@@ -1,0 +1,3 @@
+[submodule "CubeMX2Makefile"]
+	path = CubeMX2Makefile
+	url = https://github.com/madcowswe/CubeMX2Makefile.git
