@@ -8,7 +8,7 @@ To compile the program, you first need to install the prerequisite tools:
   * Available [here](http://www2.st.com/content/st_com/en/products/development-tools/software-development-tools/stm32-software-development-tools/stm32-configurators-and-code-generators/stm32cubemx.html?icmp=stm32cubemx_pron_pr-stm32cubef2_apr2014&sc=stm32cube-pr2)
 
 #### Generate code
-* Run stm32cubeMX and load the `Odrive.ioc` project file.
+* Run stm32cubeMX and load the `stm32cubemx/Odrive.ioc` project file.
 * Press `Project -> Generate code`
 * You may need to let it download some drivers and such.
 
