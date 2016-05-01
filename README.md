@@ -15,4 +15,9 @@ To compile the program, you first need to install the prerequisite tools:
 #### Generate makefile
 There is an excellent project called CubeMX2Makefile, originally from baoshi. This project is included as a submodule.
 * Initalise and clone the submodules: `git submodule init; git submodule update`
-* 
+* Generate makefile: `CubeMX2Makefile/CubeMX2Makefile.py stm32cubemx/`
+* Try to build the stuff!
+```sh
+cd stm32cubemx
+make
+```
