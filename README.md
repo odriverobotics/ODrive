@@ -67,7 +67,24 @@ There is an excellent project called CubeMX2Makefile, originally from baoshi. Th
 * Browse for existing code location, find the OdriveFirmware root.
 * In the Toolchain options, select `Cross GCC`
 * Hit Finish
+* Build the project (press ctrl-B)
 
 ![Toolchain options](screenshots/CodeAsMakefile.png "Toolchain options")
 
 ### Load the launch configuration
+* File -> Import -> Run/Debug -> Launch Configurations -> Next
+* Highlight (don't tick) the OdriveFirmare folder in the left column
+* Tick OdriveFirmware.launch in the right column
+* Hit Finish
+
+![Launch Configurations](screenshots/ImportLaunch.png "Launch Configurations")
+
+### Launch!
+* Make sure the programmer is connected to the board as per [Flashing the firmware](#flashing-the-firmware).
+* Press the down-arrow of the debug symbol in the toolbar, and hit Debug Configurations
+    * You can also hit Run -> Debug Configurations
+* Highlight the debug configuration you imported, called OdriveFirmware.
+* Hit Debug
+* The program should start halted on the first instruction in `Main`
+* Set beakpoints, step, hit Resume, etc.
+* Make some cool features! ;D
