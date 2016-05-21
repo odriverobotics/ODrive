@@ -1,6 +1,7 @@
 
 #build folder
 build/
+.dep/
 
 #markdown preview output
 README.html

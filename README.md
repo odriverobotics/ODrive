@@ -68,5 +68,6 @@ There is an excellent project called CubeMX2Makefile, originally from baoshi. Th
 * In the Toolchain options, select `Cross GCC`
 * Hit Finish
 
-###
+![Toolchain options](screenshots/CodeAsMakefile.png "Toolchain options")
 
+### Load the launch configuration
