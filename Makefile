@@ -71,6 +71,7 @@ C_SOURCES = \
   Src/stm32f4xx_hal_msp.c \
   Src/gpio.c \
   Src/freertos.c \
+  Src/test.c \
   Src/stm32f4xx_it.c \
   Src/adc.c \
   Src/usbd_conf.c  
@@ -96,7 +97,8 @@ AS_DEFS =
 C_DEFS = -D__weak="__attribute__((weak))" -D__packed="__attribute__((__packed__))" -DUSE_HAL_DRIVER -DSTM32F405xx
 # includes for gcc
 AS_INCLUDES =
-C_INCLUDES = -IInc
+C_INCLUDES = -I.
+C_INCLUDES += -IInc
 C_INCLUDES += -IDrivers/CMSIS/Device/ST/STM32F4xx/Include
 C_INCLUDES += -IDrivers/CMSIS/Include
 C_INCLUDES += -IDrivers/STM32F4xx_HAL_Driver/Inc
