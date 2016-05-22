@@ -36,8 +36,8 @@
 #include "task.h"
 #include "cmsis_os.h"
 
-/* USER CODE BEGIN Includes */     
-
+/* USER CODE BEGIN Includes */
+#include "test.h"
 /* USER CODE END Includes */
 
 /* Variables -----------------------------------------------------------------*/
@@ -99,11 +99,9 @@ void StartDefaultTask(void const * argument)
   MX_USB_DEVICE_Init();
 
   /* USER CODE BEGIN StartDefaultTask */
-  /* Infinite loop */
-  for(;;)
-  {
-    osDelay(1);
-  }
+
+  //Run test routines
+  test_main();
   /* USER CODE END StartDefaultTask */
 }
 
