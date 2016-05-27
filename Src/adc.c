@@ -67,7 +67,7 @@ void MX_ADC1_Init(void)
 
     /**Configure for the selected ADC regular channel its corresponding rank in the sequencer and its sample time. 
     */
-  sConfig.Channel = ADC_CHANNEL_5;
+  sConfig.Channel = ADC_CHANNEL_0;
   sConfig.Rank = 1;
   sConfig.SamplingTime = ADC_SAMPLETIME_3CYCLES;
   HAL_ADC_ConfigChannel(&hadc1, &sConfig);
@@ -109,7 +109,7 @@ void MX_ADC2_Init(void)
 
     /**Configure for the selected ADC regular channel its corresponding rank in the sequencer and its sample time. 
     */
-  sConfig.Channel = ADC_CHANNEL_5;
+  sConfig.Channel = ADC_CHANNEL_0;
   sConfig.Rank = 1;
   sConfig.SamplingTime = ADC_SAMPLETIME_3CYCLES;
   HAL_ADC_ConfigChannel(&hadc2, &sConfig);
@@ -303,6 +303,11 @@ void HAL_ADC_MspDeInit(ADC_HandleTypeDef* hadc)
 } 
 
 /* USER CODE BEGIN 1 */
+
+float read_ADC_volts(ADC_HandleTypeDef* hadc) {
+    uint32_t ADCValue = HAL_ADC_GetValue(&hadc1);
+    return (3.3f/((float)(1<<12))) * ADCValue;
+}
 
 /* USER CODE END 1 */
 

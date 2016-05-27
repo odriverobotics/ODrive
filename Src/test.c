@@ -19,9 +19,10 @@ static void test_read_ADC(void){
         HAL_ADC_Start(&hadc1);
         osDelay(2);
         if (HAL_ADC_PollForConversion(&hadc1, 1000) == HAL_OK) {
-            uint32_t ADCValue = HAL_ADC_GetValue(&hadc1);
+            float vbus_s = read_ADC_volts(&hadc1);
+            float busvoltage = (1.0f + 10.0f)/1.0f * vbus_s;
             ++measnum;
         }
-        osDelay(1000);
+        osDelay(10);
     }
 }

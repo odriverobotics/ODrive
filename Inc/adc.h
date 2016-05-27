@@ -57,6 +57,8 @@ void MX_ADC2_Init(void);
 
 /* USER CODE BEGIN Prototypes */
 
+float read_ADC_volts(ADC_HandleTypeDef* hadc);
+
 /* USER CODE END Prototypes */
 
 #ifdef __cplusplus

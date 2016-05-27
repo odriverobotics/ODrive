@@ -1,5 +1,5 @@
 #MicroXplorer Configuration settings - do not modify
-ADC1.Channel-0\#ChannelRegularConversion=ADC_CHANNEL_5
+ADC1.Channel-0\#ChannelRegularConversion=ADC_CHANNEL_0
 ADC1.Channel-1\#ChannelInjectedConversion=ADC_CHANNEL_10
 ADC1.ClockPrescaler=ADC_CLOCK_SYNC_PCLK_DIV4
 ADC1.ContinuousConvMode=DISABLE
@@ -24,7 +24,7 @@ ADC1.SamplingTime-0\#ChannelRegularConversion=ADC_SAMPLETIME_3CYCLES
 ADC1.SamplingTime-1\#ChannelInjectedConversion=ADC_SAMPLETIME_3CYCLES
 ADC1.ScanConvMode=DISABLE
 ADC1.master=1
-ADC2.Channel-0\#ChannelRegularConversion=ADC_CHANNEL_5
+ADC2.Channel-0\#ChannelRegularConversion=ADC_CHANNEL_0
 ADC2.Channel-1\#ChannelInjectedConversion=ADC_CHANNEL_11
 ADC2.ClockPrescaler=ADC_CLOCK_SYNC_PCLK_DIV4
 ADC2.ContinuousConvMode=DISABLE
