@@ -63,7 +63,6 @@ C_SOURCES = \
   Src/usbd_desc.c \
   Src/main.c \
   Src/usbd_cdc_if.c \
-  Src/stm32f4xx_hal_timebase_TIM.c \
   Src/usb_device.c \
   Src/tim.c \
   Src/spi.c \
