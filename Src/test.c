@@ -10,6 +10,7 @@
 
 #include "adc.h"
 #include "tim.h"
+#include "spi.h"
 
 #include "math.h"
 
@@ -19,8 +20,35 @@ static int test_base = 0;
 static int test = 0;
 static int test2 = 0;
 
-void test_main(void) {
+void start_DRV8301() {
 
+    //Init PWM
+    HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_1);
+    HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_2);
+    HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_3);
+    HAL_TIM_PWM_Start_IT(&htim1, TIM_CHANNEL_4);
+
+    //Turn off output
+    __HAL_TIM_MOE_DISABLE(&htim1);
+
+    //Enable driver
+    HAL_GPIO_WritePin(EN_GATE_GPIO_Port, EN_GATE_Pin, GPIO_PIN_SET);
+
+    //Wait for startup
+    osDelay(10);
+
+    //Do SPI comms
+    HAL_GPIO_WritePin(M0_nCS_GPIO_Port, M0_nCS_Pin, GPIO_PIN_RESET);
+    osDelay(1);
+
+
+
+    osDelay(1);
+
+
+}
+
+void test_adc_trigger() {
     //Set trigger to mid phase to check for trigger polarity
     htim1.Instance->CCR4 = 2048;
 
@@ -30,6 +58,11 @@ void test_main(void) {
     //Warp field stabilize.
     osDelay(2);
     __HAL_ADC_ENABLE_IT(&hadc2, ADC_IT_JEOC);
+}
+
+void test_main(void) {
+
+    start_DRV8301();
 
 }
 

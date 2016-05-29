@@ -47,6 +47,7 @@ C_SOURCES = \
   Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_dma.c \
   Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_ll_usb.c \
   Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_tim_ex.c \
+  Drivers/DRV8301/drv8301.c \
   Middlewares/ST/STM32_USB_Device_Library/Class/CDC/Src/usbd_cdc.c \
   Middlewares/ST/STM32_USB_Device_Library/Core/Src/usbd_ioreq.c \
   Middlewares/ST/STM32_USB_Device_Library/Core/Src/usbd_core.c \
@@ -102,6 +103,7 @@ C_INCLUDES += -IDrivers/CMSIS/Device/ST/STM32F4xx/Include
 C_INCLUDES += -IDrivers/CMSIS/Include
 C_INCLUDES += -IDrivers/STM32F4xx_HAL_Driver/Inc
 C_INCLUDES += -IDrivers/STM32F4xx_HAL_Driver/Inc/Legacy
+C_INCLUDES += -IDrivers/DRV8301
 C_INCLUDES += -IMiddlewares/ST/STM32_USB_Device_Library/Class/CDC/Inc
 C_INCLUDES += -IMiddlewares/ST/STM32_USB_Device_Library/Core/Inc
 C_INCLUDES += -IMiddlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS
