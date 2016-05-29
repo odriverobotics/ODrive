@@ -97,6 +97,10 @@ int main(void)
 
   /* USER CODE BEGIN 2 */
 
+  //Required to use OC4 for ADC triggering.
+  OC4_PWM_Override(&htim1);
+  OC4_PWM_Override(&htim8);
+
   /* USER CODE END 2 */
 
   /* Call init function for freertos objects (in freertos.c) */

@@ -16,13 +16,13 @@ static int test = 0;
 static int test2 = 0;
 
 void test_main(void) {
+
     HAL_TIM_PWM_Start_IT(&htim1, TIM_CHANNEL_4);
-    HAL_ADCEx_InjectedStart_IT(&hadc2);
-//    __HAL_ADC_ENABLE(&hadc2);
-//
-//    //Warp field stabilize.
-//    osDelay(2);
-//    __HAL_ADC_ENABLE_IT(&hadc2, ADC_IT_JEOC);
+    __HAL_ADC_ENABLE(&hadc2);
+
+    //Warp field stabilize.
+    osDelay(2);
+    __HAL_ADC_ENABLE_IT(&hadc2, ADC_IT_JEOC);
 
 }
 
@@ -43,10 +43,8 @@ static void test_read_ADC(void) {
 
 void HAL_ADCEx_InjectedConvCpltCallback(ADC_HandleTypeDef* hadc) {
     assert(hadc == &hadc2);
-    //float Iread_testval = read_ADC_volts(hadc, 1);
 
-    float vbus_s = read_ADC_volts(hadc, 1);
-    float busvoltage = (1.0f + 10.0f)/1.0f * vbus_s;
+    float unknown_ch_volts = read_ADC_volts(hadc, 1);
     test++;
 }
 
