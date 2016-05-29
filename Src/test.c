@@ -11,6 +11,8 @@
 #include "adc.h"
 #include "tim.h"
 
+#include "math.h"
+
 static void test_read_ADC(void);
 
 static int test_base = 0;
@@ -46,6 +48,9 @@ static void test_read_ADC(void) {
     }
 }
 
+static uint32_t testcnt[16];
+static int tcidx = 0;
+
 void HAL_ADCEx_InjectedConvCpltCallback(ADC_HandleTypeDef* hadc) {
     assert(hadc == &hadc2);
 
@@ -56,13 +61,9 @@ void HAL_ADCEx_InjectedConvCpltCallback(ADC_HandleTypeDef* hadc) {
         test++;
     } else {
         test2++;
+        testcnt[tcidx] = cnt - 2048;
+        if(++tcidx == 16)
+            tcidx = 0;
     }
 }
 
-void HAL_TIM_OC_DelayElapsedCallback(TIM_HandleTypeDef *htim) {
-
-    //We only expect the timing driving channel to trigger an interrupt.
-    assert(htim->Channel == HAL_TIM_ACTIVE_CHANNEL_4);
-    test_base++;
-
-}

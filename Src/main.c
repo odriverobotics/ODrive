@@ -169,9 +169,6 @@ void MX_NVIC_Init(void)
   /* ADC_IRQn interrupt configuration */
   HAL_NVIC_SetPriority(ADC_IRQn, 5, 0);
   HAL_NVIC_EnableIRQ(ADC_IRQn);
-  /* TIM1_CC_IRQn interrupt configuration */
-  HAL_NVIC_SetPriority(TIM1_CC_IRQn, 5, 0);
-  HAL_NVIC_EnableIRQ(TIM1_CC_IRQn);
 }
 
 /* USER CODE BEGIN 4 */

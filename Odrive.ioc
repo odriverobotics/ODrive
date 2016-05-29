@@ -171,7 +171,6 @@ NVIC.NonMaskableInt_IRQn=true\:0\:0\:false\:false\:true
 NVIC.OTG_FS_IRQn=true\:5\:0\:false\:false\:true
 NVIC.PriorityGroup=NVIC_PRIORITYGROUP_4
 NVIC.SysTick_IRQn=true\:15\:0\:false\:false\:true
-NVIC.TIM1_CC_IRQn=true\:5\:0\:false\:true\:true\:2
 NVIC.UsageFault_IRQn=true\:0\:0\:false\:false\:true
 PA0-WKUP.GPIOParameters=GPIO_Label
 PA0-WKUP.GPIO_Label=VBUS_S
