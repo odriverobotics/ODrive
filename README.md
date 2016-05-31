@@ -7,7 +7,7 @@ This repository contains the firmware that runs on the board. The other related 
 * [ODriveHardware](https://github.com/madcowswe/ODriveHardware): Circuit board design.
 * [ODrive](https://github.com/madcowswe/ODrive): Configuration and analysis scripts that runs on a PC.
 
-There is also ODriveFPGA, which contains the FPGA logic and software that runs on the FPGA based ODrive. This is not currently in development, but may be resumed at some later date.
+There is also [ODriveFPGA](https://github.com/madcowswe/ODriveFPGA), which contains the FPGA logic and software that runs on the FPGA based ODrive. This is not currently in development, but may be resumed at some later date.
 
 ### Table of contents
 
