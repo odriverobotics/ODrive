@@ -64,6 +64,8 @@ void HAL_TIM_MspPostInit(TIM_HandleTypeDef *htim);
 
 /* USER CODE BEGIN Prototypes */
 
+void OC4_PWM_Override(TIM_HandleTypeDef* htim);
+
 /* USER CODE END Prototypes */
 
 #ifdef __cplusplus

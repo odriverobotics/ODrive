@@ -42,13 +42,17 @@
 // **************************************************************************
 // the includes
 
+#include "stdbool.h"
+#include "stdint.h"
+
 // drivers
-#include "spi.h"
-#include "gpio.h"
 
-// modules
+#include "stm32f4xx_hal.h"
 
-// solutions
+// Port
+typedef SPI_HandleTypeDef* SPI_Handle;
+typedef GPIO_TypeDef* GPIO_Handle;
+typedef uint16_t GPIO_Number_e;
 
 
 //!
@@ -418,8 +422,10 @@ typedef struct _DRV_SPI_8301_Vars_t_
 typedef struct _DRV8301_Obj_
 {
   SPI_Handle       spiHandle;                  //!< the handle for the serial peripheral interface
-  GPIO_Handle      gpioHandle;                 //!< the gpio handle that is connected to the drv8301 enable pin
-  GPIO_Number_e    gpioNumber;                 //!< the gpio number that is connected to the drv8301 enable pin
+  GPIO_Handle      EngpioHandle;               //!< the gpio handle that is connected to the drv8301 enable pin
+  GPIO_Number_e    EngpioNumber;               //!< the gpio number that is connected to the drv8301 enable pin
+  GPIO_Handle      nCSgpioHandle;              //!< the gpio handle that is connected to the drv8301 nCS pin
+  GPIO_Number_e    nCSgpioNumber;               //!< the gpio number that is connected to the drv8301 nCS pin
   bool             RxTimeOut;                  //!< the timeout flag for the RX fifo
   bool             enableTimeOut;              //!< the timeout flag for drv8301 enable
 } DRV8301_Obj;

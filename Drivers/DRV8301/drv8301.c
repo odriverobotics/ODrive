@@ -38,18 +38,12 @@
 // **************************************************************************
 // the includes
 
+#include "assert.h"
 #include <math.h>
-
+#include "cmsis_os.h"
 
 // drivers
 #include "drv8301.h"
-
-
-// modules
-
-
-// platforms
-
 
 
 // **************************************************************************
@@ -65,27 +59,18 @@
 
 void DRV8301_enable(DRV8301_Handle handle)
 {
-  DRV8301_Obj *obj = (DRV8301_Obj *)handle;
-  static volatile uint16_t enableWaitTimeOut;
-  uint16_t n = 0;
 
-  // Enable the drv8301
-  GPIO_setHigh(obj->gpioHandle,obj->gpioNumber);
+  //Enable driver
+  HAL_GPIO_WritePin(handle->EngpioHandle, handle->EngpioNumber, GPIO_PIN_SET);
 
-  enableWaitTimeOut = 0;
+  //Wait for driver to come online
+  osDelay(20);
 
   // Make sure the Fault bit is not set during startup
-  while(((DRV8301_readSpi(handle,DRV8301_RegName_Status_1) & DRV8301_STATUS1_FAULT_BITS) != 0) && (enableWaitTimeOut < 1000))
-  {
-    if(++enableWaitTimeOut > 999)
-    {
-      obj->enableTimeOut = true;
-    }
-  }
+  while((DRV8301_readSpi(handle,DRV8301_RegName_Status_1) & DRV8301_STATUS1_FAULT_BITS) != 0);
 
   // Wait for the DRV8301 registers to update
-  for(n=0;n<0xffff;n++)
-    asm(" NOP");
+  osDelay(1);
 
   return;
 }
@@ -281,23 +266,45 @@ DRV8301_Handle DRV8301_init(void *pMemory,const size_t numBytes)
 } // end of DRV8301_init() function
 
 
-void DRV8301_setGpioHandle(DRV8301_Handle handle,GPIO_Handle gpioHandle)
+void DRV8301_setEnGpioHandle(DRV8301_Handle handle,GPIO_Handle gpioHandle)
 {
   DRV8301_Obj *obj = (DRV8301_Obj *)handle;
 
   // initialize the gpio interface object
-  obj->gpioHandle = gpioHandle;
+  obj->EngpioHandle = gpioHandle;
 
   return;
 } // end of DRV8301_setGpioHandle() function
 
 
-void DRV8301_setGpioNumber(DRV8301_Handle handle,GPIO_Number_e gpioNumber)
+void DRV8301_setEnGpioNumber(DRV8301_Handle handle,GPIO_Number_e gpioNumber)
 {
   DRV8301_Obj *obj = (DRV8301_Obj *)handle;
 
   // initialize the gpio interface object
-  obj->gpioNumber = gpioNumber;
+  obj->EngpioNumber = gpioNumber;
+
+  return;
+} // end of DRV8301_setGpioNumber() function
+
+
+void DRV8301_setnCSGpioHandle(DRV8301_Handle handle,GPIO_Handle gpioHandle)
+{
+  DRV8301_Obj *obj = (DRV8301_Obj *)handle;
+
+  // initialize the gpio interface object
+  obj->nCSgpioHandle = gpioHandle;
+
+  return;
+} // end of DRV8301_setGpioHandle() function
+
+
+void DRV8301_setnCSGpioNumber(DRV8301_Handle handle,GPIO_Number_e gpioNumber)
+{
+  DRV8301_Obj *obj = (DRV8301_Obj *)handle;
+
+  // initialize the gpio interface object
+  obj->nCSgpioNumber = gpioNumber;
 
   return;
 } // end of DRV8301_setGpioNumber() function
@@ -350,45 +357,28 @@ bool DRV8301_isReset(DRV8301_Handle handle)
 } // end of DRV8301_isReset() function
 
 
-uint16_t DRV8301_readSpi(DRV8301_Handle handle,const DRV8301_RegName_e regName)
+uint16_t DRV8301_readSpi(DRV8301_Handle handle, const DRV8301_RegName_e regName)
 {
-  DRV8301_Obj *obj = (DRV8301_Obj *)handle;
-  uint16_t ctrlWord;
-  const uint16_t data = 0;
-  volatile uint16_t readWord;
-  static volatile uint16_t WaitTimeOut = 0;
-  volatile SPI_FifoStatus_e RxFifoCnt = SPI_FifoStatus_Empty;
 
+  // Actuate chipselect
+  HAL_GPIO_WritePin(handle->nCSgpioHandle, handle->nCSgpioNumber, GPIO_PIN_RESET);
+  osDelay(1);
 
-  // build the control word
-  ctrlWord = (uint16_t)DRV8301_buildCtrlWord(DRV8301_CtrlMode_Read,regName,data);
+  // Do blocking read
+  uint16_t zerobuff = 0;
+  uint16_t controlword = (uint16_t)DRV8301_buildCtrlWord(DRV8301_CtrlMode_Read, regName, 0);
+  uint16_t recbuff = 0xbeef;
+  HAL_SPI_Transmit(handle->spiHandle, (uint8_t*)(&controlword), 1, 1000);
+  HAL_SPI_TransmitReceive(handle->spiHandle, (uint8_t*)(&zerobuff), (uint8_t*)(&recbuff), 1, 1000);
+  osDelay(1);
 
-  // reset the Rx fifo pointer to zero
-  SPI_resetRxFifo(obj->spiHandle);
-  SPI_enableRxFifo(obj->spiHandle);
+  // Actuate chipselect
+  HAL_GPIO_WritePin(handle->nCSgpioHandle, handle->nCSgpioNumber, GPIO_PIN_SET);
+  osDelay(1);
 
+  assert(recbuff != 0xbeef);
 
-  // write the command
-  SPI_write(obj->spiHandle,ctrlWord);
-  // dummy write to return the reply from the 8301
-  SPI_write(obj->spiHandle,0x0000);
-
-  // wait for two words to populate the RX fifo, or a wait timeout will occur
-  while((RxFifoCnt < SPI_FifoStatus_2_Words) && (WaitTimeOut < 0xffff))
-  {
-    RxFifoCnt = SPI_getRxFifoStatus(obj->spiHandle);
-
-      if(++WaitTimeOut > 0xfffe)
-      {
-          obj->RxTimeOut = true;
-      }
-  }
-
-  // Read two words, the dummy word and the data
-  readWord = SPI_readEmu(obj->spiHandle);
-  readWord = SPI_readEmu(obj->spiHandle);
-
-  return(readWord & DRV8301_DATA_MASK);
+  return(recbuff & DRV8301_DATA_MASK);
 }  // end of DRV8301_readSpi() function
 
 
@@ -588,20 +578,18 @@ void DRV8301_setShuntAmpGain(DRV8301_Handle handle,const DRV8301_ShuntAmpGain_e 
 
 void DRV8301_writeSpi(DRV8301_Handle handle, const DRV8301_RegName_e regName,const uint16_t data)
 {
-  DRV8301_Obj *obj = (DRV8301_Obj *)handle;
-  uint16_t ctrlWord;
+  // Actuate chipselect
+  HAL_GPIO_WritePin(handle->nCSgpioHandle, handle->nCSgpioNumber, GPIO_PIN_RESET);
+  osDelay(1);
 
+  // Do blocking write
+  uint16_t controlword = (uint16_t)DRV8301_buildCtrlWord(DRV8301_CtrlMode_Write, regName, 0);
+  HAL_SPI_Transmit(handle->spiHandle, (uint8_t*)(&controlword), 1, 1000);
+  osDelay(1);
 
-  // build the command
-  ctrlWord = (uint16_t)DRV8301_buildCtrlWord(DRV8301_CtrlMode_Write,regName,data);
-
-  // reset the Rx fifo pointer to zero
-  SPI_resetRxFifo(obj->spiHandle);
-  SPI_enableRxFifo(obj->spiHandle);
-
-  // write the command (time N)
-  SPI_write(obj->spiHandle,ctrlWord);
-
+  // Actuate chipselect
+  HAL_GPIO_WritePin(handle->nCSgpioHandle, handle->nCSgpioNumber, GPIO_PIN_SET);
+  osDelay(1);
 
   return;
 }  // end of DRV8301_writeSpi() function
@@ -696,7 +684,6 @@ void DRV8301_setupSpi(DRV8301_Handle handle, DRV_SPI_8301_Vars_t *Spi_8301_Vars)
 {
   DRV8301_RegName_e  drvRegName;
   uint16_t drvDataNew;
-  uint16_t n;
 
 
   // Update Control Register 1
@@ -723,8 +710,7 @@ void DRV8301_setupSpi(DRV8301_Handle handle, DRV_SPI_8301_Vars_t *Spi_8301_Vars)
 
 
   // Wait for the DRV8301 registers to update
-  for(n=0;n<100;n++)
-    asm(" NOP");
+  osDelay(1);
 
 
   // Update Status Register 1

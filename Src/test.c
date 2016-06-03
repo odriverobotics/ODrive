@@ -1,18 +1,18 @@
 
 #include "test.h"
 
-#include "cmsis_os.h"
+#include "stm32f4xx_hal.h"
 #include "stm32f405xx.h"
-#include "stm32f4xx.h"
-#include "stm32f4xx_hal_adc.h"
-#include "stm32f4xx_hal_adc_ex.h"
 #include "assert.h"
+#include "cmsis_os.h"
 
 #include "adc.h"
 #include "tim.h"
 #include "spi.h"
+#include "drv8301.h"
 
 #include "math.h"
+#include "stdint.h"
 
 static void test_read_ADC(void);
 
@@ -41,8 +41,13 @@ void start_DRV8301() {
     HAL_GPIO_WritePin(M0_nCS_GPIO_Port, M0_nCS_Pin, GPIO_PIN_RESET);
     osDelay(1);
 
-
-
+    uint16_t zerobuff = 0;
+    uint16_t controlword = (uint16_t)DRV8301_buildCtrlWord(DRV8301_CtrlMode_Read, DRV8301_RegName_Status_2, 0);
+    uint16_t recbuff = 0xbeef;
+    HAL_SPI_Transmit(&hspi3, &controlword, 1, 1000);
+    HAL_SPI_TransmitReceive(&hspi3, &zerobuff, &recbuff, 1, 1000);
+    osDelay(1);
+    HAL_GPIO_WritePin(M0_nCS_GPIO_Port, M0_nCS_Pin, GPIO_PIN_SET);
     osDelay(1);
 
 
@@ -60,10 +65,14 @@ void test_adc_trigger() {
     __HAL_ADC_ENABLE_IT(&hadc2, ADC_IT_JEOC);
 }
 
+void DRV8301_setup() {
+
+}
+
 void test_main(void) {
 
-    start_DRV8301();
-
+    //start_DRV8301();
+    DRV8301_setup();
 }
 
 // Simple loop to read ADC1

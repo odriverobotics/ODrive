@@ -47,7 +47,6 @@ C_SOURCES = \
   Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_dma.c \
   Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_ll_usb.c \
   Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_tim_ex.c \
-  Drivers/DRV8301/drv8301.c \
   Middlewares/ST/STM32_USB_Device_Library/Class/CDC/Src/usbd_cdc.c \
   Middlewares/ST/STM32_USB_Device_Library/Core/Src/usbd_ioreq.c \
   Middlewares/ST/STM32_USB_Device_Library/Core/Src/usbd_core.c \
@@ -74,7 +73,8 @@ C_SOURCES = \
   Src/test.c \
   Src/stm32f4xx_it.c \
   Src/adc.c \
-  Src/usbd_conf.c  
+  Src/usbd_conf.c \
+  Drivers/DRV8301/drv8301.c
 ASM_SOURCES = \
   Drivers/CMSIS/Device/ST/STM32F4xx/Source/Templates/gcc/startup_stm32f405xx.s
 
