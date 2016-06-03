@@ -116,7 +116,7 @@ ifeq ($(DEBUG), 1)
 CFLAGS += -g -gdwarf-2
 endif
 # Generate dependency information
-CFLAGS += -MD -MP -MF .dep/$(@F).d
+CFLAGS += -std=c99 -MD -MP -MF .dep/$(@F).d
 
 #######################################
 # LDFLAGS

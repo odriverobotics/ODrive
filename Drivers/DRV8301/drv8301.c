@@ -64,7 +64,7 @@ void DRV8301_enable(DRV8301_Handle handle)
   HAL_GPIO_WritePin(handle->EngpioHandle, handle->EngpioNumber, GPIO_PIN_SET);
 
   //Wait for driver to come online
-  osDelay(20);
+  osDelay(10);
 
   // Make sure the Fault bit is not set during startup
   while((DRV8301_readSpi(handle,DRV8301_RegName_Status_1) & DRV8301_STATUS1_FAULT_BITS) != 0);

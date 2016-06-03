@@ -20,8 +20,7 @@ static int test_base = 0;
 static int test = 0;
 static int test2 = 0;
 
-void start_DRV8301() {
-
+void start_pwm_triggering(){
     //Init PWM
     HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_1);
     HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_2);
@@ -31,6 +30,9 @@ void start_DRV8301() {
     //Turn off output
     __HAL_TIM_MOE_DISABLE(&htim1);
 
+}
+
+void start_DRV8301() {
     //Enable driver
     HAL_GPIO_WritePin(EN_GATE_GPIO_Port, EN_GATE_Pin, GPIO_PIN_SET);
 
@@ -65,14 +67,41 @@ void test_adc_trigger() {
     __HAL_ADC_ENABLE_IT(&hadc2, ADC_IT_JEOC);
 }
 
-void DRV8301_setup() {
+DRV8301_Obj gate_drivers[] = {
+    {
+        //M0
 
+        .spiHandle = &hspi3,
+        //Note: this board has the EN_Gate pin shared!
+        .EngpioHandle = EN_GATE_GPIO_Port,
+        .EngpioNumber = EN_GATE_Pin,
+        .nCSgpioHandle = M0_nCS_GPIO_Port,
+        .nCSgpioNumber = M0_nCS_Pin,
+        .RxTimeOut = false,
+        .enableTimeOut = false
+    }
+};
+static const int num_motors = sizeof(gate_drivers)/sizeof(gate_drivers[0]);
+
+void test_DRV8301_setup() {
+
+    //Local view of DRV registers
+    DRV_SPI_8301_Vars_t gate_driver_regs[num_motors];
+
+    //The DRV_8301 driver instance
+    //DRV8301_Obj gate_drivers[NUM_MOTORS];
+
+    for (int i = 0; i < num_motors; ++i) {
+        DRV8301_enable(&gate_drivers[i]);
+        DRV8301_setupSpi(&gate_drivers[i], &gate_driver_regs[i]);
+        osDelay(1);
+    }
 }
 
 void test_main(void) {
 
     //start_DRV8301();
-    DRV8301_setup();
+    test_DRV8301_setup();
 }
 
 // Simple loop to read ADC1
