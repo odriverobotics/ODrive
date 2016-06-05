@@ -583,7 +583,7 @@ void DRV8301_writeSpi(DRV8301_Handle handle, const DRV8301_RegName_e regName,con
   osDelay(1);
 
   // Do blocking write
-  uint16_t controlword = (uint16_t)DRV8301_buildCtrlWord(DRV8301_CtrlMode_Write, regName, 0);
+  uint16_t controlword = (uint16_t)DRV8301_buildCtrlWord(DRV8301_CtrlMode_Write, regName, data);
   HAL_SPI_Transmit(handle->spiHandle, (uint8_t*)(&controlword), 1, 1000);
   osDelay(1);
 

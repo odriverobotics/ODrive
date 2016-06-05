@@ -91,10 +91,12 @@ void test_DRV8301_setup() {
     //The DRV_8301 driver instance
     //DRV8301_Obj gate_drivers[NUM_MOTORS];
 
+    while(1){
     for (int i = 0; i < num_motors; ++i) {
         DRV8301_enable(&gate_drivers[i]);
         DRV8301_setupSpi(&gate_drivers[i], &gate_driver_regs[i]);
-        osDelay(1);
+        osDelay(1000);
+    }
     }
 }
 
