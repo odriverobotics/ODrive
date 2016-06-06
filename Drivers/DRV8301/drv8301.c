@@ -369,6 +369,16 @@ uint16_t DRV8301_readSpi(DRV8301_Handle handle, const DRV8301_RegName_e regName)
   uint16_t controlword = (uint16_t)DRV8301_buildCtrlWord(DRV8301_CtrlMode_Read, regName, 0);
   uint16_t recbuff = 0xbeef;
   HAL_SPI_Transmit(handle->spiHandle, (uint8_t*)(&controlword), 1, 1000);
+
+  // Datasheet says you don't have to pulse the nCS between transfers, (16 clocks should commit the transfer)
+  // but for some reason you actually need to pulse it.
+  // Actuate chipselect
+  HAL_GPIO_WritePin(handle->nCSgpioHandle, handle->nCSgpioNumber, GPIO_PIN_SET);
+  osDelay(1);
+  // Actuate chipselect
+  HAL_GPIO_WritePin(handle->nCSgpioHandle, handle->nCSgpioNumber, GPIO_PIN_RESET);
+  osDelay(1);
+
   HAL_SPI_TransmitReceive(handle->spiHandle, (uint8_t*)(&zerobuff), (uint8_t*)(&recbuff), 1, 1000);
   osDelay(1);
 
@@ -685,24 +695,27 @@ void DRV8301_setupSpi(DRV8301_Handle handle, DRV_SPI_8301_Vars_t *Spi_8301_Vars)
   DRV8301_RegName_e  drvRegName;
   uint16_t drvDataNew;
 
-
-  // Update Control Register 1
-  drvRegName = DRV8301_RegName_Control_1;
-  drvDataNew = (DRV8301_PeakCurrent_0p25_A   | \
-                DRV8301_Reset_Normal         | \
-                DRV8301_PwmMode_Six_Inputs   | \
-                DRV8301_OcMode_CurrentLimit  | \
-                DRV8301_VdsLevel_0p730_V);
-  DRV8301_writeSpi(handle,drvRegName,drvDataNew);
-
-  // Update Control Register 2
-  drvRegName = DRV8301_RegName_Control_2;
-  drvDataNew = (DRV8301_OcTwMode_Both        | \
-                DRV8301_ShuntAmpGain_10VpV   | \
-                DRV8301_DcCalMode_Ch1_Load   | \
-                DRV8301_DcCalMode_Ch2_Load   | \
-                DRV8301_OcOffTimeMode_Normal);
-  DRV8301_writeSpi(handle,drvRegName,drvDataNew);
+//  Why impose hardcoded values?
+//  Defaults should be device defaults or application level specified.
+//  Setting other hardcoded here is just confusing!
+//
+//  // Update Control Register 1
+//  drvRegName = DRV8301_RegName_Control_1;
+//  drvDataNew = (DRV8301_PeakCurrent_0p25_A   | \
+//                DRV8301_Reset_Normal         | \
+//                DRV8301_PwmMode_Six_Inputs   | \
+//                DRV8301_OcMode_CurrentLimit  | \
+//                DRV8301_VdsLevel_0p730_V);
+//  DRV8301_writeSpi(handle,drvRegName,drvDataNew);
+//
+//  // Update Control Register 2
+//  drvRegName = DRV8301_RegName_Control_2;
+//  drvDataNew = (DRV8301_OcTwMode_Both        | \
+//                DRV8301_ShuntAmpGain_10VpV   | \
+//                DRV8301_DcCalMode_Ch1_Load   | \
+//                DRV8301_DcCalMode_Ch2_Load   | \
+//                DRV8301_OcOffTimeMode_Normal);
+//  DRV8301_writeSpi(handle,drvRegName,drvDataNew);
 
 
   Spi_8301_Vars->SndCmd = false;
