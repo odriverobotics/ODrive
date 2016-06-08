@@ -14,12 +14,6 @@
 #include "math.h"
 #include "stdint.h"
 
-static void test_read_ADC(void);
-
-static int test_base = 0;
-static int test = 0;
-static int test2 = 0;
-
 void start_pwm_triggering(){
     //Init PWM
     HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_1);
@@ -30,18 +24,6 @@ void start_pwm_triggering(){
     //Turn off output
     __HAL_TIM_MOE_DISABLE(&htim1);
 
-}
-
-void test_adc_trigger() {
-    //Set trigger to mid phase to check for trigger polarity
-    htim1.Instance->CCR4 = 2048;
-
-    HAL_TIM_PWM_Start_IT(&htim1, TIM_CHANNEL_4);
-    __HAL_ADC_ENABLE(&hadc2);
-
-    //Warp field stabilize.
-    osDelay(2);
-    __HAL_ADC_ENABLE_IT(&hadc2, ADC_IT_JEOC);
 }
 
 DRV8301_Obj gate_drivers[] = {
@@ -88,34 +70,34 @@ void test_DRV8301_setup() {
     }
 }
 
-void test_main(void) {
+/////////////////////////////////////////////////
+//Test adc conversion latency and triggering
 
-    //start_DRV8301();
-    test_DRV8301_setup();
+void test_adc_trigger() {
+    //Set trigger to mid phase to check for trigger polarity
+    htim1.Instance->CCR4 = 2048;
+
+    HAL_TIM_PWM_Start_IT(&htim1, TIM_CHANNEL_4);
+    __HAL_ADC_ENABLE(&hadc2);
+
+    //Warp field stabilize.
+    osDelay(2);
+    __HAL_ADC_ENABLE_IT(&hadc2, ADC_IT_JEOC);
 }
 
-// Simple loop to read ADC1
-static void test_read_ADC(void) {
-    int measnum = 0;
-    for (;;) {
-        HAL_ADC_Start(&hadc1);
-        osDelay(2);
-        if (HAL_ADC_PollForConversion(&hadc1, 1000) == HAL_OK) {
-            float vbus_s = read_ADC_volts(&hadc1, 0);
-            float busvoltage = (1.0f + 10.0f)/1.0f * vbus_s;
-            ++measnum;
-        }
-        osDelay(10);
-    }
-}
-
+static int test = 0;
+static int test2 = 0;
 static uint32_t testcnt[16];
 static int tcidx = 0;
-
-void HAL_ADCEx_InjectedConvCpltCallback(ADC_HandleTypeDef* hadc) {
+void test_adc_trigger_cb(ADC_HandleTypeDef* hadc) {
     assert(hadc == &hadc2);
 
-    float unknown_ch_volts = read_ADC_volts(hadc, 1);
+    //float unknown_ch_volts = read_ADC_volts(hadc, 1);
+
+    //Capture value to read with debugger
+    uint32_t ADCValue = HAL_ADCEx_InjectedGetValue(hadc, 1);
+    (void)ADCValue; //Dummy use to avoid warning.
+
     uint32_t cnt = htim1.Instance->CNT;
     int dir = htim1.Instance->CR1 & TIM_CR1_DIR;
     if(dir){
@@ -126,5 +108,17 @@ void HAL_ADCEx_InjectedConvCpltCallback(ADC_HandleTypeDef* hadc) {
         if(++tcidx == 16)
             tcidx = 0;
     }
+}
+/////////////////////////////////////////////////
+
+
+//Test setup: Setup tests in main, and set callbacks
+void test_main(void) {
+    //test_DRV8301_setup();
+    test_adc_trigger();
+}
+
+void HAL_ADCEx_InjectedConvCpltCallback(ADC_HandleTypeDef* hadc) {
+    test_adc_trigger_cb(hadc);
 }
 
