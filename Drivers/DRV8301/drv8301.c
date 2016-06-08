@@ -698,24 +698,26 @@ void DRV8301_setupSpi(DRV8301_Handle handle, DRV_SPI_8301_Vars_t *Spi_8301_Vars)
 //  Why impose hardcoded values?
 //  Defaults should be device defaults or application level specified.
 //  Setting other hardcoded here is just confusing!
-//
-//  // Update Control Register 1
-//  drvRegName = DRV8301_RegName_Control_1;
-//  drvDataNew = (DRV8301_PeakCurrent_0p25_A   | \
-//                DRV8301_Reset_Normal         | \
-//                DRV8301_PwmMode_Six_Inputs   | \
-//                DRV8301_OcMode_CurrentLimit  | \
-//                DRV8301_VdsLevel_0p730_V);
-//  DRV8301_writeSpi(handle,drvRegName,drvDataNew);
-//
-//  // Update Control Register 2
-//  drvRegName = DRV8301_RegName_Control_2;
-//  drvDataNew = (DRV8301_OcTwMode_Both        | \
-//                DRV8301_ShuntAmpGain_10VpV   | \
-//                DRV8301_DcCalMode_Ch1_Load   | \
-//                DRV8301_DcCalMode_Ch2_Load   | \
-//                DRV8301_OcOffTimeMode_Normal);
-//  DRV8301_writeSpi(handle,drvRegName,drvDataNew);
+
+#if 0
+  // Update Control Register 1
+  drvRegName = DRV8301_RegName_Control_1;
+  drvDataNew = (DRV8301_PeakCurrent_0p25_A   | \
+                DRV8301_Reset_Normal         | \
+                DRV8301_PwmMode_Six_Inputs   | \
+                DRV8301_OcMode_CurrentLimit  | \
+                DRV8301_VdsLevel_0p730_V);
+  DRV8301_writeSpi(handle,drvRegName,drvDataNew);
+
+  // Update Control Register 2
+  drvRegName = DRV8301_RegName_Control_2;
+  drvDataNew = (DRV8301_OcTwMode_Both        | \
+                DRV8301_ShuntAmpGain_10VpV   | \
+                DRV8301_DcCalMode_Ch1_Load   | \
+                DRV8301_DcCalMode_Ch2_Load   | \
+                DRV8301_OcOffTimeMode_Normal);
+  DRV8301_writeSpi(handle,drvRegName,drvDataNew);
+#endif
 
 
   Spi_8301_Vars->SndCmd = false;

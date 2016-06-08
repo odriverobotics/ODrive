@@ -32,29 +32,6 @@ void start_pwm_triggering(){
 
 }
 
-void start_DRV8301() {
-    //Enable driver
-    HAL_GPIO_WritePin(EN_GATE_GPIO_Port, EN_GATE_Pin, GPIO_PIN_SET);
-
-    //Wait for startup
-    osDelay(10);
-
-    //Do SPI comms
-    HAL_GPIO_WritePin(M0_nCS_GPIO_Port, M0_nCS_Pin, GPIO_PIN_RESET);
-    osDelay(1);
-
-    uint16_t zerobuff = 0;
-    uint16_t controlword = (uint16_t)DRV8301_buildCtrlWord(DRV8301_CtrlMode_Read, DRV8301_RegName_Status_2, 0);
-    uint16_t recbuff = 0xbeef;
-    HAL_SPI_Transmit(&hspi3, &controlword, 1, 1000);
-    HAL_SPI_TransmitReceive(&hspi3, &zerobuff, &recbuff, 1, 1000);
-    osDelay(1);
-    HAL_GPIO_WritePin(M0_nCS_GPIO_Port, M0_nCS_Pin, GPIO_PIN_SET);
-    osDelay(1);
-
-
-}
-
 void test_adc_trigger() {
     //Set trigger to mid phase to check for trigger polarity
     htim1.Instance->CCR4 = 2048;
@@ -94,6 +71,19 @@ void test_DRV8301_setup() {
     for (int i = 0; i < num_motors; ++i) {
         DRV8301_enable(&gate_drivers[i]);
         DRV8301_setupSpi(&gate_drivers[i], &gate_driver_regs[i]);
+
+        //@TODO we can use reporting only if we actually wire up the nOCTW pin
+        gate_driver_regs[i].Ctrl_Reg_1.OC_MODE = DRV8301_OcMode_LatchShutDown;
+        //Overcurrent set to approximately 150A at 100degC. This may need tweaking.
+        gate_driver_regs[i].Ctrl_Reg_1.OC_ADJ_SET = DRV8301_VdsLevel_0p730_V;
+        //20V/V on 500uOhm gives a range of +/- 150A
+        gate_driver_regs[i].Ctrl_Reg_2.GAIN = DRV8301_ShuntAmpGain_20VpV;
+
+        gate_driver_regs[i].SndCmd = true;
+        DRV8301_writeData(&gate_drivers[i], &gate_driver_regs[i]);
+        gate_driver_regs[i].RcvCmd = true;
+        DRV8301_readData(&gate_drivers[i], &gate_driver_regs[i]);
+
         osDelay(1000);
     }
 }
