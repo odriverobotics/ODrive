@@ -14,15 +14,21 @@
 #include "math.h"
 #include "stdint.h"
 
-void start_pwm_triggering(){
+void start_pwm(){
     //Init PWM
+    int half_load = htim1.Instance->ARR/2;
+    htim1.Instance->CCR1 = half_load;
+    htim1.Instance->CCR2 = half_load;
+    htim1.Instance->CCR3 = half_load;
     HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_1);
     HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_2);
     HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_3);
+
+    htim1.Instance->CCR4 = 1;
     HAL_TIM_PWM_Start_IT(&htim1, TIM_CHANNEL_4);
 
     //Turn off output
-    __HAL_TIM_MOE_DISABLE(&htim1);
+    //__HAL_TIM_MOE_DISABLE(&htim1);
 
 }
 
@@ -42,14 +48,10 @@ DRV8301_Obj gate_drivers[] = {
 };
 static const int num_motors = sizeof(gate_drivers)/sizeof(gate_drivers[0]);
 
+//Local view of DRV registers
+static DRV_SPI_8301_Vars_t gate_driver_regs[1/*num_motors*/];
+
 void test_DRV8301_setup() {
-
-    //Local view of DRV registers
-    DRV_SPI_8301_Vars_t gate_driver_regs[num_motors];
-
-    //The DRV_8301 driver instance
-    //DRV8301_Obj gate_drivers[NUM_MOTORS];
-
     for (int i = 0; i < num_motors; ++i) {
         DRV8301_enable(&gate_drivers[i]);
         DRV8301_setupSpi(&gate_drivers[i], &gate_driver_regs[i]);
@@ -65,8 +67,6 @@ void test_DRV8301_setup() {
         DRV8301_writeData(&gate_drivers[i], &gate_driver_regs[i]);
         gate_driver_regs[i].RcvCmd = true;
         DRV8301_readData(&gate_drivers[i], &gate_driver_regs[i]);
-
-        osDelay(1000);
     }
 }
 
@@ -111,14 +111,24 @@ void test_adc_trigger_cb(ADC_HandleTypeDef* hadc) {
 }
 /////////////////////////////////////////////////
 
+static int cbcnt = 0;
+void test_cb_count(){
+    ++cbcnt;
+}
+
 
 //Test setup: Setup tests in main, and set callbacks
 void test_main(void) {
-    //test_DRV8301_setup();
-    test_adc_trigger();
+
+    //test_adc_trigger();
+
+    test_DRV8301_setup();
+    osDelay(10000);
+    start_pwm();
 }
 
 void HAL_ADCEx_InjectedConvCpltCallback(ADC_HandleTypeDef* hadc) {
-    test_adc_trigger_cb(hadc);
+    //test_adc_trigger_cb(hadc);
+    test_cb_count();
 }
 
