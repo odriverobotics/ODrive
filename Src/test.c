@@ -29,12 +29,12 @@ void start_adc_pwm(){
     htim1.Instance->CCR3 = half_load;
 
     //This hardware obfustication layer really is getting on my nerves
-    HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_1);
-    HAL_TIMEx_PWMN_Start(&htim1, TIM_CHANNEL_1);
-    HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_2);
-    HAL_TIMEx_PWMN_Start(&htim1, TIM_CHANNEL_2);
-    HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_3);
-    HAL_TIMEx_PWMN_Start(&htim1, TIM_CHANNEL_3);
+//    HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_1);
+//    HAL_TIMEx_PWMN_Start(&htim1, TIM_CHANNEL_1);
+//    HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_2);
+//    HAL_TIMEx_PWMN_Start(&htim1, TIM_CHANNEL_2);
+//    HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_3);
+//    HAL_TIMEx_PWMN_Start(&htim1, TIM_CHANNEL_3);
 
     htim1.Instance->CCR4 = 1;
     HAL_TIM_PWM_Start_IT(&htim1, TIM_CHANNEL_4);
@@ -120,15 +120,16 @@ void test_cb_count(){
     ++cbcnt;
 }
 
-static float alpha = 1/(1000.0f);
+
+/////////////////////////////////////////////////
+//Histogram test
+static float alpha = 1/(5000.0f);
 static float avg = 2048.0f;
 static float var = 0.0f;
-
 static uint32_t hist_countdown = 40000;
 static uint32_t errhist[20];
 static uint32_t neg_errhist[20];
-
-void test_adc_cb(ADC_HandleTypeDef* hadc) {
+void test_adc_hist_cb(ADC_HandleTypeDef* hadc) {
     //float unknown_ch_volts = read_ADC_volts(hadc, 1);
 
     uint32_t ADCValue = HAL_ADCEx_InjectedGetValue(hadc, 1);
@@ -154,8 +155,8 @@ void test_adc_cb(ADC_HandleTypeDef* hadc) {
         else
             ++neg_errhist[idval];
     }
-
 }
+/////////////////////////////////////////////////
 
 
 //Test setup: Setup tests in main, and set callbacks
@@ -171,6 +172,6 @@ void test_main(void) {
 void HAL_ADCEx_InjectedConvCpltCallback(ADC_HandleTypeDef* hadc) {
     //test_adc_trigger_cb(hadc);
     //test_cb_count();
-    test_adc_cb(hadc);
+    test_adc_hist_cb(hadc);
 }
 
