@@ -29,12 +29,12 @@ void start_adc_pwm(){
     htim1.Instance->CCR3 = half_load;
 
     //This hardware obfustication layer really is getting on my nerves
-//    HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_1);
-//    HAL_TIMEx_PWMN_Start(&htim1, TIM_CHANNEL_1);
-//    HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_2);
-//    HAL_TIMEx_PWMN_Start(&htim1, TIM_CHANNEL_2);
-//    HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_3);
-//    HAL_TIMEx_PWMN_Start(&htim1, TIM_CHANNEL_3);
+    HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_1);
+    HAL_TIMEx_PWMN_Start(&htim1, TIM_CHANNEL_1);
+    HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_2);
+    HAL_TIMEx_PWMN_Start(&htim1, TIM_CHANNEL_2);
+    HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_3);
+    HAL_TIMEx_PWMN_Start(&htim1, TIM_CHANNEL_3);
 
     htim1.Instance->CCR4 = 1;
     HAL_TIM_PWM_Start_IT(&htim1, TIM_CHANNEL_4);
@@ -158,6 +158,15 @@ void test_adc_hist_cb(ADC_HandleTypeDef* hadc) {
 }
 /////////////////////////////////////////////////
 
+void test_pwm_from_adc_cb(ADC_HandleTypeDef* hadc) {
+    int half_load = htim1.Instance->ARR/2;
+    htim1.Instance->CCR1 = half_load - 400;
+    htim1.Instance->CCR2 = half_load + 400;
+    htim1.Instance->CCR3 = half_load + 400;
+
+    test_adc_hist_cb(hadc);
+}
+
 
 //Test setup: Setup tests in main, and set callbacks
 void test_main(void) {
@@ -172,6 +181,7 @@ void test_main(void) {
 void HAL_ADCEx_InjectedConvCpltCallback(ADC_HandleTypeDef* hadc) {
     //test_adc_trigger_cb(hadc);
     //test_cb_count();
-    test_adc_hist_cb(hadc);
+    //test_adc_hist_cb(hadc);
+    test_pwm_from_adc_cb(hadc);
 }
 
