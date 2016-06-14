@@ -101,15 +101,7 @@ static int test = 0;
 static int test2 = 0;
 static uint32_t testcnt[16];
 static int tcidx = 0;
-void test_adc_trigger_cb(ADC_HandleTypeDef* hadc) {
-    assert(hadc == &hadc2);
-
-    //float unknown_ch_volts = read_ADC_volts(hadc, 1);
-
-    //Capture value to read with debugger
-    uint32_t ADCValue = HAL_ADCEx_InjectedGetValue(hadc, 1);
-    (void)ADCValue; //Dummy use to avoid warning.
-
+void test_adc_trigger_cb() {
     uint32_t cnt = htim1.Instance->CNT;
     int dir = htim1.Instance->CR1 & TIM_CR1_DIR;
     if(dir){
@@ -128,6 +120,43 @@ void test_cb_count(){
     ++cbcnt;
 }
 
+static float alpha = 1/(1000.0f);
+static float avg = 2048.0f;
+static float var = 0.0f;
+
+static uint32_t hist_countdown = 40000;
+static uint32_t errhist[20];
+static uint32_t neg_errhist[20];
+
+void test_adc_cb(ADC_HandleTypeDef* hadc) {
+    //float unknown_ch_volts = read_ADC_volts(hadc, 1);
+
+    uint32_t ADCValue = HAL_ADCEx_InjectedGetValue(hadc, 1);
+    float val = (float)ADCValue;
+    avg *= (1.0f - alpha);
+    avg += alpha * val;
+
+    float dval = val-avg;
+    var *= (1.0f - alpha);
+    var += alpha * (dval * dval);
+
+    if (hist_countdown) {
+        --hist_countdown;
+    } else {
+        int idval = (int)dval;
+        int pos = (idval >= 0);
+        if (!pos)
+            idval = -idval;
+        if (idval >= 20)
+            idval = 19;
+        if (pos)
+            ++errhist[idval];
+        else
+            ++neg_errhist[idval];
+    }
+
+}
+
 
 //Test setup: Setup tests in main, and set callbacks
 void test_main(void) {
@@ -141,6 +170,7 @@ void test_main(void) {
 
 void HAL_ADCEx_InjectedConvCpltCallback(ADC_HandleTypeDef* hadc) {
     //test_adc_trigger_cb(hadc);
-    test_cb_count();
+    //test_cb_count();
+    test_adc_cb(hadc);
 }
 
