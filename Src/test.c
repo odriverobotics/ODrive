@@ -164,7 +164,13 @@ void test_pwm_from_adc_cb(ADC_HandleTypeDef* hadc) {
     htim1.Instance->CCR2 = half_load + 400;
     htim1.Instance->CCR3 = half_load + 400;
 
-    test_adc_hist_cb(hadc);
+    // test_adc_hist_cb(hadc);
+}
+
+
+void test_motor_thread(void const * argument) {
+	int test = 0;
+	test = 1;
 }
 
 

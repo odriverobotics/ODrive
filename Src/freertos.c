@@ -42,6 +42,7 @@
 
 /* Variables -----------------------------------------------------------------*/
 osThreadId defaultTaskHandle;
+osThreadId motor0_TaskHandle;
 
 /* USER CODE BEGIN Variables */
 
@@ -84,7 +85,8 @@ void MX_FREERTOS_Init(void) {
   defaultTaskHandle = osThreadCreate(osThread(defaultTask), NULL);
 
   /* USER CODE BEGIN RTOS_THREADS */
-  /* add threads, ... */
+  osThreadDef(task_motor_0, test_motor_thread, osPriorityHigh, 0, 512);
+  motor0_TaskHandle = osThreadCreate(osThread(task_motor_0), NULL);
   /* USER CODE END RTOS_THREADS */
 
   /* USER CODE BEGIN RTOS_QUEUES */
