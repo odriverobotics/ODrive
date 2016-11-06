@@ -194,14 +194,52 @@ float phase_current_from_adcval(uint32_t ADCValue, int motornum) {
 
 void test_pwm_from_adc_cb(ADC_HandleTypeDef* hadc) {
 
+    // ADC2 and ADC3 record the phB and phC currents concurrently,
+    // and their interrupts have the same priorities so they can complete
+    // in any order. Because they cannot preempt each other, it is safe
+    // to store the result of the first interrupt without risk of a race condition.
+    // Then we  send both into the queue with the second interrupt.
+    typedef enum ADC_sync_e {NONE_STORED, PHB_STORED, PHC_STORED} ADC_sync_t;
+    static ADC_sync_t adc_sync = NONE_STORED;
+    static float stored_current;
+
     //Only one conversion in sequence, so only rank1
     uint32_t ADCValue = HAL_ADCEx_InjectedGetValue(hadc, ADC_INJECTED_RANK_1);
-    float M0_phB_current = phase_current_from_adcval(ADCValue, 0);
 
-    int half_load = htim1.Instance->ARR/2;
-    htim1.Instance->CCR1 = half_load - 400;
-    htim1.Instance->CCR2 = half_load + 400;
-    htim1.Instance->CCR3 = half_load + 400;
+    //Store and return, or fetch and continue
+    float M0_phB_current, M0_phC_current;
+    if (hadc == &hadc2) {
+        M0_phB_current = phase_current_from_adcval(ADCValue, 0);
+        if (adc_sync == NONE_STORED) {
+            stored_current = M0_phB_current;
+            adc_sync = PHB_STORED;
+            return;
+        } else {
+            assert(adc_sync == PHC_STORED);
+            M0_phC_current = stored_current;
+            stored_current = NONE_STORED;
+        }
+    } else if (hadc == &hadc3) {
+        M0_phC_current = phase_current_from_adcval(ADCValue, 0);
+        if (adc_sync == NONE_STORED) {
+            stored_current = M0_phC_current;
+            adc_sync = PHC_STORED;
+            return;
+        } else {
+            assert(adc_sync == PHB_STORED);
+            M0_phB_current = stored_current;
+            stored_current = NONE_STORED;
+        }
+    } else {
+        //hadc is something else, not expected
+        assert(0);
+    }
+    float test = M0_phB_current;
+
+    // int half_load = htim1.Instance->ARR/2;
+    // htim1.Instance->CCR1 = half_load - 400;
+    // htim1.Instance->CCR2 = half_load + 400;
+    // htim1.Instance->CCR3 = half_load + 400;
 
     // test_adc_hist_cb(hadc);
 }
