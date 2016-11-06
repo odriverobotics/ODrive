@@ -170,7 +170,10 @@ void test_pwm_from_adc_cb(ADC_HandleTypeDef* hadc) {
 
 void test_motor_thread(void const * argument) {
 	int test = 0;
-	test = 1;
+	while(1) {
+		++test;
+		osDelay(10);
+	}
 }
 
 

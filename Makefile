@@ -60,6 +60,7 @@ C_SOURCES = \
   Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS/cmsis_os.c \
   Middlewares/Third_Party/FreeRTOS/Source/portable/MemMang/heap_4.c \
   Middlewares/Third_Party/FreeRTOS/Source/portable/GCC/ARM_CM4F/port.c \
+  MotorControl/test.c \
   Src/usbd_desc.c \
   Src/main.c \
   Src/usbd_cdc_if.c \
@@ -70,7 +71,6 @@ C_SOURCES = \
   Src/stm32f4xx_hal_msp.c \
   Src/gpio.c \
   Src/freertos.c \
-  Src/test.c \
   Src/stm32f4xx_it.c \
   Src/adc.c \
   Src/usbd_conf.c \
@@ -109,6 +109,7 @@ C_INCLUDES += -IMiddlewares/ST/STM32_USB_Device_Library/Core/Inc
 C_INCLUDES += -IMiddlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS
 C_INCLUDES += -IMiddlewares/Third_Party/FreeRTOS/Source/include
 C_INCLUDES += -IMiddlewares/Third_Party/FreeRTOS/Source/portable/GCC/ARM_CM4F
+C_INCLUDES += -IMotorControl
 # compile gcc flags
 ASFLAGS = -mthumb -mcpu=cortex-m4 -mfpu=fpv4-sp-d16 -mfloat-abi=hard $(AS_DEFS) $(AS_INCLUDES) $(OPT) -Wall -fdata-sections -ffunction-sections
 CFLAGS = -mthumb -mcpu=cortex-m4 -mfpu=fpv4-sp-d16 -mfloat-abi=hard $(C_DEFS) $(C_INCLUDES) $(OPT) -Wall -fdata-sections -ffunction-sections
