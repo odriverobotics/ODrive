@@ -47,6 +47,7 @@ void start_adc_pwm(){
 typedef struct Motor_s {
     DRV8301_Obj gate_driver;
     float shunt_conductance;
+    float maxcurrent;
 } Motor_t;
 
 Motor_t motor_configs[] = {
@@ -61,7 +62,8 @@ Motor_t motor_configs[] = {
             .RxTimeOut = false,
             .enableTimeOut = false
         },
-        .shunt_conductance = 1.0f/0.0005f
+        .shunt_conductance = 1.0f/0.0005f, //[S]
+        .maxcurrent = 75.0f //[A] //Note: consistent with 40v/v gain
     }
 };
 
@@ -80,7 +82,8 @@ void test_DRV8301_setup() {
         //Overcurrent set to approximately 150A at 100degC. This may need tweaking.
         gate_driver_regs[i].Ctrl_Reg_1.OC_ADJ_SET = DRV8301_VdsLevel_0p730_V;
         //20V/V on 500uOhm gives a range of +/- 150A
-        gate_driver_regs[i].Ctrl_Reg_2.GAIN = DRV8301_ShuntAmpGain_20VpV;
+        //40V/V on 500uOhm gives a range of +/- 75A
+        gate_driver_regs[i].Ctrl_Reg_2.GAIN = DRV8301_ShuntAmpGain_40VpV;
 
         gate_driver_regs[i].SndCmd = true;
         DRV8301_writeData(&motor_configs[i].gate_driver, &gate_driver_regs[i]);
