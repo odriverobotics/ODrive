@@ -18,9 +18,11 @@ void start_adc_pwm(){
 
     //Enable ADC and interrupts
     __HAL_ADC_ENABLE(&hadc2);
+    __HAL_ADC_ENABLE(&hadc3);
     //Warp field stabilize.
     osDelay(2);
     __HAL_ADC_ENABLE_IT(&hadc2, ADC_IT_JEOC);
+    __HAL_ADC_ENABLE_IT(&hadc3, ADC_IT_JEOC);
 
     //Init PWM
     int half_load = htim1.Instance->ARR/2;
@@ -192,13 +194,28 @@ float phase_current_from_adcval(uint32_t ADCValue, int motornum) {
     return current;
 }
 
+void assertt(int arg) {
+    if(!arg) {
+        int test = 3;
+        for(;;);
+    }
+}
+
+// current sense queue from ADC to motor control task
+typedef struct {
+    float current_phB;
+    float current_phC;
+} Iph_BC_queue_item_t;
+osMailQDef (Iph_queue_def, 2, Iph_BC_queue_item_t);
+osMailQId  (M0_Iph_queue);
+
 void test_pwm_from_adc_cb(ADC_HandleTypeDef* hadc) {
 
     // ADC2 and ADC3 record the phB and phC currents concurrently,
     // and their interrupts have the same priorities so they can complete
     // in any order. Because they cannot preempt each other, it is safe
     // to store the result of the first interrupt without risk of a race condition.
-    // Then we  send both into the queue with the second interrupt.
+    // Then we send both into the queue.
     typedef enum ADC_sync_e {NONE_STORED, PHB_STORED, PHC_STORED} ADC_sync_t;
     static ADC_sync_t adc_sync = NONE_STORED;
     static float stored_current;
@@ -215,9 +232,9 @@ void test_pwm_from_adc_cb(ADC_HandleTypeDef* hadc) {
             adc_sync = PHB_STORED;
             return;
         } else {
-            assert(adc_sync == PHC_STORED);
+            assertt(adc_sync == PHC_STORED);
             M0_phC_current = stored_current;
-            stored_current = NONE_STORED;
+            adc_sync = NONE_STORED;
         }
     } else if (hadc == &hadc3) {
         M0_phC_current = phase_current_from_adcval(ADCValue, 0);
@@ -226,30 +243,56 @@ void test_pwm_from_adc_cb(ADC_HandleTypeDef* hadc) {
             adc_sync = PHC_STORED;
             return;
         } else {
-            assert(adc_sync == PHB_STORED);
+            assertt(adc_sync == PHB_STORED);
             M0_phB_current = stored_current;
-            stored_current = NONE_STORED;
+            adc_sync = NONE_STORED;
         }
     } else {
         //hadc is something else, not expected
-        assert(0);
+        assertt(0);
     }
-    float test = M0_phB_current;
 
-    // int half_load = htim1.Instance->ARR/2;
-    // htim1.Instance->CCR1 = half_load - 400;
-    // htim1.Instance->CCR2 = half_load + 400;
-    // htim1.Instance->CCR3 = half_load + 400;
+    //Allocate mail queue storage
+    Iph_BC_queue_item_t* mail_ptr;
+    mail_ptr = (Iph_BC_queue_item_t*) osMailAlloc(M0_Iph_queue, 0);
+    if (mail_ptr == NULL) {
+        return;
+    }
 
-    // test_adc_hist_cb(hadc);
+    //Write contents and send mail
+    mail_ptr->current_phB = M0_phB_current;
+    mail_ptr->current_phC = M0_phC_current;
+    osMailPut(M0_Iph_queue, mail_ptr);
+
 }
 
 
 void test_motor_thread(void const * argument) {
-    int test = 0;
-    while(1) {
-        ++test;
-        osDelay(10);
+
+    //Allocate the queues
+    M0_Iph_queue = osMailCreate(osMailQ(Iph_queue_def), NULL);
+
+    //Init gate drivers
+    test_DRV8301_setup();
+
+    osDelay(1000);
+
+    // Start PWM and enable adc interrupts/callbacks
+    start_adc_pwm();
+
+    for(;;) {
+        //Current measurements not occurring in a timely manner can be handled by the watchdog
+        //@TODO Actually make watchdog
+        //Hence we can use osWaitForever
+        osEvent evt = osMailGet(M0_Iph_queue, osWaitForever);
+
+        //Since we wait forever, we do not expect timeouts here.
+        assertt(evt.status == osEventMail);
+
+        Iph_BC_queue_item_t* mail_ptr = evt.value.p;
+        float M0_phB_current = mail_ptr->current_phB;
+        float M0_phC_current = mail_ptr->current_phC;
+        osMailFree(M0_Iph_queue, mail_ptr);
     }
 }
 
@@ -259,9 +302,6 @@ void test_main(void) {
 
     //test_adc_trigger();
 
-    test_DRV8301_setup();
-    osDelay(1000);
-    start_adc_pwm();
 }
 
 void HAL_ADCEx_InjectedConvCpltCallback(ADC_HandleTypeDef* hadc) {
