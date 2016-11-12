@@ -2,8 +2,8 @@
   ******************************************************************************
   * @file    stm32f4xx_hal_can.c
   * @author  MCD Application Team
-  * @version V1.4.4
-  * @date    22-January-2016
+  * @version V1.5.2
+  * @date    22-September-2016
   * @brief   This file provides firmware functions to manage the following 
   *          functionalities of the Controller Area Network (CAN) peripheral:
   *           + Initialization and de-initialization functions 
@@ -115,7 +115,8 @@
 
 #if defined(STM32F405xx) || defined(STM32F415xx) || defined(STM32F407xx) || defined(STM32F417xx) ||\
     defined(STM32F427xx) || defined(STM32F437xx) || defined(STM32F429xx) || defined(STM32F439xx) ||\
-    defined(STM32F446xx) || defined(STM32F469xx) || defined(STM32F479xx)
+    defined(STM32F446xx) || defined(STM32F469xx) || defined(STM32F479xx) || defined(STM32F412Zx) ||\
+    defined(STM32F412Vx) || defined(STM32F412Rx) || defined(STM32F412Cx)
   
 /* Private typedef -----------------------------------------------------------*/
 /* Private define ------------------------------------------------------------*/
@@ -843,6 +844,8 @@ HAL_StatusTypeDef HAL_CAN_Receive(CAN_HandleTypeDef* hcan, uint8_t FIFONumber, u
   hcan->pRxMsg->DLC = (uint8_t)0x0FU & hcan->Instance->sFIFOMailBox[FIFONumber].RDTR;
   /* Get the FMI */
   hcan->pRxMsg->FMI = (uint8_t)0xFFU & (hcan->Instance->sFIFOMailBox[FIFONumber].RDTR >> 8U);
+  /* Get the FIFONumber */
+  hcan->pRxMsg->FIFONumber = FIFONumber;
   /* Get the data field */
   hcan->pRxMsg->Data[0U] = (uint8_t)0xFFU & hcan->Instance->sFIFOMailBox[FIFONumber].RDLR;
   hcan->pRxMsg->Data[1U] = (uint8_t)0xFFU & (hcan->Instance->sFIFOMailBox[FIFONumber].RDLR >> 8U);
@@ -1351,6 +1354,8 @@ static HAL_StatusTypeDef CAN_Receive_IT(CAN_HandleTypeDef* hcan, uint8_t FIFONum
   hcan->pRxMsg->RTR = (uint8_t)0x02U & hcan->Instance->sFIFOMailBox[FIFONumber].RIR;
   /* Get the DLC */
   hcan->pRxMsg->DLC = (uint8_t)0x0FU & hcan->Instance->sFIFOMailBox[FIFONumber].RDTR;
+  /* Get the FIFONumber */
+  hcan->pRxMsg->FIFONumber = FIFONumber;
   /* Get the FMI */
   hcan->pRxMsg->FMI = (uint8_t)0xFFU & (hcan->Instance->sFIFOMailBox[FIFONumber].RDTR >> 8U);
   /* Get the data field */
@@ -1420,7 +1425,8 @@ static HAL_StatusTypeDef CAN_Receive_IT(CAN_HandleTypeDef* hcan, uint8_t FIFONum
   * @}
   */
 #endif /* STM32F405xx || STM32F415xx || STM32F407xx || STM32F417xx || STM32F427xx || STM32F437xx ||\
-          STM32F429xx || STM32F439xx || STM32F446xx || STM32F469xx || STM32F479xx */
+          STM32F429xx || STM32F439xx || STM32F446xx || STM32F469xx || STM32F479xx || STM32F412Zx ||\
+          STM32F412Vx || STM32F412Rx || STM32F412Cx */
 
 #endif /* HAL_CAN_MODULE_ENABLED */
 /**

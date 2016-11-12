@@ -26,14 +26,12 @@ BUILD_DIR = build
 ######################################
 C_SOURCES = \
   Drivers/CMSIS/Device/ST/STM32F4xx/Source/Templates/system_stm32f4xx.c \
-  Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_pcd.c \
   Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_adc.c \
   Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_pwr.c \
   Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_gpio.c \
   Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_dma_ex.c \
   Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_rcc_ex.c \
   Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_adc_ex.c \
-  Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_pcd_ex.c \
   Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_cortex.c \
   Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_flash.c \
   Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_flash_ex.c \
@@ -45,12 +43,7 @@ C_SOURCES = \
   Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_pwr_ex.c \
   Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_tim.c \
   Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_dma.c \
-  Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_ll_usb.c \
   Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_tim_ex.c \
-  Middlewares/ST/STM32_USB_Device_Library/Class/CDC/Src/usbd_cdc.c \
-  Middlewares/ST/STM32_USB_Device_Library/Core/Src/usbd_ioreq.c \
-  Middlewares/ST/STM32_USB_Device_Library/Core/Src/usbd_core.c \
-  Middlewares/ST/STM32_USB_Device_Library/Core/Src/usbd_ctlreq.c \
   Middlewares/Third_Party/FreeRTOS/Source/timers.c \
   Middlewares/Third_Party/FreeRTOS/Source/event_groups.c \
   Middlewares/Third_Party/FreeRTOS/Source/list.c \
@@ -61,10 +54,7 @@ C_SOURCES = \
   Middlewares/Third_Party/FreeRTOS/Source/portable/MemMang/heap_4.c \
   Middlewares/Third_Party/FreeRTOS/Source/portable/GCC/ARM_CM4F/port.c \
   MotorControl/test.c \
-  Src/usbd_desc.c \
   Src/main.c \
-  Src/usbd_cdc_if.c \
-  Src/usb_device.c \
   Src/tim.c \
   Src/spi.c \
   Src/can.c \
@@ -73,7 +63,6 @@ C_SOURCES = \
   Src/freertos.c \
   Src/stm32f4xx_it.c \
   Src/adc.c \
-  Src/usbd_conf.c \
   Drivers/DRV8301/drv8301.c
 ASM_SOURCES = \
   Drivers/CMSIS/Device/ST/STM32F4xx/Source/Templates/gcc/startup_stm32f405xx.s
@@ -104,8 +93,6 @@ C_INCLUDES += -IDrivers/CMSIS/Include
 C_INCLUDES += -IDrivers/STM32F4xx_HAL_Driver/Inc
 C_INCLUDES += -IDrivers/STM32F4xx_HAL_Driver/Inc/Legacy
 C_INCLUDES += -IDrivers/DRV8301
-C_INCLUDES += -IMiddlewares/ST/STM32_USB_Device_Library/Class/CDC/Inc
-C_INCLUDES += -IMiddlewares/ST/STM32_USB_Device_Library/Core/Inc
 C_INCLUDES += -IMiddlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS
 C_INCLUDES += -IMiddlewares/Third_Party/FreeRTOS/Source/include
 C_INCLUDES += -IMiddlewares/Third_Party/FreeRTOS/Source/portable/GCC/ARM_CM4F

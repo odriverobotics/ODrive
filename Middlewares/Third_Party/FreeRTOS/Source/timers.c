@@ -1,5 +1,5 @@
 /*
-    FreeRTOS V8.2.1 - Copyright (C) 2015 Real Time Engineers Ltd.
+    FreeRTOS V8.2.3 - Copyright (C) 2015 Real Time Engineers Ltd.
     All rights reserved
 
     VISIT http://www.FreeRTOS.org TO ENSURE YOU ARE USING THE LATEST VERSION.
@@ -8,7 +8,7 @@
 
     FreeRTOS is free software; you can redistribute it and/or modify it under
     the terms of the GNU General Public License (version 2) as published by the
-    Free Software Foundation >>!AND MODIFIED BY!<< the FreeRTOS exception.
+    Free Software Foundation >>>> AND MODIFIED BY <<<< the FreeRTOS exception.
 
     ***************************************************************************
     >>!   NOTE: The modification to the GPL is included to allow you to     !<<
@@ -195,7 +195,7 @@ static void prvTimerTask( void *pvParameters ) PRIVILEGED_FUNCTION;
  * Called by the timer service task to interpret and process a command it
  * received on the timer queue.
  */
-static void	prvProcessReceivedCommands( void ) PRIVILEGED_FUNCTION;
+static void prvProcessReceivedCommands( void ) PRIVILEGED_FUNCTION;
 
 /*
  * Insert the timer into either xActiveTimerList1, or xActiveTimerList2,
@@ -233,7 +233,7 @@ static TickType_t prvGetNextExpireTime( BaseType_t * const pxListWasEmpty ) PRIV
  * If a timer has expired, process it.  Otherwise, block the timer service task
  * until either a timer does expire or a command is received.
  */
-static void prvProcessTimerOrBlockTask( const TickType_t xNextExpireTime, const BaseType_t xListWasEmpty ) PRIVILEGED_FUNCTION;
+static void prvProcessTimerOrBlockTask( const TickType_t xNextExpireTime, BaseType_t xListWasEmpty ) PRIVILEGED_FUNCTION;
 
 /*-----------------------------------------------------------*/
 
@@ -318,6 +318,8 @@ BaseType_t xTimerGenericCommand( TimerHandle_t xTimer, const BaseType_t xCommand
 BaseType_t xReturn = pdFAIL;
 DaemonTaskMessage_t xMessage;
 
+	configASSERT( xTimer );
+
 	/* Send a message to the timer service task to perform a particular action
 	on a particular timer definition. */
 	if( xTimerQueue != NULL )
@@ -371,6 +373,7 @@ const char * pcTimerGetTimerName( TimerHandle_t xTimer )
 {
 Timer_t *pxTimer = ( Timer_t * ) xTimer;
 
+	configASSERT( xTimer );
 	return pxTimer->pcTimerName;
 }
 /*-----------------------------------------------------------*/
@@ -439,7 +442,7 @@ BaseType_t xListWasEmpty;
 }
 /*-----------------------------------------------------------*/
 
-static void prvProcessTimerOrBlockTask( const TickType_t xNextExpireTime, const BaseType_t xListWasEmpty )
+static void prvProcessTimerOrBlockTask( const TickType_t xNextExpireTime, BaseType_t xListWasEmpty )
 {
 TickType_t xTimeNow;
 BaseType_t xTimerListsWereSwitched;
@@ -468,7 +471,14 @@ BaseType_t xTimerListsWereSwitched;
 				received - whichever comes first.  The following line cannot
 				be reached unless xNextExpireTime > xTimeNow, except in the
 				case when the current timer list is empty. */
-				vQueueWaitForMessageRestricted( xTimerQueue, ( xNextExpireTime - xTimeNow ) );
+				if( xListWasEmpty != pdFALSE )
+				{
+					/* The current timer list is empty - is the overflow list
+					also empty? */
+					xListWasEmpty = listLIST_IS_EMPTY( pxOverflowTimerList );
+				}
+
+				vQueueWaitForMessageRestricted( xTimerQueue, ( xNextExpireTime - xTimeNow ), xListWasEmpty );
 
 				if( xTaskResumeAll() == pdFALSE )
 				{
@@ -810,6 +820,8 @@ BaseType_t xTimerIsTimerActive( TimerHandle_t xTimer )
 BaseType_t xTimerIsInActiveList;
 Timer_t *pxTimer = ( Timer_t * ) xTimer;
 
+	configASSERT( xTimer );
+
 	/* Is the timer in the list of active timers? */
 	taskENTER_CRITICAL();
 	{
@@ -841,7 +853,7 @@ void *pvReturn;
 }
 /*-----------------------------------------------------------*/
 
-void vTimerSetTimerID( const TimerHandle_t xTimer, void *pvNewID )
+void vTimerSetTimerID( TimerHandle_t xTimer, void *pvNewID )
 {
 Timer_t * const pxTimer = ( Timer_t * ) xTimer;
 

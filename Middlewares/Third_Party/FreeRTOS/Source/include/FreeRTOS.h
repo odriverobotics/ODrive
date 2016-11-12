@@ -1,5 +1,5 @@
 /*
-    FreeRTOS V8.2.1 - Copyright (C) 2015 Real Time Engineers Ltd.
+    FreeRTOS V8.2.3 - Copyright (C) 2015 Real Time Engineers Ltd.
     All rights reserved
 
     VISIT http://www.FreeRTOS.org TO ENSURE YOU ARE USING THE LATEST VERSION.
@@ -8,7 +8,7 @@
 
     FreeRTOS is free software; you can redistribute it and/or modify it under
     the terms of the GNU General Public License (version 2) as published by the
-    Free Software Foundation >>!AND MODIFIED BY!<< the FreeRTOS exception.
+    Free Software Foundation >>>> AND MODIFIED BY <<<< the FreeRTOS exception.
 
     ***************************************************************************
     >>!   NOTE: The modification to the GPL is included to allow you to     !<<
@@ -160,6 +160,11 @@ extern "C" {
 #ifndef configMAX_PRIORITIES
 	#error configMAX_PRIORITIES must be defined to be greater than or equal to 1.
 #endif
+	
+/* Configuration sanity check. */
+#if ( ( configUSE_RECURSIVE_MUTEXES == 1 ) && ( configUSE_MUTEXES != 1 ) )
+     #error configUSE_MUTEXES must be set to 1 to use recursive mutexes
+#endif	
 
 #ifndef configUSE_CO_ROUTINES
 	#define configUSE_CO_ROUTINES 0
@@ -617,6 +622,34 @@ extern "C" {
 	#define traceQUEUE_REGISTRY_ADD(xQueue, pcQueueName)
 #endif
 
+#ifndef traceTASK_NOTIFY_TAKE_BLOCK
+	#define traceTASK_NOTIFY_TAKE_BLOCK()
+#endif
+
+#ifndef traceTASK_NOTIFY_TAKE
+	#define traceTASK_NOTIFY_TAKE()
+#endif
+
+#ifndef traceTASK_NOTIFY_WAIT_BLOCK
+	#define traceTASK_NOTIFY_WAIT_BLOCK()
+#endif
+
+#ifndef traceTASK_NOTIFY_WAIT
+	#define traceTASK_NOTIFY_WAIT()
+#endif
+
+#ifndef traceTASK_NOTIFY
+	#define traceTASK_NOTIFY()
+#endif
+
+#ifndef traceTASK_NOTIFY_FROM_ISR
+	#define traceTASK_NOTIFY_FROM_ISR()
+#endif
+
+#ifndef traceTASK_NOTIFY_GIVE_FROM_ISR
+	#define traceTASK_NOTIFY_GIVE_FROM_ISR()
+#endif
+
 #ifndef configGENERATE_RUN_TIME_STATS
 	#define configGENERATE_RUN_TIME_STATS 0
 #endif
@@ -790,6 +823,14 @@ V8 if desired. */
 	#define xListItem ListItem_t
 	#define xList List_t
 #endif /* configENABLE_BACKWARD_COMPATIBILITY */
+
+/* Set configUSE_TASK_FPU_SUPPORT to 0 to omit floating point support even
+if floating point hardware is otherwise supported by the FreeRTOS port in use.
+This constant is not supported by all FreeRTOS ports that include floating 
+point support. */
+#ifndef configUSE_TASK_FPU_SUPPORT
+	#define configUSE_TASK_FPU_SUPPORT 1
+#endif
 
 #ifdef __cplusplus
 }

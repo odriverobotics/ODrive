@@ -2,8 +2,8 @@
   ******************************************************************************
   * @file    stm32f4xx_hal.c
   * @author  MCD Application Team
-  * @version V1.4.4
-  * @date    22-January-2016
+  * @version V1.5.2
+  * @date    22-September-2016
   * @brief   HAL module driver.
   *          This is the common part of the HAL initialization
   *
@@ -68,17 +68,17 @@
   * @{
   */
 /**
-  * @brief STM32F4xx HAL Driver version number V1.4.4
+  * @brief STM32F4xx HAL Driver version number V1.5.2
   */
 #define __STM32F4xx_HAL_VERSION_MAIN   (0x01) /*!< [31:24] main version */
-#define __STM32F4xx_HAL_VERSION_SUB1   (0x04) /*!< [23:16] sub1 version */
-#define __STM32F4xx_HAL_VERSION_SUB2   (0x04) /*!< [15:8]  sub2 version */
+#define __STM32F4xx_HAL_VERSION_SUB1   (0x05) /*!< [23:16] sub1 version */
+#define __STM32F4xx_HAL_VERSION_SUB2   (0x02) /*!< [15:8]  sub2 version */
 #define __STM32F4xx_HAL_VERSION_RC     (0x00) /*!< [7:0]  release candidate */ 
 #define __STM32F4xx_HAL_VERSION         ((__STM32F4xx_HAL_VERSION_MAIN << 24U)\
                                         |(__STM32F4xx_HAL_VERSION_SUB1 << 16U)\
                                         |(__STM32F4xx_HAL_VERSION_SUB2 << 8U )\
                                         |(__STM32F4xx_HAL_VERSION_RC))
-                                        
+
 #define IDCODE_DEVID_MASK    ((uint32_t)0x00000FFFU)
 
 /* ------------ RCC registers bit address in the alias region ----------- */
@@ -263,7 +263,7 @@ __weak void HAL_MspDeInit(void)
 __weak HAL_StatusTypeDef HAL_InitTick(uint32_t TickPriority)
 {
   /*Configure the SysTick to have interrupt in 1ms time basis*/
-  HAL_SYSTICK_Config(HAL_RCC_GetHCLKFreq()/1000U);
+  HAL_SYSTICK_Config(SystemCoreClock/1000U);
 
   /*Configure the SysTick IRQ priority */
   HAL_NVIC_SetPriority(SysTick_IRQn, TickPriority ,0U);
