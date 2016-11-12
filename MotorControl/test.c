@@ -293,6 +293,12 @@ void test_motor_thread(void const * argument) {
         float M0_phB_current = mail_ptr->current_phB;
         float M0_phC_current = mail_ptr->current_phC;
         osMailFree(M0_Iph_queue, mail_ptr);
+
+        // WARNING: Only gimbal motors!!
+        int half_load = htim1.Instance->ARR/2;
+        htim1.Instance->CCR1 = half_load - 400;
+        htim1.Instance->CCR2 = half_load + 400;
+        htim1.Instance->CCR3 = half_load + 400;
     }
 }
 
