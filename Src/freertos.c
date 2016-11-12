@@ -47,7 +47,7 @@
 #include "cmsis_os.h"
 
 /* USER CODE BEGIN Includes */     
-#include "MotorControl/test.h"
+#include "test.h"
 /* USER CODE END Includes */
 
 /* Variables -----------------------------------------------------------------*/
