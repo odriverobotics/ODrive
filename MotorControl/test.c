@@ -196,7 +196,6 @@ float phase_current_from_adcval(uint32_t ADCValue, int motornum) {
 
 void assertt(int arg) {
     if(!arg) {
-        int test = 3;
         for(;;);
     }
 }
@@ -212,41 +211,23 @@ osMailQId  (M0_Iph_queue);
 void test_pwm_from_adc_cb(ADC_HandleTypeDef* hadc) {
 
     // ADC2 and ADC3 record the phB and phC currents concurrently,
-    // and their interrupts have the same priorities so they can complete
-    // in any order. Because they cannot preempt each other, it is safe
-    // to store the result of the first interrupt without risk of a race condition.
-    // Then we send both into the queue.
-    typedef enum ADC_sync_e {NONE_STORED, PHB_STORED, PHC_STORED} ADC_sync_t;
-    static ADC_sync_t adc_sync = NONE_STORED;
-    static float stored_current;
+    // and their interrupts should arrive on the same clock cycle.
+    // The HAL issues the callbacks in order, so ADC2 will always be processed before ADC3.
+    // Therefore we store the value from ADC2 and push them both into the queue
+    // when ADC3 is ready.
+    // @TODO: don't use statics, will only work for 1 motor chanel
+    static float phB_current;
 
     //Only one conversion in sequence, so only rank1
     uint32_t ADCValue = HAL_ADCEx_InjectedGetValue(hadc, ADC_INJECTED_RANK_1);
 
     //Store and return, or fetch and continue
-    float M0_phB_current, M0_phC_current;
+    float phC_current;
     if (hadc == &hadc2) {
-        M0_phB_current = phase_current_from_adcval(ADCValue, 0);
-        if (adc_sync == NONE_STORED) {
-            stored_current = M0_phB_current;
-            adc_sync = PHB_STORED;
-            return;
-        } else {
-            assertt(adc_sync == PHC_STORED);
-            M0_phC_current = stored_current;
-            adc_sync = NONE_STORED;
-        }
+        phB_current = phase_current_from_adcval(ADCValue, 0);
+        return;
     } else if (hadc == &hadc3) {
-        M0_phC_current = phase_current_from_adcval(ADCValue, 0);
-        if (adc_sync == NONE_STORED) {
-            stored_current = M0_phC_current;
-            adc_sync = PHC_STORED;
-            return;
-        } else {
-            assertt(adc_sync == PHB_STORED);
-            M0_phB_current = stored_current;
-            adc_sync = NONE_STORED;
-        }
+        phC_current = phase_current_from_adcval(ADCValue, 0);
     } else {
         //hadc is something else, not expected
         assertt(0);
@@ -260,8 +241,8 @@ void test_pwm_from_adc_cb(ADC_HandleTypeDef* hadc) {
     }
 
     //Write contents and send mail
-    mail_ptr->current_phB = M0_phB_current;
-    mail_ptr->current_phC = M0_phC_current;
+    mail_ptr->current_phB = phB_current;
+    mail_ptr->current_phC = phC_current;
     osMailPut(M0_Iph_queue, mail_ptr);
 
 }
