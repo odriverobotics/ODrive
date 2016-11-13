@@ -81,10 +81,6 @@ int main(void)
 
   /* USER CODE BEGIN 1 */
 
-  //Ensure that debug halting of the core doesn't leave the motor PWM running
-  __HAL_DBGMCU_FREEZE_TIM1();
-  __HAL_DBGMCU_FREEZE_TIM8();
-
   /* USER CODE END 1 */
 
   /* MCU Configuration----------------------------------------------------------*/

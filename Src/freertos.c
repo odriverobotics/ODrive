@@ -48,6 +48,7 @@
 
 /* USER CODE BEGIN Includes */     
 #include "test.h"
+#include "low_level.h"
 /* USER CODE END Includes */
 
 /* Variables -----------------------------------------------------------------*/
@@ -94,7 +95,7 @@ void MX_FREERTOS_Init(void) {
   defaultTaskHandle = osThreadCreate(osThread(defaultTask), NULL);
 
   /* USER CODE BEGIN RTOS_THREADS */
-  osThreadDef(task_motor_0, test_motor_thread, osPriorityHigh, 0, 512);
+  osThreadDef(task_motor_0, motor_thread, osPriorityHigh, 0, 512);
   motor0_TaskHandle = osThreadCreate(osThread(task_motor_0), NULL);
   /* USER CODE END RTOS_THREADS */
 
