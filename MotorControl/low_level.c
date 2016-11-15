@@ -193,6 +193,16 @@ static void pwm_trig_adc_cb(ADC_HandleTypeDef* hadc) {
 
 }
 
+void mark_timing() {
+#define log_size 32
+	static uint32_t timings[log_size];
+	static int idx = 0;
+
+	if(++idx == log_size)
+		idx = 0;
+
+	timings[idx] = htim1.Instance->CNT;
+}
 
 void motor_thread(void const * argument) {
 
@@ -204,6 +214,8 @@ void motor_thread(void const * argument) {
         //Hence we can use osWaitForever
         osEvent evt = osMailGet(M0_Iph_queue, osWaitForever);
 
+        mark_timing();
+
         //Since we wait forever, we do not expect timeouts here.
         safe_assert(evt.status == osEventMail);
 
@@ -212,11 +224,20 @@ void motor_thread(void const * argument) {
         float M0_phC_current = mail_ptr->current_phC;
         osMailFree(M0_Iph_queue, mail_ptr);
 
-        // WARNING: Only gimbal motors!!
-        int half_load = htim1.Instance->ARR/2;
-        htim1.Instance->CCR1 = half_load - 400;
-        htim1.Instance->CCR2 = half_load + 400;
-        htim1.Instance->CCR3 = half_load + 400;
+        int full_load = htim1.Instance->ARR;
+        int half_load = full_load/2;
+        float DC_bus_voltage = 12.0f;
+
+        float test_voltage = 0.5f;
+        float test_modulation = test_voltage/DC_bus_voltage;
+        int timing = (int)(test_modulation * (float)half_load);
+
+        //Test voltage along phase A
+        htim1.Instance->CCR1 = half_load - timing;
+        htim1.Instance->CCR2 = half_load + timing;
+        htim1.Instance->CCR3 = half_load + timing;
+
+        mark_timing();
     }
 }
 
