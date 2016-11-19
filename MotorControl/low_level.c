@@ -158,11 +158,19 @@ void safe_assert(int arg) {
 //@TODO: Document how the phasing is done
 static void pwm_trig_adc_cb(ADC_HandleTypeDef* hadc) {
 
+    // Check if this trigger was the CC4 channel, used for actual current measurement at SVM vector 0
+    // or the update trigger, which is used for DC_CAL measurement at SVM vector 7
     uint32_t trig_src = hadc->Instance->CR2 & ADC_CR2_JEXTSEL;
     if (trig_src == ADC_EXTERNALTRIGINJECCONV_T1_CC4) {
+        //We should be measuring current here
+
+        //Set up next measurement to be DC_CAL measurement
         hadc->Instance->CR2 &= ~(ADC_CR2_JEXTSEL);
         hadc->Instance->CR2 |=  ADC_EXTERNALTRIGINJECCONV_T1_TRGO;
     } else if (trig_src == ADC_EXTERNALTRIGINJECCONV_T1_TRGO) {
+        //We should be measuring DC_CAL here
+
+        //Set up next measurement to be current measurement
         hadc->Instance->CR2 &= ~(ADC_CR2_JEXTSEL);
         hadc->Instance->CR2 |=  ADC_EXTERNALTRIGINJECCONV_T1_CC4;
     } else {
