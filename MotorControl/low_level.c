@@ -145,9 +145,11 @@ static float phase_current_from_adcval(uint32_t ADCValue, int motornum) {
     return current;
 }
 
-//@TODO implement
+//@TODO make available from anywhere
 void safe_assert(int arg) {
     if(!arg) {
+        __HAL_TIM_MOE_DISABLE(&htim1);
+        __HAL_TIM_MOE_DISABLE(&htim8);
         for(;;);
     }
 }
@@ -155,6 +157,17 @@ void safe_assert(int arg) {
 // This is the callback from the ADC that we expect after the PWM has triggered an ADC conversion.
 //@TODO: Document how the phasing is done
 static void pwm_trig_adc_cb(ADC_HandleTypeDef* hadc) {
+
+    uint32_t trig_src = hadc->Instance->CR2 & ADC_CR2_JEXTSEL;
+    if (trig_src == ADC_EXTERNALTRIGINJECCONV_T1_CC4) {
+        hadc->Instance->CR2 &= ~(ADC_CR2_JEXTSEL);
+        hadc->Instance->CR2 |=  ADC_EXTERNALTRIGINJECCONV_T1_TRGO;
+    } else if (trig_src == ADC_EXTERNALTRIGINJECCONV_T1_TRGO) {
+        hadc->Instance->CR2 &= ~(ADC_CR2_JEXTSEL);
+        hadc->Instance->CR2 |=  ADC_EXTERNALTRIGINJECCONV_T1_CC4;
+    } else {
+        safe_assert(0);
+    }
 
     // ADC2 and ADC3 record the phB and phC currents concurrently,
     // and their interrupts should arrive on the same clock cycle.
@@ -208,36 +221,53 @@ void motor_thread(void const * argument) {
 
 	init_motor_control();
 
+    float test_voltages[] = {0.3f, 0.7f};
+    float test_currentsB[] = {0.0f, 0.0f};
+    float test_currentsC[] = {0.0f, 0.0f};
+    float test_sum[] = {0.0f, 0.0f};
+    static const int num_test = sizeof(test_voltages)/sizeof(test_voltages[0]);
+
     for(;;) {
-        //Current measurements not occurring in a timely manner can be handled by the watchdog
-        //@TODO Actually make watchdog
-        //Hence we can use osWaitForever
-        osEvent evt = osMailGet(M0_Iph_queue, osWaitForever);
+        for (int i = 0; i < num_test; ++i) {
+            for (int rep = 0; rep < 10000; ++rep) {
 
-        mark_timing();
+                //Current measurements not occurring in a timely manner can be handled by the watchdog
+                //@TODO Actually make watchdog
+                //Hence we can use osWaitForever
+                osEvent evt = osMailGet(M0_Iph_queue, osWaitForever);
 
-        //Since we wait forever, we do not expect timeouts here.
-        safe_assert(evt.status == osEventMail);
+                mark_timing();
 
-        Iph_BC_queue_item_t* mail_ptr = evt.value.p;
-        float M0_phB_current = mail_ptr->current_phB;
-        float M0_phC_current = mail_ptr->current_phC;
-        osMailFree(M0_Iph_queue, mail_ptr);
+                //Since we wait forever, we do not expect timeouts here.
+                safe_assert(evt.status == osEventMail);
 
-        int full_load = htim1.Instance->ARR;
-        int half_load = full_load/2;
-        float DC_bus_voltage = 12.0f;
+                Iph_BC_queue_item_t* mail_ptr = evt.value.p;
+                float M0_phB_current = mail_ptr->current_phB;
+                float M0_phC_current = mail_ptr->current_phC;
+                osMailFree(M0_Iph_queue, mail_ptr);
 
-        float test_voltage = 0.5f;
-        float test_modulation = test_voltage/DC_bus_voltage;
-        int timing = (int)(test_modulation * (float)half_load);
 
-        //Test voltage along phase A
-        htim1.Instance->CCR1 = half_load - timing;
-        htim1.Instance->CCR2 = half_load + timing;
-        htim1.Instance->CCR3 = half_load + timing;
+                test_currentsB[i] += M0_phB_current;
+                test_currentsC[i] += M0_phC_current;
+                test_sum[i] += 1.0f;
 
-        mark_timing();
+
+                int full_load = htim1.Instance->ARR;
+                int half_load = full_load/2;
+                float DC_bus_voltage = 12.0f;
+
+                // float test_voltage = 0.5f;
+                float test_modulation = test_voltages[i]/DC_bus_voltage;
+                int timing = (int)(test_modulation * (float)half_load);
+
+                //Test voltage along phase A
+                htim1.Instance->CCR1 = half_load - timing;
+                htim1.Instance->CCR2 = half_load + timing;
+                htim1.Instance->CCR3 = half_load + timing;
+
+                mark_timing();
+            }
+        }
     }
 }
 
