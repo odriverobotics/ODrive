@@ -69,7 +69,7 @@ There is an excellent project called CubeMX2Makefile, originally from baoshi. Th
 ## Setting up Eclipse development environment
 
 ### Install
-* Install [Eclipse IDE for C/C++ Developers](http://www.eclipse.org/downloads/packages/eclipse-ide-cc-developers/mars2)
+* Install [Eclipse IDE for C/C++ Developers](http://www.eclipse.org/downloads/packages/eclipse-ide-cc-developers/neon1a)
 * Install the [OpenOCD Eclipse plugin](http://gnuarmeclipse.github.io/plugins/install/)
 
 ### Import project
