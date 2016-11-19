@@ -1,11 +1,12 @@
 
 #include <low_level.h>
 
-#include "cmsis_os.h"
+#include <cmsis_os.h>
 
-#include "adc.h"
-#include "tim.h"
-#include "spi.h"
+#include <main.h>
+#include <adc.h>
+#include <tim.h>
+#include <spi.h>
 
 
 // Global variables
@@ -161,7 +162,12 @@ static void pwm_trig_adc_cb(ADC_HandleTypeDef* hadc) {
     //@TODO get rid of statics when using more than one motor
     static float phB_DC_calib = 0.0f;
     static float phC_DC_calib = 0.0f;
-    // static const float calib_filter_k = 
+    #define calib_tau 0.2f //@TOTO make more easily configurable
+    static const float calib_filter_k = CURRENT_MEAS_PERIOD / calib_tau;
+
+    //Only one conversion in sequence, so only rank1
+    uint32_t ADCValue = HAL_ADCEx_InjectedGetValue(hadc, ADC_INJECTED_RANK_1);
+    float current = phase_current_from_adcval(ADCValue, 0);
 
     // Check if this trigger was the CC4 channel, used for actual current measurement at SVM vector 0
     // or the update trigger, which is used for DC_CAL measurement at SVM vector 7
@@ -171,6 +177,7 @@ static void pwm_trig_adc_cb(ADC_HandleTypeDef* hadc) {
         //Set up next measurement to be DC_CAL measurement
         hadc->Instance->CR2 &= ~(ADC_CR2_JEXTSEL);
         hadc->Instance->CR2 |=  ADC_EXTERNALTRIGINJECCONV_T1_TRGO;
+        HAL_GPIO_WritePin(M0_DC_CAL_GPIO_Port, M0_DC_CAL_Pin, GPIO_PIN_SET);
 
         // ADC2 and ADC3 record the phB and phC currents concurrently,
         // and their interrupts should arrive on the same clock cycle.
@@ -180,16 +187,13 @@ static void pwm_trig_adc_cb(ADC_HandleTypeDef* hadc) {
         // @TODO: don't use statics, will only work for 1 motor chanel
         static float phB_current;
 
-        //Only one conversion in sequence, so only rank1
-        uint32_t ADCValue = HAL_ADCEx_InjectedGetValue(hadc, ADC_INJECTED_RANK_1);
-
         //Store and return, or fetch and continue
         float phC_current;
         if (hadc == &hadc2) {
-            phB_current = phase_current_from_adcval(ADCValue, 0);
+            phB_current = current;
             return;
         } else if (hadc == &hadc3) {
-            phC_current = phase_current_from_adcval(ADCValue, 0);
+            phC_current = current;
         } else {
             //hadc is something else, not expected
             safe_assert(0);
@@ -212,8 +216,17 @@ static void pwm_trig_adc_cb(ADC_HandleTypeDef* hadc) {
         //Set up next measurement to be current measurement
         hadc->Instance->CR2 &= ~(ADC_CR2_JEXTSEL);
         hadc->Instance->CR2 |=  ADC_EXTERNALTRIGINJECCONV_T1_CC4;
+        HAL_GPIO_WritePin(M0_DC_CAL_GPIO_Port, M0_DC_CAL_Pin, GPIO_PIN_RESET);
 
-
+        if (hadc == &hadc2) {
+            phB_DC_calib += (current - phB_DC_calib) * calib_filter_k;
+        } else if (hadc == &hadc3) {
+            phC_DC_calib += (current - phC_DC_calib) * calib_filter_k;
+        } else {
+            //hadc is something else, not expected
+            safe_assert(0);
+        }
+        
     } else {
         safe_assert(0);
     }

@@ -136,6 +136,8 @@
 #define M1_ENC_B_GPIO_Port GPIOB
 /* USER CODE BEGIN Private defines */
 
+#define CURRENT_MEAS_PERIOD ((float)(2*TIM_PERIOD_CLOCKS)/(float)TIM_CLOCK_HZ)
+
 /* USER CODE END Private defines */
 
 /**
