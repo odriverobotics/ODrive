@@ -50,6 +50,9 @@
 /* USER CODE END Includes */
 
 /* Private define ------------------------------------------------------------*/
+#define TIM_CLOCK_HZ 84000000
+#define TIM_PERIOD_CLOCKS 4096
+#define TIM_DEADTIME_CLOCKS 20
 
 #define M0_nCS_Pin GPIO_PIN_13
 #define M0_nCS_GPIO_Port GPIOC
