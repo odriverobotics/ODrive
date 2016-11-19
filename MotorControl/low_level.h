@@ -5,6 +5,7 @@
 #include "drv8301.h"
 
 typedef struct Motor_s {
+	TIM_HandleTypeDef* timer_handle;
     DRV8301_Obj gate_driver;
     float shunt_conductance;
     float maxcurrent;

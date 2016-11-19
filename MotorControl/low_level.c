@@ -10,8 +10,9 @@
 
 
 // Global variables
-Motor_t motor_configs[] = {
+Motor_t motors[] = {
     { //M0
+    	.timer_handle = &htim1,
         .gate_driver = {
             .spiHandle = &hspi3,
             //Note: this board has the EN_Gate pin shared!
@@ -26,7 +27,7 @@ Motor_t motor_configs[] = {
         .maxcurrent = 75.0f //[A] //Note: consistent with 40v/v gain
     }
 };
-const int num_motors = sizeof(motor_configs)/sizeof(motor_configs[0]);
+const int num_motors = sizeof(motors)/sizeof(motors[0]);
 
 // Private variables
 //Local view of DRV registers
@@ -61,17 +62,19 @@ void init_motor_control() {
     //Init gate drivers
     DRV8301_setup();
 
-    osDelay(1000);
-
     // Start PWM and enable adc interrupts/callbacks
     start_adc_pwm();
+
+    //Wait for current sense calibration to converge
+    //@TODO make timing a function of calibration filter tau
+    osDelay(500);
 }
 
 // Set up the gate drivers
 static void DRV8301_setup() {
     for (int i = 0; i < num_motors; ++i) {
-        DRV8301_enable(&motor_configs[i].gate_driver);
-        DRV8301_setupSpi(&motor_configs[i].gate_driver, &gate_driver_regs[i]);
+        DRV8301_enable(&motors[i].gate_driver);
+        DRV8301_setupSpi(&motors[i].gate_driver, &gate_driver_regs[i]);
 
         //@TODO we can use reporting only if we actually wire up the nOCTW pin
         gate_driver_regs[i].Ctrl_Reg_1.OC_MODE = DRV8301_OcMode_LatchShutDown;
@@ -82,9 +85,9 @@ static void DRV8301_setup() {
         gate_driver_regs[i].Ctrl_Reg_2.GAIN = DRV8301_ShuntAmpGain_40VpV;
 
         gate_driver_regs[i].SndCmd = true;
-        DRV8301_writeData(&motor_configs[i].gate_driver, &gate_driver_regs[i]);
+        DRV8301_writeData(&motors[i].gate_driver, &gate_driver_regs[i]);
         gate_driver_regs[i].RcvCmd = true;
-        DRV8301_readData(&motor_configs[i].gate_driver, &gate_driver_regs[i]);
+        DRV8301_readData(&motors[i].gate_driver, &gate_driver_regs[i]);
     }
 }
 
@@ -142,7 +145,7 @@ static float phase_current_from_adcval(uint32_t ADCValue, int motornum) {
     int adcval_bal = (int)ADCValue - (1<<11);
     float amp_out_volt = (3.3f/(float)(1<<12)) * (float)adcval_bal;
     float shunt_volt = amp_out_volt * rev_gain;
-    float current = shunt_volt * motor_configs[motornum].shunt_conductance;
+    float current = shunt_volt * motors[motornum].shunt_conductance;
     return current;
 }
 
@@ -243,6 +246,21 @@ void mark_timing() {
 	timings[idx] = htim1.Instance->CNT;
 }
 
+float measure_phase_resistance(Motor_t* motor) {
+
+}
+
+//Set the rising edge timings (0.0 - 1.0)
+void set_timings(Motor_t* motor, float tA, float tB, float tC) {
+	TIM_TypeDef* tim = motor->timer_handle->Instance;
+    uint32_t full_load = tim->ARR;
+
+    //Test voltage along phase A
+    tim->CCR1 = tA * full_load;
+    tim->CCR2 = tB * full_load;
+    tim->CCR3 = tC * full_load;
+}
+
 void motor_thread(void const * argument) {
 
 	init_motor_control();
@@ -273,24 +291,16 @@ void motor_thread(void const * argument) {
                 float M0_phC_current = mail_ptr->current_phC;
                 osMailFree(M0_Iph_queue, mail_ptr);
 
-
                 test_currentsB[i] += M0_phB_current;
                 test_currentsC[i] += M0_phC_current;
                 test_sum[i] += 1.0f;
 
-
-                int full_load = htim1.Instance->ARR;
-                int half_load = full_load/2;
                 float DC_bus_voltage = 12.0f;
-
-                // float test_voltage = 0.5f;
-                float test_modulation = test_voltages[i]/DC_bus_voltage;
-                int timing = (int)(test_modulation * (float)half_load);
+                float mod = test_voltages[i]/DC_bus_voltage;
+                float dmod = mod/2.0f;
 
                 //Test voltage along phase A
-                htim1.Instance->CCR1 = half_load - timing;
-                htim1.Instance->CCR2 = half_load + timing;
-                htim1.Instance->CCR3 = half_load + timing;
+                set_timings(&motors[0], 0.5f - dmod, 0.5f + dmod, 0.5f + dmod);
 
                 mark_timing();
             }
