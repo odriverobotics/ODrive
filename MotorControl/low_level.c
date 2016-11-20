@@ -7,7 +7,7 @@
 #include <adc.h>
 #include <tim.h>
 #include <spi.h>
-
+#include <utils.h>
 
 // Global variables
 Motor_t motors[] = {
@@ -246,9 +246,28 @@ void mark_timing() {
 	timings[idx] = htim1.Instance->CNT;
 }
 
-float measure_phase_resistance(Motor_t* motor) {
+void wait_for_current_meas(osMailQId queue, float* phB_current, float* phC_current) {
+    //Current measurements not occurring in a timely manner can be handled by the watchdog
+    //@TODO Actually make watchdog
+    //Hence we can use osWaitForever
+    osEvent evt = osMailGet(M0_Iph_queue, osWaitForever);
+
+    //Since we wait forever, we do not expect timeouts here.
+    safe_assert(evt.status == osEventMail);
+
+    //Fetch current out of the mail queue
+    Iph_BC_queue_item_t* mail_ptr = evt.value.p;
+    *phB_current = mail_ptr->current_phB;
+    *phC_current = mail_ptr->current_phC;
+    osMailFree(M0_Iph_queue, mail_ptr);
+}
+
+
+float measure_phase_resistance(Motor_t* motor, float test_current) {
+	static const float kI = 0.1f; //[(V/s)/A]
 
 }
+
 
 //Set the rising edge timings (0.0 - 1.0)
 void set_timings(Motor_t* motor, float tA, float tB, float tC) {
@@ -275,21 +294,8 @@ void motor_thread(void const * argument) {
         for (int i = 0; i < num_test; ++i) {
             for (int rep = 0; rep < 10000; ++rep) {
 
-                //Current measurements not occurring in a timely manner can be handled by the watchdog
-                //@TODO Actually make watchdog
-                //Hence we can use osWaitForever
-                osEvent evt = osMailGet(M0_Iph_queue, osWaitForever);
-
-                mark_timing();
-
-                //Since we wait forever, we do not expect timeouts here.
-                safe_assert(evt.status == osEventMail);
-
-                //Fetch current out of the mail queue
-                Iph_BC_queue_item_t* mail_ptr = evt.value.p;
-                float M0_phB_current = mail_ptr->current_phB;
-                float M0_phC_current = mail_ptr->current_phC;
-                osMailFree(M0_Iph_queue, mail_ptr);
+                float M0_phB_current, M0_phC_current;
+                wait_for_current_meas(M0_Iph_queue, &M0_phB_current, &M0_phC_current);
 
                 test_currentsB[i] += M0_phB_current;
                 test_currentsC[i] += M0_phC_current;
@@ -297,12 +303,11 @@ void motor_thread(void const * argument) {
 
                 float DC_bus_voltage = 12.0f;
                 float mod = test_voltages[i]/DC_bus_voltage;
-                float dmod = mod/2.0f;
 
+                float tA, tB, tC;
                 //Test voltage along phase A
-                set_timings(&motors[0], 0.5f - dmod, 0.5f + dmod, 0.5f + dmod);
-
-                mark_timing();
+                SVM(mod, 0.0f, &tA, &tB, &tC);
+                set_timings(&motors[0], tA, tB, tC);
             }
         }
     }

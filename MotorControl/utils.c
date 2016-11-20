@@ -1,6 +1,9 @@
 
 #include <utils.h>
 
+static const float one_by_sqrt3 = 0.57735026919f;
+static const float two_by_sqrt3 = 1.15470053838f;
+
 int SVM(float alpha, float beta, float* tA, float* tB, float* tC) {
     int Sextant;
 
@@ -110,9 +113,20 @@ int SVM(float alpha, float beta, float* tA, float* tB, float* tC) {
             // PWM timings
             *tA = (1.0f - t6 - t1) * 0.5f;
             *tC = *tA + t1;
-            *tB = tC + t6;
+            *tB = *tC + t6;
 
             break;
         }
     }
+
+    int retval = 0;
+    if (
+           *tA < 0.0f
+        || *tA > 1.0f
+        || *tB < 0.0f
+        || *tB > 1.0f
+        || *tC < 0.0f
+        || *tC > 1.0f
+    ) retval = -1;
+    return retval;
 }
