@@ -10,9 +10,18 @@
 #include <utils.h>
 
 // Global variables
+// current sense queue from ADC to motor control task
+typedef struct {
+    float current_phB;
+    float current_phC;
+} Iph_BC_queue_item_t;
+osMailQDef (Iph_queue_def, 2, Iph_BC_queue_item_t);
+osMailQId  (M0_Iph_queue);
+
 Motor_t motors[] = {
     { //M0
     	.timer_handle = &htim1,
+		.current_meas_queue = &M0_Iph_queue,
         .gate_driver = {
             .spiHandle = &hspi3,
             //Note: this board has the EN_Gate pin shared!
@@ -33,20 +42,17 @@ const int num_motors = sizeof(motors)/sizeof(motors[0]);
 //Local view of DRV registers
 static DRV_SPI_8301_Vars_t gate_driver_regs[1/*num_motors*/];
 
-// current sense queue from ADC to motor control task
-typedef struct {
-    float current_phB;
-    float current_phC;
-} Iph_BC_queue_item_t;
-osMailQDef (Iph_queue_def, 2, Iph_BC_queue_item_t);
-osMailQId  (M0_Iph_queue);
+//@TODO HACK Do actual voltage measurement
+static const float hack_dc_bus_voltage = 12.0f;
 
 // Private function prototypes
 static void DRV8301_setup();
 static void start_adc_pwm();
 static float phase_current_from_adcval(uint32_t ADCValue, int motornum);
 static void pwm_trig_adc_cb(ADC_HandleTypeDef* hadc);
-
+static void set_timings(Motor_t* motor, float tA, float tB, float tC);
+static void wait_for_current_meas(osMailQId queue, float* phB_current, float* phC_current);
+static float measure_phase_resistance(Motor_t* motor, float test_current);
 
 //Special function name for ADC callback.
 //Automatically registered if defined.
@@ -246,7 +252,7 @@ void mark_timing() {
 	timings[idx] = htim1.Instance->CNT;
 }
 
-void wait_for_current_meas(osMailQId queue, float* phB_current, float* phC_current) {
+static void wait_for_current_meas(osMailQId queue, float* phB_current, float* phC_current) {
     //Current measurements not occurring in a timely manner can be handled by the watchdog
     //@TODO Actually make watchdog
     //Hence we can use osWaitForever
@@ -263,14 +269,37 @@ void wait_for_current_meas(osMailQId queue, float* phB_current, float* phC_curre
 }
 
 
-float measure_phase_resistance(Motor_t* motor, float test_current) {
-	static const float kI = 0.1f; //[(V/s)/A]
+static float measure_phase_resistance(Motor_t* motor, float test_current) {
+	static const float kI = 0.2f; //[(V/s)/A]
+	static float test_voltage = 0.0f;
+	static const int num_test_cycles = 10.0f / CURRENT_MEAS_PERIOD;
 
+	//@TODO: Fixed gain is dangerous for low impedance motors
+	//@TODO: Fixed measurement time is dangerous for high impedance motors
+	// We should do a geometric sequence of voltage instead.
+	for (int i = 0; i < num_test_cycles; ++i) {
+		float IphB, IphC;
+		wait_for_current_meas(*motor->current_meas_queue, &IphB, &IphC);
+		float Ialpha = -0.5f * (IphB + IphC);
+		test_voltage += (kI * CURRENT_MEAS_PERIOD) * (test_current - Ialpha);
+		float mod = test_voltage/hack_dc_bus_voltage;
+
+        //Test voltage along phase A
+        float tA, tB, tC;
+        SVM(mod, 0.0f, &tA, &tB, &tC);
+        set_timings(&motors[0], tA, tB, tC);
+	}
+
+	//De-energize motor
+	set_timings(&motors[0], 0.5f, 0.5f, 0.5f);;
+
+	float phase_resistance = (2.0f/3.0f) * (test_voltage / test_current);
+	return phase_resistance;
 }
 
 
 //Set the rising edge timings (0.0 - 1.0)
-void set_timings(Motor_t* motor, float tA, float tB, float tC) {
+static void set_timings(Motor_t* motor, float tA, float tB, float tC) {
 	TIM_TypeDef* tim = motor->timer_handle->Instance;
     uint32_t full_load = tim->ARR;
 
@@ -280,10 +309,7 @@ void set_timings(Motor_t* motor, float tA, float tB, float tC) {
     tim->CCR3 = tC * full_load;
 }
 
-void motor_thread(void const * argument) {
-
-	init_motor_control();
-
+void square_wave_test() {
     float test_voltages[] = {0.3f, 0.7f};
     float test_currentsB[] = {0.0f, 0.0f};
     float test_currentsC[] = {0.0f, 0.0f};
@@ -301,9 +327,7 @@ void motor_thread(void const * argument) {
                 test_currentsC[i] += M0_phC_current;
                 test_sum[i] += 1.0f;
 
-                float DC_bus_voltage = 12.0f;
-                float mod = test_voltages[i]/DC_bus_voltage;
-
+                float mod = test_voltages[i]/hack_dc_bus_voltage;
                 float tA, tB, tC;
                 //Test voltage along phase A
                 SVM(mod, 0.0f, &tA, &tB, &tC);
@@ -311,5 +335,13 @@ void motor_thread(void const * argument) {
             }
         }
     }
+}
+
+void motor_thread(void const * argument) {
+
+	init_motor_control();
+
+    float R = measure_phase_resistance(&motors[0], 3.0f);
+    square_wave_test();
 }
 

@@ -2,10 +2,12 @@
 #ifndef __LOW_LEVEL_H
 #define __LOW_LEVEL_H
 
+#include <cmsis_os.h>
 #include "drv8301.h"
 
 typedef struct Motor_s {
 	TIM_HandleTypeDef* timer_handle;
+	osMailQId* current_meas_queue;
     DRV8301_Obj gate_driver;
     float shunt_conductance;
     float maxcurrent;
