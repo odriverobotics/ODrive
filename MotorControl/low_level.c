@@ -341,9 +341,9 @@ static void square_wave_test() {
     }
 }
 
-static void scan_motor(Motor_t* motor, float voltage_magnitude) {
+static void scan_motor(Motor_t* motor, float omega, float voltage_magnitude) {
     for(;;) {
-        for (float ph = 0.0f; ph < 2.0f * M_PI; ph += 1.0f * CURRENT_MEAS_PERIOD) {
+        for (float ph = 0.0f; ph < 2.0f * M_PI; ph += omega * CURRENT_MEAS_PERIOD) {
             float IphB, IphC;
             wait_for_current_meas(*motor->current_meas_queue, &IphB, &IphC);
 
@@ -365,7 +365,7 @@ void motor_thread(void const * argument) {
     init_motor_control();
 
     float R = measure_phase_resistance(&motors[0], 3.0f);
-    scan_motor(&motors[0], 3.0f * R);
+    scan_motor(&motors[0], 1.0f, 3.0f * R);
     // square_wave_test();
 }
 
