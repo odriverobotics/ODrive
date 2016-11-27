@@ -56,7 +56,7 @@ static void init_encoders();
 static void start_adc_pwm();
 static float phase_current_from_adcval(uint32_t ADCValue, int motornum);
 static void pwm_trig_adc_cb(ADC_HandleTypeDef* hadc);
-static void mark_timing();
+static bool check_timing();
 static void set_timings(Motor_t* motor, float tA, float tB, float tC);
 static void wait_for_current_meas(osMailQId queue, float* phB_current, float* phC_current);
 static float measure_phase_resistance(Motor_t* motor, float test_current);
@@ -64,7 +64,7 @@ static float measure_phase_resistance(Motor_t* motor, float test_current);
 //Special function name for ADC callback.
 //Automatically registered if defined.
 void HAL_ADCEx_InjectedConvCpltCallback(ADC_HandleTypeDef* hadc) {
-    //mark_timing();
+    // check_timing();
     pwm_trig_adc_cb(hadc);
 }
 
@@ -231,6 +231,7 @@ static void pwm_trig_adc_cb(ADC_HandleTypeDef* hadc) {
         mail_ptr->current_phB = phB_current - phB_DC_calib;
         mail_ptr->current_phC = phC_current - phC_DC_calib;
         osMailPut(M0_Iph_queue, mail_ptr);
+        check_timing();
 
     } else if (trig_src == ADC_EXTERNALTRIGINJECCONV_T1_TRGO) {
         //We are measuring DC_CAL here
@@ -253,7 +254,7 @@ static void pwm_trig_adc_cb(ADC_HandleTypeDef* hadc) {
     }
 }
 
-void mark_timing() {
+static bool check_timing() {
 #define log_size 32
     static uint16_t timings[log_size];
     static int idx = 0;
@@ -270,6 +271,7 @@ void mark_timing() {
         idx = 0;
 
     timings[idx] = timing;
+    return down;
 }
 
 static void wait_for_current_meas(osMailQId queue, float* phB_current, float* phC_current) {
@@ -344,7 +346,7 @@ static void square_wave_test() {
                 float M0_phB_current, M0_phC_current;
                 wait_for_current_meas(M0_Iph_queue, &M0_phB_current, &M0_phC_current);
 
-                mark_timing();
+                check_timing();
 
                 float Ialpha = -M0_phB_current - M0_phC_current;
                 float delta = Ialpha - mean[i][rep];
@@ -358,7 +360,7 @@ static void square_wave_test() {
                 SVM(mod, 0.0f, &tA, &tB, &tC);
                 set_timings(&motors[0], tA, tB, tC);
 
-                mark_timing();
+                safe_assert(!check_timing());
             }
         }
         ++cycle_num;
