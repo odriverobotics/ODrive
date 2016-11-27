@@ -337,10 +337,10 @@ static void square_wave_test() {
                 mark_timing();
 
                 float Ialpha = -M0_phB_current - M0_phC_current;
-				float delta = Ialpha - mean[i][rep];
-				mean[i][rep] += delta * (1.0f / (float)cycle_num);
-				float delta_delta_sqr = (delta * delta) - var[i][rep];
-				var[i][rep] += delta_delta_sqr * (1.0f / (float)cycle_num);
+                float delta = Ialpha - mean[i][rep];
+                mean[i][rep] += delta * (1.0f / (float)cycle_num);
+                float delta_delta_sqr = (delta * delta) - var[i][rep];
+                var[i][rep] += delta_delta_sqr * (1.0f / (float)cycle_num);
 
                 float mod = test_voltages[i]/hack_dc_bus_voltage;
                 float tA, tB, tC;
@@ -370,7 +370,7 @@ static void scan_motor(Motor_t* motor, float omega, float voltage_magnitude) {
             set_timings(&motors[0], tA, tB, tC);
 
             if (abs(htim3.Instance->CNT) > 1000 || abs(htim4.Instance->CNT) > 1000){
-            	int test = 1;
+                int test = 1;
             }
         }
     }
