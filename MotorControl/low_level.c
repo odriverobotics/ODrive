@@ -56,6 +56,7 @@ static void init_encoders();
 static void start_adc_pwm();
 static float phase_current_from_adcval(uint32_t ADCValue, int motornum);
 static void pwm_trig_adc_cb(ADC_HandleTypeDef* hadc);
+static void mark_timing();
 static void set_timings(Motor_t* motor, float tA, float tB, float tC);
 static void wait_for_current_meas(osMailQId queue, float* phB_current, float* phC_current);
 static float measure_phase_resistance(Motor_t* motor, float test_current);
@@ -63,6 +64,7 @@ static float measure_phase_resistance(Motor_t* motor, float test_current);
 //Special function name for ADC callback.
 //Automatically registered if defined.
 void HAL_ADCEx_InjectedConvCpltCallback(ADC_HandleTypeDef* hadc) {
+    //mark_timing();
     pwm_trig_adc_cb(hadc);
 }
 
@@ -253,13 +255,21 @@ static void pwm_trig_adc_cb(ADC_HandleTypeDef* hadc) {
 
 void mark_timing() {
 #define log_size 32
-    static uint32_t timings[log_size];
+    static uint16_t timings[log_size];
     static int idx = 0;
+
+    uint16_t timing = htim1.Instance->CNT;
+    bool down = htim1.Instance->CR1 & TIM_CR1_DIR;
+    if (down) {
+        uint16_t arr = htim1.Instance->ARR;
+        uint16_t delta = arr - timing;
+        timing = arr + delta;
+    }
 
     if(++idx == log_size)
         idx = 0;
 
-    timings[idx] = htim1.Instance->CNT;
+    timings[idx] = timing;
 }
 
 static void wait_for_current_meas(osMailQId queue, float* phB_current, float* phC_current) {
@@ -347,6 +357,8 @@ static void square_wave_test() {
                 //Test voltage along phase A
                 SVM(mod, 0.0f, &tA, &tB, &tC);
                 set_timings(&motors[0], tA, tB, tC);
+
+                mark_timing();
             }
         }
         ++cycle_num;
