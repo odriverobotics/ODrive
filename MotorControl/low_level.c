@@ -3,6 +3,7 @@
 
 #include <cmsis_os.h>
 #include <math.h>
+#include <stdlib.h>
 #ifndef M_PI
 #define M_PI 3.14159265358979323846f
 #endif
@@ -51,9 +52,11 @@ static const float hack_dc_bus_voltage = 12.0f;
 
 // Private function prototypes
 static void DRV8301_setup();
+static void init_encoders();
 static void start_adc_pwm();
 static float phase_current_from_adcval(uint32_t ADCValue, int motornum);
 static void pwm_trig_adc_cb(ADC_HandleTypeDef* hadc);
+static void mark_timing();
 static void set_timings(Motor_t* motor, float tA, float tB, float tC);
 static void wait_for_current_meas(osMailQId queue, float* phB_current, float* phC_current);
 static float measure_phase_resistance(Motor_t* motor, float test_current);
@@ -61,6 +64,7 @@ static float measure_phase_resistance(Motor_t* motor, float test_current);
 //Special function name for ADC callback.
 //Automatically registered if defined.
 void HAL_ADCEx_InjectedConvCpltCallback(ADC_HandleTypeDef* hadc) {
+    //mark_timing();
     pwm_trig_adc_cb(hadc);
 }
 
@@ -162,6 +166,9 @@ static void sync_timers(TIM_HandleTypeDef htim_a, TIM_HandleTypeDef htim_b,
     //Turn on output
     __HAL_TIM_MOE_ENABLE(&htim_a);
     __HAL_TIM_MOE_ENABLE(&htim_b);
+}
+
+static void init_encoders() {
 }
 
 static void start_adc_pwm(){
@@ -294,13 +301,21 @@ static void pwm_trig_adc_cb(ADC_HandleTypeDef* hadc) {
 
 void mark_timing() {
 #define log_size 32
-    static uint32_t timings[log_size];
+    static uint16_t timings[log_size];
     static int idx = 0;
+
+    uint16_t timing = htim1.Instance->CNT;
+    bool down = htim1.Instance->CR1 & TIM_CR1_DIR;
+    if (down) {
+        uint16_t arr = htim1.Instance->ARR;
+        uint16_t delta = arr - timing;
+        timing = arr + delta;
+    }
 
     if(++idx == log_size)
         idx = 0;
 
-    timings[idx] = htim1.Instance->CNT;
+    timings[idx] = timing;
 }
 
 static void wait_for_current_meas(osMailQId queue, float* phB_current, float* phC_current) {
@@ -361,30 +376,38 @@ static void set_timings(Motor_t* motor, float tA, float tB, float tC) {
 }
 
 static void square_wave_test() {
-    float test_voltages[] = {0.3f, 0.7f};
-    float test_currentsB[] = {0.0f, 0.0f};
-    float test_currentsC[] = {0.0f, 0.0f};
-    float test_sum[] = {0.0f, 0.0f};
+#define NUM_CYCLES 32
+    float test_voltages[] = {0.2f, 1.0f};
+    float mean[2][NUM_CYCLES] = {{ 0.0f }};
+    float var[2][NUM_CYCLES] = {{ 0.0f }};
+    int cycle_num = 1;
     static const int num_test = sizeof(test_voltages)/sizeof(test_voltages[0]);
 
     for(;;) {
         for (int i = 0; i < num_test; ++i) {
-            for (int rep = 0; rep < 10000; ++rep) {
+            for (int rep = 0; rep < NUM_CYCLES; ++rep) {
 
                 float M0_phB_current, M0_phC_current;
                 wait_for_current_meas(M0_Iph_queue, &M0_phB_current, &M0_phC_current);
 
-                test_currentsB[i] += M0_phB_current;
-                test_currentsC[i] += M0_phC_current;
-                test_sum[i] += 1.0f;
+                mark_timing();
+
+                float Ialpha = -M0_phB_current - M0_phC_current;
+                float delta = Ialpha - mean[i][rep];
+                mean[i][rep] += delta * (1.0f / (float)cycle_num);
+                float delta_delta_sqr = (delta * delta) - var[i][rep];
+                var[i][rep] += delta_delta_sqr * (1.0f / (float)cycle_num);
 
                 float mod = test_voltages[i]/hack_dc_bus_voltage;
                 float tA, tB, tC;
                 //Test voltage along phase A
                 SVM(mod, 0.0f, &tA, &tB, &tC);
                 set_timings(&motors[0], tA, tB, tC);
+
+                mark_timing();
             }
         }
+        ++cycle_num;
     }
 }
 
@@ -403,6 +426,10 @@ static void scan_motor(Motor_t* motor, float omega, float voltage_magnitude) {
             //Test voltage along phase A
             SVM(mod_alpha, mod_beta, &tA, &tB, &tC);
             set_timings(&motors[0], tA, tB, tC);
+
+            if (abs(htim3.Instance->CNT) > 1000 || abs(htim4.Instance->CNT) > 1000){
+                int test = 1;
+            }
         }
     }
 }
@@ -411,8 +438,9 @@ void motor_thread(void const * argument) {
 
     init_motor_control();
 
-    float R = measure_phase_resistance(&motors[0], 3.0f);
-    scan_motor(&motors[0], 1.0f, 3.0f * R);
-    // square_wave_test();
+    float test_current = 3.0f;
+    float R = measure_phase_resistance(&motors[0], test_current);
+    // scan_motor(&motors[0], 10.0f, test_current * R);
+    square_wave_test();
 }
 

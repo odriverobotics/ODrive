@@ -1,6 +1,8 @@
 
 #include "test.h"
 
+#include <cmsis_os.h>
+
 #include "adc.h"
 #include "tim.h"
 
