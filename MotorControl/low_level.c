@@ -126,6 +126,10 @@ static void start_pwm(TIM_HandleTypeDef htim){
 static void sync_timers(TIM_HandleTypeDef htim_a, TIM_HandleTypeDef htim_b,
 		uint16_t internal_trigger_source, uint16_t count_offset) {
 
+    //Turn off output
+    __HAL_TIM_MOE_DISABLE(&htim_a);
+    __HAL_TIM_MOE_DISABLE(&htim_b);
+
 	uint16_t CR2_store = htim_a.Instance->CR2;
 	uint16_t SMCR_store = htim_b.Instance->SMCR;
 
@@ -143,7 +147,7 @@ static void sync_timers(TIM_HandleTypeDef htim_a, TIM_HandleTypeDef htim_b,
 
 	/* Set 2nd timer to start on trigger*/
 	htim_b.Instance->SMCR &= ~TIM_SMCR_SMS;
-	htim_b.Instance->SMCR |= (TIM_SMCR_SMS_2 | TIM_SMCR_SMS_1);
+	htim_b.Instance->SMCR |= TIM_SLAVEMODE_TRIGGER;
 
 	htim_a.Instance->CNT = 0;
 	htim_b.Instance->CNT = count_offset;
@@ -154,6 +158,10 @@ static void sync_timers(TIM_HandleTypeDef htim_a, TIM_HandleTypeDef htim_b,
 	/* Restore timer configs */
 	htim_a.Instance->CR2 = CR2_store;
 	htim_b.Instance->SMCR = SMCR_store;
+
+    //Turn on output
+    __HAL_TIM_MOE_ENABLE(&htim_a);
+    __HAL_TIM_MOE_ENABLE(&htim_b);
 }
 
 static void start_adc_pwm(){
@@ -171,9 +179,7 @@ static void start_adc_pwm(){
 
     start_pwm(htim1);
     start_pwm(htim8);
-
-    sync_timers(htim1, htim8, TIM_CLOCKSOURCE_ITR0, 0);
-
+    sync_timers(htim1, htim8, TIM_CLOCKSOURCE_ITR0, htim1.Instance->ARR/2);
 }
 
 static float phase_current_from_adcval(uint32_t ADCValue, int motornum) {
