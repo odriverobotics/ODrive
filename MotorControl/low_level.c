@@ -130,12 +130,16 @@ static void start_pwm(TIM_HandleTypeDef htim){
 static void sync_timers(TIM_HandleTypeDef htim_a, TIM_HandleTypeDef htim_b,
 		uint16_t internal_trigger_source, uint16_t count_offset) {
 
-    //Turn off output
-    __HAL_TIM_MOE_DISABLE(&htim_a);
-    __HAL_TIM_MOE_DISABLE(&htim_b);
+	//Store intial timer configs
+    uint16_t MOE_store_a = htim_a.Instance->BDTR & (TIM_BDTR_MOE);
+    uint16_t MOE_store_b = htim_b.Instance->BDTR & (TIM_BDTR_MOE);
 
 	uint16_t CR2_store = htim_a.Instance->CR2;
 	uint16_t SMCR_store = htim_b.Instance->SMCR;
+
+    //Turn off output
+    __HAL_TIM_MOE_DISABLE(&htim_a);
+    __HAL_TIM_MOE_DISABLE(&htim_b);
 
 	/* Disable both timer counters*/
 	htim_a.Instance->CR1 &= ~TIM_CR1_CEN;
@@ -153,6 +157,7 @@ static void sync_timers(TIM_HandleTypeDef htim_a, TIM_HandleTypeDef htim_b,
 	htim_b.Instance->SMCR &= ~TIM_SMCR_SMS;
 	htim_b.Instance->SMCR |= TIM_SLAVEMODE_TRIGGER;
 
+	// set counter offset
 	htim_a.Instance->CNT = 0;
 	htim_b.Instance->CNT = count_offset;
 
@@ -163,9 +168,9 @@ static void sync_timers(TIM_HandleTypeDef htim_a, TIM_HandleTypeDef htim_b,
 	htim_a.Instance->CR2 = CR2_store;
 	htim_b.Instance->SMCR = SMCR_store;
 
-    //Turn on output
-    __HAL_TIM_MOE_ENABLE(&htim_a);
-    __HAL_TIM_MOE_ENABLE(&htim_b);
+    //restore output
+    htim_a.Instance->BDTR |= MOE_store_a;
+    htim_b.Instance->BDTR |= MOE_store_b;
 }
 
 static void init_encoders() {
