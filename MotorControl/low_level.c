@@ -105,8 +105,75 @@ static void DRV8301_setup() {
     }
 }
 
-static void init_encoders() {
+static void start_pwm(TIM_HandleTypeDef htim){
+    //Init PWM
+    int half_load = htim.Instance->ARR/2;
+    htim.Instance->CCR1 = half_load;
+    htim.Instance->CCR2 = half_load;
+    htim.Instance->CCR3 = half_load;
 
+    //This hardware obfustication layer really is getting on my nerves
+    HAL_TIM_PWM_Start(&htim, TIM_CHANNEL_1);
+    HAL_TIMEx_PWMN_Start(&htim, TIM_CHANNEL_1);
+    HAL_TIM_PWM_Start(&htim, TIM_CHANNEL_2);
+    HAL_TIMEx_PWMN_Start(&htim, TIM_CHANNEL_2);
+    HAL_TIM_PWM_Start(&htim, TIM_CHANNEL_3);
+    HAL_TIMEx_PWMN_Start(&htim, TIM_CHANNEL_3);
+
+    htim.Instance->CCR4 = 1;
+    HAL_TIM_PWM_Start_IT(&htim, TIM_CHANNEL_4);
+
+    //Turn off output
+    //__HAL_TIM_MOE_DISABLE(&htim);
+}
+
+static void sync_timers(TIM_HandleTypeDef htim_a, TIM_HandleTypeDef htim_b,
+		uint16_t internal_trigger_source, uint16_t count_offset) {
+
+	//Store intial timer configs
+    uint16_t MOE_store_a = htim_a.Instance->BDTR & (TIM_BDTR_MOE);
+    uint16_t MOE_store_b = htim_b.Instance->BDTR & (TIM_BDTR_MOE);
+
+	uint16_t CR2_store = htim_a.Instance->CR2;
+	uint16_t SMCR_store = htim_b.Instance->SMCR;
+
+    //Turn off output
+    __HAL_TIM_MOE_DISABLE(&htim_a);
+    __HAL_TIM_MOE_DISABLE(&htim_b);
+
+	/* Disable both timer counters*/
+	htim_a.Instance->CR1 &= ~TIM_CR1_CEN;
+	htim_b.Instance->CR1 &= ~TIM_CR1_CEN;
+
+	/* Set first timer to send TRGO on counter enable*/
+	htim_a.Instance->CR2 &= ~TIM_CR2_MMS;
+	htim_a.Instance->CR2 |= TIM_TRGO_ENABLE;
+
+	/* Set Trigger Source of second timer to the TRGO of the first timer*/
+	htim_b.Instance->SMCR &= ~TIM_SMCR_TS;
+	htim_b.Instance->SMCR |= TIM_CLOCKSOURCE_ITR0;
+
+	/* Set 2nd timer to start on trigger*/
+	htim_b.Instance->SMCR &= ~TIM_SMCR_SMS;
+	htim_b.Instance->SMCR |= TIM_SLAVEMODE_TRIGGER;
+
+	// set counter offset
+	htim_a.Instance->CNT = 0;
+	htim_b.Instance->CNT = count_offset;
+
+	/* Start Timer 1*/
+	htim_a.Instance->CR1 |= (TIM_CR1_CEN);
+
+	/* Restore timer configs */
+	htim_a.Instance->CR2 = CR2_store;
+	htim_b.Instance->SMCR = SMCR_store;
+
+    //restore output
+    htim_a.Instance->BDTR |= MOE_store_a;
+    htim_b.Instance->BDTR |= MOE_store_b;
+}
+
+static void init_encoders() {
 }
 
 static void start_adc_pwm(){
@@ -122,25 +189,9 @@ static void start_adc_pwm(){
     __HAL_DBGMCU_FREEZE_TIM1();
     __HAL_DBGMCU_FREEZE_TIM8();
 
-    //Init PWM
-    int half_load = htim1.Instance->ARR/2;
-    htim1.Instance->CCR1 = half_load;
-    htim1.Instance->CCR2 = half_load;
-    htim1.Instance->CCR3 = half_load;
-
-    //This hardware obfustication layer really is getting on my nerves
-    HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_1);
-    HAL_TIMEx_PWMN_Start(&htim1, TIM_CHANNEL_1);
-    HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_2);
-    HAL_TIMEx_PWMN_Start(&htim1, TIM_CHANNEL_2);
-    HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_3);
-    HAL_TIMEx_PWMN_Start(&htim1, TIM_CHANNEL_3);
-
-    htim1.Instance->CCR4 = 1;
-    HAL_TIM_PWM_Start_IT(&htim1, TIM_CHANNEL_4);
-
-    //Turn off output
-    //__HAL_TIM_MOE_DISABLE(&htim1);
+    start_pwm(htim1);
+    start_pwm(htim8);
+    sync_timers(htim1, htim8, TIM_CLOCKSOURCE_ITR0, htim1.Instance->ARR/2);
 }
 
 static float phase_current_from_adcval(uint32_t ADCValue, int motornum) {
