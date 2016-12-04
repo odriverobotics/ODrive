@@ -27,6 +27,7 @@ extern Motor_t motors[];
 extern const int num_motors;
 
 void init_motor_control();
+void pwm_trig_adc_cb(ADC_HandleTypeDef* hadc);
 
 //@TODO move motor thread to high level file
 void motor_thread(void const * argument);

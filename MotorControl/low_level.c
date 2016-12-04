@@ -51,7 +51,6 @@ static void DRV8301_setup();
 static void init_encoders();
 static void start_adc_pwm();
 static float phase_current_from_adcval(uint32_t ADCValue, int motornum);
-static void pwm_trig_adc_cb(ADC_HandleTypeDef* hadc);
 static bool check_timing();
 static void set_timings(Motor_t* motor, float tA, float tB, float tC);
 static void wait_for_current_meas(Motor_t* motor, float* phB_current, float* phC_current);
@@ -224,7 +223,8 @@ static float phase_current_from_adcval(uint32_t ADCValue, int motornum) {
 
 // This is the callback from the ADC that we expect after the PWM has triggered an ADC conversion.
 //@TODO: Document how the phasing is done
-static void pwm_trig_adc_cb(ADC_HandleTypeDef* hadc) {
+void pwm_trig_adc_cb(ADC_HandleTypeDef* hadc) {
+    check_timing();
 
     //@TODO get rid of statics when using more than one motor
     static float phB_DC_calib = 0.0f;
@@ -385,8 +385,6 @@ static void square_wave_test(Motor_t* motor) {
 
                 float phB_current, phC_current;
                 wait_for_current_meas(motor, &phB_current, &phC_current);
-
-                check_timing();
 
                 float Ialpha = -phB_current - phC_current;
                 float delta = Ialpha - mean[i][rep];

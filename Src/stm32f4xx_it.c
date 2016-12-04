@@ -37,6 +37,10 @@
 #include "cmsis_os.h"
 
 /* USER CODE BEGIN 0 */
+#include <low_level.h>
+
+typedef void (*ADC_handler_t)(ADC_HandleTypeDef* hadc);
+void ADC_IRQ_Dispatch(ADC_HandleTypeDef* hadc, ADC_handler_t callback);
 
 /* USER CODE END 0 */
 
@@ -168,6 +172,15 @@ void ADC_IRQHandler(void)
 {
   /* USER CODE BEGIN ADC_IRQn 0 */
 
+  // The HAL's ADC handling mechanism adds thousands of clock cycles of overhead
+  // So we bypass it and handle the logic ourselves.
+  //@TODO add vbus meaasurement on adc1 here
+  ADC_IRQ_Dispatch(&hadc2, &pwm_trig_adc_cb);
+  ADC_IRQ_Dispatch(&hadc3, &pwm_trig_adc_cb);
+
+  // Bypass HAL
+  return;
+
   /* USER CODE END ADC_IRQn 0 */
   HAL_ADC_IRQHandler(&hadc1);
   HAL_ADC_IRQHandler(&hadc2);
@@ -178,6 +191,17 @@ void ADC_IRQHandler(void)
 }
 
 /* USER CODE BEGIN 1 */
+
+void ADC_IRQ_Dispatch(ADC_HandleTypeDef* hadc, ADC_handler_t callback) {
+  //Only handles injected measurements
+  //@TODO Add regular measurements too (requried for M1 update trigger)
+  uint32_t JEOC = __HAL_ADC_GET_FLAG(hadc, ADC_FLAG_JEOC);
+  uint32_t JEOC_IT_EN = __HAL_ADC_GET_IT_SOURCE(hadc, ADC_IT_JEOC);
+  if (JEOC && JEOC_IT_EN) {
+    callback(hadc);
+    __HAL_ADC_CLEAR_FLAG(hadc, (ADC_FLAG_JSTRT | ADC_FLAG_JEOC));
+  }
+}
 
 /* USER CODE END 1 */
 /************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/
