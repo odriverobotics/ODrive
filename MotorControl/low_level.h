@@ -23,11 +23,13 @@ enum Motor_thread_signals {
     M_SIGNAL_PH_CURRENT_MEAS = 1u << 0
 };
 
+extern float vbus_voltage;
 extern Motor_t motors[];
 extern const int num_motors;
 
 void init_motor_control();
 void pwm_trig_adc_cb(ADC_HandleTypeDef* hadc);
+void vbus_sense_adc_cb(ADC_HandleTypeDef* hadc);
 
 //@TODO move motor thread to high level file
 void motor_thread(void const * argument);

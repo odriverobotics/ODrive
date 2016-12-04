@@ -15,6 +15,8 @@
 #include <utils.h>
 
 // Global variables
+float vbus_voltage = 0;
+
 Motor_t motors[] = {
     {   //M0
         /* .motor_thread to be set by thread at thread start */
@@ -178,10 +180,12 @@ static void init_encoders() {
 
 static void start_adc_pwm(){
     //Enable ADC and interrupts
+    __HAL_ADC_ENABLE(&hadc1);
     __HAL_ADC_ENABLE(&hadc2);
     __HAL_ADC_ENABLE(&hadc3);
     //Warp field stabilize.
     osDelay(2);
+    __HAL_ADC_ENABLE_IT(&hadc1, ADC_IT_JEOC);
     __HAL_ADC_ENABLE_IT(&hadc2, ADC_IT_JEOC);
     __HAL_ADC_ENABLE_IT(&hadc3, ADC_IT_JEOC);
 
@@ -219,6 +223,13 @@ static float phase_current_from_adcval(uint32_t ADCValue, int motornum) {
     float shunt_volt = amp_out_volt * rev_gain;
     float current = shunt_volt * motors[motornum].shunt_conductance;
     return current;
+}
+
+void vbus_sense_adc_cb(ADC_HandleTypeDef* hadc) {
+    const float voltage_scale = 3.3 * 11 / (float)(1<<12);
+    //Only one conversion in sequence, so only rank1
+    uint32_t ADCValue = HAL_ADCEx_InjectedGetValue(hadc, ADC_INJECTED_RANK_1);
+    vbus_voltage = ADCValue * voltage_scale;
 }
 
 // This is the callback from the ADC that we expect after the PWM has triggered an ADC conversion.
