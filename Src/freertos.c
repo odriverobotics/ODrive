@@ -96,7 +96,7 @@ void MX_FREERTOS_Init(void) {
 
   /* USER CODE BEGIN RTOS_THREADS */
   osThreadDef(task_motor_0, motor_thread, osPriorityHigh, 0, 512);
-  motor0_TaskHandle = osThreadCreate(osThread(task_motor_0), NULL);
+  motor0_TaskHandle = osThreadCreate(osThread(task_motor_0), &motors[0]);
   /* USER CODE END RTOS_THREADS */
 
   /* USER CODE BEGIN RTOS_QUEUES */

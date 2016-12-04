@@ -13,7 +13,7 @@ TARGET = ODriveFirmware
 # debug build?
 DEBUG = 1
 # optimization
-OPT = -Os
+OPT = -O0
 
 #######################################
 # pathes
