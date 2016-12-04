@@ -311,7 +311,6 @@ static bool check_timing() {
     return down;
 }
 
-
 //@TODO: having this in a function may be a bit redundant, as it is so simple and only used in one place
 static void wait_for_current_meas(Motor_t* motor, float* phB_current, float* phC_current) {
     //Current measurements not occurring in a timely manner can be handled by the watchdog
@@ -328,7 +327,6 @@ static void wait_for_current_meas(Motor_t* motor, float* phB_current, float* phC
     *phC_current = motor->current_meas.phC;
 }
 
-
 static float measure_phase_resistance(Motor_t* motor, float test_current, float max_voltage) {
     static const float kI = 0.2f; //[(V/s)/A]
     static float test_voltage = 0.0f;
@@ -344,7 +342,7 @@ static float measure_phase_resistance(Motor_t* motor, float test_current, float 
         test_voltage += (kI * CURRENT_MEAS_PERIOD) * (test_current - Ialpha);
         if (test_voltage > max_voltage) test_voltage = max_voltage;
         if (test_voltage < -max_voltage) test_voltage = -max_voltage;
-        float mod = test_voltage/hack_dc_bus_voltage;
+        float mod = test_voltage / ((2.0f / 3.0f) * hack_dc_bus_voltage);
 
         //Test voltage along phase A
         float tA, tB, tC;
@@ -359,6 +357,9 @@ static float measure_phase_resistance(Motor_t* motor, float test_current, float 
     return phase_resistance;
 }
 
+static float measure_phase_inductance(Motor_t* motor, float voltage_low, float voltage_high) {
+    
+}
 
 //Set the rising edge timings (0.0 - 1.0)
 static void set_timings(Motor_t* motor, float tA, float tB, float tC) {
@@ -392,7 +393,7 @@ static void square_wave_test(Motor_t* motor) {
                 float delta_delta_sqr = (delta * delta) - var[i][rep];
                 var[i][rep] += delta_delta_sqr * (1.0f / (float)cycle_num);
 
-                float mod = test_voltages[i]/hack_dc_bus_voltage;
+                float mod = test_voltages[i] / ((2.0f / 3.0f) * hack_dc_bus_voltage);
                 float tA, tB, tC;
                 //Test voltage along phase A
                 SVM(mod, 0.0f, &tA, &tB, &tC);
@@ -413,8 +414,8 @@ static void scan_motor(Motor_t* motor, float omega, float voltage_magnitude) {
 
             float c = cosf(ph);
             float s = sinf(ph);
-            float mod_alpha = (c * voltage_magnitude) / hack_dc_bus_voltage;
-            float mod_beta = (s * voltage_magnitude) / hack_dc_bus_voltage;
+            float mod_alpha = (c * voltage_magnitude) / ((2.0f / 3.0f) * hack_dc_bus_voltage);
+            float mod_beta = (s * voltage_magnitude) / ((2.0f / 3.0f) * hack_dc_bus_voltage);
 
             float tA, tB, tC;
             //Test voltage along phase A
