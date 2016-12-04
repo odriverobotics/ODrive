@@ -293,7 +293,7 @@ void pwm_trig_adc_cb(ADC_HandleTypeDef* hadc) {
 
 static bool check_timing() {
 #define log_size 32
-    static uint16_t timings[log_size];
+    static volatile uint16_t timings[log_size];
     static int idx = 0;
 
     uint16_t timing = htim1.Instance->CNT;
