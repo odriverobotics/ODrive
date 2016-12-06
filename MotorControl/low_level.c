@@ -15,7 +15,7 @@
 #include <utils.h>
 
 // Global variables
-float vbus_voltage = 0;
+float vbus_voltage = 12.0; //Arbitrary non-zero inital value to avoid division by zero if ADC reading is late
 
 Motor_t motors[] = {
     {   //M0
