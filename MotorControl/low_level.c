@@ -44,9 +44,6 @@ const int num_motors = sizeof(motors)/sizeof(motors[0]);
 //@TODO: Include these in motor object instead
 static DRV_SPI_8301_Vars_t gate_driver_regs[1/*num_motors*/];
 
-//@TODO HACK Do actual voltage measurement
-static const float hack_dc_bus_voltage = 12.0f;
-
 // Private function prototypes
 void safe_assert(int arg);
 static void DRV8301_setup();
@@ -353,7 +350,7 @@ static float measure_phase_resistance(Motor_t* motor, float test_current, float 
         test_voltage += (kI * CURRENT_MEAS_PERIOD) * (test_current - Ialpha);
         if (test_voltage > max_voltage) test_voltage = max_voltage;
         if (test_voltage < -max_voltage) test_voltage = -max_voltage;
-        float mod = test_voltage / ((2.0f / 3.0f) * hack_dc_bus_voltage);
+        float mod = test_voltage / ((2.0f / 3.0f) * vbus_voltage);
 
         //Test voltage along phase A
         float tA, tB, tC;
@@ -404,7 +401,7 @@ static void square_wave_test(Motor_t* motor) {
                 float delta_delta_sqr = (delta * delta) - var[i][rep];
                 var[i][rep] += delta_delta_sqr * (1.0f / (float)cycle_num);
 
-                float mod = test_voltages[i] / ((2.0f / 3.0f) * hack_dc_bus_voltage);
+                float mod = test_voltages[i] / ((2.0f / 3.0f) * vbus_voltage);
                 float tA, tB, tC;
                 //Test voltage along phase A
                 SVM(mod, 0.0f, &tA, &tB, &tC);
@@ -425,8 +422,8 @@ static void scan_motor(Motor_t* motor, float omega, float voltage_magnitude) {
 
             float c = cosf(ph);
             float s = sinf(ph);
-            float mod_alpha = (c * voltage_magnitude) / ((2.0f / 3.0f) * hack_dc_bus_voltage);
-            float mod_beta = (s * voltage_magnitude) / ((2.0f / 3.0f) * hack_dc_bus_voltage);
+            float mod_alpha = (c * voltage_magnitude) / ((2.0f / 3.0f) * vbus_voltage);
+            float mod_beta = (s * voltage_magnitude) / ((2.0f / 3.0f) * vbus_voltage);
 
             float tA, tB, tC;
             //Test voltage along phase A
