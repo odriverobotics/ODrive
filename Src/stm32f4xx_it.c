@@ -175,6 +175,7 @@ void ADC_IRQHandler(void)
   // The HAL's ADC handling mechanism adds many clock cycles of overhead
   // So we bypass it and handle the logic ourselves.
   //@TODO add vbus meaasurement on adc1 here
+  ADC_IRQ_Dispatch(&hadc1, &vbus_sense_adc_cb);
   ADC_IRQ_Dispatch(&hadc2, &pwm_trig_adc_cb);
   ADC_IRQ_Dispatch(&hadc3, &pwm_trig_adc_cb);
 
