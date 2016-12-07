@@ -359,14 +359,43 @@ static float measure_phase_resistance(Motor_t* motor, float test_current, float 
     }
 
     //De-energize motor
-    set_timings(&motors[0], 0.5f, 0.5f, 0.5f);;
+    set_timings(&motors[0], 0.5f, 0.5f, 0.5f);
 
     float phase_resistance = test_voltage / test_current;
     return phase_resistance;
 }
 
 static float measure_phase_inductance(Motor_t* motor, float voltage_low, float voltage_high) {
-    
+    float test_voltages[2] = {voltage_low, voltage_high};
+    float Ialphas[2] = {0.0f};
+    static const int num_cycles = 10000;
+    for (int t = 0; t < num_cycles; ++t) {
+        for (int i = 0; i < 2; ++i) {
+
+            float phB_current, phC_current;
+            wait_for_current_meas(motor, &phB_current, &phC_current);
+            Ialphas[i] += -phB_current - phC_current;
+
+            float mod = test_voltages[i] / ((2.0f / 3.0f) * vbus_voltage);
+            float tA, tB, tC;
+            //Test voltage along phase A
+            SVM(mod, 0.0f, &tA, &tB, &tC);
+
+            //Check that we are still up-counting
+            safe_assert(!check_timing());
+
+            // Wait until down-counting
+            // @TODO: Do not block like this, use interrupt on timer update
+            // this will NOT work with 2 motors!
+            while(!(htim1.Instance->CR1 & TIM_CR1_DIR));
+            set_timings(motor, tA, tB, tC);
+        }
+    }
+
+    float delta_v = voltage_high - voltage_low;
+    float dI_by_dt = (Ialphas[1] - Ialphas[0]) / (CURRENT_MEAS_PERIOD * (float)num_cycles);
+    float L = delta_v / dI_by_dt;
+    return L;
 }
 
 //Set the rising edge timings (0.0 - 1.0)
@@ -405,9 +434,15 @@ static void square_wave_test(Motor_t* motor) {
                 float tA, tB, tC;
                 //Test voltage along phase A
                 SVM(mod, 0.0f, &tA, &tB, &tC);
-                set_timings(motor, tA, tB, tC);
 
+                //Check that we are still up-counting
                 safe_assert(!check_timing());
+
+                // Wait until down-counting
+                // @TODO: Do not block like this, use interrupt on timer update
+                // this will NOT work with 2 motors!
+                while(!(htim1.Instance->CR1 & TIM_CR1_DIR));
+                set_timings(motor, tA, tB, tC);
             }
         }
         ++cycle_num;
@@ -446,6 +481,10 @@ void motor_thread(void const * argument) {
     float test_current = 3.0f;
     float R = measure_phase_resistance(&motors[0], test_current, 1.0f);
     // scan_motor(&motors[0], 10.0f, test_current * R);
-    square_wave_test(&motors[0]);
+    // square_wave_test(&motors[0]);
+    measure_phase_inductance(&motors[0], 0.2f, 1.0f);
+
+    //De-energize motor
+    set_timings(&motors[0], 0.5f, 0.5f, 0.5f);
 }
 
