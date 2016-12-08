@@ -336,9 +336,9 @@ static void wait_for_current_meas(Motor_t* motor, float* phB_current, float* phC
 }
 
 static float measure_phase_resistance(Motor_t* motor, float test_current, float max_voltage) {
-    static const float kI = 0.2f; //[(V/s)/A]
+    static const float kI = 10.0f; //[(V/s)/A]
     static float test_voltage = 0.0f;
-    static const int num_test_cycles = 10.0f / CURRENT_MEAS_PERIOD;
+    static const int num_test_cycles = 3.0f / CURRENT_MEAS_PERIOD;
 
     //@TODO: Fixed gain is dangerous for low impedance motors
     //@TODO: Fixed measurement time is dangerous for high impedance motors
@@ -392,9 +392,11 @@ static float measure_phase_inductance(Motor_t* motor, float voltage_low, float v
         }
     }
 
-    float delta_v = voltage_high - voltage_low;
+    float v_L = 0.5f * (voltage_high - voltage_low);
+    //Note: A more correct formula would also take into account that there is a finite timestep.
+    //However, the discretisation in the current control loop inverts the same discrepancy
     float dI_by_dt = (Ialphas[1] - Ialphas[0]) / (CURRENT_MEAS_PERIOD * (float)num_cycles);
-    float L = delta_v / dI_by_dt;
+    float L = v_L / dI_by_dt;
     return L;
 }
 
@@ -482,7 +484,9 @@ void motor_thread(void const * argument) {
     float R = measure_phase_resistance(&motors[0], test_current, 1.0f);
     // scan_motor(&motors[0], 10.0f, test_current * R);
     // square_wave_test(&motors[0]);
-    measure_phase_inductance(&motors[0], 0.2f, 1.0f);
+    float L = measure_phase_inductance(&motors[0], -1.0f, 1.0f);
+
+
 
     //De-energize motor
     set_timings(&motors[0], 0.5f, 0.5f, 0.5f);
