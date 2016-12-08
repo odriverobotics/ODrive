@@ -368,7 +368,7 @@ static float measure_phase_resistance(Motor_t* motor, float test_current, float 
 static float measure_phase_inductance(Motor_t* motor, float voltage_low, float voltage_high) {
     float test_voltages[2] = {voltage_low, voltage_high};
     float Ialphas[2] = {0.0f};
-    static const int num_cycles = 10000;
+    static const int num_cycles = 2000;
     for (int t = 0; t < num_cycles; ++t) {
         for (int i = 0; i < 2; ++i) {
 
@@ -480,13 +480,22 @@ void motor_thread(void const * argument) {
 
     init_motor_control();
 
-    float test_current = 3.0f;
-    float R = measure_phase_resistance(&motors[0], test_current, 1.0f);
+    float test_current = 5.0f;
+    float R = measure_phase_resistance(&motors[0], test_current, 1.5f);
     // scan_motor(&motors[0], 10.0f, test_current * R);
     // square_wave_test(&motors[0]);
     float L = measure_phase_inductance(&motors[0], -1.0f, 1.0f);
 
-
+#define NUM_TESTS 32
+    float center_currents[NUM_TESTS];
+    float Ls[NUM_TESTS];
+    float peak_center_v = 1.4f;
+    float step = peak_center_v * 2.0f / (float)NUM_TESTS;
+    for (int i = 0; i < NUM_TESTS; ++i) {
+        float center_voltage = -peak_center_v + (float)i * step;
+        center_currents[i] = center_voltage / R;
+        Ls[i] = measure_phase_inductance(&motors[0], center_voltage - 0.4f, center_voltage + 0.4f);
+    }
 
     //De-energize motor
     set_timings(&motors[0], 0.5f, 0.5f, 0.5f);
