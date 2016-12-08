@@ -340,9 +340,6 @@ static float measure_phase_resistance(Motor_t* motor, float test_current, float 
     static float test_voltage = 0.0f;
     static const int num_test_cycles = 3.0f / CURRENT_MEAS_PERIOD;
 
-    //@TODO: Fixed gain is dangerous for low impedance motors
-    //@TODO: Fixed measurement time is dangerous for high impedance motors
-    // We should do a geometric sequence of voltage instead.
     for (int i = 0; i < num_test_cycles; ++i) {
         float IphB, IphC;
         wait_for_current_meas(motor, &IphB, &IphC);
@@ -485,17 +482,6 @@ void motor_thread(void const * argument) {
     // scan_motor(&motors[0], 10.0f, test_current * R);
     // square_wave_test(&motors[0]);
     float L = measure_phase_inductance(&motors[0], -1.0f, 1.0f);
-
-#define NUM_TESTS 32
-    float center_currents[NUM_TESTS];
-    float Ls[NUM_TESTS];
-    float peak_center_v = 1.4f;
-    float step = peak_center_v * 2.0f / (float)NUM_TESTS;
-    for (int i = 0; i < NUM_TESTS; ++i) {
-        float center_voltage = -peak_center_v + (float)i * step;
-        center_currents[i] = center_voltage / R;
-        Ls[i] = measure_phase_inductance(&motors[0], center_voltage - 0.4f, center_voltage + 0.4f);
-    }
 
     //De-energize motor
     set_timings(&motors[0], 0.5f, 0.5f, 0.5f);
