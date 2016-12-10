@@ -54,6 +54,7 @@ static bool check_timing();
 static void set_timings(Motor_t* motor, float tA, float tB, float tC);
 static void wait_for_current_meas(Motor_t* motor, float* phB_current, float* phC_current);
 static float measure_phase_resistance(Motor_t* motor, float test_current, float max_voltage);
+static float measure_phase_inductance(Motor_t* motor, float voltage_low, float voltage_high);
 
 //Special function name for ADC callback.
 //Automatically registered if defined.
@@ -406,46 +407,6 @@ static void set_timings(Motor_t* motor, float tA, float tB, float tC) {
     tim->CCR1 = tA * full_load;
     tim->CCR2 = tB * full_load;
     tim->CCR3 = tC * full_load;
-}
-
-static void square_wave_test(Motor_t* motor) {
-#define NUM_CYCLES 32
-    float test_voltages[] = {0.2f, 1.0f};
-    float mean[2][NUM_CYCLES] = {{ 0.0f }};
-    float var[2][NUM_CYCLES] = {{ 0.0f }};
-    int cycle_num = 1;
-    static const int num_test = sizeof(test_voltages)/sizeof(test_voltages[0]);
-
-    for(;;) {
-        for (int i = 0; i < num_test; ++i) {
-            for (int rep = 0; rep < NUM_CYCLES; ++rep) {
-
-                float phB_current, phC_current;
-                wait_for_current_meas(motor, &phB_current, &phC_current);
-
-                float Ialpha = -phB_current - phC_current;
-                float delta = Ialpha - mean[i][rep];
-                mean[i][rep] += delta * (1.0f / (float)cycle_num);
-                float delta_delta_sqr = (delta * delta) - var[i][rep];
-                var[i][rep] += delta_delta_sqr * (1.0f / (float)cycle_num);
-
-                float mod = test_voltages[i] / ((2.0f / 3.0f) * vbus_voltage);
-                float tA, tB, tC;
-                //Test voltage along phase A
-                SVM(mod, 0.0f, &tA, &tB, &tC);
-
-                //Check that we are still up-counting
-                safe_assert(!check_timing());
-
-                // Wait until down-counting
-                // @TODO: Do not block like this, use interrupt on timer update
-                // this will NOT work with 2 motors!
-                while(!(htim1.Instance->CR1 & TIM_CR1_DIR));
-                set_timings(motor, tA, tB, tC);
-            }
-        }
-        ++cycle_num;
-    }
 }
 
 static void scan_motor(Motor_t* motor, float omega, float voltage_magnitude) {
