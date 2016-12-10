@@ -86,6 +86,8 @@ static void DRV8301_setup(Motor_t* motor, DRV_SPI_8301_Vars_t* local_regs);
 static void init_encoders();
 static void start_adc_pwm();
 static void start_pwm(TIM_HandleTypeDef* htim);
+static void sync_timers(TIM_HandleTypeDef* htim_a, TIM_HandleTypeDef* htim_b,
+        uint16_t TIM_CLOCKSOURCE_ITRx, uint16_t count_offset);
 static float phase_current_from_adcval(uint32_t ADCValue, int motornum);
 static uint16_t check_timing(TIM_HandleTypeDef* htim, volatile uint16_t* log, volatile int* idx);
 static void set_timings(Motor_t* motor, float tA, float tB, float tC);
@@ -156,8 +158,8 @@ static void start_adc_pwm(){
     __HAL_DBGMCU_FREEZE_TIM8();
 
     start_pwm(&htim1);
-    // start_pwm(&htim8);
-    // sync_timers(&htim1, &htim8, TIM_CLOCKSOURCE_ITR0, TIM_PERIOD_CLOCKS/2);
+    start_pwm(&htim8);
+    sync_timers(&htim1, &htim8, TIM_CLOCKSOURCE_ITR0, TIM_PERIOD_CLOCKS/2);
 }
 
 static void start_pwm(TIM_HandleTypeDef* htim){
@@ -180,45 +182,49 @@ static void start_pwm(TIM_HandleTypeDef* htim){
 }
 
 static void sync_timers(TIM_HandleTypeDef* htim_a, TIM_HandleTypeDef* htim_b,
-		uint16_t TIM_CLOCKSOURCE_ITRx, uint16_t count_offset) {
+        uint16_t TIM_CLOCKSOURCE_ITRx, uint16_t count_offset) {
 
-	//Store intial timer configs
+    //Store intial timer configs
     uint16_t MOE_store_a = htim_a->Instance->BDTR & (TIM_BDTR_MOE);
     uint16_t MOE_store_b = htim_b->Instance->BDTR & (TIM_BDTR_MOE);
 
-	uint16_t CR2_store = htim_a->Instance->CR2;
-	uint16_t SMCR_store = htim_b->Instance->SMCR;
+    uint16_t CR2_store = htim_a->Instance->CR2;
+    uint16_t SMCR_store = htim_b->Instance->SMCR;
 
     //Turn off output
     htim_a->Instance->BDTR &= ~(TIM_BDTR_MOE);
     htim_b->Instance->BDTR &= ~(TIM_BDTR_MOE);
 
-	// Disable both timer counters
-	htim_a->Instance->CR1 &= ~TIM_CR1_CEN;
-	htim_b->Instance->CR1 &= ~TIM_CR1_CEN;
+    // Disable both timer counters
+    htim_a->Instance->CR1 &= ~TIM_CR1_CEN;
+    htim_b->Instance->CR1 &= ~TIM_CR1_CEN;
 
-	// Set first timer to send TRGO on counter enable
-	htim_a->Instance->CR2 &= ~TIM_CR2_MMS;
-	htim_a->Instance->CR2 |= TIM_TRGO_ENABLE;
+    // Set first timer to send TRGO on counter enable
+    htim_a->Instance->CR2 &= ~TIM_CR2_MMS;
+    htim_a->Instance->CR2 |= TIM_TRGO_ENABLE;
 
-	// Set Trigger Source of second timer to the TRGO of the first timer
-	htim_b->Instance->SMCR &= ~TIM_SMCR_TS;
-	htim_b->Instance->SMCR |= TIM_CLOCKSOURCE_ITRx;
+    // Set Trigger Source of second timer to the TRGO of the first timer
+    htim_b->Instance->SMCR &= ~TIM_SMCR_TS;
+    htim_b->Instance->SMCR |= TIM_CLOCKSOURCE_ITRx;
 
-	// Set 2nd timer to start on trigger
-	htim_b->Instance->SMCR &= ~TIM_SMCR_SMS;
-	htim_b->Instance->SMCR |= TIM_SLAVEMODE_TRIGGER;
+    // Set 2nd timer to start on trigger
+    htim_b->Instance->SMCR &= ~TIM_SMCR_SMS;
+    htim_b->Instance->SMCR |= TIM_SLAVEMODE_TRIGGER;
 
-	// set counter offset
-	htim_a->Instance->CNT = 0;
-	htim_b->Instance->CNT = count_offset;
+    // Set both timers to up-counting state
+    htim_a->Instance->CR1 &= ~TIM_CR1_DIR;
+    htim_b->Instance->CR1 &= ~TIM_CR1_DIR;
 
-	// Start Timer 1
-	htim_a->Instance->CR1 |= (TIM_CR1_CEN);
+    // set counter offset
+    htim_a->Instance->CNT = 0;
+    htim_b->Instance->CNT = count_offset;
 
-	// Restore timer configs
-	htim_a->Instance->CR2 = CR2_store;
-	htim_b->Instance->SMCR = SMCR_store;
+    // Start Timer 1
+    htim_a->Instance->CR1 |= (TIM_CR1_CEN);
+
+    // Restore timer configs
+    htim_a->Instance->CR2 = CR2_store;
+    htim_b->Instance->SMCR = SMCR_store;
 
     //restore output
     htim_a->Instance->BDTR |= MOE_store_a;
