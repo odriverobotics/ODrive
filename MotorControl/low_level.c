@@ -211,13 +211,23 @@ static void sync_timers(TIM_HandleTypeDef* htim_a, TIM_HandleTypeDef* htim_b,
     htim_b->Instance->SMCR &= ~TIM_SMCR_SMS;
     htim_b->Instance->SMCR |= TIM_SLAVEMODE_TRIGGER;
 
+    // Dir bit is read only in center aligned mode, so we clear the mode for now
+    uint16_t CMS_store_a = htim_a->Instance->CR1 & TIM_CR1_CMS;
+    uint16_t CMS_store_b = htim_b->Instance->CR1 & TIM_CR1_CMS;
+    htim_a->Instance->CR1 &= ~TIM_CR1_CMS;
+    htim_b->Instance->CR1 &= ~TIM_CR1_CMS;
+
     // Set both timers to up-counting state
     htim_a->Instance->CR1 &= ~TIM_CR1_DIR;
     htim_b->Instance->CR1 &= ~TIM_CR1_DIR;
 
+    // Restore center aligned mode
+    htim_a->Instance->CR1 |= CMS_store_a;
+    htim_b->Instance->CR1 |= CMS_store_b;
+
     // set counter offset
-    htim_a->Instance->CNT = 0;
-    htim_b->Instance->CNT = count_offset;
+    htim_a->Instance->CNT = count_offset;
+    htim_b->Instance->CNT = 0;
 
     // Start Timer 1
     htim_a->Instance->CR1 |= (TIM_CR1_CEN);
@@ -271,13 +281,14 @@ void vbus_sense_adc_cb(ADC_HandleTypeDef* hadc) {
 }
 
 // This is the callback from the ADC that we expect after the PWM has triggered an ADC conversion.
-//@TODO: Document how the phasing is done
+//@TODO: Document how the phasing is done, link to timing diagram
 void pwm_trig_adc_cb(ADC_HandleTypeDef* hadc) {
     #define calib_tau 0.2f //@TOTO make more easily configurable
     static const float calib_filter_k = CURRENT_MEAS_PERIOD / calib_tau;
 
     //Only one conversion in sequence, so only rank1
     uint32_t ADCValue = HAL_ADCEx_InjectedGetValue(hadc, ADC_INJECTED_RANK_1);
+    //@TODO remove hardcoded motornum
     float current = phase_current_from_adcval(ADCValue, 0);
 
     // Check if this trigger was the CC4 channel, used for actual current measurement at SVM vector 0
@@ -286,12 +297,12 @@ void pwm_trig_adc_cb(ADC_HandleTypeDef* hadc) {
     if (trig_src == ADC_EXTERNALTRIGINJECCONV_T1_CC4) {
         //We are measuring M0 current here
         Motor_t* motor = &motors[0];
+        check_timing(motor->timer_handle, timing_logs[0], &timing_log_index[0]);
         //Next measurement on this motor will be M0 DC_CAL measurement
         HAL_GPIO_WritePin(M0_DC_CAL_GPIO_Port, M0_DC_CAL_Pin, GPIO_PIN_SET);
         //Next measurement on this ADC will be M1 current
         hadc->Instance->CR2 &= ~(ADC_CR2_JEXTSEL);
-        // hadc->Instance->CR2 |=  ADC_EXTERNALTRIGINJECCONV_T8_CC4;
-        hadc->Instance->CR2 |=  ADC_EXTERNALTRIGINJECCONV_T1_TRGO; //temp test dccal
+        hadc->Instance->CR2 |=  ADC_EXTERNALTRIGINJECCONV_T8_CC4;
 
         // ADC2 and ADC3 record the phB and phC currents concurrently,
         // and their interrupts should arrive on the same clock cycle.
@@ -318,6 +329,7 @@ void pwm_trig_adc_cb(ADC_HandleTypeDef* hadc) {
     } else if (trig_src == ADC_EXTERNALTRIGINJECCONV_T1_TRGO) {
         //We are measuring M0 DC_CAL here
         Motor_t* motor = &motors[0];
+        check_timing(motor->timer_handle, timing_logs[0], &timing_log_index[0]);
         //Set up next measurement to be M0 current measurement
         // @TODO Add M1 to sequence
         hadc->Instance->CR2 &= ~(ADC_CR2_JEXTSEL);
@@ -332,7 +344,16 @@ void pwm_trig_adc_cb(ADC_HandleTypeDef* hadc) {
             //hadc is something else, not expected
             safe_assert(0);
         }
-        
+
+    } else if (trig_src == ADC_EXTERNALTRIGINJECCONV_T8_CC4) {
+        //We are measuring M1 current here
+        Motor_t* motor = &motors[0]; //TODO WRONG
+        check_timing(motor->timer_handle, timing_logs[1], &timing_log_index[1]);
+        //Next measurement on this motor will be M1 DC_CAL measurement
+        HAL_GPIO_WritePin(M1_DC_CAL_GPIO_Port, M1_DC_CAL_Pin, GPIO_PIN_SET);
+        //Next measurement on this ADC will be M0 DC_CAL
+        hadc->Instance->CR2 &= ~(ADC_CR2_JEXTSEL);
+        hadc->Instance->CR2 |=  ADC_EXTERNALTRIGINJECCONV_T1_TRGO;
     } else {
         safe_assert(0);
     }
@@ -360,7 +381,7 @@ static void wait_for_current_meas(Motor_t* motor, float* phB_current, float* phC
     //@TODO Actually make watchdog
     //Hence we can use osWaitForever
     osEvent evt = osSignalWait(M_SIGNAL_PH_CURRENT_MEAS, osWaitForever);
-    check_timing(motor->timer_handle, timing_logs[0], &timing_log_index[0]);
+    // check_timing(motor->timer_handle, timing_logs[0], &timing_log_index[0]);
 
     //Since we wait forever, we do not expect timeouts here.
     safe_assert(evt.status == osEventSignal);
@@ -414,7 +435,7 @@ static float measure_phase_inductance(Motor_t* motor, float voltage_low, float v
             SVM(mod, 0.0f, &tA, &tB, &tC);
 
             //Check that we are still up-counting
-            safe_assert(check_timing(motor->timer_handle, timing_logs[0], &timing_log_index[0]) < TIM_PERIOD_CLOCKS);
+            // safe_assert(check_timing(motor->timer_handle, timing_logs[0], &timing_log_index[0]) < TIM_PERIOD_CLOCKS);
 
             // Wait until down-counting
             // @TODO: Do not block like this, use interrupt on timer update
