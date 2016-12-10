@@ -78,8 +78,8 @@ void init_motor_control() {
 //@TODO make available from anywhere
 void safe_assert(int arg) {
     if(!arg) {
-        __HAL_TIM_MOE_DISABLE(&htim1);
-        __HAL_TIM_MOE_DISABLE(&htim8);
+        htim1.Instance->BDTR &= ~(TIM_BDTR_MOE);
+        htim8.Instance->BDTR &= ~(TIM_BDTR_MOE);
         for(;;);
     }
 }
@@ -122,13 +122,10 @@ static void start_pwm(TIM_HandleTypeDef htim){
 
     htim.Instance->CCR4 = 1;
     HAL_TIM_PWM_Start_IT(&htim, TIM_CHANNEL_4);
-
-    //Turn off output
-    //__HAL_TIM_MOE_DISABLE(&htim);
 }
 
 static void sync_timers(TIM_HandleTypeDef htim_a, TIM_HandleTypeDef htim_b,
-		uint16_t internal_trigger_source, uint16_t count_offset) {
+		uint16_t TIM_CLOCKSOURCE_ITRx, uint16_t count_offset) {
 
 	//Store intial timer configs
     uint16_t MOE_store_a = htim_a.Instance->BDTR & (TIM_BDTR_MOE);
@@ -138,22 +135,22 @@ static void sync_timers(TIM_HandleTypeDef htim_a, TIM_HandleTypeDef htim_b,
 	uint16_t SMCR_store = htim_b.Instance->SMCR;
 
     //Turn off output
-    __HAL_TIM_MOE_DISABLE(&htim_a);
-    __HAL_TIM_MOE_DISABLE(&htim_b);
+    htim_a.Instance->BDTR &= ~(TIM_BDTR_MOE);
+    htim_b.Instance->BDTR &= ~(TIM_BDTR_MOE);
 
-	/* Disable both timer counters*/
+	// Disable both timer counters
 	htim_a.Instance->CR1 &= ~TIM_CR1_CEN;
 	htim_b.Instance->CR1 &= ~TIM_CR1_CEN;
 
-	/* Set first timer to send TRGO on counter enable*/
+	// Set first timer to send TRGO on counter enable
 	htim_a.Instance->CR2 &= ~TIM_CR2_MMS;
 	htim_a.Instance->CR2 |= TIM_TRGO_ENABLE;
 
-	/* Set Trigger Source of second timer to the TRGO of the first timer*/
+	// Set Trigger Source of second timer to the TRGO of the first timer
 	htim_b.Instance->SMCR &= ~TIM_SMCR_TS;
-	htim_b.Instance->SMCR |= TIM_CLOCKSOURCE_ITR0;
+	htim_b.Instance->SMCR |= TIM_CLOCKSOURCE_ITRx;
 
-	/* Set 2nd timer to start on trigger*/
+	// Set 2nd timer to start on trigger
 	htim_b.Instance->SMCR &= ~TIM_SMCR_SMS;
 	htim_b.Instance->SMCR |= TIM_SLAVEMODE_TRIGGER;
 
@@ -161,10 +158,10 @@ static void sync_timers(TIM_HandleTypeDef htim_a, TIM_HandleTypeDef htim_b,
 	htim_a.Instance->CNT = 0;
 	htim_b.Instance->CNT = count_offset;
 
-	/* Start Timer 1*/
+	// Start Timer 1
 	htim_a.Instance->CR1 |= (TIM_CR1_CEN);
 
-	/* Restore timer configs */
+	// Restore timer configs
 	htim_a.Instance->CR2 = CR2_store;
 	htim_b.Instance->SMCR = SMCR_store;
 
