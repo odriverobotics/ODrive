@@ -109,8 +109,6 @@ void StartDefaultTask(void const * argument)
 
   /* USER CODE BEGIN StartDefaultTask */
 
-  //Run test routines
-  // test_main();
 
   //If we get to here, then the default task is done.
   vTaskDelete(defaultTaskHandle);

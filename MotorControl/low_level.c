@@ -78,7 +78,7 @@ static volatile uint16_t timing_logs[2/*num_motors*/][TIMING_LOG_SIZE];
 static volatile int timing_log_index[2/*num_motors*/] = {0, 0};
 
 /* Private function prototypes -----------------------------------------------*/
-static void DRV8301_setup();
+static void DRV8301_setup(Motor_t* motor, DRV_SPI_8301_Vars_t* local_regs);
 static void init_encoders();
 static void start_adc_pwm();
 static float phase_current_from_adcval(uint32_t ADCValue, int motornum);
@@ -98,7 +98,8 @@ void HAL_ADCEx_InjectedConvCpltCallback(ADC_HandleTypeDef* hadc) {
 
 void init_motor_control() {
     //Init gate drivers
-    DRV8301_setup();
+    DRV8301_setup(&motors[0], &gate_driver_regs[0]);
+    DRV8301_setup(&motors[0], &gate_driver_regs[1]);
 
     // Start PWM and enable adc interrupts/callbacks
     start_adc_pwm();
@@ -118,23 +119,24 @@ void safe_assert(int arg) {
 }
 
 // Set up the gate drivers
-static void DRV8301_setup() {
+//@TODO stick DRV_SPI_8301_Vars_t in motor
+static void DRV8301_setup(Motor_t* motor, DRV_SPI_8301_Vars_t* local_regs) {
     for (int i = 0; i < num_motors; ++i) {
-        DRV8301_enable(&motors[i].gate_driver);
-        DRV8301_setupSpi(&motors[i].gate_driver, &gate_driver_regs[i]);
+        DRV8301_enable(&motor->gate_driver);
+        DRV8301_setupSpi(&motor->gate_driver, local_regs);
 
         //@TODO we can use reporting only if we actually wire up the nOCTW pin
-        gate_driver_regs[i].Ctrl_Reg_1.OC_MODE = DRV8301_OcMode_LatchShutDown;
+        local_regs->Ctrl_Reg_1.OC_MODE = DRV8301_OcMode_LatchShutDown;
         //Overcurrent set to approximately 150A at 100degC. This may need tweaking.
-        gate_driver_regs[i].Ctrl_Reg_1.OC_ADJ_SET = DRV8301_VdsLevel_0p730_V;
+        local_regs->Ctrl_Reg_1.OC_ADJ_SET = DRV8301_VdsLevel_0p730_V;
         //20V/V on 500uOhm gives a range of +/- 150A
         //40V/V on 500uOhm gives a range of +/- 75A
-        gate_driver_regs[i].Ctrl_Reg_2.GAIN = DRV8301_ShuntAmpGain_40VpV;
+        local_regs->Ctrl_Reg_2.GAIN = DRV8301_ShuntAmpGain_40VpV;
 
-        gate_driver_regs[i].SndCmd = true;
-        DRV8301_writeData(&motors[i].gate_driver, &gate_driver_regs[i]);
-        gate_driver_regs[i].RcvCmd = true;
-        DRV8301_readData(&motors[i].gate_driver, &gate_driver_regs[i]);
+        local_regs->SndCmd = true;
+        DRV8301_writeData(&motor->gate_driver, local_regs);
+        local_regs->RcvCmd = true;
+        DRV8301_readData(&motor->gate_driver, local_regs);
     }
 }
 
@@ -414,6 +416,7 @@ static float measure_phase_inductance(Motor_t* motor, float voltage_low, float v
             // Wait until down-counting
             // @TODO: Do not block like this, use interrupt on timer update
             // this will NOT work with 2 motors!
+            for(;;);// Make sure we dont use
             while(!(htim1.Instance->CR1 & TIM_CR1_DIR));
             set_timings(motor, tA, tB, tC);
         }
