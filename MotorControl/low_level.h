@@ -1,10 +1,12 @@
-
+/* Define to prevent recursive inclusion -------------------------------------*/
 #ifndef __LOW_LEVEL_H
 #define __LOW_LEVEL_H
 
+/* Includes ------------------------------------------------------------------*/
 #include <cmsis_os.h>
 #include "drv8301.h"
 
+/* Exported types ------------------------------------------------------------*/
 typedef struct {
     float phB;
     float phC;
@@ -23,10 +25,15 @@ enum Motor_thread_signals {
     M_SIGNAL_PH_CURRENT_MEAS = 1u << 0
 };
 
+/* Exported constants --------------------------------------------------------*/
 extern float vbus_voltage;
 extern Motor_t motors[];
 extern const int num_motors;
 
+/* Exported variables --------------------------------------------------------*/
+/* Exported macro ------------------------------------------------------------*/
+/* Exported functions --------------------------------------------------------*/
+void safe_assert(int arg);
 void init_motor_control();
 void pwm_trig_adc_cb(ADC_HandleTypeDef* hadc);
 void vbus_sense_adc_cb(ADC_HandleTypeDef* hadc);

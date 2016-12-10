@@ -1,12 +1,9 @@
-
+/* Includes ------------------------------------------------------------------*/
 #include <low_level.h>
 
 #include <cmsis_os.h>
 #include <math.h>
 #include <stdlib.h>
-#ifndef M_PI
-#define M_PI 3.14159265358979323846f
-#endif
 
 #include <main.h>
 #include <adc.h>
@@ -14,7 +11,15 @@
 #include <spi.h>
 #include <utils.h>
 
-// Global variables
+/* Private defines -----------------------------------------------------------*/
+#ifndef M_PI
+#define M_PI 3.14159265358979323846f
+#endif
+
+/* Private macros ------------------------------------------------------------*/
+/* Private typedef -----------------------------------------------------------*/
+/* Global constant data ------------------------------------------------------*/
+/* Global variables ----------------------------------------------------------*/
 float vbus_voltage = 12.0; //Arbitrary non-zero inital value to avoid division by zero if ADC reading is late
 
 Motor_t motors[] = {
@@ -38,14 +43,13 @@ Motor_t motors[] = {
 };
 const int num_motors = sizeof(motors)/sizeof(motors[0]);
 
-// Private variables
-
+/* Private constant data -----------------------------------------------------*/
+/* Private variables ---------------------------------------------------------*/
 //Local view of DRV registers
 //@TODO: Include these in motor object instead
 static DRV_SPI_8301_Vars_t gate_driver_regs[1/*num_motors*/];
 
-// Private function prototypes
-void safe_assert(int arg);
+/* Private function prototypes -----------------------------------------------*/
 static void DRV8301_setup();
 static void init_encoders();
 static void start_adc_pwm();
@@ -56,6 +60,7 @@ static void wait_for_current_meas(Motor_t* motor, float* phB_current, float* phC
 static float measure_phase_resistance(Motor_t* motor, float test_current, float max_voltage);
 static float measure_phase_inductance(Motor_t* motor, float voltage_low, float voltage_high);
 
+/* Function implementations --------------------------------------------------*/
 //Special function name for ADC callback.
 //Automatically registered if defined.
 void HAL_ADCEx_InjectedConvCpltCallback(ADC_HandleTypeDef* hadc) {
@@ -297,8 +302,8 @@ void pwm_trig_adc_cb(ADC_HandleTypeDef* hadc) {
     }
 }
 
-static bool check_timing() {
-#define log_size 32
+static bool check_timing(uint16_t* log) {
+    #define log_size 32
     static volatile uint16_t timings[log_size];
     static int idx = 0;
 
