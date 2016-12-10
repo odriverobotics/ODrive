@@ -31,9 +31,11 @@ float vbus_voltage = 12.0; //Arbitrary non-zero inital value to avoid division b
 
 Motor_t motors[] = {
     {   //M0
-        /* .motor_thread to be set by thread at thread start */
+        .motor_thread = 0,
+        .thread_ready = false,
         .timer_handle = &htim1,
         .current_meas = {0.0f, 0.0f},
+        .DC_calib = {0.0f, 0.0f},
         .gate_driver = {
             .spiHandle = &hspi3,
             //Note: this board has the EN_Gate pin shared!
@@ -48,9 +50,11 @@ Motor_t motors[] = {
         .maxcurrent = 75.0f //[A] //Note: consistent with 40v/v gain
     },
     {   //M1
-        /* .motor_thread to be set by thread at thread start */
+        .motor_thread = 0,
+        .thread_ready = false,
         .timer_handle = &htim8,
         .current_meas = {0.0f, 0.0f},
+        .DC_calib = {0.0f, 0.0f},
         .gate_driver = {
             .spiHandle = &hspi3,
             //Note: this board has the EN_Gate pin shared!
@@ -81,6 +85,7 @@ static volatile int timing_log_index[2/*num_motors*/] = {0, 0};
 static void DRV8301_setup(Motor_t* motor, DRV_SPI_8301_Vars_t* local_regs);
 static void init_encoders();
 static void start_adc_pwm();
+static void start_pwm(TIM_HandleTypeDef* htim);
 static float phase_current_from_adcval(uint32_t ADCValue, int motornum);
 static uint16_t check_timing(TIM_HandleTypeDef* htim, volatile uint16_t* log, volatile int* idx);
 static void set_timings(Motor_t* motor, float tA, float tB, float tC);
@@ -89,17 +94,12 @@ static float measure_phase_resistance(Motor_t* motor, float test_current, float 
 static float measure_phase_inductance(Motor_t* motor, float voltage_low, float voltage_high);
 
 /* Function implementations --------------------------------------------------*/
-//Special function name for ADC callback.
-//Automatically registered if defined.
-void HAL_ADCEx_InjectedConvCpltCallback(ADC_HandleTypeDef* hadc) {
-    // check_timing();
-    pwm_trig_adc_cb(hadc);
-}
 
+// Initalises the low level motor control and then starts the motor control threads
 void init_motor_control() {
     //Init gate drivers
     DRV8301_setup(&motors[0], &gate_driver_regs[0]);
-    DRV8301_setup(&motors[0], &gate_driver_regs[1]);
+    DRV8301_setup(&motors[1], &gate_driver_regs[1]);
 
     // Start PWM and enable adc interrupts/callbacks
     start_adc_pwm();
@@ -138,6 +138,26 @@ static void DRV8301_setup(Motor_t* motor, DRV_SPI_8301_Vars_t* local_regs) {
         local_regs->RcvCmd = true;
         DRV8301_readData(&motor->gate_driver, local_regs);
     }
+}
+
+static void start_adc_pwm(){
+    //Enable ADC and interrupts
+    __HAL_ADC_ENABLE(&hadc1);
+    __HAL_ADC_ENABLE(&hadc2);
+    __HAL_ADC_ENABLE(&hadc3);
+    //Warp field stabilize.
+    osDelay(2);
+    __HAL_ADC_ENABLE_IT(&hadc1, ADC_IT_JEOC);
+    __HAL_ADC_ENABLE_IT(&hadc2, ADC_IT_JEOC);
+    __HAL_ADC_ENABLE_IT(&hadc3, ADC_IT_JEOC);
+
+    //Ensure that debug halting of the core doesn't leave the motor PWM running
+    __HAL_DBGMCU_FREEZE_TIM1();
+    __HAL_DBGMCU_FREEZE_TIM8();
+
+    start_pwm(&htim1);
+    // start_pwm(&htim8);
+    // sync_timers(&htim1, &htim8, TIM_CLOCKSOURCE_ITR0, TIM_PERIOD_CLOCKS/2);
 }
 
 static void start_pwm(TIM_HandleTypeDef* htim){
@@ -208,26 +228,6 @@ static void sync_timers(TIM_HandleTypeDef* htim_a, TIM_HandleTypeDef* htim_b,
 static void init_encoders() {
 }
 
-static void start_adc_pwm(){
-    //Enable ADC and interrupts
-    __HAL_ADC_ENABLE(&hadc1);
-    __HAL_ADC_ENABLE(&hadc2);
-    __HAL_ADC_ENABLE(&hadc3);
-    //Warp field stabilize.
-    osDelay(2);
-    __HAL_ADC_ENABLE_IT(&hadc1, ADC_IT_JEOC);
-    __HAL_ADC_ENABLE_IT(&hadc2, ADC_IT_JEOC);
-    __HAL_ADC_ENABLE_IT(&hadc3, ADC_IT_JEOC);
-
-    //Ensure that debug halting of the core doesn't leave the motor PWM running
-    __HAL_DBGMCU_FREEZE_TIM1();
-    __HAL_DBGMCU_FREEZE_TIM8();
-
-    start_pwm(&htim1);
-    // start_pwm(&htim8);
-    // sync_timers(&htim1, &htim8, TIM_CLOCKSOURCE_ITR0, TIM_PERIOD_CLOCKS/2);
-}
-
 static float phase_current_from_adcval(uint32_t ADCValue, int motornum) {
     float rev_gain;
     //@TODO we can shave off some clock cycles by writing a static rev_gain in the motor struct
@@ -267,11 +267,6 @@ void vbus_sense_adc_cb(ADC_HandleTypeDef* hadc) {
 // This is the callback from the ADC that we expect after the PWM has triggered an ADC conversion.
 //@TODO: Document how the phasing is done
 void pwm_trig_adc_cb(ADC_HandleTypeDef* hadc) {
-    check_timing(motors[0].timer_handle, timing_logs[0], &timing_log_index[0]);
-
-    //@TODO get rid of statics when using more than one motor
-    static float phB_DC_calib = 0.0f;
-    static float phC_DC_calib = 0.0f;
     #define calib_tau 0.2f //@TOTO make more easily configurable
     static const float calib_filter_k = CURRENT_MEAS_PERIOD / calib_tau;
 
@@ -284,16 +279,17 @@ void pwm_trig_adc_cb(ADC_HandleTypeDef* hadc) {
     uint32_t trig_src = hadc->Instance->CR2 & ADC_CR2_JEXTSEL;
     if (trig_src == ADC_EXTERNALTRIGINJECCONV_T1_CC4) {
         //We are measuring M0 current here
-        //Set up next measurement to be M0 DC_CAL measurement
-        // @TODO add M1 to sequence
-        hadc->Instance->CR2 &= ~(ADC_CR2_JEXTSEL);
-        hadc->Instance->CR2 |=  ADC_EXTERNALTRIGINJECCONV_T1_TRGO;
-        HAL_GPIO_WritePin(M0_DC_CAL_GPIO_Port, M0_DC_CAL_Pin, GPIO_PIN_SET);
         Motor_t* motor = &motors[0];
+        //Next measurement on this motor will be M0 DC_CAL measurement
+        HAL_GPIO_WritePin(M0_DC_CAL_GPIO_Port, M0_DC_CAL_Pin, GPIO_PIN_SET);
+        //Next measurement on this ADC will be M1 current
+        hadc->Instance->CR2 &= ~(ADC_CR2_JEXTSEL);
+        // hadc->Instance->CR2 |=  ADC_EXTERNALTRIGINJECCONV_T8_CC4;
+        hadc->Instance->CR2 |=  ADC_EXTERNALTRIGINJECCONV_T1_TRGO; //temp test dccal
 
         // ADC2 and ADC3 record the phB and phC currents concurrently,
         // and their interrupts should arrive on the same clock cycle.
-        // The HAL issues the callbacks in order, so ADC2 will always be processed before ADC3.
+        // We dispatch the callbacks in order, so ADC2 will always be processed before ADC3.
         // Therefore we only store the value from ADC2 and signal the thread that the
         // measurement is ready when we recieve the ADC3 measurement
 
@@ -309,11 +305,13 @@ void pwm_trig_adc_cb(ADC_HandleTypeDef* hadc) {
         }
 
         // Trigger motor thread
-        osSignalSet(motor->motor_thread, M_SIGNAL_PH_CURRENT_MEAS);
-        check_timing(motor->timer_handle, timing_logs[0], &timing_log_index[0]);
+        if (motor->thread_ready) {
+            osSignalSet(motor->motor_thread, M_SIGNAL_PH_CURRENT_MEAS);
+        }
 
     } else if (trig_src == ADC_EXTERNALTRIGINJECCONV_T1_TRGO) {
         //We are measuring M0 DC_CAL here
+        Motor_t* motor = &motors[0];
         //Set up next measurement to be M0 current measurement
         // @TODO Add M1 to sequence
         hadc->Instance->CR2 &= ~(ADC_CR2_JEXTSEL);
@@ -321,9 +319,9 @@ void pwm_trig_adc_cb(ADC_HandleTypeDef* hadc) {
         HAL_GPIO_WritePin(M0_DC_CAL_GPIO_Port, M0_DC_CAL_Pin, GPIO_PIN_RESET);
 
         if (hadc == &hadc2) {
-            phB_DC_calib += (current - phB_DC_calib) * calib_filter_k;
+            motor->DC_calib.phB += (current - motor->DC_calib.phB) * calib_filter_k;
         } else if (hadc == &hadc3) {
-            phC_DC_calib += (current - phC_DC_calib) * calib_filter_k;
+            motor->DC_calib.phC += (current - motor->DC_calib.phC) * calib_filter_k;
         } else {
             //hadc is something else, not expected
             safe_assert(0);
@@ -351,7 +349,6 @@ static uint16_t check_timing(TIM_HandleTypeDef* htim, volatile uint16_t* log, vo
     return timing;
 }
 
-//@TODO: having this in a function may be a bit redundant, as it is so simple and only used in one place
 static void wait_for_current_meas(Motor_t* motor, float* phB_current, float* phC_current) {
     //Current measurements not occurring in a timely manner can be handled by the watchdog
     //@TODO Actually make watchdog
@@ -384,11 +381,11 @@ static float measure_phase_resistance(Motor_t* motor, float test_current, float 
         //Test voltage along phase A
         float tA, tB, tC;
         SVM(mod, 0.0f, &tA, &tB, &tC);
-        set_timings(&motors[0], tA, tB, tC);
+        set_timings(motor, tA, tB, tC);
     }
 
     //De-energize motor
-    set_timings(&motors[0], 0.5f, 0.5f, 0.5f);
+    set_timings(motor, 0.5f, 0.5f, 0.5f);
 
     float phase_resistance = test_voltage / test_current;
     return phase_resistance;
@@ -452,7 +449,7 @@ static void scan_motor(Motor_t* motor, float omega, float voltage_magnitude) {
             float tA, tB, tC;
             //Test voltage along phase A
             SVM(mod_alpha, mod_beta, &tA, &tB, &tC);
-            set_timings(&motors[0], tA, tB, tC);
+            set_timings(motor, tA, tB, tC);
 
             //Check that we are still up-counting
             safe_assert(check_timing(motor->timer_handle, timing_logs[0], &timing_log_index[0]) < TIM_PERIOD_CLOCKS);
@@ -467,15 +464,14 @@ static void scan_motor(Motor_t* motor, float omega, float voltage_magnitude) {
 void motor_thread(void const * argument) {
     Motor_t* motor = (Motor_t*)argument;
     motor->motor_thread = osThreadGetId();
+    motor->thread_ready = true;
 
-    init_motor_control();
-
-    float test_current = 5.0f;
-    float R = measure_phase_resistance(&motors[0], test_current, 1.5f);
-    scan_motor(&motors[0], 10.0f, test_current * R);
-    // float L = measure_phase_inductance(&motors[0], -1.0f, 1.0f);
+    float test_current = 2.0f;
+    float R = measure_phase_resistance(motor, test_current, 1.5f);
+    scan_motor(motor, 10.0f, test_current * R);
+    // float L = measure_phase_inductance(motor, -1.0f, 1.0f);
 
     //De-energize motor
-    set_timings(&motors[0], 0.5f, 0.5f, 0.5f);
+    set_timings(motor, 0.5f, 0.5f, 0.5f);
 }
 

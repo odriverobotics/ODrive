@@ -54,7 +54,9 @@
 osThreadId defaultTaskHandle;
 
 /* USER CODE BEGIN Variables */
-osThreadId motor0_TaskHandle;
+
+osThreadDef(task_motor_0, motor_thread, osPriorityHigh, 0, 512);
+osThreadDef(task_motor_1, motor_thread, osPriorityHigh, 0, 512);
 
 /* USER CODE END Variables */
 
@@ -94,8 +96,7 @@ void MX_FREERTOS_Init(void) {
   defaultTaskHandle = osThreadCreate(osThread(defaultTask), NULL);
 
   /* USER CODE BEGIN RTOS_THREADS */
-  osThreadDef(task_motor_0, motor_thread, osPriorityHigh, 0, 512);
-  motor0_TaskHandle = osThreadCreate(osThread(task_motor_0), &motors[0]);
+
   /* USER CODE END RTOS_THREADS */
 
   /* USER CODE BEGIN RTOS_QUEUES */
@@ -109,6 +110,12 @@ void StartDefaultTask(void const * argument)
 
   /* USER CODE BEGIN StartDefaultTask */
 
+  // Init motor control
+  init_motor_control();
+
+  // Start motor threads
+  osThreadCreate(osThread(task_motor_0), &motors[0]);
+  // osThreadCreate(osThread(task_motor_1), &motors[1]);
 
   //If we get to here, then the default task is done.
   vTaskDelete(defaultTaskHandle);

@@ -14,8 +14,10 @@ typedef struct {
 
 typedef struct Motor_s {
     osThreadId motor_thread;
+    bool thread_ready;
     TIM_HandleTypeDef* timer_handle;
     Iph_BC_t current_meas;
+    Iph_BC_t DC_calib;
     DRV8301_Obj gate_driver;
     float shunt_conductance;
     float maxcurrent;
