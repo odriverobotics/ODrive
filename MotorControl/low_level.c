@@ -39,6 +39,23 @@ Motor_t motors[] = {
         },
         .shunt_conductance = 1.0f/0.0005f, //[S]
         .maxcurrent = 75.0f //[A] //Note: consistent with 40v/v gain
+    },
+    {   //M1
+        /* .motor_thread to be set by thread at thread start */
+        .timer_handle = &htim8,
+        .current_meas = {0.0f, 0.0f},
+        .gate_driver = {
+            .spiHandle = &hspi3,
+            //Note: this board has the EN_Gate pin shared!
+            .EngpioHandle = EN_GATE_GPIO_Port,
+            .EngpioNumber = EN_GATE_Pin,
+            .nCSgpioHandle = M1_nCS_GPIO_Port,
+            .nCSgpioNumber = M1_nCS_Pin,
+            .RxTimeOut = false,
+            .enableTimeOut = false
+        },
+        .shunt_conductance = 1.0f/0.0005f, //[S]
+        .maxcurrent = 75.0f //[A] //Note: consistent with 40v/v gain
     }
 };
 const int num_motors = sizeof(motors)/sizeof(motors[0]);
@@ -47,14 +64,18 @@ const int num_motors = sizeof(motors)/sizeof(motors[0]);
 /* Private variables ---------------------------------------------------------*/
 //Local view of DRV registers
 //@TODO: Include these in motor object instead
-static DRV_SPI_8301_Vars_t gate_driver_regs[1/*num_motors*/];
+static DRV_SPI_8301_Vars_t gate_driver_regs[2/*num_motors*/];
+
+#define TIMING_LOG_SIZE 32
+static volatile uint16_t timing_logs[2/*num_motors*/][TIMING_LOG_SIZE];
+static volatile int timing_log_index[2/*num_motors*/] = {0, 0};
 
 /* Private function prototypes -----------------------------------------------*/
 static void DRV8301_setup();
 static void init_encoders();
 static void start_adc_pwm();
 static float phase_current_from_adcval(uint32_t ADCValue, int motornum);
-static bool check_timing();
+static uint16_t check_timing(TIM_HandleTypeDef* htim, volatile uint16_t* log, volatile int* idx);
 static void set_timings(Motor_t* motor, float tA, float tB, float tC);
 static void wait_for_current_meas(Motor_t* motor, float* phB_current, float* phC_current);
 static float measure_phase_resistance(Motor_t* motor, float test_current, float max_voltage);
@@ -110,69 +131,69 @@ static void DRV8301_setup() {
     }
 }
 
-static void start_pwm(TIM_HandleTypeDef htim){
+static void start_pwm(TIM_HandleTypeDef* htim){
     //Init PWM
-    int half_load = htim.Instance->ARR/2;
-    htim.Instance->CCR1 = half_load;
-    htim.Instance->CCR2 = half_load;
-    htim.Instance->CCR3 = half_load;
+    int half_load = TIM_PERIOD_CLOCKS/2;
+    htim->Instance->CCR1 = half_load;
+    htim->Instance->CCR2 = half_load;
+    htim->Instance->CCR3 = half_load;
 
     //This hardware obfustication layer really is getting on my nerves
-    HAL_TIM_PWM_Start(&htim, TIM_CHANNEL_1);
-    HAL_TIMEx_PWMN_Start(&htim, TIM_CHANNEL_1);
-    HAL_TIM_PWM_Start(&htim, TIM_CHANNEL_2);
-    HAL_TIMEx_PWMN_Start(&htim, TIM_CHANNEL_2);
-    HAL_TIM_PWM_Start(&htim, TIM_CHANNEL_3);
-    HAL_TIMEx_PWMN_Start(&htim, TIM_CHANNEL_3);
+    HAL_TIM_PWM_Start(htim, TIM_CHANNEL_1);
+    HAL_TIMEx_PWMN_Start(htim, TIM_CHANNEL_1);
+    HAL_TIM_PWM_Start(htim, TIM_CHANNEL_2);
+    HAL_TIMEx_PWMN_Start(htim, TIM_CHANNEL_2);
+    HAL_TIM_PWM_Start(htim, TIM_CHANNEL_3);
+    HAL_TIMEx_PWMN_Start(htim, TIM_CHANNEL_3);
 
-    htim.Instance->CCR4 = 1;
-    HAL_TIM_PWM_Start_IT(&htim, TIM_CHANNEL_4);
+    htim->Instance->CCR4 = 1;
+    HAL_TIM_PWM_Start_IT(htim, TIM_CHANNEL_4);
 }
 
-static void sync_timers(TIM_HandleTypeDef htim_a, TIM_HandleTypeDef htim_b,
+static void sync_timers(TIM_HandleTypeDef* htim_a, TIM_HandleTypeDef* htim_b,
 		uint16_t TIM_CLOCKSOURCE_ITRx, uint16_t count_offset) {
 
 	//Store intial timer configs
-    uint16_t MOE_store_a = htim_a.Instance->BDTR & (TIM_BDTR_MOE);
-    uint16_t MOE_store_b = htim_b.Instance->BDTR & (TIM_BDTR_MOE);
+    uint16_t MOE_store_a = htim_a->Instance->BDTR & (TIM_BDTR_MOE);
+    uint16_t MOE_store_b = htim_b->Instance->BDTR & (TIM_BDTR_MOE);
 
-	uint16_t CR2_store = htim_a.Instance->CR2;
-	uint16_t SMCR_store = htim_b.Instance->SMCR;
+	uint16_t CR2_store = htim_a->Instance->CR2;
+	uint16_t SMCR_store = htim_b->Instance->SMCR;
 
     //Turn off output
-    htim_a.Instance->BDTR &= ~(TIM_BDTR_MOE);
-    htim_b.Instance->BDTR &= ~(TIM_BDTR_MOE);
+    htim_a->Instance->BDTR &= ~(TIM_BDTR_MOE);
+    htim_b->Instance->BDTR &= ~(TIM_BDTR_MOE);
 
 	// Disable both timer counters
-	htim_a.Instance->CR1 &= ~TIM_CR1_CEN;
-	htim_b.Instance->CR1 &= ~TIM_CR1_CEN;
+	htim_a->Instance->CR1 &= ~TIM_CR1_CEN;
+	htim_b->Instance->CR1 &= ~TIM_CR1_CEN;
 
 	// Set first timer to send TRGO on counter enable
-	htim_a.Instance->CR2 &= ~TIM_CR2_MMS;
-	htim_a.Instance->CR2 |= TIM_TRGO_ENABLE;
+	htim_a->Instance->CR2 &= ~TIM_CR2_MMS;
+	htim_a->Instance->CR2 |= TIM_TRGO_ENABLE;
 
 	// Set Trigger Source of second timer to the TRGO of the first timer
-	htim_b.Instance->SMCR &= ~TIM_SMCR_TS;
-	htim_b.Instance->SMCR |= TIM_CLOCKSOURCE_ITRx;
+	htim_b->Instance->SMCR &= ~TIM_SMCR_TS;
+	htim_b->Instance->SMCR |= TIM_CLOCKSOURCE_ITRx;
 
 	// Set 2nd timer to start on trigger
-	htim_b.Instance->SMCR &= ~TIM_SMCR_SMS;
-	htim_b.Instance->SMCR |= TIM_SLAVEMODE_TRIGGER;
+	htim_b->Instance->SMCR &= ~TIM_SMCR_SMS;
+	htim_b->Instance->SMCR |= TIM_SLAVEMODE_TRIGGER;
 
 	// set counter offset
-	htim_a.Instance->CNT = 0;
-	htim_b.Instance->CNT = count_offset;
+	htim_a->Instance->CNT = 0;
+	htim_b->Instance->CNT = count_offset;
 
 	// Start Timer 1
-	htim_a.Instance->CR1 |= (TIM_CR1_CEN);
+	htim_a->Instance->CR1 |= (TIM_CR1_CEN);
 
 	// Restore timer configs
-	htim_a.Instance->CR2 = CR2_store;
-	htim_b.Instance->SMCR = SMCR_store;
+	htim_a->Instance->CR2 = CR2_store;
+	htim_b->Instance->SMCR = SMCR_store;
 
     //restore output
-    htim_a.Instance->BDTR |= MOE_store_a;
-    htim_b.Instance->BDTR |= MOE_store_b;
+    htim_a->Instance->BDTR |= MOE_store_a;
+    htim_b->Instance->BDTR |= MOE_store_b;
 }
 
 static void init_encoders() {
@@ -193,13 +214,15 @@ static void start_adc_pwm(){
     __HAL_DBGMCU_FREEZE_TIM1();
     __HAL_DBGMCU_FREEZE_TIM8();
 
-    start_pwm(htim1);
-    // start_pwm(htim8);
-    // sync_timers(htim1, htim8, TIM_CLOCKSOURCE_ITR0, htim1.Instance->ARR/2);
+    start_pwm(&htim1);
+    // start_pwm(&htim8);
+    // sync_timers(&htim1, &htim8, TIM_CLOCKSOURCE_ITR0, TIM_PERIOD_CLOCKS/2);
 }
 
 static float phase_current_from_adcval(uint32_t ADCValue, int motornum) {
     float rev_gain;
+    //@TODO we can shave off some clock cycles by writing a static rev_gain in the motor struct
+    //when we set the gains
     switch (gate_driver_regs[motornum].Ctrl_Reg_2.GAIN) {
         case DRV8301_ShuntAmpGain_10VpV:
             rev_gain = 1.0f/10.0f;
@@ -226,7 +249,7 @@ static float phase_current_from_adcval(uint32_t ADCValue, int motornum) {
 }
 
 void vbus_sense_adc_cb(ADC_HandleTypeDef* hadc) {
-    const float voltage_scale = 3.3 * 11 / (float)(1<<12);
+    static const float voltage_scale = 3.3 * 11.0f / (float)(1<<12);
     //Only one conversion in sequence, so only rank1
     uint32_t ADCValue = HAL_ADCEx_InjectedGetValue(hadc, ADC_INJECTED_RANK_1);
     vbus_voltage = ADCValue * voltage_scale;
@@ -235,7 +258,7 @@ void vbus_sense_adc_cb(ADC_HandleTypeDef* hadc) {
 // This is the callback from the ADC that we expect after the PWM has triggered an ADC conversion.
 //@TODO: Document how the phasing is done
 void pwm_trig_adc_cb(ADC_HandleTypeDef* hadc) {
-    check_timing();
+    check_timing(motors[0].timer_handle, timing_logs[0], &timing_log_index[0]);
 
     //@TODO get rid of statics when using more than one motor
     static float phB_DC_calib = 0.0f;
@@ -278,7 +301,7 @@ void pwm_trig_adc_cb(ADC_HandleTypeDef* hadc) {
 
         // Trigger motor thread
         osSignalSet(motor->motor_thread, M_SIGNAL_PH_CURRENT_MEAS);
-        check_timing();
+        check_timing(motor->timer_handle, timing_logs[0], &timing_log_index[0]);
 
     } else if (trig_src == ADC_EXTERNALTRIGINJECCONV_T1_TRGO) {
         //We are measuring M0 DC_CAL here
@@ -302,24 +325,21 @@ void pwm_trig_adc_cb(ADC_HandleTypeDef* hadc) {
     }
 }
 
-static bool check_timing(uint16_t* log) {
-    #define log_size 32
-    static volatile uint16_t timings[log_size];
-    static int idx = 0;
-
-    uint16_t timing = htim1.Instance->CNT;
-    bool down = htim1.Instance->CR1 & TIM_CR1_DIR;
+static uint16_t check_timing(TIM_HandleTypeDef* htim, volatile uint16_t* log, volatile int* idx) {
+    uint16_t timing = htim->Instance->CNT;
+    bool down = htim->Instance->CR1 & TIM_CR1_DIR;
     if (down) {
-        uint16_t arr = htim1.Instance->ARR;
-        uint16_t delta = arr - timing;
-        timing = arr + delta;
+        uint16_t delta = TIM_PERIOD_CLOCKS - timing;
+        timing = TIM_PERIOD_CLOCKS + delta;
     }
 
-    if(++idx == log_size)
-        idx = 0;
+    if (log != NULL && idx != NULL) {
+        if(++(*idx) == TIMING_LOG_SIZE)
+            *idx = 0;
+        log[*idx] = timing;
+    }
 
-    timings[idx] = timing;
-    return down;
+    return timing;
 }
 
 //@TODO: having this in a function may be a bit redundant, as it is so simple and only used in one place
@@ -328,7 +348,7 @@ static void wait_for_current_meas(Motor_t* motor, float* phB_current, float* phC
     //@TODO Actually make watchdog
     //Hence we can use osWaitForever
     osEvent evt = osSignalWait(M_SIGNAL_PH_CURRENT_MEAS, osWaitForever);
-    check_timing();
+    check_timing(motor->timer_handle, timing_logs[0], &timing_log_index[0]);
 
     //Since we wait forever, we do not expect timeouts here.
     safe_assert(evt.status == osEventSignal);
@@ -382,7 +402,7 @@ static float measure_phase_inductance(Motor_t* motor, float voltage_low, float v
             SVM(mod, 0.0f, &tA, &tB, &tC);
 
             //Check that we are still up-counting
-            safe_assert(!check_timing());
+            safe_assert(check_timing(motor->timer_handle, timing_logs[0], &timing_log_index[0]) < TIM_PERIOD_CLOCKS);
 
             // Wait until down-counting
             // @TODO: Do not block like this, use interrupt on timer update
@@ -400,15 +420,12 @@ static float measure_phase_inductance(Motor_t* motor, float voltage_low, float v
     return L;
 }
 
-//Set the rising edge timings (0.0 - 1.0)
+//Set the rising edge timings [0.0 - 1.0]
 static void set_timings(Motor_t* motor, float tA, float tB, float tC) {
     TIM_TypeDef* tim = motor->timer_handle->Instance;
-    uint32_t full_load = tim->ARR;
-
-    //Test voltage along phase A
-    tim->CCR1 = tA * full_load;
-    tim->CCR2 = tB * full_load;
-    tim->CCR3 = tC * full_load;
+    tim->CCR1 = tA * TIM_PERIOD_CLOCKS;
+    tim->CCR2 = tB * TIM_PERIOD_CLOCKS;
+    tim->CCR3 = tC * TIM_PERIOD_CLOCKS;
 }
 
 static void scan_motor(Motor_t* motor, float omega, float voltage_magnitude) {
@@ -427,7 +444,8 @@ static void scan_motor(Motor_t* motor, float omega, float voltage_magnitude) {
             SVM(mod_alpha, mod_beta, &tA, &tB, &tC);
             set_timings(&motors[0], tA, tB, tC);
 
-            safe_assert(!check_timing());
+            //Check that we are still up-counting
+            safe_assert(check_timing(motor->timer_handle, timing_logs[0], &timing_log_index[0]) < TIM_PERIOD_CLOCKS);
 
             if (abs(htim3.Instance->CNT) > 1000 || abs(htim4.Instance->CNT) > 1000){
                 int test = 1;
