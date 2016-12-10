@@ -106,7 +106,7 @@ void init_motor_control() {
 
     //Wait for current sense calibration to converge
     //@TODO make timing a function of calibration filter tau
-    osDelay(500);
+    osDelay(1500);
 }
 
 //@TODO make available from anywhere
@@ -295,10 +295,10 @@ void pwm_trig_adc_cb(ADC_HandleTypeDef* hadc) {
 
         //return or continue
         if (hadc == &hadc2) {
-            motor->current_meas.phB = current;
+            motor->current_meas.phB = current - motor->DC_calib.phB;
             return;
         } else if (hadc == &hadc3) {
-            motor->current_meas.phC = current;
+            motor->current_meas.phC = current - motor->DC_calib.phC;
         } else {
             //hadc is something else, not expected
             safe_assert(0);
@@ -413,7 +413,6 @@ static float measure_phase_inductance(Motor_t* motor, float voltage_low, float v
             // Wait until down-counting
             // @TODO: Do not block like this, use interrupt on timer update
             // this will NOT work with 2 motors!
-            for(;;);// Make sure we dont use
             while(!(htim1.Instance->CR1 & TIM_CR1_DIR));
             set_timings(motor, tA, tB, tC);
         }
