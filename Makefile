@@ -113,8 +113,8 @@ CFLAGS += -std=c99 -MD -MP -MF .dep/$(@F).d
 # link script
 LDSCRIPT = STM32F405RGTx_FLASH.ld
 # libraries
-LIBS = -lc -lm -lnosys
-LIBDIR =
+LIBS = -lc -lm -lnosys -larm_cortexM4lf_math
+LIBDIR = -LDrivers/CMSIS/Lib
 LDFLAGS = -mthumb -mcpu=cortex-m4 -mfpu=fpv4-sp-d16 -mfloat-abi=hard -specs=nano.specs $(OPT) -T$(LDSCRIPT) $(LIBDIR) $(LIBS) -Wl,-Map=$(BUILD_DIR)/$(TARGET).map,--cref -Wl,--gc-sections
 
 # default action: build all

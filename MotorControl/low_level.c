@@ -441,8 +441,8 @@ static void scan_motor(Motor_t* motor, float omega, float voltage_magnitude) {
             float IphB, IphC;
             wait_for_current_meas(motor, &IphB, &IphC);
 
-            float c = cosf(ph);
-            float s = sinf(ph);
+            float c = arm_cos_f32(ph);
+            float s = arm_sin_f32(ph);
             float mod_alpha = (c * voltage_magnitude) / ((2.0f / 3.0f) * vbus_voltage);
             float mod_beta = (s * voltage_magnitude) / ((2.0f / 3.0f) * vbus_voltage);
 
