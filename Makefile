@@ -35,7 +35,6 @@ C_SOURCES = \
   Middlewares/Third_Party/FreeRTOS/Source/portable/GCC/ARM_CM4F/port.c \
   Middlewares/Third_Party/FreeRTOS/Source/portable/MemMang/heap_4.c \
   Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS/cmsis_os.c \
-  Test/test.c \
   Src/stm32f4xx_it.c \
   Src/tim.c \
   Src/gpio.c \
@@ -92,7 +91,6 @@ AS_INCLUDES =
 C_INCLUDES = -IMiddlewares/Third_Party/FreeRTOS/Source/portable/GCC/ARM_CM4F
 C_INCLUDES += -IMiddlewares/Third_Party/FreeRTOS/Source/include
 C_INCLUDES += -IMiddlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS
-C_INCLUDES += -ITest
 C_INCLUDES += -IDrivers/DRV8301
 C_INCLUDES += -IDrivers/STM32F4xx_HAL_Driver/Inc
 C_INCLUDES += -IDrivers/STM32F4xx_HAL_Driver/Inc/Legacy

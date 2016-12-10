@@ -47,7 +47,6 @@
 #include "cmsis_os.h"
 
 /* USER CODE BEGIN Includes */     
-#include "test.h"
 #include "low_level.h"
 /* USER CODE END Includes */
 
@@ -111,7 +110,7 @@ void StartDefaultTask(void const * argument)
   /* USER CODE BEGIN StartDefaultTask */
 
   //Run test routines
-  test_main();
+  // test_main();
 
   //If we get to here, then the default task is done.
   vTaskDelete(defaultTaskHandle);
