@@ -27,7 +27,7 @@
 /* Private typedef -----------------------------------------------------------*/
 /* Global constant data ------------------------------------------------------*/
 /* Global variables ----------------------------------------------------------*/
-float vbus_voltage = 12.0; //Arbitrary non-zero inital value to avoid division by zero if ADC reading is late
+float vbus_voltage = 12.0f; //Arbitrary non-zero inital value to avoid division by zero if ADC reading is late
 
 Motor_t motors[] = {
     {   //M0
@@ -353,8 +353,12 @@ void pwm_trig_adc_cb(ADC_HandleTypeDef* hadc) {
         safe_assert(0);
     }
 
-    //Only one conversion in sequence, so only rank1
-    uint32_t ADCValue = HAL_ADCEx_InjectedGetValue(hadc, ADC_INJECTED_RANK_1);
+    uint32_t ADCValue;
+    if (reg_edge != ADC_EXTERNALTRIGCONVEDGE_NONE) {
+        ADCValue = HAL_ADC_GetValue(hadc);
+    } else {
+        ADCValue = HAL_ADCEx_InjectedGetValue(hadc, ADC_INJECTED_RANK_1);
+    }
     //@TODO remove hardcoded motornum
     float current = phase_current_from_adcval(ADCValue, 0);
 
@@ -419,9 +423,9 @@ static void wait_for_current_meas(Motor_t* motor, float* phB_current, float* phC
 
 static float measure_phase_resistance(Motor_t* motor, float test_current, float max_voltage) {
     static const float kI = 10.0f; //[(V/s)/A]
-    static float test_voltage = 0.0f;
     static const int num_test_cycles = 3.0f / CURRENT_MEAS_PERIOD;
 
+    float test_voltage = 0.0f;
     for (int i = 0; i < num_test_cycles; ++i) {
         float IphB, IphC;
         wait_for_current_meas(motor, &IphB, &IphC);
@@ -461,7 +465,7 @@ static float measure_phase_inductance(Motor_t* motor, float voltage_low, float v
             SVM(mod, 0.0f, &tA, &tB, &tC);
 
             //Check that we are still up-counting
-            safe_assert(check_timing(motor->timer_handle, timing_logs[0], &timing_log_index[0]) < TIM_PERIOD_CLOCKS);
+            // safe_assert(check_timing(motor->timer_handle, timing_logs[0], &timing_log_index[0]) < TIM_PERIOD_CLOCKS);
 
             // Wait until down-counting
             // @TODO: Do not block like this, use interrupt on timer update
@@ -504,7 +508,7 @@ static void scan_motor(Motor_t* motor, float omega, float voltage_magnitude) {
             set_timings(motor, tA, tB, tC);
 
             //Check that we are still up-counting
-            safe_assert(check_timing(motor->timer_handle, timing_logs[0], &timing_log_index[0]) < TIM_PERIOD_CLOCKS);
+            // safe_assert(check_timing(motor->timer_handle, timing_logs[0], &timing_log_index[0]) < TIM_PERIOD_CLOCKS);
 
             if (abs(htim3.Instance->CNT) > 1000 || abs(htim4.Instance->CNT) > 1000){
                 int test = 1;
@@ -519,7 +523,7 @@ void motor_thread(void const * argument) {
     motor->thread_ready = true;
 
     float test_current = 4.0f;
-    float R = measure_phase_resistance(motor, test_current, 1.5f);
+    float R = measure_phase_resistance(motor, test_current, 1.0f);
     scan_motor(motor, 10.0f, test_current * R);
     // float L = measure_phase_inductance(motor, -1.0f, 1.0f);
 

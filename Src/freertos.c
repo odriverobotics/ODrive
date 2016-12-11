@@ -114,8 +114,8 @@ void StartDefaultTask(void const * argument)
   init_motor_control();
 
   // Start motor threads
-  osThreadCreate(osThread(task_motor_0), &motors[0]);
-  // osThreadCreate(osThread(task_motor_1), &motors[1]);
+  // osThreadCreate(osThread(task_motor_0), &motors[0]);
+  osThreadCreate(osThread(task_motor_1), &motors[1]);
 
   //If we get to here, then the default task is done.
   vTaskDelete(defaultTaskHandle);
