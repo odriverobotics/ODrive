@@ -55,7 +55,7 @@ osThreadId defaultTaskHandle;
 
 /* USER CODE BEGIN Variables */
 
-osThreadDef(task_motor_0, motor_thread, osPriorityHigh, 0, 512);
+osThreadDef(task_motor_0, motor_thread, osPriorityHigh+1, 0, 512);
 osThreadDef(task_motor_1, motor_thread, osPriorityHigh, 0, 512);
 
 /* USER CODE END Variables */

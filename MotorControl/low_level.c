@@ -77,6 +77,8 @@ const int num_motors = sizeof(motors)/sizeof(motors[0]);
 //@TODO: Include these in motor object instead
 static DRV_SPI_8301_Vars_t gate_driver_regs[2/*num_motors*/];
 
+//Log to store the timing of calls to check_timing
+//This is used in various places, so be sure to look for all the places it is written
 #define TIMING_LOG_SIZE 32
 static volatile uint16_t timing_logs[2/*num_motors*/][TIMING_LOG_SIZE];
 static volatile int timing_log_index[2/*num_motors*/] = {0, 0};
@@ -193,55 +195,42 @@ static void sync_timers(TIM_HandleTypeDef* htim_a, TIM_HandleTypeDef* htim_b,
     //Store intial timer configs
     uint16_t MOE_store_a = htim_a->Instance->BDTR & (TIM_BDTR_MOE);
     uint16_t MOE_store_b = htim_b->Instance->BDTR & (TIM_BDTR_MOE);
-
     uint16_t CR2_store = htim_a->Instance->CR2;
     uint16_t SMCR_store = htim_b->Instance->SMCR;
-
     //Turn off output
     htim_a->Instance->BDTR &= ~(TIM_BDTR_MOE);
     htim_b->Instance->BDTR &= ~(TIM_BDTR_MOE);
-
     // Disable both timer counters
     htim_a->Instance->CR1 &= ~TIM_CR1_CEN;
     htim_b->Instance->CR1 &= ~TIM_CR1_CEN;
-
     // Set first timer to send TRGO on counter enable
     htim_a->Instance->CR2 &= ~TIM_CR2_MMS;
     htim_a->Instance->CR2 |= TIM_TRGO_ENABLE;
-
     // Set Trigger Source of second timer to the TRGO of the first timer
     htim_b->Instance->SMCR &= ~TIM_SMCR_TS;
     htim_b->Instance->SMCR |= TIM_CLOCKSOURCE_ITRx;
-
     // Set 2nd timer to start on trigger
     htim_b->Instance->SMCR &= ~TIM_SMCR_SMS;
     htim_b->Instance->SMCR |= TIM_SLAVEMODE_TRIGGER;
-
     // Dir bit is read only in center aligned mode, so we clear the mode for now
     uint16_t CMS_store_a = htim_a->Instance->CR1 & TIM_CR1_CMS;
     uint16_t CMS_store_b = htim_b->Instance->CR1 & TIM_CR1_CMS;
     htim_a->Instance->CR1 &= ~TIM_CR1_CMS;
     htim_b->Instance->CR1 &= ~TIM_CR1_CMS;
-
     // Set both timers to up-counting state
     htim_a->Instance->CR1 &= ~TIM_CR1_DIR;
     htim_b->Instance->CR1 &= ~TIM_CR1_DIR;
-
     // Restore center aligned mode
     htim_a->Instance->CR1 |= CMS_store_a;
     htim_b->Instance->CR1 |= CMS_store_b;
-
     // set counter offset
     htim_a->Instance->CNT = count_offset;
     htim_b->Instance->CNT = 0;
-
     // Start Timer a
     htim_a->Instance->CR1 |= (TIM_CR1_CEN);
-
     // Restore timer configs
     htim_a->Instance->CR2 = CR2_store;
     htim_b->Instance->SMCR = SMCR_store;
-
     //restore output
     htim_a->Instance->BDTR |= MOE_store_a;
     htim_b->Instance->BDTR |= MOE_store_b;
@@ -292,6 +281,9 @@ void pwm_trig_adc_cb(ADC_HandleTypeDef* hadc) {
     #define calib_tau 0.2f //@TOTO make more easily configurable
     static const float calib_filter_k = CURRENT_MEAS_PERIOD / calib_tau;
 
+    //Ensure ADCs are expected ones to simplify the logic below
+    safe_assert(hadc == &hadc2 || hadc == &hadc3);
+
     bool current_meas_not_DC_CAL;
     Motor_t* motor;
 
@@ -310,6 +302,8 @@ void pwm_trig_adc_cb(ADC_HandleTypeDef* hadc) {
         //Next measurement on this ADC will be M0 current
         hadc->Instance->CR2 &= ~(ADC_CR2_JEXTEN | ADC_CR2_EXTEN | ADC_CR2_JEXTSEL);
         hadc->Instance->CR2 |= (ADC_EXTERNALTRIGINJECCONVEDGE_RISING | ADC_EXTERNALTRIGINJECCONV_T1_CC4);
+        hadc->Instance->JSQR &= ~(ADC_JSQR_JSQ1);
+        hadc->Instance->JSQR |= (hadc == &hadc2) ? ADC_CHANNEL_10 : ADC_CHANNEL_11;
         //Check the timing of the measurement
         check_timing(motor->timer_handle, timing_logs[1], &timing_log_index[1]);
 
@@ -322,6 +316,8 @@ void pwm_trig_adc_cb(ADC_HandleTypeDef* hadc) {
         //Next measurement on this ADC will be M1 current
         hadc->Instance->CR2 &= ~(ADC_CR2_JEXTEN | ADC_CR2_EXTEN | ADC_CR2_JEXTSEL);
         hadc->Instance->CR2 |= (ADC_EXTERNALTRIGINJECCONVEDGE_RISING | ADC_EXTERNALTRIGINJECCONV_T8_CC4);
+        hadc->Instance->JSQR &= ~(ADC_JSQR_JSQ1);
+        hadc->Instance->JSQR |= (hadc == &hadc2) ? ADC_CHANNEL_13 : ADC_CHANNEL_12;
         //Check the timing of the measurement
         check_timing(motor->timer_handle, timing_logs[0], &timing_log_index[0]);
 
@@ -334,6 +330,8 @@ void pwm_trig_adc_cb(ADC_HandleTypeDef* hadc) {
         //Next measurement on this ADC will be M0 DC_CAL
         hadc->Instance->CR2 &= ~(ADC_CR2_JEXTEN | ADC_CR2_EXTEN | ADC_CR2_JEXTSEL);
         hadc->Instance->CR2 |= (ADC_EXTERNALTRIGINJECCONVEDGE_RISING | ADC_EXTERNALTRIGINJECCONV_T1_TRGO);
+        hadc->Instance->JSQR &= ~(ADC_JSQR_JSQ1);
+        hadc->Instance->JSQR |= (hadc == &hadc2) ? ADC_CHANNEL_10 : ADC_CHANNEL_11;
         //Check the timing of the measurement
         check_timing(motor->timer_handle, timing_logs[1], &timing_log_index[1]);
 
@@ -346,6 +344,8 @@ void pwm_trig_adc_cb(ADC_HandleTypeDef* hadc) {
         //Next measurement on this ADC will be M1 DC_CAL
         hadc->Instance->CR2 &= ~(ADC_CR2_JEXTEN | ADC_CR2_EXTEN | ADC_CR2_JEXTSEL);
         hadc->Instance->CR2 |= ADC_EXTERNALTRIGCONVEDGE_RISING;
+        hadc->Instance->JSQR &= ~(ADC_JSQR_JSQ1);
+        hadc->Instance->JSQR |= (hadc == &hadc2) ? ADC_CHANNEL_13 : ADC_CHANNEL_12;
         //Check the timing of the measurement
         check_timing(motor->timer_handle, timing_logs[0], &timing_log_index[0]);
 
@@ -369,11 +369,8 @@ void pwm_trig_adc_cb(ADC_HandleTypeDef* hadc) {
         if (hadc == &hadc2) {
             motor->current_meas.phB = current - motor->DC_calib.phB;
             return;
-        } else if (hadc == &hadc3) {
-            motor->current_meas.phC = current - motor->DC_calib.phC;
         } else {
-            //hadc is something else, not expected
-            safe_assert(0);
+            motor->current_meas.phC = current - motor->DC_calib.phC;
         }
         // Trigger motor thread
         if (motor->thread_ready)
@@ -383,11 +380,8 @@ void pwm_trig_adc_cb(ADC_HandleTypeDef* hadc) {
         // DC_CAL measurement
         if (hadc == &hadc2) {
             motor->DC_calib.phB += (current - motor->DC_calib.phB) * calib_filter_k;
-        } else if (hadc == &hadc3) {
-            motor->DC_calib.phC += (current - motor->DC_calib.phC) * calib_filter_k;
         } else {
-            //hadc is something else, not expected
-            safe_assert(0);
+            motor->DC_calib.phC += (current - motor->DC_calib.phC) * calib_filter_k;
         }
     }
 }
