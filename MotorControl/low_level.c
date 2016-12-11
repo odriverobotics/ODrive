@@ -381,7 +381,6 @@ static void wait_for_current_meas(Motor_t* motor, float* phB_current, float* phC
     //@TODO Actually make watchdog
     //Hence we can use osWaitForever
     osEvent evt = osSignalWait(M_SIGNAL_PH_CURRENT_MEAS, osWaitForever);
-    // check_timing(motor->timer_handle, timing_logs[0], &timing_log_index[0]);
 
     //Since we wait forever, we do not expect timeouts here.
     safe_assert(evt.status == osEventSignal);
@@ -435,7 +434,7 @@ static float measure_phase_inductance(Motor_t* motor, float voltage_low, float v
             SVM(mod, 0.0f, &tA, &tB, &tC);
 
             //Check that we are still up-counting
-            // safe_assert(check_timing(motor->timer_handle, timing_logs[0], &timing_log_index[0]) < TIM_PERIOD_CLOCKS);
+            safe_assert(check_timing(motor->timer_handle, timing_logs[0], &timing_log_index[0]) < TIM_PERIOD_CLOCKS);
 
             // Wait until down-counting
             // @TODO: Do not block like this, use interrupt on timer update
@@ -492,7 +491,7 @@ void motor_thread(void const * argument) {
     motor->motor_thread = osThreadGetId();
     motor->thread_ready = true;
 
-    float test_current = 2.0f;
+    float test_current = 4.0f;
     float R = measure_phase_resistance(motor, test_current, 1.5f);
     scan_motor(motor, 10.0f, test_current * R);
     // float L = measure_phase_inductance(motor, -1.0f, 1.0f);
