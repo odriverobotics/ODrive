@@ -292,39 +292,77 @@ void pwm_trig_adc_cb(ADC_HandleTypeDef* hadc) {
     #define calib_tau 0.2f //@TOTO make more easily configurable
     static const float calib_filter_k = CURRENT_MEAS_PERIOD / calib_tau;
 
-    //Only one conversion in sequence, so only rank1
-    uint32_t ADCValue = HAL_ADCEx_InjectedGetValue(hadc, ADC_INJECTED_RANK_1);
-    //@TODO remove hardcoded motornum
-    float current = phase_current_from_adcval(ADCValue, 0);
+    bool current_meas_not_DC_CAL;
+    Motor_t* motor;
 
     // Check if this trigger was the CC4 channel, used for actual current measurement at SVM vector 0
     // or the update trigger, which is used for DC_CAL measurement at SVM vector 7
+    // M1 DC_CAL is a special case since due to hardware limitations, it uses the "regular" conversions
+    // rather than the injected ones.
     uint32_t inj_src = hadc->Instance->CR2 & ADC_CR2_JEXTSEL;
     uint32_t reg_edge = hadc->Instance->CR2 & ADC_CR2_EXTEN;
     if (reg_edge != ADC_EXTERNALTRIGCONVEDGE_NONE) {
         //We are measuring M1 DC_CAL here
-        Motor_t* motor = &motors[0]; //TODO WRONG
-        check_timing(motor->timer_handle, timing_logs[1], &timing_log_index[1]);
+        current_meas_not_DC_CAL = false;
+        motor = &motors[1];
         //Next measurement on this motor will be M1 current measurement
         HAL_GPIO_WritePin(M1_DC_CAL_GPIO_Port, M1_DC_CAL_Pin, GPIO_PIN_RESET);
         //Next measurement on this ADC will be M0 current
         hadc->Instance->CR2 &= ~(ADC_CR2_JEXTEN | ADC_CR2_EXTEN | ADC_CR2_JEXTSEL);
         hadc->Instance->CR2 |= (ADC_EXTERNALTRIGINJECCONVEDGE_RISING | ADC_EXTERNALTRIGINJECCONV_T1_CC4);
+        //Check the timing of the measurement
+        check_timing(motor->timer_handle, timing_logs[1], &timing_log_index[1]);
 
     } else if (inj_src == ADC_EXTERNALTRIGINJECCONV_T1_CC4) {
         //We are measuring M0 current here
-        Motor_t* motor = &motors[0];
-        check_timing(motor->timer_handle, timing_logs[0], &timing_log_index[0]);
+        current_meas_not_DC_CAL = true;
+        motor = &motors[0];
         //Next measurement on this motor will be M0 DC_CAL measurement
         HAL_GPIO_WritePin(M0_DC_CAL_GPIO_Port, M0_DC_CAL_Pin, GPIO_PIN_SET);
         //Next measurement on this ADC will be M1 current
         hadc->Instance->CR2 &= ~(ADC_CR2_JEXTEN | ADC_CR2_EXTEN | ADC_CR2_JEXTSEL);
         hadc->Instance->CR2 |= (ADC_EXTERNALTRIGINJECCONVEDGE_RISING | ADC_EXTERNALTRIGINJECCONV_T8_CC4);
+        //Check the timing of the measurement
+        check_timing(motor->timer_handle, timing_logs[0], &timing_log_index[0]);
 
+    } else if (inj_src == ADC_EXTERNALTRIGINJECCONV_T8_CC4) {
+        //We are measuring M1 current here
+        current_meas_not_DC_CAL = true;
+        motor = &motors[1];
+        //Next measurement on this motor will be M1 DC_CAL measurement
+        HAL_GPIO_WritePin(M1_DC_CAL_GPIO_Port, M1_DC_CAL_Pin, GPIO_PIN_SET);
+        //Next measurement on this ADC will be M0 DC_CAL
+        hadc->Instance->CR2 &= ~(ADC_CR2_JEXTEN | ADC_CR2_EXTEN | ADC_CR2_JEXTSEL);
+        hadc->Instance->CR2 |= (ADC_EXTERNALTRIGINJECCONVEDGE_RISING | ADC_EXTERNALTRIGINJECCONV_T1_TRGO);
+        //Check the timing of the measurement
+        check_timing(motor->timer_handle, timing_logs[1], &timing_log_index[1]);
+
+    } else if (inj_src == ADC_EXTERNALTRIGINJECCONV_T1_TRGO) {
+        //We are measuring M0 DC_CAL here
+        current_meas_not_DC_CAL = false;
+        motor = &motors[0];
+        //Next measurement on this motor will be M0 current measurement
+        HAL_GPIO_WritePin(M0_DC_CAL_GPIO_Port, M0_DC_CAL_Pin, GPIO_PIN_RESET);
+        //Next measurement on this ADC will be M1 DC_CAL
+        hadc->Instance->CR2 &= ~(ADC_CR2_JEXTEN | ADC_CR2_EXTEN | ADC_CR2_JEXTSEL);
+        hadc->Instance->CR2 |= ADC_EXTERNALTRIGCONVEDGE_RISING;
+        //Check the timing of the measurement
+        check_timing(motor->timer_handle, timing_logs[0], &timing_log_index[0]);
+
+    } else {
+        safe_assert(0);
+    }
+
+    //Only one conversion in sequence, so only rank1
+    uint32_t ADCValue = HAL_ADCEx_InjectedGetValue(hadc, ADC_INJECTED_RANK_1);
+    //@TODO remove hardcoded motornum
+    float current = phase_current_from_adcval(ADCValue, 0);
+
+    if (current_meas_not_DC_CAL) {
         // ADC2 and ADC3 record the phB and phC currents concurrently,
         // and their interrupts should arrive on the same clock cycle.
         // We dispatch the callbacks in order, so ADC2 will always be processed before ADC3.
-        // Therefore we only store the value from ADC2 and signal the thread that the
+        // Therefore we store the value from ADC2 and signal the thread that the
         // measurement is ready when we recieve the ADC3 measurement
 
         //return or continue
@@ -337,32 +375,12 @@ void pwm_trig_adc_cb(ADC_HandleTypeDef* hadc) {
             //hadc is something else, not expected
             safe_assert(0);
         }
-
         // Trigger motor thread
-        if (motor->thread_ready) {
+        if (motor->thread_ready)
             osSignalSet(motor->motor_thread, M_SIGNAL_PH_CURRENT_MEAS);
-        }
 
-    } else if (inj_src == ADC_EXTERNALTRIGINJECCONV_T8_CC4) {
-        //We are measuring M1 current here
-        Motor_t* motor = &motors[0]; //TODO WRONG
-        check_timing(motor->timer_handle, timing_logs[1], &timing_log_index[1]);
-        //Next measurement on this motor will be M1 DC_CAL measurement
-        HAL_GPIO_WritePin(M1_DC_CAL_GPIO_Port, M1_DC_CAL_Pin, GPIO_PIN_SET);
-        //Next measurement on this ADC will be M0 DC_CAL
-        hadc->Instance->CR2 &= ~(ADC_CR2_JEXTEN | ADC_CR2_EXTEN | ADC_CR2_JEXTSEL);
-        hadc->Instance->CR2 |= (ADC_EXTERNALTRIGINJECCONVEDGE_RISING | ADC_EXTERNALTRIGINJECCONV_T1_TRGO);
-
-    } else if (inj_src == ADC_EXTERNALTRIGINJECCONV_T1_TRGO) {
-        //We are measuring M0 DC_CAL here
-        Motor_t* motor = &motors[0];
-        check_timing(motor->timer_handle, timing_logs[0], &timing_log_index[0]);
-        //Next measurement on this motor will be M0 current measurement
-        HAL_GPIO_WritePin(M0_DC_CAL_GPIO_Port, M0_DC_CAL_Pin, GPIO_PIN_RESET);
-        //Next measurement on this ADC will be M1 DC_CAL
-        hadc->Instance->CR2 &= ~(ADC_CR2_JEXTEN | ADC_CR2_EXTEN | ADC_CR2_JEXTSEL);
-        hadc->Instance->CR2 |= ADC_EXTERNALTRIGCONVEDGE_RISING;
-
+    } else {
+        // DC_CAL measurement
         if (hadc == &hadc2) {
             motor->DC_calib.phB += (current - motor->DC_calib.phB) * calib_filter_k;
         } else if (hadc == &hadc3) {
@@ -371,9 +389,6 @@ void pwm_trig_adc_cb(ADC_HandleTypeDef* hadc) {
             //hadc is something else, not expected
             safe_assert(0);
         }
-
-    } else {
-        safe_assert(0);
     }
 }
 
