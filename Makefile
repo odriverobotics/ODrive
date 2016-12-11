@@ -14,6 +14,7 @@ TARGET = ODriveFirmware
 DEBUG = 1
 # optimization
 # OPT = -O3 -ffast-math -flto
+# OPT = -O3 -ffast-math
 OPT = -O0 -ffast-math
 
 #######################################

@@ -528,8 +528,11 @@ void motor_thread(void const * argument) {
 
     float test_current = 4.0f;
     float R = measure_phase_resistance(motor, test_current, 1.0f);
-    // scan_motor(motor, 10.0f, test_current * R);
-    scan_motor(motor, 10.0f, 0.2f);
+    if (motor == &motors[0]) {
+        scan_motor(motor, 50.0f, test_current * R);
+    } else {
+        scan_motor(motor, 10.0f, test_current * R);
+    }
     // float L = measure_phase_inductance(motor, -1.0f, 1.0f);
 
     //De-energize motor
