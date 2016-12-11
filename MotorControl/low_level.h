@@ -16,6 +16,7 @@ typedef struct Motor_s {
     osThreadId motor_thread;
     bool thread_ready;
     TIM_HandleTypeDef* timer_handle;
+    uint16_t next_timings[3];
     Iph_BC_t current_meas;
     Iph_BC_t DC_calib;
     DRV8301_Obj gate_driver;

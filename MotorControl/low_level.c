@@ -34,6 +34,7 @@ Motor_t motors[] = {
         .motor_thread = 0,
         .thread_ready = false,
         .timer_handle = &htim1,
+        .next_timings = {TIM_PERIOD_CLOCKS/2, TIM_PERIOD_CLOCKS/2, TIM_PERIOD_CLOCKS/2},
         .current_meas = {0.0f, 0.0f},
         .DC_calib = {0.0f, 0.0f},
         .gate_driver = {
@@ -53,6 +54,7 @@ Motor_t motors[] = {
         .motor_thread = 0,
         .thread_ready = false,
         .timer_handle = &htim8,
+        .next_timings = {TIM_PERIOD_CLOCKS/2, TIM_PERIOD_CLOCKS/2, TIM_PERIOD_CLOCKS/2},
         .current_meas = {0.0f, 0.0f},
         .DC_calib = {0.0f, 0.0f},
         .gate_driver = {
@@ -92,7 +94,7 @@ static void sync_timers(TIM_HandleTypeDef* htim_a, TIM_HandleTypeDef* htim_b,
         uint16_t TIM_CLOCKSOURCE_ITRx, uint16_t count_offset);
 static float phase_current_from_adcval(uint32_t ADCValue, int motornum);
 static uint16_t check_timing(TIM_HandleTypeDef* htim, volatile uint16_t* log, volatile int* idx);
-static void set_timings(Motor_t* motor, float tA, float tB, float tC);
+static void queue_modulation(Motor_t* motor, float mod_alpha, float mod_beta);
 static void wait_for_current_meas(Motor_t* motor, float* phB_current, float* phC_current);
 static float measure_phase_resistance(Motor_t* motor, float test_current, float max_voltage);
 static float measure_phase_inductance(Motor_t* motor, float voltage_low, float voltage_high);
@@ -305,7 +307,13 @@ void pwm_trig_adc_cb(ADC_HandleTypeDef* hadc) {
         //Set ADC channels for next measurement
         hadc->Instance->JSQR &= ~ADC_JSQR(ADC_JSQR_JSQ1, 1, 1);
         hadc->Instance->JSQR |= ADC_JSQR((hadc == &hadc2) ? ADC_CHANNEL_10 : ADC_CHANNEL_11, 1, 1);
-        //Check the timing of the measurement
+        //Load next timings for M0 (only once is sufficient)
+        if (hadc == &hadc2) {
+            motors[0].timer_handle->Instance->CCR1 = motors[0].next_timings[0];
+            motors[0].timer_handle->Instance->CCR2 = motors[0].next_timings[1];
+            motors[0].timer_handle->Instance->CCR3 = motors[0].next_timings[2];
+        }
+        //Check the timing of the sequencing
         check_timing(motor->timer_handle, timing_logs[1], &timing_log_index[1]);
 
     } else if (inj_src == ADC_EXTERNALTRIGINJECCONV_T1_CC4) {
@@ -320,7 +328,13 @@ void pwm_trig_adc_cb(ADC_HandleTypeDef* hadc) {
         //Set ADC channels for next measurement
         hadc->Instance->JSQR &= ~ADC_JSQR(ADC_JSQR_JSQ1, 1, 1);
         hadc->Instance->JSQR |= ADC_JSQR((hadc == &hadc2) ? ADC_CHANNEL_13 : ADC_CHANNEL_12, 1, 1);
-        //Check the timing of the measurement
+        //Load next timings for M1 (only once is sufficient)
+        if (hadc == &hadc2) {
+            motors[1].timer_handle->Instance->CCR1 = motors[1].next_timings[0];
+            motors[1].timer_handle->Instance->CCR2 = motors[1].next_timings[1];
+            motors[1].timer_handle->Instance->CCR3 = motors[1].next_timings[2];
+        }
+        //Check the timing of the sequencing
         check_timing(motor->timer_handle, timing_logs[0], &timing_log_index[0]);
 
     } else if (inj_src == ADC_EXTERNALTRIGINJECCONV_T8_CC4) {
@@ -335,7 +349,7 @@ void pwm_trig_adc_cb(ADC_HandleTypeDef* hadc) {
         //Set ADC channels for next measurement
         hadc->Instance->JSQR &= ~ADC_JSQR(ADC_JSQR_JSQ1, 1, 1);
         hadc->Instance->JSQR |= ADC_JSQR((hadc == &hadc2) ? ADC_CHANNEL_10 : ADC_CHANNEL_11, 1, 1);
-        //Check the timing of the measurement
+        //Check the timing of the sequencing
         check_timing(motor->timer_handle, timing_logs[1], &timing_log_index[1]);
 
     } else if (inj_src == ADC_EXTERNALTRIGINJECCONV_T1_TRGO) {
@@ -350,7 +364,7 @@ void pwm_trig_adc_cb(ADC_HandleTypeDef* hadc) {
         //Set ADC channels for next measurement
         hadc->Instance->JSQR &= ~ADC_JSQR(ADC_JSQR_JSQ1, 1, 1);
         hadc->Instance->JSQR |= ADC_JSQR((hadc == &hadc2) ? ADC_CHANNEL_13 : ADC_CHANNEL_12, 1, 1);
-        //Check the timing of the measurement
+        //Check the timing of the sequencing
         check_timing(motor->timer_handle, timing_logs[0], &timing_log_index[0]);
 
     } else {
@@ -437,25 +451,34 @@ static float measure_phase_resistance(Motor_t* motor, float test_current, float 
         test_voltage += (kI * CURRENT_MEAS_PERIOD) * (test_current - Ialpha);
         if (test_voltage > max_voltage) test_voltage = max_voltage;
         if (test_voltage < -max_voltage) test_voltage = -max_voltage;
-        float mod = test_voltage / ((2.0f / 3.0f) * vbus_voltage);
 
         //Test voltage along phase A
-        float tA, tB, tC;
-        SVM(mod, 0.0f, &tA, &tB, &tC);
-        set_timings(motor, tA, tB, tC);
+        float mod = test_voltage / ((2.0f / 3.0f) * vbus_voltage);
+        queue_modulation(motor, mod, 0.0f);
+
+        //Check we meet deadlines after queueing
+        safe_assert(check_timing(motor->timer_handle, NULL, NULL) < TIM_PERIOD_CLOCKS);
     }
 
     //De-energize motor
-    set_timings(motor, 0.5f, 0.5f, 0.5f);
+    queue_modulation(motor, 0.0f, 0.0f);
 
     float phase_resistance = test_voltage / test_current;
     return phase_resistance;
 }
 
+static void queue_modulation(Motor_t* motor, float mod_alpha, float mod_beta) {
+    float tA, tB, tC;
+    SVM(mod_alpha, mod_beta, &tA, &tB, &tC);
+    motor->next_timings[0] = (uint16_t)(tA * (float)TIM_PERIOD_CLOCKS);
+    motor->next_timings[1] = (uint16_t)(tB * (float)TIM_PERIOD_CLOCKS);
+    motor->next_timings[2] = (uint16_t)(tC * (float)TIM_PERIOD_CLOCKS);
+}
+
 static float measure_phase_inductance(Motor_t* motor, float voltage_low, float voltage_high) {
     float test_voltages[2] = {voltage_low, voltage_high};
     float Ialphas[2] = {0.0f};
-    static const int num_cycles = 2000;
+    static const int num_cycles = 5000;
     for (int t = 0; t < num_cycles; ++t) {
         for (int i = 0; i < 2; ++i) {
 
@@ -463,19 +486,12 @@ static float measure_phase_inductance(Motor_t* motor, float voltage_low, float v
             wait_for_current_meas(motor, &phB_current, &phC_current);
             Ialphas[i] += -phB_current - phC_current;
 
-            float mod = test_voltages[i] / ((2.0f / 3.0f) * vbus_voltage);
-            float tA, tB, tC;
             //Test voltage along phase A
-            SVM(mod, 0.0f, &tA, &tB, &tC);
+            float mod = test_voltages[i] / ((2.0f / 3.0f) * vbus_voltage);
+            queue_modulation(motor, mod, 0.0f);
 
-            //Check that we are still up-counting
-            // safe_assert(check_timing(motor->timer_handle, timing_logs[0], &timing_log_index[0]) < TIM_PERIOD_CLOCKS);
-
-            // Wait until down-counting
-            // @TODO: Do not block like this, use interrupt on timer update
-            // this will NOT work with 2 motors!
-            while(!(htim1.Instance->CR1 & TIM_CR1_DIR));
-            set_timings(motor, tA, tB, tC);
+            //Check we meet deadlines after queueing
+            safe_assert(check_timing(motor->timer_handle, NULL, NULL) < TIM_PERIOD_CLOCKS);
         }
     }
 
@@ -485,14 +501,6 @@ static float measure_phase_inductance(Motor_t* motor, float voltage_low, float v
     float dI_by_dt = (Ialphas[1] - Ialphas[0]) / (CURRENT_MEAS_PERIOD * (float)num_cycles);
     float L = v_L / dI_by_dt;
     return L;
-}
-
-//Set the rising edge timings [0.0 - 1.0]
-static void set_timings(Motor_t* motor, float tA, float tB, float tC) {
-    TIM_TypeDef* tim = motor->timer_handle->Instance;
-    tim->CCR1 = tA * TIM_PERIOD_CLOCKS;
-    tim->CCR2 = tB * TIM_PERIOD_CLOCKS;
-    tim->CCR3 = tC * TIM_PERIOD_CLOCKS;
 }
 
 static void scan_motor(Motor_t* motor, float omega, float voltage_magnitude) {
@@ -505,14 +513,10 @@ static void scan_motor(Motor_t* motor, float omega, float voltage_magnitude) {
             float s = arm_sin_f32(ph);
             float mod_alpha = (c * voltage_magnitude) / ((2.0f / 3.0f) * vbus_voltage);
             float mod_beta = (s * voltage_magnitude) / ((2.0f / 3.0f) * vbus_voltage);
+            queue_modulation(motor, mod_alpha, mod_beta);
 
-            float tA, tB, tC;
-            //Test voltage along phase A
-            SVM(mod_alpha, mod_beta, &tA, &tB, &tC);
-            set_timings(motor, tA, tB, tC);
-
-            //Check that we are still up-counting
-            // safe_assert(check_timing(motor->timer_handle, timing_logs[0], &timing_log_index[0]) < TIM_PERIOD_CLOCKS);
+            //Check we meet deadlines after queueing
+            safe_assert(check_timing(motor->timer_handle, NULL, NULL) < TIM_PERIOD_CLOCKS);
 
             if (abs(htim3.Instance->CNT) > 1000 || abs(htim4.Instance->CNT) > 1000){
                 int test = 1;
@@ -528,14 +532,14 @@ void motor_thread(void const * argument) {
 
     float test_current = 4.0f;
     float R = measure_phase_resistance(motor, test_current, 1.0f);
+    float L = measure_phase_inductance(motor, -1.0f, 1.0f);
     if (motor == &motors[0]) {
         scan_motor(motor, 50.0f, test_current * R);
     } else {
         scan_motor(motor, 10.0f, test_current * R);
     }
-    // float L = measure_phase_inductance(motor, -1.0f, 1.0f);
 
     //De-energize motor
-    set_timings(motor, 0.5f, 0.5f, 0.5f);
+    queue_modulation(motor, 0.0f, 0.0f);
 }
 
