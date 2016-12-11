@@ -302,8 +302,9 @@ void pwm_trig_adc_cb(ADC_HandleTypeDef* hadc) {
         //Next measurement on this ADC will be M0 current
         hadc->Instance->CR2 &= ~(ADC_CR2_JEXTEN | ADC_CR2_EXTEN | ADC_CR2_JEXTSEL);
         hadc->Instance->CR2 |= (ADC_EXTERNALTRIGINJECCONVEDGE_RISING | ADC_EXTERNALTRIGINJECCONV_T1_CC4);
-        hadc->Instance->JSQR &= ~(ADC_JSQR_JSQ1);
-        hadc->Instance->JSQR |= (hadc == &hadc2) ? ADC_CHANNEL_10 : ADC_CHANNEL_11;
+        //Set ADC channels for next measurement
+        hadc->Instance->JSQR &= ~ADC_JSQR(ADC_JSQR_JSQ1, 1, 1);
+        hadc->Instance->JSQR |= ADC_JSQR((hadc == &hadc2) ? ADC_CHANNEL_10 : ADC_CHANNEL_11, 1, 1);
         //Check the timing of the measurement
         check_timing(motor->timer_handle, timing_logs[1], &timing_log_index[1]);
 
@@ -316,8 +317,9 @@ void pwm_trig_adc_cb(ADC_HandleTypeDef* hadc) {
         //Next measurement on this ADC will be M1 current
         hadc->Instance->CR2 &= ~(ADC_CR2_JEXTEN | ADC_CR2_EXTEN | ADC_CR2_JEXTSEL);
         hadc->Instance->CR2 |= (ADC_EXTERNALTRIGINJECCONVEDGE_RISING | ADC_EXTERNALTRIGINJECCONV_T8_CC4);
-        hadc->Instance->JSQR &= ~(ADC_JSQR_JSQ1);
-        hadc->Instance->JSQR |= (hadc == &hadc2) ? ADC_CHANNEL_13 : ADC_CHANNEL_12;
+        //Set ADC channels for next measurement
+        hadc->Instance->JSQR &= ~ADC_JSQR(ADC_JSQR_JSQ1, 1, 1);
+        hadc->Instance->JSQR |= ADC_JSQR((hadc == &hadc2) ? ADC_CHANNEL_13 : ADC_CHANNEL_12, 1, 1);
         //Check the timing of the measurement
         check_timing(motor->timer_handle, timing_logs[0], &timing_log_index[0]);
 
@@ -330,8 +332,9 @@ void pwm_trig_adc_cb(ADC_HandleTypeDef* hadc) {
         //Next measurement on this ADC will be M0 DC_CAL
         hadc->Instance->CR2 &= ~(ADC_CR2_JEXTEN | ADC_CR2_EXTEN | ADC_CR2_JEXTSEL);
         hadc->Instance->CR2 |= (ADC_EXTERNALTRIGINJECCONVEDGE_RISING | ADC_EXTERNALTRIGINJECCONV_T1_TRGO);
-        hadc->Instance->JSQR &= ~(ADC_JSQR_JSQ1);
-        hadc->Instance->JSQR |= (hadc == &hadc2) ? ADC_CHANNEL_10 : ADC_CHANNEL_11;
+        //Set ADC channels for next measurement
+        hadc->Instance->JSQR &= ~ADC_JSQR(ADC_JSQR_JSQ1, 1, 1);
+        hadc->Instance->JSQR |= ADC_JSQR((hadc == &hadc2) ? ADC_CHANNEL_10 : ADC_CHANNEL_11, 1, 1);
         //Check the timing of the measurement
         check_timing(motor->timer_handle, timing_logs[1], &timing_log_index[1]);
 
@@ -344,8 +347,9 @@ void pwm_trig_adc_cb(ADC_HandleTypeDef* hadc) {
         //Next measurement on this ADC will be M1 DC_CAL
         hadc->Instance->CR2 &= ~(ADC_CR2_JEXTEN | ADC_CR2_EXTEN | ADC_CR2_JEXTSEL);
         hadc->Instance->CR2 |= ADC_EXTERNALTRIGCONVEDGE_RISING;
-        hadc->Instance->JSQR &= ~(ADC_JSQR_JSQ1);
-        hadc->Instance->JSQR |= (hadc == &hadc2) ? ADC_CHANNEL_13 : ADC_CHANNEL_12;
+        //Set ADC channels for next measurement
+        hadc->Instance->JSQR &= ~ADC_JSQR(ADC_JSQR_JSQ1, 1, 1);
+        hadc->Instance->JSQR |= ADC_JSQR((hadc == &hadc2) ? ADC_CHANNEL_13 : ADC_CHANNEL_12, 1, 1);
         //Check the timing of the measurement
         check_timing(motor->timer_handle, timing_logs[0], &timing_log_index[0]);
 
@@ -524,7 +528,8 @@ void motor_thread(void const * argument) {
 
     float test_current = 4.0f;
     float R = measure_phase_resistance(motor, test_current, 1.0f);
-    scan_motor(motor, 10.0f, test_current * R);
+    // scan_motor(motor, 10.0f, test_current * R);
+    scan_motor(motor, 10.0f, 0.2f);
     // float L = measure_phase_inductance(motor, -1.0f, 1.0f);
 
     //De-energize motor
