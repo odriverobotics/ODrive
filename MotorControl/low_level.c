@@ -87,7 +87,6 @@ static volatile int timing_log_index[2/*num_motors*/] = {0, 0};
 
 /* Private function prototypes -----------------------------------------------*/
 static void DRV8301_setup(Motor_t* motor, DRV_SPI_8301_Vars_t* local_regs);
-static void init_encoders();
 static void start_adc_pwm();
 static void start_pwm(TIM_HandleTypeDef* htim);
 static void sync_timers(TIM_HandleTypeDef* htim_a, TIM_HandleTypeDef* htim_b,
@@ -109,6 +108,10 @@ void init_motor_control() {
 
     // Start PWM and enable adc interrupts/callbacks
     start_adc_pwm();
+
+    // Start Encoders
+    HAL_TIM_Encoder_Start(&htim3, TIM_CHANNEL_ALL);
+    HAL_TIM_Encoder_Start(&htim4, TIM_CHANNEL_ALL);
 
     //Wait for current sense calibration to converge
     //@TODO make timing a function of calibration filter tau
@@ -236,9 +239,6 @@ static void sync_timers(TIM_HandleTypeDef* htim_a, TIM_HandleTypeDef* htim_b,
     //restore output
     htim_a->Instance->BDTR |= MOE_store_a;
     htim_b->Instance->BDTR |= MOE_store_b;
-}
-
-static void init_encoders() {
 }
 
 static float phase_current_from_adcval(uint32_t ADCValue, int motornum) {
@@ -518,7 +518,9 @@ static void scan_motor(Motor_t* motor, float omega, float voltage_magnitude) {
             //Check we meet deadlines after queueing
             safe_assert(check_timing(motor->timer_handle, NULL, NULL) < TIM_PERIOD_CLOCKS);
 
-            if (abs(htim3.Instance->CNT) > 1000 || abs(htim4.Instance->CNT) > 1000){
+            int16_t h3cnt = htim3.Instance->CNT;
+            int16_t h4cnt = htim4.Instance->CNT;
+            if (abs(h3cnt) > 1000 || abs(h4cnt) > 1000){
                 int test = 1;
             }
         }
