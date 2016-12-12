@@ -93,7 +93,7 @@ static void sync_timers(TIM_HandleTypeDef* htim_a, TIM_HandleTypeDef* htim_b,
         uint16_t TIM_CLOCKSOURCE_ITRx, uint16_t count_offset);
 static float phase_current_from_adcval(uint32_t ADCValue, int motornum);
 static uint16_t check_timing(TIM_HandleTypeDef* htim, volatile uint16_t* log, volatile int* idx);
-static void queue_modulation(Motor_t* motor, float mod_alpha, float mod_beta);
+static void queue_timings(Motor_t* motor, float v_alpha, float v_beta);
 static void wait_for_current_meas(Motor_t* motor, float* phB_current, float* phC_current);
 static float measure_phase_resistance(Motor_t* motor, float test_current, float max_voltage);
 static float measure_phase_inductance(Motor_t* motor, float voltage_low, float voltage_high);
@@ -453,21 +453,23 @@ static float measure_phase_resistance(Motor_t* motor, float test_current, float 
         if (test_voltage < -max_voltage) test_voltage = -max_voltage;
 
         //Test voltage along phase A
-        float mod = test_voltage / ((2.0f / 3.0f) * vbus_voltage);
-        queue_modulation(motor, mod, 0.0f);
+        queue_timings(motor, test_voltage, 0.0f);
 
         //Check we meet deadlines after queueing
         safe_assert(check_timing(motor->timer_handle, NULL, NULL) < TIM_PERIOD_CLOCKS);
     }
 
     //De-energize motor
-    queue_modulation(motor, 0.0f, 0.0f);
+    queue_timings(motor, 0.0f, 0.0f);
 
     float phase_resistance = test_voltage / test_current;
     return phase_resistance;
 }
 
-static void queue_modulation(Motor_t* motor, float mod_alpha, float mod_beta) {
+static void queue_timings(Motor_t* motor, float v_alpha, float v_beta) {
+    float vfactor = 1.0f / ((2.0f / 3.0f) * vbus_voltage);
+    float mod_alpha = vfactor * v_alpha;
+    float mod_beta = vfactor * v_beta;
     float tA, tB, tC;
     SVM(mod_alpha, mod_beta, &tA, &tB, &tC);
     motor->next_timings[0] = (uint16_t)(tA * (float)TIM_PERIOD_CLOCKS);
@@ -487,8 +489,7 @@ static float measure_phase_inductance(Motor_t* motor, float voltage_low, float v
             Ialphas[i] += -phB_current - phC_current;
 
             //Test voltage along phase A
-            float mod = test_voltages[i] / ((2.0f / 3.0f) * vbus_voltage);
-            queue_modulation(motor, mod, 0.0f);
+            queue_timings(motor, test_voltages[i], 0.0f);
 
             //Check we meet deadlines after queueing
             safe_assert(check_timing(motor->timer_handle, NULL, NULL) < TIM_PERIOD_CLOCKS);
@@ -509,11 +510,9 @@ static void scan_motor(Motor_t* motor, float omega, float voltage_magnitude) {
             float IphB, IphC;
             wait_for_current_meas(motor, &IphB, &IphC);
 
-            float c = arm_cos_f32(ph);
-            float s = arm_sin_f32(ph);
-            float mod_alpha = (c * voltage_magnitude) / ((2.0f / 3.0f) * vbus_voltage);
-            float mod_beta = (s * voltage_magnitude) / ((2.0f / 3.0f) * vbus_voltage);
-            queue_modulation(motor, mod_alpha, mod_beta);
+            float v_alpha = voltage_magnitude * arm_cos_f32(ph);
+            float v_beta  = voltage_magnitude * arm_sin_f32(ph);
+            queue_timings(motor, v_alpha, v_beta);
 
             //Check we meet deadlines after queueing
             safe_assert(check_timing(motor->timer_handle, NULL, NULL) < TIM_PERIOD_CLOCKS);
@@ -542,6 +541,6 @@ void motor_thread(void const * argument) {
     }
 
     //De-energize motor
-    queue_modulation(motor, 0.0f, 0.0f);
+    queue_timings(motor, 0.0f, 0.0f);
 }
 
