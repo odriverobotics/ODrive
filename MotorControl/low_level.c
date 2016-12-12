@@ -33,7 +33,8 @@ Motor_t motors[] = {
     {   //M0
         .motor_thread = 0,
         .thread_ready = false,
-        .timer_handle = &htim1,
+        .motor_timer = &htim1,
+        .encoder_timer = &htim3,
         .next_timings = {TIM_PERIOD_CLOCKS/2, TIM_PERIOD_CLOCKS/2, TIM_PERIOD_CLOCKS/2},
         .current_meas = {0.0f, 0.0f},
         .DC_calib = {0.0f, 0.0f},
@@ -53,7 +54,8 @@ Motor_t motors[] = {
     {   //M1
         .motor_thread = 0,
         .thread_ready = false,
-        .timer_handle = &htim8,
+        .motor_timer = &htim8,
+        .encoder_timer = &htim4,
         .next_timings = {TIM_PERIOD_CLOCKS/2, TIM_PERIOD_CLOCKS/2, TIM_PERIOD_CLOCKS/2},
         .current_meas = {0.0f, 0.0f},
         .DC_calib = {0.0f, 0.0f},
@@ -93,10 +95,11 @@ static void sync_timers(TIM_HandleTypeDef* htim_a, TIM_HandleTypeDef* htim_b,
         uint16_t TIM_CLOCKSOURCE_ITRx, uint16_t count_offset);
 static float phase_current_from_adcval(uint32_t ADCValue, int motornum);
 static uint16_t check_timing(TIM_HandleTypeDef* htim, volatile uint16_t* log, volatile int* idx);
-static void queue_timings(Motor_t* motor, float v_alpha, float v_beta);
+static void queue_voltage_timings(Motor_t* motor, float v_alpha, float v_beta);
 static void wait_for_current_meas(Motor_t* motor, float* phB_current, float* phC_current);
 static float measure_phase_resistance(Motor_t* motor, float test_current, float max_voltage);
 static float measure_phase_inductance(Motor_t* motor, float voltage_low, float voltage_high);
+static float calib_enc_offset(Motor_t* motor, float voltage_magnitude);
 
 /* Function implementations --------------------------------------------------*/
 
@@ -309,12 +312,12 @@ void pwm_trig_adc_cb(ADC_HandleTypeDef* hadc) {
         hadc->Instance->JSQR |= ADC_JSQR((hadc == &hadc2) ? ADC_CHANNEL_10 : ADC_CHANNEL_11, 1, 1);
         //Load next timings for M0 (only once is sufficient)
         if (hadc == &hadc2) {
-            motors[0].timer_handle->Instance->CCR1 = motors[0].next_timings[0];
-            motors[0].timer_handle->Instance->CCR2 = motors[0].next_timings[1];
-            motors[0].timer_handle->Instance->CCR3 = motors[0].next_timings[2];
+            motors[0].motor_timer->Instance->CCR1 = motors[0].next_timings[0];
+            motors[0].motor_timer->Instance->CCR2 = motors[0].next_timings[1];
+            motors[0].motor_timer->Instance->CCR3 = motors[0].next_timings[2];
         }
         //Check the timing of the sequencing
-        check_timing(motor->timer_handle, timing_logs[1], &timing_log_index[1]);
+        check_timing(motor->motor_timer, timing_logs[1], &timing_log_index[1]);
 
     } else if (inj_src == ADC_EXTERNALTRIGINJECCONV_T1_CC4) {
         //We are measuring M0 current here
@@ -330,12 +333,12 @@ void pwm_trig_adc_cb(ADC_HandleTypeDef* hadc) {
         hadc->Instance->JSQR |= ADC_JSQR((hadc == &hadc2) ? ADC_CHANNEL_13 : ADC_CHANNEL_12, 1, 1);
         //Load next timings for M1 (only once is sufficient)
         if (hadc == &hadc2) {
-            motors[1].timer_handle->Instance->CCR1 = motors[1].next_timings[0];
-            motors[1].timer_handle->Instance->CCR2 = motors[1].next_timings[1];
-            motors[1].timer_handle->Instance->CCR3 = motors[1].next_timings[2];
+            motors[1].motor_timer->Instance->CCR1 = motors[1].next_timings[0];
+            motors[1].motor_timer->Instance->CCR2 = motors[1].next_timings[1];
+            motors[1].motor_timer->Instance->CCR3 = motors[1].next_timings[2];
         }
         //Check the timing of the sequencing
-        check_timing(motor->timer_handle, timing_logs[0], &timing_log_index[0]);
+        check_timing(motor->motor_timer, timing_logs[0], &timing_log_index[0]);
 
     } else if (inj_src == ADC_EXTERNALTRIGINJECCONV_T8_CC4) {
         //We are measuring M1 current here
@@ -350,7 +353,7 @@ void pwm_trig_adc_cb(ADC_HandleTypeDef* hadc) {
         hadc->Instance->JSQR &= ~ADC_JSQR(ADC_JSQR_JSQ1, 1, 1);
         hadc->Instance->JSQR |= ADC_JSQR((hadc == &hadc2) ? ADC_CHANNEL_10 : ADC_CHANNEL_11, 1, 1);
         //Check the timing of the sequencing
-        check_timing(motor->timer_handle, timing_logs[1], &timing_log_index[1]);
+        check_timing(motor->motor_timer, timing_logs[1], &timing_log_index[1]);
 
     } else if (inj_src == ADC_EXTERNALTRIGINJECCONV_T1_TRGO) {
         //We are measuring M0 DC_CAL here
@@ -365,7 +368,7 @@ void pwm_trig_adc_cb(ADC_HandleTypeDef* hadc) {
         hadc->Instance->JSQR &= ~ADC_JSQR(ADC_JSQR_JSQ1, 1, 1);
         hadc->Instance->JSQR |= ADC_JSQR((hadc == &hadc2) ? ADC_CHANNEL_13 : ADC_CHANNEL_12, 1, 1);
         //Check the timing of the sequencing
-        check_timing(motor->timer_handle, timing_logs[0], &timing_log_index[0]);
+        check_timing(motor->motor_timer, timing_logs[0], &timing_log_index[0]);
 
     } else {
         safe_assert(0);
@@ -453,20 +456,20 @@ static float measure_phase_resistance(Motor_t* motor, float test_current, float 
         if (test_voltage < -max_voltage) test_voltage = -max_voltage;
 
         //Test voltage along phase A
-        queue_timings(motor, test_voltage, 0.0f);
+        queue_voltage_timings(motor, test_voltage, 0.0f);
 
         //Check we meet deadlines after queueing
-        safe_assert(check_timing(motor->timer_handle, NULL, NULL) < TIM_PERIOD_CLOCKS);
+        safe_assert(check_timing(motor->motor_timer, NULL, NULL) < TIM_PERIOD_CLOCKS);
     }
 
     //De-energize motor
-    queue_timings(motor, 0.0f, 0.0f);
+    queue_voltage_timings(motor, 0.0f, 0.0f);
 
     float phase_resistance = test_voltage / test_current;
     return phase_resistance;
 }
 
-static void queue_timings(Motor_t* motor, float v_alpha, float v_beta) {
+static void queue_voltage_timings(Motor_t* motor, float v_alpha, float v_beta) {
     float vfactor = 1.0f / ((2.0f / 3.0f) * vbus_voltage);
     float mod_alpha = vfactor * v_alpha;
     float mod_beta = vfactor * v_beta;
@@ -489,10 +492,10 @@ static float measure_phase_inductance(Motor_t* motor, float voltage_low, float v
             Ialphas[i] += -phB_current - phC_current;
 
             //Test voltage along phase A
-            queue_timings(motor, test_voltages[i], 0.0f);
+            queue_voltage_timings(motor, test_voltages[i], 0.0f);
 
             //Check we meet deadlines after queueing
-            safe_assert(check_timing(motor->timer_handle, NULL, NULL) < TIM_PERIOD_CLOCKS);
+            safe_assert(check_timing(motor->motor_timer, NULL, NULL) < TIM_PERIOD_CLOCKS);
         }
     }
 
@@ -504,6 +507,54 @@ static float measure_phase_inductance(Motor_t* motor, float voltage_low, float v
     return L;
 }
 
+//TODO: Do the scan with current, not voltage!
+static float calib_enc_offset(Motor_t* motor, float voltage_magnitude) {
+    static const int num_steps = 1024;
+    static const float scan_range = 4.0f * M_PI;
+    const float step_size = scan_range / (float)num_steps; //TODO handle const expressions better (maybe switch to C++ ?)
+
+    float encvaluesum = 0.0f;
+
+    //go to rotor zero phase for 2s to get ready to scan
+    for (int i = 0; i < 2*CURRENT_MEAS_HZ; ++i) {
+        osSignalWait(M_SIGNAL_PH_CURRENT_MEAS, osWaitForever);
+        queue_voltage_timings(motor, voltage_magnitude, 0.0f);
+    }
+    //scan forwards (200hz step rate)
+    for (float ph = -scan_range / 2.0f; ph < scan_range / 2.0f; ph += step_size) {
+        for (int i = 0; i < 0.005f*(float)CURRENT_MEAS_HZ; ++i) {
+            osSignalWait(M_SIGNAL_PH_CURRENT_MEAS, osWaitForever);
+            float v_alpha = voltage_magnitude * arm_cos_f32(ph);
+            float v_beta  = voltage_magnitude * arm_sin_f32(ph);
+            queue_voltage_timings(motor, v_alpha, v_beta);
+        }
+        //TODO actual unit conversion
+        encvaluesum += (float)((int16_t)motor->encoder_timer->Instance->CNT);
+    }
+
+    //check direction
+    //TODO ability to handle both encoder directions
+    //safe_assert(motor->encoder_timer->Instance->CNT > 0);
+    if ((int16_t)motor->encoder_timer->Instance->CNT > 0) {
+        bool good = true;
+    }
+
+    //scan backwards (200hz step rate)
+    for (float ph = scan_range / 2.0f; ph > -scan_range / 2.0f; ph -= step_size) {
+        for (int i = 0; i < 0.005f*(float)CURRENT_MEAS_HZ; ++i) {
+            osSignalWait(M_SIGNAL_PH_CURRENT_MEAS, osWaitForever);
+            float v_alpha = voltage_magnitude * arm_cos_f32(ph);
+            float v_beta  = voltage_magnitude * arm_sin_f32(ph);
+            queue_voltage_timings(motor, v_alpha, v_beta);
+        }
+        //TODO actual unit conversion
+        encvaluesum += (float)((int16_t)motor->encoder_timer->Instance->CNT);
+    }
+
+    float offset = encvaluesum / (float)(num_steps * 2.0f);
+    return offset;
+}
+
 static void scan_motor(Motor_t* motor, float omega, float voltage_magnitude) {
     for(;;) {
         for (float ph = 0.0f; ph < 2.0f * M_PI; ph += omega * CURRENT_MEAS_PERIOD) {
@@ -512,16 +563,10 @@ static void scan_motor(Motor_t* motor, float omega, float voltage_magnitude) {
 
             float v_alpha = voltage_magnitude * arm_cos_f32(ph);
             float v_beta  = voltage_magnitude * arm_sin_f32(ph);
-            queue_timings(motor, v_alpha, v_beta);
+            queue_voltage_timings(motor, v_alpha, v_beta);
 
             //Check we meet deadlines after queueing
-            safe_assert(check_timing(motor->timer_handle, NULL, NULL) < TIM_PERIOD_CLOCKS);
-
-            int16_t h3cnt = htim3.Instance->CNT;
-            int16_t h4cnt = htim4.Instance->CNT;
-            if (abs(h3cnt) > 1000 || abs(h4cnt) > 1000){
-                int test = 1;
-            }
+            safe_assert(check_timing(motor->motor_timer, NULL, NULL) < TIM_PERIOD_CLOCKS);
         }
     }
 }
@@ -534,6 +579,7 @@ void motor_thread(void const * argument) {
     float test_current = 4.0f;
     float R = measure_phase_resistance(motor, test_current, 1.0f);
     float L = measure_phase_inductance(motor, -1.0f, 1.0f);
+    float offset = calib_enc_offset(motor, test_current * R);
     if (motor == &motors[0]) {
         scan_motor(motor, 50.0f, test_current * R);
     } else {
@@ -541,6 +587,6 @@ void motor_thread(void const * argument) {
     }
 
     //De-energize motor
-    queue_timings(motor, 0.0f, 0.0f);
+    queue_voltage_timings(motor, 0.0f, 0.0f);
 }
 

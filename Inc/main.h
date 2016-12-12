@@ -138,6 +138,7 @@
 /* USER CODE BEGIN Private defines */
 
 #define CURRENT_MEAS_PERIOD ((float)(2*TIM_PERIOD_CLOCKS)/(float)TIM_CLOCK_HZ)
+#define CURRENT_MEAS_HZ (TIM_CLOCK_HZ/(2*TIM_PERIOD_CLOCKS))
 
 /* USER CODE END Private defines */
 
