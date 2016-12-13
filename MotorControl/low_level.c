@@ -509,27 +509,29 @@ static float measure_phase_inductance(Motor_t* motor, float voltage_low, float v
 
 //TODO: Do the scan with current, not voltage!
 static float calib_enc_offset(Motor_t* motor, float voltage_magnitude) {
+    static const float start_lock_duration = 1.0f;
     static const int num_steps = 1024;
+    static const float dt_step = 1.0f/500.0f;
     static const float scan_range = 4.0f * M_PI;
     const float step_size = scan_range / (float)num_steps; //TODO handle const expressions better (maybe switch to C++ ?)
 
-    float encvaluesum = 0.0f;
+    int32_t encvaluesum = 0;
 
     //go to rotor zero phase for 2s to get ready to scan
-    for (int i = 0; i < 2*CURRENT_MEAS_HZ; ++i) {
+    for (int i = 0; i < start_lock_duration*CURRENT_MEAS_HZ; ++i) {
         osSignalWait(M_SIGNAL_PH_CURRENT_MEAS, osWaitForever);
         queue_voltage_timings(motor, voltage_magnitude, 0.0f);
     }
-    //scan forwards (200hz step rate)
+    //scan forwards
     for (float ph = -scan_range / 2.0f; ph < scan_range / 2.0f; ph += step_size) {
-        for (int i = 0; i < 0.005f*(float)CURRENT_MEAS_HZ; ++i) {
+        for (int i = 0; i < dt_step*(float)CURRENT_MEAS_HZ; ++i) {
             osSignalWait(M_SIGNAL_PH_CURRENT_MEAS, osWaitForever);
             float v_alpha = voltage_magnitude * arm_cos_f32(ph);
             float v_beta  = voltage_magnitude * arm_sin_f32(ph);
             queue_voltage_timings(motor, v_alpha, v_beta);
         }
         //TODO actual unit conversion
-        encvaluesum += (float)((int16_t)motor->encoder_timer->Instance->CNT);
+        encvaluesum += (int16_t)motor->encoder_timer->Instance->CNT;
     }
 
     //check direction
@@ -539,19 +541,19 @@ static float calib_enc_offset(Motor_t* motor, float voltage_magnitude) {
         bool good = true;
     }
 
-    //scan backwards (200hz step rate)
+    //scan backwards
     for (float ph = scan_range / 2.0f; ph > -scan_range / 2.0f; ph -= step_size) {
-        for (int i = 0; i < 0.005f*(float)CURRENT_MEAS_HZ; ++i) {
+        for (int i = 0; i < dt_step*(float)CURRENT_MEAS_HZ; ++i) {
             osSignalWait(M_SIGNAL_PH_CURRENT_MEAS, osWaitForever);
             float v_alpha = voltage_magnitude * arm_cos_f32(ph);
             float v_beta  = voltage_magnitude * arm_sin_f32(ph);
             queue_voltage_timings(motor, v_alpha, v_beta);
         }
         //TODO actual unit conversion
-        encvaluesum += (float)((int16_t)motor->encoder_timer->Instance->CNT);
+        encvaluesum += (int16_t)motor->encoder_timer->Instance->CNT;
     }
 
-    float offset = encvaluesum / (float)(num_steps * 2.0f);
+    float offset = (float)encvaluesum / (float)(num_steps * 2.0f);
     return offset;
 }
 
