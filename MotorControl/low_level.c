@@ -575,8 +575,8 @@ static void scan_motor(Motor_t* motor, float omega, float voltage_magnitude) {
 }
 
 static void update_enc(Motor_t* motor) {
-    uint16_t delta_enc = (uint16_t)motor->encoder_timer->Instance->CNT - (uint16_t)motor->encoder_state;
-    motor->encoder_state += (int32_t)(int16_t)delta_enc;
+	int16_t delta_enc = (int16_t)motor->encoder_timer->Instance->CNT - (int16_t)motor->encoder_state;
+    motor->encoder_state += (int32_t)delta_enc;
 }
 
 static void FOC_voltage(Motor_t* motor, float v_d, float v_q, int16_t offset) {
@@ -608,7 +608,7 @@ void motor_thread(void const * argument) {
     int16_t offset = calib_enc_offset(motor, test_current * R);
     if (motor == &motors[0]) {
         // scan_motor(motor, 50.0f, test_current * R);
-        FOC_voltage(motor, 0.0f, -0.4f, offset);
+        FOC_voltage(motor, 0.0f, 0.4f, offset);
     } else {
         scan_motor(motor, 10.0f, 0.0f);
     }
