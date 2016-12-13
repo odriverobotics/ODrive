@@ -17,6 +17,7 @@ typedef struct Motor_s {
     bool thread_ready;
     TIM_HandleTypeDef* motor_timer;
     TIM_HandleTypeDef* encoder_timer;
+    int32_t encoder_state;
     uint16_t next_timings[3];
     Iph_BC_t current_meas;
     Iph_BC_t DC_calib;

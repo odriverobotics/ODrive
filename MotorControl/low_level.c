@@ -35,6 +35,7 @@ Motor_t motors[] = {
         .thread_ready = false,
         .motor_timer = &htim1,
         .encoder_timer = &htim3,
+        .encoder_state = 0,
         .next_timings = {TIM_PERIOD_CLOCKS/2, TIM_PERIOD_CLOCKS/2, TIM_PERIOD_CLOCKS/2},
         .current_meas = {0.0f, 0.0f},
         .DC_calib = {0.0f, 0.0f},
@@ -56,6 +57,7 @@ Motor_t motors[] = {
         .thread_ready = false,
         .motor_timer = &htim8,
         .encoder_timer = &htim4,
+        .encoder_state = 0,
         .next_timings = {TIM_PERIOD_CLOCKS/2, TIM_PERIOD_CLOCKS/2, TIM_PERIOD_CLOCKS/2},
         .current_meas = {0.0f, 0.0f},
         .DC_calib = {0.0f, 0.0f},
@@ -99,7 +101,7 @@ static void queue_voltage_timings(Motor_t* motor, float v_alpha, float v_beta);
 static void wait_for_current_meas(Motor_t* motor, float* phB_current, float* phC_current);
 static float measure_phase_resistance(Motor_t* motor, float test_current, float max_voltage);
 static float measure_phase_inductance(Motor_t* motor, float voltage_low, float voltage_high);
-static float calib_enc_offset(Motor_t* motor, float voltage_magnitude);
+static int16_t calib_enc_offset(Motor_t* motor, float voltage_magnitude);
 
 /* Function implementations --------------------------------------------------*/
 
@@ -508,7 +510,8 @@ static float measure_phase_inductance(Motor_t* motor, float voltage_low, float v
 }
 
 //TODO: Do the scan with current, not voltage!
-static float calib_enc_offset(Motor_t* motor, float voltage_magnitude) {
+//TODO: add check_timing
+static int16_t calib_enc_offset(Motor_t* motor, float voltage_magnitude) {
     static const float start_lock_duration = 1.0f;
     static const int num_steps = 1024;
     static const float dt_step = 1.0f/500.0f;
@@ -553,16 +556,14 @@ static float calib_enc_offset(Motor_t* motor, float voltage_magnitude) {
         encvaluesum += (int16_t)motor->encoder_timer->Instance->CNT;
     }
 
-    float offset = (float)encvaluesum / (float)(num_steps * 2.0f);
+    int16_t offset = encvaluesum / (num_steps * 2);
     return offset;
 }
 
 static void scan_motor(Motor_t* motor, float omega, float voltage_magnitude) {
     for(;;) {
         for (float ph = 0.0f; ph < 2.0f * M_PI; ph += omega * CURRENT_MEAS_PERIOD) {
-            float IphB, IphC;
-            wait_for_current_meas(motor, &IphB, &IphC);
-
+            osSignalWait(M_SIGNAL_PH_CURRENT_MEAS, osWaitForever);
             float v_alpha = voltage_magnitude * arm_cos_f32(ph);
             float v_beta  = voltage_magnitude * arm_sin_f32(ph);
             queue_voltage_timings(motor, v_alpha, v_beta);
@@ -570,6 +571,28 @@ static void scan_motor(Motor_t* motor, float omega, float voltage_magnitude) {
             //Check we meet deadlines after queueing
             safe_assert(check_timing(motor->motor_timer, NULL, NULL) < TIM_PERIOD_CLOCKS);
         }
+    }
+}
+
+static void update_enc(Motor_t* motor) {
+    int16_t delta_enc = (int16_t)motor->encoder_timer->Instance->CNT - (int16_t)motor->encoder_state;
+    motor->encoder_state += (int32_t)delta_enc;
+}
+
+static void FOC_voltage(Motor_t* motor, float v_d, float v_q, int16_t offset) {
+    static const float rad_per_enc = 7.0 * 2 * M_PI * (1.0f / (float)(600 * 4));
+    for (;;) {
+        osSignalWait(M_SIGNAL_PH_CURRENT_MEAS, osWaitForever);
+        update_enc(motor);
+        float ph = rad_per_enc * ((motor->encoder_state % (4*600)) - offset);
+        float c = arm_cos_f32(ph);
+        float s = arm_sin_f32(ph);
+        float v_alpha = c*v_d - s*v_q;
+        float v_beta  = c*v_q + s*v_d;
+        queue_voltage_timings(motor, v_alpha, v_beta);
+
+        //Check we meet deadlines after queueing
+        safe_assert(check_timing(motor->motor_timer, NULL, NULL) < TIM_PERIOD_CLOCKS);
     }
 }
 
@@ -581,11 +604,12 @@ void motor_thread(void const * argument) {
     float test_current = 4.0f;
     float R = measure_phase_resistance(motor, test_current, 1.0f);
     float L = measure_phase_inductance(motor, -1.0f, 1.0f);
-    float offset = calib_enc_offset(motor, test_current * R);
+    int16_t offset = calib_enc_offset(motor, test_current * R);
     if (motor == &motors[0]) {
-        scan_motor(motor, 50.0f, test_current * R);
+        // scan_motor(motor, 50.0f, test_current * R);
+        FOC_voltage(motor, 0.0f, 0.4f, offset);
     } else {
-        scan_motor(motor, 10.0f, test_current * R);
+        scan_motor(motor, 10.0f, 0.0f);
     }
 
     //De-energize motor
