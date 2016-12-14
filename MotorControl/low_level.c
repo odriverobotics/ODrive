@@ -606,12 +606,8 @@ void motor_thread(void const * argument) {
     float R = measure_phase_resistance(motor, test_current, 1.0f);
     float L = measure_phase_inductance(motor, -1.0f, 1.0f);
     int16_t offset = calib_enc_offset(motor, test_current * R);
-    if (motor == &motors[0]) {
-        // scan_motor(motor, 50.0f, test_current * R);
-        FOC_voltage(motor, 0.0f, 0.4f, offset);
-    } else {
-        scan_motor(motor, 10.0f, 0.0f);
-    }
+	// scan_motor(motor, 50.0f, test_current * R);
+	FOC_voltage(motor, 0.0f, 0.8f, offset);
 
     //De-energize motor
     queue_voltage_timings(motor, 0.0f, 0.0f);
