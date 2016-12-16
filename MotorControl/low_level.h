@@ -12,18 +12,27 @@ typedef struct {
     float phC;
 } Iph_BC_t;
 
-typedef struct Motor_s {
+typedef struct {
+    float current_lim; // [A]
+    float p_gain; // [V/A]
+    float i_gain; // [V/As]
+    float v_current_control_integral_d; // [V]
+    float v_current_control_integral_q; // [V]
+} Current_control_t;
+
+typedef struct {
     osThreadId motor_thread;
     bool thread_ready;
     TIM_HandleTypeDef* motor_timer;
     TIM_HandleTypeDef* encoder_timer;
+    int16_t encoder_offset;
     int32_t encoder_state;
     uint16_t next_timings[3];
     Iph_BC_t current_meas;
     Iph_BC_t DC_calib;
     DRV8301_Obj gate_driver;
     float shunt_conductance;
-    float maxcurrent;
+    Current_control_t current_control;
 } Motor_t;
 
 enum Motor_thread_signals {
