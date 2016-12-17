@@ -21,18 +21,25 @@ typedef struct {
 } Current_control_t;
 
 typedef struct {
-    osThreadId motor_thread;
-    bool thread_ready;
-    TIM_HandleTypeDef* motor_timer;
     TIM_HandleTypeDef* encoder_timer;
     int16_t encoder_offset;
     int32_t encoder_state;
+    float phase;
+    float pll_pos;
+    float pll_vel;
+} Rotor_t;
+
+typedef struct {
+    osThreadId motor_thread;
+    bool thread_ready;
+    TIM_HandleTypeDef* motor_timer;
     uint16_t next_timings[3];
     Iph_BC_t current_meas;
     Iph_BC_t DC_calib;
     DRV8301_Obj gate_driver;
     float shunt_conductance;
     Current_control_t current_control;
+    Rotor_t rotor;
 } Motor_t;
 
 enum Motor_thread_signals {

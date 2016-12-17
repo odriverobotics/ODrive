@@ -29,14 +29,12 @@
 /* Global variables ----------------------------------------------------------*/
 float vbus_voltage = 12.0f; //Arbitrary non-zero inital value to avoid division by zero if ADC reading is late
 
+//@TODO: Migrate to C++, clearly we are actually doing object oriented code here...
 Motor_t motors[] = {
     {   //M0
         .motor_thread = 0,
         .thread_ready = false,
         .motor_timer = &htim1,
-        .encoder_timer = &htim3,
-        .encoder_offset = 0,
-        .encoder_state = 0,
         .next_timings = {TIM_PERIOD_CLOCKS/2, TIM_PERIOD_CLOCKS/2, TIM_PERIOD_CLOCKS/2},
         .current_meas = {0.0f, 0.0f},
         .DC_calib = {0.0f, 0.0f},
@@ -57,15 +55,20 @@ Motor_t motors[] = {
             .i_gain = 0.0f, // [V/As] should be auto set after resistance and inductance measurement
             .v_current_control_integral_d = 0.0f,
             .v_current_control_integral_q = 0.0f
+        },
+        .rotor = {
+            .encoder_timer = &htim3,
+            .encoder_offset = 0,
+            .encoder_state = 0,
+            .phase = 0.0f,
+            .pll_pos = 0.0f,
+            .pll_vel = 0.0f
         }
     },
     {   //M1
         .motor_thread = 0,
         .thread_ready = false,
         .motor_timer = &htim8,
-        .encoder_timer = &htim4,
-        .encoder_offset = 0,
-        .encoder_state = 0,
         .next_timings = {TIM_PERIOD_CLOCKS/2, TIM_PERIOD_CLOCKS/2, TIM_PERIOD_CLOCKS/2},
         .current_meas = {0.0f, 0.0f},
         .DC_calib = {0.0f, 0.0f},
@@ -86,6 +89,14 @@ Motor_t motors[] = {
             .i_gain = 0.0f, // [V/As] should be auto set after resistance and inductance measurement
             .v_current_control_integral_d = 0.0f,
             .v_current_control_integral_q = 0.0f
+        },
+        .rotor = {
+            .encoder_timer = &htim4,
+            .encoder_offset = 0,
+            .encoder_state = 0,
+            .phase = 0.0f,
+            .pll_pos = 0.0f,
+            .pll_vel = 0.0f
         }
     }
 };
@@ -555,13 +566,13 @@ static int16_t calib_enc_offset(Motor_t* motor, float voltage_magnitude) {
             queue_voltage_timings(motor, v_alpha, v_beta);
         }
         //TODO actual unit conversion
-        encvaluesum += (int16_t)motor->encoder_timer->Instance->CNT;
+        encvaluesum += (int16_t)motor->rotor.encoder_timer->Instance->CNT;
     }
 
     //check direction
     //TODO ability to handle both encoder directions
     //safe_assert(motor->encoder_timer->Instance->CNT > 0);
-    if ((int16_t)motor->encoder_timer->Instance->CNT > 0) {
+    if ((int16_t)motor->rotor.encoder_timer->Instance->CNT > 0) {
         bool good = true;
     }
 
@@ -574,7 +585,7 @@ static int16_t calib_enc_offset(Motor_t* motor, float voltage_magnitude) {
             queue_voltage_timings(motor, v_alpha, v_beta);
         }
         //TODO actual unit conversion
-        encvaluesum += (int16_t)motor->encoder_timer->Instance->CNT;
+        encvaluesum += (int16_t)motor->rotor.encoder_timer->Instance->CNT;
     }
 
     int16_t offset = encvaluesum / (num_steps * 2);
@@ -596,25 +607,22 @@ static void scan_motor(Motor_t* motor, float omega, float voltage_magnitude) {
 }
 
 static void update_enc(Motor_t* motor) {
-	int16_t delta_enc = (int16_t)motor->encoder_timer->Instance->CNT - (int16_t)motor->encoder_state;
-    motor->encoder_state += (int32_t)delta_enc;
-}
-
-static float get_phase(Motor_t* motor) {
     //@TODO stick parameter into struct
     static const float rad_per_enc = 7.0 * 2 * M_PI * (1.0f / (float)(600 * 4));
-    float ph = rad_per_enc * ((motor->encoder_state % (4*600)) - motor->encoder_offset);
+
+    int16_t delta_enc = (int16_t)motor->rotor.encoder_timer->Instance->CNT - (int16_t)motor->rotor.encoder_state;
+    motor->rotor.encoder_state += (int32_t)delta_enc;
+    float ph = rad_per_enc * ((motor->rotor.encoder_state % (4*600)) - motor->rotor.encoder_offset);
     ph = fmodf(ph, 2*M_PI);
-    return ph;
+    motor->rotor.phase = ph;
 }
 
 static void FOC_voltage(Motor_t* motor, float v_d, float v_q) {
     for (;;) {
         osSignalWait(M_SIGNAL_PH_CURRENT_MEAS, osWaitForever);
         update_enc(motor);
-        float ph = get_phase(motor);
-        float c = arm_cos_f32(ph);
-        float s = arm_sin_f32(ph);
+        float c = arm_cos_f32(motor->rotor.phase);
+        float s = arm_sin_f32(motor->rotor.phase);
         float v_alpha = c*v_d - s*v_q;
         float v_beta  = c*v_q + s*v_d;
         queue_voltage_timings(motor, v_alpha, v_beta);
@@ -622,6 +630,10 @@ static void FOC_voltage(Motor_t* motor, float v_d, float v_q) {
         //Check we meet deadlines after queueing
         safe_assert(check_timing(motor->motor_timer, NULL, NULL) < TIM_PERIOD_CLOCKS);
     }
+}
+
+static void update_pll(Motor_t* motor) {
+
 }
 
 static void FOC_current(Motor_t* motor, float Id_des, float Iq_des) {
@@ -637,9 +649,8 @@ static void FOC_current(Motor_t* motor, float Id_des, float Iq_des) {
         float Ibeta = one_by_sqrt3 * (Ib - Ic);
 
         //Park transform
-        float ph = get_phase(motor);
-        float c = arm_cos_f32(ph);
-        float s = arm_sin_f32(ph);
+        float c = arm_cos_f32(motor->rotor.phase);
+        float s = arm_sin_f32(motor->rotor.phase);
         float Id = c*Ialpha + s*Ibeta;
         float Iq = c*Ibeta  - s*Ialpha;
 
@@ -690,7 +701,7 @@ void motor_thread(void const * argument) {
     float test_current = 4.0f;
     float R = measure_phase_resistance(motor, test_current, 1.0f);
     float L = measure_phase_inductance(motor, -1.0f, 1.0f);
-    motor->encoder_offset = calib_enc_offset(motor, test_current * R);
+    motor->rotor.encoder_offset = calib_enc_offset(motor, test_current * R);
 
     if (motor == &motors[1]) {
         FOC_voltage(motor, 0.0f, 0.0f);
@@ -702,8 +713,8 @@ void motor_thread(void const * argument) {
     motor->current_control.i_gain = plant_pole * motor->current_control.p_gain;
 
     // scan_motor(motor, 50.0f, test_current * R);
-    // FOC_voltage(motor, 0.0f, 0.8f);
-    FOC_current(motor, 0.0f, 0.0f);
+    FOC_voltage(motor, 0.0f, 0.8f);
+    // FOC_current(motor, 0.0f, 0.0f);
 
     //De-energize motor
     queue_voltage_timings(motor, 0.0f, 0.0f);
