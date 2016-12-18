@@ -610,25 +610,31 @@ static void scan_motor(Motor_t* motor, float omega, float voltage_magnitude) {
     }
 }
 
-static void update_pll(Motor_t* motor) {
-
-}
-
-static void update_enc(Motor_t* motor) {
+static void update_rotor(Rotor_t* rotor) {
     //@TODO stick parameter into struct
-    static const float rad_per_enc = 7.0 * 2 * M_PI * (1.0f / (float)(600 * 4));
+    #define QCPR (600*4)
+    static const float elec_rad_per_enc = 7.0 * 2 * M_PI * (1.0f / (float)QCPR);
 
-    int16_t delta_enc = (int16_t)motor->rotor.encoder_timer->Instance->CNT - (int16_t)motor->rotor.encoder_state;
-    motor->rotor.encoder_state += (int32_t)delta_enc;
-    float ph = rad_per_enc * ((motor->rotor.encoder_state % (4*600)) - motor->rotor.encoder_offset);
+    //update internal encoder state
+    int16_t delta_enc = (int16_t)rotor->encoder_timer->Instance->CNT - (int16_t)rotor->encoder_state;
+    rotor->encoder_state += (int32_t)delta_enc;
+
+    //compute electrical phase
+    float ph = elec_rad_per_enc * ((rotor->encoder_state % QCPR) - rotor->encoder_offset);
     ph = fmodf(ph, 2*M_PI);
-    motor->rotor.phase = ph;
+    rotor->phase = ph;
+
+    //run pll (for now pll is in units of encoder counts)
+    float delta_pos = (float)(rotor->encoder_state - (int32_t)floorf(rotor->pll_pos));
+    rotor->pll_pos += CURRENT_MEAS_PERIOD * (rotor->pll_vel + rotor->pll_kp * delta_pos);
+    rotor->pll_vel += CURRENT_MEAS_PERIOD * (rotor->pll_ki * delta_pos);
+
 }
 
 static void FOC_voltage(Motor_t* motor, float v_d, float v_q) {
     for (;;) {
         osSignalWait(M_SIGNAL_PH_CURRENT_MEAS, osWaitForever);
-        update_enc(motor);
+        update_rotor(&motor->rotor);
         float c = arm_cos_f32(motor->rotor.phase);
         float s = arm_sin_f32(motor->rotor.phase);
         float v_alpha = c*v_d - s*v_q;
@@ -646,7 +652,7 @@ static void FOC_current(Motor_t* motor, float Id_des, float Iq_des) {
     for(;;) {
         float Ib, Ic;
         wait_for_current_meas(motor, &Ib, &Ic);
-        update_enc(motor);
+        update_rotor(&motor->rotor);
 
         //Clarke transform
         float Ialpha = -Ib - Ic;
@@ -711,10 +717,17 @@ void motor_thread(void const * argument) {
         FOC_voltage(motor, 0.0f, 0.0f);
     }
 
+    //Calculate current control gains
     float current_control_bandwidth = 2000.0f; // [rad/s]
     motor->current_control.p_gain = current_control_bandwidth * L;
     float plant_pole = R/L;
     motor->current_control.i_gain = plant_pole * motor->current_control.p_gain;
+
+    //Calculate rotor pll gains
+    float rotor_pll_bandwidth = 2000.0f; // [rad/s]
+    motor->rotor.pll_kp = 2.0f * rotor_pll_bandwidth;
+    //Critically damped
+    motor->rotor.pll_ki = 0.25f * (motor->rotor.pll_kp * motor->rotor.pll_kp);
 
     // scan_motor(motor, 50.0f, test_current * R);
     // FOC_voltage(motor, 0.0f, 0.8f);
