@@ -60,9 +60,11 @@ Motor_t motors[] = {
             .encoder_timer = &htim3,
             .encoder_offset = 0,
             .encoder_state = 0,
-            .phase = 0.0f,
-            .pll_pos = 0.0f,
-            .pll_vel = 0.0f
+            .phase = 0.0f, // [rad]
+            .pll_pos = 0.0f, // [rad]
+            .pll_vel = 0.0f, // [rad/s]
+            .pll_kp = 0.0f, // [rad/s / rad]
+            .pll_ki = 0.0f // [(rad/s^2) / rad]
         }
     },
     {   //M1
@@ -95,8 +97,10 @@ Motor_t motors[] = {
             .encoder_offset = 0,
             .encoder_state = 0,
             .phase = 0.0f,
-            .pll_pos = 0.0f,
-            .pll_vel = 0.0f
+            .pll_pos = 0.0f, // [rad]
+            .pll_vel = 0.0f, // [rad/s]
+            .pll_kp = 0.0f, // [rad/s / rad]
+            .pll_ki = 0.0f // [(rad/s^2) / rad]
         }
     }
 };
@@ -606,6 +610,10 @@ static void scan_motor(Motor_t* motor, float omega, float voltage_magnitude) {
     }
 }
 
+static void update_pll(Motor_t* motor) {
+
+}
+
 static void update_enc(Motor_t* motor) {
     //@TODO stick parameter into struct
     static const float rad_per_enc = 7.0 * 2 * M_PI * (1.0f / (float)(600 * 4));
@@ -630,10 +638,6 @@ static void FOC_voltage(Motor_t* motor, float v_d, float v_q) {
         //Check we meet deadlines after queueing
         safe_assert(check_timing(motor->motor_timer, NULL, NULL) < TIM_PERIOD_CLOCKS);
     }
-}
-
-static void update_pll(Motor_t* motor) {
-
 }
 
 static void FOC_current(Motor_t* motor, float Id_des, float Iq_des) {
@@ -707,14 +711,14 @@ void motor_thread(void const * argument) {
         FOC_voltage(motor, 0.0f, 0.0f);
     }
 
-    float current_control_bandwidth = 500.0f; // [rad/s]
+    float current_control_bandwidth = 2000.0f; // [rad/s]
     motor->current_control.p_gain = current_control_bandwidth * L;
     float plant_pole = R/L;
     motor->current_control.i_gain = plant_pole * motor->current_control.p_gain;
 
     // scan_motor(motor, 50.0f, test_current * R);
-    FOC_voltage(motor, 0.0f, 0.8f);
-    // FOC_current(motor, 0.0f, 0.0f);
+    // FOC_voltage(motor, 0.0f, 0.8f);
+    FOC_current(motor, 0.0f, 0.0f);
 
     //De-energize motor
     queue_voltage_timings(motor, 0.0f, 0.0f);

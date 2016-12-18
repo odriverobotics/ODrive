@@ -27,6 +27,8 @@ typedef struct {
     float phase;
     float pll_pos;
     float pll_vel;
+    float pll_kp;
+    float pll_ki;
 } Rotor_t;
 
 typedef struct {
