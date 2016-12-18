@@ -625,9 +625,21 @@ static void update_rotor(Rotor_t* rotor) {
     rotor->phase = ph;
 
     //run pll (for now pll is in units of encoder counts)
+    //@TODO pll_pos runs out of precision very quickly here! Perhaps decompose into integer and fractional part?
+    // Predict current pos
+    rotor->pll_pos += CURRENT_MEAS_PERIOD * rotor->pll_vel;
+    // discrete phase detector
     float delta_pos = (float)(rotor->encoder_state - (int32_t)floorf(rotor->pll_pos));
-    rotor->pll_pos += CURRENT_MEAS_PERIOD * (rotor->pll_vel + rotor->pll_kp * delta_pos);
-    rotor->pll_vel += CURRENT_MEAS_PERIOD * (rotor->pll_ki * delta_pos);
+    // pll feedback
+    rotor->pll_pos += CURRENT_MEAS_PERIOD * rotor->pll_kp * delta_pos;
+    rotor->pll_vel += CURRENT_MEAS_PERIOD * rotor->pll_ki * delta_pos;
+
+    if (rotor == &motors[0].rotor) {
+        static int ctr = 0;
+        if (++ctr == 10000) {
+            ctr = 0;
+        }
+    }
 
 }
 
@@ -730,8 +742,8 @@ void motor_thread(void const * argument) {
     motor->rotor.pll_ki = 0.25f * (motor->rotor.pll_kp * motor->rotor.pll_kp);
 
     // scan_motor(motor, 50.0f, test_current * R);
-    // FOC_voltage(motor, 0.0f, 0.8f);
-    FOC_current(motor, 0.0f, 0.0f);
+    FOC_voltage(motor, 0.0f, 0.8f);
+    // FOC_current(motor, 0.0f, 0.0f);
 
     //De-energize motor
     queue_voltage_timings(motor, 0.0f, 0.0f);
