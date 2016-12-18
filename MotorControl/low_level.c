@@ -36,6 +36,7 @@ Motor_t motors[] = {
         .thread_ready = false,
         .motor_timer = &htim1,
         .next_timings = {TIM_PERIOD_CLOCKS/2, TIM_PERIOD_CLOCKS/2, TIM_PERIOD_CLOCKS/2},
+        .control_deadline = TIM_PERIOD_CLOCKS,
         .current_meas = {0.0f, 0.0f},
         .DC_calib = {0.0f, 0.0f},
         .gate_driver = {
@@ -72,6 +73,7 @@ Motor_t motors[] = {
         .thread_ready = false,
         .motor_timer = &htim8,
         .next_timings = {TIM_PERIOD_CLOCKS/2, TIM_PERIOD_CLOCKS/2, TIM_PERIOD_CLOCKS/2},
+        .control_deadline = (3*TIM_PERIOD_CLOCKS)/2,
         .current_meas = {0.0f, 0.0f},
         .DC_calib = {0.0f, 0.0f},
         .gate_driver = {
@@ -477,7 +479,7 @@ static float measure_phase_resistance(Motor_t* motor, float test_current, float 
         queue_voltage_timings(motor, test_voltage, 0.0f);
 
         //Check we meet deadlines after queueing
-        safe_assert(check_timing(motor->motor_timer, NULL, NULL) < TIM_PERIOD_CLOCKS);
+        safe_assert(check_timing(motor->motor_timer, NULL, NULL) < motor->control_deadline);
     }
 
     //De-energize motor
@@ -515,7 +517,7 @@ static float measure_phase_inductance(Motor_t* motor, float voltage_low, float v
             queue_voltage_timings(motor, test_voltages[i], 0.0f);
 
             //Check we meet deadlines after queueing
-            safe_assert(check_timing(motor->motor_timer, NULL, NULL) < TIM_PERIOD_CLOCKS);
+            safe_assert(check_timing(motor->motor_timer, NULL, NULL) < motor->control_deadline);
         }
     }
 
@@ -584,7 +586,7 @@ static void scan_motor_loop(Motor_t* motor, float omega, float voltage_magnitude
             queue_voltage_timings(motor, v_alpha, v_beta);
 
             //Check we meet deadlines after queueing
-            safe_assert(check_timing(motor->motor_timer, NULL, NULL) < TIM_PERIOD_CLOCKS);
+            safe_assert(check_timing(motor->motor_timer, NULL, NULL) < motor->control_deadline);
         }
     }
 }
@@ -626,7 +628,7 @@ static void FOC_voltage_loop(Motor_t* motor, float v_d, float v_q) {
         queue_voltage_timings(motor, v_alpha, v_beta);
 
         //Check we meet deadlines after queueing
-        safe_assert(check_timing(motor->motor_timer, NULL, NULL) < TIM_PERIOD_CLOCKS);
+        safe_assert(check_timing(motor->motor_timer, NULL, NULL) < motor->control_deadline);
     }
 }
 
@@ -681,12 +683,11 @@ static void FOC_current(Motor_t* motor, float Id_des, float Iq_des) {
     queue_modulation_timings(motor, mod_alpha, mod_beta);
 
     //Check we meet deadlines after queueing
-    //@TODO: For M1 the deadline is actually 1.5 * TIM_PERIOD_CLOCKS, double check and implement
-    safe_assert(check_timing(motor->motor_timer, NULL, NULL) < TIM_PERIOD_CLOCKS);
+    safe_assert(check_timing(motor->motor_timer, NULL, NULL) < motor->control_deadline);
 }
 
 static void control_velocity_loop(Motor_t* motor) {
-    static const float k_vel = 10.0f / 10000.0f; // [A/(counts/s)]
+    static const float k_vel = 5.0f / 10000.0f; // [A/(counts/s)]
     static const float test_vel = 10000.0f; // [counts/s]
     for (;;) {
         osSignalWait(M_SIGNAL_PH_CURRENT_MEAS, osWaitForever);
@@ -696,6 +697,32 @@ static void control_velocity_loop(Motor_t* motor) {
         float Iq = k_vel * v_err;
         float Ilim = motor->current_control.current_lim;
         if (Iq > Ilim) Iq = Ilim;
+        if (Iq < -Ilim) Iq = -Ilim;
+        FOC_current(motor, 0.0f, Iq);
+    }
+}
+
+static void control_position_loop(Motor_t* motor) {
+    static const float k_pos = 10.0f; // [(counts/s) / counts]
+    static const float k_vel = 5.0f / 10000.0f; // [A/(counts/s)]
+    static const float test_pos = 0.0f; // [counts]
+    static const float vel_lim = 10000.0f; // [counts/s]
+    for (;;) {
+        osSignalWait(M_SIGNAL_PH_CURRENT_MEAS, osWaitForever);
+        update_rotor(&motor->rotor);
+
+        //Position control
+        //@TODO Decide if we want to use encoder or pll position here
+        float pos_err = test_pos - motor->rotor.pll_pos;
+        float vel_des = k_pos * pos_err;
+        if (vel_des >  vel_lim) vel_des =  vel_lim;
+        if (vel_des < -vel_lim) vel_des = -vel_lim;
+
+        //Velocity control
+        float v_err = vel_des - motor->rotor.pll_vel;
+        float Iq = k_vel * v_err;
+        float Ilim = motor->current_control.current_lim;
+        if (Iq >  Ilim) Iq =  Ilim;
         if (Iq < -Ilim) Iq = -Ilim;
         FOC_current(motor, 0.0f, Iq);
     }
@@ -733,7 +760,8 @@ void motor_thread(void const * argument) {
     // scan_motor(motor, 50.0f, test_current * R);
     // FOC_voltage_loop(motor, 0.0f, 0.8f);
     // FOC_current(motor, 0.0f, 0.0f);
-    control_velocity_loop(motor);
+    // control_velocity_loop(motor);
+    control_position_loop(motor);
 
     //De-energize motor
     queue_voltage_timings(motor, 0.0f, 0.0f);
