@@ -130,7 +130,6 @@ static void sync_timers(TIM_HandleTypeDef* htim_a, TIM_HandleTypeDef* htim_b,
 static float phase_current_from_adcval(uint32_t ADCValue, int motornum);
 static uint16_t check_timing(TIM_HandleTypeDef* htim, volatile uint16_t* log, volatile int* idx);
 static void queue_voltage_timings(Motor_t* motor, float v_alpha, float v_beta);
-static void wait_for_current_meas(Motor_t* motor, float* phB_current, float* phC_current);
 static float measure_phase_resistance(Motor_t* motor, float test_current, float max_voltage);
 static float measure_phase_inductance(Motor_t* motor, float voltage_low, float voltage_high);
 static int16_t calib_enc_offset(Motor_t* motor, float voltage_magnitude);
@@ -462,29 +461,14 @@ static uint16_t check_timing(TIM_HandleTypeDef* htim, volatile uint16_t* log, vo
     return timing;
 }
 
-static void wait_for_current_meas(Motor_t* motor, float* phB_current, float* phC_current) {
-    //Current measurements not occurring in a timely manner can be handled by the watchdog
-    //@TODO Actually make watchdog
-    //Hence we can use osWaitForever
-    osEvent evt = osSignalWait(M_SIGNAL_PH_CURRENT_MEAS, osWaitForever);
-
-    //Since we wait forever, we do not expect timeouts here.
-    safe_assert(evt.status == osEventSignal);
-
-    //Fetch currents
-    *phB_current = motor->current_meas.phB;
-    *phC_current = motor->current_meas.phC;
-}
-
 static float measure_phase_resistance(Motor_t* motor, float test_current, float max_voltage) {
     static const float kI = 10.0f; //[(V/s)/A]
     static const int num_test_cycles = 3.0f / CURRENT_MEAS_PERIOD;
 
     float test_voltage = 0.0f;
     for (int i = 0; i < num_test_cycles; ++i) {
-        float IphB, IphC;
-        wait_for_current_meas(motor, &IphB, &IphC);
-        float Ialpha = -0.5f * (IphB + IphC);
+        osSignalWait(M_SIGNAL_PH_CURRENT_MEAS, osWaitForever);
+        float Ialpha = -0.5f * (motor->current_meas.phB + motor->current_meas.phC);
         test_voltage += (kI * CURRENT_MEAS_PERIOD) * (test_current - Ialpha);
         if (test_voltage > max_voltage) test_voltage = max_voltage;
         if (test_voltage < -max_voltage) test_voltage = -max_voltage;
@@ -524,10 +508,8 @@ static float measure_phase_inductance(Motor_t* motor, float voltage_low, float v
     static const int num_cycles = 5000;
     for (int t = 0; t < num_cycles; ++t) {
         for (int i = 0; i < 2; ++i) {
-
-            float phB_current, phC_current;
-            wait_for_current_meas(motor, &phB_current, &phC_current);
-            Ialphas[i] += -phB_current - phC_current;
+            osSignalWait(M_SIGNAL_PH_CURRENT_MEAS, osWaitForever);
+            Ialphas[i] += -motor->current_meas.phB - motor->current_meas.phC;
 
             //Test voltage along phase A
             queue_voltage_timings(motor, test_voltages[i], 0.0f);
@@ -575,10 +557,7 @@ static int16_t calib_enc_offset(Motor_t* motor, float voltage_magnitude) {
 
     //check direction
     //TODO ability to handle both encoder directions
-    //safe_assert(motor->encoder_timer->Instance->CNT > 0);
-    if ((int16_t)motor->rotor.encoder_timer->Instance->CNT > 0) {
-        bool good = true;
-    }
+    safe_assert((int16_t)motor->rotor.encoder_timer->Instance->CNT > 0);
 
     //scan backwards
     for (float ph = scan_range / 2.0f; ph > -scan_range / 2.0f; ph -= step_size) {
@@ -596,7 +575,7 @@ static int16_t calib_enc_offset(Motor_t* motor, float voltage_magnitude) {
     return offset;
 }
 
-static void scan_motor(Motor_t* motor, float omega, float voltage_magnitude) {
+static void scan_motor_loop(Motor_t* motor, float omega, float voltage_magnitude) {
     for(;;) {
         for (float ph = 0.0f; ph < 2.0f * M_PI; ph += omega * CURRENT_MEAS_PERIOD) {
             osSignalWait(M_SIGNAL_PH_CURRENT_MEAS, osWaitForever);
@@ -633,20 +612,13 @@ static void update_rotor(Rotor_t* rotor) {
     // pll feedback
     rotor->pll_pos += CURRENT_MEAS_PERIOD * rotor->pll_kp * delta_pos;
     rotor->pll_vel += CURRENT_MEAS_PERIOD * rotor->pll_ki * delta_pos;
-
-    if (rotor == &motors[0].rotor) {
-        static int ctr = 0;
-        if (++ctr == 10000) {
-            ctr = 0;
-        }
-    }
-
 }
 
-static void FOC_voltage(Motor_t* motor, float v_d, float v_q) {
+static void FOC_voltage_loop(Motor_t* motor, float v_d, float v_q) {
     for (;;) {
         osSignalWait(M_SIGNAL_PH_CURRENT_MEAS, osWaitForever);
         update_rotor(&motor->rotor);
+
         float c = arm_cos_f32(motor->rotor.phase);
         float s = arm_sin_f32(motor->rotor.phase);
         float v_alpha = c*v_d - s*v_q;
@@ -661,57 +633,71 @@ static void FOC_voltage(Motor_t* motor, float v_d, float v_q) {
 static void FOC_current(Motor_t* motor, float Id_des, float Iq_des) {
     Current_control_t* ictrl = &motor->current_control;
 
-    for(;;) {
-        float Ib, Ic;
-        wait_for_current_meas(motor, &Ib, &Ic);
+    //Clarke transform
+    float Ialpha = -motor->current_meas.phB - motor->current_meas.phC;
+    float Ibeta = one_by_sqrt3 * (motor->current_meas.phB - motor->current_meas.phC);
+
+    //Park transform
+    float c = arm_cos_f32(motor->rotor.phase);
+    float s = arm_sin_f32(motor->rotor.phase);
+    float Id = c*Ialpha + s*Ibeta;
+    float Iq = c*Ibeta  - s*Ialpha;
+
+    //Current error
+    float Ierr_d = Id_des - Id;
+    float Ierr_q = Iq_des - Iq;
+
+    //@TODO look into feed forward terms (esp omega, since PI pole maps to RL tau)
+    //@TODO current limit
+    //Apply PI control
+    float Vd = ictrl->v_current_control_integral_d + Ierr_d * ictrl->p_gain;
+    float Vq = ictrl->v_current_control_integral_q + Ierr_q * ictrl->p_gain;
+
+    float vfactor = 1.0f / ((2.0f / 3.0f) * vbus_voltage);
+    float mod_d = vfactor * Vd;
+    float mod_q = vfactor * Vq;
+
+    //Vector modulation saturation, lock integrator if saturated
+    //@TODO make maximum modulation configurable (currently 90%)
+    float mod_scalefactor = 0.90f * sqrt3_by_2 * 1.0f/sqrtf(mod_d*mod_d + mod_q*mod_q);
+    if (mod_scalefactor < 1.0f)
+    {
+        mod_d *= mod_scalefactor;
+        mod_q *= mod_scalefactor;
+    } else {
+        //@TODO look into fancier anti integrator windup than simple locking
+        ictrl->v_current_control_integral_d += Ierr_d * (ictrl->i_gain * CURRENT_MEAS_PERIOD);
+        ictrl->v_current_control_integral_q += Ierr_q * (ictrl->i_gain * CURRENT_MEAS_PERIOD);
+    }
+
+    // Compute estimated bus current
+    // *IbusEst = mod_d * Id + mod_q * Iq;
+
+    // Inverse park transform
+    float mod_alpha = c*mod_d - s*mod_q;
+    float mod_beta  = c*mod_q + s*mod_d;
+
+    // Apply SVM
+    queue_modulation_timings(motor, mod_alpha, mod_beta);
+
+    //Check we meet deadlines after queueing
+    //@TODO: For M1 the deadline is actually 1.5 * TIM_PERIOD_CLOCKS, double check and implement
+    safe_assert(check_timing(motor->motor_timer, NULL, NULL) < TIM_PERIOD_CLOCKS);
+}
+
+static void control_velocity_loop(Motor_t* motor) {
+    static const float k_vel = 10.0f / 10000.0f; // [A/(counts/s)]
+    static const float test_vel = 10000.0f; // [counts/s]
+    for (;;) {
+        osSignalWait(M_SIGNAL_PH_CURRENT_MEAS, osWaitForever);
         update_rotor(&motor->rotor);
 
-        //Clarke transform
-        float Ialpha = -Ib - Ic;
-        float Ibeta = one_by_sqrt3 * (Ib - Ic);
-
-        //Park transform
-        float c = arm_cos_f32(motor->rotor.phase);
-        float s = arm_sin_f32(motor->rotor.phase);
-        float Id = c*Ialpha + s*Ibeta;
-        float Iq = c*Ibeta  - s*Ialpha;
-
-        //Current error
-        float Ierr_d = Id_des - Id;
-        float Ierr_q = Iq_des - Iq;
-
-        //@TODO look into feed forward terms (esp omega, since PI pole maps to RL tau)
-        //@TODO current limit
-        //Apply PI control
-        float Vd = ictrl->v_current_control_integral_d + Ierr_d * ictrl->p_gain;
-        float Vq = ictrl->v_current_control_integral_q + Ierr_q * ictrl->p_gain;
-
-        float vfactor = 1.0f / ((2.0f / 3.0f) * vbus_voltage);
-        float mod_d = vfactor * Vd;
-        float mod_q = vfactor * Vq;
-
-        //Vector modulation saturation, lock integrator if saturated
-        //@TODO make maximum modulation configurable (currently 90%)
-        float mod_scalefactor = 0.90f * sqrt3_by_2 * 1.0f/sqrtf(mod_d*mod_d + mod_q*mod_q);
-        if (mod_scalefactor < 1.0f)
-        {
-            mod_d *= mod_scalefactor;
-            mod_q *= mod_scalefactor;
-        } else {
-            //@TODO look into fancier anti integrator windup than simple locking
-            ictrl->v_current_control_integral_d += Ierr_d * (ictrl->i_gain * CURRENT_MEAS_PERIOD);
-            ictrl->v_current_control_integral_q += Ierr_q * (ictrl->i_gain * CURRENT_MEAS_PERIOD);
-        }
-
-        // Compute estimated bus current
-        // *IbusEst = mod_d * Id + mod_q * Iq;
-
-        // Inverse park transform
-        float mod_alpha = c*mod_d - s*mod_q;
-        float mod_beta  = c*mod_q + s*mod_d;
-
-        // Apply SVM
-        queue_modulation_timings(motor, mod_alpha, mod_beta);
+        float v_err = test_vel - motor->rotor.pll_vel;
+        float Iq = k_vel * v_err;
+        float Ilim = motor->current_control.current_lim;
+        if (Iq > Ilim) Iq = Ilim;
+        if (Iq < -Ilim) Iq = -Ilim;
+        FOC_current(motor, 0.0f, Iq);
     }
 }
 
@@ -725,8 +711,9 @@ void motor_thread(void const * argument) {
     float L = measure_phase_inductance(motor, -1.0f, 1.0f);
     motor->rotor.encoder_offset = calib_enc_offset(motor, test_current * R);
 
+    //Only run tests on M0 for now
     if (motor == &motors[1]) {
-        FOC_voltage(motor, 0.0f, 0.0f);
+        FOC_voltage_loop(motor, 0.0f, 0.0f);
     }
 
     //Calculate current control gains
@@ -738,12 +725,15 @@ void motor_thread(void const * argument) {
     //Calculate rotor pll gains
     float rotor_pll_bandwidth = 2000.0f; // [rad/s]
     motor->rotor.pll_kp = 2.0f * rotor_pll_bandwidth;
+    //Check that we don't get problems with discrete time approximation
+    safe_assert(CURRENT_MEAS_PERIOD * motor->rotor.pll_kp < 1.0f);
     //Critically damped
     motor->rotor.pll_ki = 0.25f * (motor->rotor.pll_kp * motor->rotor.pll_kp);
 
     // scan_motor(motor, 50.0f, test_current * R);
-    FOC_voltage(motor, 0.0f, 0.8f);
+    // FOC_voltage_loop(motor, 0.0f, 0.8f);
     // FOC_current(motor, 0.0f, 0.0f);
+    control_velocity_loop(motor);
 
     //De-energize motor
     queue_voltage_timings(motor, 0.0f, 0.0f);
