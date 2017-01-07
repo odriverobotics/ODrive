@@ -210,7 +210,8 @@ static void start_adc_pwm(){
 
     start_pwm(&htim1);
     start_pwm(&htim8);
-    sync_timers(&htim1, &htim8, TIM_CLOCKSOURCE_ITR0, TIM_PERIOD_CLOCKS/2);
+    //TODO: explain why this offset
+    sync_timers(&htim1, &htim8, TIM_CLOCKSOURCE_ITR0, TIM_PERIOD_CLOCKS/2 - 128);
 }
 
 static void start_pwm(TIM_HandleTypeDef* htim){
@@ -686,9 +687,16 @@ static void FOC_current(Motor_t* motor, float Id_des, float Iq_des) {
     safe_assert(check_timing(motor->motor_timer, NULL, NULL) < motor->control_deadline);
 }
 
-static void control_velocity_loop(Motor_t* motor) {
+static void FOC_current_loop(Motor_t* motor, float Id_des, float Iq_des) {
+    for (;;) {
+        osSignalWait(M_SIGNAL_PH_CURRENT_MEAS, osWaitForever);
+        update_rotor(&motor->rotor);
+        FOC_current(motor, Id_des, Iq_des);
+    }
+}
+
+static void control_velocity_loop(Motor_t* motor, float test_vel) {
     static const float k_vel = 5.0f / 10000.0f; // [A/(counts/s)]
-    static const float test_vel = 10000.0f; // [counts/s]
     for (;;) {
         osSignalWait(M_SIGNAL_PH_CURRENT_MEAS, osWaitForever);
         update_rotor(&motor->rotor);
@@ -702,10 +710,9 @@ static void control_velocity_loop(Motor_t* motor) {
     }
 }
 
-static void control_position_loop(Motor_t* motor) {
-    static const float k_pos = 10.0f; // [(counts/s) / counts]
+static void control_position_loop(Motor_t* motor, float test_pos) {
+    static const float k_pos = 20.0f; // [(counts/s) / counts]
     static const float k_vel = 5.0f / 10000.0f; // [A/(counts/s)]
-    static const float test_pos = 0.0f; // [counts]
     static const float vel_lim = 10000.0f; // [counts/s]
     for (;;) {
         osSignalWait(M_SIGNAL_PH_CURRENT_MEAS, osWaitForever);
@@ -759,9 +766,11 @@ void motor_thread(void const * argument) {
 
     // scan_motor(motor, 50.0f, test_current * R);
     // FOC_voltage_loop(motor, 0.0f, 0.8f);
-    // FOC_current(motor, 0.0f, 0.0f);
-    // control_velocity_loop(motor);
-    control_position_loop(motor);
+    FOC_current_loop(motor, 0.0f, 0.0f);
+    // static const float test_vel = 10000.0f; // [counts/s]
+    // control_velocity_loop(motor, test_vel);
+    // static const float test_pos = 10000.0f; // [counts]
+    // control_position_loop(motor, test_pos);
 
     //De-energize motor
     queue_voltage_timings(motor, 0.0f, 0.0f);
