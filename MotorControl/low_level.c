@@ -696,7 +696,7 @@ static void FOC_current_loop(Motor_t* motor, float Id_des, float Iq_des) {
 }
 
 static void control_velocity_loop(Motor_t* motor, float test_vel) {
-    static const float k_vel = 5.0f / 10000.0f; // [A/(counts/s)]
+    static const float k_vel = 10.0f / 10000.0f; // [A/(counts/s)]
     for (;;) {
         osSignalWait(M_SIGNAL_PH_CURRENT_MEAS, osWaitForever);
         update_rotor(&motor->rotor);
@@ -712,7 +712,7 @@ static void control_velocity_loop(Motor_t* motor, float test_vel) {
 
 static void control_position_loop(Motor_t* motor, float test_pos) {
     static const float k_pos = 20.0f; // [(counts/s) / counts]
-    static const float k_vel = 5.0f / 10000.0f; // [A/(counts/s)]
+    static const float k_vel = 10.0f / 10000.0f; // [A/(counts/s)]
     static const float vel_lim = 10000.0f; // [counts/s]
     for (;;) {
         osSignalWait(M_SIGNAL_PH_CURRENT_MEAS, osWaitForever);
@@ -740,24 +740,24 @@ void motor_thread(void const * argument) {
     motor->motor_thread = osThreadGetId();
     motor->thread_ready = true;
 
-    float test_current = 4.0f;
-    float R = measure_phase_resistance(motor, test_current, 1.0f);
-    float L = measure_phase_inductance(motor, -1.0f, 1.0f);
-    motor->rotor.encoder_offset = calib_enc_offset(motor, test_current * R);
-
     //Only run tests on M0 for now
     if (motor == &motors[1]) {
         FOC_voltage_loop(motor, 0.0f, 0.0f);
     }
 
+    float test_current = 8.0f;
+    float R = measure_phase_resistance(motor, test_current, 1.0f);
+    float L = measure_phase_inductance(motor, -1.0f, 1.0f);
+    motor->rotor.encoder_offset = calib_enc_offset(motor, test_current * R);
+
     //Calculate current control gains
-    float current_control_bandwidth = 2000.0f; // [rad/s]
+    float current_control_bandwidth = 1000.0f; // [rad/s]
     motor->current_control.p_gain = current_control_bandwidth * L;
     float plant_pole = R/L;
     motor->current_control.i_gain = plant_pole * motor->current_control.p_gain;
 
     //Calculate rotor pll gains
-    float rotor_pll_bandwidth = 2000.0f; // [rad/s]
+    float rotor_pll_bandwidth = 1000.0f; // [rad/s]
     motor->rotor.pll_kp = 2.0f * rotor_pll_bandwidth;
     //Check that we don't get problems with discrete time approximation
     safe_assert(CURRENT_MEAS_PERIOD * motor->rotor.pll_kp < 1.0f);
@@ -766,9 +766,9 @@ void motor_thread(void const * argument) {
 
     // scan_motor(motor, 50.0f, test_current * R);
     // FOC_voltage_loop(motor, 0.0f, 0.8f);
-    FOC_current_loop(motor, 0.0f, 0.0f);
-    // static const float test_vel = 10000.0f; // [counts/s]
-    // control_velocity_loop(motor, test_vel);
+    // FOC_current_loop(motor, 0.0f, 0.0f);
+    static const float test_vel = 10000.0f; // [counts/s]
+    control_velocity_loop(motor, test_vel);
     // static const float test_pos = 10000.0f; // [counts]
     // control_position_loop(motor, test_pos);
 
