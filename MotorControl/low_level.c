@@ -764,11 +764,12 @@ void motor_thread(void const * argument) {
     //Critically damped
     motor->rotor.pll_ki = 0.25f * (motor->rotor.pll_kp * motor->rotor.pll_kp);
 
-    // scan_motor(motor, 50.0f, test_current * R);
+    // FOC_voltage_loop(motor, 0.0f, 0.0f);
+    scan_motor_loop(motor, 1000.0f, 0.2f*test_current * R);
     // FOC_voltage_loop(motor, 0.0f, 0.8f);
     // FOC_current_loop(motor, 0.0f, 0.0f);
-    static const float test_vel = 10000.0f; // [counts/s]
-    control_velocity_loop(motor, test_vel);
+    // static const float test_vel = 10000.0f; // [counts/s]
+    // control_velocity_loop(motor, test_vel);
     // static const float test_pos = 10000.0f; // [counts]
     // control_position_loop(motor, test_pos);
 
