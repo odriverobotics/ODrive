@@ -150,6 +150,16 @@ $(BUILD_DIR)/%.bin: $(BUILD_DIR)/%.elf | $(BUILD_DIR)
 $(BUILD_DIR):
 	mkdir -p $@
 
+
+debug: build/ODriveFirmware.elf
+	{ openocd -c gdb_port 3333 -c telnet_port 4444 -f interface/stlink-v2.cfg -f target/stm32f4x_stlink.cfg -c 'echo "Started by GNU ARM Eclipse"' & } && echo $$!>.openocd.pid
+	arm-none-eabi-gdb -ix .gdbinit $<; cat .openocd.pid | xargs kill -2; rm .openocd.pid
+
+openocd_log: .openocd.pid
+	# Note, this works only for linux atm..
+	cat /proc/`cat $<`/fd/1
+
+
 #######################################
 # clean up
 #######################################
