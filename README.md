@@ -38,12 +38,19 @@ To compile the program, you first need to install the prerequisite tools:
 ### Building the firmware
 Run `make` in the root of this repository.
 
-### Flashing the firmware
+### Flashing the firmware in debug mode.
+
 Connect `SWD`, `SWC`, and `GND` on connector J2 to the programmer.
 You need to power the board by only **ONE** of the following: VCC(3.3v), 5V, or the main power connection (the DC bus). The USB port (J1) does not power the board.
-Run `make flash` in the root of this repository.
-(TODO Currently not implemented yet.)
 
+Run `make debug` from the root. This starts openocd and attach ARM gdb to the ODrive. This has
+been tested on MacOS and Linux. The gdb session will start from a breakpoint at line 89 of
+`Src/Main.c`, which is the `HAL_INIT` function call in `main()`. To continue, type `continue`.
+
+To exit the gdb session, hit `ctrl + D`.
+
+If prefer using the eclipse, setup in the firmware compilation using eclipse instruction further
+down below.
 
 ## Generating startup code
 **Note:** You do not need to run this step to program the board. This is only required if you wish to update the auto generated code.
