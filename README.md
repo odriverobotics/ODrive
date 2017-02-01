@@ -42,8 +42,10 @@ Run `make` in the root of this repository.
 Connect `SWD`, `SWC`, and `GND` on connector J2 to the programmer.
 You need to power the board by only **ONE** of the following: VCC(3.3v), 5V, or the main power connection (the DC bus). The USB port (J1) does not power the board.
 Run `make flash` in the root of this repository.
-(TODO Currently not implemented yet.)
 
+### Debugging the firmware
+Run `make gdb`. This will reset and halt at program start. Now you can set breakpoints and run the program. If you know how to use gdb, you are good to go.
+If you prefer to debug from eclipse, see [Setting up Eclipse development environment](#setting-up-eclipse-development-environment).
 
 ## Generating startup code
 **Note:** You do not need to run this step to program the board. This is only required if you wish to update the auto generated code.
@@ -95,6 +97,6 @@ There is an excellent project called CubeMX2Makefile, originally from baoshi. Th
     * You can also hit Run -> Debug Configurations
 * Highlight the debug configuration you imported, called OdriveFirmware.
 * Hit Debug
-* The program should start halted on the first instruction in `Main`
+* Eclipse should flash the board for you and the program should start halted on the first instruction in `Main`
 * Set beakpoints, step, hit Resume, etc.
 * Make some cool features! ;D
