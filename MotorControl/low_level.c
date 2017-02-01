@@ -437,6 +437,16 @@ void pwm_trig_adc_cb(ADC_HandleTypeDef* hadc) {
         if (motor->thread_ready)
             osSignalSet(motor->motor_thread, M_SIGNAL_PH_CURRENT_MEAS);
 
+        static float M0C_avg = 0.0f;
+        static float M0C_avg_sqr_delta = 0.0f;
+        static const float k = 1.0f/5000.0f;
+        if (motor == &motors[0] && hadc == &hadc3) {
+            float delta = current - M0C_avg;
+            M0C_avg += k * delta;
+            float dd_sqr = (delta * delta) - M0C_avg_sqr_delta;
+            M0C_avg_sqr_delta += k * dd_sqr;
+        }
+
     } else {
         // DC_CAL measurement
         if (hadc == &hadc2) {
@@ -765,7 +775,7 @@ void motor_thread(void const * argument) {
     motor->rotor.pll_ki = 0.25f * (motor->rotor.pll_kp * motor->rotor.pll_kp);
 
     // FOC_voltage_loop(motor, 0.0f, 0.0f);
-    scan_motor_loop(motor, 1000.0f, 0.2f*test_current * R);
+    scan_motor_loop(motor, 0*1000.0f, 0.4f*test_current * R);
     // FOC_voltage_loop(motor, 0.0f, 0.8f);
     // FOC_current_loop(motor, 0.0f, 0.0f);
     // static const float test_vel = 10000.0f; // [counts/s]
