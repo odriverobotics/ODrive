@@ -211,7 +211,7 @@ static void start_adc_pwm(){
     start_pwm(&htim1);
     start_pwm(&htim8);
     //TODO: explain why this offset
-    sync_timers(&htim1, &htim8, TIM_CLOCKSOURCE_ITR0, TIM_PERIOD_CLOCKS/2 - 128);
+    sync_timers(&htim1, &htim8, TIM_CLOCKSOURCE_ITR0, TIM_PERIOD_CLOCKS/2 - 1*128);
 }
 
 static void start_pwm(TIM_HandleTypeDef* htim){
@@ -661,8 +661,8 @@ static void FOC_current(Motor_t* motor, float Id_des, float Iq_des) {
     float mod_q = vfactor * Vq;
 
     //Vector modulation saturation, lock integrator if saturated
-    //@TODO make maximum modulation configurable (currently 90%)
-    float mod_scalefactor = 0.90f * sqrt3_by_2 * 1.0f/sqrtf(mod_d*mod_d + mod_q*mod_q);
+    //@TODO make maximum modulation configurable (currently 40%)
+    float mod_scalefactor = 0.40f * sqrt3_by_2 * 1.0f/sqrtf(mod_d*mod_d + mod_q*mod_q);
     if (mod_scalefactor < 1.0f)
     {
         mod_d *= mod_scalefactor;
