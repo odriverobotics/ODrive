@@ -155,12 +155,20 @@ $(BUILD_DIR):
 #######################################
 clean:
 	-rm -fR .dep $(BUILD_DIR)
-  
+
+#######################################
+# flashing / debug
+#######################################
+
+flash: $(BUILD_DIR)/$(TARGET).elf
+	openocd -f interface/stlink-v2.cfg -f target/stm32f4x.cfg -c init -c reset\ halt -c flash\ write_image\ erase\ $(BUILD_DIR)/$(TARGET).elf -c reset\ run -c exit
+
+
 #######################################
 # dependencies
 #######################################
 -include $(shell mkdir .dep 2>/dev/null) $(wildcard .dep/*)
 
-.PHONY: clean all
+.PHONY: clean all flash gdb
 
 # *** EOF ***
