@@ -16,3 +16,6 @@ README.html
 
 # STM32CubeMX (in case you put it in this folder, or a symlink)
 STM32CubeMX
+
+#gdb log
+openocd.log
