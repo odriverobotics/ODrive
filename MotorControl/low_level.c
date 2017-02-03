@@ -662,7 +662,7 @@ static void FOC_current(Motor_t* motor, float Id_des, float Iq_des) {
 
     //Vector modulation saturation, lock integrator if saturated
     //@TODO make maximum modulation configurable (currently 40%)
-    float mod_scalefactor = 0.40f * sqrt3_by_2 * 1.0f/sqrtf(mod_d*mod_d + mod_q*mod_q);
+    float mod_scalefactor = 0.20f * sqrt3_by_2 * 1.0f/sqrtf(mod_d*mod_d + mod_q*mod_q);
     if (mod_scalefactor < 1.0f)
     {
         mod_d *= mod_scalefactor;
