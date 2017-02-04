@@ -35,8 +35,8 @@ Motor_t motors[] = {
         .motor_thread = 0,
         .thread_ready = false,
         .motor_timer = &htim1,
-        .next_timings = {TIM_PERIOD_CLOCKS/2, TIM_PERIOD_CLOCKS/2, TIM_PERIOD_CLOCKS/2},
-        .control_deadline = TIM_PERIOD_CLOCKS,
+        .next_timings = {TIM_1_8_PERIOD_CLOCKS/2, TIM_1_8_PERIOD_CLOCKS/2, TIM_1_8_PERIOD_CLOCKS/2},
+        .control_deadline = TIM_1_8_PERIOD_CLOCKS,
         .current_meas = {0.0f, 0.0f},
         .DC_calib = {0.0f, 0.0f},
         .gate_driver = {
@@ -72,8 +72,8 @@ Motor_t motors[] = {
         .motor_thread = 0,
         .thread_ready = false,
         .motor_timer = &htim8,
-        .next_timings = {TIM_PERIOD_CLOCKS/2, TIM_PERIOD_CLOCKS/2, TIM_PERIOD_CLOCKS/2},
-        .control_deadline = (3*TIM_PERIOD_CLOCKS)/2,
+        .next_timings = {TIM_1_8_PERIOD_CLOCKS/2, TIM_1_8_PERIOD_CLOCKS/2, TIM_1_8_PERIOD_CLOCKS/2},
+        .control_deadline = (3*TIM_1_8_PERIOD_CLOCKS)/2,
         .current_meas = {0.0f, 0.0f},
         .DC_calib = {0.0f, 0.0f},
         .gate_driver = {
@@ -211,12 +211,14 @@ static void start_adc_pwm(){
     start_pwm(&htim1);
     start_pwm(&htim8);
     //TODO: explain why this offset
-    sync_timers(&htim1, &htim8, TIM_CLOCKSOURCE_ITR0, TIM_PERIOD_CLOCKS/2 - 1*128);
+    sync_timers(&htim1, &htim8, TIM_CLOCKSOURCE_ITR0, TIM_1_8_PERIOD_CLOCKS/2 - 1*128);
+
+    HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_3);
 }
 
 static void start_pwm(TIM_HandleTypeDef* htim){
     //Init PWM
-    int half_load = TIM_PERIOD_CLOCKS/2;
+    int half_load = TIM_1_8_PERIOD_CLOCKS/2;
     htim->Instance->CCR1 = half_load;
     htim->Instance->CCR2 = half_load;
     htim->Instance->CCR3 = half_load;
@@ -461,8 +463,8 @@ static uint16_t check_timing(TIM_HandleTypeDef* htim, volatile uint16_t* log, vo
     uint16_t timing = htim->Instance->CNT;
     bool down = htim->Instance->CR1 & TIM_CR1_DIR;
     if (down) {
-        uint16_t delta = TIM_PERIOD_CLOCKS - timing;
-        timing = TIM_PERIOD_CLOCKS + delta;
+        uint16_t delta = TIM_1_8_PERIOD_CLOCKS - timing;
+        timing = TIM_1_8_PERIOD_CLOCKS + delta;
     }
 
     if (log != NULL && idx != NULL) {
@@ -503,9 +505,9 @@ static float measure_phase_resistance(Motor_t* motor, float test_current, float 
 static void queue_modulation_timings(Motor_t* motor, float mod_alpha, float mod_beta) {
     float tA, tB, tC;
     SVM(mod_alpha, mod_beta, &tA, &tB, &tC);
-    motor->next_timings[0] = (uint16_t)(tA * (float)TIM_PERIOD_CLOCKS);
-    motor->next_timings[1] = (uint16_t)(tB * (float)TIM_PERIOD_CLOCKS);
-    motor->next_timings[2] = (uint16_t)(tC * (float)TIM_PERIOD_CLOCKS);
+    motor->next_timings[0] = (uint16_t)(tA * (float)TIM_1_8_PERIOD_CLOCKS);
+    motor->next_timings[1] = (uint16_t)(tB * (float)TIM_1_8_PERIOD_CLOCKS);
+    motor->next_timings[2] = (uint16_t)(tC * (float)TIM_1_8_PERIOD_CLOCKS);
 }
 
 static void queue_voltage_timings(Motor_t* motor, float v_alpha, float v_beta) {
