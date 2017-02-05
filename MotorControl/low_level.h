@@ -7,6 +7,17 @@
 #include "drv8301.h"
 
 /* Exported types ------------------------------------------------------------*/
+typedef enum {
+    M_SIGNAL_PH_CURRENT_MEAS = 1u << 0
+} Motor_thread_signals_t;
+
+typedef enum {
+    CURRENT_CONTROL,
+    VELOCITY_CONTROL,
+    POSITION_CONTROL
+} Motor_control_mode_t;
+
+
 typedef struct {
     float phB;
     float phC;
@@ -32,6 +43,13 @@ typedef struct {
 } Rotor_t;
 
 typedef struct {
+    Motor_control_mode_t control_mode;
+    float pos_setpoint;
+    float pos_gain;
+    float vel_setpoint;
+    float vel_gain;
+    float vel_limit;
+    float current_setpoint;
     osThreadId motor_thread;
     bool thread_ready;
     TIM_HandleTypeDef* motor_timer;
@@ -45,10 +63,6 @@ typedef struct {
     Rotor_t rotor;
 } Motor_t;
 
-enum Motor_thread_signals {
-    M_SIGNAL_PH_CURRENT_MEAS = 1u << 0
-};
-
 /* Exported constants --------------------------------------------------------*/
 extern float vbus_voltage;
 extern Motor_t motors[];
@@ -57,6 +71,11 @@ extern const int num_motors;
 /* Exported variables --------------------------------------------------------*/
 /* Exported macro ------------------------------------------------------------*/
 /* Exported functions --------------------------------------------------------*/
+
+void set_pos_setpoint(Motor_t* motor, float pos_setpoint, float vel_feed_forward, float current_feed_forward);
+void set_vel_setpoint(Motor_t* motor, float vel_setpoint, float current_feed_forward);
+void set_current_setpoint(Motor_t* motor, float current_setpoint);
+
 void safe_assert(int arg);
 void init_motor_control();
 void pwm_trig_adc_cb(ADC_HandleTypeDef* hadc);
