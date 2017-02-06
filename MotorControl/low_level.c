@@ -32,6 +32,13 @@ float vbus_voltage = 12.0f; //Arbitrary non-zero inital value to avoid division 
 //@TODO: Migrate to C++, clearly we are actually doing object oriented code here...
 Motor_t motors[] = {
     {   //M0
+        .control_mode = CURRENT_CONTROL,
+        .pos_setpoint = 0.0f,
+        .pos_gain = 20.0f, // [(counts/s) / counts]
+        .vel_setpoint = 0.0f,
+        .vel_gain = 5.0f / 10000.0f, // [A/(counts/s)]
+        .vel_limit = 10000.0f, // [counts/s]
+        .current_setpoint = 0.0f, // [A]
         .motor_thread = 0,
         .thread_ready = false,
         .motor_timer = &htim1,
@@ -69,6 +76,13 @@ Motor_t motors[] = {
         }
     },
     {   //M1
+        .control_mode = CURRENT_CONTROL,
+        .pos_setpoint = 0.0f,
+        .pos_gain = 20.0f, // [(counts/s) / counts]
+        .vel_setpoint = 0.0f,
+        .vel_gain = 5.0f / 10000.0f, // [A/(counts/s)]
+        .vel_limit = 10000.0f, // [counts/s]
+        .current_setpoint = 0.0f, // [A]
         .motor_thread = 0,
         .thread_ready = false,
         .motor_timer = &htim8,
@@ -135,8 +149,27 @@ static void queue_voltage_timings(Motor_t* motor, float v_alpha, float v_beta);
 static float measure_phase_resistance(Motor_t* motor, float test_current, float max_voltage);
 static float measure_phase_inductance(Motor_t* motor, float voltage_low, float voltage_high);
 static int16_t calib_enc_offset(Motor_t* motor, float voltage_magnitude);
+static void control_motor_loop(Motor_t* motor);
 
 /* Function implementations --------------------------------------------------*/
+
+void set_pos_setpoint(Motor_t* motor, float pos_setpoint, float vel_feed_forward, float current_feed_forward) {
+    motor->pos_setpoint = pos_setpoint;
+    motor->vel_setpoint = vel_feed_forward;
+    motor->current_setpoint = current_feed_forward;
+    motor->control_mode = POSITION_CONTROL;
+}
+
+void set_vel_setpoint(Motor_t* motor, float vel_setpoint, float current_feed_forward) {
+    motor->vel_setpoint = vel_setpoint;
+    motor->current_setpoint = current_feed_forward;
+    motor->control_mode = VELOCITY_CONTROL;
+}
+
+void set_current_setpoint(Motor_t* motor, float current_setpoint) {
+    motor->current_setpoint = current_setpoint;
+    motor->control_mode = CURRENT_CONTROL;
+}
 
 // Initalises the low level motor control and then starts the motor control threads
 void init_motor_control() {
@@ -476,6 +509,35 @@ static uint16_t check_timing(TIM_HandleTypeDef* htim, volatile uint16_t* log, vo
     return timing;
 }
 
+static void update_rotor(Rotor_t* rotor) {
+    //@TODO stick parameter into struct
+    #define QCPR (600*4)
+    static const float elec_rad_per_enc = 7.0 * 2 * M_PI * (1.0f / (float)QCPR);
+
+    //update internal encoder state
+    int16_t delta_enc = (int16_t)rotor->encoder_timer->Instance->CNT - (int16_t)rotor->encoder_state;
+    rotor->encoder_state += (int32_t)delta_enc;
+
+    //compute electrical phase
+    float ph = elec_rad_per_enc * ((rotor->encoder_state % QCPR) - rotor->encoder_offset);
+    ph = fmodf(ph, 2*M_PI);
+    rotor->phase = ph;
+
+    //run pll (for now pll is in units of encoder counts)
+    //@TODO pll_pos runs out of precision very quickly here! Perhaps decompose into integer and fractional part?
+    // Predict current pos
+    rotor->pll_pos += CURRENT_MEAS_PERIOD * rotor->pll_vel;
+    // discrete phase detector
+    float delta_pos = (float)(rotor->encoder_state - (int32_t)floorf(rotor->pll_pos));
+    // pll feedback
+    rotor->pll_pos += CURRENT_MEAS_PERIOD * rotor->pll_kp * delta_pos;
+    rotor->pll_vel += CURRENT_MEAS_PERIOD * rotor->pll_ki * delta_pos;
+}
+
+
+//--------------------------------
+// Measurement and calibration
+//--------------------------------
 static float measure_phase_resistance(Motor_t* motor, float test_current, float max_voltage) {
     static const float kI = 10.0f; //[(V/s)/A]
     static const int num_test_cycles = 3.0f / CURRENT_MEAS_PERIOD;
@@ -590,6 +652,9 @@ static int16_t calib_enc_offset(Motor_t* motor, float voltage_magnitude) {
     return offset;
 }
 
+//--------------------------------
+// Test functions
+//--------------------------------
 static void scan_motor_loop(Motor_t* motor, float omega, float voltage_magnitude) {
     for(;;) {
         for (float ph = 0.0f; ph < 2.0f * M_PI; ph += omega * CURRENT_MEAS_PERIOD) {
@@ -602,31 +667,6 @@ static void scan_motor_loop(Motor_t* motor, float omega, float voltage_magnitude
             safe_assert(check_timing(motor->motor_timer, NULL, NULL) < motor->control_deadline);
         }
     }
-}
-
-static void update_rotor(Rotor_t* rotor) {
-    //@TODO stick parameter into struct
-    #define QCPR (600*4)
-    static const float elec_rad_per_enc = 7.0 * 2 * M_PI * (1.0f / (float)QCPR);
-
-    //update internal encoder state
-    int16_t delta_enc = (int16_t)rotor->encoder_timer->Instance->CNT - (int16_t)rotor->encoder_state;
-    rotor->encoder_state += (int32_t)delta_enc;
-
-    //compute electrical phase
-    float ph = elec_rad_per_enc * ((rotor->encoder_state % QCPR) - rotor->encoder_offset);
-    ph = fmodf(ph, 2*M_PI);
-    rotor->phase = ph;
-
-    //run pll (for now pll is in units of encoder counts)
-    //@TODO pll_pos runs out of precision very quickly here! Perhaps decompose into integer and fractional part?
-    // Predict current pos
-    rotor->pll_pos += CURRENT_MEAS_PERIOD * rotor->pll_vel;
-    // discrete phase detector
-    float delta_pos = (float)(rotor->encoder_state - (int32_t)floorf(rotor->pll_pos));
-    // pll feedback
-    rotor->pll_pos += CURRENT_MEAS_PERIOD * rotor->pll_kp * delta_pos;
-    rotor->pll_vel += CURRENT_MEAS_PERIOD * rotor->pll_ki * delta_pos;
 }
 
 static void FOC_voltage_loop(Motor_t* motor, float v_d, float v_q) {
@@ -645,6 +685,9 @@ static void FOC_voltage_loop(Motor_t* motor, float v_d, float v_q) {
     }
 }
 
+//--------------------------------
+// Main motor control
+//--------------------------------
 static void FOC_current(Motor_t* motor, float Id_des, float Iq_des) {
     Current_control_t* ictrl = &motor->current_control;
 
@@ -699,47 +742,28 @@ static void FOC_current(Motor_t* motor, float Id_des, float Iq_des) {
     safe_assert(check_timing(motor->motor_timer, NULL, NULL) < motor->control_deadline);
 }
 
-static void FOC_current_loop(Motor_t* motor, float Id_des, float Iq_des) {
-    for (;;) {
-        osSignalWait(M_SIGNAL_PH_CURRENT_MEAS, osWaitForever);
-        update_rotor(&motor->rotor);
-        FOC_current(motor, Id_des, Iq_des);
-    }
-}
-
-static void control_velocity_loop(Motor_t* motor, float test_vel) {
-    static const float k_vel = 10.0f / 10000.0f; // [A/(counts/s)]
-    for (;;) {
-        osSignalWait(M_SIGNAL_PH_CURRENT_MEAS, osWaitForever);
-        update_rotor(&motor->rotor);
-
-        float v_err = test_vel - motor->rotor.pll_vel;
-        float Iq = k_vel * v_err;
-        float Ilim = motor->current_control.current_lim;
-        if (Iq > Ilim) Iq = Ilim;
-        if (Iq < -Ilim) Iq = -Ilim;
-        FOC_current(motor, 0.0f, Iq);
-    }
-}
-
-static void control_position_loop(Motor_t* motor, float test_pos) {
-    static const float k_pos = 20.0f; // [(counts/s) / counts]
-    static const float k_vel = 10.0f / 10000.0f; // [A/(counts/s)]
-    static const float vel_lim = 10000.0f; // [counts/s]
+static void control_motor_loop(Motor_t* motor) {
     for (;;) {
         osSignalWait(M_SIGNAL_PH_CURRENT_MEAS, osWaitForever);
         update_rotor(&motor->rotor);
 
         //Position control
         //@TODO Decide if we want to use encoder or pll position here
-        float pos_err = test_pos - motor->rotor.pll_pos;
-        float vel_des = k_pos * pos_err;
+        float vel_des = motor->vel_setpoint;
+        if (motor->control_mode >= POSITION_CONTROL) {
+            float pos_err = motor->pos_setpoint - motor->rotor.pll_pos;
+            vel_des += motor->pos_gain * pos_err;
+        } 
+        float vel_lim = motor->vel_limit;
         if (vel_des >  vel_lim) vel_des =  vel_lim;
         if (vel_des < -vel_lim) vel_des = -vel_lim;
 
         //Velocity control
-        float v_err = vel_des - motor->rotor.pll_vel;
-        float Iq = k_vel * v_err;
+        float Iq = motor->current_setpoint;
+        if (motor->control_mode >= VELOCITY_CONTROL) {
+            float v_err = vel_des - motor->rotor.pll_vel;
+            Iq += motor->vel_gain * v_err;
+        }
         float Ilim = motor->current_control.current_lim;
         if (Iq >  Ilim) Iq =  Ilim;
         if (Iq < -Ilim) Iq = -Ilim;
@@ -747,6 +771,9 @@ static void control_position_loop(Motor_t* motor, float test_pos) {
     }
 }
 
+//--------------------------------
+// Motor thread
+//--------------------------------
 void motor_thread(void const * argument) {
     Motor_t* motor = (Motor_t*)argument;
     motor->motor_thread = osThreadGetId();
@@ -757,7 +784,7 @@ void motor_thread(void const * argument) {
         FOC_voltage_loop(motor, 0.0f, 0.0f);
     }
 
-    float test_current = 8.0f;
+    float test_current = 10.0f;
     float R = measure_phase_resistance(motor, test_current, 1.0f);
     float L = measure_phase_inductance(motor, -1.0f, 1.0f);
     motor->rotor.encoder_offset = calib_enc_offset(motor, test_current * R);
@@ -776,14 +803,20 @@ void motor_thread(void const * argument) {
     //Critically damped
     motor->rotor.pll_ki = 0.25f * (motor->rotor.pll_kp * motor->rotor.pll_kp);
 
-    // FOC_voltage_loop(motor, 0.0f, 0.0f);
-    scan_motor_loop(motor, 0*1000.0f, 0.4f*test_current * R);
-    // FOC_voltage_loop(motor, 0.0f, 0.8f);
-    // FOC_current_loop(motor, 0.0f, 0.0f);
-    // static const float test_vel = 10000.0f; // [counts/s]
-    // control_velocity_loop(motor, test_vel);
-    // static const float test_pos = 10000.0f; // [counts]
-    // control_position_loop(motor, test_pos);
+
+    // // Lockin scan test
+    // scan_motor(motor, 50.0f, test_current * R);
+
+    // // Velocity test
+    // motors[0].vel_setpoint = 10000.0f; // [counts/s]
+    // motors[0].control_mode = VELOCITY_CONTROL;
+
+    // // Position test
+    // motors[0].pos_setpoint = 50000.0f; // [counts/s]
+    // motors[0].control_mode = POSITION_CONTROL;
+
+    control_motor_loop(motor);
+
 
     //De-energize motor
     queue_voltage_timings(motor, 0.0f, 0.0f);
