@@ -30,13 +30,14 @@
 float vbus_voltage = 12.0f; //Arbitrary non-zero inital value to avoid division by zero if ADC reading is late
 
 //@TODO: Migrate to C++, clearly we are actually doing object oriented code here...
+//@TODO: For nice encapsulation, consider not having the motor objects public
 Motor_t motors[] = {
     {   //M0
         .control_mode = CURRENT_CONTROL,
         .pos_setpoint = 0.0f,
         .pos_gain = 20.0f, // [(counts/s) / counts]
         .vel_setpoint = 0.0f,
-        .vel_gain = 5.0f / 10000.0f, // [A/(counts/s)]
+        .vel_gain = 10.0f / 10000.0f, // [A/(counts/s)]
         .vel_limit = 10000.0f, // [counts/s]
         .current_setpoint = 0.0f, // [A]
         .motor_thread = 0,
@@ -62,7 +63,8 @@ Motor_t motors[] = {
             .p_gain = 0.0f, // [V/A] should be auto set after resistance and inductance measurement
             .i_gain = 0.0f, // [V/As] should be auto set after resistance and inductance measurement
             .v_current_control_integral_d = 0.0f,
-            .v_current_control_integral_q = 0.0f
+            .v_current_control_integral_q = 0.0f,
+            .Ibus = 0.0f
         },
         .rotor = {
             .encoder_timer = &htim3,
@@ -80,7 +82,7 @@ Motor_t motors[] = {
         .pos_setpoint = 0.0f,
         .pos_gain = 20.0f, // [(counts/s) / counts]
         .vel_setpoint = 0.0f,
-        .vel_gain = 5.0f / 10000.0f, // [A/(counts/s)]
+        .vel_gain = 10.0f / 10000.0f, // [A/(counts/s)]
         .vel_limit = 10000.0f, // [counts/s]
         .current_setpoint = 0.0f, // [A]
         .motor_thread = 0,
@@ -106,7 +108,8 @@ Motor_t motors[] = {
             .p_gain = 0.0f, // [V/A] should be auto set after resistance and inductance measurement
             .i_gain = 0.0f, // [V/As] should be auto set after resistance and inductance measurement
             .v_current_control_integral_d = 0.0f,
-            .v_current_control_integral_q = 0.0f
+            .v_current_control_integral_q = 0.0f,
+            .Ibus = 0.0f
         },
         .rotor = {
             .encoder_timer = &htim4,
@@ -130,12 +133,13 @@ static const float sqrt3_by_2 = 0.86602540378;
 //Local view of DRV registers
 //@TODO: Include these in motor object instead
 static DRV_SPI_8301_Vars_t gate_driver_regs[2/*num_motors*/];
+static float brake_resistance = 0.5; // [ohm]
 
 //Log to store the timing of calls to check_timing
 //This is used in various places, so be sure to look for all the places it is written
 #define TIMING_LOG_SIZE 32
-static volatile uint16_t timing_logs[2/*num_motors*/][TIMING_LOG_SIZE];
-static volatile int timing_log_index[2/*num_motors*/] = {0, 0};
+static volatile uint16_t timing_logs[ 2 /*num_motors*/][TIMING_LOG_SIZE];
+static volatile int timing_log_index[ 2 /*num_motors*/] = {0, 0};
 
 /* Private function prototypes -----------------------------------------------*/
 static void DRV8301_setup(Motor_t* motor, DRV_SPI_8301_Vars_t* local_regs);
@@ -534,6 +538,24 @@ static void update_rotor(Rotor_t* rotor) {
     rotor->pll_vel += CURRENT_MEAS_PERIOD * rotor->pll_ki * delta_pos;
 }
 
+static void update_brake_current(float brake_current) {
+    if (brake_current < 0.0f) brake_current = 0.0f;
+    float brake_duty = brake_current * brake_resistance / vbus_voltage;
+
+    // Duty limit at 90% to allow bootstrap caps to charge
+    if (brake_duty > 0.9f) brake_duty = 0.9f;
+    int high_on = TIM_APB1_PERIOD_CLOCKS * (1.0f - brake_duty);
+    int low_off = high_on - TIM_APB1_DEADTIME_CLOCKS;
+    if (low_off < 0) low_off = 0;
+
+    // Safe update of low and high side timings
+    // To avoid race condition, first reset timings to safe state
+    // ch3 is low side, ch4 is high side
+    htim2.Instance->CCR3 = 0;
+    htim2.Instance->CCR4 = TIM_APB1_PERIOD_CLOCKS+1;
+    htim2.Instance->CCR3 = low_off;
+    htim2.Instance->CCR4 = high_on;
+}
 
 //--------------------------------
 // Measurement and calibration
@@ -706,7 +728,6 @@ static void FOC_current(Motor_t* motor, float Id_des, float Iq_des) {
     float Ierr_q = Iq_des - Iq;
 
     //@TODO look into feed forward terms (esp omega, since PI pole maps to RL tau)
-    //@TODO current limit
     //Apply PI control
     float Vd = ictrl->v_current_control_integral_d + Ierr_d * ictrl->p_gain;
     float Vq = ictrl->v_current_control_integral_q + Ierr_q * ictrl->p_gain;
@@ -729,7 +750,17 @@ static void FOC_current(Motor_t* motor, float Id_des, float Iq_des) {
     }
 
     // Compute estimated bus current
-    // *IbusEst = mod_d * Id + mod_q * Iq;
+    ictrl->Ibus = mod_d * Id + mod_q * Iq;
+
+    // If this is last motor, update brake resistor duty
+    if (motor == &motors[num_motors-1]) {
+        float Ibus_sum = 0.0f;
+        for (int i = 0; i < num_motors; ++i) {
+            Ibus_sum += motors[i].current_control.Ibus;
+        }
+        //Note: function will clip negative values to 0.0f
+        update_brake_current(-Ibus_sum);
+    }
 
     // Inverse park transform
     float mod_alpha = c*mod_d - s*mod_q;
@@ -811,9 +842,9 @@ void motor_thread(void const * argument) {
     // motors[0].vel_setpoint = 10000.0f; // [counts/s]
     // motors[0].control_mode = VELOCITY_CONTROL;
 
-    // // Position test
-    // motors[0].pos_setpoint = 50000.0f; // [counts/s]
-    // motors[0].control_mode = POSITION_CONTROL;
+    // Position test
+    motors[0].pos_setpoint = 50000.0f; // [counts/s]
+    motors[0].control_mode = POSITION_CONTROL;
 
     control_motor_loop(motor);
 

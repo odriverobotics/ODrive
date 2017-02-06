@@ -29,6 +29,7 @@ typedef struct {
     float i_gain; // [V/As]
     float v_current_control_integral_d; // [V]
     float v_current_control_integral_q; // [V]
+    float Ibus; // DC bus current [A]
 } Current_control_t;
 
 typedef struct {
