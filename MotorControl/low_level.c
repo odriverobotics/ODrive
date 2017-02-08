@@ -29,6 +29,10 @@
 /* Global variables ----------------------------------------------------------*/
 float vbus_voltage = 12.0f; //Arbitrary non-zero inital value to avoid division by zero if ADC reading is late
 
+//@TODO stick parameter into struct
+#define ENCODER_CPR (600*4)
+static const float elec_rad_per_enc = 7.0 * 2 * M_PI * (1.0f / (float)ENCODER_CPR);
+
 //@TODO: Migrate to C++, clearly we are actually doing object oriented code here...
 Motor_t motors[] = {
     {   //M0
@@ -498,16 +502,12 @@ static uint16_t check_timing(TIM_HandleTypeDef* htim, volatile uint16_t* log, vo
 }
 
 static void update_rotor(Rotor_t* rotor) {
-    //@TODO stick parameter into struct
-    #define QCPR (600*4)
-    static const float elec_rad_per_enc = 7.0 * 2 * M_PI * (1.0f / (float)QCPR);
-
     //update internal encoder state
     int16_t delta_enc = (int16_t)rotor->encoder_timer->Instance->CNT - (int16_t)rotor->encoder_state;
     rotor->encoder_state += (int32_t)delta_enc;
 
     //compute electrical phase
-    float ph = elec_rad_per_enc * ((rotor->encoder_state % QCPR) - rotor->encoder_offset);
+    float ph = elec_rad_per_enc * ((rotor->encoder_state % ENCODER_CPR) - rotor->encoder_offset);
     ph = fmodf(ph, 2*M_PI);
     rotor->phase = ph;
 
