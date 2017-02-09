@@ -31,6 +31,9 @@ To compile the program, you first need to install the prerequisite tools:
 * `gcc-arm-none-eabi`: GCC compilation toolchain for ARM microcontrollers.
     * Installing on Ubuntu: `sudo apt-get install gcc-arm-none-eabi`
     * Installing on Windows (Cygwin): TODO
+* `gdb-arm-none-eabi`: GNU project debugger for ARM microcontrollers.
+    * Installing on Ubuntu: `sudo apt-get install gdb-arm-none-eabi`
+    * Installing on Windows (Cygwin): TODO
 * `OpenOCD`: Open On-Chip Debugging tools. This is what we use to flash the code onto the microcontroller.
     * Installing on Ubuntu: `sudo apt-get install openocd`
     * Installing on Windows (Cygwin): TODO
