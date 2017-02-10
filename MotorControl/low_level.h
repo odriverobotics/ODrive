@@ -43,6 +43,7 @@ typedef struct {
     float pll_ki;
 } Rotor_t;
 
+#define TIMING_LOG_SIZE 16
 typedef struct {
     Motor_control_mode_t control_mode;
     float pos_setpoint;
@@ -62,6 +63,8 @@ typedef struct {
     float shunt_conductance;
     Current_control_t current_control;
     Rotor_t rotor;
+    int timing_log_index;
+    uint16_t timing_log[TIMING_LOG_SIZE];
 } Motor_t;
 
 /* Exported constants --------------------------------------------------------*/
