@@ -250,7 +250,11 @@ static void start_adc_pwm(){
     //TODO: explain why this offset
     sync_timers(&htim1, &htim8, TIM_CLOCKSOURCE_ITR0, TIM_1_8_PERIOD_CLOCKS/2 - 1*128);
 
+    // Start brake resistor PWM in floating output configuration
+    htim2.Instance->CCR3 = 0;
+    htim2.Instance->CCR4 = TIM_APB1_PERIOD_CLOCKS+1;
     HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_3);
+    HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_4);
 }
 
 static void start_pwm(TIM_HandleTypeDef* htim){
@@ -742,8 +746,10 @@ static void FOC_current(Motor_t* motor, float Id_des, float Iq_des) {
     {
         mod_d *= mod_scalefactor;
         mod_q *= mod_scalefactor;
+        //@TODO make decayfactor configurable
+        ictrl->v_current_control_integral_d *= 0.99f;
+        ictrl->v_current_control_integral_q *= 0.99f;
     } else {
-        //@TODO look into fancier anti integrator windup than simple locking
         ictrl->v_current_control_integral_d += Ierr_d * (ictrl->i_gain * CURRENT_MEAS_PERIOD);
         ictrl->v_current_control_integral_q += Ierr_q * (ictrl->i_gain * CURRENT_MEAS_PERIOD);
     }
@@ -752,14 +758,17 @@ static void FOC_current(Motor_t* motor, float Id_des, float Iq_des) {
     ictrl->Ibus = mod_d * Id + mod_q * Iq;
 
     // If this is last motor, update brake resistor duty
-    if (motor == &motors[num_motors-1]) {
+    // if (motor == &motors[num_motors-1]) {
+    //Above check doesn't work if last motor is executing voltage control
+    //@TODO trigger this update in control_motor_loop instead,
+    // and make voltage control a control mode in it.
         float Ibus_sum = 0.0f;
         for (int i = 0; i < num_motors; ++i) {
             Ibus_sum += motors[i].current_control.Ibus;
         }
         //Note: function will clip negative values to 0.0f
         update_brake_current(-Ibus_sum);
-    }
+    // }
 
     // Inverse park transform
     float mod_alpha = c*mod_d - s*mod_q;
@@ -815,8 +824,11 @@ void motor_thread(void const * argument) {
     }
 
     float test_current = 10.0f;
-    float R = measure_phase_resistance(motor, test_current, 1.0f);
-    float L = measure_phase_inductance(motor, -1.0f, 1.0f);
+    // float R = measure_phase_resistance(motor, test_current, 1.0f);
+    // float L = measure_phase_inductance(motor, -1.0f, 1.0f);
+    #warning(hardcoded values!)
+    float R = 0.0332548246f;
+    float L = 7.97315806e-06f;
     motor->rotor.encoder_offset = calib_enc_offset(motor, test_current * R);
 
     //Calculate current control gains
