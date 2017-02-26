@@ -1,10 +1,11 @@
 /**
   ******************************************************************************
-  * File Name          : freertos.c
-  * Description        : Code for freertos applications
+  * @file           : USB_DEVICE  
+  * @version        : v1.0_Cube
+  * @brief          : This file implements the USB Device 
   ******************************************************************************
   *
-  * Copyright (c) 2016 STMicroelectronics International N.V. 
+  * Copyright (c) 2017 STMicroelectronics International N.V. 
   * All rights reserved.
   *
   * Redistribution and use in source and binary forms, with or without 
@@ -39,95 +40,38 @@
   * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
   *
   ******************************************************************************
-  */
+*/
 
 /* Includes ------------------------------------------------------------------*/
-#include "FreeRTOS.h"
-#include "task.h"
-#include "cmsis_os.h"
 
-/* USER CODE BEGIN Includes */     
-#include "low_level.h"
-/* USER CODE END Includes */
+#include "usb_device.h"
+#include "usbd_core.h"
+#include "usbd_desc.h"
+#include "usbd_cdc.h"
+#include "usbd_cdc_if.h"
 
-/* Variables -----------------------------------------------------------------*/
-osThreadId defaultTaskHandle;
+/* USB Device Core handle declaration */
+USBD_HandleTypeDef hUsbDeviceFS;
 
-/* USER CODE BEGIN Variables */
-
-osThreadDef(task_motor_0, motor_thread, osPriorityHigh+1, 0, 512);
-osThreadDef(task_motor_1, motor_thread, osPriorityHigh, 0, 512);
-
-/* USER CODE END Variables */
-
-/* Function prototypes -------------------------------------------------------*/
-void StartDefaultTask(void const * argument);
-
-extern void MX_USB_DEVICE_Init(void);
-void MX_FREERTOS_Init(void); /* (MISRA C 2004 rule 8.1) */
-
-/* USER CODE BEGIN FunctionPrototypes */
-
-/* USER CODE END FunctionPrototypes */
-
-/* Hook prototypes */
-
-/* Init FreeRTOS */
-
-void MX_FREERTOS_Init(void) {
-  /* USER CODE BEGIN Init */
-       
-  /* USER CODE END Init */
-
-  /* USER CODE BEGIN RTOS_MUTEX */
-  /* add mutexes, ... */
-  /* USER CODE END RTOS_MUTEX */
-
-  /* USER CODE BEGIN RTOS_SEMAPHORES */
-  /* add semaphores, ... */
-  /* USER CODE END RTOS_SEMAPHORES */
-
-  /* USER CODE BEGIN RTOS_TIMERS */
-  /* start timers, add new ones, ... */
-  /* USER CODE END RTOS_TIMERS */
-
-  /* Create the thread(s) */
-  /* definition and creation of defaultTask */
-  osThreadDef(defaultTask, StartDefaultTask, osPriorityIdle, 0, 256);
-  defaultTaskHandle = osThreadCreate(osThread(defaultTask), NULL);
-
-  /* USER CODE BEGIN RTOS_THREADS */
-
-  /* USER CODE END RTOS_THREADS */
-
-  /* USER CODE BEGIN RTOS_QUEUES */
-  /* add queues, ... */
-  /* USER CODE END RTOS_QUEUES */
-}
-
-/* StartDefaultTask function */
-void StartDefaultTask(void const * argument)
+/* init function */				        
+void MX_USB_DEVICE_Init(void)
 {
-  /* init code for USB_DEVICE */
-  MX_USB_DEVICE_Init();
+  /* Init Device Library,Add Supported Class and Start the library*/
+  USBD_Init(&hUsbDeviceFS, &FS_Desc, DEVICE_FS);
 
-  /* USER CODE BEGIN StartDefaultTask */
+  USBD_RegisterClass(&hUsbDeviceFS, &USBD_CDC);
 
-  // Init motor control
-  init_motor_control();
+  USBD_CDC_RegisterInterface(&hUsbDeviceFS, &USBD_Interface_fops_FS);
 
-  // Start motor threads
-  osThreadCreate(osThread(task_motor_0), &motors[0]);
-  osThreadCreate(osThread(task_motor_1), &motors[1]);
+  USBD_Start(&hUsbDeviceFS);
 
-  //If we get to here, then the default task is done.
-  vTaskDelete(defaultTaskHandle);
-
-  /* USER CODE END StartDefaultTask */
 }
+/**
+  * @}
+  */
 
-/* USER CODE BEGIN Application */
-     
-/* USER CODE END Application */
+/**
+  * @}
+  */
 
 /************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/
