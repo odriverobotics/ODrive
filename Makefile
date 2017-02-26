@@ -76,6 +76,7 @@ C_SOURCES = \
   Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_pcd_ex.c \
   Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_ll_usb.c \
   Src/usbd_cdc_if.c \
+  Src/syscalls.c \
   MotorControl/utils.c \
   MotorControl/low_level.c  
 ASM_SOURCES = \

@@ -48,6 +48,7 @@
 
 /* USER CODE BEGIN Includes */     
 #include "low_level.h"
+#include "version.h"
 /* USER CODE END Includes */
 
 /* Variables -----------------------------------------------------------------*/
@@ -67,6 +68,8 @@ extern void MX_USB_DEVICE_Init(void);
 void MX_FREERTOS_Init(void); /* (MISRA C 2004 rule 8.1) */
 
 /* USER CODE BEGIN FunctionPrototypes */
+
+void usb_cdc_thread(void const * argument);
 
 /* USER CODE END FunctionPrototypes */
 
@@ -120,6 +123,10 @@ void StartDefaultTask(void const * argument)
   osThreadCreate(osThread(task_motor_0), &motors[0]);
   osThreadCreate(osThread(task_motor_1), &motors[1]);
 
+  // Start USB CDC thread
+  osThreadDef(task_usb_cdc, usb_cdc_thread, osPriorityIdle, 0, 256);
+  osThreadCreate(osThread(task_usb_cdc), NULL);
+
   //If we get to here, then the default task is done.
   vTaskDelete(defaultTaskHandle);
 
@@ -128,6 +135,22 @@ void StartDefaultTask(void const * argument)
 
 /* USER CODE BEGIN Application */
      
+void usb_cdc_thread(void const * argument) {
+
+  // Wait some time for USB CDC connection and print version
+  osDelay(5000);
+  printf("ODrive Firmware v%d.%d.%d\n", ODRIVE_FW_VERSION_MAJOR, ODRIVE_FW_VERSION_MINOR, ODRIVE_FW_VERSION_PATCH);
+
+  for(;;) {
+    // Periodically print SysTick information
+    printf("osKernelSysTick: %d\n", osKernelSysTick());
+	  osDelay(1000);
+	}
+
+  // If we get here, then this task is done
+  vTaskDelete(osThreadGetId());
+}
+
 /* USER CODE END Application */
 
 /************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/
