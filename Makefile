@@ -15,7 +15,7 @@ DEBUG = 1
 # optimization
 # OPT = -O3 -ffast-math -flto
 # OPT = -O3 -ffast-math
-OPT = -O0 -ffast-math
+OPT = -O0 -ffast-math -u _printf_float -u _scanf_float
 
 #######################################
 # pathes

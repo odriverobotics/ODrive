@@ -162,17 +162,20 @@ void set_pos_setpoint(Motor_t* motor, float pos_setpoint, float vel_feed_forward
     motor->vel_setpoint = vel_feed_forward;
     motor->current_setpoint = current_feed_forward;
     motor->control_mode = POSITION_CONTROL;
+    printf("POSITION_CONTROL %3.3f %3.3f %3.3f\n", motor->pos_setpoint, motor->vel_setpoint, motor->current_setpoint);
 }
 
 void set_vel_setpoint(Motor_t* motor, float vel_setpoint, float current_feed_forward) {
     motor->vel_setpoint = vel_setpoint;
     motor->current_setpoint = current_feed_forward;
     motor->control_mode = VELOCITY_CONTROL;
+    printf("VELOCITY_CONTROL %3.3f %3.3f\n", motor->vel_setpoint, motor->current_setpoint);
 }
 
 void set_current_setpoint(Motor_t* motor, float current_setpoint) {
     motor->current_setpoint = current_setpoint;
     motor->control_mode = CURRENT_CONTROL;
+    printf("CURRENT_CONTROL %3.3f\n", motor->current_setpoint);
 }
 
 // Initalises the low level motor control and then starts the motor control threads
