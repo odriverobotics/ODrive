@@ -34,20 +34,21 @@ float vbus_voltage = 12.0f; //Arbitrary non-zero inital value to avoid division 
 static const float elec_rad_per_enc = 7.0 * 2 * M_PI * (1.0f / (float)ENCODER_CPR);
 
 //@TODO: Migrate to C++, clearly we are actually doing object oriented code here...
+//@TODO: For nice encapsulation, consider not having the motor objects public
 Motor_t motors[] = {
     {   //M0
         .control_mode = CURRENT_CONTROL,
         .pos_setpoint = 0.0f,
         .pos_gain = 20.0f, // [(counts/s) / counts]
         .vel_setpoint = 0.0f,
-        .vel_gain = 5.0f / 10000.0f, // [A/(counts/s)]
-        .vel_limit = 10000.0f, // [counts/s]
+        .vel_gain = 15.0f / 10000.0f, // [A/(counts/s)]
+        .vel_limit = 20000.0f, // [counts/s]
         .current_setpoint = 0.0f, // [A]
         .motor_thread = 0,
         .thread_ready = false,
         .motor_timer = &htim1,
-        .next_timings = {TIM_PERIOD_CLOCKS/2, TIM_PERIOD_CLOCKS/2, TIM_PERIOD_CLOCKS/2},
-        .control_deadline = TIM_PERIOD_CLOCKS,
+        .next_timings = {TIM_1_8_PERIOD_CLOCKS/2, TIM_1_8_PERIOD_CLOCKS/2, TIM_1_8_PERIOD_CLOCKS/2},
+        .control_deadline = TIM_1_8_PERIOD_CLOCKS,
         .current_meas = {0.0f, 0.0f},
         .DC_calib = {0.0f, 0.0f},
         .gate_driver = {
@@ -62,11 +63,13 @@ Motor_t motors[] = {
         },
         .shunt_conductance = 1.0f/0.0005f, //[S]
         .current_control = {
-            .current_lim = 75.0f, //[A] //Note: consistent with 40v/v gain
+            // .current_lim = 75.0f, //[A] //Note: consistent with 40v/v gain
+            .current_lim = 10.0f, //[A]
             .p_gain = 0.0f, // [V/A] should be auto set after resistance and inductance measurement
             .i_gain = 0.0f, // [V/As] should be auto set after resistance and inductance measurement
             .v_current_control_integral_d = 0.0f,
-            .v_current_control_integral_q = 0.0f
+            .v_current_control_integral_q = 0.0f,
+            .Ibus = 0.0f
         },
         .rotor = {
             .encoder_timer = &htim3,
@@ -77,21 +80,23 @@ Motor_t motors[] = {
             .pll_vel = 0.0f, // [rad/s]
             .pll_kp = 0.0f, // [rad/s / rad]
             .pll_ki = 0.0f // [(rad/s^2) / rad]
-        }
+        },
+        .timing_log_index = 0,
+        .timing_log = {0}
     },
     {   //M1
         .control_mode = CURRENT_CONTROL,
         .pos_setpoint = 0.0f,
         .pos_gain = 20.0f, // [(counts/s) / counts]
         .vel_setpoint = 0.0f,
-        .vel_gain = 5.0f / 10000.0f, // [A/(counts/s)]
-        .vel_limit = 10000.0f, // [counts/s]
+        .vel_gain = 15.0f / 10000.0f, // [A/(counts/s)]
+        .vel_limit = 20000.0f, // [counts/s]
         .current_setpoint = 0.0f, // [A]
         .motor_thread = 0,
         .thread_ready = false,
         .motor_timer = &htim8,
-        .next_timings = {TIM_PERIOD_CLOCKS/2, TIM_PERIOD_CLOCKS/2, TIM_PERIOD_CLOCKS/2},
-        .control_deadline = (3*TIM_PERIOD_CLOCKS)/2,
+        .next_timings = {TIM_1_8_PERIOD_CLOCKS/2, TIM_1_8_PERIOD_CLOCKS/2, TIM_1_8_PERIOD_CLOCKS/2},
+        .control_deadline = (3*TIM_1_8_PERIOD_CLOCKS)/2,
         .current_meas = {0.0f, 0.0f},
         .DC_calib = {0.0f, 0.0f},
         .gate_driver = {
@@ -106,11 +111,13 @@ Motor_t motors[] = {
         },
         .shunt_conductance = 1.0f/0.0005f, //[S]
         .current_control = {
-            .current_lim = 75.0f, //[A] //Note: consistent with 40v/v gain
+            // .current_lim = 75.0f, //[A] //Note: consistent with 40v/v gain
+            .current_lim = 10.0f, //[A]
             .p_gain = 0.0f, // [V/A] should be auto set after resistance and inductance measurement
             .i_gain = 0.0f, // [V/As] should be auto set after resistance and inductance measurement
             .v_current_control_integral_d = 0.0f,
-            .v_current_control_integral_q = 0.0f
+            .v_current_control_integral_q = 0.0f,
+            .Ibus = 0.0f
         },
         .rotor = {
             .encoder_timer = &htim4,
@@ -121,7 +128,9 @@ Motor_t motors[] = {
             .pll_vel = 0.0f, // [rad/s]
             .pll_kp = 0.0f, // [rad/s / rad]
             .pll_ki = 0.0f // [(rad/s^2) / rad]
-        }
+        },
+        .timing_log_index = 0,
+        .timing_log = {0}
     }
 };
 const int num_motors = sizeof(motors)/sizeof(motors[0]);
@@ -132,14 +141,9 @@ static const float sqrt3_by_2 = 0.86602540378;
 
 /* Private variables ---------------------------------------------------------*/
 //Local view of DRV registers
-//@TODO: Include these in motor object instead
+//@TODO: Include gate_driver_regs in motor object instead
 static DRV_SPI_8301_Vars_t gate_driver_regs[2/*num_motors*/];
-
-//Log to store the timing of calls to check_timing
-//This is used in various places, so be sure to look for all the places it is written
-#define TIMING_LOG_SIZE 32
-static volatile uint16_t timing_logs[2/*num_motors*/][TIMING_LOG_SIZE];
-static volatile int timing_log_index[2/*num_motors*/] = {0, 0};
+static float brake_resistance = 2.0f; // [ohm]
 
 /* Private function prototypes -----------------------------------------------*/
 static void DRV8301_setup(Motor_t* motor, DRV_SPI_8301_Vars_t* local_regs);
@@ -148,7 +152,7 @@ static void start_pwm(TIM_HandleTypeDef* htim);
 static void sync_timers(TIM_HandleTypeDef* htim_a, TIM_HandleTypeDef* htim_b,
         uint16_t TIM_CLOCKSOURCE_ITRx, uint16_t count_offset);
 static float phase_current_from_adcval(uint32_t ADCValue, int motornum);
-static uint16_t check_timing(TIM_HandleTypeDef* htim, volatile uint16_t* log, volatile int* idx);
+static uint16_t check_timing(Motor_t* motor);
 static void queue_voltage_timings(Motor_t* motor, float v_alpha, float v_beta);
 static float measure_phase_resistance(Motor_t* motor, float test_current, float max_voltage);
 static float measure_phase_inductance(Motor_t* motor, float voltage_low, float voltage_high);
@@ -248,12 +252,18 @@ static void start_adc_pwm(){
     start_pwm(&htim1);
     start_pwm(&htim8);
     //TODO: explain why this offset
-    sync_timers(&htim1, &htim8, TIM_CLOCKSOURCE_ITR0, TIM_PERIOD_CLOCKS/2 - 1*128);
+    sync_timers(&htim1, &htim8, TIM_CLOCKSOURCE_ITR0, TIM_1_8_PERIOD_CLOCKS/2 - 1*128);
+
+    // Start brake resistor PWM in floating output configuration
+    htim2.Instance->CCR3 = 0;
+    htim2.Instance->CCR4 = TIM_APB1_PERIOD_CLOCKS+1;
+    HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_3);
+    HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_4);
 }
 
 static void start_pwm(TIM_HandleTypeDef* htim){
     //Init PWM
-    int half_load = TIM_PERIOD_CLOCKS/2;
+    int half_load = TIM_1_8_PERIOD_CLOCKS/2;
     htim->Instance->CCR1 = half_load;
     htim->Instance->CCR2 = half_load;
     htim->Instance->CCR3 = half_load;
@@ -390,7 +400,7 @@ void pwm_trig_adc_cb(ADC_HandleTypeDef* hadc) {
             motors[0].motor_timer->Instance->CCR3 = motors[0].next_timings[2];
         }
         //Check the timing of the sequencing
-        check_timing(motor->motor_timer, timing_logs[1], &timing_log_index[1]);
+        check_timing(motor);
 
     } else if (inj_src == ADC_EXTERNALTRIGINJECCONV_T1_CC4) {
         //We are measuring M0 current here
@@ -411,7 +421,7 @@ void pwm_trig_adc_cb(ADC_HandleTypeDef* hadc) {
             motors[1].motor_timer->Instance->CCR3 = motors[1].next_timings[2];
         }
         //Check the timing of the sequencing
-        check_timing(motor->motor_timer, timing_logs[0], &timing_log_index[0]);
+        check_timing(motor);
 
     } else if (inj_src == ADC_EXTERNALTRIGINJECCONV_T8_CC4) {
         //We are measuring M1 current here
@@ -426,7 +436,7 @@ void pwm_trig_adc_cb(ADC_HandleTypeDef* hadc) {
         hadc->Instance->JSQR &= ~ADC_JSQR(ADC_JSQR_JSQ1, 1, 1);
         hadc->Instance->JSQR |= ADC_JSQR((hadc == &hadc2) ? ADC_CHANNEL_10 : ADC_CHANNEL_11, 1, 1);
         //Check the timing of the sequencing
-        check_timing(motor->motor_timer, timing_logs[1], &timing_log_index[1]);
+        check_timing(motor);
 
     } else if (inj_src == ADC_EXTERNALTRIGINJECCONV_T1_TRGO) {
         //We are measuring M0 DC_CAL here
@@ -441,7 +451,7 @@ void pwm_trig_adc_cb(ADC_HandleTypeDef* hadc) {
         hadc->Instance->JSQR &= ~ADC_JSQR(ADC_JSQR_JSQ1, 1, 1);
         hadc->Instance->JSQR |= ADC_JSQR((hadc == &hadc2) ? ADC_CHANNEL_13 : ADC_CHANNEL_12, 1, 1);
         //Check the timing of the sequencing
-        check_timing(motor->motor_timer, timing_logs[0], &timing_log_index[0]);
+        check_timing(motor);
 
     } else {
         safe_assert(0);
@@ -473,7 +483,6 @@ void pwm_trig_adc_cb(ADC_HandleTypeDef* hadc) {
         // Trigger motor thread
         if (motor->thread_ready)
             osSignalSet(motor->motor_thread, M_SIGNAL_PH_CURRENT_MEAS);
-
     } else {
         // DC_CAL measurement
         if (hadc == &hadc2) {
@@ -484,19 +493,18 @@ void pwm_trig_adc_cb(ADC_HandleTypeDef* hadc) {
     }
 }
 
-static uint16_t check_timing(TIM_HandleTypeDef* htim, volatile uint16_t* log, volatile int* idx) {
+static uint16_t check_timing(Motor_t* motor) {
+    TIM_HandleTypeDef* htim = motor->motor_timer;
     uint16_t timing = htim->Instance->CNT;
     bool down = htim->Instance->CR1 & TIM_CR1_DIR;
     if (down) {
-        uint16_t delta = TIM_PERIOD_CLOCKS - timing;
-        timing = TIM_PERIOD_CLOCKS + delta;
+        uint16_t delta = TIM_1_8_PERIOD_CLOCKS - timing;
+        timing = TIM_1_8_PERIOD_CLOCKS + delta;
     }
 
-    if (log != NULL && idx != NULL) {
-        if(++(*idx) == TIMING_LOG_SIZE)
-            *idx = 0;
-        log[*idx] = timing;
-    }
+    if(++(motor->timing_log_index) == TIMING_LOG_SIZE)
+        motor->timing_log_index = 0;
+    motor->timing_log[motor->timing_log_index] = timing;
 
     return timing;
 }
@@ -522,6 +530,24 @@ static void update_rotor(Rotor_t* rotor) {
     rotor->pll_vel += CURRENT_MEAS_PERIOD * rotor->pll_ki * delta_pos;
 }
 
+static void update_brake_current(float brake_current) {
+    if (brake_current < 0.0f) brake_current = 0.0f;
+    float brake_duty = brake_current * brake_resistance / vbus_voltage;
+
+    // Duty limit at 90% to allow bootstrap caps to charge
+    if (brake_duty > 0.9f) brake_duty = 0.9f;
+    int high_on = TIM_APB1_PERIOD_CLOCKS * (1.0f - brake_duty);
+    int low_off = high_on - TIM_APB1_DEADTIME_CLOCKS;
+    if (low_off < 0) low_off = 0;
+
+    // Safe update of low and high side timings
+    // To avoid race condition, first reset timings to safe state
+    // ch3 is low side, ch4 is high side
+    htim2.Instance->CCR3 = 0;
+    htim2.Instance->CCR4 = TIM_APB1_PERIOD_CLOCKS+1;
+    htim2.Instance->CCR3 = low_off;
+    htim2.Instance->CCR4 = high_on;
+}
 
 //--------------------------------
 // Measurement and calibration
@@ -542,7 +568,7 @@ static float measure_phase_resistance(Motor_t* motor, float test_current, float 
         queue_voltage_timings(motor, test_voltage, 0.0f);
 
         //Check we meet deadlines after queueing
-        safe_assert(check_timing(motor->motor_timer, NULL, NULL) < motor->control_deadline);
+        safe_assert(check_timing(motor) < motor->control_deadline);
     }
 
     //De-energize motor
@@ -555,9 +581,9 @@ static float measure_phase_resistance(Motor_t* motor, float test_current, float 
 static void queue_modulation_timings(Motor_t* motor, float mod_alpha, float mod_beta) {
     float tA, tB, tC;
     SVM(mod_alpha, mod_beta, &tA, &tB, &tC);
-    motor->next_timings[0] = (uint16_t)(tA * (float)TIM_PERIOD_CLOCKS);
-    motor->next_timings[1] = (uint16_t)(tB * (float)TIM_PERIOD_CLOCKS);
-    motor->next_timings[2] = (uint16_t)(tC * (float)TIM_PERIOD_CLOCKS);
+    motor->next_timings[0] = (uint16_t)(tA * (float)TIM_1_8_PERIOD_CLOCKS);
+    motor->next_timings[1] = (uint16_t)(tB * (float)TIM_1_8_PERIOD_CLOCKS);
+    motor->next_timings[2] = (uint16_t)(tC * (float)TIM_1_8_PERIOD_CLOCKS);
 }
 
 static void queue_voltage_timings(Motor_t* motor, float v_alpha, float v_beta) {
@@ -580,7 +606,7 @@ static float measure_phase_inductance(Motor_t* motor, float voltage_low, float v
             queue_voltage_timings(motor, test_voltages[i], 0.0f);
 
             //Check we meet deadlines after queueing
-            safe_assert(check_timing(motor->motor_timer, NULL, NULL) < motor->control_deadline);
+            safe_assert(check_timing(motor) < motor->control_deadline);
         }
     }
 
@@ -652,7 +678,7 @@ static void scan_motor_loop(Motor_t* motor, float omega, float voltage_magnitude
             queue_voltage_timings(motor, v_alpha, v_beta);
 
             //Check we meet deadlines after queueing
-            safe_assert(check_timing(motor->motor_timer, NULL, NULL) < motor->control_deadline);
+            safe_assert(check_timing(motor) < motor->control_deadline);
         }
     }
 }
@@ -669,7 +695,7 @@ static void FOC_voltage_loop(Motor_t* motor, float v_d, float v_q) {
         queue_voltage_timings(motor, v_alpha, v_beta);
 
         //Check we meet deadlines after queueing
-        safe_assert(check_timing(motor->motor_timer, NULL, NULL) < motor->control_deadline);
+        safe_assert(check_timing(motor) < motor->control_deadline);
     }
 }
 
@@ -694,7 +720,6 @@ static void FOC_current(Motor_t* motor, float Id_des, float Iq_des) {
     float Ierr_q = Iq_des - Iq;
 
     //@TODO look into feed forward terms (esp omega, since PI pole maps to RL tau)
-    //@TODO current limit
     //Apply PI control
     float Vd = ictrl->v_current_control_integral_d + Ierr_d * ictrl->p_gain;
     float Vq = ictrl->v_current_control_integral_q + Ierr_q * ictrl->p_gain;
@@ -710,14 +735,29 @@ static void FOC_current(Motor_t* motor, float Id_des, float Iq_des) {
     {
         mod_d *= mod_scalefactor;
         mod_q *= mod_scalefactor;
+        //@TODO make decayfactor configurable
+        ictrl->v_current_control_integral_d *= 0.99f;
+        ictrl->v_current_control_integral_q *= 0.99f;
     } else {
-        //@TODO look into fancier anti integrator windup than simple locking
         ictrl->v_current_control_integral_d += Ierr_d * (ictrl->i_gain * CURRENT_MEAS_PERIOD);
         ictrl->v_current_control_integral_q += Ierr_q * (ictrl->i_gain * CURRENT_MEAS_PERIOD);
     }
 
     // Compute estimated bus current
-    // *IbusEst = mod_d * Id + mod_q * Iq;
+    ictrl->Ibus = mod_d * Id + mod_q * Iq;
+
+    // If this is last motor, update brake resistor duty
+    // if (motor == &motors[num_motors-1]) {
+    //Above check doesn't work if last motor is executing voltage control
+    //@TODO trigger this update in control_motor_loop instead,
+    // and make voltage control a control mode in it.
+        float Ibus_sum = 0.0f;
+        for (int i = 0; i < num_motors; ++i) {
+            Ibus_sum += motors[i].current_control.Ibus;
+        }
+        //Note: function will clip negative values to 0.0f
+        update_brake_current(-Ibus_sum);
+    // }
 
     // Inverse park transform
     float mod_alpha = c*mod_d - s*mod_q;
@@ -727,7 +767,7 @@ static void FOC_current(Motor_t* motor, float Id_des, float Iq_des) {
     queue_modulation_timings(motor, mod_alpha, mod_beta);
 
     //Check we meet deadlines after queueing
-    safe_assert(check_timing(motor->motor_timer, NULL, NULL) < motor->control_deadline);
+    safe_assert(check_timing(motor) < motor->control_deadline);
 }
 
 static void control_motor_loop(Motor_t* motor) {
@@ -775,6 +815,9 @@ void motor_thread(void const * argument) {
     float test_current = 10.0f;
     float R = measure_phase_resistance(motor, test_current, 1.0f);
     float L = measure_phase_inductance(motor, -1.0f, 1.0f);
+    // #warning(hardcoded values for SK3-5065-280kv!)
+    // float R = 0.0332548246f;
+    // float L = 7.97315806e-06f;
     motor->rotor.encoder_offset = calib_enc_offset(motor, test_current * R);
 
     //Calculate current control gains
@@ -799,9 +842,9 @@ void motor_thread(void const * argument) {
     // motors[0].vel_setpoint = 10000.0f; // [counts/s]
     // motors[0].control_mode = VELOCITY_CONTROL;
 
-    // // Position test
-    // motors[0].pos_setpoint = 50000.0f; // [counts/s]
-    // motors[0].control_mode = POSITION_CONTROL;
+    // Position test
+    motors[0].pos_setpoint = 50000.0f; // [counts/s]
+    motors[0].control_mode = POSITION_CONTROL;
 
     control_motor_loop(motor);
 

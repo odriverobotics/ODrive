@@ -45,6 +45,7 @@ C_SOURCES = \
   Src/spi.c \
   Src/stm32f4xx_hal_msp.c \
   Src/can.c \
+  Src/system_stm32f4xx.c \
   Drivers/DRV8301/drv8301.c \
   Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal.c \
   Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_rcc.c \
@@ -64,11 +65,10 @@ C_SOURCES = \
   Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_dma_ex.c \
   Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_pwr.c \
   Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_adc_ex.c \
-  Drivers/CMSIS/Device/ST/STM32F4xx/Source/Templates/system_stm32f4xx.c \
   MotorControl/utils.c \
   MotorControl/low_level.c  
 ASM_SOURCES = \
-  Drivers/CMSIS/Device/ST/STM32F4xx/Source/Templates/gcc/startup_stm32f405xx.s
+  startup/startup_stm32f405xx.s
 
 #######################################
 # binaries

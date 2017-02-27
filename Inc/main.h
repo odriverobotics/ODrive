@@ -4,7 +4,7 @@
   * Description        : This file contains the common defines of the application
   ******************************************************************************
   *
-  * Copyright (c) 2016 STMicroelectronics International N.V. 
+  * Copyright (c) 2017 STMicroelectronics International N.V. 
   * All rights reserved.
   *
   * Redistribution and use in source and binary forms, with or without 
@@ -50,10 +50,14 @@
 /* USER CODE END Includes */
 
 /* Private define ------------------------------------------------------------*/
-#define TIM_CLOCK_HZ 168000000
-#define TIM_PERIOD_CLOCKS 8192
-// #define TIM_PERIOD_CLOCKS 4096
-#define TIM_DEADTIME_CLOCKS 20
+#define TIM_1_8_CLOCK_HZ 168000000
+// #define TIM_1_8_PERIOD_CLOCKS 4096
+#define TIM_1_8_PERIOD_CLOCKS 8192
+#define TIM_1_8_DEADTIME_CLOCKS 20
+#define TIM_APB1_CLOCK_HZ 84000000
+// #define TIM_APB1_PERIOD_CLOCKS 2048
+#define TIM_APB1_PERIOD_CLOCKS 4096
+#define TIM_APB1_DEADTIME_CLOCKS 20
 
 #define M0_nCS_Pin GPIO_PIN_13
 #define M0_nCS_GPIO_Port GPIOC
@@ -137,8 +141,8 @@
 #define M1_ENC_B_GPIO_Port GPIOB
 /* USER CODE BEGIN Private defines */
 
-#define CURRENT_MEAS_PERIOD ((float)(2*TIM_PERIOD_CLOCKS)/(float)TIM_CLOCK_HZ)
-#define CURRENT_MEAS_HZ (TIM_CLOCK_HZ/(2*TIM_PERIOD_CLOCKS))
+#define CURRENT_MEAS_PERIOD ((float)(2*TIM_1_8_PERIOD_CLOCKS)/(float)TIM_1_8_CLOCK_HZ)
+#define CURRENT_MEAS_HZ (TIM_1_8_CLOCK_HZ/(2*TIM_1_8_PERIOD_CLOCKS))
 
 /* USER CODE END Private defines */
 
