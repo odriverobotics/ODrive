@@ -15,7 +15,7 @@ DEBUG = 1
 # optimization
 # OPT = -O3 -ffast-math -flto
 # OPT = -O3 -ffast-math
-OPT = -O0 -ffast-math
+OPT = -O0 -ffast-math -u _printf_float -u _scanf_float
 
 #######################################
 # pathes
@@ -36,6 +36,11 @@ C_SOURCES = \
   Middlewares/Third_Party/FreeRTOS/Source/portable/GCC/ARM_CM4F/port.c \
   Middlewares/Third_Party/FreeRTOS/Source/portable/MemMang/heap_4.c \
   Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS/cmsis_os.c \
+  Middlewares/ST/STM32_USB_Device_Library/Core/Src/usbd_core.c \
+  Middlewares/ST/STM32_USB_Device_Library/Core/Src/usbd_ioreq.c \
+  Middlewares/ST/STM32_USB_Device_Library/Core/Src/usbd_ctlreq.c \
+  Middlewares/ST/STM32_USB_Device_Library/Class/CDC/Src/usbd_cdc.c \
+  Src/system_stm32f4xx.c \
   Src/stm32f4xx_it.c \
   Src/tim.c \
   Src/gpio.c \
@@ -45,7 +50,9 @@ C_SOURCES = \
   Src/spi.c \
   Src/stm32f4xx_hal_msp.c \
   Src/can.c \
-  Src/system_stm32f4xx.c \
+  Src/usbd_conf.c \
+  Src/usbd_desc.c \
+  Src/usb_device.c \
   Drivers/DRV8301/drv8301.c \
   Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal.c \
   Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_rcc.c \
@@ -65,6 +72,11 @@ C_SOURCES = \
   Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_dma_ex.c \
   Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_pwr.c \
   Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_adc_ex.c \
+  Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_pcd.c \
+  Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_pcd_ex.c \
+  Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_ll_usb.c \
+  Src/usbd_cdc_if.c \
+  Src/syscalls.c \
   MotorControl/utils.c \
   MotorControl/low_level.c  
 ASM_SOURCES = \
@@ -93,6 +105,8 @@ C_INCLUDES = -IMiddlewares/Third_Party/FreeRTOS/Source/portable/GCC/ARM_CM4F
 C_INCLUDES += -IMiddlewares/Third_Party/FreeRTOS/Source/include
 C_INCLUDES += -IMiddlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS
 C_INCLUDES += -IDrivers/DRV8301
+C_INCLUDES += -IMiddlewares/ST/STM32_USB_Device_Library/Core/Inc
+C_INCLUDES += -IMiddlewares/ST/STM32_USB_Device_Library/Class/CDC/Inc
 C_INCLUDES += -IDrivers/STM32F4xx_HAL_Driver/Inc
 C_INCLUDES += -IDrivers/STM32F4xx_HAL_Driver/Inc/Legacy
 C_INCLUDES += -IDrivers/CMSIS/Device/ST/STM32F4xx/Include
