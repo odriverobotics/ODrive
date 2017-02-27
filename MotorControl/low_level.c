@@ -479,17 +479,6 @@ void pwm_trig_adc_cb(ADC_HandleTypeDef* hadc) {
         // Trigger motor thread
         if (motor->thread_ready)
             osSignalSet(motor->motor_thread, M_SIGNAL_PH_CURRENT_MEAS);
-
-        static float M0C_avg = 0.0f;
-        static float M0C_avg_sqr_delta = 0.0f;
-        static const float k = 1.0f/5000.0f;
-        if (motor == &motors[0] && hadc == &hadc3) {
-            float delta = current - M0C_avg;
-            M0C_avg += k * delta;
-            float dd_sqr = (delta * delta) - M0C_avg_sqr_delta;
-            M0C_avg_sqr_delta += k * dd_sqr;
-        }
-
     } else {
         // DC_CAL measurement
         if (hadc == &hadc2) {
@@ -501,7 +490,7 @@ void pwm_trig_adc_cb(ADC_HandleTypeDef* hadc) {
 }
 
 static uint16_t check_timing(Motor_t* motor) {
-	TIM_HandleTypeDef* htim = motor->motor_timer;
+    TIM_HandleTypeDef* htim = motor->motor_timer;
     uint16_t timing = htim->Instance->CNT;
     bool down = htim->Instance->CR1 & TIM_CR1_DIR;
     if (down) {
@@ -824,21 +813,21 @@ void motor_thread(void const * argument) {
     }
 
     float test_current = 10.0f;
-    // float R = measure_phase_resistance(motor, test_current, 1.0f);
-    // float L = measure_phase_inductance(motor, -1.0f, 1.0f);
-    #warning(hardcoded values!)
-    float R = 0.0332548246f;
-    float L = 7.97315806e-06f;
+    float R = measure_phase_resistance(motor, test_current, 1.0f);
+    float L = measure_phase_inductance(motor, -1.0f, 1.0f);
+    // #warning(hardcoded values for SK3-5065-280kv!)
+    // float R = 0.0332548246f;
+    // float L = 7.97315806e-06f;
     motor->rotor.encoder_offset = calib_enc_offset(motor, test_current * R);
 
     //Calculate current control gains
-    float current_control_bandwidth = 1000.0f; // [rad/s]
+    float current_control_bandwidth = 2000.0f; // [rad/s]
     motor->current_control.p_gain = current_control_bandwidth * L;
     float plant_pole = R/L;
     motor->current_control.i_gain = plant_pole * motor->current_control.p_gain;
 
     //Calculate rotor pll gains
-    float rotor_pll_bandwidth = 1000.0f; // [rad/s]
+    float rotor_pll_bandwidth = 2000.0f; // [rad/s]
     motor->rotor.pll_kp = 2.0f * rotor_pll_bandwidth;
     //Check that we don't get problems with discrete time approximation
     safe_assert(CURRENT_MEAS_PERIOD * motor->rotor.pll_kp < 1.0f);
