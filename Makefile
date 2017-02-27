@@ -166,6 +166,12 @@ flash: $(BUILD_DIR)/$(TARGET).elf
 gdb: $(BUILD_DIR)/$(TARGET).elf
 	arm-none-eabi-gdb $(BUILD_DIR)/$(TARGET).elf -x openocd.gdbinit
 
+bmp: $(BUILD_DIR)/$(TARGET).elf
+	arm-none-eabi-gdb --ex 'target extended-remote /dev/stlink' \
+		--ex 'monitor swdp_scan' \
+		--ex 'attach 1' \
+		--ex 'load' $(BUILD_DIR)/$(TARGET).elf
+
 #######################################
 # dependencies
 #######################################
