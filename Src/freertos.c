@@ -58,7 +58,7 @@ osThreadId defaultTaskHandle;
 
 osThreadDef(task_motor_0, motor_thread, osPriorityHigh+1, 0, 512);
 osThreadDef(task_motor_1, motor_thread, osPriorityHigh, 0, 512);
-osThreadDef(task_usb_mc, usb_mc_thread, osPriorityNormal, 0, 512);
+osThreadDef(task_usb_mc, usb_mc_thread, osPriorityIdle, 0, 512);
 
 /* USER CODE END Variables */
 
@@ -70,6 +70,7 @@ void MX_FREERTOS_Init(void); /* (MISRA C 2004 rule 8.1) */
 
 /* USER CODE BEGIN FunctionPrototypes */
 
+void usb_int_thread(void const * argument);
 void usb_cdc_thread(void const * argument);
 
 /* USER CODE END FunctionPrototypes */
@@ -117,6 +118,10 @@ void StartDefaultTask(void const * argument)
 
   /* USER CODE BEGIN StartDefaultTask */
 
+  // Start USB Interrupt thread
+  osThreadDef(task_usb_int, usb_int_thread, osPriorityIdle, 0, 256);
+  osThreadCreate(osThread(task_usb_int), NULL);
+
   // Init motor control
   init_motor_control();
 
@@ -139,6 +144,19 @@ void StartDefaultTask(void const * argument)
 
 /* USER CODE BEGIN Application */
      
+void usb_int_thread(void const * argument) {
+
+  for(;;) {
+    // Periodically process USB OTG FS interrupt
+    HAL_NVIC_EnableIRQ(OTG_FS_IRQn);
+    HAL_NVIC_DisableIRQ(OTG_FS_IRQn);
+    osThreadYield();
+  }
+
+  // If we get here, then this task is done
+  vTaskDelete(osThreadGetId());
+}
+
 void usb_cdc_thread(void const * argument) {
 
   // Wait some time for USB CDC connection and print version
@@ -147,9 +165,9 @@ void usb_cdc_thread(void const * argument) {
 
   for(;;) {
     // Periodically print SysTick information
-    printf("osKernelSysTick: %d\n", osKernelSysTick());
-	  osDelay(1000);
-	}
+    //printf("osKernelSysTick: %d\n", osKernelSysTick());
+    osDelay(1000);
+  }
 
   // If we get here, then this task is done
   vTaskDelete(osThreadGetId());
