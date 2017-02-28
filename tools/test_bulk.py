@@ -16,6 +16,7 @@ import threading
 from odrive import usbbulk
 
 running = True
+ready   = False
 
 def main(args):
   global running
@@ -34,18 +35,25 @@ def main(args):
   thread = threading.Thread(target=recieve_thread, args=[dev])
   thread.start()
   while running:
+    time.sleep(0.1)
     try:
       command = input("Enter ODrive command:\n")
-      print(command)
       dev.send(command)
     except:
       running = False
 
 def recieve_thread(dev):
+  global ready
   while running:
-    message = dev.recieve(dev.recieve_max())
-    print(bytes(message).decode('ascii'), end='')
-    time.sleep(1)
+    time.sleep(0.1)
+    try:
+      message = dev.recieve(dev.recieve_max())
+      message_ascii = bytes(message).decode('ascii')
+      print(message_ascii, end='')
+      if "ODrive Firmware" in message_ascii:
+        ready = True
+    except:
+      pass
 
 if __name__ == "__main__":
    main(args)

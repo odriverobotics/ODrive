@@ -8,7 +8,8 @@
 
 /* Exported types ------------------------------------------------------------*/
 typedef enum {
-    M_SIGNAL_PH_CURRENT_MEAS = 1u << 0
+    M_SIGNAL_PH_CURRENT_MEAS = 1u << 0,
+    M_SIGNAL_USB_MOTOR_CONTROL = 1u << 1
 } Motor_thread_signals_t;
 
 typedef enum {
@@ -71,6 +72,8 @@ typedef struct {
 extern float vbus_voltage;
 extern Motor_t motors[];
 extern const int num_motors;
+extern uint8_t pending_usb_buf[64];
+extern osThreadId usb_mc_thread_id;
 
 /* Exported variables --------------------------------------------------------*/
 /* Exported macro ------------------------------------------------------------*/
@@ -88,5 +91,6 @@ void vbus_sense_adc_cb(ADC_HandleTypeDef* hadc);
 
 //@TODO move motor thread to high level file
 void motor_thread(void const * argument);
+void usb_mc_thread(void const * argument);
 
 #endif //__LOW_LEVEL_H
