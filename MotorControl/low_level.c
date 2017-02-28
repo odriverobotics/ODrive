@@ -126,6 +126,10 @@ Motor_t motors[] = {
 };
 const int num_motors = sizeof(motors)/sizeof(motors[0]);
 
+//Pending USB buffer
+uint8_t pending_usb_buf[64];
+osThreadId usb_mc_thread_id;
+
 /* Private constant data -----------------------------------------------------*/
 static const float one_by_sqrt3 = 0.57735026919f;
 static const float sqrt3_by_2 = 0.86602540378;
@@ -176,6 +180,47 @@ void set_current_setpoint(Motor_t* motor, float current_setpoint) {
     motor->current_setpoint = current_setpoint;
     motor->control_mode = CURRENT_CONTROL;
     printf("CURRENT_CONTROL %3.3f\n", motor->current_setpoint);
+}
+
+void usb_mc_thread(void const * argument) {
+  // store threadId
+  usb_mc_thread_id = osThreadGetId();
+  // run processing loop
+  for(;;) {
+    // wait for USB motor control packets
+    osSignalWait(M_SIGNAL_USB_MOTOR_CONTROL, osWaitForever);
+    // check incoming packet type
+    if (pending_usb_buf[0] == 'p') {
+      // position control
+      uint8_t motor_number;
+      float pos_setpoint, vel_feed_forward, current_feed_forward;
+      sscanf(pending_usb_buf, "p %u %f %f %f", &motor_number, &pos_setpoint, &vel_feed_forward, &current_feed_forward);
+      if (motor_number < num_motors) {
+        set_pos_setpoint(&motors[motor_number], pos_setpoint, vel_feed_forward, current_feed_forward);
+      }
+    } else if (pending_usb_buf[0] == 'v') {
+      // velocity control
+      uint8_t motor_number;
+      float vel_feed_forward, current_feed_forward;
+      sscanf(pending_usb_buf, "v %u %f %f", &motor_number, &vel_feed_forward, &current_feed_forward);
+      if (motor_number < num_motors) {
+        set_vel_setpoint(&motors[motor_number], vel_feed_forward, current_feed_forward);
+      }
+    } else if (pending_usb_buf[0] == 'c') {
+      // velocity control
+      uint8_t motor_number;
+      float current_feed_forward;
+      sscanf(pending_usb_buf, "c %u %f ", &motor_number, &current_feed_forward);
+      if (motor_number < num_motors) {
+        set_current_setpoint(&motors[motor_number], current_feed_forward);
+      }
+    }
+    // clear the buffer
+    memset(pending_usb_buf, 0, sizeof(pending_usb_buf));
+  }
+
+  // If we get here, then this task is done
+  vTaskDelete(usb_mc_thread_id);
 }
 
 // Initalises the low level motor control and then starts the motor control threads
@@ -744,7 +789,7 @@ static void control_motor_loop(Motor_t* motor) {
         if (motor->control_mode >= POSITION_CONTROL) {
             float pos_err = motor->pos_setpoint - motor->rotor.pll_pos;
             vel_des += motor->pos_gain * pos_err;
-        } 
+        }
         float vel_lim = motor->vel_limit;
         if (vel_des >  vel_lim) vel_des =  vel_lim;
         if (vel_des < -vel_lim) vel_des = -vel_lim;
@@ -812,4 +857,3 @@ void motor_thread(void const * argument) {
     //De-energize motor
     queue_voltage_timings(motor, 0.0f, 0.0f);
 }
-

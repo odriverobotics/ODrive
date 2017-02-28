@@ -264,31 +264,12 @@ static int8_t CDC_Receive_FS (uint8_t* Buf, uint32_t *Len)
   /* USER CODE BEGIN 6 */
   USBD_CDC_SetRxBuffer(&hUsbDeviceFS, &Buf[0]);
   USBD_CDC_ReceivePacket(&hUsbDeviceFS);
-  // check incoming packet type
-  if (Buf[0] == 'p') {
-	  // position control
-	  uint8_t motor_number;
-	  float pos_setpoint, vel_feed_forward, current_feed_forward;
-	  sscanf(Buf, "p %u %f %f %f", &motor_number, &pos_setpoint, &vel_feed_forward, &current_feed_forward);
-	  if (motor_number < num_motors) {
-		  set_pos_setpoint(&motors[motor_number], pos_setpoint, vel_feed_forward, current_feed_forward);
-	  }
-  } else if (Buf[0] == 'v') {
-	  // velocity control
-	  uint8_t motor_number;
-	  float vel_feed_forward, current_feed_forward;
-	  sscanf(Buf, "v %u %f %f", &motor_number, &vel_feed_forward, &current_feed_forward);
-	  if (motor_number < num_motors) {
-		  set_vel_setpoint(&motors[motor_number], vel_feed_forward, current_feed_forward);
-	  }
-  } else if (Buf[0] == 'c') {
-	  // velocity control
-	  uint8_t motor_number;
-	  float current_feed_forward;
-	  sscanf(Buf, "c %u %f ", &motor_number, &current_feed_forward);
-	  if (motor_number < num_motors) {
-	      set_current_setpoint(&motors[motor_number], current_feed_forward);
-	  }
+  // if usb_mc_thread exists
+  if (usb_mc_thread_id) {
+    // copy to temporary buffer
+    memcpy(pending_usb_buf, Buf, *Len);
+    // alert USB motor control
+    osSignalSet(usb_mc_thread_id, M_SIGNAL_USB_MOTOR_CONTROL);
   }
   return (USBD_OK);
   /* USER CODE END 6 */ 

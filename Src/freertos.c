@@ -58,6 +58,7 @@ osThreadId defaultTaskHandle;
 
 osThreadDef(task_motor_0, motor_thread, osPriorityHigh+1, 0, 512);
 osThreadDef(task_motor_1, motor_thread, osPriorityHigh, 0, 512);
+osThreadDef(task_usb_mc, usb_mc_thread, osPriorityNormal, 0, 512);
 
 /* USER CODE END Variables */
 
@@ -126,6 +127,9 @@ void StartDefaultTask(void const * argument)
   // Start USB CDC thread
   osThreadDef(task_usb_cdc, usb_cdc_thread, osPriorityIdle, 0, 256);
   osThreadCreate(osThread(task_usb_cdc), NULL);
+
+  // Start USB motor control thread
+  osThreadCreate(osThread(task_usb_mc), NULL);
 
   //If we get to here, then the default task is done.
   vTaskDelete(defaultTaskHandle);
