@@ -198,24 +198,24 @@ void usb_mc_thread(void const * argument) {
       // position control
       uint8_t motor_number;
       float pos_setpoint, vel_feed_forward, current_feed_forward;
-      sscanf(pending_usb_buf, "p %u %f %f %f", &motor_number, &pos_setpoint, &vel_feed_forward, &current_feed_forward);
-      if (motor_number < num_motors) {
+      int numscan = sscanf(pending_usb_buf, "p %u %f %f %f", &motor_number, &pos_setpoint, &vel_feed_forward, &current_feed_forward);
+      if (numscan == 4 && motor_number < num_motors) {
         set_pos_setpoint(&motors[motor_number], pos_setpoint, vel_feed_forward, current_feed_forward);
       }
     } else if (pending_usb_buf[0] == 'v') {
       // velocity control
       uint8_t motor_number;
       float vel_feed_forward, current_feed_forward;
-      sscanf(pending_usb_buf, "v %u %f %f", &motor_number, &vel_feed_forward, &current_feed_forward);
-      if (motor_number < num_motors) {
+      int numscan = sscanf(pending_usb_buf, "v %u %f %f", &motor_number, &vel_feed_forward, &current_feed_forward);
+      if (numscan == 3 && motor_number < num_motors) {
         set_vel_setpoint(&motors[motor_number], vel_feed_forward, current_feed_forward);
       }
     } else if (pending_usb_buf[0] == 'c') {
       // velocity control
       uint8_t motor_number;
       float current_feed_forward;
-      sscanf(pending_usb_buf, "c %u %f ", &motor_number, &current_feed_forward);
-      if (motor_number < num_motors) {
+      int numscan = sscanf(pending_usb_buf, "c %u %f ", &motor_number, &current_feed_forward);
+      if (numscan == 2 && motor_number < num_motors) {
         set_current_setpoint(&motors[motor_number], current_feed_forward);
       }
     }
