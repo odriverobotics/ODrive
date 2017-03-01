@@ -170,7 +170,7 @@ void set_pos_setpoint(Motor_t* motor, float pos_setpoint, float vel_feed_forward
     motor->vel_setpoint = vel_feed_forward;
     motor->current_setpoint = current_feed_forward;
     motor->control_mode = POSITION_CONTROL;
-    printf("POSITION_CONTROL %3.3f %3.3f %3.3f\n", motor->pos_setpoint, motor->vel_setpoint, motor->current_setpoint);
+    printf("POSITION_CONTROL %6.0f %3.3f %3.3f\n", motor->pos_setpoint, motor->vel_setpoint, motor->current_setpoint);
 }
 
 void set_vel_setpoint(Motor_t* motor, float vel_setpoint, float current_feed_forward) {
@@ -186,45 +186,38 @@ void set_current_setpoint(Motor_t* motor, float current_setpoint) {
     printf("CURRENT_CONTROL %3.3f\n", motor->current_setpoint);
 }
 
-void usb_mc_thread(void const * argument) {
-  // store threadId
-  usb_mc_thread_id = osThreadGetId();
-  // run processing loop
-  for(;;) {
-    // wait for USB motor control packets
-    osSignalWait(M_SIGNAL_USB_MOTOR_CONTROL, osWaitForever);
+void motor_parse_cmd(uint8_t* buffer, int len) {
+
+    //@TODO very hacky way of terminating sscanf at end of buffer:
+    //We should do some proper struct packing instead of using sscanf altogether
+    buffer[len] = 0;
+
     // check incoming packet type
     if (pending_usb_buf[0] == 'p') {
-      // position control
-      uint8_t motor_number;
-      float pos_setpoint, vel_feed_forward, current_feed_forward;
-      int numscan = sscanf(pending_usb_buf, "p %u %f %f %f", &motor_number, &pos_setpoint, &vel_feed_forward, &current_feed_forward);
-      if (numscan == 4 && motor_number < num_motors) {
-        set_pos_setpoint(&motors[motor_number], pos_setpoint, vel_feed_forward, current_feed_forward);
-      }
+        // position control
+        uint8_t motor_number;
+        float pos_setpoint, vel_feed_forward, current_feed_forward;
+        int numscan = sscanf(pending_usb_buf, "p %u %f %f %f", &motor_number, &pos_setpoint, &vel_feed_forward, &current_feed_forward);
+        if (numscan == 4 && motor_number < num_motors) {
+            set_pos_setpoint(&motors[motor_number], pos_setpoint, vel_feed_forward, current_feed_forward);
+        }
     } else if (pending_usb_buf[0] == 'v') {
-      // velocity control
-      uint8_t motor_number;
-      float vel_feed_forward, current_feed_forward;
-      int numscan = sscanf(pending_usb_buf, "v %u %f %f", &motor_number, &vel_feed_forward, &current_feed_forward);
-      if (numscan == 3 && motor_number < num_motors) {
-        set_vel_setpoint(&motors[motor_number], vel_feed_forward, current_feed_forward);
-      }
+        // velocity control
+        uint8_t motor_number;
+        float vel_feed_forward, current_feed_forward;
+        int numscan = sscanf(pending_usb_buf, "v %u %f %f", &motor_number, &vel_feed_forward, &current_feed_forward);
+        if (numscan == 3 && motor_number < num_motors) {
+            set_vel_setpoint(&motors[motor_number], vel_feed_forward, current_feed_forward);
+        }
     } else if (pending_usb_buf[0] == 'c') {
-      // velocity control
-      uint8_t motor_number;
-      float current_feed_forward;
-      int numscan = sscanf(pending_usb_buf, "c %u %f ", &motor_number, &current_feed_forward);
-      if (numscan == 2 && motor_number < num_motors) {
-        set_current_setpoint(&motors[motor_number], current_feed_forward);
-      }
+        // current control
+        uint8_t motor_number;
+        float current_feed_forward;
+        int numscan = sscanf(pending_usb_buf, "c %u %f ", &motor_number, &current_feed_forward);
+        if (numscan == 2 && motor_number < num_motors) {
+            set_current_setpoint(&motors[motor_number], current_feed_forward);
+        }
     }
-    // clear the buffer
-    memset(pending_usb_buf, 0, sizeof(pending_usb_buf));
-  }
-
-  // If we get here, then this task is done
-  vTaskDelete(usb_mc_thread_id);
 }
 
 // Initalises the low level motor control and then starts the motor control threads

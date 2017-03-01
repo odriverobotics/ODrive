@@ -46,7 +46,8 @@
 #include "task.h"
 #include "cmsis_os.h"
 
-/* USER CODE BEGIN Includes */     
+/* USER CODE BEGIN Includes */
+#include "freertos.h"
 #include "low_level.h"
 #include "version.h"
 /* USER CODE END Includes */
@@ -55,11 +56,7 @@
 osThreadId defaultTaskHandle;
 
 /* USER CODE BEGIN Variables */
-
-osThreadDef(task_motor_0, motor_thread, osPriorityHigh+1, 0, 512);
-osThreadDef(task_motor_1, motor_thread, osPriorityHigh, 0, 512);
-osThreadDef(task_usb_mc, usb_mc_thread, osPriorityIdle, 0, 512);
-
+extern PCD_HandleTypeDef hpcd_USB_OTG_FS;
 /* USER CODE END Variables */
 
 /* Function prototypes -------------------------------------------------------*/
@@ -69,9 +66,7 @@ extern void MX_USB_DEVICE_Init(void);
 void MX_FREERTOS_Init(void); /* (MISRA C 2004 rule 8.1) */
 
 /* USER CODE BEGIN FunctionPrototypes */
-
-void usb_int_thread(void const * argument);
-void usb_cdc_thread(void const * argument);
+void usb_cmd_thread(void const * argument);
 
 /* USER CODE END FunctionPrototypes */
 
@@ -89,7 +84,9 @@ void MX_FREERTOS_Init(void) {
   /* USER CODE END RTOS_MUTEX */
 
   /* USER CODE BEGIN RTOS_SEMAPHORES */
-  /* add semaphores, ... */
+  // Init usb irq semaphore with 0 tolkens.
+  osSemaphoreDef(sem_usb_irq);
+  sem_usb_irq = osSemaphoreCreate(osSemaphore(sem_usb_irq), 0);
   /* USER CODE END RTOS_SEMAPHORES */
 
   /* USER CODE BEGIN RTOS_TIMERS */
@@ -118,23 +115,18 @@ void StartDefaultTask(void const * argument)
 
   /* USER CODE BEGIN StartDefaultTask */
 
-  // Start USB Interrupt thread
-  osThreadDef(task_usb_int, usb_int_thread, osPriorityIdle, 0, 256);
-  osThreadCreate(osThread(task_usb_int), NULL);
-
   // Init motor control
   init_motor_control();
 
   // Start motor threads
-  osThreadCreate(osThread(task_motor_0), &motors[0]);
-  osThreadCreate(osThread(task_motor_1), &motors[1]);
+  osThreadDef(task_motor_0, motor_thread,   osPriorityHigh+1, 0, 512);
+  osThreadDef(task_motor_1, motor_thread,   osPriorityHigh,   0, 512);
+  thread_motor_0 = osThreadCreate(osThread(task_motor_0), &motors[0]);
+  thread_motor_1 = osThreadCreate(osThread(task_motor_1), &motors[1]);
 
-  // Start USB CDC thread
-  osThreadDef(task_usb_cdc, usb_cdc_thread, osPriorityIdle, 0, 256);
-  osThreadCreate(osThread(task_usb_cdc), NULL);
-
-  // Start USB motor control thread
-  osThreadCreate(osThread(task_usb_mc), NULL);
+  // Start USB command handling thread
+  osThreadDef(task_usb_cmd, usb_cmd_thread, osPriorityNormal, 0, 512);
+  thread_usb_cmd = osThreadCreate(osThread(task_usb_cmd), NULL);
 
   //If we get to here, then the default task is done.
   vTaskDelete(defaultTaskHandle);
@@ -143,30 +135,19 @@ void StartDefaultTask(void const * argument)
 }
 
 /* USER CODE BEGIN Application */
-     
-void usb_int_thread(void const * argument) {
 
-  for(;;) {
-    // Periodically process USB OTG FS interrupt
+// Thread to handle deffered processing of USB interrupt
+void usb_cmd_thread(void const * argument) {
+
+  for (;;) {
+    // Wait for signalling from USB interrupt (OTG_FS_IRQHandler)
+    osSemaphoreWait(sem_usb_irq, osWaitForever);
+    // Irq processing loop
+    while(HAL_NVIC_GetActive(OTG_FS_IRQn)) {
+      HAL_PCD_IRQHandler(&hpcd_USB_OTG_FS);
+    }
+    // Let the irq (OTG_FS_IRQHandler) fire again.
     HAL_NVIC_EnableIRQ(OTG_FS_IRQn);
-    HAL_NVIC_DisableIRQ(OTG_FS_IRQn);
-    osThreadYield();
-  }
-
-  // If we get here, then this task is done
-  vTaskDelete(osThreadGetId());
-}
-
-void usb_cdc_thread(void const * argument) {
-
-  // Wait some time for USB CDC connection and print version
-  osDelay(5000);
-  printf("ODrive Firmware v%d.%d.%d\n", ODRIVE_FW_VERSION_MAJOR, ODRIVE_FW_VERSION_MINOR, ODRIVE_FW_VERSION_PATCH);
-
-  for(;;) {
-    // Periodically print SysTick information
-    //printf("osKernelSysTick: %d\n", osKernelSysTick());
-    osDelay(1000);
   }
 
   // If we get here, then this task is done

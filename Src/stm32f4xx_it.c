@@ -37,7 +37,8 @@
 #include "cmsis_os.h"
 
 /* USER CODE BEGIN 0 */
-#include <low_level.h>
+#include "freertos.h"
+#include "low_level.h"
 
 typedef void (*ADC_handler_t)(ADC_HandleTypeDef* hadc);
 void ADC_IRQ_Dispatch(ADC_HandleTypeDef* hadc, ADC_handler_t callback);
@@ -199,8 +200,12 @@ void OTG_FS_IRQHandler(void)
 {
   /* USER CODE BEGIN OTG_FS_IRQn 0 */
 
-  // only process one OTG FS interrupt at a time
+  // Mask interrupt, and signal processing of interrupt by usb_cmd_thread
+  // The thread will re-enable the interrupt when all pending irqs are clear.
   HAL_NVIC_DisableIRQ(OTG_FS_IRQn);
+  osSemaphoreRelease(sem_usb_irq);
+  // Bypass interrupt processing here
+  return;
 
   /* USER CODE END OTG_FS_IRQn 0 */
   HAL_PCD_IRQHandler(&hpcd_USB_OTG_FS);

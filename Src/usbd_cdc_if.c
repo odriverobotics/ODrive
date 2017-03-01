@@ -71,8 +71,8 @@
 /* USER CODE BEGIN PRIVATE_DEFINES */
 /* Define size for the receive and transmit buffer over CDC */
 /* It's up to user to redefine and/or remove those define */
-#define APP_RX_DATA_SIZE  4
-#define APP_TX_DATA_SIZE  4
+#define APP_RX_DATA_SIZE  64
+#define APP_TX_DATA_SIZE  64
 /* USER CODE END PRIVATE_DEFINES */
 /**
   * @}
@@ -264,13 +264,9 @@ static int8_t CDC_Receive_FS (uint8_t* Buf, uint32_t *Len)
   /* USER CODE BEGIN 6 */
   USBD_CDC_SetRxBuffer(&hUsbDeviceFS, &Buf[0]);
   USBD_CDC_ReceivePacket(&hUsbDeviceFS);
-  // if usb_mc_thread exists
-  if (usb_mc_thread_id) {
-    // copy to temporary buffer
-    memcpy(pending_usb_buf, Buf, *Len);
-    // alert USB motor control
-    osSignalSet(usb_mc_thread_id, M_SIGNAL_USB_MOTOR_CONTROL);
-  }
+
+  motor_parse_cmd(Buf, *Len);
+
   return (USBD_OK);
   /* USER CODE END 6 */ 
 }
