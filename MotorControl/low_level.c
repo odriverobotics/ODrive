@@ -135,10 +135,6 @@ Motor_t motors[] = {
 };
 const int num_motors = sizeof(motors)/sizeof(motors[0]);
 
-//Pending USB buffer
-uint8_t pending_usb_buf[64];
-osThreadId usb_mc_thread_id;
-
 /* Private constant data -----------------------------------------------------*/
 static const float one_by_sqrt3 = 0.57735026919f;
 static const float sqrt3_by_2 = 0.86602540378;
@@ -193,27 +189,27 @@ void motor_parse_cmd(uint8_t* buffer, int len) {
     buffer[len] = 0;
 
     // check incoming packet type
-    if (pending_usb_buf[0] == 'p') {
+    if (buffer[0] == 'p') {
         // position control
         uint8_t motor_number;
         float pos_setpoint, vel_feed_forward, current_feed_forward;
-        int numscan = sscanf(pending_usb_buf, "p %u %f %f %f", &motor_number, &pos_setpoint, &vel_feed_forward, &current_feed_forward);
+        int numscan = sscanf(buffer, "p %u %f %f %f", &motor_number, &pos_setpoint, &vel_feed_forward, &current_feed_forward);
         if (numscan == 4 && motor_number < num_motors) {
             set_pos_setpoint(&motors[motor_number], pos_setpoint, vel_feed_forward, current_feed_forward);
         }
-    } else if (pending_usb_buf[0] == 'v') {
+    } else if (buffer[0] == 'v') {
         // velocity control
         uint8_t motor_number;
         float vel_feed_forward, current_feed_forward;
-        int numscan = sscanf(pending_usb_buf, "v %u %f %f", &motor_number, &vel_feed_forward, &current_feed_forward);
+        int numscan = sscanf(buffer, "v %u %f %f", &motor_number, &vel_feed_forward, &current_feed_forward);
         if (numscan == 3 && motor_number < num_motors) {
             set_vel_setpoint(&motors[motor_number], vel_feed_forward, current_feed_forward);
         }
-    } else if (pending_usb_buf[0] == 'c') {
+    } else if (buffer[0] == 'c') {
         // current control
         uint8_t motor_number;
         float current_feed_forward;
-        int numscan = sscanf(pending_usb_buf, "c %u %f ", &motor_number, &current_feed_forward);
+        int numscan = sscanf(buffer, "c %u %f ", &motor_number, &current_feed_forward);
         if (numscan == 2 && motor_number < num_motors) {
             set_current_setpoint(&motors[motor_number], current_feed_forward);
         }

@@ -84,9 +84,10 @@ void MX_FREERTOS_Init(void) {
   /* USER CODE END RTOS_MUTEX */
 
   /* USER CODE BEGIN RTOS_SEMAPHORES */
-  // Init usb irq semaphore with 0 tolkens.
+  // Init usb irq binary semaphore, and start with no tolkens by removing the starting one.
   osSemaphoreDef(sem_usb_irq);
-  sem_usb_irq = osSemaphoreCreate(osSemaphore(sem_usb_irq), 0);
+  sem_usb_irq = osSemaphoreCreate(osSemaphore(sem_usb_irq), 1);
+  osSemaphoreWait(sem_usb_irq, 0);
   /* USER CODE END RTOS_SEMAPHORES */
 
   /* USER CODE BEGIN RTOS_TIMERS */
@@ -143,9 +144,9 @@ void usb_cmd_thread(void const * argument) {
     // Wait for signalling from USB interrupt (OTG_FS_IRQHandler)
     osSemaphoreWait(sem_usb_irq, osWaitForever);
     // Irq processing loop
-    while(HAL_NVIC_GetActive(OTG_FS_IRQn)) {
+    //while(HAL_NVIC_GetActive(OTG_FS_IRQn)) {
       HAL_PCD_IRQHandler(&hpcd_USB_OTG_FS);
-    }
+    //}
     // Let the irq (OTG_FS_IRQHandler) fire again.
     HAL_NVIC_EnableIRQ(OTG_FS_IRQn);
   }
