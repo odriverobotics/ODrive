@@ -203,7 +203,9 @@ void OTG_FS_IRQHandler(void)
   // Mask interrupt, and signal processing of interrupt by usb_cmd_thread
   // The thread will re-enable the interrupt when all pending irqs are clear.
   HAL_NVIC_DisableIRQ(OTG_FS_IRQn);
-  osSemaphoreRelease(sem_usb_irq);
+  if (sem_usb_irq) {
+    osSemaphoreRelease(sem_usb_irq);
+  }
   // Bypass interrupt processing here
   return;
 
