@@ -50,6 +50,8 @@ typedef struct {
     float pos_gain;
     float vel_setpoint;
     float vel_gain;
+    float vel_integrator_gain;
+    float vel_integrator_current;
     float vel_limit;
     float current_setpoint;
     osThreadId motor_thread;

@@ -42,6 +42,8 @@ Motor_t motors[] = {
         .pos_gain = 20.0f, // [(counts/s) / counts]
         .vel_setpoint = 0.0f,
         .vel_gain = 15.0f / 10000.0f, // [A/(counts/s)]
+        .vel_integrator_gain = 10.0f / 10000.0f, // [A/(counts/s * s)]
+        .vel_integrator_current = 0.0f, // [A]
         .vel_limit = 20000.0f, // [counts/s]
         .current_setpoint = 0.0f, // [A]
         .motor_thread = 0,
@@ -90,6 +92,8 @@ Motor_t motors[] = {
         .pos_gain = 20.0f, // [(counts/s) / counts]
         .vel_setpoint = 0.0f,
         .vel_gain = 15.0f / 10000.0f, // [A/(counts/s)]
+        .vel_integrator_gain = 10.0f / 10000.0f, // [A/(counts/s * s)]
+        .vel_integrator_current = 0.0f, // [A]
         .vel_limit = 20000.0f, // [counts/s]
         .current_setpoint = 0.0f, // [A]
         .motor_thread = 0,
@@ -819,19 +823,48 @@ static void control_motor_loop(Motor_t* motor) {
             float pos_err = motor->pos_setpoint - motor->rotor.pll_pos;
             vel_des += motor->pos_gain * pos_err;
         }
+
+        //Velocity limiting
         float vel_lim = motor->vel_limit;
         if (vel_des >  vel_lim) vel_des =  vel_lim;
         if (vel_des < -vel_lim) vel_des = -vel_lim;
 
         //Velocity control
         float Iq = motor->current_setpoint;
+        float v_err = vel_des - motor->rotor.pll_vel;
         if (motor->control_mode >= VELOCITY_CONTROL) {
-            float v_err = vel_des - motor->rotor.pll_vel;
             Iq += motor->vel_gain * v_err;
         }
+
+        //Velocity integral action before limiting
+        Iq += motor->vel_integrator_current;
+
+        //Current limiting
         float Ilim = motor->current_control.current_lim;
-        if (Iq >  Ilim) Iq =  Ilim;
-        if (Iq < -Ilim) Iq = -Ilim;
+        bool limited = false;
+        if (Iq > Ilim) {
+            limited = true;
+            Iq = Ilim;
+        }
+        if (Iq < -Ilim) {
+            limited = true;
+            Iq = -Ilim;
+        }
+
+        //Velocity integrator (behaviour dependent on limiting)
+        if (motor->control_mode >= VELOCITY_CONTROL) {
+            if (limited) {
+                //@TODO make decayfactor configurable
+                motor->vel_integrator_current *= 0.99f;
+            } else {
+                motor->vel_integrator_current += (motor->vel_integrator_gain * CURRENT_MEAS_PERIOD) * v_err;
+            }
+        } else {
+            //reset integral if not in use
+            motor->vel_integrator_current = 0.0f;
+        }
+
+        //Execute current command
         FOC_current(motor, 0.0f, Iq);
     }
 }
