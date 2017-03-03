@@ -37,7 +37,7 @@
 #include "cmsis_os.h"
 
 /* USER CODE BEGIN 0 */
-#include "freertos.h"
+#include "freertos_vars.h"
 #include "low_level.h"
 
 typedef void (*ADC_handler_t)(ADC_HandleTypeDef* hadc);
@@ -52,7 +52,7 @@ extern ADC_HandleTypeDef hadc2;
 extern ADC_HandleTypeDef hadc3;
 
 /******************************************************************************/
-/*            Cortex-M4 Processor Interruption and Exception Handlers         */ 
+/*            Cortex-M4 Processor Interruption and Exception Handlers         */
 /******************************************************************************/
 
 /**
