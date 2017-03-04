@@ -65,7 +65,7 @@ We also use a tool to generate the Makefile. The steps to do this are as follows
 ### Generate makefile
 There is an excellent project called CubeMX2Makefile, originally from baoshi. This project is included as a submodule.
 * Initialise and clone the submodules: `git submodule init; git submodule update`
-* Generate makefile: `CubeMX2Makefile/CubeMX2Makefile.py .`
+* Generate makefile: `python2 CubeMX2Makefile/CubeMX2Makefile.py .`
 
 
 ## Setting up Eclipse development environment
