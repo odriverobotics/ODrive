@@ -17,7 +17,7 @@
 int _write(int file, char *data, int len) {
 
   // transmit over CDC
-  uint8_t status = CDC_Transmit_FS(data, len);
+  uint8_t status = CDC_Transmit_FS((uint8_t*)data, len);
 
   // return number of bytes written
   return (status == USBD_OK ? len : 0);
