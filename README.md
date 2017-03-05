@@ -95,7 +95,10 @@ There is an excellent project called CubeMX2Makefile, originally from baoshi. Th
 * Make sure the programmer is connected to the board as per [Flashing the firmware](#flashing-the-firmware).
 * Press the down-arrow of the debug symbol in the toolbar, and hit Debug Configurations
     * You can also hit Run -> Debug Configurations
-* Highlight the debug configuration you imported, called OdriveFirmware.
+* Highlight the debug configuration you imported, called OdriveFirmware. If you do not see the imported launch configuration rename your project to `ODriveFirmware` or edit the launch configuration to match your project name by unfiltering unavailable projects:
+
+![Launch Configuration Filters](screenshots/LaunchConfigFilter.png "Launch Configuration Filters")
+
 * Hit Debug
 * Eclipse should flash the board for you and the program should start halted on the first instruction in `Main`
 * Set beakpoints, step, hit Resume, etc.
