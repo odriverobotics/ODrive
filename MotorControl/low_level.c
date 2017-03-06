@@ -195,25 +195,25 @@ void motor_parse_cmd(uint8_t* buffer, int len) {
     // check incoming packet type
     if (buffer[0] == 'p') {
         // position control
-        uint8_t motor_number;
+        unsigned motor_number;
         float pos_setpoint, vel_feed_forward, current_feed_forward;
-        int numscan = sscanf((const char*)buffer, "p %hhu %f %f %f", &motor_number, &pos_setpoint, &vel_feed_forward, &current_feed_forward);
+        int numscan = sscanf((const char*)buffer, "p %u %f %f %f", &motor_number, &pos_setpoint, &vel_feed_forward, &current_feed_forward);
         if (numscan == 4 && motor_number < num_motors) {
             set_pos_setpoint(&motors[motor_number], pos_setpoint, vel_feed_forward, current_feed_forward);
         }
     } else if (buffer[0] == 'v') {
         // velocity control
-        uint8_t motor_number;
+        unsigned motor_number;
         float vel_feed_forward, current_feed_forward;
-        int numscan = sscanf((const char*)buffer, "v %hhu %f %f", &motor_number, &vel_feed_forward, &current_feed_forward);
+        int numscan = sscanf((const char*)buffer, "v %u %f %f", &motor_number, &vel_feed_forward, &current_feed_forward);
         if (numscan == 3 && motor_number < num_motors) {
             set_vel_setpoint(&motors[motor_number], vel_feed_forward, current_feed_forward);
         }
     } else if (buffer[0] == 'c') {
         // current control
-        uint8_t motor_number;
+        unsigned motor_number;
         float current_feed_forward;
-        int numscan = sscanf((const char*)buffer, "c %hhu %f ", &motor_number, &current_feed_forward);
+        int numscan = sscanf((const char*)buffer, "c %u %f ", &motor_number, &current_feed_forward);
         if (numscan == 2 && motor_number < num_motors) {
             set_current_setpoint(&motors[motor_number], current_feed_forward);
         }
