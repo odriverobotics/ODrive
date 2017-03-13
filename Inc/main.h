@@ -140,6 +140,7 @@
 #define M1_ENC_A_GPIO_Port GPIOB
 #define M1_ENC_B_Pin GPIO_PIN_7
 #define M1_ENC_B_GPIO_Port GPIOB
+
 /* USER CODE BEGIN Private defines */
 
 #define CURRENT_MEAS_PERIOD ((float)(2*TIM_1_8_PERIOD_CLOCKS)/(float)TIM_1_8_CLOCK_HZ)
