@@ -46,7 +46,7 @@
 #include "task.h"
 #include "cmsis_os.h"
 
-/* USER CODE BEGIN Includes */
+/* USER CODE BEGIN Includes */     
 #include "freertos_vars.h"
 #include "low_level.h"
 #include "version.h"

@@ -1,5 +1,5 @@
 /*
-    FreeRTOS V8.2.3 - Copyright (C) 2015 Real Time Engineers Ltd.
+    FreeRTOS V9.0.0 - Copyright (C) 2016 Real Time Engineers Ltd.
     All rights reserved
 
     VISIT http://www.FreeRTOS.org TO ENSURE YOU ARE USING THE LATEST VERSION.
@@ -76,8 +76,12 @@
  */
 typedef void (*TaskFunction_t)( void * );
 
-/* Converts a time in milliseconds to a time in ticks. */
-#define pdMS_TO_TICKS( xTimeInMs ) ( ( TickType_t ) ( ( ( TickType_t ) ( xTimeInMs ) * ( TickType_t ) configTICK_RATE_HZ ) / ( TickType_t ) 1000 ) )
+/* Converts a time in milliseconds to a time in ticks.  This macro can be
+overridden by a macro of the same name defined in FreeRTOSConfig.h in case the
+definition here is not suitable for your application. */
+#ifndef pdMS_TO_TICKS
+	#define pdMS_TO_TICKS( xTimeInMs ) ( ( TickType_t ) ( ( ( TickType_t ) ( xTimeInMs ) * ( TickType_t ) configTICK_RATE_HZ ) / ( TickType_t ) 1000 ) )
+#endif
 
 #define pdFALSE			( ( BaseType_t ) 0 )
 #define pdTRUE			( ( BaseType_t ) 1 )
@@ -107,6 +111,7 @@ typedef void (*TaskFunction_t)( void * );
 itself. */
 #define pdFREERTOS_ERRNO_NONE			0	/* No errors */
 #define	pdFREERTOS_ERRNO_ENOENT			2	/* No such file or directory */
+#define	pdFREERTOS_ERRNO_EINTR			4	/* Interrupted system call */
 #define	pdFREERTOS_ERRNO_EIO			5	/* I/O error */
 #define	pdFREERTOS_ERRNO_ENXIO			6	/* No such device or address */
 #define	pdFREERTOS_ERRNO_EBADF			9	/* Bad file number */

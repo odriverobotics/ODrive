@@ -51,12 +51,9 @@
 
 /* Private define ------------------------------------------------------------*/
 #define TIM_1_8_CLOCK_HZ 168000000
-// #define TIM_1_8_PERIOD_CLOCKS 4096
-// #define TIM_1_8_PERIOD_CLOCKS 8192
 #define TIM_1_8_PERIOD_CLOCKS 10192
 #define TIM_1_8_DEADTIME_CLOCKS 20
 #define TIM_APB1_CLOCK_HZ 84000000
-// #define TIM_APB1_PERIOD_CLOCKS 2048
 #define TIM_APB1_PERIOD_CLOCKS 4096
 #define TIM_APB1_DEADTIME_CLOCKS 20
 
@@ -140,6 +137,7 @@
 #define M1_ENC_A_GPIO_Port GPIOB
 #define M1_ENC_B_Pin GPIO_PIN_7
 #define M1_ENC_B_GPIO_Port GPIOB
+
 /* USER CODE BEGIN Private defines */
 
 #define CURRENT_MEAS_PERIOD ((float)(2*TIM_1_8_PERIOD_CLOCKS)/(float)TIM_1_8_CLOCK_HZ)
