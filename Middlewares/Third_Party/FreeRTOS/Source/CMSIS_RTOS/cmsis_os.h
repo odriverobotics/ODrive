@@ -57,7 +57,7 @@
   ******************************************************************************
   * @file    cmsis_os.h
   * @author  MCD Application Team
-  * @date    22-January-2016
+  * @date    30-September-2016
   * @brief   Header of cmsis_os.c
   *          A new set of APIs are added in addition to existing ones, these APIs 
   *          are specific to FreeRTOS.
@@ -325,6 +325,19 @@ typedef QueueHandle_t osMessageQId;
 typedef struct os_mailQ_cb *osMailQId;
 
 
+#if( configSUPPORT_STATIC_ALLOCATION == 1 )
+
+typedef StaticTask_t               osStaticThreadDef_t;
+typedef StaticTimer_t              osStaticTimerDef_t;
+typedef StaticSemaphore_t          osStaticMutexDef_t;         
+typedef StaticSemaphore_t          osStaticSemaphoreDef_t;
+typedef StaticQueue_t              osStaticMessageQDef_t;
+
+#endif
+
+
+
+
 /// Thread Definition structure contains startup information of a thread.
 /// \note CAN BE CHANGED: \b os_thread_def is implementation specific in every CMSIS-RTOS.
 typedef struct os_thread_def  {
@@ -333,24 +346,37 @@ typedef struct os_thread_def  {
   osPriority             tpriority;    ///< initial thread priority
   uint32_t               instances;    ///< maximum number of instances of that thread function
   uint32_t               stacksize;    ///< stack size requirements in bytes; 0 is default stack size
+#if( configSUPPORT_STATIC_ALLOCATION == 1 )
+  uint32_t               *buffer;      ///< stack buffer for static allocation; NULL for dynamic allocation
+  osStaticThreadDef_t    *controlblock;     ///< control block to hold thread's data for static allocation; NULL for dynamic allocation
+#endif
 } osThreadDef_t;
 
 /// Timer Definition structure contains timer parameters.
 /// \note CAN BE CHANGED: \b os_timer_def is implementation specific in every CMSIS-RTOS.
 typedef struct os_timer_def  {
   os_ptimer                 ptimer;    ///< start address of a timer function
+#if( configSUPPORT_STATIC_ALLOCATION == 1 )
+  osStaticTimerDef_t        *controlblock;      ///< control block to hold timer's data for static allocation; NULL for dynamic allocation
+#endif
 } osTimerDef_t;
 
 /// Mutex Definition structure contains setup information for a mutex.
 /// \note CAN BE CHANGED: \b os_mutex_def is implementation specific in every CMSIS-RTOS.
 typedef struct os_mutex_def  {
   uint32_t                   dummy;    ///< dummy value.
+#if( configSUPPORT_STATIC_ALLOCATION == 1 )
+  osStaticMutexDef_t         *controlblock;      ///< control block for static allocation; NULL for dynamic allocation
+#endif
 } osMutexDef_t;
 
 /// Semaphore Definition structure contains setup information for a semaphore.
 /// \note CAN BE CHANGED: \b os_semaphore_def is implementation specific in every CMSIS-RTOS.
 typedef struct os_semaphore_def  {
   uint32_t                   dummy;    ///< dummy value.
+#if( configSUPPORT_STATIC_ALLOCATION == 1 )
+  osStaticSemaphoreDef_t     *controlblock;      ///< control block for static allocation; NULL for dynamic allocation
+#endif
 } osSemaphoreDef_t;
 
 /// Definition structure for memory block allocation.
@@ -365,7 +391,11 @@ typedef struct os_pool_def  {
 /// \note CAN BE CHANGED: \b os_messageQ_def is implementation specific in every CMSIS-RTOS.
 typedef struct os_messageQ_def  {
   uint32_t                queue_sz;    ///< number of elements in the queue
-  uint32_t                 item_sz;    ///< size of an item
+  uint32_t                item_sz;    ///< size of an item
+#if( configSUPPORT_STATIC_ALLOCATION == 1 )
+  uint8_t                 *buffer;      ///< buffer for static allocation; NULL for dynamic allocation
+  osStaticMessageQDef_t   *controlblock;     ///< control block to hold queue's data for static allocation; NULL for dynamic allocation
+#endif
   //void                       *pool;    ///< memory array for messages
 } osMessageQDef_t;
 
@@ -442,9 +472,21 @@ uint32_t osKernelSysTick (void);
 #define osThreadDef(name, thread, priority, instances, stacksz)  \
 extern const osThreadDef_t os_thread_def_##name
 #else                            // define the object
+
+#if( configSUPPORT_STATIC_ALLOCATION == 1 )
 #define osThreadDef(name, thread, priority, instances, stacksz)  \
 const osThreadDef_t os_thread_def_##name = \
-{ #name, (thread), (priority), (instances), (stacksz)  }
+{ #name, (thread), (priority), (instances), (stacksz), NULL, NULL }
+
+#define osThreadStaticDef(name, thread, priority, instances, stacksz, buffer, control)  \
+const osThreadDef_t os_thread_def_##name = \
+{ #name, (thread), (priority), (instances), (stacksz), (buffer), (control) }
+#else //configSUPPORT_STATIC_ALLOCATION == 0
+
+#define osThreadDef(name, thread, priority, instances, stacksz)  \
+const osThreadDef_t os_thread_def_##name = \
+{ #name, (thread), (priority), (instances), (stacksz)}
+#endif
 #endif
 
 /// Access a Thread definition.
@@ -519,9 +561,20 @@ osEvent osWait (uint32_t millisec);
 #define osTimerDef(name, function)  \
 extern const osTimerDef_t os_timer_def_##name
 #else                            // define the object
+
+#if( configSUPPORT_STATIC_ALLOCATION == 1 ) 
+#define osTimerDef(name, function)  \
+const osTimerDef_t os_timer_def_##name = \
+{ (function), NULL }
+
+#define osTimerStaticDef(name, function, control)  \
+const osTimerDef_t os_timer_def_##name = \
+{ (function), (control) }
+#else //configSUPPORT_STATIC_ALLOCATION == 0
 #define osTimerDef(name, function)  \
 const osTimerDef_t os_timer_def_##name = \
 { (function) }
+#endif
 #endif
 
 /// Access a Timer definition.
@@ -593,8 +646,19 @@ osEvent osSignalWait (int32_t signals, uint32_t millisec);
 #define osMutexDef(name)  \
 extern const osMutexDef_t os_mutex_def_##name
 #else                            // define the object
+
+#if( configSUPPORT_STATIC_ALLOCATION == 1 )
+#define osMutexDef(name)  \
+const osMutexDef_t os_mutex_def_##name = { 0, NULL }
+
+#define osMutexStaticDef(name, control)  \
+const osMutexDef_t os_mutex_def_##name = { 0, (control) }
+#else //configSUPPORT_STATIC_ALLOCATION == 0
 #define osMutexDef(name)  \
 const osMutexDef_t os_mutex_def_##name = { 0 }
+
+#endif
+
 #endif
 
 /// Access a Mutex definition.
@@ -642,8 +706,18 @@ osStatus osMutexDelete (osMutexId mutex_id);
 #define osSemaphoreDef(name)  \
 extern const osSemaphoreDef_t os_semaphore_def_##name
 #else                            // define the object
+
+#if( configSUPPORT_STATIC_ALLOCATION == 1 )
+#define osSemaphoreDef(name)  \
+const osSemaphoreDef_t os_semaphore_def_##name = { 0, NULL }
+
+#define osSemaphoreStaticDef(name, control)  \
+const osSemaphoreDef_t os_semaphore_def_##name = { 0, (control) }
+
+#else //configSUPPORT_STATIC_ALLOCATION == 0
 #define osSemaphoreDef(name)  \
 const osSemaphoreDef_t os_semaphore_def_##name = { 0 }
+#endif
 #endif
 
 /// Access a Semaphore definition.
@@ -750,9 +824,20 @@ osStatus osPoolFree (osPoolId pool_id, void *block);
 #define osMessageQDef(name, queue_sz, type)   \
 extern const osMessageQDef_t os_messageQ_def_##name
 #else                            // define the object
+#if( configSUPPORT_STATIC_ALLOCATION == 1 )
 #define osMessageQDef(name, queue_sz, type)   \
 const osMessageQDef_t os_messageQ_def_##name = \
-{ (queue_sz), sizeof (type)  }
+{ (queue_sz), sizeof (type), NULL, NULL  }
+
+#define osMessageQStaticDef(name, queue_sz, type, buffer, control)   \
+const osMessageQDef_t os_messageQ_def_##name = \
+{ (queue_sz), sizeof (type) , (buffer), (control)}
+#else //configSUPPORT_STATIC_ALLOCATION == 1
+#define osMessageQDef(name, queue_sz, type)   \
+const osMessageQDef_t os_messageQ_def_##name = \
+{ (queue_sz), sizeof (type) }
+
+#endif
 #endif
 
 /// \brief Access a Message Queue Definition.
@@ -924,6 +1009,13 @@ osStatus osThreadResumeAll (void);
 osStatus osDelayUntil (uint32_t *PreviousWakeTime, uint32_t millisec);
 
 /**
+* @brief   Abort the delay for a specific thread
+* @param   thread_id   thread ID obtained by \ref osThreadCreate or \ref osThreadGetId   
+* @retval  status code that indicates the execution status of the function.
+*/
+osStatus osAbortDelay(osThreadId thread_id);
+
+/**
 * @brief   Lists all the current threads, along with their current state 
 *          and stack usage high water mark.
 * @param   buffer   A buffer into which the above mentioned details
@@ -939,6 +1031,27 @@ osStatus osThreadList (uint8_t *buffer);
 * @retval event information that includes status code.
 */
 osEvent osMessagePeek (osMessageQId queue_id, uint32_t millisec);
+
+/**
+* @brief  Get the number of messaged stored in a queue.
+* @param  queue_id  message queue ID obtained with \ref osMessageCreate.
+* @retval number of messages stored in a queue.
+*/
+uint32_t osMessageWaiting(osMessageQId queue_id);
+
+/**
+* @brief  Get the available space in a message queue.
+* @param  queue_id  message queue ID obtained with \ref osMessageCreate.
+* @retval available space in a message queue.
+*/
+uint32_t osMessageAvailableSpace(osMessageQId queue_id);
+
+/**
+* @brief Delete a Message Queue
+* @param  queue_id  message queue ID obtained with \ref osMessageCreate.
+* @retval  status code that indicates the execution status of the function.
+*/
+osStatus osMessageDelete (osMessageQId queue_id);
 
 /**
 * @brief  Create and Initialize a Recursive Mutex
@@ -961,6 +1074,13 @@ osStatus osRecursiveMutexRelease (osMutexId mutex_id);
 * @retval  status code that indicates the execution status of the function.
 */
 osStatus osRecursiveMutexWait (osMutexId mutex_id, uint32_t millisec);
+
+/**
+* @brief  Returns the current count value of a counting semaphore
+* @param   semaphore_id  semaphore_id ID obtained by \ref osSemaphoreCreate.
+* @retval  count value
+*/
+uint32_t osSemaphoreGetCount(osSemaphoreId semaphore_id);
 
 #ifdef  __cplusplus
 }
