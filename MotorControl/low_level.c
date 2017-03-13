@@ -897,7 +897,7 @@ void motor_thread(void const * argument) {
     motor->current_control.i_gain = plant_pole * motor->current_control.p_gain;
 
     //Calculate rotor pll gains
-    float rotor_pll_bandwidth = 2000.0f; // [rad/s]
+    float rotor_pll_bandwidth = 1000.0f; // [rad/s]
     motor->rotor.pll_kp = 2.0f * rotor_pll_bandwidth;
     //Check that we don't get problems with discrete time approximation
     safe_assert(CURRENT_MEAS_PERIOD * motor->rotor.pll_kp < 1.0f);
