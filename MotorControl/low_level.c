@@ -13,15 +13,25 @@
 #include <cmsis_os.h>
 
 #include <main.h>
-#include <adc.h>
-#include <tim.h>
-#include <spi.h>
 #include <utils.h>
 
 /* Private defines -----------------------------------------------------------*/
 #ifndef M_PI
 #define M_PI 3.14159265358979323846f
 #endif
+
+/* Externs -------------------------------------------------------------------*/
+extern TIM_HandleTypeDef htim1;
+extern TIM_HandleTypeDef htim2;
+extern TIM_HandleTypeDef htim3;
+extern TIM_HandleTypeDef htim4;
+extern TIM_HandleTypeDef htim8;
+
+extern ADC_HandleTypeDef hadc1;
+extern ADC_HandleTypeDef hadc2;
+extern ADC_HandleTypeDef hadc3;
+
+extern SPI_HandleTypeDef hspi3;
 
 /* Private macros ------------------------------------------------------------*/
 /* Private typedef -----------------------------------------------------------*/

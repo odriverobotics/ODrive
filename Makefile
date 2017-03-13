@@ -42,14 +42,9 @@ C_SOURCES = \
   Middlewares/ST/STM32_USB_Device_Library/Class/CDC/Src/usbd_cdc.c \
   Src/system_stm32f4xx.c \
   Src/stm32f4xx_it.c \
-  Src/tim.c \
-  Src/gpio.c \
   Src/main.c \
-  Src/adc.c \
   Src/freertos.c \
-  Src/spi.c \
   Src/stm32f4xx_hal_msp.c \
-  Src/can.c \
   Src/usbd_conf.c \
   Src/usbd_desc.c \
   Src/usb_device.c \
@@ -77,6 +72,7 @@ C_SOURCES = \
   Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_ll_usb.c \
   Src/usbd_cdc_if.c \
   Src/syscalls.c \
+  Src/odrive.c \
   MotorControl/utils.c \
   MotorControl/low_level.c  
 ASM_SOURCES = \
