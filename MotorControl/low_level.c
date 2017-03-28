@@ -150,7 +150,6 @@ static DRV_SPI_8301_Vars_t gate_driver_regs[2/*num_motors*/];
 static float brake_resistance = 2.0f; // [ohm]
 
 /* Monitoring */
-int monitoring_active_slots = 0;
 monitoring_slot monitoring_slots[] = {
 		{ 0 , 0},{ 0 , 0},{ 0 , 0},{ 0 , 0},{ 0 , 0},{ 0 , 0},{ 0 , 0},{ 0 , 0},{ 0 , 0},{ 0 , 0},
 		{ 0 , 0},{ 0 , 0},{ 0 , 0},{ 0 , 0},{ 0 , 0},{ 0 , 0},{ 0 , 0},{ 0 , 0},{ 0 , 0},{ 0 , 0}
@@ -165,7 +164,7 @@ float * exposed_floats [] = {
 		&elec_rad_per_enc, // ro
 		&motors[0].pos_setpoint, // rw
 		&motors[0].pos_gain, // rw
-		&motors[0].vel_setpoint,// ro
+		&motors[0].vel_setpoint,// rw
 		&motors[0].vel_gain,// rw
 		&motors[0].vel_integrator_gain,// rw
 		&motors[0].vel_integrator_current,// rw
