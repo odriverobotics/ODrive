@@ -33,7 +33,7 @@ func_template_global = '''
 
 	def monitor_%(FunctionName)s(self,slot):
 		type,id,access = variable_map["%(OdriveVarname)s"]
-		self.command("o %%s %%s %%s" %% (type,id,slot))
+		self.command("m %%s %%s %%s" %% (type,id,slot))
 '''
 func_template_global_set = '''
 	def set_%(FunctionName)s(self,value):
@@ -64,7 +64,7 @@ func_template_motor = '''
 
 	def monitor_%(FunctionName)s(self,slot):
 		type,id,access = variable_map["motors[%%s].%(OdriveVarname)s" %% self.nr]
-		self.odrive.command("o %%s %%s %%s" %% (type,id,slot))
+		self.odrive.command("m %%s %%s %%s" %% (type,id,slot))
 '''
 func_template_motor_set = '''
 	def set_%(FunctionName)s(self,value):
@@ -94,7 +94,7 @@ func_template_rotor = '''
 
 	def monitor_%(FunctionName)s(self,slot):
 		type,id,access =variable_map["motors[%%s].rotor.%(OdriveVarname)s" %% self.motor.nr]
-		self.motor.odrive.command("o %%s %%s %%s" %% (type,id,slot))
+		self.motor.odrive.command("m %%s %%s %%s" %% (type,id,slot))
 '''
 func_template_rotor_set = '''
 	def set_%(FunctionName)s(self,value):
@@ -125,7 +125,7 @@ func_template_current = '''
 
 	def monitor_%(FunctionName)s(self,slot):
 		type,id,access = variable_map["motors[%%s].current_control.%(OdriveVarname)s" %% self.motor.nr]
-		self.motor.odrive.command("o %%s %%s %%s" %% (type,id,slot))
+		self.motor.odrive.command("m %%s %%s %%s" %% (type,id,slot))
 '''
 func_template_current_set = '''
 	def set_%(FunctionName)s(self,value):
