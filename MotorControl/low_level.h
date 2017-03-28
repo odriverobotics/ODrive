@@ -34,8 +34,8 @@ typedef struct {
 
 typedef struct {
     TIM_HandleTypeDef* encoder_timer;
-    int16_t encoder_offset;
-    int32_t encoder_state;
+    int encoder_offset;
+    int encoder_state;
     float phase;
     float pll_pos;
     float pll_vel;
@@ -68,6 +68,11 @@ typedef struct {
     int timing_log_index;
     uint16_t timing_log[TIMING_LOG_SIZE];
 } Motor_t;
+
+typedef struct{   
+        int type;
+        int index;
+} monitoring_slot;
 
 /* Exported constants --------------------------------------------------------*/
 extern float vbus_voltage;

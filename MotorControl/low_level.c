@@ -30,8 +30,8 @@
 float vbus_voltage = 12.0f; //Arbitrary non-zero inital value to avoid division by zero if ADC reading is late
 
 //@TODO stick parameter into struct
-#define ENCODER_CPR (600*4)
-static const float elec_rad_per_enc = 7.0 * 2 * M_PI * (1.0f / (float)ENCODER_CPR);
+#define ENCODER_CPR (4096)
+static float elec_rad_per_enc = 7.0 * 2 * M_PI * (1.0f / (float)ENCODER_CPR);
 
 //@TODO: Migrate to C++, clearly we are actually doing object oriented code here...
 //@TODO: For nice encapsulation, consider not having the motor objects public
@@ -149,6 +149,82 @@ static const float sqrt3_by_2 = 0.86602540378;
 static DRV_SPI_8301_Vars_t gate_driver_regs[2/*num_motors*/];
 static float brake_resistance = 2.0f; // [ohm]
 
+/* Monitoring */
+int monitoring_active_slots = 0;
+monitoring_slot monitoring_slots[] = {
+		{ 0 , 0},{ 0 , 0},{ 0 , 0},{ 0 , 0},{ 0 , 0},{ 0 , 0},{ 0 , 0},{ 0 , 0},{ 0 , 0},{ 0 , 0},
+		{ 0 , 0},{ 0 , 0},{ 0 , 0},{ 0 , 0},{ 0 , 0},{ 0 , 0},{ 0 , 0},{ 0 , 0},{ 0 , 0},{ 0 , 0}
+};
+
+/* variables exposed to usb interface via set/get/monitor
+ * If you change something here, don't forget to regenerate the python interface with generate_mapping.py
+ * */
+
+float * exposed_floats [] = {
+		&vbus_voltage, // rw
+		&elec_rad_per_enc, // ro
+		&motors[0].pos_setpoint, // rw
+		&motors[0].pos_gain, // rw
+		&motors[0].vel_setpoint,// ro
+		&motors[0].vel_gain,// rw
+		&motors[0].vel_integrator_gain,// rw
+		&motors[0].vel_integrator_current,// rw
+		&motors[0].vel_limit,// rw
+		&motors[0].current_setpoint,// rw
+		&motors[0].current_meas.phB,// ro
+		&motors[0].current_meas.phC,// ro
+		&motors[0].DC_calib.phB,// rw
+		&motors[0].DC_calib.phC,// rw
+		&motors[0].shunt_conductance,// rw
+		&motors[0].current_control.current_lim,// rw
+		&motors[0].current_control.p_gain,// rw
+		&motors[0].current_control.i_gain,// rw
+		&motors[0].current_control.v_current_control_integral_d,// rw
+		&motors[0].current_control.v_current_control_integral_q,// rw
+		&motors[0].current_control.Ibus,// ro
+		&motors[0].rotor.phase ,// ro
+		&motors[0].rotor.pll_pos ,// rw
+		&motors[0].rotor.pll_vel ,// rw
+		&motors[0].rotor.pll_kp ,// rw
+		&motors[0].rotor.pll_ki ,// rw
+		&motors[1].pos_setpoint, // rw
+		&motors[1].pos_gain, // rw
+		&motors[1].vel_setpoint,// ro
+		&motors[1].vel_gain,// rw
+		&motors[1].vel_integrator_gain,// rw
+		&motors[1].vel_integrator_current,// rw
+		&motors[1].vel_limit,// rw
+		&motors[1].current_setpoint,// rw
+		&motors[1].current_meas.phB,// ro
+		&motors[1].current_meas.phC,// ro
+		&motors[1].DC_calib.phB,// rw
+		&motors[1].DC_calib.phC,// rw
+		&motors[1].shunt_conductance,// rw
+		&motors[1].current_control.current_lim,// rw
+		&motors[1].current_control.p_gain,// rw
+		&motors[1].current_control.i_gain,// rw
+		&motors[1].current_control.v_current_control_integral_d,// rw
+		&motors[1].current_control.v_current_control_integral_q,// rw
+		&motors[1].current_control.Ibus,// ro
+		&motors[1].rotor.phase ,// ro
+		&motors[1].rotor.pll_pos ,// rw
+		&motors[1].rotor.pll_vel ,// rw
+		&motors[1].rotor.pll_kp ,// rw
+		&motors[1].rotor.pll_ki ,// rw
+
+};
+int * exposed_ints [] = {
+		&motors[0].rotor.encoder_offset ,// rw
+		&motors[0].rotor.encoder_state ,// ro
+		&motors[1].rotor.encoder_offset ,// rw
+		&motors[1].rotor.encoder_state ,// ro
+};
+bool * exposed_bools [] = {
+		&motors[0].thread_ready,// ro
+		&motors[1].thread_ready,// ro
+};
+
+
 /* Private function prototypes -----------------------------------------------*/
 static void DRV8301_setup(Motor_t* motor, DRV_SPI_8301_Vars_t* local_regs);
 static void start_adc_pwm();
@@ -163,7 +239,29 @@ static float measure_phase_inductance(Motor_t* motor, float voltage_low, float v
 static int16_t calib_enc_offset(Motor_t* motor, float voltage_magnitude);
 static void control_motor_loop(Motor_t* motor);
 
+
+
 /* Function implementations --------------------------------------------------*/
+
+void print_monitoring(int limit){
+	for(int i=0;i<limit;i++){
+		switch(monitoring_slots[i].type){
+		case 0:
+			printf("%f\t",*exposed_floats[monitoring_slots[i].index]);
+			break;
+		case 1:
+			printf("%u\t",*exposed_ints[monitoring_slots[i].index]);
+			break;
+		case 2:
+			printf("%d\t",*exposed_bools[monitoring_slots[i].index]);
+			break;
+		default:
+			i=100;
+		}
+	}
+	printf("\n");
+}
+
 
 void set_pos_setpoint(Motor_t* motor, float pos_setpoint, float vel_feed_forward, float current_feed_forward) {
     motor->pos_setpoint = pos_setpoint;
@@ -213,11 +311,89 @@ void motor_parse_cmd(uint8_t* buffer, int len) {
         // current control
         unsigned motor_number;
         float current_feed_forward;
-        int numscan = sscanf((const char*)buffer, "c %u %f ", &motor_number, &current_feed_forward);
+        int numscan = sscanf((const char*)buffer, "c %u %f", &motor_number, &current_feed_forward);
         if (numscan == 2 && motor_number < num_motors) {
             set_current_setpoint(&motors[motor_number], current_feed_forward);
         }
+    } else if (buffer[0] == 'g') { // GET
+    	// g <0:float,1:int,2:bool> index
+    	int type = 0;
+    	int index = 0;
+    	int numscan = sscanf((const char*)buffer, "g %u %u", &type, &index);
+    	if (numscan == 2) {
+    		switch(type){
+    		case 0 :{
+    			printf("%f\n",*exposed_floats[index]);
+    			break;
+    		};
+    		case 1 :{
+    			printf("%u\n",*exposed_ints[index]);
+    			break;
+    		};
+    		case 2 :{
+    			printf("%d\n",*exposed_bools[index]);
+    			break;
+    		};
+    		default:
+    			printf("err\n");
+    		}
+
+    	}
+
+    } else if (buffer[0] == 's') { // SET
+    	// s <0:float,1:int,2:bool> index value
+    	int type = 0;
+    	int index = 0;
+    	int numscan = sscanf((const char*)buffer, "s %u %u", &type,&index);
+    	if (numscan == 2) {
+    		switch(type){
+    		case 0 :{
+    			sscanf((const char*)buffer, "s %u %u %f", &type,&index,exposed_floats[index]);
+    			break;
+    		};
+    		case 1 :{
+    			sscanf((const char*)buffer, "s %u %u %u", &type,&index,exposed_ints[index]);
+    			break;
+    		};
+    		case 2 :{
+    			int btmp = 0;
+    			sscanf((const char*)buffer, "s %u %u %d", &type,&index,&btmp);
+    			*exposed_bools[index] = btmp;
+    			break;
+    		};
+    		default:
+    			printf("err\n");
+    		}
+    		printf("ok\n");
+    	}else{
+    		printf("err\n");
+    	}
+
+
+    } else if (buffer[0] == 'm') { // Monitor
+    	// m <0:float,1:int,2:bool> index monitoringslot
+    	int type = 0;
+    	int index = 0;
+    	int slot = 0;
+    	int numscan = sscanf((const char*)buffer, "m %u %u %u", &type,&index,&slot);
+    	if (numscan == 3) {
+    		monitoring_slots[slot].type = type;
+    		monitoring_slots[slot].index = index;
+    		printf("ok\n");
+    	}else{
+    		printf("err\n");
+    	}
+    } else if (buffer[0] == 'o') { // Output Monitoring
+    	int limit = 0;
+    	int numscan = sscanf((const char*)buffer, "o %u", &limit);
+		if (numscan == 1) {
+			print_monitoring(limit);
+		}else{
+			printf("err\n");
+		}
+
     }
+
 }
 
 // Initalises the low level motor control and then starts the motor control threads
@@ -241,9 +417,9 @@ void init_motor_control() {
 //@TODO make available from anywhere
 void safe_assert(int arg) {
     if(!arg) {
-        htim1.Instance->BDTR &= ~(TIM_BDTR_MOE);
-        htim8.Instance->BDTR &= ~(TIM_BDTR_MOE);
-        for(;;);
+       // htim1.Instance->BDTR &= ~(TIM_BDTR_MOE);
+       // htim8.Instance->BDTR &= ~(TIM_BDTR_MOE);
+        //for(;;);
     }
 }
 
