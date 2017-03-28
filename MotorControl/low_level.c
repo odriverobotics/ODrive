@@ -160,7 +160,7 @@ monitoring_slot monitoring_slots[] = {
  * */
 
 float * exposed_floats [] = {
-		&vbus_voltage, // rw
+		&vbus_voltage, // ro
 		&elec_rad_per_enc, // ro
 		&motors[0].pos_setpoint, // rw
 		&motors[0].pos_gain, // rw
@@ -188,7 +188,7 @@ float * exposed_floats [] = {
 		&motors[0].rotor.pll_ki ,// rw
 		&motors[1].pos_setpoint, // rw
 		&motors[1].pos_gain, // rw
-		&motors[1].vel_setpoint,// ro
+		&motors[1].vel_setpoint,// rw
 		&motors[1].vel_gain,// rw
 		&motors[1].vel_integrator_gain,// rw
 		&motors[1].vel_integrator_current,// rw
