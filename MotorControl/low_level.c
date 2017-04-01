@@ -333,12 +333,8 @@ void motor_parse_cmd(uint8_t* buffer, int len) {
     			printf("%d\n",*exposed_bools[index]);
     			break;
     		};
-    		default:
-    			printf("err\n");
-    		}
-
     	}
-
+    	}
     } else if (buffer[0] == 's') { // SET
     	// s <0:float,1:int,2:bool> index value
     	int type = 0;
@@ -360,12 +356,7 @@ void motor_parse_cmd(uint8_t* buffer, int len) {
     			*exposed_bools[index] = btmp;
     			break;
     		};
-    		default:
-    			printf("err\n");
     		}
-    		printf("ok\n");
-    	}else{
-    		printf("err\n");
     	}
 
 
@@ -378,19 +369,13 @@ void motor_parse_cmd(uint8_t* buffer, int len) {
     	if (numscan == 3) {
     		monitoring_slots[slot].type = type;
     		monitoring_slots[slot].index = index;
-    		printf("ok\n");
-    	}else{
-    		printf("err\n");
     	}
     } else if (buffer[0] == 'o') { // Output Monitoring
     	int limit = 0;
     	int numscan = sscanf((const char*)buffer, "o %u", &limit);
 		if (numscan == 1) {
 			print_monitoring(limit);
-		}else{
-			printf("err\n");
 		}
-
     }
 
 }
@@ -414,11 +399,12 @@ void init_motor_control() {
 }
 
 //@TODO make available from anywhere
+//@TODO don't fail if no motor is attached
 void safe_assert(int arg) {
     if(!arg) {
-       // htim1.Instance->BDTR &= ~(TIM_BDTR_MOE);
-       // htim8.Instance->BDTR &= ~(TIM_BDTR_MOE);
-        //for(;;);
+       //htim1.Instance->BDTR &= ~(TIM_BDTR_MOE);
+       //htim8.Instance->BDTR &= ~(TIM_BDTR_MOE);
+       //for(;;);
     }
 }
 

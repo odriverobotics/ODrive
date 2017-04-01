@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html ng-app="">
+<head>
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
+<script src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mustache.js/2.3.0/mustache.js"></script>
+<script src="http://canvasjs.com/assets/script/canvasjs.min.js"
+<script type="text/javascript">
+
+</script>
+
+<style>
+    @import url(http://fonts.googleapis.com/css?family=Montserrat);
+
+    * {
+      font-family: 'Montserrat', sans-serif;
+    }
+
+    .container {
+        width: 90%;
+        height:100vh;
+    }
+
+    .box {
+        padding: 4px;
+        border-style: solid;
+        background-color: #fff;
+        border-color: #ddd;
+        border-width: 1px;
+        border-radius: 4px 4px 0 0;
+        -webkit-box-shadow: none;
+        box-shadow: none;
+    }
+    .nopad {
+        padding-left:0px;
+        padding-right:0px;
+    }
+    .chart_small {
+        height:120px;
+    }
+    .chart_large {
+        height : 220px;
+    }
+</style>
+   
+<script type="x-tmpl-mustache" id="Template_FloatInt">
+    <div class="col-md-2">
+        <div class="col-md-11" >
+            <input {{input_diabled}} type="number" step="{{input_step}}" id="input_{{type}}_{{nr}}" value="-1" onchange="odriveVariables.get({{type}},{{nr}}).changed();" style="width:100%">
+        </div>
+        <div class="col-md-1 nopad ">
+            <span id="monitor_{{type}}_{{nr}}" style="color:lightgray" class="glyphicon glyphicon-eye-open" aria-hidden="true" onclick="odriveVariables.get({{type}},{{nr}}).monitor();"></span>
+        </div>
+        <div class="col-md-12">
+            <label for="input_{{type}}_{{nr}}">{{prettyname}}</label>  
+        </div>
+    </div>
+</script>
+   
+<script type="x-tmpl-mustache" id="Template_Checkbox">
+    <div class="col-md-2">
+        <div class="col-md-12">
+            <input {{input_diabled}} type="checkbox" id="input_{{type}}_{{nr}}"  onclick="odriveVariables.get({{type}},{{nr}}).changed();" >
+            <label for="input_{{type}}_{{nr}}">{{prettyname}}</label>
+        </div>
+    </div>
+</script>   
+ 
+<script type="x-tmpl-mustache" id="Template_Chart">
+    <div id="chart_{{odriveVariable.type}}_{{odriveVariable.nr}}"  class="col-md-3 chart_small">
+        
+        <div id="chartcontainer_{{odriveVariable.type}}_{{odriveVariable.nr}}"  class="col-md-12 nopad" style="height:80%"></div>
+        
+        <div class="col-md-2 nopad" >
+            <a title="Resize" id="chart_{{odriveVariable.type}}_{{odriveVariable.nr}}_resize" class="glyphicon glyphicon-resize-full" aria-hidden="true" onclick='odriveVariables.get({{odriveVariable.type}},{{odriveVariable.nr}}).chart.resize()' style="color:gray"></a>
+        </div>
+        
+        <div class="col-md-2 nopad" >
+            <a title="Pause" id="chart_{{odriveVariable.type}}_{{odriveVariable.nr}}_playpause" class="glyphicon glyphicon-pause" aria-hidden="true" onclick='odriveVariables.get({{odriveVariable.type}},{{odriveVariable.nr}}).chart.playpause()' style="color:gray"></a>
+        </div>
+        
+        <div class="col-md-4 nopad">
+            <div class="" style="width:20%;float:left;max-width:50px;text-align:center;">
+                <a title="Sample slower" class="glyphicon glyphicon-minus" aria-hidden="true" onclick='odriveVariables.get({{odriveVariable.type}},{{odriveVariable.nr}}).chart.update_frequency("-")' style="color:gray"></a>
+            </div>
+            <div class="" id="chart_{{odriveVariable.type}}_{{odriveVariable.nr}}_frequency"  style="width:60%;float:left;max-width:100px;text-align:center;">
+                    {{frequency}}Hz
+            </div> 
+            <div class="" style="width:20%;float:left;max-width:50px;text-align:center;">
+                <a title="Sample faster" class="glyphicon glyphicon-plus" aria-hidden="true" onclick='odriveVariables.get({{odriveVariable.type}},{{odriveVariable.nr}}).chart.update_frequency("+")' style="color:gray"></a>
+            </div>
+        </div>
+        
+        <div class="col-md-4 nopad">
+            <div class="" style="width:20%;float:left;max-width:50px;text-align:center;">
+                <a title="Show less samples" class="glyphicon glyphicon-minus" aria-hidden="true" onclick='odriveVariables.get({{odriveVariable.type}},{{odriveVariable.nr}}).chart.update_datapoints("-");' style="color:gray"></a>
+            </div>
+            <div class="" id="chart_{{odriveVariable.type}}_{{odriveVariable.nr}}_nrofdatapoints" style="width:60%;float:left;max-width:100px;text-align:center;">
+                    {{max_datapoints}} 
+            </div> 
+            <div class="" style="width:20%;float:left;max-width:50px;text-align:center;">
+                <a title="Show more samples" class="glyphicon glyphicon-plus" aria-hidden="true" onclick='odriveVariables.get({{odriveVariable.type}},{{odriveVariable.nr}}).chart.update_datapoints("+");' style="color:gray"></a>
+            </div>
+        </div>        
+        
+    </div>
+</script>      
+   
+<script language="javascript" type="text/javascript">
+
+    var chart_render_delay = 500; // render charts every x milliseconds max
+    var chart_default_frequency = 10; // odrive sample rate in hz
+    var chart_default_max_datapoints = 10000; 
+    var default_websocket_server = "127.0.0.1:12342"
+    
+    var websocket_server = localStorage.getItem("odrive_websocket_server_input");
+    if(websocket_server == undefined){
+        websocket_server = "127.0.0.1:12342";
+    }
+     
+    function ODrive(){
+
+        this.get = function(type,nr){
+            websocketClient.send(JSON.stringify({"get":{"type":type,"nr":nr}})); // return is async via websocket msg.. 
+        }
+        
+        this.getAll = function(){
+            websocketClient.send(JSON.stringify({"getAll":""}));
+        }
+        
+        this.set = function(type,nr,value){
+            websocketClient.send(JSON.stringify({"set":{"type":type,"nr":nr,"value":value}}));
+        }
+        
+        this.monitor = function(type,nr,frequency){
+            websocketClient.send(JSON.stringify({"monitor":{"type":type,"nr":nr,"frequency":frequency }}));
+        }
+    }    
+
+    function ODriveVariable(){
+        this.name = ""; // eg motor[0].current_control.somevalue
+        
+        this.type = 0; // 0:float,1:int,2:bool
+        this.nr = 0;
+        this.access = ""; // rw|ro
+
+        this.prettyname = ""; // display name
+        
+        this.value = -1; // the last value read from odrive
+        this.has_changed = false; // input was changed by user
+        
+        this.input_diabled = ""; // the html "disabled" tag
+        this.input_step = 1; // step width for float/int input#
+        this.dom_nameprefix = "";
+        this.dom_input = undefined;
+        this.dom_monitorbutton = undefined // eye button div
+        this.dom_container = undefined; // where we self are located
+        
+        this.chart = undefined; // chart object
+        
+        this.init = function(data){ // init via websocket json data
+            this.name = data.name;
+            this.type = data.type;
+            this.nr = data.nr;
+            this.access = data.access;
+            if( this.type == 0){ this.input_step = 0.1; }
+            if( this.access == "ro"){ this.input_diabled = "disabled"; }
+            
+            if (this.name.indexOf(".") == -1){ 
+                this.dom_nameprefix = "global"; 
+                this.prettyname = this.name;
+            }else{
+                if (this.name.indexOf("motors") == 0){
+                    this.prettyname = this.name.substring(10);
+                    this.dom_nameprefix += "motor_" + this.name[this.name.indexOf("[")+1];
+                    if (this.name.indexOf(".rotor.") != -1){ this.dom_nameprefix += "_rotor" ; this.prettyname = this.prettyname.substring(6); }
+                    if (this.name.indexOf(".current_control.") != -1){ this.dom_nameprefix += "_current_control";this.prettyname = this.prettyname.substring(16); }
+                }else{
+                    alert("unknown mapping, add code here");
+                }
+            }
+            
+            var template = document.createElement('template');
+            if (this.type == 0 || this.type == 1){
+                template.innerHTML += Mustache.render($('#Template_FloatInt').html(),this);
+                this.dom_container = $("#"+this.dom_nameprefix+"_floatint")[0];
+            }
+            if (this.type == 2){
+                template.innerHTML += Mustache.render($('#Template_Checkbox').html(),this);
+                this.dom_container = $("#"+this.dom_nameprefix+"_bool")[0];
+            }   
+            this.dom_container.append(template.content);    
+            
+            this.dom_input = $("#input_"+this.type+"_"+this.nr)[0];
+            this.dom_monitorbutton = $("#monitor_"+this.type+"_"+this.nr)[0];
+            
+        }
+
+        this.setValue = function(value){
+            this.value = value;
+            if(this.type == 2){
+                this.dom_input.checked = value;
+            }else{
+                this.dom_input.value = value;
+            }
+            
+            this.changed();
+        }
+        
+        // call if some html input field was changed by uses
+        this.changed = function (){
+            this.has_changed = this.readInputField() != this.value;
+            if(this.has_changed == true){
+                this.dom_input.style.color = "red";
+                odriveVariables.show_changecnt();
+            }else{
+                this.dom_input.style.color = "";
+                odriveVariables.show_changecnt();
+            }
+        }
+
+        this.monitor = function(){
+            if(this.chart == undefined){ // start
+                this.chart = new Chart(this);
+                this.chart.init();
+                this.dom_monitorbutton.style.color = "green";
+                this.dom_input.disabled = true;
+            }else{ // stop
+                this.chart.delete();
+                this.chart = undefined;
+                this.dom_monitorbutton.style.color = "lightgray";
+                if(this.access == "rw"){ this.dom_input.disabled = false; }
+            }
+        }
+          
+        this.commit_change = function(){
+            this.value = this.readInputField()
+            odrive.set(this.type,this.nr,this.value);
+            this.changed();
+        }
+        
+        // read and parse html input
+        this.readInputField = function(){
+            if(this.type==0){ return parseFloat(this.dom_input.value); }
+            if(this.type==1){ return parseInt(this.dom_input.value); }
+            if(this.type==2){ return this.dom_input.checked;}
+        }
+        
+    }
+    
+    function ODriveVariables(){
+        this.odriveVars = [];
+        
+        this.init = function(data){ // init via websocket json data
+            for (var i = 0; i < data.length; i++) {
+                var odvar = new ODriveVariable()
+                odvar.init(data[i])
+                this.odriveVars[[odvar.type,odvar.nr]] = odvar;
+            }
+        }     
+        
+        this.get = function(type,nr){
+            return this.odriveVars[[type,nr]];
+        }
+        
+        this.show_changecnt = function(){
+            var cnt = 0;
+            for (var k in this.odriveVars) {
+                if(this.odriveVars[k].has_changed == true){
+                    cnt++;
+                }
+            }
+            $("#countchanged").html(cnt);
+        }
+        
+        this.commit_changes = function(){
+            for (var k in this.odriveVars) {
+                    if(this.odriveVars[k].has_changed == true){
+                        this.odriveVars[k].commit_change();
+                    }
+            }
+            this.show_changecnt();
+        }
+
+    }
+        
+    function Chart(odriveVariable){
+        this.odriveVariable = odriveVariable; 
+
+        this.datapoints = [];
+        this.max_datapoints = chart_default_max_datapoints;
+        this.frequency = chart_default_frequency;
+        
+        this.xpos = 0;
+        this.lastrender = 0;
+        this.paused = false;
+        this.small = true;
+        
+        this.canvasJsChart = undefined;
+
+        // dom elements
+        this.dom_container =  $("#"+this.odriveVariable.dom_nameprefix+"_charts")[0]; //where we self are located
+        this.dom_chart = undefined;
+        this.dom_resizebutton =  undefined;
+        this.dom_nrofdatapoints =  undefined;
+        this.dom_frequency =  undefined
+        this.dom_pausebutton =  undefined;
+
+        this.init = function(){
+            var template = document.createElement('template');
+            template.innerHTML = Mustache.render($('#Template_Chart').html(),this);             
+            this.dom_container.append(template.content);
+                
+            this.dom_chart =   $("#chart_" + this.odriveVariable.type + "_" + this.odriveVariable.nr)[0];
+            this.dom_resizebutton =   $("#chart_" + this.odriveVariable.type + "_" + this.odriveVariable.nr + "_resize")[0];
+            this.dom_nrofdatapoints = $("#chart_" + this.odriveVariable.type + "_" + this.odriveVariable.nr + "_nrofdatapoints")[0];
+            this.dom_frequency =      $("#chart_" + this.odriveVariable.type + "_" + this.odriveVariable.nr + "_frequency")[0];
+            this.dom_pausebutton =    $("#chart_" + this.odriveVariable.type + "_" + this.odriveVariable.nr + "_playpause")[0];                
+                
+            this.canvasJsChart = new CanvasJS.Chart("chartcontainer_"+this.odriveVariable.type+"_"+this.odriveVariable.nr,{
+                title :{ text: this.odriveVariable.prettyname, },			
+                data: [{
+                    type: "line",
+                    dataPoints: this.datapoints
+                }]
+            });     
+            odrive.monitor(this.odriveVariable.type,this.odriveVariable.nr,this.frequency)
+            
+            this.render();
+        }
+        
+        this.delete = function(){
+            this.dom_chart.remove();
+            odrive.monitor(this.odriveVariable.type,this.odriveVariable.nr,0)
+        }
+        
+        this.addDatapoint = function(value){
+            this.datapoints.push({x:this.xpos,y:value});
+            this.xpos++;
+            while (this.datapoints.length >this.max_datapoints)
+            {
+                this.datapoints.shift();				
+            }
+            if(this.lastrender + chart_render_delay < Date.now()){
+                this.odriveVariable.dom_input.value = value;
+                this.render();
+                this.lastrender = Date.now();
+            }
+        }
+        
+        this.resize = function(){
+            if(this.small == true){
+                this.small = false;
+                this.dom_chart.classList.remove("chart_small");
+                this.dom_chart.classList.remove("col-md-3");
+                this.dom_chart.classList.add("chart_large");
+                this.dom_chart.classList.add("col-md-12");
+                this.dom_resizebutton.classList.remove("glyphicon-resize-full");
+                this.dom_resizebutton.classList.add("glyphicon-resize-small");
+            }else{
+                this.small = true;
+                this.dom_chart.classList.remove("chart_large");
+                this.dom_chart.classList.remove("col-md-12");
+                this.dom_chart.classList.add("chart_small");
+                this.dom_chart.classList.add("col-md-3");
+                this.dom_resizebutton.classList.remove("glyphicon-resize-small");
+                this.dom_resizebutton.classList.add("glyphicon-resize-full"); 
+            }
+            this.render();
+        }
+        
+        this.update_datapoints = function(direction){
+            if(direction == "+"){
+                this.max_datapoints *= 10;
+            }else{
+                this.max_datapoints /= 10;
+            }
+            if(this.max_datapoints < 10){ this.max_datapoints = 10;}
+            if(this.max_datapoints > 1000000){ this.max_datapoints = 1000000; }
+            this.dom_nrofdatapoints.innerHTML = this.max_datapoints;
+            this.render();
+        }
+        
+        this.update_frequency = function(direction){
+            if(direction == "+"){
+                this.frequency *= 10; 
+            }else{
+                this.frequency /= 10;
+            }
+            if(this.frequency < 1){ this.frequency = 1;  }
+            if(this.frequency > 1000){ this.frequency = 1000; }
+            
+            if(this.paused==false){ 
+                odrive.monitor(this.odriveVariable.type,this.odriveVariable.nr,this.frequency)
+            }
+            
+            this.dom_frequency.innerHTML = this.frequency + "Hz";
+            this.render();
+        }   
+
+        this.playpause = function(){
+            if(this.paused==false){
+                odrive.monitor(this.odriveVariable.type,this.odriveVariable.nr,0);
+                this.dom_pausebutton.classList.remove("glyphicon-pause");
+                this.dom_pausebutton.classList.add("glyphicon-play");
+                if(this.odriveVariable.access == "rw"){
+                    this.odriveVariable.dom_input.disabled = false                    
+                }
+                this.paused = true
+            }else{
+                odrive.monitor(this.odriveVariable.type,this.odriveVariable.nr,this.frequency);
+                this.dom_pausebutton.classList.remove("glyphicon-play");
+                this.dom_pausebutton.classList.add("glyphicon-pause");
+                this.odriveVariable.dom_input.disabled = true
+                this.paused = false
+            }
+        }       
+        
+        this.render = function(){
+            this.canvasJsChart.render();
+        }
+   
+    }
+    
+    function WebsocketClient(){
+
+        this.websocket = undefined;
+        
+        this.connect = function()
+        {
+            try {   
+                this.websocket = new WebSocket( "ws://"+websocket_server);
+                //this.websocket = new WebSocket( "ws://192.168.1.241:22345");
+            } catch (e) {
+                $("#websocket_status").html("connect failed");
+            } 
+            this.websocket.connecting = false;
+            
+            this.websocket.onopen = function(evt) { 
+                $("#websocket_status").html("connected");
+                odrive.getAll();
+            };
+            
+            this.websocket.onclose = function(evt) { 
+                $("#websocket_status").html("disconnected");
+                if(this.connecting == false){
+                    this.connecting = true;
+                    setTimeout(websocketClient.connect(), 2000);    
+                }
+            };
+
+            this.websocket.onerror = function(evt) {     
+                $("#websocket_status").html(evt.data);            
+                console.log('error: ' + evt.data + '\n');
+                this.close();
+                if(this.connecting == false){
+                    this.connecting = true;
+                    setTimeout(websocketClient.connect(), 2000);    
+                }
+            };
+            
+            this.websocket.onmessage = function(evt) {
+                var data = JSON.parse(evt.data);
+                var keys = Object.keys(data);
+                switch (keys[0]) {
+                    case "mappings":
+                        odriveVariables.init(data["mappings"])
+                        break;
+                    case "values":
+                        var values = data["values"];
+                        for(var i=0;i<values.length;i++){
+                            odriveVariables.get(values[i][0],values[i][1]).setValue(values[i][2]);
+                        }
+                        break;    
+                    case "chart":
+                        var values = data["chart"];
+                        for(var i=0;i<values.length;i++){
+                            odriveVariables.get(values[i][0],values[i][1]).chart.addDatapoint(values[i][2]);
+                        }
+                        break;    
+                }
+            };
+            
+            this.connecting = false;
+        }
+    
+        this.send = function(data){
+            this.websocket.send(data);
+        }
+    }    
+    
+    
+    var websocketClient = new WebsocketClient(); 
+    var odrive = new ODrive(); 
+    var odriveVariables = new ODriveVariables();
+    
+    window.addEventListener("load", function(){ $('#websocket_server_input').val( websocket_server )} , false);
+    window.addEventListener("load", websocketClient.connect(), false);
+
+
+</script>
+
+</head>
+<body>
+
+    <div class="container">
+        <div class = "box row">        
+            <div class="col-md-3 col-md-offset-3">
+                <a onclick="odrive.getAll()">Read from Odrive</a>
+            </div>
+            <div class="col-md-3">
+                <a onclick="odriveVariables.commit_changes();">Commit Changes</a> (<div style="display:initial;" id="countchanged">0</div>)
+            </div>
+            <div class="col-md-3">
+                <input id="websocket_server_input" type="text" placeholder="127.0.0.1:12342" value="127.0.0.1:12342"/>
+                <button id="connect_button" onclick="websocket_server=$('#websocket_server_input').val();localStorage.setItem('odrive_websocket_server_input', websocket_server);">Connect</button>
+                <span id="websocket_status">Unknown<span>
+            </div>          
+        </div>
+        
+        <br>
+        
+        <div class = "box row">        
+            <h4>Global</h4>
+            <div id = "global_bool"     class = "col-md-12"></div>
+            <div id = "global_floatint" class = "col-md-12"></div>
+            <div id = "global_charts" class = "col-md-12"></div>
+        </div>
+        
+        <br>
+        
+        <div class = "box row">        
+            <h4>Motor 0</h4>
+            <div id = "motor_0_bool"     class = "col-md-12"></div>
+            <div id = "motor_0_floatint" class = "col-md-12"></div>
+            <div id = "motor_0_charts"  class = "col-md-12"></div>
+            
+            <div class = "box col-md-12">        
+                <h5>Rotor</h5>
+                <div id = "motor_0_rotor_bool"     class = "col-md-12"></div>
+                <div id = "motor_0_rotor_floatint" class = "col-md-12"></div>
+                <div id = "motor_0_charts_floatint" class = "col-md-12"></div>
+            </div>
+            <div class = "box col-md-12">        
+                <h5>Current Control</h5>
+                <div id = "motor_0_current_control_bool"     class = "col-md-12"></div>
+                <div id = "motor_0_current_control_floatint" class = "col-md-12"></div>
+                <div id = "motor_0_current_control_charts" class = "col-md-12"></div>
+            </div>
+        </div>
+        
+        <br>
+        
+        <div class = "box row">                
+            <h4>Motor 1</h4>
+            <div id = "motor_1_bool"     class = "col-md-12"></div>
+            <div id = "motor_1_floatint" class = "col-md-12"></div>            
+            <div id = "motor_1_charts" class = "col-md-12"></div>            
+        
+            <div class = "box col-md-12">        
+                <h5>Rotor</h5>
+                <div id = "motor_1_rotor_bool"     class = "col-md-12"></div>
+                <div id = "motor_1_rotor_floatint" class = "col-md-12"></div>
+                <div id = "motor_1_rotor_charts" class = "col-md-12"></div>
+            </div>
+            <div class = "box col-md-12">        
+                <h5>Current Control</h5>
+                <div id = "motor_1_current_control_bool"     class = "col-md-12"></div>
+                <div id = "motor_1_current_control_floatint" class = "col-md-12"></div>
+                <div id = "motor_1_current_control_charts" class = "col-md-12"></div>
+            </div>
+        </div>          
+    </div>
+</body>
+</html>

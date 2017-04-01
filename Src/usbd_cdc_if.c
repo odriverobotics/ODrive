@@ -284,14 +284,36 @@ static int8_t CDC_Receive_FS (uint8_t* Buf, uint32_t *Len)
   */
 uint8_t CDC_Transmit_FS(uint8_t* Buf, uint16_t Len)
 {
+  /* old
   uint8_t result = USBD_OK;
-  /* USER CODE BEGIN 7 */ 
   USBD_CDC_HandleTypeDef *hcdc = (USBD_CDC_HandleTypeDef*)hUsbDeviceFS.pClassData;
   if (hcdc->TxState != 0){
     return USBD_BUSY;
   }
   USBD_CDC_SetTxBuffer(&hUsbDeviceFS, Buf, Len);
   result = USBD_CDC_TransmitPacket(&hUsbDeviceFS);
+  */
+
+	USBD_CDC_HandleTypeDef   *hcdc = (USBD_CDC_HandleTypeDef*) hUsbDeviceFS.pClassData;
+	uint8_t result = USBD_OK;
+	USBD_CDC_SetTxBuffer(&hUsbDeviceFS, Buf, Len);
+
+  do
+   {
+       result |= USBD_CDC_TransmitPacket(&hUsbDeviceFS);
+   }
+   while((result != USBD_OK) && (result != USBD_FAIL));
+
+   if ((Len%64==0) && (result==USBD_OK))
+   {
+        while(hcdc->TxState);
+       USBD_CDC_SetTxBuffer(&hUsbDeviceFS, Buf, 0);
+       result |= USBD_CDC_TransmitPacket(&hUsbDeviceFS);
+   }
+
+
+
+
   /* USER CODE END 7 */ 
   return result;
 }
