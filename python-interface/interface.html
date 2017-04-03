@@ -432,7 +432,6 @@
         {
             try {   
                 this.websocket = new WebSocket( "ws://"+websocket_server);
-                //this.websocket = new WebSocket( "ws://192.168.1.241:22345");
             } catch (e) {
                 $("#websocket_status").html("connect failed");
             } 
@@ -541,7 +540,7 @@
                 <h5>Rotor</h5>
                 <div id = "motor_0_rotor_bool"     class = "col-md-12"></div>
                 <div id = "motor_0_rotor_floatint" class = "col-md-12"></div>
-                <div id = "motor_0_charts_floatint" class = "col-md-12"></div>
+                <div id = "motor_0_rotor_charts" class = "col-md-12"></div>
             </div>
             <div class = "box col-md-12">        
                 <h5>Current Control</h5>
