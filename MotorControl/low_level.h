@@ -6,17 +6,36 @@
 #include <cmsis_os.h>
 #include "drv8301.h"
 
+
+#define SIGNAL_TIMEOUT 100 // default timeout waiting for phase measurement signals
+
+// so we can expose a int pointer to the motor->error variable
+#define ERROR_NO_ERROR 0
+#define ERROR_PHASE_RESISTANCE_TIMING 1
+#define ERROR_PHASE_RESISTANCE_MEASUREMENT_TIMEOUT 2
+#define ERROR_PHASE_RESISTANCE_OUT_OF_RANGE 3
+#define ERROR_PHASE_INDUCTANCE_TIMING 4
+#define ERROR_PHASE_INDUCTANCE_MEASUREMENT_TIMEOUT 5
+#define ERROR_PHASE_INDUCTANCE_OUT_OF_RANGE 6
+#define ERROR_ENCODER_DIRECTION 7
+#define ERROR_ENCODER_MEASUREMENT_TIMEOUT 8
+#define ERROR_ADC_FAILED 9
+#define ERROR_SELFTEST_TIMING 10
+#define ERROR_FOC_TIMING 11
+#define ERROR_FOC_MEASUREMENT_TIMEOUT 12
+#define ERROR_SCAN_MOTOR_TIMING 13
+#define ERROR_FOC_VOLTAGE_TIMING 14
+#define ERROR_GATEDRIVER_INVALID_GAIN 15
+#define ERROR_PWM_SRC_FAIL 16
+
+#define POSITION_CONTROL 0
+#define VELOCITY_CONTROL 1
+#define CURRENT_CONTROL 2
+
 /* Exported types ------------------------------------------------------------*/
 typedef enum {
     M_SIGNAL_PH_CURRENT_MEAS = 1u << 0
 } Motor_thread_signals_t;
-
-typedef enum {
-    CURRENT_CONTROL,
-    VELOCITY_CONTROL,
-    POSITION_CONTROL
-} Motor_control_mode_t;
-
 
 typedef struct {
     float phB;
@@ -45,7 +64,8 @@ typedef struct {
 
 #define TIMING_LOG_SIZE 16
 typedef struct {
-    Motor_control_mode_t control_mode;
+    int control_mode;
+    int error;
     float pos_setpoint;
     float pos_gain;
     float vel_setpoint;
@@ -54,8 +74,14 @@ typedef struct {
     float vel_integrator_current;
     float vel_limit;
     float current_setpoint;
+    float selftest_current;
+    float phase_inductance;
+    float phase_resistance;
     osThreadId motor_thread;
     bool thread_ready;
+    bool enable_control; // enable/disable via usb to start motor control. will be set to false again in case of errors.requires selftest_ok=true
+    bool do_selftest; //  trigger motor selftest. will be reset to false after self test
+    bool selftest_ok; 
     TIM_HandleTypeDef* motor_timer;
     uint16_t next_timings[3];
     uint16_t control_deadline;

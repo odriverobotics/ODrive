@@ -301,12 +301,13 @@ uint8_t CDC_Transmit_FS(uint8_t* Buf, uint16_t Len)
   do
    {
        result |= USBD_CDC_TransmitPacket(&hUsbDeviceFS);
+       //TODO can we sleep here in this thread so cpu isn't busy looping?
    }
    while((result != USBD_OK) && (result != USBD_FAIL));
 
    if ((Len%64==0) && (result==USBD_OK))
    {
-        while(hcdc->TxState);
+        while(hcdc->TxState);//TODO can we sleep here in this thread so cpu isn't busy looping?
        USBD_CDC_SetTxBuffer(&hUsbDeviceFS, Buf, 0);
        result |= USBD_CDC_TransmitPacket(&hUsbDeviceFS);
    }
