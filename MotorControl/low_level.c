@@ -1131,7 +1131,7 @@ static void control_motor_loop(Motor_t* motor) {
         //Velocity control
         float Iq = motor->current_setpoint;
         float v_err = vel_des - motor->rotor.pll_vel;
-        if (motor->control_mode >= VELOCITY_CONTROL) {
+        if (motor->control_mode != CURRENT_CONTROL) {
             Iq += motor->vel_gain * v_err;
         }
 
@@ -1151,16 +1151,16 @@ static void control_motor_loop(Motor_t* motor) {
         }
 
         //Velocity integrator (behaviour dependent on limiting)
-        if (motor->control_mode >= VELOCITY_CONTROL) {
-            if (limited) {
-                //@TODO make decayfactor configurable
-                motor->vel_integrator_current *= 0.99f;
-            } else {
-                motor->vel_integrator_current += (motor->vel_integrator_gain * CURRENT_MEAS_PERIOD) * v_err;
-            }
+        if (motor->control_mode == CURRENT_CONTROL ) {
+        	//reset integral if not in use
+        	motor->vel_integrator_current = 0.0f;
         } else {
-            //reset integral if not in use
-            motor->vel_integrator_current = 0.0f;
+        	if (limited) {
+				//@TODO make decayfactor configurable
+				motor->vel_integrator_current *= 0.99f;
+			} else {
+				motor->vel_integrator_current += (motor->vel_integrator_gain * CURRENT_MEAS_PERIOD) * v_err;
+			}
         }
 
         //Execute current command
@@ -1179,11 +1179,13 @@ void motor_thread(void const * argument) {
     motor->motor_thread = osThreadGetId();
     motor->thread_ready = true;
 
+    // oskar you have to take a look at this, i dont know enough about the timer how/why..
     __HAL_TIM_MOE_DISABLE(motor->motor_timer); // TODO this does not belong here, add to board startup code
 
     for(;;){
         if(motor->do_selftest){
         	__HAL_TIM_MOE_ENABLE(motor->motor_timer);// enable pwm outputs
+        	osDelay(10);
             motor_selftest(motor);    
             if(!motor->selftest_ok){
             	__HAL_TIM_MOE_DISABLE(motor->motor_timer);// disables pwm outputs
@@ -1193,6 +1195,7 @@ void motor_thread(void const * argument) {
         
         if(motor->selftest_ok && motor->enable_control){
         	__HAL_TIM_MOE_ENABLE(motor->motor_timer);
+        	osDelay(10);
         	control_motor_loop(motor);
         	__HAL_TIM_MOE_DISABLE_UNCONDITIONALLY(motor->motor_timer);
             if(motor->enable_control){ // if control is still enabled, we exited because of error
