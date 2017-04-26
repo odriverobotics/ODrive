@@ -25,18 +25,19 @@ There is also [ODriveFPGA](https://github.com/madcowswe/ODriveFPGA), which conta
 ### Getting a programmer
 Get a programmer that supports SWD (Serial Wire Debugging) and is ST-link v2 compatible. You can get them really cheap on [eBay](http://www.ebay.co.uk/itm/ST-Link-V2-Emulator-Downloader-Programming-Mini-Unit-STM8-STM32-with-20CM-Line-/391173940927?hash=item5b13c8a6bf:g:3g8AAOSw~OdVf-Tu) or many other places.
 
-### Installing prerequisites 
+### Installing prerequisites
 To compile the program, you first need to install the prerequisite tools:
 
+#### Linux:
 * `gcc-arm-none-eabi`: GCC compilation toolchain for ARM microcontrollers.
     * Installing on Ubuntu: `sudo apt-get install gcc-arm-none-eabi`
-    * Installing on Windows (Cygwin): TODO
 * `gdb-arm-none-eabi`: GNU project debugger for ARM microcontrollers.
     * Installing on Ubuntu: `sudo apt-get install gdb-arm-none-eabi`
-    * Installing on Windows (Cygwin): TODO
 * `OpenOCD`: Open On-Chip Debugging tools. This is what we use to flash the code onto the microcontroller.
     * Installing on Ubuntu: `sudo apt-get install openocd`
-    * Installing on Windows (Cygwin): TODO
+
+#### Windows:
+* (Git for windows)[https://git-scm.com/download/win].
 
 ### Building the firmware
 Run `make` in the root of this repository.
