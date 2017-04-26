@@ -37,7 +37,17 @@ To compile the program, you first need to install the prerequisite tools:
     * Installing on Ubuntu: `sudo apt-get install openocd`
 
 #### Windows:
-* (Git for windows)[https://git-scm.com/download/win].
+##### Git Bash and manual tool installations
+Install the following:
+* [Git for windows](https://git-scm.com/download/win). This intalls the Git Bash, which is a unix style command line interface that we will be using. 
+* [GNU ARM Embedded Toolchain](https://developer.arm.com/open-source/gnu-toolchain/gnu-rm/downloads). The cross-compiler used to compile the code. Download and install the "Windows 32-bit" version. Add the path of the binaries to your PATH environment variable. For me this was at `C:\Program Files\GNU ARM Eclipse\OpenOCD\0.10.0-201704182147-dev\bin`.
+* [Make for Windows](http://gnuwin32.sourceforge.net/packages/make.htm). Make is used to script the compilation process. Download and run the complete package setup program. Add the path of the binaries to your PATH environment variable. For me this was at `C:\Program Files (x86)\GnuWin32\bin`.
+* OpenOCD. Follow the instructions at [GNU ARM Eclipse  - How to install the OpenOCD binaries](http://gnuarmeclipse.github.io/openocd/install/), including the part about ST-LINK/V2 drivers.
+
+After installing all of the above, open a Git Bash shell. Continue at section [Building the firmware](#building-the-firmware).
+
+##### Cygwin
+TODO
 
 ### Building the firmware
 Run `make` in the root of this repository.
