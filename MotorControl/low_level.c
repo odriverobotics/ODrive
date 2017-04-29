@@ -828,11 +828,12 @@ static bool measure_phase_resistance(Motor_t* motor, float test_current, float m
     // De-energize motor
     queue_voltage_timings(motor, 0.0f, 0.0f);
 
-    motor->phase_resistance = test_voltage / test_current;
-    if (motor->phase_resistance < 0.01 || motor->phase_resistance > 0.2) {
+    float R = test_voltage / test_current;
+    if (R < 0.01 || R > 0.2) {
         motor->error = ERROR_PHASE_RESISTANCE_OUT_OF_RANGE;
         return false;
     }
+    motor->phase_resistance = R;
     return true;
 }
 
@@ -841,6 +842,7 @@ static bool measure_phase_inductance(Motor_t* motor, float voltage_low, float vo
     float test_voltages[2] = {voltage_low, voltage_high};
     float Ialphas[2] = {0.0f};
     static const int num_cycles = 5000;
+
     for (int t = 0; t < num_cycles; ++t) {
         for (int i = 0; i < 2; ++i) {
             if (osSignalWait(M_SIGNAL_PH_CURRENT_MEAS, PH_CURRENT_MEAS_TIMEOUT).status != osEventSignal) {
@@ -867,14 +869,14 @@ static bool measure_phase_inductance(Motor_t* motor, float voltage_low, float vo
     // Note: A more correct formula would also take into account that there is a finite timestep.
     // However, the discretisation in the current control loop inverts the same discrepancy
     float dI_by_dt = (Ialphas[1] - Ialphas[0]) / (CURRENT_MEAS_PERIOD * (float)num_cycles);
-    motor->phase_inductance = v_L / dI_by_dt;
+    float L = v_L / dI_by_dt;
     
     // TODO arbitrary values set for now
-    if (motor->phase_inductance < 1e-6 || motor->phase_inductance > 500e-6) {
+    if (L < 1e-6 || L > 500e-6) {
         motor->error = ERROR_PHASE_INDUCTANCE_OUT_OF_RANGE;
         return false;
     }
-    
+    motor->phase_inductance = L;
     return true;
 }
 
@@ -938,7 +940,11 @@ static bool calib_enc_offset(Motor_t* motor, float voltage_magnitude) {
 static bool motor_calibration(Motor_t* motor){
     motor->calibration_ok = false;
     motor->error = ERROR_NO_ERROR;
-    
+
+    // #warning(hardcoded values for SK3-5065-280kv!)
+    // float R = 0.0332548246f;
+    // float L = 7.97315806e-06f;
+
     if (!measure_phase_resistance(motor, motor->calibration_current, 1.0f))
         return false;
     if (!measure_phase_inductance(motor, -1.0f, 1.0f))
@@ -1223,6 +1229,8 @@ void motor_thread(void const * argument) {
 
     motor->do_calibration = true;
     motor->enable_control = true;
+
+    set_pos_setpoint(motor, 10000.0f, 0.0f, 0.0f);
 #endif
 
     for (;;) {
