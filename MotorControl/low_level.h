@@ -6,17 +6,42 @@
 #include <cmsis_os.h>
 #include "drv8301.h"
 
+//default timeout waiting for phase measurement signals
+#define PH_CURRENT_MEAS_TIMEOUT 5 // [ms]
+
 /* Exported types ------------------------------------------------------------*/
 typedef enum {
     M_SIGNAL_PH_CURRENT_MEAS = 1u << 0
 } Motor_thread_signals_t;
 
 typedef enum {
-    CURRENT_CONTROL,
-    VELOCITY_CONTROL,
-    POSITION_CONTROL
-} Motor_control_mode_t;
+    ERROR_NO_ERROR,
+    ERROR_PHASE_RESISTANCE_TIMING,
+    ERROR_PHASE_RESISTANCE_MEASUREMENT_TIMEOUT,
+    ERROR_PHASE_RESISTANCE_OUT_OF_RANGE,
+    ERROR_PHASE_INDUCTANCE_TIMING,
+    ERROR_PHASE_INDUCTANCE_MEASUREMENT_TIMEOUT,
+    ERROR_PHASE_INDUCTANCE_OUT_OF_RANGE,
+    ERROR_ENCODER_DIRECTION,
+    ERROR_ENCODER_MEASUREMENT_TIMEOUT,
+    ERROR_ADC_FAILED,
+    ERROR_CALIBRATION_TIMING,
+    ERROR_FOC_TIMING,
+    ERROR_FOC_MEASUREMENT_TIMEOUT,
+    ERROR_SCAN_MOTOR_TIMING,
+    ERROR_FOC_VOLTAGE_TIMING,
+    ERROR_GATEDRIVER_INVALID_GAIN,
+    ERROR_PWM_SRC_FAIL,
+} Error_t;
 
+// Note: these should be sorted from lowest level of control to
+// highest level of control, to allow "<" style comparisons.
+typedef enum {
+    CTRL_MODE_VOLTAGE_CONTROL,
+    CTRL_MODE_CURRENT_CONTROL,
+    CTRL_MODE_VELOCITY_CONTROL,
+    CTRL_MODE_POSITION_CONTROL
+} Motor_control_mode_t;
 
 typedef struct {
     float phB;
@@ -34,8 +59,8 @@ typedef struct {
 
 typedef struct {
     TIM_HandleTypeDef* encoder_timer;
-    int16_t encoder_offset;
-    int32_t encoder_state;
+    int encoder_offset;
+    int encoder_state;
     float phase;
     float pll_pos;
     float pll_vel;
@@ -46,6 +71,7 @@ typedef struct {
 #define TIMING_LOG_SIZE 16
 typedef struct {
     Motor_control_mode_t control_mode;
+    int error;
     float pos_setpoint;
     float pos_gain;
     float vel_setpoint;
@@ -54,20 +80,33 @@ typedef struct {
     float vel_integrator_current;
     float vel_limit;
     float current_setpoint;
+    float calibration_current;
+    float phase_inductance;
+    float phase_resistance;
     osThreadId motor_thread;
     bool thread_ready;
+    bool enable_control; // enable/disable via usb to start motor control. will be set to false again in case of errors.requires calibration_ok=true
+    bool do_calibration; //  trigger motor calibration. will be reset to false after self test
+    bool calibration_ok;
     TIM_HandleTypeDef* motor_timer;
     uint16_t next_timings[3];
     uint16_t control_deadline;
     Iph_BC_t current_meas;
     Iph_BC_t DC_calib;
     DRV8301_Obj gate_driver;
+    DRV_SPI_8301_Vars_t gate_driver_regs; //Local view of DRV registers
     float shunt_conductance;
+    float phase_current_rev_gain; //Reverse gain for ADC to Amps
     Current_control_t current_control;
     Rotor_t rotor;
     int timing_log_index;
     uint16_t timing_log[TIMING_LOG_SIZE];
 } Motor_t;
+
+typedef struct{
+        int type;
+        int index;
+} monitoring_slot;
 
 /* Exported constants --------------------------------------------------------*/
 extern float vbus_voltage;
