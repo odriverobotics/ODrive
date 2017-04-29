@@ -1214,6 +1214,13 @@ void motor_thread(void const * argument) {
     motor->thread_ready = true;
 
 #ifdef STANDALONE_MODE
+    //Only run tests on M0 for now
+    if (motor == &motors[1]) {
+        // TODO: figure out why M1 MOE must be enabled to run M0 correctly
+        __HAL_TIM_MOE_ENABLE(motor->motor_timer);
+        FOC_voltage_loop(motor, 0.0f, 0.0f);
+    }
+
     motor->do_calibration = true;
     motor->enable_control = true;
 #endif
