@@ -92,6 +92,7 @@ Motor_t motors[] = {
             .encoder_timer = &htim3,
             .encoder_offset = 0,
             .encoder_state = 0,
+            .motor_dir = 0, // set by calib_enc_offset
             .phase = 0.0f, // [rad]
             .pll_pos = 0.0f, // [rad]
             .pll_vel = 0.0f, // [rad/s]
@@ -151,6 +152,7 @@ Motor_t motors[] = {
             .encoder_timer = &htim4,
             .encoder_offset = 0,
             .encoder_state = 0,
+            .motor_dir = 0, // set by calib_enc_offset
             .phase = 0.0f,
             .pll_pos = 0.0f, // [rad]
             .pll_vel = 0.0f, // [rad/s]
@@ -889,6 +891,7 @@ static bool calib_enc_offset(Motor_t* motor, float voltage_magnitude) {
     static const float scan_range = 4.0f * M_PI;
     const float step_size = scan_range / (float)num_steps; // TODO handle const expressions better (maybe switch to C++ ?)
 
+    int32_t init_enc_val = (int16_t)motor->rotor.encoder_timer->Instance->CNT;
     int32_t encvaluesum = 0;
 
     // go to rotor zero phase for start_lock_duration to get ready to scan
@@ -913,9 +916,15 @@ static bool calib_enc_offset(Motor_t* motor, float voltage_magnitude) {
         encvaluesum += (int16_t)motor->rotor.encoder_timer->Instance->CNT;
     }
     // check direction
-    // TODO ability to handle both encoder directions
-    if (!((int16_t)motor->rotor.encoder_timer->Instance->CNT > 0)) {
-        motor->error = ERROR_ENCODER_DIRECTION;
+    if ((int16_t)motor->rotor.encoder_timer->Instance->CNT > init_enc_val + 8) {
+        // motor same dir as encoder
+        motor->rotor.motor_dir = 1;
+    } else if ((int16_t)motor->rotor.encoder_timer->Instance->CNT < init_enc_val - 8) {
+        // motor opposite dir as encoder
+        motor->rotor.motor_dir = -1;
+    } else {
+        // Encoder response error
+        motor->error = ERROR_ENCODER_RESPONSE;
         return false;
     }
     // scan backwards
@@ -932,7 +941,7 @@ static bool calib_enc_offset(Motor_t* motor, float voltage_magnitude) {
         encvaluesum += (int16_t)motor->rotor.encoder_timer->Instance->CNT;
     }
 
-    int16_t offset = encvaluesum / (num_steps * 2);
+    int offset = encvaluesum / (num_steps * 2);
     motor->rotor.encoder_offset = offset;
     return true;
 }
@@ -1025,7 +1034,10 @@ static void update_rotor(Rotor_t* rotor) {
     rotor->encoder_state += (int32_t)delta_enc;
 
     // compute electrical phase
-    float ph = elec_rad_per_enc * ((rotor->encoder_state % ENCODER_CPR) - rotor->encoder_offset);
+    int corrected_enc = rotor->encoder_state % ENCODER_CPR;
+    corrected_enc -= rotor->encoder_offset;
+    corrected_enc *= rotor->motor_dir;
+    float ph = elec_rad_per_enc * (float)corrected_enc;
     ph = fmodf(ph, 2*M_PI);
     rotor->phase = ph;
 
@@ -1176,6 +1188,9 @@ static void control_motor_loop(Motor_t* motor) {
 
         // Velocity integral action before limiting
         Iq += motor->vel_integrator_current;
+
+        // Apply motor direction correction
+        Iq *= motor->rotor.motor_dir;
 
         // Current limiting
         float Ilim = motor->current_control.current_lim;

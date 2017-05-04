@@ -22,7 +22,7 @@ typedef enum {
     ERROR_PHASE_INDUCTANCE_TIMING,
     ERROR_PHASE_INDUCTANCE_MEASUREMENT_TIMEOUT,
     ERROR_PHASE_INDUCTANCE_OUT_OF_RANGE,
-    ERROR_ENCODER_DIRECTION,
+    ERROR_ENCODER_RESPONSE,
     ERROR_ENCODER_MEASUREMENT_TIMEOUT,
     ERROR_ADC_FAILED,
     ERROR_CALIBRATION_TIMING,
@@ -61,6 +61,7 @@ typedef struct {
     TIM_HandleTypeDef* encoder_timer;
     int encoder_offset;
     int encoder_state;
+    int motor_dir; // 1/-1 for fwd/rev alignment to encoder.
     float phase;
     float pll_pos;
     float pll_vel;
