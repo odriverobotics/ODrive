@@ -50,7 +50,9 @@ After installing all of the above, open a Git Bash shell. Continue at section [B
 TODO
 
 ### Building the firmware
-Run `make` in the root of this repository.
+* Make sure you have cloned the repository.
+* Navigate your terminal (bash/cygwin) to the ODriveFirmware dir.
+* Run `make` in the root of this repository.
 
 ### Flashing the firmware
 Connect `SWD`, `SWC`, and `GND` on connector J2 to the programmer.
