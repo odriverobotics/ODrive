@@ -37,7 +37,8 @@ float vbus_voltage = 12.0f;
 
 // TODO stick parameter into struct
 #define ENCODER_CPR (600*4)
-static float elec_rad_per_enc = 7.0 * 2 * M_PI * (1.0f / (float)ENCODER_CPR);
+#define POLE_PAIRS 7
+static float elec_rad_per_enc = POLE_PAIRS * 2 * M_PI * (1.0f / (float)ENCODER_CPR);
 
 // TODO: Migrate to C++, clearly we are actually doing object oriented code here...
 // TODO: For nice encapsulation, consider not having the motor objects public
