@@ -28,9 +28,9 @@ In it's current state, the motor structs contain both tuning parameters, meant t
 
 ### Mandatory parameters
 You must set:
-* ENCODER_CPR: Encoder Count Per Revolution (CPR). This is 4x the Pulse Per Revolution (PPR) value.
-* POLE_PAIRS: This is the number of magnet poles in the rotor, divided by two.
-* brake_resistance: This is the resistance of the brake resistor. If you are not using it, you may set it to 0.0f.
+* `ENCODER_CPR`: Encoder Count Per Revolution (CPR). This is 4x the Pulse Per Revolution (PPR) value.
+* `POLE_PAIRS`: This is the number of magnet poles in the rotor, divided by two.
+* `brake_resistance`: This is the resistance of the brake resistor. If you are not using it, you may set it to 0.0f.
 
 ### Tuning parameters
 The most important parameters are the limits:
