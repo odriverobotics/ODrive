@@ -32,4 +32,4 @@ You can now:
 * [Flash the board](https://github.com/madcowswe/ODriveFirmware#flashing-the-firmware)
 
 ### Getting help
-The [ODrive Community](https://discourse.odriverobotics.com/) warmly welcomes you.
+If you have any issues or any questions please get in touch. The [ODrive Community](https://discourse.odriverobotics.com/) warmly welcomes you.
