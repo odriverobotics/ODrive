@@ -23,11 +23,32 @@ There is also [ODriveFPGA](https://github.com/madcowswe/ODriveFPGA), which conta
 ## Configuring parameters
 To correctly operate the ODrive, you need to supply some parameters. Some are mandatory, and if supplied incorrectly will cause the drive to malfunction. To get good performance you must also tune the drive.
 
+Currently, all the parameters are at the top of the [MotorControl/low_level.c](https://github.com/madcowswe/ODriveFirmware/blob/master/MotorControl/low_level.c) file. Please note that many parameters occur twice, once for each motor.
+In it's current state, the motor structs contain both tuning parameters, meant to be set by the developer, and static variables, meant to be modified by the software. Unfortunatly these are mixed together right now, but cleaning this up is a high priority task.
+
 ### Mandatory parameters
-TODO
+You must set:
+* ENCODER_CPR: Encoder Count Per Revolution (CPR). This is 4x the Pulse Per Revolution (PPR) value.
+* POLE_PAIRS: This is the number of magnet poles in the rotor, divided by two.
+* brake_resistance: This is the resistance of the brake resistor. If you are not using it, you may set it to 0.0f.
 
 ### Tuning parameters
-TODO
+The most important parameters are the limits:
+* The current limit: `.current_lim = 75.0f, //[A] // Note: consistent with 40v/v gain`. The default current limit, for safety reasons, is set to 10A. This is quite weak, and good for making sure the drive is stable. Once you have tuned the drive, you should increase this to 75A to get some performance. Note that above 75A, you must change the current amplifier gains.
+* The velocity limit: `.vel_limit = 20000.0f, // [counts/s]`. Does what it says on the tin.
+
+The motion control gains are currently manually tuned:
+* `.pos_gain = 20.0f, // [(counts/s) / counts]`
+* `.vel_gain = 15.0f / 10000.0f, // [A/(counts/s)]`
+* `.vel_integrator_gain = 10.0f / 10000.0f, // [A/(counts/s * s)]`
+An upcoming feature will enable automatic tuning. Until then, here is a rough tuning procedure:
+* Set the integrator gain to 0
+* Make sure you have a stable system. If it is not, decrease all gains until you have one.
+* Increase `vel_gain` by around 30% per iteration until the motor exhibits some vibration.
+* Back down `vel_gain` to 50% of the vibrating value.
+* Increase `pos_gain` by around 30% per iteration until you see some overshoot.
+* Back down `pos_gain` until you do not have overshoot anymore.
+* The integrator is not easily tuned, nor is it strictly required. Tune at your own discression.
 
 ## Compiling and downloading firmware
 
