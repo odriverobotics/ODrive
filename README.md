@@ -30,3 +30,6 @@ You can now:
 * [Download and build the firmware](https://github.com/madcowswe/ODriveFirmware)
 * [Configure the firmware parameters](https://github.com/madcowswe/ODriveFirmware#configuring-parameters)
 * [Flash the board](https://github.com/madcowswe/ODriveFirmware#flashing-the-firmware)
+
+### Getting help
+The [ODrive Community](https://discourse.odriverobotics.com/) warmly welcomes you.
