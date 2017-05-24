@@ -41,6 +41,7 @@ The motion control gains are currently manually tuned:
 * `.pos_gain = 20.0f, // [(counts/s) / counts]`
 * `.vel_gain = 15.0f / 10000.0f, // [A/(counts/s)]`
 * `.vel_integrator_gain = 10.0f / 10000.0f, // [A/(counts/s * s)]`
+
 An upcoming feature will enable automatic tuning. Until then, here is a rough tuning procedure:
 * Set the integrator gain to 0
 * Make sure you have a stable system. If it is not, decrease all gains until you have one.
