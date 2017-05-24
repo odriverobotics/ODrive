@@ -10,4 +10,15 @@ This repository contains configuration and analysis scripts that runs on a PC. T
 There is also [ODriveFPGA](https://github.com/madcowswe/ODriveFPGA), which contains the FPGA logic and software that runs on the FPGA based ODrive. This is not currently in development, but may be resumed at some later date.
 
 ## Getting Started
-The getting started guide will appear here very soon.
+*References to hardware is with respect to v3.2. Other versions may still apply, but component designators may differ*
+
+It is perfectly fine, and even recommended, to start testing with just a single motor and encoder.
+Make sure you have a good mechanical connection between the encdoer and the motor, slip can cause disasterous oscillations.
+All non-power I/O is 3.3v output and 5v tolerant on input.
+
+You need one or two brushless motor(s), qudrature incremental encoder(s), and likely a power resistor.
+If you are powering from a battery that can absorb the energy from decellerating the load, and you wish to do regenerative breaking, then you do not need it. If your load is just the motor rotor, and you are testing at low speeds, it may not be required. If you are powering from a power supply, and have a load attached or are running at significant speeds/accelerations, you NEED to connect a power resistor.
+
+Wire up the motor phases into the 3-phase screw terminal(s), and the power resistor to the AUX terminal. Wire up the power source to the DC terminal, make sure to pay attention to the polarity. Do not apply power just yet.
+
+Wire up the encoder(s) to J4. The A,B phases are required, and the Z (index pulse) is optional. The A,B and Z lines have 1k pull up resistors, for use with open-drain encoder outputs. For single ended push-pull signals with weak drive current (\<2mA), you may want to desolder the pull-ups.
