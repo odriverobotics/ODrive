@@ -13,12 +13,14 @@ There is also [ODriveFPGA](https://github.com/madcowswe/ODriveFPGA), which conta
 
 <!-- MarkdownTOC depth=2 autolink=true bracket=round -->
 
+- [Configuring parameters](#configuring-parameters)
 - [Compiling and downloading firmware](#compiling-and-downloading-firmware)
 - [Generating startup code](#generating-startup-code)
 - [Setting up Eclipse development environment](#setting-up-eclipse-development-environment)
 
 <!-- /MarkdownTOC -->
 
+## Configuring parameters
 
 ## Compiling and downloading firmware
 
@@ -55,6 +57,8 @@ TODO
 * Run `make` in the root of this repository.
 
 ### Flashing the firmware
+**Make sure you have [configured the parameters first](#configuring-parameters)**
+
 Connect `SWD`, `SWC`, and `GND` on connector J2 to the programmer.
 You need to power the board by only **ONE** of the following: VCC(3.3v), 5V, or the main power connection (the DC bus). The USB port (J1) does not power the board.
 Run `make flash` in the root of this repository.
