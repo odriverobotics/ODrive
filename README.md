@@ -21,6 +21,13 @@ There is also [ODriveFPGA](https://github.com/madcowswe/ODriveFPGA), which conta
 <!-- /MarkdownTOC -->
 
 ## Configuring parameters
+To correctly operate the ODrive, you need to supply some parameters. Some are mandatory, and if supplied incorrectly will cause the drive to malfunction. To get good performance you must also tune the drive.
+
+### Mandatory parameters
+TODO
+
+### Tuning parameters
+TODO
 
 ## Compiling and downloading firmware
 
@@ -57,7 +64,7 @@ TODO
 * Run `make` in the root of this repository.
 
 ### Flashing the firmware
-**Make sure you have [configured the parameters first](#configuring-parameters)**
+* **Make sure you have [configured the parameters first](#configuring-parameters)**
 
 Connect `SWD`, `SWC`, and `GND` on connector J2 to the programmer.
 You need to power the board by only **ONE** of the following: VCC(3.3v), 5V, or the main power connection (the DC bus). The USB port (J1) does not power the board.
