@@ -8,3 +8,6 @@ This repository contains configuration and analysis scripts that runs on a PC. T
 * [ODriveHardware](https://github.com/madcowswe/ODriveHardware): Circuit board design.
 
 There is also [ODriveFPGA](https://github.com/madcowswe/ODriveFPGA), which contains the FPGA logic and software that runs on the FPGA based ODrive. This is not currently in development, but may be resumed at some later date.
+
+## Getting Started
+The getting started guide will appear here very soon.
