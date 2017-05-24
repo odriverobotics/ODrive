@@ -31,5 +31,11 @@ You can now:
 * [Configure the firmware parameters](https://github.com/madcowswe/ODriveFirmware#configuring-parameters)
 * [Flash the board](https://github.com/madcowswe/ODriveFirmware#flashing-the-firmware)
 
+### Startup procedure
+The startup procedure is illustrated [here](https://www.youtube.com/watch?v=VCX1bA2xnuY)
+
+### Sending USB commands
+Sending USB commands is illustrated [here](https://www.youtube.com/watch?v=gh_2LNFO2rU)
+
 ### Getting help
 If you have any issues or any questions please get in touch. The [ODrive Community](https://discourse.odriverobotics.com/) warmly welcomes you.
