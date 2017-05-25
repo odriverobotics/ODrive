@@ -20,7 +20,7 @@ You need one or two brushless motor(s), qudrature incremental encoder(s), and li
 If you are powering from a battery that can absorb the energy from decellerating the load, and you wish to do regenerative breaking, then you do not need it. If your load is just the motor rotor, and you are testing at low speeds, it may not be required. If you are powering from a power supply, and have a load attached or are running at significant speeds/accelerations, you NEED to connect a power resistor.
 The power resistor values you need depends on your motor setup, and peak/average decelleration power. A good starting point would be a [0.47 ohm, 50W resistor](https://www.digikey.com/product-detail/en/te-connectivity-passive-product/HSA50R47J/A102181-ND/2056131).
 
-Wire up the motor phases into the 3-phase screw terminal(s), and the power resistor to the AUX terminal. Wire up the power source to the DC terminal, make sure to pay attention to the polarity. Do not apply power just yet.
+Wire up the motor phases into the 3-phase screw terminal(s), and the power resistor to the AUX terminal. Wire up the power source (12-24V) to the DC terminal, make sure to pay attention to the polarity. Do not apply power just yet.
 
 Wire up the encoder(s) to J4. The A,B phases are required, and the Z (index pulse) is optional. The A,B and Z lines have 1k pull up resistors, for use with open-drain encoder outputs. For single ended push-pull signals with weak drive current (\<2mA), you may want to desolder the pull-ups.
 
