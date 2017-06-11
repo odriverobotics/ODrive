@@ -91,10 +91,9 @@ TODO
 
 ### Flashing the firmware
 * **Make sure you have [configured the parameters first](#configuring-parameters)**
-
-Connect `SWD`, `SWC`, and `GND` on connector J2 to the programmer.
-You need to power the board by only **ONE** of the following: VCC(3.3v), 5V, or the main power connection (the DC bus). The USB port (J1) does not power the board.
-Run `make flash` in the root of this repository.
+* Connect `SWD`, `SWC`, and `GND` on connector J2 to the programmer.
+* You need to power the board by only **ONE** of the following: VCC(3.3v), 5V, or the main power connection (the DC bus). The USB port (J1) does not power the board.
+* Run `make flash` in the root of this repository.
 
 ### Debugging the firmware
 Run `make gdb`. This will reset and halt at program start. Now you can set breakpoints and run the program. If you know how to use gdb, you are good to go.
