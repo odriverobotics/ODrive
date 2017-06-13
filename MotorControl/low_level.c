@@ -802,7 +802,7 @@ void pwm_trig_adc_cb(ADC_HandleTypeDef* hadc) {
 // Measurement and calibration
 //--------------------------------
 
-// TODO measure all phases
+// TODO check Ibeta balance to verify good motor connection
 static bool measure_phase_resistance(Motor_t* motor, float test_current, float max_voltage) {
     static const float kI = 10.0f; //[(V/s)/A]
     static const int num_test_cycles = 3.0f / CURRENT_MEAS_PERIOD; // Test runs for 3s
@@ -832,7 +832,7 @@ static bool measure_phase_resistance(Motor_t* motor, float test_current, float m
     queue_voltage_timings(motor, 0.0f, 0.0f);
 
     float R = test_voltage / test_current;
-    if (R < 0.01 || R > 0.2) {
+    if (fabs(test_voltage) == max_voltage || R < 0.01f || R > 1.0f) {
         motor->error = ERROR_PHASE_RESISTANCE_OUT_OF_RANGE;
         return false;
     }
@@ -840,7 +840,6 @@ static bool measure_phase_resistance(Motor_t* motor, float test_current, float m
     return true;
 }
 
-// TODO measure all phases
 static bool measure_phase_inductance(Motor_t* motor, float voltage_low, float voltage_high) {
     float test_voltages[2] = {voltage_low, voltage_high};
     float Ialphas[2] = {0.0f};
@@ -875,7 +874,7 @@ static bool measure_phase_inductance(Motor_t* motor, float voltage_low, float vo
     float L = v_L / dI_by_dt;
     
     // TODO arbitrary values set for now
-    if (L < 1e-6 || L > 500e-6) {
+    if (L < 1e-6f || L > 500e-6f) {
         motor->error = ERROR_PHASE_INDUCTANCE_OUT_OF_RANGE;
         return false;
     }
