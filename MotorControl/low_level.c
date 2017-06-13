@@ -1223,6 +1223,10 @@ static void control_motor_loop(Motor_t* motor) {
             break; // in case of error exit loop, motor->error has been set by FOC_current
         }
     }
+
+    //We are exiting control, reset Ibus, and update brake current
+    //TODO update brake current from all motors in 1 func
+    //TODO reset this motor Ibus, then call from here
 }
 
 
