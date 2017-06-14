@@ -48,11 +48,11 @@
 <stringAttribute key="org.eclipse.cdt.launch.COREFILE_PATH" value=""/>
 <stringAttribute key="org.eclipse.cdt.launch.DEBUGGER_REGISTER_GROUPS" value=""/>
 <stringAttribute key="org.eclipse.cdt.launch.PROGRAM_NAME" value="build/ODriveFirmware.elf"/>
-<stringAttribute key="org.eclipse.cdt.launch.PROJECT_ATTR" value="ODriveFirmware"/>
+<stringAttribute key="org.eclipse.cdt.launch.PROJECT_ATTR" value="ODriveFirmware_TelescopeController"/>
 <booleanAttribute key="org.eclipse.cdt.launch.PROJECT_BUILD_CONFIG_AUTO_ATTR" value="false"/>
 <stringAttribute key="org.eclipse.cdt.launch.PROJECT_BUILD_CONFIG_ID_ATTR" value=""/>
 <listAttribute key="org.eclipse.debug.core.MAPPED_RESOURCE_PATHS">
-<listEntry value="/ODriveFirmware"/>
+<listEntry value="/ODriveFirmware_TelescopeController"/>
 </listAttribute>
 <listAttribute key="org.eclipse.debug.core.MAPPED_RESOURCE_TYPES">
 <listEntry value="4"/>
