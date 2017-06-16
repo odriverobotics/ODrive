@@ -49,12 +49,12 @@ Motor_t motors[] = {
         .control_mode = CTRL_MODE_CURRENT_CONTROL,
         .error = ERROR_NO_ERROR,
         .pos_setpoint = 0.0f,
-        .pos_gain = 20.0f, // [(counts/s) / counts]
+        .pos_gain = 5.0f, // [(counts/s) / counts]
         .vel_setpoint = 0.0f,
-        .vel_gain = 10.0f / 10000.0f, // [A/(counts/s)]
-        .vel_integrator_gain = 0, // [A/(counts/s * s)]
+        .vel_gain = 0.0015f, // [A/(counts/s)]
+        .vel_integrator_gain = 0.1, // [A/(counts/s * s)]
         .vel_integrator_current = 0.0f, // [A]
-        .vel_limit = 20000.0f, // [counts/s]
+        .vel_limit = 2000000.0f, // [counts/s]
         .current_setpoint = 0.0f, // [A]
         .calibration_current = 2.5f, // [A]
         .phase_inductance = 0.0f, // to be set by measure_phase_inductance
@@ -995,7 +995,7 @@ static bool motor_calibration(Motor_t* motor){
 
 	// For high resistance motors (Low current) try reducing the PLL bandwidth
     // Calculate rotor pll gains
-    float rotor_pll_bandwidth = 10.0f; // [rad/s]
+    float rotor_pll_bandwidth = 200.0f; // [rad/s]
     motor->rotor.pll_kp = 2.0f * rotor_pll_bandwidth;
     // Check that we don't get problems with discrete time approximation
     if (!(CURRENT_MEAS_PERIOD * motor->rotor.pll_kp < 1.0f)){
@@ -1204,7 +1204,7 @@ static void control_motor_loop(Motor_t* motor) {
         // TODO Decide if we want to use encoder or pll position here
         float vel_des = motor->vel_setpoint;
         if (motor->control_mode >= CTRL_MODE_POSITION_CONTROL) {
-            float pos_err = motor->pos_setpoint - motor->rotor.encoder_state;
+            float pos_err = motor->pos_setpoint - motor->rotor.pll_pos;
             vel_des += motor->pos_gain * pos_err;
         }
 
@@ -1252,6 +1252,20 @@ static void control_motor_loop(Motor_t* motor) {
             limited = true;
             Vq = -Ilim * motor->phase_resistance;
         }
+
+        // Velocity integrator (behaviour dependent on limiting)
+        if (motor->control_mode < CTRL_MODE_VELOCITY_CONTROL ) {
+            // reset integral if not in use
+            motor->vel_integrator_current = 0.0f;
+        } else {
+            if (limited) {
+                // TODO make decayfactor configurable
+                motor->vel_integrator_current *= 0.99f;
+            } else {
+                motor->vel_integrator_current += (motor->vel_integrator_gain * CURRENT_MEAS_PERIOD) * v_err;
+            }
+        }
+
 
 
 		if (GIMBAL_MODE) {
