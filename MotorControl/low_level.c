@@ -36,9 +36,11 @@
 float vbus_voltage = 12.0f;
 
 // TODO stick parameter into struct
-#define ENCODER_CPR (600*4)
-#define POLE_PAIRS 7
+#define ENCODER_CPR (200*4)
+#define POLE_PAIRS 1
 static float elec_rad_per_enc = POLE_PAIRS * 2 * M_PI * (1.0f / (float)ENCODER_CPR);
+
+#define GIMBAL_MODE  1
 
 // TODO: Migrate to C++, clearly we are actually doing object oriented code here...
 // TODO: For nice encapsulation, consider not having the motor objects public
@@ -47,14 +49,14 @@ Motor_t motors[] = {
         .control_mode = CTRL_MODE_CURRENT_CONTROL,
         .error = ERROR_NO_ERROR,
         .pos_setpoint = 0.0f,
-        .pos_gain = 20.0f, // [(counts/s) / counts]
+        .pos_gain = 5.0f, // [(counts/s) / counts]
         .vel_setpoint = 0.0f,
-        .vel_gain = 15.0f / 10000.0f, // [A/(counts/s)]
-        .vel_integrator_gain = 10.0f / 10000.0f, // [A/(counts/s * s)]
+        .vel_gain = 0.0015f, // [A/(counts/s)]
+        .vel_integrator_gain = 0.1, // [A/(counts/s * s)]
         .vel_integrator_current = 0.0f, // [A]
-        .vel_limit = 20000.0f, // [counts/s]
+        .vel_limit = 2000000.0f, // [counts/s]
         .current_setpoint = 0.0f, // [A]
-        .calibration_current = 10.0f, // [A]
+        .calibration_current = 2.5f, // [A]
         .phase_inductance = 0.0f, // to be set by measure_phase_inductance
         .phase_resistance = 0.0f, // to be set by measure_phase_resistance
         .motor_thread = 0,
@@ -82,7 +84,7 @@ Motor_t motors[] = {
         .phase_current_rev_gain = 0.0f, // to be set by DRV8301_setup
         .current_control = {
             // .current_lim = 75.0f, //[A] // Note: consistent with 40v/v gain
-            .current_lim = 10.0f, //[A]
+            .current_lim = 5.0f, //[A]
             .p_gain = 0.0f, // [V/A] should be auto set after resistance and inductance measurement
             .i_gain = 0.0f, // [V/As] should be auto set after resistance and inductance measurement
             .v_current_control_integral_d = 0.0f,
@@ -287,6 +289,7 @@ static bool motor_calibration(Motor_t* motor);
 // Test functions
 static void scan_motor_loop(Motor_t* motor, float omega, float voltage_magnitude);
 static void FOC_voltage_loop(Motor_t* motor, float v_d, float v_q);
+static bool FOC_voltage(Motor_t* motor, float v_d, float v_q);
 // Main motor control
 static void update_rotor(Rotor_t* rotor);
 static void update_brake_current(float brake_current);
@@ -526,8 +529,15 @@ static void DRV8301_setup(Motor_t* motor) {
         local_regs->Ctrl_Reg_1.OC_ADJ_SET = DRV8301_VdsLevel_0p730_V;
         // 20V/V on 500uOhm gives a range of +/- 150A
         // 40V/V on 500uOhm gives a range of +/- 75A
-        local_regs->Ctrl_Reg_2.GAIN = DRV8301_ShuntAmpGain_40VpV;
-
+		
+		// Gimbal motor has lower current, increase current sensing resolution
+		if (GIMBAL_MODE){
+			local_regs->Ctrl_Reg_2.GAIN = DRV8301_ShuntAmpGain_80VpV;
+		}
+		else{
+			local_regs->Ctrl_Reg_2.GAIN = DRV8301_ShuntAmpGain_40VpV;
+		}
+		
         switch (local_regs->Ctrl_Reg_2.GAIN) {
             case DRV8301_ShuntAmpGain_10VpV:
                 motor->phase_current_rev_gain = 1.0f/10.0f;
@@ -805,7 +815,7 @@ void pwm_trig_adc_cb(ADC_HandleTypeDef* hadc) {
 // TODO measure all phases
 static bool measure_phase_resistance(Motor_t* motor, float test_current, float max_voltage) {
     static const float kI = 10.0f; //[(V/s)/A]
-    static const int num_test_cycles = 3.0f / CURRENT_MEAS_PERIOD; // Test runs for 3s
+    static const int num_test_cycles = 5.0f / CURRENT_MEAS_PERIOD; // Test runs for 5s
     float test_voltage = 0.0f;
     for (int i = 0; i < num_test_cycles; ++i) {
         osEvent evt = osSignalWait(M_SIGNAL_PH_CURRENT_MEAS, PH_CURRENT_MEAS_TIMEOUT);
@@ -831,8 +841,9 @@ static bool measure_phase_resistance(Motor_t* motor, float test_current, float m
     // De-energize motor
     queue_voltage_timings(motor, 0.0f, 0.0f);
 
+	// Max resistance is just a ball park based on resistances I have seen, might need to be higher
     float R = test_voltage / test_current;
-    if (R < 0.01 || R > 0.2) {
+    if (R < 0.01 || R > 15.0) {
         motor->error = ERROR_PHASE_RESISTANCE_OUT_OF_RANGE;
         return false;
     }
@@ -954,22 +965,37 @@ static bool motor_calibration(Motor_t* motor){
     // #warning(hardcoded values for SK3-5065-280kv!)
     // float R = 0.0332548246f;
     // float L = 7.97315806e-06f;
+	
+	float calibration_voltage = 1.0f;
 
-    if (!measure_phase_resistance(motor, motor->calibration_current, 1.0f))
+	// If in 'gimbal' mode, the motor more than likely has a high resistance. To get the calibration_current to flow
+	// a higher voltage is required. At the moment this is just a ball park value based on multimeter 
+	// measurements of the motor (calibration voltage >= 0.5 * measured phase-to-phase resistance * calibration current)
+	// Aim for a voltage that will allow atleast 5A flow.
+	if (GIMBAL_MODE){
+		calibration_voltage = 13.0f;
+	}
+    if (!measure_phase_resistance(motor, motor->calibration_current, calibration_voltage)){
         return false;
-    if (!measure_phase_inductance(motor, -1.0f, 1.0f))
-        return false;
-    if (!calib_enc_offset(motor, motor->calibration_current * motor->phase_resistance))
-        return false;
+	}
+	// Ensures we dont apply high voltage to a motor we expect to have a low resistance
+	if (!GIMBAL_MODE){
+		if (!measure_phase_inductance(motor, -1.0f, 1.0f))
+			return false;
+	}
+	if (!calib_enc_offset(motor, motor->calibration_current * motor->phase_resistance))
+			return false;
     
+	
     // Calculate current control gains
-    float current_control_bandwidth = 2000.0f; // [rad/s]
+    float current_control_bandwidth = 5.0f; // [rad/s]
     motor->current_control.p_gain = current_control_bandwidth * motor->phase_inductance;
     float plant_pole = motor->phase_resistance / motor->phase_inductance;
     motor->current_control.i_gain = plant_pole * motor->current_control.p_gain;
 
+	// For high resistance motors (Low current) try reducing the PLL bandwidth
     // Calculate rotor pll gains
-    float rotor_pll_bandwidth = 1000.0f; // [rad/s]
+    float rotor_pll_bandwidth = 200.0f; // [rad/s]
     motor->rotor.pll_kp = 2.0f * rotor_pll_bandwidth;
     // Check that we don't get problems with discrete time approximation
     if (!(CURRENT_MEAS_PERIOD * motor->rotor.pll_kp < 1.0f)){
@@ -1009,20 +1035,27 @@ static void FOC_voltage_loop(Motor_t* motor, float v_d, float v_q) {
     for (;;) {
         osSignalWait(M_SIGNAL_PH_CURRENT_MEAS, osWaitForever);
         update_rotor(&motor->rotor);
-
-        float c = arm_cos_f32(motor->rotor.phase);
-        float s = arm_sin_f32(motor->rotor.phase);
-        float v_alpha = c*v_d - s*v_q;
-        float v_beta  = c*v_q + s*v_d;
-        queue_voltage_timings(motor, v_alpha, v_beta);
-
-        // Check we meet deadlines after queueing
-        if (!(check_timing(motor) < motor->control_deadline)) {
-            motor->error = ERROR_FOC_VOLTAGE_TIMING;
-            return;
-        }
+		FOC_voltage(motor, v_d, v_q);
     }
 }
+
+
+static bool FOC_voltage(Motor_t* motor, float v_d, float v_q) {
+	osSignalWait(M_SIGNAL_PH_CURRENT_MEAS, osWaitForever);
+	float c = arm_cos_f32(motor->rotor.phase);
+	float s = arm_sin_f32(motor->rotor.phase);
+	float v_alpha = c*v_d - s*v_q;
+	float v_beta  = c*v_q + s*v_d;
+
+	queue_voltage_timings(motor, v_alpha, v_beta);
+	// Check we meet deadlines after queueing
+	if (!(check_timing(motor) < motor->control_deadline)) {
+		motor->error = ERROR_FOC_VOLTAGE_TIMING;
+		return false;
+	}
+	return true;
+}
+
 
 
 //--------------------------------
@@ -1193,6 +1226,11 @@ static void control_motor_loop(Motor_t* motor) {
         // Apply motor direction correction
         Iq *= motor->rotor.motor_dir;
 
+		// Use the same control loops the current control uses, using voltage instead
+        float Vq = Iq;
+        float Vd = 0.0f; // No field weaking for now
+		
+		
         // Current limiting
         float Ilim = motor->current_control.current_lim;
         bool limited = false;
@@ -1203,6 +1241,16 @@ static void control_motor_loop(Motor_t* motor) {
         if (Iq < -Ilim) {
             limited = true;
             Iq = -Ilim;
+        }
+
+        // Check that the demanded voltages wont exceed the current limits
+        if (Vq > Ilim * motor->phase_resistance) {
+            limited = true;
+            Vq = Ilim * motor->phase_resistance;
+        }
+        if (Vq < -Ilim * motor->phase_resistance) {
+            limited = true;
+            Vq = -Ilim * motor->phase_resistance;
         }
 
         // Velocity integrator (behaviour dependent on limiting)
@@ -1218,10 +1266,20 @@ static void control_motor_loop(Motor_t* motor) {
             }
         }
 
-        // Execute current command
-        if(!FOC_current(motor, 0.0f, Iq)){
-            break; // in case of error exit loop, motor->error has been set by FOC_current
-        }
+
+
+		if (GIMBAL_MODE) {
+			if(!FOC_voltage(motor, Vd, Vq)){
+				break;
+			}
+		}
+		
+		else{
+			// Execute current command
+			if(!FOC_current(motor, 0.0f, Iq)){
+				break; // in case of error exit loop, motor->error has been set by FOC_current
+			}
+		}
     }
 }
 
@@ -1246,7 +1304,7 @@ void motor_thread(void const * argument) {
     motor->do_calibration = true;
     motor->enable_control = true;
 
-    set_pos_setpoint(motor, 10000.0f, 0.0f, 0.0f);
+    set_pos_setpoint(motor, 800.0f, 0.0f, 0.0f);
 #endif
 
     for (;;) {
@@ -1262,7 +1320,7 @@ void motor_thread(void const * argument) {
         
         if (motor->calibration_ok && motor->enable_control) {
             __HAL_TIM_MOE_ENABLE(motor->motor_timer);
-            osDelay(10);
+            osDelay(8);  // changed from 10 to 8. Helped with FOR_MEASUREMTN_TIMEOUT error
             control_motor_loop(motor);
             __HAL_TIM_MOE_DISABLE_UNCONDITIONALLY(motor->motor_timer);
             if(motor->enable_control){ // if control is still enabled, we exited because of error
