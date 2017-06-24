@@ -832,7 +832,7 @@ static bool measure_phase_resistance(Motor_t* motor, float test_current, float m
     queue_voltage_timings(motor, 0.0f, 0.0f);
 
     float R = test_voltage / test_current;
-    if (fabs(test_voltage) == max_voltage || R < 0.01f || R > 1.0f) {
+    if (fabs(test_voltage) == fabs(max_voltage) || R < 0.01f || R > 1.0f) {
         motor->error = ERROR_PHASE_RESISTANCE_OUT_OF_RANGE;
         return false;
     }
