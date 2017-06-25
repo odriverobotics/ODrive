@@ -91,6 +91,8 @@ Motor_t motors[] = {
             .enableTimeOut = false,
         },
         // .gate_driver_regs Init by DRV8301_setup
+        .motor_type = MOTOR_TYPE_HIGH_CURRENT,
+        // .motor_type = MOTOR_TYPE_GIMBAL,
         .shunt_conductance = 1.0f / SHUNT_RESISTANCE,  //[S]
         .phase_current_rev_gain = 0.0f,                // to be set by DRV8301_setup
         .current_control = {
@@ -187,8 +189,9 @@ Motor_t motors[] = {
             .enableTimeOut = false,
         },
         // .gate_driver_regs Init by DRV8301_setup
-        .shunt_conductance = 1.0f / SHUNT_RESISTANCE,  //[S]
-        .phase_current_rev_gain = 0.0f,                // to be set by DRV8301_setup
+        .motor_type = MOTOR_TYPE_HIGH_CURRENT,
+        .shunt_conductance = 1.0f / SHUNT_RESISTANCE, //[S]
+        .phase_current_rev_gain = 0.0f,               // to be set by DRV8301_setup
         .current_control = {
             // Read out max_allowed_current to see max supported value for current_lim.
             // You can change DRV8301_ShuntAmpGain to get a different range.
