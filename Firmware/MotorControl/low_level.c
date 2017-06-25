@@ -877,19 +877,7 @@ __attribute__((unused)) void FOC_voltage_loop(Motor_t* motor, float v_d, float v
         osSignalWait(M_SIGNAL_PH_CURRENT_MEAS, osWaitForever);
         update_rotor(motor);
 
-        float phase = get_rotor_phase(motor);
-        float c = arm_cos_f32(phase);
-        float s = arm_sin_f32(phase);
-        float v_alpha = c * v_d - s * v_q;
-        float v_beta = c * v_q + s * v_d;
-        queue_voltage_timings(motor, v_alpha, v_beta);
-
-        // Check we meet deadlines after queueing
-        motor->last_cpu_time = check_timing(motor);
-        if (!(motor->last_cpu_time < motor->control_deadline)) {
-            motor->error = ERROR_FOC_VOLTAGE_TIMING;
-            return;
-        }
+        FOC_voltage(motor, v_d, v_q);
     }
 }
 
@@ -1153,6 +1141,21 @@ void queue_voltage_timings(Motor_t* motor, float v_alpha, float v_beta) {
     float mod_alpha = vfactor * v_alpha;
     float mod_beta = vfactor * v_beta;
     queue_modulation_timings(motor, mod_alpha, mod_beta);
+}
+
+void FOC_voltage(Motor_t* motor, float v_d, float v_q) {
+    float phase = get_rotor_phase(motor);
+    float c = arm_cos_f32(phase);
+    float s = arm_sin_f32(phase);
+    float v_alpha = c*v_d - s*v_q;
+    float v_beta  = c*v_q + s*v_d;
+    queue_voltage_timings(motor, v_alpha, v_beta);
+
+    // Check we meet deadlines after queueing
+    if (!(check_timing(motor) < motor->control_deadline)) {
+        motor->error = ERROR_FOC_VOLTAGE_TIMING;
+        return;
+    }
 }
 
 bool FOC_current(Motor_t* motor, float Id_des, float Iq_des) {
