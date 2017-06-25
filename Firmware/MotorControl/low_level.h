@@ -49,6 +49,7 @@ typedef enum {
     ERROR_POS_CTRL_DURING_SENSORLESS,
     ERROR_SPIN_UP_TIMEOUT,
     ERROR_DRV_FAULT,
+    ERROR_NOT_IMPLEMENTED_MOTOR_TYPE,
 } Error_t;
 
 // Note: these should be sorted from lowest level of control to
@@ -244,7 +245,7 @@ void update_brake_current();
 void set_brake_current(float brake_current);
 void queue_modulation_timings(Motor_t* motor, float mod_alpha, float mod_beta);
 void queue_voltage_timings(Motor_t* motor, float v_alpha, float v_beta);
-void FOC_voltage(Motor_t* motor, float v_d, float v_q);
+bool FOC_voltage(Motor_t* motor, float v_d, float v_q);
 bool FOC_current(Motor_t* motor, float Id_des, float Iq_des);
 void control_motor_loop(Motor_t* motor);
 
