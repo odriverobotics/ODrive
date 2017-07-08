@@ -171,7 +171,7 @@ static const float one_by_sqrt3 = 0.57735026919f;
 static const float sqrt3_by_2 = 0.86602540378;
 
 /* Private variables ---------------------------------------------------------*/
-static float brake_resistance = 2.0f; // [ohm]
+static float brake_resistance = 0.47f; // [ohm]
 
 /* Monitoring */
 monitoring_slot monitoring_slots[20] = {0};
