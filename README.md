@@ -108,7 +108,9 @@ Please use the `ODriveFirmware/tools/test_bulk.py` python script for this.
 The most accurate way to understand the commands is to read [the code](https://github.com/madcowswe/ODriveFirmware/blob/f19f1b78de4bd917284ff95bc61ca616ca9bacc4/MotorControl/low_level.c#L353) that parses the commands.
 
 #### Motor Position command
-> p motor position velocity_ff current_ff
+```
+p motor position velocity_ff current_ff
+```
 * `p` for position
 * `motor` is the motor number, `0` or `1`.
 * `position` is the desired position, in encoder counts.
@@ -118,7 +120,9 @@ The most accurate way to understand the commands is to read [the code](https://g
 Note that if you don't know what feed-forward is or what it's used for, simply set it to 0.
 
 #### Motor Velocity command
-> v motor velocity current_ff
+```
+v motor velocity current_ff
+```
 * `v` for velocity
 * `motor` is the motor number, `0` or `1`.
 * `velocity` is the desired velocity in counts/s.
@@ -127,14 +131,18 @@ Note that if you don't know what feed-forward is or what it's used for, simply s
 Note that if you don't know what feed-forward is or what it's used for, simply set it to 0.
 
 #### Motor Current command
-> c motor current
+```
+c motor current
+```
 * `c` for current
 * `motor` is the motor number, `0` or `1`.
 * `current` is the desired current in A.
 
 #### Variable getting and setting
-> g type index
-> s type index value
+```
+g type index
+s type index value
+```
 * `g` for get, `s` for set
 * `type` is the data type as follows:
 ** `0` is float
