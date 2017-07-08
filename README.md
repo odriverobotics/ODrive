@@ -35,7 +35,7 @@ You can now:
 The startup procedure is illustrated [here](https://www.youtube.com/watch?v=VCX1bA2xnuY). Note that the rotor must be allowed to rotate without any biased load during startup. That means mass and friction loads are fine, but gravity or spring loads are not okay.
 
 ### Sending USB commands
-Sending USB commands is illustrated [here](https://www.youtube.com/watch?v=gh_2LNFO2rU)
+Sending USB commands is documented [here](https://github.com/madcowswe/ODriveFirmware#communicating-over-usb)
 
 ### Getting help
 If you have any issues or any questions please get in touch. The [ODrive Community](https://discourse.odriverobotics.com/) warmly welcomes you.
