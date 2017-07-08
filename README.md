@@ -155,3 +155,9 @@ There is an excellent project called CubeMX2Makefile, originally from baoshi. Th
 * Eclipse should flash the board for you and the program should start halted on the first instruction in `Main`
 * Set beakpoints, step, hit Resume, etc.
 * Make some cool features! ;D
+
+
+## Code maintenance notes
+The cortex M4F processor has hardware single precision float unit. However double precision operations are not accelerated, and hence should be avoided. The following regex is helpful for cleaning out double constants:
+find: `([-+]?[0-9]+\.[0-9]+(?:[eE][-+]?[0-9]+)?)([^f0-9e])`
+replace: `\1f\2`
