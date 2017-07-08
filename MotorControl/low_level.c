@@ -168,7 +168,7 @@ const int num_motors = sizeof(motors)/sizeof(motors[0]);
 
 /* Private constant data -----------------------------------------------------*/
 static const float one_by_sqrt3 = 0.57735026919f;
-static const float sqrt3_by_2 = 0.86602540378;
+static const float sqrt3_by_2 = 0.86602540378f;
 
 /* Private variables ---------------------------------------------------------*/
 static float brake_resistance = 0.47f; // [ohm]
@@ -658,7 +658,7 @@ static void sync_timers(TIM_HandleTypeDef* htim_a, TIM_HandleTypeDef* htim_b,
 //--------------------------------
 
 void vbus_sense_adc_cb(ADC_HandleTypeDef* hadc) {
-    static const float voltage_scale = 3.3 * 11.0f / (float)(1<<12);
+    static const float voltage_scale = 3.3f * 11.0f / (float)(1<<12);
     // Only one conversion in sequence, so only rank1
     uint32_t ADCValue = HAL_ADCEx_InjectedGetValue(hadc, ADC_INJECTED_RANK_1);
     vbus_voltage = ADCValue * voltage_scale;
