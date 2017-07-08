@@ -15,6 +15,7 @@ There is also [ODriveFPGA](https://github.com/madcowswe/ODriveFPGA), which conta
 
 - [Configuring parameters](#configuring-parameters)
 - [Compiling and downloading firmware](#compiling-and-downloading-firmware)
+- [Communicating over USB](#communicating-over-usb)
 - [Generating startup code](#generating-startup-code)
 - [Setting up Eclipse development environment](#setting-up-eclipse-development-environment)
 
@@ -98,6 +99,61 @@ TODO
 ### Debugging the firmware
 Run `make gdb`. This will reset and halt at program start. Now you can set breakpoints and run the program. If you know how to use gdb, you are good to go.
 If you prefer to debug from eclipse, see [Setting up Eclipse development environment](#setting-up-eclipse-development-environment).
+
+## Communicating over USB
+There is currently a very primitive method to read/write configuration, commands and errors from the ODrive over the USB.
+Please use the `ODriveFirmware/tools/test_bulk.py` python script for this.
+
+### Command set
+The most accurate way to understand the commands is to read [the code](https://github.com/madcowswe/ODriveFirmware/blob/f19f1b78de4bd917284ff95bc61ca616ca9bacc4/MotorControl/low_level.c#L353) that parses the commands.
+
+#### Motor Position command
+> p motor position velocity_ff current_ff
+* `p` for position
+* `motor` is the motor number, `0` or `1`.
+* `position` is the desired position, in encoder counts.
+* `velocity_ff` is the velocity feed-forward term, in counts/s.
+* `current_ff` is the current feed-forward term, in A.
+
+Note that if you don't know what feed-forward is or what it's used for, simply set it to 0.
+
+#### Motor Velocity command
+> v motor velocity current_ff
+* `v` for velocity
+* `motor` is the motor number, `0` or `1`.
+* `velocity` is the desired velocity in counts/s.
+* `current_ff` is the current feed-forward term, in A.
+
+Note that if you don't know what feed-forward is or what it's used for, simply set it to 0.
+
+#### Motor Current command
+> c motor current
+* `c` for current
+* `motor` is the motor number, `0` or `1`.
+* `current` is the desired current in A.
+
+#### Variable getting and setting
+> g type index
+> s type index value
+* `g` for get, `s` for set
+* `type` is the data type as follows:
+** `0` is float
+** `1` is int
+** `2` is bool
+* `index` is the index in the corresponding [exposed variable table](https://github.com/madcowswe/ODriveFirmware/blob/f19f1b78de4bd917284ff95bc61ca616ca9bacc4/MotorControl/low_level.c#L184-L265).
+
+For example
+* `g 0 12` will return the phase resistance of M0
+* `s 0 8 10000.0` will set the velocity limit on M0 to 10000 counts/s
+* `g 1 3` will return the error status of M0
+* `g 1 7` will return the error status of M1
+
+The error status corresponds to the [Error_t enum in low_level.h](https://github.com/madcowswe/ODriveFirmware/blob/f19f1b78de4bd917284ff95bc61ca616ca9bacc4/MotorControl/low_level.h#L17-L35).
+
+Note that the links in this section are to a specific commits to make sure that the line numbers are accurate. That is, they don't link to the newest master, but to an old version. Please check the corresponding lines in the code you are using. This is especially important to get the correct indicies in the exposed variable tables, and the error enum values.
+
+#### Continous monitoring of variables
+You can set up variables in monitoring slots, and then have them (or a subset of them) repeatedly printed upon request. Please see the code for this.
 
 ## Generating startup code
 **Note:** You do not need to run this step to program the board. This is only required if you wish to update the auto generated code.
