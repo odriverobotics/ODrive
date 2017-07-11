@@ -60,9 +60,12 @@ class ODriveBulkDevice():
     try:
       string = ""
       # detach kernel driver
-      if self.dev.is_kernel_driver_active(1):
-        self.dev.detach_kernel_driver(1)
-        string += "Detached Kernel Driver\n"
+      try:
+        if self.dev.is_kernel_driver_active(1):
+          self.dev.detach_kernel_driver(1)
+          string += "Detached Kernel Driver\n"
+      except NotImplementedError:
+        pass #is_kernel_driver_active not implemented on Windows
       # set the active configuration. With no arguments, the first
       # configuration will be the active one
       self.dev.set_configuration()
