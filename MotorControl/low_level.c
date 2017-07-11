@@ -183,93 +183,95 @@ monitoring_slot monitoring_slots[20] = {0};
  * ro/rw : read only/read write -> ro prevents the code generator from generating setter
  * */
 
-float * exposed_floats [] = {
-        &vbus_voltage, // ro
-        &elec_rad_per_enc, // ro
-        &motors[0].pos_setpoint, // rw
-        &motors[0].pos_gain, // rw
-        &motors[0].vel_setpoint, // rw
-        &motors[0].vel_gain, // rw
-        &motors[0].vel_integrator_gain, // rw
-        &motors[0].vel_integrator_current, // rw
-        &motors[0].vel_limit, // rw
-        &motors[0].current_setpoint, // rw
-        &motors[0].calibration_current, // rw
-        &motors[0].phase_inductance, // ro
-        &motors[0].phase_resistance, // ro
-        &motors[0].current_meas.phB, // ro
-        &motors[0].current_meas.phC, // ro
-        &motors[0].DC_calib.phB, // rw
-        &motors[0].DC_calib.phC, // rw
-        &motors[0].shunt_conductance, // rw
-        &motors[0].phase_current_rev_gain, // rw
-        &motors[0].current_control.current_lim, // rw
-        &motors[0].current_control.p_gain, // rw
-        &motors[0].current_control.i_gain, // rw
-        &motors[0].current_control.v_current_control_integral_d, // rw
-        &motors[0].current_control.v_current_control_integral_q, // rw
-        &motors[0].current_control.Ibus, // ro
-        &motors[0].rotor.phase, // ro
-        &motors[0].rotor.pll_pos, // rw
-        &motors[0].rotor.pll_vel, // rw
-        &motors[0].rotor.pll_kp, // rw
-        &motors[0].rotor.pll_ki, // rw
-        &motors[1].pos_setpoint, // rw
-        &motors[1].pos_gain, // rw
-        &motors[1].vel_setpoint, // rw
-        &motors[1].vel_gain, // rw
-        &motors[1].vel_integrator_gain, // rw
-        &motors[1].vel_integrator_current, // rw
-        &motors[1].vel_limit, // rw
-        &motors[1].current_setpoint, // rw
-        &motors[1].calibration_current, // rw
-        &motors[1].phase_inductance, // ro
-        &motors[1].phase_resistance, // ro
-        &motors[1].current_meas.phB, // ro
-        &motors[1].current_meas.phC, // ro
-        &motors[1].DC_calib.phB, // rw
-        &motors[1].DC_calib.phC, // rw
-        &motors[1].shunt_conductance, // rw
-        &motors[1].phase_current_rev_gain, // rw
-        &motors[1].current_control.current_lim, // rw
-        &motors[1].current_control.p_gain, // rw
-        &motors[1].current_control.i_gain, // rw
-        &motors[1].current_control.v_current_control_integral_d, // rw
-        &motors[1].current_control.v_current_control_integral_q, // rw
-        &motors[1].current_control.Ibus, // ro
-        &motors[1].rotor.phase, // ro
-        &motors[1].rotor.pll_pos, // rw
-        &motors[1].rotor.pll_vel, // rw
-        &motors[1].rotor.pll_kp, // rw
-        &motors[1].rotor.pll_ki, // rw
+float* exposed_floats[] = {
+    &vbus_voltage, // ro
+    &elec_rad_per_enc, // ro
+    &motors[0].pos_setpoint, // rw
+    &motors[0].pos_gain, // rw
+    &motors[0].vel_setpoint, // rw
+    &motors[0].vel_gain, // rw
+    &motors[0].vel_integrator_gain, // rw
+    &motors[0].vel_integrator_current, // rw
+    &motors[0].vel_limit, // rw
+    &motors[0].current_setpoint, // rw
+    &motors[0].calibration_current, // rw
+    &motors[0].phase_inductance, // ro
+    &motors[0].phase_resistance, // ro
+    &motors[0].current_meas.phB, // ro
+    &motors[0].current_meas.phC, // ro
+    &motors[0].DC_calib.phB, // rw
+    &motors[0].DC_calib.phC, // rw
+    &motors[0].shunt_conductance, // rw
+    &motors[0].phase_current_rev_gain, // rw
+    &motors[0].current_control.current_lim, // rw
+    &motors[0].current_control.p_gain, // rw
+    &motors[0].current_control.i_gain, // rw
+    &motors[0].current_control.v_current_control_integral_d, // rw
+    &motors[0].current_control.v_current_control_integral_q, // rw
+    &motors[0].current_control.Ibus, // ro
+    &motors[0].rotor.phase, // ro
+    &motors[0].rotor.pll_pos, // rw
+    &motors[0].rotor.pll_vel, // rw
+    &motors[0].rotor.pll_kp, // rw
+    &motors[0].rotor.pll_ki, // rw
+    &motors[1].pos_setpoint, // rw
+    &motors[1].pos_gain, // rw
+    &motors[1].vel_setpoint, // rw
+    &motors[1].vel_gain, // rw
+    &motors[1].vel_integrator_gain, // rw
+    &motors[1].vel_integrator_current, // rw
+    &motors[1].vel_limit, // rw
+    &motors[1].current_setpoint, // rw
+    &motors[1].calibration_current, // rw
+    &motors[1].phase_inductance, // ro
+    &motors[1].phase_resistance, // ro
+    &motors[1].current_meas.phB, // ro
+    &motors[1].current_meas.phC, // ro
+    &motors[1].DC_calib.phB, // rw
+    &motors[1].DC_calib.phC, // rw
+    &motors[1].shunt_conductance, // rw
+    &motors[1].phase_current_rev_gain, // rw
+    &motors[1].current_control.current_lim, // rw
+    &motors[1].current_control.p_gain, // rw
+    &motors[1].current_control.i_gain, // rw
+    &motors[1].current_control.v_current_control_integral_d, // rw
+    &motors[1].current_control.v_current_control_integral_q, // rw
+    &motors[1].current_control.Ibus, // ro
+    &motors[1].rotor.phase, // ro
+    &motors[1].rotor.pll_pos, // rw
+    &motors[1].rotor.pll_vel, // rw
+    &motors[1].rotor.pll_kp, // rw
+    &motors[1].rotor.pll_ki, // rw
 };
 
-int * exposed_ints [] = {
-        (int*)&motors[0].control_mode, // rw
-        (int*)&motors[0].control_deadline, // rw
-        (int*)&motors[0].last_cpu_time, // ro
-        &motors[0].rotor.encoder_offset, // rw
-        &motors[0].rotor.encoder_state, // ro
-        &motors[0].error, // rw
-        (int*)&motors[1].control_mode, // rw
-        (int*)&motors[1].control_deadline, // rw
-        (int*)&motors[1].last_cpu_time, // ro
-        &motors[1].rotor.encoder_offset, // rw
-        &motors[1].rotor.encoder_state, // ro
-        &motors[1].error, // rw
+int* exposed_ints[] = {
+    (int*)&motors[0].control_mode, // rw
+    &motors[0].rotor.encoder_offset, // rw
+    &motors[0].rotor.encoder_state, // ro
+    &motors[0].error, // rw
+    (int*)&motors[1].control_mode, // rw
+    &motors[1].rotor.encoder_offset, // rw
+    &motors[1].rotor.encoder_state, // ro
+    &motors[1].error, // rw
 };
 
-bool * exposed_bools [] = {
-        &motors[0].thread_ready, // ro
-        &motors[0].enable_control, // rw
-        &motors[0].do_calibration, // rw
-        &motors[0].calibration_ok, // ro
-        &motors[1].thread_ready, // ro
-        &motors[1].enable_control, // rw
-        &motors[1].do_calibration, // rw
-        &motors[1].calibration_ok, // ro
+bool* exposed_bools[] = {
+    &motors[0].thread_ready, // ro
+    &motors[0].enable_control, // rw
+    &motors[0].do_calibration, // rw
+    &motors[0].calibration_ok, // ro
+    &motors[1].thread_ready, // ro
+    &motors[1].enable_control, // rw
+    &motors[1].do_calibration, // rw
+    &motors[1].calibration_ok, // ro
 };
 
+uint16_t* exposed_uint16[] = {
+    &motors[0].control_deadline, // rw
+    &motors[0].last_cpu_time, // ro
+    &motors[1].control_deadline, // rw
+    &motors[1].last_cpu_time, // ro
+};
 
 /* Private function prototypes -----------------------------------------------*/
 // Command Handling
@@ -317,10 +319,13 @@ static void print_monitoring(int limit) {
             printf("%f\t",*exposed_floats[monitoring_slots[i].index]);
             break;
         case 1:
-            printf("%u\t",*exposed_ints[monitoring_slots[i].index]);
+            printf("%d\t",*exposed_ints[monitoring_slots[i].index]);
             break;
         case 2:
             printf("%d\t",*exposed_bools[monitoring_slots[i].index]);
+            break;
+        case 3:
+            printf("%hu\t",*exposed_uint16[monitoring_slots[i].index]);
             break;
         default:
             i=100;
@@ -388,7 +393,7 @@ void motor_parse_cmd(uint8_t* buffer, int len) {
             set_current_setpoint(&motors[motor_number], current_feed_forward);
         }
     } else if (buffer[0] == 'g') { // GET
-        // g <0:float,1:int,2:bool> index
+        // g <0:float,1:int,2:bool,3:uint16> index
         int type = 0;
         int index = 0;
         int numscan = sscanf((const char*)buffer, "g %u %u", &type, &index);
@@ -399,17 +404,21 @@ void motor_parse_cmd(uint8_t* buffer, int len) {
                 break;
             };
             case 1: {
-                printf("%u\n",*exposed_ints[index]);
+                printf("%d\n",*exposed_ints[index]);
                 break;
             };
             case 2: {
                 printf("%d\n",*exposed_bools[index]);
                 break;
             };
+            case 3: {
+                printf("%hu\n",*exposed_uint16[index]);
+                break;
+            };
             }
         }
     } else if (buffer[0] == 's') { // SET
-        // s <0:float,1:int,2:bool> index value
+        // s <0:float,1:int,2:bool,3:uint16> index value
         int type = 0;
         int index = 0;
         int numscan = sscanf((const char*)buffer, "s %u %u", &type, &index);
@@ -420,7 +429,7 @@ void motor_parse_cmd(uint8_t* buffer, int len) {
                 break;
             };
             case 1: {
-                sscanf((const char*)buffer, "s %u %u %u", &type, &index, exposed_ints[index]);
+                sscanf((const char*)buffer, "s %u %u %d", &type, &index, exposed_ints[index]);
                 break;
             };
             case 2: {
@@ -429,10 +438,14 @@ void motor_parse_cmd(uint8_t* buffer, int len) {
                 *exposed_bools[index] = btmp ? true : false;
                 break;
             };
+            case 3: {
+                sscanf((const char*)buffer, "s %u %u %hu", &type, &index, exposed_uint16[index]);
+                break;
+            };
             }
         }
     } else if (buffer[0] == 'm') { // Setup Monitor
-        // m <0:float,1:int,2:bool> index monitoring_slot
+        // m <0:float,1:int,2:bool,3:uint16> index monitoring_slot
         int type = 0;
         int index = 0;
         int slot = 0;
