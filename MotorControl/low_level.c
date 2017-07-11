@@ -65,6 +65,7 @@ Motor_t motors[] = {
         .motor_timer = &htim1,
         .next_timings = {TIM_1_8_PERIOD_CLOCKS/2, TIM_1_8_PERIOD_CLOCKS/2, TIM_1_8_PERIOD_CLOCKS/2},
         .control_deadline = TIM_1_8_PERIOD_CLOCKS,
+        .last_cpu_time = 0,
         .current_meas = {0.0f, 0.0f},
         .DC_calib = {0.0f, 0.0f},
         .gate_driver = {
@@ -125,6 +126,7 @@ Motor_t motors[] = {
         .motor_timer = &htim8,
         .next_timings = {TIM_1_8_PERIOD_CLOCKS/2, TIM_1_8_PERIOD_CLOCKS/2, TIM_1_8_PERIOD_CLOCKS/2},
         .control_deadline = (3*TIM_1_8_PERIOD_CLOCKS)/2,
+        .last_cpu_time = 0,
         .current_meas = {0.0f, 0.0f},
         .DC_calib = {0.0f, 0.0f},
         .gate_driver = {
@@ -244,10 +246,14 @@ float * exposed_floats [] = {
 
 int * exposed_ints [] = {
         (int*)&motors[0].control_mode, // rw
+        (int*)&motors[0].control_deadline, // rw
+        (int*)&motors[0].last_cpu_time, // ro
         &motors[0].rotor.encoder_offset, // rw
         &motors[0].rotor.encoder_state, // ro
         &motors[0].error, // rw
         (int*)&motors[1].control_mode, // rw
+        (int*)&motors[1].control_deadline, // rw
+        (int*)&motors[1].last_cpu_time, // ro
         &motors[1].rotor.encoder_offset, // rw
         &motors[1].rotor.encoder_state, // ro
         &motors[1].error, // rw
@@ -857,7 +863,8 @@ static bool measure_phase_inductance(Motor_t* motor, float voltage_low, float vo
             queue_voltage_timings(motor, test_voltages[i], 0.0f);
 
             // Check we meet deadlines after queueing
-            if (!(check_timing(motor) < motor->control_deadline)) {
+            motor->last_cpu_time = check_timing(motor);
+            if(!(motor->last_cpu_time < motor->control_deadline)){
                 motor->error = ERROR_PHASE_INDUCTANCE_TIMING;
                 return false;
             }
@@ -996,7 +1003,8 @@ static void scan_motor_loop(Motor_t* motor, float omega, float voltage_magnitude
             queue_voltage_timings(motor, v_alpha, v_beta);
 
             // Check we meet deadlines after queueing
-            if(!(check_timing(motor) < motor->control_deadline)){
+            motor->last_cpu_time = check_timing(motor);
+            if(!(motor->last_cpu_time < motor->control_deadline)){
                 motor->error = ERROR_SCAN_MOTOR_TIMING;
                 return;
             }
@@ -1016,7 +1024,8 @@ static void FOC_voltage_loop(Motor_t* motor, float v_d, float v_q) {
         queue_voltage_timings(motor, v_alpha, v_beta);
 
         // Check we meet deadlines after queueing
-        if (!(check_timing(motor) < motor->control_deadline)) {
+        motor->last_cpu_time = check_timing(motor);
+        if(!(motor->last_cpu_time < motor->control_deadline)){
             motor->error = ERROR_FOC_VOLTAGE_TIMING;
             return;
         }
@@ -1151,7 +1160,8 @@ static bool FOC_current(Motor_t* motor, float Id_des, float Iq_des) {
     queue_modulation_timings(motor, mod_alpha, mod_beta);
 
     // Check we meet deadlines after queueing
-    if(!(check_timing(motor) < motor->control_deadline)){
+    motor->last_cpu_time = check_timing(motor);
+    if(!(motor->last_cpu_time < motor->control_deadline)){
         motor->error = ERROR_FOC_TIMING;
         return false;
     }
@@ -1240,11 +1250,11 @@ void motor_thread(void const * argument) {
 
 #ifdef STANDALONE_MODE
     //Only run tests on M0 for now
-    if (motor == &motors[1]) {
-        // TODO: figure out why M1 MOE must be enabled to run M0 correctly
-        __HAL_TIM_MOE_ENABLE(motor->motor_timer);
-        FOC_voltage_loop(motor, 0.0f, 0.0f);
-    }
+    // if (motor == &motors[1]) {
+    //     // TODO: figure out why M1 MOE must be enabled to run M0 correctly
+    //     __HAL_TIM_MOE_ENABLE(motor->motor_timer);
+    //     FOC_voltage_loop(motor, 0.0f, 0.0f);
+    // }
 
     motor->do_calibration = true;
     motor->enable_control = true;

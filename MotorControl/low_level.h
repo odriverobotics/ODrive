@@ -92,6 +92,7 @@ typedef struct {
     TIM_HandleTypeDef* motor_timer;
     uint16_t next_timings[3];
     uint16_t control_deadline;
+    uint16_t last_cpu_time;
     Iph_BC_t current_meas;
     Iph_BC_t DC_calib;
     DRV8301_Obj gate_driver;
