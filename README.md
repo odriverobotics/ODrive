@@ -103,6 +103,7 @@ If you prefer to debug from eclipse, see [Setting up Eclipse development environ
 ## Communicating over USB
 There is currently a very primitive method to read/write configuration, commands and errors from the ODrive over the USB.
 Please use the `ODriveFirmware/tools/test_bulk.py` python script for this.
+On Windows you need to set the driver for ODrive to libusb using [Zadig](http://zadig.akeo.ie/).
 
 ### Command set
 The most accurate way to understand the commands is to read [the code](https://github.com/madcowswe/ODriveFirmware/blob/f19f1b78de4bd917284ff95bc61ca616ca9bacc4/MotorControl/low_level.c#L353) that parses the commands.
