@@ -70,7 +70,6 @@
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 void MX_FREERTOS_Init(void);
-static void MX_NVIC_Init(void);
 
 /* USER CODE BEGIN PFP */
 /* Private function prototypes -----------------------------------------------*/
@@ -116,9 +115,6 @@ int main(void)
   MX_SPI3_Init();
   MX_ADC3_Init();
   MX_TIM2_Init();
-
-  /* Initialize interrupts */
-  MX_NVIC_Init();
 
   /* USER CODE BEGIN 2 */
 
@@ -202,15 +198,6 @@ void SystemClock_Config(void)
 
   /* SysTick_IRQn interrupt configuration */
   HAL_NVIC_SetPriority(SysTick_IRQn, 15, 0);
-}
-
-/** NVIC Configuration
-*/
-static void MX_NVIC_Init(void)
-{
-  /* ADC_IRQn interrupt configuration */
-  HAL_NVIC_SetPriority(ADC_IRQn, 5, 0);
-  HAL_NVIC_EnableIRQ(ADC_IRQn);
 }
 
 /* USER CODE BEGIN 4 */

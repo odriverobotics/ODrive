@@ -89,6 +89,7 @@
 #define GPIO_4_GPIO_Port GPIOA
 #define GPIO_3_Pin GPIO_PIN_4
 #define GPIO_3_GPIO_Port GPIOA
+#define GPIO_3_EXTI_IRQn EXTI4_IRQn
 #define GPIO_2_Pin GPIO_PIN_5
 #define GPIO_2_GPIO_Port GPIOA
 #define AUX_V_Pin GPIO_PIN_6
@@ -105,6 +106,7 @@
 #define M1_CL_GPIO_Port GPIOB
 #define GPIO_1_Pin GPIO_PIN_2
 #define GPIO_1_GPIO_Port GPIOB
+#define GPIO_1_EXTI_IRQn EXTI2_IRQn
 #define AUX_L_Pin GPIO_PIN_10
 #define AUX_L_GPIO_Port GPIOB
 #define AUX_H_Pin GPIO_PIN_11
