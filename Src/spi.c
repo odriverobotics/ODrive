@@ -4,6 +4,11 @@
   * Description        : This file provides code for the configuration
   *                      of the SPI instances.
   ******************************************************************************
+  * This notice applies to any and all portions of this file
+  * that are not between comment pairs USER CODE BEGIN and
+  * USER CODE END. Other portions of this file, whether 
+  * inserted by the user or by software development tools
+  * are owned by their respective copyright owners.
   *
   * Copyright (c) 2017 STMicroelectronics International N.V. 
   * All rights reserved.
@@ -71,7 +76,7 @@ void MX_SPI3_Init(void)
   hspi3.Init.CRCPolynomial = 10;
   if (HAL_SPI_Init(&hspi3) != HAL_OK)
   {
-    Error_Handler();
+    _Error_Handler(__FILE__, __LINE__);
   }
 
 }
@@ -85,7 +90,7 @@ void HAL_SPI_MspInit(SPI_HandleTypeDef* spiHandle)
   /* USER CODE BEGIN SPI3_MspInit 0 */
 
   /* USER CODE END SPI3_MspInit 0 */
-    /* Peripheral clock enable */
+    /* SPI3 clock enable */
     __HAL_RCC_SPI3_CLK_ENABLE();
   
     /**SPI3 GPIO Configuration    
@@ -124,10 +129,10 @@ void HAL_SPI_MspDeInit(SPI_HandleTypeDef* spiHandle)
     */
     HAL_GPIO_DeInit(GPIOC, GPIO_PIN_10|GPIO_PIN_11|GPIO_PIN_12);
 
-  }
   /* USER CODE BEGIN SPI3_MspDeInit 1 */
 
   /* USER CODE END SPI3_MspDeInit 1 */
+  }
 } 
 
 /* USER CODE BEGIN 1 */

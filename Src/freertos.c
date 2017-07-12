@@ -3,6 +3,11 @@
   * File Name          : freertos.c
   * Description        : Code for freertos applications
   ******************************************************************************
+  * This notice applies to any and all portions of this file
+  * that are not between comment pairs USER CODE BEGIN and
+  * USER CODE END. Other portions of this file, whether 
+  * inserted by the user or by software development tools
+  * are owned by their respective copyright owners.
   *
   * Copyright (c) 2017 STMicroelectronics International N.V. 
   * All rights reserved.
@@ -46,7 +51,7 @@
 #include "task.h"
 #include "cmsis_os.h"
 
-/* USER CODE BEGIN Includes */
+/* USER CODE BEGIN Includes */     
 #include "freertos_vars.h"
 #include "low_level.h"
 #include "version.h"

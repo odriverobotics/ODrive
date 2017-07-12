@@ -57,7 +57,7 @@
   ******************************************************************************
   * @file    cmsis_os.c
   * @author  MCD Application Team
-  * @date    30-September-2016
+  * @date    03-March-2017
   * @brief   CMSIS-RTOS API implementation for FreeRTOS V9.0.0
   ******************************************************************************
   * @attention
@@ -98,6 +98,47 @@
 
 #include <string.h>
 #include "cmsis_os.h"
+
+/*
+ * ARM Compiler 4/5
+ */
+#if   defined ( __CC_ARM )
+
+  #define __ASM            __asm                                      
+  #define __INLINE         __inline                                     
+  #define __STATIC_INLINE  static __inline
+  #include "cmsis_armcc.h"
+
+/*
+ * GNU Compiler
+ */
+#elif defined ( __GNUC__ )
+
+  #define __ASM            __asm                                      /*!< asm keyword for GNU Compiler          */
+  #define __INLINE         inline                                     /*!< inline keyword for GNU Compiler       */
+  #define __STATIC_INLINE  static inline
+
+
+  #include "cmsis_gcc.h"
+
+
+/*
+ * IAR Compiler
+ */
+#elif defined ( __ICCARM__ )
+
+  #ifndef   __ASM
+    #define __ASM                     __asm
+  #endif
+  #ifndef   __INLINE
+    #define __INLINE                  inline
+  #endif
+  #ifndef   __STATIC_INLINE
+    #define __STATIC_INLINE           static inline
+  #endif
+
+  #include <cmsis_iar.h>
+#endif
 
 extern void xPortSysTickHandler(void);
 
@@ -498,32 +539,31 @@ osStatus result = osOK;
 * @brief  Set the specified Signal Flags of an active thread.
 * @param  thread_id     thread ID obtained by \ref osThreadCreate or \ref osThreadGetId.
 * @param  signals       specifies the signal flags of the thread that should be set.
-* @retval  osOK if successful, osErrorOS if failed .
+* @retval previous signal flags of the specified thread or 0x80000000 in case of incorrect parameters.
 * @note   MUST REMAIN UNCHANGED: \b osSignalSet shall be consistent in every CMSIS-RTOS.
 */
 int32_t osSignalSet (osThreadId thread_id, int32_t signal)
 {
 #if( configUSE_TASK_NOTIFICATIONS == 1 )	
   BaseType_t xHigherPriorityTaskWoken = pdFALSE;
+  uint32_t ulPreviousNotificationValue = 0;
   
   if (inHandlerMode())
   {
-    if(xTaskNotifyFromISR( thread_id, (uint32_t)signal, eSetBits, &xHigherPriorityTaskWoken ) != pdPASS )
-      return osErrorOS;
-
+    if(xTaskGenericNotifyFromISR( thread_id , (uint32_t)signal, eSetBits, &ulPreviousNotificationValue, &xHigherPriorityTaskWoken ) != pdPASS )
+      return 0x80000000;
+    
     portYIELD_FROM_ISR( xHigherPriorityTaskWoken );
   }  
-  else if(xTaskNotify( thread_id, (uint32_t)signal, eSetBits) != pdPASS )
-  {
-    return osErrorOS;
-  }
+  else if(xTaskGenericNotify( thread_id , (uint32_t)signal, eSetBits, &ulPreviousNotificationValue) != pdPASS )
+    return 0x80000000;
   
-  return osOK;
+  return ulPreviousNotificationValue;
 #else
   (void) thread_id;
   (void) signal;
 
-  return osErrorOS; /* Task Notification not supported */ 	
+  return 0x80000000; /* Task Notification not supported */ 	
 #endif
 }
 
@@ -1245,7 +1285,7 @@ void *osMailCAlloc (osMailQId queue_id, uint32_t millisec)
   void *p = osMailAlloc(queue_id, millisec);
   
   if (p) {
-    for (i = 0; i < sizeof(queue_id->queue_def->item_sz); i++) {
+    for (i = 0; i < queue_id->queue_def->item_sz; i++) {
       ((uint8_t *)p)[i] = 0;
     }
   }

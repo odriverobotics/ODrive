@@ -4,6 +4,11 @@
   * Description        : This file provides code for the configuration
   *                      of the ADC instances.
   ******************************************************************************
+  * This notice applies to any and all portions of this file
+  * that are not between comment pairs USER CODE BEGIN and
+  * USER CODE END. Other portions of this file, whether 
+  * inserted by the user or by software development tools
+  * are owned by their respective copyright owners.
   *
   * Copyright (c) 2017 STMicroelectronics International N.V. 
   * All rights reserved.
@@ -64,7 +69,7 @@ extern ADC_HandleTypeDef hadc3;
 
 /* USER CODE END Private defines */
 
-extern void Error_Handler(void);
+extern void _Error_Handler(char *, int);
 
 void MX_ADC1_Init(void);
 void MX_ADC2_Init(void);
