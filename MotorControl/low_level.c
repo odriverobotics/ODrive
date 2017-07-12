@@ -676,6 +676,11 @@ static void sync_timers(TIM_HandleTypeDef* htim_a, TIM_HandleTypeDef* htim_b,
 // IRQ Callbacks
 //--------------------------------
 
+// step/direction interface
+void step_cb(uint16_t GPIO_Pin) {
+
+}
+
 void vbus_sense_adc_cb(ADC_HandleTypeDef* hadc) {
     static const float voltage_scale = 3.3f * 11.0f / (float)(1<<12);
     // Only one conversion in sequence, so only rank1
