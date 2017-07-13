@@ -13,6 +13,7 @@
 #include <cmsis_os.h>
 
 #include <main.h>
+#include <gpio.h>
 #include <adc.h>
 #include <tim.h>
 #include <spi.h>
@@ -676,9 +677,29 @@ static void sync_timers(TIM_HandleTypeDef* htim_a, TIM_HandleTypeDef* htim_b,
 // IRQ Callbacks
 //--------------------------------
 
+static const float counts_per_step = 1.0f;
+
 // step/direction interface
 void step_cb(uint16_t GPIO_Pin) {
-
+    GPIO_PinState dir_pin;
+    float dir;
+    switch (GPIO_Pin) {
+    case GPIO_1_Pin:
+        //M0 stepped
+        dir_pin = HAL_GPIO_ReadPin(GPIO_2_GPIO_Port, GPIO_2_Pin);
+        dir = (dir_pin == GPIO_PIN_SET) ? 1.0f : -1.0f;
+        motors[0].pos_setpoint += dir * counts_per_step;
+        break;
+    case GPIO_3_Pin:
+        //M1 stepped
+        dir_pin = HAL_GPIO_ReadPin(GPIO_4_GPIO_Port, GPIO_4_Pin);
+        dir = (dir_pin == GPIO_PIN_SET) ? 1.0f : -1.0f;
+        motors[1].pos_setpoint += dir * counts_per_step;
+        break;
+    default:
+        global_fault(ERROR_UNEXPECTED_STEP_SRC);
+        break;
+    }
 }
 
 void vbus_sense_adc_cb(ADC_HandleTypeDef* hadc) {
@@ -1277,7 +1298,9 @@ void motor_thread(void const * argument) {
     motor->do_calibration = true;
     motor->enable_control = true;
 
-    set_pos_setpoint(motor, 10000.0f, 0.0f, 0.0f);
+    //Turn on position control by default.
+    //NOTE: This may not be the preffered behaviour in your application.
+    set_pos_setpoint(motor, 0.0f, 0.0f, 0.0f);
 #endif
 
     for (;;) {

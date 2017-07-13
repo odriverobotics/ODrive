@@ -7,7 +7,7 @@
 #include "drv8301.h"
 
 //default timeout waiting for phase measurement signals
-#define PH_CURRENT_MEAS_TIMEOUT 5 // [ms]
+#define PH_CURRENT_MEAS_TIMEOUT 2 // [ms]
 
 /* Exported types ------------------------------------------------------------*/
 typedef enum {
@@ -32,6 +32,7 @@ typedef enum {
     ERROR_FOC_VOLTAGE_TIMING,
     ERROR_GATEDRIVER_INVALID_GAIN,
     ERROR_PWM_SRC_FAIL,
+    ERROR_UNEXPECTED_STEP_SRC,
 } Error_t;
 
 // Note: these should be sorted from lowest level of control to
