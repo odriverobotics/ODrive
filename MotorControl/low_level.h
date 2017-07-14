@@ -73,6 +73,7 @@ typedef struct {
 #define TIMING_LOG_SIZE 16
 typedef struct {
     Motor_control_mode_t control_mode;
+    float counts_per_step;
     int error;
     float pos_setpoint;
     float pos_gain;

@@ -46,6 +46,7 @@ static float elec_rad_per_enc = POLE_PAIRS * 2 * M_PI * (1.0f / (float)ENCODER_C
 Motor_t motors[] = {
     {   // M0
         .control_mode = CTRL_MODE_CURRENT_CONTROL,
+        .counts_per_step = 2.0f,
         .error = ERROR_NO_ERROR,
         .pos_setpoint = 0.0f,
         .pos_gain = 20.0f, // [(counts/s) / counts]
@@ -107,6 +108,7 @@ Motor_t motors[] = {
     },
     {   // M1
         .control_mode = CTRL_MODE_CURRENT_CONTROL,
+        .counts_per_step = 2.0f,
         .error = ERROR_NO_ERROR,
         .pos_setpoint = 0.0f,
         .pos_gain = 20.0f, // [(counts/s) / counts]
@@ -677,8 +679,6 @@ static void sync_timers(TIM_HandleTypeDef* htim_a, TIM_HandleTypeDef* htim_b,
 // IRQ Callbacks
 //--------------------------------
 
-static const float counts_per_step = 1.0f;
-
 // step/direction interface
 void step_cb(uint16_t GPIO_Pin) {
     GPIO_PinState dir_pin;
@@ -688,13 +688,13 @@ void step_cb(uint16_t GPIO_Pin) {
         //M0 stepped
         dir_pin = HAL_GPIO_ReadPin(GPIO_2_GPIO_Port, GPIO_2_Pin);
         dir = (dir_pin == GPIO_PIN_SET) ? 1.0f : -1.0f;
-        motors[0].pos_setpoint += dir * counts_per_step;
+        motors[0].pos_setpoint += dir * motors[0].counts_per_step;
         break;
     case GPIO_3_Pin:
         //M1 stepped
         dir_pin = HAL_GPIO_ReadPin(GPIO_4_GPIO_Port, GPIO_4_Pin);
         dir = (dir_pin == GPIO_PIN_SET) ? 1.0f : -1.0f;
-        motors[1].pos_setpoint += dir * counts_per_step;
+        motors[1].pos_setpoint += dir * motors[1].counts_per_step;
         break;
     default:
         global_fault(ERROR_UNEXPECTED_STEP_SRC);
@@ -1008,7 +1008,7 @@ static bool motor_calibration(Motor_t* motor){
         return false;
     
     // Calculate current control gains
-    float current_control_bandwidth = 2000.0f; // [rad/s]
+    float current_control_bandwidth = 1000.0f; // [rad/s]
     motor->current_control.p_gain = current_control_bandwidth * motor->phase_inductance;
     float plant_pole = motor->phase_resistance / motor->phase_inductance;
     motor->current_control.i_gain = plant_pole * motor->current_control.p_gain;
