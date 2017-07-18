@@ -46,6 +46,7 @@ static float elec_rad_per_enc = POLE_PAIRS * 2 * M_PI * (1.0f / (float)ENCODER_C
 Motor_t motors[] = {
     {   // M0
         .control_mode = CTRL_MODE_CURRENT_CONTROL,
+        .enable_step_dir = false, //auto enabled after calibration
         .counts_per_step = 2.0f,
         .error = ERROR_NO_ERROR,
         .pos_setpoint = 0.0f,
@@ -108,6 +109,7 @@ Motor_t motors[] = {
     },
     {   // M1
         .control_mode = CTRL_MODE_CURRENT_CONTROL,
+        .enable_step_dir = false, //auto enabled after calibration
         .counts_per_step = 2.0f,
         .error = ERROR_NO_ERROR,
         .pos_setpoint = 0.0f,
@@ -686,15 +688,19 @@ void step_cb(uint16_t GPIO_Pin) {
     switch (GPIO_Pin) {
     case GPIO_1_Pin:
         //M0 stepped
-        dir_pin = HAL_GPIO_ReadPin(GPIO_2_GPIO_Port, GPIO_2_Pin);
-        dir = (dir_pin == GPIO_PIN_SET) ? 1.0f : -1.0f;
-        motors[0].pos_setpoint += dir * motors[0].counts_per_step;
+        if (motors[0].enable_step_dir) {
+            dir_pin = HAL_GPIO_ReadPin(GPIO_2_GPIO_Port, GPIO_2_Pin);
+            dir = (dir_pin == GPIO_PIN_SET) ? 1.0f : -1.0f;
+            motors[0].pos_setpoint += dir * motors[0].counts_per_step;
+        }
         break;
     case GPIO_3_Pin:
         //M1 stepped
-        dir_pin = HAL_GPIO_ReadPin(GPIO_4_GPIO_Port, GPIO_4_Pin);
-        dir = (dir_pin == GPIO_PIN_SET) ? 1.0f : -1.0f;
-        motors[1].pos_setpoint += dir * motors[1].counts_per_step;
+        if (motors[1].enable_step_dir) {
+            dir_pin = HAL_GPIO_ReadPin(GPIO_4_GPIO_Port, GPIO_4_Pin);
+            dir = (dir_pin == GPIO_PIN_SET) ? 1.0f : -1.0f;
+            motors[1].pos_setpoint += dir * motors[1].counts_per_step;
+        }
         break;
     default:
         global_fault(ERROR_UNEXPECTED_STEP_SRC);
@@ -1305,8 +1311,8 @@ void motor_thread(void const * argument) {
 
     for (;;) {
         if (motor->do_calibration) {
-            __HAL_TIM_MOE_ENABLE(motor->motor_timer);// enable pwm outputs
             osDelay(10);
+            __HAL_TIM_MOE_ENABLE(motor->motor_timer);// enable pwm outputs
             motor_calibration(motor);
             if(!motor->calibration_ok){
                 __HAL_TIM_MOE_DISABLE_UNCONDITIONALLY(motor->motor_timer);// disables pwm outputs
@@ -1315,10 +1321,12 @@ void motor_thread(void const * argument) {
         }
         
         if (motor->calibration_ok && motor->enable_control) {
-            __HAL_TIM_MOE_ENABLE(motor->motor_timer);
             osDelay(10);
+            motor->enable_step_dir = true;
+            __HAL_TIM_MOE_ENABLE(motor->motor_timer);
             control_motor_loop(motor);
             __HAL_TIM_MOE_DISABLE_UNCONDITIONALLY(motor->motor_timer);
+            motor->enable_step_dir = false;
             if(motor->enable_control){ // if control is still enabled, we exited because of error
                 motor->calibration_ok = false;
                 motor->enable_control = false;
