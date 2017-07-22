@@ -28,7 +28,7 @@ Wire up the encoder(s) to J4. The A,B phases are required, and the Z (index puls
 
 The currently supported command modes are USB and step/direction.
 * If you are sending commands over USB, you can plug in a USB cable on J1.
-* If you are using step/direction, please see [Setting up step/direction](#setting-up-step/direction)
+* If you are using step/direction, please see [Setting up step/direction](#setting-up-stepdirection)
 
 You can now:
 * [Download and build the firmware](https://github.com/madcowswe/ODriveFirmware)
