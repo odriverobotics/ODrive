@@ -40,7 +40,7 @@
 #include "freertos_vars.h"
 #include "low_level.h"
 
-typedef void (*ADC_handler_t)(ADC_HandleTypeDef* hadc);
+typedef void (*ADC_handler_t)(ADC_HandleTypeDef* hadc, bool injected);
 void ADC_IRQ_Dispatch(ADC_HandleTypeDef* hadc, ADC_handler_t callback);
 
 /* USER CODE END 0 */
@@ -250,14 +250,14 @@ void ADC_IRQ_Dispatch(ADC_HandleTypeDef* hadc, ADC_handler_t callback) {
   uint32_t JEOC = __HAL_ADC_GET_FLAG(hadc, ADC_FLAG_JEOC);
   uint32_t JEOC_IT_EN = __HAL_ADC_GET_IT_SOURCE(hadc, ADC_IT_JEOC);
   if (JEOC && JEOC_IT_EN) {
-    callback(hadc);
+    callback(hadc, true);
     __HAL_ADC_CLEAR_FLAG(hadc, (ADC_FLAG_JSTRT | ADC_FLAG_JEOC));
   }
   // Regular measurements
   uint32_t EOC = __HAL_ADC_GET_FLAG(hadc, ADC_FLAG_EOC);
   uint32_t EOC_IT_EN = __HAL_ADC_GET_IT_SOURCE(hadc, ADC_IT_EOC);
   if (EOC && EOC_IT_EN) {
-    callback(hadc);
+    callback(hadc, false);
     __HAL_ADC_CLEAR_FLAG(hadc, (ADC_FLAG_STRT | ADC_FLAG_EOC));
   }
 }

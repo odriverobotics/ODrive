@@ -54,6 +54,10 @@ An upcoming feature will enable automatic tuning. Until then, here is a rough tu
 * Back down `pos_gain` until you do not have overshoot anymore.
 * The integrator is not easily tuned, nor is it strictly required. Tune at your own discression.
 
+### Optional parameters
+By default both motors are enabled, and the default control mode is position control.
+If you want a different mode, you can change `.control_mode`. To disable a motor, set `.enable_control` and `.do_calibration` to false.
+
 ## Compiling and downloading firmware
 
 ### Getting a programmer

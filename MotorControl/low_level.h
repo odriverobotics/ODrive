@@ -130,8 +130,8 @@ void set_current_setpoint(Motor_t* motor, float current_setpoint);
 void safe_assert(int arg);
 void init_motor_control();
 void step_cb(uint16_t GPIO_Pin);
-void pwm_trig_adc_cb(ADC_HandleTypeDef* hadc);
-void vbus_sense_adc_cb(ADC_HandleTypeDef* hadc);
+void pwm_trig_adc_cb(ADC_HandleTypeDef* hadc, bool injected);
+void vbus_sense_adc_cb(ADC_HandleTypeDef* hadc, bool injected);
 
 //@TODO move motor thread to high level file
 void motor_thread(void const * argument);
