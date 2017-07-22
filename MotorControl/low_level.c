@@ -45,7 +45,7 @@ static float elec_rad_per_enc = POLE_PAIRS * 2 * M_PI * (1.0f / (float)ENCODER_C
 // TODO: For nice encapsulation, consider not having the motor objects public
 Motor_t motors[] = {
     {   // M0
-        .control_mode = CTRL_MODE_POSITION_CONTROL,
+        .control_mode = CTRL_MODE_POSITION_CONTROL, //see: Motor_control_mode_t
         .enable_step_dir = false, //auto enabled after calibration
         .counts_per_step = 2.0f,
         .error = ERROR_NO_ERROR,
@@ -108,7 +108,7 @@ Motor_t motors[] = {
         .timing_log = {0}
     },
     {   // M1
-        .control_mode = CTRL_MODE_POSITION_CONTROL,
+        .control_mode = CTRL_MODE_POSITION_CONTROL, //see: Motor_control_mode_t
         .enable_step_dir = false, //auto enabled after calibration
         .counts_per_step = 2.0f,
         .error = ERROR_NO_ERROR,
