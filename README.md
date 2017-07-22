@@ -55,7 +55,7 @@ There is also a new config variable called `counts_per_step`, which specifies ho
 The maximum step rate is pending tests, but it should handle at least 16kHz. If you want's to test it, please be aware that the failure mode on too high step rates is expected to be that the motors shuts down and coasts.
 
 Please be aware that there is no enable line right now. So if whatever is driving the step/dir has disabled their outputs, the step/dir wires will be floating and may pick up electrical noise, and hence the ODrive may see step pulses.
-Therefore make sure that whenever you have the step/dir wires plugged in to the ODrive, that the motion controller is turned on when the ODrive is running.
+Therefore make sure that whenever you have the step/dir wires plugged in to the ODrive, that the motion controller is turned on and driving the step/dir signals when the ODrive is running.
 Another option to achieve a similar protection is to have somewhat strong pull-down resistors on the step lines.
 
 The step/direction interface is enabled by default, and remains active as long as the ODrive is in position control mode. By default the ODrive starts in position control mode, so you don't need to send any commands over USB to get going. You can still send USB commands if you want to.
