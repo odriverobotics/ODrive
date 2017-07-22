@@ -42,7 +42,21 @@ The startup procedure is illustrated [here](https://www.youtube.com/watch?v=VCX1
 Sending USB commands is documented [here](https://github.com/madcowswe/ODriveFirmware#communicating-over-usb)
 
 ### Setting up Step/Direction
-TODO
+Pinout:
+* GPIO 1: M0 step
+* GPIO 2: M0 dir
+* GPIO 3: M1 step
+* GPIO 4: M1 dir
+
+Please note that GPIO_3 and GPIO_4 are NOT 5v tolerant on ODrive v3.2 and earlier, so 3.3V signals only!
+ODrive v3.3 and onward have 5v tolerant GPIO pins.
+
+There is also a new config variable called `counts_per_step`, which specifies how many encoder counts a "step" corresponds to. It can be any floating point value.
+The maximum step rate is pending tests, but it should handle at least 16kHz. If you want's to test it, please be aware that the failure mode on too high step rates is expected to be that the motors shuts down and coasts.
+
+Please be aware that there is no enable line right now. So if whatever is driving the step/dir has disabled their outputs, the step/dir wires will be floating and may pick up electrical noise, and hence the ODrive may see step pulses.
+Therefore make sure that whenever you have the step/dir wires plugged in to the ODrive, that the motion controller is turned on when the ODrive is running.
+Another option to achieve a similar protection is to have somewhat strong pull-down resistors on the step lines.
 
 ### Getting help
 If you have any issues or any questions please get in touch. The [ODrive Community](https://discourse.odriverobotics.com/) warmly welcomes you.
