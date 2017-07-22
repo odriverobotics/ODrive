@@ -45,7 +45,7 @@ static float elec_rad_per_enc = POLE_PAIRS * 2 * M_PI * (1.0f / (float)ENCODER_C
 // TODO: For nice encapsulation, consider not having the motor objects public
 Motor_t motors[] = {
     {   // M0
-        .control_mode = CTRL_MODE_CURRENT_CONTROL,
+        .control_mode = CTRL_MODE_POSITION_CONTROL,
         .enable_step_dir = false, //auto enabled after calibration
         .counts_per_step = 2.0f,
         .error = ERROR_NO_ERROR,
@@ -62,8 +62,8 @@ Motor_t motors[] = {
         .phase_resistance = 0.0f, // to be set by measure_phase_resistance
         .motor_thread = 0,
         .thread_ready = false,
-        .enable_control = false,
-        .do_calibration = false,
+        .enable_control = true,
+        .do_calibration = true,
         .calibration_ok = false,
         .motor_timer = &htim1,
         .next_timings = {TIM_1_8_PERIOD_CLOCKS/2, TIM_1_8_PERIOD_CLOCKS/2, TIM_1_8_PERIOD_CLOCKS/2},
@@ -108,7 +108,7 @@ Motor_t motors[] = {
         .timing_log = {0}
     },
     {   // M1
-        .control_mode = CTRL_MODE_CURRENT_CONTROL,
+        .control_mode = CTRL_MODE_POSITION_CONTROL,
         .enable_step_dir = false, //auto enabled after calibration
         .counts_per_step = 2.0f,
         .error = ERROR_NO_ERROR,
@@ -125,8 +125,8 @@ Motor_t motors[] = {
         .phase_resistance = 0.0f, // to be set by measure_phase_resistance
         .motor_thread = 0,
         .thread_ready = false,
-        .enable_control = false,
-        .do_calibration = false,
+        .enable_control = true,
+        .do_calibration = true,
         .calibration_ok = false,
         .motor_timer = &htim8,
         .next_timings = {TIM_1_8_PERIOD_CLOCKS/2, TIM_1_8_PERIOD_CLOCKS/2, TIM_1_8_PERIOD_CLOCKS/2},
@@ -589,10 +589,6 @@ static void start_adc_pwm(){
     // Ensure that debug halting of the core doesn't leave the motor PWM running
     __HAL_DBGMCU_FREEZE_TIM1();
     __HAL_DBGMCU_FREEZE_TIM8();
-
-    // Turn off the regular conversion trigger for the inital phase
-    // hadc2.Instance->CR2 &= ~ADC_CR2_EXTEN;
-    // hadc3.Instance->CR2 &= ~ADC_CR2_EXTEN;
 
     start_pwm(&htim1);
     start_pwm(&htim8);
@@ -1256,25 +1252,6 @@ void motor_thread(void const * argument) {
     Motor_t* motor = (Motor_t*)argument;
     motor->motor_thread = osThreadGetId();
     motor->thread_ready = true;
-
-#ifdef STANDALONE_MODE
-    //Only run tests on M0 for now
-    if (motor == &motors[0]) {
-        for(;;)
-            osDelay(2);
-        // TODO: figure out why M1 MOE must be enabled to run M0 correctly
-        // osDelay(10);
-        __HAL_TIM_MOE_ENABLE(motor->motor_timer);
-        FOC_voltage_loop(motor, 0.0f, 0.0f);
-    }
-
-    motor->do_calibration = true;
-    motor->enable_control = true;
-
-    //Turn on position control by default.
-    //NOTE: This may not be the preffered behaviour in your application.
-    set_pos_setpoint(motor, 0.0f, 0.0f, 0.0f);
-#endif
 
     for (;;) {
         if (motor->do_calibration) {
