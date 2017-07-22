@@ -24,7 +24,7 @@ The power resistor values you need depends on your motor setup, and peak/average
 
 Wire up the motor phases into the 3-phase screw terminal(s), and the power resistor to the AUX terminal. Wire up the power source (12-24V) to the DC terminal, make sure to pay attention to the polarity. Do not apply power just yet.
 
-Wire up the encoder(s) to J4. The A,B phases are required, and the Z (index pulse) is optional. The A,B and Z lines have 1k pull up resistors, for use with open-drain encoder outputs. For single ended push-pull signals with weak drive current (\<2mA), you may want to desolder the pull-ups.
+Wire up the encoder(s) to J4. The A,B phases are required, and the Z (index pulse) is optional. The A,B and Z lines have 1k pull up resistors, for use with open-drain encoder outputs. For single ended push-pull signals with weak drive current (\<4mA), you may want to desolder the pull-ups.
 
 The currently supported command modes are USB and step/direction.
 * If you are sending commands over USB, you can plug in a USB cable on J1.
