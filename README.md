@@ -58,5 +58,7 @@ Please be aware that there is no enable line right now. So if whatever is drivin
 Therefore make sure that whenever you have the step/dir wires plugged in to the ODrive, that the motion controller is turned on when the ODrive is running.
 Another option to achieve a similar protection is to have somewhat strong pull-down resistors on the step lines.
 
+The step/direction interface is enabled by default, and remains active as long as the ODrive is in position control mode. By default the ODrive starts in position control mode, so you don't need to send any commands over USB to get going. You can still send USB commands if you want to.
+
 ### Getting help
 If you have any issues or any questions please get in touch. The [ODrive Community](https://discourse.odriverobotics.com/) warmly welcomes you.
