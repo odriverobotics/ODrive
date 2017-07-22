@@ -873,7 +873,8 @@ static bool measure_phase_resistance(Motor_t* motor, float test_current, float m
         queue_voltage_timings(motor, test_voltage, 0.0f);
 
         // Check we meet deadlines after queueing
-        if (!(check_timing(motor) < motor->control_deadline)){
+        motor->last_cpu_time = check_timing(motor);
+        if (!(motor->last_cpu_time < motor->control_deadline)){
             motor->error = ERROR_PHASE_RESISTANCE_TIMING;
             return false;
         }
