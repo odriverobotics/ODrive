@@ -56,9 +56,18 @@ typedef struct {
     float v_current_control_integral_d; // [V]
     float v_current_control_integral_q; // [V]
     float Ibus; // DC bus current [A]
+    // Voltage applied at end of cycle:
+    float final_v_alpha; // [V]
+    float final_v_beta; // [V]
 } Current_control_t;
 
+typedef enum {
+    ROTOR_MODE_ENCODER,
+    ROTOR_MODE_SENSORLESS
+} Rotor_mode_t;
+
 typedef struct {
+    Rotor_mode_t rotor_mode;
     TIM_HandleTypeDef* encoder_timer;
     int encoder_offset;
     int encoder_state;
@@ -68,7 +77,11 @@ typedef struct {
     float pll_vel;
     float pll_kp;
     float pll_ki;
+    //Sensorless
+    float observer_gain; // [rad/s]
+    float flux_state[2]; // [Wb]
 } Rotor_t;
+
 
 #define TIMING_LOG_SIZE 16
 typedef struct {

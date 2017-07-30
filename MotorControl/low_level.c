@@ -94,6 +94,7 @@ Motor_t motors[] = {
             .Ibus = 0.0f
         },
         .rotor = {
+            .rotor_mode = ROTOR_MODE_ENCODER,
             .encoder_timer = &htim3,
             .encoder_offset = 0,
             .encoder_state = 0,
@@ -102,7 +103,9 @@ Motor_t motors[] = {
             .pll_pos = 0.0f, // [rad]
             .pll_vel = 0.0f, // [rad/s]
             .pll_kp = 0.0f, // [rad/s / rad]
-            .pll_ki = 0.0f // [(rad/s^2) / rad]
+            .pll_ki = 0.0f, // [(rad/s^2) / rad]
+            .observer_gain = 2000.0f, // [rad/s]
+            .flux_state = {0.0f, 0.0f} // [Wb]
         },
         .timing_log_index = 0,
         .timing_log = {0}
@@ -157,6 +160,7 @@ Motor_t motors[] = {
             .Ibus = 0.0f
         },
         .rotor = {
+            .rotor_mode = ROTOR_MODE_ENCODER,
             .encoder_timer = &htim4,
             .encoder_offset = 0,
             .encoder_state = 0,
@@ -165,7 +169,9 @@ Motor_t motors[] = {
             .pll_pos = 0.0f, // [rad]
             .pll_vel = 0.0f, // [rad/s]
             .pll_kp = 0.0f, // [rad/s / rad]
-            .pll_ki = 0.0f // [(rad/s^2) / rad]
+            .pll_ki = 0.0f, // [(rad/s^2) / rad]
+            .observer_gain = 2000.0f, // [rad/s]
+            .flux_state = {0.0f, 0.0f} // [Wb]
         },
         .timing_log_index = 0,
         .timing_log = {0}
@@ -301,7 +307,7 @@ static bool motor_calibration(Motor_t* motor);
 static void scan_motor_loop(Motor_t* motor, float omega, float voltage_magnitude);
 static void FOC_voltage_loop(Motor_t* motor, float v_d, float v_q);
 // Main motor control
-static void update_rotor(Rotor_t* rotor);
+static void update_rotor(Motor_t* motor);
 static void update_brake_current(float brake_current);
 static void queue_modulation_timings(Motor_t* motor, float mod_alpha, float mod_beta);
 static void queue_voltage_timings(Motor_t* motor, float v_alpha, float v_beta);
@@ -1020,7 +1026,7 @@ static void scan_motor_loop(Motor_t* motor, float omega, float voltage_magnitude
 static void FOC_voltage_loop(Motor_t* motor, float v_d, float v_q) {
     for (;;) {
         osSignalWait(M_SIGNAL_PH_CURRENT_MEAS, osWaitForever);
-        update_rotor(&motor->rotor);
+        update_rotor(motor);
 
         float c = arm_cos_f32(motor->rotor.phase);
         float s = arm_sin_f32(motor->rotor.phase);
@@ -1042,28 +1048,48 @@ static void FOC_voltage_loop(Motor_t* motor, float v_d, float v_q) {
 // Main motor control
 //--------------------------------
 
-static void update_rotor(Rotor_t* rotor) {
-    // update internal encoder state
-    int16_t delta_enc = (int16_t)rotor->encoder_timer->Instance->CNT - (int16_t)rotor->encoder_state;
-    rotor->encoder_state += (int32_t)delta_enc;
+static void update_rotor(Motor_t* motor) {
 
-    // compute electrical phase
-    int corrected_enc = rotor->encoder_state % ENCODER_CPR;
-    corrected_enc -= rotor->encoder_offset;
-    corrected_enc *= rotor->motor_dir;
-    float ph = elec_rad_per_enc * (float)corrected_enc;
-    ph = fmodf(ph, 2*M_PI);
-    rotor->phase = ph;
+    //for convenience
+    Rotor_t* rotor = &motor->rotor;
 
-    // run pll (for now pll is in units of encoder counts)
-    // TODO pll_pos runs out of precision very quickly here! Perhaps decompose into integer and fractional part?
-    // Predict current pos
-    rotor->pll_pos += CURRENT_MEAS_PERIOD * rotor->pll_vel;
-    // discrete phase detector
-    float delta_pos = (float)(rotor->encoder_state - (int32_t)floorf(rotor->pll_pos));
-    // pll feedback
-    rotor->pll_pos += CURRENT_MEAS_PERIOD * rotor->pll_kp * delta_pos;
-    rotor->pll_vel += CURRENT_MEAS_PERIOD * rotor->pll_ki * delta_pos;
+    // Note: switching between rotor modes at runtime not currently supported
+    switch (rotor->rotor_mode) {
+        case ROTOR_MODE_ENCODER: {
+            // update internal encoder state
+            int16_t delta_enc = (int16_t)rotor->encoder_timer->Instance->CNT - (int16_t)rotor->encoder_state;
+            rotor->encoder_state += (int32_t)delta_enc;
+
+            // compute electrical phase
+            int corrected_enc = rotor->encoder_state % ENCODER_CPR;
+            corrected_enc -= rotor->encoder_offset;
+            corrected_enc *= rotor->motor_dir;
+            float ph = elec_rad_per_enc * (float)corrected_enc;
+            ph = fmodf(ph, 2*M_PI);
+            rotor->phase = ph;
+
+            // run pll (for now pll is in units of encoder counts)
+            // TODO pll_pos runs out of precision very quickly here! Perhaps decompose into integer and fractional part?
+            // Predict current pos
+            rotor->pll_pos += CURRENT_MEAS_PERIOD * rotor->pll_vel;
+            // discrete phase detector
+            float delta_pos = (float)(rotor->encoder_state - (int32_t)floorf(rotor->pll_pos));
+            // pll feedback
+            rotor->pll_pos += CURRENT_MEAS_PERIOD * rotor->pll_kp * delta_pos;
+            rotor->pll_vel += CURRENT_MEAS_PERIOD * rotor->pll_ki * delta_pos;
+        } break;
+        case ROTOR_MODE_SENSORLESS: {
+
+            //Algorithm based on paper: Sensorless Control of Surface-Mount Permanent-Magnet Synchronous Motors Based on a Nonlinear Observer
+            //http://cas.ensmp.fr/~praly/Telechargement/Journaux/2010-IEEE_TPEL-Lee-Hong-Nam-Ortega-Praly-Astolfi.pdf
+
+
+
+        } break;
+        default:
+        //TODO error handling
+        break;
+    }
 }
 
 static void update_brake_current(float brake_current) {
@@ -1122,9 +1148,10 @@ static bool FOC_current(Motor_t* motor, float Id_des, float Iq_des) {
     float Vd = ictrl->v_current_control_integral_d + Ierr_d * ictrl->p_gain;
     float Vq = ictrl->v_current_control_integral_q + Ierr_q * ictrl->p_gain;
 
-    float vfactor = 1.0f / ((2.0f / 3.0f) * vbus_voltage);
-    float mod_d = vfactor * Vd;
-    float mod_q = vfactor * Vq;
+    float mod_to_V = (2.0f / 3.0f) * vbus_voltage;
+    float V_to_mod = 1.0f / mod_to_V;
+    float mod_d = V_to_mod * Vd;
+    float mod_q = V_to_mod * Vq;
 
     // Vector modulation saturation, lock integrator if saturated
     // TODO make maximum modulation configurable
@@ -1161,6 +1188,10 @@ static bool FOC_current(Motor_t* motor, float Id_des, float Iq_des) {
     float mod_alpha = c*mod_d - s*mod_q;
     float mod_beta  = c*mod_q + s*mod_d;
 
+    // Report final applied voltage in stationary frame (for sensorles estimator)
+    ictrl->final_v_alpha = mod_to_V * mod_alpha;
+    ictrl->final_v_beta = mod_to_V * mod_beta;
+
     // Apply SVM
     queue_modulation_timings(motor, mod_alpha, mod_beta);
 
@@ -1179,7 +1210,7 @@ static void control_motor_loop(Motor_t* motor) {
             motor->error = ERROR_FOC_MEASUREMENT_TIMEOUT;
             break;
         }
-        update_rotor(&motor->rotor);
+        update_rotor(motor);
 
         // Position control
         // TODO Decide if we want to use encoder or pll position here
