@@ -153,9 +153,6 @@
 #define CURRENT_MEAS_PERIOD ((float)(2*TIM_1_8_PERIOD_CLOCKS)/(float)TIM_1_8_CLOCK_HZ)
 #define CURRENT_MEAS_HZ (TIM_1_8_CLOCK_HZ/(2*TIM_1_8_PERIOD_CLOCKS))
 
-#define MACRO_MAX(x, y) (((x) > (y)) ? (x) : (y))
-#define MACRO_MIN(x, y) (((x) < (y)) ? (x) : (y))
-
 /* USER CODE END Private defines */
 
 void _Error_Handler(char *, int);

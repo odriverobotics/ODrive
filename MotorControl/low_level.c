@@ -45,15 +45,17 @@ static float elec_rad_per_enc = POLE_PAIRS * 2 * M_PI * (1.0f / (float)ENCODER_C
 // TODO: For nice encapsulation, consider not having the motor objects public
 Motor_t motors[] = {
     {   // M0
-        .control_mode = CTRL_MODE_POSITION_CONTROL, //see: Motor_control_mode_t
+        .control_mode = CTRL_MODE_VELOCITY_CONTROL, //see: Motor_control_mode_t
         .enable_step_dir = false, //auto enabled after calibration
         .counts_per_step = 2.0f,
         .error = ERROR_NO_ERROR,
         .pos_setpoint = 0.0f,
         .pos_gain = 20.0f, // [(counts/s) / counts]
         .vel_setpoint = 0.0f,
-        .vel_gain = 15.0f / 10000.0f, // [A/(counts/s)]
-        .vel_integrator_gain = 10.0f / 10000.0f, // [A/(counts/s * s)]
+        // .vel_gain = 15.0f / 10000.0f, // [A/(counts/s)]
+        .vel_gain = 15.0f / 200.0f, // [A/(rad/s)]
+        // .vel_integrator_gain = 10.0f / 10000.0f, // [A/(counts/s * s)]
+        .vel_integrator_gain = 0.0f, // [A/(rad/s * s)]
         .vel_integrator_current = 0.0f, // [A]
         .vel_limit = 20000.0f, // [counts/s]
         .current_setpoint = 0.0f, // [A]
@@ -91,7 +93,9 @@ Motor_t motors[] = {
             .i_gain = 0.0f, // [V/As] should be auto set after resistance and inductance measurement
             .v_current_control_integral_d = 0.0f,
             .v_current_control_integral_q = 0.0f,
-            .Ibus = 0.0f
+            .Ibus = 0.0f,
+            .final_v_alpha = 0.0f,
+            .final_v_beta = 0.0f
         },
         .rotor = {
             .rotor_mode = ROTOR_MODE_ENCODER,
@@ -104,14 +108,16 @@ Motor_t motors[] = {
             .pll_vel = 0.0f, // [rad/s]
             .pll_kp = 0.0f, // [rad/s / rad]
             .pll_ki = 0.0f, // [(rad/s^2) / rad]
-            .observer_gain = 2000.0f, // [rad/s]
-            .flux_state = {0.0f, 0.0f} // [Wb]
+            .observer_gain = 4000.0f, // [rad/s]
+            .flux_state = {0.0f, 0.0f}, // [Vs]
+            .V_alpha_beta_memory = {0.0f, 0.0f}, // [V]
+            .pm_flux_linkage = 1.58e-3f // [V / (rad/s)]  { 5.51328895422 / (<pole pairs> * <rpm/v>) }
         },
         .timing_log_index = 0,
         .timing_log = {0}
     },
     {   // M1
-        .control_mode = CTRL_MODE_POSITION_CONTROL, //see: Motor_control_mode_t
+        .control_mode = CTRL_MODE_VELOCITY_CONTROL, //see: Motor_control_mode_t
         .enable_step_dir = false, //auto enabled after calibration
         .counts_per_step = 2.0f,
         .error = ERROR_NO_ERROR,
@@ -128,8 +134,8 @@ Motor_t motors[] = {
         .phase_resistance = 0.0f, // to be set by measure_phase_resistance
         .motor_thread = 0,
         .thread_ready = false,
-        .enable_control = true,
-        .do_calibration = true,
+        .enable_control = false,
+        .do_calibration = false,
         .calibration_ok = false,
         .motor_timer = &htim8,
         .next_timings = {TIM_1_8_PERIOD_CLOCKS/2, TIM_1_8_PERIOD_CLOCKS/2, TIM_1_8_PERIOD_CLOCKS/2},
@@ -157,7 +163,9 @@ Motor_t motors[] = {
             .i_gain = 0.0f, // [V/As] should be auto set after resistance and inductance measurement
             .v_current_control_integral_d = 0.0f,
             .v_current_control_integral_q = 0.0f,
-            .Ibus = 0.0f
+            .Ibus = 0.0f,
+            .final_v_alpha = 0.0f,
+            .final_v_beta = 0.0f
         },
         .rotor = {
             .rotor_mode = ROTOR_MODE_ENCODER,
@@ -170,8 +178,10 @@ Motor_t motors[] = {
             .pll_vel = 0.0f, // [rad/s]
             .pll_kp = 0.0f, // [rad/s / rad]
             .pll_ki = 0.0f, // [(rad/s^2) / rad]
-            .observer_gain = 2000.0f, // [rad/s]
-            .flux_state = {0.0f, 0.0f} // [Wb]
+            .observer_gain = 4000.0f, // [rad/s]
+            .flux_state = {0.0f, 0.0f}, // [Vs]
+            .V_alpha_beta_memory = {0.0f, 0.0f}, // [V]
+            .pm_flux_linkage = 2.25e-3f // [V / (rad/s)]  { 5.51328895422 / (<pole pairs> * <rpm/v>) }
         },
         .timing_log_index = 0,
         .timing_log = {0}
@@ -182,6 +192,8 @@ const int num_motors = sizeof(motors)/sizeof(motors[0]);
 /* Private constant data -----------------------------------------------------*/
 static const float one_by_sqrt3 = 0.57735026919f;
 static const float sqrt3_by_2 = 0.86602540378f;
+static const float current_meas_period = CURRENT_MEAS_PERIOD;
+static const float current_meas_hz = CURRENT_MEAS_HZ;
 
 /* Private variables ---------------------------------------------------------*/
 static float brake_resistance = 0.47f; // [ohm]
@@ -830,7 +842,7 @@ static bool measure_phase_resistance(Motor_t* motor, float test_current, float m
             return false;
         }
         float Ialpha = -0.5f * (motor->current_meas.phB + motor->current_meas.phC);
-        test_voltage += (kI * CURRENT_MEAS_PERIOD) * (test_current - Ialpha);
+        test_voltage += (kI * current_meas_period) * (test_current - Ialpha);
         if (test_voltage > max_voltage) test_voltage = max_voltage;
         if (test_voltage < -max_voltage) test_voltage = -max_voltage;
 
@@ -888,7 +900,7 @@ static bool measure_phase_inductance(Motor_t* motor, float voltage_low, float vo
     float v_L = 0.5f * (voltage_high - voltage_low);
     // Note: A more correct formula would also take into account that there is a finite timestep.
     // However, the discretisation in the current control loop inverts the same discrepancy
-    float dI_by_dt = (Ialphas[1] - Ialphas[0]) / (CURRENT_MEAS_PERIOD * (float)num_cycles);
+    float dI_by_dt = (Ialphas[1] - Ialphas[0]) / (current_meas_period * (float)num_cycles);
     float L = v_L / dI_by_dt;
     
     // TODO arbitrary values set for now
@@ -913,7 +925,7 @@ static bool calib_enc_offset(Motor_t* motor, float voltage_magnitude) {
     int32_t encvaluesum = 0;
 
     // go to rotor zero phase for start_lock_duration to get ready to scan
-    for (int i = 0; i < start_lock_duration*CURRENT_MEAS_HZ; ++i) {
+    for (int i = 0; i < start_lock_duration*current_meas_hz; ++i) {
         if (osSignalWait(M_SIGNAL_PH_CURRENT_MEAS, PH_CURRENT_MEAS_TIMEOUT).status != osEventSignal) {
             motor->error = ERROR_ENCODER_MEASUREMENT_TIMEOUT;
             return false;
@@ -922,7 +934,7 @@ static bool calib_enc_offset(Motor_t* motor, float voltage_magnitude) {
     }
     // scan forwards
     for (float ph = -scan_range / 2.0f; ph < scan_range / 2.0f; ph += step_size) {
-        for (int i = 0; i < dt_step*(float)CURRENT_MEAS_HZ; ++i) {
+        for (int i = 0; i < dt_step*(float)current_meas_hz; ++i) {
             if (osSignalWait(M_SIGNAL_PH_CURRENT_MEAS, PH_CURRENT_MEAS_TIMEOUT).status != osEventSignal) {
                 motor->error = ERROR_ENCODER_MEASUREMENT_TIMEOUT;
                 return false;
@@ -947,7 +959,7 @@ static bool calib_enc_offset(Motor_t* motor, float voltage_magnitude) {
     }
     // scan backwards
     for (float ph = scan_range / 2.0f; ph > -scan_range / 2.0f; ph -= step_size) {
-        for (int i = 0; i < dt_step*(float)CURRENT_MEAS_HZ; ++i) {
+        for (int i = 0; i < dt_step*(float)current_meas_hz; ++i) {
             if (osSignalWait(M_SIGNAL_PH_CURRENT_MEAS, PH_CURRENT_MEAS_TIMEOUT).status != osEventSignal) {
                 motor->error = ERROR_ENCODER_MEASUREMENT_TIMEOUT;
                 return false;
@@ -989,7 +1001,7 @@ static bool motor_calibration(Motor_t* motor){
     float rotor_pll_bandwidth = 1000.0f; // [rad/s]
     motor->rotor.pll_kp = 2.0f * rotor_pll_bandwidth;
     // Check that we don't get problems with discrete time approximation
-    if (!(CURRENT_MEAS_PERIOD * motor->rotor.pll_kp < 1.0f)){
+    if (!(current_meas_period * motor->rotor.pll_kp < 1.0f)){
         motor->error = ERROR_CALIBRATION_TIMING;
         return false;
     }
@@ -1007,7 +1019,7 @@ static bool motor_calibration(Motor_t* motor){
 
 static void scan_motor_loop(Motor_t* motor, float omega, float voltage_magnitude) {
     for (;;) {
-        for (float ph = 0.0f; ph < 2.0f * M_PI; ph += omega * CURRENT_MEAS_PERIOD) {
+        for (float ph = 0.0f; ph < 2.0f * M_PI; ph += omega * current_meas_period) {
             osSignalWait(M_SIGNAL_PH_CURRENT_MEAS, osWaitForever);
             float v_alpha = voltage_magnitude * arm_cos_f32(ph);
             float v_beta  = voltage_magnitude * arm_sin_f32(ph);
@@ -1071,19 +1083,71 @@ static void update_rotor(Motor_t* motor) {
             // run pll (for now pll is in units of encoder counts)
             // TODO pll_pos runs out of precision very quickly here! Perhaps decompose into integer and fractional part?
             // Predict current pos
-            rotor->pll_pos += CURRENT_MEAS_PERIOD * rotor->pll_vel;
+            rotor->pll_pos += current_meas_period * rotor->pll_vel;
             // discrete phase detector
             float delta_pos = (float)(rotor->encoder_state - (int32_t)floorf(rotor->pll_pos));
             // pll feedback
-            rotor->pll_pos += CURRENT_MEAS_PERIOD * rotor->pll_kp * delta_pos;
-            rotor->pll_vel += CURRENT_MEAS_PERIOD * rotor->pll_ki * delta_pos;
+            rotor->pll_pos += current_meas_period * rotor->pll_kp * delta_pos;
+            rotor->pll_vel += current_meas_period * rotor->pll_ki * delta_pos;
         } break;
         case ROTOR_MODE_SENSORLESS: {
 
-            //Algorithm based on paper: Sensorless Control of Surface-Mount Permanent-Magnet Synchronous Motors Based on a Nonlinear Observer
-            //http://cas.ensmp.fr/~praly/Telechargement/Journaux/2010-IEEE_TPEL-Lee-Hong-Nam-Ortega-Praly-Astolfi.pdf
+            // Algorithm based on paper: Sensorless Control of Surface-Mount Permanent-Magnet Synchronous Motors Based on a Nonlinear Observer
+            // http://cas.ensmp.fr/~praly/Telechargement/Journaux/2010-IEEE_TPEL-Lee-Hong-Nam-Ortega-Praly-Astolfi.pdf
+            // In particular, equation 8 (and by extension eqn 4 and 6).
 
+            // The V_alpha_beta applied immedietly prior to the current measurement associated with this cycle
+            // is the one computed two cycles ago. To get the correct measurement, it was stored twice:
+            // once by final_v_alpha/final_v_beta in the current control reporting, and once by V_alpha_beta_memory.
 
+            // Clarke transform
+            float I_alpha_beta[2] = {
+                -motor->current_meas.phB - motor->current_meas.phC,
+                one_by_sqrt3 * (motor->current_meas.phB - motor->current_meas.phC)
+            };
+
+            // alpha-beta vector operations
+            float eta[2];
+            for (int i = 0; i <= 1; ++i) {
+                // y is the total flux-driving voltage (see paper eqn 4)
+                float y = -motor->phase_resistance * I_alpha_beta[i] + rotor->V_alpha_beta_memory[i];
+                // flux dynamics (prediction)
+                float x_dot = y;
+                // integrate prediction to current timestep
+                rotor->flux_state[i] += x_dot * current_meas_period;
+
+                // eta is the estimated permanent magnet flux (see paper eqn 6)
+                eta[i] = rotor->flux_state[i] - motor->phase_inductance * I_alpha_beta[i];
+            }
+
+            // Non-linear observer (see paper eqn 8):
+            float pm_flux_sqr = rotor->pm_flux_linkage * rotor->pm_flux_linkage;
+            float est_pm_flux_sqr = eta[0] * eta[0] + eta[1] * eta[1];
+            float eta_factor = 0.5f * rotor->observer_gain * (pm_flux_sqr - est_pm_flux_sqr);
+
+            // alpha-beta vector operations
+            for (int i = 0; i <= 1; ++i) {
+                // add observer action to flux estimate dynamics
+                float x_dot = eta_factor * eta[i];
+                // convert action to discrete-time
+                rotor->flux_state[i] += x_dot * current_meas_period;
+                // update new eta
+                eta[i] = rotor->flux_state[i] - motor->phase_inductance * I_alpha_beta[i];
+            }
+
+            // Flux state estimation done, store V_alpha_beta for next timestep
+            rotor->V_alpha_beta_memory[0] = motor->current_control.final_v_alpha;
+            rotor->V_alpha_beta_memory[1] = motor->current_control.final_v_beta;
+
+            // PLL
+            // predict PLL phase with velocity
+            rotor->pll_pos = wrap_pm_pi(rotor->pll_pos + current_meas_period * rotor->pll_vel);
+            // update PLL phase with observer permanent magnet phase
+            rotor->phase = fast_atan2(eta[1], eta[0]);
+            float delta_phase = wrap_pm_pi(rotor->phase - rotor->pll_pos);
+            rotor->pll_pos = wrap_pm_pi(rotor->pll_pos + current_meas_period * rotor->pll_kp * delta_phase);
+            // update PLL velocity
+            rotor->pll_vel += current_meas_period * rotor->pll_ki * delta_phase;
 
         } break;
         default:
@@ -1164,8 +1228,8 @@ static bool FOC_current(Motor_t* motor, float Id_des, float Iq_des) {
         ictrl->v_current_control_integral_d *= 0.99f;
         ictrl->v_current_control_integral_q *= 0.99f;
     } else {
-        ictrl->v_current_control_integral_d += Ierr_d * (ictrl->i_gain * CURRENT_MEAS_PERIOD);
-        ictrl->v_current_control_integral_q += Ierr_q * (ictrl->i_gain * CURRENT_MEAS_PERIOD);
+        ictrl->v_current_control_integral_d += Ierr_d * (ictrl->i_gain * current_meas_period);
+        ictrl->v_current_control_integral_q += Ierr_q * (ictrl->i_gain * current_meas_period);
     }
 
     // Compute estimated bus current
@@ -1259,7 +1323,7 @@ static void control_motor_loop(Motor_t* motor) {
                 // TODO make decayfactor configurable
                 motor->vel_integrator_current *= 0.99f;
             } else {
-                motor->vel_integrator_current += (motor->vel_integrator_gain * CURRENT_MEAS_PERIOD) * v_err;
+                motor->vel_integrator_current += (motor->vel_integrator_gain * current_meas_period) * v_err;
             }
         }
 

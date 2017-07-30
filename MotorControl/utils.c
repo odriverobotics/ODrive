@@ -1,5 +1,6 @@
 
 #include <utils.h>
+#include <math.h>
 
 static const float one_by_sqrt3 = 0.57735026919f;
 static const float two_by_sqrt3 = 1.15470053838f;
@@ -129,4 +130,34 @@ int SVM(float alpha, float beta, float* tA, float* tB, float* tC) {
         || *tC > 1.0f
     ) retval = -1;
     return retval;
+}
+
+//beware of inserting large angles!
+float wrap_pm_pi(float theta) {
+    while (theta >= M_PI) theta -= (2.0f * M_PI);
+    while (theta < -M_PI) theta += (2.0f * M_PI);
+    return theta;
+}
+
+// based on https://math.stackexchange.com/a/1105038/81278
+float fast_atan2(float y, float x) {
+    // a := min (|x|, |y|) / max (|x|, |y|)
+    float abs_y = fabsf(y);
+    float abs_x = fabsf(x);
+    float a = MACRO_MIN(abs_x, abs_y) / MACRO_MAX(abs_x, abs_y);
+    //s := a * a
+    float s = a * a;
+    //r := ((-0.0464964749 * s + 0.15931422) * s - 0.327622764) * s * a + a
+    float r = ((-0.0464964749f * s + 0.15931422f) * s - 0.327622764f) * s * a + a;
+    //if |y| > |x| then r := 1.57079637 - r
+    if (abs_y > abs_x)
+        r = 1.57079637f - r;
+    // if x < 0 then r := 3.14159274 - r
+    if (x < 0.0f)
+        r = 3.14159274f - r;
+    // if y < 0 then r := -r
+    if (y < 0.0f)
+        r = -r;
+
+    return r;
 }

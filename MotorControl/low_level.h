@@ -79,7 +79,9 @@ typedef struct {
     float pll_ki;
     //Sensorless
     float observer_gain; // [rad/s]
-    float flux_state[2]; // [Wb]
+    float flux_state[2]; // [Vs]
+    float V_alpha_beta_memory[2]; // [V]
+    float pm_flux_linkage; // [V / (rad/s)]
 } Rotor_t;
 
 
