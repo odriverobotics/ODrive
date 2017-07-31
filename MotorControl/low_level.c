@@ -47,9 +47,10 @@ Motor_t motors[] = {
         .error = ERROR_NO_ERROR,
         .pos_setpoint = 0.0f,
         .pos_gain = 20.0f, // [(counts/s) / counts]
-        .vel_setpoint = 40000.0f,
-        .vel_gain = 15.0f / 10000.0f, // [A/(counts/s)]
-        // .vel_gain = 15.0f / 200.0f, // [A/(rad/s)]
+        // .vel_setpoint = 40000.0f,
+        .vel_setpoint = 800.0f,
+        // .vel_gain = 15.0f / 10000.0f, // [A/(counts/s)]
+        .vel_gain = 15.0f / 200.0f, // [A/(rad/s)]
         // .vel_integrator_gain = 10.0f / 10000.0f, // [A/(counts/s * s)]
         .vel_integrator_gain = 0.0f, // [A/(rad/s * s)]
         .vel_integrator_current = 0.0f, // [A]
@@ -94,7 +95,8 @@ Motor_t motors[] = {
             .final_v_beta = 0.0f,
         },
         // .rotor_mode = ROTOR_MODE_ENCODER,
-        .rotor_mode = ROTOR_MODE_RUN_ENCODER_TEST_SENSORLESS,
+        // .rotor_mode = ROTOR_MODE_RUN_ENCODER_TEST_SENSORLESS,
+        .rotor_mode = ROTOR_MODE_SENSORLESS,
         .encoder = {
             .encoder_timer = &htim3,
             .encoder_offset = 0,
@@ -118,7 +120,7 @@ Motor_t motors[] = {
             .pm_flux_linkage = 1.58e-3f, // [V / (rad/s)]  { 5.51328895422 / (<pole pairs> * <rpm/v>) }
             .estimator_good = false,
             .spin_up_current = 10.0f, // [A]
-            .spin_up_acceleration = 100.0f, // [rad/s^2]
+            .spin_up_acceleration = 400.0f, // [rad/s^2]
             .spin_up_target_vel = 400.0f, // [rad/s]
         },
         .timing_log_index = 0,
@@ -1266,18 +1268,31 @@ static bool spin_up_sensorless(Motor_t* motor) {
     float I_mag = 0.0f;
 
     // spiral up current
-    for (float x = 0; x < 1.0f; x += ramp_step) {
-        phase = ramp_up_distance * x;
+    for (float x = 0.0f; x < 1.0f; x += ramp_step) {
+        phase = wrap_pm_pi(ramp_up_distance * x);
         I_mag = motor->sensorless.spin_up_current * x;
         if(!spin_up_timestep(motor, phase, I_mag))
             return false;
     }
 
+    // accelerate
+    while (vel < motor->sensorless.spin_up_target_vel) {
+        vel += motor->sensorless.spin_up_acceleration * current_meas_period;
+        phase = wrap_pm_pi(phase + vel * current_meas_period);
+        if(!spin_up_timestep(motor, phase, motor->sensorless.spin_up_current))
+            return false;
+    }
+
+    // // test keep spinning
+    // while (true) {
+    //     phase = wrap_pm_pi(phase + vel * current_meas_period);
+    //     if(!spin_up_timestep(motor, phase, motor->sensorless.spin_up_current))
+    //         return false;
+    // }
+
     return true;
 
-    // accelerate
-
-    // check pll vel (abs ratio, 0.8)
+    // TODO: check pll vel (abs ratio, 0.8)
 }
 
 static void update_brake_current(float brake_current) {
