@@ -117,6 +117,9 @@ Motor_t motors[] = {
             .V_alpha_beta_memory = {0.0f, 0.0f}, // [V]
             .pm_flux_linkage = 1.58e-3f, // [V / (rad/s)]  { 5.51328895422 / (<pole pairs> * <rpm/v>) }
             .estimator_good = false,
+            .spin_up_current = 10.0f, // [A]
+            .spin_up_acceleration = 100.0f, // [rad/s^2]
+            .spin_up_target_vel = 400.0f, // [rad/s]
         },
         .timing_log_index = 0,
         .timing_log = {0},
@@ -335,6 +338,7 @@ static void FOC_voltage_loop(Motor_t* motor, float v_d, float v_q);
 static void update_rotor(Motor_t* motor);
 static float get_rotor_phase(Motor_t* motor);
 static float get_pll_vel(Motor_t* motor);
+static bool spin_up_sensorless(Motor_t* motor);
 static void update_brake_current(float brake_current);
 static void queue_modulation_timings(Motor_t* motor, float mod_alpha, float mod_beta);
 static void queue_voltage_timings(Motor_t* motor, float v_alpha, float v_beta);
@@ -1003,8 +1007,11 @@ static bool motor_calibration(Motor_t* motor){
         return false;
     if (!measure_phase_inductance(motor, -1.0f, 1.0f))
         return false;
-    if (!calib_enc_offset(motor, motor->calibration_current * motor->phase_resistance))
-        return false;
+    if (motor->rotor_mode == ROTOR_MODE_ENCODER ||
+        motor->rotor_mode == ROTOR_MODE_RUN_ENCODER_TEST_SENSORLESS) {
+        if (!calib_enc_offset(motor, motor->calibration_current * motor->phase_resistance))
+            return false;
+    }
     
     // Calculate current control gains
     float current_control_bandwidth = 1000.0f; // [rad/s]
@@ -1023,7 +1030,7 @@ static bool motor_calibration(Motor_t* motor){
     // Critically damped
     motor->encoder.pll_ki = 0.25f * (motor->encoder.pll_kp * motor->encoder.pll_kp);
 
-    //TODO temp sensorless pll same as encoder
+    // sensorless pll same as encoder (for now)
     motor->sensorless.pll_kp = motor->encoder.pll_kp;
     motor->sensorless.pll_ki = motor->encoder.pll_ki;
     
@@ -1181,17 +1188,17 @@ static void update_rotor(Motor_t* motor) {
             sensorless->pll_vel += current_meas_period * sensorless->pll_ki * delta_phase;
 
             //TODO TEMP TEST HACK
-            static int trigger_ctr = 0;
-            if (++trigger_ctr >= 3*current_meas_hz) {
-                trigger_ctr = 0;
+            // static int trigger_ctr = 0;
+            // if (++trigger_ctr >= 3*current_meas_hz) {
+            //     trigger_ctr = 0;
 
-                //Change to sensorless units
-                motor->vel_gain = 15.0f / 200.0f;
-                motor->vel_setpoint = 800.0f * motor->encoder.motor_dir;
+            //     //Change to sensorless units
+            //     motor->vel_gain = 15.0f / 200.0f;
+            //     motor->vel_setpoint = 800.0f * motor->encoder.motor_dir;
 
-                //Change mode
-                motor->rotor_mode = ROTOR_MODE_SENSORLESS;
-            }
+            //     //Change mode
+            //     motor->rotor_mode = ROTOR_MODE_SENSORLESS;
+            // }
 
         } break;
         default:
@@ -1230,6 +1237,47 @@ static float get_pll_vel(Motor_t* motor) {
             return 0.0f;
         break;
     }
+}
+
+static bool spin_up_timestep(Motor_t* motor, float phase, float I_mag) {
+    // wait for new timestep
+    if (osSignalWait(M_SIGNAL_PH_CURRENT_MEAS, PH_CURRENT_MEAS_TIMEOUT).status != osEventSignal) {
+        motor->error = ERROR_SPIN_UP_TIMEOUT;
+        return false;
+    }
+    // run estimator
+    update_rotor(motor);
+    // override the phase during spinup
+    motor->sensorless.phase = phase;
+    // run current control (with the phase override)
+    FOC_current(motor, I_mag, 0.0f);
+
+    return true;
+}
+
+static bool spin_up_sensorless(Motor_t* motor) {
+
+    static const float ramp_up_time = 0.4f;
+    static const float ramp_up_distance = 4 * M_PI;
+    float ramp_step = current_meas_period / ramp_up_time;
+
+    float phase = 0.0f;
+    float vel = ramp_up_distance / ramp_up_time;
+    float I_mag = 0.0f;
+
+    // spiral up current
+    for (float x = 0; x < 1.0f; x += ramp_step) {
+        phase = ramp_up_distance * x;
+        I_mag = motor->sensorless.spin_up_current * x;
+        if(!spin_up_timestep(motor, phase, I_mag))
+            return false;
+    }
+
+    return true;
+
+    // accelerate
+
+    // check pll vel (abs ratio, 0.8)
 }
 
 static void update_brake_current(float brake_current) {
@@ -1382,7 +1430,7 @@ static void control_motor_loop(Motor_t* motor) {
 
         // Apply motor direction correction
         if (motor->rotor_mode == ROTOR_MODE_ENCODER ||
-                motor->rotor_mode == ROTOR_MODE_RUN_ENCODER_TEST_SENSORLESS) {
+            motor->rotor_mode == ROTOR_MODE_RUN_ENCODER_TEST_SENSORLESS) {
             Iq *= motor->encoder.motor_dir;
         }
 
@@ -1444,9 +1492,16 @@ void motor_thread(void const * argument) {
         if (motor->calibration_ok && motor->enable_control) {
             motor->enable_step_dir = true;
             __HAL_TIM_MOE_ENABLE(motor->motor_timer);
-            control_motor_loop(motor);
+
+            bool spin_up_ok = true;
+            if (motor->rotor_mode == ROTOR_MODE_SENSORLESS)
+                spin_up_ok = spin_up_sensorless(motor);
+            if (spin_up_ok)
+                control_motor_loop(motor);
+
             __HAL_TIM_MOE_DISABLE_UNCONDITIONALLY(motor->motor_timer);
             motor->enable_step_dir = false;
+
             if(motor->enable_control){ // if control is still enabled, we exited because of error
                 motor->calibration_ok = false;
                 motor->enable_control = false;

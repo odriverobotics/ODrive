@@ -34,6 +34,7 @@ typedef enum {
     ERROR_PWM_SRC_FAIL,
     ERROR_UNEXPECTED_STEP_SRC,
     ERROR_POS_CTRL_DURING_SENSORLESS,
+    ERROR_SPIN_UP_TIMEOUT,
 } Error_t;
 
 // Note: these should be sorted from lowest level of control to
@@ -79,7 +80,9 @@ typedef struct {
     float V_alpha_beta_memory[2]; // [V]
     float pm_flux_linkage; // [V / (rad/s)]
     bool estimator_good;
-    // bool pll_good;
+    float spin_up_current; // [A]
+    float spin_up_acceleration; // [rad/s^2]
+    float spin_up_target_vel; // [rad/s]
 } Sensorless_t;
 
 typedef struct {
