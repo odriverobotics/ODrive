@@ -63,11 +63,23 @@ typedef struct {
 
 typedef enum {
     ROTOR_MODE_ENCODER,
-    ROTOR_MODE_SENSORLESS
+    ROTOR_MODE_SENSORLESS,
+    ROTOR_MODE_RUN_ENCODER_TEST_SENSORLESS //Run on encoder, but still run estimator for testing
 } Rotor_mode_t;
 
 typedef struct {
-    Rotor_mode_t rotor_mode;
+    float phase;
+    float pll_pos;
+    float pll_vel;
+    float pll_kp;
+    float pll_ki;
+    float observer_gain; // [rad/s]
+    float flux_state[2]; // [Vs]
+    float V_alpha_beta_memory[2]; // [V]
+    float pm_flux_linkage; // [V / (rad/s)]
+} Sensorless_t;
+
+typedef struct {
     TIM_HandleTypeDef* encoder_timer;
     int encoder_offset;
     int encoder_state;
@@ -77,13 +89,7 @@ typedef struct {
     float pll_vel;
     float pll_kp;
     float pll_ki;
-    //Sensorless
-    float observer_gain; // [rad/s]
-    float flux_state[2]; // [Vs]
-    float V_alpha_beta_memory[2]; // [V]
-    float pm_flux_linkage; // [V / (rad/s)]
-} Rotor_t;
-
+} Encoder_t;
 
 #define TIMING_LOG_SIZE 16
 typedef struct {
@@ -118,7 +124,9 @@ typedef struct {
     float shunt_conductance;
     float phase_current_rev_gain; //Reverse gain for ADC to Amps
     Current_control_t current_control;
-    Rotor_t rotor;
+    Rotor_mode_t rotor_mode;
+    Encoder_t encoder;
+    Sensorless_t sensorless;
     int timing_log_index;
     uint16_t timing_log[TIMING_LOG_SIZE];
 } Motor_t;
