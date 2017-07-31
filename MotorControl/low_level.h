@@ -33,6 +33,7 @@ typedef enum {
     ERROR_GATEDRIVER_INVALID_GAIN,
     ERROR_PWM_SRC_FAIL,
     ERROR_UNEXPECTED_STEP_SRC,
+    ERROR_POS_CTRL_DURING_SENSORLESS,
 } Error_t;
 
 // Note: these should be sorted from lowest level of control to

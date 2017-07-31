@@ -333,6 +333,8 @@ static void scan_motor_loop(Motor_t* motor, float omega, float voltage_magnitude
 static void FOC_voltage_loop(Motor_t* motor, float v_d, float v_q);
 // Main motor control
 static void update_rotor(Motor_t* motor);
+static float get_rotor_phase(Motor_t* motor);
+static float get_pll_vel(Motor_t* motor);
 static void update_brake_current(float brake_current);
 static void queue_modulation_timings(Motor_t* motor, float mod_alpha, float mod_beta);
 static void queue_voltage_timings(Motor_t* motor, float v_alpha, float v_beta);
@@ -1052,13 +1054,15 @@ static void scan_motor_loop(Motor_t* motor, float omega, float voltage_magnitude
     }
 }
 
+//TODO integrate as mode in main control loop
 static void FOC_voltage_loop(Motor_t* motor, float v_d, float v_q) {
     for (;;) {
         osSignalWait(M_SIGNAL_PH_CURRENT_MEAS, osWaitForever);
         update_rotor(motor);
 
-        float c = arm_cos_f32(motor->encoder.phase);
-        float s = arm_sin_f32(motor->encoder.phase);
+        float phase = get_rotor_phase(motor);
+        float c = arm_cos_f32(phase);
+        float s = arm_sin_f32(phase);
         float v_alpha = c*v_d - s*v_q;
         float v_beta  = c*v_q + s*v_d;
         queue_voltage_timings(motor, v_alpha, v_beta);
@@ -1178,13 +1182,52 @@ static void update_rotor(Motor_t* motor) {
 
             //TODO TEMP TEST HACK
             static int trigger_ctr = 0;
-            if (++trigger_ctr >= 5*current_meas_hz) {
+            if (++trigger_ctr >= 3*current_meas_hz) {
                 trigger_ctr = 0;
+
+                //Change to sensorless units
+                motor->vel_gain = 15.0f / 200.0f;
+                motor->vel_setpoint = 800.0f * motor->encoder.motor_dir;
+
+                //Change mode
+                motor->rotor_mode = ROTOR_MODE_SENSORLESS;
             }
 
         } break;
         default:
         //TODO error handling
+        break;
+    }
+}
+
+static float get_rotor_phase(Motor_t* motor) {
+    switch (motor->rotor_mode) {
+        case ROTOR_MODE_ENCODER:
+        case ROTOR_MODE_RUN_ENCODER_TEST_SENSORLESS:
+            return motor->encoder.phase;
+        break;
+        case ROTOR_MODE_SENSORLESS:
+            return motor->sensorless.phase;
+        break;
+        default:
+            //TODO error handling
+            return 0.0f;
+        break;
+    }
+}
+
+static float get_pll_vel(Motor_t* motor) {
+    switch (motor->rotor_mode) {
+        case ROTOR_MODE_ENCODER:
+        case ROTOR_MODE_RUN_ENCODER_TEST_SENSORLESS:
+            return motor->encoder.pll_vel;
+        break;
+        case ROTOR_MODE_SENSORLESS:
+            return motor->sensorless.pll_vel;
+        break;
+        default:
+            //TODO error handling
+            return 0.0f;
         break;
     }
 }
@@ -1231,8 +1274,9 @@ static bool FOC_current(Motor_t* motor, float Id_des, float Iq_des) {
     float Ibeta = one_by_sqrt3 * (motor->current_meas.phB - motor->current_meas.phC);
 
     // Park transform
-    float c = arm_cos_f32(motor->encoder.phase);
-    float s = arm_sin_f32(motor->encoder.phase);
+    float phase = get_rotor_phase(motor);
+    float c = arm_cos_f32(phase);
+    float s = arm_sin_f32(phase);
     float Id = c*Ialpha + s*Ibeta;
     float Iq = c*Ibeta  - s*Ialpha;
 
@@ -1313,6 +1357,10 @@ static void control_motor_loop(Motor_t* motor) {
         // TODO Decide if we want to use encoder or pll position here
         float vel_des = motor->vel_setpoint;
         if (motor->control_mode >= CTRL_MODE_POSITION_CONTROL) {
+            if (motor->rotor_mode == ROTOR_MODE_SENSORLESS) {
+                motor->error = ERROR_POS_CTRL_DURING_SENSORLESS;
+                break;
+            }
             float pos_err = motor->pos_setpoint - motor->encoder.pll_pos;
             vel_des += motor->pos_gain * pos_err;
         }
@@ -1324,7 +1372,7 @@ static void control_motor_loop(Motor_t* motor) {
 
         // Velocity control
         float Iq = motor->current_setpoint;
-        float v_err = vel_des - motor->encoder.pll_vel;
+        float v_err = vel_des - get_pll_vel(motor);
         if (motor->control_mode >=  CTRL_MODE_VELOCITY_CONTROL) {
             Iq += motor->vel_gain * v_err;
         }
@@ -1333,7 +1381,10 @@ static void control_motor_loop(Motor_t* motor) {
         Iq += motor->vel_integrator_current;
 
         // Apply motor direction correction
-        Iq *= motor->encoder.motor_dir;
+        if (motor->rotor_mode == ROTOR_MODE_ENCODER ||
+                motor->rotor_mode == ROTOR_MODE_RUN_ENCODER_TEST_SENSORLESS) {
+            Iq *= motor->encoder.motor_dir;
+        }
 
         // Current limiting
         float Ilim = motor->current_control.current_lim;
