@@ -41,8 +41,7 @@ static float elec_rad_per_enc = POLE_PAIRS * 2 * M_PI * (1.0f / (float)ENCODER_C
 // TODO: For nice encapsulation, consider not having the motor objects public
 Motor_t motors[] = {
     {   // M0
-        // .control_mode = CTRL_MODE_VELOCITY_CONTROL, //see: Motor_control_mode_t
-        .control_mode = ROTOR_MODE_RUN_ENCODER_TEST_SENSORLESS, //see: Motor_control_mode_t
+        .control_mode = CTRL_MODE_VELOCITY_CONTROL, //see: Motor_control_mode_t
         .enable_step_dir = false, //auto enabled after calibration
         .counts_per_step = 2.0f,
         .error = ERROR_NO_ERROR,
@@ -94,7 +93,8 @@ Motor_t motors[] = {
             .final_v_alpha = 0.0f,
             .final_v_beta = 0.0f,
         },
-        .rotor_mode = ROTOR_MODE_ENCODER,
+        // .rotor_mode = ROTOR_MODE_ENCODER,
+        .rotor_mode = ROTOR_MODE_RUN_ENCODER_TEST_SENSORLESS,
         .encoder = {
             .encoder_timer = &htim3,
             .encoder_offset = 0,
@@ -112,10 +112,11 @@ Motor_t motors[] = {
             .pll_vel = 0.0f, // [rad/s]
             .pll_kp = 0.0f, // [rad/s / rad]
             .pll_ki = 0.0f, // [(rad/s^2) / rad]
-            .observer_gain = 4000.0f, // [rad/s]
+            .observer_gain = 1000.0f, // [rad/s]
             .flux_state = {0.0f, 0.0f}, // [Vs]
             .V_alpha_beta_memory = {0.0f, 0.0f}, // [V]
             .pm_flux_linkage = 1.58e-3f, // [V / (rad/s)]  { 5.51328895422 / (<pole pairs> * <rpm/v>) }
+            .estimator_good = false,
         },
         .timing_log_index = 0,
         .timing_log = {0},
@@ -189,10 +190,11 @@ Motor_t motors[] = {
             .pll_vel = 0.0f, // [rad/s]
             .pll_kp = 0.0f, // [rad/s / rad]
             .pll_ki = 0.0f, // [(rad/s^2) / rad]
-            .observer_gain = 4000.0f, // [rad/s]
+            .observer_gain = 1000.0f, // [rad/s]
             .flux_state = {0.0f, 0.0f}, // [Vs]
             .V_alpha_beta_memory = {0.0f, 0.0f}, // [V]
             .pm_flux_linkage = 1.58e-3f, // [V / (rad/s)]  { 5.51328895422 / (<pole pairs> * <rpm/v>) }
+            .estimator_good = false,
         },
         .timing_log_index = 0,
         .timing_log = {0}
@@ -204,7 +206,7 @@ const int num_motors = sizeof(motors)/sizeof(motors[0]);
 static const float one_by_sqrt3 = 0.57735026919f;
 static const float sqrt3_by_2 = 0.86602540378f;
 static const float current_meas_period = CURRENT_MEAS_PERIOD;
-static const float current_meas_hz = CURRENT_MEAS_HZ;
+static const int current_meas_hz = CURRENT_MEAS_HZ;
 
 /* Private variables ---------------------------------------------------------*/
 static float brake_resistance = 0.47f; // [ohm]
@@ -1092,8 +1094,8 @@ static void update_rotor(Motor_t* motor) {
             corrected_enc -= encoder->encoder_offset;
             corrected_enc *= encoder->motor_dir;
             float ph = elec_rad_per_enc * (float)corrected_enc;
-            ph = fmodf(ph, 2*M_PI);
-            encoder->phase = ph;
+            // ph = fmodf(ph, 2*M_PI);
+            encoder->phase = wrap_pm_pi(ph);
 
             // run pll (for now pll is in units of encoder counts)
             // TODO pll_pos runs out of precision very quickly here! Perhaps decompose into integer and fractional part?
@@ -1144,7 +1146,11 @@ static void update_rotor(Motor_t* motor) {
             // Non-linear observer (see paper eqn 8):
             float pm_flux_sqr = sensorless->pm_flux_linkage * sensorless->pm_flux_linkage;
             float est_pm_flux_sqr = eta[0] * eta[0] + eta[1] * eta[1];
-            float eta_factor = 0.5f * sensorless->observer_gain * (pm_flux_sqr - est_pm_flux_sqr);
+            float bandwidth_factor = 1.0f / (sensorless->pm_flux_linkage * sensorless->pm_flux_linkage);
+            float eta_factor = 0.5f * (sensorless->observer_gain * bandwidth_factor) * (pm_flux_sqr - est_pm_flux_sqr);
+
+            static float eta_factor_avg_test = 0.0f;
+            eta_factor_avg_test += 0.001f * (eta_factor - eta_factor_avg_test);
 
             // alpha-beta vector operations
             for (int i = 0; i <= 1; ++i) {
@@ -1169,6 +1175,12 @@ static void update_rotor(Motor_t* motor) {
             sensorless->pll_pos = wrap_pm_pi(sensorless->pll_pos + current_meas_period * sensorless->pll_kp * delta_phase);
             // update PLL velocity
             sensorless->pll_vel += current_meas_period * sensorless->pll_ki * delta_phase;
+
+            //TODO TEMP TEST HACK
+            static int trigger_ctr = 0;
+            if (++trigger_ctr >= 5*current_meas_hz) {
+                trigger_ctr = 0;
+            }
 
         } break;
         default:

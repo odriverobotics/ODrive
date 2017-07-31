@@ -77,6 +77,8 @@ typedef struct {
     float flux_state[2]; // [Vs]
     float V_alpha_beta_memory[2]; // [V]
     float pm_flux_linkage; // [V / (rad/s)]
+    bool estimator_good;
+    // bool pll_good;
 } Sensorless_t;
 
 typedef struct {
