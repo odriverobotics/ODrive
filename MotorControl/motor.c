@@ -1,5 +1,8 @@
 #include <motor.h>
 
+#include <tim.h>
+#include <spi.h>
+
 // TODO: Migrate to C++, clearly we are actually doing object oriented code here...
 // TODO: For nice encapsulation, consider not having the motor objects public
 Motor_t motors[] = {
