@@ -4,6 +4,9 @@
         "spi.h": "c",
         "gpio.h": "c",
         "type_traits": "cpp",
-        "utility": "c"
+        "utility": "c",
+        "low_level.h": "c",
+        "motor.h": "c",
+        "math.h": "c"
     }
 }
