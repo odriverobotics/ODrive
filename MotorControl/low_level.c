@@ -459,14 +459,9 @@ static void update_rotor(Motor_t *motor)
 
     switch (motor->rotor_mode)
     {
-    case ROTOR_MODE_ENCODER:
-        update_encoder(motor);
-        break;
-    case ROTOR_MODE_RUN_ENCODER_TEST_SENSORLESS:
-        update_encoder(motor); // If we're testing, we want both encoder and sensorless
-    case ROTOR_MODE_SENSORLESS:
-        update_sensorless(motor);
-        break;
+    case ROTOR_MODE_ENCODER: update_encoder(motor); break;
+    case ROTOR_MODE_RUN_ENCODER_TEST_SENSORLESS: update_encoder(motor); // If we're testing, we want both encoder and sensorless
+    case ROTOR_MODE_SENSORLESS: update_sensorless(motor); break;
     default:
         //TODO error handling
         break;
