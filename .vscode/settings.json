@@ -7,6 +7,10 @@
         "utility": "c",
         "low_level.h": "c",
         "motor.h": "c",
-        "math.h": "c"
+        "math.h": "c",
+        "encoder.h": "c",
+        "xutility": "c",
+        "odrive_commands.h": "c",
+        "odrive_sensorless.h": "c"
     }
 }

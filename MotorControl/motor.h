@@ -2,9 +2,10 @@
 
 #include <cmsis_os.h>
 #include <drv8301.h>
-#include <sensorless.h>
+#include <odrive_constants.h>
+#include <odrive_sensorless.h>
 #include <encoder.h>
-#include <motor_error.h>
+#include <odrive_error.h>
 
 typedef enum {
     M_SIGNAL_PH_CURRENT_MEAS = 1u << 0
@@ -19,21 +20,23 @@ typedef enum {
     CTRL_MODE_POSITION_CONTROL
 } Motor_control_mode_t;
 
-typedef struct {
+typedef struct
+{
     float phB;
     float phC;
 } Iph_BC_t;
 
-typedef struct {
-    float current_lim; // [A]
-    float p_gain; // [V/A]
-    float i_gain; // [V/As]
+typedef struct
+{
+    float current_lim;                  // [A]
+    float p_gain;                       // [V/A]
+    float i_gain;                       // [V/As]
     float v_current_control_integral_d; // [V]
     float v_current_control_integral_q; // [V]
-    float Ibus; // DC bus current [A]
+    float Ibus;                         // DC bus current [A]
     // Voltage applied at end of cycle:
     float final_v_alpha; // [V]
-    float final_v_beta; // [V]
+    float final_v_beta;  // [V]
 } Current_control_t;
 
 typedef enum {
@@ -43,7 +46,8 @@ typedef enum {
 } Rotor_mode_t;
 
 #define TIMING_LOG_SIZE 16
-typedef struct {
+typedef struct
+{
     Motor_control_mode_t control_mode;
     bool enable_step_dir;
     float counts_per_step;
@@ -64,7 +68,7 @@ typedef struct {
     bool enable_control; // enable/disable via usb to start motor control. will be set to false again in case of errors.requires calibration_ok=true
     bool do_calibration; //  trigger motor calibration. will be reset to false after self test
     bool calibration_ok;
-    TIM_HandleTypeDef* motor_timer;
+    TIM_HandleTypeDef *motor_timer;
     uint16_t next_timings[3];
     uint16_t control_deadline;
     uint16_t last_cpu_time;
@@ -77,10 +81,26 @@ typedef struct {
     Current_control_t current_control;
     Rotor_mode_t rotor_mode;
     Encoder_t encoder;
-    Sensorless_t sensorless;
+    ODrive_Sensorless_t sensorless;
     int timing_log_index;
     uint16_t timing_log[TIMING_LOG_SIZE];
 } Motor_t;
 
-extern Motor_t motors[];
+// Functions
+bool motor_calibration(Motor_t *motor);
+void calculate_current_gains(Motor_t *motor);
+bool calculate_pll_gains(Motor_t *motor);
+
+bool measure_phase_resistance(Motor_t *motor, float test_current, float max_voltage);
+bool measure_phase_inductance(Motor_t *motor, float voltage_low, float voltage_high);
+bool calib_enc_offset(Motor_t *motor, float voltage_magnitude);
+
+uint16_t check_timing(Motor_t *motor);
+
+void queue_voltage_timings(Motor_t *motor, float v_alpha, float v_beta);
+void queue_modulation_timings(Motor_t *motor, float mod_alpha, float mod_beta);
+
+void scan_motor_loop(Motor_t *motor, float omega, float voltage_magnitude);
+
+extern Motor_t motors[2];
 extern const int num_motors;
