@@ -823,7 +823,7 @@ static bool measure_phase_resistance(Motor_t* motor, float test_current, float m
             motor->error = ERROR_PHASE_RESISTANCE_MEASUREMENT_TIMEOUT;
             return false;
         }
-        float Ialpha = -0.5f * (motor->current_meas.phB + motor->current_meas.phC);
+        float Ialpha = -(motor->current_meas.phB + motor->current_meas.phC);
         test_voltage += (kI * CURRENT_MEAS_PERIOD) * (test_current - Ialpha);
         if (test_voltage > max_voltage) test_voltage = max_voltage;
         if (test_voltage < -max_voltage) test_voltage = -max_voltage;
