@@ -7,6 +7,9 @@
 #include <encoder.h>
 #include <odrive_error.h>
 
+
+#define MAX_NUM_MOTORS (2)
+
 typedef enum {
     M_SIGNAL_PH_CURRENT_MEAS = 1u << 0
 } Motor_thread_signals_t;
@@ -102,5 +105,5 @@ void queue_modulation_timings(Motor_t *motor, float mod_alpha, float mod_beta);
 
 void scan_motor_loop(Motor_t *motor, float omega, float voltage_magnitude);
 
-extern Motor_t motors[2];
+extern Motor_t motors[MAX_NUM_MOTORS];
 extern const int num_motors;
