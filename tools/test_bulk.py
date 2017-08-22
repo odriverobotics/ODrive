@@ -38,12 +38,17 @@ def main(args):
     time.sleep(0.1)
     try:
       command = input("Enter ODrive command:\n")
-      dev.send(command)
+      if 'q' in command:
+        running = False
+        sys.exit()
+      else:
+        dev.send(command)
     except:
       running = False
 
 def recieve_thread(dev):
   global ready
+
   while running:
     time.sleep(0.1)
     try:
