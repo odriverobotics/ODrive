@@ -110,7 +110,7 @@ class ODriveBulkDevice():
 
   def recieve(self, bufferLen):
     try:
-      ret = self.epr.read(bufferLen, 0)
+      ret = self.epr.read(bufferLen, 100)
       return ret
     except usb.core.USBError:
       #return -1
@@ -120,4 +120,4 @@ class ODriveBulkDevice():
     return 64
 
   def recieve_max(self):
-    return 64
+    return 256
