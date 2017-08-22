@@ -901,7 +901,7 @@ void motor_thread(void const *argument)
             if (motor->rotor_mode == ROTOR_MODE_SENSORLESS)
                 spin_up_ok = spin_up_sensorless(motor);
             if (spin_up_ok)
-                control_motor_loop(motor);
+                control_motor_loop(motor);  // This doesn't return until motor->enable_control is false, or there's an error.
 
             __HAL_TIM_MOE_DISABLE_UNCONDITIONALLY(motor->motor_timer);
             motor->enable_step_dir = false;

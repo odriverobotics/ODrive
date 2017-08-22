@@ -258,4 +258,79 @@ void motor_parse_cmd(uint8_t *buffer, int len)
             print_monitoring(limit);
         }
     }
+    else if (buffer[0] == 'e')
+    {
+        // Check for Errors
+        ODrive_Error_t err;
+        for (int i = 0; i < num_motors; i++)
+        {
+            err = motors[i].error;
+
+            printf("Motor %d: ", i);
+            switch (err)
+            {
+            case ERROR_NO_ERROR:
+                printf("No Error");
+                break;
+            case ERROR_PHASE_RESISTANCE_TIMING:
+                printf("Phase Resistance Timing");
+                break;
+            case ERROR_PHASE_RESISTANCE_MEASUREMENT_TIMEOUT:
+                printf("Phase Resistance Measurement Timeout");
+                break;
+            case ERROR_PHASE_RESISTANCE_OUT_OF_RANGE:
+                printf("Phase Resistance Out of Range");
+                break;
+            case ERROR_PHASE_INDUCTANCE_TIMING:
+                printf("Phase Inductance Timing");
+                break;
+            case ERROR_PHASE_INDUCTANCE_MEASUREMENT_TIMEOUT:
+                printf("Phase Inductance Measurement Timeout");
+                break;
+            case ERROR_PHASE_INDUCTANCE_OUT_OF_RANGE:
+                printf("Inductance Out of Range");
+                break;
+            case ERROR_ENCODER_RESPONSE:
+                printf("Encoder Response");
+                break;
+            case ERROR_ENCODER_MEASUREMENT_TIMEOUT:
+                printf("Encoder Measurement Timeout");
+                break;
+            case ERROR_ADC_FAILED:
+                printf("ADC Failed");
+                break;
+            case ERROR_CALIBRATION_TIMING:
+                printf("Calibration Timing");
+                break;
+            case ERROR_FOC_TIMING:
+                printf("FOC Timing");
+                break;
+            case ERROR_FOC_MEASUREMENT_TIMEOUT:
+                printf("FOC Measurement Timeout");
+                break;
+            case ERROR_SCAN_MOTOR_TIMING:
+                printf("Scan Motor Timing");
+                break;
+            case ERROR_FOC_VOLTAGE_TIMING:
+                printf("FOC Voltage Timing");
+                break;
+            case ERROR_GATEDRIVER_INVALID_GAIN:
+                printf("Gate Driver Invalid Gain");
+                break;
+            case ERROR_PWM_SRC_FAIL:
+                printf("PWM SRC Fail");
+                break;
+            case ERROR_UNEXPECTED_STEP_SRC:
+                printf("Unexpected Step SRC");
+                break;
+            case ERROR_POS_CTRL_DURING_SENSORLESS:
+                printf("POS Control During Sensorless");
+                break;
+            case ERROR_SPIN_UP_TIMEOUT:
+                printf("Spinup Timeout");
+                break;
+            }
+            printf("\n");
+        }
+    }
 }
