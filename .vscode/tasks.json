@@ -7,9 +7,18 @@
             "taskName": "build",
             "type": "shell",
             "command": "make -j4",
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
             "problemMatcher": [
                 "$gcc"
             ]
+        },
+        {
+            "taskName": "flash",
+            "type": "shell",
+            "command": "make flash"
         }
     ]
 }
