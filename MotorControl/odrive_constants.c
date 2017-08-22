@@ -2,7 +2,7 @@
 #include <main.h>
 
 float elec_rad_per_enc = POLE_PAIRS * 2 * M_PI * (1.0f / (float)ENCODER_CPR);
-float brake_resistance = 0.47f; // [ohm]
+float brake_resistance = BRAKE_RESISTANCE; // [ohm]
 
 static const float current_meas_period = CURRENT_MEAS_PERIOD;
 static const int current_meas_hz = CURRENT_MEAS_HZ;

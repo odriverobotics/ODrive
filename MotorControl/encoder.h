@@ -2,6 +2,7 @@
 
 #include <drv8301.h>
 #include <odrive_constants.h>
+#include <odrive_configuration.h>
 
 typedef struct
 {

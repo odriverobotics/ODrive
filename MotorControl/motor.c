@@ -10,12 +10,13 @@
 #include <utils.h>
 
 const int num_motors = sizeof(motors) / sizeof(motors[0]);
+
 // TODO: Migrate to C++, clearly we are actually doing object oriented code here...
 // TODO: For nice encapsulation, consider not having the motor objects public
 Motor_t motors[] = {
     {
         // M0
-        .control_mode = CTRL_MODE_VELOCITY_CONTROL, //see: Motor_control_mode_t
+        .control_mode = AXIS_0_CONTROL_MODE, //see: Motor_control_mode_t
         .enable_step_dir = false,                   //auto enabled after calibration
         .counts_per_step = 2.0f,
         .error = ERROR_NO_ERROR,

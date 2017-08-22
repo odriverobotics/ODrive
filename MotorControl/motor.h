@@ -3,6 +3,7 @@
 #include <cmsis_os.h>
 #include <drv8301.h>
 #include <odrive_constants.h>
+#include <odrive_configuration.h>
 #include <odrive_sensorless.h>
 #include <encoder.h>
 #include <odrive_error.h>
