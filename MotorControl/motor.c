@@ -17,7 +17,7 @@ Motor_t motors[] = {
     {
         // M0
         .control_mode = AXIS_0_CONTROL_MODE, //see: Motor_control_mode_t
-        .enable_step_dir = false,                   //auto enabled after calibration
+        .enable_step_dir = false,            //auto enabled after calibration
         .counts_per_step = 2.0f,
         .error = ERROR_NO_ERROR,
         .pos_setpoint = 0.0f,
@@ -175,9 +175,8 @@ Motor_t motors[] = {
      .timing_log_index = 0,
      .timing_log = {0}}};
 
-bool motor_calibration(Motor_t *motor)
+bool calibrate_motor(Motor_t *motor)
 {
-    motor->calibration_ok = false;
     motor->error = ERROR_NO_ERROR;
 
     // #warning(hardcoded values for SK3-5065-280kv!)
@@ -201,7 +200,6 @@ bool motor_calibration(Motor_t *motor)
         return false;
     }
 
-    motor->calibration_ok = true;
     return true;
 }
 
@@ -237,7 +235,6 @@ bool calculate_pll_gains(Motor_t *motor)
 }
 
 // TODO check Ibeta balance to verify good motor connection
-// Melon Refactor - Good
 bool measure_phase_resistance(Motor_t *motor, float test_current, float max_voltage)
 {
     static const float kI = 10.0f;                          //[(V/s)/A]

@@ -91,7 +91,7 @@ typedef struct
 } Motor_t;
 
 // Functions
-bool motor_calibration(Motor_t *motor);
+bool calibrate_motor(Motor_t *motor);
 void calculate_current_gains(Motor_t *motor);
 bool calculate_pll_gains(Motor_t *motor);
 

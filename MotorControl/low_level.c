@@ -884,7 +884,7 @@ void motor_thread(void const *argument)
         if (motor->do_calibration)
         {
             __HAL_TIM_MOE_ENABLE(motor->motor_timer); // enable pwm outputs
-            motor_calibration(motor);
+            motor->calibration_ok = calibrate_motor(motor);
             if (!motor->calibration_ok)
             {
                 __HAL_TIM_MOE_DISABLE_UNCONDITIONALLY(motor->motor_timer); // disables pwm outputs
