@@ -1,7 +1,7 @@
 #pragma once
 
 #include <utils.h>
-#include <odrive_configuration.h>
+#include <configuration.h>
 
 #define ONE_BY_SQRT3                (0.57735026919f)
 #define sqrt3_by_2                  (0.86602540378f)

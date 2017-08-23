@@ -7,9 +7,9 @@
 /* Includes ------------------------------------------------------------------*/
 #include <cmsis_os.h>
 #include <motor.h>
-#include <odrive_constants.h>
-#include <odrive_configuration.h>
-#include <odrive_commands.h>
+#include <constants.h>
+#include <configuration.h>
+#include <commands.h>
 #include <controller.h>
 //default timeout waiting for phase measurement signals
 

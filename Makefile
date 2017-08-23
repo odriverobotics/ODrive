@@ -80,9 +80,9 @@ C_SOURCES = \
   MotorControl/utils.c \
   MotorControl/low_level.c \
   MotorControl/motor.c \
-  MotorControl/odrive_constants.c \
+  MotorControl/constants.c \
   MotorControl/controller.c \
-  MotorControl/odrive_commands.c
+  MotorControl/commands.c
 ASM_SOURCES = \
   startup/startup_stm32f405xx.s
 

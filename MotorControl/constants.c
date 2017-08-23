@@ -1,4 +1,4 @@
-#include <odrive_constants.h>
+#include <constants.h>
 #include <main.h>
 
 float elec_rad_per_enc = POLE_PAIRS * 2 * M_PI * (1.0f / (float)ENCODER_CPR);

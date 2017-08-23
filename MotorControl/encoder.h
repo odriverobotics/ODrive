@@ -1,8 +1,8 @@
 #pragma once
 
 #include <drv8301.h>
-#include <odrive_constants.h>
-#include <odrive_configuration.h>
+#include <constants.h>
+#include <configuration.h>
 
 typedef struct
 {

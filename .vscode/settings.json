@@ -10,8 +10,9 @@
         "math.h": "c",
         "encoder.h": "c",
         "xutility": "c",
-        "odrive_commands.h": "c",
-        "odrive_sensorless.h": "c",
-        "usbd_cdc_if.h": "c"
+        "commands.h": "c",
+        "sensorless.h": "c",
+        "usbd_cdc_if.h": "c",
+        "drv8301.h": "c"
     }
 }
