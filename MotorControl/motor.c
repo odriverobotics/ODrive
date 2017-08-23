@@ -256,8 +256,7 @@ bool measure_phase_resistance(Motor_t *motor, float test_current, float max_volt
         queue_voltage_timings(motor, test_voltage, 0.0f);
 
         // Check we meet deadlines after queueing
-        motor->last_cpu_time = check_timing(motor);
-        if (!(motor->last_cpu_time < motor->control_deadline))
+        if (!check_deadlines(motor))
         {
             motor->error = ERROR_PHASE_RESISTANCE_TIMING;
             return false;
@@ -297,10 +296,9 @@ bool measure_phase_inductance(Motor_t *motor, float voltage_low, float voltage_h
 
             // Test voltage along phase A
             queue_voltage_timings(motor, test_voltages[i], 0.0f);
-
+            
             // Check we meet deadlines after queueing
-            motor->last_cpu_time = check_timing(motor);
-            if (!(motor->last_cpu_time < motor->control_deadline))
+            if (!check_deadlines(motor))
             {
                 motor->error = ERROR_PHASE_INDUCTANCE_TIMING;
                 return false;
@@ -462,4 +460,13 @@ uint16_t check_timing(Motor_t *motor)
     motor->timing_log[motor->timing_log_index] = timing;
 
     return timing;
+}
+
+bool check_deadlines(Motor_t *motor)
+{
+    // Check we meet deadlines after queueing
+    motor->last_cpu_time = check_timing(motor);
+    if (!(motor->last_cpu_time < motor->control_deadline))
+        return false;
+    return true;
 }

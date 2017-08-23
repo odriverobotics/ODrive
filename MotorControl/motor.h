@@ -106,5 +106,7 @@ void queue_modulation_timings(Motor_t *motor, float mod_alpha, float mod_beta);
 
 void scan_motor_loop(Motor_t *motor, float omega, float voltage_magnitude);
 
+bool check_deadlines(Motor_t* motor);
+
 extern Motor_t motors[MAX_NUM_MOTORS];
 extern const int num_motors;
