@@ -6,11 +6,11 @@
 
 /* Includes ------------------------------------------------------------------*/
 #include <cmsis_os.h>
-#include <motor.h>
-#include <constants.h>
-#include <configuration.h>
 #include <commands.h>
+#include <configuration.h>
+#include <constants.h>
 #include <controller.h>
+#include <motor.h>
 //default timeout waiting for phase measurement signals
 
 /* Exported types ------------------------------------------------------------*/
@@ -28,4 +28,4 @@ void control_motor_loop(Motor_t *motor);
 //@TODO move motor thread to high level file
 void motor_thread(void const *argument);
 
-#endif //__LOW_LEVEL_H
+#endif  //__LOW_LEVEL_H

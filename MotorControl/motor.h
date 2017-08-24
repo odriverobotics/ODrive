@@ -1,13 +1,12 @@
 #pragma once
 
 #include <cmsis_os.h>
-#include <drv8301.h>
-#include <constants.h>
 #include <configuration.h>
-#include <sensorless.h>
+#include <constants.h>
+#include <drv8301.h>
 #include <encoder.h>
 #include <error.h>
-
+#include <sensorless.h>
 
 #define MAX_NUM_MOTORS (2)
 
@@ -32,21 +31,21 @@ typedef struct
 
 typedef struct
 {
-    float current_lim;                  // [A]
-    float p_gain;                       // [V/A]
-    float i_gain;                       // [V/As]
-    float v_current_control_integral_d; // [V]
-    float v_current_control_integral_q; // [V]
-    float Ibus;                         // DC bus current [A]
+    float current_lim;                   // [A]
+    float p_gain;                        // [V/A]
+    float i_gain;                        // [V/As]
+    float v_current_control_integral_d;  // [V]
+    float v_current_control_integral_q;  // [V]
+    float Ibus;                          // DC bus current [A]
     // Voltage applied at end of cycle:
-    float final_v_alpha; // [V]
-    float final_v_beta;  // [V]
+    float final_v_alpha;  // [V]
+    float final_v_beta;   // [V]
 } Current_control_t;
 
 typedef enum {
     ROTOR_MODE_ENCODER,
     ROTOR_MODE_SENSORLESS,
-    ROTOR_MODE_RUN_ENCODER_TEST_SENSORLESS //Run on encoder, but still run estimator for testing
+    ROTOR_MODE_RUN_ENCODER_TEST_SENSORLESS  //Run on encoder, but still run estimator for testing
 } Rotor_mode_t;
 
 #define TIMING_LOG_SIZE 16
@@ -69,8 +68,8 @@ typedef struct
     float phase_resistance;
     osThreadId motor_thread;
     bool thread_ready;
-    bool enable_control; // enable/disable via usb to start motor control. will be set to false again in case of errors.requires calibration_ok=true
-    bool do_calibration; //  trigger motor calibration. will be reset to false after self test
+    bool enable_control;  // enable/disable via usb to start motor control. will be set to false again in case of errors.requires calibration_ok=true
+    bool do_calibration;  //  trigger motor calibration. will be reset to false after self test
     bool calibration_ok;
     TIM_HandleTypeDef *motor_timer;
     uint16_t next_timings[3];
@@ -79,9 +78,9 @@ typedef struct
     Iph_BC_t current_meas;
     Iph_BC_t DC_calib;
     DRV8301_Obj gate_driver;
-    DRV_SPI_8301_Vars_t gate_driver_regs; //Local view of DRV registers
+    DRV_SPI_8301_Vars_t gate_driver_regs;  //Local view of DRV registers
     float shunt_conductance;
-    float phase_current_rev_gain; //Reverse gain for ADC to Amps
+    float phase_current_rev_gain;  //Reverse gain for ADC to Amps
     Current_control_t current_control;
     Rotor_mode_t rotor_mode;
     Encoder_t encoder;
@@ -106,7 +105,7 @@ void queue_modulation_timings(Motor_t *motor, float mod_alpha, float mod_beta);
 
 void scan_motor_loop(Motor_t *motor, float omega, float voltage_magnitude);
 
-bool check_deadlines(Motor_t* motor);
+bool check_deadlines(Motor_t *motor);
 
 extern Motor_t motors[MAX_NUM_MOTORS];
 extern const int num_motors;

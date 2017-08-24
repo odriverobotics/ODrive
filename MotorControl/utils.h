@@ -22,4 +22,4 @@ int SVM(float alpha, float beta, float *tA, float *tB, float *tC);
 float wrap_pm_pi(float theta);
 float fast_atan2(float y, float x);
 
-#endif //__UTILS_H
+#endif  //__UTILS_H

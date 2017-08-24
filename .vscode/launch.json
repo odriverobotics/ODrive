@@ -1,0 +1,13 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Debug",
+            "type": "gdb",
+            "request": "attach",
+            "target": "./bin/executable",
+            "cwd": "${workspaceRoot}"
+            
+        }
+    ]
+}

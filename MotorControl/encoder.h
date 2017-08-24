@@ -1,15 +1,15 @@
 #pragma once
 
-#include <drv8301.h>
-#include <constants.h>
 #include <configuration.h>
+#include <constants.h>
+#include <drv8301.h>
 
 typedef struct
 {
     TIM_HandleTypeDef *encoder_timer;
     int encoder_offset;
     int encoder_state;
-    int motor_dir; // 1/-1 for fwd/rev alignment to encoder.
+    int motor_dir;  // 1/-1 for fwd/rev alignment to encoder.
     float phase;
     float pll_pos;
     float pll_vel;

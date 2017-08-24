@@ -15,5 +15,5 @@
         "usbd_cdc_if.h": "c",
         "drv8301.h": "c"
     },
-        "C_Cpp.clang_format_style": "{ BasedOnStyle: Google, IndentWidth: 4 }"
+        "C_Cpp.clang_format_style": "{ BasedOnStyle: Google, IndentWidth: 4, ColumnLimit: 0 }"
     }

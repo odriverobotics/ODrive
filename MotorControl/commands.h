@@ -2,8 +2,7 @@
 
 #include <cmsis_os.h>
 
-typedef struct
-{
+typedef struct {
     int type;
     int index;
 } monitoring_slot;

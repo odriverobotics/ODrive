@@ -1,138 +1,121 @@
-#include <utils.h>
 #include <math.h>
+#include <utils.h>
 
 static const float ONE_BY_SQRT3 = 0.57735026919f;
 static const float two_by_sqrt3 = 1.15470053838f;
 
-int SVM(float alpha, float beta, float *tA, float *tB, float *tC)
-{
+int SVM(float alpha, float beta, float *tA, float *tB, float *tC) {
     int Sextant;
 
-    if (beta >= 0.0f)
-    {
-        if (alpha >= 0.0f)
-        {
+    if (beta >= 0.0f) {
+        if (alpha >= 0.0f) {
             //quadrant I
             if (ONE_BY_SQRT3 * beta > alpha)
-                Sextant = 2; //sextant v2-v3
+                Sextant = 2;  //sextant v2-v3
             else
-                Sextant = 1; //sextant v1-v2
-        }
-        else
-        {
+                Sextant = 1;  //sextant v1-v2
+        } else {
             //quadrant II
             if (-ONE_BY_SQRT3 * beta > alpha)
-                Sextant = 3; //sextant v3-v4
+                Sextant = 3;  //sextant v3-v4
             else
-                Sextant = 2; //sextant v2-v3
+                Sextant = 2;  //sextant v2-v3
         }
-    }
-    else
-    {
-        if (alpha >= 0.0f)
-        {
+    } else {
+        if (alpha >= 0.0f) {
             //quadrant IV
             if (-ONE_BY_SQRT3 * beta > alpha)
-                Sextant = 5; //sextant v5-v6
+                Sextant = 5;  //sextant v5-v6
             else
-                Sextant = 6; //sextant v6-v1
-        }
-        else
-        {
+                Sextant = 6;  //sextant v6-v1
+        } else {
             //quadrant III
             if (ONE_BY_SQRT3 * beta > alpha)
-                Sextant = 4; //sextant v4-v5
+                Sextant = 4;  //sextant v4-v5
             else
-                Sextant = 5; //sextant v5-v6
+                Sextant = 5;  //sextant v5-v6
         }
     }
 
-    switch (Sextant)
-    {
-    // sextant v1-v2
-    case 1:
-    {
-        // Vector on-times
-        float t1 = alpha - ONE_BY_SQRT3 * beta;
-        float t2 = two_by_sqrt3 * beta;
+    switch (Sextant) {
+        // sextant v1-v2
+        case 1: {
+            // Vector on-times
+            float t1 = alpha - ONE_BY_SQRT3 * beta;
+            float t2 = two_by_sqrt3 * beta;
 
-        // PWM timings
-        *tA = (1.0f - t1 - t2) * 0.5f;
-        *tB = *tA + t1;
-        *tC = *tB + t2;
+            // PWM timings
+            *tA = (1.0f - t1 - t2) * 0.5f;
+            *tB = *tA + t1;
+            *tC = *tB + t2;
 
-        break;
-    }
-    // sextant v2-v3
-    case 2:
-    {
-        // Vector on-times
-        float t2 = alpha + ONE_BY_SQRT3 * beta;
-        float t3 = -alpha + ONE_BY_SQRT3 * beta;
+            break;
+        }
+        // sextant v2-v3
+        case 2: {
+            // Vector on-times
+            float t2 = alpha + ONE_BY_SQRT3 * beta;
+            float t3 = -alpha + ONE_BY_SQRT3 * beta;
 
-        // PWM timings
-        *tB = (1.0f - t2 - t3) * 0.5f;
-        *tA = *tB + t3;
-        *tC = *tA + t2;
+            // PWM timings
+            *tB = (1.0f - t2 - t3) * 0.5f;
+            *tA = *tB + t3;
+            *tC = *tA + t2;
 
-        break;
-    }
-    // sextant v3-v4
-    case 3:
-    {
-        // Vector on-times
-        float t3 = two_by_sqrt3 * beta;
-        float t4 = -alpha - ONE_BY_SQRT3 * beta;
+            break;
+        }
+        // sextant v3-v4
+        case 3: {
+            // Vector on-times
+            float t3 = two_by_sqrt3 * beta;
+            float t4 = -alpha - ONE_BY_SQRT3 * beta;
 
-        // PWM timings
-        *tB = (1.0f - t3 - t4) * 0.5f;
-        *tC = *tB + t3;
-        *tA = *tC + t4;
+            // PWM timings
+            *tB = (1.0f - t3 - t4) * 0.5f;
+            *tC = *tB + t3;
+            *tA = *tC + t4;
 
-        break;
-    }
-    // sextant v4-v5
-    case 4:
-    {
-        // Vector on-times
-        float t4 = -alpha + ONE_BY_SQRT3 * beta;
-        float t5 = -two_by_sqrt3 * beta;
+            break;
+        }
+        // sextant v4-v5
+        case 4: {
+            // Vector on-times
+            float t4 = -alpha + ONE_BY_SQRT3 * beta;
+            float t5 = -two_by_sqrt3 * beta;
 
-        // PWM timings
-        *tC = (1.0f - t4 - t5) * 0.5f;
-        *tB = *tC + t5;
-        *tA = *tB + t4;
+            // PWM timings
+            *tC = (1.0f - t4 - t5) * 0.5f;
+            *tB = *tC + t5;
+            *tA = *tB + t4;
 
-        break;
-    }
-    // sextant v5-v6
-    case 5:
-    {
-        // Vector on-times
-        float t5 = -alpha - ONE_BY_SQRT3 * beta;
-        float t6 = alpha - ONE_BY_SQRT3 * beta;
+            break;
+        }
+        // sextant v5-v6
+        case 5: {
+            // Vector on-times
+            float t5 = -alpha - ONE_BY_SQRT3 * beta;
+            float t6 = alpha - ONE_BY_SQRT3 * beta;
 
-        // PWM timings
-        *tC = (1.0f - t5 - t6) * 0.5f;
-        *tA = *tC + t5;
-        *tB = *tA + t6;
+            // PWM timings
+            *tC = (1.0f - t5 - t6) * 0.5f;
+            *tA = *tC + t5;
+            *tB = *tA + t6;
 
-        break;
-    }
-    // sextant v6-v1
-    case 6:
-    {
-        // Vector on-times
-        float t6 = -two_by_sqrt3 * beta;
-        float t1 = alpha + ONE_BY_SQRT3 * beta;
+            break;
+        }
+        // sextant v6-v1
+        case 6: {
+            // Vector on-times
+            float t6 = -two_by_sqrt3 * beta;
+            float t1 = alpha + ONE_BY_SQRT3 * beta;
 
-        // PWM timings
-        *tA = (1.0f - t6 - t1) * 0.5f;
-        *tC = *tA + t1;
-        *tB = *tC + t6;
+            // PWM timings
+            *tA = (1.0f - t6 - t1) * 0.5f;
+            *tC = *tA + t1;
+            *tB = *tC + t6;
 
-        break;
-    }
+            break;
+        }
     }
 
     int retval = 0;
@@ -143,8 +126,7 @@ int SVM(float alpha, float beta, float *tA, float *tB, float *tC)
 }
 
 //beware of inserting large angles!
-float wrap_pm_pi(float theta)
-{
+float wrap_pm_pi(float theta) {
     while (theta >= M_PI)
         theta -= (2.0f * M_PI);
     while (theta < -M_PI)
@@ -153,8 +135,7 @@ float wrap_pm_pi(float theta)
 }
 
 // based on https://math.stackexchange.com/a/1105038/81278
-float fast_atan2(float y, float x)
-{
+float fast_atan2(float y, float x) {
     // a := min (|x|, |y|) / max (|x|, |y|)
     float abs_y = fabsf(y);
     float abs_x = fabsf(x);
