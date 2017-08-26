@@ -18,6 +18,7 @@ There is also [ODriveFPGA](https://github.com/madcowswe/ODriveFPGA), which conta
 - [Communicating over USB](#communicating-over-usb)
 - [Generating startup code](#generating-startup-code)
 - [Setting up Eclipse development environment](#setting-up-eclipse-development-environment)
+- [Notes for Contributors](#notes-for-contributors)
 
 <!-- /MarkdownTOC -->
 
@@ -224,8 +225,10 @@ There is an excellent project called CubeMX2Makefile, originally from baoshi. Th
 * Set beakpoints, step, hit Resume, etc.
 * Make some cool features! ;D
 
+## Notes for Contributors
+In general the project uses the [Google C++ Style Guide](https://google.github.io/styleguide/cppguide.html), except that the default indendtation is 4 spaces, and that the 80 character limit is not very strictly enforced, merely encouraged.
 
-## Code maintenance notes
+### Code maintenance notes
 The cortex M4F processor has hardware single precision float unit. However double precision operations are not accelerated, and hence should be avoided. The following regex is helpful for cleaning out double constants:
 find: `([-+]?[0-9]+\.[0-9]+(?:[eE][-+]?[0-9]+)?)([^f0-9e])`
 replace: `\1f\2`
