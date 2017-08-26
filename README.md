@@ -91,6 +91,9 @@ TODO
 
 ### Building the firmware
 * Make sure you have cloned the repository.
+ * For v3.3, you should use the [v3.3-pinout](https://github.com/madcowswe/ODriveFirmware/tree/v3.3-pinout) branch.
+ * For other versions you should use master
+ * In the near future this will be controlled with a preprocessor switch, but is done with branches for now.
 * Navigate your terminal (bash/cygwin) to the ODriveFirmware dir.
 * Run `make` in the root of this repository.
 
