@@ -265,7 +265,7 @@ bool measure_phase_resistance(Motor_t *motor, float test_current,
             motor->error = ERROR_PHASE_RESISTANCE_MEASUREMENT_TIMEOUT;
             return false;
         }
-        float Ialpha = -0.5f * (motor->current_meas.phB + motor->current_meas.phC);
+        float Ialpha = -(motor->current_meas.phB + motor->current_meas.phC);
         test_voltage += (kI * get_current_meas_period()) * (test_current - Ialpha);
         test_voltage = MACRO_CONSTRAIN(test_voltage, -max_voltage, max_voltage);
 
