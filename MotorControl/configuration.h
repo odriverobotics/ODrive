@@ -1,5 +1,11 @@
 #pragma once
 
+#include "boards.h"
+
+#ifndef MOTHERBOARD
+    #define MOTHERBOARD BOARD_ODRIVE_V3_2
+#endif
+
 // Mandatory Parameters
 #define ENCODER_PPR (600)
 #define POLE_PAIRS (7.0f)

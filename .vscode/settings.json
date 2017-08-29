@@ -13,7 +13,9 @@
         "commands.h": "c",
         "sensorless.h": "c",
         "usbd_cdc_if.h": "c",
-        "drv8301.h": "c"
+        "drv8301.h": "c",
+        "adc.h": "c",
+        "configuration.h": "c"
     },
         "C_Cpp.clang_format_style": "{ BasedOnStyle: Google, IndentWidth: 4, ColumnLimit: 0 }"
     }

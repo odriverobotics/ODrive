@@ -40,6 +40,16 @@
 #endif 
 
 /* Includes ------------------------------------------------------------------*/
+#include "boards.h"
+#include "configuration.h"
+
+#if MB(ODRIVE_V3_3)
+#include "stm32f4xx_it_ODRIVE_V3_3.h"
+#elif MB(ODRIVE_V3_2)
+#include "stm32f4xx_it_ODRIVE_V3_2.h"
+#elif MB(ODRIVE_V3_1)
+#include "stm32f4xx_it_ODRIVE_V3_2.h"
+#else
 /* Exported types ------------------------------------------------------------*/
 /* Exported constants --------------------------------------------------------*/
 /* Exported macro ------------------------------------------------------------*/
@@ -56,6 +66,8 @@ void EXTI2_IRQHandler(void);
 void EXTI4_IRQHandler(void);
 void ADC_IRQHandler(void);
 void OTG_FS_IRQHandler(void);
+
+#endif /* if MB(board) */
 
 #ifdef __cplusplus
 }

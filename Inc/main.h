@@ -51,7 +51,16 @@
   /* Includes ------------------------------------------------------------------*/
 
 /* USER CODE BEGIN Includes */
+#include "boards.h"
+#include "configuration.h"
 
+#if MB(ODRIVE_V3_3)
+#include "main_ODRIVE_V3_3.h"
+#elif MB(ODRIVE_V3_2)
+#include "main_ODRIVE_V3_2.h"
+#elif MB(ODRIVE_V3_1)
+#include "main_ODRIVE_V3_2.h"
+#else
 /* USER CODE END Includes */
 
 /* Private define ------------------------------------------------------------*/
@@ -149,6 +158,7 @@
 #define M1_ENC_B_GPIO_Port GPIOB
 
 /* USER CODE BEGIN Private defines */
+#endif
 
 #define CURRENT_MEAS_PERIOD ((float)(2*TIM_1_8_PERIOD_CLOCKS)/(float)TIM_1_8_CLOCK_HZ)
 #define CURRENT_MEAS_HZ (TIM_1_8_CLOCK_HZ/(2*TIM_1_8_PERIOD_CLOCKS))

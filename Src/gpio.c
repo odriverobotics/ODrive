@@ -51,6 +51,16 @@
 #include "gpio.h"
 /* USER CODE BEGIN 0 */
 #include "low_level.h"
+#include "boards.h"
+#include "configuration.h"
+
+#if MB(ODRIVE_V3_3)
+#include "gpio_ODRIVE_V3_3.c"
+#elif MB(ODRIVE_V3_2)
+#include "gpio_ODRIVE_V3_2.c"
+#elif MB(ODRIVE_V3_1)
+#include "gpio_ODRIVE_V3_2.c"
+#else
 /* USER CODE END 0 */
 
 /*----------------------------------------------------------------------------*/
@@ -148,6 +158,7 @@ void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 2 */
+#endif // End GPIO Include
 
 //Dispatch processing of external interrupts based on source
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin) {
