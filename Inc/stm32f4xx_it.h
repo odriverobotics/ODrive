@@ -35,9 +35,16 @@
 #ifndef __STM32F4xx_IT_H
 #define __STM32F4xx_IT_H
 
+/* USER CODE BEGIN 0 */
 #include "boards.h"
 #include "configuration.h"
+/* USER CODE END 0 */
 
+#ifdef __cplusplus
+ extern "C" {
+#endif 
+
+/* USER CODE BEGIN 1 */
 #if MB(ODRIVE_V3_3)
 #include "stm32f4xx_it_ODRIVE_V3_3.h"
 #elif MB(ODRIVE_V3_2)
@@ -45,10 +52,7 @@
 #elif MB(ODRIVE_V3_1)
 #include "stm32f4xx_it_ODRIVE_V3_2.h"
 #else
-
-#ifdef __cplusplus
- extern "C" {
-#endif 
+/* USER CODE END 1 */
 
 /* Includes ------------------------------------------------------------------*/
 
@@ -72,7 +76,9 @@ void OTG_FS_IRQHandler(void);
 #ifdef __cplusplus
 }
 
+/* USER CODE BEGIN 2 */
 #endif /* if MB(board) */
+/* USER CODE END 2 */
 
 #endif
 
