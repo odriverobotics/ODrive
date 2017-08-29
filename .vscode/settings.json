@@ -1,0 +1,21 @@
+{
+    "files.associations": {
+        "stm32f4xx_hal.h": "c",
+        "spi.h": "c",
+        "gpio.h": "c",
+        "type_traits": "cpp",
+        "utility": "c",
+        "low_level.h": "c",
+        "motor.h": "c",
+        "math.h": "c",
+        "encoder.h": "c",
+        "xutility": "c",
+        "commands.h": "c",
+        "sensorless.h": "c",
+        "usbd_cdc_if.h": "c",
+        "drv8301.h": "c",
+        "adc.h": "c",
+        "configuration.h": "c"
+    },
+        "C_Cpp.clang_format_style": "{ BasedOnStyle: Google, IndentWidth: 4, ColumnLimit: 0 }"
+    }

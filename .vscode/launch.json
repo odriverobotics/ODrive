@@ -1,0 +1,20 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "gdb",
+            "request": "attach",
+            "name": "Launch Program",
+            "target": "localhost:3333",
+            "gdbpath": "arm-none-eabi-gdb",
+            "remote": true,
+            "executable": "./build/ODriveFirmware.elf",
+            "cwd": "${workspaceRoot}",
+            "printCalls": false,
+            //"preLaunchTask": "openocd",  // This isn't working quite right.
+            "autorun": [
+                "monitor reset halt"
+            ]
+        }
+    ]
+}
