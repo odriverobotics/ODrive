@@ -35,11 +35,6 @@
 #ifndef __STM32F4xx_IT_H
 #define __STM32F4xx_IT_H
 
-#ifdef __cplusplus
- extern "C" {
-#endif 
-
-/* Includes ------------------------------------------------------------------*/
 #include "boards.h"
 #include "configuration.h"
 
@@ -50,6 +45,13 @@
 #elif MB(ODRIVE_V3_1)
 #include "stm32f4xx_it_ODRIVE_V3_2.h"
 #else
+
+#ifdef __cplusplus
+ extern "C" {
+#endif 
+
+/* Includes ------------------------------------------------------------------*/
+
 /* Exported types ------------------------------------------------------------*/
 /* Exported constants --------------------------------------------------------*/
 /* Exported macro ------------------------------------------------------------*/
@@ -67,10 +69,11 @@ void EXTI4_IRQHandler(void);
 void ADC_IRQHandler(void);
 void OTG_FS_IRQHandler(void);
 
-#endif /* if MB(board) */
-
 #ifdef __cplusplus
 }
+
+#endif /* if MB(board) */
+
 #endif
 
 #endif /* __STM32F4xx_IT_H */
