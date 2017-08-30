@@ -1,11 +1,12 @@
 #pragma once
 
-#include <configuration.h>
-#include <constants.h>
 #include <drv8301.h>
 
-typedef struct
-{
+class Encoder {
+  public:
+    Encoder(TIM_HandleTypeDef *encoder_timer);
+
+    // TODO:  Get/Set functions as needed
     TIM_HandleTypeDef *encoder_timer;
     int encoder_offset;
     int encoder_state;
@@ -15,4 +16,6 @@ typedef struct
     float pll_vel;
     float pll_kp;
     float pll_ki;
-} Encoder_t;
+
+    // TODO:  All functions which operate on an Encoder should be placed here
+}
