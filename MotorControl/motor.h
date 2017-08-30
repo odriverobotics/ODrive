@@ -8,6 +8,10 @@
 #include <error.h>
 #include <sensorless.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #define MAX_NUM_MOTORS (2)
 
 typedef enum {
@@ -89,6 +93,7 @@ typedef struct
     uint16_t timing_log[TIMING_LOG_SIZE];
 } Motor_t;
 
+
 // Functions
 bool calibrate_motor(Motor_t *motor);
 void calculate_current_gains(Motor_t *motor);
@@ -109,3 +114,7 @@ bool check_deadlines(Motor_t *motor);
 
 extern Motor_t motors[MAX_NUM_MOTORS];
 extern const int num_motors;
+
+#ifdef __cplusplus
+}
+#endif

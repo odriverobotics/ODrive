@@ -3,11 +3,6 @@
         {
             "name": "Win32",
             "includePath": [
-                "C:/Program Files (x86)/Microsoft Visual Studio/2017/Community/VC/Tools/MSVC/14.10.25017/include/*",
-                "C:/Program Files (x86)/Windows Kits/10/Include/10.0.15063.0/um",
-                "C:/Program Files (x86)/Windows Kits/10/Include/10.0.15063.0/ucrt",
-                "C:/Program Files (x86)/Windows Kits/10/Include/10.0.15063.0/shared",
-                "C:/Program Files (x86)/Windows Kits/10/Include/10.0.15063.0/winrt",
                 "${workspaceRoot}",
                 "${workspaceRoot}/Middlewares/Third_Party/FreeRTOS/Source/portable/GCC/ARM_CM4F",
                 "${workspaceRoot}/Middlewares/Third_Party/FreeRTOS/Source/include",
@@ -29,11 +24,6 @@
             "intelliSenseMode": "msvc-x64",
             "browse": {
                 "path": [
-                    "C:/Program Files (x86)/Microsoft Visual Studio/2017/Community/VC/Tools/MSVC/14.10.25017/include/*",
-                    "C:/Program Files (x86)/Windows Kits/10/Include/10.0.15063.0/um",
-                    "C:/Program Files (x86)/Windows Kits/10/Include/10.0.15063.0/ucrt",
-                    "C:/Program Files (x86)/Windows Kits/10/Include/10.0.15063.0/shared",
-                    "C:/Program Files (x86)/Windows Kits/10/Include/10.0.15063.0/winrt",
                     "${workspaceRoot}",
                     "${workspaceRoot}/Middlewares/Third_Party/FreeRTOS/Source/portable/GCC/ARM_CM4F",
                     "${workspaceRoot}/Middlewares/Third_Party/FreeRTOS/Source/include",

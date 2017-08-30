@@ -8,6 +8,10 @@
 #define M_PI 3.14159265358979323846f
 #endif
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #define MACRO_MAX(x, y) (((x) > (y)) ? (x) : (y))
 #define MACRO_MIN(x, y) (((x) < (y)) ? (x) : (y))
 #define MACRO_CONSTRAIN(val, low, high) (((val) < (low)) ? (low) : ((val > high) ? (high) : (val)))
@@ -22,4 +26,7 @@ int SVM(float alpha, float beta, float *tA, float *tB, float *tC);
 float wrap_pm_pi(float theta);
 float fast_atan2(float y, float x);
 
+#ifdef __cplusplus
+}
+#endif
 #endif  //__UTILS_H

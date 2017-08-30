@@ -135,7 +135,7 @@ void motor_parse_cmd(uint8_t *buffer, int len) {
     // check incoming packet type
     if (buffer[0] == 'p') {
         // position control
-        unsigned motor_number;
+        int motor_number;
         float pos_setpoint, vel_feed_forward, current_feed_forward;
         int numscan =
             sscanf((const char *)buffer, "p %u %f %f %f", &motor_number,
@@ -146,7 +146,7 @@ void motor_parse_cmd(uint8_t *buffer, int len) {
         }
     } else if (buffer[0] == 'v') {
         // velocity control
-        unsigned motor_number;
+        int motor_number;
         float vel_feed_forward, current_feed_forward;
         int numscan = sscanf((const char *)buffer, "v %u %f %f", &motor_number,
                              &vel_feed_forward, &current_feed_forward);
@@ -156,7 +156,7 @@ void motor_parse_cmd(uint8_t *buffer, int len) {
         }
     } else if (buffer[0] == 'c') {
         // current control
-        unsigned motor_number;
+        int motor_number;
         float current_feed_forward;
         int numscan = sscanf((const char *)buffer, "c %u %f", &motor_number,
                              &current_feed_forward);
@@ -240,7 +240,7 @@ void motor_parse_cmd(uint8_t *buffer, int len) {
         // Check for Errors
         ODrive_Error_t err;
         for (int i = 0; i < num_motors; i++) {
-            err = motors[i].error;
+            err = (ODrive_Error_t)motors[i].error;
 
             printf("Motor %d: ", i);
             switch (err) {

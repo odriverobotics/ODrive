@@ -11,6 +11,9 @@
 #include <constants.h>
 #include <controller.h>
 #include <motor.h>
+#ifdef __cplusplus
+extern "C" {
+#endif
 //default timeout waiting for phase measurement signals
 
 /* Exported types ------------------------------------------------------------*/
@@ -27,5 +30,7 @@ void control_motor_loop(Motor_t *motor);
 
 //@TODO move motor thread to high level file
 void motor_thread(void const *argument);
-
+#ifdef __cplusplus
+}
+#endif
 #endif  //__LOW_LEVEL_H
