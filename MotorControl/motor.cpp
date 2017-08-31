@@ -76,7 +76,6 @@ DRV8301_Obj gateDriver1 = {
     .spin_up_acceleration = 400.0f,  // [rad/s^2]
     .spin_up_target_vel = 400.0f,    // [rad/s]
 } */
-static int numMotors = 0;
 
 Motor::Motor(TIM_HandleTypeDef *motor_timer, DRV8301_Obj &gate_driver, Current_control_t &current_control, Encoder &encoder, Sensorless &sensorless) {
     this->control_mode = AXIS_0_CONTROL_MODE;  // see: Motor_control_mode_t

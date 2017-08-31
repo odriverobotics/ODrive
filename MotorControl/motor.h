@@ -90,30 +90,27 @@ class Motor {
     int timing_log_index;
     uint16_t timing_log[TIMING_LOG_SIZE];
 
-    // Functions
+    // Calibration functions
     bool calibrateMotor();
     void calculateCurrentGains();
     bool calculatePLLGains();
-
     bool measurePhaseResistance(float test_current, float max_voltage);
     bool measurePhaseInductance(float voltage_low, float voltage_high);
     bool calibrateEncoderOffset(float voltage_magnitude);
 
+    // 
     uint16_t checkTiming();
+    bool checkDeadlines();
 
     void queueVoltageTimings(float v_alpha, float v_beta);
     void queueModulationTimings(float mod_alpha, float mod_beta);
 
     void scanMotorLoop(float omega, float voltage_magnitude);
-
-    bool checkDeadlines();
-    
 }
 
 #ifdef __cplusplus
 extern "C" {
 #endif
-
 
     extern Motor_t motors[MAX_NUM_MOTORS];
     extern const int numMotors;
