@@ -71,11 +71,11 @@ static bool FOC_current(Motor_t *motor, float Id_des, float Iq_des);
 
 static void global_fault(int error) {
     // Disable motors NOW!
-    for (int i = 0; i < num_motors; ++i) {
+    for (int i = 0; i < numMotors; ++i) {
         __HAL_TIM_MOE_DISABLE_UNCONDITIONALLY(motors[i].motor_timer);
     }
     // Set fault codes, etc.
-    for (int i = 0; i < num_motors; ++i) {
+    for (int i = 0; i < numMotors; ++i) {
         motors[i].error = error;
         motors[i].enable_control = false;
         motors[i].calibration_ok = false;
@@ -289,7 +289,7 @@ void pwm_trig_adc_cb(ADC_HandleTypeDef *hadc, bool injected) {
             motors[0].motor_timer->Instance->CCR3 = motors[0].next_timings[2];
         }
         // Check the timing of the sequencing
-        check_timing(motor);
+        checkTiming(motor);
     } else if (motor == &motors[0] && !counting_down) {
         // We are measuring M0 current here
         current_meas_not_DC_CAL = true;
@@ -300,17 +300,17 @@ void pwm_trig_adc_cb(ADC_HandleTypeDef *hadc, bool injected) {
             motors[1].motor_timer->Instance->CCR3 = motors[1].next_timings[2];
         }
         // Check the timing of the sequencing
-        check_timing(motor);
+        checkTiming(motor);
     } else if (motor == &motors[1] && !counting_down) {
         // We are measuring M1 current here
         current_meas_not_DC_CAL = true;
         // Check the timing of the sequencing
-        check_timing(motor);
+        checkTiming(motor);
     } else if (motor == &motors[0] && counting_down) {
         // We are measuring M0 DC_CAL here
         current_meas_not_DC_CAL = false;
         // Check the timing of the sequencing
-        check_timing(motor);
+        checkTiming(motor);
     } else {
         global_fault(ERROR_PWM_SRC_FAIL);
         return;
@@ -369,10 +369,10 @@ static void FOC_voltage_loop(Motor_t *motor, float v_d, float v_q) {
         float s = arm_sin_f32(phase);
         float v_alpha = c * v_d - s * v_q;
         float v_beta = c * v_q + s * v_d;
-        queue_voltage_timings(motor, v_alpha, v_beta);
+        queueVoltageTimings(motor, v_alpha, v_beta);
 
         // Check we meet deadlines after queueing
-        motor->last_cpu_time = check_timing(motor);
+        motor->last_cpu_time = checkTiming(motor);
         if (!(motor->last_cpu_time < motor->control_deadline)) {
             motor->error = ERROR_FOC_VOLTAGE_TIMING;
             return;
@@ -757,12 +757,12 @@ static bool FOC_current(Motor_t *motor, float Id_des, float Iq_des) {
     ictrl->Ibus = mod_d * Id + mod_q * Iq;
 
     // If this is last motor, update brake resistor duty
-    // if (motor == &motors[num_motors-1]) {
+    // if (motor == &motors[numMotors-1]) {
     // Above check doesn't work if last motor is executing voltage control
     // TODO trigger this update in control_motor_loop instead,
     // and make voltage control a control mode in it.
     float Ibus_sum = 0.0f;
-    for (int i = 0; i < num_motors; ++i) {
+    for (int i = 0; i < numMotors; ++i) {
         Ibus_sum += motors[i].current_control.Ibus;
     }
     // Note: function will clip negative values to 0.0f
@@ -779,10 +779,10 @@ static bool FOC_current(Motor_t *motor, float Id_des, float Iq_des) {
     ictrl->final_v_beta = mod_to_V * mod_beta;
 
     // Apply SVM
-    queue_modulation_timings(motor, mod_alpha, mod_beta);
+    queueModulationTimings(motor, mod_alpha, mod_beta);
 
     // Check we meet deadlines after queueing
-    motor->last_cpu_time = check_timing(motor);
+    motor->last_cpu_time = checkTiming(motor);
     if (!(motor->last_cpu_time < motor->control_deadline)) {
         motor->error = ERROR_FOC_TIMING;
         return false;
@@ -826,7 +826,7 @@ void motor_thread(int motorID) {
             }
         }
 
-        queue_voltage_timings(motor, 0.0f, 0.0f);
+        queueVoltageTimings(motor, 0.0f, 0.0f);
         osDelay(100);
     }
     motor.thread_ready = false;

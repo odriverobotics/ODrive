@@ -142,12 +142,12 @@ bool calibrateMotor() {
     // float R = 0.0332548246f;
     // float L = 7.97315806e-06f;
 
-    if (!measure_phase_resistance(this->calibration_current, 1.0f))
+    if (!measurePhaseResistance(this->calibration_current, 1.0f))
         return false;
-    if (!measure_phase_inductance(-1.0f, 1.0f)) return false;
+    if (!measurePhaseInductance(-1.0f, 1.0f)) return false;
     if (this->rotor_mode == ROTOR_MODE_ENCODER ||
         this->rotor_mode == ROTOR_MODE_RUN_ENCODER_TEST_SENSORLESS) {
-        if (!calib_enc_offset(this->calibration_current * this->phase_resistance))
+        if (!calibrateEncoderOffset(this->calibration_current * this->phase_resistance))
             return false;
     }
 
@@ -190,7 +190,7 @@ bool calculatePLLGains() {
 }
 
 // TODO check Ibeta balance to verify good motor connection
-bool measure_phase_resistance(float test_current, float max_voltage) {
+bool measurePhaseResistance(float test_current, float max_voltage) {
     static const float kI = 10.0f;                           //[(V/s)/A]
     int num_test_cycles = 3.0f / get_current_meas_period();  // Test runs for 3s
     float test_voltage = 0.0f;
@@ -206,17 +206,17 @@ bool measure_phase_resistance(float test_current, float max_voltage) {
         test_voltage = MACRO_CONSTRAIN(test_voltage, -max_voltage, max_voltage);
 
         // Test voltage along phase A
-        queue_voltage_timings(test_voltage, 0.0f);
+        queueVoltageTimings(test_voltage, 0.0f);
 
         // Check we meet deadlines after queueing
-        if (!check_deadlines()) {
+        if (!checkDeadlines()) {
             this->error = ERROR_PHASE_RESISTANCE_TIMING;
             return false;
         }
     }
 
     // De-energize motor
-    queue_voltage_timings(0.0f, 0.0f);
+    queueVoltageTimings(0.0f, 0.0f);
 
     float R = test_voltage / test_current;
     if (fabs(test_voltage) == fabs(max_voltage) || R < 0.01f || R > 1.0f) {
@@ -228,7 +228,7 @@ bool measure_phase_resistance(float test_current, float max_voltage) {
 }
 
 // Melon Refactor - Good
-bool Motor::measure_phase_inductance(float voltage_low, float voltage_high) {
+bool Motor::measurePhaseInductance(float voltage_low, float voltage_high) {
     float test_voltages[2] = {voltage_low, voltage_high};
     float Ialphas[2] = {0.0f};
     static const int num_cycles = 5000;
@@ -243,10 +243,10 @@ bool Motor::measure_phase_inductance(float voltage_low, float voltage_high) {
             Ialphas[i] += -this->current_meas.phB - this->current_meas.phC;
 
             // Test voltage along phase A
-            queue_voltage_timings(test_voltages[i], 0.0f);
+            queueVoltageTimings(test_voltages[i], 0.0f);
 
             // Check we meet deadlines after queueing
-            if (!check_deadlines()) {
+            if (!checkDeadlines()) {
                 this->error = ERROR_PHASE_INDUCTANCE_TIMING;
                 return false;
             }
@@ -254,7 +254,7 @@ bool Motor::measure_phase_inductance(float voltage_low, float voltage_high) {
     }
 
     // De-energize motor
-    queue_voltage_timings(0.0f, 0.0f);
+    queueVoltageTimings(0.0f, 0.0f);
 
     float v_L = 0.5f * (voltage_high - voltage_low);
     // Note: A more correct formula would also take into account that there is a
@@ -276,7 +276,7 @@ bool Motor::measure_phase_inductance(float voltage_low, float voltage_high) {
 
 // TODO: Do the scan with current, not voltage!
 // TODO: add check_timing
-bool calib_enc_offset(float voltage_magnitude) {
+bool calibrateEncoderOffset(float voltage_magnitude) {
     static const float start_lock_duration = 1.0f;
     static const int num_steps = 1024;
     static const float dt_step = 1.0f / 500.0f;
@@ -295,7 +295,7 @@ bool calib_enc_offset(float voltage_magnitude) {
             this->error = ERROR_ENCODER_MEASUREMENT_TIMEOUT;
             return false;
         }
-        queue_voltage_timings(voltage_magnitude, 0.0f);
+        queueVoltageTimings(voltage_magnitude, 0.0f);
     }
     // scan forwards
     for (float ph = -scan_range / 2.0f; ph < scan_range / 2.0f; ph += step_size) {
@@ -307,7 +307,7 @@ bool calib_enc_offset(float voltage_magnitude) {
             }
             float v_alpha = voltage_magnitude * arm_cos_f32(ph);
             float v_beta = voltage_magnitude * arm_sin_f32(ph);
-            queue_voltage_timings(v_alpha, v_beta);
+            queueVoltageTimings(v_alpha, v_beta);
         }
         encvaluesum += (int16_t)this->encoder.encoder_timer->Instance->CNT;
     }
@@ -334,7 +334,7 @@ bool calib_enc_offset(float voltage_magnitude) {
             }
             float v_alpha = voltage_magnitude * arm_cos_f32(ph);
             float v_beta = voltage_magnitude * arm_sin_f32(ph);
-            queue_voltage_timings(v_alpha, v_beta);
+            queueVoltageTimings(v_alpha, v_beta);
         }
         encvaluesum += (int16_t)this->encoder.encoder_timer->Instance->CNT;
     }
@@ -351,10 +351,10 @@ void scan__loop(float omega, float voltage_magnitude) {
             osSignalWait(M_SIGNAL_PH_CURRENT_MEAS, osWaitForever);
             float v_alpha = voltage_magnitude * arm_cos_f32(ph);
             float v_beta = voltage_magnitude * arm_sin_f32(ph);
-            queue_voltage_timings(v_alpha, v_beta);
+            queueVoltageTimings(v_alpha, v_beta);
 
             // Check we meet deadlines after queueing
-            this->last_cpu_time = check_timing();
+            this->last_cpu_time = checkTiming();
             if (!(this->last_cpu_time < this->control_deadline)) {
                 this->error = ERROR_SCAN_MOTOR_TIMING;
                 return;
@@ -363,14 +363,14 @@ void scan__loop(float omega, float voltage_magnitude) {
     }
 }
 
-void queue_voltage_timings(float v_alpha, float v_beta) {
+void queueVoltageTimings(float v_alpha, float v_beta) {
     float vfactor = 1.0f / ((2.0f / 3.0f) * vbus_voltage);
     float mod_alpha = vfactor * v_alpha;
     float mod_beta = vfactor * v_beta;
-    queue_modulation_timings(mod_alpha, mod_beta);
+    queueModulationTimings(mod_alpha, mod_beta);
 }
 
-void queue_modulation_timings(float mod_alpha, float mod_beta) {
+void queueModulationTimings(float mod_alpha, float mod_beta) {
     float tA, tB, tC;
     SVM(mod_alpha, mod_beta, &tA, &tB, &tC);
     this->next_timings[0] = (uint16_t)(tA * (float)TIM_1_8_PERIOD_CLOCKS);
@@ -378,7 +378,7 @@ void queue_modulation_timings(float mod_alpha, float mod_beta) {
     this->next_timings[2] = (uint16_t)(tC * (float)TIM_1_8_PERIOD_CLOCKS);
 }
 
-uint16_t check_timing() {
+uint16_t checkTiming() {
     TIM_HandleTypeDef *htim = this->motor_timer;
     uint16_t timing = htim->Instance->CNT;
     bool down = htim->Instance->CR1 & TIM_CR1_DIR;
@@ -395,9 +395,9 @@ uint16_t check_timing() {
     return timing;
 }
 
-bool check_deadlines() {
+bool checkDeadlines() {
     // Check we meet deadlines after queueing
-    this->last_cpu_time = check_timing();
+    this->last_cpu_time = checkTiming();
     if (!(this->last_cpu_time < this->control_deadline)) return false;
     return true;
 }

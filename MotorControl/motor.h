@@ -95,18 +95,18 @@ class Motor {
     void calculateCurrentGains();
     bool calculatePLLGains();
 
-    bool measure_phase_resistance(Motor_t * motor, float test_current, float max_voltage);
-    bool measure_phase_inductance(Motor_t * motor, float voltage_low, float voltage_high);
-    bool calib_enc_offset(Motor_t * motor, float voltage_magnitude);
+    bool measurePhaseResistance(float test_current, float max_voltage);
+    bool measurePhaseInductance(float voltage_low, float voltage_high);
+    bool calibrateEncoderOffset(float voltage_magnitude);
 
-    uint16_t check_timing(Motor_t * motor);
+    uint16_t checkTiming();
 
-    void queue_voltage_timings(Motor_t * motor, float v_alpha, float v_beta);
-    void queue_modulation_timings(Motor_t * motor, float mod_alpha, float mod_beta);
+    void queueVoltageTimings(float v_alpha, float v_beta);
+    void queueModulationTimings(float mod_alpha, float mod_beta);
 
-    void scan_motor_loop(Motor_t * motor, float omega, float voltage_magnitude);
+    void scanMotorLoop(float omega, float voltage_magnitude);
 
-    bool check_deadlines(Motor_t * motor);
+    bool checkDeadlines();
     
 }
 
@@ -116,7 +116,7 @@ extern "C" {
 
 
     extern Motor_t motors[MAX_NUM_MOTORS];
-    extern const int num_motors;
+    extern const int numMotors;
 
 #ifdef __cplusplus
 }

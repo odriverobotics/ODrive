@@ -140,7 +140,7 @@ void motor_parse_cmd(uint8_t *buffer, int len) {
         int numscan =
             sscanf((const char *)buffer, "p %u %f %f %f", &motor_number,
                    &pos_setpoint, &vel_feed_forward, &current_feed_forward);
-        if (numscan == 4 && motor_number < num_motors) {
+        if (numscan == 4 && motor_number < numMotors) {
             set_pos_setpoint(&motors[motor_number], pos_setpoint,
                              vel_feed_forward, current_feed_forward);
         }
@@ -150,7 +150,7 @@ void motor_parse_cmd(uint8_t *buffer, int len) {
         float vel_feed_forward, current_feed_forward;
         int numscan = sscanf((const char *)buffer, "v %u %f %f", &motor_number,
                              &vel_feed_forward, &current_feed_forward);
-        if (numscan == 3 && motor_number < num_motors) {
+        if (numscan == 3 && motor_number < numMotors) {
             set_vel_setpoint(&motors[motor_number], vel_feed_forward,
                              current_feed_forward);
         }
@@ -160,7 +160,7 @@ void motor_parse_cmd(uint8_t *buffer, int len) {
         float current_feed_forward;
         int numscan = sscanf((const char *)buffer, "c %u %f", &motor_number,
                              &current_feed_forward);
-        if (numscan == 2 && motor_number < num_motors) {
+        if (numscan == 2 && motor_number < numMotors) {
             set_current_setpoint(&motors[motor_number], current_feed_forward);
         }
     } else if (buffer[0] == 'g') {  // GET
@@ -239,7 +239,7 @@ void motor_parse_cmd(uint8_t *buffer, int len) {
     } else if (buffer[0] == 'e') {
         // Check for Errors
         Error_t err;
-        for (int i = 0; i < num_motors; i++) {
+        for (int i = 0; i < numMotors; i++) {
             err = (Error_t)motors[i].error;
 
             printf("Motor %d: ", i);
