@@ -77,13 +77,16 @@ C_SOURCES = \
   Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_ll_usb.c \
   Src/usbd_cdc_if.c \
   Src/syscalls.c \
+  MotorControl/callbacks.c \
   MotorControl/motor.c
 CPP_SOURCES = \
-  MotorControl/utils.cpp \
-  MotorControl/low_level.cpp \
   MotorControl/constants.cpp \
   MotorControl/controller.cpp \
-  MotorControl/commands.cpp
+  MotorControl/encoder.cpp \
+  MotorControl/low_level.cpp \
+  MotorControl/sensorless.cpp \
+  MotorControl/usb_commands.cpp \
+  MotorControl/utils.cpp
 ASM_SOURCES = \
   startup/startup_stm32f405xx.s
 
@@ -129,7 +132,7 @@ CXXLAGS += -g -gdwarf-2
 endif
 # Generate dependency information
 CFLAGS += -std=c99 -MD -MP -MF .dep/$(@F).d
-CXXFLAGS += -MD -MP -MF .dep/$(@F).d
+CXXFLAGS += -std=c++14 -MD -MP -MF .dep/$(@F).d
 
 #######################################
 # LDFLAGS

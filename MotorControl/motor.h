@@ -8,11 +8,8 @@
 #include <error.h>
 #include <sensorless.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-#define MAX_NUM_MOTORS (2)
+#define MAX_NUM_MOTORS  (2)
+#define TIMING_LOG_SIZE (16)
 
 typedef enum {
     M_SIGNAL_PH_CURRENT_MEAS = 1u << 0
@@ -52,9 +49,10 @@ typedef enum {
     ROTOR_MODE_RUN_ENCODER_TEST_SENSORLESS  //Run on encoder, but still run estimator for testing
 } Rotor_mode_t;
 
-#define TIMING_LOG_SIZE 16
-typedef struct
-{
+class Motor {
+   public:
+    Motor();
+
     Motor_control_mode_t control_mode;
     bool enable_step_dir;
     float counts_per_step;
@@ -91,29 +89,34 @@ typedef struct
     ODrive_Sensorless_t sensorless;
     int timing_log_index;
     uint16_t timing_log[TIMING_LOG_SIZE];
-} Motor_t;
+
+    // Functions
+    bool calibrateMotor();
+    void calculateCurrentGains();
+    bool calculatePLLGains();
+
+    bool measure_phase_resistance(Motor_t * motor, float test_current, float max_voltage);
+    bool measure_phase_inductance(Motor_t * motor, float voltage_low, float voltage_high);
+    bool calib_enc_offset(Motor_t * motor, float voltage_magnitude);
+
+    uint16_t check_timing(Motor_t * motor);
+
+    void queue_voltage_timings(Motor_t * motor, float v_alpha, float v_beta);
+    void queue_modulation_timings(Motor_t * motor, float mod_alpha, float mod_beta);
+
+    void scan_motor_loop(Motor_t * motor, float omega, float voltage_magnitude);
+
+    bool check_deadlines(Motor_t * motor);
+    
+}
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 
-// Functions
-bool calibrate_motor(Motor_t *motor);
-void calculate_current_gains(Motor_t *motor);
-bool calculate_pll_gains(Motor_t *motor);
-
-bool measure_phase_resistance(Motor_t *motor, float test_current, float max_voltage);
-bool measure_phase_inductance(Motor_t *motor, float voltage_low, float voltage_high);
-bool calib_enc_offset(Motor_t *motor, float voltage_magnitude);
-
-uint16_t check_timing(Motor_t *motor);
-
-void queue_voltage_timings(Motor_t *motor, float v_alpha, float v_beta);
-void queue_modulation_timings(Motor_t *motor, float mod_alpha, float mod_beta);
-
-void scan_motor_loop(Motor_t *motor, float omega, float voltage_magnitude);
-
-bool check_deadlines(Motor_t *motor);
-
-extern Motor_t motors[MAX_NUM_MOTORS];
-extern const int num_motors;
+    extern Motor_t motors[MAX_NUM_MOTORS];
+    extern const int num_motors;
 
 #ifdef __cplusplus
 }

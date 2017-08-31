@@ -41,6 +41,7 @@
 #include "boards.h"
 #include "configuration.h"
 #include "low_level.h"
+#include "callbacks.h"
 
 typedef void (*ADC_handler_t)(ADC_HandleTypeDef* hadc, bool injected);
 void ADC_IRQ_Dispatch(ADC_HandleTypeDef* hadc, ADC_handler_t callback);

@@ -4,7 +4,7 @@ Encoder::Encoder(TIM_HandleTypeDef *encoder_timer){
     this->encoder_timer = encoder_timer;
     this->encoder_offset = 0;
     this->encoder_state = 0;
-    this->motor_dir = 0;  // 1/-1 for fwd/rev alignment to encoder.
+    this->motor_dir = 0;
     this->phase = 0.0f;
     this->pll_pos = 0.0f;
     this->pll_vel = 0.0f;

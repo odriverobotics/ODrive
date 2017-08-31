@@ -6,11 +6,11 @@
         "type_traits": "cpp",
         "utility": "c",
         "low_level.h": "cpp",
-        "motor.h": "c",
+        "motor.h": "cpp",
         "math.h": "c",
-        "encoder.h": "c",
+        "encoder.h": "cpp",
         "xutility": "c",
-        "commands.h": "cpp",
+        "usb_commands.h": "cpp",
         "sensorless.h": "cpp",
         "usbd_cdc_if.h": "c",
         "drv8301.h": "c",
@@ -18,5 +18,5 @@
         "configuration.h": "cpp",
         "utils.h": "cpp"
     },
-        "C_Cpp.clang_format_style": "{ BasedOnStyle: Google, IndentWidth: 4, ColumnLimit: 0 }"
-    }
+    "C_Cpp.clang_format_style": "{ BasedOnStyle: Google, IndentWidth: 4, ColumnLimit: 0 }"
+}

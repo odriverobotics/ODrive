@@ -255,40 +255,6 @@ static void sync_timers(TIM_HandleTypeDef *htim_a, TIM_HandleTypeDef *htim_b,
 // IRQ Callbacks
 //--------------------------------
 
-// step/direction interface
-void step_cb(uint16_t GPIO_Pin) {
-    GPIO_PinState dir_pin;
-    float dir;
-    switch (GPIO_Pin) {
-        case GPIO_1_Pin:
-            // M0 stepped
-            if (motors[0].enable_step_dir) {
-                dir_pin = HAL_GPIO_ReadPin(GPIO_2_GPIO_Port, GPIO_2_Pin);
-                dir = (dir_pin == GPIO_PIN_SET) ? 1.0f : -1.0f;
-                motors[0].pos_setpoint += dir * motors[0].counts_per_step;
-            }
-            break;
-        case GPIO_3_Pin:
-            // M1 stepped
-            if (motors[1].enable_step_dir) {
-                dir_pin = HAL_GPIO_ReadPin(GPIO_4_GPIO_Port, GPIO_4_Pin);
-                dir = (dir_pin == GPIO_PIN_SET) ? 1.0f : -1.0f;
-                motors[1].pos_setpoint += dir * motors[1].counts_per_step;
-            }
-            break;
-        default:
-            global_fault(ERROR_UNEXPECTED_STEP_SRC);
-            break;
-    }
-}
-
-void vbus_sense_adc_cb(ADC_HandleTypeDef *hadc, bool injected) {
-    static const float voltage_scale = 3.3f * 11.0f / (float)(1 << 12);
-    // Only one conversion in sequence, so only rank1
-    uint32_t ADCValue = HAL_ADCEx_InjectedGetValue(hadc, ADC_INJECTED_RANK_1);
-    vbus_voltage = ADCValue * voltage_scale;
-}
-
 // This is the callback from the ADC that we expect after the PWM has triggered
 // an ADC conversion.
 // TODO: Document how the phasing is done, link to timing diagram
@@ -662,48 +628,47 @@ static void update_brake_current(float brake_current) {
     htim2.Instance->CCR4 = high_on;
 }
 
-void control_motor_loop(Motor_t *motor) {
-    while (motor->enable_control) {
-        if (osSignalWait(M_SIGNAL_PH_CURRENT_MEAS, PH_CURRENT_MEAS_TIMEOUT)
-                .status != osEventSignal) {
-            motor->error = ERROR_FOC_MEASUREMENT_TIMEOUT;
+void control_motor_loop(Motor_t &motor) {
+    while (motor.enable_control) {
+        if (osSignalWait(M_SIGNAL_PH_CURRENT_MEAS, PH_CURRENT_MEAS_TIMEOUT).status != osEventSignal) {
+            motor.error = ERROR_FOC_MEASUREMENT_TIMEOUT;
             break;
         }
         update_rotor(motor);
 
         // Position control
         // TODO Decide if we want to use encoder or pll position here
-        float vel_des = motor->vel_setpoint;
-        if (motor->control_mode >= CTRL_MODE_POSITION_CONTROL) {
-            if (motor->rotor_mode == ROTOR_MODE_SENSORLESS) {
-                motor->error = ERROR_POS_CTRL_DURING_SENSORLESS;
+        float vel_des = motor.vel_setpoint;
+        if (motor.control_mode >= CTRL_MODE_POSITION_CONTROL) {
+            if (motor.rotor_mode == ROTOR_MODE_SENSORLESS) {
+                motor.error = ERROR_POS_CTRL_DURING_SENSORLESS;
                 break;
             }
-            float pos_err = motor->pos_setpoint - motor->encoder.pll_pos;
-            vel_des += motor->pos_gain * pos_err;
+            float pos_err = motor.pos_setpoint - motor.encoder.pll_pos;
+            vel_des += motor.pos_gain * pos_err;
         }
 
         // Velocity limiting
-        vel_des = MACRO_CONSTRAIN(vel_des, -motor->vel_limit, motor->vel_limit);
+        vel_des = MACRO_CONSTRAIN(vel_des, -motor.vel_limit, motor.vel_limit);
 
         // Velocity control
-        float Iq = motor->current_setpoint;
+        float Iq = motor.current_setpoint;
         float v_err = vel_des - get_pll_vel(motor);
-        if (motor->control_mode >= CTRL_MODE_VELOCITY_CONTROL) {
-            Iq += motor->vel_gain * v_err;
+        if (motor.control_mode >= CTRL_MODE_VELOCITY_CONTROL) {
+            Iq += motor.vel_gain * v_err;
         }
 
         // Velocity integral action before limiting
-        Iq += motor->vel_integrator_current;
+        Iq += motor.vel_integrator_current;
 
         // Apply motor direction correction
-        if (motor->rotor_mode == ROTOR_MODE_ENCODER ||
-            motor->rotor_mode == ROTOR_MODE_RUN_ENCODER_TEST_SENSORLESS) {
-            Iq *= motor->encoder.motor_dir;
+        if (motor.rotor_mode == ROTOR_MODE_ENCODER ||
+            motor.rotor_mode == ROTOR_MODE_RUN_ENCODER_TEST_SENSORLESS) {
+            Iq *= motor.encoder.motor_dir;
         }
 
         // Current limiting
-        float Ilim = motor->current_control.current_lim;
+        float Ilim = motor.current_control.current_lim;
         bool limited = false;
         if (Iq > Ilim) {
             limited = true;
@@ -715,23 +680,23 @@ void control_motor_loop(Motor_t *motor) {
         }
 
         // Velocity integrator (behaviour dependent on limiting)
-        if (motor->control_mode < CTRL_MODE_VELOCITY_CONTROL) {
+        if (motor.control_mode < CTRL_MODE_VELOCITY_CONTROL) {
             // reset integral if not in use
-            motor->vel_integrator_current = 0.0f;
+            motor.vel_integrator_current = 0.0f;
         } else {
             if (limited) {
                 // TODO make decayfactor configurable
-                motor->vel_integrator_current *= 0.99f;
+                motor.vel_integrator_current *= 0.99f;
             } else {
-                motor->vel_integrator_current +=
-                    (motor->vel_integrator_gain * get_current_meas_period()) *
+                motor.vel_integrator_current +=
+                    (motor.vel_integrator_gain * get_current_meas_period()) *
                     v_err;
             }
         }
 
         // Execute current command
         if (!FOC_current(motor, 0.0f, Iq)) {
-            break;  // in case of error exit loop, motor->error has been set by
+            break;  // in case of error exit loop, motor.error has been set by
                     // FOC_current
         }
     }
@@ -829,42 +794,40 @@ static bool FOC_current(Motor_t *motor, float Id_des, float Iq_des) {
 // Motor thread
 //--------------------------------
 
-void motor_thread(void const *argument) {
-    Motor_t *motor = (Motor_t *)argument;
-    motor->motor_thread = osThreadGetId();
-    motor->thread_ready = true;
+void motor_thread(int motorID) {
+    Motor motor = new Motor(motorID);  // Not a problem as long as we don't deallocate it
+    motor.motor_thread = osThreadGetId();
+    motor.thread_ready = true;
 
     for (;;) {
-        if (motor->do_calibration) {
-            __HAL_TIM_MOE_ENABLE(motor->motor_timer);  // enable pwm outputs
-            __HAL_TIM_MOE_DISABLE_UNCONDITIONALLY(motor->motor_timer);  // disables pwm outputs
-            motor->do_calibration = false;
+        if (motor.do_calibration) {
+            __HAL_TIM_MOE_ENABLE(motor.motor_timer);                   // enable pwm outputs
+            motor.calibrateMotor();
+            __HAL_TIM_MOE_DISABLE_UNCONDITIONALLY(motor.motor_timer);  // disables pwm outputs
+            motor.do_calibration = false;
         }
 
-        if (motor->calibration_ok && motor->enable_control) {
-            motor->enable_step_dir = true;
-            __HAL_TIM_MOE_ENABLE(motor->motor_timer);
+        if (motor.calibration_ok && motor.enable_control) {
+            motor.enable_step_dir = true;
+            __HAL_TIM_MOE_ENABLE(motor.motor_timer);
 
             bool spin_up_ok = true;
-            if (motor->rotor_mode == ROTOR_MODE_SENSORLESS)
+            if (motor.rotor_mode == ROTOR_MODE_SENSORLESS)
                 spin_up_ok = spin_up_sensorless(motor);
             if (spin_up_ok)
-                control_motor_loop(motor);  // This doesn't return until
-                                            // motor->enable_control is false,
-                                            // or there's an error.
+                control_motor_loop(motor);  // This doesn't return until motor.enable_control is false or there's an error.
 
-            __HAL_TIM_MOE_DISABLE_UNCONDITIONALLY(motor->motor_timer);
-            motor->enable_step_dir = false;
+            __HAL_TIM_MOE_DISABLE_UNCONDITIONALLY(motor.motor_timer);
+            motor.enable_step_dir = false;
 
-            if (motor->enable_control) {  // if control is still enabled, we
-                                          // exited because of error
-                motor->calibration_ok = false;
-                motor->enable_control = false;
+            if (motor.enable_control) {  // if control is still enabled, we exited because of error
+                motor.calibration_ok = false;
+                motor.enable_control = false;
             }
         }
 
         queue_voltage_timings(motor, 0.0f, 0.0f);
         osDelay(100);
     }
-    motor->thread_ready = false;
+    motor.thread_ready = false;
 }

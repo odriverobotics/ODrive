@@ -21,4 +21,4 @@ typedef enum {
     ERROR_UNEXPECTED_STEP_SRC,
     ERROR_POS_CTRL_DURING_SENSORLESS,
     ERROR_SPIN_UP_TIMEOUT,
-} ODrive_Error_t;
+} Error_t;

@@ -51,6 +51,7 @@
 #include "gpio.h"
 /* USER CODE BEGIN 0 */
 #include "low_level.h"
+#include "callbacks.h"
 #include "boards.h"
 #include "configuration.h"
 

@@ -1,4 +1,4 @@
-#include <commands.h>
+#include <usb_commands.h>
 #include <controller.h>
 #include <motor.h>
 
@@ -238,9 +238,9 @@ void motor_parse_cmd(uint8_t *buffer, int len) {
         }
     } else if (buffer[0] == 'e') {
         // Check for Errors
-        ODrive_Error_t err;
+        Error_t err;
         for (int i = 0; i < num_motors; i++) {
-            err = (ODrive_Error_t)motors[i].error;
+            err = (Error_t)motors[i].error;
 
             printf("Motor %d: ", i);
             switch (err) {
