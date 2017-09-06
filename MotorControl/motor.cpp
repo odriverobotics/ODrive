@@ -156,7 +156,7 @@ uint8_t Motor::getNumMotors(){
 }
 
 Motor* Motor::getMotorByID(int nID){
-    if(nID > 0 && nID < numMotors)
+    if(nID >= 0 && nID < numMotors)
         return motors[nID];
     else
         return NULL;
