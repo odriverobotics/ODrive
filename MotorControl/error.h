@@ -22,3 +22,8 @@ typedef enum {
     ERROR_POS_CTRL_DURING_SENSORLESS,
     ERROR_SPIN_UP_TIMEOUT,
 } Error_t;
+
+class Error {
+   public:
+    static void global_fault(int error);
+};

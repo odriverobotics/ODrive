@@ -1,6 +1,6 @@
-#include <usb_commands.h>
-#include <controller.h>
-#include <motor.h>
+#include "usb_commands.h"
+#include "controller.h"
+#include "motor.h"
 
 /* variables exposed to usb interface via set/get/monitor
  * If you change something here, don't forget to regenerate the python interface
@@ -17,91 +17,91 @@ monitoring_slot monitoring_slots[20] = {0};
 float *exposed_floats[] = {
     &vbus_voltage,                                            // ro
     &elec_rad_per_enc,                                        // ro
-    &motors[0].pos_setpoint,                                  // rw
-    &motors[0].pos_gain,                                      // rw
-    &motors[0].vel_setpoint,                                  // rw
-    &motors[0].vel_gain,                                      // rw
-    &motors[0].vel_integrator_gain,                           // rw
-    &motors[0].vel_integrator_current,                        // rw
-    &motors[0].vel_limit,                                     // rw
-    &motors[0].current_setpoint,                              // rw
-    &motors[0].calibration_current,                           // rw
-    &motors[0].phase_inductance,                              // ro
-    &motors[0].phase_resistance,                              // ro
-    &motors[0].current_meas.phB,                              // ro
-    &motors[0].current_meas.phC,                              // ro
-    &motors[0].DC_calib.phB,                                  // rw
-    &motors[0].DC_calib.phC,                                  // rw
-    &motors[0].shunt_conductance,                             // rw
-    &motors[0].phase_current_rev_gain,                        // rw
-    &motors[0].current_control.current_lim,                   // rw
-    &motors[0].current_control.p_gain,                        // rw
-    &motors[0].current_control.i_gain,                        // rw
-    &motors[0].current_control.v_current_control_integral_d,  // rw
-    &motors[0].current_control.v_current_control_integral_q,  // rw
-    &motors[0].current_control.Ibus,                          // ro
-    &motors[0].encoder.phase,                                 // ro
-    &motors[0].encoder.pll_pos,                               // rw
-    &motors[0].encoder.pll_vel,                               // rw
-    &motors[0].encoder.pll_kp,                                // rw
-    &motors[0].encoder.pll_ki,                                // rw
-    &motors[1].pos_setpoint,                                  // rw
-    &motors[1].pos_gain,                                      // rw
-    &motors[1].vel_setpoint,                                  // rw
-    &motors[1].vel_gain,                                      // rw
-    &motors[1].vel_integrator_gain,                           // rw
-    &motors[1].vel_integrator_current,                        // rw
-    &motors[1].vel_limit,                                     // rw
-    &motors[1].current_setpoint,                              // rw
-    &motors[1].calibration_current,                           // rw
-    &motors[1].phase_inductance,                              // ro
-    &motors[1].phase_resistance,                              // ro
-    &motors[1].current_meas.phB,                              // ro
-    &motors[1].current_meas.phC,                              // ro
-    &motors[1].DC_calib.phB,                                  // rw
-    &motors[1].DC_calib.phC,                                  // rw
-    &motors[1].shunt_conductance,                             // rw
-    &motors[1].phase_current_rev_gain,                        // rw
-    &motors[1].current_control.current_lim,                   // rw
-    &motors[1].current_control.p_gain,                        // rw
-    &motors[1].current_control.i_gain,                        // rw
-    &motors[1].current_control.v_current_control_integral_d,  // rw
-    &motors[1].current_control.v_current_control_integral_q,  // rw
-    &motors[1].current_control.Ibus,                          // ro
-    &motors[1].encoder.phase,                                 // ro
-    &motors[1].encoder.pll_pos,                               // rw
-    &motors[1].encoder.pll_vel,                               // rw
-    &motors[1].encoder.pll_kp,                                // rw
-    &motors[1].encoder.pll_ki,                                // rw
+    &Motor::getMotorByID(0)->pos_setpoint,                                  // rw
+    &Motor::getMotorByID(0)->pos_gain,                                      // rw
+    &Motor::getMotorByID(0)->vel_setpoint,                                  // rw
+    &Motor::getMotorByID(0)->vel_gain,                                      // rw
+    &Motor::getMotorByID(0)->vel_integrator_gain,                           // rw
+    &Motor::getMotorByID(0)->vel_integrator_current,                        // rw
+    &Motor::getMotorByID(0)->vel_limit,                                     // rw
+    &Motor::getMotorByID(0)->current_setpoint,                              // rw
+    &Motor::getMotorByID(0)->calibration_current,                           // rw
+    &Motor::getMotorByID(0)->phase_inductance,                              // ro
+    &Motor::getMotorByID(0)->phase_resistance,                              // ro
+    &Motor::getMotorByID(0)->current_meas.phB,                              // ro
+    &Motor::getMotorByID(0)->current_meas.phC,                              // ro
+    &Motor::getMotorByID(0)->DC_calib.phB,                                  // rw
+    &Motor::getMotorByID(0)->DC_calib.phC,                                  // rw
+    &Motor::getMotorByID(0)->shunt_conductance,                             // rw
+    &Motor::getMotorByID(0)->phase_current_rev_gain,                        // rw
+    &Motor::getMotorByID(0)->current_control->current_lim,                   // rw
+    &Motor::getMotorByID(0)->current_control->p_gain,                        // rw
+    &Motor::getMotorByID(0)->current_control->i_gain,                        // rw
+    &Motor::getMotorByID(0)->current_control->v_current_control_integral_d,  // rw
+    &Motor::getMotorByID(0)->current_control->v_current_control_integral_q,  // rw
+    &Motor::getMotorByID(0)->current_control->Ibus,                          // ro
+    &Motor::getMotorByID(0)->encoder->phase,                                 // ro
+    &Motor::getMotorByID(0)->encoder->pll_pos,                               // rw
+    &Motor::getMotorByID(0)->encoder->pll_vel,                               // rw
+    &Motor::getMotorByID(0)->encoder->pll_kp,                                // rw
+    &Motor::getMotorByID(0)->encoder->pll_ki,                                // rw
+    &Motor::getMotorByID(1)->pos_setpoint,                                  // rw
+    &Motor::getMotorByID(1)->pos_gain,                                      // rw
+    &Motor::getMotorByID(1)->vel_setpoint,                                  // rw
+    &Motor::getMotorByID(1)->vel_gain,                                      // rw
+    &Motor::getMotorByID(1)->vel_integrator_gain,                           // rw
+    &Motor::getMotorByID(1)->vel_integrator_current,                        // rw
+    &Motor::getMotorByID(1)->vel_limit,                                     // rw
+    &Motor::getMotorByID(1)->current_setpoint,                              // rw
+    &Motor::getMotorByID(1)->calibration_current,                           // rw
+    &Motor::getMotorByID(1)->phase_inductance,                              // ro
+    &Motor::getMotorByID(1)->phase_resistance,                              // ro
+    &Motor::getMotorByID(1)->current_meas.phB,                              // ro
+    &Motor::getMotorByID(1)->current_meas.phC,                              // ro
+    &Motor::getMotorByID(1)->DC_calib.phB,                                  // rw
+    &Motor::getMotorByID(1)->DC_calib.phC,                                  // rw
+    &Motor::getMotorByID(1)->shunt_conductance,                             // rw
+    &Motor::getMotorByID(1)->phase_current_rev_gain,                        // rw
+    &Motor::getMotorByID(1)->current_control->current_lim,                   // rw
+    &Motor::getMotorByID(1)->current_control->p_gain,                        // rw
+    &Motor::getMotorByID(1)->current_control->i_gain,                        // rw
+    &Motor::getMotorByID(1)->current_control->v_current_control_integral_d,  // rw
+    &Motor::getMotorByID(1)->current_control->v_current_control_integral_q,  // rw
+    &Motor::getMotorByID(1)->current_control->Ibus,                          // ro
+    &Motor::getMotorByID(1)->encoder->phase,                                 // ro
+    &Motor::getMotorByID(1)->encoder->pll_pos,                               // rw
+    &Motor::getMotorByID(1)->encoder->pll_vel,                               // rw
+    &Motor::getMotorByID(1)->encoder->pll_kp,                                // rw
+    &Motor::getMotorByID(1)->encoder->pll_ki,                                // rw
 };
 
 int *exposed_ints[] = {
-    (int *)&motors[0].control_mode,     // rw
-    &motors[0].encoder.encoder_offset,  // rw
-    &motors[0].encoder.encoder_state,   // ro
-    &motors[0].error,                   // rw
-    (int *)&motors[1].control_mode,     // rw
-    &motors[1].encoder.encoder_offset,  // rw
-    &motors[1].encoder.encoder_state,   // ro
-    &motors[1].error,                   // rw
+    (int *)&Motor::getMotorByID(0)->control_mode,     // rw
+    &Motor::getMotorByID(0)->encoder->encoder_offset,  // rw
+    &Motor::getMotorByID(0)->encoder->encoder_state,   // ro
+    &Motor::getMotorByID(0)->error,                   // rw
+    (int *)&Motor::getMotorByID(1)->control_mode,     // rw
+    &Motor::getMotorByID(1)->encoder->encoder_offset,  // rw
+    &Motor::getMotorByID(1)->encoder->encoder_state,   // ro
+    &Motor::getMotorByID(1)->error,                   // rw
 };
 
 bool *exposed_bools[] = {
-    &motors[0].thread_ready,    // ro
-    &motors[0].enable_control,  // rw
-    &motors[0].do_calibration,  // rw
-    &motors[0].calibration_ok,  // ro
-    &motors[1].thread_ready,    // ro
-    &motors[1].enable_control,  // rw
-    &motors[1].do_calibration,  // rw
-    &motors[1].calibration_ok,  // ro
+    &Motor::getMotorByID(0)->thread_ready,    // ro
+    &Motor::getMotorByID(0)->enable_control,  // rw
+    &Motor::getMotorByID(0)->do_calibration,  // rw
+    &Motor::getMotorByID(0)->calibration_ok,  // ro
+    &Motor::getMotorByID(1)->thread_ready,    // ro
+    &Motor::getMotorByID(1)->enable_control,  // rw
+    &Motor::getMotorByID(1)->do_calibration,  // rw
+    &Motor::getMotorByID(1)->calibration_ok,  // ro
 };
 
 uint16_t *exposed_uint16[] = {
-    &motors[0].control_deadline,  // rw
-    &motors[0].last_cpu_time,     // ro
-    &motors[1].control_deadline,  // rw
-    &motors[1].last_cpu_time,     // ro
+    &Motor::getMotorByID(0)->control_deadline,  // rw
+    &Motor::getMotorByID(0)->last_cpu_time,     // ro
+    &Motor::getMotorByID(1)->control_deadline,  // rw
+    &Motor::getMotorByID(1)->last_cpu_time,     // ro
 };
 
 static void print_monitoring(int limit) {
@@ -140,9 +140,8 @@ void motor_parse_cmd(uint8_t *buffer, int len) {
         int numscan =
             sscanf((const char *)buffer, "p %u %f %f %f", &motor_number,
                    &pos_setpoint, &vel_feed_forward, &current_feed_forward);
-        if (numscan == 4 && motor_number < numMotors) {
-            set_pos_setpoint(&motors[motor_number], pos_setpoint,
-                             vel_feed_forward, current_feed_forward);
+        if (numscan == 4 && motor_number < Motor::getNumMotors()) {
+            Controller::set_pos_setpoint(*Motor::getMotorByID(motor_number), pos_setpoint, vel_feed_forward, current_feed_forward);
         }
     } else if (buffer[0] == 'v') {
         // velocity control
@@ -150,9 +149,8 @@ void motor_parse_cmd(uint8_t *buffer, int len) {
         float vel_feed_forward, current_feed_forward;
         int numscan = sscanf((const char *)buffer, "v %u %f %f", &motor_number,
                              &vel_feed_forward, &current_feed_forward);
-        if (numscan == 3 && motor_number < numMotors) {
-            set_vel_setpoint(&motors[motor_number], vel_feed_forward,
-                             current_feed_forward);
+        if (numscan == 3 && motor_number < Motor::getNumMotors()) {
+            Controller::set_vel_setpoint(*Motor::getMotorByID(motor_number), vel_feed_forward, current_feed_forward);
         }
     } else if (buffer[0] == 'c') {
         // current control
@@ -160,8 +158,8 @@ void motor_parse_cmd(uint8_t *buffer, int len) {
         float current_feed_forward;
         int numscan = sscanf((const char *)buffer, "c %u %f", &motor_number,
                              &current_feed_forward);
-        if (numscan == 2 && motor_number < numMotors) {
-            set_current_setpoint(&motors[motor_number], current_feed_forward);
+        if (numscan == 2 && motor_number < Motor::getNumMotors()) {
+            Controller::set_current_setpoint(*Motor::getMotorByID(motor_number), current_feed_forward);
         }
     } else if (buffer[0] == 'g') {  // GET
         // g <0:float,1:int,2:bool,3:uint16> index
@@ -239,8 +237,8 @@ void motor_parse_cmd(uint8_t *buffer, int len) {
     } else if (buffer[0] == 'e') {
         // Check for Errors
         Error_t err;
-        for (int i = 0; i < numMotors; i++) {
-            err = (Error_t)motors[i].error;
+        for (int i = 0; i < Motor::getNumMotors(); i++) {
+            err = (Error_t)Motor::getMotorByID(i)->error;
 
             printf("Motor %d: ", i);
             switch (err) {

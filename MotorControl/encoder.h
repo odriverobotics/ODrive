@@ -18,4 +18,4 @@ class Encoder {
     float pll_ki;
 
     // TODO:  All functions which operate on an Encoder should be placed here
-}
+};

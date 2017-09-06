@@ -77,12 +77,13 @@ C_SOURCES = \
   Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_ll_usb.c \
   Src/usbd_cdc_if.c \
   Src/syscalls.c \
-  MotorControl/callbacks.c \
   MotorControl/motor.c
 CPP_SOURCES = \
+  MotorControl/callbacks.cpp \
   MotorControl/constants.cpp \
   MotorControl/controller.cpp \
   MotorControl/encoder.cpp \
+  MotorControl/error.cpp \
   MotorControl/low_level.cpp \
   MotorControl/sensorless.cpp \
   MotorControl/usb_commands.cpp \

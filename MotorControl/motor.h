@@ -53,6 +53,7 @@ class Motor {
    public:
     Motor();
 
+    int motorID;
     Motor_control_mode_t control_mode;
     bool enable_step_dir;
     float counts_per_step;
@@ -83,10 +84,10 @@ class Motor {
     DRV_SPI_8301_Vars_t gate_driver_regs;  //Local view of DRV registers
     float shunt_conductance;
     float phase_current_rev_gain;  //Reverse gain for ADC to Amps
-    Current_control_t current_control;
+    Current_control_t* current_control;
     Rotor_mode_t rotor_mode;
-    Encoder_t encoder;
-    ODrive_Sensorless_t sensorless;
+    Encoder* encoder;
+    Sensorless* sensorless;
     int timing_log_index;
     uint16_t timing_log[TIMING_LOG_SIZE];
 
@@ -97,23 +98,31 @@ class Motor {
     bool measurePhaseResistance(float test_current, float max_voltage);
     bool measurePhaseInductance(float voltage_low, float voltage_high);
     bool calibrateEncoderOffset(float voltage_magnitude);
-
-    // 
     uint16_t checkTiming();
     bool checkDeadlines();
-
     void queueVoltageTimings(float v_alpha, float v_beta);
     void queueModulationTimings(float mod_alpha, float mod_beta);
-
     void scanMotorLoop(float omega, float voltage_magnitude);
-}
+    void control_motor_loop();
+    float phase_current_from_adcval(uint32_t ADCValue);
+    bool spin_up_sensorless();
+    bool spin_up_timestep(float phase, float I_mag);
+    void update_rotor();
+    void update_sensorless();
+    void update_encoder();
+    float get_rotor_phase();
+    float get_pll_vel();
+    bool FOC_current(float Id_des, float Iq_des);
+    static Motor* getMotorByID(int nID);
+    static uint8_t getNumMotors();
+    static void update_brake_current(float brake_current);
+};
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-    extern Motor_t motors[MAX_NUM_MOTORS];
-    extern const int numMotors;
+    //extern Motor_t motors[MAX_NUM_MOTORS];
 
 #ifdef __cplusplus
 }
