@@ -120,7 +120,7 @@ Motor::Motor() {
     this->enable_control = true;
     this->do_calibration = true;
     this->calibration_ok = false;
-    this->motor_timer = (numMotors ? &htim8 : &htim1);
+    this->motor_timer = (motorID ? &htim8 : &htim1);
 
     this->next_timings[0] = TIM_1_8_PERIOD_CLOCKS / 2;
     this->next_timings[1] = TIM_1_8_PERIOD_CLOCKS / 2;
@@ -140,9 +140,9 @@ Motor::Motor() {
 
     this->rotor_mode = ROTOR_MODE_SENSORLESS;
 
-    this->current_control = (numMotors ? &currentControl1 : &currentControl0);
-    this->gate_driver = (numMotors ? gateDriver1 : gateDriver0);
-    this->encoder = new Encoder(numMotors ? &htim4 : &htim3);
+    this->current_control = (motorID ? &currentControl1 : &currentControl0);
+    this->gate_driver = (motorID ? gateDriver1 : gateDriver0);
+    this->encoder = new Encoder(motorID ? &htim4 : &htim3);
     this->sensorless = new Sensorless();
 
     this->timing_log_index = 0;
