@@ -3,7 +3,7 @@
 #include "boards.h"
 
 #ifndef MOTHERBOARD
-    #define MOTHERBOARD BOARD_ODRIVE_V3_2
+    #define MOTHERBOARD BOARD_ODRIVE_V3_3
 #endif
 
 // Mandatory Parameters
