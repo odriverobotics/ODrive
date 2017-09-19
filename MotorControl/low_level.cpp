@@ -68,7 +68,7 @@ static void FOC_voltage_loop(Motor &motor, float v_d, float v_q);
 
 // Initalises the low level motor control and then starts the motor control
 // threads
-void init_motor_control() {
+void initMotorControl() {
     // Init gate drivers
     DRV8301_setup(*Motor::getMotorByID(0));
     DRV8301_setup(*Motor::getMotorByID(1));
@@ -234,13 +234,13 @@ static void sync_timers(TIM_HandleTypeDef *htim_a, TIM_HandleTypeDef *htim_b,
 // This is the callback from the ADC that we expect after the PWM has triggered
 // an ADC conversion.
 // TODO: Document how the phasing is done, link to timing diagram
-void pwm_trig_adc_cb(ADC_HandleTypeDef *hadc, bool injected) {
+void pwmTrigADC_cb(ADC_HandleTypeDef *hadc, bool injected) {
 #define calib_tau 0.2f  //@TOTO make more easily configurable
     float calib_filter_k = CURRENT_MEAS_PERIOD / calib_tau;
 
     // Ensure ADCs are expected ones to simplify the logic below
     if (!(hadc == &hadc2 || hadc == &hadc3)) {
-        Error::global_fault(ERROR_ADC_FAILED);
+        Error::globalFault(ERROR_ADC_FAILED);
         return;
     };
 
@@ -288,7 +288,7 @@ void pwm_trig_adc_cb(ADC_HandleTypeDef *hadc, bool injected) {
         // Check the timing of the sequencing
         motor->checkTiming();
     } else {
-        Error::global_fault(ERROR_PWM_SRC_FAIL);
+        Error::globalFault(ERROR_PWM_SRC_FAIL);
         return;
     }
 
@@ -298,7 +298,7 @@ void pwm_trig_adc_cb(ADC_HandleTypeDef *hadc, bool injected) {
     } else {
         ADCValue = HAL_ADC_GetValue(hadc);
     }
-    float current = motor->phase_current_from_adcval(ADCValue);
+    float current = motor->phaseCurrentFromADCVal(ADCValue);
 
     if (current_meas_not_DC_CAL) {
         // ADC2 and ADC3 record the phB and phC currents concurrently,
@@ -317,7 +317,7 @@ void pwm_trig_adc_cb(ADC_HandleTypeDef *hadc, bool injected) {
         }
         // Trigger motor thread
         if (motor->thread_ready)
-            osSignalSet(motor->motor_thread, M_SIGNAL_PH_CURRENT_MEAS);
+            osSignalSet(motor->motorThread, M_SIGNAL_PH_CURRENT_MEAS);
     } else {
         // DC_CAL measurement
         if (hadc == &hadc2) {
@@ -336,9 +336,9 @@ void pwm_trig_adc_cb(ADC_HandleTypeDef *hadc, bool injected) {
 static void FOC_voltage_loop(Motor &motor, float v_d, float v_q) {
     for (;;) {
         osSignalWait(M_SIGNAL_PH_CURRENT_MEAS, osWaitForever);
-        motor.update_rotor();
+        motor.updateRotor();
 
-        float phase = motor.get_rotor_phase();
+        float phase = motor.getRotorPhase();
         float c = arm_cos_f32(phase);
         float s = arm_sin_f32(phase);
         float v_alpha = c * v_d - s * v_q;
@@ -359,9 +359,9 @@ static void FOC_voltage_loop(Motor &motor, float v_d, float v_q) {
 // Motor thread
 //--------------------------------
 
-void motor_thread() {
+void motorThread() {
     Motor* motor = new Motor();  // Not a problem as long as we don't deallocate it
-    motor->motor_thread = osThreadGetId();
+    motor->motorThread = osThreadGetId();
     motor->thread_ready = true;
 
     for (;;) {
@@ -378,9 +378,9 @@ void motor_thread() {
 
             bool spin_up_ok = true;
             if (motor->rotor_mode == ROTOR_MODE_SENSORLESS)
-                spin_up_ok = motor->spin_up_sensorless();
+                spin_up_ok = motor->spinUpSensorless();
             if (spin_up_ok)
-                motor->control_motor_loop();  // This doesn't return until motor->enable_control is false or there's an error.
+                motor->controlMotorLoop();  // This doesn't return until motor->enable_control is false or there's an error.
 
             __HAL_TIM_MOE_DISABLE_UNCONDITIONALLY(motor->motor_timer);
             motor->enable_step_dir = false;

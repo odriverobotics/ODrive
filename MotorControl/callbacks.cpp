@@ -3,7 +3,7 @@
 #include "motor.h"
 #include "error.h"
 
-void vbus_sense_adc_cb(ADC_HandleTypeDef *hadc, bool injected) {
+void vbusSenseADC_cb(ADC_HandleTypeDef *hadc, bool injected) {
     static const float voltage_scale = 3.3f * 11.0f / (float)(1 << 12);
     // Only one conversion in sequence, so only rank1
     uint32_t ADCValue = HAL_ADCEx_InjectedGetValue(hadc, ADC_INJECTED_RANK_1);
@@ -34,7 +34,7 @@ void step_cb(uint16_t GPIO_Pin) {
             }
             break;
         default:
-            Error::global_fault(ERROR_UNEXPECTED_STEP_SRC);
+            Error::globalFault(ERROR_UNEXPECTED_STEP_SRC);
             break;
     }
 }

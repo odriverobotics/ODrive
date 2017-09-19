@@ -12,9 +12,9 @@ static const int current_meas_hz = CURRENT_MEAS_HZ;
 // late
 float vbus_voltage = 12.0f;
 
-float get_current_meas_period() { return current_meas_period; }
+float getCurrentMeasPeriod() { return current_meas_period; }
 
-float get_current_meas_hz() { return current_meas_hz; }
+float getCurrentMeasHZ() { return current_meas_hz; }
 
 float get_vbus_voltage() { return vbus_voltage; }
 

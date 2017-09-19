@@ -18,11 +18,11 @@ extern "C" {
 /* Exported variables --------------------------------------------------------*/
 /* Exported macro ------------------------------------------------------------*/
 /* Exported functions --------------------------------------------------------*/
-void init_motor_control();
-void pwm_trig_adc_cb(ADC_HandleTypeDef *hadc, bool injected);
+void initMotorControl();
+void pwmTrigADC_cb(ADC_HandleTypeDef *hadc, bool injected);
 
 //@TODO move motor thread to high level file
-void motor_thread();
+void motorThread();
 
 #ifdef __cplusplus
 }

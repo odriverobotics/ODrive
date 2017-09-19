@@ -69,7 +69,7 @@ class Motor {
     float calibration_current;
     float phase_inductance;
     float phase_resistance;
-    osThreadId motor_thread;
+    osThreadId motorThread;
     bool thread_ready;
     bool enable_control;  // enable/disable via usb to start motor control. will be set to false again in case of errors.requires calibration_ok=true
     bool do_calibration;  //  trigger motor calibration. will be reset to false after self test
@@ -103,19 +103,19 @@ class Motor {
     void queueVoltageTimings(float v_alpha, float v_beta);
     void queueModulationTimings(float mod_alpha, float mod_beta);
     void scanMotorLoop(float omega, float voltage_magnitude);
-    void control_motor_loop();
-    float phase_current_from_adcval(uint32_t ADCValue);
-    bool spin_up_sensorless();
-    bool spin_up_timestep(float phase, float I_mag);
-    void update_rotor();
-    void update_sensorless();
-    void update_encoder();
-    float get_rotor_phase();
-    float get_pll_vel();
-    bool FOC_current(float Id_des, float Iq_des);
+    void controlMotorLoop();
+    float phaseCurrentFromADCVal(uint32_t ADCValue);
+    bool spinUpSensorless();
+    bool spinUpTimestep(float phase, float I_mag);
+    void updateRotor();
+    void updateSensorless();
+    void updateEncoder();
+    float getRotorPhase();
+    float getPLLVelocity();
+    bool focCurrent(float Id_des, float Iq_des);
     static Motor* getMotorByID(int nID);
     static uint8_t getNumMotors();
-    static void update_brake_current(float brake_current);
+    static void updateBrakeCurrent(float brake_current);
 };
 
 #ifdef __cplusplus

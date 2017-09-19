@@ -25,5 +25,5 @@ typedef enum {
 
 class Error {
    public:
-    static void global_fault(int error);
+    static void globalFault(int error);
 };

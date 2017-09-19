@@ -11,7 +11,7 @@ typedef struct {
     int index;
 } monitoring_slot;
 
-void motor_parse_cmd(uint8_t *buffer, int len);
+void motorParseCommand(uint8_t *buffer, int len);
 
 #ifdef __cplusplus
 }

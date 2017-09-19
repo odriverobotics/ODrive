@@ -1,7 +1,7 @@
 #include "error.h"
 #include "motor.h"
 
-void Error::global_fault(int error) {
+void Error::globalFault(int error) {
     // Disable motors NOW!
     for (int i = 0; i < Motor::getNumMotors(); ++i) {
         __HAL_TIM_MOE_DISABLE_UNCONDITIONALLY(Motor::getMotorByID(i)->motor_timer);
@@ -13,5 +13,5 @@ void Error::global_fault(int error) {
         Motor::getMotorByID(i)->calibration_ok = false;
     }
     // disable brake resistor
-    Motor::update_brake_current(0.0f);
+    Motor::updateBrakeCurrent(0.0f);
 }

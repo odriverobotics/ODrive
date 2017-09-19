@@ -7,7 +7,7 @@ extern "C" {
 #endif
 
 void step_cb(uint16_t GPIO_Pin);
-void vbus_sense_adc_cb(ADC_HandleTypeDef *hadc, bool injected);
+void vbusSenseADC_cb(ADC_HandleTypeDef *hadc, bool injected);
 
 #ifdef __cplusplus
 }

@@ -22,7 +22,7 @@ DRV8301_Obj gateDriver0 = {
     .nCSgpioHandle = M0_nCS_GPIO_Port,
     .nCSgpioNumber = M0_nCS_Pin,
     .RxTimeOut = false,
-    .enableTimeOut = false,
+    .enableTimeOut = false
 };
 
 DRV8301_Obj gateDriver1 = {
@@ -33,7 +33,7 @@ DRV8301_Obj gateDriver1 = {
     .nCSgpioHandle = M1_nCS_GPIO_Port,
     .nCSgpioNumber = M1_nCS_Pin,
     .RxTimeOut = false,
-    .enableTimeOut = false,
+    .enableTimeOut = false
 };
 
 Current_control_t currentControl0 = {
@@ -115,7 +115,7 @@ Motor::Motor() {
     this->calibration_current = 10.0f;    // [A]
     this->phase_inductance = 0.0f;        // to be set by measure_phase_inductance
     this->phase_resistance = 0.0f;        // to be set by measure_phase_resistance
-    this->motor_thread = 0;
+    this->motorThread = 0;
     this->thread_ready = false;
     this->enable_control = true;
     this->do_calibration = true;
@@ -162,13 +162,13 @@ Motor* Motor::getMotorByID(int nID){
         return NULL;
 }
 
-void Motor::control_motor_loop() {
+void Motor::controlMotorLoop() {
     while (this->enable_control) {
         if (osSignalWait(M_SIGNAL_PH_CURRENT_MEAS, PH_CURRENT_MEAS_TIMEOUT).status != osEventSignal) {
             this->error = ERROR_FOC_MEASUREMENT_TIMEOUT;
             break;
         }
-        update_rotor();
+        updateRotor();
 
         // Position control
         // TODO Decide if we want to use encoder or pll position here
@@ -187,7 +187,7 @@ void Motor::control_motor_loop() {
 
         // Velocity control
         float Iq = this->current_setpoint;
-        float v_err = vel_des - get_pll_vel();
+        float v_err = vel_des - getPLLVelocity();
         if (this->control_mode >= CTRL_MODE_VELOCITY_CONTROL) {
             Iq += this->vel_gain * v_err;
         }
@@ -223,15 +223,15 @@ void Motor::control_motor_loop() {
                 this->vel_integrator_current *= 0.99f;
             } else {
                 this->vel_integrator_current +=
-                    (this->vel_integrator_gain * get_current_meas_period()) *
+                    (this->vel_integrator_gain * getCurrentMeasPeriod()) *
                     v_err;
             }
         }
 
         // Execute current command
-        if (!FOC_current(0.0f, Iq)) {
+        if (!focCurrent(0.0f, Iq)) {
             break;  // in case of error exit loop, this->error has been set by
-                    // FOC_current
+                    // focCurrent
         }
     }
 
@@ -279,7 +279,7 @@ bool Motor::calculatePLLGains() {
     this->encoder->pll_kp = 2.0f * encoder_pll_bandwidth;
 
     // Check that we don't get problems with discrete time approximation
-    if (!(get_current_meas_period() * this->encoder->pll_kp < 1.0f)) {
+    if (!(getCurrentMeasPeriod() * this->encoder->pll_kp < 1.0f)) {
         this->error = ERROR_CALIBRATION_TIMING;
         return false;
     }
@@ -297,7 +297,7 @@ bool Motor::calculatePLLGains() {
 // TODO check Ibeta balance to verify good motor connection
 bool Motor::measurePhaseResistance(float test_current, float max_voltage) {
     static const float kI = 10.0f;                           //[(V/s)/A]
-    int num_test_cycles = 3.0f / get_current_meas_period();  // Test runs for 3s
+    int num_test_cycles = 3.0f / getCurrentMeasPeriod();  // Test runs for 3s
     float test_voltage = 0.0f;
     for (int i = 0; i < num_test_cycles; ++i) {
         osEvent evt =
@@ -307,7 +307,7 @@ bool Motor::measurePhaseResistance(float test_current, float max_voltage) {
             return false;
         }
         float Ialpha = -(this->current_meas.phB + this->current_meas.phC);
-        test_voltage += (kI * get_current_meas_period()) * (test_current - Ialpha);
+        test_voltage += (kI * getCurrentMeasPeriod()) * (test_current - Ialpha);
         test_voltage = MACRO_CONSTRAIN(test_voltage, -max_voltage, max_voltage);
 
         // Test voltage along phase A
@@ -367,7 +367,7 @@ bool Motor::measurePhaseInductance(float voltage_low, float voltage_high) {
     // However, the discretisation in the current control loop inverts the same
     // discrepancy
     float dI_by_dt = (Ialphas[1] - Ialphas[0]) /
-                     (get_current_meas_period() * (float)num_cycles);
+                     (getCurrentMeasPeriod() * (float)num_cycles);
     float L = v_L / dI_by_dt;
 
     // TODO arbitrary values set for now
@@ -394,7 +394,7 @@ bool Motor::calibrateEncoderOffset(float voltage_magnitude) {
     int32_t encvaluesum = 0;
 
     // go to encoder zero phase for start_lock_duration to get ready to scan
-    for (int i = 0; i < start_lock_duration * get_current_meas_hz(); ++i) {
+    for (int i = 0; i < start_lock_duration * getCurrentMeasHZ(); ++i) {
         if (osSignalWait(M_SIGNAL_PH_CURRENT_MEAS, PH_CURRENT_MEAS_TIMEOUT)
                 .status != osEventSignal) {
             this->error = ERROR_ENCODER_MEASUREMENT_TIMEOUT;
@@ -404,7 +404,7 @@ bool Motor::calibrateEncoderOffset(float voltage_magnitude) {
     }
     // scan forwards
     for (float ph = -scan_range / 2.0f; ph < scan_range / 2.0f; ph += step_size) {
-        for (int i = 0; i < dt_step * (float)get_current_meas_hz(); ++i) {
+        for (int i = 0; i < dt_step * (float)getCurrentMeasHZ(); ++i) {
             if (osSignalWait(M_SIGNAL_PH_CURRENT_MEAS, PH_CURRENT_MEAS_TIMEOUT)
                     .status != osEventSignal) {
                 this->error = ERROR_ENCODER_MEASUREMENT_TIMEOUT;
@@ -431,7 +431,7 @@ bool Motor::calibrateEncoderOffset(float voltage_magnitude) {
     }
     // scan backwards
     for (float ph = scan_range / 2.0f; ph > -scan_range / 2.0f; ph -= step_size) {
-        for (int i = 0; i < dt_step * (float)get_current_meas_hz(); ++i) {
+        for (int i = 0; i < dt_step * (float)getCurrentMeasHZ(); ++i) {
             if (osSignalWait(M_SIGNAL_PH_CURRENT_MEAS, PH_CURRENT_MEAS_TIMEOUT)
                     .status != osEventSignal) {
                 this->error = ERROR_ENCODER_MEASUREMENT_TIMEOUT;
@@ -452,7 +452,7 @@ bool Motor::calibrateEncoderOffset(float voltage_magnitude) {
 void Motor::scanMotorLoop(float omega, float voltage_magnitude) {
     for (;;) {
         for (float ph = 0.0f; ph < 2.0f * M_PI;
-             ph += omega * get_current_meas_period()) {
+             ph += omega * getCurrentMeasPeriod()) {
             osSignalWait(M_SIGNAL_PH_CURRENT_MEAS, osWaitForever);
             float v_alpha = voltage_magnitude * arm_cos_f32(ph);
             float v_beta = voltage_magnitude * arm_sin_f32(ph);
@@ -511,16 +511,16 @@ bool Motor::checkDeadlines() {
 // Main motor control
 //--------------------------------`
 
-void Motor::update_rotor() {
+void Motor::updateRotor() {
     switch (this->rotor_mode) {
         case ROTOR_MODE_ENCODER:
-            update_encoder();
+            updateEncoder();
             break;
         case ROTOR_MODE_RUN_ENCODER_TEST_SENSORLESS:
-            update_encoder();  // If we're testing, we want both encoder
+            updateEncoder();  // If we're testing, we want both encoder
                                     // and sensorless
         case ROTOR_MODE_SENSORLESS:
-            update_sensorless();
+            updateSensorless();
             break;
         default:
             // TODO error handling
@@ -528,7 +528,7 @@ void Motor::update_rotor() {
     }
 }
 
-void Motor::update_encoder() {
+void Motor::updateEncoder() {
     // For convenience
     Encoder *encoder = this->encoder;
 
@@ -548,16 +548,16 @@ void Motor::update_encoder() {
     // TODO pll_pos runs out of precision very quickly here! Perhaps decompose
     // into integer and fractional part?
     // Predict current pos
-    encoder->pll_pos += get_current_meas_period() * encoder->pll_vel;
+    encoder->pll_pos += getCurrentMeasPeriod() * encoder->pll_vel;
     // discrete phase detector
     float delta_pos =
         (float)(encoder->encoder_state - (int32_t)floorf(encoder->pll_pos));
     // pll feedback
-    encoder->pll_pos += get_current_meas_period() * encoder->pll_kp * delta_pos;
-    encoder->pll_vel += get_current_meas_period() * encoder->pll_ki * delta_pos;
+    encoder->pll_pos += getCurrentMeasPeriod() * encoder->pll_kp * delta_pos;
+    encoder->pll_vel += getCurrentMeasPeriod() * encoder->pll_ki * delta_pos;
 }
 
-void Motor::update_sensorless() {
+void Motor::updateSensorless() {
     // Algorithm based on paper: Sensorless Control of Surface-Mount
     // Permanent-Magnet Synchronous Motors Based on a Nonlinear Observer
     // http://cas.ensmp.fr/~praly/Telechargement/Journaux/2010-IEEE_TPEL-Lee-Hong-Nam-Ortega-Praly-Astolfi.pdf
@@ -587,7 +587,7 @@ void Motor::update_sensorless() {
         // flux dynamics (prediction)
         float x_dot = y;
         // integrate prediction to current timestep
-        sensorless->flux_state[i] += x_dot * get_current_meas_period();
+        sensorless->flux_state[i] += x_dot * getCurrentMeasPeriod();
 
         // eta is the estimated permanent magnet flux (see paper eqn 6)
         eta[i] = sensorless->flux_state[i] -
@@ -611,7 +611,7 @@ void Motor::update_sensorless() {
         // add observer action to flux estimate dynamics
         float x_dot = eta_factor * eta[i];
         // convert action to discrete-time
-        sensorless->flux_state[i] += x_dot * get_current_meas_period();
+        sensorless->flux_state[i] += x_dot * getCurrentMeasPeriod();
         // update new eta
         eta[i] = sensorless->flux_state[i] -
                  this->phase_inductance * I_alpha_beta[i];
@@ -624,16 +624,16 @@ void Motor::update_sensorless() {
     // PLL
     // predict PLL phase with velocity
     sensorless->pll_pos = wrap_pm_pi(
-        sensorless->pll_pos + get_current_meas_period() * sensorless->pll_vel);
+        sensorless->pll_pos + getCurrentMeasPeriod() * sensorless->pll_vel);
     // update PLL phase with observer permanent magnet phase
     sensorless->phase = fast_atan2(eta[1], eta[0]);
     float delta_phase = wrap_pm_pi(sensorless->phase - sensorless->pll_pos);
     sensorless->pll_pos = wrap_pm_pi(sensorless->pll_pos +
-                                     get_current_meas_period() *
+                                     getCurrentMeasPeriod() *
                                          sensorless->pll_kp * delta_phase);
     // update PLL velocity
     sensorless->pll_vel +=
-        get_current_meas_period() * sensorless->pll_ki * delta_phase;
+        getCurrentMeasPeriod() * sensorless->pll_ki * delta_phase;
 
     // TODO TEMP TEST HACK
     // static int trigger_ctr = 0;
@@ -649,7 +649,7 @@ void Motor::update_sensorless() {
     // }
 }
 
-float Motor::get_rotor_phase() {
+float Motor::getRotorPhase() {
     switch (this->rotor_mode) {
         case ROTOR_MODE_ENCODER:
         case ROTOR_MODE_RUN_ENCODER_TEST_SENSORLESS:
@@ -665,7 +665,7 @@ float Motor::get_rotor_phase() {
     }
 }
 
-float Motor::get_pll_vel() {
+float Motor::getPLLVelocity() {
     switch (this->rotor_mode) {
         case ROTOR_MODE_ENCODER:
         case ROTOR_MODE_RUN_ENCODER_TEST_SENSORLESS:
@@ -681,26 +681,26 @@ float Motor::get_pll_vel() {
     }
 }
 
-bool Motor::spin_up_timestep(float phase, float I_mag) {
+bool Motor::spinUpTimestep(float phase, float I_mag) {
     // wait for new timestep
     if (osSignalWait(M_SIGNAL_PH_CURRENT_MEAS, PH_CURRENT_MEAS_TIMEOUT).status != osEventSignal) {
         this->error = ERROR_SPIN_UP_TIMEOUT;
         return false;
     }
     // run estimator
-    update_rotor();
+    updateRotor();
     // override the phase during spinup
     this->sensorless->phase = phase;
     // run current control (with the phase override)
-    FOC_current(I_mag, 0.0f);
+    focCurrent(I_mag, 0.0f);
 
     return true;
 }
 
-bool Motor::spin_up_sensorless() {
+bool Motor::spinUpSensorless() {
     static const float ramp_up_time = 0.4f;
     static const float ramp_up_distance = 4 * M_PI;
-    float ramp_step = get_current_meas_period() / ramp_up_time;
+    float ramp_step = getCurrentMeasPeriod() / ramp_up_time;
 
     float phase = 0.0f;
     float vel = ramp_up_distance / ramp_up_time;
@@ -710,22 +710,22 @@ bool Motor::spin_up_sensorless() {
     for (float x = 0.0f; x < 1.0f; x += ramp_step) {
         phase = wrap_pm_pi(ramp_up_distance * x);
         I_mag = this->sensorless->spin_up_current * x;
-        if (!spin_up_timestep(phase, I_mag)) return false;
+        if (!spinUpTimestep(phase, I_mag)) return false;
     }
 
     // accelerate
     while (vel < this->sensorless->spin_up_target_vel) {
         vel +=
-            this->sensorless->spin_up_acceleration * get_current_meas_period();
-        phase = wrap_pm_pi(phase + vel * get_current_meas_period());
-        if (!spin_up_timestep(phase, this->sensorless->spin_up_current))
+            this->sensorless->spin_up_acceleration * getCurrentMeasPeriod();
+        phase = wrap_pm_pi(phase + vel * getCurrentMeasPeriod());
+        if (!spinUpTimestep(phase, this->sensorless->spin_up_current))
             return false;
     }
 
     // // test keep spinning
     // while (true) {
-    //     phase = wrap_pm_pi(phase + vel * get_current_meas_period());
-    //     if(!spin_up_timestep(phase, this->sensorless->spin_up_current))
+    //     phase = wrap_pm_pi(phase + vel * getCurrentMeasPeriod());
+    //     if(!spinUpTimestep(phase, this->sensorless->spin_up_current))
     //         return false;
     // }
 
@@ -734,7 +734,7 @@ bool Motor::spin_up_sensorless() {
     // TODO: check pll vel (abs ratio, 0.8)
 }
 
-void Motor::update_brake_current(float brake_current) {
+void Motor::updateBrakeCurrent(float brake_current) {
     if (brake_current < 0.0f) brake_current = 0.0f;
     float brake_duty = brake_current * brake_resistance / vbus_voltage;
 
@@ -753,7 +753,7 @@ void Motor::update_brake_current(float brake_current) {
     htim2.Instance->CCR4 = high_on;
 }
 
-bool Motor::FOC_current(float Id_des, float Iq_des) {
+bool Motor::focCurrent(float Id_des, float Iq_des) {
     Current_control_t *ictrl = this->current_control;
 
     // Clarke transform
@@ -762,7 +762,7 @@ bool Motor::FOC_current(float Id_des, float Iq_des) {
         ONE_BY_SQRT3 * (this->current_meas.phB - this->current_meas.phC);
 
     // Park transform
-    float phase = get_rotor_phase();
+    float phase = getRotorPhase();
     float c = arm_cos_f32(phase);
     float s = arm_sin_f32(phase);
     float Id = c * Ialpha + s * Ibeta;
@@ -795,9 +795,9 @@ bool Motor::FOC_current(float Id_des, float Iq_des) {
         ictrl->v_current_control_integral_q *= 0.99f;
     } else {
         ictrl->v_current_control_integral_d +=
-            Ierr_d * (ictrl->i_gain * get_current_meas_period());
+            Ierr_d * (ictrl->i_gain * getCurrentMeasPeriod());
         ictrl->v_current_control_integral_q +=
-            Ierr_q * (ictrl->i_gain * get_current_meas_period());
+            Ierr_q * (ictrl->i_gain * getCurrentMeasPeriod());
     }
 
     // Compute estimated bus current
@@ -806,14 +806,14 @@ bool Motor::FOC_current(float Id_des, float Iq_des) {
     // If this is last motor, update brake resistor duty
     // if (motor == getMotorByID(numMotors-1) {
     // Above check doesn't work if last motor is executing voltage control
-    // TODO trigger this update in control_motor_loop instead,
+    // TODO trigger this update in controlMotorLoop instead,
     // and make voltage control a control mode in it.
     float Ibus_sum = 0.0f;
     for (int i = 0; i < getNumMotors(); ++i) {
         Ibus_sum += (*getMotorByID(i)).current_control->Ibus;
     }
     // Note: function will clip negative values to 0.0f
-    update_brake_current(-Ibus_sum);
+    updateBrakeCurrent(-Ibus_sum);
     // }
 
     // Inverse park transform
@@ -842,7 +842,7 @@ bool Motor::FOC_current(float Id_des, float Iq_des) {
 // Utility
 //--------------------------------
 
-float Motor::phase_current_from_adcval(uint32_t ADCValue) {
+float Motor::phaseCurrentFromADCVal(uint32_t ADCValue) {
     int adcval_bal = (int)ADCValue - (1 << 11);
     float amp_out_volt = (3.3f / (float)(1 << 12)) * (float)adcval_bal;
     float shunt_volt = amp_out_volt * this->phase_current_rev_gain;
