@@ -18,13 +18,20 @@ There is also [ODriveFPGA](https://github.com/madcowswe/ODriveFPGA), which conta
 - [Communicating over USB](#communicating-over-usb)
 - [Generating startup code](#generating-startup-code)
 - [Setting up Eclipse development environment](#setting-up-eclipse-development-environment)
+- [Notes for Contributors](#notes-for-contributors)
 
 <!-- /MarkdownTOC -->
 
 ## Configuring parameters
 To correctly operate the ODrive, you need to supply some parameters. Some are mandatory, and if supplied incorrectly will cause the drive to malfunction. To get good performance you must also tune the drive.
 
-Currently, all the parameters are at the top of the [MotorControl/low_level.c](https://github.com/madcowswe/ODriveFirmware/blob/master/MotorControl/low_level.c) file. Please note that many parameters occur twice, once for each motor.
+The first thing to set is your board hardware version, located at the top of [Inc/main.h](https://github.com/madcowswe/ODriveFirmware/blob/master/Inc/main.h). If, for example, you are using the hardware: ODrive v3.2, then you should set it like this:
+```C
+#define HW_VERSION_MAJOR 3
+#define HW_VERSION_MINOR 2
+```
+
+The rest of all the parameters are at the top of the [MotorControl/low_level.c](https://github.com/madcowswe/ODriveFirmware/blob/master/MotorControl/low_level.c) file. Please note that many parameters occur twice, once for each motor.
 In it's current state, the motor structs contain both tuning parameters, meant to be set by the developer, and static variables, meant to be modified by the software. Unfortunatly these are mixed together right now, but cleaning this up is a high priority task.
 
 It may be helpful to know that the entry point of each of the motor threads is `void motor_thread` at the bottom of [MotorControl/low_level.c](https://github.com/madcowswe/ODriveFirmware/blob/master/MotorControl/low_level.c). This is like `main` for each motor, and is probably where you should start reading the code.
@@ -76,7 +83,6 @@ To compile the program, you first need to install the prerequisite tools:
 * No additional USB CDC driver should be required on Linux.
 
 #### Windows:
-##### Git Bash and manual tool installations
 Install the following:
 * [Git for windows](https://git-scm.com/download/win). This intalls the Git Bash, which is a unix style command line interface that we will be using. 
 * [GNU ARM Embedded Toolchain](https://developer.arm.com/open-source/gnu-toolchain/gnu-rm/downloads). The cross-compiler used to compile the code. Download and install the "Windows 32-bit" version. Make sure to tick the "add to path" option.
@@ -84,9 +90,6 @@ Install the following:
 * OpenOCD. Follow the instructions at [GNU ARM Eclipse  - How to install the OpenOCD binaries](http://gnuarmeclipse.github.io/openocd/install/), including the part about ST-LINK/V2 drivers. Add the path of the binaries to your PATH environment variable. For me this was at `C:\Program Files\GNU ARM Eclipse\OpenOCD\0.10.0-201704182147-dev\bin`.
 
 After installing all of the above, open a Git Bash shell. Continue at section [Building the firmware](#building-the-firmware).
-
-##### Cygwin
-TODO
 
 ### Building the firmware
 * Make sure you have cloned the repository.
@@ -224,8 +227,10 @@ There is an excellent project called CubeMX2Makefile, originally from baoshi. Th
 * Set beakpoints, step, hit Resume, etc.
 * Make some cool features! ;D
 
+## Notes for Contributors
+In general the project uses the [Google C++ Style Guide](https://google.github.io/styleguide/cppguide.html), except that the default indendtation is 4 spaces, and that the 80 character limit is not very strictly enforced, merely encouraged.
 
-## Code maintenance notes
+### Code maintenance notes
 The cortex M4F processor has hardware single precision float unit. However double precision operations are not accelerated, and hence should be avoided. The following regex is helpful for cleaning out double constants:
 find: `([-+]?[0-9]+\.[0-9]+(?:[eE][-+]?[0-9]+)?)([^f0-9e])`
 replace: `\1f\2`
