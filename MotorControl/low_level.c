@@ -865,7 +865,7 @@ static bool measure_phase_resistance(Motor_t* motor, float test_current, float m
             motor->error = ERROR_PHASE_RESISTANCE_MEASUREMENT_TIMEOUT;
             return false;
         }
-        float Ialpha = -0.5f * (motor->current_meas.phB + motor->current_meas.phC);
+        float Ialpha = -(motor->current_meas.phB + motor->current_meas.phC);
         test_voltage += (kI * current_meas_period) * (test_current - Ialpha);
         if (test_voltage > max_voltage) test_voltage = max_voltage;
         if (test_voltage < -max_voltage) test_voltage = -max_voltage;
@@ -1501,9 +1501,7 @@ void motor_thread(void const * argument) {
         if (motor->do_calibration) {
             __HAL_TIM_MOE_ENABLE(motor->motor_timer);// enable pwm outputs
             motor_calibration(motor);
-            if(!motor->calibration_ok){
-                __HAL_TIM_MOE_DISABLE_UNCONDITIONALLY(motor->motor_timer);// disables pwm outputs
-            }
+            __HAL_TIM_MOE_DISABLE_UNCONDITIONALLY(motor->motor_timer);// disables pwm outputs
             motor->do_calibration = false;
         }
         
