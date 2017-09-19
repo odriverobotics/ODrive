@@ -54,7 +54,7 @@
 
 #if HW_VERSION_MAJOR == 3 && HW_VERSION_MINOR == 1 \
 ||  HW_VERSION_MAJOR == 3 && HW_VERSION_MINOR == 2
-#include "gpio_ODRIVE_V3_2.c"
+#include "prev_board_ver/gpio_V3_2.c"
 #else
 /* USER CODE END 0 */
 

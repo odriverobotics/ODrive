@@ -45,7 +45,7 @@ void ADC_IRQ_Dispatch(ADC_HandleTypeDef* hadc, ADC_handler_t callback);
 
 #if HW_VERSION_MAJOR == 3 && HW_VERSION_MINOR == 1 \
 ||  HW_VERSION_MAJOR == 3 && HW_VERSION_MINOR == 2
-#include "stm32f4xx_it_ODRIVE_V3_2.c"
+#include "prev_board_ver/stm32f4xx_it_V3_2.c"
 #else
 /* USER CODE END 0 */
 
