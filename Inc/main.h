@@ -52,6 +52,9 @@
 
 /* USER CODE BEGIN Includes */
 
+#define HW_VERSION_MAJOR 3
+#define HW_VERSION_MINOR 3
+
 /* USER CODE END Includes */
 
 /* Private define ------------------------------------------------------------*/
