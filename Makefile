@@ -129,7 +129,7 @@ CFLAGS = -mthumb -mcpu=cortex-m4 -mfpu=fpv4-sp-d16 -mfloat-abi=hard $(C_DEFS) $(
 CXXFLAGS = -mthumb -mcpu=cortex-m4 -mfpu=fpv4-sp-d16 -mfloat-abi=hard $(C_DEFS) $(C_INCLUDES) $(OPT) -Wall -fdata-sections -ffunction-sections
 ifeq ($(DEBUG), 1)
 CFLAGS += -g -gdwarf-2
-CXXLAGS += -g -gdwarf-2
+CXXFLAGS += -g -gdwarf-2
 endif
 # Generate dependency information
 CFLAGS += -std=c99 -MD -MP -MF .dep/$(@F).d
