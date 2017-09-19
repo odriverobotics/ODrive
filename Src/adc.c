@@ -49,12 +49,21 @@
 
 /* Includes ------------------------------------------------------------------*/
 #include "adc.h"
-
 #include "gpio.h"
 
 /* USER CODE BEGIN 0 */
+#include "boards.h"
+#include "configuration.h"
 
+#if MB(ODRIVE_V3_3)
+#include "adc_ODRIVE_V3_3.c"
+#elif MB(ODRIVE_V3_2)
+#include "adc_ODRIVE_V3_2.c"
+#elif MB(ODRIVE_V3_1)
+#include "adc_ODRIVE_V3_2.c"
+#else
 /* USER CODE END 0 */
+
 
 ADC_HandleTypeDef hadc1;
 ADC_HandleTypeDef hadc2;
@@ -436,6 +445,7 @@ void HAL_ADC_MspDeInit(ADC_HandleTypeDef* adcHandle)
 } 
 
 /* USER CODE BEGIN 1 */
+#endif  // END ADC Include
 
 float read_ADC_volts(ADC_HandleTypeDef* hadc, uint8_t injected_rank) {
     uint32_t ADCValue;
