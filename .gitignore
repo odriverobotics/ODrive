@@ -20,3 +20,8 @@ STM32CubeMX
 
 #gdb log
 openocd.log
+dot_file
+
+cppdepends\.py
+
+graph\.pdf

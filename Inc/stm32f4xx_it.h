@@ -35,11 +35,27 @@
 #ifndef __STM32F4xx_IT_H
 #define __STM32F4xx_IT_H
 
+/* USER CODE BEGIN 0 */
+#include "boards.h"
+#include "configuration.h"
+/* USER CODE END 0 */
+
 #ifdef __cplusplus
  extern "C" {
 #endif 
 
+/* USER CODE BEGIN 1 */
+#if MB(ODRIVE_V3_3)
+#include "stm32f4xx_it_ODRIVE_V3_3.h"
+#elif MB(ODRIVE_V3_2)
+#include "stm32f4xx_it_ODRIVE_V3_2.h"
+#elif MB(ODRIVE_V3_1)
+#include "stm32f4xx_it_ODRIVE_V3_2.h"
+#else
+/* USER CODE END 1 */
+
 /* Includes ------------------------------------------------------------------*/
+
 /* Exported types ------------------------------------------------------------*/
 /* Exported constants --------------------------------------------------------*/
 /* Exported macro ------------------------------------------------------------*/
@@ -52,13 +68,18 @@ void BusFault_Handler(void);
 void UsageFault_Handler(void);
 void DebugMon_Handler(void);
 void SysTick_Handler(void);
+void EXTI0_IRQHandler(void);
 void EXTI2_IRQHandler(void);
-void EXTI4_IRQHandler(void);
 void ADC_IRQHandler(void);
 void OTG_FS_IRQHandler(void);
 
 #ifdef __cplusplus
 }
+
+/* USER CODE BEGIN 2 */
+#endif /* if MB(board) */
+/* USER CODE END 2 */
+
 #endif
 
 #endif /* __STM32F4xx_IT_H */

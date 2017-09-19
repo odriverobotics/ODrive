@@ -50,7 +50,7 @@
 #include "usbd_cdc_if.h"
 /* USER CODE BEGIN INCLUDE */
 #include "utils.h"
-#include "low_level.h"
+#include "usb_commands.h"
 /* USER CODE END INCLUDE */
 
 /** @addtogroup STM32_USB_OTG_DEVICE_LIBRARY
@@ -275,7 +275,7 @@ static int8_t CDC_Receive_FS (uint8_t* Buf, uint32_t *Len)
   int null_idx = MACRO_MIN(*Len, APP_RX_DATA_SIZE-1);
   Buf[null_idx] = 0;
 
-  motor_parse_cmd(Buf, *Len);
+  motorParseCommand(Buf, *Len);
 
   return (USBD_OK);
   /* USER CODE END 6 */ 

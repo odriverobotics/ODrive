@@ -121,14 +121,16 @@ void StartDefaultTask(void const * argument)
 
   /* USER CODE BEGIN StartDefaultTask */
 
-  // Init motor control
-  init_motor_control();
+
 
   // Start motor threads
-  osThreadDef(task_motor_0, motor_thread,   osPriorityHigh+1, 0, 512);
-  osThreadDef(task_motor_1, motor_thread,   osPriorityHigh,   0, 512);
-  thread_motor_0 = osThreadCreate(osThread(task_motor_0), &motors[0]);
-  thread_motor_1 = osThreadCreate(osThread(task_motor_1), &motors[1]);
+  osThreadDef(task_motor_0, motorThread,   osPriorityHigh+1, 0, 512);
+  osThreadDef(task_motor_1, motorThread,   osPriorityHigh,   0, 512);
+  thread_motor_0 = osThreadCreate(osThread(task_motor_0), NULL);
+  thread_motor_1 = osThreadCreate(osThread(task_motor_1), NULL);
+
+    // Init motor control
+  initMotorControl();
 
   // Start USB command handling thread
   osThreadDef(task_usb_cmd, usb_cmd_thread, osPriorityNormal, 0, 512);

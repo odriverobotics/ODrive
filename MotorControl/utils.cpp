@@ -1,41 +1,39 @@
-
-#include <utils.h>
 #include <math.h>
+#include <utils.h>
 
-static const float one_by_sqrt3 = 0.57735026919f;
+static const float ONE_BY_SQRT3 = 0.57735026919f;
 static const float two_by_sqrt3 = 1.15470053838f;
 
-int SVM(float alpha, float beta, float* tA, float* tB, float* tC) {
+int SVM(float alpha, float beta, float *tA, float *tB, float *tC) {
     int Sextant;
 
     if (beta >= 0.0f) {
         if (alpha >= 0.0f) {
             //quadrant I
-            if (one_by_sqrt3 * beta > alpha)
-                Sextant = 2; //sextant v2-v3
+            if (ONE_BY_SQRT3 * beta > alpha)
+                Sextant = 2;  //sextant v2-v3
             else
-                Sextant = 1; //sextant v1-v2
-
+                Sextant = 1;  //sextant v1-v2
         } else {
             //quadrant II
-            if (-one_by_sqrt3 * beta > alpha)
-                Sextant = 3; //sextant v3-v4
+            if (-ONE_BY_SQRT3 * beta > alpha)
+                Sextant = 3;  //sextant v3-v4
             else
-                Sextant = 2; //sextant v2-v3
+                Sextant = 2;  //sextant v2-v3
         }
     } else {
         if (alpha >= 0.0f) {
             //quadrant IV
-            if (-one_by_sqrt3 * beta > alpha)
-                Sextant = 5; //sextant v5-v6
+            if (-ONE_BY_SQRT3 * beta > alpha)
+                Sextant = 5;  //sextant v5-v6
             else
-                Sextant = 6; //sextant v6-v1
+                Sextant = 6;  //sextant v6-v1
         } else {
             //quadrant III
-            if (one_by_sqrt3 * beta > alpha)
-                Sextant = 4; //sextant v4-v5
+            if (ONE_BY_SQRT3 * beta > alpha)
+                Sextant = 4;  //sextant v4-v5
             else
-                Sextant = 5; //sextant v5-v6
+                Sextant = 5;  //sextant v5-v6
         }
     }
 
@@ -43,7 +41,7 @@ int SVM(float alpha, float beta, float* tA, float* tB, float* tC) {
         // sextant v1-v2
         case 1: {
             // Vector on-times
-            float t1 = alpha - one_by_sqrt3 * beta;
+            float t1 = alpha - ONE_BY_SQRT3 * beta;
             float t2 = two_by_sqrt3 * beta;
 
             // PWM timings
@@ -56,8 +54,8 @@ int SVM(float alpha, float beta, float* tA, float* tB, float* tC) {
         // sextant v2-v3
         case 2: {
             // Vector on-times
-            float t2 = alpha + one_by_sqrt3 * beta;
-            float t3 = -alpha + one_by_sqrt3 * beta;
+            float t2 = alpha + ONE_BY_SQRT3 * beta;
+            float t3 = -alpha + ONE_BY_SQRT3 * beta;
 
             // PWM timings
             *tB = (1.0f - t2 - t3) * 0.5f;
@@ -70,7 +68,7 @@ int SVM(float alpha, float beta, float* tA, float* tB, float* tC) {
         case 3: {
             // Vector on-times
             float t3 = two_by_sqrt3 * beta;
-            float t4 = -alpha - one_by_sqrt3 * beta;
+            float t4 = -alpha - ONE_BY_SQRT3 * beta;
 
             // PWM timings
             *tB = (1.0f - t3 - t4) * 0.5f;
@@ -82,7 +80,7 @@ int SVM(float alpha, float beta, float* tA, float* tB, float* tC) {
         // sextant v4-v5
         case 4: {
             // Vector on-times
-            float t4 = -alpha + one_by_sqrt3 * beta;
+            float t4 = -alpha + ONE_BY_SQRT3 * beta;
             float t5 = -two_by_sqrt3 * beta;
 
             // PWM timings
@@ -95,8 +93,8 @@ int SVM(float alpha, float beta, float* tA, float* tB, float* tC) {
         // sextant v5-v6
         case 5: {
             // Vector on-times
-            float t5 = -alpha - one_by_sqrt3 * beta;
-            float t6 = alpha - one_by_sqrt3 * beta;
+            float t5 = -alpha - ONE_BY_SQRT3 * beta;
+            float t6 = alpha - ONE_BY_SQRT3 * beta;
 
             // PWM timings
             *tC = (1.0f - t5 - t6) * 0.5f;
@@ -109,7 +107,7 @@ int SVM(float alpha, float beta, float* tA, float* tB, float* tC) {
         case 6: {
             // Vector on-times
             float t6 = -two_by_sqrt3 * beta;
-            float t1 = alpha + one_by_sqrt3 * beta;
+            float t1 = alpha + ONE_BY_SQRT3 * beta;
 
             // PWM timings
             *tA = (1.0f - t6 - t1) * 0.5f;
@@ -122,20 +120,17 @@ int SVM(float alpha, float beta, float* tA, float* tB, float* tC) {
 
     int retval = 0;
     if (
-           *tA < 0.0f
-        || *tA > 1.0f
-        || *tB < 0.0f
-        || *tB > 1.0f
-        || *tC < 0.0f
-        || *tC > 1.0f
-    ) retval = -1;
+        *tA < 0.0f || *tA > 1.0f || *tB < 0.0f || *tB > 1.0f || *tC < 0.0f || *tC > 1.0f)
+        retval = -1;
     return retval;
 }
 
 //beware of inserting large angles!
 float wrap_pm_pi(float theta) {
-    while (theta >= M_PI) theta -= (2.0f * M_PI);
-    while (theta < -M_PI) theta += (2.0f * M_PI);
+    while (theta >= M_PI)
+        theta -= (2.0f * M_PI);
+    while (theta < -M_PI)
+        theta += (2.0f * M_PI);
     return theta;
 }
 
