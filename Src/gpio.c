@@ -51,15 +51,9 @@
 #include "gpio.h"
 /* USER CODE BEGIN 0 */
 #include "low_level.h"
-#include "callbacks.h"
-#include "boards.h"
-#include "configuration.h"
 
-#if MB(ODRIVE_V3_3)
-#include "gpio_ODRIVE_V3_3.c"
-#elif MB(ODRIVE_V3_2)
-#include "gpio_ODRIVE_V3_2.c"
-#elif MB(ODRIVE_V3_1)
+#if HW_VERSION_MAJOR == 3 && HW_VERSION_MINOR == 1 \
+||  HW_VERSION_MAJOR == 3 && HW_VERSION_MINOR == 2
 #include "gpio_ODRIVE_V3_2.c"
 #else
 /* USER CODE END 0 */

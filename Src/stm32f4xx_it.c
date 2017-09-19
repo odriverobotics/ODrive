@@ -38,19 +38,13 @@
 
 /* USER CODE BEGIN 0 */
 #include "freertos_vars.h"
-#include "boards.h"
-#include "configuration.h"
 #include "low_level.h"
-#include "callbacks.h"
 
 typedef void (*ADC_handler_t)(ADC_HandleTypeDef* hadc, bool injected);
 void ADC_IRQ_Dispatch(ADC_HandleTypeDef* hadc, ADC_handler_t callback);
 
-#if MB(ODRIVE_V3_3)
-#include "stm32f4xx_it_ODRIVE_V3_3.c"
-#elif MB(ODRIVE_V3_2)
-#include "stm32f4xx_it_ODRIVE_V3_2.c"
-#elif MB(ODRIVE_V3_1)
+#if HW_VERSION_MAJOR == 3 && HW_VERSION_MINOR == 1 \
+||  HW_VERSION_MAJOR == 3 && HW_VERSION_MINOR == 2
 #include "stm32f4xx_it_ODRIVE_V3_2.c"
 #else
 /* USER CODE END 0 */
