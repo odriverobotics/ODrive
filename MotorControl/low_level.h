@@ -156,16 +156,14 @@ void set_pos_setpoint(Motor_t* motor, float pos_setpoint, float vel_feed_forward
 void set_vel_setpoint(Motor_t* motor, float vel_setpoint, float current_feed_forward);
 void set_current_setpoint(Motor_t* motor, float current_setpoint);
 
-void safe_assert(int arg);
-void init_motor_control();
 void step_cb(uint16_t GPIO_Pin);
 void pwm_trig_adc_cb(ADC_HandleTypeDef* hadc, bool injected);
 void vbus_sense_adc_cb(ADC_HandleTypeDef* hadc, bool injected);
 
-//@TODO move motor thread to high level file
-void motor_thread(void const * argument);
+void safe_assert(int arg);
+void init_motor_control();
 
-//@TODO move cmd parsing to high level file
+void motor_thread(void const * argument);
 void motor_parse_cmd(uint8_t* buffer, int len);
 
 #endif //__LOW_LEVEL_H

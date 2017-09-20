@@ -54,7 +54,7 @@
 /* USER CODE BEGIN Includes */     
 #include "freertos_vars.h"
 #include "low_level.h"
-#include "version.h"
+#include "axis_c_interface.h"
 /* USER CODE END Includes */
 
 /* Variables -----------------------------------------------------------------*/
@@ -125,8 +125,8 @@ void StartDefaultTask(void const * argument)
   init_motor_control();
 
   // Start motor threads
-  osThreadDef(task_motor_0, motor_thread,   osPriorityHigh+1, 0, 512);
-  osThreadDef(task_motor_1, motor_thread,   osPriorityHigh,   0, 512);
+  osThreadDef(task_motor_0, axis_thread_entry,   osPriorityHigh+1, 0, 512);
+  osThreadDef(task_motor_1, axis_thread_entry,   osPriorityHigh,   0, 512);
   thread_motor_0 = osThreadCreate(osThread(task_motor_0), &motors[0]);
   thread_motor_1 = osThreadCreate(osThread(task_motor_1), &motors[1]);
 
