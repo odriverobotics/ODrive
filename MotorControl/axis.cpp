@@ -24,21 +24,62 @@ void axis_thread_entry(void const* temp_motor_ptr) {
 }
 }  // extern "C"
 
-Axis::Axis(const AxisConfig& config, uint8_t axis_number, Motor_t* legacy_motor_ref)
-    : axis_number_(axis_number),
-      enable_control_(config.enable_control_at_start),
-      do_calibration_(config.do_calibration_at_start),
-      legacy_motor_ref_(legacy_motor_ref) {}
+void Axis::SetupLegacyMappings() {
 
-void Axis::StateMachineLoop() {
+    // Legacy reachability from C
+    legacy_motor_ref_->axis_legacy.enable_control = &enable_control_;
+
     // override for compatibility with legacy comms paradigm
     // TODO next gen comms
     exposed_bools[4*axis_number_ + 1] = &enable_control_;
     exposed_bools[4*axis_number_ + 2] = &do_calibration_;
+}
 
-    // for (;;) {
-        
-    // }
+Axis::Axis(const AxisConfig& config, uint8_t axis_number, Motor_t* legacy_motor_ref)
+    : axis_number_(axis_number),
+      enable_control_(config.enable_control_at_start),
+      do_calibration_(config.do_calibration_at_start),
+      legacy_motor_ref_(legacy_motor_ref) {
+    SetupLegacyMappings();
+}
 
-    motor_thread(legacy_motor_ref_);
+void Axis::StateMachineLoop() {
+
+    //delete:
+    //motor_thread
+    //calibration_ok
+    //enable_control
+    //do_calibration
+    legacy_motor_ref_->motor_thread = osThreadGetId();
+    legacy_motor_ref_->thread_ready = true;
+    bool calibration_ok = false;
+    for (;;) {
+        if (do_calibration_) {
+            do_calibration_ = false;
+
+            __HAL_TIM_MOE_ENABLE(legacy_motor_ref_->motor_timer);// enable pwm outputs
+            calibration_ok = motor_calibration(legacy_motor_ref_);
+            __HAL_TIM_MOE_DISABLE_UNCONDITIONALLY(legacy_motor_ref_->motor_timer);// disables pwm outputs
+        }
+
+        if (calibration_ok && enable_control_) {
+            legacy_motor_ref_->enable_step_dir = true;
+            __HAL_TIM_MOE_ENABLE(legacy_motor_ref_->motor_timer);
+
+            bool spin_up_ok = true;
+            if (legacy_motor_ref_->rotor_mode == ROTOR_MODE_SENSORLESS)
+                spin_up_ok = spin_up_sensorless(legacy_motor_ref_);
+            if (spin_up_ok)
+                control_motor_loop(legacy_motor_ref_);
+
+            __HAL_TIM_MOE_DISABLE_UNCONDITIONALLY(legacy_motor_ref_->motor_timer);
+            legacy_motor_ref_->enable_step_dir = false;
+
+            if(enable_control_){ // if control is still enabled, we exited because of error
+                calibration_ok = false;
+                enable_control_ = false;
+            }
+        }
+    }
+    legacy_motor_ref_->thread_ready = false;
 }

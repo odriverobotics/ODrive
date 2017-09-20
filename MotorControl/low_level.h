@@ -97,8 +97,13 @@ typedef struct {
     float pll_ki;
 } Encoder_t;
 
+typedef struct {
+    bool* enable_control;
+} Axis_legacy_t;
+
 #define TIMING_LOG_SIZE 16
 typedef struct {
+    Axis_legacy_t axis_legacy;
     Motor_control_mode_t control_mode;
     bool enable_step_dir;
     float counts_per_step;
@@ -116,9 +121,9 @@ typedef struct {
     float phase_resistance;
     osThreadId motor_thread;
     bool thread_ready;
-    bool enable_control; // enable/disable via usb to start motor control. will be set to false again in case of errors.requires calibration_ok=true
-    bool do_calibration; //  trigger motor calibration. will be reset to false after self test
-    bool calibration_ok;
+    // bool enable_control; // enable/disable via usb to start motor control. will be set to false again in case of errors.requires calibration_ok=true
+    // bool do_calibration; //  trigger motor calibration. will be reset to false after self test
+    // bool calibration_ok;
     TIM_HandleTypeDef* motor_timer;
     uint16_t next_timings[3];
     uint16_t control_deadline;
@@ -169,7 +174,43 @@ void vbus_sense_adc_cb(ADC_HandleTypeDef* hadc, bool injected);
 void safe_assert(int arg);
 void init_motor_control();
 
-void motor_thread(void const * argument);
+bool motor_calibration(Motor_t* motor);
+
+// void motor_thread(void const * argument);
 void motor_parse_cmd(uint8_t* buffer, int len);
+
+
+//// Old private:
+// Command Handling
+void print_monitoring(int limit);
+// Utility
+uint16_t check_timing(Motor_t* motor);
+void global_fault(int error);
+float phase_current_from_adcval(Motor_t* motor, uint32_t ADCValue);
+// Initalisation
+void DRV8301_setup(Motor_t* motor);
+void start_adc_pwm();
+void start_pwm(TIM_HandleTypeDef* htim);
+void sync_timers(TIM_HandleTypeDef* htim_a, TIM_HandleTypeDef* htim_b,
+        uint16_t TIM_CLOCKSOURCE_ITRx, uint16_t count_offset);
+// IRQ Callbacks (are all public)
+// Measurement and calibrationa
+bool measure_phase_resistance(Motor_t* motor, float test_current, float max_voltage);
+bool measure_phase_inductance(Motor_t* motor, float voltage_low, float voltage_high);
+bool calib_enc_offset(Motor_t* motor, float voltage_magnitude);
+// Test functions
+void scan_motor_loop(Motor_t* motor, float omega, float voltage_magnitude);
+void FOC_voltage_loop(Motor_t* motor, float v_d, float v_q);
+// Main motor control
+void update_rotor(Motor_t* motor);
+float get_rotor_phase(Motor_t* motor);
+float get_pll_vel(Motor_t* motor);
+bool spin_up_sensorless(Motor_t* motor);
+void update_brake_current(float brake_current);
+void queue_modulation_timings(Motor_t* motor, float mod_alpha, float mod_beta);
+void queue_voltage_timings(Motor_t* motor, float v_alpha, float v_beta);
+bool FOC_current(Motor_t* motor, float Id_des, float Iq_des);
+void control_motor_loop(Motor_t* motor);
+// Motor thread (is public)
 
 #endif //__LOW_LEVEL_H

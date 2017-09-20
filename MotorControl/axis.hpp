@@ -51,6 +51,10 @@ public:
     bool do_calibration_;
 
     Motor_t* legacy_motor_ref_;
+
+private:
+    void SetupLegacyMappings();
+
 };
 
 #endif /* __AXIS_HPP */
