@@ -35,10 +35,12 @@ public:
     //step/dir handler
 
     // Object operation requires ptr to legacy object for now, TODO: get rid of this dep
-    Axis(Motor_t* legacy_motor_ref);
+    Axis(uint8_t axis_number, Motor_t* legacy_motor_ref);
 
     // Infinite loop that does calibration and enters main control loop as appropriate
     void StateMachineLoop();
+
+    uint8_t axis_number_;
 
     bool enable_control_;
     bool do_calibration_;

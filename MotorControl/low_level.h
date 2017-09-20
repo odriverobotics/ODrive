@@ -148,6 +148,12 @@ extern Motor_t motors[];
 extern const int num_motors;
 
 /* Exported variables --------------------------------------------------------*/
+// Exposed comms table during refactor transition
+extern float* exposed_floats[];
+extern int* exposed_ints[];
+extern bool* exposed_bools[];
+extern uint16_t* exposed_uint16[];
+
 /* Exported macro ------------------------------------------------------------*/
 /* Exported functions --------------------------------------------------------*/
 
