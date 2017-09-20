@@ -422,7 +422,6 @@ void motor_parse_cmd(uint8_t* buffer, int len) {
         int numscan = sscanf((const char*)buffer, "p %u %f %f %f", &motor_number, &pos_setpoint, &vel_feed_forward, &current_feed_forward);
         if (numscan == 4 && motor_number < num_motors) {
             set_pos_setpoint(&motors[motor_number], pos_setpoint, vel_feed_forward, current_feed_forward);
-            printf("M%d\n", motor_number);
         }
     } else if (buffer[0] == 'v') {
         // velocity control
@@ -431,7 +430,6 @@ void motor_parse_cmd(uint8_t* buffer, int len) {
         int numscan = sscanf((const char*)buffer, "v %u %f %f", &motor_number, &vel_feed_forward, &current_feed_forward);
         if (numscan == 3 && motor_number < num_motors) {
             set_vel_setpoint(&motors[motor_number], vel_feed_forward, current_feed_forward);
-            printf("M%d\n", motor_number);
         }
     } else if (buffer[0] == 'c') {
         // current control
@@ -440,7 +438,6 @@ void motor_parse_cmd(uint8_t* buffer, int len) {
         int numscan = sscanf((const char*)buffer, "c %u %f", &motor_number, &current_feed_forward);
         if (numscan == 2 && motor_number < num_motors) {
             set_current_setpoint(&motors[motor_number], current_feed_forward);
-            printf("M%d\n", motor_number);
         }
     } else if (buffer[0] == 'g') { // GET
         // g <0:float,1:int,2:bool,3:uint16> index
