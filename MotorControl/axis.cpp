@@ -14,7 +14,7 @@ void axis_thread_entry(void const* temp_motor_ptr) {
     //TODO: explicit axis number assignment
     //for now we search for it
     uint8_t ax_number = 0;
-    while(&motors[ax_number] != motor)
+    while (&motors[ax_number] != motor)
         ++ax_number;
 
     static const AxisConfig default_config;
@@ -25,14 +25,13 @@ void axis_thread_entry(void const* temp_motor_ptr) {
 }  // extern "C"
 
 void Axis::SetupLegacyMappings() {
-
     // Legacy reachability from C
     legacy_motor_ref_->axis_legacy.enable_control = &enable_control_;
 
     // override for compatibility with legacy comms paradigm
     // TODO next gen comms
-    exposed_bools[4*axis_number_ + 1] = &enable_control_;
-    exposed_bools[4*axis_number_ + 2] = &do_calibration_;
+    exposed_bools[4 * axis_number_ + 1] = &enable_control_;
+    exposed_bools[4 * axis_number_ + 2] = &do_calibration_;
 }
 
 Axis::Axis(const AxisConfig& config, uint8_t axis_number, Motor_t* legacy_motor_ref)
@@ -44,12 +43,6 @@ Axis::Axis(const AxisConfig& config, uint8_t axis_number, Motor_t* legacy_motor_
 }
 
 void Axis::StateMachineLoop() {
-
-    //delete:
-    //motor_thread
-    //calibration_ok
-    //enable_control
-    //do_calibration
     legacy_motor_ref_->motor_thread = osThreadGetId();
     legacy_motor_ref_->thread_ready = true;
     bool calibration_ok = false;
@@ -57,9 +50,9 @@ void Axis::StateMachineLoop() {
         if (do_calibration_) {
             do_calibration_ = false;
 
-            __HAL_TIM_MOE_ENABLE(legacy_motor_ref_->motor_timer);// enable pwm outputs
+            __HAL_TIM_MOE_ENABLE(legacy_motor_ref_->motor_timer);  // enable pwm outputs
             calibration_ok = motor_calibration(legacy_motor_ref_);
-            __HAL_TIM_MOE_DISABLE_UNCONDITIONALLY(legacy_motor_ref_->motor_timer);// disables pwm outputs
+            __HAL_TIM_MOE_DISABLE_UNCONDITIONALLY(legacy_motor_ref_->motor_timer);  // disables pwm outputs
         }
 
         if (calibration_ok && enable_control_) {
@@ -75,7 +68,7 @@ void Axis::StateMachineLoop() {
             __HAL_TIM_MOE_DISABLE_UNCONDITIONALLY(legacy_motor_ref_->motor_timer);
             legacy_motor_ref_->enable_step_dir = false;
 
-            if(enable_control_){ // if control is still enabled, we exited because of error
+            if (enable_control_) {  // if control is still enabled, we exited because of error
                 calibration_ok = false;
                 enable_control_ = false;
             }
