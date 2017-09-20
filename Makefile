@@ -13,9 +13,7 @@ TARGET = ODriveFirmware
 # debug build?
 DEBUG = 1
 # optimization
-# OPT = -O3 -ffast-math -flto
-# OPT = -O3 -ffast-math
-OPT = -O0 -ffast-math -u _printf_float -u _scanf_float
+OPT = -Og -ffast-math
 
 #######################################
 # pathes
@@ -117,9 +115,9 @@ C_INCLUDES += -IDrivers/CMSIS/Include
 C_INCLUDES += -IInc
 C_INCLUDES += -IMotorControl
 # compile gcc flags
-ASFLAGS = -mthumb -mcpu=cortex-m4 -mfpu=fpv4-sp-d16 -mfloat-abi=hard $(AS_DEFS) $(AS_INCLUDES) $(OPT) -Wall -fdata-sections -ffunction-sections
-CFLAGS = -mthumb -mcpu=cortex-m4 -mfpu=fpv4-sp-d16 -mfloat-abi=hard $(C_DEFS) $(C_INCLUDES) $(OPT) -Wall -fdata-sections -ffunction-sections
-CXXFLAGS = -mthumb -mcpu=cortex-m4 -mfpu=fpv4-sp-d16 -mfloat-abi=hard $(C_DEFS) $(C_INCLUDES) $(OPT) -Wall -fdata-sections -ffunction-sections
+ASFLAGS = -mthumb -mcpu=cortex-m4 -mfpu=fpv4-sp-d16 -mfloat-abi=hard $(AS_DEFS) $(AS_INCLUDES) $(OPT) -Wall -fdata-sections -ffunction-sections -u _printf_float -u _scanf_float
+CFLAGS = -mthumb -mcpu=cortex-m4 -mfpu=fpv4-sp-d16 -mfloat-abi=hard $(C_DEFS) $(C_INCLUDES) $(OPT) -Wall -fdata-sections -ffunction-sections -u _printf_float -u _scanf_float
+CXXFLAGS = -mthumb -mcpu=cortex-m4 -mfpu=fpv4-sp-d16 -mfloat-abi=hard $(C_DEFS) $(C_INCLUDES) $(OPT) -Wall -fdata-sections -ffunction-sections -u _printf_float -u _scanf_float
 ifeq ($(DEBUG), 1)
 CFLAGS += -g -gdwarf-2
 CXXFLAGS += -g -gdwarf-2

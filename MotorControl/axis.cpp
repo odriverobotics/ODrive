@@ -17,13 +17,17 @@ void axis_thread_entry(void const* temp_motor_ptr) {
     while(&motors[ax_number] != motor)
         ++ax_number;
 
-    Axis axis(ax_number, motor);
+    static const AxisConfig default_config;
+
+    Axis axis(default_config, ax_number, motor);
     axis.StateMachineLoop();
 }
 }  // extern "C"
 
-Axis::Axis(uint8_t axis_number, Motor_t* legacy_motor_ref)
+Axis::Axis(const AxisConfig& config, uint8_t axis_number, Motor_t* legacy_motor_ref)
     : axis_number_(axis_number),
+      enable_control_(config.enable_control_at_start),
+      do_calibration_(config.do_calibration_at_start),
       legacy_motor_ref_(legacy_motor_ref) {}
 
 void Axis::StateMachineLoop() {
@@ -31,6 +35,10 @@ void Axis::StateMachineLoop() {
     // TODO next gen comms
     exposed_bools[4*axis_number_ + 1] = &enable_control_;
     exposed_bools[4*axis_number_ + 2] = &do_calibration_;
+
+    // for (;;) {
+        
+    // }
 
     motor_thread(legacy_motor_ref_);
 }
