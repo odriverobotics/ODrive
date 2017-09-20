@@ -120,4 +120,4 @@ class ODriveBulkDevice():
     return 64
 
   def recieve_max(self):
-    return 256
+    return 64
