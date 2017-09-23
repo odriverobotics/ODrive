@@ -52,8 +52,6 @@ void BusFault_Handler(void);
 void UsageFault_Handler(void);
 void DebugMon_Handler(void);
 void SysTick_Handler(void);
-void EXTI0_IRQHandler(void);
-void EXTI2_IRQHandler(void);
 void ADC_IRQHandler(void);
 void OTG_FS_IRQHandler(void);
 

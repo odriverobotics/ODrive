@@ -53,6 +53,7 @@
 #include "can.h"
 #include "spi.h"
 #include "tim.h"
+#include "usart.h"
 #include "usb_device.h"
 #include "gpio.h"
 
@@ -115,6 +116,7 @@ int main(void)
   MX_SPI3_Init();
   MX_ADC3_Init();
   MX_TIM2_Init();
+  MX_UART4_Init();
 
   /* USER CODE BEGIN 2 */
 
