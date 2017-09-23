@@ -145,6 +145,15 @@ void StartDefaultTask(void const * argument)
 // Thread to handle deffered processing of USB interrupt
 void usb_cmd_thread(void const * argument) {
 
+  //DMA open loop continous circular buffer
+  //1ms delay periodic, chase DMA ptr around, on new data:
+    // Check for start char
+    // copy into parse-buffer
+    // check for end-char
+    // checksum, etc.
+
+    
+
   for (;;) {
     // Wait for signalling from USB interrupt (OTG_FS_IRQHandler)
     osSemaphoreWait(sem_usb_irq, osWaitForever);
