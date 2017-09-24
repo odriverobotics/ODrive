@@ -51,6 +51,7 @@ C_SOURCES = \
   Src/stm32f4xx_hal_msp.c \
   Src/can.c \
   Src/usart.c \
+  Src/dma.c \
   Src/usbd_conf.c \
   Src/usbd_desc.c \
   Src/usb_device.c \
