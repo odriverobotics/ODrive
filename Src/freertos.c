@@ -189,7 +189,7 @@ void usb_cmd_thread(void const * argument) {
         // Record into parse buffer when actively reading
         if (read_active) {
           parse_buffer[parse_buffer_idx++] = c;
-          if (c == '\r' || c == '\n' || c == "!") {
+          if (c == '\r' || c == '\n' || c == '!') {
             // End of command string: exchange end char with terminating null
             parse_buffer[parse_buffer_idx-1] = '\0';
             motor_parse_cmd(parse_buffer, parse_buffer_idx);
