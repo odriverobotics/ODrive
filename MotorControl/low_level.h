@@ -2,6 +2,10 @@
 #ifndef __LOW_LEVEL_H
 #define __LOW_LEVEL_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /* Includes ------------------------------------------------------------------*/
 #include <cmsis_os.h>
 #include "drv8301.h"
@@ -150,7 +154,8 @@ typedef struct{
 /* Exported constants --------------------------------------------------------*/
 extern float vbus_voltage;
 extern Motor_t motors[];
-extern const int num_motors;
+extern const size_t num_motors;
+extern const float elec_rad_per_enc;
 
 /* Exported variables --------------------------------------------------------*/
 // Exposed comms table during refactor transition
@@ -212,5 +217,9 @@ void queue_voltage_timings(Motor_t* motor, float v_alpha, float v_beta);
 bool FOC_current(Motor_t* motor, float Id_des, float Iq_des);
 void control_motor_loop(Motor_t* motor);
 // Motor thread (is public)
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif //__LOW_LEVEL_H
