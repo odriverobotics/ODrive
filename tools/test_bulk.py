@@ -32,7 +32,7 @@ def main(args):
   print (dev.info())
   print (dev.init())
   # thread
-  thread = threading.Thread(target=recieve_thread, args=[dev])
+  thread = threading.Thread(target=receive_thread, args=[dev])
   thread.start()
   while running:
     time.sleep(0.1)
@@ -42,12 +42,12 @@ def main(args):
     except:
       running = False
 
-def recieve_thread(dev):
+def receive_thread(dev):
   global ready
   while running:
     time.sleep(0.1)
     try:
-      message = dev.recieve(dev.recieve_max())
+      message = dev.receive(dev.receive_max())
       message_ascii = bytes(message).decode('ascii')
       print(message_ascii, end='')
       if "ODrive Firmware" in message_ascii:

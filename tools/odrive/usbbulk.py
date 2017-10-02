@@ -108,7 +108,7 @@ class ODriveBulkDevice():
       #return -1
       raise
 
-  def recieve(self, bufferLen):
+  def receive(self, bufferLen):
     try:
       ret = self.epr.read(bufferLen, 0)
       return ret
@@ -119,5 +119,5 @@ class ODriveBulkDevice():
   def send_max(self):
     return 64
 
-  def recieve_max(self):
+  def receive_max(self):
     return 64
