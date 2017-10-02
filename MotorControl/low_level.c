@@ -35,7 +35,7 @@ float vbus_voltage = 12.0f;
 // TODO stick parameter into struct
 #define ENCODER_CPR (600*4)
 #define POLE_PAIRS 7
-const float elec_rad_per_enc = POLE_PAIRS * 2 * M_PI * (1.0f / (float)ENCODER_CPR);
+float elec_rad_per_enc = POLE_PAIRS * 2 * M_PI * (1.0f / (float)ENCODER_CPR);
 
 // TODO: Migrate to C++, clearly we are actually doing object oriented code here...
 // TODO: For nice encapsulation, consider not having the motor objects public
@@ -218,100 +218,6 @@ static const int current_meas_hz = CURRENT_MEAS_HZ;
 
 /* Private variables ---------------------------------------------------------*/
 static float brake_resistance = 0.47f; // [ohm]
-
-
-/* variables exposed to usb interface via set/get/monitor
- * If you change something here, don't forget to regenerate the python interface with generate_api.py
- * ro/rw : read only/read write -> ro prevents the code generator from generating setter
- * */
-
-float* exposed_floats[] = {
-    &motors[0].pos_setpoint, // rw
-    &motors[0].pos_gain, // rw
-    &motors[0].vel_setpoint, // rw
-    &motors[0].vel_gain, // rw
-    &motors[0].vel_integrator_gain, // rw
-    &motors[0].vel_integrator_current, // rw
-    &motors[0].vel_limit, // rw
-    &motors[0].current_setpoint, // rw
-    &motors[0].calibration_current, // rw
-    &motors[0].phase_inductance, // ro
-    &motors[0].phase_resistance, // ro
-    &motors[0].current_meas.phB, // ro
-    &motors[0].current_meas.phC, // ro
-    &motors[0].DC_calib.phB, // rw
-    &motors[0].DC_calib.phC, // rw
-    &motors[0].shunt_conductance, // rw
-    &motors[0].phase_current_rev_gain, // rw
-    &motors[0].current_control.current_lim, // rw
-    &motors[0].current_control.p_gain, // rw
-    &motors[0].current_control.i_gain, // rw
-    &motors[0].current_control.v_current_control_integral_d, // rw
-    &motors[0].current_control.v_current_control_integral_q, // rw
-    &motors[0].current_control.Ibus, // ro
-    &motors[0].encoder.phase, // ro
-    &motors[0].encoder.pll_pos, // rw
-    &motors[0].encoder.pll_vel, // rw
-    &motors[0].encoder.pll_kp, // rw
-    &motors[0].encoder.pll_ki, // rw
-    &motors[1].pos_setpoint, // rw
-    &motors[1].pos_gain, // rw
-    &motors[1].vel_setpoint, // rw
-    &motors[1].vel_gain, // rw
-    &motors[1].vel_integrator_gain, // rw
-    &motors[1].vel_integrator_current, // rw
-    &motors[1].vel_limit, // rw
-    &motors[1].current_setpoint, // rw
-    &motors[1].calibration_current, // rw
-    &motors[1].phase_inductance, // ro
-    &motors[1].phase_resistance, // ro
-    &motors[1].current_meas.phB, // ro
-    &motors[1].current_meas.phC, // ro
-    &motors[1].DC_calib.phB, // rw
-    &motors[1].DC_calib.phC, // rw
-    &motors[1].shunt_conductance, // rw
-    &motors[1].phase_current_rev_gain, // rw
-    &motors[1].current_control.current_lim, // rw
-    &motors[1].current_control.p_gain, // rw
-    &motors[1].current_control.i_gain, // rw
-    &motors[1].current_control.v_current_control_integral_d, // rw
-    &motors[1].current_control.v_current_control_integral_q, // rw
-    &motors[1].current_control.Ibus, // ro
-    &motors[1].encoder.phase, // ro
-    &motors[1].encoder.pll_pos, // rw
-    &motors[1].encoder.pll_vel, // rw
-    &motors[1].encoder.pll_kp, // rw
-    &motors[1].encoder.pll_ki, // rw
-};
-
-int* exposed_ints[] = {
-    (int*)&motors[0].control_mode, // rw
-    &motors[0].encoder.encoder_offset, // rw
-    &motors[0].encoder.encoder_state, // ro
-    &motors[0].error, // rw
-    (int*)&motors[1].control_mode, // rw
-    &motors[1].encoder.encoder_offset, // rw
-    &motors[1].encoder.encoder_state, // ro
-    &motors[1].error, // rw
-};
-
-bool* exposed_bools[] = {
-    &motors[0].thread_ready, // ro
-    NULL, // rw
-    NULL, // rw
-    NULL, // ro
-    &motors[1].thread_ready, // ro
-    NULL, // rw
-    NULL, // rw
-    NULL, // ro
-};
-
-uint16_t* exposed_uint16[] = {
-    &motors[0].control_deadline, // rw
-    &motors[0].last_cpu_time, // ro
-    &motors[1].control_deadline, // rw
-    &motors[1].last_cpu_time, // ro
-};
 
 /* Private function prototypes -----------------------------------------------*/
 

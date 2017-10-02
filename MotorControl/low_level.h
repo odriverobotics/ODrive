@@ -155,7 +155,7 @@ typedef struct{
 extern float vbus_voltage;
 extern Motor_t motors[];
 extern const size_t num_motors;
-extern const float elec_rad_per_enc;
+extern float elec_rad_per_enc; // TODO: make this const (once exposed_floats is gone)
 
 /* Exported variables --------------------------------------------------------*/
 // Exposed comms table during refactor transition
