@@ -8,9 +8,9 @@ Endpoint endpoints[] = {
     Endpoint("vbus_voltage", static_cast<const float>(vbus_voltage)),
     Endpoint("elec_rad_per_enc", elec_rad_per_enc),
     Endpoint("motor0", BEGIN_TREE, nullptr, nullptr, nullptr),
-    Endpoint("pos_setpoint", motors[0].pos_setpoint),
-    Endpoint("pos_gain", motors[0].pos_gain),
-    Endpoint("vel_setpoint", motors[0].vel_setpoint),
+        Endpoint("pos_setpoint", motors[0].pos_setpoint),
+        Endpoint("pos_gain", motors[0].pos_gain),
+        Endpoint("vel_setpoint", motors[0].vel_setpoint),
     Endpoint(nullptr, END_TREE, nullptr, nullptr, nullptr) // motor0
 };
 
@@ -78,6 +78,7 @@ void Protocol_parse_cmd(uint8_t* buffer, int len) {
         // s index value
         size_t index = 0;
         size_t pos = 0;
+        // Oskar: format string start should be w, not s
         int numscan = sscanf((const char*)buffer, "s %u %n", &index, &pos);
         if (numscan == 1) {
             if (index < NUM_ENDPOINTS) {

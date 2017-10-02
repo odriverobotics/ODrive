@@ -31,6 +31,15 @@ const char *_type_names[] = {
 
 // Default getters/setters
 
+// Oskar: Instead of creating all these functions, couldn't you just create one
+// function called "default printer", which takes as an argument the _type_info,
+// and has a big switch statement?
+
+// You could extend this, and store only a single parse function pointer, and 
+// pass in a bool indicating if we are reading or writing, hence save some memory.
+// We lose generality of nulling out the scanf part on const, but you could just
+// create duplicates in TypeInfo_t (const and non-const). Debatable if it's worth it...
+
 PrintCallback print_float = std::bind(printf, "%f", std::placeholders::_1);
 ScanCallback scan_float = std::bind(sscanf, std::placeholders::_1, "%f", std::placeholders::_2);
 
@@ -44,7 +53,10 @@ PrintCallback print_uint16 = std::bind(printf, "%d", std::placeholders::_1);
 ScanCallback scan_uint16 = std::bind(sscanf, std::placeholders::_1, "%d", std::placeholders::_2);
 
 class Endpoint {
+// Oskar: public before private: https://google.github.io/styleguide/cppguide.html#Declaration_Order
 private:
+    // Oskar: variable naming: underscores at end not beginning of Class Data Members,
+    // https://google.github.io/styleguide/cppguide.html#Variable_Names
     const TypeInfo_t _type_info;
     const PrintCallback _print_callback;
     ScanCallback _scan_callback;
@@ -71,6 +83,9 @@ public:
     {
     }
 
+    //Oskar: very nice that you omit scan feature when const.
+    // It would be cool if you can relay this writable info in the JSON,
+    // so that something like the GUI can draw a grayed out box.
     Endpoint(const char* name, const float& ctx) :
         Endpoint(name, AS_FLOAT, print_float, &ctx) {}
     Endpoint(const char* name, float& ctx) :
