@@ -2,12 +2,14 @@
 
 // Because of broken cmsis_os.h, we need to include arm_math first,
 // otherwise chip specific defines are ommited
+#include <stm32f405xx.h>
 #include <stm32f4xx_hal.h> // Sets up the correct chip specifc defines required by arm_math
 #define ARM_MATH_CM4
 #include <arm_math.h>
 
 #include <low_level.h>
 
+#include <stdint.h>
 #include <stdlib.h>
 #include <math.h>
 #include <cmsis_os.h>
