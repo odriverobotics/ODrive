@@ -55,6 +55,10 @@
 #define HW_VERSION_MAJOR 3
 #define HW_VERSION_MINOR 3
 
+#if HW_VERSION_MAJOR == 3 && HW_VERSION_MINOR == 1 \
+||  HW_VERSION_MAJOR == 3 && HW_VERSION_MINOR == 2
+#include "prev_board_ver/main_V3_2.h"
+#else
 /* USER CODE END Includes */
 
 /* Private define ------------------------------------------------------------*/
@@ -148,6 +152,7 @@
 #define M1_ENC_B_GPIO_Port GPIOB
 
 /* USER CODE BEGIN Private defines */
+#endif
 
 #define CURRENT_MEAS_PERIOD ((float)(2*TIM_1_8_PERIOD_CLOCKS)/(float)TIM_1_8_CLOCK_HZ)
 #define CURRENT_MEAS_HZ (TIM_1_8_CLOCK_HZ/(2*TIM_1_8_PERIOD_CLOCKS))
