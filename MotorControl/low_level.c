@@ -1214,36 +1214,39 @@ static void update_rotor(Motor_t* motor) {
     }
 }
 
+static bool using_encoder(Motor_t* motor) {
+    if (motor->rotor_mode == ROTOR_MODE_ENCODER ||
+        motor->rotor_mode == ROTOR_MODE_RUN_ENCODER_TEST_SENSORLESS)
+        return true;
+    else
+        return false;
+}
+
+static bool using_sensorless(Motor_t* motor) {
+    if (motor->rotor_mode == ROTOR_MODE_SENSORLESS)
+        return true;
+    else
+        return false;
+}
+
 static float get_rotor_phase(Motor_t* motor) {
-    switch (motor->rotor_mode) {
-        case ROTOR_MODE_ENCODER:
-        case ROTOR_MODE_RUN_ENCODER_TEST_SENSORLESS:
-            return motor->encoder.phase;
-        break;
-        case ROTOR_MODE_SENSORLESS:
-            return motor->sensorless.phase;
-        break;
-        default:
-            //TODO error handling
-            return 0.0f;
-        break;
-    }
+    if (using_encoder(motor)) 
+        return motor->encoder.phase;
+    else if (using_sensorless(motor)) 
+        return motor->sensorless.phase;
+    else
+        //TODO error handling
+        return 0.0f;
 }
 
 static float get_pll_vel(Motor_t* motor) {
-    switch (motor->rotor_mode) {
-        case ROTOR_MODE_ENCODER:
-        case ROTOR_MODE_RUN_ENCODER_TEST_SENSORLESS:
-            return motor->encoder.pll_vel;
-        break;
-        case ROTOR_MODE_SENSORLESS:
-            return motor->sensorless.pll_vel;
-        break;
-        default:
-            //TODO error handling
-            return 0.0f;
-        break;
-    }
+    if (using_encoder(motor)) 
+        return motor->encoder.pll_vel;
+    else if (using_sensorless(motor)) 
+        return motor->sensorless.pll_vel;
+    else
+        //TODO error handling
+        return 0.0f;
 }
 
 static bool spin_up_timestep(Motor_t* motor, float phase, float I_mag) {
