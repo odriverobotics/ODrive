@@ -82,7 +82,8 @@ C_SOURCES = \
   Src/usbd_cdc_if.c \
   Src/syscalls.c \
   MotorControl/utils.c \
-  MotorControl/low_level.c  
+  MotorControl/commands.c \
+  MotorControl/low_level.c
 ASM_SOURCES = \
   startup/startup_stm32f405xx.s
 

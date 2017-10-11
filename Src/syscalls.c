@@ -7,6 +7,7 @@
 
 #include  <sys/unistd.h>
 #include "usbd_cdc_if.h"
+#include <commands.h>
 
 //int _read(int file, char *data, int len) {}
 //int _close(int file) {}

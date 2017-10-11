@@ -34,6 +34,11 @@
 // Arbitrary non-zero inital value to avoid division by zero if ADC reading is late
 float vbus_voltage = 12.0f;
 
+// For now, this automatically updates to the interface that most
+// recently recieved a command. In the future we may want to separate
+// debug printf and the main serial comms.
+SerialPrintf_t serial_printf_select = SERIAL_PRINTF_IS_NONE;
+
 // TODO stick parameter into struct
 #define ENCODER_CPR (600*4)
 #define POLE_PAIRS 7
@@ -221,107 +226,9 @@ static const int current_meas_hz = CURRENT_MEAS_HZ;
 /* Private variables ---------------------------------------------------------*/
 static float brake_resistance = 0.47f; // [ohm]
 
-/* Monitoring */
-monitoring_slot monitoring_slots[20] = {0};
-
-/* variables exposed to usb interface via set/get/monitor
- * If you change something here, don't forget to regenerate the python interface with generate_api.py
- * ro/rw : read only/read write -> ro prevents the code generator from generating setter
- * */
-
-float* exposed_floats[] = {
-    &vbus_voltage, // ro
-    &elec_rad_per_enc, // ro
-    &motors[0].pos_setpoint, // rw
-    &motors[0].pos_gain, // rw
-    &motors[0].vel_setpoint, // rw
-    &motors[0].vel_gain, // rw
-    &motors[0].vel_integrator_gain, // rw
-    &motors[0].vel_integrator_current, // rw
-    &motors[0].vel_limit, // rw
-    &motors[0].current_setpoint, // rw
-    &motors[0].calibration_current, // rw
-    &motors[0].phase_inductance, // ro
-    &motors[0].phase_resistance, // ro
-    &motors[0].current_meas.phB, // ro
-    &motors[0].current_meas.phC, // ro
-    &motors[0].DC_calib.phB, // rw
-    &motors[0].DC_calib.phC, // rw
-    &motors[0].shunt_conductance, // rw
-    &motors[0].phase_current_rev_gain, // rw
-    &motors[0].current_control.current_lim, // rw
-    &motors[0].current_control.p_gain, // rw
-    &motors[0].current_control.i_gain, // rw
-    &motors[0].current_control.v_current_control_integral_d, // rw
-    &motors[0].current_control.v_current_control_integral_q, // rw
-    &motors[0].current_control.Ibus, // ro
-    &motors[0].encoder.phase, // ro
-    &motors[0].encoder.pll_pos, // rw
-    &motors[0].encoder.pll_vel, // rw
-    &motors[0].encoder.pll_kp, // rw
-    &motors[0].encoder.pll_ki, // rw
-    &motors[1].pos_setpoint, // rw
-    &motors[1].pos_gain, // rw
-    &motors[1].vel_setpoint, // rw
-    &motors[1].vel_gain, // rw
-    &motors[1].vel_integrator_gain, // rw
-    &motors[1].vel_integrator_current, // rw
-    &motors[1].vel_limit, // rw
-    &motors[1].current_setpoint, // rw
-    &motors[1].calibration_current, // rw
-    &motors[1].phase_inductance, // ro
-    &motors[1].phase_resistance, // ro
-    &motors[1].current_meas.phB, // ro
-    &motors[1].current_meas.phC, // ro
-    &motors[1].DC_calib.phB, // rw
-    &motors[1].DC_calib.phC, // rw
-    &motors[1].shunt_conductance, // rw
-    &motors[1].phase_current_rev_gain, // rw
-    &motors[1].current_control.current_lim, // rw
-    &motors[1].current_control.p_gain, // rw
-    &motors[1].current_control.i_gain, // rw
-    &motors[1].current_control.v_current_control_integral_d, // rw
-    &motors[1].current_control.v_current_control_integral_q, // rw
-    &motors[1].current_control.Ibus, // ro
-    &motors[1].encoder.phase, // ro
-    &motors[1].encoder.pll_pos, // rw
-    &motors[1].encoder.pll_vel, // rw
-    &motors[1].encoder.pll_kp, // rw
-    &motors[1].encoder.pll_ki, // rw
-};
-
-int* exposed_ints[] = {
-    (int*)&motors[0].control_mode, // rw
-    &motors[0].encoder.encoder_offset, // rw
-    &motors[0].encoder.encoder_state, // ro
-    &motors[0].error, // rw
-    (int*)&motors[1].control_mode, // rw
-    &motors[1].encoder.encoder_offset, // rw
-    &motors[1].encoder.encoder_state, // ro
-    &motors[1].error, // rw
-};
-
-bool* exposed_bools[] = {
-    &motors[0].thread_ready, // ro
-    &motors[0].enable_control, // rw
-    &motors[0].do_calibration, // rw
-    &motors[0].calibration_ok, // ro
-    &motors[1].thread_ready, // ro
-    &motors[1].enable_control, // rw
-    &motors[1].do_calibration, // rw
-    &motors[1].calibration_ok, // ro
-};
-
-uint16_t* exposed_uint16[] = {
-    &motors[0].control_deadline, // rw
-    &motors[0].last_cpu_time, // ro
-    &motors[1].control_deadline, // rw
-    &motors[1].last_cpu_time, // ro
-};
-
 /* Private function prototypes -----------------------------------------------*/
 // Command Handling
-static void print_monitoring(int limit);
+
 // Utility
 static uint16_t check_timing(Motor_t* motor);
 static void global_fault(int error);
@@ -361,27 +268,7 @@ static void control_motor_loop(Motor_t* motor);
 // TODO move to different file
 //--------------------------------
 
-static void print_monitoring(int limit) {
-    for (int i=0;i<limit;i++) {
-        switch (monitoring_slots[i].type) {
-        case 0:
-            printf("%f\t",*exposed_floats[monitoring_slots[i].index]);
-            break;
-        case 1:
-            printf("%d\t",*exposed_ints[monitoring_slots[i].index]);
-            break;
-        case 2:
-            printf("%d\t",*exposed_bools[monitoring_slots[i].index]);
-            break;
-        case 3:
-            printf("%hu\t",*exposed_uint16[monitoring_slots[i].index]);
-            break;
-        default:
-            i=100;
-        }
-    }
-    printf("\n");
-}
+
 
 void set_pos_setpoint(Motor_t* motor, float pos_setpoint, float vel_feed_forward, float current_feed_forward) {
     motor->pos_setpoint = pos_setpoint;
@@ -409,109 +296,6 @@ void set_current_setpoint(Motor_t* motor, float current_setpoint) {
     printf("CURRENT_CONTROL %3.3f\n", motor->current_setpoint);
 #endif
 }
-
-void motor_parse_cmd(uint8_t* buffer, int len) {
-
-    // TODO very hacky way of terminating sscanf at end of buffer:
-    // We should do some proper struct packing instead of using sscanf altogether
-    buffer[len] = 0;
-
-    // check incoming packet type
-    if (buffer[0] == 'p') {
-        // position control
-        unsigned motor_number;
-        float pos_setpoint, vel_feed_forward, current_feed_forward;
-        int numscan = sscanf((const char*)buffer, "p %u %f %f %f", &motor_number, &pos_setpoint, &vel_feed_forward, &current_feed_forward);
-        if (numscan == 4 && motor_number < num_motors) {
-            set_pos_setpoint(&motors[motor_number], pos_setpoint, vel_feed_forward, current_feed_forward);
-        }
-    } else if (buffer[0] == 'v') {
-        // velocity control
-        unsigned motor_number;
-        float vel_feed_forward, current_feed_forward;
-        int numscan = sscanf((const char*)buffer, "v %u %f %f", &motor_number, &vel_feed_forward, &current_feed_forward);
-        if (numscan == 3 && motor_number < num_motors) {
-            set_vel_setpoint(&motors[motor_number], vel_feed_forward, current_feed_forward);
-        }
-    } else if (buffer[0] == 'c') {
-        // current control
-        unsigned motor_number;
-        float current_feed_forward;
-        int numscan = sscanf((const char*)buffer, "c %u %f", &motor_number, &current_feed_forward);
-        if (numscan == 2 && motor_number < num_motors) {
-            set_current_setpoint(&motors[motor_number], current_feed_forward);
-        }
-    } else if (buffer[0] == 'g') { // GET
-        // g <0:float,1:int,2:bool,3:uint16> index
-        int type = 0;
-        int index = 0;
-        int numscan = sscanf((const char*)buffer, "g %u %u", &type, &index);
-        if (numscan == 2) {
-            switch(type){
-            case 0: {
-                printf("%f\n",*exposed_floats[index]);
-                break;
-            };
-            case 1: {
-                printf("%d\n",*exposed_ints[index]);
-                break;
-            };
-            case 2: {
-                printf("%d\n",*exposed_bools[index]);
-                break;
-            };
-            case 3: {
-                printf("%hu\n",*exposed_uint16[index]);
-                break;
-            };
-            }
-        }
-    } else if (buffer[0] == 's') { // SET
-        // s <0:float,1:int,2:bool,3:uint16> index value
-        int type = 0;
-        int index = 0;
-        int numscan = sscanf((const char*)buffer, "s %u %u", &type, &index);
-        if (numscan == 2) {
-            switch(type) {
-            case 0: {
-                sscanf((const char*)buffer, "s %u %u %f", &type, &index, exposed_floats[index]);
-                break;
-            };
-            case 1: {
-                sscanf((const char*)buffer, "s %u %u %d", &type, &index, exposed_ints[index]);
-                break;
-            };
-            case 2: {
-                int btmp = 0;
-                sscanf((const char*)buffer, "s %u %u %d", &type, &index, &btmp);
-                *exposed_bools[index] = btmp ? true : false;
-                break;
-            };
-            case 3: {
-                sscanf((const char*)buffer, "s %u %u %hu", &type, &index, exposed_uint16[index]);
-                break;
-            };
-            }
-        }
-    } else if (buffer[0] == 'm') { // Setup Monitor
-        // m <0:float,1:int,2:bool,3:uint16> index monitoring_slot
-        int type = 0;
-        int index = 0;
-        int slot = 0;
-        int numscan = sscanf((const char*)buffer, "m %u %u %u", &type, &index, &slot);
-        if (numscan == 3) {
-            monitoring_slots[slot].type = type;
-            monitoring_slots[slot].index = index;
-        }
-    } else if (buffer[0] == 'o') { // Output Monitor
-        int limit = 0;
-        int numscan = sscanf((const char*)buffer, "o %u", &limit);
-        if (numscan == 1) {
-            print_monitoring(limit);
-        }
-    }
-}
-
 
 //--------------------------------
 // Utility
@@ -1050,6 +834,7 @@ static bool motor_calibration(Motor_t* motor){
 // Test functions
 //--------------------------------
 
+__attribute__((unused))
 static void scan_motor_loop(Motor_t* motor, float omega, float voltage_magnitude) {
     for (;;) {
         for (float ph = 0.0f; ph < 2.0f * M_PI; ph += omega * current_meas_period) {
@@ -1069,6 +854,7 @@ static void scan_motor_loop(Motor_t* motor, float omega, float voltage_magnitude
 }
 
 //TODO integrate as mode in main control loop
+__attribute__((unused))
 static void FOC_voltage_loop(Motor_t* motor, float v_d, float v_q) {
     for (;;) {
         osSignalWait(M_SIGNAL_PH_CURRENT_MEAS, osWaitForever);

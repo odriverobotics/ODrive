@@ -142,10 +142,17 @@ typedef struct{
         int index;
 } monitoring_slot;
 
+typedef enum {
+    SERIAL_PRINTF_IS_NONE,
+    SERIAL_PRINTF_IS_USB,
+    SERIAL_PRINTF_IS_UART,
+} SerialPrintf_t;
+
 /* Exported constants --------------------------------------------------------*/
 extern float vbus_voltage;
 extern Motor_t motors[];
 extern const int num_motors;
+extern SerialPrintf_t serial_printf_select;
 
 /* Exported variables --------------------------------------------------------*/
 /* Exported macro ------------------------------------------------------------*/
@@ -164,8 +171,5 @@ void vbus_sense_adc_cb(ADC_HandleTypeDef* hadc, bool injected);
 
 //@TODO move motor thread to high level file
 void motor_thread(void const * argument);
-
-//@TODO move cmd parsing to high level file
-void motor_parse_cmd(uint8_t* buffer, int len);
 
 #endif //__LOW_LEVEL_H
