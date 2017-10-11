@@ -275,7 +275,7 @@ static int8_t CDC_Receive_FS (uint8_t* Buf, uint32_t *Len)
   int null_idx = MACRO_MIN(*Len, APP_RX_DATA_SIZE-1);
   Buf[null_idx] = 0;
 
-  motor_parse_cmd(Buf, *Len);
+  motor_parse_cmd(Buf, *Len, SERIAL_PRINTF_IS_USB);
 
   return (USBD_OK);
   /* USER CODE END 6 */ 
@@ -296,11 +296,14 @@ uint8_t CDC_Transmit_FS(uint8_t* Buf, uint16_t Len)
 {
   uint8_t result = USBD_OK;
   /* USER CODE BEGIN 7 */ 
-  USBD_CDC_HandleTypeDef *hcdc = (USBD_CDC_HandleTypeDef*)hUsbDeviceFS.pClassData;
-  if (hcdc->TxState != 0){
-    return USBD_BUSY;
-  }
-  USBD_CDC_SetTxBuffer(&hUsbDeviceFS, Buf, Len);
+  
+  //Check Len
+  if (Len > APP_TX_DATA_SIZE)
+    return USBD_FAIL;
+  // memcpy Buf into UserTxBufferFS
+  memcpy(UserTxBufferFS, Buf, Len);
+  // Update Len
+  USBD_CDC_SetTxBuffer(&hUsbDeviceFS, UserTxBufferFS, Len);
   result = USBD_CDC_TransmitPacket(&hUsbDeviceFS);
   /* USER CODE END 7 */ 
   return result;

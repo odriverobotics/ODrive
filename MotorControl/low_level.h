@@ -142,19 +142,11 @@ typedef struct{
         int index;
 } monitoring_slot;
 
-typedef enum {
-    SERIAL_PRINTF_IS_NONE,
-    SERIAL_PRINTF_IS_USB,
-    SERIAL_PRINTF_IS_UART,
-} SerialPrintf_t;
-
 /* Exported constants --------------------------------------------------------*/
+extern const int num_motors;
+/* Exported variables --------------------------------------------------------*/
 extern float vbus_voltage;
 extern Motor_t motors[];
-extern const int num_motors;
-extern SerialPrintf_t serial_printf_select;
-
-/* Exported variables --------------------------------------------------------*/
 /* Exported macro ------------------------------------------------------------*/
 /* Exported functions --------------------------------------------------------*/
 

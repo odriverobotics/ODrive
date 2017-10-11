@@ -34,11 +34,6 @@
 // Arbitrary non-zero inital value to avoid division by zero if ADC reading is late
 float vbus_voltage = 12.0f;
 
-// For now, this automatically updates to the interface that most
-// recently recieved a command. In the future we may want to separate
-// debug printf and the main serial comms.
-SerialPrintf_t serial_printf_select = SERIAL_PRINTF_IS_NONE;
-
 // TODO stick parameter into struct
 #define ENCODER_CPR (600*4)
 #define POLE_PAIRS 7

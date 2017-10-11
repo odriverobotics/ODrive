@@ -3,11 +3,17 @@
 #include <usart.h>
 #include <freertos_vars.h>
 
+extern PCD_HandleTypeDef hpcd_USB_OTG_FS;
+
 /* Private macros ------------------------------------------------------------*/
 /* Private typedef -----------------------------------------------------------*/
 /* Global constant data ------------------------------------------------------*/
 /* Global variables ----------------------------------------------------------*/
-extern PCD_HandleTypeDef hpcd_USB_OTG_FS;
+// For now, this automatically updates to the interface that most
+// recently recieved a command. In the future we may want to separate
+// debug printf and the main serial comms.
+SerialPrintf_t serial_printf_select = SERIAL_PRINTF_IS_NONE;
+
 /* Private constant data -----------------------------------------------------*/
 // variables exposed to usb/serial interface via set/get/monitor
 // Note: this will be depricated soon
@@ -107,7 +113,10 @@ monitoring_slot monitoring_slots[20] = {0};
 static void print_monitoring(int limit);
 
 /* Function implementations --------------------------------------------------*/
-void motor_parse_cmd(uint8_t* buffer, int len) {
+void motor_parse_cmd(uint8_t* buffer, int len, SerialPrintf_t response_interface) {
+    // Set response interface
+    serial_printf_select = response_interface;
+
     // TODO very hacky way of terminating sscanf at end of buffer:
     // We should do some proper struct packing instead of using sscanf altogether
     buffer[len] = 0;
@@ -279,7 +288,7 @@ void usb_cmd_thread(void const * argument) {
                     if (c == '\r' || c == '\n' || c == '!') {
                         // End of command string: exchange end char with terminating null
                         parse_buffer[parse_buffer_idx-1] = '\0';
-                        motor_parse_cmd(parse_buffer, parse_buffer_idx);
+                        motor_parse_cmd(parse_buffer, parse_buffer_idx, SERIAL_PRINTF_IS_UART);
                         // Reset receieve state machine
                         reset_read_state = true;
                         break;
