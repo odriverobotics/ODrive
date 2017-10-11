@@ -208,6 +208,7 @@ NVIC.SysTick_IRQn=true\:15\:0\:false\:false\:true\:true\:true
 NVIC.TIM8_TRG_COM_TIM14_IRQn=true\:0\:0\:false\:false\:true\:false\:false
 NVIC.TimeBase=TIM8_TRG_COM_TIM14_IRQn
 NVIC.TimeBaseIP=TIM14
+NVIC.UART4_IRQn=true\:5\:0\:false\:false\:true\:true\:true
 NVIC.UsageFault_IRQn=true\:0\:0\:false\:false\:true\:false\:true
 PA0-WKUP.GPIOParameters=GPIO_PuPd,GPIO_Label
 PA0-WKUP.GPIO_Label=GPIO_1

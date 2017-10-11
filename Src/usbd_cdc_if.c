@@ -300,6 +300,7 @@ uint8_t CDC_Transmit_FS(uint8_t* Buf, uint16_t Len)
   //Check length
   if (Len > APP_TX_DATA_SIZE)
     return USBD_FAIL;
+  // TODO: check busy
   // memcpy Buf into UserTxBufferFS
   memcpy(UserTxBufferFS, Buf, Len);
   // Update Len

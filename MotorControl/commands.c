@@ -269,6 +269,12 @@ void cmd_parse_thread(void const * argument) {
         uint32_t parse_buffer_idx = 0;
         //Run state machine until reset
         do {
+            // Check for UART errors and restart recieve DMA transfer if required
+            if (huart4.ErrorCode != HAL_UART_ERROR_NONE) {
+                HAL_UART_AbortReceive(&huart4);
+                HAL_UART_Receive_DMA(&huart4, dma_circ_buffer, sizeof(dma_circ_buffer));
+                break; //reset state machine
+            }
             // Fetch the circular buffer "write pointer", where it would write next
             uint32_t rcv_idx = UART_RX_BUFFER_SIZE - huart4.hdmarx->Instance->NDTR;
             // During sleeping, we may have fallen several characters behind, so we keep
