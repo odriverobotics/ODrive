@@ -36,7 +36,6 @@ int _write(int file, char *data, int len) {
       if (len > UART_TX_BUFFER_SIZE)
         return 0;
       // Check if transfer is already ongoing
-      // TODO: use HAL_UART_GetState
       if(huart4.gState != HAL_UART_STATE_READY)
         return 0;
       // memcpy data into uart_tx_buf
