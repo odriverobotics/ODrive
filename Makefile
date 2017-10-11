@@ -42,13 +42,14 @@ C_SOURCES = \
   Middlewares/ST/STM32_USB_Device_Library/Class/CDC/Src/usbd_cdc.c \
   Src/system_stm32f4xx.c \
   Src/stm32f4xx_it.c \
+  Src/stm32f4xx_hal_msp.c \
+  Src/stm32f4xx_hal_timebase_TIM.c \
   Src/tim.c \
   Src/gpio.c \
   Src/main.c \
   Src/adc.c \
   Src/freertos.c \
   Src/spi.c \
-  Src/stm32f4xx_hal_msp.c \
   Src/can.c \
   Src/usart.c \
   Src/dma.c \

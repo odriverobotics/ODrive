@@ -56,6 +56,7 @@ void DebugMon_Handler(void);
 void SysTick_Handler(void);
 void DMA1_Stream2_IRQHandler(void);
 void ADC_IRQHandler(void);
+void TIM8_TRG_COM_TIM14_IRQHandler(void);
 void OTG_FS_IRQHandler(void);
 
 #ifdef __cplusplus
