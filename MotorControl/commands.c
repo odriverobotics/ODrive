@@ -1,4 +1,5 @@
 /* Includes ------------------------------------------------------------------*/
+#include <cmsis_os.h>
 #include <commands.h>
 #include <usart.h>
 #include <freertos_vars.h>
@@ -241,7 +242,7 @@ static void print_monitoring(int limit) {
 
 // Thread to handle deffered processing of USB interrupt, and
 // read commands out of the UART DMA circular buffer
-void usb_cmd_thread(void const * argument) {
+void cmd_parse_thread(void const * argument) {
     
     //DMA open loop continous circular buffer
     //1ms delay periodic, chase DMA ptr around, on new data:
@@ -250,16 +251,16 @@ void usb_cmd_thread(void const * argument) {
         // check for end-char
         // checksum, etc.
 
-    #define UART_BUFFER_SIZE 64
-    static uint8_t dma_circ_buffer[UART_BUFFER_SIZE];
-    static uint8_t parse_buffer[UART_BUFFER_SIZE];
+    #define UART_RX_BUFFER_SIZE 64
+    static uint8_t dma_circ_buffer[UART_RX_BUFFER_SIZE];
+    static uint8_t parse_buffer[UART_RX_BUFFER_SIZE];
 
     // DMA is set up to recieve in a circular buffer forever.
     // We dont use interrupts to fetch the data, instead we periodically read
     // data out of the circular buffer into a parse buffer, controlled by a state machine
     HAL_UART_Receive_DMA(&huart4, dma_circ_buffer, sizeof(dma_circ_buffer));
 
-    uint32_t last_rcv_idx = UART_BUFFER_SIZE - huart4.hdmarx->Instance->NDTR;
+    uint32_t last_rcv_idx = UART_RX_BUFFER_SIZE - huart4.hdmarx->Instance->NDTR;
     // Re-run state-machine forever
     for (;;) {
         //Inialize recieve state machine
@@ -269,13 +270,13 @@ void usb_cmd_thread(void const * argument) {
         //Run state machine until reset
         do {
             // Fetch the circular buffer "write pointer", where it would write next
-            uint32_t rcv_idx = UART_BUFFER_SIZE - huart4.hdmarx->Instance->NDTR;
+            uint32_t rcv_idx = UART_RX_BUFFER_SIZE - huart4.hdmarx->Instance->NDTR;
             // During sleeping, we may have fallen several characters behind, so we keep
             // going until we are caught up, before we sleep again
             while (rcv_idx != last_rcv_idx) {
                 // Fetch the next char, rotate read ptr
                 uint8_t c = dma_circ_buffer[last_rcv_idx];
-                if (++last_rcv_idx == UART_BUFFER_SIZE)
+                if (++last_rcv_idx == UART_RX_BUFFER_SIZE)
                     last_rcv_idx = 0;
                 // Look for start character
                 if (c == '$') {
@@ -292,7 +293,7 @@ void usb_cmd_thread(void const * argument) {
                         // Reset receieve state machine
                         reset_read_state = true;
                         break;
-                    } else if (parse_buffer_idx == UART_BUFFER_SIZE - 1) {
+                    } else if (parse_buffer_idx == UART_RX_BUFFER_SIZE - 1) {
                         // We are not at end of command, and receiving another character after this
                         // would go into the last slot, which is reserved for terminating null.
                         // We have effectively overflowed parse buffer: abort.
@@ -301,21 +302,19 @@ void usb_cmd_thread(void const * argument) {
                     }
                 }
             }
-            // When we reach here, we are out of immediate characters to fetch out of buffer
-            // So we sleep for a bit.
-            osDelay(1);
+            // When we reach here, we are out of immediate characters to fetch out of UART buffer
+            // Now we check if there is any USB processing to do: we wait for up to 1 ms,
+            // before going back to checking UART again.
+            int USB_check_timeout = 1;
+            // Wait for signalling from USB interrupt (OTG_FS_IRQHandler)
+            osStatus semaphore_status = osSemaphoreWait(sem_usb_irq, USB_check_timeout);
+            if (semaphore_status == osOK) {
+                // We have a new incoming USB transmission: handle it
+                HAL_PCD_IRQHandler(&hpcd_USB_OTG_FS);
+                // Let the irq (OTG_FS_IRQHandler) fire again.
+                HAL_NVIC_EnableIRQ(OTG_FS_IRQn);
+            }
         } while (!reset_read_state);
-    }
-
-    for (;;) {
-        // Wait for signalling from USB interrupt (OTG_FS_IRQHandler)
-        osSemaphoreWait(sem_usb_irq, osWaitForever);
-        // Irq processing loop
-        //while(HAL_NVIC_GetActive(OTG_FS_IRQn)) {
-            HAL_PCD_IRQHandler(&hpcd_USB_OTG_FS);
-        //}
-        // Let the irq (OTG_FS_IRQHandler) fire again.
-        HAL_NVIC_EnableIRQ(OTG_FS_IRQn);
     }
 
     // If we get here, then this task is done

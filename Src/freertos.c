@@ -71,7 +71,6 @@ extern void MX_USB_DEVICE_Init(void);
 void MX_FREERTOS_Init(void); /* (MISRA C 2004 rule 8.1) */
 
 /* USER CODE BEGIN FunctionPrototypes */
-void usb_cmd_thread(void const * argument);
 
 /* USER CODE END FunctionPrototypes */
 
@@ -131,8 +130,8 @@ void StartDefaultTask(void const * argument)
   thread_motor_1 = osThreadCreate(osThread(task_motor_1), &motors[1]);
 
   // Start USB command handling thread
-  osThreadDef(task_usb_cmd, usb_cmd_thread, osPriorityNormal, 0, 512);
-  thread_usb_cmd = osThreadCreate(osThread(task_usb_cmd), NULL);
+  osThreadDef(task_cmd_parse, cmd_parse_thread, osPriorityNormal, 0, 512);
+  thread_cmd_parse = osThreadCreate(osThread(task_cmd_parse), NULL);
 
   //If we get to here, then the default task is done.
   vTaskDelete(defaultTaskHandle);
