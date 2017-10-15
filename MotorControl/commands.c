@@ -120,7 +120,7 @@ void motor_parse_cmd(uint8_t* buffer, int len, SerialPrintf_t response_interface
 
     // TODO very hacky way of terminating sscanf at end of buffer:
     // We should do some proper struct packing instead of using sscanf altogether
-    buffer[len] = 0;
+    buffer[len-1] = 0;
 
     // check incoming packet type
     if (buffer[0] == 'p') {

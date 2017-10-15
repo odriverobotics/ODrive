@@ -268,14 +268,14 @@ static int8_t CDC_Control_FS  (uint8_t cmd, uint8_t* pbuf, uint16_t length)
 static int8_t CDC_Receive_FS (uint8_t* Buf, uint32_t *Len)
 {
   /* USER CODE BEGIN 6 */
-  USBD_CDC_SetRxBuffer(&hUsbDeviceFS, &Buf[0]);
-  USBD_CDC_ReceivePacket(&hUsbDeviceFS);
-
   //Append null termination at end of string
-  int null_idx = MACRO_MIN(*Len, APP_RX_DATA_SIZE-1);
-  Buf[null_idx] = 0;
+  int modified_len = MACRO_MIN(*Len+1, APP_RX_DATA_SIZE);
+  Buf[modified_len-1] = 0;
 
-  motor_parse_cmd(Buf, *Len, SERIAL_PRINTF_IS_USB);
+  motor_parse_cmd(Buf, modified_len, SERIAL_PRINTF_IS_USB);
+
+  // Allow next packet
+  USBD_CDC_ReceivePacket(&hUsbDeviceFS);
 
   return (USBD_OK);
   /* USER CODE END 6 */ 
