@@ -169,9 +169,6 @@ void init_motor_control();
 
 bool motor_calibration(Motor_t* motor);
 
-// void motor_thread(void const * argument);
-void motor_parse_cmd(uint8_t* buffer, int len);
-
 
 //// Old private:
 // Utility
@@ -194,10 +191,10 @@ void scan_motor_loop(Motor_t* motor, float omega, float voltage_magnitude);
 void FOC_voltage_loop(Motor_t* motor, float v_d, float v_q);
 // Main motor control
 void update_rotor(Motor_t* motor);
-bool using_encoder(Motor_t* motor)
-bool using_sensorless(Motor_t* motor)
-float get_rotor_phase(Motor_t* motor)
-float get_pll_vel(Motor_t* motor)
+bool using_encoder(Motor_t* motor);
+bool using_sensorless(Motor_t* motor);
+float get_rotor_phase(Motor_t* motor);
+float get_pll_vel(Motor_t* motor);
 bool spin_up_sensorless(Motor_t* motor);
 void update_brake_current(float brake_current);
 void queue_modulation_timings(Motor_t* motor, float mod_alpha, float mod_beta);

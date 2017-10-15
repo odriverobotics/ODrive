@@ -1,9 +1,9 @@
 /* Includes ------------------------------------------------------------------*/
 #include <cmsis_os.h>
-#include <commands.h>
-#include <usart.h>
-#include <gpio.h>
-#include <freertos_vars.h>
+#include "commands.h"
+#include "usart.h"
+#include "gpio.h"
+#include "freertos_vars.h"
 
 extern PCD_HandleTypeDef hpcd_USB_OTG_FS;
 
@@ -23,7 +23,7 @@ static const GpioMode_t gpio_mode = GPIO_MODE_UART;     //GPIO 1,2 is UART Tx,Rx
 
 // variables exposed to usb/serial interface via set/get/monitor
 // Note: this will be depricated soon
-float* const exposed_floats[] = {
+float* exposed_floats[] = {
     &vbus_voltage, // ro
     NULL, //&elec_rad_per_enc, // ro
     &motors[0].pos_setpoint, // rw
@@ -84,7 +84,7 @@ float* const exposed_floats[] = {
     &motors[1].encoder.pll_ki, // rw
 };
 
-int* const exposed_ints[] = {
+int* exposed_ints[] = {
     (int*)&motors[0].control_mode, // rw
     &motors[0].encoder.encoder_offset, // rw
     &motors[0].encoder.encoder_state, // ro
@@ -95,7 +95,7 @@ int* const exposed_ints[] = {
     &motors[1].error, // rw
 };
 
-bool* const exposed_bools[] = {
+bool* exposed_bools[] = {
     &motors[0].thread_ready, // ro
     //For now these are written by Axis::SetupLegacyMappings
     NULL, // &motors[0].enable_control, // rw
@@ -107,7 +107,7 @@ bool* const exposed_bools[] = {
     NULL, // &motors[1].calibration_ok, // ro
 };
 
-uint16_t* const exposed_uint16[] = {
+uint16_t* exposed_uint16[] = {
     &motors[0].control_deadline, // rw
     &motors[0].last_cpu_time, // ro
     &motors[1].control_deadline, // rw
