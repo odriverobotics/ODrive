@@ -99,14 +99,14 @@ If you prefer to debug from eclipse, see [Setting up Eclipse development environ
 
 ## Communicating over USB
 There is currently a very primitive method to read/write configuration, commands and errors from the ODrive over the USB.
-Please use the `ODriveFirmware/tools/test_bulk.py` python script for this.  It is written for Python 3.
+Please use the `tools/test_communication.py` python script for this.  It is written for Python 3.
 
 Setup instructions as follows:
 * Install PyUSB (pip install --pre pysusb)
 * Plug in the STLink or another power source to power the ODrive board
 * Plug in a separate USB cable into the microUSB connector on ODrive
 * On Windows, use the [Zadig](http://zadig.akeo.ie/) utility to set ODrive (not STLink!) driver to libusb
-* Run test_bulk.py
+* Run `tools/test_communication.py`
 
 ### Command set
 The most accurate way to understand the commands is to read [the code](https://github.com/madcowswe/ODriveFirmware/blob/f19f1b78de4bd917284ff95bc61ca616ca9bacc4/MotorControl/low_level.c#L353) that parses the commands.
