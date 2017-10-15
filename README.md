@@ -9,7 +9,7 @@ This repository contains configuration and analysis scripts that run on a PC. Th
 There is also [ODriveFPGA](https://github.com/madcowswe/ODriveFPGA), which contains the FPGA logic and software that runs on the FPGA based ODrive. This is not currently in development, but may be resumed at some later date.
 
 ## Getting Started
-*References to hardware is with respect to v3.2. Other versions may still apply, but component designators may differ*
+*References to hardware is with respect to v3.3. Other versions may still apply, but component designators may differ*
 
 It is perfectly fine, and even recommended, to start testing with just a single motor and encoder.
 Make sure you have a good mechanical connection between the encdoer and the motor, slip can cause disasterous oscillations.
