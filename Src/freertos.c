@@ -120,6 +120,9 @@ void StartDefaultTask(void const * argument)
 
   /* USER CODE BEGIN StartDefaultTask */
 
+  // Init communications
+  init_communication();
+
   // Init motor control
   init_motor_control();
 

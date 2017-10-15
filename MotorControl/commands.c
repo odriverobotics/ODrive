@@ -2,6 +2,7 @@
 #include <cmsis_os.h>
 #include <commands.h>
 #include <usart.h>
+#include <gpio.h>
 #include <freertos_vars.h>
 
 extern PCD_HandleTypeDef hpcd_USB_OTG_FS;
@@ -10,12 +11,16 @@ extern PCD_HandleTypeDef hpcd_USB_OTG_FS;
 /* Private typedef -----------------------------------------------------------*/
 /* Global constant data ------------------------------------------------------*/
 /* Global variables ----------------------------------------------------------*/
-// For now, this automatically updates to the interface that most
+// This automatically updates to the interface that most
 // recently recieved a command. In the future we may want to separate
 // debug printf and the main serial comms.
 SerialPrintf_t serial_printf_select = SERIAL_PRINTF_IS_NONE;
 
 /* Private constant data -----------------------------------------------------*/
+// TODO: make command to switch gpio_mode during run-time
+static const GpioMode_t gpio_mode = GPIO_MODE_UART;     //GPIO 1,2 is UART Tx,Rx
+// static const GpioMode_t gpio_mode = GPIO_MODE_STEP_DIR; //GPIO 1,2 is M0 Step,Dir
+
 // variables exposed to usb/serial interface via set/get/monitor
 // Note: this will be depricated soon
 static float* const exposed_floats[] = {
@@ -114,6 +119,17 @@ monitoring_slot monitoring_slots[20] = {0};
 static void print_monitoring(int limit);
 
 /* Function implementations --------------------------------------------------*/
+void init_communication() {
+    switch (gpio_mode) {
+        case GPIO_MODE_UART: {
+            SetGPIO12toUART();
+        } break;
+        case GPIO_MODE_STEP_DIR: {
+            SetGPIO12toStepDir();
+        }
+    }
+}
+
 void motor_parse_cmd(uint8_t* buffer, int len, SerialPrintf_t response_interface) {
     // Set response interface
     serial_printf_select = response_interface;
