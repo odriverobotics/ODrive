@@ -2,19 +2,12 @@
 
 This project is all about accurately driving brushless motors, for cheap. The aim is to make it possible to use inexpensive brushless motors in high performance robotics projects, like [this](https://www.youtube.com/watch?v=WT4E5nb3KtY).
 
-This repository contains configuration and analysis scripts that run on a PC. The other related repositories are:
-* [ODriveFirmware](https://github.com/madcowswe/ODriveFirmware): Firmware that runs on the board.
-* [ODriveHardware](https://github.com/madcowswe/ODriveHardware): Circuit board design.
-
-There is also [ODriveFPGA](https://github.com/madcowswe/ODriveFPGA), which contains the FPGA logic and software that runs on the FPGA based ODrive. This is not currently in development, but may be resumed at some later date.
-
 ## Getting Started
 *References to hardware is with respect to v3.3. Other versions may still apply, but component designators may differ*
 
 It is perfectly fine, and even recommended, to start testing with just a single motor and encoder.
 Make sure you have a good mechanical connection between the encdoer and the motor, slip can cause disasterous oscillations.
 All non-power I/O is 3.3V output and 5V tolerant on input, except:
-
 * GPIO 3 and GPIO 4 are NOT 5V tolerant on ODrive v3.2 and earlier.
 
 You need one or two [brushless motors](https://hackaday.io/project/11583-odrive-high-performance-motor-control/log/37666-hobby-motors-in-your-robots), [quadrature incremental encoder(s)](https://discourse.odriverobotics.com/t/which-encoders-to-choose/63/2), and a power resistor.
@@ -32,9 +25,9 @@ The currently supported command modes are USB and step/direction.
 * If you are using step/direction, please see [setting up step/direction](#setting-up-stepdirection)
 
 You can now:
-* [Download and build the firmware](https://github.com/madcowswe/ODriveFirmware)
-* [Configure the firmware parameters](https://github.com/madcowswe/ODriveFirmware#configuring-parameters)
-* [Flash the board](https://github.com/madcowswe/ODriveFirmware#flashing-the-firmware)
+* [Download and build the firmware](Firmware/README.md)
+* [Configure the firmware parameters](Firmware/README.md#configuring-parameters)
+* [Flash the board](Firmware/README.md#flashing-the-firmware)
 
 ### Startup procedure
 The startup procedure is demonstrated [here](https://www.youtube.com/watch?v=VCX1bA2xnuY). 
@@ -42,7 +35,7 @@ The startup procedure is demonstrated [here](https://www.youtube.com/watch?v=VCX
 Note: the rotor must be allowed to rotate without any biased load during startup. That means mass and weak friction loads are fine, but gravity or spring loads are not okay. Also note that in the video, the motors spin after initalisation, but in the current software the default behaviour is to do position control to position 0 (i.e. the position at startup)
 
 ### Sending commands
-Sending USB and UART commands is documented [here].(https://github.com/madcowswe/ODriveFirmware#communicating-over-usb-and-uart)
+Sending USB and UART commands is documented [here].(Firmware/README.md#communicating-over-usb-and-uart)
 
 ### Setting up UART
 Baud rate: 115200
@@ -50,7 +43,7 @@ Pinout:
 * GPIO 1: Tx (connect to Rx of other device)
 * GPIO 2: Rx (connect to Tx of other device)
 
-To enable UART mode for the GPIO, please see [Setting the GPIO mode](https://github.com/madcowswe/ODriveFirmware#configuring-parameters).
+To enable UART mode for the GPIO, please see [Setting the GPIO mode](Firmware/README.md#configuring-parameters).
 
 ### Setting up Step/Direction
 Pinout:
@@ -62,7 +55,7 @@ Pinout:
 Please note that GPIO_3 and GPIO_4 are NOT 5v tolerant on ODrive v3.2 and earlier, so 3.3V signals only!
 ODrive v3.3 and onward have 5V tolerant GPIO pins.
 
-To enable step/dir mode for the GPIO, please see [Setting the GPIO mode](https://github.com/madcowswe/ODriveFirmware#configuring-parameters).
+To enable step/dir mode for the GPIO, please see [Setting the GPIO mode](Firmware/README.md#configuring-parameters).
 
 There is also a new config variable called `counts_per_step`, which specifies how many encoder counts a "step" corresponds to. It can be any floating point value.
 The maximum step rate is pending tests, but it should handle at least 16kHz. If you want's to test it, please be aware that the failure mode on too high step rates is expected to be that the motors shuts down and coasts.

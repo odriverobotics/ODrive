@@ -1,10 +1,4 @@
-![ODrive Logo](https://static1.squarespace.com/static/58aff26de4fcb53b5efd2f02/t/59bf2a7959cc6872bd68be7e/1505700483663/Odrive+logo+plus+text+black.png?format=1000w)
-
-This repository contains the firmware that runs on the board. The other related repositories are:
-* [ODriveHardware](https://github.com/madcowswe/ODriveHardware): Circuit board design. Also, the pinout from the microcontroller to the board is documented [here](https://docs.google.com/spreadsheets/d/1QXDCs1IRtUyG__M_9WruWOheywb-GhOwFtfPcHuN2Fg/edit#gid=404444347).
-* [ODrive](https://github.com/madcowswe/ODrive): Configuration and analysis scripts that runs on a PC.
-
-There is also [ODriveFPGA](https://github.com/madcowswe/ODriveFPGA), which contains the FPGA logic and software that runs on the FPGA based ODrive. This is not currently in development, but may be resumed at some later date.
+# ODriveFirmware
 
 ### Table of contents
 
@@ -22,16 +16,16 @@ There is also [ODriveFPGA](https://github.com/madcowswe/ODriveFPGA), which conta
 ## Configuring parameters
 To correctly operate the ODrive, you need to supply some parameters. Some are mandatory, and if supplied incorrectly will cause the drive to malfunction. To get good performance you must also tune the drive.
 
-The first thing to set is your board hardware version, located at the top of [Inc/main.h](https://github.com/madcowswe/ODriveFirmware/blob/master/Inc/main.h). If, for example, you are using the hardware: ODrive v3.2, then you should set it like this:
+The first thing to set is your board hardware version, located at the top of [Inc/main.h](Inc/main.h). If, for example, you are using the hardware: ODrive v3.2, then you should set it like this:
 ```C
 #define HW_VERSION_MAJOR 3
 #define HW_VERSION_MINOR 2
 ```
 
-The rest of all the parameters are at the top of the [MotorControl/low_level.c](https://github.com/madcowswe/ODriveFirmware/blob/master/MotorControl/low_level.c) file. Please note that many parameters occur twice, once for each motor.
+The rest of all the parameters are at the top of the [MotorControl/low_level.c](MotorControl/low_level.c) file. Please note that many parameters occur twice, once for each motor.
 In it's current state, the motor structs contain both tuning parameters, meant to be set by the developer, and static variables, meant to be modified by the software. Unfortunatly these are mixed together right now, but cleaning this up is a high priority task.
 
-It may be helpful to know that the entry point of each of the motor threads is `void motor_thread` at the bottom of [MotorControl/low_level.c](https://github.com/madcowswe/ODriveFirmware/blob/master/MotorControl/low_level.c). This is like `main` for each motor, and is probably where you should start reading the code.
+It may be helpful to know that the entry point of each of the motor threads is `void motor_thread` at the bottom of [MotorControl/low_level.c](MotorControl/low_level.c). This is like `main` for each motor, and is probably where you should start reading the code.
 
 ### Mandatory parameters
 You must set:
@@ -166,7 +160,7 @@ For example
 * `g 1 3` will return the error status of M0
 * `g 1 7` will return the error status of M1
 
-The error status corresponds to the [Error_t enum in low_level.h](https://github.com/madcowswe/ODriveFirmware/blob/f19f1b78de4bd917284ff95bc61ca616ca9bacc4/MotorControl/low_level.h#L17-L35).
+The error status corresponds to the [Error_t enum in low_level.h](MotorControl/low_level.h).
 
 Note that the links in this section are to a specific commits to make sure that the line numbers are accurate. That is, they don't link to the newest master, but to an old version. Please check the corresponding lines in the code you are using. This is especially important to get the correct indicies in the exposed variable tables, and the error enum values.
 
