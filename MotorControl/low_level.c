@@ -2,12 +2,14 @@
 
 // Because of broken cmsis_os.h, we need to include arm_math first,
 // otherwise chip specific defines are ommited
+#include <stm32f405xx.h>
 #include <stm32f4xx_hal.h> // Sets up the correct chip specifc defines required by arm_math
 #define ARM_MATH_CM4
 #include <arm_math.h>
 
 #include <low_level.h>
 
+#include <stdint.h>
 #include <stdlib.h>
 #include <math.h>
 #include <cmsis_os.h>
@@ -84,7 +86,7 @@ Motor_t motors[] = {
         .shunt_conductance = 1.0f/0.0005f, //[S]
         .phase_current_rev_gain = 0.0f, // to be set by DRV8301_setup
         .current_control = {
-            // .current_lim = 75.0f, //[A] // Note: consistent with 40v/v gain, TODO: auto limit from gain settings
+            // .current_lim = 75.0f, //[A] // If setting higher than 75A, you MUST change DRV8301_ShuntAmpGain. TODO: make this automatic
             .current_lim = 10.0f, //[A]
             .p_gain = 0.0f, // [V/A] should be auto set after resistance and inductance measurement
             .i_gain = 0.0f, // [V/As] should be auto set after resistance and inductance measurement
@@ -167,7 +169,7 @@ Motor_t motors[] = {
         .shunt_conductance = 1.0f/0.0005f, //[S]
         .phase_current_rev_gain = 0.0f, // to be set by DRV8301_setup
         .current_control = {
-            // .current_lim = 75.0f, //[A] // Note: consistent with 40v/v gain, TODO: auto limit from gain settings
+            // .current_lim = 75.0f, //[A] // If setting higher than 75A, you MUST change DRV8301_ShuntAmpGain. TODO: make this automatic
             .current_lim = 10.0f, //[A]
             .p_gain = 0.0f, // [V/A] should be auto set after resistance and inductance measurement
             .i_gain = 0.0f, // [V/As] should be auto set after resistance and inductance measurement
@@ -219,134 +221,12 @@ static const int current_meas_hz = CURRENT_MEAS_HZ;
 /* Private variables ---------------------------------------------------------*/
 static float brake_resistance = 0.47f; // [ohm]
 
-/* Monitoring */
-monitoring_slot monitoring_slots[20] = {0};
-
-/* variables exposed to usb interface via set/get/monitor
- * If you change something here, don't forget to regenerate the python interface with generate_api.py
- * ro/rw : read only/read write -> ro prevents the code generator from generating setter
- * */
-
-float* exposed_floats[] = {
-    &vbus_voltage, // ro
-    &elec_rad_per_enc, // ro
-    &motors[0].pos_setpoint, // rw
-    &motors[0].pos_gain, // rw
-    &motors[0].vel_setpoint, // rw
-    &motors[0].vel_gain, // rw
-    &motors[0].vel_integrator_gain, // rw
-    &motors[0].vel_integrator_current, // rw
-    &motors[0].vel_limit, // rw
-    &motors[0].current_setpoint, // rw
-    &motors[0].calibration_current, // rw
-    &motors[0].phase_inductance, // ro
-    &motors[0].phase_resistance, // ro
-    &motors[0].current_meas.phB, // ro
-    &motors[0].current_meas.phC, // ro
-    &motors[0].DC_calib.phB, // rw
-    &motors[0].DC_calib.phC, // rw
-    &motors[0].shunt_conductance, // rw
-    &motors[0].phase_current_rev_gain, // rw
-    &motors[0].current_control.current_lim, // rw
-    &motors[0].current_control.p_gain, // rw
-    &motors[0].current_control.i_gain, // rw
-    &motors[0].current_control.v_current_control_integral_d, // rw
-    &motors[0].current_control.v_current_control_integral_q, // rw
-    &motors[0].current_control.Ibus, // ro
-    &motors[0].encoder.phase, // ro
-    &motors[0].encoder.pll_pos, // rw
-    &motors[0].encoder.pll_vel, // rw
-    &motors[0].encoder.pll_kp, // rw
-    &motors[0].encoder.pll_ki, // rw
-    &motors[1].pos_setpoint, // rw
-    &motors[1].pos_gain, // rw
-    &motors[1].vel_setpoint, // rw
-    &motors[1].vel_gain, // rw
-    &motors[1].vel_integrator_gain, // rw
-    &motors[1].vel_integrator_current, // rw
-    &motors[1].vel_limit, // rw
-    &motors[1].current_setpoint, // rw
-    &motors[1].calibration_current, // rw
-    &motors[1].phase_inductance, // ro
-    &motors[1].phase_resistance, // ro
-    &motors[1].current_meas.phB, // ro
-    &motors[1].current_meas.phC, // ro
-    &motors[1].DC_calib.phB, // rw
-    &motors[1].DC_calib.phC, // rw
-    &motors[1].shunt_conductance, // rw
-    &motors[1].phase_current_rev_gain, // rw
-    &motors[1].current_control.current_lim, // rw
-    &motors[1].current_control.p_gain, // rw
-    &motors[1].current_control.i_gain, // rw
-    &motors[1].current_control.v_current_control_integral_d, // rw
-    &motors[1].current_control.v_current_control_integral_q, // rw
-    &motors[1].current_control.Ibus, // ro
-    &motors[1].encoder.phase, // ro
-    &motors[1].encoder.pll_pos, // rw
-    &motors[1].encoder.pll_vel, // rw
-    &motors[1].encoder.pll_kp, // rw
-    &motors[1].encoder.pll_ki, // rw
-};
-
-int* exposed_ints[] = {
-    (int*)&motors[0].control_mode, // rw
-    &motors[0].encoder.encoder_offset, // rw
-    &motors[0].encoder.encoder_state, // ro
-    &motors[0].error, // rw
-    (int*)&motors[1].control_mode, // rw
-    &motors[1].encoder.encoder_offset, // rw
-    &motors[1].encoder.encoder_state, // ro
-    &motors[1].error, // rw
-};
-
-bool* exposed_bools[] = {
-    &motors[0].thread_ready, // ro
-    NULL, // rw
-    NULL, // rw
-    NULL, // ro
-    &motors[1].thread_ready, // ro
-    NULL, // rw
-    NULL, // rw
-    NULL, // ro
-};
-
-uint16_t* exposed_uint16[] = {
-    &motors[0].control_deadline, // rw
-    &motors[0].last_cpu_time, // ro
-    &motors[1].control_deadline, // rw
-    &motors[1].last_cpu_time, // ro
-};
-
-/* Private function prototypes -----------------------------------------------*/
-
 /* Function implementations --------------------------------------------------*/
 
 //--------------------------------
 // Command Handling
 // TODO move to different file
 //--------------------------------
-
-void print_monitoring(int limit) {
-    for (int i=0;i<limit;i++) {
-        switch (monitoring_slots[i].type) {
-        case 0:
-            printf("%f\t",*exposed_floats[monitoring_slots[i].index]);
-            break;
-        case 1:
-            printf("%d\t",*exposed_ints[monitoring_slots[i].index]);
-            break;
-        case 2:
-            printf("%d\t",*exposed_bools[monitoring_slots[i].index]);
-            break;
-        case 3:
-            printf("%hu\t",*exposed_uint16[monitoring_slots[i].index]);
-            break;
-        default:
-            i=100;
-        }
-    }
-    printf("\n");
-}
 
 void set_pos_setpoint(Motor_t* motor, float pos_setpoint, float vel_feed_forward, float current_feed_forward) {
     motor->pos_setpoint = pos_setpoint;
@@ -374,109 +254,6 @@ void set_current_setpoint(Motor_t* motor, float current_setpoint) {
     printf("CURRENT_CONTROL %3.3f\n", motor->current_setpoint);
 #endif
 }
-
-void motor_parse_cmd(uint8_t* buffer, int len) {
-
-    // TODO very hacky way of terminating sscanf at end of buffer:
-    // We should do some proper struct packing instead of using sscanf altogether
-    buffer[len] = 0;
-
-    // check incoming packet type
-    if (buffer[0] == 'p') {
-        // position control
-        unsigned motor_number;
-        float pos_setpoint, vel_feed_forward, current_feed_forward;
-        int numscan = sscanf((const char*)buffer, "p %u %f %f %f", &motor_number, &pos_setpoint, &vel_feed_forward, &current_feed_forward);
-        if (numscan == 4 && motor_number < num_motors) {
-            set_pos_setpoint(&motors[motor_number], pos_setpoint, vel_feed_forward, current_feed_forward);
-        }
-    } else if (buffer[0] == 'v') {
-        // velocity control
-        unsigned motor_number;
-        float vel_feed_forward, current_feed_forward;
-        int numscan = sscanf((const char*)buffer, "v %u %f %f", &motor_number, &vel_feed_forward, &current_feed_forward);
-        if (numscan == 3 && motor_number < num_motors) {
-            set_vel_setpoint(&motors[motor_number], vel_feed_forward, current_feed_forward);
-        }
-    } else if (buffer[0] == 'c') {
-        // current control
-        unsigned motor_number;
-        float current_feed_forward;
-        int numscan = sscanf((const char*)buffer, "c %u %f", &motor_number, &current_feed_forward);
-        if (numscan == 2 && motor_number < num_motors) {
-            set_current_setpoint(&motors[motor_number], current_feed_forward);
-        }
-    } else if (buffer[0] == 'g') { // GET
-        // g <0:float,1:int,2:bool,3:uint16> index
-        int type = 0;
-        int index = 0;
-        int numscan = sscanf((const char*)buffer, "g %u %u", &type, &index);
-        if (numscan == 2) {
-            switch(type){
-            case 0: {
-                printf("%f\n",*exposed_floats[index]);
-                break;
-            };
-            case 1: {
-                printf("%d\n",*exposed_ints[index]);
-                break;
-            };
-            case 2: {
-                printf("%d\n",*exposed_bools[index]);
-                break;
-            };
-            case 3: {
-                printf("%hu\n",*exposed_uint16[index]);
-                break;
-            };
-            }
-        }
-    } else if (buffer[0] == 's') { // SET
-        // s <0:float,1:int,2:bool,3:uint16> index value
-        int type = 0;
-        int index = 0;
-        int numscan = sscanf((const char*)buffer, "s %u %u", &type, &index);
-        if (numscan == 2) {
-            switch(type) {
-            case 0: {
-                sscanf((const char*)buffer, "s %u %u %f", &type, &index, exposed_floats[index]);
-                break;
-            };
-            case 1: {
-                sscanf((const char*)buffer, "s %u %u %d", &type, &index, exposed_ints[index]);
-                break;
-            };
-            case 2: {
-                int btmp = 0;
-                sscanf((const char*)buffer, "s %u %u %d", &type, &index, &btmp);
-                *exposed_bools[index] = btmp ? true : false;
-                break;
-            };
-            case 3: {
-                sscanf((const char*)buffer, "s %u %u %hu", &type, &index, exposed_uint16[index]);
-                break;
-            };
-            }
-        }
-    } else if (buffer[0] == 'm') { // Setup Monitor
-        // m <0:float,1:int,2:bool,3:uint16> index monitoring_slot
-        int type = 0;
-        int index = 0;
-        int slot = 0;
-        int numscan = sscanf((const char*)buffer, "m %u %u %u", &type, &index, &slot);
-        if (numscan == 3) {
-            monitoring_slots[slot].type = type;
-            monitoring_slots[slot].index = index;
-        }
-    } else if (buffer[0] == 'o') { // Output Monitor
-        int limit = 0;
-        int numscan = sscanf((const char*)buffer, "o %u", &limit);
-        if (numscan == 1) {
-            print_monitoring(limit);
-        }
-    }
-}
-
 
 //--------------------------------
 // Utility
@@ -1012,6 +789,7 @@ bool motor_calibration(Motor_t* motor){
 // Test functions
 //--------------------------------
 
+__attribute__((unused))
 void scan_motor_loop(Motor_t* motor, float omega, float voltage_magnitude) {
     for (;;) {
         for (float ph = 0.0f; ph < 2.0f * M_PI; ph += omega * current_meas_period) {
@@ -1031,6 +809,7 @@ void scan_motor_loop(Motor_t* motor, float omega, float voltage_magnitude) {
 }
 
 //TODO integrate as mode in main control loop
+__attribute__((unused))
 void FOC_voltage_loop(Motor_t* motor, float v_d, float v_q) {
     for (;;) {
         osSignalWait(M_SIGNAL_PH_CURRENT_MEAS, osWaitForever);
@@ -1176,36 +955,39 @@ void update_rotor(Motor_t* motor) {
     }
 }
 
+bool using_encoder(Motor_t* motor) {
+    if (motor->rotor_mode == ROTOR_MODE_ENCODER ||
+        motor->rotor_mode == ROTOR_MODE_RUN_ENCODER_TEST_SENSORLESS)
+        return true;
+    else
+        return false;
+}
+
+bool using_sensorless(Motor_t* motor) {
+    if (motor->rotor_mode == ROTOR_MODE_SENSORLESS)
+        return true;
+    else
+        return false;
+}
+
 float get_rotor_phase(Motor_t* motor) {
-    switch (motor->rotor_mode) {
-        case ROTOR_MODE_ENCODER:
-        case ROTOR_MODE_RUN_ENCODER_TEST_SENSORLESS:
-            return motor->encoder.phase;
-        break;
-        case ROTOR_MODE_SENSORLESS:
-            return motor->sensorless.phase;
-        break;
-        default:
-            //TODO error handling
-            return 0.0f;
-        break;
-    }
+    if (using_encoder(motor)) 
+        return motor->encoder.phase;
+    else if (using_sensorless(motor)) 
+        return motor->sensorless.phase;
+    else
+        //TODO error handling
+        return 0.0f;
 }
 
 float get_pll_vel(Motor_t* motor) {
-    switch (motor->rotor_mode) {
-        case ROTOR_MODE_ENCODER:
-        case ROTOR_MODE_RUN_ENCODER_TEST_SENSORLESS:
-            return motor->encoder.pll_vel;
-        break;
-        case ROTOR_MODE_SENSORLESS:
-            return motor->sensorless.pll_vel;
-        break;
-        default:
-            //TODO error handling
-            return 0.0f;
-        break;
-    }
+    if (using_encoder(motor)) 
+        return motor->encoder.pll_vel;
+    else if (using_sensorless(motor)) 
+        return motor->sensorless.pll_vel;
+    else
+        //TODO error handling
+        return 0.0f;
 }
 
 bool spin_up_timestep(Motor_t* motor, float phase, float I_mag) {

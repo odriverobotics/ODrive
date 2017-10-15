@@ -70,6 +70,9 @@ void MX_GPIO_Init(void);
 
 /* USER CODE BEGIN Prototypes */
 
+void SetGPIO12toUART();
+void SetGPIO12toStepDir();
+
 /* USER CODE END Prototypes */
 
 #ifdef __cplusplus

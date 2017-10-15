@@ -148,17 +148,10 @@ typedef struct{
 } monitoring_slot;
 
 /* Exported constants --------------------------------------------------------*/
+extern const int num_motors;
+/* Exported variables --------------------------------------------------------*/
 extern float vbus_voltage;
 extern Motor_t motors[];
-extern const int num_motors;
-
-/* Exported variables --------------------------------------------------------*/
-// Exposed comms table during refactor transition
-extern float* exposed_floats[];
-extern int* exposed_ints[];
-extern bool* exposed_bools[];
-extern uint16_t* exposed_uint16[];
-
 /* Exported macro ------------------------------------------------------------*/
 /* Exported functions --------------------------------------------------------*/
 
@@ -181,8 +174,6 @@ void motor_parse_cmd(uint8_t* buffer, int len);
 
 
 //// Old private:
-// Command Handling
-void print_monitoring(int limit);
 // Utility
 uint16_t check_timing(Motor_t* motor);
 void global_fault(int error);
@@ -203,8 +194,10 @@ void scan_motor_loop(Motor_t* motor, float omega, float voltage_magnitude);
 void FOC_voltage_loop(Motor_t* motor, float v_d, float v_q);
 // Main motor control
 void update_rotor(Motor_t* motor);
-float get_rotor_phase(Motor_t* motor);
-float get_pll_vel(Motor_t* motor);
+bool using_encoder(Motor_t* motor)
+bool using_sensorless(Motor_t* motor)
+float get_rotor_phase(Motor_t* motor)
+float get_pll_vel(Motor_t* motor)
 bool spin_up_sensorless(Motor_t* motor);
 void update_brake_current(float brake_current);
 void queue_modulation_timings(Motor_t* motor, float mod_alpha, float mod_beta);

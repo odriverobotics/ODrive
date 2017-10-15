@@ -4,7 +4,7 @@ Like this (click for video):
 [![Servo motor control demo](https://img.youtube.com/vi/WT4E5nb3KtY/0.jpg)](https://www.youtube.com/watch?v=WT4E5nb3KtY)
 
 This repository contains the firmware that runs on the board. The other related repositories are:
-* [ODriveHardware](https://github.com/madcowswe/ODriveHardware): Circuit board design. Also, the pinout from the microcontroller to the board is documented [here](https://docs.google.com/spreadsheets/d/1QXDCs1IRtUyG__M_9WruWOheywb-GhOwFtfPcHuN2Fg/edit?usp=sharing).
+* [ODriveHardware](https://github.com/madcowswe/ODriveHardware): Circuit board design. Also, the pinout from the microcontroller to the board is documented [here](https://docs.google.com/spreadsheets/d/1QXDCs1IRtUyG__M_9WruWOheywb-GhOwFtfPcHuN2Fg/edit#gid=404444347).
 * [ODrive](https://github.com/madcowswe/ODrive): Configuration and analysis scripts that runs on a PC.
 
 There is also [ODriveFPGA](https://github.com/madcowswe/ODriveFPGA), which contains the FPGA logic and software that runs on the FPGA based ODrive. This is not currently in development, but may be resumed at some later date.
@@ -15,7 +15,7 @@ There is also [ODriveFPGA](https://github.com/madcowswe/ODriveFPGA), which conta
 
 - [Configuring parameters](#configuring-parameters)
 - [Compiling and downloading firmware](#compiling-and-downloading-firmware)
-- [Communicating over USB](#communicating-over-usb)
+- [Communicating over USB and UART](#communicating-over-usb-and-uart)
 - [Generating startup code](#generating-startup-code)
 - [Setting up Eclipse development environment](#setting-up-eclipse-development-environment)
 - [Notes for Contributors](#notes-for-contributors)
@@ -25,26 +25,35 @@ There is also [ODriveFPGA](https://github.com/madcowswe/ODriveFPGA), which conta
 ## Configuring parameters
 To correctly operate the ODrive, you need to supply some parameters. Some are mandatory, and if supplied incorrectly will cause the drive to malfunction. To get good performance you must also tune the drive.
 
+### Hardware configuration
 The first thing to set is your board hardware version, located at the top of [Inc/main.h](https://github.com/madcowswe/ODriveFirmware/blob/master/Inc/main.h). If, for example, you are using the hardware: ODrive v3.2, then you should set it like this:
 ```C
 #define HW_VERSION_MAJOR 3
 #define HW_VERSION_MINOR 2
 ```
 
+### Communication configuration
+If you are using USB only to communicate with the ODrive, you may skip this step.
+
+The GPIO 1,2 pins are configurable as either step/direction, or as UART.
+In [MotorControl/commands.c](https://github.com/madcowswe/ODriveFirmware/blob/master/MotorControl/commands.c) please set `gpio_mode` to the corresponding value (`GPIO_MODE_UART` or `GPIO_MODE_STEP_DIR`).
+
+
+### Motor control parameters
 The rest of all the parameters are at the top of the [MotorControl/low_level.c](https://github.com/madcowswe/ODriveFirmware/blob/master/MotorControl/low_level.c) file. Please note that many parameters occur twice, once for each motor.
 In it's current state, the motor structs contain both tuning parameters, meant to be set by the developer, and static variables, meant to be modified by the software. Unfortunatly these are mixed together right now, but cleaning this up is a high priority task.
 
 It may be helpful to know that the entry point of each of the motor threads is `void motor_thread` at the bottom of [MotorControl/low_level.c](https://github.com/madcowswe/ODriveFirmware/blob/master/MotorControl/low_level.c). This is like `main` for each motor, and is probably where you should start reading the code.
 
-### Mandatory parameters
+#### Mandatory parameters
 You must set:
 * `ENCODER_CPR`: Encoder Count Per Revolution (CPR). This is 4x the Pulse Per Revolution (PPR) value.
 * `POLE_PAIRS`: This is the number of magnet poles in the rotor, divided by two. You can simply count the number of magnets in the rotor, if you can see them.
 * `brake_resistance`: This is the resistance of the brake resistor. If you are not using it, you may set it to 0.0f.
 
-### Tuning parameters
+#### Tuning parameters
 The most important parameters are the limits:
-* The current limit: `.current_lim = 75.0f, //[A] // Note: consistent with 40v/v gain`. The default current limit, for safety reasons, is set to 10A. This is quite weak, and good for making sure the drive is stable. Once you have tuned the drive, you should increase this to 75A to get some performance. Note that above 75A, you must change the current amplifier gains.
+* The current limit: `.current_lim = 75.0f, //[A] // Note: consistent with 40v/v gain`. The default current limit, for safety reasons, is set to 10A. This is quite weak, and good for making sure the drive is stable. Once you have tuned the drive, you can increase this to 75A to get some performance. Note that above 75A, you must change the current amplifier gains.
 * The velocity limit: `.vel_limit = 20000.0f, // [counts/s]`. Does what it says on the tin.
 
 The motion control gains are currently manually tuned:
@@ -61,7 +70,7 @@ An upcoming feature will enable automatic tuning. Until then, here is a rough tu
 * Back down `pos_gain` until you do not have overshoot anymore.
 * The integrator is not easily tuned, nor is it strictly required. Tune at your own discression.
 
-### Optional parameters
+#### Optional parameters
 By default both motors are enabled, and the default control mode is position control.
 If you want a different mode, you can change `.control_mode`. To disable a motor, set `.enable_control` and `.do_calibration` to false.
 
@@ -106,13 +115,25 @@ After installing all of the above, open a Git Bash shell. Continue at section [B
 Run `make gdb`. This will reset and halt at program start. Now you can set breakpoints and run the program. If you know how to use gdb, you are good to go.
 If you prefer to debug from eclipse, see [Setting up Eclipse development environment](#setting-up-eclipse-development-environment).
 
-## Communicating over USB
+## Communicating over USB and UART
 There is currently a very primitive method to read/write configuration, commands and errors from the ODrive over the USB.
-Please use the `ODriveFirmware/tools/test_bulk.py` python script for this.
-On Windows you need to set the driver for ODrive to libusb using [Zadig](http://zadig.akeo.ie/).
+Please use the `ODriveFirmware/tools/test_bulk.py` python script for this.  It is written for Python 3.
+
+Setup instructions as follows:
+* Install PyUSB (pip install --pre pysusb)
+* Plug in the STLink or another power source to power the ODrive board
+* Plug in a separate USB cable into the microUSB connector on ODrive
+* On Windows, use the [Zadig](http://zadig.akeo.ie/) utility to set ODrive (not STLink!) driver to libusb
+* Run test_bulk.py
 
 ### Command set
-The most accurate way to understand the commands is to read [the code](https://github.com/madcowswe/ODriveFirmware/blob/f19f1b78de4bd917284ff95bc61ca616ca9bacc4/MotorControl/low_level.c#L353) that parses the commands.
+The most accurate way to understand the commands is to read [the code](https://github.com/madcowswe/ODriveFirmware/blob/f19f1b78de4bd917284ff95bc61ca616ca9bacc4/MotorControl/vommands.c#L133) that parses the commands. Nevertheless, here is an overview:
+
+#### UART framing
+USB communicates with packets, so it is easy to frame a command as one command per packet. However, UART doesn't have any packeting, so we need a way to frame the commands. The start-of-packet symbol is `$` and the end-of-packet symbol is `!`, that is, something like this: `$command!`. An example of a valid UART position command:
+```
+$p 0 10000 0 0!
+```
 
 #### Motor Position command
 ```
@@ -184,12 +205,6 @@ We also use a tool to generate the Makefile. The steps to do this are as follows
 * Run stm32cubeMX and load the `stm32cubemx/Odrive.ioc` project file.
 * Press `Project -> Generate code`
 * You may need to let it download some drivers and such.
-
-### Generate makefile
-There is an excellent project called CubeMX2Makefile, originally from baoshi. This project is included as a submodule.
-* Initialise and clone the submodules: `git submodule init; git submodule update`
-* Generate makefile: `python2 CubeMX2Makefile/CubeMX2Makefile.py .`
-
 
 ## Setting up Eclipse development environment
 
