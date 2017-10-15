@@ -41,8 +41,16 @@ The startup procedure is demonstrated [here](https://www.youtube.com/watch?v=VCX
 
 Note: the rotor must be allowed to rotate without any biased load during startup. That means mass and weak friction loads are fine, but gravity or spring loads are not okay. Also note that in the video, the motors spin after initalisation, but in the current software the default behaviour is to do position control to position 0 (i.e. the position at startup)
 
-### Sending USB commands
-Sending USB commands is documented [here](https://github.com/madcowswe/ODriveFirmware#communicating-over-usb)
+### Sending commands
+Sending USB and UART commands is documented [here].(https://github.com/madcowswe/ODriveFirmware#communicating-over-usb-and-uart)
+
+### Setting up UART
+Baud rate: 115200
+Pinout:
+* GPIO 1: Tx (connect to Rx of other device)
+* GPIO 2: Rx (connect to Tx of other device)
+
+To enable UART mode for the GPIO, please see [Setting the GPIO mode](https://github.com/madcowswe/ODriveFirmware#configuring-parameters).
 
 ### Setting up Step/Direction
 Pinout:
@@ -54,12 +62,12 @@ Pinout:
 Please note that GPIO_3 and GPIO_4 are NOT 5v tolerant on ODrive v3.2 and earlier, so 3.3V signals only!
 ODrive v3.3 and onward have 5V tolerant GPIO pins.
 
+To enable step/dir mode for the GPIO, please see [Setting the GPIO mode](https://github.com/madcowswe/ODriveFirmware#configuring-parameters).
+
 There is also a new config variable called `counts_per_step`, which specifies how many encoder counts a "step" corresponds to. It can be any floating point value.
 The maximum step rate is pending tests, but it should handle at least 16kHz. If you want's to test it, please be aware that the failure mode on too high step rates is expected to be that the motors shuts down and coasts.
 
-Please be aware that there is no enable line right now.
-
-The step/direction interface is enabled by default, and remains active as long as the ODrive is in position control mode. By default the ODrive starts in position control mode, so you don't need to send any commands over USB to get going. You can still send USB commands if you want to.
+Please be aware that there is no enable line right now, and the step/direction interface is enabled by default, and remains active as long as the ODrive is in position control mode. By default the ODrive starts in position control mode, so you don't need to send any commands over USB to get going. You can still send USB commands if you want to.
 
 ### Getting help
 If you have any issues or any questions please get in touch. The [ODrive Community](https://discourse.odriverobotics.com/) warmly welcomes you.
