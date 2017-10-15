@@ -127,7 +127,7 @@ Setup instructions as follows:
 * Run test_bulk.py
 
 ### Command set
-The most accurate way to understand the commands is to read [the code](https://github.com/madcowswe/ODriveFirmware/blob/f19f1b78de4bd917284ff95bc61ca616ca9bacc4/MotorControl/vommands.c#L133) that parses the commands. Nevertheless, here is an overview:
+The most accurate way to understand the commands is to read [the code](https://github.com/madcowswe/ODriveFirmware/blob/master/MotorControl/commands.c#L133) that parses the commands. Nevertheless, here is an overview:
 
 #### UART framing
 USB communicates with packets, so it is easy to frame a command as one command per packet. However, UART doesn't have any packeting, so we need a way to frame the commands. The start-of-packet symbol is `$` and the end-of-packet symbol is `!`, that is, something like this: `$command!`. An example of a valid UART position command:
