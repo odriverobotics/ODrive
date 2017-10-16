@@ -1,6 +1,6 @@
 
 #include "axis.h"
-#include "commands.h"
+#include "legacy_commands.h"
 
 //TODO: goal of refactor is to kick this out completely
 extern "C" {

@@ -8,7 +8,7 @@
 #include  <sys/unistd.h>
 #include <usbd_cdc_if.h>
 #include <usart.h>
-#include <commands.h>
+#include <legacy_commands.h>
 
 
 //int _read(int file, char *data, int len) {}

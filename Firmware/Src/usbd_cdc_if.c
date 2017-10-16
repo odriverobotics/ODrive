@@ -272,7 +272,7 @@ static int8_t CDC_Receive_FS (uint8_t* Buf, uint32_t *Len)
   int modified_len = MACRO_MIN(*Len+1, APP_RX_DATA_SIZE);
   Buf[modified_len-1] = 0;
 
-  motor_parse_cmd(Buf, modified_len, SERIAL_PRINTF_IS_USB);
+  USB_receive_packet(Buf, modified_len);
 
   // Allow next packet
   USBD_CDC_ReceivePacket(&hUsbDeviceFS);

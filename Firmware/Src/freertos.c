@@ -133,8 +133,8 @@ void StartDefaultTask(void const * argument)
   thread_motor_0 = osThreadCreate(osThread(task_motor_0), &motors[0]);
   thread_motor_1 = osThreadCreate(osThread(task_motor_1), &motors[1]);
 
-  // Start USB command handling thread
-  osThreadDef(task_cmd_parse, cmd_parse_thread, osPriorityNormal, 0, 512);
+  // Start USB/UART command handling thread
+  osThreadDef(task_cmd_parse, communication_task, osPriorityNormal, 0, 512);
   thread_cmd_parse = osThreadCreate(osThread(task_cmd_parse), NULL);
 
   //If we get to here, then the default task is done.

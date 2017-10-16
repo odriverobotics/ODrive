@@ -80,10 +80,11 @@ C_SOURCES = \
   Src/usbd_cdc_if.c \
   Src/syscalls.c \
   MotorControl/utils.c \
-  MotorControl/commands.c \
+  MotorControl/legacy_commands.c \
   MotorControl/low_level.c
 CPP_SOURCES = \
   MotorControl/axis.cpp \
+  MotorControl/commands.cpp \
   MotorControl/protocol.cpp
 ASM_SOURCES = \
   startup/startup_stm32f405xx.s
