@@ -40,6 +40,8 @@
 #endif 
 
 /* Includes ------------------------------------------------------------------*/
+#include "stm32f4xx_hal.h"
+#include "main.h"
 /* Exported types ------------------------------------------------------------*/
 /* Exported constants --------------------------------------------------------*/
 /* Exported macro ------------------------------------------------------------*/
@@ -52,9 +54,11 @@ void BusFault_Handler(void);
 void UsageFault_Handler(void);
 void DebugMon_Handler(void);
 void SysTick_Handler(void);
-void EXTI2_IRQHandler(void);
-void EXTI4_IRQHandler(void);
+void DMA1_Stream2_IRQHandler(void);
+void DMA1_Stream4_IRQHandler(void);
 void ADC_IRQHandler(void);
+void TIM8_TRG_COM_TIM14_IRQHandler(void);
+void UART4_IRQHandler(void);
 void OTG_FS_IRQHandler(void);
 
 #ifdef __cplusplus

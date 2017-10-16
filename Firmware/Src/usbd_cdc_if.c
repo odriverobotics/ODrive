@@ -50,7 +50,7 @@
 #include "usbd_cdc_if.h"
 /* USER CODE BEGIN INCLUDE */
 #include "utils.h"
-#include "protocol.h"
+#include "commands.h"
 /* USER CODE END INCLUDE */
 
 /** @addtogroup STM32_USB_OTG_DEVICE_LIBRARY
@@ -268,14 +268,14 @@ static int8_t CDC_Control_FS  (uint8_t cmd, uint8_t* pbuf, uint16_t length)
 static int8_t CDC_Receive_FS (uint8_t* Buf, uint32_t *Len)
 {
   /* USER CODE BEGIN 6 */
-  USBD_CDC_SetRxBuffer(&hUsbDeviceFS, &Buf[0]);
-  USBD_CDC_ReceivePacket(&hUsbDeviceFS);
-
   //Append null termination at end of string
-  int null_idx = MACRO_MIN(*Len, APP_RX_DATA_SIZE-1);
-  Buf[null_idx] = 0;
+  int modified_len = MACRO_MIN(*Len+1, APP_RX_DATA_SIZE);
+  Buf[modified_len-1] = 0;
 
-  Protocol_parse_cmd(Buf, *Len);
+  motor_parse_cmd(Buf, modified_len, SERIAL_PRINTF_IS_USB);
+
+  // Allow next packet
+  USBD_CDC_ReceivePacket(&hUsbDeviceFS);
 
   return (USBD_OK);
   /* USER CODE END 6 */ 
@@ -296,11 +296,18 @@ uint8_t CDC_Transmit_FS(uint8_t* Buf, uint16_t Len)
 {
   uint8_t result = USBD_OK;
   /* USER CODE BEGIN 7 */ 
-  USBD_CDC_HandleTypeDef *hcdc = (USBD_CDC_HandleTypeDef*)hUsbDeviceFS.pClassData;
-  if (hcdc->TxState != 0){
+  
+  //Check length
+  if (Len > APP_TX_DATA_SIZE)
+    return USBD_FAIL;
+  // Check for ongoing transmission
+  USBD_CDC_HandleTypeDef* hcdc = (USBD_CDC_HandleTypeDef*) hUsbDeviceFS.pClassData;
+  if (hcdc->TxState != 0)
     return USBD_BUSY;
-  }
-  USBD_CDC_SetTxBuffer(&hUsbDeviceFS, Buf, Len);
+  // memcpy Buf into UserTxBufferFS
+  memcpy(UserTxBufferFS, Buf, Len);
+  // Update Len
+  USBD_CDC_SetTxBuffer(&hUsbDeviceFS, UserTxBufferFS, Len);
   result = USBD_CDC_TransmitPacket(&hUsbDeviceFS);
   /* USER CODE END 7 */ 
   return result;

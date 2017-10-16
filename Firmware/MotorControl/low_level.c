@@ -2,12 +2,14 @@
 
 // Because of broken cmsis_os.h, we need to include arm_math first,
 // otherwise chip specific defines are ommited
+#include <stm32f405xx.h>
 #include <stm32f4xx_hal.h> // Sets up the correct chip specifc defines required by arm_math
 #define ARM_MATH_CM4
 #include <arm_math.h>
 
 #include <low_level.h>
 
+#include <stdint.h>
 #include <stdlib.h>
 #include <math.h>
 #include <cmsis_os.h>
@@ -84,7 +86,7 @@ Motor_t motors[] = {
         .shunt_conductance = 1.0f/0.0005f, //[S]
         .phase_current_rev_gain = 0.0f, // to be set by DRV8301_setup
         .current_control = {
-            // .current_lim = 75.0f, //[A] // Note: consistent with 40v/v gain, TODO: auto limit from gain settings
+            // .current_lim = 75.0f, //[A] // If setting higher than 75A, you MUST change DRV8301_ShuntAmpGain. TODO: make this automatic
             .current_lim = 10.0f, //[A]
             .p_gain = 0.0f, // [V/A] should be auto set after resistance and inductance measurement
             .i_gain = 0.0f, // [V/As] should be auto set after resistance and inductance measurement
@@ -167,7 +169,7 @@ Motor_t motors[] = {
         .shunt_conductance = 1.0f/0.0005f, //[S]
         .phase_current_rev_gain = 0.0f, // to be set by DRV8301_setup
         .current_control = {
-            // .current_lim = 75.0f, //[A] // Note: consistent with 40v/v gain, TODO: auto limit from gain settings
+            // .current_lim = 75.0f, //[A] // If setting higher than 75A, you MUST change DRV8301_ShuntAmpGain. TODO: make this automatic
             .current_lim = 10.0f, //[A]
             .p_gain = 0.0f, // [V/A] should be auto set after resistance and inductance measurement
             .i_gain = 0.0f, // [V/As] should be auto set after resistance and inductance measurement
@@ -219,8 +221,6 @@ static const int current_meas_hz = CURRENT_MEAS_HZ;
 /* Private variables ---------------------------------------------------------*/
 static float brake_resistance = 0.47f; // [ohm]
 
-/* Private function prototypes -----------------------------------------------*/
-
 /* Function implementations --------------------------------------------------*/
 
 //--------------------------------
@@ -254,7 +254,10 @@ void set_current_setpoint(Motor_t* motor, float current_setpoint) {
 #endif
 }
 
+<<<<<<< HEAD:Firmware/MotorControl/low_level.c
 
+=======
+>>>>>>> origin/cppify:Firmware/MotorControl/low_level.c
 //--------------------------------
 // Utility
 //--------------------------------
@@ -789,6 +792,7 @@ bool motor_calibration(Motor_t* motor){
 // Test functions
 //--------------------------------
 
+__attribute__((unused))
 void scan_motor_loop(Motor_t* motor, float omega, float voltage_magnitude) {
     for (;;) {
         for (float ph = 0.0f; ph < 2.0f * M_PI; ph += omega * current_meas_period) {
@@ -808,6 +812,7 @@ void scan_motor_loop(Motor_t* motor, float omega, float voltage_magnitude) {
 }
 
 //TODO integrate as mode in main control loop
+__attribute__((unused))
 void FOC_voltage_loop(Motor_t* motor, float v_d, float v_q) {
     for (;;) {
         osSignalWait(M_SIGNAL_PH_CURRENT_MEAS, osWaitForever);
@@ -953,36 +958,39 @@ void update_rotor(Motor_t* motor) {
     }
 }
 
+bool using_encoder(Motor_t* motor) {
+    if (motor->rotor_mode == ROTOR_MODE_ENCODER ||
+        motor->rotor_mode == ROTOR_MODE_RUN_ENCODER_TEST_SENSORLESS)
+        return true;
+    else
+        return false;
+}
+
+bool using_sensorless(Motor_t* motor) {
+    if (motor->rotor_mode == ROTOR_MODE_SENSORLESS)
+        return true;
+    else
+        return false;
+}
+
 float get_rotor_phase(Motor_t* motor) {
-    switch (motor->rotor_mode) {
-        case ROTOR_MODE_ENCODER:
-        case ROTOR_MODE_RUN_ENCODER_TEST_SENSORLESS:
-            return motor->encoder.phase;
-        break;
-        case ROTOR_MODE_SENSORLESS:
-            return motor->sensorless.phase;
-        break;
-        default:
-            //TODO error handling
-            return 0.0f;
-        break;
-    }
+    if (using_encoder(motor)) 
+        return motor->encoder.phase;
+    else if (using_sensorless(motor)) 
+        return motor->sensorless.phase;
+    else
+        //TODO error handling
+        return 0.0f;
 }
 
 float get_pll_vel(Motor_t* motor) {
-    switch (motor->rotor_mode) {
-        case ROTOR_MODE_ENCODER:
-        case ROTOR_MODE_RUN_ENCODER_TEST_SENSORLESS:
-            return motor->encoder.pll_vel;
-        break;
-        case ROTOR_MODE_SENSORLESS:
-            return motor->sensorless.pll_vel;
-        break;
-        default:
-            //TODO error handling
-            return 0.0f;
-        break;
-    }
+    if (using_encoder(motor)) 
+        return motor->encoder.pll_vel;
+    else if (using_sensorless(motor)) 
+        return motor->sensorless.pll_vel;
+    else
+        //TODO error handling
+        return 0.0f;
 }
 
 bool spin_up_timestep(Motor_t* motor, float phase, float I_mag) {

@@ -40,14 +40,17 @@ C_SOURCES = \
   Middlewares/ST/STM32_USB_Device_Library/Class/CDC/Src/usbd_cdc.c \
   Src/system_stm32f4xx.c \
   Src/stm32f4xx_it.c \
+  Src/stm32f4xx_hal_msp.c \
+  Src/stm32f4xx_hal_timebase_TIM.c \
   Src/tim.c \
   Src/gpio.c \
   Src/main.c \
   Src/adc.c \
   Src/freertos.c \
   Src/spi.c \
-  Src/stm32f4xx_hal_msp.c \
   Src/can.c \
+  Src/usart.c \
+  Src/dma.c \
   Src/usbd_conf.c \
   Src/usbd_desc.c \
   Src/usb_device.c \
@@ -72,10 +75,12 @@ C_SOURCES = \
   Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_adc_ex.c \
   Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_pcd.c \
   Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_pcd_ex.c \
+  Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_uart.c \
   Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_ll_usb.c \
   Src/usbd_cdc_if.c \
   Src/syscalls.c \
   MotorControl/utils.c \
+  MotorControl/commands.c \
   MotorControl/low_level.c
 CPP_SOURCES = \
   MotorControl/axis.cpp \
@@ -116,9 +121,9 @@ C_INCLUDES += -IDrivers/CMSIS/Include
 C_INCLUDES += -IInc
 C_INCLUDES += -IMotorControl
 # compile gcc flags
-ASFLAGS = -mthumb -mcpu=cortex-m4 -mfpu=fpv4-sp-d16 -mfloat-abi=hard $(AS_DEFS) $(AS_INCLUDES) $(OPT) -Wall -fdata-sections -ffunction-sections -u _printf_float -u _scanf_float
-CFLAGS = -mthumb -mcpu=cortex-m4 -mfpu=fpv4-sp-d16 -mfloat-abi=hard $(C_DEFS) $(C_INCLUDES) $(OPT) -Wall -fdata-sections -ffunction-sections -u _printf_float -u _scanf_float
-CXXFLAGS = -mthumb -mcpu=cortex-m4 -mfpu=fpv4-sp-d16 -mfloat-abi=hard $(C_DEFS) $(C_INCLUDES) $(OPT) -Wall -fdata-sections -ffunction-sections -u _printf_float -u _scanf_float
+ASFLAGS = -mthumb -mcpu=cortex-m4 -mfpu=fpv4-sp-d16 -mfloat-abi=hard $(AS_DEFS) $(AS_INCLUDES) $(OPT) -Wall -fdata-sections -ffunction-sections
+CFLAGS = -mthumb -mcpu=cortex-m4 -mfpu=fpv4-sp-d16 -mfloat-abi=hard $(C_DEFS) $(C_INCLUDES) $(OPT) -Wall -fdata-sections -ffunction-sections
+CXXFLAGS = -mthumb -mcpu=cortex-m4 -mfpu=fpv4-sp-d16 -mfloat-abi=hard $(C_DEFS) $(C_INCLUDES) $(OPT) -Wall -fdata-sections -ffunction-sections
 ifeq ($(DEBUG), 1)
 CFLAGS += -g -gdwarf-2
 CXXFLAGS += -g -gdwarf-2
@@ -135,7 +140,7 @@ LDSCRIPT = STM32F405RGTx_FLASH.ld
 # libraries
 LIBS = -lc -lm -lnosys -larm_cortexM4lf_math
 LIBDIR = -LDrivers/CMSIS/Lib
-LDFLAGS = -mthumb -mcpu=cortex-m4 -mfpu=fpv4-sp-d16 -mfloat-abi=hard -specs=nosys.specs -specs=nano.specs $(OPT) -T$(LDSCRIPT) $(LIBDIR) $(LIBS) -Wl,-Map=$(BUILD_DIR)/$(TARGET).map,--cref -Wl,--gc-sections
+LDFLAGS = -mthumb -mcpu=cortex-m4 -mfpu=fpv4-sp-d16 -mfloat-abi=hard -specs=nosys.specs -specs=nano.specs -u _printf_float -u _scanf_float $(OPT) -T$(LDSCRIPT) $(LIBDIR) $(LIBS) -Wl,-Map=$(BUILD_DIR)/$(TARGET).map,--cref -Wl,--gc-sections
 
 # default action: build all
 all: $(BUILD_DIR)/$(TARGET).elf $(BUILD_DIR)/$(TARGET).hex $(BUILD_DIR)/$(TARGET).bin
@@ -153,10 +158,10 @@ vpath %.cpp $(sort $(dir $(CPP_SOURCES)))
 OBJECTS += $(addprefix $(BUILD_DIR)/,$(notdir $(ASM_SOURCES:.s=.o)))
 vpath %.s $(sort $(dir $(ASM_SOURCES)))
 
-$(BUILD_DIR)/%.o: %.c Makefile | $(BUILD_DIR) 
+$(BUILD_DIR)/%.o: %.c Makefile | $(BUILD_DIR)
 	@$(CC) -c $(CFLAGS) -Wa,-a,-ad,-alms=$(BUILD_DIR)/$(notdir $(<:.c=.lst)) $< -o $@
 
-$(BUILD_DIR)/%.o: %.cpp Makefile | $(BUILD_DIR) 
+$(BUILD_DIR)/%.o: %.cpp Makefile | $(BUILD_DIR)
 	@$(CXX) -c $(CXXFLAGS) -Wa,-a,-ad,-alms=$(BUILD_DIR)/$(notdir $(<:.cpp=.lst)) $< -o $@
 
 $(BUILD_DIR)/%.o: %.s Makefile | $(BUILD_DIR)

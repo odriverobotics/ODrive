@@ -1,5 +1,6 @@
 
-#include "axis.hpp"
+#include "axis.h"
+#include "commands.h"
 
 //TODO: goal of refactor is to kick this out completely
 extern "C" {

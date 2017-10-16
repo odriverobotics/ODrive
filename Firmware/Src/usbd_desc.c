@@ -75,7 +75,7 @@
 #define USBD_LANGID_STRING     1033
 #define USBD_MANUFACTURER_STRING     "ODrive"
 #define USBD_PID_FS     0x0D31
-#define USBD_PRODUCT_STRING_FS     "ODrive rev 3.1"
+#define USBD_PRODUCT_STRING_FS     "ODrive v3.1"
 #define USBD_SERIALNUMBER_STRING_FS     "000000000001"
 #define USBD_CONFIGURATION_STRING_FS     "CDC Config"
 #define USBD_INTERFACE_STRING_FS     "CDC Interface"
