@@ -56,6 +56,14 @@
 #include <cstring>
 #include "crc.hpp"
 
+
+constexpr uint8_t SYNC_BYTE = '$';
+constexpr uint8_t CRC8_INIT = 0;
+constexpr uint16_t CRC16_INIT = 0;
+constexpr uint16_t PROTOCOL_VERSION = 1;
+constexpr uint16_t TX_BUF_SIZE = 64;
+
+
 template<typename T>
 inline size_t write_le(T value, uint8_t* buffer);
 
@@ -214,14 +222,6 @@ private:
     const char* json_modifier_;
     void* const ctx_;
 };
-
-
-
-constexpr uint8_t SYNC_BYTE = '$';
-constexpr uint8_t CRC8_INIT = 0;
-constexpr uint16_t CRC16_INIT = 0;
-constexpr uint16_t PROTOCOL_VERSION = 1;
-constexpr uint16_t TX_BUF_SIZE = 64;
 
 
 class PacketWriter {

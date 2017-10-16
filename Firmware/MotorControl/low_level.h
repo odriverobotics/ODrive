@@ -153,7 +153,7 @@ typedef struct{
 
 /* Exported constants --------------------------------------------------------*/
 extern const size_t num_motors;
-extern float elec_rad_per_enc; // TODO: make this const (once exposed_floats is gone)
+extern const float elec_rad_per_enc;
 /* Exported variables --------------------------------------------------------*/
 extern float vbus_voltage;
 extern Motor_t motors[];

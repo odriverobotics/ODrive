@@ -108,7 +108,7 @@ int StreamToPacketConverter::write_bytes(const uint8_t *buffer, size_t length) {
             } else if (header_index_ == 3 && calc_crc8(CRC8_INIT, header_buffer_, 3)) {
                 header_index_ = 0;
             } else if (header_index_ == 3) {
-                packet_length_ = header_buffer_[1] + 2; // expect 2 more bytes than indicated (CRC16)
+                packet_length_ = header_buffer_[1];
             }
         } else if (packet_index_ < sizeof(packet_buffer_)) {
             // Process payload byte
@@ -117,7 +117,7 @@ int StreamToPacketConverter::write_bytes(const uint8_t *buffer, size_t length) {
 
         // If both header and packet are fully received, hand it on to the packet processor
         if (header_index_ == 3 && packet_index_ == packet_length_) {
-            result |= output_.write_packet(packet_buffer_, packet_length_ - 2);
+            result |= output_.write_packet(packet_buffer_, packet_length_);
             header_index_ = packet_index_ = packet_length_ = 0;
         }
         buffer++;
@@ -209,6 +209,8 @@ int BidirectionalPacketBasedChannel::write_packet(const uint8_t* buffer, size_t 
     uint16_t seq_no = read_le<uint16_t>(&buffer, &length);
 
     if (seq_no & 0x8000) {
+        if (calc_crc16(crc16, crc16_termination, sizeof(crc16_termination)))
+            return -1;
         // TODO: ack handling
     } else {
         // TODO: think about some kind of ordering guarantees
@@ -236,14 +238,14 @@ int BidirectionalPacketBasedChannel::write_packet(const uint8_t* buffer, size_t 
         uint16_t expected_response_length = read_le<uint16_t>(&buffer, &length);
 
         // Let the endpoint do the processing
-        size_t requested_size = expected_response_length < (sizeof(tx_buf_) - 2) ? expected_response_length : (sizeof(tx_buf_) - 2);
+        size_t requested_size = expected_response_length < (sizeof(tx_buf_) - 4) ? expected_response_length : (sizeof(tx_buf_) - 4);
         size_t remaining_size = requested_size;
-        endpoint->handle(buffer, length, tx_buf_ + 2, &remaining_size);
+        endpoint->handle(buffer, length - 2, tx_buf_ + 2, &remaining_size);
 
         // Send response
         if (expect_response) {
             write_le<uint16_t>(seq_no | 0x8000, tx_buf_);
-            output_.write_packet(tx_buf_, (requested_size - remaining_size) + 2);
+            output_.write_packet(tx_buf_, (requested_size - remaining_size) + 4);
         }
     }
 
