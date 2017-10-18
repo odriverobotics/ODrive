@@ -275,7 +275,7 @@ static int8_t CDC_Receive_FS (uint8_t* Buf, uint32_t *Len)
   int null_idx = MACRO_MIN(*Len, APP_RX_DATA_SIZE-1);
   Buf[null_idx] = 0;
 
-  motor_parse_cmd(Buf, *Len);
+  motor_parse_cmd(Buf, *Len+1);
 
   return (USBD_OK);
   /* USER CODE END 6 */ 
