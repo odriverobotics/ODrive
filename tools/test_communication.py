@@ -26,6 +26,7 @@ def main(args):
   print("\tPOSITION_CONTROL:\n\t\tp MOTOR_NUMBER POSITION VELOCITY CURRENT")
   print("\tVELOCITY_CONTROL:\n\t\tv MOTOR_NUMBER VELOCITY CURRENT")
   print("\tCURRENT_CONTROL:\n\t\tc MOTOR_NUMBER CURRENT")
+  print("\tHALT:\n\t\th")
   print("\tQuit Python Script:\n\t\tq")
   print("---------------------------------------------------------------------")
   # query device
