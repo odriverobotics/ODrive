@@ -143,7 +143,7 @@ typedef enum {
 //
 // When passed a valid endpoint context, implementing functions shall handle an
 // endpoint read/write request by reading the provided input data and filling in
-// output data. The exact semantics of this function depends on the according
+// output data. The exact semantics of this function depends on the corresponding
 // endpoint's specification.
 //
 // @param input: pointer to the input data
@@ -160,7 +160,7 @@ template<typename T>
 void default_read_endpoint_handler(void* ctx, const uint8_t* input, size_t input_length, uint8_t* output, size_t* output_length) {
     const T* value = reinterpret_cast<const T*>(ctx);
     
-    // If the old value was requested, call the according little endian serialization function
+    // If the old value was requested, call the corresponding little endian serialization function
     if (*output_length) {
         uint8_t buffer[8]; // TODO: make buffer size dependent on the type
         size_t cnt = write_le<T>(*value, buffer);
@@ -175,9 +175,9 @@ void default_readwrite_endpoint_handler(void* ctx, const uint8_t* input, size_t 
     T* value = reinterpret_cast<T*>(ctx);
     
     // Call the handler for the const version of the endpoint's type - i.e. read the endpoint value into output
-    default_readwrite_endpoint_handler<T>(ctx, input, input_length, output, output_length);
+    default_read_endpoint_handler<T>(ctx, input, input_length, output, output_length);
     
-    // If a new value was passed, call the according little endian deserialization function
+    // If a new value was passed, call the corresponding little endian deserialization function
     if (input_length) {
         uint8_t buffer[8] = { 0 }; // TODO: make buffer size dependent on the type
         memcpy(output, buffer, input_length); // TODO: abort if not enough bytes received
