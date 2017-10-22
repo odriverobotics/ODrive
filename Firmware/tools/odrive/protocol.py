@@ -143,7 +143,7 @@ class Channel(PacketWriter):
         packet = packet + struct.pack('<H', crc16)
 
         if (expect_ack):
-            self._expected_acks[seq_no] = False
+            self._expected_acks[seq_no] = None
 
         self._output.write_packet(packet)
 
@@ -151,11 +151,12 @@ class Channel(PacketWriter):
             # Read and process packets until we get an ack
             # TODO: add timeout
             # TODO: support I/O driven reception (wait on semaphore)
-            while (not self._expected_acks[seq_no]):
+            while (self._expected_acks[seq_no] is None):
                 self.write_packet(self._input.read_packet())
 
-            if (expect_ack):
-                self._expected_acks.pop(seq_no, None)
+            return self._expected_acks.pop(seq_no, None)
+        else:
+            return None
     
     def write_packet(self, packet):
         if (len(packet) < 4):
@@ -169,6 +170,9 @@ class Channel(PacketWriter):
         if (seq_no & 0x8000):
             if (calc_crc16(crc16, struct.pack('<HBB', PROTOCOL_VERSION, packet[-2], packet[-1]))):
                 raise Exception("CRC16 mismatch")
+
+            seq_no &= 0x7fff
+            self._expected_acks[seq_no] = packet[2:-2]
 
         else:
             print("endpoint requested")
