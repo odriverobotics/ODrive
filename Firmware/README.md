@@ -27,7 +27,7 @@ The first thing to set is your board hardware version, located at the top of [In
 If you are using USB only to communicate with the ODrive, you may skip this step.
 
 The GPIO 1,2 pins are configurable as either step/direction, or as UART.
-In [MotorControl/commands.c](https://github.com/madcowswe/ODriveFirmware/blob/master/MotorControl/commands.c) please set `gpio_mode` to the corresponding value (`GPIO_MODE_UART` or `GPIO_MODE_STEP_DIR`).
+In [MotorControl/commands.c](MotorControl/commands.c) please set `gpio_mode` to the corresponding value (`GPIO_MODE_UART` or `GPIO_MODE_STEP_DIR`).
 
 ### Motor control parameters
 The rest of all the parameters are at the top of the [MotorControl/low_level.c](MotorControl/low_level.c) file. Please note that many parameters occur twice, once for each motor.
@@ -107,17 +107,17 @@ If you prefer to debug from eclipse, see [Setting up Eclipse development environ
 
 ## Communicating over USB and UART
 There is currently a very primitive method to read/write configuration, commands and errors from the ODrive over the USB.
-Please use the `ODriveFirmware/tools/test_bulk.py` python script for this.  It is written for Python 3.
+Please use the `tools/test_communication.py` python script for this.  It is written for Python 3.
 
 Setup instructions as follows:
 * Install PyUSB (pip install --pre pysusb)
 * Plug in the STLink or another power source to power the ODrive board
 * Plug in a separate USB cable into the microUSB connector on ODrive
 * On Windows, use the [Zadig](http://zadig.akeo.ie/) utility to set ODrive (not STLink!) driver to libusb
-* Run test_bulk.py
+* Run `tools/test_communication.py`
 
 ### Command set
-The most accurate way to understand the commands is to read [the code](https://github.com/madcowswe/ODriveFirmware/blob/master/MotorControl/commands.c#L133) that parses the commands. Nevertheless, here is an overview:
+The most accurate way to understand the commands is to read [the code](MotorControl/commands.c) that parses the commands. Nevertheless, here is an overview:
 
 #### UART framing
 USB communicates with packets, so it is easy to frame a command as one command per packet. However, UART doesn't have any packeting, so we need a way to frame the commands. The start-of-packet symbol is `$` and the end-of-packet symbol is `!`, that is, something like this: `$command!`. An example of a valid UART position command:
@@ -166,7 +166,7 @@ s type index value
 ** `0` is float
 ** `1` is int
 ** `2` is bool
-* `index` is the index in the corresponding [exposed variable table](https://github.com/madcowswe/ODriveFirmware/blob/f19f1b78de4bd917284ff95bc61ca616ca9bacc4/MotorControl/low_level.c#L184-L265).
+* `index` is the index in the corresponding [exposed variable table](MotorControl/commands.c).
 
 For example
 * `g 0 12` will return the phase resistance of M0
