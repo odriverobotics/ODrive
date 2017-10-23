@@ -16,29 +16,33 @@ import time
 import os
 import odrive.protocol
 import itertools
+import struct
 
 def noprint(x):
   pass
 
-class DeviceProperty(property):
-    def __init__(self, device, id, type, can_read, can_write):
-        self._device = device
+
+class SimpleDeviceProperty(property):
+    def __init__(self, channel, id, type, struct_format, can_read, can_write):
+        self._channel = channel
         self._id = id
         self._type = type
+        self._struct_format = struct_format
         property.__init__(self,
             self.fget if can_read else None,
             self.fset if can_write else None)
 
     def fget(self, obj):
-        self._device.send("r " + str(self._id) + "\n")
-        # TODO: message based receive
-        response = self._device.receive_until('\n')
-        return self._type(response.strip('\n'))
+        size = struct.calcsize(self._struct_format)
+        buffer = self._channel.remote_endpoint_operation(self._id, None, True, size)
+        return struct.unpack(self._struct_format, buffer)[0]
 
     def fset(self, obj, value):
         if not isinstance(value, self._type):
             raise TypeError("expected value of type {}".format(self._type.__name__))
-        self._device.send("w " + str(self._id) + " " + str(value) + "\n")
+        buffer = struct.pack(self._struct_format, value)
+        # TODO: Currenly we wait for an ack here. Settle on the default guarantee.
+        self._channel.remote_endpoint_operation(self._id, buffer, True, 0)
 
 
 def create_object(json_data, namespace, channel):
@@ -65,12 +69,16 @@ def create_object(json_data, namespace, channel):
         else:
             if type_str == "float":
                 property_type = float
+                struct_format = "<f"
             elif type_str == "int":
                 property_type = int
+                struct_format = "<i"
             elif type_str == "bool":
                 property_type = bool
+                struct_format = "<?"
             elif type_str == "uint16":
                 property_type = int
+                struct_format = "<H"
             else:
                 sys.stderr.write("property {} has unsupported type {}".format(name, type_str))
                 continue
@@ -81,9 +89,10 @@ def create_object(json_data, namespace, channel):
                 continue
 
             access_mode = item.get("mode", "rw")
-            properties[name] = DeviceProperty(channel, id_str, property_type,
-                                              'r' in access_mode,
-                                              'w' in access_mode)
+            properties[name] = SimpleDeviceProperty(channel, id_str, property_type,
+                                            struct_format,
+                                            'r' in access_mode,
+                                            'w' in access_mode)
 
     # Create a type from the property list and instantiate it
     jit_type = type(namespace, (object,), properties)
@@ -171,12 +180,14 @@ def find_all(printer=noprint):
         except (odrive.protocol.TimeoutException, odrive.protocol.ChannelBrokenException):
             printer("no response - probably incompatible")
             continue
+        json_crc16 = odrive.protocol.calc_crc16(odrive.protocol.PROTOCOL_VERSION, json_bytes)
+        channel._interface_definition_crc = struct.pack("<H", json_crc16)
         try:
             json_string = json_bytes.decode("ascii")
         except UnicodeDecodeError:
             printer("device responded on endpoint 0 with something that is not ASCII")
             continue
-        print("JSON: " + json_string)
+        #printer("JSON: " + json_string)
         try:
             json_data = json.loads(json_string)
         except json.decoder.JSONDecodeError:

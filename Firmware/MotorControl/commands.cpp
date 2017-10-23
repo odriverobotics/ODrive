@@ -41,12 +41,12 @@ static const GpioMode_t gpio_mode = GPIO_MODE_UART;     //GPIO 1,2 is UART Tx,Rx
 
 // clang-format off
 Endpoint endpoints[] = {
-    Endpoint("vbus_voltage", static_cast<const float>(vbus_voltage)),
-    Endpoint("elec_rad_per_enc", static_cast<const float>(elec_rad_per_enc)),
+    Endpoint("vbus_voltage", const_cast<const float*>(&vbus_voltage)),
+    Endpoint("elec_rad_per_enc", const_cast<const float*>(&elec_rad_per_enc)),
     Endpoint("motor0", BEGIN_TREE, nullptr, nullptr, nullptr),
-        Endpoint("pos_setpoint", motors[0].pos_setpoint),
-        Endpoint("pos_gain", motors[0].pos_gain),
-        Endpoint("vel_setpoint", motors[0].vel_setpoint),
+        Endpoint("pos_setpoint", &motors[0].pos_setpoint),
+        Endpoint("pos_gain", &motors[0].pos_gain),
+        Endpoint("vel_setpoint", &motors[0].vel_setpoint),
     Endpoint(nullptr, END_TREE, nullptr, nullptr, nullptr) // motor0
 };
 // clang-format on

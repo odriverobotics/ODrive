@@ -137,6 +137,7 @@ class PacketFromStreamConverter(PacketReader, StreamWriter):
         while True:
             header = bytes()
 
+            # TODO: sometimes this call hangs, even though the device apparently sent something
             header = header + self._input.read_bytes_or_fail(1, deadline)
             if (header[0] != SYNC_BYTE):
                 #print("sync byte mismatch")
@@ -153,6 +154,7 @@ class PacketFromStreamConverter(PacketReader, StreamWriter):
                 continue
 
             packet_length = header[1]
+            #print("wait for {} bytes".format(packet_length))
             return self._input.read_bytes_or_fail(packet_length, deadline)
 
 
@@ -193,10 +195,10 @@ class Channel(PacketWriter):
 
         crc16 = calc_crc16(CRC16_INIT, packet)
         if (endpoint_id & 0x7fff == 0):
-            print("append crc16 for " + str(struct.pack('<H', PROTOCOL_VERSION)))
+            #print("append crc16 for " + str(struct.pack('<H', PROTOCOL_VERSION)))
             crc16 = calc_crc16(crc16, struct.pack('<H', PROTOCOL_VERSION))
         else:
-            # TODO: set _interface_definition_crc
+            #print("append crc16 for " + str(self._interface_definition_crc))
             crc16 = calc_crc16(crc16, self._interface_definition_crc)
 
         # append CRC in big endian

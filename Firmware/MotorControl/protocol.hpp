@@ -61,14 +61,14 @@ constexpr uint8_t SYNC_BYTE = '$';
 constexpr uint8_t CRC8_INIT = 0x42;
 constexpr uint16_t CRC16_INIT = 0x1337;
 constexpr uint16_t PROTOCOL_VERSION = 1;
-constexpr uint16_t TX_BUF_SIZE = 64;
+constexpr uint16_t TX_BUF_SIZE = 32; // does not work with 64 for some reason
 
 
 template<typename T>
 inline size_t write_le(T value, uint8_t* buffer);
 
 template<typename T>
-inline size_t read_le(T& value, const uint8_t* buffer);
+inline size_t read_le(T* value, const uint8_t* buffer);
 
 template<>
 inline size_t write_le<uint16_t>(uint16_t value, uint8_t* buffer) {
@@ -94,15 +94,15 @@ inline size_t write_le<float>(float value, uint8_t* buffer) {
 }
 
 template<>
-inline size_t read_le<uint16_t>(uint16_t& value, const uint8_t* buffer) {
-    value = (static_cast<uint16_t>(buffer[0]) << 0) |
+inline size_t read_le<uint16_t>(uint16_t* value, const uint8_t* buffer) {
+    *value = (static_cast<uint16_t>(buffer[0]) << 0) |
             (static_cast<uint16_t>(buffer[1]) << 8);
     return 2;
 }
 
 template<>
-inline size_t read_le<uint32_t>(uint32_t& value, const uint8_t* buffer) {
-    value = (static_cast<uint32_t>(buffer[0]) << 0) |
+inline size_t read_le<uint32_t>(uint32_t* value, const uint8_t* buffer) {
+    *value = (static_cast<uint32_t>(buffer[0]) << 0) |
             (static_cast<uint32_t>(buffer[1]) << 8) |
             (static_cast<uint32_t>(buffer[2]) << 16) |
             (static_cast<uint32_t>(buffer[3]) << 24);
@@ -110,17 +110,17 @@ inline size_t read_le<uint32_t>(uint32_t& value, const uint8_t* buffer) {
 }
 
 template<>
-inline size_t read_le<float>(float& value, const uint8_t* buffer) {
+inline size_t read_le<float>(float* value, const uint8_t* buffer) {
     static_assert(CHAR_BIT * sizeof(float) == 32, "32 bit floating point expected");
     static_assert(std::numeric_limits<float>::is_iec559, "IEEE 754 floating point expected");
-    return read_le(*reinterpret_cast<uint32_t*>(&value), buffer);
+    return read_le(reinterpret_cast<uint32_t*>(value), buffer);
 }
 
 
 template<typename T>
 static inline T read_le(const uint8_t** buffer, size_t* length) {
     T result;
-    size_t cnt = read_le(result, *buffer);
+    size_t cnt = read_le(&result, *buffer);
     *buffer += cnt;
     *length -= cnt;
     return result;
@@ -159,14 +159,14 @@ typedef std::function<void(void* ctx, const uint8_t* input, size_t input_length,
 template<typename T>
 void default_read_endpoint_handler(void* ctx, const uint8_t* input, size_t input_length, uint8_t* output, size_t* output_length) {
     const T* value = reinterpret_cast<const T*>(ctx);
-    
     // If the old value was requested, call the corresponding little endian serialization function
     if (*output_length) {
         uint8_t buffer[8]; // TODO: make buffer size dependent on the type
         size_t cnt = write_le<T>(*value, buffer);
-        if (cnt < *output_length)
-            *output_length = cnt;
-        memcpy(output, buffer, *output_length);
+        if (cnt > *output_length)
+            cnt = *output_length;
+        memcpy(output, buffer, cnt);
+        *output_length -= cnt;
     }
 }
 
@@ -180,8 +180,10 @@ void default_readwrite_endpoint_handler(void* ctx, const uint8_t* input, size_t 
     // If a new value was passed, call the corresponding little endian deserialization function
     if (input_length) {
         uint8_t buffer[8] = { 0 }; // TODO: make buffer size dependent on the type
-        memcpy(output, buffer, input_length); // TODO: abort if not enough bytes received
-        read_le<T>(*value, buffer);
+        if (input_length > sizeof(buffer))
+            input_length = sizeof(buffer);
+        memcpy(buffer, input, input_length); // TODO: abort if not enough bytes received
+        read_le<T>(value, buffer);
     }
 }
 
@@ -199,14 +201,14 @@ public:
     }
 
     template<typename T>
-    Endpoint(const char* name, const T& ctx) :
+    Endpoint(const char* name, const T* ctx) :
         Endpoint(name, AS_FLOAT, default_read_endpoint_handler<T>, "\"access\":\"r\"",
-        const_cast<T*>(&ctx) /* it's safe to cast the const away here because we
+        const_cast<T*>(ctx) /* it's safe to cast the const away here because we
         know that the default_read_endpoint_handler immediately adds it back */) {}
 
     template<typename T>
-    Endpoint(const char* name, T& ctx) :
-        Endpoint(name, AS_FLOAT, default_readwrite_endpoint_handler<T>, "\"access\":\"rw\"", &ctx) {}
+    Endpoint(const char* name, T* ctx) :
+        Endpoint(name, AS_FLOAT, default_readwrite_endpoint_handler<T>, "\"access\":\"rw\"", ctx) {}
 
 
     void write_json(size_t id, size_t* skip, uint8_t** output, size_t* output_length, bool* need_comma);

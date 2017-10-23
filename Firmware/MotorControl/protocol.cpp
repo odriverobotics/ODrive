@@ -153,6 +153,7 @@ int PacketToStreamConverter::write_packet(const uint8_t *buffer, size_t length) 
     //printf("send payload:\r\n"); osDelay(5); hexdump(buffer, length);
     if (output_.write_bytes(buffer, length))
         return -1;
+    //osDelay(5); printf("sent!\r\n"); osDelay(5);
 
     return 0;
 }
@@ -194,7 +195,7 @@ void BidirectionalPacketBasedChannel::interface_query(const uint8_t* input, size
     if (input_length < 4)
         return;
     uint32_t offset32 = 0;
-    read_le<uint32_t>(offset32, input);
+    read_le<uint32_t>(&offset32, input);
     size_t offset = offset32;
     
     bool need_comma = false;
@@ -241,13 +242,14 @@ int BidirectionalPacketBasedChannel::write_packet(const uint8_t* buffer, size_t 
         // For endpoint 0 this is just the protocol version, for all other endpoints it's a
         // CRC over the entire JSON descriptor tree (this may change in future versions).
         if (endpoint_id) {
-            crc16_termination[1] = (json_crc_ >> 0) & 0xff;
-            crc16_termination[0] = (json_crc_ >> 8) & 0xff;
+            crc16_termination[0] = (json_crc_ >> 0) & 0xff;
+            crc16_termination[1] = (json_crc_ >> 8) & 0xff;
         }
         if (calc_crc16(crc16, crc16_termination, sizeof(crc16_termination))) {
             //printf("crc16 for endpoint %d failed: expected termination %02x %02x\r\n", endpoint_id, crc16_termination[0], crc16_termination[1]); osDelay(5);
             return -1;
         }
+        //printf("crc16 ok\r\n"); osDelay(5);
 
         // TODO: if more bytes than the MTU were requested, should we abort or just return as much as possible?
         uint16_t expected_response_length = read_le<uint16_t>(&buffer, &length);
