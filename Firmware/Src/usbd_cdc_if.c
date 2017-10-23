@@ -49,6 +49,8 @@
 /* Includes ------------------------------------------------------------------*/
 #include "usbd_cdc_if.h"
 /* USER CODE BEGIN INCLUDE */
+#include "cmsis_os.h"
+#include "freertos_vars.h"
 #include "utils.h"
 #include "commands.h"
 /* USER CODE END INCLUDE */
@@ -117,6 +119,8 @@ uint8_t UserTxBufferFS[APP_TX_DATA_SIZE];
   */ 
   extern USBD_HandleTypeDef hUsbDeviceFS;
 /* USER CODE BEGIN EXPORTED_VARIABLES */
+uint8_t *USBRxBuffer = UserRxBufferFS;
+uint32_t USBRxBufferLen;
 /* USER CODE END EXPORTED_VARIABLES */
 
 /**
@@ -268,15 +272,12 @@ static int8_t CDC_Control_FS  (uint8_t cmd, uint8_t* pbuf, uint16_t length)
 static int8_t CDC_Receive_FS (uint8_t* Buf, uint32_t *Len)
 {
   /* USER CODE BEGIN 6 */
-  USBD_CDC_SetRxBuffer(&hUsbDeviceFS, &Buf[0]);
-  USBD_CDC_ReceivePacket(&hUsbDeviceFS);
 
-  //Append null termination at end of string
-  int null_idx = MACRO_MIN(*Len, APP_RX_DATA_SIZE-1);
-  Buf[null_idx] = 0;
+  // unblock the processing thread
+  USBRxBufferLen = *Len;
+  osSemaphoreRelease(sem_usb_irq);
 
-  USB_receive_packet(Buf, *Len+1);
-
+  // once the data is handled, the processing thread will start the next transmission
   return (USBD_OK);
   /* USER CODE END 6 */ 
 }

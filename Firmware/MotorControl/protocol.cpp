@@ -28,10 +28,21 @@ const char *type_names_[] = {
 
 /* Private function prototypes -----------------------------------------------*/
 
+static void hexdump(const uint8_t* buf, size_t len);
 static void write_buffer(const uint8_t* input, size_t input_length, size_t* skip, uint8_t** output, size_t* output_length);
 static void write_string(const char* str, size_t* skip, uint8_t** output, size_t* output_length);
 
 /* Function implementations --------------------------------------------------*/
+
+// For debugging only
+void hexdump(const uint8_t* buf, size_t len) {
+    for (size_t pos = 0; pos < len; ++pos) {
+        printf(" %02x", buf[pos]);
+        if ((((pos + 1) % 16) == 0) || ((pos + 1) == len))
+            printf("\r\n");
+        osDelay(1);
+    }
+}
 
 // @brief Copies an input buffer to an output buffer, skipping a couple of bytes on the input buffer if required.
 // @param input: input buffer
@@ -63,17 +74,17 @@ void Endpoint::write_json(size_t id, size_t* skip, uint8_t** output, size_t* out
         *need_comma = true;
         return;
     } else if (type_id_ < END_TREE) {
-        if (need_comma)
+        if (*need_comma)
             write_string(",", skip, output, output_length);
 
         write_string("{\"name\":\"", skip, output, output_length);
         if (name_)
             write_string(name_, skip, output, output_length);
-        write_string(",\"id\":", skip, output, output_length);
+        write_string("\",\"id\":", skip, output, output_length);
         char id_buf[10];
         snprintf(id_buf, sizeof(id_buf), "%u", id); // TODO: get rid of printf
         write_string(id_buf, skip, output, output_length);
-        write_string("\"type\":\"", skip, output, output_length);
+        write_string(",\"type\":\"", skip, output, output_length);
         if (type_names_[type_id_])
             write_string(type_names_[type_id_], skip, output, output_length);
         write_string("\"", skip, output, output_length);
@@ -86,7 +97,7 @@ void Endpoint::write_json(size_t id, size_t* skip, uint8_t** output, size_t* out
                 write_string(",", skip, output, output_length);
                 write_string(json_modifier_, skip, output, output_length);
             }
-            write_string("\"}", skip, output, output_length);
+            write_string("}", skip, output, output_length);
             *need_comma = true;
         }
     }
@@ -139,6 +150,7 @@ int PacketToStreamConverter::write_packet(const uint8_t *buffer, size_t length) 
 
     if (output_.write_bytes(header, sizeof(header)))
         return -1;
+    //printf("send payload:\r\n"); osDelay(5); hexdump(buffer, length);
     if (output_.write_bytes(buffer, length))
         return -1;
 
@@ -194,14 +206,15 @@ void BidirectionalPacketBasedChannel::interface_query(const uint8_t* input, size
 }
 
 int BidirectionalPacketBasedChannel::write_packet(const uint8_t* buffer, size_t length) {
+    //printf("got packet of length %d: \r\n", length); osDelay(5); hexdump(buffer, length);
     if (length < 4)
         return -1;
 
     // calculate CRC for later validation
     uint16_t crc16 = calc_crc16(CRC16_INIT, buffer, length - 2);
     uint8_t crc16_termination[] = {
-        (PROTOCOL_VERSION >> 8) & 0xff,
         (PROTOCOL_VERSION >> 0) & 0xff,
+        (PROTOCOL_VERSION >> 8) & 0xff,
         buffer[length - 2],
         buffer[length - 1]
     };
@@ -228,11 +241,13 @@ int BidirectionalPacketBasedChannel::write_packet(const uint8_t* buffer, size_t 
         // For endpoint 0 this is just the protocol version, for all other endpoints it's a
         // CRC over the entire JSON descriptor tree (this may change in future versions).
         if (endpoint_id) {
-            crc16_termination[0] = (json_crc_ >> 8) & 0xff;
             crc16_termination[1] = (json_crc_ >> 0) & 0xff;
+            crc16_termination[0] = (json_crc_ >> 8) & 0xff;
         }
-        if (calc_crc16(crc16, crc16_termination, sizeof(crc16_termination)))
+        if (calc_crc16(crc16, crc16_termination, sizeof(crc16_termination))) {
+            //printf("crc16 for endpoint %d failed: expected termination %02x %02x\r\n", endpoint_id, crc16_termination[0], crc16_termination[1]); osDelay(5);
             return -1;
+        }
 
         // TODO: if more bytes than the MTU were requested, should we abort or just return as much as possible?
         uint16_t expected_response_length = read_le<uint16_t>(&buffer, &length);
@@ -244,8 +259,19 @@ int BidirectionalPacketBasedChannel::write_packet(const uint8_t* buffer, size_t 
 
         // Send response
         if (expect_response) {
+            size_t tx_size = (requested_size - remaining_size) + 4;
             write_le<uint16_t>(seq_no | 0x8000, tx_buf_);
-            output_.write_packet(tx_buf_, (requested_size - remaining_size) + 4);
+
+            // Add protocol version for CRC calculation (overwritten by actual CRC)
+            tx_buf_[tx_size - 2] = (PROTOCOL_VERSION >> 0) & 0xff;
+            tx_buf_[tx_size - 1] = (PROTOCOL_VERSION >> 8) & 0xff;
+            crc16 = calc_crc16(CRC16_INIT, tx_buf_, tx_size);
+
+            // Append CRC in big endian
+            tx_buf_[tx_size - 2] = (crc16 >> 8) & 0xff;
+            tx_buf_[tx_size - 1] = (crc16 >> 0) & 0xff;
+
+            output_.write_packet(tx_buf_, tx_size);
         }
     }
 

@@ -6,7 +6,7 @@ Example usage of the ODrive python library to monitor and control ODrive devices
 import odrive.core
 
 # Find a connected ODrive (this will block until you connect one)
-my_drive = odrive.core.find_any()
+my_drive = odrive.core.find_any(printer=print)
 
 # The above call returns a python object with a dynamically generated type. The
 # type hierarchy will correspond to the endpoint list in `MotorControl/protocol.cpp`.

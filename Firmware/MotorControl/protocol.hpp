@@ -58,8 +58,8 @@
 
 
 constexpr uint8_t SYNC_BYTE = '$';
-constexpr uint8_t CRC8_INIT = 0;
-constexpr uint16_t CRC16_INIT = 0;
+constexpr uint8_t CRC8_INIT = 0x42;
+constexpr uint16_t CRC16_INIT = 0x1337;
 constexpr uint16_t PROTOCOL_VERSION = 1;
 constexpr uint16_t TX_BUF_SIZE = 64;
 
@@ -121,8 +121,8 @@ template<typename T>
 static inline T read_le(const uint8_t** buffer, size_t* length) {
     T result;
     size_t cnt = read_le(result, *buffer);
-    buffer += cnt;
-    length -= cnt;
+    *buffer += cnt;
+    *length -= cnt;
     return result;
 }
 
@@ -314,7 +314,7 @@ private:
         if (index < NUM_CHANNEL_SPECIFIC_ENDPOINTS){
             return &channel_specific_endpoints_[index];
         } else if (index < n_endpoints_) {
-            return &global_endpoints_[index];
+            return &global_endpoints_[index - NUM_CHANNEL_SPECIFIC_ENDPOINTS];
         } else {
             return nullptr;
         }

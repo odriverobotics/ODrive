@@ -62,7 +62,13 @@
 osThreadId defaultTaskHandle;
 
 /* USER CODE BEGIN Variables */
+// List of semaphores
+osSemaphoreId sem_usb_irq;
 
+// List of threads
+osThreadId thread_motor_0;
+osThreadId thread_motor_1;
+osThreadId thread_cmd_parse;
 /* USER CODE END Variables */
 
 /* Function prototypes -------------------------------------------------------*/
@@ -89,7 +95,7 @@ void MX_FREERTOS_Init(void) {
   /* USER CODE END RTOS_MUTEX */
 
   /* USER CODE BEGIN RTOS_SEMAPHORES */
-  // Init usb irq binary semaphore, and start with no tolkens by removing the starting one.
+  // Init usb irq binary semaphore, and start with no tokens by removing the starting one.
   osSemaphoreDef(sem_usb_irq);
   sem_usb_irq = osSemaphoreCreate(osSemaphore(sem_usb_irq), 1);
   osSemaphoreWait(sem_usb_irq, 0);

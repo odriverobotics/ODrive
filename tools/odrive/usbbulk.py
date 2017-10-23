@@ -4,43 +4,18 @@
 import usb.core
 import usb.util
 import sys
-import time
-
-from odrive.util import ODriveNotConnectedError
-from odrive.util import USBID_VID_ODRIVE, USBID_PID_ODRIVE
-
-BULK_DEVICE_NOT_FOUND     = 'ODrive BulkDevice Not Found'
-BULK_DEVICE_FOUND         = 'ODrive BulkDevice Found!'
+import odrive.protocol
 
 def noprint(x):
   pass
 
-def poll_odrive_bulk_device(intv=1, printer=noprint):
-  # look for device
-  while 1:
-    time.sleep(intv)
-    try:
-      dev = ODriveBulkDevice()
-      break
-    except:
-      printer(BULK_DEVICE_NOT_FOUND)
-  # found device
-  printer(BULK_DEVICE_FOUND)
-  return dev
-
-class ODriveBulkDevice():
-  def __init__(self, idVendor=None, idProduct=None):
-    # ODrive idVendor
-    if idVendor is None:
-      idVendor = USBID_VID_ODRIVE
-    # ODrive idProduct
-    if idProduct is None:
-      idProduct = USBID_PID_ODRIVE
-    # find our device
-    self.dev = usb.core.find(idVendor=idVendor, idProduct=idProduct)
-    # was it found?
-    if self.dev is None:
-      raise ODriveNotConnectedError()
+# Even though USB is packet based, we do stream based communication because some
+# systems don't allow direct access to the USB endpoints, in which case the
+# device has to behave like a serial device.
+class USBBulkDevice(odrive.protocol.StreamReader, odrive.protocol.StreamWriter):
+  def __init__(self, dev, printer=noprint):
+    self.dev = dev
+    self._name = "USB device {}:{}".format(dev.idVendor, dev.idProduct)
 
   ##
   # information about the connected device
@@ -56,14 +31,13 @@ class ODriveBulkDevice():
           string += "\t\tEndpointAddress {0}\n".format(ep.bEndpointAddress)
     return string
 
-  def init(self):
+  def init(self, printer=noprint):
     try:
-      string = ""
       # detach kernel driver
       try:
         if self.dev.is_kernel_driver_active(1):
           self.dev.detach_kernel_driver(1)
-          string += "Detached Kernel Driver\n"
+          printer("Detached Kernel Driver\n")
       except NotImplementedError:
         pass #is_kernel_driver_active not implemented on Windows
       # set the active configuration. With no arguments, the first
@@ -81,7 +55,7 @@ class ODriveBulkDevice():
               usb.util.ENDPOINT_OUT
       )
       assert self.epw is not None
-      string += "EndpointAddress for writing {}\n".format(self.epw.bEndpointAddress)
+      printer("EndpointAddress for writing {}\n".format(self.epw.bEndpointAddress))
       # read endpoint
       self.epr = usb.util.find_descriptor(self.intf,
           # match the first IN endpoint
@@ -91,8 +65,7 @@ class ODriveBulkDevice():
               usb.util.ENDPOINT_IN
       )
       assert self.epr is not None
-      string += "EndpointAddress for reading {}\n".format(self.epr.bEndpointAddress)
-      return string
+      printer("EndpointAddress for reading {}\n".format(self.epr.bEndpointAddress))
     except usb.core.USBError:
       #return -1
       raise
@@ -100,7 +73,7 @@ class ODriveBulkDevice():
   def shutdown(self):
     return 0
 
-  def send(self, usbBuffer):
+  def write_bytes(self, usbBuffer):
     try:
       ret = self.epw.write(usbBuffer, 0)
       return ret
@@ -108,7 +81,7 @@ class ODriveBulkDevice():
       #return -1
       raise
 
-  def receive(self, bufferLen):
+  def read_bytes(self, bufferLen):
     try:
       ret = self.epr.read(bufferLen, 100)
       return ret

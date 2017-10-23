@@ -103,6 +103,8 @@
 extern USBD_CDC_ItfTypeDef  USBD_Interface_fops_FS;
 
 /* USER CODE BEGIN EXPORTED_VARIABLES */
+extern uint8_t *USBRxBuffer;
+extern uint32_t USBRxBufferLen;
 /* USER CODE END EXPORTED_VARIABLES */
 
 /**

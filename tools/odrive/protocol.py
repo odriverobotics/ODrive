@@ -1,10 +1,11 @@
 # See protocol.hpp for an overview of the protocol
 
+import time
 import struct
 
-SYNC_BYTE = '$'
-CRC8_INIT = 0
-CRC16_INIT = 0
+SYNC_BYTE = ord('$')
+CRC8_INIT = 0x42
+CRC16_INIT = 0x1337
 PROTOCOL_VERSION = 1
 
 CRC8_DEFAULT = 0x37 # this must match the polynomial in the C++ implementation
@@ -24,28 +25,41 @@ def calc_crc(remainder, value, polynomial, bitwidth):
     return remainder & ((1 << bitwidth) - 1)
 
 def calc_crc8(remainder, value):
-    if type(value) == bytearray or isinstance(value, list):
-        for b in value:
-            remainder = calc_crc(remainder, b, CRC8_DEFAULT, 8)
+    if isinstance(value, bytearray) or isinstance(value, bytes) or isinstance(value, list):
+        for byte in value:
+            remainder = calc_crc(remainder, byte, CRC8_DEFAULT, 8)
     else:
-        remainder = calc_crc(remainder, b, CRC8_DEFAULT, 8)
+        remainder = calc_crc(remainder, byte, CRC8_DEFAULT, 8)
     return remainder
 
 def calc_crc16(remainder, value):
-    if type(value) == bytearray or isinstance(value, list):
-        for b in value:
-            remainder = calc_crc(remainder, b, CRC16_DEFAULT, 16)
+    if isinstance(value, bytearray) or isinstance(value, bytes) or isinstance(value, list):
+        for byte in value:
+            remainder = calc_crc(remainder, byte, CRC16_DEFAULT, 16)
     else:
-        remainder = calc_crc(remainder, b, CRC16_DEFAULT, 16)
+        remainder = calc_crc(remainder, value, CRC16_DEFAULT, 16)
     return remainder
 
 # Can be verified with http://www.sunshine2k.de/coding/javascript/crc/crc_js.html:
 #print(hex(calc_crc8(0x12, [1, 2, 3, 4, 5, 0x10, 0x13, 0x37])))
 #print(hex(calc_crc16(0xfeef, [1, 2, 3, 4, 5, 0x10, 0x13, 0x37])))
 
+
+class TimeoutException(Exception):
+    pass
+
+class ChannelBrokenException(Exception):
+    pass
+
+class StreamReader(object):
+    pass
+
 class StreamWriter(object):
     pass
-    
+
+class PacketReader(object):
+    pass
+
 class PacketWriter(object):
     pass
 
@@ -59,12 +73,17 @@ class StreamToPacketConverter(StreamWriter):
         self._output = output
 
     def write_bytes(self, bytes):
+        """
+        Processes an arbitrary number of bytes. If one or more full packets are
+        are received, they are sent to this instance's output PacketWriter.
+        Incomplete packets are buffered between subsequent calls to this function.
+        """
         result = None
 
-        for b in bytes:
+        for byte in bytes:
             if (len(self._header) < 3):
                 # Process header byte
-                self._header.append(b)
+                self._header.append(byte)
                 if (len(self._header) == 1) and (self._header[0] != SYNC_BYTE):
                     self._header = []
                 elif (len(self._header) == 2) and (self._header[1] & 0x80):
@@ -75,18 +94,18 @@ class StreamToPacketConverter(StreamWriter):
                     self._packet_length = self._header[1]
             else:
                 # Process payload byte
-                self._packet.append(b)
+                self._packet.append(byte)
 
             # If both header and packet are fully received, hand it on to the packet processor
             if (len(self._header) == 3) and (len(self._packet) == self._packet_length):
                 try:
                     self._output.write_packet(self._packet)
-                except Exception, ex:
+                except Exception as ex:
                     result = ex
                 self._header = []
                 self._packet = []
                 self._packet_length = 0
-        
+
         if isinstance(result, Exception):
             raise Exception("something went wrong")
 
@@ -105,13 +124,48 @@ class PacketToStreamConverter(PacketWriter):
         self._output.write_bytes(header)
         self._output.write_bytes(packet)
 
+class PacketFromStreamConverter(PacketReader, StreamWriter):
+    def __init__(self, input):
+        self._input = input
+    
+    def read_packet(self, deadline):
+        """
+        Requests bytes from the underlying input stream until a full packet is
+        received or the deadline is reached, in which case None is returned. A
+        deadline before the current time corresponds to non-blocking mode.
+        """
+        while True:
+            header = bytes()
+
+            header = header + self._input.read_bytes_or_fail(1, deadline)
+            if (header[0] != SYNC_BYTE):
+                #print("sync byte mismatch")
+                continue
+
+            header = header + self._input.read_bytes_or_fail(1, deadline)
+            if (header[1] & 0x80):
+                #print("packet too large")
+                continue # TODO: support packets larger than 128 bytes
+
+            header = header + self._input.read_bytes_or_fail(1, deadline)
+            if calc_crc8(CRC8_INIT, header) != 0:
+                #print("crc8 mismatch")
+                continue
+
+            packet_length = header[1]
+            return self._input.read_bytes_or_fail(packet_length, deadline)
+
 
 class Channel(PacketWriter):
     _outbound_seq_no = 0
     _interface_definition_crc = bytearray(2)
     _expected_acks = {}
 
-    def __init__(self, input, output):
+    # Chose these parameters to be sensible for a specific transport layer
+    _resend_delay = 5.0     # [s]
+    _send_attempts = 5
+
+    def __init__(self, name, input, output):
         """
         Params:
         input: A PacketReader where this channel will source packets from on
@@ -119,10 +173,13 @@ class Channel(PacketWriter):
                directly by calling write_packet on this instance.
         output: A PacketWriter where this channel will put outgoing packets.
         """
+        self._name = name
         self._input = input
         self._output = output
 
     def remote_endpoint_operation(self, endpoint_id, input, expect_ack, output_length):
+        if input is None:
+            input = bytearray(0)
         if (len(input) >= 128):
             raise Exception("packet larger than 127 currently not supported")
 
@@ -135,30 +192,58 @@ class Channel(PacketWriter):
         packet = packet + input
 
         crc16 = calc_crc16(CRC16_INIT, packet)
-        if (endpoint_id == 0):
+        if (endpoint_id & 0x7fff == 0):
+            print("append crc16 for " + str(struct.pack('<H', PROTOCOL_VERSION)))
             crc16 = calc_crc16(crc16, struct.pack('<H', PROTOCOL_VERSION))
         else:
+            # TODO: set _interface_definition_crc
             crc16 = calc_crc16(crc16, self._interface_definition_crc)
 
-        packet = packet + struct.pack('<H', crc16)
+        # append CRC in big endian
+        packet = packet + struct.pack('>H', crc16)
 
         if (expect_ack):
             self._expected_acks[seq_no] = None
-
-        self._output.write_packet(packet)
-
-        if (expect_ack):
-            # Read and process packets until we get an ack
-            # TODO: add timeout
-            # TODO: support I/O driven reception (wait on semaphore)
-            while (self._expected_acks[seq_no] is None):
-                self.write_packet(self._input.read_packet())
-
-            return self._expected_acks.pop(seq_no, None)
+            attempt = 0
+            while (attempt < self._send_attempts):
+                self._output.write_packet(packet)
+                deadline = time.monotonic() + self._resend_delay
+                # Read and process packets until we get an ack or need to resend
+                # TODO: support I/O driven reception (wait on semaphore)
+                while True:
+                    try:
+                        response = self._input.read_packet(deadline)
+                    except TimeoutException:
+                        break # resend
+                    # process response, which is hopefully our ACK
+                    self.write_packet(response)
+                    if not self._expected_acks[seq_no] is None:
+                        return self._expected_acks.pop(seq_no, None)
+                    break
+                # TODO: record channel statistics
+                attempt += 1
+            raise ChannelBrokenException()
         else:
+            # fire and forget
+            self._output.write_packet(packet)
             return None
     
+    def remote_endpoint_read_buffer(self, endpoint_id):
+        """
+        Handles reads from long endpoints
+        """
+        # TODO: handle device that could (maliciously) send infinite stream
+        buffer = bytes()
+        while True:
+            chunk_length = 64
+            chunk = self.remote_endpoint_operation(0, struct.pack("<I", len(buffer)), True, chunk_length)
+            if (len(chunk) == 0):
+                break
+            buffer += chunk
+        return buffer
+
     def write_packet(self, packet):
+        #print("process packet")
         if (len(packet) < 4):
             raise Exception("packet too short")
 

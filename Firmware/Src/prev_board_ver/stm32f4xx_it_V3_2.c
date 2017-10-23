@@ -180,14 +180,7 @@ void ADC_IRQHandler(void)
 void OTG_FS_IRQHandler(void)
 {
   /* USER CODE BEGIN OTG_FS_IRQn 0 */
-
-  // Mask interrupt, and signal processing of interrupt by usb_cmd_thread
-  // The thread will re-enable the interrupt when all pending irqs are clear.
-  HAL_NVIC_DisableIRQ(OTG_FS_IRQn);
-  osSemaphoreRelease(sem_usb_irq);
-  // Bypass interrupt processing here
-  return;
-
+  
   /* USER CODE END OTG_FS_IRQn 0 */
   HAL_PCD_IRQHandler(&hpcd_USB_OTG_FS);
   /* USER CODE BEGIN OTG_FS_IRQn 1 */

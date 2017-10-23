@@ -8,7 +8,7 @@
 // This automatically updates to the interface that most
 // recently recieved a command. In the future we may want to separate
 // debug printf and the main serial comms.
-SerialPrintf_t serial_printf_select = SERIAL_PRINTF_IS_NONE;
+SerialPrintf_t serial_printf_select = SERIAL_PRINTF_IS_UART;
 
 /* Private constant data -----------------------------------------------------*/
 
@@ -112,13 +112,13 @@ static void print_monitoring(int limit);
 
 /* Function implementations --------------------------------------------------*/
 
-void legacy_parse_cmd(uint8_t* buffer, int len, SerialPrintf_t response_interface) {
+void legacy_parse_cmd(const uint8_t* buffer, int len) {
     // Set response interface
-    serial_printf_select = response_interface;
+    serial_printf_select = SERIAL_PRINTF_IS_USB;
 
-    // TODO very hacky way of terminating sscanf at end of buffer:
-    // We should do some proper struct packing instead of using sscanf altogether
-    buffer[len-1] = 0;
+    // Cast away const and write beyond the array bounds. Because we can.
+    // (TODO: yeah maybe not, but this should be gone once we disable legacy commands)
+    ((uint8_t *)buffer)[len <= 63 ? len : 63] = 0;
 
     // check incoming packet type
     if (buffer[0] == 'p') {
@@ -214,9 +214,13 @@ void legacy_parse_cmd(uint8_t* buffer, int len, SerialPrintf_t response_interfac
             print_monitoring(limit);
         }
     }
+
+    serial_printf_select = SERIAL_PRINTF_IS_UART;
 }
 
 static void print_monitoring(int limit) {
+    serial_printf_select = SERIAL_PRINTF_IS_USB;
+
     for (int i=0;i<limit;i++) {
         switch (monitoring_slots[i].type) {
         case 0:
@@ -236,4 +240,6 @@ static void print_monitoring(int limit) {
         }
     }
     printf("\n");
+
+    serial_printf_select = SERIAL_PRINTF_IS_UART;
 }

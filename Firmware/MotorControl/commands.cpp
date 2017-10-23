@@ -1,20 +1,22 @@
 
 /* Includes ------------------------------------------------------------------*/
 
-//#define INCLUDE_LEGACY_PROTOCOL
+// TODO: remove this option
+#define ENABLE_LEGACY_PROTOCOL
 
 #include "low_level.h"
 #include "protocol.hpp"
 #include "freertos_vars.h"
 #include "commands.h"
 
-#ifdef INCLUDE_LEGACY_PROTOCOL
+#ifdef ENABLE_LEGACY_PROTOCOL
 #include "legacy_commands.h"
 #endif
 
 #include <cmsis_os.h>
 #include <memory>
 #include <usbd_cdc_if.h>
+#include <usb_device.h>
 #include <usart.h>
 #include <gpio.h>
 
@@ -52,17 +54,31 @@ Endpoint endpoints[] = {
 constexpr size_t NUM_ENDPOINTS = sizeof(endpoints) / sizeof(endpoints[0]);
 
 
-class USBSender : public PacketWriter {
+// We could theoretically implement the USB channel as a packet based channel,
+// but on some platforms there's no direct USB endpoint access, so the device
+// should better just behave like a serial device.
+class USBSender : public StreamWriter {
 public:
-    int write_packet(const uint8_t* buffer, size_t length) {
-        return (CDC_Transmit_FS(
-            const_cast<uint8_t*>(buffer) /* casting this const away is safe because...
-            well... it's not actually. Stupid STM. */, length) == USBD_OK) ? 0 : -1;
+    int write_bytes(const uint8_t* buffer, size_t length) {
+        // Loop to ensure all bytes get sent
+        // TODO: add timeout
+        while (length) {
+            size_t chunk = length < 64 ? length : 64;
+            while (CDC_Transmit_FS(
+                const_cast<uint8_t*>(buffer) /* casting this const away is safe because...
+                well... it's not actually. Stupid STM. */, chunk) != USBD_OK)
+                osDelay(1);
+            buffer += chunk;
+            length -= chunk;
+        }
+        //printf("USB TX done\r\n"); osDelay(5);
+        return 0;
     }
 } usb_sender;
 
-BidirectionalPacketBasedChannel usb_connection(endpoints, NUM_ENDPOINTS, usb_sender);
-
+PacketToStreamConverter usb_packet_sender(usb_sender);
+BidirectionalPacketBasedChannel usb_connection(endpoints, NUM_ENDPOINTS, usb_packet_sender);
+StreamToPacketConverter usb_stream_writer(usb_connection);
 
 class UART4Sender : public StreamWriter {
 private:
@@ -142,13 +158,12 @@ void communication_task(void const * argument) {
         // Now we check if there is any USB processing to do: we wait for up to 1 ms,
         // before going back to checking UART again.
         int USB_check_timeout = 1;
-        // Wait for signalling from USB interrupt (OTG_FS_IRQHandler)
-        int32_t available = osSemaphoreWait(sem_usb_irq, USB_check_timeout);
-        if (available == osOK) {
-            // We have a new incoming USB transmission: handle it
-            HAL_PCD_IRQHandler(&hpcd_USB_OTG_FS);
-            // Let the irq (OTG_FS_IRQHandler) fire again.
-            HAL_NVIC_EnableIRQ(OTG_FS_IRQn);
+        int32_t status = osSemaphoreWait(sem_usb_irq, USB_check_timeout);
+        if (status == osOK) {
+            USB_receive_packet(USBRxBuffer, USBRxBufferLen);
+            // Allow receiving more bytes
+            USBD_CDC_SetRxBuffer(&hUsbDeviceFS, USBRxBuffer);
+            USBD_CDC_ReceivePacket(&hUsbDeviceFS);
         }
     }
 
@@ -156,17 +171,18 @@ void communication_task(void const * argument) {
     vTaskDelete(osThreadGetId());
 }
 
-
 void USB_receive_packet(const uint8_t *buffer, size_t length) {
-#ifdef INCLUDE_LEGACY_COMMANDS
+    //printf("[USB] got %d bytes, first is %c\r\n", length, buffer[0]); osDelay(5);
+#ifdef ENABLE_LEGACY_PROTOCOL
     const uint8_t *legacy_commands = (const uint8_t*)"pvcgsmo";
-    while (*(legacy_commands)) {
+    while (*legacy_commands && length) {
         if (buffer[0] == *(legacy_commands++)) {
-            legacy_parse_cmd(buffer, length, SERIAL_PRINTF_IS_USB);
+            //printf("[USB] process legacy command %c\r\n", buffer[0]); osDelay(5);
+            legacy_parse_cmd(buffer, length);
             length = 0;
         }
     }
 #endif
     
-    usb_connection.write_packet(buffer, length);
+    usb_stream_writer.write_bytes(buffer, length);
 }

@@ -1,6 +1,10 @@
 #ifndef COMMANDS_H
 #define COMMANDS_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /* Includes ------------------------------------------------------------------*/
 #include "low_level.h"
 /* Exported types ------------------------------------------------------------*/
@@ -23,6 +27,10 @@ extern uint16_t* exposed_uint16[];
 /* Exported functions --------------------------------------------------------*/
 
 /* Exported functions --------------------------------------------------------*/
-void legacy_parse_cmd(uint8_t* buffer, int len, SerialPrintf_t response_interface);
+void legacy_parse_cmd(const uint8_t* buffer, int len);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* COMMANDS_H */
