@@ -125,7 +125,6 @@ void communication_task(void const * argument) {
         if (huart4.ErrorCode != HAL_UART_ERROR_NONE) {
             HAL_UART_AbortReceive(&huart4);
             HAL_UART_Receive_DMA(&huart4, dma_circ_buffer, sizeof(dma_circ_buffer));
-            break; //reset state machine
         }
         // Fetch the circular buffer "write pointer", where it would write next
         uint32_t rcv_idx = UART_RX_BUFFER_SIZE - huart4.hdmarx->Instance->NDTR;
@@ -145,7 +144,7 @@ void communication_task(void const * argument) {
         int USB_check_timeout = 1;
         // Wait for signalling from USB interrupt (OTG_FS_IRQHandler)
         int32_t available = osSemaphoreWait(sem_usb_irq, USB_check_timeout);
-        if (available > 0) {
+        if (available == osOK) {
             // We have a new incoming USB transmission: handle it
             HAL_PCD_IRQHandler(&hpcd_USB_OTG_FS);
             // Let the irq (OTG_FS_IRQHandler) fire again.
