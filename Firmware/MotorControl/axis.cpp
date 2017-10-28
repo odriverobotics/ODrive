@@ -76,7 +76,7 @@ void Axis::StateMachineLoop() {
         }
 
         // give some time to lower priority threads
-        osDelay(100);
+        osDelay(2);
     }
     legacy_motor_ref_->thread_ready = false;
 }
