@@ -245,8 +245,12 @@ private:
 
 //Oskar: Writer implies that it writes things, but that's not what this is;
 // you can write to it, but it doesn't write things.
-// This interface should either be a "handler", "processor" or "reader" since that's what it does to the
-// stuff you give to it, or "writable", since you can write to it.
+
+// # Mabye use the terminology Source and Sink?
+// # <stuff>Writer -> <stuff>Sink
+// # <stuff>Reader -> <stuff>Source
+// # write_<stuff> -> process_<stuff>
+// # read_<stuff>  -> get_<stuff>
 
 class PacketWriter {
 public:

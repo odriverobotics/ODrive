@@ -17,7 +17,7 @@ def noprint(x):
 # we should be using /dev/ttyACM0 with system read/writes.
 # Actually, we should discuss the approach here, we need to decide if we should do packet based or not.
 
-class USBBulkDevice(odrive.protocol.StreamReader, odrive.protocol.StreamWriter):
+class USBBulkDevice(odrive.protocol.PacketReader, odrive.protocol.PacketWriter):
   def __init__(self, dev, printer=noprint):
     self.dev = dev
     self._name = "USB device {}:{}".format(dev.idVendor, dev.idProduct)
@@ -74,6 +74,7 @@ class USBBulkDevice(odrive.protocol.StreamReader, odrive.protocol.StreamWriter):
   def shutdown(self):
     return 0
 
+#Oskar: I would prefer the raw USB access version to write packets directly instead of using a steram converter.
   def write_bytes(self, usbBuffer):
     ret = self.epw.write(usbBuffer, 0)
     return ret

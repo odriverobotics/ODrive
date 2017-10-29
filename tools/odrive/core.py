@@ -7,7 +7,7 @@ import time
 import json
 import usb.core
 import usb.util
-import odrive
+import odrive.usbbulk
 import odrive.mock_device
 import odrive.util
 import re
@@ -139,6 +139,8 @@ def find_usb_channels(vid_pid_pairs=odrive.util.USB_VID_PID_PAIRS, printer=nopri
         bulk_device = odrive.usbbulk.USBBulkDevice(usb_device, printer)
         printer(bulk_device.info())
         bulk_device.init(printer)
+        #Oskar: Here bulk_device is expected to have a write_packet function, but it doesnt, it has read/write_bytes.
+        # We can either also use a stream converter here, but I'd prefer to write packets directly.
         yield odrive.protocol.Channel(
                 "USB device {}:{}".format(vid_pid_pair[0], vid_pid_pair[1]),
                 bulk_device, bulk_device)
@@ -149,6 +151,7 @@ def find_serial_channels(printer=noprint):
     Returns a generator of odrive.protocol.Channel objects.
     Not every returned object necessarily represents a compatible device.
     """
+    return
     # Look for serial device
     # TODO: OS specific heuristic to find serial ports
     for serial_port in filter(re.compile(r'^tty\.usbmodem').search, os.listdir('/dev')):
@@ -176,6 +179,8 @@ def find_all(printer=noprint):
         # TODO: blacklist known bad channels
         printer("Connecting to device on " + channel._name)
         try:
+            #Oskar: The fact that the JSON is on endpoint 0 is kind of protocol internal.
+            # Instead you can make a function on Channel called get_json.
             json_bytes = channel.remote_endpoint_read_buffer(0)
         except (odrive.protocol.TimeoutException, odrive.protocol.ChannelBrokenException):
             printer("no response - probably incompatible")
@@ -207,7 +212,7 @@ def find_any(printer=noprint):
     printer("looking for ODrive...")
     while True:
         dev = next(find_all(printer=printer), None)
-        if not dev is None:
+        if dev is not None:
             return dev
         printer("no device found")
         time.sleep(1)

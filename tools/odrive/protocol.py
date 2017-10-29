@@ -52,6 +52,8 @@ class TimeoutException(Exception):
 class ChannelBrokenException(Exception):
     pass
 
+#Oskar: Do these abstract classes even do anything when empty like this?
+# I'm not even too sure how this works in python...
 class StreamReader(object):
     pass
 
@@ -65,6 +67,13 @@ class PacketWriter(object):
     pass
 
 
+#Oskar: "StreamWriter" implies that it writes streams, but clearly it takes in ("reads") streams.
+# Mabye use the terminology Source and Sink?
+# <stuff>Writer -> <stuff>Sink
+# <stuff>Reader -> <stuff>Source
+# write_<stuff> -> process_<stuff>
+# read_<stuff>  -> get_<stuff>
+# Same comment for all the uses of the abstract classes.
 class StreamToPacketConverter(StreamWriter):
     _header = []
     _packet = []
@@ -73,6 +82,7 @@ class StreamToPacketConverter(StreamWriter):
     def __init__(self, output):
         self._output = output
 
+#Oskar: process_bytes?
     def write_bytes(self, bytes):
         """
         Processes an arbitrary number of bytes. If one or more full packets are
@@ -117,7 +127,7 @@ class PacketToStreamConverter(PacketWriter):
         self._output = output
 
     def write_packet(self, packet):
-        if (len(packet) >= 128):
+        if (len(packet) >= 128): #Oskar: Use a config variable at top of file or in other file, hardcodes inline in code is hard to maintain.
             raise NotImplementedError("packet larger than 127 currently not supported")
 
         header = [SYNC_BYTE, len(packet)]
@@ -126,7 +136,7 @@ class PacketToStreamConverter(PacketWriter):
         self._output.write_bytes(header)
         self._output.write_bytes(packet)
 
-class PacketFromStreamConverter(PacketReader, StreamWriter):
+class PacketFromStreamConverter(PacketReader, StreamWriter): #Oskar: This shouldn't inherit "StreamWriter", since it doesn't write_bytes.
     def __init__(self, input):
         self._input = input
     
