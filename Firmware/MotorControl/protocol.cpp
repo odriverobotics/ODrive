@@ -16,6 +16,7 @@
 /* Private variables ---------------------------------------------------------*/
 
 // The order in this list must correspond to the order in EndpointTypeID_t
+//Oskar: Isn't it better to then have an array of tuples(or structs), so that they are always paired at definition?
 const char *type_names_[] = {
     "json",
     "int32[]",
@@ -64,6 +65,7 @@ void write_buffer(const uint8_t* input, size_t input_length, size_t* skip, uint8
     }
 }
 
+//Oskar: consier a JsonWriter object (as per slack discussion)
 static void write_string(const char* str, size_t* skip, uint8_t** output, size_t* output_length) {
     write_buffer(reinterpret_cast<const uint8_t*>(str), strlen(str), skip, output, output_length);
 }
@@ -162,6 +164,8 @@ int PacketToStreamConverter::write_packet(const uint8_t *buffer, size_t length) 
 // Calculates the CRC16 of the JSON interface descriptor.
 // Make sure this stays consistent with what interface_query returns.
 // The init value is the protocol version.
+
+//Oskar: consider non-loop version of calc_crc16 in write_buffer, as per slack discussion
 uint16_t BidirectionalPacketBasedChannel::calculate_json_crc16(void) {
     uint8_t buffer[64];
     size_t offset = 0;
@@ -206,6 +210,7 @@ void BidirectionalPacketBasedChannel::interface_query(const uint8_t* input, size
     write_string("]", &offset, &output, output_length);
 }
 
+//Oskar: Can you please make a google sheet which describes the packet layout/format
 int BidirectionalPacketBasedChannel::write_packet(const uint8_t* buffer, size_t length) {
     //printf("got packet of length %d: \r\n", length); osDelay(5); hexdump(buffer, length);
     if (length < 4)

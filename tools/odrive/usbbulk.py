@@ -12,6 +12,11 @@ def noprint(x):
 # Even though USB is packet based, we do stream based communication because some
 # systems don't allow direct access to the USB endpoints, in which case the
 # device has to behave like a serial device.
+
+#Oskar: If we are using stream based comms over USB, we shouldn't be detach_kernel_driver and epr.read,
+# we should be using /dev/ttyACM0 with system read/writes.
+# Actually, we should discuss the approach here, we need to decide if we should do packet based or not.
+
 class USBBulkDevice(odrive.protocol.StreamReader, odrive.protocol.StreamWriter):
   def __init__(self, dev, printer=noprint):
     self.dev = dev
@@ -32,62 +37,50 @@ class USBBulkDevice(odrive.protocol.StreamReader, odrive.protocol.StreamWriter):
     return string
 
   def init(self, printer=noprint):
+    # detach kernel driver
     try:
-      # detach kernel driver
-      try:
-        if self.dev.is_kernel_driver_active(1):
-          self.dev.detach_kernel_driver(1)
-          printer("Detached Kernel Driver\n")
-      except NotImplementedError:
-        pass #is_kernel_driver_active not implemented on Windows
-      # set the active configuration. With no arguments, the first
-      # configuration will be the active one
-      self.dev.set_configuration()
-      # get an endpoint instance
-      self.cfg = self.dev.get_active_configuration()
-      self.intf = self.cfg[(1,0)]
-      # write endpoint
-      self.epw = usb.util.find_descriptor(self.intf,
-          # match the first OUT endpoint
-          custom_match = \
-          lambda e: \
-              usb.util.endpoint_direction(e.bEndpointAddress) == \
-              usb.util.ENDPOINT_OUT
-      )
-      assert self.epw is not None
-      printer("EndpointAddress for writing {}\n".format(self.epw.bEndpointAddress))
-      # read endpoint
-      self.epr = usb.util.find_descriptor(self.intf,
-          # match the first IN endpoint
-          custom_match = \
-          lambda e: \
-              usb.util.endpoint_direction(e.bEndpointAddress) == \
-              usb.util.ENDPOINT_IN
-      )
-      assert self.epr is not None
-      printer("EndpointAddress for reading {}\n".format(self.epr.bEndpointAddress))
-    except usb.core.USBError:
-      #return -1
-      raise
+      if self.dev.is_kernel_driver_active(1):
+        self.dev.detach_kernel_driver(1)
+        printer("Detached Kernel Driver\n")
+    except NotImplementedError:
+      pass #is_kernel_driver_active not implemented on Windows
+    # set the active configuration. With no arguments, the first
+    # configuration will be the active one
+    self.dev.set_configuration()
+    # get an endpoint instance
+    self.cfg = self.dev.get_active_configuration()
+    self.intf = self.cfg[(1,0)]
+    # write endpoint
+    self.epw = usb.util.find_descriptor(self.intf,
+        # match the first OUT endpoint
+        custom_match = \
+        lambda e: \
+            usb.util.endpoint_direction(e.bEndpointAddress) == \
+            usb.util.ENDPOINT_OUT
+    )
+    assert self.epw is not None
+    printer("EndpointAddress for writing {}\n".format(self.epw.bEndpointAddress))
+    # read endpoint
+    self.epr = usb.util.find_descriptor(self.intf,
+        # match the first IN endpoint
+        custom_match = \
+        lambda e: \
+            usb.util.endpoint_direction(e.bEndpointAddress) == \
+            usb.util.ENDPOINT_IN
+    )
+    assert self.epr is not None
+    printer("EndpointAddress for reading {}\n".format(self.epr.bEndpointAddress))
 
   def shutdown(self):
     return 0
 
   def write_bytes(self, usbBuffer):
-    try:
-      ret = self.epw.write(usbBuffer, 0)
-      return ret
-    except usb.core.USBError:
-      #return -1
-      raise
+    ret = self.epw.write(usbBuffer, 0)
+    return ret
 
   def read_bytes(self, bufferLen):
-    try:
-      ret = self.epr.read(bufferLen, 100)
-      return ret
-    except usb.core.USBError:
-      #return -1
-      raise
+    ret = self.epr.read(bufferLen, 100)
+    return ret
 
   def send_max(self):
     return 64

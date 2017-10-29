@@ -2,9 +2,12 @@
 * # ODrive Communication Protocol #
 *
 * Communicating with an ODrive consists of a series of endpoint operations.
-* operations. An endpoint is usually a single number or string.
+* An endpoint can be any data representation that can be serialized.
+* There is a default seralization implementation for POD types; for custom types
+* you must (de)seralize yourself. In the future we may provide a default seralizer
+* for stucts.
 * The available endpoints can be enumerated by reading the JSON from endpoint 0
-* and can theoretically be different for each channel (they are not in practice).
+* and can theoretically be different for each communication interface (they are not in practice).
 *
 * Each endpoint operation can send bytes to one endpoint (referenced by it's ID)
 * and at the same time receive bytes from the same endpoint. The semantics of
@@ -19,13 +22,18 @@
 * ## Stream format: ##
 * (For instance UART)
 *
-*   1. sync-byte
-*   2. packet-length (0-127, larger values are reserved)
-*   3. crc8(sync-byte + packet-length)
-*   4. packet
+*   1. sync byte
+*   2. packet length (0-127, larger values are reserved)
+*   3. crc8(sync byte + packet length)
+*   4. packet (as per below)
 *
 * ## Packet format: ##
 * (For instance USB)
+
+//Oskar: All packet formats I anticipate (USB, CAN, Ethernet) already have a transport
+// level CRC. So maybe we can throw out the packet level CRC check, and instead add
+// a data crc as step 5 on the stream format?
+
 *
 * __Request__
 *
@@ -96,16 +104,16 @@ inline size_t write_le<float>(float value, uint8_t* buffer) {
 template<>
 inline size_t read_le<uint16_t>(uint16_t* value, const uint8_t* buffer) {
     *value = (static_cast<uint16_t>(buffer[0]) << 0) |
-            (static_cast<uint16_t>(buffer[1]) << 8);
+             (static_cast<uint16_t>(buffer[1]) << 8);
     return 2;
 }
 
 template<>
 inline size_t read_le<uint32_t>(uint32_t* value, const uint8_t* buffer) {
     *value = (static_cast<uint32_t>(buffer[0]) << 0) |
-            (static_cast<uint32_t>(buffer[1]) << 8) |
-            (static_cast<uint32_t>(buffer[2]) << 16) |
-            (static_cast<uint32_t>(buffer[3]) << 24);
+             (static_cast<uint32_t>(buffer[1]) << 8) |
+             (static_cast<uint32_t>(buffer[2]) << 16) |
+             (static_cast<uint32_t>(buffer[3]) << 24);
     return 4;
 }
 
@@ -121,6 +129,10 @@ template<typename T>
 static inline T read_le(const uint8_t** buffer, size_t* length) {
     T result;
     size_t cnt = read_le(&result, *buffer);
+    //Oskar: Is the style where you have a mutable length and buffer pointer
+    // a common form? I don't think I have seen it before: let me know if you have some 
+    // reference of this style.
+    // Maybe using iterators is better?
     *buffer += cnt;
     *length -= cnt;
     return result;
@@ -153,6 +165,9 @@ typedef enum {
 // @param output_length: pointer to the remaining length of the output buffer.
 //        The handler must update this value to subtract the number of written bytes.
 //        The pointer itself is guaranteed not to be NULL.
+
+//Oskar: Suggestion: return number of bytes written, and pass output_length by value.
+// This style is more consistent with stdio functions
 typedef std::function<void(void* ctx, const uint8_t* input, size_t input_length, uint8_t* output, size_t* output_length)> EndpointHandler;
 
 
@@ -161,10 +176,12 @@ void default_read_endpoint_handler(void* ctx, const uint8_t* input, size_t input
     const T* value = reinterpret_cast<const T*>(ctx);
     // If the old value was requested, call the corresponding little endian serialization function
     if (*output_length) {
-        uint8_t buffer[8]; // TODO: make buffer size dependent on the type
+        // uint8_t buffer[8]; // TODO: make buffer size dependent on the type
+        uint8_t buffer[sizeof(T)]; //Oskar: You can do this.
         size_t cnt = write_le<T>(*value, buffer);
         if (cnt > *output_length)
-            cnt = *output_length;
+            cnt = *output_length; //Oskar: I woudldn't clip like this, some types become
+            // very wrong when clipped little endian (like float). Just write nothing if it doesnt fit.
         memcpy(output, buffer, cnt);
         *output_length -= cnt;
     }
@@ -174,7 +191,7 @@ template<typename T>
 void default_readwrite_endpoint_handler(void* ctx, const uint8_t* input, size_t input_length, uint8_t* output, size_t* output_length) {
     T* value = reinterpret_cast<T*>(ctx);
     
-    // Call the handler for the const version of the endpoint's type - i.e. read the endpoint value into output
+    // Read the endpoint value into output
     default_read_endpoint_handler<T>(ctx, input, input_length, output, output_length);
     
     // If a new value was passed, call the corresponding little endian deserialization function
@@ -182,6 +199,7 @@ void default_readwrite_endpoint_handler(void* ctx, const uint8_t* input, size_t 
         uint8_t buffer[8] = { 0 }; // TODO: make buffer size dependent on the type
         if (input_length > sizeof(buffer))
             input_length = sizeof(buffer);
+        //Oskar: Why do we need to take a copy of the input buffer?
         memcpy(buffer, input, input_length); // TODO: abort if not enough bytes received
         read_le<T>(value, buffer);
     }
@@ -225,10 +243,15 @@ private:
     void* const ctx_;
 };
 
+//Oskar: Writer implies that it writes things, but that's not what this is;
+// you can write to it, but it doesn't write things.
+// This interface should either be a "handler", "processor" or "reader" since that's what it does to the
+// stuff you give to it, or "writable", since you can write to it.
 
 class PacketWriter {
 public:
     // @brief Processes a packet.
+    //Oskar: What is the return value?
     // TODO: define what happens when the output is congested. We can either drop the data or block.
     // TODO: define what happens when the packet is larger than what the implementation can handle.
     virtual int write_packet(const uint8_t* buffer, size_t length) = 0;
@@ -238,6 +261,7 @@ public:
 class StreamWriter {
 public:
     // @brief Processes a chunk of bytes that is part of a continuous stream.
+    //Oskar: What is the return value?
     // TODO: define what happens when the output is congested. We can either drop the data or block.
     virtual int write_bytes(const uint8_t* buffer, size_t length) = 0;
 };
@@ -255,7 +279,7 @@ public:
 private:
     uint8_t header_buffer_[3];
     size_t header_index_ = 0;
-    uint8_t packet_buffer_[128];
+    uint8_t packet_buffer_[128]; //Oskar: Use some constexpr config name, hardcoded numbers are not so nice
     size_t packet_index_ = 0;
     size_t packet_length_ = 0;
     PacketWriter& output_;
@@ -302,6 +326,7 @@ private:
     }
 
     //ReceiveCallback c = BidirectionalPacketBasedChannel::receive_fetch_request_ex;
+    //Oskar: by channel_specific, do you mean protocol_internal/specific?
     Endpoint channel_specific_endpoints_[2] = {
         Endpoint("", AS_JSON, BidirectionalPacketBasedChannel::interface_query_handler, nullptr, this),
         Endpoint("subscriptions", AS_INT32_ARRAY, BidirectionalPacketBasedChannel::subscription_handler, nullptr, this)
@@ -312,6 +337,7 @@ private:
     size_t n_endpoints_;
     PacketWriter& output_;
 
+    
     Endpoint* get_endpoint(size_t index) {
         if (index < NUM_CHANNEL_SPECIFIC_ENDPOINTS){
             return &channel_specific_endpoints_[index];
@@ -322,10 +348,14 @@ private:
         }
     }
 
+    //Oskar: What is a subscription? Let's discuss on slack
     void subscription(const uint8_t* input, size_t input_length, uint8_t* output, size_t* output_length) {
         // TODO: handle
         return;
     }
+
+    //Oskar: try to keep a consistent declaration ordering between functions and data.
+    // see: https://google.github.io/styleguide/cppguide.html#Declaration_Order
 
     size_t expected_seq_no_ = 0;
     uint8_t tx_buf_[TX_BUF_SIZE];

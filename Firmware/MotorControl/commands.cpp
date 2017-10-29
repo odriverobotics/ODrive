@@ -37,9 +37,11 @@ static const GpioMode_t gpio_mode = GPIO_MODE_UART;     //GPIO 1,2 is UART Tx,Rx
 /* Private variables ---------------------------------------------------------*/
 
 /* Variables exposed to USB & UART via read/write commands */
+//Oskar: what is range information?
 // TODO: include range information in JSON description
 
 // clang-format off
+//Oskar: The endpoint table should be const, yeah? Then it can be put in RO memory (flash).
 Endpoint endpoints[] = {
     Endpoint("vbus_voltage", const_cast<const float*>(&vbus_voltage)),
     Endpoint("elec_rad_per_enc", const_cast<const float*>(&elec_rad_per_enc)),
@@ -57,6 +59,9 @@ constexpr size_t NUM_ENDPOINTS = sizeof(endpoints) / sizeof(endpoints[0]);
 // We could theoretically implement the USB channel as a packet based channel,
 // but on some platforms there's no direct USB endpoint access, so the device
 // should better just behave like a serial device.
+
+//Oskar: We should discuss this, possibly have both options.
+// On windows the serial driver seems really buggy...
 class USBSender : public StreamWriter {
 public:
     int write_bytes(const uint8_t* buffer, size_t length) {
@@ -174,7 +179,7 @@ void communication_task(void const * argument) {
 void USB_receive_packet(const uint8_t *buffer, size_t length) {
     //printf("[USB] got %d bytes, first is %c\r\n", length, buffer[0]); osDelay(5);
 #ifdef ENABLE_LEGACY_PROTOCOL
-    const uint8_t *legacy_commands = (const uint8_t*)"pvcgsmo";
+    const uint8_t* legacy_commands = (const uint8_t*)"pvcgsmo";
     while (*legacy_commands && length) {
         if (buffer[0] == *(legacy_commands++)) {
             //printf("[USB] process legacy command %c\r\n", buffer[0]); osDelay(5);

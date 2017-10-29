@@ -277,6 +277,10 @@ static int8_t CDC_Receive_FS (uint8_t* Buf, uint32_t *Len)
   USBRxBufferLen = *Len;
   osSemaphoreRelease(sem_usb_irq);
 
+  //Oskar: You shouldn't return from this function until you have copied data out of Buf,
+  // see the @note above.
+  // So I would revert to the tread-deffered USB irq processing, and call USB_receive_packet from here.
+
   // once the data is handled, the processing thread will start the next transmission
   return (USBD_OK);
   /* USER CODE END 6 */ 

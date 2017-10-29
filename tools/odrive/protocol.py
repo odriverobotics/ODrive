@@ -11,6 +11,7 @@ PROTOCOL_VERSION = 1
 CRC8_DEFAULT = 0x37 # this must match the polynomial in the C++ implementation
 CRC16_DEFAULT = 0x3d65 # this must match the polynomial in the C++ implementation
 
+#Oskar: There must be a crc library for python already?
 def calc_crc(remainder, value, polynomial, bitwidth):
     topbit = (1 << (bitwidth - 1))
 
@@ -107,6 +108,7 @@ class StreamToPacketConverter(StreamWriter):
                 self._packet_length = 0
 
         if isinstance(result, Exception):
+            #Oskar: why are we removing exception information? Just let the original exception go up?
             raise Exception("something went wrong")
 
 
@@ -116,7 +118,7 @@ class PacketToStreamConverter(PacketWriter):
 
     def write_packet(self, packet):
         if (len(packet) >= 128):
-            raise Exception("packet larger than 127 currently not supported")
+            raise NotImplementedError("packet larger than 127 currently not supported")
 
         header = [SYNC_BYTE, len(packet)]
         header.append(calc_crc8(CRC8_INIT, header))
