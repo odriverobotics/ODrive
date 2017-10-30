@@ -11,7 +11,8 @@ PROTOCOL_VERSION = 1
 CRC8_DEFAULT = 0x37 # this must match the polynomial in the C++ implementation
 CRC16_DEFAULT = 0x3d65 # this must match the polynomial in the C++ implementation
 
-#Oskar: There must be a crc library for python already?
+MAX_PACKET_SIZE = 128
+
 def calc_crc(remainder, value, polynomial, bitwidth):
     topbit = (1 << (bitwidth - 1))
 
@@ -52,29 +53,20 @@ class TimeoutException(Exception):
 class ChannelBrokenException(Exception):
     pass
 
-#Oskar: Do these abstract classes even do anything when empty like this?
-# I'm not even too sure how this works in python...
-class StreamReader(object):
+class StreamSource(object):
     pass
 
-class StreamWriter(object):
+class StreamSink(object):
     pass
 
-class PacketReader(object):
+class PacketSource(object):
     pass
 
-class PacketWriter(object):
+class PacketSink(object):
     pass
 
 
-#Oskar: "StreamWriter" implies that it writes streams, but clearly it takes in ("reads") streams.
-# Mabye use the terminology Source and Sink?
-# <stuff>Writer -> <stuff>Sink
-# <stuff>Reader -> <stuff>Source
-# write_<stuff> -> process_<stuff>
-# read_<stuff>  -> get_<stuff>
-# Same comment for all the uses of the abstract classes.
-class StreamToPacketConverter(StreamWriter):
+class StreamToPacketConverter(StreamSink):
     _header = []
     _packet = []
     _packet_length = 0
@@ -82,11 +74,10 @@ class StreamToPacketConverter(StreamWriter):
     def __init__(self, output):
         self._output = output
 
-#Oskar: process_bytes?
-    def write_bytes(self, bytes):
+    def process_bytes(self, bytes):
         """
         Processes an arbitrary number of bytes. If one or more full packets are
-        are received, they are sent to this instance's output PacketWriter.
+        are received, they are sent to this instance's output PacketSink.
         Incomplete packets are buffered between subsequent calls to this function.
         """
         result = None
@@ -102,45 +93,50 @@ class StreamToPacketConverter(StreamWriter):
                 elif (len(self._header) == 3) and calc_crc8(CRC8_INIT, self._header):
                     self._header = []
                 elif (len(self._header) == 3):
-                    self._packet_length = self._header[1]
+                    self._packet_length = self._header[1] + 2
             else:
                 # Process payload byte
                 self._packet.append(byte)
 
             # If both header and packet are fully received, hand it on to the packet processor
             if (len(self._header) == 3) and (len(self._packet) == self._packet_length):
-                try:
-                    self._output.write_packet(self._packet)
-                except Exception as ex:
-                    result = ex
+                if calc_crc16(CRC16_INIT, self._packet) == 0:
+                    try:
+                        self._output.process_packet(self._packet[:-2])
+                    except Exception as ex:
+                        result = ex
                 self._header = []
                 self._packet = []
                 self._packet_length = 0
 
         if isinstance(result, Exception):
-            #Oskar: why are we removing exception information? Just let the original exception go up?
-            raise Exception("something went wrong")
+            # TODO: check if this is valid code (pylint complains)
+            raise result
 
 
-class PacketToStreamConverter(PacketWriter):
+class PacketToStreamConverter(PacketSink):
     def __init__(self, output):
         self._output = output
 
-    def write_packet(self, packet):
-        if (len(packet) >= 128): #Oskar: Use a config variable at top of file or in other file, hardcodes inline in code is hard to maintain.
+    def process_packet(self, packet):
+        if (len(packet) >= MAX_PACKET_SIZE):
             raise NotImplementedError("packet larger than 127 currently not supported")
 
         header = [SYNC_BYTE, len(packet)]
         header.append(calc_crc8(CRC8_INIT, header))
 
-        self._output.write_bytes(header)
-        self._output.write_bytes(packet)
+        self._output.process_bytes(header)
+        self._output.process_bytes(packet)
 
-class PacketFromStreamConverter(PacketReader, StreamWriter): #Oskar: This shouldn't inherit "StreamWriter", since it doesn't write_bytes.
+        # append CRC in big endian
+        crc16 = calc_crc16(CRC16_INIT, packet)
+        self._output.process_bytes(struct.pack('>H', crc16))
+
+class PacketFromStreamConverter(PacketSource):
     def __init__(self, input):
         self._input = input
     
-    def read_packet(self, deadline):
+    def get_packet(self, deadline):
         """
         Requests bytes from the underlying input stream until a full packet is
         received or the deadline is reached, in which case None is returned. A
@@ -150,29 +146,29 @@ class PacketFromStreamConverter(PacketReader, StreamWriter): #Oskar: This should
             header = bytes()
 
             # TODO: sometimes this call hangs, even though the device apparently sent something
-            header = header + self._input.read_bytes_or_fail(1, deadline)
+            header = header + self._input.get_bytes_or_fail(1, deadline)
             if (header[0] != SYNC_BYTE):
                 #print("sync byte mismatch")
                 continue
 
-            header = header + self._input.read_bytes_or_fail(1, deadline)
+            header = header + self._input.get_bytes_or_fail(1, deadline)
             if (header[1] & 0x80):
                 #print("packet too large")
                 continue # TODO: support packets larger than 128 bytes
 
-            header = header + self._input.read_bytes_or_fail(1, deadline)
+            header = header + self._input.get_bytes_or_fail(1, deadline)
             if calc_crc8(CRC8_INIT, header) != 0:
                 #print("crc8 mismatch")
                 continue
 
             packet_length = header[1]
             #print("wait for {} bytes".format(packet_length))
-            return self._input.read_bytes_or_fail(packet_length, deadline)
+            return self._input.get_bytes_or_fail(packet_length, deadline)
 
 
-class Channel(PacketWriter):
+class Channel(PacketSink):
     _outbound_seq_no = 0
-    _interface_definition_crc = bytearray(2)
+    _interface_definition_crc = 0
     _expected_acks = {}
 
     # Chose these parameters to be sensible for a specific transport layer
@@ -182,10 +178,10 @@ class Channel(PacketWriter):
     def __init__(self, name, input, output):
         """
         Params:
-        input: A PacketReader where this channel will source packets from on
+        input: A PacketSource where this channel will source packets from on
                demand. Alternatively packets can be provided to this channel
-               directly by calling write_packet on this instance.
-        output: A PacketWriter where this channel will put outgoing packets.
+               directly by calling process_packet on this instance.
+        output: A PacketSink where this channel will put outgoing packets.
         """
         self._name = name
         self._input = input
@@ -207,30 +203,27 @@ class Channel(PacketWriter):
 
         crc16 = calc_crc16(CRC16_INIT, packet)
         if (endpoint_id & 0x7fff == 0):
-            #print("append crc16 for " + str(struct.pack('<H', PROTOCOL_VERSION)))
-            crc16 = calc_crc16(crc16, struct.pack('<H', PROTOCOL_VERSION))
+            footer = PROTOCOL_VERSION
         else:
-            #print("append crc16 for " + str(self._interface_definition_crc))
-            crc16 = calc_crc16(crc16, self._interface_definition_crc)
-
-        # append CRC in big endian
-        packet = packet + struct.pack('>H', crc16)
+            footer = self._interface_definition_crc
+        #print("append footer " + footer)
+        packet = packet + struct.pack('<H', footer)
 
         if (expect_ack):
             self._expected_acks[seq_no] = None
             attempt = 0
             while (attempt < self._send_attempts):
-                self._output.write_packet(packet)
+                self._output.process_packet(packet)
                 deadline = time.monotonic() + self._resend_delay
                 # Read and process packets until we get an ack or need to resend
                 # TODO: support I/O driven reception (wait on semaphore)
                 while True:
                     try:
-                        response = self._input.read_packet(deadline)
+                        response = self._input.get_packet(deadline)
                     except TimeoutException:
                         break # resend
                     # process response, which is hopefully our ACK
-                    self.write_packet(response)
+                    self.process_packet(response)
                     if not self._expected_acks[seq_no] is None:
                         return self._expected_acks.pop(seq_no, None)
                     break
@@ -239,7 +232,7 @@ class Channel(PacketWriter):
             raise ChannelBrokenException()
         else:
             # fire and forget
-            self._output.write_packet(packet)
+            self._output.process_packet(packet)
             return None
     
     def remote_endpoint_read_buffer(self, endpoint_id):
@@ -256,23 +249,20 @@ class Channel(PacketWriter):
             buffer += chunk
         return buffer
 
-    def write_packet(self, packet):
+    def process_packet(self, packet):
         #print("process packet")
-        if (len(packet) < 4):
+        packet = bytes(packet)
+        if (len(packet) < 2):
             raise Exception("packet too short")
-
-        # calculate CRC for later validation
-        crc16 = calc_crc16(CRC16_INIT, packet[:-2])
 
         seq_no = struct.unpack('<H', packet[0:2])[0]
 
         if (seq_no & 0x8000):
-            if (calc_crc16(crc16, struct.pack('<HBB', PROTOCOL_VERSION, packet[-2], packet[-1]))):
-                raise Exception("CRC16 mismatch")
-
             seq_no &= 0x7fff
-            self._expected_acks[seq_no] = packet[2:-2]
+            self._expected_acks[seq_no] = packet[2:]
 
         else:
+            #if (calc_crc16(crc16, struct.pack('<HBB', PROTOCOL_VERSION, packet[-2], packet[-1]))):
+            #    raise Exception("CRC16 mismatch")
             print("endpoint requested")
             # TODO: handle local endpoint operation

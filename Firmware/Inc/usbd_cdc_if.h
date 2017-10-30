@@ -71,6 +71,10 @@
   * @{
   */ 
 /* USER CODE BEGIN EXPORTED_DEFINES */
+/* Define size for the receive and transmit buffer over CDC */
+/* It's up to user to redefine and/or remove those define */
+#define USB_RX_DATA_SIZE  64
+#define USB_TX_DATA_SIZE  64
 /* USER CODE END EXPORTED_DEFINES */
 
 /**
@@ -103,8 +107,6 @@
 extern USBD_CDC_ItfTypeDef  USBD_Interface_fops_FS;
 
 /* USER CODE BEGIN EXPORTED_VARIABLES */
-extern uint8_t *USBRxBuffer;
-extern uint32_t USBRxBufferLen;
 /* USER CODE END EXPORTED_VARIABLES */
 
 /**

@@ -77,10 +77,6 @@
   * @{
   */ 
 /* USER CODE BEGIN PRIVATE_DEFINES */
-/* Define size for the receive and transmit buffer over CDC */
-/* It's up to user to redefine and/or remove those define */
-#define APP_RX_DATA_SIZE  64
-#define APP_TX_DATA_SIZE  64
 /* USER CODE END PRIVATE_DEFINES */
 /**
   * @}
@@ -102,10 +98,10 @@
 /* Create buffer for reception and transmission           */
 /* It's up to user to redefine and/or remove those define */
 /* Received Data over USB are stored in this buffer       */
-uint8_t UserRxBufferFS[APP_RX_DATA_SIZE];
+uint8_t UserRxBufferFS[USB_RX_DATA_SIZE];
 
 /* Send Data over USB CDC are stored in this buffer       */
-uint8_t UserTxBufferFS[APP_TX_DATA_SIZE];
+uint8_t UserTxBufferFS[USB_TX_DATA_SIZE];
 
 /* USER CODE BEGIN PRIVATE_VARIABLES */
 /* USER CODE END PRIVATE_VARIABLES */
@@ -119,8 +115,6 @@ uint8_t UserTxBufferFS[APP_TX_DATA_SIZE];
   */ 
   extern USBD_HandleTypeDef hUsbDeviceFS;
 /* USER CODE BEGIN EXPORTED_VARIABLES */
-uint8_t *USBRxBuffer = UserRxBufferFS;
-uint32_t USBRxBufferLen;
 /* USER CODE END EXPORTED_VARIABLES */
 
 /**
@@ -273,13 +267,12 @@ static int8_t CDC_Receive_FS (uint8_t* Buf, uint32_t *Len)
 {
   /* USER CODE BEGIN 6 */
 
-  // unblock the processing thread
-  USBRxBufferLen = *Len;
-  osSemaphoreRelease(sem_usb_irq);
+  // Process command
+  USB_receive_packet(Buf, *Len);
 
-  //Oskar: You shouldn't return from this function until you have copied data out of Buf,
-  // see the @note above.
-  // So I would revert to the tread-deffered USB irq processing, and call USB_receive_packet from here.
+  // Allow receiving more bytes
+  USBD_CDC_SetRxBuffer(&hUsbDeviceFS, UserRxBufferFS);
+  USBD_CDC_ReceivePacket(&hUsbDeviceFS);
 
   // once the data is handled, the processing thread will start the next transmission
   return (USBD_OK);
@@ -303,7 +296,7 @@ uint8_t CDC_Transmit_FS(uint8_t* Buf, uint16_t Len)
   /* USER CODE BEGIN 7 */ 
   
   //Check length
-  if (Len > APP_TX_DATA_SIZE)
+  if (Len > USB_TX_DATA_SIZE)
     return USBD_FAIL;
   // Check for ongoing transmission
   USBD_CDC_HandleTypeDef* hcdc = (USBD_CDC_HandleTypeDef*) hUsbDeviceFS.pClassData;

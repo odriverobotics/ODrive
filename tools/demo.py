@@ -27,7 +27,7 @@ print("Position setpoint is " + str(my_drive.motor0.pos_setpoint))
 
 # little sine wave to test
 t0 = time.monotonic()
-while False:
+while True:
     setpoint = 10000.0 * math.sin((time.monotonic() - t0)*2)
     print("goto " + str(int(setpoint)))
     my_drive.motor0.pos_setpoint = setpoint

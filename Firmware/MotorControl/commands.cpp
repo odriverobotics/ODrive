@@ -2,7 +2,7 @@
 /* Includes ------------------------------------------------------------------*/
 
 // TODO: remove this option
-#define ENABLE_LEGACY_PROTOCOL
+//#define ENABLE_LEGACY_PROTOCOL
 
 #include "low_level.h"
 #include "protocol.hpp"
@@ -37,59 +37,104 @@ static const GpioMode_t gpio_mode = GPIO_MODE_UART;     //GPIO 1,2 is UART Tx,Rx
 /* Private variables ---------------------------------------------------------*/
 
 /* Variables exposed to USB & UART via read/write commands */
-//Oskar: what is range information?
 // TODO: include range information in JSON description
 
+std::function<void(void)> motors_0_set_pos_setpoint_func = std::bind(set_pos_setpoint, &motors[0],
+    std::ref(motors[0].set_pos_setpoint_args.pos_setpoint),
+    std::ref(motors[0].set_pos_setpoint_args.vel_feed_forward),
+    std::ref(motors[0].set_pos_setpoint_args.current_feed_forward)
+);
+std::function<void(void)> motors_0_set_vel_setpoint_func = std::bind(set_vel_setpoint, &motors[0],
+    std::ref(motors[0].set_vel_setpoint_args.vel_setpoint),
+    std::ref(motors[0].set_vel_setpoint_args.current_feed_forward)
+);
+std::function<void(void)> motors_0_set_current_setpoint_func = std::bind(set_current_setpoint, &motors[0],
+    std::ref(motors[0].set_current_setpoint_args.current_setpoint)
+);
+
 // clang-format off
-//Oskar: The endpoint table should be const, yeah? Then it can be put in RO memory (flash).
-Endpoint endpoints[] = {
-    Endpoint("vbus_voltage", const_cast<const float*>(&vbus_voltage)),
-    Endpoint("elec_rad_per_enc", const_cast<const float*>(&elec_rad_per_enc)),
-    Endpoint("motor0", BEGIN_TREE, nullptr, nullptr, nullptr),
-        Endpoint("pos_setpoint", &motors[0].pos_setpoint),
-        Endpoint("pos_gain", &motors[0].pos_gain),
-        Endpoint("vel_setpoint", &motors[0].vel_setpoint),
-    Endpoint(nullptr, END_TREE, nullptr, nullptr, nullptr) // motor0
+// TODO: Autogenerate this table. It will come up again very soon in the Arduino library.
+const Endpoint endpoints[] = {
+    Endpoint::make_property("vbus_voltage", const_cast<const float*>(&vbus_voltage)),
+    Endpoint::make_property("elec_rad_per_enc", const_cast<const float*>(&elec_rad_per_enc)),
+    Endpoint::make_object("motor0"),
+        Endpoint::make_property("pos_setpoint", &motors[0].pos_setpoint),
+        Endpoint::make_property("pos_gain", &motors[0].pos_gain),
+        Endpoint::make_property("vel_setpoint", &motors[0].vel_setpoint),
+        Endpoint::make_function("set_pos_setpoint", &motors_0_set_pos_setpoint_func),
+            Endpoint::make_property("pos_setpoint", &motors[0].set_pos_setpoint_args.pos_setpoint),
+            Endpoint::make_property("vel_feed_forward", &motors[0].set_pos_setpoint_args.vel_feed_forward),
+            Endpoint::make_property("current_feed_forward", &motors[0].set_pos_setpoint_args.current_feed_forward),
+        Endpoint::close_tree(),
+        Endpoint::make_function("set_vel_setpoint", &motors_0_set_vel_setpoint_func),
+            Endpoint::make_property("vel_setpoint", &motors[0].set_vel_setpoint_args.vel_setpoint),
+            Endpoint::make_property("current_feed_forward", &motors[0].set_vel_setpoint_args.current_feed_forward),
+        Endpoint::close_tree(),
+        Endpoint::make_function("set_current_setpoint", &motors_0_set_current_setpoint_func),
+            Endpoint::make_property("current_setpoint", &motors[0].set_current_setpoint_args.current_setpoint),
+        Endpoint::close_tree(),
+    Endpoint::close_tree() // motor0
 };
 // clang-format on
 
 constexpr size_t NUM_ENDPOINTS = sizeof(endpoints) / sizeof(endpoints[0]);
 
 
+
+//#define STREAM_ON_USB
+#ifdef STREAM_ON_USB
 // We could theoretically implement the USB channel as a packet based channel,
 // but on some platforms there's no direct USB endpoint access, so the device
 // should better just behave like a serial device.
 
-//Oskar: We should discuss this, possibly have both options.
-// On windows the serial driver seems really buggy...
-class USBSender : public StreamWriter {
+class USBSender : public StreamSink {
 public:
-    int write_bytes(const uint8_t* buffer, size_t length) {
+    int process_bytes(const uint8_t* buffer, size_t length) {
         // Loop to ensure all bytes get sent
         // TODO: add timeout
         while (length) {
-            size_t chunk = length < 64 ? length : 64;
+            size_t chunk = length < USB_TX_DATA_SIZE ? length : USB_TX_DATA_SIZE;
             while (CDC_Transmit_FS(
                 const_cast<uint8_t*>(buffer) /* casting this const away is safe because...
                 well... it's not actually. Stupid STM. */, chunk) != USBD_OK)
                 osDelay(1);
             buffer += chunk;
-            length -= chunk;
+            length -= chunk;printf("got packet of length %d: \r\n", length); osDelay(5); hexdump(buffer, length);
         }
+        //printf("USB TX done\r\n"); osDelay(5);
+        return 0;
+    }
+
+    size_t get_free_space() { return SIZE_MAX; }
+} usb_sender;
+
+PacketToStreamConverter usb_packet_sender(usb_sender);
+BidirectionalPacketBasedChannel usb_connection(endpoints, NUM_ENDPOINTS, usb_packet_sender);
+StreamToPacketConverter usb_stream_sink(usb_connection);
+
+#else
+
+class USBSender : public PacketSink {
+public:
+    int process_packet(const uint8_t* buffer, size_t length) {
+        // cannot send partial packets
+        if (length > USB_TX_DATA_SIZE)
+            return -1;
+        while (CDC_Transmit_FS(
+            const_cast<uint8_t*>(buffer) /* casting this const away is safe because...
+            well... it's not actually. Stupid STM. */, length) != USBD_OK)
+            osDelay(1);
         //printf("USB TX done\r\n"); osDelay(5);
         return 0;
     }
 } usb_sender;
 
-PacketToStreamConverter usb_packet_sender(usb_sender);
-BidirectionalPacketBasedChannel usb_connection(endpoints, NUM_ENDPOINTS, usb_packet_sender);
-StreamToPacketConverter usb_stream_writer(usb_connection);
+BidirectionalPacketBasedChannel usb_connection(endpoints, NUM_ENDPOINTS, usb_sender);
+#endif
 
-class UART4Sender : public StreamWriter {
-private:
-    uint8_t tx_buf_[UART_TX_BUFFER_SIZE];
+class UART4Sender : public StreamSink {
 public:
-    int write_bytes(const uint8_t* buffer, size_t length) {
+    int process_bytes(const uint8_t* buffer, size_t length) {
         //Check length
         if (length > UART_TX_BUFFER_SIZE)
             return -1;
@@ -102,11 +147,15 @@ public:
         HAL_UART_Transmit_DMA(&huart4, tx_buf_, length);
         return 0;
     }
+
+    size_t get_free_space() { return SIZE_MAX; }
+private:
+    uint8_t tx_buf_[UART_TX_BUFFER_SIZE];
 } uart4_sender;
 
 PacketToStreamConverter uart4_packet_sender(uart4_sender);
 BidirectionalPacketBasedChannel uart4_connection(endpoints, NUM_ENDPOINTS, uart4_packet_sender);
-StreamToPacketConverter UART4_stream_writer(uart4_connection);
+StreamToPacketConverter UART4_stream_sink(uart4_connection);
 
 /* Private function prototypes -----------------------------------------------*/
 /* Function implementations --------------------------------------------------*/
@@ -156,7 +205,7 @@ void communication_task(void const * argument) {
             uint8_t c = dma_circ_buffer[last_rcv_idx];
             if (++last_rcv_idx == UART_RX_BUFFER_SIZE)
                 last_rcv_idx = 0;
-            UART4_stream_writer.write_bytes(&c, 1);
+            UART4_stream_sink.process_bytes(&c, 1);
         }
 
         // When we reach here, we are out of immediate characters to fetch out of UART buffer
@@ -165,10 +214,10 @@ void communication_task(void const * argument) {
         int USB_check_timeout = 1;
         int32_t status = osSemaphoreWait(sem_usb_irq, USB_check_timeout);
         if (status == osOK) {
-            USB_receive_packet(USBRxBuffer, USBRxBufferLen);
-            // Allow receiving more bytes
-            USBD_CDC_SetRxBuffer(&hUsbDeviceFS, USBRxBuffer);
-            USBD_CDC_ReceivePacket(&hUsbDeviceFS);
+            // We have a new incoming USB transmission: handle it
+            HAL_PCD_IRQHandler(&hpcd_USB_OTG_FS);
+            // Let the irq (OTG_FS_IRQHandler) fire again.
+            HAL_NVIC_EnableIRQ(OTG_FS_IRQn);
         }
     }
 
@@ -189,5 +238,9 @@ void USB_receive_packet(const uint8_t *buffer, size_t length) {
     }
 #endif
     
-    usb_stream_writer.write_bytes(buffer, length);
+#ifdef STREAM_ON_USB
+    usb_stream_sink.process_bytes(buffer, length);
+#else
+    usb_connection.process_packet(buffer, length);
+#endif
 }

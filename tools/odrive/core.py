@@ -10,6 +10,7 @@ import usb.util
 import odrive.usbbulk
 import odrive.mock_device
 import odrive.util
+import odrive.usbbulk
 import re
 import serial
 import time
@@ -45,7 +46,7 @@ class SimpleDeviceProperty(property):
         self._channel.remote_endpoint_operation(self._id, buffer, True, 0)
 
 
-def create_object(json_data, namespace, channel):
+def create_object(json_data, namespace, channel, printer=noprint):
     """
     Creates an object that implements the specified JSON type description by
     communicating with the provided device object
@@ -56,16 +57,16 @@ def create_object(json_data, namespace, channel):
     for item in json_data:
         name = item.get("name", None)
         if name is None:
-            sys.stderr.write("unnamed property in {}".format(namespace))
+            printer("unnamed property in {}".format(namespace))
             continue
 
         type_str = item.get("type", None)
         if type_str is None:
-            sys.stderr.write("property {} has no specified type".format(name))
+            printer("property {} has no specified type".format(name))
             continue
 
-        if type_str == "tree":
-            properties[name] = create_object(item["content"], namespace + "." + item["name"], channel)
+        if type_str == "object":
+            properties[name] = create_object(item["content"], namespace + "." + item["name"], channel, printer=printer)
         else:
             if type_str == "float":
                 property_type = float
@@ -80,12 +81,12 @@ def create_object(json_data, namespace, channel):
                 property_type = int
                 struct_format = "<H"
             else:
-                sys.stderr.write("property {} has unsupported type {}".format(name, type_str))
+                printer("property {} has unsupported type {}".format(name or "[anonymous]", type_str))
                 continue
 
             id_str = item.get("id", None)
             if id_str is None:
-                sys.stderr.write("property {} has specified ID".format(name))
+                printer("property {} has specified ID".format(name))
                 continue
 
             access_mode = item.get("mode", "rw")
@@ -99,14 +100,14 @@ def create_object(json_data, namespace, channel):
     new_object = jit_type()
     return new_object
 
-class SerialDevice(odrive.protocol.StreamReader, odrive.protocol.StreamWriter):
+class SerialDevice(odrive.protocol.StreamSource, odrive.protocol.StreamSink):
     def __init__(self, port, baud):
         self._dev = serial.Serial(port, baud, timeout=1)
 
-    def write_bytes(self, bytes):
+    def process_bytes(self, bytes):
         self._dev.write(bytes)
 
-    def read_bytes(self, n_bytes, deadline):
+    def get_bytes(self, n_bytes, deadline):
         """
         Returns n bytes unless the deadline is reached, in which case the bytes
         that were read up to that point are returned. If deadline is None the
@@ -119,8 +120,8 @@ class SerialDevice(odrive.protocol.StreamReader, odrive.protocol.StreamWriter):
             self._dev.timeout = max(deadline - time.monotonic(), 0)
         return self._dev.read(n_bytes)
 
-    def read_bytes_or_fail(self, n_bytes, deadline):
-        result = self.read_bytes(n_bytes, deadline)
+    def get_bytes_or_fail(self, n_bytes, deadline):
+        result = self.get_bytes(n_bytes, deadline)
         if len(result) < n_bytes:
             raise odrive.protocol.TimeoutException()
         return result
@@ -137,12 +138,17 @@ def find_usb_channels(vid_pid_pairs=odrive.util.USB_VID_PID_PAIRS, printer=nopri
             continue
         printer("Found ODrive via PyUSB")
         bulk_device = odrive.usbbulk.USBBulkDevice(usb_device, printer)
-        printer(bulk_device.info())
-        bulk_device.init(printer)
-        #Oskar: Here bulk_device is expected to have a write_packet function, but it doesnt, it has read/write_bytes.
-        # We can either also use a stream converter here, but I'd prefer to write packets directly.
+        try:
+            printer(bulk_device.info())
+            bulk_device.init(printer)
+        except usb.core.USBError as ex:
+            if ex.errno == 13:
+                printer("USB device access denied. Did you set up your udev rules correctly?")
+                continue
+            else:
+                raise
         yield odrive.protocol.Channel(
-                "USB device {}:{}".format(vid_pid_pair[0], vid_pid_pair[1]),
+                "USB device bus {} device {}".format(usb_device.bus, usb_device.address),
                 bulk_device, bulk_device)
 
 def find_serial_channels(printer=noprint):
@@ -162,11 +168,11 @@ def find_serial_channels(printer=noprint):
         except serial.serialutil.SerialException:
             printer("could not open " + serial_port)
             continue
-        input = odrive.protocol.PacketFromStreamConverter(serial_device)
-        output = odrive.protocol.PacketToStreamConverter(serial_device)
+        input_stream = odrive.protocol.PacketFromStreamConverter(serial_device)
+        output_stream = odrive.protocol.PacketToStreamConverter(serial_device)
         yield odrive.protocol.Channel(
                 "serial port {}@{}".format(serial_port, 115200),
-                input, output)
+                input_stream, output_stream)
 
 
 def find_all(printer=noprint):
@@ -186,19 +192,19 @@ def find_all(printer=noprint):
             printer("no response - probably incompatible")
             continue
         json_crc16 = odrive.protocol.calc_crc16(odrive.protocol.PROTOCOL_VERSION, json_bytes)
-        channel._interface_definition_crc = struct.pack("<H", json_crc16)
+        channel._interface_definition_crc = json_crc16
         try:
             json_string = json_bytes.decode("ascii")
         except UnicodeDecodeError:
             printer("device responded on endpoint 0 with something that is not ASCII")
             continue
-        #printer("JSON: " + json_string)
+        printer("JSON: " + json_string)
         try:
             json_data = json.loads(json_string)
         except json.decoder.JSONDecodeError:
             printer("device responded on endpoint 0 with something that is not JSON")
             continue
-        yield create_object(json_data, "odrive", channel)
+        yield create_object(json_data, "odrive", channel, printer=printer)
 
 
 def find_any(printer=noprint):

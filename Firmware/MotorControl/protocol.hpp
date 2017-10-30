@@ -26,14 +26,10 @@
 *   2. packet length (0-127, larger values are reserved)
 *   3. crc8(sync byte + packet length)
 *   4. packet (as per below)
+*   5. crc16(packet)
 *
 * ## Packet format: ##
 * (For instance USB)
-
-//Oskar: All packet formats I anticipate (USB, CAN, Ethernet) already have a transport
-// level CRC. So maybe we can throw out the packet level CRC check, and instead add
-// a data crc as step 5 on the stream format?
-
 *
 * __Request__
 *
@@ -41,14 +37,12 @@
 *   2. endpoint-id, MSB = "expect ack"
 *   3. expected_response_size
 *   4. payload (contains offset if required)
-*   5. crc16(seq-no + endpoint-id + payload + crc16(protocol_version + JSON))
-*      For endpoint 0 the JSON-CRC is not included
+*   5. crc16(protocol_version + JSON) or just protocol_version for endpoint 0
 *
 * __Response__
 *
 *   1. seq-no, MSB = 1
 *   2. payload
-*   3. crc16(seq-no + payload + protocol_version)
 *
 */
 
@@ -69,7 +63,10 @@ constexpr uint8_t SYNC_BYTE = '$';
 constexpr uint8_t CRC8_INIT = 0x42;
 constexpr uint16_t CRC16_INIT = 0x1337;
 constexpr uint16_t PROTOCOL_VERSION = 1;
+
+// This value must not be larger than USB_TX_DATA_SIZE defined in usbd_cdc_if.h
 constexpr uint16_t TX_BUF_SIZE = 32; // does not work with 64 for some reason
+constexpr uint16_t RX_BUF_SIZE = 128; // larger values than 128 have currently no effect because of protocol limitations
 
 
 template<typename T>
@@ -124,31 +121,162 @@ inline size_t read_le<float>(float* value, const uint8_t* buffer) {
     return read_le(reinterpret_cast<uint32_t*>(value), buffer);
 }
 
-
+// @brief Reads a value of type T from the buffer.
+// @param buffer    Pointer to the buffer to be read. The pointer is updated by the number of bytes that were read.
+// @param length    The number of available bytes in buffer. This value is updated to subtract the bytes that were read.
 template<typename T>
 static inline T read_le(const uint8_t** buffer, size_t* length) {
     T result;
     size_t cnt = read_le(&result, *buffer);
-    //Oskar: Is the style where you have a mutable length and buffer pointer
-    // a common form? I don't think I have seen it before: let me know if you have some 
-    // reference of this style.
-    // Maybe using iterators is better?
     *buffer += cnt;
     *length -= cnt;
     return result;
 }
 
 
+class PacketSink {
+public:
+    // @brief Processes a packet.
+    // @return: 0 on success, otherwise a non-zero error code
+    // TODO: define what happens when the output is congested. We can either drop the data or block.
+    // TODO: define what happens when the packet is larger than what the implementation can handle.
+    virtual int process_packet(const uint8_t* buffer, size_t length) = 0;
+};
+
+
+class StreamSink {
+public:
+    // @brief Processes a chunk of bytes that is part of a continuous stream.
+    // @return: 0 on success, otherwise a non-zero error code
+    // TODO: define what happens when the output is congested. We can either drop the data or block.
+    virtual int process_bytes(const uint8_t* buffer, size_t length) = 0;
+
+    // @brief Returns the number of bytes that can still be written to the stream.
+    // Shall return SIZE_MAX if the stream has unlimited lenght.
+    virtual size_t get_free_space() = 0;
+};
+
+
+class StreamToPacketConverter : public StreamSink {
+public:
+    StreamToPacketConverter(PacketSink& output) :
+        output_(output)
+    {
+    };
+
+    int process_bytes(const uint8_t *buffer, size_t length);
+    
+    size_t get_free_space() { return SIZE_MAX; }
+
+private:
+    uint8_t header_buffer_[3];
+    size_t header_index_ = 0;
+    uint8_t packet_buffer_[RX_BUF_SIZE];
+    size_t packet_index_ = 0;
+    size_t packet_length_ = 0;
+    PacketSink& output_;
+};
+
+
+class PacketToStreamConverter : public PacketSink {
+public:
+    PacketToStreamConverter(StreamSink& output) :
+        output_(output)
+    {
+    };
+    
+    int process_packet(const uint8_t *buffer, size_t length);
+
+private:
+    StreamSink& output_;
+};
+
+
+// Implements the StreamSink interface by writing into a fixed size
+// memory buffer.
+class MemoryStreamSink : public StreamSink {
+public:
+    MemoryStreamSink(uint8_t *buffer, size_t length) :
+        buffer_(buffer),
+        buffer_length_(length) {}
+
+    // Returns 0 on success and -1 if the buffer could not accept everything because it became full
+    int process_bytes(const uint8_t* buffer, size_t length) {
+        int status = 0;
+        if (length > buffer_length_) {
+            length = buffer_length_;
+            status = -1;
+        }
+        memcpy(buffer_, buffer, length);
+        buffer_ += length;
+        buffer_length_ -= length;
+        return status;
+    }
+
+    size_t get_free_space() { return buffer_length_; }
+
+private:
+    uint8_t * buffer_;
+    size_t buffer_length_;
+};
+
+// Implements the StreamSink interface by discarding the first couple of bytes
+// and then forwarding the rest to another stream.
+class NullStreamSink : public StreamSink {
+public:
+    NullStreamSink(size_t skip, StreamSink& follow_up_stream) :
+        skip_(skip),
+        follow_up_stream_(follow_up_stream) {}
+
+    // Returns 0 on success and -1 if the buffer could not accept everything because it became full
+    int process_bytes(const uint8_t* buffer, size_t length) {
+        if (skip_ < length) {
+            buffer += skip_;
+            length -= skip_;
+            skip_ = 0;
+            return follow_up_stream_.process_bytes(buffer, length);
+        } else {
+            skip_ -= length;
+            return 0;
+        }
+    }
+
+    size_t get_free_space() { return skip_ + follow_up_stream_.get_free_space(); }
+
+private:
+    size_t skip_;
+    StreamSink& follow_up_stream_;
+};
+
+
+
+// Implements the StreamSink interface by calculating the CRC16 checksum
+// on the data that is sent to it.
+class CRC16Calculator : public StreamSink {
+public:
+    CRC16Calculator(uint16_t crc16_init) :
+        crc16_(crc16_init) {}
+
+    int process_bytes(const uint8_t* buffer, size_t length) {
+        crc16_ = calc_crc16(crc16_, buffer, length);
+        return 0;
+    }
+
+    size_t get_free_space() { return SIZE_MAX; }
+
+    uint16_t get_crc16() { return crc16_; }
+private:
+    uint16_t crc16_;
+};
+
+
+
 typedef enum {
-    AS_JSON,
-    AS_INT32_ARRAY,
-    AS_FLOAT,
-    AS_INT,
-    AS_BOOL,
-    AS_UINT16,
-    BEGIN_TREE,
-    END_TREE
-} EndpointTypeID_t;
+    PROPERTY,
+    BEGIN_OBJECT,
+    BEGIN_FUNCTION,
+    CLOSE_TREE
+} EndpointType_t;
 
 
 // @brief Endpoint request handler
@@ -160,58 +288,67 @@ typedef enum {
 //
 // @param input: pointer to the input data
 // @param input_length: number of available input bytes
-// @param output: pointer to where the output data should go.
-//        If *output_length is non-zero, this is guaranteed not to be NULL.
-// @param output_length: pointer to the remaining length of the output buffer.
-//        The handler must update this value to subtract the number of written bytes.
-//        The pointer itself is guaranteed not to be NULL.
-
-//Oskar: Suggestion: return number of bytes written, and pass output_length by value.
-// This style is more consistent with stdio functions
-typedef std::function<void(void* ctx, const uint8_t* input, size_t input_length, uint8_t* output, size_t* output_length)> EndpointHandler;
+// @param output: The stream where to write the output to. Can be null.
+//                The handler shall abort as soon as the stream returns
+//                a non-zero error code on write.
+typedef std::function<void(void* ctx, const uint8_t* input, size_t input_length, StreamSink* output)> EndpointHandler;
 
 
 template<typename T>
-void default_read_endpoint_handler(void* ctx, const uint8_t* input, size_t input_length, uint8_t* output, size_t* output_length) {
+void default_read_endpoint_handler(void* ctx, const uint8_t* input, size_t input_length, StreamSink* output) {
     const T* value = reinterpret_cast<const T*>(ctx);
     // If the old value was requested, call the corresponding little endian serialization function
-    if (*output_length) {
-        // uint8_t buffer[8]; // TODO: make buffer size dependent on the type
-        uint8_t buffer[sizeof(T)]; //Oskar: You can do this.
+    if (output) {
+        // TODO: make buffer size dependent on the type
+        uint8_t buffer[sizeof(T)];
         size_t cnt = write_le<T>(*value, buffer);
-        if (cnt > *output_length)
-            cnt = *output_length; //Oskar: I woudldn't clip like this, some types become
-            // very wrong when clipped little endian (like float). Just write nothing if it doesnt fit.
-        memcpy(output, buffer, cnt);
-        *output_length -= cnt;
+        if (cnt <= output->get_free_space())
+            output->process_bytes(buffer, cnt);
     }
 }
 
 template<typename T>
-void default_readwrite_endpoint_handler(void* ctx, const uint8_t* input, size_t input_length, uint8_t* output, size_t* output_length) {
+void default_readwrite_endpoint_handler(void* ctx, const uint8_t* input, size_t input_length, StreamSink* output) {
     T* value = reinterpret_cast<T*>(ctx);
     
     // Read the endpoint value into output
-    default_read_endpoint_handler<T>(ctx, input, input_length, output, output_length);
+    default_read_endpoint_handler<T>(ctx, input, input_length, output);
     
     // If a new value was passed, call the corresponding little endian deserialization function
-    if (input_length) {
-        uint8_t buffer[8] = { 0 }; // TODO: make buffer size dependent on the type
-        if (input_length > sizeof(buffer))
-            input_length = sizeof(buffer);
-        //Oskar: Why do we need to take a copy of the input buffer?
-        memcpy(buffer, input, input_length); // TODO: abort if not enough bytes received
-        read_le<T>(value, buffer);
-    }
+    uint8_t buffer[sizeof(T)] = { 0 }; // TODO: make buffer size dependent on the type
+    if (input_length >= sizeof(buffer))
+        read_le<T>(value, input);
+}
+
+static void trigger_endpoint_handler(void* ctx, const uint8_t* input, size_t input_length, StreamSink* output) {
+    (void) input;
+    (void) input_length;
+    (void) output;
+    std::function<void(void)> function = reinterpret_cast<void(*)()>(ctx);
+    function();
+}
+
+
+template<typename T>
+static inline const char* get_default_json_modifier();
+
+template<>
+inline const char* get_default_json_modifier<const float>() {
+    return "\"type\":\"float\",\"access\":\"r\"";
+}
+
+template<>
+inline const char* get_default_json_modifier<float>() {
+    return "\"type\":\"float\",\"access\":\"rw\"";
 }
 
 class Endpoint {
 public:
     const char* const name_;
 
-    Endpoint(const char* name, EndpointTypeID_t type_id, EndpointHandler handler, const char* json_modifier, void *ctx) :
+    Endpoint(const char* name, EndpointType_t type, EndpointHandler handler, const char* json_modifier, void *ctx) :
         name_(name),
-        type_id_(type_id),
+        type_(type),
         handler_(handler),
         json_modifier_(json_modifier),
         ctx_(ctx)
@@ -219,94 +356,56 @@ public:
     }
 
     template<typename T>
-    Endpoint(const char* name, const T* ctx) :
-        Endpoint(name, AS_FLOAT, default_read_endpoint_handler<T>, "\"access\":\"r\"",
-        const_cast<T*>(ctx) /* it's safe to cast the const away here because we
-        know that the default_read_endpoint_handler immediately adds it back */) {}
+    static Endpoint make_property(const char* name, const T* ctx) {
+        return Endpoint(name, PROPERTY,
+            default_read_endpoint_handler<T>,
+            get_default_json_modifier<const T>(),
+            const_cast<T*>(ctx) /* it's safe to cast the const away here because we
+            know that the default_read_endpoint_handler immediately adds it back */);
+    }
 
     template<typename T>
-    Endpoint(const char* name, T* ctx) :
-        Endpoint(name, AS_FLOAT, default_readwrite_endpoint_handler<T>, "\"access\":\"rw\"", ctx) {}
+    static Endpoint make_property(const char* name, T* ctx) {
+        return Endpoint(name, PROPERTY,
+            default_readwrite_endpoint_handler<T>,
+            get_default_json_modifier<T>(), ctx);
+    }
+    
+    static Endpoint make_object(const char* name) {
+        return Endpoint(name, BEGIN_OBJECT, nullptr,
+            "\"type\":\"object\"", nullptr);
+    }
 
+    static Endpoint make_function(const char* name, std::function<void(void)>* function) {
+        typedef void(f_t)(void);
+        f_t* f = *function->target<f_t*>();
+        return Endpoint(name, BEGIN_FUNCTION, trigger_endpoint_handler,
+            "\"type\":\"function\"", reinterpret_cast<void*>(f));
+    }
 
-    void write_json(size_t id, size_t* skip, uint8_t** output, size_t* output_length, bool* need_comma);
+    static Endpoint close_tree() {
+        return Endpoint(nullptr, CLOSE_TREE, nullptr, nullptr, nullptr);
+    }
 
-    void handle(const uint8_t* input, size_t input_length, uint8_t* output, size_t* output_length) {
+    void write_json(size_t id, bool* need_comma, StreamSink* output) const;
+
+    void handle(const uint8_t* input, size_t input_length, StreamSink* output) const {
         if (handler_)
-            return handler_(ctx_, input, input_length, output, output_length);
+            return handler_(ctx_, input, input_length, output);
     }
 
 private:
-    const EndpointTypeID_t type_id_;
+    const EndpointType_t type_;
     const EndpointHandler handler_;
     const char* json_modifier_;
     void* const ctx_;
 };
 
-//Oskar: Writer implies that it writes things, but that's not what this is;
-// you can write to it, but it doesn't write things.
 
-// # Mabye use the terminology Source and Sink?
-// # <stuff>Writer -> <stuff>Sink
-// # <stuff>Reader -> <stuff>Source
-// # write_<stuff> -> process_<stuff>
-// # read_<stuff>  -> get_<stuff>
 
-class PacketWriter {
+class BidirectionalPacketBasedChannel : public PacketSink {
 public:
-    // @brief Processes a packet.
-    //Oskar: What is the return value?
-    // TODO: define what happens when the output is congested. We can either drop the data or block.
-    // TODO: define what happens when the packet is larger than what the implementation can handle.
-    virtual int write_packet(const uint8_t* buffer, size_t length) = 0;
-};
-
-
-class StreamWriter {
-public:
-    // @brief Processes a chunk of bytes that is part of a continuous stream.
-    //Oskar: What is the return value?
-    // TODO: define what happens when the output is congested. We can either drop the data or block.
-    virtual int write_bytes(const uint8_t* buffer, size_t length) = 0;
-};
-
-
-class StreamToPacketConverter : public StreamWriter {
-public:
-    StreamToPacketConverter(PacketWriter& output) :
-        output_(output)
-    {
-    };
-
-    int write_bytes(const uint8_t *buffer, size_t length);
-
-private:
-    uint8_t header_buffer_[3];
-    size_t header_index_ = 0;
-    uint8_t packet_buffer_[128]; //Oskar: Use some constexpr config name, hardcoded numbers are not so nice
-    size_t packet_index_ = 0;
-    size_t packet_length_ = 0;
-    PacketWriter& output_;
-};
-
-
-class PacketToStreamConverter : public PacketWriter {
-public:
-    PacketToStreamConverter(StreamWriter& output) :
-        output_(output)
-    {
-    };
-    
-    int write_packet(const uint8_t *buffer, size_t length);
-
-private:
-    StreamWriter& output_;
-};
-
-
-class BidirectionalPacketBasedChannel : public PacketWriter {
-public:
-    BidirectionalPacketBasedChannel(Endpoint* endpoints, size_t n_endpoints, PacketWriter& output) :
+    BidirectionalPacketBasedChannel(const Endpoint* endpoints, size_t n_endpoints, PacketSink& output) :
         global_endpoints_(endpoints),
         n_endpoints_(NUM_CHANNEL_SPECIFIC_ENDPOINTS + n_endpoints),
         output_(output),
@@ -314,35 +413,29 @@ public:
     {
     }
 
-    int write_packet(const uint8_t* buffer, size_t length);
+    int process_packet(const uint8_t* buffer, size_t length);
 
 private:
     
     uint16_t calculate_json_crc16(void);
-    void interface_query(const uint8_t* input, size_t input_length, uint8_t* output, size_t* output_length);
+    void interface_query(const uint8_t* input, size_t input_length, StreamSink* output);
 
-    static void interface_query_handler(void* ctx, const uint8_t* input, size_t input_length, uint8_t* output, size_t* output_length) {
-        reinterpret_cast<BidirectionalPacketBasedChannel*>(ctx)->interface_query(input, input_length, output, output_length);
+    static void interface_query_handler(void* ctx, const uint8_t* input, size_t input_length, StreamSink* output) {
+        reinterpret_cast<BidirectionalPacketBasedChannel*>(ctx)->interface_query(input, input_length, output);
     }
     
-    static void subscription_handler(void* ctx, const uint8_t* input, size_t input_length, uint8_t* output, size_t* output_length) {
-        reinterpret_cast<BidirectionalPacketBasedChannel*>(ctx)->subscription(input, input_length, output, output_length);
+    static void subscription_handler(void* ctx, const uint8_t* input, size_t input_length, StreamSink* output) {
+        reinterpret_cast<BidirectionalPacketBasedChannel*>(ctx)->subscription(input, input_length, output);
     }
 
-    //ReceiveCallback c = BidirectionalPacketBasedChannel::receive_fetch_request_ex;
-    //Oskar: by channel_specific, do you mean protocol_internal/specific?
-    Endpoint channel_specific_endpoints_[2] = {
-        Endpoint("", AS_JSON, BidirectionalPacketBasedChannel::interface_query_handler, nullptr, this),
-        Endpoint("subscriptions", AS_INT32_ARRAY, BidirectionalPacketBasedChannel::subscription_handler, nullptr, this)
+    const Endpoint channel_specific_endpoints_[1] = {
+        Endpoint("", PROPERTY, BidirectionalPacketBasedChannel::interface_query_handler, "\"type\":\"json\",\"access\":\"rw\"", this),
+        //Endpoint("subscriptions", PROPERTY, BidirectionalPacketBasedChannel::subscription_handler, nullptr, this)
     };
     static constexpr size_t NUM_CHANNEL_SPECIFIC_ENDPOINTS = sizeof(channel_specific_endpoints_) / sizeof(channel_specific_endpoints_[0]);
 
-    Endpoint* global_endpoints_;
-    size_t n_endpoints_;
-    PacketWriter& output_;
-
     
-    Endpoint* get_endpoint(size_t index) {
+    const Endpoint* get_endpoint(size_t index) {
         if (index < NUM_CHANNEL_SPECIFIC_ENDPOINTS){
             return &channel_specific_endpoints_[index];
         } else if (index < n_endpoints_) {
@@ -352,16 +445,14 @@ private:
         }
     }
 
-    //Oskar: What is a subscription? Let's discuss on slack
-    void subscription(const uint8_t* input, size_t input_length, uint8_t* output, size_t* output_length) {
+    void subscription(const uint8_t* input, size_t input_length, StreamSink* output) {
         // TODO: handle
         return;
     }
 
-    //Oskar: try to keep a consistent declaration ordering between functions and data.
-    // see: https://google.github.io/styleguide/cppguide.html#Declaration_Order
-
-    size_t expected_seq_no_ = 0;
+    const Endpoint * const global_endpoints_;
+    size_t n_endpoints_;
+    PacketSink& output_;
     uint8_t tx_buf_[TX_BUF_SIZE];
     const uint16_t json_crc_;
 };

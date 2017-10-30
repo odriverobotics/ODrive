@@ -5,19 +5,16 @@ import usb.core
 import usb.util
 import sys
 import odrive.protocol
+import time
 
 def noprint(x):
   pass
 
-# Even though USB is packet based, we do stream based communication because some
-# systems don't allow direct access to the USB endpoints, in which case the
-# device has to behave like a serial device.
+# TODO: Even though USB is packet based, we might wanna do stream based
+# communication because some systems don't allow direct access to the USB
+# endpoints, in which case the device has to behave like a serial device.
 
-#Oskar: If we are using stream based comms over USB, we shouldn't be detach_kernel_driver and epr.read,
-# we should be using /dev/ttyACM0 with system read/writes.
-# Actually, we should discuss the approach here, we need to decide if we should do packet based or not.
-
-class USBBulkDevice(odrive.protocol.PacketReader, odrive.protocol.PacketWriter):
+class USBBulkDevice(odrive.protocol.PacketSource, odrive.protocol.PacketSink):
   def __init__(self, dev, printer=noprint):
     self.dev = dev
     self._name = "USB device {}:{}".format(dev.idVendor, dev.idProduct)
@@ -74,14 +71,27 @@ class USBBulkDevice(odrive.protocol.PacketReader, odrive.protocol.PacketWriter):
   def shutdown(self):
     return 0
 
-#Oskar: I would prefer the raw USB access version to write packets directly instead of using a steram converter.
-  def write_bytes(self, usbBuffer):
-    ret = self.epw.write(usbBuffer, 0)
-    return ret
+  def process_packet(self, usbBuffer):
+    try:
+      ret = self.epw.write(usbBuffer, 0)
+      return ret
+    except usb.core.USBError as ex:
+      if ex.errno == 19: # "no such device"
+        raise odrive.protocol.ChannelBrokenException()
+      else:
+        raise
 
-  def read_bytes(self, bufferLen):
-    ret = self.epr.read(bufferLen, 100)
-    return ret
+  def get_packet(self, deadline):
+    try:
+      bufferLen = self.epr.wMaxPacketSize
+      timeout = max(int((deadline - time.monotonic()) * 1000), 0)
+      ret = self.epr.read(bufferLen, timeout)
+      return ret
+    except usb.core.USBError as ex:
+      if ex.errno == 19: # "no such device"
+        raise odrive.protocol.ChannelBrokenException()
+      else:
+        raise
 
   def send_max(self):
     return 64
