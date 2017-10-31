@@ -117,9 +117,23 @@ uint8_t gc_execute_line(char *line)
   while (line[char_counter] != 0) { // Loop until no more g-code words in line.
 
     // Import the next g-code word, expecting a letter followed by a value. Otherwise, error out.
-    letter = line[char_counter];
+    letter = line[char_counter++];
+
+    // Throw away whitepace and control characters
+    if (letter <= ' ') continue;
+    // Block delete NOT SUPPORTED. Ignore character.
+    // NOTE: If supported, would simply need to check the system if block delete is enabled.
+    if (letter == '/') continue;
+    // Enable comments flag and ignore all characters until ')' or EOL.
+    // NOTE: This doesn't follow the NIST definition exactly, but is good enough for now.
+    // In the future, we could simply remove the items within the comments, but retain the
+    // comment control characters, so that the g-code parser can error-check it.
+    if (letter == '(') { while(line[char_counter] && line[char_counter++] != ')' ); continue; }
+    if (letter == ';') { break; }
+    if (letter >= 'a' && letter <= 'z') letter += -'a'+'A';
+
     if((letter < 'A') || (letter > 'Z')) { FAIL(STATUS_EXPECTED_COMMAND_LETTER); } // [Expected word letter]
-    char_counter++;
+
     if (!read_float(line, &char_counter, &value)) { FAIL(STATUS_BAD_NUMBER_FORMAT); } // [Expected word value]
 
     // Convert values to smaller uint8 significand and mantissa values for parsing this word.
