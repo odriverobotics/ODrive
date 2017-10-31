@@ -35,7 +35,7 @@ The startup procedure is demonstrated [here](https://www.youtube.com/watch?v=VCX
 Note: the rotor must be allowed to rotate without any biased load during startup. That means mass and weak friction loads are fine, but gravity or spring loads are not okay. Also note that in the video, the motors spin after initalisation, but in the current software the default behaviour is to do position control to position 0 (i.e. the position at startup)
 
 ### Sending commands
-Sending USB and UART commands is documented [here](Firmware/README.md#communicating-over-usb-and-uart).
+Sending USB and UART commands is documented [here](Firmware/README.md#communicating-over-usb-and-uart). You can also have a look at the [ODrive Arduino library](https://github.com/madcowswe/ODriveArduino) that makes it easy to use the UART interface on Arduino. You can also look at it as an implementation example of how to talk to the ODrive over UART.
 
 ### Setting up UART
 Baud rate: 115200
