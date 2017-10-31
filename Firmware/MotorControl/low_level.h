@@ -61,6 +61,7 @@ typedef struct {
     // Voltage applied at end of cycle:
     float final_v_alpha; // [V]
     float final_v_beta; // [V]
+    float Iq;
 } Current_control_t;
 
 typedef enum {
@@ -135,6 +136,8 @@ typedef struct {
     Sensorless_t sensorless;
     int timing_log_index;
     uint16_t timing_log[TIMING_LOG_SIZE];
+    float *cogging_map;
+    bool use_anti_cogging;
 } Motor_t;
 
 typedef struct{
@@ -160,6 +163,8 @@ void init_motor_control();
 void step_cb(uint16_t GPIO_Pin);
 void pwm_trig_adc_cb(ADC_HandleTypeDef* hadc, bool injected);
 void vbus_sense_adc_cb(ADC_HandleTypeDef* hadc, bool injected);
+
+bool anti_cogging_calibration(Motor_t* motor);
 
 //@TODO move motor thread to high level file
 void motor_thread(void const * argument);

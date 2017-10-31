@@ -95,6 +95,7 @@ Motor_t motors[] = {
             .Ibus = 0.0f,
             .final_v_alpha = 0.0f,
             .final_v_beta = 0.0f,
+            .Iq = 0.0f,
         },
         // .rotor_mode = ROTOR_MODE_SENSORLESS,
         // .rotor_mode = ROTOR_MODE_RUN_ENCODER_TEST_SENSORLESS,
@@ -127,6 +128,8 @@ Motor_t motors[] = {
         },
         .timing_log_index = 0,
         .timing_log = {0},
+        .cogging_map = NULL,
+        .use_anti_cogging = false,
     },
     {   // M1
         .control_mode = CTRL_MODE_POSITION_CONTROL, //see: Motor_control_mode_t
@@ -178,6 +181,7 @@ Motor_t motors[] = {
             .Ibus = 0.0f,
             .final_v_alpha = 0.0f,
             .final_v_beta = 0.0f,
+            .Iq = 0.0f,
         },
         .rotor_mode = ROTOR_MODE_ENCODER,
         .encoder = {
@@ -207,7 +211,9 @@ Motor_t motors[] = {
             .spin_up_target_vel = 400.0f, // [rad/s]
         },
         .timing_log_index = 0,
-        .timing_log = {0}
+        .timing_log = {0},
+        .cogging_map = NULL,
+        .use_anti_cogging = false,
     }
 };
 const int num_motors = sizeof(motors)/sizeof(motors[0]);
@@ -819,11 +825,36 @@ static bool motor_calibration(Motor_t* motor){
     // sensorless pll same as encoder (for now)
     motor->sensorless.pll_kp = motor->encoder.pll_kp;
     motor->sensorless.pll_ki = motor->encoder.pll_ki;
-    
+
     motor->calibration_ok = true;
     return true;
 }
 
+/*
+ * This anti-Cogging calibration algorithm is based on the work at
+ * http://www.roboticsproceedings.org/rss10/p42.pdf
+ * 
+ * This implementation iterates through each encoder position,
+ * waits for zero velocity & position error,
+ * then samples the current required to maintain that position.
+ * 
+ * This holding current is added as a feedforward term in the control loop.
+ */
+bool anti_cogging_calibration(Motor_t* motor) {
+
+    float pos_err = 0.0f;
+
+    for(int i = 0; i < ENCODER_CPR; i++){
+        set_pos_setpoint(motor, i, 0.0f, 0.0f);
+        do{
+            pos_err = i - motor->encoder.pll_pos;
+        } while(fabs(pos_err) > 1.0f || fabs(motor->encoder.pll_vel) > 1.0f);
+
+        //motor->cogging_map[i] = motor->current_control.Iq;
+        motor->cogging_map[i] = motor->vel_integrator_current;
+    }
+    return true;
+}
 
 //--------------------------------
 // Test functions
@@ -1224,6 +1255,15 @@ static void control_motor_loop(Motor_t* motor) {
 
         // Velocity control
         float Iq = motor->current_setpoint;
+
+        if(motor->use_anti_cogging){
+            int32_t cogPos = (int32_t)motor->encoder.pll_pos % (int32_t)ENCODER_CPR;
+            if(cogPos < 0){
+                cogPos += ENCODER_CPR;
+            }
+            Iq += motor->cogging_map[cogPos];
+        }
+
         float v_err = vel_des - get_pll_vel(motor);
         if (motor->control_mode >=  CTRL_MODE_VELOCITY_CONTROL) {
             Iq += motor->vel_gain * v_err;
@@ -1263,6 +1303,7 @@ static void control_motor_loop(Motor_t* motor) {
             }
         }
 
+        motor->current_control.Iq = Iq;
         // Execute current command
         if(!FOC_current(motor, 0.0f, Iq)){
             break; // in case of error exit loop, motor->error has been set by FOC_current
@@ -1280,6 +1321,15 @@ static void control_motor_loop(Motor_t* motor) {
 
 void motor_thread(void const * argument) {
     Motor_t* motor = (Motor_t*)argument;
+
+    // Allocate the map for anti-cogging algorithm and initialize all values to 0.0f
+    motor->cogging_map = (float*)malloc(ENCODER_CPR*sizeof(float));
+    if(motor->cogging_map != NULL){
+        for(int i = 0; i < ENCODER_CPR; i++){
+            motor->cogging_map[i] = 0.0f;
+        }
+    }
+
     motor->motor_thread = osThreadGetId();
     motor->thread_ready = true;
 

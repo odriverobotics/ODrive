@@ -235,6 +235,19 @@ void motor_parse_cmd(uint8_t* buffer, int len, SerialPrintf_t response_interface
         if (numscan == 1) {
             print_monitoring(limit);
         }
+    } else if (buffer[0] == 't') {
+        //printf("Running anti-cogging.\n");
+        for (int i = 0; i < num_motors; i++) {
+            if (motors[i].cogging_map != NULL && motors[i].error == ERROR_NO_ERROR) {
+                //printf("Motor %d running\n",i);
+                if (anti_cogging_calibration(&motors[i])) {
+                    printf("Motor %d Anti-Cogging Enabled\n", i);
+                    set_pos_setpoint(&motors[i], 0.0f, 0.0f, 0.0f);
+                    motors[i].use_anti_cogging = true;
+                }
+                //printf("Motor %d ERROR\n", i);
+            }
+        }
     }
 }
 
