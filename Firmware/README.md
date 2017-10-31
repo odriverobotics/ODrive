@@ -117,7 +117,7 @@ Setup instructions as follows:
 * Run `tools/test_communication.py`
 
 ### Command set
-The most accurate way to understand the commands is to read [the code](MotorControl/commands.c) that parses the commands. Nevertheless, here is an overview:
+The most accurate way to understand the commands is to read [the code](MotorControl/commands.c) that parses the commands. Also you can have a look at the [ODrive Arduino library](https://github.com/madcowswe/ODriveArduino) that makes it easy to use the UART interface on Arduino. You can also look at it as an implementation example of how to talk to the ODrive over UART.
 
 #### UART framing
 USB communicates with packets, so it is easy to frame a command as one command per packet. However, UART doesn't have any packeting, so we need a way to frame the commands. The start-of-packet symbol is `$` and the end-of-packet symbol is `!`, that is, something like this: `$command!`. An example of a valid UART position command:
