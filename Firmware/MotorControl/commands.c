@@ -4,6 +4,7 @@
 #include <usart.h>
 #include <gpio.h>
 #include <freertos_vars.h>
+#include "gcode_input.h"
 
 extern PCD_HandleTypeDef hpcd_USB_OTG_FS;
 
@@ -137,6 +138,7 @@ void motor_parse_cmd(uint8_t* buffer, int len, SerialPrintf_t response_interface
     // TODO very hacky way of terminating sscanf at end of buffer:
     // We should do some proper struct packing instead of using sscanf altogether
     buffer[len-1] = 0;
+    buffer++;
 
     // check incoming packet type
     if (buffer[0] == 'p') {
@@ -275,6 +277,8 @@ void cmd_parse_thread(void const * argument) {
     static uint8_t dma_circ_buffer[UART_RX_BUFFER_SIZE];
     static uint8_t parse_buffer[UART_RX_BUFFER_SIZE];
 
+    enum parse_mode {UNKNOWN, GCODE, ASCII} mode = UNKNOWN;
+
     // DMA is set up to recieve in a circular buffer forever.
     // We dont use interrupts to fetch the data, instead we periodically read
     // data out of the circular buffer into a parse buffer, controlled by a state machine
@@ -285,7 +289,6 @@ void cmd_parse_thread(void const * argument) {
     for (;;) {
         //Inialize recieve state machine
         bool reset_read_state = false;
-        bool read_active = false;
         uint32_t parse_buffer_idx = 0;
         //Run state machine until reset
         do {
@@ -304,29 +307,38 @@ void cmd_parse_thread(void const * argument) {
                 uint8_t c = dma_circ_buffer[last_rcv_idx];
                 if (++last_rcv_idx == UART_RX_BUFFER_SIZE)
                     last_rcv_idx = 0;
-                // Look for start character
-                if (c == '$') {
-                    read_active = true;
-                    continue; // do not record start char
-                }
-                // Record into parse buffer when actively reading
-                if (read_active) {
-                    parse_buffer[parse_buffer_idx++] = c;
-                    if (c == '\r' || c == '\n' || c == '!') {
-                        // End of command string: exchange end char with terminating null
-                        parse_buffer[parse_buffer_idx-1] = '\0';
-                        motor_parse_cmd(parse_buffer, parse_buffer_idx, SERIAL_PRINTF_IS_UART);
-                        // Reset receieve state machine
-                        reset_read_state = true;
-                        break;
-                    } else if (parse_buffer_idx == UART_RX_BUFFER_SIZE - 1) {
-                        // We are not at end of command, and receiving another character after this
-                        // would go into the last slot, which is reserved for terminating null.
-                        // We have effectively overflowed parse buffer: abort.
-                        reset_read_state = true;
-                        break;
+                if (mode == UNKNOWN) {
+                    if (c == '$') {
+                        mode = ASCII;
+                    } else if (c >= 'A' && c <= 'Z') {
+                        mode = GCODE;
                     }
                 }
+
+                parse_buffer[parse_buffer_idx++] = c;
+                if (mode == ASCII && parse_buffer[0] != '$') {
+                    parse_buffer_idx = 0;
+                    continue;
+                }
+                if (c == '\r' || c == '\n' || (c ==  '!' && mode == ASCII )) {
+                    // End of command string: exchange end char with terminating null
+                    parse_buffer[parse_buffer_idx-1] = '\0';
+                    if (mode==ASCII) {
+                      motor_parse_cmd(parse_buffer, parse_buffer_idx, SERIAL_PRINTF_IS_UART);
+                    } else {
+                      parse_gcode_line(parse_buffer, SERIAL_PRINTF_IS_UART);  
+                    }
+                    // Reset receieve state machine
+                    reset_read_state = true;
+                    break;
+                } else if (parse_buffer_idx == UART_RX_BUFFER_SIZE - 1) {
+                    // We are not at end of command, and receiving another character after this
+                    // would go into the last slot, which is reserved for terminating null.
+                    // We have effectively overflowed parse buffer: abort.
+                    reset_read_state = true;
+                    break;
+                }
+
             }
             // When we reach here, we are out of immediate characters to fetch out of UART buffer
             // Now we check if there is any USB processing to do: we wait for up to 1 ms,

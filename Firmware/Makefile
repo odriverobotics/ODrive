@@ -81,7 +81,17 @@ C_SOURCES = \
   Src/syscalls.c \
   MotorControl/utils.c \
   MotorControl/commands.c \
-  MotorControl/low_level.c
+  MotorControl/low_level.c \
+  MotorControl/gcode_input.c \
+  MotorControl/grbl/gcode.c \
+  MotorControl/grbl/hal.c \
+  MotorControl/grbl/jog.c \
+  MotorControl/grbl/motion_control.c \
+  MotorControl/grbl/nuts_bolts.c \
+  MotorControl/grbl/planner.c \
+  MotorControl/grbl/protocol.c \
+  MotorControl/grbl/settings.c \
+  MotorControl/grbl/system.c
 ASM_SOURCES = \
   startup/startup_stm32f405xx.s
 
@@ -117,6 +127,7 @@ C_INCLUDES += -IDrivers/CMSIS/Device/ST/STM32F4xx/Include
 C_INCLUDES += -IDrivers/CMSIS/Include
 C_INCLUDES += -IInc
 C_INCLUDES += -IMotorControl
+C_INCLUDES += -IMotorControl/grbl
 # compile gcc flags
 ASFLAGS = -mthumb -mcpu=cortex-m4 -mfpu=fpv4-sp-d16 -mfloat-abi=hard $(AS_DEFS) $(AS_INCLUDES) $(OPT) -Wall -fdata-sections -ffunction-sections
 CFLAGS = -mthumb -mcpu=cortex-m4 -mfpu=fpv4-sp-d16 -mfloat-abi=hard $(C_DEFS) $(C_INCLUDES) $(OPT) -Wall -fdata-sections -ffunction-sections
