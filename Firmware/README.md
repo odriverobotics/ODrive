@@ -81,6 +81,10 @@ To compile the program, you first need to install the prerequisite tools:
     * Installing on Ubuntu: `sudo apt-get install openocd`
 * No additional USB CDC driver should be required on Linux.
 
+#### Mac:
+* `brew cask install gcc-arm-embedded`:  GCC toolchain+debugger
+* `brew install openocd`: Programmer
+
 #### Windows:
 Install the following:
 * [Git for windows](https://git-scm.com/download/win). This intalls the Git Bash, which is a unix style command line interface that we will be using. 
@@ -92,7 +96,7 @@ After installing all of the above, open a Git Bash shell. Continue at section [B
 
 ### Building the firmware
 * Make sure you have cloned the repository.
-* Navigate your terminal (bash/cygwin) to the ODriveFirmware dir.
+* Navigate your terminal (bash/cygwin) to the ODrive/Firmware dir.
 * Run `make` in the root of this repository.
 
 ### Flashing the firmware
