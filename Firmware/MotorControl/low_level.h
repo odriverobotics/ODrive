@@ -143,11 +143,10 @@ typedef struct{
 } monitoring_slot;
 
 /* Exported constants --------------------------------------------------------*/
+extern const int num_motors;
+/* Exported variables --------------------------------------------------------*/
 extern float vbus_voltage;
 extern Motor_t motors[];
-extern const int num_motors;
-
-/* Exported variables --------------------------------------------------------*/
 /* Exported macro ------------------------------------------------------------*/
 /* Exported functions --------------------------------------------------------*/
 
@@ -164,8 +163,5 @@ void vbus_sense_adc_cb(ADC_HandleTypeDef* hadc, bool injected);
 
 //@TODO move motor thread to high level file
 void motor_thread(void const * argument);
-
-//@TODO move cmd parsing to high level file
-void motor_parse_cmd(uint8_t* buffer, int len);
 
 #endif //__LOW_LEVEL_H

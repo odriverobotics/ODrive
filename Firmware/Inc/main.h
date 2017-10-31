@@ -85,7 +85,6 @@
 #define M1_IB_GPIO_Port GPIOC
 #define GPIO_1_Pin GPIO_PIN_0
 #define GPIO_1_GPIO_Port GPIOA
-#define GPIO_1_EXTI_IRQn EXTI0_IRQn
 #define GPIO_2_Pin GPIO_PIN_1
 #define GPIO_2_GPIO_Port GPIOA
 #define GPIO_3_Pin GPIO_PIN_2
