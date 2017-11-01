@@ -3,6 +3,7 @@
 ### Added
 * UART feature
 * Setting to select UART or Step/dir on GIPIO 1,2
+* Basic Anti-cogging / torque ripple suppression
 ### Changed
 
 ## [0.1.0] - 2017-08-26
