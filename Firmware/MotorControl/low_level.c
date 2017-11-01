@@ -1278,11 +1278,7 @@ static void control_motor_loop(Motor_t* motor) {
         // We get the current position and apply a current feed-forward
         // ensuring that we handle negative encoder positions properly (-1 == ENCODER_CPR - 1)
         if(motor->anticogging.use_anticogging){
-            int32_t cogPos = (int32_t)motor->encoder.pll_pos % (int32_t)ENCODER_CPR;
-            if(cogPos < 0){
-                cogPos += ENCODER_CPR;
-            }
-            Iq += motor->anticogging.cogging_map[cogPos];
+            Iq += motor->anticogging.cogging_map[mod(motor->encoder.pll_pos, ENCODER_CPR)];
         }
 
         float v_err = vel_des - get_pll_vel(motor);
