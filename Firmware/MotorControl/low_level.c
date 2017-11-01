@@ -843,10 +843,7 @@ static bool motor_calibration(Motor_t* motor){
 }
 
 /*
- * This anti-Cogging calibration algorithm is based on the work at
- * http://www.roboticsproceedings.org/rss10/p42.pdf
- * 
- * This implementation iterates through each encoder position,
+ * This anti-cogging implementation iterates through each encoder position,
  * waits for zero velocity & position error,
  * then samples the current required to maintain that position.
  * 
