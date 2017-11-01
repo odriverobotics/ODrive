@@ -853,7 +853,7 @@ static bool motor_calibration(Motor_t* motor){
  * This holding current is added as a feedforward term in the control loop.
  */
 bool anti_cogging_calibration(Motor_t* motor) {
-    if (motor->anticogging.calib_anticogging) {
+    if (motor->anticogging.calib_anticogging && motor->anticogging.cogging_map != NULL) {
         float pos_err = motor->anticogging.index - motor->encoder.pll_pos;
         if (fabsf(pos_err) <= motor->anticogging.calib_pos_threshold && 
                 fabsf(motor->encoder.pll_vel) < motor->anticogging.calib_vel_threshold) {
