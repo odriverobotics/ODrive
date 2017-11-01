@@ -240,7 +240,6 @@ void motor_parse_cmd(uint8_t* buffer, int len, SerialPrintf_t response_interface
             // Ensure the cogging map was correctly allocated earlier and that the motor is capable of calibrating
             if (motors[i].anticogging.cogging_map != NULL && motors[i].error == ERROR_NO_ERROR) {
                 motors[i].anticogging.calib_anticogging = true;
-                printf("Motor %d running calibration\n", i);
             }
         }
     }
