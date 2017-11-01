@@ -62,6 +62,10 @@ osThreadId defaultTaskHandle;
 
 /* USER CODE BEGIN Variables */
 extern PCD_HandleTypeDef hpcd_USB_OTG_FS;
+osThreadId thread_motor_0;
+osThreadId thread_motor_1;
+osThreadId thread_usb_cmd;
+osSemaphoreId sem_usb_irq;
 /* USER CODE END Variables */
 
 /* Function prototypes -------------------------------------------------------*/
