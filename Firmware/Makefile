@@ -85,12 +85,14 @@ ASM_SOURCES = \
 #######################################
 # binaries
 #######################################
-CC = arm-none-eabi-gcc
-CXX = arm-none-eabi-g++
-AS = arm-none-eabi-gcc -x assembler-with-cpp
-CP = arm-none-eabi-objcopy
-AR = arm-none-eabi-ar
-SZ = arm-none-eabi-size
+CROSS_COMPILE ?= arm-none-eabi-
+CC = $(CROSS_COMPILE)gcc
+CXX = $(CROSS_COMPILE)g++
+LD = $(CROSS_COMPILE)ld
+AS = $(CROSS_COMPILE)gcc -x assembler-with-cpp
+CP = $(CROSS_COMPILE)objcopy
+AR = $(CROSS_COMPILE)ar
+SZ = $(CROSS_COMPILE)size
 HEX = $(CP) -O ihex
 BIN = $(CP) -O binary -S
  
@@ -153,20 +155,20 @@ OBJECTS += $(addprefix $(BUILD_DIR)/,$(notdir $(ASM_SOURCES:.s=.o)))
 vpath %.s $(sort $(dir $(ASM_SOURCES)))
 
 $(BUILD_DIR)/%.o: %.c Makefile | $(BUILD_DIR) 
-	@$(CC) -c $(CFLAGS) -Wa,-a,-ad,-alms=$(BUILD_DIR)/$(notdir $(<:.c=.lst)) $< -o $@
+	$(CC) -c $(CFLAGS) -Wa,-a,-ad,-alms=$(BUILD_DIR)/$(notdir $(<:.c=.lst)) $< -o $@
 
 $(BUILD_DIR)/%.o: %.s Makefile | $(BUILD_DIR)
-	@$(AS) -c $(CFLAGS) $< -o $@
+	$(AS) -c $(CFLAGS) $< -o $@
 
 $(BUILD_DIR)/$(TARGET).elf: $(OBJECTS) Makefile
-	@$(CXX) $(OBJECTS) $(LDFLAGS) -o $@
+	$(CXX) $(OBJECTS) $(LDFLAGS) -o $@
 	$(SZ) $@
 
 $(BUILD_DIR)/%.hex: $(BUILD_DIR)/%.elf | $(BUILD_DIR)
-	@$(HEX) $< $@
+	$(HEX) $< $@
 	
 $(BUILD_DIR)/%.bin: $(BUILD_DIR)/%.elf | $(BUILD_DIR)
-	@$(BIN) $< $@
+	$(BIN) $< $@
 	
 $(BUILD_DIR):
 	mkdir -p $@
@@ -185,10 +187,10 @@ flash: $(BUILD_DIR)/$(TARGET).elf
 	openocd -f interface/stlink-v2.cfg -f target/stm32f4x.cfg -c init -c reset\ halt -c flash\ write_image\ erase\ $(BUILD_DIR)/$(TARGET).elf -c reset\ run -c exit
 
 gdb: $(BUILD_DIR)/$(TARGET).elf
-	arm-none-eabi-gdb $(BUILD_DIR)/$(TARGET).elf -x openocd.gdbinit
+	$(CROSS_COMPILE)gdb $(BUILD_DIR)/$(TARGET).elf -x openocd.gdbinit
 
 bmp: $(BUILD_DIR)/$(TARGET).elf
-	arm-none-eabi-gdb --ex 'target extended-remote /dev/stlink' \
+	$(CROSS_COMPILE)gdb --ex 'target extended-remote /dev/stlink' \
 		--ex 'monitor swdp_scan' \
 		--ex 'attach 1' \
 		--ex 'load' $(BUILD_DIR)/$(TARGET).elf
