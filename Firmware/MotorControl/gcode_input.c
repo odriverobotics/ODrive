@@ -1,5 +1,3 @@
-#include <stdio.h>
-
 #include "grbl.h"
 #include "gcode_input.h"
 
@@ -36,6 +34,8 @@ void consume_output() {
           (motors[0].pos_setpoint - motors[0].encoder.pll_pos) * (real_steps[0]) + 
           (motors[1].pos_setpoint - motors[1].encoder.pll_pos) * (real_steps[1]);
         if (dot_product<=0) break;
+
+        // THIS IS A WHILE TRUE BUSY LOOP...  EXPECT TROUBLE
     }
     plan_discard_current_block();
   }
