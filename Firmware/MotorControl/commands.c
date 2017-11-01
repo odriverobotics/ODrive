@@ -235,17 +235,14 @@ void motor_parse_cmd(uint8_t* buffer, int len, SerialPrintf_t response_interface
         if (numscan == 1) {
             print_monitoring(limit);
         }
-    } else if (buffer[0] == 't') {
-        //printf("Running anti-cogging.\n");
+    } else if (buffer[0] == 't') { // Run Anti-Cogging Calibration
         for (int i = 0; i < num_motors; i++) {
+            // Ensure the cogging map was correctly allocated earlier and that the motor is capable of calibrating
             if (motors[i].cogging_map != NULL && motors[i].error == ERROR_NO_ERROR) {
-                //printf("Motor %d running\n",i);
                 if (anti_cogging_calibration(&motors[i])) {
-                    printf("Motor %d Anti-Cogging Enabled\n", i);
-                    set_pos_setpoint(&motors[i], 0.0f, 0.0f, 0.0f);
-                    motors[i].use_anti_cogging = true;
+                    set_pos_setpoint(&motors[i], 0.0f, 0.0f, 0.0f); // Send the motor home
+                    motors[i].use_anti_cogging = true; // We're good to go, enable anti-cogging
                 }
-                //printf("Motor %d ERROR\n", i);
             }
         }
     }

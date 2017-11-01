@@ -1256,6 +1256,9 @@ static void control_motor_loop(Motor_t* motor) {
         // Velocity control
         float Iq = motor->current_setpoint;
 
+        // Anti-cogging is enabled after calibration
+        // We get the current position and apply a current feed-forward
+        // ensuring that we handle negative encoder positions properly (-1 == ENCODER_CPR - 1)
         if(motor->use_anti_cogging){
             int32_t cogPos = (int32_t)motor->encoder.pll_pos % (int32_t)ENCODER_CPR;
             if(cogPos < 0){
