@@ -2,8 +2,8 @@
   ******************************************************************************
   * @file      startup_stm32f405xx.s
   * @author    MCD Application Team
-  * @version   V2.6.0
-  * @date      04-November-2016 
+  * @version   V2.6.1
+  * @date      14-February-2017 
   * @brief     STM32F405xx Devices vector table for GCC based toolchains. 
   *            This module performs:
   *                - Set the initial SP
@@ -16,7 +16,7 @@
   ******************************************************************************
   * @attention
   *
-  * <h2><center>&copy; COPYRIGHT 2016 STMicroelectronics</center></h2>
+  * <h2><center>&copy; COPYRIGHT 2017 STMicroelectronics</center></h2>
   *
   * Redistribution and use in source and binary forms, with or without modification,
   * are permitted provided that the following conditions are met:
