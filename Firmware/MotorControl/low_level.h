@@ -14,6 +14,15 @@ typedef enum {
     M_SIGNAL_PH_CURRENT_MEAS = 1u << 0
 } Motor_thread_signals_t;
 
+typedef struct {
+    int index;
+    float *cogging_map;
+    bool use_anticogging;
+    bool calib_anticogging;
+    float calib_pos_threshold;
+    float calib_vel_threshold;
+} Anticogging_t;
+
 typedef enum {
     ERROR_NO_ERROR,
     ERROR_PHASE_RESISTANCE_TIMING,
@@ -136,8 +145,7 @@ typedef struct {
     Sensorless_t sensorless;
     int timing_log_index;
     uint16_t timing_log[TIMING_LOG_SIZE];
-    float *cogging_map;
-    bool use_anti_cogging;
+    Anticogging_t anticogging;
 } Motor_t;
 
 typedef struct{

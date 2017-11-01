@@ -128,8 +128,14 @@ Motor_t motors[] = {
         },
         .timing_log_index = 0,
         .timing_log = {0},
-        .cogging_map = NULL,
-        .use_anti_cogging = false,
+        .anticogging = {
+            .index = 0,
+            .cogging_map = NULL,
+            .use_anticogging = false,
+            .calib_anticogging = false,
+            .calib_pos_threshold = 1.0f,
+            .calib_vel_threshold = 1.0f,
+        },
     },
     {   // M1
         .control_mode = CTRL_MODE_POSITION_CONTROL, //see: Motor_control_mode_t
@@ -137,12 +143,12 @@ Motor_t motors[] = {
         .counts_per_step = 2.0f,
         .error = ERROR_NO_ERROR,
         .pos_setpoint = 0.0f,
-        .pos_gain = 20.0f, // [(counts/s) / counts]
+        .pos_gain = 200.0f, // [(counts/s) / counts]
         .vel_setpoint = 0.0f,
         .vel_gain = 15.0f / 10000.0f, // [A/(counts/s)]
         .vel_integrator_gain = 10.0f / 10000.0f, // [A/(counts/s * s)]
         .vel_integrator_current = 0.0f, // [A]
-        .vel_limit = 20000.0f, // [counts/s]
+        .vel_limit = 80000.0f, // [counts/s]
         .current_setpoint = 0.0f, // [A]
         .calibration_current = 10.0f, // [A]
         .phase_inductance = 0.0f, // to be set by measure_phase_inductance
@@ -173,7 +179,7 @@ Motor_t motors[] = {
         .phase_current_rev_gain = 0.0f, // to be set by DRV8301_setup
         .current_control = {
             // .current_lim = 75.0f, //[A] // If setting higher than 75A, you MUST change DRV8301_ShuntAmpGain. TODO: make this automatic
-            .current_lim = 10.0f, //[A]
+            .current_lim = 60.0f, //[A]
             .p_gain = 0.0f, // [V/A] should be auto set after resistance and inductance measurement
             .i_gain = 0.0f, // [V/As] should be auto set after resistance and inductance measurement
             .v_current_control_integral_d = 0.0f,
@@ -212,8 +218,14 @@ Motor_t motors[] = {
         },
         .timing_log_index = 0,
         .timing_log = {0},
-        .cogging_map = NULL,
-        .use_anti_cogging = false,
+        .anticogging = {
+            .index = 0,
+            .cogging_map = NULL,
+            .use_anticogging = false,
+            .calib_anticogging = false,
+            .calib_pos_threshold = 1.0f,
+            .calib_vel_threshold = 1.0f,
+        }
     }
 };
 const int num_motors = sizeof(motors)/sizeof(motors[0]);
@@ -841,19 +853,24 @@ static bool motor_calibration(Motor_t* motor){
  * This holding current is added as a feedforward term in the control loop.
  */
 bool anti_cogging_calibration(Motor_t* motor) {
-
-    float pos_err = 0.0f;
-
-    for(int i = 0; i < ENCODER_CPR; i++){
-        set_pos_setpoint(motor, i, 0.0f, 0.0f);
-        do{
-            pos_err = i - motor->encoder.pll_pos;
-        } while(fabs(pos_err) > 1.0f || fabs(motor->encoder.pll_vel) > 1.0f);
-
-        //motor->cogging_map[i] = motor->current_control.Iq;
-        motor->cogging_map[i] = motor->vel_integrator_current;
+    if (motor->anticogging.calib_anticogging) {
+        float pos_err = motor->anticogging.index - motor->encoder.pll_pos;
+        if (fabsf(pos_err) <= motor->anticogging.calib_pos_threshold && 
+                fabsf(motor->encoder.pll_vel) < motor->anticogging.calib_vel_threshold) {
+            motor->anticogging.cogging_map[motor->anticogging.index++] = motor->vel_integrator_current;
+        }
+        if (motor->anticogging.index < ENCODER_CPR) {
+            set_pos_setpoint(motor, motor->anticogging.index, 0.0f, 0.0f);
+            return false;
+        } else {
+            motor->anticogging.index = 0;
+            set_pos_setpoint(motor, 0.0f, 0.0f, 0.0f);  // Send the motor home
+            motor->anticogging.use_anticogging = true;  // We're good to go, enable anti-cogging
+            motor->anticogging.calib_anticogging = false;
+            return true;
+        }
     }
-    return true;
+    return false;
 }
 
 //--------------------------------
@@ -1235,6 +1252,7 @@ static void control_motor_loop(Motor_t* motor) {
             break;
         }
         update_rotor(motor);
+        anti_cogging_calibration(motor); // Only runs if anticogging.calib_anticogging is true; non-blocking
 
         // Position control
         // TODO Decide if we want to use encoder or pll position here
@@ -1259,12 +1277,12 @@ static void control_motor_loop(Motor_t* motor) {
         // Anti-cogging is enabled after calibration
         // We get the current position and apply a current feed-forward
         // ensuring that we handle negative encoder positions properly (-1 == ENCODER_CPR - 1)
-        if(motor->use_anti_cogging){
+        if(motor->anticogging.use_anticogging){
             int32_t cogPos = (int32_t)motor->encoder.pll_pos % (int32_t)ENCODER_CPR;
             if(cogPos < 0){
                 cogPos += ENCODER_CPR;
             }
-            Iq += motor->cogging_map[cogPos];
+            Iq += motor->anticogging.cogging_map[cogPos];
         }
 
         float v_err = vel_des - get_pll_vel(motor);
@@ -1326,10 +1344,10 @@ void motor_thread(void const * argument) {
     Motor_t* motor = (Motor_t*)argument;
 
     // Allocate the map for anti-cogging algorithm and initialize all values to 0.0f
-    motor->cogging_map = (float*)malloc(ENCODER_CPR*sizeof(float));
-    if(motor->cogging_map != NULL){
+    motor->anticogging.cogging_map = (float*)malloc(ENCODER_CPR*sizeof(float));
+    if(motor->anticogging.cogging_map != NULL){
         for(int i = 0; i < ENCODER_CPR; i++){
-            motor->cogging_map[i] = 0.0f;
+            motor->anticogging.cogging_map[i] = 0.0f;
         }
     }
 
@@ -1343,7 +1361,7 @@ void motor_thread(void const * argument) {
             __HAL_TIM_MOE_DISABLE_UNCONDITIONALLY(motor->motor_timer);// disables pwm outputs
             motor->do_calibration = false;
         }
-        
+
         if (motor->calibration_ok && motor->enable_control) {
             motor->enable_step_dir = true;
             __HAL_TIM_MOE_ENABLE(motor->motor_timer);
