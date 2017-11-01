@@ -161,3 +161,9 @@ float fast_atan2(float y, float x) {
 
     return r;
 }
+
+// Modulo (as opposed to remainder), per https://stackoverflow.com/a/19288271
+int mod(int dividend, int divisor){
+    int r = dividend % divisor;
+    return (r < 0) ? (r + divisor) : r;
+}
