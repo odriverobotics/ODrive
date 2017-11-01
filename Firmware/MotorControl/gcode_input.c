@@ -60,5 +60,4 @@ void parse_gcode_line(unsigned char* line, SerialPrintf_t response_interface) {
     } else {
         printf("error:%d\r\n", status);       
     }
-    
 }
