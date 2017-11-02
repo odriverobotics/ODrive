@@ -62,10 +62,13 @@ osThreadId defaultTaskHandle;
 
 /* USER CODE BEGIN Variables */
 extern PCD_HandleTypeDef hpcd_USB_OTG_FS;
+extern CAN_HandleTypeDef hcan1;
 osThreadId thread_motor_0;
 osThreadId thread_motor_1;
 osThreadId thread_usb_cmd;
+osThreadId thread_can_cmd;
 osSemaphoreId sem_usb_irq;
+osSemaphoreId sem_can_irq;
 /* USER CODE END Variables */
 
 /* Function prototypes -------------------------------------------------------*/
@@ -76,6 +79,7 @@ void MX_FREERTOS_Init(void); /* (MISRA C 2004 rule 8.1) */
 
 /* USER CODE BEGIN FunctionPrototypes */
 void usb_cmd_thread(void const * argument);
+void can_cmd_thread(void const * argument);
 
 /* USER CODE END FunctionPrototypes */
 
@@ -97,6 +101,11 @@ void MX_FREERTOS_Init(void) {
   osSemaphoreDef(sem_usb_irq);
   sem_usb_irq = osSemaphoreCreate(osSemaphore(sem_usb_irq), 1);
   osSemaphoreWait(sem_usb_irq, 0);
+
+  // Init can irq binary semaphore, and start with no tolkens by removing the initial one.
+  osSemaphoreDef(sem_can_irq);
+  sem_can_irq = osSemaphoreCreate(osSemaphore(sem_can_irq), 1);
+  osSemaphoreWait(sem_can_irq, 0);
   /* USER CODE END RTOS_SEMAPHORES */
 
   /* USER CODE BEGIN RTOS_TIMERS */
@@ -138,6 +147,10 @@ void StartDefaultTask(void const * argument)
   osThreadDef(task_usb_cmd, usb_cmd_thread, osPriorityNormal, 0, 512);
   thread_usb_cmd = osThreadCreate(osThread(task_usb_cmd), NULL);
 
+  // Start CAN command handling thread
+  osThreadDef(task_can_cmd, can_cmd_thread, osPriorityNormal, 0, 512);
+  thread_can_cmd = osThreadCreate(osThread(task_can_cmd), NULL);
+
   //If we get to here, then the default task is done.
   vTaskDelete(defaultTaskHandle);
 
@@ -158,6 +171,24 @@ void usb_cmd_thread(void const * argument) {
     //}
     // Let the irq (OTG_FS_IRQHandler) fire again.
     HAL_NVIC_EnableIRQ(OTG_FS_IRQn);
+  }
+
+  // If we get here, then this task is done
+  vTaskDelete(osThreadGetId());
+}
+
+// Thread to handle deffered processing of CAN interrupt
+void can_cmd_thread(void const * argument) {
+
+  for (;;) {
+    // Wait for signalling from CAN interrupt (HAL_CAN_IRQHandler)
+    osSemaphoreWait(sem_can_irq, osWaitForever);
+    // Irq processing loop
+    //while(HAL_NVIC_GetActive(CAN1_RX0_IRQn)) {
+      HAL_CAN_IRQHandler(&hcan1);
+    //}
+    // Let the irq (CAN1_RX0_IRQn) fire again.
+    HAL_NVIC_EnableIRQ(CAN1_RX0_IRQn);
   }
 
   // If we get here, then this task is done

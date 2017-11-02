@@ -246,6 +246,15 @@ void CAN1_TX_IRQHandler(void)
 void CAN1_RX0_IRQHandler(void)
 {
   /* USER CODE BEGIN CAN1_RX0_IRQn 0 */
+  // Use the same not-that-right pattern here to defer the IRQ handling in a
+  // dedicated FreeRTOS task.
+
+  // Mask interrupt, and signal processing of interrupt by can_cmd_thread
+  // The thread will re-enable the interrupt when all pending irqs are clear.
+  HAL_NVIC_DisableIRQ(CAN1_RX0_IRQn);
+  osSemaphoreRelease(sem_can_irq);
+  // Bypass interrupt processing here
+  return;
 
   /* USER CODE END CAN1_RX0_IRQn 0 */
   HAL_CAN_IRQHandler(&hcan1);
