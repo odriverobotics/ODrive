@@ -114,7 +114,7 @@ There is currently a very primitive method to read/write configuration, commands
 Please use the `tools/test_communication.py` python script for this.  It is written for Python 3.
 
 Setup instructions as follows:
-* Install PyUSB (pip install --pre pysusb)
+* Install PyUSB (pip install --pre pyusb)
 * Plug in the STLink or another power source to power the ODrive board
 * Plug in a separate USB cable into the microUSB connector on ODrive
 * On Windows, use the [Zadig](http://zadig.akeo.ie/) utility to set ODrive (not STLink!) driver to libusb
