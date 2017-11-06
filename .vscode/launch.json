@@ -5,12 +5,16 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Python",
+            "name": "Debug Python Utility",
             "type": "python",
             "request": "launch",
             "stopOnEntry": true,
             "pythonPath": "${config:python.pythonPath}",
-            "program": "${workspaceRoot}/tools/demo.py",
+            "program": "${workspaceRoot}/tools/test_communication.py",
+            "args": [
+                // add specific arguments that you might wanna test
+                //"--serial", "/dev/ttyUSB0"
+            ],
             "cwd": "${workspaceRoot}",
             "env": {},
             "envFile": "${workspaceRoot}/.env",
@@ -23,7 +27,7 @@
         {
             "type": "gdb",
             "request": "attach",
-            "name": "Launch Program",
+            "name": "Debug Firmware",
             "target": "localhost:3333",
             "gdbpath": "arm-none-eabi-gdb",
             "remote": true,
