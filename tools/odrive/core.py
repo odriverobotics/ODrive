@@ -198,8 +198,6 @@ def object_from_channel(channel, printer=noprint):
     """
     printer("Connecting to device on " + channel._name)
     try:
-        #Oskar: The fact that the JSON is on endpoint 0 is kind of protocol internal.
-        # Instead you can make a function on Channel called get_json.
         json_bytes = channel.remote_endpoint_read_buffer(0)
     except (odrive.protocol.TimeoutException, odrive.protocol.ChannelBrokenException):
         raise odrive.protocol.DeviceInitException("no response - probably incompatible")

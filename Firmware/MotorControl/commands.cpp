@@ -40,6 +40,8 @@ static const GpioMode_t gpio_mode = GPIO_MODE_UART;     //GPIO 1,2 is UART Tx,Rx
 /* Variables exposed to USB & UART via read/write commands */
 // TODO: include range information in JSON description
 
+
+// TODO: Autogenerate these functions
 void motors_0_set_pos_setpoint_func(void) {
     set_pos_setpoint(&motors[0],
         motors[0].set_pos_setpoint_args.pos_setpoint,
@@ -56,8 +58,9 @@ void motors_0_set_current_setpoint_func(void) {
         motors[0].set_current_setpoint_args.current_setpoint);
 }
 
-// clang-format off
+// This table specifies which fields and functions are exposed on the USB and UART ports.
 // TODO: Autogenerate this table. It will come up again very soon in the Arduino library.
+// clang-format off
 const Endpoint endpoints[] = {
     Endpoint::make_property("vbus_voltage", const_cast<const float*>(&vbus_voltage)),
     Endpoint::make_property("elec_rad_per_enc", const_cast<const float*>(&elec_rad_per_enc)),
@@ -85,12 +88,16 @@ constexpr size_t NUM_ENDPOINTS = sizeof(endpoints) / sizeof(endpoints[0]);
 
 
 
+// The USB channel is natively packet based but on some platforms (specifically
+// macOS) it's not possible to directly access the device as a USB device.
+// Instead, such platforms expose the device as a serial port, however that
+// breaks our packet boundaries. For now we just neglect this. If you happen to
+// be limited by such a platform, you should reconsider your life choices
+// or as a workaround enable this:
 //#define STREAM_ON_USB
-#ifdef STREAM_ON_USB
-// We could theoretically implement the USB channel as a packet based channel,
-// but on some platforms there's no direct USB endpoint access, so the device
-// should better just behave like a serial device.
 
+
+#ifdef STREAM_ON_USB
 class USBSender : public StreamSink {
 public:
     int process_bytes(const uint8_t* buffer, size_t length) {

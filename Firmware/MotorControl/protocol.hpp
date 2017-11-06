@@ -46,7 +46,6 @@
 *
 */
 
-
 #ifndef __PROTOCOL_HPP
 #define __PROTOCOL_HPP
 
@@ -133,22 +132,20 @@ static inline T read_le(const uint8_t** buffer, size_t* length) {
     return result;
 }
 
-
 class PacketSink {
 public:
     // @brief Processes a packet.
     // @return: 0 on success, otherwise a non-zero error code
-    // TODO: define what happens when the output is congested. We can either drop the data or block.
+    // TODO: add deadline parameter. Currently all implementations block until they can send everything.
     // TODO: define what happens when the packet is larger than what the implementation can handle.
     virtual int process_packet(const uint8_t* buffer, size_t length) = 0;
 };
-
 
 class StreamSink {
 public:
     // @brief Processes a chunk of bytes that is part of a continuous stream.
     // @return: 0 on success, otherwise a non-zero error code
-    // TODO: define what happens when the output is congested. We can either drop the data or block.
+    // TODO: add deadline parameter. Currently all implementations block until they can send everything.
     virtual int process_bytes(const uint8_t* buffer, size_t length) = 0;
 
     // @brief Returns the number of bytes that can still be written to the stream.
@@ -400,7 +397,13 @@ private:
 };
 
 
-
+/* @brief Handles the communication protocol on one channel.
+*
+* When instantiated with a list of endpoints and an output packet sink,
+* objects of this class will handle packets passed into process_packet,
+* pass the relevant data to the corresponding endpoints and dispatch response
+* packets on the output.
+*/
 class BidirectionalPacketBasedChannel : public PacketSink {
 public:
     BidirectionalPacketBasedChannel(const Endpoint* endpoints, size_t n_endpoints, PacketSink& output) :
@@ -431,7 +434,6 @@ private:
         //Endpoint("subscriptions", PROPERTY, BidirectionalPacketBasedChannel::subscription_handler, nullptr, this)
     };
     static constexpr size_t NUM_CHANNEL_SPECIFIC_ENDPOINTS = sizeof(channel_specific_endpoints_) / sizeof(channel_specific_endpoints_[0]);
-
     
     const Endpoint* get_endpoint(size_t index) {
         if (index < NUM_CHANNEL_SPECIFIC_ENDPOINTS){

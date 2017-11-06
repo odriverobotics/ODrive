@@ -8,6 +8,7 @@
 #include <stdlib.h>
 
 /* Private defines -----------------------------------------------------------*/
+// Note that this option cannot be used to debug UART because it prints on UART
 //#define DEGUG_PROTOCOL
 /* Private macros ------------------------------------------------------------*/
 
@@ -186,7 +187,6 @@ void BidirectionalPacketBasedChannel::interface_query(const uint8_t* input, size
     write_string("]", &output_with_offset);
 }
 
-//Oskar: Can you please make a google sheet which describes the packet layout/format
 int BidirectionalPacketBasedChannel::process_packet(const uint8_t* buffer, size_t length) {
     LOG_PROTO("got packet of length %d: \r\n", length);
     hexdump(buffer, length);
