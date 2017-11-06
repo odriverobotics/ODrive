@@ -39,18 +39,21 @@ static const GpioMode_t gpio_mode = GPIO_MODE_UART;     //GPIO 1,2 is UART Tx,Rx
 /* Variables exposed to USB & UART via read/write commands */
 // TODO: include range information in JSON description
 
-std::function<void(void)> motors_0_set_pos_setpoint_func = std::bind(set_pos_setpoint, &motors[0],
-    std::ref(motors[0].set_pos_setpoint_args.pos_setpoint),
-    std::ref(motors[0].set_pos_setpoint_args.vel_feed_forward),
-    std::ref(motors[0].set_pos_setpoint_args.current_feed_forward)
-);
-std::function<void(void)> motors_0_set_vel_setpoint_func = std::bind(set_vel_setpoint, &motors[0],
-    std::ref(motors[0].set_vel_setpoint_args.vel_setpoint),
-    std::ref(motors[0].set_vel_setpoint_args.current_feed_forward)
-);
-std::function<void(void)> motors_0_set_current_setpoint_func = std::bind(set_current_setpoint, &motors[0],
-    std::ref(motors[0].set_current_setpoint_args.current_setpoint)
-);
+void motors_0_set_pos_setpoint_func(void) {
+    set_pos_setpoint(&motors[0],
+        motors[0].set_pos_setpoint_args.pos_setpoint,
+        motors[0].set_pos_setpoint_args.vel_feed_forward,
+        motors[0].set_pos_setpoint_args.current_feed_forward);
+}
+void motors_0_set_vel_setpoint_func(void) {
+    set_vel_setpoint(&motors[0],
+        motors[0].set_vel_setpoint_args.vel_setpoint,
+        motors[0].set_vel_setpoint_args.current_feed_forward);
+}
+void motors_0_set_current_setpoint_func(void) {
+    set_current_setpoint(&motors[0],
+        motors[0].set_current_setpoint_args.current_setpoint);
+}
 
 // clang-format off
 // TODO: Autogenerate this table. It will come up again very soon in the Arduino library.

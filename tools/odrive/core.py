@@ -18,6 +18,7 @@ import os
 import odrive.protocol
 import itertools
 import struct
+import functools
 
 def noprint(x):
   pass
@@ -46,57 +47,104 @@ class SimpleDeviceProperty(property):
         self._channel.remote_endpoint_operation(self._id, buffer, True, 0)
 
 
-def create_object(json_data, namespace, channel, printer=noprint):
+
+def call_remote_function(channel, trigger_id, arg_properties, *args):
+    if (len(arg_properties) != len(args)):
+        raise TypeError("expected {} arguments but have {}".format(len(arg_properties), len(args)))
+    for i in range(len(args)):
+        arg_properties[i].fset(None, args[i])
+    channel.remote_endpoint_operation(trigger_id, None, True, 0)
+
+def raise_if_undefined(self, name, value):
+    if hasattr(self, name):
+        object.__setattr__(self, name, value)
+    else:
+        raise TypeError('Cannot set name %r on object of type %s' % (
+                        name, self.__class__.__name__))
+
+def create_property(name, json_data, channel, printer):
+    name = name or "[anonymous]"
+
+    type_str = json_data.get("type", None)
+    if type_str is None:
+        printer("property {} has no specified type".format(name))
+        return None
+
+    if type_str == "float":
+        property_type = float
+        struct_format = "<f"
+    elif type_str == "int":
+        property_type = int
+        struct_format = "<i"
+    elif type_str == "bool":
+        property_type = bool
+        struct_format = "<?"
+    elif type_str == "uint16":
+        property_type = int
+        struct_format = "<H"
+    else:
+        printer("property {} has unsupported type {}".format(name, type_str))
+        return None
+
+    id_str = json_data.get("id", None)
+    if id_str is None:
+        printer("property {} has no specified ID".format(name))
+        return None
+
+    access_mode = json_data.get("mode", "rw")
+    return SimpleDeviceProperty(channel, id_str, property_type,
+                                struct_format,
+                                'r' in access_mode,
+                                'w' in access_mode)
+
+def create_function(name, json_data, channel, printer):
+    id_str = json_data.get("id", None)
+    if id_str is None:
+        printer("function {} has no specified ID".format(name))
+        return None
+
+    inputs = []
+    for param in json_data.get("arguments", []):
+        param["mode"] = "r"
+        inputs.append(create_property(json_data["name"], param, channel, printer))
+    return functools.partial(call_remote_function, channel, id_str, inputs)
+
+def create_object(name, json_data, namespace, channel, printer=noprint):
     """
     Creates an object that implements the specified JSON type description by
     communicating with the provided device object
     """
 
-    # Build property list from JSON
-    properties = {}
-    for item in json_data:
-        name = item.get("name", None)
-        if name is None:
-            printer("unnamed property in {}".format(namespace))
+    if not namespace is None:
+        namespace = namespace + "." + name
+    else:
+        namespace = name
+
+    # Build attribute list from JSON
+    attributes = {"__setattr__": raise_if_undefined}
+    for member in json_data.get("members", []):
+        member_name = member.get("name", None)
+        if member_name is None:
+            printer("ignoring unnamed attribute in {}".format(namespace))
             continue
 
-        type_str = item.get("type", None)
+        type_str = member.get("type", None)
         if type_str is None:
-            printer("property {} has no specified type".format(name))
+            printer("member {} has no specified type".format(member_name))
             continue
 
         if type_str == "object":
-            properties[name] = create_object(item["content"], namespace + "." + item["name"], channel, printer=printer)
+            attribute = create_object(member_name, member, namespace, channel, printer=printer)
+        elif type_str == "function":
+            attribute = create_function(member_name, member, channel, printer)
         else:
-            if type_str == "float":
-                property_type = float
-                struct_format = "<f"
-            elif type_str == "int":
-                property_type = int
-                struct_format = "<i"
-            elif type_str == "bool":
-                property_type = bool
-                struct_format = "<?"
-            elif type_str == "uint16":
-                property_type = int
-                struct_format = "<H"
-            else:
-                printer("property {} has unsupported type {}".format(name or "[anonymous]", type_str))
-                continue
-
-            id_str = item.get("id", None)
-            if id_str is None:
-                printer("property {} has specified ID".format(name))
-                continue
-
-            access_mode = item.get("mode", "rw")
-            properties[name] = SimpleDeviceProperty(channel, id_str, property_type,
-                                            struct_format,
-                                            'r' in access_mode,
-                                            'w' in access_mode)
+            attribute = create_property(member_name, member, channel, printer)
+        
+        if not attribute is None:
+            attributes[member_name] = attribute
 
     # Create a type from the property list and instantiate it
-    jit_type = type(namespace, (object,), properties)
+    jit_type = type(namespace, (object,), attributes)
     new_object = jit_type()
     return new_object
 
@@ -204,7 +252,8 @@ def find_all(printer=noprint):
         except json.decoder.JSONDecodeError:
             printer("device responded on endpoint 0 with something that is not JSON")
             continue
-        yield create_object(json_data, "odrive", channel, printer=printer)
+        json_data = {"name": "odrive", "members": json_data}
+        yield create_object("odrive", json_data, None, channel, printer=printer)
 
 
 def find_any(printer=noprint):

@@ -376,11 +376,9 @@ public:
             "\"type\":\"object\"", nullptr);
     }
 
-    static Endpoint make_function(const char* name, std::function<void(void)>* function) {
-        typedef void(f_t)(void);
-        f_t* f = *function->target<f_t*>();
+    static Endpoint make_function(const char* name, void(*function)(void)) {
         return Endpoint(name, BEGIN_FUNCTION, trigger_endpoint_handler,
-            "\"type\":\"function\"", reinterpret_cast<void*>(f));
+            "\"type\":\"function\"", reinterpret_cast<void*>(function));
     }
 
     static Endpoint close_tree() {

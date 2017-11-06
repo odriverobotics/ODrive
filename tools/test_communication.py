@@ -27,6 +27,19 @@ import odrive.core
 def noprint(str):
   pass
 
+def print_usage():
+  print("ODrive Control Utility")
+  print("---------------------------------------------------------------------")
+  print("USAGE:")
+  print("\tPOSITION_CONTROL:\n\t\tp MOTOR_NUMBER POSITION VELOCITY CURRENT")
+  print("\tVELOCITY_CONTROL:\n\t\tv MOTOR_NUMBER VELOCITY CURRENT")
+  print("\tCURRENT_CONTROL:\n\t\tc MOTOR_NUMBER CURRENT")
+  #print("\tList parameters:\n\t\tmotor0.[TAB]")
+  #print("\tShow parameter:\n\t\tmotor0.pos_setpoint")
+  #print("\tChange parameter:\n\t\tmotor0.pos_setpoint = 0")
+  print("\tQuit Python Script:\n\t\tq")
+  print("---------------------------------------------------------------------")
+
 def command_prompt_loop(device, history):
   """
   Presents the command prompt indefinitely until something goes wrong
@@ -60,7 +73,28 @@ def command_prompt_loop(device, history):
       except (ValueError, IndexError):
         print("invalid command format")
         continue
-      motor.pos_setpoint = pos
+      motor.set_pos_setpoint(pos, vel, cur)
+    elif command.startswith("v "):
+      args = command[2:].split()
+      try:
+        motor = motors[int(args[0])]
+        vel = float(args[1])
+        cur = float(args[2])
+      except (ValueError, IndexError):
+        print("invalid command format")
+        continue
+      motor.set_vel_setpoint(vel, cur)
+    elif command.startswith("c "):
+      args = command[2:].split()
+      try:
+        motor = motors[int(args[0])]
+        cur = float(args[1])
+      except (ValueError, IndexError):
+        print("invalid command format")
+        continue
+      motor.set_current_setpoint(cur)
+    elif command == "h" or command == '?' or command == 'help':
+      print_usage()
     elif command == "q" or command == 'exit':
       sys.exit()
     else:
@@ -72,16 +106,9 @@ def main(args):
   else:
     printer = noprint
 
-  print("ODrive Control Utility")
-  print("---------------------------------------------------------------------")
-  print("USAGE:")
-  print("\tPOSITION_CONTROL:\n\t\tp MOTOR_NUMBER POSITION VELOCITY CURRENT")
-  print("\tVELOCITY_CONTROL:\n\t\tv MOTOR_NUMBER VELOCITY CURRENT")
-  print("\tCURRENT_CONTROL:\n\t\tc MOTOR_NUMBER CURRENT")
-  print("\tQuit Python Script:\n\t\tq")
-  print("---------------------------------------------------------------------")
-
   history = prompt_toolkit.history.InMemoryHistory()
+
+  print_usage()
 
   while True:
     # Connect to device

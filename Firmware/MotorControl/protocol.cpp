@@ -75,7 +75,7 @@ void Endpoint::write_json(size_t id, bool* need_comma, StreamSink* output) const
         }
 
         if (type_ == BEGIN_OBJECT) {
-            write_string(",\"content\":[", output);
+            write_string(",\"members\":[", output);
             *need_comma = false;
         } else if (type_ == BEGIN_FUNCTION) {
             write_string(",\"arguments\":[", output);

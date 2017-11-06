@@ -80,7 +80,6 @@ class StreamToPacketConverter(StreamSink):
         are received, they are sent to this instance's output PacketSink.
         Incomplete packets are buffered between subsequent calls to this function.
         """
-        result = None
 
         for byte in bytes:
             if (len(self._header) < 3):
@@ -101,17 +100,10 @@ class StreamToPacketConverter(StreamSink):
             # If both header and packet are fully received, hand it on to the packet processor
             if (len(self._header) == 3) and (len(self._packet) == self._packet_length):
                 if calc_crc16(CRC16_INIT, self._packet) == 0:
-                    try:
-                        self._output.process_packet(self._packet[:-2])
-                    except Exception as ex:
-                        result = ex
+                    self._output.process_packet(self._packet[:-2])
                 self._header = []
                 self._packet = []
                 self._packet_length = 0
-
-        if isinstance(result, Exception):
-            # TODO: check if this is valid code (pylint complains)
-            raise result
 
 
 class PacketToStreamConverter(PacketSink):
