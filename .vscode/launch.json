@@ -1,0 +1,39 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Python",
+            "type": "python",
+            "request": "launch",
+            "stopOnEntry": true,
+            "pythonPath": "${config:python.pythonPath}",
+            "program": "${workspaceRoot}/tools/demo.py",
+            "cwd": "${workspaceRoot}",
+            "env": {},
+            "envFile": "${workspaceRoot}/.env",
+            "debugOptions": [
+                "WaitOnAbnormalExit",
+                "WaitOnNormalExit",
+                "RedirectOutput"
+            ]
+        },
+        {
+            "type": "gdb",
+            "request": "attach",
+            "name": "Launch Program",
+            "target": "localhost:3333",
+            "gdbpath": "arm-none-eabi-gdb",
+            "remote": true,
+            "executable": "./build/ODriveFirmware.elf",
+            "cwd": "${workspaceRoot}/Firmware",
+            "printCalls": false,
+            //"preLaunchTask": "openocd",  // This isn't working quite right.
+            "autorun": [
+                "monitor reset halt"
+            ]
+        }
+    ]
+}
