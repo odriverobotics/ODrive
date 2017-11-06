@@ -3,7 +3,7 @@
 import time
 import struct
 
-SYNC_BYTE = ord('$')
+SYNC_BYTE = 0xAA
 CRC8_INIT = 0x42
 CRC16_INIT = 0x1337
 PROTOCOL_VERSION = 1

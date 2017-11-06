@@ -58,7 +58,7 @@
 #include "crc.hpp"
 
 
-constexpr uint8_t SYNC_BYTE = '$';
+constexpr uint8_t SYNC_BYTE = 0xAA;
 constexpr uint8_t CRC8_INIT = 0x42;
 constexpr uint16_t CRC16_INIT = 0x1337;
 constexpr uint16_t PROTOCOL_VERSION = 1;
