@@ -7,10 +7,9 @@ import time
 import json
 import usb.core
 import usb.util
-import odrive.usbbulk
-import odrive.mock_device
 import odrive.util
-import odrive.usbbulk
+import odrive.usbbulk_transport
+import odrive.serial_transport
 import re
 import serial
 import time
@@ -25,6 +24,11 @@ def noprint(x):
 
 
 class SimpleDeviceProperty(property):
+    """
+    Used internally by dynamically created objects to translate
+    property assignments and fetches into endpoint operations on the
+    object's associated channel
+    """
     def __init__(self, channel, id, type, struct_format, can_read, can_write):
         self._channel = channel
         self._id = id
@@ -46,9 +50,11 @@ class SimpleDeviceProperty(property):
         # TODO: Currenly we wait for an ack here. Settle on the default guarantee.
         self._channel.remote_endpoint_operation(self._id, buffer, True, 0)
 
-
-
 def call_remote_function(channel, trigger_id, arg_properties, *args):
+    """
+    Used internally by the dynamically created objects to translate
+    function calls into endpoint operations on the associated channel
+    """
     if (len(arg_properties) != len(args)):
         raise TypeError("expected {} arguments but have {}".format(len(arg_properties), len(args)))
     for i in range(len(args)):
@@ -56,6 +62,11 @@ def call_remote_function(channel, trigger_id, arg_properties, *args):
     channel.remote_endpoint_operation(trigger_id, None, True, 0)
 
 def raise_if_undefined(self, name, value):
+    """
+    If employed as an object's __setattr__ function, this function
+    makes sure that an assignment to an undefined attribute doesn't
+    create a new attribute but instead raises an exception
+    """
     if hasattr(self, name):
         object.__setattr__(self, name, value)
     else:
@@ -63,6 +74,9 @@ def raise_if_undefined(self, name, value):
                         name, self.__class__.__name__))
 
 def create_property(name, json_data, channel, printer):
+    """
+    Dynamically creates a property based on a JSON definition
+    """
     name = name or "[anonymous]"
 
     type_str = json_data.get("type", None)
@@ -98,6 +112,9 @@ def create_property(name, json_data, channel, printer):
                                 'w' in access_mode)
 
 def create_function(name, json_data, channel, printer):
+    """
+    Dynamically creates a function based on a JSON definition
+    """
     id_str = json_data.get("id", None)
     if id_str is None:
         printer("function {} has no specified ID".format(name))
@@ -114,7 +131,6 @@ def create_object(name, json_data, namespace, channel, printer=noprint):
     Creates an object that implements the specified JSON type description by
     communicating with the provided device object
     """
-
     if not namespace is None:
         namespace = namespace + "." + name
     else:
@@ -148,32 +164,58 @@ def create_object(name, json_data, namespace, channel, printer=noprint):
     new_object = jit_type()
     return new_object
 
-class SerialDevice(odrive.protocol.StreamSource, odrive.protocol.StreamSink):
-    def __init__(self, port, baud):
-        self._dev = serial.Serial(port, baud, timeout=1)
 
-    def process_bytes(self, bytes):
-        self._dev.write(bytes)
+def channel_from_usb_device(usb_device, printer=noprint):
+    """
+    Inits an ODrive Protocol channel from a PyUSB device object.
+    """
+    bulk_device = odrive.usbbulk_transport.USBBulkTransport(usb_device, printer)
+    printer(bulk_device.info())
+    bulk_device.init(printer)
+    return odrive.protocol.Channel(
+            "USB device bus {} device {}".format(usb_device.bus, usb_device.address),
+            bulk_device, bulk_device)
 
-    def get_bytes(self, n_bytes, deadline):
-        """
-        Returns n bytes unless the deadline is reached, in which case the bytes
-        that were read up to that point are returned. If deadline is None the
-        function blocks forever. A deadline before the current time corresponds
-        to non-blocking mode.
-        """
-        if deadline is None:
-            self._dev.timeout = None
-        else:
-            self._dev.timeout = max(deadline - time.monotonic(), 0)
-        return self._dev.read(n_bytes)
+def channel_from_serial_port(port, baud, packet_based, printer=noprint):
+    """
+    Inits an ODrive Protocol channel from a serial port name and baudrate.
+    """
+    if packet_based == True:
+        # TODO: implement packet based transport over serial
+        raise NotImplementedError("not supported yet")
+    serial_device = odrive.serial_transport.SerialStreamTransport(port, 115200)
+    input_stream = odrive.protocol.PacketFromStreamConverter(serial_device)
+    output_stream = odrive.protocol.PacketToStreamConverter(serial_device)
+    return odrive.protocol.Channel(
+            "serial port {}@{}".format(port, 115200),
+            input_stream, output_stream)
 
-    def get_bytes_or_fail(self, n_bytes, deadline):
-        result = self.get_bytes(n_bytes, deadline)
-        if len(result) < n_bytes:
-            raise odrive.protocol.TimeoutException()
-        return result
-
+def object_from_channel(channel, printer=noprint):
+    """
+    Inits an object from a given channel.
+    This queries the endpoint 0 on that channel to gain information
+    about the interface, which is then used to init the corresponding object.
+    """
+    printer("Connecting to device on " + channel._name)
+    try:
+        #Oskar: The fact that the JSON is on endpoint 0 is kind of protocol internal.
+        # Instead you can make a function on Channel called get_json.
+        json_bytes = channel.remote_endpoint_read_buffer(0)
+    except (odrive.protocol.TimeoutException, odrive.protocol.ChannelBrokenException):
+        raise odrive.protocol.DeviceInitException("no response - probably incompatible")
+    json_crc16 = odrive.protocol.calc_crc16(odrive.protocol.PROTOCOL_VERSION, json_bytes)
+    channel._interface_definition_crc = json_crc16
+    try:
+        json_string = json_bytes.decode("ascii")
+    except UnicodeDecodeError:
+        raise odrive.protocol.DeviceInitException("device responded on endpoint 0 with something that is not ASCII")
+    printer("JSON: " + json_string)
+    try:
+        json_data = json.loads(json_string)
+    except json.decoder.JSONDecodeError:
+        raise odrive.protocol.DeviceInitException("device responded on endpoint 0 with something that is not JSON")
+    json_data = {"name": "odrive", "members": json_data}
+    return create_object("odrive", json_data, None, channel, printer=printer)
 
 def find_usb_channels(vid_pid_pairs=odrive.util.USB_VID_PID_PAIRS, printer=noprint):
     """
@@ -181,46 +223,37 @@ def find_usb_channels(vid_pid_pairs=odrive.util.USB_VID_PID_PAIRS, printer=nopri
     Returns a generator of odrive.protocol.Channel objects.
     """
     for vid_pid_pair in vid_pid_pairs:
-        usb_device = usb.core.find(idVendor=vid_pid_pair[0], idProduct=vid_pid_pair[1])
-        if usb_device is None:
-            continue
-        printer("Found ODrive via PyUSB")
-        bulk_device = odrive.usbbulk.USBBulkDevice(usb_device, printer)
-        try:
-            printer(bulk_device.info())
-            bulk_device.init(printer)
-        except usb.core.USBError as ex:
-            if ex.errno == 13:
-                printer("USB device access denied. Did you set up your udev rules correctly?")
-                continue
-            else:
+        for usb_device in usb.core.find(idVendor=vid_pid_pair[0], idProduct=vid_pid_pair[1], find_all=True):
+            printer("Found ODrive via PyUSB")
+            try:
+                yield channel_from_usb_device(usb_device, printer)
+            except usb.core.USBError as ex:
+                if ex.errno == 13:
+                    printer("USB device access denied. Did you set up your udev rules correctly?")
+                    continue
                 raise
-        yield odrive.protocol.Channel(
-                "USB device bus {} device {}".format(usb_device.bus, usb_device.address),
-                bulk_device, bulk_device)
 
 def find_serial_channels(printer=noprint):
     """
-    Scans for serial devices.
+    Scans for serial ports.
     Returns a generator of odrive.protocol.Channel objects.
     Not every returned object necessarily represents a compatible device.
     """
-    return
-    # Look for serial device
-    # TODO: OS specific heuristic to find serial ports
-    for serial_port in filter(re.compile(r'^tty\.usbmodem').search, os.listdir('/dev')):
-        serial_port = '/dev/' + serial_port
-        # If this is actually a USB device, the baudrate setting has no effect
+    # Real serial ports or USB-Serial converters
+    linux_real_serial_ports = ['/dev/' + x for x in filter(re.compile(r'^ttyUSB').search, os.listdir('/dev'))]
+    windows_real_serial_ports = [ "COM1", "COM2", "COM3", "COM4" ]
+
+    # Serial devices that are exposed by the platform
+    # for the device's USB connection
+    linux_usb_serial_ports = ['/dev/' + x for x in filter(re.compile(r'^ttyACM').search, os.listdir('/dev'))]
+    macos_usb_serial_ports = ['/dev/' + x for x in filter(re.compile(r'^tty\.usbmodem').search, os.listdir('/dev'))]
+
+    for port in linux_real_serial_ports + windows_real_serial_ports + linux_usb_serial_ports + macos_usb_serial_ports:
         try:
-            serial_device = SerialDevice(serial_port, 115200)
+            yield channel_from_serial_port(port, 115200, False, printer)
         except serial.serialutil.SerialException:
-            printer("could not open " + serial_port)
+            printer("could not open " + port)
             continue
-        input_stream = odrive.protocol.PacketFromStreamConverter(serial_device)
-        output_stream = odrive.protocol.PacketToStreamConverter(serial_device)
-        yield odrive.protocol.Channel(
-                "serial port {}@{}".format(serial_port, 115200),
-                input_stream, output_stream)
 
 
 def find_all(printer=noprint):
@@ -231,29 +264,11 @@ def find_all(printer=noprint):
     serial_channels = find_serial_channels(printer=printer)
     for channel in itertools.chain(usb_channels, serial_channels):
         # TODO: blacklist known bad channels
-        printer("Connecting to device on " + channel._name)
         try:
-            #Oskar: The fact that the JSON is on endpoint 0 is kind of protocol internal.
-            # Instead you can make a function on Channel called get_json.
-            json_bytes = channel.remote_endpoint_read_buffer(0)
-        except (odrive.protocol.TimeoutException, odrive.protocol.ChannelBrokenException):
-            printer("no response - probably incompatible")
+            yield object_from_channel(channel, printer)
+        except odrive.protocol.DeviceInitException as ex:
+            printer(str(ex))
             continue
-        json_crc16 = odrive.protocol.calc_crc16(odrive.protocol.PROTOCOL_VERSION, json_bytes)
-        channel._interface_definition_crc = json_crc16
-        try:
-            json_string = json_bytes.decode("ascii")
-        except UnicodeDecodeError:
-            printer("device responded on endpoint 0 with something that is not ASCII")
-            continue
-        printer("JSON: " + json_string)
-        try:
-            json_data = json.loads(json_string)
-        except json.decoder.JSONDecodeError:
-            printer("device responded on endpoint 0 with something that is not JSON")
-            continue
-        json_data = {"name": "odrive", "members": json_data}
-        yield create_object("odrive", json_data, None, channel, printer=printer)
 
 
 def find_any(printer=noprint):
@@ -271,3 +286,15 @@ def find_any(printer=noprint):
             return dev
         printer("no device found")
         time.sleep(1)
+
+def open_serial(port_name, printer=noprint):
+    channel = channel_from_serial_port(port_name, 115200, False, printer)
+    return object_from_channel(channel, printer)
+
+def open_usb(bus, address, printer=noprint):
+    usb_device1 = usb.core.find(bus=1, address=16)
+    usb_device = usb.core.find(bus=bus, address=address)
+    if usb_device is None:
+        raise odrive.protocol.DeviceInitException("No USB device found on bus {} device {}".format(bus, address))
+    channel = channel_from_usb_device(usb_device, printer)
+    return object_from_channel(channel, printer)

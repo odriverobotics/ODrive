@@ -53,6 +53,9 @@ class TimeoutException(Exception):
 class ChannelBrokenException(Exception):
     pass
 
+class DeviceInitException(Exception):
+    pass
+
 class StreamSource(object):
     pass
 

@@ -3,12 +3,17 @@
 import argparse
 
 def parse_args():
-  parser = argparse.ArgumentParser(description='Talk to a ODrive board over USB bulk channel.')
+  parser = argparse.ArgumentParser(description='Talk to a ODrive board over USB or serial.')
   parser.add_argument("-v", "--verbose", action="store_true",
                       help="print debug information")
-  parser.add_argument("-d", "--device", action="store",
-                      help="Specifies the device to talk to. If this parameter is provided but the device is not available, I will exit immediately."
-                      "If not provided I will do my best to find an ODrive on USB and serial ports.")
+  group = parser.add_mutually_exclusive_group()
+  group.add_argument("-u", "--usb", action="store",
+                      help="Specifies the USB port on which the device is connected. "
+                      "For example \"001:014\" means bus 001, device 014. The numbers can be obtained "
+                      "using `lsusb`.")
+  group.add_argument("-s", "--serial", action="store",
+                      help="Specifies the serial port on which the device is connected. "
+                      "For example \"/dev/ttyUSB0\". Use `ls /dev/tty*` to find your port name.")
   return parser.parse_args()
 
 if __name__ == '__main__':
@@ -34,6 +39,7 @@ def print_usage():
   print("\tPOSITION_CONTROL:\n\t\tp MOTOR_NUMBER POSITION VELOCITY CURRENT")
   print("\tVELOCITY_CONTROL:\n\t\tv MOTOR_NUMBER VELOCITY CURRENT")
   print("\tCURRENT_CONTROL:\n\t\tc MOTOR_NUMBER CURRENT")
+  # TODO: implement the following features:
   #print("\tList parameters:\n\t\tmotor0.[TAB]")
   #print("\tShow parameter:\n\t\tmotor0.pos_setpoint")
   #print("\tChange parameter:\n\t\tmotor0.pos_setpoint = 0")
@@ -96,7 +102,7 @@ def command_prompt_loop(device, history):
     elif command == "h" or command == '?' or command == 'help':
       print_usage()
     elif command == "q" or command == 'exit':
-      sys.exit()
+      sys.exit(0)
     else:
       print("unknown command \"" + command + "\"")
 
@@ -112,18 +118,31 @@ def main(args):
 
   while True:
     # Connect to device
-    if (args.device is None):
+    if not args.usb is None:
+      try:
+        bus = int(args.usb.split(":")[0])
+        address = int(args.usb.split(":")[1])
+      except (ValueError, IndexError):
+        print("the --usb argument must look something like this: \"001:014\"")
+        sys.exit(1)
+      try:
+        device = odrive.core.open_usb(bus, address, printer=printer)
+      except odrive.protocol.DeviceInitException as ex:
+        print(str(ex))
+        sys.exit(1)
+    elif not args.serial is None:
+      device = odrive.core.open_serial(args.serial, printer=printer)
+    else:
       print("Waiting for device...")
       device = odrive.core.find_any(printer=printer)
-    else:
-      device = odrive.core.open(args.device, printer=printer)
+      autoconnected = True
 
     try:
       command_prompt_loop(device, history)
     except odrive.protocol.ChannelBrokenException:
       print("ODrive disconnected")
-      if not args.device is None:
-        sys.exit()
+      if not autoconnected:
+        sys.exit(1)
   
 
 if __name__ == "__main__":

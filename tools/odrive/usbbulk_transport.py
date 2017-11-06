@@ -10,11 +10,7 @@ import time
 def noprint(x):
   pass
 
-# TODO: Even though USB is packet based, we might wanna do stream based
-# communication because some systems don't allow direct access to the USB
-# endpoints, in which case the device has to behave like a serial device.
-
-class USBBulkDevice(odrive.protocol.PacketSource, odrive.protocol.PacketSink):
+class USBBulkTransport(odrive.protocol.PacketSource, odrive.protocol.PacketSink):
   def __init__(self, dev, printer=noprint):
     self.dev = dev
     self._name = "USB device {}:{}".format(dev.idVendor, dev.idProduct)
