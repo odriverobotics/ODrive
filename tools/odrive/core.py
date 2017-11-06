@@ -87,15 +87,27 @@ def create_property(name, json_data, channel, printer):
     if type_str == "float":
         property_type = float
         struct_format = "<f"
-    elif type_str == "int":
-        property_type = int
-        struct_format = "<i"
     elif type_str == "bool":
         property_type = bool
         struct_format = "<?"
+    elif type_str == "int8":
+        property_type = int
+        struct_format = "<b"
+    elif type_str == "uint8":
+        property_type = int
+        struct_format = "<B"
+    elif type_str == "int16":
+        property_type = int
+        struct_format = "<h"
     elif type_str == "uint16":
         property_type = int
         struct_format = "<H"
+    elif type_str == "int32":
+        property_type = int
+        struct_format = "<i"
+    elif type_str == "uint32":
+        property_type = int
+        struct_format = "<I"
     else:
         printer("property {} has unsupported type {}".format(name, type_str))
         return None
