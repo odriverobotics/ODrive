@@ -2,7 +2,8 @@
 /* Includes ------------------------------------------------------------------*/
 
 // TODO: remove this option
-//#define ENABLE_LEGACY_PROTOCOL
+// and once the legacy protocol is phased out, remove the seq-no hack in protocol.py
+#define ENABLE_LEGACY_PROTOCOL
 
 #include "low_level.h"
 #include "protocol.hpp"
@@ -102,9 +103,8 @@ public:
                 well... it's not actually. Stupid STM. */, chunk) != USBD_OK)
                 osDelay(1);
             buffer += chunk;
-            length -= chunk;printf("got packet of length %d: \r\n", length); osDelay(5); hexdump(buffer, length);
+            length -= chunk;
         }
-        //printf("USB TX done\r\n"); osDelay(5);
         return 0;
     }
 
@@ -127,7 +127,6 @@ public:
             const_cast<uint8_t*>(buffer) /* casting this const away is safe because...
             well... it's not actually. Stupid STM. */, length) != USBD_OK)
             osDelay(1);
-        //printf("USB TX done\r\n"); osDelay(5);
         return 0;
     }
 } usb_sender;
@@ -141,9 +140,10 @@ public:
         //Check length
         if (length > UART_TX_BUFFER_SIZE)
             return -1;
-        // Check if transfer is already ongoing
-        if (huart4.gState != HAL_UART_STATE_READY)
-            return -1;
+        // Loop until the UART is ready
+        // TODO: implement ring buffer to get a more continuous stream of data
+        while (huart4.gState != HAL_UART_STATE_READY)
+            osDelay(1);
         // memcpy data into uart_tx_buf
         memcpy(tx_buf_, buffer, length);
         // Start DMA background trasnfer

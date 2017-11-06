@@ -23,7 +23,6 @@
 
 /* Private defines -----------------------------------------------------------*/
 
-#define STANDALONE_MODE // Drive operates without USB communication
 // #define DEBUG_PRINT
 
 /* Private macros ------------------------------------------------------------*/

@@ -156,9 +156,13 @@ class PacketFromStreamConverter(PacketSource):
                 #print("crc8 mismatch")
                 continue
 
-            packet_length = header[1]
+            packet_length = header[1] + 2
             #print("wait for {} bytes".format(packet_length))
-            return self._input.get_bytes_or_fail(packet_length, deadline)
+            packet = self._input.get_bytes_or_fail(packet_length, deadline)
+            if calc_crc16(CRC16_INIT, packet) != 0:
+                #print("crc16 mismatch")
+                continue
+            return packet[:-2]
 
 
 class Channel(PacketSink):
@@ -192,6 +196,7 @@ class Channel(PacketSink):
             endpoint_id |= 0x8000
 
         self._outbound_seq_no = ((self._outbound_seq_no + 1) & 0x7fff)
+        self._outbound_seq_no |= 0x80 # FIXME: we hardwire one bit of the seq-no to 1 to avoid conflicts with the legacy protocol
         seq_no = self._outbound_seq_no
         packet = struct.pack('<HHH', seq_no, endpoint_id, output_length)
         packet = packet + input
