@@ -210,8 +210,8 @@ public:
         while (length) {
             size_t chunk = length < USB_TX_DATA_SIZE ? length : USB_TX_DATA_SIZE;
             while (CDC_Transmit_FS(
-                const_cast<uint8_t*>(buffer) /* casting this const away is safe because...
-                well... it's not actually. Stupid STM. */, chunk) != USBD_OK)
+                    const_cast<uint8_t*>(buffer) /* casting this const away is safe because...
+                    well... it's not actually. Stupid STM. */, chunk) != USBD_OK)
                 osDelay(1);
             buffer += chunk;
             length -= chunk;
@@ -300,7 +300,6 @@ void communication_task(void const * argument) {
     // We dont use interrupts to fetch the data, instead we periodically read
     // data out of the circular buffer into a parse buffer, controlled by a state machine
     HAL_UART_Receive_DMA(&huart4, dma_circ_buffer, sizeof(dma_circ_buffer));
-
     uint32_t last_rcv_idx = UART_RX_BUFFER_SIZE - huart4.hdmarx->Instance->NDTR;
 
     // Re-run state-machine forever

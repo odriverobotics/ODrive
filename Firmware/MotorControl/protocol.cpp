@@ -209,16 +209,16 @@ int BidirectionalPacketBasedChannel::process_packet(const uint8_t* buffer, size_
         if (!endpoint)
             return -1;
 
-        // Verify packet footer. The expected footer value depends on the selected endpoint.
+        // Verify packet trailer. The expected trailer value depends on the selected endpoint.
         // For endpoint 0 this is just the protocol version, for all other endpoints it's a
         // CRC over the entire JSON descriptor tree (this may change in future versions).
-        uint16_t expected_footer = endpoint_id ? json_crc_ : PROTOCOL_VERSION;
-        uint16_t actual_footer = buffer[length - 2] | (buffer[length - 1] << 8);
-        if (expected_footer != actual_footer) {
-            LOG_PROTO("footer mismatch for endpoint %d: expected %04x, got %04x\r\n", endpoint_id, expected_footer, actual_footer);
+        uint16_t expected_trailer = endpoint_id ? json_crc_ : PROTOCOL_VERSION;
+        uint16_t actual_trailer = buffer[length - 2] | (buffer[length - 1] << 8);
+        if (expected_trailer != actual_trailer) {
+            LOG_PROTO("trailer mismatch for endpoint %d: expected %04x, got %04x\r\n", endpoint_id, expected_trailer, actual_trailer);
             return -1;
         }
-        LOG_PROTO("footer ok\r\n");
+        LOG_PROTO("trailer ok\r\n");
 
         // TODO: if more bytes than the MTU were requested, should we abort or just return as much as possible?
 
