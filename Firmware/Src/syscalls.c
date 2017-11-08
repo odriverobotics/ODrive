@@ -20,7 +20,6 @@
 
 #define UART_TX_BUFFER_SIZE 64
 static uint8_t uart_tx_buf[UART_TX_BUFFER_SIZE];
-extern PCD_HandleTypeDef hpcd_USB_OTG_FS;
 extern USBD_HandleTypeDef hUsbDeviceFS;
 
 int _write(int file, char* data, int len) {
