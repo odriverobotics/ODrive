@@ -217,6 +217,13 @@ void legacy_parse_cmd(const uint8_t* buffer, int len) {
         if (numscan == 1) {
             print_monitoring(limit);
         }
+    } else if (buffer[0] == 't') { // Run Anti-Cogging Calibration
+        for (int i = 0; i < num_motors; i++) {
+            // Ensure the cogging map was correctly allocated earlier and that the motor is capable of calibrating
+            if (motors[i].anticogging.cogging_map != NULL && motors[i].error == ERROR_NO_ERROR) {
+                motors[i].anticogging.calib_anticogging = true;
+            }
+        }
     }
 
     serial_printf_select = SERIAL_PRINTF_IS_UART;

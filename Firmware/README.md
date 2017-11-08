@@ -80,18 +80,22 @@ To compile the program, you first need to install the prerequisite tools:
     * Installing on Ubuntu: `sudo apt-get install openocd`
 * No additional USB CDC driver should be required on Linux.
 
+#### Mac:
+* `brew cask install gcc-arm-embedded`:  GCC toolchain+debugger
+* `brew install openocd`: Programmer
+
 #### Windows:
 Install the following:
 * [Git for windows](https://git-scm.com/download/win). This intalls the Git Bash, which is a unix style command line interface that we will be using. 
 * [GNU ARM Embedded Toolchain](https://developer.arm.com/open-source/gnu-toolchain/gnu-rm/downloads). The cross-compiler used to compile the code. Download and install the "Windows 32-bit" version. Make sure to tick the "add to path" option.
-* [Make for Windows](http://gnuwin32.sourceforge.net/packages/make.htm). Make is used to script the compilation process. Download and run the complete package setup program. Add the path of the binaries to your PATH environment variable. For me this was at `C:\Program Files (x86)\GnuWin32\bin`.
+* [Make for Windows](http://gnuwin32.sourceforge.net/packages/make.htm). Make is used to script the compilation process. Download and run the complete package setup program. Add the path of the binaries to your PATH environment variable. For me this was at `C:\Program Files (x86)\GnuWin32\bin`. For details on how to set your path envirment in windows see [these instructions.](https://www.java.com/en/download/help/path.xml)
 * OpenOCD. Follow the instructions at [GNU ARM Eclipse  - How to install the OpenOCD binaries](http://gnuarmeclipse.github.io/openocd/install/), including the part about ST-LINK/V2 drivers. Add the path of the binaries to your PATH environment variable. For me this was at `C:\Program Files\GNU ARM Eclipse\OpenOCD\0.10.0-201704182147-dev\bin`.
 
 After installing all of the above, open a Git Bash shell. Continue at section [Building the firmware](#building-the-firmware).
 
 ### Building the firmware
 * Make sure you have cloned the repository.
-* Navigate your terminal (bash/cygwin) to the ODriveFirmware dir.
+* Navigate your terminal (bash/cygwin) to the ODrive/Firmware dir.
 * Run `make` in the root of this repository.
 
 ### Flashing the firmware
@@ -106,25 +110,26 @@ If you prefer to debug from eclipse, see [Setting up Eclipse development environ
 
 ## Communicating over USB
 There is currently a very primitive method to read/write configuration, commands and errors from the ODrive over the USB.
-Please use the `tools/test_communication.py` python script for this.  It is written for Python 3.
+Please use the `tools/test_communication.py` python script for this.  It is written for [Python 3](https://www.python.org/downloads/) and so should be installed first.
 
 * Assuming you already have Python, install dependencies:
-
-    pip install pyusb pyserial prompt_toolkit
-
-* __Linux__ set up USB permissions
-
-    echo 'SUBSYSTEM=="usb", ATTR{idVendor}=="1209", ATTR{idProduct}=="0d3[1-3]", MODE="0666"' | sudo tee /etc/udev/rules.d/50-odrive.rules
+```
+pip install pyusb pyserial prompt_toolkit
+```
+* __Linux__: set up USB permissions
+```
+    echo 'SUBSYSTEM=="usb", ATTR{idVendor}=="1209", ATTR{idProduct}=="0d[0-9][0-9]", MODE="0666"' | sudo tee /etc/udev/rules.d/50-odrive.rules
     sudo udevadm control --reload-rules
     sudo udevadm trigger # until you reboot you may need to do this everytime you reset the ODrive
-
-* Plug in the STLink or another power source to power the ODrive board
-* Plug in a separate USB cable into the microUSB connector on ODrive
-* __Windows__ Use the [Zadig](http://zadig.akeo.ie/) utility to set ODrive (not STLink!) driver to libusb
+```
+* Power the ODrive board (as per the [Flashing the firmware](#flashing-the-firmware) step)
+* Plug in a USB cable into the microUSB connector on ODrive, and connect it to your PC
+* __Windows__: Use the [Zadig](http://zadig.akeo.ie/) utility to set ODrive (not STLink!) driver to libusb. 
+  * If 'Odrive V3.x' is not in the list of devices upon opening Zadig check 'List All Devices' from the options menu. Connecting to the Odrive board directly and not over a usb hub may also help. With the Odrive selected in the device list choose 'libusb-win32' from the target driver list and select the large 'install driver' button.
 * Run `tools/test_communication.py`
 
 ### Command set
-The most accurate way to understand the commands is to read [the code](MotorControl/commands.c) that parses the commands. Nevertheless, here is an overview:
+The most accurate way to understand the commands is to read [the code](MotorControl/commands.c) that parses the commands. Also you can have a look at the [ODrive Arduino library](https://github.com/madcowswe/ODriveArduino) that makes it easy to use the UART interface on Arduino. You can also look at it as an implementation example of how to talk to the ODrive over UART.
 
 #### UART framing
 USB communicates with packets, so it is easy to frame a command as one command per packet. However, UART doesn't have any packeting, so we need a way to frame the commands. The start-of-packet symbol is `$` and the end-of-packet symbol is `!`, that is, something like this: `$command!`. An example of a valid UART position command:

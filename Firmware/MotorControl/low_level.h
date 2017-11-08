@@ -18,6 +18,15 @@ typedef enum {
     M_SIGNAL_PH_CURRENT_MEAS = 1u << 0
 } Motor_thread_signals_t;
 
+typedef struct {
+    int index;
+    float *cogging_map;
+    bool use_anticogging;
+    bool calib_anticogging;
+    float calib_pos_threshold;
+    float calib_vel_threshold;
+} Anticogging_t;
+
 typedef enum {
     ERROR_NO_ERROR,
     ERROR_PHASE_RESISTANCE_TIMING,
@@ -65,6 +74,7 @@ typedef struct {
     // Voltage applied at end of cycle:
     float final_v_alpha; // [V]
     float final_v_beta; // [V]
+    float Iq;
 } Current_control_t;
 
 typedef enum {
@@ -144,7 +154,6 @@ typedef struct {
     Sensorless_t sensorless;
     int timing_log_index;
     uint16_t timing_log[TIMING_LOG_SIZE];
-
     // Cache for remote procedure calls arguments
     struct {
         float pos_setpoint; 
@@ -158,6 +167,7 @@ typedef struct {
     struct {
         float current_setpoint;
     } set_current_setpoint_args;
+    Anticogging_t anticogging;
 } Motor_t;
 
 typedef struct{
@@ -205,6 +215,8 @@ void sync_timers(TIM_HandleTypeDef* htim_a, TIM_HandleTypeDef* htim_b,
 bool measure_phase_resistance(Motor_t* motor, float test_current, float max_voltage);
 bool measure_phase_inductance(Motor_t* motor, float voltage_low, float voltage_high);
 bool calib_enc_offset(Motor_t* motor, float voltage_magnitude);
+
+bool anti_cogging_calibration(Motor_t* motor);
 // Test functions
 void scan_motor_loop(Motor_t* motor, float omega, float voltage_magnitude);
 void FOC_voltage_loop(Motor_t* motor, float v_d, float v_q);
@@ -220,7 +232,9 @@ void queue_modulation_timings(Motor_t* motor, float mod_alpha, float mod_beta);
 void queue_voltage_timings(Motor_t* motor, float v_alpha, float v_beta);
 bool FOC_current(Motor_t* motor, float Id_des, float Iq_des);
 void control_motor_loop(Motor_t* motor);
-// Motor thread (is public)
+
+//motor thread moved to axis object
+//void motor_thread(void const * argument);
 
 #ifdef __cplusplus
 }

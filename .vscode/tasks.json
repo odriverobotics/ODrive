@@ -27,7 +27,7 @@
         {
             "taskName": "openocd",
             "type": "shell",
-            "command": "openocd -f \"interface/stlink-v2.cfg\" -f \"target/stm32f4x_stlink.cfg\" -c \"gdb_port pipe; log_output openocd.log\"",
+            "command": "openocd -f \"interface/stlink-v2.cfg\" -f \"target/stm32f4x_stlink.cfg\" -c \"gdb_port 3333; log_output openocd.log\"",
             "problemMatcher": []
         }
     ]

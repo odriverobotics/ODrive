@@ -44,6 +44,16 @@ Axis::Axis(const AxisConfig& config, uint8_t axis_number, Motor_t* legacy_motor_
 }
 
 void Axis::StateMachineLoop() {
+
+    //TODO: Move this somewhere else
+    // Allocate the map for anti-cogging algorithm and initialize all values to 0.0f
+    motor->anticogging.cogging_map = (float*)malloc(ENCODER_CPR * sizeof(float));
+    if (motor->anticogging.cogging_map != NULL) {
+        for (int i = 0; i < ENCODER_CPR; i++) {
+            motor->anticogging.cogging_map[i] = 0.0f;
+        }
+    }
+
     legacy_motor_ref_->motor_thread = osThreadGetId();
     legacy_motor_ref_->thread_ready = true;
     bool calibration_ok = false;
