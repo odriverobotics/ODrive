@@ -19,7 +19,7 @@ constexpr uint16_t CRC16_DEFAULT = 0x3d65;
 template<typename T, unsigned POLYNOMIAL>
 static T calc_crc(T remainder, uint8_t value) {
     constexpr T BIT_WIDTH = (CHAR_BIT * sizeof(T));
-    constexpr T TOPBIT = (1 << (BIT_WIDTH - 1));
+    constexpr T TOPBIT = ((T)1 << (BIT_WIDTH - 1));
     
     // Bring the next byte into the remainder.
     remainder ^= (value << (BIT_WIDTH - 8));
