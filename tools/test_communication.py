@@ -43,6 +43,7 @@ def print_usage():
   #print("\tList parameters:\n\t\tmotor0.[TAB]")
   #print("\tShow parameter:\n\t\tmotor0.pos_setpoint")
   #print("\tChange parameter:\n\t\tmotor0.pos_setpoint = 0")
+  # print("\tHALT:\n\t\th")
   print("\tQuit Python Script:\n\t\tq")
   print("---------------------------------------------------------------------")
 

@@ -170,6 +170,10 @@ void legacy_parse_cmd(const uint8_t* buffer, int len) {
             };
             }
         }
+    } else if (buffer[0] == 'h'){  // HALT
+        for(int i = 0; i < num_motors; i++){
+            set_vel_setpoint(&motors[i], 0.0f, 0.0f);
+        }
     } else if (buffer[0] == 's') { // SET
         // s <0:float,1:int,2:bool,3:uint16> index value
         int type = 0;

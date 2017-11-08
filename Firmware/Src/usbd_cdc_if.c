@@ -274,7 +274,6 @@ static int8_t CDC_Receive_FS (uint8_t* Buf, uint32_t *Len)
   USBD_CDC_SetRxBuffer(&hUsbDeviceFS, UserRxBufferFS);
   USBD_CDC_ReceivePacket(&hUsbDeviceFS);
 
-  // once the data is handled, the processing thread will start the next transmission
   return (USBD_OK);
   /* USER CODE END 6 */ 
 }
