@@ -47,6 +47,9 @@ int _write(int file, char *data, int len) {
       // Start DMA background trasnfer
       HAL_UART_Transmit_DMA(&huart4, uart_tx_buf, len);
     } break;
+            while (huart4.gState != HAL_UART_STATE_READY) {
+                // Do nothing
+            }
 
     default: {
       written = 0;
