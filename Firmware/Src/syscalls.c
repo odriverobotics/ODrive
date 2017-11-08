@@ -35,11 +35,7 @@ int _write(int file, char* data, int len) {
             // Wait for transmission to complete
             USBD_CDC_HandleTypeDef* hcdc = (USBD_CDC_HandleTypeDef*)hUsbDeviceFS.pClassData;
             while (hcdc->TxState != 0) {
-                osSemaphoreWait(sem_usb_irq, 0);
-                // We have a new incoming USB transmission: handle it
-                HAL_PCD_IRQHandler(&hpcd_USB_OTG_FS);
-                // Let the irq (OTG_FS_IRQHandler) fire again.
-                HAL_NVIC_EnableIRQ(OTG_FS_IRQn);
+              // Do nothing
             }
         } break;
 
@@ -48,15 +44,14 @@ int _write(int file, char* data, int len) {
             if (len > UART_TX_BUFFER_SIZE)
                 return 0;
             // Check if transfer is already ongoing
-            if (huart4.gState != HAL_UART_STATE_READY)
-                return 0;
+            //if (huart4.gState != HAL_UART_STATE_READY)
+                //return 0;
             // memcpy data into uart_tx_buf
             memcpy(uart_tx_buf, data, len);
             // Start DMA background trasnfer
             HAL_UART_Transmit_DMA(&huart4, uart_tx_buf, len);
-            while (huart4.gState != HAL_UART_STATE_READY) {
-                // Do nothing
-            }
+            // Wait for the transmission to complete
+            osSemaphoreWait(sem_uart_dma, osWaitForever);
         } break;
 
         default: {
@@ -65,4 +60,8 @@ int _write(int file, char* data, int len) {
     }
 
     return written;
+}
+
+void HAL_UART_TxCpltCallback(UART_HandleTypeDef* huart) {
+    osSemaphoreRelease(sem_uart_dma);
 }
