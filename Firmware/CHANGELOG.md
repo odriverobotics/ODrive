@@ -1,10 +1,9 @@
 
 ## [0.2.0] - UNRELEASED
 ### Added
-* UART feature
+* UART communication
 * Setting to select UART or Step/dir on GIPIO 1,2
 * Basic Anti-cogging
-### Changed
 
 ## [0.1.0] - 2017-08-26
 ### Added
