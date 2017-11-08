@@ -6,6 +6,7 @@
 osSemaphoreId sem_usb_irq;
 osSemaphoreId sem_uart_dma;
 osSemaphoreId sem_usb_rx;
+osSemaphoreId sem_usb_tx;
 
 // List of threads
 osThreadId thread_motor_0;
