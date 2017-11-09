@@ -64,6 +64,7 @@ constexpr uint16_t CRC16_INIT = 0x1337;
 constexpr uint16_t PROTOCOL_VERSION = 1;
 
 // This value must not be larger than USB_TX_DATA_SIZE defined in usbd_cdc_if.h
+//Oskar: What's the error? What values work? Does 63 work? Ideally we figure out how to get 64 to work, but if not let's find something better than 32.
 constexpr uint16_t TX_BUF_SIZE = 32; // does not work with 64 for some reason
 constexpr uint16_t RX_BUF_SIZE = 128; // larger values than 128 have currently no effect because of protocol limitations
 
