@@ -101,6 +101,7 @@ typedef struct {
 
 typedef struct {
     TIM_HandleTypeDef* encoder_timer;
+    int encoder_cpr;
     int encoder_offset;
     int encoder_state;
     int motor_dir; // 1/-1 for fwd/rev alignment to encoder.

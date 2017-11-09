@@ -47,10 +47,11 @@ void Axis::StateMachineLoop() {
 
     //TODO: Move this somewhere else
     // Allocate the map for anti-cogging algorithm and initialize all values to 0.0f
-    motor->anticogging.cogging_map = (float*)malloc(ENCODER_CPR * sizeof(float));
-    if (motor->anticogging.cogging_map != NULL) {
-        for (int i = 0; i < ENCODER_CPR; i++) {
-            motor->anticogging.cogging_map[i] = 0.0f;
+    int encoder_cpr = legacy_motor_ref_->encoder.encoder_cpr;
+    legacy_motor_ref_->anticogging.cogging_map = (float*)malloc(encoder_cpr * sizeof(float));
+    if (legacy_motor_ref_->anticogging.cogging_map != NULL) {
+        for (int i = 0; i < encoder_cpr; i++) {
+            legacy_motor_ref_->anticogging.cogging_map[i] = 0.0f;
         }
     }
 
