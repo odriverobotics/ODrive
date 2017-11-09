@@ -27,7 +27,8 @@ int _write(int file, char* data, int len) {
     switch (serial_printf_select) {
         case SERIAL_PRINTF_IS_USB: {
             // Wait for the interface to be available
-            osStatus sem_stat = osSemaphoreWait(sem_usb_tx, osWaitForever);
+            const uint32_t usb_tx_timeout = 100; // ms
+            osStatus sem_stat = osSemaphoreWait(sem_usb_tx, usb_tx_timeout);
             if (sem_stat == osOK) {
                 uint8_t status = CDC_Transmit_FS((uint8_t*)data, len);  // transmit over CDC
                 written = (status == USBD_OK) ? len : 0;
@@ -39,7 +40,8 @@ int _write(int file, char* data, int len) {
             if (len > UART_TX_BUFFER_SIZE)
                 return 0;
             // Wait for the interface to be available
-            osStatus sem_stat = osSemaphoreWait(sem_uart_dma, osWaitForever);
+            const uint32_t uart_tx_timeout = 100; // ms
+            osStatus sem_stat = osSemaphoreWait(sem_uart_dma, uart_tx_timeout);
             if (sem_stat == osOK) {
                 memcpy(uart_tx_buf, data, len);                    // memcpy data into uart_tx_buf
                 HAL_UART_Transmit_DMA(&huart4, uart_tx_buf, len);  // Start DMA background transfer

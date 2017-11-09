@@ -344,11 +344,14 @@ void cmd_parse_thread(void const * argument) {
                     }
                 }
             }
-            // Check if there is USB processing to do.
-            osStatus sem_stat = osSemaphoreWait(sem_usb_rx, 0);
-            if(sem_stat == osOK){
+            // When we reach here, we are out of immediate characters to fetch out of UART buffer
+            // Now we check if there is any USB processing to do: we wait for up to 1 ms,
+            // before going back to checking UART again.
+            const uint32_t usb_check_timeout = 1; // ms
+            osStatus sem_stat = osSemaphoreWait(sem_usb_rx, usb_check_timeout);
+            if (sem_stat == osOK) {
                 motor_parse_cmd(usb_buf, usb_len, SERIAL_PRINTF_IS_USB);
-                USBD_CDC_ReceivePacket(&hUsbDeviceFS); // Allow next packet
+                USBD_CDC_ReceivePacket(&hUsbDeviceFS);  // Allow next packet
             }
         } while (!reset_read_state);
     }
