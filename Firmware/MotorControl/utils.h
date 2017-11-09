@@ -75,7 +75,7 @@
 // as per the magnitude invariant clarke transform
 // The magnitude of the alpha-beta vector may not be larger than sqrt(3)/2
 // Returns 0 on success, and -1 if the input was out of range
-int SVM(float alpha, float beta, float *tA, float *tB, float *tC);
+int SVM(float alpha, float beta, float* tA, float* tB, float* tC);
 
 //beware of inserting large angles!
 float wrap_pm_pi(float theta);
