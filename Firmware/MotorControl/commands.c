@@ -22,7 +22,7 @@ SerialPrintf_t serial_printf_select = SERIAL_PRINTF_IS_NONE;
 static const GpioMode_t gpio_mode = GPIO_MODE_UART;     //GPIO 1,2 is UART Tx,Rx
 // static const GpioMode_t gpio_mode = GPIO_MODE_STEP_DIR; //GPIO 1,2 is M0 Step,Dir
 
-static uint8_t usb_buf[64];
+static uint8_t* usb_buf;
 static uint32_t usb_len;
 extern USBD_HandleTypeDef hUsbDeviceFS;
 
@@ -344,7 +344,8 @@ void cmd_parse_thread(void const * argument) {
                     }
                 }
             }
-            osStatus sem_stat = osSemaphoreWait(sem_usb_rx, 1);
+            // Check if there is USB processing to do.
+            osStatus sem_stat = osSemaphoreWait(sem_usb_rx, 0);
             if(sem_stat == osOK){
                 motor_parse_cmd(usb_buf, usb_len, SERIAL_PRINTF_IS_USB);
                 USBD_CDC_ReceivePacket(&hUsbDeviceFS); // Allow next packet
@@ -357,8 +358,8 @@ void cmd_parse_thread(void const * argument) {
 
 // Called from CDC_Receive_FS callback function, this allows motor_parse_cmd to access the
 // incoming USB data
-void set_cmd_buffer(const uint8_t *buf, uint32_t len) {
-    memcpy(usb_buf, buf, len);
+void set_cmd_buffer(uint8_t *buf, uint32_t len) {
+    usb_buf = buf;
     usb_len = len;
 }
 

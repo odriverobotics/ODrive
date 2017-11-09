@@ -27,7 +27,7 @@ void init_communication();
 void cmd_parse_thread(void const * argument);
 void motor_parse_cmd(uint8_t* buffer, int len, SerialPrintf_t response_interface);
 
-void set_cmd_buffer(const uint8_t *buf, uint32_t len);
+void set_cmd_buffer(uint8_t *buf, uint32_t len);
 void usb_update_thread();
 
 #endif /* COMMANDS_H */
