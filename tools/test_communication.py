@@ -39,7 +39,7 @@ def main(args):
   while running:
     time.sleep(0.1)
     try:
-      command = input("Enter ODrive command:\n")
+      command = input("\r\nEnter ODrive command:\n")
       if 'q' in command:
         running = False
         sys.exit()
@@ -52,7 +52,7 @@ def receive_thread(dev):
   global ready
 
   while running:
-    time.sleep(0.1)
+    time.sleep(0.001)
     try:
       message = dev.receive(dev.receive_max())
       message_ascii = bytes(message).decode('ascii')

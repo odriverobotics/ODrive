@@ -5,6 +5,7 @@
 #include <gpio.h>
 #include <freertos_vars.h>
 #include <usbd_cdc.h>
+#include <utils.h>
 
 extern PCD_HandleTypeDef hpcd_USB_OTG_FS;
 
@@ -168,10 +169,12 @@ void motor_parse_cmd(uint8_t* buffer, int len, SerialPrintf_t response_interface
         if (numscan == 2 && motor_number < num_motors) {
             set_current_setpoint(&motors[motor_number], current_feed_forward);
         }
-    } else if(buffer[0] == 'e'){
-        int val = printf("Test 1\n");
-        int val2 = printf("test 2\n");
-        val = 0;
+    } else if(buffer[0] == 'i'){ // Dump device info
+        // Retrieves the device signature, revision, flash size, and UUID
+        printf("Signature: %#x\n", STM_ID_GetSignature());
+        printf("Revision: %#x\n", STM_ID_GetRevision());
+        printf("Flash Size: %#x KiB\n", STM_ID_GetFlashSize());
+        printf("UUID: 0x%lx%lx%lx\n", STM_ID_GetUUID(2), STM_ID_GetUUID(1), STM_ID_GetUUID(0));
     } else if (buffer[0] == 'g') { // GET
         // g <0:float,1:int,2:bool,3:uint16> index
         int type = 0;
