@@ -169,7 +169,7 @@ void motor_parse_cmd(uint8_t* buffer, int len, SerialPrintf_t response_interface
         if (numscan == 2 && motor_number < num_motors) {
             set_current_setpoint(&motors[motor_number], current_feed_forward);
         }
-    } else if(buffer[0] == 'e'){ // Generic ECHO command for testing
+    } else if(buffer[0] == 'i'){ // Dump device info
         // Retrieves the device signature, revision, flash size, and UUID
         printf("Signature: %#x\n", STM_ID_GetSignature());
         printf("Revision: %#x\n", STM_ID_GetRevision());
