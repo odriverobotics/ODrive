@@ -8,7 +8,10 @@ import time
 import math
 
 # Find a connected ODrive (this will block until you connect one)
-my_drive = odrive.core.find_any(printer=print)
+odrives = odrive.core.find_all(printer=print)
+odrives = list(odrives) #force eval of generator to test finding functions
+my_drive = odrives[0]
+# my_drive = odrive.core.find_any(printer=print)
 
 # The above call returns a python object with a dynamically generated type. The
 # type hierarchy will correspond to the endpoint list in `MotorControl/protocol.cpp`.
@@ -29,7 +32,7 @@ my_drive.motor0.set_pos_setpoint(0.0, 0.0, 0.0)
 
 # little sine wave to test
 t0 = time.monotonic()
-while True:
+while False:
     setpoint = 10000.0 * math.sin((time.monotonic() - t0)*2)
     print("goto " + str(int(setpoint)))
     my_drive.motor0.set_pos_setpoint(setpoint, 0.0, 0.0)
@@ -39,7 +42,7 @@ while True:
 # Some more things you can try:
 
 # Write to a read-only property:
-# my_drive.vbus_voltage = 5  # fails with `AttributeError: can't set attribute`
+my_drive.vbus_voltage = 11.0  # fails with `AttributeError: can't set attribute`
 
 # Assign an incompatible value:
 # my_drive.motor0.pos_setpoint = "I like trains"  # fails with `TypeError: expected value of type float`

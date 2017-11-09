@@ -198,7 +198,10 @@ constexpr size_t NUM_ENDPOINTS = sizeof(endpoints) / sizeof(endpoints[0]);
 // breaks our packet boundaries. For now we just neglect this. If you happen to
 // be limited by such a platform, you should reconsider your life choices
 // or as a workaround enable this:
+
+//Oskar: Put switches like this at top of file
 //#define STREAM_ON_USB
+
 
 
 #ifdef STREAM_ON_USB
@@ -212,6 +215,8 @@ public:
             while (CDC_Transmit_FS(
                     const_cast<uint8_t*>(buffer) /* casting this const away is safe because...
                     well... it's not actually. Stupid STM. */, chunk) != USBD_OK)
+                //Oskar: we made a semaphore sem_usb_tx that guards the USB tx resource,
+                // that you can wait for to see if busy. Check _write in syscalls.c on devel for example use
                 osDelay(1);
             buffer += chunk;
             length -= chunk;
@@ -237,6 +242,8 @@ public:
         while (CDC_Transmit_FS(
             const_cast<uint8_t*>(buffer) /* casting this const away is safe because...
             well... it's not actually. Stupid STM. */, length) != USBD_OK)
+            //Oskar: we made a semaphore sem_usb_tx that guards the USB tx resource,
+            // that you can wait for to see if busy. Check _write in syscalls.c on devel for example use
             osDelay(1);
         return 0;
     }
@@ -254,6 +261,8 @@ public:
         // Loop until the UART is ready
         // TODO: implement ring buffer to get a more continuous stream of data
         while (huart4.gState != HAL_UART_STATE_READY)
+            //Oskar: we made a semaphore sem_uart_dma that guards the UART tx resource,
+            // that you can wait for to see if busy. Check _write in syscalls.c on devel for example use
             osDelay(1);
         // memcpy data into uart_tx_buf
         memcpy(tx_buf_, buffer, length);
@@ -318,12 +327,16 @@ void communication_task(void const * argument) {
             uint8_t c = dma_circ_buffer[last_rcv_idx];
             if (++last_rcv_idx == UART_RX_BUFFER_SIZE)
                 last_rcv_idx = 0;
+            //Oskar: we don't have to process 1 byte at a time,
+            // we can process up to MIN(last_rcv_idx, UART_RX_BUFFER_SIZE-1)
             UART4_stream_sink.process_bytes(&c, 1);
         }
 
         // When we reach here, we are out of immediate characters to fetch out of UART buffer
         // Now we check if there is any USB processing to do: we wait for up to 1 ms,
         // before going back to checking UART again.
+
+        //Oskar: Beware of changes in devel here when merging.
         int USB_check_timeout = 1;
         int32_t status = osSemaphoreWait(sem_usb_irq, USB_check_timeout);
         if (status == osOK) {
@@ -337,6 +350,11 @@ void communication_task(void const * argument) {
     // If we get here, then this task is done
     vTaskDelete(osThreadGetId());
 }
+
+//Oskar: can you also do a ENABLE_LEGACY_PROTOCOL case for UART?
+// If this has to be exclusive of the new protocol, that's fine: it 
+// lets us move on and upgrade the arduino library later.
+// Please test that it still works on an arduino.
 
 void USB_receive_packet(const uint8_t *buffer, size_t length) {
     //printf("[USB] got %d bytes, first is %c\r\n", length, buffer[0]); osDelay(5);

@@ -5,16 +5,12 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Debug Python Utility",
+            "name": "Python",
             "type": "python",
             "request": "launch",
             "stopOnEntry": true,
             "pythonPath": "${config:python.pythonPath}",
-            "program": "${workspaceRoot}/tools/test_communication.py",
-            "args": [
-                // add specific arguments that you might wanna test
-                //"--serial", "/dev/ttyUSB0"
-            ],
+            "program": "${file}",
             "cwd": "${workspaceRoot}",
             "env": {},
             "envFile": "${workspaceRoot}/.env",

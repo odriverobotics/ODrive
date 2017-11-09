@@ -56,6 +56,10 @@ class ChannelBrokenException(Exception):
 class DeviceInitException(Exception):
     pass
 
+#Oskar: I would just get rid of these "abstract classes",
+# I think just looking and seeing that the classes have
+# a process_packet or get_packet is enough.
+
 class StreamSource(object):
     pass
 
@@ -171,6 +175,7 @@ class Channel(PacketSink):
     _expected_acks = {}
 
     # Chose these parameters to be sensible for a specific transport layer
+    #Oskar: it's a timeout, not delay.
     _resend_delay = 5.0     # [s]
     _send_attempts = 5
 
@@ -203,11 +208,11 @@ class Channel(PacketSink):
 
         crc16 = calc_crc16(CRC16_INIT, packet)
         if (endpoint_id & 0x7fff == 0):
-            footer = PROTOCOL_VERSION
+            trailer = PROTOCOL_VERSION
         else:
-            footer = self._interface_definition_crc
-        #print("append footer " + footer)
-        packet = packet + struct.pack('<H', footer)
+            trailer = self._interface_definition_crc
+        #print("append trailer " + trailer)
+        packet = packet + struct.pack('<H', trailer)
 
         if (expect_ack):
             self._expected_acks[seq_no] = None

@@ -55,6 +55,9 @@ def print_usage():
 # that will leave that odrive variable in scope for the interactive session; just give the user some instructions
 # that they can then do stuff like odrive.[tabcomplete]
 
+# We can also make a function odrive.send_legacy_cmd(cmd_str), which is important for some features that
+# we haven't ported yet.
+
 def command_prompt_loop(device, history):
   """
   Presents the command prompt indefinitely until something goes wrong

@@ -68,12 +68,16 @@ def call_remote_function(channel, trigger_id, arg_properties, *args):
         arg_properties[i].fset(None, args[i])
     channel.remote_endpoint_operation(trigger_id, None, True, 0)
 
+#Oskar: setattr_or_raise_if_undefined
 def raise_if_undefined(self, name, value):
     """
     If employed as an object's __setattr__ function, this function
     makes sure that an assignment to an undefined attribute doesn't
     create a new attribute but instead raises an exception
     """
+    #Oskar: hasattr internally calls fget to determine if the attribute exists,
+    # which unnessecarily creates bus traffic. We should try to solve this.
+    # Step-in on the hasattr line in the debugger to see this.
     if hasattr(self, name):
         object.__setattr__(self, name, value)
     else:
@@ -124,6 +128,8 @@ def create_property(name, json_data, channel, printer):
         printer("property {} has no specified ID".format(name))
         return None
 
+    #Oskar: Bug: json_data calls this "access", but we look for "mode".
+    # The default should probably be "r" anyway, it's safer I'd say.
     access_mode = json_data.get("mode", "rw")
     return SimpleDeviceProperty(channel, id_str, property_type,
                                 struct_format,
@@ -250,20 +256,30 @@ def find_usb_channels(vid_pid_pairs=odrive.util.USB_VID_PID_PAIRS, printer=nopri
                     continue
                 raise
 
+def find_dev_serial_ports(search_regex):
+    try:
+        return ['/dev/' + x for x in filter(re.compile(search_regex).search, os.listdir('/dev'))]
+    except FileNotFoundError:
+        return []
+
 def find_serial_channels(printer=noprint):
     """
     Scans for serial ports.
     Returns a generator of odrive.protocol.Channel objects.
     Not every returned object necessarily represents a compatible device.
     """
+
+    #Oskar: Why not just use this tool to find the available ports?
+    # https://pyserial.readthedocs.io/en/latest/tools.html#module-serial.tools.list_ports
+
     # Real serial ports or USB-Serial converters
-    linux_real_serial_ports = ['/dev/' + x for x in filter(re.compile(r'^ttyUSB').search, os.listdir('/dev'))]
+    linux_real_serial_ports = find_dev_serial_ports(r'^ttyUSB')
     windows_real_serial_ports = [ "COM1", "COM2", "COM3", "COM4" ]
 
     # Serial devices that are exposed by the platform
     # for the device's USB connection
-    linux_usb_serial_ports = ['/dev/' + x for x in filter(re.compile(r'^ttyACM').search, os.listdir('/dev'))]
-    macos_usb_serial_ports = ['/dev/' + x for x in filter(re.compile(r'^tty\.usbmodem').search, os.listdir('/dev'))]
+    linux_usb_serial_ports = find_dev_serial_ports(r'^ttyACM')
+    macos_usb_serial_ports = find_dev_serial_ports(r'^tty\.usbmodem')
 
     for port in linux_real_serial_ports + windows_real_serial_ports + linux_usb_serial_ports + macos_usb_serial_ports:
         try:
