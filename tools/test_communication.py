@@ -47,6 +47,14 @@ def print_usage():
   print("\tQuit Python Script:\n\t\tq")
   print("---------------------------------------------------------------------")
 
+#Oskar: This cli prompt loop emulates the old test_communication, but I don't think that's a requirement
+# We should instead do whatever is the easiest for people to start playing with the ODrive,
+# and that would probably be to find a device as per current main(args), but then just drop
+# the user into an interactive ipython prompt (like 'ipython -i test_communication.py')
+# To do that you just put the variable 'odrive' in the global namespace, then finish the script
+# that will leave that odrive variable in scope for the interactive session; just give the user some instructions
+# that they can then do stuff like odrive.[tabcomplete]
+
 def command_prompt_loop(device, history):
   """
   Presents the command prompt indefinitely until something goes wrong

@@ -1,5 +1,6 @@
 
 #include "axis.h"
+#include <stdlib.h>
 #include "legacy_commands.h"
 
 //TODO: goal of refactor is to kick this out completely

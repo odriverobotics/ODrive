@@ -44,6 +44,13 @@ class SimpleDeviceProperty(property):
         return struct.unpack(self._struct_format, buffer)[0]
 
     def fset(self, obj, value):
+        #Oskar: Pythonic duck typing style means that you should pretend that types are
+        # compatible, and catch errors. So instead do something like:
+        # value = self._type(value)
+        # you could of course wrap this in a try/except block, but when it fails it
+        # raises a TypeError, just like the one you made below, so I'd just let that fire
+        # by itself.
+
         if not isinstance(value, self._type):
             raise TypeError("expected value of type {}".format(self._type.__name__))
         buffer = struct.pack(self._struct_format, value)
