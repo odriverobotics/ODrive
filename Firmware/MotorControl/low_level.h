@@ -153,6 +153,7 @@ typedef struct {
     Rotor_mode_t rotor_mode;
     Encoder_t encoder;
     Sensorless_t sensorless;
+    uint32_t loop_counter;
     int timing_log_index;
     uint16_t timing_log[TIMING_LOG_SIZE];
     // Cache for remote procedure calls arguments

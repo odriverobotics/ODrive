@@ -126,6 +126,7 @@ Motor_t motors[] = {
             .spin_up_acceleration = 400.0f, // [rad/s^2]
             .spin_up_target_vel = 400.0f, // [rad/s]
         },
+        .loop_counter = 0,
         .timing_log_index = 0,
         .timing_log = {0},
         .anticogging = {
@@ -217,6 +218,7 @@ Motor_t motors[] = {
             .spin_up_acceleration = 400.0f, // [rad/s^2]
             .spin_up_target_vel = 400.0f, // [rad/s]
         },
+        .loop_counter = 0,
         .timing_log_index = 0,
         .timing_log = {0},
         .anticogging = {
@@ -873,6 +875,7 @@ void FOC_voltage_loop(Motor_t* motor, float v_d, float v_q) {
             motor->error = ERROR_FOC_VOLTAGE_TIMING;
             return;
         }
+        ++(motor->loop_counter);
     }
 }
 
@@ -1282,6 +1285,8 @@ void control_motor_loop(Motor_t* motor) {
         if(!FOC_current(motor, 0.0f, Iq)){
             break; // in case of error exit loop, motor->error has been set by FOC_current
         }
+
+        ++(motor->loop_counter);
     }
 
     //We are exiting control, reset Ibus, and update brake current
