@@ -22,12 +22,7 @@ if __name__ == '__main__':
 
 import sys
 import time
-import threading
-import prompt_toolkit
-import re
-import tempfile
 import odrive.core
-
 
 def noprint(str):
   pass
@@ -54,6 +49,8 @@ def print_usage():
 # To do that you just put the variable 'odrive' in the global namespace, then finish the script
 # that will leave that odrive variable in scope for the interactive session; just give the user some instructions
 # that they can then do stuff like odrive.[tabcomplete]
+
+# EDIT: I just made the above: check explore_odrive.py
 
 # We can also make a function odrive.send_legacy_cmd(cmd_str), which is important for some features that
 # we haven't ported yet.
