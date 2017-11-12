@@ -1,5 +1,5 @@
 
-## [0.2.0] - UNRELEASED
+## [0.2.0] - 2017-11-12
 ### Added
 * UART communication
 * Setting to select UART or Step/dir on GIPIO 1,2
