@@ -26,28 +26,35 @@ def main(args):
   print("\tPOSITION_CONTROL:\n\t\tp MOTOR_NUMBER POSITION VELOCITY CURRENT")
   print("\tVELOCITY_CONTROL:\n\t\tv MOTOR_NUMBER VELOCITY CURRENT")
   print("\tCURRENT_CONTROL:\n\t\tc MOTOR_NUMBER CURRENT")
+  print("\tHALT:\n\t\th")
+  print("\tQuit Python Script:\n\t\tq")
   print("---------------------------------------------------------------------")
   # query device
   dev = usbbulk.poll_odrive_bulk_device(printer=print)
   print (dev.info())
   print (dev.init())
   # thread
-  thread = threading.Thread(target=recieve_thread, args=[dev])
+  thread = threading.Thread(target=receive_thread, args=[dev])
   thread.start()
   while running:
     time.sleep(0.1)
     try:
       command = input("Enter ODrive command:\n")
-      dev.send(command)
+      if 'q' in command:
+        running = False
+        sys.exit()
+      else:
+        dev.send(command)
     except:
       running = False
 
-def recieve_thread(dev):
+def receive_thread(dev):
   global ready
+
   while running:
     time.sleep(0.1)
     try:
-      message = dev.recieve(dev.recieve_max())
+      message = dev.receive(dev.receive_max())
       message_ascii = bytes(message).decode('ascii')
       print(message_ascii, end='')
       if "ODrive Firmware" in message_ascii:

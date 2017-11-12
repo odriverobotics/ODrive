@@ -14,6 +14,15 @@ typedef enum {
     M_SIGNAL_PH_CURRENT_MEAS = 1u << 0
 } Motor_thread_signals_t;
 
+typedef struct {
+    int index;
+    float *cogging_map;
+    bool use_anticogging;
+    bool calib_anticogging;
+    float calib_pos_threshold;
+    float calib_vel_threshold;
+} Anticogging_t;
+
 typedef enum {
     ERROR_NO_ERROR,
     ERROR_PHASE_RESISTANCE_TIMING,
@@ -61,6 +70,7 @@ typedef struct {
     // Voltage applied at end of cycle:
     float final_v_alpha; // [V]
     float final_v_beta; // [V]
+    float Iq;
 } Current_control_t;
 
 typedef enum {
@@ -135,6 +145,7 @@ typedef struct {
     Sensorless_t sensorless;
     int timing_log_index;
     uint16_t timing_log[TIMING_LOG_SIZE];
+    Anticogging_t anticogging;
 } Motor_t;
 
 typedef struct{
@@ -143,11 +154,10 @@ typedef struct{
 } monitoring_slot;
 
 /* Exported constants --------------------------------------------------------*/
+extern const int num_motors;
+/* Exported variables --------------------------------------------------------*/
 extern float vbus_voltage;
 extern Motor_t motors[];
-extern const int num_motors;
-
-/* Exported variables --------------------------------------------------------*/
 /* Exported macro ------------------------------------------------------------*/
 /* Exported functions --------------------------------------------------------*/
 
@@ -162,10 +172,9 @@ void step_cb(uint16_t GPIO_Pin);
 void pwm_trig_adc_cb(ADC_HandleTypeDef* hadc, bool injected);
 void vbus_sense_adc_cb(ADC_HandleTypeDef* hadc, bool injected);
 
+bool anti_cogging_calibration(Motor_t* motor);
+
 //@TODO move motor thread to high level file
 void motor_thread(void const * argument);
-
-//@TODO move cmd parsing to high level file
-void motor_parse_cmd(uint8_t* buffer, int len);
 
 #endif //__LOW_LEVEL_H
