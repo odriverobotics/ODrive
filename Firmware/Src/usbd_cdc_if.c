@@ -53,6 +53,7 @@
 #include "freertos_vars.h"
 #include "utils.h"
 #include "commands.h"
+#include <freertos_vars.h>
 /* USER CODE END INCLUDE */
 
 /** @addtogroup STM32_USB_OTG_DEVICE_LIBRARY
@@ -267,12 +268,8 @@ static int8_t CDC_Receive_FS (uint8_t* Buf, uint32_t *Len)
 {
   /* USER CODE BEGIN 6 */
 
-  // Process command
-  USB_receive_packet(Buf, *Len);
-
-  // Allow receiving more bytes
-  USBD_CDC_SetRxBuffer(&hUsbDeviceFS, UserRxBufferFS);
-  USBD_CDC_ReceivePacket(&hUsbDeviceFS);
+  set_cmd_buffer(Buf, *Len);
+  osSemaphoreRelease(sem_usb_rx);
 
   return (USBD_OK);
   /* USER CODE END 6 */ 

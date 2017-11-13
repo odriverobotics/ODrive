@@ -23,19 +23,24 @@
 
 #define UART_TX_BUFFER_SIZE 64
 
-extern PCD_HandleTypeDef hpcd_USB_OTG_FS;
-
 /* Private defines -----------------------------------------------------------*/
 /* Private macros ------------------------------------------------------------*/
 /* Private typedef -----------------------------------------------------------*/
 /* Global constant data ------------------------------------------------------*/
 /* Global variables ----------------------------------------------------------*/
+
+extern PCD_HandleTypeDef hpcd_USB_OTG_FS;
+extern USBD_HandleTypeDef hUsbDeviceFS;
+
 /* Private constant data -----------------------------------------------------*/
 // TODO: make command to switch gpio_mode during run-time
 static const GpioMode_t gpio_mode = GPIO_MODE_UART;     //GPIO 1,2 is UART Tx,Rx
 // static const GpioMode_t gpio_mode = GPIO_MODE_STEP_DIR; //GPIO 1,2 is M0 Step,Dir
 
 /* Private variables ---------------------------------------------------------*/
+
+static uint8_t* usb_buf;
+static uint32_t usb_len;
 
 /* Variables exposed to USB & UART via read/write commands */
 // TODO: include range information in JSON description
@@ -335,11 +340,30 @@ void communication_task(void const * argument) {
         // When we reach here, we are out of immediate characters to fetch out of UART buffer
         // Now we check if there is any USB processing to do: we wait for up to 1 ms,
         // before going back to checking UART again.
+        const uint32_t usb_check_timeout = 1; // ms
+        osStatus sem_stat = osSemaphoreWait(sem_usb_rx, usb_check_timeout);
+        if (sem_stat == osOK) {
+            USB_receive_packet(usb_buf, usb_len);
+            USBD_CDC_ReceivePacket(&hUsbDeviceFS);  // Allow next packet
+        }
+    }
 
-        //Oskar: Beware of changes in devel here when merging.
-        int USB_check_timeout = 1;
-        int32_t status = osSemaphoreWait(sem_usb_irq, USB_check_timeout);
-        if (status == osOK) {
+    // If we get here, then this task is done
+    vTaskDelete(osThreadGetId());
+}
+
+// Called from CDC_Receive_FS callback function, this allows motor_parse_cmd to access the
+// incoming USB data
+void set_cmd_buffer(uint8_t *buf, uint32_t len) {
+    usb_buf = buf;
+    usb_len = len;
+}
+
+void usb_update_thread() {
+    for (;;) {
+        // Wait for signalling from USB interrupt (OTG_FS_IRQHandler)
+        osStatus semaphore_status = osSemaphoreWait(sem_usb_irq, osWaitForever);
+        if (semaphore_status == osOK) {
             // We have a new incoming USB transmission: handle it
             HAL_PCD_IRQHandler(&hpcd_USB_OTG_FS);
             // Let the irq (OTG_FS_IRQHandler) fire again.
@@ -347,7 +371,6 @@ void communication_task(void const * argument) {
         }
     }
 
-    // If we get here, then this task is done
     vTaskDelete(osThreadGetId());
 }
 
