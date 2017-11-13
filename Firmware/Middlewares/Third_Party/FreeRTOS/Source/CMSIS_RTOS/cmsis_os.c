@@ -26,7 +26,7 @@
  *  
  *----------------------------------------------------------------------------
  *
- * Portions Copyright © 2016 STMicroelectronics International N.V. All rights reserved.
+ * Portions Copyright ï¿½ 2016 STMicroelectronics International N.V. All rights reserved.
  * Portions Copyright (c) 2013 ARM LIMITED
  * All rights reserved.
  * Redistribution and use in source and binary forms, with or without
@@ -819,7 +819,8 @@ osSemaphoreId osSemaphoreCreate (const osSemaphoreDef_t *semaphore_def, int32_t 
 * @retval  number of available tokens, or -1 in case of incorrect parameters.
 * @note   MUST REMAIN UNCHANGED: \b osSemaphoreWait shall be consistent in every CMSIS-RTOS.
 */
-int32_t osSemaphoreWait (osSemaphoreId semaphore_id, uint32_t millisec)
+// TODO: submit patch upstream
+osStatus osSemaphoreWait (osSemaphoreId semaphore_id, uint32_t millisec)
 {
   TickType_t ticks;
   portBASE_TYPE taskWoken = pdFALSE;  
