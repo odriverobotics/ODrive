@@ -68,6 +68,8 @@ constexpr uint16_t PROTOCOL_VERSION = 1;
 constexpr uint16_t TX_BUF_SIZE = 32; // does not work with 64 for some reason
 constexpr uint16_t RX_BUF_SIZE = 128; // larger values than 128 have currently no effect because of protocol limitations
 
+// Maximum time we allocate for processing and responding to a request
+constexpr uint32_t PROTOCOL_SERVER_TIMEOUT_MS = 10;
 
 template<typename T>
 inline size_t write_le(T value, uint8_t* buffer);
@@ -166,8 +168,8 @@ static inline T read_le(const uint8_t** buffer, size_t* length) {
 class PacketSink {
 public:
     // @brief Processes a packet.
+    // The blocking behavior shall depend on the thread-local deadline_ms variable.
     // @return: 0 on success, otherwise a non-zero error code
-    // TODO: add deadline parameter. Currently all implementations block until they can send everything.
     // TODO: define what happens when the packet is larger than what the implementation can handle.
     virtual int process_packet(const uint8_t* buffer, size_t length) = 0;
 };
@@ -175,8 +177,8 @@ public:
 class StreamSink {
 public:
     // @brief Processes a chunk of bytes that is part of a continuous stream.
+    // The blocking behavior shall depend on the thread-local deadline_ms variable.
     // @return: 0 on success, otherwise a non-zero error code
-    // TODO: add deadline parameter. Currently all implementations block until they can send everything.
     virtual int process_bytes(const uint8_t* buffer, size_t length) = 0;
 
     // @brief Returns the number of bytes that can still be written to the stream.

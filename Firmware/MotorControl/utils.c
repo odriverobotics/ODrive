@@ -1,6 +1,7 @@
 
 #include <utils.h>
 #include <math.h>
+#include <cmsis_os.h>
 
 static const float one_by_sqrt3 = 0.57735026919f;
 static const float two_by_sqrt3 = 1.15470053838f;
@@ -166,4 +167,19 @@ float fast_atan2(float y, float x) {
 int mod(int dividend, int divisor){
     int r = dividend % divisor;
     return (r < 0) ? (r + divisor) : r;
+}
+
+// @brief: Returns how much time is left until the deadline is reached.
+// If the deadline has already passed, the return value is 0 (except if
+// the deadline is very far in the past)
+uint32_t deadline_to_timeout(uint32_t deadline_ms) {
+    uint32_t now_ms = (uint32_t)((1000ull * (uint64_t)osKernelSysTick()) / osKernelSysTickFrequency);
+    uint32_t timeout_ms = deadline_ms - now_ms;
+    return (timeout_ms & 0x80000000) ? 0 : timeout_ms;
+}
+
+// @brief: Converts a timeout to a deadline based on the current time.
+uint32_t timeout_to_deadline(uint32_t timeout_ms) {
+    uint32_t now_ms = (uint32_t)((1000ull * (uint64_t)osKernelSysTick()) / osKernelSysTickFrequency);
+    return now_ms + timeout_ms;
 }

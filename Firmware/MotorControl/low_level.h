@@ -102,8 +102,8 @@ typedef struct {
 typedef struct {
     TIM_HandleTypeDef* encoder_timer;
     int encoder_cpr;
-    int encoder_offset;
-    int encoder_state;
+    int32_t encoder_offset;
+    int32_t encoder_state;
     int motor_dir; // 1/-1 for fwd/rev alignment to encoder.
     float phase;
     float pll_pos;
@@ -122,7 +122,7 @@ typedef struct {
     Motor_control_mode_t control_mode;
     bool enable_step_dir;
     float counts_per_step;
-    int error;
+    Error_t error;
     float pos_setpoint;
     float pos_gain;
     float vel_setpoint;
