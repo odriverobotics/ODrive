@@ -147,7 +147,7 @@ pip install pyusb pyserial prompt_toolkit
   * If 'Odrive V3.x' is not in the list of devices upon opening Zadig check 'List All Devices' from the options menu. Connecting to the Odrive board directly and not over a usb hub may also help. With the Odrive selected in the device list choose 'libusb-win32' from the target driver list and select the large 'install driver' button.
 7. Run `./tools/demo.py` or `./tools/explore_odrive.py`.
       - `demo.py` is a very simple script which will make motor 0 turn back and forth. Take a look at the code if you want to control the ODrive yourself programatically.
-      - `explore_odrive.py` drops you into an interactive python shell where you can explore and edit the parameters that are available on your device. For instance `my_odrive.motor0.pos_setpoint = 10000` makes motor0 move to position 10000. To connect over serial instead of USB run `./tools/explore_odrive.py --discover usb`.
+      - `explore_odrive.py` drops you into an interactive python shell where you can explore and edit the parameters that are available on your device. For instance `my_odrive.motor0.pos_setpoint = 10000` makes motor0 move to position 10000. To connect over serial instead of USB run `./tools/explore_odrive.py --discover serial`.
 
 ### From Arduino
 

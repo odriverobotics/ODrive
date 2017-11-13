@@ -34,26 +34,25 @@ Each request-response transaction corresponds to a single endpoint operation.
 __Request__
 
   - __Bytes 0, 1__ Sequence number, MSB = 0
-    Currently the server does not care about ordering and does not filter resent messages.
+      - Currently the server does not care about ordering and does not filter resent messages.
   - __Bytes 2, 3__ Endpoint ID
-    The IDs of all endpoints can be obtained from the JSON definition. The JSON definition can be obtained by reading from endpoint 0.
+      - The IDs of all endpoints can be obtained from the JSON definition. The JSON definition can be obtained by reading from endpoint 0.
     If (and only if) the MSB is set to 1 the client expects a response for this request.
   - __Bytes 4, 5__ Expected response size
-    The number of bytes that should be returned to the client. If the client doesn't need any response data, it can set this value to 0. The operation will still be acknowledged if the
+      - The number of bytes that should be returned to the client. If the client doesn't need any response data, it can set this value to 0. The operation will still be acknowledged if the
     MSB in EndpointID is set.
   - __Bytes 6 to N-3__ Payload
-    The length of the payload is determined by the total packet size. The format of the payload depends on the endpoint type. The endpoint type can be obtained from the JSON definition.
+      - The length of the payload is determined by the total packet size. The format of the payload depends on the endpoint type. The endpoint type can be obtained from the JSON definition.
   - __Bytes N-2, N-1__
-    For endpoint 0: Protocol version (currently 1). A server shall ignore packets with other
-    values.
-    For all other endpoints: The CRC16 calculated over the JSON definition. The CRC16 init value is the protocol version (currently 1). A server shall ignore packets that set this field incorrectly. See protocol.hpp for CRC details.
+      - For endpoint 0: Protocol version (currently 1). A server shall ignore packets with other values.
+      - For all other endpoints: The CRC16 calculated over the JSON definition. The CRC16 init value is the protocol version (currently 1). A server shall ignore packets that set this field incorrectly. See protocol.hpp for CRC details.
 
 __Response__
 
   - __Bytes 0, 1__ Sequence number, MSB = 1
-    The sequence number of the request to which this is the response.
+      - The sequence number of the request to which this is the response.
   - __Bytes 2, 3__ Payload
-    The length of the payload tends to be equal to the number of expected bytes as indicated
+      - The length of the payload tends to be equal to the number of expected bytes as indicated
     in the request. The server must not expect the client to accept more bytes than it requested.
 
 ## Stream format ##
@@ -61,9 +60,9 @@ The stream based format is just a wrapper for the packet format.
 
   - __Byte 0__ Sync byte `0xAA`
   - __Bytes 1, 2__ Packet length
-    Currently both parties shall only emit and accept values of 0 through 127.
+      - Currently both parties shall only emit and accept values of 0 through 127.
   - __Bytes 3__ CRC8 of bytes 0 through 2
-    See protocol.hpp for CRC details.
+      - See protocol.hpp for CRC details.
   - __Bytes 4 to N-3__ Packet
   - __Bytes N-2, N-1__ CRC16
-    See protocol.hpp for CRC details.
+      - See protocol.hpp for CRC details.
