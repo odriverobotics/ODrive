@@ -1,19 +1,27 @@
 #!/usr/bin/env python3
 
 import argparse
+import prompt_toolkit
 
 def parse_args():
-  parser = argparse.ArgumentParser(description='Talk to a ODrive board over USB or serial.')
+  parser = argparse.ArgumentParser(description='Talk to a ODrive board over USB or serial.\n')
   parser.add_argument("-v", "--verbose", action="store_true",
                       help="print debug information")
   group = parser.add_mutually_exclusive_group()
-  group.add_argument("-u", "--usb", action="store",
+  group.add_argument("-d", "--discover", metavar="CHANNELS", action="store",
+                      help="Automatically discover ODrives. Takes a comma-separated list (without spaces) "
+                      "to indicate which connection types should be considered. Possible values are "
+                      "usb and serial. For example \"--discover=usb,serial\" indicates "
+                      "that USB and serial ports should be scanned for ODrives. "
+                      "If none of the below options are specified, --discover=usb is assumed.")
+  group.add_argument("-u", "--usb", metavar="BUS:DEVICE", action="store",
                       help="Specifies the USB port on which the device is connected. "
                       "For example \"001:014\" means bus 001, device 014. The numbers can be obtained "
                       "using `lsusb`.")
-  group.add_argument("-s", "--serial", action="store",
+  group.add_argument("-s", "--serial", metavar="PORT", action="store",
                       help="Specifies the serial port on which the device is connected. "
                       "For example \"/dev/ttyUSB0\". Use `ls /dev/tty*` to find your port name.")
+  parser.set_defaults(discover="usb")
   return parser.parse_args()
 
 if __name__ == '__main__':
@@ -41,19 +49,6 @@ def print_usage():
   # print("\tHALT:\n\t\th")
   print("\tQuit Python Script:\n\t\tq")
   print("---------------------------------------------------------------------")
-
-#Oskar: This cli prompt loop emulates the old test_communication, but I don't think that's a requirement
-# We should instead do whatever is the easiest for people to start playing with the ODrive,
-# and that would probably be to find a device as per current main(args), but then just drop
-# the user into an interactive ipython prompt (like 'ipython -i test_communication.py')
-# To do that you just put the variable 'odrive' in the global namespace, then finish the script
-# that will leave that odrive variable in scope for the interactive session; just give the user some instructions
-# that they can then do stuff like odrive.[tabcomplete]
-
-# EDIT: I just made the above: check explore_odrive.py
-
-# We can also make a function odrive.send_legacy_cmd(cmd_str), which is important for some features that
-# we haven't ported yet.
 
 def command_prompt_loop(device, history):
   """
@@ -143,7 +138,9 @@ def main(args):
       device = odrive.core.open_serial(args.serial, printer=printer)
     else:
       print("Waiting for device...")
-      device = odrive.core.find_any(printer=printer)
+      consider_usb = 'usb' in args.discover.split(',')
+      consider_serial = 'serial' in args.discover.split(',')
+      device = odrive.core.find_any(consider_usb, consider_serial, printer=printer)
       autoconnected = True
 
     try:
