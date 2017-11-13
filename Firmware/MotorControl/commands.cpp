@@ -35,9 +35,11 @@ extern PCD_HandleTypeDef hpcd_USB_OTG_FS;
 extern USBD_HandleTypeDef hUsbDeviceFS;
 
 /* Private constant data -----------------------------------------------------*/
-// TODO: make command to switch gpio_mode during run-time
+#if defined(USE_GPIO_MODE_STEP_DIR)
+static const GpioMode_t gpio_mode = GPIO_MODE_STEP_DIR; //GPIO 1,2 is M0 Step,Dir
+#else
 static const GpioMode_t gpio_mode = GPIO_MODE_UART;     //GPIO 1,2 is UART Tx,Rx
-// static const GpioMode_t gpio_mode = GPIO_MODE_STEP_DIR; //GPIO 1,2 is M0 Step,Dir
+#endif
 
 /* Private variables ---------------------------------------------------------*/
 
@@ -201,7 +203,7 @@ const Endpoint endpoints[] = {
 constexpr size_t NUM_ENDPOINTS = sizeof(endpoints) / sizeof(endpoints[0]);
 
 
-#if defined(USB_PROTOCOL_NEW)
+#if defined(USB_PROTOCOL_NATIVE)
 
 class USBSender : public PacketSink {
 public:
@@ -222,7 +224,7 @@ public:
 
 BidirectionalPacketBasedChannel usb_channel(endpoints, NUM_ENDPOINTS, usb_sender);
 
-#elif defined(USB_PROTOCOL_NEW_STREAM_BASED)
+#elif defined(USB_PROTOCOL_NATIVE_STREAM_BASED)
 
 class USBSender : public StreamSink {
 public:
@@ -253,7 +255,7 @@ StreamToPacketConverter usb_stream_sink(usb_channel);
 
 #endif
 
-#if defined(UART_PROTOCOL_NEW)
+#if defined(UART_PROTOCOL_NATIVE)
 class UART4Sender : public StreamSink {
 public:
     int process_bytes(const uint8_t* buffer, size_t length) {
@@ -330,7 +332,7 @@ void communication_task(void const * argument) {
         uint32_t new_rcv_idx = UART_RX_BUFFER_SIZE - huart4.hdmarx->Instance->NDTR;
 
         deadline_ms = timeout_to_deadline(PROTOCOL_SERVER_TIMEOUT_MS);
-#if defined(UART_PROTOCOL_NEW)
+#if defined(UART_PROTOCOL_NATIVE)
         // Process bytes in one or two chunks (two in case there was a wrap)
         if (new_rcv_idx < last_rcv_idx) {
             UART4_stream_sink.process_bytes(dma_circ_buffer + last_rcv_idx,
@@ -365,9 +367,9 @@ void communication_task(void const * argument) {
         osStatus sem_stat = osSemaphoreWait(sem_usb_rx, usb_check_timeout);
         if (sem_stat == osOK) {
             deadline_ms = timeout_to_deadline(PROTOCOL_SERVER_TIMEOUT_MS);
-#if defined(USB_PROTOCOL_NEW)
+#if defined(USB_PROTOCOL_NATIVE)
             usb_channel.process_packet(usb_buf, usb_len);
-#elif defined(USB_PROTOCOL_NEW_STREAM_BASED)
+#elif defined(USB_PROTOCOL_NATIVE_STREAM_BASED)
             usb_stream_sink.process_bytes(usb_buf, usb_len);
 #elif defined(USB_PROTOCOL_LEGACY)
             legacy_parse_cmd(usb_buf, usb_len, USB_RX_DATA_SIZE, SERIAL_PRINTF_IS_USB);

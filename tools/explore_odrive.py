@@ -16,9 +16,9 @@ group = parser.add_mutually_exclusive_group()
 group.add_argument("-d", "--discover", metavar="CHANNELS", action="store",
                     help="Automatically discover ODrives. Takes a comma-separated list (without spaces) "
                     "to indicate which connection types should be considered. Possible values are "
-                    "usb and serial. For example \"--discover=usb,serial\" indicates "
+                    "usb and serial. For example \"--discover usb,serial\" indicates "
                     "that USB and serial ports should be scanned for ODrives. "
-                    "If none of the below options are specified, --discover=usb is assumed.")
+                    "If none of the below options are specified, --discover usb is assumed.")
 group.add_argument("-u", "--usb", metavar="BUS:DEVICE", action="store",
                     help="Specifies the USB port on which the device is connected. "
                     "For example \"001:014\" means bus 001, device 014. The numbers can be obtained "

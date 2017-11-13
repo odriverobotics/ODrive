@@ -23,10 +23,28 @@ The first thing to set is your board hardware version, located at the top of [In
 ```
 
 ### Communication configuration
-If you are using USB only to communicate with the ODrive, you may skip this step.
+If want to use the example python scripts and connect the ODrive via USB, the defaults are fine for you and you can skip this step.
 
-The GPIO 1,2 pins are configurable as either step/direction, or as UART.
-In [MotorControl/commands.c](MotorControl/commands.c) please set `gpio_mode` to the corresponding value (`GPIO_MODE_UART` or `GPIO_MODE_STEP_DIR`).
+You can select what interface you want to run on USB and UART. The following options are available:
+
+__USB__:
+ - `USB_PROTOCOL_NATIVE`: Use the native protocol (recommended for new applications).
+    The python library only understands the native protocol, so this is the way to go
+    if you use that.
+ - `USB_PROTOCOL_NATIVE_STREAM_BASED`: Use the native stream based protocol.
+    On most platforms the device shows up as a serial port when connected over USB.
+    So instead of using the python tool's direct USB access, you can use this option and then pretend you connected the device over serial.
+    __On some platforms (specifically macOS), this is required__ because the kernel doesn't allow direct USB access.
+ - `USB_PROTOCOL_LEGACY`: Use the human-readable legacy protocol
+    Select this option if you already have an existing application. This option will be removed in the future.
+ - `USB_PROTOCOL_NONE`: Ignore USB communication
+
+__GPIO 1,2 pins__:
+ - `UART_PROTOCOL_NATIVE`: Use the native protocol (see notes above).
+ - `UART_PROTOCOL_LEGACY`: Use the human-readable legacy protocol
+    Use this option if you control the ODrive with an Arduino. The ODrive Arduino library is not yet updated to the native protocol.
+ - `UART_PROTOCOL_NONE`: Ignore UART communication
+ - `USE_GPIO_MODE_STEP_DIR`: Step/direction control mode (use in conjunction with `UART_PROTOCOL_NONE`)
 
 ### Motor control parameters
 The rest of all the parameters are at the top of the [MotorControl/low_level.c](MotorControl/low_level.c) file. Please note that many parameters occur twice, once for each motor.
@@ -108,90 +126,37 @@ After installing all of the above, open a Git Bash shell. Continue at section [B
 Run `make gdb`. This will reset and halt at program start. Now you can set breakpoints and run the program. If you know how to use gdb, you are good to go.
 If you prefer to debug from eclipse, see [Setting up Eclipse development environment](#setting-up-eclipse-development-environment).
 
-## Communicating over USB
-There is currently a very primitive method to read/write configuration, commands and errors from the ODrive over the USB.
-Please use the `tools/test_communication.py` python script for this.  It is written for [Python 3](https://www.python.org/downloads/) and so should be installed first.
+## Communicating over USB or UART
 
-* Assuming you already have Python, install dependencies:
+### From Linux/Windows/macOS
+There are two simple python scripts to help you get started with controlling the ODrive using python.
+
+1. [Install Python 3](https://www.python.org/downloads/), then install dependencies:
 ```
 pip install pyusb pyserial prompt_toolkit
 ```
-* __Linux__: set up USB permissions
+3. __Linux__: set up USB permissions
 ```
     echo 'SUBSYSTEM=="usb", ATTR{idVendor}=="1209", ATTR{idProduct}=="0d[0-9][0-9]", MODE="0666"' | sudo tee /etc/udev/rules.d/50-odrive.rules
     sudo udevadm control --reload-rules
     sudo udevadm trigger # until you reboot you may need to do this everytime you reset the ODrive
 ```
-* Power the ODrive board (as per the [Flashing the firmware](#flashing-the-firmware) step)
-* Plug in a USB cable into the microUSB connector on ODrive, and connect it to your PC
-* __Windows__: Use the [Zadig](http://zadig.akeo.ie/) utility to set ODrive (not STLink!) driver to libusb. 
+4. Power the ODrive board (as per the [Flashing the firmware](#flashing-the-firmware) step)
+5. Plug in a USB cable into the microUSB connector on ODrive, and connect it to your PC
+6. __Windows__: Use the [Zadig](http://zadig.akeo.ie/) utility to set ODrive (not STLink!) driver to libusb. 
   * If 'Odrive V3.x' is not in the list of devices upon opening Zadig check 'List All Devices' from the options menu. Connecting to the Odrive board directly and not over a usb hub may also help. With the Odrive selected in the device list choose 'libusb-win32' from the target driver list and select the large 'install driver' button.
-* Run `tools/test_communication.py`
+7. Run `./tools/demo.py` or `./tools/explore_odrive.py`.
+      - `demo.py` is a very simple script which will make motor 0 turn back and forth. Take a look at the code if you want to control the ODrive yourself programatically.
+      - `explore_odrive.py` drops you into an interactive python shell where you can explore and edit the parameters that are available on your device. For instance `my_odrive.motor0.pos_setpoint = 10000` makes motor0 move to position 10000. To connect over serial instead of USB run `./tools/explore_odrive.py --discover usb`.
 
-### Command set
-The most accurate way to understand the commands is to read [the code](MotorControl/commands.c) that parses the commands. Also you can have a look at the [ODrive Arduino library](https://github.com/madcowswe/ODriveArduino) that makes it easy to use the UART interface on Arduino. You can also look at it as an implementation example of how to talk to the ODrive over UART.
+### From Arduino
 
-#### UART framing
-USB communicates with packets, so it is easy to frame a command as one command per packet. However, UART doesn't have any packeting, so we need a way to frame the commands. The start-of-packet symbol is `$` and the end-of-packet symbol is `!`, that is, something like this: `$command!`. An example of a valid UART position command:
-```
-$p 0 10000 0 0!
-```
+[See ODrive Arduino Library](https://github.com/madcowswe/ODriveArduino)
 
-#### Motor Position command
-```
-p motor position velocity_ff current_ff
-```
-* `p` for position
-* `motor` is the motor number, `0` or `1`.
-* `position` is the desired position, in encoder counts.
-* `velocity_ff` is the velocity feed-forward term, in counts/s.
-* `current_ff` is the current feed-forward term, in A.
+### Other platforms
 
-Note that if you don't know what feed-forward is or what it's used for, simply set it to 0.
+See the [protocol specification](https://github.com/madcowswe/ODrive/blob/devel/Firmware/protocol.md) or the [legacy protocol specification](https://github.com/madcowswe/ODrive/blob/devel/Firmware/legacy-protocol.md).
 
-#### Motor Velocity command
-```
-v motor velocity current_ff
-```
-* `v` for velocity
-* `motor` is the motor number, `0` or `1`.
-* `velocity` is the desired velocity in counts/s.
-* `current_ff` is the current feed-forward term, in A.
-
-Note that if you don't know what feed-forward is or what it's used for, simply set it to 0.
-
-#### Motor Current command
-```
-c motor current
-```
-* `c` for current
-* `motor` is the motor number, `0` or `1`.
-* `current` is the desired current in A.
-
-#### Variable getting and setting
-```
-g type index
-s type index value
-```
-* `g` for get, `s` for set
-* `type` is the data type as follows:
-** `0` is float
-** `1` is int
-** `2` is bool
-* `index` is the index in the corresponding [exposed variable table](MotorControl/commands.c).
-
-For example
-* `g 0 12` will return the phase resistance of M0
-* `s 0 8 10000.0` will set the velocity limit on M0 to 10000 counts/s
-* `g 1 3` will return the error status of M0
-* `g 1 7` will return the error status of M1
-
-The error status corresponds to the [Error_t enum in low_level.h](MotorControl/low_level.h).
-
-Note that the links in this section are to a specific commits to make sure that the line numbers are accurate. That is, they don't link to the newest master, but to an old version. Please check the corresponding lines in the code you are using. This is especially important to get the correct indicies in the exposed variable tables, and the error enum values.
-
-#### Continous monitoring of variables
-You can set up variables in monitoring slots, and then have them (or a subset of them) repeatedly printed upon request. Please see the code for this.
 
 ## Generating startup code
 **Note:** You do not need to run this step to program the board. This is only required if you wish to update the auto generated code.
