@@ -61,13 +61,9 @@
 osThreadId defaultTaskHandle;
 
 /* USER CODE BEGIN Variables */
-extern CAN_HandleTypeDef hcan1;
 osThreadId thread_motor_0;
 osThreadId thread_motor_1;
 osThreadId thread_cmd_parse;
-osThreadId thread_can_cmd;
-osSemaphoreId sem_usb_irq;
-osSemaphoreId sem_can_irq;
 
 /* USER CODE END Variables */
 
@@ -96,15 +92,7 @@ void MX_FREERTOS_Init(void) {
   /* USER CODE END RTOS_MUTEX */
 
   /* USER CODE BEGIN RTOS_SEMAPHORES */
-  // Init usb irq binary semaphore, and start with no tolkens by removing the starting one.
-  osSemaphoreDef(sem_usb_irq);
-  sem_usb_irq = osSemaphoreCreate(osSemaphore(sem_usb_irq), 1);
-  osSemaphoreWait(sem_usb_irq, 0);
 
-  // Init can irq binary semaphore, and start with no tolkens by removing the initial one.
-  osSemaphoreDef(sem_can_irq);
-  sem_can_irq = osSemaphoreCreate(osSemaphore(sem_can_irq), 1);
-  osSemaphoreWait(sem_can_irq, 0);
   /* USER CODE END RTOS_SEMAPHORES */
 
   /* USER CODE BEGIN RTOS_TIMERS */
@@ -145,13 +133,9 @@ void StartDefaultTask(void const * argument)
   thread_motor_0 = osThreadCreate(osThread(task_motor_0), &motors[0]);
   thread_motor_1 = osThreadCreate(osThread(task_motor_1), &motors[1]);
 
-  // Start USB command handling thread
+  // Start commands handling thread
   osThreadDef(task_cmd_parse, cmd_parse_thread, osPriorityNormal, 0, 512);
   thread_cmd_parse = osThreadCreate(osThread(task_cmd_parse), NULL);
-
-  // Start CAN command handling thread
-  osThreadDef(task_can_cmd, can_cmd_thread, osPriorityNormal, 0, 512);
-  thread_can_cmd = osThreadCreate(osThread(task_can_cmd), NULL);
 
   //If we get to here, then the default task is done.
   vTaskDelete(defaultTaskHandle);
@@ -160,24 +144,6 @@ void StartDefaultTask(void const * argument)
 }
 
 /* USER CODE BEGIN Application */
-
-// Thread to handle deffered processing of CAN interrupt
-void can_cmd_thread(void const * argument) {
-
-  for (;;) {
-    // Wait for signalling from CAN interrupt (HAL_CAN_IRQHandler)
-    osSemaphoreWait(sem_can_irq, osWaitForever);
-    // Irq processing loop
-    //while(HAL_NVIC_GetActive(CAN1_RX0_IRQn)) {
-      HAL_CAN_IRQHandler(&hcan1);
-    //}
-    // Let the irq (CAN1_RX0_IRQn) fire again.
-    HAL_NVIC_EnableIRQ(CAN1_RX0_IRQn);
-  }
-
-  // If we get here, then this task is done
-  vTaskDelete(osThreadGetId());
-}
 
 /* USER CODE END Application */
 

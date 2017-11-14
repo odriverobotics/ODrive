@@ -39,6 +39,7 @@
 /* USER CODE BEGIN 0 */
 #include "freertos_vars.h"
 #include "low_level.h"
+#include "commands.h"
 
 typedef void (*ADC_handler_t)(ADC_HandleTypeDef* hadc, bool injected);
 void ADC_IRQ_Dispatch(ADC_HandleTypeDef* hadc, ADC_handler_t callback);
@@ -256,10 +257,14 @@ void CAN1_RX0_IRQHandler(void)
 
   // Mask interrupt, and signal processing of interrupt by can_cmd_thread
   // The thread will re-enable the interrupt when all pending irqs are clear.
-  HAL_NVIC_DisableIRQ(CAN1_RX0_IRQn);
-  osSemaphoreRelease(sem_can_irq);
-  // Bypass interrupt processing here
-  return;
+  // IRQ may happen before the task is created so test the pointer first.
+  // Pointers are usually base-data aligned, so the comparison should be atomic (I hope...)
+  if (thread_cmd_parse != NULL) {
+    HAL_NVIC_DisableIRQ(CAN1_RX0_IRQn);
+    osSignalSet(thread_cmd_parse, CMD_CAN_EVENT);
+    // Bypass interrupt processing here
+    return;
+  }
 
   /* USER CODE END CAN1_RX0_IRQn 0 */
   HAL_CAN_IRQHandler(&hcan1);
@@ -306,10 +311,14 @@ void OTG_FS_IRQHandler(void)
 
   // Mask interrupt, and signal processing of interrupt by usb_cmd_thread
   // The thread will re-enable the interrupt when all pending irqs are clear.
-  HAL_NVIC_DisableIRQ(OTG_FS_IRQn);
-  osSemaphoreRelease(sem_usb_irq);
-  // Bypass interrupt processing here
-  return;
+  // IRQ may happen before the task is created so test the pointer first.
+  // Pointers are usually base-data aligned, so the comparison should be atomic (I hope...)
+  if (thread_cmd_parse != NULL) {
+    HAL_NVIC_DisableIRQ(OTG_FS_IRQn);
+    osSignalSet(thread_cmd_parse, CMD_USB_EVENT);
+    // Bypass interrupt processing here
+    return;
+  }
 
   /* USER CODE END OTG_FS_IRQn 0 */
   HAL_PCD_IRQHandler(&hpcd_USB_OTG_FS);

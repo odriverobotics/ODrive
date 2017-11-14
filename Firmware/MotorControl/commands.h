@@ -16,6 +16,11 @@ typedef enum {
     SERIAL_PRINTF_IS_UART,
 } SerialPrintf_t;
 
+typedef enum {
+    CMD_USB_EVENT = 0x1,
+    CMD_CAN_EVENT = 0x2
+} CmdEvent_t;
+
 /* Exported constants --------------------------------------------------------*/
 /* Exported variables --------------------------------------------------------*/
 extern SerialPrintf_t serial_printf_select;

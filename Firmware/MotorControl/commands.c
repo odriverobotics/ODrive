@@ -6,6 +6,7 @@
 #include <freertos_vars.h>
 
 extern PCD_HandleTypeDef hpcd_USB_OTG_FS;
+extern CAN_HandleTypeDef hcan1;
 
 /* Private macros ------------------------------------------------------------*/
 /* Private typedef -----------------------------------------------------------*/
@@ -270,7 +271,7 @@ static void print_monitoring(int limit) {
 // Thread to handle deffered processing of USB interrupt, and
 // read commands out of the UART DMA circular buffer
 void cmd_parse_thread(void const * argument) {
-    
+    osEvent event;
     //DMA open loop continous circular buffer
     //1ms delay periodic, chase DMA ptr around, on new data:
         // Check for start char
@@ -338,14 +339,19 @@ void cmd_parse_thread(void const * argument) {
             // When we reach here, we are out of immediate characters to fetch out of UART buffer
             // Now we check if there is any USB processing to do: we wait for up to 1 ms,
             // before going back to checking UART again.
-            int USB_check_timeout = 1;
-            // Wait for signalling from USB interrupt (OTG_FS_IRQHandler)
-            osStatus semaphore_status = osSemaphoreWait(sem_usb_irq, USB_check_timeout);
-            if (semaphore_status == osOK) {
+            // Wait for any signals (from USB and CAN interrupts for now)
+            event = osSignalWait(0, 1);
+            if (event.status == osEventSignal && (event.value.signals & CMD_USB_EVENT)) {
                 // We have a new incoming USB transmission: handle it
                 HAL_PCD_IRQHandler(&hpcd_USB_OTG_FS);
                 // Let the irq (OTG_FS_IRQHandler) fire again.
                 HAL_NVIC_EnableIRQ(OTG_FS_IRQn);
+            }
+            if (event.status == osEventSignal && (event.value.signals & CMD_CAN_EVENT)) {
+                // We have a new incoming CAN transmission: handle it
+                HAL_CAN_IRQHandler(&hcan1);
+                // Let the irq (CAN1_RX0_IRQn) fire again.
+                HAL_NVIC_EnableIRQ(CAN1_RX0_IRQn);
             }
         } while (!reset_read_state);
     }
