@@ -269,27 +269,27 @@ void HAL_CAN_RxCpltCallback(CAN_HandleTypeDef* canHandle)
   // Parse retrieved data in accordance with the control mode
   if (ctrlMode == 'p' && canHandle->pRxMsg->DLC == 8)
   {
-    position = (float)(canHandle->pRxMsg->Data[2] | (uint32_t)(canHandle->pRxMsg->Data[1] << 8) | 
-      (uint32_t)(canHandle->pRxMsg->Data[0] << 16)) / 100.0f;
-    velocity = (float)(canHandle->pRxMsg->Data[5] | (uint32_t)(canHandle->pRxMsg->Data[4] << 8) | 
-      (uint32_t)(canHandle->pRxMsg->Data[3] << 16)) / 100.0f;
-    current = (float)(canHandle->pRxMsg->Data[7] | (uint32_t)(canHandle->pRxMsg->Data[6] << 8)) / 100.0f;
+    position = ((float)(canHandle->pRxMsg->Data[2] | (uint32_t)(canHandle->pRxMsg->Data[1] << 8) |
+      (uint32_t)(canHandle->pRxMsg->Data[0] << 16)) - 0x800000) / 100.0f;
+    velocity = ((float)(canHandle->pRxMsg->Data[5] | (uint32_t)(canHandle->pRxMsg->Data[4] << 8) |
+      (uint32_t)(canHandle->pRxMsg->Data[3] << 16)) - 0x800000) / 100.0f;
+    current = ((float)(canHandle->pRxMsg->Data[7] | (uint32_t)(canHandle->pRxMsg->Data[6] << 8)) - 0x8000) / 100.0f;
 
     //printf("CAN p %lu %f %f %f\n", motorID, position, velocity, current);
     set_pos_setpoint(&motors[motorID], position, velocity, current);
   }
   else if (ctrlMode == 'v' && canHandle->pRxMsg->DLC >= 5)
   {
-    velocity = (float)(canHandle->pRxMsg->Data[2] | (uint32_t)(canHandle->pRxMsg->Data[1] << 8) | 
-      (uint32_t)(canHandle->pRxMsg->Data[0] << 16)) / 100.0f;
-    current = (float)(canHandle->pRxMsg->Data[4] | (uint32_t)(canHandle->pRxMsg->Data[3] << 8)) / 100.0f;
+    velocity = ((float)(canHandle->pRxMsg->Data[2] | (uint32_t)(canHandle->pRxMsg->Data[1] << 8) |
+      (uint32_t)(canHandle->pRxMsg->Data[0] << 16)) - 0x800000) / 100.0f;
+    current = ((float)(canHandle->pRxMsg->Data[4] | (uint32_t)(canHandle->pRxMsg->Data[3] << 8)) - 0x8000)/ 100.0f;
 
     //printf("CAN v %lu %f %f\n", motorID, velocity, current);
     set_vel_setpoint(&motors[motorID], velocity, current);
   }
   else if (ctrlMode == 'c' && canHandle->pRxMsg->DLC >= 2)
   {
-    current = (float)(canHandle->pRxMsg->Data[1] | (uint32_t)(canHandle->pRxMsg->Data[0] << 8)) / 100.0f;
+    current = ((float)(canHandle->pRxMsg->Data[1] | (uint32_t)(canHandle->pRxMsg->Data[0] << 8)) - 0x8000) / 100.0f;
 
     //printf("CAN c %lu %f\n", motorID, current);
     set_current_setpoint(&motors[motorID], current);
