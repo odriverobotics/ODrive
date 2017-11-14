@@ -3,8 +3,6 @@
 This project is all about accurately driving brushless motors, for cheap. The aim is to make it possible to use inexpensive brushless motors in high performance robotics projects, like [this](https://www.youtube.com/watch?v=WT4E5nb3KtY).
 
 ## Getting Started
-*References to hardware is with respect to v3.3. Other versions may still apply, but component designators may differ*
-
 It is perfectly fine, and even recommended, to start testing with just a single motor and encoder.
 Make sure you have a good mechanical connection between the encdoer and the motor, slip can cause disasterous oscillations.
 All non-power I/O is 3.3V output and 5V tolerant on input, except:
@@ -20,8 +18,9 @@ Wire up the encoder(s) to J4. The A,B phases are required, and the Z (index puls
 
 ![Image of ODrive all hooked up](https://docs.google.com/drawings/d/e/2PACX-1vTCD0P40Cd-wvD7Fl8UYEaxp3_UL81oI4qUVqrrCJPi6tkJeSs2rsffIXQRpdu6rNZs6-2mRKKYtILG/pub?w=1716&h=1281)
 
-The currently supported command modes are USB and step/direction.
+The currently supported command modes are USB, UART and step/direction.
 * If you are sending commands over USB, you can plug in a cable into the micro-USB port.
+* If you are sending commands over UART, please see [Setting up UART](#setting-up-uart)
 * If you are using step/direction, please see [setting up step/direction](#setting-up-stepdirection)
 
 You can now:
@@ -35,7 +34,7 @@ The startup procedure is demonstrated [here](https://www.youtube.com/watch?v=VCX
 Note: the rotor must be allowed to rotate without any biased load during startup. That means mass and weak friction loads are fine, but gravity or spring loads are not okay. Also note that in the video, the motors spin after initalisation, but in the current software the default behaviour is to do position control to position 0 (i.e. the position at startup)
 
 ### Sending commands
-Sending USB and UART commands is documented [here].(Firmware/README.md#communicating-over-usb-and-uart)
+Sending USB and UART commands is documented [here](Firmware/README.md#communicating-over-usb-and-uart). You can also have a look at the [ODrive Arduino library](https://github.com/madcowswe/ODriveArduino) that makes it easy to use the UART interface on Arduino. You can also look at it as an implementation example of how to talk to the ODrive over UART.
 
 ### Setting up UART
 Baud rate: 115200

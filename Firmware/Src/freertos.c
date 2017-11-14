@@ -54,21 +54,21 @@
 /* USER CODE BEGIN Includes */     
 #include "freertos_vars.h"
 #include "low_level.h"
-#include "version.h"
+#include "commands.h"
 /* USER CODE END Includes */
 
 /* Variables -----------------------------------------------------------------*/
 osThreadId defaultTaskHandle;
 
 /* USER CODE BEGIN Variables */
-extern PCD_HandleTypeDef hpcd_USB_OTG_FS;
 extern CAN_HandleTypeDef hcan1;
 osThreadId thread_motor_0;
 osThreadId thread_motor_1;
-osThreadId thread_usb_cmd;
+osThreadId thread_cmd_parse;
 osThreadId thread_can_cmd;
 osSemaphoreId sem_usb_irq;
 osSemaphoreId sem_can_irq;
+
 /* USER CODE END Variables */
 
 /* Function prototypes -------------------------------------------------------*/
@@ -78,7 +78,6 @@ extern void MX_USB_DEVICE_Init(void);
 void MX_FREERTOS_Init(void); /* (MISRA C 2004 rule 8.1) */
 
 /* USER CODE BEGIN FunctionPrototypes */
-void usb_cmd_thread(void const * argument);
 void can_cmd_thread(void const * argument);
 
 /* USER CODE END FunctionPrototypes */
@@ -134,6 +133,9 @@ void StartDefaultTask(void const * argument)
 
   /* USER CODE BEGIN StartDefaultTask */
 
+  // Init communications
+  init_communication();
+
   // Init motor control
   init_motor_control();
 
@@ -144,8 +146,8 @@ void StartDefaultTask(void const * argument)
   thread_motor_1 = osThreadCreate(osThread(task_motor_1), &motors[1]);
 
   // Start USB command handling thread
-  osThreadDef(task_usb_cmd, usb_cmd_thread, osPriorityNormal, 0, 512);
-  thread_usb_cmd = osThreadCreate(osThread(task_usb_cmd), NULL);
+  osThreadDef(task_cmd_parse, cmd_parse_thread, osPriorityNormal, 0, 512);
+  thread_cmd_parse = osThreadCreate(osThread(task_cmd_parse), NULL);
 
   // Start CAN command handling thread
   osThreadDef(task_can_cmd, can_cmd_thread, osPriorityNormal, 0, 512);
@@ -158,24 +160,6 @@ void StartDefaultTask(void const * argument)
 }
 
 /* USER CODE BEGIN Application */
-
-// Thread to handle deffered processing of USB interrupt
-void usb_cmd_thread(void const * argument) {
-
-  for (;;) {
-    // Wait for signalling from USB interrupt (OTG_FS_IRQHandler)
-    osSemaphoreWait(sem_usb_irq, osWaitForever);
-    // Irq processing loop
-    //while(HAL_NVIC_GetActive(OTG_FS_IRQn)) {
-      HAL_PCD_IRQHandler(&hpcd_USB_OTG_FS);
-    //}
-    // Let the irq (OTG_FS_IRQHandler) fire again.
-    HAL_NVIC_EnableIRQ(OTG_FS_IRQn);
-  }
-
-  // If we get here, then this task is done
-  vTaskDelete(osThreadGetId());
-}
 
 // Thread to handle deffered processing of CAN interrupt
 void can_cmd_thread(void const * argument) {

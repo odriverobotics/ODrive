@@ -2,12 +2,14 @@
 
 // Because of broken cmsis_os.h, we need to include arm_math first,
 // otherwise chip specific defines are ommited
+#include <stm32f405xx.h>
 #include <stm32f4xx_hal.h> // Sets up the correct chip specifc defines required by arm_math
 #define ARM_MATH_CM4
 #include <arm_math.h>
 
 #include <low_level.h>
 
+#include <stdint.h>
 #include <stdlib.h>
 #include <math.h>
 #include <cmsis_os.h>
@@ -93,6 +95,7 @@ Motor_t motors[] = {
             .Ibus = 0.0f,
             .final_v_alpha = 0.0f,
             .final_v_beta = 0.0f,
+            .Iq = 0.0f,
         },
         // .rotor_mode = ROTOR_MODE_SENSORLESS,
         // .rotor_mode = ROTOR_MODE_RUN_ENCODER_TEST_SENSORLESS,
@@ -125,6 +128,14 @@ Motor_t motors[] = {
         },
         .timing_log_index = 0,
         .timing_log = {0},
+        .anticogging = {
+            .index = 0,
+            .cogging_map = NULL,
+            .use_anticogging = false,
+            .calib_anticogging = false,
+            .calib_pos_threshold = 1.0f,
+            .calib_vel_threshold = 1.0f,
+        },
     },
     {   // M1
         .control_mode = CTRL_MODE_POSITION_CONTROL, //see: Motor_control_mode_t
@@ -176,6 +187,7 @@ Motor_t motors[] = {
             .Ibus = 0.0f,
             .final_v_alpha = 0.0f,
             .final_v_beta = 0.0f,
+            .Iq = 0.0f,
         },
         .rotor_mode = ROTOR_MODE_ENCODER,
         .encoder = {
@@ -205,7 +217,15 @@ Motor_t motors[] = {
             .spin_up_target_vel = 400.0f, // [rad/s]
         },
         .timing_log_index = 0,
-        .timing_log = {0}
+        .timing_log = {0},
+        .anticogging = {
+            .index = 0,
+            .cogging_map = NULL,
+            .use_anticogging = false,
+            .calib_anticogging = false,
+            .calib_pos_threshold = 1.0f,
+            .calib_vel_threshold = 1.0f,
+        }
     }
 };
 const int num_motors = sizeof(motors)/sizeof(motors[0]);
@@ -219,107 +239,9 @@ static const int current_meas_hz = CURRENT_MEAS_HZ;
 /* Private variables ---------------------------------------------------------*/
 static float brake_resistance = 0.47f; // [ohm]
 
-/* Monitoring */
-monitoring_slot monitoring_slots[20] = {0};
-
-/* variables exposed to usb interface via set/get/monitor
- * If you change something here, don't forget to regenerate the python interface with generate_api.py
- * ro/rw : read only/read write -> ro prevents the code generator from generating setter
- * */
-
-float* exposed_floats[] = {
-    &vbus_voltage, // ro
-    &elec_rad_per_enc, // ro
-    &motors[0].pos_setpoint, // rw
-    &motors[0].pos_gain, // rw
-    &motors[0].vel_setpoint, // rw
-    &motors[0].vel_gain, // rw
-    &motors[0].vel_integrator_gain, // rw
-    &motors[0].vel_integrator_current, // rw
-    &motors[0].vel_limit, // rw
-    &motors[0].current_setpoint, // rw
-    &motors[0].calibration_current, // rw
-    &motors[0].phase_inductance, // ro
-    &motors[0].phase_resistance, // ro
-    &motors[0].current_meas.phB, // ro
-    &motors[0].current_meas.phC, // ro
-    &motors[0].DC_calib.phB, // rw
-    &motors[0].DC_calib.phC, // rw
-    &motors[0].shunt_conductance, // rw
-    &motors[0].phase_current_rev_gain, // rw
-    &motors[0].current_control.current_lim, // rw
-    &motors[0].current_control.p_gain, // rw
-    &motors[0].current_control.i_gain, // rw
-    &motors[0].current_control.v_current_control_integral_d, // rw
-    &motors[0].current_control.v_current_control_integral_q, // rw
-    &motors[0].current_control.Ibus, // ro
-    &motors[0].encoder.phase, // ro
-    &motors[0].encoder.pll_pos, // rw
-    &motors[0].encoder.pll_vel, // rw
-    &motors[0].encoder.pll_kp, // rw
-    &motors[0].encoder.pll_ki, // rw
-    &motors[1].pos_setpoint, // rw
-    &motors[1].pos_gain, // rw
-    &motors[1].vel_setpoint, // rw
-    &motors[1].vel_gain, // rw
-    &motors[1].vel_integrator_gain, // rw
-    &motors[1].vel_integrator_current, // rw
-    &motors[1].vel_limit, // rw
-    &motors[1].current_setpoint, // rw
-    &motors[1].calibration_current, // rw
-    &motors[1].phase_inductance, // ro
-    &motors[1].phase_resistance, // ro
-    &motors[1].current_meas.phB, // ro
-    &motors[1].current_meas.phC, // ro
-    &motors[1].DC_calib.phB, // rw
-    &motors[1].DC_calib.phC, // rw
-    &motors[1].shunt_conductance, // rw
-    &motors[1].phase_current_rev_gain, // rw
-    &motors[1].current_control.current_lim, // rw
-    &motors[1].current_control.p_gain, // rw
-    &motors[1].current_control.i_gain, // rw
-    &motors[1].current_control.v_current_control_integral_d, // rw
-    &motors[1].current_control.v_current_control_integral_q, // rw
-    &motors[1].current_control.Ibus, // ro
-    &motors[1].encoder.phase, // ro
-    &motors[1].encoder.pll_pos, // rw
-    &motors[1].encoder.pll_vel, // rw
-    &motors[1].encoder.pll_kp, // rw
-    &motors[1].encoder.pll_ki, // rw
-};
-
-int* exposed_ints[] = {
-    (int*)&motors[0].control_mode, // rw
-    &motors[0].encoder.encoder_offset, // rw
-    &motors[0].encoder.encoder_state, // ro
-    &motors[0].error, // rw
-    (int*)&motors[1].control_mode, // rw
-    &motors[1].encoder.encoder_offset, // rw
-    &motors[1].encoder.encoder_state, // ro
-    &motors[1].error, // rw
-};
-
-bool* exposed_bools[] = {
-    &motors[0].thread_ready, // ro
-    &motors[0].enable_control, // rw
-    &motors[0].do_calibration, // rw
-    &motors[0].calibration_ok, // ro
-    &motors[1].thread_ready, // ro
-    &motors[1].enable_control, // rw
-    &motors[1].do_calibration, // rw
-    &motors[1].calibration_ok, // ro
-};
-
-uint16_t* exposed_uint16[] = {
-    &motors[0].control_deadline, // rw
-    &motors[0].last_cpu_time, // ro
-    &motors[1].control_deadline, // rw
-    &motors[1].last_cpu_time, // ro
-};
-
 /* Private function prototypes -----------------------------------------------*/
 // Command Handling
-static void print_monitoring(int limit);
+
 // Utility
 static uint16_t check_timing(Motor_t* motor);
 static void global_fault(int error);
@@ -359,27 +281,7 @@ static void control_motor_loop(Motor_t* motor);
 // TODO move to different file
 //--------------------------------
 
-static void print_monitoring(int limit) {
-    for (int i=0;i<limit;i++) {
-        switch (monitoring_slots[i].type) {
-        case 0:
-            printf("%f\t",*exposed_floats[monitoring_slots[i].index]);
-            break;
-        case 1:
-            printf("%d\t",*exposed_ints[monitoring_slots[i].index]);
-            break;
-        case 2:
-            printf("%d\t",*exposed_bools[monitoring_slots[i].index]);
-            break;
-        case 3:
-            printf("%hu\t",*exposed_uint16[monitoring_slots[i].index]);
-            break;
-        default:
-            i=100;
-        }
-    }
-    printf("\n");
-}
+
 
 void set_pos_setpoint(Motor_t* motor, float pos_setpoint, float vel_feed_forward, float current_feed_forward) {
     motor->pos_setpoint = pos_setpoint;
@@ -407,109 +309,6 @@ void set_current_setpoint(Motor_t* motor, float current_setpoint) {
     printf("CURRENT_CONTROL %3.3f\n", motor->current_setpoint);
 #endif
 }
-
-void motor_parse_cmd(uint8_t* buffer, int len) {
-
-    // TODO very hacky way of terminating sscanf at end of buffer:
-    // We should do some proper struct packing instead of using sscanf altogether
-    buffer[len] = 0;
-
-    // check incoming packet type
-    if (buffer[0] == 'p') {
-        // position control
-        unsigned motor_number;
-        float pos_setpoint, vel_feed_forward, current_feed_forward;
-        int numscan = sscanf((const char*)buffer, "p %u %f %f %f", &motor_number, &pos_setpoint, &vel_feed_forward, &current_feed_forward);
-        if (numscan == 4 && motor_number < num_motors) {
-            set_pos_setpoint(&motors[motor_number], pos_setpoint, vel_feed_forward, current_feed_forward);
-        }
-    } else if (buffer[0] == 'v') {
-        // velocity control
-        unsigned motor_number;
-        float vel_feed_forward, current_feed_forward;
-        int numscan = sscanf((const char*)buffer, "v %u %f %f", &motor_number, &vel_feed_forward, &current_feed_forward);
-        if (numscan == 3 && motor_number < num_motors) {
-            set_vel_setpoint(&motors[motor_number], vel_feed_forward, current_feed_forward);
-        }
-    } else if (buffer[0] == 'c') {
-        // current control
-        unsigned motor_number;
-        float current_feed_forward;
-        int numscan = sscanf((const char*)buffer, "c %u %f", &motor_number, &current_feed_forward);
-        if (numscan == 2 && motor_number < num_motors) {
-            set_current_setpoint(&motors[motor_number], current_feed_forward);
-        }
-    } else if (buffer[0] == 'g') { // GET
-        // g <0:float,1:int,2:bool,3:uint16> index
-        int type = 0;
-        int index = 0;
-        int numscan = sscanf((const char*)buffer, "g %u %u", &type, &index);
-        if (numscan == 2) {
-            switch(type){
-            case 0: {
-                printf("%f\n",*exposed_floats[index]);
-                break;
-            };
-            case 1: {
-                printf("%d\n",*exposed_ints[index]);
-                break;
-            };
-            case 2: {
-                printf("%d\n",*exposed_bools[index]);
-                break;
-            };
-            case 3: {
-                printf("%hu\n",*exposed_uint16[index]);
-                break;
-            };
-            }
-        }
-    } else if (buffer[0] == 's') { // SET
-        // s <0:float,1:int,2:bool,3:uint16> index value
-        int type = 0;
-        int index = 0;
-        int numscan = sscanf((const char*)buffer, "s %u %u", &type, &index);
-        if (numscan == 2) {
-            switch(type) {
-            case 0: {
-                sscanf((const char*)buffer, "s %u %u %f", &type, &index, exposed_floats[index]);
-                break;
-            };
-            case 1: {
-                sscanf((const char*)buffer, "s %u %u %d", &type, &index, exposed_ints[index]);
-                break;
-            };
-            case 2: {
-                int btmp = 0;
-                sscanf((const char*)buffer, "s %u %u %d", &type, &index, &btmp);
-                *exposed_bools[index] = btmp ? true : false;
-                break;
-            };
-            case 3: {
-                sscanf((const char*)buffer, "s %u %u %hu", &type, &index, exposed_uint16[index]);
-                break;
-            };
-            }
-        }
-    } else if (buffer[0] == 'm') { // Setup Monitor
-        // m <0:float,1:int,2:bool,3:uint16> index monitoring_slot
-        int type = 0;
-        int index = 0;
-        int slot = 0;
-        int numscan = sscanf((const char*)buffer, "m %u %u %u", &type, &index, &slot);
-        if (numscan == 3) {
-            monitoring_slots[slot].type = type;
-            monitoring_slots[slot].index = index;
-        }
-    } else if (buffer[0] == 'o') { // Output Monitor
-        int limit = 0;
-        int numscan = sscanf((const char*)buffer, "o %u", &limit);
-        if (numscan == 1) {
-            print_monitoring(limit);
-        }
-    }
-}
-
 
 //--------------------------------
 // Utility
@@ -1038,16 +837,44 @@ static bool motor_calibration(Motor_t* motor){
     // sensorless pll same as encoder (for now)
     motor->sensorless.pll_kp = motor->encoder.pll_kp;
     motor->sensorless.pll_ki = motor->encoder.pll_ki;
-    
+
     motor->calibration_ok = true;
     return true;
 }
 
+/*
+ * This anti-cogging implementation iterates through each encoder position,
+ * waits for zero velocity & position error,
+ * then samples the current required to maintain that position.
+ * 
+ * This holding current is added as a feedforward term in the control loop.
+ */
+bool anti_cogging_calibration(Motor_t* motor) {
+    if (motor->anticogging.calib_anticogging && motor->anticogging.cogging_map != NULL) {
+        float pos_err = motor->anticogging.index - motor->encoder.pll_pos;
+        if (fabsf(pos_err) <= motor->anticogging.calib_pos_threshold && 
+                fabsf(motor->encoder.pll_vel) < motor->anticogging.calib_vel_threshold) {
+            motor->anticogging.cogging_map[motor->anticogging.index++] = motor->vel_integrator_current;
+        }
+        if (motor->anticogging.index < ENCODER_CPR) {
+            set_pos_setpoint(motor, motor->anticogging.index, 0.0f, 0.0f);
+            return false;
+        } else {
+            motor->anticogging.index = 0;
+            set_pos_setpoint(motor, 0.0f, 0.0f, 0.0f);  // Send the motor home
+            motor->anticogging.use_anticogging = true;  // We're good to go, enable anti-cogging
+            motor->anticogging.calib_anticogging = false;
+            return true;
+        }
+    }
+    return false;
+}
 
 //--------------------------------
 // Test functions
 //--------------------------------
 
+__attribute__((unused))
 static void scan_motor_loop(Motor_t* motor, float omega, float voltage_magnitude) {
     for (;;) {
         for (float ph = 0.0f; ph < 2.0f * M_PI; ph += omega * current_meas_period) {
@@ -1067,6 +894,7 @@ static void scan_motor_loop(Motor_t* motor, float omega, float voltage_magnitude
 }
 
 //TODO integrate as mode in main control loop
+__attribute__((unused))
 static void FOC_voltage_loop(Motor_t* motor, float v_d, float v_q) {
     for (;;) {
         osSignalWait(M_SIGNAL_PH_CURRENT_MEAS, osWaitForever);
@@ -1212,36 +1040,39 @@ static void update_rotor(Motor_t* motor) {
     }
 }
 
+static bool using_encoder(Motor_t* motor) {
+    if (motor->rotor_mode == ROTOR_MODE_ENCODER ||
+        motor->rotor_mode == ROTOR_MODE_RUN_ENCODER_TEST_SENSORLESS)
+        return true;
+    else
+        return false;
+}
+
+static bool using_sensorless(Motor_t* motor) {
+    if (motor->rotor_mode == ROTOR_MODE_SENSORLESS)
+        return true;
+    else
+        return false;
+}
+
 static float get_rotor_phase(Motor_t* motor) {
-    switch (motor->rotor_mode) {
-        case ROTOR_MODE_ENCODER:
-        case ROTOR_MODE_RUN_ENCODER_TEST_SENSORLESS:
-            return motor->encoder.phase;
-        break;
-        case ROTOR_MODE_SENSORLESS:
-            return motor->sensorless.phase;
-        break;
-        default:
-            //TODO error handling
-            return 0.0f;
-        break;
-    }
+    if (using_encoder(motor)) 
+        return motor->encoder.phase;
+    else if (using_sensorless(motor)) 
+        return motor->sensorless.phase;
+    else
+        //TODO error handling
+        return 0.0f;
 }
 
 static float get_pll_vel(Motor_t* motor) {
-    switch (motor->rotor_mode) {
-        case ROTOR_MODE_ENCODER:
-        case ROTOR_MODE_RUN_ENCODER_TEST_SENSORLESS:
-            return motor->encoder.pll_vel;
-        break;
-        case ROTOR_MODE_SENSORLESS:
-            return motor->sensorless.pll_vel;
-        break;
-        default:
-            //TODO error handling
-            return 0.0f;
-        break;
-    }
+    if (using_encoder(motor)) 
+        return motor->encoder.pll_vel;
+    else if (using_sensorless(motor)) 
+        return motor->sensorless.pll_vel;
+    else
+        //TODO error handling
+        return 0.0f;
 }
 
 static bool spin_up_timestep(Motor_t* motor, float phase, float I_mag) {
@@ -1418,6 +1249,7 @@ static void control_motor_loop(Motor_t* motor) {
             break;
         }
         update_rotor(motor);
+        anti_cogging_calibration(motor); // Only runs if anticogging.calib_anticogging is true; non-blocking
 
         // Position control
         // TODO Decide if we want to use encoder or pll position here
@@ -1438,6 +1270,14 @@ static void control_motor_loop(Motor_t* motor) {
 
         // Velocity control
         float Iq = motor->current_setpoint;
+
+        // Anti-cogging is enabled after calibration
+        // We get the current position and apply a current feed-forward
+        // ensuring that we handle negative encoder positions properly (-1 == ENCODER_CPR - 1)
+        if(motor->anticogging.use_anticogging){
+            Iq += motor->anticogging.cogging_map[mod(motor->encoder.pll_pos, ENCODER_CPR)];
+        }
+
         float v_err = vel_des - get_pll_vel(motor);
         if (motor->control_mode >=  CTRL_MODE_VELOCITY_CONTROL) {
             Iq += motor->vel_gain * v_err;
@@ -1477,6 +1317,7 @@ static void control_motor_loop(Motor_t* motor) {
             }
         }
 
+        motor->current_control.Iq = Iq;
         // Execute current command
         if(!FOC_current(motor, 0.0f, Iq)){
             break; // in case of error exit loop, motor->error has been set by FOC_current
@@ -1494,6 +1335,15 @@ static void control_motor_loop(Motor_t* motor) {
 
 void motor_thread(void const * argument) {
     Motor_t* motor = (Motor_t*)argument;
+
+    // Allocate the map for anti-cogging algorithm and initialize all values to 0.0f
+    motor->anticogging.cogging_map = (float*)malloc(ENCODER_CPR*sizeof(float));
+    if(motor->anticogging.cogging_map != NULL){
+        for(int i = 0; i < ENCODER_CPR; i++){
+            motor->anticogging.cogging_map[i] = 0.0f;
+        }
+    }
+
     motor->motor_thread = osThreadGetId();
     motor->thread_ready = true;
 
@@ -1504,7 +1354,7 @@ void motor_thread(void const * argument) {
             __HAL_TIM_MOE_DISABLE_UNCONDITIONALLY(motor->motor_timer);// disables pwm outputs
             motor->do_calibration = false;
         }
-        
+
         if (motor->calibration_ok && motor->enable_control) {
             motor->enable_step_dir = true;
             __HAL_TIM_MOE_ENABLE(motor->motor_timer);
