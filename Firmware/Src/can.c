@@ -55,7 +55,7 @@
 /* USER CODE BEGIN 0 */
 #include "low_level.h"
 
-#define CAN_PRIVATE_M0p	0x320U
+#define CAN_PRIVATE_M0p 0x320U
 #define CAN_PRIVATE_M0v 0x321U
 #define CAN_PRIVATE_M0c 0x322U
 #define CAN_PRIVATE_M1p 0x323U
