@@ -4,6 +4,8 @@
 #include <usart.h>
 #include <gpio.h>
 #include <freertos_vars.h>
+#include <usbd_cdc.h>
+#include <utils.h>
 #include "gcode_input.h"
 
 extern PCD_HandleTypeDef hpcd_USB_OTG_FS;
@@ -21,6 +23,10 @@ SerialPrintf_t serial_printf_select = SERIAL_PRINTF_IS_NONE;
 // TODO: make command to switch gpio_mode during run-time
 static const GpioMode_t gpio_mode = GPIO_MODE_UART;     //GPIO 1,2 is UART Tx,Rx
 // static const GpioMode_t gpio_mode = GPIO_MODE_STEP_DIR; //GPIO 1,2 is M0 Step,Dir
+
+static uint8_t* usb_buf;
+static uint32_t usb_len;
+extern USBD_HandleTypeDef hUsbDeviceFS;
 
 // variables exposed to usb/serial interface via set/get/monitor
 // Note: this will be depricated soon
@@ -165,6 +171,12 @@ void motor_parse_cmd(uint8_t* buffer, int len, SerialPrintf_t response_interface
         if (numscan == 2 && motor_number < num_motors) {
             set_current_setpoint(&motors[motor_number], current_feed_forward);
         }
+    } else if(buffer[0] == 'i'){ // Dump device info
+        // Retrieves the device signature, revision, flash size, and UUID
+        printf("Signature: %#x\n", STM_ID_GetSignature());
+        printf("Revision: %#x\n", STM_ID_GetRevision());
+        printf("Flash Size: %#x KiB\n", STM_ID_GetFlashSize());
+        printf("UUID: 0x%lx%lx%lx\n", STM_ID_GetUUID(2), STM_ID_GetUUID(1), STM_ID_GetUUID(0));
     } else if (buffer[0] == 'g') { // GET
         // g <0:float,1:int,2:bool,3:uint16> index
         int type = 0;
@@ -236,6 +248,13 @@ void motor_parse_cmd(uint8_t* buffer, int len, SerialPrintf_t response_interface
         int numscan = sscanf((const char*)buffer, "o %u", &limit);
         if (numscan == 1) {
             print_monitoring(limit);
+        }
+    } else if (buffer[0] == 't') { // Run Anti-Cogging Calibration
+        for (int i = 0; i < num_motors; i++) {
+            // Ensure the cogging map was correctly allocated earlier and that the motor is capable of calibrating
+            if (motors[i].anticogging.cogging_map != NULL && motors[i].error == ERROR_NO_ERROR) {
+                motors[i].anticogging.calib_anticogging = true;
+            }
         }
     }
 }
@@ -343,18 +362,35 @@ void cmd_parse_thread(void const * argument) {
             // When we reach here, we are out of immediate characters to fetch out of UART buffer
             // Now we check if there is any USB processing to do: we wait for up to 1 ms,
             // before going back to checking UART again.
-            int USB_check_timeout = 1;
-            // Wait for signalling from USB interrupt (OTG_FS_IRQHandler)
-            osStatus semaphore_status = osSemaphoreWait(sem_usb_irq, USB_check_timeout);
-            if (semaphore_status == osOK) {
-                // We have a new incoming USB transmission: handle it
-                HAL_PCD_IRQHandler(&hpcd_USB_OTG_FS);
-                // Let the irq (OTG_FS_IRQHandler) fire again.
-                HAL_NVIC_EnableIRQ(OTG_FS_IRQn);
+            const uint32_t usb_check_timeout = 1; // ms
+            osStatus sem_stat = osSemaphoreWait(sem_usb_rx, usb_check_timeout);
+            if (sem_stat == osOK) {
+                motor_parse_cmd(usb_buf, usb_len, SERIAL_PRINTF_IS_USB);
+                USBD_CDC_ReceivePacket(&hUsbDeviceFS);  // Allow next packet
             }
         } while (!reset_read_state);
     }
-
     // If we get here, then this task is done
+    vTaskDelete(osThreadGetId());
+}
+
+// Called from CDC_Receive_FS callback function, this allows motor_parse_cmd to access the
+// incoming USB data
+void set_cmd_buffer(uint8_t *buf, uint32_t len) {
+    usb_buf = buf;
+    usb_len = len;
+}
+
+void usb_update_thread() {
+    for (;;) {
+        // Wait for signalling from USB interrupt (OTG_FS_IRQHandler)
+        osStatus semaphore_status = osSemaphoreWait(sem_usb_irq, osWaitForever);
+        if (semaphore_status == osOK) {
+            // We have a new incoming USB transmission: handle it
+            HAL_PCD_IRQHandler(&hpcd_USB_OTG_FS);
+            // Let the irq (OTG_FS_IRQHandler) fire again.
+            HAL_NVIC_EnableIRQ(OTG_FS_IRQn);
+        }
+    }
     vTaskDelete(osThreadGetId());
 }

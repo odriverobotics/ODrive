@@ -1,9 +1,12 @@
+## [0.2.1] - 2017-11-14
+### Fixed
+* USB communication deadlock
 
-## [0.2.0] - UNRELEASED
+## [0.2.0] - 2017-11-12
 ### Added
-* UART feature
+* UART communication
 * Setting to select UART or Step/dir on GIPIO 1,2
-### Changed
+* Basic Anti-cogging
 
 ## [0.1.0] - 2017-08-26
 ### Added
