@@ -51,6 +51,7 @@
 /* USER CODE BEGIN INCLUDE */
 #include "utils.h"
 #include "commands.h"
+#include <freertos_vars.h>
 /* USER CODE END INCLUDE */
 
 /** @addtogroup STM32_USB_OTG_DEVICE_LIBRARY
@@ -272,10 +273,8 @@ static int8_t CDC_Receive_FS (uint8_t* Buf, uint32_t *Len)
   int modified_len = MACRO_MIN(*Len+1, APP_RX_DATA_SIZE);
   Buf[modified_len-1] = 0;
 
-  motor_parse_cmd(Buf, modified_len, SERIAL_PRINTF_IS_USB);
-
-  // Allow next packet
-  USBD_CDC_ReceivePacket(&hUsbDeviceFS);
+  set_cmd_buffer(Buf, modified_len);
+  osSemaphoreRelease(sem_usb_rx);
 
   return (USBD_OK);
   /* USER CODE END 6 */ 
