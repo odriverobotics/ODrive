@@ -1,6 +1,7 @@
 ## [0.2.1] - 2017-11-14
 ### Fixed
 * USB communication deadlock
+* EXTI handler redefiniton in V3.2
 
 ## [0.2.0] - 2017-11-12
 ### Added
