@@ -3,6 +3,9 @@
 * USB communication deadlock
 * EXTI handler redefiniton in V3.2
 
+### Changed
+* Resistance/inductance measurement now saved dispite errors, to allow debugging
+
 ## [0.2.0] - 2017-11-12
 ### Added
 * UART communication
