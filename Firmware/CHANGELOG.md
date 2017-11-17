@@ -1,3 +1,10 @@
+## [0.2.2] - 2017-11-17
+### Fixed
+* Incorrect TIM14 interrupt mapping on board v3.2 caused hard-fault
+
+### Changed
+* GPIO communication mode now defaults to NONE
+
 ## [0.2.1] - 2017-11-14
 ### Fixed
 * USB communication deadlock
