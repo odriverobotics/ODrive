@@ -20,7 +20,8 @@ SerialPrintf_t serial_printf_select = SERIAL_PRINTF_IS_NONE;
 
 /* Private constant data -----------------------------------------------------*/
 // TODO: make command to switch gpio_mode during run-time
-static const GpioMode_t gpio_mode = GPIO_MODE_UART;     //GPIO 1,2 is UART Tx,Rx
+static const GpioMode_t gpio_mode = GPIO_MODE_NONE;     //GPIO 1,2 is not configured
+// static const GpioMode_t gpio_mode = GPIO_MODE_UART;     //GPIO 1,2 is UART Tx,Rx
 // static const GpioMode_t gpio_mode = GPIO_MODE_STEP_DIR; //GPIO 1,2 is M0 Step,Dir
 
 static uint8_t* usb_buf;
@@ -127,12 +128,17 @@ static void print_monitoring(int limit);
 /* Function implementations --------------------------------------------------*/
 void init_communication() {
     switch (gpio_mode) {
+        case GPIO_MODE_NONE:
+        break; //do nothing
         case GPIO_MODE_UART: {
             SetGPIO12toUART();
         } break;
         case GPIO_MODE_STEP_DIR: {
             SetGPIO12toStepDir();
-        }
+        } break;
+        default:
+        //TODO: report error unexpected mode
+        break;
     }
 }
 

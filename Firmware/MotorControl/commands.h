@@ -6,6 +6,7 @@
 /* Exported types ------------------------------------------------------------*/
 
 typedef enum {
+    GPIO_MODE_NONE,
     GPIO_MODE_UART,
     GPIO_MODE_STEP_DIR,
 } GpioMode_t;
