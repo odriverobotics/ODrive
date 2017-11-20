@@ -81,6 +81,7 @@ C_SOURCES = \
   Src/syscalls.c \
   MotorControl/utils.c \
   MotorControl/legacy_commands.c \
+  MotorControl/nvm.c \
   MotorControl/low_level.c
 CPP_SOURCES = \
   MotorControl/axis.cpp \
