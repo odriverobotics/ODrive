@@ -1,10 +1,23 @@
+## [0.2.2] - 2017-11-17
+### Fixed
+* Incorrect TIM14 interrupt mapping on board v3.2 caused hard-fault
 
-## [0.2.0] - UNRELEASED
+### Changed
+* GPIO communication mode now defaults to NONE
+
+## [0.2.1] - 2017-11-14
+### Fixed
+* USB communication deadlock
+* EXTI handler redefiniton in V3.2
+
+### Changed
+* Resistance/inductance measurement now saved dispite errors, to allow debugging
+
+## [0.2.0] - 2017-11-12
 ### Added
-* UART feature
+* UART communication
 * Setting to select UART or Step/dir on GIPIO 1,2
 * Basic Anti-cogging
-### Changed
 
 ## [0.1.0] - 2017-08-26
 ### Added

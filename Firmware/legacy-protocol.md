@@ -1,5 +1,5 @@
 
-Warning: [this protocol has been replaced](https://github.com/madcowswe/ODrive/blob/devel/Firmware/protocol.md).
+Warning: this protocol has [been replaced](https://github.com/madcowswe/ODrive/blob/devel/Firmware/protocol.md).
 It's still operational but for new applications it's recommended to use the new protocol.
 
 ### Command set

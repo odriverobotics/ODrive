@@ -35,10 +35,13 @@ extern PCD_HandleTypeDef hpcd_USB_OTG_FS;
 extern USBD_HandleTypeDef hUsbDeviceFS;
 
 /* Private constant data -----------------------------------------------------*/
+// TODO: make command to switch gpio_mode during run-time
 #if defined(USE_GPIO_MODE_STEP_DIR)
 static const GpioMode_t gpio_mode = GPIO_MODE_STEP_DIR; //GPIO 1,2 is M0 Step,Dir
-#else
+#elif !defined(UART_PROTOCOL_NONE)
 static const GpioMode_t gpio_mode = GPIO_MODE_UART;     //GPIO 1,2 is UART Tx,Rx
+#else
+static const GpioMode_t gpio_mode = GPIO_MODE_NONE;     //GPIO 1,2 is not configured
 #endif
 
 /* Private variables ---------------------------------------------------------*/
@@ -291,12 +294,17 @@ StreamToPacketConverter UART4_stream_sink(uart4_channel);
 
 void init_communication(void) {
     switch (gpio_mode) {
+        case GPIO_MODE_NONE:
+        break; //do nothing
         case GPIO_MODE_UART: {
             SetGPIO12toUART();
         } break;
         case GPIO_MODE_STEP_DIR: {
             SetGPIO12toStepDir();
-        }
+        } break;
+        default:
+        //TODO: report error unexpected mode
+        break;
     }
 }
 

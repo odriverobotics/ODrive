@@ -43,10 +43,6 @@
 typedef void (*ADC_handler_t)(ADC_HandleTypeDef* hadc, bool injected);
 void ADC_IRQ_Dispatch(ADC_HandleTypeDef* hadc, ADC_handler_t callback);
 
-#if HW_VERSION_MAJOR == 3 && HW_VERSION_MINOR == 1 \
-||  HW_VERSION_MAJOR == 3 && HW_VERSION_MINOR == 2
-#include "prev_board_ver/stm32f4xx_it_V3_2.c"
-#else
 /* USER CODE END 0 */
 
 /* External variables --------------------------------------------------------*/
@@ -281,7 +277,6 @@ void OTG_FS_IRQHandler(void)
 }
 
 /* USER CODE BEGIN 1 */
-#endif
 
 void ADC_IRQ_Dispatch(ADC_HandleTypeDef* hadc, ADC_handler_t callback) {
 
@@ -316,6 +311,14 @@ void EXTI0_IRQHandler(void)
 void EXTI2_IRQHandler(void)
 {
   HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_2);
+}
+
+/**
+* @brief This function handles EXTI line4 interrupt.
+*/
+void EXTI4_IRQHandler(void)
+{
+  HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_4);
 }
 
 /* USER CODE END 1 */

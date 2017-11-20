@@ -1,5 +1,9 @@
 # ODriveFirmware
 
+If you wish to use the latest release, please use the `master` branch (this is the default branch GitHub will present you with).
+
+If you are a developer, you are encouraged to use the `devel` branch, as it contains the latest features.
+
 ### Table of contents
 
 <!-- MarkdownTOC depth=2 autolink=true bracket=round -->

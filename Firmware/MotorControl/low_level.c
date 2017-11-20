@@ -646,11 +646,11 @@ bool measure_phase_resistance(Motor_t* motor, float test_current, float max_volt
     queue_voltage_timings(motor, 0.0f, 0.0f);
 
     float R = test_voltage / test_current;
+    motor->phase_resistance = R;
     if (fabs(test_voltage) == fabs(max_voltage) || R < 0.01f || R > 1.0f) {
         motor->error = ERROR_PHASE_RESISTANCE_OUT_OF_RANGE;
         return false;
     }
-    motor->phase_resistance = R;
     return true;
 }
 
@@ -688,12 +688,12 @@ bool measure_phase_inductance(Motor_t* motor, float voltage_low, float voltage_h
     float dI_by_dt = (Ialphas[1] - Ialphas[0]) / (current_meas_period * (float)num_cycles);
     float L = v_L / dI_by_dt;
     
+    motor->phase_inductance = L;
     // TODO arbitrary values set for now
     if (L < 1e-6f || L > 500e-6f) {
         motor->error = ERROR_PHASE_INDUCTANCE_OUT_OF_RANGE;
         return false;
     }
-    motor->phase_inductance = L;
     return true;
 }
 
