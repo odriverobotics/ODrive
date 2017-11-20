@@ -22,7 +22,7 @@
 //#define USB_PROTOCOL_NONE
 
 // Use GPIO 1/2 for step/dir input instead of UART
-#define USE_GPIO_MODE_STEP_DIR
+//#define USE_GPIO_MODE_STEP_DIR
 
 
 typedef enum {
