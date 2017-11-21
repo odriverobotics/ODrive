@@ -105,7 +105,7 @@ After installing all of the above, open a Git Bash shell. Continue at section [B
 
 ### Flashing the firmware
 * **Make sure you have [configured the parameters first](#configuring-parameters)**
-* Connect `SWD`, `SWC`, and `GND` on connector J2 to the programmer.
+* Connect `GND`, `SWD`, and `SWC` on connector J2 to the programmer. Note: Always plug in `GND` first!
 * You need to power the board by only **ONE** of the following: VCC(3.3v), 5V, or the main power connection (the DC bus). The USB port (J1) does not power the board.
 * Run `make flash` in the root of this repository.
 
