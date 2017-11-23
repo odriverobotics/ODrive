@@ -421,7 +421,7 @@ static void DRV8301_setup(Motor_t* motor) {
 
         float margin = 0.95f;
         float max_input = margin * 0.3f * motor->shunt_conductance;
-        float max_swing = margin * 1.6f * motor->shunt_conductance / motor->phase_current_rev_gain;
+        float max_swing = margin * 1.6f * motor->shunt_conductance * motor->phase_current_rev_gain;
         motor->max_allowed_current = MACRO_MIN(max_input, max_swing);
 
         local_regs->SndCmd = true;
