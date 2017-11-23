@@ -39,6 +39,14 @@ float vbus_voltage = 12.0f;
 #define POLE_PAIRS 7
 static float elec_rad_per_enc = POLE_PAIRS * 2 * M_PI * (1.0f / (float)ENCODER_CPR);
 
+#if HW_VERSION_MAJOR == 3
+    #if HW_VERSION_MINOR < 4
+        #define SHUNT_RESISTANCE (666e-6)
+    #else
+        #define SHUNT_RESISTANCE (500e-6)
+    #endif
+#endif
+
 // TODO: Migrate to C++, clearly we are actually doing object oriented code here...
 // TODO: For nice encapsulation, consider not having the motor objects public
 Motor_t motors[] = {
@@ -83,7 +91,7 @@ Motor_t motors[] = {
             .enableTimeOut = false,
         },
         // .gate_driver_regs Init by DRV8301_setup
-        .shunt_conductance = 1.0f/0.0005f, //[S]
+        .shunt_conductance = 1.0f/SHUNT_RESISTANCE, //[S]
         .phase_current_rev_gain = 0.0f, // to be set by DRV8301_setup
         .current_control = {
             // .current_lim = 75.0f, //[A] // If setting higher than 75A, you MUST change DRV8301_ShuntAmpGain. TODO: make this automatic
@@ -175,7 +183,7 @@ Motor_t motors[] = {
             .enableTimeOut = false,
         },
         // .gate_driver_regs Init by DRV8301_setup
-        .shunt_conductance = 1.0f/0.0005f, //[S]
+        .shunt_conductance = 1.0f/SHUNT_RESISTANCE, //[S]
         .phase_current_rev_gain = 0.0f, // to be set by DRV8301_setup
         .current_control = {
             // .current_lim = 75.0f, //[A] // If setting higher than 75A, you MUST change DRV8301_ShuntAmpGain. TODO: make this automatic
