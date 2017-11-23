@@ -104,6 +104,7 @@ Motor_t motors[] = {
             .final_v_alpha = 0.0f,
             .final_v_beta = 0.0f,
             .Iq = 0.0f,
+            .max_allowed_current = 0.0f,
         },
         // .rotor_mode = ROTOR_MODE_SENSORLESS,
         // .rotor_mode = ROTOR_MODE_RUN_ENCODER_TEST_SENSORLESS,
@@ -144,7 +145,6 @@ Motor_t motors[] = {
             .calib_pos_threshold = 1.0f,
             .calib_vel_threshold = 1.0f,
         },
-        .max_allowed_current = 0.0f,
     },
     {   // M1
         .control_mode = CTRL_MODE_POSITION_CONTROL, //see: Motor_control_mode_t
@@ -197,6 +197,7 @@ Motor_t motors[] = {
             .final_v_alpha = 0.0f,
             .final_v_beta = 0.0f,
             .Iq = 0.0f,
+            .max_allowed_current = 0.0f,
         },
         .rotor_mode = ROTOR_MODE_ENCODER,
         .encoder = {
@@ -234,8 +235,7 @@ Motor_t motors[] = {
             .calib_anticogging = false,
             .calib_pos_threshold = 1.0f,
             .calib_vel_threshold = 1.0f,
-        },
-        .max_allowed_current = 0.0f,
+        }
     }
 };
 const int num_motors = sizeof(motors)/sizeof(motors[0]);
@@ -422,7 +422,7 @@ static void DRV8301_setup(Motor_t* motor) {
         float margin = 0.95f;
         float max_input = margin * 0.3f * motor->shunt_conductance;
         float max_swing = margin * 1.6f * motor->shunt_conductance * motor->phase_current_rev_gain;
-        motor->max_allowed_current = MACRO_MIN(max_input, max_swing);
+        motor->current_control.max_allowed_current = MACRO_MIN(max_input, max_swing);
 
         local_regs->SndCmd = true;
         DRV8301_writeData(gate_driver, local_regs);
@@ -1309,7 +1309,7 @@ static void control_motor_loop(Motor_t* motor) {
         }
 
         // Current limiting
-        float Ilim = MACRO_MIN(motor->current_control.current_lim, motor->max_allowed_current);
+        float Ilim = MACRO_MIN(motor->current_control.current_lim, motor->current_control.max_allowed_current);
         bool limited = false;
         if (Iq > Ilim) {
             limited = true;

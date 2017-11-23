@@ -71,6 +71,7 @@ typedef struct {
     float final_v_alpha; // [V]
     float final_v_beta; // [V]
     float Iq;
+    float max_allowed_current;
 } Current_control_t;
 
 typedef enum {
@@ -146,7 +147,6 @@ typedef struct {
     int timing_log_index;
     uint16_t timing_log[TIMING_LOG_SIZE];
     Anticogging_t anticogging;
-    float max_allowed_current;
 } Motor_t;
 
 typedef struct{
