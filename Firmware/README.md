@@ -204,6 +204,8 @@ We also use a tool to generate the Makefile. The steps to do this are as follows
 * Press `Project -> Generate code`
 * You may need to let it download some drivers and such.
 
+You will likely want the pinout for this process.  It is available [here](https://docs.google.com/spreadsheets/d/1QXDCs1IRtUyG__M_9WruWOheywb-GhOwFtfPcHuN2Fg/edit#gid=404444347)
+
 ## Setting up Eclipse development environment
 
 ### Install
