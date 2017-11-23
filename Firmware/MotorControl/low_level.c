@@ -39,8 +39,6 @@ float vbus_voltage = 12.0f;
 #define POLE_PAIRS 7
 static float elec_rad_per_enc = POLE_PAIRS * 2 * M_PI * (1.0f / (float)ENCODER_CPR);
 
-#define CURRENT_SCALING_FACTOR (1.31578947f)
-
 // TODO: Migrate to C++, clearly we are actually doing object oriented code here...
 // TODO: For nice encapsulation, consider not having the motor objects public
 Motor_t motors[] = {
@@ -621,12 +619,7 @@ void pwm_trig_adc_cb(ADC_HandleTypeDef* hadc, bool injected) {
     } else {
         ADCValue = HAL_ADC_GetValue(hadc);
     }
-    if(HW_VERSION_MAJOR == 3 && HW_VERSION_MINOR <= 3){
-        float current = phase_current_from_adcval(motor, ADCValue)*CURRENT_SCALING_FACTOR;
-    } else {
-        float current = phase_current_from_adcval(motor, ADCValue);
-    }
-    
+    float current = phase_current_from_adcval(motor, ADCValue);
 
     if (current_meas_not_DC_CAL) {
         // ADC2 and ADC3 record the phB and phC currents concurrently,
@@ -1300,12 +1293,7 @@ static void control_motor_loop(Motor_t* motor) {
         }
 
         // Current limiting
-        if(HW_VERSION_MAJOR == 3 && HW_VERSION_MINOR <= 3){
-            float Ilim = motor->current_control.current_lim*CURRENT_SCALING_FACTOR;
-        } else{
-            float Ilim = motor->current_control.current_lim;
-        }
-        
+        float Ilim = motor->current_control.current_lim;
         bool limited = false;
         if (Iq > Ilim) {
             limited = true;
