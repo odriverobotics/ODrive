@@ -146,6 +146,7 @@ typedef struct {
     int timing_log_index;
     uint16_t timing_log[TIMING_LOG_SIZE];
     Anticogging_t anticogging;
+    float max_allowed_current;
 } Motor_t;
 
 typedef struct{

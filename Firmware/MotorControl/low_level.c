@@ -144,6 +144,7 @@ Motor_t motors[] = {
             .calib_pos_threshold = 1.0f,
             .calib_vel_threshold = 1.0f,
         },
+        .max_allowed_current = 0.0f,
     },
     {   // M1
         .control_mode = CTRL_MODE_POSITION_CONTROL, //see: Motor_control_mode_t
@@ -233,7 +234,8 @@ Motor_t motors[] = {
             .calib_anticogging = false,
             .calib_pos_threshold = 1.0f,
             .calib_vel_threshold = 1.0f,
-        }
+        },
+        .max_allowed_current = 0.0f,
     }
 };
 const int num_motors = sizeof(motors)/sizeof(motors[0]);
@@ -402,6 +404,7 @@ static void DRV8301_setup(Motor_t* motor) {
         local_regs->Ctrl_Reg_2.GAIN = DRV8301_ShuntAmpGain_40VpV;
 
         switch (local_regs->Ctrl_Reg_2.GAIN) {
+
             case DRV8301_ShuntAmpGain_10VpV:
                 motor->phase_current_rev_gain = 1.0f/10.0f;
                 break;
@@ -415,6 +418,11 @@ static void DRV8301_setup(Motor_t* motor) {
                 motor->phase_current_rev_gain = 1.0f/80.0f;
                 break;
         }
+
+        float margin = 0.95f;
+        float max_input = margin * 0.3f * motor->shunt_conductance;
+        float max_swing = margin * 1.6f * motor->shunt_conductance / motor->phase_current_rev_gain;
+        motor->max_allowed_current = MACRO_MIN(max_input, max_swing);
 
         local_regs->SndCmd = true;
         DRV8301_writeData(gate_driver, local_regs);
