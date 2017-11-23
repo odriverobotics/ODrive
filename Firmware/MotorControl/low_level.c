@@ -1309,7 +1309,7 @@ static void control_motor_loop(Motor_t* motor) {
         }
 
         // Current limiting
-        float Ilim = motor->current_control.current_lim;
+        float Ilim = MACRO_MIN(motor->current_control.current_lim, motor->max_allowed_current);
         bool limited = false;
         if (Iq > Ilim) {
             limited = true;
