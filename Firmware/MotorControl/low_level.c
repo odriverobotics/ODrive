@@ -1380,9 +1380,9 @@ void motor_thread(void const * argument) {
     motor->thread_ready = false;
 }
 
-
-void setEncoderCount(Motor_t* motor, uint16_t count){
+/** Function that sets the current encoder count to a desired 32-bit value. */
+void setEncoderCount(Motor_t* motor, uint32_t count){
     motor->encoder.encoder_state = count;
     motor->motor_timer->Instance->CNT = count;
-    motor->encoder.pll_pos = count;
+    motor->encoder.pll_pos = (float)count;
 }
