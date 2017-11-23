@@ -1379,3 +1379,10 @@ void motor_thread(void const * argument) {
     }
     motor->thread_ready = false;
 }
+
+
+void setEncoderCount(Motor_t* motor, uint16_t count){
+    motor->encoder.encoder_state = count;
+    motor->motor_timer->Instance->CNT = count;
+    motor->encoder.pll_pos = count;
+}

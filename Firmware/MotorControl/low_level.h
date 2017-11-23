@@ -172,6 +172,8 @@ void step_cb(uint16_t GPIO_Pin);
 void pwm_trig_adc_cb(ADC_HandleTypeDef* hadc, bool injected);
 void vbus_sense_adc_cb(ADC_HandleTypeDef* hadc, bool injected);
 
+void setEncoderCount(Motor_t* motor, uint16_t count);
+
 bool anti_cogging_calibration(Motor_t* motor);
 
 //@TODO move motor thread to high level file
