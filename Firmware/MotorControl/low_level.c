@@ -41,9 +41,9 @@ static float elec_rad_per_enc = POLE_PAIRS * 2 * M_PI * (1.0f / (float)ENCODER_C
 
 #if HW_VERSION_MAJOR == 3
     #if HW_VERSION_MINOR < 4
-        #define SHUNT_RESISTANCE (666e-6)
+        #define SHUNT_RESISTANCE (666e-6f)
     #else
-        #define SHUNT_RESISTANCE (500e-6)
+        #define SHUNT_RESISTANCE (500e-6f)
     #endif
 #endif
 
@@ -401,10 +401,12 @@ static void DRV8301_setup(Motor_t* motor) {
         local_regs->Ctrl_Reg_1.OC_ADJ_SET = DRV8301_VdsLevel_0p730_V;
         // 20V/V on 500uOhm gives a range of +/- 150A
         // 40V/V on 500uOhm gives a range of +/- 75A
+        // 20V/V on 666uOhm gives a range of +/- 110A
+        // 40V/V on 666uOhm gives a range of +/- 55A
         local_regs->Ctrl_Reg_2.GAIN = DRV8301_ShuntAmpGain_40VpV;
+        // local_regs->Ctrl_Reg_2.GAIN = DRV8301_ShuntAmpGain_20VpV;
 
         switch (local_regs->Ctrl_Reg_2.GAIN) {
-
             case DRV8301_ShuntAmpGain_10VpV:
                 motor->phase_current_rev_gain = 1.0f/10.0f;
                 break;
@@ -419,7 +421,7 @@ static void DRV8301_setup(Motor_t* motor) {
                 break;
         }
 
-        float margin = 0.95f;
+        float margin = 0.90f;
         float max_input = margin * 0.3f * motor->shunt_conductance;
         float max_swing = margin * 1.6f * motor->shunt_conductance * motor->phase_current_rev_gain;
         motor->current_control.max_allowed_current = MACRO_MIN(max_input, max_swing);
