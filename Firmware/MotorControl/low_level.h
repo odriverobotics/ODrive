@@ -71,6 +71,7 @@ typedef struct {
     float final_v_alpha; // [V]
     float final_v_beta; // [V]
     float Iq;
+    float max_allowed_current;
 } Current_control_t;
 
 typedef enum {

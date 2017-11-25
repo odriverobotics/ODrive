@@ -39,6 +39,14 @@ float vbus_voltage = 12.0f;
 #define POLE_PAIRS 7
 static float elec_rad_per_enc = POLE_PAIRS * 2 * M_PI * (1.0f / (float)ENCODER_CPR);
 
+#if HW_VERSION_MAJOR == 3
+    #if HW_VERSION_MINOR <= 3
+        #define SHUNT_RESISTANCE (675e-6f)
+    #else
+        #define SHUNT_RESISTANCE (500e-6f)
+    #endif
+#endif
+
 // TODO: Migrate to C++, clearly we are actually doing object oriented code here...
 // TODO: For nice encapsulation, consider not having the motor objects public
 Motor_t motors[] = {
@@ -83,7 +91,7 @@ Motor_t motors[] = {
             .enableTimeOut = false,
         },
         // .gate_driver_regs Init by DRV8301_setup
-        .shunt_conductance = 1.0f/0.0005f, //[S]
+        .shunt_conductance = 1.0f/SHUNT_RESISTANCE, //[S]
         .phase_current_rev_gain = 0.0f, // to be set by DRV8301_setup
         .current_control = {
             // .current_lim = 75.0f, //[A] // If setting higher than 75A, you MUST change DRV8301_ShuntAmpGain. TODO: make this automatic
@@ -96,6 +104,7 @@ Motor_t motors[] = {
             .final_v_alpha = 0.0f,
             .final_v_beta = 0.0f,
             .Iq = 0.0f,
+            .max_allowed_current = 0.0f,
         },
         // .rotor_mode = ROTOR_MODE_SENSORLESS,
         // .rotor_mode = ROTOR_MODE_RUN_ENCODER_TEST_SENSORLESS,
@@ -175,7 +184,7 @@ Motor_t motors[] = {
             .enableTimeOut = false,
         },
         // .gate_driver_regs Init by DRV8301_setup
-        .shunt_conductance = 1.0f/0.0005f, //[S]
+        .shunt_conductance = 1.0f/SHUNT_RESISTANCE, //[S]
         .phase_current_rev_gain = 0.0f, // to be set by DRV8301_setup
         .current_control = {
             // .current_lim = 75.0f, //[A] // If setting higher than 75A, you MUST change DRV8301_ShuntAmpGain. TODO: make this automatic
@@ -188,6 +197,7 @@ Motor_t motors[] = {
             .final_v_alpha = 0.0f,
             .final_v_beta = 0.0f,
             .Iq = 0.0f,
+            .max_allowed_current = 0.0f,
         },
         .rotor_mode = ROTOR_MODE_ENCODER,
         .encoder = {
@@ -391,7 +401,10 @@ static void DRV8301_setup(Motor_t* motor) {
         local_regs->Ctrl_Reg_1.OC_ADJ_SET = DRV8301_VdsLevel_0p730_V;
         // 20V/V on 500uOhm gives a range of +/- 150A
         // 40V/V on 500uOhm gives a range of +/- 75A
+        // 20V/V on 666uOhm gives a range of +/- 110A
+        // 40V/V on 666uOhm gives a range of +/- 55A
         local_regs->Ctrl_Reg_2.GAIN = DRV8301_ShuntAmpGain_40VpV;
+        // local_regs->Ctrl_Reg_2.GAIN = DRV8301_ShuntAmpGain_20VpV;
 
         switch (local_regs->Ctrl_Reg_2.GAIN) {
             case DRV8301_ShuntAmpGain_10VpV:
@@ -407,6 +420,11 @@ static void DRV8301_setup(Motor_t* motor) {
                 motor->phase_current_rev_gain = 1.0f/80.0f;
                 break;
         }
+
+        float margin = 0.90f;
+        float max_input = margin * 0.3f * motor->shunt_conductance;
+        float max_swing = margin * 1.6f * motor->shunt_conductance * motor->phase_current_rev_gain;
+        motor->current_control.max_allowed_current = MACRO_MIN(max_input, max_swing);
 
         local_regs->SndCmd = true;
         DRV8301_writeData(gate_driver, local_regs);
@@ -1293,7 +1311,7 @@ static void control_motor_loop(Motor_t* motor) {
         }
 
         // Current limiting
-        float Ilim = motor->current_control.current_lim;
+        float Ilim = MACRO_MIN(motor->current_control.current_lim, motor->current_control.max_allowed_current);
         bool limited = false;
         if (Iq > Ilim) {
             limited = true;
