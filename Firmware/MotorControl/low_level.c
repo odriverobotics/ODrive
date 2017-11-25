@@ -40,8 +40,8 @@ float vbus_voltage = 12.0f;
 static float elec_rad_per_enc = POLE_PAIRS * 2 * M_PI * (1.0f / (float)ENCODER_CPR);
 
 #if HW_VERSION_MAJOR == 3
-    #if HW_VERSION_MINOR < 4
-        #define SHUNT_RESISTANCE (666e-6f)
+    #if HW_VERSION_MINOR <= 3
+        #define SHUNT_RESISTANCE (675e-6f)
     #else
         #define SHUNT_RESISTANCE (500e-6f)
     #endif
