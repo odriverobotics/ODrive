@@ -12,7 +12,7 @@
             "gdbpath": "arm-none-eabi-gdb",
             "remote": true,
             "executable": "./build/ODriveFirmware.elf",
-            "cwd": "${workspaceRoot}/Firmware",
+            "cwd": "${workspaceRoot}",
             "printCalls": false,
             //"preLaunchTask": "openocd",  // This isn't working quite right.
             "autorun": [

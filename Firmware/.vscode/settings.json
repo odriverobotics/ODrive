@@ -1,7 +1,7 @@
 {
     "C_Cpp.clang_format_style": "{ BasedOnStyle: Google, IndentWidth: 4, ColumnLimit: 0 }",
     "files.exclude": {
-        "Firmware/build": true
+        "build": true
     },
     "files.associations": {
         "memory": "cpp",
