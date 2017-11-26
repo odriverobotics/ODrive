@@ -1382,20 +1382,10 @@ void motor_thread(void const * argument) {
 
 /** Function that sets the current encoder count to a desired 32-bit value. */
 void setEncoderCount(Motor_t* motor, uint32_t count){
-    bool handlerMode = false;
-    UBaseType_t uxSavedInterruptStatus;
-    if(inHandlerMode()) {
-        handlerMode = true;
-        uxSavedInterruptStatus = taskENTER_CRITICAL_FROM_ISR();
-    } else 
-        taskENTER_CRITICAL();
-
+    uint32_t prim = __get_PRIMASK();
+    __disable_irq();
     motor->encoder.encoder_state = count;
     motor->motor_timer->Instance->CNT = count;
     motor->encoder.pll_pos = (float)count;
-    
-    if(handlerMode){
-        taskEXIT_CRITICAL_FROM_ISR(uxSavedInterruptStatus);
-    } else
-        taskEXIT_CRITICAL();
+    __set_PRIMASK(prim);
 }
