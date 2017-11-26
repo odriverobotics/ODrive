@@ -75,6 +75,7 @@ typedef struct {
     float final_v_alpha; // [V]
     float final_v_beta; // [V]
     float Iq;
+    float max_allowed_current;
 } Current_control_t;
 
 typedef enum {
@@ -196,6 +197,9 @@ void vbus_sense_adc_cb(ADC_HandleTypeDef* hadc, bool injected);
 
 void safe_assert(int arg);
 void init_motor_control();
+void setEncoderCount(Motor_t* motor, uint32_t count);
+
+bool anti_cogging_calibration(Motor_t* motor);
 
 bool motor_calibration(Motor_t* motor);
 

@@ -38,6 +38,14 @@ float vbus_voltage = 12.0f;
 #define POLE_PAIRS 7
 const float elec_rad_per_enc = POLE_PAIRS * 2 * M_PI * (1.0f / (float)ENCODER_CPR);
 
+#if HW_VERSION_MAJOR == 3
+#if HW_VERSION_MINOR <= 3
+#define SHUNT_RESISTANCE (675e-6f)
+#else
+#define SHUNT_RESISTANCE (500e-6f)
+#endif
+#endif
+
 // TODO: Migrate to C++, clearly we are actually doing object oriented code here...
 // TODO: For nice encapsulation, consider not having the motor objects public
 Motor_t motors[] = {
@@ -83,10 +91,12 @@ Motor_t motors[] = {
             .enableTimeOut = false,
         },
         // .gate_driver_regs Init by DRV8301_setup
-        .shunt_conductance = 1.0f / 0.0005f,  //[S]
-        .phase_current_rev_gain = 0.0f,       // to be set by DRV8301_setup
+        .shunt_conductance = 1.0f / SHUNT_RESISTANCE,  //[S]
+        .phase_current_rev_gain = 0.0f,                // to be set by DRV8301_setup
         .current_control = {
-            // .current_lim = 75.0f, //[A] // If setting higher than 75A, you MUST change DRV8301_ShuntAmpGain. TODO: make this automatic
+            // Read out max_allowed_current to see max supported value for current_lim.
+            // You can change DRV8301_ShuntAmpGain to get a different range.
+            // .current_lim = 75.0f, //[A]
             .current_lim = 10.0f,  //[A]
             .p_gain = 0.0f,        // [V/A] should be auto set after resistance and inductance measurement
             .i_gain = 0.0f,        // [V/As] should be auto set after resistance and inductance measurement
@@ -96,12 +106,16 @@ Motor_t motors[] = {
             .final_v_alpha = 0.0f,
             .final_v_beta = 0.0f,
             .Iq = 0.0f,
+            .max_allowed_current = 0.0f,
         },
         // .rotor_mode = ROTOR_MODE_SENSORLESS,
         // .rotor_mode = ROTOR_MODE_RUN_ENCODER_TEST_SENSORLESS,
         .rotor_mode = ROTOR_MODE_ENCODER,
         .encoder = {
-            .encoder_timer = &htim3, .encoder_cpr = ENCODER_CPR, .encoder_offset = 0, .encoder_state = 0,
+            .encoder_timer = &htim3,
+            .encoder_cpr = ENCODER_CPR,
+            .encoder_offset = 0,
+            .encoder_state = 0,
             .motor_dir = 0,   // set by calib_enc_offset
             .phase = 0.0f,    // [rad]
             .pll_pos = 0.0f,  // [rad]
@@ -173,10 +187,12 @@ Motor_t motors[] = {
             .enableTimeOut = false,
         },
         // .gate_driver_regs Init by DRV8301_setup
-        .shunt_conductance = 1.0f / 0.0005f,  //[S]
-        .phase_current_rev_gain = 0.0f,       // to be set by DRV8301_setup
+        .shunt_conductance = 1.0f / SHUNT_RESISTANCE,  //[S]
+        .phase_current_rev_gain = 0.0f,                // to be set by DRV8301_setup
         .current_control = {
-            // .current_lim = 75.0f, //[A] // If setting higher than 75A, you MUST change DRV8301_ShuntAmpGain. TODO: make this automatic
+            // Read out max_allowed_current to see max supported value for current_lim.
+            // You can change DRV8301_ShuntAmpGain to get a different range.
+            // .current_lim = 75.0f, //[A]
             .current_lim = 10.0f,  //[A]
             .p_gain = 0.0f,        // [V/A] should be auto set after resistance and inductance measurement
             .i_gain = 0.0f,        // [V/As] should be auto set after resistance and inductance measurement
@@ -186,10 +202,14 @@ Motor_t motors[] = {
             .final_v_alpha = 0.0f,
             .final_v_beta = 0.0f,
             .Iq = 0.0f,
+            .max_allowed_current = 0.0f,
         },
         .rotor_mode = ROTOR_MODE_ENCODER,
         .encoder = {
-            .encoder_timer = &htim4, .encoder_cpr = ENCODER_CPR, .encoder_offset = 0, .encoder_state = 0,
+            .encoder_timer = &htim4,
+            .encoder_cpr = ENCODER_CPR,
+            .encoder_offset = 0,
+            .encoder_state = 0,
             .motor_dir = 0,   // set by calib_enc_offset
             .phase = 0.0f,    // [rad]
             .pll_pos = 0.0f,  // [rad]
@@ -347,7 +367,10 @@ void DRV8301_setup(Motor_t* motor) {
     local_regs->Ctrl_Reg_1.OC_ADJ_SET = DRV8301_VdsLevel_0p730_V;
     // 20V/V on 500uOhm gives a range of +/- 150A
     // 40V/V on 500uOhm gives a range of +/- 75A
+    // 20V/V on 666uOhm gives a range of +/- 110A
+    // 40V/V on 666uOhm gives a range of +/- 55A
     local_regs->Ctrl_Reg_2.GAIN = DRV8301_ShuntAmpGain_40VpV;
+    // local_regs->Ctrl_Reg_2.GAIN = DRV8301_ShuntAmpGain_20VpV;
 
     switch (local_regs->Ctrl_Reg_2.GAIN) {
         case DRV8301_ShuntAmpGain_10VpV:
@@ -363,6 +386,11 @@ void DRV8301_setup(Motor_t* motor) {
             motor->phase_current_rev_gain = 1.0f / 80.0f;
             break;
     }
+
+    float margin = 0.90f;
+    float max_input = margin * 0.3f * motor->shunt_conductance;
+    float max_swing = margin * 1.6f * motor->shunt_conductance * motor->phase_current_rev_gain;
+    motor->current_control.max_allowed_current = MACRO_MIN(max_input, max_swing);
 
     local_regs->SndCmd = true;
     DRV8301_writeData(gate_driver, local_regs);
@@ -1020,6 +1048,17 @@ float get_pll_vel(Motor_t* motor) {
         return 0.0f;
 }
 
+// Function that sets the current encoder count to a desired 32-bit value.
+void setEncoderCount(Motor_t* motor, uint32_t count) {
+    // Disable interrupts to make a critical section to avoid race condition
+    uint32_t prim = __get_PRIMASK();
+    __disable_irq();
+    motor->encoder.encoder_state = count;
+    motor->motor_timer->Instance->CNT = count;
+    motor->encoder.pll_pos = (float)count;
+    __set_PRIMASK(prim);
+}
+
 bool spin_up_timestep(Motor_t* motor, float phase, float I_mag) {
     // wait for new timestep
     if (osSignalWait(M_SIGNAL_PH_CURRENT_MEAS, PH_CURRENT_MEAS_TIMEOUT).status != osEventSignal) {
@@ -1236,7 +1275,7 @@ void control_motor_loop(Motor_t* motor) {
         }
 
         // Current limiting
-        float Ilim = motor->current_control.current_lim;
+        float Ilim = MACRO_MIN(motor->current_control.current_lim, motor->current_control.max_allowed_current);
         bool limited = false;
         if (Iq > Ilim) {
             limited = true;

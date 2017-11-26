@@ -166,7 +166,7 @@ See the [protocol specification](https://github.com/madcowswe/ODrive/blob/devel/
 **Note:** You do not need to run this step to program the board. This is only required if you wish to update the auto generated code.
 
 This project uses the STM32CubeMX tool to generate startup code and to ease the configuration of the peripherals.
-We also use a tool to generate the Makefile. The steps to do this are as follows.
+You will likely want the pinout for this process. It is available [here](https://docs.google.com/spreadsheets/d/1QXDCs1IRtUyG__M_9WruWOheywb-GhOwFtfPcHuN2Fg/edit#gid=404444347)
 
 ### Installing prerequisites
 * `stm32cubeMX`: Tool from STM to automatically generate setup routines and configure libraries, etc.
@@ -176,12 +176,6 @@ We also use a tool to generate the Makefile. The steps to do this are as follows
 * Run stm32cubeMX and load the `stm32cubemx/Odrive.ioc` project file.
 * Press `Project -> Generate code`
 * You may need to let it download some drivers and such.
-
-### Generate makefile
-There is an excellent project called CubeMX2Makefile, originally from baoshi. This project is included as a submodule.
-* Initialise and clone the submodules: `git submodule init; git submodule update`
-* Generate makefile: `python2 CubeMX2Makefile/CubeMX2Makefile.py .`
-
 
 ## Setting up Eclipse development environment
 

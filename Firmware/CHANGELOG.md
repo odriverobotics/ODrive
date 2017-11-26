@@ -1,3 +1,11 @@
+## [Unreleased]
+
+### Added
+* Protection from user setting current_lim higher than is measurable
+
+### Changed
+* Shunt resistance values for v3.3 and earlier to include extra resistance of PCB
+
 ## [0.2.2] - 2017-11-17
 ### Fixed
 * Incorrect TIM14 interrupt mapping on board v3.2 caused hard-fault
