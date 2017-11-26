@@ -1380,8 +1380,9 @@ void motor_thread(void const * argument) {
     motor->thread_ready = false;
 }
 
-/** Function that sets the current encoder count to a desired 32-bit value. */
+// Function that sets the current encoder count to a desired 32-bit value.
 void setEncoderCount(Motor_t* motor, uint32_t count){
+    // Disable interrupts to make a critical section to avoid race condition
     uint32_t prim = __get_PRIMASK();
     __disable_irq();
     motor->encoder.encoder_state = count;
