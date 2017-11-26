@@ -8,6 +8,7 @@
 #include <utils.h>
 
 extern PCD_HandleTypeDef hpcd_USB_OTG_FS;
+extern CAN_HandleTypeDef hcan1;
 
 /* Private macros ------------------------------------------------------------*/
 /* Private typedef -----------------------------------------------------------*/
@@ -121,7 +122,7 @@ static uint16_t* const exposed_uint16[] = {
 };
 
 /* Private variables ---------------------------------------------------------*/
-monitoring_slot monitoring_slots[20] = {0};
+monitoring_slot monitoring_slots[20];
 /* Private function prototypes -----------------------------------------------*/
 static void print_monitoring(int limit);
 
@@ -288,7 +289,6 @@ static void print_monitoring(int limit) {
 // Thread to handle deffered processing of USB interrupt, and
 // read commands out of the UART DMA circular buffer
 void cmd_parse_thread(void const * argument) {
-    
     //DMA open loop continous circular buffer
     //1ms delay periodic, chase DMA ptr around, on new data:
         // Check for start char
@@ -356,8 +356,7 @@ void cmd_parse_thread(void const * argument) {
             // When we reach here, we are out of immediate characters to fetch out of UART buffer
             // Now we check if there is any USB processing to do: we wait for up to 1 ms,
             // before going back to checking UART again.
-            const uint32_t usb_check_timeout = 1; // ms
-            osStatus sem_stat = osSemaphoreWait(sem_usb_rx, usb_check_timeout);
+            osStatus sem_stat = osSemaphoreWait(sem_usb_rx, 1); // 1ms
             if (sem_stat == osOK) {
                 motor_parse_cmd(usb_buf, usb_len, SERIAL_PRINTF_IS_USB);
                 USBD_CDC_ReceivePacket(&hUsbDeviceFS);  // Allow next packet
@@ -384,6 +383,20 @@ void usb_update_thread() {
             HAL_PCD_IRQHandler(&hpcd_USB_OTG_FS);
             // Let the irq (OTG_FS_IRQHandler) fire again.
             HAL_NVIC_EnableIRQ(OTG_FS_IRQn);
+        }
+    }
+    vTaskDelete(osThreadGetId());
+}
+
+void can_update_thread() {
+    for (;;) {
+        // Wait for signalling from CAN interrupt (CAN1_RX0_IRQHandler)
+        osStatus semaphore_status = osSemaphoreWait(sem_can_irq, osWaitForever);
+        if (semaphore_status == osOK) {
+            // We have a new incoming CAN transmission: handle it
+            HAL_CAN_IRQHandler(&hcan1);
+            // Let the irq (CAN1_RX0_IRQn) fire again.
+            HAL_NVIC_EnableIRQ(CAN1_RX0_IRQn);
         }
     }
     vTaskDelete(osThreadGetId());

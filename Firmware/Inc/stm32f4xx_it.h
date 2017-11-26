@@ -57,6 +57,8 @@ void SysTick_Handler(void);
 void DMA1_Stream2_IRQHandler(void);
 void DMA1_Stream4_IRQHandler(void);
 void ADC_IRQHandler(void);
+void CAN1_TX_IRQHandler(void);
+void CAN1_RX0_IRQHandler(void);
 void TIM8_TRG_COM_TIM14_IRQHandler(void);
 void UART4_IRQHandler(void);
 void OTG_FS_IRQHandler(void);

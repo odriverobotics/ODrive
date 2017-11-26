@@ -113,9 +113,9 @@ After installing all of the above, open a Git Bash shell. Continue at section [B
 Run `make gdb`. This will reset and halt at program start. Now you can set breakpoints and run the program. If you know how to use gdb, you are good to go.
 If you prefer to debug from eclipse, see [Setting up Eclipse development environment](#setting-up-eclipse-development-environment).
 
-## Communicating over USB and UART
-There is currently a very primitive method to read/write configuration, commands and errors from the ODrive over the USB.
-Please use the `tools/test_communication.py` python script for this.  It is written for [Python 3](https://www.python.org/downloads/) and so should be instlled first.
+## Communicating over USB, UART and CAN
+There is currently a very primitive method to read/write configuration, commands and errors from the ODrive over the USB/UART/CAN.
+Please use the `tools/test_communication.py` python script for commands execution over USB.  It is written for [Python 3](https://www.python.org/downloads/) and so should be installed first.
 
 Setup instructions as follows:
 * Install PyUSB (pip install --pre pyusb). This can be done using the [gitbash terminal](https://git-for-windows.github.io/) for windows users.
@@ -126,12 +126,6 @@ Setup instructions as follows:
 
 ### Command set
 The most accurate way to understand the commands is to read [the code](MotorControl/commands.c) that parses the commands. Also you can have a look at the [ODrive Arduino library](https://github.com/madcowswe/ODriveArduino) that makes it easy to use the UART interface on Arduino. You can also look at it as an implementation example of how to talk to the ODrive over UART.
-
-#### UART framing
-USB communicates with packets, so it is easy to frame a command as one command per packet. However, UART doesn't have any packeting, so we need a way to frame the commands. The start-of-packet symbol is `$` and the end-of-packet symbol is `!`, that is, something like this: `$command!`. An example of a valid UART position command:
-```
-$p 0 10000 0 0!
-```
 
 #### Motor Position command
 ```
@@ -185,6 +179,28 @@ For example
 The error status corresponds to the [Error_t enum in low_level.h](MotorControl/low_level.h).
 
 Note that the links in this section are to a specific commits to make sure that the line numbers are accurate. That is, they don't link to the newest master, but to an old version. Please check the corresponding lines in the code you are using. This is especially important to get the correct indicies in the exposed variable tables, and the error enum values.
+
+#### UART framing
+USB communicates with packets, so it is easy to frame a command as one command per packet. However, UART doesn't have any packeting, so we need a way to frame the commands. The start-of-packet symbol is `$` and the end-of-packet symbol is `!`, that is, something like this: `$command!`. An example of a valid UART position command:
+```
+$p 0 10000 0 0!
+```
+
+#### CAN framing
+CAN-interface is configured for 500 Kbit/s. Since CAN-frame size is limited by 8 bytes, it isn't possible to develop the full commands set support with just single frame. Therefore ODrive supports the basic position/velocity/current commands execution over CAN bus only at the moment. Each motor got three identifiers assigned, which are responsible for the corresponding command execution. CAN-frame IDs from 0x320 to 0x322 are used to run Motor 0 position, velocity and current commands respectively. IDs 0x323 - 0x325 are reserved by Motor 1 for the same purpose. Due to the frame size limitations position and velocity values are limited with three bytes each, current - with two bytes. Additionally all values are interpreted with factor of 0.01, with offset of 0x800000 for position/velocity and with offset of 0x8000 for current. Examples of setting the Motor 0 leftmost (-83886.08), middle (0) and rightmost (83886.07) positions with zeroed feed-forwards:
+```
+cansend can0 320#000000.800000.8000
+cansend can0 320#800000.800000.8000
+cansend can0 320#FFFFFF.800000.8000
+```
+Velocity command utilizes just five bytes per frame. Motor 0 velocity can be set to 1000 counts/s as follows:
+```
+cansend can0 321#8186A0.8000
+```
+Current setting command uses just two most significant bytes of the frame:
+```
+cansend can0 322#8064
+```
 
 #### Continous monitoring of variables
 You can set up variables in monitoring slots, and then have them (or a subset of them) repeatedly printed upon request. Please see the code for this.

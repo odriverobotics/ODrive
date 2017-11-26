@@ -1,0 +1,9 @@
+# Set the default behavior, in case people don't have core.autocrlf set.
+* text=auto
+
+# Explicitly declare text files you want to always be normalized and converted
+# to Windows line endings since STM32CubeMX makes them to be so.
+*.s text eol=crlf
+*.c text eol=crlf
+*.h text eol=crlf
+*.ld text eol=crlf

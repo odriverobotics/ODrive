@@ -64,6 +64,18 @@
 extern CAN_HandleTypeDef hcan1;
 
 /* USER CODE BEGIN Private defines */
+/**
+  * @brief  CAN node private settings structure definition
+  */
+typedef struct
+{
+  uint32_t filter_id;   /*!< CAN subID to ba matched after filtering */
+
+  uint32_t filter_mask; /*!< CAN filter mask to be applied on incoming msg IDs */
+
+  uint32_t tx_id;       /*!< Node CAN ID */
+
+}CAN_PrivateConfigDef;
 
 /* USER CODE END Private defines */
 
