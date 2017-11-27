@@ -6,11 +6,12 @@
 */
 
 #include <cmsis_os.h>
-#include <commands.h>
 #include <freertos_vars.h>
 #include <sys/unistd.h>
 #include <usart.h>
 #include <usbd_cdc_if.h>
+#include <legacy_commands.h> // TODO: make serial_printf_select constant
+
 
 //int _read(int file, char *data, int len) {}
 //int _close(int file) {}

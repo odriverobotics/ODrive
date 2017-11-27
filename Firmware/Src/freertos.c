@@ -54,6 +54,7 @@
 /* USER CODE BEGIN Includes */     
 #include "freertos_vars.h"
 #include "low_level.h"
+#include "axis_c_interface.h"
 #include "commands.h"
 /* USER CODE END Includes */
 
@@ -61,7 +62,13 @@
 osThreadId defaultTaskHandle;
 
 /* USER CODE BEGIN Variables */
+// List of semaphores
+osSemaphoreId sem_usb_irq;
 
+// List of threads
+osThreadId thread_motor_0;
+osThreadId thread_motor_1;
+osThreadId thread_cmd_parse;
 /* USER CODE END Variables */
 
 /* Function prototypes -------------------------------------------------------*/
@@ -141,13 +148,13 @@ void StartDefaultTask(void const * argument)
   init_motor_control();
 
   // Start motor threads
-  osThreadDef(task_motor_0, motor_thread,   osPriorityHigh+1, 0, 512);
-  osThreadDef(task_motor_1, motor_thread,   osPriorityHigh,   0, 512);
+  osThreadDef(task_motor_0, axis_thread_entry,   osPriorityHigh+1, 0, 512);
+  osThreadDef(task_motor_1, axis_thread_entry,   osPriorityHigh,   0, 512);
   thread_motor_0 = osThreadCreate(osThread(task_motor_0), &motors[0]);
   thread_motor_1 = osThreadCreate(osThread(task_motor_1), &motors[1]);
 
   // Start command handling thread
-  osThreadDef(task_cmd_parse, cmd_parse_thread, osPriorityNormal, 0, 512);
+  osThreadDef(task_cmd_parse, communication_task, osPriorityNormal, 0, 512);
   thread_cmd_parse = osThreadCreate(osThread(task_cmd_parse), NULL);
 
   // Start USB interrupt handler thread

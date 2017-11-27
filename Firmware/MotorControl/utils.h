@@ -2,6 +2,12 @@
 #ifndef __UTILS_H
 #define __UTILS_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+#include <stdint.h>
+
 /**
  * @brief Unique ID register address location
  */
@@ -81,5 +87,12 @@ int SVM(float alpha, float beta, float* tA, float* tB, float* tC);
 float wrap_pm_pi(float theta);
 float fast_atan2(float y, float x);
 int mod(int dividend, int divisor);
+
+uint32_t deadline_to_timeout(uint32_t deadline_ms);
+uint32_t timeout_to_deadline(uint32_t timeout_ms);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif  //__UTILS_H

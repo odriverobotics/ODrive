@@ -23,7 +23,6 @@
 
 /* Private defines -----------------------------------------------------------*/
 
-#define STANDALONE_MODE  // Drive operates without USB communication
 // #define DEBUG_PRINT
 
 /* Private macros ------------------------------------------------------------*/
@@ -37,7 +36,7 @@ float vbus_voltage = 12.0f;
 // TODO stick parameter into struct
 #define ENCODER_CPR (600 * 4)
 #define POLE_PAIRS 7
-static float elec_rad_per_enc = POLE_PAIRS * 2 * M_PI * (1.0f / (float)ENCODER_CPR);
+const float elec_rad_per_enc = POLE_PAIRS * 2 * M_PI * (1.0f / (float)ENCODER_CPR);
 
 #if HW_VERSION_MAJOR == 3
 #if HW_VERSION_MINOR <= 3
@@ -72,9 +71,9 @@ Motor_t motors[] = {
         .phase_resistance = 0.0f,        // to be set by measure_phase_resistance
         .motor_thread = 0,
         .thread_ready = false,
-        .enable_control = true,
-        .do_calibration = true,
-        .calibration_ok = false,
+        // .enable_control = true,
+        // .do_calibration = true,
+        // .calibration_ok = false,
         .motor_timer = &htim1,
         .next_timings = {TIM_1_8_PERIOD_CLOCKS / 2, TIM_1_8_PERIOD_CLOCKS / 2, TIM_1_8_PERIOD_CLOCKS / 2},
         .control_deadline = TIM_1_8_PERIOD_CLOCKS,
@@ -113,7 +112,10 @@ Motor_t motors[] = {
         // .rotor_mode = ROTOR_MODE_RUN_ENCODER_TEST_SENSORLESS,
         .rotor_mode = ROTOR_MODE_ENCODER,
         .encoder = {
-            .encoder_timer = &htim3, .encoder_offset = 0, .encoder_state = 0,
+            .encoder_timer = &htim3,
+            .encoder_cpr = ENCODER_CPR,
+            .encoder_offset = 0,
+            .encoder_state = 0,
             .motor_dir = 0,   // set by calib_enc_offset
             .phase = 0.0f,    // [rad]
             .pll_pos = 0.0f,  // [rad]
@@ -165,9 +167,9 @@ Motor_t motors[] = {
         .phase_resistance = 0.0f,                 // to be set by measure_phase_resistance
         .motor_thread = 0,
         .thread_ready = false,
-        .enable_control = true,
-        .do_calibration = true,
-        .calibration_ok = false,
+        // .enable_control = true,
+        // .do_calibration = true,
+        // .calibration_ok = false,
         .motor_timer = &htim8,
         .next_timings = {TIM_1_8_PERIOD_CLOCKS / 2, TIM_1_8_PERIOD_CLOCKS / 2, TIM_1_8_PERIOD_CLOCKS / 2},
         .control_deadline = (3 * TIM_1_8_PERIOD_CLOCKS) / 2,
@@ -204,7 +206,10 @@ Motor_t motors[] = {
         },
         .rotor_mode = ROTOR_MODE_ENCODER,
         .encoder = {
-            .encoder_timer = &htim4, .encoder_offset = 0, .encoder_state = 0,
+            .encoder_timer = &htim4,
+            .encoder_cpr = ENCODER_CPR,
+            .encoder_offset = 0,
+            .encoder_state = 0,
             .motor_dir = 0,   // set by calib_enc_offset
             .phase = 0.0f,    // [rad]
             .pll_pos = 0.0f,  // [rad]
@@ -239,7 +244,7 @@ Motor_t motors[] = {
         }
     }
 };
-const int num_motors = sizeof(motors) / sizeof(motors[0]);
+const size_t num_motors = sizeof(motors) / sizeof(motors[0]);
 
 /* Private constant data -----------------------------------------------------*/
 static const float one_by_sqrt3 = 0.57735026919f;
@@ -250,45 +255,10 @@ static const int current_meas_hz = CURRENT_MEAS_HZ;
 /* Private variables ---------------------------------------------------------*/
 static float brake_resistance = 0.47f;  // [ohm]
 
-/* Private function prototypes -----------------------------------------------*/
-// Command Handling
-
-// Utility
-static uint16_t check_timing(Motor_t* motor);
-static void global_fault(int error);
-static float phase_current_from_adcval(Motor_t* motor, uint32_t ADCValue);
-// Initalisation
-static void DRV8301_setup(Motor_t* motor);
-static void start_adc_pwm();
-static void start_pwm(TIM_HandleTypeDef* htim);
-static void sync_timers(TIM_HandleTypeDef* htim_a, TIM_HandleTypeDef* htim_b,
-                        uint16_t TIM_CLOCKSOURCE_ITRx, uint16_t count_offset);
-// IRQ Callbacks (are all public)
-// Measurement and calibrationa
-static bool measure_phase_resistance(Motor_t* motor, float test_current, float max_voltage);
-static bool measure_phase_inductance(Motor_t* motor, float voltage_low, float voltage_high);
-static bool calib_enc_offset(Motor_t* motor, float voltage_magnitude);
-static bool motor_calibration(Motor_t* motor);
-// Test functions
-static void scan_motor_loop(Motor_t* motor, float omega, float voltage_magnitude);
-static void FOC_voltage_loop(Motor_t* motor, float v_d, float v_q);
-// Main motor control
-static void update_rotor(Motor_t* motor);
-static float get_rotor_phase(Motor_t* motor);
-static float get_pll_vel(Motor_t* motor);
-static bool spin_up_sensorless(Motor_t* motor);
-static void update_brake_current(float brake_current);
-static void queue_modulation_timings(Motor_t* motor, float mod_alpha, float mod_beta);
-static void queue_voltage_timings(Motor_t* motor, float v_alpha, float v_beta);
-static bool FOC_current(Motor_t* motor, float Id_des, float Iq_des);
-static void control_motor_loop(Motor_t* motor);
-// Motor thread (is public)
-
 /* Function implementations --------------------------------------------------*/
 
 //--------------------------------
 // Command Handling
-// TODO move to different file
 //--------------------------------
 
 void set_pos_setpoint(Motor_t* motor, float pos_setpoint, float vel_feed_forward, float current_feed_forward) {
@@ -322,7 +292,7 @@ void set_current_setpoint(Motor_t* motor, float current_setpoint) {
 // Utility
 //--------------------------------
 
-static uint16_t check_timing(Motor_t* motor) {
+uint16_t check_timing(Motor_t* motor) {
     TIM_HandleTypeDef* htim = motor->motor_timer;
     uint16_t timing = htim->Instance->CNT;
     bool down = htim->Instance->CR1 & TIM_CR1_DIR;
@@ -339,7 +309,7 @@ static uint16_t check_timing(Motor_t* motor) {
     return timing;
 }
 
-static void global_fault(int error) {
+void global_fault(int error) {
     // Disable motors NOW!
     for (int i = 0; i < num_motors; ++i) {
         __HAL_TIM_MOE_DISABLE_UNCONDITIONALLY(motors[i].motor_timer);
@@ -347,14 +317,13 @@ static void global_fault(int error) {
     // Set fault codes, etc.
     for (int i = 0; i < num_motors; ++i) {
         motors[i].error = error;
-        motors[i].enable_control = false;
-        motors[i].calibration_ok = false;
+        *(motors[i].axis_legacy.enable_control) = false;
     }
     // disable brake resistor
     update_brake_current(0.0f);
 }
 
-static float phase_current_from_adcval(Motor_t* motor, uint32_t ADCValue) {
+float phase_current_from_adcval(Motor_t* motor, uint32_t ADCValue) {
     int adcval_bal = (int)ADCValue - (1 << 11);
     float amp_out_volt = (3.3f / (float)(1 << 12)) * (float)adcval_bal;
     float shunt_volt = amp_out_volt * motor->phase_current_rev_gain;
@@ -385,7 +354,7 @@ void init_motor_control() {
 }
 
 // Set up the gate drivers
-static void DRV8301_setup(Motor_t* motor) {
+void DRV8301_setup(Motor_t* motor) {
     DRV8301_Obj* gate_driver = &motor->gate_driver;
     DRV_SPI_8301_Vars_t* local_regs = &motor->gate_driver_regs;
 
@@ -429,7 +398,7 @@ static void DRV8301_setup(Motor_t* motor) {
     DRV8301_readData(gate_driver, local_regs);
 }
 
-static void start_adc_pwm() {
+void start_adc_pwm() {
     // Enable ADC and interrupts
     __HAL_ADC_ENABLE(&hadc1);
     __HAL_ADC_ENABLE(&hadc2);
@@ -462,7 +431,7 @@ static void start_adc_pwm() {
     HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_4);
 }
 
-static void start_pwm(TIM_HandleTypeDef* htim) {
+void start_pwm(TIM_HandleTypeDef* htim) {
     // Init PWM
     int half_load = TIM_1_8_PERIOD_CLOCKS / 2;
     htim->Instance->CCR1 = half_load;
@@ -481,8 +450,8 @@ static void start_pwm(TIM_HandleTypeDef* htim) {
     HAL_TIM_PWM_Start_IT(htim, TIM_CHANNEL_4);
 }
 
-static void sync_timers(TIM_HandleTypeDef* htim_a, TIM_HandleTypeDef* htim_b,
-                        uint16_t TIM_CLOCKSOURCE_ITRx, uint16_t count_offset) {
+void sync_timers(TIM_HandleTypeDef* htim_a, TIM_HandleTypeDef* htim_b,
+                 uint16_t TIM_CLOCKSOURCE_ITRx, uint16_t count_offset) {
     // Store intial timer configs
     uint16_t MOE_store_a = htim_a->Instance->BDTR & (TIM_BDTR_MOE);
     uint16_t MOE_store_b = htim_b->Instance->BDTR & (TIM_BDTR_MOE);
@@ -639,7 +608,7 @@ void pwm_trig_adc_cb(ADC_HandleTypeDef* hadc, bool injected) {
         // and their interrupts should arrive on the same clock cycle.
         // We dispatch the callbacks in order, so ADC2 will always be processed before ADC3.
         // Therefore we store the value from ADC2 and signal the thread that the
-        // measurement is ready when we recieve the ADC3 measurement
+        // measurement is ready when we receive the ADC3 measurement
 
         // return or continue
         if (hadc == &hadc2) {
@@ -666,7 +635,7 @@ void pwm_trig_adc_cb(ADC_HandleTypeDef* hadc, bool injected) {
 //--------------------------------
 
 // TODO check Ibeta balance to verify good motor connection
-static bool measure_phase_resistance(Motor_t* motor, float test_current, float max_voltage) {
+bool measure_phase_resistance(Motor_t* motor, float test_current, float max_voltage) {
     static const float kI = 10.0f;                                  //[(V/s)/A]
     static const int num_test_cycles = 3.0f / CURRENT_MEAS_PERIOD;  // Test runs for 3s
     float test_voltage = 0.0f;
@@ -704,7 +673,7 @@ static bool measure_phase_resistance(Motor_t* motor, float test_current, float m
     return true;
 }
 
-static bool measure_phase_inductance(Motor_t* motor, float voltage_low, float voltage_high) {
+bool measure_phase_inductance(Motor_t* motor, float voltage_low, float voltage_high) {
     float test_voltages[2] = {voltage_low, voltage_high};
     float Ialphas[2] = {0.0f};
     static const int num_cycles = 5000;
@@ -749,7 +718,7 @@ static bool measure_phase_inductance(Motor_t* motor, float voltage_low, float vo
 
 // TODO: Do the scan with current, not voltage!
 // TODO: add check_timing
-static bool calib_enc_offset(Motor_t* motor, float voltage_magnitude) {
+bool calib_enc_offset(Motor_t* motor, float voltage_magnitude) {
     static const float start_lock_duration = 1.0f;
     static const int num_steps = 1024;
     static const float dt_step = 1.0f / 500.0f;
@@ -811,8 +780,7 @@ static bool calib_enc_offset(Motor_t* motor, float voltage_magnitude) {
     return true;
 }
 
-static bool motor_calibration(Motor_t* motor) {
-    motor->calibration_ok = false;
+bool motor_calibration(Motor_t* motor) {
     motor->error = ERROR_NO_ERROR;
 
     // #warning(hardcoded values for SK3-5065-280kv!)
@@ -850,7 +818,6 @@ static bool motor_calibration(Motor_t* motor) {
     motor->sensorless.pll_kp = motor->encoder.pll_kp;
     motor->sensorless.pll_ki = motor->encoder.pll_ki;
 
-    motor->calibration_ok = true;
     return true;
 }
 
@@ -886,7 +853,7 @@ bool anti_cogging_calibration(Motor_t* motor) {
 // Test functions
 //--------------------------------
 
-__attribute__((unused)) static void scan_motor_loop(Motor_t* motor, float omega, float voltage_magnitude) {
+__attribute__((unused)) void scan_motor_loop(Motor_t* motor, float omega, float voltage_magnitude) {
     for (;;) {
         for (float ph = 0.0f; ph < 2.0f * M_PI; ph += omega * current_meas_period) {
             osSignalWait(M_SIGNAL_PH_CURRENT_MEAS, osWaitForever);
@@ -905,7 +872,7 @@ __attribute__((unused)) static void scan_motor_loop(Motor_t* motor, float omega,
 }
 
 //TODO integrate as mode in main control loop
-__attribute__((unused)) static void FOC_voltage_loop(Motor_t* motor, float v_d, float v_q) {
+__attribute__((unused)) void FOC_voltage_loop(Motor_t* motor, float v_d, float v_q) {
     for (;;) {
         osSignalWait(M_SIGNAL_PH_CURRENT_MEAS, osWaitForever);
         update_rotor(motor);
@@ -930,7 +897,7 @@ __attribute__((unused)) static void FOC_voltage_loop(Motor_t* motor, float v_d, 
 // Main motor control
 //--------------------------------
 
-static void update_rotor(Motor_t* motor) {
+void update_rotor(Motor_t* motor) {
     switch (motor->rotor_mode) {
         case ROTOR_MODE_ENCODER:
         case ROTOR_MODE_RUN_ENCODER_TEST_SENSORLESS: {
@@ -1046,7 +1013,7 @@ static void update_rotor(Motor_t* motor) {
     }
 }
 
-static bool using_encoder(Motor_t* motor) {
+bool using_encoder(Motor_t* motor) {
     if (motor->rotor_mode == ROTOR_MODE_ENCODER ||
         motor->rotor_mode == ROTOR_MODE_RUN_ENCODER_TEST_SENSORLESS)
         return true;
@@ -1054,14 +1021,14 @@ static bool using_encoder(Motor_t* motor) {
         return false;
 }
 
-static bool using_sensorless(Motor_t* motor) {
+bool using_sensorless(Motor_t* motor) {
     if (motor->rotor_mode == ROTOR_MODE_SENSORLESS)
         return true;
     else
         return false;
 }
 
-static float get_rotor_phase(Motor_t* motor) {
+float get_rotor_phase(Motor_t* motor) {
     if (using_encoder(motor))
         return motor->encoder.phase;
     else if (using_sensorless(motor))
@@ -1071,7 +1038,7 @@ static float get_rotor_phase(Motor_t* motor) {
         return 0.0f;
 }
 
-static float get_pll_vel(Motor_t* motor) {
+float get_pll_vel(Motor_t* motor) {
     if (using_encoder(motor))
         return motor->encoder.pll_vel;
     else if (using_sensorless(motor))
@@ -1081,7 +1048,18 @@ static float get_pll_vel(Motor_t* motor) {
         return 0.0f;
 }
 
-static bool spin_up_timestep(Motor_t* motor, float phase, float I_mag) {
+// Function that sets the current encoder count to a desired 32-bit value.
+void setEncoderCount(Motor_t* motor, uint32_t count) {
+    // Disable interrupts to make a critical section to avoid race condition
+    uint32_t prim = __get_PRIMASK();
+    __disable_irq();
+    motor->encoder.encoder_state = count;
+    motor->motor_timer->Instance->CNT = count;
+    motor->encoder.pll_pos = (float)count;
+    __set_PRIMASK(prim);
+}
+
+bool spin_up_timestep(Motor_t* motor, float phase, float I_mag) {
     // wait for new timestep
     if (osSignalWait(M_SIGNAL_PH_CURRENT_MEAS, PH_CURRENT_MEAS_TIMEOUT).status != osEventSignal) {
         motor->error = ERROR_SPIN_UP_TIMEOUT;
@@ -1097,7 +1075,7 @@ static bool spin_up_timestep(Motor_t* motor, float phase, float I_mag) {
     return true;
 }
 
-static bool spin_up_sensorless(Motor_t* motor) {
+bool spin_up_sensorless(Motor_t* motor) {
     static const float ramp_up_time = 0.4f;
     static const float ramp_up_distance = 4 * M_PI;
     float ramp_step = current_meas_period / ramp_up_time;
@@ -1134,7 +1112,7 @@ static bool spin_up_sensorless(Motor_t* motor) {
     // TODO: check pll vel (abs ratio, 0.8)
 }
 
-static void update_brake_current(float brake_current) {
+void update_brake_current(float brake_current) {
     if (brake_current < 0.0f) brake_current = 0.0f;
     float brake_duty = brake_current * brake_resistance / vbus_voltage;
 
@@ -1153,7 +1131,7 @@ static void update_brake_current(float brake_current) {
     htim2.Instance->CCR4 = high_on;
 }
 
-static void queue_modulation_timings(Motor_t* motor, float mod_alpha, float mod_beta) {
+void queue_modulation_timings(Motor_t* motor, float mod_alpha, float mod_beta) {
     float tA, tB, tC;
     SVM(mod_alpha, mod_beta, &tA, &tB, &tC);
     motor->next_timings[0] = (uint16_t)(tA * (float)TIM_1_8_PERIOD_CLOCKS);
@@ -1161,14 +1139,14 @@ static void queue_modulation_timings(Motor_t* motor, float mod_alpha, float mod_
     motor->next_timings[2] = (uint16_t)(tC * (float)TIM_1_8_PERIOD_CLOCKS);
 }
 
-static void queue_voltage_timings(Motor_t* motor, float v_alpha, float v_beta) {
+void queue_voltage_timings(Motor_t* motor, float v_alpha, float v_beta) {
     float vfactor = 1.0f / ((2.0f / 3.0f) * vbus_voltage);
     float mod_alpha = vfactor * v_alpha;
     float mod_beta = vfactor * v_beta;
     queue_modulation_timings(motor, mod_alpha, mod_beta);
 }
 
-static bool FOC_current(Motor_t* motor, float Id_des, float Iq_des) {
+bool FOC_current(Motor_t* motor, float Id_des, float Iq_des) {
     Current_control_t* ictrl = &motor->current_control;
 
     // Clarke transform
@@ -1246,8 +1224,8 @@ static bool FOC_current(Motor_t* motor, float Id_des, float Iq_des) {
     return true;
 }
 
-static void control_motor_loop(Motor_t* motor) {
-    while (motor->enable_control) {
+void control_motor_loop(Motor_t* motor) {
+    while (*(motor->axis_legacy.enable_control)) {
         if (osSignalWait(M_SIGNAL_PH_CURRENT_MEAS, PH_CURRENT_MEAS_TIMEOUT).status != osEventSignal) {
             motor->error = ERROR_FOC_MEASUREMENT_TIMEOUT;
             break;
@@ -1331,66 +1309,4 @@ static void control_motor_loop(Motor_t* motor) {
     //We are exiting control, reset Ibus, and update brake current
     //TODO update brake current from all motors in 1 func
     //TODO reset this motor Ibus, then call from here
-}
-
-//--------------------------------
-// Motor thread
-//--------------------------------
-
-void motor_thread(void const* argument) {
-    Motor_t* motor = (Motor_t*)argument;
-
-    // Allocate the map for anti-cogging algorithm and initialize all values to 0.0f
-    motor->anticogging.cogging_map = (float*)malloc(ENCODER_CPR * sizeof(float));
-    if (motor->anticogging.cogging_map != NULL) {
-        for (int i = 0; i < ENCODER_CPR; i++) {
-            motor->anticogging.cogging_map[i] = 0.0f;
-        }
-    }
-
-    motor->motor_thread = osThreadGetId();
-    motor->thread_ready = true;
-
-    for (;;) {
-        if (motor->do_calibration) {
-            __HAL_TIM_MOE_ENABLE(motor->motor_timer);  // enable pwm outputs
-            motor_calibration(motor);
-            __HAL_TIM_MOE_DISABLE_UNCONDITIONALLY(motor->motor_timer);  // disables pwm outputs
-            motor->do_calibration = false;
-        }
-
-        if (motor->calibration_ok && motor->enable_control) {
-            motor->enable_step_dir = true;
-            __HAL_TIM_MOE_ENABLE(motor->motor_timer);
-
-            bool spin_up_ok = true;
-            if (motor->rotor_mode == ROTOR_MODE_SENSORLESS)
-                spin_up_ok = spin_up_sensorless(motor);
-            if (spin_up_ok)
-                control_motor_loop(motor);
-
-            __HAL_TIM_MOE_DISABLE_UNCONDITIONALLY(motor->motor_timer);
-            motor->enable_step_dir = false;
-
-            if (motor->enable_control) {  // if control is still enabled, we exited because of error
-                motor->calibration_ok = false;
-                motor->enable_control = false;
-            }
-        }
-
-        queue_voltage_timings(motor, 0.0f, 0.0f);
-        osDelay(100);
-    }
-    motor->thread_ready = false;
-}
-
-// Function that sets the current encoder count to a desired 32-bit value.
-void setEncoderCount(Motor_t* motor, uint32_t count){
-    // Disable interrupts to make a critical section to avoid race condition
-    uint32_t prim = __get_PRIMASK();
-    __disable_irq();
-    motor->encoder.encoder_state = count;
-    motor->motor_timer->Instance->CNT = count;
-    motor->encoder.pll_pos = (float)count;
-    __set_PRIMASK(prim);
 }
