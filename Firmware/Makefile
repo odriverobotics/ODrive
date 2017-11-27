@@ -85,6 +85,7 @@ C_SOURCES = \
   MotorControl/low_level.c
 CPP_SOURCES = \
   MotorControl/axis.cpp \
+  MotorControl/config.cpp \
   MotorControl/commands.cpp \
   MotorControl/protocol.cpp
 ASM_SOURCES = \

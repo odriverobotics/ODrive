@@ -301,6 +301,8 @@ int NVM_start_write(size_t length) {
 //
 // The operation fails if (offset + length) is larger than the length passed to NVM_start_write.
 // The most recent valid NVM data is not modified or invalidated until NVM_commit is called.
+// Warning: Writing different data to the same area multiple times during a single transaction
+// will cause data corruption.
 //
 // @param offset: The offset in bytes, 0 being the beginning of the staging block.
 // @param data: Pointer to the data that should be written

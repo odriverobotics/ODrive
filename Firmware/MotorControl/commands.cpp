@@ -11,6 +11,7 @@
 #include "protocol.hpp"
 #include "freertos_vars.h"
 #include "utils.h"
+#include "config.h"
 
 #ifdef ENABLE_LEGACY_PROTOCOL
 #include "legacy_commands.h"
@@ -210,7 +211,13 @@ const Endpoint endpoints[] = {
         Endpoint::make_function("set_current_setpoint", &motors_1_set_current_setpoint_func),
             Endpoint::make_property("current_setpoint", &motors[1].set_current_setpoint_args.current_setpoint),
         Endpoint::close_tree(),
-    Endpoint::close_tree() // motor1
+    Endpoint::close_tree(), // motor1
+    Endpoint::make_function("save_config", &save_configuration),
+        // no arguments
+    Endpoint::close_tree(),
+    Endpoint::make_function("reset", &reset),
+        // no arguments
+    Endpoint::close_tree()
 };
 // clang-format on
 

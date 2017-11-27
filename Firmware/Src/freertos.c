@@ -56,6 +56,7 @@
 #include "low_level.h"
 #include "axis_c_interface.h"
 #include "commands.h"
+#include "config.h"
 /* USER CODE END Includes */
 
 /* Variables -----------------------------------------------------------------*/
@@ -140,6 +141,9 @@ void StartDefaultTask(void const * argument)
   MX_USB_DEVICE_Init();
 
   /* USER CODE BEGIN StartDefaultTask */
+
+  // Init and load persistent configuration
+  init_configuration();
 
   // Init communications
   init_communication();
