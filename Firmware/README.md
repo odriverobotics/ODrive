@@ -145,14 +145,26 @@ The following options are known to work and supported:
   * When you are done, you must kill the openocd task before you are able to flash the board again: Tasks -> Terminate task -> openocd.
 
 ## Communicating over USB or UART
-
+Warning: If testing USB or UART communication for the first time it is recommend that your motors are free to spin continuously and are not connected to a drivetrain with limited travel.
 ### From Linux/Windows/macOS
 There are two simple python scripts to help you get started with controlling the ODrive using python.
 
-1. [Install Python 3](https://www.python.org/downloads/), then install dependencies:
+1. [Install Python 3](https://www.python.org/downloads/), then install dependencies pyusb and pyserial:
+ * __Linux__
 ```
 pip install pyusb pyserial
 ```
+  * __Windows__
+From the start menu type 'cmd' and open the command prompt. If you only have python3 installed then enter:
+```
+pip install pyusb pyserial
+```
+If you have python2 and python3 installed concurrently then you must specifiy the location of pip for python3. For me this was at 'C:\Users\ 'username' \AppData\Local\Programs\Python\Python36-32\Scripts\' and so I instead enter:
+```
+C:\Users\'username'\AppData\Local\Programs\Python\Python36-32\Scripts\pip install pyusb pyserial
+```
+If you have trouble with this step then refer to [this walkthrough.](https://www.youtube.com/watch?v=jnpC_Ib_lbc)
+
 3. __Linux__: set up USB permissions
 ```
     echo 'SUBSYSTEM=="usb", ATTR{idVendor}=="1209", ATTR{idProduct}=="0d[0-9][0-9]", MODE="0666"' | sudo tee /etc/udev/rules.d/50-odrive.rules
@@ -163,9 +175,11 @@ pip install pyusb pyserial
 5. Plug in a USB cable into the microUSB connector on ODrive, and connect it to your PC
 6. __Windows__: Use the [Zadig](http://zadig.akeo.ie/) utility to set ODrive (not STLink!) driver to libusb. 
   * If 'Odrive V3.x' is not in the list of devices upon opening Zadig, check 'List All Devices' from the options menu. With the Odrive selected in the device list choose 'libusb-win32' from the target driver list and select the large 'install driver' button.
-7. Run `./tools/demo.py` or `./tools/explore_odrive.py`.
+7. Run `./tools/demo.py` or `./tools/explore_odrive.py`. 
       - `demo.py` is a very simple script which will make motor 0 turn back and forth. Use this as an example if you want to control the ODrive yourself programatically.
       - `explore_odrive.py` drops you into an interactive python shell where you can explore and edit the parameters that are available on your device. For instance `my_odrive.motor0.pos_setpoint = 10000` makes motor0 move to position 10000. To connect over serial instead of USB run `./tools/explore_odrive.py --discover serial`.
+  * __Windows Users:__
+If you run either of the python scripts and only see a prompt window appear for a split second before it closes then it is likely that you have not installed pyusb and pyserial for python3 correctly.
 
 ### From Arduino
 [See ODrive Arduino Library](https://github.com/madcowswe/ODriveArduino)
