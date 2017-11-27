@@ -297,7 +297,9 @@ void init_communication(void) {
         case GPIO_MODE_NONE:
         break; //do nothing
         case GPIO_MODE_UART: {
+#if HW_VERSION_MAJOR == 3 && HW_VERSION_MINOR >= 3
             SetGPIO12toUART();
+#endif
         } break;
         case GPIO_MODE_STEP_DIR: {
             SetGPIO12toStepDir();

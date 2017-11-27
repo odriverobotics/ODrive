@@ -11,18 +11,18 @@
 #include "crc.hpp"
 
 // Select which protocol to run on UART (see README for more details)
-//#define UART_PROTOCOL_NATIVE
-#define UART_PROTOCOL_LEGACY
-//#define UART_PROTOCOL_NONE
+// #define UART_PROTOCOL_NATIVE
+// #define UART_PROTOCOL_LEGACY
+#define UART_PROTOCOL_NONE
 
 // Select which protocol to run on USB (see README for more details)
 #define USB_PROTOCOL_NATIVE
-//#define USB_PROTOCOL_NATIVE_STREAM_BASED
-//#define USB_PROTOCOL_LEGACY
-//#define USB_PROTOCOL_NONE
+// #define USB_PROTOCOL_NATIVE_STREAM_BASED
+// #define USB_PROTOCOL_LEGACY
+// #define USB_PROTOCOL_NONE
 
 // Use GPIO 1/2 for step/dir input instead of UART
-//#define USE_GPIO_MODE_STEP_DIR
+// #define USE_GPIO_MODE_STEP_DIR
 
 
 typedef enum {

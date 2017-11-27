@@ -10,7 +10,7 @@ If you are a developer, you are encouraged to use the `devel` branch, as it cont
 
 - [Configuring parameters](#configuring-parameters)
 - [Compiling and downloading firmware](#compiling-and-downloading-firmware)
-- [Communicating over USB](#communicating-over-usb)
+- [Communicating over USB or UART](#communicating-over-usb-or-uart)
 - [Generating startup code](#generating-startup-code)
 - [Setting up Eclipse development environment](#setting-up-eclipse-development-environment)
 - [Notes for Contributors](#notes-for-contributors)
@@ -29,7 +29,8 @@ The first thing to set is your board hardware version, located at the top of [In
 ### Communication configuration
 If want to use the example python scripts and connect the ODrive via USB, the defaults are fine for you and you can skip this step.
 
-You can select what interface you want to run on USB and UART. The following options are available:
+You can select what interface you want to run on USB and GPIO pins. See [Communicating over USB or UART](#communicating-over-usb-or-uart) for more information.
+The following options are available in [MotorControl/commands.h](MotorControl/commands.h):
 
 __USB__:
  - `USB_PROTOCOL_NATIVE`: Use the native protocol (recommended for new applications).
@@ -44,6 +45,7 @@ __USB__:
  - `USB_PROTOCOL_NONE`: Ignore USB communication
 
 __GPIO 1,2 pins__:
+Note that UART is only supported on ODrive v3.3 and higher.
  - `UART_PROTOCOL_NATIVE`: Use the native protocol (see notes above).
  - `UART_PROTOCOL_LEGACY`: Use the human-readable legacy protocol
     Use this option if you control the ODrive with an Arduino. The ODrive Arduino library is not yet updated to the native protocol.
@@ -54,7 +56,7 @@ __GPIO 1,2 pins__:
 The rest of all the parameters are at the top of the [MotorControl/low_level.c](MotorControl/low_level.c) file. Please note that many parameters occur twice, once for each motor.
 In it's current state, the motor structs contain both tuning parameters, meant to be set by the developer, and static variables, meant to be modified by the software. Unfortunatly these are mixed together right now, but cleaning this up is a high priority task.
 
-It may be helpful to know that the entry point of each of the motor threads is `void motor_thread` at the bottom of [MotorControl/low_level.c](MotorControl/low_level.c). This is like `main` for each motor, and is probably where you should start reading the code.
+It may be helpful to know that the entry point of each of the motor threads is `void axis_thread_entry` at the top of [MotorControl/axis.cpp](MotorControl/axis.cpp). This is like `main` for each motor, and is probably where you should start reading the code.
 
 ### Mandatory parameters
 You must set:
@@ -65,7 +67,7 @@ You must set:
 ### Tuning parameters
 The most important parameters are the limits:
 * The current limit: `.current_lim = 75.0f, //[A] // Note: consistent with 40v/v gain`. The default current limit, for safety reasons, is set to 10A. This is quite weak, and good for making sure the drive is stable. Once you have tuned the drive, you can increase this to 75A to get some performance. Note that above 75A, you must change the current amplifier gains.
-* The velocity limit: `.vel_limit = 20000.0f, // [counts/s]`. Does what it says on the tin.
+* The velocity limit: `.vel_limit = 20000.0f, // [counts/s]`. The motor will be limited to this speed; again the default value is quite slow.
 
 The motion control gains are currently manually tuned:
 * `.pos_gain = 20.0f, // [(counts/s) / counts]`
@@ -126,9 +128,21 @@ After installing all of the above, open a Git Bash shell. Continue at section [B
 * You need to power the board by only **ONE** of the following: VCC(3.3v), 5V, or the main power connection (the DC bus). The USB port (J1) does not power the board.
 * Run `make flash` in the root of this repository.
 
+If the flashing worked, you can start sending commands. If you want to do that now, you can go to [Communicating over USB or UART](#communicating-over-usb-or-uart).
+
 ### Debugging the firmware
-Run `make gdb`. This will reset and halt at program start. Now you can set breakpoints and run the program. If you know how to use gdb, you are good to go.
-If you prefer to debug from eclipse, see [Setting up Eclipse development environment](#setting-up-eclipse-development-environment).
+The following options are known to work and supported:
+* Command line GDB. Run `make gdb`. This will reset and halt at program start. Now you can set breakpoints and run the program. If you know how to use gdb, you are good to go.
+* Eclipse, see [Setting up Eclipse development environment](#setting-up-eclipse-development-environment).
+* Visual Studio Code. The solution we have is not the most elegant, and if you know a better way, please do help us.
+  * Make sure you have the Firmware folder as your active folder
+  * Flash the board with the newest code (starting debug session doesn't do this)
+  * Tasks -> Run Task -> openocd
+  * Debug -> Start Debugging
+  * The processor will reset and halt.
+  * Set your breakpoints. Note: you can only set breakpoints when the processor is halted, if you set them during run mode, they won't get applied.
+  * Run
+  * When you are done, you must kill the openocd task before you are able to flash the board again: Tasks -> Terminate task -> openocd.
 
 ## Communicating over USB or UART
 
@@ -137,7 +151,7 @@ There are two simple python scripts to help you get started with controlling the
 
 1. [Install Python 3](https://www.python.org/downloads/), then install dependencies:
 ```
-pip install pyusb pyserial prompt_toolkit
+pip install pyusb pyserial
 ```
 3. __Linux__: set up USB permissions
 ```
@@ -148,17 +162,15 @@ pip install pyusb pyserial prompt_toolkit
 4. Power the ODrive board (as per the [Flashing the firmware](#flashing-the-firmware) step)
 5. Plug in a USB cable into the microUSB connector on ODrive, and connect it to your PC
 6. __Windows__: Use the [Zadig](http://zadig.akeo.ie/) utility to set ODrive (not STLink!) driver to libusb. 
-  * If 'Odrive V3.x' is not in the list of devices upon opening Zadig check 'List All Devices' from the options menu. Connecting to the Odrive board directly and not over a usb hub may also help. With the Odrive selected in the device list choose 'libusb-win32' from the target driver list and select the large 'install driver' button.
+  * If 'Odrive V3.x' is not in the list of devices upon opening Zadig, check 'List All Devices' from the options menu. With the Odrive selected in the device list choose 'libusb-win32' from the target driver list and select the large 'install driver' button.
 7. Run `./tools/demo.py` or `./tools/explore_odrive.py`.
-      - `demo.py` is a very simple script which will make motor 0 turn back and forth. Take a look at the code if you want to control the ODrive yourself programatically.
+      - `demo.py` is a very simple script which will make motor 0 turn back and forth. Use this as an example if you want to control the ODrive yourself programatically.
       - `explore_odrive.py` drops you into an interactive python shell where you can explore and edit the parameters that are available on your device. For instance `my_odrive.motor0.pos_setpoint = 10000` makes motor0 move to position 10000. To connect over serial instead of USB run `./tools/explore_odrive.py --discover serial`.
 
 ### From Arduino
-
 [See ODrive Arduino Library](https://github.com/madcowswe/ODriveArduino)
 
 ### Other platforms
-
 See the [protocol specification](https://github.com/madcowswe/ODrive/blob/devel/Firmware/protocol.md) or the [legacy protocol specification](https://github.com/madcowswe/ODrive/blob/devel/Firmware/legacy-protocol.md).
 
 
