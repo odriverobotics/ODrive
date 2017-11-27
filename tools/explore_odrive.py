@@ -70,9 +70,20 @@ print('and "my_odrive.motor0.pos_setpoint = 10000"')
 print('will send motor0 to 10000')
 print('')
 
-# Enter interactive python shell with tab complete enabled
-import code
-import rlcompleter
-import readline
-readline.parse_and_bind("tab: complete")
-code.interact(local=locals(), banner='')
+try:
+  # If this assignment works, we are already in interactive mode.
+  # so just drop out of script to existing shell
+  interpreter = sys.ps1
+except AttributeError:
+  # We are not in interactive mode, so let's fire one up
+  # Though let's be real, IPython is the way to go
+  print('If you want to have an improved interactive console with pretty colors,')
+  print('you can run this script in interactive mode with IPython with this command:')
+  print('ipython -i explore_odrive.py')
+  print('')
+  # Enter interactive python shell with tab complete enabled
+  import code
+  import rlcompleter
+  import readline
+  readline.parse_and_bind("tab: complete")
+  code.interact(local=locals(), banner='')
