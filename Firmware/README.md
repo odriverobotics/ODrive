@@ -10,9 +10,10 @@ If you are a developer, you are encouraged to use the `devel` branch, as it cont
 
 - [Configuring parameters](#configuring-parameters)
 - [Compiling and downloading firmware](#compiling-and-downloading-firmware)
+- [Setting up an IDE](#setting-up-an-ide)
+- [Continuing without an IDE](#no-ide-instructions)
 - [Communicating over USB or UART](#communicating-over-usb-or-uart)
 - [Generating startup code](#generating-startup-code)
-- [Setting up an IDE](#setting-up-an-ide)
 - [Notes for Contributors](#notes-for-contributors)
 
 <!-- /MarkdownTOC -->
