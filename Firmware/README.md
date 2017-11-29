@@ -87,7 +87,10 @@ An upcoming feature will enable automatic tuning. Until then, here is a rough tu
 By default both motors are enabled, and the default control mode is position control.
 If you want a different mode, you can change `.control_mode`. To disable a motor, set `.enable_control` and `.do_calibration` to false.
 
+----
 ## Compiling and downloading firmware
+
+
 
 ### Getting a programmer
 Get a programmer that supports SWD (Serial Wire Debugging) and is ST-link v2 compatible. You can get them really cheap on [eBay](http://www.ebay.co.uk/itm/ST-Link-V2-Emulator-Downloader-Programming-Mini-Unit-STM8-STM32-with-20CM-Line-/391173940927?hash=item5b13c8a6bf:g:3g8AAOSw~OdVf-Tu) or many other places.
@@ -117,23 +120,32 @@ Install the following:
 
 After installing all of the above, open a Git Bash shell. Continue at section [Building the firmware](#building-the-firmware).
 
+### IDE
+ODrive is a Makefile project.  It does not require an IDE, but the open-source VSCode is recommended.  See [Configuring VSCode](configuring-vscode.md) for information on how to do this.
+
 ### Building the firmware
 * Make sure you have cloned the repository.
-* Navigate your terminal (bash/cygwin) to the ODrive/Firmware dir.
-* Run `make` in the root of this repository.
+* VSCode:
+    * Tasks -> Run Build Task
+* Terminal:
+    * Navigate your terminal (bash/cygwin) to the ODrive/Firmware dir.
+    * Run `make` in the root of this repository.
 
 ### Flashing the firmware
 * **Make sure you have [configured the parameters first](#configuring-parameters)**
 * Connect `SWD`, `SWC`, and `GND` on connector J2 to the programmer.
 * You need to power the board by only **ONE** of the following: VCC(3.3v), 5V, or the main power connection (the DC bus). The USB port (J1) does not power the board.
-* Run `make flash` in the root of this repository.
+* VSCode:
+    * Tasks -> Run Task -> flash
+* Terminal:
+    * Run `make flash` in the root of this repository.
 
 If the flashing worked, you can start sending commands. If you want to do that now, you can go to [Communicating over USB or UART](#communicating-over-usb-or-uart).
 
 ### Debugging the firmware
 The following options are known to work and supported:
 * Command line GDB. Run `make gdb`. This will reset and halt at program start. Now you can set breakpoints and run the program. If you know how to use gdb, you are good to go.
-* Eclipse, see [Setting up Eclipse development environment](#setting-up-eclipse-development-environment).
+* Eclipse, see [Setting up Eclipse development environment](configuring-eclipse.md).
 * Visual Studio Code. The solution we have is not the most elegant, and if you know a better way, please do help us.
   * Make sure you have the Firmware folder as your active folder
   * Flash the board with the newest code (starting debug session doesn't do this)
@@ -188,42 +200,6 @@ You will likely want the pinout for this process. It is available [here](https:/
 * Run stm32cubeMX and load the `stm32cubemx/Odrive.ioc` project file.
 * Press `Project -> Generate code`
 * You may need to let it download some drivers and such.
-
-## Setting up Eclipse development environment
-
-### Install
-* Install [Eclipse IDE for C/C++ Developers](http://www.eclipse.org/downloads/packages/eclipse-ide-cc-developers/neon3)
-* Install the [OpenOCD Eclipse plugin](http://gnuarmeclipse.github.io/plugins/install/)
-
-### Import project
-* File -> Import -> C/C++ -> Existing Code as Makefile Project
-* Browse for existing code location, find the OdriveFirmware root.
-* In the Toolchain options, select `Cross GCC`
-* Hit Finish
-* Build the project (press ctrl-B)
-
-![Toolchain options](screenshots/CodeAsMakefile.png "Toolchain options")
-
-### Load the launch configuration
-* File -> Import -> Run/Debug -> Launch Configurations -> Next
-* Highlight (don't tick) the OdriveFirmare folder in the left column
-* Tick OdriveFirmware.launch in the right column
-* Hit Finish
-
-![Launch Configurations](screenshots/ImportLaunch.png "Launch Configurations")
-
-### Launch!
-* Make sure the programmer is connected to the board as per [Flashing the firmware](#flashing-the-firmware).
-* Press the down-arrow of the debug symbol in the toolbar, and hit Debug Configurations
-    * You can also hit Run -> Debug Configurations
-* Highlight the debug configuration you imported, called OdriveFirmware. If you do not see the imported launch configuration rename your project to `ODriveFirmware` or edit the launch configuration to match your project name by unfiltering unavailable projects:
-
-![Launch Configuration Filters](screenshots/LaunchConfigFilter.png "Launch Configuration Filters")
-
-* Hit Debug
-* Eclipse should flash the board for you and the program should start halted on the first instruction in `Main`
-* Set beakpoints, step, hit Resume, etc.
-* Make some cool features! ;D
 
 ## Notes for Contributors
 In general the project uses the [Google C++ Style Guide](https://google.github.io/styleguide/cppguide.html), except that the default indendtation is 4 spaces, and that the 80 character limit is not very strictly enforced, merely encouraged.
