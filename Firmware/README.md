@@ -12,7 +12,7 @@ If you are a developer, you are encouraged to use the `devel` branch, as it cont
 - [Compiling and downloading firmware](#compiling-and-downloading-firmware)
 - [Communicating over USB or UART](#communicating-over-usb-or-uart)
 - [Generating startup code](#generating-startup-code)
-- [Setting up an IDE](#setting-up-an-IDE)
+- [Setting up an IDE](#setting-up-an-ide)
 - [Notes for Contributors](#notes-for-contributors)
 
 <!-- /MarkdownTOC -->
