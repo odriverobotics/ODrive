@@ -89,9 +89,6 @@ If you want a different mode, you can change `.control_mode`. To disable a motor
 
 ----
 ## Compiling and downloading firmware
-
-
-
 ### Getting a programmer
 Get a programmer that supports SWD (Serial Wire Debugging) and is ST-link v2 compatible. You can get them really cheap on [eBay](http://www.ebay.co.uk/itm/ST-Link-V2-Emulator-Downloader-Programming-Mini-Unit-STM8-STM32-with-20CM-Line-/391173940927?hash=item5b13c8a6bf:g:3g8AAOSw~OdVf-Tu) or many other places.
 
