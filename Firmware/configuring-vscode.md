@@ -21,4 +21,31 @@ Before doing the VSCode setup, make sure you've installed all of your [prerequis
 1. Restart VSCode 
 1. Open the VSCode Workspace file, which is located in the root of the ODrive repository.  It is called `VSCodeWorkspace.code-workspace`.  The first time you open it, VSCode will install some dependencies.  If it fails, you may need to [change your proxy settings](https://code.visualstudio.com/docs/getstarted/settings).
 
-You should now be ready to compile and test the ODrive project.  See [Building the Firmware](README.md#building-the-firmware)
+You should now be ready to compile and test the ODrive project.
+
+## Building the Firmware
+* Tasks -> Run Build Task
+
+A terminal window will open with your native shell.  VSCode is configured to run the command `make -j4` in this terminal.
+
+## Flashing the Firmware
+* Tasks -> Run Task -> flash
+
+A terminal window will open with your native shell.  VSCode is configured to run the command `make flash` in this terminal.
+
+If the flashing worked, you can start sending commands. If you want to do that now, you can go to [Communicating over USB or UART](README.md#communicating-over-usb-or-uart).
+
+## Debugging
+The solution we have is not the most elegant, and if you know a better way, please do help us.
+  * Make sure you have the Firmware folder as your active folder
+  * Flash the board with the newest code (starting debug session doesn't do this)
+  * Tasks -> Run Task -> openocd
+  * Debug -> Start Debugging
+  * The processor will reset and halt.
+  * Set your breakpoints. Note: you can only set breakpoints when the processor is halted, if you set them during run mode, they won't get applied.
+  * Run
+  * When you are done, you must kill the openocd task before you are able to flash the board again: Tasks -> Terminate task -> openocd.
+
+## Cleaning the Build
+This sometimes needs to be done if you change branches.
+* Open a terminal (View -> Integrated Terminal) and enter `make clean`

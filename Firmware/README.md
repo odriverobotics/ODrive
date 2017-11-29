@@ -12,7 +12,7 @@ If you are a developer, you are encouraged to use the `devel` branch, as it cont
 - [Compiling and downloading firmware](#compiling-and-downloading-firmware)
 - [Communicating over USB or UART](#communicating-over-usb-or-uart)
 - [Generating startup code](#generating-startup-code)
-- [Setting up Eclipse development environment](#setting-up-eclipse-development-environment)
+- [Setting up an IDE](#setting-up-an-IDE)
 - [Notes for Contributors](#notes-for-contributors)
 
 <!-- /MarkdownTOC -->
@@ -115,46 +115,35 @@ Install the following:
 * [Make for Windows](http://gnuwin32.sourceforge.net/packages/make.htm). Make is used to script the compilation process. Download and run the complete package setup program. Add the path of the binaries to your PATH environment variable. For me this was at `C:\Program Files (x86)\GnuWin32\bin`. For details on how to set your path envirment in windows see [these instructions.](https://www.java.com/en/download/help/path.xml)
 * OpenOCD. Follow the instructions at [GNU ARM Eclipse  - How to install the OpenOCD binaries](http://gnuarmeclipse.github.io/openocd/install/), including the part about ST-LINK/V2 drivers. Add the path of the binaries to your PATH environment variable. For me this was at `C:\Program Files\GNU ARM Eclipse\OpenOCD\0.10.0-201704182147-dev\bin`.
 
-After installing all of the above, open a Git Bash shell. Continue at section [Building the firmware](#building-the-firmware).
+---
+## Setting up an IDE
+ODrive is a Makefile project.  It does not require an IDE, but the open-source VSCode is recommended.  It is also possible to use Eclipse.  If you'd like to go that route, please see the respective configuration document:
 
-### IDE
-ODrive is a Makefile project.  It does not require an IDE, but the open-source VSCode is recommended.  See [Configuring VSCode](configuring-vscode.md) for information on how to do this.
+* [Configuring VSCode](configuring-vscode.md)
+* [Configuring Eclipse](configuring-eclipse.md)
+
+---
+## No IDE Instructions
+After installing all of the above, open a Git Bash shell. Continue at section [Building the firmware](#building-the-firmware).
 
 ### Building the firmware
 * Make sure you have cloned the repository.
-* VSCode:
-    * Tasks -> Run Build Task
-* Terminal:
-    * Navigate your terminal (bash/cygwin) to the ODrive/Firmware dir.
-    * Run `make` in the root of this repository.
+* Navigate your terminal (bash/cygwin) to the ODrive/Firmware dir.
+* Run `make` in the root of this repository.
 
 ### Flashing the firmware
 * **Make sure you have [configured the parameters first](#configuring-parameters)**
 * Connect `SWD`, `SWC`, and `GND` on connector J2 to the programmer.
 * You need to power the board by only **ONE** of the following: VCC(3.3v), 5V, or the main power connection (the DC bus). The USB port (J1) does not power the board.
-* VSCode:
-    * Tasks -> Run Task -> flash
-* Terminal:
-    * Run `make flash` in the root of this repository.
+* Run `make flash` in the root of this repository.
 
 If the flashing worked, you can start sending commands. If you want to do that now, you can go to [Communicating over USB or UART](#communicating-over-usb-or-uart).
 
 ### Debugging the firmware
-The following options are known to work and supported:
-* Command line GDB. Run `make gdb`. This will reset and halt at program start. Now you can set breakpoints and run the program. If you know how to use gdb, you are good to go.
-* Eclipse, see [Setting up Eclipse development environment](configuring-eclipse.md).
-* Visual Studio Code. The solution we have is not the most elegant, and if you know a better way, please do help us.
-  * Make sure you have the Firmware folder as your active folder
-  * Flash the board with the newest code (starting debug session doesn't do this)
-  * Tasks -> Run Task -> openocd
-  * Debug -> Start Debugging
-  * The processor will reset and halt.
-  * Set your breakpoints. Note: you can only set breakpoints when the processor is halted, if you set them during run mode, they won't get applied.
-  * Run
-  * When you are done, you must kill the openocd task before you are able to flash the board again: Tasks -> Terminate task -> openocd.
+* Run `make gdb`. This will reset and halt at program start. Now you can set breakpoints and run the program. If you know how to use gdb, you are good to go.
 
+---
 ## Communicating over USB or UART
-
 ### From Linux/Windows/macOS
 There are two simple python scripts to help you get started with controlling the ODrive using python.
 
