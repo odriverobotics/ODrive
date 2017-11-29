@@ -172,7 +172,7 @@ pip install pyusb pyserial
 ### Other platforms
 See the [protocol specification](protocol.md) or the [legacy protocol specification](legacy-protocol.md).
 
-
+---
 ## Generating startup code
 **Note:** You do not need to run this step to program the board. This is only required if you wish to update the auto generated code.
 
@@ -188,6 +188,7 @@ You will likely want the pinout for this process. It is available [here](https:/
 * Press `Project -> Generate code`
 * You may need to let it download some drivers and such.
 
+---
 ## Notes for Contributors
 In general the project uses the [Google C++ Style Guide](https://google.github.io/styleguide/cppguide.html), except that the default indendtation is 4 spaces, and that the 80 character limit is not very strictly enforced, merely encouraged.
 
