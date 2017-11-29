@@ -4,10 +4,10 @@ VSCode is the recommended IDE for working with the ODrive codebase.  It is a lig
 
 Before doing the VSCode setup, make sure you've installed all of your [prerequisites](README.md#installing-prerequisites)
 
----
 ## Setup Procedure
 1. Clone the ODrive repository
 1. [Download VSCode](https://code.visualstudio.com/download)
+1. Open VSCode
 1. Install extensions.  This can be done directly from VSCode (Ctrl+Shift+X)
     * Required extensions:
         * C/C++
