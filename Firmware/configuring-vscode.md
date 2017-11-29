@@ -44,7 +44,8 @@ The solution we have is not the most elegant, and if you know a better way, plea
   * The processor will reset and halt.
   * Set your breakpoints. Note: you can only set breakpoints when the processor is halted, if you set them during run mode, they won't get applied.
   * Run
-  * When you are done, you must kill the openocd task before you are able to flash the board again: Tasks -> Terminate task -> openocd.
+  * When you are done, you must kill the openocd task before you are able to flash the board again: 
+    * Tasks -> Terminate task -> openocd
 
 ## Cleaning the Build
 This sometimes needs to be done if you change branches.
