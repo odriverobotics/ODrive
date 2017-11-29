@@ -172,7 +172,8 @@ pip install pyusb pyserial
 ### Other platforms
 See the [protocol specification](protocol.md) or the [legacy protocol specification](legacy-protocol.md).
 
----
+&nbsp;
+
 ## Generating startup code
 **Note:** You do not need to run this step to program the board. This is only required if you wish to update the auto generated code.
 
