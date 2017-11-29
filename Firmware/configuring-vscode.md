@@ -2,7 +2,7 @@
 
 VSCode is the recommended IDE for working with the ODrive codebase.  It is a light-weight text editor with Git integration and GDB debugging functionality.
 
-Before doing the VSCode setup, make sure you've installed all of your [prerequisites](#installing-prerequisites)
+Before doing the VSCode setup, make sure you've installed all of your [prerequisites](README.md#installing-prerequisites)
 
 ---
 ## Setup Procedure
