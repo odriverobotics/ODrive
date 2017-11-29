@@ -88,7 +88,7 @@ An upcoming feature will enable automatic tuning. Until then, here is a rough tu
 By default both motors are enabled, and the default control mode is position control.
 If you want a different mode, you can change `.control_mode`. To disable a motor, set `.enable_control` and `.do_calibration` to false.
 
-----
+<br><br>
 ## Compiling and downloading firmware
 ### Getting a programmer
 Get a programmer that supports SWD (Serial Wire Debugging) and is ST-link v2 compatible. You can get them really cheap on [eBay](http://www.ebay.co.uk/itm/ST-Link-V2-Emulator-Downloader-Programming-Mini-Unit-STM8-STM32-with-20CM-Line-/391173940927?hash=item5b13c8a6bf:g:3g8AAOSw~OdVf-Tu) or many other places.
@@ -116,14 +116,14 @@ Install the following:
 * [Make for Windows](http://gnuwin32.sourceforge.net/packages/make.htm). Make is used to script the compilation process. Download and run the complete package setup program. Add the path of the binaries to your PATH environment variable. For me this was at `C:\Program Files (x86)\GnuWin32\bin`. For details on how to set your path envirment in windows see [these instructions.](https://www.java.com/en/download/help/path.xml)
 * OpenOCD. Follow the instructions at [GNU ARM Eclipse  - How to install the OpenOCD binaries](http://gnuarmeclipse.github.io/openocd/install/), including the part about ST-LINK/V2 drivers. Add the path of the binaries to your PATH environment variable. For me this was at `C:\Program Files\GNU ARM Eclipse\OpenOCD\0.10.0-201704182147-dev\bin`.
 
----
+<br><br>
 ## Setting up an IDE
 ODrive is a Makefile project.  It does not require an IDE, but the open-source VSCode is recommended.  It is also possible to use Eclipse.  If you'd like to go that route, please see the respective configuration document:
 
 * [Configuring VSCode](configuring-vscode.md)
 * [Configuring Eclipse](configuring-eclipse.md)
 
----
+<br><br>
 ## No IDE Instructions
 After installing all of the above, open a Git Bash shell. Continue at section [Building the firmware](#building-the-firmware).
 
@@ -143,7 +143,7 @@ If the flashing worked, you can start sending commands. If you want to do that n
 ### Debugging the firmware
 * Run `make gdb`. This will reset and halt at program start. Now you can set breakpoints and run the program. If you know how to use gdb, you are good to go.
 
----
+<br><br>
 ## Communicating over USB or UART
 ### From Linux/Windows/macOS
 There are two simple python scripts to help you get started with controlling the ODrive using python.
@@ -172,8 +172,7 @@ pip install pyusb pyserial
 ### Other platforms
 See the [protocol specification](protocol.md) or the [legacy protocol specification](legacy-protocol.md).
 
-&nbsp;
-
+<br><br>
 ## Generating startup code
 **Note:** You do not need to run this step to program the board. This is only required if you wish to update the auto generated code.
 
@@ -189,7 +188,7 @@ You will likely want the pinout for this process. It is available [here](https:/
 * Press `Project -> Generate code`
 * You may need to let it download some drivers and such.
 
----
+<br><br>
 ## Notes for Contributors
 In general the project uses the [Google C++ Style Guide](https://google.github.io/styleguide/cppguide.html), except that the default indendtation is 4 spaces, and that the 80 character limit is not very strictly enforced, merely encouraged.
 
