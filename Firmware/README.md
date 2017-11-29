@@ -170,7 +170,7 @@ pip install pyusb pyserial
 [See ODrive Arduino Library](https://github.com/madcowswe/ODriveArduino)
 
 ### Other platforms
-See the [protocol specification](https://github.com/madcowswe/ODrive/blob/devel/Firmware/protocol.md) or the [legacy protocol specification](https://github.com/madcowswe/ODrive/blob/devel/Firmware/legacy-protocol.md).
+See the [protocol specification](protocol.md) or the [legacy protocol specification](legacy-protocol.md).
 
 
 ## Generating startup code
