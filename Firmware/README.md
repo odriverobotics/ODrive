@@ -118,7 +118,7 @@ Install the following:
 
 <br><br>
 ## Setting up an IDE
-ODrive is a Makefile project.  It does not require an IDE, but the open-source VSCode is recommended.  It is also possible to use Eclipse.  If you'd like to go that route, please see the respective configuration document:
+ODrive is a Makefile project.  It does not require an IDE, but the open-source IDE VSCode is recommended.  It is also possible to use Eclipse.  If you'd like to go that route, please see the respective configuration document:
 
 * [Configuring VSCode](configuring-vscode.md)
 * [Configuring Eclipse](configuring-eclipse.md)
