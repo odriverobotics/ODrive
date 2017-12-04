@@ -34,6 +34,9 @@
 #include <string.h>
 
 #if defined(STM32F405xx)
+
+// refer to page 75 of datasheet:
+// http://www.st.com/content/ccc/resource/technical/document/reference_manual/3d/6d/5a/66/b4/99/40/d4/DM00031020.pdf/files/DM00031020.pdf
 #define FLASH_SECTOR_10_BASE (const volatile uint8_t*)0x80C0000UL
 #define FLASH_SECTOR_10_SIZE 0x20000UL
 #define FLASH_SECTOR_11_BASE (const volatile uint8_t*)0x80E0000UL
