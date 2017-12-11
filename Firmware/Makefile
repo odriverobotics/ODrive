@@ -78,11 +78,11 @@ C_SOURCES = \
   Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_uart.c \
   Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_ll_usb.c \
   Src/usbd_cdc_if.c \
-  Src/syscalls.c \
   MotorControl/utils.c \
   MotorControl/legacy_commands.c \
   MotorControl/low_level.c
 CPP_SOURCES = \
+  Src/syscalls.cpp \
   MotorControl/axis.cpp \
   MotorControl/commands.cpp \
   MotorControl/protocol.cpp
