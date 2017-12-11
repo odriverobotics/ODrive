@@ -97,7 +97,7 @@ class PacketSink(ABC):
         pass
 
 
-class StreamToPacketConverter(StreamSink):
+class StreamToPacketSegmenter(StreamSink):
     _header = []
     _packet = []
     _packet_length = 0
@@ -137,7 +137,7 @@ class StreamToPacketConverter(StreamSink):
                 self._packet_length = 0
 
 
-class PacketToStreamConverter(PacketSink):
+class StreamBasedPacketSink(PacketSink):
     def __init__(self, output):
         self._output = output
 

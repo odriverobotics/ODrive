@@ -90,7 +90,7 @@ void Endpoint::write_json(size_t id, bool* need_comma, StreamSink* output) const
 
 
 
-int StreamToPacketConverter::process_bytes(const uint8_t *buffer, size_t length) {
+int StreamToPacketSegmenter::process_bytes(const uint8_t *buffer, size_t length) {
     int result = 0;
 
     while (length--) {
@@ -124,9 +124,9 @@ int StreamToPacketConverter::process_bytes(const uint8_t *buffer, size_t length)
     return result;
 }
 
-int PacketToStreamConverter::process_packet(const uint8_t *buffer, size_t length) {
+int StreamBasedPacketSink::process_packet(const uint8_t *buffer, size_t length) {
     // TODO: support buffer size >= 128
-    if (length >= 128)
+    if (length >= get_mtu())
         return -1;
 
     LOG_PROTO("send header\r\n");

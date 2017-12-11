@@ -217,13 +217,13 @@ const Endpoint endpoints[] = {
 constexpr size_t NUM_ENDPOINTS = sizeof(endpoints) / sizeof(endpoints[0]);
 
 
-#if defined(USB_PROTOCOL_NATIVE)
-
 class USBSender : public PacketSink {
 public:
+    size_t get_mtu() { return USB_TX_DATA_SIZE; }
+    
     int process_packet(const uint8_t* buffer, size_t length) {
         // cannot send partial packets
-        if (length > USB_TX_DATA_SIZE)
+        if (length > get_mtu())
             return -1;
         // wait for USB interface to become ready
         if (osSemaphoreWait(sem_usb_tx, deadline_to_timeout(deadline_ms)) != osOK)
@@ -234,38 +234,19 @@ public:
                 well... it's not actually. Stupid STM. */, length);
         return (status == USBD_OK) ? 0 : -1;
     }
-} usb_sender;
+} usb_packet_output;
 
-BidirectionalPacketBasedChannel usb_channel(endpoints, NUM_ENDPOINTS, usb_sender);
+PacketBasedStreamSink usb_stream_output(usb_packet_output);
+
+#if defined(USB_PROTOCOL_NATIVE)
+
+BidirectionalPacketBasedChannel usb_channel(endpoints, NUM_ENDPOINTS, usb_packet_output);
 
 #elif defined(USB_PROTOCOL_NATIVE_STREAM_BASED)
 
-class USBSender : public StreamSink {
-public:
-    int process_bytes(const uint8_t* buffer, size_t length) {
-        // Loop to ensure all bytes get sent
-        while (length) {
-            size_t chunk = length < USB_TX_DATA_SIZE ? length : USB_TX_DATA_SIZE;
-            // wait for USB interface to become ready
-            if (osSemaphoreWait(sem_usb_tx, deadline_to_timeout(deadline_ms)) != osOK)
-                return -1;
-            // transmit chunk
-            if (CDC_Transmit_FS(
-                    const_cast<uint8_t*>(buffer) /* casting this const away is safe because...
-                    well... it's not actually. Stupid STM. */, chunk) != USBD_OK)
-                return -1;
-            buffer += chunk;
-            length -= chunk;
-        }
-        return 0;
-    }
-
-    size_t get_free_space() { return SIZE_MAX; }
-} usb_sender;
-
-PacketToStreamConverter usb_packet_sender(usb_sender);
-BidirectionalPacketBasedChannel usb_channel(endpoints, NUM_ENDPOINTS, usb_packet_sender);
-StreamToPacketConverter usb_stream_sink(usb_channel);
+StreamBasedPacketSink usb_stream_based_packet_output(usb_stream_output);
+BidirectionalPacketBasedChannel usb_channel(endpoints, NUM_ENDPOINTS, usb_stream_based_packet_output);
+StreamToPacketSegmenter usb_stream_input(usb_channel);
 
 #endif
 
@@ -295,9 +276,9 @@ private:
     uint8_t tx_buf_[UART_TX_BUFFER_SIZE];
 } uart4_sender;
 
-PacketToStreamConverter uart4_packet_sender(uart4_sender);
+StreamBasedPacketSink uart4_packet_sender(uart4_sender);
 BidirectionalPacketBasedChannel uart4_channel(endpoints, NUM_ENDPOINTS, uart4_packet_sender);
-StreamToPacketConverter UART4_stream_sink(uart4_channel);
+StreamToPacketSegmenter UART4_stream_sink(uart4_channel);
 #endif
 
 /* Private function prototypes -----------------------------------------------*/
@@ -391,7 +372,7 @@ void communication_task(void const * argument) {
 #if defined(USB_PROTOCOL_NATIVE)
             usb_channel.process_packet(usb_buf, usb_len);
 #elif defined(USB_PROTOCOL_NATIVE_STREAM_BASED)
-            usb_stream_sink.process_bytes(usb_buf, usb_len);
+            usb_stream_input.process_bytes(usb_buf, usb_len);
 #elif defined(USB_PROTOCOL_LEGACY)
             legacy_parse_cmd(usb_buf, usb_len, USB_RX_DATA_SIZE, SERIAL_PRINTF_IS_USB);
 #endif

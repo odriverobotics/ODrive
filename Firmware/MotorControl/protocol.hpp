@@ -123,6 +123,11 @@ static inline T read_le(const uint8_t** buffer, size_t* length) {
 
 class PacketSink {
 public:
+    // @brief Get the maximum packet length (aka maximum transmission unit)
+    // A packet size shall take no action and return an error code if the
+    // caller attempts to send an oversized packet.
+    virtual size_t get_mtu() = 0;
+
     // @brief Processes a packet.
     // The blocking behavior shall depend on the thread-local deadline_ms variable.
     // @return: 0 on success, otherwise a non-zero error code
@@ -142,10 +147,11 @@ public:
     virtual size_t get_free_space() = 0;
 };
 
-
-class StreamToPacketConverter : public StreamSink {
+// @brief Segments a stream into packets by looking for sync bytes and packet headers.
+// This reverses the operation of StreamBasedPacketSink.
+class StreamToPacketSegmenter : public StreamSink {
 public:
-    StreamToPacketConverter(PacketSink& output) :
+    StreamToPacketSegmenter(PacketSink& output) :
         output_(output)
     {
     };
@@ -163,20 +169,48 @@ private:
     PacketSink& output_;
 };
 
-
-class PacketToStreamConverter : public PacketSink {
+// @brief Sends packets over a stream by inserting sync bytes and packet headers.
+// This operation is reversed by StreamToPacketSegmenter.
+class StreamBasedPacketSink : public PacketSink {
 public:
-    PacketToStreamConverter(StreamSink& output) :
+    StreamBasedPacketSink(StreamSink& output) :
         output_(output)
     {
     };
     
+    size_t get_mtu() { return RX_BUF_SIZE; };
+
     int process_packet(const uint8_t *buffer, size_t length);
 
 private:
     StreamSink& output_;
 };
 
+// @brief: Represents a stream sink that's based on an underlying packet sink.
+// A single call to process_bytes may result in multiple packets being sent.
+class PacketBasedStreamSink : public StreamSink {
+public:
+    PacketBasedStreamSink(PacketSink& packet_sink) : _packet_sink(packet_sink) {}
+    ~PacketBasedStreamSink() {}
+
+    int process_bytes(const uint8_t* buffer, size_t length) {
+        // Loop to ensure all bytes get sent
+        while (length) {
+            size_t chunk = length < _packet_sink.get_mtu();
+            // send chunk as packet
+            if (_packet_sink.process_packet(buffer, chunk))
+                return -1;
+            buffer += chunk;
+            length -= chunk;
+        }
+        return 0;
+    }
+
+    size_t get_free_space() { return SIZE_MAX; }
+
+private:
+    PacketSink& _packet_sink;
+};
 
 // Implements the StreamSink interface by writing into a fixed size
 // memory buffer.
@@ -433,6 +467,8 @@ public:
         json_crc_(calculate_json_crc16())
     {
     }
+
+    size_t get_mtu() { return SIZE_MAX; };
 
     int process_packet(const uint8_t* buffer, size_t length);
 

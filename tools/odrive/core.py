@@ -199,7 +199,7 @@ def channel_from_serial_port(port, baud, packet_based, printer=noprint):
         raise NotImplementedError("not supported yet")
     serial_device = odrive.serial_transport.SerialStreamTransport(port, baud)
     input_stream = odrive.protocol.PacketFromStreamConverter(serial_device)
-    output_stream = odrive.protocol.PacketToStreamConverter(serial_device)
+    output_stream = odrive.protocol.StreamBasedPacketSink(serial_device)
     return odrive.protocol.Channel(
             "serial port {}@{}".format(port, baud),
             input_stream, output_stream)
