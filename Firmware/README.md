@@ -112,6 +112,9 @@ If you want a different mode, you can change `.control_mode`. To disable a motor
 <br><br>
 ## Compiling and downloading firmware
 ### Getting a programmer
+__Note:__ If you don't plan to make major firmware modifications you can use the built-in DFU feature.
+In this case you don't need an SWD programmer and you can skip OpenOCD related instructions.
+
 Get a programmer that supports SWD (Serial Wire Debugging) and is ST-link v2 compatible. You can get them really cheap on [eBay](http://www.ebay.co.uk/itm/ST-Link-V2-Emulator-Downloader-Programming-Mini-Unit-STM8-STM32-with-20CM-Line-/391173940927?hash=item5b13c8a6bf:g:3g8AAOSw~OdVf-Tu) or many other places.
 
 ### Installing prerequisites
@@ -151,13 +154,21 @@ After installing all of the above, open a Git Bash shell. Continue at section [B
 ### Building the firmware
 * Make sure you have cloned the repository.
 * Navigate your terminal (bash/cygwin) to the ODrive/Firmware dir.
-* Run `make` in the root of this repository.
+* Run `make` in the `Firmware` directory.
 
-### Flashing the firmware
+### Flashing the firmware (standalone device)
+* Run `make dfu` in the `Firmware` directory.
+
+__Warning:__ Currently it is advised that you only do this to flash
+official unmodified firmware. Also make sure you don't switch off
+the device during upgrade. If something goes wrong you need an external
+programmer to recover the device. This will be fixed in the future.
+
+### Flashing the firmware (external Programmer)
 * **Make sure you have [configured the parameters first](#configuring-parameters)**
 * Connect `GND`, `SWD`, and `SWC` on connector J2 to the programmer. Note: Always plug in `GND` first!
 * You need to power the board by only **ONE** of the following: VCC(3.3v), 5V, or the main power connection (the DC bus). The USB port (J1) does not power the board.
-* Run `make flash` in the root of this repository.
+* Run `make flash` in the `Firmware` directory.
 
 If the flashing worked, you can start sending commands. If you want to do that now, you can go to [Communicating over USB or UART](#communicating-over-usb-or-uart).
 
