@@ -49,8 +49,6 @@ static const GpioMode_t gpio_mode = GPIO_MODE_NONE;     //GPIO 1,2 is not config
 static uint8_t* usb_buf;
 static uint32_t usb_len;
 
-// FIXME: the stdlib doesn't know about CMSIS threads, so this is just a global variable
-static thread_local uint32_t deadline_ms = 0;
 
 /* Variables exposed to USB & UART via read/write commands */
 // TODO: include range information in JSON description
@@ -226,7 +224,7 @@ public:
         if (length > get_mtu())
             return -1;
         // wait for USB interface to become ready
-        if (osSemaphoreWait(sem_usb_tx, deadline_to_timeout(deadline_ms)) != osOK)
+        if (osSemaphoreWaitUntilDeadline(sem_usb_tx) != osOK)
             return -1;
         // transmit packet
         uint8_t status = CDC_Transmit_FS(
@@ -253,13 +251,13 @@ StreamToPacketSegmenter usb_stream_input(usb_channel);
 #if defined(UART_PROTOCOL_NATIVE)
 class UART4Sender : public StreamSink {
 public:
-    int process_bytes(const uint8_t* buffer, size_t length) {
+    int process_bytes(const uint8_t* buffer, size_t length, size_t& processed_bytes) {
         // Loop to ensure all bytes get sent
         while (length) {
             size_t chunk = length < UART_TX_BUFFER_SIZE ? length : UART_TX_BUFFER_SIZE;
             // wait for USB interface to become ready
             // TODO: implement ring buffer to get a more continuous stream of data
-            if (osSemaphoreWait(sem_uart_dma, deadline_to_timeout(deadline_ms)) != osOK)
+            if (osSemaphoreWaitUntilDeadline(sem_uart_dma) != osOK)
                 return -1;
             // transmit chunk
             memcpy(tx_buf_, buffer, chunk);
@@ -267,6 +265,7 @@ public:
                 return -1;
             buffer += chunk;
             length -= chunk;
+            processed_bytes += chunk;
         }
         return 0;
     }
@@ -333,17 +332,18 @@ void communication_task(void const * argument) {
         // Fetch the circular buffer "write pointer", where it would write next
         uint32_t new_rcv_idx = UART_RX_BUFFER_SIZE - huart4.hdmarx->Instance->NDTR;
 
-        deadline_ms = timeout_to_deadline(PROTOCOL_SERVER_TIMEOUT_MS);
+        uint32_t t1 = push_timeout(PROTOCOL_SERVER_TIMEOUT_MS);
 #if defined(UART_PROTOCOL_NATIVE)
         // Process bytes in one or two chunks (two in case there was a wrap)
+        size_t processed_bytes = 0;
         if (new_rcv_idx < last_rcv_idx) {
             UART4_stream_sink.process_bytes(dma_circ_buffer + last_rcv_idx,
-                    UART_RX_BUFFER_SIZE - last_rcv_idx);
+                    UART_RX_BUFFER_SIZE - last_rcv_idx, processed_bytes);
             last_rcv_idx = 0;
         }
         if (new_rcv_idx > last_rcv_idx) {
             UART4_stream_sink.process_bytes(dma_circ_buffer + last_rcv_idx,
-                    new_rcv_idx - last_rcv_idx);
+                    new_rcv_idx - last_rcv_idx, processed_bytes);
             last_rcv_idx = new_rcv_idx;
         }
 #elif defined(UART_PROTOCOL_LEGACY)
@@ -359,6 +359,7 @@ void communication_task(void const * argument) {
             last_rcv_idx = new_rcv_idx;
         }
 #endif
+        pop_timeout(t1);
 #endif
 
 #if !defined(USB_PROTOCOL_NONE)
@@ -368,14 +369,16 @@ void communication_task(void const * argument) {
         const uint32_t usb_check_timeout = 1; // ms
         osStatus sem_stat = osSemaphoreWait(sem_usb_rx, usb_check_timeout);
         if (sem_stat == osOK) {
-            deadline_ms = timeout_to_deadline(PROTOCOL_SERVER_TIMEOUT_MS);
+            uint32_t t2 = push_timeout(PROTOCOL_SERVER_TIMEOUT_MS);
 #if defined(USB_PROTOCOL_NATIVE)
             usb_channel.process_packet(usb_buf, usb_len);
 #elif defined(USB_PROTOCOL_NATIVE_STREAM_BASED)
-            usb_stream_input.process_bytes(usb_buf, usb_len);
+            size_t processed_bytes = 0;
+            usb_stream_input.process_bytes(usb_buf, usb_len, processed_bytes);
 #elif defined(USB_PROTOCOL_LEGACY)
             legacy_parse_cmd(usb_buf, usb_len, USB_RX_DATA_SIZE, SERIAL_PRINTF_IS_USB);
 #endif
+            pop_timeout(t2);
             USBD_CDC_ReceivePacket(&hUsbDeviceFS);  // Allow next packet
         }
 #endif

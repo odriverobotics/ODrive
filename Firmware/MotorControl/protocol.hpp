@@ -140,11 +140,16 @@ public:
     // @brief Processes a chunk of bytes that is part of a continuous stream.
     // The blocking behavior shall depend on the thread-local deadline_ms variable.
     // @return: 0 on success, otherwise a non-zero error code
-    virtual int process_bytes(const uint8_t* buffer, size_t length) = 0;
+    virtual int process_bytes(const uint8_t* buffer, size_t length, size_t& processed_bytes) = 0;
 
     // @brief Returns the number of bytes that can still be written to the stream.
     // Shall return SIZE_MAX if the stream has unlimited lenght.
     virtual size_t get_free_space() = 0;
+
+    int process_bytes(const uint8_t* buffer, size_t length) {
+        size_t processed_bytes = 0;
+        return process_bytes(buffer, length, processed_bytes);
+    }
 };
 
 // @brief Segments a stream into packets by looking for sync bytes and packet headers.
@@ -156,7 +161,7 @@ public:
     {
     };
 
-    int process_bytes(const uint8_t *buffer, size_t length);
+    int process_bytes(const uint8_t *buffer, size_t length, size_t& processed_bytes);
     
     size_t get_free_space() { return SIZE_MAX; }
 
@@ -193,15 +198,16 @@ public:
     PacketBasedStreamSink(PacketSink& packet_sink) : _packet_sink(packet_sink) {}
     ~PacketBasedStreamSink() {}
 
-    int process_bytes(const uint8_t* buffer, size_t length) {
+    int process_bytes(const uint8_t* buffer, size_t length, size_t& processed_bytes) {
         // Loop to ensure all bytes get sent
         while (length) {
-            size_t chunk = length < _packet_sink.get_mtu();
+            size_t chunk = length < _packet_sink.get_mtu() ? length : _packet_sink.get_mtu();
             // send chunk as packet
             if (_packet_sink.process_packet(buffer, chunk))
                 return -1;
             buffer += chunk;
             length -= chunk;
+            processed_bytes += chunk;
         }
         return 0;
     }
@@ -221,16 +227,13 @@ public:
         buffer_length_(length) {}
 
     // Returns 0 on success and -1 if the buffer could not accept everything because it became full
-    int process_bytes(const uint8_t* buffer, size_t length) {
-        int status = 0;
-        if (length > buffer_length_) {
-            length = buffer_length_;
-            status = -1;
-        }
-        memcpy(buffer_, buffer, length);
-        buffer_ += length;
-        buffer_length_ -= length;
-        return status;
+    int process_bytes(const uint8_t* buffer, size_t length, size_t& processed_bytes) {
+        size_t chunk = length < buffer_length_ ? length : buffer_length_;
+        memcpy(buffer_, buffer, chunk);
+        buffer_ += chunk;
+        buffer_length_ -= chunk;
+        processed_bytes += chunk;
+        return chunk == length ? 0 : -1;
     }
 
     size_t get_free_space() { return buffer_length_; }
@@ -249,14 +252,16 @@ public:
         follow_up_stream_(follow_up_stream) {}
 
     // Returns 0 on success and -1 if the buffer could not accept everything because it became full
-    int process_bytes(const uint8_t* buffer, size_t length) {
+    int process_bytes(const uint8_t* buffer, size_t length, size_t& processed_bytes) {
         if (skip_ < length) {
             buffer += skip_;
             length -= skip_;
+            processed_bytes += skip_;
             skip_ = 0;
-            return follow_up_stream_.process_bytes(buffer, length);
+            return follow_up_stream_.process_bytes(buffer, length, processed_bytes);
         } else {
             skip_ -= length;
+            processed_bytes += length;
             return 0;
         }
     }
@@ -277,8 +282,9 @@ public:
     CRC16Calculator(uint16_t crc16_init) :
         crc16_(crc16_init) {}
 
-    int process_bytes(const uint8_t* buffer, size_t length) {
+    int process_bytes(const uint8_t* buffer, size_t length, size_t& processed_bytes) {
         crc16_ = calc_crc16(crc16_, buffer, length);
+        processed_bytes += length;
         return 0;
     }
 
