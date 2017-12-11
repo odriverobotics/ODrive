@@ -636,8 +636,8 @@ void pwm_trig_adc_cb(ADC_HandleTypeDef* hadc, bool injected) {
 
 // TODO check Ibeta balance to verify good motor connection
 bool measure_phase_resistance(Motor_t* motor, float test_current, float max_voltage) {
-    static const float kI = 10.0f;                                  //[(V/s)/A]
-    static const int num_test_cycles = 3.0f / CURRENT_MEAS_PERIOD;  // Test runs for 3s
+    static const float kI = 10.0f;                                 // [(V/s)/A]
+    static const int num_test_cycles = 3.0f / CURRENT_MEAS_PERIOD; // Test runs for 3s
     float test_voltage = 0.0f;
     for (int i = 0; i < num_test_cycles; ++i) {
         osEvent evt = osSignalWait(M_SIGNAL_PH_CURRENT_MEAS, PH_CURRENT_MEAS_TIMEOUT);
