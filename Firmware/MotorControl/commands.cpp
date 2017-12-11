@@ -88,6 +88,11 @@ void motors_1_set_current_setpoint_func(void) {
         motors[1].set_current_setpoint_args.current_setpoint);
 }
 
+void enter_dfu_mode() {
+    *((unsigned long *)0x2001C000) = 0xDEADBEEF;
+    NVIC_SystemReset();
+}
+
 // This table specifies which fields and functions are exposed on the USB and UART ports.
 // TODO: Autogenerate this table. It will come up again very soon in the Arduino library.
 // clang-format off
@@ -210,7 +215,9 @@ const Endpoint endpoints[] = {
         Endpoint::make_function("set_current_setpoint", &motors_1_set_current_setpoint_func),
             Endpoint::make_property("current_setpoint", &motors[1].set_current_setpoint_args.current_setpoint),
         Endpoint::close_tree(),
-    Endpoint::close_tree() // motor1
+    Endpoint::close_tree(), // motor1
+    Endpoint::make_function("enter_dfu_mode", &enter_dfu_mode),
+    Endpoint::close_tree() // enter_dfu_mode
 };
 // clang-format on
 

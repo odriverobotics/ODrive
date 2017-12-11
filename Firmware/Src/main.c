@@ -80,6 +80,14 @@ void MX_FREERTOS_Init(void);
 
 /* USER CODE BEGIN 0 */
 
+void jump_to_builtin_bootloader(void) {
+  __set_MSP(0x20001000);
+  // http://www.st.com/content/ccc/resource/technical/document/application_note/6a/17/92/02/58/98/45/0c/CD00264379.pdf/files/CD00264379.pdf
+  void (*builtin_bootloader)(void) = (void (*)(void))(*((uint32_t *)0x1FFF0004));
+  builtin_bootloader();
+  for (;;);
+}
+
 /* USER CODE END 0 */
 
 int main(void)
@@ -87,6 +95,14 @@ int main(void)
 
   /* USER CODE BEGIN 1 */
 
+  /* We could jump to the bootloader directly on demand without rebooting
+  but that requires us to reset several peripherals and interrupts for it
+  to function correctly. Therefore it's easier to just reset the entire chip. */
+
+  if(*((unsigned long *)0x2001C000) == 0xDEADBEEF) {
+    *((unsigned long *)0x2001C000) = 0xCAFEFEED;  //Reset bootloader trigger
+    jump_to_builtin_bootloader();
+  }
   /* USER CODE END 1 */
 
   /* MCU Configuration----------------------------------------------------------*/
