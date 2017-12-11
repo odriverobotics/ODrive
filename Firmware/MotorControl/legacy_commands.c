@@ -3,14 +3,17 @@
 #include <utils.h>
 
 /* Private macros ------------------------------------------------------------*/
+
+int _write(int file, const char* data, int len); // defined in syscalls.cpp
+#define _fprintf(fd, ...) do { \
+    char buf[64]; \
+    int len = snprintf(buf, sizeof(buf), __VA_ARGS__); \
+    _write(fd, buf, len > sizeof(buf) ? sizeof(buf) : len); \
+} while (0)
+
 /* Private typedef -----------------------------------------------------------*/
 /* Global constant data ------------------------------------------------------*/
 /* Global variables ----------------------------------------------------------*/
-// This automatically updates to the interface that most
-// recently recieved a command. In the future we may want to separate
-// debug printf and the main serial comms.
-SerialPrintf_t serial_printf_select = SERIAL_PRINTF_IS_UART;
-
 /* Private constant data -----------------------------------------------------*/
 
 // variables exposed to usb/serial interface via set/get/monitor
@@ -109,14 +112,11 @@ uint16_t* exposed_uint16[] = {
 /* Private variables ---------------------------------------------------------*/
 monitoring_slot monitoring_slots[20] = {0};
 /* Private function prototypes -----------------------------------------------*/
-static void print_monitoring(int limit);
+static void print_monitoring(int limit, int out_file);
 
 /* Function implementations --------------------------------------------------*/
 
-void legacy_parse_cmd(const uint8_t* buffer, size_t len, size_t buffer_capacity, SerialPrintf_t response_interface) {
-    // Set response interface
-    serial_printf_select = response_interface;
-
+void legacy_parse_cmd(const uint8_t* buffer, size_t len, size_t buffer_capacity, int out_file) {
     // Cast away const and write beyond the array bounds. Because we can.
     // (TODO: yeah maybe not, but this should be gone once we disable legacy commands)
     ((uint8_t *)buffer)[len < buffer_capacity ? len : (buffer_capacity - 1)] = 0;
@@ -148,10 +148,10 @@ void legacy_parse_cmd(const uint8_t* buffer, size_t len, size_t buffer_capacity,
         }
     } else if(buffer[0] == 'i'){ // Dump device info
         // Retrieves the device signature, revision, flash size, and UUID
-        printf("Signature: %#x\n", STM_ID_GetSignature());
-        printf("Revision: %#x\n", STM_ID_GetRevision());
-        printf("Flash Size: %#x KiB\n", STM_ID_GetFlashSize());
-        printf("UUID: 0x%lx%lx%lx\n", STM_ID_GetUUID(2), STM_ID_GetUUID(1), STM_ID_GetUUID(0));
+        _fprintf(out_file, "Signature: %#x\n", STM_ID_GetSignature());
+        _fprintf(out_file, "Revision: %#x\n", STM_ID_GetRevision());
+        _fprintf(out_file, "Flash Size: %#x KiB\n", STM_ID_GetFlashSize());
+        _fprintf(out_file, "UUID: 0x%lx%lx%lx\n", STM_ID_GetUUID(2), STM_ID_GetUUID(1), STM_ID_GetUUID(0));
     } else if (buffer[0] == 'g') { // GET
         // g <0:float,1:int,2:bool,3:uint16> index
         int type = 0;
@@ -160,19 +160,19 @@ void legacy_parse_cmd(const uint8_t* buffer, size_t len, size_t buffer_capacity,
         if (numscan == 2) {
             switch(type){
             case 0: {
-                printf("%f\n",*exposed_floats[index]);
+                _fprintf(out_file, "%f\n",*exposed_floats[index]);
                 break;
             };
             case 1: {
-                printf("%d\n",*exposed_ints[index]);
+                _fprintf(out_file, "%d\n",*exposed_ints[index]);
                 break;
             };
             case 2: {
-                printf("%d\n",*exposed_bools[index]);
+                _fprintf(out_file, "%d\n",*exposed_bools[index]);
                 break;
             };
             case 3: {
-                printf("%hu\n",*exposed_uint16[index]);
+                _fprintf(out_file, "%hu\n",*exposed_uint16[index]);
                 break;
             };
             }
@@ -222,7 +222,7 @@ void legacy_parse_cmd(const uint8_t* buffer, size_t len, size_t buffer_capacity,
         int limit = 0;
         int numscan = sscanf((const char*)buffer, "o %u", &limit);
         if (numscan == 1) {
-            print_monitoring(limit);
+            print_monitoring(limit, out_file);
         }
     } else if (buffer[0] == 't') { // Run Anti-Cogging Calibration
         for (int i = 0; i < num_motors; i++) {
@@ -234,7 +234,7 @@ void legacy_parse_cmd(const uint8_t* buffer, size_t len, size_t buffer_capacity,
     }
 }
 
-void legacy_parse_stream(const uint8_t* buffer, size_t len) {
+void legacy_parse_stream(const uint8_t* buffer, size_t len, int out_file) {
     #define PARSE_BUFFER_SIZE 64
     static uint8_t parse_buffer[PARSE_BUFFER_SIZE];
     static bool read_active = false;
@@ -253,7 +253,7 @@ void legacy_parse_stream(const uint8_t* buffer, size_t len) {
             parse_buffer[parse_buffer_idx++] = c;
             if (c == '\r' || c == '\n' || c == '!') {
                 // End of command string
-                legacy_parse_cmd(parse_buffer, parse_buffer_idx, PARSE_BUFFER_SIZE, SERIAL_PRINTF_IS_UART);
+                legacy_parse_cmd(parse_buffer, parse_buffer_idx, PARSE_BUFFER_SIZE, out_file);
                 // Reset receieve state machine
                 read_active = false;
                 parse_buffer_idx = 0;
@@ -268,24 +268,24 @@ void legacy_parse_stream(const uint8_t* buffer, size_t len) {
     }
 }
 
-static void print_monitoring(int limit) {
+static void print_monitoring(int limit, int out_file) {
     for (int i=0;i<limit;i++) {
         switch (monitoring_slots[i].type) {
         case 0:
-            printf("%f\t",*exposed_floats[monitoring_slots[i].index]);
+            _fprintf(out_file, "%f\t",*exposed_floats[monitoring_slots[i].index]);
             break;
         case 1:
-            printf("%d\t",*exposed_ints[monitoring_slots[i].index]);
+            _fprintf(out_file, "%d\t",*exposed_ints[monitoring_slots[i].index]);
             break;
         case 2:
-            printf("%d\t",*exposed_bools[monitoring_slots[i].index]);
+            _fprintf(out_file, "%d\t",*exposed_bools[monitoring_slots[i].index]);
             break;
         case 3:
-            printf("%hu\t",*exposed_uint16[monitoring_slots[i].index]);
+            _fprintf(out_file, "%hu\t",*exposed_uint16[monitoring_slots[i].index]);
             break;
         default:
             i=100;
         }
     }
-    printf("\n");
+    _fprintf(out_file, "\n");
 }
