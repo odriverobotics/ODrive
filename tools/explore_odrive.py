@@ -43,17 +43,17 @@ if not args.usb is None:
     print("the --usb argument must look something like this: \"001:014\"")
     sys.exit(1)
   try:
-    my_odrive = odrive.core.open_usb(bus, address, printer=printer)
+    my_odrive = odrive.core.open_usb(bus, address, printer=printer, device_stdout=print)
   except odrive.protocol.DeviceInitException as ex:
     print(str(ex))
     sys.exit(1)
 elif not args.serial is None:
-  my_odrive = odrive.core.open_serial(args.serial, printer=printer)
+  my_odrive = odrive.core.open_serial(args.serial, printer=printer, device_stdout=print)
 else:
   print("Waiting for device...")
   consider_usb = 'usb' in args.discover.split(',')
   consider_serial = 'serial' in args.discover.split(',')
-  my_odrive = odrive.core.find_any(consider_usb, consider_serial, printer=printer)
+  my_odrive = odrive.core.find_any(consider_usb, consider_serial, printer=printer, device_stdout=print)
 print("Connected!")
 
 

@@ -179,7 +179,7 @@ def create_object(name, json_data, namespace, channel, printer=noprint):
     return new_object
 
 
-def channel_from_usb_device(usb_device, printer=noprint):
+def channel_from_usb_device(usb_device, printer=noprint, device_stdout=noprint):
     """
     Inits an ODrive Protocol channel from a PyUSB device object.
     """
@@ -188,9 +188,10 @@ def channel_from_usb_device(usb_device, printer=noprint):
     bulk_device.init()
     return odrive.protocol.Channel(
             "USB device bus {} device {}".format(usb_device.bus, usb_device.address),
-            bulk_device, bulk_device)
+            bulk_device, bulk_device,
+            device_stdout)
 
-def channel_from_serial_port(port, baud, packet_based, printer=noprint):
+def channel_from_serial_port(port, baud, packet_based, printer=noprint, device_stdout=noprint):
     """
     Inits an ODrive Protocol channel from a serial port name and baudrate.
     """
@@ -198,11 +199,12 @@ def channel_from_serial_port(port, baud, packet_based, printer=noprint):
         # TODO: implement packet based transport over serial
         raise NotImplementedError("not supported yet")
     serial_device = odrive.serial_transport.SerialStreamTransport(port, baud)
-    input_stream = odrive.protocol.PacketFromStreamConverter(serial_device)
+    input_stream = odrive.protocol.PacketFromStreamConverter(serial_device, device_stdout)
     output_stream = odrive.protocol.StreamBasedPacketSink(serial_device)
     return odrive.protocol.Channel(
             "serial port {}@{}".format(port, baud),
-            input_stream, output_stream)
+            input_stream, output_stream,
+            device_stdout)
 
 def object_from_channel(channel, printer=noprint):
     """
@@ -229,7 +231,7 @@ def object_from_channel(channel, printer=noprint):
     json_data = {"name": "odrive", "members": json_data}
     return create_object("odrive", json_data, None, channel, printer=printer)
 
-def find_usb_channels(vid_pid_pairs=odrive.util.USB_VID_PID_PAIRS, printer=noprint):
+def find_usb_channels(vid_pid_pairs=odrive.util.USB_VID_PID_PAIRS, printer=noprint, device_stdout=noprint):
     """
     Scans for compatible USB devices.
     Returns a generator of odrive.protocol.Channel objects.
@@ -238,7 +240,7 @@ def find_usb_channels(vid_pid_pairs=odrive.util.USB_VID_PID_PAIRS, printer=nopri
         for usb_device in usb.core.find(idVendor=vid_pid_pair[0], idProduct=vid_pid_pair[1], find_all=True):
             printer("Found ODrive via PyUSB")
             try:
-                yield channel_from_usb_device(usb_device, printer)
+                yield channel_from_usb_device(usb_device, printer, device_stdout)
             except usb.core.USBError as ex:
                 if ex.errno == 13:
                     printer("USB device access denied. Did you set up your udev rules correctly?")
@@ -254,7 +256,7 @@ def find_dev_serial_ports(search_regex):
 def find_pyserial_ports():
     return [x.device for x in serial.tools.list_ports.comports()]
 
-def find_serial_channels(printer=noprint):
+def find_serial_channels(printer=noprint, device_stdout=noprint):
     """
     Scans for serial ports.
     Returns a generator of odrive.protocol.Channel objects.
@@ -270,18 +272,22 @@ def find_serial_channels(printer=noprint):
     macos_usb_serial_ports = find_dev_serial_ports(r'^tty\.usbmodem')
 
     for port in real_serial_ports + linux_usb_serial_ports + macos_usb_serial_ports:
-        yield channel_from_serial_port(port, 115200, False, printer)
+        try:
+            yield channel_from_serial_port(port, 115200, False, printer, device_stdout=device_stdout)
+        except serial.serialutil.SerialException:
+            printer("could not open " + port)
+            continue
 
 
-def find_all(consider_usb=True, consider_serial=False, printer=noprint):
+def find_all(consider_usb=True, consider_serial=False, printer=noprint, device_stdout=noprint):
     """
     Returns a generator with all the connected devices that speak the ODrive protocol
     """
     channels = iter(())
     if (consider_usb):
-        channels = itertools.chain(channels, find_usb_channels(printer=printer))
+        channels = itertools.chain(channels, find_usb_channels(printer=printer, device_stdout=device_stdout))
     if (consider_serial):
-        channels = itertools.chain(channels, find_serial_channels(printer=printer))
+        channels = itertools.chain(channels, find_serial_channels(printer=printer, device_stdout=device_stdout))
     for channel in channels:
         # TODO: blacklist known bad channels
         try:
@@ -291,7 +297,7 @@ def find_all(consider_usb=True, consider_serial=False, printer=noprint):
             continue
 
 
-def find_any(consider_usb=True, consider_serial=False, printer=noprint):
+def find_any(consider_usb=True, consider_serial=False, printer=noprint, device_stdout=noprint):
     """
     Scans for ODrives on all supported interfaces and returns the first device
     that is found. If no device is connected the function blocks.
@@ -301,20 +307,20 @@ def find_any(consider_usb=True, consider_serial=False, printer=noprint):
     # poll for device
     printer("looking for ODrive...")
     while True:
-        dev = next(find_all(consider_usb, consider_serial, printer=printer), None)
+        dev = next(find_all(consider_usb, consider_serial, printer=printer, device_stdout=device_stdout), None)
         if dev is not None:
             return dev
         printer("no device found")
         time.sleep(1)
 
-def open_serial(port_name, printer=noprint):
-    channel = channel_from_serial_port(port_name, 115200, False, printer)
+def open_serial(port_name, printer=noprint, device_stdout=noprint):
+    channel = channel_from_serial_port(port_name, 115200, False, printer, device_stdout)
     return object_from_channel(channel, printer)
 
-def open_usb(bus, address, printer=noprint):
+def open_usb(bus, address, printer=noprint, device_stdout=noprint):
     usb_device1 = usb.core.find(bus=1, address=16)
     usb_device = usb.core.find(bus=bus, address=address)
     if usb_device is None:
         raise odrive.protocol.DeviceInitException("No USB device found on bus {} device {}".format(bus, address))
-    channel = channel_from_usb_device(usb_device, printer)
+    channel = channel_from_usb_device(usb_device, printer, device_stdout)
     return object_from_channel(channel, printer)

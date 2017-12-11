@@ -156,8 +156,9 @@ class StreamBasedPacketSink(PacketSink):
         self._output.process_bytes(struct.pack('>H', crc16))
 
 class PacketFromStreamConverter(PacketSource):
-    def __init__(self, input):
+    def __init__(self, input, trash):
         self._input = input
+        self._trash = trash
     
     def get_packet(self, deadline):
         """
@@ -172,16 +173,19 @@ class PacketFromStreamConverter(PacketSource):
             header = header + self._input.get_bytes_or_fail(1, deadline)
             if (header[0] != SYNC_BYTE):
                 #print("sync byte mismatch")
+                self._trash(header)
                 continue
 
             header = header + self._input.get_bytes_or_fail(1, deadline)
             if (header[1] & 0x80):
                 #print("packet too large")
+                self._trash(header)
                 continue # TODO: support packets larger than 128 bytes
 
             header = header + self._input.get_bytes_or_fail(1, deadline)
             if calc_crc8(CRC8_INIT, header) != 0:
                 #print("crc8 mismatch")
+                self._trash(header)
                 continue
 
             packet_length = header[1] + 2
@@ -189,6 +193,8 @@ class PacketFromStreamConverter(PacketSource):
             packet = self._input.get_bytes_or_fail(packet_length, deadline)
             if calc_crc16(CRC16_INIT, packet) != 0:
                 #print("crc16 mismatch")
+                self._trash(header)
+                self._trash(packet)
                 continue
             return packet[:-2]
 
@@ -202,7 +208,7 @@ class Channel(PacketSink):
     _resend_timeout = 0.1     # [s]
     _send_attempts = 5
 
-    def __init__(self, name, input, output):
+    def __init__(self, name, input, output, trash):
         """
         Params:
         input: A PacketSource where this channel will source packets from on
@@ -213,6 +219,7 @@ class Channel(PacketSink):
         self._name = name
         self._input = input
         self._output = output
+        self._trash = trash
 
     def remote_endpoint_operation(self, endpoint_id, input, expect_ack, output_length):
         if input is None:
@@ -260,7 +267,6 @@ class Channel(PacketSink):
                     self.process_packet(response)
                     if not self._expected_acks[seq_no] is None:
                         return self._expected_acks.pop(seq_no, None)
-                    break
                 # TODO: record channel statistics
                 attempt += 1
             raise ChannelBrokenException()
@@ -296,7 +302,10 @@ class Channel(PacketSink):
             self._expected_acks[seq_no] = packet[2:]
 
         else:
-            #if (calc_crc16(CRC16_INIT, struct.pack('<HBB', PROTOCOL_VERSION, packet[-2], packet[-1]))):
-            #     raise Exception("CRC16 mismatch")
-            print("endpoint requested")
+            #if (calc_crc16(crc16, struct.pack('<HBB', PROTOCOL_VERSION, packet[-2], packet[-1]))):
+            #    raise Exception("CRC16 mismatch")
+            #print("endpoint requested")
+            # FIXME: we use non-ack packets to detect printf output, this is really hacky
+            # In the future there should be a dedicated stdout endpoint.
+            self._trash(packet)
             # TODO: handle local endpoint operation
