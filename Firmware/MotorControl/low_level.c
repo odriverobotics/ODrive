@@ -530,11 +530,13 @@ void step_cb(uint16_t GPIO_Pin) {
     }
 }
 
-void enc_index_cb(uint16_t GPIO_Pin, int index){
-    setEncoderCount(&motors[index], 0);
-    motors[index].IndexFound = true;
+// Triggered when an encoder passes over the "Index" pin
+void enc_index_cb(uint16_t GPIO_Pin, int index) {
+    if (!motors[index].encoder.index_found) {
+        setEncoderCount(&motors[index], 0);
+        motors[index].encoder.index_found = true;
+    }
 }
-
 
 void vbus_sense_adc_cb(ADC_HandleTypeDef* hadc, bool injected) {
     static const float voltage_scale = 3.3f * 11.0f / (float)(1 << 12);
