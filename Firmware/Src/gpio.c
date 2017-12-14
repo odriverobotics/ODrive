@@ -196,6 +196,8 @@ void SetGPIO12toStepDir() {
 }
 
 void SetupENCIndexGPIO(){
+  GPIO_InitTypeDef GPIO_InitStruct;
+  
   /*Configure GPIO pins : PAPin PAPin */
   GPIO_InitStruct.Pin = GPIO_4_Pin|M0_ENC_Z_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_IT_FALLING;
