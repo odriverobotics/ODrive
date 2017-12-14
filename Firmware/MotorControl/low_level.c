@@ -531,10 +531,10 @@ void step_cb(uint16_t GPIO_Pin) {
 }
 
 // Triggered when an encoder passes over the "Index" pin
-void enc_index_cb(uint16_t GPIO_Pin, int index) {
-    if (!motors[index].encoder.index_found) {
-        setEncoderCount(&motors[index], 0);
-        motors[index].encoder.index_found = true;
+void enc_index_cb(uint16_t GPIO_Pin, uint8_t motor_index) {
+    if (!motors[motor_index].encoder.index_found) {
+        setEncoderCount(&motors[motor_index], 0);
+        motors[motor_index].encoder.index_found = true;
     }
 }
 
