@@ -35,6 +35,7 @@ float vbus_voltage = 12.0f;
 
 // TODO stick parameter into struct
 #define ENCODER_CPR (600 * 4)
+#define ENC_USE_INDEX_PIN false
 #define POLE_PAIRS 7
 const float elec_rad_per_enc = POLE_PAIRS * 2 * M_PI * (1.0f / (float)ENCODER_CPR);
 
@@ -113,6 +114,7 @@ Motor_t motors[] = {
         .rotor_mode = ROTOR_MODE_ENCODER,
         .encoder = {
             .encoder_timer = &htim3,
+            .index_found = !(ENC_USE_INDEX_PIN),
             .encoder_cpr = ENCODER_CPR,
             .encoder_offset = 0,
             .encoder_state = 0,
@@ -207,6 +209,7 @@ Motor_t motors[] = {
         .rotor_mode = ROTOR_MODE_ENCODER,
         .encoder = {
             .encoder_timer = &htim4,
+            .index_found = !(ENC_USE_INDEX_PIN),
             .encoder_cpr = ENCODER_CPR,
             .encoder_offset = 0,
             .encoder_state = 0,
@@ -526,6 +529,12 @@ void step_cb(uint16_t GPIO_Pin) {
             break;
     }
 }
+
+void enc_index_cb(uint16_t GPIO_Pin, int index){
+    setEncoderCount(&motors[index], 0);
+    motors[index].IndexFound = true;
+}
+
 
 void vbus_sense_adc_cb(ADC_HandleTypeDef* hadc, bool injected) {
     static const float voltage_scale = 3.3f * 11.0f / (float)(1 << 12);
