@@ -197,18 +197,24 @@ void SetGPIO12toStepDir() {
 
 void SetupENCIndexGPIO(){
   GPIO_InitTypeDef GPIO_InitStruct;
-  
+
   /*Configure GPIO pins : PAPin PAPin */
-  GPIO_InitStruct.Pin = GPIO_4_Pin|M0_ENC_Z_Pin;
+  GPIO_InitStruct.Pin = M0_ENC_Z_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_IT_FALLING;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
+  HAL_NVIC_SetPriority(EXTI15_10_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(EXTI15_10_IRQn);
+
   /*Configure GPIO pins : PBPin PBPin */
-  GPIO_InitStruct.Pin = GPIO_5_Pin|M1_ENC_Z_Pin;
+  GPIO_InitStruct.Pin = M1_ENC_Z_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_IT_FALLING;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+
+  HAL_NVIC_SetPriority(EXTI3_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(EXTI3_IRQn);
 }
 
 
