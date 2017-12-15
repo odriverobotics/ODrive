@@ -536,7 +536,7 @@ void enc_index_cb(uint16_t GPIO_Pin, uint8_t motor_index) {
     if (!motors[motor_index].encoder.index_found) {
         setEncoderCount(&motors[motor_index], 0);
         motors[motor_index].encoder.index_found = true;
-        if(motor_index == 0){
+        if(GPIO_Pin == M0_ENC_Z_Pin){
             HAL_NVIC_DisableIRQ(EXTI3_IRQn);
         } else {
             HAL_NVIC_DisableIRQ(EXTI15_10_IRQn);
