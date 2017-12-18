@@ -4,7 +4,7 @@ This project is all about accurately driving brushless motors, for cheap. The ai
 
 ## Getting Started
 It is perfectly fine, and even recommended, to start testing with just a single motor and encoder.
-Make sure you have a good mechanical connection between the encdoer and the motor, slip can cause disasterous oscillations.
+Make sure you have a good mechanical connection between the encoder and the motor, slip can cause disasterous oscillations.
 All non-power I/O is 3.3V output and 5V tolerant on input, except:
 * GPIO 3 and GPIO 4 are NOT 5V tolerant on ODrive v3.2 and earlier.
 
