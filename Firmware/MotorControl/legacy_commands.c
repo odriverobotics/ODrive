@@ -1,13 +1,6 @@
 /* Includes ------------------------------------------------------------------*/
-#include <cmsis_os.h>
-#include <commands.h>
-#include <usart.h>
-#include <gpio.h>
-#include <freertos_vars.h>
-#include <usbd_cdc.h>
+#include "legacy_commands.h"
 #include <utils.h>
-
-extern PCD_HandleTypeDef hpcd_USB_OTG_FS;
 
 /* Private macros ------------------------------------------------------------*/
 /* Private typedef -----------------------------------------------------------*/
@@ -16,21 +9,13 @@ extern PCD_HandleTypeDef hpcd_USB_OTG_FS;
 // This automatically updates to the interface that most
 // recently recieved a command. In the future we may want to separate
 // debug printf and the main serial comms.
-SerialPrintf_t serial_printf_select = SERIAL_PRINTF_IS_NONE;
+SerialPrintf_t serial_printf_select = SERIAL_PRINTF_IS_UART;
 
 /* Private constant data -----------------------------------------------------*/
-// TODO: make command to switch gpio_mode during run-time
-static const GpioMode_t gpio_mode = GPIO_MODE_NONE;     //GPIO 1,2 is not configured
-// static const GpioMode_t gpio_mode = GPIO_MODE_UART;     //GPIO 1,2 is UART Tx,Rx
-// static const GpioMode_t gpio_mode = GPIO_MODE_STEP_DIR; //GPIO 1,2 is M0 Step,Dir
-
-static uint8_t* usb_buf;
-static uint32_t usb_len;
-extern USBD_HandleTypeDef hUsbDeviceFS;
 
 // variables exposed to usb/serial interface via set/get/monitor
 // Note: this will be depricated soon
-static float* const exposed_floats[] = {
+float* exposed_floats[] = {
     &vbus_voltage, // ro
     NULL, //&elec_rad_per_enc, // ro
     &motors[0].pos_setpoint, // rw
@@ -91,29 +76,30 @@ static float* const exposed_floats[] = {
     &motors[1].encoder.pll_ki, // rw
 };
 
-static int* const exposed_ints[] = {
+int* exposed_ints[] = {
     (int*)&motors[0].control_mode, // rw
-    &motors[0].encoder.encoder_offset, // rw
-    &motors[0].encoder.encoder_state, // ro
-    &motors[0].error, // rw
+    (int*)&motors[0].encoder.encoder_offset, // rw
+    (int*)&motors[0].encoder.encoder_state, // ro
+    (int*)&motors[0].error, // rw
     (int*)&motors[1].control_mode, // rw
-    &motors[1].encoder.encoder_offset, // rw
-    &motors[1].encoder.encoder_state, // ro
-    &motors[1].error, // rw
+    (int*)&motors[1].encoder.encoder_offset, // rw
+    (int*)&motors[1].encoder.encoder_state, // ro
+    (int*)&motors[1].error, // rw
 };
 
-static bool* const exposed_bools[] = {
+bool* exposed_bools[] = {
     &motors[0].thread_ready, // ro
-    &motors[0].enable_control, // rw
-    &motors[0].do_calibration, // rw
-    &motors[0].calibration_ok, // ro
+    //For now these are written by Axis::SetupLegacyMappings
+    NULL, // &motors[0].enable_control, // rw
+    NULL, // &motors[0].do_calibration, // rw
+    NULL, // &motors[0].calibration_ok, // ro
     &motors[1].thread_ready, // ro
-    &motors[1].enable_control, // rw
-    &motors[1].do_calibration, // rw
-    &motors[1].calibration_ok, // ro
+    NULL, // &motors[1].enable_control, // rw
+    NULL, // &motors[1].do_calibration, // rw
+    NULL, // &motors[1].calibration_ok, // ro
 };
 
-static uint16_t* const exposed_uint16[] = {
+uint16_t* exposed_uint16[] = {
     &motors[0].control_deadline, // rw
     &motors[0].last_cpu_time, // ro
     &motors[1].control_deadline, // rw
@@ -126,29 +112,14 @@ monitoring_slot monitoring_slots[20] = {0};
 static void print_monitoring(int limit);
 
 /* Function implementations --------------------------------------------------*/
-void init_communication() {
-    switch (gpio_mode) {
-        case GPIO_MODE_NONE:
-        break; //do nothing
-        case GPIO_MODE_UART: {
-            SetGPIO12toUART();
-        } break;
-        case GPIO_MODE_STEP_DIR: {
-            SetGPIO12toStepDir();
-        } break;
-        default:
-        //TODO: report error unexpected mode
-        break;
-    }
-}
 
-void motor_parse_cmd(uint8_t* buffer, int len, SerialPrintf_t response_interface) {
+void legacy_parse_cmd(const uint8_t* buffer, size_t len, size_t buffer_capacity, SerialPrintf_t response_interface) {
     // Set response interface
     serial_printf_select = response_interface;
 
-    // TODO very hacky way of terminating sscanf at end of buffer:
-    // We should do some proper struct packing instead of using sscanf altogether
-    buffer[len-1] = 0;
+    // Cast away const and write beyond the array bounds. Because we can.
+    // (TODO: yeah maybe not, but this should be gone once we disable legacy commands)
+    ((uint8_t *)buffer)[len < buffer_capacity ? len : (buffer_capacity - 1)] = 0;
 
     // check incoming packet type
     if (buffer[0] == 'p') {
@@ -261,9 +232,47 @@ void motor_parse_cmd(uint8_t* buffer, int len, SerialPrintf_t response_interface
             }
         }
     }
+
+    serial_printf_select = SERIAL_PRINTF_IS_UART;
+}
+
+void legacy_parse_stream(const uint8_t* buffer, size_t len) {
+    #define PARSE_BUFFER_SIZE 64
+    static uint8_t parse_buffer[PARSE_BUFFER_SIZE];
+    static bool read_active = false;
+    static uint32_t parse_buffer_idx = 0;
+
+    while (len--) {
+        // Fetch the next char
+        uint8_t c = *(buffer++);
+        // Look for start character
+        if (c == '$') {
+            read_active = true;
+            continue; // do not record start char
+        }
+        // Record into parse buffer when actively reading
+        if (read_active) {
+            parse_buffer[parse_buffer_idx++] = c;
+            if (c == '\r' || c == '\n' || c == '!') {
+                // End of command string
+                legacy_parse_cmd(parse_buffer, parse_buffer_idx, PARSE_BUFFER_SIZE, SERIAL_PRINTF_IS_UART);
+                // Reset receieve state machine
+                read_active = false;
+                parse_buffer_idx = 0;
+            } else if (parse_buffer_idx == PARSE_BUFFER_SIZE - 1) {
+                // We are not at end of command, and receiving another character after this
+                // would go into the last slot, which is reserved for terminating null.
+                // We have effectively overflowed parse buffer: abort.
+                read_active = false;
+                parse_buffer_idx = 0;
+            }
+        }
+    }
 }
 
 static void print_monitoring(int limit) {
+    serial_printf_select = SERIAL_PRINTF_IS_USB;
+
     for (int i=0;i<limit;i++) {
         switch (monitoring_slots[i].type) {
         case 0:
@@ -283,108 +292,6 @@ static void print_monitoring(int limit) {
         }
     }
     printf("\n");
-}
 
-// Thread to handle deffered processing of USB interrupt, and
-// read commands out of the UART DMA circular buffer
-void cmd_parse_thread(void const * argument) {
-    
-    //DMA open loop continous circular buffer
-    //1ms delay periodic, chase DMA ptr around, on new data:
-        // Check for start char
-        // copy into parse-buffer
-        // check for end-char
-        // checksum, etc.
-
-    #define UART_RX_BUFFER_SIZE 64
-    static uint8_t dma_circ_buffer[UART_RX_BUFFER_SIZE];
-    static uint8_t parse_buffer[UART_RX_BUFFER_SIZE];
-
-    // DMA is set up to recieve in a circular buffer forever.
-    // We dont use interrupts to fetch the data, instead we periodically read
-    // data out of the circular buffer into a parse buffer, controlled by a state machine
-    HAL_UART_Receive_DMA(&huart4, dma_circ_buffer, sizeof(dma_circ_buffer));
-
-    uint32_t last_rcv_idx = UART_RX_BUFFER_SIZE - huart4.hdmarx->Instance->NDTR;
-    // Re-run state-machine forever
-    for (;;) {
-        //Inialize recieve state machine
-        bool reset_read_state = false;
-        bool read_active = false;
-        uint32_t parse_buffer_idx = 0;
-        //Run state machine until reset
-        do {
-            // Check for UART errors and restart recieve DMA transfer if required
-            if (huart4.ErrorCode != HAL_UART_ERROR_NONE) {
-                HAL_UART_AbortReceive(&huart4);
-                HAL_UART_Receive_DMA(&huart4, dma_circ_buffer, sizeof(dma_circ_buffer));
-                break; //reset state machine
-            }
-            // Fetch the circular buffer "write pointer", where it would write next
-            uint32_t rcv_idx = UART_RX_BUFFER_SIZE - huart4.hdmarx->Instance->NDTR;
-            // During sleeping, we may have fallen several characters behind, so we keep
-            // going until we are caught up, before we sleep again
-            while (rcv_idx != last_rcv_idx) {
-                // Fetch the next char, rotate read ptr
-                uint8_t c = dma_circ_buffer[last_rcv_idx];
-                if (++last_rcv_idx == UART_RX_BUFFER_SIZE)
-                    last_rcv_idx = 0;
-                // Look for start character
-                if (c == '$') {
-                    read_active = true;
-                    continue; // do not record start char
-                }
-                // Record into parse buffer when actively reading
-                if (read_active) {
-                    parse_buffer[parse_buffer_idx++] = c;
-                    if (c == '\r' || c == '\n' || c == '!') {
-                        // End of command string: exchange end char with terminating null
-                        parse_buffer[parse_buffer_idx-1] = '\0';
-                        motor_parse_cmd(parse_buffer, parse_buffer_idx, SERIAL_PRINTF_IS_UART);
-                        // Reset receieve state machine
-                        reset_read_state = true;
-                        break;
-                    } else if (parse_buffer_idx == UART_RX_BUFFER_SIZE - 1) {
-                        // We are not at end of command, and receiving another character after this
-                        // would go into the last slot, which is reserved for terminating null.
-                        // We have effectively overflowed parse buffer: abort.
-                        reset_read_state = true;
-                        break;
-                    }
-                }
-            }
-            // When we reach here, we are out of immediate characters to fetch out of UART buffer
-            // Now we check if there is any USB processing to do: we wait for up to 1 ms,
-            // before going back to checking UART again.
-            const uint32_t usb_check_timeout = 1; // ms
-            osStatus sem_stat = osSemaphoreWait(sem_usb_rx, usb_check_timeout);
-            if (sem_stat == osOK) {
-                motor_parse_cmd(usb_buf, usb_len, SERIAL_PRINTF_IS_USB);
-                USBD_CDC_ReceivePacket(&hUsbDeviceFS);  // Allow next packet
-            }
-        } while (!reset_read_state);
-    }
-    // If we get here, then this task is done
-    vTaskDelete(osThreadGetId());
-}
-
-// Called from CDC_Receive_FS callback function, this allows motor_parse_cmd to access the
-// incoming USB data
-void set_cmd_buffer(uint8_t *buf, uint32_t len) {
-    usb_buf = buf;
-    usb_len = len;
-}
-
-void usb_update_thread() {
-    for (;;) {
-        // Wait for signalling from USB interrupt (OTG_FS_IRQHandler)
-        osStatus semaphore_status = osSemaphoreWait(sem_usb_irq, osWaitForever);
-        if (semaphore_status == osOK) {
-            // We have a new incoming USB transmission: handle it
-            HAL_PCD_IRQHandler(&hpcd_USB_OTG_FS);
-            // Let the irq (OTG_FS_IRQHandler) fire again.
-            HAL_NVIC_EnableIRQ(OTG_FS_IRQn);
-        }
-    }
-    vTaskDelete(osThreadGetId());
+    serial_printf_select = SERIAL_PRINTF_IS_UART;
 }

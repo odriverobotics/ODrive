@@ -2,7 +2,7 @@
 #ifndef __FREERTOS_H
 #define __FREERTOS_H
 
-// List of semaphore
+// List of semaphores
 osSemaphoreId sem_usb_irq;
 osSemaphoreId sem_uart_dma;
 osSemaphoreId sem_usb_rx;

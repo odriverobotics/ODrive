@@ -11,6 +11,9 @@
                 "kind": "build",
                 "isDefault": true
             },
+            "presentation": {
+                "panel": "new"
+            },
             "problemMatcher": [
                 "$gcc"
             ]

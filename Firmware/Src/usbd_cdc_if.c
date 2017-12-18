@@ -49,6 +49,8 @@
 /* Includes ------------------------------------------------------------------*/
 #include "usbd_cdc_if.h"
 /* USER CODE BEGIN INCLUDE */
+#include "cmsis_os.h"
+#include "freertos_vars.h"
 #include "utils.h"
 #include "commands.h"
 #include <freertos_vars.h>
@@ -76,10 +78,6 @@
   * @{
   */ 
 /* USER CODE BEGIN PRIVATE_DEFINES */
-/* Define size for the receive and transmit buffer over CDC */
-/* It's up to user to redefine and/or remove those define */
-#define APP_RX_DATA_SIZE  64
-#define APP_TX_DATA_SIZE  64
 /* USER CODE END PRIVATE_DEFINES */
 /**
   * @}
@@ -101,10 +99,10 @@
 /* Create buffer for reception and transmission           */
 /* It's up to user to redefine and/or remove those define */
 /* Received Data over USB are stored in this buffer       */
-uint8_t UserRxBufferFS[APP_RX_DATA_SIZE];
+uint8_t UserRxBufferFS[USB_RX_DATA_SIZE];
 
 /* Send Data over USB CDC are stored in this buffer       */
-uint8_t UserTxBufferFS[APP_TX_DATA_SIZE];
+uint8_t UserTxBufferFS[USB_TX_DATA_SIZE];
 
 /* USER CODE BEGIN PRIVATE_VARIABLES */
 /* USER CODE END PRIVATE_VARIABLES */
@@ -269,11 +267,8 @@ static int8_t CDC_Control_FS  (uint8_t cmd, uint8_t* pbuf, uint16_t length)
 static int8_t CDC_Receive_FS (uint8_t* Buf, uint32_t *Len)
 {
   /* USER CODE BEGIN 6 */
-  //Append null termination at end of string
-  int modified_len = MACRO_MIN(*Len+1, APP_RX_DATA_SIZE);
-  Buf[modified_len-1] = 0;
 
-  set_cmd_buffer(Buf, modified_len);
+  set_cmd_buffer(Buf, *Len);
   osSemaphoreRelease(sem_usb_rx);
 
   return (USBD_OK);
@@ -297,7 +292,7 @@ uint8_t CDC_Transmit_FS(uint8_t* Buf, uint16_t Len)
   /* USER CODE BEGIN 7 */ 
   
   //Check length
-  if (Len > APP_TX_DATA_SIZE)
+  if (Len > USB_TX_DATA_SIZE)
     return USBD_FAIL;
   // Check for ongoing transmission
   USBD_CDC_HandleTypeDef* hcdc = (USBD_CDC_HandleTypeDef*) hUsbDeviceFS.pClassData;
