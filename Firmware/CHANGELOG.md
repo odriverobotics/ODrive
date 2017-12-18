@@ -1,5 +1,4 @@
-## [0.3]
-
+## [0.3] - 2017-12-18
 ### Added
 * **New binary communication protocol**
   * This is a much richer and more efficient binary protocol than the old human-readable protocol.
