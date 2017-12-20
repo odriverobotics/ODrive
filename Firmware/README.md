@@ -25,6 +25,10 @@ The first thing to set is your board hardware version, located at the top of [In
 #define HW_VERSION_MAJOR 3
 #define HW_VERSION_MINOR 2
 ```
+If you are using the 48V version of ODrive, you should also uncomment this line
+```C
+#define HW_VERSION_HIGH_VOLTAGE true
+```
 
 ### Communication configuration
 If want to use the example python scripts and connect the ODrive via USB, the defaults are fine for you and you can skip this step.
