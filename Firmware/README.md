@@ -4,6 +4,8 @@ If you wish to use the latest release, please use the `master` branch (this is t
 
 If you are a developer, you are encouraged to use the `devel` branch, as it contains the latest features.
 
+The project is under active development, so make sure to check the [Changelog](CHANGELOG.md) to keep track of updates.
+
 ### Table of contents
 
 <!-- MarkdownTOC depth=2 autolink=true bracket=round -->
