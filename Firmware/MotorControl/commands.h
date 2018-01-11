@@ -11,8 +11,8 @@
 #include "crc.hpp"
 
 // Select which protocol to run on USB (see README for more details)
-#define USB_PROTOCOL_NATIVE
-// #define USB_PROTOCOL_NATIVE_STREAM_BASED
+// #define USB_PROTOCOL_NATIVE
+#define USB_PROTOCOL_NATIVE_STREAM_BASED
 // #define USB_PROTOCOL_LEGACY
 // #define USB_PROTOCOL_NONE
 

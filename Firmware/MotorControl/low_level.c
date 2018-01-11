@@ -34,7 +34,7 @@
 float vbus_voltage = 12.0f;
 
 // TODO stick parameter into struct
-#define ENCODER_CPR (600 * 4)
+#define ENCODER_CPR (500 * 4)
 #define POLE_PAIRS 7
 const float elec_rad_per_enc = POLE_PAIRS * 2 * M_PI * (1.0f / (float)ENCODER_CPR);
 
@@ -56,15 +56,15 @@ Motor_t motors[] = {
         .counts_per_step = 2.0f,
         .error = ERROR_NO_ERROR,
         .pos_setpoint = 0.0f,
-        .pos_gain = 20.0f,  // [(counts/s) / counts]
+        .pos_gain = 40.0f,  // [(counts/s) / counts]
         .vel_setpoint = 0.0f,
         // .vel_setpoint = 800.0f, <sensorless example>
-        .vel_gain = 15.0f / 10000.0f,  // [A/(counts/s)]
+        .vel_gain = 25.0f / 10000.0f,  // [A/(counts/s)]
         // .vel_gain = 15.0f / 200.0f, // [A/(rad/s)] <sensorless example>
         .vel_integrator_gain = 10.0f / 10000.0f,  // [A/(counts/s * s)]
         // .vel_integrator_gain = 0.0f, // [A/(rad/s * s)] <sensorless example>
         .vel_integrator_current = 0.0f,  // [A]
-        .vel_limit = 20000.0f,           // [counts/s]
+        .vel_limit = 200000.0f,           // [counts/s]
         .current_setpoint = 0.0f,        // [A]
         .calibration_current = 10.0f,    // [A]
         .phase_inductance = 0.0f,        // to be set by measure_phase_inductance
@@ -97,7 +97,7 @@ Motor_t motors[] = {
             // Read out max_allowed_current to see max supported value for current_lim.
             // You can change DRV8301_ShuntAmpGain to get a different range.
             // .current_lim = 75.0f, //[A]
-            .current_lim = 10.0f,  //[A]
+            .current_lim = 20.0f,  //[A]
             .p_gain = 0.0f,        // [V/A] should be auto set after resistance and inductance measurement
             .i_gain = 0.0f,        // [V/As] should be auto set after resistance and inductance measurement
             .v_current_control_integral_d = 0.0f,
