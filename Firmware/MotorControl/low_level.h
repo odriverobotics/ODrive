@@ -48,6 +48,7 @@ typedef enum {
     ERROR_UNEXPECTED_STEP_SRC,
     ERROR_POS_CTRL_DURING_SENSORLESS,
     ERROR_SPIN_UP_TIMEOUT,
+    ERROR_DRV_FAULT,
 } Error_t;
 
 // Note: these should be sorted from lowest level of control to
@@ -234,7 +235,8 @@ bool using_sensorless(Motor_t* motor);
 float get_rotor_phase(Motor_t* motor);
 float get_pll_vel(Motor_t* motor);
 bool spin_up_sensorless(Motor_t* motor);
-void update_brake_current(float brake_current);
+void update_brake_current();
+void set_brake_current(float brake_current);
 void queue_modulation_timings(Motor_t* motor, float mod_alpha, float mod_beta);
 void queue_voltage_timings(Motor_t* motor, float v_alpha, float v_beta);
 bool FOC_current(Motor_t* motor, float Id_des, float Iq_des);

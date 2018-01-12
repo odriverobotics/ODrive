@@ -323,7 +323,7 @@ void global_fault(int error) {
         *(motors[i].axis_legacy.enable_control) = false;
     }
     // disable brake resistor
-    update_brake_current(0.0f);
+    set_brake_current(0.0f);
 }
 
 float phase_current_from_adcval(Motor_t* motor, uint32_t ADCValue) {
@@ -422,7 +422,7 @@ void start_adc_pwm() {
     start_pwm(&htim1);
     start_pwm(&htim8);
     // TODO: explain why this offset
-    sync_timers(&htim1, &htim8, TIM_CLOCKSOURCE_ITR0, TIM_1_8_PERIOD_CLOCKS / 2 - 1 * 128);
+    sync_timers(&htim1, &htim8, TIM_CLOCKSOURCE_ITR0, TIM_1_8_PERIOD_CLOCKS / 2 - 0 * 128);
 
     // Motor output starts in the disabled state
     __HAL_TIM_MOE_DISABLE_UNCONDITIONALLY(&htim1);
@@ -545,7 +545,7 @@ void enc_index_cb(uint16_t GPIO_Pin, uint8_t motor_index) {
 }
 
 void vbus_sense_adc_cb(ADC_HandleTypeDef* hadc, bool injected) {
-    static const float voltage_scale = 3.3f * 11.0f / (float)(1 << 12);
+    static const float voltage_scale = 3.3f * VBUS_S_DIVIDER_RATIO / (float)(1 << 12);
     // Only one conversion in sequence, so only rank1
     uint32_t ADCValue = HAL_ADCEx_InjectedGetValue(hadc, ADC_INJECTED_RANK_1);
     vbus_voltage = ADCValue * voltage_scale;
@@ -653,8 +653,8 @@ void pwm_trig_adc_cb(ADC_HandleTypeDef* hadc, bool injected) {
 
 // TODO check Ibeta balance to verify good motor connection
 bool measure_phase_resistance(Motor_t* motor, float test_current, float max_voltage) {
-    static const float kI = 10.0f;                                  //[(V/s)/A]
-    static const int num_test_cycles = 3.0f / CURRENT_MEAS_PERIOD;  // Test runs for 3s
+    static const float kI = 10.0f;                                 // [(V/s)/A]
+    static const int num_test_cycles = 3.0f / CURRENT_MEAS_PERIOD; // Test runs for 3s
     float test_voltage = 0.0f;
     for (int i = 0; i < num_test_cycles; ++i) {
         osEvent evt = osSignalWait(M_SIGNAL_PH_CURRENT_MEAS, PH_CURRENT_MEAS_TIMEOUT);
@@ -1129,7 +1129,16 @@ bool spin_up_sensorless(Motor_t* motor) {
     // TODO: check pll vel (abs ratio, 0.8)
 }
 
-void update_brake_current(float brake_current) {
+void update_brake_current() {
+    float Ibus_sum = 0.0f;
+    for (int i = 0; i < num_motors; ++i) {
+        Ibus_sum += motors[i].current_control.Ibus;
+    }
+    // Note: set_brake_current will clip negative values to 0.0f
+    set_brake_current(-Ibus_sum);
+}
+
+void set_brake_current(float brake_current) {
     if (brake_current < 0.0f) brake_current = 0.0f;
     float brake_duty = brake_current * brake_resistance / vbus_voltage;
 
@@ -1208,19 +1217,6 @@ bool FOC_current(Motor_t* motor, float Id_des, float Iq_des) {
     // Compute estimated bus current
     ictrl->Ibus = mod_d * Id + mod_q * Iq;
 
-    // If this is last motor, update brake resistor duty
-    // if (motor == &motors[num_motors-1]) {
-    // Above check doesn't work if last motor is executing voltage control
-    // TODO trigger this update in control_motor_loop instead,
-    // and make voltage control a control mode in it.
-    float Ibus_sum = 0.0f;
-    for (int i = 0; i < num_motors; ++i) {
-        Ibus_sum += motors[i].current_control.Ibus;
-    }
-    // Note: function will clip negative values to 0.0f
-    update_brake_current(-Ibus_sum);
-    // }
-
     // Inverse park transform
     float mod_alpha = c * mod_d - s * mod_q;
     float mod_beta = c * mod_q + s * mod_d;
@@ -1241,10 +1237,21 @@ bool FOC_current(Motor_t* motor, float Id_des, float Iq_des) {
     return true;
 }
 
+//Returns true if the fault line is asserted
+bool check_DRV_fault(Motor_t* motor) {
+    //TODO: make this pin configurable per motor ch
+    GPIO_PinState nFAULT_state = HAL_GPIO_ReadPin(nFAULT_GPIO_Port, nFAULT_Pin);
+    return (nFAULT_state == GPIO_PIN_RESET) ? true : false;
+}
+
 void control_motor_loop(Motor_t* motor) {
     while (*(motor->axis_legacy.enable_control)) {
         if (osSignalWait(M_SIGNAL_PH_CURRENT_MEAS, PH_CURRENT_MEAS_TIMEOUT).status != osEventSignal) {
             motor->error = ERROR_FOC_MEASUREMENT_TIMEOUT;
+            break;
+        }
+        if (check_DRV_fault(motor)) {
+            motor->error = ERROR_DRV_FAULT;
             break;
         }
         update_rotor(motor);
@@ -1321,9 +1328,11 @@ void control_motor_loop(Motor_t* motor) {
         if (!FOC_current(motor, 0.0f, Iq)) {
             break;  // in case of error exit loop, motor->error has been set by FOC_current
         }
+
+        update_brake_current();
     }
 
     //We are exiting control, reset Ibus, and update brake current
-    //TODO update brake current from all motors in 1 func
-    //TODO reset this motor Ibus, then call from here
+    motor->current_control.Ibus = 0.0f;
+    update_brake_current();
 }

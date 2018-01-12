@@ -1,5 +1,4 @@
-## [0.3]
-
+## [0.3] - 2017-12-18
 ### Added
 * **New binary communication protocol**
   * This is a much richer and more efficient binary protocol than the old human-readable protocol.
@@ -7,9 +6,12 @@
 * Support for C++
 * Demo scripts for getting started with commanding ODrive from python
 * Protection from user setting current_lim higher than is measurable
+* Current sense shunt values for HW v3.4
+* Check DRV chip fault line
 
 ### Changed
 * Shunt resistance values for v3.3 and earlier to include extra resistance of PCB
+* Default HW revision to v3.4
 * Refactoring of control code:
   * Lifted top layer of low_level.c into Axis.cpp
 
