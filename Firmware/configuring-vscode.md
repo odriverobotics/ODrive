@@ -45,8 +45,9 @@ Note: If developing on Windows, you should have `arm-none-eabi-gdb` and `openOCD
   * Debug -> Start Debugging (or press F5)
   * The processor will reset and halt.
   * Set your breakpoints. Note: you can only set breakpoints when the processor is halted, if you set them during run mode, they won't get applied.
-  * Run
-  * When done debugging, simply halt the debugger.  It will kill your 
+  * Run (F5)
+  * Stepping over/in/out, restarting, and changing breakpoints can be done by first pressing the "pause" (F6) button at the top the screen.
+  * When done debugging, simply stop (Shift+F5) the debugger.  It will kill your openOCD process too.
 
 ## Cleaning the Build
 This sometimes needs to be done if you change branches.
