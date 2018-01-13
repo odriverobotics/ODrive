@@ -17,20 +17,5 @@
             ],
             "cwd": "${workspaceRoot}"
         },
-        // For the Native Debug extension
-        {
-            "type": "gdb",
-            "request": "attach",
-            "name": "Debug Firmware",
-            "target": "localhost:3333",
-            "gdbpath": "arm-none-eabi-gdb",
-            "remote": true,
-            "executable": "./build/ODriveFirmware.elf",
-            "cwd": "${workspaceRoot}",
-            "printCalls": false,
-            "autorun": [
-                "monitor reset halt"
-            ]
-        }
     ]
 }
