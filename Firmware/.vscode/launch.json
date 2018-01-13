@@ -8,7 +8,7 @@
             // For the Cortex-Debug extension
             "type": "openocd-gdb",
             "request": "launch",
-            "name": "Debug Microcontroller",
+            "name": "Debug ODrive",
             "executable": "${workspaceRoot}/build/ODriveFirmware.elf",
             "configFiles": [
                 "interface/stlink-v2.cfg",
