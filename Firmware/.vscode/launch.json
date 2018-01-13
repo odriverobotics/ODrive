@@ -5,6 +5,20 @@
     "version": "0.2.0",
     "configurations": [
         {
+            // For the Cortex-Debug extension
+            "type": "openocd-gdb",
+            "request": "launch",
+            "name": "Debug Microcontroller",
+            "gdbpath": "arm-none-eabi-gdb",
+            "executable": "${workspaceRoot}/build/ODriveFirmware.elf",
+            "configFiles": [
+                "interface/stlink-v2.cfg",
+                "target/stm32f4x_stlink.cfg",
+            ],
+            "cwd": "${workspaceRoot}"
+        },
+        // For the Native Debug extension
+        {
             "type": "gdb",
             "request": "attach",
             "name": "Debug Firmware",
@@ -14,7 +28,6 @@
             "executable": "./build/ODriveFirmware.elf",
             "cwd": "${workspaceRoot}",
             "printCalls": false,
-            //"preLaunchTask": "openocd",  // This isn't working quite right.
             "autorun": [
                 "monitor reset halt"
             ]
