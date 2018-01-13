@@ -11,8 +11,8 @@ Before doing the VSCode setup, make sure you've installed all of your [prerequis
 1. Install extensions.  This can be done directly from VSCode (Ctrl+Shift+X)
     * Required extensions:
         * C/C++
-        * Native Debug
     * Recommended Extensions:
+        * Cortex-Debug
         * vscode-icons
         * Code Outline
         * Include Autocomplete
@@ -36,16 +36,17 @@ A terminal window will open with your native shell.  VSCode is configured to run
 If the flashing worked, you can start sending commands. If you want to do that now, you can go to [Communicating over USB or UART](README.md#communicating-over-usb-or-uart).
 
 ## Debugging
-The solution we have is not the most elegant, and if you know a better way, please do help us.
+An extension called Cortex-Debug has recently been released which is designed specifically for debugging ARM Cortex projects.  You can read more on Cortex-Debug here: https://github.com/Marus/cortex-debug
+
+Note: If developing on Windows, you should have `arm-none-eabi-gdb` and `openOCD` on your PATH.
+
   * Make sure you have the Firmware folder as your active folder
   * Flash the board with the newest code (starting debug session doesn't do this)
-  * Tasks -> Run Task -> openocd
-  * Debug -> Start Debugging
+  * Debug -> Start Debugging (or press F5)
   * The processor will reset and halt.
   * Set your breakpoints. Note: you can only set breakpoints when the processor is halted, if you set them during run mode, they won't get applied.
   * Run
-  * When you are done, you must kill the openocd task before you are able to flash the board again: 
-    * Tasks -> Terminate task -> openocd
+  * When done debugging, simply halt the debugger.  It will kill your 
 
 ## Cleaning the Build
 This sometimes needs to be done if you change branches.
