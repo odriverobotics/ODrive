@@ -9,7 +9,6 @@
             "type": "openocd-gdb",
             "request": "launch",
             "name": "Debug Microcontroller",
-            "gdbpath": "arm-none-eabi-gdb",
             "executable": "${workspaceRoot}/build/ODriveFirmware.elf",
             "configFiles": [
                 "interface/stlink-v2.cfg",
