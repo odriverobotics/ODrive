@@ -94,6 +94,9 @@ void motors_1_set_current_setpoint_func(void) {
 const Endpoint endpoints[] = {
     Endpoint::make_property("vbus_voltage", const_cast<const float*>(&vbus_voltage)),
     Endpoint::make_property("elec_rad_per_enc", const_cast<const float*>(&elec_rad_per_enc)),
+	Endpoint::make_property("UUID_0", (const uint32_t*)(ID_UNIQUE_ADDRESS + 0*4)),
+	Endpoint::make_property("UUID_1", (const uint32_t*)(ID_UNIQUE_ADDRESS + 1*4)),
+	Endpoint::make_property("UUID_2", (const uint32_t*)(ID_UNIQUE_ADDRESS + 2*4)),
     Endpoint::make_object("motor0"),
         Endpoint::make_property("control_mode", reinterpret_cast<int32_t*>(&motors[0].control_mode)),
         Endpoint::make_property("error", reinterpret_cast<int32_t*>(&motors[0].error)),
