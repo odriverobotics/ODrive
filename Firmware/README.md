@@ -69,6 +69,7 @@ You must set:
 The most important parameters are the limits:
 * The current limit: `.current_lim = 75.0f, //[A] // Note: consistent with 40v/v gain`. The default current limit, for safety reasons, is set to 10A. This is quite weak, and good for making sure the drive is stable. Once you have tuned the drive, you can increase this to 75A to get some performance. Note that above 75A, you must change the current amplifier gains.
 * The velocity limit: `.vel_limit = 20000.0f, // [counts/s]`. The motor will be limited to this speed; again the default value is quite slow.
+  * Note: The motor current and the current drawn from the power supply is not the same in general. You should not look at the power supply current to see what is going on with the motor current.
 
 The motion control gains are currently manually tuned:
 * `.pos_gain = 20.0f, // [(counts/s) / counts]`
@@ -134,7 +135,7 @@ After installing all of the above, open a Git Bash shell. Continue at section [B
 
 ### Flashing the firmware
 * **Make sure you have [configured the parameters first](#configuring-parameters)**
-* Connect `SWD`, `SWC`, and `GND` on connector J2 to the programmer.
+* Connect `GND`, `SWD`, and `SWC` on connector J2 to the programmer. Note: Always plug in `GND` first!
 * You need to power the board by only **ONE** of the following: VCC(3.3v), 5V, or the main power connection (the DC bus). The USB port (J1) does not power the board.
 * Run `make flash` in the root of this repository.
 
@@ -145,26 +146,37 @@ If the flashing worked, you can start sending commands. If you want to do that n
 
 <br><br>
 ## Communicating over USB or UART
+Warning: If testing USB or UART communication for the first time it is recommend that your motors are free to spin continuously and are not connected to a drivetrain with limited travel.
 ### From Linux/Windows/macOS
-There are two simple python scripts to help you get started with controlling the ODrive using python.
+There are two example python scripts to help you get started with controlling the ODrive using python. One will drop you into an interactive shell to query settings, parameters, and variables, and let you send setpoints manually ([tools/explore_odrive.py](tools/explore_odrive.py)). The other is a demo application to show you how to control the ODrive programmatically ([tools/demo.py](tools/demo.py)). Below follows a step-by-step guide on how to run these.
 
-1. [Install Python 3](https://www.python.org/downloads/), then install dependencies:
+
+* __Windows__: It is recommended to use a Unix style command prompt, such as Git Bash that comes with [Git for windows](https://git-scm.com/download/win).
+
+1. [Install Python 3](https://www.python.org/downloads/), then install dependencies pyusb and pyserial:
 ```
 pip install pyusb pyserial
 ```
-3. __Linux__: set up USB permissions
+* Note: If you have python2 and python3 installed concurrently then you must specifiy that we wish to target python3. This is done as follows:
+  * __Linux__: Use `pip3` instead of `pip` in the above command.
+  * __Windows__: Use the full path of the Python3 pip, yeilding something like:
+ `C:\Users\YOUR_USERNAME\AppData\Local\Programs\Python\Python36-32\Scripts\pip install pyusb pyserial`
+* If you have trouble with this step then refer to [this walkthrough.](https://www.youtube.com/watch?v=jnpC_Ib_lbc)
+
+2. __Linux__: set up USB permissions
 ```
     echo 'SUBSYSTEM=="usb", ATTR{idVendor}=="1209", ATTR{idProduct}=="0d[0-9][0-9]", MODE="0666"' | sudo tee /etc/udev/rules.d/50-odrive.rules
     sudo udevadm control --reload-rules
     sudo udevadm trigger # until you reboot you may need to do this everytime you reset the ODrive
 ```
-4. Power the ODrive board (as per the [Flashing the firmware](#flashing-the-firmware) step)
-5. Plug in a USB cable into the microUSB connector on ODrive, and connect it to your PC
-6. __Windows__: Use the [Zadig](http://zadig.akeo.ie/) utility to set ODrive (not STLink!) driver to libusb. 
+3. Power the ODrive board (as per the [Flashing the firmware](#flashing-the-firmware) step).
+4. Plug in a USB cable into the microUSB connector on ODrive, and connect it to your PC.
+5. __Windows__: Use the [Zadig](http://zadig.akeo.ie/) utility to set ODrive (not STLink!) driver to libusb-win32. 
   * If 'Odrive V3.x' is not in the list of devices upon opening Zadig, check 'List All Devices' from the options menu. With the Odrive selected in the device list choose 'libusb-win32' from the target driver list and select the large 'install driver' button.
-7. Run `./tools/demo.py` or `./tools/explore_odrive.py`.
-      - `demo.py` is a very simple script which will make motor 0 turn back and forth. Use this as an example if you want to control the ODrive yourself programatically.
-      - `explore_odrive.py` drops you into an interactive python shell where you can explore and edit the parameters that are available on your device. For instance `my_odrive.motor0.pos_setpoint = 10000` makes motor0 move to position 10000. To connect over serial instead of USB run `./tools/explore_odrive.py --discover serial`.
+6. Open the bash prompt in the `ODrive/tools/` folder.
+7. Run `python3 demo.py` or `python3 explore_odrive.py`. 
+- `demo.py` is a very simple script which will make motor 0 turn back and forth. Use this as an example if you want to control the ODrive yourself programatically.
+- `explore_odrive.py` drops you into an interactive python shell where you can explore and edit the parameters that are available on your device. For instance `my_odrive.motor0.pos_setpoint = 10000` makes motor0 move to position 10000. To connect over serial instead of USB run `./tools/explore_odrive.py --discover serial`.
 
 ### From Arduino
 [See ODrive Arduino Library](https://github.com/madcowswe/ODriveArduino)

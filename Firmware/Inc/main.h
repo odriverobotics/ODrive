@@ -53,7 +53,8 @@
 /* USER CODE BEGIN Includes */
 
 #define HW_VERSION_MAJOR 3
-#define HW_VERSION_MINOR 3
+#define HW_VERSION_MINOR 4
+// #define HW_VERSION_HIGH_VOLTAGE true
 
 #if HW_VERSION_MAJOR == 3 && HW_VERSION_MINOR == 1 \
 ||  HW_VERSION_MAJOR == 3 && HW_VERSION_MINOR == 2
@@ -63,7 +64,7 @@
 
 /* Private define ------------------------------------------------------------*/
 #define TIM_1_8_CLOCK_HZ 168000000
-#define TIM_1_8_PERIOD_CLOCKS 10192
+#define TIM_1_8_PERIOD_CLOCKS 8192
 #define TIM_1_8_DEADTIME_CLOCKS 20
 #define TIM_APB1_CLOCK_HZ 84000000
 #define TIM_APB1_PERIOD_CLOCKS 4096
@@ -156,6 +157,12 @@
 
 #define CURRENT_MEAS_PERIOD ((float)(2*TIM_1_8_PERIOD_CLOCKS)/(float)TIM_1_8_CLOCK_HZ)
 #define CURRENT_MEAS_HZ (TIM_1_8_CLOCK_HZ/(2*TIM_1_8_PERIOD_CLOCKS))
+
+#ifdef HW_VERSION_HIGH_VOLTAGE
+#define VBUS_S_DIVIDER_RATIO 19.0f
+#else
+#define VBUS_S_DIVIDER_RATIO 11.0f
+#endif
 
 /* USER CODE END Private defines */
 
