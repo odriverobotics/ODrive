@@ -73,18 +73,18 @@ void motors_0_set_current_setpoint_func(void) {
         motors[0].set_current_setpoint_args.current_setpoint);
 }
 void motors_1_set_pos_setpoint_func(void) {
-    set_pos_setpoint(&motors[0],
+    set_pos_setpoint(&motors[1],
         motors[1].set_pos_setpoint_args.pos_setpoint,
         motors[1].set_pos_setpoint_args.vel_feed_forward,
         motors[1].set_pos_setpoint_args.current_feed_forward);
 }
 void motors_1_set_vel_setpoint_func(void) {
-    set_vel_setpoint(&motors[0],
+    set_vel_setpoint(&motors[1],
         motors[1].set_vel_setpoint_args.vel_setpoint,
         motors[1].set_vel_setpoint_args.current_feed_forward);
 }
 void motors_1_set_current_setpoint_func(void) {
-    set_current_setpoint(&motors[0],
+    set_current_setpoint(&motors[1],
         motors[1].set_current_setpoint_args.current_setpoint);
 }
 
