@@ -335,6 +335,10 @@ inline const char* get_default_json_modifier<int32_t>() {
     return "\"type\":\"int32\",\"access\":\"rw\"";
 }
 template<>
+inline const char* get_default_json_modifier<const uint32_t>() {
+    return "\"type\":\"uint32\",\"access\":\"r\"";
+}
+template<>
 inline const char* get_default_json_modifier<const uint16_t>() {
     return "\"type\":\"uint16\",\"access\":\"r\"";
 }

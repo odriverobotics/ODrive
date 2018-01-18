@@ -73,18 +73,18 @@ void motors_0_set_current_setpoint_func(void) {
         motors[0].set_current_setpoint_args.current_setpoint);
 }
 void motors_1_set_pos_setpoint_func(void) {
-    set_pos_setpoint(&motors[0],
+    set_pos_setpoint(&motors[1],
         motors[1].set_pos_setpoint_args.pos_setpoint,
         motors[1].set_pos_setpoint_args.vel_feed_forward,
         motors[1].set_pos_setpoint_args.current_feed_forward);
 }
 void motors_1_set_vel_setpoint_func(void) {
-    set_vel_setpoint(&motors[0],
+    set_vel_setpoint(&motors[1],
         motors[1].set_vel_setpoint_args.vel_setpoint,
         motors[1].set_vel_setpoint_args.current_feed_forward);
 }
 void motors_1_set_current_setpoint_func(void) {
-    set_current_setpoint(&motors[0],
+    set_current_setpoint(&motors[1],
         motors[1].set_current_setpoint_args.current_setpoint);
 }
 
@@ -94,6 +94,9 @@ void motors_1_set_current_setpoint_func(void) {
 const Endpoint endpoints[] = {
     Endpoint::make_property("vbus_voltage", const_cast<const float*>(&vbus_voltage)),
     Endpoint::make_property("elec_rad_per_enc", const_cast<const float*>(&elec_rad_per_enc)),
+	Endpoint::make_property("UUID_0", (const uint32_t*)(ID_UNIQUE_ADDRESS + 0*4)),
+	Endpoint::make_property("UUID_1", (const uint32_t*)(ID_UNIQUE_ADDRESS + 1*4)),
+	Endpoint::make_property("UUID_2", (const uint32_t*)(ID_UNIQUE_ADDRESS + 2*4)),
     Endpoint::make_object("motor0"),
         Endpoint::make_property("control_mode", reinterpret_cast<int32_t*>(&motors[0].control_mode)),
         Endpoint::make_property("error", reinterpret_cast<int32_t*>(&motors[0].error)),
@@ -123,6 +126,7 @@ const Endpoint endpoints[] = {
             Endpoint::make_property("i_gain", &motors[0].current_control.i_gain),
             Endpoint::make_property("v_current_control_integral_d", &motors[0].current_control.v_current_control_integral_d),
             Endpoint::make_property("v_current_control_integral_q", &motors[0].current_control.v_current_control_integral_q),
+            Endpoint::make_property("Iq_command", &motors[0].current_control.Iq),
             Endpoint::make_property("Ibus", const_cast<const float*>(&motors[0].current_control.Ibus)),
         Endpoint::close_tree(),
         Endpoint::make_object("encoder"),
@@ -176,6 +180,7 @@ const Endpoint endpoints[] = {
             Endpoint::make_property("i_gain", &motors[1].current_control.i_gain),
             Endpoint::make_property("v_current_control_integral_d", &motors[1].current_control.v_current_control_integral_d),
             Endpoint::make_property("v_current_control_integral_q", &motors[1].current_control.v_current_control_integral_q),
+            Endpoint::make_property("Iq_command", &motors[1].current_control.Iq),
             Endpoint::make_property("Ibus", const_cast<const float*>(&motors[1].current_control.Ibus)),
         Endpoint::close_tree(),
         Endpoint::make_object("encoder"),

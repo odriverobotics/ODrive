@@ -1,3 +1,18 @@
+## [0.3.1] - 2018-01-18
+
+### Added
+* UUID Endpoint
+* Reporting of correct ODrive version on USB descriptor
+* Getting started instructions for VSCode
+
+### Changed
+* USB Product ID to 0x0D32, as it is the only Pid we were allocated on [pid.codes](http://pid.codes/1209/0D32/)
+* Recommended method to debug firmware from VSCode now uses Cortex-Debug extension instead of native-debug.
+* Refactor IDE instructions into separate files
+
+### Fixed
+* Bug where the remote function calls from Python to the ODrive were not working properly.
+
 ## [0.3] - 2017-12-18
 ### Added
 * **New binary communication protocol**
