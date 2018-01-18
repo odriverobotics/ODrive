@@ -1,11 +1,15 @@
 ## UNRELEASED
 
 ### Added
+* UUID Endpoint
 * Getting started instructions for VSCode
 
 ### Changed
 * Recommended method to debug firmware from VSCode now uses Cortex-Debug extension instead of native-debug.
 * Refactor IDE instructions into separate files
+
+### Fixed
+* Bug where the remote function calls from Python to the ODrive were not working properly.
 
 ## [0.3] - 2017-12-18
 ### Added
