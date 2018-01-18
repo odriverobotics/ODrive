@@ -1,3 +1,12 @@
+## UNRELEASED
+
+### Added
+* Getting started instructions for VSCode
+
+### Changed
+* Recommended method to debug firmware from VSCode now uses Cortex-Debug extension instead of native-debug.
+* Refactor IDE instructions into separate files
+
 ## [0.3] - 2017-12-18
 ### Added
 * **New binary communication protocol**
