@@ -2,9 +2,11 @@
 
 ### Added
 * UUID Endpoint
+* Reporting of correct ODrive version on USB descriptor
 * Getting started instructions for VSCode
 
 ### Changed
+* USB Product ID to 0x0D32, as it is the only Pid we were allocated on [pid.codes](http://pid.codes/1209/0D32/)
 * Recommended method to debug firmware from VSCode now uses Cortex-Debug extension instead of native-debug.
 * Refactor IDE instructions into separate files
 
