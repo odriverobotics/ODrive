@@ -181,7 +181,7 @@ class Channel(PacketSink):
     _expected_acks = {}
 
     # Choose these parameters to be sensible for a specific transport layer
-    _resend_timeout = 5.0     # [s]
+    _resend_timeout = 0.1     # [s]
     _send_attempts = 5
 
     def __init__(self, name, input, output):

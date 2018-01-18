@@ -4,6 +4,8 @@ If you wish to use the latest release, please use the `master` branch (this is t
 
 If you are a developer, you are encouraged to use the `devel` branch, as it contains the latest features.
 
+The project is under active development, so make sure to check the [Changelog](CHANGELOG.md) to keep track of updates.
+
 ### Table of contents
 
 <!-- MarkdownTOC depth=2 autolink=true bracket=round -->
@@ -24,6 +26,10 @@ The first thing to set is your board hardware version, located at the top of [In
 ```C
 #define HW_VERSION_MAJOR 3
 #define HW_VERSION_MINOR 2
+```
+If you are using the 48V version of ODrive, you should also uncomment this line
+```C
+#define HW_VERSION_HIGH_VOLTAGE true
 ```
 
 ### Communication configuration
@@ -67,8 +73,8 @@ You must set:
 ### Tuning parameters
 The most important parameters are the limits:
 * The current limit: `.current_lim = 75.0f, //[A] // Note: consistent with 40v/v gain`. The default current limit, for safety reasons, is set to 10A. This is quite weak, and good for making sure the drive is stable. Once you have tuned the drive, you can increase this to 75A to get some performance. Note that above 75A, you must change the current amplifier gains.
-* The velocity limit: `.vel_limit = 20000.0f, // [counts/s]`. The motor will be limited to this speed; again the default value is quite slow.
   * Note: The motor current and the current drawn from the power supply is not the same in general. You should not look at the power supply current to see what is going on with the motor current.
+* The velocity limit: `.vel_limit = 20000.0f, // [counts/s]`. The motor will be limited to this speed; again the default value is quite slow.
 
 The motion control gains are currently manually tuned:
 * `.pos_gain = 20.0f, // [(counts/s) / counts]`
