@@ -43,7 +43,7 @@ Pinout:
 * GPIO 2: Rx (connect to Tx of other device)
 * GND: you must connect the grounds of the devices together. Use any GND pin on J3 of the ODrive.
 
-To enable UART mode for the GPIO, please see [Setting the GPIO mode](Firmware/README.md#configuring-parameters).
+To enable UART mode for the GPIO, please see [Setting the GPIO mode](Firmware/README.md#communication-configuration).
 
 ### Setting up Step/Direction
 Pinout:
@@ -56,7 +56,7 @@ Pinout:
 Please note that GPIO_3 and GPIO_4 are NOT 5v tolerant on ODrive v3.2 and earlier, so 3.3V signals only!
 ODrive v3.3 and onward have 5V tolerant GPIO pins.
 
-To enable step/dir mode for the GPIO, please see [Setting the GPIO mode](Firmware/README.md#configuring-parameters).
+To enable step/dir mode for the GPIO, please see [Setting the GPIO mode](Firmware/README.md#communication-configuration).
 
 There is also a new config variable called `counts_per_step`, which specifies how many encoder counts a "step" corresponds to. It can be any floating point value.
 The maximum step rate is pending tests, but it should handle at least 16kHz. If you want's to test it, please be aware that the failure mode on too high step rates is expected to be that the motors shuts down and coasts.
