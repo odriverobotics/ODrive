@@ -41,6 +41,7 @@ Baud rate: 115200
 Pinout:
 * GPIO 1: Tx (connect to Rx of other device)
 * GPIO 2: Rx (connect to Tx of other device)
+* GND: you must connect the grounds of the devices together. Use any GND pin on J3 of the ODrive.
 
 To enable UART mode for the GPIO, please see [Setting the GPIO mode](Firmware/README.md#configuring-parameters).
 
@@ -50,6 +51,7 @@ Pinout:
 * GPIO 2: M0 dir
 * GPIO 3: M1 step
 * GPIO 4: M1 dir
+* GND: you must connect the grounds of the devices together. Use any GND pin on J3 of the ODrive.
 
 Please note that GPIO_3 and GPIO_4 are NOT 5v tolerant on ODrive v3.2 and earlier, so 3.3V signals only!
 ODrive v3.3 and onward have 5V tolerant GPIO pins.
