@@ -103,6 +103,7 @@ typedef struct {
 
 typedef struct {
     TIM_HandleTypeDef* encoder_timer;
+    bool index_found;
     int encoder_cpr;
     int32_t encoder_offset;
     int32_t encoder_state;
@@ -193,6 +194,7 @@ void set_vel_setpoint(Motor_t* motor, float vel_setpoint, float current_feed_for
 void set_current_setpoint(Motor_t* motor, float current_setpoint);
 
 void step_cb(uint16_t GPIO_Pin);
+void enc_index_cb(uint16_t GPIO_Pin, uint8_t motor_index);
 void pwm_trig_adc_cb(ADC_HandleTypeDef* hadc, bool injected);
 void vbus_sense_adc_cb(ADC_HandleTypeDef* hadc, bool injected);
 
