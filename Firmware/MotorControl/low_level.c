@@ -34,7 +34,7 @@
 float vbus_voltage = 12.0f;
 
 // TODO stick parameter into struct
-#define ENCODER_CPR (600 * 4)
+#define ENCODER_CPR (2048 * 4)
 #define ENC_USE_INDEX_PIN true
 #define POLE_PAIRS 7
 const float elec_rad_per_enc = POLE_PAIRS * 2 * M_PI * (1.0f / (float)ENCODER_CPR);
@@ -60,7 +60,7 @@ Motor_t motors[] = {
         .pos_gain = 20.0f,  // [(counts/s) / counts]
         .vel_setpoint = 0.0f,
         // .vel_setpoint = 800.0f, <sensorless example>
-        .vel_gain = 15.0f / 10000.0f,  // [A/(counts/s)]
+        .vel_gain = 5.0f / 10000.0f,  // [A/(counts/s)]
         // .vel_gain = 15.0f / 200.0f, // [A/(rad/s)] <sensorless example>
         .vel_integrator_gain = 10.0f / 10000.0f,  // [A/(counts/s * s)]
         // .vel_integrator_gain = 0.0f, // [A/(rad/s * s)] <sensorless example>
@@ -159,7 +159,7 @@ Motor_t motors[] = {
         .pos_setpoint = 0.0f,
         .pos_gain = 20.0f,  // [(counts/s) / counts]
         .vel_setpoint = 0.0f,
-        .vel_gain = 15.0f / 10000.0f,             // [A/(counts/s)]
+        .vel_gain = 5.0f / 10000.0f,             // [A/(counts/s)]
         .vel_integrator_gain = 10.0f / 10000.0f,  // [A/(counts/s * s)]
         .vel_integrator_current = 0.0f,           // [A]
         .vel_limit = 20000.0f,                    // [counts/s]
