@@ -805,7 +805,7 @@ bool motor_calibration(Motor_t* motor) {
 
     if (motor->rotor_mode == ROTOR_MODE_ENCODER ||
         motor->rotor_mode == ROTOR_MODE_RUN_ENCODER_TEST_SENSORLESS) {
-        if (!calib_enc_offset(motor, motor->calibration_current * motor->phase_resistance))
+        if (!calib_enc_offset(motor, calibration_voltage))
             return false;
     }
 
