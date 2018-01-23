@@ -51,6 +51,7 @@ const float elec_rad_per_enc = POLE_PAIRS * 2 * M_PI * (1.0f / (float)ENCODER_CP
 
 // NOTE: for gimbal motors, all units of A are instead V.
 // example: vel_gain is [V/(count/s)] instead of [A/(count/s)]
+// example: current_lim and calibration_current will instead determine the maximum voltage applied to the motor.
 Motor_t motors[] = {
     {
         // M0
