@@ -49,6 +49,7 @@ typedef enum {
     ERROR_POS_CTRL_DURING_SENSORLESS,
     ERROR_SPIN_UP_TIMEOUT,
     ERROR_DRV_FAULT,
+    ERROR_NOT_IMPLEMENTED_MOTOR_TYPE,
 } Error_t;
 
 // Note: these should be sorted from lowest level of control to
@@ -59,6 +60,12 @@ typedef enum {
     CTRL_MODE_VELOCITY_CONTROL,
     CTRL_MODE_POSITION_CONTROL
 } Motor_control_mode_t;
+
+typedef enum {
+    MOTOR_TYPE_HIGH_CURRENT,
+    // MOTOR_TYPE_LOW_CURRENT, //Not yet implemented
+    MOTOR_TYPE_GIMBAL
+} Motor_type_t;
 
 typedef struct {
     float phB;
@@ -149,6 +156,7 @@ typedef struct {
     Iph_BC_t DC_calib;
     DRV8301_Obj gate_driver;
     DRV_SPI_8301_Vars_t gate_driver_regs; //Local view of DRV registers
+    Motor_type_t motor_type;
     float shunt_conductance;
     float phase_current_rev_gain; //Reverse gain for ADC to Amps
     Current_control_t current_control;
@@ -237,6 +245,7 @@ void update_brake_current();
 void set_brake_current(float brake_current);
 void queue_modulation_timings(Motor_t* motor, float mod_alpha, float mod_beta);
 void queue_voltage_timings(Motor_t* motor, float v_alpha, float v_beta);
+bool FOC_voltage(Motor_t* motor, float v_d, float v_q);
 bool FOC_current(Motor_t* motor, float Id_des, float Iq_des);
 void control_motor_loop(Motor_t* motor);
 
