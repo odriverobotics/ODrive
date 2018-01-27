@@ -1,3 +1,8 @@
+## UNRELEASED
+
+### Added
+* Gimbal motor mode
+
 ## [0.3.1] - 2018-01-18
 
 ### Added
