@@ -112,6 +112,7 @@ typedef struct {
     TIM_HandleTypeDef* encoder_timer;
     bool use_index;
     bool index_found;
+    bool calibrated;
     int encoder_cpr;
     int32_t encoder_offset;
     int32_t encoder_state;
@@ -232,11 +233,11 @@ void sync_timers(TIM_HandleTypeDef* htim_a, TIM_HandleTypeDef* htim_b,
 bool measure_phase_resistance(Motor_t* motor, float test_current, float max_voltage);
 bool measure_phase_inductance(Motor_t* motor, float voltage_low, float voltage_high);
 bool calib_enc_offset(Motor_t* motor, float voltage_magnitude);
+bool scan_for_enc_idx(Motor_t* motor, float v_d, float v_q);
 
 bool anti_cogging_calibration(Motor_t* motor);
 // Test functions
 void scan_motor_loop(Motor_t* motor, float omega, float voltage_magnitude);
-void FOC_voltage_loop(Motor_t* motor, float v_d, float v_q);
 // Main motor control
 void update_rotor(Motor_t* motor);
 bool using_encoder(Motor_t* motor);

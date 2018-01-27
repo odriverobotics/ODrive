@@ -121,6 +121,7 @@ Motor_t motors[] = {
             .encoder_timer = &htim3,
             .use_index = true,
             .index_found = false,
+            .calibrated = false,
             .encoder_cpr = ENCODER_CPR,
             .encoder_offset = 0,
             .encoder_state = 0,
@@ -218,6 +219,7 @@ Motor_t motors[] = {
             .encoder_timer = &htim4,
             .use_index = true,
             .index_found = false,
+            .calibrated = false,
             .encoder_cpr = ENCODER_CPR,
             .encoder_offset = 0,
             .encoder_state = 0,
@@ -758,7 +760,7 @@ bool calib_enc_offset(Motor_t* motor, float voltage_magnitude) {
     int32_t init_enc_val = (int16_t)motor->encoder.encoder_timer->Instance->CNT;
     int32_t encvaluesum = 0;
 
-    // go to encoder zero phase for start_lock_duration to get ready to scan
+    // go to motor zero phase for start_lock_duration to get ready to scan
     for (int i = 0; i < start_lock_duration * current_meas_hz; ++i) {
         if (osSignalWait(M_SIGNAL_PH_CURRENT_MEAS, PH_CURRENT_MEAS_TIMEOUT).status != osEventSignal) {
             motor->error = ERROR_ENCODER_MEASUREMENT_TIMEOUT;
@@ -828,7 +830,10 @@ bool motor_calibration(Motor_t* motor) {
     }
 
     if (motor->rotor_mode == ROTOR_MODE_ENCODER ||
-        motor->rotor_mode == ROTOR_MODE_RUN_ENCODER_TEST_SENSORLESS) {
+            motor->rotor_mode == ROTOR_MODE_RUN_ENCODER_TEST_SENSORLESS) {
+        if (motor->encoder.use_index && !motor->encoder.index_found)
+            if (!scan_for_enc_idx(motor, 10.0f, calibration_voltage))
+                return false;
         if (!calib_enc_offset(motor, calibration_voltage))
             return false;
     }
@@ -889,10 +894,14 @@ bool anti_cogging_calibration(Motor_t* motor) {
 // Test functions
 //--------------------------------
 
-__attribute__((unused)) void scan_motor_loop(Motor_t* motor, float omega, float voltage_magnitude) {
+bool scan_for_enc_idx(Motor_t* motor, float omega, float voltage_magnitude) {
     for (;;) {
         for (float ph = 0.0f; ph < 2.0f * M_PI; ph += omega * current_meas_period) {
             osSignalWait(M_SIGNAL_PH_CURRENT_MEAS, osWaitForever);
+
+            if (motor->encoder.index_found)
+                return true;
+
             float v_alpha = voltage_magnitude * arm_cos_f32(ph);
             float v_beta = voltage_magnitude * arm_sin_f32(ph);
             queue_voltage_timings(motor, v_alpha, v_beta);
@@ -901,7 +910,7 @@ __attribute__((unused)) void scan_motor_loop(Motor_t* motor, float omega, float 
             motor->last_cpu_time = check_timing(motor);
             if (!(motor->last_cpu_time < motor->control_deadline)) {
                 motor->error = ERROR_SCAN_MOTOR_TIMING;
-                return;
+                return false;
             }
         }
     }

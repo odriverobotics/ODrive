@@ -63,11 +63,7 @@ void Axis::StateMachineLoop() {
         // Keep rotor estimation up to date while idling
         osSignalWait(M_SIGNAL_PH_CURRENT_MEAS, osWaitForever);
         update_rotor(legacy_motor_ref_);
-
-        // TODO: actual scan search
-        if (legacy_motor_ref_->encoder.use_index && !legacy_motor_ref_->encoder.index_found)
-            continue; //Keep waiting for manual index locating
-
+        
         if (do_calibration_) {
             do_calibration_ = false;
 
