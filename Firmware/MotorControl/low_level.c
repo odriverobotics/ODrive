@@ -551,9 +551,9 @@ void enc_index_cb(uint16_t GPIO_Pin, uint8_t motor_index) {
     }
     //TODO: Hardcoded EXTI line not portable. Get mapping out of Cubemx by setting EXTI default
     if(GPIO_Pin == M0_ENC_Z_Pin){
-        HAL_NVIC_DisableIRQ(EXTI3_IRQn);
-    } else {
         HAL_NVIC_DisableIRQ(EXTI15_10_IRQn);
+    } else {
+        HAL_NVIC_DisableIRQ(EXTI3_IRQn);
     }
 }
 
