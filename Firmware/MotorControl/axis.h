@@ -12,8 +12,8 @@ extern "C" {
 
 // TODO: decide if we want to consolidate all default configs in one file for ease of use?
 struct AxisConfig {
-    bool enable_control_at_start = true;
-    bool do_calibration_at_start = true;
+    bool enable_control_at_start = false;
+    bool do_calibration_at_start = false;
 };
 
 class Axis {

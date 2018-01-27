@@ -191,6 +191,7 @@ void SetGPIO12toStepDir() {
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(GPIO_2_GPIO_Port, &GPIO_InitStruct);
 
+  //TODO: Hardcoded EXTI line not portable. Get mapping out of Cubemx by setting EXTI default
   HAL_NVIC_SetPriority(EXTI0_IRQn, 0, 0);
   HAL_NVIC_EnableIRQ(EXTI0_IRQn);
 }
@@ -204,6 +205,7 @@ void SetupENCIndexGPIO(){
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
+  //TODO: Hardcoded EXTI line not portable. Get mapping out of Cubemx by setting EXTI default
   HAL_NVIC_SetPriority(EXTI15_10_IRQn, 0, 0);
   HAL_NVIC_EnableIRQ(EXTI15_10_IRQn);
 
@@ -213,6 +215,7 @@ void SetupENCIndexGPIO(){
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
+  //TODO: Hardcoded EXTI line not portable. Get mapping out of Cubemx by setting EXTI default
   HAL_NVIC_SetPriority(EXTI3_IRQn, 0, 0);
   HAL_NVIC_EnableIRQ(EXTI3_IRQn);
 }
