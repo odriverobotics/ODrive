@@ -16,16 +16,16 @@
                 "${workspaceRoot}/Drivers/CMSIS/Include",
                 "${workspaceRoot}/Inc",
                 "${workspaceRoot}/MotorControl",
-                "C:/Program Files (x86)/GNU Tools ARM Embedded/6 2017-q1-update/arm-none-eabi/include",
                 "C:/Program Files (x86)/GNU Tools ARM Embedded/6 2017-q1-update/arm-none-eabi/include/c++/6.3.1",
                 "C:/Program Files (x86)/GNU Tools ARM Embedded/6 2017-q1-update/arm-none-eabi/include/c++/6.3.1/arm-none-eabi",
-                "C:/Program Files (x86)/GNU Tools ARM Embedded/6 2017-q1-update/lib/gcc/arm-none-eabi/6.3.1/include"
+                "C:/Program Files (x86)/GNU Tools ARM Embedded/6 2017-q1-update/lib/gcc/arm-none-eabi/6.3.1/include",
+                "C:/Program Files (x86)/GNU Tools ARM Embedded/6 2017-q1-update/arm-none-eabi/include"
             ],
             "defines": [
                 "_DEBUG",
                 "UNICODE"
             ],
-            "intelliSenseMode": "msvc-x64",
+            "intelliSenseMode": "clang-x64",
             "browse": {
                 "path": [
                     "${workspaceRoot}",
@@ -69,7 +69,7 @@
                 "_DEBUG",
                 "UNICODE"
             ],
-            "intelliSenseMode": "msvc-x64",
+            "intelliSenseMode": "clang-x64",
             "browse": {
                 "path": [
                     "${workspaceRoot}",
@@ -115,7 +115,7 @@
                 "_DEBUG",
                 "UNICODE"
             ],
-            "intelliSenseMode": "msvc-x64",
+            "intelliSenseMode": "clang-x64",
             "browse": {
                 "path": [
                     "${workspaceRoot}",

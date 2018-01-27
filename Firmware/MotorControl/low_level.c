@@ -350,7 +350,9 @@ void init_motor_control() {
     // Start Encoders
     HAL_TIM_Encoder_Start(&htim3, TIM_CHANNEL_ALL);
     HAL_TIM_Encoder_Start(&htim4, TIM_CHANNEL_ALL);
-    SetupENCIndexGPIO();
+    if (ENC_USE_INDEX_PIN) {
+        SetupENCIndexGPIO();
+    }
 
     // Wait for current sense calibration to converge
     // TODO make timing a function of calibration filter tau
@@ -533,9 +535,10 @@ void step_cb(uint16_t GPIO_Pin) {
 
 // Triggered when an encoder passes over the "Index" pin
 void enc_index_cb(uint16_t GPIO_Pin, uint8_t motor_index) {
-    if (!motors[motor_index].encoder.index_found) {
-        setEncoderCount(&motors[motor_index], 0);
-        motors[motor_index].encoder.index_found = true;
+    Motor_t* motor = &motors[motor_index];
+    if (!motor->encoder.index_found) {
+        setEncoderCount(motor, 0);
+        motor->encoder.index_found = true;
     }
     //TODO: Hardcoded EXTI line not portable. Get mapping out of Cubemx by setting EXTI default
     if(GPIO_Pin == M0_ENC_Z_Pin){
@@ -1072,7 +1075,7 @@ void setEncoderCount(Motor_t* motor, uint32_t count) {
     uint32_t prim = __get_PRIMASK();
     __disable_irq();
     motor->encoder.encoder_state = count;
-    motor->motor_timer->Instance->CNT = count;
+    motor->encoder.encoder_timer->Instance->CNT = count;
     motor->encoder.pll_pos = (float)count;
     __set_PRIMASK(prim);
 }
