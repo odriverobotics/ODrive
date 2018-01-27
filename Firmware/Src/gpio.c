@@ -196,6 +196,7 @@ void SetGPIO12toStepDir() {
   HAL_NVIC_EnableIRQ(EXTI0_IRQn);
 }
 
+//TODO: Enable index on only one channel
 void SetupENCIndexGPIO(){
   GPIO_InitTypeDef GPIO_InitStruct;
 

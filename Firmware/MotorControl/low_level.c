@@ -35,7 +35,6 @@ float vbus_voltage = 12.0f;
 
 // TODO stick parameter into struct
 #define ENCODER_CPR (2048 * 4)
-#define ENC_USE_INDEX_PIN true
 #define POLE_PAIRS 7
 const float elec_rad_per_enc = POLE_PAIRS * 2 * M_PI * (1.0f / (float)ENCODER_CPR);
 
@@ -120,7 +119,8 @@ Motor_t motors[] = {
         .rotor_mode = ROTOR_MODE_ENCODER,
         .encoder = {
             .encoder_timer = &htim3,
-            .index_found = !(ENC_USE_INDEX_PIN),
+            .use_index = true,
+            .index_found = false,
             .encoder_cpr = ENCODER_CPR,
             .encoder_offset = 0,
             .encoder_state = 0,
@@ -216,7 +216,8 @@ Motor_t motors[] = {
         .rotor_mode = ROTOR_MODE_ENCODER,
         .encoder = {
             .encoder_timer = &htim4,
-            .index_found = !(ENC_USE_INDEX_PIN),
+            .use_index = true,
+            .index_found = false,
             .encoder_cpr = ENCODER_CPR,
             .encoder_offset = 0,
             .encoder_state = 0,
@@ -357,7 +358,8 @@ void init_motor_control() {
     // Start Encoders
     HAL_TIM_Encoder_Start(&htim3, TIM_CHANNEL_ALL);
     HAL_TIM_Encoder_Start(&htim4, TIM_CHANNEL_ALL);
-    if (ENC_USE_INDEX_PIN) {
+    //TODO: Enable index on only one channel
+    if (motors[0].encoder.use_index || motors[1].encoder.use_index) {
         SetupENCIndexGPIO();
     }
 

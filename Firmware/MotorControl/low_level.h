@@ -110,6 +110,7 @@ typedef struct {
 
 typedef struct {
     TIM_HandleTypeDef* encoder_timer;
+    bool use_index;
     bool index_found;
     int encoder_cpr;
     int32_t encoder_offset;
