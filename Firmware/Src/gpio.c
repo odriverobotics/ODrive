@@ -195,11 +195,38 @@ void SetGPIO12toStepDir() {
   HAL_NVIC_EnableIRQ(EXTI0_IRQn);
 }
 
+void SetupENCIndexGPIO(){
+  GPIO_InitTypeDef GPIO_InitStruct;
+
+  /*Configure GPIO pins : PAPin PAPin */
+  GPIO_InitStruct.Pin = M0_ENC_Z_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_IT_FALLING;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+
+  HAL_NVIC_SetPriority(EXTI15_10_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(EXTI15_10_IRQn);
+
+  /*Configure GPIO pins : PBPin PBPin */
+  GPIO_InitStruct.Pin = M1_ENC_Z_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_IT_FALLING;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+
+  HAL_NVIC_SetPriority(EXTI3_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(EXTI3_IRQn);
+}
+
+
 //Dispatch processing of external interrupts based on source
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin) {
   //Step signals for M0 and M1
   if (GPIO_Pin & GPIO_1_Pin || GPIO_Pin & GPIO_3_Pin) {
     step_cb(GPIO_Pin);
+  } else if(GPIO_Pin & M0_ENC_Z_Pin){
+    enc_index_cb(GPIO_Pin, 0);
+  } else if(GPIO_Pin & M1_ENC_Z_Pin){
+    enc_index_cb(GPIO_Pin, 1);
   }
 }
 

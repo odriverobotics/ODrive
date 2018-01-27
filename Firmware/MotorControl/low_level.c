@@ -35,6 +35,7 @@ float vbus_voltage = 12.0f;
 
 // TODO stick parameter into struct
 #define ENCODER_CPR (600 * 4)
+#define ENC_USE_INDEX_PIN true
 #define POLE_PAIRS 7
 const float elec_rad_per_enc = POLE_PAIRS * 2 * M_PI * (1.0f / (float)ENCODER_CPR);
 
@@ -119,6 +120,7 @@ Motor_t motors[] = {
         .rotor_mode = ROTOR_MODE_ENCODER,
         .encoder = {
             .encoder_timer = &htim3,
+            .index_found = !(ENC_USE_INDEX_PIN),
             .encoder_cpr = ENCODER_CPR,
             .encoder_offset = 0,
             .encoder_state = 0,
@@ -214,6 +216,7 @@ Motor_t motors[] = {
         .rotor_mode = ROTOR_MODE_ENCODER,
         .encoder = {
             .encoder_timer = &htim4,
+            .index_found = !(ENC_USE_INDEX_PIN),
             .encoder_cpr = ENCODER_CPR,
             .encoder_offset = 0,
             .encoder_state = 0,
@@ -354,6 +357,7 @@ void init_motor_control() {
     // Start Encoders
     HAL_TIM_Encoder_Start(&htim3, TIM_CHANNEL_ALL);
     HAL_TIM_Encoder_Start(&htim4, TIM_CHANNEL_ALL);
+    SetupENCIndexGPIO();
 
     // Wait for current sense calibration to converge
     // TODO make timing a function of calibration filter tau
@@ -531,6 +535,19 @@ void step_cb(uint16_t GPIO_Pin) {
         default:
             global_fault(ERROR_UNEXPECTED_STEP_SRC);
             break;
+    }
+}
+
+// Triggered when an encoder passes over the "Index" pin
+void enc_index_cb(uint16_t GPIO_Pin, uint8_t motor_index) {
+    if (!motors[motor_index].encoder.index_found) {
+        setEncoderCount(&motors[motor_index], 0);
+        motors[motor_index].encoder.index_found = true;
+    }
+    if(GPIO_Pin == M0_ENC_Z_Pin){
+        HAL_NVIC_DisableIRQ(EXTI3_IRQn);
+    } else {
+        HAL_NVIC_DisableIRQ(EXTI15_10_IRQn);
     }
 }
 
