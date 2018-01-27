@@ -122,10 +122,11 @@ Motor_t motors[] = {
             .use_index = true,
             .index_found = false,
             .calibrated = false,
+            .idx_search_speed = 10.0f,
             .encoder_cpr = ENCODER_CPR,
             .encoder_offset = 0,
             .encoder_state = 0,
-            .motor_dir = 0,   // set by calib_enc_offset
+            .motor_dir = 1,   // 1 or -1
             .phase = 0.0f,    // [rad]
             .pll_pos = 0.0f,  // [rad]
             .pll_vel = 0.0f,  // [rad/s]
@@ -220,10 +221,11 @@ Motor_t motors[] = {
             .use_index = true,
             .index_found = false,
             .calibrated = false,
+            .idx_search_speed = 10.0f,
             .encoder_cpr = ENCODER_CPR,
             .encoder_offset = 0,
             .encoder_state = 0,
-            .motor_dir = 0,   // set by calib_enc_offset
+            .motor_dir = 1,   // 1 or -1
             .phase = 0.0f,    // [rad]
             .pll_pos = 0.0f,  // [rad]
             .pll_vel = 0.0f,  // [rad/s]
@@ -809,6 +811,7 @@ bool calib_enc_offset(Motor_t* motor, float voltage_magnitude) {
 
     int offset = encvaluesum / (num_steps * 2);
     motor->encoder.encoder_offset = offset;
+    motor->encoder.calibrated = true;
     return true;
 }
 
@@ -832,10 +835,13 @@ bool motor_calibration(Motor_t* motor) {
     if (motor->rotor_mode == ROTOR_MODE_ENCODER ||
             motor->rotor_mode == ROTOR_MODE_RUN_ENCODER_TEST_SENSORLESS) {
         if (motor->encoder.use_index && !motor->encoder.index_found)
-            if (!scan_for_enc_idx(motor, 10.0f, calibration_voltage))
+            if (!scan_for_enc_idx(motor,
+                    (float)(motor->encoder.motor_dir) * motor->encoder.idx_search_speed,
+                    calibration_voltage))
                 return false;
-        if (!calib_enc_offset(motor, calibration_voltage))
-            return false;
+        if (!motor->encoder.calibrated)
+            if (!calib_enc_offset(motor, calibration_voltage))
+                return false;
     }
 
     // Calculate current control gains

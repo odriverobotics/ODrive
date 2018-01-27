@@ -113,6 +113,7 @@ typedef struct {
     bool use_index;
     bool index_found;
     bool calibrated;
+    float idx_search_speed;
     int encoder_cpr;
     int32_t encoder_offset;
     int32_t encoder_state;
