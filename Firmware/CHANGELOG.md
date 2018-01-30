@@ -2,6 +2,7 @@
 
 ### Added
 * Gimbal motor mode
+* Encoder index pulse support
 
 ## [0.3.1] - 2018-01-18
 
