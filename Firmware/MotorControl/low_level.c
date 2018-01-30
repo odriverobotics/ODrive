@@ -34,7 +34,7 @@
 float vbus_voltage = 12.0f;
 
 // TODO stick parameter into struct
-#define ENCODER_CPR (600 * 4)
+#define ENCODER_CPR (2048 * 4) // Default resolution of CUI-AMT102 encoder
 #define POLE_PAIRS 7
 const float elec_rad_per_enc = POLE_PAIRS * 2 * M_PI * (1.0f / (float)ENCODER_CPR);
 
@@ -63,7 +63,7 @@ Motor_t motors[] = {
         .pos_gain = 20.0f,  // [(counts/s) / counts]
         .vel_setpoint = 0.0f,
         // .vel_setpoint = 800.0f, <sensorless example>
-        .vel_gain = 15.0f / 10000.0f,  // [A/(counts/s)]
+        .vel_gain = 5.0f / 10000.0f,  // [A/(counts/s)]
         // .vel_gain = 15.0f / 200.0f, // [A/(rad/s)] <sensorless example>
         .vel_integrator_gain = 10.0f / 10000.0f,  // [A/(counts/s * s)]
         // .vel_integrator_gain = 0.0f, // [A/(rad/s * s)] <sensorless example>
@@ -119,10 +119,14 @@ Motor_t motors[] = {
         .rotor_mode = ROTOR_MODE_ENCODER,
         .encoder = {
             .encoder_timer = &htim3,
+            .use_index = true,
+            .index_found = false,
+            .calibrated = false,
+            .idx_search_speed = 10.0f, // [rad/s electrical]
             .encoder_cpr = ENCODER_CPR,
             .encoder_offset = 0,
             .encoder_state = 0,
-            .motor_dir = 0,   // set by calib_enc_offset
+            .motor_dir = 1,   // 1 or -1
             .phase = 0.0f,    // [rad]
             .pll_pos = 0.0f,  // [rad]
             .pll_vel = 0.0f,  // [rad/s]
@@ -163,7 +167,7 @@ Motor_t motors[] = {
         .pos_setpoint = 0.0f,
         .pos_gain = 20.0f,  // [(counts/s) / counts]
         .vel_setpoint = 0.0f,
-        .vel_gain = 15.0f / 10000.0f,             // [A/(counts/s)]
+        .vel_gain = 5.0f / 10000.0f,             // [A/(counts/s)]
         .vel_integrator_gain = 10.0f / 10000.0f,  // [A/(counts/s * s)]
         .vel_integrator_current = 0.0f,           // [A]
         .vel_limit = 20000.0f,                    // [counts/s]
@@ -214,10 +218,14 @@ Motor_t motors[] = {
         .rotor_mode = ROTOR_MODE_ENCODER,
         .encoder = {
             .encoder_timer = &htim4,
+            .use_index = true,
+            .index_found = false,
+            .calibrated = false,
+            .idx_search_speed = 10.0f, // [rad/s electrical]
             .encoder_cpr = ENCODER_CPR,
             .encoder_offset = 0,
             .encoder_state = 0,
-            .motor_dir = 0,   // set by calib_enc_offset
+            .motor_dir = 1,   // 1 or -1
             .phase = 0.0f,    // [rad]
             .pll_pos = 0.0f,  // [rad]
             .pll_vel = 0.0f,  // [rad/s]
@@ -354,6 +362,10 @@ void init_motor_control() {
     // Start Encoders
     HAL_TIM_Encoder_Start(&htim3, TIM_CHANNEL_ALL);
     HAL_TIM_Encoder_Start(&htim4, TIM_CHANNEL_ALL);
+    //TODO: Enable index on only one channel
+    if (motors[0].encoder.use_index || motors[1].encoder.use_index) {
+        SetupENCIndexGPIO();
+    }
 
     // Wait for current sense calibration to converge
     // TODO make timing a function of calibration filter tau
@@ -531,6 +543,21 @@ void step_cb(uint16_t GPIO_Pin) {
         default:
             global_fault(ERROR_UNEXPECTED_STEP_SRC);
             break;
+    }
+}
+
+// Triggered when an encoder passes over the "Index" pin
+void enc_index_cb(uint16_t GPIO_Pin, uint8_t motor_index) {
+    Motor_t* motor = &motors[motor_index];
+    if (!motor->encoder.index_found) {
+        setEncoderCount(motor, 0);
+        motor->encoder.index_found = true;
+    }
+    //TODO: Hardcoded EXTI line not portable. Get mapping out of Cubemx by setting EXTI default
+    if(GPIO_Pin == M0_ENC_Z_Pin){
+        HAL_NVIC_DisableIRQ(EXTI15_10_IRQn);
+    } else {
+        HAL_NVIC_DisableIRQ(EXTI3_IRQn);
     }
 }
 
@@ -735,7 +762,7 @@ bool calib_enc_offset(Motor_t* motor, float voltage_magnitude) {
     int32_t init_enc_val = (int16_t)motor->encoder.encoder_timer->Instance->CNT;
     int32_t encvaluesum = 0;
 
-    // go to encoder zero phase for start_lock_duration to get ready to scan
+    // go to motor zero phase for start_lock_duration to get ready to scan
     for (int i = 0; i < start_lock_duration * current_meas_hz; ++i) {
         if (osSignalWait(M_SIGNAL_PH_CURRENT_MEAS, PH_CURRENT_MEAS_TIMEOUT).status != osEventSignal) {
             motor->error = ERROR_ENCODER_MEASUREMENT_TIMEOUT;
@@ -784,6 +811,7 @@ bool calib_enc_offset(Motor_t* motor, float voltage_magnitude) {
 
     int offset = encvaluesum / (num_steps * 2);
     motor->encoder.encoder_offset = offset;
+    motor->encoder.calibrated = true;
     return true;
 }
 
@@ -805,9 +833,15 @@ bool motor_calibration(Motor_t* motor) {
     }
 
     if (motor->rotor_mode == ROTOR_MODE_ENCODER ||
-        motor->rotor_mode == ROTOR_MODE_RUN_ENCODER_TEST_SENSORLESS) {
-        if (!calib_enc_offset(motor, calibration_voltage))
-            return false;
+            motor->rotor_mode == ROTOR_MODE_RUN_ENCODER_TEST_SENSORLESS) {
+        if (motor->encoder.use_index && !motor->encoder.index_found)
+            if (!scan_for_enc_idx(motor,
+                    (float)(motor->encoder.motor_dir) * motor->encoder.idx_search_speed,
+                    calibration_voltage))
+                return false;
+        if (!motor->encoder.calibrated)
+            if (!calib_enc_offset(motor, calibration_voltage))
+                return false;
     }
 
     // Calculate current control gains
@@ -866,10 +900,14 @@ bool anti_cogging_calibration(Motor_t* motor) {
 // Test functions
 //--------------------------------
 
-__attribute__((unused)) void scan_motor_loop(Motor_t* motor, float omega, float voltage_magnitude) {
+bool scan_for_enc_idx(Motor_t* motor, float omega, float voltage_magnitude) {
     for (;;) {
         for (float ph = 0.0f; ph < 2.0f * M_PI; ph += omega * current_meas_period) {
             osSignalWait(M_SIGNAL_PH_CURRENT_MEAS, osWaitForever);
+
+            if (motor->encoder.index_found)
+                return true;
+
             float v_alpha = voltage_magnitude * arm_cos_f32(ph);
             float v_beta = voltage_magnitude * arm_sin_f32(ph);
             queue_voltage_timings(motor, v_alpha, v_beta);
@@ -878,7 +916,7 @@ __attribute__((unused)) void scan_motor_loop(Motor_t* motor, float omega, float 
             motor->last_cpu_time = check_timing(motor);
             if (!(motor->last_cpu_time < motor->control_deadline)) {
                 motor->error = ERROR_SCAN_MOTOR_TIMING;
-                return;
+                return false;
             }
         }
     }
@@ -1055,7 +1093,7 @@ void setEncoderCount(Motor_t* motor, uint32_t count) {
     uint32_t prim = __get_PRIMASK();
     __disable_irq();
     motor->encoder.encoder_state = count;
-    motor->motor_timer->Instance->CNT = count;
+    motor->encoder.encoder_timer->Instance->CNT = count;
     motor->encoder.pll_pos = (float)count;
     __set_PRIMASK(prim);
 }
