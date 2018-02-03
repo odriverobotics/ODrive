@@ -145,6 +145,7 @@ typedef struct {
     float vel_limit;
     float current_setpoint;
     float calibration_current;
+    float resistance_calib_max_voltage;
     float phase_inductance;
     float phase_resistance;
     osThreadId motor_thread;

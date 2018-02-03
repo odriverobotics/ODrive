@@ -71,6 +71,7 @@ Motor_t motors[] = {
         .vel_limit = 20000.0f,           // [counts/s]
         .current_setpoint = 0.0f,        // [A]
         .calibration_current = 10.0f,    // [A]
+        .resistance_calib_max_voltage = 1.0f, // [V]
         .phase_inductance = 0.0f,        // to be set by measure_phase_inductance
         .phase_resistance = 0.0f,        // to be set by measure_phase_resistance
         .motor_thread = 0,
@@ -173,6 +174,7 @@ Motor_t motors[] = {
         .vel_limit = 20000.0f,                    // [counts/s]
         .current_setpoint = 0.0f,                 // [A]
         .calibration_current = 10.0f,             // [A]
+        .resistance_calib_max_voltage = 1.0f, // [V]
         .phase_inductance = 0.0f,                 // to be set by measure_phase_inductance
         .phase_resistance = 0.0f,                 // to be set by measure_phase_resistance
         .motor_thread = 0,
@@ -818,16 +820,17 @@ bool calib_enc_offset(Motor_t* motor, float voltage_magnitude) {
 bool motor_calibration(Motor_t* motor) {
     motor->error = ERROR_NO_ERROR;
 
-    float calibration_voltage = 0.0f;
+    float R_calib_max_voltage = motor->resistance_calib_max_voltage;
+    float enc_calibration_voltage = 0.0f;
     if (motor->motor_type == MOTOR_TYPE_HIGH_CURRENT) {
-        if (!measure_phase_resistance(motor, motor->calibration_current, 1.0f))
+        if (!measure_phase_resistance(motor, motor->calibration_current, R_calib_max_voltage))
             return false;
-        calibration_voltage = motor->calibration_current * motor->phase_resistance;
+        enc_calibration_voltage = motor->calibration_current * motor->phase_resistance;
 
-        if (!measure_phase_inductance(motor, -1.0f, 1.0f))
+        if (!measure_phase_inductance(motor, -R_calib_max_voltage, R_calib_max_voltage))
             return false;
     } else if (motor->motor_type == MOTOR_TYPE_GIMBAL) {
-        calibration_voltage = motor->calibration_current;
+        enc_calibration_voltage = motor->calibration_current;
     } else {
         return false;
     }
@@ -837,10 +840,10 @@ bool motor_calibration(Motor_t* motor) {
         if (motor->encoder.use_index && !motor->encoder.index_found)
             if (!scan_for_enc_idx(motor,
                     (float)(motor->encoder.motor_dir) * motor->encoder.idx_search_speed,
-                    calibration_voltage))
+                    enc_calibration_voltage))
                 return false;
         if (!motor->encoder.calibrated)
-            if (!calib_enc_offset(motor, calibration_voltage))
+            if (!calib_enc_offset(motor, enc_calibration_voltage))
                 return false;
     }
 
