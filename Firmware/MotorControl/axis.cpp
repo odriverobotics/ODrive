@@ -60,6 +60,10 @@ void Axis::StateMachineLoop() {
     legacy_motor_ref_->thread_ready = true;
     bool calibration_ok = false;
     for (;;) {
+        // Keep rotor estimation up to date while idling
+        osSignalWait(M_SIGNAL_PH_CURRENT_MEAS, osWaitForever);
+        update_rotor(legacy_motor_ref_);
+        
         if (do_calibration_) {
             do_calibration_ = false;
 
@@ -86,9 +90,6 @@ void Axis::StateMachineLoop() {
                 enable_control_ = false;
             }
         }
-
-        // give some time to lower priority threads
-        osDelay(2);
     }
     legacy_motor_ref_->thread_ready = false;
 }

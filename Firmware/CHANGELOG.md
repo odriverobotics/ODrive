@@ -1,3 +1,10 @@
+## [0.3.2] - 2018-02-02
+
+### Added
+* Gimbal motor mode
+* Encoder index pulse support
+* `resistance_calib_max_voltage` parameter
+
 ## [0.3.1] - 2018-01-18
 
 ### Added

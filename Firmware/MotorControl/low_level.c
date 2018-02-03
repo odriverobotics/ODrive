@@ -34,7 +34,7 @@
 float vbus_voltage = 12.0f;
 
 // TODO stick parameter into struct
-#define ENCODER_CPR (600 * 4)
+#define ENCODER_CPR (2048 * 4) // Default resolution of CUI-AMT102 encoder
 #define POLE_PAIRS 7
 const float elec_rad_per_enc = POLE_PAIRS * 2 * M_PI * (1.0f / (float)ENCODER_CPR);
 
@@ -48,6 +48,10 @@ const float elec_rad_per_enc = POLE_PAIRS * 2 * M_PI * (1.0f / (float)ENCODER_CP
 
 // TODO: Migrate to C++, clearly we are actually doing object oriented code here...
 // TODO: For nice encapsulation, consider not having the motor objects public
+
+// NOTE: for gimbal motors, all units of A are instead V.
+// example: vel_gain is [V/(count/s)] instead of [A/(count/s)]
+// example: current_lim and calibration_current will instead determine the maximum voltage applied to the motor.
 Motor_t motors[] = {
     {
         // M0
@@ -59,7 +63,7 @@ Motor_t motors[] = {
         .pos_gain = 20.0f,  // [(counts/s) / counts]
         .vel_setpoint = 0.0f,
         // .vel_setpoint = 800.0f, <sensorless example>
-        .vel_gain = 15.0f / 10000.0f,  // [A/(counts/s)]
+        .vel_gain = 5.0f / 10000.0f,  // [A/(counts/s)]
         // .vel_gain = 15.0f / 200.0f, // [A/(rad/s)] <sensorless example>
         .vel_integrator_gain = 10.0f / 10000.0f,  // [A/(counts/s * s)]
         // .vel_integrator_gain = 0.0f, // [A/(rad/s * s)] <sensorless example>
@@ -67,6 +71,7 @@ Motor_t motors[] = {
         .vel_limit = 20000.0f,           // [counts/s]
         .current_setpoint = 0.0f,        // [A]
         .calibration_current = 10.0f,    // [A]
+        .resistance_calib_max_voltage = 1.0f, // [V]
         .phase_inductance = 0.0f,        // to be set by measure_phase_inductance
         .phase_resistance = 0.0f,        // to be set by measure_phase_resistance
         .motor_thread = 0,
@@ -91,6 +96,8 @@ Motor_t motors[] = {
             .enableTimeOut = false,
         },
         // .gate_driver_regs Init by DRV8301_setup
+        .motor_type = MOTOR_TYPE_HIGH_CURRENT,
+        // .motor_type = MOTOR_TYPE_GIMBAL,
         .shunt_conductance = 1.0f / SHUNT_RESISTANCE,  //[S]
         .phase_current_rev_gain = 0.0f,                // to be set by DRV8301_setup
         .current_control = {
@@ -113,10 +120,14 @@ Motor_t motors[] = {
         .rotor_mode = ROTOR_MODE_ENCODER,
         .encoder = {
             .encoder_timer = &htim3,
+            .use_index = true,
+            .index_found = false,
+            .calibrated = false,
+            .idx_search_speed = 10.0f, // [rad/s electrical]
             .encoder_cpr = ENCODER_CPR,
             .encoder_offset = 0,
             .encoder_state = 0,
-            .motor_dir = 0,   // set by calib_enc_offset
+            .motor_dir = 1,   // 1 or -1
             .phase = 0.0f,    // [rad]
             .pll_pos = 0.0f,  // [rad]
             .pll_vel = 0.0f,  // [rad/s]
@@ -157,12 +168,13 @@ Motor_t motors[] = {
         .pos_setpoint = 0.0f,
         .pos_gain = 20.0f,  // [(counts/s) / counts]
         .vel_setpoint = 0.0f,
-        .vel_gain = 15.0f / 10000.0f,             // [A/(counts/s)]
+        .vel_gain = 5.0f / 10000.0f,             // [A/(counts/s)]
         .vel_integrator_gain = 10.0f / 10000.0f,  // [A/(counts/s * s)]
         .vel_integrator_current = 0.0f,           // [A]
         .vel_limit = 20000.0f,                    // [counts/s]
         .current_setpoint = 0.0f,                 // [A]
         .calibration_current = 10.0f,             // [A]
+        .resistance_calib_max_voltage = 1.0f, // [V]
         .phase_inductance = 0.0f,                 // to be set by measure_phase_inductance
         .phase_resistance = 0.0f,                 // to be set by measure_phase_resistance
         .motor_thread = 0,
@@ -187,6 +199,7 @@ Motor_t motors[] = {
             .enableTimeOut = false,
         },
         // .gate_driver_regs Init by DRV8301_setup
+        .motor_type = MOTOR_TYPE_HIGH_CURRENT,
         .shunt_conductance = 1.0f / SHUNT_RESISTANCE,  //[S]
         .phase_current_rev_gain = 0.0f,                // to be set by DRV8301_setup
         .current_control = {
@@ -207,10 +220,14 @@ Motor_t motors[] = {
         .rotor_mode = ROTOR_MODE_ENCODER,
         .encoder = {
             .encoder_timer = &htim4,
+            .use_index = true,
+            .index_found = false,
+            .calibrated = false,
+            .idx_search_speed = 10.0f, // [rad/s electrical]
             .encoder_cpr = ENCODER_CPR,
             .encoder_offset = 0,
             .encoder_state = 0,
-            .motor_dir = 0,   // set by calib_enc_offset
+            .motor_dir = 1,   // 1 or -1
             .phase = 0.0f,    // [rad]
             .pll_pos = 0.0f,  // [rad]
             .pll_vel = 0.0f,  // [rad/s]
@@ -347,6 +364,10 @@ void init_motor_control() {
     // Start Encoders
     HAL_TIM_Encoder_Start(&htim3, TIM_CHANNEL_ALL);
     HAL_TIM_Encoder_Start(&htim4, TIM_CHANNEL_ALL);
+    //TODO: Enable index on only one channel
+    if (motors[0].encoder.use_index || motors[1].encoder.use_index) {
+        SetupENCIndexGPIO();
+    }
 
     // Wait for current sense calibration to converge
     // TODO make timing a function of calibration filter tau
@@ -524,6 +545,21 @@ void step_cb(uint16_t GPIO_Pin) {
         default:
             global_fault(ERROR_UNEXPECTED_STEP_SRC);
             break;
+    }
+}
+
+// Triggered when an encoder passes over the "Index" pin
+void enc_index_cb(uint16_t GPIO_Pin, uint8_t motor_index) {
+    Motor_t* motor = &motors[motor_index];
+    if (!motor->encoder.index_found) {
+        setEncoderCount(motor, 0);
+        motor->encoder.index_found = true;
+    }
+    //TODO: Hardcoded EXTI line not portable. Get mapping out of Cubemx by setting EXTI default
+    if(GPIO_Pin == M0_ENC_Z_Pin){
+        HAL_NVIC_DisableIRQ(EXTI15_10_IRQn);
+    } else {
+        HAL_NVIC_DisableIRQ(EXTI3_IRQn);
     }
 }
 
@@ -728,7 +764,7 @@ bool calib_enc_offset(Motor_t* motor, float voltage_magnitude) {
     int32_t init_enc_val = (int16_t)motor->encoder.encoder_timer->Instance->CNT;
     int32_t encvaluesum = 0;
 
-    // go to encoder zero phase for start_lock_duration to get ready to scan
+    // go to motor zero phase for start_lock_duration to get ready to scan
     for (int i = 0; i < start_lock_duration * current_meas_hz; ++i) {
         if (osSignalWait(M_SIGNAL_PH_CURRENT_MEAS, PH_CURRENT_MEAS_TIMEOUT).status != osEventSignal) {
             motor->error = ERROR_ENCODER_MEASUREMENT_TIMEOUT;
@@ -777,24 +813,38 @@ bool calib_enc_offset(Motor_t* motor, float voltage_magnitude) {
 
     int offset = encvaluesum / (num_steps * 2);
     motor->encoder.encoder_offset = offset;
+    motor->encoder.calibrated = true;
     return true;
 }
 
 bool motor_calibration(Motor_t* motor) {
     motor->error = ERROR_NO_ERROR;
 
-    // #warning(hardcoded values for SK3-5065-280kv!)
-    // float R = 0.0332548246f;
-    // float L = 7.97315806e-06f;
-
-    if (!measure_phase_resistance(motor, motor->calibration_current, 1.0f))
-        return false;
-    if (!measure_phase_inductance(motor, -1.0f, 1.0f))
-        return false;
-    if (motor->rotor_mode == ROTOR_MODE_ENCODER ||
-        motor->rotor_mode == ROTOR_MODE_RUN_ENCODER_TEST_SENSORLESS) {
-        if (!calib_enc_offset(motor, motor->calibration_current * motor->phase_resistance))
+    float R_calib_max_voltage = motor->resistance_calib_max_voltage;
+    float enc_calibration_voltage = 0.0f;
+    if (motor->motor_type == MOTOR_TYPE_HIGH_CURRENT) {
+        if (!measure_phase_resistance(motor, motor->calibration_current, R_calib_max_voltage))
             return false;
+        enc_calibration_voltage = motor->calibration_current * motor->phase_resistance;
+
+        if (!measure_phase_inductance(motor, -R_calib_max_voltage, R_calib_max_voltage))
+            return false;
+    } else if (motor->motor_type == MOTOR_TYPE_GIMBAL) {
+        enc_calibration_voltage = motor->calibration_current;
+    } else {
+        return false;
+    }
+
+    if (motor->rotor_mode == ROTOR_MODE_ENCODER ||
+            motor->rotor_mode == ROTOR_MODE_RUN_ENCODER_TEST_SENSORLESS) {
+        if (motor->encoder.use_index && !motor->encoder.index_found)
+            if (!scan_for_enc_idx(motor,
+                    (float)(motor->encoder.motor_dir) * motor->encoder.idx_search_speed,
+                    enc_calibration_voltage))
+                return false;
+        if (!motor->encoder.calibrated)
+            if (!calib_enc_offset(motor, enc_calibration_voltage))
+                return false;
     }
 
     // Calculate current control gains
@@ -853,10 +903,14 @@ bool anti_cogging_calibration(Motor_t* motor) {
 // Test functions
 //--------------------------------
 
-__attribute__((unused)) void scan_motor_loop(Motor_t* motor, float omega, float voltage_magnitude) {
+bool scan_for_enc_idx(Motor_t* motor, float omega, float voltage_magnitude) {
     for (;;) {
         for (float ph = 0.0f; ph < 2.0f * M_PI; ph += omega * current_meas_period) {
             osSignalWait(M_SIGNAL_PH_CURRENT_MEAS, osWaitForever);
+
+            if (motor->encoder.index_found)
+                return true;
+
             float v_alpha = voltage_magnitude * arm_cos_f32(ph);
             float v_beta = voltage_magnitude * arm_sin_f32(ph);
             queue_voltage_timings(motor, v_alpha, v_beta);
@@ -865,7 +919,7 @@ __attribute__((unused)) void scan_motor_loop(Motor_t* motor, float omega, float 
             motor->last_cpu_time = check_timing(motor);
             if (!(motor->last_cpu_time < motor->control_deadline)) {
                 motor->error = ERROR_SCAN_MOTOR_TIMING;
-                return;
+                return false;
             }
         }
     }
@@ -877,19 +931,7 @@ __attribute__((unused)) void FOC_voltage_loop(Motor_t* motor, float v_d, float v
         osSignalWait(M_SIGNAL_PH_CURRENT_MEAS, osWaitForever);
         update_rotor(motor);
 
-        float phase = get_rotor_phase(motor);
-        float c = arm_cos_f32(phase);
-        float s = arm_sin_f32(phase);
-        float v_alpha = c * v_d - s * v_q;
-        float v_beta = c * v_q + s * v_d;
-        queue_voltage_timings(motor, v_alpha, v_beta);
-
-        // Check we meet deadlines after queueing
-        motor->last_cpu_time = check_timing(motor);
-        if (!(motor->last_cpu_time < motor->control_deadline)) {
-            motor->error = ERROR_FOC_VOLTAGE_TIMING;
-            return;
-        }
+        FOC_voltage(motor, v_d, v_q);
     }
 }
 
@@ -1054,7 +1096,7 @@ void setEncoderCount(Motor_t* motor, uint32_t count) {
     uint32_t prim = __get_PRIMASK();
     __disable_irq();
     motor->encoder.encoder_state = count;
-    motor->motor_timer->Instance->CNT = count;
+    motor->encoder.encoder_timer->Instance->CNT = count;
     motor->encoder.pll_pos = (float)count;
     __set_PRIMASK(prim);
 }
@@ -1153,6 +1195,22 @@ void queue_voltage_timings(Motor_t* motor, float v_alpha, float v_beta) {
     float mod_alpha = vfactor * v_alpha;
     float mod_beta = vfactor * v_beta;
     queue_modulation_timings(motor, mod_alpha, mod_beta);
+}
+
+bool FOC_voltage(Motor_t* motor, float v_d, float v_q) {
+    float phase = get_rotor_phase(motor);
+    float c = arm_cos_f32(phase);
+    float s = arm_sin_f32(phase);
+    float v_alpha = c*v_d - s*v_q;
+    float v_beta  = c*v_q + s*v_d;
+    queue_voltage_timings(motor, v_alpha, v_beta);
+
+    // Check we meet deadlines after queueing
+    if (!(check_timing(motor) < motor->control_deadline)) {
+        motor->error = ERROR_FOC_VOLTAGE_TIMING;
+        return false;
+    }
+    return true;
 }
 
 bool FOC_current(Motor_t* motor, float Id_des, float Iq_des) {
@@ -1308,8 +1366,18 @@ void control_motor_loop(Motor_t* motor) {
 
         motor->current_control.Iq = Iq;
         // Execute current command
-        if (!FOC_current(motor, 0.0f, Iq)) {
-            break;  // in case of error exit loop, motor->error has been set by FOC_current
+        if (motor->motor_type == MOTOR_TYPE_HIGH_CURRENT) {
+            if(!FOC_current(motor, 0.0f, Iq)){
+                break; // in case of error exit loop, motor->error has been set by FOC_current
+            }
+        } else if (motor->motor_type == MOTOR_TYPE_GIMBAL) {
+            //In gimbal motor mode, current is reinterptreted as voltage.
+            if(!FOC_voltage(motor, 0.0f, Iq)){
+                break; // in case of error exit loop, motor->error has been set by FOC_voltage
+            }
+        } else {
+            motor->error = ERROR_NOT_IMPLEMENTED_MOTOR_TYPE;
+            break;
         }
 
         update_brake_current();

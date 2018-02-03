@@ -15,6 +15,7 @@ The project is under active development, so make sure to check the [Changelog](C
 - [Setting up an IDE](#setting-up-an-ide)
 - [Continuing without an IDE](#no-ide-instructions)
 - [Communicating over USB or UART](#communicating-over-usb-or-uart)
+- [Encoder Calibration](#encoder-calibration)
 - [Generating startup code](#generating-startup-code)
 - [Notes for Contributors](#notes-for-contributors)
 
@@ -70,12 +71,24 @@ You must set:
 * `ENCODER_CPR`: Encoder Count Per Revolution (CPR). This is 4x the Pulse Per Revolution (PPR) value.
 * `POLE_PAIRS`: This is the number of magnet poles in the rotor, divided by two. You can simply count the number of magnets in the rotor, if you can see them.
 * `brake_resistance`: This is the resistance of the brake resistor. If you are not using it, you may set it to 0.0f.
+* `motor_type`: This is the type of motor being used. Currently two types of motors are supported -- High-current motors (`MOTOR_TYPE_HIGH_CURRENT`) and Gimbal motors (`MOTOR_TYPE_GIMBAL`).
+
+### Motor Modes
+The firwmare currently supports two different types of motors, high-current motors, and Gimbal motors. If you're using a regular hobby brushless motor like [this](https://hobbyking.com/en_us/turnigy-aerodrive-sk3-5065-236kv-brushless-outrunner-motor.html) one, you should set `motor_mode` to `MOTOR_TYPE_HIGH_CURRENT`. For high-torque gimbal motors like [this](https://hobbyking.com/en_us/turnigy-hd-5208-brushless-gimbal-motor-bldc.html) one, you should choose `MOTOR_TYPE_GIMBAL`.
+
+**Further detail:**
+
+If 100's of mA of current noise is "small" for you, you can choose `MOTOR_TYPE_HIGH_CURRENT`.
+If 100's of mA of current noise is "large" for you, and you do not intend to spin the motor very fast (omega * L << R), and the motor is fairly large resistance (1 ohm or larger), you can chose `MOTOR_TYPE_GIMBAL`.
+
+If 100's of mA current noise is "large" for you, and you intend to spin the motor fast, then you need to replace the shunt resistors on the ODrive.
 
 ### Tuning parameters
 The most important parameters are the limits:
 * The current limit: `.current_lim = 75.0f, //[A] // Note: consistent with 40v/v gain`. The default current limit, for safety reasons, is set to 10A. This is quite weak, and good for making sure the drive is stable. Once you have tuned the drive, you can increase this to 75A to get some performance. Note that above 75A, you must change the current amplifier gains.
   * Note: The motor current and the current drawn from the power supply is not the same in general. You should not look at the power supply current to see what is going on with the motor current.
 * The velocity limit: `.vel_limit = 20000.0f, // [counts/s]`. The motor will be limited to this speed; again the default value is quite slow.
+* You can change `.calibration_current` to the largest value you feel comfortable leaving running through the motor continously when the motor is stationary.
 
 The motion control gains are currently manually tuned:
 * `.pos_gain = 20.0f, // [(counts/s) / counts]`
@@ -189,6 +202,29 @@ pip install pyusb pyserial
 
 ### Other platforms
 See the [protocol specification](protocol.md) or the [legacy protocol specification](legacy-protocol.md).
+
+<br><br>
+## Encoder Calibration
+By default the encoder-to-motor calibration will run on every startup. During encoder calibration the rotor must be allowed to rotate without any biased load during startup. That means mass and weak friction loads are fine, but gravity or spring loads are not okay.
+
+### Encoder with Index signal
+If you have an encoder with an index (Z) signal, you may avoid having to do the calibration on every startup, and instead use the index signal to re-sync the encoder to a stored calibration. Bleow are the steps to do the one-time calibration and configuration. Note that you can follow these steps with one motor at a time, or all motors together, as you wish.
+
+* Since you will only do this once, it is recommended that you mechanically disengage the motor from anything other than the encoder, so it can spin freely.
+* All the parameters we will be modifying are in the motor structs at the top of [MotorControl/low_level.c](MotorControl/low_level.c).
+* Set `.encoder.use_index = true` and `.encoder.calibrated = false`.
+* Flash this configuration, and let the motor scan for the index pulse and then complete the encoder calibration.
+* Run `explore_odrive.py`, check [Communicating over USB or UART](#communicating-over-usb-or-uart) for instructions on how to do that.
+* Enter the following to print out the calibration parameters (substitute the motor number you are calibrating for `<NUM>`):
+  * `my_odrive.motor<NUM>.encoder.encoder_offset` - This should print a number, like -326 or 1364.
+  * `my_odrive.motor<NUM>.encoder.motor_dir` - This should print 1 or -1.
+* Copy these numbers to the corresponding entries in low_level.c: `.encoder.encoder_offset` and `.encoder.motor_dir`.
+  * _Warning_: Please be careful to enter the correct numbers, and not to confuse the motor channels. Incorrect values may cause the motor to spin out of control.
+* Set `.encoder.calibrated = true`.
+* Flash this configuration and check that the motor scans for the index pulse but skips the encoder calibration.
+* Congratulations, you are now done. You may now attach the motor to your mechanical load.
+* If you wish to scan for the index pulse in the other direction (if for example your axis usually starts close to a hard-stop), you can set a negative value in `.encoder.idx_search_speed`.
+* If your motor has problems reaching the index location due to the mechanical load, you can increase `.calibration_current`.
 
 <br><br>
 ## Generating startup code
