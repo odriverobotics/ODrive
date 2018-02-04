@@ -82,7 +82,8 @@ typedef struct {
     // Voltage applied at end of cycle:
     float final_v_alpha; // [V]
     float final_v_beta; // [V]
-    float Iq;
+    float Iq_setpoint;
+    float Iq_measured;
     float max_allowed_current;
 } Current_control_t;
 

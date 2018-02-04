@@ -112,7 +112,8 @@ Motor_t motors[] = {
             .Ibus = 0.0f,
             .final_v_alpha = 0.0f,
             .final_v_beta = 0.0f,
-            .Iq = 0.0f,
+            .Iq_setpoint = 0.0f,
+            .Iq_measured = 0.0f,
             .max_allowed_current = 0.0f,
         },
         // .rotor_mode = ROTOR_MODE_SENSORLESS,
@@ -214,7 +215,8 @@ Motor_t motors[] = {
             .Ibus = 0.0f,
             .final_v_alpha = 0.0f,
             .final_v_beta = 0.0f,
-            .Iq = 0.0f,
+            .Iq_setpoint = 0.0f,
+            .Iq_measured = 0.0f,
             .max_allowed_current = 0.0f,
         },
         .rotor_mode = ROTOR_MODE_ENCODER,
@@ -1216,6 +1218,9 @@ bool FOC_voltage(Motor_t* motor, float v_d, float v_q) {
 bool FOC_current(Motor_t* motor, float Id_des, float Iq_des) {
     Current_control_t* ictrl = &motor->current_control;
 
+    // For Reporting
+    ictrl->Iq_setpoint = Iq_des;
+
     // Clarke transform
     float Ialpha = -motor->current_meas.phB - motor->current_meas.phC;
     float Ibeta = one_by_sqrt3 * (motor->current_meas.phB - motor->current_meas.phC);
@@ -1226,6 +1231,7 @@ bool FOC_current(Motor_t* motor, float Id_des, float Iq_des) {
     float s = arm_sin_f32(phase);
     float Id = c * Ialpha + s * Ibeta;
     float Iq = c * Ibeta - s * Ialpha;
+    ictrl->Iq_measured = Iq;
 
     // Current error
     float Ierr_d = Id_des - Id;
@@ -1364,7 +1370,6 @@ void control_motor_loop(Motor_t* motor) {
             }
         }
 
-        motor->current_control.Iq = Iq;
         // Execute current command
         if (motor->motor_type == MOTOR_TYPE_HIGH_CURRENT) {
             if(!FOC_current(motor, 0.0f, Iq)){
