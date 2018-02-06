@@ -174,7 +174,7 @@ def create_object(name, json_data, namespace, channel, printer=noprint):
             attributes[member_name] = attribute
 
     # Create a type from the property list and instantiate it
-    jit_type = type(namespace, (object,), attributes)
+    jit_type = type(str(namespace), (object,), attributes)
     new_object = jit_type()
     return new_object
 
