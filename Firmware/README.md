@@ -69,7 +69,7 @@ It may be helpful to know that the entry point of each of the motor threads is `
 ### Mandatory parameters
 You must set:
 * `ENCODER_CPR`: Encoder Count Per Revolution (CPR). This is 4x the Pulse Per Revolution (PPR) value.
-* `POLE_PAIRS`: This is the number of magnet poles in the rotor, **divided by two**. You can simply count the number of magnets in the rotor, if you can see them.
+* `POLE_PAIRS`: This is the number of magnet poles in the rotor, **divided by two**. You can simply count the number of permanent magnets in the rotor, if you can see them. Note: this is not the same as the number of coils in the stator.
 * `brake_resistance`: This is the resistance of the brake resistor. If you are not using it, you may set it to 0.0f.
 * `motor_type`: This is the type of motor being used. Currently two types of motors are supported -- High-current motors (`MOTOR_TYPE_HIGH_CURRENT`) and Gimbal motors (`MOTOR_TYPE_GIMBAL`).
 
