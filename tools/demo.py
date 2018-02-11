@@ -3,6 +3,8 @@
 Example usage of the ODrive python library to monitor and control ODrive devices
 """
 
+from __future__ import print_function
+
 import odrive.core
 import time
 import math

@@ -2,7 +2,18 @@
 
 import time
 import struct
-from abc import ABC, abstractmethod
+import sys
+
+import abc
+
+if sys.version_info >= (3, 4):
+    ABC = abc.ABC
+else:
+    ABC = abc.ABCMeta('ABC', (), {})
+
+if sys.version_info <= (3, 3):
+    from monotonic import monotonic
+    time.monotonic = monotonic
 
 SYNC_BYTE = 0xAA
 CRC8_INIT = 0x42
@@ -30,6 +41,8 @@ def calc_crc(remainder, value, polynomial, bitwidth):
 def calc_crc8(remainder, value):
     if isinstance(value, bytearray) or isinstance(value, bytes) or isinstance(value, list):
         for byte in value:
+            if not isinstance(byte,int):
+                byte = ord(byte)
             remainder = calc_crc(remainder, byte, CRC8_DEFAULT, 8)
     else:
         remainder = calc_crc(remainder, byte, CRC8_DEFAULT, 8)
@@ -38,6 +51,8 @@ def calc_crc8(remainder, value):
 def calc_crc16(remainder, value):
     if isinstance(value, bytearray) or isinstance(value, bytes) or isinstance(value, list):
         for byte in value:
+            if not isinstance(byte, int):
+                byte = ord(byte)
             remainder = calc_crc(remainder, byte, CRC16_DEFAULT, 16)
     else:
         remainder = calc_crc(remainder, value, CRC16_DEFAULT, 16)
@@ -59,22 +74,22 @@ class DeviceInitException(Exception):
 
 
 class StreamSource(ABC):
-    @abstractmethod
+    @abc.abstractmethod
     def get_bytes(self, deadline):
         pass
 
 class StreamSink(ABC):
-    @abstractmethod
+    @abc.abstractmethod
     def process_bytes(self, bytes):
         pass
 
 class PacketSource(ABC):
-    @abstractmethod
+    @abc.abstractmethod
     def get_packet(self, deadline):
         pass
 
 class PacketSink(ABC):
-    @abstractmethod
+    @abc.abstractmethod
     def process_packet(self, packet):
         pass
 
@@ -272,7 +287,7 @@ class Channel(PacketSink):
             self._expected_acks[seq_no] = packet[2:]
 
         else:
-            #if (calc_crc16(crc16, struct.pack('<HBB', PROTOCOL_VERSION, packet[-2], packet[-1]))):
-            #    raise Exception("CRC16 mismatch")
+            #if (calc_crc16(CRC16_INIT, struct.pack('<HBB', PROTOCOL_VERSION, packet[-2], packet[-1]))):
+            #     raise Exception("CRC16 mismatch")
             print("endpoint requested")
             # TODO: handle local endpoint operation
