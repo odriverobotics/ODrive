@@ -11,7 +11,7 @@ if sys.version_info >= (3, 4):
 else:
     ABC = abc.ABCMeta('ABC', (), {})
 
-if sys.version_info <= (3,4):
+if sys.version_info <= (3, 3):
     from monotonic import monotonic
     time.monotonic = monotonic
 
