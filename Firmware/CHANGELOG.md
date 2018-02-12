@@ -1,3 +1,9 @@
+## UNRELEASED
+
+### Added
+* Liveplotter script
+* Automatic recovery of USB halt/stall condition
+
 ## [0.3.2] - 2018-02-02
 
 ### Added

@@ -80,7 +80,14 @@ class USBBulkTransport(odrive.protocol.PacketSource, odrive.protocol.PacketSink)
       if ex.errno == 19: # "no such device"
         raise odrive.protocol.ChannelBrokenException()
       else:
-        raise
+        # Try resetting halt/stall condition
+        self.epw.clear_halt()
+        # Resend
+        ret = self.epw.write(usbBuffer, 0)
+        self._printer("Recovered from USB halt/stall condition on write")
+        return ret
+        # Signal to retry transfer
+        # raise odrive.protocol.USBHaltException()
 
   def get_packet(self, deadline):
     try:
@@ -95,7 +102,7 @@ class USBBulkTransport(odrive.protocol.PacketSource, odrive.protocol.PacketSink)
         # Try resetting halt/stall condition and flush buffer
         self.epr.clear_halt()
         ret = self.epr.read(bufferLen, timeout)
-        self._printer("Recovered from USB halt/stall condition")
+        self._printer("Recovered from USB halt/stall condition on read")
         # Signal to retry transfer
         raise odrive.protocol.USBHaltException()
 

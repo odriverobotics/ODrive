@@ -241,7 +241,11 @@ class Channel(PacketSink):
             self._expected_acks[seq_no] = None
             attempt = 0
             while (attempt < self._send_attempts):
-                self._output.process_packet(packet)
+                try:
+                    self._output.process_packet(packet)
+                except USBHaltException:
+                    attempt += 1
+                    continue # resend
                 deadline = time.monotonic() + self._resend_timeout
                 # Read and process packets until we get an ack or need to resend
                 # TODO: support I/O driven reception (wait on semaphore)
