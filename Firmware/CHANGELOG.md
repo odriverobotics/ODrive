@@ -4,6 +4,9 @@
 * Liveplotter script
 * Automatic recovery of USB halt/stall condition
 
+### Changed
+* Modified python code to be Python 2 compatible
+
 ## [0.3.2] - 2018-02-02
 
 ### Added
