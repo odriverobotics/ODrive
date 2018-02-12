@@ -7,11 +7,13 @@ import sys
 import odrive.protocol
 import time
 
+
 def noprint(x):
   pass
 
 class USBBulkTransport(odrive.protocol.PacketSource, odrive.protocol.PacketSink):
   def __init__(self, dev, printer=noprint):
+    self._printer = printer
     self.dev = dev
     self._name = "USB device {}:{}".format(dev.idVendor, dev.idProduct)
 
@@ -29,7 +31,7 @@ class USBBulkTransport(odrive.protocol.PacketSource, odrive.protocol.PacketSink)
           string += "\t\tEndpointAddress {0}\n".format(ep.bEndpointAddress)
     return string
 
-  def init(self, printer=noprint):
+  def init(self):
     # Resetting device to start init from a known state
     # self.dev.reset()
     # time.sleep(1)
@@ -37,7 +39,7 @@ class USBBulkTransport(odrive.protocol.PacketSource, odrive.protocol.PacketSink)
     try:
       if self.dev.is_kernel_driver_active(1):
         self.dev.detach_kernel_driver(1)
-        printer("Detached Kernel Driver\n")
+        self._printer("Detached Kernel Driver\n")
     except NotImplementedError:
       pass #is_kernel_driver_active not implemented on Windows
     # set the active configuration. With no arguments, the first
@@ -55,7 +57,7 @@ class USBBulkTransport(odrive.protocol.PacketSource, odrive.protocol.PacketSink)
             usb.util.ENDPOINT_OUT
     )
     assert self.epw is not None
-    printer("EndpointAddress for writing {}\n".format(self.epw.bEndpointAddress))
+    self._printer("EndpointAddress for writing {}\n".format(self.epw.bEndpointAddress))
     # read endpoint
     self.epr = usb.util.find_descriptor(self.intf,
         # match the first IN endpoint
@@ -65,7 +67,7 @@ class USBBulkTransport(odrive.protocol.PacketSource, odrive.protocol.PacketSink)
             usb.util.ENDPOINT_IN
     )
     assert self.epr is not None
-    printer("EndpointAddress for reading {}\n".format(self.epr.bEndpointAddress))
+    self._printer("EndpointAddress for reading {}\n".format(self.epr.bEndpointAddress))
 
   def shutdown(self):
     return 0
@@ -93,6 +95,7 @@ class USBBulkTransport(odrive.protocol.PacketSource, odrive.protocol.PacketSink)
         # Try resetting halt/stall condition and flush buffer
         self.epr.clear_halt()
         ret = self.epr.read(bufferLen, timeout)
+        self._printer("Recovered from USB halt/stall condition")
         # Signal to retry transfer
         raise odrive.protocol.USBHaltException()
 

@@ -185,7 +185,7 @@ def channel_from_usb_device(usb_device, printer=noprint):
     """
     bulk_device = odrive.usbbulk_transport.USBBulkTransport(usb_device, printer)
     printer(bulk_device.info())
-    bulk_device.init(printer)
+    bulk_device.init()
     return odrive.protocol.Channel(
             "USB device bus {} device {}".format(usb_device.bus, usb_device.address),
             bulk_device, bulk_device)
