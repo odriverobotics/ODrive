@@ -1,4 +1,4 @@
-## UNRELEASED
+## [0.3.3] - 2018-02-12
 
 ### Added
 * Liveplotter script
