@@ -72,6 +72,9 @@ class ChannelBrokenException(Exception):
 class DeviceInitException(Exception):
     pass
 
+class USBHaltException(Exception):
+  pass
+
 
 class StreamSource(ABC):
     @abc.abstractmethod
@@ -246,6 +249,8 @@ class Channel(PacketSink):
                     try:
                         response = self._input.get_packet(deadline)
                     except TimeoutException:
+                        break # resend
+                    except USBHaltException:
                         break # resend
                     # process response, which is hopefully our ACK
                     self.process_packet(response)

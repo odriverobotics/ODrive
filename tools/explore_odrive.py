@@ -33,7 +33,6 @@ if (args.verbose):
   printer = print
 else:
   printer = lambda x: None
-printer = print
 
 # Connect to device
 if not args.usb is None:

@@ -31,7 +31,8 @@ class USBBulkTransport(odrive.protocol.PacketSource, odrive.protocol.PacketSink)
 
   def init(self, printer=noprint):
     # Resetting device to start init from a known state
-    self.dev.reset()
+    # self.dev.reset()
+    # time.sleep(1)
     # detach kernel driver
     try:
       if self.dev.is_kernel_driver_active(1):
@@ -89,7 +90,11 @@ class USBBulkTransport(odrive.protocol.PacketSource, odrive.protocol.PacketSink)
       if ex.errno == 19: # "no such device"
         raise odrive.protocol.ChannelBrokenException()
       else:
-        raise
+        # Try resetting halt/stall condition and flush buffer
+        self.epr.clear_halt()
+        ret = self.epr.read(bufferLen, timeout)
+        # Signal to retry transfer
+        raise odrive.protocol.USBHaltException()
 
   def send_max(self):
     return 64
