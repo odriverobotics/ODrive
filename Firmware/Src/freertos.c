@@ -99,6 +99,20 @@ void MX_FREERTOS_Init(void) {
   osSemaphoreDef(sem_usb_irq);
   sem_usb_irq = osSemaphoreCreate(osSemaphore(sem_usb_irq), 1);
   osSemaphoreWait(sem_usb_irq, 0);
+
+  // Create a semaphore for UART DMA and remove a token
+  osSemaphoreDef(sem_uart_dma);
+  sem_uart_dma = osSemaphoreCreate(osSemaphore(sem_uart_dma), 1);
+
+  // Create a semaphore for USB RX
+  osSemaphoreDef(sem_usb_rx);
+  sem_usb_rx = osSemaphoreCreate(osSemaphore(sem_usb_rx), 1);
+  osSemaphoreWait(sem_usb_irq, 0);  // Remove a token.
+
+  // Create a semaphore for USB RX
+  osSemaphoreDef(sem_usb_tx);
+  sem_usb_tx = osSemaphoreCreate(osSemaphore(sem_usb_tx), 1);
+
   /* USER CODE END RTOS_SEMAPHORES */
 
   /* USER CODE BEGIN RTOS_TIMERS */
@@ -139,9 +153,13 @@ void StartDefaultTask(void const * argument)
   thread_motor_0 = osThreadCreate(osThread(task_motor_0), &motors[0]);
   thread_motor_1 = osThreadCreate(osThread(task_motor_1), &motors[1]);
 
-  // Start USB/UART command handling thread
+  // Start command handling thread
   osThreadDef(task_cmd_parse, communication_task, osPriorityNormal, 0, 512);
   thread_cmd_parse = osThreadCreate(osThread(task_cmd_parse), NULL);
+
+  // Start USB interrupt handler thread
+  osThreadDef(task_usb_pump, usb_update_thread, osPriorityNormal, 0, 512);
+  thread_usb_pump = osThreadCreate(osThread(task_usb_pump), NULL);
 
   //If we get to here, then the default task is done.
   vTaskDelete(defaultTaskHandle);

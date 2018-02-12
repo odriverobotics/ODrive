@@ -6,7 +6,7 @@
         {
             "taskName": "build",
             "type": "shell",
-            "command": "(cd Firmware && make -j4)",
+            "command": "make -j4",
             "group": {
                 "kind": "build",
                 "isDefault": true
@@ -21,7 +21,7 @@
         {
             "taskName": "flash",
             "type": "shell",
-            "command": "(cd Firmware && make flash)",
+            "command": "make flash",
             "problemMatcher": []
         },
         {

@@ -3,15 +3,14 @@
 Example usage of the ODrive python library to monitor and control ODrive devices
 """
 
+from __future__ import print_function
+
 import odrive.core
 import time
 import math
 
 # Find a connected ODrive (this will block until you connect one)
-odrives = odrive.core.find_all(printer=print)
-odrives = list(odrives) #force eval of generator to test finding functions
-my_drive = odrives[0]
-# my_drive = odrive.core.find_any(printer=print)
+my_drive = odrive.core.find_any(consider_usb=True, consider_serial=False, printer=print)
 
 # The above call returns a python object with a dynamically generated type. The
 # type hierarchy will correspond to the endpoint list in `MotorControl/protocol.cpp`.
@@ -30,9 +29,9 @@ print("Position setpoint is " + str(my_drive.motor0.pos_setpoint))
 # And this is how function calls are done:
 my_drive.motor0.set_pos_setpoint(0.0, 0.0, 0.0)
 
-# little sine wave to test
+# A little sine wave to test
 t0 = time.monotonic()
-while False:
+while True:
     setpoint = 10000.0 * math.sin((time.monotonic() - t0)*2)
     print("goto " + str(int(setpoint)))
     my_drive.motor0.set_pos_setpoint(setpoint, 0.0, 0.0)
@@ -45,4 +44,4 @@ while False:
 my_drive.vbus_voltage = 11.0  # fails with `AttributeError: can't set attribute`
 
 # Assign an incompatible value:
-# my_drive.motor0.pos_setpoint = "I like trains"  # fails with `TypeError: expected value of type float`
+my_drive.motor0.pos_setpoint = "I like trains"  # fails with `ValueError: could not convert string to float`

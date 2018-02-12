@@ -19,21 +19,6 @@
                 "WaitOnNormalExit",
                 "RedirectOutput"
             ]
-        },
-        {
-            "type": "gdb",
-            "request": "attach",
-            "name": "Debug Firmware",
-            "target": "localhost:3333",
-            "gdbpath": "arm-none-eabi-gdb",
-            "remote": true,
-            "executable": "./build/ODriveFirmware.elf",
-            "cwd": "${workspaceRoot}/Firmware",
-            "printCalls": false,
-            //"preLaunchTask": "openocd",  // This isn't working quite right.
-            "autorun": [
-                "monitor reset halt"
-            ]
         }
     ]
 }

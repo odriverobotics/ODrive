@@ -1,49 +1,5 @@
 /*
-* # ODrive Communication Protocol #
-*
-* Communicating with an ODrive consists of a series of endpoint operations.
-* An endpoint can be any data representation that can be serialized.
-* There is a default seralization implementation for POD types; for custom types
-* you must (de)seralize yourself. In the future we may provide a default seralizer
-* for stucts.
-* The available endpoints can be enumerated by reading the JSON from endpoint 0
-* and can theoretically be different for each communication interface (they are not in practice).
-*
-* Each endpoint operation can send bytes to one endpoint (referenced by it's ID)
-* and at the same time receive bytes from the same endpoint. The semantics of
-* these payloads are specific to each endpoint's type, the name of which is
-* indicated in the JSON.
-*
-* For instance an int32 endpoint's input and output is a 4 byte little endian
-* representation. In general the convention for combined read/write requests is
-* _exchange_, i.e. the returned value is the old value. Custom endpoint handlers
-* may be non-compliant.
-*
-* ## Stream format: ##
-* (For instance UART)
-*
-*   1. sync byte
-*   2. packet length (0-127, larger values are reserved)
-*   3. crc8(sync byte + packet length)
-*   4. packet (as per below)
-*   5. crc16(packet)
-*
-* ## Packet format: ##
-* (For instance USB)
-*
-* __Request__
-*
-*   1. seq-no, MSB = 0
-*   2. endpoint-id, MSB = "expect ack"
-*   3. expected_response_size
-*   4. payload (contains offset if required)
-*   5. crc16(protocol_version + JSON) or just protocol_version for endpoint 0
-*
-* __Response__
-*
-*   1. seq-no, MSB = 1
-*   2. payload
-*
+see protocol.md for the protocol specification
 */
 
 #ifndef __PROTOCOL_HPP
@@ -68,6 +24,8 @@ constexpr uint16_t PROTOCOL_VERSION = 1;
 constexpr uint16_t TX_BUF_SIZE = 32; // does not work with 64 for some reason
 constexpr uint16_t RX_BUF_SIZE = 128; // larger values than 128 have currently no effect because of protocol limitations
 
+// Maximum time we allocate for processing and responding to a request
+constexpr uint32_t PROTOCOL_SERVER_TIMEOUT_MS = 10;
 
 template<typename T>
 inline size_t write_le(T value, uint8_t* buffer);
@@ -166,8 +124,8 @@ static inline T read_le(const uint8_t** buffer, size_t* length) {
 class PacketSink {
 public:
     // @brief Processes a packet.
+    // The blocking behavior shall depend on the thread-local deadline_ms variable.
     // @return: 0 on success, otherwise a non-zero error code
-    // TODO: add deadline parameter. Currently all implementations block until they can send everything.
     // TODO: define what happens when the packet is larger than what the implementation can handle.
     virtual int process_packet(const uint8_t* buffer, size_t length) = 0;
 };
@@ -175,8 +133,8 @@ public:
 class StreamSink {
 public:
     // @brief Processes a chunk of bytes that is part of a continuous stream.
+    // The blocking behavior shall depend on the thread-local deadline_ms variable.
     // @return: 0 on success, otherwise a non-zero error code
-    // TODO: add deadline parameter. Currently all implementations block until they can send everything.
     virtual int process_bytes(const uint8_t* buffer, size_t length) = 0;
 
     // @brief Returns the number of bytes that can still be written to the stream.

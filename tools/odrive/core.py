@@ -7,11 +7,12 @@ import time
 import json
 import usb.core
 import usb.util
+import serial
+import serial.tools.list_ports
 import odrive.util
 import odrive.usbbulk_transport
 import odrive.serial_transport
 import re
-import serial
 import time
 import os
 import odrive.protocol
@@ -44,15 +45,7 @@ class SimpleDeviceProperty(property):
         return struct.unpack(self._struct_format, buffer)[0]
 
     def fset(self, obj, value):
-        #Oskar: Pythonic duck typing style means that you should pretend that types are
-        # compatible, and catch errors. So instead do something like:
-        # value = self._type(value)
-        # you could of course wrap this in a try/except block, but when it fails it
-        # raises a TypeError, just like the one you made below, so I'd just let that fire
-        # by itself.
-
-        if not isinstance(value, self._type):
-            raise TypeError("expected value of type {}".format(self._type.__name__))
+        value = self._type(value)
         buffer = struct.pack(self._struct_format, value)
         # TODO: Currenly we wait for an ack here. Settle on the default guarantee.
         self._channel.remote_endpoint_operation(self._id, buffer, True, 0)
@@ -68,17 +61,15 @@ def call_remote_function(channel, trigger_id, arg_properties, *args):
         arg_properties[i].fset(None, args[i])
     channel.remote_endpoint_operation(trigger_id, None, True, 0)
 
-#Oskar: setattr_or_raise_if_undefined
-def raise_if_undefined(self, name, value):
+def setattr_or_raise_if_undefined(self, name, value):
     """
     If employed as an object's __setattr__ function, this function
     makes sure that an assignment to an undefined attribute doesn't
     create a new attribute but instead raises an exception
     """
-    #Oskar: hasattr internally calls fget to determine if the attribute exists,
-    # which unnessecarily creates bus traffic. We should try to solve this.
-    # Step-in on the hasattr line in the debugger to see this.
-    if hasattr(self, name):
+    # We can't use hasattr here because internally it fetches the property
+    # value, creating unnecessary bus traffic
+    if name in dir(self):
         object.__setattr__(self, name, value)
     else:
         raise TypeError('Cannot set name %r on object of type %s' % (
@@ -128,9 +119,7 @@ def create_property(name, json_data, channel, printer):
         printer("property {} has no specified ID".format(name))
         return None
 
-    #Oskar: Bug: json_data calls this "access", but we look for "mode".
-    # The default should probably be "r" anyway, it's safer I'd say.
-    access_mode = json_data.get("mode", "rw")
+    access_mode = json_data.get("access", "r")
     return SimpleDeviceProperty(channel, id_str, property_type,
                                 struct_format,
                                 'r' in access_mode,
@@ -162,7 +151,7 @@ def create_object(name, json_data, namespace, channel, printer=noprint):
         namespace = name
 
     # Build attribute list from JSON
-    attributes = {"__setattr__": raise_if_undefined}
+    attributes = {"__setattr__": setattr_or_raise_if_undefined}
     for member in json_data.get("members", []):
         member_name = member.get("name", None)
         if member_name is None:
@@ -185,7 +174,7 @@ def create_object(name, json_data, namespace, channel, printer=noprint):
             attributes[member_name] = attribute
 
     # Create a type from the property list and instantiate it
-    jit_type = type(namespace, (object,), attributes)
+    jit_type = type(str(namespace), (object,), attributes)
     new_object = jit_type()
     return new_object
 
@@ -208,11 +197,11 @@ def channel_from_serial_port(port, baud, packet_based, printer=noprint):
     if packet_based == True:
         # TODO: implement packet based transport over serial
         raise NotImplementedError("not supported yet")
-    serial_device = odrive.serial_transport.SerialStreamTransport(port, 115200)
+    serial_device = odrive.serial_transport.SerialStreamTransport(port, baud)
     input_stream = odrive.protocol.PacketFromStreamConverter(serial_device)
     output_stream = odrive.protocol.PacketToStreamConverter(serial_device)
     return odrive.protocol.Channel(
-            "serial port {}@{}".format(port, 115200),
+            "serial port {}@{}".format(port, baud),
             input_stream, output_stream)
 
 def object_from_channel(channel, printer=noprint):
@@ -262,6 +251,9 @@ def find_dev_serial_ports(search_regex):
     except FileNotFoundError:
         return []
 
+def find_pyserial_ports():
+    return [x.name for x in serial.tools.list_ports.comports()]
+
 def find_serial_channels(printer=noprint):
     """
     Scans for serial ports.
@@ -269,19 +261,15 @@ def find_serial_channels(printer=noprint):
     Not every returned object necessarily represents a compatible device.
     """
 
-    #Oskar: Why not just use this tool to find the available ports?
-    # https://pyserial.readthedocs.io/en/latest/tools.html#module-serial.tools.list_ports
-
-    # Real serial ports or USB-Serial converters
-    linux_real_serial_ports = find_dev_serial_ports(r'^ttyUSB')
-    windows_real_serial_ports = [ "COM1", "COM2", "COM3", "COM4" ]
+    # Real serial ports or USB-Serial converters (tested on Linux and Windows)
+    real_serial_ports = find_pyserial_ports()
 
     # Serial devices that are exposed by the platform
     # for the device's USB connection
     linux_usb_serial_ports = find_dev_serial_ports(r'^ttyACM')
     macos_usb_serial_ports = find_dev_serial_ports(r'^tty\.usbmodem')
 
-    for port in linux_real_serial_ports + windows_real_serial_ports + linux_usb_serial_ports + macos_usb_serial_ports:
+    for port in real_serial_ports + linux_usb_serial_ports + macos_usb_serial_ports:
         try:
             yield channel_from_serial_port(port, 115200, False, printer)
         except serial.serialutil.SerialException:
@@ -289,13 +277,16 @@ def find_serial_channels(printer=noprint):
             continue
 
 
-def find_all(printer=noprint):
+def find_all(consider_usb=True, consider_serial=False, printer=noprint):
     """
     Returns a generator with all the connected devices that speak the ODrive protocol
     """
-    usb_channels = find_usb_channels(printer=printer)
-    serial_channels = find_serial_channels(printer=printer)
-    for channel in itertools.chain(usb_channels, serial_channels):
+    channels = iter(())
+    if (consider_usb):
+        channels = itertools.chain(channels, find_usb_channels(printer=printer))
+    if (consider_serial):
+        channels = itertools.chain(channels, find_serial_channels(printer=printer))
+    for channel in channels:
         # TODO: blacklist known bad channels
         try:
             yield object_from_channel(channel, printer)
@@ -304,7 +295,7 @@ def find_all(printer=noprint):
             continue
 
 
-def find_any(printer=noprint):
+def find_any(consider_usb=True, consider_serial=False, printer=noprint):
     """
     Scans for ODrives on all supported interfaces and returns the first device
     that is found. If no device is connected the function blocks.
@@ -314,7 +305,7 @@ def find_any(printer=noprint):
     # poll for device
     printer("looking for ODrive...")
     while True:
-        dev = next(find_all(printer=printer), None)
+        dev = next(find_all(consider_usb, consider_serial, printer=printer), None)
         if dev is not None:
             return dev
         printer("no device found")

@@ -1,5 +1,6 @@
 /* Includes ------------------------------------------------------------------*/
 #include "legacy_commands.h"
+#include <utils.h>
 
 /* Private macros ------------------------------------------------------------*/
 /* Private typedef -----------------------------------------------------------*/
@@ -77,13 +78,13 @@ float* exposed_floats[] = {
 
 int* exposed_ints[] = {
     (int*)&motors[0].control_mode, // rw
-    &motors[0].encoder.encoder_offset, // rw
-    &motors[0].encoder.encoder_state, // ro
-    &motors[0].error, // rw
+    (int*)&motors[0].encoder.encoder_offset, // rw
+    (int*)&motors[0].encoder.encoder_state, // ro
+    (int*)&motors[0].error, // rw
     (int*)&motors[1].control_mode, // rw
-    &motors[1].encoder.encoder_offset, // rw
-    &motors[1].encoder.encoder_state, // ro
-    &motors[1].error, // rw
+    (int*)&motors[1].encoder.encoder_offset, // rw
+    (int*)&motors[1].encoder.encoder_state, // ro
+    (int*)&motors[1].error, // rw
 };
 
 bool* exposed_bools[] = {
@@ -112,13 +113,13 @@ static void print_monitoring(int limit);
 
 /* Function implementations --------------------------------------------------*/
 
-void legacy_parse_cmd(const uint8_t* buffer, int len) {
+void legacy_parse_cmd(const uint8_t* buffer, size_t len, size_t buffer_capacity, SerialPrintf_t response_interface) {
     // Set response interface
-    serial_printf_select = SERIAL_PRINTF_IS_USB;
+    serial_printf_select = response_interface;
 
     // Cast away const and write beyond the array bounds. Because we can.
     // (TODO: yeah maybe not, but this should be gone once we disable legacy commands)
-    ((uint8_t *)buffer)[len <= 63 ? len : 63] = 0;
+    ((uint8_t *)buffer)[len < buffer_capacity ? len : (buffer_capacity - 1)] = 0;
 
     // check incoming packet type
     if (buffer[0] == 'p') {
@@ -145,6 +146,12 @@ void legacy_parse_cmd(const uint8_t* buffer, int len) {
         if (numscan == 2 && motor_number < num_motors) {
             set_current_setpoint(&motors[motor_number], current_feed_forward);
         }
+    } else if(buffer[0] == 'i'){ // Dump device info
+        // Retrieves the device signature, revision, flash size, and UUID
+        printf("Signature: %#x\n", STM_ID_GetSignature());
+        printf("Revision: %#x\n", STM_ID_GetRevision());
+        printf("Flash Size: %#x KiB\n", STM_ID_GetFlashSize());
+        printf("UUID: 0x%lx%lx%lx\n", STM_ID_GetUUID(2), STM_ID_GetUUID(1), STM_ID_GetUUID(0));
     } else if (buffer[0] == 'g') { // GET
         // g <0:float,1:int,2:bool,3:uint16> index
         int type = 0;
@@ -227,6 +234,40 @@ void legacy_parse_cmd(const uint8_t* buffer, int len) {
     }
 
     serial_printf_select = SERIAL_PRINTF_IS_UART;
+}
+
+void legacy_parse_stream(const uint8_t* buffer, size_t len) {
+    #define PARSE_BUFFER_SIZE 64
+    static uint8_t parse_buffer[PARSE_BUFFER_SIZE];
+    static bool read_active = false;
+    static uint32_t parse_buffer_idx = 0;
+
+    while (len--) {
+        // Fetch the next char
+        uint8_t c = *(buffer++);
+        // Look for start character
+        if (c == '$') {
+            read_active = true;
+            continue; // do not record start char
+        }
+        // Record into parse buffer when actively reading
+        if (read_active) {
+            parse_buffer[parse_buffer_idx++] = c;
+            if (c == '\r' || c == '\n' || c == '!') {
+                // End of command string
+                legacy_parse_cmd(parse_buffer, parse_buffer_idx, PARSE_BUFFER_SIZE, SERIAL_PRINTF_IS_UART);
+                // Reset receieve state machine
+                read_active = false;
+                parse_buffer_idx = 0;
+            } else if (parse_buffer_idx == PARSE_BUFFER_SIZE - 1) {
+                // We are not at end of command, and receiving another character after this
+                // would go into the last slot, which is reserved for terminating null.
+                // We have effectively overflowed parse buffer: abort.
+                read_active = false;
+                parse_buffer_idx = 0;
+            }
+        }
+    }
 }
 
 static void print_monitoring(int limit) {

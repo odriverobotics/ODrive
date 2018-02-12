@@ -70,15 +70,17 @@
 
 /** @defgroup USBD_DESC_Private_Defines
   * @{
-  */ 
-#define USBD_VID     0x1209
-#define USBD_LANGID_STRING     1033
-#define USBD_MANUFACTURER_STRING     "ODrive"
-#define USBD_PID_FS     0x0D31
-#define USBD_PRODUCT_STRING_FS     "ODrive v3.1"
-#define USBD_SERIALNUMBER_STRING_FS     "000000000001"
-#define USBD_CONFIGURATION_STRING_FS     "CDC Config"
-#define USBD_INTERFACE_STRING_FS     "CDC Interface"
+  */
+#define USBD_VID 0x1209
+#define USBD_LANGID_STRING 1033
+#define USBD_MANUFACTURER_STRING "ODrive Robotics"
+#define USBD_PID_FS 0x0D32
+#define USBD_PRODUCT_XSTR(s) USBD_PRODUCT_STR(s)
+#define USBD_PRODUCT_STR(s) #s
+#define USBD_PRODUCT_STRING_FS ODrive version HW_VERSION_MAJOR.HW_VERSION_MINOR
+#define USBD_SERIALNUMBER_STRING_FS "000000000001"
+#define USBD_CONFIGURATION_STRING_FS "CDC Config"
+#define USBD_INTERFACE_STRING_FS "CDC Interface"
 
 #define USB_SIZ_BOS_DESC            0x0C
 
@@ -253,11 +255,11 @@ uint8_t *  USBD_FS_ProductStrDescriptor( USBD_SpeedTypeDef speed , uint16_t *len
 {
   if(speed == 0)
   {
-    USBD_GetString ((uint8_t *)USBD_PRODUCT_STRING_FS, USBD_StrDesc, length);
+    USBD_GetString ((uint8_t *)USBD_PRODUCT_XSTR(USBD_PRODUCT_STRING_FS), USBD_StrDesc, length);
   }
   else
   {
-    USBD_GetString ((uint8_t *)USBD_PRODUCT_STRING_FS, USBD_StrDesc, length);
+    USBD_GetString ((uint8_t *)USBD_PRODUCT_XSTR(USBD_PRODUCT_STRING_FS), USBD_StrDesc, length);
   }
   return USBD_StrDesc;
 }

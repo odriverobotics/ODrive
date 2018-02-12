@@ -1,5 +1,5 @@
-#ifndef COMMANDS_H
-#define COMMANDS_H
+#ifndef LEGACY_COMMANDS_H
+#define LEGACY_COMMANDS_H
 
 #ifdef __cplusplus
 extern "C" {
@@ -27,10 +27,11 @@ extern uint16_t* exposed_uint16[];
 /* Exported functions --------------------------------------------------------*/
 
 /* Exported functions --------------------------------------------------------*/
-void legacy_parse_cmd(const uint8_t* buffer, int len);
+void legacy_parse_cmd(const uint8_t* buffer, size_t len, size_t buffer_length, SerialPrintf_t response_interface);
+void legacy_parse_stream(const uint8_t* buffer, size_t len);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif /* COMMANDS_H */
+#endif /* LEGACY_COMMANDS_H */

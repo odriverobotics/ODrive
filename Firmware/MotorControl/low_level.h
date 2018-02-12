@@ -48,6 +48,8 @@ typedef enum {
     ERROR_UNEXPECTED_STEP_SRC,
     ERROR_POS_CTRL_DURING_SENSORLESS,
     ERROR_SPIN_UP_TIMEOUT,
+    ERROR_DRV_FAULT,
+    ERROR_NOT_IMPLEMENTED_MOTOR_TYPE,
 } Error_t;
 
 // Note: these should be sorted from lowest level of control to
@@ -58,6 +60,12 @@ typedef enum {
     CTRL_MODE_VELOCITY_CONTROL,
     CTRL_MODE_POSITION_CONTROL
 } Motor_control_mode_t;
+
+typedef enum {
+    MOTOR_TYPE_HIGH_CURRENT,
+    // MOTOR_TYPE_LOW_CURRENT, //Not yet implemented
+    MOTOR_TYPE_GIMBAL
+} Motor_type_t;
 
 typedef struct {
     float phB;
@@ -74,7 +82,9 @@ typedef struct {
     // Voltage applied at end of cycle:
     float final_v_alpha; // [V]
     float final_v_beta; // [V]
-    float Iq;
+    float Iq_setpoint;
+    float Iq_measured;
+    float max_allowed_current;
 } Current_control_t;
 
 typedef enum {
@@ -101,10 +111,14 @@ typedef struct {
 
 typedef struct {
     TIM_HandleTypeDef* encoder_timer;
+    bool use_index;
+    bool index_found;
+    bool calibrated;
+    float idx_search_speed;
     int encoder_cpr;
-    int encoder_offset;
-    int encoder_state;
-    int motor_dir; // 1/-1 for fwd/rev alignment to encoder.
+    int32_t encoder_offset;
+    int32_t encoder_state;
+    int32_t motor_dir;  // 1/-1 for fwd/rev alignment to encoder.
     float phase;
     float pll_pos;
     float pll_vel;
@@ -122,7 +136,7 @@ typedef struct {
     Motor_control_mode_t control_mode;
     bool enable_step_dir;
     float counts_per_step;
-    int error;
+    Error_t error;
     float pos_setpoint;
     float pos_gain;
     float vel_setpoint;
@@ -132,6 +146,7 @@ typedef struct {
     float vel_limit;
     float current_setpoint;
     float calibration_current;
+    float resistance_calib_max_voltage;
     float phase_inductance;
     float phase_resistance;
     osThreadId motor_thread;
@@ -147,6 +162,7 @@ typedef struct {
     Iph_BC_t DC_calib;
     DRV8301_Obj gate_driver;
     DRV_SPI_8301_Vars_t gate_driver_regs; //Local view of DRV registers
+    Motor_type_t motor_type;
     float shunt_conductance;
     float phase_current_rev_gain; //Reverse gain for ADC to Amps
     Current_control_t current_control;
@@ -192,11 +208,15 @@ void set_vel_setpoint(Motor_t* motor, float vel_setpoint, float current_feed_for
 void set_current_setpoint(Motor_t* motor, float current_setpoint);
 
 void step_cb(uint16_t GPIO_Pin);
+void enc_index_cb(uint16_t GPIO_Pin, uint8_t motor_index);
 void pwm_trig_adc_cb(ADC_HandleTypeDef* hadc, bool injected);
 void vbus_sense_adc_cb(ADC_HandleTypeDef* hadc, bool injected);
 
 void safe_assert(int arg);
 void init_motor_control();
+void setEncoderCount(Motor_t* motor, uint32_t count);
+
+bool anti_cogging_calibration(Motor_t* motor);
 
 bool motor_calibration(Motor_t* motor);
 
@@ -217,11 +237,11 @@ void sync_timers(TIM_HandleTypeDef* htim_a, TIM_HandleTypeDef* htim_b,
 bool measure_phase_resistance(Motor_t* motor, float test_current, float max_voltage);
 bool measure_phase_inductance(Motor_t* motor, float voltage_low, float voltage_high);
 bool calib_enc_offset(Motor_t* motor, float voltage_magnitude);
+bool scan_for_enc_idx(Motor_t* motor, float v_d, float v_q);
 
 bool anti_cogging_calibration(Motor_t* motor);
 // Test functions
 void scan_motor_loop(Motor_t* motor, float omega, float voltage_magnitude);
-void FOC_voltage_loop(Motor_t* motor, float v_d, float v_q);
 // Main motor control
 void update_rotor(Motor_t* motor);
 bool using_encoder(Motor_t* motor);
@@ -229,9 +249,11 @@ bool using_sensorless(Motor_t* motor);
 float get_rotor_phase(Motor_t* motor);
 float get_pll_vel(Motor_t* motor);
 bool spin_up_sensorless(Motor_t* motor);
-void update_brake_current(float brake_current);
+void update_brake_current();
+void set_brake_current(float brake_current);
 void queue_modulation_timings(Motor_t* motor, float mod_alpha, float mod_beta);
 void queue_voltage_timings(Motor_t* motor, float v_alpha, float v_beta);
+bool FOC_voltage(Motor_t* motor, float v_d, float v_q);
 bool FOC_current(Motor_t* motor, float Id_des, float Iq_des);
 void control_motor_loop(Motor_t* motor);
 

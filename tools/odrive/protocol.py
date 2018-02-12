@@ -2,6 +2,18 @@
 
 import time
 import struct
+import sys
+
+import abc
+
+if sys.version_info >= (3, 4):
+    ABC = abc.ABC
+else:
+    ABC = abc.ABCMeta('ABC', (), {})
+
+if sys.version_info <= (3, 3):
+    from monotonic import monotonic
+    time.monotonic = monotonic
 
 SYNC_BYTE = 0xAA
 CRC8_INIT = 0x42
@@ -29,6 +41,8 @@ def calc_crc(remainder, value, polynomial, bitwidth):
 def calc_crc8(remainder, value):
     if isinstance(value, bytearray) or isinstance(value, bytes) or isinstance(value, list):
         for byte in value:
+            if not isinstance(byte,int):
+                byte = ord(byte)
             remainder = calc_crc(remainder, byte, CRC8_DEFAULT, 8)
     else:
         remainder = calc_crc(remainder, byte, CRC8_DEFAULT, 8)
@@ -37,6 +51,8 @@ def calc_crc8(remainder, value):
 def calc_crc16(remainder, value):
     if isinstance(value, bytearray) or isinstance(value, bytes) or isinstance(value, list):
         for byte in value:
+            if not isinstance(byte, int):
+                byte = ord(byte)
             remainder = calc_crc(remainder, byte, CRC16_DEFAULT, 16)
     else:
         remainder = calc_crc(remainder, value, CRC16_DEFAULT, 16)
@@ -56,21 +72,26 @@ class ChannelBrokenException(Exception):
 class DeviceInitException(Exception):
     pass
 
-#Oskar: I would just get rid of these "abstract classes",
-# I think just looking and seeing that the classes have
-# a process_packet or get_packet is enough.
 
-class StreamSource(object):
-    pass
+class StreamSource(ABC):
+    @abc.abstractmethod
+    def get_bytes(self, deadline):
+        pass
 
-class StreamSink(object):
-    pass
+class StreamSink(ABC):
+    @abc.abstractmethod
+    def process_bytes(self, bytes):
+        pass
 
-class PacketSource(object):
-    pass
+class PacketSource(ABC):
+    @abc.abstractmethod
+    def get_packet(self, deadline):
+        pass
 
-class PacketSink(object):
-    pass
+class PacketSink(ABC):
+    @abc.abstractmethod
+    def process_packet(self, packet):
+        pass
 
 
 class StreamToPacketConverter(StreamSink):
@@ -174,9 +195,8 @@ class Channel(PacketSink):
     _interface_definition_crc = 0
     _expected_acks = {}
 
-    # Chose these parameters to be sensible for a specific transport layer
-    #Oskar: it's a timeout, not delay.
-    _resend_delay = 5.0     # [s]
+    # Choose these parameters to be sensible for a specific transport layer
+    _resend_timeout = 0.1     # [s]
     _send_attempts = 5
 
     def __init__(self, name, input, output):
@@ -219,7 +239,7 @@ class Channel(PacketSink):
             attempt = 0
             while (attempt < self._send_attempts):
                 self._output.process_packet(packet)
-                deadline = time.monotonic() + self._resend_delay
+                deadline = time.monotonic() + self._resend_timeout
                 # Read and process packets until we get an ack or need to resend
                 # TODO: support I/O driven reception (wait on semaphore)
                 while True:
@@ -248,7 +268,7 @@ class Channel(PacketSink):
         buffer = bytes()
         while True:
             chunk_length = 64
-            chunk = self.remote_endpoint_operation(0, struct.pack("<I", len(buffer)), True, chunk_length)
+            chunk = self.remote_endpoint_operation(endpoint_id, struct.pack("<I", len(buffer)), True, chunk_length)
             if (len(chunk) == 0):
                 break
             buffer += chunk
@@ -267,7 +287,7 @@ class Channel(PacketSink):
             self._expected_acks[seq_no] = packet[2:]
 
         else:
-            #if (calc_crc16(crc16, struct.pack('<HBB', PROTOCOL_VERSION, packet[-2], packet[-1]))):
-            #    raise Exception("CRC16 mismatch")
+            #if (calc_crc16(CRC16_INIT, struct.pack('<HBB', PROTOCOL_VERSION, packet[-2], packet[-1]))):
+            #     raise Exception("CRC16 mismatch")
             print("endpoint requested")
             # TODO: handle local endpoint operation

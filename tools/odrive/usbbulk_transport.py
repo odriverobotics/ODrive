@@ -30,6 +30,8 @@ class USBBulkTransport(odrive.protocol.PacketSource, odrive.protocol.PacketSink)
     return string
 
   def init(self, printer=noprint):
+    # Resetting device to start init from a known state
+    self.dev.reset()
     # detach kernel driver
     try:
       if self.dev.is_kernel_driver_active(1):
@@ -82,7 +84,7 @@ class USBBulkTransport(odrive.protocol.PacketSource, odrive.protocol.PacketSink)
       bufferLen = self.epr.wMaxPacketSize
       timeout = max(int((deadline - time.monotonic()) * 1000), 0)
       ret = self.epr.read(bufferLen, timeout)
-      return ret
+      return bytearray(ret)
     except usb.core.USBError as ex:
       if ex.errno == 19: # "no such device"
         raise odrive.protocol.ChannelBrokenException()
