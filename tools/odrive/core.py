@@ -252,7 +252,7 @@ def find_dev_serial_ports(search_regex):
         return []
 
 def find_pyserial_ports():
-    return [x.name for x in serial.tools.list_ports.comports()]
+    return [x.device for x in serial.tools.list_ports.comports()]
 
 def find_serial_channels(printer=noprint):
     """
@@ -270,11 +270,7 @@ def find_serial_channels(printer=noprint):
     macos_usb_serial_ports = find_dev_serial_ports(r'^tty\.usbmodem')
 
     for port in real_serial_ports + linux_usb_serial_ports + macos_usb_serial_ports:
-        try:
-            yield channel_from_serial_port(port, 115200, False, printer)
-        except serial.serialutil.SerialException:
-            printer("could not open " + port)
-            continue
+        yield channel_from_serial_port(port, 115200, False, printer)
 
 
 def find_all(consider_usb=True, consider_serial=False, printer=noprint):
