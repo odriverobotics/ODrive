@@ -7,6 +7,9 @@
 ### Changed
 * Modified python code to be Python 2 compatible
 
+### Fixed
+* USB CSC (USB serial) now reports a sensible baud rate
+
 ## [0.3.2] - 2018-02-02
 
 ### Added
