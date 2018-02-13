@@ -232,8 +232,6 @@ void legacy_parse_cmd(const uint8_t* buffer, size_t len, size_t buffer_capacity,
             }
         }
     }
-
-    serial_printf_select = SERIAL_PRINTF_IS_UART;
 }
 
 void legacy_parse_stream(const uint8_t* buffer, size_t len) {
@@ -271,8 +269,6 @@ void legacy_parse_stream(const uint8_t* buffer, size_t len) {
 }
 
 static void print_monitoring(int limit) {
-    serial_printf_select = SERIAL_PRINTF_IS_USB;
-
     for (int i=0;i<limit;i++) {
         switch (monitoring_slots[i].type) {
         case 0:
@@ -292,6 +288,4 @@ static void print_monitoring(int limit) {
         }
     }
     printf("\n");
-
-    serial_printf_select = SERIAL_PRINTF_IS_UART;
 }

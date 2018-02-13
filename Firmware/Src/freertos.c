@@ -107,7 +107,7 @@ void MX_FREERTOS_Init(void) {
   // Create a semaphore for USB RX
   osSemaphoreDef(sem_usb_rx);
   sem_usb_rx = osSemaphoreCreate(osSemaphore(sem_usb_rx), 1);
-  osSemaphoreWait(sem_usb_irq, 0);  // Remove a token.
+  osSemaphoreWait(sem_usb_rx, 0);  // Remove a token.
 
   // Create a semaphore for USB RX
   osSemaphoreDef(sem_usb_tx);
