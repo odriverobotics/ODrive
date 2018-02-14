@@ -1,3 +1,8 @@
+## [0.3.4] - 2018-02-13
+
+### Fixed
+* Broken way to check for python 2. Python 2 not supported yet.
+
 ## [0.3.3] - 2018-02-12
 
 ### Added
