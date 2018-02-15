@@ -6,7 +6,8 @@
     "configurations": [
         {
             // For the Cortex-Debug extension
-            "type": "openocd-gdb",
+            "type": "cortex-debug",
+            "servertype": "openocd",
             "request": "launch",
             "name": "Debug ODrive",
             "executable": "${workspaceRoot}/build/ODriveFirmware.elf",
