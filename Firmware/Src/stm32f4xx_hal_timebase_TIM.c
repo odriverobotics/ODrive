@@ -83,7 +83,7 @@ HAL_StatusTypeDef HAL_InitTick(uint32_t TickPriority)
   uint32_t              pFLatency;
   
   /*Configure the TIM14 IRQ priority */
-  HAL_NVIC_SetPriority(TIM8_TRG_COM_TIM14_IRQn, TickPriority ,0); 
+  HAL_NVIC_SetPriority(TIM8_TRG_COM_TIM14_IRQn, 6 ,0); 
   
   /* Enable the TIM14 global Interrupt */
   HAL_NVIC_EnableIRQ(TIM8_TRG_COM_TIM14_IRQn); 

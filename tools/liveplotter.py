@@ -22,7 +22,12 @@ vals = []
 def fetch_data():
     global vals
     while True:
-        vals.append(my_odrive.motor0.encoder.pll_pos)
+        point = []
+        point.append(my_odrive.motor0.timing_log.TIMING_LOG_ADC_CB_M0_I)
+        point.append(my_odrive.motor1.timing_log.TIMING_LOG_ADC_CB_M1_I)
+        point.append(my_odrive.motor0.timing_log.TIMING_LOG_ADC_CB_M0_DC - 8192)
+        point.append(my_odrive.motor1.timing_log.TIMING_LOG_ADC_CB_M1_DC - 8192)
+        vals.append(point)
         if len(vals) > num_samples:
             vals = vals[-num_samples:]
         time.sleep(1/data_rate)
@@ -31,6 +36,8 @@ def plot_data():
     global vals
     while True:
         plt.clf()
+        # for series in vals:
+        #     plt.plot(series)
         plt.plot(vals)
         plt.pause(1/plot_rate)
 
