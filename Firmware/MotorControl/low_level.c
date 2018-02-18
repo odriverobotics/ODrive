@@ -154,7 +154,6 @@ Motor_t motors[] = {
             .spin_up_target_vel = 400.0f,    // [rad/s]
         },
         .loop_counter = 0,
-        .timing_log_index = 0,
         .timing_log = {0},
         .anticogging = {
             .index = 0,
@@ -259,7 +258,6 @@ Motor_t motors[] = {
             .spin_up_target_vel = 400.0f,    // [rad/s]
         },
         .loop_counter = 0,
-        .timing_log_index = 0,
         .timing_log = {0},
         .anticogging = {
             .index = 0,
@@ -319,7 +317,7 @@ void set_current_setpoint(Motor_t* motor, float current_setpoint) {
 // Utility
 //--------------------------------
 
-uint16_t check_timing(Motor_t* motor) {
+uint16_t check_timing(Motor_t* motor, TimingLog_t log_idx) {
     TIM_HandleTypeDef* htim = motor->motor_timer;
     uint16_t timing = htim->Instance->CNT;
     bool down = htim->Instance->CR1 & TIM_CR1_DIR;
@@ -328,10 +326,9 @@ uint16_t check_timing(Motor_t* motor) {
         timing = TIM_1_8_PERIOD_CLOCKS + delta;
     }
 
-    if (++(motor->timing_log_index) == TIMING_LOG_SIZE) {
-        motor->timing_log_index = 0;
+    if (log_idx < TIMING_LOG_SIZE) {
+        motor->timing_log[log_idx] = timing;
     }
-    motor->timing_log[motor->timing_log_index] = timing;
 
     return timing;
 }
@@ -611,7 +608,7 @@ void pwm_trig_adc_cb(ADC_HandleTypeDef* hadc, bool injected) {
             motors[0].motor_timer->Instance->CCR3 = motors[0].next_timings[2];
         }
         // Check the timing of the sequencing
-        check_timing(motor);
+        check_timing(motor, TIMING_LOG_ADC_CB_M1_DC);
 
     } else if (motor == &motors[0] && !counting_down) {
         // We are measuring M0 current here
@@ -623,19 +620,19 @@ void pwm_trig_adc_cb(ADC_HandleTypeDef* hadc, bool injected) {
             motors[1].motor_timer->Instance->CCR3 = motors[1].next_timings[2];
         }
         // Check the timing of the sequencing
-        check_timing(motor);
+        check_timing(motor, TIMING_LOG_ADC_CB_M0_I);
 
     } else if (motor == &motors[1] && !counting_down) {
         // We are measuring M1 current here
         current_meas_not_DC_CAL = true;
         // Check the timing of the sequencing
-        check_timing(motor);
+        check_timing(motor, TIMING_LOG_ADC_CB_M1_I);
 
     } else if (motor == &motors[0] && counting_down) {
         // We are measuring M0 DC_CAL here
         current_meas_not_DC_CAL = false;
         // Check the timing of the sequencing
-        check_timing(motor);
+        check_timing(motor, TIMING_LOG_ADC_CB_M0_DC);
 
     } else {
         global_fault(ERROR_PWM_SRC_FAIL);
@@ -704,7 +701,7 @@ bool measure_phase_resistance(Motor_t* motor, float test_current, float max_volt
         queue_voltage_timings(motor, test_voltage, 0.0f);
 
         // Check we meet deadlines after queueing
-        motor->last_cpu_time = check_timing(motor);
+        motor->last_cpu_time = check_timing(motor, TIMING_LOG_MEAS_R);
         if (!(motor->last_cpu_time < motor->control_deadline)) {
             motor->error = ERROR_PHASE_RESISTANCE_TIMING;
             return false;
@@ -743,7 +740,7 @@ bool measure_phase_inductance(Motor_t* motor, float voltage_low, float voltage_h
             queue_voltage_timings(motor, test_voltages[i], 0.0f);
 
             // Check we meet deadlines after queueing
-            motor->last_cpu_time = check_timing(motor);
+            motor->last_cpu_time = check_timing(motor, TIMING_LOG_MEAS_L);
             if (!(motor->last_cpu_time < motor->control_deadline)) {
                 motor->error = ERROR_PHASE_INDUCTANCE_TIMING;
                 return false;
@@ -950,7 +947,7 @@ bool scan_for_enc_idx(Motor_t* motor, float omega, float voltage_magnitude) {
             queue_voltage_timings(motor, v_alpha, v_beta);
 
             // Check we meet deadlines after queueing
-            motor->last_cpu_time = check_timing(motor);
+            motor->last_cpu_time = check_timing(motor, TIMING_LOG_IDX_SEARCH);
             if (!(motor->last_cpu_time < motor->control_deadline)) {
                 motor->error = ERROR_SCAN_MOTOR_TIMING;
                 return false;
@@ -1237,7 +1234,7 @@ bool FOC_voltage(Motor_t* motor, float v_d, float v_q) {
     queue_voltage_timings(motor, v_alpha, v_beta);
 
     // Check we meet deadlines after queueing
-    if (!(check_timing(motor) < motor->control_deadline)) {
+    if (!(check_timing(motor, TIMING_LOG_FOC_VOLTAGE) < motor->control_deadline)) {
         motor->error = ERROR_FOC_VOLTAGE_TIMING;
         return false;
     }
@@ -1305,7 +1302,7 @@ bool FOC_current(Motor_t* motor, float Id_des, float Iq_des) {
     queue_modulation_timings(motor, mod_alpha, mod_beta);
 
     // Check we meet deadlines after queueing
-    motor->last_cpu_time = check_timing(motor);
+    motor->last_cpu_time = check_timing(motor, TIMING_LOG_FOC_CURRENT);
     if (!(motor->last_cpu_time < motor->control_deadline)) {
         motor->error = ERROR_FOC_TIMING;
         return false;
