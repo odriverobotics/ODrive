@@ -239,7 +239,7 @@ You will likely want the pinout for this process. It is available [here](https:/
 
 ### Checking for error codes
 
-`explore_odrive.py`can also be used to check error codes when your odrive is not working as expected. For example `my_odrive.motor0.error` will list the error code assosicated with motor 0.
+`explore_odrive.py`can also be used to check error codes when your odrive is not working as expected. For example `my_odrive.motor0.error` will list the error code associated with motor 0.
 <br><br>
 The error nummber corresponds to the following:
 1. `ERROR_NO_ERROR`
