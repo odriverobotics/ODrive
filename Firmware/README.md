@@ -237,6 +237,34 @@ You will likely want the pinout for this process. It is available [here](https:/
 * `stm32cubeMX`: Tool from STM to automatically generate setup routines and configure libraries, etc.
     * Available [here](http://www2.st.com/content/st_com/en/products/development-tools/software-development-tools/stm32-software-development-tools/stm32-configurators-and-code-generators/stm32cubemx.html?icmp=stm32cubemx_pron_pr-stm32cubef2_apr2014&sc=stm32cube-pr2)
 
+### Checking for error codes
+
+`explore_odrive.py`can also be used to check error codes when your odrive is not working as expected. For example `my_odrive.motor0.error` will list the error code assosicated with motor 0.
+<br><br>
+The error nummber corresponds to the following:
+1. `ERROR_NO_ERROR`
+2. `ERROR_PHASE_RESISTANCE_TIMING`
+3. `ERROR_PHASE_RESISTANCE_MEASUREMENT_TIMEOUT`
+3. `ERROR_PHASE_RESISTANCE_OUT_OF_RANGE`
+4.    `ERROR_PHASE_INDUCTANCE_TIMING`
+5.    `ERROR_PHASE_INDUCTANCE_MEASUREMENT_TIMEOUT`
+6.    `ERROR_PHASE_INDUCTANCE_OUT_OF_RANGE`
+7.    `ERROR_ENCODER_RESPONSE`
+8.    `ERROR_ENCODER_MEASUREMENT_TIMEOUT`
+9.    `ERROR_ADC_FAILED`
+10.    `ERROR_CALIBRATION_TIMING`
+11.    `ERROR_FOC_TIMING`
+12.    `ERROR_FOC_MEASUREMENT_TIMEOUT`
+13.   `ERROR_SCAN_MOTOR_TIMING`
+14.    `ERROR_FOC_VOLTAGE_TIMING`
+15.    `ERROR_GATEDRIVER_INVALID_GAIN`
+16.    `ERROR_PWM_SRC_FAIL`
+17.    `ERROR_UNEXPECTED_STEP_SRC`
+18.    `ERROR_POS_CTRL_DURING_SENSORLESS`
+19.   `ERROR_SPIN_UP_TIMEOUT`
+20.    `ERROR_DRV_FAULT`
+21.   `ERROR_NOT_IMPLEMENTED_MOTOR_TYPE`
+
 ### Generate code
 * Run stm32cubeMX and load the `stm32cubemx/Odrive.ioc` project file.
 * Press `Project -> Generate code`
