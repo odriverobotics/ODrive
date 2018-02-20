@@ -3,6 +3,7 @@
     "files.exclude": {
         "build": true
     },
+    "C_Cpp.intelliSenseEngineFallback": "Disabled",
     "files.associations": {
         "memory": "cpp",
         "utility": "cpp",
