@@ -3,7 +3,8 @@
     "files.exclude": {
         "build": true
     },
-    "C_Cpp.intelliSenseEngineFallback": "Disabled",
+    "C_Cpp.intelliSenseEngineFallback": "Enabled",
+    "C_Cpp.intelliSenseEngine": "Tag Parser",
     "files.associations": {
         "memory": "cpp",
         "utility": "cpp",
