@@ -25,6 +25,14 @@
                 "_DEBUG",
                 "UNICODE"
             ],
+            "browse": {
+                "path": [
+                    "C:/Program Files (x86)/GNU Tools ARM Embedded/6 2017-q1-update/",
+                    "${workspaceRoot}"
+                ],
+                "limitSymbolsToIncludedHeaders": true,
+                "databaseFilename": ""
+            },
             "intelliSenseMode": "clang-x64"
         },
         {
