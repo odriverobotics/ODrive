@@ -50,6 +50,7 @@ typedef enum {
     ERROR_SPIN_UP_TIMEOUT,
     ERROR_DRV_FAULT,
     ERROR_NOT_IMPLEMENTED_MOTOR_TYPE,
+    ERROR_ENCODER_CPR_OUT_OF_RANGE
 } Error_t;
 
 // Note: these should be sorted from lowest level of control to
@@ -119,6 +120,7 @@ typedef struct {
     int32_t encoder_offset;
     int32_t encoder_state;
     int32_t motor_dir;  // 1/-1 for fwd/rev alignment to encoder.
+    float encoder_calib_range;
     float phase;
     float pll_pos;
     float pll_vel;

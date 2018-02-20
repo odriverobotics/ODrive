@@ -129,6 +129,7 @@ Motor_t motors[] = {
             .encoder_offset = 0,
             .encoder_state = 0,
             .motor_dir = 1,   // 1 or -1
+            .encoder_calib_range = 0.02,
             .phase = 0.0f,    // [rad]
             .pll_pos = 0.0f,  // [rad]
             .pll_vel = 0.0f,  // [rad/s]
@@ -231,6 +232,7 @@ Motor_t motors[] = {
             .encoder_offset = 0,
             .encoder_state = 0,
             .motor_dir = 1,   // 1 or -1
+            .encoder_calib_range = 0.02,
             .phase = 0.0f,    // [rad]
             .pll_pos = 0.0f,  // [rad]
             .pll_vel = 0.0f,  // [rad/s]
@@ -765,9 +767,6 @@ bool calib_enc_offset(Motor_t* motor, float voltage_magnitude) {
     static const float scan_range = 4.0f * M_PI;
     const float step_size = scan_range / (float)num_steps;  // TODO handle const expressions better (maybe switch to C++ ?)
 
-    int32_t init_enc_val = (int16_t)motor->encoder.encoder_timer->Instance->CNT;
-    int32_t encvaluesum = 0;
-
     // go to motor zero phase for start_lock_duration to get ready to scan
     for (int i = 0; i < start_lock_duration * current_meas_hz; ++i) {
         if (osSignalWait(M_SIGNAL_PH_CURRENT_MEAS, PH_CURRENT_MEAS_TIMEOUT).status != osEventSignal) {
@@ -776,6 +775,10 @@ bool calib_enc_offset(Motor_t* motor, float voltage_magnitude) {
         }
         queue_voltage_timings(motor, voltage_magnitude, 0.0f);
     }
+
+    int32_t init_enc_val = (int16_t)motor->encoder.encoder_timer->Instance->CNT;
+    int32_t encvaluesum = 0;
+
     // scan forwards
     for (float ph = -scan_range / 2.0f; ph < scan_range / 2.0f; ph += step_size) {
         for (int i = 0; i < dt_step * (float)current_meas_hz; ++i) {
@@ -788,6 +791,14 @@ bool calib_enc_offset(Motor_t* motor, float voltage_magnitude) {
             queue_voltage_timings(motor, v_alpha, v_beta);
         }
         encvaluesum += (int16_t)motor->encoder.encoder_timer->Instance->CNT;
+    }
+
+    float estEnc = scan_range / elec_rad_per_enc;
+    float adjustedCount = fabsf((int16_t)motor->encoder.encoder_timer->Instance->CNT)-init_enc_val;
+    if(fabsf(adjustedCount-estEnc)/estEnc > motor->encoder.encoder_calib_range)
+    {
+        motor->error = ERROR_ENCODER_CPR_OUT_OF_RANGE;
+        return false;
     }
     // check direction
     if ((int16_t)motor->encoder.encoder_timer->Instance->CNT > init_enc_val + 8) {
