@@ -130,8 +130,8 @@ CFLAGS += -g -gdwarf-2
 CXXFLAGS += -g -gdwarf-2
 endif
 # Generate dependency information
-CFLAGS += -std=c99 -MD -MP -MF .dep/$(@F).d
-CXXFLAGS += -std=c++14 -MD -MP -MF .dep/$(@F).d
+CFLAGS += -std=gnu99 -MD -MP -MF .dep/$(@F).d
+CXXFLAGS += -std=gnu++14 -MD -MP -MF .dep/$(@F).d
 
 #######################################
 # LDFLAGS
