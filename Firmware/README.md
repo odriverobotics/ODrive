@@ -16,6 +16,7 @@ The project is under active development, so make sure to check the [Changelog](C
 - [Continuing without an IDE](#no-ide-instructions)
 - [Communicating over USB or UART](#communicating-over-usb-or-uart)
 - [Encoder Calibration](#encoder-calibration)
+- [Checking for error codes](#checking-for-error-codes)
 - [Generating startup code](#generating-startup-code)
 - [Notes for Contributors](#notes-for-contributors)
 
@@ -225,6 +226,36 @@ If you have an encoder with an index (Z) signal, you may avoid having to do the 
 * Congratulations, you are now done. You may now attach the motor to your mechanical load.
 * If you wish to scan for the index pulse in the other direction (if for example your axis usually starts close to a hard-stop), you can set a negative value in `.encoder.idx_search_speed`.
 * If your motor has problems reaching the index location due to the mechanical load, you can increase `.calibration_current`.
+
+<br><br>
+## Checking for error codes
+`explore_odrive.py`can also be used to check error codes when your odrive is not working as expected. For example `my_odrive.motor0.error` will list the error code associated with motor 0.
+<br><br>
+The error nummber corresponds to the following:
+0. `ERROR_NO_ERROR`
+1. `ERROR_PHASE_RESISTANCE_TIMING`
+2. `ERROR_PHASE_RESISTANCE_MEASUREMENT_TIMEOUT`
+3. `ERROR_PHASE_RESISTANCE_OUT_OF_RANGE`
+4. `ERROR_PHASE_INDUCTANCE_TIMING`
+5. `ERROR_PHASE_INDUCTANCE_MEASUREMENT_TIMEOUT`
+6. `ERROR_PHASE_INDUCTANCE_OUT_OF_RANGE`
+7. `ERROR_ENCODER_RESPONSE`
+8. `ERROR_ENCODER_MEASUREMENT_TIMEOUT`
+9. `ERROR_ADC_FAILED`
+10. `ERROR_CALIBRATION_TIMING`
+11. `ERROR_FOC_TIMING`
+12. `ERROR_FOC_MEASUREMENT_TIMEOUT`
+13. `ERROR_SCAN_MOTOR_TIMING`
+14. `ERROR_FOC_VOLTAGE_TIMING`
+15. `ERROR_GATEDRIVER_INVALID_GAIN`
+16. `ERROR_PWM_SRC_FAIL`
+17. `ERROR_UNEXPECTED_STEP_SRC`
+18. `ERROR_POS_CTRL_DURING_SENSORLESS`
+19. `ERROR_SPIN_UP_TIMEOUT`
+20. `ERROR_DRV_FAULT`
+21. `ERROR_NOT_IMPLEMENTED_MOTOR_TYPE`
+
+If you get an error code larger than this, it may be the case that someone added a code and forgot to update the documentation. In that case, please check [MotorControl/low_level.h](MotorControl/low_level.h) for the full enum.
 
 <br><br>
 ## Generating startup code
