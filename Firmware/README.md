@@ -265,6 +265,8 @@ The error nummber corresponds to the following:
 20. `ERROR_DRV_FAULT`
 21. `ERROR_NOT_IMPLEMENTED_MOTOR_TYPE`
 
+If you get an error code larger than this, it may be the case that someone added a code and forgot to update the documentation. In that case, please check [MotorControl/low_level.h](MotorControl/low_level.h) for the full enum.
+
 ### Generate code
 * Run stm32cubeMX and load the `stm32cubemx/Odrive.ioc` project file.
 * Press `Project -> Generate code`
