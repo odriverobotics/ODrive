@@ -45,6 +45,8 @@
 // drivers
 #include "drv8301.h"
 
+#include "utils.h"
+
 
 // **************************************************************************
 // the defines
@@ -362,7 +364,7 @@ uint16_t DRV8301_readSpi(DRV8301_Handle handle, const DRV8301_RegName_e regName)
 
   // Actuate chipselect
   HAL_GPIO_WritePin(handle->nCSgpioHandle, handle->nCSgpioNumber, GPIO_PIN_RESET);
-  osDelay(1);
+  delay_us(1);
 
   // Do blocking read
   uint16_t zerobuff = 0;
@@ -374,17 +376,17 @@ uint16_t DRV8301_readSpi(DRV8301_Handle handle, const DRV8301_RegName_e regName)
   // but for some reason you actually need to pulse it.
   // Actuate chipselect
   HAL_GPIO_WritePin(handle->nCSgpioHandle, handle->nCSgpioNumber, GPIO_PIN_SET);
-  osDelay(1);
+  delay_us(1);
   // Actuate chipselect
   HAL_GPIO_WritePin(handle->nCSgpioHandle, handle->nCSgpioNumber, GPIO_PIN_RESET);
-  osDelay(1);
+  delay_us(1);
 
   HAL_SPI_TransmitReceive(handle->spiHandle, (uint8_t*)(&zerobuff), (uint8_t*)(&recbuff), 1, 1000);
-  osDelay(1);
+  delay_us(1);
 
   // Actuate chipselect
   HAL_GPIO_WritePin(handle->nCSgpioHandle, handle->nCSgpioNumber, GPIO_PIN_SET);
-  osDelay(1);
+  delay_us(1);
 
   assert(recbuff != 0xbeef);
 
@@ -590,16 +592,16 @@ void DRV8301_writeSpi(DRV8301_Handle handle, const DRV8301_RegName_e regName,con
 {
   // Actuate chipselect
   HAL_GPIO_WritePin(handle->nCSgpioHandle, handle->nCSgpioNumber, GPIO_PIN_RESET);
-  osDelay(1);
+  delay_us(5);
 
   // Do blocking write
   uint16_t controlword = (uint16_t)DRV8301_buildCtrlWord(DRV8301_CtrlMode_Write, regName, data);
   HAL_SPI_Transmit(handle->spiHandle, (uint8_t*)(&controlword), 1, 1000);
-  osDelay(1);
+  delay_us(5);
 
   // Actuate chipselect
   HAL_GPIO_WritePin(handle->nCSgpioHandle, handle->nCSgpioNumber, GPIO_PIN_SET);
-  osDelay(1);
+  delay_us(5);
 
   return;
 }  // end of DRV8301_writeSpi() function
@@ -659,12 +661,14 @@ void DRV8301_readData(DRV8301_Handle handle, DRV_SPI_8301_Vars_t *Spi_8301_Vars)
     Spi_8301_Vars->Stat_Reg_1.FETLB_OC = (bool)(drvDataNew & (uint16_t)DRV8301_STATUS1_FETLB_OC_BITS);
     Spi_8301_Vars->Stat_Reg_1.FETHC_OC = (bool)(drvDataNew & (uint16_t)DRV8301_STATUS1_FETHC_OC_BITS);
     Spi_8301_Vars->Stat_Reg_1.FETLC_OC = (bool)(drvDataNew & (uint16_t)DRV8301_STATUS1_FETLC_OC_BITS);
+    Spi_8301_Vars->Stat_Reg_1_Value = drvDataNew;
 
     // Update Status Register 2
     drvRegName = DRV8301_RegName_Status_2;
     drvDataNew = DRV8301_readSpi(handle,drvRegName);
     Spi_8301_Vars->Stat_Reg_2.GVDD_OV = (bool)(drvDataNew & (uint16_t)DRV8301_STATUS2_GVDD_OV_BITS);
     Spi_8301_Vars->Stat_Reg_2.DeviceID = (uint16_t)(drvDataNew & (uint16_t)DRV8301_STATUS2_ID_BITS);
+    Spi_8301_Vars->Stat_Reg_2_Value = drvDataNew;
 
     // Update Control Register 1
     drvRegName = DRV8301_RegName_Control_1;
@@ -674,6 +678,7 @@ void DRV8301_readData(DRV8301_Handle handle, DRV_SPI_8301_Vars_t *Spi_8301_Vars)
     Spi_8301_Vars->Ctrl_Reg_1.PWM_MODE = (DRV8301_PwmMode_e)(drvDataNew & (uint16_t)DRV8301_CTRL1_PWM_MODE_BITS);
     Spi_8301_Vars->Ctrl_Reg_1.OC_MODE = (DRV8301_OcMode_e)(drvDataNew & (uint16_t)DRV8301_CTRL1_OC_MODE_BITS);
     Spi_8301_Vars->Ctrl_Reg_1.OC_ADJ_SET = (DRV8301_VdsLevel_e)(drvDataNew & (uint16_t)DRV8301_CTRL1_OC_ADJ_SET_BITS);
+    Spi_8301_Vars->Ctrl_Reg_1_Value = drvDataNew;
 
     // Update Control Register 2
     drvRegName = DRV8301_RegName_Control_2;
@@ -682,7 +687,7 @@ void DRV8301_readData(DRV8301_Handle handle, DRV_SPI_8301_Vars_t *Spi_8301_Vars)
     Spi_8301_Vars->Ctrl_Reg_2.GAIN = (DRV8301_ShuntAmpGain_e)(drvDataNew & (uint16_t)DRV8301_CTRL2_GAIN_BITS);
     Spi_8301_Vars->Ctrl_Reg_2.DC_CAL_CH1p2 = (DRV8301_DcCalMode_e)(drvDataNew & (uint16_t)(DRV8301_CTRL2_DC_CAL_1_BITS | DRV8301_CTRL2_DC_CAL_2_BITS));
     Spi_8301_Vars->Ctrl_Reg_2.OC_TOFF = (DRV8301_OcOffTimeMode_e)(drvDataNew & (uint16_t)DRV8301_CTRL2_OC_TOFF_BITS);
-
+    Spi_8301_Vars->Ctrl_Reg_2_Value = drvDataNew;
     Spi_8301_Vars->RcvCmd = false;
   }
 

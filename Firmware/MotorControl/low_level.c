@@ -34,7 +34,7 @@
 float vbus_voltage = 12.0f;
 
 // TODO stick parameter into struct
-#define ENCODER_CPR (2048 * 4) // Default resolution of CUI-AMT102 encoder
+#define ENCODER_CPR (1000 * 4) // Default resolution of CUI-AMT102 encoder
 #define POLE_PAIRS 7 // This value is correct for N5065 motors and Turnigy SK3 series.
 const float elec_rad_per_enc = POLE_PAIRS * 2 * M_PI * (1.0f / (float)ENCODER_CPR);
 
@@ -59,6 +59,7 @@ Motor_t motors[] = {
         .enable_step_dir = false,                    //auto enabled after calibration
         .counts_per_step = 2.0f,
         .error = ERROR_NO_ERROR,
+        .drv_fault = DRV8301_FaultType_NoFault,
         .pos_setpoint = 0.0f,
         .pos_gain = 20.0f,  // [(counts/s) / counts]
         .vel_setpoint = 0.0f,
@@ -167,6 +168,7 @@ Motor_t motors[] = {
         .enable_step_dir = false,                    //auto enabled after calibration
         .counts_per_step = 2.0f,
         .error = ERROR_NO_ERROR,
+        .drv_fault = DRV8301_FaultType_NoFault,
         .pos_setpoint = 0.0f,
         .pos_gain = 20.0f,  // [(counts/s) / counts]
         .vel_setpoint = 0.0f,
@@ -1291,6 +1293,14 @@ void control_motor_loop(Motor_t* motor) {
         }
         if (check_DRV_fault(motor)) {
             motor->error = ERROR_DRV_FAULT;
+
+            // Update DRV Fault Code
+            motor->drv_fault = DRV8301_getFaultType(&motor->gate_driver);
+
+            // Update/Cache all SPI device registers
+            DRV_SPI_8301_Vars_t* local_regs = &motor->gate_driver_regs;
+            local_regs->RcvCmd = true;
+            DRV8301_readData(&motor->gate_driver, local_regs);
             break;
         }
         update_rotor(motor);
