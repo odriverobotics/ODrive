@@ -13,7 +13,7 @@ import math
 my_drive = odrive.core.find_any(consider_usb=True, consider_serial=False, printer=print)
 
 # Print DRV device regs for Motor 0
-fault = my_drive.motor0.gate_driver.drv_error
+fault = my_drive.motor0.gate_driver.drv_fault
 status_reg_1 = my_drive.motor0.gate_driver.status_reg_1
 status_reg_2 = my_drive.motor0.gate_driver.status_reg_2
 ctrl_reg_1 = my_drive.motor0.gate_driver.ctrl_reg_1

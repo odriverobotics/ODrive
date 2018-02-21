@@ -137,7 +137,6 @@ typedef struct {
     bool enable_step_dir;
     float counts_per_step;
     Error_t error;
-    DRV8301_FaultType_e drv_fault;
     float pos_setpoint;
     float pos_gain;
     float vel_setpoint;
@@ -187,6 +186,7 @@ typedef struct {
         float current_setpoint;
     } set_current_setpoint_args;
     Anticogging_t anticogging;
+    DRV8301_FaultType_e drv_fault;
 } Motor_t;
 
 typedef struct{
