@@ -592,16 +592,16 @@ void DRV8301_writeSpi(DRV8301_Handle handle, const DRV8301_RegName_e regName,con
 {
   // Actuate chipselect
   HAL_GPIO_WritePin(handle->nCSgpioHandle, handle->nCSgpioNumber, GPIO_PIN_RESET);
-  delay_us(5);
+  delay_us(1);
 
   // Do blocking write
   uint16_t controlword = (uint16_t)DRV8301_buildCtrlWord(DRV8301_CtrlMode_Write, regName, data);
   HAL_SPI_Transmit(handle->spiHandle, (uint8_t*)(&controlword), 1, 1000);
-  delay_us(5);
+  delay_us(1);
 
   // Actuate chipselect
   HAL_GPIO_WritePin(handle->nCSgpioHandle, handle->nCSgpioNumber, GPIO_PIN_SET);
-  delay_us(5);
+  delay_us(1);
 
   return;
 }  // end of DRV8301_writeSpi() function
