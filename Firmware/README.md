@@ -16,6 +16,7 @@ The project is under active development, so make sure to check the [Changelog](C
 - [Continuing without an IDE](#no-ide-instructions)
 - [Communicating over USB or UART](#communicating-over-usb-or-uart)
 - [Encoder Calibration](#encoder-calibration)
+- [Checking for error codes](#checking-for-error-codes)
 - [Generating startup code](#generating-startup-code)
 - [Notes for Contributors](#notes-for-contributors)
 
@@ -227,18 +228,7 @@ If you have an encoder with an index (Z) signal, you may avoid having to do the 
 * If your motor has problems reaching the index location due to the mechanical load, you can increase `.calibration_current`.
 
 <br><br>
-## Generating startup code
-**Note:** You do not need to run this step to program the board. This is only required if you wish to update the auto generated code.
-
-This project uses the STM32CubeMX tool to generate startup code and to ease the configuration of the peripherals.
-You will likely want the pinout for this process. It is available [here](https://docs.google.com/spreadsheets/d/1QXDCs1IRtUyG__M_9WruWOheywb-GhOwFtfPcHuN2Fg/edit#gid=404444347)
-
-### Installing prerequisites
-* `stm32cubeMX`: Tool from STM to automatically generate setup routines and configure libraries, etc.
-    * Available [here](http://www2.st.com/content/st_com/en/products/development-tools/software-development-tools/stm32-software-development-tools/stm32-configurators-and-code-generators/stm32cubemx.html?icmp=stm32cubemx_pron_pr-stm32cubef2_apr2014&sc=stm32cube-pr2)
-
-### Checking for error codes
-
+## Checking for error codes
 `explore_odrive.py`can also be used to check error codes when your odrive is not working as expected. For example `my_odrive.motor0.error` will list the error code associated with motor 0.
 <br><br>
 The error nummber corresponds to the following:
@@ -266,6 +256,17 @@ The error nummber corresponds to the following:
 21. `ERROR_NOT_IMPLEMENTED_MOTOR_TYPE`
 
 If you get an error code larger than this, it may be the case that someone added a code and forgot to update the documentation. In that case, please check [MotorControl/low_level.h](MotorControl/low_level.h) for the full enum.
+
+<br><br>
+## Generating startup code
+**Note:** You do not need to run this step to program the board. This is only required if you wish to update the auto generated code.
+
+This project uses the STM32CubeMX tool to generate startup code and to ease the configuration of the peripherals.
+You will likely want the pinout for this process. It is available [here](https://docs.google.com/spreadsheets/d/1QXDCs1IRtUyG__M_9WruWOheywb-GhOwFtfPcHuN2Fg/edit#gid=404444347)
+
+### Installing prerequisites
+* `stm32cubeMX`: Tool from STM to automatically generate setup routines and configure libraries, etc.
+    * Available [here](http://www2.st.com/content/st_com/en/products/development-tools/software-development-tools/stm32-software-development-tools/stm32-configurators-and-code-generators/stm32cubemx.html?icmp=stm32cubemx_pron_pr-stm32cubef2_apr2014&sc=stm32cube-pr2)
 
 ### Generate code
 * Run stm32cubeMX and load the `stm32cubemx/Odrive.ioc` project file.
