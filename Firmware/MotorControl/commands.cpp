@@ -87,6 +87,14 @@ void motors_1_set_current_setpoint_func(void) {
     set_current_setpoint(&motors[1],
         motors[1].set_current_setpoint_args.current_setpoint);
 }
+void motors_run_anticogging_calibration_func() {
+    for (uint8_t i = 0; i < num_motors; i++) {
+        // Ensure the cogging map was correctly allocated earlier and that the motor is capable of calibrating
+        if (motors[i].anticogging.cogging_map != NULL && motors[i].error == ERROR_NO_ERROR) {
+            motors[i].anticogging.calib_anticogging = true;
+        }
+    }
+}
 
 // This table specifies which fields and functions are exposed on the USB and UART ports.
 // TODO: Autogenerate this table. It will come up again very soon in the Arduino library.
@@ -97,6 +105,9 @@ const Endpoint endpoints[] = {
 	Endpoint::make_property("UUID_0", (const uint32_t*)(ID_UNIQUE_ADDRESS + 0*4)),
 	Endpoint::make_property("UUID_1", (const uint32_t*)(ID_UNIQUE_ADDRESS + 1*4)),
 	Endpoint::make_property("UUID_2", (const uint32_t*)(ID_UNIQUE_ADDRESS + 2*4)),
+    Endpoint::make_function("run_anticogging_calibration", &motors_run_anticogging_calibration_func),
+        // No parameters, but still requires a close_tree()
+    Endpoint::close_tree(),
     Endpoint::make_object("motor0"),
         Endpoint::make_property("control_mode", reinterpret_cast<int32_t*>(&motors[0].control_mode)),
         Endpoint::make_property("error", reinterpret_cast<int32_t*>(&motors[0].error)),
