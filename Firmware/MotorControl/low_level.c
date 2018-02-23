@@ -59,6 +59,7 @@ Motor_t motors[] = {
         .enable_step_dir = false,                    //auto enabled after calibration
         .counts_per_step = 2.0f,
         .error = ERROR_NO_ERROR,
+        .drv_fault = DRV8301_FaultType_NoFault,
         .pos_setpoint = 0.0f,
         .pos_gain = 20.0f,  // [(counts/s) / counts]
         .vel_setpoint = 0.0f,
@@ -71,7 +72,7 @@ Motor_t motors[] = {
         .vel_limit = 20000.0f,           // [counts/s]
         .current_setpoint = 0.0f,        // [A]
         .calibration_current = 10.0f,    // [A]
-        .resistance_calib_max_voltage = 1.0f, // [V]
+        .resistance_calib_max_voltage = 1.0f, // [V] - You may need to increase this if this voltage isn't sufficient to drive calibration_current through the motor.
         .dc_bus_brownout_trip_level = 8.0f, // [V]
         .phase_inductance = 0.0f,        // to be set by measure_phase_inductance
         .phase_resistance = 0.0f,        // to be set by measure_phase_resistance
@@ -130,6 +131,7 @@ Motor_t motors[] = {
             .encoder_offset = 0,
             .encoder_state = 0,
             .motor_dir = 1,   // 1 or -1
+            .encoder_calib_range = 0.02,
             .phase = 0.0f,    // [rad]
             .pll_pos = 0.0f,  // [rad]
             .pll_vel = 0.0f,  // [rad/s]
@@ -168,6 +170,7 @@ Motor_t motors[] = {
         .enable_step_dir = false,                    //auto enabled after calibration
         .counts_per_step = 2.0f,
         .error = ERROR_NO_ERROR,
+        .drv_fault = DRV8301_FaultType_NoFault,
         .pos_setpoint = 0.0f,
         .pos_gain = 20.0f,  // [(counts/s) / counts]
         .vel_setpoint = 0.0f,
@@ -177,7 +180,7 @@ Motor_t motors[] = {
         .vel_limit = 20000.0f,                    // [counts/s]
         .current_setpoint = 0.0f,                 // [A]
         .calibration_current = 10.0f,             // [A]
-        .resistance_calib_max_voltage = 1.0f, // [V]
+        .resistance_calib_max_voltage = 1.0f, // [V] - You may need to increase this if this voltage isn't sufficient to drive calibration_current through the motor.
         .dc_bus_brownout_trip_level = 8.0f, // [V]
         .phase_inductance = 0.0f,                 // to be set by measure_phase_inductance
         .phase_resistance = 0.0f,                 // to be set by measure_phase_resistance
@@ -233,6 +236,7 @@ Motor_t motors[] = {
             .encoder_offset = 0,
             .encoder_state = 0,
             .motor_dir = 1,   // 1 or -1
+            .encoder_calib_range = 0.02,
             .phase = 0.0f,    // [rad]
             .pll_pos = 0.0f,  // [rad]
             .pll_vel = 0.0f,  // [rad/s]
@@ -769,13 +773,10 @@ bool measure_phase_inductance(Motor_t* motor, float voltage_low, float voltage_h
 // TODO: add check_timing
 bool calib_enc_offset(Motor_t* motor, float voltage_magnitude) {
     static const float start_lock_duration = 1.0f;
-    static const int num_steps = 1024;
+    static const int num_steps = 1024*2;
     static const float dt_step = 1.0f / 500.0f;
-    static const float scan_range = 4.0f * M_PI;
+    static const float scan_range = 16.0f * M_PI;
     const float step_size = scan_range / (float)num_steps;  // TODO handle const expressions better (maybe switch to C++ ?)
-
-    int32_t init_enc_val = (int16_t)motor->encoder.encoder_timer->Instance->CNT;
-    int32_t encvaluesum = 0;
 
     // go to motor zero phase for start_lock_duration to get ready to scan
     for (int i = 0; i < start_lock_duration * current_meas_hz; ++i) {
@@ -787,6 +788,10 @@ bool calib_enc_offset(Motor_t* motor, float voltage_magnitude) {
             return false;
         queue_voltage_timings(motor, voltage_magnitude, 0.0f);
     }
+
+    int32_t init_enc_val = (int16_t)motor->encoder.encoder_timer->Instance->CNT;
+    int32_t encvaluesum = 0;
+
     // scan forwards
     for (float ph = -scan_range / 2.0f; ph < scan_range / 2.0f; ph += step_size) {
         for (int i = 0; i < dt_step * (float)current_meas_hz; ++i) {
@@ -801,6 +806,14 @@ bool calib_enc_offset(Motor_t* motor, float voltage_magnitude) {
             queue_voltage_timings(motor, v_alpha, v_beta);
         }
         encvaluesum += (int16_t)motor->encoder.encoder_timer->Instance->CNT;
+    }
+
+    float expected_encoder_delta = scan_range / elec_rad_per_enc;
+    float actual_encoder_delta_abs = fabsf((int16_t)motor->encoder.encoder_timer->Instance->CNT-init_enc_val);
+    if(fabsf(actual_encoder_delta_abs - expected_encoder_delta)/expected_encoder_delta > motor->encoder.encoder_calib_range)
+    {
+        motor->error = ERROR_ENCODER_CPR_OUT_OF_RANGE;
+        return false;
     }
     // check direction
     if ((int16_t)motor->encoder.encoder_timer->Instance->CNT > init_enc_val + 8) {
@@ -1323,6 +1336,12 @@ bool do_checks(Motor_t* motor) {
     // Checks
     if (!check_DRV_fault(motor)) {
         motor->error = ERROR_DRV_FAULT;
+        // Update DRV Fault Code
+        motor->drv_fault = DRV8301_getFaultType(&motor->gate_driver);
+        // Update/Cache all SPI device registers
+        DRV_SPI_8301_Vars_t* local_regs = &motor->gate_driver_regs;
+        local_regs->RcvCmd = true;
+        DRV8301_readData(&motor->gate_driver, local_regs);
         return false;
     }
     return true;
