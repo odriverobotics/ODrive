@@ -229,13 +229,16 @@ def object_from_channel(channel, printer=noprint):
     json_data = {"name": "odrive", "members": json_data}
     return create_object("odrive", json_data, None, channel, printer=printer)
 
-def find_usb_channels(vid_pid_pairs=odrive.util.USB_VID_PID_PAIRS, printer=noprint):
+def find_usb_channels(vid_pid_pairs=odrive.util.USB_VID_PID_PAIRS, printer=noprint, **kwargs):
     """
     Scans for compatible USB devices.
     Returns a generator of odrive.protocol.Channel objects.
     """
     for vid_pid_pair in vid_pid_pairs:
         for usb_device in usb.core.find(idVendor=vid_pid_pair[0], idProduct=vid_pid_pair[1], find_all=True):
+            if "serial_number" in kwargs:
+                if usb_device.serial_number != kwargs["serial_number"]:
+                    continue
             printer("Found ODrive via PyUSB")
             try:
                 yield channel_from_usb_device(usb_device, printer)
@@ -273,13 +276,13 @@ def find_serial_channels(printer=noprint):
         yield channel_from_serial_port(port, 115200, False, printer)
 
 
-def find_all(consider_usb=True, consider_serial=False, printer=noprint):
+def find_all(consider_usb=True, consider_serial=False, printer=noprint, **kwargs):
     """
     Returns a generator with all the connected devices that speak the ODrive protocol
     """
     channels = iter(())
     if (consider_usb):
-        channels = itertools.chain(channels, find_usb_channels(printer=printer))
+        channels = itertools.chain(channels, find_usb_channels(printer=printer, **kwargs))
     if (consider_serial):
         channels = itertools.chain(channels, find_serial_channels(printer=printer))
     for channel in channels:
@@ -291,7 +294,7 @@ def find_all(consider_usb=True, consider_serial=False, printer=noprint):
             continue
 
 
-def find_any(consider_usb=True, consider_serial=False, printer=noprint):
+def find_any(consider_usb=True, consider_serial=False, printer=noprint, **kwargs):
     """
     Scans for ODrives on all supported interfaces and returns the first device
     that is found. If no device is connected the function blocks.
@@ -301,7 +304,7 @@ def find_any(consider_usb=True, consider_serial=False, printer=noprint):
     # poll for device
     printer("looking for ODrive...")
     while True:
-        dev = next(find_all(consider_usb, consider_serial, printer=printer), None)
+        dev = next(find_all(consider_usb, consider_serial, printer=printer, **kwargs), None)
         if dev is not None:
             return dev
         printer("no device found")

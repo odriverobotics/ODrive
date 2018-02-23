@@ -6,6 +6,7 @@ Tool for flashing .hex files to the ODrive via the STM built-in USB DFU mode.
 import argparse
 import sys
 import time
+import struct
 import dfuse
 import usb.core
 import usb.util
@@ -134,39 +135,68 @@ def jump_to_application(dfudev, address):
     if status[1] != dfuse.DfuState.DFU_MANIFEST:
         raise RuntimeError("An error occured. Device Status: {}".format(status[1]))
 
+# Looks for an STM32 in DFU mode, based on a UUID.
+def find_dfu_stm(serial_number):
+    params = {} if serial_number == None else {'serial_number': serial_number}
+    return usb.core.find(idVendor=0x0483, idProduct=0xdf11, **params)
+
+def str_to_uuid(uuid):
+    uuid = bytearray.fromhex(uuid.replace('-', ''))
+    return struct.unpack('>I', uuid[0:4]), struct.unpack('>I', uuid[4:8]), struct.unpack('>I', uuid[8:12])
+
+def uuid_to_str(uuid0, uuid1, uuid2):
+    return "{:08X}-{:08X}-{:08X}".format(struct.pack('>I', uuid0), struct.pack('>I', uuid1), struct.pack('>I', uuid2))
+
+def uuid_to_serial(uuid0, uuid1, uuid2):
+    return (struct.pack('>I', uuid0 + uuid2) + struct.pack('>I', uuid1)[0:2]).hex().upper()
+
 
 ### BEGINNING OF APPLICATION ###
 
 # parse arguments
-parser = argparse.ArgumentParser(description='Program an STM32 in DFU mode.')
+parser = argparse.ArgumentParser(description="Program an STM32 in DFU mode. The device can be identified either by it's serial number or UUID."
+                                             "You can list all connected devices by running"
+                                             "(lsusb -d 1209:0d32 -v; lsusb -d 0483:df11 -v) | grep iSerial")
 parser.add_argument('file', metavar='HEX', help='the .hex file to be flashed')
+parser.add_argument("-u", "--uuid",
+                    help="The 12-byte UUID of the device. This is a hexadecimal number of the format"
+                         "00000000-00000000-00000000")
+parser.add_argument("-s", "--serial-number",
+                    help="The 12-digit serial number of the device. This is a string consisting of 12 upper case hexadecimal digits as displayed in lsusb"
+                         "example: 385F324D3037")
 args = parser.parse_args()
-
 
 # load hex file
 hexfile = IntelHex(args.file)
 
-print("Contiguous segments in hex file:")
-for start, end in hexfile.segments():
-    print(" {:08X} to {:08X}".format(start, end - 1))
+#print("Contiguous segments in hex file:")
+#for start, end in hexfile.segments():
+#    print(" {:08X} to {:08X}".format(start, end - 1))
 
+if args.uuid != None:
+    serial_number = uuid_to_serial(*str_to_uuid(args.uuid))
+elif args.serial_number != None:
+    serial_number = args.serial_number
+else:
+    serial_number = None
 
 # find an STM32 in DFU mode (if there is none, find an ODrive and put it in DFU mode)
-usbdev = usb.core.find(idVendor=0x0483, idProduct=0xdf11)
+usbdev = find_dfu_stm(serial_number)
 if usbdev is None:
     # Find a connected ODrive (this will block until you connect one)
     print("Waiting for ODrive...")
-    my_drive = odrive.core.find_any(consider_usb=True, consider_serial=False)
-    print("Putting device into DFU mode...")
+    constraints = {} if serial_number == None else {'serial_number': serial_number}
+    my_drive = odrive.core.find_any(consider_usb=True, consider_serial=False, **constraints)
+    uuid = (my_drive.UUID_0, my_drive.UUID_1, my_drive.UUID_2)
+    print("Putting device {} into DFU mode...".format(serial_number))
     try:
         my_drive.enter_dfu_mode()
     except usb.core.USBError as ex:
-        if ex.errno != 32:
-            raise ex
+        pass # this is expected since the device reboots
     time.sleep(1.0)
-    usbdev = usb.core.find(idVendor=0x0483, idProduct=0xdf11)
+    usbdev = find_dfu_stm(serial_number)
     if usbdev is None:
-        raise ValueError('No STM32 DfuSe device found.')
+        raise ValueError('STM32 DfuSe device not found.')
 dfudev = dfuse.DfuDevice(usbdev)
 
 

@@ -195,7 +195,8 @@ flash: $(BUILD_DIR)/$(TARGET).elf
 	openocd -f interface/stlink-v2.cfg -f target/stm32f4x.cfg -c init -c reset\ halt -c flash\ write_image\ erase\ $(BUILD_DIR)/$(TARGET).elf -c reset\ run -c exit
 
 dfu: $(BUILD_DIR)/$(TARGET).hex
-	../tools/dfu.py $(BUILD_DIR)/$(TARGET).hex
+	../tools/dfu.py $(if $(value SERIAL_NUMBER),--serial-number $(SERIAL_NUMBER),) $(BUILD_DIR)/$(TARGET).hex
+
 
 gdb: $(BUILD_DIR)/$(TARGET).elf
 	arm-none-eabi-gdb $(BUILD_DIR)/$(TARGET).elf -x openocd.gdbinit
