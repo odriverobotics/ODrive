@@ -1324,16 +1324,13 @@ bool check_DRV_fault(Motor_t* motor) {
 
 //Returns true if everything is OK (no fault)
 bool check_PSU_brownout(Motor_t* motor) {
-    if(vbus_voltage < motor->dc_bus_brownout_trip_level) {
-        motor->error = ERROR_DC_BUS_BROWNOUT;
+    if(vbus_voltage < motor->dc_bus_brownout_trip_level)
         return false;
-    }
     return true;
 }
 
 // Returns true if everything is ok. Sets motor->error and returns false otherwise.
 bool do_checks(Motor_t* motor) {
-    // Checks
     if (!check_DRV_fault(motor)) {
         motor->error = ERROR_DRV_FAULT;
         // Update DRV Fault Code
@@ -1342,6 +1339,10 @@ bool do_checks(Motor_t* motor) {
         DRV_SPI_8301_Vars_t* local_regs = &motor->gate_driver_regs;
         local_regs->RcvCmd = true;
         DRV8301_readData(&motor->gate_driver, local_regs);
+        return false;
+    }
+    if (!check_PSU_brownout(motor)) {
+        motor->error = ERROR_DC_BUS_BROWNOUT;
         return false;
     }
     return true;
