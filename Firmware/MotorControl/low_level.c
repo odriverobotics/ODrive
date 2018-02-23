@@ -762,7 +762,7 @@ bool measure_phase_inductance(Motor_t* motor, float voltage_low, float voltage_h
 // TODO: add check_timing
 bool calib_enc_offset(Motor_t* motor, float voltage_magnitude) {
     static const float start_lock_duration = 1.0f;
-    static const int num_steps = 1024*4;
+    static const int num_steps = 1024*2;
     static const float dt_step = 1.0f / 500.0f;
     static const float scan_range = 16.0f * M_PI;
     const float step_size = scan_range / (float)num_steps;  // TODO handle const expressions better (maybe switch to C++ ?)
