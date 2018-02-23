@@ -51,6 +51,7 @@
 #include "usbd_core.h"
 #include "usbd_desc.h"
 #include "usbd_conf.h"
+#include "utils.h"
 
 /** @addtogroup STM32_USB_OTG_DEVICE_LIBRARY
   * @{
@@ -78,7 +79,6 @@
 #define USBD_PRODUCT_XSTR(s) USBD_PRODUCT_STR(s)
 #define USBD_PRODUCT_STR(s) #s
 #define USBD_PRODUCT_STRING_FS ODrive version HW_VERSION_MAJOR.HW_VERSION_MINOR
-#define USBD_SERIALNUMBER_STRING_FS "000000000001"
 #define USBD_CONFIGURATION_STRING_FS "CDC Config"
 #define USBD_INTERFACE_STRING_FS "CDC Interface"
 
@@ -286,14 +286,25 @@ uint8_t *  USBD_FS_ManufacturerStrDescriptor( USBD_SpeedTypeDef speed , uint16_t
 */
 uint8_t *  USBD_FS_SerialStrDescriptor( USBD_SpeedTypeDef speed , uint16_t *length)
 {
-  if(speed  == USBD_SPEED_HIGH)
-  {
-    USBD_GetString ((uint8_t *)USBD_SERIALNUMBER_STRING_FS, USBD_StrDesc, length);
+  // This procedure of building a USB serial number should be identical
+  // to the way the STM's built-in USB bootloader does it. This means
+  // that the device will have the same serial number in normal and DFU mode.
+  uint32_t uuid0 = *(uint32_t *) (ID_UNIQUE_ADDRESS + 0);
+  uint32_t uuid1 = *(uint32_t *) (ID_UNIQUE_ADDRESS + 4);
+  uint32_t uuid2 = *(uint32_t *) (ID_UNIQUE_ADDRESS + 8);
+  uint32_t uuid_first_part = uuid0 + uuid2;
+  uint8_t str[13];
+  for (size_t i = 0; i < 8; ++i) {
+    str[i] = "0123456789ABCDEF"[(uuid_first_part >> 28) & 0xf];
+    uuid_first_part <<= 4;
   }
-  else
-  {
-    USBD_GetString ((uint8_t *)USBD_SERIALNUMBER_STRING_FS, USBD_StrDesc, length);
+  for (size_t i = 8; i < 12; ++i) {
+    str[i] = "0123456789ABCDEF"[(uuid1 >> 28) & 0xf];
+    uuid1 <<= 4;
   }
+  str[12] = 0;
+
+  USBD_GetString ((uint8_t *)str, USBD_StrDesc, length);
   return USBD_StrDesc;
 }
 
