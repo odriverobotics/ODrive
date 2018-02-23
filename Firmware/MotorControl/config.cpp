@@ -139,7 +139,7 @@ struct Config<T, Ts...> {
             return -1;
         if (NVM_start_write(size))
             return -1;
-        uint16_t crc16 = CRC16_INIT;
+        uint16_t crc16 = CRC16_INIT; // TODO: this is not a sufficient method to protect against changes of the struct signature
         if (Config<T, Ts...>::store_config(0, &crc16, val0, vals...))
             return -1;
         if (Config<uint8_t, uint8_t>::store_config(size - 2, nullptr, (uint8_t *)&crc16 + 1, (uint8_t *)&crc16))
