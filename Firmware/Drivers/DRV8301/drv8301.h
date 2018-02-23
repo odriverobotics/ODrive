@@ -412,8 +412,13 @@ typedef struct _DRV_SPI_8301_Vars_t_
   DRV_SPI_8301_Stat2_t_     Stat_Reg_2;
   DRV_SPI_8301_CTRL1_t_     Ctrl_Reg_1;
   DRV_SPI_8301_CTRL2_t_     Ctrl_Reg_2;
+  uint16_t                  Stat_Reg_1_Value;
+  uint16_t                  Stat_Reg_2_Value;
+  uint16_t                  Ctrl_Reg_1_Value;
+  uint16_t                  Ctrl_Reg_2_Value;
   bool                  SndCmd;
   bool                  RcvCmd;
+
 }DRV_SPI_8301_Vars_t;
 
 

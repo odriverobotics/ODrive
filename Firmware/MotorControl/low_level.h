@@ -188,6 +188,7 @@ typedef struct {
         float current_setpoint;
     } set_current_setpoint_args;
     Anticogging_t anticogging;
+    DRV8301_FaultType_e drv_fault;
 } Motor_t;
 
 typedef struct{
