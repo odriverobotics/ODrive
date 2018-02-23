@@ -26,8 +26,8 @@ by default while UART runs the stream based variant.
 
 ## Packet format ##
 We will call the ODrive "server" and the PC "client". A request is a message
-from the PC to the ODrive and a response is a message from the PC to the
-ODrive.
+from the PC to the ODrive and a response is a message from the ODrive to the
+PC.
 
 Each request-response transaction corresponds to a single endpoint operation.
 

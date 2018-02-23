@@ -1,9 +1,15 @@
-## [0.3.4] - 2018-02-21
+## UNRELEASED
+Please add a note of your changes below this heading if you make a PR
 
 ### Added
 * Reporting of DRV status/control registers and fault codes
 * DRV status read script
 * Microsecond delay function
+
+## [0.3.4] - 2018-02-13
+
+### Fixed
+* Broken way to check for python 2. Python 2 not supported yet.
 
 ## [0.3.3] - 2018-02-12
 
@@ -13,6 +19,9 @@
 
 ### Changed
 * Modified python code to be Python 2 compatible
+
+### Fixed
+* USB CSC (USB serial) now reports a sensible baud rate
 
 ## [0.3.2] - 2018-02-02
 
