@@ -10,6 +10,7 @@
 #include "nvm.h"
 #include "crc.hpp"
 #include "low_level.h"
+#include "axis.h"
 
 /* Private defines -----------------------------------------------------------*/
 #define CRC16_INIT 0xabcd
@@ -180,7 +181,8 @@ void get_motor_config(const Motor_t* motor, MotorConfig_t* config) {
 
 void init_configuration(void) {
     MotorConfig_t motor_config[2];
-    if (NVM_init() || Config<MotorConfig_t, MotorConfig_t>::load_config(&motor_config[0], &motor_config[1])) {
+    //TODO: we really shouldn't be hardcoding like this
+    if (NVM_init() || Config<MotorConfig_t, MotorConfig_t, AxisConfig, AxisConfig>::load_config(&motor_config[0], &motor_config[1], &axis_configs[0], &axis_configs[1])) {
         //printf("no config found\r\n"); osDelay(5);
         // load default config
         // motor_config[0] = MotorConfig_t();
@@ -200,7 +202,8 @@ void save_configuration(void) {
     MotorConfig_t motor_config[2];
     get_motor_config(&motors[0], &motor_config[0]);
     get_motor_config(&motors[1], &motor_config[1]);
-    if (Config<MotorConfig_t, MotorConfig_t>::store_config(&motor_config[0], &motor_config[1])) {
+    //TODO: we really shouldn't be hardcoding like this
+    if (Config<MotorConfig_t, MotorConfig_t, AxisConfig, AxisConfig>::store_config(&motor_config[0], &motor_config[1], &axis_configs[0], &axis_configs[1])) {
         //printf("saving configuration failed\r\n"); osDelay(5);
     }
 }
