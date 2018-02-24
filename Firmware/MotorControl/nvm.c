@@ -9,18 +9,21 @@
 * Setting any bit in these sectors to 0 is always possible, but setting them
 * to 1 requires erasing the whole sector.
 *
-* We consider each sector as an array of 64-bit fields and use the beginning
-* as an allocation block. The allocation block keeps track of the state of each
-* field (erased, invalid, valid).
+* We consider each sector as an array of 64-bit fields except the first N bytes, which we
+* instead use as an allocation block. The allocation block is a compact bit-field (2 bit per entry)
+* that keeps track of the state of each field (erased, invalid, valid).
 *
 * One sector is always considered the valid (read) sector and the other one is the
-* victim for the next write access. On startup, if there is exactly one sector
+* target for the next write access: they can be considered to be ping-pong or double buffred.
+*
+* When writing a block of data, instead of always erasing the whole writable sector the
+* new data is appended in the erased area. This presumably increases flash life span.
+* The writable sector is only erased if there is not enough space for the new data.
+*
+* On startup, if there is exactly one sector
 * whose last non-erased value has the state "valid" that sector is considered
 * the valid sector. In any other case the selection is undefined.
 *
-* When writing a block of data, instead of always erasing the whole victim sector the
-* new data is appended in the erased area. This presumably increases flash life span.
-* The victim sector is only erased if there is not enough space for the new data.
 *
 * To write a new block of data atomically we first mark all associated fields
 * as "invalid" (in the allocation table) then write the data and then mark the
@@ -36,7 +39,7 @@
 #if defined(STM32F405xx)
 
 // refer to page 75 of datasheet:
-// http://www.st.com/content/ccc/resource/technical/document/reference_manual/3d/6d/5a/66/b4/99/40/d4/DM00031020.pdf/files/DM00031020.pdf
+// http://www.st.com/content/ccc/resource/technical/document/reference_manual/3d/6d/5a/66/b4/99/40/d4/DM00031020.pdf/files/DM00031020.pdf/jcr:content/translations/en.DM00031020.pdf
 #define FLASH_SECTOR_10_BASE (const volatile uint8_t*)0x80C0000UL
 #define FLASH_SECTOR_10_SIZE 0x20000UL
 #define FLASH_SECTOR_11_BASE (const volatile uint8_t*)0x80E0000UL
@@ -254,8 +257,8 @@ size_t NVM_get_max_read_length(void) {
 // @brief Returns the maximum length (in bytes) that can passed to NVM_start_write.
 // This holds until NVM_commit is called.
 size_t NVM_get_max_write_length(void) {
-    sector_t *victim = &sectors[1 - read_sector_];
-    return (victim->n_data - victim->n_reserved) << 3;
+    sector_t *target = &sectors[1 - read_sector_];
+    return (target->n_data - target->n_reserved) << 3;
 }
 
 // @brief Reads from the latest committed block in the non-volatile memory.
@@ -272,7 +275,7 @@ int NVM_read(size_t offset, uint8_t *data, size_t length) {
     return 0;
 }
 
-// @brief Starts an atomic write operation. The length must be at most equal to the size.
+// @brief Starts an atomic write operation.
 //
 // The most recent valid NVM data is not modified or invalidated until NVM_commit is called.
 // The length must be at most equal to the size indicated by NVM_get_max_write_length().
@@ -280,19 +283,19 @@ int NVM_read(size_t offset, uint8_t *data, size_t length) {
 // @param length: Length of the staging block that should be created
 int NVM_start_write(size_t length) {
     int status = 0;
-    sector_t *victim = &sectors[1 - read_sector_];
+    sector_t *target = &sectors[1 - read_sector_];
 
     length = (length + 7) >> 3; // round to multiple of 64 bit
-    if (length > victim->n_data - victim->n_reserved)
+    if (length > target->n_data - target->n_reserved)
         return -1;
 
     // make room for the new data
-    if (length > victim->n_data - victim->index)
-        if ((status = erase(victim)))
+    if (length > target->n_data - target->index)
+        if ((status = erase(target)))
             return status;
 
     // invalidate the fields we're about to write
-    status = set_allocation_state(victim, victim->index, length, INVALID);
+    status = set_allocation_state(target, target->index, length, INVALID);
     if (status)
         return status;
 
@@ -313,7 +316,7 @@ int NVM_start_write(size_t length) {
 int NVM_write(size_t offset, uint8_t *data, size_t length) {
     if (offset + length > (n_staging_area_ << 3))
         return -1;
-    sector_t *victim = &sectors[1 - read_sector_];
+    sector_t *target = &sectors[1 - read_sector_];
 
     HAL_FLASH_Unlock();
     HAL_FLASH_ClearError();
@@ -321,19 +324,19 @@ int NVM_write(size_t offset, uint8_t *data, size_t length) {
     // handle unaligned start
     for (; (offset & 0x3) && length; ++data, ++offset, --length)
         if (HAL_FLASH_Program(FLASH_TYPEPROGRAM_BYTE,
-                ((uintptr_t)&victim->data[victim->index]) + offset, *data) != HAL_OK)
+                ((uintptr_t)&target->data[target->index]) + offset, *data) != HAL_OK)
             goto fail;
 
     // write 32-bit values (64-bit doesn't work)
     for (; length >= 4; data += 4, offset += 4, length -=4)
         if (HAL_FLASH_Program(FLASH_TYPEPROGRAM_WORD,
-                ((uintptr_t)&victim->data[victim->index]) + offset, *(uint32_t*)data) != HAL_OK)
+                ((uintptr_t)&target->data[target->index]) + offset, *(uint32_t*)data) != HAL_OK)
             goto fail;
 
     // handle unaligned end
     for (; length; ++data, ++offset, --length)
         if (HAL_FLASH_Program(FLASH_TYPEPROGRAM_BYTE,
-                ((uintptr_t)&victim->data[victim->index]) + offset, *data) != HAL_OK)
+                ((uintptr_t)&target->data[target->index]) + offset, *data) != HAL_OK)
             goto fail;
 
     HAL_FLASH_Lock();
@@ -363,9 +366,8 @@ int NVM_commit(void) {
         status = set_allocation_state(read_sector, read_sector->index, 1, INVALID);
     else
         status = erase(read_sector);
-    if (status)
-        return status;
-    return 0;
+
+    return status;
 }
 
 

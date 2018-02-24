@@ -33,11 +33,13 @@
 // Arbitrary non-zero inital value to avoid division by zero if ADC reading is late
 float vbus_voltage = 12.0f;
 
-// TODO stick parameter into struct
-#define ENCODER_CPR (2048 * 4) // Default resolution of CUI-AMT102 encoder
-#define POLE_PAIRS 7 // This value is correct for N5065 motors and Turnigy SK3 series.
-const float elec_rad_per_enc = POLE_PAIRS * 2 * M_PI * (1.0f / (float)ENCODER_CPR);
-
+#if HW_VERSION_MAJOR == 3
+#if HW_VERSION_MINOR <= 3
+#define SHUNT_RESISTANCE (675e-6f)
+#else
+#define SHUNT_RESISTANCE (500e-6f)
+#endif
+#endif
 
 // TODO: Migrate to C++, clearly we are actually doing object oriented code here...
 // TODO: For nice encapsulation, consider not having the motor objects public
@@ -48,7 +50,26 @@ const float elec_rad_per_enc = POLE_PAIRS * 2 * M_PI * (1.0f / (float)ENCODER_CP
 Motor_t motors[] = {
     {
         // M0
+        .control_mode = CTRL_MODE_POSITION_CONTROL,  //see: Motor_control_mode_t
+        .enable_step_dir = false,                    //auto enabled after calibration
+        .counts_per_step = 2.0f,
         .error = ERROR_NO_ERROR,
+        .pole_pairs = 7, // This value is correct for N5065 motors and Turnigy SK3 series.
+        .pos_setpoint = 0.0f,
+        .pos_gain = 20.0f,  // [(counts/s) / counts]
+        .vel_setpoint = 0.0f,
+        // .vel_setpoint = 800.0f, <sensorless example>
+        .vel_gain = 5.0f / 10000.0f,  // [A/(counts/s)]
+        // .vel_gain = 15.0f / 200.0f, // [A/(rad/s)] <sensorless example>
+        .vel_integrator_gain = 10.0f / 10000.0f,  // [A/(counts/s * s)]
+        // .vel_integrator_gain = 0.0f, // [A/(rad/s * s)] <sensorless example>
+        .vel_integrator_current = 0.0f,  // [A]
+        .vel_limit = 20000.0f,           // [counts/s]
+        .current_setpoint = 0.0f,        // [A]
+        .calibration_current = 10.0f,    // [A]
+        .resistance_calib_max_voltage = 1.0f, // [V] - You may need to increase this if this voltage isn't sufficient to drive calibration_current through the motor.
+        .phase_inductance = 0.0f,        // to be set by measure_phase_inductance
+        .phase_resistance = 0.0f,        // to be set by measure_phase_resistance
         .motor_thread = 0,
         .thread_ready = false,
         // .enable_control = true,
@@ -71,13 +92,36 @@ Motor_t motors[] = {
             .enableTimeOut = false,
         },
         // .gate_driver_regs Init by DRV8301_setup
+        .motor_type = MOTOR_TYPE_HIGH_CURRENT,
+        // .motor_type = MOTOR_TYPE_GIMBAL,
+        .shunt_conductance = 1.0f / SHUNT_RESISTANCE,  //[S]
+        .phase_current_rev_gain = 0.0f,                // to be set by DRV8301_setup
+        .current_control = {
+            // Read out max_allowed_current to see max supported value for current_lim.
+            // You can change DRV8301_ShuntAmpGain to get a different range.
+            // .current_lim = 75.0f, //[A]
+            .current_lim = 10.0f,  //[A]
+            .p_gain = 0.0f,        // [V/A] should be auto set after resistance and inductance measurement
+            .i_gain = 0.0f,        // [V/As] should be auto set after resistance and inductance measurement
+            .v_current_control_integral_d = 0.0f,
+            .v_current_control_integral_q = 0.0f,
+            .Ibus = 0.0f,
+            .final_v_alpha = 0.0f,
+            .final_v_beta = 0.0f,
+            .Iq_setpoint = 0.0f,
+            .Iq_measured = 0.0f,
+            .max_allowed_current = 0.0f,
+        },
+        // .rotor_mode = ROTOR_MODE_SENSORLESS,
+        // .rotor_mode = ROTOR_MODE_RUN_ENCODER_TEST_SENSORLESS,
+        .rotor_mode = ROTOR_MODE_ENCODER,
         .encoder = {
             .encoder_timer = &htim3,
             .use_index = false,
             .index_found = false,
             .calibrated = false,
             .idx_search_speed = 10.0f, // [rad/s electrical]
-            .encoder_cpr = ENCODER_CPR,
+            .encoder_cpr = (2048 * 4), // Default resolution of CUI-AMT102 encoder,
             .encoder_offset = 0,
             .encoder_state = 0,
             .motor_dir = 1,   // 1 or -1
@@ -115,7 +159,23 @@ Motor_t motors[] = {
         },
     },
     {                                             // M1
+        .control_mode = CTRL_MODE_POSITION_CONTROL,  //see: Motor_control_mode_t
+        .enable_step_dir = false,                    //auto enabled after calibration
+        .counts_per_step = 2.0f,
         .error = ERROR_NO_ERROR,
+        .pole_pairs = 7, // This value is correct for N5065 motors and Turnigy SK3 series.
+        .pos_setpoint = 0.0f,
+        .pos_gain = 20.0f,  // [(counts/s) / counts]
+        .vel_setpoint = 0.0f,
+        .vel_gain = 5.0f / 10000.0f,             // [A/(counts/s)]
+        .vel_integrator_gain = 10.0f / 10000.0f,  // [A/(counts/s * s)]
+        .vel_integrator_current = 0.0f,           // [A]
+        .vel_limit = 20000.0f,                    // [counts/s]
+        .current_setpoint = 0.0f,                 // [A]
+        .calibration_current = 10.0f,             // [A]
+        .resistance_calib_max_voltage = 1.0f, // [V] - You may need to increase this if this voltage isn't sufficient to drive calibration_current through the motor.
+        .phase_inductance = 0.0f,                 // to be set by measure_phase_inductance
+        .phase_resistance = 0.0f,                 // to be set by measure_phase_resistance
         .motor_thread = 0,
         .thread_ready = false,
         // .enable_control = true,
@@ -138,13 +198,33 @@ Motor_t motors[] = {
             .enableTimeOut = false,
         },
         // .gate_driver_regs Init by DRV8301_setup
+        .motor_type = MOTOR_TYPE_HIGH_CURRENT,
+        .shunt_conductance = 1.0f / SHUNT_RESISTANCE,  //[S]
+        .phase_current_rev_gain = 0.0f,                // to be set by DRV8301_setup
+        .current_control = {
+            // Read out max_allowed_current to see max supported value for current_lim.
+            // You can change DRV8301_ShuntAmpGain to get a different range.
+            // .current_lim = 75.0f, //[A]
+            .current_lim = 10.0f,  //[A]
+            .p_gain = 0.0f,        // [V/A] should be auto set after resistance and inductance measurement
+            .i_gain = 0.0f,        // [V/As] should be auto set after resistance and inductance measurement
+            .v_current_control_integral_d = 0.0f,
+            .v_current_control_integral_q = 0.0f,
+            .Ibus = 0.0f,
+            .final_v_alpha = 0.0f,
+            .final_v_beta = 0.0f,
+            .Iq_setpoint = 0.0f,
+            .Iq_measured = 0.0f,
+            .max_allowed_current = 0.0f,
+        },
+        .rotor_mode = ROTOR_MODE_ENCODER,
         .encoder = {
             .encoder_timer = &htim4,
             .use_index = false,
             .index_found = false,
             .calibrated = false,
             .idx_search_speed = 10.0f, // [rad/s electrical]
-            .encoder_cpr = ENCODER_CPR,
+            .encoder_cpr = (2048 * 4), // Default resolution of CUI-AMT102 encoder,
             .encoder_offset = 0,
             .encoder_state = 0,
             .motor_dir = 1,   // 1 or -1
@@ -806,7 +886,7 @@ bool anti_cogging_calibration(Motor_t* motor) {
             fabsf(motor->encoder.pll_vel) < motor->anticogging.calib_vel_threshold) {
             motor->anticogging.cogging_map[motor->anticogging.index++] = motor->vel_integrator_current;
         }
-        if (motor->anticogging.index < ENCODER_CPR) {
+        if (motor->anticogging.index < motor->encoder.encoder_cpr) {
             set_pos_setpoint(motor, motor->anticogging.index, 0.0f, 0.0f);
             return false;
         } else {
@@ -862,9 +942,10 @@ void update_rotor(Motor_t* motor) {
             encoder->encoder_state += (int32_t)delta_enc;
 
             // compute electrical phase
-            int corrected_enc = encoder->encoder_state % ENCODER_CPR;
+            int corrected_enc = encoder->encoder_state % motor->encoder.encoder_cpr;
             corrected_enc -= encoder->encoder_offset;
             corrected_enc *= encoder->motor_dir;
+            float elec_rad_per_enc = motor->pole_pairs * 2 * M_PI * (1.0f / (float)(motor->encoder.encoder_cpr));
             float ph = elec_rad_per_enc * (float)corrected_enc;
             // ph = fmodf(ph, 2*M_PI);
             encoder->phase = wrap_pm_pi(ph);
@@ -1235,9 +1316,9 @@ void control_motor_loop(Motor_t* motor) {
 
         // Anti-cogging is enabled after calibration
         // We get the current position and apply a current feed-forward
-        // ensuring that we handle negative encoder positions properly (-1 == ENCODER_CPR - 1)
+        // ensuring that we handle negative encoder positions properly (-1 == motor->encoder.encoder_cpr - 1)
         if (motor->anticogging.use_anticogging) {
-            Iq += motor->anticogging.cogging_map[mod(motor->encoder.pll_pos, ENCODER_CPR)];
+            Iq += motor->anticogging.cogging_map[mod(motor->encoder.pll_pos, motor->encoder.encoder_cpr)];
         }
 
         float v_err = vel_des - get_pll_vel(motor);

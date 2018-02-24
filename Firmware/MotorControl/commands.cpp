@@ -94,7 +94,6 @@ void motors_1_set_current_setpoint_func(void) {
 // clang-format off
 const Endpoint endpoints[] = {
     Endpoint::make_property("vbus_voltage", const_cast<const float*>(&vbus_voltage)),
-    Endpoint::make_property("elec_rad_per_enc", const_cast<const float*>(&elec_rad_per_enc)),
 	Endpoint::make_property("UUID_0", (const uint32_t*)(ID_UNIQUE_ADDRESS + 0*4)),
 	Endpoint::make_property("UUID_1", (const uint32_t*)(ID_UNIQUE_ADDRESS + 1*4)),
 	Endpoint::make_property("UUID_2", (const uint32_t*)(ID_UNIQUE_ADDRESS + 2*4)),
@@ -212,10 +211,13 @@ const Endpoint endpoints[] = {
             Endpoint::make_property("current_setpoint", &motors[1].set_current_setpoint_args.current_setpoint),
         Endpoint::close_tree(),
     Endpoint::close_tree(), // motor1
-    Endpoint::make_function("save_config", &save_configuration),
+    Endpoint::make_function("save_configuration", &save_configuration),
         // no arguments
     Endpoint::close_tree(),
-    Endpoint::make_function("reset", &reset),
+    Endpoint::make_function("erase_configuration", &erase_configuration),
+        // no arguments
+    Endpoint::close_tree(),
+    Endpoint::make_function("reboot", &NVIC_SystemReset),
         // no arguments
     Endpoint::close_tree()
 };

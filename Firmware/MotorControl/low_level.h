@@ -115,7 +115,7 @@ typedef struct {
     bool index_found;
     bool calibrated;
     float idx_search_speed;
-    int encoder_cpr;
+    int32_t encoder_cpr;
     int32_t encoder_offset;
     int32_t encoder_state;
     int32_t motor_dir;  // 1/-1 for fwd/rev alignment to encoder.
@@ -137,6 +137,7 @@ typedef struct {
     bool enable_step_dir;
     float counts_per_step;
     Error_t error;
+    int32_t pole_pairs;
     float pos_setpoint;
     float pos_gain;
     float vel_setpoint;
