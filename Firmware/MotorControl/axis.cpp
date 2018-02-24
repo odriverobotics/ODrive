@@ -62,8 +62,8 @@ void Axis::StateMachineLoop() {
     for (;;) {
         // Keep rotor estimation up to date while idling
         osSignalWait(M_SIGNAL_PH_CURRENT_MEAS, osWaitForever);
-        update_rotor(legacy_motor_ref_);
-        
+        loop_updates(legacy_motor_ref_);
+
         if (do_calibration_) {
             do_calibration_ = false;
 

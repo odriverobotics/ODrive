@@ -73,6 +73,7 @@ Motor_t motors[] = {
         .current_setpoint = 0.0f,        // [A]
         .calibration_current = 10.0f,    // [A]
         .resistance_calib_max_voltage = 1.0f, // [V] - You may need to increase this if this voltage isn't sufficient to drive calibration_current through the motor.
+        .dc_bus_brownout_trip_level = 8.0f, // [V]
         .phase_inductance = 0.0f,        // to be set by measure_phase_inductance
         .phase_resistance = 0.0f,        // to be set by measure_phase_resistance
         .motor_thread = 0,
@@ -180,6 +181,7 @@ Motor_t motors[] = {
         .current_setpoint = 0.0f,                 // [A]
         .calibration_current = 10.0f,             // [A]
         .resistance_calib_max_voltage = 1.0f, // [V] - You may need to increase this if this voltage isn't sufficient to drive calibration_current through the motor.
+        .dc_bus_brownout_trip_level = 8.0f, // [V]
         .phase_inductance = 0.0f,                 // to be set by measure_phase_inductance
         .phase_resistance = 0.0f,                 // to be set by measure_phase_resistance
         .motor_thread = 0,
@@ -557,6 +559,7 @@ void step_cb(uint16_t GPIO_Pin) {
 }
 
 // Triggered when an encoder passes over the "Index" pin
+// TODO: only arm index edge interrupt when we know encoder has powered up
 void enc_index_cb(uint16_t GPIO_Pin, uint8_t motor_index) {
     Motor_t* motor = &motors[motor_index];
     if (!motor->encoder.index_found) {
@@ -689,6 +692,9 @@ bool measure_phase_resistance(Motor_t* motor, float test_current, float max_volt
             motor->error = ERROR_PHASE_RESISTANCE_MEASUREMENT_TIMEOUT;
             return false;
         }
+        if (!do_checks(motor))
+            return false;
+
         float Ialpha = -(motor->current_meas.phB + motor->current_meas.phC);
         test_voltage += (kI * current_meas_period) * (test_current - Ialpha);
         if (test_voltage > max_voltage) test_voltage = max_voltage;
@@ -728,6 +734,9 @@ bool measure_phase_inductance(Motor_t* motor, float voltage_low, float voltage_h
                 motor->error = ERROR_PHASE_INDUCTANCE_MEASUREMENT_TIMEOUT;
                 return false;
             }
+            if (!do_checks(motor))
+                return false;
+
             Ialphas[i] += -motor->current_meas.phB - motor->current_meas.phC;
 
             // Test voltage along phase A
@@ -775,6 +784,8 @@ bool calib_enc_offset(Motor_t* motor, float voltage_magnitude) {
             motor->error = ERROR_ENCODER_MEASUREMENT_TIMEOUT;
             return false;
         }
+        if (!do_checks(motor))
+            return false;
         queue_voltage_timings(motor, voltage_magnitude, 0.0f);
     }
 
@@ -788,6 +799,8 @@ bool calib_enc_offset(Motor_t* motor, float voltage_magnitude) {
                 motor->error = ERROR_ENCODER_MEASUREMENT_TIMEOUT;
                 return false;
             }
+            if (!do_checks(motor))
+                return false;
             float v_alpha = voltage_magnitude * arm_cos_f32(ph);
             float v_beta = voltage_magnitude * arm_sin_f32(ph);
             queue_voltage_timings(motor, v_alpha, v_beta);
@@ -821,6 +834,8 @@ bool calib_enc_offset(Motor_t* motor, float voltage_magnitude) {
                 motor->error = ERROR_ENCODER_MEASUREMENT_TIMEOUT;
                 return false;
             }
+            if (!do_checks(motor))
+                return false;
             float v_alpha = voltage_magnitude * arm_cos_f32(ph);
             float v_beta = voltage_magnitude * arm_sin_f32(ph);
             queue_voltage_timings(motor, v_alpha, v_beta);
@@ -924,6 +939,8 @@ bool scan_for_enc_idx(Motor_t* motor, float omega, float voltage_magnitude) {
     for (;;) {
         for (float ph = 0.0f; ph < 2.0f * M_PI; ph += omega * current_meas_period) {
             osSignalWait(M_SIGNAL_PH_CURRENT_MEAS, osWaitForever);
+            if (!do_checks(motor))
+                return false;
 
             if (motor->encoder.index_found)
                 return true;
@@ -1114,8 +1131,13 @@ bool spin_up_timestep(Motor_t* motor, float phase, float I_mag) {
         motor->error = ERROR_SPIN_UP_TIMEOUT;
         return false;
     }
+
+    if (!do_checks(motor))
+        return false;
     // run estimator
-    update_rotor(motor);
+    if (!loop_updates(motor))
+        return false;
+
     // override the phase during spinup
     motor->sensorless.phase = phase;
     // run current control (with the phase override)
@@ -1204,6 +1226,8 @@ void queue_voltage_timings(Motor_t* motor, float v_alpha, float v_beta) {
     queue_modulation_timings(motor, mod_alpha, mod_beta);
 }
 
+// TODO: This doesn't update brake current
+// We should probably make FOC Current call FOC Voltage to avoid duplication.
 bool FOC_voltage(Motor_t* motor, float v_d, float v_q) {
     float phase = get_rotor_phase(motor);
     float c = arm_cos_f32(phase);
@@ -1286,14 +1310,47 @@ bool FOC_current(Motor_t* motor, float Id_des, float Iq_des) {
         motor->error = ERROR_FOC_TIMING;
         return false;
     }
+
+    update_brake_current();
     return true;
 }
 
-//Returns true if the fault line is asserted
+//Returns true if everything is OK (no fault)
 bool check_DRV_fault(Motor_t* motor) {
     //TODO: make this pin configurable per motor ch
     GPIO_PinState nFAULT_state = HAL_GPIO_ReadPin(nFAULT_GPIO_Port, nFAULT_Pin);
-    return (nFAULT_state == GPIO_PIN_RESET) ? true : false;
+    return (nFAULT_state == GPIO_PIN_RESET) ? false : true;
+}
+
+//Returns true if everything is OK (no fault)
+bool check_PSU_brownout(Motor_t* motor) {
+    if(vbus_voltage < motor->dc_bus_brownout_trip_level)
+        return false;
+    return true;
+}
+
+// Returns true if everything is ok. Sets motor->error and returns false otherwise.
+bool do_checks(Motor_t* motor) {
+    if (!check_DRV_fault(motor)) {
+        motor->error = ERROR_DRV_FAULT;
+        // Update DRV Fault Code
+        motor->drv_fault = DRV8301_getFaultType(&motor->gate_driver);
+        // Update/Cache all SPI device registers
+        DRV_SPI_8301_Vars_t* local_regs = &motor->gate_driver_regs;
+        local_regs->RcvCmd = true;
+        DRV8301_readData(&motor->gate_driver, local_regs);
+        return false;
+    }
+    if (!check_PSU_brownout(motor)) {
+        motor->error = ERROR_DC_BUS_BROWNOUT;
+        return false;
+    }
+    return true;
+}
+
+bool loop_updates(Motor_t* motor) {
+    update_rotor(motor);
+    return true;
 }
 
 void control_motor_loop(Motor_t* motor) {
@@ -1302,20 +1359,14 @@ void control_motor_loop(Motor_t* motor) {
             motor->error = ERROR_FOC_MEASUREMENT_TIMEOUT;
             break;
         }
-        if (check_DRV_fault(motor)) {
-            motor->error = ERROR_DRV_FAULT;
 
-            // Update DRV Fault Code
-            motor->drv_fault = DRV8301_getFaultType(&motor->gate_driver);
-
-            // Update/Cache all SPI device registers
-            DRV_SPI_8301_Vars_t* local_regs = &motor->gate_driver_regs;
-            local_regs->RcvCmd = true;
-            DRV8301_readData(&motor->gate_driver, local_regs);
+        if (!do_checks(motor))
             break;
-        }
-        update_rotor(motor);
-        anti_cogging_calibration(motor);  // Only runs if anticogging.calib_anticogging is true; non-blocking
+        if (!loop_updates(motor))
+            break;
+
+        // Only runs if anticogging.calib_anticogging is true; non-blocking
+        anti_cogging_calibration(motor);
 
         // Position control
         // TODO Decide if we want to use encoder or pll position here
@@ -1398,7 +1449,6 @@ void control_motor_loop(Motor_t* motor) {
             break;
         }
 
-        update_brake_current();
         ++(motor->loop_counter);
     }
 
