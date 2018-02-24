@@ -51,7 +51,8 @@ __USB__:
     __On some platforms (specifically macOS), this is required__ because the kernel doesn't allow direct USB access.
  - `USB_PROTOCOL_LEGACY`: Use the human-readable legacy protocol
     Select this option if you already have an existing application. This option will be removed in the future.
- - `USB_PROTOCOL_NONE`: Ignore USB communication
+ - `USB_PROTOCOL_STDOUT`: Direct printf to USB port (in `explore_odrive.py` this is directly shown in the console)
+ - `USB_PROTOCOL_NONE`: Disable USB communication
 
 __GPIO 1,2 pins__:
 Note that UART is only supported on ODrive v3.3 and higher.
@@ -59,6 +60,7 @@ Note that UART is only supported on ODrive v3.3 and higher.
  - `UART_PROTOCOL_LEGACY`: Use the human-readable legacy protocol
     Use this option if you control the ODrive with an Arduino. The ODrive Arduino library is not yet updated to the native protocol.
  - `UART_PROTOCOL_NONE`: Ignore UART communication
+ - `UART_PROTOCOL_STDOUT`: Direct printf to serial port (in `explore_odrive.py` this is directly shown in the console)
  - `USE_GPIO_MODE_STEP_DIR`: Step/direction control mode (use in conjunction with `UART_PROTOCOL_NONE`)
 
 ### Motor control parameters

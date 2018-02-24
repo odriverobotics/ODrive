@@ -49,8 +49,6 @@ static const GpioMode_t gpio_mode = GPIO_MODE_NONE;     //GPIO 1,2 is not config
 static uint8_t* usb_buf;
 static uint32_t usb_len;
 
-// FIXME: the stdlib doesn't know about CMSIS threads, so this is just a global variable
-static thread_local uint32_t deadline_ms = 0;
 
 /* Variables exposed to USB & UART via read/write commands */
 // TODO: include range information in JSON description
@@ -86,6 +84,9 @@ void motors_1_set_vel_setpoint_func(void) {
 void motors_1_set_current_setpoint_func(void) {
     set_current_setpoint(&motors[1],
         motors[1].set_current_setpoint_args.current_setpoint);
+}
+void say_hello(void) {
+    printf("hello!\r\n");
 }
 
 // This table specifies which fields and functions are exposed on the USB and UART ports.
@@ -224,23 +225,25 @@ const Endpoint endpoints[] = {
         Endpoint::make_function("set_current_setpoint", &motors_1_set_current_setpoint_func),
             Endpoint::make_property("current_setpoint", &motors[1].set_current_setpoint_args.current_setpoint),
         Endpoint::close_tree(),
-    Endpoint::close_tree() // motor1
+    Endpoint::close_tree(), // motor1
+    Endpoint::make_function("say_hello", &say_hello), // test printf
+    Endpoint::close_tree()
 };
 // clang-format on
 
 constexpr size_t NUM_ENDPOINTS = sizeof(endpoints) / sizeof(endpoints[0]);
 
 
-#if defined(USB_PROTOCOL_NATIVE)
-
 class USBSender : public PacketSink {
 public:
+    size_t get_mtu() { return USB_TX_DATA_SIZE; }
+    
     int process_packet(const uint8_t* buffer, size_t length) {
         // cannot send partial packets
-        if (length > USB_TX_DATA_SIZE)
+        if (length > get_mtu())
             return -1;
         // wait for USB interface to become ready
-        if (osSemaphoreWait(sem_usb_tx, deadline_to_timeout(deadline_ms)) != osOK)
+        if (osSemaphoreWaitUntilDeadline(sem_usb_tx) != osOK)
             return -1;
         // transmit packet
         uint8_t status = CDC_Transmit_FS(
@@ -248,51 +251,32 @@ public:
                 well... it's not actually. Stupid STM. */, length);
         return (status == USBD_OK) ? 0 : -1;
     }
-} usb_sender;
+} usb_packet_output;
 
-BidirectionalPacketBasedChannel usb_channel(endpoints, NUM_ENDPOINTS, usb_sender);
+PacketBasedStreamSink usb_stream_output(usb_packet_output);
+
+#if defined(USB_PROTOCOL_NATIVE)
+
+BidirectionalPacketBasedChannel usb_channel(endpoints, NUM_ENDPOINTS, usb_packet_output);
 
 #elif defined(USB_PROTOCOL_NATIVE_STREAM_BASED)
 
-class USBSender : public StreamSink {
-public:
-    int process_bytes(const uint8_t* buffer, size_t length) {
-        // Loop to ensure all bytes get sent
-        while (length) {
-            size_t chunk = length < USB_TX_DATA_SIZE ? length : USB_TX_DATA_SIZE;
-            // wait for USB interface to become ready
-            if (osSemaphoreWait(sem_usb_tx, deadline_to_timeout(deadline_ms)) != osOK)
-                return -1;
-            // transmit chunk
-            if (CDC_Transmit_FS(
-                    const_cast<uint8_t*>(buffer) /* casting this const away is safe because...
-                    well... it's not actually. Stupid STM. */, chunk) != USBD_OK)
-                return -1;
-            buffer += chunk;
-            length -= chunk;
-        }
-        return 0;
-    }
-
-    size_t get_free_space() { return SIZE_MAX; }
-} usb_sender;
-
-PacketToStreamConverter usb_packet_sender(usb_sender);
-BidirectionalPacketBasedChannel usb_channel(endpoints, NUM_ENDPOINTS, usb_packet_sender);
-StreamToPacketConverter usb_stream_sink(usb_channel);
+StreamBasedPacketSink usb_stream_based_packet_output(usb_stream_output);
+BidirectionalPacketBasedChannel usb_channel(endpoints, NUM_ENDPOINTS, usb_stream_based_packet_output);
+StreamToPacketSegmenter usb_stream_input(usb_channel);
 
 #endif
 
-#if defined(UART_PROTOCOL_NATIVE)
+#if defined(UART_PROTOCOL_NATIVE) || defined(UART_PROTOCOL_STDOUT)
 class UART4Sender : public StreamSink {
 public:
-    int process_bytes(const uint8_t* buffer, size_t length) {
+    int process_bytes(const uint8_t* buffer, size_t length, size_t& processed_bytes) {
         // Loop to ensure all bytes get sent
         while (length) {
             size_t chunk = length < UART_TX_BUFFER_SIZE ? length : UART_TX_BUFFER_SIZE;
             // wait for USB interface to become ready
             // TODO: implement ring buffer to get a more continuous stream of data
-            if (osSemaphoreWait(sem_uart_dma, deadline_to_timeout(deadline_ms)) != osOK)
+            if (osSemaphoreWaitUntilDeadline(sem_uart_dma) != osOK)
                 return -1;
             // transmit chunk
             memcpy(tx_buf_, buffer, chunk);
@@ -300,6 +284,7 @@ public:
                 return -1;
             buffer += chunk;
             length -= chunk;
+            processed_bytes += chunk;
         }
         return 0;
     }
@@ -307,12 +292,26 @@ public:
     size_t get_free_space() { return SIZE_MAX; }
 private:
     uint8_t tx_buf_[UART_TX_BUFFER_SIZE];
-} uart4_sender;
+} uart4_output;
 
-PacketToStreamConverter uart4_packet_sender(uart4_sender);
+StreamBasedPacketSink uart4_packet_sender(uart4_output);
 BidirectionalPacketBasedChannel uart4_channel(endpoints, NUM_ENDPOINTS, uart4_packet_sender);
-StreamToPacketConverter UART4_stream_sink(uart4_channel);
+StreamToPacketSegmenter UART4_stream_sink(uart4_channel);
 #endif
+
+// must match order of FileNumber_t
+// Required by syscalls.cpp
+StreamSink* file_table[] = {
+    NULL, // stdin
+    NULL, // stdout
+    NULL, // stderr
+#if !defined(USB_PROTOCOL_NONE)
+    &usb_stream_output,
+#endif
+#if !defined(UART_PROTOCOL_NONE)
+    &uart4_output,
+#endif
+};
 
 /* Private function prototypes -----------------------------------------------*/
 /* Function implementations --------------------------------------------------*/
@@ -341,7 +340,7 @@ void communication_task(void const * argument) {
     (void) argument;
     
 
-#if !defined(UART_PROTOCOL_NONE)
+#if defined(UART_PROTOCOL_NATIVE) || defined(UART_PROTOCOL_LEGACY)
     //DMA open loop continous circular buffer
     //1ms delay periodic, chase DMA ptr around
 
@@ -357,7 +356,7 @@ void communication_task(void const * argument) {
 
     // Re-run state-machine forever
     for (;;) {
-#if !defined(UART_PROTOCOL_NONE)
+#if defined(UART_PROTOCOL_NATIVE) || defined(UART_PROTOCOL_LEGACY)
         // Check for UART errors and restart recieve DMA transfer if required
         if (huart4.ErrorCode != HAL_UART_ERROR_NONE) {
             HAL_UART_AbortReceive(&huart4);
@@ -366,32 +365,34 @@ void communication_task(void const * argument) {
         // Fetch the circular buffer "write pointer", where it would write next
         uint32_t new_rcv_idx = UART_RX_BUFFER_SIZE - huart4.hdmarx->Instance->NDTR;
 
-        deadline_ms = timeout_to_deadline(PROTOCOL_SERVER_TIMEOUT_MS);
+        uint32_t t1 = push_timeout(PROTOCOL_SERVER_TIMEOUT_MS);
 #if defined(UART_PROTOCOL_NATIVE)
         // Process bytes in one or two chunks (two in case there was a wrap)
+        size_t processed_bytes = 0;
         if (new_rcv_idx < last_rcv_idx) {
             UART4_stream_sink.process_bytes(dma_circ_buffer + last_rcv_idx,
-                    UART_RX_BUFFER_SIZE - last_rcv_idx);
+                    UART_RX_BUFFER_SIZE - last_rcv_idx, processed_bytes);
             last_rcv_idx = 0;
         }
         if (new_rcv_idx > last_rcv_idx) {
             UART4_stream_sink.process_bytes(dma_circ_buffer + last_rcv_idx,
-                    new_rcv_idx - last_rcv_idx);
+                    new_rcv_idx - last_rcv_idx, processed_bytes);
             last_rcv_idx = new_rcv_idx;
         }
 #elif defined(UART_PROTOCOL_LEGACY)
         // Process bytes in one or two chunks (two in case there was a wrap)
         if (new_rcv_idx < last_rcv_idx) {
             legacy_parse_stream(dma_circ_buffer + last_rcv_idx,
-                    UART_RX_BUFFER_SIZE - last_rcv_idx);
+                    UART_RX_BUFFER_SIZE - last_rcv_idx, FILENO_UART);
             last_rcv_idx = 0;
         }
         if (new_rcv_idx > last_rcv_idx) {
             legacy_parse_stream(dma_circ_buffer + last_rcv_idx,
-                    new_rcv_idx - last_rcv_idx);
+                    new_rcv_idx - last_rcv_idx, FILENO_UART);
             last_rcv_idx = new_rcv_idx;
         }
 #endif
+        pop_timeout(t1);
 #endif
 
 #if !defined(USB_PROTOCOL_NONE)
@@ -401,14 +402,16 @@ void communication_task(void const * argument) {
         const uint32_t usb_check_timeout = 1; // ms
         osStatus sem_stat = osSemaphoreWait(sem_usb_rx, usb_check_timeout);
         if (sem_stat == osOK) {
-            deadline_ms = timeout_to_deadline(PROTOCOL_SERVER_TIMEOUT_MS);
+            uint32_t t2 = push_timeout(PROTOCOL_SERVER_TIMEOUT_MS);
 #if defined(USB_PROTOCOL_NATIVE)
             usb_channel.process_packet(usb_buf, usb_len);
 #elif defined(USB_PROTOCOL_NATIVE_STREAM_BASED)
-            usb_stream_sink.process_bytes(usb_buf, usb_len);
+            size_t processed_bytes = 0;
+            usb_stream_input.process_bytes(usb_buf, usb_len, processed_bytes);
 #elif defined(USB_PROTOCOL_LEGACY)
-            legacy_parse_cmd(usb_buf, usb_len, USB_RX_DATA_SIZE, SERIAL_PRINTF_IS_USB);
+            legacy_parse_cmd(usb_buf, usb_len, USB_RX_DATA_SIZE, FILENO_USB);
 #endif
+            pop_timeout(t2);
             USBD_CDC_ReceivePacket(&hUsbDeviceFS);  // Allow next packet
         }
 #endif

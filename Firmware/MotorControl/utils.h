@@ -7,6 +7,7 @@ extern "C" {
 #endif
 
 #include <stdint.h>
+#include <cmsis_os.h>
 
 /**
  * @brief Unique ID register address location
@@ -90,6 +91,9 @@ int mod(int dividend, int divisor);
 
 uint32_t deadline_to_timeout(uint32_t deadline_ms);
 uint32_t timeout_to_deadline(uint32_t timeout_ms);
+uint32_t push_timeout(uint32_t timeout_ms);
+void pop_timeout(uint32_t old_deadline_ms);
+osStatus osSemaphoreWaitUntilDeadline(osSemaphoreId semaphore_id);
 
 uint32_t micros(void);
 

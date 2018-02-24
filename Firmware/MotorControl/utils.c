@@ -1,4 +1,5 @@
 
+#include <limits.h>
 #include <utils.h>
 #include <math.h>
 #include <cmsis_os.h>
@@ -170,6 +171,10 @@ int mod(int dividend, int divisor){
     return (r < 0) ? (r + divisor) : r;
 }
 
+
+// FIXME: the stdlib doesn't know about CMSIS threads, so this is just a global variable
+static /*thread_local*/ uint32_t _deadline_ms = 0;
+
 // @brief: Returns how much time is left until the deadline is reached.
 // If the deadline has already passed, the return value is 0 (except if
 // the deadline is very far in the past)
@@ -182,7 +187,29 @@ uint32_t deadline_to_timeout(uint32_t deadline_ms) {
 // @brief: Converts a timeout to a deadline based on the current time.
 uint32_t timeout_to_deadline(uint32_t timeout_ms) {
     uint32_t now_ms = (uint32_t)((1000ull * (uint64_t)osKernelSysTick()) / osKernelSysTickFrequency);
-    return now_ms + timeout_ms;
+    uint32_t deadline_ms = now_ms + timeout_ms;
+    return deadline_ms ? deadline_ms : 1; // hack: 0 is considered an undefined deadline (see push_timeout)
+}
+
+// @brief: Sets the current thread's deadline based on the new timeout.
+// If there is already a tighter deadline set, it is not pushed back.
+// @returns: A value that can be passed to pop_timeout to revert the effect of this function.
+uint32_t push_timeout(uint32_t timeout_ms) {
+    uint32_t old_deadline_ms = _deadline_ms;
+    // We consider a deadline of 0 an undefined deadline.
+    uint32_t previous_timeout_ms = old_deadline_ms ? deadline_to_timeout(old_deadline_ms) : UINT32_MAX;
+    uint32_t new_timeout_ms = previous_timeout_ms < timeout_ms ? previous_timeout_ms : timeout_ms;
+    _deadline_ms = timeout_to_deadline(new_timeout_ms);
+    return old_deadline_ms;
+}
+
+// @brief: Reverts the effects of push_timeout.
+void pop_timeout(uint32_t old_deadline_ms) {
+    _deadline_ms = old_deadline_ms;
+}
+
+osStatus osSemaphoreWaitUntilDeadline(osSemaphoreId semaphore_id) {
+    return osSemaphoreWait(semaphore_id, deadline_to_timeout(_deadline_ms));
 }
 
 // @brief: Returns number of microseconds since system startup

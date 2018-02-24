@@ -54,7 +54,8 @@
 #include "dma.h"
 
 /* USER CODE BEGIN 0 */
-
+#include <cmsis_os.h>
+#include "freertos_vars.h"
 /* USER CODE END 0 */
 
 UART_HandleTypeDef huart4;
@@ -186,6 +187,10 @@ void HAL_UART_MspDeInit(UART_HandleTypeDef* uartHandle)
 } 
 
 /* USER CODE BEGIN 1 */
+
+void HAL_UART_TxCpltCallback(UART_HandleTypeDef* huart) {
+    osSemaphoreRelease(sem_uart_dma);
+}
 
 /* USER CODE END 1 */
 

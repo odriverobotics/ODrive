@@ -3,15 +3,15 @@
 #define __FREERTOS_H
 
 // List of semaphores
-osSemaphoreId sem_usb_irq;
-osSemaphoreId sem_uart_dma;
-osSemaphoreId sem_usb_rx;
-osSemaphoreId sem_usb_tx;
+extern osSemaphoreId sem_usb_irq;
+extern osSemaphoreId sem_uart_dma;
+extern osSemaphoreId sem_usb_rx;
+extern osSemaphoreId sem_usb_tx;
 
 // List of threads
-osThreadId thread_motor_0;
-osThreadId thread_motor_1;
-osThreadId thread_cmd_parse;
-osThreadId thread_usb_pump;
+extern osThreadId thread_motor_0;
+extern osThreadId thread_motor_1;
+extern osThreadId thread_cmd_parse;
+extern osThreadId thread_usb_pump;
 
 #endif /* __FREERTOS_H */
