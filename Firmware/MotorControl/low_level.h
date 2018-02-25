@@ -50,6 +50,8 @@ typedef enum {
     ERROR_SPIN_UP_TIMEOUT,
     ERROR_DRV_FAULT,
     ERROR_NOT_IMPLEMENTED_MOTOR_TYPE,
+    ERROR_ENCODER_CPR_OUT_OF_RANGE,
+    ERROR_DC_BUS_BROWNOUT,
 } Error_t;
 
 // Note: these should be sorted from lowest level of control to
@@ -119,6 +121,7 @@ typedef struct {
     int32_t encoder_offset;
     int32_t encoder_state;
     int32_t motor_dir;  // 1/-1 for fwd/rev alignment to encoder.
+    float encoder_calib_range;
     float phase;
     float pll_pos;
     float pll_vel;
@@ -147,6 +150,7 @@ typedef struct {
     float current_setpoint;
     float calibration_current;
     float resistance_calib_max_voltage;
+    float dc_bus_brownout_trip_level;
     float phase_inductance;
     float phase_resistance;
     osThreadId motor_thread;
@@ -186,6 +190,7 @@ typedef struct {
         float current_setpoint;
     } set_current_setpoint_args;
     Anticogging_t anticogging;
+    DRV8301_FaultType_e drv_fault;
 } Motor_t;
 
 typedef struct{
@@ -243,6 +248,8 @@ bool anti_cogging_calibration(Motor_t* motor);
 // Test functions
 void scan_motor_loop(Motor_t* motor, float omega, float voltage_magnitude);
 // Main motor control
+bool do_checks(Motor_t* motor);
+bool loop_updates(Motor_t* motor);
 void update_rotor(Motor_t* motor);
 bool using_encoder(Motor_t* motor);
 bool using_sensorless(Motor_t* motor);

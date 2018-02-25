@@ -1,6 +1,12 @@
 ## UNRELEASED
 Please add a note of your changes below this heading if you make a PR
 
+### Added
+* Reporting error if your encoder CPR is incorrect
+* Reporting of DRV status/control registers and fault codes
+* DRV status read script
+* Microsecond delay function
+
 ## [0.3.4] - 2018-02-13
 
 ### Fixed
