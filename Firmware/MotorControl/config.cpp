@@ -12,6 +12,10 @@
 #include "low_level.h"
 #include "axis.h"
 
+// IMPORTANT: if you change, reorder or otherwise modify any of the fields in
+// the config structs, make sure to increment this number:
+uint16_t config_version = 0x0001;
+
 /* Private defines -----------------------------------------------------------*/
 #define CRC16_INIT 0xabcd
 
@@ -48,6 +52,15 @@ typedef struct {
 /* Private function prototypes -----------------------------------------------*/
 /* Function implementations --------------------------------------------------*/
 
+// @brief Manages configuration load and store operations from and to NVM
+//
+// The NVM stores consecutive one-to-one copies of arbitrary objects.
+// The types of these objects are passed as template arguments to Config<Ts...>.
+//
+// Config<Ts...> has two template specializations to implement template recursion:
+// - Config<T, Ts...> handles loading/storing of the first object (type T) and leaves
+//   the rest of the objects to an "inner" class Config<Ts...>.
+// - Config<> represents the leaf of the recursion.
 template<typename ... Ts>
 struct Config;
 
@@ -70,6 +83,12 @@ struct Config<T, Ts...> {
         return sizeof(T) + Config<Ts...>::get_size();
     }
 
+    // @brief Loads one or more consecutive objects from the NVM.
+    // During loading this function also calculates the CRC over the loaded data.
+    // @param offset: 0 means that the function should start reading at the beginning
+    // of the last comitted NVM block
+    // @param crc16: the result of the CRC calculation is written to this address
+    // @param val0, vals: the values to be loaded
     static int load_config(size_t offset, uint16_t* crc16, T* val0, Ts* ... vals) {
         size_t size = sizeof(T);
         // save current CRC (in case val0 and crc16 point to the same address)
@@ -82,6 +101,12 @@ struct Config<T, Ts...> {
         return 0;
     }
 
+    // @brief Stores one or more consecutive objects to the NVM.
+    // During storing this function also calculates the CRC over the stored data.
+    // @param offset: 0 means that the function should start writing at the beginning
+    // of the currently active NVM write block
+    // @param crc16: the result of the CRC calculation is written to this address
+    // @param val0, vals: the values to be stored
     static int store_config(size_t offset, uint16_t* crc16, const T* val0, const Ts* ... vals) {
         size_t size = sizeof(T);
         if (NVM_write(offset, (uint8_t *)val0, size))
@@ -94,11 +119,13 @@ struct Config<T, Ts...> {
         return 0;
     }
 
+    // @brief Loads one or more consecutive objects from the NVM. The loaded data
+    // is validated using a CRC value that is stored at the beginning of the data.
     static int load_config(T* val0, Ts* ... vals) {
         //printf("have %d bytes\r\n", NVM_get_max_read_length()); osDelay(5);
         if (Config<T, Ts..., uint16_t>::get_size() > NVM_get_max_read_length())
             return -1;
-        uint16_t crc16 = CRC16_INIT;
+        uint16_t crc16 = CRC16_INIT ^ config_version;
         if (Config<T, Ts..., uint16_t>::load_config(0, &crc16, val0, vals..., &crc16))
             return -1;
         if (crc16)
@@ -106,6 +133,13 @@ struct Config<T, Ts...> {
         return 0;
     }
 
+    // @brief Stores one or more consecutive objects to the NVM. In addition to the
+    // provided objects, a CRC of the data is stored.
+    //
+    // The CRC includes a version number and thus adds some protection against
+    // changes of the config structs during firmware update. Note that if the total
+    // config data length changes, the CRC validation will fail even if the developer
+    // forgets to update the config version number.
     static int store_config(const T* val0, const Ts* ... vals) {
         size_t size = Config<T, Ts...>::get_size() + 2;
         //printf("config is %d bytes\r\n", size); osDelay(5);
@@ -113,7 +147,7 @@ struct Config<T, Ts...> {
             return -1;
         if (NVM_start_write(size))
             return -1;
-        uint16_t crc16 = CRC16_INIT; // TODO: this is not a sufficient method to protect against changes of the struct signature
+        uint16_t crc16 = CRC16_INIT ^ config_version;
         if (Config<T, Ts...>::store_config(0, &crc16, val0, vals...))
             return -1;
         if (Config<uint8_t, uint8_t>::store_config(size - 2, nullptr, (uint8_t *)&crc16 + 1, (uint8_t *)&crc16))
