@@ -36,6 +36,13 @@ extern USBD_HandleTypeDef hUsbDeviceFS;
 
 /* Private constant data -----------------------------------------------------*/
 // TODO: make command to switch gpio_mode during run-time
+
+typedef enum {
+    GPIO_MODE_NONE,
+    GPIO_MODE_UART,
+    GPIO_MODE_STEP_DIR,
+} GpioMode_t;
+
 #if defined(USE_GPIO_MODE_STEP_DIR)
 static const GpioMode_t gpio_mode = GPIO_MODE_STEP_DIR; //GPIO 1,2 is M0 Step,Dir
 #elif !defined(UART_PROTOCOL_NONE)

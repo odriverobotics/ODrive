@@ -1,7 +1,65 @@
 
 tup.include('build.lua')
 
-boarddir = 'Board/v3.3'
+-- Switch between board versions
+boardversion = tup.getconfig("BOARD_VERSION")
+if boardversion == "" then boardversion = "v3.4" end
+if boardversion == "v3.1" then
+    boarddir = 'Board/v3.3' -- currently all platform code is in the same v3.3 directory
+    FLAGS += "-DHW_VERSION_MAJOR=3 -DHW_VERSION_MINOR=1"
+elseif boardversion == "v3.2" then
+    boarddir = 'Board/v3.3'
+    FLAGS += "-DHW_VERSION_MAJOR=3 -DHW_VERSION_MINOR=2"
+elseif boardversion == "v3.3" then
+    boarddir = 'Board/v3.3'
+    FLAGS += "-DHW_VERSION_MAJOR=3 -DHW_VERSION_MINOR=3"
+elseif boardversion == "v3.4" then
+    boarddir = 'Board/v3.3'
+    FLAGS += "-DHW_VERSION_MAJOR=3 -DHW_VERSION_MINOR=4"
+else
+    error("unknown board version "..boardversion)
+end
+buildsuffix = boardversion
+
+-- 48V voltage version
+if tup.getconfig("48V") == "y" then
+    FLAGS += "-DHW_VERSION_HIGH_VOLTAGE=true"
+else
+    FLAGS += "-DHW_VERSION_HIGH_VOLTAGE=false"
+end
+
+-- USB I/O settings
+if tup.getconfig("USB_PROTOCOL") == "native" or tup.getconfig("USB_PROTOCOL") == "" then
+    FLAGS += "-DUSB_PROTOCOL_NATIVE"
+elseif tup.getconfig("USB_PROTOCOL") == "native-stream" then
+    FLAGS += "-DUSB_PROTOCOL_NATIVE_STREAM_BASED"
+elseif tup.getconfig("USB_PROTOCOL") == "ascii" then
+    FLAGS += "-DUSB_PROTOCOL_LEGACY"
+elseif tup.getconfig("USB_PROTOCOL") == "none" then
+    FLAGS += "-DUSB_PROTOCOL_NONE"
+else
+    error("unknown USB protocol")
+end
+
+-- UART I/O settings
+if tup.getconfig("UART_PROTOCOL") == "native" then
+    FLAGS += "-DUART_PROTOCOL_NATIVE"
+elseif tup.getconfig("UART_PROTOCOL") == "ascii" or tup.getconfig("UART_PROTOCOL") == "" then
+    FLAGS += "-DUART_PROTOCOL_LEGACY"
+elseif tup.getconfig("UART_PROTOCOL") == "none" then
+    FLAGS += "-DUART_PROTOCOL_NONE"
+else
+    error("unknown UART protocol "..tup.getconfig("UART_PROTOCOL"))
+end
+
+-- GPIO settings
+if tup.getconfig("STEP_DIR") == "y" then
+    if tup.getconfig("UART_PROTOCOL") != "none" then
+        FLAGS += "-DUSE_GPIO_MODE_STEP_DIR"
+    else
+        error("Step/dir mode conflicts with UART. Set CONFIG_UART_PROTOCOL to none.")
+    end
+end
 
 
 -- C-specific flags
