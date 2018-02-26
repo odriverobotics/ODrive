@@ -262,6 +262,8 @@ The error nummber corresponds to the following:
 19. `ERROR_SPIN_UP_TIMEOUT`
 20. `ERROR_DRV_FAULT`
 21. `ERROR_NOT_IMPLEMENTED_MOTOR_TYPE`
+22. `ERROR_ENCODER_CPR_OUT_OF_RANGE`
+23. `ERROR_DC_BUS_BROWNOUT`
 
 If you get an error code larger than this, it may be the case that someone added a code and forgot to update the documentation. In that case, please check [MotorControl/low_level.h](MotorControl/low_level.h) for the full enum.
 
