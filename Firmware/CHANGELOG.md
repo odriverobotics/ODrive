@@ -6,6 +6,7 @@ Please add a note of your changes below this heading if you make a PR
 * Reporting of DRV status/control registers and fault codes
 * DRV status read script
 * Microsecond delay function
+* Ability to start anticogging calibration over USB protocol
 * Travis-CI
 
 ### Changed
