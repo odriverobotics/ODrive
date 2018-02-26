@@ -62,7 +62,7 @@ build{
     toolchains={toolchain},
     --toolchains={LLVMToolchain('x86_64', {'-Ofast'}, {'-flto'})},
     packages={'stm_platform'},
-    sources={        
+    sources={
         'MotorControl/utils.c',
         'MotorControl/legacy_commands.c',
         'MotorControl/low_level.c',
