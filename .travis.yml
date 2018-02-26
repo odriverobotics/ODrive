@@ -3,6 +3,11 @@
 language: c
 sudo: false
 
+addons:		
+  apt:		
+    packages:		
+      libc6-i386		
+
 cache:
   directories:
     - $HOME/dl
