@@ -2,3 +2,5 @@
 # CubeMX generates CRLF line endings
 Firmware/Board/v3.3/**/*.c text eol=crlf
 Firmware/Board/v3.3/**/*.h text eol=crlf
+Firmware/Board/v3.3/**/*.ld text eol=crlf
+Firmware/Board/v3.3/**/Makefile text eol=crlf
