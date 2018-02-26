@@ -264,6 +264,8 @@ Motor_t motors[] = {
 };
 const size_t num_motors = sizeof(motors) / sizeof(motors[0]);
 
+float brake_resistance = 0.47f;     // [ohm]
+
 /* Private constant data -----------------------------------------------------*/
 static const float one_by_sqrt3 = 0.57735026919f;
 static const float sqrt3_by_2 = 0.86602540378f;
@@ -271,8 +273,6 @@ static const float current_meas_period = CURRENT_MEAS_PERIOD;
 static const int current_meas_hz = CURRENT_MEAS_HZ;
 
 /* Private variables ---------------------------------------------------------*/
-static float brake_resistance = 0.47f;  // [ohm]
-
 /* Function implementations --------------------------------------------------*/
 
 //--------------------------------

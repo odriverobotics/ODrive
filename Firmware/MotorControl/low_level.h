@@ -55,16 +55,16 @@ typedef enum {
 // Note: these should be sorted from lowest level of control to
 // highest level of control, to allow "<" style comparisons.
 typedef enum {
-    CTRL_MODE_VOLTAGE_CONTROL,
-    CTRL_MODE_CURRENT_CONTROL,
-    CTRL_MODE_VELOCITY_CONTROL,
-    CTRL_MODE_POSITION_CONTROL
+    CTRL_MODE_VOLTAGE_CONTROL = 0,
+    CTRL_MODE_CURRENT_CONTROL = 1,
+    CTRL_MODE_VELOCITY_CONTROL = 2,
+    CTRL_MODE_POSITION_CONTROL = 3
 } Motor_control_mode_t;
 
 typedef enum {
-    MOTOR_TYPE_HIGH_CURRENT,
-    // MOTOR_TYPE_LOW_CURRENT, //Not yet implemented
-    MOTOR_TYPE_GIMBAL
+    MOTOR_TYPE_HIGH_CURRENT = 0,
+    // MOTOR_TYPE_LOW_CURRENT = 1, //Not yet implemented
+    MOTOR_TYPE_GIMBAL = 2
 } Motor_type_t;
 
 typedef struct {
@@ -199,6 +199,7 @@ extern const size_t num_motors;
 extern const float elec_rad_per_enc;
 /* Exported variables --------------------------------------------------------*/
 extern float vbus_voltage;
+extern float brake_resistance;
 extern Motor_t motors[];
 /* Exported macro ------------------------------------------------------------*/
 /* Exported functions --------------------------------------------------------*/
