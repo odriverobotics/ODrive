@@ -69,7 +69,7 @@ build{
         'MotorControl/nvm.c',
         'MotorControl/axis.cpp',
         'MotorControl/commands.cpp',
-        'MotorControl/protocol.cpp'
+        'MotorControl/protocol.cpp',
         'MotorControl/config.cpp'
     },
     includes={
