@@ -120,26 +120,34 @@ To compile the program, you first need to install the prerequisite tools:
 #### Linux:
 * `gcc-arm-none-eabi`: GCC compilation toolchain for ARM microcontrollers.
     * Installing on Ubuntu: `sudo apt-get install gcc-arm-none-eabi`
+    * Installing on Arch Linux: `sudo pacman -S arm-none-eabi-gcc arm-none-eabi-binutils`
 * `gdb-arm-none-eabi`: GNU project debugger for ARM microcontrollers.
     * Installing on Ubuntu: `sudo apt-get install gdb-arm-none-eabi`
+    * Installing on Arch Linux: `sudo pacman -S arm-none-eabi-gdb`
 * `OpenOCD`: Open On-Chip Debugging tools. This is what we use to flash the code onto the microcontroller.
     * Installing on Ubuntu: `sudo apt-get install openocd`
+    * Installing on Arch Linux: build and install the [AUR package](https://aur.archlinux.org/packages/openocd/)
+* `tup`: Used as a build tool
+    * Installing on Ubuntu: `sudo apt-add-repository 'deb http://ppa.launchpad.net/anatol/tup/ubuntu precise main'; sudo apt-get update; sudo apt-get install tup`
+    * Installing on Arch Linux: `sudo pacman -S tup`
 * No additional USB CDC driver should be required on Linux.
 
 #### Mac:
 * `brew cask install gcc-arm-embedded`:  GCC toolchain+debugger
+* `brew tap homebrew/fuse; brew install homebrew/fuse/tup`: Build tool
 * `brew install openocd`: Programmer
 
 #### Windows:
 Install the following:
 * [Git for windows](https://git-scm.com/download/win). This intalls the Git Bash, which is a unix style command line interface that we will be using. 
 * [GNU ARM Embedded Toolchain](https://developer.arm.com/open-source/gnu-toolchain/gnu-rm/downloads). The cross-compiler used to compile the code. Download and install the "Windows 32-bit" version. Make sure to tick the "add to path" option.
-* [Make for Windows](http://gnuwin32.sourceforge.net/packages/make.htm). Make is used to script the compilation process. Download and run the complete package setup program. Add the path of the binaries to your PATH environment variable. For me this was at `C:\Program Files (x86)\GnuWin32\bin`. For details on how to set your path envirment in windows see [these instructions.](https://www.java.com/en/download/help/path.xml)
+* [Tup](http://gittup.org/tup/index.html) is used to script the compilation process. Unpack the zip-folder. Then add the path that contains the executable (something like `C:\Users\yourname\the\place\you\unzipped\tup-latest`) to your PATH environment variable. For details on how to set your path envirment in windows see [these instructions.](https://www.java.com/en/download/help/path.xml)
+* [Make for Windows](http://gnuwin32.sourceforge.net/packages/make.htm). This is optional and mainly used because commands are short and developers are used to it. If you don't want to use it, you can look at the Makefile to get the corresponding commands. Download and run the complete package setup program. Add the path of the binaries to your PATH environment variable. For me this was at `C:\Program Files (x86)\GnuWin32\bin`.
 * OpenOCD. Follow the instructions at [GNU ARM Eclipse  - How to install the OpenOCD binaries](http://gnuarmeclipse.github.io/openocd/install/), including the part about ST-LINK/V2 drivers. Add the path of the binaries to your PATH environment variable. For me this was at `C:\Program Files\GNU ARM Eclipse\OpenOCD\0.10.0-201704182147-dev\bin`.
 
 <br><br>
 ## Setting up an IDE
-ODrive is a Makefile project.  It does not require an IDE, but the open-source IDE VSCode is recommended.  It is also possible to use Eclipse.  If you'd like to go that route, please see the respective configuration document:
+For working with the ODrive code you don't need an IDE, but the open-source IDE VSCode is recommended.  It is also possible to use Eclipse.  If you'd like to go that route, please see the respective configuration document:
 
 * [Configuring VSCode](configuring-vscode.md)
 * [Configuring Eclipse](configuring-eclipse.md)
