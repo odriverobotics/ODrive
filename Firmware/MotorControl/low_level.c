@@ -805,6 +805,8 @@ bool calib_enc_offset(Motor_t* motor, float voltage_magnitude) {
         encvaluesum += (int16_t)motor->encoder.encoder_timer->Instance->CNT;
     }
 
+    //TODO avoid recomputing elec_rad_per_enc every time
+    float elec_rad_per_enc = motor->pole_pairs * 2 * M_PI * (1.0f / (float)(motor->encoder.encoder_cpr));
     float expected_encoder_delta = scan_range / elec_rad_per_enc;
     float actual_encoder_delta_abs = fabsf((int16_t)motor->encoder.encoder_timer->Instance->CNT-init_enc_val);
     if(fabsf(actual_encoder_delta_abs - expected_encoder_delta)/expected_encoder_delta > motor->encoder.encoder_calib_range)
@@ -975,6 +977,7 @@ void update_rotor(Motor_t* motor) {
             int corrected_enc = encoder->encoder_state % motor->encoder.encoder_cpr;
             corrected_enc -= encoder->encoder_offset;
             corrected_enc *= encoder->motor_dir;
+            //TODO avoid recomputing elec_rad_per_enc every time
             float elec_rad_per_enc = motor->pole_pairs * 2 * M_PI * (1.0f / (float)(motor->encoder.encoder_cpr));
             float ph = elec_rad_per_enc * (float)corrected_enc;
             // ph = fmodf(ph, 2*M_PI);
