@@ -105,7 +105,9 @@ for src in string.gmatch(vars['C_INCLUDES'] or '', "%S+") do
     stm_includes += boarddir..'/'..string.sub(src, 3, -1) -- remove "-I" from each include path
 end
 
+-- TODO: cleaner separation of the platform code and the rest
 stm_includes += 'MotorControl'
+stm_includes += 'Drivers/DRV8301'
 build{
     name='stm_platform',
     type='objects',
@@ -121,6 +123,7 @@ build{
     --toolchains={LLVMToolchain('x86_64', {'-Ofast'}, {'-flto'})},
     packages={'stm_platform'},
     sources={
+        'Drivers/DRV8301/drv8301.c',
         'MotorControl/utils.c',
         'MotorControl/legacy_commands.c',
         'MotorControl/low_level.c',
@@ -129,6 +132,7 @@ build{
         'MotorControl/protocol.cpp'
     },
     includes={
+        'Drivers/DRV8301',
         'MotorControl'
     }
 }

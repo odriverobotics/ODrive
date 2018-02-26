@@ -80,6 +80,8 @@
 /* It's up to user to redefine and/or remove those define */
 #define USB_RX_DATA_SIZE  64
 #define USB_TX_DATA_SIZE  64
+#define APP_RX_DATA_SIZE  USB_RX_DATA_SIZE
+#define APP_TX_DATA_SIZE  USB_TX_DATA_SIZE
 /* USER CODE END EXPORTED_DEFINES */
 
 /**
