@@ -23,4 +23,4 @@ script:
   - cd Firmware
   - mkdir -p build
   - tup generate ./build.sh
-  - bash -x ./build.sh
+  - bash -xe ./build.sh
