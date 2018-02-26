@@ -280,6 +280,8 @@ You will likely want the pinout for this process. It is available [here](https:/
 * Run stm32cubeMX and load the `stm32cubemx/Odrive.ioc` project file.
 * Press `Project -> Generate code`
 * You may need to let it download some drivers and such.
+* After generating/updating the code, some minor patches need to be applied. To do this, run:
+  `git apply Firmware/Board/v3.3/*.patch`
 
 <br><br>
 ## Notes for Contributors

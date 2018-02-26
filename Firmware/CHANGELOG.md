@@ -10,6 +10,7 @@ Please add a note of your changes below this heading if you make a PR
 
 ### Changed
 * Build system is now tup instead of make
+* Update CubeMX generated STM platform code to version 1.19.0
 
 ## [0.3.4] - 2018-02-13
 
