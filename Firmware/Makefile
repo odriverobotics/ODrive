@@ -2,7 +2,8 @@
 # This is only a stub for various commands.
 # Tup is used for the actual compilation.
 
-FIRMWARE = build/ODriveFirmware.elf
+BUILD_DIR = build
+FIRMWARE = $(BUILD_DIR)/ODriveFirmware.elf
 
 all:
 	tup
@@ -19,5 +20,8 @@ bmp: all
 		--ex 'attach 1' \
 		--ex 'load' $(FIRMWARE)
 
-.PHONY: all flash gdb bmp
+clean:
+	-rm -fR .dep $(BUILD_DIR)
+
+.PHONY: all flash gdb bmp clean
 
