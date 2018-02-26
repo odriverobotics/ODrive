@@ -67,7 +67,7 @@ To get good performance you need to tune the ODrive after flashing.
 The general configuration procedure goes like this:
 
  1. Launch `./tools/explore_odrive.py`. This will give you a command prompt where you can modify using simple assignments.
- 2. Configure parameters inside the `my_odrive.[...].config` objects. For example to adjust the position gain: `my_odrive.motor0.config.pos_gain = 30` <kbd>Enter</kbd>
+ 2. Configure parameters inside the `my_odrive.[...].config` objects. For example to adjust the position gain: `my_odrive.motor0.config.pos_gain = 30` <kbd>Return</kbd>
     
     The complete list of configurable parameters is:
      - `my_odrive.motorN.config.*`
