@@ -266,11 +266,11 @@ typedef void (*PendedFunction_t)( void *, uint32_t );
  * @endverbatim
  */
 #if( configSUPPORT_DYNAMIC_ALLOCATION == 1 )
-	TimerHandle_t xTimerCreate(	const char * const pcTimerName,
+	PRIVILEGED_FUNCTION TimerHandle_t xTimerCreate(	const char * const pcTimerName,
 								const TickType_t xTimerPeriodInTicks,
 								const UBaseType_t uxAutoReload,
 								void * const pvTimerID,
-								TimerCallbackFunction_t pxCallbackFunction ) PRIVILEGED_FUNCTION; /*lint !e971 Unqualified char types are allowed for strings and single characters only. */
+								TimerCallbackFunction_t pxCallbackFunction ); /*lint !e971 Unqualified char types are allowed for strings and single characters only. */
 #endif
 
 /**
@@ -396,12 +396,12 @@ typedef void (*PendedFunction_t)( void *, uint32_t );
  * @endverbatim
  */
 #if( configSUPPORT_STATIC_ALLOCATION == 1 )
-	TimerHandle_t xTimerCreateStatic(	const char * const pcTimerName,
+	PRIVILEGED_FUNCTION TimerHandle_t xTimerCreateStatic(	const char * const pcTimerName,
 										const TickType_t xTimerPeriodInTicks,
 										const UBaseType_t uxAutoReload,
 										void * const pvTimerID,
 										TimerCallbackFunction_t pxCallbackFunction,
-										StaticTimer_t *pxTimerBuffer ) PRIVILEGED_FUNCTION; /*lint !e971 Unqualified char types are allowed for strings and single characters only. */
+										StaticTimer_t *pxTimerBuffer ); /*lint !e971 Unqualified char types are allowed for strings and single characters only. */
 #endif /* configSUPPORT_STATIC_ALLOCATION */
 
 /**
@@ -424,7 +424,7 @@ typedef void (*PendedFunction_t)( void *, uint32_t );
  *
  * See the xTimerCreate() API function example usage scenario.
  */
-void *pvTimerGetTimerID( const TimerHandle_t xTimer ) PRIVILEGED_FUNCTION;
+PRIVILEGED_FUNCTION void *pvTimerGetTimerID( const TimerHandle_t xTimer );
 
 /**
  * void vTimerSetTimerID( TimerHandle_t xTimer, void *pvNewID );
@@ -445,7 +445,7 @@ void *pvTimerGetTimerID( const TimerHandle_t xTimer ) PRIVILEGED_FUNCTION;
  *
  * See the xTimerCreate() API function example usage scenario.
  */
-void vTimerSetTimerID( TimerHandle_t xTimer, void *pvNewID ) PRIVILEGED_FUNCTION;
+PRIVILEGED_FUNCTION void vTimerSetTimerID( TimerHandle_t xTimer, void *pvNewID );
 
 /**
  * BaseType_t xTimerIsTimerActive( TimerHandle_t xTimer );
@@ -482,7 +482,7 @@ void vTimerSetTimerID( TimerHandle_t xTimer, void *pvNewID ) PRIVILEGED_FUNCTION
  * }
  * @endverbatim
  */
-BaseType_t xTimerIsTimerActive( TimerHandle_t xTimer ) PRIVILEGED_FUNCTION;
+PRIVILEGED_FUNCTION BaseType_t xTimerIsTimerActive( TimerHandle_t xTimer );
 
 /**
  * TaskHandle_t xTimerGetTimerDaemonTaskHandle( void );
@@ -490,7 +490,7 @@ BaseType_t xTimerIsTimerActive( TimerHandle_t xTimer ) PRIVILEGED_FUNCTION;
  * Simply returns the handle of the timer service/daemon task.  It it not valid
  * to call xTimerGetTimerDaemonTaskHandle() before the scheduler has been started.
  */
-TaskHandle_t xTimerGetTimerDaemonTaskHandle( void ) PRIVILEGED_FUNCTION;
+PRIVILEGED_FUNCTION TaskHandle_t xTimerGetTimerDaemonTaskHandle( void );
 
 /**
  * BaseType_t xTimerStart( TimerHandle_t xTimer, TickType_t xTicksToWait );
@@ -1225,7 +1225,7 @@ TaskHandle_t xTimerGetTimerDaemonTaskHandle( void ) PRIVILEGED_FUNCTION;
  *	}
  * @endverbatim
  */
-BaseType_t xTimerPendFunctionCallFromISR( PendedFunction_t xFunctionToPend, void *pvParameter1, uint32_t ulParameter2, BaseType_t *pxHigherPriorityTaskWoken ) PRIVILEGED_FUNCTION;
+PRIVILEGED_FUNCTION BaseType_t xTimerPendFunctionCallFromISR( PendedFunction_t xFunctionToPend, void *pvParameter1, uint32_t ulParameter2, BaseType_t *pxHigherPriorityTaskWoken );
 
  /**
   * BaseType_t xTimerPendFunctionCall( PendedFunction_t xFunctionToPend,
@@ -1259,7 +1259,7 @@ BaseType_t xTimerPendFunctionCallFromISR( PendedFunction_t xFunctionToPend, void
   * timer daemon task, otherwise pdFALSE is returned.
   *
   */
-BaseType_t xTimerPendFunctionCall( PendedFunction_t xFunctionToPend, void *pvParameter1, uint32_t ulParameter2, TickType_t xTicksToWait ) PRIVILEGED_FUNCTION;
+PRIVILEGED_FUNCTION BaseType_t xTimerPendFunctionCall( PendedFunction_t xFunctionToPend, void *pvParameter1, uint32_t ulParameter2, TickType_t xTicksToWait );
 
 /**
  * const char * const pcTimerGetName( TimerHandle_t xTimer );
@@ -1270,7 +1270,7 @@ BaseType_t xTimerPendFunctionCall( PendedFunction_t xFunctionToPend, void *pvPar
  *
  * @return The name assigned to the timer specified by the xTimer parameter.
  */
-const char * pcTimerGetName( TimerHandle_t xTimer ) PRIVILEGED_FUNCTION; /*lint !e971 Unqualified char types are allowed for strings and single characters only. */
+PRIVILEGED_FUNCTION const char * pcTimerGetName( TimerHandle_t xTimer ); /*lint !e971 Unqualified char types are allowed for strings and single characters only. */
 
 /**
  * TickType_t xTimerGetPeriod( TimerHandle_t xTimer );
@@ -1281,7 +1281,7 @@ const char * pcTimerGetName( TimerHandle_t xTimer ) PRIVILEGED_FUNCTION; /*lint 
  *
  * @return The period of the timer in ticks.
  */
-TickType_t xTimerGetPeriod( TimerHandle_t xTimer ) PRIVILEGED_FUNCTION;
+PRIVILEGED_FUNCTION TickType_t xTimerGetPeriod( TimerHandle_t xTimer );
 
 /**
 * TickType_t xTimerGetExpiryTime( TimerHandle_t xTimer );
@@ -1296,14 +1296,14 @@ TickType_t xTimerGetPeriod( TimerHandle_t xTimer ) PRIVILEGED_FUNCTION;
 * will next expire is returned.  If the timer is not running then the return
 * value is undefined.
 */
-TickType_t xTimerGetExpiryTime( TimerHandle_t xTimer ) PRIVILEGED_FUNCTION;
+PRIVILEGED_FUNCTION TickType_t xTimerGetExpiryTime( TimerHandle_t xTimer );
 
 /*
  * Functions beyond this part are not part of the public API and are intended
  * for use by the kernel only.
  */
-BaseType_t xTimerCreateTimerTask( void ) PRIVILEGED_FUNCTION;
-BaseType_t xTimerGenericCommand( TimerHandle_t xTimer, const BaseType_t xCommandID, const TickType_t xOptionalValue, BaseType_t * const pxHigherPriorityTaskWoken, const TickType_t xTicksToWait ) PRIVILEGED_FUNCTION;
+PRIVILEGED_FUNCTION BaseType_t xTimerCreateTimerTask( void );
+PRIVILEGED_FUNCTION BaseType_t xTimerGenericCommand( TimerHandle_t xTimer, const BaseType_t xCommandID, const TickType_t xOptionalValue, BaseType_t * const pxHigherPriorityTaskWoken, const TickType_t xTicksToWait );
 
 #ifdef __cplusplus
 }

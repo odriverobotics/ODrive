@@ -1,8 +1,8 @@
 /**
   ******************************************************************************
-  * @file           : USB_DEVICE
+  * @file           : usb_device.h
   * @version        : v1.0_Cube
-  * @brief          : Header for usb_device file.
+  * @brief          : Header for usb_device.c file.
   ******************************************************************************
   * This notice applies to any and all portions of this file
   * that are not between comment pairs USER CODE BEGIN and
@@ -10,7 +10,7 @@
   * inserted by the user or by software development tools
   * are owned by their respective copyright owners.
   *
-  * Copyright (c) 2017 STMicroelectronics International N.V. 
+  * Copyright (c) 2018 STMicroelectronics International N.V. 
   * All rights reserved.
   *
   * Redistribution and use in source and binary forms, with or without 
@@ -45,10 +45,12 @@
   * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
   *
   ******************************************************************************
-*/
+  */
+
 /* Define to prevent recursive inclusion -------------------------------------*/
-#ifndef __usb_device_H
-#define __usb_device_H
+#ifndef __USB_DEVICE__H__
+#define __USB_DEVICE__H__
+
 #ifdef __cplusplus
  extern "C" {
 #endif
@@ -58,22 +60,55 @@
 #include "stm32f4xx_hal.h"
 #include "usbd_def.h"
 
+/* USER CODE BEGIN INCLUDE */
+
+/* USER CODE END INCLUDE */
+
+/** @addtogroup USBD_OTG_DRIVER
+  * @{
+  */
+
+/** @defgroup USBD_DEVICE USBD_DEVICE
+  * @brief Device file for Usb otg low level driver.
+  * @{
+  */
+
+/** @defgroup USBD_DEVICE_Exported_Variables USBD_DEVICE_Exported_Variables
+  * @brief Public variables.
+  * @{
+  */
+
+/** USB device core handle. */
 extern USBD_HandleTypeDef hUsbDeviceFS;
 
-/* USB_Device init function */	
+/**
+  * @}
+  */
+
+/** @defgroup USBD_DEVICE_Exported_FunctionsPrototype USBD_DEVICE_Exported_FunctionsPrototype
+  * @brief Declaration of public functions for Usb device.
+  * @{
+  */
+
+/** USB Device initialization function. */
 void MX_USB_DEVICE_Init(void);
+
+/**
+  * @}
+  */
+
+/**
+  * @}
+  */
+
+/**
+  * @}
+  */
 
 #ifdef __cplusplus
 }
 #endif
-#endif /*__usb_device_H */
 
-/**
-  * @}
-  */
-
-/**
-  * @}
-  */
+#endif /* __USB_DEVICE__H__ */
 
 /************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/

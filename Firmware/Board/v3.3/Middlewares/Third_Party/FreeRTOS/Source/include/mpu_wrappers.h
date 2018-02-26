@@ -183,8 +183,19 @@ only for ports that are using the MPU. */
 	#else /* MPU_WRAPPERS_INCLUDED_FROM_API_FILE */
 
 		/* Ensure API functions go in the privileged execution section. */
-		#define PRIVILEGED_FUNCTION __attribute__((section("privileged_functions")))
-		#define PRIVILEGED_DATA __attribute__((section("privileged_data")))
+#if defined(__ICCARM__)
+
+#define PRIVILEGED_FUNCTION _Pragma("location= \"privileged_functions\"")
+#define PRIVILEGED_DATA     _Pragma("location= \"privileged_data\"")
+#define PRIVILEGED_INITIALIZED_DATA     _Pragma("location= \"privileged_initialized_data\"")
+
+#else
+
+#define PRIVILEGED_FUNCTION __attribute__((section("privileged_functions")))
+#define PRIVILEGED_DATA __attribute__((section("privileged_data")))
+#define PRIVILEGED_INITIALIZED_DATA PRIVILEGED_DATA
+
+#endif
 
 	#endif /* MPU_WRAPPERS_INCLUDED_FROM_API_FILE */
 
@@ -192,6 +203,7 @@ only for ports that are using the MPU. */
 
 	#define PRIVILEGED_FUNCTION
 	#define PRIVILEGED_DATA
+	#define PRIVILEGED_INITIALIZED_DATA
 	#define portUSING_MPU_WRAPPERS 0
 
 #endif /* portUSING_MPU_WRAPPERS */
