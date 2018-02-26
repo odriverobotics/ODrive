@@ -264,7 +264,7 @@ Motor_t motors[] = {
             .calib_anticogging = false,
             .calib_pos_threshold = 1.0f,
             .calib_vel_threshold = 1.0f,
-        }
+        },
         .drv_fault = DRV8301_FaultType_NoFault,
     }
 };
