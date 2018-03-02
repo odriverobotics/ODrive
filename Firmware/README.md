@@ -128,7 +128,7 @@ To compile the program, you first need to install the prerequisite tools:
     * Installing on Ubuntu: `sudo apt-get install openocd`
     * Installing on Arch Linux: build and install the [AUR package](https://aur.archlinux.org/packages/openocd/)
 * `tup`: Used as a build tool
-    * Installing on Ubuntu: `sudo apt-add-repository 'deb http://ppa.launchpad.net/anatol/tup/ubuntu precise main'; sudo apt-get update; sudo apt-get install tup`
+    * Installing on Ubuntu: `sudo add-apt-repository ppa:jonathonf/tup; sudo apt-get update; sudo apt-get install tup`
     * Installing on Arch Linux: `sudo pacman -S tup`
 * No additional USB CDC driver should be required on Linux.
 
