@@ -323,7 +323,7 @@ typedef StaticQueue_t              osStaticMessageQDef_t;
 /// Thread Definition structure contains startup information of a thread.
 /// \note CAN BE CHANGED: \b os_thread_def is implementation specific in every CMSIS-RTOS.
 typedef struct os_thread_def  {
-  char                   *name;        ///< Thread name 
+  const char             *name;        ///< Thread name 
   os_pthread             pthread;      ///< start address of thread function
   osPriority             tpriority;    ///< initial thread priority
   uint32_t               instances;    ///< maximum number of instances of that thread function

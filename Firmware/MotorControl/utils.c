@@ -4,8 +4,6 @@
 #include <cmsis_os.h>
 #include <stm32f4xx_hal.h>
 
-static const float one_by_sqrt3 = 0.57735026919f;
-static const float two_by_sqrt3 = 1.15470053838f;
 
 int SVM(float alpha, float beta, float* tA, float* tB, float* tC) {
     int Sextant;

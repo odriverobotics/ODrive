@@ -1,4 +1,4 @@
-
+#if 0
 /* Includes ------------------------------------------------------------------*/
 
 // TODO: remove this option
@@ -8,7 +8,7 @@
 
 #include "commands.h"
 #include "low_level.h"
-#include "axis.h"
+#include "axis.hpp"
 #include "protocol.hpp"
 #include "freertos_vars.h"
 #include "utils.h"
@@ -145,7 +145,7 @@ const Endpoint endpoints[] = {
         Endpoint::make_property("DC_calib.phC", &motors[0].DC_calib.phC),
         Endpoint::make_property("shunt_conductance", &motors[0].shunt_conductance),
         Endpoint::make_property("phase_current_rev_gain", &motors[0].phase_current_rev_gain),
-        Endpoint::make_property("thread_ready", &motors[0].thread_ready),
+        Endpoint::make_property("thread_id_valid", &motors[0].thread_id_valid),
         Endpoint::make_property("control_deadline", &motors[0].control_deadline),
         Endpoint::make_property("last_cpu_time", &motors[0].last_cpu_time),
         Endpoint::make_property("loop_counter", &motors[0].loop_counter),
@@ -232,7 +232,7 @@ const Endpoint endpoints[] = {
         Endpoint::make_property("DC_calib.phC", &motors[1].DC_calib.phC),
         Endpoint::make_property("shunt_conductance", &motors[1].shunt_conductance),
         Endpoint::make_property("phase_current_rev_gain", &motors[1].phase_current_rev_gain),
-        Endpoint::make_property("thread_ready", &motors[1].thread_ready),
+        Endpoint::make_property("thread_id_valid", &motors[1].thread_id_valid),
         Endpoint::make_property("control_deadline", &motors[1].control_deadline),
         Endpoint::make_property("last_cpu_time", &motors[1].last_cpu_time),
         Endpoint::make_property("loop_counter", &motors[1].loop_counter),
@@ -509,3 +509,4 @@ void usb_update_thread() {
 
     vTaskDelete(osThreadGetId());
 }
+#endif

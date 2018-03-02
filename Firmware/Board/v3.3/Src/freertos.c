@@ -53,10 +53,11 @@
 
 /* USER CODE BEGIN Includes */     
 #include "freertos_vars.h"
-#include "low_level.h"
+//#include "low_level.h"
 #include "axis_c_interface.h"
-#include "commands.h"
-#include "config.h"
+//#include "commands.h"
+//#include "config.h"
+int odrive_main(void);
 /* USER CODE END Includes */
 
 /* Variables -----------------------------------------------------------------*/
@@ -67,8 +68,6 @@ osThreadId defaultTaskHandle;
 osSemaphoreId sem_usb_irq;
 
 // List of threads
-osThreadId thread_motor_0;
-osThreadId thread_motor_1;
 osThreadId thread_cmd_parse;
 /* USER CODE END Variables */
 
@@ -110,7 +109,7 @@ void MX_FREERTOS_Init(void) {
   sem_usb_rx = osSemaphoreCreate(osSemaphore(sem_usb_rx), 1);
   osSemaphoreWait(sem_usb_rx, 0);  // Remove a token.
 
-  // Create a semaphore for USB RX
+  // Create a semaphore for USB TX
   osSemaphoreDef(sem_usb_tx);
   sem_usb_tx = osSemaphoreCreate(osSemaphore(sem_usb_tx), 1);
 
@@ -142,28 +141,7 @@ void StartDefaultTask(void const * argument)
 
   /* USER CODE BEGIN StartDefaultTask */
 
-  // Init and load persistent configuration
-  init_configuration();
-
-  // Init communications
-  init_communication();
-
-  // Init motor control
-  init_motor_control();
-
-  // Start motor threads
-  osThreadDef(task_motor_0, axis_thread_entry,   osPriorityHigh+1, 0, 512);
-  osThreadDef(task_motor_1, axis_thread_entry,   osPriorityHigh,   0, 512);
-  thread_motor_0 = osThreadCreate(osThread(task_motor_0), &motors[0]);
-  thread_motor_1 = osThreadCreate(osThread(task_motor_1), &motors[1]);
-
-  // Start command handling thread
-  osThreadDef(task_cmd_parse, communication_task, osPriorityNormal, 0, 512);
-  thread_cmd_parse = osThreadCreate(osThread(task_cmd_parse), NULL);
-
-  // Start USB interrupt handler thread
-  osThreadDef(task_usb_pump, usb_update_thread, osPriorityNormal, 0, 512);
-  thread_usb_pump = osThreadCreate(osThread(task_usb_pump), NULL);
+  odrive_main();
 
   //If we get to here, then the default task is done.
   vTaskDelete(defaultTaskHandle);

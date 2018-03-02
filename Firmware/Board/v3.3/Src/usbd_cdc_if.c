@@ -274,7 +274,7 @@ static int8_t CDC_Receive_FS (uint8_t* Buf, uint32_t *Len)
 {
   /* USER CODE BEGIN 6 */
 
-  set_cmd_buffer(Buf, *Len);
+  //set_cmd_buffer(Buf, *Len); TODO: revert!
   osSemaphoreRelease(sem_usb_rx);
 
   return (USBD_OK);
