@@ -10,11 +10,11 @@ The project is under active development, so make sure to check the [Changelog](C
 
 <!-- MarkdownTOC depth=2 autolink=true bracket=round -->
 
-- [Configuring parameters](#configuring-parameters)
+- [Configuring the build](#configuring-the-build)
 - [Compiling and downloading firmware](#compiling-and-downloading-firmware)
-- [Setting up an IDE](#setting-up-an-ide)
-- [Continuing without an IDE](#no-ide-instructions)
+- [Setting up an IDE](#setting-up-an-ide) or [Continuing without an IDE](#no-ide-instructions)
 - [Communicating over USB or UART](#communicating-over-usb-or-uart)
+- [Configuring parameters](#configuring-parameters)
 - [Encoder Calibration](#encoder-calibration)
 - [Checking for error codes](#checking-for-error-codes)
 - [Generating startup code](#generating-startup-code)
@@ -22,8 +22,10 @@ The project is under active development, so make sure to check the [Changelog](C
 
 <!-- /MarkdownTOC -->
 
-## Configuring parameters
-To correctly operate the ODrive, you need to supply some parameters. Some are mandatory, and if supplied incorrectly will cause the drive to malfunction. To get good performance you must also tune the drive.
+<br><br>
+## Configuring the build
+To correctly operate the ODrive, you need to supply some parameters. Some are mandatory, and if supplied incorrectly will cause the drive to malfunction.
+In this section we will set the compile-time parameters, later we will also set the [run time parameters](#configuring-parameters).
 
 The first thing to set is your board hardware version, located at the top of [Inc/main.h](Inc/main.h). If, for example, you are using the hardware: ODrive v3.2, then you should set it like this:
 ```C
@@ -60,54 +62,6 @@ Note that UART is only supported on ODrive v3.3 and higher.
     Use this option if you control the ODrive with an Arduino. The ODrive Arduino library is not yet updated to the native protocol.
  - `UART_PROTOCOL_NONE`: Ignore UART communication
  - `USE_GPIO_MODE_STEP_DIR`: Step/direction control mode (use in conjunction with `UART_PROTOCOL_NONE`)
-
-### Motor control parameters
-The rest of all the parameters are at the top of the [MotorControl/low_level.c](MotorControl/low_level.c) file. Please note that many parameters occur twice, once for each motor.
-In it's current state, the motor structs contain both tuning parameters, meant to be set by the developer, and static variables, meant to be modified by the software. Unfortunatly these are mixed together right now, but cleaning this up is a high priority task.
-
-It may be helpful to know that the entry point of each of the motor threads is `void axis_thread_entry` at the top of [MotorControl/axis.cpp](MotorControl/axis.cpp). This is like `main` for each motor, and is probably where you should start reading the code.
-
-### Mandatory parameters
-You must set:
-* `ENCODER_CPR`: Encoder Count Per Revolution (CPR). This is 4x the Pulse Per Revolution (PPR) value.
-* `POLE_PAIRS`: This is the number of magnet poles in the rotor, **divided by two**. You can simply count the number of permanent magnets in the rotor, if you can see them. Note: this is not the same as the number of coils in the stator.
-* `brake_resistance`: This is the resistance of the brake resistor. If you are not using it, you may set it to 0.0f.
-* `motor_type`: This is the type of motor being used. Currently two types of motors are supported -- High-current motors (`MOTOR_TYPE_HIGH_CURRENT`) and Gimbal motors (`MOTOR_TYPE_GIMBAL`).
-
-### Motor Modes
-The firwmare currently supports two different types of motors, high-current motors, and Gimbal motors. If you're using a regular hobby brushless motor like [this](https://hobbyking.com/en_us/turnigy-aerodrive-sk3-5065-236kv-brushless-outrunner-motor.html) one, you should set `motor_mode` to `MOTOR_TYPE_HIGH_CURRENT`. For high-torque gimbal motors like [this](https://hobbyking.com/en_us/turnigy-hd-5208-brushless-gimbal-motor-bldc.html) one, you should choose `MOTOR_TYPE_GIMBAL`.
-
-**Further detail:**
-
-If 100's of mA of current noise is "small" for you, you can choose `MOTOR_TYPE_HIGH_CURRENT`.
-If 100's of mA of current noise is "large" for you, and you do not intend to spin the motor very fast (omega * L << R), and the motor is fairly large resistance (1 ohm or larger), you can chose `MOTOR_TYPE_GIMBAL`.
-
-If 100's of mA current noise is "large" for you, and you intend to spin the motor fast, then you need to replace the shunt resistors on the ODrive.
-
-### Tuning parameters
-The most important parameters are the limits:
-* The current limit: `.current_lim = 75.0f, //[A] // Note: consistent with 40v/v gain`. The default current limit, for safety reasons, is set to 10A. This is quite weak, and good for making sure the drive is stable. Once you have tuned the drive, you can increase this to 75A to get some performance. Note that above 75A, you must change the current amplifier gains.
-  * Note: The motor current and the current drawn from the power supply is not the same in general. You should not look at the power supply current to see what is going on with the motor current.
-* The velocity limit: `.vel_limit = 20000.0f, // [counts/s]`. The motor will be limited to this speed; again the default value is quite slow.
-* You can change `.calibration_current` to the largest value you feel comfortable leaving running through the motor continously when the motor is stationary.
-
-The motion control gains are currently manually tuned:
-* `.pos_gain = 20.0f, // [(counts/s) / counts]`
-* `.vel_gain = 15.0f / 10000.0f, // [A/(counts/s)]`
-* `.vel_integrator_gain = 10.0f / 10000.0f, // [A/(counts/s * s)]`
-
-An upcoming feature will enable automatic tuning. Until then, here is a rough tuning procedure:
-* Set the integrator gain to 0
-* Make sure you have a stable system. If it is not, decrease all gains until you have one.
-* Increase `vel_gain` by around 30% per iteration until the motor exhibits some vibration.
-* Back down `vel_gain` to 50% of the vibrating value.
-* Increase `pos_gain` by around 30% per iteration until you see some overshoot.
-* Back down `pos_gain` until you do not have overshoot anymore.
-* The integrator is not easily tuned, nor is it strictly required. Tune at your own discression.
-
-### Optional parameters
-By default both motors are enabled, and the default control mode is position control.
-If you want a different mode, you can change `.control_mode`. To disable a motor, set `.enable_control` and `.do_calibration` to false.
 
 <br><br>
 ## Compiling and downloading firmware
@@ -152,7 +106,6 @@ For working with the ODrive code you don't need an IDE, but the open-source IDE 
 * [Configuring VSCode](configuring-vscode.md)
 * [Configuring Eclipse](configuring-eclipse.md)
 
-<br><br>
 ## No IDE Instructions
 After installing all of the above, open a Git Bash shell. Continue at section [Building the firmware](#building-the-firmware).
 
@@ -213,11 +166,78 @@ pip install pyusb pyserial
 See the [protocol specification](protocol.md) or the [legacy protocol specification](legacy-protocol.md).
 
 <br><br>
+## Configuring parameters
+The majority of the important parameters you would want to set after flashing the ODrive with firmware are configurable over the USB communication interface. These include some mandatory parameters that you must set for correct operation, as well as tuning and optional parameters.
+To start the configuration session:
+
+* Launch `./tools/explore_odrive.py`. This will give you a command prompt where you can modify using simple assignments.
+* Configure parameters of the `my_odrive.[...].config` objects.
+  * For example to adjust the position gain: `my_odrive.motor0.config.pos_gain = 30` <kbd>Enter</kbd>.
+  * The complete list of configurable parameters is:
+    * `my_odrive.motorN.config.*`
+    * `my_odrive.axisN.config.*`
+    * where N is a valid motor number (0 or 1).
+* Save the configuration into non-volatile memory: `my_odrive.save_configuration()` <kbd>Enter</kbd>
+  * This will save the properties of all the `[...].config` objects and no other parameters.
+* Reboot the drive: `my_odrive.reboot()` <kbd>Enter</kbd>
+
+Note that a firmware upgrade at this point will preserve the configuration if and only if the parameters of both firmware versions are identical. Should you need to reset the configuration, you can run `my_odrive.erase_configuration()`.
+
+__Developers__: Be aware that you can also modify the compile-time defaults for all of these parameters. Most of them you will find at the top of [MotorControl/low_level.c](MotorControl/low_level.c#L50). Note that the configuration parameters there are somewhat intertwined with runtime variables and hardware specific configuration that should not be changed. Also note that all parameters occur twice.
+
+### Mandatory parameters
+You must set for every motor:
+* `my_odrive.motorN.encoder.config.cpr`: Encoder Count Per Revolution (CPR). This is 4x the Pulse Per Revolution (PPR) value.
+* `my_odrive.motorN.config.pole_pairs`: This is the number of magnet poles in the rotor, **divided by two**. You can simply count the number of permanent magnets in the rotor, if you can see them. Note: this is not the same as the number of coils in the stator.
+* `my_odrive.config.brake_resistance` [Ohm]: This is the resistance of the brake resistor. If you are not using it, you may set it to 0.0f.
+* `my_odrive.motorN.config.motor_type`: This is the type of motor being used. Currently two types of motors are supported -- High-current motors (`MOTOR_TYPE_HIGH_CURRENT`) and Gimbal motors (`MOTOR_TYPE_GIMBAL`).
+
+#### Motor Modes
+The firwmare currently supports two different types of motors, high-current motors, and Gimbal motors. If you're using a regular hobby brushless motor like [this](https://hobbyking.com/en_us/turnigy-aerodrive-sk3-5065-236kv-brushless-outrunner-motor.html) one, you should set `my_odrive.motorN.config.motor_type` to `MOTOR_TYPE_HIGH_CURRENT`. For high-torque gimbal motors like [this](https://hobbyking.com/en_us/turnigy-hd-5208-brushless-gimbal-motor-bldc.html) one, you should choose `MOTOR_TYPE_GIMBAL`.
+
+**Further detail:**
+If 100's of mA of current noise is "small" for you, you can choose `MOTOR_TYPE_HIGH_CURRENT`.
+If 100's of mA of current noise is "large" for you, and you do not intend to spin the motor very fast (omega * L << R), and the motor is fairly large resistance (1 ohm or larger), you can chose `MOTOR_TYPE_GIMBAL`.
+If 100's of mA current noise is "large" for you, and you intend to spin the motor fast, then you need to replace the shunt resistors on the ODrive.
+
+### Tuning parameters
+The most important parameters are the limits:
+* The current limit: `my_odrive.motorN.current_control.config.current_lim` [A]. The default current limit, for safety reasons, is set to 10A. This is quite weak, and good for making sure the drive is stable. Once you have tuned the drive, you can increase this to 75A to get some performance. Note that above 75A, you must change the current amplifier gains.
+  * Note: The motor current and the current drawn from the power supply is not the same in general. You should not look at the power supply current to see what is going on with the motor current.
+* The velocity limit: `my_odrive.motorN.config.vel_limit` [counts/s]. The motor will be limited to this speed; again the default value is quite slow.
+* You can change `my_odrive.motorN.config.calibration_current` [A] to the largest value you feel comfortable leaving running through the motor continously when the motor is stationary.
+
+The motion control gains are currently manually tuned:
+* `my_odrive.motorN.config.pos_gain = 20.0f` [(counts/s) / counts]
+* `my_odrive.motorN.config.vel_gain = 15.0f / 10000.0f` [A/(counts/s)]
+* `my_odrive.motorN.config.vel_integrator_gain = 10.0f / 10000.0f` [A/(counts/s * s)]
+
+An upcoming feature will enable automatic tuning. Until then, here is a rough tuning procedure:
+* Set the integrator gain to 0
+* Make sure you have a stable system. If it is not, decrease all gains until you have one.
+* Increase `vel_gain` by around 30% per iteration until the motor exhibits some vibration.
+* Back down `vel_gain` to 50% of the vibrating value.
+* Increase `pos_gain` by around 30% per iteration until you see some overshoot.
+* Back down `pos_gain` until you do not have overshoot anymore.
+* The integrator is not easily tuned, nor is it strictly required. Tune at your own discression.
+
+### Optional parameters
+By default both motors are enabled, and the default control mode is position control.
+If you want a different mode, you can change `my_odrive.motorN.config.control_mode`.
+Possible values are:
+* `CTRL_MODE_POSITION_CONTROL`
+* `CTRL_MODE_VELOCITY_CONTROL`
+* `CTRL_MODE_CURRENT_CONTROL`
+* `CTRL_MODE_VOLTAGE_CONTROL` - this one is not normally used.
+
+To disable a motor at startup, set `my_odrive.axisN.config.enable_control` and `my_odrive.axisN.config.do_calibration` to `False`.
+
+<br><br>
 ## Encoder Calibration
 By default the encoder-to-motor calibration will run on every startup. During encoder calibration the rotor must be allowed to rotate without any biased load during startup. That means mass and weak friction loads are fine, but gravity or spring loads are not okay.
 
 ### Encoder with Index signal
-If you have an encoder with an index (Z) signal, you may avoid having to do the calibration on every startup, and instead use the index signal to re-sync the encoder to a stored calibration. Bleow are the steps to do the one-time calibration and configuration. Note that you can follow these steps with one motor at a time, or all motors together, as you wish.
+If you have an encoder with an index (Z) signal, you may avoid having to do the calibration on every startup, and instead use the index signal to re-sync the encoder to a stored calibration. Below are the steps to do the one-time calibration and configuration. Note that you can follow these steps with one motor at a time, or all motors together, as you wish.
 
 * Since you will only do this once, it is recommended that you mechanically disengage the motor from anything other than the encoder, so it can spin freely.
 * All the parameters we will be modifying are in the motor structs at the top of [MotorControl/low_level.c](MotorControl/low_level.c).
