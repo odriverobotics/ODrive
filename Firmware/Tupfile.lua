@@ -16,10 +16,8 @@ FLAGS += '-mfpu=fpv4-sp-d16'
 FLAGS += '-mfloat-abi=hard'
 FLAGS += { '-Wall', '-fdata-sections', '-ffunction-sections'}
 
-if tup.getconfig('DEBUG') == 'y' then
-    --C_FLAGS += '-g -gdwarf-2'
-    FLAGS += '-g -gdwarf-2'
-end
+FLAGS += '-g -gdwarf-2'
+
 
 -- linker flags
 LDFLAGS += '-T'..boarddir..'/STM32F405RGTx_FLASH.ld'

@@ -120,7 +120,7 @@ Motor_t motors[] = {
             .encoder_timer = &htim3,
             .use_index = false,
             .index_found = false,
-            .calibrated = false,
+            .manually_calibrated = false,
             .idx_search_speed = 10.0f, // [rad/s electrical]
             .encoder_cpr = (2048 * 4), // Default resolution of CUI-AMT102 encoder,
             .encoder_offset = 0,
@@ -225,7 +225,7 @@ Motor_t motors[] = {
             .encoder_timer = &htim4,
             .use_index = false,
             .index_found = false,
-            .calibrated = false,
+            .manually_calibrated = false,
             .idx_search_speed = 10.0f, // [rad/s electrical]
             .encoder_cpr = (2048 * 4), // Default resolution of CUI-AMT102 encoder,
             .encoder_offset = 0,
@@ -841,7 +841,6 @@ bool calib_enc_offset(Motor_t* motor, float voltage_magnitude) {
 
     int offset = encvaluesum / (num_steps * 2);
     motor->encoder.encoder_offset = offset;
-    motor->encoder.calibrated = true;
     return true;
 }
 
@@ -870,7 +869,7 @@ bool motor_calibration(Motor_t* motor) {
                     (float)(motor->encoder.motor_dir) * motor->encoder.idx_search_speed,
                     enc_calibration_voltage))
                 return false;
-        if (!motor->encoder.calibrated)
+        if (!motor->encoder.manually_calibrated)
             if (!calib_enc_offset(motor, enc_calibration_voltage))
                 return false;
     }

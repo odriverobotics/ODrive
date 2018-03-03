@@ -38,7 +38,7 @@ typedef struct {
     Rotor_mode_t rotor_mode;
     float current_control_current_lim;
     bool encoder_use_index;
-    bool encoder_calibrated;
+    bool encoder_manually_calibrated;
     float encoder_idx_search_speed;
     int32_t encoder_cpr;
     int32_t encoder_offset;
@@ -178,7 +178,7 @@ void set_motor_config(const MotorConfig_t* config, Motor_t* motor) {
     motor->current_control.current_lim = config->current_control_current_lim;
 
     motor->encoder.use_index = config->encoder_use_index;
-    motor->encoder.calibrated = config->encoder_calibrated;
+    motor->encoder.manually_calibrated = config->encoder_manually_calibrated;
     motor->encoder.idx_search_speed = config->encoder_idx_search_speed;
     motor->encoder.encoder_cpr = config->encoder_cpr;
     motor->encoder.encoder_offset = config->encoder_offset;
@@ -205,7 +205,7 @@ void get_motor_config(const Motor_t* motor, MotorConfig_t* config) {
     config->current_control_current_lim = motor->current_control.current_lim;
 
     config->encoder_use_index = motor->encoder.use_index;
-    config->encoder_calibrated = motor->encoder.calibrated;
+    config->encoder_manually_calibrated = motor->encoder.manually_calibrated;
     config->encoder_idx_search_speed = motor->encoder.idx_search_speed;
     config->encoder_cpr = motor->encoder.encoder_cpr;
     config->encoder_offset = motor->encoder.encoder_offset;

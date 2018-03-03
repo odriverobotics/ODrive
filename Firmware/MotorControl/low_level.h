@@ -115,7 +115,7 @@ typedef struct {
     TIM_HandleTypeDef* encoder_timer;
     bool use_index;
     bool index_found;
-    bool calibrated;
+    bool manually_calibrated;
     float idx_search_speed;
     int32_t encoder_cpr;
     int32_t encoder_offset;
