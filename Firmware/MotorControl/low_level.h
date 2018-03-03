@@ -175,7 +175,6 @@ typedef struct {
     Encoder_t encoder;
     Sensorless_t sensorless;
     uint32_t loop_counter;
-    int timing_log_index;
     uint16_t timing_log[TIMING_LOG_SIZE];
     // Cache for remote procedure calls arguments
     struct {
@@ -193,6 +192,20 @@ typedef struct {
     Anticogging_t anticogging;
     DRV8301_FaultType_e drv_fault;
 } Motor_t;
+
+typedef enum {
+    TIMING_LOG_GENERAL,
+    TIMING_LOG_ADC_CB_M0_I,
+    TIMING_LOG_ADC_CB_M0_DC,
+    TIMING_LOG_ADC_CB_M1_I,
+    TIMING_LOG_ADC_CB_M1_DC,
+    TIMING_LOG_MEAS_R,
+    TIMING_LOG_MEAS_L,
+    TIMING_LOG_ENC_CALIB,
+    TIMING_LOG_IDX_SEARCH,
+    TIMING_LOG_FOC_VOLTAGE,
+    TIMING_LOG_FOC_CURRENT,
+} TimingLog_t;
 
 typedef struct{
         int type;
@@ -230,7 +243,7 @@ bool motor_calibration(Motor_t* motor);
 
 //// Old private:
 // Utility
-uint16_t check_timing(Motor_t* motor);
+uint16_t check_timing(Motor_t* motor, TimingLog_t log_idx);
 void global_fault(int error);
 float phase_current_from_adcval(Motor_t* motor, uint32_t ADCValue);
 // Initalisation
