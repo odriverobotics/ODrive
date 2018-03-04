@@ -19,7 +19,7 @@ Before doing the VSCode setup, make sure you've installed all of your [prerequis
         * Path Autocomplete
         * Auto Comment Blocks
 1. Restart VSCode 
-1. Open the VSCode Workspace file, which is located in the root of the ODrive repository.  It is called `VSCodeWorkspace.code-workspace`.  The first time you open it, VSCode will install some dependencies.  If it fails, you may need to [change your proxy settings](https://code.visualstudio.com/docs/getstarted/settings).
+1. Open the VSCode Workspace file, which is located in the root of the ODrive repository.  It is called `ODrive_Workspace.code-workspace`.  The first time you open it, VSCode will install some dependencies.  If it fails, you may need to [change your proxy settings](https://code.visualstudio.com/docs/getstarted/settings).
 
 You should now be ready to compile and test the ODrive project.
 

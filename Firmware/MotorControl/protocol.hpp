@@ -34,9 +34,15 @@ template<typename T>
 inline size_t read_le(T* value, const uint8_t* buffer);
 
 template<>
+inline size_t write_le<bool>(bool value, uint8_t* buffer) {
+    buffer[0] = value ? 1 : 0;
+    return 1;
+}
+
+template<>
 inline size_t write_le<uint8_t>(uint8_t value, uint8_t* buffer) {
     buffer[0] = value;
-    return 2;
+    return 1;
 }
 
 template<>
@@ -72,9 +78,15 @@ inline size_t write_le<float>(float value, uint8_t* buffer) {
 }
 
 template<>
+inline size_t read_le<bool>(bool* value, const uint8_t* buffer) {
+    *value = buffer[0];
+    return 1;
+}
+
+template<>
 inline size_t read_le<uint8_t>(uint8_t* value, const uint8_t* buffer) {
     *value = buffer[0];
-    return 2;
+    return 1;
 }
 
 template<>
@@ -357,6 +369,14 @@ inline const char* get_default_json_modifier<const uint8_t>() {
 template<>
 inline const char* get_default_json_modifier<uint8_t>() {
     return "\"type\":\"uint8\",\"access\":\"rw\"";
+}
+template<>
+inline const char* get_default_json_modifier<const bool>() {
+    return "\"type\":\"bool\",\"access\":\"r\"";
+}
+template<>
+inline const char* get_default_json_modifier<bool>() {
+    return "\"type\":\"bool\",\"access\":\"rw\"";
 }
 
 class Endpoint {
