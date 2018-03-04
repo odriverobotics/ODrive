@@ -270,11 +270,11 @@ typedef enum  {
 
 /// Entry point of a thread.
 /// \note MUST REMAIN UNCHANGED: \b os_pthread shall be consistent in every CMSIS-RTOS.
-typedef void (*os_pthread) (void const *argument);
+typedef void (*os_pthread) (void *argument);
 
 /// Entry point of a timer call back function.
 /// \note MUST REMAIN UNCHANGED: \b os_ptimer shall be consistent in every CMSIS-RTOS.
-typedef void (*os_ptimer) (void const *argument);
+typedef void (*os_ptimer) (void *argument);
 
 // >>> the following data type definitions may shall adapted towards a specific RTOS
 

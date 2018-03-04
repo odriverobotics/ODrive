@@ -72,7 +72,7 @@ osThreadId thread_cmd_parse;
 /* USER CODE END Variables */
 
 /* Function prototypes -------------------------------------------------------*/
-void StartDefaultTask(void const * argument);
+void StartDefaultTask(void * argument);
 
 extern void MX_USB_DEVICE_Init(void);
 void MX_FREERTOS_Init(void); /* (MISRA C 2004 rule 8.1) */
@@ -134,7 +134,7 @@ void MX_FREERTOS_Init(void) {
 }
 
 /* StartDefaultTask function */
-void StartDefaultTask(void const * argument)
+void StartDefaultTask(void * argument)
 {
   /* init code for USB_DEVICE */
   MX_USB_DEVICE_Init();
