@@ -21,7 +21,7 @@
 #include <tim.h>
 #include <utils.h>
 
-#include <axis.hpp>
+#include "odrive_main.hpp"
 
 /* Private defines -----------------------------------------------------------*/
 
@@ -76,7 +76,7 @@ void start_adc_pwm() {
     HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_4);
 }
 
-void global_fault(Error_t error) {
+void halt_motors(Motor::Error_t error) {
     // Disable motors NOW!
     for (size_t i = 0; i < AXIS_COUNT; ++i) {
         axes[i]->motor.disarm();
@@ -84,7 +84,7 @@ void global_fault(Error_t error) {
     // Set fault codes, etc.
     for (size_t i = 0; i < AXIS_COUNT; ++i) {
         axes[i]->motor.error = error;
-        // TODO: update axis_state
+        axes[i]->error = Axis::ERROR_MOTOR_FAILED;
     }
     // disable brake resistor
     set_brake_current(0.0f);
@@ -175,7 +175,7 @@ void pwm_trig_adc_cb(ADC_HandleTypeDef* hadc, bool injected) {
 
     // Ensure ADCs are expected ones to simplify the logic below
     if (!(hadc == &hadc2 || hadc == &hadc3)) {
-        global_fault(ERROR_ADC_FAILED);
+        halt_motors(Motor::ERROR_ADC_FAILED);
         return;
     };
 

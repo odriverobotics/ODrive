@@ -1,6 +1,10 @@
 #ifndef __ENCODER_HPP
 #define __ENCODER_HPP
 
+#ifndef __ODRIVE_MAIN_HPP
+#error "This file should not be included directly. Include odrive_main.hpp instead."
+#endif
+
 struct EncoderConfig_t {
     bool use_index = false;
     bool calibrated = false;
@@ -12,6 +16,13 @@ struct EncoderConfig_t {
 
 class Encoder {
 public:
+    enum Error_t {
+        ERROR_NONE,
+        ERROR_NUMERICAL,
+        ERROR_CPR_OUT_OF_RANGE,
+        ERROR_RESPONSE,
+    };
+
     Encoder(const EncoderHardwareConfig_t& hw_config,
                      EncoderConfig_t& config);
     
@@ -30,6 +41,7 @@ public:
     EncoderConfig_t& config;
     Axis* axis = nullptr; // set by Axis constructor
 
+    Error_t error = ERROR_NONE;
     volatile bool index_found = false;
     int32_t state = 0;
     float phase = 0.0f;    // [rad]

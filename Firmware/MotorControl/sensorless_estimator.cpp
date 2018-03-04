@@ -1,6 +1,6 @@
 
 //#include "sensorless_estimator.hpp"
-#include <axis.hpp>
+#include "odrive_main.hpp"
 
 SensorlessEstimator::SensorlessEstimator()
 {
@@ -24,7 +24,7 @@ bool SensorlessEstimator::update(float* pos_estimate, float* vel_estimate, float
 
     // Check that we don't get problems with discrete time approximation
     if (!(current_meas_period * pll_kp < 1.0f)) {
-        axis->motor.error = ERROR_CALIBRATION_TIMING;
+        error = ERROR_NUMERICAL;
         return false;
     }
 

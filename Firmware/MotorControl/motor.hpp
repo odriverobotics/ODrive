@@ -1,38 +1,11 @@
 #ifndef __MOTOR_HPP
 #define __MOTOR_HPP
 
-// The Motor declaration is needed in the axis header
-//class Motor;
-#include <axis.hpp>
+#ifndef __ODRIVE_MAIN_HPP
+#error "This file should not be included directly. Include odrive_main.hpp instead."
+#endif
 
 #include "drv8301.h"
-
-typedef enum {
-    ERROR_NO_ERROR,
-    ERROR_PHASE_RESISTANCE_TIMING,
-    ERROR_PHASE_RESISTANCE_MEASUREMENT_TIMEOUT,
-    ERROR_PHASE_RESISTANCE_OUT_OF_RANGE,
-    ERROR_PHASE_INDUCTANCE_TIMING,
-    ERROR_PHASE_INDUCTANCE_MEASUREMENT_TIMEOUT,
-    ERROR_PHASE_INDUCTANCE_OUT_OF_RANGE,
-    ERROR_ENCODER_RESPONSE,
-    ERROR_ENCODER_MEASUREMENT_TIMEOUT,
-    ERROR_ADC_FAILED,
-    ERROR_CALIBRATION_TIMING,
-    ERROR_FOC_TIMING,
-    ERROR_FOC_MEASUREMENT_TIMEOUT,
-    ERROR_SCAN_MOTOR_TIMING,
-    ERROR_FOC_VOLTAGE_TIMING,
-    ERROR_GATEDRIVER_INVALID_GAIN,
-    ERROR_PWM_SRC_FAIL,
-    ERROR_UNEXPECTED_STEP_SRC,
-    ERROR_POS_CTRL_DURING_SENSORLESS,
-    ERROR_SPIN_UP_TIMEOUT,
-    ERROR_DRV_FAULT,
-    ERROR_NOT_IMPLEMENTED_MOTOR_TYPE,
-    ERROR_ENCODER_CPR_OUT_OF_RANGE,
-    ERROR_DC_BUS_BROWNOUT,
-} Error_t;
 
 typedef enum {
     MOTOR_TYPE_HIGH_CURRENT = 0,
@@ -81,6 +54,15 @@ typedef struct {
 
 class Motor {
 public:
+    enum Error_t {
+        ERROR_NO_ERROR,
+        ERROR_PHASE_RESISTANCE_OUT_OF_RANGE,
+        ERROR_PHASE_INDUCTANCE_OUT_OF_RANGE,
+        ERROR_ADC_FAILED,
+        ERROR_DRV_FAULT,
+        ERROR_NOT_IMPLEMENTED_MOTOR_TYPE,
+    };
+
     Motor(const MotorHardwareConfig_t& hw_config,
          const GateDriverHardwareConfig_t& gate_driver_config,
          MotorConfig_t& config);
@@ -92,6 +74,7 @@ public:
     }
     void DRV8301_setup();
     bool check_DRV_fault();
+    bool do_checks();
     uint16_t check_timing();
     float phase_current_from_adcval(uint32_t ADCValue);
     bool measure_phase_resistance(float test_current, float max_voltage);

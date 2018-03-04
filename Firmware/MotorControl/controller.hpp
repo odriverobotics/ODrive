@@ -1,3 +1,9 @@
+#ifndef __CONTROLLER_HPP
+#define __CONTROLLER_HPP
+
+#ifndef __ODRIVE_MAIN_HPP
+#error "This file should not be included directly. Include odrive_main.hpp instead."
+#endif
 
 // Note: these should be sorted from lowest level of control to
 // highest level of control, to allow "<" style comparisons.
@@ -70,3 +76,5 @@ public:
         float current_setpoint;
     } set_current_setpoint_args;
 };
+
+#endif // __CONTROLLER_HPP

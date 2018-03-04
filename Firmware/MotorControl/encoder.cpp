@@ -1,6 +1,6 @@
 
 //#include "encoder.hpp"
-#include "axis.hpp"
+#include "odrive_main.hpp"
 
 
 Encoder::Encoder(const EncoderHardwareConfig_t& hw_config,
@@ -67,6 +67,8 @@ bool Encoder::calib_enc_offset(float voltage_magnitude) {
         axis->motor.enqueue_voltage_timings(voltage_magnitude, 0.0f);
         return ++i < start_lock_duration * current_meas_hz;
     });
+    if (axis->error != Axis::ERROR_NO_ERROR)
+        return false;
 
     int32_t init_enc_val = (int16_t)hw_config.timer->Instance->CNT;
     int64_t encvaluesum = 0;
@@ -83,7 +85,7 @@ bool Encoder::calib_enc_offset(float voltage_magnitude) {
         
         return ++i < num_steps;
     });
-    if (i < num_steps)
+    if (axis->error != Axis::ERROR_NO_ERROR)
         return false;
 
     //TODO avoid recomputing elec_rad_per_enc every time
@@ -92,7 +94,7 @@ bool Encoder::calib_enc_offset(float voltage_magnitude) {
     float actual_encoder_delta_abs = fabsf((int16_t)hw_config.timer->Instance->CNT-init_enc_val);
     if(fabsf(actual_encoder_delta_abs - expected_encoder_delta)/expected_encoder_delta > config.calib_range)
     {
-        axis->motor.error = ERROR_ENCODER_CPR_OUT_OF_RANGE;
+        error = ERROR_CPR_OUT_OF_RANGE;
         return false;
     }
     // check direction
@@ -104,7 +106,7 @@ bool Encoder::calib_enc_offset(float voltage_magnitude) {
         axis->motor.config.direction = -1;
     } else {
         // Encoder response error
-        axis->motor.error = ERROR_ENCODER_RESPONSE;
+        error = ERROR_RESPONSE;
         return false;
     }
 
@@ -120,7 +122,7 @@ bool Encoder::calib_enc_offset(float voltage_magnitude) {
         
         return ++i < num_steps;
     });
-    if (i < num_steps)
+    if (axis->error != Axis::ERROR_NO_ERROR)
         return false;
 
     int offset = encvaluesum / (num_steps * 2);
@@ -142,7 +144,7 @@ bool Encoder::scan_for_enc_idx(float omega, float voltage_magnitude) {
         // continue until the index is found
         return !index_found;
     });
-    return index_found;
+    return axis->error == Axis::ERROR_NO_ERROR;
 }
 
 bool Encoder::run_calibration() {
@@ -168,7 +170,7 @@ bool Encoder::run_calibration() {
 bool Encoder::update(float* pos_estimate, float* vel_estimate, float* phase_output) {
     // Check that we don't get problems with discrete time approximation
     if (!(current_meas_period * pll_kp < 1.0f)) {
-        axis->motor.error = ERROR_CALIBRATION_TIMING;
+        error = ERROR_NUMERICAL;
         return false;
     }
 

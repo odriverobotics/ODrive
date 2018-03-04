@@ -4,7 +4,7 @@
 #include "gpio.h"
 
 #include "utils.h"
-#include "axis.hpp"
+#include "odrive_main.hpp"
 
 Axis::Axis(const AxisHardwareConfig_t& hw_config,
            AxisConfig_t& config,
@@ -25,24 +25,33 @@ Axis::Axis(const AxisHardwareConfig_t& hw_config,
     motor.axis = this;
 }
 
-static void step_cb_wrapper(void* ctx) {
-    reinterpret_cast<Axis*>(ctx)->step_cb();
-}
-
+// @brief Sets up all components of the axis,
+// such as gate driver and encoder hardware.
 void Axis::setup() {
     encoder.setup();
     motor.setup();
 }
 
+static void run_state_machine_loop_wrapper(void* ctx) {
+    reinterpret_cast<Axis*>(ctx)->run_state_machine_loop();
+}
+
+// @brief Starts run_state_machine_loop in a new thread
 void Axis::start_thread() {
-    osThreadDef(thread_def, run_state_machine_loop, hw_config.thread_priority, 0, 512);
+    osThreadDef(thread_def, run_state_machine_loop_wrapper, hw_config.thread_priority, 0, 512);
     thread_id = osThreadCreate(osThread(thread_def), this);
     thread_id_valid = true;
 }
 
+// @brief Unblocks the control loop thread.
+// This is called from the current sense interrupt handler.
 void Axis::signal_thread(thread_signals sig) {
     if (thread_id_valid)
         osSignalSet(thread_id, sig);
+}
+
+static void step_cb_wrapper(void* ctx) {
+    reinterpret_cast<Axis*>(ctx)->step_cb();
 }
 
 // step/direction interface
@@ -54,6 +63,7 @@ void Axis::step_cb() {
     }
 };
 
+// @brief Enables or disables step/dir input
 void Axis::set_step_dir_enabled(bool enable) {
     if (enable) {
         // Set up the direction GPIO as input
@@ -76,23 +86,20 @@ void Axis::set_step_dir_enabled(bool enable) {
     }
 }
 
-//Returns true if everything is OK (no fault)
+// @brief Returns true if the power supply is within range
 bool Axis::check_PSU_brownout() {
     if(vbus_voltage < config.dc_bus_brownout_trip_level)
-        return false;
+        return error = ERROR_BAD_VOLTAGE, false;
     return true;
 }
 
-// Returns true if everything is ok. Sets motor->error and returns false otherwise.
+// @brief Returns true if everything is ok.
+// Sets error and returns false otherwise.
 bool Axis::do_checks() {
-    if (!motor.check_DRV_fault()) {
-        motor.error = ERROR_DRV_FAULT;
-        return false;
-    }
-    if (!check_PSU_brownout()) {
-        motor.error = ERROR_DC_BUS_BROWNOUT;
-        return false;
-    }
+    if (!motor.do_checks())
+        return error = ERROR_MOTOR_FAILED, false;
+    if (!check_PSU_brownout())
+        return error = ERROR_BAD_VOLTAGE, false;
     return true;
 }
 
@@ -104,10 +111,10 @@ bool Axis::run_sensorless_spin_up() {
         float I_mag = config.spin_up_current * x;
         x += current_meas_period / config.ramp_up_time;
         if (!motor.update(I_mag, phase))
-            return false;
+            return error = ERROR_MOTOR_FAILED, false;
         return x < 1.0f;
     });
-    if (x < 1.0f)
+    if (error != ERROR_NO_ERROR)
         return false;
     
     // Late Spin-up: accelerate
@@ -118,10 +125,10 @@ bool Axis::run_sensorless_spin_up() {
         phase = wrap_pm_pi(phase + vel * current_meas_period);
         float I_mag = config.spin_up_current;
         if (!motor.update(I_mag, phase))
-            return false;
+            return error = ERROR_MOTOR_FAILED, false;
         return vel < config.spin_up_target_vel;
     });
-    return vel >= config.spin_up_target_vel;
+    return error == ERROR_NO_ERROR;
 }
 
 // Note run_sensorless_control_loop and run_closed_loop_control_loop are very similar and differ only in where we get the estimate from.
@@ -129,15 +136,20 @@ bool Axis::run_sensorless_control_loop() {
     run_control_loop([this](){
         float pos_estimate, vel_estimate, phase, current_setpoint;
 
+        if (controller.config.control_mode >= CTRL_MODE_POSITION_CONTROL)
+            return error = ERROR_POS_CTRL_DURING_SENSORLESS, false;
+
         // We update the encoder just in case someone needs the output for testing
         encoder.update(nullptr, nullptr, nullptr);
         if (!sensorless_estimator.update(&pos_estimate, &vel_estimate, &phase))
-            return false;
+            return error = ERROR_SENSORLESS_ESTIMATOR_FAILED, false;
         if (!controller.update(pos_estimate, vel_estimate, &current_setpoint))
-            return false;
-        return motor.update(current_setpoint, phase);
+            return error = ERROR_CONTROLLER_FAILED, false;
+        if (!motor.update(current_setpoint, phase))
+            return error = ERROR_MOTOR_FAILED, false;
+        return true;
     });
-    return false;
+    return error == ERROR_NO_ERROR;
 }
 
 bool Axis::run_closed_loop_control_loop() {
@@ -147,30 +159,30 @@ bool Axis::run_closed_loop_control_loop() {
         // We update the sensorless estimator just in case someone needs the output for testing
         sensorless_estimator.update(nullptr, nullptr, nullptr);
         if (!encoder.update(&pos_estimate, &vel_estimate, &phase))
-            return false;
+            return error = ERROR_ENCODER_FAILED, false;
         if (!controller.update(pos_estimate, vel_estimate, &current_setpoint))
-            return false;
-        return motor.update(current_setpoint, phase);
+            return error = ERROR_CONTROLLER_FAILED, false;
+        if (!motor.update(current_setpoint, phase))
+            return error = ERROR_MOTOR_FAILED, false;
+        return true;
     });
-    return false;
+    return error == ERROR_NO_ERROR;
 }
 
 bool Axis::run_idle_loop() {
-    // TODO: allow preemption
-    for (;;) {
-        if (osSignalWait(M_SIGNAL_PH_CURRENT_MEAS, PH_CURRENT_MEAS_TIMEOUT).status != osEventSignal) {
-            motor.error = ERROR_FOC_MEASUREMENT_TIMEOUT;
-            break;
-        }
+    while (requested_state == AXIS_STATE_DONT_CARE) {
+        if (osSignalWait(M_SIGNAL_PH_CURRENT_MEAS, PH_CURRENT_MEAS_TIMEOUT).status != osEventSignal)
+            return error = ERROR_CURRENT_MEASUREMENT_TIMEOUT, false;
     }
-    return false;
+    return error == ERROR_NO_ERROR;
 }
 
+// Infinite loop that does calibration and enters main control loop as appropriate
 void Axis::run_state_machine_loop() {
 
-    //TODO: Move this somewhere else
-    // TODO: respect changes of CPR
     // Allocate the map for anti-cogging algorithm and initialize all values to 0.0f
+    // TODO: Move this somewhere else
+    // TODO: respect changes of CPR
     int encoder_cpr = encoder.config.cpr;
     controller.anticogging.cogging_map = (float*)malloc(encoder_cpr * sizeof(float));
     if (controller.anticogging.cogging_map != NULL) {
@@ -179,89 +191,76 @@ void Axis::run_state_machine_loop() {
         }
     }
 
-    enum AxisState_t {
-        AXIS_STATE_MOTOR_CALIBRATION,
-        AXIS_STATE_ENCODER_CALIBRATION,
-        AXIS_STATE_SENSORLESS_SPINUP,
-        AXIS_STATE_SENSORLESS_CONTROL,
-        AXIS_STATE_CLOSED_LOOP_CONTROL,
-        AXIS_STATE_IDLE
-    };
-    AxisState_t axis_state = AXIS_STATE_MOTOR_CALIBRATION;
+    current_state = AXIS_STATE_MOTOR_CALIBRATION;
+    bool force_state = false;
     
     for (;;) {
-        switch (axis_state) {
+        AxisState_t next_state = AXIS_STATE_DONT_CARE;
+
+        switch (current_state) {
+
         case AXIS_STATE_MOTOR_CALIBRATION:
-            if (!config.enable_motor_calibration || motor.run_calibration()) {
-                axis_state = AXIS_STATE_ENCODER_CALIBRATION;
-            } else {
-                axis_state = AXIS_STATE_IDLE;
+            {
+                bool skip = !force_state && !config.enable_motor_calibration;
+                if (skip || motor.run_calibration()) {
+                    next_state = AXIS_STATE_ENCODER_CALIBRATION;
+                } else {
+                    next_state = AXIS_STATE_IDLE;
+                }
             }
             break;
+
         case AXIS_STATE_ENCODER_CALIBRATION:
-            if (!config.enable_encoder_calibration || encoder.run_calibration()) {
-                axis_state = config.enable_control ?
-                            config.sensorless ?
-                            AXIS_STATE_SENSORLESS_SPINUP :
-                            AXIS_STATE_CLOSED_LOOP_CONTROL :
-                            AXIS_STATE_IDLE;
-                if (axis_state != AXIS_STATE_IDLE)
-                    set_step_dir_enabled(config.enable_step_dir_after_calibration);
-            } else {
-                axis_state = AXIS_STATE_IDLE;
+            {
+                bool skip = !force_state && !config.enable_encoder_calibration;
+                if (skip || encoder.run_calibration()) {
+                    next_state = config.enable_closed_loop_control ?
+                                AXIS_STATE_CLOSED_LOOP_CONTROL :
+                                config.enable_sensorless_control ?
+                                AXIS_STATE_SENSORLESS_SPINUP :
+                                AXIS_STATE_IDLE;
+                    if (next_state != AXIS_STATE_IDLE)
+                        set_step_dir_enabled(config.enable_step_dir);
+                } else {
+                    next_state = AXIS_STATE_IDLE;
+                }
             }
             break;
+
         case AXIS_STATE_SENSORLESS_SPINUP:
             if (run_sensorless_spin_up()) {
-                axis_state = AXIS_STATE_SENSORLESS_CONTROL;
+                next_state = AXIS_STATE_SENSORLESS_CONTROL;
             } else {
-                axis_state = AXIS_STATE_IDLE;
+                next_state = AXIS_STATE_IDLE;
             }
             break;
+
         case AXIS_STATE_SENSORLESS_CONTROL:
             run_sensorless_control_loop();
-            axis_state = AXIS_STATE_IDLE; // TODO: restart if desired
+            next_state = AXIS_STATE_IDLE; // TODO: restart if desired
             break;
+
         case AXIS_STATE_CLOSED_LOOP_CONTROL:
             run_closed_loop_control_loop();
-            axis_state = AXIS_STATE_IDLE;
+            next_state = AXIS_STATE_IDLE;
             break;
+
         case AXIS_STATE_IDLE:
         default:
+            current_state = AXIS_STATE_IDLE;
             run_idle_loop();
             break;
         }
+
+        if (requested_state != AXIS_STATE_DONT_CARE) {
+            current_state = requested_state;
+            requested_state = AXIS_STATE_DONT_CARE;
+            force_state = true;
+        } else {
+            current_state = next_state;
+            force_state = false;
+        }
     }
 
-/*
-    bool calibration_ok = false;
-    for (;;) {
-        // Keep rotor estimation up to date while idling
-        osSignalWait(M_SIGNAL_PH_CURRENT_MEAS, osWaitForever);
-        loop_updates(legacy_motor_ref_);
-
-        if (do_calibration_) {
-            do_calibration_ = false;
-            calibration_ok = motor.do_calibration();
-            if (calibration_ok)
-                calibration_ok = encoder.do_calibration();
-        }
-
-        if (calibration_ok && enable_control_) {
-            enable_step_dir = true;
-            if (rotor_mode == ROTOR_MODE_SENSORLESS) {
-                bool spin_up_ok = do_sensorless_spin_up();
-                if (spin_up_ok)
-                    do_sensorless_control();
-            } else {
-                do_closed_loop_control();
-            }
-
-            if (enable_control_) {  // if control is still enabled, we exited because of error
-                calibration_ok = false;
-                enable_control_ = false;
-            }
-        }
-    }*/
     thread_id_valid = false;
 }

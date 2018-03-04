@@ -3,7 +3,7 @@
 
 #include "drv8301.h"
 //#include "motor.hpp"
-#include <axis.hpp>
+#include "odrive_main.hpp"
 
 
 Motor::Motor(const MotorHardwareConfig_t& hw_config,
@@ -90,6 +90,14 @@ bool Motor::check_DRV_fault() {
     return true;
 }
 
+bool Motor::do_checks() {
+    if (!check_DRV_fault()) {
+        error = ERROR_DRV_FAULT;
+        return false;
+    }
+    return true;
+}
+
 uint16_t Motor::check_timing() {
     TIM_HandleTypeDef* htim = hw_config.timer;
     uint16_t timing = htim->Instance->CNT;
@@ -129,23 +137,23 @@ bool Motor::measure_phase_resistance(float test_current, float max_voltage) {
     axis->run_control_loop([&](){
         float Ialpha = -(current_meas.phB + current_meas.phC);
         test_voltage += (kI * current_meas_period) * (test_current - Ialpha);
-        if (test_voltage > max_voltage || test_voltage < -max_voltage) {
-            error = ERROR_PHASE_RESISTANCE_OUT_OF_RANGE;
-            return false;
-        }
+        if (test_voltage > max_voltage || test_voltage < -max_voltage)
+            return error = ERROR_PHASE_RESISTANCE_OUT_OF_RANGE, false;
 
         // Test voltage along phase A
         enqueue_voltage_timings(test_voltage, 0.0f);
 
         return ++i < num_test_cycles;
     });
+    if (axis->error != Axis::ERROR_NO_ERROR)
+        return false;
 
     //// De-energize motor
     //enqueue_voltage_timings(motor, 0.0f, 0.0f);
 
     float R = test_voltage / test_current;
     config.phase_resistance = R;
-    return i == num_test_cycles; // if we ran to completion that means success
+    return true; // if we ran to completion that means success
 }
 
 bool Motor::measure_phase_inductance(float voltage_low, float voltage_high) {
@@ -163,9 +171,8 @@ bool Motor::measure_phase_inductance(float voltage_low, float voltage_high) {
 
         return ++t < (num_cycles << 1);
     });
-
-    if (t != (num_cycles << 1))
-        return false; // the loop aborted prematurely
+    if (axis->error != Axis::ERROR_NO_ERROR)
+        return false;
 
     //// De-energize motor
     //enqueue_voltage_timings(motor, 0.0f, 0.0f);
@@ -178,10 +185,8 @@ bool Motor::measure_phase_inductance(float voltage_low, float voltage_high) {
 
     config.phase_inductance = L;
     // TODO arbitrary values set for now
-    if (L < 1e-6f || L > 500e-6f) {
-        error = ERROR_PHASE_INDUCTANCE_OUT_OF_RANGE;
-        return false;
-    }
+    if (L < 1e-6f || L > 500e-6f)
+        return error = ERROR_PHASE_INDUCTANCE_OUT_OF_RANGE, false;
     return true;
 }
 

@@ -19,7 +19,6 @@ typedef struct{
 } monitoring_slot;
 
 /* Exported constants --------------------------------------------------------*/
-extern const float elec_rad_per_enc;
 /* Exported variables --------------------------------------------------------*/
 /* Exported macro ------------------------------------------------------------*/
 /* Exported functions --------------------------------------------------------*/
@@ -29,8 +28,6 @@ extern const float elec_rad_per_enc;
 void pwm_trig_adc_cb(ADC_HandleTypeDef* hadc, bool injected);
 void vbus_sense_adc_cb(ADC_HandleTypeDef* hadc, bool injected);
 
-// Utility
-void global_fault(int error);
 // Initalisation
 void start_adc_pwm();
 void start_pwm(TIM_HandleTypeDef* htim);

@@ -13,8 +13,6 @@
 
 #include "nvm.h"
 #include "crc.hpp"
-#include "low_level.h"
-#include "axis.hpp"
 
 
 /* Private defines -----------------------------------------------------------*/

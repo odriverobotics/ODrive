@@ -1,5 +1,5 @@
 
-#include <axis.hpp>
+#include "odrive_main.hpp"
 #include <nvm_config.hpp>
 
 
@@ -66,7 +66,7 @@ int odrive_main(void) {
     
     // TODO: make dynamically reconfigurable
     if (enable_uart) {
-        axes[0]->config.enable_step_dir_after_calibration = false;
+        axes[0]->config.enable_step_dir = false;
         axes[0]->set_step_dir_enabled(false);
         SetGPIO12toUART();
     }

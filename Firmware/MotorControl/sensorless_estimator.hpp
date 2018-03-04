@@ -3,12 +3,18 @@
 
 class SensorlessEstimator {
 public:
+    enum Error_t {
+        ERROR_NONE,
+        ERROR_NUMERICAL,
+    };
+
     SensorlessEstimator();
 
     bool update(float* pos_estimate, float* vel_estimate, float* phase);
 
     Axis* axis = nullptr; // set by Axis constructor
 
+    Error_t error = ERROR_NONE;
     float phase = 0.0f;                        // [rad]
     float pll_pos = 0.0f;                      // [rad]
     float pll_vel = 0.0f;                      // [rad/s]
