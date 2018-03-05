@@ -15,6 +15,7 @@ struct AxisConfig {
     bool enable_control_at_start = true;
     bool do_calibration_at_start = true;
 };
+extern AxisConfig axis_configs[];
 
 class Axis {
 public:
@@ -40,7 +41,7 @@ public:
     //step/dir handler
 
     // Object operation requires ptr to legacy object for now, TODO: get rid of this dep
-    Axis(const AxisConfig& config, uint8_t axis_number, Motor_t* legacy_motor_ref);
+    Axis(AxisConfig& config, uint8_t axis_number, Motor_t* legacy_motor_ref);
 
     // Infinite loop that does calibration and enters main control loop as appropriate
     void StateMachineLoop();
@@ -49,6 +50,8 @@ public:
 
     bool enable_control_;
     bool do_calibration_;
+
+    AxisConfig& config_;
 
     Motor_t* legacy_motor_ref_;
 

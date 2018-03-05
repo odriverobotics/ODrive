@@ -52,7 +52,7 @@ s type index value
 ** `0` is float
 ** `1` is int
 ** `2` is bool
-* `index` is the index in the corresponding [exposed variable table](MotorControl/commands.c).
+* `index` is the index in the corresponding [exposed variable table](MotorControl/legacy_commands.c).
 
 For example
 * `g 0 12` will return the phase resistance of M0

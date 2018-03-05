@@ -74,10 +74,8 @@ FLAGS += '-mfpu=fpv4-sp-d16'
 FLAGS += '-mfloat-abi=hard'
 FLAGS += { '-Wall', '-fdata-sections', '-ffunction-sections'}
 
-if tup.getconfig('DEBUG') == 'y' then
-    --C_FLAGS += '-g -gdwarf-2'
-    FLAGS += '-g -gdwarf-2'
-end
+FLAGS += '-g -gdwarf-2'
+
 
 -- linker flags
 LDFLAGS += '-T'..boarddir..'/STM32F405RGTx_FLASH.ld'
@@ -124,9 +122,11 @@ build{
         'MotorControl/utils.c',
         'MotorControl/legacy_commands.c',
         'MotorControl/low_level.c',
+        'MotorControl/nvm.c',
         'MotorControl/axis.cpp',
         'MotorControl/commands.cpp',
-        'MotorControl/protocol.cpp'
+        'MotorControl/protocol.cpp',
+        'MotorControl/config.cpp'
     },
     includes={
         'MotorControl'

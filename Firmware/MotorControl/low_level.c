@@ -33,11 +33,6 @@
 // Arbitrary non-zero inital value to avoid division by zero if ADC reading is late
 float vbus_voltage = 12.0f;
 
-// TODO stick parameter into struct
-#define ENCODER_CPR (2048 * 4) // Default resolution of CUI-AMT102 encoder
-#define POLE_PAIRS 7 // This value is correct for N5065 motors and Turnigy SK3 series.
-const float elec_rad_per_enc = POLE_PAIRS * 2 * M_PI * (1.0f / (float)ENCODER_CPR);
-
 #if HW_VERSION_MAJOR == 3
 #if HW_VERSION_MINOR <= 3
 #define SHUNT_RESISTANCE (675e-6f)
@@ -59,7 +54,7 @@ Motor_t motors[] = {
         .enable_step_dir = false,                    //auto enabled after calibration
         .counts_per_step = 2.0f,
         .error = ERROR_NO_ERROR,
-        .drv_fault = DRV8301_FaultType_NoFault,
+        .pole_pairs = 7, // This value is correct for N5065 motors and Turnigy SK3 series.
         .pos_setpoint = 0.0f,
         .pos_gain = 20.0f,  // [(counts/s) / counts]
         .vel_setpoint = 0.0f,
@@ -125,9 +120,9 @@ Motor_t motors[] = {
             .encoder_timer = &htim3,
             .use_index = false,
             .index_found = false,
-            .calibrated = false,
+            .manually_calibrated = false,
             .idx_search_speed = 10.0f, // [rad/s electrical]
-            .encoder_cpr = ENCODER_CPR,
+            .encoder_cpr = (2048 * 4), // Default resolution of CUI-AMT102 encoder,
             .encoder_offset = 0,
             .encoder_state = 0,
             .motor_dir = 1,   // 1 or -1
@@ -154,7 +149,6 @@ Motor_t motors[] = {
             .spin_up_target_vel = 400.0f,    // [rad/s]
         },
         .loop_counter = 0,
-        .timing_log_index = 0,
         .timing_log = {0},
         .anticogging = {
             .index = 0,
@@ -164,13 +158,14 @@ Motor_t motors[] = {
             .calib_pos_threshold = 1.0f,
             .calib_vel_threshold = 1.0f,
         },
+        .drv_fault = DRV8301_FaultType_NoFault,
     },
     {                                             // M1
         .control_mode = CTRL_MODE_POSITION_CONTROL,  //see: Motor_control_mode_t
         .enable_step_dir = false,                    //auto enabled after calibration
         .counts_per_step = 2.0f,
         .error = ERROR_NO_ERROR,
-        .drv_fault = DRV8301_FaultType_NoFault,
+        .pole_pairs = 7, // This value is correct for N5065 motors and Turnigy SK3 series.
         .pos_setpoint = 0.0f,
         .pos_gain = 20.0f,  // [(counts/s) / counts]
         .vel_setpoint = 0.0f,
@@ -230,9 +225,9 @@ Motor_t motors[] = {
             .encoder_timer = &htim4,
             .use_index = false,
             .index_found = false,
-            .calibrated = false,
+            .manually_calibrated = false,
             .idx_search_speed = 10.0f, // [rad/s electrical]
-            .encoder_cpr = ENCODER_CPR,
+            .encoder_cpr = (2048 * 4), // Default resolution of CUI-AMT102 encoder,
             .encoder_offset = 0,
             .encoder_state = 0,
             .motor_dir = 1,   // 1 or -1
@@ -259,7 +254,6 @@ Motor_t motors[] = {
             .spin_up_target_vel = 400.0f,    // [rad/s]
         },
         .loop_counter = 0,
-        .timing_log_index = 0,
         .timing_log = {0},
         .anticogging = {
             .index = 0,
@@ -268,10 +262,13 @@ Motor_t motors[] = {
             .calib_anticogging = false,
             .calib_pos_threshold = 1.0f,
             .calib_vel_threshold = 1.0f,
-        }
+        },
+        .drv_fault = DRV8301_FaultType_NoFault,
     }
 };
 const size_t num_motors = sizeof(motors) / sizeof(motors[0]);
+
+float brake_resistance = 0.47f;     // [ohm]
 
 /* Private constant data -----------------------------------------------------*/
 static const float one_by_sqrt3 = 0.57735026919f;
@@ -280,8 +277,6 @@ static const float current_meas_period = CURRENT_MEAS_PERIOD;
 static const int current_meas_hz = CURRENT_MEAS_HZ;
 
 /* Private variables ---------------------------------------------------------*/
-static float brake_resistance = 0.47f;  // [ohm]
-
 /* Function implementations --------------------------------------------------*/
 
 //--------------------------------
@@ -319,7 +314,7 @@ void set_current_setpoint(Motor_t* motor, float current_setpoint) {
 // Utility
 //--------------------------------
 
-uint16_t check_timing(Motor_t* motor) {
+uint16_t check_timing(Motor_t* motor, TimingLog_t log_idx) {
     TIM_HandleTypeDef* htim = motor->motor_timer;
     uint16_t timing = htim->Instance->CNT;
     bool down = htim->Instance->CR1 & TIM_CR1_DIR;
@@ -328,10 +323,9 @@ uint16_t check_timing(Motor_t* motor) {
         timing = TIM_1_8_PERIOD_CLOCKS + delta;
     }
 
-    if (++(motor->timing_log_index) == TIMING_LOG_SIZE) {
-        motor->timing_log_index = 0;
+    if (log_idx < TIMING_LOG_SIZE) {
+        motor->timing_log[log_idx] = timing;
     }
-    motor->timing_log[motor->timing_log_index] = timing;
 
     return timing;
 }
@@ -611,7 +605,7 @@ void pwm_trig_adc_cb(ADC_HandleTypeDef* hadc, bool injected) {
             motors[0].motor_timer->Instance->CCR3 = motors[0].next_timings[2];
         }
         // Check the timing of the sequencing
-        check_timing(motor);
+        check_timing(motor, TIMING_LOG_ADC_CB_M1_DC);
 
     } else if (motor == &motors[0] && !counting_down) {
         // We are measuring M0 current here
@@ -623,19 +617,19 @@ void pwm_trig_adc_cb(ADC_HandleTypeDef* hadc, bool injected) {
             motors[1].motor_timer->Instance->CCR3 = motors[1].next_timings[2];
         }
         // Check the timing of the sequencing
-        check_timing(motor);
+        check_timing(motor, TIMING_LOG_ADC_CB_M0_I);
 
     } else if (motor == &motors[1] && !counting_down) {
         // We are measuring M1 current here
         current_meas_not_DC_CAL = true;
         // Check the timing of the sequencing
-        check_timing(motor);
+        check_timing(motor, TIMING_LOG_ADC_CB_M1_I);
 
     } else if (motor == &motors[0] && counting_down) {
         // We are measuring M0 DC_CAL here
         current_meas_not_DC_CAL = false;
         // Check the timing of the sequencing
-        check_timing(motor);
+        check_timing(motor, TIMING_LOG_ADC_CB_M0_DC);
 
     } else {
         global_fault(ERROR_PWM_SRC_FAIL);
@@ -704,7 +698,7 @@ bool measure_phase_resistance(Motor_t* motor, float test_current, float max_volt
         queue_voltage_timings(motor, test_voltage, 0.0f);
 
         // Check we meet deadlines after queueing
-        motor->last_cpu_time = check_timing(motor);
+        motor->last_cpu_time = check_timing(motor, TIMING_LOG_MEAS_R);
         if (!(motor->last_cpu_time < motor->control_deadline)) {
             motor->error = ERROR_PHASE_RESISTANCE_TIMING;
             return false;
@@ -743,7 +737,7 @@ bool measure_phase_inductance(Motor_t* motor, float voltage_low, float voltage_h
             queue_voltage_timings(motor, test_voltages[i], 0.0f);
 
             // Check we meet deadlines after queueing
-            motor->last_cpu_time = check_timing(motor);
+            motor->last_cpu_time = check_timing(motor, TIMING_LOG_MEAS_L);
             if (!(motor->last_cpu_time < motor->control_deadline)) {
                 motor->error = ERROR_PHASE_INDUCTANCE_TIMING;
                 return false;
@@ -808,6 +802,8 @@ bool calib_enc_offset(Motor_t* motor, float voltage_magnitude) {
         encvaluesum += (int16_t)motor->encoder.encoder_timer->Instance->CNT;
     }
 
+    //TODO avoid recomputing elec_rad_per_enc every time
+    float elec_rad_per_enc = motor->pole_pairs * 2 * M_PI * (1.0f / (float)(motor->encoder.encoder_cpr));
     float expected_encoder_delta = scan_range / elec_rad_per_enc;
     float actual_encoder_delta_abs = fabsf((int16_t)motor->encoder.encoder_timer->Instance->CNT-init_enc_val);
     if(fabsf(actual_encoder_delta_abs - expected_encoder_delta)/expected_encoder_delta > motor->encoder.encoder_calib_range)
@@ -845,7 +841,6 @@ bool calib_enc_offset(Motor_t* motor, float voltage_magnitude) {
 
     int offset = encvaluesum / (num_steps * 2);
     motor->encoder.encoder_offset = offset;
-    motor->encoder.calibrated = true;
     return true;
 }
 
@@ -874,7 +869,7 @@ bool motor_calibration(Motor_t* motor) {
                     (float)(motor->encoder.motor_dir) * motor->encoder.idx_search_speed,
                     enc_calibration_voltage))
                 return false;
-        if (!motor->encoder.calibrated)
+        if (!motor->encoder.manually_calibrated)
             if (!calib_enc_offset(motor, enc_calibration_voltage))
                 return false;
     }
@@ -917,7 +912,7 @@ bool anti_cogging_calibration(Motor_t* motor) {
             fabsf(motor->encoder.pll_vel) < motor->anticogging.calib_vel_threshold) {
             motor->anticogging.cogging_map[motor->anticogging.index++] = motor->vel_integrator_current;
         }
-        if (motor->anticogging.index < ENCODER_CPR) {
+        if (motor->anticogging.index < motor->encoder.encoder_cpr) {
             set_pos_setpoint(motor, motor->anticogging.index, 0.0f, 0.0f);
             return false;
         } else {
@@ -950,7 +945,7 @@ bool scan_for_enc_idx(Motor_t* motor, float omega, float voltage_magnitude) {
             queue_voltage_timings(motor, v_alpha, v_beta);
 
             // Check we meet deadlines after queueing
-            motor->last_cpu_time = check_timing(motor);
+            motor->last_cpu_time = check_timing(motor, TIMING_LOG_IDX_SEARCH);
             if (!(motor->last_cpu_time < motor->control_deadline)) {
                 motor->error = ERROR_SCAN_MOTOR_TIMING;
                 return false;
@@ -975,9 +970,11 @@ void update_rotor(Motor_t* motor) {
             encoder->encoder_state += (int32_t)delta_enc;
 
             // compute electrical phase
-            int corrected_enc = encoder->encoder_state % ENCODER_CPR;
+            int corrected_enc = encoder->encoder_state % motor->encoder.encoder_cpr;
             corrected_enc -= encoder->encoder_offset;
             corrected_enc *= encoder->motor_dir;
+            //TODO avoid recomputing elec_rad_per_enc every time
+            float elec_rad_per_enc = motor->pole_pairs * 2 * M_PI * (1.0f / (float)(motor->encoder.encoder_cpr));
             float ph = elec_rad_per_enc * (float)corrected_enc;
             // ph = fmodf(ph, 2*M_PI);
             encoder->phase = wrap_pm_pi(ph);
@@ -1237,7 +1234,7 @@ bool FOC_voltage(Motor_t* motor, float v_d, float v_q) {
     queue_voltage_timings(motor, v_alpha, v_beta);
 
     // Check we meet deadlines after queueing
-    if (!(check_timing(motor) < motor->control_deadline)) {
+    if (!(check_timing(motor, TIMING_LOG_FOC_VOLTAGE) < motor->control_deadline)) {
         motor->error = ERROR_FOC_VOLTAGE_TIMING;
         return false;
     }
@@ -1305,7 +1302,7 @@ bool FOC_current(Motor_t* motor, float Id_des, float Iq_des) {
     queue_modulation_timings(motor, mod_alpha, mod_beta);
 
     // Check we meet deadlines after queueing
-    motor->last_cpu_time = check_timing(motor);
+    motor->last_cpu_time = check_timing(motor, TIMING_LOG_FOC_CURRENT);
     if (!(motor->last_cpu_time < motor->control_deadline)) {
         motor->error = ERROR_FOC_TIMING;
         return false;
@@ -1390,9 +1387,9 @@ void control_motor_loop(Motor_t* motor) {
 
         // Anti-cogging is enabled after calibration
         // We get the current position and apply a current feed-forward
-        // ensuring that we handle negative encoder positions properly (-1 == ENCODER_CPR - 1)
+        // ensuring that we handle negative encoder positions properly (-1 == motor->encoder.encoder_cpr - 1)
         if (motor->anticogging.use_anticogging) {
-            Iq += motor->anticogging.cogging_map[mod(motor->encoder.pll_pos, ENCODER_CPR)];
+            Iq += motor->anticogging.cogging_map[mod(motor->encoder.pll_pos, motor->encoder.encoder_cpr)];
         }
 
         float v_err = vel_des - get_pll_vel(motor);
