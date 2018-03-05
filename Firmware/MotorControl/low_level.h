@@ -57,16 +57,16 @@ typedef enum {
 // Note: these should be sorted from lowest level of control to
 // highest level of control, to allow "<" style comparisons.
 typedef enum {
-    CTRL_MODE_VOLTAGE_CONTROL,
-    CTRL_MODE_CURRENT_CONTROL,
-    CTRL_MODE_VELOCITY_CONTROL,
-    CTRL_MODE_POSITION_CONTROL
+    CTRL_MODE_VOLTAGE_CONTROL = 0,
+    CTRL_MODE_CURRENT_CONTROL = 1,
+    CTRL_MODE_VELOCITY_CONTROL = 2,
+    CTRL_MODE_POSITION_CONTROL = 3
 } Motor_control_mode_t;
 
 typedef enum {
-    MOTOR_TYPE_HIGH_CURRENT,
-    // MOTOR_TYPE_LOW_CURRENT, //Not yet implemented
-    MOTOR_TYPE_GIMBAL
+    MOTOR_TYPE_HIGH_CURRENT = 0,
+    // MOTOR_TYPE_LOW_CURRENT = 1, //Not yet implemented
+    MOTOR_TYPE_GIMBAL = 2
 } Motor_type_t;
 
 typedef struct {
@@ -115,9 +115,9 @@ typedef struct {
     TIM_HandleTypeDef* encoder_timer;
     bool use_index;
     bool index_found;
-    bool calibrated;
+    bool manually_calibrated;
     float idx_search_speed;
-    int encoder_cpr;
+    int32_t encoder_cpr;
     int32_t encoder_offset;
     int32_t encoder_state;
     int32_t motor_dir;  // 1/-1 for fwd/rev alignment to encoder.
@@ -140,6 +140,7 @@ typedef struct {
     bool enable_step_dir;
     float counts_per_step;
     Error_t error;
+    int32_t pole_pairs;
     float pos_setpoint;
     float pos_gain;
     float vel_setpoint;
@@ -174,7 +175,6 @@ typedef struct {
     Encoder_t encoder;
     Sensorless_t sensorless;
     uint32_t loop_counter;
-    int timing_log_index;
     uint16_t timing_log[TIMING_LOG_SIZE];
     // Cache for remote procedure calls arguments
     struct {
@@ -193,6 +193,20 @@ typedef struct {
     DRV8301_FaultType_e drv_fault;
 } Motor_t;
 
+typedef enum {
+    TIMING_LOG_GENERAL,
+    TIMING_LOG_ADC_CB_M0_I,
+    TIMING_LOG_ADC_CB_M0_DC,
+    TIMING_LOG_ADC_CB_M1_I,
+    TIMING_LOG_ADC_CB_M1_DC,
+    TIMING_LOG_MEAS_R,
+    TIMING_LOG_MEAS_L,
+    TIMING_LOG_ENC_CALIB,
+    TIMING_LOG_IDX_SEARCH,
+    TIMING_LOG_FOC_VOLTAGE,
+    TIMING_LOG_FOC_CURRENT,
+} TimingLog_t;
+
 typedef struct{
         int type;
         int index;
@@ -203,6 +217,7 @@ extern const size_t num_motors;
 extern const float elec_rad_per_enc;
 /* Exported variables --------------------------------------------------------*/
 extern float vbus_voltage;
+extern float brake_resistance;
 extern Motor_t motors[];
 /* Exported macro ------------------------------------------------------------*/
 /* Exported functions --------------------------------------------------------*/
@@ -228,7 +243,7 @@ bool motor_calibration(Motor_t* motor);
 
 //// Old private:
 // Utility
-uint16_t check_timing(Motor_t* motor);
+uint16_t check_timing(Motor_t* motor, TimingLog_t log_idx);
 void global_fault(int error);
 float phase_current_from_adcval(Motor_t* motor, uint32_t ADCValue);
 // Initalisation

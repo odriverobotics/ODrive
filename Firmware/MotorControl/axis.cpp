@@ -8,6 +8,9 @@ extern "C" {
 #include "low_level.h"
 }
 
+//TODO: Make it really clear where this is loaded.
+AxisConfig axis_configs[2]; //TODO: get a constexpr for num motors
+
 // C interface
 extern "C" {
 void axis_thread_entry(void const* temp_motor_ptr) {
@@ -19,9 +22,7 @@ void axis_thread_entry(void const* temp_motor_ptr) {
     while (&motors[ax_number] != motor)
         ++ax_number;
 
-    static const AxisConfig default_config;
-
-    Axis axis(default_config, ax_number, motor);
+    Axis axis(axis_configs[ax_number], ax_number, motor);
     axis.StateMachineLoop();
 }
 }  // extern "C"
@@ -36,10 +37,11 @@ void Axis::SetupLegacyMappings() {
     exposed_bools[4 * axis_number_ + 2] = &do_calibration_;
 }
 
-Axis::Axis(const AxisConfig& config, uint8_t axis_number, Motor_t* legacy_motor_ref)
+Axis::Axis(AxisConfig& config, uint8_t axis_number, Motor_t* legacy_motor_ref)
     : axis_number_(axis_number),
       enable_control_(config.enable_control_at_start),
       do_calibration_(config.do_calibration_at_start),
+      config_(config),
       legacy_motor_ref_(legacy_motor_ref) {
     SetupLegacyMappings();
 }
