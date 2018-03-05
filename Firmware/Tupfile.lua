@@ -5,16 +5,16 @@ tup.include('build.lua')
 boardversion = tup.getconfig("BOARD_VERSION")
 if boardversion == "" then boardversion = "v3.4" end
 if boardversion == "v3.1" then
-    boarddir = 'Board/v3.3' -- currently all platform code is in the same v3.3 directory
+    boarddir = 'Board/v3' -- currently all platform code is in the same v3.3 directory
     FLAGS += "-DHW_VERSION_MAJOR=3 -DHW_VERSION_MINOR=1"
 elseif boardversion == "v3.2" then
-    boarddir = 'Board/v3.3'
+    boarddir = 'Board/v3'
     FLAGS += "-DHW_VERSION_MAJOR=3 -DHW_VERSION_MINOR=2"
 elseif boardversion == "v3.3" then
-    boarddir = 'Board/v3.3'
+    boarddir = 'Board/v3'
     FLAGS += "-DHW_VERSION_MAJOR=3 -DHW_VERSION_MINOR=3"
 elseif boardversion == "v3.4" then
-    boarddir = 'Board/v3.3'
+    boarddir = 'Board/v3'
     FLAGS += "-DHW_VERSION_MAJOR=3 -DHW_VERSION_MINOR=4"
 else
     error("unknown board version "..boardversion)
