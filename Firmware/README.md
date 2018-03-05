@@ -120,9 +120,18 @@ After installing all of the above, open a Git Bash shell. Continue at section [B
 ### Flashing the firmware (standalone device)
 * Run `make dfu` in the `Firmware` directory.
 
+If you have multiple ODrives connected, you should specify which one to upgrade.
+* Run `(lsusb -d 1209:0d32 -v; lsusb -d 0483:df11 -v) 2>/dev/null | grep iSerial` to list the serial number of all flashable devices. Example output:
+```
+  iSerial                 3 385F324D3037
+  iSerial                 3 306A396A3235
+```
+* The last column is the serial number you're looking for. You can unplug selected devices to track down the one you want to update.
+* Run `make dfu SERIAL_NUMBER=385F324D3037`, where `385F324D3037` is the targeted serial number.
+
 __Warning:__ Currently it is advised that you only do this to flash
 official unmodified firmware. Also make sure you don't switch off
-the device during upgrade. If something goes wrong you need an external
+the device during upgrade. Otherwise, if something goes wrong, you need an external
 programmer to recover the device. This will be fixed in the future.
 
 ### Flashing the firmware (external Programmer)
