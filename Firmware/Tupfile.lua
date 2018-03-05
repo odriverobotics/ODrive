@@ -74,6 +74,7 @@ FLAGS += '-mfpu=fpv4-sp-d16'
 FLAGS += '-mfloat-abi=hard'
 FLAGS += { '-Wall', '-fdata-sections', '-ffunction-sections'}
 
+-- debug build
 FLAGS += '-g -gdwarf-2'
 
 
