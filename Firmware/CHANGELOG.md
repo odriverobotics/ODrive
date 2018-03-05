@@ -9,6 +9,7 @@ Please add a note of your changes below this heading if you make a PR
 * Microsecond delay function
 * Ability to start anticogging calibration over USB protocol
 * Travis-CI
+* Firmware update over USB
 
 ### Changed
 * Build system is now tup instead of make
