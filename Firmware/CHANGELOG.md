@@ -1,12 +1,13 @@
 # Unreleased Features
 Please add a note of your changes below this heading if you make a Pull Request.
 
+* **Storing of configuration parameters to Non Volatile Memory**
+
 # Releases
 
 ## [0.3.5] - 2018-03-04
 
 ### Added
-* **Storing of configuration parameters to Non Volatile Memory**
 * Reporting error if your encoder CPR is incorrect
 * Ability to start anticogging calibration over USB protocol
 * Reporting of DRV status/control registers and fault codes
