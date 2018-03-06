@@ -1,5 +1,10 @@
 # adapted from https://github.com/andysworkshop/stm32plus/blob/master/.travis.yml
 
+branches:
+  only: 
+    - master
+    - devel
+
 language: c
 sudo: false
 
