@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
 """
 Tool for flashing .hex files to the ODrive via the STM built-in USB DFU mode.
 """
@@ -15,7 +15,8 @@ import odrive.core
 try:
     from intelhex import IntelHex
 except:
-    print("You need intelhex for this (sudo pip install IntelHex)", file=sys.stderr)
+    # TODO: On windows you dont do sudo, in general.
+    print("You need intelhex for this ([sudo] pip install IntelHex)", file=sys.stderr)
     sys.exit(1)
 
 
