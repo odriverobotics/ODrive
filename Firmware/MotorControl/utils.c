@@ -190,7 +190,7 @@ uint32_t micros(void) {
     register uint32_t ms, cycle_cnt;
     do {
         ms = HAL_GetTick();
-        cycle_cnt = TIM_BASE_TIMER->CNT;
+        cycle_cnt = TIM_TIME_BASE->CNT;
      } while (ms != HAL_GetTick());
 
     return (ms * 1000) + cycle_cnt;
