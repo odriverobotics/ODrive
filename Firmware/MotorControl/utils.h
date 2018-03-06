@@ -70,9 +70,10 @@ extern "C" {
  */
 #define STM_ID_GetUUID(x) ((x >= 0 && x < 3) ? (*(uint32_t *)(ID_UNIQUE_ADDRESS + 4 * (x))) : 0)
 
-#ifndef M_PI
-#define M_PI 3.14159265358979323846f
+#ifdef M_PI
+#undef M_PI
 #endif
+#define M_PI 3.14159265358979323846f
 
 #define MACRO_MAX(x, y) (((x) > (y)) ? (x) : (y))
 #define MACRO_MIN(x, y) (((x) < (y)) ? (x) : (y))
@@ -90,6 +91,10 @@ int mod(int dividend, int divisor);
 
 uint32_t deadline_to_timeout(uint32_t deadline_ms);
 uint32_t timeout_to_deadline(uint32_t timeout_ms);
+
+uint32_t micros(void);
+
+void delay_us(uint32_t us);
 
 #ifdef __cplusplus
 }

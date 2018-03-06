@@ -2,6 +2,7 @@
 #include <utils.h>
 #include <math.h>
 #include <cmsis_os.h>
+#include <stm32f4xx_hal.h>
 
 static const float one_by_sqrt3 = 0.57735026919f;
 static const float two_by_sqrt3 = 1.15470053838f;
@@ -182,4 +183,24 @@ uint32_t deadline_to_timeout(uint32_t deadline_ms) {
 uint32_t timeout_to_deadline(uint32_t timeout_ms) {
     uint32_t now_ms = (uint32_t)((1000ull * (uint64_t)osKernelSysTick()) / osKernelSysTickFrequency);
     return now_ms + timeout_ms;
+}
+
+// @brief: Returns number of microseconds since system startup
+uint32_t micros(void) {
+    register uint32_t ms, cycle_cnt;
+    do {
+        ms = HAL_GetTick();
+        cycle_cnt = TIM_TIME_BASE->CNT;
+     } while (ms != HAL_GetTick());
+
+    return (ms * 1000) + cycle_cnt;
+}
+
+// @brief: Busy wait delay for given amount of microseconds (us)
+void delay_us(uint32_t us)
+{
+    uint32_t start = micros();
+    while (micros() - start < (uint32_t) us) {
+        __ASM("nop");
+    }
 }

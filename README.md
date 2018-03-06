@@ -2,6 +2,11 @@
 
 This project is all about accurately driving brushless motors, for cheap. The aim is to make it possible to use inexpensive brushless motors in high performance robotics projects, like [this](https://www.youtube.com/watch?v=WT4E5nb3KtY).
 
+| Branch | Build Status |
+|--------|--------------|
+| master | [![Build Status](https://travis-ci.org/madcowswe/ODrive.png?branch=master)](https://travis-ci.org/madcowswe/ODrive) |
+| devel  | [![Build Status](https://travis-ci.org/madcowswe/ODrive.png?branch=devel)](https://travis-ci.org/madcowswe/ODrive) |
+
 ## Getting Started
 It is perfectly fine, and even recommended, to start testing with just a single motor and encoder.
 Make sure you have a good mechanical connection between the encoder and the motor, slip can cause disasterous oscillations.
