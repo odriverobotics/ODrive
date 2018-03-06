@@ -11,8 +11,9 @@ The project is under active development, so make sure to check the [Changelog](C
 <!-- MarkdownTOC depth=2 autolink=true bracket=round -->
 
 - [Configuring the build](#configuring-the-build)
-- [Compiling and downloading firmware](#compiling-and-downloading-firmware)
-- [Setting up an IDE](#setting-up-an-ide) or [Continuing without an IDE](#no-ide-instructions)
+- [Downloading and Installing Tools](#downloading-and-installing-tools)
+- [Building and Flashing the Firmware](#building-and-flashing-the-firmware)
+- [Setting up an IDE](#setting-up-an-ide)
 - [Communicating over USB or UART](#communicating-over-usb-or-uart)
 - [Configuring parameters](#configuring-parameters)
 - [Encoder Calibration](#encoder-calibration)
@@ -64,7 +65,7 @@ Note that UART is only supported on ODrive v3.3 and higher.
  - `USE_GPIO_MODE_STEP_DIR`: Step/direction control mode (use in conjunction with `UART_PROTOCOL_NONE`)
 
 <br><br>
-## Compiling and downloading firmware
+## Downloading and Installing Tools
 ### Getting a programmer
 __Note:__ If you don't plan to make major firmware modifications you can use the built-in DFU feature.
 In this case you don't need an SWD programmer and you can skip OpenOCD related instructions.
@@ -103,13 +104,7 @@ Install the following:
 * OpenOCD. Follow the instructions at [GNU ARM Eclipse  - How to install the OpenOCD binaries](http://gnuarmeclipse.github.io/openocd/install/), including the part about ST-LINK/V2 drivers. Add the path of the binaries to your PATH environment variable. For me this was at `C:\Program Files\GNU ARM Eclipse\OpenOCD\0.10.0-201704182147-dev\bin`.
 
 <br><br>
-## Setting up an IDE
-For working with the ODrive code you don't need an IDE, but the open-source IDE VSCode is recommended.  It is also possible to use Eclipse.  If you'd like to go that route, please see the respective configuration document:
-
-* [Configuring VSCode](configuring-vscode.md)
-* [Configuring Eclipse](configuring-eclipse.md)
-
-## No IDE Instructions
+## Building and Flashing the Firmware
 After installing all of the above, open a Git Bash shell. Continue at section [Building the firmware](#building-the-firmware).
 
 ### Building the firmware
@@ -144,6 +139,13 @@ If the flashing worked, you can start sending commands. If you want to do that n
 
 ### Debugging the firmware
 * Run `make gdb`. This will reset and halt at program start. Now you can set breakpoints and run the program. If you know how to use gdb, you are good to go.
+
+<br><br>
+## Setting up an IDE
+For working with the ODrive code you don't need an IDE, but the open-source IDE VSCode is recommended.  It is also possible to use Eclipse. If you'd like to go that route, please see the respective configuration document:
+
+* [Configuring VSCode](configuring-vscode.md)
+* [Configuring Eclipse](configuring-eclipse.md)
 
 <br><br>
 ## Communicating over USB or UART
@@ -280,6 +282,7 @@ If you have an encoder with an index (Z) signal, you may avoid having to do the 
 `explore_odrive.py`can also be used to check error codes when your odrive is not working as expected. For example `my_odrive.motor0.error` will list the error code associated with motor 0.
 <br><br>
 The error nummber corresponds to the following:
+
 0. `ERROR_NO_ERROR`
 1. `ERROR_PHASE_RESISTANCE_TIMING`
 2. `ERROR_PHASE_RESISTANCE_MEASUREMENT_TIMEOUT`
