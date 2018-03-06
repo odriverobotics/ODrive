@@ -1,12 +1,17 @@
 # adapted from https://github.com/andysworkshop/stm32plus/blob/master/.travis.yml
 
+branches:
+  only: 
+    - master
+    - devel
+
 language: c
 sudo: false
 
-addons:		
-  apt:		
-    packages:		
-      libc6-i386		
+addons:
+  apt:
+    packages:
+      libc6-i386
 
 cache:
   directories:
