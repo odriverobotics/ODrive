@@ -109,7 +109,7 @@ After installing all of the above, open a Git Bash shell. Continue at section [B
 ## Building and Flashing the Firmware
 
 ### Building the firmware
-* Make sure you have cloned the repository.
+* Make sure you have cloned the repository. It is recommended that you use [git](https://help.github.com/articles/cloning-a-repository/) for this.
 * Navigate your terminal (windows: Git Bash/cygwin) to the ODrive/Firmware dir.
 * Run `make` in the `Firmware` directory.
 
