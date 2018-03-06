@@ -103,13 +103,14 @@ Install the following:
 * [Make for Windows](http://gnuwin32.sourceforge.net/packages/make.htm). This is optional and mainly used because commands are short and developers are used to it. If you don't want to use it, you can look at the Makefile to get the corresponding commands. Download and run the complete package setup program. Add the path of the binaries to your PATH environment variable. For me this was at `C:\Program Files (x86)\GnuWin32\bin`.
 * OpenOCD. Follow the instructions at [GNU ARM Eclipse  - How to install the OpenOCD binaries](http://gnuarmeclipse.github.io/openocd/install/), including the part about ST-LINK/V2 drivers. Add the path of the binaries to your PATH environment variable. For me this was at `C:\Program Files\GNU ARM Eclipse\OpenOCD\0.10.0-201704182147-dev\bin`.
 
+After installing all of the above, open a Git Bash shell. Continue at section [Building and Flashing the Firmware](#building-and-flashing-the-firmware).
+
 <br><br>
 ## Building and Flashing the Firmware
-After installing all of the above, open a Git Bash shell. Continue at section [Building the firmware](#building-the-firmware).
 
 ### Building the firmware
 * Make sure you have cloned the repository.
-* Navigate your terminal (bash/cygwin) to the ODrive/Firmware dir.
+* Navigate your terminal (windows: Git Bash/cygwin) to the ODrive/Firmware dir.
 * Run `make` in the `Firmware` directory.
 
 ### Flashing the firmware (standalone device)
