@@ -87,6 +87,14 @@ void motors_1_set_current_setpoint_func(void) {
     set_current_setpoint(&motors[1],
         motors[1].set_current_setpoint_args.current_setpoint);
 }
+void motors_run_anticogging_calibration_func() {
+    for (uint8_t i = 0; i < num_motors; i++) {
+        // Ensure the cogging map was correctly allocated earlier and that the motor is capable of calibrating
+        if (motors[i].anticogging.cogging_map != NULL && motors[i].error == ERROR_NO_ERROR) {
+            motors[i].anticogging.calib_anticogging = true;
+        }
+    }
+}
 
 // This table specifies which fields and functions are exposed on the USB and UART ports.
 // TODO: Autogenerate this table. It will come up again very soon in the Arduino library.
@@ -97,6 +105,9 @@ const Endpoint endpoints[] = {
 	Endpoint::make_property("UUID_0", (const uint32_t*)(ID_UNIQUE_ADDRESS + 0*4)),
 	Endpoint::make_property("UUID_1", (const uint32_t*)(ID_UNIQUE_ADDRESS + 1*4)),
 	Endpoint::make_property("UUID_2", (const uint32_t*)(ID_UNIQUE_ADDRESS + 2*4)),
+    Endpoint::make_function("run_anticogging_calibration", &motors_run_anticogging_calibration_func),
+        // No parameters, but still requires a close_tree()
+    Endpoint::close_tree(),
     Endpoint::make_object("motor0"),
         Endpoint::make_property("control_mode", reinterpret_cast<int32_t*>(&motors[0].control_mode)),
         Endpoint::make_property("error", reinterpret_cast<int32_t*>(&motors[0].error)),
@@ -131,6 +142,13 @@ const Endpoint endpoints[] = {
             Endpoint::make_property("Iq_measured", &motors[0].current_control.Iq_measured),
             Endpoint::make_property("Ibus", const_cast<const float*>(&motors[0].current_control.Ibus)),
         Endpoint::close_tree(),
+        Endpoint::make_object("gate_driver"),
+            Endpoint::make_property("drv_fault", reinterpret_cast<int32_t*>(&motors[0].drv_fault)),
+            Endpoint::make_property("status_reg_1", (&motors[0].gate_driver_regs.Stat_Reg_1_Value)),
+            Endpoint::make_property("status_reg_2", (&motors[0].gate_driver_regs.Stat_Reg_2_Value)),
+            Endpoint::make_property("ctrl_reg_1", (&motors[0].gate_driver_regs.Ctrl_Reg_1_Value)),
+            Endpoint::make_property("ctrl_reg_2", (&motors[0].gate_driver_regs.Ctrl_Reg_2_Value)),
+        Endpoint::close_tree(),
         Endpoint::make_object("encoder"),
             Endpoint::make_property("phase", const_cast<const float*>(&motors[0].encoder.phase)),
             Endpoint::make_property("pll_pos", &motors[0].encoder.pll_pos),
@@ -152,6 +170,19 @@ const Endpoint endpoints[] = {
         Endpoint::close_tree(),
         Endpoint::make_function("set_current_setpoint", &motors_0_set_current_setpoint_func),
             Endpoint::make_property("current_setpoint", &motors[0].set_current_setpoint_args.current_setpoint),
+        Endpoint::close_tree(),
+        Endpoint::make_object("timing_log"),
+            Endpoint::make_property("TIMING_LOG_GENERAL", &motors[0].timing_log[TIMING_LOG_GENERAL]),
+            Endpoint::make_property("TIMING_LOG_ADC_CB_M0_I", &motors[0].timing_log[TIMING_LOG_ADC_CB_M0_I]),
+            Endpoint::make_property("TIMING_LOG_ADC_CB_M0_DC", &motors[0].timing_log[TIMING_LOG_ADC_CB_M0_DC]),
+            Endpoint::make_property("TIMING_LOG_ADC_CB_M1_I", &motors[0].timing_log[TIMING_LOG_ADC_CB_M1_I]),
+            Endpoint::make_property("TIMING_LOG_ADC_CB_M1_DC", &motors[0].timing_log[TIMING_LOG_ADC_CB_M1_DC]),
+            Endpoint::make_property("TIMING_LOG_MEAS_R", &motors[0].timing_log[TIMING_LOG_MEAS_R]),
+            Endpoint::make_property("TIMING_LOG_MEAS_L", &motors[0].timing_log[TIMING_LOG_MEAS_L]),
+            Endpoint::make_property("TIMING_LOG_ENC_CALIB", &motors[0].timing_log[TIMING_LOG_ENC_CALIB]),
+            Endpoint::make_property("TIMING_LOG_IDX_SEARCH", &motors[0].timing_log[TIMING_LOG_IDX_SEARCH]),
+            Endpoint::make_property("TIMING_LOG_FOC_VOLTAGE", &motors[0].timing_log[TIMING_LOG_FOC_VOLTAGE]),
+            Endpoint::make_property("TIMING_LOG_FOC_CURRENT", &motors[0].timing_log[TIMING_LOG_FOC_CURRENT]),
         Endpoint::close_tree(),
     Endpoint::close_tree(), // motor0
     Endpoint::make_object("motor1"),
@@ -188,6 +219,13 @@ const Endpoint endpoints[] = {
             Endpoint::make_property("Iq_measured", &motors[1].current_control.Iq_measured),
             Endpoint::make_property("Ibus", const_cast<const float*>(&motors[1].current_control.Ibus)),
         Endpoint::close_tree(),
+        Endpoint::make_object("gate_driver"),
+            Endpoint::make_property("drv_fault", reinterpret_cast<int32_t*>(&motors[1].drv_fault)),
+            Endpoint::make_property("status_reg_1", (&motors[1].gate_driver_regs.Stat_Reg_1_Value)),
+            Endpoint::make_property("status_reg_2", (&motors[1].gate_driver_regs.Stat_Reg_2_Value)),
+            Endpoint::make_property("ctrl_reg_1", (&motors[1].gate_driver_regs.Ctrl_Reg_1_Value)),
+            Endpoint::make_property("ctrl_reg_2", (&motors[1].gate_driver_regs.Ctrl_Reg_2_Value)),
+        Endpoint::close_tree(),
         Endpoint::make_object("encoder"),
             Endpoint::make_property("phase", const_cast<const float*>(&motors[1].encoder.phase)),
             Endpoint::make_property("pll_pos", &motors[1].encoder.pll_pos),
@@ -209,6 +247,19 @@ const Endpoint endpoints[] = {
         Endpoint::close_tree(),
         Endpoint::make_function("set_current_setpoint", &motors_1_set_current_setpoint_func),
             Endpoint::make_property("current_setpoint", &motors[1].set_current_setpoint_args.current_setpoint),
+        Endpoint::close_tree(),
+        Endpoint::make_object("timing_log"),
+            Endpoint::make_property("TIMING_LOG_GENERAL", &motors[1].timing_log[TIMING_LOG_GENERAL]),
+            Endpoint::make_property("TIMING_LOG_ADC_CB_M0_I", &motors[1].timing_log[TIMING_LOG_ADC_CB_M0_I]),
+            Endpoint::make_property("TIMING_LOG_ADC_CB_M0_DC", &motors[1].timing_log[TIMING_LOG_ADC_CB_M0_DC]),
+            Endpoint::make_property("TIMING_LOG_ADC_CB_M1_I", &motors[1].timing_log[TIMING_LOG_ADC_CB_M1_I]),
+            Endpoint::make_property("TIMING_LOG_ADC_CB_M1_DC", &motors[1].timing_log[TIMING_LOG_ADC_CB_M1_DC]),
+            Endpoint::make_property("TIMING_LOG_MEAS_R", &motors[1].timing_log[TIMING_LOG_MEAS_R]),
+            Endpoint::make_property("TIMING_LOG_MEAS_L", &motors[1].timing_log[TIMING_LOG_MEAS_L]),
+            Endpoint::make_property("TIMING_LOG_ENC_CALIB", &motors[1].timing_log[TIMING_LOG_ENC_CALIB]),
+            Endpoint::make_property("TIMING_LOG_IDX_SEARCH", &motors[1].timing_log[TIMING_LOG_IDX_SEARCH]),
+            Endpoint::make_property("TIMING_LOG_FOC_VOLTAGE", &motors[1].timing_log[TIMING_LOG_FOC_VOLTAGE]),
+            Endpoint::make_property("TIMING_LOG_FOC_CURRENT", &motors[1].timing_log[TIMING_LOG_FOC_CURRENT]),
         Endpoint::close_tree(),
     Endpoint::close_tree() // motor1
 };
