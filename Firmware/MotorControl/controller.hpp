@@ -18,6 +18,7 @@ struct ControllerConfig_t {
     Motor_control_mode_t control_mode = CTRL_MODE_POSITION_CONTROL;  //see: Motor_control_mode_t
     float pos_gain = 20.0f;  // [(counts/s) / counts]
     float vel_gain = 5.0f / 10000.0f;  // [A/(counts/s)]
+    // float vel_gain = 15.0f / 200.0f, // [A/(rad/s)] <sensorless example>
     float vel_integrator_gain = 10.0f / 10000.0f;  // [A/(counts/s * s)]
     float vel_limit = 20000.0f;           // [counts/s]
 };
@@ -38,12 +39,11 @@ public:
     ControllerConfig_t& config;
     Axis* axis = nullptr; // set by Axis constructor
 
-    float pos_setpoint = 0.0f;
-    float vel_setpoint = 0.0f;
-    // float vel_setpoint = 800.0f; <sensorless example>
-    // float vel_gain = 15.0f / 200.0f, // [A/(rad/s)] <sensorless example>
-    float vel_integrator_current = 0.0f;  // [A]
-    float current_setpoint = 0.0f;        // [A]
+    // TODO: anticogging overhaul:
+    // - expose selected (all?) variables on protocol
+    // - make calibration user experience similar to motor & encoder calibration
+    // - use python tools to Fourier transform and write back the smoothed map or Fourier coefficients
+    // - make the calibration persistent
 
     typedef struct {
         int index;
@@ -61,6 +61,13 @@ public:
         .calib_pos_threshold = 1.0f,
         .calib_vel_threshold = 1.0f,
     };
+
+    // variables exposed on protocol
+    float pos_setpoint = 0.0f;
+    float vel_setpoint = 0.0f;
+    // float vel_setpoint = 800.0f; <sensorless example>
+    float vel_integrator_current = 0.0f;  // [A]
+    float current_setpoint = 0.0f;        // [A]
 
     // Cache for remote procedure calls arguments TODO: remove
     struct {

@@ -23,7 +23,7 @@ void save_configuration(void) {
     }
 }
 
-void load_configuration() {
+void load_configuration(void) {
     if (NVM_init() ||
         ConfigFormat::safe_load_config(
                 &axis_configs,
@@ -65,23 +65,16 @@ int odrive_main(void) {
     }
     
     // TODO: make dynamically reconfigurable
+#if HW_VERSION_MAJOR == 3 && HW_VERSION_MINOR >= 3
     if (enable_uart) {
         axes[0]->config.enable_step_dir = false;
         axes[0]->set_step_dir_enabled(false);
         SetGPIO12toUART();
     }
-/*
+#endif
+    //osDelay(100);
     // Init communications (this requires the axis objects to be constructed)
     init_communication();
-
-    // Start command handling thread
-    osThreadDef(task_cmd_parse, communication_task, osPriorityNormal, 0, 512);
-    thread_cmd_parse = osThreadCreate(osThread(task_cmd_parse), NULL);
-
-    // Start USB interrupt handler thread
-    osThreadDef(task_usb_pump, usb_update_thread, osPriorityNormal, 0, 512);
-    thread_usb_pump = osThreadCreate(osThread(task_usb_pump), NULL);
-    */
 
     // Setup hardware for all components
     for (size_t i = 0; i < AXIS_COUNT; ++i) {

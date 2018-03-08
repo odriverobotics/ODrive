@@ -23,7 +23,6 @@
 static uint8_t uart_tx_buf[UART_TX_BUFFER_SIZE];
 
 int _write(int file, char* data, int len) {
-#if 0 // TODO: revert!
     //number of bytes written
     int written = 0;
     switch (serial_printf_select) {
@@ -58,8 +57,6 @@ int _write(int file, char* data, int len) {
     }
 
     return written;
-#endif
-    return len;
 }
 
 void HAL_UART_TxCpltCallback(UART_HandleTypeDef* huart) {

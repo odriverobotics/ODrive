@@ -57,9 +57,9 @@ void Encoder::set_count(uint32_t count) {
 // TODO: add check_timing
 bool Encoder::calib_enc_offset(float voltage_magnitude) {
     static const float start_lock_duration = 1.0f;
-    static const float scan_duration = 1.0f;
-    static const float scan_range = 16.0f * M_PI;
-    static const size_t num_steps = scan_duration * current_meas_hz;
+    static const float scan_omega = 4.0f * M_PI;
+    static const float scan_distance = 16.0f * M_PI;
+    static const size_t num_steps = scan_distance / scan_omega * current_meas_hz;
 
     // go to motor zero phase for start_lock_duration to get ready to scan
     size_t i = 0;
@@ -76,7 +76,7 @@ bool Encoder::calib_enc_offset(float voltage_magnitude) {
     // scan forward
     i = 0;
     axis->run_control_loop([&](){
-        float phase = wrap_pm_pi(scan_range * (float)i / (float)num_steps - scan_range / 2.0f);
+        float phase = wrap_pm_pi(scan_distance * (float)i / (float)num_steps - scan_distance / 2.0f);
         float v_alpha = voltage_magnitude * arm_cos_f32(phase);
         float v_beta = voltage_magnitude * arm_sin_f32(phase);
         axis->motor.enqueue_voltage_timings(v_alpha, v_beta);
@@ -90,7 +90,7 @@ bool Encoder::calib_enc_offset(float voltage_magnitude) {
 
     //TODO avoid recomputing elec_rad_per_enc every time
     float elec_rad_per_enc = axis->motor.config.pole_pairs * 2 * M_PI * (1.0f / (float)(config.cpr));
-    float expected_encoder_delta = scan_range / elec_rad_per_enc;
+    float expected_encoder_delta = scan_distance / elec_rad_per_enc;
     float actual_encoder_delta_abs = fabsf((int16_t)hw_config.timer->Instance->CNT-init_enc_val);
     if(fabsf(actual_encoder_delta_abs - expected_encoder_delta)/expected_encoder_delta > config.calib_range)
     {
@@ -113,7 +113,7 @@ bool Encoder::calib_enc_offset(float voltage_magnitude) {
     // scan backwards
     i = 0;
     axis->run_control_loop([&](){
-        float phase = wrap_pm_pi(-scan_range * (float)i / (float)num_steps + scan_range / 2.0f);
+        float phase = wrap_pm_pi(-scan_distance * (float)i / (float)num_steps + scan_distance / 2.0f);
         float v_alpha = voltage_magnitude * arm_cos_f32(phase);
         float v_beta = voltage_magnitude * arm_sin_f32(phase);
         axis->motor.enqueue_voltage_timings(v_alpha, v_beta);

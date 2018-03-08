@@ -143,10 +143,12 @@ public:
     Controller& controller;
     Motor& motor;
 
-    Error_t error = ERROR_NO_ERROR;
     osThreadId thread_id;
     volatile bool thread_id_valid = false;
-    bool enable_step_dir = false; // auto enabled after calibration, based on enable_step_dir_after_calibration
+
+    // variables exposed on protocol
+    Error_t error = ERROR_NO_ERROR;
+    bool enable_step_dir = false; // auto enabled after calibration, based on config.enable_step_dir
     AxisState_t current_state = AXIS_STATE_STARTUP;
     AxisState_t requested_state = AXIS_STATE_DONT_CARE;
     uint32_t loop_counter = 0;

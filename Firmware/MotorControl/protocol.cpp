@@ -8,16 +8,7 @@
 #include <stdlib.h>
 
 /* Private defines -----------------------------------------------------------*/
-// Note that this option cannot be used to debug UART because it prints on UART
-//#define DEGUG_PROTOCOL
 /* Private macros ------------------------------------------------------------*/
-
-#ifdef DEGUG_PROTOCOL
-#define LOG_PROTO(...)  do { printf(__VA_ARGS__); osDelay(10); } while (0)
-#else
-#define LOG_PROTO(...)  ((void) 0)
-#endif
-
 /* Private typedef -----------------------------------------------------------*/
 /* Global constant data ------------------------------------------------------*/
 /* Global variables ----------------------------------------------------------*/
@@ -45,48 +36,6 @@ void hexdump(const uint8_t* buf, size_t len) {
     (void) len;
 }
 #endif
-
-static inline int write_string(const char* str, StreamSink* output) {
-    return output->process_bytes(reinterpret_cast<const uint8_t*>(str), strlen(str));
-}
-
-void Endpoint::write_json(size_t id, bool* need_comma, StreamSink* output) const {
-    if (type_ == CLOSE_TREE) {
-        write_string("]}", output);
-        *need_comma = true;
-    } else {
-        if (*need_comma)
-            write_string(",", output);
-
-        // write name
-        write_string("{\"name\":\"", output);
-        if (name_)
-            write_string(name_, output);
-
-        // write endpoint ID
-        write_string("\",\"id\":", output);
-        char id_buf[10];
-        snprintf(id_buf, sizeof(id_buf), "%u", id); // TODO: get rid of printf
-        write_string(id_buf, output);
-
-        // write additional JSON data
-        if (json_modifier_ && json_modifier_[0]) {
-            write_string(",", output);
-            write_string(json_modifier_, output);
-        }
-
-        if (type_ == BEGIN_OBJECT) {
-            write_string(",\"members\":[", output);
-            *need_comma = false;
-        } else if (type_ == BEGIN_FUNCTION) {
-            write_string(",\"arguments\":[", output);
-            *need_comma = false;
-        } else if (type_ == PROPERTY) {
-            write_string("}", output);
-            *need_comma = true;
-        }
-    }
-}
 
 
 
@@ -157,34 +106,78 @@ int PacketToStreamConverter::process_packet(const uint8_t *buffer, size_t length
 }
 
 
-// Calculates the CRC16 of the JSON interface descriptor.
-// The init value is the protocol version.
-uint16_t BidirectionalPacketBasedChannel::calculate_json_crc16(void) {
-    CRC16Calculator crc16_calculator(PROTOCOL_VERSION);
+class JSONDescriptorEndpoint : Endpoint {
+public:
+    static constexpr size_t endpoint_count = 1;
+    void write_json(size_t id, StreamSink* output);
+    void register_endpoints(Endpoint** list, size_t id, size_t length);
+    void handle(const uint8_t* input, size_t input_length, StreamSink* output);
+};
 
-    uint8_t offset[4] = { 0 };
-    interface_query(offset, sizeof(offset), &crc16_calculator);
+JSONDescriptorEndpoint json_file_endpoint = JSONDescriptorEndpoint();
+EndpointProvider* application_endpoints;
+uint16_t json_crc_;
 
-    return crc16_calculator.get_crc16();
+Endpoint* endpoints_[MAX_ENDPOINTS] = { 0 };
+size_t n_endpoints_ = 0;
+EndpointProvider* endpoint_provider_ = nullptr;
+
+void JSONDescriptorEndpoint::write_json(size_t id, StreamSink* output) {
+    write_string("{\"name\":\"\",", output);
+
+    // write endpoint ID
+    write_string("\"id\":", output);
+    char id_buf[10];
+    snprintf(id_buf, sizeof(id_buf), "%u", id); // TODO: get rid of printf
+    write_string(id_buf, output);
+
+    write_string(",\"type\":\"json\",\"access\":\"r\"}", output);
 }
 
+void JSONDescriptorEndpoint::register_endpoints(Endpoint** list, size_t id, size_t length) {
+    if (id < length)
+        list[id] = this;
+    
+};
+
 // Returns part of the JSON interface definition.
-void BidirectionalPacketBasedChannel::interface_query(const uint8_t* input, size_t input_length, StreamSink* output) {
+void JSONDescriptorEndpoint::handle(const uint8_t* input, size_t input_length, StreamSink* output) {
     // The request must contain a 32 bit integer to specify an offset
     if (input_length < 4)
         return;
     uint32_t offset = 0;
     read_le<uint32_t>(&offset, input);
     NullStreamSink output_with_offset = NullStreamSink(offset, *output);
-    
-    bool need_comma = false;
+
+    size_t id = 0;
     write_string("[", &output_with_offset);
-    for (size_t i = 0; i < n_endpoints_; ++i) {
-        get_endpoint(i)->write_json(i, &need_comma, &output_with_offset);
-        if (!output->get_free_space())
-            return; // return early if the output cannot take more bytes
-    }
+    json_file_endpoint.write_json(id, &output_with_offset);
+    id += decltype(json_file_endpoint)::endpoint_count;
+    write_string(",", &output_with_offset);
+    application_endpoints->write_json(id, &output_with_offset);
     write_string("]", &output_with_offset);
+}
+
+void set_application_endpoints(EndpointProvider* endpoints) {
+    application_endpoints = endpoints;
+
+    n_endpoints_ = 0;
+    json_file_endpoint.register_endpoints(endpoints_, 0, MAX_ENDPOINTS);
+    n_endpoints_ += decltype(json_file_endpoint)::endpoint_count;
+    application_endpoints->register_endpoints(endpoints_, n_endpoints_, MAX_ENDPOINTS);
+    n_endpoints_ += application_endpoints->get_endpoint_count();
+    
+    // Calculates the CRC16 of the JSON file.
+    // The init value is the protocol version.
+    CRC16Calculator crc16_calculator(PROTOCOL_VERSION);
+    uint8_t offset[4] = { 0 };
+    json_file_endpoint.handle(offset, sizeof(offset), &crc16_calculator);
+    json_crc_ = crc16_calculator.get_crc16();
+
+
+    CRC16Calculator crc16_calculator2(PROTOCOL_VERSION);
+    endpoints_[0]->handle(offset, sizeof(offset), &crc16_calculator2);
+    json_crc_ = crc16_calculator2.get_crc16();
 }
 
 int BidirectionalPacketBasedChannel::process_packet(const uint8_t* buffer, size_t length) {
@@ -205,9 +198,14 @@ int BidirectionalPacketBasedChannel::process_packet(const uint8_t* buffer, size_
         bool expect_response = endpoint_id & 0x8000;
         endpoint_id &= 0x7fff;
 
-        const Endpoint* endpoint = get_endpoint(endpoint_id);
-        if (!endpoint)
+        if (endpoint_id >= n_endpoints_)
             return -1;
+
+        Endpoint* endpoint = endpoints_[endpoint_id];
+        if (!endpoint) {
+            LOG_PROTO("critical: no endpoint at %d", endpoint_id);
+            return -1;
+        }
 
         // Verify packet trailer. The expected trailer value depends on the selected endpoint.
         // For endpoint 0 this is just the protocol version, for all other endpoints it's a
@@ -218,7 +216,7 @@ int BidirectionalPacketBasedChannel::process_packet(const uint8_t* buffer, size_
             LOG_PROTO("trailer mismatch for endpoint %d: expected %04x, got %04x\r\n", endpoint_id, expected_trailer, actual_trailer);
             return -1;
         }
-        LOG_PROTO("trailer ok\r\n");
+        LOG_PROTO("trailer ok for endpoint %d\r\n", endpoint_id);
 
         // TODO: if more bytes than the MTU were requested, should we abort or just return as much as possible?
 

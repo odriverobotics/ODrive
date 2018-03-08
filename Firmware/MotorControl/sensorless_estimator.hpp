@@ -14,6 +14,7 @@ public:
 
     Axis* axis = nullptr; // set by Axis constructor
 
+    // TODO: expose on protocol
     Error_t error = ERROR_NONE;
     float phase = 0.0f;                        // [rad]
     float pll_pos = 0.0f;                      // [rad]

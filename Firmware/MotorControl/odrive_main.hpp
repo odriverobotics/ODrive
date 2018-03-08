@@ -35,6 +35,7 @@ extern Axis *axes[AXIS_COUNT];
 
 
 // ODrive specific includes
+#include <protocol.hpp>
 #include <utils.h>
 #include <low_level.h>
 #include <encoder.hpp>
@@ -42,5 +43,11 @@ extern Axis *axes[AXIS_COUNT];
 #include <controller.hpp>
 #include <motor.hpp>
 #include <axis.hpp>
+
+#include <commands.h> // TODO: remove
+
+// defined in main.cpp
+void save_configuration(void);
+void erase_configuration(void);
 
 #endif /* __ODRIVE_MAIN_HPP */

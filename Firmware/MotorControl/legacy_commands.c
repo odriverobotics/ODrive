@@ -1,7 +1,7 @@
 /* Includes ------------------------------------------------------------------*/
 #include "legacy_commands.h"
 #include <utils.h>
-#if 0
+
 /* Private macros ------------------------------------------------------------*/
 /* Private typedef -----------------------------------------------------------*/
 /* Global constant data ------------------------------------------------------*/
@@ -10,7 +10,7 @@
 // recently recieved a command. In the future we may want to separate
 // debug printf and the main serial comms.
 SerialPrintf_t serial_printf_select = SERIAL_PRINTF_IS_UART;
-
+#if 0
 /* Private constant data -----------------------------------------------------*/
 
 // variables exposed to usb/serial interface via set/get/monitor
