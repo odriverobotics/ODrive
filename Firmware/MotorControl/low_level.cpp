@@ -204,7 +204,10 @@ void pwm_trig_adc_cb(ADC_HandleTypeDef* hadc, bool injected) {
     }
 
     // Check the timing of the sequencing
-    axis.motor_.log_timing();
+    if (current_meas_not_DC_CAL)
+        axis.motor_.log_timing(Motor::TIMING_LOG_ADC_CB_I);
+    else
+        axis.motor_.log_timing(Motor::TIMING_LOG_ADC_CB_DC);
 
     uint32_t ADCValue;
     if (injected) {

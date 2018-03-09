@@ -51,8 +51,6 @@ typedef struct {
     float current_lim = 10.0f;  //[A]
 } MotorConfig_t;
 
-#define TIMING_LOG_SIZE 16
-
 class Motor {
 public:
     enum Error_t {
@@ -62,6 +60,19 @@ public:
         ERROR_ADC_FAILED,
         ERROR_DRV_FAULT,
         ERROR_NOT_IMPLEMENTED_MOTOR_TYPE,
+    };
+
+    enum TimingLog_t {
+        TIMING_LOG_GENERAL,
+        TIMING_LOG_ADC_CB_I,
+        TIMING_LOG_ADC_CB_DC,
+        TIMING_LOG_MEAS_R,
+        TIMING_LOG_MEAS_L,
+        TIMING_LOG_ENC_CALIB,
+        TIMING_LOG_IDX_SEARCH,
+        TIMING_LOG_FOC_VOLTAGE,
+        TIMING_LOG_FOC_CURRENT,
+        TIMING_LOG_NUM_SLOTS
     };
 
     Motor(const MotorHardwareConfig_t& hw_config,
@@ -76,7 +87,7 @@ public:
     void DRV8301_setup();
     bool check_DRV_fault();
     bool do_checks();
-    void log_timing();
+    void log_timing(TimingLog_t log_idx);
     float phase_current_from_adcval(uint32_t ADCValue);
     bool measure_phase_resistance(float test_current, float max_voltage);
     bool measure_phase_inductance(float voltage_low, float voltage_high);
@@ -103,7 +114,7 @@ public:
     bool next_timings_valid_ = false;
     uint16_t last_cpu_time_ = 0;
     int timing_log_index_ = 0;
-    uint16_t timing_log_[TIMING_LOG_SIZE] = { 0 };
+    uint16_t timing_log_[TIMING_LOG_NUM_SLOTS] = { 0 };
 
     // variables exposed on protocol
     Error_t error_ = ERROR_NO_ERROR;
@@ -155,6 +166,17 @@ public:
                 make_protocol_ro_property("status_reg_2", &gate_driver_regs_.Stat_Reg_2_Value),
                 make_protocol_ro_property("ctrl_reg_1", &gate_driver_regs_.Ctrl_Reg_1_Value),
                 make_protocol_ro_property("ctrl_reg_2", &gate_driver_regs_.Ctrl_Reg_2_Value)
+            ),
+            make_protocol_object("timing_log",
+                make_protocol_ro_property("TIMING_LOG_GENERAL", &timing_log_[TIMING_LOG_GENERAL]),
+                make_protocol_ro_property("TIMING_LOG_ADC_CB_I", &timing_log_[TIMING_LOG_ADC_CB_I]),
+                make_protocol_ro_property("TIMING_LOG_ADC_CB_DC", &timing_log_[TIMING_LOG_ADC_CB_DC]),
+                make_protocol_ro_property("TIMING_LOG_MEAS_R", &timing_log_[TIMING_LOG_MEAS_R]),
+                make_protocol_ro_property("TIMING_LOG_MEAS_L", &timing_log_[TIMING_LOG_MEAS_L]),
+                make_protocol_ro_property("TIMING_LOG_ENC_CALIB", &timing_log_[TIMING_LOG_ENC_CALIB]),
+                make_protocol_ro_property("TIMING_LOG_IDX_SEARCH", &timing_log_[TIMING_LOG_IDX_SEARCH]),
+                make_protocol_ro_property("TIMING_LOG_FOC_VOLTAGE", &timing_log_[TIMING_LOG_FOC_VOLTAGE]),
+                make_protocol_ro_property("TIMING_LOG_FOC_CURRENT", &timing_log_[TIMING_LOG_FOC_CURRENT])
             ),
             make_protocol_object("config",
                 make_protocol_property("pole_pairs", &config_.pole_pairs),

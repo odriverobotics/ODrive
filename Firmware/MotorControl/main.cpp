@@ -3,22 +3,21 @@
 #include "nvm_config.hpp"
 #include "communication.h"
 
+BoardConfig_t board_config;
 EncoderConfig_t encoder_configs[AXIS_COUNT];
 ControllerConfig_t controller_configs[AXIS_COUNT];
 MotorConfig_t motor_configs[AXIS_COUNT];
 AxisConfig_t axis_configs[AXIS_COUNT];
+
 Axis *axes[AXIS_COUNT];
 
-bool enable_uart;
-
-typedef Config<AxisConfig_t[2], MotorConfig_t[2], float, bool> ConfigFormat;
+typedef Config<BoardConfig_t, AxisConfig_t[AXIS_COUNT], MotorConfig_t[AXIS_COUNT]> ConfigFormat;
 
 void save_configuration(void) {
     if (ConfigFormat::safe_store_config(
+        &board_config,
         &axis_configs,
-        &motor_configs,
-        &brake_resistance,
-        &enable_uart)) {
+        &motor_configs)) {
         //printf("saving configuration failed\r\n"); osDelay(5);
     }
 }
@@ -26,16 +25,14 @@ void save_configuration(void) {
 void load_configuration(void) {
     if (NVM_init() ||
         ConfigFormat::safe_load_config(
+                &board_config,
                 &axis_configs,
-                &motor_configs,
-                &brake_resistance,
-                &enable_uart)) {
+                &motor_configs)) {
         for (size_t i = 0; i < AXIS_COUNT; ++i) {
             axis_configs[i] = AxisConfig_t();
             motor_configs[i] = MotorConfig_t();
         }
-        brake_resistance = 0.47f;
-        enable_uart = true;
+        board_config = BoardConfig_t();
     }
 }
 
@@ -66,7 +63,7 @@ int odrive_main(void) {
     
     // TODO: make dynamically reconfigurable
 #if HW_VERSION_MAJOR == 3 && HW_VERSION_MINOR >= 3
-    if (enable_uart) {
+    if (board_config.enable_uart) {
         axes[0]->config_.enable_step_dir = false;
         axes[0]->set_step_dir_enabled(false);
         SetGPIO12toUART();

@@ -65,6 +65,7 @@ bool Encoder::calib_enc_offset(float voltage_magnitude) {
     int i = 0;
     axis_->run_control_loop([&](){
         axis_->motor_.enqueue_voltage_timings(voltage_magnitude, 0.0f);
+        axis_->motor_.log_timing(Motor::TIMING_LOG_ENC_CALIB);
         return ++i < start_lock_duration * current_meas_hz;
     });
     if (axis_->error_ != Axis::ERROR_NO_ERROR)
@@ -80,6 +81,7 @@ bool Encoder::calib_enc_offset(float voltage_magnitude) {
         float v_alpha = voltage_magnitude * arm_cos_f32(phase);
         float v_beta = voltage_magnitude * arm_sin_f32(phase);
         axis_->motor_.enqueue_voltage_timings(v_alpha, v_beta);
+        axis_->motor_.log_timing(Motor::TIMING_LOG_ENC_CALIB);
 
         encvaluesum += (int16_t)hw_config_.timer->Instance->CNT;
         
@@ -117,6 +119,7 @@ bool Encoder::calib_enc_offset(float voltage_magnitude) {
         float v_alpha = voltage_magnitude * arm_cos_f32(phase);
         float v_beta = voltage_magnitude * arm_sin_f32(phase);
         axis_->motor_.enqueue_voltage_timings(v_alpha, v_beta);
+        axis_->motor_.log_timing(Motor::TIMING_LOG_ENC_CALIB);
 
         encvaluesum += (int16_t)hw_config_.timer->Instance->CNT;
         
@@ -140,7 +143,8 @@ bool Encoder::scan_for_enc_idx(float omega, float voltage_magnitude) {
         float v_alpha = voltage_magnitude * arm_cos_f32(phase);
         float v_beta = voltage_magnitude * arm_sin_f32(phase);
         axis_->motor_.enqueue_voltage_timings(v_alpha, v_beta);
-        
+        axis_->motor_.log_timing(Motor::TIMING_LOG_IDX_SEARCH);
+
         // continue until the index is found
         return !index_found_;
     });
@@ -161,7 +165,7 @@ bool Encoder::run_calibration() {
                 (float)(axis_->motor_.config_.direction) * config_.idx_search_speed,
                 enc_calibration_voltage))
             return false;
-    if (!config_.hand_calibrated) // 
+    if (!config_.hand_calibrated) // TODO: discuss what logic we want here
         if (!calib_enc_offset(enc_calibration_voltage))
             return false;
     return true;

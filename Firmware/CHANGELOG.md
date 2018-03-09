@@ -1,19 +1,28 @@
-## UNRELEASED
-Please add a note of your changes below this heading if you make a PR
+# Unreleased Features
+Please add a note of your changes below this heading if you make a Pull Request.
 
 ### Added
-* Reporting error if your encoder CPR is incorrect
-* Reporting of DRV status/control registers and fault codes
-* DRV status read script
-* Microsecond delay function
-* Ability to start anticogging calibration over USB protocol
-* Travis-CI
+* **Storing of configuration parameters to Non Volatile Memory**
 
 ### Changed
-* Build system is now tup instead of make
 * Most code from `lowlevel.c` moved to `axis.cpp`, `encoder.cpp`, `controller.cpp`, `sensorless_estimator.cpp`, `motor.cpp` and the corresponding header files
 * Refactoring of the developer-facing communication protocol interface. See e.g. `axis.hpp` or `controller.hpp` for examples on how to add your own fields and functions
 * Change of the user-facing field paths. E.g. `my_odrive.motor0.pos_setpoint` is now at `my_odrive.axis0.controller.pos_setpoint`. Names are mostly unchanged.
+
+# Releases
+
+## [0.3.5] - 2018-03-04
+
+### Added
+* Reporting error if your encoder CPR is incorrect
+* Ability to start anticogging calibration over USB protocol
+* Reporting of DRV status/control registers and fault codes
+* DRV status read script
+* Microsecond delay function
+* Travis-CI
+
+### Changed
+* Build system is now tup instead of make. Please check the [Readme](README.md#installing-prerequisites) for installation instructions.
 
 ## [0.3.4] - 2018-02-13
 

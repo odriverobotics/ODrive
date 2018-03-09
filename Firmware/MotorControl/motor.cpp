@@ -127,7 +127,7 @@ bool Motor::do_checks() {
     return true;
 }
 
-void Motor::log_timing() {
+void Motor::log_timing(TimingLog_t log_idx) {
     TIM_HandleTypeDef* htim = hw_config_.timer;
     uint16_t timing = htim->Instance->CNT;
     bool down = htim->Instance->CR1 & TIM_CR1_DIR;
@@ -136,10 +136,9 @@ void Motor::log_timing() {
         timing = TIM_1_8_PERIOD_CLOCKS + delta;
     }
 
-    if (++(timing_log_index_) == TIMING_LOG_SIZE) {
-        timing_log_index_ = 0;
+    if (log_idx < TIMING_LOG_NUM_SLOTS) {
+        timing_log_[log_idx] = timing;
     }
-    timing_log_[timing_log_index_] = timing;
 }
 
 float Motor::phase_current_from_adcval(uint32_t ADCValue) {
@@ -169,6 +168,7 @@ bool Motor::measure_phase_resistance(float test_current, float max_voltage) {
 
         // Test voltage along phase A
         enqueue_voltage_timings(test_voltage, 0.0f);
+        log_timing(TIMING_LOG_MEAS_R);
 
         return ++i < num_test_cycles;
     });
@@ -195,6 +195,7 @@ bool Motor::measure_phase_inductance(float voltage_low, float voltage_high) {
 
         // Test voltage along phase A
         enqueue_voltage_timings(test_voltages[i], 0.0f);
+        log_timing(TIMING_LOG_MEAS_L);
 
         return ++t < (num_cycles << 1);
     });
@@ -257,6 +258,7 @@ void Motor::enqueue_voltage_timings(float v_alpha, float v_beta) {
     float mod_alpha = vfactor * v_alpha;
     float mod_beta = vfactor * v_beta;
     enqueue_modulation_timings(mod_alpha, mod_beta);
+    log_timing(TIMING_LOG_FOC_VOLTAGE);
 }
 
 // TODO: This doesn't update brake current
@@ -328,8 +330,8 @@ bool Motor::FOC_current(float Id_des, float Iq_des, float phase) {
 
     // Apply SVM
     enqueue_modulation_timings(mod_alpha, mod_beta);
+    log_timing(TIMING_LOG_FOC_CURRENT);
 
-    update_brake_current();
     return true;
 }
 
