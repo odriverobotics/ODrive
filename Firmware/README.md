@@ -61,7 +61,6 @@ Note that UART is only supported on ODrive v3.3 and higher.
  - `UART_PROTOCOL_LEGACY`: Use the human-readable legacy protocol
     Use this option if you control the ODrive with an Arduino. The ODrive Arduino library is not yet updated to the native protocol.
  - `UART_PROTOCOL_NONE`: Ignore UART communication
- - `USE_GPIO_MODE_STEP_DIR`: Step/direction control mode (use in conjunction with `UART_PROTOCOL_NONE`)
 
 <br><br>
 ## Compiling and downloading firmware
