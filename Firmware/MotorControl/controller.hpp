@@ -30,14 +30,15 @@ public:
     void set_pos_setpoint(float pos_setpoint, float vel_feed_forward, float current_feed_forward);
     void set_vel_setpoint(float vel_setpoint, float current_feed_forward);
     void set_current_setpoint(float current_setpoint);
-
+    
     // TODO: make this more similar to other calibration loops
-    bool anti_cogging_calibration(float pos_estimate, float vel_estimate);
+    void start_anticogging_calibration();
+    bool anticogging_calibration(float pos_estimate, float vel_estimate);
 
     bool update(float pos_estimate, float vel_estimate, float* current_setpoint);
 
-    ControllerConfig_t& config;
-    Axis* axis = nullptr; // set by Axis constructor
+    ControllerConfig_t& config_;
+    Axis* axis_ = nullptr; // set by Axis constructor
 
     // TODO: anticogging overhaul:
     // - expose selected (all?) variables on protocol
@@ -53,7 +54,7 @@ public:
         float calib_pos_threshold;
         float calib_vel_threshold;
     } Anticogging_t;
-    Anticogging_t anticogging = {
+    Anticogging_t anticogging_ = {
         .index = 0,
         .cogging_map = nullptr,
         .use_anticogging = false,
@@ -63,25 +64,38 @@ public:
     };
 
     // variables exposed on protocol
-    float pos_setpoint = 0.0f;
-    float vel_setpoint = 0.0f;
+    float pos_setpoint_ = 0.0f;
+    float vel_setpoint_ = 0.0f;
     // float vel_setpoint = 800.0f; <sensorless example>
-    float vel_integrator_current = 0.0f;  // [A]
-    float current_setpoint = 0.0f;        // [A]
+    float vel_integrator_current_ = 0.0f;  // [A]
+    float current_setpoint_ = 0.0f;        // [A]
 
-    // Cache for remote procedure calls arguments TODO: remove
-    struct {
-        float pos_setpoint; 
-        float vel_feed_forward;
-        float current_feed_forward;
-    } set_pos_setpoint_args;
-    struct {
-        float vel_setpoint;
-        float current_feed_forward;
-    } set_vel_setpoint_args;
-    struct {
-        float current_setpoint;
-    } set_current_setpoint_args;
+    // Communication protocol definitions
+    auto make_protocol_definitions() {
+        return make_protocol_member_list(
+            make_protocol_property("pos_setpoint", &pos_setpoint_),
+            make_protocol_property("vel_setpoint", &vel_setpoint_),
+            make_protocol_property("vel_integrator_current", &vel_integrator_current_),
+            make_protocol_property("current_setpoint", &current_setpoint_),
+            make_protocol_object("config",
+                make_protocol_property("control_mode", &config_.control_mode),
+                make_protocol_property("pos_gain", &config_.pos_gain),
+                make_protocol_property("vel_gain", &config_.vel_gain),
+                make_protocol_property("vel_integrator_gain", &config_.vel_integrator_gain),
+                make_protocol_property("vel_limit", &config_.vel_limit)
+            ),
+            make_protocol_function("set_pos_setpoint", *this, &Controller::set_pos_setpoint,
+                "pos_setpoint",
+                "vel_feed_forward",
+                "current_feed_forward"),
+            make_protocol_function("set_vel_setpoint", *this, &Controller::set_vel_setpoint,
+                "vel_setpoint",
+                "current_feed_forward"),
+            make_protocol_function("set_current_setpoint", *this, &Controller::set_current_setpoint,
+                "current_setpoint"),
+            make_protocol_function("start_anticogging_calibration", *this, &Controller::start_anticogging_calibration)
+        );
+    }
 };
 
 #endif // __CONTROLLER_HPP

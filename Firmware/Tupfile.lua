@@ -68,7 +68,7 @@ build{
         'MotorControl/low_level.cpp',
         'MotorControl/nvm.c',
         'MotorControl/axis.cpp',
-        'MotorControl/commands.cpp',
+        'MotorControl/communication.cpp',
         'MotorControl/protocol.cpp',
         'MotorControl/motor.cpp',
         'MotorControl/encoder.cpp',

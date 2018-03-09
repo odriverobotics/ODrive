@@ -12,12 +12,6 @@ extern "C" {
 #include <adc.h>
 
 /* Exported types ------------------------------------------------------------*/
-
-typedef struct{
-        int type;
-        int index;
-} monitoring_slot;
-
 /* Exported constants --------------------------------------------------------*/
 /* Exported variables --------------------------------------------------------*/
 /* Exported macro ------------------------------------------------------------*/
@@ -35,7 +29,6 @@ void sync_timers(TIM_HandleTypeDef* htim_a, TIM_HandleTypeDef* htim_b,
         uint16_t TIM_CLOCKSOURCE_ITRx, uint16_t count_offset);
 
 void update_brake_current();
-void set_brake_current(float brake_current);
 
 #ifdef __cplusplus
 }

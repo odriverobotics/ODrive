@@ -1,7 +1,7 @@
 
 #include "odrive_main.hpp"
-#include <nvm_config.hpp>
-
+#include "nvm_config.hpp"
+#include "communication.h"
 
 EncoderConfig_t encoder_configs[AXIS_COUNT];
 ControllerConfig_t controller_configs[AXIS_COUNT];
@@ -67,7 +67,7 @@ int odrive_main(void) {
     // TODO: make dynamically reconfigurable
 #if HW_VERSION_MAJOR == 3 && HW_VERSION_MINOR >= 3
     if (enable_uart) {
-        axes[0]->config.enable_step_dir = false;
+        axes[0]->config_.enable_step_dir = false;
         axes[0]->set_step_dir_enabled(false);
         SetGPIO12toUART();
     }

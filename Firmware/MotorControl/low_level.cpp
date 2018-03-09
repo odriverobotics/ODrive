@@ -76,20 +76,6 @@ void start_adc_pwm() {
     HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_4);
 }
 
-void halt_motors(Motor::Error_t error) {
-    // Disable motors NOW!
-    for (size_t i = 0; i < AXIS_COUNT; ++i) {
-        axes[i]->motor.disarm();
-    }
-    // Set fault codes, etc.
-    for (size_t i = 0; i < AXIS_COUNT; ++i) {
-        axes[i]->motor.error = error;
-        axes[i]->error = Axis::ERROR_MOTOR_FAILED;
-    }
-    // disable brake resistor
-    set_brake_current(0.0f);
-}
-
 void start_pwm(TIM_HandleTypeDef* htim) {
     // Init PWM
     int half_load = TIM_1_8_PERIOD_CLOCKS / 2;
@@ -155,6 +141,15 @@ void sync_timers(TIM_HandleTypeDef* htim_a, TIM_HandleTypeDef* htim_b,
     htim_b->Instance->BDTR |= MOE_store_b;
 }
 
+// @brief Floats ALL phases immediately and sets the brake current to 0.
+void disable_all_pwms(Motor::Error_t error) {
+    // Disable all motors NOW!
+    for (size_t i = 0; i < AXIS_COUNT; ++i) {
+        axes[i]->motor_.disarm();
+        axes[i]->motor_.error_ = error;
+    }
+}
+
 //--------------------------------
 // IRQ Callbacks
 //--------------------------------
@@ -175,7 +170,7 @@ void pwm_trig_adc_cb(ADC_HandleTypeDef* hadc, bool injected) {
 
     // Ensure ADCs are expected ones to simplify the logic below
     if (!(hadc == &hadc2 || hadc == &hadc3)) {
-        halt_motors(Motor::ERROR_ADC_FAILED);
+        disable_all_pwms(Motor::ERROR_ADC_FAILED);
         return;
     };
 
@@ -185,27 +180,35 @@ void pwm_trig_adc_cb(ADC_HandleTypeDef* hadc, bool injected) {
     // If we are counting down, we just sampled in SVM vector 7, with zero current
     Axis& axis = injected ? *axes[0] : *axes[1];
     Axis& other_axis = injected ? *axes[1] : *axes[0];
-    bool counting_down = axis.motor.hw_config.timer->Instance->CR1 & TIM_CR1_DIR;
+    bool counting_down = axis.motor_.hw_config_.timer->Instance->CR1 & TIM_CR1_DIR;
 
     bool current_meas_not_DC_CAL = !counting_down;
-    if (&axis == axes[1] && counting_down) {
-        // Load next timings for M0 (only once is sufficient)
-        if (hadc == &hadc2) {
-            other_axis.motor.hw_config.timer->Instance->CCR1 = other_axis.motor.next_timings[0];
-            other_axis.motor.hw_config.timer->Instance->CCR2 = other_axis.motor.next_timings[1];
-            other_axis.motor.hw_config.timer->Instance->CCR3 = other_axis.motor.next_timings[2];
-        }
-    } else if (&axis == axes[0] && !counting_down) {
-        // Load next timings for M1 (only once is sufficient)
-        if (hadc == &hadc2) {
-            other_axis.motor.hw_config.timer->Instance->CCR1 = other_axis.motor.next_timings[0];
-            other_axis.motor.hw_config.timer->Instance->CCR2 = other_axis.motor.next_timings[1];
-            other_axis.motor.hw_config.timer->Instance->CCR3 = other_axis.motor.next_timings[2];
+    bool update_timings = false;
+    if (hadc == &hadc2) {
+        if (&axis == axes[1] && counting_down)
+            update_timings = true; // update timings of M0
+        else if (&axis == axes[0] && !counting_down)
+            update_timings = true; // update timings of M1
+    }
+
+    // Load next timings for the motor that we're not currently sampling
+    if (update_timings) {
+        if (other_axis.motor_.next_timings_valid_ && !other_axis.missed_control_deadline_) {
+            other_axis.motor_.next_timings_valid_ = false;
+            other_axis.motor_.hw_config_.timer->Instance->CCR1 = other_axis.motor_.next_timings_[0];
+            other_axis.motor_.hw_config_.timer->Instance->CCR2 = other_axis.motor_.next_timings_[1];
+            other_axis.motor_.hw_config_.timer->Instance->CCR3 = other_axis.motor_.next_timings_[2];
+            __HAL_TIM_MOE_ENABLE(other_axis.motor_.hw_config_.timer);  // enable pwm outputs
+            update_brake_current();
+        } else {
+            // the motor control loop failed to update the timings in time
+            // we must assume that it died and therefore float all phases
+            other_axis.motor_.disarm();
         }
     }
 
     // Check the timing of the sequencing
-    axis.motor.check_timing();
+    axis.motor_.log_timing();
 
     uint32_t ADCValue;
     if (injected) {
@@ -213,7 +216,7 @@ void pwm_trig_adc_cb(ADC_HandleTypeDef* hadc, bool injected) {
     } else {
         ADCValue = HAL_ADC_GetValue(hadc);
     }
-    float current = axis.motor.phase_current_from_adcval(ADCValue);
+    float current = axis.motor_.phase_current_from_adcval(ADCValue);
 
     if (current_meas_not_DC_CAL) {
         // ADC2 and ADC3 record the phB and phC currents concurrently,
@@ -224,33 +227,32 @@ void pwm_trig_adc_cb(ADC_HandleTypeDef* hadc, bool injected) {
 
         // return or continue
         if (hadc == &hadc2) {
-            axis.motor.current_meas.phB = current - axis.motor.DC_calib.phB;
+            axis.motor_.current_meas_.phB = current - axis.motor_.DC_calib_.phB;
             return;
         } else {
-            axis.motor.current_meas.phC = current - axis.motor.DC_calib.phC;
+            axis.motor_.current_meas_.phC = current - axis.motor_.DC_calib_.phC;
         }
         // Trigger axis thread
-        axis.signal_thread(Axis::thread_signals::M_SIGNAL_PH_CURRENT_MEAS);
+        axis.signal_current_meas();
     } else {
         // DC_CAL measurement
         if (hadc == &hadc2) {
-            axis.motor.DC_calib.phB += (current - axis.motor.DC_calib.phB) * calib_filter_k;
+            axis.motor_.DC_calib_.phB += (current - axis.motor_.DC_calib_.phB) * calib_filter_k;
         } else {
-            axis.motor.DC_calib.phC += (current - axis.motor.DC_calib.phC) * calib_filter_k;
+            axis.motor_.DC_calib_.phC += (current - axis.motor_.DC_calib_.phC) * calib_filter_k;
         }
     }
 }
 
+// @brief Sums up the Ibus contribution of each motor and updates the
+// brake resistor PWM accordingly.
 void update_brake_current() {
     float Ibus_sum = 0.0f;
     for (size_t i = 0; i < AXIS_COUNT; ++i) {
-        Ibus_sum += axes[i]->motor.current_control.Ibus;
+        Ibus_sum += axes[i]->motor_.current_control_.Ibus;
     }
-    // Note: set_brake_current will clip negative values to 0.0f
-    set_brake_current(-Ibus_sum);
-}
-
-void set_brake_current(float brake_current) {
+    float brake_current = -Ibus_sum;
+    // Clip negative values to 0.0f
     if (brake_current < 0.0f) brake_current = 0.0f;
     float brake_duty = brake_current * brake_resistance / vbus_voltage;
 

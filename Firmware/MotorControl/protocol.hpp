@@ -369,8 +369,6 @@ inline constexpr const char* get_default_json_modifier<bool>() {
     return "\"type\":\"bool\",\"access\":\"rw\"";
 }
 
-constexpr size_t MAX_ENDPOINTS = 100;
-
 class Endpoint {
 public:
     //const char* const name_;
@@ -417,7 +415,6 @@ template<>
 struct MemberList<> {
 public:
     static constexpr size_t endpoint_count = 0;
-    size_t get_endpoint_count() { return endpoint_count; }
     static constexpr bool is_empty = true;
     void write_json(size_t id, StreamSink* output) {
         // no action
@@ -432,7 +429,6 @@ template<typename TMember, typename ... TMembers>
 struct MemberList<TMember, TMembers...> {
 public:
     static constexpr size_t endpoint_count = TMember::endpoint_count + MemberList<TMembers...>::endpoint_count;
-    size_t get_endpoint_count() { return endpoint_count; }
     static constexpr bool is_empty = false;
 
     MemberList(TMember&& this_member, TMembers&&... subsequent_members) :
@@ -441,7 +437,7 @@ public:
 
     MemberList(TMember&& this_member, MemberList<TMembers...>&& subsequent_members) :
         this_member_(std::forward<TMember>(this_member)),
-        subsequent_members_(std::forward(subsequent_members)) {}
+        subsequent_members_(std::forward<MemberList<TMembers...>>(subsequent_members)) {}
 
     // @brief Move constructor
 /*    MemberList(MemberList&& other) :
@@ -572,14 +568,28 @@ public:
     TProperty* property_;
 };
 
-template<typename TProperty>
+// Non-const non-enum types
+template<typename TProperty, typename = std::enable_if_t<!std::is_enum<TProperty>::value>>
 ProtocolProperty<TProperty> make_protocol_property(const char * name, TProperty* property) {
     return ProtocolProperty<TProperty>(name, property);
 };
 
-template<typename TProperty>
+// Const non-enum types
+template<typename TProperty, typename = std::enable_if_t<!std::is_enum<TProperty>::value>>
 ProtocolProperty<const TProperty> make_protocol_ro_property(const char * name, const TProperty* property) {
     return ProtocolProperty<const TProperty>(name, property);
+};
+
+// Non-const enum types
+template<typename TProperty, typename = std::enable_if_t<std::is_enum<TProperty>::value>>
+ProtocolProperty<std::underlying_type_t<TProperty>> make_protocol_property(const char * name, TProperty* property) {
+    return ProtocolProperty<std::underlying_type_t<TProperty>>(name, reinterpret_cast<std::underlying_type_t<TProperty>*>(property));
+};
+
+// Const enum types
+template<typename TProperty, typename = std::enable_if_t<std::is_enum<TProperty>::value>>
+ProtocolProperty<const std::underlying_type_t<TProperty>> make_protocol_ro_property(const char * name, const TProperty* property) {
+    return ProtocolProperty<const std::underlying_type_t<TProperty>>(name, reinterpret_cast<const std::underlying_type_t<TProperty>*>(property));
 };
 
 
@@ -636,7 +646,7 @@ struct PropertyListFactory<TProperty, TProperties...> {
     static MemberList<ProtocolProperty<TProperty>, ProtocolProperty<TProperties>...>
     make_property_list(std::array<const char *, sizeof...(TAllProperties)> names, std::tuple<TAllProperties...>& values) {
         return MemberList<ProtocolProperty<TProperty>, ProtocolProperty<TProperties>...>(
-            make_protocol_property(std::get<IPos>(names), std::get<IPos>(values)),
+            make_protocol_property(std::get<IPos>(names), &std::get<IPos>(values)),
             PropertyListFactory<TProperties...>::template make_property_list<IPos+1>(names, values)
         );
     }
@@ -715,7 +725,7 @@ class EndpointProvider_from_MemberList : public EndpointProvider {
 public:
     EndpointProvider_from_MemberList(T& member_list) : member_list_(member_list) {}
     size_t get_endpoint_count() final {
-        return member_list_.get_endpoint_count();
+        return T::endpoint_count;
     }
     void write_json(size_t id, StreamSink* output) final {
         return member_list_.write_json(id, output);
@@ -727,5 +737,11 @@ public:
 };
 
 void set_application_endpoints(EndpointProvider* endpoints);
+
+
+// defined in communication.cpp
+extern Endpoint* endpoints_[];
+extern size_t n_endpoints_;
+extern const size_t max_endpoints_;
 
 #endif

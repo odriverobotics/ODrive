@@ -118,10 +118,6 @@ JSONDescriptorEndpoint json_file_endpoint = JSONDescriptorEndpoint();
 EndpointProvider* application_endpoints;
 uint16_t json_crc_;
 
-Endpoint* endpoints_[MAX_ENDPOINTS] = { 0 };
-size_t n_endpoints_ = 0;
-EndpointProvider* endpoint_provider_ = nullptr;
-
 void JSONDescriptorEndpoint::write_json(size_t id, StreamSink* output) {
     write_string("{\"name\":\"\",", output);
 
@@ -162,9 +158,9 @@ void set_application_endpoints(EndpointProvider* endpoints) {
     application_endpoints = endpoints;
 
     n_endpoints_ = 0;
-    json_file_endpoint.register_endpoints(endpoints_, 0, MAX_ENDPOINTS);
+    json_file_endpoint.register_endpoints(endpoints_, 0, max_endpoints_);
     n_endpoints_ += decltype(json_file_endpoint)::endpoint_count;
-    application_endpoints->register_endpoints(endpoints_, n_endpoints_, MAX_ENDPOINTS);
+    application_endpoints->register_endpoints(endpoints_, n_endpoints_, max_endpoints_);
     n_endpoints_ += application_endpoints->get_endpoint_count();
     
     // Calculates the CRC16 of the JSON file.
@@ -173,7 +169,6 @@ void set_application_endpoints(EndpointProvider* endpoints) {
     uint8_t offset[4] = { 0 };
     json_file_endpoint.handle(offset, sizeof(offset), &crc16_calculator);
     json_crc_ = crc16_calculator.get_crc16();
-
 
     CRC16Calculator crc16_calculator2(PROTOCOL_VERSION);
     endpoints_[0]->handle(offset, sizeof(offset), &crc16_calculator2);

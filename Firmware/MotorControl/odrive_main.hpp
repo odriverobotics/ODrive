@@ -44,8 +44,6 @@ extern Axis *axes[AXIS_COUNT];
 #include <motor.hpp>
 #include <axis.hpp>
 
-#include <commands.h> // TODO: remove
-
 // defined in main.cpp
 void save_configuration(void);
 void erase_configuration(void);

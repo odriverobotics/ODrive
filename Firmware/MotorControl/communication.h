@@ -21,16 +21,6 @@
 // #define UART_PROTOCOL_LEGACY
 #define UART_PROTOCOL_NONE
 
-// Use GPIO 1/2 for step/dir input instead of UART
-// #define USE_GPIO_MODE_STEP_DIR
-
-
-typedef enum {
-    GPIO_MODE_NONE,
-    GPIO_MODE_UART,
-    GPIO_MODE_STEP_DIR,
-} GpioMode_t;
-
 extern "C" {
 #endif
 
