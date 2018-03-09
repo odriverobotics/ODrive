@@ -142,8 +142,6 @@ public:
     }
 };
 
-float bla;
-
 /* Private function prototypes -----------------------------------------------*/
 /* Function implementations --------------------------------------------------*/
 
@@ -159,13 +157,32 @@ void init_communication(void) {
     thread_usb_pump = osThreadCreate(osThread(task_usb_pump), NULL);
 }
 
-
+// Helper class because the protocol library doesn't yet
+// support non-member functions
+// TODO: make this go away
+class StaticFunctions {
+public:
+    void save_configuration_helper() { save_configuration(); }
+    void erase_configuration_helper() { erase_configuration(); }
+    void NVIC_SystemReset_helper() { NVIC_SystemReset(); }
+} static_functions;
 
 static auto make_obj_tree() {
     return make_protocol_member_list(
-        make_protocol_property("bla2", &bla),
+        make_protocol_ro_property("vbus_voltage", &vbus_voltage),
+        make_protocol_ro_property("UUID_0", (const uint32_t*)(ID_UNIQUE_ADDRESS + 0*4)),
+        make_protocol_ro_property("UUID_1", (const uint32_t*)(ID_UNIQUE_ADDRESS + 1*4)),
+        make_protocol_ro_property("UUID_2", (const uint32_t*)(ID_UNIQUE_ADDRESS + 2*4)),
+        make_protocol_object("config",
+            make_protocol_property("brake_resistance", &board_config.brake_resistance),
+            // TODO: changing this currently requires a reboot - fix this
+            make_protocol_property("enable_uart", &board_config.enable_uart)
+        ),
         make_protocol_object("axis0", axes[0]->make_protocol_definitions()),
-        make_protocol_object("axis1", axes[1]->make_protocol_definitions())
+        make_protocol_object("axis1", axes[1]->make_protocol_definitions()),
+        make_protocol_function("save_configuration", static_functions, &StaticFunctions::save_configuration_helper),
+        make_protocol_function("erase_configuration", static_functions, &StaticFunctions::erase_configuration_helper),
+        make_protocol_function("reboot", static_functions, &StaticFunctions::NVIC_SystemReset_helper)
     );
 }
 

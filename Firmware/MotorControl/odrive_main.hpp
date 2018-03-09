@@ -19,6 +19,12 @@
 #error "unknown board version"
 #endif
 
+// @brief general user configurable board configuration
+struct BoardConfig_t {
+    bool enable_uart = true;
+    float brake_resistance = 0.47f;     // [ohm]
+};
+
 class Axis;
 
 //default timeout waiting for phase measurement signals
@@ -27,8 +33,8 @@ class Axis;
 static const float current_meas_period = CURRENT_MEAS_PERIOD;
 static const int current_meas_hz = CURRENT_MEAS_HZ;
 extern float vbus_voltage;
-extern float brake_resistance;     // [ohm]
 extern const float elec_rad_per_enc;
+extern BoardConfig_t board_config;
 
 constexpr size_t AXIS_COUNT = 2;
 extern Axis *axes[AXIS_COUNT];

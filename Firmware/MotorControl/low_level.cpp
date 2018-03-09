@@ -35,10 +35,6 @@
 // Arbitrary non-zero inital value to avoid division by zero if ADC reading is late
 float vbus_voltage = 12.0f;
 
-// TODO: Migrate to C++, clearly we are actually doing object oriented code here...
-
-float brake_resistance = 0.47f;     // [ohm]
-
 /* Private constant data -----------------------------------------------------*/
 /* Private variables ---------------------------------------------------------*/
 /* Function implementations --------------------------------------------------*/
@@ -254,7 +250,7 @@ void update_brake_current() {
     float brake_current = -Ibus_sum;
     // Clip negative values to 0.0f
     if (brake_current < 0.0f) brake_current = 0.0f;
-    float brake_duty = brake_current * brake_resistance / vbus_voltage;
+    float brake_duty = brake_current * board_config.brake_resistance / vbus_voltage;
 
     // Duty limit at 90% to allow bootstrap caps to charge
     if (brake_duty > 0.9f) brake_duty = 0.9f;
