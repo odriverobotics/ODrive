@@ -1,18 +1,25 @@
-## UNRELEASED
-Please add a note of your changes below this heading if you make a PR
+# Unreleased Features
+Please add a note of your changes below this heading if you make a Pull Request.
+
+* **Storing of configuration parameters to Non Volatile Memory**
+
+## Changed
+* Update CubeMX generated STM platform code to version 1.19.0
+
+# Releases
+
+## [0.3.5] - 2018-03-04
 
 ### Added
-* **Storing of configuration parameters to Non Volatile Memory**
 * Reporting error if your encoder CPR is incorrect
+* Ability to start anticogging calibration over USB protocol
 * Reporting of DRV status/control registers and fault codes
 * DRV status read script
 * Microsecond delay function
-* Ability to start anticogging calibration over USB protocol
 * Travis-CI
 
 ### Changed
-* Build system is now tup instead of make
-* Update CubeMX generated STM platform code to version 1.19.0
+* Build system is now tup instead of make. Please check the [Readme](README.md#installing-prerequisites) for installation instructions.
 
 ## [0.3.4] - 2018-02-13
 
