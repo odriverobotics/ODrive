@@ -38,7 +38,7 @@ static void run_state_machine_loop_wrapper(void* ctx) {
 
 // @brief Starts run_state_machine_loop in a new thread
 void Axis::start_thread() {
-    osThreadDef(thread_def, run_state_machine_loop_wrapper, hw_config_.thread_priority, 0, 512);
+    osThreadDef(thread_def, run_state_machine_loop_wrapper, hw_config_.thread_priority, 0, 4*512);
     thread_id_ = osThreadCreate(osThread(thread_def), this);
     thread_id_valid_ = true;
 }
