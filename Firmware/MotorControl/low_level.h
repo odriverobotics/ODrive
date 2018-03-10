@@ -260,6 +260,8 @@ void control_motor_loop(Motor_t* motor);
 //motor thread moved to axis object
 //void motor_thread(void const * argument);
 
+void absEncoder_thread(void const * argument);
+
 #ifdef __cplusplus
 }
 #endif

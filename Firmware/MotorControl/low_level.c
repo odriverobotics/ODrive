@@ -135,6 +135,11 @@ Motor_t motors[] = {
             .pll_kp = 0.0f,   // [rad/s / rad]
             .pll_ki = 0.0f,   // [(rad/s^2) / rad]
         },
+        .absEncoder = {
+            .spiHandle = &hspi3,
+            .nCSgpioHandle = GPIO_3_GPIO_Port,
+            .nCSgpioNumber = GPIO_3_Pin
+        },
         .sensorless = {
             .phase = 0.0f,                        // [rad]
             .pll_pos = 0.0f,                      // [rad]
@@ -275,6 +280,8 @@ static const int current_meas_hz = CURRENT_MEAS_HZ;
 
 /* Private variables ---------------------------------------------------------*/
 static float brake_resistance = 0.47f;  // [ohm]
+
+uint16_t abs_data = 0;
 
 /* Function implementations --------------------------------------------------*/
 
@@ -1384,4 +1391,22 @@ void control_motor_loop(Motor_t* motor) {
     //We are exiting control, reset Ibus, and update brake current
     motor->current_control.Ibus = 0.0f;
     update_brake_current();
+}
+
+void absEncoder_thread(void const * argument){
+
+    // HAL_SPI_MspDeInit(&hspi3);
+
+    osDelay(10);
+
+    // HAL_SPI_DeInit(&hspi3);
+
+    // MX_SPI3_Init_8bit();
+
+    Motor_t* motor = (Motor_t*)argument;
+    AS5047P_Obj* absEncoder = &motor->absEncoder;
+    for (;;){
+        abs_data = AS5047P_readPosition(absEncoder);
+        osDelay(1);
+    }
 }

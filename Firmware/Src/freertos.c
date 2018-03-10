@@ -147,6 +147,11 @@ void StartDefaultTask(void const * argument)
   // Init motor control
   init_motor_control();
 
+  osThreadDef(task_absEncoder_0, absEncoder_thread,   osPriorityHigh+2, 0, 512);
+
+  while (1){};
+
+
   // Start motor threads
   osThreadDef(task_motor_0, axis_thread_entry,   osPriorityHigh+1, 0, 512);
   osThreadDef(task_motor_1, axis_thread_entry,   osPriorityHigh,   0, 512);
