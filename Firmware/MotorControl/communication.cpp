@@ -129,19 +129,6 @@ StreamToPacketConverter UART4_stream_sink(uart4_channel);
 #endif
 
 
-class test_class {
-public:
-    uint32_t property1;
-    float property2;
-
-    float set_both(uint32_t arg1, float arg2) {
-        printf("set_both called with %u and %.3f\n", (unsigned int)arg1, arg2);
-        property1 = arg1;
-        property2 = arg2;
-        return arg1 + arg2;
-    }
-};
-
 /* Private function prototypes -----------------------------------------------*/
 /* Function implementations --------------------------------------------------*/
 
@@ -149,13 +136,16 @@ void init_communication(void) {
     printf("hi!\r\n");
 
     // Start command handling thread
-    osThreadDef(task_cmd_parse, communication_task, osPriorityNormal, 0, 4*512);
+    osThreadDef(task_cmd_parse, communication_task, osPriorityNormal, 0, 5000 /* in 32-bit words */); // TODO: fix stack issues
     thread_cmd_parse = osThreadCreate(osThread(task_cmd_parse), NULL);
 
     // Start USB interrupt handler thread
     osThreadDef(task_usb_pump, usb_update_thread, osPriorityNormal, 0, 512);
     thread_usb_pump = osThreadCreate(osThread(task_usb_pump), NULL);
 }
+
+
+uint32_t comm_stack_info = 0; // for debugging only
 
 // Helper class because the protocol library doesn't yet
 // support non-member functions
@@ -167,9 +157,13 @@ public:
     void NVIC_SystemReset_helper() { NVIC_SystemReset(); }
 } static_functions;
 
-static auto make_obj_tree() {
+// When adding new functions/variables to the protocol, be careful not to
+// blow the communication stack. You can check comm_stack_info to see
+// how much headroom you have.
+static inline auto make_obj_tree() {
     return make_protocol_member_list(
         make_protocol_ro_property("vbus_voltage", &vbus_voltage),
+        make_protocol_ro_property("comm_stack_info", &comm_stack_info),
         make_protocol_ro_property("UUID_0", (const uint32_t*)(ID_UNIQUE_ADDRESS + 0*4)),
         make_protocol_ro_property("UUID_1", (const uint32_t*)(ID_UNIQUE_ADDRESS + 1*4)),
         make_protocol_ro_property("UUID_2", (const uint32_t*)(ID_UNIQUE_ADDRESS + 2*4)),
@@ -200,9 +194,13 @@ size_t n_endpoints_ = 0;
 void communication_task(void * ctx) {
     (void) ctx; // unused parameter
 
+    // TODO: this is supposed to use the move constructor, but currently
+    // the compiler uses the copy-constructor instead. Thus the make_obj_tree
+    // ends up with a stupid stack size of around 8000 bytes. Fix this.
     auto tree_ptr = new (tree_buffer) tree_type(make_obj_tree());
     auto endpoint_provider = EndpointProvider_from_MemberList<tree_type>(*tree_ptr);
     set_application_endpoints(&endpoint_provider);
+    comm_stack_info = uxTaskGetStackHighWaterMark(nullptr);
     
 #if !defined(UART_PROTOCOL_NONE)
     //DMA open loop continous circular buffer

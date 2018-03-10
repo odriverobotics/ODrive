@@ -36,7 +36,7 @@ typedef struct {
 // example: vel_gain is [V/(count/s)] instead of [A/(count/s)]
 // example: current_lim and calibration_current will instead determine the maximum voltage applied to the motor.
 typedef struct {
-    bool hand_calibrated = true; // can be set to true to indicate that all values here are valid
+    bool hand_calibrated = false; // can be set to true to indicate that all values here are valid
     int32_t pole_pairs = 7; // This value is correct for N5065 motors and Turnigy SK3 series.
     float calibration_current = 10.0f;    // [A]
     float resistance_calib_max_voltage = 1.0f; // [V] - You may need to increase this if this voltage isn't sufficient to drive calibration_current through the motor.
@@ -142,6 +142,7 @@ public:
     auto make_protocol_definitions() {
         return make_protocol_member_list(
             make_protocol_property("error", &error_),
+            make_protocol_ro_property("is_calibrated", &is_calibrated_),
             make_protocol_ro_property("current_meas_phB", &current_meas_.phB),
             make_protocol_ro_property("current_meas_phC", &current_meas_.phC),
             make_protocol_property("DC_calib_phB", &DC_calib_.phB),

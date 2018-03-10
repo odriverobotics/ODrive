@@ -54,6 +54,15 @@ public:
     // Communication protocol definitions
     auto make_protocol_definitions() {
         return make_protocol_member_list(
+            make_protocol_property("error", &error_),
+            make_protocol_ro_property("is_calibrated", &is_calibrated_),
+            make_protocol_ro_property("index_found", const_cast<bool*>(&index_found_)),
+            make_protocol_property("state", &state_),
+            make_protocol_property("phase", &phase_),
+            make_protocol_property("pll_pos", &pll_pos_),
+            make_protocol_property("pll_vel", &pll_vel_),
+            make_protocol_property("pll_kp", &pll_kp_),
+            make_protocol_property("pll_ki", &pll_ki_),
             make_protocol_object("config",
                 make_protocol_property("use_index", &config_.use_index),
                 make_protocol_property("hand_calibrated", &config_.hand_calibrated),
@@ -61,15 +70,7 @@ public:
                 make_protocol_property("cpr", &config_.cpr),
                 make_protocol_property("offset", &config_.offset),
                 make_protocol_property("calib_range", &config_.calib_range)
-            ),
-            make_protocol_property("error", &error_),
-            make_protocol_ro_property("index_found", const_cast<bool*>(&index_found_)),
-            make_protocol_property("state", &state_),
-            make_protocol_property("phase", &phase_),
-            make_protocol_property("pll_pos", &pll_pos_),
-            make_protocol_property("pll_vel", &pll_vel_),
-            make_protocol_property("pll_kp", &pll_kp_),
-            make_protocol_property("pll_ki", &pll_ki_)
+            )
         );
     }
 };

@@ -496,7 +496,7 @@ ProtocolObject<TMembers...> make_protocol_object(const char * name, TMembers&&..
 }
 
 template<typename TProperty>
-class ProtocolProperty : Endpoint {
+class ProtocolProperty : public Endpoint {
 public:
     static constexpr const char * json_modifier = get_default_json_modifier<TProperty>();
     static constexpr size_t endpoint_count = 1;
@@ -505,26 +505,24 @@ public:
         : name_(name), property_(property)
     {}
 
-//    ProtocolProperty(const ProtocolProperty&) = delete;
-
+/*  TODO: find out why the move constructor is not used when it could be
+    ProtocolProperty(const ProtocolProperty&) = delete;
     // @brief Move constructor
     ProtocolProperty(ProtocolProperty&& other) :
         Endpoint(std::move(other)),
         name_(std::move(other.name_)),
         property_(other.property_)
     {}
-
-    //constexpr ProtocolProperty& operator=(const ProtocolProperty& other) = delete;
-    /*constexpr ProtocolProperty& operator=(const ProtocolProperty& other) {
+    constexpr ProtocolProperty& operator=(const ProtocolProperty& other) = delete;
+    constexpr ProtocolProperty& operator=(const ProtocolProperty& other) {
         //Endpoint(std::move(other)),
         //name_(std::move(other.name_)),
         //property_(other.property_)
         name_ = other.name_;
         property_ = other.property_;
         return *this;
-    }*/
-
-    /*ProtocolProperty& operator=(ProtocolProperty&& other)
+    }
+    ProtocolProperty& operator=(ProtocolProperty&& other)
         : name_(other.name_), property_(other.property_)
     {}
     ProtocolProperty& operator=(const ProtocolProperty& other)

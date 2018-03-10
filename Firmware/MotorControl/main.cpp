@@ -42,6 +42,7 @@ void erase_configuration(void) {
 
 extern "C" {
 int odrive_main(void);
+void vApplicationStackOverflowHook(void) { for(;;); }
 }
 
 int odrive_main(void) {
