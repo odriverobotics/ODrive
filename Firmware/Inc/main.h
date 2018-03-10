@@ -9,7 +9,7 @@
   * inserted by the user or by software development tools
   * are owned by their respective copyright owners.
   *
-  * Copyright (c) 2017 STMicroelectronics International N.V. 
+  * Copyright (c) 2018 STMicroelectronics International N.V. 
   * All rights reserved.
   *
   * Redistribution and use in source and binary forms, with or without 
@@ -64,7 +64,7 @@
 
 /* Private define ------------------------------------------------------------*/
 #define TIM_1_8_CLOCK_HZ 168000000
-#define TIM_1_8_PERIOD_CLOCKS 8192
+#define TIM_1_8_PERIOD_CLOCKS 10192
 #define TIM_1_8_DEADTIME_CLOCKS 20
 #define TIM_APB1_CLOCK_HZ 84000000
 #define TIM_APB1_PERIOD_CLOCKS 4096
@@ -90,7 +90,6 @@
 #define GPIO_2_GPIO_Port GPIOA
 #define GPIO_3_Pin GPIO_PIN_2
 #define GPIO_3_GPIO_Port GPIOA
-#define GPIO_3_EXTI_IRQn EXTI2_IRQn
 #define GPIO_4_Pin GPIO_PIN_3
 #define GPIO_4_GPIO_Port GPIOA
 #define M1_TEMP_Pin GPIO_PIN_4
