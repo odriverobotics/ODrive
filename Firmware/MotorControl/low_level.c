@@ -167,7 +167,7 @@ Motor_t motors[] = {
             .calib_vel_threshold = 1.0f,
         },
     },
-    {                                             // M1
+    {   // M1
         .control_mode = CTRL_MODE_POSITION_CONTROL,  //see: Motor_control_mode_t
         .enable_step_dir = false,                    //auto enabled after calibration
         .counts_per_step = 2.0f,
