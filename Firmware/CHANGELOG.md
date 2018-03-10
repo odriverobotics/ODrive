@@ -1,6 +1,7 @@
 # Unreleased Features
 Please add a note of your changes below this heading if you make a Pull Request.
 
+### Added
 * **Storing of configuration parameters to Non Volatile Memory**
 
 ### Changed
