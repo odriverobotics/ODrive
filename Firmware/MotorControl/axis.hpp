@@ -157,7 +157,7 @@ public:
     // Communication protocol definitions
     auto make_protocol_definitions() {
         return make_protocol_member_list(
-            make_protocol_ro_property("error", &error_),
+            make_protocol_property("error", &error_),
             make_protocol_ro_property("missed_control_deadline", &missed_control_deadline_),
             make_protocol_property("enable_step_dir", &enable_step_dir_),
             make_protocol_ro_property("current_state", &current_state_),
