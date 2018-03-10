@@ -1,3 +1,6 @@
+/*
+* @brief Contains board specific configuration for ODrive v3.x
+*/
 
 #ifndef __BOARD_CONFIG_H
 #define __BOARD_CONFIG_H
