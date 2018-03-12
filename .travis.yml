@@ -32,5 +32,6 @@ install:
 script:
   - cd Firmware
   - mkdir -p build
+  - echo "CONFIG_BOARD_VERSION=v3.4-24V" > ../tup.config # TODO: build more configuration combinations
   - tup generate ./build.sh
   - bash -xe ./build.sh
