@@ -115,6 +115,7 @@ After installing all of the above, open a Git Bash shell. Continue at section [B
 
 ### Flashing the firmware (standalone device)
 * Run `make dfu` in the `Firmware` directory.
+* __Windows__: During the update, a new device called "STM32 BOOTLOADER" will appear. Open the Zadig utility that you used when you first connected your ODrive and set the driver for "STM32 BOOTLOADER" to libusb-win32. After that the firmware upgrade will continue.
 
 If you have multiple ODrives connected, you should specify which one to upgrade.
 * Run `(lsusb -d 1209:0d32 -v; lsusb -d 0483:df11 -v) 2>/dev/null | grep iSerial` to list the serial number of all flashable devices. Example output:
