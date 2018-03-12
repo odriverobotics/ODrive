@@ -222,6 +222,11 @@ void init_configuration(void) {
         // motor_config[0] = MotorConfig_t();
         // motor_config[1] = MotorConfig_t();
 
+        // TODO: temporary hack, this is gonna change after refactoring
+        axis_configs[0] = AxisConfig();
+        axis_configs[1] = AxisConfig();
+        brake_resistance = 0.47f;
+
         // Default config coming from flashed Motor_t
         return;
     } else {
