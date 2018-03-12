@@ -29,9 +29,7 @@ In this section we will set the compile-time parameters, later we will also set 
 
 To customize the compile time parameters, copy or rename the file `tup.config.default` to `tup.config` and edit the parameters in that file:
 
-__CONFIG_BOARD_VERSION__: The board version you're using. Can be `v3.1`, `v3.2`, `v3.3` or `v3.4`.
-
-__CONFIG_48V__: Set to `y` if you're using a 48V version of the ODrive. Otherwise set to `n`. All ODrives v3.3 or older are 24V. All ODrives v3.4 or newer have a label that says 24V or 48V.
+__CONFIG_BOARD_VERSION__: The board version you're using. Can be `v3.1`, `v3.2`, `v3.3`, `v3.4-24V` or `v3.4-48V`. Check for a label on the upper side of the ODrive to find out which version you have.
 
 __CONFIG_USB_PROTOCOL__: Defines which protocol the ODrive should use on the USB interface.
  * `native`: The native ODrive protocol. Use this if you want to use the python tools in this repo.
