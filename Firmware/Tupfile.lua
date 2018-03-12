@@ -56,7 +56,7 @@ end
 
 -- GPIO settings
 if tup.getconfig("STEP_DIR") == "y" then
-    if tup.getconfig("UART_PROTOCOL") != "none" then
+    if tup.getconfig("UART_PROTOCOL") == "none" then
         FLAGS += "-DUSE_GPIO_MODE_STEP_DIR"
     else
         error("Step/dir mode conflicts with UART. Set CONFIG_UART_PROTOCOL to none.")
