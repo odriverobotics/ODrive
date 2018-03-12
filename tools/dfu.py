@@ -6,6 +6,8 @@ Tool for flashing .hex files to the ODrive via the STM built-in USB DFU mode.
 import argparse
 import sys
 import time
+import threading
+import platform
 import struct
 import dfuse
 import usb.core
@@ -15,8 +17,8 @@ import odrive.core
 try:
     from intelhex import IntelHex
 except:
-    # TODO: On windows you dont do sudo, in general.
-    print("You need intelhex for this ([sudo] pip install IntelHex)", file=sys.stderr)
+    sudo_prefix = "" if platform.system() == "Windows" else "sudo "
+    print("You need intelhex for this ({}pip install IntelHex)".format(sudo_prefix), file=sys.stderr)
     sys.exit(1)
 
 
@@ -136,11 +138,6 @@ def jump_to_application(dfudev, address):
     if status[1] != dfuse.DfuState.DFU_MANIFEST:
         raise RuntimeError("An error occured. Device Status: {}".format(status[1]))
 
-# Looks for an STM32 in DFU mode, based on a UUID.
-def find_dfu_stm(serial_number):
-    params = {} if serial_number == None else {'serial_number': serial_number}
-    return usb.core.find(idVendor=0x0483, idProduct=0xdf11, **params)
-
 def str_to_uuid(uuid):
     uuid = bytearray.fromhex(uuid.replace('-', ''))
     return struct.unpack('>I', uuid[0:4]), struct.unpack('>I', uuid[4:8]), struct.unpack('>I', uuid[8:12])
@@ -151,6 +148,47 @@ def uuid_to_str(uuid0, uuid1, uuid2):
 def uuid_to_serial(uuid0, uuid1, uuid2):
     return (struct.pack('>I', uuid0 + uuid2) + struct.pack('>I', uuid1)[0:2]).hex().upper()
 
+
+### THREADS ###
+
+def show_deferred_message(message, cancellation_token):
+    """
+    Shows a message after 10s, unless cancellation_token gets set.
+    """
+    def show_message_thread(message, cancellation_token):
+        for i in range(1,10):
+            if cancellation_token.is_set():
+                return
+            time.sleep(1)
+        if not cancellation_token.is_set():
+            print(message)
+    t = threading.Thread(target=show_message_thread, args=(message, cancellation_token))
+    t.daemon = True
+    t.start()
+
+def put_odrive_into_dfu_mode_thread(cancellation_token):
+    """
+    Waits for an ODrive with a matching serial number and puts
+    it into DFU mode once it's found. The thread continues to put
+    matching devices into DFU mode until cancellation_token
+    is set.
+    """
+    while not cancellation_token.is_set():
+        constraints = {} if serial_number == None else {'serial_number': serial_number}
+        my_drive = odrive.core.find_any(consider_usb=True, consider_serial=False,
+                                        cancellation_token=cancellation_token,
+                                        **constraints)
+        if cancellation_token.is_set():
+            return
+        print("Putting device {} into DFU mode...".format(my_drive.__channel__.usb_device.serial_number))
+        try:
+            my_drive.enter_dfu_mode()
+        except usb.core.USBError as ex:
+            pass # this is expected because the device reboots
+        if platform.system() == "Windows":
+            show_deferred_message("Still waiting for the device to reappear.\n"
+                                  "Use the Zadig utility to set the driver of 'STM32 BOOTLOADER' to libusb-win32.",
+                                  cancellation_token)
 
 ### BEGINNING OF APPLICATION ###
 
@@ -181,45 +219,47 @@ elif args.serial_number != None:
 else:
     serial_number = None
 
-# find an STM32 in DFU mode (if there is none, find an ODrive and put it in DFU mode)
-usbdev = find_dfu_stm(serial_number)
-if usbdev is None:
-    # Find a connected ODrive (this will block until you connect one)
+
+find_odrive_cancellation_token = threading.Event()
+try:
     print("Waiting for ODrive...")
-    constraints = {} if serial_number == None else {'serial_number': serial_number}
-    my_drive = odrive.core.find_any(consider_usb=True, consider_serial=False, **constraints)
-    uuid = (my_drive.UUID_0, my_drive.UUID_1, my_drive.UUID_2)
-    print("Putting device {} into DFU mode...".format(serial_number))
-    try:
-        my_drive.enter_dfu_mode()
-    except usb.core.USBError as ex:
-        pass # this is expected since the device reboots
-    time.sleep(1.0)
-    usbdev = find_dfu_stm(serial_number)
-    if usbdev is None:
-        raise ValueError('STM32 DfuSe device not found.')
-dfudev = dfuse.DfuDevice(usbdev)
+
+    # Scan for ODrives not in DFU mode and put them into DFU mode once they appear
+    threading.Thread(target=put_odrive_into_dfu_mode_thread, args=(find_odrive_cancellation_token,)).start()
+
+    # Poll libUSB until a device in DFU mode is found
+    while True:
+        params = {} if serial_number == None else {'serial_number': serial_number}
+        stm_device = usb.core.find(idVendor=0x0483, idProduct=0xdf11, **params)
+        if stm_device != None:
+            break
+        time.sleep(1)
+    find_odrive_cancellation_token.set() # we don't need this thread anymore
+    print("Found device {} in DFU mode".format(stm_device.serial_number))
+
+    dfudev = dfuse.DfuDevice(stm_device)
 
 
-# fill sectors with data
-sectors = list(load_sectors(dfudev, hexfile))
-print("Sectors to be flashed: ")
-for sector in sectors:
-    print(" {:08X} to {:08X}".format(sector['addr'], sector['addr'] + len(sector['data']) - 1))
+    # fill sectors with data
+    sectors = list(load_sectors(dfudev, hexfile))
+    print("Sectors to be flashed: ")
+    for sector in sectors:
+        print(" {:08X} to {:08X}".format(sector['addr'], sector['addr'] + len(sector['data']) - 1))
 
-# flash!
-erase(dfudev, sectors)
-flash(dfudev, sectors)
-#verify(dfudev, sectors)
+    # flash!
+    erase(dfudev, sectors)
+    flash(dfudev, sectors)
+    #verify(dfudev, sectors)
 
-# If the flash operation failed for some reason, your device is bricked now.
-# You can unbrick it as long as the device remains powered on.
-# (or always with an STLink)
-# So for debugging you should comment this last part out.
+    # If the flash operation failed for some reason, your device is bricked now.
+    # You can unbrick it as long as the device remains powered on.
+    # (or always with an STLink)
+    # So for debugging you should comment this last part out.
 
-# Jump to application
-jump_to_application(dfudev, 0x08000000)
-
+    # Jump to application
+    jump_to_application(dfudev, 0x08000000)
+finally:
+    find_odrive_cancellation_token.set()
 
 
 # Note: the flashed image can be verified using: (0x12000 is the number of bytes to read)
