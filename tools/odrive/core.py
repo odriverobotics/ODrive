@@ -151,7 +151,8 @@ def create_object(name, json_data, namespace, channel, printer=noprint):
         namespace = name
 
     # Build attribute list from JSON
-    attributes = {"__setattr__": setattr_or_raise_if_undefined}
+    attributes = {"__setattr__": setattr_or_raise_if_undefined,
+                  "__channel__": channel}
     for member in json_data.get("members", []):
         member_name = member.get("name", None)
         if member_name is None:
@@ -186,9 +187,11 @@ def channel_from_usb_device(usb_device, printer=noprint):
     bulk_device = odrive.usbbulk_transport.USBBulkTransport(usb_device, printer)
     printer(bulk_device.info())
     bulk_device.init()
-    return odrive.protocol.Channel(
+    channel = odrive.protocol.Channel(
             "USB device bus {} device {}".format(usb_device.bus, usb_device.address),
             bulk_device, bulk_device)
+    channel.usb_device = usb_device # for debugging only
+    return channel
 
 def channel_from_serial_port(port, baud, packet_based, printer=noprint):
     """
@@ -294,7 +297,8 @@ def find_all(consider_usb=True, consider_serial=False, printer=noprint, **kwargs
             continue
 
 
-def find_any(consider_usb=True, consider_serial=False, printer=noprint, **kwargs):
+def find_any(consider_usb=True, consider_serial=False,
+             cancellation_token=None, printer=noprint, **kwargs):
     """
     Scans for ODrives on all supported interfaces and returns the first device
     that is found. If no device is connected the function blocks.
@@ -303,12 +307,13 @@ def find_any(consider_usb=True, consider_serial=False, printer=noprint, **kwargs
 
     # poll for device
     printer("looking for ODrive...")
-    while True:
+    while cancellation_token == None or not cancellation_token.is_set():
         dev = next(find_all(consider_usb, consider_serial, printer=printer, **kwargs), None)
         if dev is not None:
             return dev
         printer("no device found")
         time.sleep(1)
+    return None
 
 def open_serial(port_name, printer=noprint):
     channel = channel_from_serial_port(port_name, 115200, False, printer)
