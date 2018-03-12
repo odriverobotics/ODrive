@@ -135,7 +135,7 @@ Motor_t motors[] = {
             .pll_kp = 0.0f,   // [rad/s / rad]
             .pll_ki = 0.0f,   // [(rad/s^2) / rad]
         },
-        .absEncoder = {
+        .AS5047P_encoder = {
             .spiHandle = &hspi3,
             .nCSgpioHandle = GPIO_3_GPIO_Port,
             .nCSgpioNumber = GPIO_3_Pin
@@ -1404,9 +1404,9 @@ void absEncoder_thread(void const * argument){
     // MX_SPI3_Init_8bit();
 
     Motor_t* motor = (Motor_t*)argument;
-    AS5047P_Obj* absEncoder = &motor->absEncoder;
+    AS5047P_Obj* AS5047P_encoder = &motor->AS5047P_encoder;
     for (;;){
-        abs_data = AS5047P_readPosition(absEncoder);
+        abs_data = AS5047P_readPosition(AS5047P_encoder);
         osDelay(1);
     }
 }

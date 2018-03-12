@@ -55,6 +55,7 @@ C_SOURCES = \
   Src/usbd_desc.c \
   Src/usb_device.c \
   Drivers/DRV8301/drv8301.c \
+  Drivers/AS5047P/as5047p.c \
   Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal.c \
   Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_rcc.c \
   Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_tim_ex.c \
@@ -113,6 +114,7 @@ C_INCLUDES = -IMiddlewares/Third_Party/FreeRTOS/Source/portable/GCC/ARM_CM4F
 C_INCLUDES += -IMiddlewares/Third_Party/FreeRTOS/Source/include
 C_INCLUDES += -IMiddlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS
 C_INCLUDES += -IDrivers/DRV8301
+C_INCLUDES += -IDrivers/AS5047P
 C_INCLUDES += -IMiddlewares/ST/STM32_USB_Device_Library/Core/Inc
 C_INCLUDES += -IMiddlewares/ST/STM32_USB_Device_Library/Class/CDC/Inc
 C_INCLUDES += -IDrivers/STM32F4xx_HAL_Driver/Inc

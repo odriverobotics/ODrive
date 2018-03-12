@@ -1,5 +1,5 @@
-#ifndef _AS5047D_H_
-#define _AS5047D_H_
+#ifndef _AS5047P_H_
+#define _AS5047P_H_
 
 // **************************************************************************
 // the includes
@@ -22,17 +22,17 @@ extern "C" {
 
 //! \brief Defines the DRV8301 object
 //!
-typedef struct _AS5047D_Obj_
+typedef struct _AS5047P_Obj_
 {
   SPI_Handle       spiHandle;                  //!< the handle for the serial peripheral interface
   GPIO_Handle      nCSgpioHandle;              //!< the gpio handle that is connected to the aeat-6012-a06 nCS pin
   GPIO_Number_e    nCSgpioNumber;               //!< the gpio number that is connected to the aeat-6012-a06 nCS pin
-} AS5047D_Obj;
+} AS5047P_Obj;
 
 
 //! \brief Defines the DRV8301 handle
 //!
-typedef struct _AS5047D_Obj_ *AS5047D_Handle;
+typedef struct _AS5047P_Obj_ *AS5047D_Handle;
 
 
 // **************************************************************************
@@ -50,10 +50,10 @@ typedef struct _AS5047D_Obj_ *AS5047D_Handle;
 // **************************************************************************
 // the function prototypes
 
-extern uint16_t AS5047D_readPosition(AS5047D_Handle handle);
-extern uint16_t AS5047D_readSpi(AS5047D_Handle handle, uint8_t command);
-extern uint16_t AS5047D_readAngle(AS5047D_Handle handle);
-extern bool AS5047D_setZeroPos(AS5047D_Handle handle);
+extern uint16_t AS5047P_readPosition(AS5047D_Handle handle);
+extern uint16_t AS5047P_readSpi(AS5047D_Handle handle, uint16_t command);
+extern uint16_t AS5047P_readAngle(AS5047D_Handle handle);
+extern bool AS5047P_setZeroPos(AS5047D_Handle handle);
 // extern uint16_t AEAT_6012_A06_readAngle(AEAT_6012_A06_Handle handle);
 // extern uint16_t AEAT_6012_A06_readSpi(AEAT_6012_A06_Handle handle);
 
