@@ -27,7 +27,7 @@ The project is under active development, so make sure to check the [Changelog](C
 To correctly operate the ODrive, you need to supply some parameters. Some are mandatory, and if supplied incorrectly will cause the drive to malfunction.
 In this section we will set the compile-time parameters, later we will also set the [run time parameters](#configuring-parameters).
 
-To customize the compile time parameters, copy or rename the file `tup.config.default` to `tup.config` and edit the parameters in that file:
+To customize the compile time parameters, copy or rename the file `Firmware/tup.config.default` to `Firmware/tup.config` and edit the parameters in that file:
 
 __CONFIG_BOARD_VERSION__: The board version you're using. Can be `v3.1`, `v3.2`, `v3.3`, `v3.4-24V` or `v3.4-48V`. Check for a label on the upper side of the ODrive to find out which version you have.
 
