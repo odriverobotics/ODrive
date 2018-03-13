@@ -110,6 +110,12 @@ def create_property(name, json_data, channel, printer):
     elif type_str == "uint32":
         property_type = int
         struct_format = "<I"
+    elif type_str == "int64":
+        property_type = int
+        struct_format = "<q"
+    elif type_str == "uint64":
+        property_type = int
+        struct_format = "<Q"
     else:
         printer("property {} has unsupported type {}".format(name, type_str))
         return None
