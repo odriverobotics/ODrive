@@ -1,7 +1,12 @@
 # Unreleased Features
 Please add a note of your changes below this heading if you make a Pull Request.
 
+### Added
 * **Storing of configuration parameters to Non Volatile Memory**
+
+### Changed
+* The build is now configured using the `tup.config` file instead of editing source files. Make sure you set your board version correctly. See [here](README.md#configuring-the-build) for details.
+* Update CubeMX generated STM platform code to version 1.19.0
 
 # Releases
 
