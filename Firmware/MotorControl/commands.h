@@ -19,6 +19,8 @@ void set_cmd_buffer(uint8_t *buf, uint32_t len);
 void usb_update_thread();
 void USB_receive_packet(const uint8_t *buffer, size_t length);
 
+extern uint64_t serial_number;
+
 #ifdef __cplusplus
 }
 #endif

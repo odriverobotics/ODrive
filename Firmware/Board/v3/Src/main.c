@@ -57,6 +57,8 @@
 #include "usart.h"
 #include "usb_device.h"
 #include "gpio.h"
+#include "utils.h"
+#include "commands.h"
 
 /* USER CODE BEGIN Includes */
 
@@ -106,6 +108,15 @@ int main(void)
     *((unsigned long *)0x2001C000) = 0xCAFEFEED;  //Reset bootloader trigger
     jump_to_builtin_bootloader();
   }
+
+  // This procedure of building a USB serial number should be identical
+  // to the way the STM's built-in USB bootloader does it. This means
+  // that the device will have the same serial number in normal and DFU mode.
+  uint32_t uuid0 = *(uint32_t *) (ID_UNIQUE_ADDRESS + 0);
+  uint32_t uuid1 = *(uint32_t *) (ID_UNIQUE_ADDRESS + 4);
+  uint32_t uuid2 = *(uint32_t *) (ID_UNIQUE_ADDRESS + 8);
+  uint32_t uuid_mixed_part = uuid0 + uuid2;
+  serial_number = ((uint64_t)uuid_mixed_part << 16) | (uint64_t)(uuid1 >> 16);
 
   /* USER CODE END 1 */
 
