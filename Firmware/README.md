@@ -310,7 +310,20 @@ You will likely want the pinout for this process. It is available [here](https:/
 * Press `Project -> Generate code`
 * You may need to let it download some drivers and such.
 * After generating/updating the code, some minor patches need to be applied. To do this, run:
-  `git apply Firmware/Board/v3.3/*.patch`
+  `git apply Firmware/Board/v3/*.patch`
+* Run `git config --local core.autocrlf input`. This will tell git that all files should be checked in with LF endings (CubeMX generates CRLF endings).
+* `git status` will still claim that many files are modified but the actual diff (using `git diff`) is empty (apart from all the line ending warnings).
+
+### Generating patchfiles
+If you made changes to CubeMX generated files outside of the `USER CODE BEGIN`...`USER CODE END` sections and contribute them back, please add a patch file so that the next person who runs CubeMX doesn't run into problems. The way described here will use git to revert your changes and then revert the revert on top of that, thus giving you a commit that represents the exact patch that you want to export.
+* Make sure your current desired state is committed.
+* Run the CubeMX code generation as described in the previous section.
+* The diff will now _not_ be empty since CubeMX reversed your changes.
+* Stage the falsely reversed file and make a commit with the message "bogus commit".
+* Run `git revert HEAD` to revert the bogus commit. This gives you the "double negative" commit which you will export, so write a meaningful commit message.
+* Run `git format-patch HEAD~1` to export the commit as patch file.
+* Run `git rebase --interactive HEAD~2` and write "drop" for both commits that you just did.
+* Move the patch file to `Board/v3/` and add it in a new commit.
 
 <br><br>
 ## Notes for Contributors
