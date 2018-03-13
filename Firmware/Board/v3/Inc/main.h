@@ -167,10 +167,12 @@
 #define CURRENT_MEAS_PERIOD ((float)(2*TIM_1_8_PERIOD_CLOCKS)/(float)TIM_1_8_CLOCK_HZ)
 #define CURRENT_MEAS_HZ (TIM_1_8_CLOCK_HZ/(2*TIM_1_8_PERIOD_CLOCKS))
 
-#ifdef HW_VERSION_HIGH_VOLTAGE
+#if HW_VERSION_VOLTAGE == 48
 #define VBUS_S_DIVIDER_RATIO 19.0f
-#else
+#elif HW_VERSION_VOLTAGE == 24
 #define VBUS_S_DIVIDER_RATIO 11.0f
+#else
+#error "unknown board voltage"
 #endif
 
 /* USER CODE END Private defines */

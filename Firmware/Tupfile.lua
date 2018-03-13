@@ -6,23 +6,23 @@ boardversion = tup.getconfig("BOARD_VERSION")
 if boardversion == "v3.1" then
     boarddir = 'Board/v3' -- currently all platform code is in the same v3.3 directory
     FLAGS += "-DHW_VERSION_MAJOR=3 -DHW_VERSION_MINOR=1"
-    FLAGS += "-DHW_VERSION_HIGH_VOLTAGE=false"
+    FLAGS += "-DHW_VERSION_VOLTAGE=24"
 elseif boardversion == "v3.2" then
     boarddir = 'Board/v3'
     FLAGS += "-DHW_VERSION_MAJOR=3 -DHW_VERSION_MINOR=2"
-    FLAGS += "-DHW_VERSION_HIGH_VOLTAGE=false"
+    FLAGS += "-DHW_VERSION_VOLTAGE=24"
 elseif boardversion == "v3.3" then
     boarddir = 'Board/v3'
     FLAGS += "-DHW_VERSION_MAJOR=3 -DHW_VERSION_MINOR=3"
-    FLAGS += "-DHW_VERSION_HIGH_VOLTAGE=false"
+    FLAGS += "-DHW_VERSION_VOLTAGE=24"
 elseif boardversion == "v3.4-24V" then
     boarddir = 'Board/v3'
     FLAGS += "-DHW_VERSION_MAJOR=3 -DHW_VERSION_MINOR=4"
-    FLAGS += "-DHW_VERSION_HIGH_VOLTAGE=false"
+    FLAGS += "-DHW_VERSION_VOLTAGE=24"
 elseif boardversion == "v3.4-48V" then
     boarddir = 'Board/v3'
     FLAGS += "-DHW_VERSION_MAJOR=3 -DHW_VERSION_MINOR=4"
-    FLAGS += "-DHW_VERSION_HIGH_VOLTAGE=true"
+    FLAGS += "-DHW_VERSION_VOLTAGE=48"
 elseif boardversion == "" then
     error("board version not specified - take a look at tup.config.default")
 else
