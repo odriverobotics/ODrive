@@ -6,6 +6,7 @@ Please add a note of your changes below this heading if you make a Pull Request.
 
 ### Changed
 * The build is now configured using the `tup.config` file instead of editing source files. Make sure you set your board version correctly. See [here](README.md#configuring-the-build) for details.
+* The toplevel directory for tup is now `Firmware`. If you used tup before, go to `Firmware` and run `rm -rd ../.tup; rm -rd build/*; make`.
 
 # Releases
 
