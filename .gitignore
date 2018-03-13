@@ -63,4 +63,4 @@ target/
 
 # Tup
 .tup
-/tup.config
+tup.config
