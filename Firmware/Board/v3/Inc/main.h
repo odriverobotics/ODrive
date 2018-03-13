@@ -161,6 +161,9 @@
 /* USER CODE BEGIN Private defines */
 #endif
 
+//TODO: make this come automatically out of CubeMX somehow
+#define TIM_TIME_BASE TIM14
+
 #define CURRENT_MEAS_PERIOD ((float)(2*TIM_1_8_PERIOD_CLOCKS)/(float)TIM_1_8_CLOCK_HZ)
 #define CURRENT_MEAS_HZ (TIM_1_8_CLOCK_HZ/(2*TIM_1_8_PERIOD_CLOCKS))
 
