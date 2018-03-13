@@ -317,12 +317,13 @@ You will likely want the pinout for this process. It is available [here](https:/
 ### Generating patchfiles
 If you made changes to CubeMX generated files outside of the `USER CODE BEGIN`...`USER CODE END` sections and contribute them back, please add a patch file so that the next person who runs CubeMX doesn't run into problems. The way described here will use git to revert your changes and then revert the revert on top of that, thus giving you a commit that represents the exact patch that you want to export.
 * Make sure your current desired state is committed.
+* Make a new temporary branch: `git checkout -b cubemx_temp`
 * Run the CubeMX code generation as described in the previous section.
 * The diff will now _not_ be empty since CubeMX reversed your changes.
 * Stage the falsely reversed file and make a commit with the message "bogus commit".
 * Run `git revert HEAD` to revert the bogus commit. This gives you the "double negative" commit which you will export, so write a meaningful commit message.
 * Run `git format-patch HEAD~1` to export the commit as patch file.
-* Run `git rebase --interactive HEAD~2` and write "drop" for both commits that you just did.
+* Check out your previous branch and then force-delete the temporary branch: `git branch -D cubemx_temp`
 * Move the patch file to `Board/v3/` and add it in a new commit.
 
 <br><br>
