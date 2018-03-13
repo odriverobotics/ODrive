@@ -8,10 +8,10 @@ Subject: [PATCH] fix return type of osSemaphoreWait
  .../Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS/cmsis_os.h   | 6 +++---
  2 files changed, 6 insertions(+), 6 deletions(-)
 
-diff --git a/Firmware/Board/v3.3/Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS/cmsis_os.c b/Firmware/Board/v3.3/Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS/cmsis_os.c
+diff --git a/Firmware/Board/v3/Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS/cmsis_os.c b/Firmware/Board/v3/Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS/cmsis_os.c
 index d0e0fd7..e764cbc 100644
---- a/Firmware/Board/v3.3/Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS/cmsis_os.c
-+++ b/Firmware/Board/v3.3/Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS/cmsis_os.c
+--- a/Firmware/Board/v3/Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS/cmsis_os.c
++++ b/Firmware/Board/v3/Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS/cmsis_os.c
 @@ -816,10 +816,10 @@ osSemaphoreId osSemaphoreCreate (const osSemaphoreDef_t *semaphore_def, int32_t
  * @brief Wait until a Semaphore token becomes available
  * @param  semaphore_id  semaphore object referenced with \ref osSemaphore.
@@ -25,10 +25,10 @@ index d0e0fd7..e764cbc 100644
  {
    TickType_t ticks;
    portBASE_TYPE taskWoken = pdFALSE;  
-diff --git a/Firmware/Board/v3.3/Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS/cmsis_os.h b/Firmware/Board/v3.3/Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS/cmsis_os.h
+diff --git a/Firmware/Board/v3/Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS/cmsis_os.h b/Firmware/Board/v3/Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS/cmsis_os.h
 index 15e25b9..5223f8e 100644
---- a/Firmware/Board/v3.3/Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS/cmsis_os.h
-+++ b/Firmware/Board/v3.3/Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS/cmsis_os.h
+--- a/Firmware/Board/v3/Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS/cmsis_os.h
++++ b/Firmware/Board/v3/Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS/cmsis_os.h
 @@ -719,9 +719,9 @@ osSemaphoreId osSemaphoreCreate (const osSemaphoreDef_t *semaphore_def, int32_t
  /// Wait until a Semaphore token becomes available.
  /// \param[in]     semaphore_id  semaphore object referenced with \ref osSemaphoreCreate.
