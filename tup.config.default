@@ -1,6 +1,6 @@
+# Copy this file to tup.config and adapt it to your needs
 CONFIG_DEBUG=y
-CONFIG_BOARD_VERSION=v3.3
-CONFIG_BOARD_48V=n
+#CONFIG_BOARD_VERSION=v3.3 # make sure this fits your board
 CONFIG_USB_PROTOCOL=native
 CONFIG_UART_PROTOCOL=ascii
 CONFIG_STEP_DIR=n

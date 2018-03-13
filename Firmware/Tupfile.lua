@@ -3,30 +3,32 @@ tup.include('build.lua')
 
 -- Switch between board versions
 boardversion = tup.getconfig("BOARD_VERSION")
-if boardversion == "" then boardversion = "v3.4" end
 if boardversion == "v3.1" then
     boarddir = 'Board/v3' -- currently all platform code is in the same v3.3 directory
     FLAGS += "-DHW_VERSION_MAJOR=3 -DHW_VERSION_MINOR=1"
+    FLAGS += "-DHW_VERSION_HIGH_VOLTAGE=false"
 elseif boardversion == "v3.2" then
     boarddir = 'Board/v3'
     FLAGS += "-DHW_VERSION_MAJOR=3 -DHW_VERSION_MINOR=2"
+    FLAGS += "-DHW_VERSION_HIGH_VOLTAGE=false"
 elseif boardversion == "v3.3" then
     boarddir = 'Board/v3'
     FLAGS += "-DHW_VERSION_MAJOR=3 -DHW_VERSION_MINOR=3"
-elseif boardversion == "v3.4" then
+    FLAGS += "-DHW_VERSION_HIGH_VOLTAGE=false"
+elseif boardversion == "v3.4-24V" then
     boarddir = 'Board/v3'
     FLAGS += "-DHW_VERSION_MAJOR=3 -DHW_VERSION_MINOR=4"
+    FLAGS += "-DHW_VERSION_HIGH_VOLTAGE=false"
+elseif boardversion == "v3.4-48V" then
+    boarddir = 'Board/v3'
+    FLAGS += "-DHW_VERSION_MAJOR=3 -DHW_VERSION_MINOR=4"
+    FLAGS += "-DHW_VERSION_HIGH_VOLTAGE=true"
+elseif boardversion == "" then
+    error("board version not specified - take a look at tup.config.default")
 else
     error("unknown board version "..boardversion)
 end
 buildsuffix = boardversion
-
--- 48V voltage version
-if tup.getconfig("48V") == "y" then
-    FLAGS += "-DHW_VERSION_HIGH_VOLTAGE=true"
-else
-    FLAGS += "-DHW_VERSION_HIGH_VOLTAGE=false"
-end
 
 -- USB I/O settings
 if tup.getconfig("USB_PROTOCOL") == "native" or tup.getconfig("USB_PROTOCOL") == "" then
@@ -54,7 +56,7 @@ end
 
 -- GPIO settings
 if tup.getconfig("STEP_DIR") == "y" then
-    if tup.getconfig("UART_PROTOCOL") != "none" then
+    if tup.getconfig("UART_PROTOCOL") == "none" then
         FLAGS += "-DUSE_GPIO_MODE_STEP_DIR"
     else
         error("Step/dir mode conflicts with UART. Set CONFIG_UART_PROTOCOL to none.")
@@ -74,6 +76,7 @@ FLAGS += '-mfpu=fpv4-sp-d16'
 FLAGS += '-mfloat-abi=hard'
 FLAGS += { '-Wall', '-fdata-sections', '-ffunction-sections'}
 
+-- debug build
 FLAGS += '-g -gdwarf-2'
 
 

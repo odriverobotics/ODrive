@@ -27,41 +27,23 @@ The project is under active development, so make sure to check the [Changelog](C
 To correctly operate the ODrive, you need to supply some parameters. Some are mandatory, and if supplied incorrectly will cause the drive to malfunction.
 In this section we will set the compile-time parameters, later we will also set the [run time parameters](#configuring-parameters).
 
-The first thing to set is your board hardware version, located at the top of [Inc/main.h](Inc/main.h). If, for example, you are using the hardware: ODrive v3.2, then you should set it like this:
-```C
-#define HW_VERSION_MAJOR 3
-#define HW_VERSION_MINOR 2
-```
-If you are using the 48V version of ODrive, you should also uncomment this line
-```C
-#define HW_VERSION_HIGH_VOLTAGE true
-```
+To customize the compile time parameters, copy or rename the file `tup.config.default` to `tup.config` and edit the parameters in that file:
 
-### Communication configuration
-If want to use the example python scripts and connect the ODrive via USB, the defaults are fine for you and you can skip this step.
+__CONFIG_BOARD_VERSION__: The board version you're using. Can be `v3.1`, `v3.2`, `v3.3`, `v3.4-24V` or `v3.4-48V`. Check for a label on the upper side of the ODrive to find out which version you have.
 
-You can select what interface you want to run on USB and GPIO pins. See [Communicating over USB or UART](#communicating-over-usb-or-uart) for more information.
-The following options are available in [MotorControl/commands.h](MotorControl/commands.h):
+__CONFIG_USB_PROTOCOL__: Defines which protocol the ODrive should use on the USB interface.
+ * `native`: The native ODrive protocol. Use this if you want to use the python tools in this repo.
+ * `native-stream`: Like the native ODrive protocol, but the ODrive will treat the USB connection exactly as if it was a UART connection. __Use this if you're on macOS__. This is necessary because macOS doesn't grant our python tools sufficient low-level access to treat the device as the USB device that it is.
+ * `ascii`: The ASCII protocol. This allows sending simple commands like position setpoints directly from the terminal to the ODrive without the use of intermediate utilities.
+ * `none`: Disable USB. The device will still show up when plugged in but it will ignore any commands.
 
-__USB__:
- - `USB_PROTOCOL_NATIVE`: Use the native protocol (recommended for new applications).
-    The python library only understands the native protocol, so this is the way to go
-    if you use that.
- - `USB_PROTOCOL_NATIVE_STREAM_BASED`: Use the native stream based protocol.
-    On most platforms the device shows up as a serial port when connected over USB.
-    So instead of using the python tool's direct USB access, you can use this option and then pretend you connected the device over serial.
-    __On some platforms (specifically macOS), this is required__ because the kernel doesn't allow direct USB access.
- - `USB_PROTOCOL_LEGACY`: Use the human-readable legacy protocol
-    Select this option if you already have an existing application. This option will be removed in the future.
- - `USB_PROTOCOL_NONE`: Ignore USB communication
+__CONFIG_UART_PROTOCOL__: Defines which protocol the ODrive should use on the UART interface (GPIO1 and GPIO2). Note that UART is only supported on ODrive v3.3 and higher.
+ * `native`: The native ODrive protocol. Use this if you're connecting the ODrive to a PC using UART and want to use the python tools to control and setup the ODrive.
+ * `ascii`: The ASCII protocol. Use this option if you control the ODrive with an Arduino. The ODrive Arduino library is not yet updated to the native protocol.
+ * `none`: Disable UART.
 
-__GPIO 1,2 pins__:
-Note that UART is only supported on ODrive v3.3 and higher.
- - `UART_PROTOCOL_NATIVE`: Use the native protocol (see notes above).
- - `UART_PROTOCOL_LEGACY`: Use the human-readable legacy protocol
-    Use this option if you control the ODrive with an Arduino. The ODrive Arduino library is not yet updated to the native protocol.
- - `UART_PROTOCOL_NONE`: Ignore UART communication
- - `USE_GPIO_MODE_STEP_DIR`: Step/direction control mode (use in conjunction with `UART_PROTOCOL_NONE`)
+__CONFIG_STEP_DIR__: Set to `y` to use the GPIO1 and GPIO2 for step/direction input. Set to `n` otherwise. To use this, `CONFIG_UART_PROTOCOL` must be `none` because UART uses the same pins.
+
 
 <br><br>
 ## Compiling and downloading firmware
