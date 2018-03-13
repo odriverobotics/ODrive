@@ -173,12 +173,22 @@ def put_odrive_into_dfu_mode_thread(cancellation_token):
     matching devices into DFU mode until cancellation_token
     is set.
     """
+    global app_cancellation_token
     while not cancellation_token.is_set():
         constraints = {} if serial_number == None else {'serial_number': serial_number}
         my_drive = odrive.core.find_any(consider_usb=True, consider_serial=False,
                                         cancellation_token=cancellation_token,
                                         **constraints)
         if cancellation_token.is_set():
+            return
+        if not hasattr(my_drive, "enter_dfu_mode"):
+            print("The firmware on device {} does not support DFU. You need to \n"
+                  "flash the firmware once using STLink (`make flash`), after that \n"
+                  "DFU with this script should work fine."
+                  .format(my_drive.__channel__.usb_device.serial_number))
+            # Terminate script, otherwise it would try to reconnect to the same
+            # incompatible device
+            app_cancellation_token.set() # TODO: implement a more sensible discorvery mechanism to fix this
             return
         print("Putting device {} into DFU mode...".format(my_drive.__channel__.usb_device.serial_number))
         try:
@@ -224,6 +234,7 @@ else:
     serial_number = None
 
 
+app_cancellation_token = threading.Event()
 find_odrive_cancellation_token = threading.Event()
 try:
     print("Waiting for ODrive...")
@@ -232,13 +243,15 @@ try:
     threading.Thread(target=put_odrive_into_dfu_mode_thread, args=(find_odrive_cancellation_token,)).start()
 
     # Poll libUSB until a device in DFU mode is found
-    while True:
+    while not app_cancellation_token.is_set():
         params = {} if serial_number == None else {'serial_number': serial_number}
         stm_device = usb.core.find(idVendor=0x0483, idProduct=0xdf11, **params)
         if stm_device != None:
             break
         time.sleep(1)
     find_odrive_cancellation_token.set() # we don't need this thread anymore
+    if app_cancellation_token.is_set():
+        sys.exit(1)
     print("Found device {} in DFU mode".format(stm_device.serial_number))
 
     dfudev = dfuse.DfuDevice(stm_device)
