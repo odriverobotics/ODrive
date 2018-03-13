@@ -52,10 +52,6 @@
 
 /* USER CODE BEGIN Includes */
 
-#define HW_VERSION_MAJOR 3
-#define HW_VERSION_MINOR 4
-// #define HW_VERSION_HIGH_VOLTAGE true
-
 #if HW_VERSION_MAJOR == 3 && HW_VERSION_MINOR == 1 \
 ||  HW_VERSION_MAJOR == 3 && HW_VERSION_MINOR == 2
 #include "prev_board_ver/main_V3_2.h"
