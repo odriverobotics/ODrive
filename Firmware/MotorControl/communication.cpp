@@ -34,6 +34,7 @@
 
 extern PCD_HandleTypeDef hpcd_USB_OTG_FS;
 extern USBD_HandleTypeDef hUsbDeviceFS;
+uint64_t serial_number;
 
 /* Private constant data -----------------------------------------------------*/
 /* Private variables ---------------------------------------------------------*/
@@ -132,6 +133,11 @@ StreamToPacketConverter UART4_stream_sink(uart4_channel);
 /* Private function prototypes -----------------------------------------------*/
 /* Function implementations --------------------------------------------------*/
 
+void enter_dfu_mode() {
+    *((unsigned long *)0x2001C000) = 0xDEADBEEF;
+    NVIC_SystemReset();
+}
+
 void init_communication(void) {
     printf("hi!\r\n");
 
@@ -155,6 +161,7 @@ public:
     void save_configuration_helper() { save_configuration(); }
     void erase_configuration_helper() { erase_configuration(); }
     void NVIC_SystemReset_helper() { NVIC_SystemReset(); }
+    void enter_dfu_mode_helper() { enter_dfu_mode(); }
 } static_functions;
 
 // When adding new functions/variables to the protocol, be careful not to
@@ -164,9 +171,7 @@ static inline auto make_obj_tree() {
     return make_protocol_member_list(
         make_protocol_ro_property("vbus_voltage", &vbus_voltage),
         make_protocol_ro_property("comm_stack_info", &comm_stack_info),
-        make_protocol_ro_property("UUID_0", (const uint32_t*)(ID_UNIQUE_ADDRESS + 0*4)),
-        make_protocol_ro_property("UUID_1", (const uint32_t*)(ID_UNIQUE_ADDRESS + 1*4)),
-        make_protocol_ro_property("UUID_2", (const uint32_t*)(ID_UNIQUE_ADDRESS + 2*4)),
+        make_protocol_ro_property("serial_number", &serial_number),
         make_protocol_object("config",
             make_protocol_property("brake_resistance", &board_config.brake_resistance),
             // TODO: changing this currently requires a reboot - fix this
@@ -176,7 +181,8 @@ static inline auto make_obj_tree() {
         make_protocol_object("axis1", axes[1]->make_protocol_definitions()),
         make_protocol_function("save_configuration", static_functions, &StaticFunctions::save_configuration_helper),
         make_protocol_function("erase_configuration", static_functions, &StaticFunctions::erase_configuration_helper),
-        make_protocol_function("reboot", static_functions, &StaticFunctions::NVIC_SystemReset_helper)
+        make_protocol_function("reboot", static_functions, &StaticFunctions::NVIC_SystemReset_helper),
+        make_protocol_function("enter_dfu_mode", static_functions, &StaticFunctions::enter_dfu_mode_helper),
     );
 }
 
