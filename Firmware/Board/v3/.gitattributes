@@ -1,6 +1,0 @@
-
-# CubeMX generates CRLF line endings
-*.c text eol=crlf
-*.h text eol=crlf
-*.ld text eol=crlf
-Makefile text eol=crlf
