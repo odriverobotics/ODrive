@@ -182,7 +182,7 @@ static inline auto make_obj_tree() {
         make_protocol_function("save_configuration", static_functions, &StaticFunctions::save_configuration_helper),
         make_protocol_function("erase_configuration", static_functions, &StaticFunctions::erase_configuration_helper),
         make_protocol_function("reboot", static_functions, &StaticFunctions::NVIC_SystemReset_helper),
-        make_protocol_function("enter_dfu_mode", static_functions, &StaticFunctions::enter_dfu_mode_helper),
+        make_protocol_function("enter_dfu_mode", static_functions, &StaticFunctions::enter_dfu_mode_helper)
     );
 }
 
