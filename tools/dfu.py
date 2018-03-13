@@ -189,6 +189,10 @@ def put_odrive_into_dfu_mode_thread(cancellation_token):
             show_deferred_message("Still waiting for the device to reappear.\n"
                                   "Use the Zadig utility to set the driver of 'STM32 BOOTLOADER' to libusb-win32.",
                                   cancellation_token)
+        # If we immediately continue we might still pick up the device that was
+        # just rebooted. This isn't an issue but will display a distracting
+        # error message.
+        time.sleep(1)
 
 ### BEGINNING OF APPLICATION ###
 
