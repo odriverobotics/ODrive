@@ -42,7 +42,8 @@ public:
     enum Error_t {
         ERROR_NO_ERROR,
         ERROR_INVALID_STATE, //<! an invalid state was requested
-        ERROR_BAD_VOLTAGE,
+        ERROR_DC_BUS_UNDER_VOLTAGE,
+        ERROR_DC_BUS_OVER_VOLTAGE,
         ERROR_CURRENT_MEASUREMENT_TIMEOUT,
         ERROR_CONTROL_LOOP_TIMEOUT,
         ERROR_MOTOR_FAILED,

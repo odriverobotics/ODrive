@@ -96,9 +96,7 @@ void Axis::set_step_dir_enabled(bool enable) {
 
 // @brief Returns true if the power supply is within range
 bool Axis::check_PSU_brownout() {
-    if(vbus_voltage < config_.dc_bus_brownout_trip_level)
-        return error_ = ERROR_BAD_VOLTAGE, false;
-    return true;
+    return vbus_voltage >= config_.dc_bus_brownout_trip_level;
 }
 
 // @brief Returns true if everything is ok.
@@ -107,7 +105,7 @@ bool Axis::do_checks() {
     if (!motor_.do_checks())
         return error_ = ERROR_MOTOR_FAILED, false;
     if (!check_PSU_brownout())
-        return error_ = ERROR_BAD_VOLTAGE, false;
+        return error_ = ERROR_DC_BUS_UNDER_VOLTAGE, false;
     return true;
 }
 
