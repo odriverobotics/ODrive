@@ -315,13 +315,15 @@ You will likely want the pinout for this process. It is available [here](https:/
 * `git status` will still claim that many files are modified but the actual diff (using `git diff`) is empty (apart from all the line ending warnings).
 
 ### Generating patchfiles
-If you made changes to CubeMX generated files outside of the `USER CODE BEGIN`...`USER CODE END` sections and contribute them back, please add a patch file so that the next person who runs CubeMX doesn't run into problems. The way described here will use git to revert your changes and then revert the revert on top of that, thus giving you a commit that represents the exact patch that you want to export.
+If you made changes to CubeMX generated files outside of the `USER CODE BEGIN`...`USER CODE END` sections and contribute them back, please add a patch file so that the next person who runs CubeMX doesn't run into problems.
+
+CubeMX will reset everything outside these sections to the original state; we will capturing into a patch file the changes required to undo this resetting.
 * Make sure your current desired state is committed.
 * Make a new temporary branch: `git checkout -b cubemx_temp`
-* Run the CubeMX code generation as described in the previous section, including applying patches.
-* The diff will now _not_ be empty since CubeMX reversed your changes.
-* Stage the falsely reversed file and make a commit with the message "bogus commit".
-* Run `git revert HEAD` to revert the bogus commit. This gives you the "double negative" commit which you will export, so write a meaningful commit message.
+* Run the CubeMX code generation as described in the previous section, including applying previous patches.
+* The diff will now _not_ be empty since CubeMX reset your changes.
+* Stage this state and commit it with a message like "CubeMX reset my changes".
+* Run `git revert HEAD` to undo the resetting action CubeMX's regeneration had. This is the commit which you will export, so write a meaningful commit message.
 * Run `git format-patch HEAD~1` to export the commit as patch file.
 * Check out your previous branch and then force-delete the temporary branch: `git branch -D cubemx_temp`
 * Move the patch file to `Board/v3/` and add it in a new commit.
