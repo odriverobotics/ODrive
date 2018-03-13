@@ -4,23 +4,23 @@ tup.include('build.lua')
 -- Switch between board versions
 boardversion = tup.getconfig("BOARD_VERSION")
 if boardversion == "v3.1" then
-    boarddir = 'Board/v3.3' -- currently all platform code is in the same v3.3 directory
+    boarddir = 'Board/v3' -- currently all platform code is in the same v3.3 directory
     FLAGS += "-DHW_VERSION_MAJOR=3 -DHW_VERSION_MINOR=1"
     FLAGS += "-DHW_VERSION_HIGH_VOLTAGE=false"
 elseif boardversion == "v3.2" then
-    boarddir = 'Board/v3.3'
+    boarddir = 'Board/v3'
     FLAGS += "-DHW_VERSION_MAJOR=3 -DHW_VERSION_MINOR=2"
     FLAGS += "-DHW_VERSION_HIGH_VOLTAGE=false"
 elseif boardversion == "v3.3" then
-    boarddir = 'Board/v3.3'
+    boarddir = 'Board/v3'
     FLAGS += "-DHW_VERSION_MAJOR=3 -DHW_VERSION_MINOR=3"
     FLAGS += "-DHW_VERSION_HIGH_VOLTAGE=false"
 elseif boardversion == "v3.4-24V" then
-    boarddir = 'Board/v3.3'
+    boarddir = 'Board/v3'
     FLAGS += "-DHW_VERSION_MAJOR=3 -DHW_VERSION_MINOR=4"
     FLAGS += "-DHW_VERSION_HIGH_VOLTAGE=false"
 elseif boardversion == "v3.4-48V" then
-    boarddir = 'Board/v3.3'
+    boarddir = 'Board/v3'
     FLAGS += "-DHW_VERSION_MAJOR=3 -DHW_VERSION_MINOR=4"
     FLAGS += "-DHW_VERSION_HIGH_VOLTAGE=true"
 elseif boardversion == "" then
@@ -106,7 +106,9 @@ for src in string.gmatch(vars['C_INCLUDES'] or '', "%S+") do
     stm_includes += boarddir..'/'..string.sub(src, 3, -1) -- remove "-I" from each include path
 end
 
+-- TODO: cleaner separation of the platform code and the rest
 stm_includes += 'MotorControl'
+stm_includes += 'Drivers/DRV8301'
 build{
     name='stm_platform',
     type='objects',
@@ -122,6 +124,7 @@ build{
     --toolchains={LLVMToolchain('x86_64', {'-Ofast'}, {'-flto'})},
     packages={'stm_platform'},
     sources={
+        'Drivers/DRV8301/drv8301.c',
         'MotorControl/utils.c',
         'MotorControl/legacy_commands.c',
         'MotorControl/low_level.c',
@@ -132,6 +135,7 @@ build{
         'MotorControl/config.cpp'
     },
     includes={
+        'Drivers/DRV8301',
         'MotorControl'
     }
 }
