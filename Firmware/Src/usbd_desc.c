@@ -10,7 +10,7 @@
   * inserted by the user or by software development tools
   * are owned by their respective copyright owners.
   *
-  * Copyright (c) 2018 STMicroelectronics International N.V. 
+  * Copyright (c) 2017 STMicroelectronics International N.V. 
   * All rights reserved.
   *
   * Redistribution and use in source and binary forms, with or without 
@@ -70,15 +70,17 @@
 
 /** @defgroup USBD_DESC_Private_Defines
   * @{
-  */ 
-#define USBD_VID     0x1209
-#define USBD_LANGID_STRING     1033
-#define USBD_MANUFACTURER_STRING     "ODrive Robotics"
-#define USBD_PID_FS     0x0D33
-#define USBD_PRODUCT_STRING_FS     "ODrive v3.3"
-#define USBD_SERIALNUMBER_STRING_FS     "000000000001"
-#define USBD_CONFIGURATION_STRING_FS     "CDC Config"
-#define USBD_INTERFACE_STRING_FS     "CDC Interface"
+  */
+#define USBD_VID 0x1209
+#define USBD_LANGID_STRING 1033
+#define USBD_MANUFACTURER_STRING "ODrive Robotics"
+#define USBD_PID_FS 0x0D32
+#define USBD_PRODUCT_XSTR(s) USBD_PRODUCT_STR(s)
+#define USBD_PRODUCT_STR(s) #s
+#define USBD_PRODUCT_STRING_FS ODrive version HW_VERSION_MAJOR.HW_VERSION_MINOR
+#define USBD_SERIALNUMBER_STRING_FS "000000000001"
+#define USBD_CONFIGURATION_STRING_FS "CDC Config"
+#define USBD_INTERFACE_STRING_FS "CDC Interface"
 
 #define USB_SIZ_BOS_DESC            0x0C
 
@@ -252,12 +254,12 @@ uint8_t *  USBD_FS_LangIDStrDescriptor( USBD_SpeedTypeDef speed , uint16_t *leng
 uint8_t *  USBD_FS_ProductStrDescriptor( USBD_SpeedTypeDef speed , uint16_t *length)
 {
   if(speed == 0)
-  {   
-    USBD_GetString (USBD_PRODUCT_STRING_FS, USBD_StrDesc, length);
+  {
+    USBD_GetString ((uint8_t *)USBD_PRODUCT_XSTR(USBD_PRODUCT_STRING_FS), USBD_StrDesc, length);
   }
   else
   {
-    USBD_GetString (USBD_PRODUCT_STRING_FS, USBD_StrDesc, length);    
+    USBD_GetString ((uint8_t *)USBD_PRODUCT_XSTR(USBD_PRODUCT_STRING_FS), USBD_StrDesc, length);
   }
   return USBD_StrDesc;
 }
@@ -271,7 +273,7 @@ uint8_t *  USBD_FS_ProductStrDescriptor( USBD_SpeedTypeDef speed , uint16_t *len
 */
 uint8_t *  USBD_FS_ManufacturerStrDescriptor( USBD_SpeedTypeDef speed , uint16_t *length)
 {
-  USBD_GetString (USBD_MANUFACTURER_STRING, USBD_StrDesc, length);
+  USBD_GetString ((uint8_t *)USBD_MANUFACTURER_STRING, USBD_StrDesc, length);
   return USBD_StrDesc;
 }
 
@@ -285,12 +287,12 @@ uint8_t *  USBD_FS_ManufacturerStrDescriptor( USBD_SpeedTypeDef speed , uint16_t
 uint8_t *  USBD_FS_SerialStrDescriptor( USBD_SpeedTypeDef speed , uint16_t *length)
 {
   if(speed  == USBD_SPEED_HIGH)
-  {    
-    USBD_GetString (USBD_SERIALNUMBER_STRING_FS, USBD_StrDesc, length);
+  {
+    USBD_GetString ((uint8_t *)USBD_SERIALNUMBER_STRING_FS, USBD_StrDesc, length);
   }
   else
   {
-    USBD_GetString (USBD_SERIALNUMBER_STRING_FS, USBD_StrDesc, length);    
+    USBD_GetString ((uint8_t *)USBD_SERIALNUMBER_STRING_FS, USBD_StrDesc, length);
   }
   return USBD_StrDesc;
 }
@@ -305,12 +307,12 @@ uint8_t *  USBD_FS_SerialStrDescriptor( USBD_SpeedTypeDef speed , uint16_t *leng
 uint8_t *  USBD_FS_ConfigStrDescriptor( USBD_SpeedTypeDef speed , uint16_t *length)
 {
   if(speed  == USBD_SPEED_HIGH)
-  {  
-    USBD_GetString (USBD_CONFIGURATION_STRING_FS, USBD_StrDesc, length);
+  {
+    USBD_GetString ((uint8_t *)USBD_CONFIGURATION_STRING_FS, USBD_StrDesc, length);
   }
   else
   {
-    USBD_GetString (USBD_CONFIGURATION_STRING_FS, USBD_StrDesc, length); 
+    USBD_GetString ((uint8_t *)USBD_CONFIGURATION_STRING_FS, USBD_StrDesc, length);
   }
   return USBD_StrDesc;  
 }
@@ -326,11 +328,11 @@ uint8_t *  USBD_FS_InterfaceStrDescriptor( USBD_SpeedTypeDef speed , uint16_t *l
 {
   if(speed == 0)
   {
-    USBD_GetString (USBD_INTERFACE_STRING_FS, USBD_StrDesc, length);
+    USBD_GetString ((uint8_t *)USBD_INTERFACE_STRING_FS, USBD_StrDesc, length);
   }
   else
   {
-    USBD_GetString (USBD_INTERFACE_STRING_FS, USBD_StrDesc, length);
+    USBD_GetString ((uint8_t *)USBD_INTERFACE_STRING_FS, USBD_StrDesc, length);
   }
   return USBD_StrDesc;  
 }

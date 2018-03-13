@@ -34,7 +34,7 @@
 float vbus_voltage = 12.0f;
 
 // TODO stick parameter into struct
-#define ENCODER_CPR (4000) // Default resolution of CUI-AMT102 encoder
+#define ENCODER_CPR (2048 * 4) // Default resolution of CUI-AMT102 encoder
 #define POLE_PAIRS 7 // This value is correct for N5065 motors and Turnigy SK3 series.
 const float elec_rad_per_enc = POLE_PAIRS * 2 * M_PI * (1.0f / (float)ENCODER_CPR);
 
@@ -135,11 +135,6 @@ Motor_t motors[] = {
             .pll_kp = 0.0f,   // [rad/s / rad]
             .pll_ki = 0.0f,   // [(rad/s^2) / rad]
         },
-        .AS5047P_encoder = {
-            .spiHandle = &hspi3,
-            .nCSgpioHandle = GPIO_3_GPIO_Port,
-            .nCSgpioNumber = GPIO_3_Pin
-        },
         .sensorless = {
             .phase = 0.0f,                        // [rad]
             .pll_pos = 0.0f,                      // [rad]
@@ -167,7 +162,7 @@ Motor_t motors[] = {
             .calib_vel_threshold = 1.0f,
         },
     },
-    {   // M1
+    {                                             // M1
         .control_mode = CTRL_MODE_POSITION_CONTROL,  //see: Motor_control_mode_t
         .enable_step_dir = false,                    //auto enabled after calibration
         .counts_per_step = 2.0f,
@@ -280,8 +275,6 @@ static const int current_meas_hz = CURRENT_MEAS_HZ;
 
 /* Private variables ---------------------------------------------------------*/
 static float brake_resistance = 0.47f;  // [ohm]
-
-uint16_t abs_data = 0;
 
 /* Function implementations --------------------------------------------------*/
 
@@ -1391,22 +1384,4 @@ void control_motor_loop(Motor_t* motor) {
     //We are exiting control, reset Ibus, and update brake current
     motor->current_control.Ibus = 0.0f;
     update_brake_current();
-}
-
-void absEncoder_thread(void const * argument){
-
-    // HAL_SPI_MspDeInit(&hspi3);
-
-    osDelay(10);
-
-    // HAL_SPI_DeInit(&hspi3);
-
-    // MX_SPI3_Init_8bit();
-
-    Motor_t* motor = (Motor_t*)argument;
-    AS5047P_Obj* AS5047P_encoder = &motor->AS5047P_encoder;
-    for (;;){
-        abs_data = AS5047P_readPosition(AS5047P_encoder);
-        osDelay(1);
-    }
 }

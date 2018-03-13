@@ -9,7 +9,7 @@
   * inserted by the user or by software development tools
   * are owned by their respective copyright owners.
   *
-  * Copyright (c) 2018 STMicroelectronics International N.V. 
+  * Copyright (c) 2017 STMicroelectronics International N.V. 
   * All rights reserved.
   *
   * Redistribution and use in source and binary forms, with or without 
@@ -144,13 +144,15 @@ void StartDefaultTask(void const * argument)
   // Init communications
   init_communication();
 
+  while (1){
+    HAL_GPIO_WritePin(GPIO_3_GPIO_Port, GPIO_3_Pin, GPIO_PIN_SET);
+    osDelay(1000);
+    HAL_GPIO_WritePin(GPIO_3_GPIO_Port, GPIO_3_Pin, GPIO_PIN_RESET);
+    osDelay(1000);    
+  }
+
   // Init motor control
   init_motor_control();
-
-  // osThreadDef(task_absEncoder_0, absEncoder_thread,   osPriorityHigh+2, 0, 512);
-
-  // while (1){};
-
 
   // Start motor threads
   osThreadDef(task_motor_0, axis_thread_entry,   osPriorityHigh+1, 0, 512);
