@@ -101,6 +101,7 @@ Note: ODrive v3.4 and earlier require you to flash with the external programmer 
   * If 'Odrive version 3.x' is not in the list of devices upon opening Zadig, check 'List All Devices' from the options menu. With the Odrive selected in the device list choose 'libusb-win32' from the target driver list and select the large 'install driver' button.
 * Run `make dfu` in the `Firmware` directory.
 * __Windows__: During the update, a new device called "STM32 BOOTLOADER" will appear. Open the Zadig utility that you used when you first connected your ODrive and set the driver for "STM32 BOOTLOADER" to libusb-win32. After that the firmware upgrade will continue.
+* On some machines you will need to unplug and plug back in the usb cable to make the PC understand that we switched from regular mode to bootloader mode.
 
 If you have multiple ODrives connected, you should specify which one to upgrade.
 * Run `(lsusb -d 1209:0d32 -v; lsusb -d 0483:df11 -v) 2>/dev/null | grep iSerial` to list the serial number of all flashable devices. Example output:
