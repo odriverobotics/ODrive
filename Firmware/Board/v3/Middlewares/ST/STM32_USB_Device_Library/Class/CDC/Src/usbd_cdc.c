@@ -198,11 +198,11 @@ __ALIGN_BEGIN uint8_t USBD_CDC_CfgHSDesc[USB_CDC_CONFIG_DESC_SIZ] __ALIGN_END =
   0x00,   /* bInterfaceNumber: Number of Interface */
   0x00,   /* bAlternateSetting: Alternate setting */
   0x01,   /* bNumEndpoints: One endpoints used */
-  0x02,   /* bInterfaceClass: Communication Interface Class */
-  0x02,   /* bInterfaceSubClass: Abstract Control Model */
-  0x01,   /* bInterfaceProtocol: Common AT commands */
+  0x00,   /* bInterfaceClass: Communication Interface Class */
+  0x00,   /* bInterfaceSubClass: Abstract Control Model */
+  0x00,   /* bInterfaceProtocol: Common AT commands */
   0x00,   /* iInterface: */
-  
+#if 0
   /*Header Functional Descriptor*/
   0x05,   /* bLength: Endpoint Descriptor size */
   0x24,   /* bDescriptorType: CS_INTERFACE */
@@ -229,7 +229,7 @@ __ALIGN_BEGIN uint8_t USBD_CDC_CfgHSDesc[USB_CDC_CONFIG_DESC_SIZ] __ALIGN_END =
   0x06,   /* bDescriptorSubtype: Union func desc */
   0x00,   /* bMasterInterface: Communication class interface */
   0x01,   /* bSlaveInterface0: Data Class Interface */
-  
+#endif
   /*Endpoint 2 Descriptor*/
   0x07,                           /* bLength: Endpoint Descriptor size */
   USB_DESC_TYPE_ENDPOINT,   /* bDescriptorType: Endpoint */
@@ -294,11 +294,11 @@ __ALIGN_BEGIN uint8_t USBD_CDC_CfgFSDesc[USB_CDC_CONFIG_DESC_SIZ] __ALIGN_END =
   0x00,   /* bInterfaceNumber: Number of Interface */
   0x00,   /* bAlternateSetting: Alternate setting */
   0x01,   /* bNumEndpoints: One endpoints used */
-  0x02,   /* bInterfaceClass: Communication Interface Class */
-  0x02,   /* bInterfaceSubClass: Abstract Control Model */
-  0x01,   /* bInterfaceProtocol: Common AT commands */
+  0x00,   /* bInterfaceClass: Communication Interface Class */
+  0x00,   /* bInterfaceSubClass: Abstract Control Model */
+  0x00,   /* bInterfaceProtocol: Common AT commands */
   0x00,   /* iInterface: */
-  
+#if 0
   /*Header Functional Descriptor*/
   0x05,   /* bLength: Endpoint Descriptor size */
   0x24,   /* bDescriptorType: CS_INTERFACE */
@@ -325,7 +325,7 @@ __ALIGN_BEGIN uint8_t USBD_CDC_CfgFSDesc[USB_CDC_CONFIG_DESC_SIZ] __ALIGN_END =
   0x06,   /* bDescriptorSubtype: Union func desc */
   0x00,   /* bMasterInterface: Communication class interface */
   0x01,   /* bSlaveInterface0: Data Class Interface */
-  
+#endif
   /*Endpoint 2 Descriptor*/
   0x07,                           /* bLength: Endpoint Descriptor size */
   USB_DESC_TYPE_ENDPOINT,   /* bDescriptorType: Endpoint */
@@ -385,11 +385,11 @@ __ALIGN_BEGIN uint8_t USBD_CDC_OtherSpeedCfgDesc[USB_CDC_CONFIG_DESC_SIZ] __ALIG
   0x00,   /* bInterfaceNumber: Number of Interface */
   0x00,   /* bAlternateSetting: Alternate setting */
   0x01,   /* bNumEndpoints: One endpoints used */
-  0x02,   /* bInterfaceClass: Communication Interface Class */
-  0x02,   /* bInterfaceSubClass: Abstract Control Model */
-  0x01,   /* bInterfaceProtocol: Common AT commands */
+  0x00,   /* bInterfaceClass: Communication Interface Class */
+  0x00,   /* bInterfaceSubClass: Abstract Control Model */
+  0x00,   /* bInterfaceProtocol: Common AT commands */
   0x00,   /* iInterface: */
-  
+#if 0
   /*Header Functional Descriptor*/
   0x05,   /* bLength: Endpoint Descriptor size */
   0x24,   /* bDescriptorType: CS_INTERFACE */
@@ -416,7 +416,7 @@ __ALIGN_BEGIN uint8_t USBD_CDC_OtherSpeedCfgDesc[USB_CDC_CONFIG_DESC_SIZ] __ALIG
   0x06,   /* bDescriptorSubtype: Union func desc */
   0x00,   /* bMasterInterface: Communication class interface */
   0x01,   /* bSlaveInterface0: Data Class Interface */
-  
+#endif
   /*Endpoint 2 Descriptor*/
   0x07,                           /* bLength: Endpoint Descriptor size */
   USB_DESC_TYPE_ENDPOINT      ,   /* bDescriptorType: Endpoint */
