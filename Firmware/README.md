@@ -74,7 +74,7 @@ To compile the program, you first need to install the prerequisite tools:
 
 #### Mac:
 * `brew cask install gcc-arm-embedded`:  GCC toolchain+debugger
-* `brew tap homebrew/fuse; brew install homebrew/fuse/tup`: Build tool
+* `brew cask install osxfuse; brew install tup`: Build tool
 * `brew install openocd`: Programmer
 
 #### Windows:
