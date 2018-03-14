@@ -1,0 +1,47 @@
+From 0867a92f742b312a0ebaafe94cade6f57be22170 Mon Sep 17 00:00:00 2001
+From: Samuel Sadok <samuel.sadok@bluewin.ch>
+Date: Mon, 12 Mar 2018 23:49:32 -0700
+Subject: [PATCH] expose correct serial number on USB
+
+---
+ Firmware/Board/v3/Src/usbd_desc.c | 16 +++++++++-------
+ 1 file changed, 9 insertions(+), 7 deletions(-)
+
+diff --git a/Firmware/Board/v3/Src/usbd_desc.c b/Firmware/Board/v3/Src/usbd_desc.c
+index b9c7bd0..94dc49b 100644
+--- a/Firmware/Board/v3/Src/usbd_desc.c
++++ b/Firmware/Board/v3/Src/usbd_desc.c
+@@ -51,6 +51,7 @@
+ #include "usbd_core.h"
+ #include "usbd_desc.h"
+ #include "usbd_conf.h"
++#include "commands.h"
+ 
+ /* USER CODE BEGIN INCLUDE */
+ 
+@@ -327,14 +328,15 @@ uint8_t * USBD_FS_ManufacturerStrDescriptor(USBD_SpeedTypeDef speed, uint16_t *l
+   */
+ uint8_t * USBD_FS_SerialStrDescriptor(USBD_SpeedTypeDef speed, uint16_t *length)
+ {
+-  if(speed == USBD_SPEED_HIGH)
+-  {
+-    USBD_GetString((uint8_t *)USBD_SERIALNUMBER_STRING_FS, USBD_StrDesc, length);
+-  }
+-  else
+-  {
+-    USBD_GetString((uint8_t *)USBD_SERIALNUMBER_STRING_FS, USBD_StrDesc, length);
++  uint8_t str[13]; // 12 digits + null termination
++  uint64_t val = serial_number;
++  for (size_t i = 0; i < 12; ++i) {
++    str[i] = "0123456789ABCDEF"[(val >> (48-4)) & 0xf];
++    val <<= 4;
+   }
++  str[12] = 0;
++
++  USBD_GetString ((uint8_t *)str, USBD_StrDesc, length);
+   return USBD_StrDesc;
+ }
+ 
+-- 
+2.16.2
+

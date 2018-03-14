@@ -11,8 +11,9 @@ The project is under active development, so make sure to check the [Changelog](C
 <!-- MarkdownTOC depth=2 autolink=true bracket=round -->
 
 - [Configuring the build](#configuring-the-build)
-- [Compiling and downloading firmware](#compiling-and-downloading-firmware)
-- [Setting up an IDE](#setting-up-an-ide) or [Continuing without an IDE](#no-ide-instructions)
+- [Downloading and Installing Tools](#downloading-and-installing-tools)
+- [Building and Flashing the Firmware](#building-and-flashing-the-firmware)
+- [Setting up an IDE](#setting-up-an-ide)
 - [Communicating over USB or UART](#communicating-over-usb-or-uart)
 - [Configuring parameters](#configuring-parameters)
 - [Encoder Calibration](#encoder-calibration)
@@ -46,8 +47,11 @@ __CONFIG_STEP_DIR__: Set to `y` to use the GPIO1 and GPIO2 for step/direction in
 
 
 <br><br>
-## Compiling and downloading firmware
+## Downloading and Installing Tools
 ### Getting a programmer
+__Note:__ If you don't plan to make major firmware modifications you can use the built-in DFU feature.
+In this case you don't need an SWD programmer and you can skip OpenOCD related instructions.
+
 Get a programmer that supports SWD (Serial Wire Debugging) and is ST-link v2 compatible. You can get them really cheap on [eBay](http://www.ebay.co.uk/itm/ST-Link-V2-Emulator-Downloader-Programming-Mini-Unit-STM8-STM32-with-20CM-Line-/391173940927?hash=item5b13c8a6bf:g:3g8AAOSw~OdVf-Tu) or many other places.
 
 ### Installing prerequisites
@@ -81,31 +85,55 @@ Install the following:
 * [Make for Windows](http://gnuwin32.sourceforge.net/packages/make.htm). This is optional and mainly used because commands are short and developers are used to it. If you don't want to use it, you can look at the Makefile to get the corresponding commands. Download and run the complete package setup program. Add the path of the binaries to your PATH environment variable. For me this was at `C:\Program Files (x86)\GnuWin32\bin`.
 * OpenOCD. Follow the instructions at [GNU ARM Eclipse  - How to install the OpenOCD binaries](http://gnuarmeclipse.github.io/openocd/install/), including the part about ST-LINK/V2 drivers. Add the path of the binaries to your PATH environment variable. For me this was at `C:\Program Files\GNU ARM Eclipse\OpenOCD\0.10.0-201704182147-dev\bin`.
 
+After installing all of the above, open a Git Bash shell. Continue at section [Building and Flashing the Firmware](#building-and-flashing-the-firmware).
+
 <br><br>
-## Setting up an IDE
-For working with the ODrive code you don't need an IDE, but the open-source IDE VSCode is recommended.  It is also possible to use Eclipse.  If you'd like to go that route, please see the respective configuration document:
-
-* [Configuring VSCode](configuring-vscode.md)
-* [Configuring Eclipse](configuring-eclipse.md)
-
-## No IDE Instructions
-After installing all of the above, open a Git Bash shell. Continue at section [Building the firmware](#building-the-firmware).
+## Building and Flashing the Firmware
 
 ### Building the firmware
-* Make sure you have cloned the repository.
-* Navigate your terminal (bash/cygwin) to the ODrive/Firmware dir.
-* Run `make` in the root of this repository.
+* Make sure you have cloned the repository. It is recommended that you use [git](https://help.github.com/articles/cloning-a-repository/) for this.
+* Navigate your terminal (windows: Git Bash/cygwin) to the ODrive/Firmware dir.
+* Run `make` in the `Firmware` directory.
 
-### Flashing the firmware
+### Flashing the firmware (standalone device)
+Note: ODrive v3.4 and earlier require you to flash with the external programmer first (see below), before you can reflash in standalone mode.
+* __Windows__: Use the [Zadig](http://zadig.akeo.ie/) utility to set ODrive (not STLink!) driver to libusb-win32. 
+  * If 'Odrive version 3.x' is not in the list of devices upon opening Zadig, check 'List All Devices' from the options menu. With the Odrive selected in the device list choose 'libusb-win32' from the target driver list and select the large 'install driver' button.
+* Run `make dfu` in the `Firmware` directory.
+* __Windows__: During the update, a new device called "STM32 BOOTLOADER" will appear. Open the Zadig utility that you used when you first connected your ODrive and set the driver for "STM32 BOOTLOADER" to libusb-win32. After that the firmware upgrade will continue.
+* On some machines you will need to unplug and plug back in the usb cable to make the PC understand that we switched from regular mode to bootloader mode.
+
+If you have multiple ODrives connected, you should specify which one to upgrade.
+* Run `(lsusb -d 1209:0d32 -v; lsusb -d 0483:df11 -v) 2>/dev/null | grep iSerial` to list the serial number of all flashable devices. Example output:
+```
+  iSerial                 3 385F324D3037
+  iSerial                 3 306A396A3235
+```
+* The last column is the serial number you're looking for. You can unplug selected devices to track down the one you want to update.
+* Run `make dfu SERIAL_NUMBER=385F324D3037`, where `385F324D3037` is the targeted serial number.
+
+__Warning:__ Currently it is advised that you only do this to flash
+official unmodified firmware. Also make sure you don't switch off
+the device during upgrade. Otherwise, if something goes wrong, you need an external
+programmer to recover the device. This will be fixed in the future.
+
+### Flashing the firmware (external Programmer)
 * **Make sure you have [configured the parameters first](#configuring-parameters)**
 * Connect `GND`, `SWD`, and `SWC` on connector J2 to the programmer. Note: Always plug in `GND` first!
 * You need to power the board by only **ONE** of the following: VCC(3.3v), 5V, or the main power connection (the DC bus). The USB port (J1) does not power the board.
-* Run `make flash` in the root of this repository.
+* Run `make flash` in the `Firmware` directory.
 
 If the flashing worked, you can start sending commands. If you want to do that now, you can go to [Communicating over USB or UART](#communicating-over-usb-or-uart).
 
 ### Debugging the firmware
 * Run `make gdb`. This will reset and halt at program start. Now you can set breakpoints and run the program. If you know how to use gdb, you are good to go.
+
+<br><br>
+## Setting up an IDE
+For working with the ODrive code you don't need an IDE, but the open-source IDE VSCode is recommended.  It is also possible to use Eclipse. If you'd like to go that route, please see the respective configuration document:
+
+* [Configuring VSCode](configuring-vscode.md)
+* [Configuring Eclipse](configuring-eclipse.md)
 
 <br><br>
 ## Communicating over USB or UART
@@ -135,7 +163,7 @@ pip install pyusb pyserial
 3. Power the ODrive board (as per the [Flashing the firmware](#flashing-the-firmware) step).
 4. Plug in a USB cable into the microUSB connector on ODrive, and connect it to your PC.
 5. __Windows__: Use the [Zadig](http://zadig.akeo.ie/) utility to set ODrive (not STLink!) driver to libusb-win32. 
-  * If 'Odrive V3.x' is not in the list of devices upon opening Zadig, check 'List All Devices' from the options menu. With the Odrive selected in the device list choose 'libusb-win32' from the target driver list and select the large 'install driver' button.
+  * If 'Odrive version 3.x' is not in the list of devices upon opening Zadig, check 'List All Devices' from the options menu. With the Odrive selected in the device list choose 'libusb-win32' from the target driver list and select the large 'install driver' button.
 6. Open the bash prompt in the `ODrive/tools/` folder.
 7. Run `python3 demo.py` or `python3 explore_odrive.py`. 
 - `demo.py` is a very simple script which will make motor 0 turn back and forth. Use this as an example if you want to control the ODrive yourself programatically.
@@ -242,6 +270,7 @@ If you have an encoder with an index (Z) signal, you may avoid having to do the 
 `explore_odrive.py`can also be used to check error codes when your odrive is not working as expected. For example `my_odrive.motor0.error` will list the error code associated with motor 0.
 <br><br>
 The error nummber corresponds to the following:
+
 0. `ERROR_NO_ERROR`
 1. `ERROR_PHASE_RESISTANCE_TIMING`
 2. `ERROR_PHASE_RESISTANCE_MEASUREMENT_TIMEOUT`
@@ -285,7 +314,23 @@ You will likely want the pinout for this process. It is available [here](https:/
 * Press `Project -> Generate code`
 * You may need to let it download some drivers and such.
 * After generating/updating the code, some minor patches need to be applied. To do this, run:
-  `git apply Firmware/Board/v3.3/*.patch`
+  `git apply Firmware/Board/v3/*.patch`
+* Run `git config --local core.autocrlf input`. This will tell git that all files should be checked in with LF endings (CubeMX generates CRLF endings).
+* `git status` will still claim that many files are modified but the actual diff (using `git diff`) is empty (apart from all the line ending warnings).
+
+### Generating patchfiles
+If you made changes to CubeMX generated files outside of the `USER CODE BEGIN`...`USER CODE END` sections and contribute them back, please add a patch file so that the next person who runs CubeMX doesn't run into problems.
+
+CubeMX will reset everything outside these sections to the original state; we will capturing into a patch file the changes required to undo this resetting.
+* Make sure your current desired state is committed.
+* Make a new temporary branch: `git checkout -b cubemx_temp`
+* Run the CubeMX code generation as described in the previous section, including applying previous patches.
+* The diff will now _not_ be empty since CubeMX reset your changes.
+* Stage this state and commit it with a message like "CubeMX reset my changes".
+* Run `git revert HEAD` to undo the resetting action CubeMX's regeneration had. This is the commit which you will export, so write a meaningful commit message.
+* Run `git format-patch HEAD~1` to export the commit as patch file.
+* Check out your previous branch and then force-delete the temporary branch: `git branch -D cubemx_temp`
+* Move the patch file to `Board/v3/` and add it in a new commit.
 
 <br><br>
 ## Notes for Contributors

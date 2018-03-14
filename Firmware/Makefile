@@ -4,6 +4,7 @@
 
 BUILD_DIR = build
 FIRMWARE = $(BUILD_DIR)/ODriveFirmware.elf
+FIRMWARE_HEX = $(BUILD_DIR)/ODriveFirmware.hex
 
 all:
 	@tup --quiet
@@ -14,6 +15,9 @@ flash: all
 gdb: all
 	arm-none-eabi-gdb $(FIRMWARE) -x openocd.gdbinit
 
+dfu: all
+	../tools/dfu.py $(if $(value SERIAL_NUMBER),--serial-number $(SERIAL_NUMBER),) $(FIRMWARE_HEX)
+
 bmp: all
 	arm-none-eabi-gdb --ex 'target extended-remote /dev/stlink' \
 		--ex 'monitor swdp_scan' \
@@ -23,5 +27,5 @@ bmp: all
 clean:
 	-rm -fR .dep $(BUILD_DIR)
 
-.PHONY: all flash gdb bmp clean
+.PHONY: all flash gdb dfu bmp clean
 

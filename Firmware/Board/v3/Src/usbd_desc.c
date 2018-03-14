@@ -51,6 +51,7 @@
 #include "usbd_core.h"
 #include "usbd_desc.h"
 #include "usbd_conf.h"
+#include "commands.h"
 
 /* USER CODE BEGIN INCLUDE */
 
@@ -327,14 +328,15 @@ uint8_t * USBD_FS_ManufacturerStrDescriptor(USBD_SpeedTypeDef speed, uint16_t *l
   */
 uint8_t * USBD_FS_SerialStrDescriptor(USBD_SpeedTypeDef speed, uint16_t *length)
 {
-  if(speed == USBD_SPEED_HIGH)
-  {
-    USBD_GetString((uint8_t *)USBD_SERIALNUMBER_STRING_FS, USBD_StrDesc, length);
+  uint8_t str[13]; // 12 digits + null termination
+  uint64_t val = serial_number;
+  for (size_t i = 0; i < 12; ++i) {
+    str[i] = "0123456789ABCDEF"[(val >> (48-4)) & 0xf];
+    val <<= 4;
   }
-  else
-  {
-    USBD_GetString((uint8_t *)USBD_SERIALNUMBER_STRING_FS, USBD_StrDesc, length);
-  }
+  str[12] = 0;
+
+  USBD_GetString ((uint8_t *)str, USBD_StrDesc, length);
   return USBD_StrDesc;
 }
 

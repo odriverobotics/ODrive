@@ -57,6 +57,8 @@
 #include "usart.h"
 #include "usb_device.h"
 #include "gpio.h"
+#include "utils.h"
+#include "commands.h"
 
 /* USER CODE BEGIN Includes */
 
@@ -80,6 +82,14 @@ void MX_FREERTOS_Init(void);
 
 /* USER CODE BEGIN 0 */
 
+void jump_to_builtin_bootloader(void) {
+  __set_MSP(0x20001000);
+  // http://www.st.com/content/ccc/resource/technical/document/application_note/6a/17/92/02/58/98/45/0c/CD00264379.pdf/files/CD00264379.pdf
+  void (*builtin_bootloader)(void) = (void (*)(void))(*((uint32_t *)0x1FFF0004));
+  builtin_bootloader();
+  for (;;);
+}
+
 /* USER CODE END 0 */
 
 /**
@@ -90,6 +100,23 @@ void MX_FREERTOS_Init(void);
 int main(void)
 {
   /* USER CODE BEGIN 1 */
+
+  /* We could jump to the bootloader directly on demand without rebooting
+  but that requires us to reset several peripherals and interrupts for it
+  to function correctly. Therefore it's easier to just reset the entire chip. */
+  if(*((unsigned long *)0x2001C000) == 0xDEADBEEF) {
+    *((unsigned long *)0x2001C000) = 0xCAFEFEED;  //Reset bootloader trigger
+    jump_to_builtin_bootloader();
+  }
+
+  // This procedure of building a USB serial number should be identical
+  // to the way the STM's built-in USB bootloader does it. This means
+  // that the device will have the same serial number in normal and DFU mode.
+  uint32_t uuid0 = *(uint32_t *) (ID_UNIQUE_ADDRESS + 0);
+  uint32_t uuid1 = *(uint32_t *) (ID_UNIQUE_ADDRESS + 4);
+  uint32_t uuid2 = *(uint32_t *) (ID_UNIQUE_ADDRESS + 8);
+  uint32_t uuid_mixed_part = uuid0 + uuid2;
+  serial_number = ((uint64_t)uuid_mixed_part << 16) | (uint64_t)(uuid1 >> 16);
 
   /* USER CODE END 1 */
 

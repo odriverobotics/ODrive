@@ -35,6 +35,7 @@
 
 extern PCD_HandleTypeDef hpcd_USB_OTG_FS;
 extern USBD_HandleTypeDef hUsbDeviceFS;
+uint64_t serial_number;
 
 /* Private constant data -----------------------------------------------------*/
 // TODO: make command to switch gpio_mode during run-time
@@ -105,14 +106,17 @@ void motors_run_anticogging_calibration_func() {
     }
 }
 
+void enter_dfu_mode() {
+    *((unsigned long *)0x2001C000) = 0xDEADBEEF;
+    NVIC_SystemReset();
+}
+
 // This table specifies which fields and functions are exposed on the USB and UART ports.
 // TODO: Autogenerate this table. It will come up again very soon in the Arduino library.
 // clang-format off
 const Endpoint endpoints[] = {
     Endpoint::make_property("vbus_voltage", const_cast<const float*>(&vbus_voltage)),
-	Endpoint::make_property("UUID_0", (const uint32_t*)(ID_UNIQUE_ADDRESS + 0*4)),
-	Endpoint::make_property("UUID_1", (const uint32_t*)(ID_UNIQUE_ADDRESS + 1*4)),
-	Endpoint::make_property("UUID_2", (const uint32_t*)(ID_UNIQUE_ADDRESS + 2*4)),
+    Endpoint::make_property("serial_number", const_cast<const uint64_t *>(&serial_number)),
     Endpoint::make_function("run_anticogging_calibration", &motors_run_anticogging_calibration_func),
         // No parameters, but still requires a close_tree()
     Endpoint::close_tree(),
@@ -326,6 +330,9 @@ const Endpoint endpoints[] = {
         // no arguments
     Endpoint::close_tree(),
     Endpoint::make_function("reboot", &NVIC_SystemReset),
+        // no arguments
+    Endpoint::close_tree(),
+    Endpoint::make_function("enter_dfu_mode", &enter_dfu_mode),
         // no arguments
     Endpoint::close_tree(),
 };
