@@ -14,6 +14,10 @@ import usb.core
 import usb.util
 import odrive.core
 
+# We are interactively printing status messages, so flush by default
+import functools
+print = functools.partial(print, flush=True)
+
 try:
     from intelhex import IntelHex
 except:

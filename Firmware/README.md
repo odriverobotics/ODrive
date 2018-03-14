@@ -96,6 +96,9 @@ After installing all of the above, open a Git Bash shell. Continue at section [B
 * Run `make` in the `Firmware` directory.
 
 ### Flashing the firmware (standalone device)
+Note: ODrive v3.4 and earlier require you to flash with the external programmer first (see below), before you can reflash in standalone mode.
+* __Windows__: Use the [Zadig](http://zadig.akeo.ie/) utility to set ODrive (not STLink!) driver to libusb-win32. 
+  * If 'Odrive version 3.x' is not in the list of devices upon opening Zadig, check 'List All Devices' from the options menu. With the Odrive selected in the device list choose 'libusb-win32' from the target driver list and select the large 'install driver' button.
 * Run `make dfu` in the `Firmware` directory.
 * __Windows__: During the update, a new device called "STM32 BOOTLOADER" will appear. Open the Zadig utility that you used when you first connected your ODrive and set the driver for "STM32 BOOTLOADER" to libusb-win32. After that the firmware upgrade will continue.
 
@@ -159,7 +162,7 @@ pip install pyusb pyserial
 3. Power the ODrive board (as per the [Flashing the firmware](#flashing-the-firmware) step).
 4. Plug in a USB cable into the microUSB connector on ODrive, and connect it to your PC.
 5. __Windows__: Use the [Zadig](http://zadig.akeo.ie/) utility to set ODrive (not STLink!) driver to libusb-win32. 
-  * If 'Odrive V3.x' is not in the list of devices upon opening Zadig, check 'List All Devices' from the options menu. With the Odrive selected in the device list choose 'libusb-win32' from the target driver list and select the large 'install driver' button.
+  * If 'Odrive version 3.x' is not in the list of devices upon opening Zadig, check 'List All Devices' from the options menu. With the Odrive selected in the device list choose 'libusb-win32' from the target driver list and select the large 'install driver' button.
 6. Open the bash prompt in the `ODrive/tools/` folder.
 7. Run `python3 demo.py` or `python3 explore_odrive.py`. 
 - `demo.py` is a very simple script which will make motor 0 turn back and forth. Use this as an example if you want to control the ODrive yourself programatically.
