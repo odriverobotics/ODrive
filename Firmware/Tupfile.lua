@@ -1,7 +1,67 @@
 
 tup.include('build.lua')
 
-boarddir = 'Board/v3.3'
+-- Switch between board versions
+boardversion = tup.getconfig("BOARD_VERSION")
+if boardversion == "v3.1" then
+    boarddir = 'Board/v3' -- currently all platform code is in the same v3.3 directory
+    FLAGS += "-DHW_VERSION_MAJOR=3 -DHW_VERSION_MINOR=1"
+    FLAGS += "-DHW_VERSION_VOLTAGE=24"
+elseif boardversion == "v3.2" then
+    boarddir = 'Board/v3'
+    FLAGS += "-DHW_VERSION_MAJOR=3 -DHW_VERSION_MINOR=2"
+    FLAGS += "-DHW_VERSION_VOLTAGE=24"
+elseif boardversion == "v3.3" then
+    boarddir = 'Board/v3'
+    FLAGS += "-DHW_VERSION_MAJOR=3 -DHW_VERSION_MINOR=3"
+    FLAGS += "-DHW_VERSION_VOLTAGE=24"
+elseif boardversion == "v3.4-24V" then
+    boarddir = 'Board/v3'
+    FLAGS += "-DHW_VERSION_MAJOR=3 -DHW_VERSION_MINOR=4"
+    FLAGS += "-DHW_VERSION_VOLTAGE=24"
+elseif boardversion == "v3.4-48V" then
+    boarddir = 'Board/v3'
+    FLAGS += "-DHW_VERSION_MAJOR=3 -DHW_VERSION_MINOR=4"
+    FLAGS += "-DHW_VERSION_VOLTAGE=48"
+elseif boardversion == "" then
+    error("board version not specified - take a look at tup.config.default")
+else
+    error("unknown board version "..boardversion)
+end
+buildsuffix = boardversion
+
+-- USB I/O settings
+if tup.getconfig("USB_PROTOCOL") == "native" or tup.getconfig("USB_PROTOCOL") == "" then
+    FLAGS += "-DUSB_PROTOCOL_NATIVE"
+elseif tup.getconfig("USB_PROTOCOL") == "native-stream" then
+    FLAGS += "-DUSB_PROTOCOL_NATIVE_STREAM_BASED"
+elseif tup.getconfig("USB_PROTOCOL") == "ascii" then
+    FLAGS += "-DUSB_PROTOCOL_LEGACY"
+elseif tup.getconfig("USB_PROTOCOL") == "none" then
+    FLAGS += "-DUSB_PROTOCOL_NONE"
+else
+    error("unknown USB protocol")
+end
+
+-- UART I/O settings
+if tup.getconfig("UART_PROTOCOL") == "native" then
+    FLAGS += "-DUART_PROTOCOL_NATIVE"
+elseif tup.getconfig("UART_PROTOCOL") == "ascii" or tup.getconfig("UART_PROTOCOL") == "" then
+    FLAGS += "-DUART_PROTOCOL_LEGACY"
+elseif tup.getconfig("UART_PROTOCOL") == "none" then
+    FLAGS += "-DUART_PROTOCOL_NONE"
+else
+    error("unknown UART protocol "..tup.getconfig("UART_PROTOCOL"))
+end
+
+-- GPIO settings
+if tup.getconfig("STEP_DIR") == "y" then
+    if tup.getconfig("UART_PROTOCOL") == "none" then
+        FLAGS += "-DUSE_GPIO_MODE_STEP_DIR"
+    else
+        error("Step/dir mode conflicts with UART. Set CONFIG_UART_PROTOCOL to none.")
+    end
+end
 
 
 -- C-specific flags
@@ -16,6 +76,7 @@ FLAGS += '-mfpu=fpv4-sp-d16'
 FLAGS += '-mfloat-abi=hard'
 FLAGS += { '-Wall', '-fdata-sections', '-ffunction-sections'}
 
+-- debug build
 FLAGS += '-g -gdwarf-2'
 
 
@@ -45,7 +106,9 @@ for src in string.gmatch(vars['C_INCLUDES'] or '', "%S+") do
     stm_includes += boarddir..'/'..string.sub(src, 3, -1) -- remove "-I" from each include path
 end
 
+-- TODO: cleaner separation of the platform code and the rest
 stm_includes += 'MotorControl'
+stm_includes += 'Drivers/DRV8301'
 build{
     name='stm_platform',
     type='objects',
@@ -61,6 +124,7 @@ build{
     --toolchains={LLVMToolchain('x86_64', {'-Ofast'}, {'-flto'})},
     packages={'stm_platform'},
     sources={
+        'Drivers/DRV8301/drv8301.c',
         'MotorControl/utils.c',
         'MotorControl/legacy_commands.c',
         'MotorControl/low_level.c',
@@ -71,6 +135,7 @@ build{
         'MotorControl/config.cpp'
     },
     includes={
+        'Drivers/DRV8301',
         'MotorControl'
     }
 }
