@@ -24,9 +24,10 @@ extern "C" {
 //!
 typedef struct _AS5047P_Obj_
 {
-  SPI_Handle       spiHandle;                  //!< the handle for the serial peripheral interface
-  GPIO_Handle      nCSgpioHandle;              //!< the gpio handle that is connected to the aeat-6012-a06 nCS pin
-  GPIO_Number_e    nCSgpioNumber;               //!< the gpio number that is connected to the aeat-6012-a06 nCS pin
+  SPI_Handle       	spiHandle;                  //!< the handle for the serial peripheral interface
+  GPIO_Handle      	nCSgpioHandle;              //!< the gpio handle that is connected to the aeat-6012-a06 nCS pin
+  GPIO_Number_e    	nCSgpioNumber;               //!< the gpio number that is connected to the aeat-6012-a06 nCS pin
+  float				encoder_angle;
 } AS5047P_Obj;
 
 
@@ -56,9 +57,6 @@ extern uint16_t AS5047P_readAngle(AS5047D_Handle handle);
 extern bool AS5047P_setZeroPos(AS5047D_Handle handle);
 // extern uint16_t AEAT_6012_A06_readAngle(AEAT_6012_A06_Handle handle);
 // extern uint16_t AEAT_6012_A06_readSpi(AEAT_6012_A06_Handle handle);
-
-
-
 
 #ifdef __cplusplus
 }

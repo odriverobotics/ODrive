@@ -69,6 +69,7 @@ osSemaphoreId sem_usb_irq;
 osThreadId thread_motor_0;
 osThreadId thread_motor_1;
 osThreadId thread_cmd_parse;
+osThreadId thread_as5047p_0;
 /* USER CODE END Variables */
 
 /* Function prototypes -------------------------------------------------------*/
@@ -144,12 +145,15 @@ void StartDefaultTask(void const * argument)
   // Init communications
   init_communication();
 
-  while (1){
-    HAL_GPIO_WritePin(GPIO_3_GPIO_Port, GPIO_3_Pin, GPIO_PIN_SET);
-    osDelay(1000);
-    HAL_GPIO_WritePin(GPIO_3_GPIO_Port, GPIO_3_Pin, GPIO_PIN_RESET);
-    osDelay(1000);    
-  }
+  // osThreadDef(task_as5047p_0, AS5047P_thread, osPriorityHigh+2, 0, 512);
+  // thread_as5047p_0 = osThreadCreate(osThread(task_as5047p_0), &motors[0]);
+
+  // while (1){
+    // HAL_GPIO_WritePin(GPIO_3_GPIO_Port, GPIO_3_Pin, GPIO_PIN_SET);
+    // osDelay(1000);
+    // HAL_GPIO_WritePin(GPIO_3_GPIO_Port, GPIO_3_Pin, GPIO_PIN_RESET);
+    // osDelay(1000);    
+  // }
 
   // Init motor control
   init_motor_control();

@@ -38,6 +38,8 @@ float vbus_voltage = 12.0f;
 #define POLE_PAIRS 7 // This value is correct for N5065 motors and Turnigy SK3 series.
 const float elec_rad_per_enc = POLE_PAIRS * 2 * M_PI * (1.0f / (float)ENCODER_CPR);
 
+uint16_t as5047p_data = 0;
+
 #if HW_VERSION_MAJOR == 3
 #if HW_VERSION_MINOR <= 3
 #define SHUNT_RESISTANCE (675e-6f)
@@ -161,6 +163,13 @@ Motor_t motors[] = {
             .calib_pos_threshold = 1.0f,
             .calib_vel_threshold = 1.0f,
         },
+        .AS5047PEncoder = {
+            .spiHandle = &hspi3,
+            .nCSgpioHandle = GPIO_3_GPIO_Port,
+            .nCSgpioNumber = GPIO_3_Pin,
+            .encoder_angle = 0.0f,
+        }
+
     },
     {                                             // M1
         .control_mode = CTRL_MODE_POSITION_CONTROL,  //see: Motor_control_mode_t
@@ -1384,4 +1393,32 @@ void control_motor_loop(Motor_t* motor) {
     //We are exiting control, reset Ibus, and update brake current
     motor->current_control.Ibus = 0.0f;
     update_brake_current();
+}
+
+//--------------------------------
+// Encoder thread
+//--------------------------------
+
+void AS5047P_thread(void const * argument){
+
+    // HAL_SPI_MspDeInit(&hspi3);
+
+    // osDelay(10);
+
+    // HAL_SPI_DeInit(&hspi3);
+
+    // MX_SPI3_Init_8bit();
+
+    Motor_t* motor = (Motor_t*)argument;
+    // AEAT_6012_A06_Obj* absEncoder = &motor->absEncoder;
+    // CUI_Obj* cuiEncoder = &motor->CUIEncoder;
+    AS5047P_Obj* AS5047PEncoder = &motor->AS5047PEncoder;
+
+    for (;;){
+        // abs_data = AEAT_6012_A06_readAngle(absEncoder);
+        as5047p_data = AS5047P_readPosition(AS5047PEncoder);
+        osDelay(100);
+        as5047p_data = as5047p_data & 0x3FFF;
+        AS5047PEncoder->encoder_angle = (as5047p_data/16383.0)*360;
+    }
 }

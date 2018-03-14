@@ -9,6 +9,7 @@ extern "C" {
 /* Includes ------------------------------------------------------------------*/
 #include <cmsis_os.h>
 #include "drv8301.h"
+#include "as5047p.h"
 
 //default timeout waiting for phase measurement signals
 #define PH_CURRENT_MEAS_TIMEOUT 2 // [ms]
@@ -186,6 +187,7 @@ typedef struct {
         float current_setpoint;
     } set_current_setpoint_args;
     Anticogging_t anticogging;
+    AS5047P_Obj AS5047PEncoder;
 } Motor_t;
 
 typedef struct{
@@ -256,6 +258,8 @@ void queue_voltage_timings(Motor_t* motor, float v_alpha, float v_beta);
 bool FOC_voltage(Motor_t* motor, float v_d, float v_q);
 bool FOC_current(Motor_t* motor, float Id_des, float Iq_des);
 void control_motor_loop(Motor_t* motor);
+
+void AS5047P_thread(void const * argument);
 
 //motor thread moved to axis object
 //void motor_thread(void const * argument);
