@@ -57,11 +57,10 @@
 #include "usart.h"
 #include "usb_device.h"
 #include "gpio.h"
-#include "utils.h"
-#include "commands.h"
 
 /* USER CODE BEGIN Includes */
-
+#include "utils.h"
+#include "commands.h"
 /* USER CODE END Includes */
 
 /* Private variables ---------------------------------------------------------*/
