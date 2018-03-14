@@ -3,6 +3,7 @@ Please add a note of your changes below this heading if you make a Pull Request.
 
 ### Added
 * **Storing of configuration parameters to Non Volatile Memory**
+* **USB Bootloader**
 
 ### Changed
 * The build is now configured using the `tup.config` file instead of editing source files. Make sure you set your board version correctly. See [here](README.md#configuring-the-build) for details.
