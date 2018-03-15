@@ -1,7 +1,15 @@
 # Unreleased Features
 Please add a note of your changes below this heading if you make a Pull Request.
 
+### Added
 * **Storing of configuration parameters to Non Volatile Memory**
+* **USB Bootloader**
+
+### Changed
+* The build is now configured using the `tup.config` file instead of editing source files. Make sure you set your board version correctly. See [here](README.md#configuring-the-build) for details.
+* The toplevel directory for tup is now `Firmware`. If you used tup before, go to `Firmware` and run `rm -rd ../.tup; rm -rd build/*; make`.
+* Update CubeMX generated STM platform code to version 1.19.0
+* Remove `UUID_0`, `UUID_1` and `UUID_2` from USB protocol. Use `serial_number` instead.
 
 # Releases
 
@@ -14,6 +22,7 @@ Please add a note of your changes below this heading if you make a Pull Request.
 * DRV status read script
 * Microsecond delay function
 * Travis-CI
+* Firmware update over USB
 
 ### Changed
 * Build system is now tup instead of make. Please check the [Readme](README.md#installing-prerequisites) for installation instructions.
