@@ -19,6 +19,7 @@
 //int _fstat(int file, struct stat *st) {}
 //int _isatty(int file) {}extern char _end; // provided by the linker script
 
+extern char _end; // provided by the linker script
 extern char _heap_end_max; // provided by the linker script
 void* _end_ptr = &_end;
 void* _heap_end_max_ptr = &_heap_end_max;
@@ -39,7 +40,7 @@ void* heap_end_ptr = 0;
 * @return A pointer to the newly allocated block on success
 *         or -1 otherwise.
 */
-intptr_t _sbrk_r(struct _reent *ignored __attribute__((unused)), size_t size) {
+intptr_t _sbrk(size_t size) {
     intptr_t ptr;
 	vTaskSuspendAll();
 	{
