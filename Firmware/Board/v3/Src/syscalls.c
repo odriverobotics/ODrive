@@ -17,7 +17,7 @@
 //int _close(int file) {}
 //int _lseek(int file, int ptr, int dir) {}
 //int _fstat(int file, struct stat *st) {}
-//int _isatty(int file) {}extern char _end; // provided by the linker script
+//int _isatty(int file) {}
 
 extern char _end; // provided by the linker script
 extern char _heap_end_max; // provided by the linker script
@@ -56,7 +56,6 @@ intptr_t _sbrk(size_t size) {
 	(void)xTaskResumeAll();
     return ptr;
 }
-
 
 #define UART_TX_BUFFER_SIZE 64
 static uint8_t uart_tx_buf[UART_TX_BUFFER_SIZE];
