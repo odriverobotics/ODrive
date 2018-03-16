@@ -19,7 +19,7 @@
 //int _fstat(int file, struct stat *st) {}
 //int _isatty(int file) {}
 
-extern char _end; // provided by the linker script
+extern char _end; // provided by the linker script: it's end of statically allocated section, which is where the heap starts.
 extern char _heap_end_max; // provided by the linker script
 void* _end_ptr = &_end;
 void* _heap_end_max_ptr = &_heap_end_max;
