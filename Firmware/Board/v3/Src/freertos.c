@@ -70,6 +70,10 @@ osSemaphoreId sem_usb_irq;
 osThreadId thread_motor_0;
 osThreadId thread_motor_1;
 osThreadId thread_cmd_parse;
+
+// Place FreeRTOS heap in core coupled memory for better performance
+__attribute__((section(".ccmram")))
+uint8_t ucHeap[configTOTAL_HEAP_SIZE];
 /* USER CODE END Variables */
 
 /* Function prototypes -------------------------------------------------------*/

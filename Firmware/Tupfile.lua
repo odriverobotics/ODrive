@@ -109,6 +109,7 @@ end
 -- TODO: cleaner separation of the platform code and the rest
 stm_includes += 'MotorControl'
 stm_includes += 'Drivers/DRV8301'
+stm_sources += boarddir..'/Src/syscalls.c'
 build{
     name='stm_platform',
     type='objects',

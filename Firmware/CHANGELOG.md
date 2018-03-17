@@ -10,6 +10,10 @@ Please add a note of your changes below this heading if you make a Pull Request.
 * The toplevel directory for tup is now `Firmware`. If you used tup before, go to `Firmware` and run `rm -rd ../.tup; rm -rd build/*; make`.
 * Update CubeMX generated STM platform code to version 1.19.0
 * Remove `UUID_0`, `UUID_1` and `UUID_2` from USB protocol. Use `serial_number` instead.
+* Freertos memory pool (task stacks, etc) now uses Core Coupled Memory.
+
+### Fixed
+* malloc now fails if we run out of memory (before it would always succeed even if we are out of ram...)
 
 # Releases
 
