@@ -108,6 +108,14 @@ int main(void)
     jump_to_builtin_bootloader();
   }
 
+  /* The bootloader might fail to properly clean up after itself,
+  so if we're not sure that the system is in a clean state we
+  just reset it again */
+  if(*((unsigned long *)0x2001C000) != 42) {
+    *((unsigned long *)0x2001C000) = 42;
+    NVIC_SystemReset();
+  }
+
   // This procedure of building a USB serial number should be identical
   // to the way the STM's built-in USB bootloader does it. This means
   // that the device will have the same serial number in normal and DFU mode.
