@@ -1,18 +1,20 @@
 # requires pyusb
 #   pip install --pre pyusb
 
+import sys
+import time
 import usb.core
 import usb.util
-import sys
 import odrive.protocol
-import time
 
-
-def noprint(x):
-  pass
+ODRIVE_VID_PID_PAIRS = [
+  (0x1209, 0x0D31),
+  (0x1209, 0x0D32), # <== TODO: this is the only official ODrive PID, remove the other ones
+  (0x1209, 0x0D33)
+]
 
 class USBBulkTransport(odrive.protocol.PacketSource, odrive.protocol.PacketSink):
-  def __init__(self, dev, printer=noprint):
+  def __init__(self, dev, printer):
     self._printer = printer
     self.dev = dev
     self._name = "USB device {}:{}".format(dev.idVendor, dev.idProduct)
@@ -120,3 +122,57 @@ class USBBulkTransport(odrive.protocol.PacketSource, odrive.protocol.PacketSink)
 
   def receive_max(self):
     return 64
+
+
+def discover_channels(path, serial_number, callback, cancellation_token, printer):
+  """
+  Scans for USB devices that match the path spec.
+  This function blocks until cancellation_token is set.
+  """
+  if path == None or path == "":
+    bus = None
+    address = None
+  else:
+    try:
+      bus = int(path.split(":")[0])
+      address = int(path.split(":")[1])
+    except (ValueError, IndexError):
+      raise Exception("{} is not a valid USB path specification. "
+                      "Expected a string of the format BUS:DEVICE where BUS "
+                      "and DEVICE are integers.".format(path))
+  
+  known_devices = []
+  def device_matcher(device):
+    #print("  test {:04X}:{:04X}".format(device.idVendor, device.idProduct))
+    if (device.bus, device.address) in known_devices:
+      return False
+    if bus != None and device.bus != bus:
+      return False
+    if address != None and device.address != address:
+      return False
+    if serial_number != None and device.serial_number != serial_number:
+      return False
+    if (device.idVendor, device.idProduct) not in ODRIVE_VID_PID_PAIRS:
+      return False
+    return True
+
+  while not cancellation_token.is_set():
+    printer("USB discover loop")
+    devices = usb.core.find(find_all=True, custom_match=device_matcher)
+    for usb_device in devices:
+      try:
+        bulk_device = USBBulkTransport(usb_device, printer)
+        printer(bulk_device.info())
+        bulk_device.init()
+        channel = odrive.protocol.Channel(
+                "USB device bus {} device {}".format(usb_device.bus, usb_device.address),
+                bulk_device, bulk_device)
+        channel.usb_device = usb_device # for debugging only
+      except usb.core.USBError as ex:
+        if ex.errno == 13:
+          printer("USB device access denied. Did you set up your udev rules correctly?")
+          continue
+        raise
+      callback(channel)
+      known_devices.append((usb_device.bus, usb_device.address))
+    time.sleep(1)

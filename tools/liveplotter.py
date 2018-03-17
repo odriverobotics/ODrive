@@ -4,7 +4,7 @@ Liveplotter
 """
 
 import time
-import odrive.core
+import odrive.discovery
 import matplotlib.pyplot as plt
 import numpy as np
 import threading
@@ -13,7 +13,7 @@ data_rate = 100
 plot_rate = 10
 num_samples = 1000
 
-my_odrive = odrive.core.find_any()
+my_odrive = odrive.discovery.find_any()
 
 plt.ion()
 global vals
@@ -30,7 +30,7 @@ def fetch_data():
     global vals
     global cancellation_token
     while not cancellation_token.is_set():
-        vals.append(my_odrive.motor0.timing_log.TIMING_LOG_FOC_CURRENT)
+        vals.append(my_odrive.motor0.encoder.pll_pos)
         if len(vals) > num_samples:
             vals = vals[-num_samples:]
         time.sleep(1/data_rate)

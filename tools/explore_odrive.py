@@ -3,10 +3,15 @@
 Load an odrive object to play with in the IPython interactive shell.
 """
 
-import odrive.core
 import argparse
 import sys
 import platform
+import threading
+import odrive.discovery
+
+# Flush stdout by default
+import functools
+print = functools.partial(print, flush=True)
 
 # Check if IPython is installed
 try:
@@ -49,24 +54,27 @@ CTRL_MODE_POSITION_CONTROL = 3
 
 
 # Parse arguments
-parser = argparse.ArgumentParser(description='Load an odrive object to play with in the IPython interactive shell.')
+parser = argparse.ArgumentParser(description='Load an odrive object to play with in the IPython interactive shell.',
+                                 formatter_class=argparse.RawTextHelpFormatter)
 parser.add_argument("-v", "--verbose", action="store_true",
                     help="print debug information")
-group = parser.add_mutually_exclusive_group()
-group.add_argument("-d", "--discover", metavar="CHANNELS", action="store",
-                    help="Automatically discover ODrives. Takes a comma-separated list (without spaces) "
-                    "to indicate which connection types should be considered. Possible values are "
-                    "usb and serial. For example \"--discover usb,serial\" indicates "
-                    "that USB and serial ports should be scanned for ODrives. "
-                    "If none of the below options are specified, --discover usb is assumed.")
-group.add_argument("-u", "--usb", metavar="BUS:DEVICE", action="store",
-                    help="Specifies the USB port on which the device is connected. "
-                    "For example \"001:014\" means bus 001, device 014. The numbers can be obtained "
-                    "using `lsusb`.")
-group.add_argument("-s", "--serial", metavar="PORT", action="store",
-                    help="Specifies the serial port on which the device is connected. "
-                    "For example \"/dev/ttyUSB0\". Use `ls /dev/tty*` to find your port name.")
-parser.set_defaults(discover="usb")
+parser.add_argument("-p", "--path", metavar="PATH", action="store",
+                    help="The path(s) where ODrive(s) should be discovered.\n"
+                    "By default the script will connect to any ODrive on USB.\n\n"
+                    "To select a specific USB device:\n"
+                    "  --path usb:BUS:DEVICE\n"
+                    "usbwhere BUS and DEVICE are the bus and device numbers as shown in `lsusb`.\n\n"
+                    "To select a specific serial port:\n"
+                    "  --path serial:PATH\n"
+                    "where PATH is the path of the serial port. For example \"/dev/ttyUSB0\".\n"
+                    "You can use `ls /dev/tty*` to find the correct port.\n\n"
+                    "You can combine USB and serial specs by separating them with a comma (no space!)\n"
+                    "Example:\n"
+                    "  --path usb,serial:/dev/ttyUSB0\n"
+                    "means \"discover any USB device or a serial device on /dev/ttyUSB0\"")
+parser.add_argument("-s", "--serial-number", action="store",
+                    help="The serial number of the device. If omitted, any device is accepted.\n")
+parser.set_defaults(path="usb")
 args = parser.parse_args()
 
 if (args.verbose):
@@ -74,41 +82,109 @@ if (args.verbose):
 else:
   printer = lambda x: None
 
+COLOR_RED = '\x1b[91;1m'
+COLOR_CYAN = '\x1b[96;1m'
+COLOR_RESET = '\x1b[0m'
+
+interactive_variables = {}
+discovered_devices = []
+
+def did_discover_device(odrive):
+    """
+    Handles the discovery of new devices by displaying a
+    message and making the device available to the interactive
+    console
+    """
+    serial_number = odrive.serial_number if hasattr(odrive, 'serial_number') else "[unknown serial number]"
+    if serial_number in discovered_devices:
+        verb = "Reconnected"
+        index = discovered_devices.index(serial_number)
+    else:
+        verb = "Connected"
+        discovered_devices.append(serial_number)
+        index = len(discovered_devices) - 1
+    interactive_name = "odrv" + str(index)
+
+    # Subscribe to disappearance of the device
+    odrive.__dict__["__sealed__"] = False
+    odrive._did_disappear_callback = lambda: did_lose_device(interactive_name)
+    odrive.__sealed__ = True
+
+    # Publish new ODrive to interactive console
+    interactive_variables[interactive_name] = odrive
+    globals()[interactive_name] = odrive # Add to globals so tab complete works
+    print_on_second_last_line(COLOR_CYAN + "{} to ODrive {:012X} as {}".format(verb, serial_number, interactive_name) + COLOR_RESET)
+
+def did_lose_device(interactive_name):
+    """
+    Handles the disappearance of a device by displaying
+    a message.
+    """
+    print_on_second_last_line(COLOR_RED + "Oh no {} disappeared".format(interactive_name) + COLOR_RESET)
+
 # Connect to device
-if not args.usb is None:
-  try:
-    bus = int(args.usb.split(":")[0])
-    address = int(args.usb.split(":")[1])
-  except (ValueError, IndexError):
-    print("the --usb argument must look something like this: \"001:014\"")
-    sys.exit(1)
-  try:
-    my_odrive = odrive.core.open_usb(bus, address, printer=printer)
-  except odrive.protocol.DeviceInitException as ex:
-    print(str(ex))
-    sys.exit(1)
-elif not args.serial is None:
-  my_odrive = odrive.core.open_serial(args.serial, printer=printer)
-else:
-  print("Waiting for device...")
-  consider_usb = 'usb' in args.discover.split(',')
-  consider_serial = 'serial' in args.discover.split(',')
-  my_odrive = odrive.core.find_any(consider_usb, consider_serial, printer=printer)
-print("Connected!")
+printer("Waiting for device...")
+app_shutdown_token = threading.Event()
+odrive.discovery.find_all(args.path, args.serial_number,
+                 did_discover_device, app_shutdown_token,
+                 printer=printer)
 
 
-print('')
-print('ODRIVE EXPLORER')
-print('')
-print('You can now type "my_odrive." and press <tab>')
-print('This will present you with all the properties that you can reference')
-print('')
-print('For example: "my_odrive.motor0.encoder.pll_pos"')
-print('will print the current encoder position on motor 0')
-print('and "my_odrive.motor0.pos_setpoint = 10000"')
-print('will send motor0 to 10000')
-print('')
+def print_help():
+    print('')
+    print('ODRIVE EXPLORER')
+    print('')
+    print('Type "odrv0." and press <tab>')
+    print('This will present you with all the properties that you can reference')
+    print('')
+    print('For example: "odrv0.motor0.encoder.pll_pos"')
+    print('will print the current encoder position on motor 0')
+    print('and "odrv0.motor0.pos_setpoint = 10000"')
+    print('will send motor0 to 10000')
+    print('')
 
-# If IPython is installed, embed shell, otherwise drop into interactive stock python shell
+def print_on_second_last_line(text, **kwargs):
+    """
+    Prints a text on the second last line.
+    This can be used to print a message above the command
+    prompt. If the command prompt spans multiple lines,
+    there will be glitches.
+    """
+    # Escape character sequence:
+    #   ESC 7: store cursor position
+    #   ESC 1A: move cursor up by one
+    #   ESC 1S: scroll entire viewport by one
+    #   ESC 1L: insert 1 line at cursor position
+    #   (print text)
+    #   ESC 8: restore old cursor position
+    kwargs['end'] = ''
+    kwargs['flush'] = True
+    print('\x1b7\x1b[1A\x1b[1S\x1b[1L' + text + '\x1b8', **kwargs)
+
+
+embed_ipython = False
+
+# If IPython is installed, embed IPython shell, otherwise embed regular shell
 if embed_ipython:
-  IPython.embed()
+    IPython.embed()
+else:
+    import code
+    import rlcompleter	
+    import readline	
+    readline.parse_and_bind("tab: complete")
+    console = code.InteractiveConsole(locals=interactive_variables)
+    console.locals["help"] = print_help
+    console.runcode('import sys')
+    console.runcode('superexcepthook = sys.excepthook')
+    console.runcode('def newexcepthook(ex_class,ex,trace):\n'
+                    '  if ex_class.__module__ == "odrive.protocol" and ex_class.__name__ == "ChannelBrokenException":\n'
+                    '    pass\n'
+                    '  else:\n'
+                    '    superexcepthook(ex_class,ex,trace)')
+    console.runcode('sys.excepthook=newexcepthook')
+    #print = print_on_second_last_line
+    console.interact(banner='ODrive control utility v0.4\n'
+                            'Please connect your ODrive.\n'
+                            'Type help() for help.')
+
+app_shutdown_token.set()
