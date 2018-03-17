@@ -16,6 +16,7 @@ class USBBulkTransport(odrive.protocol.PacketSource, odrive.protocol.PacketSink)
     self._printer = printer
     self.dev = dev
     self._name = "USB device {}:{}".format(dev.idVendor, dev.idProduct)
+    self._was_damaged = False
 
   ##
   # information about the connected device
@@ -75,36 +76,44 @@ class USBBulkTransport(odrive.protocol.PacketSource, odrive.protocol.PacketSink)
   def process_packet(self, usbBuffer):
     try:
       ret = self.epw.write(usbBuffer, 0)
+      if self._was_damaged:
+        self._printer("Recovered from USB halt/stall condition")
+        self._was_damaged = False
       return ret
     except usb.core.USBError as ex:
       if ex.errno == 19: # "no such device"
         raise odrive.protocol.ChannelBrokenException()
       else:
         # Try resetting halt/stall condition
-        self.epw.clear_halt()
-        # Resend
-        ret = self.epw.write(usbBuffer, 0)
-        self._printer("Recovered from USB halt/stall condition on write")
-        return ret
-        # Signal to retry transfer
-        # raise odrive.protocol.USBHaltException()
+        try:
+          self.epw.clear_halt()
+        except usb.core.USBError:
+          raise odrive.protocol.ChannelBrokenException()
+        # Retry transfer
+        self._was_damaged = True
+        raise odrive.protocol.ChannelDamagedException()
 
   def get_packet(self, deadline):
     try:
       bufferLen = self.epr.wMaxPacketSize
       timeout = max(int((deadline - time.monotonic()) * 1000), 0)
       ret = self.epr.read(bufferLen, timeout)
+      if self._was_damaged:
+        self._printer("Recovered from USB halt/stall condition")
+        self._was_damaged = False
       return bytearray(ret)
     except usb.core.USBError as ex:
       if ex.errno == 19: # "no such device"
         raise odrive.protocol.ChannelBrokenException()
       else:
-        # Try resetting halt/stall condition and flush buffer
-        self.epr.clear_halt()
-        ret = self.epr.read(bufferLen, timeout)
-        self._printer("Recovered from USB halt/stall condition on read")
-        # Signal to retry transfer
-        raise odrive.protocol.USBHaltException()
+        # Try resetting halt/stall condition
+        try:
+          self.epw.clear_halt()
+        except usb.core.USBError:
+          raise odrive.protocol.ChannelBrokenException()
+        # Retry transfer
+        self._was_damaged = True
+        raise odrive.protocol.ChannelDamagedException()
 
   def send_max(self):
     return 64

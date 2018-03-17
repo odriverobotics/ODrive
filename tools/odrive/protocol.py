@@ -66,14 +66,21 @@ def calc_crc16(remainder, value):
 class TimeoutException(Exception):
     pass
 
-class ChannelBrokenException(Exception):
-    pass
-
 class DeviceInitException(Exception):
     pass
 
-class USBHaltException(Exception):
-  pass
+class ChannelDamagedException(Exception):
+    """
+    Raised when the channel is temporarily broken and a
+    resend of the message might be successful
+    """
+    pass
+
+class ChannelBrokenException(Exception):
+    """
+    Raised when the channel is permanently broken
+    """
+    pass
 
 
 class StreamSource(ABC):
@@ -243,7 +250,7 @@ class Channel(PacketSink):
             while (attempt < self._send_attempts):
                 try:
                     self._output.process_packet(packet)
-                except USBHaltException:
+                except ChannelDamagedException:
                     attempt += 1
                     continue # resend
                 deadline = time.monotonic() + self._resend_timeout
@@ -254,7 +261,7 @@ class Channel(PacketSink):
                         response = self._input.get_packet(deadline)
                     except TimeoutException:
                         break # resend
-                    except USBHaltException:
+                    except ChannelDamagedException:
                         break # resend
                     # process response, which is hopefully our ACK
                     self.process_packet(response)
