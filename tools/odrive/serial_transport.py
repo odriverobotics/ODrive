@@ -39,6 +39,9 @@ class SerialStreamTransport(odrive.protocol.StreamSource, odrive.protocol.Stream
             raise odrive.utils.TimeoutException("expected {} bytes but got only {}", n_bytes, len(result))
         return result
 
+    def close(self):
+        self._dev.close()
+
 
 def find_dev_serial_ports():
     try:
@@ -68,17 +71,28 @@ def discover_channels(path, serial_number, callback, cancellation_token, printer
             return False
         return bool(re.match(regex, port_name))
 
+    def did_disconnect(port_name, device):
+        device.close()
+        # TODO: yes there is a race condition here in case you wonder.
+        known_devices.pop(known_devices.index(port_name))
+
     while not cancellation_token.is_set():
         all_ports = find_pyserial_ports() + find_dev_serial_ports()
         new_ports = filter(device_matcher, all_ports)
         for port_name in new_ports:
-            serial_device = SerialStreamTransport(port_name, ODRIVE_BAUDRATE)
-            input_stream = odrive.protocol.PacketFromStreamConverter(serial_device)
-            output_stream = odrive.protocol.PacketToStreamConverter(serial_device)
-            channel = odrive.protocol.Channel(
-                    "serial port {}@{}".format(port_name, ODRIVE_BAUDRATE),
-                    input_stream, output_stream, printer)
-            channel.serial_device = serial_device
-            callback(channel)
-            known_devices.append(port_name)
+            try:
+                serial_device = SerialStreamTransport(port_name, ODRIVE_BAUDRATE)
+                input_stream = odrive.protocol.PacketFromStreamConverter(serial_device)
+                output_stream = odrive.protocol.PacketToStreamConverter(serial_device)
+                channel = odrive.protocol.Channel(
+                        "serial port {}@{}".format(port_name, ODRIVE_BAUDRATE),
+                        input_stream, output_stream, printer)
+                channel.serial_device = serial_device
+            except serial.serialutil.SerialException:
+                printer("Serial device init failed. Ignoring this port")
+                known_devices.append(port_name)
+            else:
+                known_devices.append(port_name)
+                channel._channel_broken.subscribe(lambda: did_disconnect(port_name, serial_device))
+                callback(channel)
         time.sleep(1)
