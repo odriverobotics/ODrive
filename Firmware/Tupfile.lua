@@ -128,12 +128,16 @@ build{
         'Drivers/DRV8301/drv8301.c',
         'MotorControl/utils.c',
         'MotorControl/legacy_commands.c',
-        'MotorControl/low_level.c',
+        'MotorControl/low_level.cpp',
         'MotorControl/nvm.c',
         'MotorControl/axis.cpp',
-        'MotorControl/commands.cpp',
+        'MotorControl/communication.cpp',
         'MotorControl/protocol.cpp',
-        'MotorControl/config.cpp'
+        'MotorControl/motor.cpp',
+        'MotorControl/encoder.cpp',
+        'MotorControl/controller.cpp',
+        'MotorControl/sensorless_estimator.cpp',
+        'MotorControl/main.cpp'
     },
     includes={
         'Drivers/DRV8301',

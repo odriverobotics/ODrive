@@ -60,7 +60,7 @@
 
 /* USER CODE BEGIN Includes */
 #include "utils.h"
-#include "commands.h"
+#include "communication.h"
 /* USER CODE END Includes */
 
 /* Private variables ---------------------------------------------------------*/

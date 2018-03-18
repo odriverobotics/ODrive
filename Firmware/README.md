@@ -43,8 +43,6 @@ __CONFIG_UART_PROTOCOL__: Defines which protocol the ODrive should use on the UA
  * `ascii`: The ASCII protocol. Use this option if you control the ODrive with an Arduino. The ODrive Arduino library is not yet updated to the native protocol.
  * `none`: Disable UART.
 
-__CONFIG_STEP_DIR__: Set to `y` to use the GPIO1 and GPIO2 for step/direction input. Set to `n` otherwise. To use this, `CONFIG_UART_PROTOCOL` must be `none` because UART uses the same pins.
-
 
 <br><br>
 ## Downloading and Installing Tools

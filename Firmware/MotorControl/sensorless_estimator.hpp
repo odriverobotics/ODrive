@@ -1,0 +1,31 @@
+#ifndef __SENSORLESS_ESTIMATOR_HPP
+#define __SENSORLESS_ESTIMATOR_HPP
+
+class SensorlessEstimator {
+public:
+    enum Error_t {
+        ERROR_NONE,
+        ERROR_NUMERICAL,
+    };
+
+    SensorlessEstimator();
+
+    bool update(float* pos_estimate, float* vel_estimate, float* phase);
+
+    Axis* axis_ = nullptr; // set by Axis constructor
+
+    // TODO: expose on protocol
+    Error_t error_ = ERROR_NONE;
+    float phase_ = 0.0f;                        // [rad]
+    float pll_pos_ = 0.0f;                      // [rad]
+    float pll_vel_ = 0.0f;                      // [rad/s]
+    float pll_kp_ = 0.0f;                       // [rad/s / rad]
+    float pll_ki_ = 0.0f;                       // [(rad/s^2) / rad]
+    float observer_gain_ = 1000.0f;             // [rad/s]
+    float flux_state_[2] = {0.0f, 0.0f};        // [Vs]
+    float V_alpha_beta_memory_[2] = {0.0f, 0.0f}; // [V]
+    float pm_flux_linkage_ = 1.58e-3f;          // [V / (rad/s)]  { 5.51328895422 / (<pole pairs> * <rpm/v>) }
+    bool estimator_good_ = false;
+};
+
+#endif /* __SENSORLESS_ESTIMATOR_HPP */

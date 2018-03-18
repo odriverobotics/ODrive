@@ -1,0 +1,37 @@
+[
+    {
+        "name": "",
+        "id": 0,
+        "type": "json"
+    },
+    {
+        "name": "subscriptions",
+        "id": 1,
+        "type": "int32[]"
+    },
+    {
+        "name": "motor0",
+        "id": 2,
+        "type": "tree",
+        "content": [
+            {
+                "name": "pos_setpoint",
+                "id": 3,
+                "type": "float",
+                "access": "rw"
+            },
+            {
+                "name": "pos_gain",
+                "id": 4,
+                "type": "float",
+                "access": "rw"
+            },
+            {
+                "name": "vel_setpoint",
+                "id": 5,
+                "type": "float",
+                "access": "rw"
+            }
+        ]
+    }
+]

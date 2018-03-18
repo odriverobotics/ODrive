@@ -10,7 +10,7 @@
 // recently recieved a command. In the future we may want to separate
 // debug printf and the main serial comms.
 SerialPrintf_t serial_printf_select = SERIAL_PRINTF_IS_UART;
-
+#if 0
 /* Private constant data -----------------------------------------------------*/
 
 // variables exposed to usb/serial interface via set/get/monitor
@@ -88,14 +88,14 @@ int* exposed_ints[] = {
 };
 
 bool* exposed_bools[] = {
-    &motors[0].thread_ready, // ro
+    &motors[0].thread_id_valid, // ro
     //For now these are written by Axis::SetupLegacyMappings
-    NULL, // &motors[0].enable_control, // rw
-    NULL, // &motors[0].do_calibration, // rw
+    &axis[0].enable_control, // rw
+    &axis[0].do_calibration, // rw
     NULL, // &motors[0].calibration_ok, // ro
-    &motors[1].thread_ready, // ro
-    NULL, // &motors[1].enable_control, // rw
-    NULL, // &motors[1].do_calibration, // rw
+    &motors[1].thread_id_valid, // ro
+    &axis[1].enable_control, // rw
+    &axis[1].do_calibration, // rw
     NULL, // &motors[1].calibration_ok, // ro
 };
 
@@ -289,3 +289,4 @@ static void print_monitoring(int limit) {
     }
     printf("\n");
 }
+#endif

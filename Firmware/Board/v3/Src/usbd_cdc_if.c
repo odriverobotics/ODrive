@@ -54,7 +54,7 @@
 #include "cmsis_os.h"
 #include "freertos_vars.h"
 #include "utils.h"
-#include "commands.h"
+#include "communication.h"
 #include <freertos_vars.h>
 /* USER CODE END INCLUDE */
 

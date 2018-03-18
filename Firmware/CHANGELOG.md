@@ -7,6 +7,9 @@ Please add a note of your changes below this heading if you make a Pull Request.
 * `make erase_config` to erase the configuration with an STLink (the configuration can also be erased from within explore_odrive.py, using `my_odrive.erase_configuration()`)
 
 ### Changed
+* Most of the code from `lowlevel.c` moved to `axis.cpp`, `encoder.cpp`, `controller.cpp`, `sensorless_estimator.cpp`, `motor.cpp` and the corresponding header files
+* Refactoring of the developer-facing communication protocol interface. See e.g. `axis.hpp` or `controller.hpp` for examples on how to add your own fields and functions
+* Change of the user-facing field paths. E.g. `my_odrive.motor0.pos_setpoint` is now at `my_odrive.axis0.controller.pos_setpoint`. Names are mostly unchanged.
 * The build is now configured using the `tup.config` file instead of editing source files. Make sure you set your board version correctly. See [here](README.md#configuring-the-build) for details.
 * The toplevel directory for tup is now `Firmware`. If you used tup before, go to `Firmware` and run `rm -rd ../.tup; rm -rd build/*; make`.
 * Update CubeMX generated STM platform code to version 1.19.0
