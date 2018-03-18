@@ -57,11 +57,10 @@
 #include "usart.h"
 #include "usb_device.h"
 #include "gpio.h"
-#include "utils.h"
-#include "communication.h"
 
 /* USER CODE BEGIN Includes */
-
+#include "utils.h"
+#include "communication.h"
 /* USER CODE END Includes */
 
 /* Private variables ---------------------------------------------------------*/
@@ -107,6 +106,14 @@ int main(void)
   if(*((unsigned long *)0x2001C000) == 0xDEADBEEF) {
     *((unsigned long *)0x2001C000) = 0xCAFEFEED;  //Reset bootloader trigger
     jump_to_builtin_bootloader();
+  }
+
+  /* The bootloader might fail to properly clean up after itself,
+  so if we're not sure that the system is in a clean state we
+  just reset it again */
+  if(*((unsigned long *)0x2001C000) != 42) {
+    *((unsigned long *)0x2001C000) = 42;
+    NVIC_SystemReset();
   }
 
   // This procedure of building a USB serial number should be identical

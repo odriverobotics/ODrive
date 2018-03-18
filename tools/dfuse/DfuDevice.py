@@ -37,7 +37,7 @@ class DfuDevice:
         self.intf.set_altsetting()
 
     def control_msg(self, requestType, request, value, buffer, timeout=None):
-        return self.dev.ctrl_transfer(requestType, request, value, self.intf.bInterfaceNumber, buffer, timeout=1500)
+        return self.dev.ctrl_transfer(requestType, request, value, self.intf.bInterfaceNumber, buffer, timeout=timeout)
 
     def detach(self, timeout):
         return self.control_msg(DFU_REQUEST_SEND, DFU_DETACH, timeout, None)
@@ -83,12 +83,11 @@ class DfuDevice:
         status = self.get_status()
         
         while (status[1] in states):
-            timeout = status[2]
-            if not timeout is None:
-                timeout = max(timeout, status[2])
+            claimed_timeout = status[2]
+            actual_timeout = int(max(timeout or 0, claimed_timeout))
             #print("timeout = %f, claimed = %f" % (timeout, status[2]))
             #time.sleep(timeout)
-            status = self.get_status(timeout=timeout)
+            status = self.get_status(timeout=actual_timeout)
         
         return status
 

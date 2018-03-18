@@ -3,6 +3,8 @@ Please add a note of your changes below this heading if you make a Pull Request.
 
 ### Added
 * **Storing of configuration parameters to Non Volatile Memory**
+* **USB Bootloader**
+* `make erase_config` to erase the configuration with an STLink (the configuration can also be erased from within explore_odrive.py, using `my_odrive.erase_configuration()`)
 
 ### Changed
 * Most of the code from `lowlevel.c` moved to `axis.cpp`, `encoder.cpp`, `controller.cpp`, `sensorless_estimator.cpp`, `motor.cpp` and the corresponding header files
@@ -12,6 +14,10 @@ Please add a note of your changes below this heading if you make a Pull Request.
 * The toplevel directory for tup is now `Firmware`. If you used tup before, go to `Firmware` and run `rm -rd ../.tup; rm -rd build/*; make`.
 * Update CubeMX generated STM platform code to version 1.19.0
 * Remove `UUID_0`, `UUID_1` and `UUID_2` from USB protocol. Use `serial_number` instead.
+* Freertos memory pool (task stacks, etc) now uses Core Coupled Memory.
+
+### Fixed
+* malloc now fails if we run out of memory (before it would always succeed even if we are out of ram...)
 
 # Releases
 
