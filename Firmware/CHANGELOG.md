@@ -15,6 +15,13 @@ Please add a note of your changes below this heading if you make a Pull Request.
 * Update CubeMX generated STM platform code to version 1.19.0
 * Remove `UUID_0`, `UUID_1` and `UUID_2` from USB protocol. Use `serial_number` instead.
 * Freertos memory pool (task stacks, etc) now uses Core Coupled Memory.
+* Refactor python tools
+   * `explore_odrive.py` now supports controlling multiple ODrives concurrently (`odrv0`, `odrv1`, ...)
+   * No need to restart `explore_odrive.py` when devices get disconnected and reconnected
+   * The command line arguments of `explore_odrive.py` have changed. See `explore_odrive.py --help` for more details.
+   * ODrive accesses from within python tools are now thread-safe
+   * Liveplotter does no longer steal focus and closes as expected
+   * (experimental: start liveplotter from `explore_odrive.py` by typing `start_liveplotter(lambda: odrv0.motor0.encoder.encoder_state)`)
 
 ### Fixed
 * malloc now fails if we run out of memory (before it would always succeed even if we are out of ram...)

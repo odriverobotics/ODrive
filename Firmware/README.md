@@ -165,7 +165,7 @@ pip install pyusb pyserial
 6. Open the bash prompt in the `ODrive/tools/` folder.
 7. Run `python3 demo.py` or `python3 explore_odrive.py`. 
 - `demo.py` is a very simple script which will make motor 0 turn back and forth. Use this as an example if you want to control the ODrive yourself programatically.
-- `explore_odrive.py` drops you into an interactive python shell where you can explore and edit the parameters that are available on your device. For instance `my_odrive.motor0.pos_setpoint = 10000` makes motor0 move to position 10000. To connect over serial instead of USB run `./tools/explore_odrive.py --discover serial`.
+- `explore_odrive.py` drops you into an interactive python shell where you can explore and edit the parameters that are available on your device. For instance `my_odrive.motor0.pos_setpoint = 10000` makes motor0 move to position 10000. To connect over serial instead of USB run `./tools/explore_odrive.py --path serial`.
 
 ### From Arduino
 [See ODrive Arduino Library](https://github.com/madcowswe/ODriveArduino)

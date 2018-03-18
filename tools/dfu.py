@@ -12,7 +12,7 @@ import struct
 import dfuse
 import usb.core
 import usb.util
-import odrive.core
+import odrive.discovery
 
 # We are interactively printing status messages, so flush by default
 import functools
@@ -142,18 +142,6 @@ def jump_to_application(dfudev, address):
     if status[1] != dfuse.DfuState.DFU_MANIFEST:
         raise RuntimeError("An error occured. Device Status: {}".format(status[1]))
 
-def str_to_uuid(uuid):
-    uuid = bytearray.fromhex(uuid.replace('-', ''))
-    return struct.unpack('>I', uuid[0:4]), struct.unpack('>I', uuid[4:8]), struct.unpack('>I', uuid[8:12])
-
-def uuid_to_str(uuid0, uuid1, uuid2):
-    return "{:08X}-{:08X}-{:08X}".format(struct.pack('>I', uuid0), struct.pack('>I', uuid1), struct.pack('>I', uuid2))
-
-def uuid_to_serial(uuid0, uuid1, uuid2):
-    return (struct.pack('>I', uuid0 + uuid2) + struct.pack('>I', uuid1)[0:2]).hex().upper()
-
-
-### THREADS ###
 
 def show_deferred_message(message, cancellation_token):
     """
@@ -170,43 +158,25 @@ def show_deferred_message(message, cancellation_token):
     t.daemon = True
     t.start()
 
-def put_odrive_into_dfu_mode_thread(cancellation_token):
+def put_odrive_into_dfu_mode(my_drive):
     """
-    Waits for an ODrive with a matching serial number and puts
-    it into DFU mode once it's found. The thread continues to put
-    matching devices into DFU mode until cancellation_token
-    is set.
+    Puts the specified device into DFU mode
     """
-    global app_cancellation_token
-    while not cancellation_token.is_set():
-        constraints = {} if serial_number == None else {'serial_number': serial_number}
-        my_drive = odrive.core.find_any(consider_usb=True, consider_serial=False,
-                                        cancellation_token=cancellation_token,
-                                        **constraints)
-        if cancellation_token.is_set():
-            return
-        if not hasattr(my_drive, "enter_dfu_mode"):
-            print("The firmware on device {} does not support DFU. You need to \n"
-                  "flash the firmware once using STLink (`make flash`), after that \n"
-                  "DFU with this script should work fine."
-                  .format(my_drive.__channel__.usb_device.serial_number))
-            # Terminate script, otherwise it would try to reconnect to the same
-            # incompatible device
-            app_cancellation_token.set() # TODO: implement a more sensible discorvery mechanism to fix this
-            return
-        print("Putting device {} into DFU mode...".format(my_drive.__channel__.usb_device.serial_number))
-        try:
-            my_drive.enter_dfu_mode()
-        except usb.core.USBError as ex:
-            pass # this is expected because the device reboots
-        if platform.system() == "Windows":
-            show_deferred_message("Still waiting for the device to reappear.\n"
-                                  "Use the Zadig utility to set the driver of 'STM32 BOOTLOADER' to libusb-win32.",
-                                  cancellation_token)
-        # If we immediately continue we might still pick up the device that was
-        # just rebooted. This isn't an issue but will display a distracting
-        # error message.
-        time.sleep(1)
+    if not hasattr(my_drive, "enter_dfu_mode"):
+        print("The firmware on device {} does not support DFU. You need to \n"
+              "flash the firmware once using STLink (`make flash`), after that \n"
+              "DFU with this script should work fine."
+              .format(my_drive.__channel__.usb_device.serial_number))
+        return
+    print("Putting device {} into DFU mode...".format(my_drive.__channel__.usb_device.serial_number))
+    try:
+        my_drive.enter_dfu_mode()
+    except odrive.protocol.ChannelBrokenException as ex:
+        pass # this is expected because the device reboots
+    if platform.system() == "Windows":
+        show_deferred_message("Still waiting for the device to reappear.\n"
+                              "Use the Zadig utility to set the driver of 'STM32 BOOTLOADER' to libusb-win32.",
+                              find_odrive_cancellation_token)
 
 ### BEGINNING OF APPLICATION ###
 
@@ -230,12 +200,7 @@ hexfile = IntelHex(args.file)
 #for start, end in hexfile.segments():
 #    print(" {:08X} to {:08X}".format(start, end - 1))
 
-if args.uuid != None:
-    serial_number = uuid_to_serial(*str_to_uuid(args.uuid))
-elif args.serial_number != None:
-    serial_number = args.serial_number
-else:
-    serial_number = None
+serial_number = args.serial_number
 
 
 app_cancellation_token = threading.Event()
@@ -244,7 +209,8 @@ try:
     print("Waiting for ODrive...")
 
     # Scan for ODrives not in DFU mode and put them into DFU mode once they appear
-    threading.Thread(target=put_odrive_into_dfu_mode_thread, args=(find_odrive_cancellation_token,)).start()
+    # We only scan on USB because DFU is only possible over USB
+    odrive.discovery.find_all("usb", serial_number, put_odrive_into_dfu_mode, find_odrive_cancellation_token)
 
     # Poll libUSB until a device in DFU mode is found
     while not app_cancellation_token.is_set():

@@ -1,9 +1,14 @@
+#!/usr/bin/env python3
+
 import time
-import odrive.core
+import odrive.discovery
 import matplotlib.pyplot as plt
 import numpy as np
 
-myOdrive = odrive.core.find_any()
+# Find a connected ODrive (this will block until you connect one)
+print("Waiting for ODrive...")
+myOdrive = odrive.discovery.find_any()
+print("connected")
 
 plt.ion()
 

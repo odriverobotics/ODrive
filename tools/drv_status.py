@@ -5,12 +5,14 @@ Example usage of the ODrive python library to monitor and control ODrive devices
 
 from __future__ import print_function
 
-import odrive.core
+import odrive.discovery
 import time
 import math
 
 # Find a connected ODrive (this will block until you connect one)
-my_drive = odrive.core.find_any(consider_usb=True, consider_serial=False, printer=print)
+print("Waiting for ODrive...")
+my_drive = odrive.discovery.find_any()
+print("connected")
 
 # Print DRV device regs for Motor 0
 fault = my_drive.motor0.gate_driver.drv_fault
