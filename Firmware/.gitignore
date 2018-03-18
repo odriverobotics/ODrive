@@ -3,6 +3,7 @@
 build/
 deploy/
 .dep/
+tup_build.sh
 
 #markdown preview output
 README.html
