@@ -77,7 +77,7 @@ def discover_channels(path, serial_number, callback, cancellation_token, printer
             output_stream = odrive.protocol.PacketToStreamConverter(serial_device)
             channel = odrive.protocol.Channel(
                     "serial port {}@{}".format(port_name, ODRIVE_BAUDRATE),
-                    input_stream, output_stream)
+                    input_stream, output_stream, printer)
             channel.serial_device = serial_device
             callback(channel)
             known_devices.append(port_name)

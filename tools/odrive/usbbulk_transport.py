@@ -29,16 +29,12 @@ class USBBulkTransport(odrive.protocol.PacketSource, odrive.protocol.PacketSink)
     for cfg in self.dev:
       string += "ConfigurationValue {0}\n".format(cfg.bConfigurationValue)
       for intf in cfg:
-        string += "\tInterfaceNumber {0},{0}\n".format(intf.bInterfaceNumber, intf.bAlternateSetting)
+        string += "\tInterfaceNumber {0},{1}\n".format(intf.bInterfaceNumber, intf.bAlternateSetting)
         for ep in intf:
           string += "\t\tEndpointAddress {0}\n".format(ep.bEndpointAddress)
     return string
 
   def init(self):
-    # Resetting device to start init from a known state
-    # self.dev.reset()
-    # time.sleep(1)
-    # detach kernel driver
     try:
       if self.dev.is_kernel_driver_active(1):
         self.dev.detach_kernel_driver(1)
@@ -166,13 +162,19 @@ def discover_channels(path, serial_number, callback, cancellation_token, printer
         bulk_device.init()
         channel = odrive.protocol.Channel(
                 "USB device bus {} device {}".format(usb_device.bus, usb_device.address),
-                bulk_device, bulk_device)
+                bulk_device, bulk_device, printer)
         channel.usb_device = usb_device # for debugging only
       except usb.core.USBError as ex:
         if ex.errno == 13:
           printer("USB device access denied. Did you set up your udev rules correctly?")
           continue
-        raise
-      callback(channel)
+        elif ex.errno == 16:
+          printer("USB device busy. I'll reset it and try again.")
+          usb_device.reset()
+          continue
+        else:
+          printer("USB device init failed. Ignoring this device")
+      else:
+        callback(channel)
       known_devices.append((usb_device.bus, usb_device.address))
     time.sleep(1)

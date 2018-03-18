@@ -4,6 +4,7 @@ import time
 import struct
 import sys
 import threading
+import traceback
 import odrive.utils
 from odrive.utils import wait_any
 from odrive.utils import Event
@@ -106,11 +107,10 @@ class PacketSink(ABC):
 
 
 class StreamToPacketConverter(StreamSink):
-    _header = []
-    _packet = []
-    _packet_length = 0
-
     def __init__(self, output):
+        self._header = []
+        self._packet = []
+        self._packet_length = 0
         self._output = output
 
     def process_bytes(self, bytes):
@@ -202,18 +202,11 @@ class PacketFromStreamConverter(PacketSource):
 
 
 class Channel(PacketSink):
-    _outbound_seq_no = 0
-    _interface_definition_crc = 0
-    _expected_acks = {}
-    _responses = {}
-
     # Choose these parameters to be sensible for a specific transport layer
     _resend_timeout = 0.1     # [s]
     _send_attempts = 5
 
-    _channel_broken = Event()
-
-    def __init__(self, name, input, output):
+    def __init__(self, name, input, output, printer):
         """
         Params:
         input: A PacketSource where this channel will source packets from on
@@ -224,7 +217,13 @@ class Channel(PacketSink):
         self._name = name
         self._input = input
         self._output = output
+        self._printer = printer
+        self._outbound_seq_no = 0
+        self._interface_definition_crc = 0
+        self._expected_acks = {}
+        self._responses = {}
         self._my_lock = threading.Lock()
+        self._channel_broken = Event()
         self.start_receiver_thread(Event()) # TODO: use app_shutdown_token
 
     def start_receiver_thread(self, cancellation_token):
@@ -248,6 +247,8 @@ class Channel(PacketSink):
                     # This should not throw an exception, otherwise the channel breaks
                     self.process_packet(response)
                 print("receiver thread is exiting")
+            except Exception:
+                self._printer("receiver thread is exiting: " + traceback.format_exc())
             finally:
                 self._channel_broken.set()
         threading.Thread(target=receiver_thread, daemon=True).start()

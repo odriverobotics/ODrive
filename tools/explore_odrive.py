@@ -132,22 +132,21 @@ def did_discover_device(odrive):
         index = len(discovered_devices) - 1
     interactive_name = "odrv" + str(index)
 
-    # Subscribe to disappearance of the device
-    odrive.__dict__["__sealed__"] = False
-    odrive._did_disappear_callback = lambda: did_lose_device(interactive_name)
-    odrive.__sealed__ = True
-
     # Publish new ODrive to interactive console
     interactive_variables[interactive_name] = odrive
     globals()[interactive_name] = odrive # Add to globals so tab complete works
     print_on_second_last_line(COLOR_CYAN + "{} to ODrive {:012X} as {}".format(verb, serial_number, interactive_name) + COLOR_RESET)
+
+    # Subscribe to disappearance of the device
+    odrive.__channel__._channel_broken.subscribe(lambda: did_lose_device(interactive_name))
 
 def did_lose_device(interactive_name):
     """
     Handles the disappearance of a device by displaying
     a message.
     """
-    print_on_second_last_line(COLOR_RED + "Oh no {} disappeared".format(interactive_name) + COLOR_RESET)
+    if not app_shutdown_token.is_set():
+        print_on_second_last_line(COLOR_RED + "Oh no {} disappeared".format(interactive_name) + COLOR_RESET)
 
 # Connect to device
 printer("Waiting for device...")

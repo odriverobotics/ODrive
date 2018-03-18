@@ -20,7 +20,6 @@ def start_liveplotter(get_var_callback):
     """
 
     import matplotlib.pyplot as plt
-    import numpy as np
 
     cancellation_token = threading.Event()
 

@@ -6,6 +6,7 @@ import sys
 import json
 import time
 import threading
+import traceback
 import odrive.protocol
 import odrive.utils
 import odrive.remote_object
@@ -57,14 +58,14 @@ def find_all(path, serial_number,
                 printer("device responded on endpoint 0 with something that is not JSON: " + str(error))
                 return
             json_data = {"name": "odrive", "members": json_data}
-            obj = odrive.remote_object.RemoteObject(json_data, None, channel, None, printer)
+            obj = odrive.remote_object.RemoteObject(json_data, None, channel, printer)
             device_serial_number = serial_number if hasattr(obj, 'serial_number') else "[unknown serial number]"
             if serial_number != None and device_serial_number != serial_number:
                 printer("Ignoring device with serial number {}".format(device_serial_number))
                 return
             did_discover_object_callback(obj)
-        except Exception as ex:
-            printer("Unexpected exception after discovering channel: " + str(ex))
+        except Exception:
+            printer("Unexpected exception after discovering channel: " + traceback.format_exc())
 
     # For each connection type, kick off an appropriate discovery loop
     for search_spec in path.split(','):

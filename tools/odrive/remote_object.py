@@ -16,17 +16,13 @@ import odrive.protocol
 class ObjectDefinitionError(Exception):
     pass
 
-class RemoteProperty(property):
+class RemoteProperty():
     """
     Used internally by dynamically created objects to translate
     property assignments and fetches into endpoint operations on the
     object's associated channel
     """
     def __init__(self, json_data, parent):
-        property.__init__(self,
-            lambda prop, obj: self.get_value(prop),
-            lambda prop, obj, val: self.set_value(prop, val))
-
         self._parent = parent
         id_str = json_data.get("id", None)
         if id_str is None:
@@ -39,7 +35,7 @@ class RemoteProperty(property):
 
         type_str = json_data.get("type", None)
         if type_str is None:
-            raise ObjectDefinitionError("unspecified type".format(name))
+            raise ObjectDefinitionError("unspecified type")
 
         if type_str == "float":
             self._property_type = float
@@ -116,31 +112,32 @@ class RemoteObject(object):
     """
     Object with functions and properties that map to remote endpoints
     """
-    _remote_attributes = {}
-    __sealed__ = False
-
-    def __init__(self, json_data, parent, channel, did_disappear_callback, printer):
+    def __init__(self, json_data, parent, channel, printer):
         """
         Creates an object that implements the specified JSON type description by
         communicating over the provided channel
         """
+        # Directly write to __dict__ to avoid calling __setattr__ too early
+        object.__getattribute__(self, "__dict__")["_remote_attributes"] = {}
+        object.__getattribute__(self, "__dict__")["__sealed__"] = False
+        # Assign once more to make linter happy
         self._remote_attributes = {}
         self.__sealed__ = False
+
         self.__channel__ = channel
         self.__parent__ = parent
-        self._did_disappear_callback = did_disappear_callback
 
         # Build attribute list from JSON
         for member_json in json_data.get("members", []):
             member_name = member_json.get("name", None)
             if member_name is None:
-                printer("ignoring unnamed attribute in {}".format(namespace))
+                printer("ignoring unnamed attribute")
                 continue
 
             try:
                 type_str = member_json.get("type", None)
                 if type_str == "object":
-                    attribute = RemoteObject(member_json, self, channel, self._did_disappear, printer)
+                    attribute = RemoteObject(member_json, self, channel, printer)
                 elif type_str == "function":
                     attribute = RemoteFunction(member_json, self)
                 elif type_str != None:
@@ -157,6 +154,7 @@ class RemoteObject(object):
         # Ensure that from here on out assignments to undefined attributes
         # raise an exception
         self.__sealed__ = True
+        channel._channel_broken.subscribe(self._tear_down)
 
     def __str__(self):
         return str(dir(self)) # TODO: improve print output
@@ -164,17 +162,10 @@ class RemoteObject(object):
         return self.__str__()
 
     def __getattribute__(self, name):
-        #print("get attr " + name)
-        #d = object.__getattribute__(self, "__dict__")
-        #attr = d.get("_remote_attributes", {}).get(name, None)
         attr = object.__getattribute__(self, "_remote_attributes").get(name, None)
         if isinstance(attr, RemoteProperty):
             if attr._can_read:
-                try:
-                    return attr.get_value()
-                except odrive.protocol.ChannelBrokenException:
-                    self._did_disappear()
-                    raise
+                return attr.get_value()
             else:
                 raise Exception("Cannot read from property {}".format(name))
         elif attr != None:
@@ -184,15 +175,10 @@ class RemoteObject(object):
             #raise AttributeError("Attribute {} not found".format(name))
 
     def __setattr__(self, name, value):
-        #print("set attr " + name)
         attr = object.__getattribute__(self, "_remote_attributes").get(name, None)
         if isinstance(attr, RemoteProperty):
             if attr._can_write:
-                try:
-                    attr.set_value(value)
-                except odrive.protocol.ChannelBrokenException:
-                    self._did_disappear()
-                    raise
+                attr.set_value(value)
             else:
                 raise Exception("Cannot write to property {}".format(name))
         elif not object.__getattribute__(self, "__sealed__") or name in object.__getattribute__(self, "__dict__"):
@@ -200,13 +186,8 @@ class RemoteObject(object):
         else:
             raise AttributeError("Attribute {} not found".format(name))
 
-    def _did_disappear(self):
+    def _tear_down(self):
         # Clear all remote members
         for k in self._remote_attributes.keys():
             self.__dict__.pop(k)
         self._remote_attributes = {}
-
-        # Call hook
-        if self._did_disappear_callback:
-            self._did_disappear_callback()
-
