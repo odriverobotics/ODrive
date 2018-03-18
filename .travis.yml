@@ -29,9 +29,16 @@ install:
   - if [ ! -e $TUP_DIR/bin/tup ]; then wget $TUP_URL -O $TUP_ARCHIVE; dpkg-deb -R $TUP_ARCHIVE $TUP_DIR; fi
   - export PATH=$PATH:$TUP_DIR/usr/bin
 
+env:
+  # Build default configuration for each board
+  - "CONFIG_BOARD_VERSION=v3.2 DEPLOY=v3.2"
+  - "CONFIG_BOARD_VERSION=v3.3 DEPLOY=v3.3"
+  - "CONFIG_BOARD_VERSION=v3.4-24V DEPLOY=v3.4-24V"
+  - "CONFIG_BOARD_VERSION=v3.4-48V DEPLOY=v3.4-48V"
+
+  # Various protocol combinations  
+  - "CONFIG_BOARD_VERSION=v3.4-24V CONFIG_USB_PROTOCOL=native-stream CONFIG_UART_PROTOCOL=native"
+  - "CONFIG_BOARD_VERSION=v3.4-24V CONFIG_USB_PROTOCOL=none CONFIG_UART_PROTOCOL=none"
+
 script:
-  - cd Firmware
-  - mkdir -p build
-  - echo "CONFIG_BOARD_VERSION=v3.4-24V" > tup.config # TODO: build more configuration combinations
-  - tup generate ./build.sh
-  - bash -xe ./build.sh
+  - ./tools/build.sh

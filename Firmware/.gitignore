@@ -1,6 +1,7 @@
 
 #build folder
 build/
+deploy/
 .dep/
 
 #markdown preview output
