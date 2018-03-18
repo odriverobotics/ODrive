@@ -24,8 +24,12 @@ bmp: all
 		--ex 'attach 1' \
 		--ex 'load' $(FIRMWARE)
 
+# Erase all configuration from the ODrive
+erase_config:
+	openocd -f interface/stlink-v2.cfg -f target/stm32f4x.cfg -c init -c reset\ halt -c flash\ erase_address\ 0x80C0000\ 0x40000 -c reset\ run -c exit
+
 clean:
 	-rm -fR .dep $(BUILD_DIR)
 
-.PHONY: all flash gdb dfu bmp clean
+.PHONY: all flash gdb dfu bmp clean erase_config
 
