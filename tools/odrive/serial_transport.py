@@ -9,6 +9,7 @@ import time
 import serial
 import serial.tools.list_ports
 import odrive.protocol
+import odrive.utils
 
 ODRIVE_BAUDRATE = 115200
 
@@ -35,7 +36,7 @@ class SerialStreamTransport(odrive.protocol.StreamSource, odrive.protocol.Stream
     def get_bytes_or_fail(self, n_bytes, deadline):
         result = self.get_bytes(n_bytes, deadline)
         if len(result) < n_bytes:
-            raise odrive.protocol.TimeoutException("expected {} bytes but got only {}", n_bytes, len(result))
+            raise odrive.utils.TimeoutException("expected {} bytes but got only {}", n_bytes, len(result))
         return result
 
 

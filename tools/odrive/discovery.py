@@ -7,6 +7,7 @@ import json
 import time
 import threading
 import odrive.protocol
+import odrive.utils
 import odrive.remote_object
 import odrive.usbbulk_transport
 import odrive.serial_transport
@@ -35,29 +36,35 @@ def find_all(path, serial_number,
         This queries the endpoint 0 on that channel to gain information
         about the interface, which is then used to init the corresponding object.
         """
-        printer("Connecting to device on " + channel._name)
         try:
-            json_bytes = channel.remote_endpoint_read_buffer(0)
-        except (odrive.protocol.TimeoutException, odrive.protocol.ChannelBrokenException):
-            raise odrive.protocol.DeviceInitException("no response - probably incompatible")
-        json_crc16 = odrive.protocol.calc_crc16(odrive.protocol.PROTOCOL_VERSION, json_bytes)
-        channel._interface_definition_crc = json_crc16
-        try:
-            json_string = json_bytes.decode("ascii")
-        except UnicodeDecodeError:
-            raise odrive.protocol.DeviceInitException("device responded on endpoint 0 with something that is not ASCII")
-        printer("JSON: " + json_string)
-        try:
-            json_data = json.loads(json_string)
-        except json.decoder.JSONDecodeError as error:
-            raise odrive.protocol.DeviceInitException("device responded on endpoint 0 with something that is not JSON: " + str(error))
-        json_data = {"name": "odrive", "members": json_data}
-        obj = odrive.remote_object.RemoteObject(json_data, None, channel, None, printer)
-        device_serial_number = serial_number if hasattr(obj, 'serial_number') else "[unknown serial number]"
-        if serial_number != None and device_serial_number != serial_number:
-            printer("Ignoring device with serial number {}".format(device_serial_number))
-            return
-        did_discover_object_callback(obj)
+            printer("Connecting to device on " + channel._name)
+            try:
+                json_bytes = channel.remote_endpoint_read_buffer(0)
+            except (odrive.utils.TimeoutException, odrive.protocol.ChannelBrokenException):
+                printer("no response - probably incompatible")
+                return
+            json_crc16 = odrive.protocol.calc_crc16(odrive.protocol.PROTOCOL_VERSION, json_bytes)
+            channel._interface_definition_crc = json_crc16
+            try:
+                json_string = json_bytes.decode("ascii")
+            except UnicodeDecodeError:
+                printer("device responded on endpoint 0 with something that is not ASCII")
+                return
+            printer("JSON: " + json_string)
+            try:
+                json_data = json.loads(json_string)
+            except json.decoder.JSONDecodeError as error:
+                printer("device responded on endpoint 0 with something that is not JSON: " + str(error))
+                return
+            json_data = {"name": "odrive", "members": json_data}
+            obj = odrive.remote_object.RemoteObject(json_data, None, channel, None, printer)
+            device_serial_number = serial_number if hasattr(obj, 'serial_number') else "[unknown serial number]"
+            if serial_number != None and device_serial_number != serial_number:
+                printer("Ignoring device with serial number {}".format(device_serial_number))
+                return
+            did_discover_object_callback(obj)
+        except Exception as ex:
+            printer("Unexpected exception after discovering channel: " + str(ex))
 
     # For each connection type, kick off an appropriate discovery loop
     for search_spec in path.split(','):
