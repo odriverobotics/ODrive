@@ -174,7 +174,8 @@ def discover_channels(path, serial_number, callback, cancellation_token, printer
           continue
         else:
           printer("USB device init failed. Ignoring this device")
+          known_devices.append((usb_device.bus, usb_device.address))
       else:
+        known_devices.append((usb_device.bus, usb_device.address))
         callback(channel)
-      known_devices.append((usb_device.bus, usb_device.address))
     time.sleep(1)
