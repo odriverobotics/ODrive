@@ -158,18 +158,18 @@ void StartDefaultTask(void const * argument)
   // Init motor control
   init_motor_control();
 
+  // Start motor threads
+  osThreadDef(task_motor_0, axis_thread_entry,   osPriorityHigh+1, 0, 512);
+  osThreadDef(task_motor_1, axis_thread_entry,   osPriorityHigh,   0, 512);
+  thread_motor_0 = osThreadCreate(osThread(task_motor_0), &motors[0]);
+  thread_motor_1 = osThreadCreate(osThread(task_motor_1), &motors[1]);
+
   osDelay(200);
 
   update_init_cnt_value(&motors[0]);
   update_init_cnt_value(&motors[0]);
 
   osDelay(100);
-
-  // Start motor threads
-  osThreadDef(task_motor_0, axis_thread_entry,   osPriorityHigh+1, 0, 512);
-  osThreadDef(task_motor_1, axis_thread_entry,   osPriorityHigh,   0, 512);
-  thread_motor_0 = osThreadCreate(osThread(task_motor_0), &motors[0]);
-  thread_motor_1 = osThreadCreate(osThread(task_motor_1), &motors[1]);
 
   // Start command handling thread
   osThreadDef(task_cmd_parse, communication_task, osPriorityNormal, 0, 512);

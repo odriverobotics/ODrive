@@ -965,6 +965,8 @@ bool update_init_cnt_value(Motor_t* argument){
         AS5047PEncoder->encoder_cnt = (as5047p_data) * 4000/16383;
 
         setEncoderCount(motor, (uint32_t)AS5047PEncoder->encoder_cnt);
+
+        set_pos_setpoint(motor, AS5047PEncoder->encoder_cnt, 0.0f, 0.0f);
     }
 
     return true;
@@ -981,6 +983,8 @@ void test_encoder(){
     AS5047PEncoder->encoder_cnt = (as5047p_data) * 4000/16383;
 
     setEncoderCount(motor, (uint32_t)AS5047PEncoder->encoder_cnt);
+
+    set_pos_setpoint(motor, AS5047PEncoder->encoder_cnt, 0.0f, 0.0f);
 }
 //--------------------------------
 // Main motor control
