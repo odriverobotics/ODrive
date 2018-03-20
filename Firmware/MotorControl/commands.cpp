@@ -143,6 +143,7 @@ const Endpoint endpoints[] = {
         Endpoint::close_tree(),
         Endpoint::make_object("AS5047PEncoder"),
             Endpoint::make_property("encoder_angle", &motors[0].AS5047PEncoder.encoder_angle),
+            Endpoint::make_property("encoder_cnt", &motors[0].AS5047PEncoder.encoder_cnt),
         Endpoint::close_tree(),
         Endpoint::make_function("set_pos_setpoint", &motors_0_set_pos_setpoint_func),
             Endpoint::make_property("pos_setpoint", &motors[0].set_pos_setpoint_args.pos_setpoint),

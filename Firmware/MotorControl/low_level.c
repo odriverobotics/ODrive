@@ -34,7 +34,7 @@
 float vbus_voltage = 12.0f;
 
 // TODO stick parameter into struct
-#define ENCODER_CPR (2048 * 4) // Default resolution of CUI-AMT102 encoder
+#define ENCODER_CPR (4000) // Default resolution of CUI-AMT102 encoder
 #define POLE_PAIRS 7 // This value is correct for N5065 motors and Turnigy SK3 series.
 const float elec_rad_per_enc = POLE_PAIRS * 2 * M_PI * (1.0f / (float)ENCODER_CPR);
 
@@ -125,10 +125,11 @@ Motor_t motors[] = {
             .encoder_timer = &htim3,
             .use_index = false,
             .index_found = false,
-            .calibrated = false,
+            .calibrated = true,
+            .use_absolute = true,
             .idx_search_speed = 10.0f, // [rad/s electrical]
             .encoder_cpr = ENCODER_CPR,
-            .encoder_offset = 0,
+            .encoder_offset = 1142,
             .encoder_state = 0,
             .motor_dir = 1,   // 1 or -1
             .phase = 0.0f,    // [rad]
@@ -235,6 +236,7 @@ Motor_t motors[] = {
             .use_index = false,
             .index_found = false,
             .calibrated = false,
+            .use_absolute = false,
             .idx_search_speed = 10.0f, // [rad/s electrical]
             .encoder_cpr = ENCODER_CPR,
             .encoder_offset = 0,
@@ -833,6 +835,13 @@ bool calib_enc_offset(Motor_t* motor, float voltage_magnitude) {
 bool motor_calibration(Motor_t* motor) {
     motor->error = ERROR_NO_ERROR;
 
+    // if (motor->rotor_mode == ROTOR_MODE_ENCODER ||
+    //         motor->rotor_mode == ROTOR_MODE_RUN_ENCODER_TEST_SENSORLESS) {
+    //     if (motor->encoder.use_absolute){
+    //         update_init_cnt_value(motor);
+    //     }
+    // }
+
     float R_calib_max_voltage = motor->resistance_calib_max_voltage;
     float enc_calibration_voltage = 0.0f;
     if (motor->motor_type == MOTOR_TYPE_HIGH_CURRENT) {
@@ -938,6 +947,41 @@ bool scan_for_enc_idx(Motor_t* motor, float omega, float voltage_magnitude) {
     }
 }
 
+bool update_init_cnt_value(Motor_t* argument){
+
+    // Motor_t* motor = (Motor_t*)argument;
+
+    Motor_t* motor = (Motor_t*)&motors[0];
+
+    if (motor->encoder.use_absolute){
+        // AEAT_6012_A06_Obj* absEncoder = &motor->absEncoder;
+        // CUI_Obj* cuiEncoder = &motor->CUIEncoder;
+        AS5047P_Obj* AS5047PEncoder = &motor->AS5047PEncoder;
+
+        as5047p_data = AS5047P_readPosition(AS5047PEncoder);
+        osDelay(100);
+        as5047p_data = as5047p_data & 0x3FFF;
+        AS5047PEncoder->encoder_angle = (as5047p_data/16383.0)*360;
+        AS5047PEncoder->encoder_cnt = (as5047p_data) * 4000/16383;
+
+        setEncoderCount(motor, (uint32_t)AS5047PEncoder->encoder_cnt);
+    }
+
+    return true;
+
+}
+
+void test_encoder(){
+    Motor_t* motor = (Motor_t*)&motors[0];
+    AS5047P_Obj* AS5047PEncoder = &motor->AS5047PEncoder;
+    as5047p_data = AS5047P_readPosition(AS5047PEncoder);
+    osDelay(100);
+    as5047p_data = as5047p_data & 0x3FFF;
+    AS5047PEncoder->encoder_angle = (as5047p_data/16383.0)*360;
+    AS5047PEncoder->encoder_cnt = (as5047p_data) * 4000/16383;
+
+    setEncoderCount(motor, (uint32_t)AS5047PEncoder->encoder_cnt);
+}
 //--------------------------------
 // Main motor control
 //--------------------------------

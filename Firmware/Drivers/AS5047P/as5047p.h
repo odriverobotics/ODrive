@@ -28,6 +28,7 @@ typedef struct _AS5047P_Obj_
   GPIO_Handle      	nCSgpioHandle;              //!< the gpio handle that is connected to the aeat-6012-a06 nCS pin
   GPIO_Number_e    	nCSgpioNumber;               //!< the gpio number that is connected to the aeat-6012-a06 nCS pin
   float				encoder_angle;
+  uint16_t			encoder_cnt;
 } AS5047P_Obj;
 
 

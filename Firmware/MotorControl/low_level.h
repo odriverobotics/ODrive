@@ -115,6 +115,7 @@ typedef struct {
     bool use_index;
     bool index_found;
     bool calibrated;
+    bool use_absolute;
     float idx_search_speed;
     int encoder_cpr;
     int32_t encoder_offset;
@@ -244,6 +245,8 @@ bool scan_for_enc_idx(Motor_t* motor, float v_d, float v_q);
 bool anti_cogging_calibration(Motor_t* motor);
 // Test functions
 void scan_motor_loop(Motor_t* motor, float omega, float voltage_magnitude);
+bool update_init_cnt_value(Motor_t* argument);
+void test_encoder();
 // Main motor control
 void update_rotor(Motor_t* motor);
 bool using_encoder(Motor_t* motor);
