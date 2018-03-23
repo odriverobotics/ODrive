@@ -214,8 +214,10 @@ void Axis::run_state_machine_loop() {
             if (requested_state_ == AXIS_STATE_STARTUP_SEQUENCE) {
                 if (config_.startup_motor_calibration)
                     task_chain_[pos++] = AXIS_STATE_MOTOR_CALIBRATION;
-                if (config_.startup_encoder_calibration)
-                    task_chain_[pos++] = AXIS_STATE_ENCODER_CALIBRATION;
+                if (config_.startup_encoder_index_search && encoder_.config_.use_index)
+                    task_chain_[pos++] = AXIS_STATE_ENCODER_INDEX_SEARCH;
+                if (config_.startup_encoder_offset_calibration)
+                    task_chain_[pos++] = AXIS_STATE_ENCODER_OFFSET_CALIBRATION;
                 if (config_.startup_closed_loop_control)
                     task_chain_[pos++] = AXIS_STATE_CLOSED_LOOP_CONTROL;
                 else if (config_.startup_sensorless_control)
@@ -223,7 +225,9 @@ void Axis::run_state_machine_loop() {
                 task_chain_[pos++] = AXIS_STATE_IDLE;
             } else if (requested_state_ == AXIS_STATE_FULL_CALIBRATION_SEQUENCE) {
                 task_chain_[pos++] = AXIS_STATE_MOTOR_CALIBRATION;
-                task_chain_[pos++] = AXIS_STATE_ENCODER_CALIBRATION;
+                if (encoder_.config_.use_index)
+                    task_chain_[pos++] = AXIS_STATE_ENCODER_INDEX_SEARCH;
+                task_chain_[pos++] = AXIS_STATE_ENCODER_OFFSET_CALIBRATION;
                 task_chain_[pos++] = AXIS_STATE_IDLE;
             } else if (requested_state_ != AXIS_STATE_UNDEFINED) {
                 task_chain_[pos++] = requested_state_;
@@ -239,7 +243,7 @@ void Axis::run_state_machine_loop() {
         // Validate the state before running it
         if (current_state_ > AXIS_STATE_MOTOR_CALIBRATION && !motor_.is_calibrated_)
             current_state_ = AXIS_STATE_UNDEFINED;
-        if (current_state_ > AXIS_STATE_ENCODER_CALIBRATION && !encoder_.is_calibrated_)
+        if (current_state_ > AXIS_STATE_ENCODER_OFFSET_CALIBRATION && !encoder_.is_ready_)
             current_state_ = AXIS_STATE_UNDEFINED;
 
         // Run the specified state
@@ -250,8 +254,12 @@ void Axis::run_state_machine_loop() {
             status = motor_.run_calibration();
             break;
 
-        case AXIS_STATE_ENCODER_CALIBRATION:
-            status = encoder_.run_calibration();
+        case AXIS_STATE_ENCODER_INDEX_SEARCH:
+            status = encoder_.run_index_search();
+            break;
+
+        case AXIS_STATE_ENCODER_OFFSET_CALIBRATION:
+            status = encoder_.run_offset_calibration();
             break;
 
         case AXIS_STATE_SENSORLESS_CONTROL:
