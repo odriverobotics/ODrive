@@ -26,6 +26,18 @@ public:
     float V_alpha_beta_memory_[2] = {0.0f, 0.0f}; // [V]
     float pm_flux_linkage_ = 1.58e-3f;          // [V / (rad/s)]  { 5.51328895422 / (<pole pairs> * <rpm/v>) }
     bool estimator_good_ = false;
+
+    // Communication protocol definitions
+    auto make_protocol_definitions() {
+        return make_protocol_member_list(
+            make_protocol_property("error", &error_),
+            make_protocol_property("phase", &phase_),
+            make_protocol_property("pll_pos", &pll_pos_),
+            make_protocol_property("pll_vel", &pll_vel_),
+            make_protocol_property("pll_kp", &pll_kp_),
+            make_protocol_property("pll_ki", &pll_ki_)
+        );
+    }
 };
 
 #endif /* __SENSORLESS_ESTIMATOR_HPP */
