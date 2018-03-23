@@ -8,19 +8,22 @@
 // Warning: Do not reorder these enum values.
 // The state machine uses ">" comparision on them.
 enum AxisState_t {
-    AXIS_STATE_UNDEFINED,           //<! will fall through to idle
-    AXIS_STATE_IDLE,                //<! disable PWM and do nothing
-    AXIS_STATE_STARTUP_SEQUENCE, //<! the actual sequence is defined by the config.startup_... flags
-    AXIS_STATE_FULL_CALIBRATION_SEQUENCE,   //<! run all calibration procedures, then idle
-    AXIS_STATE_MOTOR_CALIBRATION,   //<! run motor calibration
-    AXIS_STATE_SENSORLESS_CONTROL,  //<! run sensorless calibration
-    AXIS_STATE_ENCODER_CALIBRATION, //<! run encoder calibration
-    AXIS_STATE_CLOSED_LOOP_CONTROL  //<! run closed loop control
+    AXIS_STATE_UNDEFINED = 0,           //<! will fall through to idle
+    AXIS_STATE_IDLE = 1,                //<! disable PWM and do nothing
+    AXIS_STATE_STARTUP_SEQUENCE = 2, //<! the actual sequence is defined by the config.startup_... flags
+    AXIS_STATE_FULL_CALIBRATION_SEQUENCE = 3,   //<! run all calibration procedures, then idle
+    AXIS_STATE_MOTOR_CALIBRATION = 4,   //<! run motor calibration
+    AXIS_STATE_SENSORLESS_CONTROL = 5,  //<! run sensorless calibration
+    AXIS_STATE_ENCODER_INDEX_SEARCH = 6, //<! run encoder index search
+    AXIS_STATE_ENCODER_OFFSET_CALIBRATION = 7, //<! run encoder offset calibration
+    AXIS_STATE_CLOSED_LOOP_CONTROL = 8  //<! run closed loop control
 };
 
 struct AxisConfig_t {
     bool startup_motor_calibration = false;   //<! run motor calibration at startup, skip otherwise
-    bool startup_encoder_calibration = false; //<! run encoder calibration after startup, skip otherwise
+    bool startup_encoder_index_search = false; //<! run encoder index search after startup, skip otherwise
+                                               // this only has an effect if encoder.config.use_index is also true
+    bool startup_encoder_offset_calibration = false; //<! run encoder offset calibration after startup, skip otherwise
     bool startup_closed_loop_control = false; //<! enable closed loop control after calibration/startup
     bool startup_sensorless_control = false; //<! enable sensorless control after calibration/startup
     bool enable_step_dir = true; //<! enable step/dir input after calibration
@@ -40,17 +43,17 @@ struct AxisConfig_t {
 class Axis {
 public:
     enum Error_t {
-        ERROR_NO_ERROR,
-        ERROR_INVALID_STATE, //<! an invalid state was requested
-        ERROR_DC_BUS_UNDER_VOLTAGE,
-        ERROR_DC_BUS_OVER_VOLTAGE,
-        ERROR_CURRENT_MEASUREMENT_TIMEOUT,
-        ERROR_CONTROL_LOOP_TIMEOUT,
-        ERROR_MOTOR_FAILED,
-        ERROR_SENSORLESS_ESTIMATOR_FAILED,
-        ERROR_ENCODER_FAILED,
-        ERROR_CONTROLLER_FAILED,
-        ERROR_POS_CTRL_DURING_SENSORLESS,
+        ERROR_NO_ERROR = 0,
+        ERROR_INVALID_STATE = 1, //<! an invalid state was requested
+        ERROR_DC_BUS_UNDER_VOLTAGE = 2,
+        ERROR_DC_BUS_OVER_VOLTAGE = 3,
+        ERROR_CURRENT_MEASUREMENT_TIMEOUT = 4,
+        ERROR_CONTROL_LOOP_TIMEOUT = 5,
+        ERROR_MOTOR_FAILED = 6,
+        ERROR_SENSORLESS_ESTIMATOR_FAILED = 7,
+        ERROR_ENCODER_FAILED = 8,
+        ERROR_CONTROLLER_FAILED = 9,
+        ERROR_POS_CTRL_DURING_SENSORLESS = 10,
     };
 
     enum thread_signals {
@@ -166,7 +169,8 @@ public:
             make_protocol_ro_property("loop_counter", &loop_counter_),
             make_protocol_object("config",
                 make_protocol_property("startup_motor_calibration", &config_.startup_motor_calibration),
-                make_protocol_property("startup_encoder_calibration", &config_.startup_encoder_calibration),
+                make_protocol_property("startup_encoder_index_search", &config_.startup_encoder_index_search),
+                make_protocol_property("startup_encoder_offset_calibration", &config_.startup_encoder_offset_calibration),
                 make_protocol_property("startup_closed_loop_control", &config_.startup_closed_loop_control),
                 make_protocol_property("startup_sensorless_control", &config_.startup_sensorless_control),
                 make_protocol_property("enable_step_dir", &config_.enable_step_dir),

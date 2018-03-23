@@ -35,8 +35,12 @@ void Encoder::setup() {
 // TODO: only arm index edge interrupt when we know encoder has powered up
 // TODO: disable interrupt once we found the index
 void Encoder::enc_index_cb() {
-    if (!index_found_) {
+    if (config_.use_index && !index_found_) {
         set_count(0);
+        if (config_.pre_calibrated) {
+            offset_ = config_.offset;
+            is_ready_ = true;
+        }
         index_found_ = true;
     }
 }
@@ -46,6 +50,8 @@ void Encoder::set_count(int32_t count) {
     // Disable interrupts to make a critical section to avoid race condition
     uint32_t prim = __get_PRIMASK();
     __disable_irq();
+    // Offset and state must be shifted by the same amount
+    offset_ += count - state_;
     state_ = count;
     hw_config_.timer->Instance->CNT = count;
     pll_pos_ = (float)count;
@@ -53,13 +59,58 @@ void Encoder::set_count(int32_t count) {
 }
 
 
+// @brief Slowly turns the motor in one direction until the
+// encoder index is found.
 // TODO: Do the scan with current, not voltage!
-// TODO: add check_timing
-bool Encoder::calib_enc_offset(float voltage_magnitude) {
+bool Encoder::run_index_search() {
+    float voltage_magnitude;
+    if (axis_->motor_.config_.motor_type == MOTOR_TYPE_HIGH_CURRENT)
+        voltage_magnitude = axis_->motor_.config_.calibration_current * axis_->motor_.config_.phase_resistance;
+    else if (axis_->motor_.config_.motor_type == MOTOR_TYPE_GIMBAL)
+        voltage_magnitude = axis_->motor_.config_.calibration_current;
+    else
+        return false;
+    
+    float omega = (float)(axis_->motor_.config_.direction) * config_.idx_search_speed;
+
+    index_found_ = false;
+    float phase = 0.0f;
+    axis_->run_control_loop([&](){
+        phase = wrap_pm_pi(phase + omega * current_meas_period);
+
+        float v_alpha = voltage_magnitude * arm_cos_f32(phase);
+        float v_beta = voltage_magnitude * arm_sin_f32(phase);
+        axis_->motor_.enqueue_voltage_timings(v_alpha, v_beta);
+        axis_->motor_.log_timing(Motor::TIMING_LOG_IDX_SEARCH);
+
+        // continue until the index is found
+        return !index_found_;
+    });
+    return axis_->error_ != Axis::ERROR_NO_ERROR;
+}
+
+// @brief Turns the motor in one direction for a bit and then in the other
+// direction in order to find the offset between the electrical phase 0
+// and the encoder state 0.
+// TODO: Do the scan with current, not voltage!
+bool Encoder::run_offset_calibration() {
     static const float start_lock_duration = 1.0f;
     static const float scan_omega = 4.0f * M_PI;
     static const float scan_distance = 16.0f * M_PI;
     static const int num_steps = scan_distance / scan_omega * current_meas_hz;
+
+    // Temporarily disable index search so it doesn't mess
+    // with the offset calibration
+    bool old_use_index = config_.use_index;
+    config_.use_index = true;
+
+    float voltage_magnitude;
+    if (axis_->motor_.config_.motor_type == MOTOR_TYPE_HIGH_CURRENT)
+        voltage_magnitude = axis_->motor_.config_.calibration_current * axis_->motor_.config_.phase_resistance;
+    else if (axis_->motor_.config_.motor_type == MOTOR_TYPE_GIMBAL)
+        voltage_magnitude = axis_->motor_.config_.calibration_current;
+    else
+        return false;
 
     // go to motor zero phase for start_lock_duration to get ready to scan
     int i = 0;
@@ -128,46 +179,9 @@ bool Encoder::calib_enc_offset(float voltage_magnitude) {
     if (axis_->error_ != Axis::ERROR_NO_ERROR)
         return false;
 
-    int offset = encvaluesum / (num_steps * 2);
-    config_.offset = offset;
-    is_calibrated_ = true;
-    return true;
-}
-
-bool Encoder::scan_for_enc_idx(float omega, float voltage_magnitude) {
-    index_found_ = false;
-    float phase = 0.0f;
-    axis_->run_control_loop([&](){
-        phase = wrap_pm_pi(phase + omega * current_meas_period);
-
-        float v_alpha = voltage_magnitude * arm_cos_f32(phase);
-        float v_beta = voltage_magnitude * arm_sin_f32(phase);
-        axis_->motor_.enqueue_voltage_timings(v_alpha, v_beta);
-        axis_->motor_.log_timing(Motor::TIMING_LOG_IDX_SEARCH);
-
-        // continue until the index is found
-        return !index_found_;
-    });
-    return axis_->error_ == Axis::ERROR_NO_ERROR;
-}
-
-bool Encoder::run_calibration() {
-    float enc_calibration_voltage;
-    if (axis_->motor_.config_.motor_type == MOTOR_TYPE_HIGH_CURRENT)
-        enc_calibration_voltage = axis_->motor_.config_.calibration_current * axis_->motor_.config_.phase_resistance;
-    else if (axis_->motor_.config_.motor_type == MOTOR_TYPE_GIMBAL)
-        enc_calibration_voltage = axis_->motor_.config_.calibration_current;
-    else
-        return false;
-
-    if (config_.use_index && !index_found_)
-        if (!scan_for_enc_idx(
-                (float)(axis_->motor_.config_.direction) * config_.idx_search_speed,
-                enc_calibration_voltage))
-            return false;
-    if (!config_.hand_calibrated) // TODO: discuss what logic we want here
-        if (!calib_enc_offset(enc_calibration_voltage))
-            return false;
+    offset_ = encvaluesum / (num_steps * 2);
+    is_ready_ = true;
+    config_.use_index = old_use_index;
     return true;
 }
 
@@ -184,7 +198,7 @@ bool Encoder::update(float* pos_estimate, float* vel_estimate, float* phase_outp
 
     // compute electrical phase
     int corrected_enc = state_ % config_.cpr;
-    corrected_enc -= config_.offset;
+    corrected_enc -= offset_;
     //corrected_enc *= axis_->motor_.config_.direction; TODO: verify if this still works
     //TODO avoid recomputing elec_rad_per_enc every time
     float elec_rad_per_enc = axis_->motor_.config_.pole_pairs * 2 * M_PI * (1.0f / (float)(config_.cpr));
