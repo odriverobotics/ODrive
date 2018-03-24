@@ -73,11 +73,15 @@ class Event():
     """
     Alternative to threading.Event(), enhanced by the subscribe() function
     that the original fails to provide.
+    @param Trigger: if supplied, the newly created event will be triggered
+                    as soon as the trigger event becomes set
     """
-    def __init__(self):
+    def __init__(self, trigger=None):
         self._evt = threading.Event()
         self._subscribers = []
         self._mutex = threading.Lock()
+        if not trigger is None:
+            trigger.subscribe(self.set())
 
     def is_set(self):
         return self._evt.is_set()
@@ -120,7 +124,18 @@ class Event():
             self._mutex.release()
 
     def wait(self, timeout=None):
-        return self._evt.wait(timeout=timeout)
+        if not self._evt.wait(timeout=timeout):
+            raise TimeoutError()
+
+    def trigger_after(self, timeout):
+        """
+        Triggers the event after the specified timeout.
+        This function returns immediately.
+        """
+        def delayed_trigger():
+            if not self.wait(timeout=timeout):
+                self.set()
+        threading.Thread(target=delayed_trigger, daemon=True).start()
 
 def wait_any(*events, timeout=None):
     """

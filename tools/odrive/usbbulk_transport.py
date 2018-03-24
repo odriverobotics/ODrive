@@ -35,6 +35,12 @@ class USBBulkTransport(odrive.protocol.PacketSource, odrive.protocol.PacketSink)
     return string
 
   def init(self):
+    # Under some conditions, the Linux USB/libusb stack ends up in a corrupt
+    # state where there are a few packets in a receive queue but a call
+    # to epr.read() does not return these packet until a new packet arrives.
+    # This undesirable queue can be cleared by resetting the device.
+    self.dev.reset()
+
     try:
       if self.dev.is_kernel_driver_active(1):
         self.dev.detach_kernel_driver(1)
@@ -106,7 +112,7 @@ class USBBulkTransport(odrive.protocol.PacketSource, odrive.protocol.PacketSink)
       else:
         # Try resetting halt/stall condition
         try:
-          self.epw.clear_halt()
+          self.epr.clear_halt()
         except usb.core.USBError:
           raise odrive.protocol.ChannelBrokenException()
         # Retry transfer
