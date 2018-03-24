@@ -24,9 +24,13 @@ bmp: all
 		--ex 'attach 1' \
 		--ex 'load' $(FIRMWARE)
 
+# Erase entire STM32
+erase:
+	openocd -f interface/stlink-v2.cfg -f target/stm32f4x.cfg -c init -c reset\ halt -c flash\ erase_address\ 0x8000000\ 0x100000 -c reset\ run -c exit
+
 # Erase all configuration from the ODrive
 erase_config:
-	openocd -f interface/stlink-v2.cfg -f target/stm32f4x.cfg -c init -c reset\ halt -c flash\ erase_address\ 0x80C0000\ 0x40000 -c reset\ run -c exit
+	openocd -f interface/stlink-v2.cfg -f target/stm32f4x.cfg -c init -c reset\ halt -c flash\ erase_address\ 0x80C0000\ 0x40000 -c reset\ init -c reset\ run -c exit
 
 clean:
 	-rm -fR .dep $(BUILD_DIR)

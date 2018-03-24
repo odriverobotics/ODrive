@@ -154,3 +154,71 @@ def wait_any(*events, timeout=None):
         if events[i].is_set():
             return i
     raise TimeoutException()
+
+
+def for_all_parallel(objects, get_name, callback):
+    """
+    Executes the specified callback for every object in the objects
+    list concurrently. This function waits for all callbacks to
+    finish and throws an exception if any of the callbacks throw
+    an exception.
+    """
+    tracebacks = []
+
+    def run_callback(element):
+        try:
+            callback(element)
+        except Exception as ex:
+            tracebacks.append((get_name(element), ex))
+
+    # Start a thread for each element in the list
+    all_threads = []
+    for element in objects:
+        thread = threading.Thread(target=run_callback, args=(element,))
+        thread.start()
+        all_threads.append(thread)
+    
+    # Wait for all threads to complete
+    for thread in all_threads:
+        thread.join()
+
+    if len(tracebacks) == 1:
+        msg = "task {} failed.".format(tracebacks[0][0])
+        raise Exception(msg) from tracebacks[0][1]
+    elif len(tracebacks) > 1:
+        msg = "task {} and {} failed.".format(
+            tracebacks[0][0],
+            "one other" if len(tracebacks) == 2 else str(len(tracebacks)-1) + " others"
+            )
+        raise Exception(msg) from tracebacks[0][1]
+
+
+class Logger():
+    """
+    Logs messages to stdout
+    """
+
+    COLOR_GREEN = '\x1b[92;1m'
+    COLOR_CYAN = '\x1b[96;1m'
+    COLOR_YELLOW = '\x1b[93;1m'
+    COLOR_RED = '\x1b[91;1m'
+    COLOR_RESET = '\x1b[0m'
+
+    def __init__(self):
+        self._prefix = ''
+
+    def indent(self, prefix='  '):
+        indented_logger = Logger()
+        indented_logger._prefix = self._prefix + prefix
+        return indented_logger
+
+    def debug(self, text):
+        print(self._prefix + text)
+    def success(self, text):
+        print(self._prefix + Logger.COLOR_GREEN + text + Logger.COLOR_RESET)
+    def info(self, text):
+        print(self._prefix + Logger.COLOR_CYAN + text + Logger.COLOR_RESET)
+    def warn(self, text):
+        print(self._prefix + Logger.COLOR_YELLOW + text + Logger.COLOR_RESET)
+    def error(self, text):
+        print(self._prefix + Logger.COLOR_RED + text + Logger.COLOR_RESET)

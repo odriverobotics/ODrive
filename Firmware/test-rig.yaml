@@ -1,0 +1,25 @@
+
+# ODrives
+odrives:
+  - board-version: v3.4-24V
+    serial-number: "385F324D3037"
+    brake-resistance: 0.47
+    uart: /dev/serial/by-id/...
+    usb: auto
+    programmer: /dev...
+    axes:
+      - motor-phase-resistance: 0.033
+        motor-phase-inductance: 1.6e-05
+        motor-pole-pairs: 7
+        motor-direction: 1
+        encoder-cpr: 8192
+      - motor-phase-resistance: 0.028
+        motor-phase-inductance: 1.6e-05
+        motor-pole-pairs: 7
+        motor-direction: -1
+        encoder-cpr: 8192
+
+# Mechanical couplings
+couplings:
+  #- [ odrive0.axis0, odrive1.axis0 ]
+  #- [ odrive0.axis1, odrive1.axis1 ]
