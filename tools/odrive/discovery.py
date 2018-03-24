@@ -12,6 +12,7 @@ import odrive.utils
 import odrive.remote_object
 import odrive.usbbulk_transport
 import odrive.serial_transport
+from odrive.utils import Event
 
 channel_types = {
     "usb": odrive.usbbulk_transport.discover_channels,
@@ -59,7 +60,7 @@ def find_all(path, serial_number,
                 return
             json_data = {"name": "odrive", "members": json_data}
             obj = odrive.remote_object.RemoteObject(json_data, None, channel, printer)
-            device_serial_number = serial_number if hasattr(obj, 'serial_number') else "[unknown serial number]"
+            device_serial_number = format(obj.serial_number, 'x').upper() if hasattr(obj, 'serial_number') else "[unknown serial number]"
             if serial_number != None and device_serial_number != serial_number:
                 printer("Ignoring device with serial number {}".format(device_serial_number))
                 return
@@ -78,19 +79,18 @@ def find_all(path, serial_number,
             raise Exception("Invalid path spec \"{}\"".format(search_spec))
 
 
-def find_any(path="usb", serial_number=None, printer=noprint):
+def find_any(path="usb", serial_number=None, cancellation_token=None, timeout=None, printer=noprint):
     """
     Blocks until the first matching ODrive is connected and then returns that device
     """
-    cancellation_token = None # TODO: make this a parameter (see todo below)
-    if cancellation_token is None:
-        cancellation_token = threading.Event()
-    done_signal = threading.Event()
+    result = [ None ]
+    done_signal = Event(cancellation_token)
     def did_discover_object(obj):
-        global result
-        result = obj
+        result[0] = obj
         done_signal.set()
-    find_all(path, serial_number, did_discover_object, cancellation_token, printer)
-    done_signal.wait() # TODO: wait on done_signal OR cancellation_token
-    cancellation_token.set()
-    return result
+    find_all(path, serial_number, did_discover_object, done_signal, printer)
+    try:
+        done_signal.wait(timeout=timeout)
+    finally:
+        done_signal.set() # terminate find_all
+    return result[0]

@@ -87,7 +87,10 @@ class USBBulkTransport(odrive.protocol.PacketSource, odrive.protocol.PacketSink)
     except usb.core.USBError as ex:
       if ex.errno == 19: # "no such device"
         raise odrive.protocol.ChannelBrokenException()
+      elif ex.errno == 110: # timeout
+        raise odrive.utils.TimeoutException()
       else:
+        self._printer("halt condition: {}".format(ex.errno))
         # Try resetting halt/stall condition
         try:
           self.epw.clear_halt()
@@ -109,7 +112,10 @@ class USBBulkTransport(odrive.protocol.PacketSource, odrive.protocol.PacketSink)
     except usb.core.USBError as ex:
       if ex.errno == 19: # "no such device"
         raise odrive.protocol.ChannelBrokenException()
+      elif ex.errno == 110: # timeout
+        raise odrive.utils.TimeoutException()
       else:
+        self._printer("halt condition: {}".format(ex.errno))
         # Try resetting halt/stall condition
         try:
           self.epr.clear_halt()
