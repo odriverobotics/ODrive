@@ -24,11 +24,11 @@ def test_assert_eq(observed, expected, range=None, accuracy=None):
 
 def run(command_line, logger, timeout=None):
     """
-    Runs a shell command in the Firmware directory
+    Runs a shell command in the current directory
     """
     logger.debug("invoke: " + command_line)
     cmd = shlex.split(command_line)
-    result = subprocess.run(cmd, cwd='../Firmware', timeout=timeout,
+    result = subprocess.run(cmd, timeout=timeout,
         stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT)
     if result.returncode != 0:

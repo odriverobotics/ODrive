@@ -35,8 +35,11 @@ all_tests = [
 
 logger = Logger()
 
-with open('test-rig.yaml', 'r') as file_stream:
+script_path=os.path.dirname(os.path.realpath(__file__))
+with open(script_path + '/test-rig.yaml', 'r') as file_stream:
     test_rig_yaml = yaml.load(file_stream)
+
+os.chdir(script_path + '/../Firmware')
 
 # Ensure every device has a name
 for idx, odrv_yaml in enumerate(test_rig_yaml['odrives']):
