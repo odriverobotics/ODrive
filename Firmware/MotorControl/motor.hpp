@@ -82,8 +82,10 @@ public:
     bool arm();
     void disarm();
     void setup() {
+        update_current_controller_gains();
         DRV8301_setup();
     }
+    void update_current_controller_gains();
     void DRV8301_setup();
     bool check_DRV_fault();
     bool do_checks();

@@ -58,6 +58,17 @@ void Motor::disarm() {
     axis_->missed_control_deadline_ = true;
 }
 
+// @brief Tune the current controller based on phase resistance and inductance
+// This should be invoked whenever one of these values changes.
+// TODO: allow update on user-request or update automatically via hooks
+void Motor::update_current_controller_gains() {
+    // Calculate current control gains
+    float current_control_bandwidth = 1000.0f;  // [rad/s]
+    current_control_.p_gain = current_control_bandwidth * config_.phase_inductance;
+    float plant_pole = config_.phase_resistance / config_.phase_inductance;
+    current_control_.i_gain = plant_pole * current_control_.p_gain;
+}
+
 // @brief Set up the gate drivers
 void Motor::DRV8301_setup() {
     DRV_SPI_8301_Vars_t* local_regs = &gate_driver_regs_;
@@ -234,11 +245,7 @@ bool Motor::run_calibration() {
         return false;
     }
 
-    // Calculate current control gains
-    float current_control_bandwidth = 1000.0f;  // [rad/s]
-    current_control_.p_gain = current_control_bandwidth * config_.phase_inductance;
-    float plant_pole = config_.phase_resistance / config_.phase_inductance;
-    current_control_.i_gain = plant_pole * current_control_.p_gain;
+    update_current_controller_gains();
     
     is_calibrated_ = true;
     return true;
