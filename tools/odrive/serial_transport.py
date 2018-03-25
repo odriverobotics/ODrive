@@ -89,7 +89,7 @@ def discover_channels(path, serial_number, callback, cancellation_token, printer
                         input_stream, output_stream, printer)
                 channel.serial_device = serial_device
             except serial.serialutil.SerialException:
-                printer("Serial device init failed. Ignoring this port")
+                printer("Serial device init failed. Ignoring this port. More info: " + traceback.format_exc())
                 known_devices.append(port_name)
             else:
                 known_devices.append(port_name)

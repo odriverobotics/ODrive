@@ -6,6 +6,8 @@ import time
 import usb.core
 import usb.util
 import odrive.protocol
+import traceback
+import platform
 
 ODRIVE_VID_PID_PAIRS = [
   (0x1209, 0x0D31),
@@ -39,7 +41,9 @@ class USBBulkTransport(odrive.protocol.PacketSource, odrive.protocol.PacketSink)
     # state where there are a few packets in a receive queue but a call
     # to epr.read() does not return these packet until a new packet arrives.
     # This undesirable queue can be cleared by resetting the device.
-    self.dev.reset()
+    # On windows this would cause file-not-found errors in subsequent dev calls
+    if platform.system() != 'Windows':
+        self.dev.reset()
 
     try:
       if self.dev.is_kernel_driver_active(1):
@@ -185,7 +189,7 @@ def discover_channels(path, serial_number, callback, cancellation_token, printer
           usb_device.reset()
           continue
         else:
-          printer("USB device init failed. Ignoring this device")
+          printer("USB device init failed. Ignoring this device. More info: " + traceback.format_exc())
           known_devices.append((usb_device.bus, usb_device.address))
       else:
         known_devices.append((usb_device.bus, usb_device.address))
