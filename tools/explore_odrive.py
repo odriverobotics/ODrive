@@ -8,7 +8,7 @@ import sys
 import platform
 import threading
 import odrive.discovery
-from odrive.utils import start_liveplotter
+from odrive.utils import start_liveplotter, Logger
 
 # Flush stdout by default
 import functools
@@ -63,27 +63,7 @@ else:
 
 ## Interactive console utils ##
 
-COLOR_RED = '\x1b[91;1m'
-COLOR_CYAN = '\x1b[96;1m'
-COLOR_RESET = '\x1b[0m'
-
-def print_on_second_last_line(text, **kwargs):
-    """
-    Prints a text on the second last line.
-    This can be used to print a message above the command
-    prompt. If the command prompt spans multiple lines,
-    there will be glitches.
-    """
-    # Escape character sequence:
-    #   ESC 7: store cursor position
-    #   ESC 1A: move cursor up by one
-    #   ESC 1S: scroll entire viewport by one
-    #   ESC 1L: insert 1 line at cursor position
-    #   (print text)
-    #   ESC 8: restore old cursor position
-    kwargs['end'] = ''
-    kwargs['flush'] = True
-    print('\x1b7\x1b[1A\x1b[1S\x1b[1L' + text + '\x1b8', **kwargs)
+logger = Logger()
 
 def print_banner():
     print('ODrive control utility v0.4')
@@ -135,7 +115,7 @@ def did_discover_device(odrive):
     # Publish new ODrive to interactive console
     interactive_variables[interactive_name] = odrive
     globals()[interactive_name] = odrive # Add to globals so tab complete works
-    print_on_second_last_line(COLOR_CYAN + "{} to ODrive {:012X} as {}".format(verb, serial_number, interactive_name) + COLOR_RESET)
+    logger.info("{} to ODrive {:012X} as {}".format(verb, serial_number, interactive_name))
 
     # Subscribe to disappearance of the device
     odrive.__channel__._channel_broken.subscribe(lambda: did_lose_device(interactive_name))
@@ -146,7 +126,7 @@ def did_lose_device(interactive_name):
     a message.
     """
     if not app_shutdown_token.is_set():
-        print_on_second_last_line(COLOR_RED + "Oh no {} disappeared".format(interactive_name) + COLOR_RESET)
+        logger.warn("Oh no {} disappeared".format(interactive_name))
 
 # Connect to device
 printer("Waiting for device...")
@@ -183,7 +163,7 @@ else:
     # Enable tab complete if possible
     try:
         import rlcompleter
-        import readline
+        import readline # Works only on Unix
         readline.parse_and_bind("tab: complete")
     except:
         sudo_prefix = "" if platform.system() == "Windows" else "sudo "
@@ -206,5 +186,6 @@ console.runcode('sys.excepthook=newexcepthook')
 
 # Launch shell
 print_banner()
+logger._skip_bottom_line = True
 interact()
 app_shutdown_token.set()
