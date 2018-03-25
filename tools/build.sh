@@ -9,8 +9,8 @@ THIS_DIR="$(dirname "$0")"
 cd "$THIS_DIR/../Firmware"
 
 # Write all environment variables that start with "CONFIG_" to tup.config
+rm -rdf build
 mkdir -p build
-rm build/*
 env | grep ^CONFIG > tup.config
 tup generate ./tup_build.sh
 bash -xe ./tup_build.sh
