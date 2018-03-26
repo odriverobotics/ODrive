@@ -6,7 +6,7 @@
 set -euo pipefail
 
 THIS_DIR="$(dirname "$0")"
-cd "$THIS_DIR/../Firmware"
+cd "$THIS_DIR"
 
 # Write all environment variables that start with "CONFIG_" to tup.config
 rm -rdf build

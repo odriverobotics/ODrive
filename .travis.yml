@@ -41,7 +41,7 @@ env:
   - CONFIG_BOARD_VERSION=v3.4-24V CONFIG_USB_PROTOCOL=none CONFIG_UART_PROTOCOL=none
 
 script:
-- "./tools/build.sh"
+- "./Firmware/build.sh"
 
 deploy:
   provider: releases
