@@ -4,22 +4,14 @@ Date: Mon, 12 Mar 2018 23:49:32 -0700
 Subject: [PATCH] expose correct serial number on USB
 
 ---
- Firmware/Board/v3/Src/usbd_desc.c | 16 +++++++++-------
- 1 file changed, 9 insertions(+), 7 deletions(-)
+ Firmware/Board/v3/Src/usbd_desc.c | 15 +++++++++-------
+ 1 file changed, 8 insertions(+), 7 deletions(-)
 
 diff --git a/Firmware/Board/v3/Src/usbd_desc.c b/Firmware/Board/v3/Src/usbd_desc.c
 index b9c7bd0..94dc49b 100644
 --- a/Firmware/Board/v3/Src/usbd_desc.c
 +++ b/Firmware/Board/v3/Src/usbd_desc.c
-@@ -51,6 +51,7 @@
- #include "usbd_core.h"
- #include "usbd_desc.h"
- #include "usbd_conf.h"
-+#include "commands.h"
- 
- /* USER CODE BEGIN INCLUDE */
- 
-@@ -327,14 +328,15 @@ uint8_t * USBD_FS_ManufacturerStrDescriptor(USBD_SpeedTypeDef speed, uint16_t *l
+@@ -327,14 +327,15 @@ uint8_t * USBD_FS_ManufacturerStrDescriptor(USBD_SpeedTypeDef speed, uint16_t *l
    */
  uint8_t * USBD_FS_SerialStrDescriptor(USBD_SpeedTypeDef speed, uint16_t *length)
  {
