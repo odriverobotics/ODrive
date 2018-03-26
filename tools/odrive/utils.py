@@ -242,9 +242,9 @@ class Logger():
             #   (print text)
             #   ESC 8: restore old cursor position
 
-            sys.stdout.write('\x1b7\x1b[1A\x1b[1S\x1b[1L', end='', flush=True)
+            sys.stdout.write('\x1b7\x1b[1A\x1b[1S\x1b[1L')
             sys.stdout.write(Logger._VT100Colors[color] + text + Logger._VT100Colors[Logger.COLOR_DEFAULT])
-            sys.stdout.write('\x1b8', end='', flush=True)
+            sys.stdout.write('\x1b8')
             sys.stdout.flush()
 
     def print_colored(self, text, color):
