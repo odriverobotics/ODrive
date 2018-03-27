@@ -6,6 +6,46 @@ Load an odrive object to play with in the IPython interactive shell.
 import odrive.core
 import argparse
 import sys
+import platform
+
+# Check if IPython is installed
+try:
+  import IPython
+  embed_ipython = True
+except:
+  embed_ipython = False
+
+  print("Warning: you don't have IPython installed.")
+  print("If you want to have an improved interactive console with pretty colors,")
+  print("you should install IPython\n")
+
+  # Ensure interactive mode
+  if not bool(getattr(sys, 'ps1', sys.flags.interactive)):
+    print("You're not running in interactive mode. Run python -i explore_odrive.py")
+    print('')
+    sys.exit(1)
+
+  # Enable tab complete if possible
+  try:
+    import readline
+    readline.parse_and_bind("tab: complete")
+  except:
+    sudo_prefix = "" if platform.system() == "Windows" else "sudo "
+    print("Warning: could not enable tab-complete. User experience will suffer.\n"
+          "Run `{}pip install readline` and then restart this script to fix this."
+          .format(sudo_prefix))
+
+
+# some enums described in the README
+# TODO: transmit as part of the JSON
+MOTOR_TYPE_HIGH_CURRENT = 0
+#MOTOR_TYPE_LOW_CURRENT = 1
+MOTOR_TYPE_GIMBAL = 2
+
+CTRL_MODE_VOLTAGE_CONTROL = 0,
+CTRL_MODE_CURRENT_CONTROL = 1,
+CTRL_MODE_VELOCITY_CONTROL = 2,
+CTRL_MODE_POSITION_CONTROL = 3
 
 
 # Parse arguments
@@ -69,20 +109,6 @@ print('and "my_odrive.motor0.pos_setpoint = 10000"')
 print('will send motor0 to 10000')
 print('')
 
-try:
-  # If this assignment works, we are already in interactive mode.
-  # so just drop out of script to existing shell
-  interpreter = sys.ps1
-except AttributeError:
-  # We are not in interactive mode, so let's fire one up
-  # Though let's be real, IPython is the way to go
-  print('If you want to have an improved interactive console with pretty colors,')
-  print('you can run this script in interactive mode with IPython with this command:')
-  print('ipython -i explore_odrive.py')
-  print('')
-  # Enter interactive python shell with tab complete enabled
-  import code
-  import rlcompleter
-  import readline
-  readline.parse_and_bind("tab: complete")
-  code.interact(local=locals(), banner='')
+# If IPython is installed, embed shell, otherwise drop into interactive stock python shell
+if embed_ipython:
+  IPython.embed()
