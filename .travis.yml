@@ -4,6 +4,7 @@ branches:
   only:
   - master
   - devel
+  - /^fw-v/
 
 language: c
 sudo: false
