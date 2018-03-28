@@ -111,12 +111,30 @@ void enter_dfu_mode() {
     NVIC_SystemReset();
 }
 
+#if HW_VERSION_MAJOR == 3
+const uint8_t* otp_ptr =
+    *(uint8_t*)0x1fff7800 == 0xfe ? (uint8_t*)0x1fff7800 :
+    *(uint8_t*)0x1fff7800 != 0x00 ? NULL :
+        *(uint8_t*)0x1fff7810 == 0xfe ? (uint8_t*)0x1fff7810 : NULL;
+
+// Read hardware version from OTP if available, otherwise fall back
+// to software defined version.
+const uint8_t board_version_major = otp_ptr ? otp_ptr[3] : HW_VERSION_MAJOR;
+const uint8_t board_version_minor = otp_ptr ? otp_ptr[4] : HW_VERSION_MINOR;
+const uint8_t board_version_variant = otp_ptr ? otp_ptr[5] : (HW_VERSION_VOLTAGE == 24 ? 0 : 1);
+#else
+#error "not implemented"
+#endif
+
 // This table specifies which fields and functions are exposed on the USB and UART ports.
 // TODO: Autogenerate this table. It will come up again very soon in the Arduino library.
 // clang-format off
 const Endpoint endpoints[] = {
     Endpoint::make_property("vbus_voltage", const_cast<const float*>(&vbus_voltage)),
     Endpoint::make_property("serial_number", const_cast<const uint64_t *>(&serial_number)),
+    Endpoint::make_property("board_version_major", &board_version_major),
+    Endpoint::make_property("board_version_minor", &board_version_minor),
+    Endpoint::make_property("board_version_variant", &board_version_variant),
     Endpoint::make_function("run_anticogging_calibration", &motors_run_anticogging_calibration_func),
         // No parameters, but still requires a close_tree()
     Endpoint::close_tree(),
