@@ -177,6 +177,23 @@ def jump_to_application(dfudev, address):
     if status[1] != dfuse.DfuState.DFU_MANIFEST:
         raise RuntimeError("An error occured. Device Status: {}".format(status[1]))
 
+
+def dump_otp():
+    """
+    Dumps the contents of the one-time-programmable
+    memory. The OTP will be used in future versions of
+    this script to determine the board version.
+    """
+    # 512 Byte OTP
+    otp_sector = [s for s in sectors if s['name'] == 'OTP Memory' and s['addr'] == 0x1fff7800][0]
+    data = read(dfudev, otp_sector)
+    print(' '.join('{:02X}'.format(x) for x in data))
+
+    # 16 lock bytes
+    otp_lock_sector = [s for s in sectors if s['name'] == 'OTP Memory' and s['addr'] == 0x1fff7A00][0]
+    data = read(dfudev, otp_lock_sector)
+    print(' '.join('{:02X}'.format(x) for x in data))
+
 def str_to_uuid(uuid):
     uuid = bytearray.fromhex(uuid.replace('-', ''))
     return struct.unpack('>I', uuid[0:4]), struct.unpack('>I', uuid[4:8]), struct.unpack('>I', uuid[8:12])
@@ -314,6 +331,10 @@ try:
         print("The following sectors will be flashed: ")
         for sector,_ in touched_sectors:
             print(" {:08X} to {:08X}".format(sector['addr'], sector['addr'] + sector['len'] - 1))
+
+    if (args.verbose):
+        print("OTP:")
+        dump_otp()
 
     # Erase
     try:
