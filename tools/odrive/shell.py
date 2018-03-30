@@ -7,11 +7,10 @@ from odrive.utils import start_liveplotter
 from odrive.enums import *
 
 def print_banner():
-    print('ODrive control utility v0.4')
     print('Please connect your ODrive.')
     print('Type help() for help.')
 
-def print_help():
+def print_help(args):
     print('')
     if len(discovered_devices) == 0:
         print('Connect your ODrive to {} and power it up.'.format(args.path))
@@ -31,7 +30,6 @@ def print_help():
 
 
 interactive_variables = {}
-interactive_variables["help"] = print_help
 
 discovered_devices = []
 
@@ -95,15 +93,15 @@ def launch_shell(args, logger, printer, app_shutdown_token):
             print("you should install IPython\n")
             use_ipython = False
 
+    interactive_variables["help"] = lambda: print_help(args)
+
     # If IPython is installed, embed IPython shell, otherwise embed regular shell
     if use_ipython:
-        #interactive_variables["lalala"] = print_help
-        help = print_help # Override help function
+        help = lambda: print_help(args) # Override help function
         console = IPython.terminal.embed.InteractiveShellEmbed(local_ns=interactive_variables, banner1='')
         console.runcode = console.run_code # hack to make IPython look like the regular console
         interact = console
     else:
-
         # Enable tab complete if possible
         try:
             import rlcompleter

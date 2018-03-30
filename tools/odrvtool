@@ -81,11 +81,13 @@ else:
 logger = Logger(verbose=args.verbose)
 logger.debug(str(args))
 
+print("ODrive control utility v" + odrive.__version__)
+
 app_shutdown_token = Event()
 
 try:
     if args.version == True:
-        print("ODrive control utility v" + odrive.__version__)
+        pass
 
     elif args.command == 'shell':
         import odrive.shell
