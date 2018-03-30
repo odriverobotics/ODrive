@@ -72,6 +72,44 @@ def start_liveplotter(get_var_callback):
     threading.Thread(target=plot_data).start()
     #plot_data()
 
+def print_drv_regs(device):
+    """
+    Dumps the current gate driver regisers for Motor 0
+    """
+    fault = device.motor0.gate_driver.drv_fault
+    status_reg_1 = device.motor0.gate_driver.status_reg_1
+    status_reg_2 = device.motor0.gate_driver.status_reg_2
+    ctrl_reg_1 = device.motor0.gate_driver.ctrl_reg_1
+    ctrl_reg_2 = device.motor0.gate_driver.ctrl_reg_2
+
+    print("DRV Fault Code: " + str(fault))
+    print("Status Reg 1: " + str(status_reg_1) + " (" + format(status_reg_1, '#010b') + ")")
+    print("Status Reg 2: " + str(status_reg_2) + " (" + format(status_reg_2, '#010b') + ")")
+    print("Control Reg 1: " + str(ctrl_reg_1) + " (" + format(ctrl_reg_1, '#010b') + ")")
+    print("Control Reg 2: " + str(ctrl_reg_2) + " (" + format(ctrl_reg_2, '#010b') + ")")
+
+def rate_test(device):
+    """
+    Tests how many integers per second can be transmitted
+    """
+
+    import matplotlib.pyplot as plt
+    plt.ion()
+
+    print("reading 10000 values...")
+    numFrames = 10000
+    vals = []
+    for _ in range(numFrames):
+        vals.append(device.motor0.loop_counter)
+
+    plt.plot(vals)
+
+    loopsPerFrame = (vals[-1] - vals[0])/numFrames
+    loopsPerSec = (168000000/(2*10192))
+    FramePerSec = loopsPerSec/loopsPerFrame
+    print("Frames per second: " + str(FramePerSec))
+
+
 ## Exceptions ##
 
 class TimeoutException(Exception):
@@ -192,9 +230,10 @@ class Logger():
         COLOR_DEFAULT: 0x07
     }
 
-    def __init__(self):
+    def __init__(self, verbose=True):
         self._prefix = ''
         self._skip_bottom_line = False # If true, messages are printed one line above the cursor
+        self._verbose = verbose
         if platform.system() == 'Windows':
             self._stdout_buf = win32console.GetStdHandle(win32console.STD_OUTPUT_HANDLE)
 
@@ -256,7 +295,8 @@ class Logger():
             sys.stdout.flush()
 
     def debug(self, text):
-        self.print_colored(self._prefix + text, Logger.COLOR_DEFAULT)
+        if self._verbose:
+            self.print_colored(self._prefix + text, Logger.COLOR_DEFAULT)
     def success(self, text):
         self.print_colored(self._prefix + text, Logger.COLOR_GREEN)
     def info(self, text):

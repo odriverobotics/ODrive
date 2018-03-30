@@ -16,7 +16,7 @@ gdb: all
 	arm-none-eabi-gdb $(FIRMWARE) -x openocd.gdbinit
 
 dfu: all
-	../tools/dfu.py $(if $(value SERIAL_NUMBER),--serial-number $(SERIAL_NUMBER),) $(FIRMWARE_HEX)
+	../tools/odrvtool $(if $(value SERIAL_NUMBER),--serial-number $(SERIAL_NUMBER),) dfu $(FIRMWARE_HEX)
 
 bmp: all
 	arm-none-eabi-gdb --ex 'target extended-remote /dev/stlink' \

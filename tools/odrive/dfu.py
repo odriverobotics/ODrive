@@ -11,13 +11,9 @@ import platform
 import struct
 import array
 import fractions
-import dfuse
 import usb.core
 import odrive.discovery
-
-# We are interactively printing status messages, so flush by default
-import functools
-print = functools.partial(print, flush=True)
+from odrive.dfuse import *
 
 try:
     from intelhex import IntelHex
@@ -93,28 +89,28 @@ def populate_sectors(sectors, hexfile):
 
 def set_alternate_safe(dfudev, alt):
     dfudev.set_alternate(alt)
-    if dfudev.get_state() == dfuse.DfuState.DFU_ERROR:
+    if dfudev.get_state() == DfuState.DFU_ERROR:
         dfudev.clear_status()
-        dfudev.wait_while_state(dfuse.DfuState.DFU_ERROR)
+        dfudev.wait_while_state(DfuState.DFU_ERROR)
 
 #def clear_error(dfudev)
-def set_address_safe(dfudef, addr):
+def set_address_safe(dfudev, addr):
     dfudev.set_address(addr)
-    status = dfudev.wait_while_state(dfuse.DfuState.DFU_DOWNLOAD_BUSY)
-    if status[1] != dfuse.DfuState.DFU_DOWNLOAD_IDLE:
+    status = dfudev.wait_while_state(DfuState.DFU_DOWNLOAD_BUSY)
+    if status[1] != DfuState.DFU_DOWNLOAD_IDLE:
         raise RuntimeError("An error occured. Device Status: %r" % status)
     # take device out of DFU_DOWNLOAD_SYNC and into DFU_IDLE
     dfudev.abort()
-    status = dfudev.wait_while_state(dfuse.DfuState.DFU_DOWNLOAD_SYNC)
-    if status[1] != dfuse.DfuState.DFU_IDLE:
+    status = dfudev.wait_while_state(DfuState.DFU_DOWNLOAD_SYNC)
+    if status[1] != DfuState.DFU_IDLE:
         raise RuntimeError("An error occured. Device Status: %r" % status)
     
 
 def erase(dfudev, sector):
     set_alternate_safe(dfudev, sector['alt'])
     dfudev.erase(sector['addr'])
-    status = dfudev.wait_while_state(dfuse.DfuState.DFU_DOWNLOAD_BUSY, timeout=sector['len']/32)
-    if status[1] != dfuse.DfuState.DFU_DOWNLOAD_IDLE:
+    status = dfudev.wait_while_state(DfuState.DFU_DOWNLOAD_BUSY, timeout=sector['len']/32)
+    if status[1] != DfuState.DFU_DOWNLOAD_IDLE:
         raise RuntimeError("An error occured. Device Status: %r" % status)
 
 def flash(dfudev, sector, data):
@@ -128,8 +124,8 @@ def flash(dfudev, sector, data):
         #print('write to {:08X} ({} bytes)'.format(
         #        sector['addr'] + blocknum * TRANSFER_SIZE, len(block)))
         dfudev.write(blocknum, block)
-        status = dfudev.wait_while_state(dfuse.DfuState.DFU_DOWNLOAD_BUSY)
-        if status[1] != dfuse.DfuState.DFU_DOWNLOAD_IDLE:
+        status = dfudev.wait_while_state(DfuState.DFU_DOWNLOAD_BUSY)
+        if status[1] != DfuState.DFU_DOWNLOAD_IDLE:
             raise RuntimeError("An error occured. Device Status: %r" % status)
 
 def read(dfudev, sector):
@@ -168,13 +164,13 @@ def get_first_mismatch_index(array1, array2):
 def jump_to_application(dfudev, address):
     set_address_safe(dfudev, address)
     #dfudev.set_address(address)
-    #status = dfudev.wait_while_state(dfuse.DfuState.DFU_DOWNLOAD_BUSY)
-    #if status[1] != dfuse.DfuState.DFU_DOWNLOAD_IDLE:
+    #status = dfudev.wait_while_state(DfuState.DFU_DOWNLOAD_BUSY)
+    #if status[1] != DfuState.DFU_DOWNLOAD_IDLE:
     #    raise RuntimeError("An error occured. Device Status: {}".format(status[1]))
 
     dfudev.leave()
-    status = dfudev.wait_while_state(dfuse.DfuState.DFU_MANIFEST_SYNC)
-    if status[1] != dfuse.DfuState.DFU_MANIFEST:
+    status = dfudev.wait_while_state(DfuState.DFU_MANIFEST_SYNC)
+    if status[1] != DfuState.DFU_MANIFEST:
         raise RuntimeError("An error occured. Device Status: {}".format(status[1]))
 
 
@@ -229,55 +225,47 @@ def put_odrive_into_dfu_mode(my_drive):
                               "Use the Zadig utility to set the driver of 'STM32 BOOTLOADER' to libusb-win32.",
                               find_odrive_cancellation_token)
 
-### BEGINNING OF APPLICATION ###
+def launch_dfu(args, app_shutdown_token):
+    """
+    Waits for a device that matches args.path and args.serial_number
+    and then upgrades the device's firmware.
+    """
 
-# parse arguments
-parser = argparse.ArgumentParser(description="Program an STM32 in DFU mode. The device can be identified either by it's serial number or UUID."
-                                             "You can list all connected devices by running"
-                                             "(lsusb -d 1209:0d32 -v; lsusb -d 0483:df11 -v) | grep iSerial")
-parser.add_argument("-v", "--verbose", action="store_true",
-                    help="print debug information")
-parser.add_argument('file', metavar='HEX', help='the .hex file to be flashed')
-parser.add_argument("-u", "--uuid",
-                    help="The 12-byte UUID of the device. This is a hexadecimal number of the format"
-                         "00000000-00000000-00000000")
-parser.add_argument("-s", "--serial-number",
-                    help="The 12-digit serial number of the device. This is a string consisting of 12 upper case hexadecimal digits as displayed in lsusb"
-                         "example: 385F324D3037")
-args = parser.parse_args()
+    # load hex file
+    # TODO: Either use the elf format or pack a custom format with a manifest.
+    # This way we can for instance verify the target board version and only
+    # have to publish one file for every board.
+    hexfile = IntelHex(args.file)
 
-# load hex file
-hexfile = IntelHex(args.file)
+    if (args.verbose):
+        print("Contiguous segments in hex file:")
+        for start, end in hexfile.segments():
+            print(" {:08X} to {:08X}".format(start, end - 1))
 
-#print("Contiguous segments in hex file:")
-#for start, end in hexfile.segments():
-#    print(" {:08X} to {:08X}".format(start, end - 1))
+    serial_number = args.serial_number
 
-serial_number = args.serial_number
+    find_odrive_cancellation_token = threading.Event()
+    app_shutdown_token.subscribe(lambda: find_odrive_cancellation_token.set())
 
-
-app_cancellation_token = threading.Event()
-find_odrive_cancellation_token = threading.Event()
-try:
     print("Waiting for ODrive...")
 
     # Scan for ODrives not in DFU mode and put them into DFU mode once they appear
     # We only scan on USB because DFU is only possible over USB
-    odrive.discovery.find_all("usb", serial_number, put_odrive_into_dfu_mode, find_odrive_cancellation_token)
+    odrive.discovery.find_all(args.path, serial_number, put_odrive_into_dfu_mode, find_odrive_cancellation_token)
 
     # Poll libUSB until a device in DFU mode is found
-    while not app_cancellation_token.is_set():
+    while not app_shutdown_token.is_set():
         params = {} if serial_number == None else {'serial_number': serial_number}
         stm_device = usb.core.find(idVendor=0x0483, idProduct=0xdf11, **params)
         if stm_device != None:
             break
         time.sleep(1)
     find_odrive_cancellation_token.set() # we don't need this thread anymore
-    if app_cancellation_token.is_set():
+    if app_shutdown_token.is_set():
         sys.exit(1)
     print("Found device {} in DFU mode".format(stm_device.serial_number))
 
-    dfudev = dfuse.DfuDevice(stm_device)
+    dfudev = DfuDevice(stm_device)
 
     sectors = list(get_device_sectors(dfudev))
 
@@ -344,8 +332,7 @@ try:
 
     # Jump to application
     jump_to_application(dfudev, 0x08000000)
-finally:
-    find_odrive_cancellation_token.set()
+
 
 
 # Note: the flashed image can be verified using: (0x12000 is the number of bytes to read)
