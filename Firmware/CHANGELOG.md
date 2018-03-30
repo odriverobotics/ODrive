@@ -25,7 +25,7 @@ Please add a note of your changes below this heading if you make a Pull Request.
 ### Added
 * **Storing of configuration parameters to Non Volatile Memory**
 * **USB Bootloader**
-* `make erase_config` to erase the configuration with an STLink (the configuration can also be erased from within explore_odrive.py, using `my_odrive.erase_configuration()`)
+* `make erase_config` to erase the configuration with an STLink (the configuration can also be erased from within explore_odrive.py, using `odrv0.erase_configuration()`)
 * Travis-CI builds firmware for all board versions and deploys the binaries when a tag is pushed to master
 
 ### Changed

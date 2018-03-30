@@ -167,7 +167,7 @@ pip install pyusb pyserial
 6. Open the bash prompt in the `ODrive/tools/` folder.
 7. Run `python3 odrive_demo.py` or `python3 odrvtool`. 
 - `odrive_demo.py` is a very simple script which will make motor 0 turn back and forth. Use this as an example if you want to control the ODrive yourself programatically.
-- `odrvtool` drops you into an interactive python shell when started without any arguments. There you can explore and edit the parameters that are available on your device. For instance `my_odrive.motor0.pos_setpoint = 10000` makes motor0 move to position 10000. To connect over serial instead of USB run `./tools/odrvtool --path serial`. Run `./tools/odrvtool --help` to see what else you can do with the script.
+- `odrvtool` drops you into an interactive python shell when started without any arguments. There you can explore and edit the parameters that are available on your device. For instance `odrv0.motor0.pos_setpoint = 10000` makes motor0 move to position 10000. To connect over serial instead of USB run `./tools/odrvtool --path serial`. Run `./tools/odrvtool --help` to see what else you can do with the script.
 
 ### From Arduino
 [See ODrive Arduino Library](https://github.com/madcowswe/ODriveArduino)
@@ -181,26 +181,26 @@ The majority of the important parameters you would want to set after flashing th
 To start the configuration session:
 
 * Launch `./tools/odrvtool`. This will give you a command prompt where you can modify using simple assignments.
-* Configure parameters of the `my_odrive.[...].config` objects.
-  * For example to adjust the position gain: `my_odrive.motor0.config.pos_gain = 30` <kbd>Enter</kbd>.
+* Configure parameters of the `odrv0.[...].config` objects.
+  * For example to adjust the position gain: `odrv0.motor0.config.pos_gain = 30` <kbd>Enter</kbd>.
   * The complete list of configurable parameters is:
-    * `my_odrive.motorN.config.*`
-    * `my_odrive.axisN.config.*`
+    * `odrv0.motorN.config.*`
+    * `odrv0.axisN.config.*`
     * where N is a valid motor number (0 or 1).
-* Save the configuration into non-volatile memory: `my_odrive.save_configuration()` <kbd>Enter</kbd>
+* Save the configuration into non-volatile memory: `odrv0.save_configuration()` <kbd>Enter</kbd>
   * This will save the properties of all the `[...].config` objects and no other parameters.
-* Reboot the drive: `my_odrive.reboot()` <kbd>Enter</kbd>
+* Reboot the drive: `odrv0.reboot()` <kbd>Enter</kbd>
 
-Note that a firmware upgrade at this point will preserve the configuration if and only if the parameters of both firmware versions are identical. Should you need to reset the configuration, you can run `my_odrive.erase_configuration()`.
+Note that a firmware upgrade at this point will preserve the configuration if and only if the parameters of both firmware versions are identical. Should you need to reset the configuration, you can run `odrv0.erase_configuration()`.
 
 __Developers__: Be aware that you can also modify the compile-time defaults for all of these parameters. Most of them you will find at the top of [MotorControl/low_level.c](MotorControl/low_level.c#L50). Note that the configuration parameters there are somewhat intertwined with runtime variables and hardware specific configuration that should not be changed. Also note that all parameters occur twice.
 
 ### Mandatory parameters
 You must set for every motor:
-* `my_odrive.motorN.encoder.config.cpr`: Encoder Count Per Revolution (CPR). This is 4x the Pulse Per Revolution (PPR) value.
-* `my_odrive.motorN.config.pole_pairs`: This is the number of magnet poles in the rotor, **divided by two**. You can simply count the number of permanent magnets in the rotor, if you can see them. Note: this is not the same as the number of coils in the stator.
-* `my_odrive.config.brake_resistance` [Ohm]: This is the resistance of the brake resistor. If you are not using it, you may set it to 0.0f.
-* `my_odrive.motorN.config.motor_type`: This is the type of motor being used. Currently two types of motors are supported -- High-current motors (`MOTOR_TYPE_HIGH_CURRENT`) and Gimbal motors (`MOTOR_TYPE_GIMBAL`).
+* `odrv0.motorN.encoder.config.cpr`: Encoder Count Per Revolution (CPR). This is 4x the Pulse Per Revolution (PPR) value.
+* `odrv0.motorN.config.pole_pairs`: This is the number of magnet poles in the rotor, **divided by two**. You can simply count the number of permanent magnets in the rotor, if you can see them. Note: this is not the same as the number of coils in the stator.
+* `odrv0.config.brake_resistance` [Ohm]: This is the resistance of the brake resistor. If you are not using it, you may set it to 0.0f.
+* `odrv0.motorN.config.motor_type`: This is the type of motor being used. Currently two types of motors are supported -- High-current motors (`MOTOR_TYPE_HIGH_CURRENT`) and Gimbal motors (`MOTOR_TYPE_GIMBAL`).
 
 #### Motor Modes
 If you're using a regular hobby brushless motor like [this](https://hobbyking.com/en_us/turnigy-aerodrive-sk3-5065-236kv-brushless-outrunner-motor.html) one, you should set `motor_mode` to `MOTOR_TYPE_HIGH_CURRENT`. For low-current gimbal motors like [this](https://hobbyking.com/en_us/turnigy-hd-5208-brushless-gimbal-motor-bldc.html) one, you should choose `MOTOR_TYPE_GIMBAL`. Do not use `MOTOR_TYPE_GIMBAL` on a motor that is not a gimbal motor, as it may overheat the motor or the ODrive.
@@ -212,15 +212,15 @@ If 100's of mA current noise is "large" for you, and you intend to spin the moto
 
 ### Tuning parameters
 The most important parameters are the limits:
-* The current limit: `my_odrive.motorN.current_control.config.current_lim` [A]. The default current limit, for safety reasons, is set to 10A. This is quite weak, and good for making sure the drive is stable. Once you have tuned the drive, you can increase this to 75A to get some performance. Note that above 75A, you must change the current amplifier gains.
+* The current limit: `odrv0.motorN.current_control.config.current_lim` [A]. The default current limit, for safety reasons, is set to 10A. This is quite weak, and good for making sure the drive is stable. Once you have tuned the drive, you can increase this to 75A to get some performance. Note that above 75A, you must change the current amplifier gains.
   * Note: The motor current and the current drawn from the power supply is not the same in general. You should not look at the power supply current to see what is going on with the motor current.
-* The velocity limit: `my_odrive.motorN.config.vel_limit` [counts/s]. The motor will be limited to this speed; again the default value is quite slow.
-* You can change `my_odrive.motorN.config.calibration_current` [A] to the largest value you feel comfortable leaving running through the motor continously when the motor is stationary.
+* The velocity limit: `odrv0.motorN.config.vel_limit` [counts/s]. The motor will be limited to this speed; again the default value is quite slow.
+* You can change `odrv0.motorN.config.calibration_current` [A] to the largest value you feel comfortable leaving running through the motor continously when the motor is stationary.
 
 The motion control gains are currently manually tuned:
-* `my_odrive.motorN.config.pos_gain = 20.0f` [(counts/s) / counts]
-* `my_odrive.motorN.config.vel_gain = 15.0f / 10000.0f` [A/(counts/s)]
-* `my_odrive.motorN.config.vel_integrator_gain = 10.0f / 10000.0f` [A/(counts/s * s)]
+* `odrv0.motorN.config.pos_gain = 20.0f` [(counts/s) / counts]
+* `odrv0.motorN.config.vel_gain = 15.0f / 10000.0f` [A/(counts/s)]
+* `odrv0.motorN.config.vel_integrator_gain = 10.0f / 10000.0f` [A/(counts/s * s)]
 
 An upcoming feature will enable automatic tuning. Until then, here is a rough tuning procedure:
 * Set the integrator gain to 0
@@ -233,14 +233,14 @@ An upcoming feature will enable automatic tuning. Until then, here is a rough tu
 
 ### Optional parameters
 By default both motors are enabled, and the default control mode is position control.
-If you want a different mode, you can change `my_odrive.motorN.config.control_mode`.
+If you want a different mode, you can change `odrv0.motorN.config.control_mode`.
 Possible values are:
 * `CTRL_MODE_POSITION_CONTROL`
 * `CTRL_MODE_VELOCITY_CONTROL`
 * `CTRL_MODE_CURRENT_CONTROL`
 * `CTRL_MODE_VOLTAGE_CONTROL` - this one is not normally used.
 
-To disable a motor at startup, set `my_odrive.axisN.config.enable_control` and `my_odrive.axisN.config.do_calibration` to `False`.
+To disable a motor at startup, set `odrv0.axisN.config.enable_control` and `odrv0.axisN.config.do_calibration` to `False`.
 
 <br><br>
 ## Encoder Calibration
@@ -255,8 +255,8 @@ If you have an encoder with an index (Z) signal, you may avoid having to do the 
 * Flash this configuration, and let the motor scan for the index pulse and then complete the encoder calibration.
 * Run `odrvtool`, check [Communicating over USB or UART](#communicating-over-usb-or-uart) for instructions on how to do that.
 * Enter the following to print out the calibration parameters (substitute the motor number you are calibrating for `<NUM>`):
-  * `my_odrive.motor<NUM>.encoder.encoder_offset` - This should print a number, like -326 or 1364.
-  * `my_odrive.motor<NUM>.encoder.motor_dir` - This should print 1 or -1.
+  * `odrv0.motor<NUM>.encoder.encoder_offset` - This should print a number, like -326 or 1364.
+  * `odrv0.motor<NUM>.encoder.motor_dir` - This should print 1 or -1.
 * Copy these numbers to the corresponding entries in low_level.c: `.encoder.encoder_offset` and `.encoder.motor_dir`.
   * _Warning_: Please be careful to enter the correct numbers, and not to confuse the motor channels. Incorrect values may cause the motor to spin out of control.
 * Set `.encoder.calibrated = true`.
@@ -267,7 +267,7 @@ If you have an encoder with an index (Z) signal, you may avoid having to do the 
 
 <br><br>
 ## Checking for error codes
-`odrvtool` can also be used to check error codes when your odrive is not working as expected. For example `my_odrive.motor0.error` will list the error code associated with motor 0.
+`odrvtool` can also be used to check error codes when your odrive is not working as expected. For example `odrv0.motor0.error` will list the error code associated with motor 0.
 <br><br>
 The error nummber corresponds to the following:
 
