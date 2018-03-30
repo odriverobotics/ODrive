@@ -4,7 +4,7 @@ import platform
 import threading
 import odrive.discovery
 from odrive.utils import start_liveplotter
-from odrive.enums import *
+from odrive.enums import * # pylint: disable=W0614
 
 def print_banner():
     print('Please connect your ODrive.')
@@ -97,14 +97,13 @@ def launch_shell(args, logger, printer, app_shutdown_token):
 
     # If IPython is installed, embed IPython shell, otherwise embed regular shell
     if use_ipython:
-        help = lambda: print_help(args) # Override help function
+        help = lambda: print_help(args) # Override help function # pylint: disable=W0612
         console = IPython.terminal.embed.InteractiveShellEmbed(local_ns=interactive_variables, banner1='')
         console.runcode = console.run_code # hack to make IPython look like the regular console
         interact = console
     else:
         # Enable tab complete if possible
         try:
-            import rlcompleter
             import readline # Works only on Unix
             readline.parse_and_bind("tab: complete")
         except:
