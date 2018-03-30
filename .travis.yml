@@ -4,6 +4,7 @@ branches:
   only:
   - master
   - devel
+  - /^fw-v/
 
 language: c
 sudo: false
@@ -47,6 +48,8 @@ deploy:
   provider: releases
   api_key:
     secure: RM66joGTn11Z5PmG7Nlj8cRcVY0w7ga5qUl2ahinbDm6jMV8OxroaXKivEa478alx9fygMHVeKdJZUlrAkRJ5OYJ1trfpW+43S3OYEnfy1nyXEXRwhgeIlb9LqdrumXVAp7TZ0Vppfom8A2ZWbxKxW3lG/EAmA4G9fnxHf0S9rF0y95YVfGrxdapTKcxvbP7Yojo53474ZI6+VYrqx8lq0JAnn4FwNT9ZJ1QASrmIw4w08f60XXv25BzndCTscvLb2qUu0AaGLbQUosde0Bb7P+aQsBVY6uSkg9MWV8gWPQjtO3u5IRR1bTshxf2kPqtzwK+SpcYrddoGN6BkKAB3lVorJIW5VguUkRmtPZ1K9+NhIztNevB2qr0ASutumNLF3aqMt19KL3A+SRx6froj5VhRHf4i/Xjm3SDLTaTcc8ZIh2PEE6scUMUMs5Mzu8LQWjInRe25MSb+pQB1mNOHmoFBtVb0J3u7Nvs8jdImN5gQWvvowWXfXRNE0ncT1YsLmevwi3q+YdEjpAIPnrD/rouY8WaqQZ/vE15JM9uwdQRqKAbzGtMaKHDk7EZ7ANTyaP+UrQ/M5cVDa0bWsWSvqSqDJMy4IVHRlirYA/5u74lXNhmA8DGDB/gFVlVCmoEzas/pnYiAE1hh4RpsYxts78Ix+wbeo1hmt7t65X8cyo=
+  skip_cleanup: true
+  file_glob: true
   file: Firmware/deploy/*
   on:
     repo: madcowswe/ODrive
