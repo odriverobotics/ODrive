@@ -57,6 +57,8 @@ parser.add_argument("-s", "--serial-number", action="store",
                          "If omitted, any device is accepted.")
 parser.add_argument("-v", "--verbose", action="store_true",
                     help="print debug information")
+parser.add_argument("--version", action="store_true",
+                    help="print version information and exit")
 
 parser.set_defaults(path="usb")
 args = parser.parse_args()
@@ -82,7 +84,10 @@ logger.debug(str(args))
 app_shutdown_token = Event()
 
 try:
-    if args.command == 'shell':
+    if args.version == True:
+        print("ODrive control utility v" + odrive.__version__)
+
+    elif args.command == 'shell':
         import odrive.shell
         odrive.shell.launch_shell(args, logger, printer, app_shutdown_token)
 
