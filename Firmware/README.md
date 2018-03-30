@@ -139,7 +139,7 @@ For working with the ODrive code you don't need an IDE, but the open-source IDE 
 ## Communicating over USB or UART
 Warning: If testing USB or UART communication for the first time it is recommend that your motors are free to spin continuously and are not connected to a drivetrain with limited travel.
 ### From Linux/Windows/macOS
-There are two example python scripts to help you get started with controlling the ODrive using python. One will drop you into an interactive shell to query settings, parameters, and variables, and let you send setpoints manually ([tools/odrvtool](../tools/odrvtool)). The other is a demo application to show you how to control the ODrive programmatically ([tools/odrive_demo.py](../tools/odrive_demo.py)). Below follows a step-by-step guide on how to run these.
+There are two example python scripts to help you get started with controlling the ODrive using python. One will drop you into an interactive shell to query settings, parameters, and variables, and let you send setpoints manually ([tools/odrivetool](../tools/odrivetool)). The other is a demo application to show you how to control the ODrive programmatically ([tools/odrive_demo.py](../tools/odrive_demo.py)). Below follows a step-by-step guide on how to run these.
 
 
 * __Windows__: It is recommended to use a Unix style command prompt, such as Git Bash that comes with [Git for windows](https://git-scm.com/download/win).
@@ -165,9 +165,9 @@ pip install pyusb pyserial
 5. __Windows__: Use the [Zadig](http://zadig.akeo.ie/) utility to set ODrive (not STLink!) driver to libusb-win32. 
   * If 'Odrive version 3.x' is not in the list of devices upon opening Zadig, check 'List All Devices' from the options menu. With the Odrive selected in the device list choose 'libusb-win32' from the target driver list and select the large 'install driver' button.
 6. Open the bash prompt in the `ODrive/tools/` folder.
-7. Run `python3 odrive_demo.py` or `python3 odrvtool`. 
+7. Run `python3 odrive_demo.py` or `python3 odrivetool`. 
 - `odrive_demo.py` is a very simple script which will make motor 0 turn back and forth. Use this as an example if you want to control the ODrive yourself programatically.
-- `odrvtool` drops you into an interactive python shell when started without any arguments. There you can explore and edit the parameters that are available on your device. For instance `odrv0.motor0.pos_setpoint = 10000` makes motor0 move to position 10000. To connect over serial instead of USB run `./tools/odrvtool --path serial`. Run `./tools/odrvtool --help` to see what else you can do with the script.
+- `odrivetool` drops you into an interactive python shell when started without any arguments. There you can explore and edit the parameters that are available on your device. For instance `odrv0.motor0.pos_setpoint = 10000` makes motor0 move to position 10000. To connect over serial instead of USB run `./tools/odrivetool --path serial`. Run `./tools/odrivetool --help` to see what else you can do with the script.
 
 ### From Arduino
 [See ODrive Arduino Library](https://github.com/madcowswe/ODriveArduino)
@@ -180,7 +180,7 @@ See the [protocol specification](protocol.md) or the [legacy protocol specificat
 The majority of the important parameters you would want to set after flashing the ODrive with firmware are configurable over the USB communication interface. These include some mandatory parameters that you must set for correct operation, as well as tuning and optional parameters.
 To start the configuration session:
 
-* Launch `./tools/odrvtool`. This will give you a command prompt where you can modify using simple assignments.
+* Launch `./tools/odrivetool`. This will give you a command prompt where you can modify using simple assignments.
 * Configure parameters of the `odrv0.[...].config` objects.
   * For example to adjust the position gain: `odrv0.motor0.config.pos_gain = 30` <kbd>Enter</kbd>.
   * The complete list of configurable parameters is:
@@ -253,7 +253,7 @@ If you have an encoder with an index (Z) signal, you may avoid having to do the 
 * All the parameters we will be modifying are in the motor structs at the top of [MotorControl/low_level.c](MotorControl/low_level.c).
 * Set `.encoder.use_index = true` and `.encoder.calibrated = false`.
 * Flash this configuration, and let the motor scan for the index pulse and then complete the encoder calibration.
-* Run `odrvtool`, check [Communicating over USB or UART](#communicating-over-usb-or-uart) for instructions on how to do that.
+* Run `odrivetool`, check [Communicating over USB or UART](#communicating-over-usb-or-uart) for instructions on how to do that.
 * Enter the following to print out the calibration parameters (substitute the motor number you are calibrating for `<NUM>`):
   * `odrv0.motor<NUM>.encoder.encoder_offset` - This should print a number, like -326 or 1364.
   * `odrv0.motor<NUM>.encoder.motor_dir` - This should print 1 or -1.
@@ -267,7 +267,7 @@ If you have an encoder with an index (Z) signal, you may avoid having to do the 
 
 <br><br>
 ## Checking for error codes
-`odrvtool` can also be used to check error codes when your odrive is not working as expected. For example `odrv0.motor0.error` will list the error code associated with motor 0.
+`odrivetool` can also be used to check error codes when your odrive is not working as expected. For example `odrv0.motor0.error` will list the error code associated with motor 0.
 <br><br>
 The error nummber corresponds to the following:
 

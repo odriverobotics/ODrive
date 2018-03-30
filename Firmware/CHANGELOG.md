@@ -9,13 +9,13 @@ Please add a note of your changes below this heading if you make a Pull Request.
 ### Changed
  * The DFU script now verifies the flash after writing
  * Refactor python tools
-   * The scripts `explore_odrive.py`, `liveplotter.py`, `drv_status.py` and `rate_test.py` have been merged into one single `odrvtool` script. Running this script without any arguments provides the shell that `explore_odrive.py` used to provide.
-   * The command line options of `odrvtool` have changed compared to the original `explore_odrive.py`. See `odrvtool --help` for more details.
-   * `odrvtool` (previously `explore_odrive.py`) now supports controlling multiple ODrives concurrently (`odrv0`, `odrv1`, ...)
-   * No need to restart the `odrvtool` shell when devices get disconnected and reconnected
+   * The scripts `explore_odrive.py`, `liveplotter.py`, `drv_status.py` and `rate_test.py` have been merged into one single `odrivetool` script. Running this script without any arguments provides the shell that `explore_odrive.py` used to provide.
+   * The command line options of `odrivetool` have changed compared to the original `explore_odrive.py`. See `odrivetool --help` for more details.
+   * `odrivetool` (previously `explore_odrive.py`) now supports controlling multiple ODrives concurrently (`odrv0`, `odrv1`, ...)
+   * No need to restart the `odrivetool` shell when devices get disconnected and reconnected
    * ODrive accesses from within python tools are now thread-safe. That means you can read from the same remote property from multiple threads concurrently.
-   * The liveplotter (`odrvtool liveplotter`, formerly `liveplotter.py`) does no longer steal focus and closes as expected
-   * (experimental: start liveplotter from `odrvtool` shell by typing `start_liveplotter(lambda: odrv0.motor0.encoder.encoder_state)`)
+   * The liveplotter (`odrivetool liveplotter`, formerly `liveplotter.py`) does no longer steal focus and closes as expected
+   * (experimental: start liveplotter from `odrivetool` shell by typing `start_liveplotter(lambda: odrv0.motor0.encoder.encoder_state)`)
 
 ### Fixed
 

@@ -62,7 +62,7 @@ if creating_package:
 setup(
   name = 'odrive',
   packages = ['odrive'], # this must be the same as the name above
-  scripts = ['odrvtool', 'odrive_demo.py'],
+  scripts = ['odrivetool', 'odrive_demo.py'],
   version = version,
   description = 'Control utilities for the ODrive high performance motor controller',
   author = 'Oskar Weigl',

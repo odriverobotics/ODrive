@@ -14,7 +14,7 @@ print = functools.partial(print, flush=True)
 
 ## Parse arguments ##
 parser = argparse.ArgumentParser(description='ODrive command line utility\n'
-                                             'Running this tool without any arguments is equivalent to running `odrvtool shell`\n',
+                                             'Running this tool without any arguments is equivalent to running `odrivetool shell`\n',
                                  formatter_class=argparse.RawTextHelpFormatter)
 
 # Subcommands
