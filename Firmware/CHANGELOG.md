@@ -2,9 +2,18 @@
 Please add a note of your changes below this heading if you make a Pull Request.
 
 ### Added
+### Changed
+### Fixed
+
+# Releases
+
+## [0.3.6] - 2018-03-26
+
+### Added
 * **Storing of configuration parameters to Non Volatile Memory**
 * **USB Bootloader**
 * `make erase_config` to erase the configuration with an STLink (the configuration can also be erased from within explore_odrive.py, using `my_odrive.erase_configuration()`)
+* Travis-CI builds firmware for all board versions and deploys the binaries when a tag is pushed to master
 
 ### Changed
 * The build is now configured using the `tup.config` file instead of editing source files. Make sure you set your board version correctly. See [here](README.md#configuring-the-build) for details.
@@ -22,8 +31,6 @@ Please add a note of your changes below this heading if you make a Pull Request.
 
 ### Fixed
 * malloc now fails if we run out of memory (before it would always succeed even if we are out of ram...)
-
-# Releases
 
 ## [0.3.5] - 2018-03-04
 
