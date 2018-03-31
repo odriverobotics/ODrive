@@ -39,23 +39,10 @@ bool Motor::arm() {
     // that we have exactly one full interrupt period until the third trigger. This gives
     // the control loop the correct time quota to set up modulation timings.
     if (!(axis_->wait_for_current_meas() && axis_->wait_for_current_meas()))
-        return false;
+        return axis_->error_ = Axis::ERROR_CURRENT_MEASUREMENT_TIMEOUT, false;
     next_timings_valid_ = false;
-    axis_->missed_control_deadline_ = false;
+    safety_critical_arm_motor_pwm(*this);
     return true;
-}
-
-// @brief Floats the phases of this motor immediately and updates
-// the brake current accordingly.
-void Motor::disarm() {
-    // disable pwm
-    __HAL_TIM_MOE_DISABLE_UNCONDITIONALLY(hw_config_.timer);
-    // set this motor's contribution to 0
-    current_control_.Ibus = 0.0f;
-    update_brake_current();
-    // ensure the PWM is not re-enabled without the state machine explicitly
-    // calling motor.arm()
-    axis_->missed_control_deadline_ = true;
 }
 
 // @brief Tune the current controller based on phase resistance and inductance
@@ -167,7 +154,7 @@ float Motor::phase_current_from_adcval(uint32_t ADCValue) {
 // TODO check Ibeta balance to verify good motor connection
 bool Motor::measure_phase_resistance(float test_current, float max_voltage) {
     static const float kI = 10.0f;                                 // [(V/s)/A]
-    static const int num_test_cycles = 3.0f / CURRENT_MEAS_PERIOD; // Test runs for 3s
+    static const int num_test_cycles = static_cast<int>(3.0f / CURRENT_MEAS_PERIOD); // Test runs for 3s
     float test_voltage = 0.0f;
     
     size_t i = 0;
@@ -178,7 +165,8 @@ bool Motor::measure_phase_resistance(float test_current, float max_voltage) {
             return error_ = ERROR_PHASE_RESISTANCE_OUT_OF_RANGE, false;
 
         // Test voltage along phase A
-        enqueue_voltage_timings(test_voltage, 0.0f);
+        if (!enqueue_voltage_timings(test_voltage, 0.0f))
+            return false; // error set inside enqueue_voltage_timings
         log_timing(TIMING_LOG_MEAS_R);
 
         return ++i < num_test_cycles;
@@ -187,7 +175,8 @@ bool Motor::measure_phase_resistance(float test_current, float max_voltage) {
         return false;
 
     //// De-energize motor
-    //enqueue_voltage_timings(motor, 0.0f, 0.0f);
+    //if (!enqueue_voltage_timings(motor, 0.0f, 0.0f))
+    //    return false; // error set inside enqueue_voltage_timings
 
     float R = test_voltage / test_current;
     config_.phase_resistance = R;
@@ -205,7 +194,8 @@ bool Motor::measure_phase_inductance(float voltage_low, float voltage_high) {
         Ialphas[i] += -current_meas_.phB - current_meas_.phC;
 
         // Test voltage along phase A
-        enqueue_voltage_timings(test_voltages[i], 0.0f);
+        if (!enqueue_voltage_timings(test_voltages[i], 0.0f))
+            return false; // error set inside enqueue_voltage_timings
         log_timing(TIMING_LOG_MEAS_L);
 
         return ++t < (num_cycles << 1);
@@ -214,7 +204,8 @@ bool Motor::measure_phase_inductance(float voltage_low, float voltage_high) {
         return false;
 
     //// De-energize motor
-    //enqueue_voltage_timings(motor, 0.0f, 0.0f);
+    //if (!enqueue_voltage_timings(motor, 0.0f, 0.0f))
+    //    return false; // error set inside enqueue_voltage_timings
 
     float v_L = 0.5f * (voltage_high - voltage_low);
     // Note: A more correct formula would also take into account that there is a finite timestep.
@@ -251,21 +242,25 @@ bool Motor::run_calibration() {
     return true;
 }
 
-void Motor::enqueue_modulation_timings(float mod_alpha, float mod_beta) {
+bool Motor::enqueue_modulation_timings(float mod_alpha, float mod_beta) {
     float tA, tB, tC;
-    SVM(mod_alpha, mod_beta, &tA, &tB, &tC);
+    if (SVM(mod_alpha, mod_beta, &tA, &tB, &tC) != 0)
+        return error_ = ERROR_NUMERICAL, false;
     next_timings_[0] = (uint16_t)(tA * (float)TIM_1_8_PERIOD_CLOCKS);
     next_timings_[1] = (uint16_t)(tB * (float)TIM_1_8_PERIOD_CLOCKS);
     next_timings_[2] = (uint16_t)(tC * (float)TIM_1_8_PERIOD_CLOCKS);
     next_timings_valid_ = true;
+    return true;
 }
 
-void Motor::enqueue_voltage_timings(float v_alpha, float v_beta) {
+bool Motor::enqueue_voltage_timings(float v_alpha, float v_beta) {
     float vfactor = 1.0f / ((2.0f / 3.0f) * vbus_voltage);
     float mod_alpha = vfactor * v_alpha;
     float mod_beta = vfactor * v_beta;
-    enqueue_modulation_timings(mod_alpha, mod_beta);
+    if (!enqueue_modulation_timings(mod_alpha, mod_beta))
+        return false;
     log_timing(TIMING_LOG_FOC_VOLTAGE);
+    return true;
 }
 
 // TODO: This doesn't update brake current
@@ -275,8 +270,7 @@ bool Motor::FOC_voltage(float v_d, float v_q, float phase) {
     float s = arm_sin_f32(phase);
     float v_alpha = c*v_d - s*v_q;
     float v_beta  = c*v_q + s*v_d;
-    enqueue_voltage_timings(v_alpha, v_beta);
-    return true;
+    return enqueue_voltage_timings(v_alpha, v_beta);
 }
 
 bool Motor::FOC_current(float Id_des, float Iq_des, float phase) {
@@ -336,7 +330,8 @@ bool Motor::FOC_current(float Id_des, float Iq_des, float phase) {
     ictrl->final_v_beta = mod_to_V * mod_beta;
 
     // Apply SVM
-    enqueue_modulation_timings(mod_alpha, mod_beta);
+    if (!enqueue_modulation_timings(mod_alpha, mod_beta))
+        return false; // error set inside enqueue_modulation_timings
     log_timing(TIMING_LOG_FOC_CURRENT);
 
     return true;

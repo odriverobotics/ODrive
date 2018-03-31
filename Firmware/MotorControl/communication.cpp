@@ -172,6 +172,7 @@ static inline auto make_obj_tree() {
         make_protocol_ro_property("vbus_voltage", &vbus_voltage),
         make_protocol_ro_property("comm_stack_info", &comm_stack_info),
         make_protocol_ro_property("serial_number", &serial_number),
+        make_protocol_ro_property("brake_resistor_armed", &brake_resistor_armed_),
         make_protocol_object("config",
             make_protocol_property("brake_resistance", &board_config.brake_resistance),
             // TODO: changing this currently requires a reboot - fix this

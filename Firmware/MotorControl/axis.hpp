@@ -106,7 +106,8 @@ public:
                 error_ = ERROR_MOTOR_FAILED;
                 break;
             }
-            if ((current_state_ != AXIS_STATE_IDLE) && missed_control_deadline_) {
+            if ((current_state_ != AXIS_STATE_IDLE) && (motor_.armed_state_ == Motor::ARMED_STATE_DISARMED)) {
+                // motor got disarmed in something other than the idle loop
                 error_ = ERROR_CONTROL_LOOP_TIMEOUT;
                 break;
             }
@@ -121,8 +122,12 @@ public:
             ++loop_counter_;
 
             // Wait until the current measurement interrupt fires
-            if (!wait_for_current_meas()) { // error set by function call
-                motor_.disarm(); // maybe the interrupt handler is dead, let's be safe and float all phases
+            if (!wait_for_current_meas()) {
+                // maybe the interrupt handler is dead, let's be
+                // safe and float the phases
+                safety_critical_disarm_motor_pwm(motor_);
+                update_brake_current();
+                error_ = ERROR_CURRENT_MEASUREMENT_TIMEOUT;
                 break;
             }
         }
@@ -148,10 +153,6 @@ public:
 
     // variables exposed on protocol
     Error_t error_ = ERROR_NO_ERROR;
-    bool missed_control_deadline_ = true; // this flag is raised by the interrupt handler
-                                         // whenever there's no active control loop that
-                                         // sets the timings. The flag must be explicitly
-                                         // cleared by a call to motors.arm().
     bool enable_step_dir_ = false; // auto enabled after calibration, based on config.enable_step_dir
     AxisState_t requested_state_ = AXIS_STATE_STARTUP_SEQUENCE;
     AxisState_t task_chain_[10] = { AXIS_STATE_UNDEFINED };
@@ -162,7 +163,6 @@ public:
     auto make_protocol_definitions() {
         return make_protocol_member_list(
             make_protocol_property("error", &error_),
-            make_protocol_ro_property("missed_control_deadline", &missed_control_deadline_),
             make_protocol_property("enable_step_dir", &enable_step_dir_),
             make_protocol_ro_property("current_state", &current_state_),
             make_protocol_property("requested_state", &requested_state_),

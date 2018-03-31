@@ -53,9 +53,7 @@ void Axis::signal_current_meas() {
 // @brief Blocks until a current measurement is completed
 // @returns True on success, false otherwise
 bool Axis::wait_for_current_meas() {
-    if (osSignalWait(M_SIGNAL_PH_CURRENT_MEAS, PH_CURRENT_MEAS_TIMEOUT).status != osEventSignal)
-        return error_ = ERROR_CURRENT_MEASUREMENT_TIMEOUT, false;
-    return true;
+    return osSignalWait(M_SIGNAL_PH_CURRENT_MEAS, PH_CURRENT_MEAS_TIMEOUT).status == osEventSignal;
 }
 
 static void step_cb_wrapper(void* ctx) {

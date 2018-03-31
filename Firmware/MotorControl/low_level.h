@@ -2,6 +2,10 @@
 #ifndef __LOW_LEVEL_H
 #define __LOW_LEVEL_H
 
+#ifndef __ODRIVE_MAIN_HPP
+#error "This file should not be included directly. Include odrive_main.hpp instead."
+#endif
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -17,10 +21,18 @@ extern "C" {
 /* Exported macro ------------------------------------------------------------*/
 /* Exported functions --------------------------------------------------------*/
 
-//Note: to control without feed forward, set feed forward terms to 0.0f.
+void safety_critical_arm_motor_pwm(Motor& motor);
+void safety_critical_disarm_motor_pwm(Motor& motor);
+void safety_critical_apply_motor_pwm_timings(Motor& motor, uint16_t timings[3]);
+void safety_critical_arm_brake_resistor();
+void safety_critical_disarm_brake_resistor();
+void safety_critical_apply_brake_resistor_timings(uint32_t low_off, uint32_t high_on);
 
+// called from STM platform code
+extern "C" {
 void pwm_trig_adc_cb(ADC_HandleTypeDef* hadc, bool injected);
 void vbus_sense_adc_cb(ADC_HandleTypeDef* hadc, bool injected);
+}
 
 // Initalisation
 void start_adc_pwm();

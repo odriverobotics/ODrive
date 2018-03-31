@@ -6,7 +6,9 @@ extern "C" {
 #endif
 
 /* Includes ------------------------------------------------------------------*/
-#include "low_level.h"
+#include <stdlib.h>
+#include <stdint.h>
+#include <stdbool.h>
 /* Exported types ------------------------------------------------------------*/
 
 typedef enum {

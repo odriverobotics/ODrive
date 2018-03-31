@@ -60,6 +60,8 @@ public:
         ERROR_ADC_FAILED,
         ERROR_DRV_FAULT,
         ERROR_NOT_IMPLEMENTED_MOTOR_TYPE,
+        ERROR_BRAKE_CURRENT_OUT_OF_RANGE,
+        ERROR_NUMERICAL
     };
 
     enum TimingLog_t {
@@ -73,6 +75,13 @@ public:
         TIMING_LOG_FOC_VOLTAGE,
         TIMING_LOG_FOC_CURRENT,
         TIMING_LOG_NUM_SLOTS
+    };
+
+    enum ArmedState_t {
+        ARMED_STATE_DISARMED,
+        ARMED_STATE_WAITING_FOR_TIMINGS,
+        ARMED_STATE_WAITING_FOR_UPDATE,
+        ARMED_STATE_ARMED,
     };
 
     Motor(const MotorHardwareConfig_t& hw_config,
@@ -94,8 +103,8 @@ public:
     bool measure_phase_resistance(float test_current, float max_voltage);
     bool measure_phase_inductance(float voltage_low, float voltage_high);
     bool run_calibration();
-    void enqueue_modulation_timings(float mod_alpha, float mod_beta);
-    void enqueue_voltage_timings(float v_alpha, float v_beta);
+    bool enqueue_modulation_timings(float mod_alpha, float mod_beta);
+    bool enqueue_voltage_timings(float v_alpha, float v_beta);
     bool FOC_voltage(float v_d, float v_q, float phase);
     bool FOC_current(float Id_des, float Iq_des, float phase);
     bool update(float current_setpoint, float phase);
@@ -120,6 +129,9 @@ public:
 
     // variables exposed on protocol
     Error_t error_ = ERROR_NO_ERROR;
+    // Do not write to this variable directly!
+    // It is for exclusive use by the safety_critical_... functions.
+    ArmedState_t armed_state_ = ARMED_STATE_DISARMED; 
     bool is_calibrated_ = config_.pre_calibrated;
     Iph_BC_t current_meas_ = {0.0f, 0.0f};
     Iph_BC_t DC_calib_ = {0.0f, 0.0f};
@@ -144,6 +156,7 @@ public:
     auto make_protocol_definitions() {
         return make_protocol_member_list(
             make_protocol_property("error", &error_),
+            make_protocol_ro_property("armed_state", &armed_state_),
             make_protocol_ro_property("is_calibrated", &is_calibrated_),
             make_protocol_ro_property("current_meas_phB", &current_meas_.phB),
             make_protocol_ro_property("current_meas_phC", &current_meas_.phC),

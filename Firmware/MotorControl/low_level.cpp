@@ -7,8 +7,6 @@
 #define ARM_MATH_CM4
 #include <arm_math.h>
 
-#include <low_level.h>
-
 #include <cmsis_os.h>
 #include <math.h>
 #include <stdint.h>
@@ -34,9 +32,166 @@
 // This value is updated by the DC-bus reading ADC.
 // Arbitrary non-zero inital value to avoid division by zero if ADC reading is late
 float vbus_voltage = 12.0f;
+bool brake_resistor_armed_ = false;
 
 /* Private constant data -----------------------------------------------------*/
 /* Private variables ---------------------------------------------------------*/
+
+/* CPU critical section helpers ----------------------------------------------*/
+
+static inline uint8_t cpu_enter_critical() {
+    uint8_t status_register;
+    asm (
+        "MRS   R0, PRIMASK\n\t"
+        "CPSID I\n\t"
+        "STRB R0, %[output]"
+        : [output] "=m" (status_register) :: "r0"
+    );
+    return status_register;
+}
+ 
+static inline void cpu_exit_critical(uint8_t status_register) {
+    asm (
+        "ldrb r0, %[input]\n\t"
+        "msr PRIMASK,r0;\n\t"
+        ::[input] "m" (status_register) : "r0"
+    );
+}
+
+/* Safety critical functions -------------------------------------------------*/
+
+/*
+* This section contains all accesses to safety critical hardware registers.
+* Specifically, these registers:
+*   Motor0 PWMs:
+*     Timer1.MOE (master output enabled)
+*     Timer1.CCR1 (counter compare register 1)
+*     Timer1.CCR2 (counter compare register 2)
+*     Timer1.CCR3 (counter compare register 3)
+*   Motor1 PWMs:
+*     Timer8.MOE (master output enabled)
+*     Timer8.CCR1 (counter compare register 1)
+*     Timer8.CCR2 (counter compare register 2)
+*     Timer8.CCR3 (counter compare register 3)
+*   Brake resistor PWM:
+*     Timer2.CCR3 (counter compare register 3)
+*     Timer2.CCR4 (counter compare register 4)
+* 
+* The following assumptions are made:
+*   - The hardware operates as described in the datasheet:
+*     http://www.st.com/content/ccc/resource/technical/document/reference_manual/3d/6d/5a/66/b4/99/40/d4/DM00031020.pdf/files/DM00031020.pdf/jcr:content/translations/en.DM00031020.pdf
+*     This assumption also requires for instance that there are no radiation
+*     caused hardware errors.
+*   - After startup, all variables used in this section are exclusively modified
+*     by the code in this section (this excludes function parameters)
+*     This assumption also requires that there is no memory corruption.
+*   - This code is compiled by a C standard compliant compiler.
+*
+* Furthermore:
+*   - Between calls to safety_critical_arm_motor_pwm and
+*     safety_critical_disarm_motor_pwm the motor's Ibus current is
+*     set to the correct value and update_brake_resistor is called
+*     at a high rate.
+*/
+
+
+// @brief Kicks off the arming process of the motor.
+// All calls to this function must clearly originate
+// from user input.
+void safety_critical_arm_motor_pwm(Motor& motor) {
+    uint8_t sr = cpu_enter_critical();
+    if (brake_resistor_armed_) {
+        motor.armed_state_ = Motor::ARMED_STATE_WAITING_FOR_TIMINGS;
+    }
+    cpu_exit_critical(sr);
+}
+
+// @brief Disarms the motor PWM.
+// After calling this function, it is guaranteed that all three
+// motor phases are floating and will not be enabled again until
+// safety_critical_arm_motor_phases is called.
+void safety_critical_disarm_motor_pwm(Motor& motor) {
+    uint8_t sr = cpu_enter_critical();
+    motor.armed_state_ = Motor::ARMED_STATE_DISARMED;
+    __HAL_TIM_MOE_DISABLE_UNCONDITIONALLY(motor.hw_config_.timer);
+    cpu_exit_critical(sr);
+}
+
+// @brief Updates the phase timings unless the motor is disarmed.
+//
+// If this is called at a rate higher than the motor's timer period,
+// the actual PMW timings on the pins can be undefined for up to one
+// timer period.
+void safety_critical_apply_motor_pwm_timings(Motor& motor, uint16_t timings[3]) {
+    uint8_t sr = cpu_enter_critical();
+    if (!brake_resistor_armed_) {
+        motor.armed_state_ = Motor::ARMED_STATE_ARMED;
+    }
+
+    motor.hw_config_.timer->Instance->CCR1 = timings[0];
+    motor.hw_config_.timer->Instance->CCR2 = timings[1];
+    motor.hw_config_.timer->Instance->CCR3 = timings[2];
+
+    if (motor.armed_state_ == Motor::ARMED_STATE_WAITING_FOR_TIMINGS) {
+        // timings were just loaded into the timer registers
+        // the timer register are buffered, so they won't have an effect
+        // on the output just yet so we need to wait until the next
+        // interrupt before we actually enable the output
+        motor.armed_state_ = Motor::ARMED_STATE_WAITING_FOR_UPDATE;
+    } else if (motor.armed_state_ == Motor::ARMED_STATE_WAITING_FOR_UPDATE) {
+        // now we waited long enough. Enter armed state and
+        // enable the actual PWM outputs.
+        motor.armed_state_ = Motor::ARMED_STATE_ARMED;
+        __HAL_TIM_MOE_ENABLE(motor.hw_config_.timer);  // enable pwm outputs
+    } else if (motor.armed_state_ == Motor::ARMED_STATE_ARMED) {
+        // nothing to do, PWM is running, all good
+    } else {
+        // unknown state oh no
+        safety_critical_disarm_motor_pwm(motor);
+    }
+    cpu_exit_critical(sr);
+}
+
+// @brief Arms the brake resistor
+void safety_critical_arm_brake_resistor() {
+    uint8_t sr = cpu_enter_critical();
+    brake_resistor_armed_ = true;
+    htim2.Instance->CCR3 = 0;
+    htim2.Instance->CCR4 = TIM_APB1_PERIOD_CLOCKS + 1;
+    cpu_exit_critical(sr);
+}
+
+// @brief Disarms the brake resistor and by extension
+// all motor PWM outputs.
+// After calling this, the brake resistor can only be armed again
+// by calling safety_critical_arm_brake_resistor().
+void safety_critical_disarm_brake_resistor() {
+    uint8_t sr = cpu_enter_critical();
+    brake_resistor_armed_ = false;
+    htim2.Instance->CCR3 = 0;
+    htim2.Instance->CCR4 = TIM_APB1_PERIOD_CLOCKS + 1;
+    for (size_t i = 0; i < AXIS_COUNT; ++i) {
+        safety_critical_disarm_motor_pwm(axes[i]->motor_);
+    }
+    cpu_exit_critical(sr);
+}
+
+// @brief Updates the brake resistor PWM timings unless
+// the brake resistor is disarmed.
+void safety_critical_apply_brake_resistor_timings(uint32_t low_off, uint32_t high_on) {
+    uint8_t sr = cpu_enter_critical();
+    if (brake_resistor_armed_) {
+        // Safe update of low and high side timings
+        // To avoid race condition, first reset timings to safe state
+        // ch3 is low side, ch4 is high side
+        htim2.Instance->CCR3 = 0;
+        htim2.Instance->CCR4 = TIM_APB1_PERIOD_CLOCKS + 1;
+        htim2.Instance->CCR3 = low_off;
+        htim2.Instance->CCR4 = high_on;
+    }
+    cpu_exit_critical(sr);
+}
+
 /* Function implementations --------------------------------------------------*/
 
 void start_adc_pwm() {
@@ -70,6 +225,12 @@ void start_adc_pwm() {
     htim2.Instance->CCR4 = TIM_APB1_PERIOD_CLOCKS + 1;
     HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_3);
     HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_4);
+
+    // Disarm motors and arm brake resistor
+    for (size_t i = 0; i < AXIS_COUNT; ++i) {
+        safety_critical_disarm_motor_pwm(axes[i]->motor_);
+    }
+    safety_critical_arm_brake_resistor();
 }
 
 void start_pwm(TIM_HandleTypeDef* htim) {
@@ -137,13 +298,15 @@ void sync_timers(TIM_HandleTypeDef* htim_a, TIM_HandleTypeDef* htim_b,
     htim_b->Instance->BDTR |= MOE_store_b;
 }
 
-// @brief Floats ALL phases immediately and sets the brake current to 0.
-void disable_all_pwms(Motor::Error_t error) {
+// @brief Floats ALL phases immediately and disarms both motors and the brake resistor.
+void low_level_fault(Motor::Error_t error) {
     // Disable all motors NOW!
     for (size_t i = 0; i < AXIS_COUNT; ++i) {
-        axes[i]->motor_.disarm();
+        safety_critical_disarm_motor_pwm(axes[i]->motor_);
         axes[i]->motor_.error_ = error;
     }
+    
+    safety_critical_disarm_brake_resistor();
 }
 
 //--------------------------------
@@ -166,7 +329,7 @@ void pwm_trig_adc_cb(ADC_HandleTypeDef* hadc, bool injected) {
 
     // Ensure ADCs are expected ones to simplify the logic below
     if (!(hadc == &hadc2 || hadc == &hadc3)) {
-        disable_all_pwms(Motor::ERROR_ADC_FAILED);
+        low_level_fault(Motor::ERROR_ADC_FAILED);
         return;
     };
 
@@ -189,18 +352,17 @@ void pwm_trig_adc_cb(ADC_HandleTypeDef* hadc, bool injected) {
 
     // Load next timings for the motor that we're not currently sampling
     if (update_timings) {
-        if (other_axis.motor_.next_timings_valid_ && !other_axis.missed_control_deadline_) {
-            other_axis.motor_.next_timings_valid_ = false;
-            other_axis.motor_.hw_config_.timer->Instance->CCR1 = other_axis.motor_.next_timings_[0];
-            other_axis.motor_.hw_config_.timer->Instance->CCR2 = other_axis.motor_.next_timings_[1];
-            other_axis.motor_.hw_config_.timer->Instance->CCR3 = other_axis.motor_.next_timings_[2];
-            __HAL_TIM_MOE_ENABLE(other_axis.motor_.hw_config_.timer);  // enable pwm outputs
-            update_brake_current();
-        } else {
+        if (!other_axis.motor_.next_timings_valid_) {
             // the motor control loop failed to update the timings in time
             // we must assume that it died and therefore float all phases
-            other_axis.motor_.disarm();
+            safety_critical_disarm_motor_pwm(other_axis.motor_);
+        } else {
+            other_axis.motor_.next_timings_valid_ = false;
+            safety_critical_apply_motor_pwm_timings(
+                other_axis.motor_, other_axis.motor_.next_timings_
+            );
         }
+        update_brake_current();
     }
 
     // Check the timing of the sequencing
@@ -248,7 +410,9 @@ void pwm_trig_adc_cb(ADC_HandleTypeDef* hadc, bool injected) {
 void update_brake_current() {
     float Ibus_sum = 0.0f;
     for (size_t i = 0; i < AXIS_COUNT; ++i) {
-        Ibus_sum += axes[i]->motor_.current_control_.Ibus;
+        if (axes[i]->motor_.armed_state_ == Motor::ARMED_STATE_ARMED) {
+            Ibus_sum += axes[i]->motor_.current_control_.Ibus;
+        }
     }
     float brake_current = -Ibus_sum;
     // Clip negative values to 0.0f
@@ -256,16 +420,13 @@ void update_brake_current() {
     float brake_duty = brake_current * board_config.brake_resistance / vbus_voltage;
 
     // Duty limit at 90% to allow bootstrap caps to charge
-    if (brake_duty > 0.9f) brake_duty = 0.9f;
-    int high_on = TIM_APB1_PERIOD_CLOCKS * (1.0f - brake_duty);
-    int low_off = high_on - TIM_APB1_DEADTIME_CLOCKS;
-    if (low_off < 0) low_off = 0;
-
-    // Safe update of low and high side timings
-    // To avoid race condition, first reset timings to safe state
-    // ch3 is low side, ch4 is high side
-    htim2.Instance->CCR3 = 0;
-    htim2.Instance->CCR4 = TIM_APB1_PERIOD_CLOCKS + 1;
-    htim2.Instance->CCR3 = low_off;
-    htim2.Instance->CCR4 = high_on;
+    // If brake_duty is NaN, this expression will also evaluate to true
+    if ((brake_duty >= 0.0f) && (brake_duty <= 0.9f)) {
+        int high_on = static_cast<int>(TIM_APB1_PERIOD_CLOCKS * (1.0f - brake_duty));
+        int low_off = high_on - TIM_APB1_DEADTIME_CLOCKS;
+        if (low_off < 0) low_off = 0;
+        safety_critical_apply_brake_resistor_timings(low_off, high_on);
+    } else {
+        safety_critical_disarm_brake_resistor();
+    }
 }
