@@ -118,7 +118,7 @@ the device during upgrade. Otherwise, if something goes wrong, you need an exter
 programmer to recover the device. This will be fixed in the future.
 
 ### Flashing the firmware (external Programmer)
-* **Make sure you have [configured the parameters first](#configuring-parameters)**
+* **Make sure you have [configured the build first](#configuring-the-build)**
 * Connect `GND`, `SWD`, and `SWC` on connector J2 to the programmer. Note: Always plug in `GND` first!
 * You need to power the board by only **ONE** of the following: VCC(3.3v), 5V, or the main power connection (the DC bus). The USB port (J1) does not power the board.
 * Run `make flash` in the `Firmware` directory.
