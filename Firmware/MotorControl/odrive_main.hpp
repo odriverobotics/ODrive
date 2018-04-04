@@ -26,6 +26,7 @@ struct BoardConfig_t {
 };
 
 class Axis;
+class Motor;
 
 //default timeout waiting for phase measurement signals
 #define PH_CURRENT_MEAS_TIMEOUT 2 // [ms]
@@ -33,6 +34,7 @@ class Axis;
 static const float current_meas_period = CURRENT_MEAS_PERIOD;
 static const int current_meas_hz = CURRENT_MEAS_HZ;
 extern float vbus_voltage;
+extern bool brake_resistor_armed_;
 extern const float elec_rad_per_enc;
 extern BoardConfig_t board_config;
 

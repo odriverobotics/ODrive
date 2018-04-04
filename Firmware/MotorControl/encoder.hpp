@@ -16,7 +16,7 @@ struct EncoderConfig_t {
     int32_t cpr = (2048 * 4); // Default resolution of CUI-AMT102 encoder,
     int32_t offset = 0; // If pre_calibrated is true, this is copied into encoder.offset_ once
                         // index search succeeds
-    float calib_range = 0.02;
+    float calib_range = 0.02f;
 };
 
 class Encoder {

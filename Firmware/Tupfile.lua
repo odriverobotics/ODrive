@@ -63,6 +63,11 @@ if tup.getconfig("STEP_DIR") == "y" then
     end
 end
 
+-- Compiler settings
+if tup.getconfig("STRICT") == "true" then
+    FLAGS += '-Werror'
+end
+
 
 -- C-specific flags
 FLAGS += '-D__weak="__attribute__((weak))"'
@@ -74,7 +79,7 @@ FLAGS += '-mthumb'
 FLAGS += '-mcpu=cortex-m4'
 FLAGS += '-mfpu=fpv4-sp-d16'
 FLAGS += '-mfloat-abi=hard'
-FLAGS += { '-Wall', '-fdata-sections', '-ffunction-sections'}
+FLAGS += { '-Wall', '-Wfloat-conversion', '-fdata-sections', '-ffunction-sections'}
 
 -- debug build
 FLAGS += '-g -gdwarf-2'

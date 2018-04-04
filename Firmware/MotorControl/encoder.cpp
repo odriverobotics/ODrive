@@ -80,7 +80,8 @@ bool Encoder::run_index_search() {
 
         float v_alpha = voltage_magnitude * arm_cos_f32(phase);
         float v_beta = voltage_magnitude * arm_sin_f32(phase);
-        axis_->motor_.enqueue_voltage_timings(v_alpha, v_beta);
+        if (!axis_->motor_.enqueue_voltage_timings(v_alpha, v_beta))
+            return false; // error set inside enqueue_voltage_timings
         axis_->motor_.log_timing(Motor::TIMING_LOG_IDX_SEARCH);
 
         // continue until the index is found
@@ -115,7 +116,8 @@ bool Encoder::run_offset_calibration() {
     // go to motor zero phase for start_lock_duration to get ready to scan
     int i = 0;
     axis_->run_control_loop([&](){
-        axis_->motor_.enqueue_voltage_timings(voltage_magnitude, 0.0f);
+        if (!axis_->motor_.enqueue_voltage_timings(voltage_magnitude, 0.0f))
+            return false; // error set inside enqueue_voltage_timings
         axis_->motor_.log_timing(Motor::TIMING_LOG_ENC_CALIB);
         return ++i < start_lock_duration * current_meas_hz;
     });
@@ -131,7 +133,8 @@ bool Encoder::run_offset_calibration() {
         float phase = wrap_pm_pi(scan_distance * (float)i / (float)num_steps - scan_distance / 2.0f);
         float v_alpha = voltage_magnitude * arm_cos_f32(phase);
         float v_beta = voltage_magnitude * arm_sin_f32(phase);
-        axis_->motor_.enqueue_voltage_timings(v_alpha, v_beta);
+        if (!axis_->motor_.enqueue_voltage_timings(v_alpha, v_beta))
+            return false; // error set inside enqueue_voltage_timings
         axis_->motor_.log_timing(Motor::TIMING_LOG_ENC_CALIB);
 
         encvaluesum += (int16_t)hw_config_.timer->Instance->CNT;
@@ -169,7 +172,8 @@ bool Encoder::run_offset_calibration() {
         float phase = wrap_pm_pi(-scan_distance * (float)i / (float)num_steps + scan_distance / 2.0f);
         float v_alpha = voltage_magnitude * arm_cos_f32(phase);
         float v_beta = voltage_magnitude * arm_sin_f32(phase);
-        axis_->motor_.enqueue_voltage_timings(v_alpha, v_beta);
+        if (!axis_->motor_.enqueue_voltage_timings(v_alpha, v_beta))
+            return false; // error set inside enqueue_voltage_timings
         axis_->motor_.log_timing(Motor::TIMING_LOG_ENC_CALIB);
 
         encvaluesum += (int16_t)hw_config_.timer->Instance->CNT;

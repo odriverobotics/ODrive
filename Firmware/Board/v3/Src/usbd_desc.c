@@ -51,10 +51,9 @@
 #include "usbd_core.h"
 #include "usbd_desc.h"
 #include "usbd_conf.h"
-#include "communication.h"
 
 /* USER CODE BEGIN INCLUDE */
-
+#include "communication.h"
 /* USER CODE END INCLUDE */
 
 /* Private typedef -----------------------------------------------------------*/

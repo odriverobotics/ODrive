@@ -38,10 +38,14 @@
 
 /* USER CODE BEGIN 0 */
 #include "freertos_vars.h"
-#include "low_level.h"
+#include <stdbool.h>
 
 typedef void (*ADC_handler_t)(ADC_HandleTypeDef* hadc, bool injected);
 void ADC_IRQ_Dispatch(ADC_HandleTypeDef* hadc, ADC_handler_t callback);
+
+// TODO: move somewhere else
+void pwm_trig_adc_cb(ADC_HandleTypeDef* hadc, bool injected);
+void vbus_sense_adc_cb(ADC_HandleTypeDef* hadc, bool injected);
 
 /* USER CODE END 0 */
 

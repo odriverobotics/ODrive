@@ -8,6 +8,9 @@ set -euo pipefail
 THIS_DIR="$(dirname "$0")"
 cd "$THIS_DIR"
 
+# Treat warnings as errors
+export CONFIG_STRICT=true
+
 # Write all environment variables that start with "CONFIG_" to tup.config
 rm -rdf build
 mkdir -p build
