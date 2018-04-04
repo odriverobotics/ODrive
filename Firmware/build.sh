@@ -6,7 +6,7 @@
 set -euo pipefail
 
 THIS_DIR="$(dirname "$0")"
-cd "$THIS_DIR/../Firmware"
+cd "$THIS_DIR"
 
 # Write all environment variables that start with "CONFIG_" to tup.config
 rm -rdf build
@@ -18,6 +18,6 @@ bash -xe ./tup_build.sh
 # Deploy
 if ! [ -z ${DEPLOY+x} ]; then
     mkdir -p deploy
-    cp build/ODriveFirmware.elf deploy/ODriveFirmware-"$DEPLOY".elf
-    cp build/ODriveFirmware.hex deploy/ODriveFirmware-"$DEPLOY".hex
+    cp build/ODriveFirmware.elf deploy/ODriveFirmware_"$DEPLOY".elf
+    cp build/ODriveFirmware.hex deploy/ODriveFirmware_"$DEPLOY".hex
 fi

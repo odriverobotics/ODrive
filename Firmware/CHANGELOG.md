@@ -2,9 +2,32 @@
 Please add a note of your changes below this heading if you make a Pull Request.
 
 ### Added
+ * `make write_otp` command to burn the board version onto the ODrive's one-time programmable memory. If you have an ODrive v3.4 or older, you should run this once for a better firmware update user experience in the future. Run the command without any options for more details. Once set, the board version is exposed through the `board_version_[...]` properties.
+ * bake Git-derived firmware version into firmware binary. The firmware version is exposed through the `fw_version_[...]` properties.
+ * infrastructure to publish the python tools to PyPi. See `tools/setup.py` for details.
+
+### Changed
+ * The DFU script now verifies the flash after writing
+ * Refactor python tools
+   * The scripts `explore_odrive.py`, `liveplotter.py`, `drv_status.py` and `rate_test.py` have been merged into one single `odrivetool` script. Running this script without any arguments provides the shell that `explore_odrive.py` used to provide.
+   * The command line options of `odrivetool` have changed compared to the original `explore_odrive.py`. See `odrivetool --help` for more details.
+   * `odrivetool` (previously `explore_odrive.py`) now supports controlling multiple ODrives concurrently (`odrv0`, `odrv1`, ...)
+   * No need to restart the `odrivetool` shell when devices get disconnected and reconnected
+   * ODrive accesses from within python tools are now thread-safe. That means you can read from the same remote property from multiple threads concurrently.
+   * The liveplotter (`odrivetool liveplotter`, formerly `liveplotter.py`) does no longer steal focus and closes as expected
+   * (experimental: start liveplotter from `odrivetool` shell by typing `start_liveplotter(lambda: odrv0.motor0.encoder.encoder_state)`)
+
+### Fixed
+
+# Releases
+
+## [0.3.6] - 2018-03-26
+
+### Added
 * **Storing of configuration parameters to Non Volatile Memory**
 * **USB Bootloader**
-* `make erase_config` to erase the configuration with an STLink (the configuration can also be erased from within explore_odrive.py, using `my_odrive.erase_configuration()`)
+* `make erase_config` to erase the configuration with an STLink (the configuration can also be erased from within explore_odrive.py, using `odrv0.erase_configuration()`)
+* Travis-CI builds firmware for all board versions and deploys the binaries when a tag is pushed to master
 
 ### Changed
 * Most of the code from `lowlevel.c` moved to `axis.cpp`, `encoder.cpp`, `controller.cpp`, `sensorless_estimator.cpp`, `motor.cpp` and the corresponding header files
@@ -15,18 +38,9 @@ Please add a note of your changes below this heading if you make a Pull Request.
 * Update CubeMX generated STM platform code to version 1.19.0
 * Remove `UUID_0`, `UUID_1` and `UUID_2` from USB protocol. Use `serial_number` instead.
 * Freertos memory pool (task stacks, etc) now uses Core Coupled Memory.
-* Refactor python tools
-   * `explore_odrive.py` now supports controlling multiple ODrives concurrently (`odrv0`, `odrv1`, ...)
-   * No need to restart `explore_odrive.py` when devices get disconnected and reconnected
-   * The command line arguments of `explore_odrive.py` have changed. See `explore_odrive.py --help` for more details.
-   * ODrive accesses from within python tools are now thread-safe
-   * Liveplotter does no longer steal focus and closes as expected
-   * (experimental: start liveplotter from `explore_odrive.py` by typing `start_liveplotter(lambda: odrv0.motor0.encoder.encoder_state)`)
 
 ### Fixed
 * malloc now fails if we run out of memory (before it would always succeed even if we are out of ram...)
-
-# Releases
 
 ## [0.3.5] - 2018-03-04
 

@@ -67,8 +67,9 @@ function GCCToolchain(prefix, builddir, compiler_flags, linker_flags)
         else
             extra_outputs = {}
         end
+        if src == 'MotorControl/communication.cpp' then extra_inputs = 'build/version.h' end -- TODO: fix hack
         tup.frule{
-            inputs= { src },
+            inputs= { src, extra_inputs=extra_inputs },
             command=compiler..' -c %f '..
                     tostring(compiler_flags)..' '.. -- CFLAGS for this compiler
                     tostring(inc_flags)..' '.. -- CFLAGS for this translation unit
