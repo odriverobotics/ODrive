@@ -39,7 +39,7 @@ bool Motor::arm() {
     // that we have exactly one full interrupt period until the third trigger. This gives
     // the control loop the correct time quota to set up modulation timings.
     if (!(axis_->wait_for_current_meas() && axis_->wait_for_current_meas()))
-        return axis_->error_ = Axis::ERROR_CURRENT_MEASUREMENT_TIMEOUT, false;
+        return axis_->error_ |= Axis::ERROR_CURRENT_MEASUREMENT_TIMEOUT, false;
     next_timings_valid_ = false;
     safety_critical_arm_motor_pwm(*this);
     return true;
@@ -119,7 +119,7 @@ bool Motor::check_DRV_fault() {
 
 bool Motor::do_checks() {
     if (!check_DRV_fault()) {
-        error_ = ERROR_DRV_FAULT;
+        error_ |= ERROR_DRV_FAULT;
         return false;
     }
     return true;
@@ -162,7 +162,7 @@ bool Motor::measure_phase_resistance(float test_current, float max_voltage) {
         float Ialpha = -(current_meas_.phB + current_meas_.phC);
         test_voltage += (kI * current_meas_period) * (test_current - Ialpha);
         if (test_voltage > max_voltage || test_voltage < -max_voltage)
-            return error_ = ERROR_PHASE_RESISTANCE_OUT_OF_RANGE, false;
+            return error_ |= ERROR_PHASE_RESISTANCE_OUT_OF_RANGE, false;
 
         // Test voltage along phase A
         if (!enqueue_voltage_timings(test_voltage, 0.0f))
@@ -216,14 +216,12 @@ bool Motor::measure_phase_inductance(float voltage_low, float voltage_high) {
     config_.phase_inductance = L;
     // TODO arbitrary values set for now
     if (L < 1e-6f || L > 500e-6f)
-        return error_ = ERROR_PHASE_INDUCTANCE_OUT_OF_RANGE, false;
+        return error_ |= ERROR_PHASE_INDUCTANCE_OUT_OF_RANGE, false;
     return true;
 }
 
 
 bool Motor::run_calibration() {
-    error_ = ERROR_NO_ERROR;
-
     float R_calib_max_voltage = config_.resistance_calib_max_voltage;
     if (config_.motor_type == MOTOR_TYPE_HIGH_CURRENT) {
         if (!measure_phase_resistance(config_.calibration_current, R_calib_max_voltage))
@@ -245,7 +243,7 @@ bool Motor::run_calibration() {
 bool Motor::enqueue_modulation_timings(float mod_alpha, float mod_beta) {
     float tA, tB, tC;
     if (SVM(mod_alpha, mod_beta, &tA, &tB, &tC) != 0)
-        return error_ = ERROR_NUMERICAL, false;
+        return error_ |= ERROR_NUMERICAL, false;
     next_timings_[0] = (uint16_t)(tA * (float)TIM_1_8_PERIOD_CLOCKS);
     next_timings_[1] = (uint16_t)(tB * (float)TIM_1_8_PERIOD_CLOCKS);
     next_timings_[2] = (uint16_t)(tC * (float)TIM_1_8_PERIOD_CLOCKS);
@@ -353,7 +351,7 @@ bool Motor::update(float current_setpoint, float phase) {
         if(!FOC_voltage(0.0f, current_setpoint, phase))
             return false;
     } else {
-        error_ = ERROR_NOT_IMPLEMENTED_MOTOR_TYPE;
+        error_ |= ERROR_NOT_IMPLEMENTED_MOTOR_TYPE;
         return false;
     }
     return true;

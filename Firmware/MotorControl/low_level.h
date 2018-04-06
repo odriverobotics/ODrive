@@ -22,7 +22,7 @@ extern "C" {
 /* Exported functions --------------------------------------------------------*/
 
 void safety_critical_arm_motor_pwm(Motor& motor);
-void safety_critical_disarm_motor_pwm(Motor& motor);
+bool safety_critical_disarm_motor_pwm(Motor& motor);
 void safety_critical_apply_motor_pwm_timings(Motor& motor, uint16_t timings[3]);
 void safety_critical_arm_brake_resistor();
 void safety_critical_disarm_brake_resistor();

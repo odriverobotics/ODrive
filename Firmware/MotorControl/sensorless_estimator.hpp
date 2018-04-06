@@ -4,8 +4,8 @@
 class SensorlessEstimator {
 public:
     enum Error_t {
-        ERROR_NONE,
-        ERROR_NUMERICAL,
+        ERROR_NONE = 0,
+        ERROR_NUMERICAL = 0x01,
     };
 
     SensorlessEstimator();
@@ -39,5 +39,7 @@ public:
         );
     }
 };
+
+DEFINE_ENUM_FLAG_OPERATORS(SensorlessEstimator::Error_t)
 
 #endif /* __SENSORLESS_ESTIMATOR_HPP */

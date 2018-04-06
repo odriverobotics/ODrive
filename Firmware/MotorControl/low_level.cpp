@@ -110,11 +110,14 @@ void safety_critical_arm_motor_pwm(Motor& motor) {
 // After calling this function, it is guaranteed that all three
 // motor phases are floating and will not be enabled again until
 // safety_critical_arm_motor_phases is called.
-void safety_critical_disarm_motor_pwm(Motor& motor) {
+// @returns true if the motor was in a state other than disarmed before
+bool safety_critical_disarm_motor_pwm(Motor& motor) {
     uint8_t sr = cpu_enter_critical();
+    bool was_armed = motor.armed_state_ != Motor::ARMED_STATE_DISARMED;
     motor.armed_state_ = Motor::ARMED_STATE_DISARMED;
     __HAL_TIM_MOE_DISABLE_UNCONDITIONALLY(motor.hw_config_.timer);
     cpu_exit_critical(sr);
+    return was_armed;
 }
 
 // @brief Updates the phase timings unless the motor is disarmed.
@@ -303,7 +306,7 @@ void low_level_fault(Motor::Error_t error) {
     // Disable all motors NOW!
     for (size_t i = 0; i < AXIS_COUNT; ++i) {
         safety_critical_disarm_motor_pwm(axes[i]->motor_);
-        axes[i]->motor_.error_ = error;
+        axes[i]->motor_.error_ |= error;
     }
     
     safety_critical_disarm_brake_resistor();
@@ -355,7 +358,10 @@ void pwm_trig_adc_cb(ADC_HandleTypeDef* hadc, bool injected) {
         if (!other_axis.motor_.next_timings_valid_) {
             // the motor control loop failed to update the timings in time
             // we must assume that it died and therefore float all phases
-            safety_critical_disarm_motor_pwm(other_axis.motor_);
+            bool was_armed = safety_critical_disarm_motor_pwm(other_axis.motor_);
+            if (was_armed) {
+                other_axis.motor_.error_ |= Motor::ERROR_CONTROL_DEADLINE_MISSED;
+            }
         } else {
             other_axis.motor_.next_timings_valid_ = false;
             safety_critical_apply_motor_pwm_timings(
