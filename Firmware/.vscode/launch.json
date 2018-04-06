@@ -11,6 +11,7 @@
             "request": "launch",
             "name": "Debug ODrive",
             "executable": "${workspaceRoot}/build/ODriveFirmware.elf",
+            "rtos": "FreeRTOS",
             "configFiles": [
                 "interface/stlink-v2.cfg",
                 "target/stm32f4x_stlink.cfg",
