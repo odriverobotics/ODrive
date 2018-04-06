@@ -85,6 +85,7 @@ LDFLAGS += '-T'..boarddir..'/STM32F405RGTx_FLASH.ld'
 LDFLAGS += '-L'..boarddir..'/Drivers/CMSIS/Lib' -- lib dir
 LDFLAGS += '-lc -lm -lnosys -larm_cortexM4lf_math' -- libs
 LDFLAGS += '-mthumb -mcpu=cortex-m4 -mfpu=fpv4-sp-d16 -mfloat-abi=hard -specs=nosys.specs -specs=nano.specs -u _printf_float -u _scanf_float -Wl,--cref -Wl,--gc-sections'
+LDFLAGS += '-Wl,--undefined=uxTopUsedPriority'
 
 
 -- common flags for ASM, C and C++
@@ -138,7 +139,8 @@ build{
         'MotorControl/axis.cpp',
         'MotorControl/commands.cpp',
         'MotorControl/protocol.cpp',
-        'MotorControl/config.cpp'
+        'MotorControl/config.cpp',
+        'FreeRTOS-openocd.c'
     },
     includes={
         'Drivers/DRV8301',
