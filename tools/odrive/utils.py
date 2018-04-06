@@ -72,21 +72,21 @@ def start_liveplotter(get_var_callback):
     threading.Thread(target=plot_data).start()
     #plot_data()
 
-def print_drv_regs(device):
+def print_drv_regs(name, motor):
     """
-    Dumps the current gate driver regisers for Motor 0
+    Dumps the current gate driver regisers for the specified motor
     """
-    fault = device.motor0.gate_driver.drv_fault
-    status_reg_1 = device.motor0.gate_driver.status_reg_1
-    status_reg_2 = device.motor0.gate_driver.status_reg_2
-    ctrl_reg_1 = device.motor0.gate_driver.ctrl_reg_1
-    ctrl_reg_2 = device.motor0.gate_driver.ctrl_reg_2
-
+    fault = motor.gate_driver.drv_fault
+    status_reg_1 = motor.gate_driver.status_reg_1
+    status_reg_2 = motor.gate_driver.status_reg_2
+    ctrl_reg_1 = motor.gate_driver.ctrl_reg_1
+    ctrl_reg_2 = motor.gate_driver.ctrl_reg_2
+    print(name + ": " + str(fault))
     print("DRV Fault Code: " + str(fault))
     print("Status Reg 1: " + str(status_reg_1) + " (" + format(status_reg_1, '#010b') + ")")
     print("Status Reg 2: " + str(status_reg_2) + " (" + format(status_reg_2, '#010b') + ")")
-    print("Control Reg 1: " + str(ctrl_reg_1) + " (" + format(ctrl_reg_1, '#010b') + ")")
-    print("Control Reg 2: " + str(ctrl_reg_2) + " (" + format(ctrl_reg_2, '#010b') + ")")
+    print("Control Reg 1: " + str(ctrl_reg_1) + " (" + format(ctrl_reg_1, '#013b') + ")")
+    print("Control Reg 2: " + str(ctrl_reg_2) + " (" + format(ctrl_reg_2, '#09b') + ")")
 
 def rate_test(device):
     """
