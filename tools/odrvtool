@@ -111,7 +111,8 @@ try:
         from odrive.utils import print_drv_regs
         print("Waiting for ODrive...")
         my_odrive = odrive.discovery.find_any(path=args.path, serial_number=args.serial_number)
-        print_drv_regs(my_odrive)
+        print_drv_regs("Motor 0", my_odrive.axis0.motor)
+        print_drv_regs("Motor 1", my_odrive.axis1.motor)
 
     elif args.command == 'rate-test':
         from odrive.utils import rate_test
