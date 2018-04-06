@@ -22,10 +22,10 @@ struct EncoderConfig_t {
 class Encoder {
 public:
     enum Error_t {
-        ERROR_NONE,
-        ERROR_NUMERICAL,
-        ERROR_CPR_OUT_OF_RANGE,
-        ERROR_RESPONSE,
+        ERROR_NONE = 0,
+        ERROR_NUMERICAL = 0x01,
+        ERROR_CPR_OUT_OF_RANGE = 0x02,
+        ERROR_RESPONSE = 0x04,
     };
 
     Encoder(const EncoderHardwareConfig_t& hw_config,
@@ -82,5 +82,7 @@ public:
         );
     }
 };
+
+DEFINE_ENUM_FLAG_OPERATORS(Encoder::Error_t)
 
 #endif // __ENCODER_HPP

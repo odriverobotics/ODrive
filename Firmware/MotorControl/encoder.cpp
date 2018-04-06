@@ -150,7 +150,7 @@ bool Encoder::run_offset_calibration() {
     float actual_encoder_delta_abs = fabsf((int16_t)hw_config_.timer->Instance->CNT-init_enc_val);
     if(fabsf(actual_encoder_delta_abs - expected_encoder_delta)/expected_encoder_delta > config_.calib_range)
     {
-        error_ = ERROR_CPR_OUT_OF_RANGE;
+        error_ |= ERROR_CPR_OUT_OF_RANGE;
         return false;
     }
     // check direction
@@ -162,7 +162,7 @@ bool Encoder::run_offset_calibration() {
         axis_->motor_.config_.direction = -1;
     } else {
         // Encoder response error
-        error_ = ERROR_RESPONSE;
+        error_ |= ERROR_RESPONSE;
         return false;
     }
 
@@ -192,7 +192,7 @@ bool Encoder::run_offset_calibration() {
 bool Encoder::update(float* pos_estimate, float* vel_estimate, float* phase_output) {
     // Check that we don't get problems with discrete time approximation
     if (!(current_meas_period * pll_kp_ < 1.0f)) {
-        error_ = ERROR_NUMERICAL;
+        error_ |= ERROR_NUMERICAL;
         return false;
     }
 

@@ -43,17 +43,17 @@ struct AxisConfig_t {
 class Axis {
 public:
     enum Error_t {
-        ERROR_NO_ERROR = 0,
-        ERROR_INVALID_STATE = 1, //<! an invalid state was requested
-        ERROR_DC_BUS_UNDER_VOLTAGE = 2,
-        ERROR_DC_BUS_OVER_VOLTAGE = 3,
-        ERROR_CURRENT_MEASUREMENT_TIMEOUT = 4,
-        ERROR_CONTROL_LOOP_TIMEOUT = 5,
-        ERROR_MOTOR_FAILED = 6,
-        ERROR_SENSORLESS_ESTIMATOR_FAILED = 7,
-        ERROR_ENCODER_FAILED = 8,
-        ERROR_CONTROLLER_FAILED = 9,
-        ERROR_POS_CTRL_DURING_SENSORLESS = 10,
+        ERROR_NO_ERROR = 0x00,
+        ERROR_INVALID_STATE = 0x01, //<! an invalid state was requested
+        ERROR_DC_BUS_UNDER_VOLTAGE = 0x02,
+        ERROR_DC_BUS_OVER_VOLTAGE = 0x04,
+        ERROR_CURRENT_MEASUREMENT_TIMEOUT = 0x08,
+        ERROR_MOTOR_DISARMED = 0x10, //<! the motor was unexpectedly disarmed
+        ERROR_MOTOR_FAILED = 0x20,
+        ERROR_SENSORLESS_ESTIMATOR_FAILED = 0x40,
+        ERROR_ENCODER_FAILED = 0x80,
+        ERROR_CONTROLLER_FAILED = 0x100,
+        ERROR_POS_CTRL_DURING_SENSORLESS = 0x200,
     };
 
     enum thread_signals {
@@ -102,13 +102,13 @@ public:
     template<typename T>
     void run_control_loop(const T& update_handler) {
         while (requested_state_ == AXIS_STATE_UNDEFINED) {
-            if (motor_.error_ != Motor::ERROR_NO_ERROR) {
-                error_ = ERROR_MOTOR_FAILED;
-                break;
-            }
             if ((current_state_ != AXIS_STATE_IDLE) && (motor_.armed_state_ == Motor::ARMED_STATE_DISARMED)) {
                 // motor got disarmed in something other than the idle loop
-                error_ = ERROR_CONTROL_LOOP_TIMEOUT;
+                error_ |= ERROR_MOTOR_DISARMED;
+                break;
+            }
+            if (motor_.error_ != Motor::ERROR_NO_ERROR) {
+                error_ |= ERROR_MOTOR_FAILED;
                 break;
             }
 
@@ -127,7 +127,7 @@ public:
                 // safe and float the phases
                 safety_critical_disarm_motor_pwm(motor_);
                 update_brake_current();
-                error_ = ERROR_CURRENT_MEASUREMENT_TIMEOUT;
+                error_ |= ERROR_CURRENT_MEASUREMENT_TIMEOUT;
                 break;
             }
         }
@@ -189,5 +189,8 @@ public:
         );
     }
 };
+
+
+DEFINE_ENUM_FLAG_OPERATORS(Axis::Error_t)
 
 #endif /* __AXIS_HPP */

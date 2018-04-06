@@ -24,7 +24,7 @@ bool SensorlessEstimator::update(float* pos_estimate, float* vel_estimate, float
 
     // Check that we don't get problems with discrete time approximation
     if (!(current_meas_period * pll_kp_ < 1.0f)) {
-        error_ = ERROR_NUMERICAL;
+        error_ |= ERROR_NUMERICAL;
         return false;
     }
 

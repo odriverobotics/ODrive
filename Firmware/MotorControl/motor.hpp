@@ -54,14 +54,15 @@ typedef struct {
 class Motor {
 public:
     enum Error_t {
-        ERROR_NO_ERROR,
-        ERROR_PHASE_RESISTANCE_OUT_OF_RANGE,
-        ERROR_PHASE_INDUCTANCE_OUT_OF_RANGE,
-        ERROR_ADC_FAILED,
-        ERROR_DRV_FAULT,
-        ERROR_NOT_IMPLEMENTED_MOTOR_TYPE,
-        ERROR_BRAKE_CURRENT_OUT_OF_RANGE,
-        ERROR_NUMERICAL
+        ERROR_NO_ERROR = 0,
+        ERROR_PHASE_RESISTANCE_OUT_OF_RANGE = 0x01,
+        ERROR_PHASE_INDUCTANCE_OUT_OF_RANGE = 0x02,
+        ERROR_ADC_FAILED = 0x04,
+        ERROR_DRV_FAULT = 0x08,
+        ERROR_CONTROL_DEADLINE_MISSED = 0x10,
+        ERROR_NOT_IMPLEMENTED_MOTOR_TYPE = 0x20,
+        ERROR_BRAKE_CURRENT_OUT_OF_RANGE = 0x40,
+        ERROR_NUMERICAL = 0x80
     };
 
     enum TimingLog_t {
@@ -208,5 +209,7 @@ public:
         );
     }
 };
+
+DEFINE_ENUM_FLAG_OPERATORS(Motor::Error_t)
 
 #endif // __MOTOR_HPP

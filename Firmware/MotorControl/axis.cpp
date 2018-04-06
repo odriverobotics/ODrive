@@ -101,9 +101,9 @@ bool Axis::check_PSU_brownout() {
 // Sets error and returns false otherwise.
 bool Axis::do_checks() {
     if (!motor_.do_checks())
-        return error_ = ERROR_MOTOR_FAILED, false;
+        return error_ |= ERROR_MOTOR_FAILED, false;
     if (!check_PSU_brownout())
-        return error_ = ERROR_DC_BUS_UNDER_VOLTAGE, false;
+        return error_ |= ERROR_DC_BUS_UNDER_VOLTAGE, false;
     return true;
 }
 
@@ -115,7 +115,7 @@ bool Axis::run_sensorless_spin_up() {
         float I_mag = config_.spin_up_current * x;
         x += current_meas_period / config_.ramp_up_time;
         if (!motor_.update(I_mag, phase))
-            return error_ = ERROR_MOTOR_FAILED, false;
+            return error_ |= ERROR_MOTOR_FAILED, false;
         return x < 1.0f;
     });
     if (error_ != ERROR_NO_ERROR)
@@ -129,7 +129,7 @@ bool Axis::run_sensorless_spin_up() {
         phase = wrap_pm_pi(phase + vel * current_meas_period);
         float I_mag = config_.spin_up_current;
         if (!motor_.update(I_mag, phase))
-            return error_ = ERROR_MOTOR_FAILED, false;
+            return error_ |= ERROR_MOTOR_FAILED, false;
         return vel < config_.spin_up_target_vel;
     });
     return error_ == ERROR_NO_ERROR;
@@ -142,16 +142,16 @@ bool Axis::run_sensorless_control_loop() {
         float pos_estimate, vel_estimate, phase, current_setpoint;
 
         if (controller_.config_.control_mode >= CTRL_MODE_POSITION_CONTROL)
-            return error_ = ERROR_POS_CTRL_DURING_SENSORLESS, false;
+            return error_ |= ERROR_POS_CTRL_DURING_SENSORLESS, false;
 
         // We update the encoder just in case someone needs the output for testing
         encoder_.update(nullptr, nullptr, nullptr);
         if (!sensorless_estimator_.update(&pos_estimate, &vel_estimate, &phase))
-            return error_ = ERROR_SENSORLESS_ESTIMATOR_FAILED, false;
+            return error_ |= ERROR_SENSORLESS_ESTIMATOR_FAILED, false;
         if (!controller_.update(pos_estimate, vel_estimate, &current_setpoint))
-            return error_ = ERROR_CONTROLLER_FAILED, false;
+            return error_ |= ERROR_CONTROLLER_FAILED, false;
         if (!motor_.update(current_setpoint, phase))
-            return error_ = ERROR_MOTOR_FAILED, false;
+            return error_ |= ERROR_MOTOR_FAILED, false;
         return true;
     });
     set_step_dir_enabled(false);
@@ -166,11 +166,11 @@ bool Axis::run_closed_loop_control_loop() {
         // We update the sensorless estimator just in case someone needs the output for testing
         sensorless_estimator_.update(nullptr, nullptr, nullptr);
         if (!encoder_.update(&pos_estimate, &vel_estimate, &phase))
-            return error_ = ERROR_ENCODER_FAILED, false;
+            return error_ |= ERROR_ENCODER_FAILED, false;
         if (!controller_.update(pos_estimate, vel_estimate, &current_setpoint))
-            return error_ = ERROR_CONTROLLER_FAILED, false;
+            return error_ |= ERROR_CONTROLLER_FAILED, false;
         if (!motor_.update(current_setpoint, phase))
-            return error_ = ERROR_MOTOR_FAILED, false;
+            return error_ |= ERROR_MOTOR_FAILED, false;
         return true;
     });
     set_step_dir_enabled(false);
@@ -180,6 +180,7 @@ bool Axis::run_closed_loop_control_loop() {
 bool Axis::run_idle_loop() {
     // run_control_loop ignores missed modulation timing updates
     // if and only if we're in AXIS_STATE_IDLE
+    safety_critical_disarm_motor_pwm(motor_);
     run_control_loop([this](){
         sensorless_estimator_.update(nullptr, nullptr, nullptr);
         encoder_.update(nullptr, nullptr, nullptr);
@@ -276,7 +277,7 @@ void Axis::run_state_machine_loop() {
             break;
 
         default:
-            error_ = ERROR_INVALID_STATE;
+            error_ |= ERROR_INVALID_STATE;
             status = false; // this will set the state to idle
             break;
         }
