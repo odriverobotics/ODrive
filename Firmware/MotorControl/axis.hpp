@@ -48,12 +48,13 @@ public:
         ERROR_DC_BUS_UNDER_VOLTAGE = 0x02,
         ERROR_DC_BUS_OVER_VOLTAGE = 0x04,
         ERROR_CURRENT_MEASUREMENT_TIMEOUT = 0x08,
-        ERROR_MOTOR_DISARMED = 0x10, //<! the motor was unexpectedly disarmed
-        ERROR_MOTOR_FAILED = 0x20,
-        ERROR_SENSORLESS_ESTIMATOR_FAILED = 0x40,
-        ERROR_ENCODER_FAILED = 0x80,
-        ERROR_CONTROLLER_FAILED = 0x100,
-        ERROR_POS_CTRL_DURING_SENSORLESS = 0x200,
+        ERROR_BRAKE_RESISTOR_DISARMED = 0x10, //<! the brake resistor was unexpectedly disarmed
+        ERROR_MOTOR_DISARMED = 0x20, //<! the motor was unexpectedly disarmed
+        ERROR_MOTOR_FAILED = 0x40,
+        ERROR_SENSORLESS_ESTIMATOR_FAILED = 0x80,
+        ERROR_ENCODER_FAILED = 0x100,
+        ERROR_CONTROLLER_FAILED = 0x200,
+        ERROR_POS_CTRL_DURING_SENSORLESS = 0x400,
     };
 
     enum thread_signals {
@@ -102,6 +103,10 @@ public:
     template<typename T>
     void run_control_loop(const T& update_handler) {
         while (requested_state_ == AXIS_STATE_UNDEFINED) {
+            if (!brake_resistor_armed_) {
+                error_ |= ERROR_BRAKE_RESISTOR_DISARMED;
+                break;
+            }
             if ((current_state_ != AXIS_STATE_IDLE) && (motor_.armed_state_ == Motor::ARMED_STATE_DISARMED)) {
                 // motor got disarmed in something other than the idle loop
                 error_ |= ERROR_MOTOR_DISARMED;
