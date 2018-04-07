@@ -4,7 +4,7 @@
 // TODO: remove this option
 // and once the legacy protocol is phased out, remove the seq-no hack in protocol.py
 // todo: make clean switches for protocol
-#define ENABLE_LEGACY_PROTOCOL
+#define ENABLE_ASCII_PROTOCOL
 
 #include "communication.h"
 //#include "low_level.h"
@@ -13,8 +13,8 @@
 #include "freertos_vars.h"
 #include "utils.h"
 
-#ifdef ENABLE_LEGACY_PROTOCOL
-#include "legacy_commands.h"
+#ifdef ENABLE_ASCII_PROTOCOL
+#include "ascii_protocol.h"
 #endif
 
 #include <cmsis_os.h>
@@ -247,15 +247,15 @@ void communication_task(void * ctx) {
                     new_rcv_idx - last_rcv_idx);
             last_rcv_idx = new_rcv_idx;
         }
-#elif defined(UART_PROTOCOL_LEGACY)
+#elif defined(UART_PROTOCOL_ASCII)
         // Process bytes in one or two chunks (two in case there was a wrap)
         if (new_rcv_idx < last_rcv_idx) {
-            legacy_parse_stream(dma_circ_buffer + last_rcv_idx,
+            ASCII_protocol_parse_stream(dma_circ_buffer + last_rcv_idx,
                     UART_RX_BUFFER_SIZE - last_rcv_idx);
             last_rcv_idx = 0;
         }
         if (new_rcv_idx > last_rcv_idx) {
-            legacy_parse_stream(dma_circ_buffer + last_rcv_idx,
+            ASCII_protocol_parse_stream(dma_circ_buffer + last_rcv_idx,
                     new_rcv_idx - last_rcv_idx);
             last_rcv_idx = new_rcv_idx;
         }
@@ -274,8 +274,8 @@ void communication_task(void * ctx) {
             usb_channel.process_packet(usb_buf, usb_len);
 #elif defined(USB_PROTOCOL_NATIVE_STREAM_BASED)
             usb_stream_sink.process_bytes(usb_buf, usb_len);
-#elif defined(USB_PROTOCOL_LEGACY)
-            legacy_parse_cmd(usb_buf, usb_len, USB_RX_DATA_SIZE, SERIAL_PRINTF_IS_USB);
+#elif defined(USB_PROTOCOL_ASCII)
+            ASCII_protocol_parse_cmd(usb_buf, usb_len, USB_RX_DATA_SIZE, SERIAL_PRINTF_IS_USB);
 #endif
             USBD_CDC_ReceivePacket(&hUsbDeviceFS);  // Allow next packet
         }

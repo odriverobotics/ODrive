@@ -1,5 +1,5 @@
 /* Includes ------------------------------------------------------------------*/
-#include "legacy_commands.h"
+#include "ascii_protocol.h"
 #include <utils.h>
 
 /* Private macros ------------------------------------------------------------*/
@@ -113,12 +113,12 @@ static void print_monitoring(int limit);
 
 /* Function implementations --------------------------------------------------*/
 
-void legacy_parse_cmd(const uint8_t* buffer, size_t len, size_t buffer_capacity, SerialPrintf_t response_interface) {
+void ASCII_protocol_parse_cmd(const uint8_t* buffer, size_t len, size_t buffer_capacity, SerialPrintf_t response_interface) {
     // Set response interface
     serial_printf_select = response_interface;
 
     // Cast away const and write beyond the array bounds. Because we can.
-    // (TODO: yeah maybe not, but this should be gone once we disable legacy commands)
+    // (TODO: yeah maybe not, but this should be gone once we disable ASCII commands)
     ((uint8_t *)buffer)[len < buffer_capacity ? len : (buffer_capacity - 1)] = 0;
 
     // check incoming packet type
@@ -234,7 +234,7 @@ void legacy_parse_cmd(const uint8_t* buffer, size_t len, size_t buffer_capacity,
     }
 }
 
-void legacy_parse_stream(const uint8_t* buffer, size_t len) {
+void ASCII_protocol_parse_stream(const uint8_t* buffer, size_t len) {
     #define PARSE_BUFFER_SIZE 64
     static uint8_t parse_buffer[PARSE_BUFFER_SIZE];
     static bool read_active = false;
@@ -253,7 +253,7 @@ void legacy_parse_stream(const uint8_t* buffer, size_t len) {
             parse_buffer[parse_buffer_idx++] = c;
             if (c == '\r' || c == '\n' || c == '!') {
                 // End of command string
-                legacy_parse_cmd(parse_buffer, parse_buffer_idx, PARSE_BUFFER_SIZE, SERIAL_PRINTF_IS_UART);
+                ASCII_protocol_parse_cmd(parse_buffer, parse_buffer_idx, PARSE_BUFFER_SIZE, SERIAL_PRINTF_IS_UART);
                 // Reset receieve state machine
                 read_active = false;
                 parse_buffer_idx = 0;

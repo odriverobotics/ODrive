@@ -171,7 +171,7 @@ pip install pyusb pyserial
 [See ODrive Arduino Library](https://github.com/madcowswe/ODriveArduino)
 
 ### Other platforms
-See the [protocol specification](protocol.md) or the [legacy protocol specification](legacy-protocol.md).
+See the [protocol specification](protocol.md) or the [ASCII protocol specification](ascii-protocol.md).
 
 <br><br>
 ## Configuring parameters

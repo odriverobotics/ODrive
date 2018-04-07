@@ -224,7 +224,7 @@ class Channel(PacketSink):
             endpoint_id |= 0x8000
 
         self._outbound_seq_no = ((self._outbound_seq_no + 1) & 0x7fff)
-        self._outbound_seq_no |= 0x80 # FIXME: we hardwire one bit of the seq-no to 1 to avoid conflicts with the legacy protocol
+        self._outbound_seq_no |= 0x80 # FIXME: we hardwire one bit of the seq-no to 1 to avoid conflicts with the ascii protocol
         seq_no = self._outbound_seq_no
         packet = struct.pack('<HHH', seq_no, endpoint_id, output_length)
         packet = packet + input

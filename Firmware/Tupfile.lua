@@ -36,7 +36,7 @@ if tup.getconfig("USB_PROTOCOL") == "native" or tup.getconfig("USB_PROTOCOL") ==
 elseif tup.getconfig("USB_PROTOCOL") == "native-stream" then
     FLAGS += "-DUSB_PROTOCOL_NATIVE_STREAM_BASED"
 elseif tup.getconfig("USB_PROTOCOL") == "ascii" then
-    FLAGS += "-DUSB_PROTOCOL_LEGACY"
+    FLAGS += "-DUSB_PROTOCOL_ASCII"
 elseif tup.getconfig("USB_PROTOCOL") == "none" then
     FLAGS += "-DUSB_PROTOCOL_NONE"
 else
@@ -47,7 +47,7 @@ end
 if tup.getconfig("UART_PROTOCOL") == "native" then
     FLAGS += "-DUART_PROTOCOL_NATIVE"
 elseif tup.getconfig("UART_PROTOCOL") == "ascii" or tup.getconfig("UART_PROTOCOL") == "" then
-    FLAGS += "-DUART_PROTOCOL_LEGACY"
+    FLAGS += "-DUART_PROTOCOL_ASCII"
 elseif tup.getconfig("UART_PROTOCOL") == "none" then
     FLAGS += "-DUART_PROTOCOL_NONE"
 else
@@ -133,7 +133,7 @@ build{
     sources={
         'Drivers/DRV8301/drv8301.c',
         'MotorControl/utils.c',
-        'MotorControl/legacy_commands.c',
+        'MotorControl/ascii_protocol.c',
         'MotorControl/low_level.cpp',
         'MotorControl/nvm.c',
         'MotorControl/axis.cpp',

@@ -10,7 +10,7 @@
 #include <sys/unistd.h>
 #include <usart.h>
 #include <usbd_cdc_if.h>
-#include <legacy_commands.h> // TODO: make serial_printf_select constant
+#include <ascii_protocol.h> // TODO: make serial_printf_select constant
 
 
 //int _read(int file, char *data, int len) {}
