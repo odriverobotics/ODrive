@@ -19,6 +19,7 @@ class USBBulkTransport(odrive.protocol.PacketSource, odrive.protocol.PacketSink)
   def __init__(self, dev, printer):
     self._printer = printer
     self.dev = dev
+    self.intf = None
     self._name = "USB device {}:{}".format(dev.idVendor, dev.idProduct)
     self._was_damaged = False
 
@@ -45,18 +46,17 @@ class USBBulkTransport(odrive.protocol.PacketSource, odrive.protocol.PacketSink)
     if platform.system() != 'Windows':
         self.dev.reset()
 
+    interface_number = 1
     try:
-      if self.dev.is_kernel_driver_active(1):
-        self.dev.detach_kernel_driver(1)
-        self._printer("Detached Kernel Driver\n")
+      if self.dev.is_kernel_driver_active(interface_number):
+        self.dev.detach_kernel_driver(interface_number)
+        self._printer("Detached Kernel Driver")
     except NotImplementedError:
       pass #is_kernel_driver_active not implemented on Windows
-    # set the active configuration. With no arguments, the first
-    # configuration will be the active one
-    self.dev.set_configuration()
-    # get an endpoint instance
+
+    self.dev.set_configuration() # no args: set first configuration
     self.cfg = self.dev.get_active_configuration()
-    self.intf = self.cfg[(1,0)]
+    self.intf = self.cfg[(1,0)] # this implicitly claims the interface
     # write endpoint
     self.epw = usb.util.find_descriptor(self.intf,
         # match the first OUT endpoint
@@ -66,7 +66,7 @@ class USBBulkTransport(odrive.protocol.PacketSource, odrive.protocol.PacketSink)
             usb.util.ENDPOINT_OUT
     )
     assert self.epw is not None
-    self._printer("EndpointAddress for writing {}\n".format(self.epw.bEndpointAddress))
+    self._printer("EndpointAddress for writing {}".format(self.epw.bEndpointAddress))
     # read endpoint
     self.epr = usb.util.find_descriptor(self.intf,
         # match the first IN endpoint
@@ -76,10 +76,11 @@ class USBBulkTransport(odrive.protocol.PacketSource, odrive.protocol.PacketSink)
             usb.util.ENDPOINT_IN
     )
     assert self.epr is not None
-    self._printer("EndpointAddress for reading {}\n".format(self.epr.bEndpointAddress))
+    self._printer("EndpointAddress for reading {}".format(self.epr.bEndpointAddress))
 
-  def shutdown(self):
-    return 0
+  def deinit(self):
+    if not self.intf is None:
+      usb.util.release_interface(self.dev, self.intf)
 
   def process_packet(self, usbBuffer):
     try:
@@ -97,7 +98,8 @@ class USBBulkTransport(odrive.protocol.PacketSource, odrive.protocol.PacketSink)
         self._printer("halt condition: {}".format(ex.errno))
         # Try resetting halt/stall condition
         try:
-          self.epw.clear_halt()
+          self.deinit()
+          self.init()
         except usb.core.USBError:
           raise odrive.protocol.ChannelBrokenException()
         # Retry transfer
@@ -122,7 +124,8 @@ class USBBulkTransport(odrive.protocol.PacketSource, odrive.protocol.PacketSink)
         self._printer("halt condition: {}".format(ex.errno))
         # Try resetting halt/stall condition
         try:
-          self.epr.clear_halt()
+          self.deinit()
+          self.init()
         except usb.core.USBError:
           raise odrive.protocol.ChannelBrokenException()
         # Retry transfer
