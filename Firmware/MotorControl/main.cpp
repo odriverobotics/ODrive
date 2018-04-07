@@ -11,13 +11,20 @@ AxisConfig_t axis_configs[AXIS_COUNT];
 
 Axis *axes[AXIS_COUNT];
 
-typedef Config<BoardConfig_t, AxisConfig_t[AXIS_COUNT], MotorConfig_t[AXIS_COUNT]> ConfigFormat;
+typedef Config<
+    BoardConfig_t,
+    EncoderConfig_t[AXIS_COUNT],
+    ControllerConfig_t[AXIS_COUNT],
+    MotorConfig_t[AXIS_COUNT],
+    AxisConfig_t[AXIS_COUNT]> ConfigFormat;
 
 void save_configuration(void) {
     if (ConfigFormat::safe_store_config(
-        &board_config,
-        &axis_configs,
-        &motor_configs)) {
+            &board_config,
+            &encoder_configs,
+            &controller_configs,
+            &motor_configs,
+            &axis_configs)) {
         //printf("saving configuration failed\r\n"); osDelay(5);
     }
 }
@@ -26,13 +33,17 @@ void load_configuration(void) {
     if (NVM_init() ||
         ConfigFormat::safe_load_config(
                 &board_config,
-                &axis_configs,
-                &motor_configs)) {
-        for (size_t i = 0; i < AXIS_COUNT; ++i) {
-            axis_configs[i] = AxisConfig_t();
-            motor_configs[i] = MotorConfig_t();
-        }
+                &encoder_configs,
+                &controller_configs,
+                &motor_configs,
+                &axis_configs)) {
         board_config = BoardConfig_t();
+        for (size_t i = 0; i < AXIS_COUNT; ++i) {
+            encoder_configs[i] = EncoderConfig_t();
+            controller_configs[i] = ControllerConfig_t();
+            motor_configs[i] = MotorConfig_t();
+            axis_configs[i] = AxisConfig_t();
+        }
     }
 }
 
