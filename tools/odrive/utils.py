@@ -109,6 +109,27 @@ def rate_test(device):
     FramePerSec = loopsPerSec/loopsPerFrame
     print("Frames per second: " + str(FramePerSec))
 
+def usb_burn_in_test(get_var_callback, cancellation_token):
+    """
+    Starts background threads that read a values form the USB device in a spin-loop
+    """
+
+    def fetch_data():
+        global vals
+        i = 0
+        while not cancellation_token.is_set():
+            try:
+                get_var_callback()
+                i += 1
+            except Exception as ex:
+                print(str(ex))
+                time.sleep(1)
+                i = 0
+                continue
+            if i % 1000 == 0:
+                print("read {} values".format(i))
+    threading.Thread(target=fetch_data).start()
+
 
 ## Exceptions ##
 
