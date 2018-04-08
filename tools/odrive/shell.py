@@ -98,7 +98,7 @@ def launch_shell(args, logger, printer, app_shutdown_token):
     # If IPython is installed, embed IPython shell, otherwise embed regular shell
     if use_ipython:
         help = lambda: print_help(args) # Override help function # pylint: disable=W0612
-        console = IPython.terminal.embed.InteractiveShellEmbed(local_ns=interactive_variables, banner1='')
+        console = IPython.terminal.embed.InteractiveShellEmbed(banner1='')
         console.runcode = console.run_code # hack to make IPython look like the regular console
         interact = console
     else:
