@@ -1,6 +1,10 @@
 #ifndef ASCII_PROTOCOL_H
 #define ASCII_PROTOCOL_H
 
+#ifndef __ODRIVE_MAIN_HPP
+#error "This file should not be included directly. Include odrive_main.hpp instead."
+#endif
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -29,8 +33,7 @@ extern uint16_t* exposed_uint16[];
 /* Exported functions --------------------------------------------------------*/
 
 /* Exported functions --------------------------------------------------------*/
-void ASCII_protocol_parse_cmd(const uint8_t* buffer, size_t len, size_t buffer_length, SerialPrintf_t response_interface);
-void ASCII_protocol_parse_stream(const uint8_t* buffer, size_t len);
+void ASCII_protocol_parse_stream(const uint8_t* buffer, size_t len, StreamSink& response_channel);
 
 #ifdef __cplusplus
 }

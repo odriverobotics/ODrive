@@ -125,6 +125,13 @@ int main(void)
   uint32_t uuid_mixed_part = uuid0 + uuid2;
   serial_number = ((uint64_t)uuid_mixed_part << 16) | (uint64_t)(uuid1 >> 16);
 
+  uint64_t val = serial_number;
+  for (size_t i = 0; i < 12; ++i) {
+    serial_number_str[i] = "0123456789ABCDEF"[(val >> (48-4)) & 0xf];
+    val <<= 4;
+  }
+  serial_number_str[12] = 0;
+
   /* USER CODE END 1 */
 
   /* MCU Configuration----------------------------------------------------------*/

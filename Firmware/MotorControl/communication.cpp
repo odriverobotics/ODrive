@@ -35,6 +35,7 @@
 extern PCD_HandleTypeDef hpcd_USB_OTG_FS;
 extern USBD_HandleTypeDef hUsbDeviceFS;
 uint64_t serial_number;
+char serial_number_str[13]; // 12 digits + null termination
 
 /* Private constant data -----------------------------------------------------*/
 /* Private variables ---------------------------------------------------------*/
@@ -46,7 +47,7 @@ static uint32_t usb_len;
 static thread_local uint32_t deadline_ms = 0;
 
 
-#if defined(USB_PROTOCOL_NATIVE)
+#if !defined(USB_PROTOCOL_NONE)
 
 class USBSender : public PacketSink {
 public:
@@ -63,42 +64,44 @@ public:
                 well... it's not actually. Stupid STM. */, length);
         return (status == USBD_OK) ? 0 : -1;
     }
-} usb_sender;
+} usb_packet_output;
 
-BidirectionalPacketBasedChannel usb_channel(usb_sender);
-
-#elif defined(USB_PROTOCOL_NATIVE_STREAM_BASED)
-
-class USBSender : public StreamSink {
+#if !defined(USB_PROTOCOL_NATIVE)
+class TreatPacketSinkAsStreamSink : public StreamSink {
 public:
+    TreatPacketSinkAsStreamSink(PacketSink& output) : output_(output) {}
     int process_bytes(const uint8_t* buffer, size_t length) {
         // Loop to ensure all bytes get sent
         while (length) {
             size_t chunk = length < USB_TX_DATA_SIZE ? length : USB_TX_DATA_SIZE;
-            // wait for USB interface to become ready
-            if (osSemaphoreWait(sem_usb_tx, deadline_to_timeout(deadline_ms)) != osOK)
-                return -1;
-            // transmit chunk
-            if (CDC_Transmit_FS(
-                    const_cast<uint8_t*>(buffer) /* casting this const away is safe because...
-                    well... it's not actually. Stupid STM. */, chunk) != USBD_OK)
+            if (output_.process_packet(buffer, length) != 0)
                 return -1;
             buffer += chunk;
             length -= chunk;
         }
         return 0;
     }
-
     size_t get_free_space() { return SIZE_MAX; }
-} usb_sender;
-
-PacketToStreamConverter usb_packet_sender(usb_sender);
-BidirectionalPacketBasedChannel usb_channel(endpoints, NUM_ENDPOINTS, usb_packet_sender);
-StreamToPacketConverter usb_stream_sink(usb_channel);
-
+private:
+    PacketSink& output_;
+} usb_stream_output(usb_packet_output);
 #endif
 
-#if defined(UART_PROTOCOL_NATIVE)
+#if defined(USB_PROTOCOL_NATIVE)
+BidirectionalPacketBasedChannel usb_channel(usb_packet_output);
+#elif defined(USB_PROTOCOL_NATIVE_STREAM_BASED)
+PacketToStreamConverter usb_packetized_output(usb_stream_output);
+BidirectionalPacketBasedChannel usb_channel(usb_packetized_output);
+#endif
+
+#if defined(USB_PROTOCOL_NATIVE_STREAM_BASED)
+StreamToPacketConverter usb_native_stream_input(usb_channel);
+#endif
+
+#endif // !defined(USB_PROTOCOL_NONE)
+
+
+#if !defined(UART_PROTOCOL_NONE)
 class UART4Sender : public StreamSink {
 public:
     int process_bytes(const uint8_t* buffer, size_t length) {
@@ -122,12 +125,15 @@ public:
     size_t get_free_space() { return SIZE_MAX; }
 private:
     uint8_t tx_buf_[UART_TX_BUFFER_SIZE];
-} uart4_sender;
+} uart4_stream_output;
 
-PacketToStreamConverter uart4_packet_sender(uart4_sender);
+#if defined(UART_PROTOCOL_NATIVE)
+PacketToStreamConverter uart4_packet_sender(uart4_stream_output);
 BidirectionalPacketBasedChannel uart4_channel(endpoints, NUM_ENDPOINTS, uart4_packet_sender);
-StreamToPacketConverter UART4_stream_sink(uart4_channel);
+StreamToPacketConverter uart4_stream_input(uart4_channel);
 #endif
+
+#endif // !defined(UART_PROTOCOL_NONE)
 
 
 /* Private function prototypes -----------------------------------------------*/
@@ -235,31 +241,29 @@ void communication_task(void * ctx) {
         uint32_t new_rcv_idx = UART_RX_BUFFER_SIZE - huart4.hdmarx->Instance->NDTR;
 
         deadline_ms = timeout_to_deadline(PROTOCOL_SERVER_TIMEOUT_MS);
+        // Process bytes in one or two chunks (two in case there was a wrap)
+        if (new_rcv_idx < last_rcv_idx) {
 #if defined(UART_PROTOCOL_NATIVE)
-        // Process bytes in one or two chunks (two in case there was a wrap)
-        if (new_rcv_idx < last_rcv_idx) {
-            UART4_stream_sink.process_bytes(dma_circ_buffer + last_rcv_idx,
+            uart4_stream_input.process_bytes(dma_circ_buffer + last_rcv_idx,
                     UART_RX_BUFFER_SIZE - last_rcv_idx);
-            last_rcv_idx = 0;
-        }
-        if (new_rcv_idx > last_rcv_idx) {
-            UART4_stream_sink.process_bytes(dma_circ_buffer + last_rcv_idx,
-                    new_rcv_idx - last_rcv_idx);
-            last_rcv_idx = new_rcv_idx;
-        }
-#elif defined(UART_PROTOCOL_ASCII)
-        // Process bytes in one or two chunks (two in case there was a wrap)
-        if (new_rcv_idx < last_rcv_idx) {
-            ASCII_protocol_parse_stream(dma_circ_buffer + last_rcv_idx,
-                    UART_RX_BUFFER_SIZE - last_rcv_idx);
-            last_rcv_idx = 0;
-        }
-        if (new_rcv_idx > last_rcv_idx) {
-            ASCII_protocol_parse_stream(dma_circ_buffer + last_rcv_idx,
-                    new_rcv_idx - last_rcv_idx);
-            last_rcv_idx = new_rcv_idx;
-        }
 #endif
+#if defined(UART_PROTOCOL_ASCII)
+            ASCII_protocol_parse_stream(dma_circ_buffer + last_rcv_idx,
+                    UART_RX_BUFFER_SIZE - last_rcv_idx, uart4_stream_output);
+#endif
+            last_rcv_idx = 0;
+        }
+        if (new_rcv_idx > last_rcv_idx) {
+#if defined(UART_PROTOCOL_NATIVE)
+            uart4_stream_input.process_bytes(dma_circ_buffer + last_rcv_idx,
+                    new_rcv_idx - last_rcv_idx);
+#endif
+#if defined(UART_PROTOCOL_ASCII)
+            ASCII_protocol_parse_stream(dma_circ_buffer + last_rcv_idx,
+                    new_rcv_idx - last_rcv_idx, uart4_stream_output);
+#endif
+            last_rcv_idx = new_rcv_idx;
+        }
 #endif
 
 #if !defined(USB_PROTOCOL_NONE)
@@ -273,9 +277,9 @@ void communication_task(void * ctx) {
 #if defined(USB_PROTOCOL_NATIVE)
             usb_channel.process_packet(usb_buf, usb_len);
 #elif defined(USB_PROTOCOL_NATIVE_STREAM_BASED)
-            usb_stream_sink.process_bytes(usb_buf, usb_len);
+            usb_native_stream_input.process_bytes(usb_buf, usb_len);
 #elif defined(USB_PROTOCOL_ASCII)
-            ASCII_protocol_parse_cmd(usb_buf, usb_len, USB_RX_DATA_SIZE, SERIAL_PRINTF_IS_USB);
+            ASCII_protocol_parse_stream(usb_buf, usb_len, usb_stream_output);
 #endif
             USBD_CDC_ReceivePacket(&hUsbDeviceFS);  // Allow next packet
         }
@@ -312,4 +316,23 @@ void usb_update_thread(void * ctx) {
     }
 
     vTaskDelete(osThreadGetId());
+}
+
+extern "C" {
+int _write(int file, const char* data, int len);
+}
+
+// @brief This is what printf calls internally
+int _write(int file, const char* data, int len) {
+#ifdef USB_PROTOCOL_STDOUT
+    usb_stream_output.process_bytes((const uint8_t *)data, len);
+#endif
+#ifdef UART_PROTOCOL_STDOUT
+    uart4_stream_output.process_bytes((const uint8_t *)data, len);
+#endif
+    return len;
+}
+
+void HAL_UART_TxCpltCallback(UART_HandleTypeDef* huart) {
+    osSemaphoreRelease(sem_uart_dma);
 }

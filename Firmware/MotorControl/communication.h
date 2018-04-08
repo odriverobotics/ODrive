@@ -20,6 +20,7 @@ void usb_update_thread(void * ctx);
 void USB_receive_packet(const uint8_t *buffer, size_t length);
 
 extern uint64_t serial_number;
+extern char serial_number_str[13];
 
 #ifdef __cplusplus
 }
