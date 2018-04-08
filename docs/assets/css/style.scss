@@ -1,0 +1,257 @@
+---
+---
+
+$section-headings-color: #0086b3;
+
+@import "{{ site.theme }}";
+
+/*** Unset all header navbar styling done by the theme ***/
+// This corresponds to:
+// https://github.com/pages-themes/minimal/blob/master/_sass/jekyll-theme-minimal.scss#L114-L172
+
+header ul {
+  list-style:unset;
+  height:unset;
+  padding:unset;
+  background:unset;
+  border-radius:unset;
+  border:unset;
+  width:unset;
+}
+header li {
+  width:unset;
+  float:unset;
+  border-right:unset;
+  height:unset;
+} 
+header li:first-child a {
+  border-radius:unset;
+}
+header li:last-child a {
+  border-radius:unset;
+}
+header ul a {
+  line-height:unset;
+  font-size:unset;
+  color:unset;
+  display:unset;
+  text-align:unset;
+  padding-top:unset;
+  height:unset;
+}
+header ul a:hover, header ul a:focus {
+  color:unset;
+  font-weight:unset;
+}
+header ul a:active {
+  background-color:unset;
+}
+strong {
+  color:unset;
+  font-weight:unset;
+}
+header ul li + li + li {
+  border-right:unset;
+  width:unset;
+}
+header ul a strong {
+  font-size:unset;
+  display:unset;
+  color:unset;
+}
+
+
+
+
+/*** Overall layout ***/
+
+.wrapper {
+    width: auto;
+}
+
+section {
+    /* align-content: center; */
+    padding-left: 270px;
+    width: 700px;
+    float: none;
+}
+
+@media print, screen and (max-width: 960px) {
+    section {
+        padding: 20px 0;
+    }
+}
+
+div {
+    text-align: justify;
+}
+
+
+
+/*** Links ***/
+a {
+    color: #e70000;
+}
+
+a:hover, a:focus {
+    color: #8b0000;
+    font-weight: unset;
+}
+
+header > ul {
+  list-style:none;
+  padding-right: 20px;
+  //padding:0;
+  //width:240px;
+  //height:240px;
+}
+
+header > ul ul {
+  margin:0;
+  margin-bottom:12px;
+}
+
+// Note that the theme defines a "header ul li + li + li"
+// selector which has higher specifity than this one so we
+// we need the "important" keywords for some properties.
+header li {
+  width:100% !important;
+  //float:left;
+  //border-bottom:1px solid #e0e0e0;
+  border:none !important;
+  //height:unset;
+  //height:20px;
+}
+
+header ul ul li a {
+  background: #f4f4f4;
+  border:1px solid #e0e0e0;
+  line-height:1;
+  font-size:12px;
+  color:#676767;
+  display:block;
+  text-align:left;
+  padding:12px 0px 5px 5px;
+  //margin:12px;
+  height:20px;
+}
+
+/*** Navbar Hover ***/
+header ul a:hover, header ul a:focus {
+  color:rgb(0, 0, 0);
+  background-color: rgba(0, 0, 0, 0.24);
+}
+header ul a:active {
+  background-color:#f0f0f0;
+}
+
+header ul p {
+    margin:0;
+    padding-left:5px;
+    display: block;
+    color: black;
+    background-color: #00000034;
+}
+
+/*
+header li:first-child a {
+  border-radius:5px 5px 0 0;
+}
+
+header li:last-child a {
+  border-radius:0 0 5px 5px;
+}
+
+header ul a {
+  background: #f4f4f4;
+  border:1px solid #e0e0e0;
+  line-height:1;
+  font-size:12px;
+  color:#676767;
+  display:block;
+  text-align:left;
+  padding:12px 0px 5px 5px;
+  //margin:12px;
+  height:20px;
+}
+
+//  header ul li + li + li {
+//    border-right:unset;
+//    border:1px solid #e0e0e0;
+//    width:100%;
+//  }
+
+  */
+
+
+
+/*** Keyboard symbols ***/
+
+kbd {
+  display: inline-block;
+  padding: 3px 5px;
+  font-size: 11px;
+  line-height: 10px;
+  color: #444d56;
+  vertical-align: middle;
+  background-color: #fafbfc;
+  border: solid 1px #c6cbd1;
+  border-bottom-color: #959da5;
+  border-radius: 3px;
+  box-shadow: inset 0 -1px 0 #959da5;
+}
+
+p + details {
+    margin-top: -14px;
+}
+
+/*** Expandable details box ***/
+
+details {
+    //margin-top: -14px;
+    margin-bottom: 5px;
+    //background-color: #ffc54727;
+    background-color: #f2f8fd;
+    //border: solid 1px #c6cbd1;
+    border-radius: 3px;
+}
+
+// title of a "details" box
+details summary {
+    padding-left: 8px;
+    background-color: #b3d4f080;
+    //background-color: #ffc54727;
+    //border-bottom: solid 1px #c6cbd1;
+    //border-radius: 3px;
+}
+
+// content of a "details" box
+details div {
+    padding-top: 5px;
+    padding-left: 8px;
+    padding-right: 8px;
+    padding-bottom: 8px;
+    border-top: solid 1px #c6cbd1;
+}
+details div > p:last-child {
+    margin-bottom: 0px;
+}
+
+/*** Alert box ***/
+
+.alert {
+    padding: 10px;
+    color: black;
+    background-color: #ffc40096;
+    margin-bottom: 15px;
+    //border: solid 1px #000000;
+}
+
+.alert * {
+    color: black;
+}
+
+/*** inline code ***/
+:not(pre) > code {
+    background-color: #ededed;
+}
