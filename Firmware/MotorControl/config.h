@@ -5,6 +5,7 @@
 extern "C" {
 #endif
 
+extern bool user_config_loaded;
 void init_configuration(void);
 void save_configuration(void);
 void erase_configuration(void);

@@ -123,6 +123,7 @@ const Endpoint endpoints[] = {
     Endpoint::make_object("config"),
         Endpoint::make_property("brake_resistance", &brake_resistance),
     Endpoint::close_tree(),
+    Endpoint::make_property("user_config_loaded", const_cast<const bool *>(&user_config_loaded)),
     Endpoint::make_object("axis0"),
         Endpoint::make_object("config"),
             Endpoint::make_property("enable_control_at_start", &axis_configs[0].enable_control_at_start),
