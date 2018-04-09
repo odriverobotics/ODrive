@@ -3,7 +3,9 @@ Please add a note of your changes below this heading if you make a Pull Request.
 
 ### Added
 ### Changed
+* Set thread priority of USB pump thread above protocol thread
 ### Fixed
+* Enums now transported with correct underlying type on native protocol
 
 # Releases
 
