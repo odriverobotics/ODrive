@@ -26,6 +26,8 @@
 #include <usart.h>
 #include <gpio.h>
 
+#include <type_traits>
+
 #define UART_TX_BUFFER_SIZE 64
 
 /* Private defines -----------------------------------------------------------*/
@@ -152,6 +154,7 @@ const Endpoint endpoints[] = {
     Endpoint::make_object("config"),
         Endpoint::make_property("brake_resistance", &brake_resistance),
     Endpoint::close_tree(),
+    Endpoint::make_property("user_config_loaded", const_cast<const bool *>(&user_config_loaded)),
     Endpoint::make_object("axis0"),
         Endpoint::make_object("config"),
             Endpoint::make_property("enable_control_at_start", &axis_configs[0].enable_control_at_start),
@@ -160,7 +163,7 @@ const Endpoint endpoints[] = {
     Endpoint::close_tree(),
     Endpoint::make_object("motor0"),
         Endpoint::make_object("config"),
-            Endpoint::make_property("control_mode", reinterpret_cast<int32_t*>(&motors[0].control_mode)),
+            Endpoint::make_property("control_mode", reinterpret_cast<std::underlying_type_t<decltype(motors[0].control_mode)>*>(&motors[0].control_mode)),
             Endpoint::make_property("counts_per_step", &motors[0].counts_per_step),
             Endpoint::make_property("pole_pairs", &motors[0].pole_pairs),
             Endpoint::make_property("pos_gain", &motors[0].pos_gain),
@@ -171,10 +174,10 @@ const Endpoint endpoints[] = {
             Endpoint::make_property("resistance_calib_max_voltage", &motors[0].resistance_calib_max_voltage),
             Endpoint::make_property("phase_inductance", &motors[0].phase_inductance),
             Endpoint::make_property("phase_resistance", &motors[0].phase_resistance),
-            Endpoint::make_property("motor_type", reinterpret_cast<int32_t*>(&motors[0].motor_type)),
-            Endpoint::make_property("rotor_mode", reinterpret_cast<int32_t*>(&motors[0].rotor_mode)),
+            Endpoint::make_property("motor_type", reinterpret_cast<std::underlying_type_t<decltype(motors[0].motor_type)>*>(&motors[0].motor_type)),
+            Endpoint::make_property("rotor_mode", reinterpret_cast<std::underlying_type_t<decltype(motors[0].rotor_mode)>*>(&motors[0].rotor_mode)),
         Endpoint::close_tree(),
-        Endpoint::make_property("error", reinterpret_cast<int32_t*>(&motors[0].error)),
+        Endpoint::make_property("error", reinterpret_cast<std::underlying_type_t<decltype(motors[0].error)>*>(&motors[0].error)),
         Endpoint::make_property("pos_setpoint", &motors[0].pos_setpoint),
         Endpoint::make_property("vel_setpoint", &motors[0].vel_setpoint),
         Endpoint::make_property("vel_integrator_current", &motors[0].vel_integrator_current),
@@ -202,7 +205,7 @@ const Endpoint endpoints[] = {
             Endpoint::make_property("Ibus", const_cast<const float*>(&motors[0].current_control.Ibus)),
         Endpoint::close_tree(),
         Endpoint::make_object("gate_driver"),
-            Endpoint::make_property("drv_fault", reinterpret_cast<int32_t*>(&motors[0].drv_fault)),
+            Endpoint::make_property("drv_fault", reinterpret_cast<std::underlying_type_t<decltype(motors[0].drv_fault)>*>(&motors[0].drv_fault)),
             Endpoint::make_property("status_reg_1", (&motors[0].gate_driver_regs.Stat_Reg_1_Value)),
             Endpoint::make_property("status_reg_2", (&motors[0].gate_driver_regs.Stat_Reg_2_Value)),
             Endpoint::make_property("ctrl_reg_1", (&motors[0].gate_driver_regs.Ctrl_Reg_1_Value)),
@@ -260,7 +263,7 @@ const Endpoint endpoints[] = {
     Endpoint::close_tree(),
     Endpoint::make_object("motor1"),
         Endpoint::make_object("config"),
-            Endpoint::make_property("control_mode", reinterpret_cast<int32_t*>(&motors[1].control_mode)),
+            Endpoint::make_property("control_mode", reinterpret_cast<std::underlying_type_t<decltype(motors[1].control_mode)>*>(&motors[1].control_mode)),
             Endpoint::make_property("counts_per_step", &motors[1].counts_per_step),
             Endpoint::make_property("pole_pairs", &motors[1].pole_pairs),
             Endpoint::make_property("pos_gain", &motors[1].pos_gain),
@@ -271,10 +274,10 @@ const Endpoint endpoints[] = {
             Endpoint::make_property("resistance_calib_max_voltage", &motors[1].resistance_calib_max_voltage),
             Endpoint::make_property("phase_inductance", &motors[1].phase_inductance),
             Endpoint::make_property("phase_resistance", &motors[1].phase_resistance),
-            Endpoint::make_property("motor_type", reinterpret_cast<int32_t*>(&motors[1].motor_type)),
-            Endpoint::make_property("rotor_mode", reinterpret_cast<int32_t*>(&motors[1].rotor_mode)),
+            Endpoint::make_property("motor_type", reinterpret_cast<std::underlying_type_t<decltype(motors[1].motor_type)>*>(&motors[1].motor_type)),
+            Endpoint::make_property("rotor_mode", reinterpret_cast<std::underlying_type_t<decltype(motors[1].rotor_mode)>*>(&motors[1].rotor_mode)),
         Endpoint::close_tree(),
-        Endpoint::make_property("error", reinterpret_cast<int32_t*>(&motors[1].error)),
+        Endpoint::make_property("error", reinterpret_cast<std::underlying_type_t<decltype(motors[1].error)>*>(&motors[1].error)),
         Endpoint::make_property("pos_setpoint", &motors[1].pos_setpoint),
         Endpoint::make_property("vel_setpoint", &motors[1].vel_setpoint),
         Endpoint::make_property("vel_integrator_current", &motors[1].vel_integrator_current),
@@ -302,7 +305,7 @@ const Endpoint endpoints[] = {
             Endpoint::make_property("Ibus", const_cast<const float*>(&motors[1].current_control.Ibus)),
         Endpoint::close_tree(),
         Endpoint::make_object("gate_driver"),
-            Endpoint::make_property("drv_fault", reinterpret_cast<int32_t*>(&motors[1].drv_fault)),
+            Endpoint::make_property("drv_fault", reinterpret_cast<std::underlying_type_t<decltype(motors[1].drv_fault)>*>(&motors[1].drv_fault)),
             Endpoint::make_property("status_reg_1", (&motors[1].gate_driver_regs.Stat_Reg_1_Value)),
             Endpoint::make_property("status_reg_2", (&motors[1].gate_driver_regs.Stat_Reg_2_Value)),
             Endpoint::make_property("ctrl_reg_1", (&motors[1].gate_driver_regs.Ctrl_Reg_1_Value)),
