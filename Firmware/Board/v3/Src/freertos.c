@@ -166,7 +166,7 @@ void StartDefaultTask(void const * argument)
   thread_cmd_parse = osThreadCreate(osThread(task_cmd_parse), NULL);
 
   // Start USB interrupt handler thread
-  osThreadDef(task_usb_pump, usb_update_thread, osPriorityNormal, 0, 512);
+  osThreadDef(task_usb_pump, usb_update_thread, osPriorityAboveNormal, 0, 512);
   thread_usb_pump = osThreadCreate(osThread(task_usb_pump), NULL);
 
   //If we get to here, then the default task is done.

@@ -212,6 +212,7 @@ void get_motor_config(const Motor_t* motor, MotorConfig_t* config) {
     config->encoder_motor_dir = motor->encoder.motor_dir;
 }
 
+bool user_config_loaded = false;
 
 void init_configuration(void) {
     MotorConfig_t motor_config[2];
@@ -230,11 +231,11 @@ void init_configuration(void) {
         // Default config coming from flashed Motor_t
         return;
     } else {
+        user_config_loaded = true;
         //printf("load config successful\r\n"); osDelay(5);
+        set_motor_config(&motor_config[0], &motors[0]);
+        set_motor_config(&motor_config[1], &motors[1]);
     }
-    
-    set_motor_config(&motor_config[0], &motors[0]);
-    set_motor_config(&motor_config[1], &motors[1]);
 }
 
 void save_configuration(void) {
