@@ -110,6 +110,7 @@ If you have multiple ODrives connected, you should specify which one to upgrade.
   iSerial                 3 306A396A3235
 ```
 * The last column is the serial number you're looking for. You can unplug selected devices to track down the one you want to update.
+* If you only get `iSerial     3`, then you can try to substitute `sudo lsusb` in place of `lsusb`.
 * Run `make dfu SERIAL_NUMBER=385F324D3037`, where `385F324D3037` is the targeted serial number.
 
 __Warning:__ Currently it is advised that you only do this to flash
