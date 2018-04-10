@@ -103,7 +103,7 @@ bool Encoder::run_offset_calibration() {
     // Temporarily disable index search so it doesn't mess
     // with the offset calibration
     bool old_use_index = config_.use_index;
-    config_.use_index = true;
+    config_.use_index = false;
 
     float voltage_magnitude;
     if (axis_->motor_.config_.motor_type == MOTOR_TYPE_HIGH_CURRENT)
