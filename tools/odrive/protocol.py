@@ -268,7 +268,7 @@ class Channel(PacketSink):
             seq_no = self._outbound_seq_no
         finally:
             self._my_lock.release()
-        seq_no |= 0x80 # FIXME: we hardwire one bit of the seq-no to 1 to avoid conflicts with the legacy protocol
+        seq_no |= 0x80 # FIXME: we hardwire one bit of the seq-no to 1 to avoid conflicts with the ascii protocol
         packet = struct.pack('<HHH', seq_no, endpoint_id, output_length)
         packet = packet + input
 
