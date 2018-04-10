@@ -2,8 +2,8 @@
 # ODrives
 odrives:
   - name: top-odrive
-    board-version: v3.4-24V
-    serial-number: "385F324D3037"
+    board-version: v3.5-48V
+    serial-number: "3660335E3037"
     brake-resistance: 0.47
     uart: /dev/serial/by-id/[not-yet-used]
     usb: auto
@@ -26,8 +26,8 @@ odrives:
         motor-max-current: 50
         encoder-cpr: 8192
   - name: bottom-odrive
-    board-version: v3.4-48V
-    serial-number: "306A396A3235"
+    board-version: v3.5-24V
+    serial-number: "3661335E3037"
     brake-resistance: 0.47
     uart: /dev/serial/by-id/[not-yet-used]
     usb: auto
