@@ -143,6 +143,8 @@ class AxisTest(ABC):
             logger.warn("axis still in motion, delaying 2 sec...")
             time.sleep(2)
         test_assert_eq(axis_ctx.handle.encoder.pll_vel, 0, range=500)
+        test_assert_eq(axis_ctx.odrv_ctx.handle.config.dc_bus_undervoltage_trip_level, axis_ctx.odrv_ctx.yaml['vbus-voltage'] * 0.92, accuracy=0.001)
+        test_assert_eq(axis_ctx.odrv_ctx.handle.config.dc_bus_overvoltage_trip_level, axis_ctx.odrv_ctx.yaml['vbus-voltage'] * 1.08, accuracy=0.001)
 
     @abc.abstractmethod
     def run_test(self, axis_ctx: AxisTestContext, logger):
@@ -222,6 +224,10 @@ class TestSetup(ODriveTest):
         test_assert_eq(odrv_ctx.handle.config.brake_resistance, 1.0)
         odrv_ctx.handle.config.brake_resistance = odrv_ctx.yaml['brake-resistance']
         test_assert_eq(odrv_ctx.handle.config.brake_resistance, odrv_ctx.yaml['brake-resistance'], accuracy=0.01)
+        odrv_ctx.handle.config.dc_bus_undervoltage_trip_level = odrv_ctx.yaml['vbus-voltage'] * 0.92
+        odrv_ctx.handle.config.dc_bus_overvoltage_trip_level = odrv_ctx.yaml['vbus-voltage'] * 1.08
+        test_assert_eq(odrv_ctx.handle.config.dc_bus_undervoltage_trip_level, odrv_ctx.yaml['vbus-voltage'] * 0.92, accuracy=0.001)
+        test_assert_eq(odrv_ctx.handle.config.dc_bus_overvoltage_trip_level, odrv_ctx.yaml['vbus-voltage'] * 1.08, accuracy=0.001)
 
         # firmware has 1500ms startup delay
         time.sleep(2)
@@ -354,7 +360,7 @@ class TestStoreAndReboot(ODriveTest):
             test_assert_eq(axis_ctx.handle.motor.config.phase_inductance, axis_ctx.yaml['motor-phase-inductance'], accuracy=0.5)
 
 
-class TestHighVelocityCtrl(AxisTest):
+class TestHighVelocity(AxisTest):
     """
     Spins the motor up to it's max speed during a period of 10s.
     The commanded max speed is based on the motor's KV rating and nominal V_bus,
@@ -362,8 +368,18 @@ class TestHighVelocityCtrl(AxisTest):
     The test passes if the motor follows the commanded ramp closely up to 90% of
     the theoretical limit (and if no errors occur along the way).
     """
+    def __init__(self, override_current_limit=None, load_current=0, brake=True):
+        """
+        param override_current_limit: If None, the test selects a current limit that is guaranteed
+                                      not to fry the brake resistor. If you override the limit, you're
+                                      on your own.
+        """
+        self._override_current_limit = override_current_limit
+        self._load_current = load_current
+        self._brake = brake
+
     def check_preconditions(self, axis_ctx: AxisTestContext, logger):
-        super(TestHighVelocityCtrl, self).check_preconditions(axis_ctx, logger)
+        super(TestHighVelocity, self).check_preconditions(axis_ctx, logger)
         test_assert_eq(axis_ctx.handle.motor.is_calibrated, True)
         test_assert_eq(axis_ctx.handle.encoder.is_ready, True)
 
@@ -372,6 +388,7 @@ class TestHighVelocityCtrl(AxisTest):
         # V_bus and motor KV rating
         max_rpm = axis_ctx.odrv_ctx.yaml['vbus-voltage'] * axis_ctx.yaml['motor-kv']
         rated_limit = max_rpm / 60 * axis_ctx.yaml['encoder-cpr']
+        rated_limit *= 0.5 # TODO: remove this later, but for now we want to stay away from the modulation depth limit
         expected_limit = rated_limit
 
         # The KV-rating assumes square-waves on the motor phases (hexagonal space vector trajectory)
@@ -390,14 +407,18 @@ class TestHighVelocityCtrl(AxisTest):
         #theoretical_limit = 100000
         
         # Set the current limit accordingly so we don't burn the brake resistor while slowing down
-        set_limits(axis_ctx, logger, vel_limit=rated_limit, current_limit=50)
+        if self._override_current_limit is None:
+            set_limits(axis_ctx, logger, vel_limit=rated_limit, current_limit=50)
+        else:
+            axis_ctx.handle.motor.config.current_lim = self._override_current_limit
+            axis_ctx.handle.controller.config.vel_limit = rated_limit
         request_state(axis_ctx, AXIS_STATE_CLOSED_LOOP_CONTROL)
 
 
         ramp_up_time = 20.0
         t_0 = time.monotonic()
         last_print = t_0
-        max_true_vel = 0.0
+        max_measured_vel = 0.0
         while True:
             ratio = (time.monotonic() - t_0) / ramp_up_time
             if ratio >= 1:
@@ -406,29 +427,66 @@ class TestHighVelocityCtrl(AxisTest):
             # While ramping up we want to remain within +-5% of the setpoint.
             # However we accept if we can only approach 80% of the theoretical limit.
             vel_setpoint = ratio * rated_limit
-            vel_range = max(0.05*vel_setpoint, 5000)
-            if vel_setpoint - vel_range > expected_limit:
-                vel_range = vel_setpoint - expected_limit
+            expected_velocity = max(vel_setpoint - rated_limit / ramp_up_time * self._load_current / 20, 0)
+            vel_range = max(0.05*expected_velocity, 50000)
+            if expected_velocity - vel_range > expected_limit:
+                vel_range = expected_velocity - expected_limit
+
+            # set and measure velocity
+            axis_ctx.handle.controller.set_vel_setpoint(vel_setpoint, 0)
+            measured_vel = axis_ctx.handle.encoder.pll_vel
+            max_measured_vel = max(measured_vel, max_measured_vel)
+            test_assert_eq(measured_vel, expected_velocity, range=vel_range)
+            test_assert_no_error(axis_ctx)
 
             # log progress
             if time.monotonic() - last_print > 1:
                 last_print = time.monotonic()
-                logger.debug("ramping up: now at " + str(vel_setpoint))
-
-            # set and measure velocity
-            axis_ctx.handle.controller.set_vel_setpoint(vel_setpoint, 0)
-            true_vel = axis_ctx.handle.encoder.pll_vel
-            max_true_vel = max(true_vel, max_true_vel)
-            test_assert_eq(true_vel, vel_setpoint, range=vel_range)
-            test_assert_no_error(axis_ctx)
+                logger.debug("ramping up: commanded {}, expected {}, measured {} ".format(vel_setpoint, expected_velocity, measured_vel))
 
             time.sleep(0.001)
 
-        axis_ctx.handle.controller.set_vel_setpoint(0, 0)
-        time.sleep(0.5)
-        # TODO: this is not a good bound, but the encoder float resolution results in a bad velocity estimate after this many turns
-        test_assert_eq(axis_ctx.handle.encoder.pll_vel, 0, range=2000)
-        request_state(axis_ctx, AXIS_STATE_IDLE)
+        logger.debug("reached top speed of {} counts/sec".format(max_measured_vel))
+
+        if self._brake:
+            axis_ctx.handle.controller.set_vel_setpoint(0, 0)
+            time.sleep(0.5)
+            # If the velocity integrator at work, it may now work against slowing down.
+            test_assert_eq(axis_ctx.handle.encoder.pll_vel, 0, range=rated_limit*0.3)
+            # TODO: this is not a good bound, but the encoder float resolution results in a bad velocity estimate after this many turns
+            time.sleep(0.5)
+            test_assert_eq(axis_ctx.handle.encoder.pll_vel, 0, range=2000)
+            request_state(axis_ctx, AXIS_STATE_IDLE)
+        test_assert_no_error(axis_ctx)
+
+
+class TestHighVelocityInViscousFluid(DualAxisTest):
+    """
+    Runs TestHighVelocity on one motor while using the other motor as a load.
+    The load is created by running velocity control with setpoint 0.
+    """
+    def run_test(self, axis0_ctx: AxisTestContext, axis1_ctx: AxisTestContext, logger):
+        load_ctx = axis0_ctx
+        driver_ctx = axis1_ctx
+
+        # Set up viscous fluid load
+        logger.debug("activating load on {}...".format(load_ctx.name))
+        load_ctx.handle.controller.config.vel_integrator_gain = 0
+        load_ctx.handle.controller.vel_integrator_current = 0
+        load_ctx.handle.controller.config.vel_limit = 20000 # this is not really relevant
+        load_ctx.handle.motor.config.current_lim = 20
+        load_ctx.odrv_ctx.handle.config.brake_resistance = 0 # disable brake resistance, the power will go into the bus
+        load_ctx.handle.controller.set_vel_setpoint(0, 0)
+        request_state(load_ctx, AXIS_STATE_CLOSED_LOOP_CONTROL)
+
+        driver_test = TestHighVelocity(override_current_limit=40, load_current=20, brake=False)
+        driver_test.check_preconditions(driver_ctx, logger)
+        driver_test.run_test(driver_ctx, logger)
+
+        # put load to idle as quickly as possible, otherwise, because the brake resistor is disabled,
+        # it will try to put the braking power into the power rail where it has nowhere to go.
+        request_state(load_ctx, AXIS_STATE_IDLE)
+        request_state(driver_ctx, AXIS_STATE_IDLE)
 
 
 class TestVelCtrlVsPosCtrl(DualAxisTest):

@@ -29,7 +29,8 @@ all_tests = [
 #    TestClosedLoopControl(),
     TestDiscoverAndGotoIdle(), # for testing
     TestEncoderOffsetCalibration(pass_if_ready=True),
-    TestHighVelocityCtrl(),
+#    TestHighVelocity(),
+    TestHighVelocityInViscousFluid(),
 #    TestVelCtrlVsPosCtrl()
     # TODO: test step/dir
     # TODO: test sensorless
