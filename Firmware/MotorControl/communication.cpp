@@ -209,6 +209,7 @@ static inline auto make_obj_tree() {
         make_protocol_ro_property("fw_version_revision", &fw_version_revision),
         make_protocol_ro_property("fw_version_unreleased", &fw_version_unreleased),
         make_protocol_ro_property("brake_resistor_armed", &brake_resistor_armed_),
+        make_protocol_ro_property("user_config_loaded", &user_config_loaded_),
         make_protocol_object("config",
             make_protocol_property("brake_resistance", &board_config.brake_resistance),
             // TODO: changing this currently requires a reboot - fix this

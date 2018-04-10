@@ -17,7 +17,9 @@ Please add a note of your changes below this heading if you make a Pull Request.
    * The liveplotter (`odrivetool liveplotter`, formerly `liveplotter.py`) does no longer steal focus and closes as expected
    * (experimental: start liveplotter from `odrivetool` shell by typing `start_liveplotter(lambda: odrv0.motor0.encoder.encoder_state)`)
 
+* Set thread priority of USB pump thread above protocol thread
 ### Fixed
+* Enums now transported with correct underlying type on native protocol
 
 # Releases
 

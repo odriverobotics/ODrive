@@ -37,6 +37,7 @@ extern float vbus_voltage;
 extern bool brake_resistor_armed_;
 extern const float elec_rad_per_enc;
 extern BoardConfig_t board_config;
+extern bool user_config_loaded_;
 
 constexpr size_t AXIS_COUNT = 2;
 extern Axis *axes[AXIS_COUNT];

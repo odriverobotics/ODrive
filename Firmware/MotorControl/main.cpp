@@ -8,6 +8,7 @@ EncoderConfig_t encoder_configs[AXIS_COUNT];
 ControllerConfig_t controller_configs[AXIS_COUNT];
 MotorConfig_t motor_configs[AXIS_COUNT];
 AxisConfig_t axis_configs[AXIS_COUNT];
+bool user_config_loaded_;
 
 Axis *axes[AXIS_COUNT];
 
@@ -44,6 +45,8 @@ void load_configuration(void) {
             motor_configs[i] = MotorConfig_t();
             axis_configs[i] = AxisConfig_t();
         }
+    } else {
+        user_config_loaded_ = true;
     }
 }
 
