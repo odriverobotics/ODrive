@@ -13,7 +13,7 @@ import sys
 import threading
 import traceback
 from odrive.tests import *
-from odrive.utils import Logger, for_all_parallel
+from odrive.utils import Logger, for_all_parallel, Event
 
 
 all_tests = [
@@ -65,6 +65,7 @@ else:
     for coupling in test_rig_yaml['couplings']:
         couplings.append([axes_by_name[axis_name] for axis_name in coupling])
 
+app_shutdown_token = Event()
 
 try:
     for test in all_tests:
@@ -98,15 +99,21 @@ try:
                 for conflicting_axis in conflicting_axes:
                     conflicting_axis.lock.acquire()
                 try:
-                    # Run test on this axis
-                    logger.info('● running {} on {}...'.format(type(test).__name__, axis_name))
-                    try:
-                        test.check_preconditions(axis_ctx,
+                    if not app_shutdown_token.is_set():
+                        # Run test on this axis
+                        logger.info('● running {} on {}...'.format(type(test).__name__, axis_name))
+                        try:
+                            test.check_preconditions(axis_ctx,
+                                        logger.indent('  {}: '.format(axis_name)))
+                        except:
+                            raise PreconditionsNotMet()
+                        test.run_test(axis_ctx,
                                     logger.indent('  {}: '.format(axis_name)))
-                    except:
-                        raise PreconditionsNotMet()
-                    test.run_test(axis_ctx,
-                                  logger.indent('  {}: '.format(axis_name)))
+                    else:
+                        logger.warn('⬛ skipping {} on {}'.format(type(test).__name__, axis_name))
+                except:
+                    app_shutdown_token.set()
+                    raise
                 finally:
                     # Release all conflicting axes
                     for conflicting_axis in conflicting_axes:
@@ -124,15 +131,21 @@ try:
                 for axis_ctx in coupled_axes:
                     axis_ctx.lock.acquire()
                 try:
-                    # Run test on this axis
-                    logger.info('● running {} on {}...'.format(type(test).__name__, coupling_name))
-                    try:
-                        test.check_preconditions(coupled_axes[0], coupled_axes[1],
+                    if not app_shutdown_token.is_set():
+                        # Run test on this axis
+                        logger.info('● running {} on {}...'.format(type(test).__name__, coupling_name))
+                        try:
+                            test.check_preconditions(coupled_axes[0], coupled_axes[1],
+                                        logger.indent('  {}: '.format(coupling_name)))
+                        except:
+                            raise PreconditionsNotMet()
+                        test.run_test(coupled_axes[0], coupled_axes[1],
                                     logger.indent('  {}: '.format(coupling_name)))
-                    except:
-                        raise PreconditionsNotMet()
-                    test.run_test(coupled_axes[0], coupled_axes[1],
-                                  logger.indent('  {}: '.format(coupling_name)))
+                    else:
+                        logger.warn('⬛ skipping {} on {}...'.format(type(test).__name__, coupling_name))
+                except:
+                    app_shutdown_token.set()
+                    raise
                 finally:
                     # Release all conflicting axes
                     for axis_ctx in coupled_axes:
@@ -147,11 +160,13 @@ except:
     logger.error(traceback.format_exc())
     logger.debug('=> Test failed. Please wait while I secure the test rig...')
     try:
-        dont_secure_after_failure = True # TODO: disable
+        dont_secure_after_failure = False # TODO: disable
         if not dont_secure_after_failure:
             def odrv_reset_thread(odrv_name):
                 odrv_ctx = odrives_by_name[odrv_name]
-                run("make erase PROGRAMMER='" + odrv_ctx.yaml['programmer'] + "'", logger, timeout=30)
+                #run("make erase PROGRAMMER='" + odrv_ctx.yaml['programmer'] + "'", logger, timeout=30)
+                odrv_ctx.handle.axis0.requested_state = AXIS_STATE_IDLE
+                odrv_ctx.handle.axis1.requested_state = AXIS_STATE_IDLE
             for_all_parallel(odrives_by_name, lambda x: x['name'], odrv_reset_thread)
     except:
         logger.error('///////////////////////////////////////////')
