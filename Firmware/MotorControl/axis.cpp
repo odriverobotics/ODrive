@@ -251,14 +251,20 @@ void Axis::run_state_machine_loop() {
         switch (current_state_) {
         case AXIS_STATE_MOTOR_CALIBRATION:
             status = motor_.run_calibration();
+            if (!status)
+                error_ |= ERROR_MOTOR_FAILED;
             break;
 
         case AXIS_STATE_ENCODER_INDEX_SEARCH:
             status = encoder_.run_index_search();
+            if (!status)
+                error_ |= ERROR_ENCODER_FAILED;
             break;
 
         case AXIS_STATE_ENCODER_OFFSET_CALIBRATION:
             status = encoder_.run_offset_calibration();
+            if (!status)
+                error_ |= ERROR_ENCODER_FAILED;
             break;
 
         case AXIS_STATE_SENSORLESS_CONTROL:
