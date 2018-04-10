@@ -26,7 +26,7 @@ class ODriveTestContext():
         self.name = name
         self.axes = []
         for axis_idx, axis_yaml in enumerate(yaml['axes']):
-            axis_name = axis_yaml['name'] if 'name' in axis_yaml else '{}.axis{}'.format(name, axis_idx)
+            axis_name = (name + "." + axis_yaml['name']) if 'name' in axis_yaml else '{}.axis{}'.format(name, axis_idx)
             self.axes.append(AxisTestContext(axis_name, axis_yaml, self))
 
     def rediscover(self):
@@ -388,7 +388,6 @@ class TestHighVelocity(AxisTest):
         # V_bus and motor KV rating
         max_rpm = axis_ctx.odrv_ctx.yaml['vbus-voltage'] * axis_ctx.yaml['motor-kv']
         rated_limit = max_rpm / 60 * axis_ctx.yaml['encoder-cpr']
-        rated_limit *= 0.5 # TODO: remove this later, but for now we want to stay away from the modulation depth limit
         expected_limit = rated_limit
 
         # The KV-rating assumes square-waves on the motor phases (hexagonal space vector trajectory)
@@ -399,6 +398,10 @@ class TestHighVelocity(AxisTest):
         # The ODrive only goes to 80% modulation depth in order to save some time for the ADC measurements.
         # See FOC_current in motor.cpp.
         expected_limit *= 0.8
+        
+        # TODO: remove the following two lines, but for now we want to stay away from the modulation depth limit
+        expected_limit *= 0.8
+        rated_limit = expected_limit
 
         # Add a 10% margin to account for 
         expected_limit *= 0.9
@@ -465,6 +468,10 @@ class TestHighVelocityInViscousFluid(DualAxisTest):
     Runs TestHighVelocity on one motor while using the other motor as a load.
     The load is created by running velocity control with setpoint 0.
     """
+    def __init__(self, load_current=10, driver_current=20):
+        self._load_current = load_current
+        self._driver_current = driver_current
+
     def run_test(self, axis0_ctx: AxisTestContext, axis1_ctx: AxisTestContext, logger):
         load_ctx = axis0_ctx
         driver_ctx = axis1_ctx
@@ -474,12 +481,14 @@ class TestHighVelocityInViscousFluid(DualAxisTest):
         load_ctx.handle.controller.config.vel_integrator_gain = 0
         load_ctx.handle.controller.vel_integrator_current = 0
         load_ctx.handle.controller.config.vel_limit = 20000 # this is not really relevant
-        load_ctx.handle.motor.config.current_lim = 20
+        load_ctx.handle.motor.config.current_lim = self._load_current
         load_ctx.odrv_ctx.handle.config.brake_resistance = 0 # disable brake resistance, the power will go into the bus
         load_ctx.handle.controller.set_vel_setpoint(0, 0)
         request_state(load_ctx, AXIS_STATE_CLOSED_LOOP_CONTROL)
 
-        driver_test = TestHighVelocity(override_current_limit=40, load_current=20, brake=False)
+        driver_test = TestHighVelocity(
+                override_current_limit=self._driver_current,
+                load_current=self._load_current, brake=False)
         driver_test.check_preconditions(driver_ctx, logger)
         driver_test.run_test(driver_ctx, logger)
 

@@ -11,14 +11,16 @@ odrives:
     vbus-voltage: 12 # [V]
     max-brake-power: 150 # [W]
     axes:
-      - motor-phase-resistance: 0.0245
+      - name: 'yellow'
+        motor-phase-resistance: 0.0245
         motor-phase-inductance: 2.03e-05
         motor-pole-pairs: 7
         motor-direction: -1
         motor-kv: 190
         motor-max-current: 50
         encoder-cpr: 8192
-      - motor-phase-resistance: 0.028
+      - name: 'black'
+        motor-phase-resistance: 0.028
         motor-phase-inductance: 1.6e-05
         motor-pole-pairs: 7
         motor-direction: -1
@@ -35,14 +37,16 @@ odrives:
     vbus-voltage: 12 # [V]
     max-brake-power: 150 # [W]
     axes:
-      - motor-phase-resistance: 0.0253
+      - name: 'black'
+        motor-phase-resistance: 0.0253
         motor-phase-inductance: 1.6e-05
         motor-pole-pairs: 7
         motor-direction: 1
         motor-kv: 270
         motor-max-current: 50
         encoder-cpr: 8192
-      - motor-phase-resistance: 0.0245
+      - name: 'yellow'
+        motor-phase-resistance: 0.0245
         motor-phase-inductance: 2.03e-05
         motor-pole-pairs: 7
         motor-direction: -1
@@ -52,5 +56,5 @@ odrives:
 
 # Mechanical couplings
 couplings:
-  - [ top-odrive.axis0, bottom-odrive.axis1 ]
-  - [ top-odrive.axis1, bottom-odrive.axis0 ]
+  - [ top-odrive.yellow, bottom-odrive.yellow ]
+  - [ top-odrive.black, bottom-odrive.black ]

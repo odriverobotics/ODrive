@@ -12,52 +12,67 @@ import os
 import sys
 import threading
 import traceback
+import argparse
 from odrive.tests import *
 from odrive.utils import Logger, for_all_parallel, Event
 
+script_path=os.path.dirname(os.path.realpath(__file__))
 
-all_tests = [
-#    TestFlashAndErase(),
-#    TestSetup(),
-#    TestMotorCalibration(),
-#    # TODO: test encoder index search
-#    TestEncoderOffsetCalibration(),
-#    # TODO: hold down one motor while the other one does an index search (should fail)
-#    TestClosedLoopControl(),
-#    TestStoreAndReboot(),
-#    TestEncoderOffsetCalibration(), # need to find offset _or_ index after reboot
-#    TestClosedLoopControl(),
-    TestDiscoverAndGotoIdle(), # for testing
-    TestEncoderOffsetCalibration(pass_if_ready=True),
-#    TestHighVelocity(),
-    TestHighVelocityInViscousFluid(),
-#    TestVelCtrlVsPosCtrl()
-    # TODO: test step/dir
-    # TODO: test sensorless
-    # TODO: test ASCII protocol
-    # TODO: test protocol over UART
-]
+parser = argparse.ArgumentParser(description='ODrive automated test tool\n')
+parser.add_argument("--skip-boring-tests", action="store_true",
+                    help="Skip the boring tests and go right to the high power tests")
+parser.add_argument("--ignore", metavar='DEVICE', action='store', nargs='+',
+                    help="Ignore one or more ODrives or axes")
+parser.add_argument("--test-rig-yaml", type=argparse.FileType('r'),
+                    help="test rig YAML file")
+parser.set_defaults(test_rig_yaml=script_path + '/test-rig.yaml')
+parser.set_defaults(ignore=[])
+args = parser.parse_args()
 
+all_tests = []
+if not args.skip_boring_tests:
+    all_tests.append(TestFlashAndErase())
+    all_tests.append(TestSetup())
+    all_tests.append(TestMotorCalibration())
+    #    # TODO: test encoder index search
+    all_tests.append(TestEncoderOffsetCalibration())
+    #    # TODO: hold down one motor while the other one does an index search (should fail)
+    all_tests.append(TestClosedLoopControl())
+    all_tests.append(TestStoreAndReboot())
+    all_tests.append(TestEncoderOffsetCalibration()) # need to find offset _or_ index after reboot
+    all_tests.append(TestClosedLoopControl())
+else:
+    all_tests.append(TestDiscoverAndGotoIdle())
+    all_tests.append(TestEncoderOffsetCalibration(pass_if_ready=True))
 
+#all_tests.append(TestHighVelocity())
+all_tests.append(TestHighVelocityInViscousFluid(load_current=20, driver_current=40))
+#all_tests.append(TestVelCtrlVsPosCtrl())
+# TODO: test step/dir
+# TODO: test sensorless
+# TODO: test ASCII protocol
+# TODO: test protocol over UART
+
+print(str(args.ignore))
 logger = Logger()
 
-script_path=os.path.dirname(os.path.realpath(__file__))
-with open(script_path + '/test-rig.yaml', 'r') as file_stream:
-    test_rig_yaml = yaml.load(file_stream)
 
+test_rig_yaml = yaml.load(args.test_rig_yaml)
 os.chdir(script_path + '/../Firmware')
 
 # Build a dictionary of odrive test contexts by name
 odrives_by_name = {}
 for odrv_idx, odrv_yaml in enumerate(test_rig_yaml['odrives']):
     name = odrv_yaml['name'] if 'name' in odrv_yaml else 'odrive{}'.format(odrv_idx)
-    odrives_by_name[name] = ODriveTestContext(name, odrv_yaml)
+    if not name in args.ignore:
+        odrives_by_name[name] = ODriveTestContext(name, odrv_yaml)
 
 # Build a dictionary of axis test contexts by name (e.g. odrive0.axis0)
 axes_by_name = {}
 for odrv_ctx in odrives_by_name.values():
     for axis_idx, axis_ctx in enumerate(odrv_ctx.axes):
-        axes_by_name[axis_ctx.name] = axis_ctx
+        if not axis_ctx.name in args.ignore:
+            axes_by_name[axis_ctx.name] = axis_ctx
 
 # Ensure mechanical couplings are valid
 couplings = []
@@ -65,7 +80,9 @@ if test_rig_yaml['couplings'] is None:
     test_rig_yaml['couplings'] = {}
 else:
     for coupling in test_rig_yaml['couplings']:
-        couplings.append([axes_by_name[axis_name] for axis_name in coupling])
+        c = [axes_by_name[axis_name] for axis_name in coupling if (axis_name in axes_by_name)]
+        if len(c) > 1:
+            couplings.append(c)
 
 app_shutdown_token = Event()
 
