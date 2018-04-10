@@ -29,7 +29,8 @@ all_tests = [
 #    TestClosedLoopControl(),
     TestDiscoverAndGotoIdle(), # for testing
     TestEncoderOffsetCalibration(pass_if_ready=True),
-    TestVelCtrlVsPosCtrl()
+    TestHighVelocityCtrl(),
+#    TestVelCtrlVsPosCtrl()
     # TODO: test step/dir
     # TODO: test sensorless
     # TODO: test ASCII protocol

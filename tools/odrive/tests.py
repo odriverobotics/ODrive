@@ -353,6 +353,84 @@ class TestStoreAndReboot(ODriveTest):
             test_assert_eq(axis_ctx.handle.motor.config.phase_resistance, axis_ctx.yaml['motor-phase-resistance'], accuracy=0.15)
             test_assert_eq(axis_ctx.handle.motor.config.phase_inductance, axis_ctx.yaml['motor-phase-inductance'], accuracy=0.5)
 
+
+class TestHighVelocityCtrl(AxisTest):
+    """
+    Spins the motor up to it's max speed during a period of 10s.
+    The commanded max speed is based on the motor's KV rating and nominal V_bus,
+    however due to several factors the theoretical limit is about 72% of that.
+    The test passes if the motor follows the commanded ramp closely up to 90% of
+    the theoretical limit (and if no errors occur along the way).
+    """
+    def check_preconditions(self, axis_ctx: AxisTestContext, logger):
+        super(TestHighVelocityCtrl, self).check_preconditions(axis_ctx, logger)
+        test_assert_eq(axis_ctx.handle.motor.is_calibrated, True)
+        test_assert_eq(axis_ctx.handle.encoder.is_ready, True)
+
+    def run_test(self, axis_ctx: AxisTestContext, logger):
+        # Calculate theoretical max velocity in encoder counts per second based on the nominal
+        # V_bus and motor KV rating
+        max_rpm = axis_ctx.odrv_ctx.yaml['vbus-voltage'] * axis_ctx.yaml['motor-kv']
+        rated_limit = max_rpm / 60 * axis_ctx.yaml['encoder-cpr']
+        expected_limit = rated_limit
+
+        # The KV-rating assumes square-waves on the motor phases (hexagonal space vector trajectory)
+        # whereas the ODrive modulates the space vector around a circular trajectory.
+        # See Fig 4.28 here: http://krex.k-state.edu/dspace/bitstream/handle/2097/1507/JamesMevey2009.pdf
+        expected_limit *= (2/math.sqrt(3)) / (4/math.pi) # roughtly 90%
+
+        # The ODrive only goes to 80% modulation depth in order to save some time for the ADC measurements.
+        # See FOC_current in motor.cpp.
+        expected_limit *= 0.8
+
+        # Add a 10% margin to account for 
+        expected_limit *= 0.9
+
+        logger.debug("rated max speed: {}, expected max speed: >= {}".format(rated_limit, expected_limit))
+        #theoretical_limit = 100000
+        
+        # Set the current limit accordingly so we don't burn the brake resistor while slowing down
+        set_limits(axis_ctx, logger, vel_limit=rated_limit, current_limit=50)
+        request_state(axis_ctx, AXIS_STATE_CLOSED_LOOP_CONTROL)
+
+
+        ramp_up_time = 20.0
+        t_0 = time.monotonic()
+        last_print = t_0
+        max_true_vel = 0.0
+        while True:
+            ratio = (time.monotonic() - t_0) / ramp_up_time
+            if ratio >= 1:
+                break
+
+            # While ramping up we want to remain within +-5% of the setpoint.
+            # However we accept if we can only approach 80% of the theoretical limit.
+            vel_setpoint = ratio * rated_limit
+            vel_range = max(0.05*vel_setpoint, 5000)
+            if vel_setpoint - vel_range > expected_limit:
+                vel_range = vel_setpoint - expected_limit
+
+            # log progress
+            if time.monotonic() - last_print > 1:
+                last_print = time.monotonic()
+                logger.debug("ramping up: now at " + str(vel_setpoint))
+
+            # set and measure velocity
+            axis_ctx.handle.controller.set_vel_setpoint(vel_setpoint, 0)
+            true_vel = axis_ctx.handle.encoder.pll_vel
+            max_true_vel = max(true_vel, max_true_vel)
+            test_assert_eq(true_vel, vel_setpoint, range=vel_range)
+            test_assert_no_error(axis_ctx)
+
+            time.sleep(0.001)
+
+        axis_ctx.handle.controller.set_vel_setpoint(0, 0)
+        time.sleep(0.5)
+        # TODO: this is not a good bound, but the encoder float resolution results in a bad velocity estimate after this many turns
+        test_assert_eq(axis_ctx.handle.encoder.pll_vel, 0, range=2000)
+        request_state(axis_ctx, AXIS_STATE_IDLE)
+
+
 class TestVelCtrlVsPosCtrl(DualAxisTest):
     """
     Uses one ODrive as a load operating in velocity control mode.
