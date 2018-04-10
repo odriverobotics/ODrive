@@ -64,6 +64,8 @@ def test_assert_no_error(axis_ctx: AxisTestContext):
         errors.append("sensorless_estimator failed with error {:04X}".format(axis_ctx.handle.sensorless_estimator.error))
     if axis_ctx.handle.error != 0:
         errors.append("axis failed with error {:04X}".format(axis_ctx.handle.error))
+    elif len(errors) > 0:
+        errors.append("and by the way: axis reports no error even though there is one")
     if len(errors) > 0:
         raise TestFailed("\n".join(errors))
 
@@ -175,6 +177,12 @@ class TestFlashAndErase(ODriveTest):
     def __init__(self):
         ODriveTest.__init__(self, exclusive=True)
     def run_test(self, odrv_ctx: ODriveTestContext, logger):
+        # Set board-version and compile
+        with open("tup.config", mode="w") as tup_config:
+            tup_config.write("CONFIG_STRICT=true\n")
+            tup_config.write("CONFIG_BOARD_VERSION={}\n".format(odrv_ctx.yaml['board-version']))
+        #exit(1)
+        run("make", logger, timeout=10)
         run("make flash PROGRAMMER='" + odrv_ctx.yaml['programmer'] + "'", logger, timeout=20)
         # FIXME: device does not reboot correctly after erasing config this way
         #run("make erase_config PROGRAMMER='" + test_rig.programmer + "'", timeout=10)
@@ -248,7 +256,7 @@ class TestMotorCalibration(AxisTest):
         request_state(axis_ctx, AXIS_STATE_MOTOR_CALIBRATION)
         time.sleep(6)
         test_assert_eq(axis_ctx.handle.current_state, AXIS_STATE_IDLE)
-        test_assert_eq(axis_ctx.handle.error, AXIS_ERROR_NO_ERROR)
+        test_assert_no_error(axis_ctx)
         test_assert_eq(axis_ctx.handle.motor.config.phase_resistance, axis_ctx.yaml['motor-phase-resistance'], accuracy=0.2)
         test_assert_eq(axis_ctx.handle.motor.config.phase_inductance, axis_ctx.yaml['motor-phase-inductance'], accuracy=0.5)
         axis_ctx.handle.motor.config.pre_calibrated = True
@@ -282,7 +290,7 @@ class TestEncoderOffsetCalibration(AxisTest):
         # TODO: ensure the encoder calibration doesn't do crap
         time.sleep(11)
         test_assert_eq(axis_ctx.handle.current_state, AXIS_STATE_IDLE)
-        test_assert_eq(axis_ctx.handle.error, AXIS_ERROR_NO_ERROR)
+        test_assert_no_error(axis_ctx)
         test_assert_eq(axis_ctx.handle.motor.config.direction, axis_ctx.yaml['motor-direction'])
         axis_ctx.handle.encoder.config.pre_calibrated = True
 

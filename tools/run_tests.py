@@ -84,7 +84,7 @@ try:
                 for odrv in odrives_by_name:
                     odrv_test_thread(odrv)
             else:
-                for_all_parallel(odrives_by_name, lambda x: x, odrv_test_thread)
+                for_all_parallel(odrives_by_name, lambda x: type(test).__name__ + " on " + x, odrv_test_thread)
 
         elif isinstance(test, AxisTest):
             def axis_test_thread(axis_name):
@@ -112,7 +112,7 @@ try:
                     for conflicting_axis in conflicting_axes:
                         conflicting_axis.lock.release()
 
-            for_all_parallel(axes_by_name, lambda x: x, axis_test_thread)
+            for_all_parallel(axes_by_name, lambda x: type(test).__name__ + " on " + x, axis_test_thread)
 
         elif isinstance(test, DualAxisTest):
             def dual_axis_test_thread(coupling):
@@ -138,7 +138,7 @@ try:
                     for axis_ctx in coupled_axes:
                         axis_ctx.lock.release()
 
-            for_all_parallel(couplings, lambda x: "..".join([a.name for a in x]), dual_axis_test_thread)
+            for_all_parallel(couplings, lambda x: type(test).__name__ + " on " + "..".join([a.name for a in x]), dual_axis_test_thread)
 
         else:
             logger.warn("ignoring unknown test type {}".format(type(test)))
