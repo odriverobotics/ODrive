@@ -30,7 +30,6 @@ struct AxisConfig_t {
                                  //   For M0 this has no effect if enable_uart is true
 
     float counts_per_step = 2.0f;
-    float dc_bus_brownout_trip_level = 8.0f; //<! [V] voltage at which the motor stops operating
 
     // Spinup settings
     float ramp_up_time = 0.4f;            // [s]
@@ -180,7 +179,6 @@ public:
                 make_protocol_property("startup_sensorless_control", &config_.startup_sensorless_control),
                 make_protocol_property("enable_step_dir", &config_.enable_step_dir),
                 make_protocol_property("counts_per_step", &config_.counts_per_step),
-                make_protocol_property("dc_bus_brownout_trip_level", &config_.dc_bus_brownout_trip_level),
                 make_protocol_property("ramp_up_time", &config_.ramp_up_time),
                 make_protocol_property("ramp_up_distance", &config_.ramp_up_distance),
                 make_protocol_property("spin_up_current", &config_.spin_up_current),

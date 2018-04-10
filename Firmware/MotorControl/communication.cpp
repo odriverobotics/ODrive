@@ -182,7 +182,9 @@ static inline auto make_obj_tree() {
         make_protocol_object("config",
             make_protocol_property("brake_resistance", &board_config.brake_resistance),
             // TODO: changing this currently requires a reboot - fix this
-            make_protocol_property("enable_uart", &board_config.enable_uart)
+            make_protocol_property("enable_uart", &board_config.enable_uart),
+            make_protocol_property("dc_bus_undervoltage_trip_level", &board_config.dc_bus_undervoltage_trip_level),
+            make_protocol_property("dc_bus_overvoltage_trip_level", &board_config.dc_bus_overvoltage_trip_level)
         ),
         make_protocol_object("axis0", axes[0]->make_protocol_definitions()),
         make_protocol_object("axis1", axes[1]->make_protocol_definitions()),
