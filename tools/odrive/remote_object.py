@@ -101,12 +101,19 @@ class RemoteFunction(object):
             param_json["mode"] = "r"
             self._inputs.append(RemoteProperty(param_json, parent))
 
+        self._outputs = []
+        for param_json in json_data.get("outputs", []): # TODO: deprecate "arguments" keyword
+            param_json["mode"] = "r"
+            self._outputs.append(RemoteProperty(param_json, parent))
+
     def __call__(self, *args):
         if (len(self._inputs) != len(args)):
             raise TypeError("expected {} arguments but have {}".format(len(self._inputs), len(args)))
         for i in range(len(args)):
             self._inputs[i].set_value(args[i])
         self._parent.__channel__.remote_endpoint_operation(self._trigger_id, None, True, 0)
+        if len(self._outputs) > 0:
+            return self._outputs[0].get_value()
 
 class RemoteObject(object):
     """
