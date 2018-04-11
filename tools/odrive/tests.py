@@ -54,7 +54,7 @@ def test_assert_eq(observed, expected, range=None, accuracy=None):
     elif not accuracy is None and ((observed < expected * (1 - accuracy)) or (observed > expected * (1 + accuracy))):
         raise TestFailed("value out of range: expected {}+-{}% but observed {}".format(expected, accuracy*100.0, observed))
 
-def test_assert_no_error(axis_ctx: AxisTestContext):
+def get_errors(axis_ctx: AxisTestContext):
     errors = []
     if axis_ctx.handle.motor.error != 0:
         errors.append("motor failed with error {:04X}".format(axis_ctx.handle.motor.error))
@@ -66,6 +66,23 @@ def test_assert_no_error(axis_ctx: AxisTestContext):
         errors.append("axis failed with error {:04X}".format(axis_ctx.handle.error))
     elif len(errors) > 0:
         errors.append("and by the way: axis reports no error even though there is one")
+    return errors
+
+def dump_errors(axis_ctx: AxisTestContext, logger):
+    errors = get_errors(axis_ctx)
+    if len(errors):
+        logger.error("errors on " + axis_ctx.name)
+        for error in errors:
+            logger.error(error)
+
+def clear_errors(axis_ctx: AxisTestContext):
+    axis_ctx.handle.error = 0
+    axis_ctx.handle.encoder.error = 0
+    axis_ctx.handle.motor.error = 0
+    axis_ctx.handle.sensorless_estimator.error = 0
+
+def test_assert_no_error(axis_ctx: AxisTestContext):
+    errors = get_errors(axis_ctx)
     if len(errors) > 0:
         raise TestFailed("\n".join(errors))
 
@@ -160,8 +177,11 @@ class DualAxisTest(ABC):
         test_assert_no_error(axis1_ctx)
         test_assert_eq(axis0_ctx.handle.current_state, AXIS_STATE_IDLE)
         test_assert_eq(axis1_ctx.handle.current_state, AXIS_STATE_IDLE)
-        test_assert_eq(axis0_ctx.handle.encoder.pll_vel, 0, range=1000)
-        test_assert_eq(axis1_ctx.handle.encoder.pll_vel, 0, range=1000)
+        if (abs(axis0_ctx.handle.encoder.pll_vel) > 500) or (abs(axis1_ctx.handle.encoder.pll_vel) > 500):
+            logger.warn("some axis still in motion, delaying 2 sec...")
+            time.sleep(2)
+        test_assert_eq(axis0_ctx.handle.encoder.pll_vel, 0, range=500)
+        test_assert_eq(axis1_ctx.handle.encoder.pll_vel, 0, range=500)
 
     @abc.abstractmethod
     def run_test(self, axis0_ctx: AxisTestContext, axis1_ctx: AxisTestContext, logger):
@@ -170,8 +190,8 @@ class DualAxisTest(ABC):
 class TestDiscoverAndGotoIdle(ODriveTest):
     def run_test(self, odrv_ctx: ODriveTestContext, logger):
         odrv_ctx.rediscover()
-        odrv_ctx.axes[0].handle.error = 0
-        odrv_ctx.axes[1].handle.error = 0
+        clear_errors(odrv_ctx.axes[0])
+        clear_errors(odrv_ctx.axes[1])
         request_state(odrv_ctx.axes[0], AXIS_STATE_IDLE)
         request_state(odrv_ctx.axes[1], AXIS_STATE_IDLE)
 

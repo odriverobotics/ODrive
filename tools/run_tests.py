@@ -186,6 +186,9 @@ except:
                 #run("make erase PROGRAMMER='" + odrv_ctx.yaml['programmer'] + "'", logger, timeout=30)
                 odrv_ctx.handle.axis0.requested_state = AXIS_STATE_IDLE
                 odrv_ctx.handle.axis1.requested_state = AXIS_STATE_IDLE
+                dump_errors(odrv_ctx.axes[0], logger)
+                dump_errors(odrv_ctx.axes[1], logger)
+
             for_all_parallel(odrives_by_name, lambda x: x['name'], odrv_reset_thread)
     except:
         logger.error('///////////////////////////////////////////')
