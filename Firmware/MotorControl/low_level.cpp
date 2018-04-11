@@ -322,6 +322,11 @@ void vbus_sense_adc_cb(ADC_HandleTypeDef* hadc, bool injected) {
     // Only one conversion in sequence, so only rank1
     uint32_t ADCValue = HAL_ADCEx_InjectedGetValue(hadc, ADC_INJECTED_RANK_1);
     vbus_voltage = ADCValue * voltage_scale;
+    if (axes[0] && !axes[0]->error_ && axes[1] && !axes[1]->error_) {
+        if (oscilloscope_pos >= OSCILLOSCOPE_SIZE)
+            oscilloscope_pos = 0;
+        oscilloscope[oscilloscope_pos++] = vbus_voltage;
+    }
 }
 
 // This is the callback from the ADC that we expect after the PWM has triggered an ADC conversion.

@@ -47,6 +47,10 @@ extern bool user_config_loaded_;
 constexpr size_t AXIS_COUNT = 2;
 extern Axis *axes[AXIS_COUNT];
 
+#define OSCILLOSCOPE_SIZE 18000
+extern float oscilloscope[OSCILLOSCOPE_SIZE];
+extern size_t oscilloscope_pos;
+
 // TODO: move
 // this is technically not thread-safe but practically it might be
 #define DEFINE_ENUM_FLAG_OPERATORS(ENUMTYPE) \

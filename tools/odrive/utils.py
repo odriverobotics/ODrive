@@ -88,6 +88,16 @@ def print_drv_regs(name, motor):
     print("Control Reg 1: " + str(ctrl_reg_1) + " (" + format(ctrl_reg_1, '#013b') + ")")
     print("Control Reg 2: " + str(ctrl_reg_2) + " (" + format(ctrl_reg_2, '#09b') + ")")
 
+def show_oscilloscope(odrv):
+    size = 18000
+    values = []
+    for i in range(size):
+        values.append(odrv.get_oscilloscope_val(i))
+
+    import matplotlib.pyplot as plt
+    plt.plot(values)
+    plt.show()
+
 def rate_test(device):
     """
     Tests how many integers per second can be transmitted
