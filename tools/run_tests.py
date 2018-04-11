@@ -29,6 +29,8 @@ parser.set_defaults(test_rig_yaml=script_path + '/test-rig.yaml')
 parser.set_defaults(ignore=[])
 args = parser.parse_args()
 
+# TODO: add --only option
+
 all_tests = []
 if not args.skip_boring_tests:
     all_tests.append(TestFlashAndErase())
