@@ -9,6 +9,9 @@ import odrive.discovery
 from odrive.enums import *
 import odrive.utils
 
+import functools
+print = functools.partial(print, flush=True)
+
 import abc
 ABC = abc.ABC
 
@@ -34,7 +37,7 @@ class ODriveTestContext():
         Reconnects to the ODrive
         """
         self.handle = odrive.discovery.find_any(
-            path="usb", serial_number=self.yaml['serial-number'], timeout=15)
+            path="usb", serial_number=self.yaml['serial-number'], timeout=15)#, printer=print)
         for axis_idx, axis_ctx in enumerate(self.axes):
             axis_ctx.handle = self.handle.__dict__['axis{}'.format(axis_idx)]
 
@@ -378,7 +381,7 @@ class TestStoreAndReboot(ODriveTest):
         test_assert_eq(odrv_ctx.handle.config.brake_resistance, odrv_ctx.yaml['brake-resistance'], accuracy=0.01)
         for axis_ctx in odrv_ctx.axes:
             test_assert_eq(axis_ctx.handle.encoder.config.cpr, axis_ctx.yaml['encoder-cpr'])
-            test_assert_eq(axis_ctx.handle.motor.config.phase_resistance, axis_ctx.yaml['motor-phase-resistance'], accuracy=0.15)
+            test_assert_eq(axis_ctx.handle.motor.config.phase_resistance, axis_ctx.yaml['motor-phase-resistance'], accuracy=0.2)
             test_assert_eq(axis_ctx.handle.motor.config.phase_inductance, axis_ctx.yaml['motor-phase-inductance'], accuracy=0.5)
 
 
@@ -437,6 +440,8 @@ class TestHighVelocity(AxisTest):
         else:
             axis_ctx.handle.motor.config.current_lim = self._override_current_limit
             axis_ctx.handle.controller.config.vel_limit = rated_limit
+        axis_ctx.handle.controller.vel_integrator_current = 0
+        axis_ctx.handle.controller.set_vel_setpoint(0, 0)
         request_state(axis_ctx, AXIS_STATE_CLOSED_LOOP_CONTROL)
 
 

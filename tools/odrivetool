@@ -7,7 +7,7 @@ import argparse
 import odrive.discovery
 from odrive.utils import Logger, Event
 
-# Flush stdout by default
+# We are interactively printing status messages, so flush by default
 import functools
 print = functools.partial(print, flush=True)
 
@@ -67,10 +67,6 @@ args = parser.parse_args()
 if args.command is None:
     args.command = 'shell'
     args.no_ipython = False
-
-# We are interactively printing status messages, so flush by default
-import functools
-print = functools.partial(print, flush=True)
 
 # TODO: deprecate printer - use logger instead
 if (args.verbose):

@@ -67,6 +67,7 @@ def start_liveplotter(get_var_callback):
             plt.plot(vals)
             #time.sleep(1/plot_rate)
             fig.canvas.flush_events()
+            plt.pause(1/plot_rate)
 
     threading.Thread(target=fetch_data).start()
     threading.Thread(target=plot_data).start()
@@ -303,6 +304,7 @@ class Logger():
         self._prefix = ''
         self._skip_bottom_line = False # If true, messages are printed one line above the cursor
         self._verbose = verbose
+        self._print_lock = threading.Lock()
         if platform.system() == 'Windows':
             self._stdout_buf = win32console.GetStdHandle(win32console.STD_OUTPUT_HANDLE)
 
@@ -350,18 +352,22 @@ class Logger():
             #   (print text)
             #   ESC 8: restore old cursor position
 
+            self._print_lock.acquire()
             sys.stdout.write('\x1b7\x1b[1A\x1b[1S\x1b[1L')
             sys.stdout.write(Logger._VT100Colors[color] + text + Logger._VT100Colors[Logger.COLOR_DEFAULT])
             sys.stdout.write('\x1b8')
             sys.stdout.flush()
+            self._print_lock.release()
 
     def print_colored(self, text, color):
         if self._skip_bottom_line:
             self.print_on_second_last_line(text, color)
         else:
             # On Windows, colorama does the job of interpreting the VT100 escape sequences
+            self._print_lock.acquire()
             sys.stdout.write(Logger._VT100Colors[color] + text + Logger._VT100Colors[Logger.COLOR_DEFAULT] + '\n')
             sys.stdout.flush()
+            self._print_lock.release()
 
     def debug(self, text):
         if self._verbose:

@@ -93,7 +93,7 @@ try:
         if isinstance(test, ODriveTest):
             def odrv_test_thread(odrv_name):
                 odrv_ctx = odrives_by_name[odrv_name]
-                logger.info('● running {} on {}...'.format(type(test).__name__, odrv_name))
+                logger.info('* running {} on {}...'.format(type(test).__name__, odrv_name))
                 try:
                     test.check_preconditions(odrv_ctx,
                               logger.indent('  {}: '.format(odrv_name)))
@@ -122,7 +122,7 @@ try:
                 try:
                     if not app_shutdown_token.is_set():
                         # Run test on this axis
-                        logger.info('● running {} on {}...'.format(type(test).__name__, axis_name))
+                        logger.info('* running {} on {}...'.format(type(test).__name__, axis_name))
                         try:
                             test.check_preconditions(axis_ctx,
                                         logger.indent('  {}: '.format(axis_name)))
@@ -131,7 +131,7 @@ try:
                         test.run_test(axis_ctx,
                                     logger.indent('  {}: '.format(axis_name)))
                     else:
-                        logger.warn('⬛ skipping {} on {}'.format(type(test).__name__, axis_name))
+                        logger.warn('- skipping {} on {}'.format(type(test).__name__, axis_name))
                 except:
                     app_shutdown_token.set()
                     raise
@@ -154,7 +154,7 @@ try:
                 try:
                     if not app_shutdown_token.is_set():
                         # Run test on this axis
-                        logger.info('● running {} on {}...'.format(type(test).__name__, coupling_name))
+                        logger.info('* running {} on {}...'.format(type(test).__name__, coupling_name))
                         try:
                             test.check_preconditions(coupled_axes[0], coupled_axes[1],
                                         logger.indent('  {}: '.format(coupling_name)))
@@ -163,7 +163,7 @@ try:
                         test.run_test(coupled_axes[0], coupled_axes[1],
                                     logger.indent('  {}: '.format(coupling_name)))
                     else:
-                        logger.warn('⬛ skipping {} on {}...'.format(type(test).__name__, coupling_name))
+                        logger.warn('- skipping {} on {}...'.format(type(test).__name__, coupling_name))
                 except:
                     app_shutdown_token.set()
                     raise
