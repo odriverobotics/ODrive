@@ -160,8 +160,8 @@ class AxisTest(ABC):
             logger.warn("axis still in motion, delaying 2 sec...")
             time.sleep(2)
         test_assert_eq(axis_ctx.handle.encoder.pll_vel, 0, range=500)
-        #test_assert_eq(axis_ctx.odrv_ctx.handle.config.dc_bus_undervoltage_trip_level, axis_ctx.odrv_ctx.yaml['vbus-voltage'] * 0.92, accuracy=0.001)
-        #test_assert_eq(axis_ctx.odrv_ctx.handle.config.dc_bus_overvoltage_trip_level, axis_ctx.odrv_ctx.yaml['vbus-voltage'] * 1.08, accuracy=0.001)
+        test_assert_eq(axis_ctx.odrv_ctx.handle.config.dc_bus_undervoltage_trip_level, axis_ctx.odrv_ctx.yaml['vbus-voltage'] * 0.92, accuracy=0.001)
+        test_assert_eq(axis_ctx.odrv_ctx.handle.config.dc_bus_overvoltage_trip_level, axis_ctx.odrv_ctx.yaml['vbus-voltage'] * 1.08, accuracy=0.001)
         #test_assert_eq(axis_ctx.odrv_ctx.handle.config.dc_bus_undervoltage_trip_level, axis_ctx.odrv_ctx.yaml['vbus-voltage'] * 0.96, accuracy=0.001)
         #test_assert_eq(axis_ctx.odrv_ctx.handle.config.dc_bus_overvoltage_trip_level, axis_ctx.odrv_ctx.yaml['vbus-voltage'] * 1.04, accuracy=0.001)
 

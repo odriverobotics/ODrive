@@ -8,7 +8,7 @@ odrives:
     uart: /dev/serial/by-id/[not-yet-used]
     usb: auto
     programmer: '533f7506493f49514454193f'
-    vbus-voltage: 12 # [V]
+    vbus-voltage: 24 # [V]
     max-brake-power: 150 # [W]
     axes:
       - name: 'yellow'
@@ -34,7 +34,7 @@ odrives:
     uart: /dev/serial/by-id/[not-yet-used]
     usb: auto
     programmer: '493f6f06493f56540929113f'
-    vbus-voltage: 12 # [V]
+    vbus-voltage: 24 # [V]
     max-brake-power: 150 # [W]
     axes:
       - name: 'black'

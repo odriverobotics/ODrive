@@ -5,7 +5,7 @@
 BUILD_DIR = build
 FIRMWARE = $(BUILD_DIR)/ODriveFirmware.elf
 FIRMWARE_HEX = $(BUILD_DIR)/ODriveFirmware.hex
-PROGRAMMER_HEX := $(shell echo $(PROGRAMMER) | sed -e 's/.\{2\}/\\x&/g')
+PROGRAMMER_HEX := $(shell echo $(PROGRAMMER) | sed -e 's/.\\{2\\}/\\\\x&/g')
 OPENOCD := openocd -f interface/stlink-v2.cfg \
 		$(if $(value PROGRAMMER),-c 'hla_serial $(PROGRAMMER_HEX)',) \
 		-f target/stm32f4x.cfg
