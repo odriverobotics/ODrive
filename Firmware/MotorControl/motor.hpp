@@ -95,6 +95,8 @@ public:
         update_current_controller_gains();
         DRV8301_setup();
     }
+    void reset_current_control();
+
     void update_current_controller_gains();
     void DRV8301_setup();
     bool check_DRV_fault();

@@ -425,7 +425,7 @@ class TestHighVelocity(AxisTest):
         expected_limit *= 0.8
         
         # TODO: remove the following two lines, but for now we want to stay away from the modulation depth limit
-        expected_limit *= 0.8
+        expected_limit *= 0.5
         rated_limit = expected_limit
 
         # Add a 10% margin to account for 
@@ -441,11 +441,15 @@ class TestHighVelocity(AxisTest):
             axis_ctx.handle.motor.config.current_lim = self._override_current_limit
             axis_ctx.handle.controller.config.vel_limit = rated_limit
         axis_ctx.handle.controller.vel_integrator_current = 0
+        # logger.debug("Setting {} integrator current to 0".format(axis_ctx.name))
         axis_ctx.handle.controller.set_vel_setpoint(0, 0)
+        # logger.debug("Setting {} vel setpoint to 0".format(axis_ctx.name))
+        axis_ctx.handle.motor.current_control.v_current_control_integral_d = 0
+        axis_ctx.handle.motor.current_control.v_current_control_integral_q = 0
         request_state(axis_ctx, AXIS_STATE_CLOSED_LOOP_CONTROL)
 
 
-        ramp_up_time = 20.0
+        ramp_up_time = 10.0
         t_0 = time.monotonic()
         last_print = t_0
         max_measured_vel = 0.0
@@ -509,10 +513,15 @@ class TestHighVelocityInViscousFluid(DualAxisTest):
         logger.debug("activating load on {}...".format(load_ctx.name))
         load_ctx.handle.controller.config.vel_integrator_gain = 0
         load_ctx.handle.controller.vel_integrator_current = 0
+        # logger.debug("Setting {} integrator current to 0".format(load_ctx.name))
         load_ctx.handle.controller.config.vel_limit = 20000 # this is not really relevant
         load_ctx.handle.motor.config.current_lim = self._load_current
         load_ctx.odrv_ctx.handle.config.brake_resistance = 0 # disable brake resistance, the power will go into the bus
         load_ctx.handle.controller.set_vel_setpoint(0, 0)
+        # logger.debug("Setting {} vel setpoint to 0".format(load_ctx.name))
+        load_ctx.handle.motor.current_control.v_current_control_integral_d = 0
+        load_ctx.handle.motor.current_control.v_current_control_integral_q = 0
+
         request_state(load_ctx, AXIS_STATE_CLOSED_LOOP_CONTROL)
 
         driver_test = TestHighVelocity(

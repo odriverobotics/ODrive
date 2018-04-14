@@ -34,15 +34,23 @@ Motor::Motor(const MotorHardwareConfig_t& hw_config,
 //
 // @returns: True on success, false otherwise
 bool Motor::arm() {
-    // Wait until the interrupt handler triggers twice. After the first wait there is an
-    // undefined period until the next trigger. After the second wait we know for sure
-    // that we have exactly one full interrupt period until the third trigger. This gives
+
+    // Reset controller states, integrators, setpoints, etc.
+    axis_->controller_.reset();
+    reset_current_control();
+
+    // Wait until the interrupt handler triggers twice. This gives
     // the control loop the correct time quota to set up modulation timings.
-    if (!(axis_->wait_for_current_meas() && axis_->wait_for_current_meas()))
+    if (!axis_->wait_for_current_meas())
         return axis_->error_ |= Axis::ERROR_CURRENT_MEASUREMENT_TIMEOUT, false;
     next_timings_valid_ = false;
     safety_critical_arm_motor_pwm(*this);
     return true;
+}
+
+void Motor::reset_current_control() {
+    current_control_.v_current_control_integral_d = 0.0f;
+    current_control_.v_current_control_integral_q = 0.0f;
 }
 
 // @brief Tune the current controller based on phase resistance and inductance
