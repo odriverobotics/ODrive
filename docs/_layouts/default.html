@@ -75,6 +75,18 @@
       ga('send', 'pageview');
     </script>
     {% endif %}
+    <script type="text/javascript">
+      // Rewrite all links that start with "../" to point to the GitHub repo
+      window.onload = function(){
+        var links = document.links;
+        var i = links.length;
+        while (i--) {
+          if (links[i].getAttribute("href").slice(0, 3) == "../") {
+            links[i].href = "https://github.com/madcowswe/ODrive/blob/master/" + links[i].getAttribute("href").slice(3);
+          }
+        }
+      }
+    </script>
   </body>
 </html>
 
