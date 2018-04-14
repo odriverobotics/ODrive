@@ -205,7 +205,7 @@ To run the docs server locally:
 cd docs
 gem install bundler
 bundle install --path ruby-bundle
-bundle exec jekyll serve
+bundle exec jekyll serve --host=0.0.0.0
 ```
 
 ## Releases
