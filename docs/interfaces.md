@@ -1,6 +1,6 @@
 # Interfaces
 
-**Warning:** While developing custom ODrive control code it is recommend that your motors are free to spin continuously and are not connected to a drivetrain with limited travel.
+<div class="alert"> While developing custom ODrive control code it is recommend that your motors are free to spin continuously and are not connected to a drivetrain with limited travel. </div>
 
 The ODrive can be controlled over various interfaces and protocols.
 
@@ -23,17 +23,17 @@ The ODrive tools you installed earlier come with a library that you can use to e
 
 Assuming you already installed the odrive library (`pip install odrive`), the simplest program to control the ODrive is this:
 
-```
+```python
 import odrive.discovery
 odrv0 = odrive.discovery.find_any()
 print(str(odrv0.vbus_voltage))
 ```
 
-For a more detailed example, see [odrive_demo.py](tools/odrive_demo.py).
+For a more detailed example, see [odrive_demo.py](../tools/odrive_demo.py).
 
 ### Other languages
 
-We don't have an official library for you just yet. Check the community, there might be someone working on it. If you want to write a library yourself, refer to the [native protocol specification](protocol.md). You are of course welcome to contribute it back.
+We don't have an official library for you just yet. Check the community, there might be someone working on it. If you want to write a library yourself, refer to the [native protocol specification](protocol). You are of course welcome to contribute it back.
 
 ## ASCII protocol
 
@@ -60,9 +60,9 @@ Pinout:
 Please note that GPIO_3 and GPIO_4 are NOT 5v tolerant on ODrive v3.2 and earlier, so 3.3V signals only!
 ODrive v3.3 and onward have 5V tolerant GPIO pins.
 
-To enable step/dir mode for the GPIO, please see [Setting the GPIO mode](Firmware/README.md#communication-configuration).
+To enable step/dir mode for the GPIO, set `<axis>.config.enable_step_dir` to true and reboot the ODrive.
 
-There is also a config variable called `counts_per_step`, which specifies how many encoder counts a "step" corresponds to. It can be any floating point value.
+There is also a config variable called `<axis>.config.counts_per_step`, which specifies how many encoder counts a "step" corresponds to. It can be any floating point value.
 The maximum step rate is pending tests, but it should handle at least 16kHz. If you want to test it, please be aware that the failure mode on too high step rates is expected to be that the motors shuts down and coasts.
 
 Please be aware that there is no enable line right now, and the step/direction interface is enabled by default, and remains active as long as the ODrive is in position control mode. By default the ODrive starts in position control mode, so you don't need to send any commands over USB to get going. You can still send USB commands if you want to.

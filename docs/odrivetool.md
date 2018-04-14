@@ -18,6 +18,6 @@ If you have multiple ODrives connected, you should specify which one to connect 
 Note: ODrive v3.4 and earlier require you to flash with the external programmer first (see below), before you can reflash in standalone mode.
 
 * Run `make dfu` in the `Firmware` directory.
-* __Windows__: During the update, a new device called "STM32 BOOTLOADER" will appear. Open the [Zadig](http://zadig.akeo.ie/) utility and set the driver for "STM32 BOOTLOADER" to libusb-win32. After that the firmware update will continue.
+* __Windows__: During the update, a new device called "STM32 BOOTLOADER" will appear. Open the [Zadig utility](http://zadig.akeo.ie/) and set the driver for "STM32 BOOTLOADER" to libusb-win32. After that the firmware update will continue.
 * On some machines you will need to unplug and plug back in the USB cable to make the PC understand that we switched from regular mode to bootloader mode.
 * Currently a firmware update will preserve the configuration if and only if the parameters of both firmware versions are identical. This will change in the future.

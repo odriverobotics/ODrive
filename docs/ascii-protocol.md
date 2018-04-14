@@ -1,4 +1,6 @@
 
+# ASCII Protocol
+
 ## How to send commands
 
  * **Via USB:**

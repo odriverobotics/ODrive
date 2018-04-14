@@ -73,7 +73,7 @@ Most instructions in this guide refer to a utility called `odrivetool`, so you s
 1. [Install Python 3](https://www.python.org/downloads/).
 2. Install the ODrive tools by opening a terminal and typing `pip install odrive` <kbd>Enter</kbd>
 3. __Linux__: set up USB permissions
-```
+```bash
     echo 'SUBSYSTEM=="usb", ATTR{idVendor}=="1209", ATTR{idProduct}=="0d[0-9][0-9]", MODE="0666"' | sudo tee /etc/udev/rules.d/50-odrive.rules
     sudo udevadm control --reload-rules
     sudo udevadm trigger # until you reboot you may need to do this everytime you reset the ODrive
@@ -83,7 +83,7 @@ Most instructions in this guide refer to a utility called `odrivetool`, so you s
 To launch the main interactive ODrive tool, type `odrivetool` <kbd>Enter</kbd>. Connect your ODrive and wait for the tool to find it. Now you can for instance type `odrv0.vbus_voltage` <kbd>Enter</kbd> to inpect the boards main supply voltage.
 It should look something like this:
 
-```
+```python
 ODrive control utility v0.4.0
 Please connect your ODrive.
 Type help() for help.

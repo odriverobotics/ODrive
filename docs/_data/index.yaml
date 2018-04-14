@@ -12,8 +12,8 @@ sections:
       - title: Parameters & Commands
         url: commands
       - title: Interfaces
-        url: commands
-      - title: Motors & Encoders
+        url: interfaces
+      - title: Encoders
         url: encoders
       - title: Troubleshooting
         url: troubleshooting

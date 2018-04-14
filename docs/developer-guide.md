@@ -56,7 +56,7 @@ sudo add-apt-repository ppa:jonathonf/tup && sudo apt-get update && sudo apt-get
 ```
 
 #### Arch Linux
-```
+```bash
 sudo pacman -S arm-none-eabi-gcc arm-none-eabi-binutils
 sudo pacman -S arm-none-eabi-gdb
 sudo pacman -S tup
