@@ -1,4 +1,4 @@
-# Quick Start Guide
+# Getting Started
 
 ### Table of contents
 
