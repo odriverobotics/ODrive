@@ -114,7 +114,7 @@ You can also modify the compile-time defaults for all `.config` parameters. You 
 * You need to power the board by only **ONE** of the following: VCC(3.3v), 5V, or the main power connection (the DC bus). The USB port (J1) does not power the board.
 * Run `make flash` in the `Firmware` directory.
 
-If the flashing worked, you can connect to the board using the [odrivetool](quick-start#start-odrivetool).
+If the flashing worked, you can connect to the board using the [odrivetool](getting-started#start-odrivetool).
 
 <br><br>
 ## Debugging

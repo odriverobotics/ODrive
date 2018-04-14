@@ -5,8 +5,8 @@
 sections:
   - title: For Users
     docs:
-      - title: Quick Start Guide
-        url: quick-start
+      - title: Getting Started
+        url: getting-started
       - title: ODrive Tool
         url: odrivetool
       - title: Parameters & Commands

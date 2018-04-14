@@ -82,7 +82,7 @@ fault detection.
  * Try turning it on and off again (the ODrive, the script, the PC)
  * Make sure you're using the latest firmware and python tools release
  * **Linux**: Type `lsusb` to list all USB devices. Verify that your ODrive is listed.
- * **Linux**: Make sure you [set up your udev rules](quick-start#downloading-and-installing-tools) correctly.
+ * **Linux**: Make sure you [set up your udev rules](getting-started#downloading-and-installing-tools) correctly.
  * **Windows**: Right-click on the start menu and open "Device Manager". Verify that your ODrive is listed.
  * **Windows**: Use the [Zadig utility](http://zadig.akeo.ie/) to verify the driver is 
  * Ensure that no other ODrive program is running

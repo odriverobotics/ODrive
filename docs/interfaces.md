@@ -19,7 +19,7 @@ If you have a choice, this is the recommended protocol for all applications.
 
 ### Python
 
-The ODrive tools you installed earlier come with a library that you can use to easily control the ODrive from Python.
+The ODrive Tool you installed as part of the [Getting Started guide](getting-started#downloading-and-installing-tools) comes with a library that you can use to easily control the ODrive from Python.
 
 Assuming you already installed the odrive library (`pip install odrive`), the simplest program to control the ODrive is this:
 
@@ -29,7 +29,7 @@ odrv0 = odrive.discovery.find_any()
 print(str(odrv0.vbus_voltage))
 ```
 
-For a more detailed example, see [odrive_demo.py](../tools/odrive_demo.py).
+For a more comprehensive example, see [odrive_demo.py](../tools/odrive_demo.py).
 
 ### Other languages
 

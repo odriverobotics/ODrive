@@ -379,11 +379,13 @@ details > div > p:last-child {
     color: black;
     background-color: #ffc40096;
     margin-bottom: 15px;
-    //border: solid 1px #000000;
 }
 
-.alert * {
+.note {
+    padding: 10px;
     color: black;
+    background-color: #0099ff44;
+    margin-bottom: 15px;
 }
 
 /*** inline code ***/

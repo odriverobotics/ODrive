@@ -2,21 +2,6 @@
 
 We will use the `<odrv>` as a placeholder for any ODrive object. In `odrivetool` this is usually `odrv0`. Furthermore we use `<axis>` as a placeholder for any axis (for example `odrv0.axis0`).
 
-## General system commands
-
-### Saving the configuration
-
-All variables that are part of a `[...].config` object can be saved to non-volatile memory on the ODrive so they persist after you remove power. The relevant commands are:
-
- * `<odrv>.save_configuration()`: Stores the configuration to persistent memory on the ODrive.
- * `<odrv>.erase_configuration()`: Resets the configuration variables to their factory defaults. This only has an effect after a reboot. A side effect of this command is that motor control stops (in case it was running) and the USB communication breaks out temporarily. This is because erasing flash pages hangs the microcontroller for several seconds.
-
-### Diagnostics
-
- * `<odrv>.serial_number`: A number that uniquely identifies your device. When printed in upper case hexadecimal (`hex(<odrv>.serial_number).upper()`), this is identical to the serial number indicated by the USB descriptor.
- * `<odrv>.fw_version_major`, `<odrv>.fw_version_minor`, `<odrv>.fw_version_revision`: The firmware version that is currently running.
- * `<odrv>.hw_version_major`, `<odrv>.hw_version_minor`, `<odrv>.hw_version_revision`: The hardware version of your ODrive.
-
 ## Per-Axis commands
 
 For the most part, both axes on the ODrive can be controlled independently.
@@ -56,15 +41,13 @@ This behavior can be changed by modifying the following parameters:
 See [state machine](#state-machine) for a description of each state.
 
 ### Control Mode
-By default both motors are enabled, and the default control mode is position control.
-If you want a different mode, you can change `odrv0.motorN.config.control_mode`.
+The default control mode is position control.
+If you want a different mode, you can change `<axis>.controller.config.control_mode`.
 Possible values are:
 * `CTRL_MODE_POSITION_CONTROL`
 * `CTRL_MODE_VELOCITY_CONTROL`
 * `CTRL_MODE_CURRENT_CONTROL`
 * `CTRL_MODE_VOLTAGE_CONTROL` - this one is not normally used.
-
-To disable a motor at startup, set `odrv0.axisN.config.enable_control` and `odrv0.axisN.config.do_calibration` to `False`.
 
 ### Tuning parameters
 The motion control gains are currently manually tuned:
@@ -80,3 +63,19 @@ An upcoming feature will enable automatic tuning. Until then, here is a rough tu
 * Increase `pos_gain` by around 30% per iteration until you see some overshoot.
 * Back down `pos_gain` until you do not have overshoot anymore.
 * The integrator is not easily tuned, nor is it strictly required. Tune at your own discression.
+
+## General system commands
+
+### Saving the configuration
+
+All variables that are part of a `[...].config` object can be saved to non-volatile memory on the ODrive so they persist after you remove power. The relevant commands are:
+
+ * `<odrv>.save_configuration()`: Stores the configuration to persistent memory on the ODrive.
+ * `<odrv>.erase_configuration()`: Resets the configuration variables to their factory defaults. This only has an effect after a reboot. A side effect of this command is that motor control stops (in case it was running) and the USB communication breaks out temporarily. This is because erasing flash pages hangs the microcontroller for several seconds.
+
+### Diagnostics
+
+ * `<odrv>.serial_number`: A number that uniquely identifies your device. When printed in upper case hexadecimal (`hex(<odrv>.serial_number).upper()`), this is identical to the serial number indicated by the USB descriptor.
+ * `<odrv>.fw_version_major`, `<odrv>.fw_version_minor`, `<odrv>.fw_version_revision`: The firmware version that is currently running.
+ * `<odrv>.hw_version_major`, `<odrv>.hw_version_minor`, `<odrv>.hw_version_revision`: The hardware version of your ODrive.
+
