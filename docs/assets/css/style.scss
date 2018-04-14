@@ -67,7 +67,9 @@ a:hover small {
 }
 
 .wrapper {
-  width:860px;
+  max-width: 970px;
+  //width:860px;
+  width: auto;
   margin:0 auto;
 }
 
@@ -94,12 +96,15 @@ pre {
 table {
   width:100%;
   border-collapse:collapse;
+  display: block;
+  overflow-x: scroll;
 }
 
 th, td {
   text-align:left;
   padding:5px 10px;
-  border-bottom:1px solid #e5e5e5;
+  border:1px solid #d4d4d4;
+  //border-bottom:1px solid #d4d4d4;
 }
 
 dt {
@@ -120,12 +125,15 @@ header {
   float:left;
   position:fixed;
   -webkit-font-smoothing:subpixel-antialiased;
+  
+  overflow-y: auto;
+  top: 50px;
+  bottom: 0;
 }
 
 
 
 section {
-  width:500px;
   float:right;
   padding-bottom:50px;
 }
@@ -162,10 +170,6 @@ footer {
     width:auto;
   }
 
-  header {
-    padding-right:320px;
-  }
-
   section {
     border:1px solid #e5e5e5;
     border-width:1px 0;
@@ -175,12 +179,6 @@ footer {
 
   header a small {
     display:inline;
-  }
-
-  header ul {
-    position:absolute;
-    right:50px;
-    top:52px;
   }
 }
 
@@ -197,23 +195,24 @@ footer {
     position:static;
   }
 
-  pre, code {
-    word-wrap:normal;
+  pre, code, li {
+    word-wrap:break-word;
+    word-break: break-all;
   }
 }
 
 @media print, screen and (max-width: 480px) {
   body {
-    padding:15px;
+    padding:0px;
   }
 
-  header ul {
+/*  header ul {
     width:99%;
   }
 
   header li, header ul li + li + li {
     width:33%;
-  }
+  }*/
 }
 
 @media print {
@@ -230,14 +229,10 @@ footer {
 
 /*** Overall layout ***/
 
-.wrapper {
-    width: auto;
-}
-
 section {
     /* align-content: center; */
     padding-left: 270px;
-    width: 500px;
+    //width: 500px;
     float: none;
 }
 
@@ -263,32 +258,28 @@ a:hover, a:focus {
     font-weight: unset;
 }
 
-header > ul {
+/*** Navigation bar ***/
+header ul {
   list-style:none;
-  display: inline;
-  padding: unset;
-  //padding:0;
-  //width:240px;
-  //height:240px;
+  display: block;
+  padding: 0;
 }
 
-header > ul ul {
-  list-style: none;
-  display: contents;
-  margin:0;
-  margin-bottom:12px;
-}
-
-// Note that the theme defines a "header ul li + li + li"
-// selector which has higher specifity than this one so we
-// we need the "important" keywords for some properties.
 header li {
-  //width:100% !important;
-  //float:left;
-  //border-bottom:1px solid #e0e0e0;
+  display: block;
   border:none !important;
-  //height:unset;
-  //height:20px;
+}
+
+header > ul {
+  max-width: 250px;
+}
+
+header ul p {
+    margin:0;
+    padding-left:5px;
+    display: block;
+    color: black;
+    background-color: #00000034;
 }
 
 header ul ul li a {
@@ -304,6 +295,14 @@ header ul ul li a {
   height:20px;
 }
 
+//// rounded edges (look bad)
+//header ul p {
+//  border-radius:5px 5px 0 0;
+//}
+//header ul ul li:last-child a {
+//  border-radius:0 0 5px 5px;
+//}
+
 /*** Navbar Hover ***/
 header ul a:hover, header ul a:focus {
   color:rgb(0, 0, 0);
@@ -313,75 +312,10 @@ header ul a:active {
   background-color:#f0f0f0;
 }
 
-header ul p {
-    margin:0;
-    padding-left:5px;
-    display: block;
-    color: black;
-    background-color: #00000034;
-}
-
-header > ul li:first-child a {
-  border-radius:5px 5px 0 0;
-}
-
-header > ul li:last-child a {
-  border-radius:0 0 5px 5px;
-}
 
 @media print, screen and (max-width: 960px) {
-  header {
-    padding-right: unset;
-  }
-  header ul {
-    position: unset;
-    //right: 50px;
-    //top: 52px;
-    //height: 40px;
-    //display: inline;
-    //float: left;
-    //width: unset;
-  }
-  header ul ul li {
-    float: left;
-    width: unset !important;
-  }
-  header > ul {
-    //width: 500px;
-    width: 100%;
-  }
-  header > ul p {
-    //width: 50px;
-  }
-  header > ul ul {
-    //float: left;
-    //display: inline;
-    //width: 50px;
-  }
+
 }
-
-/*
-
-header ul a {
-  background: #f4f4f4;
-  border:1px solid #e0e0e0;
-  line-height:1;
-  font-size:12px;
-  color:#676767;
-  display:block;
-  text-align:left;
-  padding:12px 0px 5px 5px;
-  //margin:12px;
-  height:20px;
-}
-
-//  header ul li + li + li {
-//    border-right:unset;
-//    border:1px solid #e0e0e0;
-//    width:100%;
-//  }
-
-  */
 
 
 
@@ -420,20 +354,21 @@ details {
 details summary {
     padding-left: 8px;
     background-color: #b3d4f080;
+    cursor: pointer;
     //background-color: #ffc54727;
     //border-bottom: solid 1px #c6cbd1;
     //border-radius: 3px;
 }
 
 // content of a "details" box
-details div {
+details > div {
     padding-top: 5px;
     padding-left: 8px;
     padding-right: 8px;
     padding-bottom: 8px;
     border-top: solid 1px #c6cbd1;
 }
-details div > p:last-child {
+details > div > p:last-child {
     margin-bottom: 0px;
 }
 
@@ -454,4 +389,16 @@ details div > p:last-child {
 /*** inline code ***/
 :not(pre) > code {
     background-color: #ededed;
+    word-break: break-all;
+}
+
+
+/*** table ***/
+table th {
+  background-color: #f1d3d3;
+  border: 1px solid rgba(0, 0, 0, 0.219);
+}
+
+table tr:nth-child(2n) {
+  background-color: #faf6f6;
 }
