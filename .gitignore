@@ -64,3 +64,8 @@ target/
 # Tup
 .tup
 tup.config
+
+/ruby-bundle
+/_site
+/.bundle
+
