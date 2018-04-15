@@ -388,6 +388,12 @@ details > div > p:last-child {
     margin-bottom: 15px;
 }
 
+/*** edit link ***/
+.edit {
+  float: right;
+  font-size: 12px;
+}
+
 /*** inline code ***/
 :not(pre) > code {
     background-color: #ededed;
