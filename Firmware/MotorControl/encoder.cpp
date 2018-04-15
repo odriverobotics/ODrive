@@ -244,6 +244,8 @@ bool Encoder::update(float* pos_estimate, float* vel_estimate, float* phase_outp
     pos_cpr       += current_meas_period * pll_kp_ * delta_pos_cpr;
     pos_cpr = fmodf_pos(pos_cpr, (float)(config_.cpr));
     pll_vel_      += current_meas_period * pll_ki_ * delta_pos_cpr;
+    if (fabsf(pll_vel_) < 0.5f * current_meas_period * pll_ki_)
+        pll_vel_ = 0.0f; //align delta-sigma on zero to prevent jitter
 
     // Assign output arguments
     if (pos_estimate) *pos_estimate = pos_estimate_;

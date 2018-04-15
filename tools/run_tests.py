@@ -48,7 +48,7 @@ else:
     all_tests.append(TestEncoderOffsetCalibration(pass_if_ready=True))
 
 #all_tests.append(TestHighVelocity())
-all_tests.append(TestHighVelocityInViscousFluid(load_current=60, driver_current=70))
+all_tests.append(TestHighVelocityInViscousFluid(load_current=20, driver_current=40))
 # all_tests.append(TestVelCtrlVsPosCtrl())
 # TODO: test step/dir
 # TODO: test sensorless

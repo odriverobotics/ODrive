@@ -404,6 +404,7 @@ class TestHighVelocity(AxisTest):
         self._brake = brake
 
     def check_preconditions(self, axis_ctx: AxisTestContext, logger):
+        time.sleep(2.5) #delay in case load needs time to stop moving
         super(TestHighVelocity, self).check_preconditions(axis_ctx, logger)
         test_assert_eq(axis_ctx.handle.motor.is_calibrated, True)
         test_assert_eq(axis_ctx.handle.encoder.is_ready, True)
