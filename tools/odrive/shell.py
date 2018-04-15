@@ -22,7 +22,7 @@ def print_help(args):
         print('Type "odrv0." and press <tab>')
     print('This will present you with all the properties that you can reference')
     print('')
-    print('For example: "odrv0.motor0.encoder.pll_pos"')
+    print('For example: "odrv0.motor0.encoder.pos_estimate"')
     print('will print the current encoder position on motor 0')
     print('and "odrv0.motor0.pos_setpoint = 10000"')
     print('will send motor0 to 10000')

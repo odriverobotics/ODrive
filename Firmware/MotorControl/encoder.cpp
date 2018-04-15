@@ -50,11 +50,20 @@ void Encoder::set_count(int32_t count) {
     // Disable interrupts to make a critical section to avoid race condition
     uint32_t prim = __get_PRIMASK();
     __disable_irq();
+
+    // Update states
+    shadow_count_ = count;
+    pos_estimate_ = (float)count;
+    count_in_cpr_ = mod(count, config_.cpr);
+    pos_cpr = (float)count_in_cpr_;
+
     // Offset and state must be shifted by the same amount
     offset_ += count - shadow_count_;
-    shadow_count_ = count; //TODO FIXME
+    offset_ = mod(offset_, config_.cpr);
+
+    //Write hardware last
     hw_config_.timer->Instance->CNT = count;
-    pll_pos_ = (float)count;
+
     __set_PRIMASK(prim);
 }
 
@@ -215,16 +224,19 @@ bool Encoder::update(float* pos_estimate, float* vel_estimate, float* phase_outp
     // run pll (for now pll is in units of encoder counts)
     // Predict current pos
     pos_estimate_ += current_meas_period * pll_vel_;
-    pll_pos_ += current_meas_period * pll_vel_;
+    pos_cpr       += current_meas_period * pll_vel_;
     // discrete phase detector
-    // float delta_pos = (float)(shadow_count_ - (int32_t)floorf(pll_pos_));
-    float delta_pos = (float)(shadow_count_ - (int32_t)floorf(pll_pos_));
+    float delta_pos     = (float)(shadow_count_ - (int32_t)floorf(pos_estimate_));
+    float delta_pos_cpr = (float)(count_in_cpr_ - (int32_t)floorf(pos_cpr));
+    delta_pos_cpr = wrap_pm(delta_pos_cpr, 0.5f * (float)(config_.cpr));
     // pll feedback
-    pll_pos_ += current_meas_period * pll_kp_ * delta_pos;
-    pll_vel_ += current_meas_period * pll_ki_ * delta_pos;
+    pos_estimate_ += current_meas_period * pll_kp_ * delta_pos;
+    pos_cpr       += current_meas_period * pll_kp_ * delta_pos_cpr;
+    pos_cpr = fmodf_pos(pos_cpr, (float)(config_.cpr));
+    pll_vel_      += current_meas_period * pll_ki_ * delta_pos_cpr;
 
     // Assign output arguments
-    if (pos_estimate) *pos_estimate = pll_pos_;
+    if (pos_estimate) *pos_estimate = pos_estimate_;
     if (vel_estimate) *vel_estimate = pll_vel_;
     if (phase_output) *phase_output = phase_;
     return true;

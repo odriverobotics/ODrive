@@ -7,6 +7,7 @@ extern "C" {
 #endif
 
 #include <stdint.h>
+#include <math.h>
 
 /**
  * @brief Unique ID register address location
@@ -92,6 +93,14 @@ static inline float wrap_pm(float x, float pm_range) {
 //beware of inserting large angles!
 static inline float wrap_pm_pi(float theta) {
     return wrap_pm(theta, M_PI);
+}
+
+// like fmodf, but always positive
+static inline float fmodf_pos(float x, float y) {
+    float out = fmodf(x, y);
+    if (out < 0.0f)
+        out += y;
+    return out;
 }
 
 // Compute rising edge timings (0.0 - 1.0) as a function of alpha-beta

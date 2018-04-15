@@ -100,8 +100,8 @@ try:
 
         # If you want to plot different values, change them here.
         # You can plot any number of values concurrently.
-        start_liveplotter(lambda: [my_odrive.motor0.encoder.pll_pos,
-                                my_odrive.motor1.encoder.pll_pos])
+        start_liveplotter(lambda: [my_odrive.motor0.encoder.pos_estimate,
+                                my_odrive.motor1.encoder.pos_estimate])
 
     elif args.command == 'drv-status':
         from odrive.utils import print_drv_regs

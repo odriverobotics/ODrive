@@ -342,13 +342,13 @@ class TestClosedLoopControl(AxisTest):
         time.sleep(0.001)
         test_assert_eq(axis_ctx.handle.current_state, AXIS_STATE_CLOSED_LOOP_CONTROL)
         time.sleep(0.1) # give the PLL some time to settle
-        init_pos = axis_ctx.handle.encoder.pll_pos
+        init_pos = axis_ctx.handle.encoder.pos_estimate
         axis_ctx.handle.controller.set_pos_setpoint(init_pos+1000, 0, 0)
         time.sleep(0.5)
-        test_assert_eq(axis_ctx.handle.encoder.pll_pos, init_pos+1000, range=200)
+        test_assert_eq(axis_ctx.handle.encoder.pos_estimate, init_pos+1000, range=200)
         axis_ctx.handle.controller.set_pos_setpoint(init_pos-1000, 0, 0)
         time.sleep(0.5)
-        test_assert_eq(axis_ctx.handle.encoder.pll_pos, init_pos-1000, range=400)
+        test_assert_eq(axis_ctx.handle.encoder.pos_estimate, init_pos-1000, range=400)
 
         logger.debug("closed loop control: test vel_limit")
         axis_ctx.handle.controller.set_pos_setpoint(50000, 0, 0)
@@ -551,7 +551,7 @@ class TestVelCtrlVsPosCtrl(DualAxisTest):
         # Turn to some position
         logger.debug("using {} as driver against load, vel=100000...".format(driver_ctx.name))
         set_limits(driver_ctx, logger, vel_limit=100000, current_limit=50)
-        init_pos = driver_ctx.handle.encoder.pll_pos
+        init_pos = driver_ctx.handle.encoder.pos_estimate
         driver_ctx.handle.controller.set_pos_setpoint(init_pos + 100000, 0, 0)
         request_state(driver_ctx, AXIS_STATE_CLOSED_LOOP_CONTROL)
         for _ in range(int(4000/5)):
@@ -563,7 +563,7 @@ class TestVelCtrlVsPosCtrl(DualAxisTest):
 
         logger.debug("using {} as driver against load, vel=20000...".format(driver_ctx.name))
         set_limits(driver_ctx, logger, vel_limit=20000, current_limit=50)
-        init_pos = driver_ctx.handle.encoder.pll_pos
+        init_pos = driver_ctx.handle.encoder.pos_estimate
         driver_ctx.handle.controller.set_pos_setpoint(init_pos + 100000, 0, 0)
         request_state(driver_ctx, AXIS_STATE_CLOSED_LOOP_CONTROL)
         #for _ in range(int(5*4000/5)):
@@ -580,6 +580,6 @@ class TestVelCtrlVsPosCtrl(DualAxisTest):
         ## Turn to another position
         #logger.debug("controlling against load, vel=40000...")
         #set_limits(axis1_ctx, logger, vel_limit=40000, current_limit=20)
-        #init_pos = axis1_ctx.handle.encoder.pll_pos
+        #init_pos = axis1_ctx.handle.encoder.pos_estimate
         #axis1_ctx.handle.controller.set_pos_setpoint(init_pos + 100000, 0, 0)
         #request_state(axis1_ctx, AXIS_STATE_CLOSED_LOOP_CONTROL)
