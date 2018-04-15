@@ -176,6 +176,10 @@ footer {
     padding:20px 0;
     margin:0 0 20px;
   }
+  
+  header > div {
+    margin-right: unset;
+  }
 
   header a small {
     display:inline;
@@ -259,6 +263,10 @@ a:hover, a:focus {
 }
 
 /*** Navigation bar ***/
+header > div {
+  margin-right: 20px;
+}
+
 header ul {
   list-style:none;
   display: block;
@@ -270,7 +278,7 @@ header li {
   border:none !important;
 }
 
-header > ul {
+#navbar {
   max-width: 250px;
 }
 
