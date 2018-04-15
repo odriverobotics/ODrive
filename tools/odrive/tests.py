@@ -159,11 +159,11 @@ class AxisTest(ABC):
     def check_preconditions(self, axis_ctx: AxisTestContext, logger):
         test_assert_no_error(axis_ctx)
         test_assert_eq(axis_ctx.handle.current_state, AXIS_STATE_IDLE)
-        if (abs(axis_ctx.handle.encoder.pll_vel) > 500):
+        if (abs(axis_ctx.handle.encoder.pll_vel) > 100):
             logger.warn("axis still in motion, delaying 2 sec...")
             time.sleep(2)
         test_assert_eq(axis_ctx.handle.encoder.pll_vel, 0, range=500)
-        test_assert_eq(axis_ctx.odrv_ctx.handle.config.dc_bus_undervoltage_trip_level, axis_ctx.odrv_ctx.yaml['vbus-voltage'] * 0.92, accuracy=0.001)
+        test_assert_eq(axis_ctx.odrv_ctx.handle.config.dc_bus_undervoltage_trip_level, axis_ctx.odrv_ctx.yaml['vbus-voltage'] * 0.85, accuracy=0.001)
         test_assert_eq(axis_ctx.odrv_ctx.handle.config.dc_bus_overvoltage_trip_level, axis_ctx.odrv_ctx.yaml['vbus-voltage'] * 1.08, accuracy=0.001)
         #test_assert_eq(axis_ctx.odrv_ctx.handle.config.dc_bus_undervoltage_trip_level, axis_ctx.odrv_ctx.yaml['vbus-voltage'] * 0.96, accuracy=0.001)
         #test_assert_eq(axis_ctx.odrv_ctx.handle.config.dc_bus_overvoltage_trip_level, axis_ctx.odrv_ctx.yaml['vbus-voltage'] * 1.04, accuracy=0.001)
@@ -182,7 +182,7 @@ class DualAxisTest(ABC):
         test_assert_no_error(axis1_ctx)
         test_assert_eq(axis0_ctx.handle.current_state, AXIS_STATE_IDLE)
         test_assert_eq(axis1_ctx.handle.current_state, AXIS_STATE_IDLE)
-        if (abs(axis0_ctx.handle.encoder.pll_vel) > 500) or (abs(axis1_ctx.handle.encoder.pll_vel) > 500):
+        if (abs(axis0_ctx.handle.encoder.pll_vel) > 100) or (abs(axis1_ctx.handle.encoder.pll_vel) > 100):
             logger.warn("some axis still in motion, delaying 2 sec...")
             time.sleep(2)
         test_assert_eq(axis0_ctx.handle.encoder.pll_vel, 0, range=500)
@@ -249,9 +249,9 @@ class TestSetup(ODriveTest):
         test_assert_eq(odrv_ctx.handle.config.brake_resistance, 1.0)
         odrv_ctx.handle.config.brake_resistance = odrv_ctx.yaml['brake-resistance']
         test_assert_eq(odrv_ctx.handle.config.brake_resistance, odrv_ctx.yaml['brake-resistance'], accuracy=0.01)
-        odrv_ctx.handle.config.dc_bus_undervoltage_trip_level = odrv_ctx.yaml['vbus-voltage'] * 0.92
+        odrv_ctx.handle.config.dc_bus_undervoltage_trip_level = odrv_ctx.yaml['vbus-voltage'] * 0.85
         odrv_ctx.handle.config.dc_bus_overvoltage_trip_level = odrv_ctx.yaml['vbus-voltage'] * 1.08
-        test_assert_eq(odrv_ctx.handle.config.dc_bus_undervoltage_trip_level, odrv_ctx.yaml['vbus-voltage'] * 0.92, accuracy=0.001)
+        test_assert_eq(odrv_ctx.handle.config.dc_bus_undervoltage_trip_level, odrv_ctx.yaml['vbus-voltage'] * 0.85, accuracy=0.001)
         test_assert_eq(odrv_ctx.handle.config.dc_bus_overvoltage_trip_level, odrv_ctx.yaml['vbus-voltage'] * 1.08, accuracy=0.001)
 
         # firmware has 1500ms startup delay
@@ -425,7 +425,7 @@ class TestHighVelocity(AxisTest):
         expected_limit *= 0.8
         
         # TODO: remove the following two lines, but for now we want to stay away from the modulation depth limit
-        expected_limit *= 0.5
+        expected_limit *= 0.6
         rated_limit = expected_limit
 
         # Add a 10% margin to account for 
@@ -440,29 +440,29 @@ class TestHighVelocity(AxisTest):
         else:
             axis_ctx.handle.motor.config.current_lim = self._override_current_limit
             axis_ctx.handle.controller.config.vel_limit = rated_limit
-        axis_ctx.handle.controller.vel_integrator_current = 0
-        # logger.debug("Setting {} integrator current to 0".format(axis_ctx.name))
-        axis_ctx.handle.controller.set_vel_setpoint(0, 0)
-        # logger.debug("Setting {} vel setpoint to 0".format(axis_ctx.name))
-        axis_ctx.handle.motor.current_control.v_current_control_integral_d = 0
-        axis_ctx.handle.motor.current_control.v_current_control_integral_q = 0
         request_state(axis_ctx, AXIS_STATE_CLOSED_LOOP_CONTROL)
 
+        logger.debug("Drive current {}A, Load current {}A".format(axis_ctx.handle.motor.config.current_lim, self._load_current))
 
-        ramp_up_time = 10.0
+        ramp_up_time = 15.0
         t_0 = time.monotonic()
         last_print = t_0
         max_measured_vel = 0.0
+        logger.debug("ramping to {} over {} s".format(rated_limit, ramp_up_time))
         while True:
             ratio = (time.monotonic() - t_0) / ramp_up_time
             if ratio >= 1:
                 break
 
+            #TODO based on integrator gain and torque ramp rate
+            expected_ramp_lag = 1.0 * (rated_limit / ramp_up_time)
+            expected_lag = 0
+
             # While ramping up we want to remain within +-5% of the setpoint.
             # However we accept if we can only approach 80% of the theoretical limit.
             vel_setpoint = ratio * rated_limit
-            expected_velocity = max(vel_setpoint - rated_limit / ramp_up_time * self._load_current / 20, 0)
-            vel_range = max(0.05*expected_velocity, 50000)
+            expected_velocity = max(vel_setpoint - expected_lag, 0)
+            vel_range = max(0.05*expected_velocity, max(expected_lag+expected_ramp_lag, 2000))
             if expected_velocity - vel_range > expected_limit:
                 vel_range = expected_velocity - expected_limit
 
@@ -506,21 +506,17 @@ class TestHighVelocityInViscousFluid(DualAxisTest):
     def run_test(self, axis0_ctx: AxisTestContext, axis1_ctx: AxisTestContext, logger):
         load_ctx = axis0_ctx
         driver_ctx = axis1_ctx
-        if load_ctx.name == 'bottom-odrive.black':
-            odrive.utils.start_liveplotter(lambda: [load_ctx.odrv_ctx.handle.vbus_voltage])
+        if driver_ctx.name == 'top-odrive.black':
+            # odrive.utils.start_liveplotter(lambda: [driver_ctx.odrv_ctx.handle.vbus_voltage])
+            odrive.utils.start_liveplotter(lambda: [driver_ctx.handle.motor.current_control.Iq_measured, 
+                                                    driver_ctx.handle.motor.current_control.Iq_setpoint])
 
         # Set up viscous fluid load
         logger.debug("activating load on {}...".format(load_ctx.name))
         load_ctx.handle.controller.config.vel_integrator_gain = 0
-        load_ctx.handle.controller.vel_integrator_current = 0
-        # logger.debug("Setting {} integrator current to 0".format(load_ctx.name))
         load_ctx.handle.controller.config.vel_limit = 20000 # this is not really relevant
         load_ctx.handle.motor.config.current_lim = self._load_current
         load_ctx.odrv_ctx.handle.config.brake_resistance = 0 # disable brake resistance, the power will go into the bus
-        load_ctx.handle.controller.set_vel_setpoint(0, 0)
-        # logger.debug("Setting {} vel setpoint to 0".format(load_ctx.name))
-        load_ctx.handle.motor.current_control.v_current_control_integral_d = 0
-        load_ctx.handle.motor.current_control.v_current_control_integral_q = 0
 
         request_state(load_ctx, AXIS_STATE_CLOSED_LOOP_CONTROL)
 
@@ -534,7 +530,6 @@ class TestHighVelocityInViscousFluid(DualAxisTest):
         # it will try to put the braking power into the power rail where it has nowhere to go.
         request_state(load_ctx, AXIS_STATE_IDLE)
         request_state(driver_ctx, AXIS_STATE_IDLE)
-
 
 class TestVelCtrlVsPosCtrl(DualAxisTest):
     """
