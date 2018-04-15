@@ -18,7 +18,9 @@
 /* Global variables ----------------------------------------------------------*/
 /* Private constant data -----------------------------------------------------*/
 
-#define MAX_LINE_LENGTH 64
+#define MAX_LINE_LENGTH 256
+#define TO_STR_INNER(s) #s
+#define TO_STR(s) TO_STR_INNER(s)
 
 /* Private variables ---------------------------------------------------------*/
 /* Private function prototypes -----------------------------------------------*/
@@ -131,8 +133,40 @@ void ASCII_protocol_process_line(const uint8_t* buffer, size_t len, StreamSink& 
         respond(response_channel, use_checksum, "Flash Size: %#x KiB", STM_ID_GetFlashSize());
         respond(response_channel, use_checksum, "Serial number: %s", serial_number_str);
 
-//    } else if (cmd[0] == 'r') { // read property
-//    } else if (cmd[0] == 'w') { // write property
+    } else if (cmd[0] == 'r') { // read property
+        char name[MAX_LINE_LENGTH];
+        int numscan = sscanf(cmd, "r %" TO_STR(MAX_LINE_LENGTH) "s", name);
+        if (numscan < 1) {
+            respond(response_channel, use_checksum, "invalid command format");
+        } else {
+            Endpoint* endpoint = application_endpoints->get_by_name(name, sizeof(name));
+            if (!endpoint) {
+                respond(response_channel, use_checksum, "invalid property");
+            } else {
+                char response[10];
+                bool success = endpoint->get_string(response, sizeof(response));
+                if (!success)
+                    respond(response_channel, use_checksum, "not implemented");
+                else
+                    respond(response_channel, use_checksum, response);
+            }
+        }
+    } else if (cmd[0] == 'w') { // write property
+        char name[MAX_LINE_LENGTH];
+        char value[MAX_LINE_LENGTH];
+        int numscan = sscanf(cmd, "w %" TO_STR(MAX_LINE_LENGTH) "s %" TO_STR(MAX_LINE_LENGTH) "s", name, value);
+        if (numscan < 1) {
+            respond(response_channel, use_checksum, "invalid command format");
+        } else {
+            Endpoint* endpoint = application_endpoints->get_by_name(name, sizeof(name));
+            if (!endpoint) {
+                respond(response_channel, use_checksum, "invalid property");
+            } else {
+                bool success = endpoint->set_string(value, sizeof(value));
+                if (!success)
+                    respond(response_channel, use_checksum, "not implemented");
+            }
+        }
 
     } else if (cmd[0] == 'h') {  // HALT
         for(size_t i = 0; i < AXIS_COUNT; i++){
