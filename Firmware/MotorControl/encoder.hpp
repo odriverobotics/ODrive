@@ -50,9 +50,11 @@ public:
     Error_t error_ = ERROR_NONE;
     bool index_found_ = false;
     bool is_ready_ = false;
-    int32_t state_ = 0;
+    int32_t shadow_count_ = 0;
+    int32_t count_in_cpr_ = 0;
     int32_t offset_ = 0;
     float phase_ = 0.0f;    // [rad]
+    float pos_estimate_ = 0.0f;  // [rad]
     float pll_pos_ = 0.0f;  // [rad]
     float pll_vel_ = 0.0f;  // [rad/s]
     float pll_kp_ = 0.0f;   // [rad/s / rad]
@@ -64,9 +66,11 @@ public:
             make_protocol_property("error", &error_),
             make_protocol_ro_property("is_ready", &is_ready_),
             make_protocol_ro_property("index_found", const_cast<bool*>(&index_found_)),
-            make_protocol_property("state", &state_),
+            make_protocol_property("shadow_count", &shadow_count_),
+            make_protocol_property("count_in_cpr", &count_in_cpr_),
             make_protocol_property("offset", &offset_),
             make_protocol_property("phase", &phase_),
+            make_protocol_property("pos_estimate", &pos_estimate_),
             make_protocol_property("pll_pos", &pll_pos_),
             make_protocol_property("pll_vel", &pll_vel_),
             make_protocol_property("pll_kp", &pll_kp_),

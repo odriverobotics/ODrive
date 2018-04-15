@@ -51,8 +51,8 @@ void Encoder::set_count(int32_t count) {
     uint32_t prim = __get_PRIMASK();
     __disable_irq();
     // Offset and state must be shifted by the same amount
-    offset_ += count - state_;
-    state_ = count;
+    offset_ += count - shadow_count_;
+    shadow_count_ = count; //TODO FIXME
     hw_config_.timer->Instance->CNT = count;
     pll_pos_ = (float)count;
     __set_PRIMASK(prim);
@@ -197,25 +197,28 @@ bool Encoder::update(float* pos_estimate, float* vel_estimate, float* phase_outp
     }
 
     // update internal encoder state
-    int16_t delta_enc = (int16_t)hw_config_.timer->Instance->CNT - (int16_t)state_;
-    state_ += (int32_t)delta_enc;
+    int16_t delta_enc_16 = (int16_t)hw_config_.timer->Instance->CNT - (int16_t)shadow_count_;
+    int32_t delta_enc = (int32_t)delta_enc_16; //sign extend
+    shadow_count_ += delta_enc;
+    count_in_cpr_ += delta_enc;
+    count_in_cpr_ = mod(count_in_cpr_, config_.cpr);
 
     // compute electrical phase
-    int corrected_enc = state_ % config_.cpr;
-    corrected_enc -= offset_;
-    //corrected_enc *= axis_->motor_.config_.direction; TODO: verify if this still works
+    int corrected_enc = count_in_cpr_ - offset_;
     //TODO avoid recomputing elec_rad_per_enc every time
     float elec_rad_per_enc = axis_->motor_.config_.pole_pairs * 2 * M_PI * (1.0f / (float)(config_.cpr));
     float ph = elec_rad_per_enc * (float)corrected_enc;
     // ph = fmodf(ph, 2*M_PI);
     phase_ = wrap_pm_pi(ph);
 
+
     // run pll (for now pll is in units of encoder counts)
-    // TODO pll_pos runs out of precision very quickly here! Perhaps decompose into integer and fractional part?
     // Predict current pos
+    pos_estimate_ += current_meas_period * pll_vel_;
     pll_pos_ += current_meas_period * pll_vel_;
     // discrete phase detector
-    float delta_pos = (float)(state_ - (int32_t)floorf(pll_pos_));
+    // float delta_pos = (float)(shadow_count_ - (int32_t)floorf(pll_pos_));
+    float delta_pos = (float)(shadow_count_ - (int32_t)floorf(pll_pos_));
     // pll feedback
     pll_pos_ += current_meas_period * pll_kp_ * delta_pos;
     pll_vel_ += current_meas_period * pll_ki_ * delta_pos;
