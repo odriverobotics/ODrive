@@ -36,7 +36,7 @@ void Encoder::setup() {
 // TODO: disable interrupt once we found the index
 void Encoder::enc_index_cb() {
     if (config_.use_index && !index_found_) {
-        set_count(0);
+        set_circular_count(0);
         if (config_.pre_calibrated) {
             offset_ = config_.offset;
             is_ready_ = true;
@@ -46,7 +46,7 @@ void Encoder::enc_index_cb() {
 }
 
 // Function that sets the current encoder count to a desired 32-bit value.
-void Encoder::set_count(int32_t count) {
+void Encoder::set_linear_count(int32_t count) {
     // Disable interrupts to make a critical section to avoid race condition
     uint32_t prim = __get_PRIMASK();
     __disable_irq();
@@ -54,15 +54,25 @@ void Encoder::set_count(int32_t count) {
     // Update states
     shadow_count_ = count;
     pos_estimate_ = (float)count;
-    count_in_cpr_ = mod(count, config_.cpr);
-    pos_cpr = (float)count_in_cpr_;
-
-    // Offset and state must be shifted by the same amount
-    offset_ += count - shadow_count_;
-    offset_ = mod(offset_, config_.cpr);
-
     //Write hardware last
     hw_config_.timer->Instance->CNT = count;
+
+    __set_PRIMASK(prim);
+}
+
+// Function that sets the CPR circular tracking encoder count to a desired 32-bit value.
+// Note that this will get mod'ed down to [0, cpr)
+void Encoder::set_circular_count(int32_t count) {
+    // Disable interrupts to make a critical section to avoid race condition
+    uint32_t prim = __get_PRIMASK();
+    __disable_irq();
+
+    // Offset and state must be shifted by the same amount
+    offset_ += count - count_in_cpr_;
+    offset_ = mod(offset_, config_.cpr);
+    // Update states
+    count_in_cpr_ = mod(count, config_.cpr);
+    pos_cpr = (float)count_in_cpr_;
 
     __set_PRIMASK(prim);
 }

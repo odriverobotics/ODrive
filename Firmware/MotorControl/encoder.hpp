@@ -35,7 +35,8 @@ public:
 
     void enc_index_cb();
 
-    void set_count(int32_t count);
+    void set_linear_count(int32_t count);
+    void set_circular_count(int32_t count);
     bool calib_enc_offset(float voltage_magnitude);
     bool scan_for_enc_idx(float omega, float voltage_magnitude);
 
