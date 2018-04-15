@@ -1,6 +1,7 @@
 # Encoders
 
 ## Known and Supported Encoders
+Contributions to this table highly encouraged!
 
 Encoder|Manufacturer|Output|Index|Max CPR|Max RPM|Voltage|Supported|Price|Link|Datasheet
 :--|:--|:--|:-:|:-:|:-:|:-:|:--|:--|:--|:--
