@@ -1,2 +1,4 @@
 theme: jekyll-theme-minimal
 exclude: [ruby-bundle]
+plugins:
+  - jekyll-redirect-from

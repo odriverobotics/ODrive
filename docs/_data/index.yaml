@@ -6,7 +6,7 @@ sections:
   - title: For Users
     docs:
       - title: Getting Started
-        url: getting-started
+        url: /
       - title: ODrive Tool
         url: odrivetool
       - title: Parameters & Commands

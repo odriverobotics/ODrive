@@ -1,3 +1,9 @@
+---
+redirect_from:
+ - /getting-started
+permalink: /
+---
+
 # Getting Started
 
 ### Table of contents
