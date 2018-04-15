@@ -43,7 +43,7 @@ You will need:
 
   To be on the safe side, think about what speed and current limits you want to set for the motor.
 
-  When braking at max speed and with maximum motor current, the power that is dissipated in the power resistor can be calulated as: `P_brake = V_emf * I_motor` where `V_emf = motor_kv * V_bus`.
+  When braking at max speed and with maximum motor current, the power that is dissipated in the power resistor can be calulated as: `P_brake = V_emf * I_motor` where `V_emf = V_bus / motor_kv`.
 
   </div></details>
 
