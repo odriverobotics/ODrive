@@ -10,6 +10,7 @@ permalink: /
 
 <!-- MarkdownTOC depth=2 autolink=true bracket=round -->
 
+- [Hardware Requirements](#hardware-requirements)
 - [Wiring up the ODrive](#wiring-up-the-odrive)
 - [Downloading and Installing Tools](#downloading-and-installing-tools)
 - [Start `odrivetool`](#start-odrivetool)
@@ -19,19 +20,12 @@ permalink: /
 
 <!-- /MarkdownTOC -->
 
-## Wiring up the ODrive
-
-<div class="alert">
-Make sure you have a good mechanical connection between the encoder and the motor, slip can cause disasterous oscillations.
-</div>
-
-All non-power I/O is 3.3V output and 5V tolerant on input, except:
-<div class="alert" markdown="span"> __ODrive v3.2__: GPIO 3 and GPIO 4 are __not__ 5V tolerant.</div>
+## Hardware Requirements
 
 You will need:
 
-* One or two [brushless motors](https://hackaday.io/project/11583-odrive-high-performance-motor-control/log/37666-hobby-motors-in-your-robots). It is fine, even recommended, to start testing with just a single motor and encoder.
-* One or two [quadrature incremental encoder(s)](https://discourse.odriverobotics.com/t/which-encoders-to-choose/63/2)
+* One or two [brushless motors](https://docs.google.com/spreadsheets/d/12vzz7XVEK6YNIOqH0jAz51F5VUpc-lJEs3mmkWP1H4Y). It is fine, even recommended, to start testing with just a single motor and encoder.
+* One or two [quadrature incremental encoder(s)](encoders)
 * A power resistor. A good starting point would be a [0.47 ohm, 50W resistor](https://www.digikey.com/product-detail/en/te-connectivity-passive-product/HSA50R47J/A102181-ND/2056131)
 
   <details><summary markdown="span">Do I really need a power resistor? What values to choose?</summary><div markdown="block">
@@ -48,6 +42,15 @@ You will need:
   </div></details>
 
 * A power supply (12V-24V for the 24V board variant, 12V-48V for the 48V board variant). A battery is also fine.
+
+## Wiring up the ODrive
+
+<div class="alert">
+Make sure you have a good mechanical connection between the encoder and the motor, slip can cause disasterous oscillations.
+</div>
+
+All non-power I/O is 3.3V output and 5V tolerant on input, except:
+<div class="alert" markdown="span"> __ODrive v3.2__: GPIO 3 and GPIO 4 are __not__ 5V tolerant.</div>
 
 1. Wire up the motor phases into the 3-phase screw terminals, and the power resistor to the AUX terminal. Wire up the power source to the DC terminal, make sure to pay attention to the polarity. Do not apply power just yet.
 
