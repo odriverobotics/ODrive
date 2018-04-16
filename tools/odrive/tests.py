@@ -8,6 +8,7 @@ import threading
 import odrive.discovery
 from odrive.enums import *
 import odrive.utils
+import numpy as np
 
 import functools
 print = functools.partial(print, flush=True)
@@ -131,6 +132,27 @@ def set_limits(axis_ctx: AxisTestContext, logger, vel_limit=20000, current_limit
     axis_ctx.handle.motor.config.current_lim = current_limit
     axis_ctx.handle.controller.config.vel_limit = vel_limit
 
+def get_max_rpm(axis_ctx: AxisTestContext):
+
+    # Calculate theoretical max velocity in rpm based on the nominal
+    # V_bus and motor KV rating.
+    # The KV-rating assumes square-waves on the motor phases (hexagonal space vector trajectory)
+    # whereas the ODrive modulates the space vector around a circular trajectory.
+    # See Fig 4.28 here: http://krex.k-state.edu/dspace/bitstream/handle/2097/1507/JamesMevey2009.pdf
+    effective_bus_voltage = axis_ctx.odrv_ctx.yaml['vbus-voltage']
+    effective_bus_voltage *= (2/math.sqrt(3)) / (4/math.pi) # roughtly 90%
+    # The ODrive only goes to 80% modulation depth in order to save some time for the ADC measurements.
+    # See FOC_current in motor.cpp.
+    effective_bus_voltage *= 0.8
+
+    # If we are using a higher bus voltage than rated: use rated voltage,
+    # since that is an effective speed rating of the motor
+    voltage_for_speed = min(effective_bus_voltage, axis_ctx.yaml['motor-max-voltage'])
+    base_speed_rpm = voltage_for_speed * axis_ctx.yaml['motor-kv']
+
+    #but don't go over encoder max rpm
+    rated_rpm = min(base_speed_rpm, axis_ctx.yaml['encoder-max-rpm'])
+    return rated_rpm
 
 class ODriveTest(ABC):
     """
@@ -410,24 +432,8 @@ class TestHighVelocity(AxisTest):
         test_assert_eq(axis_ctx.handle.encoder.is_ready, True)
 
     def run_test(self, axis_ctx: AxisTestContext, logger):
-        # Calculate theoretical max velocity in rpm based on the nominal
-        # V_bus and motor KV rating. If we are using a higher bus voltage than rated, use rated voltage
-        voltage_for_speed = min(axis_ctx.odrv_ctx.yaml['vbus-voltage'], axis_ctx.yaml['motor-max-voltage'])
-        base_speed_rpm = voltage_for_speed * axis_ctx.yaml['motor-kv']
-        #but don't go over encoder max rpm
-        rated_rpm = min(base_speed_rpm, axis_ctx.yaml['encoder-max-rpm'])
-        #convert to count/s
-        rated_limit = rated_rpm / 60 * axis_ctx.yaml['encoder-cpr']
-
+        rated_limit = get_max_rpm(axis_ctx) / 60 * axis_ctx.yaml['encoder-cpr']
         expected_limit = rated_limit
-        # The KV-rating assumes square-waves on the motor phases (hexagonal space vector trajectory)
-        # whereas the ODrive modulates the space vector around a circular trajectory.
-        # See Fig 4.28 here: http://krex.k-state.edu/dspace/bitstream/handle/2097/1507/JamesMevey2009.pdf
-        expected_limit *= (2/math.sqrt(3)) / (4/math.pi) # roughtly 90%
-
-        # The ODrive only goes to 80% modulation depth in order to save some time for the ADC measurements.
-        # See FOC_current in motor.cpp.
-        expected_limit *= 0.8
         
         # TODO: remove the following two lines, but for now we want to stay away from the modulation depth limit
         expected_limit *= 0.6
@@ -451,10 +457,10 @@ class TestHighVelocity(AxisTest):
         logger.debug("Drive current {}A, Load current {}A".format(axis_ctx.handle.motor.config.current_lim, self._load_current))
 
         ramp_up_time = 15.0
-        t_0 = time.monotonic()
-        last_print = t_0
         max_measured_vel = 0.0
         logger.debug("ramping to {} over {} s".format(rated_limit, ramp_up_time))
+        t_0 = time.monotonic()
+        last_print = t_0
         while True:
             ratio = (time.monotonic() - t_0) / ramp_up_time
             if ratio >= 1:
@@ -520,7 +526,6 @@ class TestHighVelocityInViscousFluid(DualAxisTest):
         # Set up viscous fluid load
         logger.debug("activating load on {}...".format(load_ctx.name))
         load_ctx.handle.controller.config.vel_integrator_gain = 0
-        load_ctx.handle.controller.config.vel_limit = 20000 # this is not really relevant
         load_ctx.handle.motor.config.current_lim = self._load_current
         load_ctx.odrv_ctx.handle.config.brake_resistance = 0 # disable brake resistance, the power will go into the bus
         load_ctx.handle.controller.set_vel_setpoint(0, 0)
@@ -538,8 +543,79 @@ class TestHighVelocityInViscousFluid(DualAxisTest):
         request_state(load_ctx, AXIS_STATE_IDLE)
         request_state(driver_ctx, AXIS_STATE_IDLE)
 
-# class TestSelfLoadedPosVelDistribution(DualAxisTest):
+class TestSelfLoadedPosVelDistribution(DualAxisTest):
+    """
+    Uses an ODrive mechanically connected to itself to test a distribution of
+    speeds and currents. Since it's connected to itself, we can be a lot less
+    strict about the brake resistor power use.
+    """
+    def __init__(self, rpm_range=1000, load_current_range=10, driver_current_lim=20):
+        self._rpm_range = rpm_range
+        self._load_current_range = load_current_range
+        self._driver_current_lim = driver_current_lim
 
+    def run_test(self, axis0_ctx: AxisTestContext, axis1_ctx: AxisTestContext, logger):
+        load_ctx = axis0_ctx
+        driver_ctx = axis1_ctx
+
+        logger.debug("Iload range: {} A, Idriver: {} A".format(self._load_current_range, self._driver_current_lim))
+
+        # max speed for rig in counts/s for each encoder (may be different CPR)
+        max_rpm = min(self._rpm_range, get_max_rpm(driver_ctx), get_max_rpm(load_ctx))
+        driver_max_speed = max_rpm / 60 * driver_ctx.yaml['encoder-cpr']
+        load_max_speed = max_rpm / 60 * load_ctx.yaml['encoder-cpr']
+        logger.debug("RPM range: {} = driver {} = load {}".format(max_rpm, driver_max_speed, load_max_speed))
+
+        # Set up velocity controlled load
+        logger.debug("activating load on {}".format(load_ctx.name))
+        load_ctx.handle.controller.config.vel_integrator_gain = 0
+        load_ctx.handle.controller.config.vel_limit = load_max_speed
+        load_ctx.handle.motor.config.current_lim = 0 #load current to be set during runtime
+        load_ctx.handle.controller.set_vel_setpoint(0, 0) # vel sign also set during runtime
+        request_state(load_ctx, AXIS_STATE_CLOSED_LOOP_CONTROL)
+
+        # Set up velocity controlled driver
+        logger.debug("activating driver on {}".format(driver_ctx.name))
+        driver_ctx.handle.motor.config.current_lim = self._driver_current_lim
+        driver_ctx.handle.controller.config.vel_limit = driver_max_speed
+        driver_ctx.handle.controller.set_vel_setpoint(0, 0)
+        request_state(driver_ctx, AXIS_STATE_CLOSED_LOOP_CONTROL)
+
+        # Spiral parameters
+        command_rate = 500.0 #Hz (nominal, achived rate is less due to time.sleep approx)
+        test_duration = 15.0 #s
+        num_cycles = 3.0 # number of spiral "rotations"
+
+        t_0 = time.monotonic()
+        t_ratio = 0
+        last_print = t_0
+        while t_ratio < 1:
+            t_ratio = (time.monotonic() - t_0) / test_duration
+            phase = 2 * math.pi * num_cycles * t_ratio
+            driver_speed = t_ratio * driver_max_speed * math.sin(phase)
+            # print(driver_speed)
+            driver_ctx.handle.controller.set_vel_setpoint(driver_speed, 0)
+            load_current = t_ratio * self._load_current_range * math.cos(phase)
+            Iload_mag = abs(load_current)
+            Iload_sign = np.sign(load_current)
+            # print("I: {}, vel {}".format(Iload_mag, Iload_sign * load_max_speed))
+            load_ctx.handle.motor.config.current_lim = Iload_mag
+            load_ctx.handle.controller.set_vel_setpoint(Iload_sign * load_max_speed, 0)
+
+            test_assert_no_error(driver_ctx)
+            test_assert_no_error(load_ctx)
+
+            # log progress
+            if time.monotonic() - last_print > 1:
+                last_print = time.monotonic()
+                logger.debug("Envelope  --  vel: {:.2f}, I: {:.2f}".format(t_ratio * driver_max_speed, t_ratio * self._load_current_range))
+
+            time.sleep(1/command_rate)
+
+        request_state(load_ctx, AXIS_STATE_IDLE)
+        request_state(driver_ctx, AXIS_STATE_IDLE)
+        test_assert_no_error(driver_ctx)
+        test_assert_no_error(load_ctx)
 
 class TestVelCtrlVsPosCtrl(DualAxisTest):
     """

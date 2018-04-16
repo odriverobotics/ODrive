@@ -1,4 +1,6 @@
 
+type: parallel
+
 # ODrives
 odrives:
   - name: top-odrive

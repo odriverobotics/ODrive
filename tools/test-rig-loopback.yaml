@@ -1,4 +1,6 @@
 
+type: loopback
+
 odrives:
   - name: odrive-48V
     board-version: v3.5-48V

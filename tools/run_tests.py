@@ -49,7 +49,7 @@ else:
     all_tests.append(TestDiscoverAndGotoIdle())
     all_tests.append(TestEncoderOffsetCalibration(pass_if_ready=True))
 
-if 'test-rig-parallel.yaml' in test_rig_yaml:
+if test_rig_yaml['type'] == 'parallel':
     #all_tests.append(TestHighVelocity())
     all_tests.append(TestHighVelocityInViscousFluid(load_current=35, driver_current=45))
     # all_tests.append(TestVelCtrlVsPosCtrl())
@@ -57,8 +57,9 @@ if 'test-rig-parallel.yaml' in test_rig_yaml:
     # TODO: test sensorless
     # TODO: test ASCII protocol
     # TODO: test protocol over UART
-elif 'test-rig-loopback.yaml' in test_rig_yaml:
-    pass
+elif test_rig_yaml['type'] == 'loopback':
+    all_tests.append(TestSelfLoadedPosVelDistribution(
+        rpm_range=2500, load_current_range=50, driver_current_lim=60))
 
 
 print(str(args.ignore))
