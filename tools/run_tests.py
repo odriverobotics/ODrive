@@ -25,7 +25,7 @@ parser.add_argument("--ignore", metavar='DEVICE', action='store', nargs='+',
                     help="Ignore one or more ODrives or axes")
 parser.add_argument("--test-rig-yaml", type=argparse.FileType('r'),
                     help="test rig YAML file")
-parser.set_defaults(test_rig_yaml=script_path + '/test-rig.yaml')
+parser.set_defaults(test_rig_yaml=script_path + '/test-rig-parallel.yaml')
 parser.set_defaults(ignore=[])
 args = parser.parse_args()
 
