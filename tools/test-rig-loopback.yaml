@@ -1,0 +1,36 @@
+
+odrives:
+  - name: odrive-48V
+    board-version: v3.5-48V
+    serial-number: "3660335E3037"
+    brake-resistance: 0.47
+    uart: /dev/serial/by-id/[not-yet-used]
+    usb: auto
+    programmer: '533f7506493f49514454193f'
+    vbus-voltage: 24 # [V]
+    max-brake-power: 150 # [W]
+    axes:
+      - name: 'M0'
+        motor-phase-resistance: 0.0245
+        motor-phase-inductance: 2.03e-05
+        motor-pole-pairs: 7
+        motor-direction: 1
+        motor-kv: 190
+        motor-max-current: 70
+        motor-max-voltage: 40
+        encoder-cpr: 8192
+        encoder-max-rpm: 7000
+      - name: 'M1'
+        motor-phase-resistance: 0.0245
+        motor-phase-inductance: 2.03e-05
+        motor-pole-pairs: 7
+        motor-direction: -1
+        motor-kv: 190
+        motor-max-current: 70
+        motor-max-voltage: 40
+        encoder-cpr: 8192
+        encoder-max-rpm: 7000
+
+# Mechanical couplings
+couplings:
+  - [ odrive-48V.M0, odrive-48V.M1 ]

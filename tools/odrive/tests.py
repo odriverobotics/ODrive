@@ -538,6 +538,9 @@ class TestHighVelocityInViscousFluid(DualAxisTest):
         request_state(load_ctx, AXIS_STATE_IDLE)
         request_state(driver_ctx, AXIS_STATE_IDLE)
 
+# class TestSelfLoadedPosVelDistribution(DualAxisTest):
+
+
 class TestVelCtrlVsPosCtrl(DualAxisTest):
     """
     Uses one ODrive as a load operating in velocity control mode.

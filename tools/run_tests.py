@@ -25,11 +25,13 @@ parser.add_argument("--ignore", metavar='DEVICE', action='store', nargs='+',
                     help="Ignore one or more ODrives or axes")
 parser.add_argument("--test-rig-yaml", type=argparse.FileType('r'),
                     help="test rig YAML file")
-parser.set_defaults(test_rig_yaml=script_path + '/test-rig-parallel.yaml')
+# parser.set_defaults(test_rig_yaml=script_path + '/test-rig-parallel.yaml')
 parser.set_defaults(ignore=[])
 args = parser.parse_args()
+test_rig_yaml = yaml.load(args.test_rig_yaml)
 
 # TODO: add --only option
+
 
 all_tests = []
 if not args.skip_boring_tests:
@@ -47,19 +49,21 @@ else:
     all_tests.append(TestDiscoverAndGotoIdle())
     all_tests.append(TestEncoderOffsetCalibration(pass_if_ready=True))
 
-#all_tests.append(TestHighVelocity())
-all_tests.append(TestHighVelocityInViscousFluid(load_current=35, driver_current=45))
-# all_tests.append(TestVelCtrlVsPosCtrl())
-# TODO: test step/dir
-# TODO: test sensorless
-# TODO: test ASCII protocol
-# TODO: test protocol over UART
+if 'test-rig-parallel.yaml' in test_rig_yaml:
+    #all_tests.append(TestHighVelocity())
+    all_tests.append(TestHighVelocityInViscousFluid(load_current=35, driver_current=45))
+    # all_tests.append(TestVelCtrlVsPosCtrl())
+    # TODO: test step/dir
+    # TODO: test sensorless
+    # TODO: test ASCII protocol
+    # TODO: test protocol over UART
+elif 'test-rig-loopback.yaml' in test_rig_yaml:
+    pass
+
 
 print(str(args.ignore))
 logger = Logger()
 
-
-test_rig_yaml = yaml.load(args.test_rig_yaml)
 os.chdir(script_path + '/../Firmware')
 
 # Build a dictionary of odrive test contexts by name
