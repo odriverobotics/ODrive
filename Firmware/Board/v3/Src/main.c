@@ -61,6 +61,7 @@
 /* USER CODE BEGIN Includes */
 #include <MotorControl/odrive_main.h>
 #include "freertos_vars.h"
+#include "i2c.h"
 /* USER CODE END Includes */
 
 /* Private variables ---------------------------------------------------------*/
@@ -183,6 +184,7 @@ int main(void)
   MX_TIM2_Init();
   MX_UART4_Init();
   /* USER CODE BEGIN 2 */
+  MX_I2C1_Init();
 
   //Required to use OC4 for ADC triggering.
   OC4_PWM_Override(&htim1);
