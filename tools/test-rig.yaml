@@ -17,16 +17,20 @@ odrives:
         motor-pole-pairs: 7
         motor-direction: 1
         motor-kv: 190
-        motor-max-current: 50
+        motor-max-current: 70
+        motor-max-voltage: 40
         encoder-cpr: 8192
+        encoder-max-rpm: 7000
       - name: 'black'
         motor-phase-resistance: 0.028
         motor-phase-inductance: 1.6e-05
         motor-pole-pairs: 7
         motor-direction: -1
         motor-kv: 270
-        motor-max-current: 50
+        motor-max-current: 70
+        motor-max-voltage: 32
         encoder-cpr: 8192
+        encoder-max-rpm: 7000
   - name: bottom-odrive
     board-version: v3.5-24V
     serial-number: "3661335E3037"
@@ -43,16 +47,20 @@ odrives:
         motor-pole-pairs: 7
         motor-direction: 1
         motor-kv: 270
-        motor-max-current: 50
+        motor-max-current: 70
+        motor-max-voltage: 32
         encoder-cpr: 8192
+        encoder-max-rpm: 7000
       - name: 'yellow'
         motor-phase-resistance: 0.0245
         motor-phase-inductance: 2.03e-05
         motor-pole-pairs: 7
         motor-direction: -1
         motor-kv: 190
-        motor-max-current: 50
+        motor-max-current: 70
+        motor-max-voltage: 40
         encoder-cpr: 8192
+        encoder-max-rpm: 7000
 
 # Mechanical couplings
 couplings:

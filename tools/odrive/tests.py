@@ -404,18 +404,22 @@ class TestHighVelocity(AxisTest):
         self._brake = brake
 
     def check_preconditions(self, axis_ctx: AxisTestContext, logger):
-        time.sleep(2.5) #delay in case load needs time to stop moving
+        # time.sleep(2.5) #delay in case load needs time to stop moving
         super(TestHighVelocity, self).check_preconditions(axis_ctx, logger)
         test_assert_eq(axis_ctx.handle.motor.is_calibrated, True)
         test_assert_eq(axis_ctx.handle.encoder.is_ready, True)
 
     def run_test(self, axis_ctx: AxisTestContext, logger):
-        # Calculate theoretical max velocity in encoder counts per second based on the nominal
-        # V_bus and motor KV rating
-        max_rpm = axis_ctx.odrv_ctx.yaml['vbus-voltage'] * axis_ctx.yaml['motor-kv']
-        rated_limit = max_rpm / 60 * axis_ctx.yaml['encoder-cpr']
-        expected_limit = rated_limit
+        # Calculate theoretical max velocity in rpm based on the nominal
+        # V_bus and motor KV rating. If we are using a higher bus voltage than rated, use rated voltage
+        voltage_for_speed = min(axis_ctx.odrv_ctx.yaml['vbus-voltage'], axis_ctx.yaml['motor-max-voltage'])
+        base_speed_rpm = voltage_for_speed * axis_ctx.yaml['motor-kv']
+        #but don't go over encoder max rpm
+        rated_rpm = min(base_speed_rpm, axis_ctx.yaml['encoder-max-rpm'])
+        #convert to count/s
+        rated_limit = rated_rpm / 60 * axis_ctx.yaml['encoder-cpr']
 
+        expected_limit = rated_limit
         # The KV-rating assumes square-waves on the motor phases (hexagonal space vector trajectory)
         # whereas the ODrive modulates the space vector around a circular trajectory.
         # See Fig 4.28 here: http://krex.k-state.edu/dspace/bitstream/handle/2097/1507/JamesMevey2009.pdf
@@ -441,6 +445,7 @@ class TestHighVelocity(AxisTest):
         else:
             axis_ctx.handle.motor.config.current_lim = self._override_current_limit
             axis_ctx.handle.controller.config.vel_limit = rated_limit
+        axis_ctx.handle.controller.set_vel_setpoint(0, 0)
         request_state(axis_ctx, AXIS_STATE_CLOSED_LOOP_CONTROL)
 
         logger.debug("Drive current {}A, Load current {}A".format(axis_ctx.handle.motor.config.current_lim, self._load_current))
@@ -518,6 +523,7 @@ class TestHighVelocityInViscousFluid(DualAxisTest):
         load_ctx.handle.controller.config.vel_limit = 20000 # this is not really relevant
         load_ctx.handle.motor.config.current_lim = self._load_current
         load_ctx.odrv_ctx.handle.config.brake_resistance = 0 # disable brake resistance, the power will go into the bus
+        load_ctx.handle.controller.set_vel_setpoint(0, 0)
 
         request_state(load_ctx, AXIS_STATE_CLOSED_LOOP_CONTROL)
 
