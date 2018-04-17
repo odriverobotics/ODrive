@@ -85,6 +85,17 @@ class RemoteProperty():
         # TODO: Currenly we wait for an ack here. Settle on the default guarantee.
         self._parent.__channel__.remote_endpoint_operation(self._id, buffer, True, 0)
 
+    def dump(self):
+        if self._name == "serial_number":
+            # special case: serial number should be displayed in hex (TODO: generalize)
+            val_str = "{:012X}".format(self.get_value())
+        elif self._name == "error":
+            # special case: errors should be displayed in hex (TODO: generalize)
+            val_str = "0x{:04X}".format(self.get_value())
+        else:
+            val_str = str(self.get_value())
+        return "{} = {} ({})".format(self._name, val_str, self._property_type.__name__)
+
 class RemoteFunction(object):
     """
     Represents a callable function that maps to a function call on a remote object
@@ -95,6 +106,10 @@ class RemoteFunction(object):
         if id_str is None:
             raise ObjectDefinitionError("unspecified endpoint ID")
         self._trigger_id = int(id_str)
+
+        self._name = json_data.get("name", None)
+        if self._name is None:
+            self._name = "[anonymous]"
 
         self._inputs = []
         for param_json in json_data.get("arguments", []) + json_data.get("inputs", []): # TODO: deprecate "arguments" keyword
@@ -107,6 +122,9 @@ class RemoteFunction(object):
         for i in range(len(args)):
             self._inputs[i].set_value(args[i])
         self._parent.__channel__.remote_endpoint_operation(self._trigger_id, None, True, 0)
+
+    def dump(self):
+        return "{}({})".format(self._name, ", ".join("{}: {}".format(x._name, x._property_type.__name__) for x in self._inputs))
 
 class RemoteObject(object):
     """
@@ -156,8 +174,21 @@ class RemoteObject(object):
         self.__sealed__ = True
         channel._channel_broken.subscribe(self._tear_down)
 
+    def dump(self, indent, depth):
+        if depth <= 0:
+            return "..."
+        lines = []
+        for key, val in self._remote_attributes.items():
+            if isinstance(val, RemoteObject):
+                val_str = indent + key + (": " if depth == 1 else ":\n") + val.dump(indent + "  ", depth - 1)
+            else:
+                val_str = indent + val.dump()
+            lines.append(val_str)
+        return "\n".join(lines)
+
     def __str__(self):
-        return str(dir(self)) # TODO: improve print output
+        return self.dump("", depth=2)
+
     def __repr__(self):
         return self.__str__()
 
