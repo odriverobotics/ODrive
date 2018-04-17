@@ -132,6 +132,9 @@ static uint8_t  *USBD_CDC_GetOtherSpeedCfgDesc (uint16_t *length);
 
 uint8_t  *USBD_CDC_GetDeviceQualifierDescriptor (uint16_t *length);
 
+static uint8_t  USBD_WinUSBComm_SetupVendor(USBD_HandleTypeDef *pdev, USBD_SetupReqTypedef *req);
+static uint8_t * USBD_WinUSBComm_GetUsrStrDescriptor(struct _USBD_HandleTypeDef *pdev, uint8_t index,  uint16_t *length);
+
 /* USB Standard Device Descriptor */
 __ALIGN_BEGIN static uint8_t USBD_CDC_DeviceQualifierDesc[USB_LEN_DEV_QUALIFIER_DESC] __ALIGN_END =
 {
@@ -173,6 +176,7 @@ USBD_ClassTypeDef  USBD_CDC =
   USBD_CDC_GetFSCfgDesc,    
   USBD_CDC_GetOtherSpeedCfgDesc, 
   USBD_CDC_GetDeviceQualifierDescriptor,
+  USBD_WinUSBComm_GetUsrStrDescriptor
 };
 
 /* USB CDC device Configuration Descriptor */
@@ -648,6 +652,9 @@ static uint8_t  USBD_CDC_Setup (USBD_HandleTypeDef *pdev,
     case USB_REQ_SET_INTERFACE :
       break;
     }
+
+  case USB_REQ_TYPE_VENDOR:
+    return USBD_WinUSBComm_SetupVendor(pdev, req);
  
   default: 
     break;
@@ -911,6 +918,264 @@ uint8_t  USBD_CDC_ReceivePacket(USBD_HandleTypeDef *pdev)
     return USBD_FAIL;
   }
 }
+
+#if 0
+// Microsoft OS 2.0 Descriptor Set
+
+uint8_t ms_os_20_descriptor_set[0x9E] = {
+
+0x0A, 0x00,					// Descriptor size (10 bytes)
+0x00, 0x00,					// MS OS 2.0 descriptor set header
+0x00, 0x00, 0x03, 0x06,					// Windows version (8.1) (0x06030000)
+0x9E, 0x00,					// Size, MS OS 2.0 descriptor set (158 bytes)
+
+// Microsoft OS 2.0 compatible ID descriptor
+
+0x14, 0x00,						// Descriptor size (20 bytes)
+0x03, 0x00,			 		  // MS OS 2.0 compatible ID descriptor
+0x57, 0x49, 0x4E, 0x55, 0x53, 0x42, 0x00, 0x00,			// WINUSB string
+0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,			// Sub-compatible ID
+
+// Registry property descriptor
+
+0x80, 0x00,				// Descriptor size (130 bytes)
+0x04, 0x00,				// Registry Property descriptor
+0x01, 0x00,				// Strings are null-terminated Unicode
+0x28, 0x00,				// Size of Property Name (40 bytes)
+
+//Property Name ("DeviceInterfaceGUID")
+
+0x44, 0x00, 0x65, 0x00, 0x76, 0x00, 0x69, 0x00, 0x63, 0x00, 0x65, 0x00,
+0x49, 0x00, 0x6E, 0x00, 0x74, 0x00, 0x65, 0x00, 0x72, 0x00, 0x66, 0x00,
+0x61, 0x00, 0x63, 0x00, 0x65, 0x00, 0x47, 0x00, 0x55, 0x00, 0x49, 0x00,
+0x44, 0x00, 0x00, 0x00, 
+
+0x4E, 0x00,				// Size of Property Data (78 bytes)
+
+// Vendor-defined Property Data: {ecceff35-146c-4ff3-acd9-8f992d09acdd}
+
+0x7B, 0x00, 0x65, 0x00, 0x63, 0x00, 0x63, 0x00, 0x65, 0x00, 0x66, 0x00,
+0x66, 0x00, 0x33, 0x00, 0x35, 0x00, 0x2D, 0x00, 0x31, 0x00, 0x34, 0x00,
+0x36, 0x00, 0x33, 0x00, 0x2D, 0x00, 0x34, 0x00, 0x66, 0x00, 0x66, 0x00,
+0x33, 0x00, 0x2D, 0x00, 0x61, 0x00, 0x63, 0x00, 0x64, 0x00, 0x39, 0x00,
+0x2D, 0x00, 0x38, 0x00, 0x66, 0x00, 0x39, 0x00, 0x39, 0x00, 0x32, 0x00,
+0x64, 0x00, 0x30, 0x00, 0x39, 0x00, 0x61, 0x00, 0x63, 0x00, 0x64, 0x00,
+0x64, 0x00, 0x7D, 0x00, 0x00, 0x00
+};
+#endif
+
+
+// MS OS String descriptor to tell Windows that it may query for other descriptors
+// It's a standard string descriptor.
+// Windows will only query for OS descriptors once!
+// Delete the information about already queried devices in registry by deleting:
+// HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\usbflags\VVVVPPPPRRRR
+__ALIGN_BEGIN uint8_t USBD_WinUSBComm_MS_OS_StringDescriptor[]  __ALIGN_END =
+{
+  0x12,           //  bLength           1 0x12  Length of the descriptor
+  0x03,           //  bDescriptorType   1 0x03  Descriptor type
+                  //  qwSignature      14 ‘MSFT100’ Signature field
+  0x4D, 0x00,     //  'M'
+  0x53, 0x00,     //  'S'
+  0x46, 0x00,     //  'F'
+  0x54, 0x00,     //  'T'
+  0x31, 0x00,     //  '1'
+  0x30, 0x00,     //  '0'
+  0x30, 0x00,     //  '0'
+  MS_VendorCode,  //  bMS_VendorCode    1 Vendor-specific Vendor code
+  0x00            //  bPad              1 0x00  Pad field
+};
+
+
+/**
+* @brief  GetUsrStrDescriptor
+*         return non standard string descriptor (OS String Descriptor)
+* @param  pdev: device instance
+* @param  index : descriptor index (0xEE for MS OS String Descriptor)
+* @param  length : pointer data length
+* @retval pointer to descriptor buffer
+*/
+static uint8_t * USBD_WinUSBComm_GetUsrStrDescriptor(struct _USBD_HandleTypeDef *pdev, uint8_t index,  uint16_t *length)
+{
+  *length = 0;
+  if ( 0xEE == index )
+  {
+    *length = sizeof (USBD_WinUSBComm_MS_OS_StringDescriptor);
+    return USBD_WinUSBComm_MS_OS_StringDescriptor;
+  }
+  return NULL;
+}
+
+
+#define NUM_INTERFACES 2
+
+#if NUM_INTERFACES == 2
+#define USB_WINUSBCOMM_COMPAT_ID_OS_DESC_SIZ       (16 + 24 + 24)
+#else
+#define USB_WINUSBCOMM_COMPAT_ID_OS_DESC_SIZ       (16 + 24)
+#endif
+
+
+// This associates winusb driver with the device
+__ALIGN_BEGIN uint8_t USBD_WinUSBComm_Extended_Compat_ID_OS_Desc[USB_WINUSBCOMM_COMPAT_ID_OS_DESC_SIZ]  __ALIGN_END =
+{
+                                                    //    +-- Offset in descriptor
+                                                    //    |             +-- Size
+                                                    //    v             v
+  USB_WINUSBCOMM_COMPAT_ID_OS_DESC_SIZ, 0, 0, 0,    //    0 dwLength    4 DWORD The length, in bytes, of the complete extended compat ID descriptor
+  0x00, 0x01,                                       //    4 bcdVersion  2 BCD The descriptor’s version number, in binary coded decimal (BCD) format
+  0x04, 0x00,                                       //    6 wIndex      2 WORD  An index that identifies the particular OS feature descriptor
+  2,                                                //    8 bCount      1 BYTE  The number of custom property sections
+  0, 0, 0, 0, 0, 0, 0,                              //    9 RESERVED    7 BYTEs Reserved
+                                                    //    =====================
+                                                    //                 16
+
+                                                    //   +-- Offset from function section start
+                                                    //   |                        +-- Size
+                                                    //   v                        v
+  0,                                                //   0  bFirstInterfaceNumber 1 BYTE  The interface or function number
+  0,                                                //   1  RESERVED              1 BYTE  Reserved
+  0x57, 0x49, 0x4E, 0x55, 0x53, 0x42, 0x00, 0x00,   //   2  compatibleID          8 BYTEs The function’s compatible ID      ("WINUSB")
+  0, 0, 0, 0, 0, 0, 0, 0,                           //  10  subCompatibleID       8 BYTEs The function’s subcompatible ID
+  0, 0, 0, 0, 0, 0,                                 //  18  RESERVED              6 BYTEs Reserved
+                                                    //  =================================
+                                                    //                           24
+#if NUM_INTERFACES == 2
+                                                    //   +-- Offset from function section start
+                                                    //   |                        +-- Size
+                                                    //   v                        v
+  1,                                                //   0  bFirstInterfaceNumber 1 BYTE  The interface or function number
+  0,                                                //   1  RESERVED              1 BYTE  Reserved
+  0x57, 0x49, 0x4E, 0x55, 0x53, 0x42, 0x00, 0x00,   //   2  compatibleID          8 BYTEs The function’s compatible ID      ("WINUSB")
+  0, 0, 0, 0, 0, 0, 0, 0,                           //  10  subCompatibleID       8 BYTEs The function’s subcompatible ID
+  0, 0, 0, 0, 0, 0,                                 //  18  RESERVED              6 BYTEs Reserved
+                                                    //  =================================
+                                                    //                           24
+#endif
+};
+
+
+// Properties are added to:
+// HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Enum\USB\VID_xxxx&PID_xxxx\sssssssss\Device Parameters
+// Use USBDeview or similar to uninstall
+
+__ALIGN_BEGIN uint8_t USBD_WinUSBComm_Extended_Properties_OS_Desc[0xCC]  __ALIGN_END =
+{
+  0xCC, 0x00, 0x00, 0x00,   // 0 dwLength   4 DWORD The length, in bytes, of the complete extended properties descriptor
+  0x00, 0x01,               // 4 bcdVersion 2 BCD   The descriptor’s version number, in binary coded decimal (BCD) format
+  0x05, 0x00,               // 6 wIndex     2 WORD  The index for extended properties OS descriptors
+  0x02, 0x00,               // 8 wCount     2 WORD  The number of custom property sections that follow the header section
+                            // ====================
+                            //             10
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+  0x84, 0x00, 0x00, 0x00,   //  0       dwSize                  4 DWORD             The size of this custom properties section
+  0x01, 0x00, 0x00, 0x00,   //  4       dwPropertyDataType      4 DWORD             Property data format
+  0x28, 0x00,               //  8       wPropertyNameLength     2 DWORD             Property name length
+                            // ========================================
+                            //                                 10
+                            // 10       bPropertyName         PNL WCHAR[]           The property name
+  'D',0, 'e',0, 'v',0, 'i',0, 'c',0, 'e',0, 'I',0, 'n',0,
+  't',0, 'e',0, 'r',0, 'f',0, 'a',0, 'c',0, 'e',0, 'G',0,
+  'U',0, 'I',0, 'D',0, 0,0,
+                            // ========================================
+                            //                                 40 (0x28)
+
+  0x4E, 0x00, 0x00, 0x00,   // 10 + PNL dwPropertyDataLength    4 DWORD             Length of the buffer holding the property data
+                            // ========================================
+                            //                                  4
+    // 14 + PNL bPropertyData         PDL Format-dependent  Property data
+  '{',0, 'E',0, 'A',0, '0',0, 'B',0, 'D',0, '5',0, 'C',0,
+  '3',0, '-',0, '5',0, '0',0, 'F',0, '3',0, '-',0, '4',0,
+  '8',0, '8',0, '8',0, '-',0, '8',0, '4',0, 'B',0, '4',0,
+  '-',0, '7',0, '4',0, 'E',0, '5',0, '0',0, 'E',0, '1',0,
+  '6',0, '4',0, '9',0, 'D',0, 'B',0, '}',0,  0 ,0,
+                            // ========================================
+                            //                                 78 (0x4E)
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+  0x3E, 0x00, 0x00, 0x00,   //  0 dwSize 0x00000030 (62 bytes)
+  0x01, 0x00, 0x00, 0x00,   //  4 dwPropertyDataType 0x00000001 (Unicode string)
+  0x0C, 0x00,               //  8 wPropertyNameLength 0x000C (12 bytes)
+                            // ========================================
+                            //                                  10
+  'L',0, 'a',0, 'b',0, 'e',0, 'l',0, 0,0,
+                            // 10 bPropertyName “Label”
+                            // ========================================
+                            //                                  12
+  0x24, 0x00, 0x00, 0x00,   // 22 dwPropertyDataLength 0x00000016 (36 bytes)
+                            // ========================================
+                            //                                  4
+  'W',0, 'i',0, 'n',0, 'U',0, 'S',0, 'B',0, 'C',0, 'o',0, 'm',0, 'm',0, ' ',0, 'd',0, 'e',0, 'v',0, 'i',0, 'c',0, 'e',0, 0,0
+                            // 26 bPropertyData “WinUSBComm Device”
+                            // ========================================
+                            //                                  36
+
+};
+
+
+
+static uint8_t  USBD_WinUSBComm_GetMSExtendedCompatIDOSDescriptor (USBD_HandleTypeDef *pdev, USBD_SetupReqTypedef *req)
+{
+  switch (req->wIndex)
+  {
+  case 0x04:
+    USBD_CtlSendData (pdev, USBD_WinUSBComm_Extended_Compat_ID_OS_Desc, req->wLength);
+    break;
+  default:
+   USBD_CtlError(pdev , req);
+   return USBD_FAIL;
+  }
+  return USBD_OK;
+}
+static uint8_t  USBD_WinUSBComm_GetMSExtendedPropertiesOSDescriptor (USBD_HandleTypeDef *pdev, USBD_SetupReqTypedef *req)
+{
+  uint8_t byInterfaceIndex = (uint8_t)req->wValue;
+  if ( req->wIndex != 0x05 )
+  {
+    USBD_CtlError(pdev , req);
+    return USBD_FAIL;
+  }
+  switch ( byInterfaceIndex )
+  {
+  case 0:
+#if NUM_INTERFACES == 2
+  case 1:
+#endif
+    USBD_CtlSendData (pdev, USBD_WinUSBComm_Extended_Properties_OS_Desc, req->wLength);
+    break;
+  default:
+    USBD_CtlError(pdev , req);
+    return USBD_FAIL;
+  }
+  return USBD_OK;
+}
+static uint8_t  USBD_WinUSBComm_SetupVendorDevice(USBD_HandleTypeDef *pdev, USBD_SetupReqTypedef *req)
+{
+  USBD_CtlError(pdev , req);
+  return USBD_FAIL;
+}
+static uint8_t  USBD_WinUSBComm_SetupVendorInterface(USBD_HandleTypeDef *pdev, USBD_SetupReqTypedef *req)
+{
+  USBD_CtlError(pdev , req);
+  // TODO: check if this is important
+  return USBD_FAIL;
+}
+static uint8_t  USBD_WinUSBComm_SetupVendor(USBD_HandleTypeDef *pdev, USBD_SetupReqTypedef *req)
+{
+  switch ( req->bmRequest & USB_REQ_RECIPIENT_MASK )
+  {
+  case USB_REQ_RECIPIENT_DEVICE:
+    return ( MS_VendorCode == req->bRequest ) ? USBD_WinUSBComm_GetMSExtendedCompatIDOSDescriptor(pdev, req) : USBD_WinUSBComm_SetupVendorDevice(pdev, req);
+  case USB_REQ_RECIPIENT_INTERFACE:
+    return ( MS_VendorCode == req->bRequest ) ? USBD_WinUSBComm_GetMSExtendedPropertiesOSDescriptor(pdev, req) : USBD_WinUSBComm_SetupVendorInterface(pdev, req);
+  case USB_REQ_RECIPIENT_ENDPOINT:
+    // fall through
+  default:
+    break;
+  }
+  USBD_CtlError(pdev , req);
+  return USBD_FAIL;
+}
+
 /**
   * @}
   */ 
