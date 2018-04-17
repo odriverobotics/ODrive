@@ -74,7 +74,8 @@ setup(
     'PyUSB',    # Required to access USB devices from Python through libusb
     'PySerial', # Required to access serial devices from Python
     'IntelHex', # Used to by DFU to load firmware files
-    'matplotlib' # Required to run the liveplotter
+    'matplotlib', # Required to run the liveplotter
+    'pywin32 >= 1.0;platform_system=="Windows"' # Required for fancy terminal features on Windows
   ],
   package_data={'': ['version.txt']},
   include_package_data=True,

@@ -79,9 +79,15 @@ else:
   printer = lambda x: None
 
 logger = Logger(verbose=args.verbose)
-logger.debug(str(args))
 
 print("ODrive control utility v" + odrive.__version__)
+if ".dev" in odrive.__version__:
+    print("")
+    logger.warn("Developer Preview")
+    print("  If you find issues, please report them")
+    print("  on https://github.com/madcowswe/ODrive/issues")
+    print("  or better yet, submit a pull request to fix it.")
+    print("")
 
 app_shutdown_token = Event()
 
