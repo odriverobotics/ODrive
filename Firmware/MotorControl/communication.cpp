@@ -140,7 +140,8 @@ StreamToPacketConverter uart4_stream_input(uart4_channel);
 /* Function implementations --------------------------------------------------*/
 
 void enter_dfu_mode() {
-    *((unsigned long *)0x2001C000) = 0xDEADBEEF;
+    __asm volatile ("CPSID I\n\t":::"memory"); // disable interrupts
+    _reboot_cookie = 0xDEADBEEF;
     NVIC_SystemReset();
 }
 

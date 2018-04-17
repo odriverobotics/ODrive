@@ -81,12 +81,47 @@ void MX_FREERTOS_Init(void);
 
 /* USER CODE BEGIN 0 */
 
-void jump_to_builtin_bootloader(void) {
-  __set_MSP(0x20001000);
-  // http://www.st.com/content/ccc/resource/technical/document/application_note/6a/17/92/02/58/98/45/0c/CD00264379.pdf/files/CD00264379.pdf
-  void (*builtin_bootloader)(void) = (void (*)(void))(*((uint32_t *)0x1FFF0004));
-  builtin_bootloader();
-  for (;;);
+uint32_t _reboot_cookie __attribute__ ((section (".noinit")));
+extern char _estack; // provided by the linker script
+
+// Gets called from the startup assembly code
+void early_start_checks(void) {
+  /* We could jump to the bootloader directly on demand without rebooting
+  but that requires us to reset several peripherals and interrupts for it
+  to function correctly. Therefore it's easier to just reset the entire chip. */
+  if(_reboot_cookie == 0xDEADBEEF) {
+    _reboot_cookie = 0xCAFEFEED;  //Reset bootloader trigger
+    
+    /*
+    * This wait loop solves an obscure timing issue, but we don't exactly understand why.
+    * When the transition NVIC_SystemReset() => STM bootloader happens very quickly,
+    * there is a yet unexplained phenomenon where the ODrive would emit an audible click,
+    * followed by one the following symptoms:
+    *  - Device reboots in normal mode (possibly due to the bootloader exiting immidiately)
+    *  - Device goes into DFU mode and then the power supply turns off
+    *    This manifests in the DFU script detecting the device in DFU mode but then
+    *    losing the device immidiately after.
+    * There were no motors/encoders/brake resistor connected when testing this. As far as
+    * we can tell, the only way for the software to cause a short circuit is through the
+    * brake FETs.
+    */
+    for (size_t i = 0; i < 1000000; ++i) {
+      __NOP();
+    }
+
+    __set_MSP((uintptr_t)&_estack);
+    // http://www.st.com/content/ccc/resource/technical/document/application_note/6a/17/92/02/58/98/45/0c/CD00264379.pdf/files/CD00264379.pdf
+    void (*builtin_bootloader)(void) = (void (*)(void))(*((uint32_t *)0x1FFF0004));
+    builtin_bootloader();
+  }
+
+  /* The bootloader might fail to properly clean up after itself,
+  so if we're not sure that the system is in a clean state we
+  just reset it again */
+  if(_reboot_cookie != 42) {
+    _reboot_cookie = 42;
+    NVIC_SystemReset();
+  }
 }
 
 /* USER CODE END 0 */
@@ -99,22 +134,6 @@ void jump_to_builtin_bootloader(void) {
 int main(void)
 {
   /* USER CODE BEGIN 1 */
-
-  /* We could jump to the bootloader directly on demand without rebooting
-  but that requires us to reset several peripherals and interrupts for it
-  to function correctly. Therefore it's easier to just reset the entire chip. */
-  if(*((unsigned long *)0x2001C000) == 0xDEADBEEF) {
-    *((unsigned long *)0x2001C000) = 0xCAFEFEED;  //Reset bootloader trigger
-    jump_to_builtin_bootloader();
-  }
-
-  /* The bootloader might fail to properly clean up after itself,
-  so if we're not sure that the system is in a clean state we
-  just reset it again */
-  if(*((unsigned long *)0x2001C000) != 42) {
-    *((unsigned long *)0x2001C000) = 42;
-    NVIC_SystemReset();
-  }
 
   // This procedure of building a USB serial number should be identical
   // to the way the STM's built-in USB bootloader does it. This means
@@ -155,7 +174,6 @@ int main(void)
   MX_DMA_Init();
   MX_ADC1_Init();
   MX_ADC2_Init();
-  MX_CAN1_Init();
   MX_TIM1_Init();
   MX_TIM8_Init();
   MX_TIM3_Init();

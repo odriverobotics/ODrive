@@ -46,6 +46,8 @@ extern BoardConfig_t board_config;
 constexpr size_t AXIS_COUNT = 2;
 extern Axis *axes[AXIS_COUNT];
 
+extern uint32_t _reboot_cookie;
+
 // TODO: move
 // this is technically not thread-safe but practically it might be
 #define DEFINE_ENUM_FLAG_OPERATORS(ENUMTYPE) \
