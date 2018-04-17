@@ -59,7 +59,7 @@ if test_rig_yaml['type'] == 'parallel':
     # TODO: test protocol over UART
 elif test_rig_yaml['type'] == 'loopback':
     all_tests.append(TestSelfLoadedPosVelDistribution(
-        rpm_range=2500, load_current_range=50, driver_current_lim=60))
+        rpm_range=3000, load_current_range=60, driver_current_lim=70))
 
 
 print(str(args.ignore))

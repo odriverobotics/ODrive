@@ -583,7 +583,7 @@ class TestSelfLoadedPosVelDistribution(DualAxisTest):
 
         # Spiral parameters
         command_rate = 500.0 #Hz (nominal, achived rate is less due to time.sleep approx)
-        test_duration = 15.0 #s
+        test_duration = 20.0 #s
         num_cycles = 3.0 # number of spiral "rotations"
 
         t_0 = time.monotonic()
