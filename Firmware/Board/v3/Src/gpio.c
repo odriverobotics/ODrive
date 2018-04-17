@@ -138,8 +138,9 @@ void MX_GPIO_Init(void)
   HAL_GPIO_Init(nFAULT_GPIO_Port, &GPIO_InitStruct);
 
   /* EXTI interrupt init*/
-  HAL_NVIC_SetPriority(EXTI2_IRQn, 0, 0);
-  HAL_NVIC_EnableIRQ(EXTI2_IRQn);
+  // TODO get Cube to not emit this
+  // HAL_NVIC_SetPriority(EXTI2_IRQn, 0, 0);
+  // HAL_NVIC_EnableIRQ(EXTI2_IRQn);
 
 }
 
@@ -151,6 +152,7 @@ void MX_GPIO_Init(void)
 // no matter which port they belong to.
 IRQn_Type get_irq_number(uint16_t pin) {
   uint16_t pin_number = 0;
+  pin >>= 1;
   while (pin) {
     pin >>= 1;
     pin_number++;

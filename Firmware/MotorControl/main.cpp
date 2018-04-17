@@ -31,6 +31,7 @@ void save_configuration(void) {
 }
 
 void load_configuration(void) {
+    // Try to load configs
     if (NVM_init() ||
         ConfigFormat::safe_load_config(
                 &board_config,
@@ -38,6 +39,7 @@ void load_configuration(void) {
                 &controller_configs,
                 &motor_configs,
                 &axis_configs)) {
+        //If loading failed, restore defaults
         board_config = BoardConfig_t();
         for (size_t i = 0; i < AXIS_COUNT; ++i) {
             encoder_configs[i] = EncoderConfig_t();

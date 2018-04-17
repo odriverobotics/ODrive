@@ -342,6 +342,14 @@ void EXTI4_IRQHandler(void)
 }
 
 /**
+* @brief This function handles EXTI lines 5-9 interrupt.
+*/
+void EXTI9_5_IRQHandler(void)
+{
+  HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_9);
+}
+
+/**
 * @brief This function handles EXTI lines 10-15 interrupt.
 */
 void EXTI15_10_IRQHandler(void)
