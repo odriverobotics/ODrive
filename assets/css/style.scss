@@ -353,9 +353,9 @@ details {
     //margin-top: -14px;
     margin-bottom: 5px;
     //background-color: #ffc54727;
-    background-color: #f2f8fd;
+    //background-color: #f2f8fd;
     //border: solid 1px #c6cbd1;
-    border-radius: 3px;
+    //border-radius: 3px;
 }
 
 // title of a "details" box
@@ -373,7 +373,9 @@ details > div {
     padding-left: 8px;
     padding-right: 8px;
     padding-bottom: 8px;
-    border-top: solid 1px #c6cbd1;
+    border-radius:5px;
+    border:1px solid #e5e5e5;
+    //border-top: solid 1px #c6cbd1;
 }
 details > div > p:last-child {
     margin-bottom: 0px;
