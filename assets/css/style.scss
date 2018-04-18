@@ -313,13 +313,13 @@ header ul ul li a {
 //}
 
 /*** Navbar Hover ***/
-header ul a:hover, header ul a:focus {
-  color:rgb(0, 0, 0);
-  background-color: rgba(0, 0, 0, 0.24);
-}
-header ul a:active {
-  background-color:#f8f8f8;
-}
+// header ul a:hover, header ul a:focus {
+//   color:rgb(0, 0, 0);
+//   background-color: rgba(0, 0, 0, 0.24);
+// }
+// header ul a:active {
+//   background-color:#f8f8f8;
+// }
 
 
 @media print, screen and (max-width: 960px) {
