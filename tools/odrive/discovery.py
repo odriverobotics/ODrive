@@ -53,6 +53,7 @@ def find_all(path, serial_number,
                 printer("device responded on endpoint 0 with something that is not ASCII")
                 return
             printer("JSON: " + json_string)
+            printer("JSON checksum: 0x{:02X} 0x{:02X}".format(json_crc16 & 0xff, (json_crc16 >> 8) & 0xff))
             try:
                 json_data = json.loads(json_string)
             except json.decoder.JSONDecodeError as error:
