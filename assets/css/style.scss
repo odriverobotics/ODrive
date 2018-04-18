@@ -257,10 +257,10 @@ a {
     color: #0366d6;
 }
 
-a:hover, a:focus {
-    color: #0366d6;
-    font-weight: unset;
-}
+// a:hover, a:focus {
+//     color: #0366d6;
+//     font-weight: unset;
+// }
 
 /*** Navigation bar ***/
 header > div {
@@ -292,9 +292,10 @@ header ul p {
 
 header ul ul li a {
   background: #f8f8f8;
-  border:1px solid #e0e0e0;
+  //border:1px solid #e0e0e0;
   line-height:1;
   font-size:12px;
+  font-weight: bold;
   color:#676767;
   display:block;
   text-align:left;
