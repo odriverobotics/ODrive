@@ -366,12 +366,16 @@ details {
     //background-color: #f2f8fd;
     //border: solid 1px #c6cbd1;
     //border-radius: 3px;
+    border: 1px solid #eee;
+    border-left-width: 5px;
+    border-radius: 5px;
+    border-left-color: #5bc0de;
 }
 
 // title of a "details" box
 details summary {
     padding-left: 8px;
-    background-color: #f0f0f0;
+    //background-color: #f0f0f0;
     cursor: pointer;
     //border-bottom: solid 1px #c6cbd1;
     //border-radius: 3px;
@@ -383,8 +387,8 @@ details > div {
     padding-left: 8px;
     padding-right: 8px;
     padding-bottom: 8px;
-    border-radius:5px;
-    border:1px solid #e5e5e5;
+    //border-radius:5px;
+    //border:1px solid #e5e5e5;
     //border-top: solid 1px #c6cbd1;
 }
 details > div > p:last-child {
