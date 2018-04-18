@@ -23,6 +23,7 @@ body {
 h1, h2, h3, h4, h5, h6 {
   color:#222;
   margin:0 0 20px;
+  text-align: left;
 }
 
 p, ul, ol, table, pre, dl {
@@ -428,6 +429,7 @@ details > div > p:last-child {
 /*** table ***/
 table th {
   background-color: #cbcbcb;
+  color: #000;
   border: 1px solid rgba(0, 0, 0, 0.219);
 }
 
