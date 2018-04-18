@@ -66,7 +66,7 @@ ODrive v3.3 and onward have 5V tolerant GPIO pins.
 To enable step/dir mode for the GPIO, please see [Setting the GPIO mode](Firmware/README.md#communication-configuration).
 
 There is also a new config variable called `counts_per_step`, which specifies how many encoder counts a "step" corresponds to. It can be any floating point value.
-The maximum step rate is pending tests, but it should handle at least 16kHz. If you want's to test it, please be aware that the failure mode on too high step rates is expected to be that the motors shuts down and coasts.
+The maximum step rate is pending tests, but it should handle at least 32kHz. If you want's to test it, please be aware that the failure mode on too high step rates is expected to be that the motors shuts down and coasts.
 
 Please be aware that there is no enable line right now, and the step/direction interface is enabled by default, and remains active as long as the ODrive is in position control mode. By default the ODrive starts in position control mode, so you don't need to send any commands over USB to get going. You can still send USB commands if you want to.
 
