@@ -394,16 +394,22 @@ details > div > p:last-child {
 
 .alert {
     padding: 10px;
-    color: black;
-    background-color: #ffea80;
     margin-bottom: 15px;
+    color: black;
+    border: 1px solid #eee;
+    border-left-width: 5px;
+    border-radius: 5px;
+    border-left-color: #f0ad4e;
 }
 
 .note {
     padding: 10px;
-    color: black;
-    background-color: #c5f2ff;
     margin-bottom: 15px;
+    color: black;
+    border: 1px solid #eee;
+    border-left-width: 5px;
+    border-radius: 5px;
+    border-left-color: #5bc0de;
 }
 
 /*** edit link ***/
