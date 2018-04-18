@@ -425,12 +425,12 @@ details > div > p:last-child {
 }
 
 
-// /*** table ***/
-// table th {
-//   background-color: #f1d3d3;
-//   border: 1px solid rgba(0, 0, 0, 0.219);
-// }
+/*** table ***/
+table th {
+  background-color: #f1d3d3;
+  border: 1px solid rgba(0, 0, 0, 0.219);
+}
 
-// table tr:nth-child(2n) {
-//   background-color: #faf6f6;
-// }
+table tr:nth-child(2n) {
+  background-color: #faf6f6;
+}
