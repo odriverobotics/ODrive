@@ -58,6 +58,12 @@ if creating_package:
   with open(version_file_path, mode='w') as version_file:
     version_file.write(version)
 
+# TODO: find a better place for this
+if not creating_package:
+  import platform
+  if platform.system() == 'Linux':
+    import odrive.utils
+    odrive.utils.setup_udev_rules(odrive.utils.Logger())
 
 setup(
   name = 'odrive',

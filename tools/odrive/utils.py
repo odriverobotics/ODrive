@@ -7,6 +7,8 @@ import sys
 import time
 import threading
 import platform
+import subprocess
+import os
 
 try:
     if platform.system() == 'Windows':
@@ -108,6 +110,17 @@ def rate_test(device):
     loopsPerSec = (168000000/(2*10192))
     FramePerSec = loopsPerSec/loopsPerFrame
     print("Frames per second: " + str(FramePerSec))
+
+def setup_udev_rules(logger):
+    if platform.system() != 'Linux':
+        logger.error("This command only makes sense on Linux")
+    if os.getuid() != 0:
+        logger.warn("you should run this as root, otherwise it will probably not work")
+    with open('/etc/udev/rules.d/50-odrive.rules', 'w') as file:
+        file.write('SUBSYSTEM=="usb", ATTR{idVendor}=="1209", ATTR{idProduct}=="0d3[0-9]", MODE="0666"\n')
+    subprocess.run(["udevadm", "control", "--reload-rules"], check=True)
+    subprocess.run(["udevadm", "trigger"], check=True)
+    logger.info('udev rules configured successfully')
 
 
 ## Exceptions ##
