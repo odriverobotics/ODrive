@@ -68,7 +68,7 @@ if not creating_package:
 setup(
   name = 'odrive',
   packages = ['odrive', 'odrive.dfuse'], # this must be the same as the name above
-  scripts = ['odrivetool', 'odrive_demo.py'],
+  scripts = ['odrivetool', 'odrivetool.bat', 'odrive_demo.py'],
   version = version,
   description = 'Control utilities for the ODrive high performance motor controller',
   author = 'Oskar Weigl',
@@ -81,7 +81,7 @@ setup(
     'PySerial', # Required to access serial devices from Python
     'IntelHex', # Used to by DFU to load firmware files
     'matplotlib', # Required to run the liveplotter
-    'pywin32 >= 1.0;platform_system=="Windows"' # Required for fancy terminal features on Windows
+    'pywin32==222;platform_system=="Windows"' # Required for fancy terminal features on Windows
   ],
   package_data={'': ['version.txt']},
   include_package_data=True,
