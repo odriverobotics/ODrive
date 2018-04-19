@@ -46,7 +46,7 @@ You will need:
 ## Wiring up the ODrive
 
 <div class="alert">
-Make sure you have a good mechanical connection between the encoder and the motor, slip can cause disasterous oscillations.
+Make sure you have a good mechanical connection between the encoder and the motor, slip can cause disasterous oscillations or runaway.
 </div>
 
 All non-power I/O is 3.3V output and 5V tolerant on input, except:
