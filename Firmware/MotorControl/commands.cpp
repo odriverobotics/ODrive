@@ -115,16 +115,23 @@ void enter_dfu_mode() {
 }
 
 #if HW_VERSION_MAJOR == 3
+// Determine start address of the OTP struct:
+// The OTP is organized into 16-byte blocks.
+// If the first block starts with "0xfe" we use the first block.
+// If the first block starts with "0x00" and the second block starts with "0xfe",
+// we use the second block. This gives the user the chance to screw up once.
+// If none of the above is the case, we consider the OTP invalid (otp_ptr will be NULL).
 const uint8_t* otp_ptr =
-    *(uint8_t*)0x1fff7800 == 0xfe ? (uint8_t*)0x1fff7800 :
-    *(uint8_t*)0x1fff7800 != 0x00 ? NULL :
-        *(uint8_t*)0x1fff7810 == 0xfe ? (uint8_t*)0x1fff7810 : NULL;
+    (*(uint8_t*)FLASH_OTP_BASE == 0xfe) ? (uint8_t*)FLASH_OTP_BASE :
+    (*(uint8_t*)FLASH_OTP_BASE != 0x00) ? NULL :
+        (*(uint8_t*)(FLASH_OTP_BASE + 0x10) != 0xfe) ? NULL :
+            (uint8_t*)(FLASH_OTP_BASE + 0x10);
 
 // Read hardware version from OTP if available, otherwise fall back
 // to software defined version.
 const uint8_t board_version_major = otp_ptr ? otp_ptr[3] : HW_VERSION_MAJOR;
 const uint8_t board_version_minor = otp_ptr ? otp_ptr[4] : HW_VERSION_MINOR;
-const uint8_t board_version_variant = otp_ptr ? otp_ptr[5] : (HW_VERSION_VOLTAGE == 24 ? 0 : 1);
+const uint8_t board_version_variant = otp_ptr ? otp_ptr[5] : HW_VERSION_VOLTAGE;
 #else
 #error "not implemented"
 #endif
