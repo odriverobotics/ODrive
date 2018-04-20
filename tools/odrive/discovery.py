@@ -53,7 +53,7 @@ def find_all(path, serial_number,
             except UnicodeDecodeError:
                 printer("device responded on endpoint 0 with something that is not ASCII")
                 return
-            printer("JSON: " + json_string)
+            printer("JSON: " + json_string.replace('{"name"', '\n{"name"'))
             printer("JSON checksum: 0x{:02X} 0x{:02X}".format(json_crc16 & 0xff, (json_crc16 >> 8) & 0xff))
             try:
                 json_data = json.loads(json_string)
@@ -62,6 +62,10 @@ def find_all(path, serial_number,
                 return
             json_data = {"name": "odrive", "members": json_data}
             obj = odrive.remote_object.RemoteObject(json_data, None, channel, printer)
+
+            obj.__dict__['_json_data'] = json_data['members']
+            obj.__dict__['_json_crc'] = json_crc16
+
             device_serial_number = format(obj.serial_number, 'x').upper() if hasattr(obj, 'serial_number') else "[unknown serial number]"
             if serial_number != None and device_serial_number != serial_number:
                 printer("Ignoring device with serial number {}".format(device_serial_number))
