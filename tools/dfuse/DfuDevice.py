@@ -59,6 +59,9 @@ class DfuDevice:
     def get_state(self):
         return self.control_msg(DFU_REQUEST_RECEIVE, DFU_GETSTATE, 0, 1)[0]
 
+    def abort(self):
+        self.control_msg(DFU_REQUEST_RECEIVE, DFU_ABORT, 0, 0)
+
     def set_address(self, ap):
         return self.dnload(0x0, [0x21] + address_to_4bytes(ap))
 
