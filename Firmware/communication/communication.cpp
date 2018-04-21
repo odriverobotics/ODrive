@@ -65,12 +65,6 @@ const uint8_t fw_version_unreleased = FW_VERSION_UNRELEASED; // 0 for official r
 /* Private function prototypes -----------------------------------------------*/
 /* Function implementations --------------------------------------------------*/
 
-void enter_dfu_mode() {
-    __asm volatile ("CPSID I\n\t":::"memory"); // disable interrupts
-    _reboot_cookie = 0xDEADBEEF;
-    NVIC_SystemReset();
-}
-
 void init_communication(void) {
     printf("hi!\r\n");
 
