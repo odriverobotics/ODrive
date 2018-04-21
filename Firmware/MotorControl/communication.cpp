@@ -128,8 +128,8 @@ private:
 } uart4_stream_output;
 
 #if defined(UART_PROTOCOL_NATIVE)
-PacketToStreamConverter uart4_packet_sender(uart4_stream_output);
-BidirectionalPacketBasedChannel uart4_channel(endpoints, NUM_ENDPOINTS, uart4_packet_sender);
+PacketToStreamConverter uart4_packet_output(uart4_stream_output);
+BidirectionalPacketBasedChannel uart4_channel(uart4_packet_output);
 StreamToPacketConverter uart4_stream_input(uart4_channel);
 #endif
 
@@ -145,16 +145,18 @@ void enter_dfu_mode() {
     NVIC_SystemReset();
 }
 
+void init_deferred_interrupts(void) {
+    // Start USB interrupt handler thread
+    osThreadDef(task_usb_pump, usb_deferred_interrupt_thread, osPriorityAboveNormal, 0, 512);
+    thread_usb_pump = osThreadCreate(osThread(task_usb_pump), NULL);
+}
+
 void init_communication(void) {
     printf("hi!\r\n");
 
     // Start command handling thread
     osThreadDef(task_cmd_parse, communication_task, osPriorityNormal, 0, 5000 /* in 32-bit words */); // TODO: fix stack issues
     thread_cmd_parse = osThreadCreate(osThread(task_cmd_parse), NULL);
-
-    // Start USB interrupt handler thread
-    osThreadDef(task_usb_pump, usb_update_thread, osPriorityAboveNormal, 0, 512);
-    thread_usb_pump = osThreadCreate(osThread(task_usb_pump), NULL);
 }
 
 
@@ -304,7 +306,7 @@ void set_cmd_buffer(uint8_t *buf, uint32_t len) {
     usb_len = len;
 }
 
-void usb_update_thread(void * ctx) {
+void usb_deferred_interrupt_thread(void * ctx) {
     (void) ctx; // unused parameter
 
     for (;;) {

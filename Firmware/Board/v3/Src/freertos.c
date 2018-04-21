@@ -53,7 +53,7 @@
 
 /* USER CODE BEGIN Includes */     
 #include "freertos_vars.h"
-#include "axis_c_interface.h"
+#include "communication.h"
 int odrive_main(void);
 /* USER CODE END Includes */
 
@@ -126,6 +126,7 @@ void MX_FREERTOS_Init(void) {
   osSemaphoreDef(sem_usb_tx);
   sem_usb_tx = osSemaphoreCreate(osSemaphore(sem_usb_tx), 1);
 
+  init_deferred_interrupts();
   /* USER CODE END RTOS_SEMAPHORES */
 
   /* USER CODE BEGIN RTOS_TIMERS */
