@@ -13,6 +13,7 @@ import array
 import fractions
 import usb.core
 import odrive.discovery
+from odrive.utils import Event
 from odrive.dfuse import *
 
 try:
@@ -244,8 +245,7 @@ def launch_dfu(args, app_shutdown_token):
 
     serial_number = args.serial_number
 
-    find_odrive_cancellation_token = threading.Event()
-    app_shutdown_token.subscribe(lambda: find_odrive_cancellation_token.set())
+    find_odrive_cancellation_token = Event(app_shutdown_token)
 
     print("Waiting for ODrive...")
 

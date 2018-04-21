@@ -9,6 +9,7 @@ import threading
 import platform
 import subprocess
 import os
+from odrive.utils import Event
 
 try:
     if platform.system() == 'Windows':
@@ -33,7 +34,7 @@ def start_liveplotter(get_var_callback):
 
     import matplotlib.pyplot as plt
 
-    cancellation_token = threading.Event()
+    cancellation_token = Event()
 
     global vals
     vals = []
@@ -175,7 +176,7 @@ class Event():
                 handler()
         finally:
             self._mutex.release()
-        return lambda: self.unsubscribe(handler)
+        return handler
     
     def unsubscribe(self, handler):
         self._mutex.acquire()
@@ -201,16 +202,16 @@ class Event():
 def wait_any(*events, timeout=None):
     """
     Blocks until any of the specified events are triggered.
-    Returns the number of the event that was triggerd or raises
+    Returns the index of the event that was triggerd or raises
     a TimeoutException
     """
     or_event = threading.Event()
-    unsubscribe_functions = []
+    subscriptions = []
     for event in events:
-        unsubscribe_functions.append(event.subscribe(lambda: or_event.set()))
+        subscriptions.append((event, event.subscribe(lambda: or_event.set())))
     or_event.wait(timeout=timeout)
-    for unsubscribe_function in unsubscribe_functions:
-        unsubscribe_function()
+    for event, sub in subscriptions:
+        event.unsubscribe(sub)
     for i in range(len(events)):
         if events[i].is_set():
             return i
