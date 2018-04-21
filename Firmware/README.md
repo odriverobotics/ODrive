@@ -108,6 +108,7 @@ If you have multiple ODrives connected, you should specify which one to upgrade.
   iSerial                 3 306A396A3235
 ```
 * The last column is the serial number you're looking for. You can unplug selected devices to track down the one you want to update.
+* If you only get `iSerial     3`, then you can try to substitute `sudo lsusb` in place of `lsusb`.
 * Run `make dfu SERIAL_NUMBER=385F324D3037`, where `385F324D3037` is the targeted serial number.
 
 __Warning:__ Currently it is advised that you only do this to flash
@@ -116,7 +117,7 @@ the device during upgrade. Otherwise, if something goes wrong, you need an exter
 programmer to recover the device. This will be fixed in the future.
 
 ### Flashing the firmware (external Programmer)
-* **Make sure you have [configured the parameters first](#configuring-parameters)**
+* **Make sure you have [configured the build first](#configuring-the-build)**
 * Connect `GND`, `SWD`, and `SWC` on connector J2 to the programmer. Note: Always plug in `GND` first!
 * You need to power the board by only **ONE** of the following: VCC(3.3v), 5V, or the main power connection (the DC bus). The USB port (J1) does not power the board.
 * Run `make flash` in the `Firmware` directory.

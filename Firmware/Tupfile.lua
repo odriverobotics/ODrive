@@ -129,6 +129,11 @@ build{
     includes=stm_includes
 }
 
+tup.frule{
+    command='bash dump_version.sh %o',
+    outputs={'build/version.h'}
+}
+
 build{
     name='ODriveFirmware',
     toolchains={toolchain},

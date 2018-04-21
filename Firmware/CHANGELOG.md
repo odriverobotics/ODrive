@@ -2,8 +2,14 @@
 Please add a note of your changes below this heading if you make a Pull Request.
 
 ### Added
+* `make write_otp` command to burn the board version onto the ODrive's one-time programmable memory. If you have an ODrive v3.4 or older, you can run this once for a better firmware update user experience in the future. Run the command without any options for more details. Once set, the board version is exposed through the `board_version_[...]` properties.
+* bake Git-derived firmware version into firmware binary. The firmware version is exposed through the `fw_version_[...]` properties.
+
 ### Changed
+* The DFU script now verifies the flash after writing
+* Set thread priority of USB pump thread above protocol thread
 ### Fixed
+* Enums now transported with correct underlying type on native protocol
 
 # Releases
 

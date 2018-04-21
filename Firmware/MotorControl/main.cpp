@@ -9,6 +9,8 @@ ControllerConfig_t controller_configs[AXIS_COUNT];
 MotorConfig_t motor_configs[AXIS_COUNT];
 AxisConfig_t axis_configs[AXIS_COUNT];
 
+bool user_config_loaded = false;
+
 Axis *axes[AXIS_COUNT];
 
 typedef Config<

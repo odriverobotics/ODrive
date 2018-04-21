@@ -29,6 +29,7 @@ extern float vbus_voltage;
 extern bool brake_resistor_armed_;
 extern const float elec_rad_per_enc;
 extern uint32_t _reboot_cookie;
+extern bool user_config_loaded;
 
 extern uint64_t serial_number;
 extern char serial_number_str[13];
