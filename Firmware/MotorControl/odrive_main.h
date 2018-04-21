@@ -7,6 +7,8 @@ extern "C" {
 
 // STM specific includes
 #include <stm32f4xx_hal.h>  // Sets up the correct chip specifc defines required by arm_math
+#include <can.h>
+#include <i2c.h>
 #define ARM_MATH_CM4 // TODO: might change in future board versions
 #include <arm_math.h>
 
@@ -41,6 +43,7 @@ extern char serial_number_str[13];
 // @brief general user configurable board configuration
 typedef struct {
     bool enable_uart = true;
+    bool enable_i2c_instead_of_can = true;
     float brake_resistance = 0.47f;     // [ohm]
     float dc_bus_undervoltage_trip_level = 8.0f;                        //<! [V] minimum voltage below which the motor stops operating
     float dc_bus_overvoltage_trip_level = 1.08f * HW_VERSION_VOLTAGE;   //<! [V] maximum voltage above which the motor stops operating.

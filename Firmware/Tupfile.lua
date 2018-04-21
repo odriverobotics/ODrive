@@ -155,6 +155,7 @@ build{
         'communication/protocol.cpp',
         'communication/interface_uart.cpp',
         'communication/interface_usb.cpp',
+        'communication/interface_i2c.cpp',
         'FreeRTOS-openocd.c'
     },
     includes={
