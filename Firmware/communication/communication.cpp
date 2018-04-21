@@ -5,6 +5,7 @@
 
 #include "interface_usb.h"
 #include "interface_uart.h"
+#include "interface_can.hpp"
 
 #include "odrive_main.h"
 #include "protocol.hpp"
@@ -76,6 +77,8 @@ void init_communication(void) {
 
 uint32_t comm_stack_info = 0; // for debugging only
 
+static CAN_context can1_ctx;
+
 // Helper class because the protocol library doesn't yet
 // support non-member functions
 // TODO: make this go away
@@ -113,6 +116,7 @@ static inline auto make_obj_tree() {
         ),
         make_protocol_object("axis0", axes[0]->make_protocol_definitions()),
         make_protocol_object("axis1", axes[1]->make_protocol_definitions()),
+        make_protocol_object("can", can1_ctx.make_protocol_definitions()),
         make_protocol_function("save_configuration", static_functions, &StaticFunctions::save_configuration_helper),
         make_protocol_function("erase_configuration", static_functions, &StaticFunctions::erase_configuration_helper),
         make_protocol_function("reboot", static_functions, &StaticFunctions::NVIC_SystemReset_helper),
@@ -144,6 +148,7 @@ void communication_task(void * ctx) {
     
     serve_on_uart();
     serve_on_usb();
+    serve_on_can(can1_ctx, CAN1, serial_number);
 
     for (;;) {
         osDelay(1000); // nothing to do

@@ -1,6 +1,7 @@
 #ifndef __CRC_HPP
 #define __CRC_HPP
 
+#include <stdint.h>
 #include <limits.h>
 
 // Default CRC-8 Polynomial: x^8 + x^5 + x^4 + x^2 + x + 1
