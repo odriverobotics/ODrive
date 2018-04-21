@@ -85,5 +85,6 @@ inline ENUMTYPE operator ~ (ENUMTYPE a) { return static_cast<ENUMTYPE>(~static_c
 // general system functions defined in main.cpp
 void save_configuration(void);
 void erase_configuration(void);
+void enter_dfu_mode(void);
 
 #endif /* __ODRIVE_MAIN_H */

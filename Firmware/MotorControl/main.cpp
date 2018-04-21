@@ -53,6 +53,12 @@ void erase_configuration(void) {
     NVM_erase();
 }
 
+void enter_dfu_mode(void) {
+    __asm volatile ("CPSID I\n\t":::"memory"); // disable interrupts
+    _reboot_cookie = 0xDEADBEEF;
+    NVIC_SystemReset();
+}
+
 extern "C" {
 int odrive_main(void);
 void vApplicationStackOverflowHook(void) { for(;;); }
