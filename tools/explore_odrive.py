@@ -1,3 +1,5 @@
+from __future__ import print_function
+
 #!/usr/bin/env python3
 """
 Load an odrive object to play with in the IPython interactive shell.
