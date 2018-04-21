@@ -117,9 +117,9 @@ bool Motor::check_DRV_fault() {
         // Update DRV Fault Code
         drv_fault_ = DRV8301_getFaultType(&gate_driver_);
         // Update/Cache all SPI device registers
-        DRV_SPI_8301_Vars_t* local_regs = &gate_driver_regs_;
-        local_regs->RcvCmd = true;
-        DRV8301_readData(&gate_driver_, local_regs);
+        // DRV_SPI_8301_Vars_t* local_regs = &gate_driver_regs_;
+        // local_regs->RcvCmd = true;
+        // DRV8301_readData(&gate_driver_, local_regs);
         return false;
     };
     return true;

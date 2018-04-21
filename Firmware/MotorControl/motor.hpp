@@ -180,11 +180,11 @@ public:
                 make_protocol_property("max_allowed_current", &current_control_.max_allowed_current)
             ),
             make_protocol_object("gate_driver",
-                make_protocol_ro_property("drv_fault", &drv_fault_),
-                make_protocol_ro_property("status_reg_1", &gate_driver_regs_.Stat_Reg_1_Value),
-                make_protocol_ro_property("status_reg_2", &gate_driver_regs_.Stat_Reg_2_Value),
-                make_protocol_ro_property("ctrl_reg_1", &gate_driver_regs_.Ctrl_Reg_1_Value),
-                make_protocol_ro_property("ctrl_reg_2", &gate_driver_regs_.Ctrl_Reg_2_Value)
+                make_protocol_ro_property("drv_fault", &drv_fault_)
+                // make_protocol_ro_property("status_reg_1", &gate_driver_regs_.Stat_Reg_1_Value),
+                // make_protocol_ro_property("status_reg_2", &gate_driver_regs_.Stat_Reg_2_Value),
+                // make_protocol_ro_property("ctrl_reg_1", &gate_driver_regs_.Ctrl_Reg_1_Value),
+                // make_protocol_ro_property("ctrl_reg_2", &gate_driver_regs_.Ctrl_Reg_2_Value)
             ),
             make_protocol_object("timing_log",
                 make_protocol_ro_property("TIMING_LOG_GENERAL", &timing_log_[TIMING_LOG_GENERAL]),

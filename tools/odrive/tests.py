@@ -61,13 +61,13 @@ def test_assert_eq(observed, expected, range=None, accuracy=None):
 def get_errors(axis_ctx: AxisTestContext):
     errors = []
     if axis_ctx.handle.motor.error != 0:
-        errors.append("motor failed with error {:04X}".format(axis_ctx.handle.motor.error))
+        errors.append("motor failed with error 0x{:04X}".format(axis_ctx.handle.motor.error))
     if axis_ctx.handle.encoder.error != 0:
-        errors.append("encoder failed with error {:04X}".format(axis_ctx.handle.encoder.error))
+        errors.append("encoder failed with error 0x{:04X}".format(axis_ctx.handle.encoder.error))
     if axis_ctx.handle.sensorless_estimator.error != 0:
-        errors.append("sensorless_estimator failed with error {:04X}".format(axis_ctx.handle.sensorless_estimator.error))
+        errors.append("sensorless_estimator failed with error 0x{:04X}".format(axis_ctx.handle.sensorless_estimator.error))
     if axis_ctx.handle.error != 0:
-        errors.append("axis failed with error {:04X}".format(axis_ctx.handle.error))
+        errors.append("axis failed with error 0x{:04X}".format(axis_ctx.handle.error))
     elif len(errors) > 0:
         errors.append("and by the way: axis reports no error even though there is one")
     return errors
