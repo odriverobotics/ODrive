@@ -53,7 +53,7 @@
 
 /* USER CODE BEGIN Includes */     
 #include "freertos_vars.h"
-#include "communication.h"
+#include <communication/communication.h>
 int odrive_main(void);
 /* USER CODE END Includes */
 

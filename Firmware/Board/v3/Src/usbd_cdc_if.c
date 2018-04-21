@@ -53,8 +53,7 @@
 /* USER CODE BEGIN INCLUDE */
 #include "cmsis_os.h"
 #include "freertos_vars.h"
-#include "utils.h"
-#include "communication.h"
+#include <communication/communication.h>
 #include <freertos_vars.h>
 /* USER CODE END INCLUDE */
 
