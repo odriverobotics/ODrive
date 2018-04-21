@@ -4458,7 +4458,7 @@ static HAL_StatusTypeDef I2C_Slave_STOPF(I2C_HandleTypeDef *hi2c)
     }
 
     /* Set ErrorCode corresponding to a Non-Acknowledge */
-    hi2c->ErrorCode |= HAL_I2C_ERROR_AF;
+    //hi2c->ErrorCode |= HAL_I2C_ERROR_AF;
   }
 
   if(hi2c->ErrorCode != HAL_I2C_ERROR_NONE)
