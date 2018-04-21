@@ -1,7 +1,7 @@
 
-#include "odrive_main.hpp"
+#define __MAIN_CPP__
+#include "odrive_main.h"
 #include "nvm_config.hpp"
-#include <communication/communication.h>
 
 BoardConfig_t board_config;
 EncoderConfig_t encoder_configs[AXIS_COUNT];

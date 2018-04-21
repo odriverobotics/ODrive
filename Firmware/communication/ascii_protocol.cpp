@@ -7,7 +7,7 @@
 
 /* Includes ------------------------------------------------------------------*/
 
-#include "odrive_main.hpp"
+#include "odrive_main.h"
 #include "communication.h"
 #include "ascii_protocol.h"
 #include <utils.h>

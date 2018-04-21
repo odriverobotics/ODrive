@@ -53,7 +53,8 @@
 
 /* USER CODE BEGIN Includes */     
 #include "freertos_vars.h"
-#include <communication/communication.h>
+#include "usb_device.h"
+extern PCD_HandleTypeDef hpcd_USB_OTG_FS;
 int odrive_main(void);
 /* USER CODE END Includes */
 
@@ -63,11 +64,9 @@ osThreadId defaultTaskHandle;
 /* USER CODE BEGIN Variables */
 // List of semaphores
 osSemaphoreId sem_usb_irq;
-
-// List of threads
-osThreadId thread_motor_0;
-osThreadId thread_motor_1;
-osThreadId thread_cmd_parse;
+osSemaphoreId sem_uart_dma;
+osSemaphoreId sem_usb_rx;
+osSemaphoreId sem_usb_tx;
 
 // Place FreeRTOS heap in core coupled memory for better performance
 __attribute__((section(".ccmram")))
@@ -94,6 +93,28 @@ __weak void vApplicationStackOverflowHook(xTaskHandle xTask, signed char *pcTask
    configCHECK_FOR_STACK_OVERFLOW is defined to 1 or 2. This hook function is
    called if a stack overflow is detected. */
 }
+
+void usb_deferred_interrupt_thread(void * ctx) {
+    (void) ctx; // unused parameter
+
+    for (;;) {
+        // Wait for signalling from USB interrupt (OTG_FS_IRQHandler)
+        osStatus semaphore_status = osSemaphoreWait(sem_usb_irq, osWaitForever);
+        if (semaphore_status == osOK) {
+            // We have a new incoming USB transmission: handle it
+            HAL_PCD_IRQHandler(&hpcd_USB_OTG_FS);
+            // Let the irq (OTG_FS_IRQHandler) fire again.
+            HAL_NVIC_EnableIRQ(OTG_FS_IRQn);
+        }
+    }
+}
+
+void init_deferred_interrupts(void) {
+    // Start USB interrupt handler thread
+    osThreadDef(task_usb_pump, usb_deferred_interrupt_thread, osPriorityAboveNormal, 0, 512);
+    osThreadCreate(osThread(task_usb_pump), NULL);
+}
+
 /* USER CODE END 4 */
 
 /* Init FreeRTOS */

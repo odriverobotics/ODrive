@@ -59,7 +59,8 @@
 #include "gpio.h"
 
 /* USER CODE BEGIN Includes */
-#include <communication/communication.h>
+#include <MotorControl/odrive_main.h>
+#include "freertos_vars.h"
 /* USER CODE END Includes */
 
 /* Private variables ---------------------------------------------------------*/

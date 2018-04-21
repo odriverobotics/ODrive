@@ -1,8 +1,8 @@
 #ifndef __AXIS_HPP
 #define __AXIS_HPP
 
-#ifndef __ODRIVE_MAIN_HPP
-#error "This file should not be included directly. Include odrive_main.hpp instead."
+#ifndef __ODRIVE_MAIN_H
+#error "This file should not be included directly. Include odrive_main.h instead."
 #endif
 
 // Warning: Do not reorder these enum values.

@@ -52,8 +52,7 @@
 
 /* USER CODE BEGIN INCLUDE */
 #include "cmsis_os.h"
-#include "freertos_vars.h"
-#include <communication/communication.h>
+#include <communication/interface_usb.h>
 #include <freertos_vars.h>
 /* USER CODE END INCLUDE */
 
@@ -291,9 +290,7 @@ static int8_t CDC_Control_FS(uint8_t cmd, uint8_t* pbuf, uint16_t length)
 static int8_t CDC_Receive_FS(uint8_t* Buf, uint32_t *Len)
 {
   /* USER CODE BEGIN 6 */
-
-  set_cmd_buffer(Buf, *Len);
-  osSemaphoreRelease(sem_usb_rx);
+  usb_process_packet(Buf, *Len);
 
   return (USBD_OK);
   /* USER CODE END 6 */

@@ -4,7 +4,7 @@
 #include "gpio.h"
 
 #include "utils.h"
-#include "odrive_main.hpp"
+#include "odrive_main.h"
 
 Axis::Axis(const AxisHardwareConfig_t& hw_config,
            AxisConfig_t& config,

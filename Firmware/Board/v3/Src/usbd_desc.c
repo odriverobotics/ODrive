@@ -53,7 +53,7 @@
 #include "usbd_conf.h"
 
 /* USER CODE BEGIN INCLUDE */
-#include <communication/communication.h>
+#include <MotorControl/odrive_main.h>
 /* USER CODE END INCLUDE */
 
 /* Private typedef -----------------------------------------------------------*/
