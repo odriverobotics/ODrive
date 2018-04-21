@@ -6,12 +6,12 @@ import sys
 
 import abc
 
-if (sys.version_info[0], sys.version_info[1]) >= (3, 4):
+if sys.version_info >= (3, 4):
     ABC = abc.ABC
 else:
     ABC = abc.ABCMeta('ABC', (), {})
 
-if (sys.version_info[0], sys.version_info[1]) <= (3, 3):
+if sys.version_info < (3, 3):
     from monotonic import monotonic
     time.monotonic = monotonic
 
