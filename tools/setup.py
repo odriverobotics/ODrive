@@ -10,7 +10,7 @@ To build and package the python tools into a tar archive:
     python setup.py sdist
 
 Warning: Before you proceed, be aware that you can upload a
-specific version only ever once. After that you need to increment
+specific version only once ever. After that you need to increment
 the hotfix number. Deleting the release manually on the PyPi
 website does not help.
 
@@ -19,10 +19,10 @@ Use TestPyPi while developing.
 To build, package and upload the python tools to TestPyPi, run:
     python setup.py sdist upload -r pypitest
 To make a real release ensure you're at the release commit
-and then run the above command without the "test".
+and then run the above command without the "test" (so just "pypi").
 
 To install a prerelease version from test index:
-    sudo pip install --index-url https://test.pypi.org/simple/ --no-cache-dir odrive
+    sudo pip install --pre --index-url https://test.pypi.org/simple/ --no-cache-dir odrive
 
 
 PyPi access requires that you have set up ~/.pypirc with your
@@ -32,7 +32,7 @@ to publish packages with the name odrive.
 
 # TODO: add additional y/n prompt to prevent from erroneous upload
 
-from distutils.core import setup
+from setuptools import setup
 import os
 import sys
 
@@ -77,6 +77,7 @@ setup(
   url = 'https://github.com/madcowswe/ODrive',
   keywords = ['odrive', 'motor', 'motor control'],
   install_requires = [
+    'ipython',  # Used to do the interactive parts of the odrivetool
     'PyUSB',    # Required to access USB devices from Python through libusb
     'PySerial', # Required to access serial devices from Python
     'IntelHex', # Used to by DFU to load firmware files
@@ -84,7 +85,6 @@ setup(
     'pywin32==222;platform_system=="Windows"' # Required for fancy terminal features on Windows
   ],
   package_data={'': ['version.txt']},
-  include_package_data=True,
   classifiers = [],
 )
 

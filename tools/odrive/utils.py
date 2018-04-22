@@ -9,7 +9,6 @@ import threading
 import platform
 import subprocess
 import os
-from odrive.utils import Event
 
 try:
     if platform.system() == 'Windows':

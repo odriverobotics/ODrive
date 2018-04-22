@@ -8,7 +8,7 @@ from odrive.enums import * # pylint: disable=W0614
 
 def print_banner():
     print('Please connect your ODrive.')
-    print('Type help() for help.')
+    print('You can also type help() or quit().')
 
 def print_help(args):
     print('')
