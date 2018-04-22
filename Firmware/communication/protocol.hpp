@@ -804,7 +804,7 @@ public:
     ProtocolFunction(const char * name, TObj& obj, TRet(TObj::*func_ptr)(TInputs...),
             std::array<const char *, sizeof...(TInputs)> input_names,
             std::array<const char *, sizeof...(TOutputs)> output_names) :
-        name_(name), obj_(obj), func_ptr_(func_ptr),
+        name_(name), obj_(&obj), func_ptr_(func_ptr),
         input_names_{input_names}, output_names_{output_names},
         input_properties_(PropertyListFactory<TInputs...>::template make_property_list<0>(input_names_, in_args_)),
         output_properties_(PropertyListFactory<TOutputs...>::template make_property_list<0>(output_names_, out_args_))
@@ -855,17 +855,17 @@ public:
 
     template<typename> std::enable_if_t<sizeof...(TOutputs) == 0>
     handle_ex() {
-        invoke_function_with_tuple(obj_, func_ptr_, in_args_);
+        invoke_function_with_tuple(*obj_, func_ptr_, in_args_);
     }
 
     template<typename> std::enable_if_t<sizeof...(TOutputs) == 1>
     handle_ex() {
-        std::get<0>(out_args_) = invoke_function_with_tuple(obj_, func_ptr_, in_args_);
+        std::get<0>(out_args_) = invoke_function_with_tuple(*obj_, func_ptr_, in_args_);
     }
     
     template<typename> std::enable_if_t<sizeof...(TOutputs) >= 2>
     handle_ex() {
-        out_args_ = invoke_function_with_tuple(obj_, func_ptr_, in_args_);
+        out_args_ = invoke_function_with_tuple(*obj_, func_ptr_, in_args_);
     }
 
     void handle(const uint8_t* input, size_t input_length, StreamSink* output) {
@@ -878,7 +878,7 @@ public:
     }
 
     const char * name_;
-    TObj& obj_;
+    TObj* obj_;
     TRet(TObj::*func_ptr_)(TInputs...);
     std::array<const char *, sizeof...(TInputs)> input_names_; // TODO: remove
     std::array<const char *, sizeof...(TOutputs)> output_names_; // TODO: remove
