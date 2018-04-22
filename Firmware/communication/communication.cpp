@@ -92,6 +92,7 @@ public:
     void NVIC_SystemReset_helper() { NVIC_SystemReset(); }
     void enter_dfu_mode_helper() { enter_dfu_mode(); }
     float get_oscilloscope_val(uint32_t index) { return oscilloscope[index]; }
+    int32_t test_function(int32_t delta) { static int cnt = 0; return cnt += delta; }
 } static_functions;
 
 // When adding new functions/variables to the protocol, be careful not to
@@ -120,7 +121,8 @@ static inline auto make_obj_tree() {
         ),
         make_protocol_object("axis0", axes[0]->make_protocol_definitions()),
         make_protocol_object("axis1", axes[1]->make_protocol_definitions()),
-        make_protocol_function_with_ret("get_oscilloscope_val", static_functions, &StaticFunctions::get_oscilloscope_val, "index"),
+        make_protocol_function("get_oscilloscope_val", static_functions, &StaticFunctions::get_oscilloscope_val, "index"),
+        make_protocol_function("test_function", static_functions, &StaticFunctions::test_function, "delta"),
         make_protocol_function("save_configuration", static_functions, &StaticFunctions::save_configuration_helper),
         make_protocol_function("erase_configuration", static_functions, &StaticFunctions::erase_configuration_helper),
         make_protocol_function("reboot", static_functions, &StaticFunctions::NVIC_SystemReset_helper),
