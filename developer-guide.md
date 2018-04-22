@@ -18,6 +18,8 @@ The project is under active development, so make sure to check the [Changelog](C
 - [Setting up an IDE](#setting-up-an-ide)
 - [STM32CubeMX](#stm32cubemx)
 - [Troubleshooting](#troubleshooting)
+- [Documentation](#documentation)
+- [Releases](#releases)
 - [Notes for Contributors](#notes-for-contributors)
 
 <!-- /MarkdownTOC -->
