@@ -2,6 +2,7 @@
 Please add a note of your changes below this heading if you make a Pull Request.
 
 ### Added
+* Encoder can now go forever in velocity/torque mode due to using circular encoder space.
  * `make write_otp` command to burn the board version onto the ODrive's one-time programmable memory. If you have an ODrive v3.4 or older, you should run this once for a better firmware update user experience in the future. Run the command without any options for more details. Once set, the board version is exposed through the `board_version_[...]` properties.
  * bake Git-derived firmware version into firmware binary. The firmware version is exposed through the `fw_version_[...]` properties.
  * infrastructure to publish the python tools to PyPi. See `tools/setup.py` for details.
