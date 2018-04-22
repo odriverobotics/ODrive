@@ -319,7 +319,7 @@ class Channel(PacketSink):
         # TODO: handle device that could (maliciously) send infinite stream
         buffer = bytes()
         while True:
-            chunk_length = 64
+            chunk_length = 512
             chunk = self.remote_endpoint_operation(endpoint_id, struct.pack("<I", len(buffer)), True, chunk_length)
             if (len(chunk) == 0):
                 break
