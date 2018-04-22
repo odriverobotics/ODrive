@@ -38,7 +38,9 @@
                     "C:/Program Files (x86)/GNU Tools ARM Embedded"
                 ],
                 "limitSymbolsToIncludedHeaders": true
-            }
+            },
+            "cStandard": "c11",
+            "cppStandard": "c++14"
         },
         {
             "name": "Linux",

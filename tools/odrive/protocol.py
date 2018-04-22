@@ -11,14 +11,14 @@ from odrive.utils import Event
 
 import abc
 
-# if sys.version_info >= (3, 4):
-ABC = abc.ABC
-# else:
-#     ABC = abc.ABCMeta('ABC', (), {})
+if sys.version_info >= (3, 4):
+    ABC = abc.ABC
+else:
+    ABC = abc.ABCMeta('ABC', (), {})
 
-# if sys.version_info <= (3, 3):
-#     from monotonic import monotonic
-#     time.monotonic = monotonic
+if sys.version_info < (3, 3):
+    from monotonic import monotonic
+    time.monotonic = monotonic
 
 SYNC_BYTE = 0xAA
 CRC8_INIT = 0x42
@@ -206,7 +206,7 @@ class Channel(PacketSink):
     _resend_timeout = 0.1     # [s]
     _send_attempts = 5
 
-    def __init__(self, name, input, output, printer):
+    def __init__(self, name, input, output, cancellation_token, printer):
         """
         Params:
         input: A PacketSource where this channel will source packets from on
@@ -223,8 +223,8 @@ class Channel(PacketSink):
         self._expected_acks = {}
         self._responses = {}
         self._my_lock = threading.Lock()
-        self._channel_broken = Event()
-        self.start_receiver_thread(Event()) # TODO: use app_shutdown_token
+        self._channel_broken = Event(cancellation_token)
+        self.start_receiver_thread(Event(self._channel_broken))
 
     def start_receiver_thread(self, cancellation_token):
         """
@@ -246,7 +246,7 @@ class Channel(PacketSink):
                     # Process response
                     # This should not throw an exception, otherwise the channel breaks
                     self.process_packet(response)
-                print("receiver thread is exiting")
+                #print("receiver thread is exiting")
             except Exception:
                 self._printer("receiver thread is exiting: " + traceback.format_exc())
             finally:
@@ -296,7 +296,7 @@ class Channel(PacketSink):
                         self._my_lock.release()
                     # Wait for ACK until the resend timeout is exceeded
                     try:
-                        if wait_any(ack_event, self._channel_broken, timeout=self._resend_timeout) != 0:
+                        if wait_any(self._resend_timeout, ack_event, self._channel_broken) != 0:
                             raise ChannelBrokenException()
                     except odrive.utils.TimeoutException:
                         attempt += 1
@@ -319,7 +319,7 @@ class Channel(PacketSink):
         # TODO: handle device that could (maliciously) send infinite stream
         buffer = bytes()
         while True:
-            chunk_length = 64
+            chunk_length = 512
             chunk = self.remote_endpoint_operation(endpoint_id, struct.pack("<I", len(buffer)), True, chunk_length)
             if (len(chunk) == 0):
                 break

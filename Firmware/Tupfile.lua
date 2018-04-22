@@ -125,7 +125,7 @@ for src in string.gmatch(vars['C_INCLUDES'] or '', "%S+") do
 end
 
 -- TODO: cleaner separation of the platform code and the rest
-stm_includes += 'MotorControl'
+stm_includes += '.'
 stm_includes += 'Drivers/DRV8301'
 stm_sources += boarddir..'/Src/syscalls.c'
 build{
@@ -150,21 +150,24 @@ build{
     sources={
         'Drivers/DRV8301/drv8301.c',
         'MotorControl/utils.c',
-        'MotorControl/ascii_protocol.cpp',
         'MotorControl/low_level.cpp',
         'MotorControl/nvm.c',
         'MotorControl/axis.cpp',
-        'MotorControl/communication.cpp',
-        'MotorControl/protocol.cpp',
         'MotorControl/motor.cpp',
         'MotorControl/encoder.cpp',
         'MotorControl/controller.cpp',
         'MotorControl/sensorless_estimator.cpp',
         'MotorControl/main.cpp',
+        'communication/communication.cpp',
+        'communication/ascii_protocol.cpp',
+        'communication/protocol.cpp',
+        'communication/interface_uart.cpp',
+        'communication/interface_usb.cpp',
         'FreeRTOS-openocd.c'
     },
     includes={
         'Drivers/DRV8301',
-        'MotorControl'
+        'MotorControl',
+        '.'
     }
 }

@@ -7,6 +7,8 @@ import sys
 import time
 import threading
 import platform
+import subprocess
+import os
 
 try:
     if platform.system() == 'Windows':
@@ -31,7 +33,7 @@ def start_liveplotter(get_var_callback):
 
     import matplotlib.pyplot as plt
 
-    cancellation_token = threading.Event()
+    cancellation_token = Event()
 
     global vals
     vals = []
@@ -65,8 +67,10 @@ def start_liveplotter(get_var_callback):
         while not cancellation_token.is_set():
             plt.clf()
             plt.plot(vals)
-            #time.sleep(1/plot_rate)
-            fig.canvas.flush_events()
+            if platform.system() == "Windows":
+                plt.pause(1/plot_rate)
+            else:
+                fig.canvas.flush_events()
 
     threading.Thread(target=fetch_data).start()
     threading.Thread(target=plot_data).start()
@@ -130,6 +134,17 @@ def usb_burn_in_test(get_var_callback, cancellation_token):
                 print("read {} values".format(i))
     threading.Thread(target=fetch_data).start()
 
+def setup_udev_rules(logger):
+    if platform.system() != 'Linux':
+        logger.error("This command only makes sense on Linux")
+    if os.getuid() != 0:
+        logger.warn("you should run this as root, otherwise it will probably not work")
+    with open('/etc/udev/rules.d/50-odrive.rules', 'w') as file:
+        file.write('SUBSYSTEM=="usb", ATTR{idVendor}=="1209", ATTR{idProduct}=="0d3[0-9]", MODE="0666"\n')
+    subprocess.run(["udevadm", "control", "--reload-rules"], check=True)
+    subprocess.run(["udevadm", "trigger"], check=True)
+    logger.info('udev rules configured successfully')
+
 
 ## Exceptions ##
 
@@ -150,7 +165,7 @@ class Event():
         self._subscribers = []
         self._mutex = threading.Lock()
         if not trigger is None:
-            trigger.subscribe(self.set())
+            trigger.subscribe(lambda: self.set())
 
     def is_set(self):
         return self._evt.is_set()
@@ -176,6 +191,8 @@ class Event():
         handler is invoked immediately.
         Returns a function that can be invoked to unsubscribe.
         """
+        if handler is None:
+            raise TypeError
         self._mutex.acquire()
         try:
             self._subscribers.append(handler)
@@ -183,7 +200,7 @@ class Event():
                 handler()
         finally:
             self._mutex.release()
-        return lambda: self.unsubscribe(handler)
+        return handler
     
     def unsubscribe(self, handler):
         self._mutex.acquire()
@@ -206,19 +223,20 @@ class Event():
                 self.set()
         threading.Thread(target=delayed_trigger, daemon=True).start()
 
-def wait_any(*events, timeout=None):
+def wait_any(timeout=None, *events):
     """
     Blocks until any of the specified events are triggered.
-    Returns the number of the event that was triggerd or raises
+    Returns the index of the event that was triggerd or raises
     a TimeoutException
+    Param timeout: A timeout in seconds
     """
     or_event = threading.Event()
-    unsubscribe_functions = []
+    subscriptions = []
     for event in events:
-        unsubscribe_functions.append(event.subscribe(lambda: or_event.set()))
+        subscriptions.append((event, event.subscribe(lambda: or_event.set())))
     or_event.wait(timeout=timeout)
-    for unsubscribe_function in unsubscribe_functions:
-        unsubscribe_function()
+    for event, sub in subscriptions:
+        event.unsubscribe(sub)
     for i in range(len(events)):
         if events[i].is_set():
             return i

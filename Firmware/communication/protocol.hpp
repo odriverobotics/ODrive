@@ -407,12 +407,15 @@ class Endpoint {
 public:
     //const char* const name_;
     virtual void handle(const uint8_t* input, size_t input_length, StreamSink* output) = 0;
+    virtual bool get_string(char * output, size_t length) { return false; };
+    virtual bool set_string(char * buffer, size_t length) { return false; }
 };
 
 class EndpointProvider {
 public:
     virtual size_t get_endpoint_count() = 0;
     virtual void write_json(size_t id, StreamSink* output) = 0;
+    virtual Endpoint* get_by_name(char * name, size_t length) = 0;
     virtual void register_endpoints(Endpoint** list, size_t id, size_t length) = 0;
 };
 
@@ -456,6 +459,9 @@ public:
     void register_endpoints(Endpoint** list, size_t id, size_t length) {
         // no action
     }
+    Endpoint* get_by_name(const char * name, size_t length) {
+        return nullptr;
+    }
     std::tuple<> get_names_as_tuple() const { return std::tuple<>(); }
 };
 
@@ -483,6 +489,12 @@ public:
         if (!MemberList<TMembers...>::is_empty)
             write_string(",", output);
         subsequent_members_.write_json(id + TMember::endpoint_count, output);
+    }
+
+    Endpoint* get_by_name(const char * name, size_t length) {
+        Endpoint* result = this_member_.get_by_name(name, length);
+        if (result) return result;
+        else return subsequent_members_.get_by_name(name, length);
     }
 
     void register_endpoints(Endpoint** list, size_t id, size_t length) /*final*/ {
@@ -516,6 +528,14 @@ public:
         write_string("]}", output);
     }
 
+    Endpoint* get_by_name(const char * name, size_t length) {
+        size_t segment_length = strlen(name);
+        if (!strncmp(name, name_, length))
+            return member_list_.get_by_name(name + segment_length + 1, length - segment_length - 1);
+        else
+            return nullptr;
+    }
+
     void register_endpoints(Endpoint** list, size_t id, size_t length) {
         member_list_.register_endpoints(list, id, length);
     }
@@ -528,6 +548,11 @@ template<typename ... TMembers>
 ProtocolObject<TMembers...> make_protocol_object(const char * name, TMembers&&... member_list) {
     return ProtocolObject<TMembers...>(name, std::forward<TMembers>(member_list)...);
 }
+
+
+// TODO: move to cpp_utils
+#define ENABLE_IF_SAME(a, b, type) \
+    template<typename T = a> typename std::enable_if_t<std::is_same<T, b>::value, bool>
 
 template<typename TProperty>
 class ProtocolProperty : public Endpoint {
@@ -583,6 +608,71 @@ public:
         }
 
         write_string("}", output);
+    }
+
+    Endpoint* get_by_name(const char * name, size_t length) {
+        if (!strncmp(name, name_, length))
+            return this;
+        else
+            return nullptr;
+    }
+
+
+    // *** ASCII protocol handlers ***
+
+    ENABLE_IF_SAME(std::decay_t<TProperty>, float, bool)
+    get_string_ex(char * buffer, size_t length, int) {
+        snprintf(buffer, length, "%f", *property_);
+        return true;
+    }
+    ENABLE_IF_SAME(std::decay_t<TProperty>, int32_t, bool)
+    get_string_ex(char * buffer, size_t length, int) {
+        snprintf(buffer, length, "%ld", *property_);
+        return true;
+    }
+    ENABLE_IF_SAME(std::decay_t<TProperty>, uint32_t, bool)
+    get_string_ex(char * buffer, size_t length, int) {
+        snprintf(buffer, length, "%lu", *property_);
+        return true;
+    }
+    ENABLE_IF_SAME(std::decay_t<TProperty>, bool, bool)
+    get_string_ex(char * buffer, size_t length, int) {
+        buffer[0] = (*property_) ? '1' : '0';
+        buffer[1] = 0;
+        return true;
+    }
+    bool get_string_ex(char * buffer, size_t length, ...) {
+        return false;
+    }
+    bool get_string(char * buffer, size_t length) final {
+        return get_string_ex(buffer, length, 0);
+    }
+    ENABLE_IF_SAME(TProperty, float, bool)
+    set_string_ex(char * buffer, size_t length, int) {
+        return sscanf(buffer, "%f", property_) == 1;
+    }
+    ENABLE_IF_SAME(TProperty, int32_t, bool)
+    set_string_ex(char * buffer, size_t length, int) {
+        return sscanf(buffer, "%ld", property_) == 1;
+    }
+    ENABLE_IF_SAME(TProperty, uint32_t, bool)
+    set_string_ex(char * buffer, size_t length, int) {
+        return sscanf(buffer, "%lu", property_) == 1;
+    }
+    ENABLE_IF_SAME(TProperty, bool, bool)
+    set_string_ex(char * buffer, size_t length, int) {
+        int val;
+        if (sscanf(buffer, "%d", &val) != 1)
+            return false;
+        *property_ = val;
+        return true;
+    }
+    bool set_string_ex(char * buffer, size_t length, ...) {
+        return false;
+    }
+    bool set_string(char * buffer, size_t length) final {
+        //__asm ("bkpt");
+        return set_string_ex(buffer, length, 0);
     }
 
     void register_endpoints(Endpoint** list, size_t id, size_t length) {
@@ -686,7 +776,7 @@ struct PropertyListFactory<TProperty, TProperties...> {
 
 
 template<typename TObj, typename TRet, typename ... TArgs>
-class ProtocolFunction : Endpoint {
+class ProtocolFunction : public Endpoint {
 public:
     static constexpr size_t endpoint_count = 1 + MemberList<ProtocolProperty<TArgs>...>::endpoint_count;
     template<typename ... TNames>
@@ -720,6 +810,10 @@ public:
         write_string(",\"type\":\"function\",\"arguments\":[", output);
         input_properties_.write_json(id + 1, output),
         write_string("]}", output);
+    }
+
+    Endpoint* get_by_name(const char * name, size_t length) {
+        return nullptr; // can't address functions by name
     }
 
     void register_endpoints(Endpoint** list, size_t id, size_t length) {
@@ -765,6 +859,14 @@ public:
     void register_endpoints(Endpoint** list, size_t id, size_t length) final {
         return member_list_.register_endpoints(list, id, length);
     }
+    Endpoint* get_by_name(char * name, size_t length) final {
+        for (size_t i = 0; i < length; i++) {
+            if (name[i] == '.')
+                name[i] = 0;
+        }
+        name[length-1] = 0;
+        return member_list_.get_by_name(name, length);
+    }
     T& member_list_;
 };
 
@@ -775,5 +877,6 @@ void set_application_endpoints(EndpointProvider* endpoints);
 extern Endpoint* endpoints_[];
 extern size_t n_endpoints_;
 extern const size_t max_endpoints_;
+extern EndpointProvider* application_endpoints;
 
 #endif

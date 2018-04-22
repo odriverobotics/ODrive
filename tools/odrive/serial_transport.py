@@ -6,6 +6,7 @@ PacketSource/PacketSink interfaces for serial ports.
 import os
 import re
 import time
+import traceback
 import serial
 import serial.tools.list_ports
 import odrive.protocol
@@ -53,10 +54,11 @@ def find_pyserial_ports():
     return [x.device for x in serial.tools.list_ports.comports()]
 
 
-def discover_channels(path, serial_number, callback, cancellation_token, printer):
+def discover_channels(path, serial_number, callback, cancellation_token, channel_termination_token, printer):
     """
     Scans for serial ports that match the path spec.
     This function blocks until cancellation_token is set.
+    Channels spawned by this function run until channel_termination_token is set.
     """
     if path == None:
         # This regex should match all desired port names on macOS,
@@ -86,7 +88,7 @@ def discover_channels(path, serial_number, callback, cancellation_token, printer
                 output_stream = odrive.protocol.PacketToStreamConverter(serial_device)
                 channel = odrive.protocol.Channel(
                         "serial port {}@{}".format(port_name, ODRIVE_BAUDRATE),
-                        input_stream, output_stream, printer)
+                        input_stream, output_stream, channel_termination_token, printer)
                 channel.serial_device = serial_device
             except serial.serialutil.SerialException:
                 printer("Serial device init failed. Ignoring this port. More info: " + traceback.format_exc())

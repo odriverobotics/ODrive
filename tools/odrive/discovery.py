@@ -24,7 +24,8 @@ def noprint(text):
 
 def find_all(path, serial_number,
          did_discover_object_callback,
-         cancellation_token, printer=noprint):
+         search_cancellation_token,
+         channel_termination_token, printer=noprint):
     """
     Starts scanning for ODrives that match the specified path spec and calls
     the callback for each ODrive that is found.
@@ -53,6 +54,7 @@ def find_all(path, serial_number,
                 printer("device responded on endpoint 0 with something that is not ASCII")
                 return
             printer("JSON: " + json_string)
+            printer("JSON checksum: 0x{:02X} 0x{:02X}".format(json_crc16 & 0xff, (json_crc16 >> 8) & 0xff))
             try:
                 json_data = json.loads(json_string)
             except json.decoder.JSONDecodeError as error:
@@ -74,21 +76,23 @@ def find_all(path, serial_number,
         the_rest = ':'.join(search_spec.split(':')[1:])
         if prefix in channel_types:
             threading.Thread(target=channel_types[prefix],
-                             args=(the_rest, serial_number, did_discover_channel, cancellation_token, printer)).start()
+                             args=(the_rest, serial_number, did_discover_channel, search_cancellation_token, channel_termination_token, printer)).start()
         else:
             raise Exception("Invalid path spec \"{}\"".format(search_spec))
 
 
-def find_any(path="usb", serial_number=None, cancellation_token=None, timeout=None, printer=noprint):
+def find_any(path="usb", serial_number=None,
+        search_cancellation_token=None, channel_termination_token=None,
+        timeout=None, printer=noprint):
     """
     Blocks until the first matching ODrive is connected and then returns that device
     """
     result = [ None ]
-    done_signal = Event(cancellation_token)
+    done_signal = Event(search_cancellation_token)
     def did_discover_object(obj):
         result[0] = obj
         done_signal.set()
-    find_all(path, serial_number, did_discover_object, done_signal, printer)
+    find_all(path, serial_number, did_discover_object, done_signal, channel_termination_token, printer)
     try:
         done_signal.wait(timeout=timeout)
     finally:

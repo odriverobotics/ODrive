@@ -1,8 +1,8 @@
 #ifndef __AXIS_HPP
 #define __AXIS_HPP
 
-#ifndef __ODRIVE_MAIN_HPP
-#error "This file should not be included directly. Include odrive_main.hpp instead."
+#ifndef __ODRIVE_MAIN_H
+#error "This file should not be included directly. Include odrive_main.h instead."
 #endif
 
 // Warning: Do not reorder these enum values.
@@ -13,7 +13,7 @@ enum AxisState_t {
     AXIS_STATE_STARTUP_SEQUENCE = 2, //<! the actual sequence is defined by the config.startup_... flags
     AXIS_STATE_FULL_CALIBRATION_SEQUENCE = 3,   //<! run all calibration procedures, then idle
     AXIS_STATE_MOTOR_CALIBRATION = 4,   //<! run motor calibration
-    AXIS_STATE_SENSORLESS_CONTROL = 5,  //<! run sensorless calibration
+    AXIS_STATE_SENSORLESS_CONTROL = 5,  //<! run sensorless control
     AXIS_STATE_ENCODER_INDEX_SEARCH = 6, //<! run encoder index search
     AXIS_STATE_ENCODER_OFFSET_CALIBRATION = 7, //<! run encoder offset calibration
     AXIS_STATE_CLOSED_LOOP_CONTROL = 8  //<! run closed loop control

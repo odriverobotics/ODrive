@@ -2,8 +2,8 @@
 #ifndef __LOW_LEVEL_H
 #define __LOW_LEVEL_H
 
-#ifndef __ODRIVE_MAIN_HPP
-#error "This file should not be included directly. Include odrive_main.hpp instead."
+#ifndef __ODRIVE_MAIN_H
+#error "This file should not be included directly. Include odrive_main.h instead."
 #endif
 
 #ifdef __cplusplus

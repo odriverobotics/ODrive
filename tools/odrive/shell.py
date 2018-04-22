@@ -8,7 +8,7 @@ from odrive.enums import * # pylint: disable=W0614
 
 def print_banner():
     print('Please connect your ODrive.')
-    print('Type help() for help.')
+    print('You can also type help() or quit().')
 
 def print_help(args):
     print('')
@@ -77,6 +77,7 @@ def launch_shell(args, logger, printer, app_shutdown_token):
     logger.debug("Waiting for device...")
     odrive.discovery.find_all(args.path, args.serial_number,
                     lambda dev: did_discover_device(dev, logger, app_shutdown_token),
+                    app_shutdown_token,
                     app_shutdown_token,
                     printer=printer)
 
