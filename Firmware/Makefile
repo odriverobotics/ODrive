@@ -35,7 +35,7 @@ erase_config:
 #  - product ID (01: ODrive)
 #  - hardware major version
 #  - hardware minor version
-#  - hardware variant (00: 24V, 01: 48V)
+#  - hardware variant (equal to the board nominal voltage)
 # Bits in the OTP can only ever be set to 0 but never back to 1.
 # Therefore do not try to run this command on the same board
 # twice with different data.
@@ -57,9 +57,9 @@ ifeq ($(OTP_CONFIRM),TRUE)
 		-c 'mwb 0x1fff7800 0xFE' -c 'sleep 10' \
 		-c 'mwb 0x1fff7801 0x01' -c 'sleep 10' \
 		-c 'mwb 0x1fff7802 0x01' -c 'sleep 10' \
-		-c 'mwb 0x1fff7803 0x03' -c 'sleep 10' \
-		-c 'mwb 0x1fff7804 0x04' -c 'sleep 10' \
-		-c 'mwb 0x1fff7805 0x01' -c 'sleep 10' \
+		-c 'mwb 0x1fff7803 3' -c 'sleep 10' \
+		-c 'mwb 0x1fff7804 4' -c 'sleep 10' \
+		-c 'mwb 0x1fff7805 48' -c 'sleep 10' \
 		-c 'reset run' \
 		-c exit
 
@@ -72,7 +72,8 @@ else
 	@echo " 1. open the Makefile and look at the write_otp target"
 	@echo " 2. understand the structure of the OTP"
 	@echo " 3. edit the bytes that are written to match your board version"
-	@echo "Run this command again, this time with OTP_CONFIRM=TRUE"
+	@echo "Run this command again, this time with OTP_CONFIRM=TRUE appended"
+	@echo "to the command in the terminal"
 endif
 
 clean:

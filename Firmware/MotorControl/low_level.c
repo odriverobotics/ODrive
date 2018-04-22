@@ -68,7 +68,8 @@ Motor_t motors[] = {
         .current_setpoint = 0.0f,        // [A]
         .calibration_current = 10.0f,    // [A]
         .resistance_calib_max_voltage = 1.0f, // [V] - You may need to increase this if this voltage isn't sufficient to drive calibration_current through the motor.
-        .dc_bus_brownout_trip_level = 8.0f, // [V]
+        .dc_bus_undervoltage_trip_level = 8.0f, // [V]
+        .dc_bus_overvoltage_trip_level = VBUS_OVERVOLTAGE_LEVEL, // [V]
         .phase_inductance = 0.0f,        // to be set by measure_phase_inductance
         .phase_resistance = 0.0f,        // to be set by measure_phase_resistance
         .motor_thread = 0,
@@ -176,7 +177,8 @@ Motor_t motors[] = {
         .current_setpoint = 0.0f,                 // [A]
         .calibration_current = 10.0f,             // [A]
         .resistance_calib_max_voltage = 1.0f, // [V] - You may need to increase this if this voltage isn't sufficient to drive calibration_current through the motor.
-        .dc_bus_brownout_trip_level = 8.0f, // [V]
+        .dc_bus_undervoltage_trip_level = 8.0f, // [V]
+        .dc_bus_overvoltage_trip_level = VBUS_OVERVOLTAGE_LEVEL, // [V]
         .phase_inductance = 0.0f,                 // to be set by measure_phase_inductance
         .phase_resistance = 0.0f,                 // to be set by measure_phase_resistance
         .motor_thread = 0,
@@ -1320,8 +1322,16 @@ bool check_DRV_fault(Motor_t* motor) {
 }
 
 //Returns true if everything is OK (no fault)
-bool check_PSU_brownout(Motor_t* motor) {
-    if(vbus_voltage < motor->dc_bus_brownout_trip_level)
+bool check_vbus_undervoltage(Motor_t* motor) {
+    if(vbus_voltage < motor->dc_bus_undervoltage_trip_level)
+        return false;
+    return true;
+}
+
+//Returns true if everything is OK (no fault)
+// TODO This will be less repetitive with the refactoring
+bool check_vbus_overvoltage(Motor_t* motor) {
+    if(vbus_voltage > motor->dc_bus_overvoltage_trip_level)
         return false;
     return true;
 }
@@ -1338,8 +1348,12 @@ bool do_checks(Motor_t* motor) {
         DRV8301_readData(&motor->gate_driver, local_regs);
         return false;
     }
-    if (!check_PSU_brownout(motor)) {
-        motor->error = ERROR_DC_BUS_BROWNOUT;
+    if (!check_vbus_undervoltage(motor)) {
+        motor->error = ERROR_DC_BUS_UNDERVOLTAGE;
+        return false;
+    }
+    if (!check_vbus_overvoltage(motor)) {
+        motor->error = ERROR_DC_BUS_OVERVOLTAGE;
         return false;
     }
     return true;

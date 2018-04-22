@@ -51,7 +51,8 @@ typedef enum {
     ERROR_DRV_FAULT,
     ERROR_NOT_IMPLEMENTED_MOTOR_TYPE,
     ERROR_ENCODER_CPR_OUT_OF_RANGE,
-    ERROR_DC_BUS_BROWNOUT,
+    ERROR_DC_BUS_UNDERVOLTAGE,
+    ERROR_DC_BUS_OVERVOLTAGE,
 } Error_t;
 
 // Note: these should be sorted from lowest level of control to
@@ -151,7 +152,8 @@ typedef struct {
     float current_setpoint;
     float calibration_current;
     float resistance_calib_max_voltage;
-    float dc_bus_brownout_trip_level;
+    float dc_bus_undervoltage_trip_level;
+    float dc_bus_overvoltage_trip_level;
     float phase_inductance;
     float phase_resistance;
     osThreadId motor_thread;
