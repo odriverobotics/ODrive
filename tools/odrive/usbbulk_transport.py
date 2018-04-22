@@ -132,12 +132,6 @@ class USBBulkTransport(odrive.protocol.PacketSource, odrive.protocol.PacketSink)
         self._was_damaged = True
         raise odrive.protocol.ChannelDamagedException()
 
-  def send_max(self):
-    return 64
-
-  def receive_max(self):
-    return 64
-
 
 def discover_channels(path, serial_number, callback, cancellation_token, channel_termination_token, printer):
   """
