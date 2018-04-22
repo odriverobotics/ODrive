@@ -16,7 +16,7 @@ gdb: all
 	arm-none-eabi-gdb $(FIRMWARE) -x openocd.gdbinit
 
 dfu: all
-	../tools/dfu.py $(if $(value SERIAL_NUMBER),--serial-number $(SERIAL_NUMBER),) $(FIRMWARE_HEX)
+	../tools/odrivetool $(if $(value SERIAL_NUMBER),--serial-number $(SERIAL_NUMBER),) dfu $(FIRMWARE_HEX)
 
 bmp: all
 	arm-none-eabi-gdb --ex 'target extended-remote /dev/stlink' \
@@ -46,7 +46,7 @@ erase_config:
 #  FLASH_CR = (1 << FLASH_CR_PG); // unlock flash memory
 #  [write OTP]
 write_otp:
-ifeq ($(ODRV_FACTORY),TRUE)
+ifeq ($(OTP_CONFIRM),TRUE)
 	# Data: 
 	openocd -f interface/stlink-v2.cfg -f target/stm32f4x.cfg \
 		-c init \
@@ -72,7 +72,7 @@ else
 	@echo " 1. open the Makefile and look at the write_otp target"
 	@echo " 2. understand the structure of the OTP"
 	@echo " 3. edit the bytes that are written to match your board version"
-	@echo "Run this command again, this time with ODRV_FACTORY=TRUE appended"
+	@echo "Run this command again, this time with OTP_CONFIRM=TRUE appended"
 	@echo "to the command in the terminal"
 endif
 
