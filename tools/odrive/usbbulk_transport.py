@@ -139,10 +139,11 @@ class USBBulkTransport(odrive.protocol.PacketSource, odrive.protocol.PacketSink)
     return 64
 
 
-def discover_channels(path, serial_number, callback, cancellation_token, printer):
+def discover_channels(path, serial_number, callback, cancellation_token, channel_termination_token, printer):
   """
   Scans for USB devices that match the path spec.
   This function blocks until cancellation_token is set.
+  Channels spawned by this function run until channel_termination_token is set.
   """
   if path == None or path == "":
     bus = None
@@ -181,7 +182,7 @@ def discover_channels(path, serial_number, callback, cancellation_token, printer
         bulk_device.init()
         channel = odrive.protocol.Channel(
                 "USB device bus {} device {}".format(usb_device.bus, usb_device.address),
-                bulk_device, bulk_device, printer)
+                bulk_device, bulk_device, channel_termination_token, printer)
         channel.usb_device = usb_device # for debugging only
       except usb.core.USBError as ex:
         if ex.errno == 13:

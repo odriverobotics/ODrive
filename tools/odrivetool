@@ -3,13 +3,22 @@
 ODrive command line utility
 """
 
+from __future__ import print_function
+import sys
 import argparse
 import odrive.discovery
 from odrive.utils import Logger, Event
 
 # Flush stdout by default
-import functools
-print = functools.partial(print, flush=True)
+# Source:
+# https://stackoverflow.com/questions/230751/how-to-flush-output-of-python-print
+old_print = print
+def print(*args, **kwargs):
+    kwargs.pop('flush', False)
+    old_print(*args, **kwargs)
+    file = kwargs.get('file', sys.stdout)
+    # Why might file=None? IDK, but it works for print(i, file=None)
+    file.flush() if file is not None else sys.stdout.flush()
 
 
 ## Parse arguments ##
@@ -69,10 +78,6 @@ if args.command is None:
     args.command = 'shell'
     args.no_ipython = False
 
-# We are interactively printing status messages, so flush by default
-import functools
-print = functools.partial(print, flush=True)
-
 # TODO: deprecate printer - use logger instead
 if (args.verbose):
   printer = print
@@ -103,6 +108,7 @@ try:
         odrive.shell.launch_shell(args, logger, printer, app_shutdown_token)
 
     elif args.command == 'dfu':
+        print_version()
         import odrive.dfu
         odrive.dfu.launch_dfu(args, app_shutdown_token)
 

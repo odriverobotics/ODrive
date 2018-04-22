@@ -144,7 +144,7 @@ class Event():
         self._subscribers = []
         self._mutex = threading.Lock()
         if not trigger is None:
-            trigger.subscribe(self.set())
+            trigger.subscribe(lambda: self.set())
 
     def is_set(self):
         return self._evt.is_set()
@@ -170,6 +170,8 @@ class Event():
         handler is invoked immediately.
         Returns a function that can be invoked to unsubscribe.
         """
+        if handler is None:
+            raise TypeError
         self._mutex.acquire()
         try:
             self._subscribers.append(handler)
@@ -200,11 +202,12 @@ class Event():
                 self.set()
         threading.Thread(target=delayed_trigger, daemon=True).start()
 
-def wait_any(*events, timeout=None):
+def wait_any(timeout=None, *events):
     """
     Blocks until any of the specified events are triggered.
     Returns the index of the event that was triggerd or raises
     a TimeoutException
+    Param timeout: A timeout in seconds
     """
     or_event = threading.Event()
     subscriptions = []

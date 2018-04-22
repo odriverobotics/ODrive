@@ -78,6 +78,7 @@ def launch_shell(args, logger, printer, app_shutdown_token):
     odrive.discovery.find_all(args.path, args.serial_number,
                     lambda dev: did_discover_device(dev, logger, app_shutdown_token),
                     app_shutdown_token,
+                    app_shutdown_token,
                     printer=printer)
 
     # Check if IPython is installed
