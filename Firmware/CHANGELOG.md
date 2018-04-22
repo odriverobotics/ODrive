@@ -19,6 +19,7 @@ Please add a note of your changes below this heading if you make a Pull Request.
    * (experimental: start liveplotter from `odrivetool` shell by typing `start_liveplotter(lambda: odrv0.motor0.encoder.encoder_state)`)
 
 * Set thread priority of USB pump thread above protocol thread
+* GPIO3 not sensitive to edges by default
 ### Fixed
 * Enums now transported with correct underlying type on native protocol
 
