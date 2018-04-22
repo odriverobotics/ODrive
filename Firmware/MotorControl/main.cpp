@@ -1,7 +1,7 @@
 
-#include "odrive_main.hpp"
+#define __MAIN_CPP__
+#include "odrive_main.h"
 #include "nvm_config.hpp"
-#include "communication.h"
 
 BoardConfig_t board_config;
 EncoderConfig_t encoder_configs[AXIS_COUNT];
@@ -9,6 +9,8 @@ ControllerConfig_t controller_configs[AXIS_COUNT];
 MotorConfig_t motor_configs[AXIS_COUNT];
 AxisConfig_t axis_configs[AXIS_COUNT];
 bool user_config_loaded_;
+
+bool user_config_loaded = false;
 
 Axis *axes[AXIS_COUNT];
 
@@ -54,6 +56,12 @@ void load_configuration(void) {
 
 void erase_configuration(void) {
     NVM_erase();
+}
+
+void enter_dfu_mode(void) {
+    __asm volatile ("CPSID I\n\t":::"memory"); // disable interrupts
+    _reboot_cookie = 0xDEADBEEF;
+    NVIC_SystemReset();
 }
 
 extern "C" {

@@ -10,11 +10,6 @@ extern "C" {
 #include <math.h>
 
 /**
- * @brief Unique ID register address location
- */
-#define ID_UNIQUE_ADDRESS (0x1FFF7A10)
-
-/**
  * @brief Flash size register address
  */
 #define ID_FLASH_ADDRESS (0x1FFF7A22)
@@ -59,17 +54,6 @@ extern "C" {
 * Returned data is in 16-bit mode, returned value is flash size in kB (kilo bytes).
 */
 #define STM_ID_GetFlashSize() (*(uint16_t *)(ID_FLASH_ADDRESS))
-
-/**
- * "Returns" the given 32-bit value of the UUID.
- *
- * Parameters:
- *     - uint8_t x:
- *         Value between 0 and 2, corresponding to 4-bytes you want to read from 96bits (12bytes)
- *
- * Returned data is 32-bit
- */
-#define STM_ID_GetUUID(x) ((x >= 0 && x < 3) ? (*(uint32_t *)(ID_UNIQUE_ADDRESS + 4 * (x))) : 0)
 
 #ifdef M_PI
 #undef M_PI

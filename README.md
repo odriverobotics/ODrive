@@ -15,7 +15,7 @@ All non-power I/O is 3.3V output and 5V tolerant on input, except:
 
 You need one or two [brushless motors](https://hackaday.io/project/11583-odrive-high-performance-motor-control/log/37666-hobby-motors-in-your-robots), [quadrature incremental encoder(s)](https://discourse.odriverobotics.com/t/which-encoders-to-choose/63/2), and a power resistor.
 
-*The power resistor values you need depends on your motor setup, and peak/average decelleration power. A good starting point would be a [0.47 ohm, 50W resistor](https://www.digikey.com/product-detail/en/te-connectivity-passive-product/HSA50R47J/A102181-ND/2056131).*
+The power resistor values you need depends on your motor setup, and peak/average decelleration power. A good starting point would be a [0.47 ohm, 50W resistor](https://www.digikey.com/product-detail/en/te-connectivity-passive-product/HSA50R47J/A102181-ND/2056131). **Warning! Failure to use a break resistor may result in damage to your ODrive and/or power supply!**
 
 Wire up the motor phases into the 3-phase screw terminals, and the power resistor to the AUX terminal. Wire up the power source (12-24V) to the DC terminal, make sure to pay attention to the polarity. Do not apply power just yet.
 

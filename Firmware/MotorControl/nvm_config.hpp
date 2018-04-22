@@ -12,7 +12,7 @@
 #include <stm32f405xx.h>
 
 #include "nvm.h"
-#include "crc.hpp"
+#include <communication/crc.hpp>
 
 
 /* Private defines -----------------------------------------------------------*/

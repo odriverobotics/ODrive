@@ -20,25 +20,25 @@
 #endif
 
 
-struct AxisHardwareConfig_t {
+typedef struct {
     GPIO_TypeDef* step_port;
     uint16_t step_pin;
     GPIO_TypeDef* dir_port;
     uint16_t dir_pin;
     osPriority thread_priority;
-};
+} AxisHardwareConfig_t;
 
-struct EncoderHardwareConfig_t {
+typedef struct {
     TIM_HandleTypeDef* timer;
     GPIO_TypeDef* index_port;
     uint16_t index_pin;
-};
-struct MotorHardwareConfig_t {
+} EncoderHardwareConfig_t;
+typedef struct {
     TIM_HandleTypeDef* timer;
     uint16_t control_deadline;
     float shunt_conductance;
-};
-struct GateDriverHardwareConfig_t {
+} MotorHardwareConfig_t;
+typedef struct {
     SPI_HandleTypeDef* spi;
     GPIO_TypeDef* enable_port;
     uint16_t enable_pin;
@@ -46,15 +46,18 @@ struct GateDriverHardwareConfig_t {
     uint16_t nCS_pin;
     GPIO_TypeDef* nFAULT_port;
     uint16_t nFAULT_pin;
-};
-struct BoardHardwareConfig_t {
+} GateDriverHardwareConfig_t;
+typedef struct {
     AxisHardwareConfig_t axis_config;
     EncoderHardwareConfig_t encoder_config;
     MotorHardwareConfig_t motor_config;
     GateDriverHardwareConfig_t gate_driver_config;
-};
+} BoardHardwareConfig_t;
 
-const BoardHardwareConfig_t hw_configs[] = { {
+extern const BoardHardwareConfig_t hw_configs[2];
+
+#ifdef __MAIN_CPP__
+const BoardHardwareConfig_t hw_configs[2] = { {
     .axis_config = {
         .step_port = GPIO_1_GPIO_Port,
         .step_pin = GPIO_1_Pin,
@@ -111,5 +114,7 @@ const BoardHardwareConfig_t hw_configs[] = { {
         .nFAULT_pin = nFAULT_Pin,
     }
 } };
+#endif
+
 
 #endif // __BOARD_CONFIG_H

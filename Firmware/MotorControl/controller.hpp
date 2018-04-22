@@ -1,8 +1,8 @@
 #ifndef __CONTROLLER_HPP
 #define __CONTROLLER_HPP
 
-#ifndef __ODRIVE_MAIN_HPP
-#error "This file should not be included directly. Include odrive_main.hpp instead."
+#ifndef __ODRIVE_MAIN_H
+#error "This file should not be included directly. Include odrive_main.h instead."
 #endif
 
 // Note: these should be sorted from lowest level of control to

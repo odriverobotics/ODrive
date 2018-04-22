@@ -2,8 +2,7 @@
 #include <algorithm>
 
 #include "drv8301.h"
-//#include "motor.hpp"
-#include "odrive_main.hpp"
+#include "odrive_main.h"
 
 
 Motor::Motor(const MotorHardwareConfig_t& hw_config,

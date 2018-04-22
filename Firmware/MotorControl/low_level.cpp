@@ -19,7 +19,7 @@
 #include <tim.h>
 #include <utils.h>
 
-#include "odrive_main.hpp"
+#include "odrive_main.h"
 
 /* Private defines -----------------------------------------------------------*/
 
