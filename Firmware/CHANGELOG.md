@@ -2,12 +2,27 @@
 Please add a note of your changes below this heading if you make a Pull Request.
 
 ### Added
-* `make write_otp` command to burn the board version onto the ODrive's one-time programmable memory. If you have an ODrive v3.4 or older, you can run this once for a better firmware update user experience in the future. Run the command without any options for more details. Once set, the board version is exposed through the `board_version_[...]` properties.
-* bake Git-derived firmware version into firmware binary. The firmware version is exposed through the `fw_version_[...]` properties.
+ * `make write_otp` command to burn the board version onto the ODrive's one-time programmable memory. If you have an ODrive v3.4 or older, you should run this once for a better firmware update user experience in the future. Run the command without any options for more details. Once set, the board version is exposed through the `hw_version_[...]` properties.
+ * bake Git-derived firmware version into firmware binary. The firmware version is exposed through the `fw_version_[...]` properties.
+ * infrastructure to publish the python tools to PyPi. See `tools/setup.py` for details.
 
 ### Changed
 * The DFU script now verifies the flash after writing
+* Refactor python tools
+  * The scripts `explore_odrive.py`, `liveplotter.py`, `drv_status.py` and `rate_test.py` have been merged into one single `odrivetool` script. Running this script without any arguments provides the shell that `explore_odrive.py` used to provide.
+  * The command line options of `odrivetool` have changed compared to the original `explore_odrive.py`. See `odrivetool --help` for more details.
+  * `odrivetool` (previously `explore_odrive.py`) now supports controlling multiple ODrives concurrently (`odrv0`, `odrv1`, ...)
+  * No need to restart the `odrivetool` shell when devices get disconnected and reconnected
+  * ODrive accesses from within python tools are now thread-safe. That means you can read from the same remote property from multiple threads concurrently.
+  * The liveplotter (`odrivetool liveplotter`, formerly `liveplotter.py`) does no longer steal focus and closes as expected
+  * (experimental: start liveplotter from `odrivetool` shell by typing `start_liveplotter(lambda: odrv0.motor0.encoder.encoder_state)`)
+* `make write_otp` command to burn the board version onto the ODrive's one-time programmable memory. If you have an ODrive v3.4 or older, you can run this once for a better firmware update user experience in the future. Run the command without any options for more details. Once set, the board version is exposed through the `board_version_[...]` properties.
+* bake Git-derived firmware version into firmware binary. The firmware version is exposed through the `fw_version_[...]` properties.
 * Set thread priority of USB pump thread above protocol thread
+
+### Changed
+* The DFU script now verifies the flash after writing
+
 ### Fixed
 * Enums now transported with correct underlying type on native protocol
 
@@ -18,7 +33,7 @@ Please add a note of your changes below this heading if you make a Pull Request.
 ### Added
 * **Storing of configuration parameters to Non Volatile Memory**
 * **USB Bootloader**
-* `make erase_config` to erase the configuration with an STLink (the configuration can also be erased from within explore_odrive.py, using `my_odrive.erase_configuration()`)
+* `make erase_config` to erase the configuration with an STLink (the configuration can also be erased from within explore_odrive.py, using `odrv0.erase_configuration()`)
 * Travis-CI builds firmware for all board versions and deploys the binaries when a tag is pushed to master
 
 ### Changed

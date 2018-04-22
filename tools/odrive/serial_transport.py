@@ -3,9 +3,16 @@ Provides classes that implement the StreamSource/StreamSink and
 PacketSource/PacketSink interfaces for serial ports.
 """
 
-import odrive
-import serial
+import os
+import re
 import time
+import traceback
+import serial
+import serial.tools.list_ports
+import odrive.protocol
+import odrive.utils
+
+ODRIVE_BAUDRATE = 115200
 
 class SerialStreamTransport(odrive.protocol.StreamSource, odrive.protocol.StreamSink):
     def __init__(self, port, baud):
@@ -30,7 +37,64 @@ class SerialStreamTransport(odrive.protocol.StreamSource, odrive.protocol.Stream
     def get_bytes_or_fail(self, n_bytes, deadline):
         result = self.get_bytes(n_bytes, deadline)
         if len(result) < n_bytes:
-            raise odrive.protocol.TimeoutException("expected {} bytes but got only {}", n_bytes, len(result))
+            raise odrive.utils.TimeoutException("expected {} bytes but got only {}", n_bytes, len(result))
         return result
 
-# TODO: provide SerialPacketTransport
+    def close(self):
+        self._dev.close()
+
+
+def find_dev_serial_ports():
+    try:
+        return ['/dev/' + x for x in os.listdir('/dev')]
+    except FileNotFoundError:
+        return []
+
+def find_pyserial_ports():
+    return [x.device for x in serial.tools.list_ports.comports()]
+
+
+def discover_channels(path, serial_number, callback, cancellation_token, channel_termination_token, printer):
+    """
+    Scans for serial ports that match the path spec.
+    This function blocks until cancellation_token is set.
+    Channels spawned by this function run until channel_termination_token is set.
+    """
+    if path == None:
+        # This regex should match all desired port names on macOS,
+        # Linux and Windows but might match some incorrect port names.
+        regex = r'^(/dev/tty\.usbmodem.*|/dev/ttyACM.*|COM[0-9]+)$'
+    else:
+        regex = "^" + path + "$"
+
+    known_devices = []
+    def device_matcher(port_name):
+        if port_name in known_devices:
+            return False
+        return bool(re.match(regex, port_name))
+
+    def did_disconnect(port_name, device):
+        device.close()
+        # TODO: yes there is a race condition here in case you wonder.
+        known_devices.pop(known_devices.index(port_name))
+
+    while not cancellation_token.is_set():
+        all_ports = find_pyserial_ports() + find_dev_serial_ports()
+        new_ports = filter(device_matcher, all_ports)
+        for port_name in new_ports:
+            try:
+                serial_device = SerialStreamTransport(port_name, ODRIVE_BAUDRATE)
+                input_stream = odrive.protocol.PacketFromStreamConverter(serial_device)
+                output_stream = odrive.protocol.PacketToStreamConverter(serial_device)
+                channel = odrive.protocol.Channel(
+                        "serial port {}@{}".format(port_name, ODRIVE_BAUDRATE),
+                        input_stream, output_stream, channel_termination_token, printer)
+                channel.serial_device = serial_device
+            except serial.serialutil.SerialException:
+                printer("Serial device init failed. Ignoring this port. More info: " + traceback.format_exc())
+                known_devices.append(port_name)
+            else:
+                known_devices.append(port_name)
+                channel._channel_broken.subscribe(lambda: did_disconnect(port_name, serial_device))
+                callback(channel)
+        time.sleep(1)

@@ -3,6 +3,11 @@
 import time
 import struct
 import sys
+import threading
+import traceback
+import odrive.utils
+from odrive.utils import wait_any
+from odrive.utils import Event
 
 import abc
 
@@ -63,17 +68,21 @@ def calc_crc16(remainder, value):
 #print(hex(calc_crc16(0xfeef, [1, 2, 3, 4, 5, 0x10, 0x13, 0x37])))
 
 
-class TimeoutException(Exception):
-    pass
-
-class ChannelBrokenException(Exception):
-    pass
-
 class DeviceInitException(Exception):
     pass
 
-class USBHaltException(Exception):
-  pass
+class ChannelDamagedException(Exception):
+    """
+    Raised when the channel is temporarily broken and a
+    resend of the message might be successful
+    """
+    pass
+
+class ChannelBrokenException(Exception):
+    """
+    Raised when the channel is permanently broken
+    """
+    pass
 
 
 class StreamSource(ABC):
@@ -98,11 +107,10 @@ class PacketSink(ABC):
 
 
 class StreamToPacketConverter(StreamSink):
-    _header = []
-    _packet = []
-    _packet_length = 0
-
     def __init__(self, output):
+        self._header = []
+        self._packet = []
+        self._packet_length = 0
         self._output = output
 
     def process_bytes(self, bytes):
@@ -194,15 +202,11 @@ class PacketFromStreamConverter(PacketSource):
 
 
 class Channel(PacketSink):
-    _outbound_seq_no = 0
-    _interface_definition_crc = 0
-    _expected_acks = {}
-
     # Choose these parameters to be sensible for a specific transport layer
     _resend_timeout = 0.1     # [s]
     _send_attempts = 5
 
-    def __init__(self, name, input, output):
+    def __init__(self, name, input, output, cancellation_token, printer):
         """
         Params:
         input: A PacketSource where this channel will source packets from on
@@ -213,6 +217,41 @@ class Channel(PacketSink):
         self._name = name
         self._input = input
         self._output = output
+        self._printer = printer
+        self._outbound_seq_no = 0
+        self._interface_definition_crc = 0
+        self._expected_acks = {}
+        self._responses = {}
+        self._my_lock = threading.Lock()
+        self._channel_broken = Event(cancellation_token)
+        self.start_receiver_thread(Event(self._channel_broken))
+
+    def start_receiver_thread(self, cancellation_token):
+        """
+        Starts the receiver thread that processes incoming messages.
+        The thread quits as soon as the channel enters a broken state.
+        """
+        def receiver_thread():
+            try:
+                while (not cancellation_token.is_set()) and (not self._channel_broken.is_set()):
+                    # Set an arbitrary deadline because the get_packet function
+                    # currently doesn't support a cancellation_token
+                    deadline = time.monotonic() + 1.0
+                    try:
+                        response = self._input.get_packet(deadline)
+                    except odrive.utils.TimeoutException:
+                        continue # try again
+                    except ChannelDamagedException:
+                        continue # try again
+                    # Process response
+                    # This should not throw an exception, otherwise the channel breaks
+                    self.process_packet(response)
+                #print("receiver thread is exiting")
+            except Exception:
+                self._printer("receiver thread is exiting: " + traceback.format_exc())
+            finally:
+                self._channel_broken.set()
+        threading.Thread(target=receiver_thread, daemon=True).start()
 
     def remote_endpoint_operation(self, endpoint_id, input, expect_ack, output_length):
         if input is None:
@@ -223,9 +262,13 @@ class Channel(PacketSink):
         if (expect_ack):
             endpoint_id |= 0x8000
 
-        self._outbound_seq_no = ((self._outbound_seq_no + 1) & 0x7fff)
-        self._outbound_seq_no |= 0x80 # FIXME: we hardwire one bit of the seq-no to 1 to avoid conflicts with the legacy protocol
-        seq_no = self._outbound_seq_no
+        self._my_lock.acquire()
+        try:
+            self._outbound_seq_no = ((self._outbound_seq_no + 1) & 0x7fff)
+            seq_no = self._outbound_seq_no
+        finally:
+            self._my_lock.release()
+        seq_no |= 0x80 # FIXME: we hardwire one bit of the seq-no to 1 to avoid conflicts with the legacy protocol
         packet = struct.pack('<HHH', seq_no, endpoint_id, output_length)
         packet = packet + input
 
@@ -238,32 +281,32 @@ class Channel(PacketSink):
         packet = packet + struct.pack('<H', trailer)
 
         if (expect_ack):
-            self._expected_acks[seq_no] = None
-            attempt = 0
-            while (attempt < self._send_attempts):
-                try:
-                    self._output.process_packet(packet)
-                except USBHaltException:
-                    attempt += 1
-                    continue # resend
-                deadline = time.monotonic() + self._resend_timeout
-                # Read and process packets until we get an ack or need to resend
-                # TODO: support I/O driven reception (wait on semaphore)
-                while True:
+            ack_event = Event()
+            self._expected_acks[seq_no] = ack_event
+            try:
+                attempt = 0
+                while (attempt < self._send_attempts):
+                    self._my_lock.acquire()
                     try:
-                        response = self._input.get_packet(deadline)
-                    except TimeoutException:
-                        break # resend
-                    except USBHaltException:
-                        break # resend
-                    # process response, which is hopefully our ACK
-                    self.process_packet(response)
-                    if not self._expected_acks[seq_no] is None:
-                        return self._expected_acks.pop(seq_no, None)
-                    break
-                # TODO: record channel statistics
-                attempt += 1
-            raise ChannelBrokenException()
+                        self._output.process_packet(packet)
+                    except ChannelDamagedException:
+                        attempt += 1
+                        continue # resend
+                    finally:
+                        self._my_lock.release()
+                    # Wait for ACK until the resend timeout is exceeded
+                    try:
+                        if wait_any(self._resend_timeout, ack_event, self._channel_broken) != 0:
+                            raise ChannelBrokenException()
+                    except odrive.utils.TimeoutException:
+                        attempt += 1
+                        continue # resend
+                    return self._responses.pop(seq_no)
+                    # TODO: record channel statistics
+                raise ChannelBrokenException() # Too many resend attempts
+            finally:
+                self._expected_acks.pop(seq_no)
+                self._responses.pop(seq_no, None)
         else:
             # fire and forget
             self._output.process_packet(packet)
@@ -276,7 +319,7 @@ class Channel(PacketSink):
         # TODO: handle device that could (maliciously) send infinite stream
         buffer = bytes()
         while True:
-            chunk_length = 64
+            chunk_length = 512
             chunk = self.remote_endpoint_operation(endpoint_id, struct.pack("<I", len(buffer)), True, chunk_length)
             if (len(chunk) == 0):
                 break
@@ -293,7 +336,12 @@ class Channel(PacketSink):
 
         if (seq_no & 0x8000):
             seq_no &= 0x7fff
-            self._expected_acks[seq_no] = packet[2:]
+            ack_signal = self._expected_acks.get(seq_no, None)
+            if (ack_signal):
+                self._responses[seq_no] = packet[2:]
+                ack_signal.set()
+            else:
+                print("received unexpected ACK: " + str(seq_no))
 
         else:
             #if (calc_crc16(CRC16_INIT, struct.pack('<HBB', PROTOCOL_VERSION, packet[-2], packet[-1]))):
