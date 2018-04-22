@@ -113,6 +113,27 @@ def rate_test(device):
     FramePerSec = loopsPerSec/loopsPerFrame
     print("Frames per second: " + str(FramePerSec))
 
+def usb_burn_in_test(get_var_callback, cancellation_token):
+    """
+    Starts background threads that read a values form the USB device in a spin-loop
+    """
+
+    def fetch_data():
+        global vals
+        i = 0
+        while not cancellation_token.is_set():
+            try:
+                get_var_callback()
+                i += 1
+            except Exception as ex:
+                print(str(ex))
+                time.sleep(1)
+                i = 0
+                continue
+            if i % 1000 == 0:
+                print("read {} values".format(i))
+    threading.Thread(target=fetch_data).start()
+
 def setup_udev_rules(logger):
     if platform.system() != 'Linux':
         logger.error("This command only makes sense on Linux")
@@ -220,6 +241,44 @@ def wait_any(timeout=None, *events):
         if events[i].is_set():
             return i
     raise TimeoutException()
+
+
+def for_all_parallel(objects, get_name, callback):
+    """
+    Executes the specified callback for every object in the objects
+    list concurrently. This function waits for all callbacks to
+    finish and throws an exception if any of the callbacks throw
+    an exception.
+    """
+    tracebacks = []
+
+    def run_callback(element):
+        try:
+            callback(element)
+        except Exception as ex:
+            tracebacks.append((get_name(element), ex))
+
+    # Start a thread for each element in the list
+    all_threads = []
+    for element in objects:
+        thread = threading.Thread(target=run_callback, args=(element,))
+        thread.start()
+        all_threads.append(thread)
+    
+    # Wait for all threads to complete
+    for thread in all_threads:
+        thread.join()
+
+    if len(tracebacks) == 1:
+        msg = "task {} failed.".format(tracebacks[0][0])
+        raise Exception(msg) from tracebacks[0][1]
+    elif len(tracebacks) > 1:
+        msg = "task {} and {} failed.".format(
+            tracebacks[0][0],
+            "one other" if len(tracebacks) == 2 else str(len(tracebacks)-1) + " others"
+            )
+        raise Exception(msg) from tracebacks[0][1]
+
 
 class Logger():
     """

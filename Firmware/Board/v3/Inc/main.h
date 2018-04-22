@@ -58,6 +58,9 @@
 #if HW_VERSION_MAJOR == 3 && HW_VERSION_MINOR == 1 \
 ||  HW_VERSION_MAJOR == 3 && HW_VERSION_MINOR == 2
 #include "prev_board_ver/main_V3_2.h"
+#elif HW_VERSION_MAJOR == 3 && HW_VERSION_MINOR == 3 \
+||  HW_VERSION_MAJOR == 3 && HW_VERSION_MINOR == 4
+#include "prev_board_ver/main_V3_4.h"
 #else
 /* USER CODE END Includes */
 
@@ -74,8 +77,8 @@
 #define M0_nCS_GPIO_Port GPIOC
 #define M1_nCS_Pin GPIO_PIN_14
 #define M1_nCS_GPIO_Port GPIOC
-#define M1_DC_CAL_Pin GPIO_PIN_15
-#define M1_DC_CAL_GPIO_Port GPIOC
+#define M1_ENC_Z_Pin GPIO_PIN_15
+#define M1_ENC_Z_GPIO_Port GPIOC
 #define M0_IB_Pin GPIO_PIN_0
 #define M0_IB_GPIO_Port GPIOC
 #define M0_IC_Pin GPIO_PIN_1
@@ -95,22 +98,22 @@
 #define GPIO_4_GPIO_Port GPIOA
 #define M1_TEMP_Pin GPIO_PIN_4
 #define M1_TEMP_GPIO_Port GPIOA
-#define AUX_I_Pin GPIO_PIN_5
-#define AUX_I_GPIO_Port GPIOA
+#define AUX_TEMP_Pin GPIO_PIN_5
+#define AUX_TEMP_GPIO_Port GPIOA
 #define VBUS_S_Pin GPIO_PIN_6
 #define VBUS_S_GPIO_Port GPIOA
 #define M1_AL_Pin GPIO_PIN_7
 #define M1_AL_GPIO_Port GPIOA
-#define AUX_TEMP_Pin GPIO_PIN_4
-#define AUX_TEMP_GPIO_Port GPIOC
+#define GPIO_5_Pin GPIO_PIN_4
+#define GPIO_5_GPIO_Port GPIOC
 #define M0_TEMP_Pin GPIO_PIN_5
 #define M0_TEMP_GPIO_Port GPIOC
 #define M1_BL_Pin GPIO_PIN_0
 #define M1_BL_GPIO_Port GPIOB
 #define M1_CL_Pin GPIO_PIN_1
 #define M1_CL_GPIO_Port GPIOB
-#define GPIO_5_Pin GPIO_PIN_2
-#define GPIO_5_GPIO_Port GPIOB
+#define GPIO_6_Pin GPIO_PIN_2
+#define GPIO_6_GPIO_Port GPIOB
 #define AUX_L_Pin GPIO_PIN_10
 #define AUX_L_GPIO_Port GPIOB
 #define AUX_H_Pin GPIO_PIN_11
@@ -129,20 +132,20 @@
 #define M1_BH_GPIO_Port GPIOC
 #define M1_CH_Pin GPIO_PIN_8
 #define M1_CH_GPIO_Port GPIOC
-#define M0_DC_CAL_Pin GPIO_PIN_9
-#define M0_DC_CAL_GPIO_Port GPIOC
+#define M0_ENC_Z_Pin GPIO_PIN_9
+#define M0_ENC_Z_GPIO_Port GPIOC
 #define M0_AH_Pin GPIO_PIN_8
 #define M0_AH_GPIO_Port GPIOA
 #define M0_BH_Pin GPIO_PIN_9
 #define M0_BH_GPIO_Port GPIOA
 #define M0_CH_Pin GPIO_PIN_10
 #define M0_CH_GPIO_Port GPIOA
-#define M0_ENC_Z_Pin GPIO_PIN_15
-#define M0_ENC_Z_GPIO_Port GPIOA
+#define GPIO_7_Pin GPIO_PIN_15
+#define GPIO_7_GPIO_Port GPIOA
 #define nFAULT_Pin GPIO_PIN_2
 #define nFAULT_GPIO_Port GPIOD
-#define M1_ENC_Z_Pin GPIO_PIN_3
-#define M1_ENC_Z_GPIO_Port GPIOB
+#define GPIO_8_Pin GPIO_PIN_3
+#define GPIO_8_GPIO_Port GPIOB
 #define M0_ENC_A_Pin GPIO_PIN_4
 #define M0_ENC_A_GPIO_Port GPIOB
 #define M0_ENC_B_Pin GPIO_PIN_5

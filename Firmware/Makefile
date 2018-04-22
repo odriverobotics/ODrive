@@ -5,12 +5,21 @@
 BUILD_DIR = build
 FIRMWARE = $(BUILD_DIR)/ODriveFirmware.elf
 FIRMWARE_HEX = $(BUILD_DIR)/ODriveFirmware.hex
+PROGRAMMER_HEX := $(shell echo $(PROGRAMMER) | sed -e 's/.\{2\}/\\x&/g')
+OPENOCD := openocd -f interface/stlink-v2.cfg \
+		$(if $(value PROGRAMMER),-c 'hla_serial $(PROGRAMMER_HEX)',) \
+		-f target/stm32f4x.cfg
+
 
 all:
 	@tup --quiet --no-environ-check
 
 flash: all
-	openocd -f interface/stlink-v2.cfg -f target/stm32f4x.cfg -c init -c reset\ halt -c flash\ write_image\ erase\ $(FIRMWARE) -c reset\ run -c exit
+	$(OPENOCD) -c init \
+		-c 'reset halt' \
+		-c 'flash write_image erase $(FIRMWARE)' \
+		-c 'reset run' \
+		-c exit
 
 gdb: all
 	arm-none-eabi-gdb $(FIRMWARE) -x openocd.gdbinit
@@ -24,9 +33,13 @@ bmp: all
 		--ex 'attach 1' \
 		--ex 'load' $(FIRMWARE)
 
+# Erase entire STM32
+erase:
+	$(OPENOCD) -c init -c reset\ halt -c flash\ erase_address\ 0x8000000\ 0x100000 -c reset\ run -c exit
+
 # Erase all configuration from the ODrive
 erase_config:
-	openocd -f interface/stlink-v2.cfg -f target/stm32f4x.cfg -c init -c reset\ halt -c flash\ erase_address\ 0x80C0000\ 0x40000 -c reset\ run -c exit
+	$(OPENOCD) -c init -c reset\ halt -c flash\ erase_address\ 0x80C0000\ 0x40000 -c reset\ init -c reset\ run -c exit
 
 # The one-time programmable memory stores the board version
 # has the following format:
@@ -48,7 +61,7 @@ erase_config:
 write_otp:
 ifeq ($(OTP_CONFIRM),TRUE)
 	# Data: 
-	openocd -f interface/stlink-v2.cfg -f target/stm32f4x.cfg \
+	$(OPENOCD) \
 		-c init \
 		-c 'reset halt' \
 		-c 'mww 0x40023C04 0x45670123' \
