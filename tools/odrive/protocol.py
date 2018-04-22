@@ -224,7 +224,7 @@ class Channel(PacketSink):
         self._responses = {}
         self._my_lock = threading.Lock()
         self._channel_broken = Event(cancellation_token)
-        self.start_receiver_thread(Event(self._channel_broken)) # TODO: use app_shutdown_token
+        self.start_receiver_thread(Event(self._channel_broken))
 
     def start_receiver_thread(self, cancellation_token):
         """
