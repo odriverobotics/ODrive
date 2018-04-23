@@ -138,7 +138,6 @@ public:
     bool is_calibrated_ = config_.pre_calibrated;
     Iph_BC_t current_meas_ = {0.0f, 0.0f};
     Iph_BC_t DC_calib_ = {0.0f, 0.0f};
-    const float shunt_conductance_ = 1.0f / SHUNT_RESISTANCE;  //[S]
     float phase_current_rev_gain_ = 0.0f; // Reverse gain for ADC to Amps (to be set by DRV8301_setup)
     Current_control_t current_control_ = {
         .p_gain = 0.0f,        // [V/A] should be auto set after resistance and inductance measurement
@@ -165,7 +164,6 @@ public:
             make_protocol_ro_property("current_meas_phC", &current_meas_.phC),
             make_protocol_property("DC_calib_phB", &DC_calib_.phB),
             make_protocol_property("DC_calib_phC", &DC_calib_.phC),
-            make_protocol_property("shunt_conductance", &shunt_conductance_),
             make_protocol_property("phase_current_rev_gain", &phase_current_rev_gain_),
             make_protocol_object("current_control",
                 make_protocol_property("p_gain", &current_control_.p_gain),
