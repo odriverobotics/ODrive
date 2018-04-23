@@ -182,6 +182,8 @@ void safety_critical_disarm_brake_resistor() {
 // @brief Updates the brake resistor PWM timings unless
 // the brake resistor is disarmed.
 void safety_critical_apply_brake_resistor_timings(uint32_t low_off, uint32_t high_on) {
+    if (high_on - low_off > TIM_APB1_DEADTIME_CLOCKS)
+        for(;;);
     uint8_t sr = cpu_enter_critical();
     if (brake_resistor_armed_) {
         // Safe update of low and high side timings
@@ -431,7 +433,7 @@ void update_brake_current() {
     float brake_duty = brake_current * board_config.brake_resistance / vbus_voltage;
 
     // Duty limit at 90% to allow bootstrap caps to charge
-    // If brake_duty is NaN, this expression will also evaluate to true
+    // If brake_duty is NaN, this expression will also evaluate to false
     if ((brake_duty >= 0.0f) && (brake_duty <= 0.9f)) {
         int high_on = static_cast<int>(TIM_APB1_PERIOD_CLOCKS * (1.0f - brake_duty));
         int low_off = high_on - TIM_APB1_DEADTIME_CLOCKS;
