@@ -16,6 +16,7 @@ static uint32_t usb_len;
 // FIXME: the stdlib doesn't know about CMSIS threads, so this is just a global variable
 static thread_local uint32_t deadline_ms = 0;
 
+osThreadId usb_thread;
 
 
 class USBSender : public PacketSink {
@@ -99,5 +100,5 @@ void usb_process_packet(uint8_t *buf, uint32_t len) {
 void serve_on_usb() {
     // Start USB communication thread
     osThreadDef(usb_server_thread_def, usb_server_thread, osPriorityNormal, 0, 512);
-    osThreadCreate(osThread(usb_server_thread_def), NULL);
+    usb_thread = osThreadCreate(osThread(usb_server_thread_def), NULL);
 }

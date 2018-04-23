@@ -13,6 +13,10 @@
 extern "C" {
 #endif
 
+#include <cmsis_os.h>
+
+extern osThreadId comm_thread;
+
 void init_communication(void);
 void communication_task(void * ctx);
 

@@ -3,6 +3,10 @@
 #include "odrive_main.h"
 #include "nvm_config.hpp"
 
+#include "freertos_vars.h"
+#include <communication/interface_usb.h>
+#include <communication/interface_uart.h>
+
 BoardConfig_t board_config;
 EncoderConfig_t encoder_configs[AXIS_COUNT];
 ControllerConfig_t controller_configs[AXIS_COUNT];
@@ -10,7 +14,7 @@ MotorConfig_t motor_configs[AXIS_COUNT];
 AxisConfig_t axis_configs[AXIS_COUNT];
 bool user_config_loaded_;
 
-bool user_config_loaded = false;
+SystemStats_t system_stats_ = { 0 };
 
 Axis *axes[AXIS_COUNT];
 
@@ -66,7 +70,22 @@ void enter_dfu_mode(void) {
 
 extern "C" {
 int odrive_main(void);
-void vApplicationStackOverflowHook(void) { for(;;); }
+void vApplicationStackOverflowHook(void) {
+    for (;;); // TODO: safe action
+}
+void vApplicationIdleHook(void) {
+    if (system_stats_.fully_booted) {
+        system_stats_.uptime = xTaskGetTickCount();
+        system_stats_.min_heap_space = xPortGetMinimumEverFreeHeapSize();
+        system_stats_.min_stack_space_comms = uxTaskGetStackHighWaterMark(comm_thread);
+        system_stats_.min_stack_space_axis0 = uxTaskGetStackHighWaterMark(axes[0]->thread_id_);
+        system_stats_.min_stack_space_axis1 = uxTaskGetStackHighWaterMark(axes[1]->thread_id_);
+        system_stats_.min_stack_space_usb = uxTaskGetStackHighWaterMark(usb_thread);
+        system_stats_.min_stack_space_uart = uxTaskGetStackHighWaterMark(uart_thread);
+        system_stats_.min_stack_space_usb_irq = uxTaskGetStackHighWaterMark(usb_irq_thread);
+        system_stats_.min_stack_space_startup = uxTaskGetStackHighWaterMark(defaultTaskHandle);
+    }
+}
 }
 
 int odrive_main(void) {
@@ -121,5 +140,6 @@ int odrive_main(void) {
         axes[i]->start_thread();
     }
 
+    system_stats_.fully_booted = true;
     return 0;
 }

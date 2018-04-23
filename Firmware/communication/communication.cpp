@@ -62,6 +62,8 @@ const uint8_t fw_version_minor = FW_VERSION_MINOR;
 const uint8_t fw_version_revision = FW_VERSION_REVISION;
 const uint8_t fw_version_unreleased = FW_VERSION_UNRELEASED; // 0 for official releases, 1 otherwise
 
+osThreadId comm_thread;
+
 /* Private function prototypes -----------------------------------------------*/
 /* Function implementations --------------------------------------------------*/
 
@@ -70,7 +72,7 @@ void init_communication(void) {
 
     // Start command handling thread
     osThreadDef(task_cmd_parse, communication_task, osPriorityNormal, 0, 5000 /* in 32-bit words */); // TODO: fix stack issues
-    osThreadCreate(osThread(task_cmd_parse), NULL);
+    comm_thread = osThreadCreate(osThread(task_cmd_parse), NULL);
 }
 
 
@@ -79,8 +81,6 @@ float oscilloscope[OSCILLOSCOPE_SIZE] = {
 };
 size_t oscilloscope_pos = 0;
 
-
-uint32_t comm_stack_info = 0; // for debugging only
 
 // Helper class because the protocol library doesn't yet
 // support non-member functions
@@ -101,7 +101,6 @@ public:
 static inline auto make_obj_tree() {
     return make_protocol_member_list(
         make_protocol_ro_property("vbus_voltage", &vbus_voltage),
-        make_protocol_ro_property("comm_stack_info", &comm_stack_info),
         make_protocol_ro_property("serial_number", &serial_number),
         make_protocol_ro_property("hw_version_major", &hw_version_major),
         make_protocol_ro_property("hw_version_minor", &hw_version_minor),
@@ -110,8 +109,19 @@ static inline auto make_obj_tree() {
         make_protocol_ro_property("fw_version_minor", &fw_version_minor),
         make_protocol_ro_property("fw_version_revision", &fw_version_revision),
         make_protocol_ro_property("fw_version_unreleased", &fw_version_unreleased),
-        make_protocol_ro_property("user_config_loaded", const_cast<const bool *>(&user_config_loaded)),
+        make_protocol_ro_property("user_config_loaded", const_cast<const bool *>(&user_config_loaded_)),
         make_protocol_ro_property("brake_resistor_armed", &brake_resistor_armed_),
+        make_protocol_object("system_stats",
+            make_protocol_ro_property("uptime", &system_stats_.uptime),
+            make_protocol_ro_property("min_heap_space", &system_stats_.min_heap_space),
+            make_protocol_ro_property("min_stack_space_axis0", &system_stats_.min_stack_space_axis0),
+            make_protocol_ro_property("min_stack_space_axis1", &system_stats_.min_stack_space_axis1),
+            make_protocol_ro_property("min_stack_space_comms", &system_stats_.min_stack_space_comms),
+            make_protocol_ro_property("min_stack_space_usb", &system_stats_.min_stack_space_usb),
+            make_protocol_ro_property("min_stack_space_uart", &system_stats_.min_stack_space_uart),
+            make_protocol_ro_property("min_stack_space_usb_irq", &system_stats_.min_stack_space_usb_irq),
+            make_protocol_ro_property("min_stack_space_startup", &system_stats_.min_stack_space_startup)
+        ),
         make_protocol_object("config",
             make_protocol_property("brake_resistance", &board_config.brake_resistance),
             // TODO: changing this currently requires a reboot - fix this
@@ -150,7 +160,6 @@ void communication_task(void * ctx) {
     auto tree_ptr = new (tree_buffer) tree_type(make_obj_tree());
     auto endpoint_provider = EndpointProvider_from_MemberList<tree_type>(*tree_ptr);
     set_application_endpoints(&endpoint_provider);
-    comm_stack_info = uxTaskGetStackHighWaterMark(nullptr);
     
     serve_on_uart();
     serve_on_usb();

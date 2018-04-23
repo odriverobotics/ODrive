@@ -68,6 +68,8 @@ osSemaphoreId sem_uart_dma;
 osSemaphoreId sem_usb_rx;
 osSemaphoreId sem_usb_tx;
 
+osThreadId usb_irq_thread;
+
 // Place FreeRTOS heap in core coupled memory for better performance
 __attribute__((section(".ccmram")))
 uint8_t ucHeap[configTOTAL_HEAP_SIZE];
@@ -112,7 +114,7 @@ void usb_deferred_interrupt_thread(void * ctx) {
 void init_deferred_interrupts(void) {
     // Start USB interrupt handler thread
     osThreadDef(task_usb_pump, usb_deferred_interrupt_thread, osPriorityAboveNormal, 0, 512);
-    osThreadCreate(osThread(task_usb_pump), NULL);
+    usb_irq_thread = osThreadCreate(osThread(task_usb_pump), NULL);
 }
 
 /* USER CODE END 4 */

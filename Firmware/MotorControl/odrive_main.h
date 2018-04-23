@@ -29,11 +29,24 @@ extern float vbus_voltage;
 extern bool brake_resistor_armed_;
 extern const float elec_rad_per_enc;
 extern uint32_t _reboot_cookie;
-extern bool user_config_loaded;
+extern bool user_config_loaded_;
 
 extern uint64_t serial_number;
 extern char serial_number_str[13];
 
+typedef struct {
+    bool fully_booted;
+    uint32_t uptime; // [ms]
+    uint32_t min_heap_space; // FreeRTOS heap [Bytes]
+    uint32_t min_stack_space_axis0; // minimum remaining space since startup [Bytes]
+    uint32_t min_stack_space_axis1;
+    uint32_t min_stack_space_comms;
+    uint32_t min_stack_space_usb;
+    uint32_t min_stack_space_uart;
+    uint32_t min_stack_space_usb_irq;
+    uint32_t min_stack_space_startup;
+} SystemStats_t;
+extern SystemStats_t system_stats_;
 
 #ifdef __cplusplus
 }
