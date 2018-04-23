@@ -812,17 +812,6 @@ public:
         LOG_PROTO("my tuple is at %x and of size %u\r\n", (uintptr_t)&in_args_, sizeof(in_args_));
     }
 
-    ProtocolFunction(const ProtocolFunction& other) :
-        name_(other.name_), obj_(other.obj_), func_ptr_(other.func_ptr_),
-        input_names_(other.input_names_), output_names_(other.output_names_),
-        input_properties_(PropertyListFactory<TInputs...>::template make_property_list<0>(
-            input_names_, in_args_)),
-        output_properties_(PropertyListFactory<TOutputs...>::template make_property_list<0>(
-            output_names_, out_args_))
-    {
-        LOG_PROTO("COPIED! my tuple is at %x and of size %u\r\n", (uintptr_t)&in_args_, sizeof(in_args_));
-    }
-
     void write_json(size_t id, StreamSink* output) {
         // write name
         write_string("{\"name\":\"", output);
