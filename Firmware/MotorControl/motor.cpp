@@ -78,7 +78,8 @@ void Motor::DRV8301_setup() {
     // 40V/V on 500uOhm gives a range of +/- 75A
     // 20V/V on 666uOhm gives a range of +/- 110A
     // 40V/V on 666uOhm gives a range of +/- 55A
-    local_regs->Ctrl_Reg_2.GAIN = DRV8301_ShuntAmpGain_40VpV;
+    local_regs->Ctrl_Reg_2.GAIN = DRV8301_ShuntAmpGain_80VpV;
+    // local_regs->Ctrl_Reg_2.GAIN = DRV8301_ShuntAmpGain_40VpV;
     // local_regs->Ctrl_Reg_2.GAIN = DRV8301_ShuntAmpGain_20VpV;
 
     switch (local_regs->Ctrl_Reg_2.GAIN) {
