@@ -8,7 +8,7 @@ odrives:
     brake-resistance: 0.47
     uart: /dev/serial/by-id/[not-yet-used]
     usb: auto
-    programmer: '493f6f06493f56540929113f'
+    programmer: '\x49\x3f\x6f\x06\x49\x3f\x56\x54\x09\x29\x11\x3f'
     vbus-voltage: 24 # [V]
     max-brake-power: 150 # [W]
     axes:
@@ -38,7 +38,7 @@ odrives:
     brake-resistance: 0.47
     uart: /dev/serial/by-id/[not-yet-used]
     usb: auto
-    programmer: '533f7506493f49514454193f'
+    programmer: '\x53\x3f\x75\x06\x49\x3f\x49\x51\x44\x54\x19\x3f'
     vbus-voltage: 48 # [V]
     max-brake-power: 150 # [W]
     axes:
