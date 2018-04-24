@@ -86,7 +86,8 @@ else:
 logger = Logger(verbose=args.verbose)
 
 def print_version():
-    print("ODrive control utility v" + odrive.__version__)
+    sys.stderr.write("ODrive control utility v" + odrive.__version__ + "\n")
+    sys.stderr.flush()
 
 app_shutdown_token = Event()
 

@@ -138,7 +138,7 @@ build{
 }
 
 tup.frule{
-    command='bash dump_version.sh %o',
+    command='python ../tools/odrive/version.py --output %o',
     outputs={'build/version.h'}
 }
 

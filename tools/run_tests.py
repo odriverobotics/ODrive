@@ -14,7 +14,45 @@ import threading
 import traceback
 import argparse
 from odrive.tests import *
-from odrive.utils import Logger, for_all_parallel, Event
+from odrive.utils import Logger, Event
+
+
+def for_all_parallel(objects, get_name, callback):
+    """
+    Executes the specified callback for every object in the objects
+    list concurrently. This function waits for all callbacks to
+    finish and throws an exception if any of the callbacks throw
+    an exception.
+    """
+    tracebacks = []
+
+    def run_callback(element):
+        try:
+            callback(element)
+        except Exception as ex:
+            tracebacks.append((get_name(element), ex))
+
+    # Start a thread for each element in the list
+    all_threads = []
+    for element in objects:
+        thread = threading.Thread(target=run_callback, args=(element,))
+        thread.start()
+        all_threads.append(thread)
+    
+    # Wait for all threads to complete
+    for thread in all_threads:
+        thread.join()
+
+    if len(tracebacks) == 1:
+        msg = "task {} failed.".format(tracebacks[0][0])
+        raise Exception(msg) from tracebacks[0][1]
+    elif len(tracebacks) > 1:
+        msg = "task {} and {} failed.".format(
+            tracebacks[0][0],
+            "one other" if len(tracebacks) == 2 else str(len(tracebacks)-1) + " others"
+            )
+        raise Exception(msg) from tracebacks[0][1]
+
 
 script_path=os.path.dirname(os.path.realpath(__file__))
 

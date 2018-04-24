@@ -16,7 +16,9 @@ try:
         import colorama
         colorama.init()
 except ModuleNotFoundError:
-    print("Could not init terminal colors")
+    print("Could not init terminal features.")
+    print("Refer to install instructions at http://docs.odriverobotics.com/#downloading-and-installing-tools")
+    sys.stdout.flush()
     pass
 
 data_rate = 100
@@ -251,43 +253,6 @@ def wait_any(timeout=None, *events):
         if events[i].is_set():
             return i
     raise TimeoutException()
-
-
-def for_all_parallel(objects, get_name, callback):
-    """
-    Executes the specified callback for every object in the objects
-    list concurrently. This function waits for all callbacks to
-    finish and throws an exception if any of the callbacks throw
-    an exception.
-    """
-    tracebacks = []
-
-    def run_callback(element):
-        try:
-            callback(element)
-        except Exception as ex:
-            tracebacks.append((get_name(element), ex))
-
-    # Start a thread for each element in the list
-    all_threads = []
-    for element in objects:
-        thread = threading.Thread(target=run_callback, args=(element,))
-        thread.start()
-        all_threads.append(thread)
-    
-    # Wait for all threads to complete
-    for thread in all_threads:
-        thread.join()
-
-    if len(tracebacks) == 1:
-        msg = "task {} failed.".format(tracebacks[0][0])
-        raise Exception(msg) from tracebacks[0][1]
-    elif len(tracebacks) > 1:
-        msg = "task {} and {} failed.".format(
-            tracebacks[0][0],
-            "one other" if len(tracebacks) == 2 else str(len(tracebacks)-1) + " others"
-            )
-        raise Exception(msg) from tracebacks[0][1]
 
 
 class Logger():
