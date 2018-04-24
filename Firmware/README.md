@@ -49,7 +49,7 @@ __CONFIG_STEP_DIR__: Set to `y` to use the GPIO1 and GPIO2 for step/direction in
 <br><br>
 ## Downloading and Installing Tools
 ### Getting a programmer
-__Note:__ If you don't plan to make major firmware modifications you can use the built-in DFU feature.
+__Note:__ If you have ODrive v3.5 and newer, and don't plan to make major firmware modifications you can use the built-in DFU feature.
 In this case you don't need an SWD programmer and you can skip OpenOCD related instructions.
 
 Get a programmer that supports SWD (Serial Wire Debugging) and is ST-link v2 compatible. You can get them really cheap on [eBay](http://www.ebay.co.uk/itm/ST-Link-V2-Emulator-Downloader-Programming-Mini-Unit-STM8-STM32-with-20CM-Line-/391173940927?hash=item5b13c8a6bf:g:3g8AAOSw~OdVf-Tu) or many other places.
@@ -96,7 +96,7 @@ After installing all of the above, open a Git Bash shell. Continue at section [B
 * Run `make` in the `Firmware` directory.
 
 ### Flashing the firmware (standalone device)
-Note: ODrive v3.4 and earlier require you to flash with the external programmer first (see below), before you can reflash in standalone mode.
+Note: This method of updating the firmware is only supported on ODrive v3.5 and newer. If you have an older board you must instead use the method in the [next section](#flashing-the-firmware).
 * __Windows__: Use the [Zadig](http://zadig.akeo.ie/) utility to set ODrive (not STLink!) driver to libusb-win32. 
   * If 'Odrive version 3.x' is not in the list of devices upon opening Zadig, check 'List All Devices' from the options menu. With the Odrive selected in the device list choose 'libusb-win32' from the target driver list and select the large 'install driver' button.
 * Run `make dfu` in the `Firmware` directory.
