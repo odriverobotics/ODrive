@@ -77,13 +77,13 @@ void vApplicationIdleHook(void) {
     if (system_stats_.fully_booted) {
         system_stats_.uptime = xTaskGetTickCount();
         system_stats_.min_heap_space = xPortGetMinimumEverFreeHeapSize();
-        system_stats_.min_stack_space_comms = uxTaskGetStackHighWaterMark(comm_thread);
-        system_stats_.min_stack_space_axis0 = uxTaskGetStackHighWaterMark(axes[0]->thread_id_);
-        system_stats_.min_stack_space_axis1 = uxTaskGetStackHighWaterMark(axes[1]->thread_id_);
-        system_stats_.min_stack_space_usb = uxTaskGetStackHighWaterMark(usb_thread);
-        system_stats_.min_stack_space_uart = uxTaskGetStackHighWaterMark(uart_thread);
-        system_stats_.min_stack_space_usb_irq = uxTaskGetStackHighWaterMark(usb_irq_thread);
-        system_stats_.min_stack_space_startup = uxTaskGetStackHighWaterMark(defaultTaskHandle);
+        system_stats_.min_stack_space_comms = uxTaskGetStackHighWaterMark(comm_thread) * sizeof(StackType_t);
+        system_stats_.min_stack_space_axis0 = uxTaskGetStackHighWaterMark(axes[0]->thread_id_) * sizeof(StackType_t);
+        system_stats_.min_stack_space_axis1 = uxTaskGetStackHighWaterMark(axes[1]->thread_id_) * sizeof(StackType_t);
+        system_stats_.min_stack_space_usb = uxTaskGetStackHighWaterMark(usb_thread) * sizeof(StackType_t);
+        system_stats_.min_stack_space_uart = uxTaskGetStackHighWaterMark(uart_thread) * sizeof(StackType_t);
+        system_stats_.min_stack_space_usb_irq = uxTaskGetStackHighWaterMark(usb_irq_thread) * sizeof(StackType_t);
+        system_stats_.min_stack_space_startup = uxTaskGetStackHighWaterMark(defaultTaskHandle) * sizeof(StackType_t);
     }
 }
 }

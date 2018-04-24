@@ -120,7 +120,12 @@ static inline auto make_obj_tree() {
             make_protocol_ro_property("min_stack_space_usb", &system_stats_.min_stack_space_usb),
             make_protocol_ro_property("min_stack_space_uart", &system_stats_.min_stack_space_uart),
             make_protocol_ro_property("min_stack_space_usb_irq", &system_stats_.min_stack_space_usb_irq),
-            make_protocol_ro_property("min_stack_space_startup", &system_stats_.min_stack_space_startup)
+            make_protocol_ro_property("min_stack_space_startup", &system_stats_.min_stack_space_startup),
+            make_protocol_object("usb",
+                make_protocol_ro_property("rx_cnt", &usb_stats_.rx_cnt),
+                make_protocol_ro_property("tx_cnt", &usb_stats_.tx_cnt),
+                make_protocol_ro_property("tx_overrun_cnt", &usb_stats_.tx_overrun_cnt)
+            )
         ),
         make_protocol_object("config",
             make_protocol_property("brake_resistance", &board_config.brake_resistance),

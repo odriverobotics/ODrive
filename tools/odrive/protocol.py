@@ -345,6 +345,7 @@ class Channel(PacketSink):
             if (ack_signal):
                 self._responses[seq_no] = packet[2:]
                 ack_signal.set()
+                #print("received ack for packet " + str(seq_no))
             else:
                 print("received unexpected ACK: " + str(seq_no))
 
