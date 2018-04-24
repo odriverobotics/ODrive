@@ -76,9 +76,7 @@ void init_communication(void) {
 }
 
 
-float oscilloscope[OSCILLOSCOPE_SIZE] = {
-    0.123f, 0.345f, 0.4576f, 1.543f, -50.0f
-};
+float oscilloscope[OSCILLOSCOPE_SIZE] = {0};
 size_t oscilloscope_pos = 0;
 
 

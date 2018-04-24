@@ -70,7 +70,8 @@ class Motor;
 constexpr size_t AXIS_COUNT = 2;
 extern Axis *axes[AXIS_COUNT];
 
-#define OSCILLOSCOPE_SIZE 18000
+// if you use the oscilloscope feature you can bump up this value
+#define OSCILLOSCOPE_SIZE 128
 extern float oscilloscope[OSCILLOSCOPE_SIZE];
 extern size_t oscilloscope_pos;
 
