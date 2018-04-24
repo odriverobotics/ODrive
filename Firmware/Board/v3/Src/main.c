@@ -86,29 +86,33 @@ extern char _estack; // provided by the linker script
 
 // Gets called from the startup assembly code
 void early_start_checks(void) {
+  if(_reboot_cookie == 0xDEADFE75) {
+    /* The STM DFU bootloader enables internal pull-up resistors on PB10 (AUX_H)
+    * and PB11 (AUX_L), thereby causing shoot-through on the brake resistor
+    * FETs and obliterating them unless external 3.3k pull-down resistors are
+    * present. Pull-downs are only present on ODrive 3.5 or newer.
+    * On older boards we disable DFU by default but if the user insists
+    * there's only one thing left that might save it: time.
+    * The brake resistor gate driver needs a certain 10V supply (GVDD) to
+    * make it work. This voltage is supplied by the motor gate drivers which get
+    * disabled at system reset. So over time GVDD voltage _should_ below
+    * dangerous levels. This is completely handwavy and should not be relied on
+    * so you are on your own on if you ignore this warning.
+    *
+    * This loop takes 5 cycles per iteration and at this point the system runs
+    * on the internal 16MHz RC oscillator so the delay is about 2 seconds.
+    */
+    for (size_t i = 0; i < (16000000UL / 5UL * 2UL); ++i) {
+      __NOP();
+    }
+    _reboot_cookie = 0xDEADBEEF;
+  }
+
   /* We could jump to the bootloader directly on demand without rebooting
   but that requires us to reset several peripherals and interrupts for it
   to function correctly. Therefore it's easier to just reset the entire chip. */
   if(_reboot_cookie == 0xDEADBEEF) {
     _reboot_cookie = 0xCAFEFEED;  //Reset bootloader trigger
-    
-    /*
-    * This wait loop solves an obscure timing issue, but we don't exactly understand why.
-    * When the transition NVIC_SystemReset() => STM bootloader happens very quickly,
-    * there is a yet unexplained phenomenon where the ODrive would emit an audible click,
-    * followed by one the following symptoms:
-    *  - Device reboots in normal mode (possibly due to the bootloader exiting immidiately)
-    *  - Device goes into DFU mode and then the power supply turns off
-    *    This manifests in the DFU script detecting the device in DFU mode but then
-    *    losing the device immidiately after.
-    * There were no motors/encoders/brake resistor connected when testing this. As far as
-    * we can tell, the only way for the software to cause a short circuit is through the
-    * brake FETs.
-    */
-    for (size_t i = 0; i < 1000000; ++i) {
-      __NOP();
-    }
-
     __set_MSP((uintptr_t)&_estack);
     // http://www.st.com/content/ccc/resource/technical/document/application_note/6a/17/92/02/58/98/45/0c/CD00264379.pdf/files/CD00264379.pdf
     void (*builtin_bootloader)(void) = (void (*)(void))(*((uint32_t *)0x1FFF0004));

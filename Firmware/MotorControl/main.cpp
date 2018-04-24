@@ -62,10 +62,22 @@ void erase_configuration(void) {
     NVM_erase();
 }
 
-void enter_dfu_mode(void) {
-    __asm volatile ("CPSID I\n\t":::"memory"); // disable interrupts
-    _reboot_cookie = 0xDEADBEEF;
-    NVIC_SystemReset();
+void enter_dfu_mode() {
+    if ((hw_version_major == 3) && (hw_version_minor >= 5)) {
+        __asm volatile ("CPSID I\n\t":::"memory"); // disable interrupts
+        _reboot_cookie = 0xDEADBEEF;
+        NVIC_SystemReset();
+    } else {
+        /*
+        * DFU mode is only allowed on board version >= 3.5 because it can burn
+        * the brake resistor FETs on older boards.
+        * If you really want to use it on an older board, add 3.3k pull-down resistors
+        * to the AUX_L and AUX_H signals and _only then_ uncomment these lines.
+        */
+        //__asm volatile ("CPSID I\n\t":::"memory"); // disable interrupts
+        //_reboot_cookie = 0xDEADFE75;
+        //NVIC_SystemReset();
+    }
 }
 
 extern "C" {
