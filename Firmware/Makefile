@@ -24,7 +24,7 @@ gdb: all
 	arm-none-eabi-gdb $(FIRMWARE) -x openocd.gdbinit
 
 dfu: all
-	../tools/odrivetool $(if $(value SERIAL_NUMBER),--serial-number $(SERIAL_NUMBER),) dfu $(FIRMWARE_HEX)
+	python ../tools/odrivetool $(if $(value SERIAL_NUMBER),--serial-number $(SERIAL_NUMBER),) dfu $(FIRMWARE_HEX)
 
 bmp: all
 	arm-none-eabi-gdb --ex 'target extended-remote /dev/stlink' \
