@@ -119,7 +119,7 @@ int main(void)
     for (size_t i = 0; i < (16000000UL / 5UL * 2UL); ++i) {
       __NOP();
     }
-    *((unsigned long *)0x2001C000) == 0xDEADBEEF;
+    *((unsigned long *)0x2001C000) = 0xDEADBEEF;
   }
 
   /* We could jump to the bootloader directly on demand without rebooting
