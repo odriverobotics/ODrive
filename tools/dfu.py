@@ -14,6 +14,9 @@ import usb.core
 import usb.util
 import odrive.core
 
+print("The DFU script had to be disabled because of it potentially breaking the board.")
+sys.exit(1)
+
 # We are interactively printing status messages, so flush by default
 import functools
 print = functools.partial(print, flush=True)
