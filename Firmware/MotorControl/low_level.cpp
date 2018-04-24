@@ -182,7 +182,7 @@ void safety_critical_disarm_brake_resistor() {
 // @brief Updates the brake resistor PWM timings unless
 // the brake resistor is disarmed.
 void safety_critical_apply_brake_resistor_timings(uint32_t low_off, uint32_t high_on) {
-    if (high_on - low_off > TIM_APB1_DEADTIME_CLOCKS)
+    if (high_on - low_off < TIM_APB1_DEADTIME_CLOCKS)
         for(;;);
     uint8_t sr = cpu_enter_critical();
     if (brake_resistor_armed_) {
