@@ -100,19 +100,26 @@ int main(void)
 {
   /* USER CODE BEGIN 1 */
 
-  /*
-  * This wait loop works around an obscure timing issue.
-  * When the transition NVIC_SystemReset() => STM bootloader happens quickly,
-  * there is a yet unexplained phenomenon where both the high side and low side
-  * brake resistor FETs would turn on simultaneously for about 2.5ms.
-  * This manifests in an audible click and may lead to failure of the FETs.
-  * When adding a delay before entering DFU mode the issue does not occur.
-  * 
-  * This loop takes about 5 cycles per iteration, so the delay
-  * is about 1/168000kHz*5*1000000 = 30ms
-  */
-  for (size_t i = 0; i < 1000000; ++i) {
-    __NOP();
+  if(*((unsigned long *)0x2001C000) == 0xDEADFE75) {
+    /* The STM DFU bootloader enables internal pull-up resistors on PB10 (AUX_H)
+    * and PB11 (AUX_L), thereby causing shoot-through on the brake resistor
+    * FETs and obliterating them unless external 3.3k pull-down resistors are
+    * present. Pull-downs are only present on ODrive 3.5 or newer.
+    * On older boards we disable DFU by default but if the user insists
+    * there's only one thing left that might save it: time.
+    * The brake resistor gate driver needs a certain 10V supply (GVDD) to
+    * make it work. This voltage is supplied by the motor gate drivers which get
+    * disabled at system reset. So over time GVDD voltage _should_ below
+    * dangerous levels. This is completely handwavy and should not be relied on
+    * so you are on your own on if you ignore this warning.
+    *
+    * This loop takes 5 cycles per iteration and at this point the system runs
+    * on the internal 16MHz RC oscillator so the delay is about 2 seconds.
+    */
+    for (size_t i = 0; i < (16000000UL / 5UL * 2UL); ++i) {
+      __NOP();
+    }
+    *((unsigned long *)0x2001C000) == 0xDEADBEEF;
   }
 
   /* We could jump to the bootloader directly on demand without rebooting
