@@ -15,6 +15,7 @@ The project is under active development, so make sure to check the [Changelog](C
 - [Configuring the build](#configuring-the-build)
 - [Building and flashing the Firmware](#building-and-flashing-the-firmware)
 - [Debugging](#debugging)
+- [Testing](#testing)
 - [Setting up an IDE](#setting-up-an-ide)
 - [STM32CubeMX](#stm32cubemx)
 - [Troubleshooting](#troubleshooting)
@@ -117,6 +118,14 @@ You can also modify the compile-time defaults for all `.config` parameters. You 
 * Run `make flash` in the `Firmware` directory.
 
 If the flashing worked, you can connect to the board using the [odrivetool](getting-started#start-odrivetool).
+
+<br><br>
+## Testing
+The script `tools/run_tests.py` runs a sequence of automated tests for several firmware features as well as high power burn-in tests. Some tests only need one ODrive and one motor/encoder pair while other tests need a back-to-back test rig such as [this one](https://cad.onshape.com/documents/026bda35ad5dff4d73c1d37f/w/ae302174f402737e1fdb3783/e/5ca143a6e5e24daf1fe8e434). In any case, to run the tests you need to provide a YAML file that lists the parameters of your test setup. An example can be found at [`tools/test-rig-parallel.yaml`](tools/test-rig-parallel.yaml`). The programmer serial number can be found by running `Firmware/find_programmer.sh` (make sure it has the latest formware from STM).
+
+<div class="alert" markdown="span">The test script commands the ODrive to high currents and high motor speeds so if your ODrive is connected to anything other than a stirdy test-rig (or free spinning motors), it will probably break your machine.</div>
+
+Example usage: `./run_tests.py --test-rig-yaml ../tools/test-rig-parallel.yaml`
 
 <br><br>
 ## Debugging
