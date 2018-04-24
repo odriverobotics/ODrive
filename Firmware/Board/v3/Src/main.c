@@ -100,6 +100,21 @@ int main(void)
 {
   /* USER CODE BEGIN 1 */
 
+  /*
+  * This wait loop works around an obscure timing issue.
+  * When the transition NVIC_SystemReset() => STM bootloader happens quickly,
+  * there is a yet unexplained phenomenon where both the high side and low side
+  * brake resistor FETs would turn on simultaneously for about 2.5ms.
+  * This manifests in an audible click and may lead to failure of the FETs.
+  * When adding a delay before entering DFU mode the issue does not occur.
+  * 
+  * This loop takes about 5 cycles per iteration, so the delay
+  * is about 1/168000kHz*5*1000000 = 30ms
+  */
+  for (size_t i = 0; i < 1000000; ++i) {
+    __NOP();
+  }
+
   /* We could jump to the bootloader directly on demand without rebooting
   but that requires us to reset several peripherals and interrupts for it
   to function correctly. Therefore it's easier to just reset the entire chip. */
