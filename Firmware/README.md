@@ -73,9 +73,10 @@ To compile the program, you first need to install the prerequisite tools:
 * No additional USB CDC driver should be required on Linux.
 
 #### Mac:
-* `brew cask install gcc-arm-embedded`:  GCC toolchain+debugger
-* `brew cask install osxfuse; brew install tup`: Build tool
-* `brew install openocd`: Programmer
+First install [Homebrew](https://brew.sh/). Then you can run these commands in Terminal:
+* `brew cask install gcc-arm-embedded`: to install GCC toolchain+debugger
+* `brew cask install osxfuse; brew install tup`: to install the build tool
+* `brew install openocd`: to install the programmer tool
 
 #### Windows:
 Install the following:
@@ -165,7 +166,8 @@ pip install pyusb pyserial
 5. __Windows__: Use the [Zadig](http://zadig.akeo.ie/) utility to set ODrive (not STLink!) driver to libusb-win32. 
   * If 'Odrive version 3.x' is not in the list of devices upon opening Zadig, check 'List All Devices' from the options menu. With the Odrive selected in the device list choose 'libusb-win32' from the target driver list and select the large 'install driver' button.
 6. Open the bash prompt in the `ODrive/tools/` folder.
-7. Run `python3 demo.py` or `python3 explore_odrive.py`. 
+7. Run `python3 demo.py` or `python3 explore_odrive.py`.
+- __Mac__: `python3 demo.py --discover serial` or `python3 explore_odrive.py --discover serial`
 - `demo.py` is a very simple script which will make motor 0 turn back and forth. Use this as an example if you want to control the ODrive yourself programatically.
 - `explore_odrive.py` drops you into an interactive python shell where you can explore and edit the parameters that are available on your device. For instance `my_odrive.motor0.pos_setpoint = 10000` makes motor0 move to position 10000. To connect over serial instead of USB run `./tools/explore_odrive.py --discover serial`.
 
