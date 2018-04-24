@@ -206,7 +206,7 @@ def show_deferred_message(message, cancellation_token):
     t.daemon = True
     t.start()
 
-def put_odrive_into_dfu_mode(my_drive):
+def put_odrive_into_dfu_mode(my_drive, cancellation_token):
     """
     Puts the specified device into DFU mode
     """
@@ -216,15 +216,23 @@ def put_odrive_into_dfu_mode(my_drive):
               "DFU with this script should work fine."
               .format(my_drive.__channel__.usb_device.serial_number))
         return
-    print("Putting device {} into DFU mode...".format(my_drive.__channel__.usb_device.serial_number))
-    try:
-        my_drive.enter_dfu_mode()
-    except odrive.protocol.ChannelBrokenException as ex:
-        pass # this is expected because the device reboots
-    if platform.system() == "Windows":
-        show_deferred_message("Still waiting for the device to reappear.\n"
-                              "Use the Zadig utility to set the driver of 'STM32 BOOTLOADER' to libusb-win32.",
-                              find_odrive_cancellation_token)
+    hw_version_major = my_drive.hw_version_major if hasattr(my_drive, 'hw_version_major') else 3
+    hw_version_minor = my_drive.hw_version_minor if hasattr(my_drive, 'hw_version_minor') else 4
+    if hw_version_major == 3 and hw_version_minor >= 5:
+        print("Putting device {} into DFU mode...".format(my_drive.__channel__.usb_device.serial_number))
+        try:
+            my_drive.enter_dfu_mode()
+        except odrive.protocol.ChannelBrokenException:
+            pass # this is expected because the device reboots
+        if platform.system() == "Windows":
+            show_deferred_message("Still waiting for the device to reappear.\n"
+                                "Use the Zadig utility to set the driver of 'STM32 BOOTLOADER' to libusb-win32.",
+                                cancellation_token)
+    else:
+        print("Found device {}".format(my_drive.__channel__.usb_device.serial_number))
+        print("  DFU mode is not supported on board version 3.4 or earlier.")
+        print("  This is because entering DFU mode on such a device would")
+        print("  break the brake resistor FETs under some circumstances.")
 
 def launch_dfu(args, app_shutdown_token):
     """
@@ -251,7 +259,9 @@ def launch_dfu(args, app_shutdown_token):
 
     # Scan for ODrives not in DFU mode and put them into DFU mode once they appear
     # We only scan on USB because DFU is only possible over USB
-    odrive.discovery.find_all(args.path, serial_number, put_odrive_into_dfu_mode, find_odrive_cancellation_token, app_shutdown_token)
+    odrive.discovery.find_all(args.path, serial_number,
+        lambda dev: put_odrive_into_dfu_mode(dev, find_odrive_cancellation_token),
+        find_odrive_cancellation_token, app_shutdown_token)
 
     # Poll libUSB until a device in DFU mode is found
     while not app_shutdown_token.is_set():
