@@ -6,6 +6,9 @@ Please add a note of your changes below this heading if you make a Pull Request.
  * `make write_otp` command to burn the board version onto the ODrive's one-time programmable memory. If you have an ODrive v3.4 or older, you should run this once for a better firmware update user experience in the future. Run the command without any options for more details. Once set, the board version is exposed through the `hw_version_[...]` properties.
  * bake Git-derived firmware version into firmware binary. The firmware version is exposed through the `fw_version_[...]` properties.
  * infrastructure to publish the python tools to PyPi. See `tools/setup.py` for details.
+ * Automated test script `run_tests.py`
+ * Protocol supports function return values
+ * System stats (e.g. stack usage) are exposed under `<odrv>.system_stats`
 
 ### Changed
 * The DFU script now verifies the flash after writing
@@ -24,6 +27,7 @@ Please add a note of your changes below this heading if you make a Pull Request.
 
 ### Fixed
 * Enums now transported with correct underlying type on native protocol
+* USB issue where the device would stop responding when the host script would quit abruptly or reset the device during operation
 
 # Releases
 
