@@ -109,8 +109,19 @@ void motors_run_anticogging_calibration_func() {
 }
 
 void enter_dfu_mode() {
-    *((unsigned long *)0x2001C000) = 0xDEADBEEF;
-    NVIC_SystemReset();
+    if ((HW_VERSION_MAJOR == 3) && (HW_VERSION_MINOR >= 5)) {
+        *((unsigned long *)0x2001C000) = 0xDEADBEEF;
+        NVIC_SystemReset();
+    } else {
+        /*
+        * DFU mode is only allowed on board version >= 3.5 because it can burn
+        * the brake resistor FETs on older boards.
+        * If you really want to use it on an older board, add 3.3k pull-down resistors
+        * to the AUX_L and AUX_H signals and _only then_ uncomment these lines.
+        */
+        //*((unsigned long *)0x2001C000) = 0xDEADFE75;
+        //NVIC_SystemReset();
+    }
 }
 
 // This table specifies which fields and functions are exposed on the USB and UART ports.
