@@ -65,6 +65,8 @@ const uint8_t fw_version_unreleased = FW_VERSION_UNRELEASED; // 0 for official r
 
 osThreadId comm_thread;
 
+static uint32_t test_property = 0;
+
 /* Private function prototypes -----------------------------------------------*/
 /* Function implementations --------------------------------------------------*/
 
@@ -142,8 +144,9 @@ static inline auto make_obj_tree() {
         ),
         make_protocol_object("axis0", axes[0]->make_protocol_definitions()),
         make_protocol_object("axis1", axes[1]->make_protocol_definitions()),
-        make_protocol_function("get_oscilloscope_val", static_functions, &StaticFunctions::get_oscilloscope_val, "index"),
+        make_protocol_property("test_property", &test_property),
         make_protocol_function("test_function", static_functions, &StaticFunctions::test_function, "delta"),
+        make_protocol_function("get_oscilloscope_val", static_functions, &StaticFunctions::get_oscilloscope_val, "index"),
         make_protocol_function("save_configuration", static_functions, &StaticFunctions::save_configuration_helper),
         make_protocol_function("erase_configuration", static_functions, &StaticFunctions::erase_configuration_helper),
         make_protocol_function("reboot", static_functions, &StaticFunctions::NVIC_SystemReset_helper),
