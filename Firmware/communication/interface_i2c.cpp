@@ -75,6 +75,12 @@ void HAL_I2C_AddrCallback(I2C_HandleTypeDef *hi2c, uint8_t TransferDirection, ui
 }
 
 void HAL_I2C_ErrorCallback(I2C_HandleTypeDef *hi2c) {
-    if (hi2c->ErrorCode & (~HAL_I2C_ERROR_AF)) // ignore NACK errors
-        i2c_stats_.error_cnt += 1;
+    // ignore NACK errors
+    if (!(hi2c->ErrorCode & (~HAL_I2C_ERROR_AF)))
+        return;
+
+    i2c_stats_.error_cnt += 1;
+
+    // Continue listening
+    HAL_I2C_EnableListen_IT(hi2c);
 }

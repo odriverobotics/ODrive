@@ -109,7 +109,7 @@ int odrive_main(void) {
         // Set up the direction GPIO as input
         GPIO_InitTypeDef GPIO_InitStruct;
         GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
-        GPIO_InitStruct.Pull = GPIO_NOPULL;
+        GPIO_InitStruct.Pull = GPIO_PULLUP;
 
         GPIO_InitStruct.Pin = I2C_A0_PIN;
         HAL_GPIO_Init(I2C_A0_PORT, &GPIO_InitStruct);
