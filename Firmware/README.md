@@ -47,7 +47,7 @@ __CONFIG_UART_PROTOCOL__: Defines which protocol the ODrive should use on the UA
 <br><br>
 ## Downloading and Installing Tools
 ### Getting a programmer
-__Note:__ If you don't plan to make major firmware modifications you can use the built-in DFU feature.
+__Note:__ If you have ODrive v3.5 and newer, and don't plan to make major firmware modifications you can use the built-in DFU feature.
 In this case you don't need an SWD programmer and you can skip OpenOCD related instructions.
 
 Get a programmer that supports SWD (Serial Wire Debugging) and is ST-link v2 compatible. You can get them really cheap on [eBay](http://www.ebay.co.uk/itm/ST-Link-V2-Emulator-Downloader-Programming-Mini-Unit-STM8-STM32-with-20CM-Line-/391173940927?hash=item5b13c8a6bf:g:3g8AAOSw~OdVf-Tu) or many other places.
@@ -71,9 +71,10 @@ To compile the program, you first need to install the prerequisite tools:
 * No additional USB CDC driver should be required on Linux.
 
 #### Mac:
-* `brew cask install gcc-arm-embedded`:  GCC toolchain+debugger
-* `brew cask install osxfuse; brew install tup`: Build tool
-* `brew install openocd`: Programmer
+First install [Homebrew](https://brew.sh/). Then you can run these commands in Terminal:
+* `brew cask install gcc-arm-embedded`: to install GCC toolchain+debugger
+* `brew cask install osxfuse; brew install tup`: to install the build tool
+* `brew install openocd`: to install the programmer tool
 
 #### Windows:
 Install the following:
@@ -94,7 +95,7 @@ After installing all of the above, open a Git Bash shell. Continue at section [B
 * Run `make` in the `Firmware` directory.
 
 ### Flashing the firmware (standalone device)
-Note: ODrive v3.4 and earlier require you to flash with the external programmer first (see below), before you can reflash in standalone mode.
+Note: This method of updating the firmware is only supported on ODrive v3.5 and newer. If you have an older board you must instead use the method in the [next section](#flashing-the-firmware).
 * __Windows__: Use the [Zadig](http://zadig.akeo.ie/) utility to set ODrive (not STLink!) driver to libusb-win32. 
   * If 'Odrive version 3.x' is not in the list of devices upon opening Zadig, check 'List All Devices' from the options menu. With the Odrive selected in the device list choose 'libusb-win32' from the target driver list and select the large 'install driver' button.
 * Run `make dfu` in the `Firmware` directory.
@@ -165,6 +166,7 @@ pip install pyusb pyserial
   * If 'Odrive version 3.x' is not in the list of devices upon opening Zadig, check 'List All Devices' from the options menu. With the Odrive selected in the device list choose 'libusb-win32' from the target driver list and select the large 'install driver' button.
 6. Open the bash prompt in the `ODrive/tools/` folder.
 7. Run `python3 odrive_demo.py` or `python3 odrivetool`. 
+- __Mac__: instead run: `python3 odrive_demo.py --discover serial` or `python3 explore_odrive.py --discover serial`
 - `odrive_demo.py` is a very simple script which will make motor 0 turn back and forth. Use this as an example if you want to control the ODrive yourself programatically.
 - `odrivetool` drops you into an interactive python shell when started without any arguments. There you can explore and edit the parameters that are available on your device. For instance `odrv0.motor0.pos_setpoint = 10000` makes motor0 move to position 10000. To connect over serial instead of USB run `./tools/odrivetool --path serial`. Run `./tools/odrivetool --help` to see what else you can do with the script.
 
@@ -250,7 +252,7 @@ If you have an encoder with an index (Z) signal, you may avoid having to do the 
 
 * Since you will only do this once, it is recommended that you mechanically disengage the motor from anything other than the encoder, so it can spin freely.
 * All the parameters we will be modifying are in the motor structs at the top of [MotorControl/low_level.c](MotorControl/low_level.c).
-* Set `.encoder.use_index = true` and `.encoder.calibrated = false`.
+* Set `.encoder.use_index = true` and `.encoder.manually_calibrated = false`.
 * Flash this configuration, and let the motor scan for the index pulse and then complete the encoder calibration.
 * Run `odrivetool`, check [Communicating over USB or UART](#communicating-over-usb-or-uart) for instructions on how to do that.
 * Enter the following to print out the calibration parameters (substitute the motor number you are calibrating for `<NUM>`):
@@ -258,7 +260,7 @@ If you have an encoder with an index (Z) signal, you may avoid having to do the 
   * `odrv0.motor<NUM>.encoder.motor_dir` - This should print 1 or -1.
 * Copy these numbers to the corresponding entries in low_level.c: `.encoder.encoder_offset` and `.encoder.motor_dir`.
   * _Warning_: Please be careful to enter the correct numbers, and not to confuse the motor channels. Incorrect values may cause the motor to spin out of control.
-* Set `.encoder.calibrated = true`.
+* Set `.encoder.manually_calibrated = true`.
 * Flash this configuration and check that the motor scans for the index pulse but skips the encoder calibration.
 * Congratulations, you are now done. You may now attach the motor to your mechanical load.
 * If you wish to scan for the index pulse in the other direction (if for example your axis usually starts close to a hard-stop), you can set a negative value in `.encoder.idx_search_speed`.
