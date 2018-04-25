@@ -38,12 +38,12 @@ shell_parser.add_argument("--no-ipython", action="store_true",
 dfu_parser = subparsers.add_parser('dfu', help="Upgrade the ODrive device firmware")
 dfu_parser.add_argument('file', metavar='HEX', help='The .hex file to be flashed. Make sure your firmware board version matches the actual board version.')
 
-template_processor_parser = subparsers.add_parser('process-template', help="Process a jinja2 template, passing the ODrive's JSON data as data input")
-template_processor_parser.add_argument("-t", "--template", type=argparse.FileType('r'),
+code_generator_parser = subparsers.add_parser('generate-code', help="Process a jinja2 template, passing the ODrive's JSON data as data input")
+code_generator_parser.add_argument("-t", "--template", type=argparse.FileType('r'),
                     help="the code template")
-template_processor_parser.add_argument("-o", "--output", type=argparse.FileType('w'), default='-',
+code_generator_parser.add_argument("-o", "--output", type=argparse.FileType('w'), default='-',
                     help="path of the generated output")
-template_processor_parser.set_defaults(template = os.path.join(script_path, 'odrive_header_template.h.in'))
+code_generator_parser.set_defaults(template = os.path.join(script_path, 'odrive_header_template.h.in'))
 
 subparsers.add_parser('liveplotter', help="Upgrade the ODrive's Firmware")
 subparsers.add_parser('drv-status', help="Show status of the on-board DRV8301 chips (for debugging only)")
@@ -148,10 +148,11 @@ try:
         from odrive.utils import setup_udev_rules
         setup_udev_rules(logger)
     
-    elif args.command == 'process-template':
-        from odrive.template_processor import generate_header
-        my_odrive = odrive.discovery.find_any(path=args.path, serial_number=args.serial_number)
-        generate_header(my_odrive, args.template, args.output)
+    elif args.command == 'generate-code':
+        from odrive.code_generator import generate_code
+        my_odrive = odrive.discovery.find_any(path=args.path, serial_number=args.serial_number,
+            channel_termination_token=app_shutdown_token)
+        generate_code(my_odrive, args.template, args.output)
 
     else:
         raise Exception("unknown command: " + args.command)

@@ -22,7 +22,7 @@ def get_flat_endpoint_list(json, prefix):
             flat_list = flat_list + get_flat_endpoint_list(item['members'], prefix + item['name'] + '.')
     return flat_list
 
-def generate_header(odrv, template_file, output_file):
+def generate_code(odrv, template_file, output_file):
     json_data = odrv._json_data
     json_crc = odrv._json_crc
 
