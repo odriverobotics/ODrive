@@ -5,6 +5,7 @@
 
 #include "interface_usb.h"
 #include "interface_uart.h"
+#include "interface_i2c.h"
 
 #include "odrive_main.h"
 #include "protocol.hpp"
@@ -123,12 +124,19 @@ static inline auto make_obj_tree() {
                 make_protocol_ro_property("rx_cnt", &usb_stats_.rx_cnt),
                 make_protocol_ro_property("tx_cnt", &usb_stats_.tx_cnt),
                 make_protocol_ro_property("tx_overrun_cnt", &usb_stats_.tx_overrun_cnt)
+            ),
+            make_protocol_object("i2c",
+                make_protocol_ro_property("addr", &i2c_stats_.addr),
+                make_protocol_ro_property("addr_match_cnt", &i2c_stats_.addr_match_cnt),
+                make_protocol_ro_property("rx_cnt", &i2c_stats_.rx_cnt),
+                make_protocol_ro_property("error_cnt", &i2c_stats_.error_cnt)
             )
         ),
         make_protocol_object("config",
             make_protocol_property("brake_resistance", &board_config.brake_resistance),
             // TODO: changing this currently requires a reboot - fix this
             make_protocol_property("enable_uart", &board_config.enable_uart),
+            make_protocol_property("enable_i2c_instead_of_can" , &board_config.enable_i2c_instead_of_can), // requires a reboot
             make_protocol_property("dc_bus_undervoltage_trip_level", &board_config.dc_bus_undervoltage_trip_level),
             make_protocol_property("dc_bus_overvoltage_trip_level", &board_config.dc_bus_overvoltage_trip_level)
         ),
@@ -166,6 +174,9 @@ void communication_task(void * ctx) {
     
     serve_on_uart();
     serve_on_usb();
+    if (board_config.enable_i2c_instead_of_can) {
+        serve_on_i2c();
+    }
 
     for (;;) {
         osDelay(1000); // nothing to do
