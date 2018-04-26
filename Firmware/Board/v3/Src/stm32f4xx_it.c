@@ -46,7 +46,9 @@ void ADC_IRQ_Dispatch(ADC_HandleTypeDef* hadc, ADC_handler_t callback);
 // TODO: move somewhere else
 void pwm_trig_adc_cb(ADC_HandleTypeDef* hadc, bool injected);
 void vbus_sense_adc_cb(ADC_HandleTypeDef* hadc, bool injected);
+void tim_update_cb(TIM_HandleTypeDef* htim);
 
+extern TIM_HandleTypeDef htim1;
 extern I2C_HandleTypeDef hi2c1;
 
 /* USER CODE END 0 */
@@ -56,7 +58,6 @@ extern PCD_HandleTypeDef hpcd_USB_OTG_FS;
 extern ADC_HandleTypeDef hadc1;
 extern ADC_HandleTypeDef hadc2;
 extern ADC_HandleTypeDef hadc3;
-extern TIM_HandleTypeDef htim1;
 extern TIM_HandleTypeDef htim8;
 extern DMA_HandleTypeDef hdma_uart4_rx;
 extern DMA_HandleTypeDef hdma_uart4_tx;
@@ -242,20 +243,6 @@ void ADC_IRQHandler(void)
 }
 
 /**
-* @brief This function handles TIM8 update interrupt and TIM13 global interrupt.
-*/
-void TIM8_UP_TIM13_IRQHandler(void)
-{
-  /* USER CODE BEGIN TIM8_UP_TIM13_IRQn 0 */
-
-  /* USER CODE END TIM8_UP_TIM13_IRQn 0 */
-  HAL_TIM_IRQHandler(&htim8);
-  /* USER CODE BEGIN TIM8_UP_TIM13_IRQn 1 */
-
-  /* USER CODE END TIM8_UP_TIM13_IRQn 1 */
-}
-
-/**
 * @brief This function handles TIM8 trigger and commutation interrupts and TIM14 global interrupt.
 */
 void TIM8_TRG_COM_TIM14_IRQHandler(void)
@@ -331,7 +318,7 @@ void ADC_IRQ_Dispatch(ADC_HandleTypeDef* hadc, ADC_handler_t callback) {
 void TIM1_UP_TIM10_IRQHandler(void)
 {
   __HAL_TIM_CLEAR_IT(&htim1, TIM_IT_UPDATE);
-  // TODO: Callback here
+  tim_update_cb(&htim1);
 }
 
 /**
@@ -339,8 +326,8 @@ void TIM1_UP_TIM10_IRQHandler(void)
 */
 void TIM8_UP_TIM13_IRQHandler(void)
 {
-  __HAL_TIM_CLEAR_IT(&htim1, TIM_IT_UPDATE);
-  // TODO: Callback here
+  __HAL_TIM_CLEAR_IT(&htim8, TIM_IT_UPDATE);
+  tim_update_cb(&htim8);
 }
 
 
