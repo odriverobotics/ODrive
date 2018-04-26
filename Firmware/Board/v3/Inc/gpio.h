@@ -77,6 +77,8 @@ bool GPIO_subscribe(GPIO_TypeDef* GPIO_port, uint16_t GPIO_pin,
     void (*callback)(void*), void* ctx);
 void GPIO_unsubscribe(GPIO_TypeDef* GPIO_port, uint16_t GPIO_pin);
 
+uint16_t get_gpio_pin_by_pin(uint16_t GPIO_pin);
+GPIO_TypeDef* get_gpio_port_by_pin(uint16_t GPIO_pin);
 
 /* USER CODE END Prototypes */
 

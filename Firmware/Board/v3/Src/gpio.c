@@ -266,6 +266,26 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_pin) {
   }
 }
 
+GPIO_TypeDef* get_gpio_port_by_pin(uint16_t GPIO_pin){
+  switch(GPIO_pin){
+    case 1: return GPIO_1_GPIO_Port; break;
+    case 2: return GPIO_2_GPIO_Port; break;
+    case 3: return GPIO_3_GPIO_Port; break;
+    case 4: return GPIO_4_GPIO_Port; break;
+    case 5: return GPIO_5_GPIO_Port; break;
+  }
+}
+
+uint16_t get_gpio_pin_by_pin(uint16_t GPIO_pin){
+  switch(GPIO_pin){
+    case 1: return GPIO_1_Pin; break;
+    case 2: return GPIO_2_Pin; break;
+    case 3: return GPIO_3_Pin; break;
+    case 4: return GPIO_4_Pin; break;
+    case 5: return GPIO_5_Pin; break;
+  }
+}
+
 /* USER CODE END 2 */
 
 /**
