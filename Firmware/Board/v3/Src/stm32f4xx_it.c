@@ -242,20 +242,6 @@ void ADC_IRQHandler(void)
 }
 
 /**
-* @brief This function handles TIM1 update interrupt and TIM10 global interrupt.
-*/
-void TIM1_UP_TIM10_IRQHandler(void)
-{
-  /* USER CODE BEGIN TIM1_UP_TIM10_IRQn 0 */
-
-  /* USER CODE END TIM1_UP_TIM10_IRQn 0 */
-  HAL_TIM_IRQHandler(&htim1);
-  /* USER CODE BEGIN TIM1_UP_TIM10_IRQn 1 */
-
-  /* USER CODE END TIM1_UP_TIM10_IRQn 1 */
-}
-
-/**
 * @brief This function handles TIM8 update interrupt and TIM13 global interrupt.
 */
 void TIM8_UP_TIM13_IRQHandler(void)
@@ -340,6 +326,25 @@ void ADC_IRQ_Dispatch(ADC_HandleTypeDef* hadc, ADC_handler_t callback) {
 }
 
 /**
+* @brief This function handles TIM1 update interrupt and TIM10 global interrupt.
+*/
+void TIM1_UP_TIM10_IRQHandler(void)
+{
+  __HAL_TIM_CLEAR_IT(&htim1, TIM_IT_UPDATE);
+  // TODO: Callback here
+}
+
+/**
+* @brief This function handles TIM8 update interrupt and TIM13 global interrupt.
+*/
+void TIM8_UP_TIM13_IRQHandler(void)
+{
+  __HAL_TIM_CLEAR_IT(&htim1, TIM_IT_UPDATE);
+  // TODO: Callback here
+}
+
+
+/**
 * @brief This function handles I2C1 event interrupt.
 */
 void I2C1_EV_IRQHandler(void)
@@ -413,8 +418,6 @@ void EXTI15_10_IRQHandler(void)
   HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_14);
   HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_15);
 }
-
-
 
 /* USER CODE END 1 */
 /************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/
