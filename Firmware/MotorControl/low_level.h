@@ -18,6 +18,8 @@ extern "C" {
 /* Exported types ------------------------------------------------------------*/
 /* Exported constants --------------------------------------------------------*/
 /* Exported variables --------------------------------------------------------*/
+extern float vbus_voltage;
+extern bool brake_resistor_armed;
 /* Exported macro ------------------------------------------------------------*/
 /* Exported functions --------------------------------------------------------*/
 
@@ -39,7 +41,6 @@ void start_adc_pwm();
 void start_pwm(TIM_HandleTypeDef* htim);
 void sync_timers(TIM_HandleTypeDef* htim_a, TIM_HandleTypeDef* htim_b,
         uint16_t TIM_CLOCKSOURCE_ITRx, uint16_t count_offset);
-
 void update_brake_current();
 
 #ifdef __cplusplus

@@ -25,11 +25,10 @@ extern "C" {
 //default timeout waiting for phase measurement signals
 #define PH_CURRENT_MEAS_TIMEOUT 2 // [ms]
 
+//TODO clean this up
 static const float current_meas_period = CURRENT_MEAS_PERIOD;
 static const int current_meas_hz = CURRENT_MEAS_HZ;
-extern float vbus_voltage;
-extern bool brake_resistor_armed_;
-extern const float elec_rad_per_enc;
+// extern const float elec_rad_per_enc;
 extern uint32_t _reboot_cookie;
 extern bool user_config_loaded_;
 

@@ -29,14 +29,16 @@
 /* Private typedef -----------------------------------------------------------*/
 /* Global constant data ------------------------------------------------------*/
 /* Global variables ----------------------------------------------------------*/
+
 // This value is updated by the DC-bus reading ADC.
 // Arbitrary non-zero inital value to avoid division by zero if ADC reading is late
 float vbus_voltage = 12.0f;
-bool brake_resistor_armed_ = false;
-
+bool brake_resistor_armed = false;
 /* Private constant data -----------------------------------------------------*/
 /* Private variables ---------------------------------------------------------*/
 
+// Two motors, sampling port A,B,C (coherent with current meas timing)
+static uint16_t GPIO_port_samples [2][3];
 /* CPU critical section helpers ----------------------------------------------*/
 
 static inline uint8_t cpu_enter_critical() {
@@ -94,13 +96,23 @@ static inline void cpu_exit_critical(uint8_t status_register) {
 *     at a high rate.
 */
 
+// @brief Floats ALL phases immediately and disarms both motors and the brake resistor.
+void low_level_fault(Motor::Error_t error) {
+    // Disable all motors NOW!
+    for (size_t i = 0; i < AXIS_COUNT; ++i) {
+        safety_critical_disarm_motor_pwm(axes[i]->motor_);
+        axes[i]->motor_.error_ |= error;
+    }
+
+    safety_critical_disarm_brake_resistor();
+}
 
 // @brief Kicks off the arming process of the motor.
 // All calls to this function must clearly originate
 // from user input.
 void safety_critical_arm_motor_pwm(Motor& motor) {
     uint8_t sr = cpu_enter_critical();
-    if (brake_resistor_armed_) {
+    if (brake_resistor_armed) {
         motor.armed_state_ = Motor::ARMED_STATE_WAITING_FOR_TIMINGS;
     }
     cpu_exit_critical(sr);
@@ -127,7 +139,7 @@ bool safety_critical_disarm_motor_pwm(Motor& motor) {
 // timer period.
 void safety_critical_apply_motor_pwm_timings(Motor& motor, uint16_t timings[3]) {
     uint8_t sr = cpu_enter_critical();
-    if (!brake_resistor_armed_) {
+    if (!brake_resistor_armed) {
         motor.armed_state_ = Motor::ARMED_STATE_ARMED;
     }
 
@@ -158,7 +170,7 @@ void safety_critical_apply_motor_pwm_timings(Motor& motor, uint16_t timings[3]) 
 // @brief Arms the brake resistor
 void safety_critical_arm_brake_resistor() {
     uint8_t sr = cpu_enter_critical();
-    brake_resistor_armed_ = true;
+    brake_resistor_armed = true;
     htim2.Instance->CCR3 = 0;
     htim2.Instance->CCR4 = TIM_APB1_PERIOD_CLOCKS + 1;
     cpu_exit_critical(sr);
@@ -170,7 +182,7 @@ void safety_critical_arm_brake_resistor() {
 // by calling safety_critical_arm_brake_resistor().
 void safety_critical_disarm_brake_resistor() {
     uint8_t sr = cpu_enter_critical();
-    brake_resistor_armed_ = false;
+    brake_resistor_armed = false;
     htim2.Instance->CCR3 = 0;
     htim2.Instance->CCR4 = TIM_APB1_PERIOD_CLOCKS + 1;
     for (size_t i = 0; i < AXIS_COUNT; ++i) {
@@ -183,9 +195,9 @@ void safety_critical_disarm_brake_resistor() {
 // the brake resistor is disarmed.
 void safety_critical_apply_brake_resistor_timings(uint32_t low_off, uint32_t high_on) {
     if (high_on - low_off < TIM_APB1_DEADTIME_CLOCKS)
-        for(;;);
+        low_level_fault(Motor::ERROR_BRAKE_DEADTIME_VIOLATION);
     uint8_t sr = cpu_enter_critical();
-    if (brake_resistor_armed_) {
+    if (brake_resistor_armed) {
         // Safe update of low and high side timings
         // To avoid race condition, first reset timings to safe state
         // ch3 is low side, ch4 is high side
@@ -301,17 +313,6 @@ void sync_timers(TIM_HandleTypeDef* htim_a, TIM_HandleTypeDef* htim_b,
     // restore output
     htim_a->Instance->BDTR |= MOE_store_a;
     htim_b->Instance->BDTR |= MOE_store_b;
-}
-
-// @brief Floats ALL phases immediately and disarms both motors and the brake resistor.
-void low_level_fault(Motor::Error_t error) {
-    // Disable all motors NOW!
-    for (size_t i = 0; i < AXIS_COUNT; ++i) {
-        safety_critical_disarm_motor_pwm(axes[i]->motor_);
-        axes[i]->motor_.error_ |= error;
-    }
-    
-    safety_critical_disarm_brake_resistor();
 }
 
 //--------------------------------

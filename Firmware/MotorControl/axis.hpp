@@ -102,7 +102,7 @@ public:
     template<typename T>
     void run_control_loop(const T& update_handler) {
         while (requested_state_ == AXIS_STATE_UNDEFINED) {
-            if (!brake_resistor_armed_) {
+            if (!brake_resistor_armed) {
                 error_ |= ERROR_BRAKE_RESISTOR_DISARMED;
                 break;
             }

@@ -111,7 +111,7 @@ static inline auto make_obj_tree() {
         make_protocol_ro_property("fw_version_revision", &fw_version_revision),
         make_protocol_ro_property("fw_version_unreleased", &fw_version_unreleased),
         make_protocol_ro_property("user_config_loaded", const_cast<const bool *>(&user_config_loaded_)),
-        make_protocol_ro_property("brake_resistor_armed", &brake_resistor_armed_),
+        make_protocol_ro_property("brake_resistor_armed", &brake_resistor_armed),
         make_protocol_object("system_stats",
             make_protocol_ro_property("uptime", &system_stats_.uptime),
             make_protocol_ro_property("min_heap_space", &system_stats_.min_heap_space),
