@@ -35,10 +35,12 @@
 float vbus_voltage = 12.0f;
 bool brake_resistor_armed = false;
 /* Private constant data -----------------------------------------------------*/
+static const GPIO_TypeDef* GPIOs_to_samp[] = { GPIOA, GPIOB, GPIOC };
+static const int num_GPIO = sizeof(GPIOs_to_samp) / sizeof(GPIOs_to_samp[0]);
 /* Private variables ---------------------------------------------------------*/
 
 // Two motors, sampling port A,B,C (coherent with current meas timing)
-static uint16_t GPIO_port_samples [2][3];
+static uint16_t GPIO_port_samples [2][num_GPIO];
 /* CPU critical section helpers ----------------------------------------------*/
 
 static inline uint8_t cpu_enter_critical() {
@@ -416,6 +418,22 @@ void pwm_trig_adc_cb(ADC_HandleTypeDef* hadc, bool injected) {
         } else {
             axis.motor_.DC_calib_.phC += (current - axis.motor_.DC_calib_.phC) * calib_filter_k;
         }
+    }
+}
+
+void tim_update_cb(TIM_HandleTypeDef* htim) {
+    int portsamples_arr;
+    if (htim == &htim1) {
+        portsamples_arr = 0;
+    } else if (htim == &htim8) {
+        portsamples_arr = 1;
+    } else {
+        low_level_fault(Motor::ERROR_UNEXPECTED_TIMER_CALLBACK);
+        return;
+    }
+
+    for (int i = 0; i < num_GPIO; ++i) {
+        GPIO_port_samples[portsamples_arr][i] = GPIOs_to_samp[i]->IDR;
     }
 }
 
