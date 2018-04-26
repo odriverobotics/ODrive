@@ -239,6 +239,10 @@ void start_adc_pwm() {
     __HAL_TIM_MOE_DISABLE_UNCONDITIONALLY(&htim1);
     __HAL_TIM_MOE_DISABLE_UNCONDITIONALLY(&htim8);
 
+    // Enable the update interrupt (used to coherently sample GPIO)
+    __HAL_TIM_ENABLE_IT(&htim1, TIM_IT_UPDATE);
+    __HAL_TIM_ENABLE_IT(&htim8, TIM_IT_UPDATE);
+
     // Start brake resistor PWM in floating output configuration
     htim2.Instance->CCR3 = 0;
     htim2.Instance->CCR4 = TIM_APB1_PERIOD_CLOCKS + 1;
