@@ -48,7 +48,7 @@ typedef struct {
     // Read out max_allowed_current to see max supported value for current_lim.
     // You can change DRV8301_ShuntAmpGain to get a different range.
     // float current_lim = 75.0f; //[A]
-    float current_lim = 10.0f;  //[A]
+    float current_lim = 6.0f;  //[A]
 } MotorConfig_t;
 
 class Motor {

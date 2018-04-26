@@ -167,6 +167,8 @@ bool Motor::measure_phase_resistance(float test_current, float max_voltage) {
     
     size_t i = 0;
     axis_->run_control_loop([&](){
+        axis_->encoder_.update(nullptr, nullptr, nullptr);
+
         float Ialpha = -(current_meas_.phB + current_meas_.phC);
         test_voltage += (kI * current_meas_period) * (test_current - Ialpha);
         if (test_voltage > max_voltage || test_voltage < -max_voltage)
@@ -198,6 +200,8 @@ bool Motor::measure_phase_inductance(float voltage_low, float voltage_high) {
 
     size_t t = 0;
     axis_->run_control_loop([&](){
+        axis_->encoder_.update(nullptr, nullptr, nullptr);
+
         int i = t & 1;
         Ialphas[i] += -current_meas_.phB - current_meas_.phC;
 

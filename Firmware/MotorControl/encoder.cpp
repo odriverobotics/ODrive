@@ -148,6 +148,8 @@ bool Encoder::run_offset_calibration() {
     // scan forward
     i = 0;
     axis_->run_control_loop([&](){
+        axis_->encoder_.update(nullptr, nullptr, nullptr);
+
         float phase = wrap_pm_pi(scan_distance * (float)i / (float)num_steps - scan_distance / 2.0f);
         float v_alpha = voltage_magnitude * arm_cos_f32(phase);
         float v_beta = voltage_magnitude * arm_sin_f32(phase);
