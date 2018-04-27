@@ -31,4 +31,4 @@ using endpoint_type_t = typename endpoint_type<I>::type;
 
 }
 
-#endif __ODRIVE_ENDPOINTS_HPP
+#endif // __ODRIVE_ENDPOINTS_HPP

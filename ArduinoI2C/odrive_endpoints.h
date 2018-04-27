@@ -110,6 +110,7 @@ enum {
   AXIS0__CONTROLLER__CONFIG__VEL_GAIN = 93,
   AXIS0__CONTROLLER__CONFIG__VEL_INTEGRATOR_GAIN = 94,
   AXIS0__CONTROLLER__CONFIG__VEL_LIMIT = 95,
+  AXIS0__CONTROLLER__START_ANTICOGGING_CALIBRATION = 105,
   AXIS0__ENCODER__ERROR = 106,
   AXIS0__ENCODER__IS_READY = 107,
   AXIS0__ENCODER__INDEX_FOUND = 108,
@@ -197,6 +198,7 @@ enum {
   AXIS1__CONTROLLER__CONFIG__VEL_GAIN = 190,
   AXIS1__CONTROLLER__CONFIG__VEL_INTEGRATOR_GAIN = 191,
   AXIS1__CONTROLLER__CONFIG__VEL_LIMIT = 192,
+  AXIS1__CONTROLLER__START_ANTICOGGING_CALIBRATION = 202,
   AXIS1__ENCODER__ERROR = 203,
   AXIS1__ENCODER__IS_READY = 204,
   AXIS1__ENCODER__INDEX_FOUND = 205,
@@ -222,6 +224,10 @@ enum {
   AXIS1__SENSORLESS_ESTIMATOR__PLL_KP = 225,
   AXIS1__SENSORLESS_ESTIMATOR__PLL_KI = 226,
   TEST_PROPERTY = 227,
+  SAVE_CONFIGURATION = 234,
+  ERASE_CONFIGURATION = 235,
+  REBOOT = 236,
+  ENTER_DFU_MODE = 237,
 };
 
 template<int I>
@@ -322,6 +328,7 @@ template<> struct endpoint_type<AXIS0__CONTROLLER__CONFIG__POS_GAIN> { typedef f
 template<> struct endpoint_type<AXIS0__CONTROLLER__CONFIG__VEL_GAIN> { typedef float type; };
 template<> struct endpoint_type<AXIS0__CONTROLLER__CONFIG__VEL_INTEGRATOR_GAIN> { typedef float type; };
 template<> struct endpoint_type<AXIS0__CONTROLLER__CONFIG__VEL_LIMIT> { typedef float type; };
+template<> struct endpoint_type<AXIS0__CONTROLLER__START_ANTICOGGING_CALIBRATION> { typedef void type; };
 template<> struct endpoint_type<AXIS0__ENCODER__ERROR> { typedef uint8_t type; };
 template<> struct endpoint_type<AXIS0__ENCODER__IS_READY> { typedef bool type; };
 template<> struct endpoint_type<AXIS0__ENCODER__INDEX_FOUND> { typedef bool type; };
@@ -409,6 +416,7 @@ template<> struct endpoint_type<AXIS1__CONTROLLER__CONFIG__POS_GAIN> { typedef f
 template<> struct endpoint_type<AXIS1__CONTROLLER__CONFIG__VEL_GAIN> { typedef float type; };
 template<> struct endpoint_type<AXIS1__CONTROLLER__CONFIG__VEL_INTEGRATOR_GAIN> { typedef float type; };
 template<> struct endpoint_type<AXIS1__CONTROLLER__CONFIG__VEL_LIMIT> { typedef float type; };
+template<> struct endpoint_type<AXIS1__CONTROLLER__START_ANTICOGGING_CALIBRATION> { typedef void type; };
 template<> struct endpoint_type<AXIS1__ENCODER__ERROR> { typedef uint8_t type; };
 template<> struct endpoint_type<AXIS1__ENCODER__IS_READY> { typedef bool type; };
 template<> struct endpoint_type<AXIS1__ENCODER__INDEX_FOUND> { typedef bool type; };
@@ -434,6 +442,10 @@ template<> struct endpoint_type<AXIS1__SENSORLESS_ESTIMATOR__PLL_VEL> { typedef 
 template<> struct endpoint_type<AXIS1__SENSORLESS_ESTIMATOR__PLL_KP> { typedef float type; };
 template<> struct endpoint_type<AXIS1__SENSORLESS_ESTIMATOR__PLL_KI> { typedef float type; };
 template<> struct endpoint_type<TEST_PROPERTY> { typedef uint32_t type; };
+template<> struct endpoint_type<SAVE_CONFIGURATION> { typedef void type; };
+template<> struct endpoint_type<ERASE_CONFIGURATION> { typedef void type; };
+template<> struct endpoint_type<REBOOT> { typedef void type; };
+template<> struct endpoint_type<ENTER_DFU_MODE> { typedef void type; };
 
 
 template<int I>
@@ -441,4 +453,4 @@ using endpoint_type_t = typename endpoint_type<I>::type;
 
 }
 
-#endif __ODRIVE_ENDPOINTS_HPP
+#endif // __ODRIVE_ENDPOINTS_HPP

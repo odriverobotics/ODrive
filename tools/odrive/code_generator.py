@@ -13,6 +13,12 @@ def get_flat_endpoint_list(json, prefix):
                 is_property = True
             elif item['type'] in {'bool', 'float'}:
                 is_property = True
+            elif item['type'] in {'function'}:
+                if len(item.get('arguments', [])) == 0 and len(item.get('inputs', [])) == 0 and len(item.get('outputs', [])) == 0:
+                    item['type'] = 'void'
+                    is_property = True
+                else:
+                    is_property = False
             else:
                 is_property = False
             if is_property:
