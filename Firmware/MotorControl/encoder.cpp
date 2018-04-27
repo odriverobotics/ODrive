@@ -215,6 +215,7 @@ bool Encoder::run_offset_calibration() {
         return false;
 
     offset_ = encvaluesum / (num_steps * 2);
+    config_.offset = offset_;
     int32_t residual = encvaluesum - ((int64_t)offset_ * (int64_t)(num_steps * 2));
     config_.offset_float = (float)residual / (float)(num_steps * 2);
     is_ready_ = true;
