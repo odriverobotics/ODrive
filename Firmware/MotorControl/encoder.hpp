@@ -63,6 +63,7 @@ public:
     int32_t shadow_count_ = 0;
     int32_t count_in_cpr_ = 0;
     int32_t offset_ = 0;
+    float interpolation_ = 0.0f;
     float phase_ = 0.0f;    // [rad]
     float pos_estimate_ = 0.0f;  // [rad]
     float pos_cpr_ = 0.0f;  // [rad]
@@ -82,6 +83,7 @@ public:
             make_protocol_property("shadow_count", &shadow_count_),
             make_protocol_property("count_in_cpr", &count_in_cpr_),
             make_protocol_property("offset", &offset_),
+            make_protocol_property("interpolation", &interpolation_),
             make_protocol_property("phase", &phase_),
             make_protocol_property("pos_estimate", &pos_estimate_),
             make_protocol_property("pos_cpr", &pos_cpr_),

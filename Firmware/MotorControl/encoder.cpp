@@ -269,16 +269,31 @@ bool Encoder::update(float* pos_estimate, float* vel_estimate, float* phase_outp
     count_in_cpr_ += delta_enc;
     count_in_cpr_ = mod(count_in_cpr_, config_.cpr);
 
-    // compute electrical phase
-    int corrected_enc = count_in_cpr_ - offset_;
+
+    //// run encoder count interpolation
+    int32_t corrected_enc = count_in_cpr_ - offset_;
+    // reset interpolation if encoder edge comes
+    if (delta_enc > 0) {
+        interpolation_ = 0.0f;
+    } else if (delta_enc < 0) {
+        interpolation_ = 1.0f;
+    } else {
+        // Interpolate (predict) between encoder counts using pll_vel,
+        interpolation_ += current_meas_period * pll_vel_;
+        // don't allow interpolation indicated position outside of [enc, enc+1)
+        if (interpolation_ > 1.0f) interpolation_ = 1.0f;
+        if (interpolation_ < 0.0f) interpolation_ = 0.0f;
+    }
+    float interpolated_enc = corrected_enc + interpolation_;
+
+    //// compute electrical phase
     //TODO avoid recomputing elec_rad_per_enc every time
     float elec_rad_per_enc = axis_->motor_.config_.pole_pairs * 2 * M_PI * (1.0f / (float)(config_.cpr));
-    float ph = elec_rad_per_enc * ((float)corrected_enc - config_.offset_float);
+    float ph = elec_rad_per_enc * (interpolated_enc - config_.offset_float);
     // ph = fmodf(ph, 2*M_PI);
     phase_ = wrap_pm_pi(ph);
 
-
-    // run pll (for now pll is in units of encoder counts)
+    //// run pll (for now pll is in units of encoder counts)
     // Predict current pos
     pos_estimate_ += current_meas_period * pll_vel_;
     pos_cpr_      += current_meas_period * pll_vel_;
