@@ -210,6 +210,8 @@ bool Encoder::run_offset_calibration() {
         return false;
 
     offset_ = encvaluesum / (num_steps * 2);
+    int32_t residual = encvaluesum - ((int64_t)offset_ * (int64_t)(num_steps * 2));
+    config_.offset_float = (float)residual / (float)(num_steps * 2);
     is_ready_ = true;
     config_.use_index = old_use_index;
     return true;
@@ -271,7 +273,7 @@ bool Encoder::update(float* pos_estimate, float* vel_estimate, float* phase_outp
     int corrected_enc = count_in_cpr_ - offset_;
     //TODO avoid recomputing elec_rad_per_enc every time
     float elec_rad_per_enc = axis_->motor_.config_.pole_pairs * 2 * M_PI * (1.0f / (float)(config_.cpr));
-    float ph = elec_rad_per_enc * (float)corrected_enc;
+    float ph = elec_rad_per_enc * ((float)corrected_enc - config_.offset_float);
     // ph = fmodf(ph, 2*M_PI);
     phase_ = wrap_pm_pi(ph);
 

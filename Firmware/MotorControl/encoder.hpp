@@ -33,6 +33,7 @@ public:
         int32_t cpr = (2048 * 4); // Default resolution of CUI-AMT102 encoder,
         int32_t offset = 0; // If pre_calibrated is true, this is copied into encoder.offset_ once
                             // index search succeeds
+        float offset_float = 0.0f; // Sub-count phase alignment offset
         float calib_range = 0.02f;
     };
 
@@ -95,6 +96,7 @@ public:
                 make_protocol_property("idx_search_speed", &config_.idx_search_speed),
                 make_protocol_property("cpr", &config_.cpr),
                 make_protocol_property("offset", &config_.offset),
+                make_protocol_property("offset_float", &config_.offset_float),
                 make_protocol_property("calib_range", &config_.calib_range)
             )
         );
