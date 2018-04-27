@@ -5,12 +5,16 @@
 *   - Implement the C function I2C_transaction to provide low level I2C access.
 *   - Use read_property<PropertyId>() to read properties from the ODrive.
 *   - Use write_property<PropertyId>() to modify properties on the ODrive.
+*   - Use trigger<PropertyId>() to trigger a function (such as reboot or save_configuration)
 *   - Use endpoint_type_t<PropertyId> to retrieve the underlying type
 *     of a given property.
+*   - Refer to PropertyId for a list of available properties.
 *
-* To regenerate the interface definitions, flash an ODrive with the new
-* firmware, then run
-*   ../tools/odrivetool generate-code --output odrive_endpoints.h
+* To regenerate the interface definitions, flash an ODrive with
+* the new firmware, connect it to your PC via USB and then run
+*   ../tools/odrivetool generate-code --output [path to odrive_endpoints.h]
+* This step can be done with any ODrive, it doesn't have to be the
+* one that you'll be controlling over I2C.
 */
 
 
@@ -136,6 +140,24 @@ namespace odrive {
         uint8_t i2c_tx_buffer[4 + byte_width<endpoint_type_t<IPropertyId>>::value];
         write_le<uint16_t>(i2c_tx_buffer, IPropertyId);
         write_le<endpoint_type_t<IPropertyId>>(i2c_tx_buffer + 2, value);
+        write_le<uint16_t>(i2c_tx_buffer + sizeof(i2c_tx_buffer) - 2, json_crc);
+        return I2C_transaction(i2c_addr + num, i2c_tx_buffer, sizeof(i2c_tx_buffer), nullptr, 0);
+    }
+
+    /* @brief Write to an endpoint on the ODrive
+    *
+    * Usage example:
+    *   success = odrive::trigger<odrive::SAVE_CONFIGURATION>(0);
+    *
+    * @param num Selects the ODrive. For instance the value 4 selects
+    * the ODrive that has [A2, A1, A0] connected to [VCC, GND, GND].
+    * @return true if the I2C transaction succeeded, false otherwise
+    */
+    template<int IPropertyId,
+             typename = typename std::enable_if<std::is_void<endpoint_type_t<IPropertyId>>::value>::type>
+    bool trigger(uint8_t num) {
+        uint8_t i2c_tx_buffer[4];
+        write_le<uint16_t>(i2c_tx_buffer, IPropertyId);
         write_le<uint16_t>(i2c_tx_buffer + sizeof(i2c_tx_buffer) - 2, json_crc);
         return I2C_transaction(i2c_addr + num, i2c_tx_buffer, sizeof(i2c_tx_buffer), nullptr, 0);
     }

@@ -51,6 +51,12 @@ void loop() {
   if (!success)
     Serial.println("error");
 
+  success = odrive::trigger<odrive::SAVE_CONFIGURATION>(odrive_num);
+  if (!success)
+    Serial.println("error");
+  else
+    Serial.println("saved config");
+
   delay(500);
 }
 
