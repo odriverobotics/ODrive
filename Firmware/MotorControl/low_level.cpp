@@ -36,7 +36,7 @@ float vbus_voltage = 12.0f;
 bool brake_resistor_armed = false;
 /* Private constant data -----------------------------------------------------*/
 static const GPIO_TypeDef* GPIOs_to_samp[] = { GPIOA, GPIOB, GPIOC };
-static const int num_GPIO = sizeof(GPIOs_to_samp) / sizeof(GPIOs_to_samp[0]);
+static const int num_GPIO = sizeof(GPIOs_to_samp) / sizeof(GPIOs_to_samp[0]); 
 /* Private variables ---------------------------------------------------------*/
 
 // Two motors, sampling port A,B,C (coherent with current meas timing)
@@ -325,7 +325,6 @@ void sync_timers(TIM_HandleTypeDef* htim_a, TIM_HandleTypeDef* htim_b,
 // IRQ Callbacks
 //--------------------------------
 
-
 void vbus_sense_adc_cb(ADC_HandleTypeDef* hadc, bool injected) {
     static const float voltage_scale = 3.3f * VBUS_S_DIVIDER_RATIO / (float)(1 << 12);
     // Only one conversion in sequence, so only rank1
@@ -336,6 +335,34 @@ void vbus_sense_adc_cb(ADC_HandleTypeDef* hadc, bool injected) {
             oscilloscope_pos = 0;
         oscilloscope[oscilloscope_pos++] = vbus_voltage;
     }
+}
+
+static void decode_hall_samples(Encoder& enc, uint16_t GPIO_samples[num_GPIO]) {
+    GPIO_TypeDef* hall_ports[] = {
+        enc.hw_config_.hallA_port,
+        enc.hw_config_.hallB_port,
+        enc.hw_config_.hallC_port
+    };
+    uint16_t hall_pins[] = {
+        enc.hw_config_.hallA_pin,
+        enc.hw_config_.hallB_pin,
+        enc.hw_config_.hallC_pin
+    };
+
+    uint8_t hall_state = 0x0;
+    for (int i = 0; i < 3; ++i) {
+        int port_idx = 0;
+        for (;;) {
+            auto port = GPIOs_to_samp[port_idx];
+            if (port == hall_ports[i])
+                break;
+        }
+
+        hall_state <<= 1;
+        hall_state |= (GPIO_samples[port_idx] & hall_pins[i]) ? 1 : 0;
+    }
+
+    enc.hall_state = hall_state;
 }
 
 // This is the callback from the ADC that we expect after the PWM has triggered an ADC conversion.
@@ -355,6 +382,7 @@ void pwm_trig_adc_cb(ADC_HandleTypeDef* hadc, bool injected) {
     // If the corresponding timer is counting up, we just sampled in SVM vector 0, i.e. real current
     // If we are counting down, we just sampled in SVM vector 7, with zero current
     Axis& axis = injected ? *axes[0] : *axes[1];
+    int axis_num = injected ? 0 : 1;
     Axis& other_axis = injected ? *axes[1] : *axes[0];
     bool counting_down = axis.motor_.hw_config_.timer->Instance->CR1 & TIM_CR1_DIR;
 
@@ -413,6 +441,8 @@ void pwm_trig_adc_cb(ADC_HandleTypeDef* hadc, bool injected) {
         } else {
             axis.motor_.current_meas_.phC = current - axis.motor_.DC_calib_.phC;
         }
+        // Prepare hall readings
+        decode_hall_samples(axis.encoder_, GPIO_port_samples[axis_num]);
         // Trigger axis thread
         axis.signal_current_meas();
     } else {

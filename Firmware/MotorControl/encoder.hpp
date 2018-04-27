@@ -62,7 +62,7 @@ public:
     float pll_ki_ = 0.0f;   // [(rad/s^2) / rad]
 
     // Updated by low_level pwm_adc_cb
-    bool hallA_ = 0, hallB_ = 0, hallC_ = 0;
+    uint8_t hall_state = 0x0; // bit[0] = HallA, .., bit[2] = HallC
 
     // Communication protocol definitions
     auto make_protocol_definitions() {
