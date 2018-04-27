@@ -3,13 +3,13 @@
 
 
 Encoder::Encoder(const EncoderHardwareConfig_t& hw_config,
-                EncoderConfig_t& config) :
+                Config_t& config) :
         hw_config_(hw_config),
         config_(config)
 {
     // Calculate encoder pll gains
     // This calculation is currently identical to the PLL in SensorlessEstimator
-    float pll_bandwidth = 1000.0f;  // [rad/s]
+    float pll_bandwidth = 100.0f;  // [rad/s]
     pll_kp_ = 2.0f * pll_bandwidth;
 
     // Critically damped
@@ -24,32 +24,6 @@ void Encoder::setup() {
     HAL_TIM_Encoder_Start(hw_config_.timer, TIM_CHANNEL_ALL);
     GPIO_subscribe(hw_config_.index_port, hw_config_.index_pin, GPIO_NOPULL,
             enc_index_cb_wrapper, this);
-}
-
-int16_t Encoder::get_low_level_count() {
-    switch (mode_) {
-        case MODE_INCREMENTAL: {
-            return (int16_t)hw_config_.timer->Instance->CNT;
-        } break;
-        case MODE_HALL: {
-            switch (hall_state_) {
-                case 0b001: return 0;
-                case 0b011: return 1;
-                case 0b010: return 2;
-                case 0b110: return 3;
-                case 0b100: return 4;
-                case 0b101: return 5;
-                default: {
-                    error_ |= ERROR_ILLEGAL_HALL_STATE;
-                    return 0;
-                }
-            }
-        } break;
-        default: {
-           error_ |= ERROR_UNSUPPORTED_ENCODER_MODE;
-           return 0;
-        }
-    }
 }
 
 //--------------------
@@ -120,6 +94,8 @@ bool Encoder::run_index_search() {
     index_found_ = false;
     float phase = 0.0f;
     axis_->run_control_loop([&](){
+        update(nullptr, nullptr, nullptr);
+
         phase = wrap_pm_pi(phase + omega * current_meas_period);
 
         float v_alpha = voltage_magnitude * arm_cos_f32(phase);
@@ -160,6 +136,8 @@ bool Encoder::run_offset_calibration() {
     // go to motor zero phase for start_lock_duration to get ready to scan
     int i = 0;
     axis_->run_control_loop([&](){
+        update(nullptr, nullptr, nullptr);
+
         if (!axis_->motor_.enqueue_voltage_timings(voltage_magnitude, 0.0f))
             return false; // error set inside enqueue_voltage_timings
         axis_->motor_.log_timing(Motor::TIMING_LOG_ENC_CALIB);
@@ -168,13 +146,13 @@ bool Encoder::run_offset_calibration() {
     if (axis_->error_ != Axis::ERROR_NO_ERROR)
         return false;
 
-    int32_t init_enc_val = get_low_level_count();
+    int32_t init_enc_val = shadow_count_;
     int64_t encvaluesum = 0;
 
     // scan forward
     i = 0;
     axis_->run_control_loop([&](){
-        axis_->encoder_.update(nullptr, nullptr, nullptr);
+        update(nullptr, nullptr, nullptr);
 
         float phase = wrap_pm_pi(scan_distance * (float)i / (float)num_steps - scan_distance / 2.0f);
         float v_alpha = voltage_magnitude * arm_cos_f32(phase);
@@ -183,7 +161,7 @@ bool Encoder::run_offset_calibration() {
             return false; // error set inside enqueue_voltage_timings
         axis_->motor_.log_timing(Motor::TIMING_LOG_ENC_CALIB);
 
-        encvaluesum += get_low_level_count();
+        encvaluesum += shadow_count_;
         
         return ++i < num_steps;
     });
@@ -193,17 +171,17 @@ bool Encoder::run_offset_calibration() {
     //TODO avoid recomputing elec_rad_per_enc every time
     float elec_rad_per_enc = axis_->motor_.config_.pole_pairs * 2 * M_PI * (1.0f / (float)(config_.cpr));
     float expected_encoder_delta = scan_distance / elec_rad_per_enc;
-    float actual_encoder_delta_abs = fabsf(get_low_level_count()-init_enc_val);
+    float actual_encoder_delta_abs = fabsf(shadow_count_-init_enc_val);
     if(fabsf(actual_encoder_delta_abs - expected_encoder_delta)/expected_encoder_delta > config_.calib_range)
     {
         error_ |= ERROR_CPR_OUT_OF_RANGE;
         return false;
     }
     // check direction
-    if (get_low_level_count() > init_enc_val + 8) {
+    if (shadow_count_ > init_enc_val + 8) {
         // motor same dir as encoder
         axis_->motor_.config_.direction = 1;
-    } else if (get_low_level_count() < init_enc_val - 8) {
+    } else if (shadow_count_ < init_enc_val - 8) {
         // motor opposite dir as encoder
         axis_->motor_.config_.direction = -1;
     } else {
@@ -215,6 +193,8 @@ bool Encoder::run_offset_calibration() {
     // scan backwards
     i = 0;
     axis_->run_control_loop([&](){
+        update(nullptr, nullptr, nullptr);
+
         float phase = wrap_pm_pi(-scan_distance * (float)i / (float)num_steps + scan_distance / 2.0f);
         float v_alpha = voltage_magnitude * arm_cos_f32(phase);
         float v_beta = voltage_magnitude * arm_sin_f32(phase);
@@ -222,7 +202,7 @@ bool Encoder::run_offset_calibration() {
             return false; // error set inside enqueue_voltage_timings
         axis_->motor_.log_timing(Motor::TIMING_LOG_ENC_CALIB);
 
-        encvaluesum += get_low_level_count();
+        encvaluesum += shadow_count_;
         
         return ++i < num_steps;
     });
@@ -235,6 +215,18 @@ bool Encoder::run_offset_calibration() {
     return true;
 }
 
+static bool decode_hall(uint8_t hall_state, int32_t* hall_cnt) {
+    switch (hall_state) {
+        case 0b001: *hall_cnt = 0; return true;
+        case 0b011: *hall_cnt = 1; return true;
+        case 0b010: *hall_cnt = 2; return true;
+        case 0b110: *hall_cnt = 3; return true;
+        case 0b100: *hall_cnt = 4; return true;
+        case 0b101: *hall_cnt = 5; return true;
+        default: return false;
+    }
+}
+
 bool Encoder::update(float* pos_estimate, float* vel_estimate, float* phase_output) {
     // Check that we don't get problems with discrete time approximation
     if (!(current_meas_period * pll_kp_ < 1.0f)) {
@@ -242,9 +234,35 @@ bool Encoder::update(float* pos_estimate, float* vel_estimate, float* phase_outp
         return false;
     }
 
-    // update internal encoder state
-    int16_t delta_enc_16 = get_low_level_count() - (int16_t)shadow_count_;
-    int32_t delta_enc = (int32_t)delta_enc_16; //sign extend
+    // update internal encoder state.
+    int32_t delta_enc = 0;
+    switch (config_.mode) {
+        case MODE_INCREMENTAL: {
+            //TODO: use count_in_cpr_ instead as shadow_count_ can overflow
+            //or use 64 bit
+            int16_t delta_enc_16 = (int16_t)hw_config_.timer->Instance->CNT - (int16_t)shadow_count_;
+            delta_enc = (int32_t)delta_enc_16; //sign extend
+        } break;
+
+        case MODE_HALL: {
+            int32_t hall_cnt;
+            if (decode_hall(hall_state_, &hall_cnt)) {
+                delta_enc = hall_cnt - count_in_cpr_;
+                delta_enc = mod(delta_enc, 6);
+                if (delta_enc > 3)
+                    delta_enc -= 6;
+            } else {
+                error_ |= ERROR_ILLEGAL_HALL_STATE;
+                return false;
+            }
+        } break;
+        
+        default: {
+           error_ |= ERROR_UNSUPPORTED_ENCODER_MODE;
+           return 0;
+        } break;
+    }
+
     shadow_count_ += delta_enc;
     count_in_cpr_ += delta_enc;
     count_in_cpr_ = mod(count_in_cpr_, config_.cpr);
@@ -261,14 +279,14 @@ bool Encoder::update(float* pos_estimate, float* vel_estimate, float* phase_outp
     // run pll (for now pll is in units of encoder counts)
     // Predict current pos
     pos_estimate_ += current_meas_period * pll_vel_;
-    pos_cpr_       += current_meas_period * pll_vel_;
+    pos_cpr_      += current_meas_period * pll_vel_;
     // discrete phase detector
     float delta_pos     = (float)(shadow_count_ - (int32_t)floorf(pos_estimate_));
     float delta_pos_cpr = (float)(count_in_cpr_ - (int32_t)floorf(pos_cpr_));
     delta_pos_cpr = wrap_pm(delta_pos_cpr, 0.5f * (float)(config_.cpr));
     // pll feedback
     pos_estimate_ += current_meas_period * pll_kp_ * delta_pos;
-    pos_cpr_       += current_meas_period * pll_kp_ * delta_pos_cpr;
+    pos_cpr_      += current_meas_period * pll_kp_ * delta_pos_cpr;
     pos_cpr_ = fmodf_pos(pos_cpr_, (float)(config_.cpr));
     pll_vel_      += current_meas_period * pll_ki_ * delta_pos_cpr;
     if (fabsf(pll_vel_) < 0.5f * current_meas_period * pll_ki_)

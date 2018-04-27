@@ -9,7 +9,7 @@
 #include <communication/interface_i2c.h>
 
 BoardConfig_t board_config;
-EncoderConfig_t encoder_configs[AXIS_COUNT];
+Encoder::Config_t encoder_configs[AXIS_COUNT];
 ControllerConfig_t controller_configs[AXIS_COUNT];
 MotorConfig_t motor_configs[AXIS_COUNT];
 AxisConfig_t axis_configs[AXIS_COUNT];
@@ -21,7 +21,7 @@ Axis *axes[AXIS_COUNT];
 
 typedef Config<
     BoardConfig_t,
-    EncoderConfig_t[AXIS_COUNT],
+    Encoder::Config_t[AXIS_COUNT],
     ControllerConfig_t[AXIS_COUNT],
     MotorConfig_t[AXIS_COUNT],
     AxisConfig_t[AXIS_COUNT]> ConfigFormat;
@@ -49,7 +49,7 @@ void load_configuration(void) {
         //If loading failed, restore defaults
         board_config = BoardConfig_t();
         for (size_t i = 0; i < AXIS_COUNT; ++i) {
-            encoder_configs[i] = EncoderConfig_t();
+            encoder_configs[i] = Encoder::Config_t();
             controller_configs[i] = ControllerConfig_t();
             motor_configs[i] = MotorConfig_t();
             axis_configs[i] = AxisConfig_t();
