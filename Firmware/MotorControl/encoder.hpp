@@ -26,6 +26,13 @@ public:
         ERROR_NUMERICAL = 0x01,
         ERROR_CPR_OUT_OF_RANGE = 0x02,
         ERROR_RESPONSE = 0x04,
+        ERROR_UNSUPPORTED_ENCODER_MODE = 0x08,
+        ERROR_ILLEGAL_HALL_STATE = 0x10,
+    };
+
+    enum Mode_t {
+        MODE_INCREMENTAL,
+        MODE_HALL
     };
 
     Encoder(const EncoderHardwareConfig_t& hw_config,
@@ -35,6 +42,7 @@ public:
 
     void enc_index_cb();
 
+    int16_t get_low_level_count();
     void set_linear_count(int32_t count);
     void set_circular_count(int32_t count);
     bool calib_enc_offset(float voltage_magnitude);
@@ -49,6 +57,7 @@ public:
     Axis* axis_ = nullptr; // set by Axis constructor
 
     Error_t error_ = ERROR_NONE;
+    Mode_t mode_ = MODE_INCREMENTAL;
     bool index_found_ = false;
     bool is_ready_ = false;
     int32_t shadow_count_ = 0;
@@ -62,7 +71,7 @@ public:
     float pll_ki_ = 0.0f;   // [(rad/s^2) / rad]
 
     // Updated by low_level pwm_adc_cb
-    uint8_t hall_state = 0x0; // bit[0] = HallA, .., bit[2] = HallC
+    uint8_t hall_state_ = 0x0; // bit[0] = HallA, .., bit[2] = HallC
 
     // Communication protocol definitions
     auto make_protocol_definitions() {
@@ -76,6 +85,7 @@ public:
             make_protocol_property("phase", &phase_),
             make_protocol_property("pos_estimate", &pos_estimate_),
             make_protocol_property("pos_cpr", &pos_cpr_),
+            make_protocol_property("hall_state", &hall_state_),
             make_protocol_property("pll_vel", &pll_vel_),
             make_protocol_property("pll_kp", &pll_kp_),
             make_protocol_property("pll_ki", &pll_ki_),

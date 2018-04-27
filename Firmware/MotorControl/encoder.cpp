@@ -26,6 +26,32 @@ void Encoder::setup() {
             enc_index_cb_wrapper, this);
 }
 
+int16_t Encoder::get_low_level_count() {
+    switch (mode_) {
+        case MODE_INCREMENTAL: {
+            return (int16_t)hw_config_.timer->Instance->CNT;
+        } break;
+        case MODE_HALL: {
+            switch (hall_state_) {
+                case 0b001: return 0;
+                case 0b011: return 1;
+                case 0b010: return 2;
+                case 0b110: return 3;
+                case 0b100: return 4;
+                case 0b101: return 5;
+                default: {
+                    error_ |= ERROR_ILLEGAL_HALL_STATE;
+                    return 0;
+                }
+            }
+        } break;
+        default: {
+           error_ |= ERROR_UNSUPPORTED_ENCODER_MODE;
+           return 0;
+        }
+    }
+}
+
 //--------------------
 // Hardware Dependent
 //--------------------
@@ -142,7 +168,7 @@ bool Encoder::run_offset_calibration() {
     if (axis_->error_ != Axis::ERROR_NO_ERROR)
         return false;
 
-    int32_t init_enc_val = (int16_t)hw_config_.timer->Instance->CNT;
+    int32_t init_enc_val = get_low_level_count();
     int64_t encvaluesum = 0;
 
     // scan forward
@@ -157,7 +183,7 @@ bool Encoder::run_offset_calibration() {
             return false; // error set inside enqueue_voltage_timings
         axis_->motor_.log_timing(Motor::TIMING_LOG_ENC_CALIB);
 
-        encvaluesum += (int16_t)hw_config_.timer->Instance->CNT;
+        encvaluesum += get_low_level_count();
         
         return ++i < num_steps;
     });
@@ -167,17 +193,17 @@ bool Encoder::run_offset_calibration() {
     //TODO avoid recomputing elec_rad_per_enc every time
     float elec_rad_per_enc = axis_->motor_.config_.pole_pairs * 2 * M_PI * (1.0f / (float)(config_.cpr));
     float expected_encoder_delta = scan_distance / elec_rad_per_enc;
-    float actual_encoder_delta_abs = fabsf((int16_t)hw_config_.timer->Instance->CNT-init_enc_val);
+    float actual_encoder_delta_abs = fabsf(get_low_level_count()-init_enc_val);
     if(fabsf(actual_encoder_delta_abs - expected_encoder_delta)/expected_encoder_delta > config_.calib_range)
     {
         error_ |= ERROR_CPR_OUT_OF_RANGE;
         return false;
     }
     // check direction
-    if ((int16_t)hw_config_.timer->Instance->CNT > init_enc_val + 8) {
+    if (get_low_level_count() > init_enc_val + 8) {
         // motor same dir as encoder
         axis_->motor_.config_.direction = 1;
-    } else if ((int16_t)hw_config_.timer->Instance->CNT < init_enc_val - 8) {
+    } else if (get_low_level_count() < init_enc_val - 8) {
         // motor opposite dir as encoder
         axis_->motor_.config_.direction = -1;
     } else {
@@ -196,7 +222,7 @@ bool Encoder::run_offset_calibration() {
             return false; // error set inside enqueue_voltage_timings
         axis_->motor_.log_timing(Motor::TIMING_LOG_ENC_CALIB);
 
-        encvaluesum += (int16_t)hw_config_.timer->Instance->CNT;
+        encvaluesum += get_low_level_count();
         
         return ++i < num_steps;
     });
@@ -217,7 +243,7 @@ bool Encoder::update(float* pos_estimate, float* vel_estimate, float* phase_outp
     }
 
     // update internal encoder state
-    int16_t delta_enc_16 = (int16_t)hw_config_.timer->Instance->CNT - (int16_t)shadow_count_;
+    int16_t delta_enc_16 = get_low_level_count() - (int16_t)shadow_count_;
     int32_t delta_enc = (int32_t)delta_enc_16; //sign extend
     shadow_count_ += delta_enc;
     count_in_cpr_ += delta_enc;
