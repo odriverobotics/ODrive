@@ -9,10 +9,11 @@
 #ifndef __ODRIVE_ENDPOINTS_HPP
 #define __ODRIVE_ENDPOINTS_HPP
 
+#define AXIS_ENDPOINT_COUNT 101
 
 namespace odrive {
     
-static constexpr const uint16_t json_crc = 0x7199;
+static constexpr const uint16_t json_crc = 0x64cd;
 
 enum { 
   VBUS_VOLTAGE = 1,
@@ -47,187 +48,195 @@ enum {
   CONFIG__ENABLE_I2C_INSTEAD_OF_CAN = 30,
   CONFIG__DC_BUS_UNDERVOLTAGE_TRIP_LEVEL = 31,
   CONFIG__DC_BUS_OVERVOLTAGE_TRIP_LEVEL = 32,
-  AXIS0__ERROR = 33,
-  AXIS0__ENABLE_STEP_DIR = 34,
-  AXIS0__CURRENT_STATE = 35,
-  AXIS0__REQUESTED_STATE = 36,
-  AXIS0__LOOP_COUNTER = 37,
-  AXIS0__CONFIG__STARTUP_MOTOR_CALIBRATION = 38,
-  AXIS0__CONFIG__STARTUP_ENCODER_INDEX_SEARCH = 39,
-  AXIS0__CONFIG__STARTUP_ENCODER_OFFSET_CALIBRATION = 40,
-  AXIS0__CONFIG__STARTUP_CLOSED_LOOP_CONTROL = 41,
-  AXIS0__CONFIG__STARTUP_SENSORLESS_CONTROL = 42,
-  AXIS0__CONFIG__ENABLE_STEP_DIR = 43,
-  AXIS0__CONFIG__COUNTS_PER_STEP = 44,
-  AXIS0__CONFIG__RAMP_UP_TIME = 45,
-  AXIS0__CONFIG__RAMP_UP_DISTANCE = 46,
-  AXIS0__CONFIG__SPIN_UP_CURRENT = 47,
-  AXIS0__CONFIG__SPIN_UP_ACCELERATION = 48,
-  AXIS0__CONFIG__SPIN_UP_TARGET_VEL = 49,
-  AXIS0__MOTOR__ERROR = 50,
-  AXIS0__MOTOR__ARMED_STATE = 51,
-  AXIS0__MOTOR__IS_CALIBRATED = 52,
-  AXIS0__MOTOR__CURRENT_MEAS_PHB = 53,
-  AXIS0__MOTOR__CURRENT_MEAS_PHC = 54,
-  AXIS0__MOTOR__DC_CALIB_PHB = 55,
-  AXIS0__MOTOR__DC_CALIB_PHC = 56,
-  AXIS0__MOTOR__PHASE_CURRENT_REV_GAIN = 57,
-  AXIS0__MOTOR__CURRENT_CONTROL__P_GAIN = 58,
-  AXIS0__MOTOR__CURRENT_CONTROL__I_GAIN = 59,
-  AXIS0__MOTOR__CURRENT_CONTROL__V_CURRENT_CONTROL_INTEGRAL_D = 60,
-  AXIS0__MOTOR__CURRENT_CONTROL__V_CURRENT_CONTROL_INTEGRAL_Q = 61,
-  AXIS0__MOTOR__CURRENT_CONTROL__IBUS = 62,
-  AXIS0__MOTOR__CURRENT_CONTROL__FINAL_V_ALPHA = 63,
-  AXIS0__MOTOR__CURRENT_CONTROL__FINAL_V_BETA = 64,
-  AXIS0__MOTOR__CURRENT_CONTROL__IQ_SETPOINT = 65,
-  AXIS0__MOTOR__CURRENT_CONTROL__IQ_MEASURED = 66,
-  AXIS0__MOTOR__CURRENT_CONTROL__MAX_ALLOWED_CURRENT = 67,
-  AXIS0__MOTOR__GATE_DRIVER__DRV_FAULT = 68,
-  AXIS0__MOTOR__TIMING_LOG__TIMING_LOG_GENERAL = 69,
-  AXIS0__MOTOR__TIMING_LOG__TIMING_LOG_ADC_CB_I = 70,
-  AXIS0__MOTOR__TIMING_LOG__TIMING_LOG_ADC_CB_DC = 71,
-  AXIS0__MOTOR__TIMING_LOG__TIMING_LOG_MEAS_R = 72,
-  AXIS0__MOTOR__TIMING_LOG__TIMING_LOG_MEAS_L = 73,
-  AXIS0__MOTOR__TIMING_LOG__TIMING_LOG_ENC_CALIB = 74,
-  AXIS0__MOTOR__TIMING_LOG__TIMING_LOG_IDX_SEARCH = 75,
-  AXIS0__MOTOR__TIMING_LOG__TIMING_LOG_FOC_VOLTAGE = 76,
-  AXIS0__MOTOR__TIMING_LOG__TIMING_LOG_FOC_CURRENT = 77,
-  AXIS0__MOTOR__CONFIG__PRE_CALIBRATED = 78,
-  AXIS0__MOTOR__CONFIG__POLE_PAIRS = 79,
-  AXIS0__MOTOR__CONFIG__CALIBRATION_CURRENT = 80,
-  AXIS0__MOTOR__CONFIG__RESISTANCE_CALIB_MAX_VOLTAGE = 81,
-  AXIS0__MOTOR__CONFIG__PHASE_INDUCTANCE = 82,
-  AXIS0__MOTOR__CONFIG__PHASE_RESISTANCE = 83,
-  AXIS0__MOTOR__CONFIG__DIRECTION = 84,
-  AXIS0__MOTOR__CONFIG__MOTOR_TYPE = 85,
-  AXIS0__MOTOR__CONFIG__CURRENT_LIM = 86,
-  AXIS0__CONTROLLER__POS_SETPOINT = 87,
-  AXIS0__CONTROLLER__VEL_SETPOINT = 88,
-  AXIS0__CONTROLLER__VEL_INTEGRATOR_CURRENT = 89,
-  AXIS0__CONTROLLER__CURRENT_SETPOINT = 90,
-  AXIS0__CONTROLLER__CONFIG__CONTROL_MODE = 91,
-  AXIS0__CONTROLLER__CONFIG__POS_GAIN = 92,
-  AXIS0__CONTROLLER__CONFIG__VEL_GAIN = 93,
-  AXIS0__CONTROLLER__CONFIG__VEL_INTEGRATOR_GAIN = 94,
-  AXIS0__CONTROLLER__CONFIG__VEL_LIMIT = 95,
-  AXIS0__CONTROLLER__START_ANTICOGGING_CALIBRATION = 105,
-  AXIS0__ENCODER__ERROR = 106,
-  AXIS0__ENCODER__IS_READY = 107,
-  AXIS0__ENCODER__INDEX_FOUND = 108,
-  AXIS0__ENCODER__SHADOW_COUNT = 109,
-  AXIS0__ENCODER__COUNT_IN_CPR = 110,
-  AXIS0__ENCODER__OFFSET = 111,
-  AXIS0__ENCODER__PHASE = 112,
-  AXIS0__ENCODER__POS_ESTIMATE = 113,
-  AXIS0__ENCODER__POS_CPR = 114,
-  AXIS0__ENCODER__PLL_VEL = 115,
-  AXIS0__ENCODER__PLL_KP = 116,
-  AXIS0__ENCODER__PLL_KI = 117,
-  AXIS0__ENCODER__CONFIG__USE_INDEX = 118,
-  AXIS0__ENCODER__CONFIG__PRE_CALIBRATED = 119,
-  AXIS0__ENCODER__CONFIG__IDX_SEARCH_SPEED = 120,
-  AXIS0__ENCODER__CONFIG__CPR = 121,
-  AXIS0__ENCODER__CONFIG__OFFSET = 122,
-  AXIS0__ENCODER__CONFIG__CALIB_RANGE = 123,
-  AXIS0__SENSORLESS_ESTIMATOR__ERROR = 124,
-  AXIS0__SENSORLESS_ESTIMATOR__PHASE = 125,
-  AXIS0__SENSORLESS_ESTIMATOR__PLL_POS = 126,
-  AXIS0__SENSORLESS_ESTIMATOR__PLL_VEL = 127,
-  AXIS0__SENSORLESS_ESTIMATOR__PLL_KP = 128,
-  AXIS0__SENSORLESS_ESTIMATOR__PLL_KI = 129,
-  AXIS1__ERROR = 130,
-  AXIS1__ENABLE_STEP_DIR = 131,
-  AXIS1__CURRENT_STATE = 132,
-  AXIS1__REQUESTED_STATE = 133,
-  AXIS1__LOOP_COUNTER = 134,
-  AXIS1__CONFIG__STARTUP_MOTOR_CALIBRATION = 135,
-  AXIS1__CONFIG__STARTUP_ENCODER_INDEX_SEARCH = 136,
-  AXIS1__CONFIG__STARTUP_ENCODER_OFFSET_CALIBRATION = 137,
-  AXIS1__CONFIG__STARTUP_CLOSED_LOOP_CONTROL = 138,
-  AXIS1__CONFIG__STARTUP_SENSORLESS_CONTROL = 139,
-  AXIS1__CONFIG__ENABLE_STEP_DIR = 140,
-  AXIS1__CONFIG__COUNTS_PER_STEP = 141,
-  AXIS1__CONFIG__RAMP_UP_TIME = 142,
-  AXIS1__CONFIG__RAMP_UP_DISTANCE = 143,
-  AXIS1__CONFIG__SPIN_UP_CURRENT = 144,
-  AXIS1__CONFIG__SPIN_UP_ACCELERATION = 145,
-  AXIS1__CONFIG__SPIN_UP_TARGET_VEL = 146,
-  AXIS1__MOTOR__ERROR = 147,
-  AXIS1__MOTOR__ARMED_STATE = 148,
-  AXIS1__MOTOR__IS_CALIBRATED = 149,
-  AXIS1__MOTOR__CURRENT_MEAS_PHB = 150,
-  AXIS1__MOTOR__CURRENT_MEAS_PHC = 151,
-  AXIS1__MOTOR__DC_CALIB_PHB = 152,
-  AXIS1__MOTOR__DC_CALIB_PHC = 153,
-  AXIS1__MOTOR__PHASE_CURRENT_REV_GAIN = 154,
-  AXIS1__MOTOR__CURRENT_CONTROL__P_GAIN = 155,
-  AXIS1__MOTOR__CURRENT_CONTROL__I_GAIN = 156,
-  AXIS1__MOTOR__CURRENT_CONTROL__V_CURRENT_CONTROL_INTEGRAL_D = 157,
-  AXIS1__MOTOR__CURRENT_CONTROL__V_CURRENT_CONTROL_INTEGRAL_Q = 158,
-  AXIS1__MOTOR__CURRENT_CONTROL__IBUS = 159,
-  AXIS1__MOTOR__CURRENT_CONTROL__FINAL_V_ALPHA = 160,
-  AXIS1__MOTOR__CURRENT_CONTROL__FINAL_V_BETA = 161,
-  AXIS1__MOTOR__CURRENT_CONTROL__IQ_SETPOINT = 162,
-  AXIS1__MOTOR__CURRENT_CONTROL__IQ_MEASURED = 163,
-  AXIS1__MOTOR__CURRENT_CONTROL__MAX_ALLOWED_CURRENT = 164,
-  AXIS1__MOTOR__GATE_DRIVER__DRV_FAULT = 165,
-  AXIS1__MOTOR__TIMING_LOG__TIMING_LOG_GENERAL = 166,
-  AXIS1__MOTOR__TIMING_LOG__TIMING_LOG_ADC_CB_I = 167,
-  AXIS1__MOTOR__TIMING_LOG__TIMING_LOG_ADC_CB_DC = 168,
-  AXIS1__MOTOR__TIMING_LOG__TIMING_LOG_MEAS_R = 169,
-  AXIS1__MOTOR__TIMING_LOG__TIMING_LOG_MEAS_L = 170,
-  AXIS1__MOTOR__TIMING_LOG__TIMING_LOG_ENC_CALIB = 171,
-  AXIS1__MOTOR__TIMING_LOG__TIMING_LOG_IDX_SEARCH = 172,
-  AXIS1__MOTOR__TIMING_LOG__TIMING_LOG_FOC_VOLTAGE = 173,
-  AXIS1__MOTOR__TIMING_LOG__TIMING_LOG_FOC_CURRENT = 174,
-  AXIS1__MOTOR__CONFIG__PRE_CALIBRATED = 175,
-  AXIS1__MOTOR__CONFIG__POLE_PAIRS = 176,
-  AXIS1__MOTOR__CONFIG__CALIBRATION_CURRENT = 177,
-  AXIS1__MOTOR__CONFIG__RESISTANCE_CALIB_MAX_VOLTAGE = 178,
-  AXIS1__MOTOR__CONFIG__PHASE_INDUCTANCE = 179,
-  AXIS1__MOTOR__CONFIG__PHASE_RESISTANCE = 180,
-  AXIS1__MOTOR__CONFIG__DIRECTION = 181,
-  AXIS1__MOTOR__CONFIG__MOTOR_TYPE = 182,
-  AXIS1__MOTOR__CONFIG__CURRENT_LIM = 183,
-  AXIS1__CONTROLLER__POS_SETPOINT = 184,
-  AXIS1__CONTROLLER__VEL_SETPOINT = 185,
-  AXIS1__CONTROLLER__VEL_INTEGRATOR_CURRENT = 186,
-  AXIS1__CONTROLLER__CURRENT_SETPOINT = 187,
-  AXIS1__CONTROLLER__CONFIG__CONTROL_MODE = 188,
-  AXIS1__CONTROLLER__CONFIG__POS_GAIN = 189,
-  AXIS1__CONTROLLER__CONFIG__VEL_GAIN = 190,
-  AXIS1__CONTROLLER__CONFIG__VEL_INTEGRATOR_GAIN = 191,
-  AXIS1__CONTROLLER__CONFIG__VEL_LIMIT = 192,
-  AXIS1__CONTROLLER__START_ANTICOGGING_CALIBRATION = 202,
-  AXIS1__ENCODER__ERROR = 203,
-  AXIS1__ENCODER__IS_READY = 204,
-  AXIS1__ENCODER__INDEX_FOUND = 205,
-  AXIS1__ENCODER__SHADOW_COUNT = 206,
-  AXIS1__ENCODER__COUNT_IN_CPR = 207,
-  AXIS1__ENCODER__OFFSET = 208,
-  AXIS1__ENCODER__PHASE = 209,
-  AXIS1__ENCODER__POS_ESTIMATE = 210,
-  AXIS1__ENCODER__POS_CPR = 211,
-  AXIS1__ENCODER__PLL_VEL = 212,
-  AXIS1__ENCODER__PLL_KP = 213,
-  AXIS1__ENCODER__PLL_KI = 214,
-  AXIS1__ENCODER__CONFIG__USE_INDEX = 215,
-  AXIS1__ENCODER__CONFIG__PRE_CALIBRATED = 216,
-  AXIS1__ENCODER__CONFIG__IDX_SEARCH_SPEED = 217,
-  AXIS1__ENCODER__CONFIG__CPR = 218,
-  AXIS1__ENCODER__CONFIG__OFFSET = 219,
-  AXIS1__ENCODER__CONFIG__CALIB_RANGE = 220,
-  AXIS1__SENSORLESS_ESTIMATOR__ERROR = 221,
-  AXIS1__SENSORLESS_ESTIMATOR__PHASE = 222,
-  AXIS1__SENSORLESS_ESTIMATOR__PLL_POS = 223,
-  AXIS1__SENSORLESS_ESTIMATOR__PLL_VEL = 224,
-  AXIS1__SENSORLESS_ESTIMATOR__PLL_KP = 225,
-  AXIS1__SENSORLESS_ESTIMATOR__PLL_KI = 226,
-  TEST_PROPERTY = 227,
-  SAVE_CONFIGURATION = 234,
-  ERASE_CONFIGURATION = 235,
-  REBOOT = 236,
-  ENTER_DFU_MODE = 237,
+  AXIS__ERROR = 33,
+  AXIS__ENABLE_STEP_DIR = 34,
+  AXIS__CURRENT_STATE = 35,
+  AXIS__REQUESTED_STATE = 36,
+  AXIS__LOOP_COUNTER = 37,
+  AXIS__CONFIG__STARTUP_MOTOR_CALIBRATION = 38,
+  AXIS__CONFIG__STARTUP_ENCODER_INDEX_SEARCH = 39,
+  AXIS__CONFIG__STARTUP_ENCODER_OFFSET_CALIBRATION = 40,
+  AXIS__CONFIG__STARTUP_CLOSED_LOOP_CONTROL = 41,
+  AXIS__CONFIG__STARTUP_SENSORLESS_CONTROL = 42,
+  AXIS__CONFIG__ENABLE_STEP_DIR = 43,
+  AXIS__CONFIG__COUNTS_PER_STEP = 44,
+  AXIS__CONFIG__RAMP_UP_TIME = 45,
+  AXIS__CONFIG__RAMP_UP_DISTANCE = 46,
+  AXIS__CONFIG__SPIN_UP_CURRENT = 47,
+  AXIS__CONFIG__SPIN_UP_ACCELERATION = 48,
+  AXIS__CONFIG__SPIN_UP_TARGET_VEL = 49,
+  AXIS__MOTOR__ERROR = 50,
+  AXIS__MOTOR__ARMED_STATE = 51,
+  AXIS__MOTOR__IS_CALIBRATED = 52,
+  AXIS__MOTOR__CURRENT_MEAS_PHB = 53,
+  AXIS__MOTOR__CURRENT_MEAS_PHC = 54,
+  AXIS__MOTOR__DC_CALIB_PHB = 55,
+  AXIS__MOTOR__DC_CALIB_PHC = 56,
+  AXIS__MOTOR__PHASE_CURRENT_REV_GAIN = 57,
+  AXIS__MOTOR__CURRENT_CONTROL__P_GAIN = 58,
+  AXIS__MOTOR__CURRENT_CONTROL__I_GAIN = 59,
+  AXIS__MOTOR__CURRENT_CONTROL__V_CURRENT_CONTROL_INTEGRAL_D = 60,
+  AXIS__MOTOR__CURRENT_CONTROL__V_CURRENT_CONTROL_INTEGRAL_Q = 61,
+  AXIS__MOTOR__CURRENT_CONTROL__IBUS = 62,
+  AXIS__MOTOR__CURRENT_CONTROL__FINAL_V_ALPHA = 63,
+  AXIS__MOTOR__CURRENT_CONTROL__FINAL_V_BETA = 64,
+  AXIS__MOTOR__CURRENT_CONTROL__IQ_SETPOINT = 65,
+  AXIS__MOTOR__CURRENT_CONTROL__IQ_MEASURED = 66,
+  AXIS__MOTOR__CURRENT_CONTROL__MAX_ALLOWED_CURRENT = 67,
+  AXIS__MOTOR__GATE_DRIVER__DRV_FAULT = 68,
+  AXIS__MOTOR__TIMING_LOG__TIMING_LOG_GENERAL = 69,
+  AXIS__MOTOR__TIMING_LOG__TIMING_LOG_ADC_CB_I = 70,
+  AXIS__MOTOR__TIMING_LOG__TIMING_LOG_ADC_CB_DC = 71,
+  AXIS__MOTOR__TIMING_LOG__TIMING_LOG_MEAS_R = 72,
+  AXIS__MOTOR__TIMING_LOG__TIMING_LOG_MEAS_L = 73,
+  AXIS__MOTOR__TIMING_LOG__TIMING_LOG_ENC_CALIB = 74,
+  AXIS__MOTOR__TIMING_LOG__TIMING_LOG_IDX_SEARCH = 75,
+  AXIS__MOTOR__TIMING_LOG__TIMING_LOG_FOC_VOLTAGE = 76,
+  AXIS__MOTOR__TIMING_LOG__TIMING_LOG_FOC_CURRENT = 77,
+  AXIS__MOTOR__CONFIG__PRE_CALIBRATED = 78,
+  AXIS__MOTOR__CONFIG__POLE_PAIRS = 79,
+  AXIS__MOTOR__CONFIG__CALIBRATION_CURRENT = 80,
+  AXIS__MOTOR__CONFIG__RESISTANCE_CALIB_MAX_VOLTAGE = 81,
+  AXIS__MOTOR__CONFIG__PHASE_INDUCTANCE = 82,
+  AXIS__MOTOR__CONFIG__PHASE_RESISTANCE = 83,
+  AXIS__MOTOR__CONFIG__DIRECTION = 84,
+  AXIS__MOTOR__CONFIG__MOTOR_TYPE = 85,
+  AXIS__MOTOR__CONFIG__CURRENT_LIM = 86,
+  AXIS__CONTROLLER__POS_SETPOINT = 87,
+  AXIS__CONTROLLER__VEL_SETPOINT = 88,
+  AXIS__CONTROLLER__VEL_INTEGRATOR_CURRENT = 89,
+  AXIS__CONTROLLER__CURRENT_SETPOINT = 90,
+  AXIS__CONTROLLER__CONFIG__CONTROL_MODE = 91,
+  AXIS__CONTROLLER__CONFIG__POS_GAIN = 92,
+  AXIS__CONTROLLER__CONFIG__VEL_GAIN = 93,
+  AXIS__CONTROLLER__CONFIG__VEL_INTEGRATOR_GAIN = 94,
+  AXIS__CONTROLLER__CONFIG__VEL_LIMIT = 95,
+  AXIS__CONTROLLER__START_ANTICOGGING_CALIBRATION = 105,
+  AXIS__ENCODER__ERROR = 106,
+  AXIS__ENCODER__IS_READY = 107,
+  AXIS__ENCODER__INDEX_FOUND = 108,
+  AXIS__ENCODER__SHADOW_COUNT = 109,
+  AXIS__ENCODER__COUNT_IN_CPR = 110,
+  AXIS__ENCODER__OFFSET = 111,
+  AXIS__ENCODER__INTERPOLATION = 112,
+  AXIS__ENCODER__PHASE = 113,
+  AXIS__ENCODER__POS_ESTIMATE = 114,
+  AXIS__ENCODER__POS_CPR = 115,
+  AXIS__ENCODER__HALL_STATE = 116,
+  AXIS__ENCODER__PLL_VEL = 117,
+  AXIS__ENCODER__PLL_KP = 118,
+  AXIS__ENCODER__PLL_KI = 119,
+  AXIS__ENCODER__CONFIG__MODE = 120,
+  AXIS__ENCODER__CONFIG__USE_INDEX = 121,
+  AXIS__ENCODER__CONFIG__PRE_CALIBRATED = 122,
+  AXIS__ENCODER__CONFIG__IDX_SEARCH_SPEED = 123,
+  AXIS__ENCODER__CONFIG__CPR = 124,
+  AXIS__ENCODER__CONFIG__OFFSET = 125,
+  AXIS__ENCODER__CONFIG__OFFSET_FLOAT = 126,
+  AXIS__ENCODER__CONFIG__CALIB_RANGE = 127,
+  AXIS__SENSORLESS_ESTIMATOR__ERROR = 128,
+  AXIS__SENSORLESS_ESTIMATOR__PHASE = 129,
+  AXIS__SENSORLESS_ESTIMATOR__PLL_POS = 130,
+  AXIS__SENSORLESS_ESTIMATOR__PLL_VEL = 131,
+  AXIS__SENSORLESS_ESTIMATOR__PLL_KP = 132,
+  AXIS__SENSORLESS_ESTIMATOR__PLL_KI = 133,
+  AXIS1__ERROR = 134,
+  AXIS1__ENABLE_STEP_DIR = 135,
+  AXIS1__CURRENT_STATE = 136,
+  AXIS1__REQUESTED_STATE = 137,
+  AXIS1__LOOP_COUNTER = 138,
+  AXIS1__CONFIG__STARTUP_MOTOR_CALIBRATION = 139,
+  AXIS1__CONFIG__STARTUP_ENCODER_INDEX_SEARCH = 140,
+  AXIS1__CONFIG__STARTUP_ENCODER_OFFSET_CALIBRATION = 141,
+  AXIS1__CONFIG__STARTUP_CLOSED_LOOP_CONTROL = 142,
+  AXIS1__CONFIG__STARTUP_SENSORLESS_CONTROL = 143,
+  AXIS1__CONFIG__ENABLE_STEP_DIR = 144,
+  AXIS1__CONFIG__COUNTS_PER_STEP = 145,
+  AXIS1__CONFIG__RAMP_UP_TIME = 146,
+  AXIS1__CONFIG__RAMP_UP_DISTANCE = 147,
+  AXIS1__CONFIG__SPIN_UP_CURRENT = 148,
+  AXIS1__CONFIG__SPIN_UP_ACCELERATION = 149,
+  AXIS1__CONFIG__SPIN_UP_TARGET_VEL = 150,
+  AXIS1__MOTOR__ERROR = 151,
+  AXIS1__MOTOR__ARMED_STATE = 152,
+  AXIS1__MOTOR__IS_CALIBRATED = 153,
+  AXIS1__MOTOR__CURRENT_MEAS_PHB = 154,
+  AXIS1__MOTOR__CURRENT_MEAS_PHC = 155,
+  AXIS1__MOTOR__DC_CALIB_PHB = 156,
+  AXIS1__MOTOR__DC_CALIB_PHC = 157,
+  AXIS1__MOTOR__PHASE_CURRENT_REV_GAIN = 158,
+  AXIS1__MOTOR__CURRENT_CONTROL__P_GAIN = 159,
+  AXIS1__MOTOR__CURRENT_CONTROL__I_GAIN = 160,
+  AXIS1__MOTOR__CURRENT_CONTROL__V_CURRENT_CONTROL_INTEGRAL_D = 161,
+  AXIS1__MOTOR__CURRENT_CONTROL__V_CURRENT_CONTROL_INTEGRAL_Q = 162,
+  AXIS1__MOTOR__CURRENT_CONTROL__IBUS = 163,
+  AXIS1__MOTOR__CURRENT_CONTROL__FINAL_V_ALPHA = 164,
+  AXIS1__MOTOR__CURRENT_CONTROL__FINAL_V_BETA = 165,
+  AXIS1__MOTOR__CURRENT_CONTROL__IQ_SETPOINT = 166,
+  AXIS1__MOTOR__CURRENT_CONTROL__IQ_MEASURED = 167,
+  AXIS1__MOTOR__CURRENT_CONTROL__MAX_ALLOWED_CURRENT = 168,
+  AXIS1__MOTOR__GATE_DRIVER__DRV_FAULT = 169,
+  AXIS1__MOTOR__TIMING_LOG__TIMING_LOG_GENERAL = 170,
+  AXIS1__MOTOR__TIMING_LOG__TIMING_LOG_ADC_CB_I = 171,
+  AXIS1__MOTOR__TIMING_LOG__TIMING_LOG_ADC_CB_DC = 172,
+  AXIS1__MOTOR__TIMING_LOG__TIMING_LOG_MEAS_R = 173,
+  AXIS1__MOTOR__TIMING_LOG__TIMING_LOG_MEAS_L = 174,
+  AXIS1__MOTOR__TIMING_LOG__TIMING_LOG_ENC_CALIB = 175,
+  AXIS1__MOTOR__TIMING_LOG__TIMING_LOG_IDX_SEARCH = 176,
+  AXIS1__MOTOR__TIMING_LOG__TIMING_LOG_FOC_VOLTAGE = 177,
+  AXIS1__MOTOR__TIMING_LOG__TIMING_LOG_FOC_CURRENT = 178,
+  AXIS1__MOTOR__CONFIG__PRE_CALIBRATED = 179,
+  AXIS1__MOTOR__CONFIG__POLE_PAIRS = 180,
+  AXIS1__MOTOR__CONFIG__CALIBRATION_CURRENT = 181,
+  AXIS1__MOTOR__CONFIG__RESISTANCE_CALIB_MAX_VOLTAGE = 182,
+  AXIS1__MOTOR__CONFIG__PHASE_INDUCTANCE = 183,
+  AXIS1__MOTOR__CONFIG__PHASE_RESISTANCE = 184,
+  AXIS1__MOTOR__CONFIG__DIRECTION = 185,
+  AXIS1__MOTOR__CONFIG__MOTOR_TYPE = 186,
+  AXIS1__MOTOR__CONFIG__CURRENT_LIM = 187,
+  AXIS1__CONTROLLER__POS_SETPOINT = 188,
+  AXIS1__CONTROLLER__VEL_SETPOINT = 189,
+  AXIS1__CONTROLLER__VEL_INTEGRATOR_CURRENT = 190,
+  AXIS1__CONTROLLER__CURRENT_SETPOINT = 191,
+  AXIS1__CONTROLLER__CONFIG__CONTROL_MODE = 192,
+  AXIS1__CONTROLLER__CONFIG__POS_GAIN = 193,
+  AXIS1__CONTROLLER__CONFIG__VEL_GAIN = 194,
+  AXIS1__CONTROLLER__CONFIG__VEL_INTEGRATOR_GAIN = 195,
+  AXIS1__CONTROLLER__CONFIG__VEL_LIMIT = 196,
+  AXIS1__CONTROLLER__START_ANTICOGGING_CALIBRATION = 206,
+  AXIS1__ENCODER__ERROR = 207,
+  AXIS1__ENCODER__IS_READY = 208,
+  AXIS1__ENCODER__INDEX_FOUND = 209,
+  AXIS1__ENCODER__SHADOW_COUNT = 210,
+  AXIS1__ENCODER__COUNT_IN_CPR = 211,
+  AXIS1__ENCODER__OFFSET = 212,
+  AXIS1__ENCODER__INTERPOLATION = 213,
+  AXIS1__ENCODER__PHASE = 214,
+  AXIS1__ENCODER__POS_ESTIMATE = 215,
+  AXIS1__ENCODER__POS_CPR = 216,
+  AXIS1__ENCODER__HALL_STATE = 217,
+  AXIS1__ENCODER__PLL_VEL = 218,
+  AXIS1__ENCODER__PLL_KP = 219,
+  AXIS1__ENCODER__PLL_KI = 220,
+  AXIS1__ENCODER__CONFIG__MODE = 221,
+  AXIS1__ENCODER__CONFIG__USE_INDEX = 222,
+  AXIS1__ENCODER__CONFIG__PRE_CALIBRATED = 223,
+  AXIS1__ENCODER__CONFIG__IDX_SEARCH_SPEED = 224,
+  AXIS1__ENCODER__CONFIG__CPR = 225,
+  AXIS1__ENCODER__CONFIG__OFFSET = 226,
+  AXIS1__ENCODER__CONFIG__OFFSET_FLOAT = 227,
+  AXIS1__ENCODER__CONFIG__CALIB_RANGE = 228,
+  AXIS1__SENSORLESS_ESTIMATOR__ERROR = 229,
+  AXIS1__SENSORLESS_ESTIMATOR__PHASE = 230,
+  AXIS1__SENSORLESS_ESTIMATOR__PLL_POS = 231,
+  AXIS1__SENSORLESS_ESTIMATOR__PLL_VEL = 232,
+  AXIS1__SENSORLESS_ESTIMATOR__PLL_KP = 233,
+  AXIS1__SENSORLESS_ESTIMATOR__PLL_KI = 234,
+  TEST_PROPERTY = 235,
+  SAVE_CONFIGURATION = 242,
+  ERASE_CONFIGURATION = 243,
+  REBOOT = 244,
+  ENTER_DFU_MODE = 245,
 };
 
 template<int I>
@@ -265,94 +274,98 @@ template<> struct endpoint_type<CONFIG__ENABLE_UART> { typedef bool type; };
 template<> struct endpoint_type<CONFIG__ENABLE_I2C_INSTEAD_OF_CAN> { typedef bool type; };
 template<> struct endpoint_type<CONFIG__DC_BUS_UNDERVOLTAGE_TRIP_LEVEL> { typedef float type; };
 template<> struct endpoint_type<CONFIG__DC_BUS_OVERVOLTAGE_TRIP_LEVEL> { typedef float type; };
-template<> struct endpoint_type<AXIS0__ERROR> { typedef uint16_t type; };
-template<> struct endpoint_type<AXIS0__ENABLE_STEP_DIR> { typedef bool type; };
-template<> struct endpoint_type<AXIS0__CURRENT_STATE> { typedef uint8_t type; };
-template<> struct endpoint_type<AXIS0__REQUESTED_STATE> { typedef uint8_t type; };
-template<> struct endpoint_type<AXIS0__LOOP_COUNTER> { typedef uint32_t type; };
-template<> struct endpoint_type<AXIS0__CONFIG__STARTUP_MOTOR_CALIBRATION> { typedef bool type; };
-template<> struct endpoint_type<AXIS0__CONFIG__STARTUP_ENCODER_INDEX_SEARCH> { typedef bool type; };
-template<> struct endpoint_type<AXIS0__CONFIG__STARTUP_ENCODER_OFFSET_CALIBRATION> { typedef bool type; };
-template<> struct endpoint_type<AXIS0__CONFIG__STARTUP_CLOSED_LOOP_CONTROL> { typedef bool type; };
-template<> struct endpoint_type<AXIS0__CONFIG__STARTUP_SENSORLESS_CONTROL> { typedef bool type; };
-template<> struct endpoint_type<AXIS0__CONFIG__ENABLE_STEP_DIR> { typedef bool type; };
-template<> struct endpoint_type<AXIS0__CONFIG__COUNTS_PER_STEP> { typedef float type; };
-template<> struct endpoint_type<AXIS0__CONFIG__RAMP_UP_TIME> { typedef float type; };
-template<> struct endpoint_type<AXIS0__CONFIG__RAMP_UP_DISTANCE> { typedef float type; };
-template<> struct endpoint_type<AXIS0__CONFIG__SPIN_UP_CURRENT> { typedef float type; };
-template<> struct endpoint_type<AXIS0__CONFIG__SPIN_UP_ACCELERATION> { typedef float type; };
-template<> struct endpoint_type<AXIS0__CONFIG__SPIN_UP_TARGET_VEL> { typedef float type; };
-template<> struct endpoint_type<AXIS0__MOTOR__ERROR> { typedef uint8_t type; };
-template<> struct endpoint_type<AXIS0__MOTOR__ARMED_STATE> { typedef uint8_t type; };
-template<> struct endpoint_type<AXIS0__MOTOR__IS_CALIBRATED> { typedef bool type; };
-template<> struct endpoint_type<AXIS0__MOTOR__CURRENT_MEAS_PHB> { typedef float type; };
-template<> struct endpoint_type<AXIS0__MOTOR__CURRENT_MEAS_PHC> { typedef float type; };
-template<> struct endpoint_type<AXIS0__MOTOR__DC_CALIB_PHB> { typedef float type; };
-template<> struct endpoint_type<AXIS0__MOTOR__DC_CALIB_PHC> { typedef float type; };
-template<> struct endpoint_type<AXIS0__MOTOR__PHASE_CURRENT_REV_GAIN> { typedef float type; };
-template<> struct endpoint_type<AXIS0__MOTOR__CURRENT_CONTROL__P_GAIN> { typedef float type; };
-template<> struct endpoint_type<AXIS0__MOTOR__CURRENT_CONTROL__I_GAIN> { typedef float type; };
-template<> struct endpoint_type<AXIS0__MOTOR__CURRENT_CONTROL__V_CURRENT_CONTROL_INTEGRAL_D> { typedef float type; };
-template<> struct endpoint_type<AXIS0__MOTOR__CURRENT_CONTROL__V_CURRENT_CONTROL_INTEGRAL_Q> { typedef float type; };
-template<> struct endpoint_type<AXIS0__MOTOR__CURRENT_CONTROL__IBUS> { typedef float type; };
-template<> struct endpoint_type<AXIS0__MOTOR__CURRENT_CONTROL__FINAL_V_ALPHA> { typedef float type; };
-template<> struct endpoint_type<AXIS0__MOTOR__CURRENT_CONTROL__FINAL_V_BETA> { typedef float type; };
-template<> struct endpoint_type<AXIS0__MOTOR__CURRENT_CONTROL__IQ_SETPOINT> { typedef float type; };
-template<> struct endpoint_type<AXIS0__MOTOR__CURRENT_CONTROL__IQ_MEASURED> { typedef float type; };
-template<> struct endpoint_type<AXIS0__MOTOR__CURRENT_CONTROL__MAX_ALLOWED_CURRENT> { typedef float type; };
-template<> struct endpoint_type<AXIS0__MOTOR__GATE_DRIVER__DRV_FAULT> { typedef uint16_t type; };
-template<> struct endpoint_type<AXIS0__MOTOR__TIMING_LOG__TIMING_LOG_GENERAL> { typedef uint16_t type; };
-template<> struct endpoint_type<AXIS0__MOTOR__TIMING_LOG__TIMING_LOG_ADC_CB_I> { typedef uint16_t type; };
-template<> struct endpoint_type<AXIS0__MOTOR__TIMING_LOG__TIMING_LOG_ADC_CB_DC> { typedef uint16_t type; };
-template<> struct endpoint_type<AXIS0__MOTOR__TIMING_LOG__TIMING_LOG_MEAS_R> { typedef uint16_t type; };
-template<> struct endpoint_type<AXIS0__MOTOR__TIMING_LOG__TIMING_LOG_MEAS_L> { typedef uint16_t type; };
-template<> struct endpoint_type<AXIS0__MOTOR__TIMING_LOG__TIMING_LOG_ENC_CALIB> { typedef uint16_t type; };
-template<> struct endpoint_type<AXIS0__MOTOR__TIMING_LOG__TIMING_LOG_IDX_SEARCH> { typedef uint16_t type; };
-template<> struct endpoint_type<AXIS0__MOTOR__TIMING_LOG__TIMING_LOG_FOC_VOLTAGE> { typedef uint16_t type; };
-template<> struct endpoint_type<AXIS0__MOTOR__TIMING_LOG__TIMING_LOG_FOC_CURRENT> { typedef uint16_t type; };
-template<> struct endpoint_type<AXIS0__MOTOR__CONFIG__PRE_CALIBRATED> { typedef bool type; };
-template<> struct endpoint_type<AXIS0__MOTOR__CONFIG__POLE_PAIRS> { typedef int32_t type; };
-template<> struct endpoint_type<AXIS0__MOTOR__CONFIG__CALIBRATION_CURRENT> { typedef float type; };
-template<> struct endpoint_type<AXIS0__MOTOR__CONFIG__RESISTANCE_CALIB_MAX_VOLTAGE> { typedef float type; };
-template<> struct endpoint_type<AXIS0__MOTOR__CONFIG__PHASE_INDUCTANCE> { typedef float type; };
-template<> struct endpoint_type<AXIS0__MOTOR__CONFIG__PHASE_RESISTANCE> { typedef float type; };
-template<> struct endpoint_type<AXIS0__MOTOR__CONFIG__DIRECTION> { typedef int32_t type; };
-template<> struct endpoint_type<AXIS0__MOTOR__CONFIG__MOTOR_TYPE> { typedef uint8_t type; };
-template<> struct endpoint_type<AXIS0__MOTOR__CONFIG__CURRENT_LIM> { typedef float type; };
-template<> struct endpoint_type<AXIS0__CONTROLLER__POS_SETPOINT> { typedef float type; };
-template<> struct endpoint_type<AXIS0__CONTROLLER__VEL_SETPOINT> { typedef float type; };
-template<> struct endpoint_type<AXIS0__CONTROLLER__VEL_INTEGRATOR_CURRENT> { typedef float type; };
-template<> struct endpoint_type<AXIS0__CONTROLLER__CURRENT_SETPOINT> { typedef float type; };
-template<> struct endpoint_type<AXIS0__CONTROLLER__CONFIG__CONTROL_MODE> { typedef uint8_t type; };
-template<> struct endpoint_type<AXIS0__CONTROLLER__CONFIG__POS_GAIN> { typedef float type; };
-template<> struct endpoint_type<AXIS0__CONTROLLER__CONFIG__VEL_GAIN> { typedef float type; };
-template<> struct endpoint_type<AXIS0__CONTROLLER__CONFIG__VEL_INTEGRATOR_GAIN> { typedef float type; };
-template<> struct endpoint_type<AXIS0__CONTROLLER__CONFIG__VEL_LIMIT> { typedef float type; };
-template<> struct endpoint_type<AXIS0__CONTROLLER__START_ANTICOGGING_CALIBRATION> { typedef void type; };
-template<> struct endpoint_type<AXIS0__ENCODER__ERROR> { typedef uint8_t type; };
-template<> struct endpoint_type<AXIS0__ENCODER__IS_READY> { typedef bool type; };
-template<> struct endpoint_type<AXIS0__ENCODER__INDEX_FOUND> { typedef bool type; };
-template<> struct endpoint_type<AXIS0__ENCODER__SHADOW_COUNT> { typedef int32_t type; };
-template<> struct endpoint_type<AXIS0__ENCODER__COUNT_IN_CPR> { typedef int32_t type; };
-template<> struct endpoint_type<AXIS0__ENCODER__OFFSET> { typedef int32_t type; };
-template<> struct endpoint_type<AXIS0__ENCODER__PHASE> { typedef float type; };
-template<> struct endpoint_type<AXIS0__ENCODER__POS_ESTIMATE> { typedef float type; };
-template<> struct endpoint_type<AXIS0__ENCODER__POS_CPR> { typedef float type; };
-template<> struct endpoint_type<AXIS0__ENCODER__PLL_VEL> { typedef float type; };
-template<> struct endpoint_type<AXIS0__ENCODER__PLL_KP> { typedef float type; };
-template<> struct endpoint_type<AXIS0__ENCODER__PLL_KI> { typedef float type; };
-template<> struct endpoint_type<AXIS0__ENCODER__CONFIG__USE_INDEX> { typedef bool type; };
-template<> struct endpoint_type<AXIS0__ENCODER__CONFIG__PRE_CALIBRATED> { typedef bool type; };
-template<> struct endpoint_type<AXIS0__ENCODER__CONFIG__IDX_SEARCH_SPEED> { typedef float type; };
-template<> struct endpoint_type<AXIS0__ENCODER__CONFIG__CPR> { typedef int32_t type; };
-template<> struct endpoint_type<AXIS0__ENCODER__CONFIG__OFFSET> { typedef int32_t type; };
-template<> struct endpoint_type<AXIS0__ENCODER__CONFIG__CALIB_RANGE> { typedef float type; };
-template<> struct endpoint_type<AXIS0__SENSORLESS_ESTIMATOR__ERROR> { typedef uint8_t type; };
-template<> struct endpoint_type<AXIS0__SENSORLESS_ESTIMATOR__PHASE> { typedef float type; };
-template<> struct endpoint_type<AXIS0__SENSORLESS_ESTIMATOR__PLL_POS> { typedef float type; };
-template<> struct endpoint_type<AXIS0__SENSORLESS_ESTIMATOR__PLL_VEL> { typedef float type; };
-template<> struct endpoint_type<AXIS0__SENSORLESS_ESTIMATOR__PLL_KP> { typedef float type; };
-template<> struct endpoint_type<AXIS0__SENSORLESS_ESTIMATOR__PLL_KI> { typedef float type; };
+template<> struct endpoint_type<AXIS__ERROR> { typedef uint16_t type; };
+template<> struct endpoint_type<AXIS__ENABLE_STEP_DIR> { typedef bool type; };
+template<> struct endpoint_type<AXIS__CURRENT_STATE> { typedef uint8_t type; };
+template<> struct endpoint_type<AXIS__REQUESTED_STATE> { typedef uint8_t type; };
+template<> struct endpoint_type<AXIS__LOOP_COUNTER> { typedef uint32_t type; };
+template<> struct endpoint_type<AXIS__CONFIG__STARTUP_MOTOR_CALIBRATION> { typedef bool type; };
+template<> struct endpoint_type<AXIS__CONFIG__STARTUP_ENCODER_INDEX_SEARCH> { typedef bool type; };
+template<> struct endpoint_type<AXIS__CONFIG__STARTUP_ENCODER_OFFSET_CALIBRATION> { typedef bool type; };
+template<> struct endpoint_type<AXIS__CONFIG__STARTUP_CLOSED_LOOP_CONTROL> { typedef bool type; };
+template<> struct endpoint_type<AXIS__CONFIG__STARTUP_SENSORLESS_CONTROL> { typedef bool type; };
+template<> struct endpoint_type<AXIS__CONFIG__ENABLE_STEP_DIR> { typedef bool type; };
+template<> struct endpoint_type<AXIS__CONFIG__COUNTS_PER_STEP> { typedef float type; };
+template<> struct endpoint_type<AXIS__CONFIG__RAMP_UP_TIME> { typedef float type; };
+template<> struct endpoint_type<AXIS__CONFIG__RAMP_UP_DISTANCE> { typedef float type; };
+template<> struct endpoint_type<AXIS__CONFIG__SPIN_UP_CURRENT> { typedef float type; };
+template<> struct endpoint_type<AXIS__CONFIG__SPIN_UP_ACCELERATION> { typedef float type; };
+template<> struct endpoint_type<AXIS__CONFIG__SPIN_UP_TARGET_VEL> { typedef float type; };
+template<> struct endpoint_type<AXIS__MOTOR__ERROR> { typedef uint16_t type; };
+template<> struct endpoint_type<AXIS__MOTOR__ARMED_STATE> { typedef uint8_t type; };
+template<> struct endpoint_type<AXIS__MOTOR__IS_CALIBRATED> { typedef bool type; };
+template<> struct endpoint_type<AXIS__MOTOR__CURRENT_MEAS_PHB> { typedef float type; };
+template<> struct endpoint_type<AXIS__MOTOR__CURRENT_MEAS_PHC> { typedef float type; };
+template<> struct endpoint_type<AXIS__MOTOR__DC_CALIB_PHB> { typedef float type; };
+template<> struct endpoint_type<AXIS__MOTOR__DC_CALIB_PHC> { typedef float type; };
+template<> struct endpoint_type<AXIS__MOTOR__PHASE_CURRENT_REV_GAIN> { typedef float type; };
+template<> struct endpoint_type<AXIS__MOTOR__CURRENT_CONTROL__P_GAIN> { typedef float type; };
+template<> struct endpoint_type<AXIS__MOTOR__CURRENT_CONTROL__I_GAIN> { typedef float type; };
+template<> struct endpoint_type<AXIS__MOTOR__CURRENT_CONTROL__V_CURRENT_CONTROL_INTEGRAL_D> { typedef float type; };
+template<> struct endpoint_type<AXIS__MOTOR__CURRENT_CONTROL__V_CURRENT_CONTROL_INTEGRAL_Q> { typedef float type; };
+template<> struct endpoint_type<AXIS__MOTOR__CURRENT_CONTROL__IBUS> { typedef float type; };
+template<> struct endpoint_type<AXIS__MOTOR__CURRENT_CONTROL__FINAL_V_ALPHA> { typedef float type; };
+template<> struct endpoint_type<AXIS__MOTOR__CURRENT_CONTROL__FINAL_V_BETA> { typedef float type; };
+template<> struct endpoint_type<AXIS__MOTOR__CURRENT_CONTROL__IQ_SETPOINT> { typedef float type; };
+template<> struct endpoint_type<AXIS__MOTOR__CURRENT_CONTROL__IQ_MEASURED> { typedef float type; };
+template<> struct endpoint_type<AXIS__MOTOR__CURRENT_CONTROL__MAX_ALLOWED_CURRENT> { typedef float type; };
+template<> struct endpoint_type<AXIS__MOTOR__GATE_DRIVER__DRV_FAULT> { typedef uint16_t type; };
+template<> struct endpoint_type<AXIS__MOTOR__TIMING_LOG__TIMING_LOG_GENERAL> { typedef uint16_t type; };
+template<> struct endpoint_type<AXIS__MOTOR__TIMING_LOG__TIMING_LOG_ADC_CB_I> { typedef uint16_t type; };
+template<> struct endpoint_type<AXIS__MOTOR__TIMING_LOG__TIMING_LOG_ADC_CB_DC> { typedef uint16_t type; };
+template<> struct endpoint_type<AXIS__MOTOR__TIMING_LOG__TIMING_LOG_MEAS_R> { typedef uint16_t type; };
+template<> struct endpoint_type<AXIS__MOTOR__TIMING_LOG__TIMING_LOG_MEAS_L> { typedef uint16_t type; };
+template<> struct endpoint_type<AXIS__MOTOR__TIMING_LOG__TIMING_LOG_ENC_CALIB> { typedef uint16_t type; };
+template<> struct endpoint_type<AXIS__MOTOR__TIMING_LOG__TIMING_LOG_IDX_SEARCH> { typedef uint16_t type; };
+template<> struct endpoint_type<AXIS__MOTOR__TIMING_LOG__TIMING_LOG_FOC_VOLTAGE> { typedef uint16_t type; };
+template<> struct endpoint_type<AXIS__MOTOR__TIMING_LOG__TIMING_LOG_FOC_CURRENT> { typedef uint16_t type; };
+template<> struct endpoint_type<AXIS__MOTOR__CONFIG__PRE_CALIBRATED> { typedef bool type; };
+template<> struct endpoint_type<AXIS__MOTOR__CONFIG__POLE_PAIRS> { typedef int32_t type; };
+template<> struct endpoint_type<AXIS__MOTOR__CONFIG__CALIBRATION_CURRENT> { typedef float type; };
+template<> struct endpoint_type<AXIS__MOTOR__CONFIG__RESISTANCE_CALIB_MAX_VOLTAGE> { typedef float type; };
+template<> struct endpoint_type<AXIS__MOTOR__CONFIG__PHASE_INDUCTANCE> { typedef float type; };
+template<> struct endpoint_type<AXIS__MOTOR__CONFIG__PHASE_RESISTANCE> { typedef float type; };
+template<> struct endpoint_type<AXIS__MOTOR__CONFIG__DIRECTION> { typedef int32_t type; };
+template<> struct endpoint_type<AXIS__MOTOR__CONFIG__MOTOR_TYPE> { typedef uint8_t type; };
+template<> struct endpoint_type<AXIS__MOTOR__CONFIG__CURRENT_LIM> { typedef float type; };
+template<> struct endpoint_type<AXIS__CONTROLLER__POS_SETPOINT> { typedef float type; };
+template<> struct endpoint_type<AXIS__CONTROLLER__VEL_SETPOINT> { typedef float type; };
+template<> struct endpoint_type<AXIS__CONTROLLER__VEL_INTEGRATOR_CURRENT> { typedef float type; };
+template<> struct endpoint_type<AXIS__CONTROLLER__CURRENT_SETPOINT> { typedef float type; };
+template<> struct endpoint_type<AXIS__CONTROLLER__CONFIG__CONTROL_MODE> { typedef uint8_t type; };
+template<> struct endpoint_type<AXIS__CONTROLLER__CONFIG__POS_GAIN> { typedef float type; };
+template<> struct endpoint_type<AXIS__CONTROLLER__CONFIG__VEL_GAIN> { typedef float type; };
+template<> struct endpoint_type<AXIS__CONTROLLER__CONFIG__VEL_INTEGRATOR_GAIN> { typedef float type; };
+template<> struct endpoint_type<AXIS__CONTROLLER__CONFIG__VEL_LIMIT> { typedef float type; };
+template<> struct endpoint_type<AXIS__CONTROLLER__START_ANTICOGGING_CALIBRATION> { typedef void type; };
+template<> struct endpoint_type<AXIS__ENCODER__ERROR> { typedef uint8_t type; };
+template<> struct endpoint_type<AXIS__ENCODER__IS_READY> { typedef bool type; };
+template<> struct endpoint_type<AXIS__ENCODER__INDEX_FOUND> { typedef bool type; };
+template<> struct endpoint_type<AXIS__ENCODER__SHADOW_COUNT> { typedef int32_t type; };
+template<> struct endpoint_type<AXIS__ENCODER__COUNT_IN_CPR> { typedef int32_t type; };
+template<> struct endpoint_type<AXIS__ENCODER__OFFSET> { typedef int32_t type; };
+template<> struct endpoint_type<AXIS__ENCODER__INTERPOLATION> { typedef float type; };
+template<> struct endpoint_type<AXIS__ENCODER__PHASE> { typedef float type; };
+template<> struct endpoint_type<AXIS__ENCODER__POS_ESTIMATE> { typedef float type; };
+template<> struct endpoint_type<AXIS__ENCODER__POS_CPR> { typedef float type; };
+template<> struct endpoint_type<AXIS__ENCODER__HALL_STATE> { typedef uint8_t type; };
+template<> struct endpoint_type<AXIS__ENCODER__PLL_VEL> { typedef float type; };
+template<> struct endpoint_type<AXIS__ENCODER__PLL_KP> { typedef float type; };
+template<> struct endpoint_type<AXIS__ENCODER__PLL_KI> { typedef float type; };
+template<> struct endpoint_type<AXIS__ENCODER__CONFIG__MODE> { typedef uint8_t type; };
+template<> struct endpoint_type<AXIS__ENCODER__CONFIG__USE_INDEX> { typedef bool type; };
+template<> struct endpoint_type<AXIS__ENCODER__CONFIG__PRE_CALIBRATED> { typedef bool type; };
+template<> struct endpoint_type<AXIS__ENCODER__CONFIG__IDX_SEARCH_SPEED> { typedef float type; };
+template<> struct endpoint_type<AXIS__ENCODER__CONFIG__CPR> { typedef int32_t type; };
+template<> struct endpoint_type<AXIS__ENCODER__CONFIG__OFFSET> { typedef int32_t type; };
+template<> struct endpoint_type<AXIS__ENCODER__CONFIG__OFFSET_FLOAT> { typedef float type; };
+template<> struct endpoint_type<AXIS__ENCODER__CONFIG__CALIB_RANGE> { typedef float type; };
+template<> struct endpoint_type<AXIS__SENSORLESS_ESTIMATOR__ERROR> { typedef uint8_t type; };
+template<> struct endpoint_type<AXIS__SENSORLESS_ESTIMATOR__PHASE> { typedef float type; };
+template<> struct endpoint_type<AXIS__SENSORLESS_ESTIMATOR__PLL_POS> { typedef float type; };
+template<> struct endpoint_type<AXIS__SENSORLESS_ESTIMATOR__PLL_VEL> { typedef float type; };
+template<> struct endpoint_type<AXIS__SENSORLESS_ESTIMATOR__PLL_KP> { typedef float type; };
+template<> struct endpoint_type<AXIS__SENSORLESS_ESTIMATOR__PLL_KI> { typedef float type; };
 template<> struct endpoint_type<AXIS1__ERROR> { typedef uint16_t type; };
 template<> struct endpoint_type<AXIS1__ENABLE_STEP_DIR> { typedef bool type; };
 template<> struct endpoint_type<AXIS1__CURRENT_STATE> { typedef uint8_t type; };
@@ -370,7 +383,7 @@ template<> struct endpoint_type<AXIS1__CONFIG__RAMP_UP_DISTANCE> { typedef float
 template<> struct endpoint_type<AXIS1__CONFIG__SPIN_UP_CURRENT> { typedef float type; };
 template<> struct endpoint_type<AXIS1__CONFIG__SPIN_UP_ACCELERATION> { typedef float type; };
 template<> struct endpoint_type<AXIS1__CONFIG__SPIN_UP_TARGET_VEL> { typedef float type; };
-template<> struct endpoint_type<AXIS1__MOTOR__ERROR> { typedef uint8_t type; };
+template<> struct endpoint_type<AXIS1__MOTOR__ERROR> { typedef uint16_t type; };
 template<> struct endpoint_type<AXIS1__MOTOR__ARMED_STATE> { typedef uint8_t type; };
 template<> struct endpoint_type<AXIS1__MOTOR__IS_CALIBRATED> { typedef bool type; };
 template<> struct endpoint_type<AXIS1__MOTOR__CURRENT_MEAS_PHB> { typedef float type; };
@@ -423,17 +436,21 @@ template<> struct endpoint_type<AXIS1__ENCODER__INDEX_FOUND> { typedef bool type
 template<> struct endpoint_type<AXIS1__ENCODER__SHADOW_COUNT> { typedef int32_t type; };
 template<> struct endpoint_type<AXIS1__ENCODER__COUNT_IN_CPR> { typedef int32_t type; };
 template<> struct endpoint_type<AXIS1__ENCODER__OFFSET> { typedef int32_t type; };
+template<> struct endpoint_type<AXIS1__ENCODER__INTERPOLATION> { typedef float type; };
 template<> struct endpoint_type<AXIS1__ENCODER__PHASE> { typedef float type; };
 template<> struct endpoint_type<AXIS1__ENCODER__POS_ESTIMATE> { typedef float type; };
 template<> struct endpoint_type<AXIS1__ENCODER__POS_CPR> { typedef float type; };
+template<> struct endpoint_type<AXIS1__ENCODER__HALL_STATE> { typedef uint8_t type; };
 template<> struct endpoint_type<AXIS1__ENCODER__PLL_VEL> { typedef float type; };
 template<> struct endpoint_type<AXIS1__ENCODER__PLL_KP> { typedef float type; };
 template<> struct endpoint_type<AXIS1__ENCODER__PLL_KI> { typedef float type; };
+template<> struct endpoint_type<AXIS1__ENCODER__CONFIG__MODE> { typedef uint8_t type; };
 template<> struct endpoint_type<AXIS1__ENCODER__CONFIG__USE_INDEX> { typedef bool type; };
 template<> struct endpoint_type<AXIS1__ENCODER__CONFIG__PRE_CALIBRATED> { typedef bool type; };
 template<> struct endpoint_type<AXIS1__ENCODER__CONFIG__IDX_SEARCH_SPEED> { typedef float type; };
 template<> struct endpoint_type<AXIS1__ENCODER__CONFIG__CPR> { typedef int32_t type; };
 template<> struct endpoint_type<AXIS1__ENCODER__CONFIG__OFFSET> { typedef int32_t type; };
+template<> struct endpoint_type<AXIS1__ENCODER__CONFIG__OFFSET_FLOAT> { typedef float type; };
 template<> struct endpoint_type<AXIS1__ENCODER__CONFIG__CALIB_RANGE> { typedef float type; };
 template<> struct endpoint_type<AXIS1__SENSORLESS_ESTIMATOR__ERROR> { typedef uint8_t type; };
 template<> struct endpoint_type<AXIS1__SENSORLESS_ESTIMATOR__PHASE> { typedef float type; };

@@ -101,7 +101,8 @@ namespace odrive {
         write_le<T_Int>(buffer, *reinterpret_cast<T_Int*>(&value));
     }
 
-    /* @brief Read from an endpoint on the ODrive
+    /* @brief Read from an endpoint on the ODrive.
+    * To read from an axis specific endpoint use read_axis_property() instead.
     *
     * Usage example:
     *   float val;
@@ -112,9 +113,9 @@ namespace odrive {
     * @return true if the I2C transaction succeeded, false otherwise
     */
     template<int IPropertyId>
-    bool read_property(uint8_t num, endpoint_type_t<IPropertyId>* value) {
+    bool read_property(uint8_t num, endpoint_type_t<IPropertyId>* value, uint16_t address = IPropertyId) {
         uint8_t i2c_tx_buffer[4];
-        write_le<uint16_t>(i2c_tx_buffer, IPropertyId);
+        write_le<uint16_t>(i2c_tx_buffer, address);
         write_le<uint16_t>(i2c_tx_buffer + sizeof(i2c_tx_buffer) - 2, json_crc);
         uint8_t i2c_rx_buffer[byte_width<endpoint_type_t<IPropertyId>>::value];
         if (!I2C_transaction(i2c_addr + num,
@@ -126,25 +127,26 @@ namespace odrive {
         return true;
     }
 
-    /* @brief Write to an endpoint on the ODrive
+    /* @brief Write to an endpoint on the ODrive.
+    * To write to an axis specific endpoint use write_axis_property() instead.
     *
     * Usage example:
-    *   success = odrive::write_property<odrive::AXIS0__CONTROLLER__VEL_SETPOINT>(0, 10000);
+    *   success = odrive::write_property<odrive::TEST_PROPERTY>(0, 42);
     *
     * @param num Selects the ODrive. For instance the value 4 selects
     * the ODrive that has [A2, A1, A0] connected to [VCC, GND, GND].
     * @return true if the I2C transaction succeeded, false otherwise
     */
     template<int IPropertyId>
-    bool write_property(uint8_t num, endpoint_type_t<IPropertyId> value) {
+    bool write_property(uint8_t num, endpoint_type_t<IPropertyId> value, uint16_t address = IPropertyId) {
         uint8_t i2c_tx_buffer[4 + byte_width<endpoint_type_t<IPropertyId>>::value];
-        write_le<uint16_t>(i2c_tx_buffer, IPropertyId);
+        write_le<uint16_t>(i2c_tx_buffer, address);
         write_le<endpoint_type_t<IPropertyId>>(i2c_tx_buffer + 2, value);
         write_le<uint16_t>(i2c_tx_buffer + sizeof(i2c_tx_buffer) - 2, json_crc);
         return I2C_transaction(i2c_addr + num, i2c_tx_buffer, sizeof(i2c_tx_buffer), nullptr, 0);
     }
 
-    /* @brief Write to an endpoint on the ODrive
+    /* @brief Trigger an parameter-less function on the ODrive
     *
     * Usage example:
     *   success = odrive::trigger<odrive::SAVE_CONFIGURATION>(0);
@@ -155,11 +157,43 @@ namespace odrive {
     */
     template<int IPropertyId,
              typename = typename std::enable_if<std::is_void<endpoint_type_t<IPropertyId>>::value>::type>
-    bool trigger(uint8_t num) {
+    bool trigger(uint8_t num, uint16_t address = IPropertyId) {
         uint8_t i2c_tx_buffer[4];
-        write_le<uint16_t>(i2c_tx_buffer, IPropertyId);
+        write_le<uint16_t>(i2c_tx_buffer, address);
         write_le<uint16_t>(i2c_tx_buffer + sizeof(i2c_tx_buffer) - 2, json_crc);
         return I2C_transaction(i2c_addr + num, i2c_tx_buffer, sizeof(i2c_tx_buffer), nullptr, 0);
     }
 
+    template<int IPropertyId>
+    bool read_axis_property(uint8_t num, uint8_t axis, endpoint_type_t<IPropertyId>* value) {
+        return read_property<IPropertyId>(num, value, IPropertyId + axis * AXIS_ENDPOINT_COUNT);
+    }
+
+    template<int IPropertyId>
+    bool write_axis_property(uint8_t num, uint8_t axis, endpoint_type_t<IPropertyId> value) {
+        return write_property<IPropertyId>(num, value, IPropertyId + axis * AXIS_ENDPOINT_COUNT);
+    }
+
+
+    /* @brief Checks if the axis is in the requested state and the error register is clear */
+    bool check_axis_state(uint8_t num, uint8_t axis, uint8_t state) {
+        endpoint_type_t<odrive::AXIS__CURRENT_STATE> observed_state = 0;
+        endpoint_type_t<odrive::AXIS__ERROR> observed_error = 0;
+        if (!read_axis_property<odrive::AXIS__CURRENT_STATE>(num, axis, &observed_state))
+            return false;
+        if (!read_axis_property<odrive::AXIS__ERROR>(num, axis, &observed_error))
+            return false;
+        return (observed_error == 0) && (observed_state == state);
+    }
+
+    /* @brief Clears any error state of the specified axis */
+    bool clear_errors(uint8_t num, uint8_t axis) {
+        if (!write_axis_property<odrive::AXIS__ERROR>(num, axis, 0))
+            return false;
+        if (!write_axis_property<odrive::AXIS__MOTOR__ERROR>(num, axis, 0))
+            return false;
+        if (!write_axis_property<odrive::AXIS__ENCODER__ERROR>(num, axis, 0))
+            return false;
+        return true;
+    }
 }
