@@ -35,6 +35,16 @@ int set_and_save_configuration(uint8_t odrive_num, uint8_t axis_num) {
     return __LINE__;
 
   // select hall effect mode
+  bool user_config_loaded = false;
+  success = odrive::read_property<odrive::USER_CONFIG_LOADED>(odrive_num, &user_config_loaded);
+  if (!success)
+    return __LINE__;
+  if (user_config_loaded) {
+    Serial.println("ODrive already configured");
+    return 0;
+  }
+
+  // select hall effect mode
   success = odrive::write_axis_property<odrive::AXIS__ENCODER__CONFIG__MODE>(odrive_num, axis_num, 1);
   if (!success)
     return __LINE__;
@@ -108,6 +118,7 @@ bool do_setup = true;
 void setup() {
   Wire.begin(); // join i2c bus (address optional for master)
   Serial.begin(9600);
+  Serial.println("Hello World!");
 
   if (do_setup) {
     Serial.println("Starting ODrive setup...");
