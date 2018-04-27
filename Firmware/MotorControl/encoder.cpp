@@ -14,6 +14,11 @@ Encoder::Encoder(const EncoderHardwareConfig_t& hw_config,
 
     // Critically damped
     pll_ki_ = 0.25f * (pll_kp_ * pll_kp_);
+
+    if (config.pre_calibrated && (config.mode == Encoder::MODE_HALL)) {
+        offset_ = config.offset;
+        is_ready_ = true;
+    }
 }
 
 static void enc_index_cb_wrapper(void* ctx) {
