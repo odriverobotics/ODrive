@@ -257,6 +257,17 @@ void GPIO_unsubscribe(GPIO_TypeDef* GPIO_port, uint16_t GPIO_pin) {
     HAL_NVIC_DisableIRQ(get_irq_number(GPIO_pin));
 }
 
+// @brief Configures the specified GPIO as an analog input.
+// This disables any subscriptions that were active for this pin.
+void GPIO_set_to_analog(GPIO_TypeDef* GPIO_port, uint16_t GPIO_pin) {
+  GPIO_InitTypeDef GPIO_InitStruct;
+  GPIO_unsubscribe(GPIO_port, GPIO_pin);
+  GPIO_InitStruct.Pin = GPIO_pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_ANALOG;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  HAL_GPIO_Init(GPIO_port, &GPIO_InitStruct);
+}
+
 //Dispatch processing of external interrupts based on source
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_pin) {
   for (size_t i = 0; i < n_subscriptions; ++i) {
