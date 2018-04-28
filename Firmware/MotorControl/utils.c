@@ -179,6 +179,13 @@ uint32_t timeout_to_deadline(uint32_t timeout_ms) {
     return now_ms + timeout_ms;
 }
 
+// @brief: Returns a non-zero value if the specified system time (in ms)
+// is in the future or 0 otherwise.
+// If the time lies far in the past this may falsely return a non-zero value.
+int is_in_the_future(uint32_t time_ms) {
+    return deadline_to_timeout(time_ms);
+}
+
 // @brief: Returns number of microseconds since system startup
 uint32_t micros(void) {
     register uint32_t ms, cycle_cnt;
