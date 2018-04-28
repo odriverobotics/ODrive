@@ -166,12 +166,12 @@ namespace odrive {
 
     template<int IPropertyId>
     bool read_axis_property(uint8_t num, uint8_t axis, endpoint_type_t<IPropertyId>* value) {
-        return read_property<IPropertyId>(num, value, IPropertyId + axis * AXIS_ENDPOINT_COUNT);
+        return read_property<IPropertyId>(num, value, IPropertyId + axis * per_axis_offset);
     }
 
     template<int IPropertyId>
     bool write_axis_property(uint8_t num, uint8_t axis, endpoint_type_t<IPropertyId> value) {
-        return write_property<IPropertyId>(num, value, IPropertyId + axis * AXIS_ENDPOINT_COUNT);
+        return write_property<IPropertyId>(num, value, IPropertyId + axis * per_axis_offset);
     }
 
 
