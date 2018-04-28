@@ -128,6 +128,15 @@ int odrive_main(void) {
         MX_CAN1_Init();
     }
 
+    // Init general user ADC on GPIO 1 and GPIO 2
+    GPIO_InitTypeDef GPIO_InitStruct;
+    GPIO_InitStruct.Mode = GPIO_MODE_ANALOG;
+    GPIO_InitStruct.Pull = GPIO_NOPULL;
+    GPIO_InitStruct.Pin = GPIO_1_Pin;
+    HAL_GPIO_Init(GPIO_1_GPIO_Port, &GPIO_InitStruct);
+    GPIO_InitStruct.Pin = GPIO_2_Pin;
+    HAL_GPIO_Init(GPIO_2_GPIO_Port, &GPIO_InitStruct);
+
     // Construct all objects.
     for (size_t i = 0; i < AXIS_COUNT; ++i) {
         Encoder *encoder = new Encoder(hw_configs[i].encoder_config,

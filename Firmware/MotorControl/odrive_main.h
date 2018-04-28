@@ -57,7 +57,7 @@ extern SystemStats_t system_stats_;
 
 // @brief general user configurable board configuration
 struct BoardConfig_t {
-    bool enable_uart = true;
+    bool enable_uart = false;
     bool enable_i2c_instead_of_can = true;
     float brake_resistance = 0.47f;     // [ohm]
     float dc_bus_undervoltage_trip_level = 8.0f;                        //<! [V] minimum voltage below which the motor stops operating

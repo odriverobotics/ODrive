@@ -26,7 +26,7 @@ struct AxisConfig_t {
     bool startup_encoder_offset_calibration = false; //<! run encoder offset calibration after startup, skip otherwise
     bool startup_closed_loop_control = false; //<! enable closed loop control after calibration/startup
     bool startup_sensorless_control = false; //<! enable sensorless control after calibration/startup
-    bool enable_step_dir = true; //<! enable step/dir input after calibration
+    bool enable_step_dir = false; //<! enable step/dir input after calibration
                                  //   For M0 this has no effect if enable_uart is true
 
     float counts_per_step = 2.0f;
