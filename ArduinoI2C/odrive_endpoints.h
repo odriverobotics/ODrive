@@ -12,7 +12,7 @@
 
 namespace odrive {
     
-static constexpr const uint16_t json_crc = 0x64cd;
+static constexpr const uint16_t json_crc = 0xbe97;
 
 static constexpr const uint16_t per_axis_offset = 101;
 
@@ -50,10 +50,12 @@ enum {
     CONFIG__DC_BUS_UNDERVOLTAGE_TRIP_LEVEL = 31,
     CONFIG__DC_BUS_OVERVOLTAGE_TRIP_LEVEL = 32,
     TEST_PROPERTY = 235,
-    SAVE_CONFIGURATION = 242,
-    ERASE_CONFIGURATION = 243,
-    REBOOT = 244,
-    ENTER_DFU_MODE = 245,
+    ADC_GPIO1 = 242,
+    ADC_GPIO2 = 243,
+    SAVE_CONFIGURATION = 244,
+    ERASE_CONFIGURATION = 245,
+    REBOOT = 246,
+    ENTER_DFU_MODE = 247,
 
     // Per-Axis endpoints (to be used with read_axis_property and write_axis_property)
     AXIS__ERROR = 33,
@@ -186,6 +188,8 @@ template<> struct endpoint_type<CONFIG__ENABLE_I2C_INSTEAD_OF_CAN> { typedef boo
 template<> struct endpoint_type<CONFIG__DC_BUS_UNDERVOLTAGE_TRIP_LEVEL> { typedef float type; };
 template<> struct endpoint_type<CONFIG__DC_BUS_OVERVOLTAGE_TRIP_LEVEL> { typedef float type; };
 template<> struct endpoint_type<TEST_PROPERTY> { typedef uint32_t type; };
+template<> struct endpoint_type<ADC_GPIO1> { typedef uint16_t type; };
+template<> struct endpoint_type<ADC_GPIO2> { typedef uint16_t type; };
 template<> struct endpoint_type<SAVE_CONFIGURATION> { typedef void type; };
 template<> struct endpoint_type<ERASE_CONFIGURATION> { typedef void type; };
 template<> struct endpoint_type<REBOOT> { typedef void type; };
