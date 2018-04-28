@@ -312,6 +312,112 @@ void low_level_fault(Motor::Error_t error) {
     safety_critical_disarm_brake_resistor();
 }
 
+// @brief ADC1 measurements are written to this buffer by DMA
+uint16_t adc_measurements_[ADC_CHANNEL_COUNT] = { 0 };
+
+// @brief Starts the general purpose ADC on the ADC1 peripheral.
+// The measured ADC voltages can be read with get_adc_voltage().
+//
+// ADC1 is set up to continuously sample all channels 0 to 15 in a
+// round-robin fashion.
+// DMA is used to copy the measured 12-bit values to adc_measurements_.
+//
+// The injected (high priority) channel of ADC1 is used to sample vbus_voltage.
+// This conversion is triggered by TIM1 at the frequency of the motor control loop.
+void start_general_purpose_adc() {
+    ADC_ChannelConfTypeDef sConfig;
+
+    // Configure the global features of the ADC (Clock, Resolution, Data Alignment and number of conversion)
+    hadc1.Instance = ADC1;
+    hadc1.Init.ClockPrescaler = ADC_CLOCK_SYNC_PCLK_DIV4;
+    hadc1.Init.Resolution = ADC_RESOLUTION_12B;
+    hadc1.Init.ScanConvMode = ENABLE;
+    hadc1.Init.ContinuousConvMode = ENABLE;
+    hadc1.Init.DiscontinuousConvMode = DISABLE;
+    hadc1.Init.ExternalTrigConvEdge = ADC_EXTERNALTRIGCONVEDGE_NONE;
+    hadc1.Init.ExternalTrigConv = ADC_SOFTWARE_START;
+    hadc1.Init.DataAlign = ADC_DATAALIGN_RIGHT;
+    hadc1.Init.NbrOfConversion = ADC_CHANNEL_COUNT;
+    hadc1.Init.DMAContinuousRequests = ENABLE;
+    hadc1.Init.EOCSelection = ADC_EOC_SINGLE_CONV;
+    if (HAL_ADC_Init(&hadc1) != HAL_OK)
+    {
+        _Error_Handler((char*)__FILE__, __LINE__);
+    }
+
+    // Set up sampling sequence (channel 0 ... channel 15)
+    sConfig.SamplingTime = ADC_SAMPLETIME_15CYCLES;
+    for (uint32_t channel = 0; channel < ADC_CHANNEL_COUNT; ++channel) {
+        sConfig.Channel = channel << ADC_CR1_AWDCH_Pos;
+        sConfig.Rank = channel + 1; // rank numbering starts at 1
+        if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
+            _Error_Handler((char*)__FILE__, __LINE__);
+    }
+
+    HAL_ADC_Start_DMA(&hadc1, reinterpret_cast<uint32_t*>(adc_measurements_), ADC_CHANNEL_COUNT);
+}
+
+// @brief Returns the ADC voltage associated with the specified pin.
+// GPIO_set_to_analog() must be called first to put the Pin into
+// analog mode.
+// Returns NaN if the pin has no associated ADC1 channel.
+//
+// On ODrive 3.3 and 3.4 the following pins can be used with this function:
+//  GPIO_1, GPIO_2, GPIO_3, GPIO_4 and some pins that are connected to
+//  on-board sensors (M0_TEMP, M1_TEMP, AUX_TEMP)
+//
+// The ADC values are sampled in background at ~30kHz without
+// any CPU involvement.
+//
+// Details: each of the 16 conversion takes (15+26) ADC clock
+// cycles and the ADC, so the update rate of the entire sequence is:
+//  21000kHz / (15+26) / 16 = 32kHz
+// The true frequency is slightly lower because of the injected vbus
+// measurements
+float get_adc_voltage(GPIO_TypeDef* GPIO_port, uint16_t GPIO_pin) {
+    uint32_t channel = UINT32_MAX;
+    if (GPIO_port == GPIOA) {
+        if (GPIO_pin == GPIO_PIN_0)
+            channel = 0;
+        else if (GPIO_pin == GPIO_PIN_1)
+            channel = 1;
+        else if (GPIO_pin == GPIO_PIN_2)
+            channel = 2;
+        else if (GPIO_pin == GPIO_PIN_3)
+            channel = 3;
+        else if (GPIO_pin == GPIO_PIN_4)
+            channel = 4;
+        else if (GPIO_pin == GPIO_PIN_5)
+            channel = 5;
+        else if (GPIO_pin == GPIO_PIN_6)
+            channel = 6;
+        else if (GPIO_pin == GPIO_PIN_7)
+            channel = 7;
+    } else if (GPIO_port == GPIOB) {
+        if (GPIO_pin == GPIO_PIN_0)
+            channel = 8;
+        else if (GPIO_pin == GPIO_PIN_1)
+            channel = 9;
+    } else if (GPIO_port == GPIOC) {
+        if (GPIO_pin == GPIO_PIN_0)
+            channel = 10;
+        else if (GPIO_pin == GPIO_PIN_1)
+            channel = 11;
+        else if (GPIO_pin == GPIO_PIN_2)
+            channel = 12;
+        else if (GPIO_pin == GPIO_PIN_3)
+            channel = 13;
+        else if (GPIO_pin == GPIO_PIN_4)
+            channel = 14;
+        else if (GPIO_pin == GPIO_PIN_5)
+            channel = 15;
+    }
+    if (channel < ADC_CHANNEL_COUNT)
+        return ((float)adc_measurements_[channel]) * (3.3f / (float)(1 << 12));
+    else
+        return 0.0f / 0.0f; // NaN
+}
+
 //--------------------------------
 // IRQ Callbacks
 //--------------------------------

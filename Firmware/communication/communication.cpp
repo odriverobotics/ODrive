@@ -113,6 +113,10 @@ static inline auto make_obj_tree() {
         ),
         make_protocol_object("axis0", axes[0]->make_protocol_definitions()),
         make_protocol_object("axis1", axes[1]->make_protocol_definitions()),
+#if HW_VERSION_MAJOR == 3 && HW_VERSION_MINOR == 4
+        make_protocol_property("adc_gpio1", &adc_measurements_[0]),
+        make_protocol_property("adc_gpio2", &adc_measurements_[1]),
+#endif
         make_protocol_function("save_configuration", static_functions, &StaticFunctions::save_configuration_helper),
         make_protocol_function("erase_configuration", static_functions, &StaticFunctions::erase_configuration_helper),
         make_protocol_function("reboot", static_functions, &StaticFunctions::NVIC_SystemReset_helper),
