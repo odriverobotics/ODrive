@@ -9,7 +9,7 @@ class Encoder {
 public:
     enum Error_t {
         ERROR_NONE = 0,
-        ERROR_NUMERICAL = 0x01,
+        ERROR_UNSTABLE_GAIN = 0x01,
         ERROR_CPR_OUT_OF_RANGE = 0x02,
         ERROR_RESPONSE = 0x04,
         ERROR_UNSUPPORTED_ENCODER_MODE = 0x08,
@@ -53,7 +53,7 @@ public:
 
     bool run_index_search();
     bool run_offset_calibration();
-    bool update(float* pos_estimate, float* vel_estimate, float* phase);
+    bool update();
 
     const EncoderHardwareConfig_t& hw_config_;
     Config_t& config_;

@@ -114,6 +114,14 @@ bool Axis::do_checks() {
     return error_ == ERROR_NONE;
 }
 
+// @brief Update all esitmators
+bool Axis::do_updates() {
+    // Sub-components should use set_error which will propegate to this error_
+    encoder_.update();
+    sensorless_estimator_.update();
+    return error_ == ERROR_NONE;
+}
+
 bool Axis::run_sensorless_spin_up() {
     // Early Spin-up: spiral up current
     float x = 0.0f;
@@ -146,19 +154,15 @@ bool Axis::run_sensorless_spin_up() {
 bool Axis::run_sensorless_control_loop() {
     set_step_dir_enabled(config_.enable_step_dir);
     run_control_loop([this](){
-        float pos_estimate, vel_estimate, phase, current_setpoint;
-
         if (controller_.config_.control_mode >= CTRL_MODE_POSITION_CONTROL)
             return error_ |= ERROR_POS_CTRL_DURING_SENSORLESS, false;
 
-        // We update the encoder just in case someone needs the output for testing
-        encoder_.update(nullptr, nullptr, nullptr);
-        if (!sensorless_estimator_.update(&pos_estimate, &vel_estimate, &phase))
-            return error_ |= ERROR_SENSORLESS_ESTIMATOR_FAILED, false;
-        if (!controller_.update(pos_estimate, vel_estimate, &current_setpoint))
+        // Note that all estimators are updated in the loop prefix in run_control_loop
+        float current_setpoint;
+        if (!controller_.update(sensorless_estimator_.pll_pos_, sensorless_estimator_.pll_vel_, &current_setpoint))
             return error_ |= ERROR_CONTROLLER_FAILED, false;
-        if (!motor_.update(current_setpoint, phase))
-            return error_ |= ERROR_MOTOR_FAILED, false;
+        if (!motor_.update(current_setpoint, sensorless_estimator_.phase_))
+            return false; // set_error should update axis.error_
         return true;
     });
     set_step_dir_enabled(false);
@@ -168,16 +172,12 @@ bool Axis::run_sensorless_control_loop() {
 bool Axis::run_closed_loop_control_loop() {
     set_step_dir_enabled(config_.enable_step_dir);
     run_control_loop([this](){
-        float pos_estimate, vel_estimate, phase, current_setpoint;
-
-        // We update the sensorless estimator just in case someone needs the output for testing
-        sensorless_estimator_.update(nullptr, nullptr, nullptr);
-        if (!encoder_.update(&pos_estimate, &vel_estimate, &phase))
-            return error_ |= ERROR_ENCODER_FAILED, false;
-        if (!controller_.update(pos_estimate, vel_estimate, &current_setpoint))
-            return error_ |= ERROR_CONTROLLER_FAILED, false;
-        if (!motor_.update(current_setpoint, phase))
-            return error_ |= ERROR_MOTOR_FAILED, false;
+        // Note that all estimators are updated in the loop prefix in run_control_loop
+        float current_setpoint;
+        if (!controller_.update(encoder_.pos_estimate_, encoder_.pll_vel_, &current_setpoint))
+            return error_ |= ERROR_CONTROLLER_FAILED, false; //TODO: Make controller.set_error
+        if (!motor_.update(current_setpoint, encoder_.phase_))
+            return false; // set_error should update axis.error_
         return true;
     });
     set_step_dir_enabled(false);
@@ -189,8 +189,6 @@ bool Axis::run_idle_loop() {
     // if and only if we're in AXIS_STATE_IDLE
     safety_critical_disarm_motor_pwm(motor_);
     run_control_loop([this](){
-        sensorless_estimator_.update(nullptr, nullptr, nullptr);
-        encoder_.update(nullptr, nullptr, nullptr);
         return true;
     });
     return error_ == ERROR_NONE;

@@ -108,8 +108,6 @@ bool Encoder::run_index_search() {
     index_found_ = false;
     float phase = 0.0f;
     axis_->run_control_loop([&](){
-        update(nullptr, nullptr, nullptr);
-
         phase = wrap_pm_pi(phase + omega * current_meas_period);
 
         float v_alpha = voltage_magnitude * arm_cos_f32(phase);
@@ -150,8 +148,6 @@ bool Encoder::run_offset_calibration() {
     // go to motor zero phase for start_lock_duration to get ready to scan
     int i = 0;
     axis_->run_control_loop([&](){
-        update(nullptr, nullptr, nullptr);
-
         if (!axis_->motor_.enqueue_voltage_timings(voltage_magnitude, 0.0f))
             return false; // error set inside enqueue_voltage_timings
         axis_->motor_.log_timing(Motor::TIMING_LOG_ENC_CALIB);
@@ -166,8 +162,6 @@ bool Encoder::run_offset_calibration() {
     // scan forward
     i = 0;
     axis_->run_control_loop([&](){
-        update(nullptr, nullptr, nullptr);
-
         float phase = wrap_pm_pi(scan_distance * (float)i / (float)num_steps - scan_distance / 2.0f);
         float v_alpha = voltage_magnitude * arm_cos_f32(phase);
         float v_beta = voltage_magnitude * arm_sin_f32(phase);
@@ -207,8 +201,6 @@ bool Encoder::run_offset_calibration() {
     // scan backwards
     i = 0;
     axis_->run_control_loop([&](){
-        update(nullptr, nullptr, nullptr);
-
         float phase = wrap_pm_pi(-scan_distance * (float)i / (float)num_steps + scan_distance / 2.0f);
         float v_alpha = voltage_magnitude * arm_cos_f32(phase);
         float v_beta = voltage_magnitude * arm_sin_f32(phase);
@@ -244,10 +236,10 @@ static bool decode_hall(uint8_t hall_state, int32_t* hall_cnt) {
     }
 }
 
-bool Encoder::update(float* pos_estimate, float* vel_estimate, float* phase_output) {
+bool Encoder::update() {
     // Check that we don't get problems with discrete time approximation
     if (!(current_meas_period * pll_kp_ < 1.0f)) {
-        set_error(ERROR_NUMERICAL);
+        set_error(ERROR_UNSTABLE_GAIN);
         return false;
     }
 
@@ -276,7 +268,7 @@ bool Encoder::update(float* pos_estimate, float* vel_estimate, float* phase_outp
         
         default: {
            set_error(ERROR_UNSUPPORTED_ENCODER_MODE);
-           return 0;
+           return false;
         } break;
     }
 
@@ -324,9 +316,5 @@ bool Encoder::update(float* pos_estimate, float* vel_estimate, float* phase_outp
     if (fabsf(pll_vel_) < 0.5f * current_meas_period * pll_ki_)
         pll_vel_ = 0.0f; //align delta-sigma on zero to prevent jitter
 
-    // Assign output arguments
-    if (pos_estimate) *pos_estimate = pos_estimate_;
-    if (vel_estimate) *vel_estimate = pll_vel_;
-    if (phase_output) *phase_output = phase_;
     return true;
 }

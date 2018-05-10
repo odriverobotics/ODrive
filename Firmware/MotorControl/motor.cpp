@@ -172,8 +172,6 @@ bool Motor::measure_phase_resistance(float test_current, float max_voltage) {
     
     size_t i = 0;
     axis_->run_control_loop([&](){
-        axis_->encoder_.update(nullptr, nullptr, nullptr);
-
         float Ialpha = -(current_meas_.phB + current_meas_.phC);
         test_voltage += (kI * current_meas_period) * (test_current - Ialpha);
         if (test_voltage > max_voltage || test_voltage < -max_voltage)
@@ -205,8 +203,6 @@ bool Motor::measure_phase_inductance(float voltage_low, float voltage_high) {
 
     size_t t = 0;
     axis_->run_control_loop([&](){
-        axis_->encoder_.update(nullptr, nullptr, nullptr);
-
         int i = t & 1;
         Ialphas[i] += -current_meas_.phB - current_meas_.phC;
 
@@ -260,7 +256,7 @@ bool Motor::run_calibration() {
 bool Motor::enqueue_modulation_timings(float mod_alpha, float mod_beta) {
     float tA, tB, tC;
     if (SVM(mod_alpha, mod_beta, &tA, &tB, &tC) != 0)
-        return set_error(ERROR_NUMERICAL), false;
+        return set_error(ERROR_MODULATION_MAGNITUDE), false;
     next_timings_[0] = (uint16_t)(tA * (float)TIM_1_8_PERIOD_CLOCKS);
     next_timings_[1] = (uint16_t)(tB * (float)TIM_1_8_PERIOD_CLOCKS);
     next_timings_[2] = (uint16_t)(tC * (float)TIM_1_8_PERIOD_CLOCKS);

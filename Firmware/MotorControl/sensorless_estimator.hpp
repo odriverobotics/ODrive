@@ -5,12 +5,12 @@ class SensorlessEstimator {
 public:
     enum Error_t {
         ERROR_NONE = 0,
-        ERROR_NUMERICAL = 0x01,
+        ERROR_UNSTABLE_GAIN = 0x01,
     };
 
     SensorlessEstimator();
 
-    bool update(float* pos_estimate, float* vel_estimate, float* phase);
+    bool update();
 
     Axis* axis_ = nullptr; // set by Axis constructor
 

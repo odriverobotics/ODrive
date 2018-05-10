@@ -78,6 +78,7 @@ public:
     bool check_DRV_fault();
     bool check_PSU_brownout();
     bool do_checks();
+    bool do_updates();
 
     // @brief Runs the specified update handler at the frequency of the current measurements.
     //
@@ -103,6 +104,8 @@ public:
     void run_control_loop(const T& update_handler) {
         while (requested_state_ == AXIS_STATE_UNDEFINED) {
             if (!do_checks()) // look for errors at axis level and also all subcomponents
+                break;
+            if (!do_updates()) // Update all estimators
                 break;
 
             // Run main loop function, defer quitting for after wait
