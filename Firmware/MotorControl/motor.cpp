@@ -125,9 +125,14 @@ bool Motor::check_DRV_fault() {
     return true;
 }
 
+void Motor::set_error(Motor::Error_t error){
+    error_ |= error;
+    axis_->error_ |= Axis::ERROR_MOTOR_FAILED;
+}
+
 bool Motor::do_checks() {
     if (!check_DRV_fault()) {
-        error_ |= ERROR_DRV_FAULT;
+        set_error(ERROR_DRV_FAULT);
         return false;
     }
     return true;
@@ -172,7 +177,7 @@ bool Motor::measure_phase_resistance(float test_current, float max_voltage) {
         float Ialpha = -(current_meas_.phB + current_meas_.phC);
         test_voltage += (kI * current_meas_period) * (test_current - Ialpha);
         if (test_voltage > max_voltage || test_voltage < -max_voltage)
-            return error_ |= ERROR_PHASE_RESISTANCE_OUT_OF_RANGE, false;
+            return set_error(ERROR_PHASE_RESISTANCE_OUT_OF_RANGE), false;
 
         // Test voltage along phase A
         if (!enqueue_voltage_timings(test_voltage, 0.0f))
@@ -181,7 +186,7 @@ bool Motor::measure_phase_resistance(float test_current, float max_voltage) {
 
         return ++i < num_test_cycles;
     });
-    if (axis_->error_ != Axis::ERROR_NO_ERROR)
+    if (axis_->error_ != Axis::ERROR_NONE)
         return false;
 
     //// De-energize motor
@@ -212,7 +217,7 @@ bool Motor::measure_phase_inductance(float voltage_low, float voltage_high) {
 
         return ++t < (num_cycles << 1);
     });
-    if (axis_->error_ != Axis::ERROR_NO_ERROR)
+    if (axis_->error_ != Axis::ERROR_NONE)
         return false;
 
     //// De-energize motor
@@ -228,7 +233,7 @@ bool Motor::measure_phase_inductance(float voltage_low, float voltage_high) {
     config_.phase_inductance = L;
     // TODO arbitrary values set for now
     if (L < 1e-6f || L > 500e-6f)
-        return error_ |= ERROR_PHASE_INDUCTANCE_OUT_OF_RANGE, false;
+        return set_error(ERROR_PHASE_INDUCTANCE_OUT_OF_RANGE), false;
     return true;
 }
 
@@ -255,7 +260,7 @@ bool Motor::run_calibration() {
 bool Motor::enqueue_modulation_timings(float mod_alpha, float mod_beta) {
     float tA, tB, tC;
     if (SVM(mod_alpha, mod_beta, &tA, &tB, &tC) != 0)
-        return error_ |= ERROR_NUMERICAL, false;
+        return set_error(ERROR_NUMERICAL), false;
     next_timings_[0] = (uint16_t)(tA * (float)TIM_1_8_PERIOD_CLOCKS);
     next_timings_[1] = (uint16_t)(tB * (float)TIM_1_8_PERIOD_CLOCKS);
     next_timings_[2] = (uint16_t)(tC * (float)TIM_1_8_PERIOD_CLOCKS);
@@ -363,7 +368,7 @@ bool Motor::update(float current_setpoint, float phase) {
         if(!FOC_voltage(0.0f, current_setpoint, phase))
             return false;
     } else {
-        error_ |= ERROR_NOT_IMPLEMENTED_MOTOR_TYPE;
+        set_error(ERROR_NOT_IMPLEMENTED_MOTOR_TYPE);
         return false;
     }
     return true;

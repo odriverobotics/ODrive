@@ -31,6 +31,15 @@ void Encoder::setup() {
             enc_index_cb_wrapper, this);
 }
 
+void Encoder::set_error(Encoder::Error_t error) {
+    error_ |= error;
+    axis_->error_ |= Axis::ERROR_MOTOR_FAILED;
+}
+
+bool Encoder::do_checks(){
+    return error_ == ERROR_NONE;
+}
+
 //--------------------
 // Hardware Dependent
 //--------------------
@@ -112,7 +121,7 @@ bool Encoder::run_index_search() {
         // continue until the index is found
         return !index_found_;
     });
-    return axis_->error_ != Axis::ERROR_NO_ERROR;
+    return axis_->error_ != Axis::ERROR_NONE;
 }
 
 // @brief Turns the motor in one direction for a bit and then in the other
@@ -148,7 +157,7 @@ bool Encoder::run_offset_calibration() {
         axis_->motor_.log_timing(Motor::TIMING_LOG_ENC_CALIB);
         return ++i < start_lock_duration * current_meas_hz;
     });
-    if (axis_->error_ != Axis::ERROR_NO_ERROR)
+    if (axis_->error_ != Axis::ERROR_NONE)
         return false;
 
     int32_t init_enc_val = shadow_count_;
@@ -170,7 +179,7 @@ bool Encoder::run_offset_calibration() {
         
         return ++i < num_steps;
     });
-    if (axis_->error_ != Axis::ERROR_NO_ERROR)
+    if (axis_->error_ != Axis::ERROR_NONE)
         return false;
 
     //TODO avoid recomputing elec_rad_per_enc every time
@@ -179,7 +188,7 @@ bool Encoder::run_offset_calibration() {
     float actual_encoder_delta_abs = fabsf(shadow_count_-init_enc_val);
     if(fabsf(actual_encoder_delta_abs - expected_encoder_delta)/expected_encoder_delta > config_.calib_range)
     {
-        error_ |= ERROR_CPR_OUT_OF_RANGE;
+        set_error(ERROR_CPR_OUT_OF_RANGE);
         return false;
     }
     // check direction
@@ -191,7 +200,7 @@ bool Encoder::run_offset_calibration() {
         axis_->motor_.config_.direction = -1;
     } else {
         // Encoder response error
-        error_ |= ERROR_RESPONSE;
+        set_error(ERROR_RESPONSE);
         return false;
     }
 
@@ -211,7 +220,7 @@ bool Encoder::run_offset_calibration() {
         
         return ++i < num_steps;
     });
-    if (axis_->error_ != Axis::ERROR_NO_ERROR)
+    if (axis_->error_ != Axis::ERROR_NONE)
         return false;
 
     offset_ = encvaluesum / (num_steps * 2);
@@ -238,7 +247,7 @@ static bool decode_hall(uint8_t hall_state, int32_t* hall_cnt) {
 bool Encoder::update(float* pos_estimate, float* vel_estimate, float* phase_output) {
     // Check that we don't get problems with discrete time approximation
     if (!(current_meas_period * pll_kp_ < 1.0f)) {
-        error_ |= ERROR_NUMERICAL;
+        set_error(ERROR_NUMERICAL);
         return false;
     }
 
@@ -260,13 +269,13 @@ bool Encoder::update(float* pos_estimate, float* vel_estimate, float* phase_outp
                 if (delta_enc > 3)
                     delta_enc -= 6;
             } else {
-                error_ |= ERROR_ILLEGAL_HALL_STATE;
+                set_error(ERROR_ILLEGAL_HALL_STATE);
                 return false;
             }
         } break;
         
         default: {
-           error_ |= ERROR_UNSUPPORTED_ENCODER_MODE;
+           set_error(ERROR_UNSUPPORTED_ENCODER_MODE);
            return 0;
         } break;
     }

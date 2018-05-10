@@ -92,16 +92,26 @@ void Axis::set_step_dir_enabled(bool enable) {
     }
 }
 
-// @brief Returns true if everything is ok.
-// Sets error and returns false otherwise.
+// @brief Do axis level checks and call subcomponent do_checks
+// Returns true if everything is ok.
 bool Axis::do_checks() {
-    if (!motor_.do_checks())
-        return error_ |= ERROR_MOTOR_FAILED, false;
+    if (!brake_resistor_armed)
+        error_ |= ERROR_BRAKE_RESISTOR_DISARMED;
+    if ((current_state_ != AXIS_STATE_IDLE) && (motor_.armed_state_ == Motor::ARMED_STATE_DISARMED))
+        // motor got disarmed in something other than the idle loop
+        error_ |= ERROR_MOTOR_DISARMED;
     if (!(vbus_voltage >= board_config.dc_bus_undervoltage_trip_level))
-        return error_ |= ERROR_DC_BUS_UNDER_VOLTAGE, false;
+        error_ |= ERROR_DC_BUS_UNDER_VOLTAGE;
     if (!(vbus_voltage <= board_config.dc_bus_overvoltage_trip_level))
-        return error_ |= ERROR_DC_BUS_OVER_VOLTAGE, false;
-    return true;
+        error_ |= ERROR_DC_BUS_OVER_VOLTAGE;
+
+    // Sub-components should use set_error which will propegate to this error_
+    motor_.do_checks();
+    encoder_.do_checks();
+    // sensorless_estimator_.do_checks();
+    // controller_.do_checks();
+
+    return error_ == ERROR_NONE;
 }
 
 bool Axis::run_sensorless_spin_up() {
@@ -115,7 +125,7 @@ bool Axis::run_sensorless_spin_up() {
             return error_ |= ERROR_MOTOR_FAILED, false;
         return x < 1.0f;
     });
-    if (error_ != ERROR_NO_ERROR)
+    if (error_ != ERROR_NONE)
         return false;
     
     // Late Spin-up: accelerate
@@ -129,7 +139,7 @@ bool Axis::run_sensorless_spin_up() {
             return error_ |= ERROR_MOTOR_FAILED, false;
         return vel < config_.spin_up_target_vel;
     });
-    return error_ == ERROR_NO_ERROR;
+    return error_ == ERROR_NONE;
 }
 
 // Note run_sensorless_control_loop and run_closed_loop_control_loop are very similar and differ only in where we get the estimate from.
@@ -152,7 +162,7 @@ bool Axis::run_sensorless_control_loop() {
         return true;
     });
     set_step_dir_enabled(false);
-    return error_ == ERROR_NO_ERROR;
+    return error_ == ERROR_NONE;
 }
 
 bool Axis::run_closed_loop_control_loop() {
@@ -171,7 +181,7 @@ bool Axis::run_closed_loop_control_loop() {
         return true;
     });
     set_step_dir_enabled(false);
-    return error_ == ERROR_NO_ERROR;
+    return error_ == ERROR_NONE;
 }
 
 bool Axis::run_idle_loop() {
@@ -183,7 +193,7 @@ bool Axis::run_idle_loop() {
         encoder_.update(nullptr, nullptr, nullptr);
         return true;
     });
-    return error_ == ERROR_NO_ERROR;
+    return error_ == ERROR_NONE;
 }
 
 // Infinite loop that does calibration and enters main control loop as appropriate

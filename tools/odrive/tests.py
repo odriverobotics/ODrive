@@ -111,7 +111,7 @@ def request_state(axis_ctx: AxisTestContext, state, expect_success=True):
     else:
         test_assert_eq(axis_ctx.handle.current_state, AXIS_STATE_IDLE)
         test_assert_eq(axis_ctx.handle.error, AXIS_ERROR_INVALID_STATE)
-        axis_ctx.handle.error = AXIS_ERROR_NO_ERROR # reset error
+        axis_ctx.handle.error = AXIS_ERROR_NONE # reset error
 
 def set_limits(axis_ctx: AxisTestContext, logger, vel_limit=20000, current_limit=10):
     """

@@ -41,6 +41,8 @@ public:
                      Config_t& config);
     
     void setup();
+    void set_error(Error_t error);
+    bool do_checks();
 
     void enc_index_cb();
 

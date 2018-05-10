@@ -54,7 +54,7 @@ typedef struct {
 class Motor {
 public:
     enum Error_t {
-        ERROR_NO_ERROR = 0,
+        ERROR_NONE = 0,
         ERROR_PHASE_RESISTANCE_OUT_OF_RANGE = 0x0001,
         ERROR_PHASE_INDUCTANCE_OUT_OF_RANGE = 0x0002,
         ERROR_ADC_FAILED = 0x0004,
@@ -102,6 +102,7 @@ public:
     void update_current_controller_gains();
     void DRV8301_setup();
     bool check_DRV_fault();
+    void set_error(Error_t error);
     bool do_checks();
     void log_timing(TimingLog_t log_idx);
     float phase_current_from_adcval(uint32_t ADCValue);
@@ -133,7 +134,7 @@ public:
     uint16_t timing_log_[TIMING_LOG_NUM_SLOTS] = { 0 };
 
     // variables exposed on protocol
-    Error_t error_ = ERROR_NO_ERROR;
+    Error_t error_ = ERROR_NONE;
     // Do not write to this variable directly!
     // It is for exclusive use by the safety_critical_... functions.
     ArmedState_t armed_state_ = ARMED_STATE_DISARMED; 
