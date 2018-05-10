@@ -119,7 +119,7 @@ bool Encoder::run_index_search() {
         // continue until the index is found
         return !index_found_;
     });
-    return axis_->error_ != Axis::ERROR_NONE;
+    return true;
 }
 
 // @brief Turns the motor in one direction for a bit and then in the other

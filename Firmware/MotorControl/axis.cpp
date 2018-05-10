@@ -38,6 +38,7 @@ void Axis::setup() {
 
 static void run_state_machine_loop_wrapper(void* ctx) {
     reinterpret_cast<Axis*>(ctx)->run_state_machine_loop();
+    reinterpret_cast<Axis*>(ctx)->thread_id_valid_ = false;
 }
 
 // @brief Starts run_state_machine_loop in a new thread
@@ -254,43 +255,37 @@ void Axis::run_state_machine_loop() {
         // Handlers should exit if requested_state != AXIS_STATE_UNDEFINED
         bool status;
         switch (current_state_) {
-        case AXIS_STATE_MOTOR_CALIBRATION:
-            status = motor_.run_calibration();
-            if (!status)
-                error_ |= ERROR_MOTOR_FAILED;
-            break;
+            case AXIS_STATE_MOTOR_CALIBRATION:
+                status = motor_.run_calibration();
+                break;
 
-        case AXIS_STATE_ENCODER_INDEX_SEARCH:
-            status = encoder_.run_index_search();
-            if (!status)
-                error_ |= ERROR_ENCODER_FAILED;
-            break;
+            case AXIS_STATE_ENCODER_INDEX_SEARCH:
+                status = encoder_.run_index_search();
+                break;
 
-        case AXIS_STATE_ENCODER_OFFSET_CALIBRATION:
-            status = encoder_.run_offset_calibration();
-            if (!status)
-                error_ |= ERROR_ENCODER_FAILED;
-            break;
+            case AXIS_STATE_ENCODER_OFFSET_CALIBRATION:
+                status = encoder_.run_offset_calibration();
+                break;
 
-        case AXIS_STATE_SENSORLESS_CONTROL:
-            status = run_sensorless_spin_up(); // TODO: restart if desired
-            if (status)
-                status = run_sensorless_control_loop();
-            break;
+            case AXIS_STATE_SENSORLESS_CONTROL:
+                status = run_sensorless_spin_up(); // TODO: restart if desired
+                if (status)
+                    status = run_sensorless_control_loop();
+                break;
 
-        case AXIS_STATE_CLOSED_LOOP_CONTROL:
-            status = run_closed_loop_control_loop();
-            break;
+            case AXIS_STATE_CLOSED_LOOP_CONTROL:
+                status = run_closed_loop_control_loop();
+                break;
 
-        case AXIS_STATE_IDLE:
-            run_idle_loop();
-            status = motor_.arm(); // done with idling - try to arm the motor
-            break;
+            case AXIS_STATE_IDLE:
+                run_idle_loop();
+                status = motor_.arm(); // done with idling - try to arm the motor
+                break;
 
-        default:
-            error_ |= ERROR_INVALID_STATE;
-            status = false; // this will set the state to idle
-            break;
+            default:
+                error_ |= ERROR_INVALID_STATE;
+                status = false; // this will set the state to idle
+                break;
         }
 
         // If the state failed, go to idle, else advance task chain
@@ -299,6 +294,4 @@ void Axis::run_state_machine_loop() {
         else
             memcpy(task_chain_, task_chain_ + 1, sizeof(task_chain_) - sizeof(task_chain_[0]));
     }
-
-    thread_id_valid_ = false;
 }
