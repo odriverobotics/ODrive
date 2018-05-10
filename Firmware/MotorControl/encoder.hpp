@@ -30,7 +30,7 @@ public:
                                     // In this case the encoder will enter ready
                                     // state as soon as the index is found.
         float idx_search_speed = 10.0f; // [rad/s electrical]
-        int32_t cpr = 72; //(2048 * 4); // Default resolution of CUI-AMT102 encoder,
+        int32_t cpr = (2048 * 4);   // Default resolution of CUI-AMT102 encoder,
         int32_t offset = 0; // If pre_calibrated is true, this is copied into encoder.offset_ once
                             // index search succeeds
         float offset_float = 0.0f; // Sub-count phase alignment offset
