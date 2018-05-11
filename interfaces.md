@@ -2,22 +2,67 @@
 
 <div class="alert"> While developing custom ODrive control code it is recommend that your motors are free to spin continuously and are not connected to a drivetrain with limited travel. </div>
 
-The ODrive can be controlled over various interfaces and protocols.
+The ODrive can be controlled over various ports and protocols.
 
 [TODO: include a picture that shows all interfaces with the supported protocols]
 
-### Setting up UART
+### Table of contents
+
+<!-- MarkdownTOC depth=2 autolink=true bracket=round -->
+
+- [Ports](#ports)
+   - [USB](#usb)
+   - [UART](#uart)
+- [Protocols](#protocols)
+   - [Native Protocol](#native-protocol)
+   - [ASCII Protocol](#ascii-protocol)
+   - [Step/direction](#stepdirection)
+
+<!-- /MarkdownTOC -->
+
+## Ports
+
+### USB
+
+This section assumes that you are familiar with the general USB architecture, in particular with terms like "configuration", "interface" and "endpoint".
+
+On USB the ODrive provides a single configuration which is a composite device consisting of a CDC device (virtual COM port) and a vendor specific device.
+
+<details><summary markdown="span">What is a composite device?</summary><div markdown="block">
+A composite device is a device where interfaces are grouped by interface association descriptors. For such devices, the host OS loads an intermediate driver, so that each of the interface groups can be treated like a separate device and have its own host-side driver attached.
+</div></details>
+
+On the ODrive, the following interface groups are present:
+
+ * Interface Association: Communication Device Class (CDC)
+    * Interface 0:
+        * Endpoint `0x82`: CDC commands
+    * Interface 1:
+        * Endpoint `0x01`: CDC data OUT
+        * Endpoint `0x81`: CDC data IN
+ * Interface Association: Vendor Specific Device Class
+    * Interface 2:
+        * Endpoint `0x03`: data OUT
+        * Endpoint `0x83`: data IN
+
+The endpoint pairs `0x01, 0x81` and `0x03, 0x83` behave exactly identical, only their descriptors (interface class, ...) are different.
+
+If you plan to access the USB endpoints directly it is recommended that you use interface 2. The other interfaces (the ones associated with the CDC device) are usually claimed by the CDC driver of the host OS, so their endpoints cannot be used without first detaching the CDC driver.
+
+### UART
 Baud rate: 115200
 Pinout:
 * GPIO 1: Tx (connect to Rx of other device)
 * GPIO 2: Rx (connect to Tx of other device)
 * GND: you must connect the grounds of the devices together. Use any GND pin on J3 of the ODrive.
 
-## Native protocol
+## Protocols
+
+### Native protocol
 
 If you have a choice, this is the recommended protocol for all applications.
 
-### Python
+#### Python
 
 The ODrive Tool you installed as part of the [Getting Started guide](getting-started#downloading-and-installing-tools) comes with a library that you can use to easily control the ODrive from Python.
 
@@ -31,11 +76,11 @@ print(str(odrv0.vbus_voltage))
 
 For a more comprehensive example, see [odrive_demo.py](../tools/odrive_demo.py).
 
-### Other languages
+#### Other languages
 
 We don't have an official library for you just yet. Check the community, there might be someone working on it. If you want to write a library yourself, refer to the [native protocol specification](protocol). You are of course welcome to contribute it back.
 
-## ASCII protocol
+### ASCII protocol
 
 This is a simpler alternative to the native protocol if you don't need all its bells and whistles. Before you use this, be sure that you're ok with its limitations.
 
@@ -43,11 +88,11 @@ This protocol may be extended in the future to support a selected set of GCode c
 
 For more details, see the [ASCII protocol specification](ascii-protocol.md).
 
-### C++ (Arduino)
+#### C++ (Arduino)
 
 [See ODrive Arduino Library](https://github.com/madcowswe/ODriveArduino)
 
-## Step/direction
+### Step/direction
 This is the simplest possible way of controlling the ODrive. It is also the most primitive and brittle one. So don't use it unless you must interoperate with other hardware that you don't control.
 
 Pinout:
