@@ -33,21 +33,33 @@ Here, two ODrives are connected.
 
 ## Device Firmware Update
 
-<div class="note" markdown="span">__ODrive v3.3, v3.4__: You need to flash with the external programmer first (see [below](#flashing-with-an-stlink)), before you can reflash in DFU mode.</div>
+<div class="note" markdown="span">__ODrive v3.4 or earlier__: DFU is not supported on these devices. You need to [flash with the external programmer](#flashing-with-an-stlink) instead.</div>
 
-1. Download the latest firmware release form [here](https://github.com/madcowswe/ODrive/releases). You will need the __.hex__ file. Make sure you select the file that matches your board version.
-2. Open up a terminal and navigate to the directory where the firmware is.
-3. Run the following command (replace `ODriveFirmware_v3.4-24V.hex` with the name of your firmware file):
+To update the ODrive to the newest firmware release, simply open up a terminal and run the following command:
+
 ```
-~/Downloads $ odrivetool dfu ODriveFirmware_v3.4-24V.hex 
-ODrive control utility v0.3.7.dev-11
+~ $ odrivetool dfu 
+ODrive control utility v0.3.7.dev
 Waiting for ODrive...
-Putting device 306A396A3235 into DFU mode...
-Found device 306A396A3235 in DFU mode
+Found ODrive 308039673235 (v3.5-24V) with firmware v0.3.7-dev
+Checking online for newest firmware... found v0.3.7
+Downloading firmware...
+Putting device 308039673235 into DFU mode...
 Erasing... done            
 Flashing... done            
 Verifying... done            
 ```
+
+Note that this command will connect to GitHub servers to retrieve the latest firmware.
+
+<details><summary markdown="span">How to flash a custom firmware</summary><div markdown="block">
+If you want to flash a specific firmware file instead of automatically downloading one, you can run `odrivetool dfu [path/to/firmware/file.hex]`.
+
+You can download one of the officially released firmware files from [here](https://github.com/madcowswe/ODrive/releases). You will need one of the __.hex__ files (not the __.elf__ file). Make sure you select the file that matches your board version.
+
+To compile firmware from source, refer to the [developer guide](developer-guide).
+</div></details>
+
 
 ### Troubleshooting
 
@@ -67,7 +79,7 @@ Verifying... done
 
 ## Flashing with an STLink
 
-This procedure is only necessary for ODrive v3.4. You will need an STLink/v2 or compatible programmer. You should have received one with your ODrive.
+This procedure is only necessary for ODrive v3.4 or earlier. You will need an STLink/v2 or compatible programmer. You should have received one with your ODrive.
 
 1. Install OpenOCD
    * **Windows:** [instructions](http://gnuarmeclipse.github.io/openocd/install/) (also follow the instructions on the ST-LINK/V2 drivers)
@@ -109,7 +121,5 @@ Warn : no flash bank found for address 10000000
 wrote 262144 bytes from file ODriveFirmware_v3.4-24V.elf in 10.194110s (25.113 KiB/s)
 adapter speed: 2000 kHz
   ```
-
-From now on you can use the device with the DFU feature. If you modify the firmware in a way that prevents it from communicating, you may have to repeat this procedure.
 
 If something doesn't work, make sure `openocd` is in your `PATH` variable, check that the wires are connected properly and try with elevated privileges.
