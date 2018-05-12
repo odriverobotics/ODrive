@@ -12,9 +12,10 @@ import struct
 import requests
 import re
 import io
+import os
 import usb.core
 import odrive.discovery
-from odrive.utils import Event
+from odrive.utils import Event, OperationAbortedException
 from odrive.dfuse import *
 
 try:
@@ -96,6 +97,8 @@ class Firmware():
 
     @staticmethod
     def is_newer(a, b):
+        if (a[0], a[1], a[2]) == (0, 0, 0) or (b[0], b[1], b[2]) == (0, 0, 0):
+            return False # Cannot compare unknown versions
         return (a[0] > b[0] or
                 (a[0] == b[0] and
                  (a[1] > b[1] or
@@ -154,6 +157,7 @@ class FirmwareFromGithub(Firmware):
         Returns the content of the firmware in as a binary array in Intel Hex format
         """
         if self.hex is None:
+            print("Downloading firmware {}...".format(get_fw_version_string(self.fw_version)))
             response = requests.get('https://api.github.com/repos/madcowswe/ODrive/releases/assets/' + str(self.github_asset_id),
                                     headers={'Accept': 'application/octet-stream'})
             if response.status_code != 200:
@@ -249,7 +253,7 @@ def find_device_in_dfu_mode(serial_number, cancellation_token):
         time.sleep(1)
     return None
 
-def update_device(device, firmware, verbose, cancellation_token):
+def update_device(device, firmware, logger, cancellation_token):
     """
     Updates the specified device with the specified firmware.
     The device passed to this function can either be in
@@ -262,8 +266,8 @@ def update_device(device, firmware, verbose, cancellation_token):
     if isinstance(device, usb.core.Device):
         serial_number = device.serial_number
         dfudev = DfuDevice(device)
-        if (verbose):
-            print("OTP:")
+        if (logger._verbose):
+            logger.debug("OTP:")
             dump_otp(dfudev)
 
         # Read hardware version from one-time-programmable memory
@@ -304,18 +308,18 @@ def update_device(device, firmware, verbose, cancellation_token):
             else:
                 suggestion = 'Run "make write_otp" to program the board version.'
             raise Exception('Cannot check online for new firmware because the board version is unknown. ' + suggestion)
-        print("Checking online for newest firmware...")
+        print("Checking online for newest firmware...", end='')
         firmware = get_newest_firmware(hw_version)
         if firmware is None:
             raise Exception("could not find any firmware release for this board version")
+        print(" found {}".format(get_fw_version_string(firmware.fw_version)))
 
-    print("Updating to firmware {}".format(get_fw_version_string(firmware.fw_version)))
     if firmware < fw_version:
         print("Warning: you are about to flash firmware {} which is older than the firmware on the device ({}).".format(
                 get_fw_version_string(firmware.fw_version),
                 get_fw_version_string(fw_version)))
         if not odrive.utils.yes_no_prompt("Do you want to flash this firmware anyway?", True):
-            return
+            raise OperationAbortedException()
 
     # load hex file
     # TODO: Either use the elf format or pack a custom format with a manifest.
@@ -323,10 +327,17 @@ def update_device(device, firmware, verbose, cancellation_token):
     # have to publish one file for every board (instead of elf AND hex files).
     hexfile = IntelHex(firmware.get_as_hex())
 
-    if (verbose):
-        print("Contiguous segments in hex file:")
-        for start, end in hexfile.segments():
-            print(" {:08X} to {:08X}".format(start, end - 1))
+    logger.debug("Contiguous segments in hex file:")
+    for start, end in hexfile.segments():
+        logger.debug(" {:08X} to {:08X}".format(start, end - 1))
+
+    # Back up configuration
+    if dfudev is None:
+        did_backup_config = device.user_config_loaded if hasattr(device, 'user_config_loaded') else False
+        if did_backup_config:
+            odrive.configuration.backup_config(device, None, logger)
+    elif not odrive.utils.yes_no_prompt("The configuration cannot be backed up because the device is already in DFU mode. The configuration may be lost after updating. Do you want to continue anyway?", True):
+        raise OperationAbortedException()
 
     # Put the device into DFU mode if it's not already in DFU mode
     if dfudev is None:
@@ -334,21 +345,19 @@ def update_device(device, firmware, verbose, cancellation_token):
         stm_device = find_device_in_dfu_mode(serial_number, cancellation_token)
         dfudev = DfuDevice(stm_device)
 
-    if (verbose):
-        print("Sectors on device: ")
-        for sector in dfudev.sectors:
-            print(" {:08X} to {:08X} ({})".format(
-                sector['addr'],
-                sector['addr'] + sector['len'] - 1,
-                sector['name']))
+    logger.debug("Sectors on device: ")
+    for sector in dfudev.sectors:
+        logger.debug(" {:08X} to {:08X} ({})".format(
+            sector['addr'],
+            sector['addr'] + sector['len'] - 1,
+            sector['name']))
 
     # fill sectors with data
     touched_sectors = list(populate_sectors(dfudev.sectors, hexfile))
 
-    if (verbose):
-        print("The following sectors will be flashed: ")
-        for sector,_ in touched_sectors:
-            print(" {:08X} to {:08X}".format(sector['addr'], sector['addr'] + sector['len'] - 1))
+    logger.debug("The following sectors will be flashed: ")
+    for sector,_ in touched_sectors:
+        logger.debug(" {:08X} to {:08X}".format(sector['addr'], sector['addr'] + sector['len'] - 1))
 
     # Erase
     try:
@@ -394,16 +403,26 @@ def update_device(device, firmware, verbose, cancellation_token):
     # Jump to application
     dfudev.jump_to_application(0x08000000)
 
-def launch_dfu(args, app_shutdown_token):
+    logger.info("Waiting for the device to reappear...")
+    device = odrive.discovery.find_any("usb", serial_number,
+                    cancellation_token, cancellation_token, timeout=30)
+
+    if did_backup_config:
+        odrive.configuration.restore_config(device, None, logger)
+        os.remove(odrive.configuration.get_temp_config_filename(device))
+
+    logger.success("Device firmware update successful.")
+
+def launch_dfu(args, logger, cancellation_token):
     """
     Waits for a device that matches args.path and args.serial_number
     and then upgrades the device's firmware.
     """
 
     serial_number = args.serial_number
-    find_odrive_cancellation_token = Event(app_shutdown_token)
+    find_odrive_cancellation_token = Event(cancellation_token)
 
-    print("Waiting for ODrive...")
+    logger.info("Waiting for ODrive...")
 
     devices = [None, None]
 
@@ -416,18 +435,13 @@ def launch_dfu(args, app_shutdown_token):
     # Scan for ODrives not in DFU mode
     # We only scan on USB because DFU is only implemented over USB
     devices[1] = odrive.discovery.find_any("usb", serial_number,
-        find_odrive_cancellation_token, app_shutdown_token)
+        find_odrive_cancellation_token, cancellation_token)
     find_odrive_cancellation_token.set()
     
     device = devices[0] or devices[1]
     firmware = FirmwareFromFile(args.file) if args.file else None
 
-    try:
-        update_device(device, firmware, args.verbose, app_shutdown_token)
-    except Exception as ex:
-        if args.verbose:
-            raise
-        print(ex)
+    update_device(device, firmware, logger, cancellation_token)
 
 
 
