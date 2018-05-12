@@ -33,8 +33,15 @@ shell_parser.add_argument("--no-ipython", action="store_true",
                           "instead of the IPython shell, "
                           "even if IPython is installed.")
 
-dfu_parser = subparsers.add_parser('dfu', help="Upgrade the ODrive device firmware")
-dfu_parser.add_argument('file', metavar='HEX', help='The .hex file to be flashed. Make sure your firmware board version matches the actual board version.')
+dfu_parser = subparsers.add_parser('dfu', help="Upgrade the ODrive device firmware."
+                                               "If no serial number is specified, the first ODrive that is found is updated")
+dfu_parser.add_argument('file', metavar='HEX', nargs='?',
+                        help='The .hex file to be flashed. Make sure target board version '
+                        'of the firmware file matches the actual board version. '
+                        'You can download the latest release manually from '
+                        'https://github.com/madcowswe/ODrive/releases. '
+                        'If no file is provided, the script automatically downloads '
+                        'the latest firmware.')
 
 subparsers.add_parser('liveplotter', help="Upgrade the ODrive's Firmware")
 subparsers.add_parser('drv-status', help="Show status of the on-board DRV8301 chips (for debugging only)")

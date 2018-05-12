@@ -363,3 +363,22 @@ class Logger():
     def error(self, text):
         # TODO: write to stderr
         self.print_colored(self._prefix + text, Logger.COLOR_RED)
+
+def yes_no_prompt(question, default=None):
+    if default is None:
+        question += " [y/n] "
+    elif default == True:
+        question += " [Y/n] "
+    elif default == False:
+        question += " [y/N] "
+
+    while True:
+        print(question, end='')
+
+        choice = input().lower()
+        if choice in {'yes', 'y'}:
+            return True
+        elif choice in {'no', 'n'}:
+            return False
+        elif choice == '' and default is not None:
+            return default

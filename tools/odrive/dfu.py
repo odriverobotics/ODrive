@@ -9,8 +9,9 @@ import time
 import threading
 import platform
 import struct
-import array
-import fractions
+import requests
+import re
+import io
 import usb.core
 import odrive.discovery
 from odrive.utils import Event
@@ -24,46 +25,17 @@ except:
     sys.exit(1)
 
 
-SIZE_MULTIPLIERS = {' ': 1, 'K': 1024, 'M' : 1024*1024}
-MAX_TRANSFER_SIZE = 2048
+def get_fw_version_string(fw_version):
+    if (fw_version[0], fw_version[1], fw_version[2]) == (0, 0, 0):
+        return "[unknown version]"
+    else:
+        return "v{}.{}.{}{}".format(fw_version[0], fw_version[1], fw_version[2], "-dev" if fw_version[3] else "")
 
-
-def get_device_sectors(dfudev):
-    """
-    Returns a list of all sectors on the device.
-    Each sector is represented as a dictionary with the following keys:
-     - name: name of the associated memory region (e.g. "Internal Flash")
-     - alt: USB alternate setting associated with this memory region
-     - addr: Start address of the sector (e.g. 0x08004000 for the second flash sectors)
-     - baseaddr: Start address of the memory region associated with the sector
-                 (e.g. 0x08000000 for all flash sectors)
-     - len: Number of bytes in the sector
-    """
-    for name, alt in dfudev.alternates():
-        # example for name:
-        # '@Internal Flash  /0x08000000/04*016Kg,01*064Kg,07*128Kg'
-        label, baseaddr, layout = name.split('/')
-        baseaddr = int(baseaddr, 0) # convert hex to decimal
-        addr = baseaddr
-
-        for sector in layout.split(','):
-            repeat, size = map(int, sector[:-2].split('*'))
-            size *= SIZE_MULTIPLIERS[sector[-2].upper()]
-            mode = sector[-1]
-
-            while repeat > 0:
-                # TODO: verify if the section is writable
-                yield {
-                    'name': label.strip().strip('@'),
-                    'alt': alt,
-                    'baseaddr': baseaddr,
-                    'addr': addr,
-                    'len': size,
-                    'mode': mode
-                }
-
-                addr += size
-                repeat -= 1
+def get_hw_version_string(hw_version):
+    if hw_version == (0, 0, 0):
+        return "[unknown version]"
+    else:
+        return "v{}.{}{}".format(hw_version[0], hw_version[1], ("-" + str(hw_version[2]) + "V") if hw_version[2] > 0 else "")
 
 def populate_sectors(sectors, hexfile):
     """
@@ -88,66 +60,6 @@ def populate_sectors(sectors, hexfile):
             # TODO: verify if the section is writable
             yield (sector, hexfile.tobinarray(addr, addr + size - 1))
 
-def set_alternate_safe(dfudev, alt):
-    dfudev.set_alternate(alt)
-    if dfudev.get_state() == DfuState.DFU_ERROR:
-        dfudev.clear_status()
-        dfudev.wait_while_state(DfuState.DFU_ERROR)
-
-#def clear_error(dfudev)
-def set_address_safe(dfudev, addr):
-    dfudev.set_address(addr)
-    status = dfudev.wait_while_state(DfuState.DFU_DOWNLOAD_BUSY)
-    if status[1] != DfuState.DFU_DOWNLOAD_IDLE:
-        raise RuntimeError("An error occured. Device Status: %r" % status)
-    # take device out of DFU_DOWNLOAD_SYNC and into DFU_IDLE
-    dfudev.abort()
-    status = dfudev.wait_while_state(DfuState.DFU_DOWNLOAD_SYNC)
-    if status[1] != DfuState.DFU_IDLE:
-        raise RuntimeError("An error occured. Device Status: %r" % status)
-    
-
-def erase(dfudev, sector):
-    set_alternate_safe(dfudev, sector['alt'])
-    dfudev.erase(sector['addr'])
-    status = dfudev.wait_while_state(DfuState.DFU_DOWNLOAD_BUSY, timeout=sector['len']/32)
-    if status[1] != DfuState.DFU_DOWNLOAD_IDLE:
-        raise RuntimeError("An error occured. Device Status: %r" % status)
-
-def flash(dfudev, sector, data):
-    set_alternate_safe(dfudev, sector['alt'])
-    set_address_safe(dfudev, sector['addr'])
-
-    transfer_size = fractions.gcd(sector['len'], MAX_TRANSFER_SIZE)
-    
-    blocks = [data[i:i + transfer_size] for i in range(0, len(data), transfer_size)]
-    for blocknum, block in enumerate(blocks):
-        #print('write to {:08X} ({} bytes)'.format(
-        #        sector['addr'] + blocknum * TRANSFER_SIZE, len(block)))
-        dfudev.write(blocknum, block)
-        status = dfudev.wait_while_state(DfuState.DFU_DOWNLOAD_BUSY)
-        if status[1] != DfuState.DFU_DOWNLOAD_IDLE:
-            raise RuntimeError("An error occured. Device Status: %r" % status)
-
-def read(dfudev, sector):
-    """
-    Reads data from the specified sector
-    Returns: a byte array containing the data
-    """
-    set_alternate_safe(dfudev, sector['alt'])
-    set_address_safe(dfudev, sector['addr'])
-
-    transfer_size = fractions.gcd(sector['len'], MAX_TRANSFER_SIZE)
-    #blocknum_offset = int((sector['addr'] - sector['baseaddr']) / transfer_size)
-
-    
-    data = array.array(u'B')
-    for blocknum in range(int(sector['len'] / transfer_size)):
-        #print('read at {:08X}'.format(sector['addr'] + blocknum * TRANSFER_SIZE))
-        deviceBlock = dfudev.read(blocknum, transfer_size)
-        data.extend(deviceBlock)
-    dfudev.abort() # take device into DFU_IDLE
-    return data
 
 def get_first_mismatch_index(array1, array2):
     """
@@ -161,42 +73,133 @@ def get_first_mismatch_index(array1, array2):
             return pos
     return None
 
-
-def jump_to_application(dfudev, address):
-    set_address_safe(dfudev, address)
-    #dfudev.set_address(address)
-    #status = dfudev.wait_while_state(DfuState.DFU_DOWNLOAD_BUSY)
-    #if status[1] != DfuState.DFU_DOWNLOAD_IDLE:
-    #    raise RuntimeError("An error occured. Device Status: {}".format(status[1]))
-
-    dfudev.leave()
-    status = dfudev.wait_while_state(DfuState.DFU_MANIFEST_SYNC)
-    if status[1] != DfuState.DFU_MANIFEST:
-        raise RuntimeError("An error occured. Device Status: {}".format(status[1]))
-
-
-def dump_otp():
+def dump_otp(dfudev):
     """
     Dumps the contents of the one-time-programmable
     memory. The OTP will be used in future versions of
     this script to determine the board version.
     """
     # 512 Byte OTP
-    otp_sector = [s for s in sectors if s['name'] == 'OTP Memory' and s['addr'] == 0x1fff7800][0]
-    data = read(dfudev, otp_sector)
+    otp_sector = [s for s in dfudev.sectors if s['name'] == 'OTP Memory' and s['addr'] == 0x1fff7800][0]
+    data = dfudev.read_sector(otp_sector)
     print(' '.join('{:02X}'.format(x) for x in data))
 
     # 16 lock bytes
-    otp_lock_sector = [s for s in sectors if s['name'] == 'OTP Memory' and s['addr'] == 0x1fff7A00][0]
-    data = read(dfudev, otp_lock_sector)
+    otp_lock_sector = [s for s in dfudev.sectors if s['name'] == 'OTP Memory' and s['addr'] == 0x1fff7A00][0]
+    data = dfudev.read_sector(otp_lock_sector)
     print(' '.join('{:02X}'.format(x) for x in data))
+
+class Firmware():
+    def __init__(self):
+        self.fw_version = (0, 0, 0, True)
+        self.hw_version = (0, 0, 0)
+
+    @staticmethod
+    def is_newer(a, b):
+        return (a[0] > b[0] or
+                (a[0] == b[0] and
+                 (a[1] > b[1] or
+                  (a[1] == b[1] and
+                   (a[2] > b[2] or
+                    (a[2] == b[2] and
+                     (not a[3] and a[3])))))))
+
+    def __gt__(self, other):
+        """
+        Compares two firmware versions. If both versions are equal, the
+        prerelease version is considered older than the release version.
+        """
+        if not isinstance(other, tuple):
+            other = other.fw_version
+        return Firmware.is_newer(self.fw_version, other)
+
+    def __lt__(self, other):
+        """
+        Compares two firmware versions. If both versions are equal, the
+        prerelease version is considered older than the release version.
+        """
+        if not isinstance(other, tuple):
+            other = other.fw_version
+        return Firmware.is_newer(other, self.fw_version)
+
+    def is_compatible(self, hw_version):
+        """
+        Determines if this firmware is compatible
+        with the specified hardware version
+        """
+        return self.hw_version == hw_version
+
+class FirmwareFromGithub(Firmware):
+    """
+    Represents a firmware asset
+    """
+    def __init__(self, release_json, asset_json):
+        Firmware.__init__(self)
+        if release_json['draft'] or release_json['prerelease']:
+            release_json['tag_name'] += "*"
+        self.fw_version = odrive.version.version_str_to_tuple(release_json['tag_name'])
+
+        hw_version_regex = r'.*v([0-9]+).([0-9]+)(-(?P<voltage>[0-9]+)V)?.hex'
+        hw_version_match = re.search(hw_version_regex, asset_json['name'])
+        self.hw_version = (int(hw_version_match[1]),
+                          int(hw_version_match[2]),
+                          int(hw_version_match.groupdict().get('voltage') or 0))
+        self.github_asset_id = asset_json['id']
+        self.hex = None
+        # no technical reason to fetch this - just interesting
+        self.download_count = asset_json['download_count']
+    
+    def get_as_hex(self):
+        """
+        Returns the content of the firmware in as a binary array in Intel Hex format
+        """
+        if self.hex is None:
+            response = requests.get('https://api.github.com/repos/madcowswe/ODrive/releases/assets/' + str(self.github_asset_id),
+                                    headers={'Accept': 'application/octet-stream'})
+            if response.status_code != 200:
+                raise Exception("failed to download firmware")
+            self.hex = response.content
+        return io.StringIO(self.hex.decode('utf-8'))
+
+class FirmwareFromFile(Firmware):
+    def __init__(self, file):
+        Firmware.__init__(self)
+        self._file = file
+    def get_as_hex(self):
+        return self._file
+
+def get_all_github_firmwares():
+    response = requests.get('https://api.github.com/repos/madcowswe/ODrive/releases')
+    if response.status_code != 200:
+        raise Exception("could not fetch releases")
+    response_json = response.json()
+    
+    for release_json in response_json:
+        for asset_json in release_json['assets']:
+            try:
+                if asset_json['name'].lower().endswith('.hex'):
+                    fw = FirmwareFromGithub(release_json, asset_json)
+                    yield fw
+            except Exception as ex:
+                print(ex)
+
+def get_newest_firmware(hw_version):
+    """
+    Returns the newest available firmware for the specified hardware version
+    """
+    firmwares = get_all_github_firmwares()
+    firmwares = filter(lambda fw: not fw.fw_version[3], firmwares) # ignore prereleases
+    firmwares = filter(lambda fw: fw.hw_version == hw_version, firmwares)
+    firmwares = list(firmwares)
+    firmwares.sort()
+    return firmwares[-1] if len(firmwares) else None
 
 def show_deferred_message(message, cancellation_token):
     """
     Shows a message after 10s, unless cancellation_token gets set.
     """
     def show_message_thread(message, cancellation_token):
-        for i in range(1,10):
+        for _ in range(1,10):
             if cancellation_token.is_set():
                 return
             time.sleep(1)
@@ -206,104 +209,152 @@ def show_deferred_message(message, cancellation_token):
     t.daemon = True
     t.start()
 
-def put_odrive_into_dfu_mode(my_drive, cancellation_token):
+def put_into_dfu_mode(device, cancellation_token):
     """
     Puts the specified device into DFU mode
     """
-    if not hasattr(my_drive, "enter_dfu_mode"):
+    if not hasattr(device, "enter_dfu_mode"):
         print("The firmware on device {} does not support DFU. You need to \n"
               "flash the firmware once using STLink (`make flash`), after that \n"
               "DFU with this script should work fine."
-              .format(my_drive.__channel__.usb_device.serial_number))
+              .format(device.__channel__.usb_device.serial_number))
         return
-    hw_version_major = my_drive.hw_version_major if hasattr(my_drive, 'hw_version_major') else 3
-    hw_version_minor = my_drive.hw_version_minor if hasattr(my_drive, 'hw_version_minor') else 4
-    if hw_version_major == 3 and hw_version_minor >= 5:
-        print("Putting device {} into DFU mode...".format(my_drive.__channel__.usb_device.serial_number))
-        try:
-            my_drive.enter_dfu_mode()
-        except odrive.protocol.ChannelBrokenException:
-            pass # this is expected because the device reboots
-        if platform.system() == "Windows":
-            show_deferred_message("Still waiting for the device to reappear.\n"
-                                "Use the Zadig utility to set the driver of 'STM32 BOOTLOADER' to libusb-win32.",
-                                cancellation_token)
-    else:
-        print("Found device {}".format(my_drive.__channel__.usb_device.serial_number))
+    hw_version_major = device.hw_version_major if hasattr(device, 'hw_version_major') else 3
+    hw_version_minor = device.hw_version_minor if hasattr(device, 'hw_version_minor') else 4
+    if hw_version_major == 3 and hw_version_minor < 5:
         print("  DFU mode is not supported on board version 3.4 or earlier.")
         print("  This is because entering DFU mode on such a device would")
         print("  break the brake resistor FETs under some circumstances.")
+        raise Exception("not supported")
+    
+    print("Putting device {} into DFU mode...".format(device.__channel__.usb_device.serial_number))
+    try:
+        device.enter_dfu_mode()
+    except odrive.protocol.ChannelBrokenException:
+        pass # this is expected because the device reboots
+    if platform.system() == "Windows":
+        show_deferred_message("Still waiting for the device to reappear.\n"
+                            "Use the Zadig utility to set the driver of 'STM32 BOOTLOADER' to libusb-win32.",
+                            cancellation_token)
 
-def launch_dfu(args, app_shutdown_token):
+def find_device_in_dfu_mode(serial_number, cancellation_token):
     """
-    Waits for a device that matches args.path and args.serial_number
-    and then upgrades the device's firmware.
+    Polls libusb until a device in DFU mode is found
     """
+    while not cancellation_token.is_set():
+        params = {} if serial_number == None else {'serial_number': serial_number}
+        stm_device = usb.core.find(idVendor=0x0483, idProduct=0xdf11, **params)
+        if stm_device != None:
+            return stm_device
+        time.sleep(1)
+    return None
+
+def update_device(device, firmware, verbose, cancellation_token):
+    """
+    Updates the specified device with the specified firmware.
+    The device passed to this function can either be in
+    normal mode or in DFU mode.
+    The firmware should be an instance of Firmware or None.
+    If firmware is None, the newest firmware for the device is
+    downloaded from GitHub releases.
+    """
+
+    if isinstance(device, usb.core.Device):
+        serial_number = device.serial_number
+        dfudev = DfuDevice(device)
+        if (verbose):
+            print("OTP:")
+            dump_otp(dfudev)
+
+        # Read hardware version from one-time-programmable memory
+        otp_sector = [s for s in dfudev.sectors if s['name'] == 'OTP Memory' and s['addr'] == 0x1fff7800][0]
+        otp_data = dfudev.read_sector(otp_sector)
+        if otp_data[0] == 0:
+            otp_data = otp_data[16:]
+        if otp_data[0] == 0xfe:
+            hw_version = (otp_data[3], otp_data[4], otp_data[5])
+        else:
+            hw_version = (0, 0, 0)
+    else:
+        serial_number = device.__channel__.usb_device.serial_number
+        dfudev = None
+
+        # Read hardware version as reported from firmware
+        hw_version_major = device.hw_version_major if hasattr(device, 'hw_version_major') else 0
+        hw_version_minor = device.hw_version_minor if hasattr(device, 'hw_version_minor') else 0
+        hw_version_variant = device.hw_version_variant if hasattr(device, 'hw_version_variant') else 0
+        hw_version = (hw_version_major, hw_version_minor, hw_version_variant)
+
+    fw_version_major = device.fw_version_major if hasattr(device, 'fw_version_major') else 0
+    fw_version_minor = device.fw_version_minor if hasattr(device, 'fw_version_minor') else 0
+    fw_version_revision = device.fw_version_revision if hasattr(device, 'fw_version_revision') else 0
+    fw_version_prerelease = device.fw_version_prerelease if hasattr(device, 'fw_version_prerelease') else True
+    fw_version = (fw_version_major, fw_version_minor, fw_version_revision, fw_version_prerelease)
+
+    print("Found ODrive {} ({}) with firmware {}{}".format(
+                serial_number,
+                get_hw_version_string(hw_version),
+                get_fw_version_string(fw_version),
+                " in DFU mode" if dfudev is not None else ""))
+
+    if firmware is None:
+        if hw_version == (0, 0, 0):
+            if dfudev is None:
+                suggestion = 'You have to manually flash an up-to-date firmware to make automatic checks work. Run `odrivetool dfu --help` for more info.'
+            else:
+                suggestion = 'Run "make write_otp" to program the board version.'
+            raise Exception('Cannot check online for new firmware because the board version is unknown. ' + suggestion)
+        print("Checking online for newest firmware...")
+        firmware = get_newest_firmware(hw_version)
+        if firmware is None:
+            raise Exception("could not find any firmware release for this board version")
+
+    print("Updating to firmware {}".format(get_fw_version_string(firmware.fw_version)))
+    if firmware < fw_version:
+        print("Warning: you are about to flash firmware {} which is older than the firmware on the device ({}).".format(
+                get_fw_version_string(firmware.fw_version),
+                get_fw_version_string(fw_version)))
+        if not odrive.utils.yes_no_prompt("Do you want to flash this firmware anyway?", True):
+            return
 
     # load hex file
     # TODO: Either use the elf format or pack a custom format with a manifest.
     # This way we can for instance verify the target board version and only
-    # have to publish one file for every board.
-    hexfile = IntelHex(args.file)
+    # have to publish one file for every board (instead of elf AND hex files).
+    hexfile = IntelHex(firmware.get_as_hex())
 
-    if (args.verbose):
+    if (verbose):
         print("Contiguous segments in hex file:")
         for start, end in hexfile.segments():
             print(" {:08X} to {:08X}".format(start, end - 1))
 
-    serial_number = args.serial_number
+    # Put the device into DFU mode if it's not already in DFU mode
+    if dfudev is None:
+        put_into_dfu_mode(device, cancellation_token)
+        stm_device = find_device_in_dfu_mode(serial_number, cancellation_token)
+        dfudev = DfuDevice(stm_device)
 
-    find_odrive_cancellation_token = Event(app_shutdown_token)
-
-    print("Waiting for ODrive...")
-
-    # Scan for ODrives not in DFU mode and put them into DFU mode once they appear
-    # We only scan on USB because DFU is only possible over USB
-    odrive.discovery.find_all(args.path, serial_number,
-        lambda dev: put_odrive_into_dfu_mode(dev, find_odrive_cancellation_token),
-        find_odrive_cancellation_token, app_shutdown_token)
-
-    # Poll libUSB until a device in DFU mode is found
-    while not app_shutdown_token.is_set():
-        params = {} if serial_number == None else {'serial_number': serial_number}
-        stm_device = usb.core.find(idVendor=0x0483, idProduct=0xdf11, **params)
-        if stm_device != None:
-            break
-        time.sleep(1)
-    find_odrive_cancellation_token.set() # we don't need this thread anymore
-    if app_shutdown_token.is_set():
-        sys.exit(1)
-    print("Found device {} in DFU mode".format(stm_device.serial_number))
-
-    dfudev = DfuDevice(stm_device)
-
-    sectors = list(get_device_sectors(dfudev))
-
-    if (args.verbose):
+    if (verbose):
         print("Sectors on device: ")
-        for sector in sectors:
+        for sector in dfudev.sectors:
             print(" {:08X} to {:08X} ({})".format(
                 sector['addr'],
                 sector['addr'] + sector['len'] - 1,
                 sector['name']))
 
     # fill sectors with data
-    touched_sectors = list(populate_sectors(sectors, hexfile))
+    touched_sectors = list(populate_sectors(dfudev.sectors, hexfile))
 
-    if (args.verbose):
+    if (verbose):
         print("The following sectors will be flashed: ")
         for sector,_ in touched_sectors:
             print(" {:08X} to {:08X}".format(sector['addr'], sector['addr'] + sector['len'] - 1))
-
-    if (args.verbose):
-        print("OTP:")
-        dump_otp()
 
     # Erase
     try:
         for i, (sector, data) in enumerate(touched_sectors):
             print("Erasing... (sector {}/{})  \r".format(i, len(touched_sectors)), end='', flush=True)
-            erase(dfudev, sector)
+            dfudev.erase_sector(sector)
         print('Erasing... done            \r', end='', flush=True)
     finally:
         print('', flush=True)
@@ -312,7 +363,7 @@ def launch_dfu(args, app_shutdown_token):
     try:
         for i, (sector, data) in enumerate(touched_sectors):
             print("Flashing... (sector {}/{})  \r".format(i, len(touched_sectors)), end='', flush=True)
-            flash(dfudev, sector, data)
+            dfudev.write_sector(sector, data)
         print('Flashing... done            \r', end='', flush=True)
     finally:
         print('', flush=True)
@@ -321,7 +372,7 @@ def launch_dfu(args, app_shutdown_token):
     try:
         for i, (sector, expected_data) in enumerate(touched_sectors):
             print("Verifying... (sector {}/{})  \r".format(i, len(touched_sectors)), end='', flush=True)
-            observed_data = read(dfudev, sector)
+            observed_data = dfudev.read_sector(sector)
             mismatch_pos = get_first_mismatch_index(observed_data, expected_data)
             if not mismatch_pos is None:
                 mismatch_pos -= mismatch_pos % 16
@@ -341,7 +392,42 @@ def launch_dfu(args, app_shutdown_token):
     # So for debugging you should comment this last part out.
 
     # Jump to application
-    jump_to_application(dfudev, 0x08000000)
+    dfudev.jump_to_application(0x08000000)
+
+def launch_dfu(args, app_shutdown_token):
+    """
+    Waits for a device that matches args.path and args.serial_number
+    and then upgrades the device's firmware.
+    """
+
+    serial_number = args.serial_number
+    find_odrive_cancellation_token = Event(app_shutdown_token)
+
+    print("Waiting for ODrive...")
+
+    devices = [None, None]
+
+    # Start background thread to scan for ODrives in DFU mode
+    def find_device_in_dfu_mode_thread():
+        devices[0] = find_device_in_dfu_mode(serial_number, find_odrive_cancellation_token)
+        find_odrive_cancellation_token.set()
+    threading.Thread(target=find_device_in_dfu_mode_thread).start()
+
+    # Scan for ODrives not in DFU mode
+    # We only scan on USB because DFU is only implemented over USB
+    devices[1] = odrive.discovery.find_any("usb", serial_number,
+        find_odrive_cancellation_token, app_shutdown_token)
+    find_odrive_cancellation_token.set()
+    
+    device = devices[0] or devices[1]
+    firmware = FirmwareFromFile(args.file) if args.file else None
+
+    try:
+        update_device(device, firmware, args.verbose, app_shutdown_token)
+    except Exception as ex:
+        if args.verbose:
+            raise
+        print(ex)
 
 
 
