@@ -31,6 +31,13 @@ $ (sudo lsusb -d 1209:0d32 -v; sudo lsusb -d 0483:df11 -v) 2>/dev/null | grep iS
 Here, two ODrives are connected.
 </div></details>
 
+## Configuration Backup
+
+You can use ODrive Tool to back up and restore device configurations or transfer the configuration of one ODrive to another one.
+
+ * To save the configuration to a file on the PC, run `odrivetool backup-config my_config.json`.
+ * To restore the configuration form such a file, run `odrivetool restore-config my_config.json`.
+
 ## Device Firmware Update
 
 <div class="note" markdown="span">__ODrive v3.4 or earlier__: DFU is not supported on these devices. You need to [flash with the external programmer](#flashing-with-an-stlink) instead.</div>
@@ -52,6 +59,8 @@ Verifying... done
 
 Note that this command will connect to GitHub servers to retrieve the latest firmware.
 
+If you have a non-default configuration saved on the device, ODrive Tool will try to carry over the configuration across the firmware update. If any of the settings are removed or renamed, you will get warning messages.
+
 <details><summary markdown="span">How to flash a custom firmware</summary><div markdown="block">
 If you want to flash a specific firmware file instead of automatically downloading one, you can run `odrivetool dfu [path/to/firmware/file.hex]`.
 
@@ -65,7 +74,6 @@ To compile firmware from source, refer to the [developer guide](developer-guide)
 
 * __Windows__: During the update, a new device called "STM32 BOOTLOADER" will appear. Open the [Zadig utility](http://zadig.akeo.ie/) and set the driver for "STM32 BOOTLOADER" to libusb-win32. After that the firmware update will continue.
 * On some machines you will need to unplug and plug back in the USB cable to make the PC understand that we switched from regular mode to bootloader mode.
-* Currently a firmware update will preserve the configuration if and only if the parameters of both firmware versions are identical. This will change in the future.
 * If the DFU script can't find the device, try forcing it into DFU mode.
 
   <details><summary markdown="span">How to force DFU mode (ODrive v3.5)</summary><div markdown="block">
