@@ -13,7 +13,7 @@ addons:
   apt:
     packages:
       libc6-i386
-      arm-none-eabi-gcc
+      gcc-arm-none-eabi
 
 cache:
   directories:
