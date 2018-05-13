@@ -1,0 +1,70 @@
+
+type: parallel
+
+# ODrives
+odrives:
+  - name: top-odrive
+    board-version: v3.5-48V
+    serial-number: "3660335E3037"
+    brake-resistance: 0.47
+    uart: /dev/serial/by-id/[not-yet-used]
+    usb: auto
+    programmer: '\x53\x3f\x75\x06\x49\x3f\x49\x51\x44\x54\x19\x3f'
+    vbus-voltage: 24 # [V]
+    max-brake-power: 150 # [W]
+    axes:
+      - name: 'yellow'
+        motor-phase-resistance: 0.0245
+        motor-phase-inductance: 2.03e-05
+        motor-pole-pairs: 7
+        motor-direction: 1
+        motor-kv: 190
+        motor-max-current: 70
+        motor-max-voltage: 40
+        encoder-cpr: 8192
+        encoder-max-rpm: 7000
+      - name: 'black'
+        motor-phase-resistance: 0.028
+        motor-phase-inductance: 1.6e-05
+        motor-pole-pairs: 7
+        motor-direction: -1
+        motor-kv: 270
+        motor-max-current: 70
+        motor-max-voltage: 32
+        encoder-cpr: 8192
+        encoder-max-rpm: 7000
+  - name: bottom-odrive
+    board-version: v3.5-24V
+    serial-number: "3661335E3037"
+    brake-resistance: 0.47
+    uart: /dev/serial/by-id/[not-yet-used]
+    usb: auto
+    programmer: '\x49\x3f\x6f\x06\x49\x3f\x56\x54\x09\x29\x11\x3f'
+    vbus-voltage: 24 # [V]
+    max-brake-power: 150 # [W]
+    axes:
+      - name: 'black'
+        motor-phase-resistance: 0.028
+        motor-phase-inductance: 1.6e-05
+        motor-pole-pairs: 7
+        motor-direction: 1
+        motor-kv: 270
+        motor-max-current: 70
+        motor-max-voltage: 32
+        encoder-cpr: 8192
+        encoder-max-rpm: 7000
+      - name: 'yellow'
+        motor-phase-resistance: 0.0245
+        motor-phase-inductance: 2.03e-05
+        motor-pole-pairs: 7
+        motor-direction: -1
+        motor-kv: 190
+        motor-max-current: 70
+        motor-max-voltage: 40
+        encoder-cpr: 8192
+        encoder-max-rpm: 7000
+
+# Mechanical couplings
+couplings:
+  - [ top-odrive.yellow, bottom-odrive.yellow ]
+  - [ top-odrive.black, bottom-odrive.black ]

@@ -30,7 +30,7 @@ In this section we will set the compile-time parameters, later we will also set 
 
 To customize the compile time parameters, copy or rename the file `Firmware/tup.config.default` to `Firmware/tup.config` and edit the parameters in that file:
 
-__CONFIG_BOARD_VERSION__: The board version you're using. Can be `v3.1`, `v3.2`, `v3.3`, `v3.4-24V` or `v3.4-48V`. Check for a label on the upper side of the ODrive to find out which version you have.
+__CONFIG_BOARD_VERSION__: The board version you're using. Can be `v3.1`, `v3.2`, `v3.3`, `v3.4-24V`, `v3.4-48V`, `v3.5-24V` or `v3.5-48V`. Check for a label on the upper side of the ODrive to find out which version you have.
 
 __CONFIG_USB_PROTOCOL__: Defines which protocol the ODrive should use on the USB interface.
  * `native`: The native ODrive protocol. Use this if you want to use the python tools in this repo.
@@ -42,8 +42,6 @@ __CONFIG_UART_PROTOCOL__: Defines which protocol the ODrive should use on the UA
  * `native`: The native ODrive protocol. Use this if you're connecting the ODrive to a PC using UART and want to use the python tools to control and setup the ODrive.
  * `ascii`: The ASCII protocol. Use this option if you control the ODrive with an Arduino. The ODrive Arduino library is not yet updated to the native protocol.
  * `none`: Disable UART.
-
-__CONFIG_STEP_DIR__: Set to `y` to use the GPIO1 and GPIO2 for step/direction input. Set to `n` otherwise. To use this, `CONFIG_UART_PROTOCOL` must be `none` because UART uses the same pins.
 
 
 <br><br>
@@ -176,7 +174,7 @@ pip install pyusb pyserial
 [See ODrive Arduino Library](https://github.com/madcowswe/ODriveArduino)
 
 ### Other platforms
-See the [protocol specification](protocol.md) or the [legacy protocol specification](legacy-protocol.md).
+See the [protocol specification](protocol.md) or the [ASCII protocol specification](ascii-protocol.md).
 
 <br><br>
 ## Configuring parameters

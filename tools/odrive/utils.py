@@ -16,7 +16,9 @@ try:
         import colorama
         colorama.init()
 except ModuleNotFoundError:
-    print("Could not init terminal colors")
+    print("Could not init terminal features.")
+    print("Refer to install instructions at http://docs.odriverobotics.com/#downloading-and-installing-tools")
+    sys.stdout.flush()
     pass
 
 data_rate = 100
@@ -92,6 +94,16 @@ def print_drv_regs(name, motor):
     print("Control Reg 1: " + str(ctrl_reg_1) + " (" + format(ctrl_reg_1, '#013b') + ")")
     print("Control Reg 2: " + str(ctrl_reg_2) + " (" + format(ctrl_reg_2, '#09b') + ")")
 
+def show_oscilloscope(odrv):
+    size = 18000
+    values = []
+    for i in range(size):
+        values.append(odrv.get_oscilloscope_val(i))
+
+    import matplotlib.pyplot as plt
+    plt.plot(values)
+    plt.show()
+
 def rate_test(device):
     """
     Tests how many integers per second can be transmitted
@@ -112,6 +124,27 @@ def rate_test(device):
     loopsPerSec = (168000000/(2*10192))
     FramePerSec = loopsPerSec/loopsPerFrame
     print("Frames per second: " + str(FramePerSec))
+
+def usb_burn_in_test(get_var_callback, cancellation_token):
+    """
+    Starts background threads that read a values form the USB device in a spin-loop
+    """
+
+    def fetch_data():
+        global vals
+        i = 0
+        while not cancellation_token.is_set():
+            try:
+                get_var_callback()
+                i += 1
+            except Exception as ex:
+                print(str(ex))
+                time.sleep(1)
+                i = 0
+                continue
+            if i % 1000 == 0:
+                print("read {} values".format(i))
+    threading.Thread(target=fetch_data).start()
 
 def setup_udev_rules(logger):
     if platform.system() != 'Linux':
@@ -221,6 +254,7 @@ def wait_any(timeout=None, *events):
             return i
     raise TimeoutException()
 
+
 class Logger():
     """
     Logs messages to stdout
@@ -252,6 +286,7 @@ class Logger():
         self._prefix = ''
         self._skip_bottom_line = False # If true, messages are printed one line above the cursor
         self._verbose = verbose
+        self._print_lock = threading.Lock()
         if platform.system() == 'Windows':
             self._stdout_buf = win32console.GetStdHandle(win32console.STD_OUTPUT_HANDLE)
 
@@ -299,18 +334,22 @@ class Logger():
             #   (print text)
             #   ESC 8: restore old cursor position
 
+            self._print_lock.acquire()
             sys.stdout.write('\x1b7\x1b[1A\x1b[1S\x1b[1L')
             sys.stdout.write(Logger._VT100Colors[color] + text + Logger._VT100Colors[Logger.COLOR_DEFAULT])
             sys.stdout.write('\x1b8')
             sys.stdout.flush()
+            self._print_lock.release()
 
     def print_colored(self, text, color):
         if self._skip_bottom_line:
             self.print_on_second_last_line(text, color)
         else:
             # On Windows, colorama does the job of interpreting the VT100 escape sequences
+            self._print_lock.acquire()
             sys.stdout.write(Logger._VT100Colors[color] + text + Logger._VT100Colors[Logger.COLOR_DEFAULT] + '\n')
             sys.stdout.flush()
+            self._print_lock.release()
 
     def debug(self, text):
         if self._verbose:

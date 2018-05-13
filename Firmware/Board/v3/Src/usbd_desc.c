@@ -51,10 +51,9 @@
 #include "usbd_core.h"
 #include "usbd_desc.h"
 #include "usbd_conf.h"
-#include "commands.h"
 
 /* USER CODE BEGIN INCLUDE */
-
+#include <MotorControl/odrive_main.h>
 /* USER CODE END INCLUDE */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -330,15 +329,7 @@ uint8_t * USBD_FS_ManufacturerStrDescriptor(USBD_SpeedTypeDef speed, uint16_t *l
   */
 uint8_t * USBD_FS_SerialStrDescriptor(USBD_SpeedTypeDef speed, uint16_t *length)
 {
-  uint8_t str[13]; // 12 digits + null termination
-  uint64_t val = serial_number;
-  for (size_t i = 0; i < 12; ++i) {
-    str[i] = "0123456789ABCDEF"[(val >> (48-4)) & 0xf];
-    val <<= 4;
-  }
-  str[12] = 0;
-
-  USBD_GetString ((uint8_t *)str, USBD_StrDesc, length);
+  USBD_GetString ((uint8_t *)serial_number_str, USBD_StrDesc, length);
   return USBD_StrDesc;
 }
 

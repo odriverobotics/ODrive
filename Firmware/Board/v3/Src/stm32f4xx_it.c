@@ -38,10 +38,14 @@
 
 /* USER CODE BEGIN 0 */
 #include "freertos_vars.h"
-#include "low_level.h"
+#include <stdbool.h>
 
 typedef void (*ADC_handler_t)(ADC_HandleTypeDef* hadc, bool injected);
 void ADC_IRQ_Dispatch(ADC_HandleTypeDef* hadc, ADC_handler_t callback);
+
+// TODO: move somewhere else
+void pwm_trig_adc_cb(ADC_HandleTypeDef* hadc, bool injected);
+void vbus_sense_adc_cb(ADC_HandleTypeDef* hadc, bool injected);
 
 /* USER CODE END 0 */
 
@@ -217,7 +221,7 @@ void ADC_IRQHandler(void)
 
   // The HAL's ADC handling mechanism adds many clock cycles of overhead
   // So we bypass it and handle the logic ourselves.
-  //@TODO add vbus meaasurement on adc1 here
+  //@TODO add vbus measurement on adc1 here
   ADC_IRQ_Dispatch(&hadc1, &vbus_sense_adc_cb);
   ADC_IRQ_Dispatch(&hadc2, &pwm_trig_adc_cb);
   ADC_IRQ_Dispatch(&hadc3, &pwm_trig_adc_cb);
@@ -338,10 +342,29 @@ void EXTI4_IRQHandler(void)
 }
 
 /**
+* @brief This function handles EXTI lines 5-9 interrupt.
+*/
+void EXTI9_5_IRQHandler(void)
+{
+  // The true source of the interrupt is checked inside HAL_GPIO_EXTI_IRQHandler() 
+  HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_5);
+  HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_6);
+  HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_7);
+  HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_8);
+  HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_9);
+}
+
+/**
 * @brief This function handles EXTI lines 10-15 interrupt.
 */
 void EXTI15_10_IRQHandler(void)
 {
+  // The true source of the interrupt is checked inside HAL_GPIO_EXTI_IRQHandler() 
+  HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_10);
+  HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_11);
+  HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_12);
+  HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_13);
+  HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_14);
   HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_15);
 }
 

@@ -13,13 +13,16 @@
 extern "C" {
 #endif
 
-void init_communication(void);
-void communication_task(void const * argument);
-void set_cmd_buffer(uint8_t *buf, uint32_t len);
-void usb_update_thread();
-void USB_receive_packet(const uint8_t *buffer, size_t length);
+#include <cmsis_os.h>
 
-extern uint64_t serial_number;
+extern osThreadId comm_thread;
+
+extern const uint8_t hw_version_major;
+extern const uint8_t hw_version_minor;
+extern const uint8_t hw_version_variant;
+
+void init_communication(void);
+void communication_task(void * ctx);
 
 #ifdef __cplusplus
 }

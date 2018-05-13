@@ -59,7 +59,7 @@
 #include "main.h"
 
 /* USER CODE BEGIN Includes */
-
+#include <stdbool.h>
 /* USER CODE END Includes */
 
 /* USER CODE BEGIN Private defines */
@@ -71,8 +71,12 @@ void MX_GPIO_Init(void);
 /* USER CODE BEGIN Prototypes */
 
 void SetGPIO12toUART();
-void SetGPIO12toStepDir();
 void SetupENCIndexGPIO();
+bool GPIO_subscribe(GPIO_TypeDef* GPIO_port, uint16_t GPIO_pin,
+    uint32_t pull_up_down,
+    void (*callback)(void*), void* ctx);
+void GPIO_unsubscribe(GPIO_TypeDef* GPIO_port, uint16_t GPIO_pin);
+
 
 /* USER CODE END Prototypes */
 

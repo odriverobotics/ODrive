@@ -4,8 +4,6 @@
 #include <cmsis_os.h>
 #include <stm32f4xx_hal.h>
 
-static const float one_by_sqrt3 = 0.57735026919f;
-static const float two_by_sqrt3 = 1.15470053838f;
 
 int SVM(float alpha, float beta, float* tA, float* tB, float* tC) {
     int Sextant;
@@ -122,23 +120,12 @@ int SVM(float alpha, float beta, float* tA, float* tB, float* tC) {
         }
     }
 
-    int retval = 0;
-    if (
-           *tA < 0.0f
-        || *tA > 1.0f
-        || *tB < 0.0f
-        || *tB > 1.0f
-        || *tC < 0.0f
-        || *tC > 1.0f
-    ) retval = -1;
-    return retval;
-}
-
-//beware of inserting large angles!
-float wrap_pm_pi(float theta) {
-    while (theta >= M_PI) theta -= (2.0f * M_PI);
-    while (theta < -M_PI) theta += (2.0f * M_PI);
-    return theta;
+    // if any of the results becomes NaN, result_valid will evaluate to false
+    int result_valid =
+            *tA >= 0.0f && *tA <= 1.0f
+         && *tB >= 0.0f && *tB <= 1.0f
+         && *tC >= 0.0f && *tC <= 1.0f;
+    return result_valid ? 0 : -1;
 }
 
 // based on https://math.stackexchange.com/a/1105038/81278

@@ -83,7 +83,11 @@ class DfuDevice:
         else:
             states = state
 
-        status = self.get_status()
+        try:
+            status = self.get_status()
+        except:
+            time.sleep(0.100)
+            status = self.get_status()
         
         while (status[1] in states):
             claimed_timeout = status[2]

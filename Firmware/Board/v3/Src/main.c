@@ -59,8 +59,8 @@
 #include "gpio.h"
 
 /* USER CODE BEGIN Includes */
-#include "utils.h"
-#include "commands.h"
+#include <MotorControl/odrive_main.h>
+#include "freertos_vars.h"
 /* USER CODE END Includes */
 
 /* Private variables ---------------------------------------------------------*/
@@ -81,26 +81,12 @@ void MX_FREERTOS_Init(void);
 
 /* USER CODE BEGIN 0 */
 
-void jump_to_builtin_bootloader(void) {
-  __set_MSP(0x20001000);
-  // http://www.st.com/content/ccc/resource/technical/document/application_note/6a/17/92/02/58/98/45/0c/CD00264379.pdf/files/CD00264379.pdf
-  void (*builtin_bootloader)(void) = (void (*)(void))(*((uint32_t *)0x1FFF0004));
-  builtin_bootloader();
-  for (;;);
-}
+uint32_t _reboot_cookie __attribute__ ((section (".noinit")));
+extern char _estack; // provided by the linker script
 
-/* USER CODE END 0 */
-
-/**
-  * @brief  The application entry point.
-  *
-  * @retval None
-  */
-int main(void)
-{
-  /* USER CODE BEGIN 1 */
-
-  if(*((unsigned long *)0x2001C000) == 0xDEADFE75) {
+// Gets called from the startup assembly code
+void early_start_checks(void) {
+  if(_reboot_cookie == 0xDEADFE75) {
     /* The STM DFU bootloader enables internal pull-up resistors on PB10 (AUX_H)
     * and PB11 (AUX_L), thereby causing shoot-through on the brake resistor
     * FETs and obliterating them unless external 3.3k pull-down resistors are
@@ -119,33 +105,55 @@ int main(void)
     for (size_t i = 0; i < (16000000UL / 5UL * 2UL); ++i) {
       __NOP();
     }
-    *((unsigned long *)0x2001C000) = 0xDEADBEEF;
+    _reboot_cookie = 0xDEADBEEF;
   }
 
   /* We could jump to the bootloader directly on demand without rebooting
   but that requires us to reset several peripherals and interrupts for it
   to function correctly. Therefore it's easier to just reset the entire chip. */
-  if(*((unsigned long *)0x2001C000) == 0xDEADBEEF) {
-    *((unsigned long *)0x2001C000) = 0xCAFEFEED;  //Reset bootloader trigger
-    jump_to_builtin_bootloader();
+  if(_reboot_cookie == 0xDEADBEEF) {
+    _reboot_cookie = 0xCAFEFEED;  //Reset bootloader trigger
+    __set_MSP((uintptr_t)&_estack);
+    // http://www.st.com/content/ccc/resource/technical/document/application_note/6a/17/92/02/58/98/45/0c/CD00264379.pdf/files/CD00264379.pdf
+    void (*builtin_bootloader)(void) = (void (*)(void))(*((uint32_t *)0x1FFF0004));
+    builtin_bootloader();
   }
 
   /* The bootloader might fail to properly clean up after itself,
   so if we're not sure that the system is in a clean state we
   just reset it again */
-  if(*((unsigned long *)0x2001C000) != 42) {
-    *((unsigned long *)0x2001C000) = 42;
+  if(_reboot_cookie != 42) {
+    _reboot_cookie = 42;
     NVIC_SystemReset();
   }
+}
+
+/* USER CODE END 0 */
+
+/**
+  * @brief  The application entry point.
+  *
+  * @retval None
+  */
+int main(void)
+{
+  /* USER CODE BEGIN 1 */
 
   // This procedure of building a USB serial number should be identical
   // to the way the STM's built-in USB bootloader does it. This means
   // that the device will have the same serial number in normal and DFU mode.
-  uint32_t uuid0 = *(uint32_t *) (ID_UNIQUE_ADDRESS + 0);
-  uint32_t uuid1 = *(uint32_t *) (ID_UNIQUE_ADDRESS + 4);
-  uint32_t uuid2 = *(uint32_t *) (ID_UNIQUE_ADDRESS + 8);
+  uint32_t uuid0 = *(uint32_t *)(UID_BASE + 0);
+  uint32_t uuid1 = *(uint32_t *)(UID_BASE + 4);
+  uint32_t uuid2 = *(uint32_t *)(UID_BASE + 8);
   uint32_t uuid_mixed_part = uuid0 + uuid2;
   serial_number = ((uint64_t)uuid_mixed_part << 16) | (uint64_t)(uuid1 >> 16);
+
+  uint64_t val = serial_number;
+  for (size_t i = 0; i < 12; ++i) {
+    serial_number_str[i] = "0123456789ABCDEF"[(val >> (48-4)) & 0xf];
+    val <<= 4;
+  }
+  serial_number_str[12] = 0;
 
   /* USER CODE END 1 */
 
@@ -170,7 +178,6 @@ int main(void)
   MX_DMA_Init();
   MX_ADC1_Init();
   MX_ADC2_Init();
-  MX_CAN1_Init();
   MX_TIM1_Init();
   MX_TIM8_Init();
   MX_TIM3_Init();

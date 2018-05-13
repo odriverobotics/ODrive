@@ -232,8 +232,10 @@ class Channel(PacketSink):
         The thread quits as soon as the channel enters a broken state.
         """
         def receiver_thread():
+            error_ctr = 0
             try:
-                while (not cancellation_token.is_set()) and (not self._channel_broken.is_set()):
+                while (not cancellation_token.is_set() and not self._channel_broken.is_set()
+                        and error_ctr < 10):
                     # Set an arbitrary deadline because the get_packet function
                     # currently doesn't support a cancellation_token
                     deadline = time.monotonic() + 1.0
@@ -242,7 +244,10 @@ class Channel(PacketSink):
                     except odrive.utils.TimeoutException:
                         continue # try again
                     except ChannelDamagedException:
+                        error_ctr += 1
                         continue # try again
+                    if (error_ctr > 0):
+                        error_ctr -= 1
                     # Process response
                     # This should not throw an exception, otherwise the channel breaks
                     self.process_packet(response)
@@ -268,7 +273,7 @@ class Channel(PacketSink):
             seq_no = self._outbound_seq_no
         finally:
             self._my_lock.release()
-        seq_no |= 0x80 # FIXME: we hardwire one bit of the seq-no to 1 to avoid conflicts with the legacy protocol
+        seq_no |= 0x80 # FIXME: we hardwire one bit of the seq-no to 1 to avoid conflicts with the ascii protocol
         packet = struct.pack('<HHH', seq_no, endpoint_id, output_length)
         packet = packet + input
 
@@ -340,6 +345,7 @@ class Channel(PacketSink):
             if (ack_signal):
                 self._responses[seq_no] = packet[2:]
                 ack_signal.set()
+                #print("received ack for packet " + str(seq_no))
             else:
                 print("received unexpected ACK: " + str(seq_no))
 

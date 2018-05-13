@@ -23,6 +23,14 @@ elseif boardversion == "v3.4-48V" then
     boarddir = 'Board/v3'
     FLAGS += "-DHW_VERSION_MAJOR=3 -DHW_VERSION_MINOR=4"
     FLAGS += "-DHW_VERSION_VOLTAGE=48"
+elseif boardversion == "v3.5-24V" then
+    boarddir = 'Board/v3'
+    FLAGS += "-DHW_VERSION_MAJOR=3 -DHW_VERSION_MINOR=5"
+    FLAGS += "-DHW_VERSION_VOLTAGE=24"
+elseif boardversion == "v3.5-48V" then
+    boarddir = 'Board/v3'
+    FLAGS += "-DHW_VERSION_MAJOR=3 -DHW_VERSION_MINOR=5"
+    FLAGS += "-DHW_VERSION_VOLTAGE=48"
 elseif boardversion == "" then
     error("board version not specified - take a look at tup.config.default")
 else
@@ -36,7 +44,9 @@ if tup.getconfig("USB_PROTOCOL") == "native" or tup.getconfig("USB_PROTOCOL") ==
 elseif tup.getconfig("USB_PROTOCOL") == "native-stream" then
     FLAGS += "-DUSB_PROTOCOL_NATIVE_STREAM_BASED"
 elseif tup.getconfig("USB_PROTOCOL") == "ascii" then
-    FLAGS += "-DUSB_PROTOCOL_LEGACY"
+    FLAGS += "-DUSB_PROTOCOL_ASCII"
+elseif tup.getconfig("USB_PROTOCOL") == "stdout" then
+    FLAGS += "-DUSB_PROTOCOL_STDOUT"
 elseif tup.getconfig("USB_PROTOCOL") == "none" then
     FLAGS += "-DUSB_PROTOCOL_NONE"
 else
@@ -47,7 +57,9 @@ end
 if tup.getconfig("UART_PROTOCOL") == "native" then
     FLAGS += "-DUART_PROTOCOL_NATIVE"
 elseif tup.getconfig("UART_PROTOCOL") == "ascii" or tup.getconfig("UART_PROTOCOL") == "" then
-    FLAGS += "-DUART_PROTOCOL_LEGACY"
+    FLAGS += "-DUART_PROTOCOL_ASCII"
+elseif tup.getconfig("UART_PROTOCOL") == "stdout" then
+    FLAGS += "-DUART_PROTOCOL_STDOUT"
 elseif tup.getconfig("UART_PROTOCOL") == "none" then
     FLAGS += "-DUART_PROTOCOL_NONE"
 else
@@ -63,6 +75,11 @@ if tup.getconfig("STEP_DIR") == "y" then
     end
 end
 
+-- Compiler settings
+if tup.getconfig("STRICT") == "true" then
+    FLAGS += '-Werror'
+end
+
 
 -- C-specific flags
 FLAGS += '-D__weak="__attribute__((weak))"'
@@ -74,7 +91,7 @@ FLAGS += '-mthumb'
 FLAGS += '-mcpu=cortex-m4'
 FLAGS += '-mfpu=fpv4-sp-d16'
 FLAGS += '-mfloat-abi=hard'
-FLAGS += { '-Wall', '-fdata-sections', '-ffunction-sections'}
+FLAGS += { '-Wall', '-Wfloat-conversion', '-fdata-sections', '-ffunction-sections'}
 
 -- debug build
 FLAGS += '-g -gdwarf-2'
@@ -90,7 +107,7 @@ LDFLAGS += '-Wl,--undefined=uxTopUsedPriority'
 
 -- common flags for ASM, C and C++
 OPT += '-Og'
-OPT += '-ffast-math'
+OPT += '-ffast-math -fno-finite-math-only'
 tup.append_table(FLAGS, OPT)
 tup.append_table(LDFLAGS, OPT)
 
@@ -108,7 +125,7 @@ for src in string.gmatch(vars['C_INCLUDES'] or '', "%S+") do
 end
 
 -- TODO: cleaner separation of the platform code and the rest
-stm_includes += 'MotorControl'
+stm_includes += '.'
 stm_includes += 'Drivers/DRV8301'
 stm_sources += boarddir..'/Src/syscalls.c'
 build{
@@ -121,7 +138,7 @@ build{
 }
 
 tup.frule{
-    command='bash dump_version.sh %o',
+    command='python ../tools/odrive/version.py --output %o',
     outputs={'build/version.h'}
 }
 
@@ -133,17 +150,24 @@ build{
     sources={
         'Drivers/DRV8301/drv8301.c',
         'MotorControl/utils.c',
-        'MotorControl/legacy_commands.c',
-        'MotorControl/low_level.c',
+        'MotorControl/low_level.cpp',
         'MotorControl/nvm.c',
         'MotorControl/axis.cpp',
-        'MotorControl/commands.cpp',
-        'MotorControl/protocol.cpp',
-        'MotorControl/config.cpp',
+        'MotorControl/motor.cpp',
+        'MotorControl/encoder.cpp',
+        'MotorControl/controller.cpp',
+        'MotorControl/sensorless_estimator.cpp',
+        'MotorControl/main.cpp',
+        'communication/communication.cpp',
+        'communication/ascii_protocol.cpp',
+        'communication/protocol.cpp',
+        'communication/interface_uart.cpp',
+        'communication/interface_usb.cpp',
         'FreeRTOS-openocd.c'
     },
     includes={
         'Drivers/DRV8301',
-        'MotorControl'
+        'MotorControl',
+        '.'
     }
 }

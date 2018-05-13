@@ -53,10 +53,9 @@
 
 /* USER CODE BEGIN Includes */     
 #include "freertos_vars.h"
-#include "low_level.h"
-#include "axis_c_interface.h"
-#include "commands.h"
-#include "config.h"
+#include "usb_device.h"
+extern PCD_HandleTypeDef hpcd_USB_OTG_FS;
+int odrive_main(void);
 /* USER CODE END Includes */
 
 /* Variables -----------------------------------------------------------------*/
@@ -65,11 +64,11 @@ osThreadId defaultTaskHandle;
 /* USER CODE BEGIN Variables */
 // List of semaphores
 osSemaphoreId sem_usb_irq;
+osSemaphoreId sem_uart_dma;
+osSemaphoreId sem_usb_rx;
+osSemaphoreId sem_usb_tx;
 
-// List of threads
-osThreadId thread_motor_0;
-osThreadId thread_motor_1;
-osThreadId thread_cmd_parse;
+osThreadId usb_irq_thread;
 
 // Place FreeRTOS heap in core coupled memory for better performance
 __attribute__((section(".ccmram")))
@@ -77,7 +76,7 @@ uint8_t ucHeap[configTOTAL_HEAP_SIZE];
 /* USER CODE END Variables */
 
 /* Function prototypes -------------------------------------------------------*/
-void StartDefaultTask(void const * argument);
+void StartDefaultTask(void * argument);
 
 extern void MX_USB_DEVICE_Init(void);
 void MX_FREERTOS_Init(void); /* (MISRA C 2004 rule 8.1) */
@@ -87,6 +86,38 @@ void MX_FREERTOS_Init(void); /* (MISRA C 2004 rule 8.1) */
 /* USER CODE END FunctionPrototypes */
 
 /* Hook prototypes */
+void vApplicationStackOverflowHook(xTaskHandle xTask, signed char *pcTaskName);
+
+/* USER CODE BEGIN 4 */
+__weak void vApplicationStackOverflowHook(xTaskHandle xTask, signed char *pcTaskName)
+{
+   /* Run time stack overflow checking is performed if
+   configCHECK_FOR_STACK_OVERFLOW is defined to 1 or 2. This hook function is
+   called if a stack overflow is detected. */
+}
+
+void usb_deferred_interrupt_thread(void * ctx) {
+    (void) ctx; // unused parameter
+
+    for (;;) {
+        // Wait for signalling from USB interrupt (OTG_FS_IRQHandler)
+        osStatus semaphore_status = osSemaphoreWait(sem_usb_irq, osWaitForever);
+        if (semaphore_status == osOK) {
+            // We have a new incoming USB transmission: handle it
+            HAL_PCD_IRQHandler(&hpcd_USB_OTG_FS);
+            // Let the irq (OTG_FS_IRQHandler) fire again.
+            HAL_NVIC_EnableIRQ(OTG_FS_IRQn);
+        }
+    }
+}
+
+void init_deferred_interrupts(void) {
+    // Start USB interrupt handler thread
+    osThreadDef(task_usb_pump, usb_deferred_interrupt_thread, osPriorityAboveNormal, 0, 512);
+    usb_irq_thread = osThreadCreate(osThread(task_usb_pump), NULL);
+}
+
+/* USER CODE END 4 */
 
 /* Init FreeRTOS */
 
@@ -114,10 +145,11 @@ void MX_FREERTOS_Init(void) {
   sem_usb_rx = osSemaphoreCreate(osSemaphore(sem_usb_rx), 1);
   osSemaphoreWait(sem_usb_rx, 0);  // Remove a token.
 
-  // Create a semaphore for USB RX
+  // Create a semaphore for USB TX
   osSemaphoreDef(sem_usb_tx);
   sem_usb_tx = osSemaphoreCreate(osSemaphore(sem_usb_tx), 1);
 
+  init_deferred_interrupts();
   /* USER CODE END RTOS_SEMAPHORES */
 
   /* USER CODE BEGIN RTOS_TIMERS */
@@ -126,7 +158,7 @@ void MX_FREERTOS_Init(void) {
 
   /* Create the thread(s) */
   /* definition and creation of defaultTask */
-  osThreadDef(defaultTask, StartDefaultTask, osPriorityIdle, 0, 256);
+  osThreadDef(defaultTask, StartDefaultTask, osPriorityNormal, 0, 256);
   defaultTaskHandle = osThreadCreate(osThread(defaultTask), NULL);
 
   /* USER CODE BEGIN RTOS_THREADS */
@@ -139,35 +171,14 @@ void MX_FREERTOS_Init(void) {
 }
 
 /* StartDefaultTask function */
-void StartDefaultTask(void const * argument)
+void StartDefaultTask(void * argument)
 {
   /* init code for USB_DEVICE */
   MX_USB_DEVICE_Init();
 
   /* USER CODE BEGIN StartDefaultTask */
 
-  // Init and load persistent configuration
-  init_configuration();
-
-  // Init communications
-  init_communication();
-
-  // Init motor control
-  init_motor_control();
-
-  // Start motor threads
-  osThreadDef(task_motor_0, axis_thread_entry,   osPriorityHigh+1, 0, 512);
-  osThreadDef(task_motor_1, axis_thread_entry,   osPriorityHigh,   0, 512);
-  thread_motor_0 = osThreadCreate(osThread(task_motor_0), &motors[0]);
-  thread_motor_1 = osThreadCreate(osThread(task_motor_1), &motors[1]);
-
-  // Start command handling thread
-  osThreadDef(task_cmd_parse, communication_task, osPriorityNormal, 0, 512);
-  thread_cmd_parse = osThreadCreate(osThread(task_cmd_parse), NULL);
-
-  // Start USB interrupt handler thread
-  osThreadDef(task_usb_pump, usb_update_thread, osPriorityAboveNormal, 0, 512);
-  thread_usb_pump = osThreadCreate(osThread(task_usb_pump), NULL);
+  odrive_main();
 
   //If we get to here, then the default task is done.
   vTaskDelete(defaultTaskHandle);

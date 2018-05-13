@@ -17,6 +17,9 @@ Odrive.xml
 .settings/
 .project
 
+# VSCode stuff
+/.vscode/.cortex-debug.*.state.json
+
 # STM32CubeMX (in case you put it in this folder, or a symlink)
 STM32CubeMX
 
