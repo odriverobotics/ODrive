@@ -12,7 +12,6 @@ sudo: false
 addons:
   apt:
     packages:
-      libc6-i386
       gcc-arm-none-eabi
 
 cache:
