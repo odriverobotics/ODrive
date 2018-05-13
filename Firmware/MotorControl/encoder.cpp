@@ -116,7 +116,7 @@ bool Encoder::run_offset_calibration() {
     static const float start_lock_duration = 1.0f;
     static const float scan_omega = 4.0f * M_PI;
     static const float scan_distance = 16.0f * M_PI;
-    static const int num_steps = scan_distance / scan_omega * current_meas_hz;
+    static const int num_steps = scan_distance / scan_omega * (float)current_meas_hz;
 
     // Temporarily disable index search so it doesn't mess
     // with the offset calibration
