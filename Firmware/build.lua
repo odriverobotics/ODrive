@@ -49,7 +49,8 @@ end
 function GCCToolchain(prefix, builddir, compiler_flags, linker_flags)
 
     -- add some default compiler flags
-    compiler_flags += '-fstack-usage'
+    -- This gives a warning for some functions containing inline assembly (prvPortStartFirstTask in particular)
+    --compiler_flags += '-fstack-usage'
 
     gcc_generic_compiler = function(compiler, compiler_flags, gen_su_file, src, flags, includes, outputs)
         -- convert include list to flags
