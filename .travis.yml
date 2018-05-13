@@ -13,17 +13,13 @@ addons:
   apt:
     packages:
       libc6-i386
+      arm-none-eabi-gcc
 
 cache:
   directories:
   - "$HOME/dl"
 
 install:
-- export GCC_DIR=$HOME/dl/gcc-arm-none-eabi-5_2-2015q4
-- export GCC_ARCHIVE=$HOME/dl/gcc-arm-none-eabi-5_2-2015q4-20151219-linux.tar.bz2
-- export GCC_URL=https://launchpad.net/gcc-arm-embedded/5.0/5-2015-q4-major/+download/gcc-arm-none-eabi-5_2-2015q4-20151219-linux.tar.bz2
-- if [ ! -e $GCC_DIR/bin/arm-none-eabi-gcc ]; then wget $GCC_URL -O $GCC_ARCHIVE; tar xfj $GCC_ARCHIVE -C $HOME/dl; fi
-- export PATH=$PATH:$GCC_DIR/bin
 - export TUP_DIR=$HOME/dl/tup_0.7.5-0~16.04.york0_amd64
 - export TUP_ARCHIVE=$HOME/dl/tup_0.7.5-0~16.04.york0_amd64.deb
 - export TUP_URL=http://ppa.launchpad.net/jonathonf/tup/ubuntu/pool/main/t/tup/tup_0.7.5-0~16.04.york0_amd64.deb
