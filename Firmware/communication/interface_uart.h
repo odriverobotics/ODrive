@@ -2,6 +2,9 @@
 #define __INTERFACE_UART_HPP
 
 #ifdef __cplusplus
+#include "protocol.hpp"
+extern StreamSink* uart4_stream_output_ptr;
+
 extern "C" {
 #endif
 
