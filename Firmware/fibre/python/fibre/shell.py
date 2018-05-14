@@ -4,10 +4,10 @@ import platform
 import threading
 import fibre
 
-interactive_variables = {}
-discovered_devices = []
-
-def did_discover_device(device, branding_short, branding_long, logger, app_shutdown_token):
+def did_discover_device(device,
+                        interactive_variables, discovered_devices,
+                        branding_short, branding_long,
+                        logger, app_shutdown_token):
     """
     Handles the discovery of new devices by displaying a
     message and making the device available to the interactive
@@ -40,6 +40,7 @@ def did_lose_device(interactive_name, logger, app_shutdown_token):
         logger.warn("Oh no {} disappeared".format(interactive_name))
 
 def launch_shell(args,
+                interactive_variables,
                 print_banner, print_help,
                 logger, app_shutdown_token,
                 branding_short="dev", branding_long="device"):
@@ -51,10 +52,13 @@ def launch_shell(args,
     The names of the variables can be customized by setting branding_short.
     """
 
+    discovered_devices = []
+    globals().update(interactive_variables)
+
     # Connect to device
     logger.debug("Waiting for {}...".format(branding_long))
     fibre.find_all(args.path, args.serial_number,
-                    lambda dev: did_discover_device(dev, branding_short, branding_long, logger, app_shutdown_token),
+                    lambda dev: did_discover_device(dev, interactive_variables, discovered_devices, branding_short, branding_long, logger, app_shutdown_token),
                     app_shutdown_token,
                     app_shutdown_token,
                     logger=logger)

@@ -25,7 +25,7 @@ class UDPTransport(fibre.protocol.PacketSource, fibre.protocol.PacketSink):
 
   def get_packet(self, deadline):
     # TODO: implement deadline
-    data, addr = self.sock.recvfrom(1024)
+    data, _ = self.sock.recvfrom(1024)
     return data
 
 def discover_channels(path, serial_number, callback, cancellation_token, channel_termination_token, logger):

@@ -4,8 +4,9 @@ import platform
 import threading
 import fibre
 import odrive
+import odrive.enums
 from odrive.utils import start_liveplotter
-from odrive.enums import * # pylint: disable=W0614
+#from odrive.enums import * # pylint: disable=W0614
 
 def print_banner():
     print('Please connect your ODrive.')
@@ -74,7 +75,15 @@ def launch_shell(args, logger, printer, app_shutdown_token):
     "odrv0", "odrv1", ...
     """
 
+    interactive_variables = {
+        'start_liveplotter': start_liveplotter
+    }
+
+    # Expose all enums from odrive.enums
+    interactive_variables.update({k: v for (k, v) in odrive.enums.__dict__.items() if not k.startswith("_")})
+
     fibre.launch_shell(args,
+                       interactive_variables,
                        print_banner, print_help,
                        logger, app_shutdown_token,
                        branding_short="odrv", branding_long="ODrive")

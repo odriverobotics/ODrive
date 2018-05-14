@@ -1,5 +1,5 @@
 
-from fibre.discovery import find_any, find_all
-from fibre.utils import Event, Logger
-from fibre.protocol import ChannelBrokenException, ChannelDamagedException
-from fibre.shell import launch_shell
+from .discovery import find_any, find_all
+from .utils import Event, Logger
+from .protocol import ChannelBrokenException, ChannelDamagedException
+from .shell import launch_shell

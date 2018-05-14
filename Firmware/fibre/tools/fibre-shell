@@ -7,7 +7,7 @@ import sys
 import os
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.realpath(__file__))) + "/python")
-import fibre
+
 from fibre import Logger, Event
 
 # Parse arguments
@@ -54,4 +54,4 @@ def print_help(args, have_devices):
     pass
 
 import fibre
-fibre.launch_shell(args, print_banner, print_help, logger, app_shutdown_token)
+fibre.launch_shell(args, {}, print_banner, print_help, logger, app_shutdown_token)

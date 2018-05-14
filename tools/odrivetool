@@ -5,10 +5,14 @@ ODrive command line utility
 
 from __future__ import print_function
 import sys
+import os
 import argparse
-import odrive
+
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.realpath(__file__))) + "/Firmware/fibre/python")
+
 import fibre.discovery
-from fibre.utils import Logger, Event
+from fibre import Logger, Event
+import odrive
 
 #print("Refer to install instructions at http://docs.odriverobotics.com/#downloading-and-installing-tools")
 
