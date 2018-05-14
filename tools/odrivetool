@@ -8,8 +8,9 @@ import sys
 import os
 import argparse
 
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.realpath(__file__))) + "/Firmware/fibre/python")
-
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(
+                    os.path.realpath(__file__))),
+                    "Firmware", "fibre", "python"))
 import fibre.discovery
 from fibre import Logger, Event
 import odrive
