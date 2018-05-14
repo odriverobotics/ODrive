@@ -1,9 +1,9 @@
 
 #include "interface_usb.h"
-#include "protocol.hpp"
 
 #include <MotorControl/utils.h>
 
+#include <fibre/protocol.hpp>
 #include <usbd_cdc.h>
 #include <usbd_cdc_if.h>
 #include <usb_device.h>
@@ -51,7 +51,7 @@ public:
 class TreatPacketSinkAsStreamSink : public StreamSink {
 public:
     TreatPacketSinkAsStreamSink(PacketSink& output) : output_(output) {}
-    int process_bytes(const uint8_t* buffer, size_t length) {
+    int process_bytes(const uint8_t* buffer, size_t length, size_t* processed_bytes) {
         // Loop to ensure all bytes get sent
         while (length) {
             size_t chunk = length < USB_TX_DATA_SIZE ? length : USB_TX_DATA_SIZE;
@@ -59,6 +59,8 @@ public:
                 return -1;
             buffer += chunk;
             length -= chunk;
+            if (processed_bytes)
+                *processed_bytes += chunk;
         }
         return 0;
     }

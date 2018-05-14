@@ -9,8 +9,9 @@
 
 #include "odrive_main.h"
 #include "communication.h"
-#include "ascii_protocol.h"
+#include "ascii_protocol.hpp"
 #include <utils.h>
+#include <fibre/cpp_utils.hpp>
 
 /* Private macros ------------------------------------------------------------*/
 /* Private typedef -----------------------------------------------------------*/
@@ -31,15 +32,15 @@ template<typename ... TArgs>
 void respond(StreamSink& output, bool include_checksum, const char * fmt, TArgs&& ... args) {
     char response[64];
     size_t len = snprintf(response, sizeof(response), fmt, std::forward<TArgs>(args)...);
-    output.process_bytes((uint8_t*)response, len);
+    output.process_bytes((uint8_t*)response, len, nullptr); // TODO: use process_all instead
     if (include_checksum) {
         uint8_t checksum = 0;
         for (size_t i = 0; i < len; ++i)
             checksum ^= response[i];
         len = snprintf(response, sizeof(response), "*%u", checksum);
-        output.process_bytes((uint8_t*)response, len);
+        output.process_bytes((uint8_t*)response, len, nullptr);
     }
-    output.process_bytes((const uint8_t*)"\r\n", 2);
+    output.process_bytes((const uint8_t*)"\r\n", 2, nullptr);
 }
 
 
@@ -139,7 +140,7 @@ void ASCII_protocol_process_line(const uint8_t* buffer, size_t len, StreamSink& 
         if (numscan < 1) {
             respond(response_channel, use_checksum, "invalid command format");
         } else {
-            Endpoint* endpoint = application_endpoints->get_by_name(name, sizeof(name));
+            Endpoint* endpoint = application_endpoints_->get_by_name(name, sizeof(name));
             if (!endpoint) {
                 respond(response_channel, use_checksum, "invalid property");
             } else {
@@ -158,7 +159,7 @@ void ASCII_protocol_process_line(const uint8_t* buffer, size_t len, StreamSink& 
         if (numscan < 1) {
             respond(response_channel, use_checksum, "invalid command format");
         } else {
-            Endpoint* endpoint = application_endpoints->get_by_name(name, sizeof(name));
+            Endpoint* endpoint = application_endpoints_->get_by_name(name, sizeof(name));
             if (!endpoint) {
                 respond(response_channel, use_checksum, "invalid property");
             } else {

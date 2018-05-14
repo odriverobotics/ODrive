@@ -23,7 +23,7 @@ public:
     FIBRE_EXPORTS(TestClass,
         make_protocol_property("property1", &property1),
         make_protocol_property("property2", &property2),
-        make_protocol_function("set_both", obj, &TestClass::set_both, "arg1", "arg2")
+        make_protocol_function("set_both", *obj, &TestClass::set_both, "arg1", "arg2")
     );
 };
 

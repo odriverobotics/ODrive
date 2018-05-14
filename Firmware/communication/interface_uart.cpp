@@ -1,11 +1,11 @@
 
 #include "interface_uart.h"
-#include "protocol.hpp"
 
-#include "ascii_protocol.h"
+#include "ascii_protocol.hpp"
 
 #include <MotorControl/utils.h>
 
+#include <fibre/protocol.hpp>
 #include <usart.h>
 #include <cmsis_os.h>
 #include <freertos_vars.h>
@@ -26,7 +26,7 @@ osThreadId uart_thread;
 
 class UART4Sender : public StreamSink {
 public:
-    int process_bytes(const uint8_t* buffer, size_t length) {
+    int process_bytes(const uint8_t* buffer, size_t length, size_t* processed_bytes) {
         // Loop to ensure all bytes get sent
         while (length) {
             size_t chunk = length < UART_TX_BUFFER_SIZE ? length : UART_TX_BUFFER_SIZE;
@@ -40,6 +40,8 @@ public:
                 return -1;
             buffer += chunk;
             length -= chunk;
+            if (processed_bytes)
+                *processed_bytes += chunk;
         }
         return 0;
     }
@@ -49,9 +51,9 @@ private:
     uint8_t tx_buf_[UART_TX_BUFFER_SIZE];
 } uart4_stream_output;
 
-PacketToStreamConverter uart4_packet_output(uart4_stream_output);
+StreamBasedPacketSink uart4_packet_output(uart4_stream_output);
 BidirectionalPacketBasedChannel uart4_channel(uart4_packet_output);
-StreamToPacketConverter uart4_stream_input(uart4_channel);
+StreamToPacketSegmenter uart4_stream_input(uart4_channel);
 
 static void uart_server_thread(void * ctx) {
     (void) ctx;
@@ -69,14 +71,14 @@ static void uart_server_thread(void * ctx) {
         // Process bytes in one or two chunks (two in case there was a wrap)
         if (new_rcv_idx < dma_last_rcv_idx) {
             uart4_stream_input.process_bytes(dma_rx_buffer + dma_last_rcv_idx,
-                    UART_RX_BUFFER_SIZE - dma_last_rcv_idx);
+                    UART_RX_BUFFER_SIZE - dma_last_rcv_idx, nullptr); // TODO: use process_all
             ASCII_protocol_parse_stream(dma_rx_buffer + dma_last_rcv_idx,
                     UART_RX_BUFFER_SIZE - dma_last_rcv_idx, uart4_stream_output);
             dma_last_rcv_idx = 0;
         }
         if (new_rcv_idx > dma_last_rcv_idx) {
             uart4_stream_input.process_bytes(dma_rx_buffer + dma_last_rcv_idx,
-                    new_rcv_idx - dma_last_rcv_idx);
+                    new_rcv_idx - dma_last_rcv_idx, nullptr); // TODO: use process_all
             ASCII_protocol_parse_stream(dma_rx_buffer + dma_last_rcv_idx,
                     new_rcv_idx - dma_last_rcv_idx, uart4_stream_output);
             dma_last_rcv_idx = new_rcv_idx;

@@ -129,7 +129,7 @@ public:
 
 #include <type_traits>
 #define ENABLE_IF(...) \
-  typename = std::enable_if_t<__VA_ARGS__>
+    typename = std::enable_if_t<__VA_ARGS__>
 
 
 template <class T, class M> M get_member_type(M T:: *);
@@ -140,5 +140,42 @@ template <class T, class M> M get_member_type(M T:: *);
 // @brief Statically asserts that T is derived from type BaseType
 #define EXPECT_TYPE(T, BaseType) static_assert(std::is_base_of<BaseType, typename std::decay<T>::type>::value || std::is_convertible<typename std::decay<T>::type, BaseType>::value, "expected template argument of type " #BaseType)
 //#define EXPECT_TYPE(T, BaseType) static_assert(, "expected template argument of type " #BaseType)
+
+
+
+
+template<typename TObj, typename TRet, typename ... TArgs>
+class function_traits {
+public:
+    template<unsigned IUnpacked, typename ... TUnpackedArgs, ENABLE_IF(IUnpacked != sizeof...(TArgs))>
+    static TRet invoke(TObj& obj, TRet(TObj::*func_ptr)(TArgs...), std::tuple<TArgs...> packed_args, TUnpackedArgs ... args) {
+        return invoke<IUnpacked+1>(obj, func_ptr, packed_args, args..., std::get<IUnpacked>(packed_args));
+    }
+
+    template<unsigned IUnpacked>
+    static TRet invoke(TObj& obj, TRet(TObj::*func_ptr)(TArgs...), std::tuple<TArgs...> packed_args, TArgs ... args) {
+        return (obj.*func_ptr)(args...);
+    }
+};
+
+/* @brief Invoke a class member function with a variable number of arguments that are supplied as a tuple
+
+Example usage:
+
+class MyClass {
+public:
+    int MyFunction(int a, int b) {
+        return 0;
+    }
+};
+
+MyClass my_object;
+std::tuple<int, int> my_args(3, 4); // arguments are supplied as a tuple
+int result = invoke_function_with_tuple(my_object, &MyClass::MyFunction, my_args);
+*/
+template<typename TObj, typename TRet, typename ... TArgs>
+TRet invoke_function_with_tuple(TObj& obj, TRet(TObj::*func_ptr)(TArgs...), std::tuple<TArgs...> packed_args) {
+    return function_traits<TObj, TRet, TArgs...>::template invoke<0>(obj, func_ptr, packed_args);
+}
 
 #endif // __CPP_UTILS_HPP

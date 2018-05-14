@@ -17,7 +17,7 @@ Endpoint** endpoint_list_ = nullptr; // initialized by calling fibre_publish
 size_t n_endpoints_ = 0; // initialized by calling fibre_publish
 uint16_t json_crc_; // initialized by calling fibre_publish
 JSONDescriptorEndpoint json_file_endpoint_ = JSONDescriptorEndpoint();
-JSONWriter* application_json_writer_;
+EndpointProvider* application_endpoints_;
 
 /* Private constant data -----------------------------------------------------*/
 /* Private variables ---------------------------------------------------------*/
@@ -122,7 +122,7 @@ void JSONDescriptorEndpoint::write_json(size_t id, StreamSink* output) {
     // write endpoint ID
     write_string("\"id\":", output);
     char id_buf[10];
-    snprintf(id_buf, sizeof(id_buf), "%zu", id); // TODO: get rid of printf
+    snprintf(id_buf, sizeof(id_buf), "%u", (unsigned)id); // TODO: get rid of printf
     write_string(id_buf, output);
 
     write_string(",\"type\":\"json\",\"access\":\"r\"}", output);
@@ -147,7 +147,7 @@ void JSONDescriptorEndpoint::handle(const uint8_t* input, size_t input_length, S
     json_file_endpoint_.write_json(id, &output_with_offset);
     id += decltype(json_file_endpoint_)::endpoint_count;
     write_string(",", &output_with_offset);
-    application_json_writer_->write_json(id, &output_with_offset);
+    application_endpoints_->write_json(id, &output_with_offset);
     write_string("]", &output_with_offset);
 }
 

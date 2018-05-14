@@ -7,7 +7,6 @@
 #include "interface_uart.h"
 
 #include "odrive_main.h"
-#include "protocol.hpp"
 #include "freertos_vars.h"
 #include "utils.h"
 
@@ -149,11 +148,6 @@ static inline auto make_obj_tree() {
 using tree_type = decltype(make_obj_tree());
 uint8_t tree_buffer[sizeof(tree_type)];
 
-// the protocol has one additional built-in endpoint
-constexpr size_t MAX_ENDPOINTS = decltype(make_obj_tree())::endpoint_count + 1;
-Endpoint* endpoints_[MAX_ENDPOINTS] = { 0 };
-const size_t max_endpoints_ = MAX_ENDPOINTS;
-size_t n_endpoints_ = 0;
 
 // Thread to handle deffered processing of USB interrupt, and
 // read commands out of the UART DMA circular buffer
@@ -164,8 +158,7 @@ void communication_task(void * ctx) {
     // the compiler uses the copy-constructor instead. Thus the make_obj_tree
     // ends up with a stupid stack size of around 8000 bytes. Fix this.
     auto tree_ptr = new (tree_buffer) tree_type(make_obj_tree());
-    auto endpoint_provider = EndpointProvider_from_MemberList<tree_type>(*tree_ptr);
-    set_application_endpoints(&endpoint_provider);
+    fibre_publish(*tree_ptr);
     
     serve_on_uart();
     serve_on_usb();

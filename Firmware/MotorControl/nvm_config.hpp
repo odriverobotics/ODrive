@@ -12,11 +12,12 @@
 #include <stm32f405xx.h>
 
 #include "nvm.h"
-#include <communication/crc.hpp>
+#include <fibre/crc.hpp>
 
 
 /* Private defines -----------------------------------------------------------*/
 #define CONFIG_CRC16_INIT 0xabcd
+#define CONFIG_CRC16_POLYNOMIAL 0x3d65
 
 /* Private macros ------------------------------------------------------------*/
 /* Private typedef -----------------------------------------------------------*/
@@ -76,7 +77,7 @@ struct Config<T, Ts...> {
         size_t previous_crc16 = *crc16;
         if (NVM_read(offset, (uint8_t *)val0, size))
             return -1;
-        *crc16 = calc_crc16(previous_crc16, (uint8_t *)val0, size);
+        *crc16 = calc_crc16<CONFIG_CRC16_POLYNOMIAL>(previous_crc16, (uint8_t *)val0, size);
         if (Config<Ts...>::load_config(offset + size, crc16, vals...))
             return -1;
         return 0;
@@ -94,7 +95,7 @@ struct Config<T, Ts...> {
             return -1;
         // update CRC _after_ writing (in case val0 and crc16 point to the same address)
         if (crc16)
-            *crc16 = calc_crc16(*crc16, (uint8_t *)val0, size);
+            *crc16 = calc_crc16<CONFIG_CRC16_POLYNOMIAL>(*crc16, (uint8_t *)val0, size);
         if (Config<Ts...>::store_config(offset + size, crc16, vals...))
             return -1;
         return 0;

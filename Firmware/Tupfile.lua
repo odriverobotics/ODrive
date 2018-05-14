@@ -160,14 +160,15 @@ build{
         'MotorControl/main.cpp',
         'communication/communication.cpp',
         'communication/ascii_protocol.cpp',
-        'communication/protocol.cpp',
         'communication/interface_uart.cpp',
         'communication/interface_usb.cpp',
+        'fibre-cpp/protocol.cpp',
         'FreeRTOS-openocd.c'
     },
     includes={
         'Drivers/DRV8301',
         'MotorControl',
+        'fibre/cpp/include',
         '.'
     }
 }
