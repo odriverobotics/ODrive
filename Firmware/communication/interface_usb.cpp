@@ -2,6 +2,8 @@
 #include "interface_usb.h"
 #include "protocol.hpp"
 
+#include "ascii_protocol.h"
+
 #include <MotorControl/utils.h>
 
 #include <usbd_cdc.h>
