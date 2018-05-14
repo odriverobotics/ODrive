@@ -3,12 +3,16 @@ Provides classes that implement the StreamSource/StreamSink and
 PacketSource/PacketSink interfaces for serial ports.
 """
 
-import serial
+import os
+import re
 import time
+import traceback
+import serial
+import serial.tools.list_ports
 import fibre
 
-def noprint(x):
-  pass
+# TODO: make this customizable
+DEFAULT_BAUDRATE = 115200
 
 class SerialStreamTransport(fibre.protocol.StreamSource, fibre.protocol.StreamSink):
     def __init__(self, port, baud):
@@ -33,59 +37,64 @@ class SerialStreamTransport(fibre.protocol.StreamSource, fibre.protocol.StreamSi
     def get_bytes_or_fail(self, n_bytes, deadline):
         result = self.get_bytes(n_bytes, deadline)
         if len(result) < n_bytes:
-            raise fibre.protocol.TimeoutException("expected {} bytes but got only {}", n_bytes, len(result))
+            raise TimeoutError("expected {} bytes but got only {}", n_bytes, len(result))
         return result
 
-# TODO: provide SerialPacketTransport
+    def close(self):
+        self._dev.close()
 
 
-
-def channel_from_serial_port(port, baud, packet_based, printer=noprint, device_stdout=noprint):
-    """
-    Inits a Fibre Protocol channel from a serial port name and baudrate.
-    """
-    if packet_based == True:
-        # TODO: implement packet based transport over serial
-        raise NotImplementedError("not supported yet")
-    serial_device = fibre.serial_transport.SerialStreamTransport(port, baud)
-    input_stream = fibre.protocol.PacketFromStreamConverter(serial_device, device_stdout)
-    output_stream = fibre.protocol.StreamBasedPacketSink(serial_device)
-    return fibre.protocol.Channel(
-            "serial port {}@{}".format(port, baud),
-            input_stream, output_stream,
-            device_stdout)
-
-def find_dev_serial_ports(search_regex):
+def find_dev_serial_ports():
     try:
-        return ['/dev/' + x for x in filter(re.compile(search_regex).search, os.listdir('/dev'))]
+        return ['/dev/' + x for x in os.listdir('/dev')]
     except FileNotFoundError:
         return []
 
 def find_pyserial_ports():
-    return [x.name for x in serial.tools.list_ports.comports()]
+    return [x.device for x in serial.tools.list_ports.comports()]
 
-def find_serial_channels(printer=noprint, device_stdout=noprint):
+
+def discover_channels(path, serial_number, callback, cancellation_token, channel_termination_token, logger):
     """
-    Scans for serial ports.
-    Returns a generator of fibre.protocol.Channel objects.
-    Not every returned object necessarily represents a compatible device.
+    Scans for serial ports that match the path spec.
+    This function blocks until cancellation_token is set.
+    Channels spawned by this function run until channel_termination_token is set.
     """
+    if path == None:
+        # This regex should match all desired port names on macOS,
+        # Linux and Windows but might match some incorrect port names.
+        regex = r'^(/dev/tty\.usbmodem.*|/dev/ttyACM.*|COM[0-9]+)$'
+    else:
+        regex = "^" + path + "$"
 
-    # Real serial ports or USB-Serial converters (tested on Linux and Windows)
-    real_serial_ports = find_pyserial_ports()
+    known_devices = []
+    def device_matcher(port_name):
+        if port_name in known_devices:
+            return False
+        return bool(re.match(regex, port_name))
 
-    # Serial devices that are exposed by the platform
-    # for the device's USB connection
-    linux_usb_serial_ports = find_dev_serial_ports(r'^ttyACM')
-    macos_usb_serial_ports = find_dev_serial_ports(r'^tty\.usbmodem')
+    def did_disconnect(port_name, device):
+        device.close()
+        # TODO: yes there is a race condition here in case you wonder.
+        known_devices.pop(known_devices.index(port_name))
 
-    for port in real_serial_ports + linux_usb_serial_ports + macos_usb_serial_ports:
-        try:
-            yield channel_from_serial_port(port, 115200, False, printer, device_stdout=device_stdout)
-        except serial.serialutil.SerialException:
-            printer("could not open " + port)
-            continue
-
-def open_serial(port_name, printer=noprint, device_stdout=noprint):
-    channel = channel_from_serial_port(port_name, 115200, False, printer, device_stdout)
-    return object_from_channel(channel, printer)
+    while not cancellation_token.is_set():
+        all_ports = find_pyserial_ports() + find_dev_serial_ports()
+        new_ports = filter(device_matcher, all_ports)
+        for port_name in new_ports:
+            try:
+                serial_device = SerialStreamTransport(port_name, DEFAULT_BAUDRATE)
+                input_stream = fibre.protocol.PacketFromStreamConverter(serial_device)
+                output_stream = fibre.protocol.StreamBasedPacketSink(serial_device)
+                channel = fibre.protocol.Channel(
+                        "serial port {}@{}".format(port_name, DEFAULT_BAUDRATE),
+                        input_stream, output_stream, channel_termination_token, logger)
+                channel.serial_device = serial_device
+            except serial.serialutil.SerialException:
+                logger.debug("Serial device init failed. Ignoring this port. More info: " + traceback.format_exc())
+                known_devices.append(port_name)
+            else:
+                known_devices.append(port_name)
+                channel._channel_broken.subscribe(lambda: did_disconnect(port_name, serial_device))
+                callback(channel)
+        time.sleep(1)

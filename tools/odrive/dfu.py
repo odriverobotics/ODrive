@@ -12,7 +12,8 @@ import struct
 import array
 import fractions
 import usb.core
-import odrive.discovery
+import fibre
+import odrive
 from odrive.utils import Event
 from odrive.dfuse import *
 
@@ -222,7 +223,7 @@ def put_odrive_into_dfu_mode(my_drive, cancellation_token):
         print("Putting device {} into DFU mode...".format(my_drive.__channel__.usb_device.serial_number))
         try:
             my_drive.enter_dfu_mode()
-        except odrive.protocol.ChannelBrokenException:
+        except fibre.ChannelBrokenException:
             pass # this is expected because the device reboots
         if platform.system() == "Windows":
             show_deferred_message("Still waiting for the device to reappear.\n"
@@ -259,7 +260,7 @@ def launch_dfu(args, app_shutdown_token):
 
     # Scan for ODrives not in DFU mode and put them into DFU mode once they appear
     # We only scan on USB because DFU is only possible over USB
-    odrive.discovery.find_all(args.path, serial_number,
+    odrive.find_all(args.path, serial_number,
         lambda dev: put_odrive_into_dfu_mode(dev, find_odrive_cancellation_token),
         find_odrive_cancellation_token, app_shutdown_token)
 

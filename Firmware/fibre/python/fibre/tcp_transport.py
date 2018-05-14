@@ -2,14 +2,15 @@
 import sys
 import socket
 import time
+import traceback
 import fibre.protocol
-from fibre.core import object_from_channel
+from fibre.utils import wait_any
 
 def noprint(x):
   pass
 
 class TCPTransport(fibre.protocol.StreamSource, fibre.protocol.StreamSink):
-  def __init__(self, dest_addr, dest_port, printer):
+  def __init__(self, dest_addr, dest_port, logger):
     # TODO: FIXME: use IPv6
     # Problem: getaddrinfo fails if the resolver returns an
     # IPv4 address, but we are using AF_INET6
@@ -37,38 +38,48 @@ class TCPTransport(fibre.protocol.StreamSource, fibre.protocol.StreamSink):
     try:
       data = self.sock.recv(n_bytes, socket.MSG_WAITALL) # receive n_bytes
       return data
-    except TimeoutError:
+    except socket.timeout:
       # if we got a timeout data will still be none, so we call recv again
       # this time in non blocking state and see if we can get some data
-      return self.sock.recv(n_bytes, socket.MSG_DONTWAIT)
+      try:
+        return self.sock.recv(n_bytes, socket.MSG_DONTWAIT)
+      except socket.timeout:
+        raise TimeoutError
 
   def get_bytes_or_fail(self, n_bytes, deadline):
     result = self.get_bytes(n_bytes, deadline)
     if len(result) < n_bytes:
-      raise fibre.protocol.TimeoutException("expected {} bytes but got only {}".format(n_bytes, len(result)))
+      raise TimeoutError("expected {} bytes but got only {}".format(n_bytes, len(result)))
     return result
 
 
 
-def channel_from_tcp_destination(dest_addr, dest_port, printer=noprint, device_stdout=noprint):
-    """
-    Inits a Fibre Protocol channel from a TCP hostname and port.
-    """
-    tcp_transport = fibre.tcp_transport.TCPTransport(dest_addr, dest_port, printer)
-    stream2packet_input = fibre.protocol.PacketFromStreamConverter(tcp_transport, device_stdout)
-    packet2stream_output = fibre.protocol.StreamBasedPacketSink(tcp_transport)
-    return fibre.protocol.Channel(
-            "TCP device {}:{}".format(dest_addr, dest_port),
-            stream2packet_input, packet2stream_output,
-            device_stdout)
-
-def open_tcp(destination, printer=noprint, device_stdout=noprint):
+def discover_channels(path, serial_number, callback, cancellation_token, channel_termination_token, logger):
+  """
+  Tries to connect to a TCP server based on the path spec.
+  This function blocks until cancellation_token is set.
+  Channels spawned by this function run until channel_termination_token is set.
+  """
   try:
-    dest_addr = ':'.join(destination.split(":")[:-1])
-    dest_port = int(destination.split(":")[-1])
+    dest_addr = ':'.join(path.split(":")[:-1])
+    dest_port = int(path.split(":")[-1])
   except (ValueError, IndexError):
     raise Exception('"{}" is not a valid TCP destination. The format should be something like "localhost:1234".'
-                    .format(destination))
-  channel = channel_from_tcp_destination(dest_addr, dest_port)
-  tcp_device = object_from_channel(channel, printer)
-  return tcp_device
+                    .format(path))
+
+  while not cancellation_token.is_set():
+    try:
+      tcp_transport = fibre.tcp_transport.TCPTransport(dest_addr, dest_port, logger)
+      stream2packet_input = fibre.protocol.PacketFromStreamConverter(tcp_transport)
+      packet2stream_output = fibre.protocol.StreamBasedPacketSink(tcp_transport)
+      channel = fibre.protocol.Channel(
+              "TCP device {}:{}".format(dest_addr, dest_port),
+              stream2packet_input, packet2stream_output,
+              channel_termination_token, logger)
+    except:
+      #logger.debug("TCP channel init failed. More info: " + traceback.format_exc())
+      pass
+    else:
+      callback(channel)
+      wait_any(None, cancellation_token, channel._channel_broken)
+    time.sleep(1)

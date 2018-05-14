@@ -5,15 +5,15 @@ Example usage of the ODrive python library to monitor and control ODrive devices
 
 from __future__ import print_function
 
-import odrive.discovery
+import odrive
 import time
 import math
 
 # Find a connected ODrive (this will block until you connect one)
-my_drive = odrive.discovery.find_any()
+my_drive = odrive.find_any()
 
 # Find an ODrive that is connected on the serial port /dev/ttyUSB0
-#my_drive = odrive.discovery.find_any("serial:/dev/ttyUSB0")
+#my_drive = odrive.find_any("serial:/dev/ttyUSB0")
 
 # The above call returns a python object with a dynamically generated type. The
 # type hierarchy will correspond to the endpoint list in `MotorControl/protocol.cpp`.

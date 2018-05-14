@@ -5,7 +5,8 @@ import math
 import time
 import sys
 import threading
-import odrive.discovery
+import fibre
+import odrive
 from odrive.enums import *
 import odrive.utils
 import numpy as np
@@ -37,7 +38,7 @@ class ODriveTestContext():
         """
         Reconnects to the ODrive
         """
-        self.handle = odrive.discovery.find_any(
+        self.handle = odrive.find_any(
             path="usb", serial_number=self.yaml['serial-number'], timeout=15)#, printer=print)
         for axis_idx, axis_ctx in enumerate(self.axes):
             axis_ctx.handle = self.handle.__dict__['axis{}'.format(axis_idx)]
@@ -250,7 +251,7 @@ class TestFlashAndErase(ODriveTest):
             # this is a firmware issue since it persists when unplugging/replugging
             # but goes away when power cycling the device
             odrv_ctx.handle.reboot()
-        except odrive.protocol.ChannelBrokenException:
+        except fibre.ChannelBrokenException:
             pass # this is expected
         time.sleep(0.5)
 
@@ -393,7 +394,7 @@ class TestStoreAndReboot(ODriveTest):
         odrv_ctx.handle.save_configuration()
         try:
             odrv_ctx.handle.reboot()
-        except odrive.protocol.ChannelBrokenException:
+        except fibre.ChannelBrokenException:
             pass # this is expected
         time.sleep(2)
 

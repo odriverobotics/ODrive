@@ -6,8 +6,11 @@ ODrive command line utility
 from __future__ import print_function
 import sys
 import argparse
-import odrive.discovery
-from odrive.utils import Logger, Event
+import odrive
+import fibre.discovery
+from fibre.utils import Logger, Event
+
+#print("Refer to install instructions at http://docs.odriverobotics.com/#downloading-and-installing-tools")
 
 # Flush stdout by default
 # Source:
@@ -115,7 +118,7 @@ try:
     elif args.command == 'liveplotter':
         from odrive.utils import start_liveplotter
         print("Waiting for ODrive...")
-        my_odrive = odrive.discovery.find_any(path=args.path, serial_number=args.serial_number)
+        my_odrive = odrive.find_any(path=args.path, serial_number=args.serial_number)
 
         # If you want to plot different values, change them here.
         # You can plot any number of values concurrently.
@@ -125,14 +128,14 @@ try:
     elif args.command == 'drv-status':
         from odrive.utils import print_drv_regs
         print("Waiting for ODrive...")
-        my_odrive = odrive.discovery.find_any(path=args.path, serial_number=args.serial_number)
+        my_odrive = odrive.find_any(path=args.path, serial_number=args.serial_number)
         print_drv_regs("Motor 0", my_odrive.axis0.motor)
         print_drv_regs("Motor 1", my_odrive.axis1.motor)
 
     elif args.command == 'rate-test':
         from odrive.utils import rate_test
         print("Waiting for ODrive...")
-        my_odrive = odrive.discovery.find_any(path=args.path, serial_number=args.serial_number)
+        my_odrive = odrive.find_any(path=args.path, serial_number=args.serial_number)
         rate_test(my_odrive)
 
     elif args.command == 'udev-setup':

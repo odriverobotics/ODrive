@@ -1,14 +1,16 @@
 
 import sys
 import socket
+import time
+import traceback
 import fibre.protocol
-from fibre.core import object_from_channel
+from fibre.utils import wait_any
 
 def noprint(x):
   pass
 
 class UDPTransport(fibre.protocol.PacketSource, fibre.protocol.PacketSink):
-  def __init__(self, dest_addr, dest_port, printer):
+  def __init__(self, dest_addr, dest_port, logger):
     # TODO: FIXME: use IPv6
     # Problem: getaddrinfo fails if the resolver returns an
     # IPv4 address, but we are using AF_INET6
@@ -26,25 +28,30 @@ class UDPTransport(fibre.protocol.PacketSource, fibre.protocol.PacketSink):
     data, addr = self.sock.recvfrom(1024)
     return data
 
-
-
-def channel_from_udp_destination(dest_addr, dest_port, printer=noprint, device_stdout=noprint):
-    """
-    Inits a Fibre Protocol channel from a UDP hostname and port.
-    """
-    udp_transport = fibre.udp_transport.UDPTransport(dest_addr, dest_port, printer)
-    return fibre.protocol.Channel(
-            "UDP device {}:{}".format(dest_addr, dest_port),
-            udp_transport, udp_transport,
-            device_stdout)
-
-def open_udp(destination, printer=noprint, device_stdout=noprint):
+def discover_channels(path, serial_number, callback, cancellation_token, channel_termination_token, logger):
+  """
+  Tries to connect to a UDP server based on the path spec.
+  This function blocks until cancellation_token is set.
+  Channels spawned by this function run until channel_termination_token is set.
+  """
   try:
-    dest_addr = ':'.join(destination.split(":")[:-1])
-    dest_port = int(destination.split(":")[-1])
+    dest_addr = ':'.join(path.split(":")[:-1])
+    dest_port = int(path.split(":")[-1])
   except (ValueError, IndexError):
     raise Exception('"{}" is not a valid UDP destination. The format should be something like "localhost:1234".'
-                    .format(destination))
-  channel = channel_from_udp_destination(dest_addr, dest_port)
-  udp_device = object_from_channel(channel, printer)
-  return udp_device
+                    .format(path))
+
+  while not cancellation_token.is_set():
+    try:
+      udp_transport = fibre.udp_transport.UDPTransport(dest_addr, dest_port, logger)
+      channel = fibre.protocol.Channel(
+              "UDP device {}:{}".format(dest_addr, dest_port),
+              udp_transport, udp_transport,
+              channel_termination_token, logger)
+    except:
+      logger.debug("UDP channel init failed. More info: " + traceback.format_exc())
+      pass
+    else:
+      callback(channel)
+      wait_any(None, cancellation_token, channel._channel_broken)
+    time.sleep(1)

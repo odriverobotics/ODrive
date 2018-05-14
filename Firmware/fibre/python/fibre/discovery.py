@@ -1,69 +1,124 @@
 """
-Provides functions for the discovery of fibre hubs
+Provides functions for the discovery of Fibre nodes
 """
 
 import sys
-import time
 import json
-#import usb.core
-#import usb.util
-#import serial
-#import serial.tools.list_ports
-import re
 import time
-import os
-import itertools
-import struct
-import functools
-
+import threading
+import traceback
 import fibre.protocol
-# TODO: refactor code for each transport layer
-import fibre.udp_transport
-import fibre.tcp_transport
+import fibre.utils
+import fibre.remote_object
+import fibre.serial_transport
+from fibre.utils import Event
+from fibre.protocol import ChannelBrokenException
+
+# Load all installed transport layers
+
+channel_types = {}
+
 try:
     import fibre.usbbulk_transport
+    channel_types['usb'] = fibre.usbbulk_transport.discover_channels
 except ModuleNotFoundError:
-    def find_usb_channels():
-        return []
+    pass
+
 try:
     import fibre.serial_transport
+    channel_types['serial'] = fibre.serial_transport.discover_channels
 except ModuleNotFoundError:
-    def find_serial_channels():
-        return []
+    pass
 
-def noprint(x):
-  pass
+try:
+    import fibre.tcp_transport
+    channel_types['tcp'] = fibre.tcp_transport.discover_channels
+except ModuleNotFoundError:
+    pass
 
-def find_all(consider_usb=True, consider_serial=False, printer=noprint, device_stdout=noprint):
+try:
+    import fibre.udp_transport
+    channel_types['udp'] = fibre.udp_transport.discover_channels
+except ModuleNotFoundError:
+    pass
+
+def noprint(text):
+    pass
+
+def find_all(path, serial_number,
+         did_discover_object_callback,
+         search_cancellation_token,
+         channel_termination_token,
+         logger):
     """
-    Returns a generator with all the connected devices that speak the Fibre protocol
+    Starts scanning for Fibre nodes that match the specified path spec and calls
+    the callback for each Fibre node that is found.
+    This function is non-blocking.
     """
-    channels = iter(())
-    if (consider_usb):
-        channels = itertools.chain(channels, find_usb_channels(printer=printer, device_stdout=device_stdout))
-    if (consider_serial):
-        channels = itertools.chain(channels, find_serial_channels(printer=printer, device_stdout=device_stdout))
-    for channel in channels:
-        # TODO: blacklist known bad channels
+
+    def did_discover_channel(channel):
+        """
+        Inits an object from a given channel and then calls did_discover_object_callback
+        with the created object
+        This queries the endpoint 0 on that channel to gain information
+        about the interface, which is then used to init the corresponding object.
+        """
         try:
-            yield object_from_channel(channel, printer)
-        except fibre.protocol.DeviceInitException as ex:
-            printer(str(ex))
-            continue
+            logger.debug("Connecting to device on " + channel._name)
+            try:
+                json_bytes = channel.remote_endpoint_read_buffer(0)
+            except (TimeoutError, ChannelBrokenException):
+                logger.debug("no response - probably incompatible")
+                return
+            json_crc16 = fibre.protocol.calc_crc16(fibre.protocol.PROTOCOL_VERSION, json_bytes)
+            channel._interface_definition_crc = json_crc16
+            try:
+                json_string = json_bytes.decode("ascii")
+            except UnicodeDecodeError:
+                logger.debug("device responded on endpoint 0 with something that is not ASCII")
+                return
+            logger.debug("JSON: " + json_string)
+            logger.debug("JSON checksum: 0x{:02X} 0x{:02X}".format(json_crc16 & 0xff, (json_crc16 >> 8) & 0xff))
+            try:
+                json_data = json.loads(json_string)
+            except json.decoder.JSONDecodeError as error:
+                logger.debug("device responded on endpoint 0 with something that is not JSON: " + str(error))
+                return
+            json_data = {"name": "fibre_node", "members": json_data}
+            obj = fibre.remote_object.RemoteObject(json_data, None, channel, logger)
+            device_serial_number = format(obj.serial_number, 'x').upper() if hasattr(obj, 'serial_number') else "[unknown serial number]"
+            if serial_number != None and device_serial_number != serial_number:
+                logger.debug("Ignoring device with serial number {}".format(device_serial_number))
+                return
+            did_discover_object_callback(obj)
+        except Exception:
+            logger.debug("Unexpected exception after discovering channel: " + traceback.format_exc())
+
+    # For each connection type, kick off an appropriate discovery loop
+    for search_spec in path.split(','):
+        prefix = search_spec.split(':')[0]
+        the_rest = ':'.join(search_spec.split(':')[1:])
+        if prefix in channel_types:
+            threading.Thread(target=channel_types[prefix],
+                             args=(the_rest, serial_number, did_discover_channel, search_cancellation_token, channel_termination_token, logger)).start()
+        else:
+            raise Exception("Invalid path spec \"{}\"".format(search_spec))
 
 
-def find_any(consider_usb=True, consider_serial=False, printer=noprint, device_stdout=noprint):
+def find_any(path="usb", serial_number=None,
+        search_cancellation_token=None, channel_termination_token=None,
+        timeout=None, printer=noprint):
     """
-    Scans for Fibre Hubs on all supported interfaces and returns the first device
-    that is found. If no device is connected the function blocks.
+    Blocks until the first matching Fibre node is connected and then returns that node
     """
-    # TODO: do device discovery and instantiation in a separate thread and just wait on a semaphore here
-
-    # poll for device
-    printer("looking for Fibre Hubs...")
-    while True:
-        dev = next(find_all(consider_usb, consider_serial, printer=printer, device_stdout=device_stdout), None)
-        if dev is not None:
-            return dev
-        printer("no device found")
-        time.sleep(1)
+    result = [ None ]
+    done_signal = Event(search_cancellation_token)
+    def did_discover_object(obj):
+        result[0] = obj
+        done_signal.set()
+    find_all(path, serial_number, did_discover_object, done_signal, channel_termination_token, printer)
+    try:
+        done_signal.wait(timeout=timeout)
+    finally:
+        done_signal.set() # terminate find_all
+    return result[0]
