@@ -10,6 +10,9 @@
 #include <cmsis_os.h>
 #include <freertos_vars.h>
 
+#include <odrive_main.h>
+#include "ascii_protocol.h"
+
 static uint8_t* usb_buf;
 static uint32_t usb_len;
 static uint8_t active_endpoint_pair;
@@ -88,13 +91,15 @@ static void usb_server_thread(void * ctx) {
         if (sem_stat == osOK) {
             usb_stats_.rx_cnt++;
             deadline_ms = timeout_to_deadline(PROTOCOL_SERVER_TIMEOUT_MS);
+            if (active_endpoint_pair == CDC_OUT_EP && board_config.enable_ascii_protocol_on_usb) {
+                ASCII_protocol_parse_stream(usb_buf, usb_len, usb_stream_output);
+            } else {
 #if defined(USB_PROTOCOL_NATIVE)
-            usb_channel.process_packet(usb_buf, usb_len);
+                usb_channel.process_packet(usb_buf, usb_len);
 #elif defined(USB_PROTOCOL_NATIVE_STREAM_BASED)
-            usb_native_stream_input.process_bytes(usb_buf, usb_len);
-#elif defined(USB_PROTOCOL_ASCII)
-            ASCII_protocol_parse_stream(usb_buf, usb_len, usb_stream_output);
+                usb_native_stream_input.process_bytes(usb_buf, usb_len);
 #endif
+            }
             USBD_CDC_ReceivePacket(&hUsbDeviceFS, active_endpoint_pair);  // Allow next packet
         }
     }
