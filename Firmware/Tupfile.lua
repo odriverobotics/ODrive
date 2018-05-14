@@ -162,7 +162,7 @@ build{
         'communication/ascii_protocol.cpp',
         'communication/interface_uart.cpp',
         'communication/interface_usb.cpp',
-        'fibre-cpp/protocol.cpp',
+        'fibre/cpp/protocol.cpp',
         'FreeRTOS-openocd.c'
     },
     includes={
