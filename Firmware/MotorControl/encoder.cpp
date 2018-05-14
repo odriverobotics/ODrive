@@ -218,7 +218,7 @@ bool Encoder::run_offset_calibration() {
     offset_ = encvaluesum / (num_steps * 2);
     config_.offset = offset_;
     int32_t residual = encvaluesum - ((int64_t)offset_ * (int64_t)(num_steps * 2));
-    config_.offset_float = (float)residual / (float)(num_steps * 2);
+    config_.offset_float = (float)residual / (float)(num_steps * 2) + 0.5f; // add 0.5 to center-align state to phase
     is_ready_ = true;
     config_.use_index = old_use_index;
     return true;
@@ -276,11 +276,32 @@ bool Encoder::update() {
     count_in_cpr_ += delta_enc;
     count_in_cpr_ = mod(count_in_cpr_, config_.cpr);
 
+    //// run pll (for now pll is in units of encoder counts)
+    // Predict current pos
+    pos_estimate_ += current_meas_period * pll_vel_;
+    pos_cpr_      += current_meas_period * pll_vel_;
+    // discrete phase detector
+    float delta_pos     = (float)(shadow_count_ - (int32_t)floorf(pos_estimate_));
+    float delta_pos_cpr = (float)(count_in_cpr_ - (int32_t)floorf(pos_cpr_));
+    delta_pos_cpr = wrap_pm(delta_pos_cpr, 0.5f * (float)(config_.cpr));
+    // pll feedback
+    pos_estimate_ += current_meas_period * pll_kp_ * delta_pos;
+    pos_cpr_      += current_meas_period * pll_kp_ * delta_pos_cpr;
+    pos_cpr_ = fmodf_pos(pos_cpr_, (float)(config_.cpr));
+    pll_vel_      += current_meas_period * pll_ki_ * delta_pos_cpr;
+    bool snap_to_zero_vel = false;
+    if (fabsf(pll_vel_) < 0.5f * current_meas_period * pll_ki_) {
+        pll_vel_ = 0.0f; //align delta-sigma on zero to prevent jitter
+        snap_to_zero_vel = true;
+    }
 
     //// run encoder count interpolation
     int32_t corrected_enc = count_in_cpr_ - offset_;
+    // if we are stopped, make sure we don't randomly drift
+    if (snap_to_zero_vel) {
+        interpolation_ = 0.5f;
     // reset interpolation if encoder edge comes
-    if (delta_enc > 0) {
+    } else if (delta_enc > 0) {
         interpolation_ = 0.0f;
     } else if (delta_enc < 0) {
         interpolation_ = 1.0f;
@@ -299,22 +320,6 @@ bool Encoder::update() {
     float ph = elec_rad_per_enc * (interpolated_enc - config_.offset_float);
     // ph = fmodf(ph, 2*M_PI);
     phase_ = wrap_pm_pi(ph);
-
-    //// run pll (for now pll is in units of encoder counts)
-    // Predict current pos
-    pos_estimate_ += current_meas_period * pll_vel_;
-    pos_cpr_      += current_meas_period * pll_vel_;
-    // discrete phase detector
-    float delta_pos     = (float)(shadow_count_ - (int32_t)floorf(pos_estimate_));
-    float delta_pos_cpr = (float)(count_in_cpr_ - (int32_t)floorf(pos_cpr_));
-    delta_pos_cpr = wrap_pm(delta_pos_cpr, 0.5f * (float)(config_.cpr));
-    // pll feedback
-    pos_estimate_ += current_meas_period * pll_kp_ * delta_pos;
-    pos_cpr_      += current_meas_period * pll_kp_ * delta_pos_cpr;
-    pos_cpr_ = fmodf_pos(pos_cpr_, (float)(config_.cpr));
-    pll_vel_      += current_meas_period * pll_ki_ * delta_pos_cpr;
-    if (fabsf(pll_vel_) < 0.5f * current_meas_period * pll_ki_)
-        pll_vel_ = 0.0f; //align delta-sigma on zero to prevent jitter
 
     return true;
 }
