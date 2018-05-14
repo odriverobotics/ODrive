@@ -65,42 +65,51 @@ void Motor::update_current_controller_gains() {
 
 // @brief Set up the gate drivers
 void Motor::DRV8301_setup() {
-    DRV_SPI_8301_Vars_t* local_regs = &gate_driver_regs_;
-
-    DRV8301_enable(&gate_driver_);
-    DRV8301_setupSpi(&gate_driver_, local_regs);
-
-    // TODO we can use reporting only if we actually wire up the nOCTW pin
-    local_regs->Ctrl_Reg_1.OC_MODE = DRV8301_OcMode_LatchShutDown;
-    // Overcurrent set to approximately 150A at 100degC. This may need tweaking.
-    local_regs->Ctrl_Reg_1.OC_ADJ_SET = DRV8301_VdsLevel_0p730_V;
+    // for reference:
     // 20V/V on 500uOhm gives a range of +/- 150A
     // 40V/V on 500uOhm gives a range of +/- 75A
     // 20V/V on 666uOhm gives a range of +/- 110A
     // 40V/V on 666uOhm gives a range of +/- 55A
-    local_regs->Ctrl_Reg_2.GAIN = DRV8301_ShuntAmpGain_80VpV;
-    // local_regs->Ctrl_Reg_2.GAIN = DRV8301_ShuntAmpGain_40VpV;
-    // local_regs->Ctrl_Reg_2.GAIN = DRV8301_ShuntAmpGain_20VpV;
 
-    switch (local_regs->Ctrl_Reg_2.GAIN) {
-        case DRV8301_ShuntAmpGain_10VpV:
-            phase_current_rev_gain_ = 1.0f / 10.0f;
-            break;
-        case DRV8301_ShuntAmpGain_20VpV:
-            phase_current_rev_gain_ = 1.0f / 20.0f;
-            break;
-        case DRV8301_ShuntAmpGain_40VpV:
-            phase_current_rev_gain_ = 1.0f / 40.0f;
-            break;
-        case DRV8301_ShuntAmpGain_80VpV:
-            phase_current_rev_gain_ = 1.0f / 80.0f;
-            break;
-    }
+    // Solve for exact gain, then snap down to have equal or larger range as requested
+    // or largest possible range otherwise
+    static const float kMargin = 0.90f;
+    static const float max_output_swing = 1.6f; // [V] out of amplifier
+    float max_unity_gain_current = kMargin * max_output_swing * hw_config_.shunt_conductance; // [A]
+    float requested_gain = max_unity_gain_current / config_.requested_current_range; // [V/V]
 
-    float margin = 0.90f;
-    float max_input = margin * 0.3f * hw_config_.shunt_conductance;
-    float max_swing = margin * 1.6f * hw_config_.shunt_conductance * phase_current_rev_gain_;
-    current_control_.max_allowed_current = std::min(max_input, max_swing);
+    // Decoding array for snapping gain
+    std::array<std::pair<float, DRV8301_ShuntAmpGain_e>, 4> gain_choices = { 
+        std::make_pair(10.0f, DRV8301_ShuntAmpGain_10VpV),
+        std::make_pair(20.0f, DRV8301_ShuntAmpGain_20VpV),
+        std::make_pair(40.0f, DRV8301_ShuntAmpGain_40VpV),
+        std::make_pair(80.0f, DRV8301_ShuntAmpGain_80VpV)
+    };
+
+    // We use lower_bound in reverse because it snaps up by default, we want to snap down.
+    auto gain_snap_down = std::lower_bound(gain_choices.crbegin(), gain_choices.crend(), requested_gain, 
+    [](std::pair<float, DRV8301_ShuntAmpGain_e> pair, float val){
+        return pair.first > val;
+    });
+
+    // If we snap to outside the array, clip to smallest val
+    if(gain_snap_down == gain_choices.crend())
+       --gain_snap_down;
+
+    // Values for current controller
+    phase_current_rev_gain_ = 1.0f / gain_snap_down->first;
+    // Clip all current control to actual usable range
+    current_control_.max_allowed_current = max_unity_gain_current * phase_current_rev_gain_;
+
+    // We now have the gain settings we want to use, lets set up DRV chip
+    DRV_SPI_8301_Vars_t* local_regs = &gate_driver_regs_;
+    DRV8301_enable(&gate_driver_);
+    DRV8301_setupSpi(&gate_driver_, local_regs);
+
+    local_regs->Ctrl_Reg_1.OC_MODE = DRV8301_OcMode_LatchShutDown;
+    // Overcurrent set to approximately 150A at 100degC. This may need tweaking.
+    local_regs->Ctrl_Reg_1.OC_ADJ_SET = DRV8301_VdsLevel_0p730_V;
+    local_regs->Ctrl_Reg_2.GAIN = gain_snap_down->second;
 
     local_regs->SndCmd = true;
     DRV8301_writeData(&gate_driver_, local_regs);
