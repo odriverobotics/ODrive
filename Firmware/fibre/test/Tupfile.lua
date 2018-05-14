@@ -1,15 +1,16 @@
 
-tup.include('tupfiles/build.lua')
-tup.include('cpp/Tupfile.lua')
+
+tup.include('../tupfiles/build.lua')
+tup.include('../cpp/package.lua')
 
 test_server = define_package{
     packages={fibre_package},
-    sources={'test/test_server.cpp'}
+    sources={'test_server.cpp'}
 }
 
 unit_tests = define_package{
     packages={fibre_package},
-    sources={'test/run_tests.cpp'}
+    sources={'run_tests.cpp'}
 }
 
 
@@ -19,5 +20,8 @@ toolchain=GCCToolchain('', 'build', {'-O3', '-g', '-Wall'}, {})
 --toolchain=LLVMToolchain('x86_64', {'-O3', '-fno-sanitize=safe-stack', '-fno-stack-protector'}, {'-flto', '-Wl,-s'})
 --toolchain=LLVMToolchain('avr', {'-O3', '-std=gnu++11', '--target=avr', '-fno-sanitize=safe-stack', '-fno-stack-protector', '-I/home/samuel/stlport-avr/stlport'}, {'-flto', '-Wl,-s'})
 
-build_executable('test_server', test_server, toolchain)
---build_executable('run_tests', unit_tests, toolchain)
+
+if tup.getconfig("BUILD_FIBRE_TESTS") == "true" then
+	build_executable('test_server', test_server, toolchain)
+	--build_executable('run_tests', unit_tests, toolchain)
+end
