@@ -135,6 +135,8 @@ __ALIGN_BEGIN uint8_t USBD_MS_OS_StringDescriptor[]  __ALIGN_END =
   0x00            //  bPad              1 0x00  Pad field
 };
 
+// redefined further down
+__ALIGN_BEGIN uint8_t USBD_StrDesc[USBD_MAX_STR_DESC_SIZ] __ALIGN_END;
 /**
 * @brief  UsrStrDescriptor
 *         return non standard string descriptor
