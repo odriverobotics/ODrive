@@ -77,8 +77,8 @@ def get_first_mismatch_index(array1, array2):
 def dump_otp(dfudev):
     """
     Dumps the contents of the one-time-programmable
-    memory. The OTP will be used in future versions of
-    this script to determine the board version.
+    memory for debugging purposes.
+    The OTP is used to determine the board version.
     """
     # 512 Byte OTP
     otp_sector = [s for s in dfudev.sectors if s['name'] == 'OTP Memory' and s['addr'] == 0x1fff7800][0]
@@ -97,15 +97,11 @@ class Firmware():
 
     @staticmethod
     def is_newer(a, b):
-        if (a[0], a[1], a[2]) == (0, 0, 0) or (b[0], b[1], b[2]) == (0, 0, 0):
+        a_num = (a[0], a[1], a[2])
+        b_num = (b[0], b[1], b[2])
+        if a_num == (0, 0, 0) or b_num == (0, 0, 0):
             return False # Cannot compare unknown versions
-        return (a[0] > b[0] or
-                (a[0] == b[0] and
-                 (a[1] > b[1] or
-                  (a[1] == b[1] and
-                   (a[2] > b[2] or
-                    (a[2] == b[2] and
-                     (not a[3] and a[3])))))))
+        return a_num > b_num or (a_num == b_num and not a[3] and b[3])
 
     def __gt__(self, other):
         """
