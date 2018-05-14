@@ -48,6 +48,7 @@ public:
 private:
     uint8_t tx_buf_[UART_TX_BUFFER_SIZE];
 } uart4_stream_output;
+StreamSink* uart4_stream_output_ptr = &uart4_stream_output;
 
 PacketToStreamConverter uart4_packet_output(uart4_stream_output);
 BidirectionalPacketBasedChannel uart4_channel(uart4_packet_output);
