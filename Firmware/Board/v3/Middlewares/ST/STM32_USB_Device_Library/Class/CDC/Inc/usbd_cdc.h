@@ -52,13 +52,15 @@
 #define CDC_IN_EP                                   0x81  /* EP1 for data IN */
 #define CDC_OUT_EP                                  0x01  /* EP1 for data OUT */
 #define CDC_CMD_EP                                  0x82  /* EP2 for CDC commands */
+#define ODRIVE_IN_EP                                0x83  /* EP3 IN: ODrive device TX endpoint */
+#define ODRIVE_OUT_EP                               0x03  /* EP3 OUT: ODrive device RX endpoint */
 
 /* CDC Endpoints parameters: you can fine tune these values depending on the needed baudrates and performance. */
-#define CDC_DATA_HS_MAX_PACKET_SIZE                 512  /* Endpoint IN & OUT Packet size */
+#define CDC_DATA_HS_MAX_PACKET_SIZE                 64  /* Endpoint IN & OUT Packet size */
 #define CDC_DATA_FS_MAX_PACKET_SIZE                 64  /* Endpoint IN & OUT Packet size */
 #define CDC_CMD_PACKET_SIZE                         8  /* Control Endpoint Packet size */ 
 
-#define USB_CDC_CONFIG_DESC_SIZ                     (67 - 19)
+#define USB_CDC_CONFIG_DESC_SIZ                     (67 + 39)
 #define CDC_DATA_HS_IN_PACKET_SIZE                  CDC_DATA_HS_MAX_PACKET_SIZE
 #define CDC_DATA_HS_OUT_PACKET_SIZE                 CDC_DATA_HS_MAX_PACKET_SIZE
 
@@ -103,7 +105,7 @@ typedef struct _USBD_CDC_Itf
   int8_t (* Init)          (void);
   int8_t (* DeInit)        (void);
   int8_t (* Control)       (uint8_t, uint8_t * , uint16_t);   
-  int8_t (* Receive)       (uint8_t *, uint32_t *);  
+  int8_t (* Receive)       (uint8_t *, uint32_t *, uint8_t);  
 
 }USBD_CDC_ItfTypeDef;
 
@@ -156,9 +158,9 @@ uint8_t  USBD_CDC_SetTxBuffer        (USBD_HandleTypeDef   *pdev,
 uint8_t  USBD_CDC_SetRxBuffer        (USBD_HandleTypeDef   *pdev,
                                       uint8_t  *pbuff);
   
-uint8_t  USBD_CDC_ReceivePacket      (USBD_HandleTypeDef *pdev);
+uint8_t  USBD_CDC_ReceivePacket      (USBD_HandleTypeDef *pdev, uint8_t endpoint_pair);
 
-uint8_t  USBD_CDC_TransmitPacket     (USBD_HandleTypeDef *pdev);
+uint8_t  USBD_CDC_TransmitPacket     (USBD_HandleTypeDef *pdev, uint8_t endpoint_pair);
 /**
   * @}
   */ 

@@ -114,6 +114,48 @@
 
 /* USER CODE BEGIN 0 */
 
+// MS OS String descriptor to tell Windows that it may query for other descriptors
+// It's a standard string descriptor.
+// Windows will only query for OS descriptors once!
+// Delete the information about already queried devices in registry by deleting:
+// HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\usbflags\VVVVPPPPRRRR
+__ALIGN_BEGIN uint8_t USBD_MS_OS_StringDescriptor[]  __ALIGN_END =
+{
+  0x12,           //  bLength           1 0x12  Length of the descriptor
+  0x03,           //  bDescriptorType   1 0x03  Descriptor type
+                  //  qwSignature      14 ‘MSFT100’ Signature field
+  0x4D, 0x00,     //  'M'
+  0x53, 0x00,     //  'S'
+  0x46, 0x00,     //  'F'
+  0x54, 0x00,     //  'T'
+  0x31, 0x00,     //  '1'
+  0x30, 0x00,     //  '0'
+  0x30, 0x00,     //  '0'
+  MS_VendorCode,  //  bMS_VendorCode    1 Vendor-specific Vendor code
+  0x00            //  bPad              1 0x00  Pad field
+};
+
+/**
+* @brief  UsrStrDescriptor
+*         return non standard string descriptor
+* @param  pdev: device instance
+* @param  index : descriptor index (0xEE for MS OS String Descriptor)
+* @param  length : pointer data length
+* @retval pointer to descriptor buffer
+*/
+uint8_t * USBD_UsrStrDescriptor(struct _USBD_HandleTypeDef *pdev, uint8_t index,  uint16_t *length)
+{
+  *length = 0;
+  if (USBD_IDX_MICROSOFT_DESC_STR == index) {
+    *length = sizeof (USBD_MS_OS_StringDescriptor);
+    return USBD_MS_OS_StringDescriptor;
+  } else if (USBD_IDX_ODRIVE_INTF_STR == index) {
+    USBD_GetString((uint8_t *)"ODrive Interface", USBD_StrDesc, length);
+    return USBD_StrDesc;
+  }
+  return NULL;
+}
+
 /* USER CODE END 0 */
 
 /** @defgroup USBD_DESC_Private_Macros USBD_DESC_Private_Macros
@@ -189,16 +231,17 @@ __ALIGN_BEGIN uint8_t USBD_FS_DeviceDesc[USB_LEN_DEV_DESC] __ALIGN_END =
   0x00,                       /*bcdUSB */
 #endif /* (USBD_LPM_ENABLED == 1) */
   0x02,
-  0x00,                       /*bDeviceClass*/
-  0x00,                       /*bDeviceSubClass*/
-  0x00,                       /*bDeviceProtocol*/
+  // Notify OS that this is a composite device
+  0xEF,                       /*bDeviceClass*/
+  0x02,                       /*bDeviceSubClass*/
+  0x01,                       /*bDeviceProtocol*/
   USB_MAX_EP0_SIZE,           /*bMaxPacketSize*/
   LOBYTE(USBD_VID),           /*idVendor*/
   HIBYTE(USBD_VID),           /*idVendor*/
   LOBYTE(USBD_PID_FS),        /*idProduct*/
   HIBYTE(USBD_PID_FS),        /*idProduct*/
   0x00,                       /*bcdDevice rel. 2.00*/
-  0x02,
+  0x03,                       /* bNumInterfaces */
   USBD_IDX_MFC_STR,           /*Index of manufacturer  string*/
   USBD_IDX_PRODUCT_STR,       /*Index of product string*/
   USBD_IDX_SERIAL_STR,        /*Index of serial number string*/
