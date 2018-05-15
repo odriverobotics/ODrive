@@ -70,8 +70,9 @@ public:
     float pos_estimate_ = 0.0f;  // [rad]
     float pos_cpr_ = 0.0f;  // [rad]
     float pll_vel_ = 0.0f;  // [rad/s]
-    float pll_kp_ = 0.0f;   // [rad/s / rad]
-    float pll_ki_ = 0.0f;   // [(rad/s^2) / rad]
+    // float pll_kp_ = 0.0f;   // [rad/s / rad]
+    // float pll_ki_ = 0.0f;   // [(rad/s^2) / rad]
+    float bandwidth_ = 1000.0f; // [/s]
 
     // Updated by low_level pwm_adc_cb
     uint8_t hall_state_ = 0x0; // bit[0] = HallA, .., bit[2] = HallC
@@ -91,8 +92,8 @@ public:
             make_protocol_property("pos_cpr", &pos_cpr_),
             make_protocol_property("hall_state", &hall_state_),
             make_protocol_property("pll_vel", &pll_vel_),
-            make_protocol_property("pll_kp", &pll_kp_),
-            make_protocol_property("pll_ki", &pll_ki_),
+            // make_protocol_property("pll_kp", &pll_kp_),
+            // make_protocol_property("pll_ki", &pll_ki_),
             make_protocol_object("config",
                 make_protocol_property("mode", &config_.mode),
                 make_protocol_property("use_index", &config_.use_index),
@@ -101,6 +102,7 @@ public:
                 make_protocol_property("cpr", &config_.cpr),
                 make_protocol_property("offset", &config_.offset),
                 make_protocol_property("offset_float", &config_.offset_float),
+                make_protocol_property("bandwidth", &bandwidth_),
                 make_protocol_property("calib_range", &config_.calib_range)
             )
         );
