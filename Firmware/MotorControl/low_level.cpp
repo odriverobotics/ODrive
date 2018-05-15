@@ -486,7 +486,7 @@ void pwm_in_init() {
     GPIO_InitStruct.Alternate = GPIO_AF2_TIM5;
 
     for (int i = 1; i <= 4; ++i) {
-        if (board_config.pwm_mappings[i].endpoint) {
+        if (is_endpoint_ref_valid(board_config.pwm_mappings[i].endpoint)) {
             GPIO_InitStruct.Pin = get_gpio_pin_by_pin(i);
             HAL_GPIO_Init(get_gpio_port_by_pin(i), &GPIO_InitStruct);
             HAL_TIM_IC_Start_IT(&htim5, gpio_num_to_tim_2_5_channel(i));
@@ -513,11 +513,7 @@ void handle_pulse(int gpio_num, uint32_t high_time) {
     float value = board_config.pwm_mappings[gpio_num].min +
                   (fraction * (board_config.pwm_mappings[gpio_num].max - board_config.pwm_mappings[gpio_num].min));
 
-    uint32_t endpoint_id = board_config.pwm_mappings[gpio_num].endpoint;
-    if (endpoint_id >= n_endpoints_)
-        return;
-
-    Endpoint* endpoint = endpoints_[endpoint_id];
+    Endpoint* endpoint = get_endpoint(board_config.pwm_mappings[gpio_num].endpoint);
     if (!endpoint)
         return;
 

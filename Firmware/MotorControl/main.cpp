@@ -116,8 +116,6 @@ int odrive_main(void) {
         axes[i] = new Axis(hw_configs[i].axis_config, axis_configs[i],
                 *encoder, *sensorless_estimator, *controller, *motor);
     }
-    
-    pwm_in_init();
 
     // TODO: make dynamically reconfigurable
 #if HW_VERSION_MAJOR == 3 && HW_VERSION_MINOR >= 3
@@ -130,6 +128,9 @@ int odrive_main(void) {
     //osDelay(100);
     // Init communications (this requires the axis objects to be constructed)
     init_communication();
+
+    // must happen after communication is initialized
+    pwm_in_init();
 
     // Setup hardware for all components
     for (size_t i = 0; i < AXIS_COUNT; ++i) {

@@ -237,3 +237,15 @@ int BidirectionalPacketBasedChannel::process_packet(const uint8_t* buffer, size_
 
     return 0;
 }
+
+bool is_endpoint_ref_valid(endpoint_ref_t endpoint_ref) {
+    return (endpoint_ref.json_crc == json_crc_)
+        && (endpoint_ref.endpoint_id < n_endpoints_);
+}
+
+Endpoint* get_endpoint(endpoint_ref_t endpoint_ref) {
+    if (is_endpoint_ref_valid(endpoint_ref))
+        return endpoints_[endpoint_ref.endpoint_id];
+    else
+        return nullptr;
+}
