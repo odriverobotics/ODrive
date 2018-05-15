@@ -32,6 +32,7 @@ void safety_critical_apply_brake_resistor_timings(uint32_t low_off, uint32_t hig
 extern "C" {
 void pwm_trig_adc_cb(ADC_HandleTypeDef* hadc, bool injected);
 void vbus_sense_adc_cb(ADC_HandleTypeDef* hadc, bool injected);
+void pwm_in_cb(int channel, uint32_t timestamp);
 }
 
 // Initalisation
@@ -39,6 +40,7 @@ void start_adc_pwm();
 void start_pwm(TIM_HandleTypeDef* htim);
 void sync_timers(TIM_HandleTypeDef* htim_a, TIM_HandleTypeDef* htim_b,
         uint16_t TIM_CLOCKSOURCE_ITRx, uint16_t count_offset);
+void pwm_in_init();
 
 void update_brake_current();
 

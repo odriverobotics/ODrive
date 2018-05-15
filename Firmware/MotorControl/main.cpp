@@ -117,6 +117,8 @@ int odrive_main(void) {
                 *encoder, *sensorless_estimator, *controller, *motor);
     }
     
+    pwm_in_init();
+
     // TODO: make dynamically reconfigurable
 #if HW_VERSION_MAJOR == 3 && HW_VERSION_MINOR >= 3
     if (board_config.enable_uart) {

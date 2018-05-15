@@ -49,6 +49,7 @@ void decode_tim_capture(TIM_HandleTypeDef *htim, TIM_capture_callback_t callback
 // TODO: move somewhere else
 void pwm_trig_adc_cb(ADC_HandleTypeDef* hadc, bool injected);
 void vbus_sense_adc_cb(ADC_HandleTypeDef* hadc, bool injected);
+void pwm_in_cb(int channel, uint32_t timestamp);
 
 /* USER CODE END 0 */
 

@@ -443,3 +443,104 @@ void update_brake_current() {
         safety_critical_disarm_brake_resistor();
     }
 }
+
+
+/* RC PWM input --------------------------------------------------------------*/
+
+// @brief Returns the ODrive GPIO number for a given
+// TIM2 or TIM5 input capture channel number.
+int tim_2_5_channel_num_to_gpio_num(int channel) {
+#if HW_VERSION_MAJOR == 3 && HW_VERSION_MINOR >= 3
+    if (channel >= 1 && channel <= 4) {
+        // the channel numbers just happen to coincide with
+        // the GPIO numbers
+        return channel;
+    } else {
+        return -1;
+    }
+#else
+#error "Not implemented"
+#endif
+}
+// @brief Returns the TIM2 or TIM5 channel number
+// for a given GPIO number.
+uint32_t gpio_num_to_tim_2_5_channel(int gpio_num) {
+#if HW_VERSION_MAJOR == 3 && HW_VERSION_MINOR >= 3
+    switch (gpio_num) {
+        case 1: return TIM_CHANNEL_1;
+        case 2: return TIM_CHANNEL_2;
+        case 3: return TIM_CHANNEL_3;
+        case 4: return TIM_CHANNEL_4;
+        default: return 0;
+    }
+#else
+#error "Not implemented"
+#endif
+}
+
+void pwm_in_init() {
+    GPIO_InitTypeDef GPIO_InitStruct;
+    GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
+    GPIO_InitStruct.Pull = GPIO_NOPULL;
+    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+    GPIO_InitStruct.Alternate = GPIO_AF2_TIM5;
+
+    for (int i = 1; i <= 4; ++i) {
+        if (board_config.pwm_mappings[i].endpoint) {
+            GPIO_InitStruct.Pin = get_gpio_pin_by_pin(i);
+            HAL_GPIO_Init(get_gpio_port_by_pin(i), &GPIO_InitStruct);
+            HAL_TIM_IC_Start_IT(&htim5, gpio_num_to_tim_2_5_channel(i));
+        }
+    }
+}
+
+#define TIM_2_5_CLOCK_HZ        TIM_APB1_CLOCK_HZ
+#define PWM_MIN_HIGH_TIME          ((TIM_2_5_CLOCK_HZ / 1000000UL) * 1000UL) // 1ms high is considered full reverse
+#define PWM_MAX_HIGH_TIME          ((TIM_2_5_CLOCK_HZ / 1000000UL) * 2000UL) // 2ms high is considered full forward
+#define PWM_MIN_LEGAL_HIGH_TIME    ((TIM_2_5_CLOCK_HZ / 1000000UL) * 500UL) // ignore high periods shorter than 0.5ms
+#define PWM_MAX_LEGAL_HIGH_TIME    ((TIM_2_5_CLOCK_HZ / 1000000UL) * 2500UL) // ignore high periods longer than 2.5ms
+#define PWM_INVERT_INPUT        false
+
+void handle_pulse(int gpio_num, uint32_t high_time) {
+    if (high_time < PWM_MIN_LEGAL_HIGH_TIME || high_time > PWM_MAX_LEGAL_HIGH_TIME)
+        return;
+
+    if (high_time < PWM_MIN_HIGH_TIME)
+        high_time = PWM_MIN_HIGH_TIME;
+    if (high_time > PWM_MAX_HIGH_TIME)
+        high_time = PWM_MAX_HIGH_TIME;
+    float fraction = (float)(high_time - PWM_MIN_HIGH_TIME) / (float)(PWM_MAX_HIGH_TIME - PWM_MIN_HIGH_TIME);
+    float value = board_config.pwm_mappings[gpio_num].min +
+                  (fraction * (board_config.pwm_mappings[gpio_num].max - board_config.pwm_mappings[gpio_num].min));
+
+    uint32_t endpoint_id = board_config.pwm_mappings[gpio_num].endpoint;
+    if (endpoint_id >= n_endpoints_)
+        return;
+
+    Endpoint* endpoint = endpoints_[endpoint_id];
+    if (!endpoint)
+        return;
+
+    endpoint->set_from_float(value);
+}
+
+void pwm_in_cb(int channel, uint32_t timestamp) {
+    static uint32_t last_timestamp[GPIO_COUNT] = { 0 };
+    static bool last_pin_state[GPIO_COUNT] = { false };
+    static bool last_sample_valid[GPIO_COUNT] = { false };
+
+    int gpio_num = tim_2_5_channel_num_to_gpio_num(channel);
+    if (gpio_num < 0 || gpio_num >= GPIO_COUNT)
+        return;
+    bool current_pin_state = HAL_GPIO_ReadPin(get_gpio_port_by_pin(gpio_num), get_gpio_pin_by_pin(gpio_num)) != GPIO_PIN_RESET;
+
+    if (last_sample_valid[gpio_num]
+        && (last_pin_state[gpio_num] != PWM_INVERT_INPUT)
+        && (current_pin_state == PWM_INVERT_INPUT)) {
+        handle_pulse(gpio_num, timestamp - last_timestamp[gpio_num]);
+    }
+
+    last_timestamp[gpio_num] = timestamp;
+    last_pin_state[gpio_num] = current_pin_state;
+    last_sample_valid[gpio_num] = true;
+}

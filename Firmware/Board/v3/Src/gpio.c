@@ -273,6 +273,7 @@ GPIO_TypeDef* get_gpio_port_by_pin(uint16_t GPIO_pin){
     case 3: return GPIO_3_GPIO_Port; break;
     case 4: return GPIO_4_GPIO_Port; break;
     case 5: return GPIO_5_GPIO_Port; break;
+    default: return GPIO_1_GPIO_Port;
   }
 }
 
@@ -283,6 +284,7 @@ uint16_t get_gpio_pin_by_pin(uint16_t GPIO_pin){
     case 3: return GPIO_3_Pin; break;
     case 4: return GPIO_4_Pin; break;
     case 5: return GPIO_5_Pin; break;
+    default: return GPIO_1_Pin;
   }
 }
 

@@ -51,6 +51,12 @@ extern SystemStats_t system_stats_;
 #ifdef __cplusplus
 }
 
+struct PWMMapping_t {
+    uint32_t endpoint = 0;
+    float min = 0;
+    float max = 0;
+};
+
 // @brief general user configurable board configuration
 struct BoardConfig_t {
     bool enable_uart = true;
@@ -60,6 +66,7 @@ struct BoardConfig_t {
                                                                         //<! This protects against cases in which the power supply fails to dissipate
                                                                         //<! the brake power if the brake resistor is disabled.
                                                                         //<! The default is 26V for the 24V board version and 52V for the 48V board version.
+    PWMMapping_t pwm_mappings[GPIO_COUNT];
 };
 extern BoardConfig_t board_config;
 extern bool user_config_loaded_;
