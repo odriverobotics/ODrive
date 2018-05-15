@@ -2,6 +2,8 @@
 #include "interface_usb.h"
 #include "protocol.hpp"
 
+#include "ascii_protocol.h"
+
 #include <MotorControl/utils.h>
 
 #include <usbd_cdc.h>
@@ -47,7 +49,6 @@ public:
     }
 } usb_packet_output;
 
-#if !defined(USB_PROTOCOL_NATIVE)
 class TreatPacketSinkAsStreamSink : public StreamSink {
 public:
     TreatPacketSinkAsStreamSink(PacketSink& output) : output_(output) {}
@@ -66,7 +67,7 @@ public:
 private:
     PacketSink& output_;
 } usb_stream_output(usb_packet_output);
-#endif
+StreamSink* usb_stream_output_ptr = &usb_stream_output;
 
 #if defined(USB_PROTOCOL_NATIVE)
 BidirectionalPacketBasedChannel usb_channel(usb_packet_output);
