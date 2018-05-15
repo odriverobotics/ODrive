@@ -29,7 +29,7 @@ extern float vbus_voltage;
 extern bool brake_resistor_armed_;
 extern const float elec_rad_per_enc;
 extern uint32_t _reboot_cookie;
-extern bool user_config_loaded;
+extern bool user_config_loaded_;
 
 extern uint64_t serial_number;
 extern char serial_number_str[13];
@@ -37,11 +37,25 @@ extern char serial_number_str[13];
 #define ADC_CHANNEL_COUNT 16
 extern uint16_t adc_measurements_[ADC_CHANNEL_COUNT];
 
+typedef struct {
+    bool fully_booted;
+    uint32_t uptime; // [ms]
+    uint32_t min_heap_space; // FreeRTOS heap [Bytes]
+    uint32_t min_stack_space_axis0; // minimum remaining space since startup [Bytes]
+    uint32_t min_stack_space_axis1;
+    uint32_t min_stack_space_comms;
+    uint32_t min_stack_space_usb;
+    uint32_t min_stack_space_uart;
+    uint32_t min_stack_space_usb_irq;
+    uint32_t min_stack_space_startup;
+} SystemStats_t;
+extern SystemStats_t system_stats_;
+
 #ifdef __cplusplus
 }
 
 // @brief general user configurable board configuration
-typedef struct {
+struct BoardConfig_t {
     bool enable_uart = true;
     float brake_resistance = 0.47f;     // [ohm]
     float dc_bus_undervoltage_trip_level = 8.0f;                        //<! [V] minimum voltage below which the motor stops operating
@@ -49,14 +63,20 @@ typedef struct {
                                                                         //<! This protects against cases in which the power supply fails to dissipate
                                                                         //<! the brake power if the brake resistor is disabled.
                                                                         //<! The default is 26V for the 24V board version and 52V for the 48V board version.
-} BoardConfig_t;
+};
 extern BoardConfig_t board_config;
+extern bool user_config_loaded_;
 
 class Axis;
 class Motor;
 
 constexpr size_t AXIS_COUNT = 2;
 extern Axis *axes[AXIS_COUNT];
+
+// if you use the oscilloscope feature you can bump up this value
+#define OSCILLOSCOPE_SIZE 128
+extern float oscilloscope[OSCILLOSCOPE_SIZE];
+extern size_t oscilloscope_pos;
 
 // TODO: move
 // this is technically not thread-safe but practically it might be

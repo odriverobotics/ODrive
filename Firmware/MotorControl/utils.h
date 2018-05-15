@@ -7,6 +7,7 @@ extern "C" {
 #endif
 
 #include <stdint.h>
+#include <math.h>
 
 /**
  * @brief Flash size register address
@@ -66,14 +67,32 @@ static const float one_by_sqrt3 = 0.57735026919f;
 static const float two_by_sqrt3 = 1.15470053838f;
 static const float sqrt3_by_2 = 0.86602540378f;
 
+//beware of inserting large values!
+static inline float wrap_pm(float x, float pm_range) {
+    while (x >= pm_range) x -= (2.0f * pm_range);
+    while (x < -pm_range) x += (2.0f * pm_range);
+    return x;
+}
+
+//beware of inserting large angles!
+static inline float wrap_pm_pi(float theta) {
+    return wrap_pm(theta, M_PI);
+}
+
+// like fmodf, but always positive
+static inline float fmodf_pos(float x, float y) {
+    float out = fmodf(x, y);
+    if (out < 0.0f)
+        out += y;
+    return out;
+}
+
 // Compute rising edge timings (0.0 - 1.0) as a function of alpha-beta
 // as per the magnitude invariant clarke transform
 // The magnitude of the alpha-beta vector may not be larger than sqrt(3)/2
 // Returns 0 on success, and -1 if the input was out of range
 int SVM(float alpha, float beta, float* tA, float* tB, float* tC);
 
-//beware of inserting large angles!
-float wrap_pm_pi(float theta);
 float fast_atan2(float y, float x);
 int mod(int dividend, int divisor);
 

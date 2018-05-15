@@ -40,7 +40,7 @@ creating_package = "sdist" in sys.argv
 
 # Load version from Git tag
 import odrive.version
-version = odrive.version.get_version(git_only=creating_package)
+version = odrive.version.get_version_str(git_only=creating_package)
 
 # Change this if you already uploaded the current
 # version but need to release a hotfix

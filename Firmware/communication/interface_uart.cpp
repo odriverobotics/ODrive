@@ -21,6 +21,8 @@ static uint32_t dma_last_rcv_idx;
 // FIXME: the stdlib doesn't know about CMSIS threads, so this is just a global variable
 static thread_local uint32_t deadline_ms = 0;
 
+osThreadId uart_thread;
+
 
 class UART4Sender : public StreamSink {
 public:
@@ -46,6 +48,7 @@ public:
 private:
     uint8_t tx_buf_[UART_TX_BUFFER_SIZE];
 } uart4_stream_output;
+StreamSink* uart4_stream_output_ptr = &uart4_stream_output;
 
 PacketToStreamConverter uart4_packet_output(uart4_stream_output);
 BidirectionalPacketBasedChannel uart4_channel(uart4_packet_output);
@@ -93,7 +96,7 @@ void serve_on_uart() {
 
     // Start UART communication thread
     osThreadDef(uart_server_thread_def, uart_server_thread, osPriorityNormal, 0, 512);
-    osThreadCreate(osThread(uart_server_thread_def), NULL);
+    uart_thread = osThreadCreate(osThread(uart_server_thread_def), NULL);
 }
 
 void HAL_UART_TxCpltCallback(UART_HandleTypeDef* huart) {

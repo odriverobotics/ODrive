@@ -3,13 +3,18 @@
 #include "odrive_main.h"
 #include "nvm_config.hpp"
 
+#include "freertos_vars.h"
+#include <communication/interface_usb.h>
+#include <communication/interface_uart.h>
+
 BoardConfig_t board_config;
 EncoderConfig_t encoder_configs[AXIS_COUNT];
 ControllerConfig_t controller_configs[AXIS_COUNT];
 MotorConfig_t motor_configs[AXIS_COUNT];
 AxisConfig_t axis_configs[AXIS_COUNT];
+bool user_config_loaded_;
 
-bool user_config_loaded = false;
+SystemStats_t system_stats_ = { 0 };
 
 Axis *axes[AXIS_COUNT];
 
@@ -32,6 +37,7 @@ void save_configuration(void) {
 }
 
 void load_configuration(void) {
+    // Try to load configs
     if (NVM_init() ||
         ConfigFormat::safe_load_config(
                 &board_config,
@@ -39,6 +45,7 @@ void load_configuration(void) {
                 &controller_configs,
                 &motor_configs,
                 &axis_configs)) {
+        //If loading failed, restore defaults
         board_config = BoardConfig_t();
         for (size_t i = 0; i < AXIS_COUNT; ++i) {
             encoder_configs[i] = EncoderConfig_t();
@@ -46,6 +53,8 @@ void load_configuration(void) {
             motor_configs[i] = MotorConfig_t();
             axis_configs[i] = AxisConfig_t();
         }
+    } else {
+        user_config_loaded_ = true;
     }
 }
 
@@ -53,15 +62,42 @@ void erase_configuration(void) {
     NVM_erase();
 }
 
-void enter_dfu_mode(void) {
-    __asm volatile ("CPSID I\n\t":::"memory"); // disable interrupts
-    _reboot_cookie = 0xDEADBEEF;
-    NVIC_SystemReset();
+void enter_dfu_mode() {
+    if ((hw_version_major == 3) && (hw_version_minor >= 5)) {
+        __asm volatile ("CPSID I\n\t":::"memory"); // disable interrupts
+        _reboot_cookie = 0xDEADBEEF;
+        NVIC_SystemReset();
+    } else {
+        /*
+        * DFU mode is only allowed on board version >= 3.5 because it can burn
+        * the brake resistor FETs on older boards.
+        * If you really want to use it on an older board, add 3.3k pull-down resistors
+        * to the AUX_L and AUX_H signals and _only then_ uncomment these lines.
+        */
+        //__asm volatile ("CPSID I\n\t":::"memory"); // disable interrupts
+        //_reboot_cookie = 0xDEADFE75;
+        //NVIC_SystemReset();
+    }
 }
 
 extern "C" {
 int odrive_main(void);
-void vApplicationStackOverflowHook(void) { for(;;); }
+void vApplicationStackOverflowHook(void) {
+    for (;;); // TODO: safe action
+}
+void vApplicationIdleHook(void) {
+    if (system_stats_.fully_booted) {
+        system_stats_.uptime = xTaskGetTickCount();
+        system_stats_.min_heap_space = xPortGetMinimumEverFreeHeapSize();
+        system_stats_.min_stack_space_comms = uxTaskGetStackHighWaterMark(comm_thread) * sizeof(StackType_t);
+        system_stats_.min_stack_space_axis0 = uxTaskGetStackHighWaterMark(axes[0]->thread_id_) * sizeof(StackType_t);
+        system_stats_.min_stack_space_axis1 = uxTaskGetStackHighWaterMark(axes[1]->thread_id_) * sizeof(StackType_t);
+        system_stats_.min_stack_space_usb = uxTaskGetStackHighWaterMark(usb_thread) * sizeof(StackType_t);
+        system_stats_.min_stack_space_uart = uxTaskGetStackHighWaterMark(uart_thread) * sizeof(StackType_t);
+        system_stats_.min_stack_space_usb_irq = uxTaskGetStackHighWaterMark(usb_irq_thread) * sizeof(StackType_t);
+        system_stats_.min_stack_space_startup = uxTaskGetStackHighWaterMark(defaultTaskHandle) * sizeof(StackType_t);
+    }
+}
 }
 
 int odrive_main(void) {
@@ -119,5 +155,6 @@ int odrive_main(void) {
         axes[i]->start_thread();
     }
 
+    system_stats_.fully_booted = true;
     return 0;
 }

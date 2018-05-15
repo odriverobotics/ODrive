@@ -119,8 +119,9 @@ public:
             if (!do_checks()) // error set during function call
                 break;
 
-            if (!update_handler()) // error set during function call
-                break;
+            // Run main loop function, defer quitting for after wait
+            // TODO: change arming logic to arm after waiting
+            bool main_continue = update_handler();
 
             // Check we meet deadlines after queueing
             ++loop_counter_;
@@ -134,6 +135,9 @@ public:
                 error_ |= ERROR_CURRENT_MEASUREMENT_TIMEOUT;
                 break;
             }
+
+            if (!main_continue)
+                break;
         }
     }
 

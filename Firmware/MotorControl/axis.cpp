@@ -25,6 +25,10 @@ Axis::Axis(const AxisHardwareConfig_t& hw_config,
     motor_.axis_ = this;
 }
 
+static void step_cb_wrapper(void* ctx) {
+    reinterpret_cast<Axis*>(ctx)->step_cb();
+}
+
 // @brief Sets up all components of the axis,
 // such as gate driver and encoder hardware.
 void Axis::setup() {
@@ -54,10 +58,6 @@ void Axis::signal_current_meas() {
 // @returns True on success, false otherwise
 bool Axis::wait_for_current_meas() {
     return osSignalWait(M_SIGNAL_PH_CURRENT_MEAS, PH_CURRENT_MEAS_TIMEOUT).status == osEventSignal;
-}
-
-static void step_cb_wrapper(void* ctx) {
-    reinterpret_cast<Axis*>(ctx)->step_cb();
 }
 
 // step/direction interface

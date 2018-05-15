@@ -118,7 +118,7 @@ class USBBulkTransport(odrive.protocol.PacketSource, odrive.protocol.PacketSink)
     except usb.core.USBError as ex:
       if ex.errno == 19: # "no such device"
         raise odrive.protocol.ChannelBrokenException()
-      elif ex.errno == 110: # timeout
+      elif ex.errno is None or ex.errno == 110: # timeout
         raise odrive.utils.TimeoutException()
       else:
         self._printer("halt condition: {}".format(ex.errno))
@@ -167,7 +167,7 @@ def discover_channels(path, serial_number, callback, cancellation_token, channel
     return True
 
   while not cancellation_token.is_set():
-    printer("USB discover loop")
+    # printer("USB discover loop")
     devices = usb.core.find(find_all=True, custom_match=device_matcher)
     for usb_device in devices:
       try:

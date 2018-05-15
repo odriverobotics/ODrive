@@ -6,6 +6,13 @@ Controller::Controller(ControllerConfig_t& config) :
     config_(config)
 {}
 
+void Controller::reset() {
+    pos_setpoint_ = 0.0f;
+    vel_setpoint_ = 0.0f;
+    vel_integrator_current_ = 0.0f;
+    current_setpoint_ = 0.0f;
+}
+
 //--------------------------------
 // Command Handling
 //--------------------------------

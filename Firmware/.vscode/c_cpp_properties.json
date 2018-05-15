@@ -26,7 +26,9 @@
             "defines": [
                 "STM32F405xx",
                 "USE_HAL_DRIVER",
-                "HW_VERSION_MAJOR=3", "HW_VERSION_MINOR=4", "HW_VERSION_VOLTAGE=24",
+                "HW_VERSION_MAJOR=3",
+                "HW_VERSION_MINOR=5",
+                "HW_VERSION_VOLTAGE=48",
                 "__weak=\"__attribute__((weak))\"",
                 "__packed=\"__attribute__((__packed__))\"",
                 "__GNUC__"
@@ -64,7 +66,9 @@
             "defines": [
                 "STM32F405xx",
                 "USE_HAL_DRIVER",
-                "HW_VERSION_MAJOR=3", "HW_VERSION_MINOR=4", "HW_VERSION_VOLTAGE=24",
+                "HW_VERSION_MAJOR=3",
+                "HW_VERSION_MINOR=4",
+                "HW_VERSION_VOLTAGE=24",
                 "__weak=\"__attribute__((weak))\"",
                 "__packed=\"__attribute__((__packed__))\"",
                 "__GNUC__"
@@ -107,7 +111,9 @@
             "defines": [
                 "STM32F405xx",
                 "USE_HAL_DRIVER",
-                "HW_VERSION_MAJOR=3", "HW_VERSION_MINOR=4", "HW_VERSION_VOLTAGE=24",
+                "HW_VERSION_MAJOR=3",
+                "HW_VERSION_MINOR=4",
+                "HW_VERSION_VOLTAGE=24",
                 "__weak=\"__attribute__((weak))\"",
                 "__packed=\"__attribute__((__packed__))\"",
                 "__GNUC__"
@@ -123,5 +129,5 @@
             }
         }
     ],
-    "version": 3
+    "version": 4
 }

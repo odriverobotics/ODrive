@@ -23,6 +23,14 @@ elseif boardversion == "v3.4-48V" then
     boarddir = 'Board/v3'
     FLAGS += "-DHW_VERSION_MAJOR=3 -DHW_VERSION_MINOR=4"
     FLAGS += "-DHW_VERSION_VOLTAGE=48"
+elseif boardversion == "v3.5-24V" then
+    boarddir = 'Board/v3'
+    FLAGS += "-DHW_VERSION_MAJOR=3 -DHW_VERSION_MINOR=5"
+    FLAGS += "-DHW_VERSION_VOLTAGE=24"
+elseif boardversion == "v3.5-48V" then
+    boarddir = 'Board/v3'
+    FLAGS += "-DHW_VERSION_MAJOR=3 -DHW_VERSION_MINOR=5"
+    FLAGS += "-DHW_VERSION_VOLTAGE=48"
 elseif boardversion == "" then
     error("board version not specified - take a look at tup.config.default")
 else
@@ -99,7 +107,7 @@ LDFLAGS += '-Wl,--undefined=uxTopUsedPriority'
 
 -- common flags for ASM, C and C++
 OPT += '-Og'
-OPT += '-ffast-math'
+OPT += '-ffast-math -fno-finite-math-only'
 tup.append_table(FLAGS, OPT)
 tup.append_table(LDFLAGS, OPT)
 
@@ -130,7 +138,7 @@ build{
 }
 
 tup.frule{
-    command='bash dump_version.sh %o',
+    command='python ../tools/odrive/version.py --output %o',
     outputs={'build/version.h'}
 }
 

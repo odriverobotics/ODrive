@@ -35,7 +35,7 @@ void Encoder::setup() {
 // TODO: disable interrupt once we found the index
 void Encoder::enc_index_cb() {
     if (config_.use_index && !index_found_) {
-        set_count(0);
+        set_circular_count(0);
         if (config_.pre_calibrated) {
             offset_ = config_.offset;
             is_ready_ = true;
@@ -45,15 +45,34 @@ void Encoder::enc_index_cb() {
 }
 
 // Function that sets the current encoder count to a desired 32-bit value.
-void Encoder::set_count(int32_t count) {
+void Encoder::set_linear_count(int32_t count) {
     // Disable interrupts to make a critical section to avoid race condition
     uint32_t prim = __get_PRIMASK();
     __disable_irq();
-    // Offset and state must be shifted by the same amount
-    offset_ += count - state_;
-    state_ = count;
+
+    // Update states
+    shadow_count_ = count;
+    pos_estimate_ = (float)count;
+    //Write hardware last
     hw_config_.timer->Instance->CNT = count;
-    pll_pos_ = (float)count;
+
+    __set_PRIMASK(prim);
+}
+
+// Function that sets the CPR circular tracking encoder count to a desired 32-bit value.
+// Note that this will get mod'ed down to [0, cpr)
+void Encoder::set_circular_count(int32_t count) {
+    // Disable interrupts to make a critical section to avoid race condition
+    uint32_t prim = __get_PRIMASK();
+    __disable_irq();
+
+    // Offset and state must be shifted by the same amount
+    offset_ += count - count_in_cpr_;
+    offset_ = mod(offset_, config_.cpr);
+    // Update states
+    count_in_cpr_ = mod(count, config_.cpr);
+    pos_cpr_ = (float)count_in_cpr_;
+
     __set_PRIMASK(prim);
 }
 
@@ -97,7 +116,7 @@ bool Encoder::run_offset_calibration() {
     static const float start_lock_duration = 1.0f;
     static const float scan_omega = 4.0f * M_PI;
     static const float scan_distance = 16.0f * M_PI;
-    static const int num_steps = scan_distance / scan_omega * current_meas_hz;
+    static const int num_steps = (int)(scan_distance / scan_omega * (float)current_meas_hz);
 
     // Temporarily disable index search so it doesn't mess
     // with the offset calibration
@@ -196,31 +215,39 @@ bool Encoder::update(float* pos_estimate, float* vel_estimate, float* phase_outp
     }
 
     // update internal encoder state
-    int16_t delta_enc = (int16_t)hw_config_.timer->Instance->CNT - (int16_t)state_;
-    state_ += (int32_t)delta_enc;
+    int16_t delta_enc_16 = (int16_t)hw_config_.timer->Instance->CNT - (int16_t)shadow_count_;
+    int32_t delta_enc = (int32_t)delta_enc_16; //sign extend
+    shadow_count_ += delta_enc;
+    count_in_cpr_ += delta_enc;
+    count_in_cpr_ = mod(count_in_cpr_, config_.cpr);
 
     // compute electrical phase
-    int corrected_enc = state_ % config_.cpr;
-    corrected_enc -= offset_;
-    //corrected_enc *= axis_->motor_.config_.direction; TODO: verify if this still works
+    int corrected_enc = count_in_cpr_ - offset_;
     //TODO avoid recomputing elec_rad_per_enc every time
     float elec_rad_per_enc = axis_->motor_.config_.pole_pairs * 2 * M_PI * (1.0f / (float)(config_.cpr));
     float ph = elec_rad_per_enc * (float)corrected_enc;
     // ph = fmodf(ph, 2*M_PI);
     phase_ = wrap_pm_pi(ph);
 
+
     // run pll (for now pll is in units of encoder counts)
-    // TODO pll_pos runs out of precision very quickly here! Perhaps decompose into integer and fractional part?
     // Predict current pos
-    pll_pos_ += current_meas_period * pll_vel_;
+    pos_estimate_ += current_meas_period * pll_vel_;
+    pos_cpr_       += current_meas_period * pll_vel_;
     // discrete phase detector
-    float delta_pos = (float)(state_ - (int32_t)floorf(pll_pos_));
+    float delta_pos     = (float)(shadow_count_ - (int32_t)floorf(pos_estimate_));
+    float delta_pos_cpr = (float)(count_in_cpr_ - (int32_t)floorf(pos_cpr_));
+    delta_pos_cpr = wrap_pm(delta_pos_cpr, 0.5f * (float)(config_.cpr));
     // pll feedback
-    pll_pos_ += current_meas_period * pll_kp_ * delta_pos;
-    pll_vel_ += current_meas_period * pll_ki_ * delta_pos;
+    pos_estimate_ += current_meas_period * pll_kp_ * delta_pos;
+    pos_cpr_       += current_meas_period * pll_kp_ * delta_pos_cpr;
+    pos_cpr_ = fmodf_pos(pos_cpr_, (float)(config_.cpr));
+    pll_vel_      += current_meas_period * pll_ki_ * delta_pos_cpr;
+    if (fabsf(pll_vel_) < 0.5f * current_meas_period * pll_ki_)
+        pll_vel_ = 0.0f; //align delta-sigma on zero to prevent jitter
 
     // Assign output arguments
-    if (pos_estimate) *pos_estimate = pll_pos_;
+    if (pos_estimate) *pos_estimate = pos_estimate_;
     if (vel_estimate) *vel_estimate = pll_vel_;
     if (phase_output) *phase_output = phase_;
     return true;

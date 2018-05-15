@@ -26,6 +26,7 @@ struct ControllerConfig_t {
 class Controller {
 public:
     Controller(ControllerConfig_t& config);
+    void reset();
 
     void set_pos_setpoint(float pos_setpoint, float vel_feed_forward, float current_feed_forward);
     void set_vel_setpoint(float vel_setpoint, float current_feed_forward);
