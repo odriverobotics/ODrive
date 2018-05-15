@@ -64,6 +64,7 @@ const uint8_t fw_version_revision = FW_VERSION_REVISION;
 const uint8_t fw_version_unreleased = FW_VERSION_UNRELEASED; // 0 for official releases, 1 otherwise
 
 osThreadId comm_thread;
+volatile bool endpoint_list_valid = false;
 
 static uint32_t test_property = 0;
 
@@ -85,6 +86,9 @@ void init_communication(void) {
     // Start command handling thread
     osThreadDef(task_cmd_parse, communication_task, osPriorityNormal, 0, 5000 /* in 32-bit words */); // TODO: fix stack issues
     comm_thread = osThreadCreate(osThread(task_cmd_parse), NULL);
+
+    while (!endpoint_list_valid)
+        osDelay(1);
 }
 
 
@@ -191,6 +195,7 @@ void communication_task(void * ctx) {
     auto tree_ptr = new (tree_buffer) tree_type(make_obj_tree());
     auto endpoint_provider = EndpointProvider_from_MemberList<tree_type>(*tree_ptr);
     set_application_endpoints(&endpoint_provider);
+    endpoint_list_valid = true;
     
     serve_on_uart();
     serve_on_usb();

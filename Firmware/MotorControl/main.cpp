@@ -153,9 +153,6 @@ int odrive_main(void) {
     // Start ADC for temperature measurements and user measurements
     start_general_purpose_adc();
 
-    // Start pwm-in compare modules
-    pwm_in_init();
-
     // TODO: make dynamically reconfigurable
 #if HW_VERSION_MAJOR == 3 && HW_VERSION_MINOR >= 3
     if (board_config.enable_uart) {
@@ -167,6 +164,10 @@ int odrive_main(void) {
     //osDelay(100);
     // Init communications (this requires the axis objects to be constructed)
     init_communication();
+
+    // Start pwm-in compare modules
+    // must happen after communication is initialized
+    pwm_in_init();
 
     // Setup hardware for all components
     for (size_t i = 0; i < AXIS_COUNT; ++i) {

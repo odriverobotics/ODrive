@@ -2,6 +2,7 @@
 #define __ODRIVE_MAIN_H
 
 #ifdef __cplusplus
+#include <communication/protocol.hpp>
 extern "C" {
 #endif
 
@@ -56,7 +57,7 @@ extern SystemStats_t system_stats_;
 }
 
 struct PWMMapping_t {
-    uint32_t endpoint = 0;
+    endpoint_ref_t endpoint = { 0 };
     float min = 0;
     float max = 0;
 };
@@ -100,7 +101,6 @@ inline ENUMTYPE operator ~ (ENUMTYPE a) { return static_cast<ENUMTYPE>(~static_c
 
 
 // ODrive specific includes
-#include <communication/protocol.hpp>
 #include <utils.h>
 #include <low_level.h>
 #include <encoder.hpp>
