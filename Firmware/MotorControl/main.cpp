@@ -153,6 +153,9 @@ int odrive_main(void) {
     // Start ADC for temperature measurements and user measurements
     start_general_purpose_adc();
 
+    // Start pwm-in compare modules
+    pwm_in_init();
+
     // TODO: make dynamically reconfigurable
 #if HW_VERSION_MAJOR == 3 && HW_VERSION_MINOR >= 3
     if (board_config.enable_uart) {

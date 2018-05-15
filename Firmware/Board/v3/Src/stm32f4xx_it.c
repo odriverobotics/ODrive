@@ -43,10 +43,14 @@
 typedef void (*ADC_handler_t)(ADC_HandleTypeDef* hadc, bool injected);
 void ADC_IRQ_Dispatch(ADC_HandleTypeDef* hadc, ADC_handler_t callback);
 
+typedef void (*TIM_capture_callback_t)(int channel, uint32_t timestamp);
+void decode_tim_capture(TIM_HandleTypeDef *htim, TIM_capture_callback_t callback);
+
 // TODO: move somewhere else
 void pwm_trig_adc_cb(ADC_HandleTypeDef* hadc, bool injected);
 void vbus_sense_adc_cb(ADC_HandleTypeDef* hadc, bool injected);
 void tim_update_cb(TIM_HandleTypeDef* htim);
+void pwm_in_cb(int channel, uint32_t timestamp);
 
 extern TIM_HandleTypeDef htim1;
 extern I2C_HandleTypeDef hi2c1;
@@ -58,6 +62,7 @@ extern PCD_HandleTypeDef hpcd_USB_OTG_FS;
 extern ADC_HandleTypeDef hadc1;
 extern ADC_HandleTypeDef hadc2;
 extern ADC_HandleTypeDef hadc3;
+extern TIM_HandleTypeDef htim5;
 extern TIM_HandleTypeDef htim8;
 extern DMA_HandleTypeDef hdma_uart4_rx;
 extern DMA_HandleTypeDef hdma_uart4_tx;
@@ -258,6 +263,23 @@ void TIM8_TRG_COM_TIM14_IRQHandler(void)
 }
 
 /**
+* @brief This function handles TIM5 global interrupt.
+*/
+void TIM5_IRQHandler(void)
+{
+  /* USER CODE BEGIN TIM5_IRQn 0 */
+
+  // We know we only use capture mode here, so bypass HAL
+  decode_tim_capture(&htim5, &pwm_in_cb);
+
+  /* USER CODE END TIM5_IRQn 0 */
+  HAL_TIM_IRQHandler(&htim5);
+  /* USER CODE BEGIN TIM5_IRQn 1 */
+
+  /* USER CODE END TIM5_IRQn 1 */
+}
+
+/**
 * @brief This function handles UART4 global interrupt.
 */
 void UART4_IRQHandler(void)
@@ -309,6 +331,25 @@ void ADC_IRQ_Dispatch(ADC_HandleTypeDef* hadc, ADC_handler_t callback) {
   if (EOC && EOC_IT_EN) {
     callback(hadc, false);
     __HAL_ADC_CLEAR_FLAG(hadc, (ADC_FLAG_STRT | ADC_FLAG_EOC));
+  }
+}
+
+void decode_tim_capture(TIM_HandleTypeDef *htim, TIM_capture_callback_t callback) {
+  if(__HAL_TIM_GET_FLAG(htim, TIM_FLAG_CC1)) {
+    __HAL_TIM_CLEAR_IT(htim, TIM_IT_CC1);
+    callback(1, htim->Instance->CCR1);
+  }
+  if(__HAL_TIM_GET_FLAG(htim, TIM_FLAG_CC2)) {
+    __HAL_TIM_CLEAR_IT(htim, TIM_IT_CC2);
+    callback(2, htim->Instance->CCR2);
+  }
+  if(__HAL_TIM_GET_FLAG(htim, TIM_FLAG_CC3)) {
+    __HAL_TIM_CLEAR_IT(htim, TIM_IT_CC3);
+    callback(3, htim->Instance->CCR3);
+  }
+  if(__HAL_TIM_GET_FLAG(htim, TIM_FLAG_CC4)) {
+    __HAL_TIM_CLEAR_IT(htim, TIM_IT_CC4);
+    callback(4, htim->Instance->CCR4);
   }
 }
 

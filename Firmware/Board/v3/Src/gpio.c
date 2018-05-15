@@ -106,12 +106,6 @@ void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : PAPin PAPin PAPin */
-  GPIO_InitStruct.Pin = GPIO_3_Pin|GPIO_4_Pin|GPIO_7_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
-  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
-
   /*Configure GPIO pins : PBPin PBPin */
   GPIO_InitStruct.Pin = GPIO_6_Pin|GPIO_8_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
@@ -124,6 +118,12 @@ void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(EN_GATE_GPIO_Port, &GPIO_InitStruct);
+
+  /*Configure GPIO pin : PtPin */
+  GPIO_InitStruct.Pin = GPIO_7_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  HAL_GPIO_Init(GPIO_7_GPIO_Port, &GPIO_InitStruct);
 
   /*Configure GPIO pin : PtPin */
   GPIO_InitStruct.Pin = nFAULT_Pin;
@@ -274,6 +274,28 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_pin) {
     if (subscriptions[i].GPIO_pin == GPIO_pin) // TODO: check for port
       if (subscriptions[i].callback)
         subscriptions[i].callback(subscriptions[i].ctx);
+  }
+}
+
+GPIO_TypeDef* get_gpio_port_by_pin(uint16_t GPIO_pin){
+  switch(GPIO_pin){
+    case 1: return GPIO_1_GPIO_Port; break;
+    case 2: return GPIO_2_GPIO_Port; break;
+    case 3: return GPIO_3_GPIO_Port; break;
+    case 4: return GPIO_4_GPIO_Port; break;
+    case 5: return GPIO_5_GPIO_Port; break;
+    default: return GPIO_1_GPIO_Port;
+  }
+}
+
+uint16_t get_gpio_pin_by_pin(uint16_t GPIO_pin){
+  switch(GPIO_pin){
+    case 1: return GPIO_1_Pin; break;
+    case 2: return GPIO_2_Pin; break;
+    case 3: return GPIO_3_Pin; break;
+    case 4: return GPIO_4_Pin; break;
+    case 5: return GPIO_5_Pin; break;
+    default: return GPIO_1_Pin;
   }
 }
 

@@ -11,6 +11,7 @@ see protocol.md for the protocol specification
 #include <functional>
 #include <limits>
 #include <cstring>
+#include <cmath>
 #include "crc.hpp"
 
 // Note that this option cannot be used to debug UART because it prints on UART
@@ -407,8 +408,9 @@ class Endpoint {
 public:
     //const char* const name_;
     virtual void handle(const uint8_t* input, size_t input_length, StreamSink* output) = 0;
-    virtual bool get_string(char * output, size_t length) { return false; };
+    virtual bool get_string(char * output, size_t length) { return false; }
     virtual bool set_string(char * buffer, size_t length) { return false; }
+    virtual bool set_from_float(float value) { return false; }
 };
 
 class EndpointProvider {
@@ -549,6 +551,40 @@ ProtocolObject<TMembers...> make_protocol_object(const char * name, TMembers&&..
     return ProtocolObject<TMembers...>(name, std::forward<TMembers>(member_list)...);
 }
 
+//template<typename T, typename = typename std>
+//bool set_from_float_ex(float value, T* property) {
+//    return false;
+//}
+
+namespace conversion {
+//template<typename T>
+template<typename T>
+bool set_from_float_ex(float value, float* property, int) {
+    return *property = value, true;
+}
+template<typename T>
+bool set_from_float_ex(float value, bool* property, int) {
+    return *property = (value >= 0.0f), true;
+}
+template<typename T, typename = std::enable_if_t<std::is_integral<T>::value && !std::is_const<T>::value>>
+bool set_from_float_ex(float value, T* property, int) {
+    return *property = static_cast<T>(std::round(value)), true;
+}
+template<typename T>
+bool set_from_float_ex(float value, T* property, ...) {
+    return false;
+}
+template<typename T>
+bool set_from_float(float value, T* property) {
+    return set_from_float_ex<T>(value, property, 0);
+}
+}
+
+//template<typename T>
+//bool set_from_float_ex<>(float value, T* property) {
+//    return false;
+//}
+
 
 // TODO: move to cpp_utils
 #define ENABLE_IF_SAME(a, b, type) \
@@ -673,6 +709,10 @@ public:
     bool set_string(char * buffer, size_t length) final {
         //__asm ("bkpt");
         return set_string_ex(buffer, length, 0);
+    }
+
+    bool set_from_float(float value) final {
+        return conversion::set_from_float(value, property_);
     }
 
     void register_endpoints(Endpoint** list, size_t id, size_t length) {
