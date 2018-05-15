@@ -147,7 +147,7 @@ static inline auto make_obj_tree() {
         make_protocol_property("test_property", &test_property),
         make_protocol_function("test_function", static_functions, &StaticFunctions::test_function, "delta"),
         make_protocol_function("get_oscilloscope_val", static_functions, &StaticFunctions::get_oscilloscope_val, "index"),
-#if HW_VERSION_MAJOR == 3 && HW_VERSION_MINOR == 4
+#if HW_VERSION_MAJOR == 3 && HW_VERSION_MINOR >= 3
         make_protocol_property("adc_gpio1", &adc_measurements_[0]),
         make_protocol_property("adc_gpio2", &adc_measurements_[1]),
 #endif
@@ -197,10 +197,10 @@ int _write(int file, const char* data, int len);
 // @brief This is what printf calls internally
 int _write(int file, const char* data, int len) {
 #ifdef USB_PROTOCOL_STDOUT
-    usb_stream_output.process_bytes((const uint8_t *)data, len);
+    usb_stream_output_ptr->process_bytes((const uint8_t *)data, len);
 #endif
 #ifdef UART_PROTOCOL_STDOUT
-    uart4_stream_output.process_bytes((const uint8_t *)data, len);
+    uart4_stream_output_ptr->process_bytes((const uint8_t *)data, len);
 #endif
     return len;
 }
