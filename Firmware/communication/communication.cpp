@@ -18,7 +18,7 @@
 //#include <usbd_cdc_if.h>
 //#include <usb_device.h>
 //#include <usart.h>
-//#include <gpio.h>
+#include <gpio.h>
 
 #include <type_traits>
 
@@ -92,7 +92,7 @@ public:
     void NVIC_SystemReset_helper() { NVIC_SystemReset(); }
     void enter_dfu_mode_helper() { enter_dfu_mode(); }
     float get_oscilloscope_val(uint32_t index) { return oscilloscope[index]; }
-    //float get_adc_voltage_(uint32_t gpio) { return get_adc_voltage(gpio_port(gpio), gpio_pin(gpio)); }
+    float get_adc_voltage_(uint32_t gpio) { return get_adc_voltage(get_gpio_port_by_pin(gpio), get_gpio_pin_by_pin(gpio)); }
     int32_t test_function(int32_t delta) { static int cnt = 0; return cnt += delta; }
 } static_functions;
 
@@ -140,7 +140,7 @@ static inline auto make_obj_tree() {
         make_protocol_property("test_property", &test_property),
         make_protocol_function("test_function", static_functions, &StaticFunctions::test_function, "delta"),
         make_protocol_function("get_oscilloscope_val", static_functions, &StaticFunctions::get_oscilloscope_val, "index"),
-        //make_protocol_function("get_adc_voltage", static_functions, &StaticFunctions::get_adc_voltage_, "channel"),
+        make_protocol_function("get_adc_voltage", static_functions, &StaticFunctions::get_adc_voltage_, "gpio"),
         make_protocol_function("save_configuration", static_functions, &StaticFunctions::save_configuration_helper),
         make_protocol_function("erase_configuration", static_functions, &StaticFunctions::erase_configuration_helper),
         make_protocol_function("reboot", static_functions, &StaticFunctions::NVIC_SystemReset_helper),

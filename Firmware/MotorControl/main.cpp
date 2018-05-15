@@ -104,6 +104,23 @@ int odrive_main(void) {
     // Load persistent configuration (or defaults)
     load_configuration();
 
+    // Init general user ADC on some GPIOs.
+    GPIO_InitTypeDef GPIO_InitStruct;
+    GPIO_InitStruct.Mode = GPIO_MODE_ANALOG;
+    GPIO_InitStruct.Pull = GPIO_NOPULL;
+    GPIO_InitStruct.Pin = GPIO_1_Pin;
+    HAL_GPIO_Init(GPIO_1_GPIO_Port, &GPIO_InitStruct);
+    GPIO_InitStruct.Pin = GPIO_2_Pin;
+    HAL_GPIO_Init(GPIO_2_GPIO_Port, &GPIO_InitStruct);
+    GPIO_InitStruct.Pin = GPIO_3_Pin;
+    HAL_GPIO_Init(GPIO_3_GPIO_Port, &GPIO_InitStruct);
+    GPIO_InitStruct.Pin = GPIO_4_Pin;
+    HAL_GPIO_Init(GPIO_4_GPIO_Port, &GPIO_InitStruct);
+#if HW_VERSION_MAJOR == 3 && HW_VERSION_MAJOR >= 5
+    GPIO_InitStruct.Pin = GPIO_5_Pin;
+    HAL_GPIO_Init(GPIO_5_GPIO_Port, &GPIO_InitStruct);
+#endif
+
     // Construct all objects.
     for (size_t i = 0; i < AXIS_COUNT; ++i) {
         Encoder *encoder = new Encoder(hw_configs[i].encoder_config,
