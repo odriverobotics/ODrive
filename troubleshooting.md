@@ -79,13 +79,13 @@ fault detection.
 
 ## USB Connectivity Issues
 
- * Try turning it on and off again (the ODrive, the script, the PC)
+ * Try turning it off and on again (the ODrive, the script, the PC)
  * Make sure you're using the latest firmware and python tools release
  * **Linux**: Type `lsusb` to list all USB devices. Verify that your ODrive is listed.
  * **Linux**: Make sure you [set up your udev rules](getting-started#downloading-and-installing-tools) correctly.
  * **Windows**: Right-click on the start menu and open "Device Manager". Verify that your ODrive is listed.
- * **Windows**: Use the [Zadig utility](http://zadig.akeo.ie/) to verify the driver is 
+ * **Windows**: Use the [Zadig utility](http://zadig.akeo.ie/) to verify the driver is set to `libusb-win32`.
  * Ensure that no other ODrive program is running
- * Run `odrivetools` with the `--verbose` command.
+ * Run `odrivetools` with the `--verbose` option.
  * Run `PYUSB_DEBUG=debug odrivetools` to get even more log output.
  * If you're a developer you can use Wireshark to capture USB traffic.
