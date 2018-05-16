@@ -51,12 +51,22 @@ class AxisTestContext():
         self.odrv_ctx = odrv_ctx
 
 def test_assert_eq(observed, expected, range=None, accuracy=None):
-    if range is None and accuracy is None and observed != expected:
-        raise TestFailed("value mismatch: expected {} but observed {}".format(expected, observed))
-    if not range is None and ((observed < expected - range) or (observed > expected + range)):
-        raise TestFailed("value out of range: expected {}+-{} but observed {}".format(expected, range, observed))
-    elif not accuracy is None and ((observed < expected * (1 - accuracy)) or (observed > expected * (1 + accuracy))):
-        raise TestFailed("value out of range: expected {}+-{}% but observed {}".format(expected, accuracy*100.0, observed))
+    sign = lambda x: 1 if x >= 0 else -1
+
+    # Comparision with absolute range
+    if not range is None:
+        if (observed < expected - range) or (observed > expected + range):
+            raise TestFailed("value out of range: expected {}+-{} but observed {}".format(expected, range, observed))
+
+    # Comparision with relative range
+    elif not accuracy is None:
+        if sign(observed) != sign(expected) or (abs(observed) < abs(expected) * (1 - accuracy)) or (abs(observed) > abs(expected) * (1 + accuracy)):
+            raise TestFailed("value out of range: expected {}+-{}% but observed {}".format(expected, accuracy*100.0, observed))
+
+    # Exact comparision
+    else:
+        if observed != expected:
+            raise TestFailed("value mismatch: expected {} but observed {}".format(expected, observed))
 
 def get_errors(axis_ctx: AxisTestContext):
     errors = []
@@ -669,3 +679,72 @@ class TestVelCtrlVsPosCtrl(DualAxisTest):
         #init_pos = axis1_ctx.handle.encoder.pos_estimate
         #axis1_ctx.handle.controller.set_pos_setpoint(init_pos + 100000, 0, 0)
         #request_state(axis1_ctx, AXIS_STATE_CLOSED_LOOP_CONTROL)
+
+
+# ASCII protocol helper functions
+def gcode_calc_checksum(data):
+    from functools import reduce
+    return reduce(lambda a, b: a ^ b, data)
+def gcode_append_checksum(data):
+    return data + b'*' + str(gcode_calc_checksum(data)).encode('ascii')
+def get_lines(port):
+    buf = port.get_bytes(512, time.monotonic() + 0.2)
+    return [line.rstrip(b'\r') for line in buf.split(b'\n') if line.rstrip(b'\r')]
+
+class TestAsciiProtocol(ODriveTest):
+    def run_test(self, odrv_ctx: ODriveTestContext, logger):
+        import odrive.serial_transport
+        port = odrive.serial_transport.SerialStreamTransport(odrv_ctx.yaml['uart'], 115200)
+
+        # send garbage to throw the device off track
+        port.process_bytes(b"garbage\r\n\r\0trash\n")
+        port.process_bytes(b"\n") # start a new clean line
+        get_lines(port) # flush RX buffer
+
+        # info command without checksum
+        port.process_bytes(b"i\n")
+        # check if it reports the serial number (among other things)
+        lines = get_lines(port)
+        expected_line = ('Serial number: ' + odrv_ctx.yaml['serial-number']).encode('ascii')
+        if not expected_line in lines:
+            raise Exception("expected {} in ASCII protocol response but got {}".format(expected_line, str(lines)))
+
+        # info command with checksum
+        port.process_bytes(gcode_append_checksum(b"i") + b" ; a useless comment\n")
+        # check if it reports the serial number with checksum (among other things)
+        lines = get_lines(port)
+        expected_line = gcode_append_checksum(('Serial number: ' + odrv_ctx.yaml['serial-number']).encode('ascii'))
+        if not expected_line in lines:
+            raise Exception("expected {} in ASCII protocol response but got {}".format(expected_line, str(lines)))
+
+        port.process_bytes(b"p 0 2000 -10 0.002\n")
+        time.sleep(0.01) # 1ms is too short, 2ms usually works, 10ms for good measure
+        test_assert_eq(odrv_ctx.handle.axis0.controller.pos_setpoint, 2000, accuracy=0.001)
+        test_assert_eq(odrv_ctx.handle.axis0.controller.vel_setpoint, -10, accuracy=0.001)
+        test_assert_eq(odrv_ctx.handle.axis0.controller.current_setpoint, 0.002, accuracy=0.001)
+
+        port.process_bytes(b"v 1 -21.1 0.32\n")
+        time.sleep(0.01)
+        test_assert_eq(odrv_ctx.handle.axis1.controller.vel_setpoint, -21.1, accuracy=0.001)
+        test_assert_eq(odrv_ctx.handle.axis1.controller.current_setpoint, 0.32, accuracy=0.001)
+
+        port.process_bytes(b"c 0 0.1\n")
+        time.sleep(0.01)
+        test_assert_eq(odrv_ctx.handle.axis0.controller.current_setpoint, 0.1, accuracy=0.001)
+
+        # write arbitrary parameter
+        port.process_bytes(b"w axis0.controller.pos_setpoint -123.456 ; comment\n")
+        time.sleep(0.01)
+        test_assert_eq(odrv_ctx.handle.axis0.controller.pos_setpoint, -123.456, accuracy=0.001)
+
+        port.process_bytes(b"r axis0.controller.pos_setpoint\n")
+        lines = get_lines(port)
+        expected_line = b'-123.4560'
+        if lines != [expected_line]:
+            raise Exception("expected {} in ASCII protocol response but got {}".format(expected_line, str(lines)))
+
+        # disable axes
+        odrv_ctx.handle.axis0.controller.set_pos_setpoint(0, 0, 0)
+        odrv_ctx.handle.axis1.controller.set_pos_setpoint(0, 0, 0)
+        request_state(odrv_ctx.axes[0], AXIS_STATE_IDLE)
+        request_state(odrv_ctx.axes[1], AXIS_STATE_IDLE)

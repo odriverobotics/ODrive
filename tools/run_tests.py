@@ -87,6 +87,8 @@ else:
     all_tests.append(TestDiscoverAndGotoIdle())
     all_tests.append(TestEncoderOffsetCalibration(pass_if_ready=True))
 
+all_tests.append(TestAsciiProtocol())
+
 if test_rig_yaml['type'] == 'parallel':
     #all_tests.append(TestHighVelocity())
     all_tests.append(TestHighVelocityInViscousFluid(load_current=35, driver_current=45))
