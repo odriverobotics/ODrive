@@ -10,6 +10,17 @@
     * **Arduino:** You can use the [ODrive Arduino library](https://github.com/madcowswe/ODriveArduino) to talk to the ODrive.
     * **Windows/Linux/macOS:** You can use an FTDI USB-UART cable to connect to the ODrive.
 
+## Command format
+
+The ASCII protocol is human-readable and line-oriented, with each line having the following format:
+
+```
+command *42 ; comment [new line character]
+```
+
+ * `*42` stands for a GCode compatible checksum and can be omitted. If and only if a checksum is provided, the device will also include a checksum in the response, if any.
+ * comments are supported for GCode compatibility
+ * the command is interpreted once the new-line character is encountered
 
 ## Command Reference
 
@@ -51,4 +62,19 @@ c motor current
 
 #### Parameter reading/writing
 
-This is currently not supported. Use the native protocol.
+Not all parameters can be accessed via the ASCII protocol but at least all parameters with float and integer type are supported.
+
+ * Reading:
+    ```
+    r [property]
+    ```
+   * `property` name of the property, as seen in ODrive Tool
+   * response: text representation of the requested value
+   * Example: `r vbus_voltage` => response: `24.087744` <new line>
+ * Writing:
+    ```
+    w [property] [value]
+    ```
+   * `property` name of the property, as seen in ODrive Tool
+   * `value` text representation of the value to be written
+   * Example: `w axis0.controller.pos_setpoint -123.456`
