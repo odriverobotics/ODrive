@@ -641,15 +641,23 @@ uint32_t gpio_num_to_tim_2_5_channel(int gpio_num) {
 void pwm_in_init() {
     GPIO_InitTypeDef GPIO_InitStruct;
     GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
-    GPIO_InitStruct.Pull = GPIO_NOPULL;
+    GPIO_InitStruct.Pull = GPIO_PULLDOWN;
     GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
     GPIO_InitStruct.Alternate = GPIO_AF2_TIM5;
 
-    for (int i = 1; i <= 4; ++i) {
-        if (is_endpoint_ref_valid(board_config.pwm_mappings[i].endpoint)) {
-            GPIO_InitStruct.Pin = get_gpio_pin_by_pin(i);
-            HAL_GPIO_Init(get_gpio_port_by_pin(i), &GPIO_InitStruct);
-            HAL_TIM_IC_Start_IT(&htim5, gpio_num_to_tim_2_5_channel(i));
+    TIM_IC_InitTypeDef sConfigIC;
+    sConfigIC.ICPolarity = TIM_INPUTCHANNELPOLARITY_BOTHEDGE;
+    sConfigIC.ICSelection = TIM_ICSELECTION_DIRECTTI;
+    sConfigIC.ICPrescaler = TIM_ICPSC_DIV1;
+    sConfigIC.ICFilter = 15;
+
+    for (int gpio_num = 1; gpio_num <= 4; ++gpio_num) {
+        if (is_endpoint_ref_valid(board_config.pwm_mappings[gpio_num - 1].endpoint)) {
+            GPIO_InitStruct.Pin = get_gpio_pin_by_pin(gpio_num);
+            HAL_GPIO_DeInit(get_gpio_port_by_pin(gpio_num), get_gpio_pin_by_pin(gpio_num));
+            HAL_GPIO_Init(get_gpio_port_by_pin(gpio_num), &GPIO_InitStruct);
+            HAL_TIM_IC_ConfigChannel(&htim5, &sConfigIC, gpio_num_to_tim_2_5_channel(gpio_num));
+            HAL_TIM_IC_Start_IT(&htim5, gpio_num_to_tim_2_5_channel(gpio_num));
         }
     }
 }
@@ -670,10 +678,10 @@ void handle_pulse(int gpio_num, uint32_t high_time) {
     if (high_time > PWM_MAX_HIGH_TIME)
         high_time = PWM_MAX_HIGH_TIME;
     float fraction = (float)(high_time - PWM_MIN_HIGH_TIME) / (float)(PWM_MAX_HIGH_TIME - PWM_MIN_HIGH_TIME);
-    float value = board_config.pwm_mappings[gpio_num].min +
-                  (fraction * (board_config.pwm_mappings[gpio_num].max - board_config.pwm_mappings[gpio_num].min));
+    float value = board_config.pwm_mappings[gpio_num - 1].min +
+                  (fraction * (board_config.pwm_mappings[gpio_num - 1].max - board_config.pwm_mappings[gpio_num - 1].min));
 
-    Endpoint* endpoint = get_endpoint(board_config.pwm_mappings[gpio_num].endpoint);
+    Endpoint* endpoint = get_endpoint(board_config.pwm_mappings[gpio_num - 1].endpoint);
     if (!endpoint)
         return;
 
@@ -686,17 +694,17 @@ void pwm_in_cb(int channel, uint32_t timestamp) {
     static bool last_sample_valid[GPIO_COUNT] = { false };
 
     int gpio_num = tim_2_5_channel_num_to_gpio_num(channel);
-    if (gpio_num < 0 || gpio_num >= GPIO_COUNT)
+    if (gpio_num < 1 || gpio_num > GPIO_COUNT)
         return;
     bool current_pin_state = HAL_GPIO_ReadPin(get_gpio_port_by_pin(gpio_num), get_gpio_pin_by_pin(gpio_num)) != GPIO_PIN_RESET;
 
-    if (last_sample_valid[gpio_num]
-        && (last_pin_state[gpio_num] != PWM_INVERT_INPUT)
+    if (last_sample_valid[gpio_num - 1]
+        && (last_pin_state[gpio_num - 1] != PWM_INVERT_INPUT)
         && (current_pin_state == PWM_INVERT_INPUT)) {
-        handle_pulse(gpio_num, timestamp - last_timestamp[gpio_num]);
+        handle_pulse(gpio_num, timestamp - last_timestamp[gpio_num - 1]);
     }
 
-    last_timestamp[gpio_num] = timestamp;
-    last_pin_state[gpio_num] = current_pin_state;
-    last_sample_valid[gpio_num] = true;
+    last_timestamp[gpio_num - 1] = timestamp;
+    last_pin_state[gpio_num - 1] = current_pin_state;
+    last_sample_valid[gpio_num - 1] = true;
 }

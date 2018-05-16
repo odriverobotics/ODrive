@@ -154,10 +154,10 @@ static inline auto make_obj_tree() {
             make_protocol_property("enable_i2c_instead_of_can" , &board_config.enable_i2c_instead_of_can), // requires a reboot
             make_protocol_property("dc_bus_undervoltage_trip_level", &board_config.dc_bus_undervoltage_trip_level),
             make_protocol_property("dc_bus_overvoltage_trip_level", &board_config.dc_bus_overvoltage_trip_level),
-            make_protocol_object("gpio1_pwm_mapping", make_protocol_definitions(board_config.pwm_mappings[1])),
-            make_protocol_object("gpio2_pwm_mapping", make_protocol_definitions(board_config.pwm_mappings[2])),
-            make_protocol_object("gpio3_pwm_mapping", make_protocol_definitions(board_config.pwm_mappings[3])),
-            make_protocol_object("gpio4_pwm_mapping", make_protocol_definitions(board_config.pwm_mappings[4]))
+            make_protocol_object("gpio1_pwm_mapping", make_protocol_definitions(board_config.pwm_mappings[0])),
+            make_protocol_object("gpio2_pwm_mapping", make_protocol_definitions(board_config.pwm_mappings[1])),
+            make_protocol_object("gpio3_pwm_mapping", make_protocol_definitions(board_config.pwm_mappings[2])),
+            make_protocol_object("gpio4_pwm_mapping", make_protocol_definitions(board_config.pwm_mappings[3]))
         ),
         make_protocol_object("axis0", axes[0]->make_protocol_definitions()),
         make_protocol_object("axis1", axes[1]->make_protocol_definitions()),
