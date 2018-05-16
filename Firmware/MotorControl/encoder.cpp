@@ -230,7 +230,7 @@ static bool decode_hall(uint8_t hall_state, int32_t* hall_cnt) {
 
 bool Encoder::update() {
     // Calculate encoder pll gains
-    float pll_kp = 2.0f * bandwidth_; // basic conversion to discrete time
+    float pll_kp = 2.0f * config_.bandwidth;  // basic conversion to discrete time
     float pll_ki = 0.25f * (pll_kp * pll_kp); // Critically damped
 
     // Check that we don't get problems with discrete time approximation
