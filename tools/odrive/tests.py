@@ -164,6 +164,9 @@ def get_max_rpm(axis_ctx: AxisTestContext):
     rated_rpm = min(base_speed_rpm, axis_ctx.yaml['encoder-max-rpm'])
     return rated_rpm
 
+def get_sensorless_vel(axis_ctx: AxisTestContext, vel):
+    return vel * 2 * math.pi / axis_ctx.yaml['encoder-cpr'] * axis_ctx.yaml['motor-pole-pairs']
+
 class ODriveTest(ABC):
     """
     Tests inheriting from this class get full ownership of the ODrive
@@ -748,3 +751,17 @@ class TestAsciiProtocol(ODriveTest):
         odrv_ctx.handle.axis1.controller.set_pos_setpoint(0, 0, 0)
         request_state(odrv_ctx.axes[0], AXIS_STATE_IDLE)
         request_state(odrv_ctx.axes[1], AXIS_STATE_IDLE)
+
+
+class TestSensorlessControl(AxisTest):
+    def run_test(self, axis_ctx: AxisTestContext, logger):
+        odrv0.axis0.controller.config.vel_gain = 5 / get_sensorless_vel(axis_ctx, 10000)
+        odrv0.axis0.controller.config.vel_integrator_gain = 10 / get_sensorless_vel(axis_ctx, 10000)
+        target_vel = get_sensorless_vel(axis_ctx, 20000)
+        axis_ctx.handle.controller.set_vel_setpoint(target_vel, 0)
+        request_state(axis_ctx, AXIS_STATE_SENSORLESS_CONTROL)
+        # wait for spinup
+        time.sleep(2)
+        test_assert_eq(odrv0.axis0.encoder.pll_vel, target_vel, range=2000)
+
+        request_state(axis_ctx, AXIS_STATE_IDLE)
