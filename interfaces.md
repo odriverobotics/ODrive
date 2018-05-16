@@ -6,6 +6,9 @@ The ODrive can be controlled over various ports and protocols.
 
 [TODO: include a picture that shows all interfaces with the supported protocols]
 
+
+
+
 ### Table of contents
 
 <!-- MarkdownTOC depth=2 autolink=true bracket=round -->
@@ -20,6 +23,21 @@ The ODrive can be controlled over various ports and protocols.
    - [RC PWM input](#rc-pwm-input)
 
 <!-- /MarkdownTOC -->
+
+## Pinout
+
+| GPIO      | primary   | step/dir   | other                   |
+|-----------|-----------|------------|-------------------------|
+| GPIO1     | UART TX   | Axis0 Step | Analog input, PWM input |
+| GPIO2     | UART RX   | Axis0 Dir  | Analog input, PWM input |
+| GPIO3     | I2C Addr0 | Axis1 Step | Analog input, PWM input |
+| GPIO4     | I2C Addr1 | Axis1 Dir  | Analog input, PWM input |
+| GPIO5     | I2C Addr2 |            |                         |
+| GPIO6 (*) |           |            |                         |
+| GPIO7 (*) |           |            |                         |
+| GPIO8 (*) |           |            |                         |
+
+(*) available on ODrive v3.5 only
 
 ## Ports
 
