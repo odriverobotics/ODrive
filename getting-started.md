@@ -124,6 +124,9 @@ The tool you're looking at is a fully capable Python command prompt, so you can 
 
    * The current limit: `odrv0.axis0.motor.config.current_lim` [A]. The default current limit, for safety reasons, is set to 10A. This is quite weak, and good for making sure the drive is stable. Once you have tuned the drive, you can increase this to 75A to get some performance. Note that above 75A, you must change the current amplifier gains.
      * Note: The motor current and the current drawn from the power supply is not the same in general. You should not look at the power supply current to see what is going on with the motor current.
+       <details><summary markdown="span">Ok so tell me how it actually works...</summary><div markdown="block">
+       Testy mc testface.
+       </div></details>
    * The velocity limit: `odrv0.axis0.motor.config.vel_limit` [counts/s]. The motor will be limited to this speed; again the default value is quite slow.
    * You can change `odrv0.axis0.motor.config.calibration_current` [A] to the largest value you feel comfortable leaving running through the motor continously when the motor is stationary.
 
