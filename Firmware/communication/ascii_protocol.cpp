@@ -124,7 +124,6 @@ void ASCII_protocol_process_line(const uint8_t* buffer, size_t len, StreamSink& 
             respond(response_channel, use_checksum, "invalid motor %u", motor_number);
         } else {
             axes[motor_number]->controller_.set_current_setpoint(current_setpoint);
-            respond(response_channel, use_checksum, "ok", motor_number);
         }
 
     } else if (cmd[0] == 'i'){ // Dump device info

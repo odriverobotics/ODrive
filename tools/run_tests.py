@@ -87,6 +87,12 @@ else:
     all_tests.append(TestDiscoverAndGotoIdle())
     all_tests.append(TestEncoderOffsetCalibration(pass_if_ready=True))
 
+all_tests.append(TestAsciiProtocol())
+all_tests.append(TestSensorlessControl())
+
+#all_tests.append(TestStepDirInput())
+#all_tests.append(TestPWMInput())
+
 if test_rig_yaml['type'] == 'parallel':
     #all_tests.append(TestHighVelocity())
     all_tests.append(TestHighVelocityInViscousFluid(load_current=35, driver_current=45))
