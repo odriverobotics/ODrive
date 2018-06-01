@@ -551,8 +551,8 @@ ProtocolObject<TMembers...> make_protocol_object(const char * name, TMembers&&..
 
 
 // TODO: move to cpp_utils
-#define ENABLE_IF_SAME(a, b, type) \
-    template<typename T = a> typename std::enable_if_t<std::is_same<T, b>::value, bool>
+#define ENABLE_IF_SAME_OR_ENUM(a, b, type) \
+    template<typename T = a> typename std::enable_if_t<std::is_same<T, b>::value || std::is_enum<T>::value, type>
 
 template<typename TProperty>
 class ProtocolProperty : public Endpoint {
@@ -620,22 +620,22 @@ public:
 
     // *** ASCII protocol handlers ***
 
-    ENABLE_IF_SAME(std::decay_t<TProperty>, float, bool)
+    ENABLE_IF_SAME_OR_ENUM(std::decay_t<TProperty>, float, bool)
     get_string_ex(char * buffer, size_t length, int) {
         snprintf(buffer, length, "%f", *property_);
         return true;
     }
-    ENABLE_IF_SAME(std::decay_t<TProperty>, int32_t, bool)
+    ENABLE_IF_SAME_OR_ENUM(std::decay_t<TProperty>, int32_t, bool)
     get_string_ex(char * buffer, size_t length, int) {
         snprintf(buffer, length, "%ld", *property_);
         return true;
     }
-    ENABLE_IF_SAME(std::decay_t<TProperty>, uint32_t, bool)
+    ENABLE_IF_SAME_OR_ENUM(std::decay_t<TProperty>, uint32_t, bool)
     get_string_ex(char * buffer, size_t length, int) {
         snprintf(buffer, length, "%lu", *property_);
         return true;
     }
-    ENABLE_IF_SAME(std::decay_t<TProperty>, bool, bool)
+    ENABLE_IF_SAME_OR_ENUM(std::decay_t<TProperty>, bool, bool)
     get_string_ex(char * buffer, size_t length, int) {
         buffer[0] = (*property_) ? '1' : '0';
         buffer[1] = 0;
@@ -647,19 +647,20 @@ public:
     bool get_string(char * buffer, size_t length) final {
         return get_string_ex(buffer, length, 0);
     }
-    ENABLE_IF_SAME(TProperty, float, bool)
+
+    ENABLE_IF_SAME_OR_ENUM(TProperty, float, bool)
     set_string_ex(char * buffer, size_t length, int) {
         return sscanf(buffer, "%f", property_) == 1;
     }
-    ENABLE_IF_SAME(TProperty, int32_t, bool)
+    ENABLE_IF_SAME_OR_ENUM(TProperty, int32_t, bool)
     set_string_ex(char * buffer, size_t length, int) {
         return sscanf(buffer, "%ld", property_) == 1;
     }
-    ENABLE_IF_SAME(TProperty, uint32_t, bool)
+    ENABLE_IF_SAME_OR_ENUM(TProperty, uint32_t, bool)
     set_string_ex(char * buffer, size_t length, int) {
         return sscanf(buffer, "%lu", property_) == 1;
     }
-    ENABLE_IF_SAME(TProperty, bool, bool)
+    ENABLE_IF_SAME_OR_ENUM(TProperty, bool, bool)
     set_string_ex(char * buffer, size_t length, int) {
         int val;
         if (sscanf(buffer, "%d", &val) != 1)
