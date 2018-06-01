@@ -635,6 +635,26 @@ public:
         snprintf(buffer, length, "%lu", *property_);
         return true;
     }
+    ENABLE_IF_SAME(std::decay_t<TProperty>, int16_t, bool)
+    get_string_ex(char * buffer, size_t length, int) {
+        snprintf(buffer, length, "%hd", *property_);
+        return true;
+    }
+    ENABLE_IF_SAME(std::decay_t<TProperty>, uint16_t, bool)
+    get_string_ex(char * buffer, size_t length, int) {
+        snprintf(buffer, length, "%hu", *property_);
+        return true;
+    }
+    ENABLE_IF_SAME(std::decay_t<TProperty>, int8_t, bool)
+    get_string_ex(char * buffer, size_t length, int) {
+        snprintf(buffer, length, "%hhd", *property_);
+        return true;
+    }
+    ENABLE_IF_SAME(std::decay_t<TProperty>, uint8_t, bool)
+    get_string_ex(char * buffer, size_t length, int) {
+        snprintf(buffer, length, "%hhu", *property_);
+        return true;
+    }
     ENABLE_IF_SAME(std::decay_t<TProperty>, bool, bool)
     get_string_ex(char * buffer, size_t length, int) {
         buffer[0] = (*property_) ? '1' : '0';
@@ -659,6 +679,22 @@ public:
     ENABLE_IF_SAME(TProperty, uint32_t, bool)
     set_string_ex(char * buffer, size_t length, int) {
         return sscanf(buffer, "%lu", property_) == 1;
+    }
+    ENABLE_IF_SAME(TProperty, int16_t, bool)
+    set_string_ex(char * buffer, size_t length, int) {
+        return sscanf(buffer, "%hd", property_) == 1;
+    }
+    ENABLE_IF_SAME(TProperty, uint16_t, bool)
+    set_string_ex(char * buffer, size_t length, int) {
+        return sscanf(buffer, "%hu", property_) == 1;
+    }
+    ENABLE_IF_SAME(TProperty, int8_t, bool)
+    set_string_ex(char * buffer, size_t length, int) {
+        return sscanf(buffer, "%hhd", property_) == 1;
+    }
+    ENABLE_IF_SAME(TProperty, uint8_t, bool)
+    set_string_ex(char * buffer, size_t length, int) {
+        return sscanf(buffer, "%hhu", property_) == 1;
     }
     ENABLE_IF_SAME(TProperty, bool, bool)
     set_string_ex(char * buffer, size_t length, int) {
