@@ -746,6 +746,18 @@ class TestAsciiProtocol(ODriveTest):
         if lines != [expected_line]:
             raise Exception("expected {} in ASCII protocol response but got {}".format(expected_line, str(lines)))
 
+        # read/write enums
+        port.process_bytes(b"r axis0.error\n")
+        lines = get_lines(port)
+        expected_line = b'0'
+        if lines != [expected_line]:
+            raise Exception("expected {} in ASCII protocol response but got {}".format(expected_line, str(lines)))
+
+        test_assert_eq(odrv_ctx.axes[0].handle.current_state, AXIS_STATE_CLOSED_LOOP_CONTROL)
+        port.process_bytes(b"w axis0.requested_state {}\n".format(AXIS_STATE_IDLE))
+        time.sleep(0.01)
+        test_assert_eq(odrv_ctx.axes[0].handle.current_state, AXIS_STATE_IDLE)
+
         # disable axes
         odrv_ctx.handle.axis0.controller.set_pos_setpoint(0, 0, 0)
         odrv_ctx.handle.axis1.controller.set_pos_setpoint(0, 0, 0)
