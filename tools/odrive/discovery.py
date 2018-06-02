@@ -62,7 +62,7 @@ def find_all(path, serial_number,
                 return
             json_data = {"name": "odrive", "members": json_data}
             obj = odrive.remote_object.RemoteObject(json_data, None, channel, printer)
-            device_serial_number = format(obj.serial_number, 'x').upper() if hasattr(obj, 'serial_number') else "[unknown serial number]"
+            device_serial_number = odrive.utils.get_serial_number_str(obj)
             if serial_number != None and device_serial_number != serial_number:
                 printer("Ignoring device with serial number {}".format(device_serial_number))
                 return
