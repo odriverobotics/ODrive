@@ -163,15 +163,18 @@ def discover_channels(path, serial_number, callback, cancellation_token, channel
   known_devices = []
   def device_matcher(device):
     #print("  test {:04X}:{:04X}".format(device.idVendor, device.idProduct))
-    if (device.bus, device.address) in known_devices:
-      return False
-    if bus != None and device.bus != bus:
-      return False
-    if address != None and device.address != address:
-      return False
-    if serial_number != None and device.serial_number != serial_number:
-      return False
-    if (device.idVendor, device.idProduct) not in ODRIVE_VID_PID_PAIRS:
+    try:
+      if (device.bus, device.address) in known_devices:
+        return False
+      if bus != None and device.bus != bus:
+        return False
+      if address != None and device.address != address:
+        return False
+      if serial_number != None and device.serial_number != serial_number:
+        return False
+      if (device.idVendor, device.idProduct) not in ODRIVE_VID_PID_PAIRS:
+        return False
+    except:
       return False
     return True
 
