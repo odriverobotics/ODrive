@@ -206,6 +206,9 @@ You must set for every motor:
 
 #### Motor Modes
 If you're using a regular hobby brushless motor like [this](https://hobbyking.com/en_us/turnigy-aerodrive-sk3-5065-236kv-brushless-outrunner-motor.html) one, you should set `motor_mode` to `MOTOR_TYPE_HIGH_CURRENT`. For low-current gimbal motors like [this](https://hobbyking.com/en_us/turnigy-hd-5208-brushless-gimbal-motor-bldc.html) one, you should choose `MOTOR_TYPE_GIMBAL`. Do not use `MOTOR_TYPE_GIMBAL` on a motor that is not a gimbal motor, as it may overheat the motor or the ODrive.
+Motor Mode values are:
+* `MOTOR_TYPE_HIGH_CURRENT = 0`
+* `MOTOR_TYPE_GIMBAL = 2`
 
 **Further detail:**
 If 100's of mA of current noise is "small" for you, you can choose `MOTOR_TYPE_HIGH_CURRENT`.
@@ -237,10 +240,10 @@ An upcoming feature will enable automatic tuning. Until then, here is a rough tu
 By default both motors are enabled, and the default control mode is position control.
 If you want a different mode, you can change `my_odrive.motorN.config.control_mode`.
 Possible values are:
-* `CTRL_MODE_POSITION_CONTROL`
-* `CTRL_MODE_VELOCITY_CONTROL`
-* `CTRL_MODE_CURRENT_CONTROL`
-* `CTRL_MODE_VOLTAGE_CONTROL` - this one is not normally used.
+* `CTRL_MODE_POSITION_CONTROL = 3`
+* `CTRL_MODE_VELOCITY_CONTROL = 2`
+* `CTRL_MODE_CURRENT_CONTROL  = 1`
+* `CTRL_MODE_VOLTAGE_CONTROL  = 0` - this one is not normally used.
 
 To disable a motor at startup, set `my_odrive.axisN.config.enable_control` and `my_odrive.axisN.config.do_calibration` to `False`.
 
