@@ -168,8 +168,8 @@ void communication_task(void * ctx) {
     auto endpoint_provider = EndpointProvider_from_MemberList<tree_type>(*tree_ptr);
     set_application_endpoints(&endpoint_provider);
     
-    serve_on_uart();
-    serve_on_usb();
+    start_uart_server();
+    start_usb_server();
 
     for (;;) {
         osDelay(1000); // nothing to do

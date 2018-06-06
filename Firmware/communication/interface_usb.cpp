@@ -117,7 +117,7 @@ void usb_process_packet(uint8_t *buf, uint32_t len, uint8_t endpoint_pair) {
     osSemaphoreRelease(sem_usb_rx);
 }
 
-void serve_on_usb() {
+void start_usb_server() {
     // Start USB communication thread
     osThreadDef(usb_server_thread_def, usb_server_thread, osPriorityNormal, 0, 512);
     usb_thread = osThreadCreate(osThread(usb_server_thread_def), NULL);

@@ -97,7 +97,8 @@
 #define USBD_PID_FS     0x0D32
 #define USBD_PRODUCT_XSTR(s) USBD_PRODUCT_STR(s)
 #define USBD_PRODUCT_STR(s) #s
-#define USBD_PRODUCT_STRING_FS ODrive version HW_VERSION_MAJOR.HW_VERSION_MINOR
+#define USBD_PRODUCT_STRING_FS ODrive HW_VERSION_MAJOR.HW_VERSION_MINOR CDC Interface
+#define NATIVE_STRING ODrive HW_VERSION_MAJOR.HW_VERSION_MINOR Native Interface
 #define USBD_SERIALNUMBER_STRING_FS     "000000000001"
 #define USBD_CONFIGURATION_STRING_FS     "CDC Config"
 #define USBD_INTERFACE_STRING_FS     "CDC Interface"
@@ -152,7 +153,7 @@ uint8_t * USBD_UsrStrDescriptor(struct _USBD_HandleTypeDef *pdev, uint8_t index,
     *length = sizeof (USBD_MS_OS_StringDescriptor);
     return USBD_MS_OS_StringDescriptor;
   } else if (USBD_IDX_ODRIVE_INTF_STR == index) {
-    USBD_GetString((uint8_t *)"ODrive Interface", USBD_StrDesc, length);
+    USBD_GetString((uint8_t *)USBD_PRODUCT_XSTR(NATIVE_STRING), USBD_StrDesc, length);
     return USBD_StrDesc;
   }
   return NULL;
