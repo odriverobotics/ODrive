@@ -87,6 +87,12 @@ else:
     all_tests.append(TestDiscoverAndGotoIdle())
     all_tests.append(TestEncoderOffsetCalibration(pass_if_ready=True))
 
+all_tests.append(TestAsciiProtocol())
+all_tests.append(TestSensorlessControl())
+
+#all_tests.append(TestStepDirInput())
+#all_tests.append(TestPWMInput())
+
 if test_rig_yaml['type'] == 'parallel':
     #all_tests.append(TestHighVelocity())
     all_tests.append(TestHighVelocityInViscousFluid(load_current=35, driver_current=45))
@@ -136,7 +142,7 @@ try:
         if isinstance(test, ODriveTest):
             def odrv_test_thread(odrv_name):
                 odrv_ctx = odrives_by_name[odrv_name]
-                logger.info('* running {} on {}...'.format(type(test).__name__, odrv_name))
+                logger.notify('* running {} on {}...'.format(type(test).__name__, odrv_name))
                 try:
                     test.check_preconditions(odrv_ctx,
                               logger.indent('  {}: '.format(odrv_name)))
@@ -165,7 +171,7 @@ try:
                 try:
                     if not app_shutdown_token.is_set():
                         # Run test on this axis
-                        logger.info('* running {} on {}...'.format(type(test).__name__, axis_name))
+                        logger.notify('* running {} on {}...'.format(type(test).__name__, axis_name))
                         try:
                             test.check_preconditions(axis_ctx,
                                         logger.indent('  {}: '.format(axis_name)))
@@ -197,7 +203,7 @@ try:
                 try:
                     if not app_shutdown_token.is_set():
                         # Run test on this axis
-                        logger.info('* running {} on {}...'.format(type(test).__name__, coupling_name))
+                        logger.notify('* running {} on {}...'.format(type(test).__name__, coupling_name))
                         try:
                             test.check_preconditions(coupled_axes[0], coupled_axes[1],
                                         logger.indent('  {}: '.format(coupling_name)))

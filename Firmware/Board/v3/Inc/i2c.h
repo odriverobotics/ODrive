@@ -1,8 +1,8 @@
 /**
   ******************************************************************************
-  * @file           : usbd_desc.h
-  * @version        : v1.0_Cube
-  * @brief          : Header for usbd_desc.c file.
+  * File Name          : I2C.h
+  * Description        : This file provides code for the configuration
+  *                      of the I2C instances.
   ******************************************************************************
   * This notice applies to any and all portions of this file
   * that are not between comment pairs USER CODE BEGIN and
@@ -46,113 +46,46 @@
   *
   ******************************************************************************
   */
-
 /* Define to prevent recursive inclusion -------------------------------------*/
-#ifndef __USBD_DESC__H__
-#define __USBD_DESC__H__
-
+#ifndef __i2c_H
+#define __i2c_H
 #ifdef __cplusplus
  extern "C" {
 #endif
 
 /* Includes ------------------------------------------------------------------*/
-#include "usbd_def.h"
+#include "stm32f4xx_hal.h"
+#include "main.h"
 
-/* USER CODE BEGIN INCLUDE */
+/* USER CODE BEGIN Includes */
 
-/* USER CODE END INCLUDE */
+/* USER CODE END Includes */
 
-/** @addtogroup STM32_USB_OTG_DEVICE_LIBRARY
-  * @{
-  */
+extern I2C_HandleTypeDef hi2c1;
 
-/** @defgroup USBD_DESC USBD_DESC
-  * @brief Usb device descriptors module.
-  * @{
-  */
+/* USER CODE BEGIN Private defines */
 
-/** @defgroup USBD_DESC_Exported_Defines USBD_DESC_Exported_Defines
-  * @brief Defines.
-  * @{
-  */
+/* USER CODE END Private defines */
 
-/* USER CODE BEGIN EXPORTED_DEFINES */
+extern void _Error_Handler(char *, int);
 
-/* USER CODE END EXPORTED_DEFINES */
+void MX_I2C1_Init(uint8_t addr);
 
-/**
-  * @}
-  */
+/* USER CODE BEGIN Prototypes */
 
-/** @defgroup USBD_DESC_Exported_TypesDefinitions USBD_DESC_Exported_TypesDefinitions
-  * @brief Types.
-  * @{
-  */
-
-/* USER CODE BEGIN EXPORTED_TYPES */
-
-/* USER CODE END EXPORTED_TYPES */
-
-/**
-  * @}
-  */
-
-/** @defgroup USBD_DESC_Exported_Macros USBD_DESC_Exported_Macros
-  * @brief Aliases.
-  * @{
-  */
-
-/* USER CODE BEGIN EXPORTED_MACRO */
-
-/* USER CODE END EXPORTED_MACRO */
-
-/**
-  * @}
-  */
-
-/** @defgroup USBD_DESC_Exported_Variables USBD_DESC_Exported_Variables
-  * @brief Public variables.
-  * @{
-  */
-
-/** Descriptor for the Usb device. */
-extern USBD_DescriptorsTypeDef FS_Desc;
-
-/* USER CODE BEGIN EXPORTED_VARIABLES */
-
-/* USER CODE END EXPORTED_VARIABLES */
-
-/**
-  * @}
-  */
-
-/** @defgroup USBD_DESC_Exported_FunctionsPrototype USBD_DESC_Exported_FunctionsPrototype
-  * @brief Public functions declaration.
-  * @{
-  */
-
-/* USER CODE BEGIN EXPORTED_FUNCTIONS */
-
-uint8_t * USBD_UsrStrDescriptor(struct _USBD_HandleTypeDef *pdev, uint8_t index,  uint16_t *length);
-
-/* USER CODE END EXPORTED_FUNCTIONS */
-
-/**
-  * @}
-  */
-
-/**
-  * @}
-  */
-
-/**
-  * @}
-  */
+/* USER CODE END Prototypes */
 
 #ifdef __cplusplus
 }
 #endif
+#endif /*__ i2c_H */
 
-#endif /* __USBD_DESC__H__ */
+/**
+  * @}
+  */
+
+/**
+  * @}
+  */
 
 /************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/

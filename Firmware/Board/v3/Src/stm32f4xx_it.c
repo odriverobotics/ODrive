@@ -46,6 +46,10 @@ void ADC_IRQ_Dispatch(ADC_HandleTypeDef* hadc, ADC_handler_t callback);
 // TODO: move somewhere else
 void pwm_trig_adc_cb(ADC_HandleTypeDef* hadc, bool injected);
 void vbus_sense_adc_cb(ADC_HandleTypeDef* hadc, bool injected);
+void tim_update_cb(TIM_HandleTypeDef* htim);
+
+extern TIM_HandleTypeDef htim1;
+extern I2C_HandleTypeDef hi2c1;
 
 /* USER CODE END 0 */
 
@@ -308,6 +312,40 @@ void ADC_IRQ_Dispatch(ADC_HandleTypeDef* hadc, ADC_handler_t callback) {
   }
 }
 
+/**
+* @brief This function handles TIM1 update interrupt and TIM10 global interrupt.
+*/
+void TIM1_UP_TIM10_IRQHandler(void)
+{
+  __HAL_TIM_CLEAR_IT(&htim1, TIM_IT_UPDATE);
+  tim_update_cb(&htim1);
+}
+
+/**
+* @brief This function handles TIM8 update interrupt and TIM13 global interrupt.
+*/
+void TIM8_UP_TIM13_IRQHandler(void)
+{
+  __HAL_TIM_CLEAR_IT(&htim8, TIM_IT_UPDATE);
+  tim_update_cb(&htim8);
+}
+
+
+/**
+* @brief This function handles I2C1 event interrupt.
+*/
+void I2C1_EV_IRQHandler(void)
+{
+  HAL_I2C_EV_IRQHandler(&hi2c1);
+}
+
+/**
+* @brief This function handles I2C1 error interrupt.
+*/
+void I2C1_ER_IRQHandler(void)
+{
+  HAL_I2C_ER_IRQHandler(&hi2c1);
+}
 
 /**
 * @brief This function handles EXTI line0 interrupt.
@@ -367,8 +405,6 @@ void EXTI15_10_IRQHandler(void)
   HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_14);
   HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_15);
 }
-
-
 
 /* USER CODE END 1 */
 /************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/

@@ -18,6 +18,8 @@ extern "C" {
 /* Exported types ------------------------------------------------------------*/
 /* Exported constants --------------------------------------------------------*/
 /* Exported variables --------------------------------------------------------*/
+extern float vbus_voltage;
+extern bool brake_resistor_armed;
 /* Exported macro ------------------------------------------------------------*/
 /* Exported functions --------------------------------------------------------*/
 
@@ -32,6 +34,7 @@ void safety_critical_apply_brake_resistor_timings(uint32_t low_off, uint32_t hig
 extern "C" {
 void pwm_trig_adc_cb(ADC_HandleTypeDef* hadc, bool injected);
 void vbus_sense_adc_cb(ADC_HandleTypeDef* hadc, bool injected);
+void tim_update_cb(TIM_HandleTypeDef* htim);
 }
 
 // Initalisation

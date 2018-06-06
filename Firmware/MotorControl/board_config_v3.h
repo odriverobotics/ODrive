@@ -32,6 +32,12 @@ typedef struct {
     TIM_HandleTypeDef* timer;
     GPIO_TypeDef* index_port;
     uint16_t index_pin;
+    GPIO_TypeDef* hallA_port;
+    uint16_t hallA_pin;
+    GPIO_TypeDef* hallB_port;
+    uint16_t hallB_pin;
+    GPIO_TypeDef* hallC_port;
+    uint16_t hallC_pin;
 } EncoderHardwareConfig_t;
 typedef struct {
     TIM_HandleTypeDef* timer;
@@ -56,6 +62,7 @@ typedef struct {
 
 extern const BoardHardwareConfig_t hw_configs[2];
 
+//TODO stick this in a C file
 #ifdef __MAIN_CPP__
 const BoardHardwareConfig_t hw_configs[2] = { {
     .axis_config = {
@@ -69,6 +76,12 @@ const BoardHardwareConfig_t hw_configs[2] = { {
         .timer = &htim3,
         .index_port = M0_ENC_Z_GPIO_Port,
         .index_pin = M0_ENC_Z_Pin,
+        .hallA_port = M0_ENC_A_GPIO_Port,
+        .hallA_pin = M0_ENC_A_Pin,
+        .hallB_port = M0_ENC_B_GPIO_Port,
+        .hallB_pin = M0_ENC_B_Pin,
+        .hallC_port = M0_ENC_Z_GPIO_Port,
+        .hallC_pin = M0_ENC_Z_Pin,
     },
     .motor_config = {
         .timer = &htim1,
@@ -97,6 +110,12 @@ const BoardHardwareConfig_t hw_configs[2] = { {
         .timer = &htim4,
         .index_port = M1_ENC_Z_GPIO_Port,
         .index_pin = M1_ENC_Z_Pin,
+        .hallA_port = M1_ENC_A_GPIO_Port,
+        .hallA_pin = M1_ENC_A_Pin,
+        .hallB_port = M1_ENC_B_GPIO_Port,
+        .hallB_pin = M1_ENC_B_Pin,
+        .hallC_port = M1_ENC_Z_GPIO_Port,
+        .hallC_pin = M1_ENC_Z_Pin,
     },
     .motor_config = {
         .timer = &htim8,
@@ -116,5 +135,13 @@ const BoardHardwareConfig_t hw_configs[2] = { {
 } };
 #endif
 
+
+
+#define I2C_A0_PORT GPIO_3_GPIO_Port
+#define I2C_A0_PIN GPIO_3_Pin
+#define I2C_A1_PORT GPIO_4_GPIO_Port
+#define I2C_A1_PIN GPIO_4_Pin
+#define I2C_A2_PORT GPIO_5_GPIO_Port
+#define I2C_A2_PIN GPIO_5_Pin
 
 #endif // __BOARD_CONFIG_H

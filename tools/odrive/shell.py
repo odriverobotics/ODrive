@@ -52,7 +52,7 @@ def did_discover_device(odrive, logger, app_shutdown_token):
     # Publish new ODrive to interactive console
     interactive_variables[interactive_name] = odrive
     globals()[interactive_name] = odrive # Add to globals so tab complete works
-    logger.info("{} to ODrive {:012X} as {}".format(verb, serial_number, interactive_name))
+    logger.notify("{} to ODrive {:012X} as {}".format(verb, serial_number, interactive_name))
 
     # Subscribe to disappearance of the device
     odrive.__channel__._channel_broken.subscribe(lambda: did_lose_device(interactive_name, logger, app_shutdown_token))

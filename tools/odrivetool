@@ -6,8 +6,10 @@ ODrive command line utility
 from __future__ import print_function
 import sys
 import argparse
+import os
 import odrive.discovery
-from odrive.utils import Logger, Event
+from odrive.utils import Logger, Event, OperationAbortedException
+from odrive.configuration import *
 
 # Flush stdout by default
 # Source:
@@ -19,6 +21,7 @@ def print(*args, **kwargs):
     file = kwargs.get('file', sys.stdout)
     file.flush() if file is not None else sys.stdout.flush()
 
+script_path=os.path.dirname(os.path.realpath(__file__))
 
 ## Parse arguments ##
 parser = argparse.ArgumentParser(description='ODrive command line utility\n'
@@ -33,8 +36,33 @@ shell_parser.add_argument("--no-ipython", action="store_true",
                           "instead of the IPython shell, "
                           "even if IPython is installed.")
 
-dfu_parser = subparsers.add_parser('dfu', help="Upgrade the ODrive device firmware")
-dfu_parser.add_argument('file', metavar='HEX', help='The .hex file to be flashed. Make sure your firmware board version matches the actual board version.')
+dfu_parser = subparsers.add_parser('dfu', help="Upgrade the ODrive device firmware."
+                                               "If no serial number is specified, the first ODrive that is found is updated")
+dfu_parser.add_argument('file', metavar='HEX', nargs='?',
+                        help='The .hex file to be flashed. Make sure target board version '
+                        'of the firmware file matches the actual board version. '
+                        'You can download the latest release manually from '
+                        'https://github.com/madcowswe/ODrive/releases. '
+                        'If no file is provided, the script automatically downloads '
+                        'the latest firmware.')
+
+
+dfu_parser = subparsers.add_parser('backup-config', help="Saves the configuration of the ODrive to a JSON file")
+dfu_parser.add_argument('file', nargs='?',
+                        help="Path to the file where to store the data. "
+                        "If no path is provided, the configuration is stored in {}.".format(tempfile.gettempdir()))
+
+dfu_parser = subparsers.add_parser('restore-config', help="Restores the configuration of the ODrive from a JSON file")
+dfu_parser.add_argument('file', nargs='?',
+                        help="Path to the file that contains the configuration data. "
+                        "If no path is provided, the configuration is loaded from {}.".format(tempfile.gettempdir()))
+
+code_generator_parser = subparsers.add_parser('generate-code', help="Process a jinja2 template, passing the ODrive's JSON data as data input")
+code_generator_parser.add_argument("-t", "--template", type=argparse.FileType('r'),
+                    help="the code template")
+code_generator_parser.add_argument("-o", "--output", type=argparse.FileType('w'), default='-',
+                    help="path of the generated output")
+code_generator_parser.set_defaults(template = os.path.join(script_path, 'odrive_header_template.h.in'))
 
 subparsers.add_parser('liveplotter', help="Upgrade the ODrive's Firmware")
 subparsers.add_parser('drv-status', help="Show status of the on-board DRV8301 chips (for debugging only)")
@@ -110,12 +138,14 @@ try:
     elif args.command == 'dfu':
         print_version()
         import odrive.dfu
-        odrive.dfu.launch_dfu(args, app_shutdown_token)
+        odrive.dfu.launch_dfu(args, logger, app_shutdown_token)
 
     elif args.command == 'liveplotter':
         from odrive.utils import start_liveplotter
         print("Waiting for ODrive...")
-        my_odrive = odrive.discovery.find_any(path=args.path, serial_number=args.serial_number)
+        my_odrive = odrive.discovery.find_any(path=args.path, serial_number=args.serial_number,
+                                              search_cancellation_token=app_shutdown_token,
+                                              channel_termination_token=app_shutdown_token)
 
         # If you want to plot different values, change them here.
         # You can plot any number of values concurrently.
@@ -125,22 +155,50 @@ try:
     elif args.command == 'drv-status':
         from odrive.utils import print_drv_regs
         print("Waiting for ODrive...")
-        my_odrive = odrive.discovery.find_any(path=args.path, serial_number=args.serial_number)
+        my_odrive = odrive.discovery.find_any(path=args.path, serial_number=args.serial_number,
+                                              search_cancellation_token=app_shutdown_token,
+                                              channel_termination_token=app_shutdown_token)
         print_drv_regs("Motor 0", my_odrive.axis0.motor)
         print_drv_regs("Motor 1", my_odrive.axis1.motor)
 
     elif args.command == 'rate-test':
         from odrive.utils import rate_test
         print("Waiting for ODrive...")
-        my_odrive = odrive.discovery.find_any(path=args.path, serial_number=args.serial_number)
+        my_odrive = odrive.discovery.find_any(path=args.path, serial_number=args.serial_number,
+                                              search_cancellation_token=app_shutdown_token,
+                                              channel_termination_token=app_shutdown_token)
         rate_test(my_odrive)
 
     elif args.command == 'udev-setup':
         from odrive.utils import setup_udev_rules
         setup_udev_rules(logger)
+    
+    elif args.command == 'generate-code':
+        from odrive.code_generator import generate_code
+        my_odrive = odrive.discovery.find_any(path=args.path, serial_number=args.serial_number,
+            channel_termination_token=app_shutdown_token)
+        generate_code(my_odrive, args.template, args.output)
+
+    elif args.command == 'backup-config':
+        from odrive.configuration import backup_config
+        print("Waiting for ODrive...")
+        my_odrive = odrive.discovery.find_any(path=args.path, serial_number=args.serial_number,
+                                              search_cancellation_token=app_shutdown_token,
+                                              channel_termination_token=app_shutdown_token)
+        backup_config(my_odrive, args.file, logger)
+
+    elif args.command == 'restore-config':
+        from odrive.configuration import restore_config
+        print("Waiting for ODrive...")
+        my_odrive = odrive.discovery.find_any(path=args.path, serial_number=args.serial_number,
+                                              search_cancellation_token=app_shutdown_token,
+                                              channel_termination_token=app_shutdown_token)
+        restore_config(my_odrive, args.file, logger)
 
     else:
         raise Exception("unknown command: " + args.command)
 
+except OperationAbortedException:
+    logger.info("Operation aborted.")
 finally:
     app_shutdown_token.set()

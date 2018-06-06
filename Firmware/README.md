@@ -272,7 +272,7 @@ If you have an encoder with an index (Z) signal, you may avoid having to do the 
 <br><br>
 The error nummber corresponds to the following:
 
-0. `ERROR_NO_ERROR`
+0. `ERROR_NONE`
 1. `ERROR_PHASE_RESISTANCE_TIMING`
 2. `ERROR_PHASE_RESISTANCE_MEASUREMENT_TIMEOUT`
 3. `ERROR_PHASE_RESISTANCE_OUT_OF_RANGE`

@@ -37,7 +37,7 @@ typedef struct {
 // example: current_lim and calibration_current will instead determine the maximum voltage applied to the motor.
 typedef struct {
     bool pre_calibrated = false; // can be set to true to indicate that all values here are valid
-    int32_t pole_pairs = 7; // This value is correct for N5065 motors and Turnigy SK3 series.
+    int32_t pole_pairs = 7;
     float calibration_current = 10.0f;    // [A]
     float resistance_calib_max_voltage = 1.0f; // [V] - You may need to increase this if this voltage isn't sufficient to drive calibration_current through the motor.
     float phase_inductance = 0.0f;        // to be set by measure_phase_inductance
@@ -46,23 +46,26 @@ typedef struct {
     Motor_type_t motor_type = MOTOR_TYPE_HIGH_CURRENT;
 
     // Read out max_allowed_current to see max supported value for current_lim.
-    // You can change DRV8301_ShuntAmpGain to get a different range.
-    // float current_lim = 75.0f; //[A]
+    // float current_lim = 70.0f; //[A]
     float current_lim = 10.0f;  //[A]
+    // Value used to compute shunt amplifier gains
+    float requested_current_range = 70.0f; // [A]
 } MotorConfig_t;
 
 class Motor {
 public:
     enum Error_t {
-        ERROR_NO_ERROR = 0,
-        ERROR_PHASE_RESISTANCE_OUT_OF_RANGE = 0x01,
-        ERROR_PHASE_INDUCTANCE_OUT_OF_RANGE = 0x02,
-        ERROR_ADC_FAILED = 0x04,
-        ERROR_DRV_FAULT = 0x08,
-        ERROR_CONTROL_DEADLINE_MISSED = 0x10,
-        ERROR_NOT_IMPLEMENTED_MOTOR_TYPE = 0x20,
-        ERROR_BRAKE_CURRENT_OUT_OF_RANGE = 0x40,
-        ERROR_NUMERICAL = 0x80
+        ERROR_NONE = 0,
+        ERROR_PHASE_RESISTANCE_OUT_OF_RANGE = 0x0001,
+        ERROR_PHASE_INDUCTANCE_OUT_OF_RANGE = 0x0002,
+        ERROR_ADC_FAILED = 0x0004,
+        ERROR_DRV_FAULT = 0x0008,
+        ERROR_CONTROL_DEADLINE_MISSED = 0x0010,
+        ERROR_NOT_IMPLEMENTED_MOTOR_TYPE = 0x0020,
+        ERROR_BRAKE_CURRENT_OUT_OF_RANGE = 0x0040,
+        ERROR_MODULATION_MAGNITUDE = 0x0080,
+        ERROR_BRAKE_DEADTIME_VIOLATION = 0x0100,
+        ERROR_UNEXPECTED_TIMER_CALLBACK = 0x0200
     };
 
     enum TimingLog_t {
@@ -100,6 +103,7 @@ public:
     void update_current_controller_gains();
     void DRV8301_setup();
     bool check_DRV_fault();
+    void set_error(Error_t error);
     bool do_checks();
     void log_timing(TimingLog_t log_idx);
     float phase_current_from_adcval(uint32_t ADCValue);
@@ -131,7 +135,7 @@ public:
     uint16_t timing_log_[TIMING_LOG_NUM_SLOTS] = { 0 };
 
     // variables exposed on protocol
-    Error_t error_ = ERROR_NO_ERROR;
+    Error_t error_ = ERROR_NONE;
     // Do not write to this variable directly!
     // It is for exclusive use by the safety_critical_... functions.
     ArmedState_t armed_state_ = ARMED_STATE_DISARMED; 
@@ -204,7 +208,8 @@ public:
                 make_protocol_property("phase_resistance", &config_.phase_resistance),
                 make_protocol_property("direction", &config_.direction),
                 make_protocol_property("motor_type", &config_.motor_type),
-                make_protocol_property("current_lim", &config_.current_lim)
+                make_protocol_property("current_lim", &config_.current_lim),
+                make_protocol_property("requested_current_range", &config_.requested_current_range)
             )
         );
     }

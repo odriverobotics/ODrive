@@ -25,6 +25,9 @@ data_rate = 100
 plot_rate = 10
 num_samples = 1000
 
+class OperationAbortedException(Exception):
+    pass
+
 def start_liveplotter(get_var_callback):
     """
     Starts a liveplotter.
@@ -157,6 +160,11 @@ def setup_udev_rules(logger):
     subprocess.run(["udevadm", "trigger"], check=True)
     logger.info('udev rules configured successfully')
 
+def get_serial_number_str(device):
+    if hasattr(device, 'serial_number'):
+        return format(device.serial_number, 'x').upper()
+    else:
+        return "[unknown serial number]"
 
 ## Exceptions ##
 
@@ -357,9 +365,30 @@ class Logger():
     def success(self, text):
         self.print_colored(self._prefix + text, Logger.COLOR_GREEN)
     def info(self, text):
+        self.print_colored(self._prefix + text, Logger.COLOR_DEFAULT)
+    def notify(self, text):
         self.print_colored(self._prefix + text, Logger.COLOR_CYAN)
     def warn(self, text):
         self.print_colored(self._prefix + text, Logger.COLOR_YELLOW)
     def error(self, text):
         # TODO: write to stderr
         self.print_colored(self._prefix + text, Logger.COLOR_RED)
+
+def yes_no_prompt(question, default=None):
+    if default is None:
+        question += " [y/n] "
+    elif default == True:
+        question += " [Y/n] "
+    elif default == False:
+        question += " [y/N] "
+
+    while True:
+        print(question, end='')
+
+        choice = input().lower()
+        if choice in {'yes', 'y'}:
+            return True
+        elif choice in {'no', 'n'}:
+            return False
+        elif choice == '' and default is not None:
+            return default

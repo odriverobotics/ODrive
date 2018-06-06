@@ -6,9 +6,10 @@
 #include "freertos_vars.h"
 #include <communication/interface_usb.h>
 #include <communication/interface_uart.h>
+#include <communication/interface_i2c.h>
 
 BoardConfig_t board_config;
-EncoderConfig_t encoder_configs[AXIS_COUNT];
+Encoder::Config_t encoder_configs[AXIS_COUNT];
 ControllerConfig_t controller_configs[AXIS_COUNT];
 MotorConfig_t motor_configs[AXIS_COUNT];
 AxisConfig_t axis_configs[AXIS_COUNT];
@@ -20,7 +21,7 @@ Axis *axes[AXIS_COUNT];
 
 typedef Config<
     BoardConfig_t,
-    EncoderConfig_t[AXIS_COUNT],
+    Encoder::Config_t[AXIS_COUNT],
     ControllerConfig_t[AXIS_COUNT],
     MotorConfig_t[AXIS_COUNT],
     AxisConfig_t[AXIS_COUNT]> ConfigFormat;
@@ -33,6 +34,8 @@ void save_configuration(void) {
             &motor_configs,
             &axis_configs)) {
         //printf("saving configuration failed\r\n"); osDelay(5);
+    } else {
+        user_config_loaded_ = true;
     }
 }
 
@@ -48,7 +51,7 @@ void load_configuration(void) {
         //If loading failed, restore defaults
         board_config = BoardConfig_t();
         for (size_t i = 0; i < AXIS_COUNT; ++i) {
-            encoder_configs[i] = EncoderConfig_t();
+            encoder_configs[i] = Encoder::Config_t();
             controller_configs[i] = ControllerConfig_t();
             motor_configs[i] = MotorConfig_t();
             axis_configs[i] = AxisConfig_t();
@@ -103,6 +106,29 @@ void vApplicationIdleHook(void) {
 int odrive_main(void) {
     // Load persistent configuration (or defaults)
     load_configuration();
+
+    if (board_config.enable_i2c_instead_of_can) {
+        // Set up the direction GPIO as input
+        GPIO_InitTypeDef GPIO_InitStruct;
+        GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+        GPIO_InitStruct.Pull = GPIO_PULLUP;
+
+        GPIO_InitStruct.Pin = I2C_A0_PIN;
+        HAL_GPIO_Init(I2C_A0_PORT, &GPIO_InitStruct);
+        GPIO_InitStruct.Pin = I2C_A1_PIN;
+        HAL_GPIO_Init(I2C_A1_PORT, &GPIO_InitStruct);
+        GPIO_InitStruct.Pin = I2C_A2_PIN;
+        HAL_GPIO_Init(I2C_A2_PORT, &GPIO_InitStruct);
+
+        osDelay(1);
+        i2c_stats_.addr = (0xD << 3);
+        i2c_stats_.addr |= HAL_GPIO_ReadPin(I2C_A0_PORT, I2C_A0_PIN) != GPIO_PIN_RESET ? 0x1 : 0;
+        i2c_stats_.addr |= HAL_GPIO_ReadPin(I2C_A1_PORT, I2C_A1_PIN) != GPIO_PIN_RESET ? 0x2 : 0;
+        i2c_stats_.addr |= HAL_GPIO_ReadPin(I2C_A2_PORT, I2C_A2_PIN) != GPIO_PIN_RESET ? 0x4 : 0;
+        MX_I2C1_Init(i2c_stats_.addr);
+    } else {
+        MX_CAN1_Init();
+    }
 
     // Init general user ADC on some GPIOs.
     GPIO_InitTypeDef GPIO_InitStruct;

@@ -46,7 +46,7 @@ void Controller::set_current_setpoint(float current_setpoint) {
 
 void Controller::start_anticogging_calibration() {
     // Ensure the cogging map was correctly allocated earlier and that the motor is capable of calibrating
-    if (anticogging_.cogging_map != NULL && axis_->error_ == Axis::ERROR_NO_ERROR) {
+    if (anticogging_.cogging_map != NULL && axis_->error_ == Axis::ERROR_NONE) {
         anticogging_.calib_anticogging = true;
     }
 }

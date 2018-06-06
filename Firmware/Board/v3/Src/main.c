@@ -61,6 +61,7 @@
 /* USER CODE BEGIN Includes */
 #include <MotorControl/odrive_main.h>
 #include "freertos_vars.h"
+#include "i2c.h"
 /* USER CODE END Includes */
 
 /* Private variables ---------------------------------------------------------*/
