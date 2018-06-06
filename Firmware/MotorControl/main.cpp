@@ -107,6 +107,7 @@ int odrive_main(void) {
     // Load persistent configuration (or defaults)
     load_configuration();
 
+#if HW_VERSION_MAJOR == 3 && HW_VERSION_MINOR >= 3
     if (board_config.enable_i2c_instead_of_can) {
         // Set up the direction GPIO as input
         GPIO_InitTypeDef GPIO_InitStruct;
@@ -126,11 +127,11 @@ int odrive_main(void) {
         i2c_stats_.addr |= HAL_GPIO_ReadPin(I2C_A1_PORT, I2C_A1_PIN) != GPIO_PIN_RESET ? 0x2 : 0;
         i2c_stats_.addr |= HAL_GPIO_ReadPin(I2C_A2_PORT, I2C_A2_PIN) != GPIO_PIN_RESET ? 0x4 : 0;
         MX_I2C1_Init(i2c_stats_.addr);
-    } else {
+    } else
+#endif
         MX_CAN1_Init();
-    }
 
-    // Init general user ADC on GPIO 1 and GPIO 2
+    // Init general user ADC on some GPIOs.
     GPIO_InitTypeDef GPIO_InitStruct;
     GPIO_InitStruct.Mode = GPIO_MODE_ANALOG;
     GPIO_InitStruct.Pull = GPIO_NOPULL;
@@ -138,6 +139,14 @@ int odrive_main(void) {
     HAL_GPIO_Init(GPIO_1_GPIO_Port, &GPIO_InitStruct);
     GPIO_InitStruct.Pin = GPIO_2_Pin;
     HAL_GPIO_Init(GPIO_2_GPIO_Port, &GPIO_InitStruct);
+    GPIO_InitStruct.Pin = GPIO_3_Pin;
+    HAL_GPIO_Init(GPIO_3_GPIO_Port, &GPIO_InitStruct);
+    GPIO_InitStruct.Pin = GPIO_4_Pin;
+    HAL_GPIO_Init(GPIO_4_GPIO_Port, &GPIO_InitStruct);
+#if HW_VERSION_MAJOR == 3 && HW_VERSION_MINOR >= 5
+    GPIO_InitStruct.Pin = GPIO_5_Pin;
+    HAL_GPIO_Init(GPIO_5_GPIO_Port, &GPIO_InitStruct);
+#endif
 
     // Construct all objects.
     for (size_t i = 0; i < AXIS_COUNT; ++i) {
