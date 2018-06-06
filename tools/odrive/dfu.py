@@ -285,6 +285,11 @@ def update_device(device, firmware, logger, cancellation_token):
         hw_version_variant = device.hw_version_variant if hasattr(device, 'hw_version_variant') else 0
         hw_version = (hw_version_major, hw_version_minor, hw_version_variant)
 
+    if hw_version < (3, 5, 0):
+        print("Warning: DFU mode is not supported on ODrives earlier than v3.5 unless you perform a hardware mod.")
+        if not odrive.utils.yes_no_prompt("Do you still want to continue?", False):
+            raise OperationAbortedException()
+
     fw_version_major = device.fw_version_major if hasattr(device, 'fw_version_major') else 0
     fw_version_minor = device.fw_version_minor if hasattr(device, 'fw_version_minor') else 0
     fw_version_revision = device.fw_version_revision if hasattr(device, 'fw_version_revision') else 0
