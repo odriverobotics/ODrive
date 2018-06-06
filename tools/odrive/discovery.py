@@ -66,7 +66,7 @@ def find_all(path, serial_number,
             obj.__dict__['_json_data'] = json_data['members']
             obj.__dict__['_json_crc'] = json_crc16
 
-            device_serial_number = format(obj.serial_number, 'x').upper() if hasattr(obj, 'serial_number') else "[unknown serial number]"
+            device_serial_number = odrive.utils.get_serial_number_str(obj)
             if serial_number != None and device_serial_number != serial_number:
                 printer("Ignoring device with serial number {}".format(device_serial_number))
                 return

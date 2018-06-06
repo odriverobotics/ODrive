@@ -34,6 +34,8 @@ void save_configuration(void) {
             &motor_configs,
             &axis_configs)) {
         //printf("saving configuration failed\r\n"); osDelay(5);
+    } else {
+        user_config_loaded_ = true;
     }
 }
 

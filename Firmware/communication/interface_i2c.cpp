@@ -24,7 +24,7 @@ public:
 } i2c1_packet_output;
 BidirectionalPacketBasedChannel i2c1_channel(i2c1_packet_output);
 
-void serve_on_i2c() {
+void start_i2c_server() {
     // CAN H = SDA
     // CAN L = SCL
     HAL_I2C_EnableListen_IT(&hi2c1);

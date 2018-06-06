@@ -139,6 +139,7 @@ static inline auto make_obj_tree() {
             // TODO: changing this currently requires a reboot - fix this
             make_protocol_property("enable_uart", &board_config.enable_uart),
             make_protocol_property("enable_i2c_instead_of_can" , &board_config.enable_i2c_instead_of_can), // requires a reboot
+            make_protocol_property("enable_ascii_protocol_on_usb", &board_config.enable_ascii_protocol_on_usb),
             make_protocol_property("dc_bus_undervoltage_trip_level", &board_config.dc_bus_undervoltage_trip_level),
             make_protocol_property("dc_bus_overvoltage_trip_level", &board_config.dc_bus_overvoltage_trip_level)
         ),
@@ -179,10 +180,10 @@ void communication_task(void * ctx) {
     auto endpoint_provider = EndpointProvider_from_MemberList<tree_type>(*tree_ptr);
     set_application_endpoints(&endpoint_provider);
     
-    serve_on_uart();
-    serve_on_usb();
+    start_uart_server();
+    start_usb_server();
     if (board_config.enable_i2c_instead_of_can) {
-        serve_on_i2c();
+        start_i2c_server();
     }
 
     for (;;) {

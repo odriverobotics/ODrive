@@ -11,7 +11,10 @@ Please add a note of your changes below this heading if you make a Pull Request.
  * System stats (e.g. stack usage) are exposed under `<odrv>.system_stats`
 
 ### Changed
-* The DFU script now verifies the flash after writing
+* DFU script updates
+  * Verify the flash after writing
+  * Automatically download firmware from GitHub releases if no file is provided
+  * Retain configuration during firmware updates
 * Refactor python tools
   * The scripts `explore_odrive.py`, `liveplotter.py`, `drv_status.py` and `rate_test.py` have been merged into one single `odrivetool` script. Running this script without any arguments provides the shell that `explore_odrive.py` used to provide.
   * The command line options of `odrivetool` have changed compared to the original `explore_odrive.py`. See `odrivetool --help` for more details.
@@ -19,11 +22,15 @@ Please add a note of your changes below this heading if you make a Pull Request.
   * No need to restart the `odrivetool` shell when devices get disconnected and reconnected
   * ODrive accesses from within python tools are now thread-safe. That means you can read from the same remote property from multiple threads concurrently.
   * The liveplotter (`odrivetool liveplotter`, formerly `liveplotter.py`) does no longer steal focus and closes as expected
+  * Add commands `odrivetool backup-config` and `odrivetool restore-config`
   * (experimental: start liveplotter from `odrivetool` shell by typing `start_liveplotter(lambda: odrv0.motor0.encoder.encoder_state)`)
 * `make write_otp` command to burn the board version onto the ODrive's one-time programmable memory. If you have an ODrive v3.4 or older, you can run this once for a better firmware update user experience in the future. Run the command without any options for more details. Once set, the board version is exposed through the `hw_version_[...]` properties.
 * bake Git-derived firmware version into firmware binary. The firmware version is exposed through the `fw_version_[...]` properties.
 * Set thread priority of USB pump thread above protocol thread
 * GPIO3 not sensitive to edges by default
+* The device now appears as a composite device on USB. One subdevice is still a CDC device (virtual COM port), the other subdevice is a vendor specific class. This should resolve several issues that were caused by conflicting kernel drivers or OS services.
+* Add WinUSB descriptors. This will tell Windows >= 8 to automatically load winusb.sys for the ODrive (only for the vendor specific subdevice). This makes it possible to use the ODrive from userspace via WinUSB with zero configuration. The Python tool currently still uses libusb so Zadig is still required.
+* Add a configuration to enable the ASCII protocol on USB at runtime. This will only enable the ASCII protocol on the USB CDC subdevice, not the vendor specific subdevice so the python tools will still be able to talk to the ODrive.
 
 ### Fixed
 * Enums now transported with correct underlying type on native protocol

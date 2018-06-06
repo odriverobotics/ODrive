@@ -133,6 +133,8 @@ extern USBD_DescriptorsTypeDef FS_Desc;
 
 /* USER CODE BEGIN EXPORTED_FUNCTIONS */
 
+uint8_t * USBD_UsrStrDescriptor(struct _USBD_HandleTypeDef *pdev, uint8_t index,  uint16_t *length);
+
 /* USER CODE END EXPORTED_FUNCTIONS */
 
 /**

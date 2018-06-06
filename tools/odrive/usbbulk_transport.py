@@ -46,20 +46,30 @@ class USBBulkTransport(odrive.protocol.PacketSource, odrive.protocol.PacketSink)
     if platform.system() != 'Windows':
         self.dev.reset()
 
-    interface_number = 1
+    #self.dev.set_configuration() # no args: set first configuration
+
+    # Find the best interface
+    self.cfg = self.dev.get_active_configuration()
+    custom_interfaces = [i for i in self.cfg.interfaces() if i.bInterfaceClass == 0x00 and i.bInterfaceSubClass == 0x01]
+    cdc_interfaces = [i for i in self.cfg.interfaces() if i.bInterfaceClass == 0x0a and i.bInterfaceSubClass == 0x00]
+    all_compatible_interfaces = custom_interfaces + cdc_interfaces
+    if len(all_compatible_interfaces) == 0:
+      raise Exception("the device has no compatible interfaces")
+    self.intf = all_compatible_interfaces[0]
+
+    # Try to detach kernel driver from interface
+    #interface_number = 1
     try:
-      if self.dev.is_kernel_driver_active(interface_number):
-        self.dev.detach_kernel_driver(interface_number)
+      if self.dev.is_kernel_driver_active(self.intf.bInterfaceNumber):
+        self.dev.detach_kernel_driver(self.intf.bInterfaceNumber)
         self._printer("Detached Kernel Driver")
+      else:
+        self._printer("Kernel Driver was not attached")
     except NotImplementedError:
       pass #is_kernel_driver_active not implemented on Windows
 
-    self.dev.set_configuration() # no args: set first configuration
-    self.cfg = self.dev.get_active_configuration()
-    self.intf = self.cfg[(1,0)] # this implicitly claims the interface
-    # write endpoint
+    # find write endpoint (first OUT endpoint)
     self.epw = usb.util.find_descriptor(self.intf,
-        # match the first OUT endpoint
         custom_match = \
         lambda e: \
             usb.util.endpoint_direction(e.bEndpointAddress) == \
@@ -67,9 +77,8 @@ class USBBulkTransport(odrive.protocol.PacketSource, odrive.protocol.PacketSink)
     )
     assert self.epw is not None
     self._printer("EndpointAddress for writing {}".format(self.epw.bEndpointAddress))
-    # read endpoint
+    # find read endpoint (first IN endpoint)
     self.epr = usb.util.find_descriptor(self.intf,
-        # match the first IN endpoint
         custom_match = \
         lambda e: \
             usb.util.endpoint_direction(e.bEndpointAddress) == \
@@ -154,15 +163,18 @@ def discover_channels(path, serial_number, callback, cancellation_token, channel
   known_devices = []
   def device_matcher(device):
     #print("  test {:04X}:{:04X}".format(device.idVendor, device.idProduct))
-    if (device.bus, device.address) in known_devices:
-      return False
-    if bus != None and device.bus != bus:
-      return False
-    if address != None and device.address != address:
-      return False
-    if serial_number != None and device.serial_number != serial_number:
-      return False
-    if (device.idVendor, device.idProduct) not in ODRIVE_VID_PID_PAIRS:
+    try:
+      if (device.bus, device.address) in known_devices:
+        return False
+      if bus != None and device.bus != bus:
+        return False
+      if address != None and device.address != address:
+        return False
+      if serial_number != None and device.serial_number != serial_number:
+        return False
+      if (device.idVendor, device.idProduct) not in ODRIVE_VID_PID_PAIRS:
+        return False
+    except:
       return False
     return True
 
