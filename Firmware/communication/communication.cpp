@@ -131,6 +131,7 @@ static inline auto make_obj_tree() {
             make_protocol_property("brake_resistance", &board_config.brake_resistance),
             // TODO: changing this currently requires a reboot - fix this
             make_protocol_property("enable_uart", &board_config.enable_uart),
+            make_protocol_property("enable_ascii_protocol_on_usb", &board_config.enable_ascii_protocol_on_usb),
             make_protocol_property("dc_bus_undervoltage_trip_level", &board_config.dc_bus_undervoltage_trip_level),
             make_protocol_property("dc_bus_overvoltage_trip_level", &board_config.dc_bus_overvoltage_trip_level)
         ),
@@ -167,8 +168,8 @@ void communication_task(void * ctx) {
     auto endpoint_provider = EndpointProvider_from_MemberList<tree_type>(*tree_ptr);
     set_application_endpoints(&endpoint_provider);
     
-    serve_on_uart();
-    serve_on_usb();
+    start_uart_server();
+    start_usb_server();
 
     for (;;) {
         osDelay(1000); // nothing to do

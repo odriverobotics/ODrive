@@ -43,8 +43,6 @@ if tup.getconfig("USB_PROTOCOL") == "native" or tup.getconfig("USB_PROTOCOL") ==
     FLAGS += "-DUSB_PROTOCOL_NATIVE"
 elseif tup.getconfig("USB_PROTOCOL") == "native-stream" then
     FLAGS += "-DUSB_PROTOCOL_NATIVE_STREAM_BASED"
-elseif tup.getconfig("USB_PROTOCOL") == "ascii" then
-    FLAGS += "-DUSB_PROTOCOL_ASCII"
 elseif tup.getconfig("USB_PROTOCOL") == "stdout" then
     FLAGS += "-DUSB_PROTOCOL_STDOUT"
 elseif tup.getconfig("USB_PROTOCOL") == "none" then

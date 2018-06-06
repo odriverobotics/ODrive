@@ -28,6 +28,9 @@ Please add a note of your changes below this heading if you make a Pull Request.
 * bake Git-derived firmware version into firmware binary. The firmware version is exposed through the `fw_version_[...]` properties.
 * Set thread priority of USB pump thread above protocol thread
 * GPIO3 not sensitive to edges by default
+* The device now appears as a composite device on USB. One subdevice is still a CDC device (virtual COM port), the other subdevice is a vendor specific class. This should resolve several issues that were caused by conflicting kernel drivers or OS services.
+* Add WinUSB descriptors. This will tell Windows >= 8 to automatically load winusb.sys for the ODrive (only for the vendor specific subdevice). This makes it possible to use the ODrive from userspace via WinUSB with zero configuration. The Python tool currently still uses libusb so Zadig is still required.
+* Add a configuration to enable the ASCII protocol on USB at runtime. This will only enable the ASCII protocol on the USB CDC subdevice, not the vendor specific subdevice so the python tools will still be able to talk to the ODrive.
 
 ### Fixed
 * Enums now transported with correct underlying type on native protocol
