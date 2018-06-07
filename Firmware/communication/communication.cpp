@@ -187,7 +187,8 @@ void communication_task(void * ctx) {
     if (board_config.enable_i2c_instead_of_can) {
         start_i2c_server();
     } else {
-        serve_on_can(can1_ctx, CAN1, serial_number);
+        // TODO: finish implementing CAN
+        // start_can_server(can1_ctx, CAN1, serial_number);
     }
 
     for (;;) {

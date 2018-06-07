@@ -129,7 +129,7 @@ void server_thread(CAN_context* ctx) {
     }
 }
 
-bool serve_on_can(CAN_context& ctx, CAN_TypeDef *port, uint64_t serial_number) {
+bool start_can_server(CAN_context& ctx, CAN_TypeDef *port, uint64_t serial_number) {
     //MX_CAN1_Init(); // TODO: flatten
 #if defined(CAN1)
     if (port == CAN1) ctx.handle = &hcan1, ctxs[0] = &ctx; else

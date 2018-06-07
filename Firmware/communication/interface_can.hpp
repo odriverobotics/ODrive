@@ -50,6 +50,6 @@ struct CAN_context {
     }
 };
 
-bool serve_on_can(CAN_context& ctx, CAN_TypeDef *hcan, uint64_t serial_number);
+bool start_can_server(CAN_context& ctx, CAN_TypeDef *hcan, uint64_t serial_number);
 
 #endif // __INTERFACE_CAN_HPP
