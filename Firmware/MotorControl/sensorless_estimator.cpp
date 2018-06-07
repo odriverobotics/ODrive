@@ -12,7 +12,7 @@ SensorlessEstimator::SensorlessEstimator()
     pll_ki_ = 0.25f * (pll_kp_ * pll_kp_);
 }
 
-bool SensorlessEstimator::update(float* pos_estimate, float* vel_estimate, float* phase_output) {
+bool SensorlessEstimator::update() {
     // Algorithm based on paper: Sensorless Control of Surface-Mount Permanent-Magnet Synchronous Motors Based on a Nonlinear Observer
     // http://cas.ensmp.fr/~praly/Telechargement/Journaux/2010-IEEE_TPEL-Lee-Hong-Nam-Ortega-Praly-Astolfi.pdf
     // In particular, equation 8 (and by extension eqn 4 and 6).
@@ -23,7 +23,7 @@ bool SensorlessEstimator::update(float* pos_estimate, float* vel_estimate, float
 
     // Check that we don't get problems with discrete time approximation
     if (!(current_meas_period * pll_kp_ < 1.0f)) {
-        error_ |= ERROR_NUMERICAL;
+        error_ |= ERROR_UNSTABLE_GAIN;
         return false;
     }
 
@@ -83,21 +83,5 @@ bool SensorlessEstimator::update(float* pos_estimate, float* vel_estimate, float
     // update PLL velocity
     pll_vel_ += current_meas_period * pll_ki_ * delta_phase;
 
-    //TODO TEMP TEST HACK
-    // static int trigger_ctr = 0;
-    // if (++trigger_ctr >= 3*current_meas_hz) {
-    //     trigger_ctr = 0;
-
-    //     //Change to sensorless units
-    //     motor->vel_gain = 15.0f / 200.0f;
-    //     motor->vel_setpoint = 800.0f * motor->encoder.motor_dir;
-
-    //     //Change mode
-    //     motor->rotor_mode = ROTOR_MODE_SENSORLESS;
-    // }
-
-    if (pos_estimate) *pos_estimate = pll_pos_;
-    if (vel_estimate) *vel_estimate = pll_vel_;
-    if (phase_output) *phase_output = phase_;
     return true;
 };

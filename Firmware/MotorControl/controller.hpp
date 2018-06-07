@@ -18,7 +18,7 @@ struct ControllerConfig_t {
     Motor_control_mode_t control_mode = CTRL_MODE_POSITION_CONTROL;  //see: Motor_control_mode_t
     float pos_gain = 20.0f;  // [(counts/s) / counts]
     float vel_gain = 5.0f / 10000.0f;  // [A/(counts/s)]
-    // float vel_gain = 15.0f / 200.0f, // [A/(rad/s)] <sensorless example>
+    // float vel_gain = 5.0f / 200.0f, // [A/(rad/s)] <sensorless example>
     float vel_integrator_gain = 10.0f / 10000.0f;  // [A/(counts/s * s)]
     float vel_limit = 20000.0f;           // [counts/s]
 };
@@ -26,6 +26,7 @@ struct ControllerConfig_t {
 class Controller {
 public:
     Controller(ControllerConfig_t& config);
+    void reset();
 
     void set_pos_setpoint(float pos_setpoint, float vel_feed_forward, float current_feed_forward);
     void set_vel_setpoint(float vel_setpoint, float current_feed_forward);

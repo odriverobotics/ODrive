@@ -33,15 +33,23 @@ Motor::Motor(const MotorHardwareConfig_t& hw_config,
 //
 // @returns: True on success, false otherwise
 bool Motor::arm() {
-    // Wait until the interrupt handler triggers twice. After the first wait there is an
-    // undefined period until the next trigger. After the second wait we know for sure
-    // that we have exactly one full interrupt period until the third trigger. This gives
+
+    // Reset controller states, integrators, setpoints, etc.
+    axis_->controller_.reset();
+    reset_current_control();
+
+    // Wait until the interrupt handler triggers twice. This gives
     // the control loop the correct time quota to set up modulation timings.
-    if (!(axis_->wait_for_current_meas() && axis_->wait_for_current_meas()))
+    if (!axis_->wait_for_current_meas())
         return axis_->error_ |= Axis::ERROR_CURRENT_MEASUREMENT_TIMEOUT, false;
     next_timings_valid_ = false;
     safety_critical_arm_motor_pwm(*this);
     return true;
+}
+
+void Motor::reset_current_control() {
+    current_control_.v_current_control_integral_d = 0.0f;
+    current_control_.v_current_control_integral_q = 0.0f;
 }
 
 // @brief Tune the current controller based on phase resistance and inductance
@@ -57,41 +65,51 @@ void Motor::update_current_controller_gains() {
 
 // @brief Set up the gate drivers
 void Motor::DRV8301_setup() {
-    DRV_SPI_8301_Vars_t* local_regs = &gate_driver_regs_;
-
-    DRV8301_enable(&gate_driver_);
-    DRV8301_setupSpi(&gate_driver_, local_regs);
-
-    // TODO we can use reporting only if we actually wire up the nOCTW pin
-    local_regs->Ctrl_Reg_1.OC_MODE = DRV8301_OcMode_LatchShutDown;
-    // Overcurrent set to approximately 150A at 100degC. This may need tweaking.
-    local_regs->Ctrl_Reg_1.OC_ADJ_SET = DRV8301_VdsLevel_0p730_V;
+    // for reference:
     // 20V/V on 500uOhm gives a range of +/- 150A
     // 40V/V on 500uOhm gives a range of +/- 75A
     // 20V/V on 666uOhm gives a range of +/- 110A
     // 40V/V on 666uOhm gives a range of +/- 55A
-    local_regs->Ctrl_Reg_2.GAIN = DRV8301_ShuntAmpGain_40VpV;
-    // local_regs->Ctrl_Reg_2.GAIN = DRV8301_ShuntAmpGain_20VpV;
 
-    switch (local_regs->Ctrl_Reg_2.GAIN) {
-        case DRV8301_ShuntAmpGain_10VpV:
-            phase_current_rev_gain_ = 1.0f / 10.0f;
-            break;
-        case DRV8301_ShuntAmpGain_20VpV:
-            phase_current_rev_gain_ = 1.0f / 20.0f;
-            break;
-        case DRV8301_ShuntAmpGain_40VpV:
-            phase_current_rev_gain_ = 1.0f / 40.0f;
-            break;
-        case DRV8301_ShuntAmpGain_80VpV:
-            phase_current_rev_gain_ = 1.0f / 80.0f;
-            break;
-    }
+    // Solve for exact gain, then snap down to have equal or larger range as requested
+    // or largest possible range otherwise
+    static const float kMargin = 0.90f;
+    static const float max_output_swing = 1.6f; // [V] out of amplifier
+    float max_unity_gain_current = kMargin * max_output_swing * hw_config_.shunt_conductance; // [A]
+    float requested_gain = max_unity_gain_current / config_.requested_current_range; // [V/V]
 
-    float margin = 0.90f;
-    float max_input = margin * 0.3f * hw_config_.shunt_conductance;
-    float max_swing = margin * 1.6f * hw_config_.shunt_conductance * phase_current_rev_gain_;
-    current_control_.max_allowed_current = std::min(max_input, max_swing);
+    // Decoding array for snapping gain
+    std::array<std::pair<float, DRV8301_ShuntAmpGain_e>, 4> gain_choices = { 
+        std::make_pair(10.0f, DRV8301_ShuntAmpGain_10VpV),
+        std::make_pair(20.0f, DRV8301_ShuntAmpGain_20VpV),
+        std::make_pair(40.0f, DRV8301_ShuntAmpGain_40VpV),
+        std::make_pair(80.0f, DRV8301_ShuntAmpGain_80VpV)
+    };
+
+    // We use lower_bound in reverse because it snaps up by default, we want to snap down.
+    auto gain_snap_down = std::lower_bound(gain_choices.crbegin(), gain_choices.crend(), requested_gain, 
+    [](std::pair<float, DRV8301_ShuntAmpGain_e> pair, float val){
+        return pair.first > val;
+    });
+
+    // If we snap to outside the array, clip to smallest val
+    if(gain_snap_down == gain_choices.crend())
+       --gain_snap_down;
+
+    // Values for current controller
+    phase_current_rev_gain_ = 1.0f / gain_snap_down->first;
+    // Clip all current control to actual usable range
+    current_control_.max_allowed_current = max_unity_gain_current * phase_current_rev_gain_;
+
+    // We now have the gain settings we want to use, lets set up DRV chip
+    DRV_SPI_8301_Vars_t* local_regs = &gate_driver_regs_;
+    DRV8301_enable(&gate_driver_);
+    DRV8301_setupSpi(&gate_driver_, local_regs);
+
+    local_regs->Ctrl_Reg_1.OC_MODE = DRV8301_OcMode_LatchShutDown;
+    // Overcurrent set to approximately 150A at 100degC. This may need tweaking.
+    local_regs->Ctrl_Reg_1.OC_ADJ_SET = DRV8301_VdsLevel_0p730_V;
+    local_regs->Ctrl_Reg_2.GAIN = gain_snap_down->second;
 
     local_regs->SndCmd = true;
     DRV8301_writeData(&gate_driver_, local_regs);
@@ -108,17 +126,22 @@ bool Motor::check_DRV_fault() {
         // Update DRV Fault Code
         drv_fault_ = DRV8301_getFaultType(&gate_driver_);
         // Update/Cache all SPI device registers
-        DRV_SPI_8301_Vars_t* local_regs = &gate_driver_regs_;
-        local_regs->RcvCmd = true;
-        DRV8301_readData(&gate_driver_, local_regs);
+        // DRV_SPI_8301_Vars_t* local_regs = &gate_driver_regs_;
+        // local_regs->RcvCmd = true;
+        // DRV8301_readData(&gate_driver_, local_regs);
         return false;
     };
     return true;
 }
 
+void Motor::set_error(Motor::Error_t error){
+    error_ |= error;
+    axis_->error_ |= Axis::ERROR_MOTOR_FAILED;
+}
+
 bool Motor::do_checks() {
     if (!check_DRV_fault()) {
-        error_ |= ERROR_DRV_FAULT;
+        set_error(ERROR_DRV_FAULT);
         return false;
     }
     return true;
@@ -161,7 +184,7 @@ bool Motor::measure_phase_resistance(float test_current, float max_voltage) {
         float Ialpha = -(current_meas_.phB + current_meas_.phC);
         test_voltage += (kI * current_meas_period) * (test_current - Ialpha);
         if (test_voltage > max_voltage || test_voltage < -max_voltage)
-            return error_ |= ERROR_PHASE_RESISTANCE_OUT_OF_RANGE, false;
+            return set_error(ERROR_PHASE_RESISTANCE_OUT_OF_RANGE), false;
 
         // Test voltage along phase A
         if (!enqueue_voltage_timings(test_voltage, 0.0f))
@@ -170,7 +193,7 @@ bool Motor::measure_phase_resistance(float test_current, float max_voltage) {
 
         return ++i < num_test_cycles;
     });
-    if (axis_->error_ != Axis::ERROR_NO_ERROR)
+    if (axis_->error_ != Axis::ERROR_NONE)
         return false;
 
     //// De-energize motor
@@ -199,7 +222,7 @@ bool Motor::measure_phase_inductance(float voltage_low, float voltage_high) {
 
         return ++t < (num_cycles << 1);
     });
-    if (axis_->error_ != Axis::ERROR_NO_ERROR)
+    if (axis_->error_ != Axis::ERROR_NONE)
         return false;
 
     //// De-energize motor
@@ -215,7 +238,7 @@ bool Motor::measure_phase_inductance(float voltage_low, float voltage_high) {
     config_.phase_inductance = L;
     // TODO arbitrary values set for now
     if (L < 1e-6f || L > 500e-6f)
-        return error_ |= ERROR_PHASE_INDUCTANCE_OUT_OF_RANGE, false;
+        return set_error(ERROR_PHASE_INDUCTANCE_OUT_OF_RANGE), false;
     return true;
 }
 
@@ -242,7 +265,7 @@ bool Motor::run_calibration() {
 bool Motor::enqueue_modulation_timings(float mod_alpha, float mod_beta) {
     float tA, tB, tC;
     if (SVM(mod_alpha, mod_beta, &tA, &tB, &tC) != 0)
-        return error_ |= ERROR_NUMERICAL, false;
+        return set_error(ERROR_MODULATION_MAGNITUDE), false;
     next_timings_[0] = (uint16_t)(tA * (float)TIM_1_8_PERIOD_CLOCKS);
     next_timings_[1] = (uint16_t)(tB * (float)TIM_1_8_PERIOD_CLOCKS);
     next_timings_[2] = (uint16_t)(tC * (float)TIM_1_8_PERIOD_CLOCKS);
@@ -350,7 +373,7 @@ bool Motor::update(float current_setpoint, float phase) {
         if(!FOC_voltage(0.0f, current_setpoint, phase))
             return false;
     } else {
-        error_ |= ERROR_NOT_IMPLEMENTED_MOTOR_TYPE;
+        set_error(ERROR_NOT_IMPLEMENTED_MOTOR_TYPE);
         return false;
     }
     return true;

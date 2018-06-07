@@ -552,7 +552,7 @@ ProtocolObject<TMembers...> make_protocol_object(const char * name, TMembers&&..
 
 // TODO: move to cpp_utils
 #define ENABLE_IF_SAME(a, b, type) \
-    template<typename T = a> typename std::enable_if_t<std::is_same<T, b>::value, bool>
+    template<typename T = a> typename std::enable_if_t<std::is_same<T, b>::value, type>
 
 template<typename TProperty>
 class ProtocolProperty : public Endpoint {
@@ -635,6 +635,26 @@ public:
         snprintf(buffer, length, "%lu", *property_);
         return true;
     }
+    ENABLE_IF_SAME(std::decay_t<TProperty>, int16_t, bool)
+    get_string_ex(char * buffer, size_t length, int) {
+        snprintf(buffer, length, "%hd", *property_);
+        return true;
+    }
+    ENABLE_IF_SAME(std::decay_t<TProperty>, uint16_t, bool)
+    get_string_ex(char * buffer, size_t length, int) {
+        snprintf(buffer, length, "%hu", *property_);
+        return true;
+    }
+    ENABLE_IF_SAME(std::decay_t<TProperty>, int8_t, bool)
+    get_string_ex(char * buffer, size_t length, int) {
+        snprintf(buffer, length, "%hhd", *property_);
+        return true;
+    }
+    ENABLE_IF_SAME(std::decay_t<TProperty>, uint8_t, bool)
+    get_string_ex(char * buffer, size_t length, int) {
+        snprintf(buffer, length, "%hhu", *property_);
+        return true;
+    }
     ENABLE_IF_SAME(std::decay_t<TProperty>, bool, bool)
     get_string_ex(char * buffer, size_t length, int) {
         buffer[0] = (*property_) ? '1' : '0';
@@ -647,6 +667,7 @@ public:
     bool get_string(char * buffer, size_t length) final {
         return get_string_ex(buffer, length, 0);
     }
+
     ENABLE_IF_SAME(TProperty, float, bool)
     set_string_ex(char * buffer, size_t length, int) {
         return sscanf(buffer, "%f", property_) == 1;
@@ -658,6 +679,22 @@ public:
     ENABLE_IF_SAME(TProperty, uint32_t, bool)
     set_string_ex(char * buffer, size_t length, int) {
         return sscanf(buffer, "%lu", property_) == 1;
+    }
+    ENABLE_IF_SAME(TProperty, int16_t, bool)
+    set_string_ex(char * buffer, size_t length, int) {
+        return sscanf(buffer, "%hd", property_) == 1;
+    }
+    ENABLE_IF_SAME(TProperty, uint16_t, bool)
+    set_string_ex(char * buffer, size_t length, int) {
+        return sscanf(buffer, "%hu", property_) == 1;
+    }
+    ENABLE_IF_SAME(TProperty, int8_t, bool)
+    set_string_ex(char * buffer, size_t length, int) {
+        return sscanf(buffer, "%hhd", property_) == 1;
+    }
+    ENABLE_IF_SAME(TProperty, uint8_t, bool)
+    set_string_ex(char * buffer, size_t length, int) {
+        return sscanf(buffer, "%hhu", property_) == 1;
     }
     ENABLE_IF_SAME(TProperty, bool, bool)
     set_string_ex(char * buffer, size_t length, int) {
@@ -775,22 +812,51 @@ struct PropertyListFactory<TProperty, TProperties...> {
 };
 
 
-template<typename TObj, typename TRet, typename ... TArgs>
-class ProtocolFunction : public Endpoint {
+template<typename ... Types>
+struct return_type;
+
+template<>
+struct return_type<> { typedef void type; };
+template<typename T>
+struct return_type<T> { typedef T type; };
+template<typename T, typename ... Ts>
+struct return_type<T, Ts...> { typedef std::tuple<T, Ts...> type; };
+
+
+
+template<typename TObj, typename ... TInputsAndOutputs>
+class ProtocolFunction;
+
+template<typename TObj, typename ... TInputs, typename ... TOutputs>
+    //template <typename ... TInputs> typename asd,
+    //template <typename ... TOutputs> typename ssss>
+class ProtocolFunction<TObj, std::tuple<TInputs...>, std::tuple<TOutputs...>> : Endpoint {
 public:
-    static constexpr size_t endpoint_count = 1 + MemberList<ProtocolProperty<TArgs>...>::endpoint_count;
-    template<typename ... TNames>
-    ProtocolFunction(const char * name, TObj& obj, TRet(TObj::*func_ptr)(TArgs...), TNames ... names) :
-        name_(name), all_arg_names_{names...}, obj_(obj), func_ptr_(func_ptr),
-        input_properties_(PropertyListFactory<TArgs...>::template make_property_list<0>(all_arg_names_, in_args_))
+
+    // @brief The return type of the function as written by a C++ programmer
+    using TRet = typename return_type<TOutputs...>::type;
+
+    static constexpr size_t endpoint_count = 1 + MemberList<ProtocolProperty<TInputs>...>::endpoint_count + MemberList<ProtocolProperty<TOutputs>...>::endpoint_count;
+
+    ProtocolFunction(const char * name, TObj& obj, TRet(TObj::*func_ptr)(TInputs...),
+            std::array<const char *, sizeof...(TInputs)> input_names,
+            std::array<const char *, sizeof...(TOutputs)> output_names) :
+        name_(name), obj_(&obj), func_ptr_(func_ptr),
+        input_names_{input_names}, output_names_{output_names},
+        input_properties_(PropertyListFactory<TInputs...>::template make_property_list<0>(input_names_, in_args_)),
+        output_properties_(PropertyListFactory<TOutputs...>::template make_property_list<0>(output_names_, out_args_))
     {
         LOG_PROTO("my tuple is at %x and of size %u\r\n", (uintptr_t)&in_args_, sizeof(in_args_));
     }
 
+    // The custom copy constructor is needed because otherwise the
+    // input_properties_ and output_properties_ would point to memory
+    // locations of the old object.
     ProtocolFunction(const ProtocolFunction& other) :
-        name_(other.name_), all_arg_names_(other.all_arg_names_), obj_(other.obj_), func_ptr_(other.func_ptr_),
-        input_properties_(PropertyListFactory<TArgs...>::template make_property_list<0>(
-            all_arg_names_, in_args_))
+        name_(other.name_), obj_(other.obj_), func_ptr_(other.func_ptr_),
+        input_names_{other.input_names_}, output_names_{other.output_names_},
+        input_properties_(PropertyListFactory<TInputs...>::template make_property_list<0>(input_names_, in_args_)),
+        output_properties_(PropertyListFactory<TOutputs...>::template make_property_list<0>(output_names_, out_args_))
     {
         LOG_PROTO("COPIED! my tuple is at %x and of size %u\r\n", (uintptr_t)&in_args_, sizeof(in_args_));
     }
@@ -807,8 +873,10 @@ public:
         write_string(id_buf, output);
         
         // write arguments
-        write_string(",\"type\":\"function\",\"arguments\":[", output);
+        write_string(",\"type\":\"function\",\"inputs\":[", output);
         input_properties_.write_json(id + 1, output),
+        write_string("],\"outputs\":[", output);
+        output_properties_.write_json(id + 1 + decltype(input_properties_)::endpoint_count, output),
         write_string("]}", output);
     }
 
@@ -820,6 +888,22 @@ public:
         if (id < length)
             list[id] = this;
         input_properties_.register_endpoints(list, id + 1, length);
+        output_properties_.register_endpoints(list, id + 1 + decltype(input_properties_)::endpoint_count, length);
+    }
+
+    template<typename> std::enable_if_t<sizeof...(TOutputs) == 0>
+    handle_ex() {
+        invoke_function_with_tuple(*obj_, func_ptr_, in_args_);
+    }
+
+    template<typename> std::enable_if_t<sizeof...(TOutputs) == 1>
+    handle_ex() {
+        std::get<0>(out_args_) = invoke_function_with_tuple(*obj_, func_ptr_, in_args_);
+    }
+    
+    template<typename> std::enable_if_t<sizeof...(TOutputs) >= 2>
+    handle_ex() {
+        out_args_ = invoke_function_with_tuple(*obj_, func_ptr_, in_args_);
     }
 
     void handle(const uint8_t* input, size_t input_length, StreamSink* output) {
@@ -828,20 +912,30 @@ public:
         (void) output;
         LOG_PROTO("tuple still at %x and of size %u\r\n", (uintptr_t)&in_args_, sizeof(in_args_));
         LOG_PROTO("invoke function using %d and %.3f\r\n", std::get<0>(in_args_), std::get<1>(in_args_));
-        invoke_function_with_tuple(obj_, func_ptr_, in_args_);
+        handle_ex<void>();
     }
 
     const char * name_;
-    std::array<const char *, sizeof...(TArgs)> all_arg_names_; // TODO: remove
-    TObj& obj_;
-    TRet(TObj::*func_ptr_)(TArgs...);
-    std::tuple<TArgs...> in_args_;
-    MemberList<ProtocolProperty<TArgs>...> input_properties_;
+    TObj* obj_;
+    TRet(TObj::*func_ptr_)(TInputs...);
+    std::array<const char *, sizeof...(TInputs)> input_names_; // TODO: remove
+    std::array<const char *, sizeof...(TOutputs)> output_names_; // TODO: remove
+    std::tuple<TInputs...> in_args_;
+    std::tuple<TOutputs...> out_args_;
+    MemberList<ProtocolProperty<TInputs>...> input_properties_;
+    MemberList<ProtocolProperty<TOutputs>...> output_properties_;
 };
 
-template<typename TObj, typename TRet, typename ... TArgs, typename ... TNames, typename = std::enable_if_t<sizeof...(TArgs) == sizeof...(TNames)>>
-ProtocolFunction<TObj, TRet, TArgs...> make_protocol_function(const char * name, TObj& obj, TRet(TObj::*func_ptr)(TArgs...), TNames ... names) {
-    return ProtocolFunction<TObj, TRet, TArgs...>(name, obj, func_ptr, names...);
+template<typename TObj, typename ... TArgs, typename ... TNames,
+        typename = std::enable_if_t<sizeof...(TArgs) == sizeof...(TNames)>>
+ProtocolFunction<TObj, std::tuple<TArgs...>, std::tuple<>> make_protocol_function(const char * name, TObj& obj, void(TObj::*func_ptr)(TArgs...), TNames ... names) {
+    return ProtocolFunction<TObj, std::tuple<TArgs...>, std::tuple<>>(name, obj, func_ptr, {names...}, {});
+}
+
+template<typename TObj, typename TRet, typename ... TArgs, typename ... TNames,
+        typename = std::enable_if_t<sizeof...(TArgs) == sizeof...(TNames) && !std::is_void<TRet>::value>>
+ProtocolFunction<TObj, std::tuple<TArgs...>, std::tuple<TRet>> make_protocol_function(const char * name, TObj& obj, TRet(TObj::*func_ptr)(TArgs...), TNames ... names) {
+    return ProtocolFunction<TObj, std::tuple<TArgs...>, std::tuple<TRet>>(name, obj, func_ptr, {names...}, {"result"});
 }
 
 

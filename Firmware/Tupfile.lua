@@ -23,6 +23,14 @@ elseif boardversion == "v3.4-48V" then
     boarddir = 'Board/v3'
     FLAGS += "-DHW_VERSION_MAJOR=3 -DHW_VERSION_MINOR=4"
     FLAGS += "-DHW_VERSION_VOLTAGE=48"
+elseif boardversion == "v3.5-24V" then
+    boarddir = 'Board/v3'
+    FLAGS += "-DHW_VERSION_MAJOR=3 -DHW_VERSION_MINOR=5"
+    FLAGS += "-DHW_VERSION_VOLTAGE=24"
+elseif boardversion == "v3.5-48V" then
+    boarddir = 'Board/v3'
+    FLAGS += "-DHW_VERSION_MAJOR=3 -DHW_VERSION_MINOR=5"
+    FLAGS += "-DHW_VERSION_VOLTAGE=48"
 elseif boardversion == "" then
     error("board version not specified - take a look at tup.config.default")
 else
@@ -35,8 +43,6 @@ if tup.getconfig("USB_PROTOCOL") == "native" or tup.getconfig("USB_PROTOCOL") ==
     FLAGS += "-DUSB_PROTOCOL_NATIVE"
 elseif tup.getconfig("USB_PROTOCOL") == "native-stream" then
     FLAGS += "-DUSB_PROTOCOL_NATIVE_STREAM_BASED"
-elseif tup.getconfig("USB_PROTOCOL") == "ascii" then
-    FLAGS += "-DUSB_PROTOCOL_ASCII"
 elseif tup.getconfig("USB_PROTOCOL") == "stdout" then
     FLAGS += "-DUSB_PROTOCOL_STDOUT"
 elseif tup.getconfig("USB_PROTOCOL") == "none" then
@@ -99,7 +105,7 @@ LDFLAGS += '-Wl,--undefined=uxTopUsedPriority'
 
 -- common flags for ASM, C and C++
 OPT += '-Og'
-OPT += '-ffast-math'
+OPT += '-ffast-math -fno-finite-math-only'
 tup.append_table(FLAGS, OPT)
 tup.append_table(LDFLAGS, OPT)
 
@@ -130,7 +136,7 @@ build{
 }
 
 tup.frule{
-    command='bash dump_version.sh %o',
+    command='python ../tools/odrive/version.py --output %o',
     outputs={'build/version.h'}
 }
 
@@ -156,6 +162,7 @@ build{
         'communication/interface_uart.cpp',
         'communication/interface_usb.cpp',
         'communication/interface_can.cpp',
+        'communication/interface_i2c.cpp',
         'FreeRTOS-openocd.c'
     },
     includes={

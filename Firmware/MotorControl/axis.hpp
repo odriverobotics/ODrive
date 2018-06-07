@@ -26,7 +26,7 @@ struct AxisConfig_t {
     bool startup_encoder_offset_calibration = false; //<! run encoder offset calibration after startup, skip otherwise
     bool startup_closed_loop_control = false; //<! enable closed loop control after calibration/startup
     bool startup_sensorless_control = false; //<! enable sensorless control after calibration/startup
-    bool enable_step_dir = true; //<! enable step/dir input after calibration
+    bool enable_step_dir = false; //<! enable step/dir input after calibration
                                  //   For M0 this has no effect if enable_uart is true
 
     float counts_per_step = 2.0f;
@@ -42,7 +42,7 @@ struct AxisConfig_t {
 class Axis {
 public:
     enum Error_t {
-        ERROR_NO_ERROR = 0x00,
+        ERROR_NONE = 0x00,
         ERROR_INVALID_STATE = 0x01, //<! an invalid state was requested
         ERROR_DC_BUS_UNDER_VOLTAGE = 0x02,
         ERROR_DC_BUS_OVER_VOLTAGE = 0x04,
@@ -78,6 +78,7 @@ public:
     bool check_DRV_fault();
     bool check_PSU_brownout();
     bool do_checks();
+    bool do_updates();
 
     // @brief Runs the specified update handler at the frequency of the current measurements.
     //
@@ -102,25 +103,14 @@ public:
     template<typename T>
     void run_control_loop(const T& update_handler) {
         while (requested_state_ == AXIS_STATE_UNDEFINED) {
-            if (!brake_resistor_armed_) {
-                error_ |= ERROR_BRAKE_RESISTOR_DISARMED;
+            if (!do_checks()) // look for errors at axis level and also all subcomponents
                 break;
-            }
-            if ((current_state_ != AXIS_STATE_IDLE) && (motor_.armed_state_ == Motor::ARMED_STATE_DISARMED)) {
-                // motor got disarmed in something other than the idle loop
-                error_ |= ERROR_MOTOR_DISARMED;
-                break;
-            }
-            if (motor_.error_ != Motor::ERROR_NO_ERROR) {
-                error_ |= ERROR_MOTOR_FAILED;
-                break;
-            }
-
-            if (!do_checks()) // error set during function call
+            if (!do_updates()) // Update all estimators
                 break;
 
-            if (!update_handler()) // error set during function call
-                break;
+            // Run main loop function, defer quitting for after wait
+            // TODO: change arming logic to arm after waiting
+            bool main_continue = update_handler();
 
             // Check we meet deadlines after queueing
             ++loop_counter_;
@@ -134,6 +124,9 @@ public:
                 error_ |= ERROR_CURRENT_MEASUREMENT_TIMEOUT;
                 break;
             }
+
+            if (!main_continue)
+                break;
         }
     }
 
@@ -156,7 +149,7 @@ public:
     volatile bool thread_id_valid_ = false;
 
     // variables exposed on protocol
-    Error_t error_ = ERROR_NO_ERROR;
+    Error_t error_ = ERROR_NONE;
     bool enable_step_dir_ = false; // auto enabled after calibration, based on config.enable_step_dir
     AxisState_t requested_state_ = AXIS_STATE_STARTUP_SEQUENCE;
     AxisState_t task_chain_[10] = { AXIS_STATE_UNDEFINED };

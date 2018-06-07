@@ -128,13 +128,6 @@ int SVM(float alpha, float beta, float* tA, float* tB, float* tC) {
     return result_valid ? 0 : -1;
 }
 
-//beware of inserting large angles!
-float wrap_pm_pi(float theta) {
-    while (theta >= M_PI) theta -= (2.0f * M_PI);
-    while (theta < -M_PI) theta += (2.0f * M_PI);
-    return theta;
-}
-
 // based on https://math.stackexchange.com/a/1105038/81278
 float fast_atan2(float y, float x) {
     // a := min (|x|, |y|) / max (|x|, |y|)

@@ -30,7 +30,7 @@ In this section we will set the compile-time parameters, later we will also set 
 
 To customize the compile time parameters, copy or rename the file `Firmware/tup.config.default` to `Firmware/tup.config` and edit the parameters in that file:
 
-__CONFIG_BOARD_VERSION__: The board version you're using. Can be `v3.1`, `v3.2`, `v3.3`, `v3.4-24V` or `v3.4-48V`. Check for a label on the upper side of the ODrive to find out which version you have.
+__CONFIG_BOARD_VERSION__: The board version you're using. Can be `v3.1`, `v3.2`, `v3.3`, `v3.4-24V`, `v3.4-48V`, `v3.5-24V` or `v3.5-48V`. Check for a label on the upper side of the ODrive to find out which version you have.
 
 __CONFIG_USB_PROTOCOL__: Defines which protocol the ODrive should use on the USB interface.
  * `native`: The native ODrive protocol. Use this if you want to use the python tools in this repo.
@@ -47,7 +47,7 @@ __CONFIG_UART_PROTOCOL__: Defines which protocol the ODrive should use on the UA
 <br><br>
 ## Downloading and Installing Tools
 ### Getting a programmer
-__Note:__ If you don't plan to make major firmware modifications you can use the built-in DFU feature.
+__Note:__ If you have ODrive v3.5 and newer, and don't plan to make major firmware modifications you can use the built-in DFU feature.
 In this case you don't need an SWD programmer and you can skip OpenOCD related instructions.
 
 Get a programmer that supports SWD (Serial Wire Debugging) and is ST-link v2 compatible. You can get them really cheap on [eBay](http://www.ebay.co.uk/itm/ST-Link-V2-Emulator-Downloader-Programming-Mini-Unit-STM8-STM32-with-20CM-Line-/391173940927?hash=item5b13c8a6bf:g:3g8AAOSw~OdVf-Tu) or many other places.
@@ -71,9 +71,10 @@ To compile the program, you first need to install the prerequisite tools:
 * No additional USB CDC driver should be required on Linux.
 
 #### Mac:
-* `brew cask install gcc-arm-embedded`:  GCC toolchain+debugger
-* `brew cask install osxfuse; brew install tup`: Build tool
-* `brew install openocd`: Programmer
+First install [Homebrew](https://brew.sh/). Then you can run these commands in Terminal:
+* `brew cask install gcc-arm-embedded`: to install GCC toolchain+debugger
+* `brew cask install osxfuse; brew install tup`: to install the build tool
+* `brew install openocd`: to install the programmer tool
 
 #### Windows:
 Install the following:
@@ -94,7 +95,7 @@ After installing all of the above, open a Git Bash shell. Continue at section [B
 * Run `make` in the `Firmware` directory.
 
 ### Flashing the firmware (standalone device)
-Note: ODrive v3.4 and earlier require you to flash with the external programmer first (see below), before you can reflash in standalone mode.
+Note: This method of updating the firmware is only supported on ODrive v3.5 and newer. If you have an older board you must instead use the method in the [next section](#flashing-the-firmware).
 * __Windows__: Use the [Zadig](http://zadig.akeo.ie/) utility to set ODrive (not STLink!) driver to libusb-win32. 
   * If 'Odrive version 3.x' is not in the list of devices upon opening Zadig, check 'List All Devices' from the options menu. With the Odrive selected in the device list choose 'libusb-win32' from the target driver list and select the large 'install driver' button.
 * Run `make dfu` in the `Firmware` directory.
@@ -138,7 +139,7 @@ For working with the ODrive code you don't need an IDE, but the open-source IDE 
 ## Communicating over USB or UART
 Warning: If testing USB or UART communication for the first time it is recommend that your motors are free to spin continuously and are not connected to a drivetrain with limited travel.
 ### From Linux/Windows/macOS
-There are two example python scripts to help you get started with controlling the ODrive using python. One will drop you into an interactive shell to query settings, parameters, and variables, and let you send setpoints manually ([tools/explore_odrive.py](../tools/explore_odrive.py)). The other is a demo application to show you how to control the ODrive programmatically ([tools/demo.py](../tools/demo.py)). Below follows a step-by-step guide on how to run these.
+There are two example python scripts to help you get started with controlling the ODrive using python. One will drop you into an interactive shell to query settings, parameters, and variables, and let you send setpoints manually ([tools/odrivetool](../tools/odrivetool)). The other is a demo application to show you how to control the ODrive programmatically ([tools/odrive_demo.py](../tools/odrive_demo.py)). Below follows a step-by-step guide on how to run these.
 
 
 * __Windows__: It is recommended to use a Unix style command prompt, such as Git Bash that comes with [Git for windows](https://git-scm.com/download/win).
@@ -164,9 +165,10 @@ pip install pyusb pyserial
 5. __Windows__: Use the [Zadig](http://zadig.akeo.ie/) utility to set ODrive (not STLink!) driver to libusb-win32. 
   * If 'Odrive version 3.x' is not in the list of devices upon opening Zadig, check 'List All Devices' from the options menu. With the Odrive selected in the device list choose 'libusb-win32' from the target driver list and select the large 'install driver' button.
 6. Open the bash prompt in the `ODrive/tools/` folder.
-7. Run `python3 demo.py` or `python3 explore_odrive.py`. 
-- `demo.py` is a very simple script which will make motor 0 turn back and forth. Use this as an example if you want to control the ODrive yourself programatically.
-- `explore_odrive.py` drops you into an interactive python shell where you can explore and edit the parameters that are available on your device. For instance `my_odrive.motor0.pos_setpoint = 10000` makes motor0 move to position 10000. To connect over serial instead of USB run `./tools/explore_odrive.py --discover serial`.
+7. Run `python3 odrive_demo.py` or `python3 odrivetool`. 
+- __Mac__: instead run: `python3 odrive_demo.py --discover serial` or `python3 explore_odrive.py --discover serial`
+- `odrive_demo.py` is a very simple script which will make motor 0 turn back and forth. Use this as an example if you want to control the ODrive yourself programatically.
+- `odrivetool` drops you into an interactive python shell when started without any arguments. There you can explore and edit the parameters that are available on your device. For instance `odrv0.motor0.pos_setpoint = 10000` makes motor0 move to position 10000. To connect over serial instead of USB run `./tools/odrivetool --path serial`. Run `./tools/odrivetool --help` to see what else you can do with the script.
 
 ### From Arduino
 [See ODrive Arduino Library](https://github.com/madcowswe/ODriveArduino)
@@ -179,27 +181,27 @@ See the [protocol specification](protocol.md) or the [ASCII protocol specificati
 The majority of the important parameters you would want to set after flashing the ODrive with firmware are configurable over the USB communication interface. These include some mandatory parameters that you must set for correct operation, as well as tuning and optional parameters.
 To start the configuration session:
 
-* Launch `./tools/explore_odrive.py`. This will give you a command prompt where you can modify using simple assignments.
-* Configure parameters of the `my_odrive.[...].config` objects.
-  * For example to adjust the position gain: `my_odrive.motor0.config.pos_gain = 30` <kbd>Enter</kbd>.
+* Launch `./tools/odrivetool`. This will give you a command prompt where you can modify using simple assignments.
+* Configure parameters of the `odrv0.[...].config` objects.
+  * For example to adjust the position gain: `odrv0.motor0.config.pos_gain = 30` <kbd>Enter</kbd>.
   * The complete list of configurable parameters is:
-    * `my_odrive.motorN.config.*`
-    * `my_odrive.axisN.config.*`
+    * `odrv0.motorN.config.*`
+    * `odrv0.axisN.config.*`
     * where N is a valid motor number (0 or 1).
-* Save the configuration into non-volatile memory: `my_odrive.save_configuration()` <kbd>Enter</kbd>
+* Save the configuration into non-volatile memory: `odrv0.save_configuration()` <kbd>Enter</kbd>
   * This will save the properties of all the `[...].config` objects and no other parameters.
-* Reboot the drive: `my_odrive.reboot()` <kbd>Enter</kbd>
+* Reboot the drive: `odrv0.reboot()` <kbd>Enter</kbd>
 
-Note that a firmware upgrade at this point will preserve the configuration if and only if the parameters of both firmware versions are identical. Should you need to reset the configuration, you can run `my_odrive.erase_configuration()`.
+Note that a firmware upgrade at this point will preserve the configuration if and only if the parameters of both firmware versions are identical. Should you need to reset the configuration, you can run `odrv0.erase_configuration()`.
 
 __Developers__: Be aware that you can also modify the compile-time defaults for all of these parameters. Most of them you will find at the top of [MotorControl/low_level.c](MotorControl/low_level.c#L50). Note that the configuration parameters there are somewhat intertwined with runtime variables and hardware specific configuration that should not be changed. Also note that all parameters occur twice.
 
 ### Mandatory parameters
 You must set for every motor:
-* `my_odrive.motorN.encoder.config.cpr`: Encoder Count Per Revolution (CPR). This is 4x the Pulse Per Revolution (PPR) value.
-* `my_odrive.motorN.config.pole_pairs`: This is the number of magnet poles in the rotor, **divided by two**. You can simply count the number of permanent magnets in the rotor, if you can see them. Note: this is not the same as the number of coils in the stator.
-* `my_odrive.config.brake_resistance` [Ohm]: This is the resistance of the brake resistor. If you are not using it, you may set it to 0.0f.
-* `my_odrive.motorN.config.motor_type`: This is the type of motor being used. Currently two types of motors are supported -- High-current motors (`MOTOR_TYPE_HIGH_CURRENT`) and Gimbal motors (`MOTOR_TYPE_GIMBAL`).
+* `odrv0.motorN.encoder.config.cpr`: Encoder Count Per Revolution (CPR). This is 4x the Pulse Per Revolution (PPR) value.
+* `odrv0.motorN.config.pole_pairs`: This is the number of magnet poles in the rotor, **divided by two**. You can simply count the number of permanent magnets in the rotor, if you can see them. Note: this is not the same as the number of coils in the stator.
+* `odrv0.config.brake_resistance` [Ohm]: This is the resistance of the brake resistor. If you are not using it, you may set it to 0.0f.
+* `odrv0.motorN.config.motor_type`: This is the type of motor being used. Currently two types of motors are supported -- High-current motors (`MOTOR_TYPE_HIGH_CURRENT`) and Gimbal motors (`MOTOR_TYPE_GIMBAL`).
 
 #### Motor Modes
 If you're using a regular hobby brushless motor like [this](https://hobbyking.com/en_us/turnigy-aerodrive-sk3-5065-236kv-brushless-outrunner-motor.html) one, you should set `motor_mode` to `MOTOR_TYPE_HIGH_CURRENT`. For low-current gimbal motors like [this](https://hobbyking.com/en_us/turnigy-hd-5208-brushless-gimbal-motor-bldc.html) one, you should choose `MOTOR_TYPE_GIMBAL`. Do not use `MOTOR_TYPE_GIMBAL` on a motor that is not a gimbal motor, as it may overheat the motor or the ODrive.
@@ -211,15 +213,15 @@ If 100's of mA current noise is "large" for you, and you intend to spin the moto
 
 ### Tuning parameters
 The most important parameters are the limits:
-* The current limit: `my_odrive.motorN.current_control.config.current_lim` [A]. The default current limit, for safety reasons, is set to 10A. This is quite weak, and good for making sure the drive is stable. Once you have tuned the drive, you can increase this to 75A to get some performance. Note that above 75A, you must change the current amplifier gains.
+* The current limit: `odrv0.motorN.current_control.config.current_lim` [A]. The default current limit, for safety reasons, is set to 10A. This is quite weak, and good for making sure the drive is stable. Once you have tuned the drive, you can increase this to 75A to get some performance. Note that above 75A, you must change the current amplifier gains.
   * Note: The motor current and the current drawn from the power supply is not the same in general. You should not look at the power supply current to see what is going on with the motor current.
-* The velocity limit: `my_odrive.motorN.config.vel_limit` [counts/s]. The motor will be limited to this speed; again the default value is quite slow.
-* You can change `my_odrive.motorN.config.calibration_current` [A] to the largest value you feel comfortable leaving running through the motor continously when the motor is stationary.
+* The velocity limit: `odrv0.motorN.config.vel_limit` [counts/s]. The motor will be limited to this speed; again the default value is quite slow.
+* You can change `odrv0.motorN.config.calibration_current` [A] to the largest value you feel comfortable leaving running through the motor continously when the motor is stationary.
 
 The motion control gains are currently manually tuned:
-* `my_odrive.motorN.config.pos_gain = 20.0f` [(counts/s) / counts]
-* `my_odrive.motorN.config.vel_gain = 15.0f / 10000.0f` [A/(counts/s)]
-* `my_odrive.motorN.config.vel_integrator_gain = 10.0f / 10000.0f` [A/(counts/s * s)]
+* `odrv0.motorN.config.pos_gain = 20.0f` [(counts/s) / counts]
+* `odrv0.motorN.config.vel_gain = 15.0f / 10000.0f` [A/(counts/s)]
+* `odrv0.motorN.config.vel_integrator_gain = 10.0f / 10000.0f` [A/(counts/s * s)]
 
 An upcoming feature will enable automatic tuning. Until then, here is a rough tuning procedure:
 * Set the integrator gain to 0
@@ -232,14 +234,14 @@ An upcoming feature will enable automatic tuning. Until then, here is a rough tu
 
 ### Optional parameters
 By default both motors are enabled, and the default control mode is position control.
-If you want a different mode, you can change `my_odrive.motorN.config.control_mode`.
+If you want a different mode, you can change `odrv0.motorN.config.control_mode`.
 Possible values are:
 * `CTRL_MODE_POSITION_CONTROL`
 * `CTRL_MODE_VELOCITY_CONTROL`
 * `CTRL_MODE_CURRENT_CONTROL`
 * `CTRL_MODE_VOLTAGE_CONTROL` - this one is not normally used.
 
-To disable a motor at startup, set `my_odrive.axisN.config.enable_control` and `my_odrive.axisN.config.do_calibration` to `False`.
+To disable a motor at startup, set `odrv0.axisN.config.enable_control` and `odrv0.axisN.config.do_calibration` to `False`.
 
 <br><br>
 ## Encoder Calibration
@@ -250,15 +252,15 @@ If you have an encoder with an index (Z) signal, you may avoid having to do the 
 
 * Since you will only do this once, it is recommended that you mechanically disengage the motor from anything other than the encoder, so it can spin freely.
 * All the parameters we will be modifying are in the motor structs at the top of [MotorControl/low_level.c](MotorControl/low_level.c).
-* Set `.encoder.use_index = true` and `.encoder.calibrated = false`.
+* Set `.encoder.use_index = true` and `.encoder.manually_calibrated = false`.
 * Flash this configuration, and let the motor scan for the index pulse and then complete the encoder calibration.
-* Run `explore_odrive.py`, check [Communicating over USB or UART](#communicating-over-usb-or-uart) for instructions on how to do that.
+* Run `odrivetool`, check [Communicating over USB or UART](#communicating-over-usb-or-uart) for instructions on how to do that.
 * Enter the following to print out the calibration parameters (substitute the motor number you are calibrating for `<NUM>`):
-  * `my_odrive.motor<NUM>.encoder.encoder_offset` - This should print a number, like -326 or 1364.
-  * `my_odrive.motor<NUM>.encoder.motor_dir` - This should print 1 or -1.
+  * `odrv0.motor<NUM>.encoder.encoder_offset` - This should print a number, like -326 or 1364.
+  * `odrv0.motor<NUM>.encoder.motor_dir` - This should print 1 or -1.
 * Copy these numbers to the corresponding entries in low_level.c: `.encoder.encoder_offset` and `.encoder.motor_dir`.
   * _Warning_: Please be careful to enter the correct numbers, and not to confuse the motor channels. Incorrect values may cause the motor to spin out of control.
-* Set `.encoder.calibrated = true`.
+* Set `.encoder.manually_calibrated = true`.
 * Flash this configuration and check that the motor scans for the index pulse but skips the encoder calibration.
 * Congratulations, you are now done. You may now attach the motor to your mechanical load.
 * If you wish to scan for the index pulse in the other direction (if for example your axis usually starts close to a hard-stop), you can set a negative value in `.encoder.idx_search_speed`.
@@ -266,11 +268,11 @@ If you have an encoder with an index (Z) signal, you may avoid having to do the 
 
 <br><br>
 ## Checking for error codes
-`explore_odrive.py`can also be used to check error codes when your odrive is not working as expected. For example `my_odrive.motor0.error` will list the error code associated with motor 0.
+`odrivetool` can also be used to check error codes when your odrive is not working as expected. For example `odrv0.motor0.error` will list the error code associated with motor 0.
 <br><br>
 The error nummber corresponds to the following:
 
-0. `ERROR_NO_ERROR`
+0. `ERROR_NONE`
 1. `ERROR_PHASE_RESISTANCE_TIMING`
 2. `ERROR_PHASE_RESISTANCE_MEASUREMENT_TIMEOUT`
 3. `ERROR_PHASE_RESISTANCE_OUT_OF_RANGE`

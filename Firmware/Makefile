@@ -5,18 +5,26 @@
 BUILD_DIR = build
 FIRMWARE = $(BUILD_DIR)/ODriveFirmware.elf
 FIRMWARE_HEX = $(BUILD_DIR)/ODriveFirmware.hex
+OPENOCD := openocd -f interface/stlink-v2.cfg \
+		$(if $(value PROGRAMMER),-c 'hla_serial $(PROGRAMMER)',) \
+		-f target/stm32f4x.cfg
+
 
 all:
 	@tup --quiet --no-environ-check
 
 flash: all
-	openocd -f interface/stlink-v2.cfg -f target/stm32f4x.cfg -c init -c reset\ halt -c flash\ write_image\ erase\ $(FIRMWARE) -c reset\ run -c exit
+	$(OPENOCD) -c init \
+		-c 'reset halt' \
+		-c 'flash write_image erase $(FIRMWARE)' \
+		-c 'reset run' \
+		-c exit
 
 gdb: all
 	arm-none-eabi-gdb $(FIRMWARE) -x openocd.gdbinit
 
 dfu: all
-	../tools/dfu.py $(if $(value SERIAL_NUMBER),--serial-number $(SERIAL_NUMBER),) $(FIRMWARE_HEX)
+	python ../tools/odrivetool $(if $(value SERIAL_NUMBER),--serial-number $(SERIAL_NUMBER),) dfu $(FIRMWARE_HEX)
 
 bmp: all
 	arm-none-eabi-gdb --ex 'target extended-remote /dev/stlink' \
@@ -24,9 +32,13 @@ bmp: all
 		--ex 'attach 1' \
 		--ex 'load' $(FIRMWARE)
 
+# Erase entire STM32
+erase:
+	$(OPENOCD) -c init -c reset\ halt -c flash\ erase_address\ 0x8000000\ 0x100000 -c reset\ run -c exit
+
 # Erase all configuration from the ODrive
 erase_config:
-	openocd -f interface/stlink-v2.cfg -f target/stm32f4x.cfg -c init -c reset\ halt -c flash\ erase_address\ 0x80C0000\ 0x40000 -c reset\ run -c exit
+	$(OPENOCD) -c init -c reset\ halt -c flash\ erase_address\ 0x80C0000\ 0x40000 -c reset\ init -c reset\ run -c exit
 
 # The one-time programmable memory stores the board version
 # has the following format:
@@ -46,9 +58,9 @@ erase_config:
 #  FLASH_CR = (1 << FLASH_CR_PG); // unlock flash memory
 #  [write OTP]
 write_otp:
-ifeq ($(ODRV_FACTORY),TRUE)
+ifeq ($(OTP_CONFIRM),TRUE)
 	# Data: 
-	openocd -f interface/stlink-v2.cfg -f target/stm32f4x.cfg \
+	$(OPENOCD) \
 		-c init \
 		-c 'reset halt' \
 		-c 'mww 0x40023C04 0x45670123' \
@@ -72,7 +84,7 @@ else
 	@echo " 1. open the Makefile and look at the write_otp target"
 	@echo " 2. understand the structure of the OTP"
 	@echo " 3. edit the bytes that are written to match your board version"
-	@echo "Run this command again, this time with ODRV_FACTORY=TRUE appended"
+	@echo "Run this command again, this time with OTP_CONFIRM=TRUE appended"
 	@echo "to the command in the terminal"
 endif
 

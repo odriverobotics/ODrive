@@ -2,10 +2,17 @@
 #define __INTERFACE_UART_HPP
 
 #ifdef __cplusplus
+#include "protocol.hpp"
+extern StreamSink* uart4_stream_output_ptr;
+
 extern "C" {
 #endif
 
-void serve_on_uart(void);
+#include <cmsis_os.h>
+
+extern osThreadId uart_thread;
+
+void start_uart_server(void);
 
 #ifdef __cplusplus
 }

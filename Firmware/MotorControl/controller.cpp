@@ -6,6 +6,13 @@ Controller::Controller(ControllerConfig_t& config) :
     config_(config)
 {}
 
+void Controller::reset() {
+    pos_setpoint_ = 0.0f;
+    vel_setpoint_ = 0.0f;
+    vel_integrator_current_ = 0.0f;
+    current_setpoint_ = 0.0f;
+}
+
 //--------------------------------
 // Command Handling
 //--------------------------------
@@ -39,7 +46,7 @@ void Controller::set_current_setpoint(float current_setpoint) {
 
 void Controller::start_anticogging_calibration() {
     // Ensure the cogging map was correctly allocated earlier and that the motor is capable of calibrating
-    if (anticogging_.cogging_map != NULL && axis_->error_ == Axis::ERROR_NO_ERROR) {
+    if (anticogging_.cogging_map != NULL && axis_->error_ == Axis::ERROR_NONE) {
         anticogging_.calib_anticogging = true;
     }
 }

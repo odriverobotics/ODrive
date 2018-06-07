@@ -21,6 +21,8 @@ static uint32_t dma_last_rcv_idx;
 // FIXME: the stdlib doesn't know about CMSIS threads, so this is just a global variable
 static thread_local uint32_t deadline_ms = 0;
 
+osThreadId uart_thread;
+
 
 class UART4Sender : public StreamSink {
 public:
@@ -46,6 +48,7 @@ public:
 private:
     uint8_t tx_buf_[UART_TX_BUFFER_SIZE];
 } uart4_stream_output;
+StreamSink* uart4_stream_output_ptr = &uart4_stream_output;
 
 PacketToStreamConverter uart4_packet_output(uart4_stream_output);
 BidirectionalPacketBasedChannel uart4_channel(uart4_packet_output);
@@ -84,7 +87,7 @@ static void uart_server_thread(void * ctx) {
     };
 }
 
-void serve_on_uart() {
+void start_uart_server() {
     // DMA is set up to recieve in a circular buffer forever.
     // We dont use interrupts to fetch the data, instead we periodically read
     // data out of the circular buffer into a parse buffer, controlled by a state machine
@@ -92,8 +95,8 @@ void serve_on_uart() {
     dma_last_rcv_idx = UART_RX_BUFFER_SIZE - huart4.hdmarx->Instance->NDTR;
 
     // Start UART communication thread
-    osThreadDef(uart_server_thread_def, uart_server_thread, osPriorityNormal, 0, 512);
-    osThreadCreate(osThread(uart_server_thread_def), NULL);
+    osThreadDef(uart_server_thread_def, uart_server_thread, osPriorityNormal, 0, 1024 /* the ascii protocol needs considerable stack space */);
+    uart_thread = osThreadCreate(osThread(uart_server_thread_def), NULL);
 }
 
 void HAL_UART_TxCpltCallback(UART_HandleTypeDef* huart) {

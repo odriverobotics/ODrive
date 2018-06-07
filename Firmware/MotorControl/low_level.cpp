@@ -29,14 +29,18 @@
 /* Private typedef -----------------------------------------------------------*/
 /* Global constant data ------------------------------------------------------*/
 /* Global variables ----------------------------------------------------------*/
+
 // This value is updated by the DC-bus reading ADC.
 // Arbitrary non-zero inital value to avoid division by zero if ADC reading is late
 float vbus_voltage = 12.0f;
-bool brake_resistor_armed_ = false;
-
+bool brake_resistor_armed = false;
 /* Private constant data -----------------------------------------------------*/
+static const GPIO_TypeDef* GPIOs_to_samp[] = { GPIOA, GPIOB, GPIOC };
+static const int num_GPIO = sizeof(GPIOs_to_samp) / sizeof(GPIOs_to_samp[0]); 
 /* Private variables ---------------------------------------------------------*/
 
+// Two motors, sampling port A,B,C (coherent with current meas timing)
+static uint16_t GPIO_port_samples [2][num_GPIO];
 /* CPU critical section helpers ----------------------------------------------*/
 
 static inline uint8_t cpu_enter_critical() {
@@ -94,13 +98,23 @@ static inline void cpu_exit_critical(uint8_t status_register) {
 *     at a high rate.
 */
 
+// @brief Floats ALL phases immediately and disarms both motors and the brake resistor.
+void low_level_fault(Motor::Error_t error) {
+    // Disable all motors NOW!
+    for (size_t i = 0; i < AXIS_COUNT; ++i) {
+        safety_critical_disarm_motor_pwm(axes[i]->motor_);
+        axes[i]->motor_.error_ |= error;
+    }
+
+    safety_critical_disarm_brake_resistor();
+}
 
 // @brief Kicks off the arming process of the motor.
 // All calls to this function must clearly originate
 // from user input.
 void safety_critical_arm_motor_pwm(Motor& motor) {
     uint8_t sr = cpu_enter_critical();
-    if (brake_resistor_armed_) {
+    if (brake_resistor_armed) {
         motor.armed_state_ = Motor::ARMED_STATE_WAITING_FOR_TIMINGS;
     }
     cpu_exit_critical(sr);
@@ -127,7 +141,7 @@ bool safety_critical_disarm_motor_pwm(Motor& motor) {
 // timer period.
 void safety_critical_apply_motor_pwm_timings(Motor& motor, uint16_t timings[3]) {
     uint8_t sr = cpu_enter_critical();
-    if (!brake_resistor_armed_) {
+    if (!brake_resistor_armed) {
         motor.armed_state_ = Motor::ARMED_STATE_ARMED;
     }
 
@@ -158,7 +172,7 @@ void safety_critical_apply_motor_pwm_timings(Motor& motor, uint16_t timings[3]) 
 // @brief Arms the brake resistor
 void safety_critical_arm_brake_resistor() {
     uint8_t sr = cpu_enter_critical();
-    brake_resistor_armed_ = true;
+    brake_resistor_armed = true;
     htim2.Instance->CCR3 = 0;
     htim2.Instance->CCR4 = TIM_APB1_PERIOD_CLOCKS + 1;
     cpu_exit_critical(sr);
@@ -170,7 +184,7 @@ void safety_critical_arm_brake_resistor() {
 // by calling safety_critical_arm_brake_resistor().
 void safety_critical_disarm_brake_resistor() {
     uint8_t sr = cpu_enter_critical();
-    brake_resistor_armed_ = false;
+    brake_resistor_armed = false;
     htim2.Instance->CCR3 = 0;
     htim2.Instance->CCR4 = TIM_APB1_PERIOD_CLOCKS + 1;
     for (size_t i = 0; i < AXIS_COUNT; ++i) {
@@ -182,8 +196,10 @@ void safety_critical_disarm_brake_resistor() {
 // @brief Updates the brake resistor PWM timings unless
 // the brake resistor is disarmed.
 void safety_critical_apply_brake_resistor_timings(uint32_t low_off, uint32_t high_on) {
+    if (high_on - low_off < TIM_APB1_DEADTIME_CLOCKS)
+        low_level_fault(Motor::ERROR_BRAKE_DEADTIME_VIOLATION);
     uint8_t sr = cpu_enter_critical();
-    if (brake_resistor_armed_) {
+    if (brake_resistor_armed) {
         // Safe update of low and high side timings
         // To avoid race condition, first reset timings to safe state
         // ch3 is low side, ch4 is high side
@@ -222,6 +238,10 @@ void start_adc_pwm() {
     // Motor output starts in the disabled state
     __HAL_TIM_MOE_DISABLE_UNCONDITIONALLY(&htim1);
     __HAL_TIM_MOE_DISABLE_UNCONDITIONALLY(&htim8);
+
+    // Enable the update interrupt (used to coherently sample GPIO)
+    __HAL_TIM_ENABLE_IT(&htim1, TIM_IT_UPDATE);
+    __HAL_TIM_ENABLE_IT(&htim8, TIM_IT_UPDATE);
 
     // Start brake resistor PWM in floating output configuration
     htim2.Instance->CCR3 = 0;
@@ -301,27 +321,155 @@ void sync_timers(TIM_HandleTypeDef* htim_a, TIM_HandleTypeDef* htim_b,
     htim_b->Instance->BDTR |= MOE_store_b;
 }
 
-// @brief Floats ALL phases immediately and disarms both motors and the brake resistor.
-void low_level_fault(Motor::Error_t error) {
-    // Disable all motors NOW!
-    for (size_t i = 0; i < AXIS_COUNT; ++i) {
-        safety_critical_disarm_motor_pwm(axes[i]->motor_);
-        axes[i]->motor_.error_ |= error;
+// @brief ADC1 measurements are written to this buffer by DMA
+uint16_t adc_measurements_[ADC_CHANNEL_COUNT] = { 0 };
+
+// @brief Starts the general purpose ADC on the ADC1 peripheral.
+// The measured ADC voltages can be read with get_adc_voltage().
+//
+// ADC1 is set up to continuously sample all channels 0 to 15 in a
+// round-robin fashion.
+// DMA is used to copy the measured 12-bit values to adc_measurements_.
+//
+// The injected (high priority) channel of ADC1 is used to sample vbus_voltage.
+// This conversion is triggered by TIM1 at the frequency of the motor control loop.
+void start_general_purpose_adc() {
+    ADC_ChannelConfTypeDef sConfig;
+
+    // Configure the global features of the ADC (Clock, Resolution, Data Alignment and number of conversion)
+    hadc1.Instance = ADC1;
+    hadc1.Init.ClockPrescaler = ADC_CLOCK_SYNC_PCLK_DIV4;
+    hadc1.Init.Resolution = ADC_RESOLUTION_12B;
+    hadc1.Init.ScanConvMode = ENABLE;
+    hadc1.Init.ContinuousConvMode = ENABLE;
+    hadc1.Init.DiscontinuousConvMode = DISABLE;
+    hadc1.Init.ExternalTrigConvEdge = ADC_EXTERNALTRIGCONVEDGE_NONE;
+    hadc1.Init.ExternalTrigConv = ADC_SOFTWARE_START;
+    hadc1.Init.DataAlign = ADC_DATAALIGN_RIGHT;
+    hadc1.Init.NbrOfConversion = ADC_CHANNEL_COUNT;
+    hadc1.Init.DMAContinuousRequests = ENABLE;
+    hadc1.Init.EOCSelection = ADC_EOC_SINGLE_CONV;
+    if (HAL_ADC_Init(&hadc1) != HAL_OK)
+    {
+        _Error_Handler((char*)__FILE__, __LINE__);
     }
-    
-    safety_critical_disarm_brake_resistor();
+
+    // Set up sampling sequence (channel 0 ... channel 15)
+    sConfig.SamplingTime = ADC_SAMPLETIME_15CYCLES;
+    for (uint32_t channel = 0; channel < ADC_CHANNEL_COUNT; ++channel) {
+        sConfig.Channel = channel << ADC_CR1_AWDCH_Pos;
+        sConfig.Rank = channel + 1; // rank numbering starts at 1
+        if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
+            _Error_Handler((char*)__FILE__, __LINE__);
+    }
+
+    HAL_ADC_Start_DMA(&hadc1, reinterpret_cast<uint32_t*>(adc_measurements_), ADC_CHANNEL_COUNT);
+}
+
+// @brief Returns the ADC voltage associated with the specified pin.
+// GPIO_set_to_analog() must be called first to put the Pin into
+// analog mode.
+// Returns NaN if the pin has no associated ADC1 channel.
+//
+// On ODrive 3.3 and 3.4 the following pins can be used with this function:
+//  GPIO_1, GPIO_2, GPIO_3, GPIO_4 and some pins that are connected to
+//  on-board sensors (M0_TEMP, M1_TEMP, AUX_TEMP)
+//
+// The ADC values are sampled in background at ~30kHz without
+// any CPU involvement.
+//
+// Details: each of the 16 conversion takes (15+26) ADC clock
+// cycles and the ADC, so the update rate of the entire sequence is:
+//  21000kHz / (15+26) / 16 = 32kHz
+// The true frequency is slightly lower because of the injected vbus
+// measurements
+float get_adc_voltage(GPIO_TypeDef* GPIO_port, uint16_t GPIO_pin) {
+    uint32_t channel = UINT32_MAX;
+    if (GPIO_port == GPIOA) {
+        if (GPIO_pin == GPIO_PIN_0)
+            channel = 0;
+        else if (GPIO_pin == GPIO_PIN_1)
+            channel = 1;
+        else if (GPIO_pin == GPIO_PIN_2)
+            channel = 2;
+        else if (GPIO_pin == GPIO_PIN_3)
+            channel = 3;
+        else if (GPIO_pin == GPIO_PIN_4)
+            channel = 4;
+        else if (GPIO_pin == GPIO_PIN_5)
+            channel = 5;
+        else if (GPIO_pin == GPIO_PIN_6)
+            channel = 6;
+        else if (GPIO_pin == GPIO_PIN_7)
+            channel = 7;
+    } else if (GPIO_port == GPIOB) {
+        if (GPIO_pin == GPIO_PIN_0)
+            channel = 8;
+        else if (GPIO_pin == GPIO_PIN_1)
+            channel = 9;
+    } else if (GPIO_port == GPIOC) {
+        if (GPIO_pin == GPIO_PIN_0)
+            channel = 10;
+        else if (GPIO_pin == GPIO_PIN_1)
+            channel = 11;
+        else if (GPIO_pin == GPIO_PIN_2)
+            channel = 12;
+        else if (GPIO_pin == GPIO_PIN_3)
+            channel = 13;
+        else if (GPIO_pin == GPIO_PIN_4)
+            channel = 14;
+        else if (GPIO_pin == GPIO_PIN_5)
+            channel = 15;
+    }
+    if (channel < ADC_CHANNEL_COUNT)
+        return ((float)adc_measurements_[channel]) * (3.3f / (float)(1 << 12));
+    else
+        return 0.0f / 0.0f; // NaN
 }
 
 //--------------------------------
 // IRQ Callbacks
 //--------------------------------
 
-
 void vbus_sense_adc_cb(ADC_HandleTypeDef* hadc, bool injected) {
     static const float voltage_scale = 3.3f * VBUS_S_DIVIDER_RATIO / (float)(1 << 12);
     // Only one conversion in sequence, so only rank1
     uint32_t ADCValue = HAL_ADCEx_InjectedGetValue(hadc, ADC_INJECTED_RANK_1);
     vbus_voltage = ADCValue * voltage_scale;
+    if (axes[0] && !axes[0]->error_ && axes[1] && !axes[1]->error_) {
+        if (oscilloscope_pos >= OSCILLOSCOPE_SIZE)
+            oscilloscope_pos = 0;
+        oscilloscope[oscilloscope_pos++] = vbus_voltage;
+    }
+}
+
+static void decode_hall_samples(Encoder& enc, uint16_t GPIO_samples[num_GPIO]) {
+    GPIO_TypeDef* hall_ports[] = {
+        enc.hw_config_.hallC_port,
+        enc.hw_config_.hallB_port,
+        enc.hw_config_.hallA_port,
+    };
+    uint16_t hall_pins[] = {
+        enc.hw_config_.hallC_pin,
+        enc.hw_config_.hallB_pin,
+        enc.hw_config_.hallA_pin,
+    };
+
+    uint8_t hall_state = 0x0;
+    for (int i = 0; i < 3; ++i) {
+        int port_idx = 0;
+        for (;;) {
+            auto port = GPIOs_to_samp[port_idx];
+            if (port == hall_ports[i])
+                break;
+            ++port_idx;
+        }
+
+        hall_state <<= 1;
+        hall_state |= (GPIO_samples[port_idx] & hall_pins[i]) ? 1 : 0;
+    }
+
+    enc.hall_state_ = hall_state;
 }
 
 // This is the callback from the ADC that we expect after the PWM has triggered an ADC conversion.
@@ -341,6 +489,7 @@ void pwm_trig_adc_cb(ADC_HandleTypeDef* hadc, bool injected) {
     // If the corresponding timer is counting up, we just sampled in SVM vector 0, i.e. real current
     // If we are counting down, we just sampled in SVM vector 7, with zero current
     Axis& axis = injected ? *axes[0] : *axes[1];
+    int axis_num = injected ? 0 : 1;
     Axis& other_axis = injected ? *axes[1] : *axes[0];
     bool counting_down = axis.motor_.hw_config_.timer->Instance->CR1 & TIM_CR1_DIR;
 
@@ -399,6 +548,8 @@ void pwm_trig_adc_cb(ADC_HandleTypeDef* hadc, bool injected) {
         } else {
             axis.motor_.current_meas_.phC = current - axis.motor_.DC_calib_.phC;
         }
+        // Prepare hall readings
+        decode_hall_samples(axis.encoder_, GPIO_port_samples[axis_num]);
         // Trigger axis thread
         axis.signal_current_meas();
     } else {
@@ -408,6 +559,22 @@ void pwm_trig_adc_cb(ADC_HandleTypeDef* hadc, bool injected) {
         } else {
             axis.motor_.DC_calib_.phC += (current - axis.motor_.DC_calib_.phC) * calib_filter_k;
         }
+    }
+}
+
+void tim_update_cb(TIM_HandleTypeDef* htim) {
+    int portsamples_arr;
+    if (htim == &htim1) {
+        portsamples_arr = 0;
+    } else if (htim == &htim8) {
+        portsamples_arr = 1;
+    } else {
+        low_level_fault(Motor::ERROR_UNEXPECTED_TIMER_CALLBACK);
+        return;
+    }
+
+    for (int i = 0; i < num_GPIO; ++i) {
+        GPIO_port_samples[portsamples_arr][i] = GPIOs_to_samp[i]->IDR;
     }
 }
 
@@ -426,7 +593,7 @@ void update_brake_current() {
     float brake_duty = brake_current * board_config.brake_resistance / vbus_voltage;
 
     // Duty limit at 90% to allow bootstrap caps to charge
-    // If brake_duty is NaN, this expression will also evaluate to true
+    // If brake_duty is NaN, this expression will also evaluate to false
     if ((brake_duty >= 0.0f) && (brake_duty <= 0.9f)) {
         int high_on = static_cast<int>(TIM_APB1_PERIOD_CLOCKS * (1.0f - brake_duty));
         int low_off = high_on - TIM_APB1_DEADTIME_CLOCKS;
