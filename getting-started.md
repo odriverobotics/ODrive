@@ -108,6 +108,8 @@ Out[1]: 11.97055721282959
 
 The tool you're looking at is a fully capable Python command prompt, so you can type any valid python code.
 
+You can read more about the odrivetool [Here](odrivetool).
+
 ## Configure M0
 
 <div class="alert">Read this section carefully, else you risk breaking something.</div>
