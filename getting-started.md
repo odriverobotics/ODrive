@@ -48,8 +48,7 @@ You will need:
 Make sure you have a good mechanical connection between the encoder and the motor, slip can cause disasterous oscillations or runaway.
 </div>
 
-All non-power I/O is 3.3V output and 5V tolerant on input, except:
-<div class="alert" markdown="span"> __ODrive v3.2__: GPIO 3 and GPIO 4 are __not__ 5V tolerant.</div>
+All non-power I/O is 3.3V output and 5V tolerant on input, on ODrive v3.3 and newer.
 
 1. Wire up the motor phases into the 3-phase screw terminals, and the power resistor to the AUX terminal. Wire up the power source to the DC terminal, make sure to pay attention to the polarity. Do not apply power just yet.
 
