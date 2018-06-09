@@ -151,6 +151,9 @@ The tool you're looking at is a fully capable Python command prompt, so you can 
 
    * `odrv0.axis0.encoder.config.cpr`: Encoder Count Per Revolution (CPR). This is 4x the Pulse Per Revolution (PPR) value. Usually this is indicated in the datasheet of your encoder.
 
+3. Save configuration. You can save all `.config` parameters to persistent memory such that the ODrive remembers them between power cycles.
+* `odrv0.save_configuration()` <kbd>Enter</kbd>
+
 ## Position control of M0
 
 Let's get motor 0 up and running. The procedure for motor 1 is exactly the same, so feel free to replace read "axis1" wherever it says "axis0".
