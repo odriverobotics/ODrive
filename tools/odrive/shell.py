@@ -67,7 +67,7 @@ def did_lose_device(interactive_name, logger, app_shutdown_token):
     if not app_shutdown_token.is_set():
         logger.warn("Oh no {} disappeared".format(interactive_name))
 
-def launch_shell(args, logger, printer, app_shutdown_token):
+def launch_shell(args, logger, app_shutdown_token):
     """
     Launches an interactive python or IPython command line
     interface.

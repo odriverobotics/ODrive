@@ -111,12 +111,6 @@ if args.command is None:
     args.command = 'shell'
     args.no_ipython = False
 
-# TODO: deprecate printer - use logger instead
-if (args.verbose):
-  printer = print
-else:
-  printer = lambda x: None
-
 logger = Logger(verbose=args.verbose)
 
 def print_version():
@@ -139,7 +133,7 @@ try:
             print("  or better yet, submit a pull request to fix it.")
             print("")
         import odrive.shell
-        odrive.shell.launch_shell(args, logger, printer, app_shutdown_token)
+        odrive.shell.launch_shell(args, logger, app_shutdown_token)
 
     elif args.command == 'dfu':
         print_version()

@@ -26,7 +26,7 @@ def did_discover_device(device,
     # Publish new device to interactive console
     interactive_variables[interactive_name] = device
     globals()[interactive_name] = device # Add to globals so tab complete works
-    logger.info("{} to {} {} as {}".format(verb, branding_long, serial_number, interactive_name))
+    logger.notify("{} to {} {} as {}".format(verb, branding_long, serial_number, interactive_name))
 
     # Subscribe to disappearance of the device
     device.__channel__._channel_broken.subscribe(lambda: did_lose_device(interactive_name, logger, app_shutdown_token))
