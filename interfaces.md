@@ -12,7 +12,7 @@ The ODrive can be controlled over various ports and protocols. If you're comfort
 - [Native Protocol](#native-protocol)
 - [ASCII Protocol](#ascii-protocol)
 - [Step/direction](#stepdirection)
-- [RC PWM input](#rc-pwm-input)
+- [RC PWM input](#rc-pwm-input) (coming soon)
 - [Ports](#ports)
    - [USB](#usb)
    - [UART](#uart)
@@ -91,6 +91,7 @@ The maximum step rate is pending tests, but it should handle at least 50kHz. If 
 
 Please be aware that there is no enable line right now, and the step/direction interface is enabled by default, and remains active as long as the ODrive is in position control mode. To get the ODrive to go into position control mode at bootup, see how to configure the [Startup procedure](commands#startup-procedure).
 
+<!--
 ## RC PWM input
 
 You can control the ODrive directly from an hobby RC receiver.
@@ -117,6 +118,8 @@ As an example, we'll configure GPIO4 to control the angle of axis 0. We want the
     In [5]: odrv0.reboot()
     ```
 5. Connect the RC receiver ground to the ODrive's GND and one of the RC receiver signals to GPIO4. You may try to power the receiver from the ODrive's 5V supply if it doesn't draw too much power. Power up the the RC transmitter. You should now be able to control axis 0 from one of the RC sticks.
+
+-->
 
 ## Ports
 Note: when you use an existing library you don't have to deal with the specifics described in this section.
