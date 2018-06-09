@@ -174,8 +174,8 @@ Let's get motor 0 up and running. The procedure for motor 1 is exactly the same,
 
    </div></details>
 
-3. Type `odrv0.axis0.motor.config.pre_calibrated = True` <kbd>Enter</kbd> and then `odrv0.save_configuration()` <kbd>Enter</kbd>. This will save all the configuration and calibration you just did so the next time you start the device it's already ready to go. Except for one thing: you need to run the encoder offset calibration after every power cycle.
-4. Type `odrv0.axis0.requested_state = AXIS_STATE_CLOSED_CONTROL_LOOP` <kbd>Enter</kbd>. From now on the ODrive will try to hold the motor's position. If you try to turn it by hand, it will fight you gently. That is unless you bump up `odrv0.axis0.motor.config.current_lim`, in which case it will fight you more fiercely.
+<!--1. Type `odrv0.axis0.motor.config.pre_calibrated = True` <kbd>Enter</kbd> and then `odrv0.save_configuration()` <kbd>Enter</kbd>. This will save all the configuration and calibration you just did so the next time you start the device it's already ready to go. Except for one thing: you need to run the encoder offset calibration after every power cycle. -->
+1. Type `odrv0.axis0.requested_state = AXIS_STATE_CLOSED_CONTROL_LOOP` <kbd>Enter</kbd>. From now on the ODrive will try to hold the motor's position. If you try to turn it by hand, it will fight you gently. That is unless you bump up `odrv0.axis0.motor.config.current_lim`, in which case it will fight you more fiercely.
 
 ## What's next?
 
