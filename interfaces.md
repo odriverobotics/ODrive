@@ -69,7 +69,7 @@ This protocol may be extended in the future to support a selected set of GCode c
 
 For more details, see the [ASCII protocol specification](ascii-protocol.md).
 
-#### C++ (Arduino)
+### C++ (Arduino)
 
 [See ODrive Arduino Library](https://github.com/madcowswe/ODriveArduino)
 
@@ -89,7 +89,7 @@ To apply these settings you must reboot, and to keep them on reboot you must sav
 There is also a config variable called `<axis>.config.counts_per_step`, which specifies how many encoder counts a "step" corresponds to. It can be any floating point value.
 The maximum step rate is pending tests, but it should handle at least 50kHz. If you want to test it, please be aware that the failure mode on too high step rates is expected to be that the motors shuts down and coasts.
 
-Please be aware that there is no enable line right now, and the step/direction interface is enabled by default, and remains active as long as the ODrive is in position control mode. To get the ODrive to go into position control mode at bootup, see TODO.
+Please be aware that there is no enable line right now, and the step/direction interface is enabled by default, and remains active as long as the ODrive is in position control mode. To get the ODrive to go into position control mode at bootup, see how to configure the [Startup procedure](commands#startup-procedure).
 
 ## RC PWM input
 
