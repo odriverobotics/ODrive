@@ -32,7 +32,7 @@ The ODrive can be controlled over various ports and protocols. If you're comfort
 | GPIO7 (*) |           | Axis1 Step (*)|                         |
 | GPIO8 (*) |           | Axis1 Dir (*) |                         |
 
-(+) on ODrive v3.4 and earlier
+(+) on ODrive v3.4 and earlier <br>
 (*) ODrive v3.5 and later
 
 ## Native Protocol
