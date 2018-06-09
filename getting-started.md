@@ -26,8 +26,7 @@ You will need:
 
 * One or two [brushless motors](https://docs.google.com/spreadsheets/d/12vzz7XVEK6YNIOqH0jAz51F5VUpc-lJEs3mmkWP1H4Y). It is fine, even recommended, to start testing with just a single motor and encoder.
 * One or two [quadrature incremental encoder(s)](encoders)
-* A power resistor. A good starting point would be a [0.47 ohm, 50W resistor](https://www.digikey.com/product-detail/en/te-connectivity-passive-product/HSA50R47J/A102181-ND/2056131)
-
+* A power resistor. A good starting point would be the 50W resistor included with your ODrive.
   <details><summary markdown="span">Do I really need a power resistor? What values to choose?</summary><div markdown="block">
 
   If you don't have a brake resistor, the ODrive will pump excess power back into the power supply during deceleration to achieve the desired deceleration torque. If your power supply doesn't eat that power (which it won't if it's not a battery), the bus voltage will inevitebly rise. If you're unlucky this will break the power supply.
