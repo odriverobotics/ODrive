@@ -21,18 +21,19 @@ The ODrive can be controlled over various ports and protocols. If you're comfort
 
 ## Pinout
 
-| GPIO      | primary   | step/dir   | other                   |
-|-----------|-----------|------------|-------------------------|
-| GPIO1     | UART TX   | Axis0 Step | Analog input, PWM input |
-| GPIO2     | UART RX   | Axis0 Dir  | Analog input, PWM input |
-| GPIO3     | I2C Addr0 | Axis1 Step | Analog input, PWM input |
-| GPIO4     | I2C Addr1 | Axis1 Dir  | Analog input, PWM input |
-| GPIO5     | I2C Addr2 |            |                         |
-| GPIO6 (*) |           |            |                         |
-| GPIO7 (*) |           |            |                         |
-| GPIO8 (*) |           |            |                         |
+| GPIO      | primary   | step/dir      | other                   |
+|-----------|-----------|---------------|-------------------------|
+| GPIO1     | UART TX   | Axis0 Step    | Analog input, PWM input |
+| GPIO2     | UART RX   | Axis0 Dir     | Analog input, PWM input |
+| GPIO3     |           | Axis1 Step (+)| Analog input, PWM input |
+| GPIO4     |           | Axis1 Dir (+) | Analog input, PWM input |
+| GPIO5     |           |               | Analog input (*)        |
+| GPIO6 (*) |           |               |                         |
+| GPIO7 (*) |           | Axis1 Step (*)|                         |
+| GPIO8 (*) |           | Axis1 Dir (*) |                         |
 
-(*) available on ODrive v3.5 only
+(+) on ODrive v3.4 and earlier
+(*) ODrive v3.5 and later
 
 ## Native Protocol
 
