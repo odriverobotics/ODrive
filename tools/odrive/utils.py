@@ -157,12 +157,6 @@ def setup_udev_rules(logger):
     subprocess.run(["udevadm", "trigger"], check=True)
     logger.info('udev rules configured successfully')
 
-def get_serial_number_str(device):
-    if hasattr(device, 'serial_number'):
-        return format(device.serial_number, 'x').upper()
-    else:
-        return "[unknown serial number]"
-
 def yes_no_prompt(question, default=None):
     if default is None:
         question += " [y/n] "

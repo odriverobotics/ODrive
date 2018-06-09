@@ -2,15 +2,15 @@
 import json
 import os
 import tempfile
-import odrive.remote_object
+import fibre.remote_object
 from odrive.utils import OperationAbortedException
 
 def get_dict(obj, is_config_object):
     result = {}
     for (k,v) in obj._remote_attributes.items():
-        if isinstance(v, odrive.remote_object.RemoteProperty) and is_config_object:
+        if isinstance(v, fibre.remote_object.RemoteProperty) and is_config_object:
             result[k] = v.get_value()
-        elif isinstance(v, odrive.remote_object.RemoteObject):
+        elif isinstance(v, fibre.remote_object.RemoteObject):
             sub_dict = get_dict(v, k == 'config')
             if sub_dict != {}:
                 result[k] = sub_dict
@@ -24,7 +24,7 @@ def set_dict(obj, path, config_dict):
             errors.append("Could not restore {}: property not found on device".format(name))
             continue
         remote_attribute = obj._remote_attributes[k]
-        if isinstance(remote_attribute, odrive.remote_object.RemoteObject):
+        if isinstance(remote_attribute, fibre.remote_object.RemoteObject):
             errors += set_dict(remote_attribute, name, v)
         else:
             try:
@@ -34,7 +34,7 @@ def set_dict(obj, path, config_dict):
     return errors
 
 def get_temp_config_filename(device):
-    serial_number = odrive.utils.get_serial_number_str(device)
+    serial_number = fibre.utils.get_serial_number_str(device)
     safe_serial_number = ''.join(filter(str.isalnum, serial_number))
     return os.path.join(tempfile.gettempdir(), 'odrive-config-{}.json'.format(safe_serial_number))
 

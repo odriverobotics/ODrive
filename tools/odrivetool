@@ -14,7 +14,6 @@ sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(
 import fibre.discovery
 from fibre import Logger, Event
 import odrive
-import odrive.discovery
 from odrive.utils import OperationAbortedException
 from odrive.configuration import *
 
@@ -150,7 +149,7 @@ try:
     elif args.command == 'liveplotter':
         from odrive.utils import start_liveplotter
         print("Waiting for ODrive...")
-        my_odrive = odrive.discovery.find_any(path=args.path, serial_number=args.serial_number,
+        my_odrive = odrive.find_any(path=args.path, serial_number=args.serial_number,
                                               search_cancellation_token=app_shutdown_token,
                                               channel_termination_token=app_shutdown_token)
 
@@ -162,7 +161,7 @@ try:
     elif args.command == 'drv-status':
         from odrive.utils import print_drv_regs
         print("Waiting for ODrive...")
-        my_odrive = odrive.discovery.find_any(path=args.path, serial_number=args.serial_number,
+        my_odrive = odrive.find_any(path=args.path, serial_number=args.serial_number,
                                               search_cancellation_token=app_shutdown_token,
                                               channel_termination_token=app_shutdown_token)
         print_drv_regs("Motor 0", my_odrive.axis0.motor)
@@ -171,7 +170,7 @@ try:
     elif args.command == 'rate-test':
         from odrive.utils import rate_test
         print("Waiting for ODrive...")
-        my_odrive = odrive.discovery.find_any(path=args.path, serial_number=args.serial_number,
+        my_odrive = odrive.find_any(path=args.path, serial_number=args.serial_number,
                                               search_cancellation_token=app_shutdown_token,
                                               channel_termination_token=app_shutdown_token)
         rate_test(my_odrive)
@@ -182,14 +181,14 @@ try:
     
     elif args.command == 'generate-code':
         from odrive.code_generator import generate_code
-        my_odrive = odrive.discovery.find_any(path=args.path, serial_number=args.serial_number,
+        my_odrive = odrive.find_any(path=args.path, serial_number=args.serial_number,
             channel_termination_token=app_shutdown_token)
         generate_code(my_odrive, args.template, args.output)
 
     elif args.command == 'backup-config':
         from odrive.configuration import backup_config
         print("Waiting for ODrive...")
-        my_odrive = odrive.discovery.find_any(path=args.path, serial_number=args.serial_number,
+        my_odrive = odrive.find_any(path=args.path, serial_number=args.serial_number,
                                               search_cancellation_token=app_shutdown_token,
                                               channel_termination_token=app_shutdown_token)
         backup_config(my_odrive, args.file, logger)
@@ -197,7 +196,7 @@ try:
     elif args.command == 'restore-config':
         from odrive.configuration import restore_config
         print("Waiting for ODrive...")
-        my_odrive = odrive.discovery.find_any(path=args.path, serial_number=args.serial_number,
+        my_odrive = odrive.find_any(path=args.path, serial_number=args.serial_number,
                                               search_cancellation_token=app_shutdown_token,
                                               channel_termination_token=app_shutdown_token)
         restore_config(my_odrive, args.file, logger)

@@ -11,7 +11,7 @@ import fibre.protocol
 import fibre.utils
 import fibre.remote_object
 import fibre.serial_transport
-from fibre.utils import Event
+from fibre.utils import Event, Logger
 from fibre.protocol import ChannelBrokenException
 
 # Load all installed transport layers
@@ -90,7 +90,7 @@ def find_all(path, serial_number,
             obj.__dict__['_json_data'] = json_data['members']
             obj.__dict__['_json_crc'] = json_crc16
 
-            device_serial_number = odrive.utils.get_serial_number_str(obj)
+            device_serial_number = fibre.utils.get_serial_number_str(obj)
             if serial_number != None and device_serial_number != serial_number:
                 logger.debug("Ignoring device with serial number {}".format(device_serial_number))
                 return
@@ -111,7 +111,7 @@ def find_all(path, serial_number,
 
 def find_any(path="usb", serial_number=None,
         search_cancellation_token=None, channel_termination_token=None,
-        timeout=None, printer=noprint):
+        timeout=None, logger=Logger(verbose=False)):
     """
     Blocks until the first matching Fibre node is connected and then returns that node
     """
@@ -120,7 +120,7 @@ def find_any(path="usb", serial_number=None,
     def did_discover_object(obj):
         result[0] = obj
         done_signal.set()
-    find_all(path, serial_number, did_discover_object, done_signal, channel_termination_token, printer)
+    find_all(path, serial_number, did_discover_object, done_signal, channel_termination_token, logger)
     try:
         done_signal.wait(timeout=timeout)
     finally:
