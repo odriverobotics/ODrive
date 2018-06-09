@@ -40,7 +40,7 @@ Below are the steps to do the one-time calibration and configuration. Note that 
 * Set `<axis>.encoder.config.pre_calibrated` to `True` to confirm that the offset is valid with respect to the index pulse.
 * If you would like to search for the index at startup, set `<axis>.config.startup_encoder_index_search` to `True`.
   * If you'd rather do it manually, just run `<axis>.requested_state = AXIS_STATE_ENCODER_INDEX_SEARCH` on every bootup.
-* If you are looking to start your machine as quickly as possibly on bootup, also set `<axis>.motor.config.pre_calibrated` to `True` to save the current motor calibration and avoid doing it again on bootup.
+* If you are looking to start your machine as quickly as possible on bootup, also set `<axis>.motor.config.pre_calibrated` to `True` to save the current motor calibration and avoid doing it again on bootup.
 * Save the configuration by typing `<odrv>.save_configuration()` <kbd>Enter</kbd>.
 
 That's it, now on every reboot the motor will turn in one direction until it finds the encoder index.
