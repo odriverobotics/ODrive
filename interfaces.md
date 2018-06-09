@@ -80,7 +80,11 @@ Pinout:
 * Step/dir signals: see [Pinout](#pinout) above.
 * GND: you must connect the grounds of the devices together. Use any GND pin on J3 of the ODrive.
 
-To enable step/dir mode for the GPIO, set `<axis>.config.enable_step_dir` to true and then save configuration and reboot the ODrive.
+To enable step/dir mode for the GPIO, set `<axis>.config.enable_step_dir` to true for each axis that you wish to use this on.
+Axis 0 step/dir pins conflicts with UART, and the UART takes priority. So to be able to use step/dir on Axis 0, you must also set `odrv0.config.enable_uart = False`.
+To apply these settings you must reboot, and to keep them on reboot you must save configuration:
+* `odrv0.save_configuration()`
+* `odrv0.reboot()`
 
 There is also a config variable called `<axis>.config.counts_per_step`, which specifies how many encoder counts a "step" corresponds to. It can be any floating point value.
 The maximum step rate is pending tests, but it should handle at least 50kHz. If you want to test it, please be aware that the failure mode on too high step rates is expected to be that the motors shuts down and coasts.
