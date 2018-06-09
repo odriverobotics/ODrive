@@ -76,14 +76,10 @@ StreamSink* usb_stream_output_ptr = &usb_stream_output;
 #if defined(USB_PROTOCOL_NATIVE)
 BidirectionalPacketBasedChannel usb_channel(usb_packet_output);
 #elif defined(USB_PROTOCOL_NATIVE_STREAM_BASED)
-PacketToStreamConverter usb_packetized_output(usb_stream_output);
+StreamBasedPacketSink usb_packetized_output(usb_stream_output);
 BidirectionalPacketBasedChannel usb_channel(usb_packetized_output);
+StreamToPacketSegmenter usb_native_stream_input(usb_channel);
 #endif
-
-#if defined(USB_PROTOCOL_NATIVE_STREAM_BASED)
-StreamToPacketConverter usb_native_stream_input(usb_channel);
-#endif
-
 
 static void usb_server_thread(void * ctx) {
     (void) ctx;
@@ -100,7 +96,7 @@ static void usb_server_thread(void * ctx) {
 #if defined(USB_PROTOCOL_NATIVE)
                 usb_channel.process_packet(usb_buf, usb_len);
 #elif defined(USB_PROTOCOL_NATIVE_STREAM_BASED)
-                usb_native_stream_input.process_bytes(usb_buf, usb_len);
+                usb_native_stream_input.process_bytes(usb_buf, usb_len, nullptr);
 #endif
             }
             USBD_CDC_ReceivePacket(&hUsbDeviceFS, active_endpoint_pair);  // Allow next packet
