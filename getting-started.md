@@ -96,7 +96,7 @@ Most instructions in this guide refer to a utility called `odrivetool`, so you s
 To launch the main interactive ODrive tool, type `odrivetool` <kbd>Enter</kbd>. Connect your ODrive and wait for the tool to find it. Now you can for instance type `odrv0.vbus_voltage` <kbd>Enter</kbd> to inpect the boards main supply voltage.
 It should look something like this:
 
-```python
+```text
 ODrive control utility v0.4.0
 Please connect your ODrive.
 Type help() for help.
