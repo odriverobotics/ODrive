@@ -30,7 +30,7 @@ The current state of an axis is indicated by `<axis>.current_state`. The user ca
 ### Startup Procedure
 
 By default the ODrive takes no action at startup and goes to idle immediately.
-This behavior can be changed by modifying the following parameters:
+This behavior can be changed by setting any of the following to `True`. The ODrive will sequence all enabled startup actions in the order shown below.
 
 * `<axis>.config.startup_motor_calibration`
 * `<axis>.config.startup_encoder_index_search`
