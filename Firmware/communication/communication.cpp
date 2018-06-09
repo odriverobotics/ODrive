@@ -196,10 +196,10 @@ int _write(int file, const char* data, int len);
 // @brief This is what printf calls internally
 int _write(int file, const char* data, int len) {
 #ifdef USB_PROTOCOL_STDOUT
-    usb_stream_output_ptr->process_bytes((const uint8_t *)data, len);
+    usb_stream_output_ptr->process_bytes((const uint8_t *)data, len, nullptr);
 #endif
 #ifdef UART_PROTOCOL_STDOUT
-    uart4_stream_output_ptr->process_bytes((const uint8_t *)data, len);
+    uart4_stream_output_ptr->process_bytes((const uint8_t *)data, len, nullptr);
 #endif
     return len;
 }
