@@ -167,7 +167,7 @@ Let's get motor 0 up and running. The procedure for motor 1 is exactly the same,
 
    The startup procedure is demonstrated [here](https://www.youtube.com/watch?v=VCX1bA2xnuY).
 
-   **Note**: the rotor must be allowed to rotate without any biased load during startup. That means mass and weak friction loads are fine, but gravity or spring loads are not okay. Also note that in the video, the motors spin after initalisation, but in the current software the default behaviour is to do position control to position 0 (i.e. the position at startup)
+   **Note**: the rotor must be allowed to rotate without any biased load during startup. That means mass and weak friction loads are fine, but gravity or spring loads are not okay. Also note that in the video, the motors spin after initalisation, but in the current software the default behaviour is not like that.
 
    <details><summary markdown="span">My motor doesn't beep or doesn't turn</summary><div markdown="block">
 
