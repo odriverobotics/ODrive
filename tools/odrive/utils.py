@@ -22,6 +22,9 @@ data_rate = 100
 plot_rate = 10
 num_samples = 1000
 
+class OperationAbortedException(Exception):
+    pass
+
 def start_liveplotter(get_var_callback):
     """
     Starts a liveplotter.
@@ -153,3 +156,28 @@ def setup_udev_rules(logger):
     subprocess.run(["udevadm", "control", "--reload-rules"], check=True)
     subprocess.run(["udevadm", "trigger"], check=True)
     logger.info('udev rules configured successfully')
+
+def get_serial_number_str(device):
+    if hasattr(device, 'serial_number'):
+        return format(device.serial_number, 'x').upper()
+    else:
+        return "[unknown serial number]"
+
+def yes_no_prompt(question, default=None):
+    if default is None:
+        question += " [y/n] "
+    elif default == True:
+        question += " [Y/n] "
+    elif default == False:
+        question += " [y/N] "
+
+    while True:
+        print(question, end='')
+
+        choice = input().lower()
+        if choice in {'yes', 'y'}:
+            return True
+        elif choice in {'no', 'n'}:
+            return False
+        elif choice == '' and default is not None:
+            return default

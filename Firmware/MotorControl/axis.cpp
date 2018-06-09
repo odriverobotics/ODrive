@@ -38,6 +38,7 @@ void Axis::setup() {
 
 static void run_state_machine_loop_wrapper(void* ctx) {
     reinterpret_cast<Axis*>(ctx)->run_state_machine_loop();
+    reinterpret_cast<Axis*>(ctx)->thread_id_valid_ = false;
 }
 
 // @brief Starts run_state_machine_loop in a new thread
@@ -92,16 +93,34 @@ void Axis::set_step_dir_enabled(bool enable) {
     }
 }
 
-// @brief Returns true if everything is ok.
-// Sets error and returns false otherwise.
+// @brief Do axis level checks and call subcomponent do_checks
+// Returns true if everything is ok.
 bool Axis::do_checks() {
-    if (!motor_.do_checks())
-        return error_ |= ERROR_MOTOR_FAILED, false;
+    if (!brake_resistor_armed)
+        error_ |= ERROR_BRAKE_RESISTOR_DISARMED;
+    if ((current_state_ != AXIS_STATE_IDLE) && (motor_.armed_state_ == Motor::ARMED_STATE_DISARMED))
+        // motor got disarmed in something other than the idle loop
+        error_ |= ERROR_MOTOR_DISARMED;
     if (!(vbus_voltage >= board_config.dc_bus_undervoltage_trip_level))
-        return error_ |= ERROR_DC_BUS_UNDER_VOLTAGE, false;
+        error_ |= ERROR_DC_BUS_UNDER_VOLTAGE;
     if (!(vbus_voltage <= board_config.dc_bus_overvoltage_trip_level))
-        return error_ |= ERROR_DC_BUS_OVER_VOLTAGE, false;
-    return true;
+        error_ |= ERROR_DC_BUS_OVER_VOLTAGE;
+
+    // Sub-components should use set_error which will propegate to this error_
+    motor_.do_checks();
+    encoder_.do_checks();
+    // sensorless_estimator_.do_checks();
+    // controller_.do_checks();
+
+    return error_ == ERROR_NONE;
+}
+
+// @brief Update all esitmators
+bool Axis::do_updates() {
+    // Sub-components should use set_error which will propegate to this error_
+    encoder_.update();
+    sensorless_estimator_.update();
+    return error_ == ERROR_NONE;
 }
 
 bool Axis::run_sensorless_spin_up() {
@@ -115,7 +134,7 @@ bool Axis::run_sensorless_spin_up() {
             return error_ |= ERROR_MOTOR_FAILED, false;
         return x < 1.0f;
     });
-    if (error_ != ERROR_NO_ERROR)
+    if (error_ != ERROR_NONE)
         return false;
     
     // Late Spin-up: accelerate
@@ -129,49 +148,41 @@ bool Axis::run_sensorless_spin_up() {
             return error_ |= ERROR_MOTOR_FAILED, false;
         return vel < config_.spin_up_target_vel;
     });
-    return error_ == ERROR_NO_ERROR;
+    return error_ == ERROR_NONE;
 }
 
 // Note run_sensorless_control_loop and run_closed_loop_control_loop are very similar and differ only in where we get the estimate from.
 bool Axis::run_sensorless_control_loop() {
     set_step_dir_enabled(config_.enable_step_dir);
     run_control_loop([this](){
-        float pos_estimate, vel_estimate, phase, current_setpoint;
-
         if (controller_.config_.control_mode >= CTRL_MODE_POSITION_CONTROL)
             return error_ |= ERROR_POS_CTRL_DURING_SENSORLESS, false;
 
-        // We update the encoder just in case someone needs the output for testing
-        encoder_.update(nullptr, nullptr, nullptr);
-        if (!sensorless_estimator_.update(&pos_estimate, &vel_estimate, &phase))
-            return error_ |= ERROR_SENSORLESS_ESTIMATOR_FAILED, false;
-        if (!controller_.update(pos_estimate, vel_estimate, &current_setpoint))
+        // Note that all estimators are updated in the loop prefix in run_control_loop
+        float current_setpoint;
+        if (!controller_.update(sensorless_estimator_.pll_pos_, sensorless_estimator_.pll_vel_, &current_setpoint))
             return error_ |= ERROR_CONTROLLER_FAILED, false;
-        if (!motor_.update(current_setpoint, phase))
-            return error_ |= ERROR_MOTOR_FAILED, false;
+        if (!motor_.update(current_setpoint, sensorless_estimator_.phase_))
+            return false; // set_error should update axis.error_
         return true;
     });
     set_step_dir_enabled(false);
-    return error_ == ERROR_NO_ERROR;
+    return error_ == ERROR_NONE;
 }
 
 bool Axis::run_closed_loop_control_loop() {
     set_step_dir_enabled(config_.enable_step_dir);
     run_control_loop([this](){
-        float pos_estimate, vel_estimate, phase, current_setpoint;
-
-        // We update the sensorless estimator just in case someone needs the output for testing
-        sensorless_estimator_.update(nullptr, nullptr, nullptr);
-        if (!encoder_.update(&pos_estimate, &vel_estimate, &phase))
-            return error_ |= ERROR_ENCODER_FAILED, false;
-        if (!controller_.update(pos_estimate, vel_estimate, &current_setpoint))
-            return error_ |= ERROR_CONTROLLER_FAILED, false;
-        if (!motor_.update(current_setpoint, phase))
-            return error_ |= ERROR_MOTOR_FAILED, false;
+        // Note that all estimators are updated in the loop prefix in run_control_loop
+        float current_setpoint;
+        if (!controller_.update(encoder_.pos_estimate_, encoder_.pll_vel_, &current_setpoint))
+            return error_ |= ERROR_CONTROLLER_FAILED, false; //TODO: Make controller.set_error
+        if (!motor_.update(current_setpoint, encoder_.phase_))
+            return false; // set_error should update axis.error_
         return true;
     });
     set_step_dir_enabled(false);
-    return error_ == ERROR_NO_ERROR;
+    return error_ == ERROR_NONE;
 }
 
 bool Axis::run_idle_loop() {
@@ -179,11 +190,9 @@ bool Axis::run_idle_loop() {
     // if and only if we're in AXIS_STATE_IDLE
     safety_critical_disarm_motor_pwm(motor_);
     run_control_loop([this](){
-        sensorless_estimator_.update(nullptr, nullptr, nullptr);
-        encoder_.update(nullptr, nullptr, nullptr);
         return true;
     });
-    return error_ == ERROR_NO_ERROR;
+    return error_ == ERROR_NONE;
 }
 
 // Infinite loop that does calibration and enters main control loop as appropriate
@@ -246,43 +255,37 @@ void Axis::run_state_machine_loop() {
         // Handlers should exit if requested_state != AXIS_STATE_UNDEFINED
         bool status;
         switch (current_state_) {
-        case AXIS_STATE_MOTOR_CALIBRATION:
-            status = motor_.run_calibration();
-            if (!status)
-                error_ |= ERROR_MOTOR_FAILED;
-            break;
+            case AXIS_STATE_MOTOR_CALIBRATION:
+                status = motor_.run_calibration();
+                break;
 
-        case AXIS_STATE_ENCODER_INDEX_SEARCH:
-            status = encoder_.run_index_search();
-            if (!status)
-                error_ |= ERROR_ENCODER_FAILED;
-            break;
+            case AXIS_STATE_ENCODER_INDEX_SEARCH:
+                status = encoder_.run_index_search();
+                break;
 
-        case AXIS_STATE_ENCODER_OFFSET_CALIBRATION:
-            status = encoder_.run_offset_calibration();
-            if (!status)
-                error_ |= ERROR_ENCODER_FAILED;
-            break;
+            case AXIS_STATE_ENCODER_OFFSET_CALIBRATION:
+                status = encoder_.run_offset_calibration();
+                break;
 
-        case AXIS_STATE_SENSORLESS_CONTROL:
-            status = run_sensorless_spin_up(); // TODO: restart if desired
-            if (status)
-                status = run_sensorless_control_loop();
-            break;
+            case AXIS_STATE_SENSORLESS_CONTROL:
+                status = run_sensorless_spin_up(); // TODO: restart if desired
+                if (status)
+                    status = run_sensorless_control_loop();
+                break;
 
-        case AXIS_STATE_CLOSED_LOOP_CONTROL:
-            status = run_closed_loop_control_loop();
-            break;
+            case AXIS_STATE_CLOSED_LOOP_CONTROL:
+                status = run_closed_loop_control_loop();
+                break;
 
-        case AXIS_STATE_IDLE:
-            run_idle_loop();
-            status = motor_.arm(); // done with idling - try to arm the motor
-            break;
+            case AXIS_STATE_IDLE:
+                run_idle_loop();
+                status = motor_.arm(); // done with idling - try to arm the motor
+                break;
 
-        default:
-            error_ |= ERROR_INVALID_STATE;
-            status = false; // this will set the state to idle
-            break;
+            default:
+                error_ |= ERROR_INVALID_STATE;
+                status = false; // this will set the state to idle
+                break;
         }
 
         // If the state failed, go to idle, else advance task chain
@@ -291,6 +294,4 @@ void Axis::run_state_machine_loop() {
         else
             memcpy(task_chain_, task_chain_ + 1, sizeof(task_chain_) - sizeof(task_chain_[0]));
     }
-
-    thread_id_valid_ = false;
 }

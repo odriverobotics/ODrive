@@ -213,6 +213,8 @@ class Logger():
     def success(self, text):
         self.print_colored(self._prefix + text, Logger.COLOR_GREEN)
     def info(self, text):
+        self.print_colored(self._prefix + text, Logger.COLOR_DEFAULT)
+    def notify(self, text):
         self.print_colored(self._prefix + text, Logger.COLOR_CYAN)
     def warn(self, text):
         self.print_colored(self._prefix + text, Logger.COLOR_YELLOW)

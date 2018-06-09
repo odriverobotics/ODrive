@@ -7,6 +7,8 @@ extern "C" {
 
 // STM specific includes
 #include <stm32f4xx_hal.h>  // Sets up the correct chip specifc defines required by arm_math
+#include <can.h>
+#include <i2c.h>
 #define ARM_MATH_CM4 // TODO: might change in future board versions
 #include <arm_math.h>
 
@@ -23,16 +25,18 @@ extern "C" {
 //default timeout waiting for phase measurement signals
 #define PH_CURRENT_MEAS_TIMEOUT 2 // [ms]
 
+//TODO clean this up
 static const float current_meas_period = CURRENT_MEAS_PERIOD;
 static const int current_meas_hz = CURRENT_MEAS_HZ;
-extern float vbus_voltage;
-extern bool brake_resistor_armed_;
-extern const float elec_rad_per_enc;
+// extern const float elec_rad_per_enc;
 extern uint32_t _reboot_cookie;
 extern bool user_config_loaded_;
 
 extern uint64_t serial_number;
 extern char serial_number_str[13];
+
+#define ADC_CHANNEL_COUNT 16
+extern uint16_t adc_measurements_[ADC_CHANNEL_COUNT];
 
 typedef struct {
     bool fully_booted;
@@ -54,6 +58,8 @@ extern SystemStats_t system_stats_;
 // @brief general user configurable board configuration
 struct BoardConfig_t {
     bool enable_uart = true;
+    bool enable_i2c_instead_of_can = false;
+    bool enable_ascii_protocol_on_usb = true;
     float brake_resistance = 0.47f;     // [ohm]
     float dc_bus_undervoltage_trip_level = 8.0f;                        //<! [V] minimum voltage below which the motor stops operating
     float dc_bus_overvoltage_trip_level = 1.08f * HW_VERSION_VOLTAGE;   //<! [V] maximum voltage above which the motor stops operating.

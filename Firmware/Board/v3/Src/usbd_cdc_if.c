@@ -151,7 +151,7 @@ extern USBD_HandleTypeDef hUsbDeviceFS;
 static int8_t CDC_Init_FS(void);
 static int8_t CDC_DeInit_FS(void);
 static int8_t CDC_Control_FS(uint8_t cmd, uint8_t* pbuf, uint16_t length);
-static int8_t CDC_Receive_FS(uint8_t* pbuf, uint32_t *Len);
+static int8_t CDC_Receive_FS(uint8_t* pbuf, uint32_t *Len, uint8_t endpoint_pair);
 
 /* USER CODE BEGIN PRIVATE_FUNCTIONS_DECLARATION */
 /* USER CODE END PRIVATE_FUNCTIONS_DECLARATION */
@@ -287,10 +287,10 @@ static int8_t CDC_Control_FS(uint8_t cmd, uint8_t* pbuf, uint16_t length)
   * @param  Len: Number of data received (in bytes)
   * @retval Result of the operation: USBD_OK if all operations are OK else USBD_FAIL
   */
-static int8_t CDC_Receive_FS(uint8_t* Buf, uint32_t *Len)
+static int8_t CDC_Receive_FS(uint8_t* Buf, uint32_t *Len, uint8_t endpoint_pair)
 {
   /* USER CODE BEGIN 6 */
-  usb_process_packet(Buf, *Len);
+  usb_process_packet(Buf, *Len, endpoint_pair);
 
   return (USBD_OK);
   /* USER CODE END 6 */
@@ -307,7 +307,7 @@ static int8_t CDC_Receive_FS(uint8_t* Buf, uint32_t *Len)
   * @param  Len: Number of data to be sent (in bytes)
   * @retval USBD_OK if all operations are OK else USBD_FAIL or USBD_BUSY
   */
-uint8_t CDC_Transmit_FS(uint8_t* Buf, uint16_t Len)
+uint8_t CDC_Transmit_FS(uint8_t* Buf, uint16_t Len, uint8_t endpoint_pair)
 {
   uint8_t result = USBD_OK;
   /* USER CODE BEGIN 7 */
@@ -323,7 +323,7 @@ uint8_t CDC_Transmit_FS(uint8_t* Buf, uint16_t Len)
   memcpy(UserTxBufferFS, Buf, Len);
   // Update Len
   USBD_CDC_SetTxBuffer(&hUsbDeviceFS, UserTxBufferFS, Len);
-  result = USBD_CDC_TransmitPacket(&hUsbDeviceFS);
+  result = USBD_CDC_TransmitPacket(&hUsbDeviceFS, endpoint_pair);
   /* USER CODE END 7 */
   return result;
 }

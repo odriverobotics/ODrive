@@ -1,6 +1,7 @@
 #ifndef __CRC_HPP
 #define __CRC_HPP
 
+#include <stdint.h>
 #include <limits.h>
 
 // Calculates an arbitrary CRC for one byte.

@@ -5,6 +5,8 @@
 
 #include "interface_usb.h"
 #include "interface_uart.h"
+#include "interface_can.hpp"
+#include "interface_i2c.h"
 
 #include "odrive_main.h"
 #include "freertos_vars.h"
@@ -17,7 +19,7 @@
 //#include <usbd_cdc_if.h>
 //#include <usb_device.h>
 //#include <usart.h>
-//#include <gpio.h>
+#include <gpio.h>
 
 #include <type_traits>
 
@@ -81,6 +83,8 @@ float oscilloscope[OSCILLOSCOPE_SIZE] = {0};
 size_t oscilloscope_pos = 0;
 
 
+static CAN_context can1_ctx;
+
 // Helper class because the protocol library doesn't yet
 // support non-member functions
 // TODO: make this go away
@@ -91,6 +95,7 @@ public:
     void NVIC_SystemReset_helper() { NVIC_SystemReset(); }
     void enter_dfu_mode_helper() { enter_dfu_mode(); }
     float get_oscilloscope_val(uint32_t index) { return oscilloscope[index]; }
+    float get_adc_voltage_(uint32_t gpio) { return get_adc_voltage(get_gpio_port_by_pin(gpio), get_gpio_pin_by_pin(gpio)); }
     int32_t test_function(int32_t delta) { static int cnt = 0; return cnt += delta; }
 } static_functions;
 
@@ -109,7 +114,7 @@ static inline auto make_obj_tree() {
         make_protocol_ro_property("fw_version_revision", &fw_version_revision),
         make_protocol_ro_property("fw_version_unreleased", &fw_version_unreleased),
         make_protocol_ro_property("user_config_loaded", const_cast<const bool *>(&user_config_loaded_)),
-        make_protocol_ro_property("brake_resistor_armed", &brake_resistor_armed_),
+        make_protocol_ro_property("brake_resistor_armed", &brake_resistor_armed),
         make_protocol_object("system_stats",
             make_protocol_ro_property("uptime", &system_stats_.uptime),
             make_protocol_ro_property("min_heap_space", &system_stats_.min_heap_space),
@@ -124,20 +129,30 @@ static inline auto make_obj_tree() {
                 make_protocol_ro_property("rx_cnt", &usb_stats_.rx_cnt),
                 make_protocol_ro_property("tx_cnt", &usb_stats_.tx_cnt),
                 make_protocol_ro_property("tx_overrun_cnt", &usb_stats_.tx_overrun_cnt)
+            ),
+            make_protocol_object("i2c",
+                make_protocol_ro_property("addr", &i2c_stats_.addr),
+                make_protocol_ro_property("addr_match_cnt", &i2c_stats_.addr_match_cnt),
+                make_protocol_ro_property("rx_cnt", &i2c_stats_.rx_cnt),
+                make_protocol_ro_property("error_cnt", &i2c_stats_.error_cnt)
             )
         ),
         make_protocol_object("config",
             make_protocol_property("brake_resistance", &board_config.brake_resistance),
             // TODO: changing this currently requires a reboot - fix this
             make_protocol_property("enable_uart", &board_config.enable_uart),
+            make_protocol_property("enable_i2c_instead_of_can" , &board_config.enable_i2c_instead_of_can), // requires a reboot
+            make_protocol_property("enable_ascii_protocol_on_usb", &board_config.enable_ascii_protocol_on_usb),
             make_protocol_property("dc_bus_undervoltage_trip_level", &board_config.dc_bus_undervoltage_trip_level),
             make_protocol_property("dc_bus_overvoltage_trip_level", &board_config.dc_bus_overvoltage_trip_level)
         ),
         make_protocol_object("axis0", axes[0]->make_protocol_definitions()),
         make_protocol_object("axis1", axes[1]->make_protocol_definitions()),
+        make_protocol_object("can", can1_ctx.make_protocol_definitions()),
         make_protocol_property("test_property", &test_property),
         make_protocol_function("test_function", static_functions, &StaticFunctions::test_function, "delta"),
         make_protocol_function("get_oscilloscope_val", static_functions, &StaticFunctions::get_oscilloscope_val, "index"),
+        make_protocol_function("get_adc_voltage", static_functions, &StaticFunctions::get_adc_voltage_, "gpio"),
         make_protocol_function("save_configuration", static_functions, &StaticFunctions::save_configuration_helper),
         make_protocol_function("erase_configuration", static_functions, &StaticFunctions::erase_configuration_helper),
         make_protocol_function("reboot", static_functions, &StaticFunctions::NVIC_SystemReset_helper),
@@ -160,8 +175,14 @@ void communication_task(void * ctx) {
     auto tree_ptr = new (tree_buffer) tree_type(make_obj_tree());
     fibre_publish(*tree_ptr);
     
-    serve_on_uart();
-    serve_on_usb();
+    start_uart_server();
+    start_usb_server();
+    if (board_config.enable_i2c_instead_of_can) {
+        start_i2c_server();
+    } else {
+        // TODO: finish implementing CAN
+        // start_can_server(can1_ctx, CAN1, serial_number);
+    }
 
     for (;;) {
         osDelay(1000); // nothing to do
@@ -175,10 +196,10 @@ int _write(int file, const char* data, int len);
 // @brief This is what printf calls internally
 int _write(int file, const char* data, int len) {
 #ifdef USB_PROTOCOL_STDOUT
-    usb_stream_output.process_bytes((const uint8_t *)data, len);
+    usb_stream_output_ptr->process_bytes((const uint8_t *)data, len);
 #endif
 #ifdef UART_PROTOCOL_STDOUT
-    uart4_stream_output.process_bytes((const uint8_t *)data, len);
+    uart4_stream_output_ptr->process_bytes((const uint8_t *)data, len);
 #endif
     return len;
 }

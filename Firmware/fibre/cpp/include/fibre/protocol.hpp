@@ -551,6 +551,10 @@ struct format_traits_t;
 template<> struct format_traits_t<float> { static constexpr const char * fmt = "%f"; };
 template<> struct format_traits_t<int32_t> { static constexpr const char * fmt = "%ld"; };
 template<> struct format_traits_t<uint32_t> { static constexpr const char * fmt = "%lu"; };
+template<> struct format_traits_t<int16_t> { static constexpr const char * fmt = "%hd"; };
+template<> struct format_traits_t<uint16_t> { static constexpr const char * fmt = "%hu"; };
+template<> struct format_traits_t<int8_t> { static constexpr const char * fmt = "%hhd"; };
+template<> struct format_traits_t<uint8_t> { static constexpr const char * fmt = "%hhu"; };
 
 template<typename T, typename = typename format_traits_t<T>::fmt>
 static bool to_string(const T& value, char * buffer, size_t length, int) {
@@ -881,6 +885,18 @@ public:
         output_properties_(PropertyListFactory<TOutputs...>::template make_property_list<0>(output_names_, out_args_))
     {
         LOG_FIBRE("COPIED! my tuple is at %x and of size %u\r\n", (uintptr_t)&in_args_, sizeof(in_args_));
+    }
+
+    // The custom copy constructor is needed because otherwise the
+    // input_properties_ and output_properties_ would point to memory
+    // locations of the old object.
+    ProtocolFunction(const ProtocolFunction& other) :
+        name_(other.name_), obj_(other.obj_), func_ptr_(other.func_ptr_),
+        input_names_{other.input_names_}, output_names_{other.output_names_},
+        input_properties_(PropertyListFactory<TInputs...>::template make_property_list<0>(input_names_, in_args_)),
+        output_properties_(PropertyListFactory<TOutputs...>::template make_property_list<0>(output_names_, out_args_))
+    {
+        LOG_PROTO("COPIED! my tuple is at %x and of size %u\r\n", (uintptr_t)&in_args_, sizeof(in_args_));
     }
 
     void write_json(size_t id, StreamSink* output) {

@@ -68,7 +68,9 @@
 #define  USBD_IDX_PRODUCT_STR                           0x02
 #define  USBD_IDX_SERIAL_STR                            0x03 
 #define  USBD_IDX_CONFIG_STR                            0x04 
-#define  USBD_IDX_INTERFACE_STR                         0x05 
+#define  USBD_IDX_INTERFACE_STR                         0x05
+#define  USBD_IDX_ODRIVE_INTF_STR                       0x06
+#define  USBD_IDX_MICROSOFT_DESC_STR                    0xEE
 
 #define  USB_REQ_TYPE_STANDARD                          0x00
 #define  USB_REQ_TYPE_CLASS                             0x20

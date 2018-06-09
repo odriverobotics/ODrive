@@ -131,6 +131,8 @@ public:
 #define ENABLE_IF(...) \
     typename = std::enable_if_t<__VA_ARGS__>
 
+#define ENABLE_IF_SAME(a, b, type) \
+    template<typename T = a> typename std::enable_if_t<std::is_same<T, b>::value, type>
 
 template <class T, class M> M get_member_type(M T:: *);
 #define GET_TYPE_OF(mem) decltype(get_member_type(mem))

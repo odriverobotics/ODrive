@@ -61,6 +61,7 @@
 /* USER CODE BEGIN Includes */
 #include <MotorControl/odrive_main.h>
 #include "freertos_vars.h"
+#include "i2c.h"
 /* USER CODE END Includes */
 
 /* Private variables ---------------------------------------------------------*/
@@ -178,6 +179,7 @@ int main(void)
   MX_DMA_Init();
   MX_ADC1_Init();
   MX_ADC2_Init();
+  MX_CAN1_Init();
   MX_TIM1_Init();
   MX_TIM8_Init();
   MX_TIM3_Init();

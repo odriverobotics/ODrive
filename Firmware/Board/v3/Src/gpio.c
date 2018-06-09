@@ -257,12 +257,49 @@ void GPIO_unsubscribe(GPIO_TypeDef* GPIO_port, uint16_t GPIO_pin) {
     HAL_NVIC_DisableIRQ(get_irq_number(GPIO_pin));
 }
 
+// @brief Configures the specified GPIO as an analog input.
+// This disables any subscriptions that were active for this pin.
+void GPIO_set_to_analog(GPIO_TypeDef* GPIO_port, uint16_t GPIO_pin) {
+  GPIO_InitTypeDef GPIO_InitStruct;
+  GPIO_unsubscribe(GPIO_port, GPIO_pin);
+  GPIO_InitStruct.Pin = GPIO_pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_ANALOG;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  HAL_GPIO_Init(GPIO_port, &GPIO_InitStruct);
+}
+
 //Dispatch processing of external interrupts based on source
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_pin) {
   for (size_t i = 0; i < n_subscriptions; ++i) {
     if (subscriptions[i].GPIO_pin == GPIO_pin) // TODO: check for port
       if (subscriptions[i].callback)
         subscriptions[i].callback(subscriptions[i].ctx);
+  }
+}
+
+GPIO_TypeDef* get_gpio_port_by_pin(uint16_t GPIO_pin){
+  switch(GPIO_pin){
+    case 1: return GPIO_1_GPIO_Port; break;
+    case 2: return GPIO_2_GPIO_Port; break;
+    case 3: return GPIO_3_GPIO_Port; break;
+    case 4: return GPIO_4_GPIO_Port; break;
+#ifdef GPIO_5_GPIO_Port
+    case 5: return GPIO_5_GPIO_Port; break;
+#endif
+    default: return GPIO_1_GPIO_Port;
+  }
+}
+
+uint16_t get_gpio_pin_by_pin(uint16_t GPIO_pin){
+  switch(GPIO_pin){
+    case 1: return GPIO_1_Pin; break;
+    case 2: return GPIO_2_Pin; break;
+    case 3: return GPIO_3_Pin; break;
+    case 4: return GPIO_4_Pin; break;
+#ifdef GPIO_5_Pin
+    case 5: return GPIO_5_Pin; break;
+#endif
+    default: return GPIO_1_Pin;
   }
 }
 
