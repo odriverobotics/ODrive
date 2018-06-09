@@ -74,7 +74,7 @@ Most instructions in this guide refer to a utility called `odrivetool`, so you s
 3. Install the ODrive tools by typing `pip install odrive` <kbd>Enter</kbd>
 4. Plug in a USB cable into the microUSB connector on ODrive, and connect it to your PC.
 5. Use the [Zadig](http://zadig.akeo.ie/) utility to set ODrive driver to libusb-win32. 
-  * Check 'List All Devices' from the options menu, and select 'ODrive 3.x Native Interface (Interface 2)'. With the Odrive selected in the device list choose 'libusb-win32' from the target driver list and select the large 'install driver' button.
+  * Check 'List All Devices' from the options menu, and select 'ODrive 3.x Native Interface (Interface 2)'. With that selected in the device list choose 'libusb-win32' from the target driver list and then press the large 'install driver' button.
 
 
 ### Linux/macOS
