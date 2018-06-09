@@ -72,7 +72,7 @@ For more details, see the [ASCII protocol specification](ascii-protocol.md).
 [See ODrive Arduino Library](https://github.com/madcowswe/ODriveArduino)
 
 ## Step/direction
-This is the simplest possible way of controlling the ODrive. It is also the most primitive and brittle one. So don't use it unless you must interoperate with other hardware that you don't control.
+This is the simplest possible way of controlling the ODrive. It is also the most primitive and fragile one. So don't use it unless you must interoperate with other hardware that you don't control.
 
 Pinout:
 * GPIO 1: M0 step
