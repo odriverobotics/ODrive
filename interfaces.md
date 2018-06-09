@@ -35,6 +35,8 @@ The ODrive can be controlled over various ports and protocols. If you're comfort
 (+) on ODrive v3.4 and earlier <br>
 (*) ODrive v3.5 and later
 
+ODrive v3.3 and onward have 5V tolerant GPIO pins.
+
 ## Native Protocol
 
 This protocol is what the ODrive Tool uses to talk to the ODrive. If you have a choice, this is the recommended protocol for all applications. The native protocol runs on USB and can also be configured to run on UART.
@@ -75,21 +77,15 @@ For more details, see the [ASCII protocol specification](ascii-protocol.md).
 This is the simplest possible way of controlling the ODrive. It is also the most primitive and fragile one. So don't use it unless you must interoperate with other hardware that you don't control.
 
 Pinout:
-* GPIO 1: M0 step
-* GPIO 2: M0 dir
-* GPIO 3: M1 step
-* GPIO 4: M1 dir
+* Step/dir signals: see [Pinout](#pinout) above.
 * GND: you must connect the grounds of the devices together. Use any GND pin on J3 of the ODrive.
 
-Please note that GPIO_3 and GPIO_4 are NOT 5v tolerant on ODrive v3.2 and earlier, so 3.3V signals only!
-ODrive v3.3 and onward have 5V tolerant GPIO pins.
-
-To enable step/dir mode for the GPIO, set `<axis>.config.enable_step_dir` to true and reboot the ODrive.
+To enable step/dir mode for the GPIO, set `<axis>.config.enable_step_dir` to true and then save configuration and reboot the ODrive.
 
 There is also a config variable called `<axis>.config.counts_per_step`, which specifies how many encoder counts a "step" corresponds to. It can be any floating point value.
-The maximum step rate is pending tests, but it should handle at least 16kHz. If you want to test it, please be aware that the failure mode on too high step rates is expected to be that the motors shuts down and coasts.
+The maximum step rate is pending tests, but it should handle at least 50kHz. If you want to test it, please be aware that the failure mode on too high step rates is expected to be that the motors shuts down and coasts.
 
-Please be aware that there is no enable line right now, and the step/direction interface is enabled by default, and remains active as long as the ODrive is in position control mode. By default the ODrive starts in position control mode, so you don't need to send any commands over USB to get going. You can still send USB commands if you want to.
+Please be aware that there is no enable line right now, and the step/direction interface is enabled by default, and remains active as long as the ODrive is in position control mode. To get the ODrive to go into position control mode at bootup, see TODO.
 
 ## RC PWM input
 
