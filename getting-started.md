@@ -184,7 +184,7 @@ Let's get motor 0 up and running. The procedure for motor 1 is exactly the same,
 
 You can now:
 
- * Set the [tuning parameters](commands#tuning-parameters) for better performance
- * Control the ODrive from your own program or hook it up to an existing system through one of it's [interfaces](interfaces)
+ * Set the [tuning parameters](commands#tuning-parameters) for better performance.
+ * Control the ODrive from your own program or hook it up to an existing system through one of it's [interfaces](interfaces).
 
 If you have any issues or any questions please get in touch. The [ODrive Community](https://discourse.odriverobotics.com/) warmly welcomes you.
