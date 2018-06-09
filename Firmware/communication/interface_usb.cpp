@@ -1,7 +1,6 @@
 
 #include "interface_usb.h"
-
-#include "ascii_protocol.h"
+#include "ascii_protocol.hpp"
 
 #include <MotorControl/utils.h>
 
@@ -13,7 +12,6 @@
 #include <freertos_vars.h>
 
 #include <odrive_main.h>
-#include "ascii_protocol.h"
 
 static uint8_t* usb_buf;
 static uint32_t usb_len;

@@ -32,7 +32,7 @@
 */
 
 #include "interface_can.hpp"
-#include "crc.hpp"
+#include "fibre/crc.hpp"
 #include "utils.h"
 
 #include <can.h>

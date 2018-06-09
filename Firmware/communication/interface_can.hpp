@@ -1,7 +1,7 @@
 #ifndef __INTERFACE_CAN_HPP
 #define __INTERFACE_CAN_HPP
 
-#include "protocol.hpp"
+#include "fibre/protocol.hpp"
 #include <stm32f4xx_hal.h>
 #include <cmsis_os.h>
 
