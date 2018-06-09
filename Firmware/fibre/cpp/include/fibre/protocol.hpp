@@ -548,17 +548,38 @@ private:
 template<typename T>
 struct format_traits_t;
 
-template<> struct format_traits_t<float> { static constexpr const char * fmt = "%f"; };
-template<> struct format_traits_t<int32_t> { static constexpr const char * fmt = "%ld"; };
-template<> struct format_traits_t<uint32_t> { static constexpr const char * fmt = "%lu"; };
-template<> struct format_traits_t<int16_t> { static constexpr const char * fmt = "%hd"; };
-template<> struct format_traits_t<uint16_t> { static constexpr const char * fmt = "%hu"; };
-template<> struct format_traits_t<int8_t> { static constexpr const char * fmt = "%hhd"; };
-template<> struct format_traits_t<uint8_t> { static constexpr const char * fmt = "%hhu"; };
+template<> struct format_traits_t<float> { using type = void;
+    static constexpr const char * fmt = "%f";
+    static constexpr const char * fmtp = "%f";
+};
+template<> struct format_traits_t<int32_t> { using type = void;
+    static constexpr const char * fmt = "%ld";
+    static constexpr const char * fmtp = "%ld";
+};
+template<> struct format_traits_t<uint32_t> { using type = void;
+    static constexpr const char * fmt = "%lu";
+    static constexpr const char * fmtp = "%lu";
+};
+template<> struct format_traits_t<int16_t> { using type = void;
+    static constexpr const char * fmt = "%hd";
+    static constexpr const char * fmtp = "%hd";
+};
+template<> struct format_traits_t<uint16_t> { using type = void;
+    static constexpr const char * fmt = "%hu";
+    static constexpr const char * fmtp = "%hu";
+};
+template<> struct format_traits_t<int8_t> { using type = void;
+    static constexpr const char * fmt = "%hhd";
+    static constexpr const char * fmtp = "%d";
+};
+template<> struct format_traits_t<uint8_t> { using type = void;
+    static constexpr const char * fmt = "%hhu";
+    static constexpr const char * fmtp = "%u";
+};
 
-template<typename T, typename = typename format_traits_t<T>::fmt>
+template<typename T, typename = typename format_traits_t<T>::type>
 static bool to_string(const T& value, char * buffer, size_t length, int) {
-    snprintf(buffer, length, format_traits_t<T>::fmt, value);
+    snprintf(buffer, length, format_traits_t<T>::fmtp, value);
     return true;
 }
 template<typename T>
@@ -573,7 +594,7 @@ static bool to_string(const T& value, char * buffer, size_t length, ...) {
     return false;
 }
 
-template<typename T, typename = typename format_traits_t<T>::fmt>
+template<typename T, typename = typename format_traits_t<T>::type>
 static bool from_string(const char * buffer, size_t length, T* property, int) {
     return sscanf(buffer, format_traits_t<T>::fmt, property) == 1;
 }
