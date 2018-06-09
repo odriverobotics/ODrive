@@ -53,7 +53,7 @@ odrv0 = odrive.discovery.find_any()
 print(str(odrv0.vbus_voltage))
 ```
 
-For a more comprehensive example, see [odrive_demo.py](../tools/odrive_demo.py).
+For a more comprehensive example, see [odrive_demo.py](../tools/demo.py).
 
 #### Other languages
 
