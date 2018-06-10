@@ -67,6 +67,7 @@ sudo pacman -S tup
 * [OpenOCD AUR package](https://aur.archlinux.org/packages/openocd/)
 
 #### Mac
+First install [Homebrew](https://brew.sh/). Then you can run these commands in Terminal:
 ```bash
 brew cask install gcc-arm-embedded
 brew cask install osxfuse && brew install tup
