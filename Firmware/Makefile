@@ -74,7 +74,7 @@ ifeq ($(OTP_CONFIRM),TRUE)
 		-c 'mwb 0x1fff7805 48' -c 'sleep 10' \
 		-c 'reset run' \
 		-c exit
-
+	@echo "OK"
 else
 	@echo "The one-time programmable memory can only be"
 	@echo "written ONCE on every board (what a surprise)."

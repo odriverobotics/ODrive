@@ -312,11 +312,17 @@ def update_device(device, firmware, logger, cancellation_token):
             raise Exception("could not find any firmware release for this board version")
         print(" found {}".format(get_fw_version_string(firmware.fw_version)))
 
-    if firmware < fw_version:
-        print("Warning: you are about to flash firmware {} which is older than the firmware on the device ({}).".format(
-                get_fw_version_string(firmware.fw_version),
-                get_fw_version_string(fw_version)))
-        if not odrive.utils.yes_no_prompt("Do you want to flash this firmware anyway?", True):
+    if firmware.fw_version <= fw_version:
+        print()
+        if firmware.fw_version < fw_version:
+            print("Warning: you are about to flash firmware {} which is older than the firmware on the device ({}).".format(
+                    get_fw_version_string(firmware.fw_version),
+                    get_fw_version_string(fw_version)))
+        else:
+            print("You are about to flash firmware {} which is the same version as the firmware on the device ({}).".format(
+                    get_fw_version_string(firmware.fw_version),
+                    get_fw_version_string(fw_version)))
+        if not odrive.utils.yes_no_prompt("Do you want to flash this firmware anyway?", False):
             raise OperationAbortedException()
 
     # load hex file
@@ -339,8 +345,10 @@ def update_device(device, firmware, logger, cancellation_token):
 
     # Put the device into DFU mode if it's not already in DFU mode
     if dfudev is None:
-        put_into_dfu_mode(device, cancellation_token)
+        find_odrive_cancellation_token = Event(cancellation_token)
+        put_into_dfu_mode(device, find_odrive_cancellation_token)
         stm_device = find_device_in_dfu_mode(serial_number, cancellation_token)
+        find_odrive_cancellation_token.set()
         dfudev = DfuDevice(stm_device)
 
     logger.debug("Sectors on device: ")
