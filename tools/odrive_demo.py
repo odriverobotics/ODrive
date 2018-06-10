@@ -15,13 +15,6 @@ my_drive = odrive.find_any()
 # Find an ODrive that is connected on the serial port /dev/ttyUSB0
 #my_drive = odrive.find_any("serial:/dev/ttyUSB0")
 
-# The above call returns a python object with a dynamically generated type. The
-# type hierarchy will correspond to the endpoint list in `MotorControl/protocol.cpp`.
-# You can also inspect the object using the dir-function:
-#print(dir(my_drive))
-#print(dir(my_drive.motor0))
-# TODO: maybe provide an introspection method that dumps the whole type hierarchy at once
-
 # To read a value, simply read the property
 print("Bus voltage is " + str(my_drive.vbus_voltage) + "V")
 
@@ -32,7 +25,7 @@ print("Position setpoint is " + str(my_drive.motor0.pos_setpoint))
 # And this is how function calls are done:
 my_drive.motor0.set_pos_setpoint(0.0, 0.0, 0.0)
 
-# A little sine wave to test
+# A sine wave to test
 t0 = time.monotonic()
 while True:
     setpoint = 10000.0 * math.sin((time.monotonic() - t0)*2)
