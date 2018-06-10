@@ -48,8 +48,8 @@ The ODrive Tool you installed as part of the [Getting Started guide](getting-sta
 Assuming you already installed the odrive library (`pip install odrive`), the simplest program to control the ODrive is this:
 
 ```python
-import odrive.discovery
-odrv0 = odrive.discovery.find_any()
+import odrive
+odrv0 = odrive.find_any()
 print(str(odrv0.vbus_voltage))
 ```
 
