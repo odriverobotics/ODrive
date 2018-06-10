@@ -10,7 +10,7 @@ The ODrive can be controlled over various ports and protocols. If you're comfort
 
 - [Pinout](#pinout)
 - [Native Protocol](#native-protocol)
-- [ASCII Protocol](#ascii-protocol)
+- [ASCII Protocol](#ascii-protocol) (and Arduino)
 - [Step/direction](#stepdirection)
 - [RC PWM input](#rc-pwm-input) (coming soon)
 - [Ports](#ports)
@@ -61,17 +61,12 @@ We don't have an official library for you just yet. Check the community, there m
 
 ## ASCII protocol
 
-This is a simpler alternative to the native protocol if you don't need all its bells and whistles. Before you use this, be sure that you're ok with its limitations.
-
-The ASCII protocol is enabled by default on UART and can also be enabled on USB alongside with the native protocol.
-
-This protocol may be extended in the future to support a selected set of GCode commands.
+This is a simpler alternative to the native protocol if you don't need all its bells and whistles. Before you use this, be sure that you're ok with its limitations. The ASCII protocol is enabled by default on UART and can also be enabled on USB alongside with the native protocol.
 
 For more details, see the [ASCII protocol specification](ascii-protocol.md).
 
-### C++ (Arduino)
-
-[See ODrive Arduino Library](https://github.com/madcowswe/ODriveArduino)
+### Arduino
+There is an Arduino library that gives some expamples on how to use the ASCII protocol to communicate with the ODrive. TODO LINK HERE.
 
 ## Step/direction
 This is the simplest possible way of controlling the ODrive. It is also the most primitive and fragile one. So don't use it unless you must interoperate with other hardware that you don't control.
