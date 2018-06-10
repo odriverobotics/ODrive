@@ -1,0 +1,5 @@
+theme: jekyll-theme-minimal
+exclude: [ruby-bundle]
+plugins:
+  - jekyll-redirect-from
+google_analytics: UA-93396600-3
