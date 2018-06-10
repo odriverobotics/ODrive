@@ -184,7 +184,7 @@ Let's get motor 0 up and running. The procedure for motor 1 is exactly the same,
 
 You can now:
 
- * Set the [tuning parameters](commands#tuning-parameters) for better performance.
+ * See what other [commands and parameters](commands.md) are available, including setting tuning parameters for better performance.
  * Control the ODrive from your own program or hook it up to an existing system through one of it's [interfaces](interfaces).
  * See how you can improve the behavior during the startup procedure, like [bypassing encoder calibration](encoders.md#encoder-with-index-signal).
 
