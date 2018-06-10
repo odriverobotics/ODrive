@@ -186,5 +186,6 @@ You can now:
 
  * Set the [tuning parameters](commands#tuning-parameters) for better performance.
  * Control the ODrive from your own program or hook it up to an existing system through one of it's [interfaces](interfaces).
+ * See how you can improve the behavior during the startup procedure, like [bypassing encoder calibration](encoders.md#encoder-with-index-signal).
 
 If you have any issues or any questions please get in touch. The [ODrive Community](https://discourse.odriverobotics.com/) warmly welcomes you.
