@@ -27,7 +27,7 @@ void ODriveArduino::SetPosition(int motor_number, float position, float velocity
 }
 
 void ODriveArduino::SetPosition(int motor_number, float position, float velocity_feedforward, float current_feedforward) {
-    serial_ << "$p " << motor_number  << " " << position << " " << velocity_feedforward << " " << current_feedforward << "!";
+    serial_ << "p " << motor_number  << " " << position << " " << velocity_feedforward << " " << current_feedforward << "\n";
 }
 
 void ODriveArduino::SetVelocity(int motor_number, float velocity) {
@@ -35,59 +35,8 @@ void ODriveArduino::SetVelocity(int motor_number, float velocity) {
 }
 
 void ODriveArduino::SetVelocity(int motor_number, float velocity, float current_feedforward) {
-    serial_ << "$v " << motor_number  << " " << velocity << " " << current_feedforward << "!";
+    serial_ << "v " << motor_number  << " " << velocity << " " << current_feedforward << "\n";
 }
-
-float ODriveArduino::getBusVoltage() {
-    serial_ << "$g 0 0!";
-    return readFloat();
-}
-
-float ODriveArduino::GetParameter(int motor_number, ParamNamesFloat parameter) {
-    int idx = kMotorOffsetFloat + kMotorStrideFloat * motor_number + parameter;
-    serial_ << "$g 0 " << idx << "!";
-    return readString().toFloat();
-}
-
-int32_t ODriveArduino::GetParameter(int motor_number, ParamNamesInt32 parameter) {
-    int idx = kMotorOffsetInt32 + kMotorStrideInt32 * motor_number + parameter;
-    serial_ << "$g 1 " << idx << "!";
-    return readString().toInt();
-}
-
-bool ODriveArduino::GetParameter(int motor_number, ParamNamesBool parameter) {
-    int idx = kMotorOffsetBool + kMotorStrideBool * motor_number + parameter;
-    serial_ << "$g 2 " << idx << "!";
-    return readString().toInt();
-}
-
-uint16_t ODriveArduino::GetParameter(int motor_number, ParamNamesUint16 parameter) {
-    int idx = kMotorOffsetUint16 + kMotorStrideUint16 * motor_number + parameter;
-    serial_ << "$g 3 " << idx << "!";
-    return readString().toInt();
-}
-
-
-void ODriveArduino::SetParameter(int motor_number, ParamNamesFloat parameter, float value) {
-    int idx = kMotorOffsetFloat + kMotorStrideFloat * motor_number + parameter;
-    serial_ << "$s 0 " << idx << " " << value << "!";
-}
-
-void ODriveArduino::SetParameter(int motor_number, ParamNamesInt32 parameter, int32_t value) {
-    int idx = kMotorOffsetInt32 + kMotorStrideInt32 * motor_number + parameter;
-    serial_ << "$s 1 " << idx << " " << value << "!";
-}
-
-void ODriveArduino::SetParameter(int motor_number, ParamNamesBool parameter, bool value) {
-    int idx = kMotorOffsetBool + kMotorStrideBool * motor_number + parameter;
-    serial_ << "$s 2 " << idx << " " << value << "!";
-}
-
-void ODriveArduino::SetParameter(int motor_number, ParamNamesUint16 parameter, uint16_t value) {
-    int idx = kMotorOffsetUint16 + kMotorStrideUint16 * motor_number + parameter;
-    serial_ << "$s 3 " << idx << " " << value << "!";
-}
-
 
 float ODriveArduino::readFloat() {
     return readString().toFloat();
@@ -95,6 +44,19 @@ float ODriveArduino::readFloat() {
 
 int32_t ODriveArduino::readInt() {
     return readString().toInt();
+}
+
+bool ODriveArduino::run_state(int axis, int requested_state, bool wait) {
+    int timeout_ctr = 100;
+    serial_ << "w axis" << axis << ".requested_state " << requested_state << '\n';
+    if (wait) {
+        do {
+            delay(100);
+            serial_ << "r axis" << axis << ".current_state\n";
+        } while (readInt() != AXIS_STATE_IDLE && --timeout_ctr > 0);
+    }
+
+    return timeout_ctr > 0;
 }
 
 String ODriveArduino::readString() {
