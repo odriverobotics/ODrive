@@ -3,15 +3,15 @@ Please add a note of your changes below this heading if you make a Pull Request.
 
 # Releases
 
-## [0.4.0] - SOON
+## [0.4.0] - 2018-06-10
 
 ### Added
  * Encoder can now go forever in velocity/torque mode due to using circular encoder space.
- * `make write_otp` command to burn the board version onto the ODrive's one-time programmable memory. If you have an ODrive v3.4 or older, you should run this once for a better firmware update user experience in the future. Run the command without any options for more details. Once set, the board version is exposed through the `hw_version_[...]` properties.
+ * Protocol supports function return values
  * bake Git-derived firmware version into firmware binary. The firmware version is exposed through the `fw_version_[...]` properties.
+ * `make write_otp` command to burn the board version onto the ODrive's one-time programmable memory. If you have an ODrive v3.4 or older, you should run this once for a better firmware update user experience in the future. Run the command without any options for more details. Once set, the board version is exposed through the `hw_version_[...]` properties.
  * infrastructure to publish the python tools to PyPi. See `tools/setup.py` for details.
  * Automated test script `run_tests.py`
- * Protocol supports function return values
  * System stats (e.g. stack usage) are exposed under `<odrv>.system_stats`
 
 ### Changed
@@ -28,8 +28,6 @@ Please add a note of your changes below this heading if you make a Pull Request.
   * The liveplotter (`odrivetool liveplotter`, formerly `liveplotter.py`) does no longer steal focus and closes as expected
   * Add commands `odrivetool backup-config` and `odrivetool restore-config`
   * (experimental: start liveplotter from `odrivetool` shell by typing `start_liveplotter(lambda: odrv0.motor0.encoder.encoder_state)`)
-* `make write_otp` command to burn the board version onto the ODrive's one-time programmable memory. If you have an ODrive v3.4 or older, you can run this once for a better firmware update user experience in the future. Run the command without any options for more details. Once set, the board version is exposed through the `hw_version_[...]` properties.
-* bake Git-derived firmware version into firmware binary. The firmware version is exposed through the `fw_version_[...]` properties.
 * Set thread priority of USB pump thread above protocol thread
 * GPIO3 not sensitive to edges by default
 * The device now appears as a composite device on USB. One subdevice is still a CDC device (virtual COM port), the other subdevice is a vendor specific class. This should resolve several issues that were caused by conflicting kernel drivers or OS services.
