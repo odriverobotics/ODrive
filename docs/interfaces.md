@@ -66,7 +66,7 @@ This is a simpler alternative to the native protocol if you don't need all its b
 For more details, see the [ASCII protocol specification](ascii-protocol.md).
 
 ### Arduino
-There is an Arduino library that gives some expamples on how to use the ASCII protocol to communicate with the ODrive. TODO LINK HERE.
+There is an Arduino library that gives some expamples on how to use the ASCII protocol to communicate with the ODrive. Check it out [here](../Arduino/ODriveArduino).
 
 ## Step/direction
 This is the simplest possible way of controlling the ODrive. It is also the most primitive and fragile one. So don't use it unless you must interoperate with other hardware that you don't control.
