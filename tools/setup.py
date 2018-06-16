@@ -91,7 +91,8 @@ setup(
     'ipython',  # Used to do the interactive parts of the odrivetool
     'PyUSB',    # Required to access USB devices from Python through libusb
     'PySerial', # Required to access serial devices from Python
-    'IntelHex', # Used to by DFU to load firmware files
+    'requests', # Used to by DFU to load firmware files
+    'IntelHex', # Used to by DFU to download firmware from github
     'matplotlib', # Required to run the liveplotter
     'pywin32==222;platform_system=="Windows"' # Required for fancy terminal features on Windows
   ],
