@@ -28,8 +28,8 @@ def get_version_from_git():
 
         (major, minor, revision, is_prerelease) = version_str_to_tuple(git_tag)
 
-        if is_prerelease:
-            revision += 1
+        # if is_prerelease:
+        #     revision += 1
         return git_tag, major, minor, revision, is_prerelease
 
     except Exception as ex:
