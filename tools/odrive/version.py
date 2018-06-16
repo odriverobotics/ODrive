@@ -36,7 +36,7 @@ def get_version_from_git():
         print(ex)
         return "[unknown version]", 0, 0, 0, 1
 
-def get_version_str(git_only=False):
+def get_version_str(git_only=False, is_post_release=False):
     """
     Returns the versions of the tools
     If git_only is true, the version.txt file is ignored even
@@ -53,7 +53,9 @@ def get_version_str(git_only=False):
     
     _, major, minor, revision, unreleased = get_version_from_git()
     version = '{}.{}.{}'.format(major, minor, revision)
-    if unreleased:
+    if is_post_release:
+        version += ".post"
+    elif unreleased:
         version += ".dev"
     return version
 

@@ -30,6 +30,12 @@ PyPi credentials and that your account has the rights
 to publish packages with the name odrive.
 """
 
+# Change this if you already uploaded the current
+# version but need to release a hotfix
+hotfix = 0
+# Set to true to make an official post-release, rather than dev of new version
+is_post_release = False
+
 # TODO: add additional y/n prompt to prevent from erroneous upload
 
 from setuptools import setup
@@ -40,16 +46,11 @@ creating_package = "sdist" in sys.argv
 
 # Load version from Git tag
 import odrive.version
-version = odrive.version.get_version_str(git_only=creating_package)
-
-# Change this if you already uploaded the current
-# version but need to release a hotfix
-hotfix = 0
+version = odrive.version.get_version_str(git_only=creating_package, is_post_release=is_post_release)
 
 if creating_package and (hotfix > 0 or not version[-1].isdigit()):
   # Add this for hotfixes
-  version += "-" + str(hotfix)
-
+  version += str(hotfix)
 
 # If we're currently creating the package we need to autogenerate
 # a file that contains the version string
