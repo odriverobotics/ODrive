@@ -74,7 +74,10 @@ if not creating_package:
   if platform.system() == 'Linux':
     import odrive.utils
     from fibre.utils import Logger
-    odrive.utils.setup_udev_rules(Logger())
+    try:
+      odrive.utils.setup_udev_rules(Logger())
+    except PermissionError:
+      print("Warning: could not set up udev rules. Run `sudo odrivetool udev-setup` to try again.")
 
 setup(
   name = 'odrive',
