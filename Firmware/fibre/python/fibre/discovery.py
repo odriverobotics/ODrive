@@ -10,7 +10,6 @@ import traceback
 import fibre.protocol
 import fibre.utils
 import fibre.remote_object
-import fibre.serial_transport
 from fibre.utils import Event, Logger
 from fibre.protocol import ChannelBrokenException
 
