@@ -76,7 +76,25 @@ Most instructions in this guide refer to a utility called `odrivetool`, so you s
   * Check 'List All Devices' from the options menu, and select 'ODrive 3.x Native Interface (Interface 2)'. With that selected in the device list choose 'libusb-win32' from the target driver list and then press the large 'install driver' button.
 
 
-### Linux/macOS
+### OSX
+1. If you don't already have it, install homebrew:
+```sh
+/usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
+```
+2. Install python:
+```sh
+brew install python
+```
+3. If you get the error: `Error: python 2.7.14_2 is already installed`, then upgrade to Python 3 by running:
+```sh
+brew upgrade python
+```
+4. Now that you have Python 3 and all the package managers, run:
+```sh
+pip3 install odrive
+```
+
+### Linux
 
 1. [Install Python 3](https://www.python.org/downloads/).
 2. Install the ODrive tools by opening a terminal and typing `pip install odrive` <kbd>Enter</kbd>
