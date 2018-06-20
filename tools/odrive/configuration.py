@@ -71,7 +71,7 @@ def restore_config(device, filename, logger):
         data = json.load(file)
 
     logger.info("Restoring configuration from {}...".format(filename))
-    errors = odrive.configuration.set_dict(device, "", data)
+    errors = set_dict(device, "", data)
 
     for error in errors:
         logger.info(error)
