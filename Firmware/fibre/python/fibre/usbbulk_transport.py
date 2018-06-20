@@ -102,11 +102,13 @@ class USBBulkTransport(fibre.protocol.PacketSource, fibre.protocol.PacketSink):
     except usb.core.USBError as ex:
       if ex.errno == 19 or ex.errno == 32: # "no such device", "pipe error"
         raise fibre.protocol.ChannelBrokenException()
-      elif ex.errno == 110: # timeout
+      elif ex.errno is None or ex.errno == 60 or ex.errno == 110: # timeout
         raise TimeoutError()
       else:
+        self._logger.debug("error in usbbulk_transport.py, process_packet")
         self._logger.debug(traceback.format_exc())
         self._logger.debug("halt condition: {}".format(ex.errno))
+        self._logger.debug(str(ex))
         # Try resetting halt/stall condition
         try:
           self.deinit()
@@ -129,11 +131,13 @@ class USBBulkTransport(fibre.protocol.PacketSource, fibre.protocol.PacketSink):
     except usb.core.USBError as ex:
       if ex.errno == 19 or ex.errno == 32: # "no such device", "pipe error"
         raise fibre.protocol.ChannelBrokenException()
-      elif ex.errno is None or ex.errno == 110: # timeout
+      elif ex.errno is None or ex.errno == 60 or ex.errno == 110: # timeout
         raise TimeoutError()
       else:
+        self._logger.debug("error in usbbulk_transport.py, process_packet")
         self._logger.debug(traceback.format_exc())
         self._logger.debug("halt condition: {}".format(ex.errno))
+        self._logger.debug(str(ex))
         # Try resetting halt/stall condition
         try:
           self.deinit()
