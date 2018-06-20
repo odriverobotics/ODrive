@@ -1,2 +1,2 @@
 @echo off
-python %~dp0\odrivetool
+ipython %~dp0\odrivetool -- %*
