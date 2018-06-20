@@ -6,7 +6,15 @@
 Encoder::Encoder(const EncoderHardwareConfig_t& hw_config,
                 Config_t& config) :
         hw_config_(hw_config),
-        config_(config)
+        config_(config),
+        AS5047PEncoder({
+            .spiHandle = hw_config_.spi, //&hspi3,
+            // .EngpioHandle = hw_config_.enable_port,
+            // .EngpioNumber = hw_config_.enable_pin,
+            .nCSgpioHandle = hw_config_.nCS_port,//GPIO_3_GPIO_Port,
+            .nCSgpioNumber = hw_config_.nCS_pin,// GPIO_3_Pin,
+            .encoder_angle = 0.0f,
+        })
 {
     // Calculate encoder pll gains
     // This calculation is currently identical to the PLL in SensorlessEstimator
@@ -258,6 +266,9 @@ bool Encoder::update() {
             //or use 64 bit
             int16_t delta_enc_16 = (int16_t)hw_config_.timer->Instance->CNT - (int16_t)shadow_count_;
             delta_enc = (int32_t)delta_enc_16; //sign extend
+            shadow_count_ += delta_enc;
+            count_in_cpr_ += delta_enc;
+            count_in_cpr_ = mod(count_in_cpr_, config_.cpr);
         } break;
 
         case MODE_HALL: {
@@ -271,6 +282,9 @@ bool Encoder::update() {
                 set_error(ERROR_ILLEGAL_HALL_STATE);
                 return false;
             }
+            shadow_count_ += delta_enc;
+            count_in_cpr_ += delta_enc;
+            count_in_cpr_ = mod(count_in_cpr_, config_.cpr);
         } break;
 
         case MODE_AS5047P: {
@@ -278,7 +292,11 @@ bool Encoder::update() {
             osDelay(100);
             as5047p_data = as5047p_data & 0x3FFF;
             AS5047PEncoder.encoder_angle = (as5047p_data/16383.0)*360;
-            AS5047PEncoder.encoder_cnt = (as5047p_data) * 4000/16383;
+            // AS5047PEncoder.encoder_cnt = (as5047p_data) * 4000/16383; //Old update when count was out of 4000
+            AS5047PEncoder.encoder_cnt = (as5047p_data);  
+            shadow_count_ = AS5047PEncoder.encoder_cnt;
+            count_in_cpr_ = AS5047PEncoder.encoder_cnt;
+            count_in_cpr_ = mod(count_in_cpr_, config_.cpr);
         } break;
         
         default: {
@@ -286,10 +304,6 @@ bool Encoder::update() {
            return false;
         } break;
     }
-
-    shadow_count_ += delta_enc;
-    count_in_cpr_ += delta_enc;
-    count_in_cpr_ = mod(count_in_cpr_, config_.cpr);
 
     //// run pll (for now pll is in units of encoder counts)
     // Predict current pos

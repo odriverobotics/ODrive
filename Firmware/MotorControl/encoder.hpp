@@ -65,7 +65,6 @@ public:
 
     Config_t& config_;
     Axis* axis_ = nullptr; // set by Axis constructor
-    
 
     Error_t error_ = ERROR_NONE;
     bool index_found_ = false;
