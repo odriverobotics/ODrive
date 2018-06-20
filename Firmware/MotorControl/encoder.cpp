@@ -1,5 +1,6 @@
 
 #include "odrive_main.h"
+#include "as5047p.h"
 
 
 Encoder::Encoder(const EncoderHardwareConfig_t& hw_config,
@@ -16,6 +17,12 @@ Encoder::Encoder(const EncoderHardwareConfig_t& hw_config,
     pll_ki_ = 0.25f * (pll_kp_ * pll_kp_);
 
     if (config.pre_calibrated && (config.mode == Encoder::MODE_HALL)) {
+        offset_ = config.offset;
+        is_ready_ = true;
+    }
+
+    //Handle AS5147P Encoder
+    if (config.pre_calibrated && (config.mode == Encoder::MODE_AS5047P)) {
         offset_ = config.offset;
         is_ready_ = true;
     }
@@ -264,6 +271,14 @@ bool Encoder::update() {
                 set_error(ERROR_ILLEGAL_HALL_STATE);
                 return false;
             }
+        } break;
+
+        case MODE_AS5047P: {
+            uint16_t as5047p_data = AS5047P_readPosition(&AS5047PEncoder);
+            osDelay(100);
+            as5047p_data = as5047p_data & 0x3FFF;
+            AS5047PEncoder.encoder_angle = (as5047p_data/16383.0)*360;
+            AS5047PEncoder.encoder_cnt = (as5047p_data) * 4000/16383;
         } break;
         
         default: {

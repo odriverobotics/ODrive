@@ -5,6 +5,9 @@
 #error "This file should not be included directly. Include odrive_main.h instead."
 #endif
 
+
+#include "as5047p.h"
+
 class Encoder {
 public:
     enum Error_t {
@@ -18,11 +21,13 @@ public:
 
     enum Mode_t {
         MODE_INCREMENTAL,
-        MODE_HALL
+        MODE_HALL, 
+        MODE_AS5047P
     };
 
     struct Config_t {
-        Encoder::Mode_t mode = Encoder::MODE_INCREMENTAL;
+        // Encoder::Mode_t mode = Encoder::MODE_INCREMENTAL;
+        Encoder::Mode_t mode = Encoder::MODE_AS5047P;
         bool use_index = false;
         bool pre_calibrated = false; // If true, this means the offset stored in
                                     // configuration is valid and does not need
@@ -56,8 +61,11 @@ public:
     bool update();
 
     const EncoderHardwareConfig_t& hw_config_;
+    AS5047P_Obj AS5047PEncoder;
+
     Config_t& config_;
     Axis* axis_ = nullptr; // set by Axis constructor
+    
 
     Error_t error_ = ERROR_NONE;
     bool index_found_ = false;
