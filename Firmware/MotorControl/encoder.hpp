@@ -22,7 +22,7 @@ public:
     enum Mode_t {
         MODE_INCREMENTAL,
         MODE_HALL, 
-        MODE_AS5047P
+        MODE_AS5047P,
     };
 
     struct Config_t {
@@ -35,7 +35,8 @@ public:
                                     // In this case the encoder will enter ready
                                     // state as soon as the index is found.
         float idx_search_speed = 10.0f; // [rad/s electrical]
-        int32_t cpr = (2048 * 4);   // Default resolution of CUI-AMT102 encoder,
+        int32_t cpr = 16384; // Default Resoliution of AS5047P Abs Encoder
+        // int32_t cpr = (2048 * 4);   // Default resolution of CUI-AMT102 encoder,
         int32_t offset = 0; // If pre_calibrated is true, this is copied into encoder.offset_ once
                             // index search succeeds
         float offset_float = 0.0f; // Sub-count phase alignment offset

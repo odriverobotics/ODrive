@@ -139,10 +139,11 @@ int odrive_main(void) {
     HAL_GPIO_Init(GPIO_1_GPIO_Port, &GPIO_InitStruct);
     GPIO_InitStruct.Pin = GPIO_2_Pin;
     HAL_GPIO_Init(GPIO_2_GPIO_Port, &GPIO_InitStruct);
-    GPIO_InitStruct.Pin = GPIO_3_Pin;
-    HAL_GPIO_Init(GPIO_3_GPIO_Port, &GPIO_InitStruct);
-    GPIO_InitStruct.Pin = GPIO_4_Pin;
-    HAL_GPIO_Init(GPIO_4_GPIO_Port, &GPIO_InitStruct);
+    //------------Commented out in order to work for AS5047P Abs Encoder
+    // GPIO_InitStruct.Pin = GPIO_3_Pin;
+    // HAL_GPIO_Init(GPIO_3_GPIO_Port, &GPIO_InitStruct);
+    // GPIO_InitStruct.Pin = GPIO_4_Pin;
+    // HAL_GPIO_Init(GPIO_4_GPIO_Port, &GPIO_InitStruct);
 #if HW_VERSION_MAJOR == 3 && HW_VERSION_MINOR >= 5
     GPIO_InitStruct.Pin = GPIO_5_Pin;
     HAL_GPIO_Init(GPIO_5_GPIO_Port, &GPIO_InitStruct);
