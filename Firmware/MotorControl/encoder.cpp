@@ -9,8 +9,6 @@ Encoder::Encoder(const EncoderHardwareConfig_t& hw_config,
         config_(config),
         AS5047PEncoder({
             .spiHandle = hw_config_.spi, //&hspi3,
-            // .EngpioHandle = hw_config_.enable_port,
-            // .EngpioNumber = hw_config_.enable_pin,
             .nCSgpioHandle = hw_config_.nCS_port,//GPIO_3_GPIO_Port,
             .nCSgpioNumber = hw_config_.nCS_pin,// GPIO_3_Pin,
             .encoder_angle = 0.0f,
@@ -18,7 +16,7 @@ Encoder::Encoder(const EncoderHardwareConfig_t& hw_config,
 {
     // Calculate encoder pll gains
     // This calculation is currently identical to the PLL in SensorlessEstimator
-    float pll_bandwidth = 1000.0f;  // [rad/s] [1/2pi Hz] //was 1000f
+    float pll_bandwidth = 300.0f;  // [rad/s] = [1/2pi Hz] //was 1000f, 1571rad/s = 250Hz
     pll_kp_ = 2.0f * pll_bandwidth;
 
     // Critically damped
