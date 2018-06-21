@@ -41,6 +41,11 @@ You will need:
   </div></details>
 
 * A power supply (12V-24V for the 24V board variant, 12V-48V for the 48V board variant). A battery is also fine.
+   <details><summary markdown="span">What voltage variant do I have?</summary><div markdown="block">
+   On all ODrives shipped July 2018 or after have a silkscreen label clearly indicating the voltage variant.
+ 
+   ODrives before this may or may not have this label. If you don't have a label, then you can look at the bus capacitors (8 gray cylinder components on the underside of the board). If they read 470uF, you have a 24V version; if they read 120uF you have a 48V version.
+   </div></details>
 
 ## Wiring up the ODrive
 
