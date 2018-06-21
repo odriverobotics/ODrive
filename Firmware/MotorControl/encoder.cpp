@@ -18,7 +18,7 @@ Encoder::Encoder(const EncoderHardwareConfig_t& hw_config,
 {
     // Calculate encoder pll gains
     // This calculation is currently identical to the PLL in SensorlessEstimator
-    float pll_bandwidth = 1000.0f;  // [rad/s]
+    float pll_bandwidth = 1000.0f;  // [rad/s] [1/2pi Hz] //was 1000f
     pll_kp_ = 2.0f * pll_bandwidth;
 
     // Critically damped
@@ -289,14 +289,29 @@ bool Encoder::update() {
 
         case MODE_AS5047P: {
             uint16_t as5047p_data = AS5047P_readPosition(&AS5047PEncoder);
-            osDelay(100);
+            // osDelay(100);
             as5047p_data = as5047p_data & 0x3FFF;
             AS5047PEncoder.encoder_angle = (as5047p_data/16383.0)*360;
             // AS5047PEncoder.encoder_cnt = (as5047p_data) * 4000/16383; //Old update when count was out of 4000
             AS5047PEncoder.encoder_cnt = (as5047p_data);  
-            shadow_count_ = AS5047PEncoder.encoder_cnt;
+
             count_in_cpr_ = AS5047PEncoder.encoder_cnt;
             count_in_cpr_ = mod(count_in_cpr_, config_.cpr);
+
+            // Need this code for shadow_count_ because raw absolute encoder loops around.
+            if(shadow_flag_){
+                if(((config_.cpr*shadow_counter_ + count_in_cpr_)-shadow_count_prev_)<(-config_.cpr/2)){ //dEncdt>0
+                shadow_counter_++;
+                }else if(((config_.cpr*shadow_counter_ + count_in_cpr_)-shadow_count_prev_)>(config_.cpr/2)){ //dEncdt<0
+                    shadow_counter_--;
+                }
+            }else{
+                shadow_flag_ = 1;
+            }
+            
+            shadow_count_ = config_.cpr*shadow_counter_ + count_in_cpr_;
+            shadow_count_prev_ = shadow_count_;
+
         } break;
         
         default: {

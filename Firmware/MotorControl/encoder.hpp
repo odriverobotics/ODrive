@@ -67,6 +67,8 @@ public:
     Config_t& config_;
     Axis* axis_ = nullptr; // set by Axis constructor
 
+
+
     Error_t error_ = ERROR_NONE;
     bool index_found_ = false;
     bool is_ready_ = false;
@@ -81,6 +83,11 @@ public:
     float pll_kp_ = 0.0f;   // [rad/s / rad]
     float pll_ki_ = 0.0f;   // [(rad/s^2) / rad]
 
+    //Counters for turning absolute encoder value into a continuous (and possibly negative) value for shadow_count
+    int32_t shadow_counter_ = 0; //Overflow counter
+    int32_t shadow_count_prev_ = 0; //Used for determining directionality
+    bool shadow_flag_ = 0; //Used for the first step
+
     // Updated by low_level pwm_adc_cb
     uint8_t hall_state_ = 0x0; // bit[0] = HallA, .., bit[2] = HallC
 
@@ -91,6 +98,7 @@ public:
             make_protocol_ro_property("is_ready", &is_ready_),
             make_protocol_ro_property("index_found", const_cast<bool*>(&index_found_)),
             make_protocol_property("shadow_count", &shadow_count_),
+            make_protocol_property("shadow_counter", &shadow_counter_),
             make_protocol_property("count_in_cpr", &count_in_cpr_),
             make_protocol_property("offset", &offset_),
             make_protocol_property("interpolation", &interpolation_),
