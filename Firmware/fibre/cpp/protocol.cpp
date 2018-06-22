@@ -221,7 +221,7 @@ bool is_endpoint_ref_valid(endpoint_ref_t endpoint_ref) {
 
 Endpoint* get_endpoint(endpoint_ref_t endpoint_ref) {
     if (is_endpoint_ref_valid(endpoint_ref))
-        return endpoints_[endpoint_ref.endpoint_id];
+        return endpoint_list_[endpoint_ref.endpoint_id];
     else
         return nullptr;
 }

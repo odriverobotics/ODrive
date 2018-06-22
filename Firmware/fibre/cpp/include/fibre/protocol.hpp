@@ -440,7 +440,7 @@ void default_readwrite_endpoint_handler(endpoint_ref_t* value, const uint8_t* in
         size_t cnt = write_le<decltype(value->endpoint_id)>(value->endpoint_id, buffer);
         cnt += write_le<decltype(value->json_crc)>(value->json_crc, buffer + cnt);
         if (cnt <= output->get_free_space())
-            output->process_bytes(buffer, cnt);
+            output->process_bytes(buffer, cnt, nullptr);
     }
     
     // If a new value was passed, call the corresponding little endian deserialization function
@@ -880,11 +880,8 @@ public:
         if (id < length)
             list[id] = this;
     }
-    // void handle(const uint8_t* input, size_t input_length, StreamSink* output) {
-    //     default_readwrite_endpoint_handler<TProperty>(property_, input, input_length, output);
-    // }
     void handle(const uint8_t* input, size_t input_length, StreamSink* output) final {
-        default_readwrite_endpoint_handler(property_, input, input_length, output);
+        default_readwrite_endpoint_handler<TProperty>(property_, input, input_length, output);
     }
     /*void handle(const uint8_t* input, size_t input_length, StreamSink* output) {
         handle(input, input_length, output);
@@ -1136,6 +1133,9 @@ extern size_t n_endpoints_;
 extern uint16_t json_crc_;
 extern JSONDescriptorEndpoint json_file_endpoint_;
 extern EndpointProvider* application_endpoints_;
+
+bool is_endpoint_ref_valid(endpoint_ref_t endpoint_ref);
+Endpoint* get_endpoint(endpoint_ref_t endpoint_ref);
 
 // @brief Registers the specified application object list using the provided endpoint table.
 // This function should only be called once during the lifetime of the application. TODO: fix this.
