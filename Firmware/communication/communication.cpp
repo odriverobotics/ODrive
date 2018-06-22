@@ -5,10 +5,10 @@
 
 #include "interface_usb.h"
 #include "interface_uart.h"
+#include "interface_can.hpp"
 #include "interface_i2c.h"
 
 #include "odrive_main.h"
-#include "protocol.hpp"
 #include "freertos_vars.h"
 #include "utils.h"
 
@@ -19,7 +19,7 @@
 //#include <usbd_cdc_if.h>
 //#include <usb_device.h>
 //#include <usart.h>
-//#include <gpio.h>
+#include <gpio.h>
 
 #include <type_traits>
 
@@ -96,6 +96,8 @@ float oscilloscope[OSCILLOSCOPE_SIZE] = {0};
 size_t oscilloscope_pos = 0;
 
 
+static CAN_context can1_ctx;
+
 // Helper class because the protocol library doesn't yet
 // support non-member functions
 // TODO: make this go away
@@ -106,6 +108,7 @@ public:
     void NVIC_SystemReset_helper() { NVIC_SystemReset(); }
     void enter_dfu_mode_helper() { enter_dfu_mode(); }
     float get_oscilloscope_val(uint32_t index) { return oscilloscope[index]; }
+    float get_adc_voltage_(uint32_t gpio) { return get_adc_voltage(get_gpio_port_by_pin(gpio), get_gpio_pin_by_pin(gpio)); }
     int32_t test_function(int32_t delta) { static int cnt = 0; return cnt += delta; }
 } static_functions;
 
@@ -152,6 +155,7 @@ static inline auto make_obj_tree() {
             // TODO: changing this currently requires a reboot - fix this
             make_protocol_property("enable_uart", &board_config.enable_uart),
             make_protocol_property("enable_i2c_instead_of_can" , &board_config.enable_i2c_instead_of_can), // requires a reboot
+            make_protocol_property("enable_ascii_protocol_on_usb", &board_config.enable_ascii_protocol_on_usb),
             make_protocol_property("dc_bus_undervoltage_trip_level", &board_config.dc_bus_undervoltage_trip_level),
             make_protocol_property("dc_bus_overvoltage_trip_level", &board_config.dc_bus_overvoltage_trip_level),
             make_protocol_object("gpio1_pwm_mapping", make_protocol_definitions(board_config.pwm_mappings[0])),
@@ -161,13 +165,11 @@ static inline auto make_obj_tree() {
         ),
         make_protocol_object("axis0", axes[0]->make_protocol_definitions()),
         make_protocol_object("axis1", axes[1]->make_protocol_definitions()),
+        make_protocol_object("can", can1_ctx.make_protocol_definitions()),
         make_protocol_property("test_property", &test_property),
         make_protocol_function("test_function", static_functions, &StaticFunctions::test_function, "delta"),
         make_protocol_function("get_oscilloscope_val", static_functions, &StaticFunctions::get_oscilloscope_val, "index"),
-#if HW_VERSION_MAJOR == 3 && HW_VERSION_MINOR >= 3
-        make_protocol_property("adc_gpio1", &adc_measurements_[0]),
-        make_protocol_property("adc_gpio2", &adc_measurements_[1]),
-#endif
+        make_protocol_function("get_adc_voltage", static_functions, &StaticFunctions::get_adc_voltage_, "gpio"),
         make_protocol_function("save_configuration", static_functions, &StaticFunctions::save_configuration_helper),
         make_protocol_function("erase_configuration", static_functions, &StaticFunctions::erase_configuration_helper),
         make_protocol_function("reboot", static_functions, &StaticFunctions::NVIC_SystemReset_helper),
@@ -178,11 +180,6 @@ static inline auto make_obj_tree() {
 using tree_type = decltype(make_obj_tree());
 uint8_t tree_buffer[sizeof(tree_type)];
 
-// the protocol has one additional built-in endpoint
-constexpr size_t MAX_ENDPOINTS = decltype(make_obj_tree())::endpoint_count + 1;
-Endpoint* endpoints_[MAX_ENDPOINTS] = { 0 };
-const size_t max_endpoints_ = MAX_ENDPOINTS;
-size_t n_endpoints_ = 0;
 
 // Thread to handle deffered processing of USB interrupt, and
 // read commands out of the UART DMA circular buffer
@@ -193,14 +190,15 @@ void communication_task(void * ctx) {
     // the compiler uses the copy-constructor instead. Thus the make_obj_tree
     // ends up with a stupid stack size of around 8000 bytes. Fix this.
     auto tree_ptr = new (tree_buffer) tree_type(make_obj_tree());
-    auto endpoint_provider = EndpointProvider_from_MemberList<tree_type>(*tree_ptr);
-    set_application_endpoints(&endpoint_provider);
-    endpoint_list_valid = true;
+    fibre_publish(*tree_ptr);
     
-    serve_on_uart();
-    serve_on_usb();
+    start_uart_server();
+    start_usb_server();
     if (board_config.enable_i2c_instead_of_can) {
-        serve_on_i2c();
+        start_i2c_server();
+    } else {
+        // TODO: finish implementing CAN
+        // start_can_server(can1_ctx, CAN1, serial_number);
     }
 
     for (;;) {
@@ -215,10 +213,10 @@ int _write(int file, const char* data, int len);
 // @brief This is what printf calls internally
 int _write(int file, const char* data, int len) {
 #ifdef USB_PROTOCOL_STDOUT
-    usb_stream_output_ptr->process_bytes((const uint8_t *)data, len);
+    usb_stream_output_ptr->process_bytes((const uint8_t *)data, len, nullptr);
 #endif
 #ifdef UART_PROTOCOL_STDOUT
-    uart4_stream_output_ptr->process_bytes((const uint8_t *)data, len);
+    uart4_stream_output_ptr->process_bytes((const uint8_t *)data, len, nullptr);
 #endif
     return len;
 }

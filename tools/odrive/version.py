@@ -4,6 +4,20 @@ import subprocess
 import os
 import sys
 
+def version_str_to_tuple(version_string):
+    """
+    Converts a version string to a tuple of the form
+    (major, minor, revision, prerelease)
+
+    Example: "fw-v0.3.6-23" => (0, 3, 6, True)
+    """
+    regex=r'.*v([0-9a-zA-Z]+).([0-9a-zA-Z]+).([0-9a-zA-Z]+)(.*)'
+    return (int(re.sub(regex, r"\1", version_string)),
+            int(re.sub(regex, r"\2", version_string)),
+            int(re.sub(regex, r"\3", version_string)),
+            (re.sub(regex, r"\4", version_string) != ""))
+
+
 def get_version_from_git():
     script_dir = os.path.dirname(os.path.realpath(__file__))
     try:
@@ -12,21 +26,17 @@ def get_version_from_git():
             cwd=script_dir)
         git_tag = git_tag.decode(sys.stdout.encoding).rstrip('\n')
 
-        regex=r'.*v([0-9a-zA-Z]).([0-9a-zA-Z]).([0-9a-zA-Z])(.*)'
-        package_version_major = int(re.sub(regex, r"\1", git_tag))
-        package_version_minor = int(re.sub(regex, r"\2", git_tag))
-        package_version_revision = int(re.sub(regex, r"\3", git_tag))
-        package_version_unreleased = (re.sub(regex, r"\4", git_tag) != "")
+        (major, minor, revision, is_prerelease) = version_str_to_tuple(git_tag)
 
-        if package_version_unreleased:
-            package_version_revision += 1
+        # if is_prerelease:
+        #     revision += 1
+        return git_tag, major, minor, revision, is_prerelease
 
     except Exception as ex:
         print(ex)
         return "[unknown version]", 0, 0, 0, 1
-    return git_tag, package_version_major, package_version_minor, package_version_revision, package_version_unreleased
 
-def get_version_str(git_only=False):
+def get_version_str(git_only=False, is_post_release=False, bump_rev=False):
     """
     Returns the versions of the tools
     If git_only is true, the version.txt file is ignored even
@@ -42,8 +52,12 @@ def get_version_str(git_only=False):
             return version_file.readline().rstrip('\n')
     
     _, major, minor, revision, unreleased = get_version_from_git()
+    if bump_rev:
+        revision += 1
     version = '{}.{}.{}'.format(major, minor, revision)
-    if unreleased:
+    if is_post_release:
+        version += ".post"
+    elif unreleased:
         version += ".dev"
     return version
 

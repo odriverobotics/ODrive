@@ -1,13 +1,12 @@
 """
-Provides functions for the discovery of ODrive devices
+Provides functions for the discovery of Fibre nodes
 """
 
 import sys
 import json
 import struct
 import threading
-import odrive.protocol
-
+import fibre.protocol
 
 class ObjectDefinitionError(Exception):
     pass
@@ -78,7 +77,7 @@ class RemoteProperty():
         # TODO: Currenly we wait for an ack here. Settle on the default guarantee.
         self._parent.__channel__.remote_endpoint_operation(self._id, buffer, True, 0)
 
-    def dump(self):
+    def _dump(self):
         if self._name == "serial_number":
             # special case: serial number should be displayed in hex (TODO: generalize)
             val_str = "{:012X}".format(self.get_value())
@@ -164,14 +163,14 @@ class RemoteFunction(object):
         if len(self._outputs) > 0:
             return self._outputs[0].get_value()
 
-    def dump(self):
+    def _dump(self):
         return "{}({})".format(self._name, ", ".join("{}: {}".format(x._name, x._property_type.__name__) for x in self._inputs))
 
 class RemoteObject(object):
     """
     Object with functions and properties that map to remote endpoints
     """
-    def __init__(self, json_data, parent, channel, printer):
+    def __init__(self, json_data, parent, channel, logger):
         """
         Creates an object that implements the specified JSON type description by
         communicating over the provided channel
@@ -190,13 +189,13 @@ class RemoteObject(object):
         for member_json in json_data.get("members", []):
             member_name = member_json.get("name", None)
             if member_name is None:
-                printer("ignoring unnamed attribute")
+                logger.debug("ignoring unnamed attribute")
                 continue
 
             try:
                 type_str = member_json.get("type", None)
                 if type_str == "object":
-                    attribute = RemoteObject(member_json, self, channel, printer)
+                    attribute = RemoteObject(member_json, self, channel, logger)
                 elif type_str == "function":
                     attribute = RemoteFunction(member_json, self)
                 elif type_str != None:
@@ -204,7 +203,7 @@ class RemoteObject(object):
                 else:
                     raise ObjectDefinitionError("no type information")
             except ObjectDefinitionError as ex:
-                printer("malformed member {}: {}".format(member_name, str(ex)))
+                logger.debug("malformed member {}: {}".format(member_name, str(ex)))
                 continue
 
             self._remote_attributes[member_name] = attribute
@@ -215,20 +214,20 @@ class RemoteObject(object):
         self.__sealed__ = True
         channel._channel_broken.subscribe(self._tear_down)
 
-    def dump(self, indent, depth):
+    def _dump(self, indent, depth):
         if depth <= 0:
             return "..."
         lines = []
         for key, val in self._remote_attributes.items():
             if isinstance(val, RemoteObject):
-                val_str = indent + key + (": " if depth == 1 else ":\n") + val.dump(indent + "  ", depth - 1)
+                val_str = indent + key + (": " if depth == 1 else ":\n") + val._dump(indent + "  ", depth - 1)
             else:
-                val_str = indent + val.dump()
+                val_str = indent + val._dump()
             lines.append(val_str)
         return "\n".join(lines)
 
     def __str__(self):
-        return self.dump("", depth=2)
+        return self._dump("", depth=2)
 
     def __repr__(self):
         return self.__str__()

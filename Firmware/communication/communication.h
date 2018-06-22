@@ -8,7 +8,6 @@
 
 #include <functional>
 #include <limits>
-#include "crc.hpp"
 
 extern "C" {
 #endif

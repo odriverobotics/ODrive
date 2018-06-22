@@ -2,7 +2,7 @@
 #define __INTERFACE_UART_HPP
 
 #ifdef __cplusplus
-#include "protocol.hpp"
+#include "fibre/protocol.hpp"
 extern StreamSink* uart4_stream_output_ptr;
 
 extern "C" {
@@ -12,7 +12,7 @@ extern "C" {
 
 extern osThreadId uart_thread;
 
-void serve_on_uart(void);
+void start_uart_server(void);
 
 #ifdef __cplusplus
 }

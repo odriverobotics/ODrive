@@ -5,6 +5,9 @@
 		},
 		{
 			"path": "tools"
+		},
+		{
+			"path": "docs"
 		}
 	],
 	"settings": {
@@ -38,7 +41,10 @@
 			"tuple": "cpp",
 			"type_traits": "cpp",
 			"typeinfo": "cpp",
-			"algorithm": "cpp"
+			"algorithm": "cpp",
+			"chrono": "cpp",
+			"condition_variable": "cpp",
+			"future": "cpp"
 		}
 	}
 }

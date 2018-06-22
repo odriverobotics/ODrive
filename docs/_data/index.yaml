@@ -1,0 +1,27 @@
+
+# This data could theoretically be retrieved directly from the md files:
+# https://jekyllrb.com/tutorials/navigation/#scenario-8-retrieving-items-based-on-front-matter-properties
+
+sections:
+  - title: For Users
+    docs:
+      - title: Getting Started
+        url: /
+      - title: ODrive Tool
+        url: odrivetool
+      - title: Parameters & Commands
+        url: commands
+      - title: Interfaces
+        url: interfaces
+      - title: Encoders
+        url: encoders
+      - title: Troubleshooting
+        url: troubleshooting
+  - title: For ODrive Developers
+    docs:
+      - title: Firmware Developer Guide
+        url: developer-guide
+      - title: Configuring Visual Studio Code
+        url: configuring-vscode
+      - title: Configuring Eclipse
+        url: configuring-eclipse

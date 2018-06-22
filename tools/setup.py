@@ -22,13 +22,22 @@ To make a real release ensure you're at the release commit
 and then run the above command without the "test" (so just "pypi").
 
 To install a prerelease version from test index:
-    sudo pip install --pre --index-url https://test.pypi.org/simple/ --no-cache-dir odrive
+(extra-index-url is there because some packages don't upload to test server)
+    sudo pip install --pre --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple/ --no-cache-dir odrive
 
 
 PyPi access requires that you have set up ~/.pypirc with your
 PyPi credentials and that your account has the rights
 to publish packages with the name odrive.
 """
+
+# Set to true to make an official post-release, rather than dev of new version
+is_post_release = False
+post_rel_num = 5
+
+# To test higher numbered releases, bump to the next rev
+bump_rev = not is_post_release
+devnum = 1
 
 # TODO: add additional y/n prompt to prevent from erroneous upload
 
@@ -40,34 +49,45 @@ creating_package = "sdist" in sys.argv
 
 # Load version from Git tag
 import odrive.version
-version = odrive.version.get_version_str(git_only=creating_package)
-
-# Change this if you already uploaded the current
-# version but need to release a hotfix
-hotfix = 0
-
-if creating_package and (hotfix > 0 or not version[-1].isdigit()):
-  # Add this for hotfixes
-  version += "-" + str(hotfix)
-
+version = odrive.version.get_version_str(
+    git_only=creating_package, is_post_release=is_post_release, bump_rev=bump_rev )
 
 # If we're currently creating the package we need to autogenerate
 # a file that contains the version string
 if creating_package:
+  if is_post_release:
+    version += str(post_rel_num)
+  elif (devnum > 0):
+    version += str(devnum)
+
   version_file_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'odrive', 'version.txt')
   with open(version_file_path, mode='w') as version_file:
     version_file.write(version)
+  
+  # Temporarily link fibre into the python tools directory
+  # TODO: distribute a fibre package separately
+  fibre_src = os.path.join(os.path.dirname(os.path.dirname(
+                    os.path.realpath(__file__))),
+                    "Firmware", "fibre", "python", "fibre")
+  fibre_link = os.path.join(os.path.dirname(
+                    os.path.realpath(__file__)), "fibre")
+  if not os.path.exists(fibre_link):
+    os.symlink(fibre_src, fibre_link, True)
 
 # TODO: find a better place for this
 if not creating_package:
   import platform
   if platform.system() == 'Linux':
     import odrive.utils
-    odrive.utils.setup_udev_rules(odrive.utils.Logger())
+    from fibre.utils import Logger
+    try:
+      odrive.utils.setup_udev_rules(Logger())
+    except PermissionError:
+      print("Warning: could not set up udev rules. Run `sudo odrivetool udev-setup` to try again.")
 
 setup(
   name = 'odrive',
-  packages = ['odrive', 'odrive.dfuse'], # this must be the same as the name above
+  packages = ['odrive', 'odrive.dfuse', 'fibre'],
   scripts = ['odrivetool', 'odrivetool.bat', 'odrive_demo.py'],
   version = version,
   description = 'Control utilities for the ODrive high performance motor controller',
@@ -80,9 +100,10 @@ setup(
     'ipython',  # Used to do the interactive parts of the odrivetool
     'PyUSB',    # Required to access USB devices from Python through libusb
     'PySerial', # Required to access serial devices from Python
-    'IntelHex', # Used to by DFU to load firmware files
+    'requests', # Used to by DFU to load firmware files
+    'IntelHex', # Used to by DFU to download firmware from github
     'matplotlib', # Required to run the liveplotter
-    'pywin32==222;platform_system=="Windows"' # Required for fancy terminal features on Windows
+    'pywin32 >= 222; platform_system == "Windows"' # Required for fancy terminal features on Windows
   ],
   package_data={'': ['version.txt']},
   classifiers = [],
@@ -93,3 +114,4 @@ setup(
 # clean up
 if creating_package:
   os.remove(version_file_path)
+  os.remove(fibre_link)

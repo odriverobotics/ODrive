@@ -7,68 +7,18 @@ This project is all about accurately driving brushless motors, for cheap. The ai
 | master | [![Build Status](https://travis-ci.org/madcowswe/ODrive.png?branch=master)](https://travis-ci.org/madcowswe/ODrive) |
 | devel  | [![Build Status](https://travis-ci.org/madcowswe/ODrive.png?branch=devel)](https://travis-ci.org/madcowswe/ODrive) |
 
-## Getting Started
-It is perfectly fine, and even recommended, to start testing with just a single motor and encoder.
-Make sure you have a good mechanical connection between the encoder and the motor, slip can cause disasterous oscillations.
-All non-power I/O is 3.3V output and 5V tolerant on input, except:
-* GPIO 3 and GPIO 4 are NOT 5V tolerant on ODrive v3.2 and earlier.
 
-You need one or two [brushless motors](https://hackaday.io/project/11583-odrive-high-performance-motor-control/log/37666-hobby-motors-in-your-robots), [quadrature incremental encoder(s)](https://discourse.odriverobotics.com/t/which-encoders-to-choose/63/2), and a power resistor.
+Please refer to the [Developer Guide](https://docs.odriverobotics.com/developer-guide.md) to get started with ODrive firmware development.
 
-The power resistor values you need depends on your motor setup, and peak/average decelleration power. A good starting point would be a [0.47 ohm, 50W resistor](https://www.digikey.com/product-detail/en/te-connectivity-passive-product/HSA50R47J/A102181-ND/2056131). **Warning! Failure to use a break resistor may result in damage to your ODrive and/or power supply!**
 
-Wire up the motor phases into the 3-phase screw terminals, and the power resistor to the AUX terminal. Wire up the power source (12-24V) to the DC terminal, make sure to pay attention to the polarity. Do not apply power just yet.
+### Repository Structure
+ * **Firmware**: ODrive firmware
+ * **tools**: Python library & tools
+ * **docs**: Documentation
 
-Wire up the encoder(s) to J4. The A,B phases are required, and the Z (index pulse) is optional. The A,B and Z lines have 3.3k pull up resistors, for use with open-drain encoder outputs. For single ended push-pull signals with weak drive current (\<4mA), you may want to desolder the pull-ups.
+### Other Resources
 
-![Image of ODrive all hooked up](https://docs.google.com/drawings/d/e/2PACX-1vTCD0P40Cd-wvD7Fl8UYEaxp3_UL81oI4qUVqrrCJPi6tkJeSs2rsffIXQRpdu6rNZs6-2mRKKYtILG/pub?w=1716&h=1281)
-
-The currently supported command modes are USB, UART and step/direction.
-* If you are sending commands over USB, you can plug in a cable into the micro-USB port.
-* If you are sending commands over UART, please see [Setting up UART](#setting-up-uart)
-* If you are using step/direction, please see [setting up step/direction](#setting-up-stepdirection)
-
-You can now:
-* [Download and build the firmware](Firmware/README.md)
-* [Configure the firmware parameters](Firmware/README.md#configuring-parameters)
-* [Flash the board](Firmware/README.md#flashing-the-firmware)
-
-### Startup procedure
-The startup procedure is demonstrated [here](https://www.youtube.com/watch?v=VCX1bA2xnuY). 
-
-Note: the rotor must be allowed to rotate without any biased load during startup. That means mass and weak friction loads are fine, but gravity or spring loads are not okay. Also note that in the video, the motors spin after initalisation, but in the current software the default behaviour is to do position control to position 0 (i.e. the position at startup)
-
-If you have an encoder with an index (Z) signal, you can calibrate once and restore the calibration on startup. Instructions on how to do that are [here](Firmware/README.md#encoder-calibration).
-
-### Sending commands
-Sending USB and UART commands is documented [here](Firmware/README.md#communicating-over-usb-and-uart). You can also have a look at the [ODrive Arduino library](https://github.com/madcowswe/ODriveArduino) that makes it easy to use the UART interface on Arduino. You can also look at it as an implementation example of how to talk to the ODrive over UART.
-
-### Setting up UART
-Baud rate: 115200
-Pinout:
-* GPIO 1: Tx (connect to Rx of other device)
-* GPIO 2: Rx (connect to Tx of other device)
-* GND: you must connect the grounds of the devices together. Use any GND pin on J3 of the ODrive.
-
-To enable UART mode for the GPIO, please see [Setting the GPIO mode](Firmware/README.md#communication-configuration).
-
-### Setting up Step/Direction
-Pinout:
-* GPIO 1: M0 step
-* GPIO 2: M0 dir
-* GPIO 3: M1 step
-* GPIO 4: M1 dir
-* GND: you must connect the grounds of the devices together. Use any GND pin on J3 of the ODrive.
-
-Please note that GPIO_3 and GPIO_4 are NOT 5v tolerant on ODrive v3.2 and earlier, so 3.3V signals only!
-ODrive v3.3 and onward have 5V tolerant GPIO pins.
-
-To enable step/dir mode for the GPIO, please see [Setting the GPIO mode](Firmware/README.md#communication-configuration).
-
-There is also a new config variable called `counts_per_step`, which specifies how many encoder counts a "step" corresponds to. It can be any floating point value.
-The maximum step rate is pending tests, but it should handle at least 32kHz. If you want's to test it, please be aware that the failure mode on too high step rates is expected to be that the motors shuts down and coasts.
-
-Please be aware that there is no enable line right now, and the step/direction interface is enabled by default, and remains active as long as the ODrive is in position control mode. By default the ODrive starts in position control mode, so you don't need to send any commands over USB to get going. You can still send USB commands if you want to.
-
-### Getting help
-If you have any issues or any questions please get in touch. The [ODrive Community](https://discourse.odriverobotics.com/) warmly welcomes you.
+ * [Main Website](https://www.odriverobotics.com/)
+ * [User Guide](https://docs.odriverobotics.com/)
+ * [Forum](https://discourse.odriverobotics.com/)
+ * [Chat](https://discourse.odriverobotics.com/t/come-chat-with-us/281)

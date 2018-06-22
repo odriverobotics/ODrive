@@ -1,17 +1,24 @@
 
 /* Includes ------------------------------------------------------------------*/
 
-//#include "low_level.h"
-#include "protocol.hpp"
-
 #include <memory>
 #include <stdlib.h>
+
+#include <fibre/protocol.hpp>
+#include <fibre/crc.hpp>
 
 /* Private defines -----------------------------------------------------------*/
 /* Private macros ------------------------------------------------------------*/
 /* Private typedef -----------------------------------------------------------*/
 /* Global constant data ------------------------------------------------------*/
 /* Global variables ----------------------------------------------------------*/
+
+Endpoint** endpoint_list_ = nullptr; // initialized by calling fibre_publish
+size_t n_endpoints_ = 0; // initialized by calling fibre_publish
+uint16_t json_crc_; // initialized by calling fibre_publish
+JSONDescriptorEndpoint json_file_endpoint_ = JSONDescriptorEndpoint();
+EndpointProvider* application_endpoints_;
+
 /* Private constant data -----------------------------------------------------*/
 /* Private variables ---------------------------------------------------------*/
 /* Private function prototypes -----------------------------------------------*/
@@ -39,18 +46,18 @@ void hexdump(const uint8_t* buf, size_t len) {
 
 
 
-int StreamToPacketConverter::process_bytes(const uint8_t *buffer, size_t length) {
+int StreamToPacketSegmenter::process_bytes(const uint8_t *buffer, size_t length, size_t* processed_bytes) {
     int result = 0;
 
     while (length--) {
         if (header_index_ < sizeof(header_buffer_)) {
             // Process header byte
             header_buffer_[header_index_++] = *buffer;
-            if (header_index_ == 1 && header_buffer_[0] != SYNC_BYTE) {
+            if (header_index_ == 1 && header_buffer_[0] != CANONICAL_PREFIX) {
                 header_index_ = 0;
             } else if (header_index_ == 2 && (header_buffer_[1] & 0x80)) {
                 header_index_ = 0; // TODO: support packets larger than 128 bytes
-            } else if (header_index_ == 3 && calc_crc8(CRC8_INIT, header_buffer_, 3)) {
+            } else if (header_index_ == 3 && calc_crc8<CANONICAL_CRC8_POLYNOMIAL>(CANONICAL_CRC8_INIT, header_buffer_, 3)) {
                 header_index_ = 0;
             } else if (header_index_ == 3) {
                 packet_length_ = header_buffer_[1] + 2;
@@ -62,61 +69,52 @@ int StreamToPacketConverter::process_bytes(const uint8_t *buffer, size_t length)
 
         // If both header and packet are fully received, hand it on to the packet processor
         if (header_index_ == 3 && packet_index_ == packet_length_) {
-            if (calc_crc16(CRC16_INIT, packet_buffer_, packet_length_) == 0) {
+            if (calc_crc16<CANONICAL_CRC16_POLYNOMIAL>(CANONICAL_CRC16_INIT, packet_buffer_, packet_length_) == 0) {
                 result |= output_.process_packet(packet_buffer_, packet_length_ - 2);
             }
             header_index_ = packet_index_ = packet_length_ = 0;
         }
         buffer++;
+        if (processed_bytes)
+            (*processed_bytes)++;
     }
 
     return result;
 }
 
-int PacketToStreamConverter::process_packet(const uint8_t *buffer, size_t length) {
+int StreamBasedPacketSink::process_packet(const uint8_t *buffer, size_t length) {
     // TODO: support buffer size >= 128
     if (length >= 128)
         return -1;
 
-    LOG_PROTO("send header\r\n");
+    LOG_FIBRE("send header\r\n");
     uint8_t header[] = {
-        SYNC_BYTE,
+        CANONICAL_PREFIX,
         static_cast<uint8_t>(length),
         0
     };
-    header[2] = calc_crc8(CRC8_INIT, header, 2);
+    header[2] = calc_crc8<CANONICAL_CRC8_POLYNOMIAL>(CANONICAL_CRC8_INIT, header, 2);
 
-    if (output_.process_bytes(header, sizeof(header)))
+    if (output_.process_bytes(header, sizeof(header), nullptr))
         return -1;
-    LOG_PROTO("send payload:\r\n");
+    LOG_FIBRE("send payload:\r\n");
     hexdump(buffer, length);
-    if (output_.process_bytes(buffer, length))
+    if (output_.process_bytes(buffer, length, nullptr))
         return -1;
 
-    LOG_PROTO("send crc16\r\n");
-    uint16_t crc16 = calc_crc16(CRC16_INIT, buffer, length);
+    LOG_FIBRE("send crc16\r\n");
+    uint16_t crc16 = calc_crc16<CANONICAL_CRC16_POLYNOMIAL>(CANONICAL_CRC16_INIT, buffer, length);
     uint8_t crc16_buffer[] = {
         (uint8_t)((crc16 >> 8) & 0xff),
         (uint8_t)((crc16 >> 0) & 0xff)
     };
-    if (output_.process_bytes(crc16_buffer, 2))
+    if (output_.process_bytes(crc16_buffer, 2, nullptr))
         return -1;
-    LOG_PROTO("sent!\r\n");
+    LOG_FIBRE("sent!\r\n");
     return 0;
 }
 
 
-class JSONDescriptorEndpoint : Endpoint {
-public:
-    static constexpr size_t endpoint_count = 1;
-    void write_json(size_t id, StreamSink* output);
-    void register_endpoints(Endpoint** list, size_t id, size_t length);
-    void handle(const uint8_t* input, size_t input_length, StreamSink* output);
-};
-
-JSONDescriptorEndpoint json_file_endpoint = JSONDescriptorEndpoint();
-EndpointProvider* application_endpoints;
-uint16_t json_crc_;
 
 void JSONDescriptorEndpoint::write_json(size_t id, StreamSink* output) {
     write_string("{\"name\":\"\",", output);
@@ -124,7 +122,7 @@ void JSONDescriptorEndpoint::write_json(size_t id, StreamSink* output) {
     // write endpoint ID
     write_string("\"id\":", output);
     char id_buf[10];
-    snprintf(id_buf, sizeof(id_buf), "%u", id); // TODO: get rid of printf
+    snprintf(id_buf, sizeof(id_buf), "%u", (unsigned)id); // TODO: get rid of printf
     write_string(id_buf, output);
 
     write_string(",\"type\":\"json\",\"access\":\"r\"}", output);
@@ -133,8 +131,7 @@ void JSONDescriptorEndpoint::write_json(size_t id, StreamSink* output) {
 void JSONDescriptorEndpoint::register_endpoints(Endpoint** list, size_t id, size_t length) {
     if (id < length)
         list[id] = this;
-    
-};
+}
 
 // Returns part of the JSON interface definition.
 void JSONDescriptorEndpoint::handle(const uint8_t* input, size_t input_length, StreamSink* output) {
@@ -147,36 +144,15 @@ void JSONDescriptorEndpoint::handle(const uint8_t* input, size_t input_length, S
 
     size_t id = 0;
     write_string("[", &output_with_offset);
-    json_file_endpoint.write_json(id, &output_with_offset);
-    id += decltype(json_file_endpoint)::endpoint_count;
+    json_file_endpoint_.write_json(id, &output_with_offset);
+    id += decltype(json_file_endpoint_)::endpoint_count;
     write_string(",", &output_with_offset);
-    application_endpoints->write_json(id, &output_with_offset);
+    application_endpoints_->write_json(id, &output_with_offset);
     write_string("]", &output_with_offset);
 }
 
-void set_application_endpoints(EndpointProvider* endpoints) {
-    application_endpoints = endpoints;
-
-    n_endpoints_ = 0;
-    json_file_endpoint.register_endpoints(endpoints_, 0, max_endpoints_);
-    n_endpoints_ += decltype(json_file_endpoint)::endpoint_count;
-    application_endpoints->register_endpoints(endpoints_, n_endpoints_, max_endpoints_);
-    n_endpoints_ += application_endpoints->get_endpoint_count();
-    
-    // Calculates the CRC16 of the JSON file.
-    // The init value is the protocol version.
-    CRC16Calculator crc16_calculator(PROTOCOL_VERSION);
-    uint8_t offset[4] = { 0 };
-    json_file_endpoint.handle(offset, sizeof(offset), &crc16_calculator);
-    json_crc_ = crc16_calculator.get_crc16();
-
-    CRC16Calculator crc16_calculator2(PROTOCOL_VERSION);
-    endpoints_[0]->handle(offset, sizeof(offset), &crc16_calculator2);
-    json_crc_ = crc16_calculator2.get_crc16();
-}
-
 int BidirectionalPacketBasedChannel::process_packet(const uint8_t* buffer, size_t length) {
-    LOG_PROTO("got packet of length %d: \r\n", length);
+    LOG_FIBRE("got packet of length %d: \r\n", length);
     hexdump(buffer, length);
     if (length < 4)
         return -1;
@@ -196,9 +172,9 @@ int BidirectionalPacketBasedChannel::process_packet(const uint8_t* buffer, size_
         if (endpoint_id >= n_endpoints_)
             return -1;
 
-        Endpoint* endpoint = endpoints_[endpoint_id];
+        Endpoint* endpoint = endpoint_list_[endpoint_id];
         if (!endpoint) {
-            LOG_PROTO("critical: no endpoint at %d", endpoint_id);
+            LOG_FIBRE("critical: no endpoint at %d", endpoint_id);
             return -1;
         }
 
@@ -208,10 +184,10 @@ int BidirectionalPacketBasedChannel::process_packet(const uint8_t* buffer, size_
         uint16_t expected_trailer = endpoint_id ? json_crc_ : PROTOCOL_VERSION;
         uint16_t actual_trailer = buffer[length - 2] | (buffer[length - 1] << 8);
         if (expected_trailer != actual_trailer) {
-            LOG_PROTO("trailer mismatch for endpoint %d: expected %04x, got %04x\r\n", endpoint_id, expected_trailer, actual_trailer);
+            LOG_FIBRE("trailer mismatch for endpoint %d: expected %04x, got %04x\r\n", endpoint_id, expected_trailer, actual_trailer);
             return -1;
         }
-        LOG_PROTO("trailer ok for endpoint %d\r\n", endpoint_id);
+        LOG_FIBRE("trailer ok for endpoint %d\r\n", endpoint_id);
 
         // TODO: if more bytes than the MTU were requested, should we abort or just return as much as possible?
 
@@ -229,7 +205,7 @@ int BidirectionalPacketBasedChannel::process_packet(const uint8_t* buffer, size_
             size_t actual_response_length = expected_response_length - output.get_free_space() + 2;
             write_le<uint16_t>(seq_no | 0x8000, tx_buf_);
 
-            LOG_PROTO("send packet:\r\n");
+            LOG_FIBRE("send packet:\r\n");
             hexdump(tx_buf_, actual_response_length);
             output_.process_packet(tx_buf_, actual_response_length);
         }

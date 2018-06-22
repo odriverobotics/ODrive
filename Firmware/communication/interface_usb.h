@@ -2,7 +2,7 @@
 #define __INTERFACE_USB_HPP
 
 #ifdef __cplusplus
-#include "protocol.hpp"
+#include "fibre/protocol.hpp"
 extern StreamSink* usb_stream_output_ptr;
 
 extern "C" {
@@ -21,8 +21,8 @@ typedef struct {
 
 extern USBStats_t usb_stats_;
 
-void usb_process_packet(uint8_t *buf, uint32_t len);
-void serve_on_usb(void);
+void usb_process_packet(uint8_t *buf, uint32_t len, uint8_t endpoint_pair);
+void start_usb_server(void);
 
 #ifdef __cplusplus
 }

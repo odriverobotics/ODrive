@@ -16,7 +16,7 @@ struct I2CStats_t {
 
 extern I2CStats_t i2c_stats_;
 
-void serve_on_i2c(void);
+void start_i2c_server(void);
 
 #ifdef __cplusplus
 }

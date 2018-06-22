@@ -1,23 +1,25 @@
 # requires pyusb
 #   pip install --pre pyusb
 
-import sys
-import time
 import usb.core
 import usb.util
-import odrive.protocol
+import sys
+import time
+import fibre.protocol
 import traceback
 import platform
 
-ODRIVE_VID_PID_PAIRS = [
+# Currently we identify fibre-enabled devices by VID,PID
+# TODO: identify by USB descriptors
+WELL_KNOWN_VID_PID_PAIRS = [
   (0x1209, 0x0D31),
-  (0x1209, 0x0D32), # <== TODO: this is the only official ODrive PID, remove the other ones
+  (0x1209, 0x0D32),
   (0x1209, 0x0D33)
 ]
 
-class USBBulkTransport(odrive.protocol.PacketSource, odrive.protocol.PacketSink):
-  def __init__(self, dev, printer):
-    self._printer = printer
+class USBBulkTransport(fibre.protocol.PacketSource, fibre.protocol.PacketSink):
+  def __init__(self, dev, logger):
+    self._logger = logger
     self.dev = dev
     self.intf = None
     self._name = "USB device {}:{}".format(dev.idVendor, dev.idProduct)
@@ -46,37 +48,45 @@ class USBBulkTransport(odrive.protocol.PacketSource, odrive.protocol.PacketSink)
     if platform.system() != 'Windows':
         self.dev.reset()
 
-    interface_number = 1
+    #self.dev.set_configuration() # no args: set first configuration
+
+    # Find the best interface
+    self.cfg = self.dev.get_active_configuration()
+    custom_interfaces = [i for i in self.cfg.interfaces() if i.bInterfaceClass == 0x00 and i.bInterfaceSubClass == 0x01]
+    cdc_interfaces = [i for i in self.cfg.interfaces() if i.bInterfaceClass == 0x0a and i.bInterfaceSubClass == 0x00]
+    all_compatible_interfaces = custom_interfaces + cdc_interfaces
+    if len(all_compatible_interfaces) == 0:
+      raise Exception("the device has no compatible interfaces")
+    self.intf = all_compatible_interfaces[0]
+
+    # Try to detach kernel driver from interface
     try:
-      if self.dev.is_kernel_driver_active(interface_number):
-        self.dev.detach_kernel_driver(interface_number)
-        self._printer("Detached Kernel Driver")
+      if self.dev.is_kernel_driver_active(self.intf.bInterfaceNumber):
+        self.dev.detach_kernel_driver(self.intf.bInterfaceNumber)
+        self._logger.debug("Detached Kernel Driver")
+      else:
+        self._logger.debug("Kernel Driver was not attached")
     except NotImplementedError:
       pass #is_kernel_driver_active not implemented on Windows
 
-    self.dev.set_configuration() # no args: set first configuration
-    self.cfg = self.dev.get_active_configuration()
-    self.intf = self.cfg[(1,0)] # this implicitly claims the interface
-    # write endpoint
+    # find write endpoint (first OUT endpoint)
     self.epw = usb.util.find_descriptor(self.intf,
-        # match the first OUT endpoint
         custom_match = \
         lambda e: \
             usb.util.endpoint_direction(e.bEndpointAddress) == \
             usb.util.ENDPOINT_OUT
     )
     assert self.epw is not None
-    self._printer("EndpointAddress for writing {}".format(self.epw.bEndpointAddress))
-    # read endpoint
+    self._logger.debug("EndpointAddress for writing {}".format(self.epw.bEndpointAddress))
+    # find read endpoint (first IN endpoint)
     self.epr = usb.util.find_descriptor(self.intf,
-        # match the first IN endpoint
         custom_match = \
         lambda e: \
             usb.util.endpoint_direction(e.bEndpointAddress) == \
             usb.util.ENDPOINT_IN
     )
     assert self.epr is not None
-    self._printer("EndpointAddress for reading {}".format(self.epr.bEndpointAddress))
+    self._logger.debug("EndpointAddress for reading {}".format(self.epr.bEndpointAddress))
 
   def deinit(self):
     if not self.intf is None:
@@ -86,25 +96,28 @@ class USBBulkTransport(odrive.protocol.PacketSource, odrive.protocol.PacketSink)
     try:
       ret = self.epw.write(usbBuffer, 0)
       if self._was_damaged:
-        self._printer("Recovered from USB halt/stall condition")
+        self._logger.debug("Recovered from USB halt/stall condition")
         self._was_damaged = False
       return ret
     except usb.core.USBError as ex:
-      if ex.errno == 19: # "no such device"
-        raise odrive.protocol.ChannelBrokenException()
-      elif ex.errno == 110: # timeout
-        raise odrive.utils.TimeoutException()
+      if ex.errno == 19 or ex.errno == 32: # "no such device", "pipe error"
+        raise fibre.protocol.ChannelBrokenException()
+      elif ex.errno is None or ex.errno == 60 or ex.errno == 110: # timeout
+        raise TimeoutError()
       else:
-        self._printer("halt condition: {}".format(ex.errno))
+        self._logger.debug("error in usbbulk_transport.py, process_packet")
+        self._logger.debug(traceback.format_exc())
+        self._logger.debug("halt condition: {}".format(ex.errno))
+        self._logger.debug(str(ex))
         # Try resetting halt/stall condition
         try:
           self.deinit()
           self.init()
         except usb.core.USBError:
-          raise odrive.protocol.ChannelBrokenException()
+          raise fibre.protocol.ChannelBrokenException()
         # Retry transfer
         self._was_damaged = True
-        raise odrive.protocol.ChannelDamagedException()
+        raise fibre.protocol.ChannelDamagedException()
 
   def get_packet(self, deadline):
     try:
@@ -112,28 +125,31 @@ class USBBulkTransport(odrive.protocol.PacketSource, odrive.protocol.PacketSink)
       timeout = max(int((deadline - time.monotonic()) * 1000), 0)
       ret = self.epr.read(bufferLen, timeout)
       if self._was_damaged:
-        self._printer("Recovered from USB halt/stall condition")
+        self._logger.debug("Recovered from USB halt/stall condition")
         self._was_damaged = False
       return bytearray(ret)
     except usb.core.USBError as ex:
-      if ex.errno == 19: # "no such device"
-        raise odrive.protocol.ChannelBrokenException()
-      elif ex.errno is None or ex.errno == 110: # timeout
-        raise odrive.utils.TimeoutException()
+      if ex.errno == 19 or ex.errno == 32: # "no such device", "pipe error"
+        raise fibre.protocol.ChannelBrokenException()
+      elif ex.errno is None or ex.errno == 60 or ex.errno == 110: # timeout
+        raise TimeoutError()
       else:
-        self._printer("halt condition: {}".format(ex.errno))
+        self._logger.debug("error in usbbulk_transport.py, process_packet")
+        self._logger.debug(traceback.format_exc())
+        self._logger.debug("halt condition: {}".format(ex.errno))
+        self._logger.debug(str(ex))
         # Try resetting halt/stall condition
         try:
           self.deinit()
           self.init()
         except usb.core.USBError:
-          raise odrive.protocol.ChannelBrokenException()
+          raise fibre.protocol.ChannelBrokenException()
         # Retry transfer
         self._was_damaged = True
-        raise odrive.protocol.ChannelDamagedException()
+        raise fibre.protocol.ChannelDamagedException()
 
 
-def discover_channels(path, serial_number, callback, cancellation_token, channel_termination_token, printer):
+def discover_channels(path, serial_number, callback, cancellation_token, channel_termination_token, logger):
   """
   Scans for USB devices that match the path spec.
   This function blocks until cancellation_token is set.
@@ -154,40 +170,43 @@ def discover_channels(path, serial_number, callback, cancellation_token, channel
   known_devices = []
   def device_matcher(device):
     #print("  test {:04X}:{:04X}".format(device.idVendor, device.idProduct))
-    if (device.bus, device.address) in known_devices:
-      return False
-    if bus != None and device.bus != bus:
-      return False
-    if address != None and device.address != address:
-      return False
-    if serial_number != None and device.serial_number != serial_number:
-      return False
-    if (device.idVendor, device.idProduct) not in ODRIVE_VID_PID_PAIRS:
+    try:
+      if (device.bus, device.address) in known_devices:
+        return False
+      if bus != None and device.bus != bus:
+        return False
+      if address != None and device.address != address:
+        return False
+      if serial_number != None and device.serial_number != serial_number:
+        return False
+      if (device.idVendor, device.idProduct) not in WELL_KNOWN_VID_PID_PAIRS:
+        return False
+    except:
       return False
     return True
 
   while not cancellation_token.is_set():
-    # printer("USB discover loop")
+    logger.debug("USB discover loop")
     devices = usb.core.find(find_all=True, custom_match=device_matcher)
     for usb_device in devices:
       try:
-        bulk_device = USBBulkTransport(usb_device, printer)
-        printer(bulk_device.info())
+        bulk_device = USBBulkTransport(usb_device, logger)
+        logger.debug(bulk_device.info())
         bulk_device.init()
-        channel = odrive.protocol.Channel(
+        channel = fibre.protocol.Channel(
                 "USB device bus {} device {}".format(usb_device.bus, usb_device.address),
-                bulk_device, bulk_device, channel_termination_token, printer)
+                bulk_device, bulk_device, channel_termination_token, logger)
         channel.usb_device = usb_device # for debugging only
       except usb.core.USBError as ex:
         if ex.errno == 13:
-          printer("USB device access denied. Did you set up your udev rules correctly?")
+          logger.debug("USB device access denied. Did you set up your udev rules correctly?")
           continue
         elif ex.errno == 16:
-          printer("USB device busy. I'll reset it and try again.")
+          logger.debug("USB device busy. I'll reset it and try again.")
           usb_device.reset()
           continue
         else:
-          printer("USB device init failed. Ignoring this device. More info: " + traceback.format_exc())
+          logger.debug("USB device init failed. Ignoring this device. More info: " + traceback.format_exc())
           known_devices.append((usb_device.bus, usb_device.address))
       else:
         known_devices.append((usb_device.bus, usb_device.address))

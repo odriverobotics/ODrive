@@ -9,12 +9,12 @@ import time
 import traceback
 import serial
 import serial.tools.list_ports
-import odrive.protocol
-import odrive.utils
+import fibre
 
-ODRIVE_BAUDRATE = 115200
+# TODO: make this customizable
+DEFAULT_BAUDRATE = 115200
 
-class SerialStreamTransport(odrive.protocol.StreamSource, odrive.protocol.StreamSink):
+class SerialStreamTransport(fibre.protocol.StreamSource, fibre.protocol.StreamSink):
     def __init__(self, port, baud):
         self._dev = serial.Serial(port, baud, timeout=1)
 
@@ -37,7 +37,7 @@ class SerialStreamTransport(odrive.protocol.StreamSource, odrive.protocol.Stream
     def get_bytes_or_fail(self, n_bytes, deadline):
         result = self.get_bytes(n_bytes, deadline)
         if len(result) < n_bytes:
-            raise odrive.utils.TimeoutException("expected {} bytes but got only {}", n_bytes, len(result))
+            raise TimeoutError("expected {} bytes but got only {}", n_bytes, len(result))
         return result
 
     def close(self):
@@ -54,7 +54,7 @@ def find_pyserial_ports():
     return [x.device for x in serial.tools.list_ports.comports()]
 
 
-def discover_channels(path, serial_number, callback, cancellation_token, channel_termination_token, printer):
+def discover_channels(path, serial_number, callback, cancellation_token, channel_termination_token, logger):
     """
     Scans for serial ports that match the path spec.
     This function blocks until cancellation_token is set.
@@ -83,15 +83,15 @@ def discover_channels(path, serial_number, callback, cancellation_token, channel
         new_ports = filter(device_matcher, all_ports)
         for port_name in new_ports:
             try:
-                serial_device = SerialStreamTransport(port_name, ODRIVE_BAUDRATE)
-                input_stream = odrive.protocol.PacketFromStreamConverter(serial_device)
-                output_stream = odrive.protocol.PacketToStreamConverter(serial_device)
-                channel = odrive.protocol.Channel(
-                        "serial port {}@{}".format(port_name, ODRIVE_BAUDRATE),
-                        input_stream, output_stream, channel_termination_token, printer)
+                serial_device = SerialStreamTransport(port_name, DEFAULT_BAUDRATE)
+                input_stream = fibre.protocol.PacketFromStreamConverter(serial_device)
+                output_stream = fibre.protocol.StreamBasedPacketSink(serial_device)
+                channel = fibre.protocol.Channel(
+                        "serial port {}@{}".format(port_name, DEFAULT_BAUDRATE),
+                        input_stream, output_stream, channel_termination_token, logger)
                 channel.serial_device = serial_device
             except serial.serialutil.SerialException:
-                printer("Serial device init failed. Ignoring this port. More info: " + traceback.format_exc())
+                logger.debug("Serial device init failed. Ignoring this port. More info: " + traceback.format_exc())
                 known_devices.append(port_name)
             else:
                 known_devices.append(port_name)

@@ -10,26 +10,65 @@ see protocol.md for the protocol specification
 
 #include <functional>
 #include <limits>
-#include <cstring>
 #include <cmath>
+//#include <stdint.h>
+#include <string.h>
 #include "crc.hpp"
+#include "cpp_utils.hpp"
 
 // Note that this option cannot be used to debug UART because it prints on UART
-//#define DEBUG_PROTOCOL
-#ifdef DEBUG_PROTOCOL
-#define LOG_PROTO(...)  do { printf(__VA_ARGS__); osDelay(10); } while (0)
+//#define DEBUG_FIBRE
+#ifdef DEBUG_FIBRE
+#define LOG_FIBRE(...)  do { printf(__VA_ARGS__); } while (0)
 #else
-#define LOG_PROTO(...)  ((void) 0)
+#define LOG_FIBRE(...)  ((void) 0)
 #endif
 
 
-constexpr uint8_t SYNC_BYTE = 0xAA;
-constexpr uint8_t CRC8_INIT = 0x42;
-constexpr uint16_t CRC16_INIT = 0x1337;
+// Default CRC-8 Polynomial: x^8 + x^5 + x^4 + x^2 + x + 1
+// Can protect a 4 byte payload against toggling of up to 5 bits
+//  source: https://users.ece.cmu.edu/~koopman/crc/index.html
+constexpr uint8_t CANONICAL_CRC8_POLYNOMIAL = 0x37;
+constexpr uint8_t CANONICAL_CRC8_INIT = 0x42;
+
+constexpr size_t CRC8_BLOCKSIZE = 4;
+
+// Default CRC-16 Polynomial: 0x9eb2 x^16 + x^13 + x^12 + x^11 + x^10 + x^8 + x^6 + x^5 + x^2 + 1
+// Can protect a 135 byte payload against toggling of up to 5 bits
+//  source: https://users.ece.cmu.edu/~koopman/crc/index.html
+// Also known as CRC-16-DNP
+constexpr uint16_t CANONICAL_CRC16_POLYNOMIAL = 0x3d65;
+constexpr uint16_t CANONICAL_CRC16_INIT = 0x1337;
+
+constexpr uint8_t CANONICAL_PREFIX = 0xAA;
+
+
+
+
+
+/* move to fibre_config.h ******************************/
+
+typedef size_t endpoint_id_t;
+
+struct ReceiverState {
+    endpoint_id_t endpoint_id;
+    size_t length;
+    uint16_t seqno_thread;
+    uint16_t seqno;
+    bool expect_ack;
+    bool expect_response;
+    bool enforce_ordering;
+};
+
+/*******************************************************/
+
+
+
+#include <unistd.h>
+
 constexpr uint16_t PROTOCOL_VERSION = 1;
 
 // This value must not be larger than USB_TX_DATA_SIZE defined in usbd_cdc_if.h
-//Oskar: What's the error? What values work? Does 63 work? Ideally we figure out how to get 64 to work, but if not let's find something better than 32.
 constexpr uint16_t TX_BUF_SIZE = 32; // does not work with 64 for some reason
 constexpr uint16_t RX_BUF_SIZE = 128; // larger values than 128 have currently no effect because of protocol limitations
 
@@ -185,6 +224,11 @@ static inline T read_le(const uint8_t** buffer, size_t* length) {
 
 class PacketSink {
 public:
+    // @brief Get the maximum packet length (aka maximum transmission unit)
+    // A packet size shall take no action and return an error code if the
+    // caller attempts to send an oversized packet.
+    //virtual size_t get_mtu() = 0;
+
     // @brief Processes a packet.
     // The blocking behavior shall depend on the thread-local deadline_ms variable.
     // @return: 0 on success, otherwise a non-zero error code
@@ -196,23 +240,45 @@ class StreamSink {
 public:
     // @brief Processes a chunk of bytes that is part of a continuous stream.
     // The blocking behavior shall depend on the thread-local deadline_ms variable.
+    // @param processed_bytes: if not NULL, shall be incremented by the number of
+    //        bytes that were consumed.
     // @return: 0 on success, otherwise a non-zero error code
-    virtual int process_bytes(const uint8_t* buffer, size_t length) = 0;
+    virtual int process_bytes(const uint8_t* buffer, size_t length, size_t* processed_bytes) = 0;
 
     // @brief Returns the number of bytes that can still be written to the stream.
     // Shall return SIZE_MAX if the stream has unlimited lenght.
+    // TODO: deprecate
     virtual size_t get_free_space() = 0;
+
+    /*int process_bytes(const uint8_t* buffer, size_t length) {
+        size_t processed_bytes = 0;
+        return process_bytes(buffer, length, &processed_bytes);
+    }*/
 };
 
-
-class StreamToPacketConverter : public StreamSink {
+class StreamSource {
 public:
-    StreamToPacketConverter(PacketSink& output) :
+    // @brief Generate a chunk of bytes that are part of a continuous stream.
+    // The blocking behavior shall depend on the thread-local deadline_ms variable.
+    // @param generated_bytes: if not NULL, shall be incremented by the number of
+    //        bytes that were written to buffer.
+    // @return: 0 on success, otherwise a non-zero error code
+    virtual int get_bytes(uint8_t* buffer, size_t length, size_t* generated_bytes) = 0;
+
+    // @brief Returns the number of bytes that can still be written to the stream.
+    // Shall return SIZE_MAX if the stream has unlimited lenght.
+    // TODO: deprecate
+    //virtual size_t get_free_space() = 0;
+};
+
+class StreamToPacketSegmenter : public StreamSink {
+public:
+    StreamToPacketSegmenter(PacketSink& output) :
         output_(output)
     {
     };
 
-    int process_bytes(const uint8_t *buffer, size_t length);
+    int process_bytes(const uint8_t *buffer, size_t length, size_t* processed_bytes);
     
     size_t get_free_space() { return SIZE_MAX; }
 
@@ -226,19 +292,47 @@ private:
 };
 
 
-class PacketToStreamConverter : public PacketSink {
+class StreamBasedPacketSink : public PacketSink {
 public:
-    PacketToStreamConverter(StreamSink& output) :
+    StreamBasedPacketSink(StreamSink& output) :
         output_(output)
     {
     };
     
+    //size_t get_mtu() { return SIZE_MAX; }
     int process_packet(const uint8_t *buffer, size_t length);
 
 private:
     StreamSink& output_;
 };
 
+// @brief: Represents a stream sink that's based on an underlying packet sink.
+// A single call to process_bytes may result in multiple packets being sent.
+class PacketBasedStreamSink : public StreamSink {
+public:
+    PacketBasedStreamSink(PacketSink& packet_sink) : _packet_sink(packet_sink) {}
+    ~PacketBasedStreamSink() {}
+
+    int process_bytes(const uint8_t* buffer, size_t length, size_t* processed_bytes) {
+        // Loop to ensure all bytes get sent
+        while (length) {
+            size_t chunk = length;
+            // send chunk as packet
+            if (_packet_sink.process_packet(buffer, chunk))
+                return -1;
+            buffer += chunk;
+            length -= chunk;
+            if (processed_bytes)
+                *processed_bytes += chunk;
+        }
+        return 0;
+    }
+
+    size_t get_free_space() { return SIZE_MAX; }
+
+private:
+    PacketSink& _packet_sink;
+};
 
 // Implements the StreamSink interface by writing into a fixed size
 // memory buffer.
@@ -249,16 +343,14 @@ public:
         buffer_length_(length) {}
 
     // Returns 0 on success and -1 if the buffer could not accept everything because it became full
-    int process_bytes(const uint8_t* buffer, size_t length) {
-        int status = 0;
-        if (length > buffer_length_) {
-            length = buffer_length_;
-            status = -1;
-        }
-        memcpy(buffer_, buffer, length);
-        buffer_ += length;
-        buffer_length_ -= length;
-        return status;
+    int process_bytes(const uint8_t* buffer, size_t length, size_t* processed_bytes) {
+        size_t chunk = length < buffer_length_ ? length : buffer_length_;
+        memcpy(buffer_, buffer, chunk);
+        buffer_ += chunk;
+        buffer_length_ -= chunk;
+        if (processed_bytes)
+            *processed_bytes += chunk;
+        return chunk == length ? 0 : -1;
     }
 
     size_t get_free_space() { return buffer_length_; }
@@ -277,14 +369,18 @@ public:
         follow_up_stream_(follow_up_stream) {}
 
     // Returns 0 on success and -1 if the buffer could not accept everything because it became full
-    int process_bytes(const uint8_t* buffer, size_t length) {
+    int process_bytes(const uint8_t* buffer, size_t length, size_t* processed_bytes) {
         if (skip_ < length) {
             buffer += skip_;
             length -= skip_;
+            if (processed_bytes)
+                *processed_bytes += skip_;
             skip_ = 0;
-            return follow_up_stream_.process_bytes(buffer, length);
+            return follow_up_stream_.process_bytes(buffer, length, processed_bytes);
         } else {
             skip_ -= length;
+            if (processed_bytes)
+                *processed_bytes += length;
             return 0;
         }
     }
@@ -305,8 +401,10 @@ public:
     CRC16Calculator(uint16_t crc16_init) :
         crc16_(crc16_init) {}
 
-    int process_bytes(const uint8_t* buffer, size_t length) {
-        crc16_ = calc_crc16(crc16_, buffer, length);
+    int process_bytes(const uint8_t* buffer, size_t length, size_t* processed_bytes) {
+        crc16_ = calc_crc16<CANONICAL_CRC16_POLYNOMIAL>(crc16_, buffer, length);
+        if (processed_bytes)
+            *processed_bytes += length;
         return 0;
     }
 
@@ -363,7 +461,7 @@ default_readwrite_endpoint_handler(T* value, const uint8_t* input, size_t input_
         uint8_t buffer[sizeof(T)];
         size_t cnt = write_le<T>(*value, buffer);
         if (cnt <= output->get_free_space())
-            output->process_bytes(buffer, cnt);
+            output->process_bytes(buffer, cnt, nullptr);
     }
 }
 
@@ -455,17 +553,8 @@ public:
     virtual bool set_from_float(float value) { return false; }
 };
 
-class EndpointProvider {
-public:
-    virtual size_t get_endpoint_count() = 0;
-    virtual void write_json(size_t id, StreamSink* output) = 0;
-    virtual Endpoint* get_by_name(char * name, size_t length) = 0;
-    virtual void register_endpoints(Endpoint** list, size_t id, size_t length) = 0;
-};
-
-
 static inline int write_string(const char* str, StreamSink* output) {
-    return output->process_bytes(reinterpret_cast<const uint8_t*>(str), strlen(str));
+    return output->process_bytes(reinterpret_cast<const uint8_t*>(str), strlen(str), nullptr);
 }
 
 
@@ -482,12 +571,93 @@ public:
         output_(output)
     { }
 
+    //size_t get_mtu() {
+    //    return SIZE_MAX;
+    //}
     int process_packet(const uint8_t* buffer, size_t length);
 private:
     PacketSink& output_;
     uint8_t tx_buf_[TX_BUF_SIZE];
 };
 
+
+/* ToString / FromString functions -------------------------------------------*/
+/*
+* These functions are currently not used by Fibre and only here to
+* support the ODrive ASCII protocol.
+* TODO: find a general way for client code to augment endpoints with custom
+* functions
+*/
+
+template<typename T>
+struct format_traits_t;
+
+template<> struct format_traits_t<float> { using type = void;
+    static constexpr const char * fmt = "%f";
+    static constexpr const char * fmtp = "%f";
+};
+template<> struct format_traits_t<int32_t> { using type = void;
+    static constexpr const char * fmt = "%ld";
+    static constexpr const char * fmtp = "%ld";
+};
+template<> struct format_traits_t<uint32_t> { using type = void;
+    static constexpr const char * fmt = "%lu";
+    static constexpr const char * fmtp = "%lu";
+};
+template<> struct format_traits_t<int16_t> { using type = void;
+    static constexpr const char * fmt = "%hd";
+    static constexpr const char * fmtp = "%hd";
+};
+template<> struct format_traits_t<uint16_t> { using type = void;
+    static constexpr const char * fmt = "%hu";
+    static constexpr const char * fmtp = "%hu";
+};
+template<> struct format_traits_t<int8_t> { using type = void;
+    static constexpr const char * fmt = "%hhd";
+    static constexpr const char * fmtp = "%d";
+};
+template<> struct format_traits_t<uint8_t> { using type = void;
+    static constexpr const char * fmt = "%hhu";
+    static constexpr const char * fmtp = "%u";
+};
+
+template<typename T, typename = typename format_traits_t<T>::type>
+static bool to_string(const T& value, char * buffer, size_t length, int) {
+    snprintf(buffer, length, format_traits_t<T>::fmtp, value);
+    return true;
+}
+template<typename T>
+//__attribute__((__unused__))
+static bool to_string(const bool& value, char * buffer, size_t length, int) {
+    buffer[0] = value ? '1' : '0';
+    buffer[1] = 0;
+    return true;
+}
+template<typename T>
+static bool to_string(const T& value, char * buffer, size_t length, ...) {
+    return false;
+}
+
+template<typename T, typename = typename format_traits_t<T>::type>
+static bool from_string(const char * buffer, size_t length, T* property, int) {
+    return sscanf(buffer, format_traits_t<T>::fmt, property) == 1;
+}
+//__attribute__((__unused__))
+template<typename T>
+static bool from_string(const char * buffer, size_t length, bool* property, int) {
+    int val;
+    if (sscanf(buffer, "%d", &val) != 1)
+        return false;
+    *property = val;
+    return true;
+}
+template<typename T>
+static bool from_string(const char * buffer, size_t length, T* property, ...) {
+    return false;
+}
+
+
+/* Object tree ---------------------------------------------------------------*/
 
 template<typename ... TMembers>
 struct MemberList;
@@ -628,10 +798,6 @@ bool set_from_float(float value, T* property) {
 //}
 
 
-// TODO: move to cpp_utils
-#define ENABLE_IF_SAME(a, b, type) \
-    template<typename T = a> typename std::enable_if_t<std::is_same<T, b>::value, bool>
-
 template<typename TProperty>
 class ProtocolProperty : public Endpoint {
 public:
@@ -669,14 +835,14 @@ public:
     void write_json(size_t id, StreamSink* output) {
         // write name
         write_string("{\"name\":\"", output);
-        LOG_PROTO("json: this at %x, name at %x is s\r\n", (uintptr_t)this, (uintptr_t)name_);
-        //LOG_PROTO("json\r\n");
+        LOG_FIBRE("json: this at %x, name at %x is s\r\n", (uintptr_t)this, (uintptr_t)name_);
+        //LOG_FIBRE("json\r\n");
         write_string(name_, output);
 
         // write endpoint ID
         write_string("\",\"id\":", output);
         char id_buf[10];
-        snprintf(id_buf, sizeof(id_buf), "%u", id); // TODO: get rid of printf
+        snprintf(id_buf, sizeof(id_buf), "%u", (unsigned)id); // TODO: get rid of printf
         write_string(id_buf, output);
 
         // write additional JSON data
@@ -688,6 +854,7 @@ public:
         write_string("}", output);
     }
 
+    // special-purpose function - to be moved
     Endpoint* get_by_name(const char * name, size_t length) {
         if (!strncmp(name, name_, length))
             return this;
@@ -695,62 +862,14 @@ public:
             return nullptr;
     }
 
-
-    // *** ASCII protocol handlers ***
-
-    ENABLE_IF_SAME(std::decay_t<TProperty>, float, bool)
-    get_string_ex(char * buffer, size_t length, int) {
-        snprintf(buffer, length, "%f", *property_);
-        return true;
-    }
-    ENABLE_IF_SAME(std::decay_t<TProperty>, int32_t, bool)
-    get_string_ex(char * buffer, size_t length, int) {
-        snprintf(buffer, length, "%ld", *property_);
-        return true;
-    }
-    ENABLE_IF_SAME(std::decay_t<TProperty>, uint32_t, bool)
-    get_string_ex(char * buffer, size_t length, int) {
-        snprintf(buffer, length, "%lu", *property_);
-        return true;
-    }
-    ENABLE_IF_SAME(std::decay_t<TProperty>, bool, bool)
-    get_string_ex(char * buffer, size_t length, int) {
-        buffer[0] = (*property_) ? '1' : '0';
-        buffer[1] = 0;
-        return true;
-    }
-    bool get_string_ex(char * buffer, size_t length, ...) {
-        return false;
-    }
+    // special-purpose function - to be moved
     bool get_string(char * buffer, size_t length) final {
-        return get_string_ex(buffer, length, 0);
+        return to_string(*property_, buffer, length, 0);
     }
-    ENABLE_IF_SAME(TProperty, float, bool)
-    set_string_ex(char * buffer, size_t length, int) {
-        return sscanf(buffer, "%f", property_) == 1;
-    }
-    ENABLE_IF_SAME(TProperty, int32_t, bool)
-    set_string_ex(char * buffer, size_t length, int) {
-        return sscanf(buffer, "%ld", property_) == 1;
-    }
-    ENABLE_IF_SAME(TProperty, uint32_t, bool)
-    set_string_ex(char * buffer, size_t length, int) {
-        return sscanf(buffer, "%lu", property_) == 1;
-    }
-    ENABLE_IF_SAME(TProperty, bool, bool)
-    set_string_ex(char * buffer, size_t length, int) {
-        int val;
-        if (sscanf(buffer, "%d", &val) != 1)
-            return false;
-        *property_ = val;
-        return true;
-    }
-    bool set_string_ex(char * buffer, size_t length, ...) {
-        return false;
-    }
+
+    // special-purpose function - to be moved
     bool set_string(char * buffer, size_t length) final {
-        //__asm ("bkpt");
-        return set_string_ex(buffer, length, 0);
+        return from_string(buffer, length, property_, 0);
     }
 
     bool set_from_float(float value) final {
@@ -761,8 +880,11 @@ public:
         if (id < length)
             list[id] = this;
     }
-    void handle(const uint8_t* input, size_t input_length, StreamSink* output) {
-        default_readwrite_endpoint_handler<TProperty>(property_, input, input_length, output);
+    // void handle(const uint8_t* input, size_t input_length, StreamSink* output) {
+    //     default_readwrite_endpoint_handler<TProperty>(property_, input, input_length, output);
+    // }
+    void handle(const uint8_t* input, size_t input_length, StreamSink* output) final {
+        default_readwrite_endpoint_handler(property_, input, input_length, output);
     }
     /*void handle(const uint8_t* input, size_t input_length, StreamSink* output) {
         handle(input, input_length, output);
@@ -773,64 +895,28 @@ public:
 };
 
 // Non-const non-enum types
-template<typename TProperty, typename = std::enable_if_t<!std::is_enum<TProperty>::value>>
+template<typename TProperty, ENABLE_IF(!std::is_enum<TProperty>::value)>
 ProtocolProperty<TProperty> make_protocol_property(const char * name, TProperty* property) {
     return ProtocolProperty<TProperty>(name, property);
 };
 
 // Const non-enum types
-template<typename TProperty, typename = std::enable_if_t<!std::is_enum<TProperty>::value>>
+template<typename TProperty, ENABLE_IF(!std::is_enum<TProperty>::value)>
 ProtocolProperty<const TProperty> make_protocol_ro_property(const char * name, const TProperty* property) {
     return ProtocolProperty<const TProperty>(name, property);
 };
 
 // Non-const enum types
-template<typename TProperty, typename = std::enable_if_t<std::is_enum<TProperty>::value>>
+template<typename TProperty, ENABLE_IF(std::is_enum<TProperty>::value)>
 ProtocolProperty<std::underlying_type_t<TProperty>> make_protocol_property(const char * name, TProperty* property) {
     return ProtocolProperty<std::underlying_type_t<TProperty>>(name, reinterpret_cast<std::underlying_type_t<TProperty>*>(property));
 };
 
 // Const enum types
-template<typename TProperty, typename = std::enable_if_t<std::is_enum<TProperty>::value>>
+template<typename TProperty, ENABLE_IF(std::is_enum<TProperty>::value)>
 ProtocolProperty<const std::underlying_type_t<TProperty>> make_protocol_ro_property(const char * name, const TProperty* property) {
     return ProtocolProperty<const std::underlying_type_t<TProperty>>(name, reinterpret_cast<const std::underlying_type_t<TProperty>*>(property));
 };
-
-
-
-template<typename TObj, typename TRet, typename ... TArgs>
-class FunctionTraits {
-public:
-    template<unsigned IUnpacked, typename ... TUnpackedArgs, typename = std::enable_if_t<IUnpacked != sizeof...(TArgs)>>
-    static TRet invoke(TObj& obj, TRet(TObj::*func_ptr)(TArgs...), std::tuple<TArgs...> packed_args, TUnpackedArgs ... args) {
-        return invoke<IUnpacked+1>(obj, func_ptr, packed_args, args..., std::get<IUnpacked>(packed_args));
-    }
-
-    template<unsigned IUnpacked>
-    static TRet invoke(TObj& obj, TRet(TObj::*func_ptr)(TArgs...), std::tuple<TArgs...> packed_args, TArgs ... args) {
-        return (obj.*func_ptr)(args...);
-    }
-};
-
-/* @brief Invoke a class member function with a variable number of arguments that are supplied as a tuple
-
-Example usage:
-
-class MyClass {
-public:
-    int MyFunction(int a, int b) {
-        return 0;
-    }
-};
-
-MyClass my_object;
-std::tuple<int, int> my_args(3, 4); // arguments are supplied as a tuple
-int result = invoke_function_with_tuple(my_object, &MyClass::MyFunction, my_args);
-*/
-template<typename TObj, typename TRet, typename ... TArgs>
-TRet invoke_function_with_tuple(TObj& obj, TRet(TObj::*func_ptr)(TArgs...), std::tuple<TArgs...> packed_args) {
-    return FunctionTraits<TObj, TRet, TArgs...>::template invoke<0>(obj, func_ptr, packed_args);
-}
 
 
 template<typename ... TArgs>
@@ -856,7 +942,13 @@ struct PropertyListFactory<TProperty, TProperties...> {
     }
 };
 
-
+/* @brief return_type<TypeList>::type represents the true return type
+* of a function returning 0 or more arguments.
+*
+* For an empty TypeList, the return type is void. For a list with
+* one type, the return type is equal to that type. For a list with
+* more than one items, the return type is a tuple.
+*/
 template<typename ... Types>
 struct return_type;
 
@@ -868,16 +960,12 @@ template<typename T, typename ... Ts>
 struct return_type<T, Ts...> { typedef std::tuple<T, Ts...> type; };
 
 
-
 template<typename TObj, typename ... TInputsAndOutputs>
 class ProtocolFunction;
 
 template<typename TObj, typename ... TInputs, typename ... TOutputs>
-    //template <typename ... TInputs> typename asd,
-    //template <typename ... TOutputs> typename ssss>
 class ProtocolFunction<TObj, std::tuple<TInputs...>, std::tuple<TOutputs...>> : Endpoint {
 public:
-
     // @brief The return type of the function as written by a C++ programmer
     using TRet = typename return_type<TOutputs...>::type;
 
@@ -891,7 +979,7 @@ public:
         input_properties_(PropertyListFactory<TInputs...>::template make_property_list<0>(input_names_, in_args_)),
         output_properties_(PropertyListFactory<TOutputs...>::template make_property_list<0>(output_names_, out_args_))
     {
-        LOG_PROTO("my tuple is at %x and of size %u\r\n", (uintptr_t)&in_args_, sizeof(in_args_));
+        LOG_FIBRE("my tuple is at %x and of size %u\r\n", (uintptr_t)&in_args_, sizeof(in_args_));
     }
 
     // The custom copy constructor is needed because otherwise the
@@ -903,7 +991,7 @@ public:
         input_properties_(PropertyListFactory<TInputs...>::template make_property_list<0>(input_names_, in_args_)),
         output_properties_(PropertyListFactory<TOutputs...>::template make_property_list<0>(output_names_, out_args_))
     {
-        LOG_PROTO("COPIED! my tuple is at %x and of size %u\r\n", (uintptr_t)&in_args_, sizeof(in_args_));
+        LOG_FIBRE("COPIED! my tuple is at %x and of size %u\r\n", (uintptr_t)&in_args_, sizeof(in_args_));
     }
 
     void write_json(size_t id, StreamSink* output) {
@@ -914,7 +1002,7 @@ public:
         // write endpoint ID
         write_string("\",\"id\":", output);
         char id_buf[10];
-        snprintf(id_buf, sizeof(id_buf), "%u", id); // TODO: get rid of printf
+        snprintf(id_buf, sizeof(id_buf), "%u", (unsigned)id); // TODO: get rid of printf
         write_string(id_buf, output);
         
         // write arguments
@@ -925,6 +1013,7 @@ public:
         write_string("]}", output);
     }
 
+    // special-purpose function - to be moved
     Endpoint* get_by_name(const char * name, size_t length) {
         return nullptr; // can't address functions by name
     }
@@ -951,12 +1040,12 @@ public:
         out_args_ = invoke_function_with_tuple(*obj_, func_ptr_, in_args_);
     }
 
-    void handle(const uint8_t* input, size_t input_length, StreamSink* output) {
+    void handle(const uint8_t* input, size_t input_length, StreamSink* output) final {
         (void) input;
         (void) input_length;
         (void) output;
-        LOG_PROTO("tuple still at %x and of size %u\r\n", (uintptr_t)&in_args_, sizeof(in_args_));
-        LOG_PROTO("invoke function using %d and %.3f\r\n", std::get<0>(in_args_), std::get<1>(in_args_));
+        LOG_FIBRE("tuple still at %x and of size %u\r\n", (uintptr_t)&in_args_, sizeof(in_args_));
+        LOG_FIBRE("invoke function using %d and %.3f\r\n", std::get<0>(in_args_), std::get<1>(in_args_));
         handle_ex<void>();
     }
 
@@ -984,6 +1073,28 @@ ProtocolFunction<TObj, std::tuple<TArgs...>, std::tuple<TRet>> make_protocol_fun
 }
 
 
+#define FIBRE_EXPORTS(CLASS, ...) \
+    struct fibre_export_t { \
+        static CLASS* obj; \
+        using type = decltype(make_protocol_member_list(__VA_ARGS__)); \
+    }; \
+    fibre_export_t::type make_fibre_definitions() { \
+        CLASS* obj = this; \
+        return make_protocol_member_list(__VA_ARGS__); \
+    } \
+    fibre_export_t::type fibre_definitions = make_fibre_definitions()
+
+
+
+
+
+class EndpointProvider {
+public:
+    virtual size_t get_endpoint_count() = 0;
+    virtual void write_json(size_t id, StreamSink* output) = 0;
+    virtual Endpoint* get_by_name(char * name, size_t length) = 0;
+    virtual void register_endpoints(Endpoint** list, size_t id, size_t length) = 0;
+};
 
 template<typename T>
 class EndpointProvider_from_MemberList : public EndpointProvider {
@@ -1009,17 +1120,49 @@ public:
     T& member_list_;
 };
 
-void set_application_endpoints(EndpointProvider* endpoints);
 
 
-// defined in communication.cpp
-extern Endpoint* endpoints_[];
+class JSONDescriptorEndpoint : Endpoint {
+public:
+    static constexpr size_t endpoint_count = 1;
+    void write_json(size_t id, StreamSink* output);
+    void register_endpoints(Endpoint** list, size_t id, size_t length);
+    void handle(const uint8_t* input, size_t input_length, StreamSink* output);
+};
+
+// defined in protocol.cpp
+extern Endpoint** endpoint_list_;
 extern size_t n_endpoints_;
-extern const size_t max_endpoints_;
-extern EndpointProvider* application_endpoints;
 extern uint16_t json_crc_;
+extern JSONDescriptorEndpoint json_file_endpoint_;
+extern EndpointProvider* application_endpoints_;
 
-bool is_endpoint_ref_valid(endpoint_ref_t endpoint_ref);
-Endpoint* get_endpoint(endpoint_ref_t endpoint_ref);
+// @brief Registers the specified application object list using the provided endpoint table.
+// This function should only be called once during the lifetime of the application. TODO: fix this.
+// @param application_objects The application objects to be registred.
+template<typename T>
+int fibre_publish(T& application_objects) {
+    static constexpr size_t endpoint_list_size = 1 + T::endpoint_count;
+    static Endpoint* endpoint_list[endpoint_list_size];
+    static auto endpoint_provider = EndpointProvider_from_MemberList<T>(application_objects);
+
+    json_file_endpoint_.register_endpoints(endpoint_list, 0, endpoint_list_size);
+    application_objects.register_endpoints(endpoint_list, 1, endpoint_list_size);
+
+    // Update the global endpoint table
+    endpoint_list_ = endpoint_list;
+    n_endpoints_ = endpoint_list_size;
+    application_endpoints_ = &endpoint_provider;
+    
+    // Calculate the CRC16 of the JSON file.
+    // The init value is the protocol version.
+    CRC16Calculator crc16_calculator(PROTOCOL_VERSION);
+    uint8_t offset[4] = { 0 };
+    json_file_endpoint_.handle(offset, sizeof(offset), &crc16_calculator);
+    json_crc_ = crc16_calculator.get_crc16();
+
+    return 0;
+}
+
 
 #endif

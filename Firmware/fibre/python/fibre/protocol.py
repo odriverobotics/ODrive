@@ -5,12 +5,10 @@ import struct
 import sys
 import threading
 import traceback
-import odrive.utils
-from odrive.utils import wait_any
-from odrive.utils import Event
+#import fibre.utils
+from fibre.utils import Event, wait_any
 
 import abc
-
 if sys.version_info >= (3, 4):
     ABC = abc.ABC
 else:
@@ -87,7 +85,7 @@ class ChannelBrokenException(Exception):
 
 class StreamSource(ABC):
     @abc.abstractmethod
-    def get_bytes(self, deadline):
+    def get_bytes(self, n_bytes, deadline):
         pass
 
 class StreamSink(ABC):
@@ -106,7 +104,7 @@ class PacketSink(ABC):
         pass
 
 
-class StreamToPacketConverter(StreamSink):
+class StreamToPacketSegmenter(StreamSink):
     def __init__(self, output):
         self._header = []
         self._packet = []
@@ -145,7 +143,7 @@ class StreamToPacketConverter(StreamSink):
                 self._packet_length = 0
 
 
-class PacketToStreamConverter(PacketSink):
+class StreamBasedPacketSink(PacketSink):
     def __init__(self, output):
         self._output = output
 
@@ -153,7 +151,9 @@ class PacketToStreamConverter(PacketSink):
         if (len(packet) >= MAX_PACKET_SIZE):
             raise NotImplementedError("packet larger than 127 currently not supported")
 
-        header = [SYNC_BYTE, len(packet)]
+        header = bytearray()
+        header.append(SYNC_BYTE)
+        header.append(len(packet))
         header.append(calc_crc8(CRC8_INIT, header))
 
         self._output.process_bytes(header)
@@ -203,10 +203,10 @@ class PacketFromStreamConverter(PacketSource):
 
 class Channel(PacketSink):
     # Choose these parameters to be sensible for a specific transport layer
-    _resend_timeout = 0.1     # [s]
+    _resend_timeout = 5.0     # [s]
     _send_attempts = 5
 
-    def __init__(self, name, input, output, cancellation_token, printer):
+    def __init__(self, name, input, output, cancellation_token, logger):
         """
         Params:
         input: A PacketSource where this channel will source packets from on
@@ -217,7 +217,7 @@ class Channel(PacketSink):
         self._name = name
         self._input = input
         self._output = output
-        self._printer = printer
+        self._logger = logger
         self._outbound_seq_no = 0
         self._interface_definition_crc = 0
         self._expected_acks = {}
@@ -241,7 +241,7 @@ class Channel(PacketSink):
                     deadline = time.monotonic() + 1.0
                     try:
                         response = self._input.get_packet(deadline)
-                    except odrive.utils.TimeoutException:
+                    except TimeoutError:
                         continue # try again
                     except ChannelDamagedException:
                         error_ctr += 1
@@ -253,7 +253,7 @@ class Channel(PacketSink):
                     self.process_packet(response)
                 #print("receiver thread is exiting")
             except Exception:
-                self._printer("receiver thread is exiting: " + traceback.format_exc())
+                self._logger.debug("receiver thread is exiting: " + traceback.format_exc())
             finally:
                 self._channel_broken.set()
         threading.Thread(target=receiver_thread).start()
@@ -303,7 +303,7 @@ class Channel(PacketSink):
                     try:
                         if wait_any(self._resend_timeout, ack_event, self._channel_broken) != 0:
                             raise ChannelBrokenException()
-                    except odrive.utils.TimeoutException:
+                    except TimeoutError:
                         attempt += 1
                         continue # resend
                     return self._responses.pop(seq_no)

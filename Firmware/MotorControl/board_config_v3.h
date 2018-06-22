@@ -100,10 +100,17 @@ const BoardHardwareConfig_t hw_configs[2] = { {
     }
 },{
     .axis_config = {
+#if HW_VERSION_MAJOR == 3 && HW_VERSION_MINOR >= 5
+        .step_port = GPIO_7_GPIO_Port,
+        .step_pin = GPIO_7_Pin,
+        .dir_port = GPIO_8_GPIO_Port,
+        .dir_pin = GPIO_8_Pin,
+#else
         .step_port = GPIO_3_GPIO_Port,
         .step_pin = GPIO_3_Pin,
         .dir_port = GPIO_4_GPIO_Port,
         .dir_pin = GPIO_4_Pin,
+#endif
         .thread_priority = osPriorityHigh,
     },
     .encoder_config = {
