@@ -82,20 +82,25 @@ Most instructions in this guide refer to a utility called `odrivetool`, so you s
 
 
 ### OSX
+We are going to run the following commands for installation in Terminal.
 1. If you don't already have it, install homebrew:
-```sh
+```bash
 /usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
 ```
 2. Install python:
-```sh
+```bash
 brew install python
 ```
 3. If you get the error: `Error: python 2.7.14_2 is already installed`, then upgrade to Python 3 by running:
-```sh
+```bash
 brew upgrade python
 ```
-4. Now that you have Python 3 and all the package managers, run:
-```sh
+4. The odrive tools uses libusb to communicate to the ODrive:
+```bash
+brew install libusb
+```
+5. Now that you have Python 3 and all the package managers, run:
+```bash
 pip3 install odrive
 ```
 
