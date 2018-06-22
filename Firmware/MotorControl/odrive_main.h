@@ -2,7 +2,7 @@
 #define __ODRIVE_MAIN_H
 
 #ifdef __cplusplus
-#include <communication/protocol.hpp>
+#include <fibre/protocol.hpp>
 extern "C" {
 #endif
 
@@ -106,7 +106,6 @@ inline ENUMTYPE operator ~ (ENUMTYPE a) { return static_cast<ENUMTYPE>(~static_c
 
 
 // ODrive specific includes
-#include <fibre/protocol.hpp>
 #include <utils.h>
 #include <low_level.h>
 #include <encoder.hpp>
