@@ -47,6 +47,7 @@ Possible values are:
 * `CTRL_MODE_POSITION_CONTROL`
 * `CTRL_MODE_VELOCITY_CONTROL`
 * `CTRL_MODE_CURRENT_CONTROL`
+* `CTRL_MODE_IMPEDANCE_CONTROL`
 * `CTRL_MODE_VOLTAGE_CONTROL` - this one is not normally used.
 
 ### Tuning parameters

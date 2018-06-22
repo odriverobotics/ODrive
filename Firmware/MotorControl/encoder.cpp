@@ -16,7 +16,7 @@ Encoder::Encoder(const EncoderHardwareConfig_t& hw_config,
 {
     // Calculate encoder pll gains
     // This calculation is currently identical to the PLL in SensorlessEstimator
-    float pll_bandwidth = 300.0f;  // [rad/s] = [1/2pi Hz] //was 1000f, 1571rad/s = 250Hz
+    float pll_bandwidth = 300.0f;  // [rad/s] = [1/2pi Hz] //was 1000f, 1571rad/s = 250Hz, 300rad/s ~= 50Hz
     pll_kp_ = 2.0f * pll_bandwidth;
 
     // Critically damped

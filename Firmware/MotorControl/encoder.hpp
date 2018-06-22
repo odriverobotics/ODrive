@@ -76,12 +76,15 @@ public:
     int32_t count_in_cpr_ = 0;
     int32_t offset_ = 0;
     float interpolation_ = 0.0f;
-    float phase_ = 0.0f;    // [rad]
-    float pos_estimate_ = 0.0f;  // [rad]
-    float pos_cpr_ = 0.0f;  // [rad]
-    float pll_vel_ = 0.0f;  // [rad/s]
-    float pll_kp_ = 0.0f;   // [rad/s / rad]
-    float pll_ki_ = 0.0f;   // [(rad/s^2) / rad]
+    float phase_ = 0.0f;    // [counts]
+    float pos_estimate_ = 0.0f;  // [counts]
+    float pos_cpr_ = 0.0f;  // [counts]
+    float pll_vel_ = 0.0f;  // [counts/s]
+    float pll_kp_ = 0.0f;   // [counts/s / rad]
+    float pll_ki_ = 0.0f;   // [(counts/s^2) / rad]
+
+    // float pos_sum_ = 0.0f;  // [counts]
+    // float pos_counter_ = 0.0f;  // [counts]
 
     //Counters for turning absolute encoder value into a continuous (and possibly negative) value for shadow_count
     int32_t shadow_counter_ = 0; //Overflow counter
