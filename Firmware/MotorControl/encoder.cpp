@@ -129,6 +129,10 @@ bool Encoder::run_offset_calibration() {
     bool old_use_index = config_.use_index;
     config_.use_index = false;
 
+    // We use shadow_count_ to do the calibration, but the offset is used by count_in_cpr_
+    // Therefore we have to sync them for calibration
+    shadow_count_ = count_in_cpr_;
+
     float voltage_magnitude;
     if (axis_->motor_.config_.motor_type == MOTOR_TYPE_HIGH_CURRENT)
         voltage_magnitude = axis_->motor_.config_.calibration_current * axis_->motor_.config_.phase_resistance;
