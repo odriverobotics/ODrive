@@ -191,6 +191,9 @@ void communication_task(void * ctx) {
     // ends up with a stupid stack size of around 8000 bytes. Fix this.
     auto tree_ptr = new (tree_buffer) tree_type(make_obj_tree());
     fibre_publish(*tree_ptr);
+
+    // Allow main init to continue
+    endpoint_list_valid = true;
     
     start_uart_server();
     start_usb_server();
