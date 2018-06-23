@@ -157,7 +157,7 @@ You can read more about the odrivetool [here](odrivetool.md).
 
        The largest effect on modulation magnitude is speed. There are other smaller factors, but in general: if the motor is still it's not unreasonable to have 50A in the motor from 5A on the power supply. When the motor is spinning close to top speed, the power supply current and the motor current will be somewhat close to each other.
        </div></details>
-   * The velocity limit: `odrv0.axis0.motor.config.vel_limit` [counts/s]. The motor will be limited to this speed; again the default value is quite slow.
+   * The velocity limit: `odrv0.axis0.controller.config.vel_limit` [counts/s]. The motor will be limited to this speed; again the default value is quite slow.
    * You can change `odrv0.axis0.motor.config.calibration_current` [A] to the largest value you feel comfortable leaving running through the motor continously when the motor is stationary.
 
 2. Set other hardware parameters:
