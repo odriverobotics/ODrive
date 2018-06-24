@@ -3,7 +3,7 @@ import json
 import os
 import tempfile
 import fibre.remote_object
-from odrive.utils import OperationAbortedException
+from odrive.utils import OperationAbortedException, yes_no_prompt
 
 def get_dict(obj, is_config_object):
     result = {}
@@ -51,7 +51,7 @@ def backup_config(device, filename, logger):
     logger.info("Saving configuration to {}...".format(filename))
 
     if os.path.exists(filename):
-        if not odrive.utils.yes_no_prompt("The file {} already exists. Do you want to override it?".format(filename), True):
+        if not yes_no_prompt("The file {} already exists. Do you want to override it?".format(filename), True):
             raise OperationAbortedException()
 
     data = get_dict(device, False)
