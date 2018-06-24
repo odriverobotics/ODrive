@@ -619,7 +619,12 @@ int tim_2_5_channel_num_to_gpio_num(int channel) {
         return -1;
     }
 #else
-#error "Not implemented"
+    // Only ch4 is available on v3.2
+    if (channel == 4) {
+        return 4;
+    } else {
+        return -1;
+    }
 #endif
 }
 // @brief Returns the TIM2 or TIM5 channel number
@@ -634,7 +639,12 @@ uint32_t gpio_num_to_tim_2_5_channel(int gpio_num) {
         default: return 0;
     }
 #else
-#error "Not implemented"
+    // Only ch4 is available on v3.2
+    if (gpio_num == 4) {
+        return TIM_CHANNEL_4;
+    } else {
+        return 0;
+    }
 #endif
 }
 
@@ -651,7 +661,11 @@ void pwm_in_init() {
     sConfigIC.ICPrescaler = TIM_ICPSC_DIV1;
     sConfigIC.ICFilter = 15;
 
+#if HW_VERSION_MAJOR == 3 && HW_VERSION_MINOR >= 3
     for (int gpio_num = 1; gpio_num <= 4; ++gpio_num) {
+#else
+    int gpio_num = 4; {
+#endif
         if (is_endpoint_ref_valid(board_config.pwm_mappings[gpio_num - 1].endpoint)) {
             GPIO_InitStruct.Pin = get_gpio_pin_by_pin(gpio_num);
             HAL_GPIO_DeInit(get_gpio_port_by_pin(gpio_num), get_gpio_pin_by_pin(gpio_num));
