@@ -41,11 +41,11 @@ You will need:
   </div></details>
 
 * A power supply (12V-24V for the 24V board variant, 12V-48V for the 48V board variant). A battery is also fine.
-   <details><summary markdown="span">What voltage variant do I have?</summary><div markdown="block">
-   On all ODrives shipped July 2018 or after have a silkscreen label clearly indicating the voltage variant.
- 
-   ODrives before this may or may not have this label. If you don't have a label, then you can look at the bus capacitors (8 gray cylinder components on the underside of the board). If they read 470uF, you have a 24V version; if they read 120uF you have a 48V version.
-   </div></details>
+  <details><summary markdown="span">What voltage variant do I have?</summary><div markdown="block">
+  On all ODrives shipped July 2018 or after have a silkscreen label clearly indicating the voltage variant.
+
+  ODrives before this may or may not have this label. If you don't have a label, then you can look at the bus capacitors (8 gray cylinder components on the underside of the board). If they read 470uF, you have a 24V version; if they read 120uF you have a 48V version.
+  </div></details>
 
 ## Wiring up the ODrive
 
@@ -68,12 +68,12 @@ Most instructions in this guide refer to a utility called `odrivetool`, so you s
 ### Windows
 
 1. Install Python 3. We recommend the Anaconda distribution because it packs a lot of useful scientific tools, however you can also install the standalone python.
-   * __Anaconda__: Download the installer from [here](https://www.anaconda.com/download/#windows). Execute the downloaded file and follow the instructions.
-   * __Standalone Python__: Download the installer from [here](https://www.python.org/downloads/). Execute the downloaded file and follow the instructions.
-   * If you have Python 2 installed alongside Python 3, replace `pip` by `C:\Users\YOUR_USERNAME\AppData\Local\Programs\Python\Python36-32\Scripts\pip`. If you have trouble with this step then refer to [this walkthrough](https://www.youtube.com/watch?v=jnpC_Ib_lbc).
+  * __Anaconda__: Download the installer from [here](https://www.anaconda.com/download/#windows). Execute the downloaded file and follow the instructions.
+  * __Standalone Python__: Download the installer from [here](https://www.python.org/downloads/). Execute the downloaded file and follow the instructions.
+  * If you have Python 2 installed alongside Python 3, replace `pip` by `C:\Users\YOUR_USERNAME\AppData\Local\Programs\Python\Python36-32\Scripts\pip`. If you have trouble with this step then refer to [this walkthrough](https://www.youtube.com/watch?v=jnpC_Ib_lbc).
 2. Launch the command prompt.
-   * __Anaconda__: In the start menu, type `Anaconda Prompt` <kbd>Enter</kbd>
-   * __Standalone Python__: In the start menu, type `cmd` <kbd>Enter</kbd>
+  * __Anaconda__: In the start menu, type `Anaconda Prompt` <kbd>Enter</kbd>
+  * __Standalone Python__: In the start menu, type `cmd` <kbd>Enter</kbd>
 3. Install dependencies by typing `pip install pywin32==222` <kbd>Enter</kbd>
 3. Install the ODrive tools by typing `pip install odrive` <kbd>Enter</kbd>
 4. Plug in a USB cable into the microUSB connector on ODrive, and connect it to your PC.
@@ -137,42 +137,43 @@ You can read more about the odrivetool [here](odrivetool.md).
 
 1. Set the limits:
 
-   <details><summary markdown="span">Wait, how do I set these?</summary><div markdown="block">
+  <details><summary markdown="span">Wait, how do I set these?</summary><div markdown="block">
 
-   In the previous step we started `odrivetool`. In there, you can assign variables directly by name.
+  In the previous step we started `odrivetool`. In there, you can assign variables directly by name.
 
-   For instance, to set the current limit of M0 to 10A you would type: `odrv0.axis0.motor.config.current_lim = 10` <kbd>Enter</kbd>
+  For instance, to set the current limit of M0 to 10A you would type: `odrv0.axis0.motor.config.current_lim = 10` <kbd>Enter</kbd>
 
-   </div></details>
+  </div></details>
 
-   * The current limit: `odrv0.axis0.motor.config.current_lim` [A]. The default current limit, for safety reasons, is set to 10A. This is quite weak, and good for making sure the drive is stable. Once you have tuned the drive, you can increase this to 75A to get some performance. Note that above 75A, you must change the current amplifier gains.
-     * Note: The motor current and the current drawn from the power supply is not the same in general. You should not look at the power supply current to see what is going on with the motor current.
-       <details><summary markdown="span">Ok so tell me how it actually works then...</summary><div markdown="block">
-       The current in the motor is only connected to the current in the power supply _sometimes_ and other times it just cycles out of one phase and back in the other. This is what the modulation magnitude is (sometimes people call this duty cycle, but that's a bit confusing because we use SVM not straight PWM). When the modulation magnitude is 0, the average voltage seen across the motor phases is 0, and the motor current is never connected to the power supply. When the magnitude is 100%, it is always connected, and at 50% it's connected half the time, and cycled in just the motor half the time.
+  * The current limit: `odrv0.axis0.motor.config.current_lim` [A]. The default current limit, for safety reasons, is set to 10A. This is quite weak, and good for making sure the drive is stable. Once you have tuned the drive, you can increase this to 75A to get some performance. Note that above 75A, you must change the current amplifier gains.
+    * Note: The motor current and the current drawn from the power supply is not the same in general. You should not look at the power supply current to see what is going on with the motor current.
+      <details><summary markdown="span">Ok so tell me how it actually works then...</summary><div markdown="block">
+      The current in the motor is only connected to the current in the power supply _sometimes_ and other times it just cycles out of one phase and back in the other. This is what the modulation magnitude is (sometimes people call this duty cycle, but that's a bit confusing because we use SVM not straight PWM). When the modulation magnitude is 0, the average voltage seen across the motor phases is 0, and the motor current is never connected to the power supply. When the magnitude is 100%, it is always connected, and at 50% it's connected half the time, and cycled in just the motor half the time.
 
-       The largest effect on modulation magnitude is speed. There are other smaller factors, but in general: if the motor is still it's not unreasonable to have 50A in the motor from 5A on the power supply. When the motor is spinning close to top speed, the power supply current and the motor current will be somewhat close to each other.
-       </div></details>
-   * The velocity limit: `odrv0.axis0.motor.config.vel_limit` [counts/s]. The motor will be limited to this speed; again the default value is quite slow.
-   * You can change `odrv0.axis0.motor.config.calibration_current` [A] to the largest value you feel comfortable leaving running through the motor continously when the motor is stationary.
+      The largest effect on modulation magnitude is speed. There are other smaller factors, but in general: if the motor is still it's not unreasonable to have 50A in the motor from 5A on the power supply. When the motor is spinning close to top speed, the power supply current and the motor current will be somewhat close to each other.
+      </div></details>
+  * The velocity limit: `odrv0.axis0.motor.config.vel_limit` [counts/s]. The motor will be limited to this speed; again the default value is quite slow.
+  * You can change `odrv0.axis0.motor.config.calibration_current` [A] to the largest value you feel comfortable leaving running through the motor continously when the motor is stationary.
 
 2. Set other hardware parameters:
 
-   * `odrv0.config.brake_resistance` [Ohm]: This is the resistance of the brake resistor. If you are not using it, you may set it to `0`.
-   * `odrv0.axis0.motor.config.pole_pairs`: This is the number of **magnet poles** in the rotor, **divided by two**. You can simply count the number of permanent magnets in the rotor, if you can see them. _Note: this is not the same as the number of coils in the stator._
-   * `odrv0.axis0.motor.config.motor_type`: This is the type of motor being used. Currently two types of motors are supported: High-current motors (`MOTOR_TYPE_HIGH_CURRENT`) and Gimbal motors (`MOTOR_TYPE_GIMBAL`).
-  
-     <details><summary markdown="span">Which `motor_type` to choose?</summary><div markdown="block">
+  * `odrv0.config.brake_resistance` [Ohm]: This is the resistance of the brake resistor. If you are not using it, you may set it to `0`.
+  * `odrv0.axis0.motor.config.pole_pairs`: This is the number of **magnet poles** in the rotor, **divided by two**. You can simply count the number of permanent magnets in the rotor, if you can see them. _Note: this is not the same as the number of coils in the stator._
+  * `odrv0.axis0.motor.config.motor_type`: This is the type of motor being used. Currently two types of motors are supported: High-current motors (`MOTOR_TYPE_HIGH_CURRENT`) and Gimbal motors (`MOTOR_TYPE_GIMBAL`).
 
-     If you're using a regular hobby brushless motor like [this](https://hobbyking.com/en_us/turnigy-aerodrive-sk3-5065-236kv-brushless-outrunner-motor.html) one, you should set `motor_mode` to `MOTOR_TYPE_HIGH_CURRENT`. For low-current gimbal motors like [this](https://hobbyking.com/en_us/turnigy-hd-5208-brushless-gimbal-motor-bldc.html) one, you should choose `MOTOR_TYPE_GIMBAL`. Do not use `MOTOR_TYPE_GIMBAL` on a motor that is not a gimbal motor, as it may overheat the motor or the ODrive.
+    <details><summary markdown="span">Which `motor_type` to choose?</summary><div markdown="block">
 
-     **Further detail:**
-     If 100's of mA of current noise is "small" for you, you can choose `MOTOR_TYPE_HIGH_CURRENT`.
-     If 100's of mA of current noise is "large" for you, and you do not intend to spin the motor very fast (omega * L << R), and the motor is fairly large resistance (1 ohm or larger), you can chose `MOTOR_TYPE_GIMBAL`.
-     If 100's of mA current noise is "large" for you, _and_ you intend to spin the motor fast, then you need to replace the shunt resistors on the ODrive.
+    If you're using a regular hobby brushless motor like [this](https://hobbyking.com/en_us/turnigy-aerodrive-sk3-5065-236kv-brushless-outrunner-motor.html) one, you should set `motor_mode` to `MOTOR_TYPE_HIGH_CURRENT`. For low-current gimbal motors like [this](https://hobbyking.com/en_us/turnigy-hd-5208-brushless-gimbal-motor-bldc.html) one, you should choose `MOTOR_TYPE_GIMBAL`. Do not use `MOTOR_TYPE_GIMBAL` on a motor that is not a gimbal motor, as it may overheat the motor or the ODrive.
 
-     </div></details>
+    **Further detail:**
+    If 100's of mA of current noise is "small" for you, you can choose `MOTOR_TYPE_HIGH_CURRENT`.
+    If 100's of mA of current noise is "large" for you, and you do not intend to spin the motor very fast (omega * L << R), and the motor is fairly large resistance (1 ohm or larger), you can chose `MOTOR_TYPE_GIMBAL`.
+    If 100's of mA current noise is "large" for you, _and_ you intend to spin the motor fast, then you need to replace the shunt resistors on the ODrive.
 
-   * `odrv0.axis0.encoder.config.cpr`: Encoder Count Per Revolution (CPR). This is 4x the Pulse Per Revolution (PPR) value. Usually this is indicated in the datasheet of your encoder.
+    </div></details>
+
+  * `odrv0.axis0.encoder.config.cpr`: Encoder Count Per Revolution (CPR). This is 4x the Pulse Per Revolution (PPR) value. Usually this is indicated in the datasheet of your encoder.
+
 
 3. Save configuration. You can save all `.config` parameters to persistent memory such that the ODrive remembers them between power cycles.
 * `odrv0.save_configuration()` <kbd>Enter</kbd>
@@ -183,22 +184,22 @@ Let's get motor 0 up and running. The procedure for motor 1 is exactly the same,
 
 1. Type `odrv0.axis0.requested_state = AXIS_STATE_FULL_CALIBRATION_SEQUENCE` <kbd>Enter</kbd>. After about 2 seconds should hear a beep. Then the motor will turn slowly in one direction for a few seconds, then back in the other direction.
 
-   <details><summary markdown="span">What's the point of this?</summary><div markdown="block">
-   This procedure first measures your motor's electrical properties (namely phase resistance and phase inductance) and then the offset between the motor's electrical phase and the encoder position.
+  <details><summary markdown="span">What's the point of this?</summary><div markdown="block">
+  This procedure first measures your motor's electrical properties (namely phase resistance and phase inductance) and then the offset between the motor's electrical phase and the encoder position.
 
-   </div></details>
+  </div></details>
 
-   The startup procedure is demonstrated [here](https://www.youtube.com/watch?v=VCX1bA2xnuY).
+  The startup procedure is demonstrated [here](https://www.youtube.com/watch?v=VCX1bA2xnuY).
 
-   **Note**: the rotor must be allowed to rotate without any biased load during startup. That means mass and weak friction loads are fine, but gravity or spring loads are not okay. Also note that in the video, the motors spin after initalisation, but in the current software the default behaviour is not like that.
+  **Note**: the rotor must be allowed to rotate without any biased load during startup. That means mass and weak friction loads are fine, but gravity or spring loads are not okay. Also note that in the video, the motors spin after initalisation, but in the current software the default behaviour is not like that.
 
-   <details><summary markdown="span">My motor doesn't beep or doesn't turn</summary><div markdown="block">
+  <details><summary markdown="span">My motor doesn't beep or doesn't turn</summary><div markdown="block">
 
-   Make sure the motor wires are connected firmly. Check the value of `odrv0.axis0.error` and then refer to the [error code documentation](troubleshooting.md#error-codes) for details.
+  Make sure the motor wires are connected firmly. Check the value of `odrv0.axis0.error` and then refer to the [error code documentation](troubleshooting.md#error-codes) for details.
 
-   Once you have understood the error and fixed its cause, you may clear the error state (`odrv0.axis0.error = 0` <kbd>Enter</kbd>) and retry. You may also need to clear the error state of other subcomponents (e.g. `odrv0.axis0.motor.error`).
+  Once you have understood the error and fixed its cause, you may clear the error state (`odrv0.axis0.error = 0` <kbd>Enter</kbd>) and retry. You may also need to clear the error state of other subcomponents (e.g. `odrv0.axis0.motor.error`).
 
-   </div></details>
+  </div></details>
 
 <!--1. Type `odrv0.axis0.motor.config.pre_calibrated = True` <kbd>Enter</kbd> and then `odrv0.save_configuration()` <kbd>Enter</kbd>. This will save all the configuration and calibration you just did so the next time you start the device it's already ready to go. Except for one thing: you need to run the encoder offset calibration after every power cycle. -->
 2. Type `odrv0.axis0.requested_state = AXIS_STATE_CLOSED_LOOP_CONTROL` <kbd>Enter</kbd>. From now on the ODrive will try to hold the motor's position. If you try to turn it by hand, it will fight you gently. That is unless you bump up `odrv0.axis0.motor.config.current_lim`, in which case it will fight you more fiercely.
@@ -207,8 +208,8 @@ Let's get motor 0 up and running. The procedure for motor 1 is exactly the same,
 
 You can now:
 
- * See what other [commands and parameters](commands.md) are available, including setting tuning parameters for better performance.
- * Control the ODrive from your own program or hook it up to an existing system through one of it's [interfaces](interfaces).
- * See how you can improve the behavior during the startup procedure, like [bypassing encoder calibration](encoders.md#encoder-with-index-signal).
+* See what other [commands and parameters](commands.md) are available, including setting tuning parameters for better performance.
+* Control the ODrive from your own program or hook it up to an existing system through one of it's [interfaces](interfaces).
+* See how you can improve the behavior during the startup procedure, like [bypassing encoder calibration](encoders.md#encoder-with-index-signal).
 
 If you have any issues or any questions please get in touch. The [ODrive Community](https://discourse.odriverobotics.com/) warmly welcomes you.
