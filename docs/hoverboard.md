@@ -1,12 +1,12 @@
 
 # Hoverboard motor and remote control setup guide
-By popular request, here follows a step-by-step guide on how to set up the ODrive to drive hoverboard motors using RC PWM input.
-Each step is acompanied by some explanation, so hopefully you can carry over some of the steps to other setups and configuration.
+By popular request here follows a step-by-step guide on how to setup the ODrive to drive hoverboard motors using RC PWM input.
+Each step is acompanied by some explanation so hopefully you can carry over some of the steps to other setups and configurations.
 
 [![IMAGE ALT TEXT HERE](https://img.youtube.com/vi/ponx_U4xhoM/0.jpg)](https://www.youtube.com/watch?v=ponx_U4xhoM) <br> Click above to play video.
 
 ### Hoverboard motor configuration
-Standard 6.5 inch hoverboard hub motors have 30 permanent magnet poles, and thus 15 pole pairs. If you have a different motor, you need to count the magnets or have a reliable datasheet for this information.
+Standard 6.5 inch hoverboard hub motors have 30 permanent magnet poles, and thus 15 pole pairs. If you have a different motor you need to count the magnets or have a reliable datasheet for this information.
 ```txt
 odrv0.axis0.motor.config.pole_pairs = 15
 ```
@@ -27,8 +27,8 @@ odrv0.axis0.encoder.config.cpr = 90
 ```
 
 Since the hall feedback only has 90 counts per revolution, we want to reduce the velocity tracking bandwidth to get smoother velocity estimates.
-We can also set these fairly modest gains that will be a bit sloppy but shouldn't shake your rig apart if it's built poorly. Make sure to tune the gains up when you have everything else working, to the stiffness that is applicable to your application.
-Lets also start in velocity control mode, since that is probably what you want for a wheeled robot. Note that in velocity mode `pos_gain` isn't used, but I give you a recommended value anyway in case you wanted to run position control mode.
+We can also set these fairly modest gains that will be a bit sloppy but shouldn't shake your rig apart if it's built poorly. Make sure to tune the gains up when you have everything else working to a stiffness that is applicable to your application.
+Lets also start in velocity control mode since that is probably what you want for a wheeled robot. Note that in velocity mode `pos_gain` isn't used but I have given you a recommended value anyway in case you wanted to run position control mode.
 ```txt
 odrv0.axis0.encoder.config.bandwidth = 100
 odrv0.axis0.controller.config.pos_gain = 1
@@ -37,7 +37,7 @@ odrv0.axis0.controller.config.vel_lim = 1000
 odrv0.axis0.controller.config.control_mode = CTRL_MODE_VELOCITY_CONTROL
 ```
 
-In the next step we are going to be start powering the motor, so we want to make sure that some of the above settings that requrie a reboot are applied first.
+In the next step we are going to start powering the motor and so we want to make sure that some of the above settings that requrie a reboot are applied first.
 ```txt
 odrv0.save_configuration()
 odrv0.reboot()
@@ -53,20 +53,20 @@ You can read out all the data pertaining to the motor:
 odrv0.axis0.motor
 ```
 
-Check to see that there is no error, and that the phase resistance and inductance are reasonable. Here are the results I got:
+Check to see that there is no error and that the phase resistance and inductance are reasonable. Here are the results I got:
 ```txt
   error = 0x0000 (int)
   phase_inductance = 0.00033594953129068017 (float)
   phase_resistance = 0.1793474406003952 (float)
 ```
 
-If all looks good you can tell the ODrive that saving this calibration to presistent memory is OK:
+If all looks good then you can tell the ODrive that saving this calibration to presistent memory is OK:
 ```txt
 odrv0.axis0.motor.config.pre_calibrated = True
 ```
 
 Next step is to check the alignment between the motor and the hall sensor.
-Because of this step you are allowed to plug the motor phases in random order, and also the hall signals can be random. Just don't change it after calibration.
+Because of this step you are allowed to plug the motor phases in random order and also the hall signals can be random. Just don't change it after calibration.
 Make sure the motor is free to move and run:
 ```txt
 odrv0.axis0.requested_state = AXIS_STATE_ENCODER_OFFSET_CALIBRATION
@@ -77,19 +77,19 @@ Check the status of the encoder object:
 odrv0.axis0.encoder
 ```
 
-Check that there was no error. If your hall sensors has standard timing angle, then `offset_float` should be close to 0.5.
+Check that there are no errors. If your hall sensors has a standard timing angle then `offset_float` should be close to 0.5.
 ```txt
   error = 0x0000 (int)
   offset_float = 0.5126956701278687 (float)
 ```
 
-If all looks good you can tell the ODrive that saving this calibration to presistent memory is OK:
+If all looks good then you can tell the ODrive that saving this calibration to presistent memory is OK:
 ```txt
 odrv0.axis0.encoder.config.pre_calibrated = True
 ```
 
-OK we are done with the motor configuration! Time to save, reboot, and then test it.
-The ODrive starts in idle (we will look at changing this later), so we enable closed loop control.
+OK, we are now done with the motor configuration! Time to save, reboot, and then test it.
+The ODrive starts in idle (we will look at changing this later) so we can enable closed loop control.
 ```txt
 odrv0.save_configuration()
 odrv0.reboot()
@@ -103,8 +103,8 @@ odrv0.axis0.requested_state = AXIS_STATE_IDLE
 Hopefully you got your motor to spin! Feel free to repeat all of the above for the other axis if appropriate.
 
 ### PWM input
-If you want to drive your hoverboard wheels around with an RC remote contro, you can use the [RC PWM input](interfaces.md#rc-pwm-input). There is more information in that link.
-Lets use GPIO 3/4 for the velocity inputs, because then we don't have to disable UART.
+If you want to drive your hoverboard wheels around with an RC remote contro you can use the [RC PWM input](interfaces.md#rc-pwm-input). There is more information in that link.
+Lets use GPIO 3/4 for the velocity inputs so that we don't have to disable UART.
 Then let's map the full stick range of these inputs to some suitable velocity setpoint range.
 We also have to reboot to activate the PWM input.
 ```txt
@@ -145,8 +145,8 @@ odrv0.axis1.requested_state = AXIS_STATE_CLOSED_LOOP_CONTROL
 ```
 
 ### Automatic startup
-Try to reboot and then activate AXIS_STATE_CLOSED_LOOP_CONTROL on both axis. Check that everything directly is operational and works as expected.
-If so, you can make the ODrive turn on the motor power automatically after booting. This is useful if you are going to be running the ODrive without a PC or other logic board.
+Try to reboot and then activate AXIS_STATE_CLOSED_LOOP_CONTROL on both axis. Check that everything is operational and works as expected.
+If so, you can now make the ODrive turn on the motor power automatically after booting. This is useful if you are going to be running the ODrive without a PC or other logic board.
 ```txt
 odrv0.axis0.config.startup_closed_loop_control = True
 odrv0.axis1.config.startup_closed_loop_control = True
