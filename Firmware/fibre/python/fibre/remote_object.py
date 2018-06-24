@@ -11,6 +11,25 @@ import fibre.protocol
 class ObjectDefinitionError(Exception):
     pass
 
+codecs = {}
+
+class StructCodec():
+    """
+    Generic serializer/deserializer based on struct pack
+    """
+    def __init__(self, struct_format, target_type):
+        self._struct_format = struct_format
+        self._target_type = target_type
+    def get_length(self):
+        return struct.calcsize(self._struct_format)
+    def serialize(self, value):
+        value = self._target_type(value)
+        return struct.pack(self._struct_format, value)
+    def deserialize(self, buffer):
+        value = struct.unpack(self._struct_format, buffer)
+        value = value[0] if len(value) == 1 else value
+        return self._target_type(value)
+
 class RemoteProperty():
     """
     Used internally by dynamically created objects to translate
@@ -19,6 +38,7 @@ class RemoteProperty():
     """
     def __init__(self, json_data, parent):
         self._parent = parent
+        self.__channel__ = parent.__channel__
         id_str = json_data.get("id", None)
         if id_str is None:
             raise ObjectDefinitionError("unspecified endpoint ID")
@@ -32,51 +52,28 @@ class RemoteProperty():
         if type_str is None:
             raise ObjectDefinitionError("unspecified type")
 
-        if type_str == "float":
-            self._property_type = float
-            self._struct_format = "<f"
-        elif type_str == "bool":
-            self._property_type = bool
-            self._struct_format = "<?"
-        elif type_str == "int8":
-            self._property_type = int
-            self._struct_format = "<b"
-        elif type_str == "uint8":
-            self._property_type = int
-            self._struct_format = "<B"
-        elif type_str == "int16":
-            self._property_type = int
-            self._struct_format = "<h"
-        elif type_str == "uint16":
-            self._property_type = int
-            self._struct_format = "<H"
-        elif type_str == "int32":
-            self._property_type = int
-            self._struct_format = "<i"
-        elif type_str == "uint32":
-            self._property_type = int
-            self._struct_format = "<I"
-        elif type_str == "int64":
-            self._property_type = int
-            self._struct_format = "<q"
-        elif type_str == "uint64":
-            self._property_type = int
-            self._struct_format = "<Q"
-        else:
-            raise ObjectDefinitionError("unsupported type {}".format(type_str))
+        # Find all codecs that match the type_str and build a dictionary
+        # of the form {type1: codec1, type2: codec2}
+        eligible_types = {k: v[type_str] for (k,v) in codecs.items() if type_str in v}
+        
+        if not eligible_types:
+            raise ObjectDefinitionError("unsupported codec {}".format(type_str))
+
+        # TODO: better heuristics to select a matching type (i.e. prefer non lossless)
+        eligible_types = list(eligible_types.items())
+        self._property_type = eligible_types[0][0]
+        self._codec = eligible_types[0][1]
 
         access_mode = json_data.get("access", "r")
         self._can_read = 'r' in access_mode
         self._can_write = 'w' in access_mode
 
     def get_value(self):
-        size = struct.calcsize(self._struct_format)
-        buffer = self._parent.__channel__.remote_endpoint_operation(self._id, None, True, size)
-        return struct.unpack(self._struct_format, buffer)[0]
+        buffer = self._parent.__channel__.remote_endpoint_operation(self._id, None, True, self._codec.get_length())
+        return self._codec.deserialize(buffer)
 
     def set_value(self, value):
-        value = self._property_type(value)
-        buffer = struct.pack(self._struct_format, value)
+        buffer = self._codec.serialize(value)
         # TODO: Currenly we wait for an ack here. Settle on the default guarantee.
         self._parent.__channel__.remote_endpoint_operation(self._id, buffer, True, 0)
 
@@ -90,6 +87,47 @@ class RemoteProperty():
         else:
             val_str = str(self.get_value())
         return "{} = {} ({})".format(self._name, val_str, self._property_type.__name__)
+
+class EndpointRefCodec():
+    """
+    Serializer/deserializer for an endpoint reference
+    """
+    def get_length(self):
+        return struct.calcsize("<HH")
+    def serialize(self, value):
+        if value is None:
+            (ep_id, ep_crc) = (0, 0)
+        elif isinstance(value, RemoteProperty):
+            (ep_id, ep_crc) = (value._id, value.__channel__._interface_definition_crc)
+        else:
+            raise TypeError("Expected value of type RemoteProperty or None but got '{}'. En example for a RemoteProperty is this expression: odrv0.axis0.controller._remote_attributes['pos_setpoint']".format(type(value).__name__))
+        return struct.pack("<HH", ep_id, ep_crc)
+    def deserialize(self, buffer):
+        return struct.unpack("<HH", buffer)
+
+codecs[int] = {
+    'int8': StructCodec("<b", int),
+    'uint8': StructCodec("<B", int),
+    'int16': StructCodec("<h", int),
+    'uint16': StructCodec("<H", int),
+    'int32': StructCodec("<i", int),
+    'uint32': StructCodec("<I", int),
+    'int64': StructCodec("<q", int),
+    'uint64': StructCodec("<Q", int)
+}
+
+codecs[bool] = {
+    'bool': StructCodec("<?", bool)
+}
+
+codecs[float] = {
+    'float': StructCodec("<f", float)
+}
+
+codecs[RemoteProperty] = {
+    'endpoint_ref': EndpointRefCodec()
+}
+
 
 class RemoteFunction(object):
     """

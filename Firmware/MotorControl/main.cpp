@@ -176,6 +176,10 @@ int odrive_main(void) {
     // Init communications (this requires the axis objects to be constructed)
     init_communication();
 
+    // Start pwm-in compare modules
+    // must happen after communication is initialized
+    pwm_in_init();
+
     // Setup hardware for all components
     for (size_t i = 0; i < AXIS_COUNT; ++i) {
         axes[i]->setup();
