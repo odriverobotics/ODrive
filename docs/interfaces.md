@@ -48,6 +48,14 @@ For predictable results, try to have only one feature enabled for any one pin. W
 * `odrv0.save_configuration()`
 * `odrv0.reboot()`
 
+### Hall feedback pinout
+When the encoder mode is set to hall feedback, the pinout on the encoder port is as follows:
+| Label on ODrive | Hall feedback |
+|-----------------|---------------|
+| A               | Hall A        |
+| B               | Hall B        |
+| Z               | Hall C        |
+
 ## Native Protocol
 
 This protocol is what the ODrive Tool uses to talk to the ODrive. If you have a choice, this is the recommended protocol for all applications. The native protocol runs on USB and can also be configured to run on UART.
@@ -95,7 +103,6 @@ The maximum step rate is pending tests, but it should handle at least 50kHz. If 
 Please be aware that there is no enable line right now, and the step/direction interface is enabled by default, and remains active as long as the ODrive is in position control mode. To get the ODrive to go into position control mode at bootup, see how to configure the [startup procedure](commands.md#startup-procedure).
 
 ## RC PWM input
-
 You can control the ODrive directly from an hobby RC receiver.
 
 Some GPIO pins can be used for PWM input, if they are not allocated to other functions. For example, you must disable the UART to use GPIO 1,2. See the [pin function priorities](#pin-function-priorities) for more detail.
