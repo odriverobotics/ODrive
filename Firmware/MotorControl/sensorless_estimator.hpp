@@ -26,8 +26,8 @@ public:
     float phase_ = 0.0f;                        // [rad]
     float pll_pos_ = 0.0f;                      // [rad]
     float pll_vel_ = 0.0f;                      // [rad/s]
-    float pll_kp_ = 0.0f;                       // [rad/s / rad]
-    float pll_ki_ = 0.0f;                       // [(rad/s^2) / rad]
+    // float pll_kp_ = 0.0f;                       // [rad/s / rad]
+    // float pll_ki_ = 0.0f;                       // [(rad/s^2) / rad]
     float flux_state_[2] = {0.0f, 0.0f};        // [Vs]
     float V_alpha_beta_memory_[2] = {0.0f, 0.0f}; // [V]
     bool estimator_good_ = false;
