@@ -82,20 +82,25 @@ Most instructions in this guide refer to a utility called `odrivetool`, so you s
 
 
 ### OSX
+We are going to run the following commands for installation in Terminal.
 1. If you don't already have it, install homebrew:
-```sh
+```bash
 /usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
 ```
 2. Install python:
-```sh
+```bash
 brew install python
 ```
 3. If you get the error: `Error: python 2.7.14_2 is already installed`, then upgrade to Python 3 by running:
-```sh
+```bash
 brew upgrade python
 ```
-4. Now that you have Python 3 and all the package managers, run:
-```sh
+4. The odrive tools uses libusb to communicate to the ODrive:
+```bash
+brew install libusb
+```
+5. Now that you have Python 3 and all the package managers, run:
+```bash
 pip3 install odrive
 ```
 
@@ -152,7 +157,7 @@ You can read more about the odrivetool [here](odrivetool.md).
 
        The largest effect on modulation magnitude is speed. There are other smaller factors, but in general: if the motor is still it's not unreasonable to have 50A in the motor from 5A on the power supply. When the motor is spinning close to top speed, the power supply current and the motor current will be somewhat close to each other.
        </div></details>
-   * The velocity limit: `odrv0.axis0.motor.config.vel_limit` [counts/s]. The motor will be limited to this speed; again the default value is quite slow.
+   * The velocity limit: `odrv0.axis0.controller.config.vel_limit` [counts/s]. The motor will be limited to this speed; again the default value is quite slow.
    * You can change `odrv0.axis0.motor.config.calibration_current` [A] to the largest value you feel comfortable leaving running through the motor continously when the motor is stationary.
 
 2. Set other hardware parameters:

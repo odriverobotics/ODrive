@@ -5,11 +5,11 @@ Contributions to this table highly encouraged!
 
 Encoder|Manufacturer|Output|Index|Max CPR|Max RPM|Voltage|Supported|Price|Link|Datasheet
 :--|:--|:--|:-:|:-:|:-:|:-:|:--|:--|:--|:--
-AMT102|CUI|Quadrature|Yes|8192|-|5V|Yes|-|-|-
-AMT203|CUI|Quadrature + Absolute|Yes|4096|-|5V|Quadrature Only|-|-|-
-AS5047P|AMS|Quadrature + Absolute|Yes|4096|28k|3.3V or 5V|Quadrature Only|-|-|-
-E6B2-CWZ6C|Omron|Quadrature|Yes|8000|-|5-24V|Yes|-|-|[Datasheet](http://www.ia.omron.com/products/family/487/)
-J733|-|Quadrature|No|2400|-|5-24V|Yes|-|-|-
+AMT102|CUI|Quadrature|Yes|8192 (2048 * 4)|-|5V|Yes|-|-|-
+AMT203|CUI|Quadrature + Absolute|Yes|4096 (1024 * 4)|-|5V|Quadrature Only|-|-|-
+AS5047P|AMS|Quadrature + Absolute|Yes|4096 (1024 * 4)|28k|3.3V or 5V|Quadrature Only|-|-|-
+E6B2-CWZ6C|Omron|Quadrature|Yes|8000 (2000 * 4)|-|5-24V|Yes|-|-|[Datasheet](http://www.ia.omron.com/products/family/487/)
+J733|-|Quadrature|No|2400 (600 * 4)|-|5-24V|Yes|-|-|-
 
 ## Encoder Calibration
 
