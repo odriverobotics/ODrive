@@ -79,3 +79,14 @@ All variables that are part of a `[...].config` object can be saved to non-volat
  * `<odrv>.fw_version_major`, `<odrv>.fw_version_minor`, `<odrv>.fw_version_revision`: The firmware version that is currently running.
  * `<odrv>.hw_version_major`, `<odrv>.hw_version_minor`, `<odrv>.hw_version_revision`: The hardware version of your ODrive.
 
+## Setting up sensorless
+The ODrive can run without encoder/hall feedback, but there is a minimum speed, usually around a few hunderd RPM.
+However the 
+```
+odrv0.axis0.controller.config.vel_gain = 0.1
+odrv0.axis0.controller.config.vel_integrator_gain = 0
+odrv0.axis0.controller.config.control_mode = 2
+odrv0.axis0.controller.vel_setpoint = 400
+odrv0.axis0.sensorless_estimator.config.pm_flux_linkage = 5.51328895422 / (<pole pairs> * <motor kv>)
+```
+

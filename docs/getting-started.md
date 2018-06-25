@@ -172,7 +172,10 @@ You can read more about the odrivetool [here](odrivetool.md).
 
     </div></details>
 
-  * `odrv0.axis0.encoder.config.cpr`: Encoder Count Per Revolution (CPR). This is 4x the Pulse Per Revolution (PPR) value. Usually this is indicated in the datasheet of your encoder.
+  * _if using encoder_: `odrv0.axis0.encoder.config.cpr`: Encoder Count Per Revolution (CPR). This is 4x the Pulse Per Revolution (PPR) value. Usually this is indicated in the datasheet of your encoder.
+  * _if not using encoder_:
+    * If you wish to run in sensorless mode, please see [Setting up Sensorless](commands.md#setting-up-sensorless).
+    * If you are using hall sensor feedback, please see the [hoverboard motor example](hoverboard.md).
 
 
 3. Save configuration. You can save all `.config` parameters to persistent memory such that the ODrive remembers them between power cycles.
