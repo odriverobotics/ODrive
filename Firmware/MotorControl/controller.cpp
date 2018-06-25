@@ -106,6 +106,8 @@ bool Controller::update(float pos_estimate, float vel_estimate, float* current_s
         float v_err = vel_des - vel_estimate;
         Iq += config_.vel_gain * v_err;  //Damping Controller
 
+        Iq/=config_.torque_constant; //Convert from N*m to A. 
+
         // Current limiting
         float Ilim = std::min(axis_->motor_.config_.current_lim, axis_->motor_.current_control_.max_allowed_current);
         if (Iq > Ilim) {

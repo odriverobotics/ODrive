@@ -52,9 +52,10 @@ Possible values are:
 
 ### Tuning parameters
 The motion control gains are currently manually tuned:
-* `<axis>.controller.config.pos_gain = 20.0f` [(counts/s) / counts]
-* `<axis>.controller.config.vel_gain = 5.0f / 10000.0f` [A/(counts/s)]
+* `<axis>.controller.config.pos_gain = 20.0f` [(counts/s) / counts] or [N*m/radian] in Impedance Control Mode
+* `<axis>.controller.config.vel_gain = 5.0f / 10000.0f` [A/(counts/s)] or [N*m*s/radian] in Impedance Control Mode
 * `<axis>.controller.config.vel_integrator_gain = 10.0f / 10000.0f` [A/((counts/s) * s)]
+* `<axis>.controller.config.torque_constant = 0.45f` [N*m/A], only used in Impedance Control Mode
 
 An upcoming feature will enable automatic tuning. Until then, here is a rough tuning procedure:
 * Set the integrator gain to 0
