@@ -53,9 +53,9 @@ Possible values are:
 
 # Control Commands
 
-* <axis>.controller.pos_setpoint = <encoder_counts>
-* <axis>.controller.current_setpoint = <current_in_A>
-* <axis>.controller.vel_setpoint = <encoder_counts/s>
+* `<axis>.controller.pos_setpoint = <encoder_counts>`
+* `<axis>.controller.current_setpoint = <current_in_A>`
+* `<axis>.controller.vel_setpoint = <encoder_counts/s>`
 
 ### Tuning parameters
 The motion control gains are currently manually tuned:
