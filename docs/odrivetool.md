@@ -15,7 +15,7 @@ By default, `odrivetool` will connect to any ODrive it finds. If this is not wha
 To find the serial number of your ODrive, run `odrivetool`, connect exactly one ODrive and power it up. You should see this:
 ```
 Connected to ODrive 306A396A3235 as odrv0
-In [1]: 
+In [1]:
 ```
 `306A396A3235` is the serial number of this particular ODrive. If you want ODrive Tool to ignore all other devices you would close it and then run `odrivetool --serial-number 306A396A3235`.
 
@@ -45,7 +45,7 @@ You can use ODrive Tool to back up and restore device configurations or transfer
 To update the ODrive to the newest firmware release, simply open up a terminal and run the following command:
 
 ```
-~ $ odrivetool dfu 
+~ $ odrivetool dfu
 ODrive control utility v0.3.7.dev
 Waiting for ODrive...
 Found ODrive 308039673235 (v3.5-24V) with firmware v0.3.7-dev
@@ -118,12 +118,12 @@ Info : using stlink api v2
 Info : Target voltage: 3.236027
 Info : stm32f4x.cpu: hardware has 6 breakpoints, 4 watchpoints
 adapter speed: 2000 kHz
-target halted due to debug-request, current mode: Thread 
+target halted due to debug-request, current mode: Thread
 xPSR: 0x01000000 pc: 0x08009224 msp: 0x20020000
 auto erase enabled
 Info : device id = 0x10076413
 Info : flash size = 1024kbytes
-target halted due to breakpoint, current mode: Thread 
+target halted due to breakpoint, current mode: Thread
 xPSR: 0x61000000 pc: 0x20000046 msp: 0x20020000
 Warn : no flash bank found for address 10000000
 wrote 262144 bytes from file ODriveFirmware_v3.4-24V.elf in 10.194110s (25.113 KiB/s)
