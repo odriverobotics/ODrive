@@ -51,11 +51,11 @@ Possible values are:
 * `CTRL_MODE_CURRENT_CONTROL`
 * `CTRL_MODE_VOLTAGE_CONTROL` - this one is not normally used.
 
-## Control commands
+# Control Commands
 
-<axis>.controller.pos_setpoint = <encoder_counts>
-<axis>.controller.current_setpoint = <current_in_A>
-<axis>.controller.vel_setpoint = <encoder_counts/s>
+* <axis>.controller.pos_setpoint = <encoder_counts>
+* <axis>.controller.current_setpoint = <current_in_A>
+* <axis>.controller.vel_setpoint = <encoder_counts/s>
 
 ### Tuning parameters
 The motion control gains are currently manually tuned:
