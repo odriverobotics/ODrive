@@ -43,7 +43,7 @@ You will need:
 * A power supply (12V-24V for the 24V board variant, 12V-48V for the 48V board variant). A battery is also fine.
    <details><summary markdown="span">What voltage variant do I have?</summary><div markdown="block">
    On all ODrives shipped July 2018 or after have a silkscreen label clearly indicating the voltage variant.
- 
+
    ODrives before this may or may not have this label. If you don't have a label, then you can look at the bus capacitors (8 gray cylinder components on the underside of the board). If they read 470uF, you have a 24V version; if they read 120uF you have a 48V version.
    </div></details>
 
@@ -77,7 +77,7 @@ Most instructions in this guide refer to a utility called `odrivetool`, so you s
 3. Install dependencies by typing `pip install pywin32==222` <kbd>Enter</kbd>
 3. Install the ODrive tools by typing `pip install odrive` <kbd>Enter</kbd>
 4. Plug in a USB cable into the microUSB connector on ODrive, and connect it to your PC.
-5. Use the [Zadig](http://zadig.akeo.ie/) utility to set ODrive driver to libusb-win32. 
+5. Use the [Zadig](http://zadig.akeo.ie/) utility to set ODrive driver to libusb-win32.
   * Check 'List All Devices' from the options menu, and select 'ODrive 3.x Native Interface (Interface 2)'. With that selected in the device list choose 'libusb-win32' from the target driver list and then press the large 'install driver' button.
 
 
@@ -104,6 +104,20 @@ brew install libusb
 pip3 install odrive
 ```
 
+__Troubleshooting__
+1. Permission Errors: Just run the previous command in sudo
+```bash
+sudo pip3 install odrive
+```
+
+2. Dependency Errors: If the installer doesn't complete and you get a dependency
+error (Ex. "No module..." or "module_name not found")
+```bash
+sudo pip3 install module_name
+```
+Try step 5 again
+
+
 ### Linux
 
 1. [Install Python 3](https://www.python.org/downloads/).
@@ -117,7 +131,9 @@ pip3 install odrive
 
 ## Start `odrivetool`
 
-<div class="note" markdown="span">__ODrive v3.4 and earlier:__ Your board does not come preflashed with any firmware. Follow the instructions [here](odrivetool#device-firmware-update) before you continue.</div>
+<div class="note" markdown="span">__ODrive v3.5 and later:__ Your board should come preflashed with firmware. If you run into problems, follow the instructions [here](odrivetool#device-firmware-update) on the DFU procedure before you continue.</div>
+
+<div class="note" markdown="span">__ODrive v3.4 and earlier:__ Your board does __not__ come preflashed with any firmware. Follow the instructions [here](odrivetool#device-firmware-update) on the STP Link procedure before you continue.</div>
 
 To launch the main interactive ODrive tool, type `odrivetool` <kbd>Enter</kbd>. Connect your ODrive and wait for the tool to find it. Now you can for instance type `odrv0.vbus_voltage` <kbd>Enter</kbd> to inpect the boards main supply voltage.
 It should look something like this:
@@ -165,7 +181,7 @@ You can read more about the odrivetool [here](odrivetool.md).
    * `odrv0.config.brake_resistance` [Ohm]: This is the resistance of the brake resistor. If you are not using it, you may set it to `0`.
    * `odrv0.axis0.motor.config.pole_pairs`: This is the number of **magnet poles** in the rotor, **divided by two**. You can simply count the number of permanent magnets in the rotor, if you can see them. _Note: this is not the same as the number of coils in the stator._
    * `odrv0.axis0.motor.config.motor_type`: This is the type of motor being used. Currently two types of motors are supported: High-current motors (`MOTOR_TYPE_HIGH_CURRENT`) and Gimbal motors (`MOTOR_TYPE_GIMBAL`).
-  
+
      <details><summary markdown="span">Which `motor_type` to choose?</summary><div markdown="block">
 
      If you're using a regular hobby brushless motor like [this](https://hobbyking.com/en_us/turnigy-aerodrive-sk3-5065-236kv-brushless-outrunner-motor.html) one, you should set `motor_mode` to `MOTOR_TYPE_HIGH_CURRENT`. For low-current gimbal motors like [this](https://hobbyking.com/en_us/turnigy-hd-5208-brushless-gimbal-motor-bldc.html) one, you should choose `MOTOR_TYPE_GIMBAL`. Do not use `MOTOR_TYPE_GIMBAL` on a motor that is not a gimbal motor, as it may overheat the motor or the ODrive.
