@@ -190,7 +190,6 @@ Let's get motor 0 up and running. The procedure for motor 1 is exactly the same,
 
    <details><summary markdown="span">What's the point of this?</summary><div markdown="block">
    This procedure first measures your motor's electrical properties (namely phase resistance and phase inductance) and then the offset between the motor's electrical phase and the encoder position.
-
    </div></details>
 
    The startup procedure is demonstrated [here](https://www.youtube.com/watch?v=VCX1bA2xnuY).
@@ -198,15 +197,18 @@ Let's get motor 0 up and running. The procedure for motor 1 is exactly the same,
    **Note**: the rotor must be allowed to rotate without any biased load during startup. That means mass and weak friction loads are fine, but gravity or spring loads are not okay. Also note that in the video, the motors spin after initalisation, but in the current software the default behaviour is not like that.
 
    <details><summary markdown="span">My motor doesn't beep or doesn't turn</summary><div markdown="block">
-
    Make sure the motor wires are connected firmly. Check the value of `odrv0.axis0.error` and then refer to the [error code documentation](troubleshooting.md#error-codes) for details.
 
    Once you have understood the error and fixed its cause, you may clear the error state (`odrv0.axis0.error = 0` <kbd>Enter</kbd>) and retry. You may also need to clear the error state of other subcomponents (e.g. `odrv0.axis0.motor.error`).
-
    </div></details>
 
-<!--1. Type `odrv0.axis0.motor.config.pre_calibrated = True` <kbd>Enter</kbd> and then `odrv0.save_configuration()` <kbd>Enter</kbd>. This will save all the configuration and calibration you just did so the next time you start the device it's already ready to go. Except for one thing: you need to run the encoder offset calibration after every power cycle. -->
 2. Type `odrv0.axis0.requested_state = AXIS_STATE_CLOSED_LOOP_CONTROL` <kbd>Enter</kbd>. From now on the ODrive will try to hold the motor's position. If you try to turn it by hand, it will fight you gently. That is unless you bump up `odrv0.axis0.motor.config.current_lim`, in which case it will fight you more fiercely.
+3. Send the motor a new position setpoint. `odrv0.axis0.controller.pos_setpoint = 10000` <kbd>Enter</kbd>. The units are in encoder counts.
+
+### Other control modes
+The ODrive also supports velocity control and current (torque) control.
+* **Velocity control**: Set `odrv0.axis0.controller.config.control_mode = CTRL_MODE_VELOCITY_CONTROL`. You can now control the velocity with `odrv0.axis0.controller.vel_setpoint = 5000`. Units are counts/s.
+* **Current control**: Set `odrv0.axis0.controller.config.control_mode = CTRL_MODE_CURRENT_CONTROL`. You can now control the current with `odrv0.axis0.controller.vel_setpoint = 3`. Units are A. **NOTE**: There is no velocity limiting in current control mode. Make sure that you don't overrev the motor, or exceed the max speed for your encoder.
 
 ## What's next?
 
