@@ -110,7 +110,7 @@ You can also modify the compile-time defaults for all `.config` parameters. You 
 
 1. Run `make` in the `Firmware` directory.
 2. Connect the ODrive via USB and power it up.
-3. Flash the firmware using [`odrivetool dfu`](odrivetool#device-firmware-update).
+3. Flash the firmware using [odrivetool dfu](odrivetool#device-firmware-update).
 
 ### Flashing using an STLink/v2 programmer
 

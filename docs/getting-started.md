@@ -77,27 +77,46 @@ Most instructions in this guide refer to a utility called `odrivetool`, so you s
 3. Install dependencies by typing `pip install pywin32==222` <kbd>Enter</kbd>
 3. Install the ODrive tools by typing `pip install odrive` <kbd>Enter</kbd>
 4. Plug in a USB cable into the microUSB connector on ODrive, and connect it to your PC.
-5. Use the [Zadig](http://zadig.akeo.ie/) utility to set ODrive driver to libusb-win32. 
+5. Use the [Zadig](http://zadig.akeo.ie/) utility to set ODrive driver to libusb-win32.
   * Check 'List All Devices' from the options menu, and select 'ODrive 3.x Native Interface (Interface 2)'. With that selected in the device list choose 'libusb-win32' from the target driver list and then press the large 'install driver' button.
 
 
 ### OSX
+We are going to run the following commands for installation in Terminal.
 1. If you don't already have it, install homebrew:
-```sh
+```bash
 /usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
 ```
 2. Install python:
-```sh
+```bash
 brew install python
 ```
 3. If you get the error: `Error: python 2.7.14_2 is already installed`, then upgrade to Python 3 by running:
-```sh
+```bash
 brew upgrade python
 ```
-4. Now that you have Python 3 and all the package managers, run:
-```sh
+4. The odrive tools uses libusb to communicate to the ODrive:
+```bash
+brew install libusb
+```
+5. Now that you have Python 3 and all the package managers, run:
+```bash
 pip3 install odrive
 ```
+
+__Troubleshooting__
+1. Permission Errors: Just run the previous command in sudo
+```bash
+sudo pip3 install odrive
+```
+
+2. Dependency Errors: If the installer doesn't complete and you get a dependency
+error (Ex. "No module..." or "module_name not found")
+```bash
+sudo pip3 install module_name
+```
+Try step 5 again
+
 
 ### Linux
 
@@ -112,7 +131,9 @@ pip3 install odrive
 
 ## Start `odrivetool`
 
-<div class="note" markdown="span">__ODrive v3.4 and earlier:__ Your board does not come preflashed with any firmware. Follow the instructions [here](odrivetool#device-firmware-update) before you continue.</div>
+<div class="note" markdown="span">__ODrive v3.5 and later:__ Your board should come preflashed with firmware. If you run into problems, follow the instructions [here](odrivetool#device-firmware-update) on the DFU procedure before you continue.</div>
+
+<div class="note" markdown="span">__ODrive v3.4 and earlier:__ Your board does __not__ come preflashed with any firmware. Follow the instructions [here](odrivetool#device-firmware-update) on the STP Link procedure before you continue.</div>
 
 To launch the main interactive ODrive tool, type `odrivetool` <kbd>Enter</kbd>. Connect your ODrive and wait for the tool to find it. Now you can for instance type `odrv0.vbus_voltage` <kbd>Enter</kbd> to inpect the boards main supply voltage.
 It should look something like this:
@@ -152,7 +173,7 @@ You can read more about the odrivetool [here](odrivetool.md).
 
       The largest effect on modulation magnitude is speed. There are other smaller factors, but in general: if the motor is still it's not unreasonable to have 50A in the motor from 5A on the power supply. When the motor is spinning close to top speed, the power supply current and the motor current will be somewhat close to each other.
       </div></details>
-  * The velocity limit: `odrv0.axis0.motor.config.vel_limit` [counts/s]. The motor will be limited to this speed; again the default value is quite slow.
+  * The velocity limit: `odrv0.axis0.controller.config.vel_limit` [counts/s]. The motor will be limited to this speed; again the default value is quite slow.
   * You can change `odrv0.axis0.motor.config.calibration_current` [A] to the largest value you feel comfortable leaving running through the motor continously when the motor is stationary.
 
 2. Set other hardware parameters:
@@ -189,7 +210,6 @@ Let's get motor 0 up and running. The procedure for motor 1 is exactly the same,
 
   <details><summary markdown="span">What's the point of this?</summary><div markdown="block">
   This procedure first measures your motor's electrical properties (namely phase resistance and phase inductance) and then the offset between the motor's electrical phase and the encoder position.
-
   </div></details>
 
   The startup procedure is demonstrated [here](https://www.youtube.com/watch?v=VCX1bA2xnuY).
@@ -197,15 +217,18 @@ Let's get motor 0 up and running. The procedure for motor 1 is exactly the same,
   **Note**: the rotor must be allowed to rotate without any biased load during startup. That means mass and weak friction loads are fine, but gravity or spring loads are not okay. Also note that in the video, the motors spin after initalisation, but in the current software the default behaviour is not like that.
 
   <details><summary markdown="span">My motor doesn't beep or doesn't turn</summary><div markdown="block">
-
   Make sure the motor wires are connected firmly. Check the value of `odrv0.axis0.error` and then refer to the [error code documentation](troubleshooting.md#error-codes) for details.
 
   Once you have understood the error and fixed its cause, you may clear the error state (`odrv0.axis0.error = 0` <kbd>Enter</kbd>) and retry. You may also need to clear the error state of other subcomponents (e.g. `odrv0.axis0.motor.error`).
-
   </div></details>
 
-<!--1. Type `odrv0.axis0.motor.config.pre_calibrated = True` <kbd>Enter</kbd> and then `odrv0.save_configuration()` <kbd>Enter</kbd>. This will save all the configuration and calibration you just did so the next time you start the device it's already ready to go. Except for one thing: you need to run the encoder offset calibration after every power cycle. -->
 2. Type `odrv0.axis0.requested_state = AXIS_STATE_CLOSED_LOOP_CONTROL` <kbd>Enter</kbd>. From now on the ODrive will try to hold the motor's position. If you try to turn it by hand, it will fight you gently. That is unless you bump up `odrv0.axis0.motor.config.current_lim`, in which case it will fight you more fiercely.
+3. Send the motor a new position setpoint. `odrv0.axis0.controller.pos_setpoint = 10000` <kbd>Enter</kbd>. The units are in encoder counts.
+
+### Other control modes
+The ODrive also supports velocity control and current (torque) control.
+* **Velocity control**: Set `odrv0.axis0.controller.config.control_mode = CTRL_MODE_VELOCITY_CONTROL`. You can now control the velocity with `odrv0.axis0.controller.vel_setpoint = 5000`. Units are counts/s.
+* **Current control**: Set `odrv0.axis0.controller.config.control_mode = CTRL_MODE_CURRENT_CONTROL`. You can now control the current with `odrv0.axis0.controller.vel_setpoint = 3`. Units are A. **NOTE**: There is no velocity limiting in current control mode. Make sure that you don't overrev the motor, or exceed the max speed for your encoder.
 
 ## What's next?
 

@@ -69,10 +69,8 @@ def start_liveplotter(get_var_callback):
         while not cancellation_token.is_set():
             plt.clf()
             plt.plot(vals)
-            if platform.system() == "Windows":
-                plt.pause(1/plot_rate)
-            else:
-                fig.canvas.flush_events()
+            fig.canvas.draw()
+            fig.canvas.start_event_loop(1/plot_rate)
 
     threading.Thread(target=fetch_data).start()
     threading.Thread(target=plot_data).start()
