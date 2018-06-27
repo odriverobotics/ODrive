@@ -1,6 +1,8 @@
 
 #include "odrive_main.h"
+#include "planner.h"
 
+Planner SmartPlanner;
 
 Controller::Controller(ControllerConfig_t& config) :
     config_(config)
@@ -18,9 +20,12 @@ void Controller::reset() {
 //--------------------------------
 
 void Controller::set_pos_setpoint(float pos_setpoint, float vel_feed_forward, float current_feed_forward) {
-    pos_setpoint_ = pos_setpoint;
-    vel_setpoint_ = vel_feed_forward;
-    current_setpoint_ = current_feed_forward;
+
+    SmartPlanner.moveTrapezoid(pos_setpoint,vel_feed_forward,current_feed_forward,pos_setpoint_);
+    // SmartPlanner.moveTrapezoid(pos_setpoint,4000,2000);
+    // pos_setpoint_ = pos_setpoint;
+    // vel_setpoint_ = vel_feed_forward;
+    // current_setpoint_ = current_feed_forward;
     config_.control_mode = CTRL_MODE_POSITION_CONTROL;
 #ifdef DEBUG_PRINT
     printf("POSITION_CONTROL %6.0f %3.3f %3.3f\n", pos_setpoint, vel_setpoint_, current_setpoint_);
@@ -55,7 +60,7 @@ void Controller::start_anticogging_calibration() {
  * This anti-cogging implementation iterates through each encoder position,
  * waits for zero velocity & position error,
  * then samples the current required to maintain that position.
- * 
+ *
  * This holding current is added as a feedforward term in the control loop.
  */
 bool Controller::anticogging_calibration(float pos_estimate, float vel_estimate) {
@@ -82,7 +87,9 @@ bool Controller::anticogging_calibration(float pos_estimate, float vel_estimate)
 bool Controller::update(float pos_estimate, float vel_estimate, float* current_setpoint_output) {
     // Only runs if anticogging_.calib_anticogging is true; non-blocking
     anticogging_calibration(pos_estimate, vel_estimate);
-    
+
+    pos_setpoint_=SmartPlanner.tick();
+
     // Position control
     // TODO Decide if we want to use encoder or pll position here
     float vel_des = vel_setpoint_;
