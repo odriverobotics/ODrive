@@ -50,6 +50,7 @@ For predictable results, try to have only one feature enabled for any one pin. W
 
 ### Hall feedback pinout
 When the encoder mode is set to hall feedback, the pinout on the encoder port is as follows:
+
 | Label on ODrive | Hall feedback |
 |-----------------|---------------|
 | A               | Hall A        |
