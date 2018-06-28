@@ -49,12 +49,13 @@ Possible values are:
 * `CTRL_MODE_CURRENT_CONTROL`
 * `CTRL_MODE_VOLTAGE_CONTROL` - this one is not normally used.
 
+Note that the default position control method is using nested position and velocity control loops, as opposed to traditional P+I+D. Presently, if you want to configure Proportional and Derivative gains, the `vel_integrator_gain` and `current_setpoint_` must be set to 0, and the `pos_gain` must be `=kP/vel_gain` and updated every time `vel_gain` is updated. The function `set_parallel_PD_gains(float kP, float kD)` may be used to set these for you. For now, this is the only way to get more traditional Proportional + Derivative behavior. There is also no position integrator controller presently implemented. 
+
 ### Tuning parameters
 The motion control gains are currently manually tuned:
 * `<axis>.controller.config.pos_gain = 20.0f` [(counts/s) / counts] or [A/count] in Parallel Mode
 * `<axis>.controller.config.vel_gain = 5.0f / 10000.0f` [A/(counts/s)]
 * `<axis>.controller.config.vel_integrator_gain = 10.0f / 10000.0f` [A/((counts/s) * s)]
-* `<axis>.controller.config.torque_constant = 0.45f` [N*m/A], only used in Impedance Control Mode
 
 An upcoming feature will enable automatic tuning. Until then, here is a rough tuning procedure:
 * Set the integrator gain to 0

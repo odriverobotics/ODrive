@@ -90,8 +90,6 @@ bool Controller::update(float pos_estimate, float vel_estimate, float* current_s
     // Only runs if anticogging_.calib_anticogging is true; non-blocking
     anticogging_calibration(pos_estimate, vel_estimate);
 
-    float Iq = 0;
-
     // Position control
     // TODO Decide if we want to use encoder or pll position here
     float vel_des = vel_setpoint_;
@@ -106,7 +104,7 @@ bool Controller::update(float pos_estimate, float vel_estimate, float* current_s
     if (vel_des < -vel_lim) vel_des = -vel_lim;
 
     // Velocity control
-    Iq = current_setpoint_;
+    float Iq = current_setpoint_;
 
     // Anti-cogging is enabled after calibration
     // We get the current position and apply a current feed-forward
@@ -147,8 +145,6 @@ bool Controller::update(float pos_estimate, float vel_estimate, float* current_s
             vel_integrator_current_ += (config_.vel_integrator_gain * current_meas_period) * v_err;
         }
     }
-
-
 
     if (current_setpoint_output) *current_setpoint_output = Iq;
     return true;
