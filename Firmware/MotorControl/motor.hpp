@@ -50,6 +50,7 @@ typedef struct {
     float current_lim = 10.0f;  //[A]
     // Value used to compute shunt amplifier gains
     float requested_current_range = 70.0f; // [A]
+    float current_control_bandwidth = 1000.0f;  // [rad/s]
 } MotorConfig_t;
 
 class Motor {
@@ -101,6 +102,7 @@ public:
     void reset_current_control();
 
     void update_current_controller_gains();
+    void set_current_control_bandwidth(float current_control_bandwidth);
     void DRV8301_setup();
     bool check_DRV_fault();
     void set_error(Error_t error);
@@ -209,8 +211,11 @@ public:
                 make_protocol_property("direction", &config_.direction),
                 make_protocol_property("motor_type", &config_.motor_type),
                 make_protocol_property("current_lim", &config_.current_lim),
-                make_protocol_property("requested_current_range", &config_.requested_current_range)
-            )
+                make_protocol_property("requested_current_range", &config_.requested_current_range),
+                make_protocol_ro_property("current_control_bandwidth", &config_.current_control_bandwidth)
+            ),
+            make_protocol_function("set_current_control_bandwidth", *this, &Motor::set_current_control_bandwidth,
+                "current_control_bandwidth")
         );
     }
 };

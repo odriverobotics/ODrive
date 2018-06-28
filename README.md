@@ -19,6 +19,6 @@ Please refer to the [Developer Guide](https://docs.odriverobotics.com/developer-
 ### Other Resources
 
  * [Main Website](https://www.odriverobotics.com/)
- * [User Guide](https://docs.odriverobotics.com/quick-start.md)
+ * [User Guide](https://docs.odriverobotics.com/)
  * [Forum](https://discourse.odriverobotics.com/)
  * [Chat](https://discourse.odriverobotics.com/t/come-chat-with-us/281)

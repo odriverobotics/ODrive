@@ -41,6 +41,7 @@ public:
                             // index search succeeds
         float offset_float = 0.0f; // Sub-count phase alignment offset
         float calib_range = 0.02f;
+        float bandwidth = 1000.0f;
     };
 
     Encoder(const EncoderHardwareConfig_t& hw_config,
@@ -80,11 +81,8 @@ public:
     float pos_estimate_ = 0.0f;  // [counts]
     float pos_cpr_ = 0.0f;  // [counts]
     float pll_vel_ = 0.0f;  // [counts/s]
-    float pll_kp_ = 0.0f;   // [counts/s / rad]
-    float pll_ki_ = 0.0f;   // [(counts/s^2) / rad]
-
-    // float pos_sum_ = 0.0f;  // [counts]
-    // float pos_counter_ = 0.0f;  // [counts]
+    //float pll_kp_ = 0.0f;   // [counts/s / rad]
+    //float pll_ki_ = 0.0f;   // [(counts/s^2) / rad]
 
     //Counters for turning absolute encoder value into a continuous (and possibly negative) value for shadow_count
     int32_t shadow_counter_ = 0; //Overflow counter
@@ -110,8 +108,8 @@ public:
             make_protocol_property("pos_cpr", &pos_cpr_),
             make_protocol_property("hall_state", &hall_state_),
             make_protocol_property("pll_vel", &pll_vel_),
-            make_protocol_property("pll_kp", &pll_kp_),
-            make_protocol_property("pll_ki", &pll_ki_),
+            // make_protocol_property("pll_kp", &pll_kp_),
+            // make_protocol_property("pll_ki", &pll_ki_),
             make_protocol_object("config",
                 make_protocol_property("mode", &config_.mode),
                 make_protocol_property("use_index", &config_.use_index),
@@ -120,6 +118,7 @@ public:
                 make_protocol_property("cpr", &config_.cpr),
                 make_protocol_property("offset", &config_.offset),
                 make_protocol_property("offset_float", &config_.offset_float),
+                make_protocol_property("bandwidth", &config_.bandwidth),
                 make_protocol_property("calib_range", &config_.calib_range)
             )
         );

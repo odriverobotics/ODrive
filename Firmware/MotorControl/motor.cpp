@@ -57,10 +57,14 @@ void Motor::reset_current_control() {
 // TODO: allow update on user-request or update automatically via hooks
 void Motor::update_current_controller_gains() {
     // Calculate current control gains
-    float current_control_bandwidth = 500.0f;  // [rad/s] Was 1000.0f rad/s, now 300rad/s = 50Hz
-    current_control_.p_gain = current_control_bandwidth * config_.phase_inductance;
+    current_control_.p_gain = config_.current_control_bandwidth * config_.phase_inductance;
     float plant_pole = config_.phase_resistance / config_.phase_inductance;
     current_control_.i_gain = plant_pole * current_control_.p_gain;
+}
+
+void Motor::set_current_control_bandwidth(float current_control_bandwidth) {
+    config_.current_control_bandwidth = current_control_bandwidth;
+    update_current_controller_gains();
 }
 
 // @brief Set up the gate drivers

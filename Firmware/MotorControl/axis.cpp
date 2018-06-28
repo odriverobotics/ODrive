@@ -148,6 +148,11 @@ bool Axis::run_sensorless_spin_up() {
             return error_ |= ERROR_MOTOR_FAILED, false;
         return vel < config_.spin_up_target_vel;
     });
+
+    // call to controller.reset() that happend when arming means that vel_setpoint
+    // is zeroed. So we make the setpoint the spinup target for smooth transition.
+    controller_.vel_setpoint_ = config_.spin_up_target_vel;
+
     return error_ == ERROR_NONE;
 }
 

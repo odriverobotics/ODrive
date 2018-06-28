@@ -37,6 +37,26 @@ The ODrive can be controlled over various ports and protocols. If you're comfort
 
 ODrive v3.3 and onward have 5V tolerant GPIO pins.
 
+### Pin function priorities
+1. PWM in, if enabled. Disabled by default.
+1. UART, **Enabled by default**.
+1. Step/Dir, if enabled. Disabled by default.
+1. Analog, default behaviour if not overriden (only on supported pins).
+1. Digital in, default behaviour on pins not capable of analog input.
+
+For predictable results, try to have only one feature enabled for any one pin. When changing pin assignments you must:
+* `odrv0.save_configuration()`
+* `odrv0.reboot()`
+
+### Hall feedback pinout
+When the encoder mode is set to hall feedback, the pinout on the encoder port is as follows:
+
+| Label on ODrive | Hall feedback |
+|-----------------|---------------|
+| A               | Hall A        |
+| B               | Hall B        |
+| Z               | Hall C        |
+
 ## Native Protocol
 
 This protocol is what the ODrive Tool uses to talk to the ODrive. If you have a choice, this is the recommended protocol for all applications. The native protocol runs on USB and can also be configured to run on UART.
@@ -53,7 +73,7 @@ odrv0 = odrive.find_any()
 print(str(odrv0.vbus_voltage))
 ```
 
-For a more comprehensive example, see [tools/demo.py](../tools/demo.py).
+For a more comprehensive example, see [tools/odrive_demo.py](../tools/odrive_demo.py).
 
 #### Other languages
 
@@ -66,7 +86,7 @@ This is a simpler alternative to the native protocol if you don't need all its b
 For more details, see the [ASCII protocol specification](ascii-protocol.md).
 
 ### Arduino
-There is an Arduino library that gives some expamples on how to use the ASCII protocol to communicate with the ODrive. TODO LINK HERE.
+There is an Arduino library that gives some expamples on how to use the ASCII protocol to communicate with the ODrive. Check it out [here](../Arduino/ODriveArduino).
 
 ## Step/direction
 This is the simplest possible way of controlling the ODrive. It is also the most primitive and fragile one. So don't use it unless you must interoperate with other hardware that you don't control.
@@ -76,45 +96,36 @@ Pinout:
 * GND: you must connect the grounds of the devices together. Use any GND pin on J3 of the ODrive.
 
 To enable step/dir mode for the GPIO, set `<axis>.config.enable_step_dir` to true for each axis that you wish to use this on.
-Axis 0 step/dir pins conflicts with UART, and the UART takes priority. So to be able to use step/dir on Axis 0, you must also set `odrv0.config.enable_uart = False`.
-To apply these settings you must reboot, and to keep them on reboot you must save configuration:
-* `odrv0.save_configuration()`
-* `odrv0.reboot()`
+Axis 0 step/dir pins conflicts with UART, and the UART takes priority. So to be able to use step/dir on Axis 0, you must also set `odrv0.config.enable_uart = False`. See the [pin function priorities](#pin-function-priorities) for more detail. Don't forget to save configuration and reboot.
 
 There is also a config variable called `<axis>.config.counts_per_step`, which specifies how many encoder counts a "step" corresponds to. It can be any floating point value.
 The maximum step rate is pending tests, but it should handle at least 50kHz. If you want to test it, please be aware that the failure mode on too high step rates is expected to be that the motors shuts down and coasts.
 
 Please be aware that there is no enable line right now, and the step/direction interface is enabled by default, and remains active as long as the ODrive is in position control mode. To get the ODrive to go into position control mode at bootup, see how to configure the [startup procedure](commands.md#startup-procedure).
 
-<!--
 ## RC PWM input
-
 You can control the ODrive directly from an hobby RC receiver.
 
-Up to 4 channels (GPIOs 1, 2, 3 and 4) can be used simultaneously if the respective pins are not assigned to other functions. Any of the numerical parameters that are writable from the ODrive Tool can be hooked up to a PWM input.
+Some GPIO pins can be used for PWM input, if they are not allocated to other functions. For example, you must disable the UART to use GPIO 1,2. See the [pin function priorities](#pin-function-priorities) for more detail.
 
+Any of the numerical parameters that are writable from the ODrive Tool can be hooked up to a PWM input.
 As an example, we'll configure GPIO4 to control the angle of axis 0. We want the axis to move within a range of -1500 to 1500 encoder counts.
 
 1. Make sure you're able control the axis 0 angle by writing to `odrv0.axis0.controller.pos_setpoint`. If you need help with this follow the [getting started guide](getting-started.md).
-2. It is recommended that you configure the ODrive such that axis 0 automatically goes operational after a reboot. You may have to set `odrv0.axis0.config.startup_encoder_offset_calibration` and `odrv0.axis0.config.startup_closed_loop_control` to `True`. The exact procedure may vary depending on what type of encoder you're using.
+2. If you want to control your ODrive with the PWM input without using anything else to activate the ODrive, you can configure the ODrive such that axis 0 automatically goes operational at startup. See [here](commands.md#startup-procedure) for more information.
 3. In ODrive Tool, configure the PWM input mapping
     ```
     In [1]: odrv0.config.gpio4_pwm_mapping.min = -1500
-    
     In [2]: odrv0.config.gpio4_pwm_mapping.max = 1500
-    
     In [3]: odrv0.config.gpio4_pwm_mapping.endpoint = odrv0.axis0.controller._remote_attributes['pos_setpoint']
     ```
    Note: you can disable the input by setting `odrv0.config.gpio4_pwm_mapping.endpoint = None`
 4. Save the configuration and reboot
     ```
     In [4]: odrv0.save_configuration()
-    
     In [5]: odrv0.reboot()
     ```
-5. Connect the RC receiver ground to the ODrive's GND and one of the RC receiver signals to GPIO4. You may try to power the receiver from the ODrive's 5V supply if it doesn't draw too much power. Power up the the RC transmitter. You should now be able to control axis 0 from one of the RC sticks.
-
--->
+5. With the ODrive powered off, connect the RC receiver ground to the ODrive's GND and one of the RC receiver signals to GPIO4. You may try to power the receiver from the ODrive's 5V supply if it doesn't draw too much power. Power up the the RC transmitter. You should now be able to control axis 0 from one of the RC sticks.
 
 ## Ports
 Note: when you use an existing library you don't have to deal with the specifics described in this section.

@@ -10,6 +10,7 @@
 
 BoardConfig_t board_config;
 Encoder::Config_t encoder_configs[AXIS_COUNT];
+SensorlessEstimator::Config_t sensorless_configs[AXIS_COUNT];
 ControllerConfig_t controller_configs[AXIS_COUNT];
 MotorConfig_t motor_configs[AXIS_COUNT];
 AxisConfig_t axis_configs[AXIS_COUNT];
@@ -22,6 +23,7 @@ Axis *axes[AXIS_COUNT];
 typedef Config<
     BoardConfig_t,
     Encoder::Config_t[AXIS_COUNT],
+    SensorlessEstimator::Config_t[AXIS_COUNT],
     ControllerConfig_t[AXIS_COUNT],
     MotorConfig_t[AXIS_COUNT],
     AxisConfig_t[AXIS_COUNT]> ConfigFormat;
@@ -30,6 +32,7 @@ void save_configuration(void) {
     if (ConfigFormat::safe_store_config(
             &board_config,
             &encoder_configs,
+            &sensorless_configs,
             &controller_configs,
             &motor_configs,
             &axis_configs)) {
@@ -45,6 +48,7 @@ void load_configuration(void) {
         ConfigFormat::safe_load_config(
                 &board_config,
                 &encoder_configs,
+                &sensorless_configs,
                 &controller_configs,
                 &motor_configs,
                 &axis_configs)) {
@@ -52,6 +56,7 @@ void load_configuration(void) {
         board_config = BoardConfig_t();
         for (size_t i = 0; i < AXIS_COUNT; ++i) {
             encoder_configs[i] = Encoder::Config_t();
+            sensorless_configs[i] = SensorlessEstimator::Config_t();
             controller_configs[i] = ControllerConfig_t();
             motor_configs[i] = MotorConfig_t();
             axis_configs[i] = AxisConfig_t();
@@ -153,7 +158,7 @@ int odrive_main(void) {
     for (size_t i = 0; i < AXIS_COUNT; ++i) {
         Encoder *encoder = new Encoder(hw_configs[i].encoder_config,
                                        encoder_configs[i]);
-        SensorlessEstimator *sensorless_estimator = new SensorlessEstimator();
+        SensorlessEstimator *sensorless_estimator = new SensorlessEstimator(sensorless_configs[i]);
         Controller *controller = new Controller(controller_configs[i]);
         Motor *motor = new Motor(hw_configs[i].motor_config,
                                  hw_configs[i].gate_driver_config,
@@ -176,6 +181,10 @@ int odrive_main(void) {
     //osDelay(100);
     // Init communications (this requires the axis objects to be constructed)
     init_communication();
+
+    // Start pwm-in compare modules
+    // must happen after communication is initialized
+    pwm_in_init();
 
     // Setup hardware for all components
     for (size_t i = 0; i < AXIS_COUNT; ++i) {

@@ -28,15 +28,15 @@ def get_version_from_git():
 
         (major, minor, revision, is_prerelease) = version_str_to_tuple(git_tag)
 
-        if is_prerelease:
-            revision += 1
+        # if is_prerelease:
+        #     revision += 1
         return git_tag, major, minor, revision, is_prerelease
 
     except Exception as ex:
         print(ex)
         return "[unknown version]", 0, 0, 0, 1
 
-def get_version_str(git_only=False):
+def get_version_str(git_only=False, is_post_release=False, bump_rev=False):
     """
     Returns the versions of the tools
     If git_only is true, the version.txt file is ignored even
@@ -52,8 +52,12 @@ def get_version_str(git_only=False):
             return version_file.readline().rstrip('\n')
     
     _, major, minor, revision, unreleased = get_version_from_git()
+    if bump_rev:
+        revision += 1
     version = '{}.{}.{}'.format(major, minor, revision)
-    if unreleased:
+    if is_post_release:
+        version += ".post"
+    elif unreleased:
         version += ".dev"
     return version
 

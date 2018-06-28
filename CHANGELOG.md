@@ -1,14 +1,25 @@
 # Unreleased Features
 Please add a note of your changes below this heading if you make a Pull Request.
 
+## [0.4.1] - UNRELEASED
 ### Added
- * Encoder can now go forever in velocity/torque mode due to using circular encoder space.
- * `make write_otp` command to burn the board version onto the ODrive's one-time programmable memory. If you have an ODrive v3.4 or older, you should run this once for a better firmware update user experience in the future. Run the command without any options for more details. Once set, the board version is exposed through the `hw_version_[...]` properties.
- * bake Git-derived firmware version into firmware binary. The firmware version is exposed through the `fw_version_[...]` properties.
- * infrastructure to publish the python tools to PyPi. See `tools/setup.py` for details.
- * Automated test script `run_tests.py`
- * Protocol supports function return values
- * System stats (e.g. stack usage) are exposed under `<odrv>.system_stats`
+* Hall sensor feedback
+* Configurable RC PWM input
+* Config settings for:
+  * `motor.config.requested_current_range`
+  * `motor.config.current_control_bandwidth` and `motor.set_current_control_bandwidth`. Latter required to invoke gain recalculation.
+  * `encoder.config.bandwidth`
+
+# Releases
+## [0.4.0] - 2018-06-10
+### Added
+* Encoder can now go forever in velocity/torque mode due to using circular encoder space.
+* Protocol supports function return values
+* bake Git-derived firmware version into firmware binary. The firmware version is exposed through the `fw_version_[...]` properties.
+* `make write_otp` command to burn the board version onto the ODrive's one-time programmable memory. If you have an ODrive v3.4 or older, you should run this once for a better firmware update user experience in the future. Run the command without any options for more details. Once set, the board version is exposed through the `hw_version_[...]` properties.
+* infrastructure to publish the python tools to PyPi. See `tools/setup.py` for details.
+* Automated test script `run_tests.py`
+* System stats (e.g. stack usage) are exposed under `<odrv>.system_stats`
 
 ### Changed
 * DFU script updates
@@ -24,8 +35,6 @@ Please add a note of your changes below this heading if you make a Pull Request.
   * The liveplotter (`odrivetool liveplotter`, formerly `liveplotter.py`) does no longer steal focus and closes as expected
   * Add commands `odrivetool backup-config` and `odrivetool restore-config`
   * (experimental: start liveplotter from `odrivetool` shell by typing `start_liveplotter(lambda: odrv0.motor0.encoder.encoder_state)`)
-* `make write_otp` command to burn the board version onto the ODrive's one-time programmable memory. If you have an ODrive v3.4 or older, you can run this once for a better firmware update user experience in the future. Run the command without any options for more details. Once set, the board version is exposed through the `hw_version_[...]` properties.
-* bake Git-derived firmware version into firmware binary. The firmware version is exposed through the `fw_version_[...]` properties.
 * Set thread priority of USB pump thread above protocol thread
 * GPIO3 not sensitive to edges by default
 * The device now appears as a composite device on USB. One subdevice is still a CDC device (virtual COM port), the other subdevice is a vendor specific class. This should resolve several issues that were caused by conflicting kernel drivers or OS services.
@@ -36,10 +45,7 @@ Please add a note of your changes below this heading if you make a Pull Request.
 * Enums now transported with correct underlying type on native protocol
 * USB issue where the device would stop responding when the host script would quit abruptly or reset the device during operation
 
-# Releases
-
 ## [0.3.6] - 2018-03-26
-
 ### Added
 * **Storing of configuration parameters to Non Volatile Memory**
 * **USB Bootloader**
@@ -62,7 +68,6 @@ Please add a note of your changes below this heading if you make a Pull Request.
 * malloc now fails if we run out of memory (before it would always succeed even if we are out of ram...)
 
 ## [0.3.5] - 2018-03-04
-
 ### Added
 * Reporting error if your encoder CPR is incorrect
 * Ability to start anticogging calibration over USB protocol
@@ -76,12 +81,10 @@ Please add a note of your changes below this heading if you make a Pull Request.
 * Build system is now tup instead of make. Please check the [Readme](README.md#installing-prerequisites) for installation instructions.
 
 ## [0.3.4] - 2018-02-13
-
 ### Fixed
 * Broken way to check for python 2. Python 2 not supported yet.
 
 ## [0.3.3] - 2018-02-12
-
 ### Added
 * Liveplotter script
 * Automatic recovery of USB halt/stall condition
@@ -93,14 +96,12 @@ Please add a note of your changes below this heading if you make a Pull Request.
 * USB CSC (USB serial) now reports a sensible baud rate
 
 ## [0.3.2] - 2018-02-02
-
 ### Added
 * Gimbal motor mode
 * Encoder index pulse support
 * `resistance_calib_max_voltage` parameter
 
 ## [0.3.1] - 2018-01-18
-
 ### Added
 * UUID Endpoint
 * Reporting of correct ODrive version on USB descriptor
