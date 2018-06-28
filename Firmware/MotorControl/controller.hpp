@@ -33,6 +33,7 @@ public:
     void set_pos_setpoint(float pos_setpoint, float vel_feed_forward, float current_feed_forward);
     void set_vel_setpoint(float vel_setpoint, float current_feed_forward);
     void set_current_setpoint(float current_setpoint);
+    void set_parallel_PD_gains(float kP, float kD);
     
     // TODO: make this more similar to other calibration loops
     void start_anticogging_calibration();

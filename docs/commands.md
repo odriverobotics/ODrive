@@ -47,13 +47,12 @@ Possible values are:
 * `CTRL_MODE_POSITION_CONTROL`
 * `CTRL_MODE_VELOCITY_CONTROL`
 * `CTRL_MODE_CURRENT_CONTROL`
-* `CTRL_MODE_IMPEDANCE_CONTROL`
 * `CTRL_MODE_VOLTAGE_CONTROL` - this one is not normally used.
 
 ### Tuning parameters
 The motion control gains are currently manually tuned:
-* `<axis>.controller.config.pos_gain = 20.0f` [(counts/s) / counts] or [N*m/radian] in Impedance Control Mode
-* `<axis>.controller.config.vel_gain = 5.0f / 10000.0f` [A/(counts/s)] or [N*m*s/radian] in Impedance Control Mode
+* `<axis>.controller.config.pos_gain = 20.0f` [(counts/s) / counts] or [A/count] in Parallel Mode
+* `<axis>.controller.config.vel_gain = 5.0f / 10000.0f` [A/(counts/s)]
 * `<axis>.controller.config.vel_integrator_gain = 10.0f / 10000.0f` [A/((counts/s) * s)]
 * `<axis>.controller.config.torque_constant = 0.45f` [N*m/A], only used in Impedance Control Mode
 

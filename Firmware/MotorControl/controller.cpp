@@ -44,6 +44,13 @@ void Controller::set_current_setpoint(float current_setpoint) {
 #endif
 }
 
+void Controller::set_parallel_PD_gains(float kP, float kD) {
+    config_.vel_integrator_gain = 0; //PID Will require changing the controller to integrate position error, not velocity error.
+    config_.vel_gain = kD;
+    config_.pos_gain = kP/kD;
+    current_setpoint_ = 0.0f;
+}
+
 void Controller::start_anticogging_calibration() {
     // Ensure the cogging map was correctly allocated earlier and that the motor is capable of calibrating
     if (anticogging_.cogging_map != NULL && axis_->error_ == Axis::ERROR_NONE) {
@@ -83,95 +90,61 @@ bool Controller::update(float pos_estimate, float vel_estimate, float* current_s
     // Only runs if anticogging_.calib_anticogging is true; non-blocking
     anticogging_calibration(pos_estimate, vel_estimate);
 
-    float Iq = 0; //No feedforward for impedance control
+    float Iq = 0;
 
-    // Impedance Control
-    if(config_.control_mode == CTRL_MODE_IMPEDANCE_CONTROL){ //Use simple PD
-        float vel_des = vel_setpoint_;
-        
-        // Velocity limiting
-        float vel_lim = config_.vel_limit;
-        if (vel_des > vel_lim) vel_des = vel_lim;
-        if (vel_des < -vel_lim) vel_des = -vel_lim;
-
-        // Anti-cogging is enabled after calibration
-        // We get the current position and apply a current feed-forward
-        // ensuring that we handle negative encoder positions properly (-1 == motor->encoder.encoder_cpr - 1)
-        if (anticogging_.use_anticogging) {
-            Iq += anticogging_.cogging_map[mod(static_cast<int>(pos_estimate), axis_->encoder_.config_.cpr)];
-        }
-
+    // Position control
+    // TODO Decide if we want to use encoder or pll position here
+    float vel_des = vel_setpoint_;
+    if (config_.control_mode >= CTRL_MODE_POSITION_CONTROL) {
         float pos_err = pos_setpoint_ - pos_estimate;
-        Iq += config_.pos_gain * pos_err; //Stiffness Controller
-        float v_err = vel_des - vel_estimate;
-        Iq += config_.vel_gain * v_err;  //Damping Controller
+        vel_des += config_.pos_gain * pos_err;
+    }
 
-        Iq/=config_.torque_constant; //Convert from N*m to A. 
+    // Velocity limiting
+    float vel_lim = config_.vel_limit;
+    if (vel_des > vel_lim) vel_des = vel_lim;
+    if (vel_des < -vel_lim) vel_des = -vel_lim;
 
-        // Current limiting
-        float Ilim = std::min(axis_->motor_.config_.current_lim, axis_->motor_.current_control_.max_allowed_current);
-        if (Iq > Ilim) {
-            Iq = Ilim;
-        }
-        if (Iq < -Ilim) {
-            Iq = -Ilim;
-        }
+    // Velocity control
+    Iq = current_setpoint_;
 
-    }else{
-        // Position control
-        // TODO Decide if we want to use encoder or pll position here
-        float vel_des = vel_setpoint_;
-        if (config_.control_mode >= CTRL_MODE_POSITION_CONTROL) {
-            float pos_err = pos_setpoint_ - pos_estimate;
-            vel_des += config_.pos_gain * pos_err;
-        }
+    // Anti-cogging is enabled after calibration
+    // We get the current position and apply a current feed-forward
+    // ensuring that we handle negative encoder positions properly (-1 == motor->encoder.encoder_cpr - 1)
+    if (anticogging_.use_anticogging) {
+        Iq += anticogging_.cogging_map[mod(static_cast<int>(pos_estimate), axis_->encoder_.config_.cpr)];
+    }
 
-        // Velocity limiting
-        float vel_lim = config_.vel_limit;
-        if (vel_des > vel_lim) vel_des = vel_lim;
-        if (vel_des < -vel_lim) vel_des = -vel_lim;
+    float v_err = vel_des - vel_estimate;
+    if (config_.control_mode >= CTRL_MODE_VELOCITY_CONTROL) {
+        Iq += config_.vel_gain * v_err;
+    }
 
-        // Velocity control
-        Iq = current_setpoint_;
-
-        // Anti-cogging is enabled after calibration
-        // We get the current position and apply a current feed-forward
-        // ensuring that we handle negative encoder positions properly (-1 == motor->encoder.encoder_cpr - 1)
-        if (anticogging_.use_anticogging) {
-            Iq += anticogging_.cogging_map[mod(static_cast<int>(pos_estimate), axis_->encoder_.config_.cpr)];
-        }
-
-        float v_err = vel_des - vel_estimate;
-        if (config_.control_mode >= CTRL_MODE_VELOCITY_CONTROL) {
-            Iq += config_.vel_gain * v_err;
-        }
-
-        // Velocity integral action before limiting
-        Iq += vel_integrator_current_;
-        
-        // Current limiting
-        float Ilim = std::min(axis_->motor_.config_.current_lim, axis_->motor_.current_control_.max_allowed_current);
-        bool limited = false;
-        if (Iq > Ilim) {
-            limited = true;
-            Iq = Ilim;
-        }
-        if (Iq < -Ilim) {
-            limited = true;
-            Iq = -Ilim;
-        }
-        
-        // Velocity integrator (behaviour dependent on limiting)
-        if (config_.control_mode < CTRL_MODE_VELOCITY_CONTROL) {
-            // reset integral if not in use
-            vel_integrator_current_ = 0.0f;
+    // Velocity integral action before limiting
+    Iq += vel_integrator_current_;
+    
+    // Current limiting
+    float Ilim = std::min(axis_->motor_.config_.current_lim, axis_->motor_.current_control_.max_allowed_current);
+    bool limited = false;
+    if (Iq > Ilim) {
+        limited = true;
+        Iq = Ilim;
+    }
+    if (Iq < -Ilim) {
+        limited = true;
+        Iq = -Ilim;
+    }
+    
+    // Velocity integrator (behaviour dependent on limiting)
+    if (config_.control_mode < CTRL_MODE_VELOCITY_CONTROL) {
+        // reset integral if not in use
+        vel_integrator_current_ = 0.0f;
+    } else {
+        if (limited) {
+            // TODO make decayfactor configurable
+            vel_integrator_current_ *= 0.99f;
         } else {
-            if (limited) {
-                // TODO make decayfactor configurable
-                vel_integrator_current_ *= 0.99f;
-            } else {
-                vel_integrator_current_ += (config_.vel_integrator_gain * current_meas_period) * v_err;
-            }
+            vel_integrator_current_ += (config_.vel_integrator_gain * current_meas_period) * v_err;
         }
     }
 
