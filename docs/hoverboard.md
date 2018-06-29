@@ -33,7 +33,7 @@ Lets also start in velocity control mode since that is probably what you want fo
 odrv0.axis0.encoder.config.bandwidth = 100
 odrv0.axis0.controller.config.pos_gain = 1
 odrv0.axis0.controller.config.vel_gain = 0.02
-odrv0.axis0.controller.config.vel_lim = 1000
+odrv0.axis0.controller.config.vel_limit = 1000
 odrv0.axis0.controller.config.control_mode = CTRL_MODE_VELOCITY_CONTROL
 ```
 
