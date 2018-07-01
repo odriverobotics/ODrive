@@ -256,7 +256,7 @@ class Channel(PacketSink):
                 self._logger.debug("receiver thread is exiting: " + traceback.format_exc())
             finally:
                 self._channel_broken.set()
-        threading.Thread(target=receiver_thread).start()
+        threading.Thread(target=receiver_thread, daemon=True).start()
 
     def remote_endpoint_operation(self, endpoint_id, input, expect_ack, output_length):
         if input is None:
