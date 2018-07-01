@@ -153,6 +153,13 @@ float fast_atan2(float y, float x) {
     return r;
 }
 
+float horner_fma(float x, const float *coeffs, size_t count) {
+    float result = 0.0f;
+    for (int idx = count-1; idx >= 0; idx--)
+        result = fmaf(result, x, coeffs[idx]);
+    return result;
+}
+
 // Modulo (as opposed to remainder), per https://stackoverflow.com/a/19288271
 int mod(int dividend, int divisor){
     int r = dividend % divisor;

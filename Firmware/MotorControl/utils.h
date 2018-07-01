@@ -94,6 +94,7 @@ static inline float fmodf_pos(float x, float y) {
 int SVM(float alpha, float beta, float* tA, float* tB, float* tC);
 
 float fast_atan2(float y, float x);
+float horner_fma(float x, const float *coeffs, size_t count);
 int mod(int dividend, int divisor);
 
 uint32_t deadline_to_timeout(uint32_t deadline_ms);
