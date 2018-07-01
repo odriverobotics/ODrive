@@ -5,6 +5,7 @@ Please add a note of your changes below this heading if you make a Pull Request.
 ### Added
 * Hall sensor feedback
 * Configurable RC PWM input
+* Ability to read axis FET temperature
 * Config settings for:
   * `motor.config.requested_current_range`
   * `motor.config.current_control_bandwidth` and `motor.set_current_control_bandwidth`. Latter required to invoke gain recalculation.
