@@ -70,6 +70,9 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     git_name, major, minor, revision, unreleased = get_version_from_git()
+    print('Firmware version {}.{}.{}{}, aka {}'.format(
+        major, minor, revision, '-dev' if unreleased else '',
+        git_name))
     args.output.write('#define FW_VERSION "{}"\n'.format(git_name))
     args.output.write('#define FW_VERSION_MAJOR {}\n'.format(major))
     args.output.write('#define FW_VERSION_MINOR {}\n'.format(minor))
