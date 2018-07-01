@@ -72,8 +72,10 @@ def start_liveplotter(get_var_callback):
             fig.canvas.draw()
             fig.canvas.start_event_loop(1/plot_rate)
 
-    threading.Thread(target=fetch_data).start()
-    threading.Thread(target=plot_data).start()
+    threading.Thread(target=fetch_data, daemon=True).start()
+    threading.Thread(target=plot_data, daemon=True).start()
+
+    return cancellation_token;
     #plot_data()
 
 def print_drv_regs(name, motor):
@@ -142,7 +144,7 @@ def usb_burn_in_test(get_var_callback, cancellation_token):
                 continue
             if i % 1000 == 0:
                 print("read {} values".format(i))
-    threading.Thread(target=fetch_data).start()
+    threading.Thread(target=fetch_data, daemon=True).start()
 
 def setup_udev_rules(logger):
     if platform.system() != 'Linux':

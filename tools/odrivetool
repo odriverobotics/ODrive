@@ -7,6 +7,7 @@ from __future__ import print_function
 import sys
 import os
 import argparse
+import time
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(
                     os.path.realpath(__file__))),
@@ -14,7 +15,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(
 import fibre.discovery
 from fibre import Logger, Event
 import odrive
-from odrive.utils import OperationAbortedException
+from odrive.utils import OperationAbortedException, decode_temp
 from odrive.configuration import *
 
 # Flush stdout by default
@@ -149,8 +150,14 @@ try:
 
         # If you want to plot different values, change them here.
         # You can plot any number of values concurrently.
-        start_liveplotter(lambda: [my_odrive.motor0.encoder.pos_estimate,
-                                my_odrive.motor1.encoder.pos_estimate])
+        cancellation_token = start_liveplotter(lambda: [
+            my_odrive.axis0.encoder.pos_estimate,
+            my_odrive.axis1.encoder.pos_estimate,
+        ])
+
+        print("Showing plot. Press Ctrl+C to exit.")
+        while not cancellation_token.is_set():
+            time.sleep(1)
 
     elif args.command == 'drv-status':
         from odrive.utils import print_drv_regs

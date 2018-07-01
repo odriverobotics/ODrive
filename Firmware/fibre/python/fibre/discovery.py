@@ -103,7 +103,8 @@ def find_all(path, serial_number,
         the_rest = ':'.join(search_spec.split(':')[1:])
         if prefix in channel_types:
             threading.Thread(target=channel_types[prefix],
-                             args=(the_rest, serial_number, did_discover_channel, search_cancellation_token, channel_termination_token, logger)).start()
+                             args=(the_rest, serial_number, did_discover_channel, search_cancellation_token, channel_termination_token, logger),
+                             daemon=True).start()
         else:
             raise Exception("Invalid path spec \"{}\"".format(search_spec))
 
