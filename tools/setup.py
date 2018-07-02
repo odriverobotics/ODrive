@@ -33,11 +33,11 @@ to publish packages with the name odrive.
 
 # Set to true to make an official post-release, rather than dev of new version
 is_post_release = False
-post_rel_num = 9
+post_rel_num = 0
 
 # To test higher numbered releases, bump to the next rev
 bump_rev = not is_post_release
-devnum = 1
+devnum = 0
 
 # TODO: add additional y/n prompt to prevent from erroneous upload
 
