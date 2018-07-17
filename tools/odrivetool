@@ -15,7 +15,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(
 import fibre.discovery
 from fibre import Logger, Event
 import odrive
-from odrive.utils import OperationAbortedException, decode_temp
+from odrive.utils import OperationAbortedException
 from odrive.configuration import *
 
 # Flush stdout by default

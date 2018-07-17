@@ -31,13 +31,16 @@ PyPi credentials and that your account has the rights
 to publish packages with the name odrive.
 """
 
+# Set to true to make the current release
+is_release = False
+
 # Set to true to make an official post-release, rather than dev of new version
 is_post_release = False
-post_rel_num = 8
+post_rel_num = 0
 
 # To test higher numbered releases, bump to the next rev
-bump_rev = not is_post_release
-devnum = 1
+devnum = 0
+bump_rev = not is_post_release and not is_release
 
 # TODO: add additional y/n prompt to prevent from erroneous upload
 
@@ -50,7 +53,10 @@ creating_package = "sdist" in sys.argv
 # Load version from Git tag
 import odrive.version
 version = odrive.version.get_version_str(
-    git_only=creating_package, is_post_release=is_post_release, bump_rev=bump_rev )
+    git_only=creating_package,
+    is_post_release=is_post_release,
+    bump_rev=bump_rev,
+    release_override=is_release)
 
 # If we're currently creating the package we need to autogenerate
 # a file that contains the version string
@@ -85,33 +91,35 @@ if not creating_package:
     except PermissionError:
       print("Warning: could not set up udev rules. Run `sudo odrivetool udev-setup` to try again.")
 
-setup(
-  name = 'odrive',
-  packages = ['odrive', 'odrive.dfuse', 'fibre'],
-  scripts = ['odrivetool', 'odrivetool.bat', 'odrive_demo.py'],
-  version = version,
-  description = 'Control utilities for the ODrive high performance motor controller',
-  author = 'Oskar Weigl',
-  author_email = 'oskar.weigl@odriverobotics.com',
-  license='MIT',
-  url = 'https://github.com/madcowswe/ODrive',
-  keywords = ['odrive', 'motor', 'motor control'],
-  install_requires = [
-    'ipython',  # Used to do the interactive parts of the odrivetool
-    'PyUSB',    # Required to access USB devices from Python through libusb
-    'PySerial', # Required to access serial devices from Python
-    'requests', # Used to by DFU to load firmware files
-    'IntelHex', # Used to by DFU to download firmware from github
-    'matplotlib', # Required to run the liveplotter
-    'pywin32 >= 222; platform_system == "Windows"' # Required for fancy terminal features on Windows
-  ],
-  package_data={'': ['version.txt']},
-  classifiers = [],
-)
+try:
+  setup(
+    name = 'odrive',
+    packages = ['odrive', 'odrive.dfuse', 'fibre'],
+    scripts = ['odrivetool', 'odrivetool.bat', 'odrive_demo.py'],
+    version = version,
+    description = 'Control utilities for the ODrive high performance motor controller',
+    author = 'Oskar Weigl',
+    author_email = 'oskar.weigl@odriverobotics.com',
+    license='MIT',
+    url = 'https://github.com/madcowswe/ODrive',
+    keywords = ['odrive', 'motor', 'motor control'],
+    install_requires = [
+      'ipython',  # Used to do the interactive parts of the odrivetool
+      'PyUSB',    # Required to access USB devices from Python through libusb
+      'PySerial', # Required to access serial devices from Python
+      'requests', # Used to by DFU to load firmware files
+      'IntelHex', # Used to by DFU to download firmware from github
+      'matplotlib', # Required to run the liveplotter
+      'pywin32 >= 222; platform_system == "Windows"' # Required for fancy terminal features on Windows
+    ],
+    package_data={'': ['version.txt']},
+    classifiers = [],
+  )
 
-# TODO: include README
+  # TODO: include README
 
-# clean up
-if creating_package:
-  os.remove(version_file_path)
-  os.remove(fibre_link)
+finally:
+  # clean up
+  if creating_package:
+    os.remove(version_file_path)
+    os.remove(fibre_link)

@@ -1,7 +1,7 @@
 # Unreleased Features
 Please add a note of your changes below this heading if you make a Pull Request.
 
-## [0.4.1] - UNRELEASED
+## UNRELEASED
 ### Added
 * Hall sensor feedback
 * Configurable RC PWM input
@@ -12,6 +12,13 @@ Please add a note of your changes below this heading if you make a Pull Request.
   * `encoder.config.bandwidth`
 
 # Releases
+## [0.4.1] - 2018-07-01
+### Fixed
+* Encoder errors would show up as Axis error `ERROR_MOTOR_FAILED` instead of `ERROR_ENCODER_FAILED`.
+* Various pip install dependencies
+* Ability for python tools threads to quit properly
+* dfuse error prints now python3 compatible
+
 ## [0.4.0] - 2018-06-10
 ### Added
 * Encoder can now go forever in velocity/torque mode due to using circular encoder space.
