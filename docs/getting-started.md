@@ -74,7 +74,6 @@ Most instructions in this guide refer to a utility called `odrivetool`, so you s
 2. Launch the command prompt.
    * __Anaconda__: In the start menu, type `Anaconda Prompt` <kbd>Enter</kbd>
    * __Standalone Python__: In the start menu, type `cmd` <kbd>Enter</kbd>
-3. Install dependencies by typing `pip install pywin32==222` <kbd>Enter</kbd>
 3. Install the ODrive tools by typing `pip install odrive` <kbd>Enter</kbd>
 4. Plug in a USB cable into the microUSB connector on ODrive, and connect it to your PC.
 5. Use the [Zadig](http://zadig.akeo.ie/) utility to set ODrive driver to libusb-win32.
