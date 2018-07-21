@@ -79,7 +79,7 @@ __Note__: make sure these programs are not only installed but also added to your
 
 Some instructions in this document may assume that you're using a bash command prompt, such as the Windows 10 built-in bash or [Git](https://git-scm.com/download/win) bash.
 
-* [ARM compiler](https://developer.arm.com/open-source/gnu-toolchain/gnu-rm/downloads)
+* [ARM compiler](https://developer.arm.com/open-source/gnu-toolchain/gnu-rm/downloads)  __Note__: After installing, create an environment variable named `ARM_GCC_ROOT` whose value is the path you installed to.  e.g. `C:\Program Files (x86)\GNU Tools Arm Embedded\7 2018-q2-update`.  This variable is used to locate include files for the c/c++ Visual Studio Code extension.
 * [Tup](http://gittup.org/tup/index.html)
 * [Make for Windows](http://gnuwin32.sourceforge.net/packages/make.htm)
 * [OpenOCD](http://gnuarmeclipse.github.io/openocd/install/). Also follow the instructions on the ST-LINK/V2 drivers.
