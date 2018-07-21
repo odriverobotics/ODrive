@@ -16,12 +16,8 @@
                 "${workspaceRoot}/Board/v3/Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS",
                 "${workspaceRoot}/Board/v3/Middlewares/Third_Party/FreeRTOS/Source/include",
                 "${workspaceRoot}/Board/v3/Middlewares/Third_Party/FreeRTOS/Source/portable/GCC/ARM_CM4F",
-                "%ARM_GCC_ROOT%/arm-none-eabi/include/c++/6.3.1",
-                "%ARM_GCC_ROOT%/arm-none-eabi/include/c++/6.3.1/arm-none-eabi",
-                "%ARM_GCC_ROOT%/arm-none-eabi/include/c++/6.3.1/backward",
-                "%ARM_GCC_ROOT%/lib/gcc/arm-none-eabi/6.3.1/include",
-                "%ARM_GCC_ROOT%/lib/gcc/arm-none-eabi/6.3.1/include-fixed",
-                "%ARM_GCC_ROOT%/arm-none-eabi/include"
+                "%ARM_GCC_ROOT%/arm-none-eabi/include/*",
+                "%ARM_GCC_ROOT%/lib/gcc/arm-none-eabi/*"
             ],
             "defines": [
                 "STM32F405xx",
@@ -103,10 +99,8 @@
                 "${workspaceRoot}/Board/v3/Drivers/STM32F4xx_HAL_Driver/Inc/Legacy",
                 "${workspaceRoot}/Board/v3/Drivers/CMSIS/Device/ST/STM32F4xx/Include",
                 "${workspaceRoot}/Board/v3/Drivers/CMSIS/Include",
-                "$ARM_GCC_ROOT/arm-none-eabi/include",
-                "$ARM_GCC_ROOT/arm-none-eabi/include/c++/6.3.1",
-                "$ARM_GCC_ROOT/arm-none-eabi/include/c++/6.3.1/arm-none-eabi",
-                "$ARM_GCC_ROOT/lib/gcc/arm-none-eabi/6.3.1/include"
+                "$ARM_GCC_ROOT/arm-none-eabi/include/*",
+                "$ARM_GCC_ROOT/lib/gcc/arm-none-eabi/*"
             ],
             "defines": [
                 "STM32F405xx",
