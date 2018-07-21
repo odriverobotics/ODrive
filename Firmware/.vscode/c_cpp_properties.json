@@ -4,6 +4,7 @@
             "name": "Win32",
             "includePath": [
                 "${workspaceRoot}",
+                "${workspaceRoot}/fibre/cpp/include/*",
                 "${workspaceRoot}/MotorControl",
                 "${workspaceRoot}/Drivers/DRV8301",
                 "${workspaceRoot}/Board/v3/Inc",
