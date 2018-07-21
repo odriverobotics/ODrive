@@ -32,7 +32,7 @@ The recommended tools for ODrive development are:
 
  * **make**: Used to invoke tup
  * **Tup**: The build system used to invoke the compile commands
- * **ARM GNU Compiler**: For cross-comiling code
+ * **ARM GNU Compiler**: For cross-compiling code
  * **ARM GDB**: For debugging the code and stepping through on the device
  * **OpenOCD**: For flashing the ODrive with the STLink/v2 programmer
  * **Python**: For running the Python tools
