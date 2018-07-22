@@ -20,6 +20,15 @@ flash: all
 		-c 'reset run' \
 		-c exit
 
+flashbmp: all
+	arm-none-eabi-gdb --ex 'target extended-remote $(BMP_PORT)' \
+		--ex 'monitor swdp_scan' \
+		--ex 'attach 1' \
+		--ex 'load' \
+		--ex 'detach' \
+		--ex 'quit' \
+		$(FIRMWARE)
+
 gdb: all
 	arm-none-eabi-gdb $(FIRMWARE) -x openocd.gdbinit
 

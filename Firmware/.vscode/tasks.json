@@ -19,9 +19,15 @@
             ]
         },
         {
-            "label": "flash",
+            "label": "flash - ST-Link",
             "type": "shell",
             "command": "make flash",
+            "problemMatcher": []
+        },
+        {
+            "label": "flash - Black Magic Probe",
+            "type": "shell",
+            "command": "make flashbmp",
             "problemMatcher": []
         },
         {
