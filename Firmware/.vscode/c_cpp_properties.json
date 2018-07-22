@@ -26,8 +26,6 @@
                 "HW_VERSION_MAJOR=3",
                 "HW_VERSION_MINOR=5",
                 "HW_VERSION_VOLTAGE=24",
-                "__weak=\"__attribute__((weak))\"",
-                "__packed=\"__attribute__((__packed__))\"",
                 "__GNUC__"
             ],
             "intelliSenseMode": "clang-x64",
@@ -38,7 +36,7 @@
                 ],
                 "limitSymbolsToIncludedHeaders": true
             },
-            "compilerPath": "arm-none-eabi-gcc -mthumb -mcpu=cortex-m4 -mfpu=fpv4-sp-d16 -mfloat-abi=hard -specs=nosys.specs -specs=nano.specs -u _printf_float -u _scanf_float",
+            "compilerPath": "%ARM_GCC_ROOT%/bin/arm-none-eabi-gcc.exe -mthumb -mcpu=cortex-m4 -mfpu=fpv4-sp-d16 -mfloat-abi=hard -specs=nosys.specs -specs=nano.specs -u _printf_float -u _scanf_float",
             "cStandard": "c11",
             "cppStandard": "c++14"
         },
