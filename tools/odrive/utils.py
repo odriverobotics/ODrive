@@ -72,8 +72,10 @@ def start_liveplotter(get_var_callback):
             fig.canvas.draw()
             fig.canvas.start_event_loop(1/plot_rate)
 
-    threading.Thread(target=fetch_data).start()
-    threading.Thread(target=plot_data).start()
+    threading.Thread(target=fetch_data, daemon=True).start()
+    threading.Thread(target=plot_data, daemon=True).start()
+
+    return cancellation_token;
     #plot_data()
 
 def print_drv_regs(name, motor):
@@ -142,7 +144,7 @@ def usb_burn_in_test(get_var_callback, cancellation_token):
                 continue
             if i % 1000 == 0:
                 print("read {} values".format(i))
-    threading.Thread(target=fetch_data).start()
+    threading.Thread(target=fetch_data, daemon=True).start()
 
 def setup_udev_rules(logger):
     if platform.system() != 'Linux':
@@ -151,8 +153,8 @@ def setup_udev_rules(logger):
         logger.warn("you should run this as root, otherwise it will probably not work")
     with open('/etc/udev/rules.d/50-odrive.rules', 'w') as file:
         file.write('SUBSYSTEM=="usb", ATTR{idVendor}=="1209", ATTR{idProduct}=="0d3[0-9]", MODE="0666"\n')
-    subprocess.run(["udevadm", "control", "--reload-rules"], check=True)
-    subprocess.run(["udevadm", "trigger"], check=True)
+    subprocess.check_call(["udevadm", "control", "--reload-rules"])
+    subprocess.check_call(["udevadm", "trigger"])
     logger.info('udev rules configured successfully')
 
 def yes_no_prompt(question, default=None):

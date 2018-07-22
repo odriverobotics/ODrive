@@ -123,6 +123,12 @@ bool Axis::do_updates() {
     return error_ == ERROR_NONE;
 }
 
+float Axis::get_temp() {
+    float adc = adc_measurements_[hw_config_.thermistor_adc_ch];
+    float normalized_voltage = adc / adc_full_scale;
+    return horner_fma(normalized_voltage, thermistor_poly_coeffs, thermistor_num_coeffs);
+}
+
 bool Axis::run_sensorless_spin_up() {
     // Early Spin-up: spiral up current
     float x = 0.0f;

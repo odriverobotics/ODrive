@@ -36,7 +36,7 @@ def get_version_from_git():
         print(ex)
         return "[unknown version]", 0, 0, 0, 1
 
-def get_version_str(git_only=False, is_post_release=False, bump_rev=False):
+def get_version_str(git_only=False, is_post_release=False, bump_rev=False, release_override=False):
     """
     Returns the versions of the tools
     If git_only is true, the version.txt file is ignored even
@@ -57,7 +57,7 @@ def get_version_str(git_only=False, is_post_release=False, bump_rev=False):
     version = '{}.{}.{}'.format(major, minor, revision)
     if is_post_release:
         version += ".post"
-    elif unreleased:
+    elif not release_override and unreleased:
         version += ".dev"
     return version
 
@@ -70,6 +70,9 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     git_name, major, minor, revision, unreleased = get_version_from_git()
+    print('Firmware version {}.{}.{}{} ({})'.format(
+        major, minor, revision, '-dev' if unreleased else '',
+        git_name))
     args.output.write('#define FW_VERSION "{}"\n'.format(git_name))
     args.output.write('#define FW_VERSION_MAJOR {}\n'.format(major))
     args.output.write('#define FW_VERSION_MINOR {}\n'.format(minor))

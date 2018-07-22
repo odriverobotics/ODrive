@@ -36,9 +36,6 @@ extern bool user_config_loaded_;
 extern uint64_t serial_number;
 extern char serial_number_str[13];
 
-#define ADC_CHANNEL_COUNT 16
-extern uint16_t adc_measurements_[ADC_CHANNEL_COUNT];
-
 typedef struct {
     bool fully_booted;
     uint32_t uptime; // [ms]

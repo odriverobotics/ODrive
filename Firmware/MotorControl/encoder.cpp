@@ -25,7 +25,7 @@ void Encoder::setup() {
 
 void Encoder::set_error(Encoder::Error_t error) {
     error_ |= error;
-    axis_->error_ |= Axis::ERROR_MOTOR_FAILED;
+    axis_->error_ |= Axis::ERROR_ENCODER_FAILED;
 }
 
 bool Encoder::do_checks(){
