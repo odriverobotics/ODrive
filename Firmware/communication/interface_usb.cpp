@@ -106,7 +106,8 @@ static void usb_server_thread(void * ctx) {
 
 // Called from CDC_Receive_FS callback function, this allows the communication
 // thread to handle the incoming data
-// NOTE: 
+// NOTE: We're temporarily(?) restricting communication to one endpoint or the other
+// See issue #202 https://github.com/madcowswe/ODrive/issues/202
 void usb_process_packet(uint8_t *buf, uint32_t len, uint8_t endpoint_pair) {
     if (endpoint_pair == ODRIVE_OUT_EP && board_config.enable_ascii_protocol_on_usb == false) {
         usb_buf = buf;
