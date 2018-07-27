@@ -8,6 +8,8 @@
 #include "interface_can.hpp"
 #include "interface_i2c.h"
 
+#include "fibre/protocol.hpp"
+
 #include "odrive_main.h"
 #include "freertos_vars.h"
 #include "utils.h"
@@ -117,8 +119,11 @@ public:
 // how much headroom you have.
 static inline auto make_obj_tree() {
     return make_protocol_member_list(
-        make_protocol_ro_property("vbus_voltage", &vbus_voltage),
-        make_protocol_ro_property("serial_number", &serial_number),
+        // NOTE: First item is publicly accessible - as in the CRC signature is not required, same as endpoint 0
+        make_protocol_ro_property("json_crc", &json_crc_),
+        // NOTE: Ideally we don't change the order of these properties.  Any new properties
+        // should be appended rather than inserted.  The goal here is to establish a contract
+        // that the client can rely on to adapt its behavior based on versions
         make_protocol_ro_property("hw_version_major", &hw_version_major),
         make_protocol_ro_property("hw_version_minor", &hw_version_minor),
         make_protocol_ro_property("hw_version_variant", &hw_version_variant),
@@ -126,6 +131,9 @@ static inline auto make_obj_tree() {
         make_protocol_ro_property("fw_version_minor", &fw_version_minor),
         make_protocol_ro_property("fw_version_revision", &fw_version_revision),
         make_protocol_ro_property("fw_version_unreleased", &fw_version_unreleased),
+        // Going forward, it doesn't much matter what order things are in
+        make_protocol_ro_property("vbus_voltage", &vbus_voltage),
+        make_protocol_ro_property("serial_number", &serial_number),
         make_protocol_ro_property("user_config_loaded", const_cast<const bool *>(&user_config_loaded_)),
         make_protocol_ro_property("brake_resistor_armed", &brake_resistor_armed),
         make_protocol_object("system_stats",

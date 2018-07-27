@@ -183,7 +183,8 @@ int BidirectionalPacketBasedChannel::process_packet(const uint8_t* buffer, size_
         // CRC over the entire JSON descriptor tree (this may change in future versions).
         uint16_t expected_trailer = endpoint_id ? json_crc_ : PROTOCOL_VERSION;
         uint16_t actual_trailer = buffer[length - 2] | (buffer[length - 1] << 8);
-        if (expected_trailer != actual_trailer) {
+        // Endpoint 1 is a special case in that it should expose the CRC publicly, no matter the trailer
+        if (expected_trailer != actual_trailer && endpoint_id != 1) {
             LOG_FIBRE("trailer mismatch for endpoint %d: expected %04x, got %04x\r\n", endpoint_id, expected_trailer, actual_trailer);
             return -1;
         }
