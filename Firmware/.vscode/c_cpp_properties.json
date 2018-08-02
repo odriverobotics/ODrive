@@ -17,8 +17,8 @@
                 "${workspaceRoot}/Board/v3/Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS",
                 "${workspaceRoot}/Board/v3/Middlewares/Third_Party/FreeRTOS/Source/include",
                 "${workspaceRoot}/Board/v3/Middlewares/Third_Party/FreeRTOS/Source/portable/GCC/ARM_CM4F",
-                "%ARM_GCC_ROOT%/arm-none-eabi/include/**",
-                "%ARM_GCC_ROOT%/lib/gcc/arm-none-eabi/**"
+                "${ARM_GCC_ROOT}/arm-none-eabi/include/**",
+                "${ARM_GCC_ROOT}/lib/gcc/arm-none-eabi/**"
             ],
             "defines": [
                 "STM32F405xx",
@@ -32,11 +32,11 @@
             "browse": {
                 "path": [
                     "${workspaceRoot}",
-                    "%ARM_GCC_ROOT%"
+                    "${ARM_GCC_ROOT}"
                 ],
                 "limitSymbolsToIncludedHeaders": true
             },
-            "compilerPath": "%ARM_GCC_ROOT%/bin/arm-none-eabi-gcc.exe -mthumb -mcpu=cortex-m4 -mfpu=fpv4-sp-d16 -mfloat-abi=hard -specs=nosys.specs -specs=nano.specs -u _printf_float -u _scanf_float",
+            "compilerPath": "${ARM_GCC_ROOT}/bin/arm-none-eabi-gcc.exe -mthumb -mcpu=cortex-m4 -mfpu=fpv4-sp-d16 -mfloat-abi=hard -specs=nosys.specs -specs=nano.specs -u _printf_float -u _scanf_float",
             "cStandard": "c11",
             "cppStandard": "c++14"
         },
@@ -100,8 +100,8 @@
                 "${workspaceRoot}/Board/v3/Drivers/STM32F4xx_HAL_Driver/Inc/Legacy",
                 "${workspaceRoot}/Board/v3/Drivers/CMSIS/Device/ST/STM32F4xx/Include",
                 "${workspaceRoot}/Board/v3/Drivers/CMSIS/Include",
-                "$ARM_GCC_ROOT/arm-none-eabi/include/**",
-                "$ARM_GCC_ROOT/lib/gcc/arm-none-eabi/**"
+                "${ARM_GCC_ROOT}/arm-none-eabi/include/**",
+                "${ARM_GCC_ROOT}/lib/gcc/arm-none-eabi/**"
             ],
             "defines": [
                 "STM32F405xx",
@@ -117,7 +117,7 @@
             "browse": {
                 "path": [
                     "${workspaceRoot}",
-                    "$ARM_GCC_ROOT"
+                    "${ARM_GCC_ROOT}"
                 ],
                 "limitSymbolsToIncludedHeaders": true,
                 "databaseFilename": ""
