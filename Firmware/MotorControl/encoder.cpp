@@ -7,14 +7,6 @@ Encoder::Encoder(const EncoderHardwareConfig_t& hw_config,
         hw_config_(hw_config),
         config_(config)
 {
-    // Calculate encoder pll gains
-    // This calculation is currently identical to the PLL in SensorlessEstimator
-    float pll_bandwidth = 1000.0f;  // [rad/s]
-    pll_kp_ = 2.0f * pll_bandwidth;
-
-    // Critically damped
-    pll_ki_ = 0.25f * (pll_kp_ * pll_kp_);
-
     if (config.pre_calibrated && (config.mode == Encoder::MODE_HALL)) {
         offset_ = config.offset;
         is_ready_ = true;
@@ -137,6 +129,10 @@ bool Encoder::run_offset_calibration() {
     bool old_use_index = config_.use_index;
     config_.use_index = false;
 
+    // We use shadow_count_ to do the calibration, but the offset is used by count_in_cpr_
+    // Therefore we have to sync them for calibration
+    shadow_count_ = count_in_cpr_;
+
     float voltage_magnitude;
     if (axis_->motor_.config_.motor_type == MOTOR_TYPE_HIGH_CURRENT)
         voltage_magnitude = axis_->motor_.config_.calibration_current * axis_->motor_.config_.phase_resistance;
@@ -237,8 +233,12 @@ static bool decode_hall(uint8_t hall_state, int32_t* hall_cnt) {
 }
 
 bool Encoder::update() {
+    // Calculate encoder pll gains
+    float pll_kp = 2.0f * config_.bandwidth;  // basic conversion to discrete time
+    float pll_ki = 0.25f * (pll_kp * pll_kp); // Critically damped
+
     // Check that we don't get problems with discrete time approximation
-    if (!(current_meas_period * pll_kp_ < 1.0f)) {
+    if (!(current_meas_period * pll_kp < 1.0f)) {
         set_error(ERROR_UNSTABLE_GAIN);
         return false;
     }
@@ -285,12 +285,12 @@ bool Encoder::update() {
     float delta_pos_cpr = (float)(count_in_cpr_ - (int32_t)floorf(pos_cpr_));
     delta_pos_cpr = wrap_pm(delta_pos_cpr, 0.5f * (float)(config_.cpr));
     // pll feedback
-    pos_estimate_ += current_meas_period * pll_kp_ * delta_pos;
-    pos_cpr_      += current_meas_period * pll_kp_ * delta_pos_cpr;
+    pos_estimate_ += current_meas_period * pll_kp * delta_pos;
+    pos_cpr_      += current_meas_period * pll_kp * delta_pos_cpr;
     pos_cpr_ = fmodf_pos(pos_cpr_, (float)(config_.cpr));
-    pll_vel_      += current_meas_period * pll_ki_ * delta_pos_cpr;
+    pll_vel_      += current_meas_period * pll_ki * delta_pos_cpr;
     bool snap_to_zero_vel = false;
-    if (fabsf(pll_vel_) < 0.5f * current_meas_period * pll_ki_) {
+    if (fabsf(pll_vel_) < 0.5f * current_meas_period * pll_ki) {
         pll_vel_ = 0.0f; //align delta-sigma on zero to prevent jitter
         snap_to_zero_vel = true;
     }

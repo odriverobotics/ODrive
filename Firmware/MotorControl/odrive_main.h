@@ -2,6 +2,7 @@
 #define __ODRIVE_MAIN_H
 
 #ifdef __cplusplus
+#include <fibre/protocol.hpp>
 extern "C" {
 #endif
 
@@ -35,9 +36,6 @@ extern bool user_config_loaded_;
 extern uint64_t serial_number;
 extern char serial_number_str[13];
 
-#define ADC_CHANNEL_COUNT 16
-extern uint16_t adc_measurements_[ADC_CHANNEL_COUNT];
-
 typedef struct {
     bool fully_booted;
     uint32_t uptime; // [ms]
@@ -55,6 +53,12 @@ extern SystemStats_t system_stats_;
 #ifdef __cplusplus
 }
 
+struct PWMMapping_t {
+    endpoint_ref_t endpoint = { 0 };
+    float min = 0;
+    float max = 0;
+};
+
 // @brief general user configurable board configuration
 struct BoardConfig_t {
     bool enable_uart = true;
@@ -70,6 +74,7 @@ struct BoardConfig_t {
                                                                         //<! This protects against cases in which the power supply fails to dissipate
                                                                         //<! the brake power if the brake resistor is disabled.
                                                                         //<! The default is 26V for the 24V board version and 52V for the 48V board version.
+    PWMMapping_t pwm_mappings[GPIO_COUNT];
 };
 extern BoardConfig_t board_config;
 extern bool user_config_loaded_;
@@ -98,7 +103,6 @@ inline ENUMTYPE operator ~ (ENUMTYPE a) { return static_cast<ENUMTYPE>(~static_c
 
 
 // ODrive specific includes
-#include <fibre/protocol.hpp>
 #include <utils.h>
 #include <low_level.h>
 #include <encoder.hpp>

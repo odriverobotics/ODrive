@@ -1,6 +1,7 @@
 
 #include <utils.h>
 #include <math.h>
+#include <float.h>
 #include <cmsis_os.h>
 #include <stm32f4xx_hal.h>
 
@@ -133,12 +134,13 @@ float fast_atan2(float y, float x) {
     // a := min (|x|, |y|) / max (|x|, |y|)
     float abs_y = fabsf(y);
     float abs_x = fabsf(x);
-    float a = MACRO_MIN(abs_x, abs_y) / MACRO_MAX(abs_x, abs_y);
-    //s := a * a
+    // inject FLT_MIN in denominator to avoid division by zero
+    float a = MACRO_MIN(abs_x, abs_y) / (MACRO_MAX(abs_x, abs_y) + FLT_MIN);
+    // s := a * a
     float s = a * a;
-    //r := ((-0.0464964749 * s + 0.15931422) * s - 0.327622764) * s * a + a
+    // r := ((-0.0464964749 * s + 0.15931422) * s - 0.327622764) * s * a + a
     float r = ((-0.0464964749f * s + 0.15931422f) * s - 0.327622764f) * s * a + a;
-    //if |y| > |x| then r := 1.57079637 - r
+    // if |y| > |x| then r := 1.57079637 - r
     if (abs_y > abs_x)
         r = 1.57079637f - r;
     // if x < 0 then r := 3.14159274 - r
@@ -149,6 +151,16 @@ float fast_atan2(float y, float x) {
         r = -r;
 
     return r;
+}
+
+// Evaluate polynomials using Fused Multiply Add intrisic instruction.
+// coeffs[0] is highest order, as per numpy.polyfit
+// p(x) = coeffs[0] * x^deg + ... + coeffs[deg], for some degree "deg"
+float horner_fma(float x, const float *coeffs, size_t count) {
+    float result = 0.0f;
+    for (int idx = 0; idx < count; ++idx)
+        result = fmaf(result, x, coeffs[idx]);
+    return result;
 }
 
 // Modulo (as opposed to remainder), per https://stackoverflow.com/a/19288271
