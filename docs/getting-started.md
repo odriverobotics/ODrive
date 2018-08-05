@@ -153,8 +153,8 @@ You can read more about the odrivetool [here](odrivetool.md).
 
 ## Configure M0
 
-<div class="alert">Read this section carefully, else you risk breaking something.</div>
-<div class="note">There is a [separate guide](hoverboard.md) specifically for hoverboard motors.</div>
+<div class="alert" markdown="span">Read this section carefully, else you risk breaking something.</div>
+<div class="note" markdown="span">There is a [separate guide](hoverboard.md) specifically for hoverboard motors.</div>
 
 ### 1. Set the limits:
 <details><summary markdown="span">Wait, how do I set these?</summary><div markdown="block">
