@@ -74,7 +74,6 @@ Most instructions in this guide refer to a utility called `odrivetool`, so you s
 2. Launch the command prompt.
   * __Anaconda__: In the start menu, type `Anaconda Prompt` <kbd>Enter</kbd>
   * __Standalone Python__: In the start menu, type `cmd` <kbd>Enter</kbd>
-3. Install dependencies by typing `pip install pywin32==222` <kbd>Enter</kbd>
 3. Install the ODrive tools by typing `pip install odrive` <kbd>Enter</kbd>
 4. Plug in a USB cable into the microUSB connector on ODrive, and connect it to your PC.
 5. Use the [Zadig](http://zadig.akeo.ie/) utility to set ODrive driver to libusb-win32.
@@ -216,8 +215,8 @@ Let's get motor 0 up and running. The procedure for motor 1 is exactly the same,
 
   **Note**: the rotor must be allowed to rotate without any biased load during startup. That means mass and weak friction loads are fine, but gravity or spring loads are not okay. Also note that in the video, the motors spin after initalisation, but in the current software the default behaviour is not like that.
 
-  <details><summary markdown="span">My motor doesn't beep or doesn't turn</summary><div markdown="block">
-  Make sure the motor wires are connected firmly. Check the value of `odrv0.axis0.error` and then refer to the [error code documentation](troubleshooting.md#error-codes) for details.
+  <details><summary markdown="span">Help, something isn't working!</summary><div markdown="block">
+  Check the encoder wiring and that the encoder is firmly connected to the motor. Check the value of `hex(odrv0.axis0.error)` and then refer to the [error code documentation](troubleshooting.md#error-codes) for details.
 
   Once you have understood the error and fixed its cause, you may clear the error state (`odrv0.axis0.error = 0` <kbd>Enter</kbd>) and retry. You may also need to clear the error state of other subcomponents (e.g. `odrv0.axis0.motor.error`).
   </div></details>

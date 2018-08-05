@@ -63,7 +63,7 @@ This protocol is what the ODrive Tool uses to talk to the ODrive. If you have a 
 
 #### Python
 
-The ODrive Tool you installed as part of the [Getting Started guide](getting-started#downloading-and-installing-tools) comes with a library that you can use to easily control the ODrive from Python.
+The ODrive Tool you installed as part of the [Getting Started guide](getting-started.md#downloading-and-installing-tools) comes with a library that you can use to easily control the ODrive from Python.
 
 Assuming you already installed the odrive library (`pip install odrive`), the simplest program to control the ODrive is this:
 
