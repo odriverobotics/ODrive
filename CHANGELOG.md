@@ -1,7 +1,8 @@
 # Unreleased Features
 Please add a note of your changes below this heading if you make a Pull Request.
 
-## UNRELEASED
+# Releases
+## [0.4.2] - 2018-07-04
 ### Added
 * Hall sensor feedback
 * Configurable RC PWM input
@@ -11,7 +12,6 @@ Please add a note of your changes below this heading if you make a Pull Request.
   * `motor.config.current_control_bandwidth` and `motor.set_current_control_bandwidth`. Latter required to invoke gain recalculation.
   * `encoder.config.bandwidth`
 
-# Releases
 ## [0.4.1] - 2018-07-01
 ### Fixed
 * Encoder errors would show up as Axis error `ERROR_MOTOR_FAILED` instead of `ERROR_ENCODER_FAILED`.
