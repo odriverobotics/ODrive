@@ -17,20 +17,22 @@ def trapPlan(Xf, Xi, Vf, Vi, Af, Ai, Vmax, Amax, Dmax, dT=0.001):
 
     dX = Xf - Xi    # Distance to travel
     if Vf == 0:
-        dXmin = Ta*(Vr + Vi)/2 + Td*(Vr)/2
+        dXmin = Ta*(Vr + Vi)/2 + Td*(Vr)/2  # Basic wedge profile
     elif np.sign(Vf) == np.sign(Vr):
-        dXmin = Ta*(Vr + Vi)/2 + Td*(Vr-Vf)/2 + Td*Vf
+        dXmin = Ta*(Vr + Vi)/2 + Td*(Vr - Vf)/2 + Td*Vf   # Wedge profile with an unfinished end
     else:
-        dXmin = Ta*(Vr + Vi)/2 + Td*(Vr - s*Vf)/2
+        dXmin = Ta*(Vr + Vi)/2 + Td*(Vr - s*Vf)/2   # Wedge profile that crosses Y axis on decel
 
-    if s*dXmin > s*dX:
-        Vr = s*math.sqrt(-1*Ar*(Vf*Vf-2*Dr*dX))/math.sqrt(Dr-Ar)
+    if s*dXmin > s*dX:  # Short move handling
+        Vr = s*math.sqrt(-1*Ar*(Vf*Vf-2*Dr*dX))/math.sqrt(Dr-Ar)    # Modified from paper to handle non-zero Vf
         Ta = max(0, (Vr - Vi)/Ar)
         Tv = 0
         Td = max(0, (Vf - Vr)/Dr)
     else:
-        Tv = (dX - dXmin)/Vr
+        Tv = (dX - dXmin)/Vr    # non-short move, coast time at constant v
     
+    ## We've computed Ta, Tv, Td, and Vr.  Time to produce a trajectory
+    # Create the time series and preallocate the position, velocity, and acceleration arrays
     t_traj = np.arange(0, Ta+Tv+Td, dT)
     y = [None]*len(t_traj)
     yd = [None]*len(t_traj)
@@ -38,22 +40,26 @@ def trapPlan(Xf, Xi, Vf, Vi, Af, Ai, Vmax, Amax, Dmax, dT=0.001):
 
     for i in range(len(t_traj)):
         t = t_traj[i]
-        if(t <= 0):
+        if(t <= 0): # Initial conditions
             y[i] = Xi
             yd[i] = Vi
             ydd[i] = Ai
-        elif(t <= Ta):
+        elif(t <= Ta):  # Acceleration
             y[i] = y[i-1] + yd[i-1] * dT + (0.5*ydd[i-1]*dT*dT)
             yd[i] = yd[i-1] + ydd[i-1]*dT
             ydd[i] = Ar
-        elif(t <= Ta+Tv):
+        elif(t <= Ta+Tv):   # Coasting
             y[i] = y[i-1] + yd[i-1] * dT
             yd[i] = yd[i-1]
             ydd[i] = 0
-        elif(t <= Ta+Tv+Td):
+        elif(t < Ta+Tv+Td): # Deceleration
             y[i] = y[i-1] + yd[i-1] * dT + (0.5*ydd[i-1]*dT*dT)
             yd[i] = yd[i-1] + ydd[i-1]*dT
             ydd[i] = Dr
+        else:   # Final conditions
+            y[i] = Xf
+            yd[i] = Vf
+            ydd[i] = Af
     
     return (y, yd, ydd)
 
