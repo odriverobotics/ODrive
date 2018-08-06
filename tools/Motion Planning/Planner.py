@@ -52,26 +52,24 @@ def trapPlan(Xf, Xi, Vf, Vi, Af, Ai, Vmax, Amax, Dmax, dT=0.001):
             yd[i] = Vi
             ydd[i] = Ai
         elif(t <= Ta):  # Acceleration
-            y[i] = y[i-1] + yd[i-1] * dT + (0.5*ydd[i-1]*dT*dT)
-            yd[i] = yd[i-1] + ydd[i-1]*dT
+            y[i] = (Ar * (t*t)/2) + (Vi * t) + Xi
+            yd[i] = (Ar * t) + Vi
             ydd[i] = Ar
         elif(t <= Ta+Tv):   # Coasting
-            y[i] = y[i-1] + yd[i-1] * dT
-            yd[i] = yd[i-1]
+            y[i] = ((Ar*Ta*Ta) / 2) + (Vi * Ta) + (Vr * (t - Ta)) + Xi
+            yd[i] = Ar*Ta + Vi
             ydd[i] = 0
-        elif(t < Ta+Tv+Td): # Deceleration
-            y[i] = y[i-1] + yd[i-1] * dT + (0.5*ydd[i-1]*dT*dT)
-            yd[i] = yd[i-1] + ydd[i-1]*dT
+        elif(t <= Ta+Tv+Td): # Deceleration
+            y[i] = ((Ar*Ta*Ta) / 2) + (Vi * Ta) + (Vr * (t - Ta)) + Xi + Dr*(t - Ta - Tv)*(t - Ta - Tv)/2
+            yd[i] = Ar*Ta + Vi + Dr*(t - Ta - Tv)
             ydd[i] = Dr
-        else:   # Final conditions
-            y[i] = Xf
-            yd[i] = Vf
-            ydd[i] = Af
+
     
     return (y, yd, ydd, t_traj)
 
 
-(Y, Yd, Ydd, t) = trapPlan(10, 0, 0, 0, 0, 0, 10, 20, 20)
+(Y, Yd, Ydd, t) = trapPlan(10, 0, 0, 4, 0, 0, 2, 5, 5)
+print("Y: ",Y[len(Y)-1],"\nYd: ",Yd[len(Yd)-1])
 plt.plot(t, Y)
 plt.plot(t, Yd)
 plt.plot(t, Ydd)
