@@ -2,7 +2,7 @@
 Please add a note of your changes below this heading if you make a Pull Request.
 
 # Releases
-## [0.4.2] - 2018-07-04
+## [0.4.2] - 2018-08-04
 ### Added
 * Hall sensor feedback
 * Configurable RC PWM input
