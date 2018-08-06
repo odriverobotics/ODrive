@@ -602,7 +602,8 @@ void update_brake_current() {
         if (low_off < 0) low_off = 0;
         safety_critical_apply_brake_resistor_timings(low_off, high_on);
     } else {
-        safety_critical_disarm_brake_resistor();
+        //shuts off all motors AND brake resistor, sets error code on all motors.
+        low_level_fault(Motor::ERROR_BRAKE_CURRENT_OUT_OF_RANGE);
     }
 }
 
