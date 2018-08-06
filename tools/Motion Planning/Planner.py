@@ -3,7 +3,8 @@ import math
 
 def trapPlan(Xf, Xi, Vf, Vi, Af, Ai, Vmax, Amax, Dmax, dT=0.001):
 
-    s = np.sign(Xf - Xi)   # Sign 
+    dX = Xf - Xi    # Distance to travel
+    s = np.sign(dX)   # Sign 
 
     Ar = s*Amax     # Maximum Acceleration (signed)
     Dr = -s*Dmax    # Maximum Deceleration (signed)
@@ -15,7 +16,9 @@ def trapPlan(Xf, Xi, Vf, Vi, Af, Ai, Vmax, Amax, Dmax, dT=0.001):
     Ta = (Vr - Vi)/Ar   # Acceleration Time
     Td = (Vf - Vr)/Dr   # Deceleration Time
 
-    dX = Xf - Xi    # Distance to travel
+    
+
+    ## Peak velocity handling
     if Vf == 0:
         dXmin = Ta*(Vr + Vi)/2 + Td*(Vr)/2  # Basic wedge profile
     elif np.sign(Vf) == np.sign(Vr):
@@ -23,7 +26,8 @@ def trapPlan(Xf, Xi, Vf, Vi, Af, Ai, Vmax, Amax, Dmax, dT=0.001):
     else:
         dXmin = Ta*(Vr + Vi)/2 + Td*(Vr - s*Vf)/2   # Wedge profile that crosses Y axis on decel
 
-    if s*dXmin > s*dX:  # Short move handling
+    ## Short move handling
+    if s*dXmin > s*dX:  
         Vr = s*math.sqrt(-1*Ar*(Vf*Vf-2*Dr*dX))/math.sqrt(Dr-Ar)    # Modified from paper to handle non-zero Vf
         Ta = max(0, (Vr - Vi)/Ar)
         Tv = 0
@@ -38,6 +42,8 @@ def trapPlan(Xf, Xi, Vf, Vi, Af, Ai, Vmax, Amax, Dmax, dT=0.001):
     yd = [None]*len(t_traj)
     ydd = [None]*len(t_traj)
 
+    # We only know acceleration (Ar and Dr), so we integrate to create
+    # the velocity and position curves
     for i in range(len(t_traj)):
         t = t_traj[i]
         if(t <= 0): # Initial conditions
