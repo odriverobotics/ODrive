@@ -1,5 +1,6 @@
 import numpy as np
 import math
+import matplotlib.pyplot as plt
 
 def trapPlan(Xf, Xi, Vf, Vi, Af, Ai, Vmax, Amax, Dmax, dT=0.001):
 
@@ -67,8 +68,11 @@ def trapPlan(Xf, Xi, Vf, Vi, Af, Ai, Vmax, Amax, Dmax, dT=0.001):
             yd[i] = Vf
             ydd[i] = Af
     
-    return (y, yd, ydd)
+    return (y, yd, ydd, t_traj)
 
 
-(Y, Yd, Ydd) = trapPlan(10, 0, 0, 0, 0, 0, 10, 20, 20)
-print(Y[len(Y)-1])
+(Y, Yd, Ydd, t) = trapPlan(10, 0, 0, 0, 0, 0, 10, 20, 20)
+plt.plot(t, Y)
+plt.plot(t, Yd)
+plt.plot(t, Ydd)
+plt.show()
