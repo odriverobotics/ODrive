@@ -55,6 +55,10 @@ float TrapezoidalTrajectory::planTrapezoidal(float Xf, float Xi,
     Vi_ = Vi;
     Ai_ = Ai;
 
+    Xf_ = Xf;
+    Vf_ = Vf;
+    Af_ = Af;
+
     Ar_ = Ar;
     Dr_ = Dr;
     Vr_ = Vr;
@@ -86,6 +90,10 @@ TrapezoidalTrajectory::TrajectoryStep_t TrapezoidalTrajectory::evalTrapTraj(floa
         trajStep.Y = yAccel_ + (Vr_ * (Tdc)) + Dr_*(Tdc*Tdc)/2.0f;
         trajStep.Yd = Vr_ + Dr_*Tdc;
         trajStep.Ydd = Dr_;       
+    } else {    // Ending conditions
+        trajStep.Y = Xf_;
+        trajStep.Yd = Vf_;
+        trajStep.Ydd = Af_;
     }
 
     return trajStep;
