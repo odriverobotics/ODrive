@@ -111,6 +111,7 @@ inline ENUMTYPE operator ~ (ENUMTYPE a) { return static_cast<ENUMTYPE>(~static_c
 #include <motor.hpp>
 #include <axis.hpp>
 #include <communication/communication.h>
+#include <trapTraj.hpp>
 
 #endif // __cplusplus
 
