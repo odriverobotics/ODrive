@@ -1,8 +1,9 @@
 import numpy as np
 import math
 import matplotlib.pyplot as plt
+import random
 
-def trapPlan(Xf, Xi, Vf, Vi, Af, Ai, Vmax, Amax, Dmax, dT=0.001):
+def trapPlan(Xf, Vf, Xi, Vi, Ai, Vmax, Amax, Dmax, dT=0.001):
 
     dX = Xf - Xi    # Distance to travel
     s = np.sign(dX)   # Sign 
@@ -17,19 +18,12 @@ def trapPlan(Xf, Xi, Vf, Vi, Af, Ai, Vmax, Amax, Dmax, dT=0.001):
     Ta = (Vr - Vi)/Ar   # Acceleration Time
     Td = (Vf - Vr)/Dr   # Deceleration Time
 
-    
-
     ## Peak velocity handling
-    if Vf == 0:
-        dXmin = Ta*(Vr + Vi)/2 + Td*(Vr)/2  # Basic wedge profile
-    elif np.sign(Vf) == np.sign(Vr):
-        dXmin = Ta*(Vr + Vi)/2 + Td*(Vr - Vf)/2 + Td*Vf   # Wedge profile with an unfinished end
-    else:
-        dXmin = Ta*(Vr + Vi)/2 + Td*(Vr - s*Vf)/2   # Wedge profile that crosses Y axis on decel
+    dXmin = Ta*(Vr + Vi)/2 + Td*(Vr + Vf)/2
 
     ## Short move handling
     if s*dXmin > s*dX:  
-        Vr = s*math.sqrt(-1*Ar*(Vf*Vf-2*Dr*dX))/math.sqrt(Dr-Ar)    # Modified from paper to handle non-zero Vf
+        Vr = s*math.sqrt(-1*Ar*(Vf*Vf-2*Dr*dX))*math.sqrt(Dr-Ar)/(Dr-Ar)    # Modified from paper to handle non-zero Vf
         Ta = max(0, (Vr - Vi)/Ar)
         Tv = 0
         Td = max(0, (Vf - Vr)/Dr)
@@ -67,14 +61,25 @@ def trapPlan(Xf, Xi, Vf, Vi, Af, Ai, Vmax, Amax, Dmax, dT=0.001):
             yd[i] = Vr + Dr*(t - Tav)
             ydd[i] = Dr
 
-
     return (y, yd, ydd, t_traj)
 
 
-(Y, Yd, Ydd, t) = trapPlan(10, 0, 0, 4, 0, 0, 2, 5, 5)
-print("Y: ",Y[len(Y)-1])
-print("Yd: ",Yd[len(Yd)-1])
-plt.plot(t, Y)
-plt.plot(t, Yd)
-plt.plot(t, Ydd)
-plt.show()
+(Y, Yd, Ydd, t) = trapPlan(0.74, 1.797, 0, 0, 0, 15.122, 22.022, 22.022)
+# random.seed()
+# for x in range(100):
+
+#     Vmax = random.uniform(0.1, 20)
+#     Amax = random.uniform(0.1, 40)
+
+#     Xf = random.uniform(-100.0, 100.0)
+#     Vf = random.uniform(-Vmax+0.001, Vmax-0.001)
+
+#     print(round(Xf, 3), round(Vf, 3), round(Vmax, 3), round(Amax, 3))
+#     (Y, Yd, Ydd, t) = trapPlan(Xf, Vf, 0, 0, 0, Vmax, Amax, Amax)
+    
+    # print(Xf-Y[-1], Vf-Yd[-1])
+
+    # plt.plot(t, Y)
+    # plt.plot(t, Yd)
+    # plt.plot(t, Ydd)
+    # plt.show()
