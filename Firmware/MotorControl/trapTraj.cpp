@@ -87,4 +87,6 @@ TrapezoidalTrajectory::TrajectoryStep_t TrapezoidalTrajectory::evalTrapTraj(floa
         trajStep.Yd = Vr_ + Dr_*Tdc;
         trajStep.Ydd = Dr_;       
     }
+
+    return trajStep;
 }
