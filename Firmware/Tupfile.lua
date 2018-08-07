@@ -156,6 +156,7 @@ build{
         'MotorControl/controller.cpp',
         'MotorControl/sensorless_estimator.cpp',
         'MotorControl/main.cpp',
+        'MotorControl/trapTraj.cpp',
         'communication/communication.cpp',
         'communication/ascii_protocol.cpp',
         'communication/interface_uart.cpp',

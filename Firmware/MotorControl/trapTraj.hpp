@@ -37,4 +37,4 @@ public:
     TrajectoryStep_t evalTrapTraj(float t);
 
     ~TrapezoidalTrajectory();
-}
+};
