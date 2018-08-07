@@ -10,6 +10,7 @@ see protocol.md for the protocol specification
 
 #include <functional>
 #include <limits>
+#include <cmath>
 //#include <stdint.h>
 #include <string.h>
 #include "crc.hpp"
@@ -74,7 +75,15 @@ constexpr uint16_t RX_BUF_SIZE = 128; // larger values than 128 have currently n
 // Maximum time we allocate for processing and responding to a request
 constexpr uint32_t PROTOCOL_SERVER_TIMEOUT_MS = 10;
 
-template<typename T>
+
+typedef struct {
+    uint16_t json_crc;
+    uint16_t node_id;
+    uint16_t endpoint_id;
+} endpoint_ref_t;
+
+
+template<typename T, typename = typename std::enable_if_t<!std::is_const<T>::value>>
 inline size_t write_le(T value, uint8_t* buffer);
 
 template<typename T>
@@ -136,6 +145,12 @@ inline size_t write_le<float>(float value, uint8_t* buffer) {
     static_assert(std::numeric_limits<float>::is_iec559, "IEEE 754 floating point expected");
     const uint32_t * value_as_uint32 = reinterpret_cast<const uint32_t*>(&value);
     return write_le<uint32_t>(*value_as_uint32, buffer);
+}
+
+template<typename T>
+typename std::enable_if_t<std::is_const<T>::value, size_t>
+write_le(T value, uint8_t* buffer) {
+    return write_le<std::remove_const_t<T>>(value, buffer);
 }
 
 template<>
@@ -417,7 +432,29 @@ typedef std::function<void(void* ctx, const uint8_t* input, size_t input_length,
 
 
 template<typename T>
-void default_readwrite_endpoint_handler(const T* value, const uint8_t* input, size_t input_length, StreamSink* output) {
+void default_readwrite_endpoint_handler(endpoint_ref_t* value, const uint8_t* input, size_t input_length, StreamSink* output) {
+    constexpr size_t size = sizeof(value->endpoint_id) + sizeof(value->json_crc);
+    if (output) {
+        // TODO: make buffer size dependent on the type
+        uint8_t buffer[size];
+        size_t cnt = write_le<decltype(value->endpoint_id)>(value->endpoint_id, buffer);
+        cnt += write_le<decltype(value->json_crc)>(value->json_crc, buffer + cnt);
+        if (cnt <= output->get_free_space())
+            output->process_bytes(buffer, cnt, nullptr);
+    }
+    
+    // If a new value was passed, call the corresponding little endian deserialization function
+    if (input_length >= size) {
+        read_le<decltype(value->endpoint_id)>(&value->endpoint_id, input);
+        read_le<decltype(value->json_crc)>(&value->json_crc, input + 2);
+    }
+}
+
+
+// @brief Default endpoint handler for const types
+template<typename T>
+std::enable_if_t<!std::is_same<T, endpoint_ref_t>::value && std::is_const<T>::value>
+default_readwrite_endpoint_handler(T* value, const uint8_t* input, size_t input_length, StreamSink* output) {
     // If the old value was requested, call the corresponding little endian serialization function
     if (output) {
         // TODO: make buffer size dependent on the type
@@ -428,10 +465,12 @@ void default_readwrite_endpoint_handler(const T* value, const uint8_t* input, si
     }
 }
 
+// @brief Default endpoint handler for non-const types
 template<typename T>
-void default_readwrite_endpoint_handler(T* value, const uint8_t* input, size_t input_length, StreamSink* output) {
+std::enable_if_t<!std::is_same<T, endpoint_ref_t>::value && !std::is_const<T>::value>
+default_readwrite_endpoint_handler(T* value, const uint8_t* input, size_t input_length, StreamSink* output) {
     // Read the endpoint value into output
-    default_readwrite_endpoint_handler<T>(const_cast<const T*>(value), input, input_length, output);
+    default_readwrite_endpoint_handler<const T>(const_cast<const T*>(value), input, input_length, output);
     
     // If a new value was passed, call the corresponding little endian deserialization function
     uint8_t buffer[sizeof(T)] = { 0 }; // TODO: make buffer size dependent on the type
@@ -500,13 +539,18 @@ template<>
 inline constexpr const char* get_default_json_modifier<bool>() {
     return "\"type\":\"bool\",\"access\":\"rw\"";
 }
+template<>
+inline constexpr const char* get_default_json_modifier<endpoint_ref_t>() {
+    return "\"type\":\"endpoint_ref\",\"access\":\"rw\"";
+}
 
 class Endpoint {
 public:
     //const char* const name_;
     virtual void handle(const uint8_t* input, size_t input_length, StreamSink* output) = 0;
-    virtual bool get_string(char * output, size_t length) { return false; };
+    virtual bool get_string(char * output, size_t length) { return false; }
     virtual bool set_string(char * buffer, size_t length) { return false; }
+    virtual bool set_from_float(float value) { return false; }
 };
 
 static inline int write_string(const char* str, StreamSink* output) {
@@ -719,6 +763,41 @@ ProtocolObject<TMembers...> make_protocol_object(const char * name, TMembers&&..
     return ProtocolObject<TMembers...>(name, std::forward<TMembers>(member_list)...);
 }
 
+//template<typename T, typename = typename std>
+//bool set_from_float_ex(float value, T* property) {
+//    return false;
+//}
+
+namespace conversion {
+//template<typename T>
+template<typename T>
+bool set_from_float_ex(float value, float* property, int) {
+    return *property = value, true;
+}
+template<typename T>
+bool set_from_float_ex(float value, bool* property, int) {
+    return *property = (value >= 0.0f), true;
+}
+template<typename T, typename = std::enable_if_t<std::is_integral<T>::value && !std::is_const<T>::value>>
+bool set_from_float_ex(float value, T* property, int) {
+    return *property = static_cast<T>(std::round(value)), true;
+}
+template<typename T>
+bool set_from_float_ex(float value, T* property, ...) {
+    return false;
+}
+template<typename T>
+bool set_from_float(float value, T* property) {
+    return set_from_float_ex<T>(value, property, 0);
+}
+}
+
+//template<typename T>
+//bool set_from_float_ex<>(float value, T* property) {
+//    return false;
+//}
+
+
 template<typename TProperty>
 class ProtocolProperty : public Endpoint {
 public:
@@ -793,12 +872,16 @@ public:
         return from_string(buffer, length, property_, 0);
     }
 
+    bool set_from_float(float value) final {
+        return conversion::set_from_float(value, property_);
+    }
+
     void register_endpoints(Endpoint** list, size_t id, size_t length) {
         if (id < length)
             list[id] = this;
     }
     void handle(const uint8_t* input, size_t input_length, StreamSink* output) final {
-        default_readwrite_endpoint_handler(property_, input, input_length, output);
+        default_readwrite_endpoint_handler<TProperty>(property_, input, input_length, output);
     }
     /*void handle(const uint8_t* input, size_t input_length, StreamSink* output) {
         handle(input, input_length, output);
@@ -1050,6 +1133,9 @@ extern size_t n_endpoints_;
 extern uint16_t json_crc_;
 extern JSONDescriptorEndpoint json_file_endpoint_;
 extern EndpointProvider* application_endpoints_;
+
+bool is_endpoint_ref_valid(endpoint_ref_t endpoint_ref);
+Endpoint* get_endpoint(endpoint_ref_t endpoint_ref);
 
 // @brief Registers the specified application object list using the provided endpoint table.
 // This function should only be called once during the lifetime of the application. TODO: fix this.

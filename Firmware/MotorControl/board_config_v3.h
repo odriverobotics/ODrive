@@ -25,6 +25,7 @@ typedef struct {
     uint16_t step_pin;
     GPIO_TypeDef* dir_port;
     uint16_t dir_pin;
+    size_t thermistor_adc_ch;
     osPriority thread_priority;
 } AxisHardwareConfig_t;
 
@@ -61,15 +62,23 @@ typedef struct {
 } BoardHardwareConfig_t;
 
 extern const BoardHardwareConfig_t hw_configs[2];
+extern const float thermistor_poly_coeffs[];
+extern const size_t thermistor_num_coeffs;
 
 //TODO stick this in a C file
 #ifdef __MAIN_CPP__
+const float thermistor_poly_coeffs[] =
+    {363.0172658f, -459.19773008f, 308.29273921f, -28.12731452f};
+const size_t thermistor_num_coeffs = sizeof(thermistor_poly_coeffs)/sizeof(thermistor_poly_coeffs[1]);
+
 const BoardHardwareConfig_t hw_configs[2] = { {
+    //M0
     .axis_config = {
         .step_port = GPIO_1_GPIO_Port,
         .step_pin = GPIO_1_Pin,
         .dir_port = GPIO_2_GPIO_Port,
         .dir_pin = GPIO_2_Pin,
+        .thermistor_adc_ch = 15,
         .thread_priority = (osPriority)(osPriorityHigh + (osPriority)1),
     },
     .encoder_config = {
@@ -99,6 +108,7 @@ const BoardHardwareConfig_t hw_configs[2] = { {
         .nFAULT_pin = nFAULT_Pin,
     }
 },{
+    //M1
     .axis_config = {
 #if HW_VERSION_MAJOR == 3 && HW_VERSION_MINOR >= 5
         .step_port = GPIO_7_GPIO_Port,
@@ -110,6 +120,11 @@ const BoardHardwareConfig_t hw_configs[2] = { {
         .step_pin = GPIO_3_Pin,
         .dir_port = GPIO_4_GPIO_Port,
         .dir_pin = GPIO_4_Pin,
+#endif
+#if HW_VERSION_MAJOR == 3 && HW_VERSION_MINOR >= 3
+        .thermistor_adc_ch = 4,
+#else
+        .thermistor_adc_ch = 1,
 #endif
         .thread_priority = osPriorityHigh,
     },

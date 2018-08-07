@@ -80,6 +80,12 @@ void GPIO_set_to_analog(GPIO_TypeDef* GPIO_port, uint16_t GPIO_pin);
 uint16_t get_gpio_pin_by_pin(uint16_t GPIO_pin);
 GPIO_TypeDef* get_gpio_port_by_pin(uint16_t GPIO_pin);
 
+#if HW_VERSION_MAJOR == 3 && HW_VERSION_MINOR <= 4
+#define GPIO_COUNT  5
+#else
+#define GPIO_COUNT  8
+#endif
+
 /* USER CODE END Prototypes */
 
 #ifdef __cplusplus

@@ -123,6 +123,12 @@ bool Axis::do_updates() {
     return error_ == ERROR_NONE;
 }
 
+float Axis::get_temp() {
+    float adc = adc_measurements_[hw_config_.thermistor_adc_ch];
+    float normalized_voltage = adc / adc_full_scale;
+    return horner_fma(normalized_voltage, thermistor_poly_coeffs, thermistor_num_coeffs);
+}
+
 bool Axis::run_sensorless_spin_up() {
     // Early Spin-up: spiral up current
     float x = 0.0f;
@@ -148,6 +154,11 @@ bool Axis::run_sensorless_spin_up() {
             return error_ |= ERROR_MOTOR_FAILED, false;
         return vel < config_.spin_up_target_vel;
     });
+
+    // call to controller.reset() that happend when arming means that vel_setpoint
+    // is zeroed. So we make the setpoint the spinup target for smooth transition.
+    controller_.vel_setpoint_ = config_.spin_up_target_vel;
+
     return error_ == ERROR_NONE;
 }
 

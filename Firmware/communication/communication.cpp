@@ -64,10 +64,20 @@ const uint8_t fw_version_revision = FW_VERSION_REVISION;
 const uint8_t fw_version_unreleased = FW_VERSION_UNRELEASED; // 0 for official releases, 1 otherwise
 
 osThreadId comm_thread;
+volatile bool endpoint_list_valid = false;
 
 static uint32_t test_property = 0;
 
 /* Private function prototypes -----------------------------------------------*/
+
+auto make_protocol_definitions(PWMMapping_t& mapping) {
+    return make_protocol_member_list(
+        make_protocol_property("endpoint", &mapping.endpoint),
+        make_protocol_property("min", &mapping.min),
+        make_protocol_property("max", &mapping.max)
+    );
+}
+
 /* Function implementations --------------------------------------------------*/
 
 void init_communication(void) {
@@ -76,6 +86,9 @@ void init_communication(void) {
     // Start command handling thread
     osThreadDef(task_cmd_parse, communication_task, osPriorityNormal, 0, 5000 /* in 32-bit words */); // TODO: fix stack issues
     comm_thread = osThreadCreate(osThread(task_cmd_parse), NULL);
+
+    while (!endpoint_list_valid)
+        osDelay(1);
 }
 
 
@@ -144,7 +157,13 @@ static inline auto make_obj_tree() {
             make_protocol_property("enable_i2c_instead_of_can" , &board_config.enable_i2c_instead_of_can), // requires a reboot
             make_protocol_property("enable_ascii_protocol_on_usb", &board_config.enable_ascii_protocol_on_usb),
             make_protocol_property("dc_bus_undervoltage_trip_level", &board_config.dc_bus_undervoltage_trip_level),
-            make_protocol_property("dc_bus_overvoltage_trip_level", &board_config.dc_bus_overvoltage_trip_level)
+            make_protocol_property("dc_bus_overvoltage_trip_level", &board_config.dc_bus_overvoltage_trip_level),
+#if HW_VERSION_MAJOR == 3 && HW_VERSION_MINOR >= 3
+            make_protocol_object("gpio1_pwm_mapping", make_protocol_definitions(board_config.pwm_mappings[0])),
+            make_protocol_object("gpio2_pwm_mapping", make_protocol_definitions(board_config.pwm_mappings[1])),
+            make_protocol_object("gpio3_pwm_mapping", make_protocol_definitions(board_config.pwm_mappings[2])),
+#endif
+            make_protocol_object("gpio4_pwm_mapping", make_protocol_definitions(board_config.pwm_mappings[3]))
         ),
         make_protocol_object("axis0", axes[0]->make_protocol_definitions()),
         make_protocol_object("axis1", axes[1]->make_protocol_definitions()),
@@ -174,6 +193,9 @@ void communication_task(void * ctx) {
     // ends up with a stupid stack size of around 8000 bytes. Fix this.
     auto tree_ptr = new (tree_buffer) tree_type(make_obj_tree());
     fibre_publish(*tree_ptr);
+
+    // Allow main init to continue
+    endpoint_list_valid = true;
     
     start_uart_server();
     start_usb_server();
