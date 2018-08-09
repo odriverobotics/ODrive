@@ -3,6 +3,7 @@
 Tool for flashing .hex files to the ODrive via the STM built-in USB DFU mode.
 """
 
+from __future__ import print_function
 import argparse
 import sys
 import time
