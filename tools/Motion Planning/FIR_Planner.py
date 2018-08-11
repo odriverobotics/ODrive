@@ -13,7 +13,7 @@ import random
 # vr, ar and dr                 Reached values of velocity and acceleration
 # Tj , Tja, Tjv and Tjd         Length of the constant jerk stages (FIR filter time)
 
-def FIR_trapPlan(Xf, Xi, Vi, Ai, Vmax, Amax, Dmax, dT=0.001):
+def FIR_trapPlan(Xf, Xi, Vi, Ai, Vmax, Amax, Dmax):
 
     dX = Xf - Xi    # Distance to travel
     s = np.sign(dX)   # Sign
