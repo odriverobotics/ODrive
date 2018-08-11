@@ -13,7 +13,7 @@ import random
 # vr, ar and dr                 Reached values of velocity and acceleration
 # Tj , Tja, Tjv and Tjd         Length of the constant jerk stages (FIR filter time)
 
-def trapPlan(Xf, Xi, Vi, Ai, Vmax, Amax, Dmax, dT=0.001):
+def FIR_trapPlan(Xf, Xi, Vi, Ai, Vmax, Amax, Dmax, dT=0.001):
 
     dX = Xf - Xi    # Distance to travel
     s = np.sign(dX)   # Sign
@@ -39,7 +39,8 @@ def trapPlan(Xf, Xi, Vi, Ai, Vmax, Amax, Dmax, dT=0.001):
         Td = max(0, (-Vr)/Dr)
     else:
         Tv = (dX - dXmin)/Vr    # non-short move, coast time at constant v
-    
+
+
     ## We've computed Ta, Tv, Td, and Vr.  Time to produce a trajectory
     # Create the time series and preallocate the position, velocity, and acceleration arrays
     t_traj = np.linspace(0, Ta+Tv+Td, 10000)
@@ -75,7 +76,9 @@ def trapPlan(Xf, Xi, Vi, Ai, Vmax, Amax, Dmax, dT=0.001):
 
 
 #(Y, Yd, Ydd, t) = trapPlan(10, 0, 0, 0, 15.122, 22.022, 22.022)
-fig, axes = plt.subplots(2, 4)
+numRows = 2
+numCols = 4
+fig, axes = plt.subplots(numRows, numCols, sharey='all')
 random.seed()
 for x in range(8):
 
@@ -86,7 +89,7 @@ for x in range(8):
     Vi = random.uniform(-Vmax, Vmax)
     Xf = random.uniform(-100.0, 100.0)
 
-    (Y, Yd, Ydd, t) = trapPlan(Xf, Xi, 0, 0, Vmax, Amax, Amax)
+    (Y, Yd, Ydd, t) = FIR_trapPlan(Xf, Xi, 0, 0, Vmax, Amax, Amax)
 
     if(abs(Xf-Y[-1]) > 0.0001):
         print("Bad final position: ", Xf, Y[-1], abs(Xf-Y[-1]))
@@ -105,9 +108,9 @@ for x in range(8):
     else:
         print("Position Error: {:.6f}\tVelocity Error: {:.6f}".format(abs(Xf-Y[-1]),abs(Yd[-1])))
 
-    axes[int(x/4), x%4].plot(t, Y)
-    axes[int(x/4), x%4].plot(t, Yd)
-    axes[int(x/4), x%4].plot(t, Ydd)
-    axes[int(x/4), x%4].set_title('Xi: {:.3f}  Xf: {:.3f}'.format(Xi, Xf))
+    axes[int(x/numCols), x%numCols].plot(t, Y)
+    axes[int(x/numCols), x%numCols].plot(t, Yd)
+    axes[int(x/numCols), x%numCols].plot(t, Ydd)
+    axes[int(x/numCols), x%numCols].set_title('Xi: {:.3f}  Xf: {:.3f}'.format(Xi, Xf))
 
 plt.show()
