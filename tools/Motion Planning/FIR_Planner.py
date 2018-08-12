@@ -163,12 +163,10 @@ for x in range(numRows*numCols):
     ax1.plot(t, Yd)
     ax1.plot(t[-1], Xf, 'b*')
     ax1.plot(t[-1], 0, 'r*')
-    ax1.set_ylabel("Pos and Velocity")
 
     ax2 = ax1.twinx()
     ax2.plot(t, Ydd, color='tab:green')
     ax2.tick_params(axis='y', labelcolor='tab:green')
-    ax2.set_ylabel("Acceleration")
     dX = abs(Xf - Y[-1])
     dV = abs(0 - Yd[-1])
     axes[int(x/numCols), x%numCols].set_title('Xf: {:.3f}  Xi: {:.3f}\ndX: {:.3f} dV: {:.3f}'.format(Xf, Xi, dX, dV))
