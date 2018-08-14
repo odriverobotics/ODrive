@@ -71,6 +71,18 @@ An upcoming feature will enable automatic tuning. Until then, here is a rough tu
 * Back down `pos_gain` until you do not have overshoot anymore.
 * The integrator is not easily tuned, nor is it strictly required. Tune at your own discretion.
 
+## System monitoring commands
+
+### Encoder position and velocity
+* View encoder position with `<axis>.encoder.pos_estimate` [counts]
+* View rotational velocity with `<axis>.encoder.ppl_vel` [counts/s]
+
+### Motor current and torque estimation
+* View the commanded motor current with `<axis>.motor.current_control.Iq_setpoint` [A] 
+* View the measured motor current with `<axis>.motor.current_control.Iq_measured` [A]. If you find that this returns noisy data then use the command motor current instead. The two values should be close so long as you are not approching the maximim achieveable rotational velocity of your motor for a given supply votlage, in which case the commanded current may become larger than the measured current. 
+
+Using the motor current and the known KV of your motor you can estimate the motors torque using the following relationship: Torque [N.m] = 8.27 * Current [A] / KV. 
+
 ## General system commands
 
 ### Saving the configuration
