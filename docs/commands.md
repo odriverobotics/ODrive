@@ -75,7 +75,7 @@ An upcoming feature will enable automatic tuning. Until then, here is a rough tu
 
 ### Encoder position and velocity
 * View encoder position with `<axis>.encoder.pos_estimate` [counts]
-* View rotational velocity with `<axis>.encoder.ppl_vel` [counts/s]
+* View rotational velocity with `<axis>.encoder.pll_vel` [counts/s]
 
 ### Motor current and torque estimation
 * View the commanded motor current with `<axis>.motor.current_control.Iq_setpoint` [A] 
