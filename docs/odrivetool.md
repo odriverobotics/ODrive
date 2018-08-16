@@ -131,3 +131,48 @@ adapter speed: 2000 kHz
   ```
 
 If something doesn't work, make sure `openocd` is in your `PATH` variable, check that the wires are connected properly and try with elevated privileges.
+
+## Liveplotter
+
+Liveplotter is used for the graphical plotting of odrive parameters (i.e. position) in real time. To start liveplotter, close any other instances of liveplotter and run `odrivetool liveplotter` from a new anaconda prompt window. By defult two parameters are plotted on startup; the encoder positon of axis 1 and axis 2. In the below example the motors are running in `closed_loop_control` while they are being forced off position by hand.
+
+![Liveplotter position plot](figure_1.png)
+
+To change what parameters are plotted open odrivetool (located in Anaconda3\Scripts or ODrive-master\tools) with a text editor and modify the liveplotter function:
+```
+        # If you want to plot different values, change them here.
+        # You can plot any number of values concurrently.
+        cancellation_token = start_liveplotter(lambda: [
+            my_odrive.axis0.encoder.pos_estimate,
+            my_odrive.axis1.encoder.pos_estimate,
+        ])
+```
+For example, to plot the approximate motor torque [N.cm] and the velocity [RPM] of axis1 with a 150KV motor and an 8192 count per rotation econder you would modify the function to read:
+```
+        # If you want to plot different values, change them here.
+        # You can plot any number of values concurrently.
+        cancellation_token = start_liveplotter(lambda: [
+            (((my_odrive.axis0.encoder.pll_vel)/8192)*60), # 8192 CPR encoder
+            ((8.27*my_odrive.axis0.motor.current_control.Iq_setpoint/150) * 100), # Torque [N.cm] = (8.27 * Current [A] / KV) * 100
+        ])
+```
+In the example below the motor is forced off axis by hand and held there. In response the motor controller increases the torque (orange line) to counteract this disturbance up to a peak of 500 N.cm at which point the motor current limit is reached. When the motor is released it returns back to its commanded position very quickly as can be seen by the spike in the motor velocity (blue line).
+
+![Liveplotter torque vel plot](figure_1-1.png)
+
+To change the scale and sample rate of the plot modify the following parameters located at the beginning of utils.py (located in Anaconda3\Lib\site-packages\odrive):
+
+```
+data_rate = 100
+plot_rate = 10
+num_samples = 1000
+```
+
+For more examples on how to interact with the plotting functinality refer to the [Matplotlib examples.](https://matplotlib.org/examples)
+
+### Liveplotter from interactive odrivetool instance
+You can also run `start_liveplotter(...)` directly from the interactive odrivetool prompt. This is useful if you want to issue commands or otherwise keep interacting with the odrive while plotting.
+
+For example you can type the following directly into the interactive prompt: `start_liveplotter(lambda: [odrv0.axis0.encoder.pos_estimate])`. Just like the examples above, you can list several parameters to plot separated by comma in the square brackets.
+In general, you can plot any variable that you are able to read like normal in odrivetool.
+
