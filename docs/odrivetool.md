@@ -134,7 +134,7 @@ If something doesn't work, make sure `openocd` is in your `PATH` variable, check
 
 ## Liveplotter
 
-Liveplotter is used for the graphical plotting of odrive parameters (i.e. position) in real time. To start liveplotter, close any other instances of liveplotter and run `odrivetool liveplotter` from a new anaconda prompt window. By defult two parameters are plotted on startup; the encoder positon of axis 1 and axis 2. In the below example the motors are running in open `closed_loop_control` while they are being forced off position by hand.
+Liveplotter is used for the graphical plotting of odrive parameters (i.e. position) in real time. To start liveplotter, close any other instances of liveplotter and run `odrivetool liveplotter` from a new anaconda prompt window. By defult two parameters are plotted on startup; the encoder positon of axis 1 and axis 2. In the below example the motors are running in `closed_loop_control` while they are being forced off position by hand.
 
 ![Liveplotter position plot](figure_1.png)
 
@@ -169,3 +169,10 @@ num_samples = 1000
 ```
 
 For more examples on how to interact with the plotting functinality refer to the [Matplotlib examples.](https://matplotlib.org/examples)
+
+### Liveplotter from interactive odrivetool instance
+You can also run `start_liveplotter(...)` directly from the interactive odrivetool prompt. This is useful if you want to issue commands or otherwise keep interacting with the odrive while plotting.
+
+For example you can type the following directly into the interactive prompt: `start_liveplotter(lambda: [odrv0.axis0.encoder.pos_estimate])`. Just like the examples above, you can list several parameters to plot separated by comma in the square brackets.
+In general, you can plot any variable that you are able to read like normal in odrivetool.
+
