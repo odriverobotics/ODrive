@@ -11,9 +11,10 @@ public:
         ERROR_NONE = 0,
         ERROR_UNSTABLE_GAIN = 0x01,
         ERROR_CPR_OUT_OF_RANGE = 0x02,
-        ERROR_RESPONSE = 0x04,
+        ERROR_NO_RESPONSE = 0x04,
         ERROR_UNSUPPORTED_ENCODER_MODE = 0x08,
         ERROR_ILLEGAL_HALL_STATE = 0x10,
+        ERROR_INDEX_NOT_FOUND_YET = 0x20,
     };
 
     enum Mode_t {
@@ -31,8 +32,7 @@ public:
                                     // state as soon as the index is found.
         float idx_search_speed = 10.0f; // [rad/s electrical]
         int32_t cpr = (2048 * 4);   // Default resolution of CUI-AMT102 encoder,
-        int32_t offset = 0; // If pre_calibrated is true, this is copied into encoder.offset_ once
-                            // index search succeeds
+        int32_t offset = 0;        // Offset between encoder count and rotor electrical phase
         float offset_float = 0.0f; // Sub-count phase alignment offset
         float calib_range = 0.02f;
         float bandwidth = 1000.0f;
@@ -65,7 +65,6 @@ public:
     bool is_ready_ = false;
     int32_t shadow_count_ = 0;
     int32_t count_in_cpr_ = 0;
-    int32_t offset_ = 0;
     float interpolation_ = 0.0f;
     float phase_ = 0.0f;    // [rad]
     float pos_estimate_ = 0.0f;  // [rad]
@@ -85,7 +84,6 @@ public:
             make_protocol_ro_property("index_found", const_cast<bool*>(&index_found_)),
             make_protocol_property("shadow_count", &shadow_count_),
             make_protocol_property("count_in_cpr", &count_in_cpr_),
-            make_protocol_property("offset", &offset_),
             make_protocol_property("interpolation", &interpolation_),
             make_protocol_property("phase", &phase_),
             make_protocol_property("pos_estimate", &pos_estimate_),
