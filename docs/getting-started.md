@@ -134,7 +134,7 @@ Try step 5 again
 
 <div class="note" markdown="span">__ODrive v3.4 and earlier:__ Your board does __not__ come preflashed with any firmware. Follow the instructions [here](odrivetool.md#device-firmware-update) on the STP Link procedure before you continue.</div>
 
-To launch the main interactive ODrive tool, type `odrivetool` <kbd>Enter</kbd>. Connect your ODrive and wait for the tool to find it. Now you can for instance type `odrv0.vbus_voltage` <kbd>Enter</kbd> to inpect the boards main supply voltage.
+To launch the main interactive ODrive tool, type `odrivetool` <kbd>Enter</kbd>. Connect your ODrive and wait for the tool to find it. NOTE: On ubuntu odrivetool needs root access else the odrive will never be found, type `sudo odrivetool`. Now you can for instance type `odrv0.vbus_voltage` <kbd>Enter</kbd> to inpect the boards main supply voltage.
 It should look something like this:
 
 ```text
