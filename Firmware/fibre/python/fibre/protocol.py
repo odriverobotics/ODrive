@@ -297,6 +297,9 @@ class Channel(PacketSink):
                     except ChannelDamagedException:
                         attempt += 1
                         continue # resend
+                    except TimeoutError:
+                        attempt += 1
+                        continue # resend
                     finally:
                         self._my_lock.release()
                     # Wait for ACK until the resend timeout is exceeded
