@@ -46,19 +46,20 @@ void loop() {
 
     // Run calibration sequence
     if (c == '0' || c == '1') {
+      int motornum = c-'0';
       int requested_state;
 
       requested_state = ODriveArduino::AXIS_STATE_MOTOR_CALIBRATION;
       Serial << "Axis" << c << ": Requesting state " << requested_state << '\n';
-      odrive.run_state(atoi(c), requested_state, true);
+      odrive.run_state(motornum, requested_state, true);
 
       requested_state = ODriveArduino::AXIS_STATE_ENCODER_OFFSET_CALIBRATION;
       Serial << "Axis" << c << ": Requesting state " << requested_state << '\n';
-      odrive.run_state(atoi(c), requested_state, true);
+      odrive.run_state(motornum, requested_state, true);
 
       requested_state = ODriveArduino::AXIS_STATE_CLOSED_LOOP_CONTROL;
       Serial << "Axis" << c << ": Requesting state " << requested_state << '\n';
-      odrive.run_state(atoi(c), requested_state, false); // don't wait
+      odrive.run_state(motornum, requested_state, false); // don't wait
     }
 
     // Sinusoidal test move
