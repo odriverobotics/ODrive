@@ -107,11 +107,11 @@ void Axis::min_endstop_cb(){
 
     if(config_.min_endstop.enabled){
         min_endstop_state_ = HAL_GPIO_ReadPin(gpio_port, gpio_pin);
+        if(config_.min_endstop.is_active_high == false)
+            min_endstop_state_ = !min_endstop_state_;
     } else {
         min_endstop_state_ = false;
     }
-    if(config_.min_endstop.is_active_high == false)
-        min_endstop_state_ = !min_endstop_state_;
 }
 
 void Axis::set_min_endstop_enabled(bool enable){
@@ -138,12 +138,11 @@ void Axis::max_endstop_cb(){
 
     if(config_.max_endstop.enabled){
         max_endstop_state_ = HAL_GPIO_ReadPin(gpio_port, gpio_pin);
+        if(config_.max_endstop.is_active_high == false)
+            max_endstop_state_ = !max_endstop_state_;
     } else {
         max_endstop_state_ = false;
     }
-
-    if(config_.max_endstop.is_active_high == false)
-        max_endstop_state_ = !max_endstop_state_;
 }
 
 void Axis::set_max_endstop_enabled(bool enable){
