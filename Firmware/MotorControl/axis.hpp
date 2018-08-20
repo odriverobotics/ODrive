@@ -20,7 +20,7 @@ enum AxisState_t {
     AXIS_STATE_HOMING = 9   //<! run axis homing function
 };
 
-struct Endstop_t{
+struct Endstop_t {
     uint16_t gpio_num;
     bool enabled;
     int32_t offset = 0;
@@ -63,6 +63,8 @@ public:
         ERROR_ENCODER_FAILED = 0x100,
         ERROR_CONTROLLER_FAILED = 0x200,
         ERROR_POS_CTRL_DURING_SENSORLESS = 0x400,
+        ERROR_MIN_ENDSTOP_PRESSED = 0x800,
+        ERROR_MAX_ENDSTOP_PRESSED = 0x1000
     };
 
     enum thread_signals {

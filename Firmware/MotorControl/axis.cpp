@@ -272,6 +272,14 @@ bool Axis::run_closed_loop_control_loop() {
             return error_ |= ERROR_CONTROLLER_FAILED, false; //TODO: Make controller.set_error
         if (!motor_.update(current_setpoint, encoder_.phase_))
             return false; // set_error should update axis.error_
+        
+
+        // Check for endstop presses
+        if(config_.min_endstop.enabled && min_endstop_state_) {
+            return error_ |= ERROR_MIN_ENDSTOP_PRESSED, false;
+        } else if(config_.max_endstop.enabled && max_endstop_state_) {
+            return error_ |= ERROR_MAX_ENDSTOP_PRESSED, false;
+        }
         return true;
     });
     set_step_dir_enabled(false);
