@@ -19,6 +19,11 @@ enum AxisState_t {
     AXIS_STATE_CLOSED_LOOP_CONTROL = 8  //<! run closed loop control
 };
 
+struct Endstop_t{
+    uint16_t gpio_num;
+    bool enabled;
+};
+
 struct AxisConfig_t {
     bool startup_motor_calibration = false;   //<! run motor calibration at startup, skip otherwise
     bool startup_encoder_index_search = false; //<! run encoder index search after startup, skip otherwise
@@ -37,6 +42,8 @@ struct AxisConfig_t {
     float spin_up_current = 10.0f;        // [A]
     float spin_up_acceleration = 400.0f;  // [rad/s^2]
     float spin_up_target_vel = 400.0f;    // [rad/s]
+    Endstop_t min_endstop;
+    Endstop_t max_endstop;
 };
 
 class Axis {
@@ -182,7 +189,15 @@ public:
                 make_protocol_property("ramp_up_distance", &config_.ramp_up_distance),
                 make_protocol_property("spin_up_current", &config_.spin_up_current),
                 make_protocol_property("spin_up_acceleration", &config_.spin_up_acceleration),
-                make_protocol_property("spin_up_target_vel", &config_.spin_up_target_vel)
+                make_protocol_property("spin_up_target_vel", &config_.spin_up_target_vel),
+                make_protocol_object("min_endstop",
+                    make_protocol_property("gpio_num", &config_.min_endstop.gpio_num),
+                    make_protocol_property("enabled", &config_.min_endstop.enabled)
+                ),
+                make_protocol_object("max_endstop",
+                    make_protocol_property("gpio_num", &config_.max_endstop.gpio_num),
+                    make_protocol_property("enabled", &config_.max_endstop.enabled)
+                )
             ),
             make_protocol_function("get_temp", *this, &Axis::get_temp),
             make_protocol_object("motor", motor_.make_protocol_definitions()),
