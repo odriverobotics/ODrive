@@ -16,12 +16,14 @@ enum AxisState_t {
     AXIS_STATE_SENSORLESS_CONTROL = 5,  //<! run sensorless control
     AXIS_STATE_ENCODER_INDEX_SEARCH = 6, //<! run encoder index search
     AXIS_STATE_ENCODER_OFFSET_CALIBRATION = 7, //<! run encoder offset calibration
-    AXIS_STATE_CLOSED_LOOP_CONTROL = 8  //<! run closed loop control
+    AXIS_STATE_CLOSED_LOOP_CONTROL = 8,  //<! run closed loop control
+    AXIS_STATE_HOMING = 9   //<! run axis homing function
 };
 
 struct Endstop_t{
     uint16_t gpio_num;
     bool enabled;
+    int32_t offset = 0;
 };
 
 struct AxisConfig_t {
@@ -200,11 +202,13 @@ public:
                 make_protocol_property("spin_up_target_vel", &config_.spin_up_target_vel),
                 make_protocol_object("min_endstop",
                     make_protocol_property("gpio_num", &config_.min_endstop.gpio_num),
-                    make_protocol_property("enabled", &config_.min_endstop.enabled)
+                    make_protocol_property("enabled", &config_.min_endstop.enabled),
+                    make_protocol_property("offset", &config_.min_endstop.offset)
                 ),
                 make_protocol_object("max_endstop",
                     make_protocol_property("gpio_num", &config_.max_endstop.gpio_num),
-                    make_protocol_property("enabled", &config_.max_endstop.enabled)
+                    make_protocol_property("enabled", &config_.max_endstop.enabled),
+                    make_protocol_property("offset", &config_.max_endstop.offset)
                 )
             ),
             make_protocol_function("get_temp", *this, &Axis::get_temp),

@@ -21,6 +21,7 @@ struct ControllerConfig_t {
     // float vel_gain = 5.0f / 200.0f, // [A/(rad/s)] <sensorless example>
     float vel_integrator_gain = 10.0f / 10000.0f;  // [A/(counts/s * s)]
     float vel_limit = 20000.0f;           // [counts/s]
+    float homing_speed = 2000.0f;   // [counts/s]
 };
 
 class Controller {
@@ -31,6 +32,8 @@ public:
     void set_pos_setpoint(float pos_setpoint, float vel_feed_forward, float current_feed_forward);
     void set_vel_setpoint(float vel_setpoint, float current_feed_forward);
     void set_current_setpoint(float current_setpoint);
+
+    bool home_axis();
     
     // TODO: make this more similar to other calibration loops
     void start_anticogging_calibration();
@@ -83,7 +86,8 @@ public:
                 make_protocol_property("pos_gain", &config_.pos_gain),
                 make_protocol_property("vel_gain", &config_.vel_gain),
                 make_protocol_property("vel_integrator_gain", &config_.vel_integrator_gain),
-                make_protocol_property("vel_limit", &config_.vel_limit)
+                make_protocol_property("vel_limit", &config_.vel_limit),
+                make_protocol_property("homing_speed", &config_.homing_speed)
             ),
             make_protocol_function("set_pos_setpoint", *this, &Controller::set_pos_setpoint,
                 "pos_setpoint",
@@ -94,7 +98,8 @@ public:
                 "current_feed_forward"),
             make_protocol_function("set_current_setpoint", *this, &Controller::set_current_setpoint,
                 "current_setpoint"),
-            make_protocol_function("start_anticogging_calibration", *this, &Controller::start_anticogging_calibration)
+            make_protocol_function("start_anticogging_calibration", *this, &Controller::start_anticogging_calibration),
+            make_protocol_function("home_axis", *this, &Controller::home_axis)
         );
     }
 };
