@@ -110,6 +110,8 @@ void Axis::min_endstop_cb(){
     } else {
         min_endstop_state_ = false;
     }
+    if(config_.min_endstop.is_active_high == false)
+        min_endstop_state_ = !min_endstop_state_;
 }
 
 void Axis::set_min_endstop_enabled(bool enable){
@@ -139,6 +141,9 @@ void Axis::max_endstop_cb(){
     } else {
         max_endstop_state_ = false;
     }
+
+    if(config_.max_endstop.is_active_high == false)
+        max_endstop_state_ = !max_endstop_state_;
 }
 
 void Axis::set_max_endstop_enabled(bool enable){

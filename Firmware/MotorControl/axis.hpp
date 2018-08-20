@@ -22,8 +22,9 @@ enum AxisState_t {
 
 struct Endstop_t {
     uint16_t gpio_num;
-    bool enabled;
+    bool enabled = false;
     int32_t offset = 0;
+    bool is_active_high = false;
 };
 
 struct AxisConfig_t {
@@ -205,12 +206,14 @@ public:
                 make_protocol_object("min_endstop",
                     make_protocol_property("gpio_num", &config_.min_endstop.gpio_num),
                     make_protocol_property("enabled", &config_.min_endstop.enabled),
-                    make_protocol_property("offset", &config_.min_endstop.offset)
+                    make_protocol_property("offset", &config_.min_endstop.offset),
+                    make_protocol_property("is_active_high", &config_.min_endstop.is_active_high)
                 ),
                 make_protocol_object("max_endstop",
                     make_protocol_property("gpio_num", &config_.max_endstop.gpio_num),
                     make_protocol_property("enabled", &config_.max_endstop.enabled),
-                    make_protocol_property("offset", &config_.max_endstop.offset)
+                    make_protocol_property("offset", &config_.max_endstop.offset),
+                    make_protocol_property("is_active_high", &config_.max_endstop.is_active_high)
                 )
             ),
             make_protocol_function("get_temp", *this, &Axis::get_temp),
