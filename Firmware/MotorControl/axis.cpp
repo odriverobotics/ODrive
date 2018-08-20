@@ -81,8 +81,8 @@ void Axis::set_step_dir_enabled(bool enable) {
         HAL_GPIO_Init(hw_config_.dir_port, &GPIO_InitStruct);
 
         // Subscribe to rising edges of the step GPIO
-        GPIO_subscribe(hw_config_.step_port, hw_config_.step_pin, GPIO_PULLDOWN,
-                step_cb_wrapper, this);
+        GPIO_subscribe(hw_config_.step_port, hw_config_.step_pin, GPIO_PULLDOWN, 
+                       GPIO_MODE_IT_FALLING, step_cb_wrapper, this);
 
         enable_step_dir_ = true;
     } else {

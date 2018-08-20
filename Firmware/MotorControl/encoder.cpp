@@ -19,7 +19,7 @@ static void enc_index_cb_wrapper(void* ctx) {
 void Encoder::setup() {
     HAL_TIM_Encoder_Start(hw_config_.timer, TIM_CHANNEL_ALL);
     GPIO_subscribe(hw_config_.index_port, hw_config_.index_pin, GPIO_NOPULL,
-            enc_index_cb_wrapper, this);
+            GPIO_MODE_IT_RISING, enc_index_cb_wrapper, this);
 }
 
 void Encoder::set_error(Encoder::Error_t error) {
