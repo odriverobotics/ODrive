@@ -29,6 +29,14 @@ static void step_cb_wrapper(void* ctx) {
     reinterpret_cast<Axis*>(ctx)->step_cb();
 }
 
+static void min_endstop_cb_wrapper(void* ctx){
+    reinterpret_cast<Axis*>(ctx)->min_endstop_cb();
+}
+
+static void max_endstop_cb_wrapper(void* ctx){
+    reinterpret_cast<Axis*>(ctx)->max_endstop_cb();
+}
+
 // @brief Sets up all components of the axis,
 // such as gate driver and encoder hardware.
 void Axis::setup() {
@@ -90,6 +98,64 @@ void Axis::set_step_dir_enabled(bool enable) {
 
         // Unsubscribe from step GPIO
         GPIO_unsubscribe(hw_config_.step_port, hw_config_.step_pin);
+    }
+}
+
+void Axis::min_endstop_cb(){
+    uint16_t gpio_pin = get_gpio_pin_by_pin(config_.min_endstop.gpio_num);
+    GPIO_TypeDef* gpio_port = get_gpio_port_by_pin(config_.min_endstop.gpio_num);
+
+    if(config_.min_endstop.enabled){
+        min_endstop_state_ = HAL_GPIO_ReadPin(gpio_port, gpio_pin);
+    } else {
+        min_endstop_state_ = false;
+    }
+}
+
+void Axis::set_min_endstop_enabled(bool enable){
+    uint16_t gpio_pin = get_gpio_pin_by_pin(config_.min_endstop.gpio_num);
+    GPIO_TypeDef* gpio_port = get_gpio_port_by_pin(config_.min_endstop.gpio_num);
+    if(enable){
+        GPIO_InitTypeDef GPIO_InitStruct;
+        GPIO_InitStruct.Pin = gpio_pin;
+        GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+        GPIO_InitStruct.Pull = GPIO_NOPULL;
+        HAL_GPIO_Init(gpio_port, &GPIO_InitStruct);
+
+        GPIO_subscribe(gpio_port, gpio_pin, GPIO_PULLUP, GPIO_MODE_IT_RISING_FALLING,
+                        min_endstop_cb_wrapper, this);
+    }
+    else {
+        GPIO_unsubscribe(gpio_port, gpio_pin);
+    }
+}
+
+void Axis::max_endstop_cb(){
+    uint16_t gpio_pin = get_gpio_pin_by_pin(config_.max_endstop.gpio_num);
+    GPIO_TypeDef* gpio_port = get_gpio_port_by_pin(config_.max_endstop.gpio_num);
+
+    if(config_.max_endstop.enabled){
+        max_endstop_state_ = HAL_GPIO_ReadPin(gpio_port, gpio_pin);
+    } else {
+        max_endstop_state_ = false;
+    }
+}
+
+void Axis::set_max_endstop_enabled(bool enable){
+    uint16_t gpio_pin = get_gpio_pin_by_pin(config_.max_endstop.gpio_num);
+    GPIO_TypeDef* gpio_port = get_gpio_port_by_pin(config_.max_endstop.gpio_num);
+    if(enable){
+        GPIO_InitTypeDef GPIO_InitStruct;
+        GPIO_InitStruct.Pin = gpio_pin;
+        GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+        GPIO_InitStruct.Pull = GPIO_NOPULL;
+        HAL_GPIO_Init(gpio_port, &GPIO_InitStruct);
+
+        GPIO_subscribe(gpio_port, gpio_pin, GPIO_PULLUP, GPIO_MODE_IT_RISING_FALLING,
+                        max_endstop_cb_wrapper, this);
+    }
+    else {
+        GPIO_unsubscribe(gpio_port, gpio_pin);
     }
 }
 
@@ -177,7 +243,10 @@ bool Axis::run_sensorless_spin_up() {
 
 // Note run_sensorless_control_loop and run_closed_loop_control_loop are very similar and differ only in where we get the estimate from.
 bool Axis::run_sensorless_control_loop() {
+    set_min_endstop_enabled(config_.min_endstop.enabled);
+    set_max_endstop_enabled(config_.max_endstop.enabled);
     set_step_dir_enabled(config_.enable_step_dir);
+
     run_control_loop([this](){
         if (controller_.config_.control_mode >= CTRL_MODE_POSITION_CONTROL)
             return error_ |= ERROR_POS_CTRL_DURING_SENSORLESS, false;

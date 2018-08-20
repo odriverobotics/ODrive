@@ -81,6 +81,10 @@ public:
 
     void step_cb();
     void set_step_dir_enabled(bool enable);
+    void min_endstop_cb();
+    void set_min_endstop_enabled(bool enable);
+    void max_endstop_cb();
+    void set_max_endstop_enabled(bool enable);
 
     bool check_DRV_fault();
     bool check_PSU_brownout();
@@ -168,6 +172,8 @@ public:
     AxisState_t task_chain_[10] = { AXIS_STATE_UNDEFINED };
     AxisState_t& current_state_ = task_chain_[0];
     uint32_t loop_counter_ = 0;
+    bool min_endstop_state_ = false;
+    bool max_endstop_state_ = false;
 
     // Communication protocol definitions
     auto make_protocol_definitions() {
@@ -177,6 +183,8 @@ public:
             make_protocol_ro_property("current_state", &current_state_),
             make_protocol_property("requested_state", &requested_state_),
             make_protocol_ro_property("loop_counter", &loop_counter_),
+            make_protocol_ro_property("min_endstop_state", &min_endstop_state_),
+            make_protocol_ro_property("max_endstop_state", &max_endstop_state_),
             make_protocol_object("config",
                 make_protocol_property("startup_motor_calibration", &config_.startup_motor_calibration),
                 make_protocol_property("startup_encoder_index_search", &config_.startup_encoder_index_search),
