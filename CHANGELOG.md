@@ -24,6 +24,7 @@ Please add a note of your changes below this heading if you make a Pull Request.
   * `motor.config.requested_current_range`
   * `motor.config.current_control_bandwidth` and `motor.set_current_control_bandwidth`. Latter required to invoke gain recalculation.
   * `encoder.config.bandwidth`
+  * `sensorless_estimator.config.pm_flux_linkage`
 
 ## [0.4.1] - 2018-07-01
 ### Fixed
