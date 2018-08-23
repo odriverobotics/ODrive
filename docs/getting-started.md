@@ -200,7 +200,7 @@ For instance, to set the current limit of M0 to 10A you would type: `odrv0.axis0
 You can save all `.config` parameters to persistent memory such that the ODrive remembers them between power cycles. 
 * `odrv0.save_configuration()` <kbd>Enter</kbd>. 
 
-Due to a [known issue](https://github.com/madcowswe/ODrive/issues/183) it is strongly reccomneded that you reboot following every save of your configerations using `odrv0.reboot()`.
+Due to a [known issue](https://github.com/madcowswe/ODrive/issues/183) it is strongly recommended that you reboot following every save of your configuration using `odrv0.reboot()`.
 
 
 ## Position control of M0
