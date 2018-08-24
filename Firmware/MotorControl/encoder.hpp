@@ -69,7 +69,7 @@ public:
     float phase_ = 0.0f;    // [rad]
     float pos_estimate_ = 0.0f;  // [rad]
     float pos_cpr_ = 0.0f;  // [rad]
-    float pll_vel_ = 0.0f;  // [rad/s]
+    float vel_estimate_ = 0.0f;  // [rad/s]
     // float pll_kp_ = 0.0f;   // [rad/s / rad]
     // float pll_ki_ = 0.0f;   // [(rad/s^2) / rad]
 
@@ -89,7 +89,7 @@ public:
             make_protocol_property("pos_estimate", &pos_estimate_),
             make_protocol_property("pos_cpr", &pos_cpr_),
             make_protocol_property("hall_state", &hall_state_),
-            make_protocol_property("pll_vel", &pll_vel_),
+            make_protocol_property("vel_estimate", &vel_estimate_),
             // make_protocol_property("pll_kp", &pll_kp_),
             // make_protocol_property("pll_ki", &pll_ki_),
             make_protocol_object("config",
