@@ -288,8 +288,8 @@ bool Encoder::update() {
 
     //// run pll (for now pll is in units of encoder counts)
     // Predict current pos
-    pos_estimate_ += current_meas_period * pll_vel_;
-    pos_cpr_      += current_meas_period * pll_vel_;
+    pos_estimate_ += current_meas_period * vel_estimate_;
+    pos_cpr_      += current_meas_period * vel_estimate_;
     // discrete phase detector
     float delta_pos     = (float)(shadow_count_ - (int32_t)floorf(pos_estimate_));
     float delta_pos_cpr = (float)(count_in_cpr_ - (int32_t)floorf(pos_cpr_));
@@ -298,10 +298,10 @@ bool Encoder::update() {
     pos_estimate_ += current_meas_period * pll_kp * delta_pos;
     pos_cpr_      += current_meas_period * pll_kp * delta_pos_cpr;
     pos_cpr_ = fmodf_pos(pos_cpr_, (float)(config_.cpr));
-    pll_vel_      += current_meas_period * pll_ki * delta_pos_cpr;
+    vel_estimate_      += current_meas_period * pll_ki * delta_pos_cpr;
     bool snap_to_zero_vel = false;
-    if (fabsf(pll_vel_) < 0.5f * current_meas_period * pll_ki) {
-        pll_vel_ = 0.0f; //align delta-sigma on zero to prevent jitter
+    if (fabsf(vel_estimate_) < 0.5f * current_meas_period * pll_ki) {
+        vel_estimate_ = 0.0f; //align delta-sigma on zero to prevent jitter
         snap_to_zero_vel = true;
     }
 
@@ -316,8 +316,8 @@ bool Encoder::update() {
     } else if (delta_enc < 0) {
         interpolation_ = 1.0f;
     } else {
-        // Interpolate (predict) between encoder counts using pll_vel,
-        interpolation_ += current_meas_period * pll_vel_;
+        // Interpolate (predict) between encoder counts using vel_estimate,
+        interpolation_ += current_meas_period * vel_estimate_;
         // don't allow interpolation indicated position outside of [enc, enc+1)
         if (interpolation_ > 1.0f) interpolation_ = 1.0f;
         if (interpolation_ < 0.0f) interpolation_ = 0.0f;

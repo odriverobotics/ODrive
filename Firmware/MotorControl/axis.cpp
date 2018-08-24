@@ -184,7 +184,7 @@ bool Axis::run_sensorless_control_loop() {
 
         // Note that all estimators are updated in the loop prefix in run_control_loop
         float current_setpoint;
-        if (!controller_.update(sensorless_estimator_.pll_pos_, sensorless_estimator_.pll_vel_, &current_setpoint))
+        if (!controller_.update(sensorless_estimator_.pll_pos_, sensorless_estimator_.vel_estimate_, &current_setpoint))
             return error_ |= ERROR_CONTROLLER_FAILED, false;
         if (!motor_.update(current_setpoint, sensorless_estimator_.phase_))
             return false; // set_error should update axis.error_
@@ -199,7 +199,7 @@ bool Axis::run_closed_loop_control_loop() {
     run_control_loop([this](){
         // Note that all estimators are updated in the loop prefix in run_control_loop
         float current_setpoint;
-        if (!controller_.update(encoder_.pos_estimate_, encoder_.pll_vel_, &current_setpoint))
+        if (!controller_.update(encoder_.pos_estimate_, encoder_.vel_estimate_, &current_setpoint))
             return error_ |= ERROR_CONTROLLER_FAILED, false; //TODO: Make controller.set_error
         if (!motor_.update(current_setpoint, encoder_.phase_))
             return false; // set_error should update axis.error_
