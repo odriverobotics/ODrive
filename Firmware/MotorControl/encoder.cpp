@@ -41,11 +41,13 @@ bool Encoder::do_checks(){
 // TODO: disable interrupt once we found the index
 void Encoder::enc_index_cb() {
     if (config_.use_index && !index_found_) {
-        set_circular_count(0);
+        set_circular_count(0, false);
         set_linear_count(0); // Avoid position control transient after search
         if (config_.pre_calibrated) {
             is_ready_ = true;
         } else {
+            // We can't use the update_offset facility in set_circular_count because
+            // we also set the linear count before there is a chance to update. Therefore:
             // Invalidate offset calibration that may have happened before idx search
             is_ready_ = false;
         }
@@ -70,18 +72,15 @@ void Encoder::set_linear_count(int32_t count) {
 
 // Function that sets the CPR circular tracking encoder count to a desired 32-bit value.
 // Note that this will get mod'ed down to [0, cpr)
-void Encoder::set_circular_count(int32_t count) {
+void Encoder::set_circular_count(int32_t count, bool update_offset) {
     // Disable interrupts to make a critical section to avoid race condition
     uint32_t prim = __get_PRIMASK();
     __disable_irq();
 
-    // Offset and state must be shifted by the same amount
-    // Note that if the linear count is also cleared before running an update,
-    // the offset will drift by at least one count. Therefore we shouldn't rely
-    // on this during index search callback.
-    // Hence we invalidate calibration in enc_index_cb
-    config_.offset += count - count_in_cpr_;
-    config_.offset = mod(config_.offset, config_.cpr);
+    if (update_offset) {
+        config_.offset += count - count_in_cpr_;
+        config_.offset = mod(config_.offset, config_.cpr);
+    }
 
     // Update states
     count_in_cpr_ = mod(count, config_.cpr);
