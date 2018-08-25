@@ -254,9 +254,9 @@ void Axis::run_state_machine_loop() {
                 task_chain_[pos++] = AXIS_STATE_IDLE;
             } else if (requested_state_ == AXIS_STATE_FULL_CALIBRATION_SEQUENCE) {
                 task_chain_[pos++] = AXIS_STATE_MOTOR_CALIBRATION;
+                task_chain_[pos++] = AXIS_STATE_ENCODER_OFFSET_CALIBRATION;
                 if (encoder_.config_.use_index)
                     task_chain_[pos++] = AXIS_STATE_ENCODER_INDEX_SEARCH;
-                task_chain_[pos++] = AXIS_STATE_ENCODER_OFFSET_CALIBRATION;
                 task_chain_[pos++] = AXIS_STATE_IDLE;
             } else if (requested_state_ != AXIS_STATE_UNDEFINED) {
                 task_chain_[pos++] = requested_state_;
