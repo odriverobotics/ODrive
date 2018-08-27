@@ -8,6 +8,7 @@ Please add a note of your changes below this heading if you make a Pull Request.
 ### Changed
 * We now enforce encoder offset calibration must happen after index is found (if using index)
 * Renaming of the velocity estimate `pll_vel` -> `vel_estimate`.
+* Hardcoded maximum inductance now 2500 uH.
 
 ### Fixed
 * Once you got an axis error `ERROR_INVALID_STATE` you could never clear it
