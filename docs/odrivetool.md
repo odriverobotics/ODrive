@@ -84,6 +84,37 @@ To compile firmware from source, refer to the [developer guide](developer-guide)
   Connect the pin "BOOT0" to "3.3V" and power cycle the board. If that alone doesn't work, also connect the pin "GPIO1" to "GND". After you're done, remove the wires and power cycle the board again.
   </div></details>
 
+### Upgrading firmware with a different DFU tool
+Some people have had issues using the python dfu tool, so below is a guide on how to manually use a different tool.
+
+Before starting the below steps, you need to get firmware binary. You can download one of the officially released firmware files from [here](https://github.com/madcowswe/ODrive/releases). Make sure you select the file that matches your board version, and that you get the __.hex__ file (not the __.elf__ file).
+
+To compile firmware from source, refer to the [developer guide](developer-guide).
+
+#### Windows
+You can use the DfuSe app from ST.
+
+1. Download the tool [here](https://www.st.com/en/development-tools/stsw-stm32080.html). Unfortunately they make you create a login to download. Sorry about that.
+1. After installing the tool, launch `DfuFileMgr.exe` which probably got added to the start menu as "Dfu file manager".
+1. Select "I want to GENERATE a DFU file from S19, HEX or BIN files", press OK.
+1. Click the button that says "S19 or Hex...", find the `ODriveFirmware.hex` file you built or downloaded.
+1. Leave all the other settings as default and click the "Generate..." button.
+1. Save the output file as `ODriveFirmware.dfu`. Note that the success message has a warning sign for some reason...
+1. Launch `DfuSeDemo.exe` which probably got added to the start menu as "DfuSeDemo".
+1. Force the ODrive into DFU mode, as per the instructions above "How to force DFU mode".
+1. In the top left it should now be connected to "STM Device in DFU Mode".
+   1. If it doesn't appear, it may be because the driver is set to libusb by Zadig. We need to set it back to the original driver. Follow [these instructions](https://github.com/pbatard/libwdi/wiki/FAQ#Help_Zadig_replaced_the_driver_for_the_wrong_device_How_do_I_restore_it).
+1. In the bottom right section called "Upgrade or Verify Action" click the button "Choose...".
+1. Locate the `ODriveFirmware.dfu` we made before.
+1. Click button "Upgrade".
+1. If you get a warning that it's not possible to check that it's the correct device type: click yes to continue.
+1. Congratulations your ODrive should now be flashed; you can now quit DfuSeDemo.
+
+#### MacOS or Linux
+**This section needs more detail. Please consider adding detail if you got it to work.**
+You may be able to use [dfu-util](http://dfu-util.sourceforge.net/) to upgrade the firmware. You will need to convert the .hex file to a .dfu file. You may be able to do it with the python script [dfu-convert](https://github.com/plietar/dfuse-tool/blob/master/dfu-convert) or the c program [hex2dfu](https://github.com/encedo/hex2dfu).
+
+You probably need to force DFU mode, as per the instructions above.
 
 ## Flashing with an STLink
 
