@@ -109,6 +109,7 @@ You can use the DfuSe app from ST.
 1. Click button "Upgrade".
 1. If you get a warning that it's not possible to check that it's the correct device type: click yes to continue.
 1. Congratulations your ODrive should now be flashed; you can now quit DfuSeDemo.
+1. Turn off the power to the ODrive and set the DIP switch back to RUN mode.
 
 #### MacOS or Linux
 **This section needs more detail. Please consider adding detail if you got it to work.**
