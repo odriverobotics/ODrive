@@ -124,7 +124,9 @@ void Axis::set_min_endstop_enabled(bool enable){
         GPIO_InitStruct.Pull = GPIO_NOPULL;
         HAL_GPIO_Init(gpio_port, &GPIO_InitStruct);
 
-        GPIO_subscribe(gpio_port, gpio_pin, GPIO_PULLUP, GPIO_MODE_IT_RISING_FALLING,
+        uint32_t pull_up_down = config_.min_endstop.is_active_high ? GPIO_PULLDOWN : GPIO_PULLUP;
+        uint32_t interrupt_mode = config_.min_endstop.is_active_high ? GPIO_MODE_IT_RISING : GPIO_MODE_IT_FALLING;
+        GPIO_subscribe(gpio_port, gpio_pin, pull_up_down, interrupt_mode,
                         min_endstop_cb_wrapper, this);
     }
     else {
@@ -155,7 +157,9 @@ void Axis::set_max_endstop_enabled(bool enable){
         GPIO_InitStruct.Pull = GPIO_NOPULL;
         HAL_GPIO_Init(gpio_port, &GPIO_InitStruct);
 
-        GPIO_subscribe(gpio_port, gpio_pin, GPIO_PULLUP, GPIO_MODE_IT_RISING_FALLING,
+        uint32_t pull_up_down = config_.max_endstop.is_active_high ? GPIO_PULLDOWN : GPIO_PULLUP;
+        uint32_t interrupt_mode = config_.max_endstop.is_active_high ? GPIO_MODE_IT_RISING : GPIO_MODE_IT_FALLING;
+        GPIO_subscribe(gpio_port, gpio_pin, pull_up_down, interrupt_mode,
                         max_endstop_cb_wrapper, this);
     }
     else {
