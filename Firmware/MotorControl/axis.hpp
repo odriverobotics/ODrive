@@ -34,6 +34,7 @@ struct AxisConfig_t {
     bool startup_encoder_offset_calibration = false; //<! run encoder offset calibration after startup, skip otherwise
     bool startup_closed_loop_control = false; //<! enable closed loop control after calibration/startup
     bool startup_sensorless_control = false; //<! enable sensorless control after calibration/startup
+    bool startup_homing = false; //<! enable homing after calibration/startup
     bool enable_step_dir = false; //<! enable step/dir input after calibration
                                  //   For M0 this has no effect if enable_uart is true
 
@@ -196,6 +197,7 @@ public:
                 make_protocol_property("startup_encoder_offset_calibration", &config_.startup_encoder_offset_calibration),
                 make_protocol_property("startup_closed_loop_control", &config_.startup_closed_loop_control),
                 make_protocol_property("startup_sensorless_control", &config_.startup_sensorless_control),
+                make_protocol_property("startup_homing", &config_.startup_homing),
                 make_protocol_property("enable_step_dir", &config_.enable_step_dir),
                 make_protocol_property("counts_per_step", &config_.counts_per_step),
                 make_protocol_property("ramp_up_time", &config_.ramp_up_time),
