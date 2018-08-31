@@ -1,7 +1,8 @@
 # Unreleased Features
 Please add a note of your changes below this heading if you make a Pull Request.
 
-## Unreleased
+# Releases
+## [0.4.3] - 2018-08-30
 ### Added
 * Encoder position count "homed" to zero when index is found.
 
@@ -14,7 +15,6 @@ Please add a note of your changes below this heading if you make a Pull Request.
 * Once you got an axis error `ERROR_INVALID_STATE` you could never clear it
 * Char to int conversion to read motornum on arduino example
 
-# Releases
 ## [0.4.2] - 2018-08-04
 ### Added
 * Hall sensor feedback
