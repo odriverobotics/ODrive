@@ -71,6 +71,18 @@ An upcoming feature will enable automatic tuning. Until then, here is a rough tu
 * Back down `pos_gain` until you do not have overshoot anymore.
 * The integrator is not easily tuned, nor is it strictly required. Tune at your own discretion.
 
+## System monitoring commands
+
+### Encoder position and velocity
+* View encoder position with `<axis>.encoder.pos_estimate` [counts]
+* View rotational velocity with `<axis>.encoder.pll_vel` [counts/s]
+
+### Motor current and torque estimation
+* View the commanded motor current with `<axis>.motor.current_control.Iq_setpoint` [A] 
+* View the measured motor current with `<axis>.motor.current_control.Iq_measured` [A]. If you find that this returns noisy data then use the command motor current instead. The two values should be close so long as you are not approching the maximim achieveable rotational velocity of your motor for a given supply votlage, in which case the commanded current may become larger than the measured current. 
+
+Using the motor current and the known KV of your motor you can estimate the motors torque using the following relationship: Torque [N.m] = 8.27 * Current [A] / KV. 
+
 ## General system commands
 
 ### Saving the configuration
@@ -88,10 +100,15 @@ All variables that are part of a `[...].config` object can be saved to non-volat
 
 ## Setting up sensorless
 The ODrive can run without encoder/hall feedback, but there is a minimum speed, usually around a few hunderd RPM.
-However the 
+However the units of this mode is different from when using an encoder. Velocities are not measured in counts/s, instead it is electrical rad/s. This also applies to the gains. For example, `vel_gain` is in units of `A / (rad/s)` instead of `A / (count/s)`.
+
+To give an example, suppose you have a motor with 7 pole pairs, and you want to spin it at 3000 RPM. Then you would set the `vel_setpoint` to `3000 * 2*pi/60 * 7 = 2199 rad/s electrical`.
+
+Below are some suggested starting parameters that you can use. Note that you _must_ set the `pm_flux_linkage` correctly for sensorless mode to work.
+
 ```
-odrv0.axis0.controller.config.vel_gain = 0.1
-odrv0.axis0.controller.config.vel_integrator_gain = 0
+odrv0.axis0.controller.config.vel_gain = 0.01
+odrv0.axis0.controller.config.vel_integrator_gain = 0.05
 odrv0.axis0.controller.config.control_mode = 2
 odrv0.axis0.controller.vel_setpoint = 400
 odrv0.axis0.sensorless_estimator.config.pm_flux_linkage = 5.51328895422 / (<pole pairs> * <motor kv>)
