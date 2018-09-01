@@ -79,6 +79,7 @@ public:
     bool check_PSU_brownout();
     bool do_checks();
     bool do_updates();
+    bool check_for_errors();
     float get_temp();
 
     // @brief Runs the specified update handler at the frequency of the current measurements.
@@ -104,9 +105,13 @@ public:
     template<typename T>
     void run_control_loop(const T& update_handler) {
         while (requested_state_ == AXIS_STATE_UNDEFINED) {
-            if (!do_checks()) // look for errors at axis level and also all subcomponents
-                break;
-            if (!do_updates()) // Update all estimators
+            // look for errors at axis level and also all subcomponents
+            bool checks_ok = do_checks();
+            // Update all estimators
+            // Note: updates run even if checks fail
+            bool updates_ok = do_updates(); 
+            
+            if (!checks_ok || !updates_ok) 
                 break;
 
             // Run main loop function, defer quitting for after wait

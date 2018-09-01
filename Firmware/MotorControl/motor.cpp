@@ -241,7 +241,7 @@ bool Motor::measure_phase_inductance(float voltage_low, float voltage_high) {
 
     config_.phase_inductance = L;
     // TODO arbitrary values set for now
-    if (L < 1e-6f || L > 500e-6f)
+    if (L < 1e-6f || L > 2500e-6f)
         return set_error(ERROR_PHASE_INDUCTANCE_OUT_OF_RANGE), false;
     return true;
 }

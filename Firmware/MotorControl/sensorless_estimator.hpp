@@ -25,7 +25,7 @@ public:
     Error_t error_ = ERROR_NONE;
     float phase_ = 0.0f;                        // [rad]
     float pll_pos_ = 0.0f;                      // [rad]
-    float pll_vel_ = 0.0f;                      // [rad/s]
+    float vel_estimate_ = 0.0f;                      // [rad/s]
     // float pll_kp_ = 0.0f;                       // [rad/s / rad]
     // float pll_ki_ = 0.0f;                       // [(rad/s^2) / rad]
     float flux_state_[2] = {0.0f, 0.0f};        // [Vs]
@@ -38,7 +38,7 @@ public:
             make_protocol_property("error", &error_),
             make_protocol_property("phase", &phase_),
             make_protocol_property("pll_pos", &pll_pos_),
-            make_protocol_property("pll_vel", &pll_vel_),
+            make_protocol_property("vel_estimate", &vel_estimate_),
             // make_protocol_property("pll_kp", &pll_kp_),
             // make_protocol_property("pll_ki", &pll_ki_),
             make_protocol_object("config",

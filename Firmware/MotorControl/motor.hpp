@@ -44,7 +44,6 @@ typedef struct {
     float phase_resistance = 0.0f;        // to be set by measure_phase_resistance
     int32_t direction = 1;                // 1 or -1
     Motor_type_t motor_type = MOTOR_TYPE_HIGH_CURRENT;
-
     // Read out max_allowed_current to see max supported value for current_lim.
     // float current_lim = 70.0f; //[A]
     float current_lim = 10.0f;  //[A]
