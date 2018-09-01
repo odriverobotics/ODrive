@@ -14,6 +14,7 @@ Please add a note of your changes below this heading if you make a Pull Request.
 ### Fixed
 * Once you got an axis error `ERROR_INVALID_STATE` you could never clear it
 * Char to int conversion to read motornum on arduino example
+* GPIO above #5 would not be used correctly in some cases
 
 ## [0.4.2] - 2018-08-04
 ### Added
