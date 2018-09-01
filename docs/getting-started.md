@@ -175,7 +175,7 @@ For instance, to set the current limit of M0 to 10A you would type: `odrv0.axis0
 
 ### 2. Set other hardware parameters:
 
-  * `odrv0.config.brake_resistance` [Ohm]: This is the resistance of the brake resistor. If you are not using it, you may set it to `0`.
+  * `odrv0.config.brake_resistance` [Ohm]: This is the resistance of the brake resistor. If you are not using it, you may set it to `0`. Note that there may be some extra resistance in your wiring and in the screw terminals, so if you are getting issues while braking you may want to increase this parameter by around 0.05 ohm.
   * `odrv0.axis0.motor.config.pole_pairs`: This is the number of **magnet poles** in the rotor, **divided by two**. You can simply count the number of permanent magnets in the rotor, if you can see them. _Note: this is not the same as the number of coils in the stator._
   * `odrv0.axis0.motor.config.motor_type`: This is the type of motor being used. Currently two types of motors are supported: High-current motors (`MOTOR_TYPE_HIGH_CURRENT`) and Gimbal motors (`MOTOR_TYPE_GIMBAL`).
 
