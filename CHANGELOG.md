@@ -2,7 +2,20 @@
 Please add a note of your changes below this heading if you make a Pull Request.
 
 # Releases
-## [0.4.2] - 2018-07-04
+## [0.4.3] - 2018-08-30
+### Added
+* Encoder position count "homed" to zero when index is found.
+
+### Changed
+* We now enforce encoder offset calibration must happen after index is found (if using index)
+* Renaming of the velocity estimate `pll_vel` -> `vel_estimate`.
+* Hardcoded maximum inductance now 2500 uH.
+
+### Fixed
+* Once you got an axis error `ERROR_INVALID_STATE` you could never clear it
+* Char to int conversion to read motornum on arduino example
+
+## [0.4.2] - 2018-08-04
 ### Added
 * Hall sensor feedback
 * Configurable RC PWM input
