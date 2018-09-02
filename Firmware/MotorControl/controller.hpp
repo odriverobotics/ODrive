@@ -23,7 +23,7 @@ struct ControllerConfig_t {
     float vel_integrator_gain = 10.0f / 10000.0f;  // [A/(counts/s * s)]
     float vel_limit = 20000.0f;           // [counts/s]
     float accel_limit = 5000.0f;
-    float deccel_limit = 5000.0f;
+    float decel_limit = 5000.0f;
 };
 
 class Controller {
@@ -94,7 +94,7 @@ public:
                 make_protocol_property("vel_integrator_gain", &config_.vel_integrator_gain),
                 make_protocol_property("vel_limit", &config_.vel_limit),
                 make_protocol_property("accel_limit", &config_.accel_limit),
-                make_protocol_property("deccel_limit", &config_.deccel_limit)),
+                make_protocol_property("decel_limit", &config_.decel_limit)),
             make_protocol_function("set_pos_setpoint", *this, &Controller::set_pos_setpoint,
                                    "pos_setpoint",
                                    "vel_feed_forward",
