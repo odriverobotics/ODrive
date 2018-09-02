@@ -13,9 +13,10 @@ import random
 # vr, ar and dr                 Reached values of velocity and acceleration
 # Tj , Tja, Tjv and Tjd         Length of the constant jerk stages (FIR filter time)
 
+
 def FIR_trapPlan(Xf, Xi, Vi, Vmax, Amax, Dmax):
 
-    dX_stop = Vi**2 / (2*Dmax) # Minimum stopping distance
+    dX_stop = Vi**2 / (2*Dmax)  # Minimum stopping distance
     dX = Xf - Xi    # Distance to travel
 
     s = np.sign(dX)   # Sign of travel direction
@@ -33,27 +34,29 @@ def FIR_trapPlan(Xf, Xi, Vi, Vmax, Amax, Dmax):
 
         print("Overshoot Move:")
         print("dX: {:.3f}\tdx_Stop: {:.3f}".format(dX, dX_stop))
-        print("Xf: {:.3f}\tXi: {:.3f}\tVi: {:.3f}\tVmax: {:.3f}\tAmax: {:.3f}\t".format(Xf, Xi, Vi, Vmax, Amax))
+        print("Xf: {:.3f}\tXi: {:.3f}\tVi: {:.3f}\tVmax: {:.3f}\tAmax: {:.3f}\t".format(
+            Xf, Xi, Vi, Vmax, Amax))
         print("Ta: {:.3f}\tTv: {:.3f}\tTd: {:.3f}".format(Ta, Tv, Td))
         print("Ar: {:.3f}\tDr: {:.3f}\tVr: {:.3f}".format(Ar, Dr, Vr))
-        print()        
+        print()
 
     else:
-    # Correct initial acceleration direction if needed
+        # Correct initial acceleration direction if needed
         if s*Vi > s*Vr:
             Ar = -s*Amax
 
         Ta = (Vr - Vi)/Ar   # Acceleration Time
         Td = -Vr/Dr   # Deceleration Time
 
-        ## Peak velocity handling
+        # Peak velocity handling
         dXmin = Ta*(Vr + Vi)/2.0 + Td*(Vr)/2.0
 
-        ## Short move handling
+        # Short move handling
         if abs(dX) < abs(dXmin):
             print("Short Move:")
             print("dX: {:.3f}\tdXmin: {:.3f}".format(dX, dXmin))
-            print("Xf: {:.3f}\tXi: {:.3f}\tVi: {:.3f}\tVmax: {:.3f}\tAmax: {:.3f}\t".format(Xf, Xi, Vi, Vmax, Amax))
+            print("Xf: {:.3f}\tXi: {:.3f}\tVi: {:.3f}\tVmax: {:.3f}\tAmax: {:.3f}\t".format(
+                Xf, Xi, Vi, Vmax, Amax))
             print("Ta: {:.3f}\tTd: {:.3f}\tVr: {:.3f}".format(Ta, Td, Vr))
             print()
 
@@ -64,7 +67,7 @@ def FIR_trapPlan(Xf, Xi, Vi, Vmax, Amax, Dmax):
         else:
             Tv = (dX - dXmin)/Vr    # non-short move, coast time at constant v
 
-    ## We've computed Ta, Tv, Td, and Vr.  Time to produce a trajectory
+    # We've computed Ta, Tv, Td, and Vr.  Time to produce a trajectory
     # Create the time series and preallocate the position, velocity, and acceleration arrays
     t_traj = np.linspace(0, Ta+Tv+Td, 10000)
     y = [None]*len(t_traj)
@@ -78,7 +81,7 @@ def FIR_trapPlan(Xf, Xi, Vi, Vmax, Amax, Dmax):
 
     for i in range(len(t_traj)):
         t = t_traj[i]
-        if(t < 0): # Initial conditions
+        if(t < 0):  # Initial conditions
             y[i] = Xi
             yd[i] = Vi
             ydd[i] = Ar
@@ -90,41 +93,44 @@ def FIR_trapPlan(Xf, Xi, Vi, Vmax, Amax, Dmax):
             y[i] = y_Accel + (Vr * (t - Ta))
             yd[i] = Vr
             ydd[i] = 0
-        elif(t <= Ta+Tv+Td): # Deceleration
-            y[i] = y_Accel + (Vr * (t - Ta)) + Dr*((t - Tav)*(t - Tav))/2
-            yd[i] = Vr + Dr*(t - Tav)
+        elif(t <= Ta+Tv+Td):  # Deceleration
+            Tdc = t - Tav
+            y[i] = y_Accel + (Vr * (t - Ta)) + Dr*((Tdc)*(Tdc))/2
+            yd[i] = Vr + Dr*(Tdc)
             ydd[i] = Dr
 
     return (y, yd, ydd, t_traj)
 
 
 numRows = 2
-numCols = 4
+numCols = 2
 fig, axes = plt.subplots(numRows, numCols)
 random.seed()
 for x in range(numRows*numCols):
 
-    Vmax = random.uniform(0.1, 20)
-    Amax = random.uniform(0.1, 4)
-    Dmax = Amax
-
-    Xf = random.uniform(-100.0, 100.0)
-    Xi = random.uniform(-100.0, 100.0)
-    Vi = random.uniform(-Vmax*2, Vmax*2)
-
-    # Vmax = .5
-    # Amax = .5
+    # Vmax = random.uniform(0.1, 20)
+    # Amax = random.uniform(0.1, 4)
     # Dmax = Amax
-    # Xf = 10
-    # Xi = -2
-    # Vi = 4
+
+    # Xf = random.uniform(-100.0, 100.0)
+    # Xi = random.uniform(-100.0, 100.0)
+    # Vi = random.uniform(-Vmax*2, Vmax*2)
+
+    Vmax = 100000.0
+    Amax = 100000.0
+    Dmax = Amax
+    Xf = 0
+    Xi = 1000000
+    Vi = 0
 
     (Y, Yd, Ydd, t) = FIR_trapPlan(Xf, Xi, Vi, Vmax, Amax, Dmax)
 
     if(abs(Xf-Xi) <= Vi**2 / (2*Dmax)):
-        print("Overshoot: ",Xf)
-        print("Xf: {:.3f}\tXi: {:.3f}\tVi: {:.3f}\tVmax: {:.3f}\tAmax: {:.3f}\t".format(Xf, Xi, Vi, Vmax, Amax))
-        print("Y: {:.3f}\tYd: {:.3f}\tYdd: {:.3f}".format(Y[-1], Yd[-1], Ydd[-1]))
+        print("Overshoot: ", Xf)
+        print("Xf: {:.3f}\tXi: {:.3f}\tVi: {:.3f}\tVmax: {:.3f}\tAmax: {:.3f}\t".format(
+            Xf, Xi, Vi, Vmax, Amax))
+        print("Y: {:.3f}\tYd: {:.3f}\tYdd: {:.3f}".format(
+            Y[-1], Yd[-1], Ydd[-1]))
         print()
         (Y2, Yd2, Ydd2, t2) = FIR_trapPlan(Xf, Y[-1], Yd[-1], Vmax, Amax, Dmax)
         Y.extend(Y2)
@@ -135,7 +141,8 @@ for x in range(numRows*numCols):
 
     if(abs(Xf-Y[-1]) > 0.0001):
         print("Bad Final Position")
-        print("Xf: {:.3f}\tXi: {:.3f}\tVi: {:.3f}\tVmax: {:.3f}\tAmax: {:.3f}\t".format(Xf, Xi, Vi, Vmax, Amax))
+        print("Xf: {:.3f}\tXi: {:.3f}\tVi: {:.3f}\tVmax: {:.3f}\tAmax: {:.3f}\t".format(
+            Xf, Xi, Vi, Vmax, Amax))
         print()
         # plt.figure()
         # plt.subplot(2,1,1)
@@ -150,7 +157,8 @@ for x in range(numRows*numCols):
         # plt.show()
     elif(abs(Yd[-1]) > 0.0001):
         print("Bad Final Velocity")
-        print("Xf: {:.3f}\tXi: {:.3f}\tVi: {:.3f}\tVmax: {:.3f}\tAmax: {:.3f}\t".format(Xf, Xi, Vi, Vmax, Amax))
+        print("Xf: {:.3f}\tXi: {:.3f}\tVi: {:.3f}\tVmax: {:.3f}\tAmax: {:.3f}\t".format(
+            Xf, Xi, Vi, Vmax, Amax))
         print()
         # plt.figure()
         # plt.plot(t, Y)
@@ -158,17 +166,18 @@ for x in range(numRows*numCols):
         # # plt.plot(t, Ydd)
         # plt.show()
 
-    ax1 = axes[int(x/numCols), x%numCols]
+    ax1 = axes[int(x/numCols), x % numCols]
     ax1.plot(t, Y)
     ax1.plot(t, Yd)
     ax1.plot(t[-1], Xf, 'b*')
     ax1.plot(t[-1], 0, 'r*')
 
-    ax2 = ax1.twinx()
-    ax2.plot(t, Ydd, color='tab:green')
-    ax2.tick_params(axis='y', labelcolor='tab:green')
+    # ax2 = ax1.twinx()
+    # ax2.plot(t, Ydd, color='tab:green')
+    # ax2.tick_params(axis='y', labelcolor='tab:green')
     dX = abs(Xf - Y[-1])
     dV = abs(0 - Yd[-1])
-    axes[int(x/numCols), x%numCols].set_title('Xf: {:.3f}  Xi: {:.3f}\ndX: {:.3f} dV: {:.3f}'.format(Xf, Xi, dX, dV))
+    axes[int(x/numCols), x % numCols].set_title(
+        'Xf: {:.3f}  Xi: {:.3f}\ndX: {:.3f} dV: {:.3f}'.format(Xf, Xi, dX, dV))
 
 plt.show()

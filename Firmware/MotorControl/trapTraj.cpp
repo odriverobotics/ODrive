@@ -92,8 +92,8 @@ TrajectoryStep_t TrapezoidalTrajectory::evalTrapTraj(float t) {
         trajStep.Yd = Vr_;
         trajStep.Ydd = 0;
     } else if (t < Ta_ + Tv_ + Td_) {  // Deceleration
-        float Tdc = t - Ta_;
-        trajStep.Y = yAccel_ + (Vr_ * (Tdc)) + Dr_ * (Tdc * Tdc) / 2.0f;
+        float Tdc = t - Tav_;
+        trajStep.Y = yAccel_ + (Vr_ * (t - Ta_)) + Dr_ * (Tdc * Tdc) / 2.0f;
         trajStep.Yd = Vr_ + Dr_ * Tdc;
         trajStep.Ydd = Dr_;
     }
