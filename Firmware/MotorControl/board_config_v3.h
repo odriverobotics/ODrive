@@ -25,6 +25,8 @@ typedef struct {
     uint16_t step_pin;
     GPIO_TypeDef* dir_port;
     uint16_t dir_pin;
+    //GPIO_TypeDef* motor_enable_port;
+    //uint16_t motor_enable_pin;
     size_t thermistor_adc_ch;
     osPriority thread_priority;
 } AxisHardwareConfig_t;
@@ -78,6 +80,8 @@ const BoardHardwareConfig_t hw_configs[2] = { {
         .step_pin = GPIO_1_Pin,
         .dir_port = GPIO_2_GPIO_Port,
         .dir_pin = GPIO_2_Pin,
+        //.motor_enable_pin = GPIO_5_Pin,
+        //.motor_enable_port = GPIO_5_GPIO_Port,
         .thermistor_adc_ch = 15,
         .thread_priority = (osPriority)(osPriorityHigh + (osPriority)1),
     },
@@ -115,11 +119,15 @@ const BoardHardwareConfig_t hw_configs[2] = { {
         .step_pin = GPIO_7_Pin,
         .dir_port = GPIO_8_GPIO_Port,
         .dir_pin = GPIO_8_Pin,
+        //.motor_enable_pin = GPIO_5_Pin,
+        //.motor_enable_port = GPIO_5_GPIO_Port,
 #else
         .step_port = GPIO_3_GPIO_Port,
         .step_pin = GPIO_3_Pin,
         .dir_port = GPIO_4_GPIO_Port,
         .dir_pin = GPIO_4_Pin,
+        //.motor_enable_pin = GPIO_5_Pin,
+        //.motor_enable_port = GPIO_5_GPIO_Port,
 #endif
 #if HW_VERSION_MAJOR == 3 && HW_VERSION_MINOR >= 3
         .thermistor_adc_ch = 4,
