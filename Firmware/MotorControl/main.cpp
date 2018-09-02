@@ -162,8 +162,9 @@ int odrive_main(void) {
         Motor *motor = new Motor(hw_configs[i].motor_config,
                                  hw_configs[i].gate_driver_config,
                                  motor_configs[i]);
+        TrapezoidalTrajectory *trap = new TrapezoidalTrajectory();
         axes[i] = new Axis(hw_configs[i].axis_config, axis_configs[i],
-                *encoder, *sensorless_estimator, *controller, *motor);
+                *encoder, *sensorless_estimator, *controller, *motor, *trap);
     }
     
     // Start ADC for temperature measurements and user measurements

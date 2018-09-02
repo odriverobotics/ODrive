@@ -10,6 +10,8 @@ int sign(T val) {
         return (std::signbit(val)) ? -1 : 1;
 }
 
+TrapezoidalTrajectory::TrapezoidalTrajectory(){};
+
 float TrapezoidalTrajectory::planTrapezoidal(float Xf, float Xi,
                                              float Vi, float Vmax,
                                              float Amax, float Dmax) {
@@ -75,8 +77,8 @@ float TrapezoidalTrajectory::planTrapezoidal(float Xf, float Xi,
     return Ta + Tv + Td;
 }
 
-TrapezoidalTrajectory::TrajectoryStep_t TrapezoidalTrajectory::evalTrapTraj(float t) {
-    TrapezoidalTrajectory::TrajectoryStep_t trajStep;
+TrajectoryStep_t TrapezoidalTrajectory::evalTrapTraj(float t) {
+    TrajectoryStep_t trajStep;
     if (t < 0.0f) {  // Initial Conditions
         trajStep.Y = Xi_;
         trajStep.Yd = Vi_;

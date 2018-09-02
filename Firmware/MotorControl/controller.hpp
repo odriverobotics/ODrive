@@ -11,7 +11,8 @@ typedef enum {
     CTRL_MODE_VOLTAGE_CONTROL = 0,
     CTRL_MODE_CURRENT_CONTROL = 1,
     CTRL_MODE_VELOCITY_CONTROL = 2,
-    CTRL_MODE_POSITION_CONTROL = 3
+    CTRL_MODE_POSITION_CONTROL = 3,
+    CTRL_MODE_PLANNED_MOVE_CONTROL = 4
 } Motor_control_mode_t;
 
 struct ControllerConfig_t {
@@ -21,6 +22,8 @@ struct ControllerConfig_t {
     // float vel_gain = 5.0f / 200.0f, // [A/(rad/s)] <sensorless example>
     float vel_integrator_gain = 10.0f / 10000.0f;  // [A/(counts/s * s)]
     float vel_limit = 20000.0f;           // [counts/s]
+    float accel_lim = 5000.0f;
+    float deccel_lim = 5000.0f;
 };
 
 class Controller {
@@ -31,6 +34,9 @@ public:
     void set_pos_setpoint(float pos_setpoint, float vel_feed_forward, float current_feed_forward);
     void set_vel_setpoint(float vel_setpoint, float current_feed_forward);
     void set_current_setpoint(float current_setpoint);
+
+    // Trajectory-Planned control
+    void move_to_pos(float pos_setpoint);
     
     // TODO: make this more similar to other calibration loops
     void start_anticogging_calibration();
@@ -71,6 +77,9 @@ public:
     float vel_integrator_current_ = 0.0f;  // [A]
     float current_setpoint_ = 0.0f;        // [A]
 
+    float planned_move_timer_ = 0.0f;
+    float planned_move_end_time_ = 0.0f;
+
     // Communication protocol definitions
     auto make_protocol_definitions() {
         return make_protocol_member_list(
@@ -83,19 +92,20 @@ public:
                 make_protocol_property("pos_gain", &config_.pos_gain),
                 make_protocol_property("vel_gain", &config_.vel_gain),
                 make_protocol_property("vel_integrator_gain", &config_.vel_integrator_gain),
-                make_protocol_property("vel_limit", &config_.vel_limit)
-            ),
+                make_protocol_property("vel_limit", &config_.vel_limit),
+                make_protocol_property("accel_lim", &config_.accel_lim),
+                make_protocol_property("deccel_lim", &config_.deccel_lim)),
             make_protocol_function("set_pos_setpoint", *this, &Controller::set_pos_setpoint,
-                "pos_setpoint",
-                "vel_feed_forward",
-                "current_feed_forward"),
+                                   "pos_setpoint",
+                                   "vel_feed_forward",
+                                   "current_feed_forward"),
             make_protocol_function("set_vel_setpoint", *this, &Controller::set_vel_setpoint,
-                "vel_setpoint",
-                "current_feed_forward"),
+                                   "vel_setpoint",
+                                   "current_feed_forward"),
             make_protocol_function("set_current_setpoint", *this, &Controller::set_current_setpoint,
-                "current_setpoint"),
-            make_protocol_function("start_anticogging_calibration", *this, &Controller::start_anticogging_calibration)
-        );
+                                   "current_setpoint"),
+            make_protocol_function("move_to_pos", *this, &Controller::move_to_pos, "pos_setpoint"),
+            make_protocol_function("start_anticogging_calibration", *this, &Controller::start_anticogging_calibration), );
     }
 };
 

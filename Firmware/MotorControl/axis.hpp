@@ -65,7 +65,8 @@ public:
             Encoder& encoder,
             SensorlessEstimator& sensorless_estimator,
             Controller& controller,
-            Motor& motor);
+            Motor& motor,
+            TrapezoidalTrajectory& trap);
 
     void setup();
     void start_thread();
@@ -150,6 +151,7 @@ public:
     SensorlessEstimator& sensorless_estimator_;
     Controller& controller_;
     Motor& motor_;
+    TrapezoidalTrajectory& trap_;
 
     osThreadId thread_id_;
     volatile bool thread_id_valid_ = false;
