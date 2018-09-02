@@ -86,7 +86,7 @@ bool Controller::update(float pos_estimate, float vel_estimate, float* current_s
     // Position control
     // TODO Decide if we want to use encoder or pll position here
     float vel_des = vel_setpoint_;
-    float gain_scheduling_multiplier = 1.0f
+    float gain_scheduling_multiplier = 1.0f;
     if (config_.control_mode >= CTRL_MODE_POSITION_CONTROL) {
         float pos_err = pos_setpoint_ - pos_estimate;
         vel_des += config_.pos_gain * pos_err;
