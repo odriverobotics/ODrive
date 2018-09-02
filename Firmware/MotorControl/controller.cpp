@@ -53,6 +53,7 @@ void Controller::move_to_pos(float pos_setpoint) {
     pos_setpoint_ = myTraj.Y;
     vel_setpoint_ = myTraj.Yd;
     // current_setpoint_ = myTraj.Ydd;
+    current_setpoint_ = 0.0f; // Temporary, until we have a way to convert from accel to current
 
     planned_move_timer_ = axis_->loop_counter_ * current_meas_period;
 }
@@ -108,6 +109,7 @@ bool Controller::update(float pos_estimate, float vel_estimate, float* current_s
             pos_setpoint_ = myTraj.Y;
             vel_setpoint_ = myTraj.Yd;
             // current_setpoint_ = myTraj.Ydd;
+            current_setpoint_ = 0.0f; // Temporary, until we have a way of converting from accel to current
         }
     }
 
