@@ -101,6 +101,8 @@ bool Controller::update(float pos_estimate, float vel_estimate, float* current_s
         float time_now = axis_->loop_counter_ * current_meas_period;
         if ((time_now - planned_move_timer_) > planned_move_end_time_) {
             config_.control_mode = CTRL_MODE_POSITION_CONTROL;
+            vel_setpoint_ = 0.0f;
+            current_setpoint_ = 0.0f;
         } else {
             TrajectoryStep_t myTraj = axis_->trap_.evalTrapTraj(time_now - planned_move_timer_);
             pos_setpoint_ = myTraj.Y;
