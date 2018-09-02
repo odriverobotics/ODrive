@@ -20,6 +20,12 @@ enum AxisState_t {
     AXIS_STATE_HOMING = 9   //<! run axis homing function
 };
 
+enum HomingState_t {
+    HOMING_STATE_IDLE,
+    HOMING_STATE_HOMING,
+    HOMING_STATE_MOVE_TO_ZERO
+};
+
 struct Endstop_t {
     uint16_t gpio_num;
     bool enabled = false;
@@ -180,6 +186,7 @@ public:
     uint32_t loop_counter_ = 0;
     bool min_endstop_state_ = false;
     bool max_endstop_state_ = false;
+    HomingState_t homing_state_ = HOMING_STATE_IDLE;
 
     // Communication protocol definitions
     auto make_protocol_definitions() {
@@ -191,6 +198,7 @@ public:
             make_protocol_ro_property("loop_counter", &loop_counter_),
             make_protocol_ro_property("min_endstop_state", &min_endstop_state_),
             make_protocol_ro_property("max_endstop_state", &max_endstop_state_),
+            make_protocol_ro_property("homing_state", &homing_state_),
             make_protocol_object("config",
                 make_protocol_property("startup_motor_calibration", &config_.startup_motor_calibration),
                 make_protocol_property("startup_encoder_index_search", &config_.startup_encoder_index_search),

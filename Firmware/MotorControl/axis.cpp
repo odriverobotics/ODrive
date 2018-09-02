@@ -118,6 +118,7 @@ void Axis::set_min_endstop_enabled(bool enable){
     uint16_t gpio_pin = get_gpio_pin_by_pin(config_.min_endstop.gpio_num);
     GPIO_TypeDef* gpio_port = get_gpio_port_by_pin(config_.min_endstop.gpio_num);
     if(enable){
+        HAL_GPIO_DeInit(gpio_port, gpio_pin);
         GPIO_InitTypeDef GPIO_InitStruct;
         GPIO_InitStruct.Pin = gpio_pin;
         GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
@@ -125,7 +126,7 @@ void Axis::set_min_endstop_enabled(bool enable){
         HAL_GPIO_Init(gpio_port, &GPIO_InitStruct);
 
         uint32_t pull_up_down = config_.min_endstop.is_active_high ? GPIO_PULLDOWN : GPIO_PULLUP;
-        uint32_t interrupt_mode = config_.min_endstop.is_active_high ? GPIO_MODE_IT_RISING : GPIO_MODE_IT_FALLING;
+        uint32_t interrupt_mode = GPIO_MODE_IT_RISING_FALLING;
         GPIO_subscribe(gpio_port, gpio_pin, pull_up_down, interrupt_mode,
                         min_endstop_cb_wrapper, this);
     }
@@ -158,7 +159,7 @@ void Axis::set_max_endstop_enabled(bool enable){
         HAL_GPIO_Init(gpio_port, &GPIO_InitStruct);
 
         uint32_t pull_up_down = config_.max_endstop.is_active_high ? GPIO_PULLDOWN : GPIO_PULLUP;
-        uint32_t interrupt_mode = config_.max_endstop.is_active_high ? GPIO_MODE_IT_RISING : GPIO_MODE_IT_FALLING;
+        uint32_t interrupt_mode = GPIO_MODE_IT_RISING_FALLING; // Need to track pin state, not just homing edges
         GPIO_subscribe(gpio_port, gpio_pin, pull_up_down, interrupt_mode,
                         max_endstop_cb_wrapper, this);
     }
@@ -251,8 +252,6 @@ bool Axis::run_sensorless_spin_up() {
 
 // Note run_sensorless_control_loop and run_closed_loop_control_loop are very similar and differ only in where we get the estimate from.
 bool Axis::run_sensorless_control_loop() {
-    set_min_endstop_enabled(config_.min_endstop.enabled);
-    set_max_endstop_enabled(config_.max_endstop.enabled);
     set_step_dir_enabled(config_.enable_step_dir);
 
     run_control_loop([this](){
@@ -273,20 +272,32 @@ bool Axis::run_sensorless_control_loop() {
 
 bool Axis::run_closed_loop_control_loop() {
     set_step_dir_enabled(config_.enable_step_dir);
-    run_control_loop([this](){
+    run_control_loop([this]() {
         // Note that all estimators are updated in the loop prefix in run_control_loop
         float current_setpoint;
         if (!controller_.update(encoder_.pos_estimate_, encoder_.vel_estimate_, &current_setpoint))
-            return error_ |= ERROR_CONTROLLER_FAILED, false; //TODO: Make controller.set_error
+            return error_ |= ERROR_CONTROLLER_FAILED, false;  //TODO: Make controller.set_error
         if (!motor_.update(current_setpoint, encoder_.phase_))
-            return false; // set_error should update axis.error_
-        
+            return false;  // set_error should update axis.error_
 
-        // Check for endstop presses
-        if(config_.min_endstop.enabled && min_endstop_state_) {
-            return error_ |= ERROR_MIN_ENDSTOP_PRESSED, false;
-        } else if(config_.max_endstop.enabled && max_endstop_state_) {
-            return error_ |= ERROR_MAX_ENDSTOP_PRESSED, false;
+        // Handle the homing case
+        if (homing_state_ == HOMING_STATE_HOMING) {
+            if (min_endstop_state_) {
+                encoder_.set_linear_count(config_.min_endstop.offset);
+                controller_.set_pos_setpoint(0.0f, 0.0f, 0.0f);
+                homing_state_ = HOMING_STATE_MOVE_TO_ZERO;
+            }
+        } else if (homing_state_ == HOMING_STATE_MOVE_TO_ZERO) {
+            if(!min_endstop_state_){
+                homing_state_ = HOMING_STATE_IDLE;
+            }
+        } else {
+            // Check for endstop presses
+            if (config_.min_endstop.enabled && min_endstop_state_) {
+                return error_ |= ERROR_MIN_ENDSTOP_PRESSED, false;
+            } else if (config_.max_endstop.enabled && max_endstop_state_) {
+                return error_ |= ERROR_MAX_ENDSTOP_PRESSED, false;
+            }
         }
         return true;
     });
@@ -306,6 +317,8 @@ bool Axis::run_idle_loop() {
 
 // Infinite loop that does calibration and enters main control loop as appropriate
 void Axis::run_state_machine_loop() {
+    set_min_endstop_enabled(config_.min_endstop.enabled);
+    set_max_endstop_enabled(config_.max_endstop.enabled);
 
     // Allocate the map for anti-cogging algorithm and initialize all values to 0.0f
     // TODO: Move this somewhere else
@@ -333,9 +346,9 @@ void Axis::run_state_machine_loop() {
                 if (config_.startup_encoder_offset_calibration)
                     task_chain_[pos++] = AXIS_STATE_ENCODER_OFFSET_CALIBRATION;
                 if (config_.startup_closed_loop_control){
-                    task_chain_[pos++] = AXIS_STATE_CLOSED_LOOP_CONTROL;
                     if(config_.startup_homing)
                         task_chain_[pos++] = AXIS_STATE_HOMING;
+                    task_chain_[pos++] = AXIS_STATE_CLOSED_LOOP_CONTROL;
                 }
                 else if (config_.startup_sensorless_control)
                     task_chain_[pos++] = AXIS_STATE_SENSORLESS_CONTROL;
