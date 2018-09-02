@@ -18,7 +18,7 @@ static uint32_t usb_len;
 static uint8_t active_endpoint_pair;
 
 // FIXME: the stdlib doesn't know about CMSIS threads, so this is just a global variable
-static thread_local uint32_t deadline_ms = 0;
+// static thread_local uint32_t deadline_ms = 0;
 
 osThreadId usb_thread;
 
@@ -31,7 +31,8 @@ public:
         if (length > USB_TX_DATA_SIZE)
             return -1;
         // wait for USB interface to become ready
-        if (osSemaphoreWait(sem_usb_tx, deadline_to_timeout(deadline_ms)) != osOK) {
+        // if (osSemaphoreWait(sem_usb_tx, deadline_to_timeout(deadline_ms)) != osOK) {
+        if (osSemaphoreWait(sem_usb_tx, PROTOCOL_SERVER_TIMEOUT_MS) != osOK) {
             // If the host resets the device it might be that the TX-complete handler is never called
             // and the sem_usb_tx semaphore is never released. To handle this we just override the
             // TX buffer if this wait times out. The implication is that the channel is no longer lossless.
@@ -85,11 +86,11 @@ static void usb_server_thread(void * ctx) {
     (void) ctx;
     
     for (;;) {
-        const uint32_t usb_check_timeout = 1; // ms
-        osStatus sem_stat = osSemaphoreWait(sem_usb_rx, usb_check_timeout);
+        // const uint32_t usb_check_timeout = 1; // ms
+        osStatus sem_stat = osSemaphoreWait(sem_usb_rx, osWaitForever);
         if (sem_stat == osOK) {
             usb_stats_.rx_cnt++;
-            deadline_ms = timeout_to_deadline(PROTOCOL_SERVER_TIMEOUT_MS);
+            // deadline_ms = timeout_to_deadline(PROTOCOL_SERVER_TIMEOUT_MS);
             if (active_endpoint_pair == CDC_OUT_EP && board_config.enable_ascii_protocol_on_usb) {
                 ASCII_protocol_parse_stream(usb_buf, usb_len, usb_stream_output);
             } else {
