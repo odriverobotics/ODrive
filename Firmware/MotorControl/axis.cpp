@@ -93,6 +93,26 @@ void Axis::set_step_dir_enabled(bool enable) {
     }
 }
 
+void Axis::set_motor_enable_pin_enabled(bool enable) {
+    if (enable) {
+        // Set up the direction GPIO as input
+        GPIO_InitTypeDef GPIO_InitStruct;
+        //GPIO_InitStruct.Pin = hw_config_.motor_enable_pin;
+        GPIO_InitStruct.Pin = GPIO_5_Pin;
+        GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+        GPIO_InitStruct.Pull = GPIO_NOPULL;
+        //HAL_GPIO_Init(hw_config_.motor_enable_port, &GPIO_InitStruct);
+        HAL_GPIO_Init(GPIO_5_GPIO_Port, &GPIO_InitStruct);
+
+        enable_motor_pin = true;
+    } else {
+        enable_motor_pin = false;
+
+        // Unsubscribe from step GPIO
+        GPIO_unsubscribe(GPIO_5_GPIO_Port, GPIO_5_Pin);
+    }
+}
+
 bool Axis::check_for_errors() {
     // Maybe we should update this to only trigger on new errors?
     // The danger with that is we could fail to bail on uncleared errors that still prevent
@@ -106,6 +126,23 @@ bool Axis::check_for_errors() {
         return error_ == ERROR_NONE;
 }
 
+bool Axis::check_next_state() {
+    if (enable_motor_pin == true) {
+        bool pinstate = (HAL_GPIO_ReadPin(GPIO_5_GPIO_Port, GPIO_5_Pin));
+        if (pinstate == true) {
+            if (current_state_ == AXIS_STATE_CLOSED_LOOP_CONTROL) {
+                requested_state_ = AXIS_STATE_IDLE;
+            }
+        }
+        if (pinstate == false ) {
+            if (current_state_ == AXIS_STATE_IDLE) {
+                encoder_.set_linear_count(0);
+                requested_state_ = AXIS_STATE_CLOSED_LOOP_CONTROL;
+            }       
+        }
+    }
+    return check_for_errors();            
+}
 // @brief Do axis level checks and call subcomponent do_checks
 // Returns true if everything is ok.
 bool Axis::do_checks() {
@@ -178,6 +215,7 @@ bool Axis::run_sensorless_spin_up() {
 // Note run_sensorless_control_loop and run_closed_loop_control_loop are very similar and differ only in where we get the estimate from.
 bool Axis::run_sensorless_control_loop() {
     set_step_dir_enabled(config_.enable_step_dir);
+    set_motor_enable_pin_enabled(config_.enable_motor_pin);
     run_control_loop([this](){
         if (controller_.config_.control_mode >= CTRL_MODE_POSITION_CONTROL)
             return error_ |= ERROR_POS_CTRL_DURING_SENSORLESS, false;
@@ -196,6 +234,7 @@ bool Axis::run_sensorless_control_loop() {
 
 bool Axis::run_closed_loop_control_loop() {
     set_step_dir_enabled(config_.enable_step_dir);
+    set_motor_enable_pin_enabled(config_.enable_motor_pin);
     run_control_loop([this](){
         // Note that all estimators are updated in the loop prefix in run_control_loop
         float current_setpoint;
