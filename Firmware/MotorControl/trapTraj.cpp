@@ -1,5 +1,5 @@
-#include "odrive_main.h"
 #include <math.h>
+#include "odrive_main.h"
 
 // Standard sign function, implemented to match the Python impelmentation
 template <typename T>
@@ -10,7 +10,7 @@ int sign(T val) {
         return (std::signbit(val)) ? -1 : 1;
 }
 
-TrapezoidalTrajectory::TrapezoidalTrajectory(){};
+TrapezoidalTrajectory::TrapezoidalTrajectory(TrapTrajConfig_t &config) : config_(config) {}
 
 float TrapezoidalTrajectory::planTrapezoidal(float Xf, float Xi,
                                              float Vi, float Vmax,
@@ -40,15 +40,15 @@ float TrapezoidalTrajectory::planTrapezoidal(float Xf, float Xi,
             Ar = -1.0f * s * Amax;
         }
 
-        Ta = (Vr - Vi) / Ar;    // Acceleration time
-        Td = (-Vr) / Dr;        // Deceleration time
+        Ta = (Vr - Vi) / Ar;  // Acceleration time
+        Td = (-Vr) / Dr;      // Deceleration time
 
         // Peak Velocity handling
-        float dXmin = Ta*(Vr + Vi)/2.0f + Td*Vr/2.0f;
+        float dXmin = Ta * (Vr + Vi) / 2.0f + Td * Vr / 2.0f;
 
         // Short move handling
         if (fabs(dX) < fabs(dXmin)) {
-            Vr = s*sqrt((-((Vi*Vi)/Ar)-2.0f*dX)/(1.0f/Dr-1.0f/Ar));
+            Vr = s * sqrt((-((Vi * Vi) / Ar) - 2.0f * dX) / (1.0f / Dr - 1.0f / Ar));
             Ta = std::max(0.0f, (Vr - Vi) / Ar);
             Tv = 0;
             Td = std::max(0.0f, -Vr / Dr);
@@ -58,7 +58,7 @@ float TrapezoidalTrajectory::planTrapezoidal(float Xf, float Xi,
     }
 
     // Populate object's values
-    
+
     Xf_ = Xf;
     Xi_ = Xi;
     Vi_ = Vi;
@@ -77,14 +77,14 @@ float TrapezoidalTrajectory::planTrapezoidal(float Xf, float Xi,
     return Ta + Tv + Td;
 }
 
-TrajectoryStep_t TrapezoidalTrajectory::evalTrapTraj(float t) {
-    TrajectoryStep_t trajStep;
+TrapTrajStep_t TrapezoidalTrajectory::evalTrapTraj(float t) {
+    TrapTrajStep_t trajStep;
     if (t < 0.0f) {  // Initial Conditions
         trajStep.Y = Xi_;
         trajStep.Yd = Vi_;
         trajStep.Ydd = Ar_;
     } else if (t < Ta_) {  // Accelerating
-        trajStep.Y = (Ar_ * (t * t)/ 2.0f) + (Vi_ * t) + Xi_;
+        trajStep.Y = (Ar_ * (t * t) / 2.0f) + (Vi_ * t) + Xi_;
         trajStep.Yd = (Ar_ * t) + Vi_;
         trajStep.Ydd = Ar_;
     } else if (t < Ta_ + Tv_) {  // Coasting

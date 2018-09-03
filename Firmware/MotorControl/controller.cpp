@@ -46,10 +46,10 @@ void Controller::set_current_setpoint(float current_setpoint) {
 
 void Controller::move_to_pos(float pos_setpoint) {
     planned_move_end_time_ = axis_->trap_.planTrapezoidal(pos_setpoint, axis_->encoder_.pos_estimate_,
-                                                          axis_->encoder_.vel_estimate_, config_.vel_limit,
-                                                          config_.accel_limit, config_.decel_limit);
+                                                          axis_->encoder_.vel_estimate_, axis_->trap_.config_.vel_limit,
+                                                          axis_->trap_.config_.accel_limit, axis_->trap_.config_.decel_limit);
     config_.control_mode = CTRL_MODE_PLANNED_MOVE_CONTROL;
-    TrajectoryStep_t myTraj = axis_->trap_.evalTrapTraj(0.0f);
+    TrapTrajStep_t myTraj = axis_->trap_.evalTrapTraj(0.0f);
     pos_setpoint_ = myTraj.Y;
     vel_setpoint_ = myTraj.Yd;
     // current_setpoint_ = myTraj.Ydd;
@@ -105,7 +105,7 @@ bool Controller::update(float pos_estimate, float vel_estimate, float* current_s
             vel_setpoint_ = 0.0f;
             current_setpoint_ = 0.0f;
         } else {
-            TrajectoryStep_t myTraj = axis_->trap_.evalTrapTraj(time_now - planned_move_timer_);
+            TrapTrajStep_t myTraj = axis_->trap_.evalTrapTraj(time_now - planned_move_timer_);
             pos_setpoint_ = myTraj.Y;
             vel_setpoint_ = myTraj.Yd;
             // current_setpoint_ = myTraj.Ydd;
