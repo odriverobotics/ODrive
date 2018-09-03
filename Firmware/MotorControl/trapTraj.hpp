@@ -1,7 +1,6 @@
 #ifndef _TRAP_TRAJ_H
 #define _TRAP_TRAJ_H
 
-
 struct TrapTrajConfig_t {
     float vel_limit = 20000.0f;
     float accel_limit = 5000.0f;
@@ -16,7 +15,7 @@ struct TrapTrajStep_t {
 
 class TrapezoidalTrajectory {
    public:
-    Axis* axis_ = nullptr;  // set by Axis constructor
+    Axis *axis_ = nullptr;  // set by Axis constructor
     TrapTrajConfig_t &config_;
 
     TrapezoidalTrajectory(TrapTrajConfig_t &config);
@@ -27,16 +26,15 @@ class TrapezoidalTrajectory {
 
     TrapTrajStep_t evalTrapTraj(float t);
 
-    auto make_protocol_definitions(){
-     return make_protocol_member_list(
-         make_protocol_property("vel_limit", &config_.vel_limit),
-         make_protocol_property("accel_limit", &config_.accel_limit),
-         make_protocol_property("decel_limit", &config_.decel_limit)
-     );
+    auto make_protocol_definitions() {
+        return make_protocol_member_list(
+            make_protocol_object("config",
+                make_protocol_property("vel_limit", &config_.vel_limit),
+                make_protocol_property("accel_limit", &config_.accel_limit),
+                make_protocol_property("decel_limit", &config_.decel_limit)));
     }
 
    private:
-
     float yAccel_;
 
     float Xi_;
