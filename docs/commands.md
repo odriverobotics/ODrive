@@ -71,6 +71,26 @@ An upcoming feature will enable automatic tuning. Until then, here is a rough tu
 * Back down `pos_gain` until you do not have overshoot anymore.
 * The integrator is not easily tuned, nor is it strictly required. Tune at your own discretion.
 
+<details><summary markdown="span">Further details on the PID loops used by odrive for advanced users</summary><div markdown="block">
+ODrive uses a cascading controller with Feedforward terms, similar to [this diagram](https://discourse.odriverobotics.com/uploads/default/optimized/1X/750bd08c2dcdf1e22eacb9fa10d1c624db323631_1_690x279.png).
+
+image
+
+The three main PID loops used by odrive are:
+
+### Position loop:
+ 
+* `vel_cmd = (pos_setpoint - pos_feedback) * pos_gain`
+### Velocity loop:
+
+* `vel_error_sum += (vel_cmd - vel_feedback) * vel_integrator_gain`
+* `current_cmd = (vel_cmd - vel_feedback) * vel_gain + vel_error_sum + vel_feedforward`
+### Current loop:
+
+* `current_error_sum += (current_cmd - current_fb) * current_integrator_gain`
+* `voltage_cmd = (current_cmd - current_fb) * current_gain + current_error_sum + current_feedforward`
+ </div></details>
+
 ## System monitoring commands
 
 ### Encoder position and velocity
