@@ -72,11 +72,7 @@ An upcoming feature will enable automatic tuning. Until then, here is a rough tu
 * The integrator is not easily tuned, nor is it strictly required. Tune at your own discretion.
 
 <details><summary markdown="span">Further details on the PID loops used by odrive for advanced users</summary><div markdown="block">
-ODrive uses a cascading controller with Feedforward terms, similar to [this diagram](https://discourse.odriverobotics.com/uploads/default/optimized/1X/750bd08c2dcdf1e22eacb9fa10d1c624db323631_1_690x279.png).
-
-image
-
-The three main PID loops used by odrive are:
+ODrive uses a cascading controller with Feedforward terms. The three main PID loops used by odrive are:
 
 ### Position loop:
  
