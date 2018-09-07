@@ -96,6 +96,7 @@ bool Controller::anticogging_calibration(float pos_estimate, float vel_estimate)
 bool Controller::update(float pos_estimate, float vel_estimate, float* current_setpoint_output) {
     // Only runs if anticogging_.calib_anticogging is true; non-blocking
     anticogging_calibration(pos_estimate, vel_estimate);
+    float anticogging_pos = pos_estimate;
 
     // Controlled Move
     if (config_.control_mode >= CTRL_MODE_PLANNED_MOVE_CONTROL) {
@@ -111,6 +112,7 @@ bool Controller::update(float pos_estimate, float vel_estimate, float* current_s
             // current_setpoint_ = myTraj.Ydd;
             current_setpoint_ = 0.0f; // Temporary, until we have a way of converting from accel to current
         }
+        anticogging_pos = pos_setpoint_; // FF the position setpoint instead of the pos_estimate
     }
 
     // Position control
@@ -133,7 +135,7 @@ bool Controller::update(float pos_estimate, float vel_estimate, float* current_s
     // We get the current position and apply a current feed-forward
     // ensuring that we handle negative encoder positions properly (-1 == motor->encoder.encoder_cpr - 1)
     if (anticogging_.use_anticogging) {
-        Iq += anticogging_.cogging_map[mod(static_cast<int>(pos_estimate), axis_->encoder_.config_.cpr)];
+        Iq += anticogging_.cogging_map[mod(static_cast<int>(anticogging_pos), axis_->encoder_.config_.cpr)];
     }
 
     float v_err = vel_des - vel_estimate;
