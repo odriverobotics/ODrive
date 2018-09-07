@@ -71,7 +71,7 @@ code_generator_parser.add_argument("-o", "--output", type=argparse.FileType('w')
                     help="path of the generated output")
 code_generator_parser.set_defaults(template = os.path.join(script_path, 'odrive_header_template.h.in'))
 
-subparsers.add_parser('liveplotter', help="Upgrade the ODrive's Firmware")
+subparsers.add_parser('liveplotter', help="For plotting of odrive parameters (i.e. position) in real time")
 subparsers.add_parser('drv-status', help="Show status of the on-board DRV8301 chips (for debugging only)")
 subparsers.add_parser('rate-test', help="Estimate the average transmission bandwidth over USB")
 subparsers.add_parser('udev-setup', help="Linux only: Gives users on your system permission to access the ODrive by installing udev rules")

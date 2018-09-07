@@ -1,16 +1,9 @@
 
 #include "odrive_main.h"
 
-SensorlessEstimator::SensorlessEstimator()
-{
-    // Calculate pll gains
-    // This calculation is currently identical to the PLL in Encoder
-    float pll_bandwidth = 1000.0f;  // [rad/s]
-    pll_kp_ = 2.0f * pll_bandwidth;
-
-    // Critically damped
-    pll_ki_ = 0.25f * (pll_kp_ * pll_kp_);
-}
+SensorlessEstimator::SensorlessEstimator(Config_t& config) :
+        config_(config)
+    {};
 
 bool SensorlessEstimator::update() {
     // Algorithm based on paper: Sensorless Control of Surface-Mount Permanent-Magnet Synchronous Motors Based on a Nonlinear Observer
@@ -20,12 +13,6 @@ bool SensorlessEstimator::update() {
     // The V_alpha_beta applied immedietly prior to the current measurement associated with this cycle
     // is the one computed two cycles ago. To get the correct measurement, it was stored twice:
     // once by final_v_alpha/final_v_beta in the current control reporting, and once by V_alpha_beta_memory.
-
-    // Check that we don't get problems with discrete time approximation
-    if (!(current_meas_period * pll_kp_ < 1.0f)) {
-        error_ |= ERROR_UNSTABLE_GAIN;
-        return false;
-    }
 
     // Clarke transform
     float I_alpha_beta[2] = {
@@ -50,13 +37,10 @@ bool SensorlessEstimator::update() {
     }
 
     // Non-linear observer (see paper eqn 8):
-    float pm_flux_sqr = pm_flux_linkage_ * pm_flux_linkage_;
+    float pm_flux_sqr = config_.pm_flux_linkage * config_.pm_flux_linkage;
     float est_pm_flux_sqr = eta[0] * eta[0] + eta[1] * eta[1];
     float bandwidth_factor = 1.0f / pm_flux_sqr;
-    float eta_factor = 0.5f * (observer_gain_ * bandwidth_factor) * (pm_flux_sqr - est_pm_flux_sqr);
-
-    static float eta_factor_avg_test = 0.0f;
-    eta_factor_avg_test += 0.001f * (eta_factor - eta_factor_avg_test);
+    float eta_factor = 0.5f * (config_.observer_gain * bandwidth_factor) * (pm_flux_sqr - est_pm_flux_sqr);
 
     // alpha-beta vector operations
     for (int i = 0; i <= 1; ++i) {
@@ -74,14 +58,24 @@ bool SensorlessEstimator::update() {
 
     // PLL
     // TODO: the PLL part has some code duplication with the encoder PLL
+    // Pll gains as a function of bandwidth
+    float pll_kp = 2.0f * config_.pll_bandwidth;
+    // Critically damped
+    float pll_ki = 0.25f * (pll_kp * pll_kp);
+    // Check that we don't get problems with discrete time approximation
+    if (!(current_meas_period * pll_kp < 1.0f)) {
+        error_ |= ERROR_UNSTABLE_GAIN;
+        return false;
+    }
+
     // predict PLL phase with velocity
-    pll_pos_ = wrap_pm_pi(pll_pos_ + current_meas_period * pll_vel_);
+    pll_pos_ = wrap_pm_pi(pll_pos_ + current_meas_period * vel_estimate_);
     // update PLL phase with observer permanent magnet phase
     phase_ = fast_atan2(eta[1], eta[0]);
     float delta_phase = wrap_pm_pi(phase_ - pll_pos_);
-    pll_pos_ = wrap_pm_pi(pll_pos_ + current_meas_period * pll_kp_ * delta_phase);
+    pll_pos_ = wrap_pm_pi(pll_pos_ + current_meas_period * pll_kp * delta_phase);
     // update PLL velocity
-    pll_vel_ += current_meas_period * pll_ki_ * delta_phase;
+    vel_estimate_ += current_meas_period * pll_ki * delta_phase;
 
     return true;
 };

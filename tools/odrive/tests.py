@@ -195,10 +195,10 @@ class AxisTest(ABC):
     def check_preconditions(self, axis_ctx: AxisTestContext, logger):
         test_assert_no_error(axis_ctx)
         test_assert_eq(axis_ctx.handle.current_state, AXIS_STATE_IDLE)
-        if (abs(axis_ctx.handle.encoder.pll_vel) > 100):
+        if (abs(axis_ctx.handle.encoder.vel_estimate) > 100):
             logger.warn("axis still in motion, delaying 2 sec...")
             time.sleep(2)
-        test_assert_eq(axis_ctx.handle.encoder.pll_vel, 0, range=500)
+        test_assert_eq(axis_ctx.handle.encoder.vel_estimate, 0, range=500)
         test_assert_eq(axis_ctx.odrv_ctx.handle.config.dc_bus_undervoltage_trip_level, axis_ctx.odrv_ctx.yaml['vbus-voltage'] * 0.85, accuracy=0.001)
         test_assert_eq(axis_ctx.odrv_ctx.handle.config.dc_bus_overvoltage_trip_level, axis_ctx.odrv_ctx.yaml['vbus-voltage'] * 1.08, accuracy=0.001)
         #test_assert_eq(axis_ctx.odrv_ctx.handle.config.dc_bus_undervoltage_trip_level, axis_ctx.odrv_ctx.yaml['vbus-voltage'] * 0.96, accuracy=0.001)
@@ -218,11 +218,11 @@ class DualAxisTest(ABC):
         test_assert_no_error(axis1_ctx)
         test_assert_eq(axis0_ctx.handle.current_state, AXIS_STATE_IDLE)
         test_assert_eq(axis1_ctx.handle.current_state, AXIS_STATE_IDLE)
-        if (abs(axis0_ctx.handle.encoder.pll_vel) > 100) or (abs(axis1_ctx.handle.encoder.pll_vel) > 100):
+        if (abs(axis0_ctx.handle.encoder.vel_estimate) > 100) or (abs(axis1_ctx.handle.encoder.vel_estimate) > 100):
             logger.warn("some axis still in motion, delaying 2 sec...")
             time.sleep(2)
-        test_assert_eq(axis0_ctx.handle.encoder.pll_vel, 0, range=500)
-        test_assert_eq(axis1_ctx.handle.encoder.pll_vel, 0, range=500)
+        test_assert_eq(axis0_ctx.handle.encoder.vel_estimate, 0, range=500)
+        test_assert_eq(axis1_ctx.handle.encoder.vel_estimate, 0, range=500)
 
     @abc.abstractmethod
     def run_test(self, axis0_ctx: AxisTestContext, axis1_ctx: AxisTestContext, logger):
@@ -390,11 +390,11 @@ class TestClosedLoopControl(AxisTest):
         axis_ctx.handle.controller.set_pos_setpoint(50000, 0, 0)
         axis_ctx.handle.controller.config.vel_limit = 40000
         time.sleep(0.3)
-        test_assert_eq(axis_ctx.handle.encoder.pll_vel, 40000, range=4000)
+        test_assert_eq(axis_ctx.handle.encoder.vel_estimate, 40000, range=4000)
         expected_sensorless_estimation = 40000 * 2 * math.pi / axis_ctx.yaml['encoder-cpr'] * axis_ctx.yaml['motor-pole-pairs']
-        test_assert_eq(axis_ctx.handle.sensorless_estimator.pll_vel, expected_sensorless_estimation, range=50)
+        test_assert_eq(axis_ctx.handle.sensorless_estimator.vel_estimate, expected_sensorless_estimation, range=50)
         time.sleep(3)
-        test_assert_eq(axis_ctx.handle.encoder.pll_vel, 0, range=1000)
+        test_assert_eq(axis_ctx.handle.encoder.vel_estimate, 0, range=1000)
         time.sleep(0.5)
         request_state(axis_ctx, AXIS_STATE_IDLE)
 
@@ -494,7 +494,7 @@ class TestHighVelocity(AxisTest):
 
             # set and measure velocity
             axis_ctx.handle.controller.set_vel_setpoint(vel_setpoint, 0)
-            measured_vel = axis_ctx.handle.encoder.pll_vel
+            measured_vel = axis_ctx.handle.encoder.vel_estimate
             max_measured_vel = max(measured_vel, max_measured_vel)
             test_assert_eq(measured_vel, expected_velocity, range=vel_range)
             test_assert_no_error(axis_ctx)
@@ -512,10 +512,10 @@ class TestHighVelocity(AxisTest):
             axis_ctx.handle.controller.set_vel_setpoint(0, 0)
             time.sleep(0.5)
             # If the velocity integrator at work, it may now work against slowing down.
-            test_assert_eq(axis_ctx.handle.encoder.pll_vel, 0, range=rated_limit*0.3)
+            test_assert_eq(axis_ctx.handle.encoder.vel_estimate, 0, range=rated_limit*0.3)
             # TODO: this is not a good bound, but the encoder float resolution results in a bad velocity estimate after this many turns
             time.sleep(0.5)
-            test_assert_eq(axis_ctx.handle.encoder.pll_vel, 0, range=2000)
+            test_assert_eq(axis_ctx.handle.encoder.vel_estimate, 0, range=2000)
             request_state(axis_ctx, AXIS_STATE_IDLE)
         test_assert_no_error(axis_ctx)
 
@@ -775,6 +775,6 @@ class TestSensorlessControl(AxisTest):
         request_state(axis_ctx, AXIS_STATE_SENSORLESS_CONTROL)
         # wait for spinup
         time.sleep(2)
-        test_assert_eq(odrv0.axis0.encoder.pll_vel, target_vel, range=2000)
+        test_assert_eq(odrv0.axis0.encoder.vel_estimate, target_vel, range=2000)
 
         request_state(axis_ctx, AXIS_STATE_IDLE)

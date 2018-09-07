@@ -118,6 +118,7 @@ You can also modify the compile-time defaults for all `.config` parameters. You 
 * Connect `GND`, `SWD`, and `SWC` on connector J2 to the programmer. Note: Always plug in `GND` first!
 * You need to power the board by only **ONE** of the following: VCC(3.3v), 5V, or the main power connection (the DC bus). The USB port (J1) does not power the board.
 * Run `make flash` in the `Firmware` directory.
+__Note__: If you receive the error `can't find target interface/stlink-v2.cfg` or similar, create and set an environment variable named `OPENOCD_SCRIPTS` to the location of the openocd scripts directory.
 
 If the flashing worked, you can connect to the board using the [odrivetool](getting-started#start-odrivetool).
 

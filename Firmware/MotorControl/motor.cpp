@@ -57,10 +57,14 @@ void Motor::reset_current_control() {
 // TODO: allow update on user-request or update automatically via hooks
 void Motor::update_current_controller_gains() {
     // Calculate current control gains
-    float current_control_bandwidth = 1000.0f;  // [rad/s]
-    current_control_.p_gain = current_control_bandwidth * config_.phase_inductance;
+    current_control_.p_gain = config_.current_control_bandwidth * config_.phase_inductance;
     float plant_pole = config_.phase_resistance / config_.phase_inductance;
     current_control_.i_gain = plant_pole * current_control_.p_gain;
+}
+
+void Motor::set_current_control_bandwidth(float current_control_bandwidth) {
+    config_.current_control_bandwidth = current_control_bandwidth;
+    update_current_controller_gains();
 }
 
 // @brief Set up the gate drivers
@@ -237,7 +241,7 @@ bool Motor::measure_phase_inductance(float voltage_low, float voltage_high) {
 
     config_.phase_inductance = L;
     // TODO arbitrary values set for now
-    if (L < 1e-6f || L > 500e-6f)
+    if (L < 1e-6f || L > 2500e-6f)
         return set_error(ERROR_PHASE_INDUCTANCE_OUT_OF_RANGE), false;
     return true;
 }

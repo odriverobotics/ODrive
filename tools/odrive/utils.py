@@ -123,7 +123,7 @@ def rate_test(device):
     numFrames = 10000
     vals = []
     for _ in range(numFrames):
-        vals.append(device.motor0.loop_counter)
+        vals.append(device.axis0.loop_counter)
 
     plt.plot(vals)
 

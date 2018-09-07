@@ -79,6 +79,8 @@ public:
     bool check_PSU_brownout();
     bool do_checks();
     bool do_updates();
+    bool check_for_errors();
+    float get_temp();
 
     // @brief Runs the specified update handler at the frequency of the current measurements.
     //
@@ -103,9 +105,13 @@ public:
     template<typename T>
     void run_control_loop(const T& update_handler) {
         while (requested_state_ == AXIS_STATE_UNDEFINED) {
-            if (!do_checks()) // look for errors at axis level and also all subcomponents
-                break;
-            if (!do_updates()) // Update all estimators
+            // look for errors at axis level and also all subcomponents
+            bool checks_ok = do_checks();
+            // Update all estimators
+            // Note: updates run even if checks fail
+            bool updates_ok = do_updates(); 
+            
+            if (!checks_ok || !updates_ok) 
                 break;
 
             // Run main loop function, defer quitting for after wait
@@ -178,6 +184,7 @@ public:
                 make_protocol_property("spin_up_acceleration", &config_.spin_up_acceleration),
                 make_protocol_property("spin_up_target_vel", &config_.spin_up_target_vel)
             ),
+            make_protocol_function("get_temp", *this, &Axis::get_temp),
             make_protocol_object("motor", motor_.make_protocol_definitions()),
             make_protocol_object("controller", controller_.make_protocol_definitions()),
             make_protocol_object("encoder", encoder_.make_protocol_definitions()),
