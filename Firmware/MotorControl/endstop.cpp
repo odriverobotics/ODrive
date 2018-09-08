@@ -1,4 +1,5 @@
 #include <odrive_main.h>
+#include <algorithm>
 
 Endstop::Endstop(EndstopConfig_t &config)
     : config_(config) {
@@ -8,17 +9,30 @@ static void endstop_cb_wrapper(void* ctx){
     reinterpret_cast<Endstop*>(ctx)->endstop_cb();
 }
 
-void Endstop::endstop_cb(){
-    uint16_t gpio_pin = get_gpio_pin_by_pin(config_.gpio_num);
-    GPIO_TypeDef* gpio_port = get_gpio_port_by_pin(config_.gpio_num);
-
-    if(config_.enabled){
-        endstop_state_ = HAL_GPIO_ReadPin(gpio_port, gpio_pin);
-        if(config_.is_active_high == false)
-            endstop_state_ = !endstop_state_;
+void Endstop::update() {
+    if (config_.enabled) {
+        float now = axis_->loop_counter_ * current_meas_period;
+        if((now - debounce_timer_) >= config_.debounce_ms) {                        // Debounce timer expired, take the new pin state
+            endstop_state_ = config_.is_active_high ? pin_state_ : !pin_state_;     // endstop_state is the logical state
+            debounce_timer_ = now - config_.debounce_ms;                            // Ensure timer doesn't have overflow issues
+        } else {
+            endstop_state_ = endstop_state_; // Do nothing
+        }
     } else {
         endstop_state_ = false;
     }
+}
+
+bool Endstop::getEndstopState() {
+    return endstop_state_;
+}
+
+void Endstop::endstop_cb() {
+    uint16_t gpio_pin = get_gpio_pin_by_pin(config_.gpio_num);
+    GPIO_TypeDef* gpio_port = get_gpio_port_by_pin(config_.gpio_num);
+
+    debounce_timer_ = axis_->loop_counter_ * current_meas_period;
+    pin_state_ = HAL_GPIO_ReadPin(gpio_port, gpio_pin);
 }
 
 void Endstop::set_endstop_enabled(bool enable){

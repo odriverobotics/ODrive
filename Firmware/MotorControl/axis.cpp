@@ -140,6 +140,8 @@ bool Axis::do_updates() {
     // Sub-components should use set_error which will propegate to this error_
     encoder_.update();
     sensorless_estimator_.update();
+    min_endstop_.update();
+    max_endstop_.update();
     return check_for_errors();
 }
 
@@ -214,20 +216,20 @@ bool Axis::run_closed_loop_control_loop() {
 
         // Handle the homing case
         if (homing_state_ == HOMING_STATE_HOMING) {
-            if (min_endstop_.endstop_state_) {
+            if (min_endstop_.getEndstopState()) {
                 encoder_.set_linear_count(min_endstop_.config_.offset);
                 controller_.set_pos_setpoint(0.0f, 0.0f, 0.0f);
                 homing_state_ = HOMING_STATE_MOVE_TO_ZERO;
             }
         } else if (homing_state_ == HOMING_STATE_MOVE_TO_ZERO) {
-            if(!min_endstop_.endstop_state_){
+            if(!min_endstop_.getEndstopState()){
                 homing_state_ = HOMING_STATE_IDLE;
             }
         } else {
             // Check for endstop presses
-            if (min_endstop_.config_.enabled && min_endstop_.endstop_state_) {
+            if (min_endstop_.config_.enabled && min_endstop_.getEndstopState()) {
                 return error_ |= ERROR_MIN_ENDSTOP_PRESSED, false;
-            } else if (max_endstop_.config_.enabled && max_endstop_.endstop_state_) {
+            } else if (max_endstop_.config_.enabled && max_endstop_.getEndstopState()) {
                 return error_ |= ERROR_MAX_ENDSTOP_PRESSED, false;
             }
         }
