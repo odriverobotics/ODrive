@@ -18,7 +18,7 @@ USBStats_t usb_stats_ = {0};
 
 class USBSender : public PacketSink {
 public:
-    USBSender(uint8_t endpoint_pair, osSemaphoreId sem_usb_tx)
+    USBSender(uint8_t endpoint_pair, const osSemaphoreId& sem_usb_tx)
             : endpoint_pair_(endpoint_pair), sem_usb_tx_(sem_usb_tx) {}
 
     int process_packet(const uint8_t* buffer, size_t length) {
@@ -46,7 +46,7 @@ public:
     }
 private:
     uint8_t endpoint_pair_;
-    osSemaphoreId sem_usb_tx_;
+    const osSemaphoreId& sem_usb_tx_;
 };
 
 // Note we could have independent semaphores here to allow concurrent transmission

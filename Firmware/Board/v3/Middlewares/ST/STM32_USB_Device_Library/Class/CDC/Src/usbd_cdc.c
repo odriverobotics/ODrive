@@ -570,9 +570,10 @@ static uint8_t  USBD_CDC_DataIn (USBD_HandleTypeDef *pdev, uint8_t epnum)
   
   if(pdev->pClassData != NULL)
   {
-    if (epnum == CDC_IN_EP)
+    // NOTE: We would logically expect xx_IN_EP here, but we actually get the xx_OUT_EP
+    if (epnum == CDC_OUT_EP)
       hcdc->CDC_Tx.State = 0;
-    if (epnum == ODRIVE_IN_EP)
+    if (epnum == ODRIVE_OUT_EP)
       hcdc->ODRIVE_Tx.State = 0;
     //Note: We could use independent semaphores for simoultainous USB transmission.
     osSemaphoreRelease(sem_usb_tx);
