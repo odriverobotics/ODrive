@@ -11,31 +11,30 @@ Axis::Axis(const AxisHardwareConfig_t& hw_config,
            Encoder& encoder,
            SensorlessEstimator& sensorless_estimator,
            Controller& controller,
-           Motor& motor)
+           Motor& motor,
+           Endstop& min_endstop,
+           Endstop& max_endstop)
     : hw_config_(hw_config),
       config_(config),
       encoder_(encoder),
       sensorless_estimator_(sensorless_estimator),
       controller_(controller),
-      motor_(motor)
+      motor_(motor),
+      min_endstop_(min_endstop),
+      max_endstop_(max_endstop)
 {
     encoder_.axis_ = this;
     sensorless_estimator_.axis_ = this;
     controller_.axis_ = this;
     motor_.axis_ = this;
+    min_endstop_.axis_ = this;
+    max_endstop_.axis_ = this;
 }
 
 static void step_cb_wrapper(void* ctx) {
     reinterpret_cast<Axis*>(ctx)->step_cb();
 }
 
-static void min_endstop_cb_wrapper(void* ctx){
-    reinterpret_cast<Axis*>(ctx)->min_endstop_cb();
-}
-
-static void max_endstop_cb_wrapper(void* ctx){
-    reinterpret_cast<Axis*>(ctx)->max_endstop_cb();
-}
 
 // @brief Sets up all components of the axis,
 // such as gate driver and encoder hardware.
@@ -98,73 +97,6 @@ void Axis::set_step_dir_enabled(bool enable) {
 
         // Unsubscribe from step GPIO
         GPIO_unsubscribe(hw_config_.step_port, hw_config_.step_pin);
-    }
-}
-
-void Axis::min_endstop_cb(){
-    uint16_t gpio_pin = get_gpio_pin_by_pin(config_.min_endstop.gpio_num);
-    GPIO_TypeDef* gpio_port = get_gpio_port_by_pin(config_.min_endstop.gpio_num);
-
-    if(config_.min_endstop.enabled){
-        min_endstop_state_ = HAL_GPIO_ReadPin(gpio_port, gpio_pin);
-        if(config_.min_endstop.is_active_high == false)
-            min_endstop_state_ = !min_endstop_state_;
-    } else {
-        min_endstop_state_ = false;
-    }
-}
-
-void Axis::set_min_endstop_enabled(bool enable){
-    uint16_t gpio_pin = get_gpio_pin_by_pin(config_.min_endstop.gpio_num);
-    GPIO_TypeDef* gpio_port = get_gpio_port_by_pin(config_.min_endstop.gpio_num);
-    if(enable){
-        HAL_GPIO_DeInit(gpio_port, gpio_pin);
-        GPIO_InitTypeDef GPIO_InitStruct;
-        GPIO_InitStruct.Pin = gpio_pin;
-        GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
-        GPIO_InitStruct.Pull = GPIO_NOPULL;
-        HAL_GPIO_Init(gpio_port, &GPIO_InitStruct);
-
-        uint32_t pull_up_down = config_.min_endstop.is_active_high ? GPIO_PULLDOWN : GPIO_PULLUP;
-        uint32_t interrupt_mode = GPIO_MODE_IT_RISING_FALLING;
-        GPIO_subscribe(gpio_port, gpio_pin, pull_up_down, interrupt_mode,
-                        min_endstop_cb_wrapper, this);
-    }
-    else {
-        GPIO_unsubscribe(gpio_port, gpio_pin);
-    }
-}
-
-void Axis::max_endstop_cb(){
-    uint16_t gpio_pin = get_gpio_pin_by_pin(config_.max_endstop.gpio_num);
-    GPIO_TypeDef* gpio_port = get_gpio_port_by_pin(config_.max_endstop.gpio_num);
-
-    if(config_.max_endstop.enabled){
-        max_endstop_state_ = HAL_GPIO_ReadPin(gpio_port, gpio_pin);
-        if(config_.max_endstop.is_active_high == false)
-            max_endstop_state_ = !max_endstop_state_;
-    } else {
-        max_endstop_state_ = false;
-    }
-}
-
-void Axis::set_max_endstop_enabled(bool enable){
-    uint16_t gpio_pin = get_gpio_pin_by_pin(config_.max_endstop.gpio_num);
-    GPIO_TypeDef* gpio_port = get_gpio_port_by_pin(config_.max_endstop.gpio_num);
-    if(enable){
-        GPIO_InitTypeDef GPIO_InitStruct;
-        GPIO_InitStruct.Pin = gpio_pin;
-        GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
-        GPIO_InitStruct.Pull = GPIO_NOPULL;
-        HAL_GPIO_Init(gpio_port, &GPIO_InitStruct);
-
-        uint32_t pull_up_down = config_.max_endstop.is_active_high ? GPIO_PULLDOWN : GPIO_PULLUP;
-        uint32_t interrupt_mode = GPIO_MODE_IT_RISING_FALLING; // Need to track pin state, not just homing edges
-        GPIO_subscribe(gpio_port, gpio_pin, pull_up_down, interrupt_mode,
-                        max_endstop_cb_wrapper, this);
-    }
-    else {
-        GPIO_unsubscribe(gpio_port, gpio_pin);
     }
 }
 
@@ -282,20 +214,20 @@ bool Axis::run_closed_loop_control_loop() {
 
         // Handle the homing case
         if (homing_state_ == HOMING_STATE_HOMING) {
-            if (min_endstop_state_) {
-                encoder_.set_linear_count(config_.min_endstop.offset);
+            if (min_endstop_.endstop_state_) {
+                encoder_.set_linear_count(min_endstop_.config_.offset);
                 controller_.set_pos_setpoint(0.0f, 0.0f, 0.0f);
                 homing_state_ = HOMING_STATE_MOVE_TO_ZERO;
             }
         } else if (homing_state_ == HOMING_STATE_MOVE_TO_ZERO) {
-            if(!min_endstop_state_){
+            if(!min_endstop_.endstop_state_){
                 homing_state_ = HOMING_STATE_IDLE;
             }
         } else {
             // Check for endstop presses
-            if (config_.min_endstop.enabled && min_endstop_state_) {
+            if (min_endstop_.config_.enabled && min_endstop_.endstop_state_) {
                 return error_ |= ERROR_MIN_ENDSTOP_PRESSED, false;
-            } else if (config_.max_endstop.enabled && max_endstop_state_) {
+            } else if (max_endstop_.config_.enabled && max_endstop_.endstop_state_) {
                 return error_ |= ERROR_MAX_ENDSTOP_PRESSED, false;
             }
         }
@@ -317,9 +249,6 @@ bool Axis::run_idle_loop() {
 
 // Infinite loop that does calibration and enters main control loop as appropriate
 void Axis::run_state_machine_loop() {
-    set_min_endstop_enabled(config_.min_endstop.enabled);
-    set_max_endstop_enabled(config_.max_endstop.enabled);
-
     // Allocate the map for anti-cogging algorithm and initialize all values to 0.0f
     // TODO: Move this somewhere else
     // TODO: respect changes of CPR

@@ -14,6 +14,8 @@ SensorlessEstimator::Config_t sensorless_configs[AXIS_COUNT];
 ControllerConfig_t controller_configs[AXIS_COUNT];
 MotorConfig_t motor_configs[AXIS_COUNT];
 AxisConfig_t axis_configs[AXIS_COUNT];
+EndstopConfig_t min_endstop_configs[AXIS_COUNT];
+EndstopConfig_t max_endstop_configs[AXIS_COUNT];
 bool user_config_loaded_;
 
 SystemStats_t system_stats_ = { 0 };
@@ -26,7 +28,9 @@ typedef Config<
     SensorlessEstimator::Config_t[AXIS_COUNT],
     ControllerConfig_t[AXIS_COUNT],
     MotorConfig_t[AXIS_COUNT],
-    AxisConfig_t[AXIS_COUNT]> ConfigFormat;
+    AxisConfig_t[AXIS_COUNT],
+    EndstopConfig_t[AXIS_COUNT],
+    EndstopConfig_t[AXIS_COUNT]> ConfigFormat;
 
 void save_configuration(void) {
     if (ConfigFormat::safe_store_config(
@@ -35,7 +39,9 @@ void save_configuration(void) {
             &sensorless_configs,
             &controller_configs,
             &motor_configs,
-            &axis_configs)) {
+            &axis_configs,
+            &min_endstop_configs,
+            &max_endstop_configs)) {
         //printf("saving configuration failed\r\n"); osDelay(5);
     } else {
         user_config_loaded_ = true;
@@ -51,7 +57,9 @@ void load_configuration(void) {
                 &sensorless_configs,
                 &controller_configs,
                 &motor_configs,
-                &axis_configs)) {
+                &axis_configs,
+                &min_endstop_configs,
+                &max_endstop_configs)) {
         //If loading failed, restore defaults
         board_config = BoardConfig_t();
         for (size_t i = 0; i < AXIS_COUNT; ++i) {
@@ -60,6 +68,8 @@ void load_configuration(void) {
             controller_configs[i] = ControllerConfig_t();
             motor_configs[i] = MotorConfig_t();
             axis_configs[i] = AxisConfig_t();
+            min_endstop_configs[i] = EndstopConfig_t();
+            max_endstop_configs[i] = EndstopConfig_t();
         }
     } else {
         user_config_loaded_ = true;
@@ -162,8 +172,10 @@ int odrive_main(void) {
         Motor *motor = new Motor(hw_configs[i].motor_config,
                                  hw_configs[i].gate_driver_config,
                                  motor_configs[i]);
+        Endstop *min_endstop = new Endstop(min_endstop_configs[i]);
+        Endstop *max_endstop = new Endstop(max_endstop_configs[i]);
         axes[i] = new Axis(hw_configs[i].axis_config, axis_configs[i],
-                *encoder, *sensorless_estimator, *controller, *motor);
+                *encoder, *sensorless_estimator, *controller, *motor, *min_endstop, *max_endstop);
     }
     
     // Start ADC for temperature measurements and user measurements

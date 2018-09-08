@@ -26,13 +26,6 @@ enum HomingState_t {
     HOMING_STATE_MOVE_TO_ZERO
 };
 
-struct Endstop_t {
-    uint16_t gpio_num;
-    bool enabled = false;
-    int32_t offset = 0;
-    bool is_active_high = false;
-};
-
 struct AxisConfig_t {
     bool startup_motor_calibration = false;   //<! run motor calibration at startup, skip otherwise
     bool startup_encoder_index_search = false; //<! run encoder index search after startup, skip otherwise
@@ -52,8 +45,6 @@ struct AxisConfig_t {
     float spin_up_current = 10.0f;        // [A]
     float spin_up_acceleration = 400.0f;  // [rad/s^2]
     float spin_up_target_vel = 400.0f;    // [rad/s]
-    Endstop_t min_endstop;
-    Endstop_t max_endstop;
 };
 
 class Axis {
@@ -84,7 +75,9 @@ public:
             Encoder& encoder,
             SensorlessEstimator& sensorless_estimator,
             Controller& controller,
-            Motor& motor);
+            Motor& motor,
+            Endstop& min_endstop,
+            Endstop& max_endstop);
 
     void setup();
     void start_thread();
@@ -93,10 +86,7 @@ public:
 
     void step_cb();
     void set_step_dir_enabled(bool enable);
-    void min_endstop_cb();
-    void set_min_endstop_enabled(bool enable);
-    void max_endstop_cb();
-    void set_max_endstop_enabled(bool enable);
+  
 
     bool check_DRV_fault();
     bool check_PSU_brownout();
@@ -173,6 +163,8 @@ public:
     SensorlessEstimator& sensorless_estimator_;
     Controller& controller_;
     Motor& motor_;
+    Endstop& min_endstop_;
+    Endstop& max_endstop_;
 
     osThreadId thread_id_;
     volatile bool thread_id_valid_ = false;
@@ -184,8 +176,6 @@ public:
     AxisState_t task_chain_[10] = { AXIS_STATE_UNDEFINED };
     AxisState_t& current_state_ = task_chain_[0];
     uint32_t loop_counter_ = 0;
-    bool min_endstop_state_ = false;
-    bool max_endstop_state_ = false;
     HomingState_t homing_state_ = HOMING_STATE_IDLE;
 
     // Communication protocol definitions
@@ -196,8 +186,6 @@ public:
             make_protocol_ro_property("current_state", &current_state_),
             make_protocol_property("requested_state", &requested_state_),
             make_protocol_ro_property("loop_counter", &loop_counter_),
-            make_protocol_ro_property("min_endstop_state", &min_endstop_state_),
-            make_protocol_ro_property("max_endstop_state", &max_endstop_state_),
             make_protocol_ro_property("homing_state", &homing_state_),
             make_protocol_object("config",
                 make_protocol_property("startup_motor_calibration", &config_.startup_motor_calibration),
@@ -212,24 +200,14 @@ public:
                 make_protocol_property("ramp_up_distance", &config_.ramp_up_distance),
                 make_protocol_property("spin_up_current", &config_.spin_up_current),
                 make_protocol_property("spin_up_acceleration", &config_.spin_up_acceleration),
-                make_protocol_property("spin_up_target_vel", &config_.spin_up_target_vel),
-                make_protocol_object("min_endstop",
-                    make_protocol_property("gpio_num", &config_.min_endstop.gpio_num),
-                    make_protocol_property("enabled", &config_.min_endstop.enabled),
-                    make_protocol_property("offset", &config_.min_endstop.offset),
-                    make_protocol_property("is_active_high", &config_.min_endstop.is_active_high)
-                ),
-                make_protocol_object("max_endstop",
-                    make_protocol_property("gpio_num", &config_.max_endstop.gpio_num),
-                    make_protocol_property("enabled", &config_.max_endstop.enabled),
-                    make_protocol_property("offset", &config_.max_endstop.offset),
-                    make_protocol_property("is_active_high", &config_.max_endstop.is_active_high)
-                )
+                make_protocol_property("spin_up_target_vel", &config_.spin_up_target_vel)
             ),
             make_protocol_function("get_temp", *this, &Axis::get_temp),
             make_protocol_object("motor", motor_.make_protocol_definitions()),
             make_protocol_object("controller", controller_.make_protocol_definitions()),
             make_protocol_object("encoder", encoder_.make_protocol_definitions()),
+            make_protocol_object("min_endstop", min_endstop_.make_protocol_definitions()),
+            make_protocol_object("max_endstop", max_endstop_.make_protocol_definitions()),
             make_protocol_object("sensorless_estimator", sensorless_estimator_.make_protocol_definitions())
         );
     }

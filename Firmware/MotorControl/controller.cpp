@@ -54,7 +54,7 @@ void Controller::start_anticogging_calibration() {
 // Slowly drive in the negative direction at homing_speed until the min endstop is pressed
 // When pressed, set the linear count to the offset (default 0), and then
 bool Controller::home_axis() {
-    if (axis_->config_.min_endstop.enabled) {
+    if (axis_->min_endstop_.config_.enabled) {
         set_vel_setpoint(-config_.homing_speed, 0.0f);
         axis_->homing_state_ = HOMING_STATE_HOMING;
     } else {
