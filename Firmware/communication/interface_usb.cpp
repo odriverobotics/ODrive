@@ -125,6 +125,7 @@ static void usb_server_thread(void * ctx) {
 
             // CDC Interface
             if (CDC_interface.data_pending) {
+                CDC_interface.data_pending = false;
                 if (board_config.enable_ascii_protocol_on_usb) {
                     ASCII_protocol_parse_stream(CDC_interface.rx_buf,
                             CDC_interface.rx_len, usb_stream_output);
@@ -141,6 +142,7 @@ static void usb_server_thread(void * ctx) {
 
             // Native Interface
             if (ODrive_interface.data_pending) {
+                ODrive_interface.data_pending = false;
 #if defined(USB_PROTOCOL_NATIVE)
                 usb_channel.process_packet(ODrive_interface.rx_buf, ODrive_interface.rx_len);
 #elif defined(USB_PROTOCOL_NATIVE_STREAM_BASED)
