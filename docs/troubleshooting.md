@@ -45,7 +45,7 @@ You can monitor your PUS voltage using liveplotter in odrive tool by entering `s
 
 During calibration the motor resistance and [inductance](https://en.wikipedia.org/wiki/Inductance) is measured. If the measured motor resistance or inductance falls outside a set range this error will be returned. Check that all motor leads are connected securely.
 
-The measured values can be measured using odrivetool as is shown below:
+The measured values can be viewed using odrivetool as is shown below:
 ```
 In [2]: odrv0.axis0.motor.config.phase_inductance
 Out[2]: 1.408751450071577e-05
@@ -64,7 +64,7 @@ is `ERROR_DRV_FAULT`.
 The conjecture is that the high switching current creates large ripples in the
 power supply of the DRV8301 gate driver chips, thus tripping its under-voltage fault detection. 
 
-To resolve this issue you can limit the M0 current to 40A. The lowest current at which the DRV fault was observed is 45A on one test motor and 50A on another test motor. Refer to [this post](https://discourse.odriverobotics.com/t/drv-fault-on-odrive-v3-4/558) for instructions for a hardware fix
+To resolve this issue you can limit the M0 current to 40A. The lowest current at which the DRV fault was observed is 45A on one test motor and 50A on another test motor. Refer to [this post](https://discourse.odriverobotics.com/t/drv-fault-on-odrive-v3-4/558) for instructions for a hardware fix.
 
 ## Common Encoder Errors
 
@@ -78,7 +78,7 @@ Confirm that your encoder is plugged into the right pins on the odrive board.
 
 * `ERROR_INDEX_NOT_FOUND_YET = 0x20`
 
-Check that your encoder is a model that has an index pulse (will have a wire connected to the pin labelled Z and that it is plugged in correctly.
+Check that your encoder is a model that has an index pulse. If your encoder does not have a wire connected to pin Z on your odrive then it does not output an index pulse.
 
 
 ## USB Connectivity Issues
