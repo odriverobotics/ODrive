@@ -2,6 +2,18 @@
 
 The ODrive Tool is the accompanying PC program for the ODrive. It's main purpose is to provide an interactive shell to control the device manually, as well as some supporting functions like firmware update.
 
+### Table of contents
+<!-- TOC depthFrom:2 depthTo:2 -->
+
+- [Installation](#installation)
+- [Multiple ODrives](#multiple-odrives)
+- [Configuration Backup](#configuration-backup)
+- [Device Firmware Update](#device-firmware-update)
+- [Flashing with an STLink](#flashing-with-an-stlink)
+- [Liveplotter](#liveplotter)
+
+<!-- /TOC -->
+
 ## Installation
 
 Refer to the [Getting Started guide](getting-started#downloading-and-installing-tools).

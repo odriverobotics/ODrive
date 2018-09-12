@@ -2,6 +2,16 @@
 
 We will use the `<odrv>` as a placeholder for any ODrive object. Every ODrive controller is an ODrive object. In `odrivetool` this is usually `odrv0`. Furthermore we use `<axis>` as a placeholder for any axis, which is an attribute of an ODrive object (for example `odrv0.axis0`). An axis represents where the motors are connected. (axis0 for M0 or axis1 for M1)
 
+### Table of contents
+<!-- TOC depthFrom:2 depthTo:2 -->
+
+- [Per-Axis commands](#per-axis-commands)
+- [System monitoring commands](#system-monitoring-commands)
+- [General system commands](#general-system-commands)
+- [Setting up sensorless](#setting-up-sensorless)
+
+<!-- /TOC -->
+
 ## Per-Axis commands
 
 For the most part, both axes on the ODrive can be controlled independently.

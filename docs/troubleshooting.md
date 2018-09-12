@@ -1,5 +1,18 @@
 # Troubleshooting
 
+Table of Contents:
+<!-- TOC depthFrom:2 depthTo:2 -->
+
+- [Error codes](#error-codes)
+- [Common Axis Errors](#common-axis-errors)
+- [Common Motor Errors](#common-motor-errors)
+- [Common Encoder Errors](#common-encoder-errors)
+- [USB Connectivity Issues](#usb-connectivity-issues)
+- [Firmware Issues](#firmware-issues)
+- [Other issues that may not produce an error code](#other-issues-that-may-not-produce-an-error-code)
+
+<!-- /TOC -->
+
 ## Error codes
 If your ODrive is not working as expected, run `odrivetool` and type `hex(<axis>.error)` <kbd>Enter</kbd> where `<axis>` is the axis that isn't working. This will display a [hexadecimal](https://en.wikipedia.org/wiki/Hexadecimal) representation of the error code. Each bit represents one error flag.
 
@@ -96,7 +109,7 @@ Check that your encoder is a model that has an index pulse. If your encoder does
  * Try a different USB cable
  * Try routing your USB cable so that it is far away from the motor and PSU cables to reduce EMI
 
-## **Firmware Issues**
+## Firmware Issues
 
 ### Failure to build the firmware when running `make`
 - Clear out temporary files from previous compiles by first running `make clean` to prevent conflicts.

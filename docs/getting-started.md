@@ -7,8 +7,7 @@ permalink: /
 # Getting Started
 
 ### Table of contents
-
-<!-- MarkdownTOC depth=2 autolink=true bracket=round -->
+<!-- TOC depthFrom:2 depthTo:2 -->
 
 - [Hardware Requirements](#hardware-requirements)
 - [Wiring up the ODrive](#wiring-up-the-odrive)
@@ -18,7 +17,7 @@ permalink: /
 - [Position control of M0](#position-control-of-m0)
 - [What's next?](#whats-next)
 
-<!-- /MarkdownTOC -->
+<!-- /TOC -->
 
 ## Hardware Requirements
 
