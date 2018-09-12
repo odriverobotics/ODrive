@@ -123,7 +123,7 @@ Try step 5 again
 2. Install the ODrive tools by opening a terminal and typing `pip install odrive` <kbd>Enter</kbd>
 3. __Linux__: set up USB permissions
 ```bash
-    echo 'SUBSYSTEM=="usb", ATTR{idVendor}=="1209", ATTR{idProduct}=="0d[0-9][0-9]", MODE="0666"' | sudo tee /etc/udev/rules.d/99-odrive.rules
+    echo 'SUBSYSTEM=="usb", ATTR{idVendor}=="1209", ATTR{idProduct}=="0d[0-9][0-9]", MODE="0666"' | sudo tee /etc/udev/rules.d/91-odrive.rules
     sudo udevadm control --reload-rules
     sudo udevadm trigger # until you reboot you may need to do this everytime you reset the ODrive
 ```
