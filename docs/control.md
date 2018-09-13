@@ -6,15 +6,25 @@ The motor controller is a cascaded style position, velocity and current control 
 
 ### Position loop:
 The position controller is a P loop with a single proportional gain.
-* `vel_cmd = (pos_setpoint - pos_feedback) * pos_gain`
+```text
+pos_error = pos_setpoint - pos_feedback
+vel_cmd = pos_error * pos_gain + vel_feedforward
+```
 
 ### Velocity loop:
 The velocity controller is a PI loop.
-* `vel_error_sum += (vel_cmd - vel_feedback) * vel_integrator_gain`
-* `current_cmd = (vel_cmd - vel_feedback) * vel_gain + vel_error_sum + vel_feedforward`
+```text
+vel_error = vel_cmd - vel_feedback
+current_integral += vel_error * vel_integrator_gain
+current_cmd = vel_error * vel_gain + current_integral + current_feedforward
+```
+
 ### Current loop:
 The current controller is a PI loop.
-* `current_error_sum += (current_cmd - current_fb) * current_integrator_gain`
-* `voltage_cmd = (current_cmd - current_fb) * current_gain + current_error_sum + current_feedforward`
+```text
+current_error = current_cmd - current_fb
+voltage_integral += current_error * current_integrator_gain
+voltage_cmd = current_error * current_gain + voltage_integral (+ voltage_feedforward when we have motor model)
+```
 
 For more detail refer to [controller.cpp](https://github.com/madcowswe/ODrive/blob/master/Firmware/MotorControl/controller.cpp#L86).
