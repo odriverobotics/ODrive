@@ -53,6 +53,8 @@ void pwm_in_init();
 
 void update_brake_current();
 
+void start_analog_thread();
+
 #ifdef __cplusplus
 }
 #endif

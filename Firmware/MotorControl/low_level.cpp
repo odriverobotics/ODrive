@@ -725,3 +725,32 @@ void pwm_in_cb(int channel, uint32_t timestamp) {
     last_pin_state[gpio_num - 1] = current_pin_state;
     last_sample_valid[gpio_num - 1] = true;
 }
+
+
+/* Analog speed control input */
+
+static void update_analog_endpoint(const struct PWMMapping_t *map, int gpio)
+{
+    float fraction = get_adc_voltage(get_gpio_port_by_pin(gpio), get_gpio_pin_by_pin(gpio)) / 3.3f;
+    float value = map->min + (fraction * (map->max - map->min));
+    get_endpoint(map->endpoint)->set_from_float(value);
+}
+
+static void analog_polling_thread(void *)
+{
+    while (true) {
+        for (int i = 0; i < GPIO_COUNT; i++) {
+            struct PWMMapping_t *map = &board_config.analog_mappings[i];
+
+            if (is_endpoint_ref_valid(map->endpoint))
+                update_analog_endpoint(map, i + 1);
+        }
+        osDelay(200);
+    }
+}
+
+void start_analog_thread()
+{
+    osThreadDef(thread_def, analog_polling_thread, osPriorityLow, 0, 4*512);
+    osThreadCreate(osThread(thread_def), NULL);
+}
