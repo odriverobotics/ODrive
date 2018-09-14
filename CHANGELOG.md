@@ -4,6 +4,7 @@ Please add a note of your changes below this heading if you make a Pull Request.
 ## Unreleased
 ### Added
 * Encoder position count "homed" to zero when index is found.
+* Basic 'anti-hunt' implimentation to avoid vibration when stationary.
 
 ### Changed
 * We now enforce encoder offset calibration must happen after index is found (if using index)

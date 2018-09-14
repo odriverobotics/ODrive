@@ -21,6 +21,8 @@ struct ControllerConfig_t {
     // float vel_gain = 5.0f / 200.0f, // [A/(rad/s)] <sensorless example>
     float vel_integrator_gain = 10.0f / 10000.0f;  // [A/(counts/s * s)]
     float vel_limit = 20000.0f;           // [counts/s]
+    float gain_scheduling_width = 10.0f; // [counts] width either size of pos_setpoint
+    bool enable_gain_scheduling = false; // enable gain scheduling when in position control
 };
 
 class Controller {
@@ -83,7 +85,9 @@ public:
                 make_protocol_property("pos_gain", &config_.pos_gain),
                 make_protocol_property("vel_gain", &config_.vel_gain),
                 make_protocol_property("vel_integrator_gain", &config_.vel_integrator_gain),
-                make_protocol_property("vel_limit", &config_.vel_limit)
+                make_protocol_property("vel_limit", &config_.vel_limit),
+                make_protocol_property("gain_scheduling_width", &config_.gain_scheduling_width),
+                make_protocol_property("enable_gain_scheduling", &config_.enable_gain_scheduling)
             ),
             make_protocol_function("set_pos_setpoint", *this, &Controller::set_pos_setpoint,
                 "pos_setpoint",
