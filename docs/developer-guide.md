@@ -52,8 +52,9 @@ $ python --version              # should be 3.7 or later
 
 #### Linux (Ubuntu)
 ```bash
-sudo apt-get install gcc-arm-none-eabi
-sudo apt-get install gdb-arm-none-eabi
+sudo add-apt-repository ppa:team-gcc-arm-embedded/ppa
+sudo apt-get update
+sudo apt-get install gcc-arm-embedded
 sudo apt-get install openocd
 sudo add-apt-repository ppa:jonathonf/tup && sudo apt-get update && sudo apt-get install tup
 ```
