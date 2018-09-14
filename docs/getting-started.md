@@ -228,7 +228,7 @@ Let's get motor 0 up and running. The procedure for motor 1 is exactly the same,
 ### Other control modes
 The ODrive also supports velocity control and current (torque) control.
 * **Velocity control**: Set `odrv0.axis0.controller.config.control_mode = CTRL_MODE_VELOCITY_CONTROL`. You can now control the velocity with `odrv0.axis0.controller.vel_setpoint = 5000`. Units are counts/s.
-* **Current control**: Set `odrv0.axis0.controller.config.control_mode = CTRL_MODE_CURRENT_CONTROL`. You can now control the current with `odrv0.axis0.controller.vel_setpoint = 3`. Units are A. **NOTE**: There is no velocity limiting in current control mode. Make sure that you don't overrev the motor, or exceed the max speed for your encoder.
+* **Current control**: Set `odrv0.axis0.controller.config.control_mode = CTRL_MODE_CURRENT_CONTROL`. You can now control the current with `odrv0.axis0.controller.current_setpoint = 3`. Units are A. **NOTE**: There is no velocity limiting in current control mode. Make sure that you don't overrev the motor, or exceed the max speed for your encoder.
 
 ## What's next?
 
