@@ -4,18 +4,21 @@ if boardversion == "v3.1" then
     boarddir = 'Board/v3' -- currently all platform code is in the same v3.3 directory
     FLAGS += "-DHW_VERSION_MAJOR=3 -DHW_VERSION_MINOR=1"
     FLAGS += '-DSTM32F405xx'
+    FLAGS += "-DHW_VERSION_VOLTAGE=24"
     LDFLAGS += '-T'..boarddir..'/STM32F405RGTx_FLASH.ld'
 
 elseif boardversion == "v3.2" then
     boarddir = 'Board/v3'
     FLAGS += "-DHW_VERSION_MAJOR=3 -DHW_VERSION_MINOR=2"
     FLAGS += '-DSTM32F405xx'
+    FLAGS += "-DHW_VERSION_VOLTAGE=24"
     LDFLAGS += '-T'..boarddir..'/STM32F405RGTx_FLASH.ld'
 
 elseif boardversion == "v3.3" then
     boarddir = 'Board/v3'
     FLAGS += "-DHW_VERSION_MAJOR=3 -DHW_VERSION_MINOR=3"
     FLAGS += '-DSTM32F405xx'
+    FLAGS += "-DHW_VERSION_VOLTAGE=24"
     LDFLAGS += '-T'..boarddir..'/STM32F405RGTx_FLASH.ld'
 elseif boardversion == "v3.4-24V" then
     boarddir = 'Board/v3'
