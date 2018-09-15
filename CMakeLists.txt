@@ -114,6 +114,3 @@ add_custom_target(UPLOAD
 
 
 
-## Something up with .rodata .text .debugstr .debugline
-
-
