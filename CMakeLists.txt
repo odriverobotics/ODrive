@@ -98,7 +98,6 @@ add_custom_command(TARGET ${PROJECT_NAME}.elf
         COMMAND ${OBJCOPY} -Oihex $<TARGET_FILE:${PROJECT_NAME}.elf> ${HEX_FILE}
         COMMAND ${OBJCOPY} -Obinary $<TARGET_FILE:${PROJECT_NAME}.elf> ${BIN_FILE}
         COMMAND ${OBJDUMP} $<TARGET_FILE:${PROJECT_NAME}.elf> -dSC> ${ASM_FILE}
-        COMMAND ${}
         COMMAND python "${CMAKE_SOURCE_DIR}/CMake_Helpers/CMake_Remove_Build_Folder.py" --Path "${CMAKE_SOURCE_DIR}/Firmware/build"
         COMMAND ${SIZE} --format=SysV ${PROJECT_NAME}.elf
         )
@@ -118,42 +117,3 @@ add_custom_target(UPLOAD
 ## Something up with .rodata .text .debugstr .debugline
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-## OLD ARCHIVED STUFF
-
-#include_directories(Firmware/Board/v3/Drivers/CMSIS)
-#include_directories(Firmware/Board/v3/Drivers/CMSIS/Device)
-#include_directories(Firmware/Board/v3/Drivers/CMSIS/Device/ST)
-#include_directories(Firmware/Board/v3/Drivers/CMSIS/Device/ST/STM32F4xx)
-#include_directories(Firmware/Board/v3/Drivers/CMSIS/Device/ST/STM32F4xx/Include)
-#include_directories(Firmware/Board/v3/Drivers/CMSIS/Include)
-#include_directories(Firmware/Board/v3/Drivers/STM32F4xx_HAL_Driver/Inc)
-#include_directories(Firmware/Board/v3/Drivers/STM32F4xx_HAL_Driver/Inc/Legacy)
-#include_directories(Firmware/Board/v3/Inc)
-#include_directories(Firmware/Board/v3/Inc/prev_board_ver)
-#include_directories(Firmware/Board/v3/Middlewares/ST/STM32_USB_Device_Library/Class/CDC/Inc)
-#include_directories(Firmware/Board/v3/Middlewares/ST/STM32_USB_Device_Library/Core/Inc)
-#include_directories(Firmware/Board/v3/Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS)
-#include_directories(Firmware/Board/v3/Middlewares/Third_Party/FreeRTOS/Source/include)
-#include_directories(Firmware/Board/v3/Middlewares/Third_Party/FreeRTOS/Source/portable/GCC/ARM_CM4F)
-#include_directories(Firmware/build)
-#include_directories(Firmware/communication)
-#
-#include_directories(Firmware/Drivers/DRV8301)
-#include_directories(Firmware/fibre/cpp/include)
-#include_directories(Firmware/fibre/cpp/include/fibre)
-#include_directories(Firmware/MotorControl)
