@@ -109,8 +109,8 @@ def rate_test(device):
     Tests how many integers per second can be transmitted
     """
 
-    import matplotlib.pyplot as plt
-    plt.ion()
+    # import matplotlib.pyplot as plt
+    # plt.ion()
 
     print("reading 10000 values...")
     numFrames = 10000
@@ -118,12 +118,13 @@ def rate_test(device):
     for _ in range(numFrames):
         vals.append(device.axis0.loop_counter)
 
-    plt.plot(vals)
-
     loopsPerFrame = (vals[-1] - vals[0])/numFrames
     loopsPerSec = (168000000/(2*10192))
     FramePerSec = loopsPerSec/loopsPerFrame
     print("Frames per second: " + str(FramePerSec))
+
+    # plt.plot(vals)
+    # plt.show(block=True)
 
 def usb_burn_in_test(get_var_callback, cancellation_token):
     """
