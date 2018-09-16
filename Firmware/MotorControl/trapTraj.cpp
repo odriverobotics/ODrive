@@ -58,7 +58,6 @@ float TrapezoidalTrajectory::planTrapezoidal(float Xf, float Xi,
     }
 
     // Populate object's values
-
     Xf_ = Xf;
     Xi_ = Xi;
     Vi_ = Vi;
@@ -74,7 +73,23 @@ float TrapezoidalTrajectory::planTrapezoidal(float Xf, float Xi,
     yAccel_ = (Ar * Ta * Ta) / 2.0f + (Vi * Ta) + Xi;
     Tav_ = Ta + Tv;
 
-    return Ta + Tv + Td;
+    // If it's an overshoot trajectory, we need to re-do our process
+    // to generate the second-half of the trajectory
+    if (fabs(dX) <= dx_stop) {
+        TrapTrajStep_t traj;
+        traj = evalTrapTraj(Td_);
+        planTrapezoidal(Xf, traj.Y, traj.Yd, Vmax, Amax, Dmax);
+
+        // Fix initial points
+        Xi_ = Xi;
+        Vi_ = Vi;
+
+        // Fix time points
+        Ta_ += Td;
+        yAccel_ = (Ar_ * Ta_ * Ta_) / 2.0f + (Vi_ * Ta_) + Xi_;
+        Tav_ = Ta_ + Tv_;
+    }
+    return Ta_ + Tv_ + Td_;
 }
 
 TrapTrajStep_t TrapezoidalTrajectory::evalTrapTraj(float t) {
