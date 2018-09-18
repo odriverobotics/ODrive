@@ -74,7 +74,7 @@ Note that this command will connect to GitHub servers to retrieve the latest fir
 If you have a non-default configuration saved on the device, ODrive Tool will try to carry over the configuration across the firmware update. If any of the settings are removed or renamed, you will get warning messages.
 
 <details><summary markdown="span">How to flash a custom firmware</summary><div markdown="block">
-If you want to flash a specific firmware file instead of automatically downloading one, you can run `odrivetool dfu [path/to/firmware/file.hex]`.
+If you want to flash a specific firmware file instead of automatically downloading one, you can run `odrivetool dfu path/to/firmware/file.hex`
 
 You can download one of the officially released firmware files from [here](https://github.com/madcowswe/ODrive/releases). You will need one of the __.hex__ files (not the __.elf__ file). Make sure you select the file that matches your board version.
 
