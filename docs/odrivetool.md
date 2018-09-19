@@ -23,6 +23,7 @@ Type `odrivetool --help` to see what features are available.
 ## Multiple ODrives
 
 By default, `odrivetool` will connect to any ODrive it finds. If this is not what you want, you can select a specific ODrive.
+NOTE: On ubuntu odrivetool needs root access else the odrive will never be found, type `sudo odrivetool`.
 
 To find the serial number of your ODrive, run `odrivetool`, connect exactly one ODrive and power it up. You should see this:
 ```
