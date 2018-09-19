@@ -2,10 +2,12 @@
 Please add a note of your changes below this heading if you make a Pull Request.
 
 # Unreleased
-## Fixed
-* Serious reliability issue with USB communication where packets on Native and the CDC interface would collide with each other.
 
 # Releases
+## [0.4.4] - 2018-09-18
+### Fixed
+* Serious reliability issue with USB communication where packets on Native and the CDC interface would collide with each other.
+
 ## [0.4.3] - 2018-08-30
 ### Added
 * Encoder position count "homed" to zero when index is found.
