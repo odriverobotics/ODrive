@@ -13,7 +13,8 @@ struct EndstopConfig_t {
 class Endstop {
    public:
     Endstop(EndstopConfig_t& config);
-    EndstopConfig_t config_;
+    
+    EndstopConfig_t& config_;
     Axis* axis_ = nullptr;
 
     void set_endstop_enabled(bool enable);
