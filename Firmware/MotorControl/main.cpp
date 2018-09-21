@@ -63,6 +63,7 @@ void load_configuration(void) {
             sensorless_configs[i] = SensorlessEstimator::Config_t();
             controller_configs[i] = ControllerConfig_t();
             motor_configs[i] = MotorConfig_t();
+            trap_configs[i] = TrapTrajConfig_t();
             axis_configs[i] = AxisConfig_t();
         }
     } else {
