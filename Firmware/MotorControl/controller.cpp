@@ -44,16 +44,15 @@ void Controller::set_current_setpoint(float current_setpoint) {
 #endif
 }
 
-void Controller::move_to_pos(float pos_setpoint) {
-    planned_move_end_time_ = axis_->trap_.planTrapezoidal(pos_setpoint, axis_->encoder_.pos_estimate_,
-                                                          axis_->encoder_.vel_estimate_, axis_->trap_.config_.vel_limit,
+void Controller::move_to_pos(float goal_point) {
+    planned_move_end_time_ = axis_->trap_.planTrapezoidal(goal_point, pos_setpoint_,
+                                                          vel_setpoint_, axis_->trap_.config_.vel_limit,
                                                           axis_->trap_.config_.accel_limit, axis_->trap_.config_.decel_limit);
     config_.control_mode = CTRL_MODE_PLANNED_MOVE_CONTROL;
     TrapTrajStep_t myTraj = axis_->trap_.evalTrapTraj(0.0f);
     pos_setpoint_ = myTraj.Y;
     vel_setpoint_ = myTraj.Yd;
-    // current_setpoint_ = myTraj.Ydd;
-    current_setpoint_ = 0.0f; // Temporary, until we have a way to convert from accel to current
+    current_setpoint_ = myTraj.Ydd * axis_->trap_.config_.A_to_cpss;
 
     planned_move_timer_ = axis_->loop_counter_ * current_meas_period;
 }
@@ -109,8 +108,7 @@ bool Controller::update(float pos_estimate, float vel_estimate, float* current_s
             TrapTrajStep_t myTraj = axis_->trap_.evalTrapTraj(time_now - planned_move_timer_);
             pos_setpoint_ = myTraj.Y;
             vel_setpoint_ = myTraj.Yd;
-            // current_setpoint_ = myTraj.Ydd;
-            current_setpoint_ = 0.0f; // Temporary, until we have a way of converting from accel to current
+            current_setpoint_ = myTraj.Ydd * axis_->trap_.config_.A_to_cpss;
         }
         anticogging_pos = pos_setpoint_; // FF the position setpoint instead of the pos_estimate
     }
