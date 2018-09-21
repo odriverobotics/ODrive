@@ -7,7 +7,7 @@ struct EndstopConfig_t {
     bool enabled = false;
     int32_t offset = 0;
     bool is_active_high = false;
-    float debounce_ms = 100;
+    float debounce_ms = 100.0f;
 };
 
 class Endstop {
