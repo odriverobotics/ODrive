@@ -5,7 +5,7 @@ struct TrapTrajConfig_t {
     float vel_limit = 20000.0f;
     float accel_limit = 5000.0f;
     float decel_limit = 5000.0f;
-    float A_to_cpss = 0.0f;
+    float cpss_to_A = 0.0f;
 };
 
 struct TrapTrajStep_t {

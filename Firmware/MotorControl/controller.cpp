@@ -52,7 +52,7 @@ void Controller::move_to_pos(float goal_point) {
     TrapTrajStep_t myTraj = axis_->trap_.evalTrapTraj(0.0f);
     pos_setpoint_ = myTraj.Y;
     vel_setpoint_ = myTraj.Yd;
-    current_setpoint_ = myTraj.Ydd * axis_->trap_.config_.A_to_cpss;
+    current_setpoint_ = myTraj.Ydd * axis_->trap_.config_.cpss_to_A;
 
     planned_move_timer_ = axis_->loop_counter_ * current_meas_period;
 }
@@ -108,7 +108,7 @@ bool Controller::update(float pos_estimate, float vel_estimate, float* current_s
             TrapTrajStep_t myTraj = axis_->trap_.evalTrapTraj(time_now - planned_move_timer_);
             pos_setpoint_ = myTraj.Y;
             vel_setpoint_ = myTraj.Yd;
-            current_setpoint_ = myTraj.Ydd * axis_->trap_.config_.A_to_cpss;
+            current_setpoint_ = myTraj.Ydd * axis_->trap_.config_.cpss_to_A;
         }
         anticogging_pos = pos_setpoint_; // FF the position setpoint instead of the pos_estimate
     }
