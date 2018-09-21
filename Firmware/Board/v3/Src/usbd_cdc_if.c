@@ -117,10 +117,12 @@
 /* Create buffer for reception and transmission           */
 /* It's up to user to redefine and/or remove those define */
 /** Received data over USB are stored in this buffer      */
-uint8_t UserRxBufferFS[APP_RX_DATA_SIZE];
+uint8_t CDCRxBufferFS[APP_RX_DATA_SIZE];
+uint8_t ODRIVERxBufferFS[APP_RX_DATA_SIZE];
 
 /** Data to send over USB CDC are stored in this buffer   */
-uint8_t UserTxBufferFS[APP_TX_DATA_SIZE];
+uint8_t CDCTxBufferFS[APP_TX_DATA_SIZE];
+uint8_t ODRIVETxBufferFS[APP_TX_DATA_SIZE];
 
 /* USER CODE BEGIN PRIVATE_VARIABLES */
 /* USER CODE END PRIVATE_VARIABLES */
@@ -177,8 +179,10 @@ static int8_t CDC_Init_FS(void)
 {
   /* USER CODE BEGIN 3 */
   /* Set Application Buffers */
-  USBD_CDC_SetTxBuffer(&hUsbDeviceFS, UserTxBufferFS, 0);
-  USBD_CDC_SetRxBuffer(&hUsbDeviceFS, UserRxBufferFS);
+  USBD_CDC_SetTxBuffer(&hUsbDeviceFS, CDCTxBufferFS, 0, CDC_OUT_EP);
+  USBD_CDC_SetRxBuffer(&hUsbDeviceFS, CDCRxBufferFS, CDC_OUT_EP);
+  USBD_CDC_SetTxBuffer(&hUsbDeviceFS, ODRIVETxBufferFS, 0, ODRIVE_OUT_EP);
+  USBD_CDC_SetRxBuffer(&hUsbDeviceFS, ODRIVERxBufferFS, ODRIVE_OUT_EP);
   return (USBD_OK);
   /* USER CODE END 3 */
 }
@@ -290,7 +294,7 @@ static int8_t CDC_Control_FS(uint8_t cmd, uint8_t* pbuf, uint16_t length)
 static int8_t CDC_Receive_FS(uint8_t* Buf, uint32_t *Len, uint8_t endpoint_pair)
 {
   /* USER CODE BEGIN 6 */
-  usb_process_packet(Buf, *Len, endpoint_pair);
+  usb_rx_process_packet(Buf, *Len, endpoint_pair);
 
   return (USBD_OK);
   /* USER CODE END 6 */
@@ -315,14 +319,29 @@ uint8_t CDC_Transmit_FS(uint8_t* Buf, uint16_t Len, uint8_t endpoint_pair)
   //Check length
   if (Len > USB_TX_DATA_SIZE)
     return USBD_FAIL;
-  // Check for ongoing transmission
+
   USBD_CDC_HandleTypeDef* hcdc = (USBD_CDC_HandleTypeDef*) hUsbDeviceFS.pClassData;
-  if (hcdc->TxState != 0)
-    return USBD_BUSY;
+
+  // Select EP
+  USBD_CDC_EP_HandleTypeDef* hEP_Tx;
+  uint8_t* TxBuff;
+  if (endpoint_pair == CDC_OUT_EP) {
+    hEP_Tx = &hcdc->CDC_Tx;
+    TxBuff = CDCTxBufferFS;
+  } else if (endpoint_pair == ODRIVE_OUT_EP) {
+    hEP_Tx = &hcdc->ODRIVE_Tx;
+    TxBuff = ODRIVETxBufferFS;
+  } else {
+    return USBD_FAIL;
+  }
+
+  // Check for ongoing transmission
+  if (hEP_Tx->State != 0)
+      return USBD_BUSY;
   // memcpy Buf into UserTxBufferFS
-  memcpy(UserTxBufferFS, Buf, Len);
+  memcpy(TxBuff, Buf, Len);
   // Update Len
-  USBD_CDC_SetTxBuffer(&hUsbDeviceFS, UserTxBufferFS, Len);
+  USBD_CDC_SetTxBuffer(&hUsbDeviceFS, TxBuff, Len, endpoint_pair);
   result = USBD_CDC_TransmitPacket(&hUsbDeviceFS, endpoint_pair);
   /* USER CODE END 7 */
   return result;

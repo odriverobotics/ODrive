@@ -109,19 +109,25 @@ typedef struct _USBD_CDC_Itf
 
 }USBD_CDC_ItfTypeDef;
 
+typedef struct
+{
+  uint8_t* Buffer;
+  uint32_t Length;
+  volatile uint8_t State;
+}
+USBD_CDC_EP_HandleTypeDef;
 
 typedef struct
 {
   uint32_t data[CDC_DATA_HS_MAX_PACKET_SIZE/4];      /* Force 32bits alignment */
   uint8_t  CmdOpCode;
-  uint8_t  CmdLength;    
-  uint8_t  *RxBuffer;  
-  uint8_t  *TxBuffer;   
-  uint32_t RxLength;
-  uint32_t TxLength;    
-  
-  __IO uint32_t TxState;     
-  __IO uint32_t RxState;    
+  uint8_t  CmdLength;
+
+  USBD_CDC_EP_HandleTypeDef CDC_Tx;
+  USBD_CDC_EP_HandleTypeDef CDC_Rx;
+
+  USBD_CDC_EP_HandleTypeDef ODRIVE_Tx;
+  USBD_CDC_EP_HandleTypeDef ODRIVE_Rx;
 }
 USBD_CDC_HandleTypeDef; 
 
@@ -153,10 +159,11 @@ uint8_t  USBD_CDC_RegisterInterface  (USBD_HandleTypeDef   *pdev,
 
 uint8_t  USBD_CDC_SetTxBuffer        (USBD_HandleTypeDef   *pdev,
                                       uint8_t  *pbuff,
-                                      uint16_t length);
+                                      uint16_t length,
+                                      uint8_t endpoint_pair);
 
 uint8_t  USBD_CDC_SetRxBuffer        (USBD_HandleTypeDef   *pdev,
-                                      uint8_t  *pbuff);
+                                      uint8_t  *pbuff, uint8_t endpoint_pair);
   
 uint8_t  USBD_CDC_ReceivePacket      (USBD_HandleTypeDef *pdev, uint8_t endpoint_pair);
 

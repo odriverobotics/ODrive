@@ -4,6 +4,27 @@ The motor controller is a cascaded style position, velocity and current control 
 
 ![Cascaded pos vel I loops](https://static1.squarespace.com/static/58aff26de4fcb53b5efd2f02/t/5b66284a0e2e72aae8818d64/1533421649405/CascadedController.png?format=2500w)
 
-* The position controller is a P loop with a single proportional gain.
-* The velocity controller is a PI loop.
-* The current controller is a PI loop.
+### Position loop:
+The position controller is a P loop with a single proportional gain.
+```text
+pos_error = pos_setpoint - pos_feedback
+vel_cmd = pos_error * pos_gain + vel_feedforward
+```
+
+### Velocity loop:
+The velocity controller is a PI loop.
+```text
+vel_error = vel_cmd - vel_feedback
+current_integral += vel_error * vel_integrator_gain
+current_cmd = vel_error * vel_gain + current_integral + current_feedforward
+```
+
+### Current loop:
+The current controller is a PI loop.
+```text
+current_error = current_cmd - current_fb
+voltage_integral += current_error * current_integrator_gain
+voltage_cmd = current_error * current_gain + voltage_integral (+ voltage_feedforward when we have motor model)
+```
+
+For more detail refer to [controller.cpp](https://github.com/madcowswe/ODrive/blob/master/Firmware/MotorControl/controller.cpp#L86).

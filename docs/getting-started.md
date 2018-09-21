@@ -7,8 +7,7 @@ permalink: /
 # Getting Started
 
 ### Table of contents
-
-<!-- MarkdownTOC depth=2 autolink=true bracket=round -->
+<!-- TOC depthFrom:2 depthTo:2 -->
 
 - [Hardware Requirements](#hardware-requirements)
 - [Wiring up the ODrive](#wiring-up-the-odrive)
@@ -18,7 +17,7 @@ permalink: /
 - [Position control of M0](#position-control-of-m0)
 - [What's next?](#whats-next)
 
-<!-- /MarkdownTOC -->
+<!-- /TOC -->
 
 ## Hardware Requirements
 
@@ -123,9 +122,9 @@ Try step 5 again
 2. Install the ODrive tools by opening a terminal and typing `pip install odrive` <kbd>Enter</kbd>
 3. __Linux__: set up USB permissions
 ```bash
-    echo 'SUBSYSTEM=="usb", ATTR{idVendor}=="1209", ATTR{idProduct}=="0d[0-9][0-9]", MODE="0666"' | sudo tee /etc/udev/rules.d/50-odrive.rules
+    echo 'SUBSYSTEM=="usb", ATTR{idVendor}=="1209", ATTR{idProduct}=="0d[0-9][0-9]", MODE="0666"' | sudo tee /etc/udev/rules.d/91-odrive.rules
     sudo udevadm control --reload-rules
-    sudo udevadm trigger # until you reboot you may need to do this everytime you reset the ODrive
+    sudo udevadm trigger
 ```
 
 ## Start `odrivetool`
@@ -163,7 +162,7 @@ In the previous step we started `odrivetool`. In there, you can assign variables
 For instance, to set the current limit of M0 to 10A you would type: `odrv0.axis0.motor.config.current_lim = 10` <kbd>Enter</kbd>
 </div></details>
 
-* The current limit: `odrv0.axis0.motor.config.current_lim` [A]. The default current limit, for safety reasons, is set to 10A. This is quite weak, and good for making sure the drive is stable. Once you have tuned the drive, you can increase this to 75A to get some performance. Note that above 75A, you must change the current amplifier gains.
+* The current limit: `odrv0.axis0.motor.config.current_lim` [A]. The default current limit, for safety reasons, is set to 10A. This is quite weak, and good for making sure the drive is stable. Once you have tuned the drive, you can increase this to 75A to get some performance. Note that above 75A, you must change the current amplifier gains. You do this by requesting a different current range. i.e. for 90A on M0: 'odrv0.axis0.motor.config.requested_current_range = 90' [A], then save the configeration and reboot as the gains are written out to the DRV (MOSFET driver) only during startup.
   * Note: The motor current and the current drawn from the power supply is not the same in general. You should not look at the power supply current to see what is going on with the motor current.
     <details><summary markdown="span">Ok so tell me how it actually works then...</summary><div markdown="block">
     The current in the motor is only connected to the current in the power supply _sometimes_ and other times it just cycles out of one phase and back in the other. This is what the modulation magnitude is (sometimes people call this duty cycle, but that's a bit confusing because we use SVM not straight PWM). When the modulation magnitude is 0, the average voltage seen across the motor phases is 0, and the motor current is never connected to the power supply. When the magnitude is 100%, it is always connected, and at 50% it's connected half the time, and cycled in just the motor half the time.
@@ -171,11 +170,11 @@ For instance, to set the current limit of M0 to 10A you would type: `odrv0.axis0
     The largest effect on modulation magnitude is speed. There are other smaller factors, but in general: if the motor is still it's not unreasonable to have 50A in the motor from 5A on the power supply. When the motor is spinning close to top speed, the power supply current and the motor current will be somewhat close to each other.
     </div></details>
 * The velocity limit: `odrv0.axis0.controller.config.vel_limit` [counts/s]. The motor will be limited to this speed; again the default value is quite slow.
-* You can change `odrv0.axis0.motor.config.calibration_current` [A] to the largest value you feel comfortable leaving running through the motor continously when the motor is stationary.
+* You can change `odrv0.axis0.motor.config.calibration_current` [A] to the largest value you feel comfortable leaving running through the motor continously when the motor is stationary. If you are using a small motor (i.e. 15A current rated) you may need to reduce `calibration_current` to a value smaller than the default.
 
 ### 2. Set other hardware parameters:
 
-  * `odrv0.config.brake_resistance` [Ohm]: This is the resistance of the brake resistor. If you are not using it, you may set it to `0`.
+  * `odrv0.config.brake_resistance` [Ohm]: This is the resistance of the brake resistor. If you are not using it, you may set it to `0`. Note that there may be some extra resistance in your wiring and in the screw terminals, so if you are getting issues while braking you may want to increase this parameter by around 0.05 ohm.
   * `odrv0.axis0.motor.config.pole_pairs`: This is the number of **magnet poles** in the rotor, **divided by two**. You can simply count the number of permanent magnets in the rotor, if you can see them. _Note: this is not the same as the number of coils in the stator._
   * `odrv0.axis0.motor.config.motor_type`: This is the type of motor being used. Currently two types of motors are supported: High-current motors (`MOTOR_TYPE_HIGH_CURRENT`) and Gimbal motors (`MOTOR_TYPE_GIMBAL`).
 
@@ -197,8 +196,11 @@ For instance, to set the current limit of M0 to 10A you would type: `odrv0.axis0
 
 
 ### 3. Save configuration.
-You can save all `.config` parameters to persistent memory such that the ODrive remembers them between power cycles.
-* `odrv0.save_configuration()` <kbd>Enter</kbd>
+You can save all `.config` parameters to persistent memory such that the ODrive remembers them between power cycles. 
+* `odrv0.save_configuration()` <kbd>Enter</kbd>. 
+
+Due to a [known issue](https://github.com/madcowswe/ODrive/issues/183) it is strongly recommended that you reboot following every save of your configuration using `odrv0.reboot()`.
+
 
 ## Position control of M0
 
@@ -226,14 +228,14 @@ Let's get motor 0 up and running. The procedure for motor 1 is exactly the same,
 ### Other control modes
 The ODrive also supports velocity control and current (torque) control.
 * **Velocity control**: Set `odrv0.axis0.controller.config.control_mode = CTRL_MODE_VELOCITY_CONTROL`. You can now control the velocity with `odrv0.axis0.controller.vel_setpoint = 5000`. Units are counts/s.
-* **Current control**: Set `odrv0.axis0.controller.config.control_mode = CTRL_MODE_CURRENT_CONTROL`. You can now control the current with `odrv0.axis0.controller.vel_setpoint = 3`. Units are A. **NOTE**: There is no velocity limiting in current control mode. Make sure that you don't overrev the motor, or exceed the max speed for your encoder.
+* **Current control**: Set `odrv0.axis0.controller.config.control_mode = CTRL_MODE_CURRENT_CONTROL`. You can now control the current with `odrv0.axis0.controller.current_setpoint = 3`. Units are A. **NOTE**: There is no velocity limiting in current control mode. Make sure that you don't overrev the motor, or exceed the max speed for your encoder.
 
 ## What's next?
 
 You can now:
 
 * See what other [commands and parameters](commands.md) are available, including setting tuning parameters for better performance.
-* Control the ODrive from your own program or hook it up to an existing system through one of it's [interfaces](interfaces).
+* Control the ODrive from your own program or hook it up to an existing system through one of it's [interfaces](interfaces.md).
 * See how you can improve the behavior during the startup procedure, like [bypassing encoder calibration](encoders.md#encoder-with-index-signal).
 
 If you have any issues or any questions please get in touch. The [ODrive Community](https://discourse.odriverobotics.com/) warmly welcomes you.
