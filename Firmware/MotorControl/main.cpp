@@ -28,9 +28,9 @@ typedef Config<
     SensorlessEstimator::Config_t[AXIS_COUNT],
     ControllerConfig_t[AXIS_COUNT],
     MotorConfig_t[AXIS_COUNT],
-    AxisConfig_t[AXIS_COUNT],
     EndstopConfig_t[AXIS_COUNT],
-    EndstopConfig_t[AXIS_COUNT]> ConfigFormat;
+    EndstopConfig_t[AXIS_COUNT],
+    AxisConfig_t[AXIS_COUNT]> ConfigFormat;
 
 void save_configuration(void) {
     if (ConfigFormat::safe_store_config(
@@ -39,10 +39,10 @@ void save_configuration(void) {
             &sensorless_configs,
             &controller_configs,
             &motor_configs,
-            &axis_configs,
             &min_endstop_configs,
-            &max_endstop_configs)) {
-        //printf("saving configuration failed\r\n"); osDelay(5);
+            &max_endstop_configs,
+            &axis_configs)) {
+        printf("saving configuration failed\r\n"); osDelay(5);
     } else {
         user_config_loaded_ = true;
     }
@@ -57,9 +57,9 @@ void load_configuration(void) {
                 &sensorless_configs,
                 &controller_configs,
                 &motor_configs,
-                &axis_configs,
                 &min_endstop_configs,
-                &max_endstop_configs)) {
+                &max_endstop_configs,
+                &axis_configs)) {
         //If loading failed, restore defaults
         board_config = BoardConfig_t();
         for (size_t i = 0; i < AXIS_COUNT; ++i) {
@@ -67,9 +67,9 @@ void load_configuration(void) {
             sensorless_configs[i] = SensorlessEstimator::Config_t();
             controller_configs[i] = ControllerConfig_t();
             motor_configs[i] = MotorConfig_t();
-            axis_configs[i] = AxisConfig_t();
             min_endstop_configs[i] = EndstopConfig_t();
             max_endstop_configs[i] = EndstopConfig_t();
+            axis_configs[i] = AxisConfig_t();
         }
     } else {
         user_config_loaded_ = true;
