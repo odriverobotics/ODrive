@@ -1,55 +1,50 @@
 #ifndef __INTERFACE_CAN_HPP
 #define __INTERFACE_CAN_HPP
 
-#include "fibre/protocol.hpp"
-#include <stm32f4xx_hal.h>
 #include <cmsis_os.h>
+#include <stm32f4xx_hal.h>
+#include "fibre/protocol.hpp"
 
-struct CAN_context {
-    CAN_HandleTypeDef *handle = nullptr;
-    uint8_t node_id = 0;
-    uint64_t serial_number = 0;
+struct {
+    uint32_t id;
+    bool isExt;
+    uint8_t len;
+    uint8_t buf[8];
+} CAN_message_t;
 
-    uint32_t node_ids_in_use_0[4]; // 128 bits (indicate if a node ID was in use up to 1 second ago)
-    uint32_t node_ids_in_use_1[4]; // 128 bits (indicats if a node ID was in use 1-2 seconds ago)
+// Anonymous enum for defining the most common CAN baud rates
+enum {
+    CAN_BAUD_125K = 125000,
+    CAN_BAUD_250K = 250000,
+    CAN_BAUD_500K = 500000,
+    CAN_BAUD_1000K = 1000000,
+    CAN_BAUD_1M = 1000000
+};
+struct CANConfig_t {
+    uint8_t node_id;
+    uint32_t baud;
+};
 
-    uint32_t last_heartbeat_mailbox = 0;
-    uint32_t tx_msg_cnt = 0;
-    uint32_t node_id_expiry = 0;
-    
-    uint8_t node_id_rng_state = 0;
+class ODriveCAN {
+   public:
+    ODriveCAN(CAN_HandleTypeDef *handle, CANConfig_t &config);
 
-    osSemaphoreId sem_send_heartbeat;
+    bool start_can_server();
+    void can_server_thread();
 
-    // count occurrence various callbacks
-    uint32_t TxMailboxCompleteCallbackCnt = 0;
-    uint32_t TxMailboxAbortCallbackCnt = 0;
-    int RxFifo0MsgPendingCallbackCnt = 0;
-    int RxFifo0FullCallbackCnt = 0;
-    int RxFifo1MsgPendingCallbackCnt = 0;
-    int RxFifo1FullCallbackCnt = 0;
-    int SleepCallbackCnt = 0;
-    int WakeUpFromRxMsgCallbackCnt = 0;
-    int ErrorCallbackCnt = 0;
-
-    uint32_t received_msg_cnt = 0;
-    uint32_t received_ack = 0;
-    uint32_t unexpected_errors = 0;
-    uint32_t unhandled_messages = 0;
+    osThreadId thread_id_;
+    volatile bool thread_id_valid_ = false;
 
     auto make_protocol_definitions() {
         return make_protocol_member_list(
-            make_protocol_ro_property("node_id", &node_id),
-            make_protocol_ro_property("TxMailboxCompleteCallbackCnt", &TxMailboxCompleteCallbackCnt),
-            make_protocol_ro_property("TxMailboxAbortCallbackCnt", &TxMailboxAbortCallbackCnt),
-            make_protocol_ro_property("received_msg_cnt", &received_msg_cnt),
-            make_protocol_ro_property("received_ack", &received_ack),
-            make_protocol_ro_property("unexpected_errors", &unexpected_errors),
-            make_protocol_ro_property("unhandled_messages", &unhandled_messages)
-        );
+            make_protocol_object("config",
+                                 make_protocol_property("node_id", &config_.node_id),
+                                 make_protocol_property("baud_rate", &config_.baud)));
     }
+
+   private:
+    CAN_HandleTypeDef *handle_ = nullptr;
+    CANConfig_t &config_;
 };
 
-bool start_can_server(CAN_context& ctx, CAN_TypeDef *hcan, uint64_t serial_number);
-
-#endif // __INTERFACE_CAN_HPP
+#endif  // __INTERFACE_CAN_HPP
