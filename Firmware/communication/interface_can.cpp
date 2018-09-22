@@ -52,7 +52,7 @@ static void can_server_thread_wrapper(void* ctx){
 
 void ODriveCAN::can_server_thread() {
     for (;;) {
-       // Do nothing
+       osDelay(1000);
     }
 }
 
@@ -80,4 +80,22 @@ bool ODriveCAN::start_can_server() {
     thread_id_valid_ = true;
     
     return true;
+}
+
+void ODriveCAN::set_baud_rate(uint32_t baudRate){
+    switch(baudRate){
+        case CAN_BAUD_125K: 
+        case CAN_BAUD_250K:
+        case CAN_BAUD_500K:
+        case CAN_BAUD_1000K:
+            config_.baud = baudRate; // baudRate is a valid CAN baud
+            break;
+        default:
+            break; // baudRate is invalid, so do nothing
+    }
+}
+
+void ODriveCAN::set_node_id(uint8_t nodeID){
+    // Allow for future nodeID validation by making this a set function
+    config_.node_id = nodeID;
 }

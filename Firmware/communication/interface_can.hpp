@@ -21,8 +21,8 @@ enum {
     CAN_BAUD_1M = 1000000
 };
 struct CANConfig_t {
-    uint8_t node_id;
-    uint32_t baud;
+    uint8_t node_id = 0;
+    uint32_t baud = CAN_BAUD_250K;
 };
 
 class ODriveCAN {
@@ -38,13 +38,20 @@ class ODriveCAN {
     auto make_protocol_definitions() {
         return make_protocol_member_list(
             make_protocol_object("config",
-                                 make_protocol_property("node_id", &config_.node_id),
-                                 make_protocol_property("baud_rate", &config_.baud)));
+                                 make_protocol_ro_property("node_id", &config_.node_id),
+                                 make_protocol_ro_property("baud_rate", &config_.baud)
+                                ),
+            make_protocol_function("set_node_id", *this, &ODriveCAN::set_node_id, "nodeID"),
+            make_protocol_function("set_baud_rate", *this, &ODriveCAN::set_baud_rate, "baudRate")
+        );
     }
 
    private:
     CAN_HandleTypeDef *handle_ = nullptr;
     CANConfig_t &config_;
+
+    void set_node_id(uint8_t nodeID);
+    void set_baud_rate(uint32_t baudRate);
 };
 
 #endif  // __INTERFACE_CAN_HPP
