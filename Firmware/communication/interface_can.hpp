@@ -5,6 +5,9 @@
 #include <stm32f4xx_hal.h>
 #include "fibre/protocol.hpp"
 
+#define CAN_CLK_HZ (42000000)
+#define CAN_CLK_MHZ (42)
+
 struct {
     uint32_t id;
     bool isExt;

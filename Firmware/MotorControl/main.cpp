@@ -23,8 +23,6 @@ SystemStats_t system_stats_ = { 0 };
 Axis *axes[AXIS_COUNT];
 ODriveCAN *odCAN;
 
-
-
 typedef Config<
     BoardConfig_t,
     CANConfig_t,
