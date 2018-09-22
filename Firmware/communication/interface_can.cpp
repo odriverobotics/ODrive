@@ -39,21 +39,34 @@
 #include <cmsis_os.h>
 #include <stm32f4xx_hal.h>
 
+static uint32_t counter = 0;
 // Constructor is called by communication.cpp and the handle is assigned appropriately
 ODriveCAN::ODriveCAN(CAN_HandleTypeDef *handle, CANConfig_t &config)
     : handle_{handle},
       config_{config} {
 }
 
+void ODriveCAN::can_server_thread() {
+    for (;;) {
+        CAN_message_t txmsg;
+        txmsg.id = 0x100;
+        txmsg.len = 4;
+        txmsg.isExt = false;
+
+        txmsg.buf[0] = counter >> 24;
+        txmsg.buf[1] = counter >> 16;
+        txmsg.buf[2] = counter >> 8;
+        txmsg.buf[3] = counter;
+
+        write(txmsg); // Transmit message w/ counter at ID = 0x100
+
+        osDelay(10);
+    }
+}
+
 static void can_server_thread_wrapper(void *ctx) {
     reinterpret_cast<ODriveCAN *>(ctx)->can_server_thread();
     reinterpret_cast<ODriveCAN *>(ctx)->thread_id_valid_ = false;
-}
-
-void ODriveCAN::can_server_thread() {
-    for (;;) {
-        osDelay(10);
-    }
 }
 
 bool ODriveCAN::start_can_server() {
@@ -120,4 +133,19 @@ void ODriveCAN::set_baud_rate(uint32_t baudRate) {
 void ODriveCAN::set_node_id(uint8_t nodeID) {
     // Allow for future nodeID validation by making this a set function
     config_.node_id = nodeID;
+}
+
+uint32_t ODriveCAN::write(CAN_message_t& txmsg) {
+    CAN_TxHeaderTypeDef header;
+    header.StdId = txmsg.id;
+    header.ExtId = txmsg.id;
+    header.IDE = txmsg.isExt ? CAN_ID_EXT : CAN_ID_STD;
+    header.RTR = CAN_RTR_DATA;
+    header.DLC = txmsg.len;
+    header.TransmitGlobalTime = FunctionalState::DISABLE;
+
+    uint32_t retTxMailbox;
+    HAL_CAN_AddTxMessage(handle_, &header, txmsg.buf, &retTxMailbox);
+
+    return retTxMailbox;
 }

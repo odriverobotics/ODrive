@@ -8,7 +8,7 @@
 #define CAN_CLK_HZ (42000000)
 #define CAN_CLK_MHZ (42)
 
-struct {
+typedef struct {
     uint32_t id;
     bool isExt;
     uint8_t len;
@@ -34,6 +34,9 @@ class ODriveCAN {
 
     bool start_can_server();
     void can_server_thread();
+
+    uint32_t write(CAN_message_t& txmsg);
+    int read(CAN_message_t& rxmsg);
 
     osThreadId thread_id_;
     volatile bool thread_id_valid_ = false;
