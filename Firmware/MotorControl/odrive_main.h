@@ -109,8 +109,10 @@ inline ENUMTYPE operator ~ (ENUMTYPE a) { return static_cast<ENUMTYPE>(~static_c
 #include <sensorless_estimator.hpp>
 #include <controller.hpp>
 #include <motor.hpp>
+#include <trapTraj.hpp>
 #include <axis.hpp>
 #include <communication/communication.h>
+
 
 #endif // __cplusplus
 

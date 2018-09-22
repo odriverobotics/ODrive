@@ -44,6 +44,19 @@ void Controller::set_current_setpoint(float current_setpoint) {
 #endif
 }
 
+void Controller::move_to_pos(float goal_point) {
+    planned_move_end_time_ = axis_->trap_.planTrapezoidal(goal_point, pos_setpoint_,
+                                                          vel_setpoint_, axis_->trap_.config_.vel_limit,
+                                                          axis_->trap_.config_.accel_limit, axis_->trap_.config_.decel_limit);
+    config_.control_mode = CTRL_MODE_PLANNED_MOVE_CONTROL;
+    TrapTrajStep_t myTraj = axis_->trap_.evalTrapTraj(0.0f);
+    pos_setpoint_ = myTraj.Y;
+    vel_setpoint_ = myTraj.Yd;
+    current_setpoint_ = myTraj.Ydd * axis_->trap_.config_.cpss_to_A;
+
+    planned_move_timer_ = axis_->loop_counter_ * current_meas_period;
+}
+
 void Controller::start_anticogging_calibration() {
     // Ensure the cogging map was correctly allocated earlier and that the motor is capable of calibrating
     if (anticogging_.cogging_map != NULL && axis_->error_ == Axis::ERROR_NONE) {
@@ -82,7 +95,24 @@ bool Controller::anticogging_calibration(float pos_estimate, float vel_estimate)
 bool Controller::update(float pos_estimate, float vel_estimate, float* current_setpoint_output) {
     // Only runs if anticogging_.calib_anticogging is true; non-blocking
     anticogging_calibration(pos_estimate, vel_estimate);
-    
+    float anticogging_pos = pos_estimate;
+
+    // Controlled Move
+    if (config_.control_mode >= CTRL_MODE_PLANNED_MOVE_CONTROL) {
+        float time_now = axis_->loop_counter_ * current_meas_period;
+        if ((time_now - planned_move_timer_) > planned_move_end_time_) {
+            config_.control_mode = CTRL_MODE_POSITION_CONTROL;
+            vel_setpoint_ = 0.0f;
+            current_setpoint_ = 0.0f;
+        } else {
+            TrapTrajStep_t myTraj = axis_->trap_.evalTrapTraj(time_now - planned_move_timer_);
+            pos_setpoint_ = myTraj.Y;
+            vel_setpoint_ = myTraj.Yd;
+            current_setpoint_ = myTraj.Ydd * axis_->trap_.config_.cpss_to_A;
+        }
+        anticogging_pos = pos_setpoint_; // FF the position setpoint instead of the pos_estimate
+    }
+
     // Position control
     // TODO Decide if we want to use encoder or pll position here
     float vel_des = vel_setpoint_;
@@ -103,7 +133,7 @@ bool Controller::update(float pos_estimate, float vel_estimate, float* current_s
     // We get the current position and apply a current feed-forward
     // ensuring that we handle negative encoder positions properly (-1 == motor->encoder.encoder_cpr - 1)
     if (anticogging_.use_anticogging) {
-        Iq += anticogging_.cogging_map[mod(static_cast<int>(pos_estimate), axis_->encoder_.config_.cpr)];
+        Iq += anticogging_.cogging_map[mod(static_cast<int>(anticogging_pos), axis_->encoder_.config_.cpr)];
     }
 
     float v_err = vel_des - vel_estimate;

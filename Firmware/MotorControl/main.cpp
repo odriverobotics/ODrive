@@ -14,6 +14,7 @@ SensorlessEstimator::Config_t sensorless_configs[AXIS_COUNT];
 ControllerConfig_t controller_configs[AXIS_COUNT];
 MotorConfig_t motor_configs[AXIS_COUNT];
 AxisConfig_t axis_configs[AXIS_COUNT];
+TrapTrajConfig_t trap_configs[AXIS_COUNT];
 bool user_config_loaded_;
 
 SystemStats_t system_stats_ = { 0 };
@@ -26,6 +27,7 @@ typedef Config<
     SensorlessEstimator::Config_t[AXIS_COUNT],
     ControllerConfig_t[AXIS_COUNT],
     MotorConfig_t[AXIS_COUNT],
+    TrapTrajConfig_t[AXIS_COUNT],
     AxisConfig_t[AXIS_COUNT]> ConfigFormat;
 
 void save_configuration(void) {
@@ -35,6 +37,7 @@ void save_configuration(void) {
             &sensorless_configs,
             &controller_configs,
             &motor_configs,
+            &trap_configs,
             &axis_configs)) {
         //printf("saving configuration failed\r\n"); osDelay(5);
     } else {
@@ -51,6 +54,7 @@ void load_configuration(void) {
                 &sensorless_configs,
                 &controller_configs,
                 &motor_configs,
+                &trap_configs,
                 &axis_configs)) {
         //If loading failed, restore defaults
         board_config = BoardConfig_t();
@@ -59,6 +63,7 @@ void load_configuration(void) {
             sensorless_configs[i] = SensorlessEstimator::Config_t();
             controller_configs[i] = ControllerConfig_t();
             motor_configs[i] = MotorConfig_t();
+            trap_configs[i] = TrapTrajConfig_t();
             axis_configs[i] = AxisConfig_t();
         }
     } else {
@@ -162,8 +167,9 @@ int odrive_main(void) {
         Motor *motor = new Motor(hw_configs[i].motor_config,
                                  hw_configs[i].gate_driver_config,
                                  motor_configs[i]);
+        TrapezoidalTrajectory *trap = new TrapezoidalTrajectory(trap_configs[i]);
         axes[i] = new Axis(hw_configs[i].axis_config, axis_configs[i],
-                *encoder, *sensorless_estimator, *controller, *motor);
+                *encoder, *sensorless_estimator, *controller, *motor, *trap);
     }
     
     // Start ADC for temperature measurements and user measurements

@@ -65,7 +65,8 @@ public:
             Encoder& encoder,
             SensorlessEstimator& sensorless_estimator,
             Controller& controller,
-            Motor& motor);
+            Motor& motor,
+            TrapezoidalTrajectory& trap);
 
     void setup();
     void start_thread();
@@ -150,6 +151,7 @@ public:
     SensorlessEstimator& sensorless_estimator_;
     Controller& controller_;
     Motor& motor_;
+    TrapezoidalTrajectory& trap_;
 
     osThreadId thread_id_;
     volatile bool thread_id_valid_ = false;
@@ -188,7 +190,8 @@ public:
             make_protocol_object("motor", motor_.make_protocol_definitions()),
             make_protocol_object("controller", controller_.make_protocol_definitions()),
             make_protocol_object("encoder", encoder_.make_protocol_definitions()),
-            make_protocol_object("sensorless_estimator", sensorless_estimator_.make_protocol_definitions())
+            make_protocol_object("sensorless_estimator", sensorless_estimator_.make_protocol_definitions()),
+            make_protocol_object("trap_traj", trap_.make_protocol_definitions())
         );
     }
 };

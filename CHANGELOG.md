@@ -3,6 +3,10 @@ Please add a note of your changes below this heading if you make a Pull Request.
 
 # Unreleased
 
+## Added
+* Trapezoidal Trajectory Planner
+
+
 # Releases
 ## [0.4.4] - 2018-09-18
 ### Fixed
