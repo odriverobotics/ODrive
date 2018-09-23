@@ -18,6 +18,10 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+# This algorithm is based on:
+# FIR filter-based online jerk-constrained trajectory generation
+# https://www.researchgate.net/profile/Richard_Bearee/publication/304358769_FIR_filter-based_online_jerk-controlled_trajectory_generation/links/5770ccdd08ae10de639c0ff7/FIR-filter-based-online-jerk-controlled-trajectory-generation.pdf
+
 import numpy as np
 import math
 import matplotlib.pyplot as plt
@@ -35,57 +39,47 @@ import random
 
 
 def FIR_trapPlan(Xf, Xi, Vi, Vmax, Amax, Dmax):
-
-    dX_stop = Vi**2 / (2*Dmax)  # Minimum stopping distance
     dX = Xf - Xi    # Distance to travel
-
-    s = np.sign(dX)   # Sign of travel direction
-
+    stop_dist = Vi**2 / (2*Dmax)  # Minimum stopping distance
+    dX_stop = np.sign(Vi)*stop_dist # Minimum stopping displacement
+    s = np.sign(dX - dX_stop)   # Sign of coast velocity (if any)
     Ar = s*Amax     # Maximum Acceleration (signed)
     Dr = -s*Dmax    # Maximum Deceleration (signed)
     Vr = s*Vmax     # Maximum Velocity (signed)
 
-    if abs(dX) <= dX_stop:  # Check for an overshoot condition (decelerate only)
-        Ta = 0
+    # If we start with a speed faster than cruising, then we need to decel instead of accel
+    # aka "double deceleration move" in the paper
+    if s*Vi > s*Vr:
+        Ar = -s*Amax
+        print("Handbrake!")
+
+    # Time to accel/decel to/from Vr (cruise speed)
+    Ta = (Vr - Vi)/Ar
+    Td = -Vr/Dr
+
+    # Integrate velocity ramps over the full accel and decel times to get
+    # minimum displacement required to reach cuising speed
+    dXmin = Ta*(Vr + Vi)/2.0 + Td*(Vr)/2.0
+
+    # Did we displace enough to reach cruising speed?
+    if abs(dX) < abs(dXmin):
+        print("Short Move:")
+        # From paper:
+        # Vr = s*math.sqrt((-(Vi**2/Ar)-2*dX)/(1/Dr-1/Ar))
+        # Simplified for less divisions:
+        Vr = s*math.sqrt((Dr*Vi**2 + 2*Ar*Dr*dX) / (Dr-Ar))
+        Ta = max(0, (Vr - Vi)/Ar)
+        Td = max(0, -Vr/Dr)
         Tv = 0
-        Vr = Vi
-        Dr = -np.sign(Vi)*Dmax
-        Td = abs(Vi) / Dmax
-
-        print("Overshoot Move:")
-        print("dX: {:.3f}\tdx_Stop: {:.3f}".format(dX, dX_stop))
-        print("Xf: {:.3f}\tXi: {:.3f}\tVi: {:.3f}\tVmax: {:.3f}\tAmax: {:.3f}\t".format(
-            Xf, Xi, Vi, Vmax, Amax))
-        print("Ta: {:.3f}\tTv: {:.3f}\tTd: {:.3f}".format(Ta, Tv, Td))
-        print("Ar: {:.3f}\tDr: {:.3f}\tVr: {:.3f}".format(Ar, Dr, Vr))
-        print()
-
     else:
-        # Correct initial acceleration direction if needed
-        if s*Vi > s*Vr:
-            Ar = -s*Amax
+        print("Long move:")
+        Tv = (dX - dXmin)/Vr # Coasting time
 
-        Ta = (Vr - Vi)/Ar   # Acceleration Time
-        Td = -Vr/Dr   # Deceleration Time
-
-        # Peak velocity handling
-        dXmin = Ta*(Vr + Vi)/2.0 + Td*(Vr)/2.0
-
-        # Short move handling
-        if abs(dX) < abs(dXmin):
-            print("Short Move:")
-            print("dX: {:.3f}\tdXmin: {:.3f}".format(dX, dXmin))
-            print("Xf: {:.3f}\tXi: {:.3f}\tVi: {:.3f}\tVmax: {:.3f}\tAmax: {:.3f}\t".format(
-                Xf, Xi, Vi, Vmax, Amax))
-            print("Ta: {:.3f}\tTd: {:.3f}\tVr: {:.3f}".format(Ta, Td, Vr))
-            print()
-
-            Vr = s*math.sqrt((-(Vi**2/Ar)-2*dX)/(1/Dr-1/Ar))
-            Ta = max(0, (Vr - Vi)/Ar)
-            Tv = 0
-            Td = max(0, -Vr/Dr)
-        else:
-            Tv = (dX - dXmin)/Vr    # non-short move, coast time at constant v
+    print("Xi: {:.3f}\tXf: {:.3f}\tVi: {:.3f}".format(Xi, Xf, Vi))
+    print("Amax: {:.3f}\tVmax: {:.3f}\tDmax: {:.3f}".format(Amax, Vmax, Dmax))
+    print("dX: {:.3f}\tdx_Stop: {:.3f}".format(dX, dX_stop))
+    print("Ar: {:.3f}\tDr: {:.3f}\tVr: {:.3f}".format(Ar, Dr, Vr))
+    print("Ta: {:.3f}\tTv: {:.3f}\tTd: {:.3f}".format(Ta, Tv, Td))
 
     # We've computed Ta, Tv, Td, and Vr.  Time to produce a trajectory
     # Create the time series and preallocate the position, velocity, and acceleration arrays
@@ -122,82 +116,53 @@ def FIR_trapPlan(Xf, Xi, Vi, Vmax, Amax, Dmax):
     return (y, yd, ydd, t_traj)
 
 
-numRows = 2
-numCols = 2
+pos_range  = 10000.0
+Vmax_range = 8000.0
+Amax_range = 10000.0
+plot_range = 10000.0
+
+numRows = 3
+numCols = 5
 fig, axes = plt.subplots(numRows, numCols)
-random.seed()
+random.seed(2) # Repeatable tests by using specific seed
 for x in range(numRows*numCols):
+    rownow = int(x/numCols)
+    colnow = x % numCols
+    print("row: {}, col: {}".format(rownow, colnow))
 
-    # Vmax = random.uniform(0.1, 20)
-    # Amax = random.uniform(0.1, 4)
-    # Dmax = Amax
-
-    # Xf = random.uniform(-100.0, 100.0)
-    # Xi = random.uniform(-100.0, 100.0)
-    # Vi = random.uniform(-Vmax*2, Vmax*2)
-
-    Vmax = 100000.0
-    Amax = 100000.0
+    Vmax = random.uniform(0.1*Vmax_range, Vmax_range)
+    Amax = random.uniform(0.1*Amax_range, Amax_range)
     Dmax = Amax
-    Xf = 0
-    Xi = 1000000
-    Vi = 0
+    Xf = random.uniform(-pos_range, pos_range)
+    Xi = random.uniform(-pos_range, pos_range)
+    Vi = random.uniform(-Vmax*1.5, Vmax*1.5)
 
     (Y, Yd, Ydd, t) = FIR_trapPlan(Xf, Xi, Vi, Vmax, Amax, Dmax)
 
-    if(abs(Xf-Xi) <= Vi**2 / (2*Dmax)):
-        print("Overshoot: ", Xf)
-        print("Xf: {:.3f}\tXi: {:.3f}\tVi: {:.3f}\tVmax: {:.3f}\tAmax: {:.3f}\t".format(
-            Xf, Xi, Vi, Vmax, Amax))
-        print("Y: {:.3f}\tYd: {:.3f}\tYdd: {:.3f}".format(
-            Y[-1], Yd[-1], Ydd[-1]))
-        print()
-        (Y2, Yd2, Ydd2, t2) = FIR_trapPlan(Xf, Y[-1], Yd[-1], Vmax, Amax, Dmax)
-        Y.extend(Y2)
-        Yd.extend(Yd2)
-        Ydd.extend(Ydd2)
-        t2 = t2 + t[-1]
-        t = np.append(t, t2, axis=0)
-
+    if(abs(Xi-Y[0]) > 0.0001):
+        print("---------- Bad Initial Position ----------")
     if(abs(Xf-Y[-1]) > 0.0001):
-        print("Bad Final Position")
-        print("Xf: {:.3f}\tXi: {:.3f}\tVi: {:.3f}\tVmax: {:.3f}\tAmax: {:.3f}\t".format(
-            Xf, Xi, Vi, Vmax, Amax))
-        print()
-        # plt.figure()
-        # plt.subplot(2,1,1)
-        # plt.plot(t, Y)
-        # plt.plot(t, Yd)
-        # plt.plot(t[-1], Xf, 'b*')
-        # plt.plot(t[-1], 0, 'r*')
+        print("---------- Bad Final Position ----------")
+    if(abs(Vi-Yd[0]) > 0.0001):
+        print("---------- Bad Initial Velocity ----------")
+    if(abs(Yd[-1]) > 0.0001):
+        print("---------- Bad Final Velocity ----------")
 
-        # plt.subplot(2,1,2)
-        # plt.plot(t, Ydd)
+    # Plotting
+    ax1 = axes[rownow, colnow]
+    # Vel limits (draw first for clearer z-order)
+    ax1.plot([t[0], t[-1]], [Vmax, Vmax], 'g--')
+    ax1.plot([t[0], t[-1]], [-Vmax, -Vmax], 'g--')
 
-        # plt.show()
-    elif(abs(Yd[-1]) > 0.0001):
-        print("Bad Final Velocity")
-        print("Xf: {:.3f}\tXi: {:.3f}\tVi: {:.3f}\tVmax: {:.3f}\tAmax: {:.3f}\t".format(
-            Xf, Xi, Vi, Vmax, Amax))
-        print()
-        # plt.figure()
-        # plt.plot(t, Y)
-        # plt.plot(t, Yd)
-        # # plt.plot(t, Ydd)
-        # plt.show()
+    ax1.plot(t, Y) # Pos
+    ax1.plot(t, Yd) # Vel
+    ax1.plot(t[0], Xi, 'bo') # Pos Initial
+    ax1.plot(t[0], Vi, 'ro') # Vel Initial
+    ax1.plot(t[-1], Xf, 'b*') # Pos Final
+    ax1.plot(t[-1], 0, 'r*') # Vel Final
 
-    ax1 = axes[int(x/numCols), x % numCols]
-    ax1.plot(t, Y)
-    ax1.plot(t, Yd)
-    ax1.plot(t[-1], Xf, 'b*')
-    ax1.plot(t[-1], 0, 'r*')
+    ax1.set_ylim(-plot_range, plot_range)
 
-    # ax2 = ax1.twinx()
-    # ax2.plot(t, Ydd, color='tab:green')
-    # ax2.tick_params(axis='y', labelcolor='tab:green')
-    dX = abs(Xf - Y[-1])
-    dV = abs(0 - Yd[-1])
-    axes[int(x/numCols), x % numCols].set_title(
-        'Xf: {:.3f}  Xi: {:.3f}\ndX: {:.3f} dV: {:.3f}'.format(Xf, Xi, dX, dV))
+    print()
 
 plt.show()
