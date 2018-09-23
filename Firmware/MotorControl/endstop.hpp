@@ -23,6 +23,7 @@ class Endstop {
 
     bool getEndstopState();
 
+
     bool endstop_state_ = false;
     
     auto make_protocol_definitions(){
@@ -41,6 +42,6 @@ class Endstop {
    private:
     
     bool pin_state_ = false;
-    float debounce_timer_ = 0;
+    volatile float debounce_timer_ = 0;
 };
 #endif
