@@ -2,6 +2,7 @@
 
 Endstop::Endstop(EndstopConfig_t &config)
     : config_(config) {
+        set_endstop_enabled(config_.enabled);
 }
 
 static void endstop_cb_wrapper(void* ctx){
