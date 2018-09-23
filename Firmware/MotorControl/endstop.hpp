@@ -23,8 +23,11 @@ class Endstop {
 
     bool getEndstopState();
 
+    bool endstop_state_ = false;
+    
     auto make_protocol_definitions(){
         return make_protocol_member_list(
+            make_protocol_ro_property("endstop_state_", &endstop_state_),
             make_protocol_object("config",
                                  make_protocol_property("gpio_num", &config_.gpio_num),
                                  make_protocol_property("enabled", &config_.enabled),
@@ -36,7 +39,7 @@ class Endstop {
     }
 
    private:
-    bool endstop_state_ = false;
+    
     bool pin_state_ = false;
     float debounce_timer_ = 0;
 };
