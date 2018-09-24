@@ -28,15 +28,13 @@ import math
 import matplotlib.pyplot as plt
 import random
 
-# Symbol                        Description
-# Ta, Tv and Td                 Duration of the stages of the AL profile
-# q0f , v0f and a0f             Initial conditions of the jerk-limited trajectory
-# q0 and v0                     Adapted initial conditions for the AL profile
-# qe                            Position set-point
-# s                             Direction (sign) of the trajectory
-# vmax, amax, dmax and jmax     Kinematic bounds
-# vr, ar and dr                 Reached values of velocity and acceleration
-# Tj , Tja, Tjv and Tjd         Length of the constant jerk stages (FIR filter time)
+# Symbol                     Description
+# Ta, Tv and Td              Duration of the stages of the AL profile
+# Xi and Vi                  Adapted initial conditions for the AL profile
+# Xf                         Position set-point
+# s                          Direction (sign) of the trajectory
+# Vmax, Amax, Dmax and jmax  Kinematic bounds
+# Ar, Dr and Vr              Reached values of acceleration and velocity
 
 # Test scales:
 pos_range  = 10000.0
@@ -57,18 +55,18 @@ def PlanTrap(Xf, Xi, Vi, Vmax, Amax, Dmax):
     # If we start with a speed faster than cruising, then we need to decel instead of accel
     # aka "double deceleration move" in the paper
     if s*Vi > s*Vr:
-        Ar = -s*Amax
         print("Handbrake!")
+        Ar = -s*Amax
 
     # Time to accel/decel to/from Vr (cruise speed)
-    Ta = (Vr - Vi)/Ar
+    Ta = (Vr-Vi)/Ar
     Td = -Vr/Dr
 
-    # Integrate velocity ramps over the full accel and decel times to get
+    # Integral of velocity ramps over the full accel and decel times to get
     # minimum displacement required to reach cuising speed
-    dXmin = Ta*(Vr + Vi)/2.0 + Td*(Vr)/2.0
+    dXmin = Ta*(Vr+Vi)/2.0 + Td*(Vr)/2.0
 
-    # Did we displace enough to reach cruising speed?
+    # Are we displacing enough to reach cruising speed?
     if s*dX < s*dXmin:
         print("Short Move:")
         # From paper:
@@ -126,6 +124,8 @@ def EvalTrap(Xf, Xi, Vi, Ar, Vr, Dr, Ta, Tv, Td, Tf):
             y[i]   = Xf
             yd[i]  = 0
             ydd[i] = 0
+        else:
+            raise ValueError("t = {} is outside of considered range".format(t))
         
     dy = np.diff(y)
     dy_max = np.max(np.abs(dy))

@@ -1,101 +1,93 @@
 #include <math.h>
 #include "odrive_main.h"
+#include "utils.h"
 
-// Standard sign function, implemented to match the Python impelmentation
-template <typename T>
-int sign(T val) {
-    if (val == T(0))
-        return T(0);
-    else
-        return (std::signbit(val)) ? -1 : 1;
+// A sign function where input 0 has positive sign (not 0)
+float sign_hard(float val) {
+    return (std::signbit(val)) ? -1.0f : 1.0f;
 }
 
-TrapezoidalTrajectory::TrapezoidalTrajectory(TrapTrajConfig_t &config) : config_(config) {}
+// Symbol                     Description
+// Ta, Tv and Td              Duration of the stages of the AL profile
+// Xi and Vi                  Adapted initial conditions for the AL profile
+// Xf                         Position set-point
+// s                          Direction (sign) of the trajectory
+// Vmax, Amax, Dmax and jmax  Kinematic bounds
+// Ar, Dr and Vr              Reached values of acceleration and velocity
 
-float TrapezoidalTrajectory::planTrapezoidal(float Xf, float Xi,
-                                             float Vi, float Vmax,
-                                             float Amax, float Dmax) {
-    float dx_stop = (Vi * Vi) / (Dmax * 2.0f);
-    float dX = Xf - Xi;
-    int s = sign(dX);
+TrapezoidalTrajectory::TrapezoidalTrajectory(TrapTrajConfig_t& config) : config_(config) {}
 
-    float Ar = s * Amax;          // Maximum Acceleration (signed)
-    float Dr = -1.0f * s * Dmax;  // Maximum Deceleration (signed)
-    float Vr = s * Vmax;          // Maximum Velocity (signed)
+bool TrapezoidalTrajectory::planTrapezoidal(float Xf, float Xi, float Vi,
+                                            float Vmax, float Amax, float Dmax) {
+    float dX = Xf - Xi;  // Distance to travel
+    float stop_dist = (Vi * Vi) / (2.0f * Dmax); // Minimum stopping distance
+    float dXstop = std::copysign(stop_dist, Vi); // Minimum stopping displacement
+    float s = sign_hard(dX - dXstop); // Sign of coast velocity (if any)
+    Ar_ = s * Amax;  // Maximum Acceleration (signed)
+    Dr_ = -s * Dmax; // Maximum Deceleration (signed)
+    Vr_ = s * Vmax;  // Maximum Velocity (signed)
 
-    float Ta;
-    float Tv;
-    float Td;
-
-    // Checking for overshoot on "minimum stop"
-    if (fabs(dX) <= dx_stop) {
-        Ta = 0;
-        Tv = 0;
-        Vr = Vi;
-        Dr = -1.0f * sign(Vi) * Dmax;
-        Td = fabs(Vi) / Dmax;
-    } else {
-        // Handle the case where initial velocity > Max velocity
-        if ((s * Vi) > (s * Vr)) {
-            Ar = -1.0f * s * Amax;
-        }
-
-        Ta = (Vr - Vi) / Ar;  // Acceleration time
-        Td = (-Vr) / Dr;      // Deceleration time
-
-        // Peak Velocity handling
-        float dXmin = Ta * (Vr + Vi) / 2.0f + Td * Vr / 2.0f;
-
-        // Short move handling
-        if (fabs(dX) < fabs(dXmin)) {
-            Vr = s * sqrt((-((Vi * Vi) / Ar) - 2.0f * dX) / (1.0f / Dr - 1.0f / Ar));
-            Ta = std::max(0.0f, (Vr - Vi) / Ar);
-            Tv = 0;
-            Td = std::max(0.0f, -Vr / Dr);
-        } else {
-            Tv = (dX - dXmin) / Vr;
-        }
+    // If we start with a speed faster than cruising, then we need to decel instead of accel
+    // aka "double deceleration move" in the paper
+    if ((s * Vi) > (s * Vr_)) {
+        Ar_ = -s * Amax;
     }
 
-    // Populate object's values
+    // Time to accel/decel to/from Vr (cruise speed)
+    Ta_ = (Vr_ - Vi) / Ar_;
+    Td_ = -Vr_ / Dr_;
 
-    Xf_ = Xf;
+    // Integral of velocity ramps over the full accel and decel times to get
+    // minimum displacement required to reach cuising speed
+    float dXmin = 0.5f*Ta_*(Vr_ + Vi) + 0.5f*Td_*Vr_;
+
+    // Are we displacing enough to reach cruising speed?
+    if (s*dX < s*dXmin) {
+        // Short move (triangle profile)
+        Vr_ = s * sqrtf((Dr_*SQ(Vi) + 2*Ar_*Dr_*dX) / (Dr_ - Ar_));
+        Ta_ = std::max(0.0f, (Vr_ - Vi) / Ar_);
+        Td_ = std::max(0.0f, -Vr_ / Dr_);
+        Tv_ = 0.0f;
+    } else {
+        // Long move (trapezoidal profile)
+        Tv_ = (dX - dXmin) / Vr_;
+    }
+
+    // Fill in the rest of the values used at evaluation-time
+    Tf_ = Ta_ + Tv_ + Td_;
     Xi_ = Xi;
+    Xf_ = Xf;
     Vi_ = Vi;
+    yAccel_ = Xi + Vi*Ta_ + 0.5f*Ar_*SQ(Ta_); // pos at end of accel phase
 
-    Ar_ = Ar;
-    Dr_ = Dr;
-    Vr_ = Vr;
-
-    Ta_ = Ta;
-    Tv_ = Tv;
-    Td_ = Td;
-
-    yAccel_ = (Ar * Ta * Ta) / 2.0f + (Vi * Ta) + Xi;
-    Tav_ = Ta + Tv;
-
-    return Ta + Tv + Td;
+    return true;
 }
 
 TrapTrajStep_t TrapezoidalTrajectory::evalTrapTraj(float t) {
     TrapTrajStep_t trajStep;
-    if (t < 0.0f) {  // Initial Conditions
-        trajStep.Y = Xi_;
-        trajStep.Yd = Vi_;
-        trajStep.Ydd = Ar_;
+    if (t < 0.0f) {  // Initial Condition
+        trajStep.Y   = Xi_;
+        trajStep.Yd  = Vi_;
+        trajStep.Ydd = 0.0f;
     } else if (t < Ta_) {  // Accelerating
-        trajStep.Y = (Ar_ * (t * t) / 2.0f) + (Vi_ * t) + Xi_;
-        trajStep.Yd = (Ar_ * t) + Vi_;
+        trajStep.Y   = Xi_ + Vi_*t + 0.5f*Ar_*SQ(t);
+        trajStep.Yd  = Vi_ + Ar_*t;
         trajStep.Ydd = Ar_;
     } else if (t < Ta_ + Tv_) {  // Coasting
-        trajStep.Y = yAccel_ + (Vr_ * (t - Ta_));
-        trajStep.Yd = Vr_;
-        trajStep.Ydd = 0;
-    } else if (t < Ta_ + Tv_ + Td_) {  // Deceleration
-        float Tdc = t - Tav_;
-        trajStep.Y = yAccel_ + (Vr_ * (t - Ta_)) + Dr_ * (Tdc * Tdc) / 2.0f;
-        trajStep.Yd = Vr_ + Dr_ * Tdc;
+        trajStep.Y   = yAccel_ + Vr_*(t - Ta_);
+        trajStep.Yd  = Vr_;
+        trajStep.Ydd = 0.0f;
+    } else if (t < Tf_) {  // Deceleration
+        float td     = t - Tf_;
+        trajStep.Y   = Xf_ + 0.5f*Dr_*SQ(td);
+        trajStep.Yd  = Dr_*td;
         trajStep.Ydd = Dr_;
+    } else if (t >= Tf_) { // Final Condition
+        trajStep.Y   = Xf_;
+        trajStep.Yd  = 0.0f;
+        trajStep.Ydd = 0.0f;
+    } else {
+        // TODO: report error here
     }
 
     return trajStep;
