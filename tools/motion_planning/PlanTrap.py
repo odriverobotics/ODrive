@@ -45,7 +45,7 @@ Amax_range = 10000.0
 plot_range = 10000.0
 
 
-def TrapPlan(Xf, Xi, Vi, Vmax, Amax, Dmax):
+def PlanTrap(Xf, Xi, Vi, Vmax, Amax, Dmax):
     dX = Xf - Xi    # Distance to travel
     stop_dist = Vi**2 / (2*Dmax)  # Minimum stopping distance
     dXstop = np.sign(Vi)*stop_dist # Minimum stopping displacement
@@ -178,7 +178,7 @@ def graphical_test():
         else:
             Vi = 0
 
-        (Ar, Vr, Dr, Ta, Tv, Td, Tf) = TrapPlan(Xf, Xi, Vi, Vmax, Amax, Dmax)
+        (Ar, Vr, Dr, Ta, Tv, Td, Tf) = PlanTrap(Xf, Xi, Vi, Vmax, Amax, Dmax)
         (Y, Yd, Ydd, t) = EvalTrap(Xf, Xi, Vi, Ar, Vr, Dr, Ta, Tv, Td, Tf)
 
         # Plotting
@@ -215,7 +215,7 @@ def large_test():
         else:
             Vi = 0
 
-        (Ar, Vr, Dr, Ta, Tv, Td, Tf) = TrapPlan(Xf, Xi, Vi, Vmax, Amax, Dmax)
+        (Ar, Vr, Dr, Ta, Tv, Td, Tf) = PlanTrap(Xf, Xi, Vi, Vmax, Amax, Dmax)
         (Y, Yd, Ydd, t) = EvalTrap(Xf, Xi, Vi, Ar, Vr, Dr, Ta, Tv, Td, Tf)
 
         print()
