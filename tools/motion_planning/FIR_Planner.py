@@ -1,4 +1,5 @@
 # Copyright (c) 2018 Paul Guénette
+# Copyright (c) 2018 Oskar Weigl
 
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -41,8 +42,8 @@ import random
 def FIR_trapPlan(Xf, Xi, Vi, Vmax, Amax, Dmax):
     dX = Xf - Xi    # Distance to travel
     stop_dist = Vi**2 / (2*Dmax)  # Minimum stopping distance
-    dX_stop = np.sign(Vi)*stop_dist # Minimum stopping displacement
-    s = np.sign(dX - dX_stop)   # Sign of coast velocity (if any)
+    dXstop = np.sign(Vi)*stop_dist # Minimum stopping displacement
+    s = np.sign(dX - dXstop)   # Sign of coast velocity (if any)
     Ar = s*Amax     # Maximum Acceleration (signed)
     Dr = -s*Dmax    # Maximum Deceleration (signed)
     Vr = s*Vmax     # Maximum Velocity (signed)
@@ -62,7 +63,7 @@ def FIR_trapPlan(Xf, Xi, Vi, Vmax, Amax, Dmax):
     dXmin = Ta*(Vr + Vi)/2.0 + Td*(Vr)/2.0
 
     # Did we displace enough to reach cruising speed?
-    if abs(dX) < abs(dXmin):
+    if s*dX < s*dXmin:
         print("Short Move:")
         # From paper:
         # Vr = s*math.sqrt((-(Vi**2/Ar)-2*dX)/(1/Dr-1/Ar))
@@ -75,43 +76,60 @@ def FIR_trapPlan(Xf, Xi, Vi, Vmax, Amax, Dmax):
         print("Long move:")
         Tv = (dX - dXmin)/Vr # Coasting time
 
+    Tf = Ta+Tv+Td
+    
     print("Xi: {:.3f}\tXf: {:.3f}\tVi: {:.3f}".format(Xi, Xf, Vi))
     print("Amax: {:.3f}\tVmax: {:.3f}\tDmax: {:.3f}".format(Amax, Vmax, Dmax))
-    print("dX: {:.3f}\tdx_Stop: {:.3f}".format(dX, dX_stop))
+    print("dX: {:.3f}\tdXstop: {:.3f}\tdXmin: {:.3f}".format(dX, dXstop, dXmin))
     print("Ar: {:.3f}\tDr: {:.3f}\tVr: {:.3f}".format(Ar, Dr, Vr))
     print("Ta: {:.3f}\tTv: {:.3f}\tTd: {:.3f}".format(Ta, Tv, Td))
 
     # We've computed Ta, Tv, Td, and Vr.  Time to produce a trajectory
     # Create the time series and preallocate the position, velocity, and acceleration arrays
-    t_traj = np.linspace(0, Ta+Tv+Td, 10000)
+    # t_traj = np.linspace(0, Tf, 10000)
+    t_traj = np.arange(0, Tf+0.1, 1/10000)
     y = [None]*len(t_traj)
     yd = [None]*len(t_traj)
     ydd = [None]*len(t_traj)
 
     # We only know acceleration (Ar and Dr), so we integrate to create
     # the velocity and position curves
-    y_Accel = (Ar*Ta*Ta) / 2 + (Vi * Ta) + Xi
-    Tav = Ta + Tv
+    y_Accel = Xi + Vi*Ta + 0.5*Ar*Ta**2
 
     for i in range(len(t_traj)):
         t = t_traj[i]
-        if(t < 0):  # Initial conditions
-            y[i] = Xi
-            yd[i] = Vi
-            ydd[i] = Ar
-        elif(t < Ta):  # Acceleration
-            y[i] = (Ar * (t*t)/2) + (Vi * t) + Xi
-            yd[i] = (Ar * t) + Vi
-            ydd[i] = Ar
-        elif(t < Ta+Tv):   # Coasting
-            y[i] = y_Accel + (Vr * (t - Ta))
-            yd[i] = Vr
+        if t < 0: # Initial conditions
+            y[i]   = Xi
+            yd[i]  = Vi
             ydd[i] = 0
-        elif(t <= Ta+Tv+Td):  # Deceleration
-            Tdc = t - Tav
-            y[i] = y_Accel + (Vr * (t - Ta)) + Dr*((Tdc)*(Tdc))/2
-            yd[i] = Vr + Dr*(Tdc)
+        elif t < Ta: # Acceleration
+            y[i]   = Xi + Vi*t + 0.5*Ar*t**2
+            yd[i]  = Vi + Ar*t
+            ydd[i] = Ar
+        elif t < Ta+Tv: # Coasting
+            y[i]   = y_Accel + Vr*(t-Ta)
+            yd[i]  = Vr
+            ydd[i] = 0
+        elif t < Tf: # Deceleration
+            td     = t-Tf
+            y[i]   = Xf + 0*td + 0.5*Dr*td**2
+            yd[i]  = 0 + Dr*td
             ydd[i] = Dr
+        elif t >= Tf: # Final condition
+            y[i]   = Xf
+            yd[i]  = 0
+            ydd[i] = 0
+        
+    dy = np.diff(y)
+    dy_max = np.max(np.abs(dy))
+    dyd = np.diff(yd)
+    dyd_max = np.max(np.abs(dyd))
+    print("dy_max: {:.3f}\tdyd_max: {:.3f}".format(dy_max, dyd_max))
+    if dy_max/np.abs(Xf-Xi) > 0.01:
+        print("---------- Bad Pos Continuity ----------")
+        # import ipdb; ipdb.set_trace()
+    if dyd_max/Vmax > 0.001:
+        print("---------- Bad Vel Continuity ----------")
 
     return (y, yd, ydd, t_traj)
 
@@ -124,7 +142,7 @@ plot_range = 10000.0
 numRows = 3
 numCols = 5
 fig, axes = plt.subplots(numRows, numCols)
-random.seed(2) # Repeatable tests by using specific seed
+random.seed(3) # Repeatable tests by using specific seed
 for x in range(numRows*numCols):
     rownow = int(x/numCols)
     colnow = x % numCols
@@ -135,17 +153,20 @@ for x in range(numRows*numCols):
     Dmax = Amax
     Xf = random.uniform(-pos_range, pos_range)
     Xi = random.uniform(-pos_range, pos_range)
-    Vi = random.uniform(-Vmax*1.5, Vmax*1.5)
+    if random.random() <= 0.5:
+        Vi = random.uniform(-Vmax*1.5, Vmax*1.5)
+    else:
+        Vi = 0
 
     (Y, Yd, Ydd, t) = FIR_trapPlan(Xf, Xi, Vi, Vmax, Amax, Dmax)
 
-    if(abs(Xi-Y[0]) > 0.0001):
+    if abs(Xi-Y[0]) > 0.0001:
         print("---------- Bad Initial Position ----------")
-    if(abs(Xf-Y[-1]) > 0.0001):
+    if abs(Xf-Y[-1]) > 0.0001:
         print("---------- Bad Final Position ----------")
-    if(abs(Vi-Yd[0]) > 0.0001):
+    if abs(Vi-Yd[0]) > 0.0001:
         print("---------- Bad Initial Velocity ----------")
-    if(abs(Yd[-1]) > 0.0001):
+    if abs(Yd[-1]) > 0.0001:
         print("---------- Bad Final Velocity ----------")
 
     # Plotting
@@ -156,10 +177,11 @@ for x in range(numRows*numCols):
 
     ax1.plot(t, Y) # Pos
     ax1.plot(t, Yd) # Vel
-    ax1.plot(t[0], Xi, 'bo') # Pos Initial
-    ax1.plot(t[0], Vi, 'ro') # Vel Initial
-    ax1.plot(t[-1], Xf, 'b*') # Pos Final
-    ax1.plot(t[-1], 0, 'r*') # Vel Final
+    ax1.plot(0, Xi, 'bo') # Pos Initial
+    ax1.plot(0, Vi, 'ro') # Vel Initial
+    ## TODO: pull out Ta+Td+Td from planner for correct plot points
+    ax1.plot(t[-1]-0.1, Xf, 'b*') # Pos Final
+    ax1.plot(t[-1]-0.1, 0, 'r*') # Vel Final
 
     ax1.set_ylim(-plot_range, plot_range)
 
