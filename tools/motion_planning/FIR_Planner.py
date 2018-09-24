@@ -38,8 +38,14 @@ import random
 # vr, ar and dr                 Reached values of velocity and acceleration
 # Tj , Tja, Tjv and Tjd         Length of the constant jerk stages (FIR filter time)
 
+# Test scales:
+pos_range  = 10000.0
+Vmax_range = 8000.0
+Amax_range = 10000.0
+plot_range = 10000.0
 
-def FIR_trapPlan(Xf, Xi, Vi, Vmax, Amax, Dmax):
+
+def TrapPlan(Xf, Xi, Vi, Vmax, Amax, Dmax):
     dX = Xf - Xi    # Distance to travel
     stop_dist = Vi**2 / (2*Dmax)  # Minimum stopping distance
     dXstop = np.sign(Vi)*stop_dist # Minimum stopping displacement
@@ -77,16 +83,17 @@ def FIR_trapPlan(Xf, Xi, Vi, Vmax, Amax, Dmax):
         Tv = (dX - dXmin)/Vr # Coasting time
 
     Tf = Ta+Tv+Td
-    
-    print("Xi: {:.3f}\tXf: {:.3f}\tVi: {:.3f}".format(Xi, Xf, Vi))
-    print("Amax: {:.3f}\tVmax: {:.3f}\tDmax: {:.3f}".format(Amax, Vmax, Dmax))
-    print("dX: {:.3f}\tdXstop: {:.3f}\tdXmin: {:.3f}".format(dX, dXstop, dXmin))
-    print("Ar: {:.3f}\tDr: {:.3f}\tVr: {:.3f}".format(Ar, Dr, Vr))
-    print("Ta: {:.3f}\tTv: {:.3f}\tTd: {:.3f}".format(Ta, Tv, Td))
 
-    # We've computed Ta, Tv, Td, and Vr.  Time to produce a trajectory
+    print("Xi: {:.2f}\tXf: {:.2f}\tVi: {:.2f}".format(Xi, Xf, Vi))
+    print("Amax: {:.2f}\tVmax: {:.2f}\tDmax: {:.2f}".format(Amax, Vmax, Dmax))
+    print("dX: {:.2f}\tdXst: {:.2f}\tdXmin: {:.2f}".format(dX, dXstop, dXmin))
+    print("Ar: {:.2f}\tVr: {:.2f}\tDr: {:.2f}".format(Ar, Vr, Dr))
+    print("Ta: {:.2f}\tTv: {:.2f}\tTd: {:.2f}".format(Ta, Tv, Td))
+
+    return (Ar, Vr, Dr, Ta, Tv, Td, Tf)
+
+def EvalTrap(Xf, Xi, Vi, Ar, Vr, Dr, Ta, Tv, Td, Tf):
     # Create the time series and preallocate the position, velocity, and acceleration arrays
-    # t_traj = np.linspace(0, Tf, 10000)
     t_traj = np.arange(0, Tf+0.1, 1/10000)
     y = [None]*len(t_traj)
     yd = [None]*len(t_traj)
@@ -124,67 +131,95 @@ def FIR_trapPlan(Xf, Xi, Vi, Vmax, Amax, Dmax):
     dy_max = np.max(np.abs(dy))
     dyd = np.diff(yd)
     dyd_max = np.max(np.abs(dyd))
-    print("dy_max: {:.3f}\tdyd_max: {:.3f}".format(dy_max, dyd_max))
-    if dy_max/np.abs(Xf-Xi) > 0.01:
-        print("---------- Bad Pos Continuity ----------")
-        # import ipdb; ipdb.set_trace()
-    if dyd_max/Vmax > 0.001:
-        print("---------- Bad Vel Continuity ----------")
+    print("dy_max: {:.2f}\tdyd_max: {:.2f}".format(dy_max, dyd_max))
+
+    error = False
+    if dy_max/pos_range > 0.001:
+        print("---------- Bad Pos Continuity --------------------")
+        error = True
+    if dyd_max/Vmax_range > 0.001:
+        print("---------- Bad Vel Continuity --------------------")
+        error = True
+    if abs(Xi-y[0]) > 0.0001:
+        print("---------- Bad Initial Position --------------------")
+        error = True
+    if abs(Xf-y[-1]) > 0.0001:
+        print("---------- Bad Final Position --------------------")
+        error = True
+    if abs(Vi-yd[0]) > 0.0001:
+        print("---------- Bad Initial Velocity --------------------")
+        error = True
+    if abs(yd[-1]) > 0.0001:
+        print("---------- Bad Final Velocity --------------------")
+        error = True
+
+    if error:
+        import ipdb; ipdb.set_trace()
 
     return (y, yd, ydd, t_traj)
 
+def graphical_test():
+    numRows = 3
+    numCols = 5
+    fig, axes = plt.subplots(numRows, numCols)
+    random.seed(3) # Repeatable tests by using specific seed
+    for x in range(numRows*numCols):
+        rownow = int(x/numCols)
+        colnow = x % numCols
+        print("row: {}, col: {}".format(rownow, colnow))
 
-pos_range  = 10000.0
-Vmax_range = 8000.0
-Amax_range = 10000.0
-plot_range = 10000.0
+        Vmax = random.uniform(0.1*Vmax_range, Vmax_range)
+        Amax = random.uniform(0.1*Amax_range, Amax_range)
+        Dmax = Amax
+        Xf = random.uniform(-pos_range, pos_range)
+        Xi = random.uniform(-pos_range, pos_range)
+        if random.random() <= 0.5:
+            Vi = random.uniform(-Vmax*1.5, Vmax*1.5)
+        else:
+            Vi = 0
 
-numRows = 3
-numCols = 5
-fig, axes = plt.subplots(numRows, numCols)
-random.seed(3) # Repeatable tests by using specific seed
-for x in range(numRows*numCols):
-    rownow = int(x/numCols)
-    colnow = x % numCols
-    print("row: {}, col: {}".format(rownow, colnow))
+        (Ar, Vr, Dr, Ta, Tv, Td, Tf) = TrapPlan(Xf, Xi, Vi, Vmax, Amax, Dmax)
+        (Y, Yd, Ydd, t) = EvalTrap(Xf, Xi, Vi, Ar, Vr, Dr, Ta, Tv, Td, Tf)
 
-    Vmax = random.uniform(0.1*Vmax_range, Vmax_range)
-    Amax = random.uniform(0.1*Amax_range, Amax_range)
-    Dmax = Amax
-    Xf = random.uniform(-pos_range, pos_range)
-    Xi = random.uniform(-pos_range, pos_range)
-    if random.random() <= 0.5:
-        Vi = random.uniform(-Vmax*1.5, Vmax*1.5)
-    else:
-        Vi = 0
+        # Plotting
+        ax1 = axes[rownow, colnow]
+        # Vel limits (draw first for clearer z-order)
+        ax1.plot([t[0], t[-1]], [Vmax, Vmax], 'g--')
+        ax1.plot([t[0], t[-1]], [-Vmax, -Vmax], 'g--')
 
-    (Y, Yd, Ydd, t) = FIR_trapPlan(Xf, Xi, Vi, Vmax, Amax, Dmax)
+        ax1.plot(t, Y) # Pos
+        ax1.plot(t, Yd) # Vel
+        ax1.plot(0, Xi, 'bo') # Pos Initial
+        ax1.plot(0, Vi, 'ro') # Vel Initial
+        ## TODO: pull out Ta+Td+Td from planner for correct plot points
+        ax1.plot(t[-1]-0.1, Xf, 'b*') # Pos Final
+        ax1.plot(t[-1]-0.1, 0, 'r*') # Vel Final
 
-    if abs(Xi-Y[0]) > 0.0001:
-        print("---------- Bad Initial Position ----------")
-    if abs(Xf-Y[-1]) > 0.0001:
-        print("---------- Bad Final Position ----------")
-    if abs(Vi-Yd[0]) > 0.0001:
-        print("---------- Bad Initial Velocity ----------")
-    if abs(Yd[-1]) > 0.0001:
-        print("---------- Bad Final Velocity ----------")
+        ax1.set_ylim(-plot_range, plot_range)
 
-    # Plotting
-    ax1 = axes[rownow, colnow]
-    # Vel limits (draw first for clearer z-order)
-    ax1.plot([t[0], t[-1]], [Vmax, Vmax], 'g--')
-    ax1.plot([t[0], t[-1]], [-Vmax, -Vmax], 'g--')
+        print()
 
-    ax1.plot(t, Y) # Pos
-    ax1.plot(t, Yd) # Vel
-    ax1.plot(0, Xi, 'bo') # Pos Initial
-    ax1.plot(0, Vi, 'ro') # Vel Initial
-    ## TODO: pull out Ta+Td+Td from planner for correct plot points
-    ax1.plot(t[-1]-0.1, Xf, 'b*') # Pos Final
-    ax1.plot(t[-1]-0.1, 0, 'r*') # Vel Final
+    plt.show()
 
-    ax1.set_ylim(-plot_range, plot_range)
+def large_test():
+    random.seed(1) # Repeatable tests by using specific seed
+    for x in range(100):
+        print("Test {}".format(x))
+        Vmax = random.uniform(0.1*Vmax_range, Vmax_range)
+        Amax = random.uniform(0.1*Amax_range, Amax_range)
+        Dmax = Amax
+        Xf = random.uniform(-pos_range, pos_range)
+        Xi = random.uniform(-pos_range, pos_range)
+        if random.random() <= 0.5:
+            Vi = random.uniform(-Vmax*1.5, Vmax*1.5)
+        else:
+            Vi = 0
 
-    print()
+        (Ar, Vr, Dr, Ta, Tv, Td, Tf) = TrapPlan(Xf, Xi, Vi, Vmax, Amax, Dmax)
+        (Y, Yd, Ydd, t) = EvalTrap(Xf, Xi, Vi, Ar, Vr, Dr, Ta, Tv, Td, Tf)
 
-plt.show()
+        print()
+
+if __name__ == '__main__':
+    large_test()
+    graphical_test()
