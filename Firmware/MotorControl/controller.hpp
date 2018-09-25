@@ -97,7 +97,7 @@ public:
                 "vel_setpoint", "current_feed_forward"),
             make_protocol_function("set_current_setpoint", *this, &Controller::set_current_setpoint,
                 "current_setpoint"),
-            make_protocol_function("move_to_pos", *this, &Controller::move_to_pos, "pos_setpoint"),
+            make_protocol_function("move_to_pos", *this, &Controller::move_to_pos, "goal_point"),
             make_protocol_function("start_anticogging_calibration", *this, &Controller::start_anticogging_calibration)
         );
     }
