@@ -12,8 +12,8 @@ BoardConfig_t board_config;
 Encoder::Config_t encoder_configs[AXIS_COUNT];
 SensorlessEstimator::Config_t sensorless_configs[AXIS_COUNT];
 Controller::Config_t controller_configs[AXIS_COUNT];
-MotorConfig_t motor_configs[AXIS_COUNT];
-AxisConfig_t axis_configs[AXIS_COUNT];
+Motor::Config_t motor_configs[AXIS_COUNT];
+Axis::Config_t axis_configs[AXIS_COUNT];
 TrapezoidalTrajectory::Config_t trap_configs[AXIS_COUNT];
 bool user_config_loaded_;
 
@@ -26,9 +26,9 @@ typedef Config<
     Encoder::Config_t[AXIS_COUNT],
     SensorlessEstimator::Config_t[AXIS_COUNT],
     Controller::Config_t[AXIS_COUNT],
-    MotorConfig_t[AXIS_COUNT],
+    Motor::Config_t[AXIS_COUNT],
     TrapezoidalTrajectory::Config_t[AXIS_COUNT],
-    AxisConfig_t[AXIS_COUNT]> ConfigFormat;
+    Axis::Config_t[AXIS_COUNT]> ConfigFormat;
 
 void save_configuration(void) {
     if (ConfigFormat::safe_store_config(
@@ -62,9 +62,9 @@ void load_configuration(void) {
             encoder_configs[i] = Encoder::Config_t();
             sensorless_configs[i] = SensorlessEstimator::Config_t();
             controller_configs[i] = Controller::Config_t();
-            motor_configs[i] = MotorConfig_t();
+            motor_configs[i] = Motor::Config_t();
             trap_configs[i] = TrapezoidalTrajectory::Config_t();
-            axis_configs[i] = AxisConfig_t();
+            axis_configs[i] = Axis::Config_t();
         }
     } else {
         user_config_loaded_ = true;
