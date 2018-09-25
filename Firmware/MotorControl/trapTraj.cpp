@@ -15,7 +15,7 @@ float sign_hard(float val) {
 // Vmax, Amax, Dmax and jmax  Kinematic bounds
 // Ar, Dr and Vr              Reached values of acceleration and velocity
 
-TrapezoidalTrajectory::TrapezoidalTrajectory(TrapTrajConfig_t& config) : config_(config) {}
+TrapezoidalTrajectory::TrapezoidalTrajectory(Config_t& config) : config_(config) {}
 
 bool TrapezoidalTrajectory::planTrapezoidal(float Xf, float Xi, float Vi,
                                             float Vmax, float Amax, float Dmax) {
@@ -63,8 +63,8 @@ bool TrapezoidalTrajectory::planTrapezoidal(float Xf, float Xi, float Vi,
     return true;
 }
 
-TrapTrajStep_t TrapezoidalTrajectory::evalTrapTraj(float t) {
-    TrapTrajStep_t trajStep;
+TrapezoidalTrajectory::Step_t TrapezoidalTrajectory::eval(float t) {
+    Step_t trajStep;
     if (t < 0.0f) {  // Initial Condition
         trajStep.Y   = Xi_;
         trajStep.Yd  = Vi_;
@@ -82,7 +82,7 @@ TrapTrajStep_t TrapezoidalTrajectory::evalTrapTraj(float t) {
         trajStep.Y   = Xf_ + 0.5f*Dr_*SQ(td);
         trajStep.Yd  = Dr_*td;
         trajStep.Ydd = Dr_;
-    } else if (t >= Tf_) { // Final Condition
+    } else if (t >= Tf_) {  // Final Condition
         trajStep.Y   = Xf_;
         trajStep.Yd  = 0.0f;
         trajStep.Ydd = 0.0f;

@@ -4,7 +4,7 @@ Please add a note of your changes below this heading if you make a Pull Request.
 # Unreleased
 
 ## Added
-* Trapezoidal Trajectory Planner
+* **Trapezoidal Trajectory Planner**
 
 
 # Releases
