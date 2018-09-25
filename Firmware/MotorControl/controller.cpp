@@ -63,7 +63,7 @@ void Controller::move_incremental(float displacement, bool from_goal_point = tru
     if(from_goal_point){
         move_to_pos(goal_point_ + displacement);
     } else{
-        move_to_pos(axis_->encoder_.pos_estimate_ + displacement);
+        move_to_pos(pos_setpoint_ + displacement);
     }
 }
 
