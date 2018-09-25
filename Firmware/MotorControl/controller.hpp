@@ -35,6 +35,7 @@ public:
 
     // Trajectory-Planned control
     void move_to_pos(float goal_point);
+    void move_incremental(float displacement, bool from_goal_point);
     
     // TODO: make this more similar to other calibration loops
     void start_anticogging_calibration();
@@ -78,6 +79,8 @@ public:
     float planned_move_timer_ = 0.0f;
     float planned_move_end_time_ = 0.0f;
 
+    float goal_point_ = 0.0f;
+
     // Communication protocol definitions
     auto make_protocol_definitions() {
         return make_protocol_member_list(
@@ -102,6 +105,7 @@ public:
             make_protocol_function("set_current_setpoint", *this, &Controller::set_current_setpoint,
                                    "current_setpoint"),
             make_protocol_function("move_to_pos", *this, &Controller::move_to_pos, "pos_setpoint"),
+            make_protocol_function("move_incremental", *this, &Controller::move_incremental, "displacement", "from_goal_point"),
             make_protocol_function("start_anticogging_calibration", *this, &Controller::start_anticogging_calibration)
         );
     }

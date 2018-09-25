@@ -48,6 +48,8 @@ void Controller::move_to_pos(float goal_point) {
     planned_move_end_time_ = axis_->trap_.planTrapezoidal(goal_point, pos_setpoint_,
                                                           vel_setpoint_, axis_->trap_.config_.vel_limit,
                                                           axis_->trap_.config_.accel_limit, axis_->trap_.config_.decel_limit);
+    
+    goal_point_ = goal_point;
     config_.control_mode = CTRL_MODE_PLANNED_MOVE_CONTROL;
     TrapTrajStep_t myTraj = axis_->trap_.evalTrapTraj(0.0f);
     pos_setpoint_ = myTraj.Y;
@@ -55,6 +57,14 @@ void Controller::move_to_pos(float goal_point) {
     current_setpoint_ = myTraj.Ydd * axis_->trap_.config_.cpss_to_A;
 
     planned_move_timer_ = axis_->loop_counter_ * current_meas_period;
+}
+
+void Controller::move_incremental(float displacement, bool from_goal_point = true){
+    if(from_goal_point){
+        move_to_pos(goal_point_ + displacement);
+    } else{
+        move_to_pos(axis_->encoder_.pos_estimate_ + displacement);
+    }
 }
 
 void Controller::start_anticogging_calibration() {
