@@ -20,7 +20,6 @@ permalink: /
 <!-- /TOC -->
 
 ## Hardware Requirements
-
 You will need:
 
 * One or two [brushless motors](https://docs.google.com/spreadsheets/d/12vzz7XVEK6YNIOqH0jAz51F5VUpc-lJEs3mmkWP1H4Y). It is fine, even recommended, to start testing with just a single motor and encoder.
@@ -47,7 +46,6 @@ You will need:
   </div></details>
 
 ## Wiring up the ODrive
-
 <div class="alert">
 Make sure you have a good mechanical connection between the encoder and the motor, slip can cause disasterous oscillations or runaway.
 </div>
@@ -61,11 +59,9 @@ All non-power I/O is 3.3V output and 5V tolerant on input, on ODrive v3.3 and ne
 ![Image of ODrive all hooked up](https://docs.google.com/drawings/d/e/2PACX-1vTCD0P40Cd-wvD7Fl8UYEaxp3_UL81oI4qUVqrrCJPi6tkJeSs2rsffIXQRpdu6rNZs6-2mRKKYtILG/pub?w=1716&h=1281)
 
 ## Downloading and Installing Tools
-
 Most instructions in this guide refer to a utility called `odrivetool`, so you should install that first.
 
 ### Windows
-
 1. Install Python 3. We recommend the Anaconda distribution because it packs a lot of useful scientific tools, however you can also install the standalone python.
   * __Anaconda__: Download the installer from [here](https://www.anaconda.com/download/#windows). Execute the downloaded file and follow the instructions.
   * __Standalone Python__: Download the installer from [here](https://www.python.org/downloads/). Execute the downloaded file and follow the instructions.
@@ -117,7 +113,6 @@ Try step 5 again
 
 
 ### Linux
-
 1. [Install Python 3](https://www.python.org/downloads/).
 2. Install the ODrive tools by opening a terminal and typing `pip install odrive` <kbd>Enter</kbd>
 3. __Linux__: set up USB permissions
@@ -128,7 +123,6 @@ Try step 5 again
 ```
 
 ## Start `odrivetool`
-
 <div class="note" markdown="span">__ODrive v3.5 and later:__ Your board should come preflashed with firmware. If you run into problems, follow the instructions [here](odrivetool.md#device-firmware-update) on the DFU procedure before you continue.</div>
 
 <div class="note" markdown="span">__ODrive v3.4 and earlier:__ Your board does __not__ come preflashed with any firmware. Follow the instructions [here](odrivetool.md#device-firmware-update) on the STP Link procedure before you continue.</div>
@@ -173,7 +167,6 @@ For instance, to set the current limit of M0 to 10A you would type: `odrv0.axis0
 * You can change `odrv0.axis0.motor.config.calibration_current` [A] to the largest value you feel comfortable leaving running through the motor continously when the motor is stationary. If you are using a small motor (i.e. 15A current rated) you may need to reduce `calibration_current` to a value smaller than the default.
 
 ### 2. Set other hardware parameters:
-
   * `odrv0.config.brake_resistance` [Ohm]: This is the resistance of the brake resistor. If you are not using it, you may set it to `0`. Note that there may be some extra resistance in your wiring and in the screw terminals, so if you are getting issues while braking you may want to increase this parameter by around 0.05 ohm.
   * `odrv0.axis0.motor.config.pole_pairs`: This is the number of **magnet poles** in the rotor, **divided by two**. You can simply count the number of permanent magnets in the rotor, if you can see them. _Note: this is not the same as the number of coils in the stator._
   * `odrv0.axis0.motor.config.motor_type`: This is the type of motor being used. Currently two types of motors are supported: High-current motors (`MOTOR_TYPE_HIGH_CURRENT`) and Gimbal motors (`MOTOR_TYPE_GIMBAL`).
@@ -203,7 +196,6 @@ Due to a [known issue](https://github.com/madcowswe/ODrive/issues/183) it is str
 
 
 ## Position control of M0
-
 Let's get motor 0 up and running. The procedure for motor 1 is exactly the same, so feel free to replace read "axis1" wherever it says "axis0".
 
 1. Type `odrv0.axis0.requested_state = AXIS_STATE_FULL_CALIBRATION_SEQUENCE` <kbd>Enter</kbd>. After about 2 seconds should hear a beep. Then the motor will turn slowly in one direction for a few seconds, then back in the other direction.
@@ -231,9 +223,7 @@ The ODrive also supports velocity control and current (torque) control.
 * **Current control**: Set `odrv0.axis0.controller.config.control_mode = CTRL_MODE_CURRENT_CONTROL`. You can now control the current with `odrv0.axis0.controller.current_setpoint = 3`. Units are A. **NOTE**: There is no velocity limiting in current control mode. Make sure that you don't overrev the motor, or exceed the max speed for your encoder.
 
 ## What's next?
-
 You can now:
-
 * See what other [commands and parameters](commands.md) are available, including setting tuning parameters for better performance.
 * Control the ODrive from your own program or hook it up to an existing system through one of it's [interfaces](interfaces.md).
 * See how you can improve the behavior during the startup procedure, like [bypassing encoder calibration](encoders.md#encoder-with-index-signal).
