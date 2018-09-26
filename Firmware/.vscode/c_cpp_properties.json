@@ -47,6 +47,7 @@
             "name": "Linux",
             "includePath": [
                 "${workspaceRoot}",
+                "${workspaceRoot}/fibre/cpp/include/**",
                 "${workspaceRoot}/MotorControl",
                 "${workspaceRoot}/Drivers/DRV8301",
                 "${workspaceRoot}/Board/v3/Inc",
@@ -59,8 +60,8 @@
                 "${workspaceRoot}/Board/v3/Drivers/STM32F4xx_HAL_Driver/Inc/Legacy",
                 "${workspaceRoot}/Board/v3/Drivers/CMSIS/Device/ST/STM32F4xx/Include",
                 "${workspaceRoot}/Board/v3/Drivers/CMSIS/Include",
-                "/usr/lib/gcc/arm-none-eabi/4.9.3/include",
-                "/usr/lib/arm-none-eabi/include"
+                "${ARM_GCC_ROOT}/arm-none-eabi/include/**",
+                "${ARM_GCC_ROOT}/lib/gcc/arm-none-eabi/**"
             ],
             "defines": [
                 "STM32F405xx",
@@ -76,8 +77,7 @@
             "browse": {
                 "path": [
                     "${workspaceRoot}",
-                    "/usr/lib/gcc/arm-none-eabi/4.9.3/include",
-                    "/usr/lib/arm-none-eabi/include"
+                    "${ARM_GCC_ROOT}"
                 ],
                 "limitSymbolsToIncludedHeaders": true,
                 "databaseFilename": ""
