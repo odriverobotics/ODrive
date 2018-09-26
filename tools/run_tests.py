@@ -35,7 +35,8 @@ def for_all_parallel(objects, get_name, callback):
     # Start a thread for each element in the list
     all_threads = []
     for element in objects:
-        thread = threading.Thread(target=run_callback, args=(element,), daemon=True)
+        thread = threading.Thread(target=run_callback, args=(element,))
+        thread.daemon = True
         thread.start()
         all_threads.append(thread)
     

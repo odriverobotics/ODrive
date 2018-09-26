@@ -1,3 +1,4 @@
+from __future__ import print_function
 
 import sys
 import time
@@ -12,7 +13,7 @@ try:
         import win32console
         import colorama
         colorama.init()
-except ModuleNotFoundError:
+except ImportError:
     print("Could not init terminal features.")
     print("Refer to install instructions at http://docs.odriverobotics.com/#downloading-and-installing-tools")
     sys.stdout.flush()
@@ -72,8 +73,14 @@ def start_liveplotter(get_var_callback):
             fig.canvas.draw()
             fig.canvas.start_event_loop(1/plot_rate)
 
-    threading.Thread(target=fetch_data, daemon=True).start()
-    threading.Thread(target=plot_data, daemon=True).start()
+    fetch_t = threading.Thread(target=fetch_data)
+    fetch_t.daemon = True
+    fetch_t.start()
+    
+    plot_t = threading.Thread(target=plot_data)
+    plot_t.daemon = True
+    plot_t.start()
+    
 
     return cancellation_token;
     #plot_data()
