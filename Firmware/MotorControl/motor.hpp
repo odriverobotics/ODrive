@@ -211,10 +211,13 @@ public:
                 make_protocol_property("motor_type", &config_.motor_type),
                 make_protocol_property("current_lim", &config_.current_lim),
                 make_protocol_property("requested_current_range", &config_.requested_current_range),
-                make_protocol_ro_property("current_control_bandwidth", &config_.current_control_bandwidth)
-            ),
-            make_protocol_function("set_current_control_bandwidth", *this, &Motor::set_current_control_bandwidth,
-                "current_control_bandwidth")
+                // make_protocol_ro_property("current_control_bandwidth", &config_.current_control_bandwidth)
+                make_protocol_property("current_control_bandwidth", &config_.current_control_bandwidth,
+                    [](void* ctx) { static_cast<Motor*>(ctx)->update_current_controller_gains(); }, this)
+            )
+            // ),
+            // make_protocol_function("set_current_control_bandwidth", *this, &Motor::set_current_control_bandwidth,
+            //     "current_control_bandwidth")
         );
     }
 };

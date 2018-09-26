@@ -804,8 +804,9 @@ public:
     static constexpr const char * json_modifier = get_default_json_modifier<TProperty>();
     static constexpr size_t endpoint_count = 1;
 
-    ProtocolProperty(const char * name, TProperty* property, void (*written_hook)(void))
-        : name_(name), property_(property), written_hook_(written_hook)
+    ProtocolProperty(const char * name, TProperty* property,
+                     void (*written_hook)(void*), void* ctx)
+        : name_(name), property_(property), written_hook_(written_hook), ctx_(ctx)
     {}
 
 /*  TODO: find out why the move constructor is not used when it could be
@@ -889,37 +890,38 @@ public:
 
     const char* name_;
     TProperty* property_;
-    void (*written_hook_)(void);
+    void (*written_hook_)(void*);
+    void* ctx_;
 };
 
 // Non-const non-enum types
 template<typename TProperty, ENABLE_IF(!std::is_enum<TProperty>::value)>
-ProtocolProperty<TProperty> make_protocol_property(
-            const char * name, TProperty* property, void (*written_hook)(void) = nullptr) {
-    return ProtocolProperty<TProperty>(name, property, written_hook);
+ProtocolProperty<TProperty> make_protocol_property(const char * name, TProperty* property,
+        void (*written_hook)(void*) = nullptr, void* ctx = nullptr) {
+    return ProtocolProperty<TProperty>(name, property, written_hook, ctx);
 };
 
 // Const non-enum types
 template<typename TProperty, ENABLE_IF(!std::is_enum<TProperty>::value)>
-ProtocolProperty<const TProperty> make_protocol_ro_property(
-            const char * name, TProperty* property, void (*written_hook)(void) = nullptr) {
-    return ProtocolProperty<const TProperty>(name, property, written_hook);
+ProtocolProperty<const TProperty> make_protocol_ro_property(const char * name, TProperty* property,
+        void (*written_hook)(void*) = nullptr, void* ctx = nullptr) {
+    return ProtocolProperty<const TProperty>(name, property, written_hook, ctx);
 };
 
 // Non-const enum types
 template<typename TProperty, ENABLE_IF(std::is_enum<TProperty>::value)>
-ProtocolProperty<std::underlying_type_t<TProperty>> make_protocol_property(
-            const char * name, TProperty* property, void (*written_hook)(void) = nullptr) {
+ProtocolProperty<std::underlying_type_t<TProperty>> make_protocol_property(const char * name, TProperty* property,
+        void (*written_hook)(void*) = nullptr, void* ctx = nullptr) {
     return ProtocolProperty<std::underlying_type_t<TProperty>>(
-            name, reinterpret_cast<std::underlying_type_t<TProperty>*>(property), written_hook);
+            name, reinterpret_cast<std::underlying_type_t<TProperty>*>(property), written_hook, ctx);
 };
 
 // Const enum types
 template<typename TProperty, ENABLE_IF(std::is_enum<TProperty>::value)>
-ProtocolProperty<const std::underlying_type_t<TProperty>> make_protocol_ro_property(
-            const char * name, TProperty* property, void (*written_hook)(void) = nullptr) {
+ProtocolProperty<const std::underlying_type_t<TProperty>> make_protocol_ro_property(const char * name, TProperty* property,
+        void (*written_hook)(void*) = nullptr, void* ctx = nullptr) {
     return ProtocolProperty<const std::underlying_type_t<TProperty>>(
-            name, reinterpret_cast<const std::underlying_type_t<TProperty>*>(property), written_hook);
+            name, reinterpret_cast<const std::underlying_type_t<TProperty>*>(property), written_hook, ctx);
 };
 
 
