@@ -157,7 +157,6 @@ The tool you're looking at is a fully capable Python command prompt, so you can 
 You can read more about `odrivetool` [here](odrivetool.md).
 
 ## Configure M0
-
 <div class="alert" markdown="span">Read this section carefully, else you risk breaking something.</div>
 <div class="note" markdown="span">There is a [separate guide](hoverboard.md) specifically for hoverboard motors.</div>
 
@@ -187,21 +186,12 @@ The motor will be limited to this speed. Again the default value is quite slow.
 You can change `odrv0.axis0.motor.config.calibration_current` [A] to the largest value you feel comfortable leaving running through the motor continuously when the motor is stationary. If you are using a small motor (i.e. 15A current rated) you may need to reduce `calibration_current` to a value smaller than the default.
 
 ### 2. Set other hardware parameters
-
-<<<<<<< HEAD
 `odrv0.config.brake_resistance` [Ohm]  
-This is the resistance of the brake resistor. If you are not using it, you may set it to `0`.
+This is the resistance of the brake resistor. If you are not using it, you may set it to `0`. Note that there may be some extra resistance in your wiring and in the screw terminals, so if you are getting issues while braking you may want to increase this parameter by around 0.05 ohm.
  
 `odrv0.axis0.motor.config.pole_pairs`  
-This is the number of **magnet poles** in the rotor, **divided by two**. To find this, you can simply count the number of permanent magnets in the rotor, if you can see them. If you can't see them, try sliding a magnet around the rotor, and counting how many times it stops. This will be the number of **pole pairs**. If you use a magnetic piece of metal instead of a magnet, you will get the number of **magnet poles**.
-=======
-  * `odrv0.config.brake_resistance` [Ohm]: This is the resistance of the brake resistor. If you are not using it, you may set it to `0`. Note that there may be some extra resistance in your wiring and in the screw terminals, so if you are getting issues while braking you may want to increase this parameter by around 0.05 ohm.
-  * `odrv0.axis0.motor.config.pole_pairs`: This is the number of **magnet poles** in the rotor, **divided by two**. You can simply count the number of permanent magnets in the rotor, if you can see them. _Note: this is not the same as the number of coils in the stator._
-  * `odrv0.axis0.motor.config.motor_type`: This is the type of motor being used. Currently two types of motors are supported: High-current motors (`MOTOR_TYPE_HIGH_CURRENT`) and Gimbal motors (`MOTOR_TYPE_GIMBAL`).
->>>>>>> devel
-
-
-_Note: this is not the same as the number of coils in the stator._
+This is the number of **magnet poles** in the rotor, **divided by two**. To find this, you can simply count the number of permanent magnets in the rotor, if you can see them. _Note: this is not the same as the number of coils in the stator._
+If you can't see them, try sliding a magnet around the rotor, and counting how many times it stops. This will be the number of **pole pairs**. If you use a magnetic piece of metal instead of a magnet, you will get the number of **magnet poles**.
 `odrv0.axis0.motor.config.motor_type`  
 This is the type of motor being used. Currently two types of motors are supported: High-current motors (`MOTOR_TYPE_HIGH_CURRENT`) and gimbal motors (`MOTOR_TYPE_GIMBAL`).
 
@@ -234,7 +224,6 @@ Due to a [known issue](https://github.com/madcowswe/ODrive/issues/183) it is str
 
 
 ## Position control of M0
-
 Let's get motor 0 up and running. The procedure for motor 1 is exactly the same, so feel free to substitute `axis0` wherever it says `axis0`.
 
 1. Type `odrv0.axis0.requested_state = AXIS_STATE_FULL_CALIBRATION_SEQUENCE` <kbd>Enter</kbd>. After about 2 seconds should hear a beep. Then the motor will turn slowly in one direction for a few seconds, then back in the other direction.
@@ -259,19 +248,14 @@ Let's get motor 0 up and running. The procedure for motor 1 is exactly the same,
 
 ### Other control modes
 The ODrive also supports velocity control and current (torque) control.
-<<<<<<< HEAD
 #### Velocity control
 Set `odrv0.axis0.controller.config.control_mode = CTRL_MODE_VELOCITY_CONTROL`.  
 You can now control the velocity with `odrv0.axis0.controller.vel_setpoint = 5000` [count/s].
 #### Current control
 Set `odrv0.axis0.controller.config.control_mode = CTRL_MODE_CURRENT_CONTROL`.  
-You can now control the current with `odrv0.axis0.controller.vel_setpoint = 3` [A].
+You can now control the current with `odrv0.axis0.controller.current_setpoint = 3` [A].
 
 *Note: There is no velocity limiting in current control mode. Make sure that you don't overrev the motor, or exceed the max speed for your encoder.*
-=======
-* **Velocity control**: Set `odrv0.axis0.controller.config.control_mode = CTRL_MODE_VELOCITY_CONTROL`. You can now control the velocity with `odrv0.axis0.controller.vel_setpoint = 5000`. Units are counts/s.
-* **Current control**: Set `odrv0.axis0.controller.config.control_mode = CTRL_MODE_CURRENT_CONTROL`. You can now control the current with `odrv0.axis0.controller.current_setpoint = 3`. Units are A. **NOTE**: There is no velocity limiting in current control mode. Make sure that you don't overrev the motor, or exceed the max speed for your encoder.
->>>>>>> devel
 
 ## What's next?
 
