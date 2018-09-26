@@ -25,6 +25,7 @@ Please add a note of your changes below this heading if you make a Pull Request.
 * Hardcoded maximum inductance now 2500 uH.
 
 ### Fixed
+* Incorrect shifting of offset during index callback
 * Once you got an axis error `ERROR_INVALID_STATE` you could never clear it
 * Char to int conversion to read motornum on arduino example
 * GPIO above #5 would not be used correctly in some cases
