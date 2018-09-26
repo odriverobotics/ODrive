@@ -7,8 +7,7 @@ permalink: /
 # Getting Started
 
 ### Table of contents
-
-<!-- MarkdownTOC depth=2 autolink=true bracket=round -->
+<!-- TOC depthFrom:2 depthTo:2 -->
 
 - [Hardware Requirements](#hardware-requirements)
 - [Wiring up the ODrive](#wiring-up-the-odrive)
@@ -19,12 +18,11 @@ permalink: /
 - [Position control of M0](#position-control-of-m0)
 - [What's next?](#whats-next)
 
-<!-- /MarkdownTOC -->
+<!-- /TOC -->
 
 ## Hardware Requirements
 
 ### You will need:
-
 * One or two [brushless motors](https://docs.google.com/spreadsheets/d/12vzz7XVEK6YNIOqH0jAz51F5VUpc-lJEs3mmkWP1H4Y). It is fine, even recommended, to start testing with just a single motor and encoder.
 * One or two [quadrature incremental encoder(s)](encoders)
 * A power resistor. A good starting point would be the 50W resistor included with your ODrive.
@@ -128,9 +126,9 @@ Try step 5 again
 2. Install the ODrive tools by opening a terminal and typing `pip install odrive` <kbd>Enter</kbd>
 3. Set up USB permissions
 ```bash
-    echo 'SUBSYSTEM=="usb", ATTR{idVendor}=="1209", ATTR{idProduct}=="0d[0-9][0-9]", MODE="0666"' | sudo tee /etc/udev/rules.d/50-odrive.rules
+    echo 'SUBSYSTEM=="usb", ATTR{idVendor}=="1209", ATTR{idProduct}=="0d[0-9][0-9]", MODE="0666"' | sudo tee /etc/udev/rules.d/91-odrive.rules
     sudo udevadm control --reload-rules
-    sudo udevadm trigger # until you reboot you may need to do this everytime you reset the ODrive
+    sudo udevadm trigger
 ```
 
 ## Firmware
@@ -190,11 +188,17 @@ You can change `odrv0.axis0.motor.config.calibration_current` [A] to the largest
 
 ### 2. Set other hardware parameters
 
+<<<<<<< HEAD
 `odrv0.config.brake_resistance` [Ohm]  
 This is the resistance of the brake resistor. If you are not using it, you may set it to `0`.
  
 `odrv0.axis0.motor.config.pole_pairs`  
 This is the number of **magnet poles** in the rotor, **divided by two**. To find this, you can simply count the number of permanent magnets in the rotor, if you can see them. If you can't see them, try sliding a magnet around the rotor, and counting how many times it stops. This will be the number of **pole pairs**. If you use a magnetic piece of metal instead of a magnet, you will get the number of **magnet poles**.
+=======
+  * `odrv0.config.brake_resistance` [Ohm]: This is the resistance of the brake resistor. If you are not using it, you may set it to `0`. Note that there may be some extra resistance in your wiring and in the screw terminals, so if you are getting issues while braking you may want to increase this parameter by around 0.05 ohm.
+  * `odrv0.axis0.motor.config.pole_pairs`: This is the number of **magnet poles** in the rotor, **divided by two**. You can simply count the number of permanent magnets in the rotor, if you can see them. _Note: this is not the same as the number of coils in the stator._
+  * `odrv0.axis0.motor.config.motor_type`: This is the type of motor being used. Currently two types of motors are supported: High-current motors (`MOTOR_TYPE_HIGH_CURRENT`) and Gimbal motors (`MOTOR_TYPE_GIMBAL`).
+>>>>>>> devel
 
 
 _Note: this is not the same as the number of coils in the stator._
@@ -255,6 +259,7 @@ Let's get motor 0 up and running. The procedure for motor 1 is exactly the same,
 
 ### Other control modes
 The ODrive also supports velocity control and current (torque) control.
+<<<<<<< HEAD
 #### Velocity control
 Set `odrv0.axis0.controller.config.control_mode = CTRL_MODE_VELOCITY_CONTROL`.  
 You can now control the velocity with `odrv0.axis0.controller.vel_setpoint = 5000` [count/s].
@@ -263,6 +268,10 @@ Set `odrv0.axis0.controller.config.control_mode = CTRL_MODE_CURRENT_CONTROL`.
 You can now control the current with `odrv0.axis0.controller.vel_setpoint = 3` [A].
 
 *Note: There is no velocity limiting in current control mode. Make sure that you don't overrev the motor, or exceed the max speed for your encoder.*
+=======
+* **Velocity control**: Set `odrv0.axis0.controller.config.control_mode = CTRL_MODE_VELOCITY_CONTROL`. You can now control the velocity with `odrv0.axis0.controller.vel_setpoint = 5000`. Units are counts/s.
+* **Current control**: Set `odrv0.axis0.controller.config.control_mode = CTRL_MODE_CURRENT_CONTROL`. You can now control the current with `odrv0.axis0.controller.current_setpoint = 3`. Units are A. **NOTE**: There is no velocity limiting in current control mode. Make sure that you don't overrev the motor, or exceed the max speed for your encoder.
+>>>>>>> devel
 
 ## What's next?
 

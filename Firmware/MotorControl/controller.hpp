@@ -86,12 +86,9 @@ public:
                 make_protocol_property("vel_limit", &config_.vel_limit)
             ),
             make_protocol_function("set_pos_setpoint", *this, &Controller::set_pos_setpoint,
-                "pos_setpoint",
-                "vel_feed_forward",
-                "current_feed_forward"),
+                "pos_setpoint", "vel_feed_forward", "current_feed_forward"),
             make_protocol_function("set_vel_setpoint", *this, &Controller::set_vel_setpoint,
-                "vel_setpoint",
-                "current_feed_forward"),
+                "vel_setpoint", "current_feed_forward"),
             make_protocol_function("set_current_setpoint", *this, &Controller::set_current_setpoint,
                 "current_setpoint"),
             make_protocol_function("start_anticogging_calibration", *this, &Controller::start_anticogging_calibration)

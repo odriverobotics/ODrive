@@ -19,7 +19,7 @@ static uint8_t dma_rx_buffer[UART_RX_BUFFER_SIZE];
 static uint32_t dma_last_rcv_idx;
 
 // FIXME: the stdlib doesn't know about CMSIS threads, so this is just a global variable
-static thread_local uint32_t deadline_ms = 0;
+// static thread_local uint32_t deadline_ms = 0;
 
 osThreadId uart_thread;
 
@@ -32,7 +32,8 @@ public:
             size_t chunk = length < UART_TX_BUFFER_SIZE ? length : UART_TX_BUFFER_SIZE;
             // wait for USB interface to become ready
             // TODO: implement ring buffer to get a more continuous stream of data
-            if (osSemaphoreWait(sem_uart_dma, deadline_to_timeout(deadline_ms)) != osOK)
+            // if (osSemaphoreWait(sem_uart_dma, deadline_to_timeout(deadline_ms)) != osOK)
+            if (osSemaphoreWait(sem_uart_dma, PROTOCOL_SERVER_TIMEOUT_MS) != osOK)
                 return -1;
             // transmit chunk
             memcpy(tx_buf_, buffer, chunk);
@@ -68,7 +69,7 @@ static void uart_server_thread(void * ctx) {
         // Fetch the circular buffer "write pointer", where it would write next
         uint32_t new_rcv_idx = UART_RX_BUFFER_SIZE - huart4.hdmarx->Instance->NDTR;
 
-        deadline_ms = timeout_to_deadline(PROTOCOL_SERVER_TIMEOUT_MS);
+        // deadline_ms = timeout_to_deadline(PROTOCOL_SERVER_TIMEOUT_MS);
         // Process bytes in one or two chunks (two in case there was a wrap)
         if (new_rcv_idx < dma_last_rcv_idx) {
             uart4_stream_input.process_bytes(dma_rx_buffer + dma_last_rcv_idx,

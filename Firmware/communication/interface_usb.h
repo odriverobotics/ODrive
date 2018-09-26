@@ -21,7 +21,7 @@ typedef struct {
 
 extern USBStats_t usb_stats_;
 
-void usb_process_packet(uint8_t *buf, uint32_t len, uint8_t endpoint_pair);
+void usb_rx_process_packet(uint8_t *buf, uint32_t len, uint8_t endpoint_pair);
 void start_usb_server(void);
 
 #ifdef __cplusplus
