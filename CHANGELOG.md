@@ -1,7 +1,13 @@
 # Unreleased Features
 Please add a note of your changes below this heading if you make a Pull Request.
 
+# Unreleased
+
 # Releases
+## [0.4.4] - 2018-09-18
+### Fixed
+* Serious reliability issue with USB communication where packets on Native and the CDC interface would collide with each other.
+
 ## [0.4.3] - 2018-08-30
 ### Added
 * Encoder position count "homed" to zero when index is found.
@@ -14,6 +20,7 @@ Please add a note of your changes below this heading if you make a Pull Request.
 ### Fixed
 * Once you got an axis error `ERROR_INVALID_STATE` you could never clear it
 * Char to int conversion to read motornum on arduino example
+* GPIO above #5 would not be used correctly in some cases
 
 ## [0.4.2] - 2018-08-04
 ### Added
@@ -24,6 +31,7 @@ Please add a note of your changes below this heading if you make a Pull Request.
   * `motor.config.requested_current_range`
   * `motor.config.current_control_bandwidth` and `motor.set_current_control_bandwidth`. Latter required to invoke gain recalculation.
   * `encoder.config.bandwidth`
+  * `sensorless_estimator.config.pm_flux_linkage`
 
 ## [0.4.1] - 2018-07-01
 ### Fixed

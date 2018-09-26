@@ -116,8 +116,8 @@ def rate_test(device):
     Tests how many integers per second can be transmitted
     """
 
-    import matplotlib.pyplot as plt
-    plt.ion()
+    # import matplotlib.pyplot as plt
+    # plt.ion()
 
     print("reading 10000 values...")
     numFrames = 10000
@@ -125,12 +125,13 @@ def rate_test(device):
     for _ in range(numFrames):
         vals.append(device.axis0.loop_counter)
 
-    plt.plot(vals)
-
     loopsPerFrame = (vals[-1] - vals[0])/numFrames
     loopsPerSec = (168000000/(2*10192))
     FramePerSec = loopsPerSec/loopsPerFrame
     print("Frames per second: " + str(FramePerSec))
+
+    # plt.plot(vals)
+    # plt.show(block=True)
 
 def usb_burn_in_test(get_var_callback, cancellation_token):
     """
@@ -158,7 +159,7 @@ def setup_udev_rules(logger):
         logger.error("This command only makes sense on Linux")
     if os.getuid() != 0:
         logger.warn("you should run this as root, otherwise it will probably not work")
-    with open('/etc/udev/rules.d/50-odrive.rules', 'w') as file:
+    with open('/etc/udev/rules.d/91-odrive.rules', 'w') as file:
         file.write('SUBSYSTEM=="usb", ATTR{idVendor}=="1209", ATTR{idProduct}=="0d3[0-9]", MODE="0666"\n')
     subprocess.check_call(["udevadm", "control", "--reload-rules"])
     subprocess.check_call(["udevadm", "trigger"])
