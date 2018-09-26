@@ -883,7 +883,7 @@ public:
     }
     void handle(const uint8_t* input, size_t input_length, StreamSink* output) final {
         default_readwrite_endpoint_handler<TProperty>(property_, input, input_length, output);
-        if (written_hook_ != nullptr) {
+        if (written_hook_ != nullptr && input_length >= sizeof(TProperty)) {
             written_hook_(ctx_);
         }
     }
