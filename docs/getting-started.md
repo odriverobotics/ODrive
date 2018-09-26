@@ -132,10 +132,10 @@ Try step 5 again
 ```
 
 ## Firmware
-**ODrive v3.5 and later**
+**ODrive v3.5 and later**<br>
 Your board should come preflashed with firmware. If you run into problems, follow the instructions [here](odrivetool.md#device-firmware-update) on the DFU procedure before you continue.</div>
 
-**ODrive v3.4 and earlier**
+**ODrive v3.4 and earlier**<br>
 Your board does **not** come preflashed with any firmware. Follow the instructions [here](odrivetool.md#device-firmware-update) on the STP Link procedure before you continue.</div>
 
 ## Start `odrivetool`
@@ -167,7 +167,7 @@ In the previous step we started `odrivetool`. In there, you can assign variables
 For instance, to set the current limit of M0 to 10A you would type: `odrv0.axis0.motor.config.current_lim = 10` <kbd>Enter</kbd>
 </div></details>
 
-**Current limit**
+**Current limit**<br>
 `odrv0.axis0.motor.config.current_lim` [A].  
 The default current limit, for safety reasons, is set to 10A. This is quite weak, but good for making sure the drive is stable. Once you have tuned the oDrive, you can increase this to 75A to increase performance. Note that above 75A, you must change the current amplifier gains. You do this by requesting a different current range. i.e. for 90A on M0: `odrv0.axis0.motor.config.requested_current_range = 90` [A], then save the configuration and reboot as the gains are written out to the DRV (MOSFET driver) only during startup.
 
@@ -178,10 +178,10 @@ The current in the motor is only connected to the current in the power supply _s
 The largest effect on modulation magnitude is speed. There are other smaller factors, but in general: if the motor is still it's not unreasonable to have 50A in the motor from 5A on the power supply. When the motor is spinning close to top speed, the power supply current and the motor current will be somewhat close to each other.
 </div></details>
 
-**Velocity limit**
+**Velocity limit**<br>
 `odrv0.axis0.controller.config.vel_limit` [counts/s].  
 The motor will be limited to this speed. Again the default value is quite slow.
-**Calibration current**
+**Calibration current**<br>
 You can change `odrv0.axis0.motor.config.calibration_current` [A] to the largest value you feel comfortable leaving running through the motor continuously when the motor is stationary. If you are using a small motor (i.e. 15A current rated) you may need to reduce `calibration_current` to a value smaller than the default.
 
 ### 2. Set other hardware parameters
@@ -205,10 +205,10 @@ If 100's of mA current noise is "large" for you, _and_ you intend to spin the mo
 
 *Note: When using gimbal motors,* `current_lim` *and* `calibration_current` *actually mean "voltage limit" and "calibration voltage", since we don't use current feedback. This means that if you set it to 10, it means 10V, despite the name of the parameter.*
 
-**If using encoder**
+**If using encoder**<br>
 `odrv0.axis0.encoder.config.cpr`: Encoder Count Per Revolution [CPR]  
 This is 4x the Pulse Per Revolution (PPR) value. Usually this is indicated in the datasheet of your encoder.
-**If not using encoder**
+**If not using encoder**<br>
 * If you wish to run in sensorless mode, please see [Setting up sensorless](commands.md#setting-up-sensorless).
 * If you are using hall sensor feedback, please see the [hoverboard motor example](hoverboard.md).
 
@@ -245,10 +245,10 @@ Let's get motor 0 up and running. The procedure for motor 1 is exactly the same,
 
 ### Other control modes
 The ODrive also supports velocity control and current (torque) control.
-**Velocity control**
+**Velocity control**<br>
 Set `odrv0.axis0.controller.config.control_mode = CTRL_MODE_VELOCITY_CONTROL`.  
 You can now control the velocity with `odrv0.axis0.controller.vel_setpoint = 5000` [count/s].
-**Current control**
+**Current control**<br>
 Set `odrv0.axis0.controller.config.control_mode = CTRL_MODE_CURRENT_CONTROL`.  
 You can now control the current with `odrv0.axis0.controller.current_setpoint = 3` [A].
 
