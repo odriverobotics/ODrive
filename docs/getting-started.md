@@ -181,6 +181,7 @@ The largest effect on modulation magnitude is speed. There are other smaller fac
 **Velocity limit**<br>
 `odrv0.axis0.controller.config.vel_limit` [counts/s].  
 The motor will be limited to this speed. Again the default value is quite slow.
+
 **Calibration current**<br>
 You can change `odrv0.axis0.motor.config.calibration_current` [A] to the largest value you feel comfortable leaving running through the motor continuously when the motor is stationary. If you are using a small motor (i.e. 15A current rated) you may need to reduce `calibration_current` to a value smaller than the default.
 
@@ -208,6 +209,7 @@ If 100's of mA current noise is "large" for you, _and_ you intend to spin the mo
 **If using encoder**<br>
 `odrv0.axis0.encoder.config.cpr`: Encoder Count Per Revolution [CPR]  
 This is 4x the Pulse Per Revolution (PPR) value. Usually this is indicated in the datasheet of your encoder.
+
 **If not using encoder**<br>
 * If you wish to run in sensorless mode, please see [Setting up sensorless](commands.md#setting-up-sensorless).
 * If you are using hall sensor feedback, please see the [hoverboard motor example](hoverboard.md).
@@ -245,9 +247,11 @@ Let's get motor 0 up and running. The procedure for motor 1 is exactly the same,
 
 ### Other control modes
 The ODrive also supports velocity control and current (torque) control.
+
 **Velocity control**<br>
 Set `odrv0.axis0.controller.config.control_mode = CTRL_MODE_VELOCITY_CONTROL`.  
 You can now control the velocity with `odrv0.axis0.controller.vel_setpoint = 5000` [count/s].
+
 **Current control**<br>
 Set `odrv0.axis0.controller.config.control_mode = CTRL_MODE_CURRENT_CONTROL`.  
 You can now control the current with `odrv0.axis0.controller.current_setpoint = 3` [A].
