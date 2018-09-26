@@ -66,7 +66,12 @@ Out[2]: 1.408751450071577e-05
 In [3]: odrv0.axis0.motor.config.phase_resistance
 Out[3]: 0.029788672924041748
 ```
-Some motors will have a considerably different phase resistance and inductance than this. For example, gimbal motors, some small motors (e.g. < 10A peak current). If you think this applies to you try increasing `odrv0.axis0.motor.config.resistance_calib_max_voltage` from its default value of 1 using odrive tool and repeat the motor calibration process. If your motor has a small peak current draw (e.g. < 20A) you can also try decreasing `odrv0.axis0.motor.config.calibration_current` from its default value of 10A.
+Some motors will have a considerably different phase resistance and inductance than this. For example, gimbal motors, some small motors (e.g. < 10A peak current). If you think this applies to you try increasing `odrv0.axis0.motor.config.resistance_calib_max_voltage` from its default value of 1 using odrivetool and repeat the motor calibration process. If your motor has a small peak current draw (e.g. < 20A) you can also try decreasing `odrv0.axis0.motor.config.calibration_current` from its default value of 10A.
+
+In general, you need
+```text
+resistance_calib_max_voltage > calibration_current * phase_resistance`.
+```
 
 * `ERROR_DRV_FAULT = 0x0008`
 
