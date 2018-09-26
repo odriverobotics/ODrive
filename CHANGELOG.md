@@ -3,6 +3,13 @@ Please add a note of your changes below this heading if you make a Pull Request.
 
 # Unreleased
 
+### Changed
+* Make python tools compatible with python 2.7 (so it can be used with ROS)
+  * Threading API constructor can't take the daemon parameter, so all thread creation had to be expanded out.
+  * `TimeoutError` isn't defined, but it makes for more readable code, so I defined it as an OSError subclass.
+  * `ModuleNotFoundError` is replaced by the older ImportError.
+  * Print function imported from future
+
 # Releases
 ## [0.4.4] - 2018-09-18
 ### Fixed
