@@ -16,7 +16,7 @@ The motors are also fairly high inductance, so we need to reduce the bandwidth o
 ```txt
 odrv0.axis0.motor.config.resistance_calib_max_voltage = 4
 odrv0.axis0.motor.config.requested_current_range = 25 #Requires config save and reboot
-odrv0.axis0.motor.set_current_control_bandwidth(100)
+odrv0.axis0.motor.config.current_control_bandwidth = 100
 ```
 
 Set the encoder to hall mode (instead of incremental). See the [pinout](interfaces.md#hall-feedback-pinout) for instructions on how to plug in the hall feedback.

@@ -95,13 +95,11 @@ public:
     bool arm();
     void disarm();
     void setup() {
-        update_current_controller_gains();
         DRV8301_setup();
     }
     void reset_current_control();
 
     void update_current_controller_gains();
-    void set_current_control_bandwidth(float current_control_bandwidth);
     void DRV8301_setup();
     bool check_DRV_fault();
     void set_error(Error_t error);
@@ -211,13 +209,9 @@ public:
                 make_protocol_property("motor_type", &config_.motor_type),
                 make_protocol_property("current_lim", &config_.current_lim),
                 make_protocol_property("requested_current_range", &config_.requested_current_range),
-                // make_protocol_ro_property("current_control_bandwidth", &config_.current_control_bandwidth)
                 make_protocol_property("current_control_bandwidth", &config_.current_control_bandwidth,
                     [](void* ctx) { static_cast<Motor*>(ctx)->update_current_controller_gains(); }, this)
             )
-            // ),
-            // make_protocol_function("set_current_control_bandwidth", *this, &Motor::set_current_control_bandwidth,
-            //     "current_control_bandwidth")
         );
     }
 };

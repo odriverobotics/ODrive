@@ -3,6 +3,15 @@ Please add a note of your changes below this heading if you make a Pull Request.
 
 # Unreleased
 
+### Added
+* Hook to execute protocol property written callback
+
+### Changed
+* Using new hooks to calculate:
+  * `motor.config.current_control_bandwidth`
+    * This depricates `motor.set_current_control_bandwidth()`
+  * `encoder.config.bandwidth`
+
 # Releases
 ## [0.4.4] - 2018-09-18
 ### Fixed
