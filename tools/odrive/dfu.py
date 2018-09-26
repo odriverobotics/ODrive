@@ -3,6 +3,7 @@
 Tool for flashing .hex files to the ODrive via the STM built-in USB DFU mode.
 """
 
+from __future__ import print_function
 import argparse
 import sys
 import time
@@ -206,7 +207,7 @@ def show_deferred_message(message, cancellation_token):
             time.sleep(1)
         if not cancellation_token.is_set():
             print(message)
-    t = threading.Thread(target=show_message_thread, args=(message, cancellation_token), daemon=True)
+    t = threading.Thread(target=show_message_thread, args=(message, cancellation_token))
     t.daemon = True
     t.start()
 
@@ -436,7 +437,10 @@ def launch_dfu(args, logger, cancellation_token):
     def find_device_in_dfu_mode_thread():
         devices[0] = find_device_in_dfu_mode(serial_number, find_odrive_cancellation_token)
         find_odrive_cancellation_token.set()
-    threading.Thread(target=find_device_in_dfu_mode_thread, daemon=True).start()
+    t = threading.Thread(target=find_device_in_dfu_mode_thread)
+    t.daemon = True
+    t.start()
+    
 
     # Scan for ODrives not in DFU mode
     # We only scan on USB because DFU is only implemented over USB

@@ -48,6 +48,10 @@ from setuptools import setup
 import os
 import sys
 
+if sys.version_info < (3, 3):
+  import exceptions
+  PermissionError = exceptions.OSError
+
 creating_package = "sdist" in sys.argv
 
 # Load version from Git tag
@@ -78,7 +82,10 @@ if creating_package:
   fibre_link = os.path.join(os.path.dirname(
                     os.path.realpath(__file__)), "fibre")
   if not os.path.exists(fibre_link):
-    os.symlink(fibre_src, fibre_link, True)
+    if sys.version_info > (3, 3):
+      os.symlink(fibre_src, fibre_link, target_is_directory=True)
+    else:
+      os.symlink(fibre_src, fibre_link)
 
 # TODO: find a better place for this
 if not creating_package:

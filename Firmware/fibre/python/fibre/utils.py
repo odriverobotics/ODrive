@@ -12,10 +12,16 @@ try:
         # TODO: we should win32console anyway so we could just omit colorama
         import colorama
         colorama.init()
-except ModuleNotFoundError:
+except ImportError:
     print("Could not init terminal features.")
     sys.stdout.flush()
     pass
+    
+if sys.version_info < (3, 3):
+    class TimeoutError(Exception):
+        pass
+else:
+    TimeoutError = TimeoutError
 
 def get_serial_number_str(device):
     if hasattr(device, 'serial_number'):
@@ -92,7 +98,10 @@ class Event():
         def delayed_trigger():
             if not self.wait(timeout=timeout):
                 self.set()
-        threading.Thread(target=delayed_trigger, daemon=True).start()
+        threading.Thread(target=delayed_trigger)
+        t.daemon = True
+        t.start()
+        
 
 def wait_any(timeout=None, *events):
     """
