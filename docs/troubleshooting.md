@@ -1,10 +1,22 @@
 # Troubleshooting
 
+Table of Contents:
+<!-- TOC depthFrom:2 depthTo:2 -->
+
+- [Error codes](#error-codes)
+- [Common Axis Errors](#common-axis-errors)
+- [Common Motor Errors](#common-motor-errors)
+- [Common Encoder Errors](#common-encoder-errors)
+- [USB Connectivity Issues](#usb-connectivity-issues)
+- [Firmware Issues](#firmware-issues)
+- [Other issues that may not produce an error code](#other-issues-that-may-not-produce-an-error-code)
+
+<!-- /TOC -->
+
 ## Error codes
 If your ODrive is not working as expected, run `odrivetool` and type `hex(<axis>.error)` <kbd>Enter</kbd> where `<axis>` is the axis that isn't working. This will display a [hexadecimal](https://en.wikipedia.org/wiki/Hexadecimal) representation of the error code. Each bit represents one error flag.
 
 <details><summary markdown="span">Example</summary><div markdown="block">
-
 Say you got this error output:
 ```python
 In [1]: hex(odrv0.axis0.error)
@@ -12,69 +24,74 @@ Out[1]: '0x6'
 ```
 
 Written in binary, the number `0x6` corresponds to `110`, that means bits 1 and 2 are set (counting starts at 0).
-
 Looking at the reference below, this means that both `ERROR_DC_BUS_UNDER_VOLTAGE` and `ERROR_DC_BUS_OVER_VOLTAGE` occurred.
-
 </div></details>
 
-There is a slight chance that the values here are out of sync with the actual firmware. To be completely sure, check the linked definition in the source code.
+The axis error may say that some other component has failed. Say it reports `ERROR_ENCODER_FAILED`, then you need to go check the encoder error: `hex(<axis>.encoder.error)`.
 
-### Axis error flags
+* Axis error flags defined [here](../Firmware/MotorControl/axis.hpp).
+* Motor error flags defined [here](../Firmware/MotorControl/motor.hpp).
+* Encoder error flags defined [here](../Firmware/MotorControl/encoder.hpp).
+* Sensorless estimator error flags defined [here](../Firmware/MotorControl/sensorless_estimator.hpp).
 
-Defined [here](../Firmware/MotorControl/axis.hpp)
+## Common Axis Errors 
 
-0. `ERROR_INVALID_STATE`
-1. `ERROR_DC_BUS_UNDER_VOLTAGE`
-2. `ERROR_DC_BUS_OVER_VOLTAGE`
-3. `ERROR_CURRENT_MEASUREMENT_TIMEOUT`
-4. `ERROR_BRAKE_RESISTOR_DISARMED`
-5. `ERROR_MOTOR_DISARMED`
-6. `ERROR_MOTOR_FAILED` (check `.motor.error` for more details)
-7. `ERROR_SENSORLESS_ESTIMATOR_FAILED` (check `.sensorless_estimator.error` for more details)
-8. `ERROR_ENCODER_FAILED` (check `.encoder.error` for more details)
-9. `ERROR_CONTROLLER_FAILED`
-10. `ERROR_POS_CTRL_DURING_SENSORLESS`
+* `ERROR_INVALID_STATE = 0x01`
 
-### Motor error flags
+Typically returned along with another error. Resolve that error and then reboot using `odrv0.reboot()` or remoivng power, waiting 5 seconds and restoring power to return to normal operating. 
 
-Defined [here](../Firmware/MotorControl/motor.hpp)
+* `ERROR_DC_BUS_UNDER_VOLTAGE = 0x02`
 
-0. `ERROR_PHASE_RESISTANCE_OUT_OF_RANGE`
-1. `ERROR_PHASE_INDUCTANCE_OUT_OF_RANGE`
-2. `ERROR_ADC_FAILED`
-3. [`ERROR_DRV_FAULT`](#drv-fault)
-4. `ERROR_CONTROL_DEADLINE_MISSED`
-5. `ERROR_NOT_IMPLEMENTED_MOTOR_TYPE`
-6. `ERROR_BRAKE_CURRENT_OUT_OF_RANGE`
-7. `ERROR_NUMERICAL`
+Confirm that your power leads are connected securely. For initial testing a 12V PSU which can supply a couple of amps should be sufficient while the use of low current 'wall wart' plug packs may lead to inconsistent behaviour and is not recommended. 
 
-### Encoder error flags
+You can monitor your PUS voltage using liveplotter in odrive tool by entering `start_liveplotter(lambda: [odrv0.vbus_voltage])`. If you see your votlage drop below ~ 8V then you will trip this error. Even a relatively small motor can draw multiple kW momentary and so unless you have a very large PSU or are running of a battery you may encounter this error when executing high speed movements with a high current limit. To limit your PSU power draw you can limit your motor current and/or velocity limit `odrv0.axis0.controller.config.vel_limit` and `odrv0.axis0.motor.config.current_lim`.
 
-Defined [here](../Firmware/MotorControl/encoder.hpp)
+* `ERROR_DC_BUS_OVER_VOLTAGE = 0x04`
 
-0. `ERROR_NUMERICAL`
-1. `ERROR_CPR_OUT_OF_RANGE`
-2. `ERROR_RESPONSE`
+Confirm that you have a break resistor of the correct value connected securly and that `odrv0.config.brake_resistance` is set to the value of your break resistor. 
 
-### Sensorless estimator error flags
+You can monitor your PUS voltage using liveplotter in odrive tool by entering `start_liveplotter(lambda: [odrv0.vbus_voltage])`. If during a move you see the voltage rise above your PSU's nominal set voltage then you have your break resistance set too low. This may happen if you are using long wires or small gauge wires to connect your break resistor to your odrive which will added extra resistance. This extra resistance needs to be accounted for to prevent this voltage spike. If you have checked all your connections you can also try increasing your break resistance by ~ 0.01 Ohm at a time to a maximum of 0.05 greater than your break resistor value.
 
-Defined [here](../Firmware/MotorControl/sensorless_estimator.hpp)
+## Common Motor Errors 
 
-0. `ERROR_NUMERICAL`
+* `ERROR_PHASE_RESISTANCE_OUT_OF_RANGE = 0x0001` and `ERROR_PHASE_INDUCTANCE_OUT_OF_RANGE = 0x0002`
 
+During calibration the motor resistance and [inductance](https://en.wikipedia.org/wiki/Inductance) is measured. If the measured motor resistance or inductance falls outside a set range this error will be returned. Check that all motor leads are connected securely.
 
-## DRV fault
+The measured values can be viewed using odrivetool as is shown below:
+```
+In [2]: odrv0.axis0.motor.config.phase_inductance
+Out[2]: 1.408751450071577e-05
+
+In [3]: odrv0.axis0.motor.config.phase_resistance
+Out[3]: 0.029788672924041748
+```
+Some motors will have a considerably different phase resistance and inductance than this. For example, gimbal motors, some small motors (e.g. < 10A peak current). If you think this applies to you try increasing `odrv0.axis0.motor.config.resistance_calib_max_voltage` from its default value of 1 using odrive tool and repeat the motor calibration process. If your motor has a small peak current draw (e.g. < 20A) you can also try decreasing `odrv0.axis0.motor.config.calibration_current` from its default value of 10A.
+
+* `ERROR_DRV_FAULT = 0x0008`
 
 The ODrive v3.4 is known to have a hardware issue whereby the motors would stop operating
 when applying high currents to M0. The reported error of both motors in this case
 is `ERROR_DRV_FAULT`.
 
 The conjecture is that the high switching current creates large ripples in the
-power supply of the DRV8301 gate driver chips, thus tripping its undervoltage
-fault detection.
+power supply of the DRV8301 gate driver chips, thus tripping its under-voltage fault detection. 
 
-* Limit the M0 current to 40A. The lowest current at which the DRV fault was observed is 45A on one test motor and 50A on another test motor.
-* Refer to [this post](https://discourse.odriverobotics.com/t/drv-fault-on-odrive-v3-4/558) for instructions for a hardware fix
+To resolve this issue you can limit the M0 current to 40A. The lowest current at which the DRV fault was observed is 45A on one test motor and 50A on another test motor. Refer to [this post](https://discourse.odriverobotics.com/t/drv-fault-on-odrive-v3-4/558) for instructions for a hardware fix.
+
+## Common Encoder Errors
+
+* `ERROR_CPR_OUT_OF_RANGE = 0x02`
+
+Confirm you have entered the correct count per rotation (CPR) for [your encoder](https://docs.odriverobotics.com/encoders). Note that the AMT encoders are configurable using the micro-switches on the encoder PCB and so you may need to check that these are in the right positions. If your encoder lists its pulse per rotation (PPR) multiply that number by four to get CPR.
+
+* `ERROR_NO_RESPONSE = 0x04`
+
+Confirm that your encoder is plugged into the right pins on the odrive board.
+
+* `ERROR_INDEX_NOT_FOUND_YET = 0x20`
+
+Check that your encoder is a model that has an index pulse. If your encoder does not have a wire connected to pin Z on your odrive then it does not output an index pulse.
 
 
 ## USB Connectivity Issues
@@ -89,3 +106,42 @@ fault detection.
  * Run `odrivetools` with the `--verbose` option.
  * Run `PYUSB_DEBUG=debug odrivetools` to get even more log output.
  * If you're a developer you can use Wireshark to capture USB traffic.
+ * Try a different USB cable
+ * Try routing your USB cable so that it is far away from the motor and PSU cables to reduce EMI
+
+## Firmware Issues
+
+### Failure to build the firmware when running `make`
+- Clear out temporary files from previous compiles by first running `make clean` to prevent conflicts.
+- **Windows users**: Confirm that tup has been correctly added to path by running `env|grep PATH` in Git Bash. If you see no mention of tup then you must [add its location to your PATH environment variable.](https://docs.alfresco.com/4.2/tasks/fot-addpath.html). Note that you may need to restart for the added path to take effect.
+
+### Failure to flash the firmware when running `make flash`
+- If using an ST-link, confirm that the ST-link is connected the correct pins and that you have power supplied to the board. This can be by the 5V pin on the ST link or the main DC power jack. No power is supplied over the USB connection.
+
+## Other issues that may not produce an error code
+
+###  Motor cuts off or spins uncontrollably at high rotational speeds (ie: > 5000 RPM)
+- You may be approaching the limit of your encoder. The 2400 count/rotation encoders that were initially included with odrive are realistically limited to around 5000 RPM. Exceeding this speed causes the odrive to lose track of position. This can only be fixed by using an alternative encoder or gearing down the output of your motor onto your encoder so that it still sees < 5000RPM at full speed. If using the gearing options be sure to change your counts/rotation accordingly.
+
+### Motor vibrates when stationary or makes constant noise
+
+- Likely due to incorrect gains, specifically `vel_gain` may be set too high. Try following the [tuning procedure](https://docs.odriverobotics.com/commands).
+- Check encoder shaft connection. Grub screws may vibrate lose with time. If using a CUI shaft encoder try remounting the plastic retaining ring and confirm that it is not coming into contact with the encoder housing. Also confirm that the encoder is securely mounted.
+- If you are using a high resolution encoder (>4000 counts/rotation) then increasing encoder_pll_bandwidth may help reduce vibration.
+- If you connect your motor to an object with a large moment of inertia (such as a flywheel) this will help reduce vibrations at high gians. However, make sure that all connections are ridged. Cheap shaft couplers or belts under low tension can introduce enough flex into a system that the motor may still vibrate independently.
+
+### Motor overshoots target position or oscillates back and forth
+- Likely due to incorrect gains for a given motor current limit. Specifically `pos_gain` is set too high. Try following the [tuning procedure](https://docs.odriverobotics.com/commands).
+- Increase the current limit of your motor for more torque.
+
+### Motor slowly starts to increase in speed
+- Encoder has likely slipped. This may occur when your motor makes a hard stop or violently vibrates causing something to come lose. Power the board off and on again so that it undertakes a new calibration. If you are using an index search on startup then you will need to repeat the index calibration process.
+
+### Motor feels like it has less torque than it should and/or gets hot sitting still while under no load.
+- Encoder has likely slipped causing the motor controller to commutate the wrong windings slightly which reduces output torque and produces excess heat as the motor 'fights itself'.
+
+### False steps or direction changes when using step/dir
+- Prior to Odrive board V3.5 no filtering is present on the GPIO pins used for step/dir interface and so inductively coupled noise may causes false steps to be detected. Odrive V3.5 and has onboard filtering to resolve this issue.
+- If you experience this issue use a twisted pair cable between your microcontroller that’s generating the step/dir signals and your odrive board. A section cut from cat-5 cable works well as does just twisting some normal insulated wire together.
+- Ensure that the step/dir signal cables are not draped over the odrive board, are not running in parallel to the motor or power supply cables.
+- If the above does not resolve your issue on V3.4 boards and lower try adding a ~22 Ohm resistor in series with the step and direction pins along with a ~ 4.7 nF capacitor between the ground pin and the step and dir pins such as shown [here](https://cdn.discordapp.com/attachments/369667319280173069/420811057431445504/IMG_20180306_211224.jpg).

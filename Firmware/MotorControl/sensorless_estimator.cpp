@@ -69,13 +69,13 @@ bool SensorlessEstimator::update() {
     }
 
     // predict PLL phase with velocity
-    pll_pos_ = wrap_pm_pi(pll_pos_ + current_meas_period * pll_vel_);
+    pll_pos_ = wrap_pm_pi(pll_pos_ + current_meas_period * vel_estimate_);
     // update PLL phase with observer permanent magnet phase
     phase_ = fast_atan2(eta[1], eta[0]);
     float delta_phase = wrap_pm_pi(phase_ - pll_pos_);
     pll_pos_ = wrap_pm_pi(pll_pos_ + current_meas_period * pll_kp * delta_phase);
     // update PLL velocity
-    pll_vel_ += current_meas_period * pll_ki * delta_phase;
+    vel_estimate_ += current_meas_period * pll_ki * delta_phase;
 
     return true;
 };

@@ -3,13 +3,13 @@
 
 Communicating with an ODrive consists of a series of endpoint operations.
 An endpoint can theoretically be any kind data serialized in any way.
-There is a default seralization implementation for POD types; for custom types
-you must (de)seralize yourself. In the future we may provide a default seralizer
-for stucts.
+There is a default serialization implementation for POD types; for custom types
+you must (de)serialize yourself. In the future we may provide a default serializer
+for structs.
 The available endpoints can be enumerated by reading the JSON from endpoint 0
 and can theoretically be different for each communication interface (they are not in practice).
 
-Each endpoint operation can send bytes to one endpoint (referenced by it's ID)
+Each endpoint operation can send bytes to one endpoint (referenced by its ID)
 and at the same time receive bytes from the same endpoint. The semantics of
 these payloads are specific to each endpoint's type, the name of which is
 indicated in the JSON.

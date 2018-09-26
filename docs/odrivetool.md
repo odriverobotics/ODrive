@@ -2,6 +2,18 @@
 
 The ODrive Tool is the accompanying PC program for the ODrive. It's main purpose is to provide an interactive shell to control the device manually, as well as some supporting functions like firmware update.
 
+### Table of contents
+<!-- TOC depthFrom:2 depthTo:2 -->
+
+- [Installation](#installation)
+- [Multiple ODrives](#multiple-odrives)
+- [Configuration Backup](#configuration-backup)
+- [Device Firmware Update](#device-firmware-update)
+- [Flashing with an STLink](#flashing-with-an-stlink)
+- [Liveplotter](#liveplotter)
+
+<!-- /TOC -->
+
 ## Installation
 
 Refer to the [Getting Started guide](getting-started#downloading-and-installing-tools).
@@ -62,7 +74,7 @@ Note that this command will connect to GitHub servers to retrieve the latest fir
 If you have a non-default configuration saved on the device, ODrive Tool will try to carry over the configuration across the firmware update. If any of the settings are removed or renamed, you will get warning messages.
 
 <details><summary markdown="span">How to flash a custom firmware</summary><div markdown="block">
-If you want to flash a specific firmware file instead of automatically downloading one, you can run `odrivetool dfu [path/to/firmware/file.hex]`.
+If you want to flash a specific firmware file instead of automatically downloading one, you can run `odrivetool dfu path/to/firmware/file.hex`
 
 You can download one of the officially released firmware files from [here](https://github.com/madcowswe/ODrive/releases). You will need one of the __.hex__ files (not the __.elf__ file). Make sure you select the file that matches your board version.
 
@@ -77,13 +89,45 @@ To compile firmware from source, refer to the [developer guide](developer-guide)
 * If the DFU script can't find the device, try forcing it into DFU mode.
 
   <details><summary markdown="span">How to force DFU mode (ODrive v3.5)</summary><div markdown="block">
-  Flick the DIP switch that "DFU, RUN" to "DFU" and power cycle the board. If that alone doesn't work, also connect the  After you're done, put the switch back into the "RUN" position and power cycle the board again.
+  Flick the DIP switch that "DFU, RUN" to "DFU" and power cycle the board. After you're done, put the switch back into the "RUN" position and power cycle the board again.
   </div></details>
 
   <details><summary markdown="span">How to force DFU mode (ODrive v3.1, v3.2)</summary><div markdown="block">
   Connect the pin "BOOT0" to "3.3V" and power cycle the board. If that alone doesn't work, also connect the pin "GPIO1" to "GND". After you're done, remove the wires and power cycle the board again.
   </div></details>
 
+### Upgrading firmware with a different DFU tool
+Some people have had issues using the python dfu tool, so below is a guide on how to manually use a different tool.
+
+Before starting the below steps, you need to get firmware binary. You can download one of the officially released firmware files from [here](https://github.com/madcowswe/ODrive/releases). Make sure you select the file that matches your board version, and that you get the __.hex__ file (not the __.elf__ file).
+
+To compile firmware from source, refer to the [developer guide](developer-guide).
+
+#### Windows
+You can use the DfuSe app from ST.
+
+1. Download the tool [here](https://www.st.com/en/development-tools/stsw-stm32080.html). Unfortunately they make you create a login to download. Sorry about that.
+1. After installing the tool, launch `DfuFileMgr.exe` which probably got added to the start menu as "Dfu file manager".
+1. Select "I want to GENERATE a DFU file from S19, HEX or BIN files", press OK.
+1. Click the button that says "S19 or Hex...", find the `ODriveFirmware.hex` file you built or downloaded.
+1. Leave all the other settings as default and click the "Generate..." button.
+1. Save the output file as `ODriveFirmware.dfu`. Note that the success message has a warning sign for some reason...
+1. Launch `DfuSeDemo.exe` which probably got added to the start menu as "DfuSeDemo".
+1. Force the ODrive into DFU mode, as per the instructions above "How to force DFU mode".
+1. In the top left it should now be connected to "STM Device in DFU Mode".
+   1. If it doesn't appear, it may be because the driver is set to libusb by Zadig. We need to set it back to the original driver. Follow [these instructions](https://github.com/pbatard/libwdi/wiki/FAQ#Help_Zadig_replaced_the_driver_for_the_wrong_device_How_do_I_restore_it).
+1. In the bottom right section called "Upgrade or Verify Action" click the button "Choose...".
+1. Locate the `ODriveFirmware.dfu` we made before.
+1. Click button "Upgrade".
+1. If you get a warning that it's not possible to check that it's the correct device type: click yes to continue.
+1. Congratulations your ODrive should now be flashed; you can now quit DfuSeDemo.
+1. Turn off the power to the ODrive and set the DIP switch back to RUN mode.
+
+#### MacOS or Linux
+**This section needs more detail. Please consider adding detail if you got it to work.**
+You may be able to use [dfu-util](http://dfu-util.sourceforge.net/) to upgrade the firmware. You will need to convert the .hex file to a .dfu file. You may be able to do it with the python script [dfu-convert](https://github.com/plietar/dfuse-tool/blob/master/dfu-convert) or the c program [hex2dfu](https://github.com/encedo/hex2dfu).
+
+You probably need to force DFU mode, as per the instructions above.
 
 ## Flashing with an STLink
 
@@ -131,3 +175,48 @@ adapter speed: 2000 kHz
   ```
 
 If something doesn't work, make sure `openocd` is in your `PATH` variable, check that the wires are connected properly and try with elevated privileges.
+
+## Liveplotter
+
+Liveplotter is used for the graphical plotting of odrive parameters (i.e. position) in real time. To start liveplotter, close any other instances of liveplotter and run `odrivetool liveplotter` from a new anaconda prompt window. By defult two parameters are plotted on startup; the encoder positon of axis 1 and axis 2. In the below example the motors are running in `closed_loop_control` while they are being forced off position by hand.
+
+![Liveplotter position plot](figure_1.png)
+
+To change what parameters are plotted open odrivetool (located in Anaconda3\Scripts or ODrive-master\tools) with a text editor and modify the liveplotter function:
+```
+        # If you want to plot different values, change them here.
+        # You can plot any number of values concurrently.
+        cancellation_token = start_liveplotter(lambda: [
+            my_odrive.axis0.encoder.pos_estimate,
+            my_odrive.axis1.encoder.pos_estimate,
+        ])
+```
+For example, to plot the approximate motor torque [N.cm] and the velocity [RPM] of axis1 with a 150KV motor and an 8192 count per rotation econder you would modify the function to read:
+```
+        # If you want to plot different values, change them here.
+        # You can plot any number of values concurrently.
+        cancellation_token = start_liveplotter(lambda: [
+            (((my_odrive.axis0.encoder.pll_vel)/8192)*60), # 8192 CPR encoder
+            ((8.27*my_odrive.axis0.motor.current_control.Iq_setpoint/150) * 100), # Torque [N.cm] = (8.27 * Current [A] / KV) * 100
+        ])
+```
+In the example below the motor is forced off axis by hand and held there. In response the motor controller increases the torque (orange line) to counteract this disturbance up to a peak of 500 N.cm at which point the motor current limit is reached. When the motor is released it returns back to its commanded position very quickly as can be seen by the spike in the motor velocity (blue line).
+
+![Liveplotter torque vel plot](figure_1-1.png)
+
+To change the scale and sample rate of the plot modify the following parameters located at the beginning of utils.py (located in Anaconda3\Lib\site-packages\odrive):
+
+```
+data_rate = 100
+plot_rate = 10
+num_samples = 1000
+```
+
+For more examples on how to interact with the plotting functinality refer to the [Matplotlib examples.](https://matplotlib.org/examples)
+
+### Liveplotter from interactive odrivetool instance
+You can also run `start_liveplotter(...)` directly from the interactive odrivetool prompt. This is useful if you want to issue commands or otherwise keep interacting with the odrive while plotting.
+
+For example you can type the following directly into the interactive prompt: `start_liveplotter(lambda: [odrv0.axis0.encoder.pos_estimate])`. Just like the examples above, you can list several parameters to plot separated by comma in the square brackets.
+In general, you can plot any variable that you are able to read like normal in odrivetool.
+

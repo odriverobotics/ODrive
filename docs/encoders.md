@@ -20,7 +20,7 @@ All encoder types that are currently supported require the ODrive to do some sor
 
 During encoder offset calibration the rotor must be allowed to rotate without any biased load during startup. That means mass and weak friction loads are fine, but gravity or spring loads are not okay.
 
-In the `odrivetool`, type `<axis>.encoder.requested_state = AXIS_STATE_ENCODER_OFFSET_CALIBRATION` <kbd>Enter</kbd>.
+In the `odrivetool`, type `<axis>.requested_state = AXIS_STATE_ENCODER_OFFSET_CALIBRATION` <kbd>Enter</kbd>.
 
 To verify everything went well, check the following variables:
 

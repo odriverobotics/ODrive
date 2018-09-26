@@ -8,7 +8,7 @@ This project is all about accurately driving brushless motors, for cheap. The ai
 | devel  | [![Build Status](https://travis-ci.org/madcowswe/ODrive.png?branch=devel)](https://travis-ci.org/madcowswe/ODrive) |
 
 
-Please refer to the [Developer Guide](https://docs.odriverobotics.com/developer-guide.md) to get started with ODrive firmware development.
+Please refer to the [Developer Guide](https://docs.odriverobotics.com/developer-guide) to get started with ODrive firmware development.
 
 
 ### Repository Structure

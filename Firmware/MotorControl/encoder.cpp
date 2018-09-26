@@ -8,7 +8,6 @@ Encoder::Encoder(const EncoderHardwareConfig_t& hw_config,
         config_(config)
 {
     if (config.pre_calibrated && (config.mode == Encoder::MODE_HALL)) {
-        offset_ = config.offset;
         is_ready_ = true;
     }
 }
@@ -25,7 +24,7 @@ void Encoder::setup() {
 
 void Encoder::set_error(Encoder::Error_t error) {
     error_ |= error;
-    axis_->error_ |= Axis::ERROR_MOTOR_FAILED;
+    axis_->error_ |= Axis::ERROR_ENCODER_FAILED;
 }
 
 bool Encoder::do_checks(){
@@ -38,13 +37,19 @@ bool Encoder::do_checks(){
 
 // Triggered when an encoder passes over the "Index" pin
 // TODO: only arm index edge interrupt when we know encoder has powered up
+// (maybe by attaching the interrupt on start search, synergistic with following)
 // TODO: disable interrupt once we found the index
 void Encoder::enc_index_cb() {
     if (config_.use_index && !index_found_) {
-        set_circular_count(0);
+        set_circular_count(0, false);
+        set_linear_count(0); // Avoid position control transient after search
         if (config_.pre_calibrated) {
-            offset_ = config_.offset;
             is_ready_ = true;
+        } else {
+            // We can't use the update_offset facility in set_circular_count because
+            // we also set the linear count before there is a chance to update. Therefore:
+            // Invalidate offset calibration that may have happened before idx search
+            is_ready_ = false;
         }
         index_found_ = true;
     }
@@ -67,14 +72,16 @@ void Encoder::set_linear_count(int32_t count) {
 
 // Function that sets the CPR circular tracking encoder count to a desired 32-bit value.
 // Note that this will get mod'ed down to [0, cpr)
-void Encoder::set_circular_count(int32_t count) {
+void Encoder::set_circular_count(int32_t count, bool update_offset) {
     // Disable interrupts to make a critical section to avoid race condition
     uint32_t prim = __get_PRIMASK();
     __disable_irq();
 
-    // Offset and state must be shifted by the same amount
-    offset_ += count - count_in_cpr_;
-    offset_ = mod(offset_, config_.cpr);
+    if (update_offset) {
+        config_.offset += count - count_in_cpr_;
+        config_.offset = mod(config_.offset, config_.cpr);
+    }
+
     // Update states
     count_in_cpr_ = mod(count, config_.cpr);
     pos_cpr_ = (float)count_in_cpr_;
@@ -124,10 +131,11 @@ bool Encoder::run_offset_calibration() {
     static const float scan_distance = 16.0f * M_PI;
     static const int num_steps = (int)(scan_distance / scan_omega * (float)current_meas_hz);
 
-    // Temporarily disable index search so it doesn't mess
-    // with the offset calibration
-    bool old_use_index = config_.use_index;
-    config_.use_index = false;
+    // Require index found if enabled
+    if (config_.use_index && !index_found_) {
+        set_error(ERROR_INDEX_NOT_FOUND_YET);
+        return false;
+    }
 
     // We use shadow_count_ to do the calibration, but the offset is used by count_in_cpr_
     // Therefore we have to sync them for calibration
@@ -172,16 +180,7 @@ bool Encoder::run_offset_calibration() {
     if (axis_->error_ != Axis::ERROR_NONE)
         return false;
 
-    //TODO avoid recomputing elec_rad_per_enc every time
-    float elec_rad_per_enc = axis_->motor_.config_.pole_pairs * 2 * M_PI * (1.0f / (float)(config_.cpr));
-    float expected_encoder_delta = scan_distance / elec_rad_per_enc;
-    float actual_encoder_delta_abs = fabsf(shadow_count_-init_enc_val);
-    if(fabsf(actual_encoder_delta_abs - expected_encoder_delta)/expected_encoder_delta > config_.calib_range)
-    {
-        set_error(ERROR_CPR_OUT_OF_RANGE);
-        return false;
-    }
-    // check direction
+    // Check response and direction
     if (shadow_count_ > init_enc_val + 8) {
         // motor same dir as encoder
         axis_->motor_.config_.direction = 1;
@@ -190,7 +189,18 @@ bool Encoder::run_offset_calibration() {
         axis_->motor_.config_.direction = -1;
     } else {
         // Encoder response error
-        set_error(ERROR_RESPONSE);
+        set_error(ERROR_NO_RESPONSE);
+        return false;
+    }
+
+    //TODO avoid recomputing elec_rad_per_enc every time
+    // Check CPR
+    float elec_rad_per_enc = axis_->motor_.config_.pole_pairs * 2 * M_PI * (1.0f / (float)(config_.cpr));
+    float expected_encoder_delta = scan_distance / elec_rad_per_enc;
+    float actual_encoder_delta_abs = fabsf(shadow_count_-init_enc_val);
+    if(fabsf(actual_encoder_delta_abs - expected_encoder_delta)/expected_encoder_delta > config_.calib_range)
+    {
+        set_error(ERROR_CPR_OUT_OF_RANGE);
         return false;
     }
 
@@ -211,12 +221,11 @@ bool Encoder::run_offset_calibration() {
     if (axis_->error_ != Axis::ERROR_NONE)
         return false;
 
-    offset_ = encvaluesum / (num_steps * 2);
-    config_.offset = offset_;
-    int32_t residual = encvaluesum - ((int64_t)offset_ * (int64_t)(num_steps * 2));
+    config_.offset = encvaluesum / (num_steps * 2);
+    int32_t residual = encvaluesum - ((int64_t)config_.offset * (int64_t)(num_steps * 2));
     config_.offset_float = (float)residual / (float)(num_steps * 2) + 0.5f; // add 0.5 to center-align state to phase
+
     is_ready_ = true;
-    config_.use_index = old_use_index;
     return true;
 }
 
@@ -278,8 +287,8 @@ bool Encoder::update() {
 
     //// run pll (for now pll is in units of encoder counts)
     // Predict current pos
-    pos_estimate_ += current_meas_period * pll_vel_;
-    pos_cpr_      += current_meas_period * pll_vel_;
+    pos_estimate_ += current_meas_period * vel_estimate_;
+    pos_cpr_      += current_meas_period * vel_estimate_;
     // discrete phase detector
     float delta_pos     = (float)(shadow_count_ - (int32_t)floorf(pos_estimate_));
     float delta_pos_cpr = (float)(count_in_cpr_ - (int32_t)floorf(pos_cpr_));
@@ -288,15 +297,15 @@ bool Encoder::update() {
     pos_estimate_ += current_meas_period * pll_kp * delta_pos;
     pos_cpr_      += current_meas_period * pll_kp * delta_pos_cpr;
     pos_cpr_ = fmodf_pos(pos_cpr_, (float)(config_.cpr));
-    pll_vel_      += current_meas_period * pll_ki * delta_pos_cpr;
+    vel_estimate_      += current_meas_period * pll_ki * delta_pos_cpr;
     bool snap_to_zero_vel = false;
-    if (fabsf(pll_vel_) < 0.5f * current_meas_period * pll_ki) {
-        pll_vel_ = 0.0f; //align delta-sigma on zero to prevent jitter
+    if (fabsf(vel_estimate_) < 0.5f * current_meas_period * pll_ki) {
+        vel_estimate_ = 0.0f; //align delta-sigma on zero to prevent jitter
         snap_to_zero_vel = true;
     }
 
     //// run encoder count interpolation
-    int32_t corrected_enc = count_in_cpr_ - offset_;
+    int32_t corrected_enc = count_in_cpr_ - config_.offset;
     // if we are stopped, make sure we don't randomly drift
     if (snap_to_zero_vel) {
         interpolation_ = 0.5f;
@@ -306,8 +315,8 @@ bool Encoder::update() {
     } else if (delta_enc < 0) {
         interpolation_ = 1.0f;
     } else {
-        // Interpolate (predict) between encoder counts using pll_vel,
-        interpolation_ += current_meas_period * pll_vel_;
+        // Interpolate (predict) between encoder counts using vel_estimate,
+        interpolation_ += current_meas_period * vel_estimate_;
         // don't allow interpolation indicated position outside of [enc, enc+1)
         if (interpolation_ > 1.0f) interpolation_ = 1.0f;
         if (interpolation_ < 0.0f) interpolation_ = 0.0f;

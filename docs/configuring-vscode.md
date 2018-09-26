@@ -11,10 +11,8 @@ Before doing the VSCode setup, make sure you've installed all of your [prerequis
 1. Install extensions.  This can be done directly from VSCode (Ctrl+Shift+X)
     * Required extensions:
         * C/C++
-    * Recommended Extensions:
         * Cortex-Debug
-        * vscode-icons
-        * Code Outline
+    * Recommended Extensions:
         * Include Autocomplete
         * Path Autocomplete
         * Auto Comment Blocks

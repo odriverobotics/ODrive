@@ -206,7 +206,7 @@ def show_deferred_message(message, cancellation_token):
             time.sleep(1)
         if not cancellation_token.is_set():
             print(message)
-    t = threading.Thread(target=show_message_thread, args=(message, cancellation_token))
+    t = threading.Thread(target=show_message_thread, args=(message, cancellation_token), daemon=True)
     t.daemon = True
     t.start()
 
@@ -436,7 +436,7 @@ def launch_dfu(args, logger, cancellation_token):
     def find_device_in_dfu_mode_thread():
         devices[0] = find_device_in_dfu_mode(serial_number, find_odrive_cancellation_token)
         find_odrive_cancellation_token.set()
-    threading.Thread(target=find_device_in_dfu_mode_thread).start()
+    threading.Thread(target=find_device_in_dfu_mode_thread, daemon=True).start()
 
     # Scan for ODrives not in DFU mode
     # We only scan on USB because DFU is only implemented over USB

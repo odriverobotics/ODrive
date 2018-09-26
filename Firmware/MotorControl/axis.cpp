@@ -93,6 +93,19 @@ void Axis::set_step_dir_enabled(bool enable) {
     }
 }
 
+bool Axis::check_for_errors() {
+    // Maybe we should update this to only trigger on new errors?
+    // The danger with that is we could fail to bail on uncleared errors that still prevent
+    // correct opreation.
+
+    // For now: we treat ERROR_INVALID_STATE in idle loop special, or we could never stay
+    // in idle after this kind of error.
+    if (current_state_ == AXIS_STATE_IDLE)
+        return (error_ & ~ERROR_INVALID_STATE) == ERROR_NONE;
+    else
+        return error_ == ERROR_NONE;
+}
+
 // @brief Do axis level checks and call subcomponent do_checks
 // Returns true if everything is ok.
 bool Axis::do_checks() {
@@ -112,7 +125,7 @@ bool Axis::do_checks() {
     // sensorless_estimator_.do_checks();
     // controller_.do_checks();
 
-    return error_ == ERROR_NONE;
+    return check_for_errors();
 }
 
 // @brief Update all esitmators
@@ -120,7 +133,13 @@ bool Axis::do_updates() {
     // Sub-components should use set_error which will propegate to this error_
     encoder_.update();
     sensorless_estimator_.update();
-    return error_ == ERROR_NONE;
+    return check_for_errors();
+}
+
+float Axis::get_temp() {
+    float adc = adc_measurements_[hw_config_.thermistor_adc_ch];
+    float normalized_voltage = adc / adc_full_scale;
+    return horner_fma(normalized_voltage, thermistor_poly_coeffs, thermistor_num_coeffs);
 }
 
 bool Axis::run_sensorless_spin_up() {
@@ -153,7 +172,7 @@ bool Axis::run_sensorless_spin_up() {
     // is zeroed. So we make the setpoint the spinup target for smooth transition.
     controller_.vel_setpoint_ = config_.spin_up_target_vel;
 
-    return error_ == ERROR_NONE;
+    return check_for_errors();
 }
 
 // Note run_sensorless_control_loop and run_closed_loop_control_loop are very similar and differ only in where we get the estimate from.
@@ -165,14 +184,14 @@ bool Axis::run_sensorless_control_loop() {
 
         // Note that all estimators are updated in the loop prefix in run_control_loop
         float current_setpoint;
-        if (!controller_.update(sensorless_estimator_.pll_pos_, sensorless_estimator_.pll_vel_, &current_setpoint))
+        if (!controller_.update(sensorless_estimator_.pll_pos_, sensorless_estimator_.vel_estimate_, &current_setpoint))
             return error_ |= ERROR_CONTROLLER_FAILED, false;
         if (!motor_.update(current_setpoint, sensorless_estimator_.phase_))
             return false; // set_error should update axis.error_
         return true;
     });
     set_step_dir_enabled(false);
-    return error_ == ERROR_NONE;
+    return check_for_errors();
 }
 
 bool Axis::run_closed_loop_control_loop() {
@@ -180,14 +199,14 @@ bool Axis::run_closed_loop_control_loop() {
     run_control_loop([this](){
         // Note that all estimators are updated in the loop prefix in run_control_loop
         float current_setpoint;
-        if (!controller_.update(encoder_.pos_estimate_, encoder_.pll_vel_, &current_setpoint))
+        if (!controller_.update(encoder_.pos_estimate_, encoder_.vel_estimate_, &current_setpoint))
             return error_ |= ERROR_CONTROLLER_FAILED, false; //TODO: Make controller.set_error
         if (!motor_.update(current_setpoint, encoder_.phase_))
             return false; // set_error should update axis.error_
         return true;
     });
     set_step_dir_enabled(false);
-    return error_ == ERROR_NONE;
+    return check_for_errors();
 }
 
 bool Axis::run_idle_loop() {
@@ -197,7 +216,7 @@ bool Axis::run_idle_loop() {
     run_control_loop([this](){
         return true;
     });
-    return error_ == ERROR_NONE;
+    return check_for_errors();
 }
 
 // Infinite loop that does calibration and enters main control loop as appropriate
@@ -243,9 +262,10 @@ void Axis::run_state_machine_loop() {
                 task_chain_[pos++] = requested_state_;
                 task_chain_[pos++] = AXIS_STATE_IDLE;
             }
-            task_chain_[pos++] = AXIS_STATE_UNDEFINED;
-            // TODO: bounds checking
+            task_chain_[pos++] = AXIS_STATE_UNDEFINED; // TODO: bounds checking
             requested_state_ = AXIS_STATE_UNDEFINED;
+            // Auto-clear any invalid state error
+            error_ &= ~ERROR_INVALID_STATE;
         }
 
         // Note that current_state is a reference to task_chain_[0]
