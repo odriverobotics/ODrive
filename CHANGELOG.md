@@ -2,13 +2,23 @@
 Please add a note of your changes below this heading if you make a Pull Request.
 
 # Unreleased
-## Added
-* Trapezoidal Trajectory Planner
 
-## Fixed
-* Serious reliability issue with USB communication where packets on Native and the CDC interface would collide with each other.
+### Added
+* **Trapezoidal Trajectory Planner**
+* -Wdouble-promotion warning to compilation
+
+### Changed
+* Make python tools compatible with python 2.7 (so it can be used with ROS)
+  * Threading API constructor can't take the daemon parameter, so all thread creation had to be expanded out.
+  * `TimeoutError` isn't defined, but it makes for more readable code, so I defined it as an OSError subclass.
+  * `ModuleNotFoundError` is replaced by the older ImportError.
+  * Print function imported from future
 
 # Releases
+## [0.4.4] - 2018-09-18
+### Fixed
+* Serious reliability issue with USB communication where packets on Native and the CDC interface would collide with each other.
+
 ## [0.4.3] - 2018-08-30
 ### Added
 * Encoder position count "homed" to zero when index is found.
@@ -19,8 +29,10 @@ Please add a note of your changes below this heading if you make a Pull Request.
 * Hardcoded maximum inductance now 2500 uH.
 
 ### Fixed
+* Incorrect shifting of offset during index callback
 * Once you got an axis error `ERROR_INVALID_STATE` you could never clear it
 * Char to int conversion to read motornum on arduino example
+* GPIO above #5 would not be used correctly in some cases
 
 ## [0.4.2] - 2018-08-04
 ### Added

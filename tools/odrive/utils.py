@@ -1,3 +1,4 @@
+from __future__ import print_function
 
 import sys
 import time
@@ -12,7 +13,7 @@ try:
         import win32console
         import colorama
         colorama.init()
-except ModuleNotFoundError:
+except ImportError:
     print("Could not init terminal features.")
     print("Refer to install instructions at http://docs.odriverobotics.com/#downloading-and-installing-tools")
     sys.stdout.flush()
@@ -72,8 +73,14 @@ def start_liveplotter(get_var_callback):
             fig.canvas.draw()
             fig.canvas.start_event_loop(1/plot_rate)
 
-    threading.Thread(target=fetch_data, daemon=True).start()
-    threading.Thread(target=plot_data, daemon=True).start()
+    fetch_t = threading.Thread(target=fetch_data)
+    fetch_t.daemon = True
+    fetch_t.start()
+    
+    plot_t = threading.Thread(target=plot_data)
+    plot_t.daemon = True
+    plot_t.start()
+    
 
     return cancellation_token;
     #plot_data()
@@ -152,7 +159,7 @@ def setup_udev_rules(logger):
         logger.error("This command only makes sense on Linux")
     if os.getuid() != 0:
         logger.warn("you should run this as root, otherwise it will probably not work")
-    with open('/etc/udev/rules.d/50-odrive.rules', 'w') as file:
+    with open('/etc/udev/rules.d/91-odrive.rules', 'w') as file:
         file.write('SUBSYSTEM=="usb", ATTR{idVendor}=="1209", ATTR{idProduct}=="0d3[0-9]", MODE="0666"\n')
     subprocess.check_call(["udevadm", "control", "--reload-rules"])
     subprocess.check_call(["udevadm", "trigger"])

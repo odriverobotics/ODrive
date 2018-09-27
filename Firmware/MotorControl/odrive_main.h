@@ -113,7 +113,6 @@ inline ENUMTYPE operator ~ (ENUMTYPE a) { return static_cast<ENUMTYPE>(~static_c
 #include <axis.hpp>
 #include <communication/communication.h>
 
-
 #endif // __cplusplus
 
 

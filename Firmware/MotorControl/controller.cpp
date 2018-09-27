@@ -2,7 +2,7 @@
 #include "odrive_main.h"
 
 
-Controller::Controller(ControllerConfig_t& config) :
+Controller::Controller(Config_t& config) :
     config_(config)
 {}
 
@@ -45,18 +45,13 @@ void Controller::set_current_setpoint(float current_setpoint) {
 }
 
 void Controller::move_to_pos(float goal_point) {
-    planned_move_end_time_ = axis_->trap_.planTrapezoidal(goal_point, pos_setpoint_,
-                                                          vel_setpoint_, axis_->trap_.config_.vel_limit,
-                                                          axis_->trap_.config_.accel_limit, axis_->trap_.config_.decel_limit);
-    
+    axis_->trap_.planTrapezoidal(goal_point, pos_setpoint_, vel_setpoint_,
+                                 axis_->trap_.config_.vel_limit,
+                                 axis_->trap_.config_.accel_limit,
+                                 axis_->trap_.config_.decel_limit);
+    traj_start_loop_count_ = axis_->loop_counter_;
+    config_.control_mode = CTRL_MODE_TRAJECTORY_CONTROL;
     goal_point_ = goal_point;
-    config_.control_mode = CTRL_MODE_PLANNED_MOVE_CONTROL;
-    TrapTrajStep_t myTraj = axis_->trap_.evalTrapTraj(0.0f);
-    pos_setpoint_ = myTraj.Y;
-    vel_setpoint_ = myTraj.Yd;
-    current_setpoint_ = myTraj.Ydd * axis_->trap_.config_.cpss_to_A;
-
-    planned_move_timer_ = axis_->loop_counter_ * current_meas_period;
 }
 
 void Controller::move_incremental(float displacement, bool from_goal_point = true){
@@ -107,18 +102,22 @@ bool Controller::update(float pos_estimate, float vel_estimate, float* current_s
     anticogging_calibration(pos_estimate, vel_estimate);
     float anticogging_pos = pos_estimate;
 
-    // Controlled Move
-    if (config_.control_mode >= CTRL_MODE_PLANNED_MOVE_CONTROL) {
-        float time_now = axis_->loop_counter_ * current_meas_period;
-        if ((time_now - planned_move_timer_) > planned_move_end_time_) {
+    // Trajectory control
+    if (config_.control_mode == CTRL_MODE_TRAJECTORY_CONTROL) {
+        // Note: uint32_t loop count delta is OK across overflow
+        // Beware of negative deltas, as they will not be well behaved due to uint!
+        float t = (axis_->loop_counter_ - traj_start_loop_count_) * current_meas_period;
+        if (t > axis_->trap_.Tf_) {
+            // Drop into position control mode when done to avoid problems on loop counter delta overflow
             config_.control_mode = CTRL_MODE_POSITION_CONTROL;
+            // pos_setpoint already set by trajectory
             vel_setpoint_ = 0.0f;
             current_setpoint_ = 0.0f;
         } else {
-            TrapTrajStep_t myTraj = axis_->trap_.evalTrapTraj(time_now - planned_move_timer_);
-            pos_setpoint_ = myTraj.Y;
-            vel_setpoint_ = myTraj.Yd;
-            current_setpoint_ = myTraj.Ydd * axis_->trap_.config_.cpss_to_A;
+            TrapezoidalTrajectory::Step_t traj_step = axis_->trap_.eval(t);
+            pos_setpoint_ = traj_step.Y;
+            vel_setpoint_ = traj_step.Yd;
+            current_setpoint_ = traj_step.Ydd * axis_->trap_.config_.A_per_css;
         }
         anticogging_pos = pos_setpoint_; // FF the position setpoint instead of the pos_estimate
     }

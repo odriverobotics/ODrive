@@ -5,19 +5,16 @@
 The ODrive can be controlled over various ports and protocols. If you're comfortable with embedded systems development, you can also run custom code directly on the ODrive. For that refer to the [developer documentation](developer-guide.md).
 
 ### Table of contents
-
-<!-- MarkdownTOC depth=2 autolink=true bracket=round -->
+<!-- TOC depthFrom:2 depthTo:2 -->
 
 - [Pinout](#pinout)
 - [Native Protocol](#native-protocol)
-- [ASCII Protocol](#ascii-protocol) (and Arduino)
+- [ASCII protocol](#ascii-protocol)
 - [Step/direction](#stepdirection)
-- [RC PWM input](#rc-pwm-input) (coming soon)
+- [RC PWM input](#rc-pwm-input)
 - [Ports](#ports)
-   - [USB](#usb)
-   - [UART](#uart)
 
-<!-- /MarkdownTOC -->
+<!-- /TOC -->
 
 ## Pinout
 
