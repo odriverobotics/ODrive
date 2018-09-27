@@ -3,8 +3,9 @@ Please add a note of your changes below this heading if you make a Pull Request.
 
 # Unreleased
 
-## Added
+### Added
 * **Trapezoidal Trajectory Planner**
+* -Wdouble-promotion warning to compilation
 
 ### Changed
 * Make python tools compatible with python 2.7 (so it can be used with ROS)
@@ -28,6 +29,7 @@ Please add a note of your changes below this heading if you make a Pull Request.
 * Hardcoded maximum inductance now 2500 uH.
 
 ### Fixed
+* Incorrect shifting of offset during index callback
 * Once you got an axis error `ERROR_INVALID_STATE` you could never clear it
 * Char to int conversion to read motornum on arduino example
 * GPIO above #5 would not be used correctly in some cases
