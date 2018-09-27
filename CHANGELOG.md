@@ -3,6 +3,9 @@ Please add a note of your changes below this heading if you make a Pull Request.
 
 # Unreleased
 
+### Added
+* -Wdouble-promotion warning to compilation
+
 ### Changed
 * Make python tools compatible with python 2.7 (so it can be used with ROS)
   * Threading API constructor can't take the daemon parameter, so all thread creation had to be expanded out.
