@@ -6,8 +6,8 @@
 
 
 Motor::Motor(const MotorHardwareConfig_t& hw_config,
-         const GateDriverHardwareConfig_t& gate_driver_config,
-         MotorConfig_t& config) :
+             const GateDriverHardwareConfig_t& gate_driver_config,
+             Config_t& config) :
         hw_config_(hw_config),
         gate_driver_config_(gate_driver_config),
         config_(config),
@@ -298,10 +298,11 @@ bool Motor::FOC_voltage(float v_d, float v_q, float phase) {
 }
 
 bool Motor::FOC_current(float Id_des, float Iq_des, float phase) {
-    Current_control_t* ictrl = &current_control_;
+    // Syntactic sugar
+    CurrentControl_t& ictrl = current_control_;
 
     // For Reporting
-    ictrl->Iq_setpoint = Iq_des;
+    ictrl.Iq_setpoint = Iq_des;
 
     // Clarke transform
     float Ialpha = -current_meas_.phB - current_meas_.phC;
@@ -312,7 +313,7 @@ bool Motor::FOC_current(float Id_des, float Iq_des, float phase) {
     float s = arm_sin_f32(phase);
     float Id = c * Ialpha + s * Ibeta;
     float Iq = c * Ibeta - s * Ialpha;
-    ictrl->Iq_measured = Iq;
+    ictrl.Iq_measured = Iq;
 
     // Current error
     float Ierr_d = Id_des - Id;
@@ -320,8 +321,8 @@ bool Motor::FOC_current(float Id_des, float Iq_des, float phase) {
 
     // TODO look into feed forward terms (esp omega, since PI pole maps to RL tau)
     // Apply PI control
-    float Vd = ictrl->v_current_control_integral_d + Ierr_d * ictrl->p_gain;
-    float Vq = ictrl->v_current_control_integral_q + Ierr_q * ictrl->p_gain;
+    float Vd = ictrl.v_current_control_integral_d + Ierr_d * ictrl.p_gain;
+    float Vq = ictrl.v_current_control_integral_q + Ierr_q * ictrl.p_gain;
 
     float mod_to_V = (2.0f / 3.0f) * vbus_voltage;
     float V_to_mod = 1.0f / mod_to_V;
@@ -335,23 +336,23 @@ bool Motor::FOC_current(float Id_des, float Iq_des, float phase) {
         mod_d *= mod_scalefactor;
         mod_q *= mod_scalefactor;
         // TODO make decayfactor configurable
-        ictrl->v_current_control_integral_d *= 0.99f;
-        ictrl->v_current_control_integral_q *= 0.99f;
+        ictrl.v_current_control_integral_d *= 0.99f;
+        ictrl.v_current_control_integral_q *= 0.99f;
     } else {
-        ictrl->v_current_control_integral_d += Ierr_d * (ictrl->i_gain * current_meas_period);
-        ictrl->v_current_control_integral_q += Ierr_q * (ictrl->i_gain * current_meas_period);
+        ictrl.v_current_control_integral_d += Ierr_d * (ictrl.i_gain * current_meas_period);
+        ictrl.v_current_control_integral_q += Ierr_q * (ictrl.i_gain * current_meas_period);
     }
 
     // Compute estimated bus current
-    ictrl->Ibus = mod_d * Id + mod_q * Iq;
+    ictrl.Ibus = mod_d * Id + mod_q * Iq;
 
     // Inverse park transform
     float mod_alpha = c * mod_d - s * mod_q;
     float mod_beta = c * mod_q + s * mod_d;
 
     // Report final applied voltage in stationary frame (for sensorles estimator)
-    ictrl->final_v_alpha = mod_to_V * mod_alpha;
-    ictrl->final_v_beta = mod_to_V * mod_beta;
+    ictrl.final_v_alpha = mod_to_V * mod_alpha;
+    ictrl.final_v_beta = mod_to_V * mod_beta;
 
     // Apply SVM
     if (!enqueue_modulation_timings(mod_alpha, mod_beta))

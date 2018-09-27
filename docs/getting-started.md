@@ -47,7 +47,6 @@ permalink: /
   </div></details>
 
 ## Wiring up the ODrive
-
 <div class="alert">
 Make sure you have a good mechanical connection between the encoder and the motor, slip can cause disastrous oscillations or runaway.
 </div>
@@ -65,11 +64,9 @@ Connect the encoder(s) to J4. The A,B phases are required, and the Z (index puls
 ![Image of ODrive all hooked up](https://docs.google.com/drawings/d/e/2PACX-1vTCD0P40Cd-wvD7Fl8UYEaxp3_UL81oI4qUVqrrCJPi6tkJeSs2rsffIXQRpdu6rNZs6-2mRKKYtILG/pub?w=1716&h=1281)
 
 ## Downloading and Installing Tools
-
 Most instructions in this guide refer to a utility called `odrivetool`, so you should install that first.
 
 ### Windows
-
 1. Install Python 3. We recommend the Anaconda distribution because it packs a lot of useful scientific tools, however you can also install the standalone python.
   * __Anaconda__: Download the installer from [here](https://www.anaconda.com/download/#windows). Execute the downloaded file and follow the instructions.
   * __Standalone Python__: Download the installer from [here](https://www.python.org/downloads/). Execute the downloaded file and follow the instructions.
@@ -121,7 +118,6 @@ Try step 5 again
 
 
 ### Linux
-
 1. [Install Python 3](https://www.python.org/downloads/).
 2. Install the ODrive tools by opening a terminal and typing `pip install odrive` <kbd>Enter</kbd>
 3. Set up USB permissions
@@ -133,10 +129,10 @@ Try step 5 again
 
 ## Firmware
 #### ODrive v3.5 and later
-Your board should come preflashed with firmware. If you run into problems, follow the instructions [here](odrivetool.md#device-firmware-update) on the DFU procedure before you continue.</div>
+Your board should come preflashed with firmware. If you run into problems, follow the instructions [here](odrivetool.md#device-firmware-update) on the DFU procedure before you continue.
 
 #### ODrive v3.4 and earlier
-Your board does **not** come preflashed with any firmware. Follow the instructions [here](odrivetool.md#device-firmware-update) on the STP Link procedure before you continue.</div>
+Your board does **not** come preflashed with any firmware. Follow the instructions [here](odrivetool.md#device-firmware-update) on the STP Link procedure before you continue.
 
 ## Start `odrivetool`
 To launch the main interactive ODrive tool, type `odrivetool` <kbd>Enter</kbd>. Connect your ODrive and wait for the tool to find it. Now you can, for instance type `odrv0.vbus_voltage` <kbd>Enter</kbd> to inpect the boards main supply voltage.
@@ -258,9 +254,7 @@ You can now control the current with `odrv0.axis0.controller.current_setpoint = 
 *Note: There is no velocity limiting in current control mode. Make sure that you don't overrev the motor, or exceed the max speed for your encoder.*
 
 ## What's next?
-
 You can now:
-
 * See what other [commands and parameters](commands.md) are available, including setting tuning parameters for better performance.
 * Control the ODrive from your own program or hook it up to an existing system through one of it's [interfaces](interfaces.md).
 * See how you can improve the behavior during the startup procedure, like [bypassing encoder calibration](encoders.md#encoder-with-index-signal).
