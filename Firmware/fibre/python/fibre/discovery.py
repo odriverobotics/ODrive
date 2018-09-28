@@ -11,7 +11,7 @@ import fibre.protocol
 import fibre.utils
 import fibre.remote_object
 from fibre.utils import Event, Logger
-from fibre.protocol import ChannelBrokenException
+from fibre.protocol import ChannelBrokenException, TimeoutError
 
 # Load all installed transport layers
 
@@ -20,25 +20,25 @@ channel_types = {}
 try:
     import fibre.usbbulk_transport
     channel_types['usb'] = fibre.usbbulk_transport.discover_channels
-except ModuleNotFoundError:
+except ImportError:
     pass
 
 try:
     import fibre.serial_transport
     channel_types['serial'] = fibre.serial_transport.discover_channels
-except ModuleNotFoundError:
+except ImportError:
     pass
 
 try:
     import fibre.tcp_transport
     channel_types['tcp'] = fibre.tcp_transport.discover_channels
-except ModuleNotFoundError:
+except ImportError:
     pass
 
 try:
     import fibre.udp_transport
     channel_types['udp'] = fibre.udp_transport.discover_channels
-except ModuleNotFoundError:
+except ImportError:
     pass
 
 def noprint(text):
@@ -102,9 +102,10 @@ def find_all(path, serial_number,
         prefix = search_spec.split(':')[0]
         the_rest = ':'.join(search_spec.split(':')[1:])
         if prefix in channel_types:
-            threading.Thread(target=channel_types[prefix],
-                             args=(the_rest, serial_number, did_discover_channel, search_cancellation_token, channel_termination_token, logger),
-                             daemon=True).start()
+            t = threading.Thread(target=channel_types[prefix],
+                             args=(the_rest, serial_number, did_discover_channel, search_cancellation_token, channel_termination_token, logger))
+            t.daemon = True
+            t.start()
         else:
             raise Exception("Invalid path spec \"{}\"".format(search_spec))
 

@@ -11,9 +11,10 @@
 BoardConfig_t board_config;
 Encoder::Config_t encoder_configs[AXIS_COUNT];
 SensorlessEstimator::Config_t sensorless_configs[AXIS_COUNT];
-ControllerConfig_t controller_configs[AXIS_COUNT];
-MotorConfig_t motor_configs[AXIS_COUNT];
-AxisConfig_t axis_configs[AXIS_COUNT];
+Controller::Config_t controller_configs[AXIS_COUNT];
+Motor::Config_t motor_configs[AXIS_COUNT];
+Axis::Config_t axis_configs[AXIS_COUNT];
+TrapezoidalTrajectory::Config_t trap_configs[AXIS_COUNT];
 EndstopConfig_t min_endstop_configs[AXIS_COUNT];
 EndstopConfig_t max_endstop_configs[AXIS_COUNT];
 bool user_config_loaded_;
@@ -26,11 +27,12 @@ typedef Config<
     BoardConfig_t,
     Encoder::Config_t[AXIS_COUNT],
     SensorlessEstimator::Config_t[AXIS_COUNT],
-    ControllerConfig_t[AXIS_COUNT],
-    MotorConfig_t[AXIS_COUNT],
+    Controller::Config_t[AXIS_COUNT],
+    Motor::Config_t[AXIS_COUNT],
+    TrapezoidalTrajectory::Config_t[AXIS_COUNT],
     EndstopConfig_t[AXIS_COUNT],
     EndstopConfig_t[AXIS_COUNT],
-    AxisConfig_t[AXIS_COUNT]> ConfigFormat;
+    Axis::Config_t[AXIS_COUNT]> ConfigFormat;
 
 void save_configuration(void) {
     if (ConfigFormat::safe_store_config(
@@ -39,6 +41,7 @@ void save_configuration(void) {
             &sensorless_configs,
             &controller_configs,
             &motor_configs,
+            &trap_configs,
             &min_endstop_configs,
             &max_endstop_configs,
             &axis_configs)) {
@@ -57,6 +60,7 @@ void load_configuration(void) {
                 &sensorless_configs,
                 &controller_configs,
                 &motor_configs,
+                &trap_configs,
                 &min_endstop_configs,
                 &max_endstop_configs,
                 &axis_configs)) {
@@ -65,11 +69,12 @@ void load_configuration(void) {
         for (size_t i = 0; i < AXIS_COUNT; ++i) {
             encoder_configs[i] = Encoder::Config_t();
             sensorless_configs[i] = SensorlessEstimator::Config_t();
-            controller_configs[i] = ControllerConfig_t();
-            motor_configs[i] = MotorConfig_t();
+            controller_configs[i] = Controller::Config_t();
+            motor_configs[i] = Motor::Config_t();
+            trap_configs[i] = TrapezoidalTrajectory::Config_t();
+            axis_configs[i] = Axis::Config_t();
             min_endstop_configs[i] = EndstopConfig_t();
             max_endstop_configs[i] = EndstopConfig_t();
-            axis_configs[i] = AxisConfig_t();
         }
     } else {
         user_config_loaded_ = true;
@@ -172,10 +177,11 @@ int odrive_main(void) {
         Motor *motor = new Motor(hw_configs[i].motor_config,
                                  hw_configs[i].gate_driver_config,
                                  motor_configs[i]);
+        TrapezoidalTrajectory *trap = new TrapezoidalTrajectory(trap_configs[i]);
         Endstop *min_endstop = new Endstop(min_endstop_configs[i]);
         Endstop *max_endstop = new Endstop(max_endstop_configs[i]);
         axes[i] = new Axis(hw_configs[i].axis_config, axis_configs[i],
-                *encoder, *sensorless_estimator, *controller, *motor, *min_endstop, *max_endstop);
+                *encoder, *sensorless_estimator, *controller, *motor, *trap, *min_endstop, *max_endstop);
     }
     
     // Start ADC for temperature measurements and user measurements

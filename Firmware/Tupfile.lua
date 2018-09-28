@@ -89,7 +89,7 @@ FLAGS += '-mthumb'
 FLAGS += '-mcpu=cortex-m4'
 FLAGS += '-mfpu=fpv4-sp-d16'
 FLAGS += '-mfloat-abi=hard'
-FLAGS += { '-Wall', '-Wfloat-conversion', '-fdata-sections', '-ffunction-sections'}
+FLAGS += { '-Wall', '-Wdouble-promotion', '-Wfloat-conversion', '-fdata-sections', '-ffunction-sections'}
 
 -- debug build
 FLAGS += '-g -gdwarf-2'
@@ -156,6 +156,7 @@ build{
         'MotorControl/endstop.cpp',
         'MotorControl/controller.cpp',
         'MotorControl/sensorless_estimator.cpp',
+        'MotorControl/trapTraj.cpp',
         'MotorControl/main.cpp',
         'communication/communication.cpp',
         'communication/ascii_protocol.cpp',

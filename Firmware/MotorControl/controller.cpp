@@ -2,7 +2,7 @@
 #include "odrive_main.h"
 
 
-Controller::Controller(ControllerConfig_t& config) :
+Controller::Controller(Config_t& config) :
     config_(config)
 {}
 
@@ -42,6 +42,15 @@ void Controller::set_current_setpoint(float current_setpoint) {
 #ifdef DEBUG_PRINT
     printf("CURRENT_CONTROL %3.3f\n", current_setpoint_);
 #endif
+}
+
+void Controller::move_to_pos(float goal_point) {
+    axis_->trap_.planTrapezoidal(goal_point, pos_setpoint_, vel_setpoint_,
+                                 axis_->trap_.config_.vel_limit,
+                                 axis_->trap_.config_.accel_limit,
+                                 axis_->trap_.config_.decel_limit);
+    traj_start_loop_count_ = axis_->loop_counter_;
+    config_.control_mode = CTRL_MODE_TRAJECTORY_CONTROL;
 }
 
 void Controller::start_anticogging_calibration() {
@@ -94,7 +103,28 @@ bool Controller::anticogging_calibration(float pos_estimate, float vel_estimate)
 bool Controller::update(float pos_estimate, float vel_estimate, float* current_setpoint_output) {
     // Only runs if anticogging_.calib_anticogging is true; non-blocking
     anticogging_calibration(pos_estimate, vel_estimate);
-    
+    float anticogging_pos = pos_estimate;
+
+    // Trajectory control
+    if (config_.control_mode == CTRL_MODE_TRAJECTORY_CONTROL) {
+        // Note: uint32_t loop count delta is OK across overflow
+        // Beware of negative deltas, as they will not be well behaved due to uint!
+        float t = (axis_->loop_counter_ - traj_start_loop_count_) * current_meas_period;
+        if (t > axis_->trap_.Tf_) {
+            // Drop into position control mode when done to avoid problems on loop counter delta overflow
+            config_.control_mode = CTRL_MODE_POSITION_CONTROL;
+            // pos_setpoint already set by trajectory
+            vel_setpoint_ = 0.0f;
+            current_setpoint_ = 0.0f;
+        } else {
+            TrapezoidalTrajectory::Step_t traj_step = axis_->trap_.eval(t);
+            pos_setpoint_ = traj_step.Y;
+            vel_setpoint_ = traj_step.Yd;
+            current_setpoint_ = traj_step.Ydd * axis_->trap_.config_.A_per_css;
+        }
+        anticogging_pos = pos_setpoint_; // FF the position setpoint instead of the pos_estimate
+    }
+
     // Position control
     // TODO Decide if we want to use encoder or pll position here
     float vel_des = vel_setpoint_;
@@ -115,7 +145,7 @@ bool Controller::update(float pos_estimate, float vel_estimate, float* current_s
     // We get the current position and apply a current feed-forward
     // ensuring that we handle negative encoder positions properly (-1 == motor->encoder.encoder_cpr - 1)
     if (anticogging_.use_anticogging) {
-        Iq += anticogging_.cogging_map[mod(static_cast<int>(pos_estimate), axis_->encoder_.config_.cpr)];
+        Iq += anticogging_.cogging_map[mod(static_cast<int>(anticogging_pos), axis_->encoder_.config_.cpr)];
     }
 
     float v_err = vel_des - vel_estimate;

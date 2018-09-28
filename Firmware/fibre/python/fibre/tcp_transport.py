@@ -4,7 +4,7 @@ import socket
 import time
 import traceback
 import fibre.protocol
-from fibre.utils import wait_any
+from fibre.utils import wait_any, TimeoutError
 
 def noprint(x):
   pass

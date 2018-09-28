@@ -5,46 +5,11 @@
 #error "This file should not be included directly. Include odrive_main.h instead."
 #endif
 
-// Warning: Do not reorder these enum values.
-// The state machine uses ">" comparision on them.
-enum AxisState_t {
-    AXIS_STATE_UNDEFINED = 0,           //<! will fall through to idle
-    AXIS_STATE_IDLE = 1,                //<! disable PWM and do nothing
-    AXIS_STATE_STARTUP_SEQUENCE = 2, //<! the actual sequence is defined by the config.startup_... flags
-    AXIS_STATE_FULL_CALIBRATION_SEQUENCE = 3,   //<! run all calibration procedures, then idle
-    AXIS_STATE_MOTOR_CALIBRATION = 4,   //<! run motor calibration
-    AXIS_STATE_SENSORLESS_CONTROL = 5,  //<! run sensorless control
-    AXIS_STATE_ENCODER_INDEX_SEARCH = 6, //<! run encoder index search
-    AXIS_STATE_ENCODER_OFFSET_CALIBRATION = 7, //<! run encoder offset calibration
-    AXIS_STATE_CLOSED_LOOP_CONTROL = 8,  //<! run closed loop control
-    AXIS_STATE_HOMING = 9   //<! run axis homing function
-};
-
+    
 enum HomingState_t {
     HOMING_STATE_IDLE,
     HOMING_STATE_HOMING,
     HOMING_STATE_MOVE_TO_ZERO
-};
-
-struct AxisConfig_t {
-    bool startup_motor_calibration = false;   //<! run motor calibration at startup, skip otherwise
-    bool startup_encoder_index_search = false; //<! run encoder index search after startup, skip otherwise
-                                               // this only has an effect if encoder.config.use_index is also true
-    bool startup_encoder_offset_calibration = false; //<! run encoder offset calibration after startup, skip otherwise
-    bool startup_closed_loop_control = false; //<! enable closed loop control after calibration/startup
-    bool startup_sensorless_control = false; //<! enable sensorless control after calibration/startup
-    bool startup_homing = false; //<! enable homing after calibration/startup
-    bool enable_step_dir = false; //<! enable step/dir input after calibration
-                                 //   For M0 this has no effect if enable_uart is true
-
-    float counts_per_step = 2.0f;
-
-    // Spinup settings
-    float ramp_up_time = 0.4f;            // [s]
-    float ramp_up_distance = 4 * M_PI;    // [rad]
-    float spin_up_current = 10.0f;        // [A]
-    float spin_up_acceleration = 400.0f;  // [rad/s^2]
-    float spin_up_target_vel = 400.0f;    // [rad/s]
 };
 
 class Axis {
@@ -66,16 +31,53 @@ public:
         ERROR_MAX_ENDSTOP_PRESSED = 0x1000
     };
 
+    // Warning: Do not reorder these enum values.
+    // The state machine uses ">" comparision on them.
+    enum State_t {
+        AXIS_STATE_UNDEFINED = 0,           //<! will fall through to idle
+        AXIS_STATE_IDLE = 1,                //<! disable PWM and do nothing
+        AXIS_STATE_STARTUP_SEQUENCE = 2, //<! the actual sequence is defined by the config.startup_... flags
+        AXIS_STATE_FULL_CALIBRATION_SEQUENCE = 3,   //<! run all calibration procedures, then idle
+        AXIS_STATE_MOTOR_CALIBRATION = 4,   //<! run motor calibration
+        AXIS_STATE_SENSORLESS_CONTROL = 5,  //<! run sensorless control
+        AXIS_STATE_ENCODER_INDEX_SEARCH = 6, //<! run encoder index search
+        AXIS_STATE_ENCODER_OFFSET_CALIBRATION = 7, //<! run encoder offset calibration
+        AXIS_STATE_CLOSED_LOOP_CONTROL = 8,  //<! run closed loop control
+        AXIS_STATE_HOMING = 9   //<! run axis homing function
+};
+
+    struct Config_t {
+        bool startup_motor_calibration = false;   //<! run motor calibration at startup, skip otherwise
+        bool startup_encoder_index_search = false; //<! run encoder index search after startup, skip otherwise
+                                                // this only has an effect if encoder.config.use_index is also true
+        bool startup_encoder_offset_calibration = false; //<! run encoder offset calibration after startup, skip otherwise
+        bool startup_closed_loop_control = false; //<! enable closed loop control after calibration/startup
+        bool startup_sensorless_control = false; //<! enable sensorless control after calibration/startup
+        bool startup_homing = false; //<! enable homing after calibration/startup
+        bool enable_step_dir = false; //<! enable step/dir input after calibration
+                                    //   For M0 this has no effect if enable_uart is true
+
+        float counts_per_step = 2.0f;
+
+        // Spinup settings
+        float ramp_up_time = 0.4f;            // [s]
+        float ramp_up_distance = 4 * M_PI;    // [rad]
+        float spin_up_current = 10.0f;        // [A]
+        float spin_up_acceleration = 400.0f;  // [rad/s^2]
+        float spin_up_target_vel = 400.0f;    // [rad/s]
+    };
+
     enum thread_signals {
         M_SIGNAL_PH_CURRENT_MEAS = 1u << 0
     };
 
     Axis(const AxisHardwareConfig_t& hw_config,
-            AxisConfig_t& config,
+            Config_t& config,
             Encoder& encoder,
             SensorlessEstimator& sensorless_estimator,
             Controller& controller,
             Motor& motor,
+            TrapezoidalTrajectory& trap,
             Endstop& min_endstop,
             Endstop& max_endstop);
 
@@ -157,12 +159,13 @@ public:
     void run_state_machine_loop();
 
     const AxisHardwareConfig_t& hw_config_;
-    AxisConfig_t& config_;
+    Config_t& config_;
 
     Encoder& encoder_;
     SensorlessEstimator& sensorless_estimator_;
     Controller& controller_;
     Motor& motor_;
+    TrapezoidalTrajectory& trap_;
     Endstop& min_endstop_;
     Endstop& max_endstop_;
 
@@ -172,9 +175,9 @@ public:
     // variables exposed on protocol
     Error_t error_ = ERROR_NONE;
     bool enable_step_dir_ = false; // auto enabled after calibration, based on config.enable_step_dir
-    AxisState_t requested_state_ = AXIS_STATE_STARTUP_SEQUENCE;
-    AxisState_t task_chain_[10] = { AXIS_STATE_UNDEFINED };
-    AxisState_t& current_state_ = task_chain_[0];
+    State_t requested_state_ = AXIS_STATE_STARTUP_SEQUENCE;
+    State_t task_chain_[10] = { AXIS_STATE_UNDEFINED };
+    State_t& current_state_ = task_chain_[0];
     uint32_t loop_counter_ = 0;
     HomingState_t homing_state_ = HOMING_STATE_IDLE;
 
@@ -206,9 +209,10 @@ public:
             make_protocol_object("motor", motor_.make_protocol_definitions()),
             make_protocol_object("controller", controller_.make_protocol_definitions()),
             make_protocol_object("encoder", encoder_.make_protocol_definitions()),
+            make_protocol_object("sensorless_estimator", sensorless_estimator_.make_protocol_definitions()),
             make_protocol_object("min_endstop", min_endstop_.make_protocol_definitions()),
             make_protocol_object("max_endstop", max_endstop_.make_protocol_definitions()),
-            make_protocol_object("sensorless_estimator", sensorless_estimator_.make_protocol_definitions())
+            make_protocol_object("trap_traj", trap_.make_protocol_definitions())
         );
     }
 };

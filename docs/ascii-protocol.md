@@ -24,6 +24,18 @@ command *42 ; comment [new line character]
 
 ## Command Reference
 
+#### Motor trajectory command
+```
+t motor destination
+```
+* `t` for trajectory
+* `motor` is the motor number, `0` or `1`.
+* `destination` is the goal position, in encoder counts.
+
+Example: `t 0 -20000`
+
+For general moving around of the axis, this is the recommended command.
+
 #### Motor Position command
 ```
 p motor position velocity_ff current_ff
