@@ -10,7 +10,7 @@
 #include <communication/interface_can.hpp>
 
 BoardConfig_t board_config;
-CANConfig_t can_config;
+ODriveCAN::Config_t can_config;
 Encoder::Config_t encoder_configs[AXIS_COUNT];
 SensorlessEstimator::Config_t sensorless_configs[AXIS_COUNT];
 Controller::Config_t controller_configs[AXIS_COUNT];
@@ -26,7 +26,7 @@ ODriveCAN *odCAN;
 
 typedef Config<
     BoardConfig_t,
-    CANConfig_t,
+    ODriveCAN::Config_t,
     Encoder::Config_t[AXIS_COUNT],
     SensorlessEstimator::Config_t[AXIS_COUNT],
     Controller::Config_t[AXIS_COUNT],
@@ -64,7 +64,7 @@ void load_configuration(void) {
                 &axis_configs)) {
         //If loading failed, restore defaults
         board_config = BoardConfig_t();
-        can_config = CANConfig_t();
+        can_config = ODriveCAN::Config_t();
         for (size_t i = 0; i < AXIS_COUNT; ++i) {
             encoder_configs[i] = Encoder::Config_t();
             sensorless_configs[i] = SensorlessEstimator::Config_t();

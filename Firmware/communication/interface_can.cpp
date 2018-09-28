@@ -41,7 +41,7 @@
 
 static uint32_t counter = 0;
 // Constructor is called by communication.cpp and the handle is assigned appropriately
-ODriveCAN::ODriveCAN(CAN_HandleTypeDef *handle, CANConfig_t &config)
+ODriveCAN::ODriveCAN(CAN_HandleTypeDef *handle, ODriveCAN::Config_t &config)
     : handle_{handle},
       config_{config} {
 }
