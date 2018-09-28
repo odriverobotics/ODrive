@@ -8,6 +8,7 @@ import time
 import fibre.protocol
 import traceback
 import platform
+from fibre.utils import TimeoutError
 
 # Currently we identify fibre-enabled devices by VID,PID
 # TODO: identify by USB descriptors

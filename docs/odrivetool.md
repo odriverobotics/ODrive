@@ -143,36 +143,14 @@ This procedure is only necessary for ODrive v3.4 or earlier. You will need an ST
      Power up the ODrive.
 4. Open up a terminal and navigate to the directory where the firmware is.
 5. Run the following command (replace `ODriveFirmware_v3.4-24V.elf` with the name of your firmware file):
-  ```
-~/Downloads $ openocd -f interface/stlink-v2.cfg -f target/stm32f4x.cfg -c init -c reset\ halt -c flash\ write_image\ erase\ ODriveFirmware_v3.4-24V.elf -c reset\ run -c exit
-Open On-Chip Debugger 0.10.0
-Licensed under GNU GPL v2
-For bug reports, read
-	http://openocd.org/doc/doxygen/bugs.html
-Info : auto-selecting first available session transport "hla_swd". To override use 'transport select <transport>'.
-Info : The selected transport took over low-level target control. The results might differ compared to plain JTAG/SWD
-adapter speed: 2000 kHz
-adapter_nsrst_delay: 100
-none separate
-Info : Unable to match requested speed 2000 kHz, using 1800 kHz
-Info : Unable to match requested speed 2000 kHz, using 1800 kHz
-Info : clock speed 1800 kHz
-Info : STLINK v2 JTAG v17 API v2 SWIM v4 VID 0x0483 PID 0x3748
-Info : using stlink api v2
-Info : Target voltage: 3.236027
-Info : stm32f4x.cpu: hardware has 6 breakpoints, 4 watchpoints
-adapter speed: 2000 kHz
-target halted due to debug-request, current mode: Thread
-xPSR: 0x01000000 pc: 0x08009224 msp: 0x20020000
-auto erase enabled
-Info : device id = 0x10076413
-Info : flash size = 1024kbytes
-target halted due to breakpoint, current mode: Thread
-xPSR: 0x61000000 pc: 0x20000046 msp: 0x20020000
-Warn : no flash bank found for address 10000000
+```
+openocd -f interface/stlink-v2.cfg -f target/stm32f4x.cfg -c init -c "reset halt" -c "flash write_image erase ODriveFirmware_v3.4-24V.elf" -c "reset run" -c exit
+```
+
+If everything worked correctly, you should see something similar to this towards the end of the printout:
+```
 wrote 262144 bytes from file ODriveFirmware_v3.4-24V.elf in 10.194110s (25.113 KiB/s)
-adapter speed: 2000 kHz
-  ```
+```
 
 If something doesn't work, make sure `openocd` is in your `PATH` variable, check that the wires are connected properly and try with elevated privileges.
 

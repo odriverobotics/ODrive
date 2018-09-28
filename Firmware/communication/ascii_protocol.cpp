@@ -128,6 +128,18 @@ void ASCII_protocol_process_line(const uint8_t* buffer, size_t len, StreamSink& 
             axes[motor_number]->controller_.set_current_setpoint(current_setpoint);
         }
 
+    } else if (cmd[0] == 't') { // trapezoidal trajectory
+        unsigned motor_number;
+        float goal_point;
+        int numscan = sscanf(cmd, "t %u %f", &motor_number, &goal_point);
+        if (numscan < 2) {
+            respond(response_channel, use_checksum, "invalid command format");
+        } else if (motor_number >= AXIS_COUNT) {
+            respond(response_channel, use_checksum, "invalid motor %u", motor_number);
+        } else {
+            axes[motor_number]->controller_.move_to_pos(goal_point);
+        }
+
     } else if (cmd[0] == 'h') {  // Help
         respond(response_channel, use_checksum, "Please see documentation for more details");
         respond(response_channel, use_checksum, "");
