@@ -94,8 +94,14 @@ float32_t our_arm_cos_f32(
   in = in - (float32_t) n;
 
   /* Calculation of index of the table */
-  findex = (float32_t) FAST_MATH_TABLE_SIZE * in;
-  index = ((uint16_t)findex) & 0x1ff;
+  findex = (float32_t)FAST_MATH_TABLE_SIZE * in;
+  index = (uint16_t)findex;
+
+  /* when "in" is exactly 1, we need to rotate the index down to 0 */
+  if (index >= FAST_MATH_TABLE_SIZE) {
+    index = 0;
+    findex -= (float32_t)FAST_MATH_TABLE_SIZE;
+  }
 
   /* fractional value calculation */
   fract = findex - (float32_t) index;
