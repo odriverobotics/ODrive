@@ -1,6 +1,6 @@
 #include <odrive_main.h>
 
-Endstop::Endstop(EndstopConfig_t &config)
+Endstop::Endstop(Endstop::Config_t &config)
     : config_(config) {
         set_endstop_enabled(config_.enabled);
 }

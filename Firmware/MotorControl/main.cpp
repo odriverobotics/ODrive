@@ -15,8 +15,8 @@ Controller::Config_t controller_configs[AXIS_COUNT];
 Motor::Config_t motor_configs[AXIS_COUNT];
 Axis::Config_t axis_configs[AXIS_COUNT];
 TrapezoidalTrajectory::Config_t trap_configs[AXIS_COUNT];
-EndstopConfig_t min_endstop_configs[AXIS_COUNT];
-EndstopConfig_t max_endstop_configs[AXIS_COUNT];
+Endstop::Config_t min_endstop_configs[AXIS_COUNT];
+Endstop::Config_t max_endstop_configs[AXIS_COUNT];
 bool user_config_loaded_;
 
 SystemStats_t system_stats_ = { 0 };
@@ -30,8 +30,8 @@ typedef Config<
     Controller::Config_t[AXIS_COUNT],
     Motor::Config_t[AXIS_COUNT],
     TrapezoidalTrajectory::Config_t[AXIS_COUNT],
-    EndstopConfig_t[AXIS_COUNT],
-    EndstopConfig_t[AXIS_COUNT],
+    Endstop::Config_t[AXIS_COUNT],
+    Endstop::Config_t[AXIS_COUNT],
     Axis::Config_t[AXIS_COUNT]> ConfigFormat;
 
 void save_configuration(void) {
@@ -73,8 +73,8 @@ void load_configuration(void) {
             motor_configs[i] = Motor::Config_t();
             trap_configs[i] = TrapezoidalTrajectory::Config_t();
             axis_configs[i] = Axis::Config_t();
-            min_endstop_configs[i] = EndstopConfig_t();
-            max_endstop_configs[i] = EndstopConfig_t();
+            min_endstop_configs[i] = Endstop::Config_t();
+            max_endstop_configs[i] = Endstop::Config_t();
         }
     } else {
         user_config_loaded_ = true;
