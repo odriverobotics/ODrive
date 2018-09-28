@@ -105,6 +105,7 @@ LDFLAGS += '-Wl,--undefined=uxTopUsedPriority'
 
 -- common flags for ASM, C and C++
 OPT += '-Og'
+-- OPT += '-O0'
 OPT += '-ffast-math -fno-finite-math-only'
 tup.append_table(FLAGS, OPT)
 tup.append_table(LDFLAGS, OPT)
@@ -148,6 +149,8 @@ build{
     sources={
         'Drivers/DRV8301/drv8301.c',
         'MotorControl/utils.c',
+        'MotorControl/arm_sin_f32.c',
+        'MotorControl/arm_cos_f32.c',
         'MotorControl/low_level.cpp',
         'MotorControl/nvm.c',
         'MotorControl/axis.cpp',

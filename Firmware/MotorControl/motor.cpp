@@ -290,8 +290,8 @@ bool Motor::enqueue_voltage_timings(float v_alpha, float v_beta) {
 // TODO: This doesn't update brake current
 // We should probably make FOC Current call FOC Voltage to avoid duplication.
 bool Motor::FOC_voltage(float v_d, float v_q, float phase) {
-    float c = arm_cos_f32(phase);
-    float s = arm_sin_f32(phase);
+    float c = our_arm_cos_f32(phase);
+    float s = our_arm_sin_f32(phase);
     float v_alpha = c*v_d - s*v_q;
     float v_beta  = c*v_q + s*v_d;
     return enqueue_voltage_timings(v_alpha, v_beta);
@@ -308,8 +308,8 @@ bool Motor::FOC_current(float Id_des, float Iq_des, float phase) {
     float Ibeta = one_by_sqrt3 * (current_meas_.phB - current_meas_.phC);
 
     // Park transform
-    float c = arm_cos_f32(phase);
-    float s = arm_sin_f32(phase);
+    float c = our_arm_cos_f32(phase);
+    float s = our_arm_sin_f32(phase);
     float Id = c * Ialpha + s * Ibeta;
     float Iq = c * Ibeta - s * Ialpha;
     ictrl->Iq_measured = Iq;

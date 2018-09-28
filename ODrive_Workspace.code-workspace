@@ -44,7 +44,8 @@
 			"algorithm": "cpp",
 			"chrono": "cpp",
 			"condition_variable": "cpp",
-			"future": "cpp"
+			"future": "cpp",
+			"arm_math.h": "c"
 		}
 	}
 }
