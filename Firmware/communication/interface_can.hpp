@@ -36,7 +36,7 @@ class ODriveCAN {
 
     bool start_can_server();
     void can_server_thread();
-
+    
     uint32_t write(CAN_message_t &txmsg);
     int read(CAN_message_t &rxmsg);
 

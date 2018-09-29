@@ -39,7 +39,6 @@
 #include <cmsis_os.h>
 #include <stm32f4xx_hal.h>
 
-static uint32_t counter = 0;
 // Constructor is called by communication.cpp and the handle is assigned appropriately
 ODriveCAN::ODriveCAN(CAN_HandleTypeDef *handle, ODriveCAN::Config_t &config)
     : handle_{handle},
@@ -47,6 +46,7 @@ ODriveCAN::ODriveCAN(CAN_HandleTypeDef *handle, ODriveCAN::Config_t &config)
 }
 
 void ODriveCAN::can_server_thread() {
+    static uint32_t counter = 0;
     for (;;) {
         CAN_message_t txmsg;
         txmsg.id = 0x100;
@@ -58,8 +58,8 @@ void ODriveCAN::can_server_thread() {
         txmsg.buf[2] = counter >> 8;
         txmsg.buf[3] = counter;
 
-        write(txmsg); // Transmit message w/ counter at ID = 0x100
-
+        counter++;
+        write(txmsg);
         osDelay(10);
     }
 }
@@ -103,28 +103,33 @@ bool ODriveCAN::start_can_server() {
 void ODriveCAN::set_baud_rate(uint32_t baudRate) {
     switch (baudRate) {
         case CAN_BAUD_125K:
-            handle_->Init.Prescaler = 21;   // 16 TQ's
-            handle_->Init.TimeSeg1 = CAN_BS1_12TQ;
-            handle_->Init.TimeSeg2 = CAN_BS2_3TQ;
+            handle_->Init.Prescaler = 16;  // 21 TQ's
+            handle_->Init.TimeSeg1 = CAN_BS1_16TQ;
+            handle_->Init.TimeSeg2 = CAN_BS2_4TQ;
             config_.baud = baudRate;
             break;
+
         case CAN_BAUD_250K:
-            handle_->Init.Prescaler = 8;    // 21 TQ's
+            handle_->Init.Prescaler = 8;  // 21 TQ's
             handle_->Init.TimeSeg1 = CAN_BS1_16TQ;
             handle_->Init.TimeSeg2 = CAN_BS2_4TQ;
             config_.baud = baudRate;
             break;
+
         case CAN_BAUD_500K:
-            handle_->Init.Prescaler = 4;    // 21 TQ's
-            handle_->Init.TimeSeg1 = CAN_BS1_16TQ;
-            handle_->Init.TimeSeg2 = CAN_BS2_4TQ;
-            config_.baud = baudRate;
-        case CAN_BAUD_1000K:
-            handle_->Init.Prescaler = 2;    // 21 TQ's
+            handle_->Init.Prescaler = 4;  // 21 TQ's
             handle_->Init.TimeSeg1 = CAN_BS1_16TQ;
             handle_->Init.TimeSeg2 = CAN_BS2_4TQ;
             config_.baud = baudRate;
             break;
+
+        case CAN_BAUD_1000K:
+            handle_->Init.Prescaler = 2;  // 21 TQ's
+            handle_->Init.TimeSeg1 = CAN_BS1_16TQ;
+            handle_->Init.TimeSeg2 = CAN_BS2_4TQ;
+            config_.baud = baudRate;
+            break;
+
         default:
             break;  // baudRate is invalid, so do nothing
     }
@@ -135,7 +140,8 @@ void ODriveCAN::set_node_id(uint8_t nodeID) {
     config_.node_id = nodeID;
 }
 
-uint32_t ODriveCAN::write(CAN_message_t& txmsg) {
+// Send a CAN message on the bus
+uint32_t ODriveCAN::write(CAN_message_t &txmsg) {
     CAN_TxHeaderTypeDef header;
     header.StdId = txmsg.id;
     header.ExtId = txmsg.id;
@@ -145,7 +151,8 @@ uint32_t ODriveCAN::write(CAN_message_t& txmsg) {
     header.TransmitGlobalTime = FunctionalState::DISABLE;
 
     uint32_t retTxMailbox;
-    HAL_CAN_AddTxMessage(handle_, &header, txmsg.buf, &retTxMailbox);
+    if(HAL_CAN_GetTxMailboxesFreeLevel(handle_) > 0)
+        HAL_CAN_AddTxMessage(handle_, &header, txmsg.buf, &retTxMailbox);
 
     return retTxMailbox;
 }
