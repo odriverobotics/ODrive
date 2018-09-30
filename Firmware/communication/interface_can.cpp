@@ -33,6 +33,7 @@
 
 #include "interface_can.hpp"
 #include "fibre/crc.hpp"
+#include "freertos_vars.h"
 #include "utils.h"
 
 #include <can.h>
@@ -50,7 +51,7 @@ void ODriveCAN::can_server_thread() {
     for (;;) {
         CAN_message_t txmsg;
         txmsg.id = 0x100;
-        txmsg.len = 4;
+        osSemaphoreWait(sem_can, 10);
         txmsg.isExt = false;
 
         txmsg.buf[0] = counter >> 24;
