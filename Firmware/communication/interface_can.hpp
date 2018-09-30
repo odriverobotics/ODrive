@@ -34,15 +34,18 @@ class ODriveCAN {
 
     ODriveCAN(CAN_HandleTypeDef *handle, ODriveCAN::Config_t &config);
 
+    // Thread Relevant Data
+    osThreadId thread_id_;
+    volatile bool thread_id_valid_ = false;
     bool start_can_server();
     void can_server_thread();
     
+    // I/O Functions
+    uint32_t available();
     uint32_t write(CAN_message_t &txmsg);
-    int read(CAN_message_t &rxmsg);
+    bool read(CAN_message_t &rxmsg);
 
-    osThreadId thread_id_;
-    volatile bool thread_id_valid_ = false;
-
+    // Communication Protocol Handling
     auto make_protocol_definitions() {
         return make_protocol_member_list(
             make_protocol_object("config",
@@ -58,6 +61,7 @@ class ODriveCAN {
 
     void set_node_id(uint8_t nodeID);
     void set_baud_rate(uint32_t baudRate);
+    
 };
 
 #endif  // __INTERFACE_CAN_HPP

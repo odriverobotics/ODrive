@@ -44,7 +44,14 @@
 			"algorithm": "cpp",
 			"chrono": "cpp",
 			"condition_variable": "cpp",
-			"future": "cpp"
+			"future": "cpp",
+			"cmath": "cpp",
+			"cstdarg": "cpp",
+			"unordered_map": "cpp",
+			"fstream": "cpp",
+			"numeric": "cpp",
+			"optional": "cpp",
+			"sstream": "cpp"
 		}
 	}
 }
