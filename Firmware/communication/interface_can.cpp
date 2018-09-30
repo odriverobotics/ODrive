@@ -70,7 +70,7 @@ void ODriveCAN::can_server_thread() {
         heartbeat.buf[0] = axes[0]->error_;
         heartbeat.buf[1] = axes[0]->current_state_;
         heartbeat.buf[2] = axes[1]->error_;
-        heartbeat.buf[3] = axes[2]->current_state_;
+        heartbeat.buf[3] = axes[1]->current_state_;
         uint32_t now = osKernelSysTick();
         if(now - lastHeartbeatTick >= 100){
             write(heartbeat);
