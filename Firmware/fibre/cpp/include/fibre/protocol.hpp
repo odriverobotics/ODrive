@@ -431,30 +431,6 @@ private:
 typedef std::function<void(void* ctx, const uint8_t* input, size_t input_length, StreamSink* output)> EndpointHandler;
 
 
-// @brief Default endpoint handler for endpoint_ref_t types
-template<typename T>
-bool default_readwrite_endpoint_handler(endpoint_ref_t* value, const uint8_t* input, size_t input_length, StreamSink* output) {
-    constexpr size_t size = sizeof(value->endpoint_id) + sizeof(value->json_crc);
-    if (output) {
-        // TODO: make buffer size dependent on the type
-        uint8_t buffer[size];
-        size_t cnt = write_le<decltype(value->endpoint_id)>(value->endpoint_id, buffer);
-        cnt += write_le<decltype(value->json_crc)>(value->json_crc, buffer + cnt);
-        if (cnt <= output->get_free_space())
-            output->process_bytes(buffer, cnt, nullptr);
-    }
-    
-    // If a new value was passed, call the corresponding little endian deserialization function
-    if (input_length >= size) {
-        read_le<decltype(value->endpoint_id)>(&value->endpoint_id, input);
-        read_le<decltype(value->json_crc)>(&value->json_crc, input + 2);
-        return true;
-    } else {
-        return false;
-    }
-}
-
-
 // @brief Default endpoint handler for const types
 // @return: True if endpoint was written to, False otherwise
 template<typename T>
@@ -482,6 +458,29 @@ default_readwrite_endpoint_handler(T* value, const uint8_t* input, size_t input_
     uint8_t buffer[sizeof(T)] = { 0 }; // TODO: make buffer size dependent on the type
     if (input_length >= sizeof(buffer)) {
         read_le<T>(value, input);
+        return true;
+    } else {
+        return false;
+    }
+}
+
+// @brief Default endpoint handler for endpoint_ref_t types
+template<typename T>
+bool default_readwrite_endpoint_handler(endpoint_ref_t* value, const uint8_t* input, size_t input_length, StreamSink* output) {
+    constexpr size_t size = sizeof(value->endpoint_id) + sizeof(value->json_crc);
+    if (output) {
+        // TODO: make buffer size dependent on the type
+        uint8_t buffer[size];
+        size_t cnt = write_le<decltype(value->endpoint_id)>(value->endpoint_id, buffer);
+        cnt += write_le<decltype(value->json_crc)>(value->json_crc, buffer + cnt);
+        if (cnt <= output->get_free_space())
+            output->process_bytes(buffer, cnt, nullptr);
+    }
+    
+    // If a new value was passed, call the corresponding little endian deserialization function
+    if (input_length >= size) {
+        read_le<decltype(value->endpoint_id)>(&value->endpoint_id, input);
+        read_le<decltype(value->json_crc)>(&value->json_crc, input + 2);
         return true;
     } else {
         return false;
