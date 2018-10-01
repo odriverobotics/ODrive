@@ -5,6 +5,7 @@ Please add a note of your changes below this heading if you make a Pull Request.
 
 ### Added
 * **Trapezoidal Trajectory Planner**
+* Hook to execute protocol property written callback
 * -Wdouble-promotion warning to compilation
 
 ### Changed
@@ -13,6 +14,10 @@ Please add a note of your changes below this heading if you make a Pull Request.
   * `TimeoutError` isn't defined, but it makes for more readable code, so I defined it as an OSError subclass.
   * `ModuleNotFoundError` is replaced by the older ImportError.
   * Print function imported from future
+* Using new hooks to calculate:
+  * `motor.config.current_control_bandwidth`
+    * This deprecates `motor.set_current_control_bandwidth()`
+  * `encoder.config.bandwidth`
 
 # Releases
 ## [0.4.4] - 2018-09-18
