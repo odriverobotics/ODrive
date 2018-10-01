@@ -431,8 +431,9 @@ private:
 typedef std::function<void(void* ctx, const uint8_t* input, size_t input_length, StreamSink* output)> EndpointHandler;
 
 
+// @brief Default endpoint handler for endpoint_ref_t types
 template<typename T>
-void default_readwrite_endpoint_handler(endpoint_ref_t* value, const uint8_t* input, size_t input_length, StreamSink* output) {
+bool default_readwrite_endpoint_handler(endpoint_ref_t* value, const uint8_t* input, size_t input_length, StreamSink* output) {
     constexpr size_t size = sizeof(value->endpoint_id) + sizeof(value->json_crc);
     if (output) {
         // TODO: make buffer size dependent on the type
@@ -447,13 +448,17 @@ void default_readwrite_endpoint_handler(endpoint_ref_t* value, const uint8_t* in
     if (input_length >= size) {
         read_le<decltype(value->endpoint_id)>(&value->endpoint_id, input);
         read_le<decltype(value->json_crc)>(&value->json_crc, input + 2);
+        return true;
+    } else {
+        return false;
     }
 }
 
 
 // @brief Default endpoint handler for const types
+// @return: True if endpoint was written to, False otherwise
 template<typename T>
-std::enable_if_t<!std::is_same<T, endpoint_ref_t>::value && std::is_const<T>::value>
+std::enable_if_t<!std::is_same<T, endpoint_ref_t>::value && std::is_const<T>::value, bool>
 default_readwrite_endpoint_handler(T* value, const uint8_t* input, size_t input_length, StreamSink* output) {
     // If the old value was requested, call the corresponding little endian serialization function
     if (output) {
@@ -463,22 +468,25 @@ default_readwrite_endpoint_handler(T* value, const uint8_t* input, size_t input_
         if (cnt <= output->get_free_space())
             output->process_bytes(buffer, cnt, nullptr);
     }
+    return false; // We don't ever write to const types
 }
 
 // @brief Default endpoint handler for non-const types
 template<typename T>
-std::enable_if_t<!std::is_same<T, endpoint_ref_t>::value && !std::is_const<T>::value>
+std::enable_if_t<!std::is_same<T, endpoint_ref_t>::value && !std::is_const<T>::value, bool>
 default_readwrite_endpoint_handler(T* value, const uint8_t* input, size_t input_length, StreamSink* output) {
     // Read the endpoint value into output
     default_readwrite_endpoint_handler<const T>(const_cast<const T*>(value), input, input_length, output);
     
     // If a new value was passed, call the corresponding little endian deserialization function
     uint8_t buffer[sizeof(T)] = { 0 }; // TODO: make buffer size dependent on the type
-    if (input_length >= sizeof(buffer))
+    if (input_length >= sizeof(buffer)) {
         read_le<T>(value, input);
+        return true;
+    } else {
+        return false;
+    }
 }
-
-
 
 template<typename T>
 static inline const char* get_default_json_modifier();
@@ -893,8 +901,8 @@ public:
             list[id] = this;
     }
     void handle(const uint8_t* input, size_t input_length, StreamSink* output) final {
-        default_readwrite_endpoint_handler<TProperty>(property_, input, input_length, output);
-        if (written_hook_ != nullptr && input_length >= sizeof(TProperty)) {
+        bool wrote = default_readwrite_endpoint_handler<TProperty>(property_, input, input_length, output);
+        if (wrote && written_hook_ != nullptr) {
             written_hook_(ctx_);
         }
     }

@@ -16,7 +16,7 @@ Please add a note of your changes below this heading if you make a Pull Request.
   * Print function imported from future
 * Using new hooks to calculate:
   * `motor.config.current_control_bandwidth`
-    * This depricates `motor.set_current_control_bandwidth()`
+    * This deprecates `motor.set_current_control_bandwidth()`
   * `encoder.config.bandwidth`
 
 # Releases
