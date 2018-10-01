@@ -109,8 +109,8 @@ bool Encoder::run_index_search() {
     axis_->run_control_loop([&](){
         phase = wrap_pm_pi(phase + omega * current_meas_period);
 
-        float v_alpha = voltage_magnitude * arm_cos_f32(phase);
-        float v_beta = voltage_magnitude * arm_sin_f32(phase);
+        float v_alpha = voltage_magnitude * our_arm_cos_f32(phase);
+        float v_beta = voltage_magnitude * our_arm_sin_f32(phase);
         if (!axis_->motor_.enqueue_voltage_timings(v_alpha, v_beta))
             return false; // error set inside enqueue_voltage_timings
         axis_->motor_.log_timing(Motor::TIMING_LOG_IDX_SEARCH);
@@ -167,8 +167,8 @@ bool Encoder::run_offset_calibration() {
     i = 0;
     axis_->run_control_loop([&](){
         float phase = wrap_pm_pi(scan_distance * (float)i / (float)num_steps - scan_distance / 2.0f);
-        float v_alpha = voltage_magnitude * arm_cos_f32(phase);
-        float v_beta = voltage_magnitude * arm_sin_f32(phase);
+        float v_alpha = voltage_magnitude * our_arm_cos_f32(phase);
+        float v_beta = voltage_magnitude * our_arm_sin_f32(phase);
         if (!axis_->motor_.enqueue_voltage_timings(v_alpha, v_beta))
             return false; // error set inside enqueue_voltage_timings
         axis_->motor_.log_timing(Motor::TIMING_LOG_ENC_CALIB);
@@ -208,8 +208,8 @@ bool Encoder::run_offset_calibration() {
     i = 0;
     axis_->run_control_loop([&](){
         float phase = wrap_pm_pi(-scan_distance * (float)i / (float)num_steps + scan_distance / 2.0f);
-        float v_alpha = voltage_magnitude * arm_cos_f32(phase);
-        float v_beta = voltage_magnitude * arm_sin_f32(phase);
+        float v_alpha = voltage_magnitude * our_arm_cos_f32(phase);
+        float v_beta = voltage_magnitude * our_arm_sin_f32(phase);
         if (!axis_->motor_.enqueue_voltage_timings(v_alpha, v_beta))
             return false; // error set inside enqueue_voltage_timings
         axis_->motor_.log_timing(Motor::TIMING_LOG_ENC_CALIB);
