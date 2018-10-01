@@ -24,7 +24,7 @@ permalink: /
 
 ### You will need:
 * One or two [brushless motors](https://docs.google.com/spreadsheets/d/12vzz7XVEK6YNIOqH0jAz51F5VUpc-lJEs3mmkWP1H4Y). It is fine, even recommended, to start testing with just a single motor and encoder.
-* One or two [quadrature incremental encoder(s)](encoders)
+* One or two [encoder(s)](https://docs.google.com/spreadsheets/d/1OBDwYrBb5zUPZLrhL98ezZbg94tUsZcdTuwiVNgVqpU)
 * A power resistor. A good starting point would be the 50W resistor included with your ODrive.
   <details><summary markdown="span">Do I really need a power resistor? What values to choose?</summary><div markdown="block">
 
