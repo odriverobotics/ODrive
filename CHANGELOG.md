@@ -14,6 +14,9 @@ Please add a note of your changes below this heading if you make a Pull Request.
   * `ModuleNotFoundError` is replaced by the older ImportError.
   * Print function imported from future
 
+### Fixed
+* There is a [bug](https://github.com/ARM-software/CMSIS_5/issues/267) in the arm fast math library, which gives spikes in the output of arm_cos_f32 for input values close to -pi/2. We fixed the bug locally, and hence are using "our_arm_cos_f32".
+
 # Releases
 ## [0.4.4] - 2018-09-18
 ### Fixed
