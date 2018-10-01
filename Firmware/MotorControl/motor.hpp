@@ -7,51 +7,6 @@
 
 #include "drv8301.h"
 
-typedef enum {
-    MOTOR_TYPE_HIGH_CURRENT = 0,
-    // MOTOR_TYPE_LOW_CURRENT = 1, //Not yet implemented
-    MOTOR_TYPE_GIMBAL = 2
-} Motor_type_t;
-
-typedef struct {
-    float phB;
-    float phC;
-} Iph_BC_t;
-
-typedef struct {
-    float p_gain; // [V/A]
-    float i_gain; // [V/As]
-    float v_current_control_integral_d; // [V]
-    float v_current_control_integral_q; // [V]
-    float Ibus; // DC bus current [A]
-    // Voltage applied at end of cycle:
-    float final_v_alpha; // [V]
-    float final_v_beta; // [V]
-    float Iq_setpoint;
-    float Iq_measured;
-    float max_allowed_current;
-} Current_control_t;
-
-// NOTE: for gimbal motors, all units of A are instead V.
-// example: vel_gain is [V/(count/s)] instead of [A/(count/s)]
-// example: current_lim and calibration_current will instead determine the maximum voltage applied to the motor.
-typedef struct {
-    bool pre_calibrated = false; // can be set to true to indicate that all values here are valid
-    int32_t pole_pairs = 7;
-    float calibration_current = 10.0f;    // [A]
-    float resistance_calib_max_voltage = 1.0f; // [V] - You may need to increase this if this voltage isn't sufficient to drive calibration_current through the motor.
-    float phase_inductance = 0.0f;        // to be set by measure_phase_inductance
-    float phase_resistance = 0.0f;        // to be set by measure_phase_resistance
-    int32_t direction = 1;                // 1 or -1
-    Motor_type_t motor_type = MOTOR_TYPE_HIGH_CURRENT;
-    // Read out max_allowed_current to see max supported value for current_lim.
-    // float current_lim = 70.0f; //[A]
-    float current_lim = 10.0f;  //[A]
-    // Value used to compute shunt amplifier gains
-    float requested_current_range = 70.0f; // [A]
-    float current_control_bandwidth = 1000.0f;  // [rad/s]
-} MotorConfig_t;
-
 class Motor {
 public:
     enum Error_t {
@@ -66,6 +21,51 @@ public:
         ERROR_MODULATION_MAGNITUDE = 0x0080,
         ERROR_BRAKE_DEADTIME_VIOLATION = 0x0100,
         ERROR_UNEXPECTED_TIMER_CALLBACK = 0x0200
+    };
+
+    enum MotorType_t {
+        MOTOR_TYPE_HIGH_CURRENT = 0,
+        // MOTOR_TYPE_LOW_CURRENT = 1, //Not yet implemented
+        MOTOR_TYPE_GIMBAL = 2
+    };
+
+    struct Iph_BC_t {
+        float phB;
+        float phC;
+    };
+
+    struct CurrentControl_t{
+        float p_gain; // [V/A]
+        float i_gain; // [V/As]
+        float v_current_control_integral_d; // [V]
+        float v_current_control_integral_q; // [V]
+        float Ibus; // DC bus current [A]
+        // Voltage applied at end of cycle:
+        float final_v_alpha; // [V]
+        float final_v_beta; // [V]
+        float Iq_setpoint;
+        float Iq_measured;
+        float max_allowed_current;
+    };
+
+    // NOTE: for gimbal motors, all units of A are instead V.
+    // example: vel_gain is [V/(count/s)] instead of [A/(count/s)]
+    // example: current_lim and calibration_current will instead determine the maximum voltage applied to the motor.
+    struct Config_t {
+        bool pre_calibrated = false; // can be set to true to indicate that all values here are valid
+        int32_t pole_pairs = 7;
+        float calibration_current = 10.0f;    // [A]
+        float resistance_calib_max_voltage = 1.0f; // [V] - You may need to increase this if this voltage isn't sufficient to drive calibration_current through the motor.
+        float phase_inductance = 0.0f;        // to be set by measure_phase_inductance
+        float phase_resistance = 0.0f;        // to be set by measure_phase_resistance
+        int32_t direction = 1;                // 1 or -1
+        MotorType_t motor_type = MOTOR_TYPE_HIGH_CURRENT;
+        // Read out max_allowed_current to see max supported value for current_lim.
+        // float current_lim = 70.0f; //[A]
+        float current_lim = 10.0f;  //[A]
+        // Value used to compute shunt amplifier gains
+        float requested_current_range = 70.0f; // [A]
+        float current_control_bandwidth = 1000.0f;  // [rad/s]
     };
 
     enum TimingLog_t {
@@ -90,7 +90,7 @@ public:
 
     Motor(const MotorHardwareConfig_t& hw_config,
          const GateDriverHardwareConfig_t& gate_driver_config,
-         MotorConfig_t& config);
+         Config_t& config);
 
     bool arm();
     void disarm();
@@ -117,7 +117,7 @@ public:
 
     const MotorHardwareConfig_t& hw_config_;
     const GateDriverHardwareConfig_t gate_driver_config_;
-    MotorConfig_t& config_;
+    Config_t& config_;
     Axis* axis_ = nullptr; // set by Axis constructor
 
 //private:
@@ -142,7 +142,7 @@ public:
     Iph_BC_t current_meas_ = {0.0f, 0.0f};
     Iph_BC_t DC_calib_ = {0.0f, 0.0f};
     float phase_current_rev_gain_ = 0.0f; // Reverse gain for ADC to Amps (to be set by DRV8301_setup)
-    Current_control_t current_control_ = {
+    CurrentControl_t current_control_ = {
         .p_gain = 0.0f,        // [V/A] should be auto set after resistance and inductance measurement
         .i_gain = 0.0f,        // [V/As] should be auto set after resistance and inductance measurement
         .v_current_control_integral_d = 0.0f,

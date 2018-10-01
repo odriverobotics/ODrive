@@ -97,9 +97,9 @@ void Encoder::set_circular_count(int32_t count, bool update_offset) {
 // TODO: Do the scan with current, not voltage!
 bool Encoder::run_index_search() {
     float voltage_magnitude;
-    if (axis_->motor_.config_.motor_type == MOTOR_TYPE_HIGH_CURRENT)
+    if (axis_->motor_.config_.motor_type == Motor::MOTOR_TYPE_HIGH_CURRENT)
         voltage_magnitude = axis_->motor_.config_.calibration_current * axis_->motor_.config_.phase_resistance;
-    else if (axis_->motor_.config_.motor_type == MOTOR_TYPE_GIMBAL)
+    else if (axis_->motor_.config_.motor_type == Motor::MOTOR_TYPE_GIMBAL)
         voltage_magnitude = axis_->motor_.config_.calibration_current;
     else
         return false;
@@ -144,9 +144,9 @@ bool Encoder::run_offset_calibration() {
     shadow_count_ = count_in_cpr_;
 
     float voltage_magnitude;
-    if (axis_->motor_.config_.motor_type == MOTOR_TYPE_HIGH_CURRENT)
+    if (axis_->motor_.config_.motor_type == Motor::MOTOR_TYPE_HIGH_CURRENT)
         voltage_magnitude = axis_->motor_.config_.calibration_current * axis_->motor_.config_.phase_resistance;
-    else if (axis_->motor_.config_.motor_type == MOTOR_TYPE_GIMBAL)
+    else if (axis_->motor_.config_.motor_type == Motor::MOTOR_TYPE_GIMBAL)
         voltage_magnitude = axis_->motor_.config_.calibration_current;
     else
         return false;

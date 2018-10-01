@@ -7,22 +7,25 @@
 #include "odrive_main.h"
 
 Axis::Axis(const AxisHardwareConfig_t& hw_config,
-           AxisConfig_t& config,
+           Config_t& config,
            Encoder& encoder,
            SensorlessEstimator& sensorless_estimator,
            Controller& controller,
-           Motor& motor)
+           Motor& motor,
+           TrapezoidalTrajectory& trap)
     : hw_config_(hw_config),
       config_(config),
       encoder_(encoder),
       sensorless_estimator_(sensorless_estimator),
       controller_(controller),
-      motor_(motor)
+      motor_(motor),
+      trap_(trap)
 {
     encoder_.axis_ = this;
     sensorless_estimator_.axis_ = this;
     controller_.axis_ = this;
     motor_.axis_ = this;
+    trap_.axis_ = this;
 }
 
 static void step_cb_wrapper(void* ctx) {
@@ -179,7 +182,7 @@ bool Axis::run_sensorless_spin_up() {
 bool Axis::run_sensorless_control_loop() {
     set_step_dir_enabled(config_.enable_step_dir);
     run_control_loop([this](){
-        if (controller_.config_.control_mode >= CTRL_MODE_POSITION_CONTROL)
+        if (controller_.config_.control_mode >= Controller::CTRL_MODE_POSITION_CONTROL)
             return error_ |= ERROR_POS_CTRL_DURING_SENSORLESS, false;
 
         // Note that all estimators are updated in the loop prefix in run_control_loop

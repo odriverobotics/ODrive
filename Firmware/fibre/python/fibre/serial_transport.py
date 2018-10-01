@@ -10,6 +10,7 @@ import traceback
 import serial
 import serial.tools.list_ports
 import fibre
+from fibre.utils import TimeoutError
 
 # TODO: make this customizable
 DEFAULT_BAUDRATE = 115200
