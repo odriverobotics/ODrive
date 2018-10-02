@@ -132,13 +132,13 @@ float Axis::get_temp() {
     return horner_fma(normalized_voltage, thermistor_poly_coeffs, thermistor_num_coeffs);
 }
 
-bool Axis::run_sensorless_spin_up() {
-    // Early Spin-up: spiral up current
+bool Axis::run_lockin_spin() {
+    // Spiral up current for softer rotor lock-in
     float x = 0.0f;
     run_control_loop([&](){
-        float phase = wrap_pm_pi(config_.ramp_up_distance * x);
-        float I_mag = config_.spin_up_current * x;
-        x += current_meas_period / config_.ramp_up_time;
+        float phase = wrap_pm_pi(config_.lockin_ramp_time * x);
+        float I_mag = config_.lockin_current * x;
+        x += current_meas_period / config_.lockin_ramp_time;
         if (!motor_.update(I_mag, phase))
             return error_ |= ERROR_MOTOR_FAILED, false;
         return x < 1.0f;
@@ -146,21 +146,38 @@ bool Axis::run_sensorless_spin_up() {
     if (error_ != ERROR_NONE)
         return false;
     
-    // Late Spin-up: accelerate
-    float vel = config_.ramp_up_distance / config_.ramp_up_time;
-    float phase = wrap_pm_pi(config_.ramp_up_distance);
+    // Accelerate
+    float distance = config_.lockin_ramp_time;
+    float phase = wrap_pm_pi(distance);
+    float vel = distance / config_.lockin_ramp_time;
+    bool vel_done = false;
+    bool dist_done = false;
     run_control_loop([&](){
-        vel += config_.spin_up_acceleration * current_meas_period;
+        vel += config_.lockin_accel * current_meas_period;
+        distance += vel * current_meas_period;
         phase = wrap_pm_pi(phase + vel * current_meas_period);
-        float I_mag = config_.spin_up_current;
-        if (!motor_.update(I_mag, phase))
+        if (!motor_.update(config_.lockin_current, phase))
             return error_ |= ERROR_MOTOR_FAILED, false;
-        return vel < config_.spin_up_target_vel;
+        vel_done = vel >= config_.lockin_vel;
+        dist_done = fabsf(distance) >= fabsf(config_.lockin_finish_distance);
+        if (config_.lockin_finish_on_distance)
+            return !vel_done && !dist_done;
+        else
+            return !vel_done;
     });
 
-    // call to controller.reset() that happend when arming means that vel_setpoint
-    // is zeroed. So we make the setpoint the spinup target for smooth transition.
-    controller_.vel_setpoint_ = config_.spin_up_target_vel;
+    // Constant speed
+    if (config_.lockin_finish_on_distance) {
+        vel = config_.lockin_vel;
+        run_control_loop([&](){
+            distance += vel * current_meas_period;
+            phase = wrap_pm_pi(phase + vel * current_meas_period);
+            if (!motor_.update(config_.lockin_current, phase))
+                return error_ |= ERROR_MOTOR_FAILED, false;
+            dist_done = fabsf(distance) >= fabsf(config_.lockin_finish_distance);
+            return !dist_done;
+        });
+    }
 
     return check_for_errors();
 }
@@ -282,10 +299,18 @@ void Axis::run_state_machine_loop() {
                 status = encoder_.run_offset_calibration();
                 break;
 
+            case AXIS_STATE_LOCKIN_SPIN:
+                status = run_lockin_spin();
+                break;
+
             case AXIS_STATE_SENSORLESS_CONTROL:
-                status = run_sensorless_spin_up(); // TODO: restart if desired
-                if (status)
+                status = run_lockin_spin(); // TODO: restart if desired
+                if (status) {
+                    // call to controller.reset() that happend when arming means that vel_setpoint
+                    // is zeroed. So we make the setpoint the spinup target for smooth transition.
+                    controller_.vel_setpoint_ = config_.lockin_vel;
                     status = run_sensorless_control_loop();
+                }
                 break;
 
             case AXIS_STATE_CLOSED_LOOP_CONTROL:

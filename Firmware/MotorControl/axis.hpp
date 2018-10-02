@@ -31,9 +31,10 @@ public:
         AXIS_STATE_FULL_CALIBRATION_SEQUENCE = 3,   //<! run all calibration procedures, then idle
         AXIS_STATE_MOTOR_CALIBRATION = 4,   //<! run motor calibration
         AXIS_STATE_SENSORLESS_CONTROL = 5,  //<! run sensorless control
-        AXIS_STATE_ENCODER_INDEX_SEARCH = 6, //<! run encoder index search
-        AXIS_STATE_ENCODER_OFFSET_CALIBRATION = 7, //<! run encoder offset calibration
-        AXIS_STATE_CLOSED_LOOP_CONTROL = 8  //<! run closed loop control
+        AXIS_STATE_LOCKIN_SPIN = 6,       //<! run lockin spin
+        AXIS_STATE_ENCODER_INDEX_SEARCH = 7, //<! run encoder index search
+        AXIS_STATE_ENCODER_OFFSET_CALIBRATION = 8, //<! run encoder offset calibration
+        AXIS_STATE_CLOSED_LOOP_CONTROL = 9,  //<! run closed loop control
     };
 
     struct Config_t {
@@ -49,11 +50,13 @@ public:
         float counts_per_step = 2.0f;
 
         // Spinup settings
-        float ramp_up_time = 0.4f;            // [s]
-        float ramp_up_distance = 4 * M_PI;    // [rad]
-        float spin_up_current = 10.0f;        // [A]
-        float spin_up_acceleration = 400.0f;  // [rad/s^2]
-        float spin_up_target_vel = 400.0f;    // [rad/s]
+        float lockin_current = 10.0f;           // [A]
+        float lockin_ramp_time = 0.4f;          // [s]
+        float lockin_ramp_distance = 4 * M_PI;  // [rad]
+        float lockin_accel = 400.0f;     // [rad/s^2]
+        float lockin_vel = 400.0f; // [rad/s]
+        bool lockin_finish_on_distance = false; // false: finish on target vel
+        float lockin_finish_distance = 1000.0f;  // [rad]
     };
 
     enum thread_signals {
@@ -149,7 +152,7 @@ public:
         }
     }
 
-    bool run_sensorless_spin_up();
+    bool run_lockin_spin();
     bool run_sensorless_control_loop();
     bool run_closed_loop_control_loop();
     bool run_idle_loop();
@@ -192,11 +195,13 @@ public:
                 make_protocol_property("startup_sensorless_control", &config_.startup_sensorless_control),
                 make_protocol_property("enable_step_dir", &config_.enable_step_dir),
                 make_protocol_property("counts_per_step", &config_.counts_per_step),
-                make_protocol_property("ramp_up_time", &config_.ramp_up_time),
-                make_protocol_property("ramp_up_distance", &config_.ramp_up_distance),
-                make_protocol_property("spin_up_current", &config_.spin_up_current),
-                make_protocol_property("spin_up_acceleration", &config_.spin_up_acceleration),
-                make_protocol_property("spin_up_target_vel", &config_.spin_up_target_vel)
+                make_protocol_property("lockin_current", &config_.lockin_current),
+                make_protocol_property("lockin_ramp_time", &config_.lockin_ramp_time),
+                make_protocol_property("lockin_ramp_distance", &config_.lockin_ramp_distance),
+                make_protocol_property("lockin_accel", &config_.lockin_accel),
+                make_protocol_property("lockin_vel", &config_.lockin_vel),
+                make_protocol_property("lockin_finish_on_distance", &config_.lockin_finish_on_distance),
+                make_protocol_property("lockin_finish_distance", &config_.lockin_finish_distance)
             ),
             make_protocol_function("get_temp", *this, &Axis::get_temp),
             make_protocol_object("motor", motor_.make_protocol_definitions()),
