@@ -5,6 +5,7 @@ Please add a note of your changes below this heading if you make a Pull Request.
 
 ### Added
 * **Trapezoidal Trajectory Planner**
+* Hook to execute protocol property written callback
 * -Wdouble-promotion warning to compilation
 
 ### Changed
@@ -13,6 +14,10 @@ Please add a note of your changes below this heading if you make a Pull Request.
   * `TimeoutError` isn't defined, but it makes for more readable code, so I defined it as an OSError subclass.
   * `ModuleNotFoundError` is replaced by the older ImportError.
   * Print function imported from future
+* Using new hooks to calculate:
+  * `motor.config.current_control_bandwidth`
+    * This deprecates `motor.set_current_control_bandwidth()`
+  * `encoder.config.bandwidth`
 
 ### Fixed
 * There is a [bug](https://github.com/ARM-software/CMSIS_5/issues/267) in the arm fast math library, which gives spikes in the output of arm_cos_f32 for input values close to -pi/2. We fixed the bug locally, and hence are using "our_arm_cos_f32".

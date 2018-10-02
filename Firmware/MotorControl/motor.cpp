@@ -17,8 +17,8 @@ Motor::Motor(const MotorHardwareConfig_t& hw_config,
             .EngpioNumber = gate_driver_config_.enable_pin,
             .nCSgpioHandle = gate_driver_config_.nCS_port,
             .nCSgpioNumber = gate_driver_config_.nCS_pin,
-        })
-{
+        }) {
+    update_current_controller_gains();
 }
 
 // @brief Arms the PWM outputs that belong to this motor.
@@ -60,11 +60,6 @@ void Motor::update_current_controller_gains() {
     current_control_.p_gain = config_.current_control_bandwidth * config_.phase_inductance;
     float plant_pole = config_.phase_resistance / config_.phase_inductance;
     current_control_.i_gain = plant_pole * current_control_.p_gain;
-}
-
-void Motor::set_current_control_bandwidth(float current_control_bandwidth) {
-    config_.current_control_bandwidth = current_control_bandwidth;
-    update_current_controller_gains();
 }
 
 // @brief Set up the gate drivers
