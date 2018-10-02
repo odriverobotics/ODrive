@@ -343,7 +343,7 @@ bool Motor::FOC_current(float Id_des, float Iq_des, float phase) {
 
     // Inverse park transform
     float mod_alpha = c * mod_d - s * mod_q;
-    float mod_beta = c * mod_q + s * mod_d;
+    float mod_beta  = c * mod_q + s * mod_d;
 
     // Report final applied voltage in stationary frame (for sensorles estimator)
     ictrl.final_v_alpha = mod_to_V * mod_alpha;
