@@ -54,6 +54,8 @@ public:
         float spin_up_current = 10.0f;        // [A]
         float spin_up_acceleration = 400.0f;  // [rad/s^2]
         float spin_up_target_vel = 400.0f;    // [rad/s]
+
+        uint8_t can_node_id = 0; // If both axes are 0, only the first one will get commands.
     };
 
     enum thread_signals {
