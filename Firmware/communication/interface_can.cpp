@@ -32,7 +32,7 @@
 */
 
 #include "interface_can.hpp"
-#include <unordered_map>
+
 #include "fibre/crc.hpp"
 #include "freertos_vars.h"
 #include "utils.h"
@@ -41,15 +41,20 @@
 #include <cmsis_os.h>
 #include <stm32f4xx_hal.h>
 
+// Specific CAN Protocols
+#include "can_simple.hpp"
+
 #include <odrive_main.h>
 
-std::unordered_map<CAN_HandleTypeDef *, ODriveCAN *> ctxMap;
+// Safer context handling via maps instead of arrays
+// #include <unordered_map>
+// std::unordered_map<CAN_HandleTypeDef *, ODriveCAN *> ctxMap;
 
 // Constructor is called by communication.cpp and the handle is assigned appropriately
 ODriveCAN::ODriveCAN(CAN_HandleTypeDef *handle, ODriveCAN::Config_t &config)
     : handle_{handle},
       config_{config} {
-    ctxMap[handle_] = this;
+    // ctxMap[handle_] = this;
 }
 
 void ODriveCAN::can_server_thread() {
@@ -60,10 +65,12 @@ void ODriveCAN::can_server_thread() {
     for (;;) {
         CAN_message_t rxmsg;
 
-        osSemaphoreWait(sem_can, 10);
+        osSemaphoreWait(sem_can, 10); // Poll every 10ms regardless of sempahore status
         while (available()) {
             read(rxmsg);
-            write(rxmsg);
+            switch(config_.protocol) {
+                case CAN_PROTOCOL_SIMPLE: CANSimple::handle_can_message(rxmsg); break;
+            }
         }
 
         // Handle heartbeat message
