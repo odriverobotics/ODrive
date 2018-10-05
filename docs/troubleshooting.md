@@ -38,7 +38,7 @@ The axis error may say that some other component has failed. Say it reports `ERR
 
 * `ERROR_INVALID_STATE = 0x01`
 
-Typically returned along with another error. Resolve that error and then reboot using `odrv0.reboot()` or remoivng power, waiting 5 seconds and restoring power to return to normal operating. 
+You tried to run a state before you are allowed to. Typically you tried to run encoder calibration or closed loop control before the motor was calibrated, or you tried to run closed loop control before the encoder was calibrated.
 
 * `ERROR_DC_BUS_UNDER_VOLTAGE = 0x02`
 
