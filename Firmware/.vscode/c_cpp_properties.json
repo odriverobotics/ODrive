@@ -31,7 +31,7 @@
                 "__packed=\"__attribute__((__packed__))\"",
                 "__GNUC__"
             ],
-            "intelliSenseMode": "clang-x64",
+            "intelliSenseMode": "gcc-x64",
             "browse": {
                 "path": [
                     "${workspaceRoot}",
