@@ -4,6 +4,7 @@
 #include <cmsis_os.h>
 #include <stm32f4xx_hal.h>
 #include "fibre/protocol.hpp"
+#include "odrive_main.h"
 
 #define CAN_CLK_HZ (42000000)
 #define CAN_CLK_MHZ (42)
@@ -44,6 +45,7 @@ class ODriveCAN {
     volatile bool thread_id_valid_ = false;
     bool start_can_server();
     void can_server_thread();
+    void send_heartbeat(Axis* axis);
 
     // I/O Functions
     uint32_t available();

@@ -6,10 +6,16 @@
 class CANSimple {
    public:
     static void handle_can_message(CAN_message_t& msg);
+    static void send_heartbeat(Axis* axis);
 
    private:
+    static void estop_callback();
+
     // Controller
-    static void move_to_pos_callback(Axis& axis, uint32_t pos);
+    static void move_to_pos_callback(Axis* axis, CAN_message_t& msg);
+    static void set_pos_setpoint_callback(Axis* axis, CAN_message_t& msg);
+    static void set_vel_setpoint_callback(Axis* axis, CAN_message_t& msg);
+    static void set_current_setpoint_callback(Axis* axis, CAN_message_t& msg);
 
     // This functional way of handling the messages is neat and is much cleaner from
     // a data security point of view, but it will require some tweaking

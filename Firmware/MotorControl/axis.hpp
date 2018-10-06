@@ -20,6 +20,7 @@ public:
         ERROR_ENCODER_FAILED = 0x100,
         ERROR_CONTROLLER_FAILED = 0x200,
         ERROR_POS_CTRL_DURING_SENSORLESS = 0x400,
+        ERROR_ESTOP_REQUESTED = 0x800
     };
 
     // Warning: Do not reorder these enum values.
@@ -55,7 +56,7 @@ public:
         float spin_up_acceleration = 400.0f;  // [rad/s^2]
         float spin_up_target_vel = 400.0f;    // [rad/s]
 
-        uint8_t can_node_id = 0; // If both axes are 0, only the first one will get commands.
+        uint8_t can_node_id = 0; // Both axes will have the same id to start
     };
 
     enum thread_signals {
@@ -113,10 +114,9 @@ public:
             // Update all estimators
             // Note: updates run even if checks fail
             bool updates_ok = do_updates(); 
-            
             if (!checks_ok || !updates_ok) 
                 break;
-
+            
             // Run main loop function, defer quitting for after wait
             // TODO: change arming logic to arm after waiting
             bool main_continue = update_handler();
@@ -165,6 +165,7 @@ public:
     State_t task_chain_[10] = { AXIS_STATE_UNDEFINED };
     State_t& current_state_ = task_chain_[0];
     uint32_t loop_counter_ = 0;
+    uint32_t last_heartbeat_ = 0;
 
     // Communication protocol definitions
     auto make_protocol_definitions() {
@@ -186,7 +187,8 @@ public:
                 make_protocol_property("ramp_up_distance", &config_.ramp_up_distance),
                 make_protocol_property("spin_up_current", &config_.spin_up_current),
                 make_protocol_property("spin_up_acceleration", &config_.spin_up_acceleration),
-                make_protocol_property("spin_up_target_vel", &config_.spin_up_target_vel)
+                make_protocol_property("spin_up_target_vel", &config_.spin_up_target_vel),
+                make_protocol_property("can_node_id", &config_.can_node_id)
             ),
             make_protocol_function("get_temp", *this, &Axis::get_temp),
             make_protocol_object("motor", motor_.make_protocol_definitions()),

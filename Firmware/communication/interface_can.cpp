@@ -1,36 +1,3 @@
-/*
-*
-* Zero-config node ID negotiation
-* -------------------------------
-*
-* A heartbeat message is a message with a 8 byte unique serial number as payload.
-* A regular message is any message that is not a heartbeat message.
-*
-* All nodes MUST obey these four rules:
-*
-* a) At a given point in time, a node MUST consider a node ID taken (by others)
-*   if any of the following is true:
-*     - the node received a (not self-emitted) heartbeat message with that node ID
-*       within the last second
-*     - the node attempted and failed at sending a heartbeat message with that
-*       node ID within the last second (failed in the sense of not ACK'd)
-*
-* b) At a given point in time, a node MUST NOT consider a node ID self-assigned
-*   if, within the last second, it did not succeed in sending a heartbeat
-*   message with that node ID.
-*
-* c) At a given point in time, a node MUST NOT send any heartbeat message with
-*   a node ID that is taken.
-*
-* d) At a given point in time, a node MUST NOT send any regular message with
-*   a node ID that is not self-assigned.
-*
-* Hardware allocation
-* -------------------
-*   RX FIFO0:
-*       - filter bank 0: heartbeat messages
-*/
-
 #include "interface_can.hpp"
 
 #include "fibre/crc.hpp"
@@ -58,32 +25,18 @@ ODriveCAN::ODriveCAN(CAN_HandleTypeDef *handle, ODriveCAN::Config_t &config)
 }
 
 void ODriveCAN::can_server_thread() {
-    CAN_message_t heartbeat;
-    heartbeat.id = 0x700 + config_.node_id;
-    uint32_t lastHeartbeatTick = osKernelSysTick();
-
     for (;;) {
         CAN_message_t rxmsg;
 
-        osSemaphoreWait(sem_can, 10); // Poll every 10ms regardless of sempahore status
+        osSemaphoreWait(sem_can, 10);  // Poll every 10ms regardless of sempahore status
         while (available()) {
             read(rxmsg);
-            switch(config_.protocol) {
-                case CAN_PROTOCOL_SIMPLE: CANSimple::handle_can_message(rxmsg); break;
+            switch (config_.protocol) {
+                case CAN_PROTOCOL_SIMPLE:
+                    CANSimple::handle_can_message(rxmsg);
+                    break;
             }
         }
-
-        // Handle heartbeat message
-        heartbeat.buf[0] = axes[0]->error_;
-        heartbeat.buf[1] = axes[0]->current_state_;
-        heartbeat.buf[2] = axes[1]->error_;
-        heartbeat.buf[3] = axes[1]->current_state_;
-        uint32_t now = osKernelSysTick();
-        if(now - lastHeartbeatTick >= 100){
-            write(heartbeat);
-            lastHeartbeatTick = now;
-        }
-        
         HAL_CAN_ActivateNotification(handle_, CAN_IT_RX_FIFO0_MSG_PENDING);
     }
 }
@@ -140,8 +93,6 @@ bool ODriveCAN::start_can_server() {
     return true;
 }
 
-
-
 // Send a CAN message on the bus
 uint32_t ODriveCAN::write(CAN_message_t &txmsg) {
     CAN_TxHeaderTypeDef header;
@@ -181,8 +132,7 @@ bool ODriveCAN::read(CAN_message_t &rxmsg) {
     return validRead;
 }
 
-
-// Set one of only a few common baud rates.  CAN doesn't do arbitrary baud rates well due to the time-quanta issue.  
+// Set one of only a few common baud rates.  CAN doesn't do arbitrary baud rates well due to the time-quanta issue.
 // 21 TQ allows for easy sampling at exactly 80% (recommended by Vector Informatik GmbH for high reliability systems)
 // Conveniently, the CAN peripheral's 42MHz clock lets us easily create 21TQs for all common baud rates
 void ODriveCAN::set_baud_rate(uint32_t baudRate) {
@@ -215,6 +165,21 @@ void ODriveCAN::set_baud_rate(uint32_t baudRate) {
 void ODriveCAN::set_node_id(uint8_t nodeID) {
     // Allow for future nodeID validation by making this a set function
     config_.node_id = nodeID;
+}
+
+// This function is called by each axis.  
+// It provides an abstraction from the specific CAN protocol in use
+void ODriveCAN::send_heartbeat(Axis *axis) {
+    // Handle heartbeat message
+    uint32_t now = osKernelSysTick();
+    if (now - axis->last_heartbeat_ >= 100) {
+        switch (config_.protocol) {
+            case CAN_PROTOCOL_SIMPLE:
+                CANSimple::send_heartbeat(axis);
+                break;
+        }
+        axis->last_heartbeat_ = now;
+    }
 }
 
 void HAL_CAN_TxMailbox0CompleteCallback(CAN_HandleTypeDef *hcan) {}
