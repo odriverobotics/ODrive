@@ -18,6 +18,7 @@ Please add a note of your changes below this heading if you make a Pull Request.
   * `motor.config.current_control_bandwidth`
     * This deprecates `motor.set_current_control_bandwidth()`
   * `encoder.config.bandwidth`
+* Default value for `motor.resistance_calib_max_voltage` changed to 2.0
 
 ### Fixed
 * An issue where the axis state machine would jump in and out of idle when there is an error
