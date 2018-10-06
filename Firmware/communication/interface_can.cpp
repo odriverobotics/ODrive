@@ -162,11 +162,6 @@ void ODriveCAN::set_baud_rate(uint32_t baudRate) {
     }
 }
 
-void ODriveCAN::set_node_id(uint8_t nodeID) {
-    // Allow for future nodeID validation by making this a set function
-    config_.node_id = nodeID;
-}
-
 // This function is called by each axis.  
 // It provides an abstraction from the specific CAN protocol in use
 void ODriveCAN::send_heartbeat(Axis *axis) {

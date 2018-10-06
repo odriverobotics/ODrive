@@ -33,8 +33,7 @@ enum CAN_Protocol_t {
 class ODriveCAN {
    public:
     struct Config_t {
-        uint8_t node_id = 0;
-        uint32_t baud = CAN_BAUD_250K;
+        uint32_t baud = CAN_BAUD_1M;
         CAN_Protocol_t protocol = CAN_PROTOCOL_SIMPLE;
     };
 
@@ -56,10 +55,8 @@ class ODriveCAN {
     auto make_protocol_definitions() {
         return make_protocol_member_list(
             make_protocol_object("config",
-                                 make_protocol_ro_property("node_id", &config_.node_id),
                                  make_protocol_ro_property("baud_rate", &config_.baud)),
                                  make_protocol_property("can_protocol", &config_.protocol),
-            make_protocol_function("set_node_id", *this, &ODriveCAN::set_node_id, "nodeID"),
             make_protocol_function("set_baud_rate", *this, &ODriveCAN::set_baud_rate, "baudRate"));
     }
 
