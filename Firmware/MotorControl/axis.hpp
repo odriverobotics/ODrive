@@ -82,17 +82,10 @@ public:
     bool do_updates();
     float get_temp();
 
-    bool inline check_for_errors() {
-        // Maybe we should update this to only trigger on new errors?
-        // The danger with that is we could fail to bail on uncleared errors that still prevent
-        // correct opreation.
 
-        // For now: we treat ERROR_INVALID_STATE in idle loop special, or we could never stay
-        // in idle after this kind of error.
-        if (current_state_ == AXIS_STATE_IDLE)
-            return (error_ & ~ERROR_INVALID_STATE) == ERROR_NONE;
-        else
-            return error_ == ERROR_NONE;
+    // True if there are no errors
+    bool inline check_for_errors() {
+        return error_ == ERROR_NONE;
     }
 
     // @brief Runs the specified update handler at the frequency of the current measurements.
@@ -124,8 +117,12 @@ public:
             // Note: updates run even if checks fail
             bool updates_ok = do_updates(); 
             
-            if (!checks_ok || !updates_ok) 
-                break;
+            if (!checks_ok || !updates_ok) {
+                // It's not useful to quit idle since that is the safe action
+                // Also leaving idle would rearm the motors
+                if (current_state_ != AXIS_STATE_IDLE)
+                    break;
+            }
 
             // Run main loop function, defer quitting for after wait
             // TODO: change arming logic to arm after waiting
