@@ -103,19 +103,6 @@ void Axis::set_step_dir_enabled(bool enable) {
     }
 }
 
-bool Axis::check_for_errors() {
-    // Maybe we should update this to only trigger on new errors?
-    // The danger with that is we could fail to bail on uncleared errors that still prevent
-    // correct opreation.
-
-    // For now: we treat ERROR_INVALID_STATE in idle loop special, or we could never stay
-    // in idle after this kind of error.
-    if (current_state_ == AXIS_STATE_IDLE)
-        return (error_ & ~ERROR_INVALID_STATE) == ERROR_NONE;
-    else
-        return error_ == ERROR_NONE;
-}
-
 // @brief Do axis level checks and call subcomponent do_checks
 // Returns true if everything is ok.
 bool Axis::do_checks() {

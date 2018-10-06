@@ -17,8 +17,8 @@ Motor::Motor(const MotorHardwareConfig_t& hw_config,
             .EngpioNumber = gate_driver_config_.enable_pin,
             .nCSgpioHandle = gate_driver_config_.nCS_port,
             .nCSgpioNumber = gate_driver_config_.nCS_pin,
-        })
-{
+        }) {
+    update_current_controller_gains();
 }
 
 // @brief Arms the PWM outputs that belong to this motor.
@@ -60,11 +60,6 @@ void Motor::update_current_controller_gains() {
     current_control_.p_gain = config_.current_control_bandwidth * config_.phase_inductance;
     float plant_pole = config_.phase_resistance / config_.phase_inductance;
     current_control_.i_gain = plant_pole * current_control_.p_gain;
-}
-
-void Motor::set_current_control_bandwidth(float current_control_bandwidth) {
-    config_.current_control_bandwidth = current_control_bandwidth;
-    update_current_controller_gains();
 }
 
 // @brief Set up the gate drivers
@@ -290,8 +285,8 @@ bool Motor::enqueue_voltage_timings(float v_alpha, float v_beta) {
 // TODO: This doesn't update brake current
 // We should probably make FOC Current call FOC Voltage to avoid duplication.
 bool Motor::FOC_voltage(float v_d, float v_q, float phase) {
-    float c = arm_cos_f32(phase);
-    float s = arm_sin_f32(phase);
+    float c = our_arm_cos_f32(phase);
+    float s = our_arm_sin_f32(phase);
     float v_alpha = c*v_d - s*v_q;
     float v_beta  = c*v_q + s*v_d;
     return enqueue_voltage_timings(v_alpha, v_beta);
@@ -309,8 +304,8 @@ bool Motor::FOC_current(float Id_des, float Iq_des, float phase) {
     float Ibeta = one_by_sqrt3 * (current_meas_.phB - current_meas_.phC);
 
     // Park transform
-    float c = arm_cos_f32(phase);
-    float s = arm_sin_f32(phase);
+    float c = our_arm_cos_f32(phase);
+    float s = our_arm_sin_f32(phase);
     float Id = c * Ialpha + s * Ibeta;
     float Iq = c * Ibeta - s * Ialpha;
     ictrl.Iq_measured = Iq;
@@ -348,7 +343,7 @@ bool Motor::FOC_current(float Id_des, float Iq_des, float phase) {
 
     // Inverse park transform
     float mod_alpha = c * mod_d - s * mod_q;
-    float mod_beta = c * mod_q + s * mod_d;
+    float mod_beta  = c * mod_q + s * mod_d;
 
     // Report final applied voltage in stationary frame (for sensorles estimator)
     ictrl.final_v_alpha = mod_to_V * mod_alpha;

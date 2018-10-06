@@ -94,8 +94,13 @@ public:
     bool check_PSU_brownout();
     bool do_checks();
     bool do_updates();
-    bool check_for_errors();
     float get_temp();
+
+
+    // True if there are no errors
+    bool inline check_for_errors() {
+        return error_ == ERROR_NONE;
+    }
 
     // @brief Runs the specified update handler at the frequency of the current measurements.
     //
@@ -126,8 +131,12 @@ public:
             // Note: updates run even if checks fail
             bool updates_ok = do_updates(); 
             
-            if (!checks_ok || !updates_ok) 
-                break;
+            if (!checks_ok || !updates_ok) {
+                // It's not useful to quit idle since that is the safe action
+                // Also leaving idle would rearm the motors
+                if (current_state_ != AXIS_STATE_IDLE)
+                    break;
+            }
 
             // Run main loop function, defer quitting for after wait
             // TODO: change arming logic to arm after waiting
