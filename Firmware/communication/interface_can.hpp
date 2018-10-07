@@ -65,7 +65,6 @@ class ODriveCAN {
     CAN_HandleTypeDef *handle_ = nullptr;
     ODriveCAN::Config_t &config_;
 
-    void set_node_id(uint8_t nodeID);
     void set_baud_rate(uint32_t baudRate);
 };
 
