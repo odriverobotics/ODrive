@@ -24,7 +24,7 @@ permalink: /
 
 ### You will need:
 * One or two [brushless motors](https://docs.google.com/spreadsheets/d/12vzz7XVEK6YNIOqH0jAz51F5VUpc-lJEs3mmkWP1H4Y). It is fine, even recommended, to start testing with just a single motor and encoder.
-* One or two [quadrature incremental encoder(s)](encoders)
+* One or two [encoder(s)](https://docs.google.com/spreadsheets/d/1OBDwYrBb5zUPZLrhL98ezZbg94tUsZcdTuwiVNgVqpU)
 * A power resistor. A good starting point would be the 50W resistor included with your ODrive.
   <details><summary markdown="span">Do I really need a power resistor? What values to choose?</summary><div markdown="block">
 
@@ -128,11 +128,11 @@ Try step 5 again
 ```
 
 ## Firmware
-#### ODrive v3.5 and later
-Your board should come preflashed with firmware. If you run into problems, follow the instructions [here](odrivetool.md#device-firmware-update) on the DFU procedure before you continue.
+**ODrive v3.5 and later**<br>
+Your board should come preflashed with firmware. If you run into problems, follow the instructions [here](odrivetool.md#device-firmware-update) on the DFU procedure before you continue.</div>
 
-#### ODrive v3.4 and earlier
-Your board does **not** come preflashed with any firmware. Follow the instructions [here](odrivetool.md#device-firmware-update) on the STP Link procedure before you continue.
+**ODrive v3.4 and earlier**<br>
+Your board does **not** come preflashed with any firmware. Follow the instructions [here](odrivetool.md#device-firmware-update) on the STP Link procedure before you continue.</div>
 
 ## Start `odrivetool`
 To launch the main interactive ODrive tool, type `odrivetool` <kbd>Enter</kbd>. Connect your ODrive and wait for the tool to find it. Now you can, for instance type `odrv0.vbus_voltage` <kbd>Enter</kbd> to inpect the boards main supply voltage.
@@ -158,27 +158,27 @@ You can read more about `odrivetool` [here](odrivetool.md).
 
 ### 1. Set the limits:
 <details><summary markdown="span">Wait, how do I set these?</summary><div markdown="block">
-
 In the previous step we started `odrivetool`. In there, you can assign variables directly by name.
 
 For instance, to set the current limit of M0 to 10A you would type: `odrv0.axis0.motor.config.current_lim = 10` <kbd>Enter</kbd>
 </div></details>
 
-#### Current limit
+**Current limit**<br>
 `odrv0.axis0.motor.config.current_lim` [A].  
 The default current limit, for safety reasons, is set to 10A. This is quite weak, but good for making sure the drive is stable. Once you have tuned the oDrive, you can increase this to 75A to increase performance. Note that above 75A, you must change the current amplifier gains. You do this by requesting a different current range. i.e. for 90A on M0: `odrv0.axis0.motor.config.requested_current_range = 90` [A], then save the configuration and reboot as the gains are written out to the DRV (MOSFET driver) only during startup.
 
 *Note: The motor current and the current drawn from the power supply is not the same in general. You should not look at the power supply current to see what is going on with the motor current.*
-    
 <details><summary markdown="span">Ok, so tell me how it actually works then...</summary><div markdown="block">
 The current in the motor is only connected to the current in the power supply _sometimes_ and other times it just cycles out of one phase and back in the other. This is what the modulation magnitude is (sometimes people call this duty cycle, but that's a bit confusing because we use SVM not straight PWM). When the modulation magnitude is 0, the average voltage seen across the motor phases is 0, and the motor current is never connected to the power supply. When the magnitude is 100%, it is always connected, and at 50% it's connected half the time, and cycled in just the motor half the time.
 
 The largest effect on modulation magnitude is speed. There are other smaller factors, but in general: if the motor is still it's not unreasonable to have 50A in the motor from 5A on the power supply. When the motor is spinning close to top speed, the power supply current and the motor current will be somewhat close to each other.
-    </div></details>
-#### Velocity limit
+</div></details>
+
+**Velocity limit**<br>
 `odrv0.axis0.controller.config.vel_limit` [counts/s].  
 The motor will be limited to this speed. Again the default value is quite slow.
-#### Calibration current
+
+**Calibration current**<br>
 You can change `odrv0.axis0.motor.config.calibration_current` [A] to the largest value you feel comfortable leaving running through the motor continuously when the motor is stationary. If you are using a small motor (i.e. 15A current rated) you may need to reduce `calibration_current` to a value smaller than the default.
 
 ### 2. Set other hardware parameters
@@ -190,7 +190,6 @@ This is the number of **magnet poles** in the rotor, **divided by two**. To find
 If you can't see them, try sliding a magnet around the rotor, and counting how many times it stops. This will be the number of **pole pairs**. If you use a magnetic piece of metal instead of a magnet, you will get the number of **magnet poles**.
 `odrv0.axis0.motor.config.motor_type`  
 This is the type of motor being used. Currently two types of motors are supported: High-current motors (`MOTOR_TYPE_HIGH_CURRENT`) and gimbal motors (`MOTOR_TYPE_GIMBAL`).
-
 <details><summary markdown="span">Which <code>motor_type</code> to choose?</summary><div markdown="block">
 
 If you're using a regular hobby brushless motor like [this](https://hobbyking.com/en_us/turnigy-aerodrive-sk3-5065-236kv-brushless-outrunner-motor.html) one, you should set `motor_mode` to `MOTOR_TYPE_HIGH_CURRENT`. For low-current gimbal motors like [this](https://hobbyking.com/en_us/turnigy-hd-5208-brushless-gimbal-motor-bldc.html) one, you should choose `MOTOR_TYPE_GIMBAL`. Do not use `MOTOR_TYPE_GIMBAL` on a motor that is not a gimbal motor, as it may overheat the motor or the ODrive.
@@ -199,15 +198,15 @@ If you're using a regular hobby brushless motor like [this](https://hobbyking.co
 If 100's of mA of current noise is "small" for you, you can choose `MOTOR_TYPE_HIGH_CURRENT`.
 If 100's of mA of current noise is "large" for you, and you do not intend to spin the motor very fast (Ω * L << R), and the motor is fairly large resistance (1 ohm or larger), you can chose `MOTOR_TYPE_GIMBAL`.
 If 100's of mA current noise is "large" for you, _and_ you intend to spin the motor fast, then you need to replace the shunt resistors on the ODrive.
-
 </div></details> <br> 
 
 *Note: When using gimbal motors,* `current_lim` *and* `calibration_current` *actually mean "voltage limit" and "calibration voltage", since we don't use current feedback. This means that if you set it to 10, it means 10V, despite the name of the parameter.*
 
-#### If using encoder
+**If using encoder**<br>
 `odrv0.axis0.encoder.config.cpr`: Encoder Count Per Revolution [CPR]  
 This is 4x the Pulse Per Revolution (PPR) value. Usually this is indicated in the datasheet of your encoder.
-#### If not using encoder
+
+**If not using encoder**<br>
 * If you wish to run in sensorless mode, please see [Setting up sensorless](commands.md#setting-up-sensorless).
 * If you are using hall sensor feedback, please see the [hoverboard motor example](hoverboard.md).
 
@@ -244,10 +243,12 @@ Let's get motor 0 up and running. The procedure for motor 1 is exactly the same,
 
 ### Other control modes
 The ODrive also supports velocity control and current (torque) control.
-#### Velocity control
+
+**Velocity control**<br>
 Set `odrv0.axis0.controller.config.control_mode = CTRL_MODE_VELOCITY_CONTROL`.  
 You can now control the velocity with `odrv0.axis0.controller.vel_setpoint = 5000` [count/s].
-#### Current control
+
+**Current control**<br>
 Set `odrv0.axis0.controller.config.control_mode = CTRL_MODE_CURRENT_CONTROL`.  
 You can now control the current with `odrv0.axis0.controller.current_setpoint = 3` [A].
 
