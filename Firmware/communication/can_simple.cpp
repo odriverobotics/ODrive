@@ -116,4 +116,5 @@ void CANSimple::send_heartbeat(Axis* axis){
     txmsg.buf[5] = axis->current_state_ >> 8;
     txmsg.buf[6] = axis->current_state_ >> 16;
     txmsg.buf[7] = axis->current_state_ >> 24;
+    odCAN->write(txmsg);
 }
