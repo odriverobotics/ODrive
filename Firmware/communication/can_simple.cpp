@@ -24,16 +24,16 @@ void CANSimple::handle_can_message(CAN_message_t& msg) {
     }
     if (axis != nullptr) {
         switch (msg.id & 0x7F) {
-            case 0x010:
+            case 0x020:
                 move_to_pos_callback(axis, msg);
                 break;
-            case 0x011:
+            case 0x021:
                 set_pos_setpoint_callback(axis, msg);
                 break;
-            case 0x012:
+            case 0x022:
                 set_vel_setpoint_callback(axis, msg);
                 break;
-            case 0x013:
+            case 0x023:
                 set_current_setpoint_callback(axis, msg);
                 break;
         }
