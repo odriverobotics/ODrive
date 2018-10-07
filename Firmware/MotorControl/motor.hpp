@@ -55,7 +55,7 @@ public:
         bool pre_calibrated = false; // can be set to true to indicate that all values here are valid
         int32_t pole_pairs = 7;
         float calibration_current = 10.0f;    // [A]
-        float resistance_calib_max_voltage = 1.0f; // [V] - You may need to increase this if this voltage isn't sufficient to drive calibration_current through the motor.
+        float resistance_calib_max_voltage = 2.0f; // [V] - You may need to increase this if this voltage isn't sufficient to drive calibration_current through the motor.
         float phase_inductance = 0.0f;        // to be set by measure_phase_inductance
         float phase_resistance = 0.0f;        // to be set by measure_phase_resistance
         int32_t direction = 1;                // 1 or -1
@@ -95,13 +95,11 @@ public:
     bool arm();
     void disarm();
     void setup() {
-        update_current_controller_gains();
         DRV8301_setup();
     }
     void reset_current_control();
 
     void update_current_controller_gains();
-    void set_current_control_bandwidth(float current_control_bandwidth);
     void DRV8301_setup();
     bool check_DRV_fault();
     void set_error(Error_t error);
@@ -211,10 +209,9 @@ public:
                 make_protocol_property("motor_type", &config_.motor_type),
                 make_protocol_property("current_lim", &config_.current_lim),
                 make_protocol_property("requested_current_range", &config_.requested_current_range),
-                make_protocol_ro_property("current_control_bandwidth", &config_.current_control_bandwidth)
-            ),
-            make_protocol_function("set_current_control_bandwidth", *this, &Motor::set_current_control_bandwidth,
-                "current_control_bandwidth")
+                make_protocol_property("current_control_bandwidth", &config_.current_control_bandwidth,
+                    [](void* ctx) { static_cast<Motor*>(ctx)->update_current_controller_gains(); }, this)
+            )
         );
     }
 };

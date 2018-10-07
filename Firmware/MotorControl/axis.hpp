@@ -15,9 +15,9 @@ public:
         ERROR_CURRENT_MEASUREMENT_TIMEOUT = 0x08,
         ERROR_BRAKE_RESISTOR_DISARMED = 0x10, //<! the brake resistor was unexpectedly disarmed
         ERROR_MOTOR_DISARMED = 0x20, //<! the motor was unexpectedly disarmed
-        ERROR_MOTOR_FAILED = 0x40,
+        ERROR_MOTOR_FAILED = 0x40, // Go to motor.hpp for information, check odrvX.axisX.motor.error for error value 
         ERROR_SENSORLESS_ESTIMATOR_FAILED = 0x80,
-        ERROR_ENCODER_FAILED = 0x100,
+        ERROR_ENCODER_FAILED = 0x100, // Go to encoder.hpp for information, check odrvX.axisX.encoder.error for error value
         ERROR_CONTROLLER_FAILED = 0x200,
         ERROR_POS_CTRL_DURING_SENSORLESS = 0x400,
     };
@@ -80,8 +80,13 @@ public:
     bool check_PSU_brownout();
     bool do_checks();
     bool do_updates();
-    bool check_for_errors();
     float get_temp();
+
+
+    // True if there are no errors
+    bool inline check_for_errors() {
+        return error_ == ERROR_NONE;
+    }
 
     // @brief Runs the specified update handler at the frequency of the current measurements.
     //
@@ -112,8 +117,12 @@ public:
             // Note: updates run even if checks fail
             bool updates_ok = do_updates(); 
             
-            if (!checks_ok || !updates_ok) 
-                break;
+            if (!checks_ok || !updates_ok) {
+                // It's not useful to quit idle since that is the safe action
+                // Also leaving idle would rearm the motors
+                if (current_state_ != AXIS_STATE_IDLE)
+                    break;
+            }
 
             // Run main loop function, defer quitting for after wait
             // TODO: change arming logic to arm after waiting
