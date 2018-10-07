@@ -2,6 +2,9 @@
 Please add a note of your changes below this heading if you make a Pull Request.
 
 # Releases
+## [0.4.6] - 2018-10-07
+### Fixed
+* Broken printing of floats on ascii protocol
 
 ## [0.4.5] - 2018-10-06
 ### Added

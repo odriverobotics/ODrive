@@ -603,6 +603,14 @@ struct format_traits_t;
 //     static constexpr const char * fmt = "%f";
 //     static constexpr const char * fmtp = "%f";
 // };
+template<> struct format_traits_t<int64_t> { using type = void;
+    static constexpr const char * fmt = "%lld";
+    static constexpr const char * fmtp = "%lld";
+};
+template<> struct format_traits_t<uint64_t> { using type = void;
+    static constexpr const char * fmt = "%llu";
+    static constexpr const char * fmtp = "%llu";
+};
 template<> struct format_traits_t<int32_t> { using type = void;
     static constexpr const char * fmt = "%ld";
     static constexpr const char * fmtp = "%ld";
@@ -634,14 +642,12 @@ static bool to_string(const T& value, char * buffer, size_t length, int) {
     return true;
 }
 // Special case for float because printf promotes float to double, and we get warnings
-template<typename T>
+template<typename T = float>
 static bool to_string(const float& value, char * buffer, size_t length, int) {
     snprintf(buffer, length, "%f", (double)value);
     return true;
 }
-
-
-template<typename T>
+template<typename T = bool>
 static bool to_string(const bool& value, char * buffer, size_t length, int) {
     buffer[0] = value ? '1' : '0';
     buffer[1] = 0;
@@ -657,11 +663,11 @@ static bool from_string(const char * buffer, size_t length, T* property, int) {
     return sscanf(buffer, format_traits_t<T>::fmt, property) == 1;
 }
 // Special case for float because printf promotes float to double, and we get warnings
-template<typename T>
+template<typename T = float>
 static bool from_string(const char * buffer, size_t length, float* property, int) {
     return sscanf(buffer, "%f", property) == 1;
 }
-template<typename T>
+template<typename T = bool>
 static bool from_string(const char * buffer, size_t length, bool* property, int) {
     int val;
     if (sscanf(buffer, "%d", &val) != 1)
