@@ -1,6 +1,9 @@
 
 #include "can_simple.hpp"
 
+static const uint8_t NUM_NODE_ID_BITS = 6;
+static constexpr uint8_t NUM_CMD_ID_BITS = 11 - NUM_NODE_ID_BITS;
+
 void CANSimple::handle_can_message(CAN_message_t& msg) {
     // This functional way of handling the messages is neat and is much cleaner from
     // a data security point of view, but it will require some tweaking to fix the syntax.
@@ -13,7 +16,7 @@ void CANSimple::handle_can_message(CAN_message_t& msg) {
     //     Frame
     // nodeID | CMD
     // 4 bits | 7 bits
-    auto nodeID = (msg.id >> 7 & 0x15);
+    auto nodeID = get_node_id(msg.id);
     Axis* axis = nullptr;
 
     for (uint8_t i = 0; i < AXIS_COUNT; i++) {
@@ -22,21 +25,29 @@ void CANSimple::handle_can_message(CAN_message_t& msg) {
         }
     }
     if (axis != nullptr) {
-        switch (msg.id & 0x7F) {
-            case 0x020:
+        switch (get_cmd_id(msg.id)) {
+            case MSG_MOVE_TO_POS:
                 move_to_pos_callback(axis, msg);
                 break;
-            case 0x021:
+            case MSG_SET_POS_SETPOINT:
                 set_pos_setpoint_callback(axis, msg);
                 break;
-            case 0x022:
+            case MSG_SET_VEL_SETPOINT:
                 set_vel_setpoint_callback(axis, msg);
                 break;
-            case 0x023:
+            case MSG_SET_CUR_SETPOINT:
                 set_current_setpoint_callback(axis, msg);
                 break;
         }
     }
+}
+
+uint8_t CANSimple::get_node_id(uint32_t msgID){
+    return ((msgID >> NUM_NODE_ID_BITS) & 0x03F); // Upper 6 bits
+}
+
+uint8_t CANSimple::get_cmd_id(uint32_t msgID){
+    return (msgID & 0x01F); // Bottom 5 bits
 }
 
 void CANSimple::estop_callback(){
@@ -99,8 +110,8 @@ void CANSimple::set_current_setpoint_callback(Axis* axis, CAN_message_t& msg) {
 
 void CANSimple::send_heartbeat(Axis* axis){
     CAN_message_t txmsg;
-    txmsg.id = axis->config_.can_node_id << 7;
-    txmsg.id += 0x001; // heartbeat ID
+    txmsg.id = axis->config_.can_node_id << NUM_CMD_ID_BITS;
+    txmsg.id += MSG_HEARTBEAT_CMD; // heartbeat ID
     txmsg.isExt = false;
     txmsg.len = 8;
     

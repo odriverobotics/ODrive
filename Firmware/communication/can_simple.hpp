@@ -55,6 +55,10 @@ class CANSimple {
     static void set_vel_setpoint_callback(Axis* axis, CAN_message_t& msg);
     static void set_current_setpoint_callback(Axis* axis, CAN_message_t& msg);
 
+    // Utility functions
+    static uint8_t get_node_id(uint32_t msgID);
+    static uint8_t get_cmd_id(uint32_t msgID);
+
     // This functional way of handling the messages is neat and is much cleaner from
     // a data security point of view, but it will require some tweaking
     //
