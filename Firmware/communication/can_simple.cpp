@@ -28,12 +28,17 @@ void CANSimple::handle_can_message(CAN_message_t& msg) {
     }
     switch (cmd) {
         case MSG_CO_NMT_CTRL:
-            nmt_callback(axis, msg);
-            break;
-        case MSG_CO_SYNC_CTRL:
-            sync_callback(axis, msg);
             break;
         case MSG_CO_HEARTBEAT_CMD:
+            break;
+        case MSG_ODRIVE_HEARTBEAT:
+            // We don't currently do anything to respond to ODrive heartbeat messages
+            break;
+        case MSG_ODRIVE_ESTOP:
+            estop_callback(axis, msg);
+            break;
+        case MSG_GET_MOTOR_ERROR:
+            get_motor_error_callback(axis, msg);
             break;
         case MSG_GET_ENCODER_ERROR:
             get_encoder_error_callback(axis, msg);
@@ -52,6 +57,9 @@ void CANSimple::handle_can_message(CAN_message_t& msg) {
             break;
         case MSG_GET_ENCODER_ESTIMATES:
             get_encoder_estimates_callback(axis, msg);
+            break;
+        case MSG_GET_ENCODER_COUNT:
+            get_encoder_count_callback(axis, msg);
             break;
         case MSG_MOVE_TO_POS:
             move_to_pos_callback(axis, msg);
@@ -77,10 +85,6 @@ void CANSimple::handle_can_message(CAN_message_t& msg) {
 }
 
 void CANSimple::nmt_callback(Axis* axis, CAN_message_t& msg) {
-    // Not implemented
-}
-
-void CANSimple::sync_callback(Axis* axis, CAN_message_t& msg) {
     // Not implemented
 }
 
@@ -134,7 +138,7 @@ void CANSimple::get_sensorless_error_callback(Axis* axis, CAN_message_t& msg) {
 }
 
 void CANSimple::set_axis_nodeid_callback(Axis* axis, CAN_message_t& msg) {
-    axis->config_.can_node_id = msg.buf[0];
+    axis->config_.can_node_id = msg.buf[0] & 0x3F; // Node ID bitmask
 }
 
 void CANSimple::set_axis_requested_state_callback(Axis* axis, CAN_message_t& msg) {
@@ -166,6 +170,26 @@ void CANSimple::get_encoder_estimates_callback(Axis* axis, CAN_message_t& msg) {
     odCAN->write(txmsg);
 }
 
+void CANSimple::get_encoder_count_callback(Axis* axis, CAN_message_t& msg){
+    CAN_message_t txmsg;
+    txmsg.id = axis->config_.can_node_id << NUM_CMD_ID_BITS;
+    txmsg.id += MSG_GET_ENCODER_COUNT;
+    txmsg.isExt = false;
+    txmsg.len = 8;
+
+    txmsg.buf[0] = axis->encoder_.shadow_count_;
+    txmsg.buf[1] = axis->encoder_.shadow_count_ >> 8;
+    txmsg.buf[2] = axis->encoder_.shadow_count_ >> 16;
+    txmsg.buf[3] = axis->encoder_.shadow_count_ >> 24;
+
+    txmsg.buf[4] = axis->encoder_.count_in_cpr_;
+    txmsg.buf[5] = axis->encoder_.count_in_cpr_ >> 8;
+    txmsg.buf[6] = axis->encoder_.count_in_cpr_ >> 16;
+    txmsg.buf[7] = axis->encoder_.count_in_cpr_ >> 24;
+
+    odCAN->write(txmsg);
+}
+
 void CANSimple::move_to_pos_callback(Axis* axis, CAN_message_t& msg) {
     axis->controller_.move_to_pos(get_32bit_val(msg, 0));
 }
@@ -183,17 +207,31 @@ void CANSimple::set_current_setpoint_callback(Axis* axis, CAN_message_t& msg) {
 }
 
 void CANSimple::set_vel_limit_callback(Axis* axis, CAN_message_t& msg) {
-    axis->controller_.config_.vel_limit = get_32bit_val(msg, 0);
+    axis->controller_.config_.vel_limit = get_float(msg, 0);
 }
 
 void CANSimple::start_anticogging_callback(Axis* axis, CAN_message_t& msg) {
     axis->controller_.start_anticogging_calibration();
 }
 
+void CANSimple::set_traj_vel_limit_callback(Axis* axis, CAN_message_t& msg) {
+    axis->trap_.config_.vel_limit = get_float(msg, 0);
+}
+
+void CANSimple::set_traj_accel_limits_callback(Axis* axis, CAN_message_t& msg) {
+    axis->trap_.config_.accel_limit = get_float(msg, 0);
+    axis->trap_.config_.decel_limit = get_float(msg, 4);
+}
+
+void CANSimple::set_traj_A_per_css_callback(Axis* axis, CAN_message_t& msg) {
+    axis->trap_.config_.A_per_css = get_float(msg, 0);
+}
+
+
 void CANSimple::send_heartbeat(Axis* axis) {
     CAN_message_t txmsg;
     txmsg.id = axis->config_.can_node_id << NUM_CMD_ID_BITS;
-    txmsg.id += MSG_CO_HEARTBEAT_CMD;  // heartbeat ID
+    txmsg.id += MSG_ODRIVE_HEARTBEAT;  // heartbeat ID
     txmsg.isExt = false;
     txmsg.len = 8;
 
@@ -219,11 +257,15 @@ uint8_t CANSimple::get_cmd_id(uint32_t msgID) {
     return (msgID & 0x01F);  // Bottom 5 bits
 }
 
-uint16_t CANSimple::get_16bit_val(CAN_message_t& msg, uint8_t start_byte) {
+int16_t CANSimple::get_16bit_val(CAN_message_t& msg, uint8_t start_byte) {
     return msg.buf[start_byte] + (msg.buf[start_byte + 1] << 8);
 }
 
-uint32_t CANSimple::get_32bit_val(CAN_message_t& msg, uint8_t start_byte) {
-    return get_16bit_val(msg, 0) + (get_16bit_val(msg, 2) << 16);
-    // return msg.buf[start_byte] + (msg.buf[start_byte+1] << 8) + (msg.buf[start_byte+1] << 16) + (msg.buf[start_byte+1] << 24);
+int32_t CANSimple::get_32bit_val(CAN_message_t& msg, uint8_t start_byte) {
+    return get_16bit_val(msg, start_byte) + (get_16bit_val(msg, start_byte + 2) << 16);
+}
+
+float CANSimple::get_float(CAN_message_t& msg, uint8_t start_byte){
+    int32_t val = get_32bit_val(msg, start_byte);
+    return *(reinterpret_cast<float*>(val)); // Sexy int32_t -> float cast
 }
