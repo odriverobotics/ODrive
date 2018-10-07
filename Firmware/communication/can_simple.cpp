@@ -100,7 +100,7 @@ void CANSimple::set_current_setpoint_callback(Axis* axis, CAN_message_t& msg) {
 void CANSimple::send_heartbeat(Axis* axis){
     CAN_message_t txmsg;
     txmsg.id = axis->config_.can_node_id << 7;
-    txmsg.id += 0x1;
+    txmsg.id += 0x001; // heartbeat ID
     txmsg.isExt = false;
     txmsg.len = 8;
     

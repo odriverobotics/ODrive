@@ -45,6 +45,7 @@ class ODriveCAN {
     bool start_can_server();
     void can_server_thread();
     void send_heartbeat(Axis* axis);
+    void reinit_can();
 
     // I/O Functions
     uint32_t available();

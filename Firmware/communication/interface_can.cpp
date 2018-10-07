@@ -24,18 +24,28 @@ ODriveCAN::ODriveCAN(CAN_HandleTypeDef *handle, ODriveCAN::Config_t &config)
 
 void ODriveCAN::can_server_thread() {
     for (;;) {
-        CAN_message_t rxmsg;
+        uint32_t status = HAL_CAN_GetError(handle_);
+        if (status == HAL_CAN_ERROR_NONE) {
+            CAN_message_t rxmsg;
 
-        osSemaphoreWait(sem_can, 10);  // Poll every 10ms regardless of sempahore status
-        while (available()) {
-            read(rxmsg);
-            switch (config_.protocol) {
-                case CAN_PROTOCOL_SIMPLE:
-                    CANSimple::handle_can_message(rxmsg);
-                    break;
+            osSemaphoreWait(sem_can, 10);  // Poll every 10ms regardless of sempahore status
+            while (available()) {
+                read(rxmsg);
+                switch (config_.protocol) {
+                    case CAN_PROTOCOL_SIMPLE:
+                        CANSimple::handle_can_message(rxmsg);
+                        break;
+                }
+            }
+            HAL_CAN_ActivateNotification(handle_, CAN_IT_RX_FIFO0_MSG_PENDING);
+        } else {
+            if (status == HAL_CAN_ERROR_TIMEOUT) {
+                HAL_CAN_ResetError(handle_);
+                status = HAL_CAN_Start(handle_);
+                if (status == HAL_OK)
+                    status = HAL_CAN_ActivateNotification(handle_, CAN_IT_RX_FIFO0_MSG_PENDING);
             }
         }
-        HAL_CAN_ActivateNotification(handle_, CAN_IT_RX_FIFO0_MSG_PENDING);
     }
 }
 
@@ -48,9 +58,8 @@ bool ODriveCAN::start_can_server() {
     HAL_StatusTypeDef status;
 
     set_baud_rate(config_.baud);
+
     status = HAL_CAN_Init(handle_);
-    if (status != HAL_OK)
-        return false;
 
     CAN_FilterTypeDef filter;
     filter.FilterActivation = ENABLE;
@@ -64,48 +73,37 @@ bool ODriveCAN::start_can_server() {
     filter.FilterScale = CAN_FILTERSCALE_32BIT;
 
     status = HAL_CAN_ConfigFilter(handle_, &filter);
-    if (status != HAL_OK)
-        return false;
 
     status = HAL_CAN_Start(handle_);
-    if (status != HAL_OK)
-        return false;
-
-    status = HAL_CAN_ActivateNotification(handle_,
-                                          //   CAN_IT_TX_MAILBOX_EMPTY |
-                                          CAN_IT_RX_FIFO0_MSG_PENDING | CAN_IT_RX_FIFO1_MSG_PENDING /* we probably only want this */
-                                                                                                    //   CAN_IT_RX_FIFO0_FULL | CAN_IT_RX_FIFO1_FULL
-                                                                                                    //   CAN_IT_RX_FIFO0_OVERRUN | CAN_IT_RX_FIFO1_OVERRUN |
-                                                                                                    //   CAN_IT_WAKEUP | CAN_IT_SLEEP_ACK |
-                                                                                                    //   CAN_IT_ERROR_WARNING | CAN_IT_ERROR_PASSIVE |
-                                                                                                    //   CAN_IT_BUSOFF | CAN_IT_LAST_ERROR_CODE |
-                                                                                                    //   | CAN_IT_ERROR
-    );
-    if (status != HAL_OK)
-        return false;
+    if (status == HAL_OK)
+        status = HAL_CAN_ActivateNotification(handle_, CAN_IT_RX_FIFO0_MSG_PENDING);
 
     osThreadDef(can_server_thread_def, can_server_thread_wrapper, osPriorityNormal, 0, 512);
     thread_id_ = osThreadCreate(osThread(can_server_thread_def), this);
     thread_id_valid_ = true;
 
-    return true;
+    return status;
 }
 
 // Send a CAN message on the bus
 uint32_t ODriveCAN::write(CAN_message_t &txmsg) {
-    CAN_TxHeaderTypeDef header;
-    header.StdId = txmsg.id;
-    header.ExtId = txmsg.id;
-    header.IDE = txmsg.isExt ? CAN_ID_EXT : CAN_ID_STD;
-    header.RTR = CAN_RTR_DATA;
-    header.DLC = txmsg.len;
-    header.TransmitGlobalTime = FunctionalState::DISABLE;
+    if (HAL_CAN_GetError(handle_) == HAL_CAN_ERROR_NONE) {
+        CAN_TxHeaderTypeDef header;
+        header.StdId = txmsg.id;
+        header.ExtId = txmsg.id;
+        header.IDE = txmsg.isExt ? CAN_ID_EXT : CAN_ID_STD;
+        header.RTR = CAN_RTR_DATA;
+        header.DLC = txmsg.len;
+        header.TransmitGlobalTime = FunctionalState::DISABLE;
 
-    uint32_t retTxMailbox;
-    if (HAL_CAN_GetTxMailboxesFreeLevel(handle_) > 0)
-        HAL_CAN_AddTxMessage(handle_, &header, txmsg.buf, &retTxMailbox);
+        uint32_t retTxMailbox;
+        if (HAL_CAN_GetTxMailboxesFreeLevel(handle_) > 0)
+            HAL_CAN_AddTxMessage(handle_, &header, txmsg.buf, &retTxMailbox);
 
-    return retTxMailbox;
+        return retTxMailbox;
+    } else {
+        return -1;
+    }
 }
 
 uint32_t ODriveCAN::available() {
@@ -138,21 +136,25 @@ void ODriveCAN::set_baud_rate(uint32_t baudRate) {
         case CAN_BAUD_125K:
             handle_->Init.Prescaler = 16;  // 21 TQ's
             config_.baud = baudRate;
+            reinit_can();
             break;
 
         case CAN_BAUD_250K:
             handle_->Init.Prescaler = 8;  // 21 TQ's
             config_.baud = baudRate;
+            reinit_can();
             break;
 
         case CAN_BAUD_500K:
             handle_->Init.Prescaler = 4;  // 21 TQ's
             config_.baud = baudRate;
+            reinit_can();
             break;
 
         case CAN_BAUD_1000K:
             handle_->Init.Prescaler = 2;  // 21 TQ's
             config_.baud = baudRate;
+            reinit_can();
             break;
 
         default:
@@ -160,7 +162,15 @@ void ODriveCAN::set_baud_rate(uint32_t baudRate) {
     }
 }
 
-// This function is called by each axis.  
+void ODriveCAN::reinit_can() {
+    HAL_CAN_Stop(handle_);
+    HAL_CAN_Init(handle_);
+    auto status = HAL_CAN_Start(handle_);
+    if (status == HAL_OK)
+        status = HAL_CAN_ActivateNotification(handle_, CAN_IT_RX_FIFO0_MSG_PENDING);
+}
+
+// This function is called by each axis.
 // It provides an abstraction from the specific CAN protocol in use
 void ODriveCAN::send_heartbeat(Axis *axis) {
     // Handle heartbeat message
