@@ -1,6 +1,5 @@
 
 #include "can_simple.hpp"
-#include "odrive_main.h"
 
 void CANSimple::handle_can_message(CAN_message_t& msg) {
     // This functional way of handling the messages is neat and is much cleaner from

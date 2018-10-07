@@ -11,8 +11,6 @@
 // Specific CAN Protocols
 #include "can_simple.hpp"
 
-#include <odrive_main.h>
-
 // Safer context handling via maps instead of arrays
 // #include <unordered_map>
 // std::unordered_map<CAN_HandleTypeDef *, ODriveCAN *> ctxMap;
