@@ -15,9 +15,9 @@ public:
         ERROR_CURRENT_MEASUREMENT_TIMEOUT = 0x08,
         ERROR_BRAKE_RESISTOR_DISARMED = 0x10, //<! the brake resistor was unexpectedly disarmed
         ERROR_MOTOR_DISARMED = 0x20, //<! the motor was unexpectedly disarmed
-        ERROR_MOTOR_FAILED = 0x40,
+        ERROR_MOTOR_FAILED = 0x40, // Go to motor.hpp for information, check odrvX.axisX.motor.error for error value 
         ERROR_SENSORLESS_ESTIMATOR_FAILED = 0x80,
-        ERROR_ENCODER_FAILED = 0x100,
+        ERROR_ENCODER_FAILED = 0x100, // Go to encoder.hpp for information, check odrvX.axisX.encoder.error for error value
         ERROR_CONTROLLER_FAILED = 0x200,
         ERROR_POS_CTRL_DURING_SENSORLESS = 0x400,
         ERROR_ESTOP_REQUESTED = 0x800
