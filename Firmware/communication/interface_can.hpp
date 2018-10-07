@@ -19,11 +19,11 @@ typedef struct {
 // Anonymous enum for defining the most common CAN baud rates
 
 enum {
-    CAN_BAUD_125K = 125000,
-    CAN_BAUD_250K = 250000,
-    CAN_BAUD_500K = 500000,
-    CAN_BAUD_1000K = 1000000,
-    CAN_BAUD_1M = 1000000
+    CAN_BAUD_125K   = 125000,
+    CAN_BAUD_250K   = 250000,
+    CAN_BAUD_500K   = 500000,
+    CAN_BAUD_1000K  = 1000000,
+    CAN_BAUD_1M     = 1000000
 };
 
 enum CAN_Protocol_t {
@@ -33,7 +33,7 @@ enum CAN_Protocol_t {
 class ODriveCAN {
    public:
     struct Config_t {
-        uint32_t baud = CAN_BAUD_1M;
+        uint32_t baud = CAN_BAUD_250K;
         CAN_Protocol_t protocol = CAN_PROTOCOL_SIMPLE;
     };
 
@@ -44,7 +44,7 @@ class ODriveCAN {
     volatile bool thread_id_valid_ = false;
     bool start_can_server();
     void can_server_thread();
-    void send_heartbeat(Axis* axis);
+    void send_heartbeat(Axis *axis);
     void reinit_can();
 
     // I/O Functions
@@ -57,7 +57,7 @@ class ODriveCAN {
         return make_protocol_member_list(
             make_protocol_object("config",
                                  make_protocol_ro_property("baud_rate", &config_.baud)),
-                                 make_protocol_property("can_protocol", &config_.protocol),
+            make_protocol_property("can_protocol", &config_.protocol),
             make_protocol_function("set_baud_rate", *this, &ODriveCAN::set_baud_rate, "baudRate"));
     }
 

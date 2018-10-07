@@ -158,7 +158,8 @@ void ODriveCAN::set_baud_rate(uint32_t baudRate) {
             break;
 
         default:
-            break;  // baudRate is invalid, so do nothing
+            // baudRate is invalid, so don't accept it.
+            break;  
     }
 }
 
