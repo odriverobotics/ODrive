@@ -136,6 +136,8 @@ bool Motor::check_DRV_fault() {
 void Motor::set_error(Motor::Error_t error){
     error_ |= error;
     axis_->error_ |= Axis::ERROR_MOTOR_FAILED;
+    safety_critical_disarm_motor_pwm(*this);
+    update_brake_current();
 }
 
 bool Motor::do_checks() {

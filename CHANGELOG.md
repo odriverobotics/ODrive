@@ -1,8 +1,12 @@
 # Unreleased Features
 Please add a note of your changes below this heading if you make a Pull Request.
 
-# Unreleased
+# Releases
+## [0.4.6] - 2018-10-07
+### Fixed
+* Broken printing of floats on ascii protocol
 
+## [0.4.5] - 2018-10-06
 ### Added
 * **Trapezoidal Trajectory Planner**
 * Hook to execute protocol property written callback
@@ -24,7 +28,6 @@ Please add a note of your changes below this heading if you make a Pull Request.
 * An issue where the axis state machine would jump in and out of idle when there is an error
 * There is a [bug](https://github.com/ARM-software/CMSIS_5/issues/267) in the arm fast math library, which gives spikes in the output of arm_cos_f32 for input values close to -pi/2. We fixed the bug locally, and hence are using "our_arm_cos_f32".
 
-# Releases
 ## [0.4.4] - 2018-09-18
 ### Fixed
 * Serious reliability issue with USB communication where packets on Native and the CDC interface would collide with each other.
