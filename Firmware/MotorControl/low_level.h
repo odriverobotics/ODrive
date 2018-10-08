@@ -53,6 +53,15 @@ void pwm_in_init();
 
 void update_brake_current();
 
+inline uint32_t cpu_enter_critical() {
+    return __get_PRIMASK();
+    __disable_irq();
+}
+
+inline void cpu_exit_critical(uint32_t priority_mask) {
+    __set_PRIMASK(priority_mask);
+}
+
 #ifdef __cplusplus
 }
 #endif

@@ -45,25 +45,6 @@ static const int num_GPIO = sizeof(GPIOs_to_samp) / sizeof(GPIOs_to_samp[0]);
 static uint16_t GPIO_port_samples [2][num_GPIO];
 /* CPU critical section helpers ----------------------------------------------*/
 
-static inline uint8_t cpu_enter_critical() {
-    uint8_t status_register;
-    asm (
-        "MRS   R0, PRIMASK\n\t"
-        "CPSID I\n\t"
-        "STRB R0, %[output]"
-        : [output] "=m" (status_register) :: "r0"
-    );
-    return status_register;
-}
- 
-static inline void cpu_exit_critical(uint8_t status_register) {
-    asm (
-        "ldrb r0, %[input]\n\t"
-        "msr PRIMASK,r0;\n\t"
-        ::[input] "m" (status_register) : "r0"
-    );
-}
-
 /* Safety critical functions -------------------------------------------------*/
 
 /*
@@ -115,11 +96,11 @@ void low_level_fault(Motor::Error_t error) {
 // All calls to this function must clearly originate
 // from user input.
 void safety_critical_arm_motor_pwm(Motor& motor) {
-    uint8_t sr = cpu_enter_critical();
+    uint32_t mask = cpu_enter_critical();
     if (brake_resistor_armed) {
         motor.armed_state_ = Motor::ARMED_STATE_WAITING_FOR_TIMINGS;
     }
-    cpu_exit_critical(sr);
+    cpu_exit_critical(mask);
 }
 
 // @brief Disarms the motor PWM.
@@ -128,11 +109,11 @@ void safety_critical_arm_motor_pwm(Motor& motor) {
 // safety_critical_arm_motor_phases is called.
 // @returns true if the motor was in a state other than disarmed before
 bool safety_critical_disarm_motor_pwm(Motor& motor) {
-    uint8_t sr = cpu_enter_critical();
+    uint32_t mask = cpu_enter_critical();
     bool was_armed = motor.armed_state_ != Motor::ARMED_STATE_DISARMED;
     motor.armed_state_ = Motor::ARMED_STATE_DISARMED;
     __HAL_TIM_MOE_DISABLE_UNCONDITIONALLY(motor.hw_config_.timer);
-    cpu_exit_critical(sr);
+    cpu_exit_critical(mask);
     return was_armed;
 }
 
@@ -142,7 +123,7 @@ bool safety_critical_disarm_motor_pwm(Motor& motor) {
 // the actual PMW timings on the pins can be undefined for up to one
 // timer period.
 void safety_critical_apply_motor_pwm_timings(Motor& motor, uint16_t timings[3]) {
-    uint8_t sr = cpu_enter_critical();
+    uint32_t mask = cpu_enter_critical();
     if (!brake_resistor_armed) {
         motor.armed_state_ = Motor::ARMED_STATE_ARMED;
     }
@@ -168,16 +149,16 @@ void safety_critical_apply_motor_pwm_timings(Motor& motor, uint16_t timings[3]) 
         // unknown state oh no
         safety_critical_disarm_motor_pwm(motor);
     }
-    cpu_exit_critical(sr);
+    cpu_exit_critical(mask);
 }
 
 // @brief Arms the brake resistor
 void safety_critical_arm_brake_resistor() {
-    uint8_t sr = cpu_enter_critical();
+    uint32_t mask = cpu_enter_critical();
     brake_resistor_armed = true;
     htim2.Instance->CCR3 = 0;
     htim2.Instance->CCR4 = TIM_APB1_PERIOD_CLOCKS + 1;
-    cpu_exit_critical(sr);
+    cpu_exit_critical(mask);
 }
 
 // @brief Disarms the brake resistor and by extension
@@ -185,14 +166,14 @@ void safety_critical_arm_brake_resistor() {
 // After calling this, the brake resistor can only be armed again
 // by calling safety_critical_arm_brake_resistor().
 void safety_critical_disarm_brake_resistor() {
-    uint8_t sr = cpu_enter_critical();
+    uint32_t mask = cpu_enter_critical();
     brake_resistor_armed = false;
     htim2.Instance->CCR3 = 0;
     htim2.Instance->CCR4 = TIM_APB1_PERIOD_CLOCKS + 1;
     for (size_t i = 0; i < AXIS_COUNT; ++i) {
         safety_critical_disarm_motor_pwm(axes[i]->motor_);
     }
-    cpu_exit_critical(sr);
+    cpu_exit_critical(mask);
 }
 
 // @brief Updates the brake resistor PWM timings unless
@@ -200,7 +181,7 @@ void safety_critical_disarm_brake_resistor() {
 void safety_critical_apply_brake_resistor_timings(uint32_t low_off, uint32_t high_on) {
     if (high_on - low_off < TIM_APB1_DEADTIME_CLOCKS)
         low_level_fault(Motor::ERROR_BRAKE_DEADTIME_VIOLATION);
-    uint8_t sr = cpu_enter_critical();
+    uint32_t mask = cpu_enter_critical();
     if (brake_resistor_armed) {
         // Safe update of low and high side timings
         // To avoid race condition, first reset timings to safe state
@@ -210,7 +191,7 @@ void safety_critical_apply_brake_resistor_timings(uint32_t low_off, uint32_t hig
         htim2.Instance->CCR3 = low_off;
         htim2.Instance->CCR4 = high_on;
     }
-    cpu_exit_critical(sr);
+    cpu_exit_critical(mask);
 }
 
 /* Function implementations --------------------------------------------------*/
