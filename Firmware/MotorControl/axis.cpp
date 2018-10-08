@@ -135,47 +135,55 @@ float Axis::get_temp() {
 bool Axis::run_lockin_spin() {
     // Spiral up current for softer rotor lock-in
     float x = 0.0f;
-    run_control_loop([&](){
+    run_control_loop([&]() {
         float phase = wrap_pm_pi(config_.lockin_ramp_time * x);
         float I_mag = config_.lockin_current * x;
         x += current_meas_period / config_.lockin_ramp_time;
         if (!motor_.update(I_mag, phase))
-            return error_ |= ERROR_MOTOR_FAILED, false;
+            return false;
         return x < 1.0f;
     });
     if (error_ != ERROR_NONE)
         return false;
     
-    // Accelerate
+    // Spin states
     float distance = config_.lockin_ramp_time;
     float phase = wrap_pm_pi(distance);
     float vel = distance / config_.lockin_ramp_time;
-    bool vel_done = false;
-    bool dist_done = false;
-    run_control_loop([&](){
+
+    // Function of states to check if we are done
+    auto spin_done = [&](bool vel_override = false) -> bool {
+        bool done = false;
+        if (config_.lockin_finish_on_vel || vel_override)
+            done = done || vel >= config_.lockin_vel;
+        if (config_.lockin_finish_on_distance)
+            done = done || fabsf(distance) >= fabsf(config_.lockin_finish_distance);
+        if (config_.lockin_finish_on_enc_idx)
+            done = done || encoder_.index_found_;
+        return done;
+    };
+
+    // Accelerate
+    run_control_loop([&]() {
         vel += config_.lockin_accel * current_meas_period;
         distance += vel * current_meas_period;
         phase = wrap_pm_pi(phase + vel * current_meas_period);
+
         if (!motor_.update(config_.lockin_current, phase))
-            return error_ |= ERROR_MOTOR_FAILED, false;
-        vel_done = vel >= config_.lockin_vel;
-        dist_done = fabsf(distance) >= fabsf(config_.lockin_finish_distance);
-        if (config_.lockin_finish_on_distance)
-            return !vel_done && !dist_done;
-        else
-            return !vel_done;
+            return false;
+        return !spin_done(true); //vel_override to go to next phase
     });
 
     // Constant speed
-    if (config_.lockin_finish_on_distance) {
-        vel = config_.lockin_vel;
-        run_control_loop([&](){
+    if (!spin_done()) {
+        vel = config_.lockin_vel; // reset to actual specified vel to avoid small integration error
+        run_control_loop([&]() {
             distance += vel * current_meas_period;
             phase = wrap_pm_pi(phase + vel * current_meas_period);
+
             if (!motor_.update(config_.lockin_current, phase))
-                return error_ |= ERROR_MOTOR_FAILED, false;
-            dist_done = fabsf(distance) >= fabsf(config_.lockin_finish_distance);
-            return !dist_done;
+                return false;
+            return !spin_done();
         });
     }
 

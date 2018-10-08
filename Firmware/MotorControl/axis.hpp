@@ -55,7 +55,9 @@ public:
         float lockin_ramp_distance = 4 * M_PI;  // [rad]
         float lockin_accel = 400.0f;     // [rad/s^2]
         float lockin_vel = 400.0f; // [rad/s]
-        bool lockin_finish_on_distance = false; // false: finish on target vel
+        bool lockin_finish_on_vel = false;
+        bool lockin_finish_on_distance = false;
+        bool lockin_finish_on_enc_idx = false;
         float lockin_finish_distance = 1000.0f;  // [rad]
     };
 
@@ -196,8 +198,10 @@ public:
                 make_protocol_property("lockin_ramp_distance", &config_.lockin_ramp_distance),
                 make_protocol_property("lockin_accel", &config_.lockin_accel),
                 make_protocol_property("lockin_vel", &config_.lockin_vel),
+                make_protocol_property("lockin_finish_distance", &config_.lockin_finish_distance),
+                make_protocol_property("lockin_finish_on_vel", &config_.lockin_finish_on_vel),
                 make_protocol_property("lockin_finish_on_distance", &config_.lockin_finish_on_distance),
-                make_protocol_property("lockin_finish_distance", &config_.lockin_finish_distance)
+                make_protocol_property("lockin_finish_on_enc_idx", &config_.lockin_finish_on_enc_idx)
             ),
             make_protocol_function("get_temp", *this, &Axis::get_temp),
             make_protocol_object("motor", motor_.make_protocol_definitions()),
