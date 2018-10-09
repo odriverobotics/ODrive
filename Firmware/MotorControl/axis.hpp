@@ -22,8 +22,6 @@ public:
         ERROR_POS_CTRL_DURING_SENSORLESS = 0x400,
     };
 
-    // Warning: Do not reorder these enum values.
-    // The state machine uses ">" comparision on them.
     enum State_t {
         AXIS_STATE_UNDEFINED = 0,           //<! will fall through to idle
         AXIS_STATE_IDLE = 1,                //<! disable PWM and do nothing
@@ -31,10 +29,10 @@ public:
         AXIS_STATE_FULL_CALIBRATION_SEQUENCE = 3,   //<! run all calibration procedures, then idle
         AXIS_STATE_MOTOR_CALIBRATION = 4,   //<! run motor calibration
         AXIS_STATE_SENSORLESS_CONTROL = 5,  //<! run sensorless control
-        AXIS_STATE_LOCKIN_SPIN = 6,       //<! run lockin spin
-        AXIS_STATE_ENCODER_INDEX_SEARCH = 7, //<! run encoder index search
-        AXIS_STATE_ENCODER_OFFSET_CALIBRATION = 8, //<! run encoder offset calibration
-        AXIS_STATE_CLOSED_LOOP_CONTROL = 9,  //<! run closed loop control
+        AXIS_STATE_ENCODER_INDEX_SEARCH = 6, //<! run encoder index search
+        AXIS_STATE_ENCODER_OFFSET_CALIBRATION = 7, //<! run encoder offset calibration
+        AXIS_STATE_CLOSED_LOOP_CONTROL = 8,  //<! run closed loop control
+        AXIS_STATE_LOCKIN_SPIN = 9,       //<! run lockin spin
     };
 
     struct Config_t {

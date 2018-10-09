@@ -287,12 +287,6 @@ void Axis::run_state_machine_loop() {
 
         // Note that current_state is a reference to task_chain_[0]
 
-        // Validate the state before running it
-        if (current_state_ > AXIS_STATE_MOTOR_CALIBRATION && !motor_.is_calibrated_)
-            current_state_ = AXIS_STATE_UNDEFINED;
-        if (current_state_ > AXIS_STATE_ENCODER_OFFSET_CALIBRATION && !encoder_.is_ready_)
-            current_state_ = AXIS_STATE_UNDEFINED;
-
         // Run the specified state
         // Handlers should exit if requested_state != AXIS_STATE_UNDEFINED
         bool status;
@@ -302,18 +296,26 @@ void Axis::run_state_machine_loop() {
                 break;
 
             case AXIS_STATE_ENCODER_INDEX_SEARCH:
+                if (!motor_.is_calibrated_)
+                    goto invalid_state_label;
                 status = encoder_.run_index_search();
                 break;
 
             case AXIS_STATE_ENCODER_OFFSET_CALIBRATION:
+                if (!motor_.is_calibrated_)
+                    goto invalid_state_label;
                 status = encoder_.run_offset_calibration();
                 break;
 
             case AXIS_STATE_LOCKIN_SPIN:
+                if (!motor_.is_calibrated_)
+                    goto invalid_state_label;
                 status = run_lockin_spin();
                 break;
 
             case AXIS_STATE_SENSORLESS_CONTROL:
+                if (!motor_.is_calibrated_)
+                        goto invalid_state_label;
                 status = run_lockin_spin(); // TODO: restart if desired
                 if (status) {
                     // call to controller.reset() that happend when arming means that vel_setpoint
@@ -324,6 +326,10 @@ void Axis::run_state_machine_loop() {
                 break;
 
             case AXIS_STATE_CLOSED_LOOP_CONTROL:
+                if (!motor_.is_calibrated_)
+                    goto invalid_state_label;
+                if (!encoder_.is_ready_)
+                    goto invalid_state_label;
                 status = run_closed_loop_control_loop();
                 break;
 
@@ -333,6 +339,7 @@ void Axis::run_state_machine_loop() {
                 break;
 
             default:
+            invalid_state_label:
                 error_ |= ERROR_INVALID_STATE;
                 status = false; // this will set the state to idle
                 break;
