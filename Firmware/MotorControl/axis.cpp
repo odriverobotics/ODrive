@@ -134,6 +134,7 @@ float Axis::get_temp() {
 
 bool Axis::run_lockin_spin() {
     // Spiral up current for softer rotor lock-in
+    lockin_state_ = LOCKIN_STATE_RAMP;
     float x = 0.0f;
     run_control_loop([&]() {
         float phase = wrap_pm_pi(config_.lockin_ramp_time * x);
@@ -143,8 +144,6 @@ bool Axis::run_lockin_spin() {
             return false;
         return x < 1.0f;
     });
-    if (error_ != ERROR_NONE)
-        return false;
     
     // Spin states
     float distance = config_.lockin_ramp_time;
@@ -164,6 +163,7 @@ bool Axis::run_lockin_spin() {
     };
 
     // Accelerate
+    lockin_state_ = LOCKIN_STATE_ACCELERATE;
     run_control_loop([&]() {
         vel += config_.lockin_accel * current_meas_period;
         distance += vel * current_meas_period;
@@ -176,6 +176,7 @@ bool Axis::run_lockin_spin() {
 
     // Constant speed
     if (!spin_done()) {
+        lockin_state_ = LOCKIN_STATE_CONST_VEL;
         vel = config_.lockin_vel; // reset to actual specified vel to avoid small integration error
         run_control_loop([&]() {
             distance += vel * current_meas_period;
@@ -187,6 +188,7 @@ bool Axis::run_lockin_spin() {
         });
     }
 
+    lockin_state_ = LOCKIN_STATE_INACTIVE;
     return check_for_errors();
 }
 

@@ -55,7 +55,7 @@ public:
         float lockin_ramp_distance = 4 * M_PI;  // [rad]
         float lockin_accel = 400.0f;     // [rad/s^2]
         float lockin_vel = 400.0f; // [rad/s]
-        bool lockin_finish_on_vel = false;
+        bool lockin_finish_on_vel = true;
         bool lockin_finish_on_distance = false;
         bool lockin_finish_on_enc_idx = false;
         float lockin_finish_distance = 1000.0f;  // [rad]
@@ -63,6 +63,13 @@ public:
 
     enum thread_signals {
         M_SIGNAL_PH_CURRENT_MEAS = 1u << 0
+    };
+
+    enum LockinState_t {
+        LOCKIN_STATE_INACTIVE,
+        LOCKIN_STATE_RAMP,
+        LOCKIN_STATE_ACCELERATE,
+        LOCKIN_STATE_CONST_VEL,
     };
 
     Axis(const AxisHardwareConfig_t& hw_config,
@@ -176,6 +183,7 @@ public:
     State_t task_chain_[10] = { AXIS_STATE_UNDEFINED };
     State_t& current_state_ = task_chain_[0];
     uint32_t loop_counter_ = 0;
+    LockinState_t lockin_state_ = LOCKIN_STATE_INACTIVE;
 
     // Communication protocol definitions
     auto make_protocol_definitions() {
@@ -185,6 +193,7 @@ public:
             make_protocol_ro_property("current_state", &current_state_),
             make_protocol_property("requested_state", &requested_state_),
             make_protocol_ro_property("loop_counter", &loop_counter_),
+            make_protocol_ro_property("lockin_state", &lockin_state_),
             make_protocol_object("config",
                 make_protocol_property("startup_motor_calibration", &config_.startup_motor_calibration),
                 make_protocol_property("startup_encoder_index_search", &config_.startup_encoder_index_search),
