@@ -33,6 +33,7 @@ public:
         AXIS_STATE_ENCODER_OFFSET_CALIBRATION = 7, //<! run encoder offset calibration
         AXIS_STATE_CLOSED_LOOP_CONTROL = 8,  //<! run closed loop control
         AXIS_STATE_LOCKIN_SPIN = 9,       //<! run lockin spin
+        AXIS_STATE_ENCODER_DIR_FIND = 10,
     };
 
     struct Config_t {

@@ -137,7 +137,7 @@ bool Axis::run_lockin_spin() {
     lockin_state_ = LOCKIN_STATE_RAMP;
     float x = 0.0f;
     run_control_loop([&]() {
-        float phase = wrap_pm_pi(config_.lockin_ramp_time * x);
+        float phase = wrap_pm_pi(config_.lockin_ramp_distance * x);
         float I_mag = config_.lockin_current * x;
         x += current_meas_period / config_.lockin_ramp_time;
         if (!motor_.update(I_mag, phase))
@@ -146,7 +146,7 @@ bool Axis::run_lockin_spin() {
     });
     
     // Spin states
-    float distance = config_.lockin_ramp_time;
+    float distance = config_.lockin_ramp_distance;
     float phase = wrap_pm_pi(distance);
     float vel = distance / config_.lockin_ramp_time;
 
@@ -154,7 +154,7 @@ bool Axis::run_lockin_spin() {
     auto spin_done = [&](bool vel_override = false) -> bool {
         bool done = false;
         if (config_.lockin_finish_on_vel || vel_override)
-            done = done || vel >= config_.lockin_vel;
+            done = done || fabsf(vel) >= fabsf(config_.lockin_vel);
         if (config_.lockin_finish_on_distance)
             done = done || fabsf(distance) >= fabsf(config_.lockin_finish_distance);
         if (config_.lockin_finish_on_enc_idx)
@@ -298,7 +298,10 @@ void Axis::run_state_machine_loop() {
             case AXIS_STATE_ENCODER_INDEX_SEARCH: {
                 if (!motor_.is_calibrated_)
                     goto invalid_state_label;
+                if (encoder_.config_.idx_search_unidirectional && motor_.config_.direction==0)
+                    goto invalid_state_label;
 
+                // TODO: move code body to function in Encoder
                 encoder_.config_.use_index = true;
                 encoder_.index_found_ = false;
 
@@ -306,7 +309,32 @@ void Axis::run_state_machine_loop() {
                 config_.lockin_finish_on_enc_idx = true;
                 status = run_lockin_spin();
                 config_.lockin_finish_on_enc_idx = orig_setting;
-                // status = encoder_.run_index_search();
+            } break;
+
+            case AXIS_STATE_ENCODER_DIR_FIND: {
+                if (!motor_.is_calibrated_)
+                    goto invalid_state_label;
+
+                // TODO: move code body to function in Encoder
+                int32_t init_enc_val = encoder_.shadow_count_;
+                bool orig_setting = config_.lockin_finish_on_distance;
+                config_.lockin_finish_on_distance = true;
+                motor_.config_.direction = 1; // Must test spin forwards for direction detect logic
+                status = run_lockin_spin();
+                config_.lockin_finish_on_distance = orig_setting;
+
+                if (status) {
+                    // Check response and direction
+                    if (encoder_.shadow_count_ > init_enc_val + 8) {
+                        // motor same dir as encoder
+                        motor_.config_.direction = 1;
+                    } else if (encoder_.shadow_count_ < init_enc_val - 8) {
+                        // motor opposite dir as encoder
+                        motor_.config_.direction = -1;
+                    } else {
+                        motor_.config_.direction = 0;
+                    }
+                }
             } break;
 
             case AXIS_STATE_ENCODER_OFFSET_CALIBRATION: {
@@ -316,13 +344,13 @@ void Axis::run_state_machine_loop() {
             } break;
 
             case AXIS_STATE_LOCKIN_SPIN: {
-                if (!motor_.is_calibrated_)
+                if (!motor_.is_calibrated_ || motor_.config_.direction==0)
                     goto invalid_state_label;
                 status = run_lockin_spin();
             } break;
 
             case AXIS_STATE_SENSORLESS_CONTROL: {
-                if (!motor_.is_calibrated_)
+                if (!motor_.is_calibrated_ || motor_.config_.direction==0)
                         goto invalid_state_label;
                 status = run_lockin_spin(); // TODO: restart if desired
                 if (status) {
@@ -334,7 +362,7 @@ void Axis::run_state_machine_loop() {
             } break;
 
             case AXIS_STATE_CLOSED_LOOP_CONTROL: {
-                if (!motor_.is_calibrated_)
+                if (!motor_.is_calibrated_ || motor_.config_.direction==0)
                     goto invalid_state_label;
                 if (!encoder_.is_ready_)
                     goto invalid_state_label;
