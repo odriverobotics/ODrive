@@ -37,6 +37,9 @@ target/
 .tup
 tup.config
 
+#CLion
+.idea
+
 /ruby-bundle
 /_site
 /.bundle

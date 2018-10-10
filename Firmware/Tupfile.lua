@@ -1,40 +1,20 @@
+Dev_Env = tup.getconfig("DEVELOPMENT_IDE")
+
 
 tup.include('build.lua')
-
--- Switch between board versions
+boarddir = "" -- No Board Loaded Yet
 boardversion = tup.getconfig("BOARD_VERSION")
-if boardversion == "v3.1" then
-    boarddir = 'Board/v3' -- currently all platform code is in the same v3.3 directory
-    FLAGS += "-DHW_VERSION_MAJOR=3 -DHW_VERSION_MINOR=1"
-    FLAGS += "-DHW_VERSION_VOLTAGE=24"
-elseif boardversion == "v3.2" then
-    boarddir = 'Board/v3'
-    FLAGS += "-DHW_VERSION_MAJOR=3 -DHW_VERSION_MINOR=2"
-    FLAGS += "-DHW_VERSION_VOLTAGE=24"
-elseif boardversion == "v3.3" then
-    boarddir = 'Board/v3'
-    FLAGS += "-DHW_VERSION_MAJOR=3 -DHW_VERSION_MINOR=3"
-    FLAGS += "-DHW_VERSION_VOLTAGE=24"
-elseif boardversion == "v3.4-24V" then
-    boarddir = 'Board/v3'
-    FLAGS += "-DHW_VERSION_MAJOR=3 -DHW_VERSION_MINOR=4"
-    FLAGS += "-DHW_VERSION_VOLTAGE=24"
-elseif boardversion == "v3.4-48V" then
-    boarddir = 'Board/v3'
-    FLAGS += "-DHW_VERSION_MAJOR=3 -DHW_VERSION_MINOR=4"
-    FLAGS += "-DHW_VERSION_VOLTAGE=48"
-elseif boardversion == "v3.5-24V" then
-    boarddir = 'Board/v3'
-    FLAGS += "-DHW_VERSION_MAJOR=3 -DHW_VERSION_MINOR=5"
-    FLAGS += "-DHW_VERSION_VOLTAGE=24"
-elseif boardversion == "v3.5-48V" then
-    boarddir = 'Board/v3'
-    FLAGS += "-DHW_VERSION_MAJOR=3 -DHW_VERSION_MINOR=5"
-    FLAGS += "-DHW_VERSION_VOLTAGE=48"
-elseif boardversion == "" then
-    error("board version not specified - take a look at tup.config.default")
-else
-    error("unknown board version "..boardversion)
+tup.include("Board/HAL_Generics/Generics.lua") -- Generic HAL functions for simplifying HAL dev
+
+--> Add Other HAL Tests Here
+tup.include("Board/v3/HAL_V3.x.lua")
+
+
+-->
+
+
+if boarddir == "" then
+    error("Unknown Board. Check Your Config. "..boardversion)
 end
 buildsuffix = boardversion
 
@@ -82,13 +62,7 @@ end
 -- C-specific flags
 FLAGS += '-D__weak="__attribute__((weak))"'
 FLAGS += '-D__packed="__attribute__((__packed__))"'
-FLAGS += '-DUSE_HAL_DRIVER'
-FLAGS += '-DSTM32F405xx'
-
 FLAGS += '-mthumb'
-FLAGS += '-mcpu=cortex-m4'
-FLAGS += '-mfpu=fpv4-sp-d16'
-FLAGS += '-mfloat-abi=hard'
 FLAGS += { '-Wall', '-Wdouble-promotion', '-Wfloat-conversion', '-fdata-sections', '-ffunction-sections'}
 
 -- debug build
@@ -96,10 +70,7 @@ FLAGS += '-g -gdwarf-2'
 
 
 -- linker flags
-LDFLAGS += '-T'..boarddir..'/STM32F405RGTx_FLASH.ld'
-LDFLAGS += '-L'..boarddir..'/Drivers/CMSIS/Lib' -- lib dir
-LDFLAGS += '-lc -lm -lnosys -larm_cortexM4lf_math' -- libs
-LDFLAGS += '-mthumb -mcpu=cortex-m4 -mfpu=fpv4-sp-d16 -mfloat-abi=hard -specs=nosys.specs -specs=nano.specs -u _printf_float -u _scanf_float -Wl,--cref -Wl,--gc-sections'
+LDFLAGS += '-mthumb -specs=nosys.specs -specs=nano.specs -u _printf_float -u _scanf_float -Wl,--cref -Wl,--gc-sections'
 LDFLAGS += '-Wl,--undefined=uxTopUsedPriority'
 
 
@@ -147,6 +118,7 @@ build{
     --toolchains={LLVMToolchain('x86_64', {'-Ofast'}, {'-flto'})},
     packages={'stm_platform'},
     sources={
+        'Board/HAL_Config.c',
         'Drivers/DRV8301/drv8301.c',
         'MotorControl/utils.c',
         'MotorControl/arm_sin_f32.c',
@@ -176,3 +148,12 @@ build{
         '.'
     }
 }
+
+if Dev_Env == "CLION" then
+    --> Rule for allowing code completion with CLion.
+    tup.frule{
+        inputs=b,
+        command="python ../tools/builders/GenerateCMakeLists.py --SRC $(all_source) $(stm_sources) --INC $(all_inc) $(stm_includes) --FLAG $(FLAGS) $(LDFLAGS) ",
+        outputs={"CMakeListsPrivate.txt"}
+    }
+end

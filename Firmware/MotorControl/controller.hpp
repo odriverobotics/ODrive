@@ -2,11 +2,11 @@
 #define __CONTROLLER_HPP
 
 #ifndef __ODRIVE_MAIN_H
-#error "This file should not be included directly. Include odrive_main.h instead."
+    #error "This file should not be included directly. Include odrive_main.h instead."
 #endif
 
 class Controller {
-public:
+  public:
     enum Error_t {
         ERROR_NONE = 0,
         ERROR_OVERSPEED = 0x01,
@@ -14,7 +14,7 @@ public:
 
     // Note: these should be sorted from lowest level of control to
     // highest level of control, to allow "<" style comparisons.
-    enum ControlMode_t{
+    enum ControlMode_t {
         CTRL_MODE_VOLTAGE_CONTROL = 0,
         CTRL_MODE_CURRENT_CONTROL = 1,
         CTRL_MODE_VELOCITY_CONTROL = 2,
@@ -34,25 +34,30 @@ public:
         bool setpoints_in_cpr = false;
     };
 
-    Controller(Config_t& config);
+    Controller(Config_t &config);
+
     void reset();
+
     void set_error(Error_t error);
 
     void set_pos_setpoint(float pos_setpoint, float vel_feed_forward, float current_feed_forward);
+
     void set_vel_setpoint(float vel_setpoint, float current_feed_forward);
+
     void set_current_setpoint(float current_setpoint);
 
     // Trajectory-Planned control
     void move_to_pos(float goal_point);
-    
+
     // TODO: make this more similar to other calibration loops
     void start_anticogging_calibration();
+
     bool anticogging_calibration(float pos_estimate, float vel_estimate);
 
-    bool update(float pos_estimate, float vel_estimate, float* current_setpoint);
+    bool update(float pos_estimate, float vel_estimate, float *current_setpoint);
 
-    Config_t& config_;
-    Axis* axis_ = nullptr; // set by Axis constructor
+    Config_t &config_;
+    Axis *axis_ = nullptr; // set by Axis constructor
 
     // TODO: anticogging overhaul:
     // - expose selected (all?) variables on protocol
@@ -100,21 +105,21 @@ public:
             make_protocol_property("vel_ramp_target", &vel_ramp_target_),
             make_protocol_property("vel_ramp_enable", &vel_ramp_enable_),
             make_protocol_object("config",
-                make_protocol_property("control_mode", &config_.control_mode),
-                make_protocol_property("pos_gain", &config_.pos_gain),
-                make_protocol_property("vel_gain", &config_.vel_gain),
-                make_protocol_property("vel_integrator_gain", &config_.vel_integrator_gain),
-                make_protocol_property("vel_limit", &config_.vel_limit),
-                make_protocol_property("vel_limit_tolerance", &config_.vel_limit_tolerance),
-                make_protocol_property("vel_ramp_rate", &config_.vel_ramp_rate),
-                make_protocol_property("setpoints_in_cpr", &config_.setpoints_in_cpr)
+                                 make_protocol_property("control_mode", &config_.control_mode),
+                                 make_protocol_property("pos_gain", &config_.pos_gain),
+                                 make_protocol_property("vel_gain", &config_.vel_gain),
+                                 make_protocol_property("vel_integrator_gain", &config_.vel_integrator_gain),
+                                 make_protocol_property("vel_limit", &config_.vel_limit),
+                                 make_protocol_property("vel_limit_tolerance", &config_.vel_limit_tolerance),
+                                 make_protocol_property("vel_ramp_rate", &config_.vel_ramp_rate),
+                                 make_protocol_property("setpoints_in_cpr", &config_.setpoints_in_cpr)
             ),
             make_protocol_function("set_pos_setpoint", *this, &Controller::set_pos_setpoint,
-                "pos_setpoint", "vel_feed_forward", "current_feed_forward"),
+                                   "pos_setpoint", "vel_feed_forward", "current_feed_forward"),
             make_protocol_function("set_vel_setpoint", *this, &Controller::set_vel_setpoint,
-                "vel_setpoint", "current_feed_forward"),
+                                   "vel_setpoint", "current_feed_forward"),
             make_protocol_function("set_current_setpoint", *this, &Controller::set_current_setpoint,
-                "current_setpoint"),
+                                   "current_setpoint"),
             make_protocol_function("move_to_pos", *this, &Controller::move_to_pos, "goal_point"),
             make_protocol_function("start_anticogging_calibration", *this, &Controller::start_anticogging_calibration)
         );

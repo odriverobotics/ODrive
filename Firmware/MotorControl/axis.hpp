@@ -2,11 +2,11 @@
 #define __AXIS_HPP
 
 #ifndef __ODRIVE_MAIN_H
-#error "This file should not be included directly. Include odrive_main.h instead."
+    #error "This file should not be included directly. Include odrive_main.h instead."
 #endif
 
 class Axis {
-public:
+  public:
     enum Error_t {
         ERROR_NONE = 0x00,
         ERROR_INVALID_STATE = 0x01, //<! an invalid state was requested
@@ -39,12 +39,12 @@ public:
     struct Config_t {
         bool startup_motor_calibration = false;   //<! run motor calibration at startup, skip otherwise
         bool startup_encoder_index_search = false; //<! run encoder index search after startup, skip otherwise
-                                                // this only has an effect if encoder.config.use_index is also true
+        // this only has an effect if encoder.config.use_index is also true
         bool startup_encoder_offset_calibration = false; //<! run encoder offset calibration after startup, skip otherwise
         bool startup_closed_loop_control = false; //<! enable closed loop control after calibration/startup
         bool startup_sensorless_control = false; //<! enable sensorless control after calibration/startup
         bool enable_step_dir = false; //<! enable step/dir input after calibration
-                                    //   For M0 this has no effect if enable_uart is true
+        //   For M0 this has no effect if enable_uart is true
         float counts_per_step = 2.0f;
 
         // Defaults loaded from hw_config in load_configuration in main.cpp
@@ -63,29 +63,40 @@ public:
         M_SIGNAL_PH_CURRENT_MEAS = 1u << 0
     };
 
-    Axis(const AxisHardwareConfig_t& hw_config,
-            Config_t& config,
-            Encoder& encoder,
-            SensorlessEstimator& sensorless_estimator,
-            Controller& controller,
-            Motor& motor,
-            TrapezoidalTrajectory& trap);
+    Axis(
+        const AxisHardwareConfig_t &hw_config,
+        Config_t &config,
+        Encoder &encoder,
+        SensorlessEstimator &sensorless_estimator,
+        Controller &controller,
+        Motor &motor,
+        TrapezoidalTrajectory &trap);
 
     void setup();
+
     void start_thread();
+
     void signal_current_meas();
+
     bool wait_for_current_meas();
 
     void step_cb();
+
     void set_step_dir_active(bool enable);
+
     void decode_step_dir_pins();
+
     static void load_default_step_dir_pin_config(
-        const AxisHardwareConfig_t& hw_config, Config_t* config);
+        const AxisHardwareConfig_t &hw_config, Config_t *config);
 
     bool check_DRV_fault();
+
     bool check_PSU_brownout();
+
     bool do_checks();
+
     bool do_updates();
+
     float get_temp();
 
 
@@ -114,59 +125,64 @@ public:
     // go to zero.
     //
     // @tparam T Must be a callable type that takes no arguments and returns a bool
-    template<typename T>
-    void run_control_loop(const T& update_handler) {
-        while (requested_state_ == AXIS_STATE_UNDEFINED) {
-            // look for errors at axis level and also all subcomponents
-            bool checks_ok = do_checks();
-            // Update all estimators
-            // Note: updates run even if checks fail
-            bool updates_ok = do_updates(); 
-            
-            if (!checks_ok || !updates_ok) {
-                // It's not useful to quit idle since that is the safe action
-                // Also leaving idle would rearm the motors
-                if (current_state_ != AXIS_STATE_IDLE)
+    template <typename T>
+        void run_control_loop(const T &update_handler) {
+            while (requested_state_ == AXIS_STATE_UNDEFINED) {
+                // look for errors at axis level and also all subcomponents
+                bool checks_ok = do_checks();
+                // Update all estimators
+                // Note: updates run even if checks fail
+                bool updates_ok = do_updates();
+
+                if (!checks_ok || !updates_ok) {
+                    // It's not useful to quit idle since that is the safe action
+                    // Also leaving idle would rearm the motors
+                    if (current_state_ != AXIS_STATE_IDLE) {
+                        break;
+                    }
+                }
+
+                // Run main loop function, defer quitting for after wait
+                // TODO: change arming logic to arm after waiting
+                bool main_continue = update_handler();
+
+                // Check we meet deadlines after queueing
+                ++loop_counter_;
+
+                // Wait until the current measurement interrupt fires
+                if (!wait_for_current_meas()) {
+                    // maybe the interrupt handler is dead, let's be
+                    // safe and float the phases
+                    safety_critical_disarm_motor_pwm(motor_);
+                    update_brake_current();
+                    error_ |= ERROR_CURRENT_MEASUREMENT_TIMEOUT;
                     break;
+                }
+
+                if (!main_continue) {
+                    break;
+                }
             }
-
-            // Run main loop function, defer quitting for after wait
-            // TODO: change arming logic to arm after waiting
-            bool main_continue = update_handler();
-
-            // Check we meet deadlines after queueing
-            ++loop_counter_;
-
-            // Wait until the current measurement interrupt fires
-            if (!wait_for_current_meas()) {
-                // maybe the interrupt handler is dead, let's be
-                // safe and float the phases
-                safety_critical_disarm_motor_pwm(motor_);
-                update_brake_current();
-                error_ |= ERROR_CURRENT_MEASUREMENT_TIMEOUT;
-                break;
-            }
-
-            if (!main_continue)
-                break;
         }
-    }
 
     bool run_sensorless_spin_up();
+
     bool run_sensorless_control_loop();
+
     bool run_closed_loop_control_loop();
+
     bool run_idle_loop();
 
     void run_state_machine_loop();
 
-    const AxisHardwareConfig_t& hw_config_;
-    Config_t& config_;
+    const AxisHardwareConfig_t &hw_config_;
+    Config_t &config_;
 
-    Encoder& encoder_;
-    SensorlessEstimator& sensorless_estimator_;
-    Controller& controller_;
-    Motor& motor_;
-    TrapezoidalTrajectory& trap_;
+    Encoder &encoder_;
+    SensorlessEstimator &sensorless_estimator_;
+    Controller &controller_;
+    Motor &motor_;
+    TrapezoidalTrajectory &trap_;
 
     osThreadId thread_id_;
     volatile bool thread_id_valid_ = false;
@@ -176,14 +192,14 @@ public:
     bool step_dir_active_ = false; // auto enabled after calibration, based on config.enable_step_dir
 
     // updated from config in constructor, and on protocol hook
-    GPIO_TypeDef* step_port_;
+    GPIO_TypeDef *step_port_;
     uint16_t step_pin_;
-    GPIO_TypeDef* dir_port_;
+    GPIO_TypeDef *dir_port_;
     uint16_t dir_pin_;
 
     State_t requested_state_ = AXIS_STATE_STARTUP_SEQUENCE;
-    State_t task_chain_[10] = { AXIS_STATE_UNDEFINED };
-    State_t& current_state_ = task_chain_[0];
+    State_t task_chain_[10] = {AXIS_STATE_UNDEFINED};
+    State_t &current_state_ = task_chain_[0];
     uint32_t loop_counter_ = 0;
 
     // Communication protocol definitions
@@ -195,22 +211,22 @@ public:
             make_protocol_property("requested_state", &requested_state_),
             make_protocol_ro_property("loop_counter", &loop_counter_),
             make_protocol_object("config",
-                make_protocol_property("startup_motor_calibration", &config_.startup_motor_calibration),
-                make_protocol_property("startup_encoder_index_search", &config_.startup_encoder_index_search),
-                make_protocol_property("startup_encoder_offset_calibration", &config_.startup_encoder_offset_calibration),
-                make_protocol_property("startup_closed_loop_control", &config_.startup_closed_loop_control),
-                make_protocol_property("startup_sensorless_control", &config_.startup_sensorless_control),
-                make_protocol_property("enable_step_dir", &config_.enable_step_dir),
-                make_protocol_property("counts_per_step", &config_.counts_per_step),
-                make_protocol_property("step_gpio_pin", &config_.step_gpio_pin,
-                    [](void* ctx) { static_cast<Axis*>(ctx)->decode_step_dir_pins(); }, this),
-                make_protocol_property("dir_gpio_pin", &config_.dir_gpio_pin,
-                    [](void* ctx) { static_cast<Axis*>(ctx)->decode_step_dir_pins(); }, this),
-                make_protocol_property("ramp_up_time", &config_.ramp_up_time),
-                make_protocol_property("ramp_up_distance", &config_.ramp_up_distance),
-                make_protocol_property("spin_up_current", &config_.spin_up_current),
-                make_protocol_property("spin_up_acceleration", &config_.spin_up_acceleration),
-                make_protocol_property("spin_up_target_vel", &config_.spin_up_target_vel)
+                                 make_protocol_property("startup_motor_calibration", &config_.startup_motor_calibration),
+                                 make_protocol_property("startup_encoder_index_search", &config_.startup_encoder_index_search),
+                                 make_protocol_property("startup_encoder_offset_calibration", &config_.startup_encoder_offset_calibration),
+                                 make_protocol_property("startup_closed_loop_control", &config_.startup_closed_loop_control),
+                                 make_protocol_property("startup_sensorless_control", &config_.startup_sensorless_control),
+                                 make_protocol_property("enable_step_dir", &config_.enable_step_dir),
+                                 make_protocol_property("counts_per_step", &config_.counts_per_step),
+                                 make_protocol_property("step_gpio_pin", &config_.step_gpio_pin,
+                                                        [ ](void *ctx) { static_cast<Axis *>(ctx)->decode_step_dir_pins(); }, this),
+                                 make_protocol_property("dir_gpio_pin", &config_.dir_gpio_pin,
+                                                        [ ](void *ctx) { static_cast<Axis *>(ctx)->decode_step_dir_pins(); }, this),
+                                 make_protocol_property("ramp_up_time", &config_.ramp_up_time),
+                                 make_protocol_property("ramp_up_distance", &config_.ramp_up_distance),
+                                 make_protocol_property("spin_up_current", &config_.spin_up_current),
+                                 make_protocol_property("spin_up_acceleration", &config_.spin_up_acceleration),
+                                 make_protocol_property("spin_up_target_vel", &config_.spin_up_target_vel)
             ),
             make_protocol_function("get_temp", *this, &Axis::get_temp),
             make_protocol_object("motor", motor_.make_protocol_definitions()),

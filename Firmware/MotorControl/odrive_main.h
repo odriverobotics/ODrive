@@ -9,7 +9,8 @@
 // btw this pattern is not so uncommon, for instance IIRC the stdlib uses it too
 
 #ifdef __cplusplus
-#include <fibre/protocol.hpp>
+
+    #include <fibre/protocol.hpp>
 extern "C" {
 #endif
 
@@ -24,11 +25,8 @@ extern "C" {
 #include <cmsis_os.h>
 
 // Hardware configuration
-#if HW_VERSION_MAJOR == 3
-#include "board_config_v3.h"
-#else
-#error "unknown board version"
-#endif
+#include "Board/HAL_Config.h"
+
 
 //default timeout waiting for phase measurement signals
 #define PH_CURRENT_MEAS_TIMEOUT 2 // [ms]
@@ -61,7 +59,7 @@ extern SystemStats_t system_stats_;
 }
 
 struct PWMMapping_t {
-    endpoint_ref_t endpoint = { 0 };
+    endpoint_ref_t endpoint = {0};
     float min = 0;
     float max = 0;
 };
@@ -71,35 +69,34 @@ struct BoardConfig_t {
     bool enable_uart = true;
     bool enable_i2c_instead_of_can = false;
     bool enable_ascii_protocol_on_usb = true;
-#if HW_VERSION_MAJOR == 3 && HW_VERSION_MINOR >= 5 && HW_VERSION_VOLTAGE >= 48
-    float brake_resistance = 2.0f;     // [ohm]
-#else
-    float brake_resistance = 0.47f;     // [ohm]
-#endif
+
+    float brake_resistance = HAL_BRAKE_RESISTANCE;     // [ohm]
+
     float dc_bus_undervoltage_trip_level = 8.0f;                        //<! [V] minimum voltage below which the motor stops operating
     float dc_bus_overvoltage_trip_level = 1.08f * HW_VERSION_VOLTAGE;   //<! [V] maximum voltage above which the motor stops operating.
-                                                                        //<! This protects against cases in which the power supply fails to dissipate
-                                                                        //<! the brake power if the brake resistor is disabled.
-                                                                        //<! The default is 26V for the 24V board version and 52V for the 48V board version.
+    //<! This protects against cases in which the power supply fails to dissipate
+    //<! the brake power if the brake resistor is disabled.
+    //<! The default is 26V for the 24V board version and 52V for the 48V board version.
     PWMMapping_t pwm_mappings[GPIO_COUNT];
 };
 extern BoardConfig_t board_config;
 extern bool user_config_loaded_;
 
 class Axis;
+
 class Motor;
 
-constexpr size_t AXIS_COUNT = 2;
+constexpr size_t AXIS_COUNT = HAL_NUMBER_OF_MOTORS;
 extern Axis *axes[AXIS_COUNT];
 
 // if you use the oscilloscope feature you can bump up this value
-#define OSCILLOSCOPE_SIZE 128
+    #define OSCILLOSCOPE_SIZE 128
 extern float oscilloscope[OSCILLOSCOPE_SIZE];
 extern size_t oscilloscope_pos;
 
 // TODO: move
 // this is technically not thread-safe but practically it might be
-#define DEFINE_ENUM_FLAG_OPERATORS(ENUMTYPE) \
+    #define DEFINE_ENUM_FLAG_OPERATORS(ENUMTYPE) \
 inline ENUMTYPE operator | (ENUMTYPE a, ENUMTYPE b) { return static_cast<ENUMTYPE>(static_cast<std::underlying_type_t<ENUMTYPE>>(a) | static_cast<std::underlying_type_t<ENUMTYPE>>(b)); } \
 inline ENUMTYPE operator & (ENUMTYPE a, ENUMTYPE b) { return static_cast<ENUMTYPE>(static_cast<std::underlying_type_t<ENUMTYPE>>(a) & static_cast<std::underlying_type_t<ENUMTYPE>>(b)); } \
 inline ENUMTYPE operator ^ (ENUMTYPE a, ENUMTYPE b) { return static_cast<ENUMTYPE>(static_cast<std::underlying_type_t<ENUMTYPE>>(a) ^ static_cast<std::underlying_type_t<ENUMTYPE>>(b)); } \
@@ -110,22 +107,24 @@ inline ENUMTYPE operator ~ (ENUMTYPE a) { return static_cast<ENUMTYPE>(~static_c
 
 
 // ODrive specific includes
-#include <utils.h>
-#include <low_level.h>
-#include <encoder.hpp>
-#include <sensorless_estimator.hpp>
-#include <controller.hpp>
-#include <motor.hpp>
-#include <trapTraj.hpp>
-#include <axis.hpp>
-#include <communication/communication.h>
+    #include <utils.h>
+    #include <low_level.h>
+    #include <encoder.hpp>
+    #include <sensorless_estimator.hpp>
+    #include <controller.hpp>
+    #include <motor.hpp>
+    #include <trapTraj.hpp>
+    #include <axis.hpp>
+    #include <communication/communication.h>
 
 #endif // __cplusplus
 
 
 // general system functions defined in main.cpp
 void save_configuration(void);
+
 void erase_configuration(void);
+
 void enter_dfu_mode(void);
 
 #endif /* __ODRIVE_MAIN_H */

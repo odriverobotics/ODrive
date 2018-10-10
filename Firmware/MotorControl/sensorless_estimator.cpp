@@ -1,9 +1,8 @@
 
 #include "odrive_main.h"
 
-SensorlessEstimator::SensorlessEstimator(Config_t& config) :
-        config_(config)
-    {};
+SensorlessEstimator::SensorlessEstimator(Config_t &config) :
+    config_(config) { };
 
 bool SensorlessEstimator::update() {
     // Algorithm based on paper: Sensorless Control of Surface-Mount Permanent-Magnet Synchronous Motors Based on a Nonlinear Observer
@@ -17,7 +16,8 @@ bool SensorlessEstimator::update() {
     // Clarke transform
     float I_alpha_beta[2] = {
         -axis_->motor_.current_meas_.phB - axis_->motor_.current_meas_.phC,
-        one_by_sqrt3 * (axis_->motor_.current_meas_.phB - axis_->motor_.current_meas_.phC)};
+        one_by_sqrt3 * (axis_->motor_.current_meas_.phB - axis_->motor_.current_meas_.phC)
+    };
 
     // Swap sign of I_beta if motor is reversed
     I_alpha_beta[1] *= axis_->motor_.config_.direction;

@@ -1,5 +1,6 @@
 
 #define __MAIN_CPP__
+
 #include "odrive_main.h"
 #include "nvm_config.hpp"
 
@@ -17,7 +18,7 @@ Axis::Config_t axis_configs[AXIS_COUNT];
 TrapezoidalTrajectory::Config_t trap_configs[AXIS_COUNT];
 bool user_config_loaded_;
 
-SystemStats_t system_stats_ = { 0 };
+SystemStats_t system_stats_ = {0};
 
 Axis *axes[AXIS_COUNT];
 
@@ -32,15 +33,16 @@ typedef Config<
 
 void save_configuration(void) {
     if (ConfigFormat::safe_store_config(
-            &board_config,
-            &encoder_configs,
-            &sensorless_configs,
-            &controller_configs,
-            &motor_configs,
-            &trap_configs,
-            &axis_configs)) {
+        &board_config,
+        &encoder_configs,
+        &sensorless_configs,
+        &controller_configs,
+        &motor_configs,
+        &trap_configs,
+        &axis_configs)) {
         //printf("saving configuration failed\r\n"); osDelay(5);
-    } else {
+    }
+    else {
         user_config_loaded_ = true;
     }
 }
@@ -49,13 +51,13 @@ void load_configuration(void) {
     // Try to load configs
     if (NVM_init() ||
         ConfigFormat::safe_load_config(
-                &board_config,
-                &encoder_configs,
-                &sensorless_configs,
-                &controller_configs,
-                &motor_configs,
-                &trap_configs,
-                &axis_configs)) {
+            &board_config,
+            &encoder_configs,
+            &sensorless_configs,
+            &controller_configs,
+            &motor_configs,
+            &trap_configs,
+            &axis_configs)) {
         //If loading failed, restore defaults
         board_config = BoardConfig_t();
         for (size_t i = 0; i < AXIS_COUNT; ++i) {
@@ -68,7 +70,8 @@ void load_configuration(void) {
             // Default step/dir pins are different, so we need to explicitly load them
             Axis::load_default_step_dir_pin_config(hw_configs[i].axis_config, &axis_configs[i]);
         }
-    } else {
+    }
+    else {
         user_config_loaded_ = true;
     }
 }
@@ -79,10 +82,11 @@ void erase_configuration(void) {
 
 void enter_dfu_mode() {
     if ((hw_version_major == 3) && (hw_version_minor >= 5)) {
-        __asm volatile ("CPSID I\n\t":::"memory"); // disable interrupts
+        __asm volatile ("CPSID I\n\t":: :"memory"); // disable interrupts
         _reboot_cookie = 0xDEADBEEF;
         NVIC_SystemReset();
-    } else {
+    }
+    else {
         /*
         * DFU mode is only allowed on board version >= 3.5 because it can burn
         * the brake resistor FETs on older boards.
@@ -98,8 +102,9 @@ void enter_dfu_mode() {
 extern "C" {
 int odrive_main(void);
 void vApplicationStackOverflowHook(void) {
-    for (;;); // TODO: safe action
+    for (;;) { } // TODO: safe action
 }
+
 void vApplicationIdleHook(void) {
     if (system_stats_.fully_booted) {
         system_stats_.uptime = xTaskGetTickCount();
@@ -126,22 +131,25 @@ int odrive_main(void) {
         GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
         GPIO_InitStruct.Pull = GPIO_PULLUP;
 
-        GPIO_InitStruct.Pin = I2C_A0_PIN;
-        HAL_GPIO_Init(I2C_A0_PORT, &GPIO_InitStruct);
-        GPIO_InitStruct.Pin = I2C_A1_PIN;
-        HAL_GPIO_Init(I2C_A1_PORT, &GPIO_InitStruct);
-        GPIO_InitStruct.Pin = I2C_A2_PIN;
-        HAL_GPIO_Init(I2C_A2_PORT, &GPIO_InitStruct);
+        GPIO_InitStruct.Pin = HAL_I2C_A0_PIN;
+        HAL_GPIO_Init(HAL_I2C_A0_PORT, &GPIO_InitStruct);
+        GPIO_InitStruct.Pin = HAL_I2C_A1_PIN;
+        HAL_GPIO_Init(HAL_I2C_A1_PORT, &GPIO_InitStruct);
+        GPIO_InitStruct.Pin = HAL_I2C_A2_PIN;
+        HAL_GPIO_Init(HAL_I2C_A2_PORT, &GPIO_InitStruct);
 
         osDelay(1);
         i2c_stats_.addr = (0xD << 3);
-        i2c_stats_.addr |= HAL_GPIO_ReadPin(I2C_A0_PORT, I2C_A0_PIN) != GPIO_PIN_RESET ? 0x1 : 0;
-        i2c_stats_.addr |= HAL_GPIO_ReadPin(I2C_A1_PORT, I2C_A1_PIN) != GPIO_PIN_RESET ? 0x2 : 0;
-        i2c_stats_.addr |= HAL_GPIO_ReadPin(I2C_A2_PORT, I2C_A2_PIN) != GPIO_PIN_RESET ? 0x4 : 0;
+        i2c_stats_.addr |= HAL_GPIO_ReadPin(HAL_I2C_A0_PORT, HAL_I2C_A0_PIN) != GPIO_PIN_RESET ? 0x1 : 0;
+        i2c_stats_.addr |= HAL_GPIO_ReadPin(HAL_I2C_A1_PORT, HAL_I2C_A1_PIN) != GPIO_PIN_RESET ? 0x2 : 0;
+        i2c_stats_.addr |= HAL_GPIO_ReadPin(HAL_I2C_A2_PORT, HAL_I2C_A2_PIN) != GPIO_PIN_RESET ? 0x4 : 0;
         MX_I2C1_Init(i2c_stats_.addr);
-    } else
+    }
+    else
 #endif
+    {
         MX_CAN1_Init();
+    }
 
     // Init general user ADC on some GPIOs.
     GPIO_InitTypeDef GPIO_InitStruct;
@@ -155,10 +163,10 @@ int odrive_main(void) {
     HAL_GPIO_Init(GPIO_3_GPIO_Port, &GPIO_InitStruct);
     GPIO_InitStruct.Pin = GPIO_4_Pin;
     HAL_GPIO_Init(GPIO_4_GPIO_Port, &GPIO_InitStruct);
-#if HW_VERSION_MAJOR == 3 && HW_VERSION_MINOR >= 5
+    #if HW_VERSION_MAJOR == 3 && HW_VERSION_MINOR >= 5
     GPIO_InitStruct.Pin = GPIO_5_Pin;
     HAL_GPIO_Init(GPIO_5_GPIO_Port, &GPIO_InitStruct);
-#endif
+    #endif
 
     // Construct all objects.
     for (size_t i = 0; i < AXIS_COUNT; ++i) {
@@ -171,18 +179,18 @@ int odrive_main(void) {
                                  motor_configs[i]);
         TrapezoidalTrajectory *trap = new TrapezoidalTrajectory(trap_configs[i]);
         axes[i] = new Axis(hw_configs[i].axis_config, axis_configs[i],
-                *encoder, *sensorless_estimator, *controller, *motor, *trap);
+                           *encoder, *sensorless_estimator, *controller, *motor, *trap);
     }
-    
+
     // Start ADC for temperature measurements and user measurements
     start_general_purpose_adc();
 
     // TODO: make dynamically reconfigurable
-#if HW_VERSION_MAJOR == 3 && HW_VERSION_MINOR >= 3
+    #if HW_VERSION_MAJOR == 3 && HW_VERSION_MINOR >= 3
     if (board_config.enable_uart) {
         SetGPIO12toUART();
     }
-#endif
+    #endif
     //osDelay(100);
     // Init communications (this requires the axis objects to be constructed)
     init_communication();
