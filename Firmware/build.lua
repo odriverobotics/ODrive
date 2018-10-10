@@ -107,7 +107,8 @@ function GCCToolchain(prefix, builddir, compiler_flags, linker_flags)
 end
 
 all_packages = {}
-
+all_source = {}
+all_inc = {}
 -- toolchains: Each element of this list is a collection of functions, such as compile_c, link, ...
 --              You can create a new toolchain object for each platform you want to build for.
 function build(args)
@@ -120,7 +121,7 @@ function build(args)
     if args.asm_flags == nil then args.asm_flags = {} end
     if args.ld_flags == nil then args.ld_flags = {} end
     if args.linker_objects == nil then args.linker_objects = {} end
-    
+
     -- add includes of other packages
     for _,pkg_name in pairs(args.packages) do
         --print('depend on package '..pkg_name)
@@ -143,10 +144,13 @@ function build(args)
             --print("compile "..src)
             if tup.ext(src) == 'c' then
                 toolchain.compile_c(src, args.c_flags, args.includes, outputs)
+                all_source += src
             elseif tup.ext(src) == 'cpp' then
                 toolchain.compile_cpp(src, args.cpp_flags, args.includes, outputs)
+                all_source += src
             elseif tup.ext(src) == 's' or tup.ext(src) == 'asm' then
                 toolchain.compile_asm(src, args.asm_flags, args.includes, outputs)
+                all_source += src
             else
                 error('unrecognized file ending')
             end
@@ -162,6 +166,7 @@ function build(args)
         for _,inc in pairs(args.includes) do
             table.insert(outputs.includes, tup.nodevariable(inc))
         end
+        all_inc += outputs.includes
         if args.name != nil then
             all_packages[args.name] = outputs
         end
