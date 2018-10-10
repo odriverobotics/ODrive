@@ -51,7 +51,6 @@ public:
     void set_linear_count(int32_t count);
     void set_circular_count(int32_t count, bool update_offset);
     bool calib_enc_offset(float voltage_magnitude);
-    bool scan_for_enc_idx(float omega, float voltage_magnitude);
 
     bool run_index_search();
     bool run_offset_calibration();

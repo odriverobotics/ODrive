@@ -91,38 +91,6 @@ void Encoder::set_circular_count(int32_t count, bool update_offset) {
     cpu_exit_critical(prim);
 }
 
-
-// @brief Slowly turns the motor in one direction until the
-// encoder index is found.
-// TODO: Do the scan with current, not voltage!
-bool Encoder::run_index_search() {
-    float voltage_magnitude;
-    if (axis_->motor_.config_.motor_type == Motor::MOTOR_TYPE_HIGH_CURRENT)
-        voltage_magnitude = axis_->motor_.config_.calibration_current * axis_->motor_.config_.phase_resistance;
-    else if (axis_->motor_.config_.motor_type == Motor::MOTOR_TYPE_GIMBAL)
-        voltage_magnitude = axis_->motor_.config_.calibration_current;
-    else
-        return false;
-    
-    float omega = (float)(axis_->motor_.config_.direction) * config_.idx_search_speed;
-
-    index_found_ = false;
-    float phase = 0.0f;
-    axis_->run_control_loop([&](){
-        phase = wrap_pm_pi(phase + omega * current_meas_period);
-
-        float v_alpha = voltage_magnitude * our_arm_cos_f32(phase);
-        float v_beta = voltage_magnitude * our_arm_sin_f32(phase);
-        if (!axis_->motor_.enqueue_voltage_timings(v_alpha, v_beta))
-            return false; // error set inside enqueue_voltage_timings
-        axis_->motor_.log_timing(Motor::TIMING_LOG_IDX_SEARCH);
-
-        // continue until the index is found
-        return !index_found_;
-    });
-    return true;
-}
-
 // @brief Turns the motor in one direction for a bit and then in the other
 // direction in order to find the offset between the electrical phase 0
 // and the encoder state 0.

@@ -291,29 +291,37 @@ void Axis::run_state_machine_loop() {
         // Handlers should exit if requested_state != AXIS_STATE_UNDEFINED
         bool status;
         switch (current_state_) {
-            case AXIS_STATE_MOTOR_CALIBRATION:
+            case AXIS_STATE_MOTOR_CALIBRATION: {
                 status = motor_.run_calibration();
-                break;
+            } break;
 
-            case AXIS_STATE_ENCODER_INDEX_SEARCH:
+            case AXIS_STATE_ENCODER_INDEX_SEARCH: {
                 if (!motor_.is_calibrated_)
                     goto invalid_state_label;
-                status = encoder_.run_index_search();
-                break;
 
-            case AXIS_STATE_ENCODER_OFFSET_CALIBRATION:
+                encoder_.config_.use_index = true;
+                encoder_.index_found_ = false;
+
+                bool orig_setting = config_.lockin_finish_on_enc_idx;
+                config_.lockin_finish_on_enc_idx = true;
+                status = run_lockin_spin();
+                config_.lockin_finish_on_enc_idx = orig_setting;
+                // status = encoder_.run_index_search();
+            } break;
+
+            case AXIS_STATE_ENCODER_OFFSET_CALIBRATION: {
                 if (!motor_.is_calibrated_)
                     goto invalid_state_label;
                 status = encoder_.run_offset_calibration();
-                break;
+            } break;
 
-            case AXIS_STATE_LOCKIN_SPIN:
+            case AXIS_STATE_LOCKIN_SPIN: {
                 if (!motor_.is_calibrated_)
                     goto invalid_state_label;
                 status = run_lockin_spin();
-                break;
+            } break;
 
-            case AXIS_STATE_SENSORLESS_CONTROL:
+            case AXIS_STATE_SENSORLESS_CONTROL: {
                 if (!motor_.is_calibrated_)
                         goto invalid_state_label;
                 status = run_lockin_spin(); // TODO: restart if desired
@@ -323,20 +331,20 @@ void Axis::run_state_machine_loop() {
                     controller_.vel_setpoint_ = config_.lockin_vel;
                     status = run_sensorless_control_loop();
                 }
-                break;
+            } break;
 
-            case AXIS_STATE_CLOSED_LOOP_CONTROL:
+            case AXIS_STATE_CLOSED_LOOP_CONTROL: {
                 if (!motor_.is_calibrated_)
                     goto invalid_state_label;
                 if (!encoder_.is_ready_)
                     goto invalid_state_label;
                 status = run_closed_loop_control_loop();
-                break;
+            } break;
 
-            case AXIS_STATE_IDLE:
+            case AXIS_STATE_IDLE: {
                 run_idle_loop();
                 status = motor_.arm(); // done with idling - try to arm the motor
-                break;
+            } break;
 
             default:
             invalid_state_label:

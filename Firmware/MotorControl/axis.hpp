@@ -50,13 +50,13 @@ public:
         // Spinup settings
         float lockin_current = 10.0f;           // [A]
         float lockin_ramp_time = 0.4f;          // [s]
-        float lockin_ramp_distance = 4 * M_PI;  // [rad]
-        float lockin_accel = 400.0f;     // [rad/s^2]
-        float lockin_vel = 400.0f; // [rad/s]
-        bool lockin_finish_on_vel = true;
+        float lockin_ramp_distance = 1 * M_PI;  // [rad]
+        float lockin_accel = 10.0f;     // [rad/s^2]
+        float lockin_vel = 100.0f; // [rad/s]
+        float lockin_finish_distance = 1000.0f;  // [rad]
+        bool lockin_finish_on_vel = false;
         bool lockin_finish_on_distance = false;
         bool lockin_finish_on_enc_idx = false;
-        float lockin_finish_distance = 1000.0f;  // [rad]
     };
 
     enum thread_signals {
