@@ -1,6 +1,12 @@
 MCU_Defined = false
 FPU_Defined = false
 
+function DefineBoardVersion(Major,Minor,Voltage)
+    FLAGS += "-DHW_VERSION_MAJOR="..Major
+    FLAGS += "-DHW_VERSION_MINOR="..Minor
+    FLAGS += "-DHW_VERSION_VOLTAGE="..Voltage
+end
+
 function MCU_Set_STM32F405()
     MCU_Defined = true
     FLAGS += '-DUSE_HAL_DRIVER'
