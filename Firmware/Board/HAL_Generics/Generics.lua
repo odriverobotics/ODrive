@@ -1,7 +1,10 @@
 MCU_Defined = false
 FPU_Defined = false
+Version_Defined = false
 
 function DefineBoardVersion(Major,Minor,Voltage)
+    if Version_Defined then error("Board Version Already Defined. Remove Duplicate.") end
+    Version_Defined = true
     FLAGS += "-DHW_VERSION_MAJOR="..Major
     FLAGS += "-DHW_VERSION_MINOR="..Minor
     FLAGS += "-DHW_VERSION_VOLTAGE="..Voltage
