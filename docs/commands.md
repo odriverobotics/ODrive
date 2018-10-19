@@ -29,7 +29,7 @@ The current state of an axis is indicated by `<axis>.current_state`. The user ca
  5. `AXIS_STATE_SENSORLESS_CONTROL` Run sensorless control.
     * The motor must be calibrated (`<axis>.motor.is_calibrated`)
     * [`<axis>.controller.control_mode`](#control-mode) must be `True`.
- 6. `AXIS_STATE_ENCODER_INDEX_SEARCH` Turn the motor in one direction until the encoder index is traversed. This state can only be entered if `<axis>.encoder.config.config.use_index` is `True`.
+ 6. `AXIS_STATE_ENCODER_INDEX_SEARCH` Turn the motor in one direction until the encoder index is traversed. This state can only be entered if `<axis>.encoder.config.use_index` is `True`.
  7. `AXIS_STATE_ENCODER_OFFSET_CALIBRATION` Turn the motor in one direction for a few seconds and then back to measure the offset between the encoder position and the electrical phase.
     * Can only be entered if the motor is calibrated (`<axis>.motor.is_calibrated`).
     * A successful encoder calibration will make the `<axis>.encoder.is_ready` go to true.
