@@ -4,6 +4,9 @@ Please add a note of your changes below this heading if you make a Pull Request.
 ## Fixed
 * Would ERROR_CONTROL_DEADLINE_MISSED along with every ERROR_PHASE_RESISTANCE_OUT_OF_RANGE.
 
+### Changed
+* renamed `axis.enable_step_dir` to `axis.step_dir_active`
+
 # Releases
 ## [0.4.6] - 2018-10-07
 ### Fixed

@@ -167,7 +167,7 @@ public:
 
     // variables exposed on protocol
     Error_t error_ = ERROR_NONE;
-    bool enable_step_dir_ = false; // auto enabled after calibration, based on config.enable_step_dir
+    bool step_dir_active_ = false; // auto enabled after calibration, based on config.enable_step_dir
     State_t requested_state_ = AXIS_STATE_STARTUP_SEQUENCE;
     State_t task_chain_[10] = { AXIS_STATE_UNDEFINED };
     State_t& current_state_ = task_chain_[0];
@@ -177,7 +177,7 @@ public:
     auto make_protocol_definitions() {
         return make_protocol_member_list(
             make_protocol_property("error", &error_),
-            make_protocol_property("enable_step_dir", &enable_step_dir_),
+            make_protocol_ro_property("step_dir_active", &step_dir_active_),
             make_protocol_ro_property("current_state", &current_state_),
             make_protocol_property("requested_state", &requested_state_),
             make_protocol_ro_property("loop_counter", &loop_counter_),

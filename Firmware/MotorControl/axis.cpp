@@ -66,7 +66,7 @@ bool Axis::wait_for_current_meas() {
 
 // step/direction interface
 void Axis::step_cb() {
-    if (enable_step_dir_) {
+    if (step_dir_active_) {
         GPIO_PinState dir_pin = HAL_GPIO_ReadPin(hw_config_.dir_port, hw_config_.dir_pin);
         float dir = (dir_pin == GPIO_PIN_SET) ? 1.0f : -1.0f;
         controller_.pos_setpoint_ += dir * config_.counts_per_step;
@@ -87,9 +87,9 @@ void Axis::set_step_dir_enabled(bool enable) {
         GPIO_subscribe(hw_config_.step_port, hw_config_.step_pin, GPIO_PULLDOWN,
                 step_cb_wrapper, this);
 
-        enable_step_dir_ = true;
+        step_dir_active_ = true;
     } else {
-        enable_step_dir_ = false;
+        step_dir_active_ = false;
 
         // Unsubscribe from step GPIO
         GPIO_unsubscribe(hw_config_.step_port, hw_config_.step_pin);
