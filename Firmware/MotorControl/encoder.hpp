@@ -68,12 +68,12 @@ public:
     int32_t shadow_count_ = 0;
     int32_t count_in_cpr_ = 0;
     float interpolation_ = 0.0f;
-    float phase_ = 0.0f;    // [rad]
-    float pos_estimate_ = 0.0f;  // [rad]
-    float pos_cpr_ = 0.0f;  // [rad]
-    float vel_estimate_ = 0.0f;  // [rad/s]
-    float pll_kp_ = 0.0f;   // [rad/s / rad]
-    float pll_ki_ = 0.0f;   // [(rad/s^2) / rad]
+    float phase_ = 0.0f;    // [count]
+    float pos_estimate_ = 0.0f;  // [count]
+    float pos_cpr_ = 0.0f;  // [count]
+    float vel_estimate_ = 0.0f;  // [count/s]
+    float pll_kp_ = 0.0f;   // [count/s / count]
+    float pll_ki_ = 0.0f;   // [(count/s^2) / count]
 
     // Updated by low_level pwm_adc_cb
     uint8_t hall_state_ = 0x0; // bit[0] = HallA, .., bit[2] = HallC
