@@ -137,9 +137,7 @@ sudo dfu-util -a 0 -s 0x08000000 -D build/ODriveFirmware.bin
 
 #### MacOS
 **This section needs more detail. Please consider adding detail if you got it to work.**
-You may be able to use [dfu-util](http://dfu-util.sourceforge.net/) to upgrade the firmware. You will need to convert the .hex file to a .dfu file. You may be able to do it with the python script [dfu-convert](https://github.com/plietar/dfuse-tool/blob/master/dfu-convert) or the c program [hex2dfu](https://github.com/encedo/hex2dfu).
-
-You probably need to force DFU mode, as per the instructions above.
+You may be able to use [dfu-util](http://dfu-util.sourceforge.net/) to upgrade the firmware. The command should be similar to the Linux instructions.
 
 ## Flashing with an STLink
 
