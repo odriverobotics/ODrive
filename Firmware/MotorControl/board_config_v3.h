@@ -21,10 +21,6 @@
 
 
 typedef struct {
-    // GPIO_TypeDef* step_port;
-    // uint16_t step_pin;
-    // GPIO_TypeDef* dir_port;
-    // uint16_t dir_pin;
     uint16_t step_gpio_pin;
     uint16_t dir_gpio_pin;
     size_t thermistor_adc_ch;
@@ -76,10 +72,6 @@ const size_t thermistor_num_coeffs = sizeof(thermistor_poly_coeffs)/sizeof(therm
 const BoardHardwareConfig_t hw_configs[2] = { {
     //M0
     .axis_config = {
-        // .step_port = GPIO_1_GPIO_Port,
-        // .step_pin = GPIO_1_Pin,
-        // .dir_port = GPIO_2_GPIO_Port,
-        // .dir_pin = GPIO_2_Pin,
         .step_gpio_pin = 1,
         .dir_gpio_pin = 2,
         .thermistor_adc_ch = 15,
@@ -115,17 +107,9 @@ const BoardHardwareConfig_t hw_configs[2] = { {
     //M1
     .axis_config = {
 #if HW_VERSION_MAJOR == 3 && HW_VERSION_MINOR >= 5
-        // .step_port = GPIO_7_GPIO_Port,
-        // .step_pin = GPIO_7_Pin,
-        // .dir_port = GPIO_8_GPIO_Port,
-        // .dir_pin = GPIO_8_Pin,
         .step_gpio_pin = 7,
         .dir_gpio_pin = 8,
 #else
-        // .step_port = GPIO_3_GPIO_Port,
-        // .step_pin = GPIO_3_Pin,
-        // .dir_port = GPIO_4_GPIO_Port,
-        // .dir_pin = GPIO_4_Pin,
         .step_gpio_pin = 3,
         .dir_gpio_pin = 4,
 #endif
