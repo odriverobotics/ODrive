@@ -180,8 +180,6 @@ int odrive_main(void) {
     // TODO: make dynamically reconfigurable
 #if HW_VERSION_MAJOR == 3 && HW_VERSION_MINOR >= 3
     if (board_config.enable_uart) {
-        axes[0]->config_.enable_step_dir = false;
-        axes[0]->set_step_dir_active(false);
         SetGPIO12toUART();
     }
 #endif
