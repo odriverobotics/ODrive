@@ -1,6 +1,9 @@
 # Unreleased Features
 Please add a note of your changes below this heading if you make a Pull Request.
 
+## Added
+* Make step dir gpio pins configurable.
+
 ## Fixed
 * Would ERROR_CONTROL_DEADLINE_MISSED along with every ERROR_PHASE_RESISTANCE_OUT_OF_RANGE.
 
