@@ -167,6 +167,7 @@ standard names. */
 
 /* USER CODE BEGIN Defines */   	      
 /* Section where parameter definitions can be added (for instance, to override default ones in FreeRTOS.h) */
+#define configAPPLICATION_ALLOCATED_HEAP 1 // ucHeap allocated in freertos.c
 /* USER CODE END Defines */ 
 
 #endif /* FREERTOS_CONFIG_H */
