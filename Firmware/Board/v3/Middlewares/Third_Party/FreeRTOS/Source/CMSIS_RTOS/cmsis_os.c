@@ -816,10 +816,10 @@ osSemaphoreId osSemaphoreCreate (const osSemaphoreDef_t *semaphore_def, int32_t 
 * @brief Wait until a Semaphore token becomes available
 * @param  semaphore_id  semaphore object referenced with \ref osSemaphore.
 * @param  millisec      timeout value or 0 in case of no time-out.
-* @retval  status code that indicates the execution status of the function.
+* @retval  number of available tokens, or -1 in case of incorrect parameters.
 * @note   MUST REMAIN UNCHANGED: \b osSemaphoreWait shall be consistent in every CMSIS-RTOS.
 */
-osStatus osSemaphoreWait (osSemaphoreId semaphore_id, uint32_t millisec)
+int32_t osSemaphoreWait (osSemaphoreId semaphore_id, uint32_t millisec)
 {
   TickType_t ticks;
   portBASE_TYPE taskWoken = pdFALSE;  

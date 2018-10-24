@@ -270,11 +270,11 @@ typedef enum  {
 
 /// Entry point of a thread.
 /// \note MUST REMAIN UNCHANGED: \b os_pthread shall be consistent in every CMSIS-RTOS.
-typedef void (*os_pthread) (void *argument);
+typedef void (*os_pthread) (void const *argument);
 
 /// Entry point of a timer call back function.
 /// \note MUST REMAIN UNCHANGED: \b os_ptimer shall be consistent in every CMSIS-RTOS.
-typedef void (*os_ptimer) (void *argument);
+typedef void (*os_ptimer) (void const *argument);
 
 // >>> the following data type definitions may shall adapted towards a specific RTOS
 
@@ -323,7 +323,7 @@ typedef StaticQueue_t              osStaticMessageQDef_t;
 /// Thread Definition structure contains startup information of a thread.
 /// \note CAN BE CHANGED: \b os_thread_def is implementation specific in every CMSIS-RTOS.
 typedef struct os_thread_def  {
-  const char             *name;        ///< Thread name
+  char                   *name;        ///< Thread name 
   os_pthread             pthread;      ///< start address of thread function
   osPriority             tpriority;    ///< initial thread priority
   uint32_t               instances;    ///< maximum number of instances of that thread function
@@ -719,9 +719,9 @@ osSemaphoreId osSemaphoreCreate (const osSemaphoreDef_t *semaphore_def, int32_t 
 /// Wait until a Semaphore token becomes available.
 /// \param[in]     semaphore_id  semaphore object referenced with \ref osSemaphoreCreate.
 /// \param[in]     millisec      timeout value or 0 in case of no time-out.
-/// \return status code that indicates the execution status of the function.
+/// \return number of available tokens, or -1 in case of incorrect parameters.
 /// \note MUST REMAIN UNCHANGED: \b osSemaphoreWait shall be consistent in every CMSIS-RTOS.
-osStatus osSemaphoreWait (osSemaphoreId semaphore_id, uint32_t millisec);
+int32_t osSemaphoreWait (osSemaphoreId semaphore_id, uint32_t millisec);
 
 /// Release a Semaphore token.
 /// \param[in]     semaphore_id  semaphore object referenced with \ref osSemaphoreCreate.

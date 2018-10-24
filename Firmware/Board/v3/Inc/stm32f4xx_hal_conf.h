@@ -65,7 +65,7 @@
 /* #define HAL_SRAM_MODULE_ENABLED   */
 /* #define HAL_SDRAM_MODULE_ENABLED   */
 /* #define HAL_HASH_MODULE_ENABLED   */
-#define HAL_I2C_MODULE_ENABLED
+/* #define HAL_I2C_MODULE_ENABLED   */
 /* #define HAL_I2S_MODULE_ENABLED   */
 /* #define HAL_IWDG_MODULE_ENABLED   */
 /* #define HAL_LTDC_MODULE_ENABLED   */
@@ -91,6 +91,7 @@
 /* #define HAL_SPDIFRX_MODULE_ENABLED   */
 /* #define HAL_DFSDM_MODULE_ENABLED   */
 /* #define HAL_LPTIM_MODULE_ENABLED   */
+/* #define HAL_EXTI_MODULE_ENABLED   */
 #define HAL_GPIO_MODULE_ENABLED
 #define HAL_DMA_MODULE_ENABLED
 #define HAL_RCC_MODULE_ENABLED
@@ -243,6 +244,10 @@
 #ifdef HAL_RCC_MODULE_ENABLED
   #include "stm32f4xx_hal_rcc.h"
 #endif /* HAL_RCC_MODULE_ENABLED */
+
+#ifdef HAL_EXTI_MODULE_ENABLED
+  #include "stm32f4xx_hal_exti.h"
+#endif /* HAL_EXTI_MODULE_ENABLED */
 
 #ifdef HAL_GPIO_MODULE_ENABLED
   #include "stm32f4xx_hal_gpio.h"
