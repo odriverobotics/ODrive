@@ -180,7 +180,7 @@ int main(void)
   MX_DMA_Init();
   MX_ADC1_Init();
   MX_ADC2_Init();
-  MX_CAN1_Init();
+  // MX_CAN1_Init(); // CAN or I2C called in main.cpp instead
   MX_TIM1_Init();
   MX_TIM8_Init();
   MX_TIM3_Init();
