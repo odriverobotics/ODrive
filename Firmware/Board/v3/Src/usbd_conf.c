@@ -66,7 +66,7 @@
 
 /* USER CODE END PV */
 
-                PCD_HandleTypeDef hpcd_USB_OTG_FS;
+PCD_HandleTypeDef hpcd_USB_OTG_FS;
 void _Error_Handler(char * file, int line);
 
 /* External functions --------------------------------------------------------*/
@@ -154,6 +154,23 @@ void HAL_PCD_MspDeInit(PCD_HandleTypeDef* pcdHandle)
   */
 void HAL_PCD_SetupStageCallback(PCD_HandleTypeDef *hpcd)
 {
+  USBD_StatusTypeDef ret = USBD_OK;
+  USBD_HandleTypeDef *pdev = hpcd->pData;
+  USBD_SetupReqTypedef    *req = &pdev->request;
+  USBD_ParseSetupRequest(req, (uint8_t *)hpcd->Setup);
+  if ( ( USB_REQ_TYPE_VENDOR == (req->bmRequest & USB_REQ_TYPE_MASK) ) && ( MS_VendorCode == req->bRequest ) )
+  {
+    pdev->ep0_state = USBD_EP0_SETUP;
+    pdev->ep0_data_len = pdev->request.wLength;
+
+    ret = pdev->pClass->Setup(pdev, req);
+
+    if( (req->wLength == 0) && (ret == USBD_OK) )
+    {
+       USBD_CtlSendStatus(pdev);
+    }
+    return;
+  }
   USBD_LL_SetupStage((USBD_HandleTypeDef*)hpcd->pData, (uint8_t *)hpcd->Setup);
 }
 
@@ -312,7 +329,7 @@ USBD_StatusTypeDef USBD_LL_Init(USBD_HandleTypeDef *pdev)
   pdev->pData = &hpcd_USB_OTG_FS;
   
   hpcd_USB_OTG_FS.Instance = USB_OTG_FS;
-  hpcd_USB_OTG_FS.Init.dev_endpoints = 4;
+  hpcd_USB_OTG_FS.Init.dev_endpoints = 6;
   hpcd_USB_OTG_FS.Init.speed = PCD_SPEED_FULL;
   hpcd_USB_OTG_FS.Init.dma_enable = DISABLE;
   hpcd_USB_OTG_FS.Init.ep0_mps = DEP0CTL_MPS_64;
@@ -329,7 +346,8 @@ USBD_StatusTypeDef USBD_LL_Init(USBD_HandleTypeDef *pdev)
 
   HAL_PCDEx_SetRxFiFo(&hpcd_USB_OTG_FS, 0x80);
   HAL_PCDEx_SetTxFiFo(&hpcd_USB_OTG_FS, 0, 0x40);
-  HAL_PCDEx_SetTxFiFo(&hpcd_USB_OTG_FS, 1, 0x80);
+  HAL_PCDEx_SetTxFiFo(&hpcd_USB_OTG_FS, 1, 0x40); // CDC IN endpoint
+  HAL_PCDEx_SetTxFiFo(&hpcd_USB_OTG_FS, 3, 0x40); // ODrive IN endpoint
   }
   return USBD_OK;
 }
