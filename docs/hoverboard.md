@@ -8,9 +8,9 @@ Each step is acompanied by some explanation so hopefully you can carry over some
 ### Hoverboard motor wiring
 Hoverboard motors come with three motor phases (usually colored yellow, blue, green) which are thicker, and a set of 5 thinner wires for the hall sensor feedback (usually colored red, yellow, blue, green, black).
 
-You may wire the motor phases in any order into a motor connector on the ODrive, as we will calibrate the phase alignment later anyway. Wire the hall feedback into the ODrive J2 conenctor (make sure that the motor channel number matches) as follows:
+You may wire the motor phases in any order into a motor connector on the ODrive, as we will calibrate the phase alignment later anyway. Wire the hall feedback into the ODrive J4 conenctor (make sure that the motor channel number matches) as follows:
 
-| Hall wire | J2 signal |
+| Hall wire | J4 signal |
 |-----------|-----------|
 | Red       | 5V        |
 | Yellow    | A         |
