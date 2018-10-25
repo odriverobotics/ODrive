@@ -382,7 +382,7 @@ void MX_TIM13_Init(void)
   htim13.Instance = TIM13;
   htim13.Init.Prescaler = 0;
   htim13.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim13.Init.Period = (2 * TIM_1_8_PERIOD_CLOCKS * (TIM_1_8_RCR+1)) * (TIM_APB1_CLOCK_HZ / TIM_1_8_CLOCK_HZ);
+  htim13.Init.Period = (2 * TIM_1_8_PERIOD_CLOCKS * (TIM_1_8_RCR+1)) * ((float)TIM_APB1_CLOCK_HZ / (float)TIM_1_8_CLOCK_HZ) - 1;
   htim13.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   if (HAL_TIM_Base_Init(&htim13) != HAL_OK)
   {
