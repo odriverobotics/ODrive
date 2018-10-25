@@ -144,33 +144,54 @@ For working with the ODrive code you don't need an IDE, but the open-source IDE 
 
 <br><br>
 ## STM32CubeMX
-
 This project uses the STM32CubeMX tool to generate startup code and to ease the configuration of the peripherals. You can download it from [here](http://www2.st.com/content/st_com/en/products/development-tools/software-development-tools/stm32-software-development-tools/stm32-configurators-and-code-generators/stm32cubemx.html?icmp=stm32cubemx_pron_pr-stm32cubef2_apr2014&sc=stm32cube-pr2). All CubeMX related files are in `Firmware/Board/v3`.
 
 You will likely want the pinout for this process. It is available [here](https://docs.google.com/spreadsheets/d/1QXDCs1IRtUyG__M_9WruWOheywb-GhOwFtfPcHuN2Fg/edit#gid=404444347).
 
-### Generate code
+### Maintaining modified generated code
+When generating the code, STM32CubeMX will nuke everything except some special sections that they provide. These sections are marked like `USER CODE BEGIN`...`USER CODE END`.
+We used to try to make sure all edits we made to the generated code would only go in these sections, so some code structrure may reflect that.
+However over time we realized this will not be tenable, so instead we use git to rebase all changes of the generated code whenever we need to regenerate it.
+We use two special branches that will help us to do this, they are `STM32CubeMX-start` and `STM32CubeMX-end`.
+How to use these is shown in the following example.
+
+**Note**: Due to how this rebasing is done, all development that changes the generated code should be done directly on `STM32CubeMX-end`, and not based on `devel`, then follow step 4 below to carry them over to your feature branch. If you did some changes to the generated code based from `devel`, you need to cherry pick just those changes over to `STM32CubeMX-end`.
+
+### 1. Ensuring a clean slate
+* We do all changes to the STM32CubeMX config and regenerate the code on top of `STM32CubeMX-start`.
+  * `git checkout STM32CubeMX-start`
 * Run stm32cubeMX and load the `Firmware/Board/v3/Odrive.ioc` project file.
-* Press `Project -> Generate code`
+  * If the tool asks if you wish to migrate to a new version, choose to migrate.
+* Without changing any settings, press `Project -> Generate code`.
 * You may need to let it download some drivers and such.
-* After generating/updating the code, some minor patches need to be applied. To do this, run:
-  `git apply Firmware/Board/v3/*.patch`
-* Run `git config --local core.autocrlf input`. This will tell git that all files should be checked in with LF endings (CubeMX generates CRLF endings).
-* `git status` will still claim that many files are modified but the actual diff (using `git diff`) is empty (apart from all the line ending warnings).
+* STM32CubeMX may now have a newer version of some of the libraries, so there may be changes to the generated code even though we didn't change any settings. We need to check that everything is still working, and hence check in the changes:
+* `git config --local core.autocrlf input` - This will tell git that all files should be checked in with LF endings (CubeMX generates CRLF endings).
+* `git diff` - Ignore the pile of line ending warnings.
+* If you feel qualified: you can now ispect if CubeMX introduced something stupid. If there were any changes, and they look acceptable, we should commit them:
+  * `git commit -am "Run STM32CubeMX v1.21"` - Replace with actual version of CubeMX
 
-### Generating patchfiles
-If you made changes to CubeMX generated files outside of the `USER CODE BEGIN`...`USER CODE END` sections and contribute them back, please add a patch file so that the next person who runs CubeMX doesn't run into problems.
+### 2. Making changes to the STM32CubeMX config
+* After completing the above steps, make sure the working directory is clean:
+  * `git status` should include "nothing to commit, working tree clean"
+* Make your changes in STM32CubeMX, save the project and generate the code. (`Project -> Generate code`)
+* `git diff` - Check that the introduced changes are as expected
+* If everything looks ok, you can commit your changes.
 
-CubeMX will reset everything outside these sections to the original state; we will capturing into a patch file the changes required to undo this resetting.
-* Make sure your current desired state is committed.
-* Make a new temporary branch: `git checkout -b cubemx_temp`
-* Run the CubeMX code generation as described in the previous section, including applying previous patches.
-* The diff will now _not_ be empty since CubeMX reset your changes.
-* Stage this state and commit it with a message like "CubeMX reset my changes".
-* Run `git revert HEAD` to undo the resetting action CubeMX's regeneration had. This is the commit which you will export, so write a meaningful commit message.
-* Run `git format-patch HEAD~1` to export the commit as patch file.
-* Check out your previous branch and then force-delete the temporary branch: `git branch -D cubemx_temp`
-* Move the patch file to `Firmware/Board/v3/` and add it in a new commit.
+### 3. Rebasing the modifications to the generated code
+* `git checkout STM32CubeMX-end`
+* `git rebase STM32CubeMX-start`
+* Make sure the rebase finishes, fixing any conflicts that may arise
+
+### 4. Merge new STM32CubeMX code to your feature branch
+**TODO: Nobody has done this yet, these instructions are new. Please verify that this works as intended.**
+Simply merge the new state at `STM32CubeMX-end` into your feature branch.
+* `git checkout your-feature`
+* `git merge STM32CubeMX-end`
+
+### 5. Pushing back upstream
+* Generate a PR like normal for your feature.
+* Make sure youhave pushed to the `STM32CubeMX-start` and `STM32CubeMX-end` branches on your fork.
+* Make a note in your PR to the maintainer that they need to update the STM32CubeMX branches when they merge the PR.
 
 <br><br>
 ## Troubleshooting
