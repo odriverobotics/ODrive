@@ -1,6 +1,9 @@
 # Unreleased Features
 Please add a note of your changes below this heading if you make a Pull Request.
 
+### Added
+* Overspeed fault
+
 ### Changed
 * Increased switching frequency from around 8kHz to 24kHz. Control loops still run at 8kHz.
 * Renamed `axis.enable_step_dir` to `axis.step_dir_active`

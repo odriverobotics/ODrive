@@ -7,6 +7,11 @@
 
 class Controller {
 public:
+    enum Error_t {
+        ERROR_NONE = 0,
+        ERROR_OVERSPEED = 0x01,
+    };
+
     // Note: these should be sorted from lowest level of control to
     // highest level of control, to allow "<" style comparisons.
     enum ControlMode_t{
@@ -23,11 +28,13 @@ public:
         float vel_gain = 5.0f / 10000.0f;  // [A/(counts/s)]
         // float vel_gain = 5.0f / 200.0f, // [A/(rad/s)] <sensorless example>
         float vel_integrator_gain = 10.0f / 10000.0f;  // [A/(counts/s * s)]
-        float vel_limit = 20000.0f;           // [counts/s]
+        float vel_limit = 20000.0f;        // [counts/s]
+        float vel_limit_tolerance = 1.2f;  // ratio to vel_lim. 0.0f to disable
     };
 
     Controller(Config_t& config);
     void reset();
+    void set_error(Error_t error);
 
     void set_pos_setpoint(float pos_setpoint, float vel_feed_forward, float current_feed_forward);
     void set_vel_setpoint(float vel_setpoint, float current_feed_forward);
@@ -68,6 +75,7 @@ public:
         .calib_vel_threshold = 1.0f,
     };
 
+    Error_t error_ = ERROR_NONE;
     // variables exposed on protocol
     float pos_setpoint_ = 0.0f;
     float vel_setpoint_ = 0.0f;
@@ -80,6 +88,7 @@ public:
     // Communication protocol definitions
     auto make_protocol_definitions() {
         return make_protocol_member_list(
+            make_protocol_property("error", &error_),
             make_protocol_property("pos_setpoint", &pos_setpoint_),
             make_protocol_property("vel_setpoint", &vel_setpoint_),
             make_protocol_property("vel_integrator_current", &vel_integrator_current_),
@@ -89,7 +98,8 @@ public:
                 make_protocol_property("pos_gain", &config_.pos_gain),
                 make_protocol_property("vel_gain", &config_.vel_gain),
                 make_protocol_property("vel_integrator_gain", &config_.vel_integrator_gain),
-                make_protocol_property("vel_limit", &config_.vel_limit)
+                make_protocol_property("vel_limit", &config_.vel_limit),
+                make_protocol_property("vel_limit_tolerance", &config_.vel_limit_tolerance)
             ),
             make_protocol_function("set_pos_setpoint", *this, &Controller::set_pos_setpoint,
                 "pos_setpoint", "vel_feed_forward", "current_feed_forward"),
@@ -102,5 +112,7 @@ public:
         );
     }
 };
+
+DEFINE_ENUM_FLAG_OPERATORS(Controller::Error_t)
 
 #endif // __CONTROLLER_HPP
