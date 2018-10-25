@@ -183,7 +183,6 @@ How to use these is shown in the following example.
 * Make sure the rebase finishes, fixing any conflicts that may arise
 
 ### 4. Merge new STM32CubeMX code to your feature branch
-**TODO: Nobody has done this yet, these instructions are new. Please verify that this works as intended.**
 Simply merge the new state at `STM32CubeMX-end` into your feature branch.
 * `git checkout your-feature`
 * `git merge STM32CubeMX-end`
