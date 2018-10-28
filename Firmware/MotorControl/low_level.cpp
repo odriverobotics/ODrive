@@ -216,7 +216,8 @@ void start_adc_pwm() {
     start_pwm(&htim1);
     start_pwm(&htim8);
     // TODO: explain why this offset
-    sync_timers(&htim1, &htim8, TIM_CLOCKSOURCE_ITR0, TIM_1_8_PERIOD_CLOCKS / 2 - 1 * 128);
+    sync_timers(&htim1, &htim8, TIM_CLOCKSOURCE_ITR0, TIM_1_8_PERIOD_CLOCKS / 2 - 1 * 128,
+            &htim13);
 
     // Motor output starts in the disabled state
     __HAL_TIM_MOE_DISABLE_UNCONDITIONALLY(&htim1);
@@ -259,7 +260,8 @@ void start_pwm(TIM_HandleTypeDef* htim) {
 }
 
 void sync_timers(TIM_HandleTypeDef* htim_a, TIM_HandleTypeDef* htim_b,
-                 uint16_t TIM_CLOCKSOURCE_ITRx, uint16_t count_offset) {
+                 uint16_t TIM_CLOCKSOURCE_ITRx, uint16_t count_offset,
+                 TIM_HandleTypeDef* htim_refbase) {
     // Store intial timer configs
     uint16_t MOE_store_a = htim_a->Instance->BDTR & (TIM_BDTR_MOE);
     uint16_t MOE_store_b = htim_b->Instance->BDTR & (TIM_BDTR_MOE);
@@ -294,6 +296,11 @@ void sync_timers(TIM_HandleTypeDef* htim_a, TIM_HandleTypeDef* htim_b,
     // set counter offset
     htim_a->Instance->CNT = count_offset;
     htim_b->Instance->CNT = 0;
+    // Set and start reference timebase timer (if used)
+    if (htim_refbase) {
+        htim_refbase->Instance->CNT = count_offset;
+        htim_refbase->Instance->CR1 |= (TIM_CR1_CEN); // start
+    }
     // Start Timer a
     htim_a->Instance->CR1 |= (TIM_CR1_CEN);
     // Restore timer configs
@@ -475,8 +482,14 @@ void pwm_trig_adc_cb(ADC_HandleTypeDef* hadc, bool injected) {
     int axis_num = injected ? 0 : 1;
     Axis& other_axis = injected ? *axes[1] : *axes[0];
     bool counting_down = axis.motor_.hw_config_.timer->Instance->CR1 & TIM_CR1_DIR;
-
     bool current_meas_not_DC_CAL = !counting_down;
+
+    // Check the timing of the sequencing
+    if (current_meas_not_DC_CAL)
+        axis.motor_.log_timing(Motor::TIMING_LOG_ADC_CB_I);
+    else
+        axis.motor_.log_timing(Motor::TIMING_LOG_ADC_CB_DC);
+
     bool update_timings = false;
     if (hadc == &hadc2) {
         if (&axis == axes[1] && counting_down)
@@ -502,12 +515,6 @@ void pwm_trig_adc_cb(ADC_HandleTypeDef* hadc, bool injected) {
         }
         update_brake_current();
     }
-
-    // Check the timing of the sequencing
-    if (current_meas_not_DC_CAL)
-        axis.motor_.log_timing(Motor::TIMING_LOG_ADC_CB_I);
-    else
-        axis.motor_.log_timing(Motor::TIMING_LOG_ADC_CB_DC);
 
     uint32_t ADCValue;
     if (injected) {

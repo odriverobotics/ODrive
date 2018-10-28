@@ -1,14 +1,17 @@
 # Unreleased Features
 Please add a note of your changes below this heading if you make a Pull Request.
 
-## Added
+### Added
+* Overspeed fault
 * Make step dir gpio pins configurable.
 
-## Fixed
-* Would ERROR_CONTROL_DEADLINE_MISSED along with every ERROR_PHASE_RESISTANCE_OUT_OF_RANGE.
-
 ### Changed
-* renamed `axis.enable_step_dir` to `axis.step_dir_active`
+* Increased switching frequency from around 8kHz to 24kHz. Control loops still run at 8kHz.
+* Renamed `axis.enable_step_dir` to `axis.step_dir_active`
+* New process for working with STM32CubeMX.
+
+## Fixed
+* Would get ERROR_CONTROL_DEADLINE_MISSED along with every ERROR_PHASE_RESISTANCE_OUT_OF_RANGE.
 
 # Releases
 ## [0.4.6] - 2018-10-07

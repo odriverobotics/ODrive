@@ -24,7 +24,7 @@ void Encoder::setup() {
             enc_index_cb_wrapper, this);
 }
 
-void Encoder::set_error(Encoder::Error_t error) {
+void Encoder::set_error(Error_t error) {
     error_ |= error;
     axis_->error_ |= Axis::ERROR_ENCODER_FAILED;
 }
