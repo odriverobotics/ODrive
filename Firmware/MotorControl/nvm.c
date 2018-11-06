@@ -402,6 +402,7 @@ int NVM_commit(void) {
 */
 void NVM_demo(void) {
     const size_t len = 38;
+    const int num_write_cycles = 1;
     uint8_t data[len];
     int progress = 0;
     uint8_t seed = 0;
@@ -430,19 +431,21 @@ void NVM_demo(void) {
         printf("NVM is empty\r\n"); osDelay(5);
     }
 
-    // store new bytes in NVM (data based on seed)
-    printf("write 0x%02x, ..., 0x%02x to NVM\r\n", seed, seed + len - 1); osDelay(5);
-    for (size_t i = 0; i < len; i++)
-        data[i] = seed++;
-    if (progress++, NVM_start_write(len) != 0)
-        goto fail;
-    if (progress++, NVM_write(0, data, len / 2))
-        goto fail;
-    if (progress++, NVM_write(len / 2, &data[len / 2], len - (len / 2)))
-        goto fail;
-    if (progress++, NVM_commit())
-        goto fail;
-    printf("new data committed to NVM\r\n"); osDelay(5);
+    for(int cyc = 0; cyc < num_write_cycles; cyc++) {
+        // store new bytes in NVM (data based on seed)
+        printf("write 0x%02x, ..., 0x%02x to NVM\r\n", seed, seed + len - 1); osDelay(5);
+        for (size_t i = 0; i < len; i++)
+            data[i] = seed++;
+        if (progress++, NVM_start_write(len) != 0)
+            goto fail;
+        if (progress++, NVM_write(0, data, len / 2))
+            goto fail;
+        if (progress++, NVM_write(len / 2, &data[len / 2], len - (len / 2)))
+            goto fail;
+        if (progress++, NVM_commit())
+            goto fail;
+        printf("new data committed to NVM\r\n"); osDelay(5);
+    }
 
     return;
 
