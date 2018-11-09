@@ -66,7 +66,7 @@ extern const size_t thermistor_num_coeffs;
 //TODO stick this in a C file
 #ifdef __MAIN_CPP__
 const float thermistor_poly_coeffs[] =
-    {363.0172658f, -459.19773008f, 308.29273921f, -28.12731452f};
+    {363.93910201f, -462.15369634f, 307.55129571f, -27.72569531f};
 const size_t thermistor_num_coeffs = sizeof(thermistor_poly_coeffs)/sizeof(thermistor_poly_coeffs[1]);
 
 const BoardHardwareConfig_t hw_configs[2] = { {
