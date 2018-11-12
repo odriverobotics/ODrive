@@ -21,6 +21,7 @@ int NVM_erase(void);
 size_t NVM_get_max_read_length(void);
 size_t NVM_get_max_write_length(void);
 int NVM_read(size_t offset, uint8_t *data, size_t length);
+int NVM_invalidate();
 int NVM_start_write(size_t length);
 int NVM_write(size_t offset, uint8_t *data, size_t length);
 int NVM_commit(void);

@@ -275,6 +275,21 @@ int NVM_read(size_t offset, uint8_t *data, size_t length) {
     return 0;
 }
 
+// @brief Sets the currently valid read sector to invalid.
+//
+// Make there be no valid data right now. Useful if you wish to invalidate a saved configuration
+// but don't have a new one to write.
+int NVM_invalidate() {
+    // Invalidate all currently valid fields
+    sector_t *read_sector = &sectors[read_sector_];
+    int status = set_allocation_state(read_sector, read_sector->index - n_valid_, n_valid_, INVALID);
+    if (status)
+        return status;
+    
+    n_valid_ = 0;
+    return 0;
+}
+
 // @brief Starts an atomic write operation.
 //
 // The most recent valid NVM data is not modified or invalidated until NVM_commit is called.
