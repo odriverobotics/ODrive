@@ -78,6 +78,18 @@ auto make_protocol_definitions(PWMMapping_t& mapping) {
     );
 }
 
+auto make_protocol_definitions(DiffSteeringMixerMapping_t& mapping) {
+    return make_protocol_member_list(
+        make_protocol_property("input_throttle", &mapping.input_throttle),
+        make_protocol_property("input_steering", &mapping.input_steering),
+        make_protocol_property("endpoint_output_a", &mapping.endpoint_output_a),
+        make_protocol_property("endpoint_output_b", &mapping.endpoint_output_b),
+        make_protocol_property("direction_a", &mapping.direction_a),
+        make_protocol_property("direction_b", &mapping.direction_b),
+        make_protocol_property("gpio_update_trigger", &mapping.gpio_update_trigger)
+    );
+}
+
 /* Function implementations --------------------------------------------------*/
 
 void init_communication(void) {
@@ -164,10 +176,10 @@ static inline auto make_obj_tree() {
             make_protocol_object("gpio3_pwm_mapping", make_protocol_definitions(board_config.pwm_mappings[2])),
 #endif
             make_protocol_object("gpio4_pwm_mapping", make_protocol_definitions(board_config.pwm_mappings[3])),
-
             make_protocol_object("gpio3_analog_mapping", make_protocol_definitions(board_config.analog_mappings[2])),
-            make_protocol_object("gpio4_analog_mapping", make_protocol_definitions(board_config.analog_mappings[3]))
-            ),
+            make_protocol_object("gpio4_analog_mapping", make_protocol_definitions(board_config.analog_mappings[3])),
+            make_protocol_object("diff_steering_mixer_mapping", make_protocol_definitions(board_config.mixer_mapping))
+        ),
         make_protocol_object("axis0", axes[0]->make_protocol_definitions()),
         make_protocol_object("axis1", axes[1]->make_protocol_definitions()),
         make_protocol_object("can", can1_ctx.make_protocol_definitions()),

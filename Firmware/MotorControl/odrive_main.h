@@ -66,6 +66,16 @@ struct PWMMapping_t {
     float max = 0;
 };
 
+struct DiffSteeringMixerMapping_t {
+    endpoint_ref_t endpoint_output_a = { 0 };
+    endpoint_ref_t endpoint_output_b = { 0 };
+    float input_steering = 0;
+    float input_throttle = 0;
+    float direction_a = 1;
+    float direction_b = -1;
+    int32_t gpio_update_trigger = 0;
+};
+
 // @brief general user configurable board configuration
 struct BoardConfig_t {
     bool enable_uart = true;
@@ -83,6 +93,7 @@ struct BoardConfig_t {
                                                                         //<! The default is 26V for the 24V board version and 52V for the 48V board version.
     PWMMapping_t pwm_mappings[GPIO_COUNT];
     PWMMapping_t analog_mappings[GPIO_COUNT];
+    DiffSteeringMixerMapping_t mixer_mapping;
 };
 extern BoardConfig_t board_config;
 extern bool user_config_loaded_;
