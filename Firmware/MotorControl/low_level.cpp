@@ -679,30 +679,59 @@ void pwm_in_init() {
     }
 }
 
-#define TIM_2_5_CLOCK_HZ        TIM_APB1_CLOCK_HZ
-#define PWM_MIN_HIGH_TIME          ((TIM_2_5_CLOCK_HZ / 1000000UL) * 1000UL) // 1ms high is considered full reverse
-#define PWM_MAX_HIGH_TIME          ((TIM_2_5_CLOCK_HZ / 1000000UL) * 2000UL) // 2ms high is considered full forward
-#define PWM_MIN_LEGAL_HIGH_TIME    ((TIM_2_5_CLOCK_HZ / 1000000UL) * 500UL) // ignore high periods shorter than 0.5ms
-#define PWM_MAX_LEGAL_HIGH_TIME    ((TIM_2_5_CLOCK_HZ / 1000000UL) * 2500UL) // ignore high periods longer than 2.5ms
-#define PWM_INVERT_INPUT        false
+#define TIM_2_5_CLOCK_HZ         TIM_APB1_CLOCK_HZ
+#define PWM_MIN_HIGH_TIME        ((TIM_2_5_CLOCK_HZ / 1000000UL) * 1000UL) // 1ms high is considered full reverse
+#define PWM_MAX_HIGH_TIME        ((TIM_2_5_CLOCK_HZ / 1000000UL) * 2000UL) // 2ms high is considered full forward
+#define PWM_DEADBAND_MIN_TIME    ((TIM_2_5_CLOCK_HZ / 1000000UL) * 1495UL) // Values in the range [DEADBAND_MIN, DEADBAND_MAX] will output (min+max)/2
+#define PWM_DEADBAND_MAX_TIME    ((TIM_2_5_CLOCK_HZ / 1000000UL) * 1505UL) // Values in the range [DEADBAND_MIN, DEADBAND_MAX] will output (min+max)/2
+#define PWM_MIN_LEGAL_HIGH_TIME  ((TIM_2_5_CLOCK_HZ / 1000000UL) * 500UL) // ignore high periods shorter than 0.5ms
+#define PWM_MAX_LEGAL_HIGH_TIME  ((TIM_2_5_CLOCK_HZ / 1000000UL) * 2500UL) // ignore high periods longer than 2.5ms
+#define PWM_INVERT_INPUT         false
+
+void diff_steering_mixer_update(int channel) {
+    if (channel != board_config.mixer_mapping.gpio_update_trigger)
+        return;
+
+    Endpoint* endpoint_a = get_endpoint(board_config.mixer_mapping.endpoint_output_a);
+    Endpoint* endpoint_b = get_endpoint(board_config.mixer_mapping.endpoint_output_b);
+    if (!endpoint_a || !endpoint_b)
+        return;
+    
+    endpoint_a->set_from_float(board_config.mixer_mapping.direction_a * (board_config.mixer_mapping.input_throttle + board_config.mixer_mapping.input_steering));
+    endpoint_b->set_from_float(board_config.mixer_mapping.direction_b * (board_config.mixer_mapping.input_throttle - board_config.mixer_mapping.input_steering));
+}
 
 void handle_pulse(int gpio_num, uint32_t high_time) {
     if (high_time < PWM_MIN_LEGAL_HIGH_TIME || high_time > PWM_MAX_LEGAL_HIGH_TIME)
         return;
 
-    if (high_time < PWM_MIN_HIGH_TIME)
-        high_time = PWM_MIN_HIGH_TIME;
-    if (high_time > PWM_MAX_HIGH_TIME)
-        high_time = PWM_MAX_HIGH_TIME;
-    float fraction = (float)(high_time - PWM_MIN_HIGH_TIME) / (float)(PWM_MAX_HIGH_TIME - PWM_MIN_HIGH_TIME);
-    float value = board_config.pwm_mappings[gpio_num - 1].min +
-                  (fraction * (board_config.pwm_mappings[gpio_num - 1].max - board_config.pwm_mappings[gpio_num - 1].min));
-
     Endpoint* endpoint = get_endpoint(board_config.pwm_mappings[gpio_num - 1].endpoint);
     if (!endpoint)
         return;
 
-    endpoint->set_from_float(value);
+    if (high_time <= PWM_MIN_HIGH_TIME) { // Minimum time
+        endpoint->set_from_float(board_config.pwm_mappings[gpio_num - 1].min);
+    }
+    else if (high_time < PWM_DEADBAND_MIN_TIME) { // Between minimum time and inclusive deadband
+        float fraction = 0.5f * (float)(high_time - PWM_MIN_HIGH_TIME) / (float)(PWM_DEADBAND_MIN_TIME - PWM_MIN_HIGH_TIME); // 0.0 to 0.5
+        float value = board_config.pwm_mappings[gpio_num - 1].min +
+                    (fraction * (board_config.pwm_mappings[gpio_num - 1].max - board_config.pwm_mappings[gpio_num - 1].min));
+        endpoint->set_from_float(value);
+    }
+    else if (high_time <= PWM_DEADBAND_MAX_TIME) { // Inside inclusive deadband
+        endpoint->set_from_float((board_config.pwm_mappings[gpio_num - 1].max + board_config.pwm_mappings[gpio_num - 1].min) / 2.0f); // Center
+    }
+    else if (high_time < PWM_MAX_HIGH_TIME) { // Between inclusive deadband and maximum time
+        float fraction = 0.5f * (float)(high_time - PWM_DEADBAND_MAX_TIME) / (float)(PWM_MAX_HIGH_TIME - PWM_DEADBAND_MAX_TIME) + 0.5f; // 0.5 to 1.0
+        float value = board_config.pwm_mappings[gpio_num - 1].min +
+                    (fraction * (board_config.pwm_mappings[gpio_num - 1].max - board_config.pwm_mappings[gpio_num - 1].min));
+        endpoint->set_from_float(value);
+    }
+    else { // Maximum time
+        endpoint->set_from_float(board_config.pwm_mappings[gpio_num - 1].max);
+    }
+
+    diff_steering_mixer_update(gpio_num);
 }
 
 void pwm_in_cb(int channel, uint32_t timestamp) {
