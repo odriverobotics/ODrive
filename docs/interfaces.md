@@ -1,6 +1,7 @@
+
 # Interfaces
 
-<div class="alert"> While developing custom ODrive control code it is recommend that your motors are free to spin continuously and are not connected to a drivetrain with limited travel. </div>
+<div class="alert"> While developing custom ODrive control code it is recommended that your motors are free to spin continuously and are not connected to a drivetrain with limited travel. </div>
 
 The ODrive can be controlled over various ports and protocols. If you're comfortable with embedded systems development, you can also run custom code directly on the ODrive. For that refer to the [developer documentation](developer-guide.md).
 
@@ -124,6 +125,33 @@ As an example, we'll configure GPIO4 to control the angle of axis 0. We want the
     ```
 5. With the ODrive powered off, connect the RC receiver ground to the ODrive's GND and one of the RC receiver signals to GPIO4. You may try to power the receiver from the ODrive's 5V supply if it doesn't draw too much power. Power up the the RC transmitter. You should now be able to control axis 0 from one of the RC sticks.
 
+### Differential Steering Mixer
+An input mixer meant for controlling skid-steer or differential-steering robots is also available.  It takes inputs from a steering and a throttle channel and converts them outputs for left and right motors.
+
+To use the mixer, connect the GPIO pin endpoints to the `diff_steering_mixer_mapping` object, and the mixer's endpoints to the numerical motor control parameters.  The following code was used to drive a hoverboard motor cart in current control mode.
+
+```
+odrv0.config.gpio1_pwm_mapping.min = -8.0
+odrv0.config.gpio1_pwm_mapping.max = 8.0
+odrv0.config.gpio1_pwm_mapping.endpoint = odrv0.config.diff_steering_mixer_mapping._remote_attributes['input_steering']
+
+odrv0.config.gpio2_pwm_mapping.min = -15.0
+odrv0.config.gpio2_pwm_mapping.max = 15.0
+odrv0.config.gpio2_pwm_mapping.endpoint = odrv0.config.diff_steering_mixer_mapping._remote_attributes['input_throttle']
+
+odrv0.config.diff_steering_mixer_mapping.gpio_update_trigger = 2
+odrv0.config.diff_steering_mixer_mapping.direction_a = -1.0
+odrv0.config.diff_steering_mixer_mapping.direction_b = 1.0
+odrv0.config.diff_steering_mixer_mapping.endpoint_output_a = odrv0.axis1.controller._remote_attributes['current_setpoint']
+odrv0.config.diff_steering_mixer_mapping.endpoint_output_b = odrv0.axis0.controller._remote_attributes['current_setpoint']
+```
+The `diff_steering_mixer_mapping.direction_a` and `.direction_b` parameters are multipliers to change the direction of the motors.  `gpio_update_trigger` needs to be set to the GPIO number of one of the input channels.  In the firmware, the mixer's outputs update after that channel's input is received. 
+
+The mixer could be used for other applications;  the math inside the function is copied below.
+```
+endpoint_a = direction_a * (input_throttle + input_steering));
+endpoint_b = direction_b * (input_throttle - input_steering));
+```
 ## Ports
 Note: when you use an existing library you don't have to deal with the specifics described in this section.
 
