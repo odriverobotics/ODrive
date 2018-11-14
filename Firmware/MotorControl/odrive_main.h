@@ -64,6 +64,7 @@ struct PWMMapping_t {
     endpoint_ref_t endpoint = { 0 };
     float min = 0;
     float max = 0;
+    bool enable_deadband = true;
 };
 
 struct DiffSteeringMixerMapping_t {

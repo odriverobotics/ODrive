@@ -709,26 +709,43 @@ void handle_pulse(int gpio_num, uint32_t high_time) {
     if (!endpoint)
         return;
 
-    if (high_time <= PWM_MIN_HIGH_TIME) { // Minimum time
-        endpoint->set_from_float(board_config.pwm_mappings[gpio_num - 1].min);
+    if (board_config.pwm_mappings[gpio_num - 1].enable_deadband) {
+        if (high_time <= PWM_MIN_HIGH_TIME) { // Minimum time
+            endpoint->set_from_float(board_config.pwm_mappings[gpio_num - 1].min);
+        }
+        else if (high_time < PWM_DEADBAND_MIN_TIME) { // Between minimum time and inclusive deadband
+            float fraction = 0.5f * (float)(high_time - PWM_MIN_HIGH_TIME) / (float)(PWM_DEADBAND_MIN_TIME - PWM_MIN_HIGH_TIME); // 0.0 to 0.5
+            float value = board_config.pwm_mappings[gpio_num - 1].min +
+                          (fraction * (board_config.pwm_mappings[gpio_num - 1].max - board_config.pwm_mappings[gpio_num - 1].min));
+            endpoint->set_from_float(value);
+        }
+        else if (high_time <= PWM_DEADBAND_MAX_TIME) { // Inside inclusive deadband
+            endpoint->set_from_float((board_config.pwm_mappings[gpio_num - 1].max + board_config.pwm_mappings[gpio_num - 1].min) / 2.0f); // Center
+        }
+        else if (high_time < PWM_MAX_HIGH_TIME) { // Between inclusive deadband and maximum time
+            float fraction = 0.5f * (float)(high_time - PWM_DEADBAND_MAX_TIME) / (float)(PWM_MAX_HIGH_TIME - PWM_DEADBAND_MAX_TIME) + 0.5f; // 0.5 to 1.0
+            float value = board_config.pwm_mappings[gpio_num - 1].min +
+                          (fraction * (board_config.pwm_mappings[gpio_num - 1].max - board_config.pwm_mappings[gpio_num - 1].min));
+            endpoint->set_from_float(value);
+        }
+        else { // Maximum time
+            endpoint->set_from_float(board_config.pwm_mappings[gpio_num - 1].max);
+        }
     }
-    else if (high_time < PWM_DEADBAND_MIN_TIME) { // Between minimum time and inclusive deadband
-        float fraction = 0.5f * (float)(high_time - PWM_MIN_HIGH_TIME) / (float)(PWM_DEADBAND_MIN_TIME - PWM_MIN_HIGH_TIME); // 0.0 to 0.5
-        float value = board_config.pwm_mappings[gpio_num - 1].min +
-                    (fraction * (board_config.pwm_mappings[gpio_num - 1].max - board_config.pwm_mappings[gpio_num - 1].min));
-        endpoint->set_from_float(value);
-    }
-    else if (high_time <= PWM_DEADBAND_MAX_TIME) { // Inside inclusive deadband
-        endpoint->set_from_float((board_config.pwm_mappings[gpio_num - 1].max + board_config.pwm_mappings[gpio_num - 1].min) / 2.0f); // Center
-    }
-    else if (high_time < PWM_MAX_HIGH_TIME) { // Between inclusive deadband and maximum time
-        float fraction = 0.5f * (float)(high_time - PWM_DEADBAND_MAX_TIME) / (float)(PWM_MAX_HIGH_TIME - PWM_DEADBAND_MAX_TIME) + 0.5f; // 0.5 to 1.0
-        float value = board_config.pwm_mappings[gpio_num - 1].min +
-                    (fraction * (board_config.pwm_mappings[gpio_num - 1].max - board_config.pwm_mappings[gpio_num - 1].min));
-        endpoint->set_from_float(value);
-    }
-    else { // Maximum time
-        endpoint->set_from_float(board_config.pwm_mappings[gpio_num - 1].max);
+    else { // Deadband disabled
+        if (high_time <= PWM_MIN_HIGH_TIME) { // Below minimum time
+            endpoint->set_from_float(board_config.pwm_mappings[gpio_num - 1].min);
+        }
+        else if (high_time < PWM_MAX_HIGH_TIME) { // Between max and min time
+            float fraction = (float)(high_time - PWM_MIN_HIGH_TIME) / (float)(PWM_MAX_HIGH_TIME - PWM_MIN_HIGH_TIME);
+            float value = board_config.pwm_mappings[gpio_num - 1].min +
+                          (fraction * (board_config.pwm_mappings[gpio_num - 1].max - board_config.pwm_mappings[gpio_num - 1].min));
+
+            endpoint->set_from_float(value);
+        }
+        else { // Above maximum time
+            endpoint->set_from_float(board_config.pwm_mappings[gpio_num - 1].max);
+        }
     }
 
     diff_steering_mixer_update(gpio_num);

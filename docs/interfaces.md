@@ -125,6 +125,8 @@ As an example, we'll configure GPIO4 to control the angle of axis 0. We want the
     ```
 5. With the ODrive powered off, connect the RC receiver ground to the ODrive's GND and one of the RC receiver signals to GPIO4. You may try to power the receiver from the ODrive's 5V supply if it doesn't draw too much power. Power up the the RC transmitter. You should now be able to control axis 0 from one of the RC sticks.
 
+The PWM pins have a center deadband that's enabled by default to control creeping when using the pins for velocity or current control.  When the RC PWM pulse time is in the 1495μs to 1505μs range, the endpoint is set to a constant halfway between the `gpioN_pwm_mapping.min` and `max` settings.  Change `gpioN_pwm_mapping.enable_deadband` to `False` to disable it.
+
 ### Differential Steering Mixer
 An input mixer meant for controlling skid-steer or differential-steering robots is also available.  It takes inputs from a steering and a throttle channel and converts them outputs for left and right motors.
 
