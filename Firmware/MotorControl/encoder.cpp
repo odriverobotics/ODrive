@@ -44,7 +44,8 @@ bool Encoder::do_checks(){
 void Encoder::enc_index_cb() {
     if (config_.use_index && !index_found_) {
         set_circular_count(0, false);
-        set_linear_count(0); // Avoid position control transient after search
+        if (config_.zero_count_on_find_idx)
+            set_linear_count(0); // Avoid position control transient after search
         if (config_.pre_calibrated) {
             is_ready_ = true;
         } else {
