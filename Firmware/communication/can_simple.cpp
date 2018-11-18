@@ -1,6 +1,8 @@
 
 #include "can_simple.hpp"
 
+#include <cstring>
+
 static const uint8_t NUM_NODE_ID_BITS = 6;
 static constexpr uint8_t NUM_CMD_ID_BITS = 11 - NUM_NODE_ID_BITS;
 
@@ -155,13 +157,20 @@ void CANSimple::get_encoder_estimates_callback(Axis* axis, CAN_message_t& msg) {
     txmsg.isExt = false;
     txmsg.len = 8;
 
-    uint32_t floatBytes = *(reinterpret_cast<int32_t*>(&(axis->encoder_.pos_estimate_)));
+    // Undefined behaviour!
+    // uint32_t floatBytes = *(reinterpret_cast<int32_t*>(&(axis->encoder_.pos_estimate_)));
+
+    uint32_t floatBytes;
+    static_assert(sizeof axis->encoder_.pos_estimate_ == sizeof floatBytes);
+    std::memcpy(&floatBytes, &axis->encoder_.pos_estimate_, sizeof floatBytes);
+    
     txmsg.buf[0] = floatBytes;
     txmsg.buf[1] = floatBytes >> 8;
     txmsg.buf[2] = floatBytes >> 16;
     txmsg.buf[3] = floatBytes >> 24;
 
-    floatBytes = *(reinterpret_cast<int32_t*>(&(axis->encoder_.vel_estimate_)));
+    static_assert(sizeof floatBytes == sizeof axis->encoder_.vel_estimate_);
+    std::memcpy(&floatBytes, &axis->encoder_.vel_estimate_, sizeof floatBytes);
     txmsg.buf[4] = floatBytes;
     txmsg.buf[5] = floatBytes >> 8;
     txmsg.buf[6] = floatBytes >> 16;
@@ -267,5 +276,9 @@ int32_t CANSimple::get_32bit_val(CAN_message_t& msg, uint8_t start_byte) {
 
 float CANSimple::get_float(CAN_message_t& msg, uint8_t start_byte){
     int32_t val = get_32bit_val(msg, start_byte);
-    return *(reinterpret_cast<float*>(val)); // Sexy int32_t -> float cast
+    float retVal;
+    
+    static_assert(sizeof retVal == sizeof val);
+    std::memcpy(&retVal, &val, sizeof val); // Sexier int32_t -> float cast that isn't UB
+    return retVal;
 }
