@@ -45,16 +45,16 @@ CMD ID | Name | Sender | Signals | Start byte
 0x007 | Set Axis Requested State | Master | Axis Requested State | 0
 0x008 | Set Axis Startup Config | Master | - Not yet implemented - | -
 0x009 | Get Encoder Estimates\* | Master | Encoder Pos Estimate<br>Encoder Vel Estimate | 0<br>4
-0x010 | Get Encoder Count\* | Master | Encoder Shadow Count<br>Encoder Count in CPR | 0<br>4
-0x011 | Move To Pos | Master | Goal Position | 0
-0x012 | Set Pos Setpoint | Master | Pos Setpoint<br>Vel FF<br>Current FF | 0<br>4<br>6
-0x013 | Set Vel Setpoint | Master | Vel Setpoint<br>Current FF | 0<br>4
-0x014 | Set Current Setpoint | Master | Current Setpoint | 0
-0x015 | Set Velocity Limit | Master | Velocity Limit | 0
-0x016 | Start Anticogging | Master | - | -
-0x017 | Set Traj Vel Limit | Master | Traj Vel Limit | 0
-0x018 | Set Traj Accel Limits | Master | Traj Accel Limit<br>Traj Decel Limit | 0<br>4
-0x019 | Set Traj A per Count / s^2 | Master | Traj A per CSS | 0
+0x00A | Get Encoder Count\* | Master | Encoder Shadow Count<br>Encoder Count in CPR | 0<br>4
+0x00B | Move To Pos | Master | Goal Position | 0
+0x00C | Set Pos Setpoint | Master | Pos Setpoint<br>Vel FF<br>Current FF | 0<br>4<br>6
+0x00D | Set Vel Setpoint | Master | Vel Setpoint<br>Current FF | 0<br>4
+0x00E | Set Current Setpoint | Master | Current Setpoint | 0
+0x00F | Set Velocity Limit | Master | Velocity Limit | 0
+0x010 | Start Anticogging | Master | - | -
+0x011 | Set Traj Vel Limit | Master | Traj Vel Limit | 0
+0x012 | Set Traj Accel Limits | Master | Traj Accel Limit<br>Traj Decel Limit | 0<br>4
+0x013 | Set Traj A per Count / s^2 | Master | Traj A per CSS | 0
 
 \* Note: These messages are call & response.  The Master node sends a message with no payload, and the axis responds with the same ID and specified payload.  
 \*\* Note:  These CANOpen messages are reserved to avoid bus collisions with CANOpen devices.  They are not used by CAN Simple.
