@@ -174,7 +174,7 @@ public:
     // variables exposed on protocol
     Error_t error_ = ERROR_NONE;
     bool step_dir_active_ = false; // auto enabled after calibration, based on config.enable_step_dir
-    
+
     // updated from config in constructor, and on protocol hook
     GPIO_TypeDef* step_port_;
     uint16_t step_pin_;

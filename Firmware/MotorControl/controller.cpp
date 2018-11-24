@@ -135,7 +135,19 @@ bool Controller::update(float pos_estimate, float vel_estimate, float* current_s
     // TODO Decide if we want to use encoder or pll position here
     float vel_des = vel_setpoint_;
     if (config_.control_mode >= CTRL_MODE_POSITION_CONTROL) {
-        float pos_err = pos_setpoint_ - pos_estimate;
+        float pos_err;
+        if (config_.setpoints_in_cpr) {
+            // TODO this breaks the semantics that estimates come in on the arguments.
+            // It's probably better to call a get_estimate that will arbitrate (enc vs sensorless) instead.
+            float cpr = (float)(axis_->encoder_.config_.cpr);
+            // Keep pos setpoint from drifting
+            pos_setpoint_ = fmodf_pos(pos_setpoint_, cpr);
+            // Circular delta
+            pos_err = pos_setpoint_ - axis_->encoder_.pos_cpr_;
+            pos_err = wrap_pm(pos_err, 0.5f * cpr);
+        } else {
+            pos_err = pos_setpoint_ - pos_estimate;
+        }
         vel_des += config_.pos_gain * pos_err;
     }
 
