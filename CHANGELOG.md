@@ -6,6 +6,7 @@ Please add a note of your changes below this heading if you make a Pull Request.
 * Supress startup transients by sampling encoder estimate into position setpoint when entering closed loop control.
 * Make step dir gpio pins configurable.
 * Configuration variable `encoder.config.zero_count_on_find_idx`, true by default. Set to false to leave the initial encoder count to be where the axis was at boot.
+* Circular position setpoint mode: position setpoints wrapped [0, cpr). Useful for infinite incremental position control.
 
 ### Changed
 * Increased switching frequency from around 8kHz to 24kHz. Control loops still run at 8kHz.
@@ -14,6 +15,7 @@ Please add a note of your changes below this heading if you make a Pull Request.
 
 ## Fixed
 * Would get ERROR_CONTROL_DEADLINE_MISSED along with every ERROR_PHASE_RESISTANCE_OUT_OF_RANGE.
+* ODrive tool can now run interactive nested scripts with "%run -i script.py"
 
 # Releases
 ## [0.4.6] - 2018-10-07
