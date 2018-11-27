@@ -93,6 +93,12 @@ bool Controller::anticogging_calibration(float pos_estimate, float vel_estimate)
     return false;
 }
 
+float Controller::write_anticogging_map(int32_t index, float value){
+    if (anticogging_.cogging_map != NULL && !std::isnan(value))
+        anticogging_.cogging_map[index] = value;
+    return anticogging_.cogging_map[index];
+}
+
 bool Controller::update(float pos_estimate, float vel_estimate, float* current_setpoint_output) {
     // Only runs if anticogging_.calib_anticogging is true; non-blocking
     anticogging_calibration(pos_estimate, vel_estimate);

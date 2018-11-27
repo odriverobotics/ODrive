@@ -42,11 +42,11 @@ tup.config
 /.bundle
 
 # QtCreator
-Firmware/*\.config
-Firmware/*\.creator
-Firmware/*\.creator\.user
-Firmware/*\.files
-Firmware/*\.includes
+*\.config
+*\.creator
+*\.creator\.user
+*\.files
+*\.includes
 
 #PyCharm
 tools/\.idea/
