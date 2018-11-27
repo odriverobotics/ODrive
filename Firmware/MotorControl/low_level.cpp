@@ -657,7 +657,9 @@ void pwm_in_init() {
 #else
     int gpio_num = 4; {
 #endif
-        if (is_endpoint_ref_valid(board_config.pwm_mappings[gpio_num - 1].endpoint)) {
+        if (is_endpoint_ref_valid(board_config.pwm_mappings[gpio_num - 1].endpoint)
+            || axes[0]->encoder_.config_.pwm_pin
+            || axes[1]->encoder_.config_.pwm_pin) {
             GPIO_InitStruct.Pin = get_gpio_pin_by_pin(gpio_num);
             HAL_GPIO_DeInit(get_gpio_port_by_pin(gpio_num), get_gpio_pin_by_pin(gpio_num));
             HAL_GPIO_Init(get_gpio_port_by_pin(gpio_num), &GPIO_InitStruct);
@@ -708,6 +710,11 @@ void pwm_in_cb(int channel, uint32_t timestamp) {
         && (last_pin_state[gpio_num - 1] != PWM_INVERT_INPUT)
         && (current_pin_state == PWM_INVERT_INPUT)) {
         handle_pulse(gpio_num, timestamp - last_timestamp[gpio_num - 1]);
+
+        // Check if this pin is used for absolute pwm positioning
+        for (size_t i = 0; i < AXIS_COUNT; ++i)
+            if(axes[i]->encoder_.config_.pwm_pin == gpio_num)
+                axes[i]->encoder_.enc_pwm_cb(timestamp - last_timestamp[gpio_num - 1]);
     }
 
     last_timestamp[gpio_num - 1] = timestamp;

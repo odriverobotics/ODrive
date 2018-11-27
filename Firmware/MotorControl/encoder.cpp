@@ -57,6 +57,14 @@ void Encoder::enc_index_cb() {
         index_found_ = true;
     }
 }
+// This function is called by the tim5 interrupt callback if config_pwm pin is set
+// This is currently hardcoded for AS5074P PWM output
+void Encoder::enc_pwm_cb(uint32_t high_time){
+    //37.30 = 444e-9 * TIM_2_5_CLOCK_HZ
+    float pos_time = (high_time / 37.30f) - 16.0f;
+    pos_abs_ = config_.cpr - (int32_t)pos_time;
+    pwm_updated = true;
+}
 
 // Function that sets the current encoder count to a desired 32-bit value.
 void Encoder::set_linear_count(int32_t count) {
@@ -95,31 +103,65 @@ void Encoder::set_circular_count(int32_t count, bool update_offset) {
 // encoder index is found.
 // TODO: Do the scan with current, not voltage!
 bool Encoder::run_index_search() {
-    float voltage_magnitude;
-    if (axis_->motor_.config_.motor_type == Motor::MOTOR_TYPE_HIGH_CURRENT)
-        voltage_magnitude = axis_->motor_.config_.calibration_current * axis_->motor_.config_.phase_resistance;
-    else if (axis_->motor_.config_.motor_type == Motor::MOTOR_TYPE_GIMBAL)
-        voltage_magnitude = axis_->motor_.config_.calibration_current;
-    else
-        return false;
-    
-    float omega = (float)(axis_->motor_.config_.direction) * config_.idx_search_speed;
+    switch (config_.mode) {
+        case MODE_INCREMENTAL: {
+            float voltage_magnitude;
+            if (axis_->motor_.config_.motor_type == Motor::MOTOR_TYPE_HIGH_CURRENT)
+                voltage_magnitude = axis_->motor_.config_.calibration_current * axis_->motor_.config_.phase_resistance;
+            else if (axis_->motor_.config_.motor_type == Motor::MOTOR_TYPE_GIMBAL)
+                voltage_magnitude = axis_->motor_.config_.calibration_current;
+            else
+                return false;
 
-    index_found_ = false;
-    float phase = 0.0f;
-    axis_->run_control_loop([&](){
-        phase = wrap_pm_pi(phase + omega * current_meas_period);
+            float omega = (float)(axis_->motor_.config_.direction) * config_.idx_search_speed;
 
-        float v_alpha = voltage_magnitude * our_arm_cos_f32(phase);
-        float v_beta = voltage_magnitude * our_arm_sin_f32(phase);
-        if (!axis_->motor_.enqueue_voltage_timings(v_alpha, v_beta))
-            return false; // error set inside enqueue_voltage_timings
-        axis_->motor_.log_timing(Motor::TIMING_LOG_IDX_SEARCH);
+            index_found_ = false;
+            float phase = 0.0f;
+            axis_->run_control_loop([&](){
+                phase = wrap_pm_pi(phase + omega * current_meas_period);
 
-        // continue until the index is found
-        return !index_found_;
-    });
-    return true;
+                float v_alpha = voltage_magnitude * our_arm_cos_f32(phase);
+                float v_beta = voltage_magnitude * our_arm_sin_f32(phase);
+                if (!axis_->motor_.enqueue_voltage_timings(v_alpha, v_beta))
+                    return false; // error set inside enqueue_voltage_timings
+                axis_->motor_.log_timing(Motor::TIMING_LOG_IDX_SEARCH);
+
+                // continue until the index is found
+                return !index_found_;
+            });
+            return true;
+        }break;
+
+        case MODE_INCREMENTAL_PWM: {
+            const int num_samples = 16;
+            int32_t pos_abs_buffer[num_samples];
+            int i = 0;
+            axis_->run_control_loop([&](){
+                if (!axis_->motor_.enqueue_voltage_timings(0.0f, 0.0f))
+                    return false; // error set inside enqueue_voltage_timings
+                if(pwm_updated){
+                    pwm_updated = false;
+                    if(pos_abs_ < config_.cpr && pos_abs_ >= 0)
+                        pos_abs_buffer[i++] = pos_abs_;
+
+                    if(i == num_samples){
+                        set_circular_count(pos_abs_, false);
+                        set_linear_count(pos_abs_);
+                        is_ready_ = true;
+                        return false;
+                    }
+                }
+                return true;
+            });
+        return true;
+        }break;
+
+        default: {
+           set_error(ERROR_UNSUPPORTED_ENCODER_MODE);
+           return false;
+        } break;
+    }
+    return false;
 }
 
 // @brief Turns the motor in one direction for a bit and then in the other
@@ -256,6 +298,7 @@ bool Encoder::update() {
     // update internal encoder state.
     int32_t delta_enc = 0;
     switch (config_.mode) {
+        case MODE_INCREMENTAL_PWM:
         case MODE_INCREMENTAL: {
             //TODO: use count_in_cpr_ instead as shadow_count_ can overflow
             //or use 64 bit
