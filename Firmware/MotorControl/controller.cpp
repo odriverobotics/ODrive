@@ -1,5 +1,6 @@
 
 #include "odrive_main.h"
+#include "arm_const_structs.h"
 
 
 Controller::Controller(Config_t& config) :
@@ -97,6 +98,43 @@ float Controller::write_anticogging_map(int32_t index, float value){
     if (anticogging_.cogging_map != NULL && !std::isnan(value))
         anticogging_.cogging_map[index] = value;
     return anticogging_.cogging_map[index];
+}
+
+void Controller::init_anticogging_map(){
+    if (anticogging_.cogging_map == NULL)
+        return;
+    int32_t fft_size = axis_->encoder_.config_.cpr;
+
+    // Determine what sized fft to use:
+    // TODO: Handle non power series of two FFTs
+    const static arm_cfft_instance_f32 *S;
+    switch (fft_size) {
+      case 512: S = &arm_cfft_sR_f32_len512; break;
+      case 1024: S = &arm_cfft_sR_f32_len1024; break;
+      case 2048: S = &arm_cfft_sR_f32_len2048; break;
+      case 4096: S = &arm_cfft_sR_f32_len4096; break;
+    };
+
+    float *fft_array = (float*)malloc(2 * fft_size * sizeof(float));
+    for(int i = 0; i < fft_size*2; i++){
+        fft_array[i] = 0;
+    }
+
+    for(int i = 0; i < NUM_HARMONICS; i++){
+        uint32_t index = config_.harmonics[i].index;
+        if(index < (uint32_t)axis_->encoder_.config_.cpr){
+            fft_array[index * 2] = config_.harmonics[i].real;
+            fft_array[(index * 2)+1] = config_.harmonics[i].imaginary;
+        }
+    }
+
+    arm_cfft_f32(S, fft_array, 1, 1);
+    for(int i = 0; i < fft_size; i++){
+        //-- seems to be half the value of python ifft
+        anticogging_.cogging_map[i] = fft_array[i*2] * 2;
+    }
+    free(fft_array);
+    anticogging_.use_anticogging = true;
 }
 
 bool Controller::update(float pos_estimate, float vel_estimate, float* current_setpoint_output) {

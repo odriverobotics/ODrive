@@ -236,6 +236,8 @@ void Axis::run_state_machine_loop() {
         for (int i = 0; i < encoder_cpr; i++) {
             controller_.anticogging_.cogging_map[i] = 0.0f;
         }
+        //-- Do the inverse FFT to generate the anticogging map
+        controller_.init_anticogging_map();
     }
 
     // arm!

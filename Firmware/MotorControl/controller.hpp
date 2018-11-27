@@ -22,6 +22,13 @@ public:
         CTRL_MODE_TRAJECTORY_CONTROL = 4
     };
 
+    static const int32_t NUM_HARMONICS = 16;
+    typedef struct {
+        uint32_t index;
+        float real;
+        float imaginary;
+    }Harmonic_t ;
+
     struct Config_t {
         ControlMode_t control_mode = CTRL_MODE_POSITION_CONTROL;  //see: Motor_control_mode_t
         float pos_gain = 20.0f;  // [(counts/s) / counts]
@@ -32,6 +39,7 @@ public:
         float vel_limit_tolerance = 1.2f;  // ratio to vel_lim. 0.0f to disable
         float vel_ramp_limit = 10000.0f;  // [(counts/s) / s]
         bool setpoints_in_cpr = false;
+        Harmonic_t harmonics[NUM_HARMONICS];
     };
 
     Controller(Config_t& config);
@@ -49,6 +57,7 @@ public:
     void start_anticogging_calibration();
     bool anticogging_calibration(float pos_estimate, float vel_estimate);
     float write_anticogging_map(int32_t index, float value);
+    void init_anticogging_map();
 
     bool update(float pos_estimate, float vel_estimate, float* current_setpoint);
 
@@ -120,6 +129,7 @@ public:
             make_protocol_function("move_to_pos", *this, &Controller::move_to_pos, "goal_point"),
             make_protocol_function("write_anticogging_map", *this, &Controller::write_anticogging_map,
                 "index", "value"),
+            make_protocol_function("init_anticogging_map", *this, &Controller::init_anticogging_map),
             make_protocol_function("start_anticogging_calibration", *this, &Controller::start_anticogging_calibration)
         );
     }
