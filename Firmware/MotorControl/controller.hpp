@@ -57,6 +57,7 @@ public:
     void start_anticogging_calibration();
     bool anticogging_calibration(float pos_estimate, float vel_estimate);
     float write_anticogging_map(int32_t index, float value);
+    float write_harmonics(int32_t index, int32_t harmonic, int32_t imag, float value);
     void init_anticogging_map();
 
     bool update(float pos_estimate, float vel_estimate, float* current_setpoint);
@@ -129,6 +130,8 @@ public:
             make_protocol_function("move_to_pos", *this, &Controller::move_to_pos, "goal_point"),
             make_protocol_function("write_anticogging_map", *this, &Controller::write_anticogging_map,
                 "index", "value"),
+            make_protocol_function("write_harmonics", *this, &Controller::write_harmonics,
+                        "index", "harmonic", "imag", "value"),
             make_protocol_function("init_anticogging_map", *this, &Controller::init_anticogging_map),
             make_protocol_function("start_anticogging_calibration", *this, &Controller::start_anticogging_calibration)
         );

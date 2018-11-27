@@ -94,6 +94,14 @@ bool Controller::anticogging_calibration(float pos_estimate, float vel_estimate)
     return false;
 }
 
+float Controller::write_harmonics(int32_t index, int32_t harmonic, int32_t imag, float value){
+    if (!std::isnan(value)){
+        config_.harmonics[index].index = harmonic;
+        imag ? config_.harmonics[index].imaginary = value : config_.harmonics[index].real = value;
+    }
+    return imag ? config_.harmonics[index].imaginary: config_.harmonics[index].real;
+}
+
 float Controller::write_anticogging_map(int32_t index, float value){
     if (anticogging_.cogging_map != NULL && !std::isnan(value))
         anticogging_.cogging_map[index] = value;
