@@ -86,6 +86,7 @@ bool Controller::anticogging_calibration(float pos_estimate, float vel_estimate)
         } else {
             anticogging_.index = 0;
             set_pos_setpoint(0.0f, 0.0f, 0.0f);  // Send the motor home
+            extract_harmonics();
             anticogging_.use_anticogging = true;  // We're good to go, enable anti-cogging
             anticogging_.calib_anticogging = false;
             return true;
@@ -93,7 +94,85 @@ bool Controller::anticogging_calibration(float pos_estimate, float vel_estimate)
     }
     return false;
 }
+/*
+ * This function takes the cogging map in the 'time' domain, performs an FFT,
+ * finds the frequencies with the highest magnitudes (ignoring zero) and saves them to
+ * the config structure.
+ */
+void Controller::extract_harmonics(){
+    int32_t fft_size = axis_->encoder_.config_.cpr;
 
+    // Determine what sized fft to use:
+    // TODO: Handle non power series of two FFTs
+    // TODO: We could do this with RFFTs
+    const arm_cfft_instance_f32 *S;
+    switch (fft_size) {
+      case 512:  S = &arm_cfft_sR_f32_len512;  break;
+      case 1024: S = &arm_cfft_sR_f32_len1024; break;
+      case 2048: S = &arm_cfft_sR_f32_len2048; break;
+      case 4096: S = &arm_cfft_sR_f32_len4096; break;
+    };
+
+    float *fft_array = (float*)malloc(2 * fft_size * sizeof(float));
+    float *mag_array = (float*)malloc((fft_size /2) * sizeof(float));
+
+    for(int i = 0; i < fft_size; i++){
+        fft_array[i*2] = anticogging_.cogging_map[i];
+        fft_array[(i*2)+1] = 0;
+    }
+
+    arm_cfft_f32(S, fft_array, 0, 1);
+    // real ffts are symmetric, we dont need half this array...
+    arm_cmplx_mag_f32(fft_array, mag_array, fft_size/2);
+
+    // ignore the DC component
+    mag_array[0] = 0;
+
+    // we need to find the NUM_HARMONICS highest magnitudes
+    uint32_t indices[NUM_HARMONICS];
+    find_n_highest_indices(mag_array, fft_size/2, indices, NUM_HARMONICS);
+    
+    for (int i = 0; i < NUM_HARMONICS; i++){
+        uint32_t index = indices[i];
+        config_.harmonics[i].index = index;
+        config_.harmonics[i].real = fft_array[index *2];
+        config_.harmonics[i].imaginary = fft_array[(index*2) +1];
+    }
+
+    free(fft_array);
+    free(mag_array);
+}
+/*
+ * Find the indices of the n highest values in an array
+ */
+void Controller::find_n_highest_indices(float* arr, uint32_t arr_size, uint32_t* indices, uint32_t n){
+    float *min_sorted_maxes = (float*)malloc(n * sizeof(float));
+
+    for(uint32_t i = 0; i < n-1; i++){
+        min_sorted_maxes[i] = 0;
+        indices[i] = 0;
+    }
+    min_sorted_maxes[n-1] = arr[0];
+    indices[n-1] = 0;
+
+    for(uint32_t i = 1; i < arr_size; i++){
+        float val = arr[i];
+        if(val > min_sorted_maxes[0]){
+            for(uint32_t j = 1; j <= n; j++){
+                if((j < n) && (val > min_sorted_maxes[j])){
+                    min_sorted_maxes[j-1] = min_sorted_maxes[j];
+                    indices[j-1] = indices[j];
+                }
+                else{
+                    min_sorted_maxes[j-1] = val;
+                    indices[j-1] = i;
+                    break;
+                }
+            }
+        }
+    }
+    free(min_sorted_maxes);
+}
 float Controller::write_harmonics(int32_t index, int32_t harmonic, int32_t imag, float value){
     if (!std::isnan(value)){
         config_.harmonics[index].index = harmonic;

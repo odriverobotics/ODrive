@@ -56,6 +56,8 @@ public:
     // TODO: make this more similar to other calibration loops
     void start_anticogging_calibration();
     bool anticogging_calibration(float pos_estimate, float vel_estimate);
+    void extract_harmonics();
+    void find_n_highest_indices(float* arr, uint32_t arr_size, uint32_t* indices, uint32_t n);
     float write_anticogging_map(int32_t index, float value);
     float write_harmonics(int32_t index, int32_t harmonic, int32_t imag, float value);
     void init_anticogging_map();
