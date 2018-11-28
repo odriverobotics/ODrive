@@ -7,6 +7,7 @@ Please add a note of your changes below this heading if you make a Pull Request.
 * Make step dir gpio pins configurable.
 * Configuration variable `encoder.config.zero_count_on_find_idx`, true by default. Set to false to leave the initial encoder count to be where the axis was at boot.
 * Circular position setpoint mode: position setpoints wrapped [0, cpr). Useful for infinite incremental position control.
+* Velocity setpoint ramping. Use velocity control mode, and set `controller.vel_ramp_enable` to true. This will ramp `controller.vel_setpoint` towards `controller.vel_ramp_target` at a ramp rate of `controller.config.vel_ramp_rate`.
 
 ### Changed
 * Increased switching frequency from around 8kHz to 24kHz. Control loops still run at 8kHz.
