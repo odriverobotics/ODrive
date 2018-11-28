@@ -73,7 +73,8 @@ void Motor::DRV8301_setup() {
     // Solve for exact gain, then snap down to have equal or larger range as requested
     // or largest possible range otherwise
     static const float kMargin = 0.90f;
-    static const float max_output_swing = 1.6f; // [V] out of amplifier
+    static const float kTripMargin = 1.0f; // Trip level is at edge of linear range of amplifer
+    static const float max_output_swing = 1.35f; // [V] out of amplifier
     float max_unity_gain_current = kMargin * max_output_swing * hw_config_.shunt_conductance; // [A]
     float requested_gain = max_unity_gain_current / config_.requested_current_range; // [V/V]
 
@@ -99,6 +100,8 @@ void Motor::DRV8301_setup() {
     phase_current_rev_gain_ = 1.0f / gain_snap_down->first;
     // Clip all current control to actual usable range
     current_control_.max_allowed_current = max_unity_gain_current * phase_current_rev_gain_;
+    // Set trip level
+    current_control_.overcurrent_trip_level = (kTripMargin / kMargin) * current_control_.max_allowed_current;
 
     // We now have the gain settings we want to use, lets set up DRV chip
     DRV_SPI_8301_Vars_t* local_regs = &gate_driver_regs_;
@@ -295,6 +298,12 @@ bool Motor::FOC_current(float Id_des, float Iq_des, float phase) {
 
     // For Reporting
     ictrl.Iq_setpoint = Iq_des;
+
+    // Check for current sense saturation
+    if (fabsf(current_meas_.phB) > ictrl.overcurrent_trip_level
+     || fabsf(current_meas_.phC) > ictrl.overcurrent_trip_level) {
+        set_error(ERROR_CURRENT_SENSE_SATURATION);
+    }
 
     // Clarke transform
     float Ialpha = -current_meas_.phB - current_meas_.phC;

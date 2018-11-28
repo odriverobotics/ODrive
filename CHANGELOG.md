@@ -3,6 +3,7 @@ Please add a note of your changes below this heading if you make a Pull Request.
 
 ### Added
 * Overspeed fault
+* Current sense saturation fault.
 * Supress startup transients by sampling encoder estimate into position setpoint when entering closed loop control.
 * Make step dir gpio pins configurable.
 * Configuration variable `encoder.config.zero_count_on_find_idx`, true by default. Set to false to leave the initial encoder count to be where the axis was at boot.
