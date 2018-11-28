@@ -30,6 +30,8 @@ public:
         float vel_integrator_gain = 10.0f / 10000.0f;  // [A/(counts/s * s)]
         float vel_limit = 20000.0f;        // [counts/s]
         float vel_limit_tolerance = 1.2f;  // ratio to vel_lim. 0.0f to disable
+        float vel_ramp_rate = 10000.0f;  // [(counts/s) / s]
+        bool setpoints_in_cpr = false;
     };
 
     Controller(Config_t& config);
@@ -82,6 +84,8 @@ public:
     // float vel_setpoint = 800.0f; <sensorless example>
     float vel_integrator_current_ = 0.0f;  // [A]
     float current_setpoint_ = 0.0f;        // [A]
+    float vel_ramp_target_ = 0.0f;
+    bool vel_ramp_enable_ = false;
 
     uint32_t traj_start_loop_count_ = 0;
 
@@ -93,13 +97,17 @@ public:
             make_protocol_property("vel_setpoint", &vel_setpoint_),
             make_protocol_property("vel_integrator_current", &vel_integrator_current_),
             make_protocol_property("current_setpoint", &current_setpoint_),
+            make_protocol_property("vel_ramp_target", &vel_ramp_target_),
+            make_protocol_property("vel_ramp_enable", &vel_ramp_enable_),
             make_protocol_object("config",
                 make_protocol_property("control_mode", &config_.control_mode),
                 make_protocol_property("pos_gain", &config_.pos_gain),
                 make_protocol_property("vel_gain", &config_.vel_gain),
                 make_protocol_property("vel_integrator_gain", &config_.vel_integrator_gain),
                 make_protocol_property("vel_limit", &config_.vel_limit),
-                make_protocol_property("vel_limit_tolerance", &config_.vel_limit_tolerance)
+                make_protocol_property("vel_limit_tolerance", &config_.vel_limit_tolerance),
+                make_protocol_property("vel_ramp_rate", &config_.vel_ramp_rate),
+                make_protocol_property("setpoints_in_cpr", &config_.setpoints_in_cpr)
             ),
             make_protocol_function("set_pos_setpoint", *this, &Controller::set_pos_setpoint,
                 "pos_setpoint", "vel_feed_forward", "current_feed_forward"),
