@@ -98,7 +98,7 @@ bool Controller::anticogging_calibration(float pos_estimate, float vel_estimate)
                     anticogging_.cogging_map[anticogging_.index] += vel_integrator_current_;
                     anticogging_.cogging_map[anticogging_.index--] /= 2.0f;
                 }
-                if (anticogging_.index > 0) {  // TODO: remove the dependency on encoder CPR
+                if (anticogging_.index >= 0) {  // TODO: remove the dependency on encoder CPR
                     set_pos_setpoint(anticogging_.index, 0.0f, 0.0f);
                     return false;
                 } else {
