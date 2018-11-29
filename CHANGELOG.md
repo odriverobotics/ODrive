@@ -17,7 +17,7 @@ Please add a note of your changes below this heading if you make a Pull Request.
 * Renamed `axis.enable_step_dir` to `axis.step_dir_active`
 * New process for working with STM32CubeMX.
 
-## Fixed
+### Fixed
 * Would get ERROR_CONTROL_DEADLINE_MISSED along with every ERROR_PHASE_RESISTANCE_OUT_OF_RANGE.
 * ODrive tool can now run interactive nested scripts with "%run -i script.py"
 
