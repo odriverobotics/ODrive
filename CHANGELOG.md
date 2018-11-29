@@ -1,6 +1,8 @@
 # Unreleased Features
 Please add a note of your changes below this heading if you make a Pull Request.
 
+# Releases
+## [0.4.7] - 2018-11-28
 ### Added
 * Overspeed fault
 * Current sense saturation fault.
@@ -19,7 +21,6 @@ Please add a note of your changes below this heading if you make a Pull Request.
 * Would get ERROR_CONTROL_DEADLINE_MISSED along with every ERROR_PHASE_RESISTANCE_OUT_OF_RANGE.
 * ODrive tool can now run interactive nested scripts with "%run -i script.py"
 
-# Releases
 ## [0.4.6] - 2018-10-07
 ### Fixed
 * Broken printing of floats on ascii protocol
