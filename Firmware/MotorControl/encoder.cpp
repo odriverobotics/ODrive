@@ -59,11 +59,18 @@ void Encoder::enc_index_cb() {
 }
 // This function is called by the tim5 interrupt callback if config_pwm pin is set
 // This is currently hardcoded for AS5074P PWM output
-void Encoder::enc_pwm_cb(uint32_t high_time){
-    //37.30 = 444e-9 * TIM_2_5_CLOCK_HZ
-    float pos_time = (high_time / 37.30f) - 16.0f;
-    pos_abs_ = config_.cpr - (int32_t)pos_time;
-    pwm_updated = true;
+void Encoder::enc_pwm_cb(uint32_t rise_time, uint32_t fall_time){
+    static uint32_t prev_rise_time = 0;
+
+    // Find the period in clock cycles:
+    uint32_t period_ = rise_time - prev_rise_time;
+    prev_rise_time = rise_time;
+
+    // The PWM output consists of a frame of 4119 PWM clock periods
+    pos_abs_ = ((fall_time - rise_time) * 4119)/period_;
+    // The 12 PWM Clocks for INIT, 4 PWM Clocks for Error detection
+    pos_abs_ -= 16;
+    pwm_updated_ = true;
 }
 
 // Function that sets the current encoder count to a desired 32-bit value.
@@ -139,8 +146,8 @@ bool Encoder::run_index_search() {
             axis_->run_control_loop([&](){
                 if (!axis_->motor_.enqueue_voltage_timings(0.0f, 0.0f))
                     return false; // error set inside enqueue_voltage_timings
-                if(pwm_updated){
-                    pwm_updated = false;
+                if(pwm_updated_){
+                    pwm_updated_ = false;
                     if(pos_abs_ < config_.cpr && pos_abs_ >= 0)
                         pos_abs_buffer[i++] = pos_abs_;
 

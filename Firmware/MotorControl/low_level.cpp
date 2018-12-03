@@ -714,7 +714,7 @@ void pwm_in_cb(int channel, uint32_t timestamp) {
         // Check if this pin is used for absolute pwm positioning
         for (size_t i = 0; i < AXIS_COUNT; ++i)
             if(axes[i]->encoder_.config_.pwm_pin == gpio_num)
-                axes[i]->encoder_.enc_pwm_cb(timestamp - last_timestamp[gpio_num - 1]);
+                axes[i]->encoder_.enc_pwm_cb(last_timestamp[gpio_num - 1], timestamp);
     }
 
     last_timestamp[gpio_num - 1] = timestamp;

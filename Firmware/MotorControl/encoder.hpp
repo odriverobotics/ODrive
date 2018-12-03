@@ -51,7 +51,7 @@ public:
 
     void enc_index_cb();
 
-    void enc_pwm_cb(uint32_t high_time);
+    void enc_pwm_cb(uint32_t rise_time, uint32_t fall_time);
 
     void set_linear_count(int32_t count);
     void set_circular_count(int32_t count, bool update_offset);
@@ -70,7 +70,7 @@ public:
 
     Error_t error_ = ERROR_NONE;
     bool index_found_ = false;
-    bool pwm_updated = false;
+    bool pwm_updated_ = false;
     bool is_ready_ = false;
     int32_t shadow_count_ = 0;
     int32_t count_in_cpr_ = 0;
