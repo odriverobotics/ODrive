@@ -1,6 +1,9 @@
 # Unreleased Features
 Please add a note of your changes below this heading if you make a Pull Request.
 
+### Added
+* Second order setpoint input filter.
+
 ### Changed
 * Moved `traptraj.A_per_css` to `controller.inertia`
 * Refactored velocity ramp mode into the new general input filtering structure

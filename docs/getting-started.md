@@ -235,12 +235,24 @@ The default control mode is unfiltered position control in the absolute encoder 
 You may also wish to control velocity (directly or with a ramping filter).
 You can also directly control the current of the motor, which is proportional to torque.
 
+- [Filtered position control](#filtered-position-control)
 - [Trajectory control](#trajectory-control)
 - [Circular position control](#circular-position-control)
 - [Velocity control](#velocity-control)
 - [Ramped velocity control](#ramped-velocity-control)
 - [Current control](#current-control)
 
+
+### Filtered position control
+Asking the ODrive controller to go as hard as it can to raw setpoints may result in jerky movement. Even if you are using a planned trajectory generated from an external source, if that is sent at a modest frequency, the ODrive may chase each stair in the incoming staircase in a jerky way. In this case, a good starting point for tuning the filter bandwidth is to set it to one half of your setpoint command rate.
+
+You can use the second order position filter in these cases.
+Set the filter bandwidth: `axis.controller.config.input_filter_bandwidth = 2.0` [1/s]<br>
+Activate the setpoint filter: `axis.controller.config.input_mode = INPUT_MODE_POS_FILTER`.<br>
+You can now control the velocity with `axis.controller.input_pos = 1000` [counts].
+
+![secondOrderResponse](secondOrderResponse.PNG)<br>
+Step response of a 1000 to 0 position input with a filter bandwidth of 1.0 [/sec].
 
 ### Trajectory control
 This mode lets you smoothly accelerate, coast, and decelerate the axis from one position to another. With raw position control, the controller simply tries to go to the setpoint as quickly as possible. Using a trajectory lets you tune the feedback gains more aggressively to reject disturbance, while keeping smooth motion.
