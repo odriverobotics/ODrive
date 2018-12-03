@@ -96,13 +96,8 @@ bool Controller::anticogging_calibration(float pos_estimate, float vel_estimate)
 }
 
 void Controller::update_filter_gains() {
-    input_filter_kp_ = 2.0f * config_.input_filter_bandwidth;  // basic conversion to discrete time
-    input_filter_ki_ = 0.25f * (input_filter_kp_ * input_filter_kp_); // Critically damped
-
-    // Check that we don't get problems with discrete time approximation
-    if (!(current_meas_period * input_filter_kp_ < 1.0f)) {
-        set_error(ERROR_UNSTABLE_GAIN);
-    }
+    input_filter_ki_ = 2.0f * config_.input_filter_bandwidth;  // basic conversion to discrete time
+    input_filter_kp_ = 0.25f * (input_filter_ki_ * input_filter_ki_); // Critically damped
 }
 
 bool Controller::update(float pos_estimate, float vel_estimate, float* current_setpoint_output) {
@@ -134,10 +129,10 @@ bool Controller::update(float pos_estimate, float vel_estimate, float* current_s
         } break;
         case INPUT_MODE_POS_FILTER: {
             // 2nd order pos tracking filter
-            pos_setpoint_ += current_meas_period * vel_setpoint_; // Integrate vel
+            pos_setpoint_ += current_meas_period * vel_setpoint_; // Delta pos
             float delta_pos = input_pos_ - pos_setpoint_; // Pos error
-            pos_setpoint_ += current_meas_period * input_filter_kp_ * delta_pos; // Kp
-            float accel = input_filter_ki_ * delta_pos; // Ki
+            float delta_vel = input_vel_ - vel_setpoint_; // Vel error
+            float accel = input_filter_kp_*delta_pos + input_filter_ki_*delta_vel; // Feedback
             vel_setpoint_ += current_meas_period * accel; // delta vel
             current_setpoint_ = accel * config_.inertia; // Accel
         } break;
