@@ -4,7 +4,9 @@
 
 Controller::Controller(Config_t& config) :
     config_(config)
-{}
+{
+    update_filter_gains();
+}
 
 void Controller::reset() {
     pos_setpoint_ = 0.0f;
@@ -93,7 +95,15 @@ bool Controller::anticogging_calibration(float pos_estimate, float vel_estimate)
     return false;
 }
 
+void Controller::update_filter_gains() {
+    input_filter_kp_ = 2.0f * config_.input_filter_bandwidth;  // basic conversion to discrete time
+    input_filter_ki_ = 0.25f * (input_filter_kp_ * input_filter_kp_); // Critically damped
 
+    // Check that we don't get problems with discrete time approximation
+    if (!(current_meas_period * input_filter_kp_ < 1.0f)) {
+        set_error(ERROR_UNSTABLE_GAIN);
+    }
+}
 
 bool Controller::update(float pos_estimate, float vel_estimate, float* current_setpoint_output) {
     // Only runs if anticogging_.calib_anticogging is true; non-blocking
@@ -120,9 +130,16 @@ bool Controller::update(float pos_estimate, float vel_estimate, float* current_s
                 step = full_step;
             }
             vel_setpoint_ += step;
+            current_setpoint_ = step / current_meas_period * config_.inertia;
         } break;
         case INPUT_MODE_POS_FILTER: {
-
+            // 2nd order pos tracking filter
+            pos_setpoint_ += current_meas_period * vel_setpoint_; // Integrate vel
+            float delta_pos = input_pos_ - pos_setpoint_; // Pos error
+            pos_setpoint_ += current_meas_period * input_filter_kp_ * delta_pos; // Kp
+            float accel = input_filter_ki_ * delta_pos; // Ki
+            vel_setpoint_ += current_meas_period * accel; // delta vel
+            current_setpoint_ = accel * config_.inertia; // Accel
         } break;
         // case INPUT_MODE_MIX_CHANNELS: {
         //     // NOT YET IMPLEMENTED

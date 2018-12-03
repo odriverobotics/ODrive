@@ -11,6 +11,7 @@ public:
         ERROR_NONE = 0,
         ERROR_OVERSPEED = 0x01,
         ERROR_INVALID_INPUT_MODE = 0x02,
+        ERROR_UNSTABLE_GAIN = 0x04,
     };
 
     // Note: these should be sorted from lowest level of control to
@@ -43,6 +44,7 @@ public:
         float vel_ramp_rate = 10000.0f;  // [(counts/s) / s]
         bool setpoints_in_cpr = false;
         float inertia = 0.0f;      // [A/(count/s^2)]
+        float input_filter_bandwidth = 2.0f; // [1/s]
     };
 
     Controller(Config_t& config);
@@ -60,6 +62,7 @@ public:
     void start_anticogging_calibration();
     bool anticogging_calibration(float pos_estimate, float vel_estimate);
 
+    void update_filter_gains();
     bool update(float pos_estimate, float vel_estimate, float* current_setpoint);
 
     Config_t& config_;
@@ -99,6 +102,8 @@ public:
     float input_pos_ = 0.0f;
     float input_vel_ = 0.0f;
     float input_current_ = 0.0f;
+    float input_filter_kp_ = 0.0f;
+    float input_filter_ki_ = 0.0f;
 
     uint32_t traj_start_loop_count_ = 0;
 
@@ -123,7 +128,9 @@ public:
                 make_protocol_property("vel_limit_tolerance", &config_.vel_limit_tolerance),
                 make_protocol_property("vel_ramp_rate", &config_.vel_ramp_rate),
                 make_protocol_property("setpoints_in_cpr", &config_.setpoints_in_cpr),
-                make_protocol_property("inertia", &config_.inertia)
+                make_protocol_property("inertia", &config_.inertia),
+                make_protocol_property("input_filter_bandwidth", &config_.input_filter_bandwidth,
+                    [](void* ctx) { static_cast<Controller*>(ctx)->update_filter_gains(); }, this)
             ),
             make_protocol_function("set_pos_setpoint", *this, &Controller::set_pos_setpoint,
                 "pos_setpoint", "vel_feed_forward", "current_feed_forward"),
