@@ -32,6 +32,7 @@ public:
         float vel_limit_tolerance = 1.2f;  // ratio to vel_lim. 0.0f to disable
         float vel_ramp_rate = 10000.0f;  // [(counts/s) / s]
         bool setpoints_in_cpr = false;
+        float inertia = 0.0f;      // [A/(count/s^2)]
     };
 
     Controller(Config_t& config);
@@ -107,7 +108,8 @@ public:
                 make_protocol_property("vel_limit", &config_.vel_limit),
                 make_protocol_property("vel_limit_tolerance", &config_.vel_limit_tolerance),
                 make_protocol_property("vel_ramp_rate", &config_.vel_ramp_rate),
-                make_protocol_property("setpoints_in_cpr", &config_.setpoints_in_cpr)
+                make_protocol_property("setpoints_in_cpr", &config_.setpoints_in_cpr),
+                make_protocol_property("inertia", &config_.inertia)
             ),
             make_protocol_function("set_pos_setpoint", *this, &Controller::set_pos_setpoint,
                 "pos_setpoint", "vel_feed_forward", "current_feed_forward"),

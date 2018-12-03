@@ -7,7 +7,6 @@ public:
         float vel_limit = 20000.0f;  // [count/s]
         float accel_limit = 5000.0f; // [count/s^2]
         float decel_limit = 5000.0f; // [count/s^2]
-        float A_per_css = 0.0f;      // [A/(count/s^2)]
     };
     struct Step_t {
         float Y;
@@ -25,8 +24,7 @@ public:
             make_protocol_object("config",
                 make_protocol_property("vel_limit", &config_.vel_limit),
                 make_protocol_property("accel_limit", &config_.accel_limit),
-                make_protocol_property("decel_limit", &config_.decel_limit),
-                make_protocol_property("A_per_css", &config_.A_per_css)
+                make_protocol_property("decel_limit", &config_.decel_limit)
             )
         );
     }

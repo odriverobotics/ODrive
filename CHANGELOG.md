@@ -1,6 +1,9 @@
 # Unreleased Features
 Please add a note of your changes below this heading if you make a Pull Request.
 
+### Changed
+* Moved `traptraj.A_per_css` to `controller.inertia`
+
 # Releases
 ## [0.4.7] - 2018-11-28
 ### Added

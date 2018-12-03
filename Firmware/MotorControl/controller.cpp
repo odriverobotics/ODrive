@@ -113,7 +113,7 @@ bool Controller::update(float pos_estimate, float vel_estimate, float* current_s
             TrapezoidalTrajectory::Step_t traj_step = axis_->trap_.eval(t);
             pos_setpoint_ = traj_step.Y;
             vel_setpoint_ = traj_step.Yd;
-            current_setpoint_ = traj_step.Ydd * axis_->trap_.config_.A_per_css;
+            current_setpoint_ = traj_step.Ydd * config_.inertia;
         }
         anticogging_pos = pos_setpoint_; // FF the position setpoint instead of the pos_estimate
     }
