@@ -10,6 +10,7 @@ public:
     enum Error_t {
         ERROR_NONE = 0,
         ERROR_OVERSPEED = 0x01,
+        ERROR_INVALID_INPUT_MODE = 0x02,
     };
 
     // Note: these should be sorted from lowest level of control to
@@ -22,8 +23,17 @@ public:
         CTRL_MODE_TRAJECTORY_CONTROL = 4
     };
 
+    enum InputMode_t{
+        INPUT_MODE_INACTIVE,
+        INPUT_MODE_PASSTHROUGH,
+        INPUT_MODE_VEL_RAMP,
+        INPUT_MODE_POS_FILTER,
+        INPUT_MODE_MIX_CHANNELS,
+    };
+
     struct Config_t {
-        ControlMode_t control_mode = CTRL_MODE_POSITION_CONTROL;  //see: Motor_control_mode_t
+        ControlMode_t control_mode = CTRL_MODE_POSITION_CONTROL;  //see: ControlMode_t
+        InputMode_t input_mode = INPUT_MODE_INACTIVE;  //see: InputMode_t
         float pos_gain = 20.0f;  // [(counts/s) / counts]
         float vel_gain = 5.0f / 10000.0f;  // [A/(counts/s)]
         // float vel_gain = 5.0f / 200.0f, // [A/(rad/s)] <sensorless example>
@@ -85,8 +95,10 @@ public:
     // float vel_setpoint = 800.0f; <sensorless example>
     float vel_integrator_current_ = 0.0f;  // [A]
     float current_setpoint_ = 0.0f;        // [A]
-    float vel_ramp_target_ = 0.0f;
-    bool vel_ramp_enable_ = false;
+
+    float input_pos_ = 0.0f;
+    float input_vel_ = 0.0f;
+    float input_current_ = 0.0f;
 
     uint32_t traj_start_loop_count_ = 0;
 
@@ -94,14 +106,16 @@ public:
     auto make_protocol_definitions() {
         return make_protocol_member_list(
             make_protocol_property("error", &error_),
+            make_protocol_property("input_pos", &input_pos_),
+            make_protocol_property("input_vel", &input_vel_),
+            make_protocol_property("input_current", &input_current_),
             make_protocol_property("pos_setpoint", &pos_setpoint_),
             make_protocol_property("vel_setpoint", &vel_setpoint_),
             make_protocol_property("vel_integrator_current", &vel_integrator_current_),
             make_protocol_property("current_setpoint", &current_setpoint_),
-            make_protocol_property("vel_ramp_target", &vel_ramp_target_),
-            make_protocol_property("vel_ramp_enable", &vel_ramp_enable_),
             make_protocol_object("config",
                 make_protocol_property("control_mode", &config_.control_mode),
+                make_protocol_property("input_mode", &config_.input_mode),
                 make_protocol_property("pos_gain", &config_.pos_gain),
                 make_protocol_property("vel_gain", &config_.vel_gain),
                 make_protocol_property("vel_integrator_gain", &config_.vel_integrator_gain),

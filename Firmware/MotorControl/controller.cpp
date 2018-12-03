@@ -93,10 +93,45 @@ bool Controller::anticogging_calibration(float pos_estimate, float vel_estimate)
     return false;
 }
 
+
+
 bool Controller::update(float pos_estimate, float vel_estimate, float* current_setpoint_output) {
     // Only runs if anticogging_.calib_anticogging is true; non-blocking
     anticogging_calibration(pos_estimate, vel_estimate);
     float anticogging_pos = pos_estimate;
+
+    // Update inputs
+    switch (config_.input_mode) {
+        case INPUT_MODE_INACTIVE: {
+            // do nothing
+        } break;
+        case INPUT_MODE_PASSTHROUGH: {
+            pos_setpoint_ = input_pos_;
+            vel_setpoint_ = input_vel_;
+            current_setpoint_ = input_current_;
+        } break;
+        case INPUT_MODE_VEL_RAMP: {
+            float max_step_size = current_meas_period * config_.vel_ramp_rate;
+            float full_step = input_vel_ - vel_setpoint_;
+            float step;
+            if (fabsf(full_step) > max_step_size) {
+                step = std::copysignf(max_step_size, full_step);
+            } else {
+                step = full_step;
+            }
+            vel_setpoint_ += step;
+        } break;
+        case INPUT_MODE_POS_FILTER: {
+
+        } break;
+        // case INPUT_MODE_MIX_CHANNELS: {
+        //     // NOT YET IMPLEMENTED
+        // } break;
+        default: {
+            set_error(ERROR_INVALID_INPUT_MODE);
+            return false;
+        }
+    }
 
     // Trajectory control
     if (config_.control_mode == CTRL_MODE_TRAJECTORY_CONTROL) {
@@ -116,19 +151,6 @@ bool Controller::update(float pos_estimate, float vel_estimate, float* current_s
             current_setpoint_ = traj_step.Ydd * config_.inertia;
         }
         anticogging_pos = pos_setpoint_; // FF the position setpoint instead of the pos_estimate
-    }
-
-    // Ramp rate limited velocity setpoint
-    if (config_.control_mode == CTRL_MODE_VELOCITY_CONTROL && vel_ramp_enable_) {
-        float max_step_size = current_meas_period * config_.vel_ramp_rate;
-        float full_step = vel_ramp_target_ - vel_setpoint_;
-        float step;
-        if (fabsf(full_step) > max_step_size) {
-            step = std::copysignf(max_step_size, full_step);
-        } else {
-            step = full_step;
-        }
-        vel_setpoint_ += step;
     }
 
     // Position control

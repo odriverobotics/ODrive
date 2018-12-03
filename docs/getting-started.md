@@ -7,19 +7,7 @@ permalink: /
 # Getting Started
 
 ### Table of contents
-<!-- TOC depthFrom:2 depthTo:2 -->
-
-- [Hardware Requirements](#hardware-requirements)
-- [Wiring up the ODrive](#wiring-up-the-odrive)
-- [Downloading and Installing Tools](#downloading-and-installing-tools)
-- [Firmware](#firmware)
-- [Start `odrivetool`](#start-odrivetool)
-- [Configure M0](#configure-m0)
-- [Position control of M0](#position-control-of-m0)
-- [Other control modes](#other-control-modes)
-- [What's next?](#whats-next)
-
-<!-- /TOC -->
+<!-- TOC depthFrom:2 depthTo:2 -->autoauto- [Hardware Requirements](#hardware-requirements)auto- [Wiring up the ODrive](#wiring-up-the-odrive)auto- [Downloading and Installing Tools](#downloading-and-installing-tools)auto- [Firmware](#firmware)auto- [Start `odrivetool`](#start-odrivetool)auto- [Configure M0](#configure-m0)auto- [Position control of M0](#position-control-of-m0)auto- [Other control modes](#other-control-modes)auto- [What's next?](#whats-next)autoauto<!-- /TOC -->
 
 ## Hardware Requirements
 
@@ -303,8 +291,8 @@ You can now control the velocity with `axis.controller.vel_setpoint = 5000` [cou
 ### Ramped velocity control
 Set `axis.controller.config.control_mode = CTRL_MODE_VELOCITY_CONTROL`.<br>
 Set the velocity ramp rate (acceleration): `axis.controller.config.vel_ramp_rate = 2000` [counts/s^2]<br>
-Activate the ramped velocity mode: `axis.controller.vel_ramp_enable = True`.<br>
-You can now control the velocity with `axis.controller.vel_ramp_target = 5000` [count/s].
+Activate the ramped velocity mode: `axis.controller.config.input_mode = INPUT_MODE_VEL_RAMP`.<br>
+You can now control the velocity with `axis.controller.input_vel = 5000` [count/s].
 
 ### Current control
 Set `axis.controller.config.control_mode = CTRL_MODE_CURRENT_CONTROL`.<br>
