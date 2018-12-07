@@ -110,7 +110,7 @@ public:
                 make_protocol_property("vel_limit", &config_.vel_limit),
                 make_protocol_property("vel_limit_tolerance", &config_.vel_limit_tolerance),
                 make_protocol_property("vel_ramp_rate", &config_.vel_ramp_rate),
-                make_protocol_property("setpoints_in_cpr", &config_.setpoints_in_cpr)
+                make_protocol_property("setpoints_in_cpr", &config_.setpoints_in_cpr),
                 make_protocol_property("homing_speed", &config_.homing_speed)
             ),
             make_protocol_function("set_pos_setpoint", *this, &Controller::set_pos_setpoint,
