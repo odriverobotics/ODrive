@@ -1,8 +1,34 @@
 # Unreleased Features
 Please add a note of your changes below this heading if you make a Pull Request.
 
-# Unreleased
+### Added
+* `dump_errors()` utility function in odrivetool to dump, decode and optionally clear errors.
 
+# Releases
+## [0.4.7] - 2018-11-28
+### Added
+* Overspeed fault
+* Current sense saturation fault.
+* Supress startup transients by sampling encoder estimate into position setpoint when entering closed loop control.
+* Make step dir gpio pins configurable.
+* Configuration variable `encoder.config.zero_count_on_find_idx`, true by default. Set to false to leave the initial encoder count to be where the axis was at boot.
+* Circular position setpoint mode: position setpoints wrapped [0, cpr). Useful for infinite incremental position control.
+* Velocity setpoint ramping. Use velocity control mode, and set `controller.vel_ramp_enable` to true. This will ramp `controller.vel_setpoint` towards `controller.vel_ramp_target` at a ramp rate of `controller.config.vel_ramp_rate`.
+
+### Changed
+* Increased switching frequency from around 8kHz to 24kHz. Control loops still run at 8kHz.
+* Renamed `axis.enable_step_dir` to `axis.step_dir_active`
+* New process for working with STM32CubeMX.
+
+### Fixed
+* Would get ERROR_CONTROL_DEADLINE_MISSED along with every ERROR_PHASE_RESISTANCE_OUT_OF_RANGE.
+* ODrive tool can now run interactive nested scripts with "%run -i script.py"
+
+## [0.4.6] - 2018-10-07
+### Fixed
+* Broken printing of floats on ascii protocol
+
+## [0.4.5] - 2018-10-06
 ### Added
 * **Trapezoidal Trajectory Planner**
 * Hook to execute protocol property written callback
@@ -24,7 +50,6 @@ Please add a note of your changes below this heading if you make a Pull Request.
 * An issue where the axis state machine would jump in and out of idle when there is an error
 * There is a [bug](https://github.com/ARM-software/CMSIS_5/issues/267) in the arm fast math library, which gives spikes in the output of arm_cos_f32 for input values close to -pi/2. We fixed the bug locally, and hence are using "our_arm_cos_f32".
 
-# Releases
 ## [0.4.4] - 2018-09-18
 ### Fixed
 * Serious reliability issue with USB communication where packets on Native and the CDC interface would collide with each other.

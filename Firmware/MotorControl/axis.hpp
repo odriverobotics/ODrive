@@ -22,9 +22,9 @@ public:
         ERROR_CURRENT_MEASUREMENT_TIMEOUT = 0x08,
         ERROR_BRAKE_RESISTOR_DISARMED = 0x10, //<! the brake resistor was unexpectedly disarmed
         ERROR_MOTOR_DISARMED = 0x20, //<! the motor was unexpectedly disarmed
-        ERROR_MOTOR_FAILED = 0x40,
+        ERROR_MOTOR_FAILED = 0x40, // Go to motor.hpp for information, check odrvX.axisX.motor.error for error value 
         ERROR_SENSORLESS_ESTIMATOR_FAILED = 0x80,
-        ERROR_ENCODER_FAILED = 0x100,
+        ERROR_ENCODER_FAILED = 0x100, // Go to encoder.hpp for information, check odrvX.axisX.encoder.error for error value
         ERROR_CONTROLLER_FAILED = 0x200,
         ERROR_POS_CTRL_DURING_SENSORLESS = 0x400,
         ERROR_MIN_ENDSTOP_PRESSED = 0x800,
@@ -56,8 +56,11 @@ public:
         bool startup_homing = false; //<! enable homing after calibration/startup
         bool enable_step_dir = false; //<! enable step/dir input after calibration
                                     //   For M0 this has no effect if enable_uart is true
-
         float counts_per_step = 2.0f;
+
+        // Defaults loaded from hw_config in load_configuration in main.cpp
+        uint16_t step_gpio_pin = 0;
+        uint16_t dir_gpio_pin = 0;
 
         // Spinup settings
         float ramp_up_time = 0.4f;            // [s]
@@ -87,8 +90,10 @@ public:
     bool wait_for_current_meas();
 
     void step_cb();
-    void set_step_dir_enabled(bool enable);
-  
+    void set_step_dir_active(bool enable);
+    void decode_step_dir_pins();
+    static void load_default_step_dir_pin_config(
+        const AxisHardwareConfig_t& hw_config, Config_t* config);
 
     bool check_DRV_fault();
     bool check_PSU_brownout();
@@ -183,7 +188,14 @@ public:
 
     // variables exposed on protocol
     Error_t error_ = ERROR_NONE;
-    bool enable_step_dir_ = false; // auto enabled after calibration, based on config.enable_step_dir
+    bool step_dir_active_ = false; // auto enabled after calibration, based on config.enable_step_dir
+
+    // updated from config in constructor, and on protocol hook
+    GPIO_TypeDef* step_port_;
+    uint16_t step_pin_;
+    GPIO_TypeDef* dir_port_;
+    uint16_t dir_pin_;
+
     State_t requested_state_ = AXIS_STATE_STARTUP_SEQUENCE;
     State_t task_chain_[10] = { AXIS_STATE_UNDEFINED };
     State_t& current_state_ = task_chain_[0];
@@ -194,7 +206,7 @@ public:
     auto make_protocol_definitions() {
         return make_protocol_member_list(
             make_protocol_property("error", &error_),
-            make_protocol_property("enable_step_dir", &enable_step_dir_),
+            make_protocol_ro_property("step_dir_active", &step_dir_active_),
             make_protocol_ro_property("current_state", &current_state_),
             make_protocol_property("requested_state", &requested_state_),
             make_protocol_ro_property("loop_counter", &loop_counter_),
@@ -208,6 +220,10 @@ public:
                 make_protocol_property("startup_homing", &config_.startup_homing),
                 make_protocol_property("enable_step_dir", &config_.enable_step_dir),
                 make_protocol_property("counts_per_step", &config_.counts_per_step),
+                make_protocol_property("step_gpio_pin", &config_.step_gpio_pin,
+                    [](void* ctx) { static_cast<Axis*>(ctx)->decode_step_dir_pins(); }, this),
+                make_protocol_property("dir_gpio_pin", &config_.dir_gpio_pin,
+                    [](void* ctx) { static_cast<Axis*>(ctx)->decode_step_dir_pins(); }, this),
                 make_protocol_property("ramp_up_time", &config_.ramp_up_time),
                 make_protocol_property("ramp_up_distance", &config_.ramp_up_distance),
                 make_protocol_property("spin_up_current", &config_.spin_up_current),

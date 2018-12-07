@@ -5,6 +5,20 @@ Each step is acompanied by some explanation so hopefully you can carry over some
 
 [![IMAGE ALT TEXT HERE](https://img.youtube.com/vi/ponx_U4xhoM/0.jpg)](https://www.youtube.com/watch?v=ponx_U4xhoM) <br> Click above to play video.
 
+### Hoverboard motor wiring
+Hoverboard motors come with three motor phases (usually colored yellow, blue, green) which are thicker, and a set of 5 thinner wires for the hall sensor feedback (usually colored red, yellow, blue, green, black).
+
+You may wire the motor phases in any order into a motor connector on the ODrive, as we will calibrate the phase alignment later anyway. Wire the hall feedback into the ODrive J4 conenctor (make sure that the motor channel number matches) as follows:
+
+| Hall wire | J4 signal |
+|-----------|-----------|
+| Red       | 5V        |
+| Yellow    | A         |
+| Blue      | B         |
+| Green     | Z         |
+| Black     | GND       |
+
+
 ### Hoverboard motor configuration
 Standard 6.5 inch hoverboard hub motors have 30 permanent magnet poles, and thus 15 pole pairs. If you have a different motor you need to count the magnets or have a reliable datasheet for this information.
 ```txt

@@ -14,21 +14,9 @@ Table of Contents:
 <!-- /TOC -->
 
 ## Error codes
-If your ODrive is not working as expected, run `odrivetool` and type `hex(<axis>.error)` <kbd>Enter</kbd> where `<axis>` is the axis that isn't working. This will display a [hexadecimal](https://en.wikipedia.org/wiki/Hexadecimal) representation of the error code. Each bit represents one error flag.
+If your ODrive is not working as expected, run `odrivetool` and type `dump_errors(odrv0)` <kbd>Enter</kbd>. This will dump a list of all the errors that are present. To also clear all the errors, you can run `dump_errors(odrv0, True)`.
 
-<details><summary markdown="span">Example</summary><div markdown="block">
-Say you got this error output:
-```python
-In [1]: hex(odrv0.axis0.error)
-Out[1]: '0x6'
-```
-
-Written in binary, the number `0x6` corresponds to `110`, that means bits 1 and 2 are set (counting starts at 0).
-Looking at the reference below, this means that both `ERROR_DC_BUS_UNDER_VOLTAGE` and `ERROR_DC_BUS_OVER_VOLTAGE` occurred.
-</div></details>
-
-The axis error may say that some other component has failed. Say it reports `ERROR_ENCODER_FAILED`, then you need to go check the encoder error: `hex(<axis>.encoder.error)`.
-
+The following sections will give some guidance on the most common errors. You may also check the code for the full list of errors:
 * Axis error flags defined [here](../Firmware/MotorControl/axis.hpp).
 * Motor error flags defined [here](../Firmware/MotorControl/motor.hpp).
 * Encoder error flags defined [here](../Firmware/MotorControl/encoder.hpp).
@@ -38,7 +26,7 @@ The axis error may say that some other component has failed. Say it reports `ERR
 
 * `ERROR_INVALID_STATE = 0x01`
 
-Typically returned along with another error. Resolve that error and then reboot using `odrv0.reboot()` or remoivng power, waiting 5 seconds and restoring power to return to normal operating. 
+You tried to run a state before you are allowed to. Typically you tried to run encoder calibration or closed loop control before the motor was calibrated, or you tried to run closed loop control before the encoder was calibrated.
 
 * `ERROR_DC_BUS_UNDER_VOLTAGE = 0x02`
 
@@ -66,7 +54,12 @@ Out[2]: 1.408751450071577e-05
 In [3]: odrv0.axis0.motor.config.phase_resistance
 Out[3]: 0.029788672924041748
 ```
-Some motors will have a considerably different phase resistance and inductance than this. For example, gimbal motors, some small motors (e.g. < 10A peak current). If you think this applies to you try increasing `odrv0.axis0.motor.config.resistance_calib_max_voltage` from its default value of 1 using odrive tool and repeat the motor calibration process. If your motor has a small peak current draw (e.g. < 20A) you can also try decreasing `odrv0.axis0.motor.config.calibration_current` from its default value of 10A.
+Some motors will have a considerably different phase resistance and inductance than this. For example, gimbal motors, some small motors (e.g. < 10A peak current). If you think this applies to you try increasing `odrv0.axis0.motor.config.resistance_calib_max_voltage` from its default value of 1 using odrivetool and repeat the motor calibration process. If your motor has a small peak current draw (e.g. < 20A) you can also try decreasing `odrv0.axis0.motor.config.calibration_current` from its default value of 10A.
+
+In general, you need
+```text
+resistance_calib_max_voltage > calibration_current * phase_resistance`.
+```
 
 * `ERROR_DRV_FAULT = 0x0008`
 

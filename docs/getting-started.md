@@ -16,6 +16,7 @@ permalink: /
 - [Start `odrivetool`](#start-odrivetool)
 - [Configure M0](#configure-m0)
 - [Position control of M0](#position-control-of-m0)
+- [Other control modes](#other-control-modes)
 - [What's next?](#whats-next)
 
 <!-- /TOC -->
@@ -24,7 +25,7 @@ permalink: /
 
 ### You will need:
 * One or two [brushless motors](https://docs.google.com/spreadsheets/d/12vzz7XVEK6YNIOqH0jAz51F5VUpc-lJEs3mmkWP1H4Y). It is fine, even recommended, to start testing with just a single motor and encoder.
-* One or two [quadrature incremental encoder(s)](encoders)
+* One or two [encoder(s)](https://docs.google.com/spreadsheets/d/1OBDwYrBb5zUPZLrhL98ezZbg94tUsZcdTuwiVNgVqpU)
 * A power resistor. A good starting point would be the 50W resistor included with your ODrive.
   <details><summary markdown="span">Do I really need a power resistor? What values to choose?</summary><div markdown="block">
 
@@ -128,10 +129,10 @@ Try step 5 again
 ```
 
 ## Firmware
-#### ODrive v3.5 and later
+**ODrive v3.5 and later**<br>
 Your board should come preflashed with firmware. If you run into problems, follow the instructions [here](odrivetool.md#device-firmware-update) on the DFU procedure before you continue.
 
-#### ODrive v3.4 and earlier
+**ODrive v3.4 and earlier**<br>
 Your board does **not** come preflashed with any firmware. Follow the instructions [here](odrivetool.md#device-firmware-update) on the STP Link procedure before you continue.
 
 ## Start `odrivetool`
@@ -158,27 +159,27 @@ You can read more about `odrivetool` [here](odrivetool.md).
 
 ### 1. Set the limits:
 <details><summary markdown="span">Wait, how do I set these?</summary><div markdown="block">
-
 In the previous step we started `odrivetool`. In there, you can assign variables directly by name.
 
 For instance, to set the current limit of M0 to 10A you would type: `odrv0.axis0.motor.config.current_lim = 10` <kbd>Enter</kbd>
 </div></details>
 
-#### Current limit
+**Current limit**<br>
 `odrv0.axis0.motor.config.current_lim` [A].  
-The default current limit, for safety reasons, is set to 10A. This is quite weak, but good for making sure the drive is stable. Once you have tuned the oDrive, you can increase this to 75A to increase performance. Note that above 75A, you must change the current amplifier gains. You do this by requesting a different current range. i.e. for 90A on M0: `odrv0.axis0.motor.config.requested_current_range = 90` [A], then save the configuration and reboot as the gains are written out to the DRV (MOSFET driver) only during startup.
+The default current limit, for safety reasons, is set to 10A. This is quite weak, but good for making sure the drive is stable. Once you have tuned the oDrive, you can increase this to 60A to increase performance. Note that above 60A, you must change the current amplifier gains. You do this by requesting a different current range. i.e. for 90A on M0: `odrv0.axis0.motor.config.requested_current_range = 90` [A], then save the configuration and reboot as the gains are written out to the DRV (MOSFET driver) only during startup.
 
 *Note: The motor current and the current drawn from the power supply is not the same in general. You should not look at the power supply current to see what is going on with the motor current.*
-    
 <details><summary markdown="span">Ok, so tell me how it actually works then...</summary><div markdown="block">
 The current in the motor is only connected to the current in the power supply _sometimes_ and other times it just cycles out of one phase and back in the other. This is what the modulation magnitude is (sometimes people call this duty cycle, but that's a bit confusing because we use SVM not straight PWM). When the modulation magnitude is 0, the average voltage seen across the motor phases is 0, and the motor current is never connected to the power supply. When the magnitude is 100%, it is always connected, and at 50% it's connected half the time, and cycled in just the motor half the time.
 
 The largest effect on modulation magnitude is speed. There are other smaller factors, but in general: if the motor is still it's not unreasonable to have 50A in the motor from 5A on the power supply. When the motor is spinning close to top speed, the power supply current and the motor current will be somewhat close to each other.
-    </div></details>
-#### Velocity limit
+</div></details>
+
+**Velocity limit**<br>
 `odrv0.axis0.controller.config.vel_limit` [counts/s].  
 The motor will be limited to this speed. Again the default value is quite slow.
-#### Calibration current
+
+**Calibration current**<br>
 You can change `odrv0.axis0.motor.config.calibration_current` [A] to the largest value you feel comfortable leaving running through the motor continuously when the motor is stationary. If you are using a small motor (i.e. 15A current rated) you may need to reduce `calibration_current` to a value smaller than the default.
 
 ### 2. Set other hardware parameters
@@ -190,7 +191,6 @@ This is the number of **magnet poles** in the rotor, **divided by two**. To find
 If you can't see them, try sliding a magnet around the rotor, and counting how many times it stops. This will be the number of **pole pairs**. If you use a magnetic piece of metal instead of a magnet, you will get the number of **magnet poles**.
 `odrv0.axis0.motor.config.motor_type`  
 This is the type of motor being used. Currently two types of motors are supported: High-current motors (`MOTOR_TYPE_HIGH_CURRENT`) and gimbal motors (`MOTOR_TYPE_GIMBAL`).
-
 <details><summary markdown="span">Which <code>motor_type</code> to choose?</summary><div markdown="block">
 
 If you're using a regular hobby brushless motor like [this](https://hobbyking.com/en_us/turnigy-aerodrive-sk3-5065-236kv-brushless-outrunner-motor.html) one, you should set `motor_mode` to `MOTOR_TYPE_HIGH_CURRENT`. For low-current gimbal motors like [this](https://hobbyking.com/en_us/turnigy-hd-5208-brushless-gimbal-motor-bldc.html) one, you should choose `MOTOR_TYPE_GIMBAL`. Do not use `MOTOR_TYPE_GIMBAL` on a motor that is not a gimbal motor, as it may overheat the motor or the ODrive.
@@ -199,15 +199,15 @@ If you're using a regular hobby brushless motor like [this](https://hobbyking.co
 If 100's of mA of current noise is "small" for you, you can choose `MOTOR_TYPE_HIGH_CURRENT`.
 If 100's of mA of current noise is "large" for you, and you do not intend to spin the motor very fast (Ω * L << R), and the motor is fairly large resistance (1 ohm or larger), you can chose `MOTOR_TYPE_GIMBAL`.
 If 100's of mA current noise is "large" for you, _and_ you intend to spin the motor fast, then you need to replace the shunt resistors on the ODrive.
-
 </div></details> <br> 
 
 *Note: When using gimbal motors,* `current_lim` *and* `calibration_current` *actually mean "voltage limit" and "calibration voltage", since we don't use current feedback. This means that if you set it to 10, it means 10V, despite the name of the parameter.*
 
-#### If using encoder
+**If using encoder**<br>
 `odrv0.axis0.encoder.config.cpr`: Encoder Count Per Revolution [CPR]  
 This is 4x the Pulse Per Revolution (PPR) value. Usually this is indicated in the datasheet of your encoder.
-#### If not using encoder
+
+**If not using encoder**<br>
 * If you wish to run in sensorless mode, please see [Setting up sensorless](commands.md#setting-up-sensorless).
 * If you are using hall sensor feedback, please see the [hoverboard motor example](hoverboard.md).
 
@@ -242,14 +242,73 @@ Let's get motor 0 up and running. The procedure for motor 1 is exactly the same,
 2. Type `odrv0.axis0.requested_state = AXIS_STATE_CLOSED_LOOP_CONTROL` <kbd>Enter</kbd>. From now on the ODrive will try to hold the motor's position. If you try to turn it by hand, it will fight you gently. That is unless you bump up `odrv0.axis0.motor.config.current_lim`, in which case it will fight you more fiercely.
 3. Send the motor a new position setpoint. `odrv0.axis0.controller.pos_setpoint = 10000` <kbd>Enter</kbd>. The units are in encoder counts.
 
-### Other control modes
-The ODrive also supports velocity control and current (torque) control.
-#### Velocity control
-Set `odrv0.axis0.controller.config.control_mode = CTRL_MODE_VELOCITY_CONTROL`.  
-You can now control the velocity with `odrv0.axis0.controller.vel_setpoint = 5000` [count/s].
-#### Current control
-Set `odrv0.axis0.controller.config.control_mode = CTRL_MODE_CURRENT_CONTROL`.  
-You can now control the current with `odrv0.axis0.controller.current_setpoint = 3` [A].
+## Other control modes
+The default control mode is unfiltered position control in the absolute encoder reference frame. You may wish to use a controlled trajectory instead. Or you may wish to control position in a circular frame to allow continous rotation forever without growing the numeric value of the setpoint too large.
+You may also wish to control velocity (directly or with a ramping filter).
+You can also directly control the current of the motor, which is proportional to torque.
+
+- [Trajectory control](#trajectory-control)
+- [Circular position control](#circular-position-control)
+- [Velocity control](#velocity-control)
+- [Ramped velocity control](#ramped-velocity-control)
+- [Current control](#current-control)
+
+
+### Trajectory control
+This mode lets you smoothly accelerate, coast, and decelerate the axis from one position to another. With raw position control, the controller simply tries to go to the setpoint as quickly as possible. Using a trajectory lets you tune the feedback gains more aggressively to reject disturbance, while keeping smooth motion.
+
+![Taptraj](TrapTrajPosVel.PNG)<br>
+In the above image blue is position and orange is velocity.
+
+#### Parameters
+```
+<odrv>.<axis>.trap_traj.config.vel_limit = <Float>
+<odrv>.<axis>.trap_traj.config.accel_limit = <Float>
+<odrv>.<axis>.trap_traj.config.decel_limit = <Float>
+<odrv>.<axis>.trap_traj.config.A_per_css = <Float>
+```
+
+`vel_limit` is the maximum planned trajectory speed.  This sets your coasting speed.<br>
+`accel_limit` is the maximum acceleration in counts / sec^2<br>
+`decel_limit` is the maximum deceleration in counts / sec^2<br>
+`A_per_css` is a value which correlates acceleration (in counts / sec^2) and motor current. It is 0 by default. It is optional, but can improve response of your system if correctly tuned. Keep in mind this will need to change with the load / mass of your system.
+
+All values should be strictly positive (>= 0).
+
+Keep in mind that you must still set your safety limits as before.  I recommend you set these a little higher ( > 10%) than the planner values, to give the controller enough control authority.
+```
+<odrv>.<axis>.motor.config.current_lim = <Float>
+<odrv>.<axis>.controller.config.vel_limit = <Float>
+```
+
+#### Usage
+Use the `move_to_pos` function to move to an absolute position:
+```
+<odrv>.<axis>.controller.move_to_pos(<Float>)
+```
+
+### Circular position control
+This mode is useful for continuos incremental position movement. For example a robot rolling indefinitely, or an extruder motor or conveyor belt moving with controlled increments indefinitely.
+In the regular position mode, the `pos_setpoint` would grow to a very large value and would lose precision due to floating point rounding.
+
+In this mode, the controller will try to track the position within only one turn of the motor. Specifically, `pos_setpoint` is expected in the range `[0, cpr-1]`, where `cpr` is the number of encoder counts in one revolution. If the `pos_setpoint` is incremented to outside this range (say via step/dir input), it is automatically wrapped around into the correct value.
+Note that in this mode `encoder.pos_cpr` is used for feedback in stead of `encoder.pos_estimate`.
+
+If you try to increment the axis with a large step in one go that exceeds `cpr/2` steps, the motor will go to the same angle around the wrong way. This is also the case if there is a large disturbance. If you have an application where you would like to handle larger steps, you can use a virtual CPR that is an integer times larger than your encoder's actual CPR. Set `encoder.config.cpr = N * your_enc_cpr`, where N is some integer. Choose N to give you an appropriate circular space for your application.
+
+### Velocity control
+Set `axis.controller.config.control_mode = CTRL_MODE_VELOCITY_CONTROL`.<br>
+You can now control the velocity with `axis.controller.vel_setpoint = 5000` [count/s].
+
+### Ramped velocity control
+Set `axis.controller.config.control_mode = CTRL_MODE_VELOCITY_CONTROL`.<br>
+Set the velocity ramp rate (acceleration): `axis.controller.config.vel_ramp_rate = 2000` [counts/s^2]<br>
+Activate the ramped velocity mode: `axis.controller.vel_ramp_enable = True`.<br>
+You can now control the velocity with `axis.controller.vel_ramp_target = 5000` [count/s].
+
+### Current control
+Set `axis.controller.config.control_mode = CTRL_MODE_CURRENT_CONTROL`.<br>
+You can now control the current with `axis.controller.current_setpoint = 3` [A].
 
 *Note: There is no velocity limiting in current control mode. Make sure that you don't overrev the motor, or exceed the max speed for your encoder.*
 
