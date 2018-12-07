@@ -1,6 +1,9 @@
 # Unreleased Features
 Please add a note of your changes below this heading if you make a Pull Request.
 
+### Added
+* `dump_errors()` utility function in odrivetool to dump, decode and optionally clear errors.
+
 # Releases
 ## [0.4.7] - 2018-11-28
 ### Added

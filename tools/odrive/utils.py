@@ -7,6 +7,7 @@ import platform
 import subprocess
 import os
 from fibre.utils import Event
+from odrive.enums import errors
 
 try:
     if platform.system() == 'Windows':
@@ -19,13 +20,48 @@ except ImportError:
     sys.stdout.flush()
     pass
 
-data_rate = 100
-plot_rate = 10
-num_samples = 1000
+_VT100Colors = {
+    'green': '\x1b[92;1m',
+    'cyan': '\x1b[96;1m',
+    'yellow': '\x1b[93;1m',
+    'red': '\x1b[91;1m',
+    'default': '\x1b[0m'
+}
 
 class OperationAbortedException(Exception):
     pass
 
+def dump_errors(odrv, clear=False):
+    axes = [axis for name, axis in odrv._remote_attributes.items() if 'axis' in name]
+    for num, axis in enumerate(axes):
+        print('Axis{}:'.format(num))
+
+        # Flatten axis and submodules
+        # (name, remote_obj, errorcode)
+        module_decode_map = [
+            ('axis', axis, errors.axis),
+            ('motor', axis.motor, errors.motor),
+            ('encoder', axis.encoder, errors.encoder),
+            ('controller', axis.controller, errors.controller),
+        ]
+
+        # Module error decode
+        for name, remote_obj, errorcodes in module_decode_map:
+            prefix = ' '*2 + name + ": "
+            if (remote_obj.error != errorcodes.ERROR_NONE):
+                print(prefix + _VT100Colors['red'] + "Error(s):" + _VT100Colors['default'])
+                errorcodes_tup = [(name, val) for name, val in errorcodes.__dict__.items() if 'ERROR_' in name]
+                for codename, codeval in errorcodes_tup:
+                    if remote_obj.error & codeval != 0:
+                        print("    " + codename)
+                if clear:
+                    remote_obj.error = errorcodes.ERROR_NONE
+            else:
+                print(prefix + _VT100Colors['green'] + "no error" + _VT100Colors['default'])
+
+data_rate = 100
+plot_rate = 10
+num_samples = 1000
 def start_liveplotter(get_var_callback):
     """
     Starts a liveplotter.
