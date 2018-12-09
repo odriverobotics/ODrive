@@ -38,8 +38,11 @@ The current state of an axis is indicated by `<axis>.current_state`. The user ca
     * Can only be entered if the motor is calibrated (`<axis>.motor.is_calibrated`) and the encoder is ready (`<axis>.encoder.is_ready`).
 
 ### Startup Procedure
-
 By default the ODrive takes no action at startup and goes to idle immediately.
+You may execute a predefined sequence of actions at startup by configuring the following options.
+
+If you set `<axis>.config.startup_sequence_on_boot` to True, then the sequence will run as soon as power is applied. If it is set to False it will run when the Enable line is asserted, or when `<axis>.requested_state = AXIS_STATE_STARTUP_SEQUENCE`.
+
 In order to change what startup procedures are used, set the startup procedures you want to `True`.
 The ODrive will sequence all enabled startup actions selected in the order shown below.
 

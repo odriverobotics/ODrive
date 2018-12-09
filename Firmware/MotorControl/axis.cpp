@@ -30,13 +30,10 @@ Axis::Axis(const AxisHardwareConfig_t& hw_config,
     decode_step_dir_pins();
 }
 
-static void step_cb_wrapper(void* ctx) {
-    reinterpret_cast<Axis*>(ctx)->step_cb();
-}
-
 // @brief Sets up all components of the axis,
 // such as gate driver and encoder hardware.
 void Axis::setup() {
+    use_enable_pin_update();
     encoder_.setup();
     motor_.setup();
 }
@@ -79,6 +76,7 @@ void Axis::load_default_step_dir_pin_config(
         const AxisHardwareConfig_t& hw_config, Config_t* config) {
     config->step_gpio_pin = hw_config.step_gpio_pin;
     config->dir_gpio_pin = hw_config.dir_gpio_pin;
+    config->en_gpio_pin = hw_config.en_gpio_pin;
 }
 
 void Axis::decode_step_dir_pins() {
@@ -86,6 +84,8 @@ void Axis::decode_step_dir_pins() {
     step_pin_ = get_gpio_pin_by_pin(config_.step_gpio_pin);
     dir_port_ = get_gpio_port_by_pin(config_.dir_gpio_pin);
     dir_pin_ = get_gpio_pin_by_pin(config_.dir_gpio_pin);
+    en_port_ = get_gpio_port_by_pin(config_.en_gpio_pin);
+    en_pin_ = get_gpio_pin_by_pin(config_.en_gpio_pin);
 }
 
 // @brief (de)activates step/dir input
@@ -100,7 +100,7 @@ void Axis::set_step_dir_active(bool active) {
 
         // Subscribe to rising edges of the step GPIO
         GPIO_subscribe(step_port_, step_pin_, GPIO_PULLDOWN,
-                step_cb_wrapper, this);
+            [](void* ctx) { static_cast<Axis*>(ctx)->step_cb(); }, this);
 
         step_dir_active_ = true;
     } else {
@@ -108,6 +108,39 @@ void Axis::set_step_dir_active(bool active) {
 
         // Unsubscribe from step GPIO
         GPIO_unsubscribe(step_port_, step_pin_);
+    }
+}
+
+void Axis::use_enable_pin_update() {
+    if (config_.use_enable_pin) {
+        GPIO_InitTypeDef GPIO_InitStruct;
+        GPIO_InitStruct.Pin = en_pin_;
+        GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+        if (config_.enable_pin_active_low) {
+            GPIO_InitStruct.Pull = GPIO_PULLUP;
+        } else {
+            GPIO_InitStruct.Pull = GPIO_PULLDOWN;
+        }
+        HAL_GPIO_Init(en_port_, &GPIO_InitStruct);
+        GPIO_subscribe(en_port_, en_pin_, GPIO_InitStruct.Pull,
+            [](void* ctx) { static_cast<Axis*>(ctx)->step_cb(); }, this);
+    } else {
+        GPIO_unsubscribe(en_port_, en_pin_);
+    }
+}
+
+void Axis::enable_pin_cb() {
+    if (config_.use_enable_pin) {
+        bool enable = HAL_GPIO_ReadPin(en_port_, en_pin_) ^ config_.enable_pin_active_low;
+        if (enable) {
+            if (startup_sequence_done_) {
+                requested_state_ = AXIS_STATE_CLOSED_LOOP_CONTROL;   
+            } else {
+                requested_state_ = AXIS_STATE_STARTUP_SEQUENCE;
+            }
+        } else {
+            requested_state_ = AXIS_STATE_IDLE;
+        }
     }
 }
 
@@ -133,7 +166,7 @@ bool Axis::do_checks() {
     return check_for_errors();
 }
 
-// @brief Update all esitmators
+// @brief Update all estimators
 bool Axis::do_updates() {
     // Sub-components should use set_error which will propegate to this error_
     encoder_.update();
@@ -224,6 +257,15 @@ bool Axis::run_idle_loop() {
     return check_for_errors();
 }
 
+bool Axis::is_state_allowed(Axis::State_t query) {
+    if (query > AXIS_STATE_MOTOR_CALIBRATION && !motor_.is_calibrated_)
+        return false;
+    if (query > AXIS_STATE_ENCODER_OFFSET_CALIBRATION && !encoder_.is_ready_)
+        return false;
+    
+    return true;
+}
+
 // Infinite loop that does calibration and enters main control loop as appropriate
 void Axis::run_state_machine_loop() {
 
@@ -236,6 +278,10 @@ void Axis::run_state_machine_loop() {
         for (int i = 0; i < encoder_cpr; i++) {
             controller_.anticogging_.cogging_map[i] = 0.0f;
         }
+    }
+
+    if (config_.startup_sequence_on_boot) {
+        requested_state_ = AXIS_STATE_STARTUP_SEQUENCE;
     }
 
     // arm!
@@ -256,6 +302,7 @@ void Axis::run_state_machine_loop() {
                     task_chain_[pos++] = AXIS_STATE_CLOSED_LOOP_CONTROL;
                 else if (config_.startup_sensorless_control)
                     task_chain_[pos++] = AXIS_STATE_SENSORLESS_CONTROL;
+                task_chain_[pos++] = AXIS_STATE_STARTUP_SEQUENCE_DONE;
                 task_chain_[pos++] = AXIS_STATE_IDLE;
             } else if (requested_state_ == AXIS_STATE_FULL_CALIBRATION_SEQUENCE) {
                 task_chain_[pos++] = AXIS_STATE_MOTOR_CALIBRATION;
@@ -276,10 +323,9 @@ void Axis::run_state_machine_loop() {
         // Note that current_state is a reference to task_chain_[0]
 
         // Validate the state before running it
-        if (current_state_ > AXIS_STATE_MOTOR_CALIBRATION && !motor_.is_calibrated_)
+        if (!is_state_allowed(current_state_)) {
             current_state_ = AXIS_STATE_UNDEFINED;
-        if (current_state_ > AXIS_STATE_ENCODER_OFFSET_CALIBRATION && !encoder_.is_ready_)
-            current_state_ = AXIS_STATE_UNDEFINED;
+        }
 
         // Run the specified state
         // Handlers should exit if requested_state != AXIS_STATE_UNDEFINED
@@ -305,6 +351,11 @@ void Axis::run_state_machine_loop() {
 
             case AXIS_STATE_CLOSED_LOOP_CONTROL:
                 status = run_closed_loop_control_loop();
+                break;
+
+            case AXIS_STATE_STARTUP_SEQUENCE_DONE:
+                startup_sequence_done_ = true;
+                status = true;
                 break;
 
             case AXIS_STATE_IDLE:

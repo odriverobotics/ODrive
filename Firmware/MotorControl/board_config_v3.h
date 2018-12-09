@@ -23,6 +23,7 @@
 typedef struct {
     uint16_t step_gpio_pin;
     uint16_t dir_gpio_pin;
+    uint16_t en_gpio_pin;
     size_t thermistor_adc_ch;
     osPriority thread_priority;
 } AxisHardwareConfig_t;
@@ -74,6 +75,7 @@ const BoardHardwareConfig_t hw_configs[2] = { {
     .axis_config = {
         .step_gpio_pin = 1,
         .dir_gpio_pin = 2,
+        .en_gpio_pin = 5,
         .thermistor_adc_ch = 15,
         .thread_priority = (osPriority)(osPriorityHigh + (osPriority)1),
     },
@@ -109,9 +111,11 @@ const BoardHardwareConfig_t hw_configs[2] = { {
 #if HW_VERSION_MAJOR == 3 && HW_VERSION_MINOR >= 5
         .step_gpio_pin = 7,
         .dir_gpio_pin = 8,
+        .en_gpio_pin = 6,
 #else
         .step_gpio_pin = 3,
         .dir_gpio_pin = 4,
+        .en_gpio_pin = 5,
 #endif
 #if HW_VERSION_MAJOR == 3 && HW_VERSION_MINOR >= 3
         .thermistor_adc_ch = 4,

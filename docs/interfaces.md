@@ -24,13 +24,14 @@ The ODrive can be controlled over various ports and protocols. If you're comfort
 | GPIO2     | UART RX   | Axis0 Dir     | Analog input, PWM input |
 | GPIO3     |           | Axis1 Step (+)| Analog input, PWM input |
 | GPIO4     |           | Axis1 Dir (+) | Analog input, PWM input |
-| GPIO5     |           |               | Analog input (*)        |
-| GPIO6 (*) |           |               |                         |
+| GPIO5     |           | Axis0 Enable(†) | Analog input (*)      |
+| GPIO6 (*) |           | Axis1 Enable  |                         |
 | GPIO7 (*) |           | Axis1 Step (*)|                         |
 | GPIO8 (*) |           | Axis1 Dir (*) |                         |
 
 (+) on ODrive v3.4 and earlier <br>
-(*) ODrive v3.5 and later
+(*) ODrive v3.5 and later <br>
+(†) on ODrive v3.4 and earlier GPIO5 enables/disables both motors. 
 
 Notes:
 * ODrive v3.3 and onward have 5V tolerant GPIO pins.
@@ -92,7 +93,7 @@ There is an Arduino library that gives some expamples on how to use the ASCII pr
 This is the simplest possible way of controlling the ODrive. It is also the most primitive and fragile one. So don't use it unless you must interoperate with other hardware that you don't control.
 
 Pinout:
-* Step/dir signals: see [Pinout](#pinout) above. Note in that section how to reassign the pins.
+* Step/dir/en signals: see [Pinout](#pinout) above. Note in that section how to reassign the pins.
 * GND: you must connect the grounds of the devices together. Use any GND pin on J3 of the ODrive.
 
 To enable step/dir mode for the GPIO, set `<axis>.config.enable_step_dir` to true for each axis that you wish to use this on.
@@ -101,7 +102,13 @@ Axis 0 step/dir pins conflicts with UART, and the UART takes priority. So to be 
 There is also a config variable called `<axis>.config.counts_per_step`, which specifies how many encoder counts a "step" corresponds to. It can be any floating point value.
 The maximum step rate is pending tests, but it should handle at least 50kHz. If you want to test it, please be aware that the failure mode on too high step rates is expected to be that the motors shuts down and coasts.
 
-Please be aware that there is no enable line right now, and the step/direction interface is enabled by default, and remains active as long as the ODrive is in position control mode. To get the ODrive to go into position control mode at bootup, see how to configure the [startup procedure](commands.md#startup-procedure).
+The step/direction interface will count steps and move the motor whenever the drive is in closed loop control. It will not count steps otherwise: steps during idle are ignored.
+
+### Enable pin
+You may optionally use an Enable pin; set `axis.config.use_enable_pin` to True. The polarity of the enable line may be set with `axis.config.enable_pin_active_low = True/False`.
+
+When the Enable pin is asserted, the ODrive will go into closed loop control, and it will go to idle when de-asserted.
+The first time the line is asserted it will also execute the [startup procedure](commands.md#startup-procedure). Please see that section for more detail and how to configure it.
 
 ## RC PWM input
 You can control the ODrive directly from an hobby RC receiver.

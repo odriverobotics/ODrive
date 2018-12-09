@@ -213,8 +213,10 @@ bool GPIO_subscribe(GPIO_TypeDef* GPIO_port, uint16_t GPIO_pin,
   struct subscription_t* subscription = NULL;
   for (size_t i = 0; i < n_subscriptions; ++i) {
     if (subscriptions[i].GPIO_port == GPIO_port &&
-        subscriptions[i].GPIO_pin == GPIO_pin)
+        subscriptions[i].GPIO_pin == GPIO_pin) {
       subscription = &subscriptions[i];
+      break;
+    }
   }
   if (!subscription) {
     if (n_subscriptions >= MAX_SUBSCRIPTIONS)

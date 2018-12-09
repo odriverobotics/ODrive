@@ -33,10 +33,12 @@ public:
         AXIS_STATE_SENSORLESS_CONTROL = 5,  //<! run sensorless control
         AXIS_STATE_ENCODER_INDEX_SEARCH = 6, //<! run encoder index search
         AXIS_STATE_ENCODER_OFFSET_CALIBRATION = 7, //<! run encoder offset calibration
-        AXIS_STATE_CLOSED_LOOP_CONTROL = 8  //<! run closed loop control
+        AXIS_STATE_CLOSED_LOOP_CONTROL = 8,  //<! run closed loop control
+        AXIS_STATE_STARTUP_SEQUENCE_DONE = 9,  //<! run closed loop control
     };
 
     struct Config_t {
+        bool startup_sequence_on_boot = false;   //<! run startup sequence on boot, run when asserting EN line otherwise
         bool startup_motor_calibration = false;   //<! run motor calibration at startup, skip otherwise
         bool startup_encoder_index_search = false; //<! run encoder index search after startup, skip otherwise
                                                 // this only has an effect if encoder.config.use_index is also true
@@ -45,11 +47,14 @@ public:
         bool startup_sensorless_control = false; //<! enable sensorless control after calibration/startup
         bool enable_step_dir = false; //<! enable step/dir input after calibration
                                     //   For M0 this has no effect if enable_uart is true
+        bool use_enable_pin = false;
+        bool enable_pin_active_low = true;
         float counts_per_step = 2.0f;
 
         // Defaults loaded from hw_config in load_configuration in main.cpp
         uint16_t step_gpio_pin = 0;
         uint16_t dir_gpio_pin = 0;
+        uint16_t en_gpio_pin = 0;
 
         // Spinup settings
         float ramp_up_time = 0.4f;            // [s]
@@ -81,6 +86,8 @@ public:
     void decode_step_dir_pins();
     static void load_default_step_dir_pin_config(
         const AxisHardwareConfig_t& hw_config, Config_t* config);
+    void enable_pin_cb();
+    void use_enable_pin_update();
 
     bool check_DRV_fault();
     bool check_PSU_brownout();
@@ -121,7 +128,7 @@ public:
             bool checks_ok = do_checks();
             // Update all estimators
             // Note: updates run even if checks fail
-            bool updates_ok = do_updates(); 
+            bool updates_ok = do_updates();
             
             if (!checks_ok || !updates_ok) {
                 // It's not useful to quit idle since that is the safe action
@@ -157,6 +164,7 @@ public:
     bool run_closed_loop_control_loop();
     bool run_idle_loop();
 
+    bool is_state_allowed(State_t query);
     void run_state_machine_loop();
 
     const AxisHardwareConfig_t& hw_config_;
@@ -180,10 +188,13 @@ public:
     uint16_t step_pin_;
     GPIO_TypeDef* dir_port_;
     uint16_t dir_pin_;
+    GPIO_TypeDef* en_port_;
+    uint16_t en_pin_;
 
-    State_t requested_state_ = AXIS_STATE_STARTUP_SEQUENCE;
+    State_t requested_state_ = AXIS_STATE_IDLE;
     State_t task_chain_[10] = { AXIS_STATE_UNDEFINED };
     State_t& current_state_ = task_chain_[0];
+    bool startup_sequence_done_ = false;
     uint32_t loop_counter_ = 0;
 
     // Communication protocol definitions
@@ -195,17 +206,27 @@ public:
             make_protocol_property("requested_state", &requested_state_),
             make_protocol_ro_property("loop_counter", &loop_counter_),
             make_protocol_object("config",
+                make_protocol_property("startup_sequence_on_boot", &config_.startup_sequence_on_boot),
                 make_protocol_property("startup_motor_calibration", &config_.startup_motor_calibration),
                 make_protocol_property("startup_encoder_index_search", &config_.startup_encoder_index_search),
                 make_protocol_property("startup_encoder_offset_calibration", &config_.startup_encoder_offset_calibration),
                 make_protocol_property("startup_closed_loop_control", &config_.startup_closed_loop_control),
                 make_protocol_property("startup_sensorless_control", &config_.startup_sensorless_control),
                 make_protocol_property("enable_step_dir", &config_.enable_step_dir),
+                make_protocol_property("use_enable_pin", &config_.use_enable_pin,
+                    [](void* ctx) { static_cast<Axis*>(ctx)->use_enable_pin_update(); }, this),
+                make_protocol_property("enable_pin_active_low", &config_.enable_pin_active_low,
+                    [](void* ctx) { static_cast<Axis*>(ctx)->use_enable_pin_update(); }, this),
                 make_protocol_property("counts_per_step", &config_.counts_per_step),
                 make_protocol_property("step_gpio_pin", &config_.step_gpio_pin,
                     [](void* ctx) { static_cast<Axis*>(ctx)->decode_step_dir_pins(); }, this),
                 make_protocol_property("dir_gpio_pin", &config_.dir_gpio_pin,
                     [](void* ctx) { static_cast<Axis*>(ctx)->decode_step_dir_pins(); }, this),
+                make_protocol_property("en_gpio_pin", &config_.en_gpio_pin,
+                    [](void* ctx) {
+                        static_cast<Axis*>(ctx)->decode_step_dir_pins();
+                        static_cast<Axis*>(ctx)->use_enable_pin_update();
+                    }, this),
                 make_protocol_property("ramp_up_time", &config_.ramp_up_time),
                 make_protocol_property("ramp_up_distance", &config_.ramp_up_distance),
                 make_protocol_property("spin_up_current", &config_.spin_up_current),
