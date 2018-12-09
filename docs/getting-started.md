@@ -40,7 +40,7 @@ permalink: /
 
   </div></details>
 
-* A power supply (12V-24V for the 24V board variant, 12V-48V for the 48V board variant). A battery is also fine.
+* A power supply (12V-24V for the 24V board variant, 12V-48V for the 48V board variant). A battery is also fine. Some advice on choosing a power supply can be found [here](https://things-in-motion.blogspot.com/2018/12/how-to-select-right-power-source-for.html).
   <details><summary markdown="span">What voltage variant do I have?</summary><div markdown="block">
   On all ODrives shipped July 2018 or after have a silkscreen label clearly indicating the voltage variant.
 
