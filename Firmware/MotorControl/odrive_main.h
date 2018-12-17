@@ -60,11 +60,18 @@ extern SystemStats_t system_stats_;
 #ifdef __cplusplus
 }
 
+enum PwmType_t {
+    PWM_TYPE_RC = 0,
+    PWM_TYPE_DUTY_CYCLE = 1,
+};
+
 struct PWMMapping_t {
+    PwmType_t pwm_type = PWM_TYPE_RC;
     endpoint_ref_t endpoint = { 0 };
     float min = 0;
     float max = 0;
     bool enable_deadband = true;
+    int32_t gpio_direction_pin = 0;
 };
 
 struct DiffSteeringMixerMapping_t {
@@ -125,6 +132,7 @@ inline ENUMTYPE operator ~ (ENUMTYPE a) { return static_cast<ENUMTYPE>(~static_c
 // ODrive specific includes
 #include <utils.h>
 #include <low_level.h>
+#include <pwm_input.h>
 #include <encoder.hpp>
 #include <sensorless_estimator.hpp>
 #include <controller.hpp>
