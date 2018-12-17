@@ -214,6 +214,8 @@ int odrive_main(void) {
         axes[i]->start_thread();
     }
 
+    start_analog_thread();
+
     system_stats_.fully_booted = true;
     return 0;
 }
