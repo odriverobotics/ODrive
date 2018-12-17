@@ -734,7 +734,7 @@ static void analog_polling_thread(void *)
             if (is_endpoint_ref_valid(map->endpoint))
                 update_analog_endpoint(map, i + 1);
         }
-        osDelay(200);
+        osDelay(10);
     }
 }
 
