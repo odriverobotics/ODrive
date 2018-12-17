@@ -37,6 +37,7 @@ public:
         float offset_float = 0.0f; // Sub-count phase alignment offset
         float calib_range = 0.02f;
         float bandwidth = 1000.0f;
+        bool ignore_illegal_hall_state = false;
     };
 
     Encoder(const EncoderHardwareConfig_t& hw_config,
@@ -106,7 +107,8 @@ public:
                 make_protocol_property("offset_float", &config_.offset_float),
                 make_protocol_property("bandwidth", &config_.bandwidth,
                     [](void* ctx) { static_cast<Encoder*>(ctx)->update_pll_gains(); }, this),
-                make_protocol_property("calib_range", &config_.calib_range)
+                make_protocol_property("calib_range", &config_.calib_range),
+                make_protocol_property("ignore_illegal_hall_state", &config_.ignore_illegal_hall_state)
             )
         );
     }
