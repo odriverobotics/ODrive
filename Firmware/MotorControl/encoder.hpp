@@ -27,7 +27,7 @@ public:
     struct Config_t {
         Encoder::Mode_t mode = Encoder::MODE_INCREMENTAL;
         bool use_index = false;
-        int32_t pwm_pin = 0;    // GPIO pin of the absolue PWM signal, must be 4 or 5
+        int32_t pwm_pin = 0;    // GPIO pin of the absolute PWM signal, must be 3 or 4
         bool pre_calibrated = false; // If true, this means the offset stored in
                                     // configuration is valid and does not need
                                     // be determined by run_offset_calibration.
