@@ -40,6 +40,7 @@ public:
         float offset_float = 0.0f; // Sub-count phase alignment offset
         float calib_range = 0.02f;
         float bandwidth = 1000.0f;
+        int32_t offset_abs = 0; // Offset for absolute position and some mechanical zero
     };
 
     Encoder(const EncoderHardwareConfig_t& hw_config,
@@ -112,6 +113,7 @@ public:
                 make_protocol_property("zero_count_on_find_idx", &config_.zero_count_on_find_idx),
                 make_protocol_property("cpr", &config_.cpr),
                 make_protocol_property("offset", &config_.offset),
+                make_protocol_property("offset_abs", &config_.offset_abs),
                 make_protocol_property("offset_float", &config_.offset_float),
                 make_protocol_property("bandwidth", &config_.bandwidth,
                     [](void* ctx) { static_cast<Encoder*>(ctx)->update_pll_gains(); }, this),

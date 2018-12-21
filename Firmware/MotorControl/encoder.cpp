@@ -58,7 +58,7 @@ void Encoder::enc_index_cb() {
     }
 }
 // This function is called by the tim5 interrupt callback if config_pwm pin is set
-// This is currently hardcoded for AS5074P PWM output
+// This is currently hardcoded for AS5074P PWM output at 4096CPR
 void Encoder::enc_pwm_cb(uint32_t rise_time, uint32_t fall_time){
     static uint32_t prev_rise_time = 0;
 
@@ -70,6 +70,11 @@ void Encoder::enc_pwm_cb(uint32_t rise_time, uint32_t fall_time){
     pos_abs_ = ((fall_time - rise_time) * 4119)/period_;
     // The 12 PWM Clocks for INIT, 4 PWM Clocks for Error detection
     pos_abs_ -= 16;
+    // Take off the offset
+    pos_abs_ -= config_.offset_abs;
+    // Handle the wrap
+    if (pos_abs_ < 0) pos_abs_ += 4096;
+
     pwm_updated_ = true;
 }
 
