@@ -81,6 +81,7 @@ def launch_shell(args,
     # If IPython is installed, embed IPython shell, otherwise embed regular shell
     if use_ipython:
         help = lambda: print_help(args, len(discovered_devices) > 0) # Override help function # pylint: disable=W0612
+        locals()['__name__'] = globals()['__name__'] # to fix broken "%run -i script.py"
         console = IPython.terminal.embed.InteractiveShellEmbed(banner1='')
         console.runcode = console.run_code # hack to make IPython look like the regular console
         interact = console

@@ -8,15 +8,17 @@ Each step is acompanied by some explanation so hopefully you can carry over some
 ### Hoverboard motor wiring
 Hoverboard motors come with three motor phases (usually colored yellow, blue, green) which are thicker, and a set of 5 thinner wires for the hall sensor feedback (usually colored red, yellow, blue, green, black).
 
-You may wire the motor phases in any order into a motor connector on the ODrive, as we will calibrate the phase alignment later anyway. Wire the hall feedback into the ODrive J2 conenctor (make sure that the motor channel number matches) as follows:
+You may wire the motor phases in any order into a motor connector on the ODrive, as we will calibrate the phase alignment later anyway. Wire the hall feedback into the ODrive J4 conenctor (make sure that the motor channel number matches) as follows:
 
-| Hall wire | J2 signal |
+| Hall wire | J4 signal |
 |-----------|-----------|
 | Red       | 5V        |
 | Yellow    | A         |
 | Blue      | B         |
 | Green     | Z         |
 | Black     | GND       |
+
+Note: In order to ber compatible with encoder inputs, the ODrive doesn't have any filtering capacitors on the pins where the hall sensors connect. Therefore to get a reliable hall signal, it is recommended that you add some filter capacitors to these pins. You can see instructions [here](https://discourse.odriverobotics.com/t/encoder-error-error-illegal-hall-state/1047/7?u=madcowswe).
 
 
 ### Hoverboard motor configuration

@@ -73,7 +73,8 @@ void Motor::DRV8301_setup() {
     // Solve for exact gain, then snap down to have equal or larger range as requested
     // or largest possible range otherwise
     static const float kMargin = 0.90f;
-    static const float max_output_swing = 1.6f; // [V] out of amplifier
+    static const float kTripMargin = 1.0f; // Trip level is at edge of linear range of amplifer
+    static const float max_output_swing = 1.35f; // [V] out of amplifier
     float max_unity_gain_current = kMargin * max_output_swing * hw_config_.shunt_conductance; // [A]
     float requested_gain = max_unity_gain_current / config_.requested_current_range; // [V/V]
 
@@ -99,6 +100,8 @@ void Motor::DRV8301_setup() {
     phase_current_rev_gain_ = 1.0f / gain_snap_down->first;
     // Clip all current control to actual usable range
     current_control_.max_allowed_current = max_unity_gain_current * phase_current_rev_gain_;
+    // Set trip level
+    current_control_.overcurrent_trip_level = (kTripMargin / kMargin) * current_control_.max_allowed_current;
 
     // We now have the gain settings we want to use, lets set up DRV chip
     DRV_SPI_8301_Vars_t* local_regs = &gate_driver_regs_;
@@ -136,6 +139,8 @@ bool Motor::check_DRV_fault() {
 void Motor::set_error(Motor::Error_t error){
     error_ |= error;
     axis_->error_ |= Axis::ERROR_MOTOR_FAILED;
+    safety_critical_disarm_motor_pwm(*this);
+    update_brake_current();
 }
 
 bool Motor::do_checks() {
@@ -147,13 +152,8 @@ bool Motor::do_checks() {
 }
 
 void Motor::log_timing(TimingLog_t log_idx) {
-    TIM_HandleTypeDef* htim = hw_config_.timer;
-    uint16_t timing = htim->Instance->CNT;
-    bool down = htim->Instance->CR1 & TIM_CR1_DIR;
-    if (down) {
-        uint16_t delta = TIM_1_8_PERIOD_CLOCKS - timing;
-        timing = TIM_1_8_PERIOD_CLOCKS + delta;
-    }
+    static const uint16_t clocks_per_cnt = (uint16_t)((float)TIM_1_8_CLOCK_HZ / (float)TIM_APB1_CLOCK_HZ);
+    uint16_t timing = clocks_per_cnt * htim13.Instance->CNT; // TODO: Use a hw_config
 
     if (log_idx < TIMING_LOG_NUM_SLOTS) {
         timing_log_[log_idx] = timing;
@@ -298,6 +298,12 @@ bool Motor::FOC_current(float Id_des, float Iq_des, float phase) {
 
     // For Reporting
     ictrl.Iq_setpoint = Iq_des;
+
+    // Check for current sense saturation
+    if (fabsf(current_meas_.phB) > ictrl.overcurrent_trip_level
+     || fabsf(current_meas_.phC) > ictrl.overcurrent_trip_level) {
+        set_error(ERROR_CURRENT_SENSE_SATURATION);
+    }
 
     // Clarke transform
     float Ialpha = -current_meas_.phB - current_meas_.phC;

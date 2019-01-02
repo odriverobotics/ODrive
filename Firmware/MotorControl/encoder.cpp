@@ -24,7 +24,7 @@ void Encoder::setup() {
             enc_index_cb_wrapper, this);
 }
 
-void Encoder::set_error(Encoder::Error_t error) {
+void Encoder::set_error(Error_t error) {
     error_ |= error;
     axis_->error_ |= Axis::ERROR_ENCODER_FAILED;
 }
@@ -44,7 +44,8 @@ bool Encoder::do_checks(){
 void Encoder::enc_index_cb() {
     if (config_.use_index && !index_found_) {
         set_circular_count(0, false);
-        set_linear_count(0); // Avoid position control transient after search
+        if (config_.zero_count_on_find_idx)
+            set_linear_count(0); // Avoid position control transient after search
         if (config_.pre_calibrated) {
             is_ready_ = true;
         } else {
@@ -60,8 +61,7 @@ void Encoder::enc_index_cb() {
 // Function that sets the current encoder count to a desired 32-bit value.
 void Encoder::set_linear_count(int32_t count) {
     // Disable interrupts to make a critical section to avoid race condition
-    uint32_t prim = __get_PRIMASK();
-    __disable_irq();
+    uint32_t prim = cpu_enter_critical();
 
     // Update states
     shadow_count_ = count;
@@ -69,15 +69,14 @@ void Encoder::set_linear_count(int32_t count) {
     //Write hardware last
     hw_config_.timer->Instance->CNT = count;
 
-    __set_PRIMASK(prim);
+    cpu_exit_critical(prim);
 }
 
 // Function that sets the CPR circular tracking encoder count to a desired 32-bit value.
 // Note that this will get mod'ed down to [0, cpr)
 void Encoder::set_circular_count(int32_t count, bool update_offset) {
     // Disable interrupts to make a critical section to avoid race condition
-    uint32_t prim = __get_PRIMASK();
-    __disable_irq();
+    uint32_t prim = cpu_enter_critical();
 
     if (update_offset) {
         config_.offset += count - count_in_cpr_;
@@ -88,7 +87,7 @@ void Encoder::set_circular_count(int32_t count, bool update_offset) {
     count_in_cpr_ = mod(count, config_.cpr);
     pos_cpr_ = (float)count_in_cpr_;
 
-    __set_PRIMASK(prim);
+    cpu_exit_critical(prim);
 }
 
 
