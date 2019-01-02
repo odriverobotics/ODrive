@@ -126,18 +126,18 @@ int odrive_main(void) {
         GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
         GPIO_InitStruct.Pull = GPIO_PULLUP;
 
-        GPIO_InitStruct.Pin = I2C_A0_PIN;
-        HAL_GPIO_Init(I2C_A0_PORT, &GPIO_InitStruct);
-        GPIO_InitStruct.Pin = I2C_A1_PIN;
-        HAL_GPIO_Init(I2C_A1_PORT, &GPIO_InitStruct);
-        GPIO_InitStruct.Pin = I2C_A2_PIN;
-        HAL_GPIO_Init(I2C_A2_PORT, &GPIO_InitStruct);
+        GPIO_InitStruct.Pin = HAL_I2C_A0_PIN;
+        HAL_GPIO_Init(HAL_I2C_A0_PORT, &GPIO_InitStruct);
+        GPIO_InitStruct.Pin = HAL_I2C_A1_PIN;
+        HAL_GPIO_Init(HAL_I2C_A1_PORT, &GPIO_InitStruct);
+        GPIO_InitStruct.Pin = HAL_I2C_A2_PIN;
+        HAL_GPIO_Init(HAL_I2C_A2_PORT, &GPIO_InitStruct);
 
         osDelay(1);
         i2c_stats_.addr = (0xD << 3);
-        i2c_stats_.addr |= HAL_GPIO_ReadPin(I2C_A0_PORT, I2C_A0_PIN) != GPIO_PIN_RESET ? 0x1 : 0;
-        i2c_stats_.addr |= HAL_GPIO_ReadPin(I2C_A1_PORT, I2C_A1_PIN) != GPIO_PIN_RESET ? 0x2 : 0;
-        i2c_stats_.addr |= HAL_GPIO_ReadPin(I2C_A2_PORT, I2C_A2_PIN) != GPIO_PIN_RESET ? 0x4 : 0;
+        i2c_stats_.addr |= HAL_GPIO_ReadPin(HAL_I2C_A0_PORT, HAL_I2C_A0_PIN) != GPIO_PIN_RESET ? 0x1 : 0;
+        i2c_stats_.addr |= HAL_GPIO_ReadPin(HAL_I2C_A1_PORT, HAL_I2C_A1_PIN) != GPIO_PIN_RESET ? 0x2 : 0;
+        i2c_stats_.addr |= HAL_GPIO_ReadPin(HAL_I2C_A2_PORT, HAL_I2C_A2_PIN) != GPIO_PIN_RESET ? 0x4 : 0;
         MX_I2C1_Init(i2c_stats_.addr);
     } else
 #endif

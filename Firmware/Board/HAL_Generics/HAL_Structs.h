@@ -1,7 +1,6 @@
-#ifndef BOARD_CONFIG_H
-#define BOARD_CONFIG_H
 
-
+#ifndef _HAL_STRUCTS_H
+#define _HAL_STRUCTS_H
 typedef struct {
     uint16_t step_gpio_pin;
     uint16_t dir_gpio_pin;
@@ -48,12 +47,4 @@ extern const BoardHardwareConfig_t hw_configs[2];
 extern const float thermistor_poly_coeffs[];
 extern const size_t thermistor_num_coeffs;
 
-
-#if HW_VERSION_MAJOR == 3
-#include "v3/board_config_v3.h"
-#else
-#error "unknown board version"
-#endif
-
-
-#endif //BOARD_CONFIG_H
+#endif //_HAL_STRUCTS_H

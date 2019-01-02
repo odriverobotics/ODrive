@@ -1,38 +1,30 @@
-/*
-* @brief Contains board specific configuration for ODrive v3.x
-*/
+#ifndef BOARD_CONFIG_H
+#define BOARD_CONFIG_H
 
-#ifndef __BOARD_CONFIG_H_V3
-#define __BOARD_CONFIG_H_V3
 
-// STM specific includes
-#include <gpio.h>
-#include <spi.h>
-#include <tim.h>
-#include <main.h>
+#include "HAL_Generics/HAL_Structs.h"
+
+
+
+
 
 #if HW_VERSION_MAJOR == 3
-#if HW_VERSION_MINOR <= 3
-#define SHUNT_RESISTANCE (675e-6f)
+#include "Board/v3/HAL_Board_V3.x.h"
 #else
-#define SHUNT_RESISTANCE (500e-6f)
+#error "unknown board version"
 #endif
-#endif
-
-
 
 //TODO stick this in a C file
 #ifdef __MAIN_CPP__
-const float thermistor_poly_coeffs[] =
-    {363.93910201f, -462.15369634f, 307.55129571f, -27.72569531f};
+const float thermistor_poly_coeffs[] = THERMISTOR_POLY_COEFFS;
 const size_t thermistor_num_coeffs = sizeof(thermistor_poly_coeffs)/sizeof(thermistor_poly_coeffs[1]);
 
-const BoardHardwareConfig_t hw_configs[2] = { {
+const BoardHardwareConfig_t hw_configs[HAL_NUMBER_OF_MOTORS] = { {
     //M0
     .axis_config = {
-        .step_gpio_pin = 1,
-        .dir_gpio_pin = 2,
-        .thermistor_adc_ch = 15,
+        .step_gpio_pin = M0_AXIS_STEP_PIN,
+        .dir_gpio_pin = M0_AXIS_DIR_PIN,
+        .thermistor_adc_ch = M0_THERMISTOR_ADC_CHANNEL,
         .thread_priority = (osPriority)(osPriorityHigh + (osPriority)1),
     },
     .encoder_config = {
@@ -64,18 +56,9 @@ const BoardHardwareConfig_t hw_configs[2] = { {
 },{
     //M1
     .axis_config = {
-#if HW_VERSION_MAJOR == 3 && HW_VERSION_MINOR >= 5
-        .step_gpio_pin = 7,
-        .dir_gpio_pin = 8,
-#else
-        .step_gpio_pin = 3,
-        .dir_gpio_pin = 4,
-#endif
-#if HW_VERSION_MAJOR == 3 && HW_VERSION_MINOR >= 3
-        .thermistor_adc_ch = 4,
-#else
-        .thermistor_adc_ch = 1,
-#endif
+        .step_gpio_pin = M1_AXIS_STEP_PIN,
+        .dir_gpio_pin = M1_AXIS_DIR_PIN,
+        .thermistor_adc_ch = M1_THERMISTOR_ADC_CHANNEL,
         .thread_priority = osPriorityHigh,
     },
     .encoder_config = {
@@ -107,13 +90,4 @@ const BoardHardwareConfig_t hw_configs[2] = { {
 } };
 #endif
 
-
-
-#define I2C_A0_PORT GPIO_3_GPIO_Port
-#define I2C_A0_PIN GPIO_3_Pin
-#define I2C_A1_PORT GPIO_4_GPIO_Port
-#define I2C_A1_PIN GPIO_4_Pin
-#define I2C_A2_PORT GPIO_5_GPIO_Port
-#define I2C_A2_PIN GPIO_5_Pin
-
-#endif // __BOARD_CONFIG_H_V3
+#endif //BOARD_CONFIG_H
