@@ -30,6 +30,7 @@ public:
         INPUT_MODE_VEL_RAMP,
         INPUT_MODE_POS_FILTER,
         INPUT_MODE_MIX_CHANNELS,
+        INPUT_MODE_TRAP_TRAJ,
     };
 
     struct Config_t {
