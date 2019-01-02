@@ -80,6 +80,11 @@ public:
     // - use python tools to Fourier transform and write back the smoothed map or Fourier coefficients
     // - make the calibration persistent
 
+    enum AnticoggingState_t {
+      ANTICOG_STATE_FWD,
+      ANTICOG_STATE_REV  
+    };
+
     typedef struct {
         int index;
         float *cogging_map;
@@ -87,6 +92,7 @@ public:
         bool calib_anticogging;
         float calib_pos_threshold;
         float calib_vel_threshold;
+        AnticoggingState_t state;
     } Anticogging_t;
     Anticogging_t anticogging_ = {
         .index = 0,
@@ -95,6 +101,7 @@ public:
         .calib_anticogging = false,
         .calib_pos_threshold = 1.0f,
         .calib_vel_threshold = 1.0f,
+        .state = ANTICOG_STATE_FWD,
     };
 
     Error_t error_ = ERROR_NONE;

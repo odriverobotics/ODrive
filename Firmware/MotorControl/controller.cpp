@@ -89,19 +89,41 @@ bool Controller::home_axis() {
 bool Controller::anticogging_calibration(float pos_estimate, float vel_estimate) {
     if (anticogging_.calib_anticogging && anticogging_.cogging_map != NULL) {
         float pos_err = anticogging_.index - pos_estimate;
-        if (fabsf(pos_err) <= anticogging_.calib_pos_threshold &&
-            fabsf(vel_estimate) < anticogging_.calib_vel_threshold) {
-            anticogging_.cogging_map[anticogging_.index++] = vel_integrator_current_;
-        }
-        if (anticogging_.index < axis_->encoder_.config_.cpr) { // TODO: remove the dependency on encoder CPR
-            set_pos_setpoint(anticogging_.index, 0.0f, 0.0f);
-            return false;
-        } else {
-            anticogging_.index = 0;
-            set_pos_setpoint(0.0f, 0.0f, 0.0f);  // Send the motor home
-            anticogging_.use_anticogging = true;  // We're good to go, enable anti-cogging
-            anticogging_.calib_anticogging = false;
-            return true;
+        switch (anticogging_.state) {
+            case ANTICOG_STATE_FWD:
+                if (std::abs(pos_err) <= anticogging_.calib_pos_threshold &&
+                    std::abs(vel_estimate) < anticogging_.calib_vel_threshold) {
+                    anticogging_.cogging_map[anticogging_.index++] = vel_integrator_current_;
+                }
+                if (anticogging_.index < axis_->encoder_.config_.cpr) {  // TODO: remove the dependency on encoder CPR
+                    set_pos_setpoint(anticogging_.index, 0.0f, 0.0f);
+                    return false;
+                } else {
+                    anticogging_.state = ANTICOG_STATE_REV;
+                    anticogging_.index = axis_->encoder_.config_.cpr - 1; // Go to last position
+                    set_pos_setpoint(anticogging_.index, 0.0f, 0.0f);
+                    return false;
+                }
+                break;
+
+            case ANTICOG_STATE_REV:
+                if (std::abs(pos_err) <= anticogging_.calib_pos_threshold &&
+                    std::abs(vel_estimate) < anticogging_.calib_vel_threshold) {
+                    anticogging_.cogging_map[anticogging_.index] += vel_integrator_current_;
+                    anticogging_.cogging_map[anticogging_.index--] /= 2.0f;
+                }
+                if (anticogging_.index >= 0) {  // TODO: remove the dependency on encoder CPR
+                    set_pos_setpoint(anticogging_.index, 0.0f, 0.0f);
+                    return false;
+                } else {
+                    anticogging_.state = ANTICOG_STATE_FWD;
+                    anticogging_.index = 0;
+                    set_pos_setpoint(0.0f, 0.0f, 0.0f);   // Send the motor home
+                    anticogging_.use_anticogging = true;  // We're good to go, enable anti-cogging
+                    anticogging_.calib_anticogging = false;
+                    return true;
+                }
+                break;
         }
     }
     return false;
