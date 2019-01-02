@@ -133,13 +133,6 @@ public:
                 make_protocol_property("input_filter_bandwidth", &config_.input_filter_bandwidth,
                     [](void* ctx) { static_cast<Controller*>(ctx)->update_filter_gains(); }, this)
             ),
-            make_protocol_function("set_pos_setpoint", *this, &Controller::set_pos_setpoint,
-                "pos_setpoint", "vel_feed_forward", "current_feed_forward"),
-            make_protocol_function("set_vel_setpoint", *this, &Controller::set_vel_setpoint,
-                "vel_setpoint", "current_feed_forward"),
-            make_protocol_function("set_current_setpoint", *this, &Controller::set_current_setpoint,
-                "current_setpoint"),
-            make_protocol_function("move_to_pos", *this, &Controller::move_to_pos, "goal_point"),
             make_protocol_function("start_anticogging_calibration", *this, &Controller::start_anticogging_calibration)
         );
     }
