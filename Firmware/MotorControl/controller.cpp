@@ -159,7 +159,7 @@ bool Controller::update(float pos_estimate, float vel_estimate, float* current_s
                 step = full_step;
             }
             vel_setpoint_ += step;
-            current_setpoint_ = step / current_meas_period * config_.inertia;
+            current_setpoint_ = (step / current_meas_period) * config_.inertia;
         } break;
         case INPUT_MODE_POS_FILTER: {
             // 2nd order pos tracking filter
