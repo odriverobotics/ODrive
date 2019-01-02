@@ -7,19 +7,7 @@ permalink: /
 # Getting Started
 
 ### Table of contents
-<!-- TOC depthFrom:2 depthTo:2 -->
-
-- [Hardware Requirements](#hardware-requirements)
-- [Wiring up the ODrive](#wiring-up-the-odrive)
-- [Downloading and Installing Tools](#downloading-and-installing-tools)
-- [Firmware](#firmware)
-- [Start `odrivetool`](#start-odrivetool)
-- [Configure M0](#configure-m0)
-- [Position control of M0](#position-control-of-m0)
-- [Other control modes](#other-control-modes)
-- [What's next?](#whats-next)
-
-<!-- /TOC -->
+<!-- TOC depthFrom:2 depthTo:2 -->autoauto- [Hardware Requirements](#hardware-requirements)auto- [Wiring up the ODrive](#wiring-up-the-odrive)auto- [Downloading and Installing Tools](#downloading-and-installing-tools)auto- [Firmware](#firmware)auto- [Start `odrivetool`](#start-odrivetool)auto- [Configure M0](#configure-m0)auto- [Position control of M0](#position-control-of-m0)auto- [Other control modes](#other-control-modes)auto- [What's next?](#whats-next)autoauto<!-- /TOC -->
 
 ## Hardware Requirements
 
@@ -247,12 +235,24 @@ The default control mode is unfiltered position control in the absolute encoder 
 You may also wish to control velocity (directly or with a ramping filter).
 You can also directly control the current of the motor, which is proportional to torque.
 
+- [Filtered position control](#filtered-position-control)
 - [Trajectory control](#trajectory-control)
 - [Circular position control](#circular-position-control)
 - [Velocity control](#velocity-control)
 - [Ramped velocity control](#ramped-velocity-control)
 - [Current control](#current-control)
 
+
+### Filtered position control
+Asking the ODrive controller to go as hard as it can to raw setpoints may result in jerky movement. Even if you are using a planned trajectory generated from an external source, if that is sent at a modest frequency, the ODrive may chase each stair in the incoming staircase in a jerky way. In this case, a good starting point for tuning the filter bandwidth is to set it to one half of your setpoint command rate.
+
+You can use the second order position filter in these cases.
+Set the filter bandwidth: `axis.controller.config.input_filter_bandwidth = 2.0` [1/s]<br>
+Activate the setpoint filter: `axis.controller.config.input_mode = INPUT_MODE_POS_FILTER`.<br>
+You can now control the velocity with `axis.controller.input_pos = 1000` [counts].
+
+![secondOrderResponse](secondOrderResponse.PNG)<br>
+Step response of a 1000 to 0 position input with a filter bandwidth of 1.0 [/sec].
 
 ### Trajectory control
 This mode lets you smoothly accelerate, coast, and decelerate the axis from one position to another. With raw position control, the controller simply tries to go to the setpoint as quickly as possible. Using a trajectory lets you tune the feedback gains more aggressively to reject disturbance, while keeping smooth motion.
@@ -265,13 +265,13 @@ In the above image blue is position and orange is velocity.
 <odrv>.<axis>.trap_traj.config.vel_limit = <Float>
 <odrv>.<axis>.trap_traj.config.accel_limit = <Float>
 <odrv>.<axis>.trap_traj.config.decel_limit = <Float>
-<odrv>.<axis>.trap_traj.config.A_per_css = <Float>
+<odrv>.<axis>.controller.config.inertia = <Float>
 ```
 
 `vel_limit` is the maximum planned trajectory speed.  This sets your coasting speed.<br>
 `accel_limit` is the maximum acceleration in counts / sec^2<br>
 `decel_limit` is the maximum deceleration in counts / sec^2<br>
-`A_per_css` is a value which correlates acceleration (in counts / sec^2) and motor current. It is 0 by default. It is optional, but can improve response of your system if correctly tuned. Keep in mind this will need to change with the load / mass of your system.
+`controller.config.inertia` is a value which correlates acceleration (in counts / sec^2) and motor current. It is 0 by default. It is optional, but can improve response of your system if correctly tuned. Keep in mind this will need to change with the load / mass of your system.
 
 All values should be strictly positive (>= 0).
 
@@ -303,8 +303,8 @@ You can now control the velocity with `axis.controller.vel_setpoint = 5000` [cou
 ### Ramped velocity control
 Set `axis.controller.config.control_mode = CTRL_MODE_VELOCITY_CONTROL`.<br>
 Set the velocity ramp rate (acceleration): `axis.controller.config.vel_ramp_rate = 2000` [counts/s^2]<br>
-Activate the ramped velocity mode: `axis.controller.vel_ramp_enable = True`.<br>
-You can now control the velocity with `axis.controller.vel_ramp_target = 5000` [count/s].
+Activate the ramped velocity mode: `axis.controller.config.input_mode = INPUT_MODE_VEL_RAMP`.<br>
+You can now control the velocity with `axis.controller.input_vel = 5000` [count/s].
 
 ### Current control
 Set `axis.controller.config.control_mode = CTRL_MODE_CURRENT_CONTROL`.<br>

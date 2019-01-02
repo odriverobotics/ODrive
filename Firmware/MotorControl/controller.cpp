@@ -4,7 +4,9 @@
 
 Controller::Controller(Config_t& config) :
     config_(config)
-{}
+{
+    update_filter_gains();
+}
 
 void Controller::reset() {
     pos_setpoint_ = 0.0f;
@@ -105,10 +107,55 @@ bool Controller::anticogging_calibration(float pos_estimate, float vel_estimate)
     return false;
 }
 
+void Controller::update_filter_gains() {
+    input_filter_ki_ = 2.0f * config_.input_filter_bandwidth;  // basic conversion to discrete time
+    input_filter_kp_ = 0.25f * (input_filter_ki_ * input_filter_ki_); // Critically damped
+}
+
 bool Controller::update(float pos_estimate, float vel_estimate, float* current_setpoint_output) {
     // Only runs if anticogging_.calib_anticogging is true; non-blocking
     anticogging_calibration(pos_estimate, vel_estimate);
     float anticogging_pos = pos_estimate;
+
+    // Update inputs
+    switch (config_.input_mode) {
+        case INPUT_MODE_INACTIVE: {
+            // do nothing
+        } break;
+        case INPUT_MODE_PASSTHROUGH: {
+            pos_setpoint_ = input_pos_;
+            vel_setpoint_ = input_vel_;
+            current_setpoint_ = input_current_;
+        } break;
+        case INPUT_MODE_VEL_RAMP: {
+            float max_step_size = current_meas_period * config_.vel_ramp_rate;
+            float full_step = input_vel_ - vel_setpoint_;
+            float step;
+            if (fabsf(full_step) > max_step_size) {
+                step = std::copysignf(max_step_size, full_step);
+            } else {
+                step = full_step;
+            }
+            vel_setpoint_ += step;
+            current_setpoint_ = step / current_meas_period * config_.inertia;
+        } break;
+        case INPUT_MODE_POS_FILTER: {
+            // 2nd order pos tracking filter
+            pos_setpoint_ += current_meas_period * vel_setpoint_; // Delta pos
+            float delta_pos = input_pos_ - pos_setpoint_; // Pos error
+            float delta_vel = input_vel_ - vel_setpoint_; // Vel error
+            float accel = input_filter_kp_*delta_pos + input_filter_ki_*delta_vel; // Feedback
+            vel_setpoint_ += current_meas_period * accel; // delta vel
+            current_setpoint_ = accel * config_.inertia; // Accel
+        } break;
+        // case INPUT_MODE_MIX_CHANNELS: {
+        //     // NOT YET IMPLEMENTED
+        // } break;
+        default: {
+            set_error(ERROR_INVALID_INPUT_MODE);
+            return false;
+        }
+    }
 
     // Trajectory control
     if (config_.control_mode == CTRL_MODE_TRAJECTORY_CONTROL) {
@@ -125,22 +172,9 @@ bool Controller::update(float pos_estimate, float vel_estimate, float* current_s
             TrapezoidalTrajectory::Step_t traj_step = axis_->trap_.eval(t);
             pos_setpoint_ = traj_step.Y;
             vel_setpoint_ = traj_step.Yd;
-            current_setpoint_ = traj_step.Ydd * axis_->trap_.config_.A_per_css;
+            current_setpoint_ = traj_step.Ydd * config_.inertia;
         }
         anticogging_pos = pos_setpoint_; // FF the position setpoint instead of the pos_estimate
-    }
-
-    // Ramp rate limited velocity setpoint
-    if (config_.control_mode == CTRL_MODE_VELOCITY_CONTROL && vel_ramp_enable_) {
-        float max_step_size = current_meas_period * config_.vel_ramp_rate;
-        float full_step = vel_ramp_target_ - vel_setpoint_;
-        float step;
-        if (fabsf(full_step) > max_step_size) {
-            step = std::copysignf(max_step_size, full_step);
-        } else {
-            step = full_step;
-        }
-        vel_setpoint_ += step;
     }
 
     // Position control

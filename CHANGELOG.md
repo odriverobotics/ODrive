@@ -2,7 +2,12 @@
 Please add a note of your changes below this heading if you make a Pull Request.
 
 ### Added
+* Second order setpoint input filter.
 * `dump_errors()` utility function in odrivetool to dump, decode and optionally clear errors.
+
+### Changed
+* Moved `traptraj.A_per_css` to `controller.inertia`
+* Refactored velocity ramp mode into the new general input filtering structure
 
 # Releases
 ## [0.4.7] - 2018-11-28

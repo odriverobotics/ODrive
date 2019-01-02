@@ -233,7 +233,7 @@ void CANSimple::set_traj_accel_limits_callback(Axis* axis, CAN_message_t& msg) {
 }
 
 void CANSimple::set_traj_A_per_css_callback(Axis* axis, CAN_message_t& msg) {
-    axis->trap_.config_.A_per_css = get_float(msg, 0);
+    axis->controller_.config_.inertia = get_float(msg, 0);
 }
 
 
