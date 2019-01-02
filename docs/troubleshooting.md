@@ -14,21 +14,9 @@ Table of Contents:
 <!-- /TOC -->
 
 ## Error codes
-If your ODrive is not working as expected, run `odrivetool` and type `hex(<axis>.error)` <kbd>Enter</kbd> where `<axis>` is the axis that isn't working. This will display a [hexadecimal](https://en.wikipedia.org/wiki/Hexadecimal) representation of the error code. Each bit represents one error flag.
+If your ODrive is not working as expected, run `odrivetool` and type `dump_errors(odrv0)` <kbd>Enter</kbd>. This will dump a list of all the errors that are present. To also clear all the errors, you can run `dump_errors(odrv0, True)`.
 
-<details><summary markdown="span">Example</summary><div markdown="block">
-Say you got this error output:
-```python
-In [1]: hex(odrv0.axis0.error)
-Out[1]: '0x6'
-```
-
-Written in binary, the number `0x6` corresponds to `110`, that means bits 1 and 2 are set (counting starts at 0).
-Looking at the reference below, this means that both `ERROR_DC_BUS_UNDER_VOLTAGE` and `ERROR_DC_BUS_OVER_VOLTAGE` occurred.
-</div></details>
-
-The axis error may say that some other component has failed. Say it reports `ERROR_ENCODER_FAILED`, then you need to go check the encoder error: `hex(<axis>.encoder.error)`.
-
+The following sections will give some guidance on the most common errors. You may also check the code for the full list of errors:
 * Axis error flags defined [here](../Firmware/MotorControl/axis.hpp).
 * Motor error flags defined [here](../Firmware/MotorControl/motor.hpp).
 * Encoder error flags defined [here](../Firmware/MotorControl/encoder.hpp).

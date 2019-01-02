@@ -271,8 +271,10 @@ bool Encoder::update() {
                 if (delta_enc > 3)
                     delta_enc -= 6;
             } else {
-                set_error(ERROR_ILLEGAL_HALL_STATE);
-                return false;
+                if (!config_.ignore_illegal_hall_state) {
+                    set_error(ERROR_ILLEGAL_HALL_STATE);
+                    return false;
+                }
             }
         } break;
         
