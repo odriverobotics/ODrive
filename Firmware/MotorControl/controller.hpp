@@ -23,6 +23,7 @@ public:
         CTRL_MODE_POSITION_CONTROL = 3,
         CTRL_MODE_TRAJECTORY_CONTROL = 4
     };
+    
 
     enum InputMode_t{
         INPUT_MODE_INACTIVE,
@@ -45,7 +46,9 @@ public:
         bool setpoints_in_cpr = false;
         float inertia = 0.0f;      // [A/(count/s^2)]
         float input_filter_bandwidth = 2.0f; // [1/s]
-    float homing_speed = 2000.0f;   // [counts/s]
+        float gain_scheduling_width = 10.0f; // [counts] width either size of pos_setpoint
+        bool enable_gain_scheduling = false; // enable gain scheduling when in position control
+        float homing_speed = 2000.0f;   // [counts/s]
     };
 
     Controller(Config_t& config);
@@ -134,7 +137,9 @@ public:
                 make_protocol_property("inertia", &config_.inertia),
                 make_protocol_property("input_filter_bandwidth", &config_.input_filter_bandwidth,
                     [](void* ctx) { static_cast<Controller*>(ctx)->update_filter_gains(); }, this),
-                make_protocol_property("homing_speed", &config_.homing_speed)
+                make_protocol_property("homing_speed", &config_.homing_speed),
+                make_protocol_property("gain_scheduling_width", &config_.gain_scheduling_width),
+                make_protocol_property("enable_gain_scheduling", &config_.enable_gain_scheduling)
             ),
             make_protocol_function("set_pos_setpoint", *this, &Controller::set_pos_setpoint,
                 "pos_setpoint", "vel_feed_forward", "current_feed_forward"),
