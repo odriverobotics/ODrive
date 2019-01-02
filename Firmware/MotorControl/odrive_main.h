@@ -24,11 +24,8 @@ extern "C" {
 #include <cmsis_os.h>
 
 // Hardware configuration
-#if HW_VERSION_MAJOR == 3
-#include "board_config_v3.h"
-#else
-#error "unknown board version"
-#endif
+#include "Board/board_config.h"
+
 
 //default timeout waiting for phase measurement signals
 #define PH_CURRENT_MEAS_TIMEOUT 2 // [ms]

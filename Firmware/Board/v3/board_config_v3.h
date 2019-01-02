@@ -2,8 +2,8 @@
 * @brief Contains board specific configuration for ODrive v3.x
 */
 
-#ifndef __BOARD_CONFIG_H
-#define __BOARD_CONFIG_H
+#ifndef __BOARD_CONFIG_H_V3
+#define __BOARD_CONFIG_H_V3
 
 // STM specific includes
 #include <gpio.h>
@@ -20,48 +20,6 @@
 #endif
 
 
-typedef struct {
-    uint16_t step_gpio_pin;
-    uint16_t dir_gpio_pin;
-    size_t thermistor_adc_ch;
-    osPriority thread_priority;
-} AxisHardwareConfig_t;
-
-typedef struct {
-    TIM_HandleTypeDef* timer;
-    GPIO_TypeDef* index_port;
-    uint16_t index_pin;
-    GPIO_TypeDef* hallA_port;
-    uint16_t hallA_pin;
-    GPIO_TypeDef* hallB_port;
-    uint16_t hallB_pin;
-    GPIO_TypeDef* hallC_port;
-    uint16_t hallC_pin;
-} EncoderHardwareConfig_t;
-typedef struct {
-    TIM_HandleTypeDef* timer;
-    uint16_t control_deadline;
-    float shunt_conductance;
-} MotorHardwareConfig_t;
-typedef struct {
-    SPI_HandleTypeDef* spi;
-    GPIO_TypeDef* enable_port;
-    uint16_t enable_pin;
-    GPIO_TypeDef* nCS_port;
-    uint16_t nCS_pin;
-    GPIO_TypeDef* nFAULT_port;
-    uint16_t nFAULT_pin;
-} GateDriverHardwareConfig_t;
-typedef struct {
-    AxisHardwareConfig_t axis_config;
-    EncoderHardwareConfig_t encoder_config;
-    MotorHardwareConfig_t motor_config;
-    GateDriverHardwareConfig_t gate_driver_config;
-} BoardHardwareConfig_t;
-
-extern const BoardHardwareConfig_t hw_configs[2];
-extern const float thermistor_poly_coeffs[];
-extern const size_t thermistor_num_coeffs;
 
 //TODO stick this in a C file
 #ifdef __MAIN_CPP__
@@ -158,4 +116,4 @@ const BoardHardwareConfig_t hw_configs[2] = { {
 #define I2C_A2_PORT GPIO_5_GPIO_Port
 #define I2C_A2_PIN GPIO_5_Pin
 
-#endif // __BOARD_CONFIG_H
+#endif // __BOARD_CONFIG_H_V3
