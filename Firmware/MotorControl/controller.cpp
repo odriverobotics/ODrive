@@ -173,6 +173,13 @@ bool Controller::update(float pos_estimate, float vel_estimate, float* current_s
         // case INPUT_MODE_MIX_CHANNELS: {
         //     // NOT YET IMPLEMENTED
         // } break;
+        case INPUT_MODE_TRAP_TRAJ: {
+            static auto last_pos = input_pos_;
+            if(last_pos != input_pos_){
+                last_pos = input_pos_;
+                move_to_pos(input_pos_); // We should really move the *setpoint* handling here, but this will work for now
+            }
+        } break;
         default: {
             set_error(ERROR_INVALID_INPUT_MODE);
             return false;
@@ -187,7 +194,7 @@ bool Controller::update(float pos_estimate, float vel_estimate, float* current_s
         if (t > axis_->trap_.Tf_) {
             // Drop into position control mode when done to avoid problems on loop counter delta overflow
             config_.control_mode = CTRL_MODE_POSITION_CONTROL;
-            // pos_setpoint already set by trajectory
+            pos_setpoint_ = input_pos_;
             vel_setpoint_ = 0.0f;
             current_setpoint_ = 0.0f;
         } else {

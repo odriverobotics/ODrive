@@ -31,6 +31,7 @@ public:
         INPUT_MODE_VEL_RAMP,
         INPUT_MODE_POS_FILTER,
         INPUT_MODE_MIX_CHANNELS,
+        INPUT_MODE_TRAP_TRAJ,
     };
 
     struct Config_t {
@@ -127,10 +128,10 @@ public:
             make_protocol_property("input_pos", &input_pos_),
             make_protocol_property("input_vel", &input_vel_),
             make_protocol_property("input_current", &input_current_),
-            make_protocol_property("pos_setpoint", &pos_setpoint_),
-            make_protocol_property("vel_setpoint", &vel_setpoint_),
-            make_protocol_property("vel_integrator_current", &vel_integrator_current_),
-            make_protocol_property("current_setpoint", &current_setpoint_),
+            make_protocol_ro_property("pos_setpoint", &pos_setpoint_),
+            make_protocol_ro_property("vel_setpoint", &vel_setpoint_),
+            make_protocol_ro_property("vel_integrator_current", &vel_integrator_current_),
+            make_protocol_ro_property("current_setpoint", &current_setpoint_),
             make_protocol_object("config",
                 make_protocol_property("control_mode", &config_.control_mode),
                 make_protocol_property("input_mode", &config_.input_mode),
@@ -148,14 +149,7 @@ public:
                 make_protocol_property("gain_scheduling_width", &config_.gain_scheduling_width),
                 make_protocol_property("enable_gain_scheduling", &config_.enable_gain_scheduling)
             ),
-            make_protocol_function("set_pos_setpoint", *this, &Controller::set_pos_setpoint,
-                "pos_setpoint", "vel_feed_forward", "current_feed_forward"),
-            make_protocol_function("set_vel_setpoint", *this, &Controller::set_vel_setpoint,
-                "vel_setpoint", "current_feed_forward"),
-            make_protocol_function("set_current_setpoint", *this, &Controller::set_current_setpoint,
-                "current_setpoint"),
             make_protocol_function("start_anticogging_calibration", *this, &Controller::start_anticogging_calibration),
-            make_protocol_function("move_to_pos", *this, &Controller::move_to_pos, "goal_point"),
             make_protocol_function("home_axis", *this, &Controller::home_axis)
         );
     }
