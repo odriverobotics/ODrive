@@ -2,7 +2,13 @@
 Please add a note of your changes below this heading if you make a Pull Request.
 
 ### Added
+* `dump_errors()` utility function in odrivetool to dump, decode and optionally clear errors.
+
+# Releases
+## [0.4.7] - 2018-11-28
+### Added
 * Overspeed fault
+* Current sense saturation fault.
 * Supress startup transients by sampling encoder estimate into position setpoint when entering closed loop control.
 * Make step dir gpio pins configurable.
 * Configuration variable `encoder.config.zero_count_on_find_idx`, true by default. Set to false to leave the initial encoder count to be where the axis was at boot.
@@ -14,11 +20,10 @@ Please add a note of your changes below this heading if you make a Pull Request.
 * Renamed `axis.enable_step_dir` to `axis.step_dir_active`
 * New process for working with STM32CubeMX.
 
-## Fixed
+### Fixed
 * Would get ERROR_CONTROL_DEADLINE_MISSED along with every ERROR_PHASE_RESISTANCE_OUT_OF_RANGE.
 * ODrive tool can now run interactive nested scripts with "%run -i script.py"
 
-# Releases
 ## [0.4.6] - 2018-10-07
 ### Fixed
 * Broken printing of floats on ascii protocol

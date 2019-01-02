@@ -20,7 +20,8 @@ public:
         ERROR_BRAKE_CURRENT_OUT_OF_RANGE = 0x0040,
         ERROR_MODULATION_MAGNITUDE = 0x0080,
         ERROR_BRAKE_DEADTIME_VIOLATION = 0x0100,
-        ERROR_UNEXPECTED_TIMER_CALLBACK = 0x0200
+        ERROR_UNEXPECTED_TIMER_CALLBACK = 0x0200,
+        ERROR_CURRENT_SENSE_SATURATION = 0x0400
     };
 
     enum MotorType_t {
@@ -43,9 +44,10 @@ public:
         // Voltage applied at end of cycle:
         float final_v_alpha; // [V]
         float final_v_beta; // [V]
-        float Iq_setpoint;
-        float Iq_measured;
-        float max_allowed_current;
+        float Iq_setpoint; // [A]
+        float Iq_measured; // [A]
+        float max_allowed_current; // [A]
+        float overcurrent_trip_level; // [A]
     };
 
     // NOTE: for gimbal motors, all units of A are instead V.
@@ -64,7 +66,7 @@ public:
         // float current_lim = 70.0f; //[A]
         float current_lim = 10.0f;  //[A]
         // Value used to compute shunt amplifier gains
-        float requested_current_range = 70.0f; // [A]
+        float requested_current_range = 60.0f; // [A]
         float current_control_bandwidth = 1000.0f;  // [rad/s]
     };
 
@@ -153,6 +155,7 @@ public:
         .Iq_setpoint = 0.0f,
         .Iq_measured = 0.0f,
         .max_allowed_current = 0.0f,
+        .overcurrent_trip_level = 0.0f,
     };
     DRV8301_FaultType_e drv_fault_ = DRV8301_FaultType_NoFault;
     DRV_SPI_8301_Vars_t gate_driver_regs_; //Local view of DRV registers (initialized by DRV8301_setup)
@@ -178,7 +181,8 @@ public:
                 make_protocol_property("final_v_beta", &current_control_.final_v_beta),
                 make_protocol_property("Iq_setpoint", &current_control_.Iq_setpoint),
                 make_protocol_property("Iq_measured", &current_control_.Iq_measured),
-                make_protocol_property("max_allowed_current", &current_control_.max_allowed_current)
+                make_protocol_ro_property("max_allowed_current", &current_control_.max_allowed_current),
+                make_protocol_ro_property("overcurrent_trip_level", &current_control_.overcurrent_trip_level)
             ),
             make_protocol_object("gate_driver",
                 make_protocol_ro_property("drv_fault", &drv_fault_)

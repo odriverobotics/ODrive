@@ -160,8 +160,11 @@ static inline auto make_obj_tree() {
             make_protocol_object("gpio2_pwm_mapping", make_protocol_definitions(board_config.pwm_mappings[1])),
             make_protocol_object("gpio3_pwm_mapping", make_protocol_definitions(board_config.pwm_mappings[2])),
 #endif
-            make_protocol_object("gpio4_pwm_mapping", make_protocol_definitions(board_config.pwm_mappings[3]))
-        ),
+            make_protocol_object("gpio4_pwm_mapping", make_protocol_definitions(board_config.pwm_mappings[3])),
+
+            make_protocol_object("gpio3_analog_mapping", make_protocol_definitions(board_config.analog_mappings[2])),
+            make_protocol_object("gpio4_analog_mapping", make_protocol_definitions(board_config.analog_mappings[3]))
+            ),
         make_protocol_object("axis0", axes[0]->make_protocol_definitions()),
         make_protocol_object("axis1", axes[1]->make_protocol_definitions()),
         make_protocol_object("can", odCAN->make_protocol_definitions()),

@@ -5,7 +5,7 @@ import threading
 import fibre
 import odrive
 import odrive.enums
-from odrive.utils import start_liveplotter
+from odrive.utils import start_liveplotter, dump_errors
 #from odrive.enums import * # pylint: disable=W0614
 
 def print_banner():
@@ -76,7 +76,8 @@ def launch_shell(args, logger, app_shutdown_token):
     """
 
     interactive_variables = {
-        'start_liveplotter': start_liveplotter
+        'start_liveplotter': start_liveplotter,
+        'dump_errors': dump_errors
     }
 
     # Expose all enums from odrive.enums
