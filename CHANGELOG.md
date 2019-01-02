@@ -56,6 +56,8 @@ Please add a note of your changes below this heading if you make a Pull Request.
 
 ## [0.4.3] - 2018-08-30
 ### Added
+* `min_endstop` and `max_endstop` objects can be configured on GPIO
+* Axes can be homed if `min_endstop` is enabled
 * Encoder position count "homed" to zero when index is found.
 
 ### Changed

@@ -5,6 +5,13 @@
 #error "This file should not be included directly. Include odrive_main.h instead."
 #endif
 
+    
+enum HomingState_t {
+    HOMING_STATE_IDLE,
+    HOMING_STATE_HOMING,
+    HOMING_STATE_MOVE_TO_ZERO
+};
+
 class Axis {
 public:
     enum Error_t {
@@ -20,7 +27,9 @@ public:
         ERROR_ENCODER_FAILED = 0x100, // Go to encoder.hpp for information, check odrvX.axisX.encoder.error for error value
         ERROR_CONTROLLER_FAILED = 0x200,
         ERROR_POS_CTRL_DURING_SENSORLESS = 0x400,
-        ERROR_ESTOP_REQUESTED = 0x800
+        ERROR_MIN_ENDSTOP_PRESSED = 0x800,
+        ERROR_MAX_ENDSTOP_PRESSED = 0x1000,
+        ERROR_ESTOP_REQUESTED = 0x2000
     };
 
     // Warning: Do not reorder these enum values.
@@ -34,8 +43,9 @@ public:
         AXIS_STATE_SENSORLESS_CONTROL = 5,  //<! run sensorless control
         AXIS_STATE_ENCODER_INDEX_SEARCH = 6, //<! run encoder index search
         AXIS_STATE_ENCODER_OFFSET_CALIBRATION = 7, //<! run encoder offset calibration
-        AXIS_STATE_CLOSED_LOOP_CONTROL = 8  //<! run closed loop control
-    };
+        AXIS_STATE_CLOSED_LOOP_CONTROL = 8,  //<! run closed loop control
+        AXIS_STATE_HOMING = 9   //<! run axis homing function
+};
 
     struct Config_t {
         bool startup_motor_calibration = false;   //<! run motor calibration at startup, skip otherwise
@@ -44,6 +54,7 @@ public:
         bool startup_encoder_offset_calibration = false; //<! run encoder offset calibration after startup, skip otherwise
         bool startup_closed_loop_control = false; //<! enable closed loop control after calibration/startup
         bool startup_sensorless_control = false; //<! enable sensorless control after calibration/startup
+        bool startup_homing = false; //<! enable homing after calibration/startup
         bool enable_step_dir = false; //<! enable step/dir input after calibration
                                     //   For M0 this has no effect if enable_uart is true
         float counts_per_step = 2.0f;
@@ -72,7 +83,9 @@ public:
             SensorlessEstimator& sensorless_estimator,
             Controller& controller,
             Motor& motor,
-            TrapezoidalTrajectory& trap);
+            TrapezoidalTrajectory& trap,
+            Endstop& min_endstop,
+            Endstop& max_endstop);
 
     void setup();
     void start_thread();
@@ -170,6 +183,8 @@ public:
     Controller& controller_;
     Motor& motor_;
     TrapezoidalTrajectory& trap_;
+    Endstop& min_endstop_;
+    Endstop& max_endstop_;
 
     osThreadId thread_id_;
     volatile bool thread_id_valid_ = false;
@@ -188,6 +203,7 @@ public:
     State_t task_chain_[10] = { AXIS_STATE_UNDEFINED };
     State_t& current_state_ = task_chain_[0];
     uint32_t loop_counter_ = 0;
+    HomingState_t homing_state_ = HOMING_STATE_IDLE;
     uint32_t last_heartbeat_ = 0;
 
     // Communication protocol definitions
@@ -198,12 +214,14 @@ public:
             make_protocol_ro_property("current_state", &current_state_),
             make_protocol_property("requested_state", &requested_state_),
             make_protocol_ro_property("loop_counter", &loop_counter_),
+            make_protocol_ro_property("homing_state", &homing_state_),
             make_protocol_object("config",
                 make_protocol_property("startup_motor_calibration", &config_.startup_motor_calibration),
                 make_protocol_property("startup_encoder_index_search", &config_.startup_encoder_index_search),
                 make_protocol_property("startup_encoder_offset_calibration", &config_.startup_encoder_offset_calibration),
                 make_protocol_property("startup_closed_loop_control", &config_.startup_closed_loop_control),
                 make_protocol_property("startup_sensorless_control", &config_.startup_sensorless_control),
+                make_protocol_property("startup_homing", &config_.startup_homing),
                 make_protocol_property("enable_step_dir", &config_.enable_step_dir),
                 make_protocol_property("counts_per_step", &config_.counts_per_step),
                 make_protocol_property("step_gpio_pin", &config_.step_gpio_pin,
@@ -222,6 +240,8 @@ public:
             make_protocol_object("controller", controller_.make_protocol_definitions()),
             make_protocol_object("encoder", encoder_.make_protocol_definitions()),
             make_protocol_object("sensorless_estimator", sensorless_estimator_.make_protocol_definitions()),
+            make_protocol_object("min_endstop", min_endstop_.make_protocol_definitions()),
+            make_protocol_object("max_endstop", max_endstop_.make_protocol_definitions()),
             make_protocol_object("trap_traj", trap_.make_protocol_definitions())
         );
     }
