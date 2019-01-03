@@ -6,10 +6,9 @@
 
 #if HW_VERSION_MAJOR == 3
 
-#include "Board/v3/HAL_Board_V3.x.h"
-
+    #include "Board/v3/HAL_Board_V3.x.h"
 #else
-#error "unknown board version"
+    #error "unknown board version"
 #endif
 
 #include "HAL_Generics/HAL_Structs.h"

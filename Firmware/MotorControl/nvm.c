@@ -40,14 +40,14 @@
 
 // refer to page 75 of datasheet:
 // http://www.st.com/content/ccc/resource/technical/document/reference_manual/3d/6d/5a/66/b4/99/40/d4/DM00031020.pdf/files/DM00031020.pdf/jcr:content/translations/en.DM00031020.pdf
-#define FLASH_SECTOR_10_BASE (const volatile uint8_t*)0x80C0000UL
-#define FLASH_SECTOR_10_SIZE 0x20000UL
-#define FLASH_SECTOR_11_BASE (const volatile uint8_t*)0x80E0000UL
-#define FLASH_SECTOR_11_SIZE 0x20000UL
+    #define FLASH_SECTOR_10_BASE (const volatile uint8_t*)0x80C0000UL
+    #define FLASH_SECTOR_10_SIZE 0x20000UL
+    #define FLASH_SECTOR_11_BASE (const volatile uint8_t*)0x80E0000UL
+    #define FLASH_SECTOR_11_SIZE 0x20000UL
 
-#define HAL_FLASH_ClearError() __HAL_FLASH_CLEAR_FLAG(FLASH_FLAG_EOP | FLASH_FLAG_OPERR | FLASH_FLAG_WRPERR | FLASH_FLAG_PGAERR | FLASH_FLAG_PGSERR | FLASH_FLAG_PGPERR)
+    #define HAL_FLASH_ClearError() __HAL_FLASH_CLEAR_FLAG(FLASH_FLAG_EOP | FLASH_FLAG_OPERR | FLASH_FLAG_WRPERR | FLASH_FLAG_PGAERR | FLASH_FLAG_PGSERR | FLASH_FLAG_PGPERR)
 #else
-#error "unknown flash sector size"
+    #error "unknown flash sector size"
 #endif
 
 typedef enum {
@@ -61,23 +61,24 @@ typedef struct {
     const uint32_t sector_id;   //!< HAL ID of this sector
     const size_t n_data;        //!< number of 64-bit fields in this sector
     const size_t n_reserved;    //!< number of 64-bit fields in this sector that are reserved for the allocation table
-    const volatile uint8_t* const alloc_table;
-    const volatile uint64_t* const data;
+    const volatile uint8_t *const alloc_table;
+    const volatile uint64_t *const data;
 } sector_t;
 
-sector_t sectors[] = { {
-    .sector_id = FLASH_SECTOR_10,
-    .n_data = FLASH_SECTOR_10_SIZE >> 3,
-    .n_reserved = (FLASH_SECTOR_10_SIZE >> 3) >> 5,
-    .alloc_table = FLASH_SECTOR_10_BASE,
-    .data = (uint64_t *)FLASH_SECTOR_10_BASE
-}, {
-    .sector_id = FLASH_SECTOR_11,
-    .n_data = FLASH_SECTOR_11_SIZE >> 3,
-    .n_reserved = (FLASH_SECTOR_11_SIZE >> 3) >> 5,
-    .alloc_table = FLASH_SECTOR_11_BASE,
-    .data = (uint64_t *)FLASH_SECTOR_11_BASE
-}};
+sector_t sectors[] = {{
+                          .sector_id = FLASH_SECTOR_10,
+                          .n_data = FLASH_SECTOR_10_SIZE >> 3,
+                          .n_reserved = (FLASH_SECTOR_10_SIZE >> 3) >> 5,
+                          .alloc_table = FLASH_SECTOR_10_BASE,
+                          .data = (uint64_t *) FLASH_SECTOR_10_BASE
+                      },
+                      {
+                          .sector_id = FLASH_SECTOR_11,
+                          .n_data = FLASH_SECTOR_11_SIZE >> 3,
+                          .n_reserved = (FLASH_SECTOR_11_SIZE >> 3) >> 5,
+                          .alloc_table = FLASH_SECTOR_11_BASE,
+                          .data = (uint64_t *) FLASH_SECTOR_11_BASE
+                      }};
 
 uint8_t read_sector_; // 0 or 1 to indicate which sector to read from and which to write to
 size_t n_staging_area_; // number of 64-bit values that were reserved using NVM_start_write
@@ -97,8 +98,9 @@ int erase(sector_t *sector) {
     HAL_FLASH_Unlock();
     HAL_FLASH_ClearError();
     uint32_t sector_error;
-    if (HAL_FLASHEx_Erase(&erase_struct, &sector_error) != HAL_OK)
+    if (HAL_FLASHEx_Erase(&erase_struct, &sector_error) != HAL_OK) {
         goto fail;
+    }
     sector->index = sector->n_reserved;
 
     HAL_FLASH_Lock();
@@ -115,14 +117,16 @@ fail:
 // @param state: 11: erased, 10: writing, 00: valid data
 // @returns 0 on success or a non-zero error code otherwise
 int set_allocation_state(sector_t *sector, size_t index, size_t count, field_state_t state) {
-    if (index < sector->n_reserved)
+    if (index < sector->n_reserved) {
         return -1;
-    if (index + count >= sector->n_data)
+    }
+    if (index + count >= sector->n_data) {
         return -1;
+    }
 
     // expand state to state for 4 values
     const uint8_t states = (state << 0) | (state << 2) | (state << 4) | (state << 6);
-    
+
     // handle unaligned start
     uint8_t mask = ~(0xff << ((index & 0x3) << 1));
     count += index & 0x3;
@@ -133,18 +137,20 @@ int set_allocation_state(sector_t *sector, size_t index, size_t count, field_sta
 
     // write states
     for (; count >= 4; count -= 4, index += 4) {
-        if (HAL_FLASH_Program(FLASH_TYPEPROGRAM_BYTE, (uintptr_t)&sector->alloc_table[index >> 2], states | mask) != HAL_OK)
+        if (HAL_FLASH_Program(FLASH_TYPEPROGRAM_BYTE, (uintptr_t) &sector->alloc_table[index >> 2], states | mask) != HAL_OK) {
             goto fail;
+        }
         mask = 0;
     }
 
     // handle unaligned end
     if (count) {
         mask |= ~(0xff >> ((4 - count) << 1));
-        if (HAL_FLASH_Program(FLASH_TYPEPROGRAM_BYTE, (uintptr_t)&sector->alloc_table[index >> 2], states | mask) != HAL_OK)
+        if (HAL_FLASH_Program(FLASH_TYPEPROGRAM_BYTE, (uintptr_t) &sector->alloc_table[index >> 2], states | mask) != HAL_OK) {
             goto fail;
+        }
     }
-    
+
     HAL_FLASH_Lock();
     return 0;
 fail:
@@ -177,15 +183,16 @@ size_t scan_allocation_table(sector_t *sector, size_t max_index, field_state_t r
             states = (states & ~ignore_mask) | (ref_states & ignore_mask);
             ignore = 0;
         }
-        if (states != ref_states)
+        if (states != ref_states) {
             break;
+        }
     }
 
     // once we encounterd a byte with any state mismatch determine which of the 4 states it is
     for (; ((states >> 6) == (ref_states & 0x3)) && (index > sector->n_reserved); index--) {
         states <<= 2;
     }
-    
+
     *state = states >> 6;
     //printf("(it's %02x)\r\n", index); osDelay(5);
     return index;
@@ -198,25 +205,26 @@ size_t scan_allocation_table(sector_t *sector, size_t max_index, field_state_t r
 int NVM_init(void) {
     field_state_t sector0_state, sector1_state;
     sectors[0].index = scan_allocation_table(&sectors[0], sectors[0].n_data,
-                ERASED, &sector0_state);
+                                             ERASED, &sector0_state);
     sectors[1].index = scan_allocation_table(&sectors[1], sectors[1].n_data,
-                ERASED, &sector1_state);
+                                             ERASED, &sector1_state);
     //printf("sector states: %02x, %02x\r\n", sector0_state, sector1_state); osDelay(5);
 
     // Select valid sector on a best effort basis
     // (in unfortunate cases valid_sector might actually point
     // to an invalid or erased sector)
     read_sector_ = 0;
-    if (sector1_state == VALID)
+    if (sector1_state == VALID) {
         read_sector_ = 1;
-    
+    }
+
     // count the number of valid fields
     sector_t *read_sector = &sectors[read_sector_];
     uint8_t first_nonvalid_state;
     size_t min_valid_index = scan_allocation_table(read_sector, read_sector->index,
-        VALID, &first_nonvalid_state);
+                                                   VALID, &first_nonvalid_state);
     n_valid_ = read_sector->index - min_valid_index;
-    
+
     n_staging_area_ = 0;
 
     int status = 0;
@@ -267,10 +275,11 @@ size_t NVM_get_max_write_length(void) {
 // @param length: length in bytes (if (offset + length) is out of range, the function fails)
 // @returns 0 on success or a non-zero error code otherwise
 int NVM_read(size_t offset, uint8_t *data, size_t length) {
-    if (offset + length > (n_valid_ << 3))
+    if (offset + length > (n_valid_ << 3)) {
         return -1;
+    }
     sector_t *read_sector = &sectors[read_sector_];
-    const uint8_t *src_ptr = ((const uint8_t *)&read_sector->data[read_sector->index - n_valid_]) + offset;
+    const uint8_t *src_ptr = ((const uint8_t *) &read_sector->data[read_sector->index - n_valid_]) + offset;
     memcpy(data, src_ptr, length);
     return 0;
 }
@@ -286,18 +295,22 @@ int NVM_start_write(size_t length) {
     sector_t *target = &sectors[1 - read_sector_];
 
     length = (length + 7) >> 3; // round to multiple of 64 bit
-    if (length > target->n_data - target->n_reserved)
+    if (length > target->n_data - target->n_reserved) {
         return -1;
+    }
 
     // make room for the new data
-    if (length > target->n_data - target->index)
-        if ((status = erase(target)))
+    if (length > target->n_data - target->index) {
+        if ((status = erase(target))) {
             return status;
+        }
+    }
 
     // invalidate the fields we're about to write
     status = set_allocation_state(target, target->index, length, INVALID);
-    if (status)
+    if (status) {
         return status;
+    }
 
     n_staging_area_ = length;
     return 0;
@@ -314,30 +327,37 @@ int NVM_start_write(size_t length) {
 // @param data: Pointer to the data that should be written
 // @param length: Data length in bytes
 int NVM_write(size_t offset, uint8_t *data, size_t length) {
-    if (offset + length > (n_staging_area_ << 3))
+    if (offset + length > (n_staging_area_ << 3)) {
         return -1;
+    }
     sector_t *target = &sectors[1 - read_sector_];
 
     HAL_FLASH_Unlock();
     HAL_FLASH_ClearError();
 
     // handle unaligned start
-    for (; (offset & 0x3) && length; ++data, ++offset, --length)
+    for (; (offset & 0x3) && length; ++data, ++offset, --length) {
         if (HAL_FLASH_Program(FLASH_TYPEPROGRAM_BYTE,
-                ((uintptr_t)&target->data[target->index]) + offset, *data) != HAL_OK)
+                              ((uintptr_t) &target->data[target->index]) + offset, *data) != HAL_OK) {
             goto fail;
+        }
+    }
 
     // write 32-bit values (64-bit doesn't work)
-    for (; length >= 4; data += 4, offset += 4, length -=4)
+    for (; length >= 4; data += 4, offset += 4, length -= 4) {
         if (HAL_FLASH_Program(FLASH_TYPEPROGRAM_WORD,
-                ((uintptr_t)&target->data[target->index]) + offset, *(uint32_t*)data) != HAL_OK)
+                              ((uintptr_t) &target->data[target->index]) + offset, *(uint32_t *) data) != HAL_OK) {
             goto fail;
+        }
+    }
 
     // handle unaligned end
-    for (; length; ++data, ++offset, --length)
+    for (; length; ++data, ++offset, --length) {
         if (HAL_FLASH_Program(FLASH_TYPEPROGRAM_BYTE,
-                ((uintptr_t)&target->data[target->index]) + offset, *data) != HAL_OK)
+                              ((uintptr_t) &target->data[target->index]) + offset, *data) != HAL_OK) {
             goto fail;
+        }
+    }
 
     HAL_FLASH_Lock();
     return 0;
@@ -353,8 +373,9 @@ int NVM_commit(void) {
 
     // mark the newly-written fields as valid
     int status = set_allocation_state(write_sector, write_sector->index, n_staging_area_, VALID);
-    if (status)
+    if (status) {
         return status;
+    }
 
     write_sector->index += n_staging_area_;
     n_valid_ = n_staging_area_;
@@ -362,16 +383,19 @@ int NVM_commit(void) {
     read_sector_ = 1 - read_sector_;
 
     // invalidate the other sector
-    if (read_sector->index < read_sector->n_data)
+    if (read_sector->index < read_sector->n_data) {
         status = set_allocation_state(read_sector, read_sector->index, 1, INVALID);
-    else
+    }
+    else {
         status = erase(read_sector);
+    }
 
     return status;
 }
 
 
 #include <cmsis_os.h>
+
 /** @brief Call this at startup to test/demo the NVM driver
 
  Expected output when starting with a fully erased NVM
@@ -407,42 +431,56 @@ void NVM_demo(void) {
     uint8_t seed = 0;
 
     osDelay(100);
-    printf("=== NVM TEST ===\r\n"); osDelay(5);
+    printf("=== NVM TEST ===\r\n");
+    osDelay(5);
     //NVM_erase();
-    if (progress++, NVM_init() != 0)
+    if (progress++, NVM_init() != 0) {
         goto fail;
-    
+    }
+
     // load bytes from NVM and print them
     size_t available = NVM_get_max_read_length();
     if (available) {
-        printf("NVM contains %d valid bytes:\r\n", available); osDelay(5);
+        printf("NVM contains %d valid bytes:\r\n", available);
+        osDelay(5);
         uint8_t buf[available];
-        if (progress++, NVM_read(0, buf, available) != 0)
+        if (progress++, NVM_read(0, buf, available) != 0) {
             goto fail;
+        }
         for (size_t pos = 0; pos < available; ++pos) {
             seed += buf[pos];
             printf(" %02x", buf[pos]);
-            if ((((pos + 1) % 16) == 0) || ((pos + 1) == available))
+            if ((((pos + 1) % 16) == 0) || ((pos + 1) == available)) {
                 printf("\r\n");
+            }
             osDelay(2);
         }
-    } else {
-        printf("NVM is empty\r\n"); osDelay(5);
+    }
+    else {
+        printf("NVM is empty\r\n");
+        osDelay(5);
     }
 
     // store new bytes in NVM (data based on seed)
-    printf("write 0x%02x, ..., 0x%02x to NVM\r\n", seed, seed + len - 1); osDelay(5);
-    for (size_t i = 0; i < len; i++)
+    printf("write 0x%02x, ..., 0x%02x to NVM\r\n", seed, seed + len - 1);
+    osDelay(5);
+    for (size_t i = 0; i < len; i++) {
         data[i] = seed++;
-    if (progress++, NVM_start_write(len) != 0)
+    }
+    if (progress++, NVM_start_write(len) != 0) {
         goto fail;
-    if (progress++, NVM_write(0, data, len / 2))
+    }
+    if (progress++, NVM_write(0, data, len / 2)) {
         goto fail;
-    if (progress++, NVM_write(len / 2, &data[len / 2], len - (len / 2)))
+    }
+    if (progress++, NVM_write(len / 2, &data[len / 2], len - (len / 2))) {
         goto fail;
-    if (progress++, NVM_commit())
+    }
+    if (progress++, NVM_commit()) {
         goto fail;
-    printf("new data committed to NVM\r\n"); osDelay(5);
+    }
+    printf("new data committed to NVM\r\n");
+    osDelay(5);
 
     return;
 

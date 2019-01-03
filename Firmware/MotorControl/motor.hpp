@@ -2,13 +2,13 @@
 #define __MOTOR_HPP
 
 #ifndef __ODRIVE_MAIN_H
-#error "This file should not be included directly. Include odrive_main.h instead."
+    #error "This file should not be included directly. Include odrive_main.h instead."
 #endif
 
 #include "drv8301.h"
 
 class Motor {
-public:
+  public:
     enum Error_t {
         ERROR_NONE = 0,
         ERROR_PHASE_RESISTANCE_OUT_OF_RANGE = 0x0001,
@@ -35,7 +35,7 @@ public:
         float phC;
     };
 
-    struct CurrentControl_t{
+    struct CurrentControl_t {
         float p_gain; // [V/A]
         float i_gain; // [V/As]
         float v_current_control_integral_d; // [V]
@@ -57,7 +57,8 @@ public:
         bool pre_calibrated = false; // can be set to true to indicate that all values here are valid
         int32_t pole_pairs = 7;
         float calibration_current = 10.0f;    // [A]
-        float resistance_calib_max_voltage = 2.0f; // [V] - You may need to increase this if this voltage isn't sufficient to drive calibration_current through the motor.
+        float resistance_calib_max_voltage =
+            2.0f; // [V] - You may need to increase this if this voltage isn't sufficient to drive calibration_current through the motor.
         float phase_inductance = 0.0f;        // to be set by measure_phase_inductance
         float phase_resistance = 0.0f;        // to be set by measure_phase_resistance
         int32_t direction = 1;                // 1 or -1
@@ -90,37 +91,55 @@ public:
         ARMED_STATE_ARMED,
     };
 
-    Motor(const MotorHardwareConfig_t& hw_config,
-         const GateDriverHardwareConfig_t& gate_driver_config,
-         Config_t& config);
+    Motor(
+        const MotorHardwareConfig_t &hw_config,
+        const GateDriverHardwareConfig_t &gate_driver_config,
+        Config_t &config);
 
     bool arm();
+
     void disarm();
+
     void setup() {
         DRV8301_setup();
     }
+
     void reset_current_control();
 
     void update_current_controller_gains();
+
     void DRV8301_setup();
+
     bool check_DRV_fault();
+
     void set_error(Error_t error);
+
     bool do_checks();
+
     void log_timing(TimingLog_t log_idx);
+
     float phase_current_from_adcval(uint32_t ADCValue);
+
     bool measure_phase_resistance(float test_current, float max_voltage);
+
     bool measure_phase_inductance(float voltage_low, float voltage_high);
+
     bool run_calibration();
+
     bool enqueue_modulation_timings(float mod_alpha, float mod_beta);
+
     bool enqueue_voltage_timings(float v_alpha, float v_beta);
+
     bool FOC_voltage(float v_d, float v_q, float phase);
+
     bool FOC_current(float Id_des, float Iq_des, float phase);
+
     bool update(float current_setpoint, float phase);
 
-    const MotorHardwareConfig_t& hw_config_;
+    const MotorHardwareConfig_t &hw_config_;
     const GateDriverHardwareConfig_t gate_driver_config_;
-    Config_t& config_;
-    Axis* axis_ = nullptr; // set by Axis constructor
+    Config_t &config_;
+    Axis *axis_ = nullptr; // set by Axis constructor
 
 //private:
 
@@ -133,13 +152,13 @@ public:
     bool next_timings_valid_ = false;
     uint16_t last_cpu_time_ = 0;
     int timing_log_index_ = 0;
-    uint16_t timing_log_[TIMING_LOG_NUM_SLOTS] = { 0 };
+    uint16_t timing_log_[TIMING_LOG_NUM_SLOTS] = {0};
 
     // variables exposed on protocol
     Error_t error_ = ERROR_NONE;
     // Do not write to this variable directly!
     // It is for exclusive use by the safety_critical_... functions.
-    ArmedState_t armed_state_ = ARMED_STATE_DISARMED; 
+    ArmedState_t armed_state_ = ARMED_STATE_DISARMED;
     bool is_calibrated_ = config_.pre_calibrated;
     Iph_BC_t current_meas_ = {0.0f, 0.0f};
     Iph_BC_t DC_calib_ = {0.0f, 0.0f};
@@ -172,49 +191,49 @@ public:
             make_protocol_property("DC_calib_phC", &DC_calib_.phC),
             make_protocol_property("phase_current_rev_gain", &phase_current_rev_gain_),
             make_protocol_object("current_control",
-                make_protocol_property("p_gain", &current_control_.p_gain),
-                make_protocol_property("i_gain", &current_control_.i_gain),
-                make_protocol_property("v_current_control_integral_d", &current_control_.v_current_control_integral_d),
-                make_protocol_property("v_current_control_integral_q", &current_control_.v_current_control_integral_q),
-                make_protocol_property("Ibus", &current_control_.Ibus),
-                make_protocol_property("final_v_alpha", &current_control_.final_v_alpha),
-                make_protocol_property("final_v_beta", &current_control_.final_v_beta),
-                make_protocol_property("Iq_setpoint", &current_control_.Iq_setpoint),
-                make_protocol_property("Iq_measured", &current_control_.Iq_measured),
-                make_protocol_ro_property("max_allowed_current", &current_control_.max_allowed_current),
-                make_protocol_ro_property("overcurrent_trip_level", &current_control_.overcurrent_trip_level)
+                                 make_protocol_property("p_gain", &current_control_.p_gain),
+                                 make_protocol_property("i_gain", &current_control_.i_gain),
+                                 make_protocol_property("v_current_control_integral_d", &current_control_.v_current_control_integral_d),
+                                 make_protocol_property("v_current_control_integral_q", &current_control_.v_current_control_integral_q),
+                                 make_protocol_property("Ibus", &current_control_.Ibus),
+                                 make_protocol_property("final_v_alpha", &current_control_.final_v_alpha),
+                                 make_protocol_property("final_v_beta", &current_control_.final_v_beta),
+                                 make_protocol_property("Iq_setpoint", &current_control_.Iq_setpoint),
+                                 make_protocol_property("Iq_measured", &current_control_.Iq_measured),
+                                 make_protocol_ro_property("max_allowed_current", &current_control_.max_allowed_current),
+                                 make_protocol_ro_property("overcurrent_trip_level", &current_control_.overcurrent_trip_level)
             ),
             make_protocol_object("gate_driver",
-                make_protocol_ro_property("drv_fault", &drv_fault_)
+                                 make_protocol_ro_property("drv_fault", &drv_fault_)
                 // make_protocol_ro_property("status_reg_1", &gate_driver_regs_.Stat_Reg_1_Value),
                 // make_protocol_ro_property("status_reg_2", &gate_driver_regs_.Stat_Reg_2_Value),
                 // make_protocol_ro_property("ctrl_reg_1", &gate_driver_regs_.Ctrl_Reg_1_Value),
                 // make_protocol_ro_property("ctrl_reg_2", &gate_driver_regs_.Ctrl_Reg_2_Value)
             ),
             make_protocol_object("timing_log",
-                make_protocol_ro_property("TIMING_LOG_GENERAL", &timing_log_[TIMING_LOG_GENERAL]),
-                make_protocol_ro_property("TIMING_LOG_ADC_CB_I", &timing_log_[TIMING_LOG_ADC_CB_I]),
-                make_protocol_ro_property("TIMING_LOG_ADC_CB_DC", &timing_log_[TIMING_LOG_ADC_CB_DC]),
-                make_protocol_ro_property("TIMING_LOG_MEAS_R", &timing_log_[TIMING_LOG_MEAS_R]),
-                make_protocol_ro_property("TIMING_LOG_MEAS_L", &timing_log_[TIMING_LOG_MEAS_L]),
-                make_protocol_ro_property("TIMING_LOG_ENC_CALIB", &timing_log_[TIMING_LOG_ENC_CALIB]),
-                make_protocol_ro_property("TIMING_LOG_IDX_SEARCH", &timing_log_[TIMING_LOG_IDX_SEARCH]),
-                make_protocol_ro_property("TIMING_LOG_FOC_VOLTAGE", &timing_log_[TIMING_LOG_FOC_VOLTAGE]),
-                make_protocol_ro_property("TIMING_LOG_FOC_CURRENT", &timing_log_[TIMING_LOG_FOC_CURRENT])
+                                 make_protocol_ro_property("TIMING_LOG_GENERAL", &timing_log_[TIMING_LOG_GENERAL]),
+                                 make_protocol_ro_property("TIMING_LOG_ADC_CB_I", &timing_log_[TIMING_LOG_ADC_CB_I]),
+                                 make_protocol_ro_property("TIMING_LOG_ADC_CB_DC", &timing_log_[TIMING_LOG_ADC_CB_DC]),
+                                 make_protocol_ro_property("TIMING_LOG_MEAS_R", &timing_log_[TIMING_LOG_MEAS_R]),
+                                 make_protocol_ro_property("TIMING_LOG_MEAS_L", &timing_log_[TIMING_LOG_MEAS_L]),
+                                 make_protocol_ro_property("TIMING_LOG_ENC_CALIB", &timing_log_[TIMING_LOG_ENC_CALIB]),
+                                 make_protocol_ro_property("TIMING_LOG_IDX_SEARCH", &timing_log_[TIMING_LOG_IDX_SEARCH]),
+                                 make_protocol_ro_property("TIMING_LOG_FOC_VOLTAGE", &timing_log_[TIMING_LOG_FOC_VOLTAGE]),
+                                 make_protocol_ro_property("TIMING_LOG_FOC_CURRENT", &timing_log_[TIMING_LOG_FOC_CURRENT])
             ),
             make_protocol_object("config",
-                make_protocol_property("pre_calibrated", &config_.pre_calibrated),
-                make_protocol_property("pole_pairs", &config_.pole_pairs),
-                make_protocol_property("calibration_current", &config_.calibration_current),
-                make_protocol_property("resistance_calib_max_voltage", &config_.resistance_calib_max_voltage),
-                make_protocol_property("phase_inductance", &config_.phase_inductance),
-                make_protocol_property("phase_resistance", &config_.phase_resistance),
-                make_protocol_property("direction", &config_.direction),
-                make_protocol_property("motor_type", &config_.motor_type),
-                make_protocol_property("current_lim", &config_.current_lim),
-                make_protocol_property("requested_current_range", &config_.requested_current_range),
-                make_protocol_property("current_control_bandwidth", &config_.current_control_bandwidth,
-                    [](void* ctx) { static_cast<Motor*>(ctx)->update_current_controller_gains(); }, this)
+                                 make_protocol_property("pre_calibrated", &config_.pre_calibrated),
+                                 make_protocol_property("pole_pairs", &config_.pole_pairs),
+                                 make_protocol_property("calibration_current", &config_.calibration_current),
+                                 make_protocol_property("resistance_calib_max_voltage", &config_.resistance_calib_max_voltage),
+                                 make_protocol_property("phase_inductance", &config_.phase_inductance),
+                                 make_protocol_property("phase_resistance", &config_.phase_resistance),
+                                 make_protocol_property("direction", &config_.direction),
+                                 make_protocol_property("motor_type", &config_.motor_type),
+                                 make_protocol_property("current_lim", &config_.current_lim),
+                                 make_protocol_property("requested_current_range", &config_.requested_current_range),
+                                 make_protocol_property("current_control_bandwidth", &config_.current_control_bandwidth,
+                                                        [ ](void *ctx) { static_cast<Motor *>(ctx)->update_current_controller_gains(); }, this)
             )
         );
     }

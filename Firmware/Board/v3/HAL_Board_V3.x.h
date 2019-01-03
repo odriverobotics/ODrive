@@ -1,6 +1,7 @@
 /*
 * @brief Contains board specific configuration for ODrive v3.x
 */
+
 #ifndef __BOARD_CONFIG_H_V3
 #define __BOARD_CONFIG_H_V3
 
@@ -10,15 +11,14 @@
 #include <tim.h>
 #include <main.h>
 
-#if HW_VERSION_MAJOR == 3
 #if HW_VERSION_MINOR <= 3
-#define M0_SHUNT_RESISTANCE (675e-6f)
-#define M1_SHUNT_RESISTANCE (675e-6f)
+    #define M0_SHUNT_RESISTANCE (675e-6f)
+    #define M1_SHUNT_RESISTANCE (675e-6f)
 #else
-#define M0_SHUNT_RESISTANCE (500e-6f)
-#define M1_SHUNT_RESISTANCE (500e-6f)
+    #define M0_SHUNT_RESISTANCE (500e-6f)
+    #define M1_SHUNT_RESISTANCE (500e-6f)
 #endif
-#endif
+
 
 #define THERMISTOR_POLY_COEFFS {363.93910201f, -462.15369634f, 307.55129571f, -27.72569531f}
 
@@ -31,30 +31,28 @@
 #define M0_THREAD_PRIORITY_OFFSET 1
 
 
-#if HW_VERSION_MAJOR == 3 && HW_VERSION_MINOR >= 5
-  #define M1_AXIS_STEP_PIN 7
-  #define M1_AXIS_DIR_PIN 8
+#if HW_VERSION_MINOR >= 5
+    #define M1_AXIS_STEP_PIN 7
+    #define M1_AXIS_DIR_PIN 8
 #else
-  #define M1_AXIS_STEP_PIN 3
-  #define M1_AXIS_DIR_PIN 4
+    #define M1_AXIS_STEP_PIN 3
+    #define M1_AXIS_DIR_PIN 4
 #endif
 
-#if HW_VERSION_MAJOR == 3 && HW_VERSION_MINOR >= 3
-  #define M1_ADC_CHANNEL 4
+#if HW_VERSION_MINOR >= 3
+    #define M1_ADC_CHANNEL 4
 #else
-  #define M1_ADC_CHANNEL 1
+    #define M1_ADC_CHANNEL 1
 #endif
 
 #define M1_THERMISTOR_ADC_CHANNEL 15
 #define M1_THREAD_PRIORITY_OFFSET 0
 
-#if HW_VERSION_MAJOR == 3 && HW_VERSION_MINOR >= 5 && HW_VERSION_VOLTAGE >= 48
-  #define HAL_BRAKE_RESISTANCE 2.0f     // [ohm]
+#if HW_VERSION_MINOR >= 5 && HW_VERSION_VOLTAGE >= 48
+    #define HAL_BRAKE_RESISTANCE 2.0f     // [ohm]
 #else
-  #define HAL_BRAKE_RESISTANCE 0.47f;     // [ohm]
+    #define HAL_BRAKE_RESISTANCE 0.47f;     // [ohm]
 #endif
-
-
 
 
 #define HAL_I2C_A0_PORT GPIO_3_GPIO_Port

@@ -56,7 +56,7 @@ extern "C" {
 #define STM_ID_GetFlashSize() (*(uint16_t *)(ID_FLASH_ADDRESS))
 
 #ifdef M_PI
-#undef M_PI
+    #undef M_PI
 #endif
 #define M_PI 3.14159265358979323846f
 
@@ -71,8 +71,8 @@ static const float sqrt3_by_2 = 0.86602540378f;
 
 //beware of inserting large values!
 static inline float wrap_pm(float x, float pm_range) {
-    while (x >= pm_range) x -= (2.0f * pm_range);
-    while (x < -pm_range) x += (2.0f * pm_range);
+    while (x >= pm_range) { x -= (2.0f * pm_range); }
+    while (x < -pm_range) { x += (2.0f * pm_range); }
     return x;
 }
 
@@ -84,8 +84,9 @@ static inline float wrap_pm_pi(float theta) {
 // like fmodf, but always positive
 static inline float fmodf_pos(float x, float y) {
     float out = fmodf(x, y);
-    if (out < 0.0f)
+    if (out < 0.0f) {
         out += y;
+    }
     return out;
 }
 
@@ -93,20 +94,26 @@ static inline float fmodf_pos(float x, float y) {
 // as per the magnitude invariant clarke transform
 // The magnitude of the alpha-beta vector may not be larger than sqrt(3)/2
 // Returns 0 on success, and -1 if the input was out of range
-int SVM(float alpha, float beta, float* tA, float* tB, float* tC);
+int SVM(float alpha, float beta, float *tA, float *tB, float *tC);
 
 float fast_atan2(float y, float x);
+
 float horner_fma(float x, const float *coeffs, size_t count);
+
 int mod(int dividend, int divisor);
 
 uint32_t deadline_to_timeout(uint32_t deadline_ms);
+
 uint32_t timeout_to_deadline(uint32_t timeout_ms);
+
 int is_in_the_future(uint32_t time_ms);
 
 uint32_t micros(void);
+
 void delay_us(uint32_t us);
 
 float our_arm_sin_f32(float x);
+
 float our_arm_cos_f32(float x);
 
 #ifdef __cplusplus

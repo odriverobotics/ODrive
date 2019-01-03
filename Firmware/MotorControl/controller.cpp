@@ -2,9 +2,8 @@
 #include "odrive_main.h"
 
 
-Controller::Controller(Config_t& config) :
-    config_(config)
-{}
+Controller::Controller(Config_t &config) :
+    config_(config) { }
 
 void Controller::reset() {
     pos_setpoint_ = 0.0f;
@@ -82,7 +81,8 @@ bool Controller::anticogging_calibration(float pos_estimate, float vel_estimate)
         if (anticogging_.index < axis_->encoder_.config_.cpr) { // TODO: remove the dependency on encoder CPR
             set_pos_setpoint(anticogging_.index, 0.0f, 0.0f);
             return false;
-        } else {
+        }
+        else {
             anticogging_.index = 0;
             set_pos_setpoint(0.0f, 0.0f, 0.0f);  // Send the motor home
             anticogging_.use_anticogging = true;  // We're good to go, enable anti-cogging
@@ -93,7 +93,7 @@ bool Controller::anticogging_calibration(float pos_estimate, float vel_estimate)
     return false;
 }
 
-bool Controller::update(float pos_estimate, float vel_estimate, float* current_setpoint_output) {
+bool Controller::update(float pos_estimate, float vel_estimate, float *current_setpoint_output) {
     // Only runs if anticogging_.calib_anticogging is true; non-blocking
     anticogging_calibration(pos_estimate, vel_estimate);
     float anticogging_pos = pos_estimate;
@@ -109,7 +109,8 @@ bool Controller::update(float pos_estimate, float vel_estimate, float* current_s
             // pos_setpoint already set by trajectory
             vel_setpoint_ = 0.0f;
             current_setpoint_ = 0.0f;
-        } else {
+        }
+        else {
             TrapezoidalTrajectory::Step_t traj_step = axis_->trap_.eval(t);
             pos_setpoint_ = traj_step.Y;
             vel_setpoint_ = traj_step.Yd;
@@ -125,7 +126,8 @@ bool Controller::update(float pos_estimate, float vel_estimate, float* current_s
         float step;
         if (fabsf(full_step) > max_step_size) {
             step = std::copysignf(max_step_size, full_step);
-        } else {
+        }
+        else {
             step = full_step;
         }
         vel_setpoint_ += step;
@@ -139,13 +141,14 @@ bool Controller::update(float pos_estimate, float vel_estimate, float* current_s
         if (config_.setpoints_in_cpr) {
             // TODO this breaks the semantics that estimates come in on the arguments.
             // It's probably better to call a get_estimate that will arbitrate (enc vs sensorless) instead.
-            float cpr = (float)(axis_->encoder_.config_.cpr);
+            float cpr = (float) (axis_->encoder_.config_.cpr);
             // Keep pos setpoint from drifting
             pos_setpoint_ = fmodf_pos(pos_setpoint_, cpr);
             // Circular delta
             pos_err = pos_setpoint_ - axis_->encoder_.pos_cpr_;
             pos_err = wrap_pm(pos_err, 0.5f * cpr);
-        } else {
+        }
+        else {
             pos_err = pos_setpoint_ - pos_estimate;
         }
         vel_des += config_.pos_gain * pos_err;
@@ -153,8 +156,8 @@ bool Controller::update(float pos_estimate, float vel_estimate, float* current_s
 
     // Velocity limiting
     float vel_lim = config_.vel_limit;
-    if (vel_des > vel_lim) vel_des = vel_lim;
-    if (vel_des < -vel_lim) vel_des = -vel_lim;
+    if (vel_des > vel_lim) { vel_des = vel_lim; }
+    if (vel_des < -vel_lim) { vel_des = -vel_lim; }
 
     // Check for overspeed fault (done in this module (controller) for cohesion with vel_lim)
     if (config_.vel_limit_tolerance > 0.0f) { // 0.0f to disable
@@ -198,15 +201,17 @@ bool Controller::update(float pos_estimate, float vel_estimate, float* current_s
     if (config_.control_mode < CTRL_MODE_VELOCITY_CONTROL) {
         // reset integral if not in use
         vel_integrator_current_ = 0.0f;
-    } else {
+    }
+    else {
         if (limited) {
             // TODO make decayfactor configurable
             vel_integrator_current_ *= 0.99f;
-        } else {
+        }
+        else {
             vel_integrator_current_ += (config_.vel_integrator_gain * current_meas_period) * v_err;
         }
     }
 
-    if (current_setpoint_output) *current_setpoint_output = Iq;
+    if (current_setpoint_output) { *current_setpoint_output = Iq; }
     return true;
 }

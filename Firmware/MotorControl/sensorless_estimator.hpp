@@ -2,7 +2,7 @@
 #define __SENSORLESS_ESTIMATOR_HPP
 
 class SensorlessEstimator {
-public:
+  public:
     enum Error_t {
         ERROR_NONE = 0,
         ERROR_UNSTABLE_GAIN = 0x01,
@@ -14,12 +14,12 @@ public:
         float pm_flux_linkage = 1.58e-3f; // [V / (rad/s)]  { 5.51328895422 / (<pole pairs> * <rpm/v>) }
     };
 
-    SensorlessEstimator(Config_t& config);
+    SensorlessEstimator(Config_t &config);
 
     bool update();
 
-    Axis* axis_ = nullptr; // set by Axis constructor
-    Config_t& config_;
+    Axis *axis_ = nullptr; // set by Axis constructor
+    Config_t &config_;
 
     // TODO: expose on protocol
     Error_t error_ = ERROR_NONE;
@@ -42,9 +42,9 @@ public:
             // make_protocol_property("pll_kp", &pll_kp_),
             // make_protocol_property("pll_ki", &pll_ki_),
             make_protocol_object("config",
-                make_protocol_property("observer_gain", &config_.observer_gain),
-                make_protocol_property("pll_bandwidth", &config_.pll_bandwidth),
-                make_protocol_property("pm_flux_linkage", &config_.pm_flux_linkage)
+                                 make_protocol_property("observer_gain", &config_.observer_gain),
+                                 make_protocol_property("pll_bandwidth", &config_.pll_bandwidth),
+                                 make_protocol_property("pm_flux_linkage", &config_.pm_flux_linkage)
             )
         );
     }

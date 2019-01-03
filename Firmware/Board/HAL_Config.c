@@ -6,15 +6,13 @@ const size_t thermistor_num_coeffs = sizeof(thermistor_poly_coeffs) / sizeof(the
 const BoardHardwareConfig_t hw_configs[HAL_NUMBER_OF_MOTORS] = {
         {
 //M0
-                .
-                axis_config = {
+        .axis_config = {
                         .step_gpio_pin = M0_AXIS_STEP_PIN,
                         .dir_gpio_pin = M0_AXIS_DIR_PIN,
                         .thermistor_adc_ch = M0_THERMISTOR_ADC_CHANNEL,
                         .thread_priority = (osPriority) (osPriorityHigh + (osPriority) M0_THREAD_PRIORITY_OFFSET),
                 },
-                .
-                encoder_config = {
+        .encoder_config = {
                         .timer = &htim3,
                         .index_port = M0_ENC_Z_GPIO_Port,
                         .index_pin = M0_ENC_Z_Pin,
@@ -25,14 +23,12 @@ const BoardHardwareConfig_t hw_configs[HAL_NUMBER_OF_MOTORS] = {
                         .hallC_port = M0_ENC_Z_GPIO_Port,
                         .hallC_pin = M0_ENC_Z_Pin,
                 },
-                .
-                motor_config = {
+        .motor_config = {
                         .timer = &htim1,
                         .control_deadline = TIM_1_8_PERIOD_CLOCKS,
                         .shunt_conductance = 1.0f / M0_SHUNT_RESISTANCE,  //[S]
                 },
-                .
-                gate_driver_config = {
+        .gate_driver_config = {
                         .spi = &hspi3,
                         // Note: this board has the EN_Gate pin shared!
                         .enable_port = EN_GATE_GPIO_Port,
@@ -45,15 +41,13 @@ const BoardHardwareConfig_t hw_configs[HAL_NUMBER_OF_MOTORS] = {
         },
         {
 //M1
-                .
-                axis_config = {
+        .axis_config = {
                         .step_gpio_pin = M1_AXIS_STEP_PIN,
                         .dir_gpio_pin = M1_AXIS_DIR_PIN,
                         .thermistor_adc_ch = M1_THERMISTOR_ADC_CHANNEL,
                         .thread_priority =(osPriority) (osPriorityHigh + (osPriority) M1_THREAD_PRIORITY_OFFSET),
                 },
-                .
-                encoder_config = {
+        .encoder_config = {
                         .timer = &htim4,
                         .index_port = M1_ENC_Z_GPIO_Port,
                         .index_pin = M1_ENC_Z_Pin,
@@ -64,14 +58,12 @@ const BoardHardwareConfig_t hw_configs[HAL_NUMBER_OF_MOTORS] = {
                         .hallC_port = M1_ENC_Z_GPIO_Port,
                         .hallC_pin = M1_ENC_Z_Pin,
                 },
-                .
-                motor_config = {
+        .motor_config = {
                         .timer = &htim8,
                         .control_deadline = (3 * TIM_1_8_PERIOD_CLOCKS) / 2,
                         .shunt_conductance = 1.0f / M1_SHUNT_RESISTANCE,  //[S]
                 },
-                .
-                gate_driver_config = {
+        .gate_driver_config = {
                         .spi = &hspi3,
                         // Note: this board has the EN_Gate pin shared!
                         .enable_port = EN_GATE_GPIO_Port,

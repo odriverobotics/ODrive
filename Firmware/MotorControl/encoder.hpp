@@ -2,11 +2,11 @@
 #define __ENCODER_HPP
 
 #ifndef __ODRIVE_MAIN_H
-#error "This file should not be included directly. Include odrive_main.h instead."
+    #error "This file should not be included directly. Include odrive_main.h instead."
 #endif
 
 class Encoder {
-public:
+  public:
     enum Error_t {
         ERROR_NONE = 0,
         ERROR_UNSTABLE_GAIN = 0x01,
@@ -26,10 +26,10 @@ public:
         Encoder::Mode_t mode = Encoder::MODE_INCREMENTAL;
         bool use_index = false;
         bool pre_calibrated = false; // If true, this means the offset stored in
-                                    // configuration is valid and does not need
-                                    // be determined by run_offset_calibration.
-                                    // In this case the encoder will enter ready
-                                    // state as soon as the index is found.
+        // configuration is valid and does not need
+        // be determined by run_offset_calibration.
+        // In this case the encoder will enter ready
+        // state as soon as the index is found.
         float idx_search_speed = 10.0f; // [rad/s electrical]
         bool zero_count_on_find_idx = true;
         int32_t cpr = (2048 * 4);   // Default resolution of CUI-AMT102 encoder,
@@ -39,29 +39,37 @@ public:
         float bandwidth = 1000.0f;
     };
 
-    Encoder(const EncoderHardwareConfig_t& hw_config,
-                     Config_t& config);
-    
+    Encoder(
+        const EncoderHardwareConfig_t &hw_config,
+        Config_t &config);
+
     void setup();
+
     void set_error(Error_t error);
+
     bool do_checks();
 
     void enc_index_cb();
 
     void set_linear_count(int32_t count);
+
     void set_circular_count(int32_t count, bool update_offset);
+
     bool calib_enc_offset(float voltage_magnitude);
+
     bool scan_for_enc_idx(float omega, float voltage_magnitude);
 
     bool run_index_search();
+
     bool run_offset_calibration();
+
     bool update();
 
     void update_pll_gains();
 
-    const EncoderHardwareConfig_t& hw_config_;
-    Config_t& config_;
-    Axis* axis_ = nullptr; // set by Axis constructor
+    const EncoderHardwareConfig_t &hw_config_;
+    Config_t &config_;
+    Axis *axis_ = nullptr; // set by Axis constructor
 
     Error_t error_ = ERROR_NONE;
     bool index_found_ = false;
@@ -84,7 +92,7 @@ public:
         return make_protocol_member_list(
             make_protocol_property("error", &error_),
             make_protocol_ro_property("is_ready", &is_ready_),
-            make_protocol_ro_property("index_found", const_cast<bool*>(&index_found_)),
+            make_protocol_ro_property("index_found", const_cast<bool *>(&index_found_)),
             make_protocol_property("shadow_count", &shadow_count_),
             make_protocol_property("count_in_cpr", &count_in_cpr_),
             make_protocol_property("interpolation", &interpolation_),
@@ -96,17 +104,17 @@ public:
             // make_protocol_property("pll_kp", &pll_kp_),
             // make_protocol_property("pll_ki", &pll_ki_),
             make_protocol_object("config",
-                make_protocol_property("mode", &config_.mode),
-                make_protocol_property("use_index", &config_.use_index),
-                make_protocol_property("pre_calibrated", &config_.pre_calibrated),
-                make_protocol_property("idx_search_speed", &config_.idx_search_speed),
-                make_protocol_property("zero_count_on_find_idx", &config_.zero_count_on_find_idx),
-                make_protocol_property("cpr", &config_.cpr),
-                make_protocol_property("offset", &config_.offset),
-                make_protocol_property("offset_float", &config_.offset_float),
-                make_protocol_property("bandwidth", &config_.bandwidth,
-                    [](void* ctx) { static_cast<Encoder*>(ctx)->update_pll_gains(); }, this),
-                make_protocol_property("calib_range", &config_.calib_range)
+                                 make_protocol_property("mode", &config_.mode),
+                                 make_protocol_property("use_index", &config_.use_index),
+                                 make_protocol_property("pre_calibrated", &config_.pre_calibrated),
+                                 make_protocol_property("idx_search_speed", &config_.idx_search_speed),
+                                 make_protocol_property("zero_count_on_find_idx", &config_.zero_count_on_find_idx),
+                                 make_protocol_property("cpr", &config_.cpr),
+                                 make_protocol_property("offset", &config_.offset),
+                                 make_protocol_property("offset_float", &config_.offset_float),
+                                 make_protocol_property("bandwidth", &config_.bandwidth,
+                                                        [ ](void *ctx) { static_cast<Encoder *>(ctx)->update_pll_gains(); }, this),
+                                 make_protocol_property("calib_range", &config_.calib_range)
             )
         );
     }
