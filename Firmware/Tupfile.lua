@@ -118,6 +118,7 @@ build{
     --toolchains={LLVMToolchain('x86_64', {'-Ofast'}, {'-flto'})},
     packages={'stm_platform'},
     sources={
+        'Board/HAL_Config.c',
         'Drivers/DRV8301/drv8301.c',
         'MotorControl/utils.c',
         'MotorControl/arm_sin_f32.c',

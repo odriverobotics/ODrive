@@ -84,7 +84,7 @@ extern bool user_config_loaded_;
 class Axis;
 class Motor;
 
-constexpr size_t AXIS_COUNT = 2;
+constexpr size_t AXIS_COUNT = HAL_NUMBER_OF_MOTORS;
 extern Axis *axes[AXIS_COUNT];
 
 // if you use the oscilloscope feature you can bump up this value

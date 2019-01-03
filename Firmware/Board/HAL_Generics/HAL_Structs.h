@@ -1,6 +1,7 @@
 
 #ifndef _HAL_STRUCTS_H
 #define _HAL_STRUCTS_H
+#include "cmsis_os.h"
 typedef struct {
     uint16_t step_gpio_pin;
     uint16_t dir_gpio_pin;
@@ -43,8 +44,6 @@ typedef struct {
     GateDriverHardwareConfig_t gate_driver_config;
 } BoardHardwareConfig_t;
 
-extern const BoardHardwareConfig_t hw_configs[2];
-extern const float thermistor_poly_coeffs[];
-extern const size_t thermistor_num_coeffs;
+
 
 #endif //_HAL_STRUCTS_H
