@@ -50,7 +50,6 @@ void sync_timers(TIM_HandleTypeDef* htim_a, TIM_HandleTypeDef* htim_b,
                  TIM_HandleTypeDef* htim_refbase = nullptr);
 void start_general_purpose_adc();
 float get_adc_voltage(GPIO_TypeDef* GPIO_port, uint16_t GPIO_pin);
-void pwm_in_init();
 void start_analog_thread();
 
 void update_brake_current();
