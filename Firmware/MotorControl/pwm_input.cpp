@@ -31,7 +31,7 @@
 #define RC_MIN_LEGAL_HIGH_TIME  ((TIM_2_5_CLOCK_HZ / 1000000UL) * 500UL) // ignore high periods shorter than 0.5ms
 #define RC_MAX_LEGAL_HIGH_TIME  ((TIM_2_5_CLOCK_HZ / 1000000UL) * 2500UL) // ignore high periods longer than 2.5ms
 
-#define PWM_INACTIVE_TIME        (((TIM_2_5_CLOCK_HZ / 1000UL) * 25UL)) // 25 milliseconds.  RC PWM should cycle every 20ms.
+#define PWM_INACTIVE_TIME        (((TIM_2_5_CLOCK_HZ / 1000UL) * 45UL)) // 45 milliseconds.  RC PWM should cycle every 20ms.
 
 #define PWM_DEADBAND_MIN    0.495f // Values in the range [DEADBAND_MIN, DEADBAND_MAX] will output (min+max)/2
 #define PWM_DEADBAND_MAX    0.505f // Values in the range [DEADBAND_MIN, DEADBAND_MAX] will output (min+max)/2
@@ -43,17 +43,20 @@
 /* Private constant data -----------------------------------------------------*/
 /* Private variables ---------------------------------------------------------*/
 
-static uint32_t last_valid_pulse_timestamp[GPIO_COUNT] = { 0 }; // Timer ticks
+static uint32_t last_active_timestamp[GPIO_COUNT] = { 0 }; // Timer ticks
 static uint32_t last_LtoH_timestamp[GPIO_COUNT] = { 0 }; // Timer ticks
 static uint32_t last_HtoL_timestamp[GPIO_COUNT] = { 0 }; // Timer ticks
-static uint32_t last_edge_timestamp[GPIO_COUNT] = { 0 }; // Timer ticks
 static uint32_t last_period_110[GPIO_COUNT] = { 0 }; // Timer ticks
 static uint32_t last_period_090[GPIO_COUNT] = { 0 }; // Timer ticks
 static uint32_t last_period[GPIO_COUNT] = { 0 }; // Timer ticks
 static bool last_dir_pin_state[GPIO_COUNT] = { false };
 static bool last_pin_state[GPIO_COUNT] = { false };
 static bool channel_active[GPIO_COUNT] = { false };
-static float channel_value[GPIO_COUNT]; // Channel output value before modification by direction pin 
+static float channel_value[GPIO_COUNT]; // Channel output value before modification by direction pin
+
+// Debugging variables
+static uint32_t valid_counts[GPIO_COUNT];
+static uint32_t all_counts[GPIO_COUNT];
 
 /* Function prototypes -------------------------------------------------------*/
 
@@ -135,7 +138,6 @@ void pwm_in_init() {
     pwm_check_callback_struct.ptimer = &pwm_no_pulse_check_cb; // Callback function pointer
     osTimerId pwm_check_timer = osTimerCreate(&pwm_check_callback_struct, osTimerPeriodic, NULL);
     osTimerStart (pwm_check_timer, 2); // Period in milliseconds
-
 }
 
 void diff_steering_mixer_update(int gpio_num) {
@@ -164,12 +166,22 @@ float add_deadband(float ratio) {
 }
 
 bool get_dir_pin_state(int32_t gpio_index) {
+
+    #warning Disabled this function for debugging
+    return true;
+
     int32_t gpio_dir_pin = board_config.pwm_mappings[gpio_index].gpio_direction_pin;
-    if (gpio_dir_pin < 1 || gpio_dir_pin > GPIO_COUNT) { // 1-indexed
+
+#if HW_VERSION_MAJOR == 3 && HW_VERSION_MINOR >= 3
+    if (gpio_dir_pin >= 1 && gpio_dir_pin <= GPIO_COUNT) { // 1-indexed
+#else
+    // Only ch4 is available on v3.2
+    if (gpio_dir_pin == 4) {
+#endif
         return HAL_GPIO_ReadPin(get_gpio_port_by_pin(gpio_dir_pin), get_gpio_pin_by_pin(gpio_dir_pin)) != GPIO_PIN_RESET;
     }
     else {
-        return false;
+        return true;
     }
 }
 
@@ -228,7 +240,6 @@ bool handle_pulse(int32_t gpio_index, uint32_t high_time, uint32_t period) {
     return true;
 }
 
-
 // In this function we need to calculate the duty cycle of the incoming PWM signal so that it can be translated into a control input
 
 // Three types of pulse-width modulation (PWM) are possible:
@@ -275,13 +286,16 @@ bool handle_pulse(int32_t gpio_index, uint32_t high_time, uint32_t period) {
 // Called by interrupt from stm32f4xx.c
 void pwm_in_cb(int channel, uint32_t timestamp) {
     
+    // gpio_num is 1-indexed
     int gpio_num = tim_2_5_channel_num_to_gpio_num(channel);
-    if (gpio_num < 1 || gpio_num > GPIO_COUNT)
+    if (gpio_num <= 0) // Returns -1 for error
         return;
 
     bool current_pin_state = HAL_GPIO_ReadPin(get_gpio_port_by_pin(gpio_num), get_gpio_pin_by_pin(gpio_num)) != GPIO_PIN_RESET;
 
     int gpio_index = gpio_num - 1; // Convert from 1-indexed to zero-indexed for array access
+
+    if (gpio_index != 0 && gpio_index != 1) printf("unknown index %i\n", gpio_index);
 
     auto transitionLtoH = [&]() {
         // Calculate LtoH period of waveform (assuming type 2 PWM)
@@ -292,16 +306,23 @@ void pwm_in_cb(int channel, uint32_t timestamp) {
         if ((this_period >= last_period_090[gpio_index]) && (this_period <= last_period_110[gpio_index]) && this_period < PWM_INACTIVE_TIME) {
             if (handle_pulse(gpio_index, last_HtoL_timestamp[gpio_index] - last_LtoH_timestamp[gpio_index], this_period)) {
                 if (board_config.pwm_mappings[gpio_index].pwm_type == PWM_TYPE_RC) {
-                    last_valid_pulse_timestamp[gpio_index] = timestamp; // Used for RC PWM
+                    last_active_timestamp[gpio_index] = timestamp; // Used for RC PWM
                     channel_active[gpio_index] = true;
                 }
             }
+            valid_counts[gpio_index]++;
+        }
+        else {
+            // Debugging
+            printf("index %u this_period: %lu, pulse: %lu\n", gpio_index, this_period/84, (last_HtoL_timestamp[gpio_index] - last_LtoH_timestamp[gpio_index])/84);
         }
 
         last_LtoH_timestamp[gpio_index] = timestamp;
         last_period_110[gpio_index] = 11 * (this_period / 10); // Going to accept less accuracy here to avoid overflowing at (uint32_t max value)/10
         last_period_090[gpio_index] =  9 * (this_period / 10); // Going to accept less accuracy here to avoid overflowing at (uint32_t max value)/10
         last_period[gpio_index] = this_period;
+
+        all_counts[gpio_index]++;
     };
 
     auto transitionHtoL = [&]() {
@@ -326,25 +347,39 @@ void pwm_in_cb(int channel, uint32_t timestamp) {
             // Duty cycle is 100%
             transitionHtoL();
             transitionLtoH();
+            printf("index %u missed low pulse\n", gpio_index);
         }
         else { // LtoH then HtoL 
             // Immeasurably-short high pulse
             // Duty cycle is 0%
             transitionLtoH();
             transitionHtoL();
+            printf("index %u missed high pulse.\n", gpio_index);
         }
     }
+
+    // static uint32_t counter = 0;
+    // static uint32_t last_timestamp = 0;
+    // if (gpio_index == 0) {
+    //     printf("%u t %lu s %u\n", gpio_index, (timestamp - last_timestamp)/84, current_pin_state);
+    //     // if (counter >= 9) {
+    //     //     counter = 0;
+    //     // }
+    //     // counter++;
+    //     last_timestamp = timestamp;
+    // }
 
     last_pin_state[gpio_index] = current_pin_state;
 
     if (board_config.pwm_mappings[gpio_index].pwm_type == PWM_TYPE_DUTY_CYCLE) {
-        last_edge_timestamp[gpio_index] = timestamp;
+        last_active_timestamp[gpio_index] = timestamp;
         channel_active[gpio_index] = true;
     }
 }
 
 // Called by RTOS timer at 0.1 to 1 kHz.  Timer set up in pwm_in_init()
 void pwm_no_pulse_check_cb(void *argument) {
+    
 #if HW_VERSION_MAJOR == 3 && HW_VERSION_MINOR >= 3
     for (uint8_t gpio_index = 0; gpio_index < GPIO_COUNT; gpio_index++) {
 #else
@@ -367,13 +402,14 @@ void pwm_no_pulse_check_cb(void *argument) {
             if (channel_active[gpio_index]) {
                 switch(board_config.pwm_mappings[gpio_index].pwm_type) {
                     case PWM_TYPE_RC: {
-                        if ((htim5.Instance->CNT - last_valid_pulse_timestamp[gpio_index]) > PWM_INACTIVE_TIME) {
+                        if ((htim5.Instance->CNT - last_active_timestamp[gpio_index]) > PWM_INACTIVE_TIME) {
                             channel_active[gpio_index] = false;
                             set_channel_output(endpoint, gpio_index, 0.5);
+                            printf("RC input index %i timed out\n", gpio_index);
                         }
                     } break;
                     case PWM_TYPE_DUTY_CYCLE: {
-                        if ((htim5.Instance->CNT - last_edge_timestamp[gpio_index]) > PWM_INACTIVE_TIME) {
+                        if ((htim5.Instance->CNT - last_active_timestamp[gpio_index]) > PWM_INACTIVE_TIME) {
                             channel_active[gpio_index] = false;
 
                             // Interrupt always records the most recent pin state in last_pin_state[gpio_index]
@@ -383,6 +419,8 @@ void pwm_no_pulse_check_cb(void *argument) {
                             else {
                                 set_channel_output(endpoint, gpio_index, 0.0);
                             }
+
+                            printf("PWM input index %i timed out\n", gpio_index);
                         }
                     } break;
                 }

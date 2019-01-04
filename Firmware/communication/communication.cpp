@@ -72,10 +72,12 @@ static uint32_t test_property = 0;
 
 auto make_protocol_definitions(PWMMapping_t& mapping) {
     return make_protocol_member_list(
+        make_protocol_property("pwm_type", &mapping.pwm_type),
         make_protocol_property("endpoint", &mapping.endpoint),
         make_protocol_property("min", &mapping.min),
         make_protocol_property("max", &mapping.max),
-        make_protocol_property("enable_deadband", &mapping.enable_deadband)
+        make_protocol_property("enable_deadband", &mapping.enable_deadband),
+        make_protocol_property("gpio_direction_pin", &mapping.gpio_direction_pin)
     );
 }
 
