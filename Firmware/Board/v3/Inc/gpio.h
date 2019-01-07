@@ -86,6 +86,8 @@ GPIO_TypeDef* get_gpio_port_by_pin(uint16_t GPIO_pin);
 #define GPIO_COUNT  8
 #endif
 
+#define PWM_IN_COUNT 4
+
 /* USER CODE END Prototypes */
 
 #ifdef __cplusplus
