@@ -17,7 +17,6 @@ class Endstop {
     Axis* axis_ = nullptr;
 
     void set_endstop_enabled(bool enable);
-    void endstop_cb();
     void update();
 
     bool getEndstopState();
