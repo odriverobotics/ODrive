@@ -122,9 +122,15 @@ void pwm_in_init() {
     for (int gpio_num = 1; gpio_num <= PWM_IN_COUNT; ++gpio_num) {
 #else
     int gpio_num = 4; {
-#endif
-        //if (is_endpoint_ref_valid(board_config.pwm_mappings[gpio_num - 1].endpoint)) {
-        {
+#endif  
+        // Activate timer interrupt if the pin is being used as a PWM input
+        bool pwm_dir_pin = false;
+        for (uint8_t i = 0; i < PWM_IN_COUNT; ++i) {
+            if (board_config.pwm_mappings[i].gpio_direction_pin == gpio_num) {
+                pwm_dir_pin = true;
+            }
+        }
+        if (is_endpoint_ref_valid(board_config.pwm_mappings[gpio_num - 1].endpoint) || pwm_dir_pin) {
             GPIO_InitStruct.Pin = get_gpio_pin_by_pin(gpio_num);
             HAL_GPIO_DeInit(get_gpio_port_by_pin(gpio_num), get_gpio_pin_by_pin(gpio_num));
             HAL_GPIO_Init(get_gpio_port_by_pin(gpio_num), &GPIO_InitStruct);
@@ -343,6 +349,8 @@ void pwm_in_cb(int channel, uint32_t timestamp) {
         }
     }
     else {
+        static uint32_t counter = 0;
+        printf("%u\n", ++counter);
         for (size_t i = 0; i < PWM_IN_COUNT; ++i) {
             // Check if another GPIO pin is using this channel as direction pin
             if (board_config.pwm_mappings[i].gpio_direction_pin == gpio_num) {
