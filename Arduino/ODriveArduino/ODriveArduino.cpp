@@ -38,6 +38,10 @@ void ODriveArduino::SetVelocity(int motor_number, float velocity, float current_
     serial_ << "v " << motor_number  << " " << velocity << " " << current_feedforward << "\n";
 }
 
+void ODriveArduino::SetCurrent(int motor_number, float current) {
+    serial_ << "c" << motor_number << " " << current << "\n";
+}
+
 float ODriveArduino::readFloat() {
     return readString().toFloat();
 }
