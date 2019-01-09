@@ -105,7 +105,7 @@ The maximum step rate is pending tests, but it should handle at least 50kHz. If 
 Please be aware that there is no enable line right now, and the step/direction interface is enabled by default, and remains active as long as the ODrive is in position control mode. To get the ODrive to go into position control mode at bootup, see how to configure the [startup procedure](commands.md#startup-procedure).
 
 ## RC PWM input
-You can control the ODrive directly from an hobby RC receiver.
+You can control the ODrive directly from an hobby RC receiver.  The ODrive firmware expects a high pulse between 1000 and 2000 microseconds long, and a frequency of no less than 25Hz.
 
 Some GPIO pins can be used for PWM input, if they are not allocated to other functions. For example, you must disable the UART to use GPIO 1,2. See the [pin function priorities](#pin-function-priorities) for more detail.
 
@@ -116,22 +116,40 @@ As an example, we'll configure GPIO4 to control the angle of axis 0. We want the
 2. If you want to control your ODrive with the PWM input without using anything else to activate the ODrive, you can configure the ODrive such that axis 0 automatically goes operational at startup. See [here](commands.md#startup-procedure) for more information.
 3. In ODrive Tool, configure the PWM input mapping
     ```
-    In [1]: odrv0.config.gpio4_pwm_mapping.min = -1500
-    In [2]: odrv0.config.gpio4_pwm_mapping.max = 1500
-    In [3]: odrv0.config.gpio4_pwm_mapping.endpoint = odrv0.axis0.controller._remote_attributes['pos_setpoint']
+    odrv0.config.gpio4_pwm_mapping.min = -1500
+    odrv0.config.gpio4_pwm_mapping.max = 1500
+    odrv0.config.gpio4_pwm_mapping.endpoint = odrv0.axis0.controller._remote_attributes['pos_setpoint']
     ```
    Note: you can disable the input by setting `odrv0.config.gpio4_pwm_mapping.endpoint = None`
-4. Save the configuration and reboot
+4. Save the configuration and reboot (only necessary if GPIO pins were not in use as PWM pins before).
     ```
-    In [4]: odrv0.save_configuration()
-    In [5]: odrv0.reboot()
+    odrv0.save_configuration()
+    odrv0.reboot()
     ```
 5. With the ODrive powered off, connect the RC receiver ground to the ODrive's GND and one of the RC receiver signals to GPIO4. You may try to power the receiver from the ODrive's 5V supply if it doesn't draw too much power. Power up the the RC transmitter. You should now be able to control axis 0 from one of the RC sticks.
 
-The PWM pins have a center deadband that's enabled by default to control creeping when using the pins for velocity or current control.  When the RC PWM pulse time is in the 1495μs to 1505μs range, the endpoint is set to a constant halfway between the `gpioN_pwm_mapping.min` and `max` settings.  Change `gpioN_pwm_mapping.enable_deadband` to `False` to disable it.
+#### Other PWM Options
+
+**Deadband:** PWM pins have a deadband option to control creeping when using the pins for velocity or current control.  When the RC PWM pulse time is in the 1495μs to 1505μs range, the endpoint is set to a constant halfway between the `gpioN_pwm_mapping.min` and `max` settings.  Change `gpioN_pwm_mapping.enable_deadband` to 'True' or `False` to enable or disable it.
+
+**Duty-Cycle PWM:** The input PWM type can be changed to duty cycle, which is the signal type usually referred to by "PWM".  A signal with a high-low duty cycle between 100% and 0% will adjust the endpoint between `gpioN_pwm_mapping.max` and `min`, respectively.  Because the ODrive microcontroller uses interrupts to process PWM input, a lower frequency is better because it takes up less CPU time.  A frequency down to 25Hz is supported, and one lower than 500Hz is recommended.
+```
+odrv0.config.gpio1_pwm_mapping.pwm_type = 0 # aka PWM_TYPE_RC
+# OR
+odrv0.config.gpio1_pwm_mapping.pwm_type = 1 # aka PWM_TYPE_DUTY_CYCLE
+```
+
+**Direction Pin:**  Mainly meant to be used with the duty-cycle PWM input.  Another GPIO pin can be set as the direction input for a PWM input using the `gpioN_pwm_mapping.gpio_direction_pin = <pin number here>` parameter.  Currently only PWM capable pins are supported (such as 1-4 for ODrive 3.5).
+
+When the direction pin is HIGH, the endpoint is set to a value between `gpioN_pwm_mapping.min` and `max`.  When LOW, the endpoint is set to a value between negative `gpioN_pwm_mapping.min` and negative `max`.
+
+**Inactivity Detection:** If an RC PWM channel doesn't receive a valid pulse for more than 45 milliseconds, the endpoint will be set to a value halfway between the `gpioN_pwm_mapping.min` and `max` settings, which is assumed to be zero.  Duty-cycle PWM will not do this.  As soon a valid RC PWM pulse is received, the channel will resume normal operations.
+
+<div class=“alert”> Note: If 'ERROR_CONTROL_DEADLINE_MISSED' errors are received from the motor objects, it could be caused by noisy PWM or PWM direction pin inputs.  Noise will cause spurious interrupts, taking CPU time away from the control algorithms. </div>
+
 
 ### Differential Steering Mixer
-An input mixer meant for controlling skid-steer or differential-steering robots is also available.  It takes inputs from a steering and a throttle channel and converts them outputs for left and right motors.
+An input mixer meant for controlling skid-steer or differential-steering robots is also available.  It takes inputs from a steering and a throttle channel and converts them to outputs for left and right motors.
 
 To use the mixer, connect the GPIO pin endpoints to the `diff_steering_mixer_mapping` object, and the mixer's endpoints to the numerical motor control parameters.  The following code was used to drive a hoverboard motor cart in current control mode.
 
@@ -150,7 +168,7 @@ odrv0.config.diff_steering_mixer_mapping.direction_b = 1.0
 odrv0.config.diff_steering_mixer_mapping.endpoint_output_a = odrv0.axis1.controller._remote_attributes['current_setpoint']
 odrv0.config.diff_steering_mixer_mapping.endpoint_output_b = odrv0.axis0.controller._remote_attributes['current_setpoint']
 ```
-The `diff_steering_mixer_mapping.direction_a` and `.direction_b` parameters are multipliers to change the direction of the motors.  `gpio_update_trigger` needs to be set to the GPIO number of one of the input channels.  In the firmware, the mixer's outputs update after that channel's input is received. 
+The `diff_steering_mixer_mapping.direction_a` and `.direction_b` parameters are multipliers to change the direction of the motors.  `gpio_update_trigger` needs to be set to the GPIO number of one of the input channels.  In the firmware, the mixer's outputs update each time that channel's input pulse is received. 
 
 The mixer could be used for other applications;  the math inside the function is copied below.
 ```
