@@ -3,29 +3,28 @@
 #include <functional>
 #include "gpio.h"
 
-#include "utils.h"
 #include "odrive_main.h"
+#include "utils.h"
 
 Axis::Axis(const AxisHardwareConfig_t& hw_config,
-           Config_t& config,
-           Encoder& encoder,
-           SensorlessEstimator& sensorless_estimator,
-           Controller& controller,
-           Motor& motor,
-           TrapezoidalTrajectory& trap)
+           Config_t&                   config,
+           Encoder&                    encoder,
+           SensorlessEstimator&        sensorless_estimator,
+           Controller&                 controller,
+           Motor&                      motor,
+           TrapezoidalTrajectory&      trap)
     : hw_config_(hw_config),
       config_(config),
       encoder_(encoder),
       sensorless_estimator_(sensorless_estimator),
       controller_(controller),
       motor_(motor),
-      trap_(trap)
-{
-    encoder_.axis_ = this;
+      trap_(trap) {
+    encoder_.axis_              = this;
     sensorless_estimator_.axis_ = this;
-    controller_.axis_ = this;
-    motor_.axis_ = this;
-    trap_.axis_ = this;
+    controller_.axis_           = this;
+    motor_.axis_                = this;
+    trap_.axis_                 = this;
 
     decode_step_dir_pins();
 }
@@ -48,8 +47,8 @@ static void run_state_machine_loop_wrapper(void* ctx) {
 
 // @brief Starts run_state_machine_loop in a new thread
 void Axis::start_thread() {
-    osThreadDef(thread_def, run_state_machine_loop_wrapper, hw_config_.thread_priority, 0, 4*512);
-    thread_id_ = osThreadCreate(osThread(thread_def), this);
+    osThreadDef(thread_def, run_state_machine_loop_wrapper, hw_config_.thread_priority, 0, 4 * 512);
+    thread_id_       = osThreadCreate(osThread(thread_def), this);
     thread_id_valid_ = true;
 }
 
@@ -70,22 +69,22 @@ bool Axis::wait_for_current_meas() {
 void Axis::step_cb() {
     if (step_dir_active_) {
         auto dir_pin = HAL_GPIO_ReadPin(dir_port_, dir_pin_);
-        auto dir = (dir_pin == GPIO_PIN_SET) ? 1.0f : -1.0f;
+        auto dir     = (dir_pin == GPIO_PIN_SET) ? 1.0f : -1.0f;
         controller_.pos_setpoint_ += dir * config_.counts_per_step;
     }
 };
 
 void Axis::load_default_step_dir_pin_config(
-        const AxisHardwareConfig_t& hw_config, Config_t* config) {
+    const AxisHardwareConfig_t& hw_config, Config_t* config) {
     config->step_gpio_pin = hw_config.step_gpio_pin;
-    config->dir_gpio_pin = hw_config.dir_gpio_pin;
+    config->dir_gpio_pin  = hw_config.dir_gpio_pin;
 }
 
 void Axis::decode_step_dir_pins() {
     step_port_ = get_gpio_port_by_pin(config_.step_gpio_pin);
-    step_pin_ = get_gpio_pin_by_pin(config_.step_gpio_pin);
-    dir_port_ = get_gpio_port_by_pin(config_.dir_gpio_pin);
-    dir_pin_ = get_gpio_pin_by_pin(config_.dir_gpio_pin);
+    step_pin_  = get_gpio_pin_by_pin(config_.step_gpio_pin);
+    dir_port_  = get_gpio_port_by_pin(config_.dir_gpio_pin);
+    dir_pin_   = get_gpio_pin_by_pin(config_.dir_gpio_pin);
 }
 
 // @brief (de)activates step/dir input
@@ -93,14 +92,14 @@ void Axis::set_step_dir_active(bool active) {
     if (active) {
         // Set up the direction GPIO as input
         GPIO_InitTypeDef GPIO_InitStruct;
-        GPIO_InitStruct.Pin = dir_pin_;
+        GPIO_InitStruct.Pin  = dir_pin_;
         GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
         GPIO_InitStruct.Pull = GPIO_NOPULL;
         HAL_GPIO_Init(dir_port_, &GPIO_InitStruct);
 
         // Subscribe to rising edges of the step GPIO
         GPIO_subscribe(step_port_, step_pin_, GPIO_PULLDOWN,
-                step_cb_wrapper, this);
+                       step_cb_wrapper, this);
 
         step_dir_active_ = true;
     } else {
@@ -142,7 +141,7 @@ bool Axis::do_updates() {
 }
 
 float Axis::get_temp() {
-    auto adc = adc_measurements_[hw_config_.thermistor_adc_ch];
+    auto adc                = adc_measurements_[hw_config_.thermistor_adc_ch];
     auto normalized_voltage = adc / adc_full_scale;
     return horner_fma(normalized_voltage, thermistor_poly_coeffs, thermistor_num_coeffs);
 }
@@ -150,7 +149,7 @@ float Axis::get_temp() {
 bool Axis::run_sensorless_spin_up() {
     // Early Spin-up: spiral up current
     auto x = 0.0f;
-    run_control_loop([&](){
+    run_control_loop([&]() {
         auto phase = wrap_pm_pi(config_.ramp_up_distance * x);
         auto I_mag = config_.spin_up_current * x;
         x += current_meas_period / config_.ramp_up_time;
@@ -160,13 +159,13 @@ bool Axis::run_sensorless_spin_up() {
     });
     if (error_ != ERROR_NONE)
         return false;
-    
+
     // Late Spin-up: accelerate
-    auto vel = config_.ramp_up_distance / config_.ramp_up_time;
+    auto vel   = config_.ramp_up_distance / config_.ramp_up_time;
     auto phase = wrap_pm_pi(config_.ramp_up_distance);
-    run_control_loop([&](){
+    run_control_loop([&]() {
         vel += config_.spin_up_acceleration * current_meas_period;
-        phase = wrap_pm_pi(phase + vel * current_meas_period);
+        phase      = wrap_pm_pi(phase + vel * current_meas_period);
         auto I_mag = config_.spin_up_current;
         if (!motor_.update(I_mag, phase))
             return error_ |= ERROR_MOTOR_FAILED, false;
@@ -182,7 +181,7 @@ bool Axis::run_sensorless_spin_up() {
 
 // Note run_sensorless_control_loop and run_closed_loop_control_loop are very similar and differ only in where we get the estimate from.
 bool Axis::run_sensorless_control_loop() {
-    run_control_loop([this](){
+    run_control_loop([this]() {
         if (controller_.config_.control_mode >= Controller::CTRL_MODE_POSITION_CONTROL)
             return error_ |= ERROR_POS_CTRL_DURING_SENSORLESS, false;
 
@@ -191,7 +190,7 @@ bool Axis::run_sensorless_control_loop() {
         if (!controller_.update(sensorless_estimator_.pll_pos_, sensorless_estimator_.vel_estimate_, &current_setpoint))
             return error_ |= ERROR_CONTROLLER_FAILED, false;
         if (!motor_.update(current_setpoint, sensorless_estimator_.phase_))
-            return false; // set_error should update axis.error_
+            return false;  // set_error should update axis.error_
         return true;
     });
     return check_for_errors();
@@ -201,13 +200,13 @@ bool Axis::run_closed_loop_control_loop() {
     // To avoid any transient on startup, we intialize the setpoint to be the current position
     controller_.pos_setpoint_ = encoder_.pos_estimate_;
     set_step_dir_active(config_.enable_step_dir);
-    run_control_loop([this](){
+    run_control_loop([this]() {
         // Note that all estimators are updated in the loop prefix in run_control_loop
         float current_setpoint;
         if (!controller_.update(encoder_.pos_estimate_, encoder_.vel_estimate_, &current_setpoint))
-            return error_ |= ERROR_CONTROLLER_FAILED, false; //TODO: Make controller.set_error
+            return error_ |= ERROR_CONTROLLER_FAILED, false;  //TODO: Make controller.set_error
         if (!motor_.update(current_setpoint, encoder_.phase_))
-            return false; // set_error should update axis.error_
+            return false;  // set_error should update axis.error_
         return true;
     });
     set_step_dir_active(false);
@@ -218,7 +217,7 @@ bool Axis::run_idle_loop() {
     // run_control_loop ignores missed modulation timing updates
     // if and only if we're in AXIS_STATE_IDLE
     safety_critical_disarm_motor_pwm(motor_);
-    run_control_loop([this](){
+    run_control_loop([this]() {
         return true;
     });
     return check_for_errors();
@@ -226,11 +225,10 @@ bool Axis::run_idle_loop() {
 
 // Infinite loop that does calibration and enters main control loop as appropriate
 void Axis::run_state_machine_loop() {
-
     // Allocate the map for anti-cogging algorithm and initialize all values to 0.0f
     // TODO: Move this somewhere else
     // TODO: respect changes of CPR
-    auto encoder_cpr = encoder_.config_.cpr;
+    auto encoder_cpr                     = encoder_.config_.cpr;
     controller_.anticogging_.cogging_map = (float*)malloc(encoder_cpr * sizeof(float));
     if (controller_.anticogging_.cogging_map != NULL) {
         for (auto i = 0; i < encoder_cpr; i++) {
@@ -240,7 +238,7 @@ void Axis::run_state_machine_loop() {
 
     // arm!
     motor_.arm();
-    
+
     for (;;) {
         // Load the task chain if a specific request is pending
         if (requested_state_ != AXIS_STATE_UNDEFINED) {
@@ -267,8 +265,8 @@ void Axis::run_state_machine_loop() {
                 task_chain_[pos++] = requested_state_;
                 task_chain_[pos++] = AXIS_STATE_IDLE;
             }
-            task_chain_[pos++] = AXIS_STATE_UNDEFINED; // TODO: bounds checking
-            requested_state_ = AXIS_STATE_UNDEFINED;
+            task_chain_[pos++] = AXIS_STATE_UNDEFINED;  // TODO: bounds checking
+            requested_state_   = AXIS_STATE_UNDEFINED;
             // Auto-clear any invalid state error
             error_ &= ~ERROR_INVALID_STATE;
         }
@@ -298,7 +296,7 @@ void Axis::run_state_machine_loop() {
                 break;
 
             case AXIS_STATE_SENSORLESS_CONTROL:
-                status = run_sensorless_spin_up(); // TODO: restart if desired
+                status = run_sensorless_spin_up();  // TODO: restart if desired
                 if (status)
                     status = run_sensorless_control_loop();
                 break;
@@ -309,12 +307,12 @@ void Axis::run_state_machine_loop() {
 
             case AXIS_STATE_IDLE:
                 run_idle_loop();
-                status = motor_.arm(); // done with idling - try to arm the motor
+                status = motor_.arm();  // done with idling - try to arm the motor
                 break;
 
             default:
                 error_ |= ERROR_INVALID_STATE;
-                status = false; // this will set the state to idle
+                status = false;  // this will set the state to idle
                 break;
         }
 

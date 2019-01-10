@@ -101,7 +101,7 @@ bool Encoder::run_index_search() {
     auto omega = (float)(axis_->motor_.config_.direction) * config_.idx_search_speed;
 
     index_found_ = false;
-    auto phase  = 0.0f;
+    auto phase   = 0.0f;
     axis_->run_control_loop([&]() {
         phase = wrap_pm_pi(phase + omega * current_meas_period);
 
@@ -125,7 +125,7 @@ bool Encoder::run_offset_calibration() {
     static const auto start_lock_duration = 1.0f;
     static const auto scan_omega          = 4.0f * M_PI;
     static const auto scan_distance       = 16.0f * M_PI;
-    static const int   num_steps           = (int)(scan_distance / scan_omega * (float)current_meas_hz);
+    static const int  num_steps           = (int)(scan_distance / scan_omega * (float)current_meas_hz);
 
     // Require index found if enabled
     if (config_.use_index && !index_found_) {
@@ -217,7 +217,7 @@ bool Encoder::run_offset_calibration() {
         return false;
 
     config_.offset       = encvaluesum / (num_steps * 2);
-    auto residual     = encvaluesum - ((int64_t)config_.offset * (int64_t)(num_steps * 2));
+    auto residual        = encvaluesum - ((int64_t)config_.offset * (int64_t)(num_steps * 2));
     config_.offset_float = (float)residual / (float)(num_steps * 2) + 0.5f;  // add 0.5 to center-align state to phase
 
     is_ready_ = true;
@@ -254,7 +254,7 @@ bool Encoder::update() {
             //TODO: use count_in_cpr_ instead as shadow_count_ can overflow
             //or use 64 bit
             auto delta_enc_16 = (int16_t)hw_config_.timer->Instance->CNT - (int16_t)shadow_count_;
-            delta_enc            = (int32_t)delta_enc_16;  //sign extend
+            delta_enc         = (int32_t)delta_enc_16;  //sign extend
         } break;
 
         case MODE_HALL: {
@@ -289,7 +289,7 @@ bool Encoder::update() {
     // discrete phase detector
     auto delta_pos     = (float)(shadow_count_ - (int32_t)floorf(pos_estimate_));
     auto delta_pos_cpr = (float)(count_in_cpr_ - (int32_t)floorf(pos_cpr_));
-    delta_pos_cpr       = wrap_pm(delta_pos_cpr, 0.5f * (float)(config_.cpr));
+    delta_pos_cpr      = wrap_pm(delta_pos_cpr, 0.5f * (float)(config_.cpr));
     // pll feedback
     pos_estimate_ += current_meas_period * pll_kp_ * delta_pos;
     pos_cpr_ += current_meas_period * pll_kp_ * delta_pos_cpr;

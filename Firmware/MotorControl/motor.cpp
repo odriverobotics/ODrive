@@ -4,20 +4,18 @@
 #include "drv8301.h"
 #include "odrive_main.h"
 
-
-Motor::Motor(const MotorHardwareConfig_t& hw_config,
+Motor::Motor(const MotorHardwareConfig_t&      hw_config,
              const GateDriverHardwareConfig_t& gate_driver_config,
-             Config_t& config) :
-        hw_config_(hw_config),
-        gate_driver_config_(gate_driver_config),
-        config_(config),
-        gate_driver_({
-            .spiHandle = gate_driver_config_.spi,
-            .EngpioHandle = gate_driver_config_.enable_port,
-            .EngpioNumber = gate_driver_config_.enable_pin,
-            .nCSgpioHandle = gate_driver_config_.nCS_port,
-            .nCSgpioNumber = gate_driver_config_.nCS_pin,
-        }) {
+             Config_t&                         config) : hw_config_(hw_config),
+                                 gate_driver_config_(gate_driver_config),
+                                 config_(config),
+                                 gate_driver_({
+                                     .spiHandle     = gate_driver_config_.spi,
+                                     .EngpioHandle  = gate_driver_config_.enable_port,
+                                     .EngpioNumber  = gate_driver_config_.enable_pin,
+                                     .nCSgpioHandle = gate_driver_config_.nCS_port,
+                                     .nCSgpioNumber = gate_driver_config_.nCS_pin,
+                                 }) {
     update_current_controller_gains();
 }
 
@@ -33,7 +31,6 @@ Motor::Motor(const MotorHardwareConfig_t& hw_config,
 //
 // @returns: True on success, false otherwise
 bool Motor::arm() {
-
     // Reset controller states, integrators, setpoints, etc.
     axis_->controller_.reset();
     reset_current_control();
@@ -58,7 +55,7 @@ void Motor::reset_current_control() {
 void Motor::update_current_controller_gains() {
     // Calculate current control gains
     current_control_.p_gain = config_.current_control_bandwidth * config_.phase_inductance;
-    auto plant_pole = config_.phase_resistance / config_.phase_inductance;
+    auto plant_pole         = config_.phase_resistance / config_.phase_inductance;
     current_control_.i_gain = plant_pole * current_control_.p_gain;
 }
 
@@ -72,29 +69,28 @@ void Motor::DRV8301_setup() {
 
     // Solve for exact gain, then snap down to have equal or larger range as requested
     // or largest possible range otherwise
-    static const auto kMargin = 0.90f;
-    static const auto kTripMargin = 1.0f; // Trip level is at edge of linear range of amplifer
-    static const auto max_output_swing = 1.35f; // [V] out of amplifier
-    auto max_unity_gain_current = kMargin * max_output_swing * hw_config_.shunt_conductance; // [A]
-    auto requested_gain = max_unity_gain_current / config_.requested_current_range; // [V/V]
+    static const auto kMargin                = 0.90f;
+    static const auto kTripMargin            = 1.0f;                                                       // Trip level is at edge of linear range of amplifer
+    static const auto max_output_swing       = 1.35f;                                                      // [V] out of amplifier
+    auto              max_unity_gain_current = kMargin * max_output_swing * hw_config_.shunt_conductance;  // [A]
+    auto              requested_gain         = max_unity_gain_current / config_.requested_current_range;   // [V/V]
 
     // Decoding array for snapping gain
-    std::array<std::pair<float, DRV8301_ShuntAmpGain_e>, 4> gain_choices = { 
+    std::array<std::pair<float, DRV8301_ShuntAmpGain_e>, 4> gain_choices = {
         std::make_pair(10.0f, DRV8301_ShuntAmpGain_10VpV),
         std::make_pair(20.0f, DRV8301_ShuntAmpGain_20VpV),
         std::make_pair(40.0f, DRV8301_ShuntAmpGain_40VpV),
-        std::make_pair(80.0f, DRV8301_ShuntAmpGain_80VpV)
-    };
+        std::make_pair(80.0f, DRV8301_ShuntAmpGain_80VpV)};
 
     // We use lower_bound in reverse because it snaps up by default, we want to snap down.
-    auto gain_snap_down = std::lower_bound(gain_choices.crbegin(), gain_choices.crend(), requested_gain, 
-    [](std::pair<float, DRV8301_ShuntAmpGain_e> pair, float val){
-        return pair.first > val;
-    });
+    auto gain_snap_down = std::lower_bound(gain_choices.crbegin(), gain_choices.crend(), requested_gain,
+                                           [](std::pair<float, DRV8301_ShuntAmpGain_e> pair, float val) {
+                                               return pair.first > val;
+                                           });
 
     // If we snap to outside the array, clip to smallest val
-    if(gain_snap_down == gain_choices.crend())
-       --gain_snap_down;
+    if (gain_snap_down == gain_choices.crend())
+        --gain_snap_down;
 
     // Values for current controller
     phase_current_rev_gain_ = 1.0f / gain_snap_down->first;
@@ -111,7 +107,7 @@ void Motor::DRV8301_setup() {
     local_regs->Ctrl_Reg_1.OC_MODE = DRV8301_OcMode_LatchShutDown;
     // Overcurrent set to approximately 150A at 100degC. This may need tweaking.
     local_regs->Ctrl_Reg_1.OC_ADJ_SET = DRV8301_VdsLevel_0p730_V;
-    local_regs->Ctrl_Reg_2.GAIN = gain_snap_down->second;
+    local_regs->Ctrl_Reg_2.GAIN       = gain_snap_down->second;
 
     local_regs->SndCmd = true;
     DRV8301_writeData(&gate_driver_, local_regs);
@@ -136,7 +132,7 @@ bool Motor::check_DRV_fault() {
     return true;
 }
 
-void Motor::set_error(Motor::Error_t error){
+void Motor::set_error(Motor::Error_t error) {
     error_ |= error;
     axis_->error_ |= Axis::ERROR_MOTOR_FAILED;
     safety_critical_disarm_motor_pwm(*this);
@@ -153,7 +149,7 @@ bool Motor::do_checks() {
 
 void Motor::log_timing(TimingLog_t log_idx) {
     static const auto clocks_per_cnt = (uint16_t)((float)TIM_1_8_CLOCK_HZ / (float)TIM_APB1_CLOCK_HZ);
-    auto timing = clocks_per_cnt * htim13.Instance->CNT; // TODO: Use a hw_config
+    auto              timing         = clocks_per_cnt * htim13.Instance->CNT;  // TODO: Use a hw_config
 
     if (log_idx < TIMING_LOG_NUM_SLOTS) {
         timing_log_[log_idx] = timing;
@@ -161,10 +157,10 @@ void Motor::log_timing(TimingLog_t log_idx) {
 }
 
 float Motor::phase_current_from_adcval(uint32_t ADCValue) {
-    auto adcval_bal = (int)ADCValue - (1 << 11);
+    auto adcval_bal   = (int)ADCValue - (1 << 11);
     auto amp_out_volt = (3.3f / (float)(1 << 12)) * (float)adcval_bal;
-    auto shunt_volt = amp_out_volt * phase_current_rev_gain_;
-    auto current = shunt_volt * hw_config_.shunt_conductance;
+    auto shunt_volt   = amp_out_volt * phase_current_rev_gain_;
+    auto current      = shunt_volt * hw_config_.shunt_conductance;
     return current;
 }
 
@@ -174,12 +170,12 @@ float Motor::phase_current_from_adcval(uint32_t ADCValue) {
 
 // TODO check Ibeta balance to verify good motor connection
 bool Motor::measure_phase_resistance(float test_current, float max_voltage) {
-    static const auto kI = 10.0f;                                 // [(V/s)/A]
-    static const auto num_test_cycles = static_cast<int>(3.0f / CURRENT_MEAS_PERIOD); // Test runs for 3s
-    auto test_voltage = 0.0f;
-    
+    static const auto kI              = 10.0f;                                         // [(V/s)/A]
+    static const auto num_test_cycles = static_cast<int>(3.0f / CURRENT_MEAS_PERIOD);  // Test runs for 3s
+    auto              test_voltage    = 0.0f;
+
     auto i = 0;
-    axis_->run_control_loop([&](){
+    axis_->run_control_loop([&]() {
         auto Ialpha = -(current_meas_.phB + current_meas_.phC);
         test_voltage += (kI * current_meas_period) * (test_current - Ialpha);
         if (test_voltage > max_voltage || test_voltage < -max_voltage)
@@ -187,7 +183,7 @@ bool Motor::measure_phase_resistance(float test_current, float max_voltage) {
 
         // Test voltage along phase A
         if (!enqueue_voltage_timings(test_voltage, 0.0f))
-            return false; // error set inside enqueue_voltage_timings
+            return false;  // error set inside enqueue_voltage_timings
         log_timing(TIMING_LOG_MEAS_R);
 
         return ++i < num_test_cycles;
@@ -199,24 +195,24 @@ bool Motor::measure_phase_resistance(float test_current, float max_voltage) {
     //if (!enqueue_voltage_timings(motor, 0.0f, 0.0f))
     //    return false; // error set inside enqueue_voltage_timings
 
-    auto R = test_voltage / test_current;
+    auto R                   = test_voltage / test_current;
     config_.phase_resistance = R;
-    return true; // if we ran to completion that means success
+    return true;  // if we ran to completion that means success
 }
 
 bool Motor::measure_phase_inductance(float voltage_low, float voltage_high) {
-    float test_voltages[2] = {voltage_low, voltage_high};
-    float Ialphas[2] = {0.0f};
-    static const auto num_cycles = 5000;
+    float             test_voltages[2] = {voltage_low, voltage_high};
+    float             Ialphas[2]       = {0.0f};
+    static const auto num_cycles       = 5000;
 
     auto t = 0;
-    axis_->run_control_loop([&](){
+    axis_->run_control_loop([&]() {
         auto i = t & 1;
         Ialphas[i] += -current_meas_.phB - current_meas_.phC;
 
         // Test voltage along phase A
         if (!enqueue_voltage_timings(test_voltages[i], 0.0f))
-            return false; // error set inside enqueue_voltage_timings
+            return false;  // error set inside enqueue_voltage_timings
         log_timing(TIMING_LOG_MEAS_L);
 
         return ++t < (num_cycles << 1);
@@ -232,7 +228,7 @@ bool Motor::measure_phase_inductance(float voltage_low, float voltage_high) {
     // Note: A more correct formula would also take into account that there is a finite timestep.
     // However, the discretisation in the current control loop inverts the same discrepancy
     auto dI_by_dt = (Ialphas[1] - Ialphas[0]) / (current_meas_period * (float)num_cycles);
-    auto L = v_L / dI_by_dt;
+    auto L        = v_L / dI_by_dt;
 
     config_.phase_inductance = L;
     // TODO arbitrary values set for now
@@ -240,7 +236,6 @@ bool Motor::measure_phase_inductance(float voltage_low, float voltage_high) {
         return set_error(ERROR_PHASE_INDUCTANCE_OUT_OF_RANGE), false;
     return true;
 }
-
 
 bool Motor::run_calibration() {
     auto R_calib_max_voltage = config_.resistance_calib_max_voltage;
@@ -256,7 +251,7 @@ bool Motor::run_calibration() {
     }
 
     update_current_controller_gains();
-    
+
     is_calibrated_ = true;
     return true;
 }
@@ -265,17 +260,17 @@ bool Motor::enqueue_modulation_timings(float mod_alpha, float mod_beta) {
     float tA, tB, tC;
     if (SVM(mod_alpha, mod_beta, &tA, &tB, &tC) != 0)
         return set_error(ERROR_MODULATION_MAGNITUDE), false;
-    next_timings_[0] = (uint16_t)(tA * (float)TIM_1_8_PERIOD_CLOCKS);
-    next_timings_[1] = (uint16_t)(tB * (float)TIM_1_8_PERIOD_CLOCKS);
-    next_timings_[2] = (uint16_t)(tC * (float)TIM_1_8_PERIOD_CLOCKS);
+    next_timings_[0]    = (uint16_t)(tA * (float)TIM_1_8_PERIOD_CLOCKS);
+    next_timings_[1]    = (uint16_t)(tB * (float)TIM_1_8_PERIOD_CLOCKS);
+    next_timings_[2]    = (uint16_t)(tC * (float)TIM_1_8_PERIOD_CLOCKS);
     next_timings_valid_ = true;
     return true;
 }
 
 bool Motor::enqueue_voltage_timings(float v_alpha, float v_beta) {
-    auto vfactor = 1.0f / ((2.0f / 3.0f) * vbus_voltage);
+    auto vfactor   = 1.0f / ((2.0f / 3.0f) * vbus_voltage);
     auto mod_alpha = vfactor * v_alpha;
-    auto mod_beta = vfactor * v_beta;
+    auto mod_beta  = vfactor * v_beta;
     if (!enqueue_modulation_timings(mod_alpha, mod_beta))
         return false;
     log_timing(TIMING_LOG_FOC_VOLTAGE);
@@ -285,10 +280,10 @@ bool Motor::enqueue_voltage_timings(float v_alpha, float v_beta) {
 // TODO: This doesn't update brake current
 // We should probably make FOC Current call FOC Voltage to avoid duplication.
 bool Motor::FOC_voltage(float v_d, float v_q, float phase) {
-    auto c = our_arm_cos_f32(phase);
-    auto s = our_arm_sin_f32(phase);
-    auto v_alpha = c*v_d - s*v_q;
-    auto v_beta  = c*v_q + s*v_d;
+    auto c       = our_arm_cos_f32(phase);
+    auto s       = our_arm_sin_f32(phase);
+    auto v_alpha = c * v_d - s * v_q;
+    auto v_beta  = c * v_q + s * v_d;
     return enqueue_voltage_timings(v_alpha, v_beta);
 }
 
@@ -300,20 +295,19 @@ bool Motor::FOC_current(float Id_des, float Iq_des, float phase) {
     ictrl.Iq_setpoint = Iq_des;
 
     // Check for current sense saturation
-    if (fabsf(current_meas_.phB) > ictrl.overcurrent_trip_level
-     || fabsf(current_meas_.phC) > ictrl.overcurrent_trip_level) {
+    if (fabsf(current_meas_.phB) > ictrl.overcurrent_trip_level || fabsf(current_meas_.phC) > ictrl.overcurrent_trip_level) {
         set_error(ERROR_CURRENT_SENSE_SATURATION);
     }
 
     // Clarke transform
     auto Ialpha = -current_meas_.phB - current_meas_.phC;
-    auto Ibeta = one_by_sqrt3 * (current_meas_.phB - current_meas_.phC);
+    auto Ibeta  = one_by_sqrt3 * (current_meas_.phB - current_meas_.phC);
 
     // Park transform
-    auto c = our_arm_cos_f32(phase);
-    auto s = our_arm_sin_f32(phase);
-    auto Id = c * Ialpha + s * Ibeta;
-    auto Iq = c * Ibeta - s * Ialpha;
+    auto c            = our_arm_cos_f32(phase);
+    auto s            = our_arm_sin_f32(phase);
+    auto Id           = c * Ialpha + s * Ibeta;
+    auto Iq           = c * Ibeta - s * Ialpha;
     ictrl.Iq_measured = Iq;
 
     // Current error
@@ -327,8 +321,8 @@ bool Motor::FOC_current(float Id_des, float Iq_des, float phase) {
 
     auto mod_to_V = (2.0f / 3.0f) * vbus_voltage;
     auto V_to_mod = 1.0f / mod_to_V;
-    auto mod_d = V_to_mod * Vd;
-    auto mod_q = V_to_mod * Vq;
+    auto mod_d    = V_to_mod * Vd;
+    auto mod_q    = V_to_mod * Vq;
 
     // Vector modulation saturation, lock integrator if saturated
     // TODO make maximum modulation configurable
@@ -353,16 +347,15 @@ bool Motor::FOC_current(float Id_des, float Iq_des, float phase) {
 
     // Report final applied voltage in stationary frame (for sensorles estimator)
     ictrl.final_v_alpha = mod_to_V * mod_alpha;
-    ictrl.final_v_beta = mod_to_V * mod_beta;
+    ictrl.final_v_beta  = mod_to_V * mod_beta;
 
     // Apply SVM
     if (!enqueue_modulation_timings(mod_alpha, mod_beta))
-        return false; // error set inside enqueue_modulation_timings
+        return false;  // error set inside enqueue_modulation_timings
     log_timing(TIMING_LOG_FOC_CURRENT);
 
     return true;
 }
-
 
 bool Motor::update(float current_setpoint, float phase) {
     current_setpoint *= config_.direction;
@@ -371,12 +364,12 @@ bool Motor::update(float current_setpoint, float phase) {
     // Execute current command
     // TODO: move this into the mot
     if (config_.motor_type == MOTOR_TYPE_HIGH_CURRENT) {
-        if(!FOC_current(0.0f, current_setpoint, phase)){
+        if (!FOC_current(0.0f, current_setpoint, phase)) {
             return false;
         }
     } else if (config_.motor_type == MOTOR_TYPE_GIMBAL) {
         //In gimbal motor mode, current is reinterptreted as voltage.
-        if(!FOC_voltage(0.0f, current_setpoint, phase))
+        if (!FOC_voltage(0.0f, current_setpoint, phase))
             return false;
     } else {
         set_error(ERROR_NOT_IMPLEMENTED_MOTOR_TYPE);

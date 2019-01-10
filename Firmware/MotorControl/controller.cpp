@@ -1,16 +1,13 @@
 
 #include "odrive_main.h"
 
-
-Controller::Controller(Config_t& config) :
-    config_(config)
-{}
+Controller::Controller(Config_t& config) : config_(config) {}
 
 void Controller::reset() {
-    pos_setpoint_ = 0.0f;
-    vel_setpoint_ = 0.0f;
+    pos_setpoint_           = 0.0f;
+    vel_setpoint_           = 0.0f;
     vel_integrator_current_ = 0.0f;
-    current_setpoint_ = 0.0f;
+    current_setpoint_       = 0.0f;
 }
 
 void Controller::set_error(Error_t error) {
@@ -23,9 +20,9 @@ void Controller::set_error(Error_t error) {
 //--------------------------------
 
 void Controller::set_pos_setpoint(float pos_setpoint, float vel_feed_forward, float current_feed_forward) {
-    pos_setpoint_ = pos_setpoint;
-    vel_setpoint_ = vel_feed_forward;
-    current_setpoint_ = current_feed_forward;
+    pos_setpoint_        = pos_setpoint;
+    vel_setpoint_        = vel_feed_forward;
+    current_setpoint_    = current_feed_forward;
     config_.control_mode = CTRL_MODE_POSITION_CONTROL;
 #ifdef DEBUG_PRINT
     printf("POSITION_CONTROL %6.0f %3.3f %3.3f\n", pos_setpoint, vel_setpoint_, current_setpoint_);
@@ -33,8 +30,8 @@ void Controller::set_pos_setpoint(float pos_setpoint, float vel_feed_forward, fl
 }
 
 void Controller::set_vel_setpoint(float vel_setpoint, float current_feed_forward) {
-    vel_setpoint_ = vel_setpoint;
-    current_setpoint_ = current_feed_forward;
+    vel_setpoint_        = vel_setpoint;
+    current_setpoint_    = current_feed_forward;
     config_.control_mode = CTRL_MODE_VELOCITY_CONTROL;
 #ifdef DEBUG_PRINT
     printf("VELOCITY_CONTROL %3.3f %3.3f\n", vel_setpoint_, motor->current_setpoint_);
@@ -42,7 +39,7 @@ void Controller::set_vel_setpoint(float vel_setpoint, float current_feed_forward
 }
 
 void Controller::set_current_setpoint(float current_setpoint) {
-    current_setpoint_ = current_setpoint;
+    current_setpoint_    = current_setpoint;
     config_.control_mode = CTRL_MODE_CURRENT_CONTROL;
 #ifdef DEBUG_PRINT
     printf("CURRENT_CONTROL %3.3f\n", current_setpoint_);
@@ -55,7 +52,7 @@ void Controller::move_to_pos(float goal_point) {
                                  axis_->trap_.config_.accel_limit,
                                  axis_->trap_.config_.decel_limit);
     traj_start_loop_count_ = axis_->loop_counter_;
-    config_.control_mode = CTRL_MODE_TRAJECTORY_CONTROL;
+    config_.control_mode   = CTRL_MODE_TRAJECTORY_CONTROL;
 }
 
 void Controller::start_anticogging_calibration() {
@@ -79,13 +76,13 @@ bool Controller::anticogging_calibration(float pos_estimate, float vel_estimate)
             fabsf(vel_estimate) < anticogging_.calib_vel_threshold) {
             anticogging_.cogging_map[anticogging_.index++] = vel_integrator_current_;
         }
-        if (anticogging_.index < axis_->encoder_.config_.cpr) { // TODO: remove the dependency on encoder CPR
+        if (anticogging_.index < axis_->encoder_.config_.cpr) {  // TODO: remove the dependency on encoder CPR
             set_pos_setpoint(anticogging_.index, 0.0f, 0.0f);
             return false;
         } else {
             anticogging_.index = 0;
-            set_pos_setpoint(0.0f, 0.0f, 0.0f);  // Send the motor home
-            anticogging_.use_anticogging = true;  // We're good to go, enable anti-cogging
+            set_pos_setpoint(0.0f, 0.0f, 0.0f);     // Send the motor home
+            anticogging_.use_anticogging   = true;  // We're good to go, enable anti-cogging
             anticogging_.calib_anticogging = false;
             return true;
         }
@@ -107,21 +104,21 @@ bool Controller::update(float pos_estimate, float vel_estimate, float* current_s
             // Drop into position control mode when done to avoid problems on loop counter delta overflow
             config_.control_mode = CTRL_MODE_POSITION_CONTROL;
             // pos_setpoint already set by trajectory
-            vel_setpoint_ = 0.0f;
+            vel_setpoint_     = 0.0f;
             current_setpoint_ = 0.0f;
         } else {
-            auto traj_step = axis_->trap_.eval(t);
-            pos_setpoint_ = traj_step.Y;
-            vel_setpoint_ = traj_step.Yd;
+            auto traj_step    = axis_->trap_.eval(t);
+            pos_setpoint_     = traj_step.Y;
+            vel_setpoint_     = traj_step.Yd;
             current_setpoint_ = traj_step.Ydd * axis_->trap_.config_.A_per_css;
         }
-        anticogging_pos = pos_setpoint_; // FF the position setpoint instead of the pos_estimate
+        anticogging_pos = pos_setpoint_;  // FF the position setpoint instead of the pos_estimate
     }
 
     // Ramp rate limited velocity setpoint
     if (config_.control_mode == CTRL_MODE_VELOCITY_CONTROL && vel_ramp_enable_) {
-        auto max_step_size = current_meas_period * config_.vel_ramp_rate;
-        auto full_step = vel_ramp_target_ - vel_setpoint_;
+        auto  max_step_size = current_meas_period * config_.vel_ramp_rate;
+        auto  full_step     = vel_ramp_target_ - vel_setpoint_;
         float step;
         if (fabsf(full_step) > max_step_size) {
             step = std::copysignf(max_step_size, full_step);
@@ -157,7 +154,7 @@ bool Controller::update(float pos_estimate, float vel_estimate, float* current_s
     if (vel_des < -vel_lim) vel_des = -vel_lim;
 
     // Check for overspeed fault (done in this module (controller) for cohesion with vel_lim)
-    if (config_.vel_limit_tolerance > 0.0f) { // 0.0f to disable
+    if (config_.vel_limit_tolerance > 0.0f) {  // 0.0f to disable
         if (fabsf(vel_estimate) > config_.vel_limit_tolerance * vel_lim) {
             set_error(ERROR_OVERSPEED);
             return false;
@@ -183,15 +180,15 @@ bool Controller::update(float pos_estimate, float vel_estimate, float* current_s
     Iq += vel_integrator_current_;
 
     // Current limiting
-    auto Ilim = std::min(axis_->motor_.config_.current_lim, axis_->motor_.current_control_.max_allowed_current);
+    auto Ilim    = std::min(axis_->motor_.config_.current_lim, axis_->motor_.current_control_.max_allowed_current);
     auto limited = false;
     if (Iq > Ilim) {
         limited = true;
-        Iq = Ilim;
+        Iq      = Ilim;
     }
     if (Iq < -Ilim) {
         limited = true;
-        Iq = -Ilim;
+        Iq      = -Ilim;
     }
 
     // Velocity integrator (behaviour dependent on limiting)

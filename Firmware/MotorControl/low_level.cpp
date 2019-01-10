@@ -28,21 +28,21 @@
 /* Private macros ------------------------------------------------------------*/
 /* Private typedef -----------------------------------------------------------*/
 /* Global constant data ------------------------------------------------------*/
-const float adc_full_scale = (float)(1 << 12);
+const float adc_full_scale  = (float)(1 << 12);
 const float adc_ref_voltage = 3.3f;
 /* Global variables ----------------------------------------------------------*/
 
 // This value is updated by the DC-bus reading ADC.
 // Arbitrary non-zero inital value to avoid division by zero if ADC reading is late
-float vbus_voltage = 12.0f;
-bool brake_resistor_armed = false;
+float vbus_voltage         = 12.0f;
+bool  brake_resistor_armed = false;
 /* Private constant data -----------------------------------------------------*/
-static const GPIO_TypeDef* GPIOs_to_samp[] = { GPIOA, GPIOB, GPIOC };
-static const int num_GPIO = sizeof(GPIOs_to_samp) / sizeof(GPIOs_to_samp[0]); 
+static const GPIO_TypeDef* GPIOs_to_samp[] = {GPIOA, GPIOB, GPIOC};
+static const int           num_GPIO        = sizeof(GPIOs_to_samp) / sizeof(GPIOs_to_samp[0]);
 /* Private variables ---------------------------------------------------------*/
 
 // Two motors, sampling port A,B,C (coherent with current meas timing)
-static uint16_t GPIO_port_samples [2][num_GPIO];
+static uint16_t GPIO_port_samples[2][num_GPIO];
 /* CPU critical section helpers ----------------------------------------------*/
 
 /* Safety critical functions -------------------------------------------------*/
@@ -109,8 +109,8 @@ void safety_critical_arm_motor_pwm(Motor& motor) {
 // safety_critical_arm_motor_phases is called.
 // @returns true if the motor was in a state other than disarmed before
 bool safety_critical_disarm_motor_pwm(Motor& motor) {
-    auto mask = cpu_enter_critical();
-    auto was_armed = motor.armed_state_ != Motor::ARMED_STATE_DISARMED;
+    auto mask          = cpu_enter_critical();
+    auto was_armed     = motor.armed_state_ != Motor::ARMED_STATE_DISARMED;
     motor.armed_state_ = Motor::ARMED_STATE_DISARMED;
     __HAL_TIM_MOE_DISABLE_UNCONDITIONALLY(motor.hw_config_.timer);
     cpu_exit_critical(mask);
@@ -154,7 +154,7 @@ void safety_critical_apply_motor_pwm_timings(Motor& motor, uint16_t timings[3]) 
 
 // @brief Arms the brake resistor
 void safety_critical_arm_brake_resistor() {
-    auto mask = cpu_enter_critical();
+    auto mask            = cpu_enter_critical();
     brake_resistor_armed = true;
     htim2.Instance->CCR3 = 0;
     htim2.Instance->CCR4 = TIM_APB1_PERIOD_CLOCKS + 1;
@@ -166,7 +166,7 @@ void safety_critical_arm_brake_resistor() {
 // After calling this, the brake resistor can only be armed again
 // by calling safety_critical_arm_brake_resistor().
 void safety_critical_disarm_brake_resistor() {
-    auto mask = cpu_enter_critical();
+    auto mask            = cpu_enter_critical();
     brake_resistor_armed = false;
     htim2.Instance->CCR3 = 0;
     htim2.Instance->CCR4 = TIM_APB1_PERIOD_CLOCKS + 1;
@@ -217,7 +217,7 @@ void start_adc_pwm() {
     start_pwm(&htim8);
     // TODO: explain why this offset
     sync_timers(&htim1, &htim8, TIM_CLOCKSOURCE_ITR0, TIM_1_8_PERIOD_CLOCKS / 2 - 1 * 128,
-            &htim13);
+                &htim13);
 
     // Motor output starts in the disabled state
     __HAL_TIM_MOE_DISABLE_UNCONDITIONALLY(&htim1);
@@ -242,7 +242,7 @@ void start_adc_pwm() {
 
 void start_pwm(TIM_HandleTypeDef* htim) {
     // Init PWM
-    auto half_load = TIM_1_8_PERIOD_CLOCKS / 2;
+    auto half_load       = TIM_1_8_PERIOD_CLOCKS / 2;
     htim->Instance->CCR1 = half_load;
     htim->Instance->CCR2 = half_load;
     htim->Instance->CCR3 = half_load;
@@ -265,8 +265,8 @@ void sync_timers(TIM_HandleTypeDef* htim_a, TIM_HandleTypeDef* htim_b,
     // Store intial timer configs
     auto MOE_store_a = htim_a->Instance->BDTR & (TIM_BDTR_MOE);
     auto MOE_store_b = htim_b->Instance->BDTR & (TIM_BDTR_MOE);
-    auto CR2_store = htim_a->Instance->CR2;
-    auto SMCR_store = htim_b->Instance->SMCR;
+    auto CR2_store   = htim_a->Instance->CR2;
+    auto SMCR_store  = htim_b->Instance->SMCR;
     // Turn off output
     htim_a->Instance->BDTR &= ~(TIM_BDTR_MOE);
     htim_b->Instance->BDTR &= ~(TIM_BDTR_MOE);
@@ -299,12 +299,12 @@ void sync_timers(TIM_HandleTypeDef* htim_a, TIM_HandleTypeDef* htim_b,
     // Set and start reference timebase timer (if used)
     if (htim_refbase) {
         htim_refbase->Instance->CNT = count_offset;
-        htim_refbase->Instance->CR1 |= (TIM_CR1_CEN); // start
+        htim_refbase->Instance->CR1 |= (TIM_CR1_CEN);  // start
     }
     // Start Timer a
     htim_a->Instance->CR1 |= (TIM_CR1_CEN);
     // Restore timer configs
-    htim_a->Instance->CR2 = CR2_store;
+    htim_a->Instance->CR2  = CR2_store;
     htim_b->Instance->SMCR = SMCR_store;
     // restore output
     htim_a->Instance->BDTR |= MOE_store_a;
@@ -312,7 +312,7 @@ void sync_timers(TIM_HandleTypeDef* htim_a, TIM_HandleTypeDef* htim_b,
 }
 
 // @brief ADC1 measurements are written to this buffer by DMA
-uint16_t adc_measurements_[ADC_CHANNEL_COUNT] = { 0 };
+uint16_t adc_measurements_[ADC_CHANNEL_COUNT] = {0};
 
 // @brief Starts the general purpose ADC on the ADC1 peripheral.
 // The measured ADC voltages can be read with get_adc_voltage().
@@ -327,20 +327,19 @@ void start_general_purpose_adc() {
     ADC_ChannelConfTypeDef sConfig;
 
     // Configure the global features of the ADC (Clock, Resolution, Data Alignment and number of conversion)
-    hadc1.Instance = ADC1;
-    hadc1.Init.ClockPrescaler = ADC_CLOCK_SYNC_PCLK_DIV4;
-    hadc1.Init.Resolution = ADC_RESOLUTION_12B;
-    hadc1.Init.ScanConvMode = ENABLE;
-    hadc1.Init.ContinuousConvMode = ENABLE;
+    hadc1.Instance                   = ADC1;
+    hadc1.Init.ClockPrescaler        = ADC_CLOCK_SYNC_PCLK_DIV4;
+    hadc1.Init.Resolution            = ADC_RESOLUTION_12B;
+    hadc1.Init.ScanConvMode          = ENABLE;
+    hadc1.Init.ContinuousConvMode    = ENABLE;
     hadc1.Init.DiscontinuousConvMode = DISABLE;
-    hadc1.Init.ExternalTrigConvEdge = ADC_EXTERNALTRIGCONVEDGE_NONE;
-    hadc1.Init.ExternalTrigConv = ADC_SOFTWARE_START;
-    hadc1.Init.DataAlign = ADC_DATAALIGN_RIGHT;
-    hadc1.Init.NbrOfConversion = ADC_CHANNEL_COUNT;
+    hadc1.Init.ExternalTrigConvEdge  = ADC_EXTERNALTRIGCONVEDGE_NONE;
+    hadc1.Init.ExternalTrigConv      = ADC_SOFTWARE_START;
+    hadc1.Init.DataAlign             = ADC_DATAALIGN_RIGHT;
+    hadc1.Init.NbrOfConversion       = ADC_CHANNEL_COUNT;
     hadc1.Init.DMAContinuousRequests = ENABLE;
-    hadc1.Init.EOCSelection = ADC_EOC_SINGLE_CONV;
-    if (HAL_ADC_Init(&hadc1) != HAL_OK)
-    {
+    hadc1.Init.EOCSelection          = ADC_EOC_SINGLE_CONV;
+    if (HAL_ADC_Init(&hadc1) != HAL_OK) {
         _Error_Handler((char*)__FILE__, __LINE__);
     }
 
@@ -348,7 +347,7 @@ void start_general_purpose_adc() {
     sConfig.SamplingTime = ADC_SAMPLETIME_15CYCLES;
     for (auto channel = 0; channel < ADC_CHANNEL_COUNT; ++channel) {
         sConfig.Channel = channel << ADC_CR1_AWDCH_Pos;
-        sConfig.Rank = channel + 1; // rank numbering starts at 1
+        sConfig.Rank    = channel + 1;  // rank numbering starts at 1
         if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
             _Error_Handler((char*)__FILE__, __LINE__);
     }
@@ -414,7 +413,7 @@ float get_adc_voltage(GPIO_TypeDef* GPIO_port, uint16_t GPIO_pin) {
     if (channel < ADC_CHANNEL_COUNT)
         return ((float)adc_measurements_[channel]) * (adc_ref_voltage / adc_full_scale);
     else
-        return 0.0f / 0.0f; // NaN
+        return 0.0f / 0.0f;  // NaN
 }
 
 //--------------------------------
@@ -425,7 +424,7 @@ void vbus_sense_adc_cb(ADC_HandleTypeDef* hadc, bool injected) {
     static const auto voltage_scale = adc_ref_voltage * VBUS_S_DIVIDER_RATIO / adc_full_scale;
     // Only one conversion in sequence, so only rank1
     auto ADCValue = HAL_ADCEx_InjectedGetValue(hadc, ADC_INJECTED_RANK_1);
-    vbus_voltage = ADCValue * voltage_scale;
+    vbus_voltage  = ADCValue * voltage_scale;
     if (axes[0] && !axes[0]->error_ && axes[1] && !axes[1]->error_) {
         if (oscilloscope_pos >= OSCILLOSCOPE_SIZE)
             oscilloscope_pos = 0;
@@ -478,11 +477,11 @@ void pwm_trig_adc_cb(ADC_HandleTypeDef* hadc, bool injected) {
     // Motor 1 is on Timer 8, which triggers ADC 2 and 3 on a regular conversion
     // If the corresponding timer is counting up, we just sampled in SVM vector 0, i.e. real current
     // If we are counting down, we just sampled in SVM vector 7, with zero current
-    Axis& axis = injected ? *axes[0] : *axes[1];
-    auto axis_num = injected ? 0 : 1;
-    Axis& other_axis = injected ? *axes[1] : *axes[0];
-    auto counting_down = axis.motor_.hw_config_.timer->Instance->CR1 & TIM_CR1_DIR;
-    auto current_meas_not_DC_CAL = !counting_down;
+    Axis& axis                    = injected ? *axes[0] : *axes[1];
+    auto  axis_num                = injected ? 0 : 1;
+    Axis& other_axis              = injected ? *axes[1] : *axes[0];
+    auto  counting_down           = axis.motor_.hw_config_.timer->Instance->CR1 & TIM_CR1_DIR;
+    auto  current_meas_not_DC_CAL = !counting_down;
 
     // Check the timing of the sequencing
     if (current_meas_not_DC_CAL)
@@ -493,9 +492,9 @@ void pwm_trig_adc_cb(ADC_HandleTypeDef* hadc, bool injected) {
     auto update_timings = false;
     if (hadc == &hadc2) {
         if (&axis == axes[1] && counting_down)
-            update_timings = true; // update timings of M0
+            update_timings = true;  // update timings of M0
         else if (&axis == axes[0] && !counting_down)
-            update_timings = true; // update timings of M1
+            update_timings = true;  // update timings of M1
     }
 
     // Load next timings for the motor that we're not currently sampling
@@ -510,8 +509,7 @@ void pwm_trig_adc_cb(ADC_HandleTypeDef* hadc, bool injected) {
         } else {
             other_axis.motor_.next_timings_valid_ = false;
             safety_critical_apply_motor_pwm_timings(
-                other_axis.motor_, other_axis.motor_.next_timings_
-            );
+                other_axis.motor_, other_axis.motor_.next_timings_);
         }
         update_brake_current();
     }
@@ -595,7 +593,6 @@ void update_brake_current() {
     }
 }
 
-
 /* RC PWM input --------------------------------------------------------------*/
 
 // @brief Returns the ODrive GPIO number for a given
@@ -641,21 +638,22 @@ uint32_t gpio_num_to_tim_2_5_channel(int gpio_num) {
 
 void pwm_in_init() {
     GPIO_InitTypeDef GPIO_InitStruct;
-    GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
-    GPIO_InitStruct.Pull = GPIO_PULLDOWN;
-    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+    GPIO_InitStruct.Mode      = GPIO_MODE_AF_PP;
+    GPIO_InitStruct.Pull      = GPIO_PULLDOWN;
+    GPIO_InitStruct.Speed     = GPIO_SPEED_FREQ_LOW;
     GPIO_InitStruct.Alternate = GPIO_AF2_TIM5;
 
     TIM_IC_InitTypeDef sConfigIC;
-    sConfigIC.ICPolarity = TIM_INPUTCHANNELPOLARITY_BOTHEDGE;
+    sConfigIC.ICPolarity  = TIM_INPUTCHANNELPOLARITY_BOTHEDGE;
     sConfigIC.ICSelection = TIM_ICSELECTION_DIRECTTI;
     sConfigIC.ICPrescaler = TIM_ICPSC_DIV1;
-    sConfigIC.ICFilter = 15;
+    sConfigIC.ICFilter    = 15;
 
 #if HW_VERSION_MAJOR == 3 && HW_VERSION_MINOR >= 3
     for (auto gpio_num = 1; gpio_num <= 4; ++gpio_num) {
 #else
-    auto gpio_num = 4; {
+    auto gpio_num = 4;
+    {
 #endif
         if (is_endpoint_ref_valid(board_config.pwm_mappings[gpio_num - 1].endpoint)) {
             GPIO_InitStruct.Pin = get_gpio_pin_by_pin(gpio_num);
@@ -668,12 +666,12 @@ void pwm_in_init() {
 }
 
 //TODO: These expressions have integer division by 1MHz, so it will be incorrect for clock speeds of not-integer MHz
-#define TIM_2_5_CLOCK_HZ        TIM_APB1_CLOCK_HZ
-#define PWM_MIN_HIGH_TIME          ((TIM_2_5_CLOCK_HZ / 1000000UL) * 1000UL) // 1ms high is considered full reverse
-#define PWM_MAX_HIGH_TIME          ((TIM_2_5_CLOCK_HZ / 1000000UL) * 2000UL) // 2ms high is considered full forward
-#define PWM_MIN_LEGAL_HIGH_TIME    ((TIM_2_5_CLOCK_HZ / 1000000UL) * 500UL) // ignore high periods shorter than 0.5ms
-#define PWM_MAX_LEGAL_HIGH_TIME    ((TIM_2_5_CLOCK_HZ / 1000000UL) * 2500UL) // ignore high periods longer than 2.5ms
-#define PWM_INVERT_INPUT        false
+#define TIM_2_5_CLOCK_HZ TIM_APB1_CLOCK_HZ
+#define PWM_MIN_HIGH_TIME ((TIM_2_5_CLOCK_HZ / 1000000UL) * 1000UL)        // 1ms high is considered full reverse
+#define PWM_MAX_HIGH_TIME ((TIM_2_5_CLOCK_HZ / 1000000UL) * 2000UL)        // 2ms high is considered full forward
+#define PWM_MIN_LEGAL_HIGH_TIME ((TIM_2_5_CLOCK_HZ / 1000000UL) * 500UL)   // ignore high periods shorter than 0.5ms
+#define PWM_MAX_LEGAL_HIGH_TIME ((TIM_2_5_CLOCK_HZ / 1000000UL) * 2500UL)  // ignore high periods longer than 2.5ms
+#define PWM_INVERT_INPUT false
 
 void handle_pulse(int gpio_num, uint32_t high_time) {
     if (high_time < PWM_MIN_LEGAL_HIGH_TIME || high_time > PWM_MAX_LEGAL_HIGH_TIME)
@@ -684,8 +682,8 @@ void handle_pulse(int gpio_num, uint32_t high_time) {
     if (high_time > PWM_MAX_HIGH_TIME)
         high_time = PWM_MAX_HIGH_TIME;
     auto fraction = (float)(high_time - PWM_MIN_HIGH_TIME) / (float)(PWM_MAX_HIGH_TIME - PWM_MIN_HIGH_TIME);
-    auto value = board_config.pwm_mappings[gpio_num - 1].min +
-                  (fraction * (board_config.pwm_mappings[gpio_num - 1].max - board_config.pwm_mappings[gpio_num - 1].min));
+    auto value    = board_config.pwm_mappings[gpio_num - 1].min +
+                 (fraction * (board_config.pwm_mappings[gpio_num - 1].max - board_config.pwm_mappings[gpio_num - 1].min));
 
     auto endpoint = get_endpoint(board_config.pwm_mappings[gpio_num - 1].endpoint);
     if (!endpoint)
@@ -695,41 +693,36 @@ void handle_pulse(int gpio_num, uint32_t high_time) {
 }
 
 void pwm_in_cb(int channel, uint32_t timestamp) {
-    static uint32_t last_timestamp[GPIO_COUNT] = { 0 };
-    static bool last_pin_state[GPIO_COUNT] = { false };
-    static bool last_sample_valid[GPIO_COUNT] = { false };
+    static uint32_t last_timestamp[GPIO_COUNT]    = {0};
+    static bool     last_pin_state[GPIO_COUNT]    = {false};
+    static bool     last_sample_valid[GPIO_COUNT] = {false};
 
     auto gpio_num = tim_2_5_channel_num_to_gpio_num(channel);
     if (gpio_num < 1 || gpio_num > GPIO_COUNT)
         return;
     auto current_pin_state = HAL_GPIO_ReadPin(get_gpio_port_by_pin(gpio_num), get_gpio_pin_by_pin(gpio_num)) != GPIO_PIN_RESET;
 
-    if (last_sample_valid[gpio_num - 1]
-        && (last_pin_state[gpio_num - 1] != PWM_INVERT_INPUT)
-        && (current_pin_state == PWM_INVERT_INPUT)) {
+    if (last_sample_valid[gpio_num - 1] && (last_pin_state[gpio_num - 1] != PWM_INVERT_INPUT) && (current_pin_state == PWM_INVERT_INPUT)) {
         handle_pulse(gpio_num, timestamp - last_timestamp[gpio_num - 1]);
     }
 
-    last_timestamp[gpio_num - 1] = timestamp;
-    last_pin_state[gpio_num - 1] = current_pin_state;
+    last_timestamp[gpio_num - 1]    = timestamp;
+    last_pin_state[gpio_num - 1]    = current_pin_state;
     last_sample_valid[gpio_num - 1] = true;
 }
 
-
 /* Analog speed control input */
 
-static void update_analog_endpoint(const struct PWMMapping_t *map, int gpio)
-{
+static void update_analog_endpoint(const struct PWMMapping_t* map, int gpio) {
     auto fraction = get_adc_voltage(get_gpio_port_by_pin(gpio), get_gpio_pin_by_pin(gpio)) / 3.3f;
-    auto value = map->min + (fraction * (map->max - map->min));
+    auto value    = map->min + (fraction * (map->max - map->min));
     get_endpoint(map->endpoint)->set_from_float(value);
 }
 
-static void analog_polling_thread(void *)
-{
+static void analog_polling_thread(void*) {
     while (true) {
         for (int i = 0; i < GPIO_COUNT; i++) {
-            struct PWMMapping_t *map = &board_config.analog_mappings[i];
+            struct PWMMapping_t* map = &board_config.analog_mappings[i];
 
             if (is_endpoint_ref_valid(map->endpoint))
                 update_analog_endpoint(map, i + 1);
@@ -738,8 +731,7 @@ static void analog_polling_thread(void *)
     }
 }
 
-void start_analog_thread()
-{
-    osThreadDef(thread_def, analog_polling_thread, osPriorityLow, 0, 4*512);
+void start_analog_thread() {
+    osThreadDef(thread_def, analog_polling_thread, osPriorityLow, 0, 4 * 512);
     osThreadCreate(osThread(thread_def), NULL);
 }
