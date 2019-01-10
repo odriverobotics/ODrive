@@ -19,10 +19,10 @@ TrapezoidalTrajectory::TrapezoidalTrajectory(Config_t& config) : config_(config)
 
 bool TrapezoidalTrajectory::planTrapezoidal(float Xf, float Xi, float Vi,
                                             float Vmax, float Amax, float Dmax) {
-    float dX = Xf - Xi;  // Distance to travel
-    float stop_dist = (Vi * Vi) / (2.0f * Dmax); // Minimum stopping distance
-    float dXstop = std::copysign(stop_dist, Vi); // Minimum stopping displacement
-    float s = sign_hard(dX - dXstop); // Sign of coast velocity (if any)
+    auto dX = Xf - Xi;  // Distance to travel
+    auto stop_dist = (Vi * Vi) / (2.0f * Dmax); // Minimum stopping distance
+    auto dXstop = std::copysign(stop_dist, Vi); // Minimum stopping displacement
+    auto s = sign_hard(dX - dXstop); // Sign of coast velocity (if any)
     Ar_ = s * Amax;  // Maximum Acceleration (signed)
     Dr_ = -s * Dmax; // Maximum Deceleration (signed)
     Vr_ = s * Vmax;  // Maximum Velocity (signed)
@@ -39,7 +39,7 @@ bool TrapezoidalTrajectory::planTrapezoidal(float Xf, float Xi, float Vi,
 
     // Integral of velocity ramps over the full accel and decel times to get
     // minimum displacement required to reach cuising speed
-    float dXmin = 0.5f*Ta_*(Vr_ + Vi) + 0.5f*Td_*Vr_;
+    auto dXmin = 0.5f*Ta_*(Vr_ + Vi) + 0.5f*Td_*Vr_;
 
     // Are we displacing enough to reach cruising speed?
     if (s*dX < s*dXmin) {
@@ -78,7 +78,7 @@ TrapezoidalTrajectory::Step_t TrapezoidalTrajectory::eval(float t) {
         trajStep.Yd  = Vr_;
         trajStep.Ydd = 0.0f;
     } else if (t < Tf_) {  // Deceleration
-        float td     = t - Tf_;
+        auto td     = t - Tf_;
         trajStep.Y   = Xf_ + 0.5f*Dr_*SQ(td);
         trajStep.Yd  = Dr_*td;
         trajStep.Ydd = Dr_;

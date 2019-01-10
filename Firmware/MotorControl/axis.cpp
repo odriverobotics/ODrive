@@ -69,8 +69,8 @@ bool Axis::wait_for_current_meas() {
 // step/direction interface
 void Axis::step_cb() {
     if (step_dir_active_) {
-        GPIO_PinState dir_pin = HAL_GPIO_ReadPin(dir_port_, dir_pin_);
-        float dir = (dir_pin == GPIO_PIN_SET) ? 1.0f : -1.0f;
+        auto dir_pin = HAL_GPIO_ReadPin(dir_port_, dir_pin_);
+        auto dir = (dir_pin == GPIO_PIN_SET) ? 1.0f : -1.0f;
         controller_.pos_setpoint_ += dir * config_.counts_per_step;
     }
 };
@@ -142,17 +142,17 @@ bool Axis::do_updates() {
 }
 
 float Axis::get_temp() {
-    float adc = adc_measurements_[hw_config_.thermistor_adc_ch];
-    float normalized_voltage = adc / adc_full_scale;
+    auto adc = adc_measurements_[hw_config_.thermistor_adc_ch];
+    auto normalized_voltage = adc / adc_full_scale;
     return horner_fma(normalized_voltage, thermistor_poly_coeffs, thermistor_num_coeffs);
 }
 
 bool Axis::run_sensorless_spin_up() {
     // Early Spin-up: spiral up current
-    float x = 0.0f;
+    auto x = 0.0f;
     run_control_loop([&](){
-        float phase = wrap_pm_pi(config_.ramp_up_distance * x);
-        float I_mag = config_.spin_up_current * x;
+        auto phase = wrap_pm_pi(config_.ramp_up_distance * x);
+        auto I_mag = config_.spin_up_current * x;
         x += current_meas_period / config_.ramp_up_time;
         if (!motor_.update(I_mag, phase))
             return error_ |= ERROR_MOTOR_FAILED, false;
@@ -162,12 +162,12 @@ bool Axis::run_sensorless_spin_up() {
         return false;
     
     // Late Spin-up: accelerate
-    float vel = config_.ramp_up_distance / config_.ramp_up_time;
-    float phase = wrap_pm_pi(config_.ramp_up_distance);
+    auto vel = config_.ramp_up_distance / config_.ramp_up_time;
+    auto phase = wrap_pm_pi(config_.ramp_up_distance);
     run_control_loop([&](){
         vel += config_.spin_up_acceleration * current_meas_period;
         phase = wrap_pm_pi(phase + vel * current_meas_period);
-        float I_mag = config_.spin_up_current;
+        auto I_mag = config_.spin_up_current;
         if (!motor_.update(I_mag, phase))
             return error_ |= ERROR_MOTOR_FAILED, false;
         return vel < config_.spin_up_target_vel;
@@ -230,10 +230,10 @@ void Axis::run_state_machine_loop() {
     // Allocate the map for anti-cogging algorithm and initialize all values to 0.0f
     // TODO: Move this somewhere else
     // TODO: respect changes of CPR
-    int encoder_cpr = encoder_.config_.cpr;
+    auto encoder_cpr = encoder_.config_.cpr;
     controller_.anticogging_.cogging_map = (float*)malloc(encoder_cpr * sizeof(float));
     if (controller_.anticogging_.cogging_map != NULL) {
-        for (int i = 0; i < encoder_cpr; i++) {
+        for (auto i = 0; i < encoder_cpr; i++) {
             controller_.anticogging_.cogging_map[i] = 0.0f;
         }
     }
@@ -244,7 +244,7 @@ void Axis::run_state_machine_loop() {
     for (;;) {
         // Load the task chain if a specific request is pending
         if (requested_state_ != AXIS_STATE_UNDEFINED) {
-            size_t pos = 0;
+            auto pos = 0;
             if (requested_state_ == AXIS_STATE_STARTUP_SEQUENCE) {
                 if (config_.startup_motor_calibration)
                     task_chain_[pos++] = AXIS_STATE_MOTOR_CALIBRATION;

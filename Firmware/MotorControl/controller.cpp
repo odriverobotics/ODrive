@@ -74,7 +74,7 @@ void Controller::start_anticogging_calibration() {
  */
 bool Controller::anticogging_calibration(float pos_estimate, float vel_estimate) {
     if (anticogging_.calib_anticogging && anticogging_.cogging_map != NULL) {
-        float pos_err = anticogging_.index - pos_estimate;
+        auto pos_err = anticogging_.index - pos_estimate;
         if (fabsf(pos_err) <= anticogging_.calib_pos_threshold &&
             fabsf(vel_estimate) < anticogging_.calib_vel_threshold) {
             anticogging_.cogging_map[anticogging_.index++] = vel_integrator_current_;
@@ -96,13 +96,13 @@ bool Controller::anticogging_calibration(float pos_estimate, float vel_estimate)
 bool Controller::update(float pos_estimate, float vel_estimate, float* current_setpoint_output) {
     // Only runs if anticogging_.calib_anticogging is true; non-blocking
     anticogging_calibration(pos_estimate, vel_estimate);
-    float anticogging_pos = pos_estimate;
+    auto anticogging_pos = pos_estimate;
 
     // Trajectory control
     if (config_.control_mode == CTRL_MODE_TRAJECTORY_CONTROL) {
         // Note: uint32_t loop count delta is OK across overflow
         // Beware of negative deltas, as they will not be well behaved due to uint!
-        float t = (axis_->loop_counter_ - traj_start_loop_count_) * current_meas_period;
+        auto t = (axis_->loop_counter_ - traj_start_loop_count_) * current_meas_period;
         if (t > axis_->trap_.Tf_) {
             // Drop into position control mode when done to avoid problems on loop counter delta overflow
             config_.control_mode = CTRL_MODE_POSITION_CONTROL;
@@ -110,7 +110,7 @@ bool Controller::update(float pos_estimate, float vel_estimate, float* current_s
             vel_setpoint_ = 0.0f;
             current_setpoint_ = 0.0f;
         } else {
-            TrapezoidalTrajectory::Step_t traj_step = axis_->trap_.eval(t);
+            auto traj_step = axis_->trap_.eval(t);
             pos_setpoint_ = traj_step.Y;
             vel_setpoint_ = traj_step.Yd;
             current_setpoint_ = traj_step.Ydd * axis_->trap_.config_.A_per_css;
@@ -120,8 +120,8 @@ bool Controller::update(float pos_estimate, float vel_estimate, float* current_s
 
     // Ramp rate limited velocity setpoint
     if (config_.control_mode == CTRL_MODE_VELOCITY_CONTROL && vel_ramp_enable_) {
-        float max_step_size = current_meas_period * config_.vel_ramp_rate;
-        float full_step = vel_ramp_target_ - vel_setpoint_;
+        auto max_step_size = current_meas_period * config_.vel_ramp_rate;
+        auto full_step = vel_ramp_target_ - vel_setpoint_;
         float step;
         if (fabsf(full_step) > max_step_size) {
             step = std::copysignf(max_step_size, full_step);
@@ -133,13 +133,13 @@ bool Controller::update(float pos_estimate, float vel_estimate, float* current_s
 
     // Position control
     // TODO Decide if we want to use encoder or pll position here
-    float vel_des = vel_setpoint_;
+    auto vel_des = vel_setpoint_;
     if (config_.control_mode >= CTRL_MODE_POSITION_CONTROL) {
         float pos_err;
         if (config_.setpoints_in_cpr) {
             // TODO this breaks the semantics that estimates come in on the arguments.
             // It's probably better to call a get_estimate that will arbitrate (enc vs sensorless) instead.
-            float cpr = (float)(axis_->encoder_.config_.cpr);
+            auto cpr = (float)(axis_->encoder_.config_.cpr);
             // Keep pos setpoint from drifting
             pos_setpoint_ = fmodf_pos(pos_setpoint_, cpr);
             // Circular delta
@@ -152,7 +152,7 @@ bool Controller::update(float pos_estimate, float vel_estimate, float* current_s
     }
 
     // Velocity limiting
-    float vel_lim = config_.vel_limit;
+    auto vel_lim = config_.vel_limit;
     if (vel_des > vel_lim) vel_des = vel_lim;
     if (vel_des < -vel_lim) vel_des = -vel_lim;
 
@@ -165,7 +165,7 @@ bool Controller::update(float pos_estimate, float vel_estimate, float* current_s
     }
 
     // Velocity control
-    float Iq = current_setpoint_;
+    auto Iq = current_setpoint_;
 
     // Anti-cogging is enabled after calibration
     // We get the current position and apply a current feed-forward
@@ -174,7 +174,7 @@ bool Controller::update(float pos_estimate, float vel_estimate, float* current_s
         Iq += anticogging_.cogging_map[mod(static_cast<int>(anticogging_pos), axis_->encoder_.config_.cpr)];
     }
 
-    float v_err = vel_des - vel_estimate;
+    auto v_err = vel_des - vel_estimate;
     if (config_.control_mode >= CTRL_MODE_VELOCITY_CONTROL) {
         Iq += config_.vel_gain * v_err;
     }
@@ -183,8 +183,8 @@ bool Controller::update(float pos_estimate, float vel_estimate, float* current_s
     Iq += vel_integrator_current_;
 
     // Current limiting
-    float Ilim = std::min(axis_->motor_.config_.current_lim, axis_->motor_.current_control_.max_allowed_current);
-    bool limited = false;
+    auto Ilim = std::min(axis_->motor_.config_.current_lim, axis_->motor_.current_control_.max_allowed_current);
+    auto limited = false;
     if (Iq > Ilim) {
         limited = true;
         Iq = Ilim;
