@@ -10,7 +10,7 @@ def get_flat_endpoint_list(json, prefix, id_offset):
         if 'id' in item:
             item['id'] -= id_offset
         if 'type' in item:
-            if item['type'] in {'int8', 'uint8', 'int16', 'uint16', 'int32', 'uint32', 'int64', 'uint64', 'int64'}:
+            if item['type'] in {'int8', 'uint8', 'int16', 'uint16', 'int32', 'uint32', 'int64', 'uint64'}:
                 item['type'] += '_t'
                 is_property = True
             elif item['type'] in {'bool', 'float'}:
