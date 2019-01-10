@@ -230,7 +230,8 @@ bool Encoder::run_offset_calibration() {
     return true;
 }
 
-static bool decode_hall(uint8_t hall_state, int32_t& hall_cnt) {
+namespace {
+    bool decode_hall(uint8_t hall_state, int32_t& hall_cnt) {
     switch (hall_state) {
         case 0b001: hall_cnt = 0; return true;
         case 0b011: hall_cnt = 1; return true;
@@ -240,6 +241,7 @@ static bool decode_hall(uint8_t hall_state, int32_t& hall_cnt) {
         case 0b101: hall_cnt = 5; return true;
         default: return false;
     }
+}
 }
 
 void Encoder::update_pll_gains() {
