@@ -49,8 +49,8 @@ class Encoder {
 
     void enc_index_cb();
 
-    void set_linear_count(int32_t count);
-    void set_circular_count(int32_t count, bool update_offset);
+    void set_linear_count(int64_t count);
+    void set_circular_count(int64_t count, bool update_offset);
     bool calib_enc_offset(float voltage_magnitude);
     bool scan_for_enc_idx(float omega, float voltage_magnitude);
 
@@ -67,8 +67,8 @@ class Encoder {
     Error_t error_         = ERROR_NONE;
     bool    index_found_   = false;
     bool    is_ready_      = false;
-    int32_t shadow_count_  = 0;
-    int32_t count_in_cpr_  = 0;
+    int64_t shadow_count_  = 0;
+    int64_t count_in_cpr_  = 0;
     float   interpolation_ = 0.0f;
     float   phase_         = 0.0f;  // [count]
     float   pos_estimate_  = 0.0f;  // [count]

@@ -140,6 +140,19 @@ inline size_t write_le<uint64_t>(uint64_t value, uint8_t* buffer) {
 }
 
 template<>
+inline size_t write_le<int64_t>(int64_t value, uint8_t* buffer) {
+    buffer[0] = (value >> 0) & 0xff;
+    buffer[1] = (value >> 8) & 0xff;
+    buffer[2] = (value >> 16) & 0xff;
+    buffer[3] = (value >> 24) & 0xff;
+    buffer[4] = (value >> 32) & 0xff;
+    buffer[5] = (value >> 40) & 0xff;
+    buffer[6] = (value >> 48) & 0xff;
+    buffer[7] = (value >> 56) & 0xff;
+    return 8;
+}
+
+template<>
 inline size_t write_le<float>(float value, uint8_t* buffer) {
     static_assert(CHAR_BIT * sizeof(float) == 32, "32 bit floating point expected");
     static_assert(std::numeric_limits<float>::is_iec559, "IEEE 754 floating point expected");
@@ -200,6 +213,19 @@ inline size_t read_le<uint64_t>(uint64_t* value, const uint8_t* buffer) {
              (static_cast<uint64_t>(buffer[5]) << 40) |
              (static_cast<uint64_t>(buffer[6]) << 48) |
              (static_cast<uint64_t>(buffer[7]) << 56);
+    return 8;
+}
+
+template<>
+inline size_t read_le<int64_t>(int64_t* value, const uint8_t* buffer) {
+    *value = (static_cast<int64_t>(buffer[0]) << 0) |
+             (static_cast<int64_t>(buffer[1]) << 8) |
+             (static_cast<int64_t>(buffer[2]) << 16) |
+             (static_cast<int64_t>(buffer[3]) << 24) |
+             (static_cast<int64_t>(buffer[4]) << 32) |
+             (static_cast<int64_t>(buffer[5]) << 40) |
+             (static_cast<int64_t>(buffer[6]) << 48) |
+             (static_cast<int64_t>(buffer[7]) << 56);
     return 8;
 }
 
@@ -497,6 +523,14 @@ inline constexpr const char* get_default_json_modifier<const float>() {
 template<>
 inline constexpr const char* get_default_json_modifier<float>() {
     return "\"type\":\"float\",\"access\":\"rw\"";
+}
+template<>
+inline constexpr const char* get_default_json_modifier<const int64_t>() {
+    return "\"type\":\"int64\",\"access\":\"r\"";
+}
+template<>
+inline constexpr const char* get_default_json_modifier<int64_t>() {
+    return "\"type\":\"int64\",\"access\":\"r\"";
 }
 template<>
 inline constexpr const char* get_default_json_modifier<const uint64_t>() {

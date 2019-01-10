@@ -55,7 +55,7 @@ void Encoder::enc_index_cb() {
 }
 
 // Function that sets the current encoder count to a desired 32-bit value.
-void Encoder::set_linear_count(int32_t count) {
+void Encoder::set_linear_count(int64_t count) {
     // Disable interrupts to make a critical section to avoid race condition
     auto prim = cpu_enter_critical();
 
@@ -70,7 +70,7 @@ void Encoder::set_linear_count(int32_t count) {
 
 // Function that sets the CPR circular tracking encoder count to a desired 32-bit value.
 // Note that this will get mod'ed down to [0, cpr)
-void Encoder::set_circular_count(int32_t count, bool update_offset) {
+void Encoder::set_circular_count(int64_t count, bool update_offset) {
     // Disable interrupts to make a critical section to avoid race condition
     auto prim = cpu_enter_critical();
 
