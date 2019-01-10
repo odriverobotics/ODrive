@@ -84,9 +84,9 @@ static uint16_t GPIO_port_samples [2][num_GPIO];
 // @brief Floats ALL phases immediately and disarms both motors and the brake resistor.
 void low_level_fault(Motor::Error_t error) {
     // Disable all motors NOW!
-    for (size_t i = 0; i < AXIS_COUNT; ++i) {
-        safety_critical_disarm_motor_pwm(axes[i]->motor_);
-        axes[i]->motor_.error_ |= error;
+    for (auto axis : axes) {
+        safety_critical_disarm_motor_pwm(axis->motor_);
+        axis->motor_.error_ |= error;
     }
 
     safety_critical_disarm_brake_resistor();
@@ -96,7 +96,7 @@ void low_level_fault(Motor::Error_t error) {
 // All calls to this function must clearly originate
 // from user input.
 void safety_critical_arm_motor_pwm(Motor& motor) {
-    uint32_t mask = cpu_enter_critical();
+    auto mask = cpu_enter_critical();
     if (brake_resistor_armed) {
         motor.armed_state_ = Motor::ARMED_STATE_WAITING_FOR_TIMINGS;
     }
@@ -109,8 +109,8 @@ void safety_critical_arm_motor_pwm(Motor& motor) {
 // safety_critical_arm_motor_phases is called.
 // @returns true if the motor was in a state other than disarmed before
 bool safety_critical_disarm_motor_pwm(Motor& motor) {
-    uint32_t mask = cpu_enter_critical();
-    bool was_armed = motor.armed_state_ != Motor::ARMED_STATE_DISARMED;
+    auto mask = cpu_enter_critical();
+    auto was_armed = motor.armed_state_ != Motor::ARMED_STATE_DISARMED;
     motor.armed_state_ = Motor::ARMED_STATE_DISARMED;
     __HAL_TIM_MOE_DISABLE_UNCONDITIONALLY(motor.hw_config_.timer);
     cpu_exit_critical(mask);
@@ -123,7 +123,7 @@ bool safety_critical_disarm_motor_pwm(Motor& motor) {
 // the actual PMW timings on the pins can be undefined for up to one
 // timer period.
 void safety_critical_apply_motor_pwm_timings(Motor& motor, uint16_t timings[3]) {
-    uint32_t mask = cpu_enter_critical();
+    auto mask = cpu_enter_critical();
     if (!brake_resistor_armed) {
         motor.armed_state_ = Motor::ARMED_STATE_ARMED;
     }
@@ -154,7 +154,7 @@ void safety_critical_apply_motor_pwm_timings(Motor& motor, uint16_t timings[3]) 
 
 // @brief Arms the brake resistor
 void safety_critical_arm_brake_resistor() {
-    uint32_t mask = cpu_enter_critical();
+    auto mask = cpu_enter_critical();
     brake_resistor_armed = true;
     htim2.Instance->CCR3 = 0;
     htim2.Instance->CCR4 = TIM_APB1_PERIOD_CLOCKS + 1;
@@ -166,12 +166,12 @@ void safety_critical_arm_brake_resistor() {
 // After calling this, the brake resistor can only be armed again
 // by calling safety_critical_arm_brake_resistor().
 void safety_critical_disarm_brake_resistor() {
-    uint32_t mask = cpu_enter_critical();
+    auto mask = cpu_enter_critical();
     brake_resistor_armed = false;
     htim2.Instance->CCR3 = 0;
     htim2.Instance->CCR4 = TIM_APB1_PERIOD_CLOCKS + 1;
-    for (size_t i = 0; i < AXIS_COUNT; ++i) {
-        safety_critical_disarm_motor_pwm(axes[i]->motor_);
+    for (auto axis : axes) {
+        safety_critical_disarm_motor_pwm(axis->motor_);
     }
     cpu_exit_critical(mask);
 }
@@ -181,7 +181,7 @@ void safety_critical_disarm_brake_resistor() {
 void safety_critical_apply_brake_resistor_timings(uint32_t low_off, uint32_t high_on) {
     if (high_on - low_off < TIM_APB1_DEADTIME_CLOCKS)
         low_level_fault(Motor::ERROR_BRAKE_DEADTIME_VIOLATION);
-    uint32_t mask = cpu_enter_critical();
+    auto mask = cpu_enter_critical();
     if (brake_resistor_armed) {
         // Safe update of low and high side timings
         // To avoid race condition, first reset timings to safe state
@@ -234,15 +234,15 @@ void start_adc_pwm() {
     HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_4);
 
     // Disarm motors and arm brake resistor
-    for (size_t i = 0; i < AXIS_COUNT; ++i) {
-        safety_critical_disarm_motor_pwm(axes[i]->motor_);
+    for (auto axis : axes) {
+        safety_critical_disarm_motor_pwm(axis->motor_);
     }
     safety_critical_arm_brake_resistor();
 }
 
 void start_pwm(TIM_HandleTypeDef* htim) {
     // Init PWM
-    int half_load = TIM_1_8_PERIOD_CLOCKS / 2;
+    auto half_load = TIM_1_8_PERIOD_CLOCKS / 2;
     htim->Instance->CCR1 = half_load;
     htim->Instance->CCR2 = half_load;
     htim->Instance->CCR3 = half_load;
@@ -263,10 +263,10 @@ void sync_timers(TIM_HandleTypeDef* htim_a, TIM_HandleTypeDef* htim_b,
                  uint16_t TIM_CLOCKSOURCE_ITRx, uint16_t count_offset,
                  TIM_HandleTypeDef* htim_refbase) {
     // Store intial timer configs
-    uint16_t MOE_store_a = htim_a->Instance->BDTR & (TIM_BDTR_MOE);
-    uint16_t MOE_store_b = htim_b->Instance->BDTR & (TIM_BDTR_MOE);
-    uint16_t CR2_store = htim_a->Instance->CR2;
-    uint16_t SMCR_store = htim_b->Instance->SMCR;
+    auto MOE_store_a = htim_a->Instance->BDTR & (TIM_BDTR_MOE);
+    auto MOE_store_b = htim_b->Instance->BDTR & (TIM_BDTR_MOE);
+    auto CR2_store = htim_a->Instance->CR2;
+    auto SMCR_store = htim_b->Instance->SMCR;
     // Turn off output
     htim_a->Instance->BDTR &= ~(TIM_BDTR_MOE);
     htim_b->Instance->BDTR &= ~(TIM_BDTR_MOE);
@@ -283,8 +283,8 @@ void sync_timers(TIM_HandleTypeDef* htim_a, TIM_HandleTypeDef* htim_b,
     htim_b->Instance->SMCR &= ~TIM_SMCR_SMS;
     htim_b->Instance->SMCR |= TIM_SLAVEMODE_TRIGGER;
     // Dir bit is read only in center aligned mode, so we clear the mode for now
-    uint16_t CMS_store_a = htim_a->Instance->CR1 & TIM_CR1_CMS;
-    uint16_t CMS_store_b = htim_b->Instance->CR1 & TIM_CR1_CMS;
+    auto CMS_store_a = htim_a->Instance->CR1 & TIM_CR1_CMS;
+    auto CMS_store_b = htim_b->Instance->CR1 & TIM_CR1_CMS;
     htim_a->Instance->CR1 &= ~TIM_CR1_CMS;
     htim_b->Instance->CR1 &= ~TIM_CR1_CMS;
     // Set both timers to up-counting state
@@ -346,7 +346,7 @@ void start_general_purpose_adc() {
 
     // Set up sampling sequence (channel 0 ... channel 15)
     sConfig.SamplingTime = ADC_SAMPLETIME_15CYCLES;
-    for (uint32_t channel = 0; channel < ADC_CHANNEL_COUNT; ++channel) {
+    for (auto channel = 0; channel < ADC_CHANNEL_COUNT; ++channel) {
         sConfig.Channel = channel << ADC_CR1_AWDCH_Pos;
         sConfig.Rank = channel + 1; // rank numbering starts at 1
         if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
@@ -374,7 +374,7 @@ void start_general_purpose_adc() {
 // The true frequency is slightly lower because of the injected vbus
 // measurements
 float get_adc_voltage(GPIO_TypeDef* GPIO_port, uint16_t GPIO_pin) {
-    uint32_t channel = UINT32_MAX;
+    auto channel = UINT32_MAX;
     if (GPIO_port == GPIOA) {
         if (GPIO_pin == GPIO_PIN_0)
             channel = 0;
@@ -422,9 +422,9 @@ float get_adc_voltage(GPIO_TypeDef* GPIO_port, uint16_t GPIO_pin) {
 //--------------------------------
 
 void vbus_sense_adc_cb(ADC_HandleTypeDef* hadc, bool injected) {
-    static const float voltage_scale = adc_ref_voltage * VBUS_S_DIVIDER_RATIO / adc_full_scale;
+    static const auto voltage_scale = adc_ref_voltage * VBUS_S_DIVIDER_RATIO / adc_full_scale;
     // Only one conversion in sequence, so only rank1
-    uint32_t ADCValue = HAL_ADCEx_InjectedGetValue(hadc, ADC_INJECTED_RANK_1);
+    auto ADCValue = HAL_ADCEx_InjectedGetValue(hadc, ADC_INJECTED_RANK_1);
     vbus_voltage = ADCValue * voltage_scale;
     if (axes[0] && !axes[0]->error_ && axes[1] && !axes[1]->error_) {
         if (oscilloscope_pos >= OSCILLOSCOPE_SIZE)
@@ -445,9 +445,9 @@ static void decode_hall_samples(Encoder& enc, uint16_t GPIO_samples[num_GPIO]) {
         enc.hw_config_.hallA_pin,
     };
 
-    uint8_t hall_state = 0x0;
-    for (int i = 0; i < 3; ++i) {
-        int port_idx = 0;
+    auto hall_state = 0x0;
+    for (auto i = 0; i < 3; ++i) {
+        auto port_idx = 0;
         for (;;) {
             auto port = GPIOs_to_samp[port_idx];
             if (port == hall_ports[i])
@@ -466,7 +466,7 @@ static void decode_hall_samples(Encoder& enc, uint16_t GPIO_samples[num_GPIO]) {
 // TODO: Document how the phasing is done, link to timing diagram
 void pwm_trig_adc_cb(ADC_HandleTypeDef* hadc, bool injected) {
 #define calib_tau 0.2f  //@TOTO make more easily configurable
-    static const float calib_filter_k = CURRENT_MEAS_PERIOD / calib_tau;
+    static const auto calib_filter_k = CURRENT_MEAS_PERIOD / calib_tau;
 
     // Ensure ADCs are expected ones to simplify the logic below
     if (!(hadc == &hadc2 || hadc == &hadc3)) {
@@ -479,10 +479,10 @@ void pwm_trig_adc_cb(ADC_HandleTypeDef* hadc, bool injected) {
     // If the corresponding timer is counting up, we just sampled in SVM vector 0, i.e. real current
     // If we are counting down, we just sampled in SVM vector 7, with zero current
     Axis& axis = injected ? *axes[0] : *axes[1];
-    int axis_num = injected ? 0 : 1;
+    auto axis_num = injected ? 0 : 1;
     Axis& other_axis = injected ? *axes[1] : *axes[0];
-    bool counting_down = axis.motor_.hw_config_.timer->Instance->CR1 & TIM_CR1_DIR;
-    bool current_meas_not_DC_CAL = !counting_down;
+    auto counting_down = axis.motor_.hw_config_.timer->Instance->CR1 & TIM_CR1_DIR;
+    auto current_meas_not_DC_CAL = !counting_down;
 
     // Check the timing of the sequencing
     if (current_meas_not_DC_CAL)
@@ -490,7 +490,7 @@ void pwm_trig_adc_cb(ADC_HandleTypeDef* hadc, bool injected) {
     else
         axis.motor_.log_timing(Motor::TIMING_LOG_ADC_CB_DC);
 
-    bool update_timings = false;
+    auto update_timings = false;
     if (hadc == &hadc2) {
         if (&axis == axes[1] && counting_down)
             update_timings = true; // update timings of M0
@@ -503,7 +503,7 @@ void pwm_trig_adc_cb(ADC_HandleTypeDef* hadc, bool injected) {
         if (!other_axis.motor_.next_timings_valid_) {
             // the motor control loop failed to update the timings in time
             // we must assume that it died and therefore float all phases
-            bool was_armed = safety_critical_disarm_motor_pwm(other_axis.motor_);
+            auto was_armed = safety_critical_disarm_motor_pwm(other_axis.motor_);
             if (was_armed) {
                 other_axis.motor_.error_ |= Motor::ERROR_CONTROL_DEADLINE_MISSED;
             }
@@ -522,7 +522,7 @@ void pwm_trig_adc_cb(ADC_HandleTypeDef* hadc, bool injected) {
     } else {
         ADCValue = HAL_ADC_GetValue(hadc);
     }
-    float current = axis.motor_.phase_current_from_adcval(ADCValue);
+    auto current = axis.motor_.phase_current_from_adcval(ADCValue);
 
     if (current_meas_not_DC_CAL) {
         // ADC2 and ADC3 record the phB and phC currents concurrently,
@@ -571,22 +571,22 @@ void tim_update_cb(TIM_HandleTypeDef* htim) {
 // @brief Sums up the Ibus contribution of each motor and updates the
 // brake resistor PWM accordingly.
 void update_brake_current() {
-    float Ibus_sum = 0.0f;
-    for (size_t i = 0; i < AXIS_COUNT; ++i) {
-        if (axes[i]->motor_.armed_state_ == Motor::ARMED_STATE_ARMED) {
-            Ibus_sum += axes[i]->motor_.current_control_.Ibus;
+    auto Ibus_sum = 0.0f;
+    for (auto axis : axes) {
+        if (axis->motor_.armed_state_ == Motor::ARMED_STATE_ARMED) {
+            Ibus_sum += axis->motor_.current_control_.Ibus;
         }
     }
-    float brake_current = -Ibus_sum;
+    auto brake_current = -Ibus_sum;
     // Clip negative values to 0.0f
     if (brake_current < 0.0f) brake_current = 0.0f;
-    float brake_duty = brake_current * board_config.brake_resistance / vbus_voltage;
+    auto brake_duty = brake_current * board_config.brake_resistance / vbus_voltage;
 
     // Duty limit at 90% to allow bootstrap caps to charge
     // If brake_duty is NaN, this expression will also evaluate to false
     if ((brake_duty >= 0.0f) && (brake_duty <= 0.9f)) {
-        int high_on = static_cast<int>(TIM_APB1_PERIOD_CLOCKS * (1.0f - brake_duty));
-        int low_off = high_on - TIM_APB1_DEADTIME_CLOCKS;
+        auto high_on = static_cast<int>(TIM_APB1_PERIOD_CLOCKS * (1.0f - brake_duty));
+        auto low_off = high_on - TIM_APB1_DEADTIME_CLOCKS;
         if (low_off < 0) low_off = 0;
         safety_critical_apply_brake_resistor_timings(low_off, high_on);
     } else {
@@ -653,9 +653,9 @@ void pwm_in_init() {
     sConfigIC.ICFilter = 15;
 
 #if HW_VERSION_MAJOR == 3 && HW_VERSION_MINOR >= 3
-    for (int gpio_num = 1; gpio_num <= 4; ++gpio_num) {
+    for (auto gpio_num = 1; gpio_num <= 4; ++gpio_num) {
 #else
-    int gpio_num = 4; {
+    auto gpio_num = 4; {
 #endif
         if (is_endpoint_ref_valid(board_config.pwm_mappings[gpio_num - 1].endpoint)) {
             GPIO_InitStruct.Pin = get_gpio_pin_by_pin(gpio_num);
@@ -683,11 +683,11 @@ void handle_pulse(int gpio_num, uint32_t high_time) {
         high_time = PWM_MIN_HIGH_TIME;
     if (high_time > PWM_MAX_HIGH_TIME)
         high_time = PWM_MAX_HIGH_TIME;
-    float fraction = (float)(high_time - PWM_MIN_HIGH_TIME) / (float)(PWM_MAX_HIGH_TIME - PWM_MIN_HIGH_TIME);
-    float value = board_config.pwm_mappings[gpio_num - 1].min +
+    auto fraction = (float)(high_time - PWM_MIN_HIGH_TIME) / (float)(PWM_MAX_HIGH_TIME - PWM_MIN_HIGH_TIME);
+    auto value = board_config.pwm_mappings[gpio_num - 1].min +
                   (fraction * (board_config.pwm_mappings[gpio_num - 1].max - board_config.pwm_mappings[gpio_num - 1].min));
 
-    Endpoint* endpoint = get_endpoint(board_config.pwm_mappings[gpio_num - 1].endpoint);
+    auto endpoint = get_endpoint(board_config.pwm_mappings[gpio_num - 1].endpoint);
     if (!endpoint)
         return;
 
@@ -699,10 +699,10 @@ void pwm_in_cb(int channel, uint32_t timestamp) {
     static bool last_pin_state[GPIO_COUNT] = { false };
     static bool last_sample_valid[GPIO_COUNT] = { false };
 
-    int gpio_num = tim_2_5_channel_num_to_gpio_num(channel);
+    auto gpio_num = tim_2_5_channel_num_to_gpio_num(channel);
     if (gpio_num < 1 || gpio_num > GPIO_COUNT)
         return;
-    bool current_pin_state = HAL_GPIO_ReadPin(get_gpio_port_by_pin(gpio_num), get_gpio_pin_by_pin(gpio_num)) != GPIO_PIN_RESET;
+    auto current_pin_state = HAL_GPIO_ReadPin(get_gpio_port_by_pin(gpio_num), get_gpio_pin_by_pin(gpio_num)) != GPIO_PIN_RESET;
 
     if (last_sample_valid[gpio_num - 1]
         && (last_pin_state[gpio_num - 1] != PWM_INVERT_INPUT)
@@ -720,8 +720,8 @@ void pwm_in_cb(int channel, uint32_t timestamp) {
 
 static void update_analog_endpoint(const struct PWMMapping_t *map, int gpio)
 {
-    float fraction = get_adc_voltage(get_gpio_port_by_pin(gpio), get_gpio_pin_by_pin(gpio)) / 3.3f;
-    float value = map->min + (fraction * (map->max - map->min));
+    auto fraction = get_adc_voltage(get_gpio_port_by_pin(gpio), get_gpio_pin_by_pin(gpio)) / 3.3f;
+    auto value = map->min + (fraction * (map->max - map->min));
     get_endpoint(map->endpoint)->set_from_float(value);
 }
 
