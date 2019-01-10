@@ -5,7 +5,7 @@ As such it assumes that you know things like how to use Git, what a compiler is,
 
 The official releases are maintained on the `master` branch. However since you are a developer, you are encouraged to use the `devel` branch, as it contains the latest features.
 
-The project is under active development, so make sure to check the [Changelog](CHANGELOG.md) to keep track of updates.
+The project is under active development, so make sure to check the [Changelog](../CHANGELOG.md) to keep track of updates.
 
 ### Table of contents
 
