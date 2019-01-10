@@ -192,8 +192,8 @@ int odrive_main(void) {
     pwm_in_init();
 
     // Setup hardware for all components
-    for (size_t i = 0; i < AXIS_COUNT; ++i) {
-        axes[i]->setup();
+    for (auto axis : axes) {
+        axis->setup();
     }
 
     // Start PWM and enable adc interrupts/callbacks
@@ -210,8 +210,8 @@ int odrive_main(void) {
     // Start state machine threads. Each thread will go through various calibration
     // procedures and then run the actual controller loops.
     // TODO: generalize for AXIS_COUNT != 2
-    for (size_t i = 0; i < AXIS_COUNT; ++i) {
-        axes[i]->start_thread();
+    for (auto axis : axes) {
+        axis->start_thread();
     }
 
     start_analog_thread();
