@@ -86,7 +86,7 @@ typedef struct {
 template<typename T, typename = typename std::enable_if_t<!std::is_const<T>::value>>
 inline size_t write_le(T value, uint8_t* buffer){
     for(size_t i = 0; i < sizeof(value); ++i){
-        buffer[i] = value >> 8*i;
+        buffer[i] = (value >> 8*i) & 0xff;
     }
     return sizeof(value);
 }
