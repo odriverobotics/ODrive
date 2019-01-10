@@ -1,0 +1,18 @@
+# Google standard, but with 4 column indentation
+BasedOnStyle: Google
+IndentWidth: 4
+
+# Don't wrap code automatically due to length
+ColumnLimit: 0
+
+Language: Cpp
+DerivePointerAlignment: false
+PointerAlignment: Left
+
+AlignConsecutiveAssignments: true
+AlignConsecutiveDeclarations: true
+AlignEscapedNewlines: true
+
+AllowShortBlocksOnASingleLine: true
+AllowShortCaseLabelsOnASingleLine: true
+AllowShortIfStatementsOnASingleLine: true
