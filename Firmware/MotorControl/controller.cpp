@@ -13,6 +13,11 @@ void Controller::reset() {
     current_setpoint_ = 0.0f;
 }
 
+void Controller::set_error(Error_t error) {
+    error_ |= error;
+    axis_->error_ |= Axis::ERROR_CONTROLLER_FAILED;
+}
+
 //--------------------------------
 // Command Handling
 //--------------------------------
@@ -125,6 +130,14 @@ bool Controller::update(float pos_estimate, float vel_estimate, float* current_s
     float vel_lim = config_.vel_limit;
     if (vel_des > vel_lim) vel_des = vel_lim;
     if (vel_des < -vel_lim) vel_des = -vel_lim;
+
+    // Check for overspeed fault (done in this module (controller) for cohesion with vel_lim)
+    if (config_.vel_limit_tolerance > 0.0f) { // 0.0f to disable
+        if (fabsf(vel_estimate) > config_.vel_limit_tolerance * vel_lim) {
+            set_error(ERROR_OVERSPEED);
+            return false;
+        }
+    }
 
     // Velocity control
     float Iq = current_setpoint_;
