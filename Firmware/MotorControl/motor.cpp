@@ -136,8 +136,6 @@ bool Motor::check_DRV_fault() {
 void Motor::set_error(Motor::Error_t error){
     error_ |= error;
     axis_->error_ |= Axis::ERROR_MOTOR_FAILED;
-    safety_critical_disarm_motor_pwm(*this);
-    update_brake_current();
 }
 
 bool Motor::do_checks() {
@@ -149,8 +147,13 @@ bool Motor::do_checks() {
 }
 
 void Motor::log_timing(TimingLog_t log_idx) {
-    static const uint16_t clocks_per_cnt = (uint16_t)((float)TIM_1_8_CLOCK_HZ / (float)TIM_APB1_CLOCK_HZ);
-    uint16_t timing = clocks_per_cnt * htim13.Instance->CNT; // TODO: Use a hw_config
+    TIM_HandleTypeDef* htim = hw_config_.timer;
+    uint16_t timing = htim->Instance->CNT;
+    bool down = htim->Instance->CR1 & TIM_CR1_DIR;
+    if (down) {
+        uint16_t delta = TIM_1_8_PERIOD_CLOCKS - timing;
+        timing = TIM_1_8_PERIOD_CLOCKS + delta;
+    }
 
     if (log_idx < TIMING_LOG_NUM_SLOTS) {
         timing_log_[log_idx] = timing;

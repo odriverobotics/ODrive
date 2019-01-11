@@ -134,10 +134,9 @@ SECTIONS
   * 
   * IMPORTANT NOTE! 
   * If initialized variables will be placed in this section,
-  * the startup code needs to be modified to copy the init-values.
-  * Oskar: Added NOLOAD to remove this section from .bin outputs
+  * the startup code needs to be modified to copy the init-values.  
   */
-  .ccmram (NOLOAD):
+  .ccmram :
   {
     . = ALIGN(4);
     _sccmram = .;       /* create a global symbol at ccmram start */

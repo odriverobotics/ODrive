@@ -31,7 +31,6 @@ public:
                                     // In this case the encoder will enter ready
                                     // state as soon as the index is found.
         float idx_search_speed = 10.0f; // [rad/s electrical]
-        bool zero_count_on_find_idx = true;
         int32_t cpr = (2048 * 4);   // Default resolution of CUI-AMT102 encoder,
         int32_t offset = 0;        // Offset between encoder count and rotor electrical phase
         float offset_float = 0.0f; // Sub-count phase alignment offset
@@ -69,12 +68,12 @@ public:
     int32_t shadow_count_ = 0;
     int32_t count_in_cpr_ = 0;
     float interpolation_ = 0.0f;
-    float phase_ = 0.0f;    // [count]
-    float pos_estimate_ = 0.0f;  // [count]
-    float pos_cpr_ = 0.0f;  // [count]
-    float vel_estimate_ = 0.0f;  // [count/s]
-    float pll_kp_ = 0.0f;   // [count/s / count]
-    float pll_ki_ = 0.0f;   // [(count/s^2) / count]
+    float phase_ = 0.0f;    // [rad]
+    float pos_estimate_ = 0.0f;  // [rad]
+    float pos_cpr_ = 0.0f;  // [rad]
+    float vel_estimate_ = 0.0f;  // [rad/s]
+    float pll_kp_ = 0.0f;   // [rad/s / rad]
+    float pll_ki_ = 0.0f;   // [(rad/s^2) / rad]
 
     // Updated by low_level pwm_adc_cb
     uint8_t hall_state_ = 0x0; // bit[0] = HallA, .., bit[2] = HallC
@@ -100,7 +99,6 @@ public:
                 make_protocol_property("use_index", &config_.use_index),
                 make_protocol_property("pre_calibrated", &config_.pre_calibrated),
                 make_protocol_property("idx_search_speed", &config_.idx_search_speed),
-                make_protocol_property("zero_count_on_find_idx", &config_.zero_count_on_find_idx),
                 make_protocol_property("cpr", &config_.cpr),
                 make_protocol_property("offset", &config_.offset),
                 make_protocol_property("offset_float", &config_.offset_float),

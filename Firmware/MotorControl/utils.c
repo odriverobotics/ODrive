@@ -51,8 +51,9 @@ int SVM(float alpha, float beta, float* tA, float* tB, float* tC) {
             *tA = (1.0f - t1 - t2) * 0.5f;
             *tB = *tA + t1;
             *tC = *tB + t2;
-        } break;
 
+            break;
+        }
         // sextant v2-v3
         case 2: {
             // Vector on-times
@@ -63,8 +64,9 @@ int SVM(float alpha, float beta, float* tA, float* tB, float* tC) {
             *tB = (1.0f - t2 - t3) * 0.5f;
             *tA = *tB + t3;
             *tC = *tA + t2;
-        } break;
 
+            break;
+        }
         // sextant v3-v4
         case 3: {
             // Vector on-times
@@ -75,8 +77,9 @@ int SVM(float alpha, float beta, float* tA, float* tB, float* tC) {
             *tB = (1.0f - t3 - t4) * 0.5f;
             *tC = *tB + t3;
             *tA = *tC + t4;
-        } break;
 
+            break;
+        }
         // sextant v4-v5
         case 4: {
             // Vector on-times
@@ -87,8 +90,9 @@ int SVM(float alpha, float beta, float* tA, float* tB, float* tC) {
             *tC = (1.0f - t4 - t5) * 0.5f;
             *tB = *tC + t5;
             *tA = *tB + t4;
-        } break;
 
+            break;
+        }
         // sextant v5-v6
         case 5: {
             // Vector on-times
@@ -99,8 +103,9 @@ int SVM(float alpha, float beta, float* tA, float* tB, float* tC) {
             *tC = (1.0f - t5 - t6) * 0.5f;
             *tA = *tC + t5;
             *tB = *tA + t6;
-        } break;
 
+            break;
+        }
         // sextant v6-v1
         case 6: {
             // Vector on-times
@@ -111,7 +116,9 @@ int SVM(float alpha, float beta, float* tA, float* tB, float* tC) {
             *tA = (1.0f - t6 - t1) * 0.5f;
             *tC = *tA + t1;
             *tB = *tC + t6;
-        } break;
+
+            break;
+        }
     }
 
     // if any of the results becomes NaN, result_valid will evaluate to false

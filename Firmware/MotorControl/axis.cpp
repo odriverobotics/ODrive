@@ -26,8 +26,6 @@ Axis::Axis(const AxisHardwareConfig_t& hw_config,
     controller_.axis_ = this;
     motor_.axis_ = this;
     trap_.axis_ = this;
-
-    decode_step_dir_pins();
 }
 
 static void step_cb_wrapper(void* ctx) {
@@ -68,46 +66,33 @@ bool Axis::wait_for_current_meas() {
 
 // step/direction interface
 void Axis::step_cb() {
-    if (step_dir_active_) {
-        GPIO_PinState dir_pin = HAL_GPIO_ReadPin(dir_port_, dir_pin_);
+    if (enable_step_dir_) {
+        GPIO_PinState dir_pin = HAL_GPIO_ReadPin(hw_config_.dir_port, hw_config_.dir_pin);
         float dir = (dir_pin == GPIO_PIN_SET) ? 1.0f : -1.0f;
         controller_.pos_setpoint_ += dir * config_.counts_per_step;
     }
 };
 
-void Axis::load_default_step_dir_pin_config(
-        const AxisHardwareConfig_t& hw_config, Config_t* config) {
-    config->step_gpio_pin = hw_config.step_gpio_pin;
-    config->dir_gpio_pin = hw_config.dir_gpio_pin;
-}
-
-void Axis::decode_step_dir_pins() {
-    step_port_ = get_gpio_port_by_pin(config_.step_gpio_pin);
-    step_pin_ = get_gpio_pin_by_pin(config_.step_gpio_pin);
-    dir_port_ = get_gpio_port_by_pin(config_.dir_gpio_pin);
-    dir_pin_ = get_gpio_pin_by_pin(config_.dir_gpio_pin);
-}
-
-// @brief (de)activates step/dir input
-void Axis::set_step_dir_active(bool active) {
-    if (active) {
+// @brief Enables or disables step/dir input
+void Axis::set_step_dir_enabled(bool enable) {
+    if (enable) {
         // Set up the direction GPIO as input
         GPIO_InitTypeDef GPIO_InitStruct;
-        GPIO_InitStruct.Pin = dir_pin_;
+        GPIO_InitStruct.Pin = hw_config_.dir_pin;
         GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
         GPIO_InitStruct.Pull = GPIO_NOPULL;
-        HAL_GPIO_Init(dir_port_, &GPIO_InitStruct);
+        HAL_GPIO_Init(hw_config_.dir_port, &GPIO_InitStruct);
 
         // Subscribe to rising edges of the step GPIO
-        GPIO_subscribe(step_port_, step_pin_, GPIO_PULLDOWN,
+        GPIO_subscribe(hw_config_.step_port, hw_config_.step_pin, GPIO_PULLDOWN,
                 step_cb_wrapper, this);
 
-        step_dir_active_ = true;
+        enable_step_dir_ = true;
     } else {
-        step_dir_active_ = false;
+        enable_step_dir_ = false;
 
         // Unsubscribe from step GPIO
-        GPIO_unsubscribe(step_port_, step_pin_);
+        GPIO_unsubscribe(hw_config_.step_port, hw_config_.step_pin);
     }
 }
 
@@ -182,6 +167,7 @@ bool Axis::run_sensorless_spin_up() {
 
 // Note run_sensorless_control_loop and run_closed_loop_control_loop are very similar and differ only in where we get the estimate from.
 bool Axis::run_sensorless_control_loop() {
+    set_step_dir_enabled(config_.enable_step_dir);
     run_control_loop([this](){
         if (controller_.config_.control_mode >= Controller::CTRL_MODE_POSITION_CONTROL)
             return error_ |= ERROR_POS_CTRL_DURING_SENSORLESS, false;
@@ -194,13 +180,12 @@ bool Axis::run_sensorless_control_loop() {
             return false; // set_error should update axis.error_
         return true;
     });
+    set_step_dir_enabled(false);
     return check_for_errors();
 }
 
 bool Axis::run_closed_loop_control_loop() {
-    // To avoid any transient on startup, we intialize the setpoint to be the current position
-    controller_.pos_setpoint_ = encoder_.pos_estimate_;
-    set_step_dir_active(config_.enable_step_dir);
+    set_step_dir_enabled(config_.enable_step_dir);
     run_control_loop([this](){
         // Note that all estimators are updated in the loop prefix in run_control_loop
         float current_setpoint;
@@ -210,7 +195,7 @@ bool Axis::run_closed_loop_control_loop() {
             return false; // set_error should update axis.error_
         return true;
     });
-    set_step_dir_active(false);
+    set_step_dir_enabled(false);
     return check_for_errors();
 }
 

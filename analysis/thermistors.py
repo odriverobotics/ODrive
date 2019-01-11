@@ -5,7 +5,7 @@ import numpy as np
 Rload = 3300
 R_25 = 10000
 T_25 = 25 + 273.15 #Kelvin
-Beta = 3434
+Beta = 3380
 Tmin = 0
 Tmax = 140
 

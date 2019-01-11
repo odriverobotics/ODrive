@@ -70,9 +70,6 @@ typedef enum
 } HAL_LockTypeDef;
 
 /* Exported macro ------------------------------------------------------------*/
-
-#define UNUSED(X) (void)X      /* To avoid gcc/g++ warnings */
-
 #define HAL_MAX_DELAY      0xFFFFFFFFU
 
 #define HAL_IS_BIT_SET(REG, BIT)         (((REG) & (BIT)) != RESET)
@@ -82,7 +79,9 @@ typedef enum
                         do{                                                      \
                               (__HANDLE__)->__PPP_DMA_FIELD__ = &(__DMA_HANDLE__); \
                               (__DMA_HANDLE__).Parent = (__HANDLE__);             \
-                          } while(0U)
+                          } while(0)
+
+#define UNUSED(x) ((void)(x))
 
 /** @brief Reset the Handle's State field.
   * @param __HANDLE__ specifies the Peripheral Handle.
@@ -136,7 +135,7 @@ typedef enum
 /* Macro to get variable aligned on 4-bytes, for __ICCARM__ the directive "#pragma data_alignment=4" must be used instead */
 #if defined ( __GNUC__ ) && !defined (__CC_ARM) /* GNU Compiler */
   #ifndef __ALIGN_END
-#define __ALIGN_END    __attribute__ ((aligned (4)))
+    #define __ALIGN_END    __attribute__ ((aligned (4)))
   #endif /* __ALIGN_END */
   #ifndef __ALIGN_BEGIN  
     #define __ALIGN_BEGIN
@@ -147,7 +146,7 @@ typedef enum
   #endif /* __ALIGN_END */
   #ifndef __ALIGN_BEGIN      
     #if defined   (__CC_ARM)      /* ARM Compiler */
-#define __ALIGN_BEGIN    __align(4)
+      #define __ALIGN_BEGIN    __align(4)
     #elif defined (__ICCARM__)    /* IAR Compiler */
       #define __ALIGN_BEGIN 
     #endif /* __CC_ARM */
@@ -168,14 +167,14 @@ typedef enum
    Available memory areas are declared in the 'Target' tab of the 'Options for Target'
    dialog. 
 */
-#define __RAM_FUNC
+#define __RAM_FUNC HAL_StatusTypeDef 
 
 #elif defined ( __ICCARM__ )
 /* ICCARM Compiler
    ---------------
    RAM functions are defined using a specific toolchain keyword "__ramfunc". 
 */
-#define __RAM_FUNC __ramfunc
+#define __RAM_FUNC __ramfunc HAL_StatusTypeDef
 
 #elif defined   (  __GNUC__  )
 /* GNU Compiler
@@ -183,7 +182,7 @@ typedef enum
   RAM functions are defined using a specific toolchain attribute 
    "__attribute__((section(".RamFunc")))".
 */
-#define __RAM_FUNC __attribute__((section(".RamFunc")))
+#define __RAM_FUNC HAL_StatusTypeDef  __attribute__((section(".RamFunc")))
 
 #endif
 

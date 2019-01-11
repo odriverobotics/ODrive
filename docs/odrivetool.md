@@ -123,21 +123,11 @@ You can use the DfuSe app from ST.
 1. Congratulations your ODrive should now be flashed; you can now quit DfuSeDemo.
 1. Turn off the power to the ODrive and set the DIP switch back to RUN mode.
 
-#### Linux
-Install `dfu-util`:
-```text
-sudo apt install dfu-util
-```
-
-Force DFU mode, as per the instructions above.
-In the Firmware directory, after finishing building the firmware:
-```text
-sudo dfu-util -a 0 -s 0x08000000 -D build/ODriveFirmware.bin
-```
-
-#### MacOS
+#### MacOS or Linux
 **This section needs more detail. Please consider adding detail if you got it to work.**
-You may be able to use [dfu-util](http://dfu-util.sourceforge.net/) to upgrade the firmware. The command should be similar to the Linux instructions.
+You may be able to use [dfu-util](http://dfu-util.sourceforge.net/) to upgrade the firmware. You will need to convert the .hex file to a .dfu file. You may be able to do it with the python script [dfu-convert](https://github.com/plietar/dfuse-tool/blob/master/dfu-convert) or the c program [hex2dfu](https://github.com/encedo/hex2dfu).
+
+You probably need to force DFU mode, as per the instructions above.
 
 ## Flashing with an STLink
 
