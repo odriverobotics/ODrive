@@ -32,6 +32,7 @@ The axis error may say that some other component has failed. Say it reports `ERR
 * Axis error flags defined [here](../Firmware/MotorControl/axis.hpp).
 * Motor error flags defined [here](../Firmware/MotorControl/motor.hpp).
 * Encoder error flags defined [here](../Firmware/MotorControl/encoder.hpp).
+* Controller error flags defined [here](../Firmware/MotorControl/controller.hpp).
 * Sensorless estimator error flags defined [here](../Firmware/MotorControl/sensorless_estimator.hpp).
 
 ## Common Axis Errors 
