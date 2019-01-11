@@ -125,7 +125,7 @@ bool safety_critical_disarm_motor_pwm(Motor& motor) {
 void safety_critical_apply_motor_pwm_timings(Motor& motor, uint16_t timings[3]) {
     uint32_t mask = cpu_enter_critical();
     if (!brake_resistor_armed) {
-        motor.armed_state_ = Motor::ARMED_STATE_ARMED;
+        motor.armed_state_ = Motor::ARMED_STATE_DISARMED;
     }
 
     motor.hw_config_.timer->Instance->CCR1 = timings[0];
