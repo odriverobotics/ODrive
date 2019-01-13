@@ -349,8 +349,8 @@ void pwm_in_cb(int channel, uint32_t timestamp) {
         }
     }
     else {
-        static uint32_t counter = 0;
-        printf("%u\n", ++counter);
+        // static uint32_t debug_counter = 0;
+        // printf("%u\n", ++debug_counter);
         for (size_t i = 0; i < PWM_IN_COUNT; ++i) {
             // Check if another GPIO pin is using this channel as direction pin
             if (board_config.pwm_mappings[i].gpio_direction_pin == gpio_num) {

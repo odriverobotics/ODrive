@@ -361,10 +361,8 @@ void TIM5_IRQHandler(void)
   decode_tim_capture(&htim5, &pwm_in_cb);
 
   /* USER CODE END TIM5_IRQn 0 */
-  //HAL_TIM_IRQHandler(&htim5);
-  #warning HAL_TIM_IRQHandler(&htim5) disabled for debugging
-  // Disabling this fixes missed timer captures on GPIO pin 1.
-  // Not sure why yet, haven't dug into the function.
+  
+  // HAL_TIM_IRQHandler(&htim5);
 
   /* USER CODE BEGIN TIM5_IRQn 1 */
 
