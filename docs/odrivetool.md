@@ -135,9 +135,35 @@ In the Firmware directory, after finishing building the firmware:
 sudo dfu-util -a 0 -s 0x08000000 -D build/ODriveFirmware.bin
 ```
 
-#### MacOS
-**This section needs more detail. Please consider adding detail if you got it to work.**
-You may be able to use [dfu-util](http://dfu-util.sourceforge.net/) to upgrade the firmware. The command should be similar to the Linux instructions.
+#### macOS
+
+First, you need a Ubuntu/Debian Linux (virtual) machine to convert the `.elf` file from  into a `.bin` file that the `dfu-util` understands. Copy the latest `.elf` for your board from [here](https://github.com/madcowswe/ODrive/releases). Proceed to convert the binary (tested on Ubuntu 18.04):
+
+```text
+$ sudo apt install binutils-arm-none-eabi
+$ arm-none-eabi-objcopy -O binary ODriveFirmware_v3.5-48V.elf ODriveFirmware_v3.5-48V.bin
+```
+
+Back on the macOS machine (tested on macOS High Sierra), install `dfu-util`:
+
+```text
+$ sudo port install dfu-util   # via MacPorts; for HomeBrew use "brew install dfu-util"
+```
+
+Then, copy the new `.bin` firmware file to the macOS machine, find the correct device serial number to use.
+
+```text
+$ dfu-util --list              # list the DFU capable devices
+[...]
+Found DFU: [0483:df11] ver=2200, devnum=5, cfg=1, intf=0, path="20-2", alt=0, 
+ name="@Internal Flash  /0x08000000/04*016Kg,01*064Kg,07*128Kg", serial="388237123123"
+```
+
+Finally, flash the firmware using the found serial number:
+
+```text
+$ sudo dfu-util -S 388237123123 -a 0 -s 0x08000000 -D ODriveFirmware_v3.5-48V.bin
+```
 
 ## Flashing with an STLink
 
