@@ -46,7 +46,7 @@ public:
         int32_t offset_abs = 0; // Offset for absolute position and some mechanical zero
         bool ignore_illegal_hall_state = false;
         AbsEncoderType_t abs_enc_type = NONE;
-        int32_t spi_cs_pin = 0;
+        int32_t spi_cs_gpio_pin = 0;
     };
 
     Encoder(const EncoderHardwareConfig_t& hw_config,
@@ -69,6 +69,8 @@ public:
     bool run_offset_calibration();
     bool update();
 
+    void decode_spi_cs_pin();
+
     void update_pll_gains();
 
     const EncoderHardwareConfig_t& hw_config_;
@@ -90,7 +92,8 @@ public:
     float pll_kp_ = 0.0f;   // [count/s / count]
     float pll_ki_ = 0.0f;   // [(count/s^2) / count]
     int32_t pos_abs_ = 0;
-
+    GPIO_TypeDef* spi_cs_port_;
+    uint16_t spi_cs_pin_;
     // Updated by low_level pwm_adc_cb
     uint8_t hall_state_ = 0x0; // bit[0] = HallA, .., bit[2] = HallC
 
@@ -115,7 +118,8 @@ public:
                 make_protocol_property("mode", &config_.mode),
                 make_protocol_property("use_index", &config_.use_index),
                 make_protocol_property("pwm_pin", &config_.pwm_pin),
-                make_protocol_property("spi_cs_pin", &config_.spi_cs_pin),
+                make_protocol_property("spi_cs_pin", &config_.spi_cs_gpio_pin, 
+                [](void* ctx) { static_cast<Encoder*>(ctx)->decode_spi_cs_pin(); }, this),
                 make_protocol_property("abs_encoder_type", &config_.abs_enc_type),
                 make_protocol_property("pre_calibrated", &config_.pre_calibrated),
                 make_protocol_property("idx_search_speed", &config_.idx_search_speed),

@@ -13,12 +13,13 @@ Encoder::Encoder(const EncoderHardwareConfig_t& hw_config,
         is_ready_ = true;
     }
 
+    decode_spi_cs_pin();
+
     if (config_.mode == MODE_ABSOLUTE) {
         switch (config_.abs_enc_type) {
             case NONE: break;
             case ABSOLUTE_ENCODER_AMT203:
-                abs_enc_ = new AMT203(&hspi3, get_gpio_port_by_pin(config_.spi_cs_pin),
-                                      get_gpio_pin_by_pin(config_.spi_cs_pin));
+                abs_enc_ = new AMT203(&hspi3, spi_cs_port_, spi_cs_pin_);
                 abs_enc_->init();
                 abs_enc_->readPosition();
             default:
@@ -312,6 +313,11 @@ bool Encoder::run_offset_calibration() {
 
     is_ready_ = true;
     return true;
+}
+
+void Encoder::decode_spi_cs_pin(){
+    spi_cs_port_ = get_gpio_port_by_pin(config_.spi_cs_gpio_pin);
+    spi_cs_pin_ = get_gpio_pin_by_pin(config_.spi_cs_gpio_pin);
 }
 
 static bool decode_hall(uint8_t hall_state, int32_t& hall_cnt) {
