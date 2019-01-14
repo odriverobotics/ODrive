@@ -161,6 +161,9 @@ odrv0.axis0.requested_state = AXIS_STATE_CLOSED_LOOP_CONTROL
 odrv0.axis1.requested_state = AXIS_STATE_CLOSED_LOOP_CONTROL
 ```
 
+### Safety
+Be sure to setup the Failsafe feature on your RC Receiver so that if connection is lost between the remote and the receiver, the receiver outputs 0 and 0 for the velocity setpoint of both axes (or whatever is safest for your configuration). Also note that if the receiver turns off (loss of power, etc) or if the signal from the receiver to the ODrive is lost (wire comes unplugged, etc), the ODrive will continue the last commanded velocity setpoint. There is currently no timeout function in the ODrive for PWM inputs.
+
 ### Automatic startup
 Try to reboot and then activate AXIS_STATE_CLOSED_LOOP_CONTROL on both axis. Check that everything is operational and works as expected.
 If so, you can now make the ODrive turn on the motor power automatically after booting. This is useful if you are going to be running the ODrive without a PC or other logic board.
