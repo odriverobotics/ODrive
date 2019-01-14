@@ -5,6 +5,7 @@
             "includePath": [
                 "${workspaceRoot}",
                 "${workspaceRoot}/fibre/cpp/include/**",
+                "${workspaceRoot}/Encoders",
                 "${workspaceRoot}/MotorControl",
                 "${workspaceRoot}/Drivers/DRV8301",
                 "${workspaceRoot}/Board/v3/Inc",

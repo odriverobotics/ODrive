@@ -5,6 +5,8 @@
 #error "This file should not be included directly. Include odrive_main.h instead."
 #endif
 
+#include <Encoders/amt203.hpp>
+
 class Encoder {
 public:
     enum Error_t {
@@ -15,6 +17,7 @@ public:
         ERROR_UNSUPPORTED_ENCODER_MODE = 0x08,
         ERROR_ILLEGAL_HALL_STATE = 0x10,
         ERROR_INDEX_NOT_FOUND_YET = 0x20,
+        ERROR_INVALID_ABSOLUTE_ENCODER = 0x40,
     };
 
     enum Mode_t {
@@ -42,6 +45,8 @@ public:
         float bandwidth = 1000.0f;
         int32_t offset_abs = 0; // Offset for absolute position and some mechanical zero
         bool ignore_illegal_hall_state = false;
+        AbsEncoderType_t abs_enc_type = NONE;
+        int32_t spi_cs_pin = 0;
     };
 
     Encoder(const EncoderHardwareConfig_t& hw_config,
@@ -69,6 +74,7 @@ public:
     const EncoderHardwareConfig_t& hw_config_;
     Config_t& config_;
     Axis* axis_ = nullptr; // set by Axis constructor
+    AbsoluteEncoder* abs_enc_ = nullptr; // Initialized in Encoder constructor
 
     Error_t error_ = ERROR_NONE;
     bool index_found_ = false;
@@ -109,6 +115,8 @@ public:
                 make_protocol_property("mode", &config_.mode),
                 make_protocol_property("use_index", &config_.use_index),
                 make_protocol_property("pwm_pin", &config_.pwm_pin),
+                make_protocol_property("spi_cs_pin", &config_.spi_cs_pin),
+                make_protocol_property("abs_encoder_type", &config_.abs_enc_type),
                 make_protocol_property("pre_calibrated", &config_.pre_calibrated),
                 make_protocol_property("idx_search_speed", &config_.idx_search_speed),
                 make_protocol_property("zero_count_on_find_idx", &config_.zero_count_on_find_idx),

@@ -4,8 +4,9 @@
 #include <stdint.h>
 
 typedef enum {
-    ABSOLUTE_ENCODER_AMT203
-} absEncoderType_t;
+    NONE,
+    ABSOLUTE_ENCODER_AMT203,
+} AbsEncoderType_t;
 
 class AbsoluteEncoder {
     public:

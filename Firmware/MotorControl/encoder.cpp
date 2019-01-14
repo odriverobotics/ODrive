@@ -12,6 +12,19 @@ Encoder::Encoder(const EncoderHardwareConfig_t& hw_config,
     if (config.pre_calibrated && (config.mode == Encoder::MODE_HALL)) {
         is_ready_ = true;
     }
+
+    if (config_.mode == MODE_ABSOLUTE) {
+        switch (config_.abs_enc_type) {
+            case NONE: break;
+            case ABSOLUTE_ENCODER_AMT203:
+                abs_enc_ = new AMT203(&hspi3, get_gpio_port_by_pin(config_.spi_cs_pin),
+                                      get_gpio_pin_by_pin(config_.spi_cs_pin));
+                abs_enc_->init();
+                abs_enc_->readPosition();
+            default:
+                break;
+        }
+    }
 }
 
 static void enc_index_cb_wrapper(void* ctx) {
@@ -167,6 +180,23 @@ bool Encoder::run_index_search() {
             });
         return true;
         }break;
+
+        case MODE_ABSOLUTE: {
+            if (abs_enc_ == nullptr) {
+                set_error(ERROR_INVALID_ABSOLUTE_ENCODER);
+                return false;
+            } else {
+                axis_->run_control_loop([&]() {
+                    if (!axis_->motor_.enqueue_voltage_timings(0.0f, 0.0f))
+                        return false;  // error set inside enqueue_voltage_timings
+                    pos_abs_ = abs_enc_->readPosition();
+                    set_circular_count(pos_abs_, false);
+                    set_linear_count(pos_abs_);
+                    return true;
+                });
+            }
+            return true;
+        } break;
 
         default: {
            set_error(ERROR_UNSUPPORTED_ENCODER_MODE);
