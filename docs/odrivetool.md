@@ -137,20 +137,25 @@ sudo dfu-util -a 0 -s 0x08000000 -D build/ODriveFirmware.bin
 
 #### macOS
 
-First, you need a Ubuntu/Debian Linux (virtual) machine to convert the `.elf` file from  into a `.bin` file that the `dfu-util` understands. Copy the latest `.elf` for your board from [here](https://github.com/madcowswe/ODrive/releases). Proceed to convert the binary (tested on Ubuntu 18.04):
+First, you need to install the arm development tools to copy the binary into the appropriate format.
 
 ```text
-$ sudo apt install binutils-arm-none-eabi
+$ brew cask install gcc-arm-embedded
+```
+
+Then convert the binary to .bin format
+
+```text
 $ arm-none-eabi-objcopy -O binary ODriveFirmware_v3.5-48V.elf ODriveFirmware_v3.5-48V.bin
 ```
 
-Back on the macOS machine (tested on macOS High Sierra), install `dfu-util`:
+Install `dfu-util`:
 
 ```text
 $ sudo port install dfu-util   # via MacPorts; for HomeBrew use "brew install dfu-util"
 ```
 
-Then, copy the new `.bin` firmware file to the macOS machine, find the correct device serial number to use.
+Find the correct device serial number to use:
 
 ```text
 $ dfu-util --list              # list the DFU capable devices
