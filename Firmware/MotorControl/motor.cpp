@@ -282,7 +282,6 @@ bool Motor::enqueue_voltage_timings(float v_alpha, float v_beta) {
     return true;
 }
 
-// TODO: This doesn't update brake current
 // We should probably make FOC Current call FOC Voltage to avoid duplication.
 bool Motor::FOC_voltage(float v_d, float v_q, float phase) {
     float c = our_arm_cos_f32(phase);

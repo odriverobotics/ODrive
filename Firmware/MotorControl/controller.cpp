@@ -183,8 +183,13 @@ bool Controller::update(float pos_estimate, float vel_estimate, float* current_s
     Iq += vel_integrator_current_;
 
     // Current limiting
-    float Ilim = std::min(axis_->motor_.config_.current_lim, axis_->motor_.current_control_.max_allowed_current);
     bool limited = false;
+    float Ilim = 0.0f;
+    if (axis_->motor_.config_.motor_type == Motor::MOTOR_TYPE_GIMBAL) {
+        Ilim = std::min(axis_->motor_.config_.current_lim, 0.98f*one_by_sqrt3*vbus_voltage);
+    } else {
+        Ilim = std::min(axis_->motor_.config_.current_lim, axis_->motor_.current_control_.max_allowed_current);
+    }
     if (Iq > Ilim) {
         limited = true;
         Iq = Ilim;
