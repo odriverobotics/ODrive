@@ -74,6 +74,12 @@ In general, you need
 resistance_calib_max_voltage > calibration_current * phase_resistance`.
 ```
 
+* `ERROR_MODULATION_MAGNITUDE`
+
+The bus voltage was insufficent to push the requested current through the motor. Reduce `motor.config.calibration_current` and/or `motor.config.current_lim`, for errors at calibration-time and closed loop control respectively.
+
+For gimbal motors, it is recommended to set the calibration_current and current_lim to half your bus voltage, or less.
+
 * `ERROR_DRV_FAULT = 0x0008`
 
 The ODrive v3.4 is known to have a hardware issue whereby the motors would stop operating
