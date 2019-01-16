@@ -74,12 +74,6 @@ In general, you need
 resistance_calib_max_voltage > calibration_current * phase_resistance`.
 ```
 
-* `ERROR_MODULATION_MAGNITUDE`
-
-The bus voltage was insufficent to push the requested current through the motor. Reduce `motor.config.calibration_current` and/or `motor.config.current_lim`, for errors at calibration-time and closed loop control respectively.
-
-For gimbal motors, it is recommended to set the calibration_current and current_lim to half your bus voltage, or less.
-
 * `ERROR_DRV_FAULT = 0x0008`
 
 The ODrive v3.4 is known to have a hardware issue whereby the motors would stop operating
@@ -90,6 +84,12 @@ The conjecture is that the high switching current creates large ripples in the
 power supply of the DRV8301 gate driver chips, thus tripping its under-voltage fault detection. 
 
 To resolve this issue you can limit the M0 current to 40A. The lowest current at which the DRV fault was observed is 45A on one test motor and 50A on another test motor. Refer to [this post](https://discourse.odriverobotics.com/t/drv-fault-on-odrive-v3-4/558) for instructions for a hardware fix.
+
+* `ERROR_MODULATION_MAGNITUDE = 0x0080`
+
+The bus voltage was insufficent to push the requested current through the motor. Reduce `motor.config.calibration_current` and/or `motor.config.current_lim`, for errors at calibration-time and closed loop control respectively.
+
+For gimbal motors, it is recommended to set the calibration_current and current_lim to half your bus voltage, or less.
 
 ## Common Encoder Errors
 
