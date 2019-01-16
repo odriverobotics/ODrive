@@ -261,6 +261,7 @@ You can also directly control the current of the motor, which is proportional to
 
 
 ### Trajectory control
+Set `axis.controller.config.control_mode = CTRL_MODE_TRAJECTORY_CONTROL`.<br>
 This mode lets you smoothly accelerate, coast, and decelerate the axis from one position to another. With raw position control, the controller simply tries to go to the setpoint as quickly as possible. Using a trajectory lets you tune the feedback gains more aggressively to reject disturbance, while keeping smooth motion.
 
 ![Taptraj](TrapTrajPosVel.PNG)<br>
@@ -295,7 +296,7 @@ Use the `move_to_pos` function to move to an absolute position:
 
 ### Circular position control
 
-To enable Circular position control, set 'axis.controller.config.setpoints_in_cpr = True'
+To enable Circular position control, set `axis.controller.config.setpoints_in_cpr = True`
 
 This mode is useful for continuos incremental position movement. For example a robot rolling indefinitely, or an extruder motor or conveyor belt moving with controlled increments indefinitely.
 In the regular position mode, the `pos_setpoint` would grow to a very large value and would lose precision due to floating point rounding.
