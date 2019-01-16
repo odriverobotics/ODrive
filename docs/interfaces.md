@@ -33,6 +33,7 @@ The ODrive can be controlled over various ports and protocols. If you're comfort
 (*) ODrive v3.5 and later
 
 Notes:
+* You must also connect GND between ODrive and your other board.
 * ODrive v3.3 and onward have 5V tolerant GPIO pins.
 * ODrive v3.5 and later have some noise supression filters on the default step/dir pins
 * You can change the step/dir pins using `axis.config.<step/dir>_gpio_pin`.
