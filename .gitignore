@@ -41,3 +41,13 @@ tup.config
 /_site
 /.bundle
 
+
+ODrive\.config
+
+ODrive\.creator
+
+ODrive\.creator\.user
+
+ODrive\.files
+
+ODrive\.includes

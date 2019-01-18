@@ -12,6 +12,9 @@ Encoder::Encoder(const EncoderHardwareConfig_t& hw_config,
     if (config.pre_calibrated && (config.mode == Encoder::MODE_HALL || config.mode == Encoder::MODE_SINCOS)) {
         is_ready_ = true;
     }
+
+    decode_abs_spi_cs_pin();
+    HAL_GPIO_WritePin(abs_spi_cs_port_, abs_spi_cs_pin_, GPIO_PIN_SET);
 }
 
 static void enc_index_cb_wrapper(void* ctx) {
@@ -21,6 +24,9 @@ static void enc_index_cb_wrapper(void* ctx) {
 void Encoder::setup() {
     HAL_TIM_Encoder_Start(hw_config_.timer, TIM_CHANNEL_ALL);
     set_idx_subscribe();
+
+    if(config_.mode & MODE_FLAG_ABS)
+        abs_spi_init();
 }
 
 void Encoder::set_error(Error_t error) {
@@ -294,9 +300,96 @@ void Encoder::sample_now() {
     }
 }
 
+bool Encoder::abs_spi_init(){
+    // Init cs pin
+    HAL_GPIO_DeInit(abs_spi_cs_port_, abs_spi_cs_pin_);
+    GPIO_InitTypeDef GPIO_InitStruct;
+    GPIO_InitStruct.Pin = abs_spi_cs_pin_;
+    GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+    GPIO_InitStruct.Pull = GPIO_PULLUP;
+    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+    HAL_GPIO_Init(abs_spi_cs_port_, &GPIO_InitStruct);
+
+    uint32_t cr1,cr2;
+    cr1 = hw_config_.spi->Instance->CR1;
+    cr2 = hw_config_.spi->Instance->CR2;
+
+    SPI_HandleTypeDef * spi = hw_config_.spi;
+    spi->Init.Mode = SPI_MODE_MASTER;
+    spi->Init.Direction = SPI_DIRECTION_2LINES;
+    spi->Init.DataSize = SPI_DATASIZE_16BIT;
+    spi->Init.CLKPolarity = SPI_POLARITY_LOW;
+    spi->Init.CLKPhase = SPI_PHASE_2EDGE;
+    spi->Init.NSS = SPI_NSS_SOFT;
+    spi->Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_16;
+    spi->Init.FirstBit = SPI_FIRSTBIT_MSB;
+    spi->Init.TIMode = SPI_TIMODE_DISABLE;
+    spi->Init.CRCCalculation = SPI_CRCCALCULATION_DISABLE;
+    spi->Init.CRCPolynomial = 10;
+
+    HAL_SPI_DeInit(spi);
+    HAL_SPI_Init(spi);
+    //stash our configuration
+    abs_spi_cr1 = hw_config_.spi->Instance->CR1;
+    abs_spi_cr2 = hw_config_.spi->Instance->CR2;
+
+    hw_config_.spi->Instance->CR1 = cr1;
+    hw_config_.spi->Instance->CR2 = cr2;
+    return true;
+}
+
+bool Encoder::abs_spi_start_transaction(){
+    if (config_.mode & MODE_FLAG_ABS){
+        //TODO semaphore take
+
+        //apply the stashed configuration
+        hw_config_.spi->Instance->CR1 = abs_spi_cr1;
+        hw_config_.spi->Instance->CR2 = abs_spi_cr2;
+        HAL_GPIO_WritePin(abs_spi_cs_port_, abs_spi_cs_pin_, GPIO_PIN_RESET);
+        HAL_SPI_TransmitReceive_DMA(hw_config_.spi,(uint8_t*)abs_spi_dma_tx_,(uint8_t*)abs_spi_dma_rx_,1);
+    }
+    return true;
+}
+
+uint8_t parity(uint16_t v){
+    v ^= v >> 8;
+    v ^= v >> 4;
+    v ^= v >> 2;
+    v ^= v >> 1;
+    return v & 1;
+}
+void Encoder::abs_spi_cb(){
+    //TODO semaphore release
+    HAL_GPIO_WritePin(abs_spi_cs_port_, abs_spi_cs_pin_, GPIO_PIN_SET);
+    switch (config_.mode) {
+        case MODE_SPI_ABS_AMS: {
+            //TODO check parity
+        uint8_t parity_calc, parity_bit;
+        parity_calc = parity(abs_spi_dma_rx_[0]&0x7FFF);
+        parity_bit = abs_spi_dma_rx_[0] >>15;
+            if(parity_calc != parity_bit)
+                set_error(ERROR_ABS_SPI_COM_FAIL);
+            pos_abs_ = abs_spi_dma_rx_[0] & 0x3FFF;
+        }break;
+
+        default: {
+           set_error(ERROR_UNSUPPORTED_ENCODER_MODE);
+        } break;
+    }
+
+    abs_spi_pos_updated_ = true;
+    is_ready_ = true;
+}
+
+void Encoder::decode_abs_spi_cs_pin(){
+    abs_spi_cs_port_ = get_gpio_port_by_pin(config_.abs_spi_cs_gpio_pin);
+    abs_spi_cs_pin_ = get_gpio_pin_by_pin(config_.abs_spi_cs_gpio_pin);
+}
+
 bool Encoder::update() {
     // update internal encoder state.
     int32_t delta_enc = 0;
+
     switch (config_.mode) {
         case MODE_INCREMENTAL: {
             //TODO: use count_in_cpr_ instead as shadow_count_ can overflow
@@ -331,6 +424,18 @@ bool Encoder::update() {
                 delta_enc -= 6283;
         } break;
         
+        case MODE_SPI_ABS_AMS:
+        case MODE_SPI_ABS_CUI:{
+            if(abs_spi_pos_updated_ == false){
+                set_error(ERROR_ABS_SPI_TIMEOUT);
+            }
+            abs_spi_pos_updated_ = false;
+            delta_enc = pos_abs_ - count_in_cpr_;
+            delta_enc = mod(delta_enc, config_.cpr);
+            if (delta_enc > config_.cpr/2)
+                delta_enc -= config_.cpr;
+
+        }break;
         default: {
            set_error(ERROR_UNSUPPORTED_ENCODER_MODE);
            return false;
@@ -340,6 +445,9 @@ bool Encoder::update() {
     shadow_count_ += delta_enc;
     count_in_cpr_ += delta_enc;
     count_in_cpr_ = mod(count_in_cpr_, config_.cpr);
+
+    if(config_.mode & MODE_FLAG_ABS)
+        count_in_cpr_ = pos_abs_;
 
     //// run pll (for now pll is in units of encoder counts)
     // Predict current pos

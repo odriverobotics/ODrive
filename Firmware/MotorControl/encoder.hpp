@@ -15,13 +15,18 @@ public:
         ERROR_UNSUPPORTED_ENCODER_MODE = 0x08,
         ERROR_ILLEGAL_HALL_STATE = 0x10,
         ERROR_INDEX_NOT_FOUND_YET = 0x20,
+        ERROR_ABS_SPI_TIMEOUT = 0x30,
+        ERROR_ABS_SPI_COM_FAIL = 0x40,
     };
 
     enum Mode_t {
         MODE_INCREMENTAL,
         MODE_HALL,
         MODE_SINCOS
+        MODE_SPI_ABS_CUI = 0x100,
+        MODE_SPI_ABS_AMS = 0x101,
     };
+    const uint32_t MODE_FLAG_ABS = 0x100;
 
     struct Config_t {
         Encoder::Mode_t mode = Encoder::MODE_INCREMENTAL;
@@ -43,6 +48,7 @@ public:
         bool find_idx_on_lockin_only = false; // Only be sensitive during lockin scan constant vel state
         bool idx_search_unidirectional = false; // Only allow index search in known direction
         bool ignore_illegal_hall_state = false; // dont error on bad states like 000 or 111
+        uint16_t abs_spi_cs_gpio_pin = 0;
     };
 
     Encoder(const EncoderHardwareConfig_t& hw_config,
@@ -86,12 +92,25 @@ public:
     float pll_kp_ = 0.0f;   // [count/s / count]
     float pll_ki_ = 0.0f;   // [(count/s^2) / count]
     float calib_scan_response_ = 0.0f; // debug report from offset calib
+    int32_t pos_abs_ = 0;
 
     int16_t tim_cnt_sample_ = 0; // 
     // Updated by low_level pwm_adc_cb
     uint8_t hall_state_ = 0x0; // bit[0] = HallA, .., bit[2] = HallC
     float sincos_sample_s_ = 0.0f;
     float sincos_sample_c_ = 0.0f;
+
+    bool abs_spi_init();
+    bool abs_spi_start_transaction();
+    void abs_spi_cb();
+    void decode_abs_spi_cs_pin();
+    uint16_t abs_spi_dma_tx_[2] = {0xFFFF, 0x0000};
+    uint16_t abs_spi_dma_rx_[2];
+    bool abs_spi_pos_updated_;
+    GPIO_TypeDef* abs_spi_cs_port_;
+    uint16_t abs_spi_cs_pin_;
+    uint32_t abs_spi_cr1;
+    uint32_t abs_spi_cr2;
 
     // Communication protocol definitions
     auto make_protocol_definitions() {
@@ -108,6 +127,7 @@ public:
             make_protocol_ro_property("hall_state", &hall_state_),
             make_protocol_property("vel_estimate", &vel_estimate_),
             make_protocol_ro_property("calib_scan_response", &calib_scan_response_),
+            make_protocol_property("pos_abs", &pos_abs_),
             // make_protocol_property("pll_kp", &pll_kp_),
             // make_protocol_property("pll_ki", &pll_ki_),
             make_protocol_object("config",
@@ -118,6 +138,8 @@ public:
                     [](void* ctx) { static_cast<Encoder*>(ctx)->set_idx_subscribe(); }, this),
                 make_protocol_property("pre_calibrated", &config_.pre_calibrated,
                     [](void* ctx) { static_cast<Encoder*>(ctx)->check_pre_calibrated(); }, this),
+                make_protocol_property("abs_spi_cs_gpio_pin", &config_.abs_spi_cs_gpio_pin,
+                    [](void* ctx) { static_cast<Encoder*>(ctx)->decode_abs_spi_cs_pin(); }, this),
                 make_protocol_property("zero_count_on_find_idx", &config_.zero_count_on_find_idx),
                 make_protocol_property("cpr", &config_.cpr),
                 make_protocol_property("offset", &config_.offset),
