@@ -5,6 +5,8 @@ Please add a note of your changes below this heading if you make a Pull Request.
 * Second order setpoint input filter.
 * `dump_errors()` utility function in odrivetool to dump, decode and optionally clear errors.
 * `q` command to ascii protocol. It is like the old `p` command, but velocity and current mean limits, not feed-forward.
+* Voltage limit soft clamping instead of ERROR_MODULATION_MAGNITUDE in gimbal motor closed loop.
+* Thermal current limit with linear derating.
 
 ### Changed
 * Moved `traptraj.A_per_css` to `controller.inertia`

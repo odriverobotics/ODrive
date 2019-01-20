@@ -59,7 +59,7 @@ def dump_errors(odrv, clear=False):
             else:
                 print(prefix + _VT100Colors['green'] + "no error" + _VT100Colors['default'])
 
-data_rate = 100
+data_rate = 10
 plot_rate = 10
 num_samples = 1000
 def start_liveplotter(get_var_callback):
