@@ -71,7 +71,8 @@ Some motors will have a considerably different phase resistance and inductance t
 
 In general, you need
 ```text
-resistance_calib_max_voltage > calibration_current * phase_resistance`.
+resistance_calib_max_voltage > calibration_current * phase_resistance
+resistance_calib_max_voltage < 0.5 * vbus_voltage
 ```
 
 * `ERROR_DRV_FAULT = 0x0008`
