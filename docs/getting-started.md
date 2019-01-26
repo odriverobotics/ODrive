@@ -56,13 +56,18 @@ All non-power I/O is 3.3V output and 5V tolerant on input, on ODrive v3.3 and ne
 
 ### Wiring up the motors
 * Connect the motor phases into the 3-phase screw terminals. It is not recommended to use a clip-on connector such as an alligator clip, as this can cause issues with the phase resistance/inductance measurements. 
-* Connect the power source to the DC terminals. Make sure to pay attention to the polarity.
-* Do not apply power just yet.
 
 ### Wiring up the encoders
 Connect the encoder(s) to J4. The A,B phases are required, and the Z (index pulse) is optional. The A,B and Z lines have 3.3k pull up resistors, for use with open-drain encoder outputs. For single ended push-pull signals with weak drive current (\<4mA), you may want to desolder the pull-ups.
 
 ![Image of ODrive all hooked up](https://docs.google.com/drawings/d/e/2PACX-1vTCD0P40Cd-wvD7Fl8UYEaxp3_UL81oI4qUVqrrCJPi6tkJeSs2rsffIXQRpdu6rNZs6-2mRKKYtILG/pub?w=1716&h=1281)
+
+### Safety & Power UP
+<div class="alert">
+ Always think safety before powering up the ODrive if motors are attached. Consider what might happen if the motor spins as soon as power is applied.
+</div>
+* Unlike some devices, the ODrive does not recieve power over the USB port so the 24/48 volt power input is required even just to communicate with it using USB. It is ok to power up the ODrive before or after connecting the USB cable.
+* To power up the ODrive, connect the power source to the DC terminals. Make sure to pay attention to the polarity. A small spark is normal. This is caused by the capacitors charging up.
 
 ## Downloading and Installing Tools
 Most instructions in this guide refer to a utility called `odrivetool`, so you should install that first.
@@ -189,6 +194,7 @@ This is the resistance of the brake resistor. If you are not using it, you may s
 `odrv0.axis0.motor.config.pole_pairs`  
 This is the number of **magnet poles** in the rotor, **divided by two**. To find this, you can simply count the number of permanent magnets in the rotor, if you can see them. _Note: this is not the same as the number of coils in the stator._
 If you can't see them, try sliding a magnet around the rotor, and counting how many times it stops. This will be the number of **pole pairs**. If you use a magnetic piece of metal instead of a magnet, you will get the number of **magnet poles**.
+
 `odrv0.axis0.motor.config.motor_type`  
 This is the type of motor being used. Currently two types of motors are supported: High-current motors (`MOTOR_TYPE_HIGH_CURRENT`) and gimbal motors (`MOTOR_TYPE_GIMBAL`).
 <details><summary markdown="span">Which <code>motor_type</code> to choose?</summary><div markdown="block">
@@ -255,6 +261,7 @@ You can also directly control the current of the motor, which is proportional to
 
 
 ### Trajectory control
+Set `axis.controller.config.control_mode = CTRL_MODE_TRAJECTORY_CONTROL`.<br>
 This mode lets you smoothly accelerate, coast, and decelerate the axis from one position to another. With raw position control, the controller simply tries to go to the setpoint as quickly as possible. Using a trajectory lets you tune the feedback gains more aggressively to reject disturbance, while keeping smooth motion.
 
 ![Taptraj](TrapTrajPosVel.PNG)<br>
@@ -288,6 +295,9 @@ Use the `move_to_pos` function to move to an absolute position:
 ```
 
 ### Circular position control
+
+To enable Circular position control, set `axis.controller.config.setpoints_in_cpr = True`
+
 This mode is useful for continuos incremental position movement. For example a robot rolling indefinitely, or an extruder motor or conveyor belt moving with controlled increments indefinitely.
 In the regular position mode, the `pos_setpoint` would grow to a very large value and would lose precision due to floating point rounding.
 
