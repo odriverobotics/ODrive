@@ -13,8 +13,10 @@ Encoder::Encoder(const EncoderHardwareConfig_t& hw_config,
         is_ready_ = true;
     }
 
-    decode_abs_spi_cs_pin();
-    HAL_GPIO_WritePin(abs_spi_cs_port_, abs_spi_cs_pin_, GPIO_PIN_SET);
+    if(config.mode & Encoder::MODE_FLAG_ABS){
+        decode_abs_spi_cs_pin();
+        HAL_GPIO_WritePin(abs_spi_cs_port_, abs_spi_cs_pin_, GPIO_PIN_SET);
+    }
 }
 
 static void enc_index_cb_wrapper(void* ctx) {
@@ -298,8 +300,10 @@ bool Encoder::abs_spi_init(){
 
 bool Encoder::abs_spi_start_transaction(){
     if (config_.mode & MODE_FLAG_ABS){
-        //TODO semaphore take
-
+        if(hw_config_.spi->State != HAL_SPI_STATE_READY){
+            set_error(ERROR_ABS_SPI_NOT_READY);
+            return false;
+        }
         //apply the stashed configuration
         hw_config_.spi->Instance->CR1 = abs_spi_cr1;
         hw_config_.spi->Instance->CR2 = abs_spi_cr2;
@@ -317,7 +321,6 @@ uint8_t parity(uint16_t v){
     return v & 1;
 }
 void Encoder::abs_spi_cb(){
-    //TODO semaphore release
     HAL_GPIO_WritePin(abs_spi_cs_port_, abs_spi_cs_pin_, GPIO_PIN_SET);
     switch (config_.mode) {
         case MODE_SPI_ABS_AMS: {

@@ -15,8 +15,9 @@ public:
         ERROR_UNSUPPORTED_ENCODER_MODE = 0x08,
         ERROR_ILLEGAL_HALL_STATE = 0x10,
         ERROR_INDEX_NOT_FOUND_YET = 0x20,
-        ERROR_ABS_SPI_TIMEOUT = 0x30,
-        ERROR_ABS_SPI_COM_FAIL = 0x40,
+        ERROR_ABS_SPI_TIMEOUT = 0x40,
+        ERROR_ABS_SPI_COM_FAIL = 0x80,
+        ERROR_ABS_SPI_NOT_READY = 0x100,
     };
 
     enum Mode_t {
