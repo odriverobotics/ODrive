@@ -1,5 +1,6 @@
 
 #include "can_simple.hpp"
+#include <odrive_main.h>
 
 #include <cstring>
 
@@ -80,6 +81,18 @@ void CANSimple::handle_can_message(CAN_message_t& msg) {
             break;
         case MSG_START_ANTICOGGING:
             start_anticogging_callback(axis, msg);
+            break;
+        case MSG_SET_TRAJ_A_PER_CSS:
+            set_traj_A_per_css_callback(axis, msg);
+            break;
+        case MSG_SET_TRAJ_ACCEL_LIMITS:
+            set_traj_accel_limits_callback(axis, msg);
+            break;
+        case MSG_SET_TRAJ_VEL_LIMIT:
+            set_traj_vel_limit_callback(axis, msg);
+            break;
+        case MSG_GET_IQ:
+            get_iq_callback(axis, msg);
             break;
         default:
             break;
@@ -234,6 +247,32 @@ void CANSimple::set_traj_accel_limits_callback(Axis* axis, CAN_message_t& msg) {
 
 void CANSimple::set_traj_A_per_css_callback(Axis* axis, CAN_message_t& msg) {
     axis->trap_.config_.A_per_css = get_float(msg, 0);
+}
+
+void CANSimple::get_iq_callback(Axis* axis, CAN_message_t& msg){
+    CAN_message_t txmsg;
+    txmsg.id = axis->config_.can_node_id << NUM_CMD_ID_BITS;
+    txmsg.id += MSG_GET_IQ;
+    txmsg.isExt = false;
+    txmsg.len = 8;
+
+    uint32_t floatBytes;
+    static_assert(sizeof axis->motor_.current_control_.Iq_setpoint == sizeof floatBytes);
+    std::memcpy(&floatBytes, &axis->motor_.current_control_.Iq_setpoint, sizeof floatBytes);
+    
+    txmsg.buf[0] = floatBytes;
+    txmsg.buf[1] = floatBytes >> 8;
+    txmsg.buf[2] = floatBytes >> 16;
+    txmsg.buf[3] = floatBytes >> 24;
+
+    static_assert(sizeof floatBytes == sizeof axis->motor_.current_control_.Iq_measured);
+    std::memcpy(&floatBytes, &axis->motor_.current_control_.Iq_measured, sizeof floatBytes);
+    txmsg.buf[4] = floatBytes;
+    txmsg.buf[5] = floatBytes >> 8;
+    txmsg.buf[6] = floatBytes >> 16;
+    txmsg.buf[7] = floatBytes >> 24;
+
+    odCAN->write(txmsg);
 }
 
 

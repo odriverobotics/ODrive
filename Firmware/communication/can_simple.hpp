@@ -26,7 +26,8 @@ class CANSimple {
         MSG_START_ANTICOGGING,
         MSG_SET_TRAJ_VEL_LIMIT,
         MSG_SET_TRAJ_ACCEL_LIMITS,
-        MSG_SET_TRAJ_A_PER_CSS
+        MSG_SET_TRAJ_A_PER_CSS,
+        MSG_GET_IQ,
     };
 
     static void handle_can_message(CAN_message_t& msg);
@@ -53,6 +54,7 @@ class CANSimple {
     static void set_traj_vel_limit_callback(Axis* axis, CAN_message_t& msg);
     static void set_traj_accel_limits_callback(Axis* axis, CAN_message_t& msg);
     static void set_traj_A_per_css_callback(Axis* axis, CAN_message_t& msg);
+    static void get_iq_callback(Axis* axis, CAN_message_t& msg);
 
 
     // Utility functions
