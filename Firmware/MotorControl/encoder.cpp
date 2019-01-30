@@ -277,6 +277,20 @@ bool Encoder::update() {
                 }
             }
         } break;
+
+        case MODE_SINCOS: {
+            float c = get_adc_voltage(GPIO_3_GPIO_Port, GPIO_3_Pin) / 3.3f;
+            float s = get_adc_voltage(GPIO_4_GPIO_Port, GPIO_4_Pin) / 3.3f;
+
+            float phase = fast_atan2(s, c);
+            int fake_count = (int)(1000.0f * phase);
+            //CPR = 6283 = 2pi * 1k
+
+            delta_enc = fake_count - count_in_cpr_;
+            delta_enc = mod(delta_enc, 6283);
+            if (delta_enc > 6283/2)
+                delta_enc -= 6283;
+        } break;
         
         default: {
            set_error(ERROR_UNSUPPORTED_ENCODER_MODE);

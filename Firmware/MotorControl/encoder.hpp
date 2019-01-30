@@ -19,7 +19,8 @@ public:
 
     enum Mode_t {
         MODE_INCREMENTAL,
-        MODE_HALL
+        MODE_HALL,
+        MODE_SINCOS
     };
 
     struct Config_t {
