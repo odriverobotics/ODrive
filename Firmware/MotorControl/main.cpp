@@ -97,7 +97,7 @@ void enter_dfu_mode() {
 
 extern "C" {
 int odrive_main(void);
-void vApplicationStackOverflowHook(void) {
+void vApplicationStackOverflowHook(xTaskHandle *pxTask, signed portCHAR *pcTaskName) {
     for (;;); // TODO: safe action
 }
 void vApplicationIdleHook(void) {
