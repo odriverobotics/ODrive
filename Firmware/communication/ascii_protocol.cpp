@@ -175,6 +175,13 @@ void ASCII_protocol_process_line(const uint8_t* buffer, size_t len, StreamSink& 
         respond(response_channel, use_checksum, "Firmware version: %d.%d.%d", FW_VERSION_MAJOR, FW_VERSION_MINOR, FW_VERSION_REVISION);
         respond(response_channel, use_checksum, "Serial number: %s", serial_number_str);
 
+    } else if (cmd[0] == 's'){ // Save config
+        save_configuration();
+    } else if (cmd[0] == 'e'){ // Erase config
+        erase_configuration();
+    } else if (cmd[0] == 'b'){ // Reboot
+        NVIC_SystemReset();
+
     } else if (cmd[0] == 'r') { // read property
         char name[MAX_LINE_LENGTH];
         int numscan = sscanf(cmd, "r %" TO_STR(MAX_LINE_LENGTH) "s", name);
