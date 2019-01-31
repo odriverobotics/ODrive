@@ -94,6 +94,9 @@ void CANSimple::handle_can_message(CAN_message_t& msg) {
         case MSG_GET_IQ:
             get_iq_callback(axis, msg);
             break;
+        case MSG_GET_SENSORLESS_ESTIMATES:
+            get_sensorless_estimates_callback(axis, msg);
+            break;
         default:
             break;
     }
@@ -184,6 +187,35 @@ void CANSimple::get_encoder_estimates_callback(Axis* axis, CAN_message_t& msg) {
 
     static_assert(sizeof floatBytes == sizeof axis->encoder_.vel_estimate_);
     std::memcpy(&floatBytes, &axis->encoder_.vel_estimate_, sizeof floatBytes);
+    txmsg.buf[4] = floatBytes;
+    txmsg.buf[5] = floatBytes >> 8;
+    txmsg.buf[6] = floatBytes >> 16;
+    txmsg.buf[7] = floatBytes >> 24;
+
+    odCAN->write(txmsg);
+}
+
+void CANSimple::get_sensorless_estimates_callback(Axis* axis, CAN_message_t& msg) {
+    CAN_message_t txmsg;
+    txmsg.id = axis->config_.can_node_id << NUM_CMD_ID_BITS;
+    txmsg.id += MSG_GET_SENSORLESS_ESTIMATES;  // heartbeat ID
+    txmsg.isExt = false;
+    txmsg.len = 8;
+
+    // Undefined behaviour!
+    // uint32_t floatBytes = *(reinterpret_cast<int32_t*>(&(axis->encoder_.pos_estimate_)));
+
+    uint32_t floatBytes;
+    static_assert(sizeof axis->sensorless_estimator_.pll_pos_ == sizeof floatBytes);
+    std::memcpy(&floatBytes, &axis->sensorless_estimator_.pll_pos_, sizeof floatBytes);
+    
+    txmsg.buf[0] = floatBytes;
+    txmsg.buf[1] = floatBytes >> 8;
+    txmsg.buf[2] = floatBytes >> 16;
+    txmsg.buf[3] = floatBytes >> 24;
+
+    static_assert(sizeof floatBytes == sizeof axis->sensorless_estimator_.vel_estimate_);
+    std::memcpy(&floatBytes, &axis->sensorless_estimator_.vel_estimate_, sizeof floatBytes);
     txmsg.buf[4] = floatBytes;
     txmsg.buf[5] = floatBytes >> 8;
     txmsg.buf[6] = floatBytes >> 16;

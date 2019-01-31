@@ -56,6 +56,7 @@ CMD ID | Name | Sender | Signals | Start byte
 0x012 | Set Traj Accel Limits | Master | Traj Accel Limit<br>Traj Decel Limit | 0<br>4
 0x013 | Set Traj A per Count / s^2 | Master | Traj A per CSS | 0
 0x014 | Get IQ\* | Axis | Iq Setpoint<br>Iq Measured | 0<br>4
+0x015 | Get Sensorless Estimates\* | Master | Sensorless Pos Estimate<br>Sensorless Vel Estimate | 0<br>4
 
 \* Note: These messages are call & response.  The Master node sends a message with no payload, and the axis responds with the same ID and specified payload.  
 \*\* Note:  These CANOpen messages are reserved to avoid bus collisions with CANOpen devices.  They are not used by CAN Simple.
@@ -88,6 +89,8 @@ Traj Decel Limit | IEEE 754 Float | 32 | 1 | 0 | Intel
 Traj A per CSS | IEEE 754 Float | 32 | 1 | 0 | Intel
 Iq Setpoint | IEEE 754 Float | 32 | 1 | 0 | Intel
 Iq Measured | IEEE 754 Float | 32 | 1 | 0 | Intel
+Sensorless Pos Estimate | IEEE 754 Float | 32 | 1 | 0 | Intel
+Sensorless Vel Estimate | IEEE 754 Float | 32 | 1 | 0 | Intel
 
 ---
 ## Configuring ODrive for CAN
