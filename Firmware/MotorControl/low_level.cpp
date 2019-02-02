@@ -539,6 +539,7 @@ void pwm_trig_adc_cb(ADC_HandleTypeDef* hadc, bool injected) {
             axis.motor_.current_meas_.phC = current - axis.motor_.DC_calib_.phC;
         }
         // Prepare hall readings
+        // TODO move this to inside encoder update function
         decode_hall_samples(axis.encoder_, GPIO_port_samples[axis_num]);
         // Trigger axis thread
         axis.signal_current_meas();
@@ -553,18 +554,30 @@ void pwm_trig_adc_cb(ADC_HandleTypeDef* hadc, bool injected) {
 }
 
 void tim_update_cb(TIM_HandleTypeDef* htim) {
-    int portsamples_arr;
+    
+    // If the corresponding timer is counting up, we just sampled in SVM vector 0, i.e. real current
+    // If we are counting down, we just sampled in SVM vector 7, with zero current
+    bool counting_down = htim->Instance->CR1 & TIM_CR1_DIR;
+    if (counting_down)
+        return;
+    
+    int sample_ch;
+    Axis* axis;
     if (htim == &htim1) {
-        portsamples_arr = 0;
+        sample_ch = 0;
+        axis = axes[0];
     } else if (htim == &htim8) {
-        portsamples_arr = 1;
+        sample_ch = 1;
+        axis = axes[1];
     } else {
         low_level_fault(Motor::ERROR_UNEXPECTED_TIMER_CALLBACK);
         return;
     }
 
+    axis->encoder_.sample_now();
+
     for (int i = 0; i < num_GPIO; ++i) {
-        GPIO_port_samples[portsamples_arr][i] = GPIOs_to_samp[i]->IDR;
+        GPIO_port_samples[sample_ch][i] = GPIOs_to_samp[i]->IDR;
     }
 }
 

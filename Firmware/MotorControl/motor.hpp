@@ -47,6 +47,8 @@ public:
         float final_v_beta; // [V]
         float Iq_setpoint; // [A]
         float Iq_measured; // [A]
+        float Id_measured; // [A]
+        float I_measured_report_filter_k;
         float max_allowed_current; // [A]
         float overcurrent_trip_level; // [A]
     };
@@ -119,9 +121,9 @@ public:
     bool run_calibration();
     bool enqueue_modulation_timings(float mod_alpha, float mod_beta);
     bool enqueue_voltage_timings(float v_alpha, float v_beta);
-    bool FOC_voltage(float v_d, float v_q, float phase);
-    bool FOC_current(float Id_des, float Iq_des, float phase);
-    bool update(float current_setpoint, float phase);
+    bool FOC_voltage(float v_d, float v_q, float pwm_phase);
+    bool FOC_current(float Id_des, float Iq_des, float I_phase, float pwm_phase);
+    bool update(float current_setpoint, float phase, float phase_vel);
 
     const MotorHardwareConfig_t& hw_config_;
     const GateDriverHardwareConfig_t gate_driver_config_;
@@ -160,6 +162,8 @@ public:
         .final_v_beta = 0.0f,
         .Iq_setpoint = 0.0f,
         .Iq_measured = 0.0f,
+        .Id_measured = 0.0f,
+        .I_measured_report_filter_k = 1.0f,
         .max_allowed_current = 0.0f,
         .overcurrent_trip_level = 0.0f,
     };
@@ -190,6 +194,8 @@ public:
                 make_protocol_property("final_v_beta", &current_control_.final_v_beta),
                 make_protocol_property("Iq_setpoint", &current_control_.Iq_setpoint),
                 make_protocol_property("Iq_measured", &current_control_.Iq_measured),
+                make_protocol_property("Id_measured", &current_control_.Id_measured),
+                make_protocol_property("I_measured_report_filter_k", &current_control_.I_measured_report_filter_k),
                 make_protocol_ro_property("max_allowed_current", &current_control_.max_allowed_current),
                 make_protocol_ro_property("overcurrent_trip_level", &current_control_.overcurrent_trip_level)
             ),

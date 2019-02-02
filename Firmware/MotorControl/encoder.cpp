@@ -252,6 +252,27 @@ void Encoder::update_pll_gains() {
     }
 }
 
+void Encoder::sample_now() {
+    switch (config_.mode) {
+        case MODE_INCREMENTAL: {
+            tim_cnt_sample_ = (int16_t)hw_config_.timer->Instance->CNT;
+        } break;
+
+        case MODE_HALL: {
+            // do nothing: samples already captured in general GPIO capture
+        } break;
+
+        case MODE_SINCOS: {
+            sincos_sample_s_ = get_adc_voltage(GPIO_3_GPIO_Port, GPIO_3_Pin) / 3.3f;
+            sincos_sample_c_ = get_adc_voltage(GPIO_4_GPIO_Port, GPIO_4_Pin) / 3.3f;
+        } break;
+
+        default: {
+           set_error(ERROR_UNSUPPORTED_ENCODER_MODE);
+        } break;
+    }
+}
+
 bool Encoder::update() {
     // update internal encoder state.
     int32_t delta_enc = 0;
@@ -259,7 +280,7 @@ bool Encoder::update() {
         case MODE_INCREMENTAL: {
             //TODO: use count_in_cpr_ instead as shadow_count_ can overflow
             //or use 64 bit
-            int16_t delta_enc_16 = (int16_t)hw_config_.timer->Instance->CNT - (int16_t)shadow_count_;
+            int16_t delta_enc_16 = (int16_t)tim_cnt_sample_ - (int16_t)shadow_count_;
             delta_enc = (int32_t)delta_enc_16; //sign extend
         } break;
 
@@ -279,10 +300,7 @@ bool Encoder::update() {
         } break;
 
         case MODE_SINCOS: {
-            float c = get_adc_voltage(GPIO_3_GPIO_Port, GPIO_3_Pin) / 3.3f;
-            float s = get_adc_voltage(GPIO_4_GPIO_Port, GPIO_4_Pin) / 3.3f;
-
-            float phase = fast_atan2(s, c);
+            float phase = fast_atan2(sincos_sample_s_, sincos_sample_c_);
             int fake_count = (int)(1000.0f * phase);
             //CPR = 6283 = 2pi * 1k
 

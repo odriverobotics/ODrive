@@ -323,15 +323,15 @@ bool Motor::enqueue_voltage_timings(float v_alpha, float v_beta) {
 }
 
 // We should probably make FOC Current call FOC Voltage to avoid duplication.
-bool Motor::FOC_voltage(float v_d, float v_q, float phase) {
-    float c = our_arm_cos_f32(phase);
-    float s = our_arm_sin_f32(phase);
+bool Motor::FOC_voltage(float v_d, float v_q, float pwm_phase) {
+    float c = our_arm_cos_f32(pwm_phase);
+    float s = our_arm_sin_f32(pwm_phase);
     float v_alpha = c*v_d - s*v_q;
     float v_beta  = c*v_q + s*v_d;
     return enqueue_voltage_timings(v_alpha, v_beta);
 }
 
-bool Motor::FOC_current(float Id_des, float Iq_des, float phase) {
+bool Motor::FOC_current(float Id_des, float Iq_des, float I_phase, float pwm_phase) {
     // Syntactic sugar
     CurrentControl_t& ictrl = current_control_;
 
@@ -349,11 +349,12 @@ bool Motor::FOC_current(float Id_des, float Iq_des, float phase) {
     float Ibeta = one_by_sqrt3 * (current_meas_.phB - current_meas_.phC);
 
     // Park transform
-    float c = our_arm_cos_f32(phase);
-    float s = our_arm_sin_f32(phase);
-    float Id = c * Ialpha + s * Ibeta;
-    float Iq = c * Ibeta - s * Ialpha;
-    ictrl.Iq_measured = Iq;
+    float c_I = our_arm_cos_f32(I_phase);
+    float s_I = our_arm_sin_f32(I_phase);
+    float Id = c_I * Ialpha + s_I * Ibeta;
+    float Iq = c_I * Ibeta - s_I * Ialpha;
+    ictrl.Iq_measured += ictrl.I_measured_report_filter_k * (Iq - ictrl.Iq_measured);
+    ictrl.Id_measured += ictrl.I_measured_report_filter_k * (Id - ictrl.Id_measured);
 
     // Current error
     float Ierr_d = Id_des - Id;
@@ -387,8 +388,10 @@ bool Motor::FOC_current(float Id_des, float Iq_des, float phase) {
     ictrl.Ibus = mod_d * Id + mod_q * Iq;
 
     // Inverse park transform
-    float mod_alpha = c * mod_d - s * mod_q;
-    float mod_beta  = c * mod_q + s * mod_d;
+    float c_p = our_arm_cos_f32(pwm_phase);
+    float s_p = our_arm_sin_f32(pwm_phase);
+    float mod_alpha = c_p * mod_d - s_p * mod_q;
+    float mod_beta  = c_p * mod_q + s_p * mod_d;
 
     // Report final applied voltage in stationary frame (for sensorles estimator)
     ictrl.final_v_alpha = mod_to_V * mod_alpha;
@@ -403,19 +406,22 @@ bool Motor::FOC_current(float Id_des, float Iq_des, float phase) {
 }
 
 
-bool Motor::update(float current_setpoint, float phase) {
+bool Motor::update(float current_setpoint, float phase, float phase_vel) {
     current_setpoint *= config_.direction;
     phase *= config_.direction;
+    phase_vel *= config_.direction;
+
+    float pwm_phase = phase + 1.5f * current_meas_period * phase_vel;
 
     // Execute current command
     // TODO: move this into the mot
     if (config_.motor_type == MOTOR_TYPE_HIGH_CURRENT) {
-        if(!FOC_current(0.0f, current_setpoint, phase)){
+        if(!FOC_current(0.0f, current_setpoint, phase, pwm_phase)){
             return false;
         }
     } else if (config_.motor_type == MOTOR_TYPE_GIMBAL) {
         //In gimbal motor mode, current is reinterptreted as voltage.
-        if(!FOC_voltage(0.0f, current_setpoint, phase))
+        if(!FOC_voltage(0.0f, current_setpoint, pwm_phase))
             return false;
     } else {
         set_error(ERROR_NOT_IMPLEMENTED_MOTOR_TYPE);

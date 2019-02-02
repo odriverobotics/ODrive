@@ -106,6 +106,7 @@ def start_liveplotter(get_var_callback):
         while not cancellation_token.is_set():
             plt.clf()
             plt.plot(vals)
+            plt.legend(list(range(len(vals))))
             fig.canvas.draw()
             fig.canvas.start_event_loop(1/plot_rate)
 
