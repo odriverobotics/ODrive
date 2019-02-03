@@ -5,7 +5,9 @@
 
 Controller::Controller(Config_t& config) :
     config_(config)
-{}
+{
+    update_filter_gains();
+}
 
 void Controller::reset() {
     pos_setpoint_ = 0.0f;
@@ -66,6 +68,18 @@ void Controller::start_anticogging_calibration() {
     }
 }
 
+// Slowly drive in the negative direction at homing_speed until the min endstop is pressed
+// When pressed, set the linear count to the offset (default 0), and then
+bool Controller::home_axis() {
+    if (axis_->min_endstop_.config_.enabled) {
+        set_vel_setpoint(-config_.homing_speed, 0.0f);
+        axis_->homing_state_ = HOMING_STATE_HOMING;
+    } else {
+        return false;
+    }
+    return true;
+}
+
 /*
  * This anti-cogging implementation iterates through each encoder position,
  * waits for zero velocity & position error,
@@ -76,6 +90,7 @@ void Controller::start_anticogging_calibration() {
 bool Controller::anticogging_calibration(float pos_estimate, float vel_estimate) {
     if (anticogging_.calib_anticogging && anticogging_.cogging_map != NULL) {
         float pos_err = anticogging_.index - pos_estimate;
+<<<<<<< HEAD
         if (fabsf(pos_err) <= anticogging_.calib_pos_threshold &&
             fabsf(vel_estimate) < anticogging_.calib_vel_threshold) {
             anticogging_.cogging_map[anticogging_.index++] = vel_integrator_current_;
@@ -90,6 +105,43 @@ bool Controller::anticogging_calibration(float pos_estimate, float vel_estimate)
             anticogging_.use_anticogging = true;  // We're good to go, enable anti-cogging
             anticogging_.calib_anticogging = false;
             return true;
+=======
+        switch (anticogging_.state) {
+            case ANTICOG_STATE_FWD:
+                if (std::abs(pos_err) <= anticogging_.calib_pos_threshold &&
+                    std::abs(vel_estimate) < anticogging_.calib_vel_threshold) {
+                    anticogging_.cogging_map[anticogging_.index++] = vel_integrator_current_;
+                }
+                if (anticogging_.index < axis_->encoder_.config_.cpr) {  // TODO: remove the dependency on encoder CPR
+                    set_pos_setpoint(anticogging_.index, 0.0f, 0.0f);
+                    return false;
+                } else {
+                    anticogging_.state = ANTICOG_STATE_REV;
+                    anticogging_.index = axis_->encoder_.config_.cpr - 1; // Go to last position
+                    set_pos_setpoint(anticogging_.index, 0.0f, 0.0f);
+                    return false;
+                }
+                break;
+
+            case ANTICOG_STATE_REV:
+                if (std::abs(pos_err) <= anticogging_.calib_pos_threshold &&
+                    std::abs(vel_estimate) < anticogging_.calib_vel_threshold) {
+                    anticogging_.cogging_map[anticogging_.index] += vel_integrator_current_;
+                    anticogging_.cogging_map[anticogging_.index--] /= 2.0f;
+                }
+                if (anticogging_.index >= 0) {  // TODO: remove the dependency on encoder CPR
+                    set_pos_setpoint(anticogging_.index, 0.0f, 0.0f);
+                    return false;
+                } else {
+                    anticogging_.state = ANTICOG_STATE_FWD;
+                    anticogging_.index = 0;
+                    set_pos_setpoint(0.0f, 0.0f, 0.0f);   // Send the motor home
+                    anticogging_.use_anticogging = true;  // We're good to go, enable anti-cogging
+                    anticogging_.calib_anticogging = false;
+                    return true;
+                }
+                break;
+>>>>>>> c702f38c07712547df389cac4e77ac4c180d1bf3
         }
     }
     return false;
@@ -224,10 +276,62 @@ void Controller::init_anticogging_map(){
     anticogging_.use_anticogging = true;
 }
 
+void Controller::update_filter_gains() {
+    input_filter_ki_ = 2.0f * config_.input_filter_bandwidth;  // basic conversion to discrete time
+    input_filter_kp_ = 0.25f * (input_filter_ki_ * input_filter_ki_); // Critically damped
+}
+
 bool Controller::update(float pos_estimate, float vel_estimate, float* current_setpoint_output) {
     // Only runs if anticogging_.calib_anticogging is true; non-blocking
     anticogging_calibration(pos_estimate, vel_estimate);
     float anticogging_pos = pos_estimate;
+
+    // Update inputs
+    switch (config_.input_mode) {
+        case INPUT_MODE_INACTIVE: {
+            // do nothing
+        } break;
+        case INPUT_MODE_PASSTHROUGH: {
+            pos_setpoint_ = input_pos_;
+            vel_setpoint_ = input_vel_;
+            current_setpoint_ = input_current_;
+        } break;
+        case INPUT_MODE_VEL_RAMP: {
+            float max_step_size = current_meas_period * config_.vel_ramp_rate;
+            float full_step = input_vel_ - vel_setpoint_;
+            float step;
+            if (fabsf(full_step) > max_step_size) {
+                step = std::copysignf(max_step_size, full_step);
+            } else {
+                step = full_step;
+            }
+            vel_setpoint_ += step;
+            current_setpoint_ = (step / current_meas_period) * config_.inertia;
+        } break;
+        case INPUT_MODE_POS_FILTER: {
+            // 2nd order pos tracking filter
+            pos_setpoint_ += current_meas_period * vel_setpoint_; // Delta pos
+            float delta_pos = input_pos_ - pos_setpoint_; // Pos error
+            float delta_vel = input_vel_ - vel_setpoint_; // Vel error
+            float accel = input_filter_kp_*delta_pos + input_filter_ki_*delta_vel; // Feedback
+            vel_setpoint_ += current_meas_period * accel; // delta vel
+            current_setpoint_ = accel * config_.inertia; // Accel
+        } break;
+        // case INPUT_MODE_MIX_CHANNELS: {
+        //     // NOT YET IMPLEMENTED
+        // } break;
+        case INPUT_MODE_TRAP_TRAJ: {
+            static auto last_pos = input_pos_;
+            if(last_pos != input_pos_){
+                last_pos = input_pos_;
+                move_to_pos(input_pos_); // We should really move the *setpoint* handling here, but this will work for now
+            }
+        } break;
+        default: {
+            set_error(ERROR_INVALID_INPUT_MODE);
+            return false;
+        }
+    }
 
     // Trajectory control
     if (config_.control_mode == CTRL_MODE_TRAJECTORY_CONTROL) {
@@ -237,34 +341,22 @@ bool Controller::update(float pos_estimate, float vel_estimate, float* current_s
         if (t > axis_->trap_.Tf_) {
             // Drop into position control mode when done to avoid problems on loop counter delta overflow
             config_.control_mode = CTRL_MODE_POSITION_CONTROL;
-            // pos_setpoint already set by trajectory
+            pos_setpoint_ = input_pos_;
             vel_setpoint_ = 0.0f;
             current_setpoint_ = 0.0f;
         } else {
             TrapezoidalTrajectory::Step_t traj_step = axis_->trap_.eval(t);
             pos_setpoint_ = traj_step.Y;
             vel_setpoint_ = traj_step.Yd;
-            current_setpoint_ = traj_step.Ydd * axis_->trap_.config_.A_per_css;
+            current_setpoint_ = traj_step.Ydd * config_.inertia;
         }
         anticogging_pos = pos_setpoint_; // FF the position setpoint instead of the pos_estimate
-    }
-
-    // Ramp rate limited velocity setpoint
-    if (config_.control_mode == CTRL_MODE_VELOCITY_CONTROL && vel_ramp_enable_) {
-        float max_step_size = current_meas_period * config_.vel_ramp_rate;
-        float full_step = vel_ramp_target_ - vel_setpoint_;
-        float step;
-        if (fabsf(full_step) > max_step_size) {
-            step = std::copysignf(max_step_size, full_step);
-        } else {
-            step = full_step;
-        }
-        vel_setpoint_ += step;
     }
 
     // Position control
     // TODO Decide if we want to use encoder or pll position here
     float vel_des = vel_setpoint_;
+    float gain_scheduling_multiplier = 1.0f;
     if (config_.control_mode >= CTRL_MODE_POSITION_CONTROL) {
         float pos_err;
         if (config_.setpoints_in_cpr) {
@@ -280,6 +372,12 @@ bool Controller::update(float pos_estimate, float vel_estimate, float* current_s
             pos_err = pos_setpoint_ - pos_estimate;
         }
         vel_des += config_.pos_gain * pos_err;
+        
+        // V-shaped gain shedule based on position error
+        float abs_pos_err = fabsf(pos_err);
+        if (config_.enable_gain_scheduling && abs_pos_err <= config_.gain_scheduling_width) {
+            gain_scheduling_multiplier = abs_pos_err / config_.gain_scheduling_width;
+        }
     }
 
     // Velocity limiting
@@ -307,15 +405,15 @@ bool Controller::update(float pos_estimate, float vel_estimate, float* current_s
 
     float v_err = vel_des - vel_estimate;
     if (config_.control_mode >= CTRL_MODE_VELOCITY_CONTROL) {
-        Iq += config_.vel_gain * v_err;
+        Iq += (config_.vel_gain * gain_scheduling_multiplier) * v_err;
     }
 
     // Velocity integral action before limiting
     Iq += vel_integrator_current_;
 
     // Current limiting
-    float Ilim = std::min(axis_->motor_.config_.current_lim, axis_->motor_.current_control_.max_allowed_current);
     bool limited = false;
+    float Ilim = axis_->motor_.effective_current_lim();
     if (Iq > Ilim) {
         limited = true;
         Iq = Ilim;
@@ -334,7 +432,7 @@ bool Controller::update(float pos_estimate, float vel_estimate, float* current_s
             // TODO make decayfactor configurable
             vel_integrator_current_ *= 0.99f;
         } else {
-            vel_integrator_current_ += (config_.vel_integrator_gain * current_meas_period) * v_err;
+            vel_integrator_current_ += ((config_.vel_integrator_gain * gain_scheduling_multiplier) * current_meas_period) * v_err;
         }
     }
 

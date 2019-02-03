@@ -102,6 +102,21 @@ void ASCII_protocol_process_line(const uint8_t* buffer, size_t len, StreamSink& 
             axes[motor_number]->controller_.set_pos_setpoint(pos_setpoint, vel_feed_forward, current_feed_forward);
         }
 
+    } else if (cmd[0] == 'q') { // position control with limits
+        unsigned motor_number;
+        float pos_setpoint, vel_limit, current_lim;
+        int numscan = sscanf(cmd, "q %u %f %f %f", &motor_number, &pos_setpoint, &vel_limit, &current_lim);
+        if (numscan < 4) {
+            respond(response_channel, use_checksum, "invalid command format");
+        } else if (motor_number >= AXIS_COUNT) {
+            respond(response_channel, use_checksum, "invalid motor %u", motor_number);
+        } else {
+            Axis* axis = axes[motor_number];
+            axis->controller_.pos_setpoint_ = pos_setpoint;
+            axis->controller_.config_.vel_limit = vel_limit;
+            axis->motor_.config_.current_lim = current_lim;
+        }
+
     } else if (cmd[0] == 'v') { // velocity control
         unsigned motor_number;
         float vel_setpoint, current_feed_forward;

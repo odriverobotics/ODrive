@@ -12,6 +12,20 @@ Encoder::Encoder(const EncoderHardwareConfig_t& hw_config,
     if (config.pre_calibrated && (config.mode == Encoder::MODE_HALL)) {
         is_ready_ = true;
     }
+
+    decode_spi_cs_pin();
+
+    if (config_.mode == MODE_ABSOLUTE) {
+        switch (config_.abs_enc_type) {
+            case NONE: break;
+            case ABSOLUTE_ENCODER_AMT203:
+                abs_enc_ = new AMT203(&hspi3, spi_cs_port_, spi_cs_pin_);
+                abs_enc_->init();
+                abs_enc_->readPosition();
+            default:
+                break;
+        }
+    }
 }
 
 static void enc_index_cb_wrapper(void* ctx) {
@@ -21,7 +35,7 @@ static void enc_index_cb_wrapper(void* ctx) {
 void Encoder::setup() {
     HAL_TIM_Encoder_Start(hw_config_.timer, TIM_CHANNEL_ALL);
     GPIO_subscribe(hw_config_.index_port, hw_config_.index_pin, GPIO_NOPULL,
-            enc_index_cb_wrapper, this);
+            GPIO_MODE_IT_RISING, enc_index_cb_wrapper, this);
 }
 
 void Encoder::set_error(Error_t error) {
@@ -58,7 +72,7 @@ void Encoder::enc_index_cb() {
     }
 }
 // This function is called by the tim5 interrupt callback if config_pwm pin is set
-// This is currently hardcoded for AS5074P PWM output
+// This is currently hardcoded for AS5074P PWM output at 4096CPR
 void Encoder::enc_pwm_cb(uint32_t rise_time, uint32_t fall_time){
     static uint32_t prev_rise_time = 0;
 
@@ -70,6 +84,11 @@ void Encoder::enc_pwm_cb(uint32_t rise_time, uint32_t fall_time){
     pos_abs_ = ((fall_time - rise_time) * 4119)/period_;
     // The 12 PWM Clocks for INIT, 4 PWM Clocks for Error detection
     pos_abs_ -= 16;
+    // Take off the offset
+    pos_abs_ -= config_.offset_abs;
+    // Handle the wrap
+    if (pos_abs_ < 0) pos_abs_ += 4096;
+
     pwm_updated_ = true;
 }
 
@@ -162,6 +181,23 @@ bool Encoder::run_index_search() {
             });
         return true;
         }break;
+
+        case MODE_ABSOLUTE: {
+            if (abs_enc_ == nullptr) {
+                set_error(ERROR_INVALID_ABSOLUTE_ENCODER);
+                return false;
+            } else {
+                axis_->run_control_loop([&]() {
+                    if (!axis_->motor_.enqueue_voltage_timings(0.0f, 0.0f))
+                        return false;  // error set inside enqueue_voltage_timings
+                    pos_abs_ = abs_enc_->readPosition();
+                    set_circular_count(pos_abs_, false);
+                    set_linear_count(pos_abs_);
+                    return true;
+                });
+            }
+            return true;
+        } break;
 
         default: {
            set_error(ERROR_UNSUPPORTED_ENCODER_MODE);
@@ -279,14 +315,19 @@ bool Encoder::run_offset_calibration() {
     return true;
 }
 
-static bool decode_hall(uint8_t hall_state, int32_t* hall_cnt) {
+void Encoder::decode_spi_cs_pin(){
+    spi_cs_port_ = get_gpio_port_by_pin(config_.spi_cs_gpio_pin);
+    spi_cs_pin_ = get_gpio_pin_by_pin(config_.spi_cs_gpio_pin);
+}
+
+static bool decode_hall(uint8_t hall_state, int32_t& hall_cnt) {
     switch (hall_state) {
-        case 0b001: *hall_cnt = 0; return true;
-        case 0b011: *hall_cnt = 1; return true;
-        case 0b010: *hall_cnt = 2; return true;
-        case 0b110: *hall_cnt = 3; return true;
-        case 0b100: *hall_cnt = 4; return true;
-        case 0b101: *hall_cnt = 5; return true;
+        case 0b001: hall_cnt = 0; return true;
+        case 0b011: hall_cnt = 1; return true;
+        case 0b010: hall_cnt = 2; return true;
+        case 0b110: hall_cnt = 3; return true;
+        case 0b100: hall_cnt = 4; return true;
+        case 0b101: hall_cnt = 5; return true;
         default: return false;
     }
 }
@@ -315,14 +356,16 @@ bool Encoder::update() {
 
         case MODE_HALL: {
             int32_t hall_cnt;
-            if (decode_hall(hall_state_, &hall_cnt)) {
+            if (decode_hall(hall_state_, hall_cnt)) {
                 delta_enc = hall_cnt - count_in_cpr_;
                 delta_enc = mod(delta_enc, 6);
                 if (delta_enc > 3)
                     delta_enc -= 6;
             } else {
-                set_error(ERROR_ILLEGAL_HALL_STATE);
-                return false;
+                if (!config_.ignore_illegal_hall_state) {
+                    set_error(ERROR_ILLEGAL_HALL_STATE);
+                    return false;
+                }
             }
         } break;
         

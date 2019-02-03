@@ -54,6 +54,7 @@ typedef struct {
     uint32_t min_stack_space_uart;
     uint32_t min_stack_space_usb_irq;
     uint32_t min_stack_space_startup;
+    uint32_t min_stack_space_can;
 } SystemStats_t;
 extern SystemStats_t system_stats_;
 
@@ -82,15 +83,19 @@ struct BoardConfig_t {
                                                                         //<! the brake power if the brake resistor is disabled.
                                                                         //<! The default is 26V for the 24V board version and 52V for the 48V board version.
     PWMMapping_t pwm_mappings[GPIO_COUNT];
+    PWMMapping_t analog_mappings[GPIO_COUNT];
 };
 extern BoardConfig_t board_config;
 extern bool user_config_loaded_;
 
+// Forward Declarations
 class Axis;
 class Motor;
+class ODriveCAN;
 
 constexpr size_t AXIS_COUNT = 2;
 extern Axis *axes[AXIS_COUNT];
+extern ODriveCAN *odCAN;
 
 // if you use the oscilloscope feature you can bump up this value
 #define OSCILLOSCOPE_SIZE 128
@@ -117,6 +122,7 @@ inline ENUMTYPE operator ~ (ENUMTYPE a) { return static_cast<ENUMTYPE>(~static_c
 #include <controller.hpp>
 #include <motor.hpp>
 #include <trapTraj.hpp>
+#include <endstop.hpp>
 #include <axis.hpp>
 #include <communication/communication.h>
 

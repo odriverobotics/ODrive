@@ -2,7 +2,15 @@
 Please add a note of your changes below this heading if you make a Pull Request.
 
 ### Added
+* Second order setpoint input filter.
 * `dump_errors()` utility function in odrivetool to dump, decode and optionally clear errors.
+* `q` command to ascii protocol. It is like the old `p` command, but velocity and current mean limits, not feed-forward.
+* Voltage limit soft clamping instead of ERROR_MODULATION_MAGNITUDE in gimbal motor closed loop.
+* Thermal current limit with linear derating.
+
+### Changed
+* Moved `traptraj.A_per_css` to `controller.inertia`
+* Refactored velocity ramp mode into the new general input filtering structure
 
 # Releases
 ## [0.4.7] - 2018-11-28
@@ -56,7 +64,10 @@ Please add a note of your changes below this heading if you make a Pull Request.
 
 ## [0.4.3] - 2018-08-30
 ### Added
+* `min_endstop` and `max_endstop` objects can be configured on GPIO
+* Axes can be homed if `min_endstop` is enabled
 * Encoder position count "homed" to zero when index is found.
+* Basic 'anti-hunt' implimentation to avoid vibration when stationary.
 
 ### Changed
 * We now enforce encoder offset calibration must happen after index is found (if using index)

@@ -7,39 +7,50 @@
 #include <communication/interface_usb.h>
 #include <communication/interface_uart.h>
 #include <communication/interface_i2c.h>
+#include <communication/interface_can.hpp>
 
 BoardConfig_t board_config;
+ODriveCAN::Config_t can_config;
 Encoder::Config_t encoder_configs[AXIS_COUNT];
 SensorlessEstimator::Config_t sensorless_configs[AXIS_COUNT];
 Controller::Config_t controller_configs[AXIS_COUNT];
 Motor::Config_t motor_configs[AXIS_COUNT];
 Axis::Config_t axis_configs[AXIS_COUNT];
 TrapezoidalTrajectory::Config_t trap_configs[AXIS_COUNT];
+Endstop::Config_t min_endstop_configs[AXIS_COUNT];
+Endstop::Config_t max_endstop_configs[AXIS_COUNT];
 bool user_config_loaded_;
 
 SystemStats_t system_stats_ = { 0 };
 
 Axis *axes[AXIS_COUNT];
+ODriveCAN *odCAN;
 
 typedef Config<
     BoardConfig_t,
+    ODriveCAN::Config_t,
     Encoder::Config_t[AXIS_COUNT],
     SensorlessEstimator::Config_t[AXIS_COUNT],
     Controller::Config_t[AXIS_COUNT],
     Motor::Config_t[AXIS_COUNT],
     TrapezoidalTrajectory::Config_t[AXIS_COUNT],
+    Endstop::Config_t[AXIS_COUNT],
+    Endstop::Config_t[AXIS_COUNT],
     Axis::Config_t[AXIS_COUNT]> ConfigFormat;
 
 void save_configuration(void) {
     if (ConfigFormat::safe_store_config(
             &board_config,
+            &can_config,
             &encoder_configs,
             &sensorless_configs,
             &controller_configs,
             &motor_configs,
             &trap_configs,
+            &min_endstop_configs,
+            &max_endstop_configs,
             &axis_configs)) {
-        //printf("saving configuration failed\r\n"); osDelay(5);
+        printf("saving configuration failed\r\n"); osDelay(5);
     } else {
         user_config_loaded_ = true;
     }
@@ -50,14 +61,18 @@ void load_configuration(void) {
     if (NVM_init() ||
         ConfigFormat::safe_load_config(
                 &board_config,
+                &can_config,
                 &encoder_configs,
                 &sensorless_configs,
                 &controller_configs,
                 &motor_configs,
                 &trap_configs,
+                &min_endstop_configs,
+                &max_endstop_configs,
                 &axis_configs)) {
         //If loading failed, restore defaults
         board_config = BoardConfig_t();
+        can_config = ODriveCAN::Config_t();
         for (size_t i = 0; i < AXIS_COUNT; ++i) {
             encoder_configs[i] = Encoder::Config_t();
             sensorless_configs[i] = SensorlessEstimator::Config_t();
@@ -67,6 +82,8 @@ void load_configuration(void) {
             axis_configs[i] = Axis::Config_t();
             // Default step/dir pins are different, so we need to explicitly load them
             Axis::load_default_step_dir_pin_config(hw_configs[i].axis_config, &axis_configs[i]);
+            min_endstop_configs[i] = Endstop::Config_t();
+            max_endstop_configs[i] = Endstop::Config_t();
         }
     } else {
         user_config_loaded_ = true;
@@ -111,6 +128,7 @@ void vApplicationIdleHook(void) {
         system_stats_.min_stack_space_uart = uxTaskGetStackHighWaterMark(uart_thread) * sizeof(StackType_t);
         system_stats_.min_stack_space_usb_irq = uxTaskGetStackHighWaterMark(usb_irq_thread) * sizeof(StackType_t);
         system_stats_.min_stack_space_startup = uxTaskGetStackHighWaterMark(defaultTaskHandle) * sizeof(StackType_t);
+        system_stats_.min_stack_space_can = uxTaskGetStackHighWaterMark(odCAN->thread_id_) * sizeof(StackType_t);
     }
 }
 }
@@ -161,6 +179,7 @@ int odrive_main(void) {
 #endif
 
     // Construct all objects.
+    odCAN = new ODriveCAN(&hcan1, can_config);
     for (size_t i = 0; i < AXIS_COUNT; ++i) {
         Encoder *encoder = new Encoder(hw_configs[i].encoder_config,
                                        encoder_configs[i]);
@@ -170,8 +189,10 @@ int odrive_main(void) {
                                  hw_configs[i].gate_driver_config,
                                  motor_configs[i]);
         TrapezoidalTrajectory *trap = new TrapezoidalTrajectory(trap_configs[i]);
+        Endstop *min_endstop = new Endstop(min_endstop_configs[i]);
+        Endstop *max_endstop = new Endstop(max_endstop_configs[i]);
         axes[i] = new Axis(hw_configs[i].axis_config, axis_configs[i],
-                *encoder, *sensorless_estimator, *controller, *motor, *trap);
+                *encoder, *sensorless_estimator, *controller, *motor, *trap, *min_endstop, *max_endstop);
     }
     
     // Start ADC for temperature measurements and user measurements
@@ -213,6 +234,8 @@ int odrive_main(void) {
     for (size_t i = 0; i < AXIS_COUNT; ++i) {
         axes[i]->start_thread();
     }
+
+    start_analog_thread();
 
     system_stats_.fully_booted = true;
     return 0;

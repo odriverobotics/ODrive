@@ -156,10 +156,13 @@ build{
         'MotorControl/axis.cpp',
         'MotorControl/motor.cpp',
         'MotorControl/encoder.cpp',
+        'MotorControl/endstop.cpp',
         'MotorControl/controller.cpp',
         'MotorControl/sensorless_estimator.cpp',
         'MotorControl/trapTraj.cpp',
         'MotorControl/main.cpp',
+        'Encoders/amt203.cpp',
+        'communication/can_simple.cpp',
         'communication/communication.cpp',
         'communication/ascii_protocol.cpp',
         'communication/interface_uart.cpp',
@@ -171,6 +174,7 @@ build{
     },
     includes={
         'Drivers/DRV8301',
+        'Encoders',
         'MotorControl',
         'fibre/cpp/include',
         '.'

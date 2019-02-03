@@ -84,6 +84,7 @@ osSemaphoreId sem_usb_irq;
 osSemaphoreId sem_uart_dma;
 osSemaphoreId sem_usb_rx;
 osSemaphoreId sem_usb_tx;
+osSemaphoreId sem_can;
 
 osThreadId usb_irq_thread;
 
@@ -185,6 +186,10 @@ void MX_FREERTOS_Init(void) {
   // Create a semaphore for USB TX
   osSemaphoreDef(sem_usb_tx);
   sem_usb_tx = osSemaphoreCreate(osSemaphore(sem_usb_tx), 1);
+
+  osSemaphoreDef(sem_can);
+  sem_can = osSemaphoreCreate(osSemaphore(sem_can), 1);
+  osSemaphoreWait(sem_can, 0);
 
   init_deferred_interrupts();
   /* USER CODE END RTOS_SEMAPHORES */
