@@ -278,6 +278,8 @@ void Axis::run_state_machine_loop() {
         for (int i = 0; i < encoder_cpr; i++) {
             controller_.anticogging_.cogging_map[i] = 0.0f;
         }
+        //-- Do the inverse FFT to generate the anticogging map
+        controller_.init_anticogging_map();
     }
 
     if (config_.startup_sequence_on_boot) {
@@ -294,7 +296,7 @@ void Axis::run_state_machine_loop() {
             if (requested_state_ == AXIS_STATE_STARTUP_SEQUENCE) {
                 if (config_.startup_motor_calibration)
                     task_chain_[pos++] = AXIS_STATE_MOTOR_CALIBRATION;
-                if (config_.startup_encoder_index_search && encoder_.config_.use_index)
+                if (config_.startup_encoder_index_search)
                     task_chain_[pos++] = AXIS_STATE_ENCODER_INDEX_SEARCH;
                 if (config_.startup_encoder_offset_calibration)
                     task_chain_[pos++] = AXIS_STATE_ENCODER_OFFSET_CALIBRATION;

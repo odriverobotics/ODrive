@@ -22,6 +22,13 @@ public:
         CTRL_MODE_TRAJECTORY_CONTROL = 4
     };
 
+    static const int32_t NUM_HARMONICS = 16;
+    typedef struct {
+        uint32_t index;
+        float real;
+        float imaginary;
+    }Harmonic_t ;
+
     struct Config_t {
         ControlMode_t control_mode = CTRL_MODE_POSITION_CONTROL;  //see: Motor_control_mode_t
         float pos_gain = 20.0f;  // [(counts/s) / counts]
@@ -32,6 +39,7 @@ public:
         float vel_limit_tolerance = 1.2f;  // ratio to vel_lim. 0.0f to disable
         float vel_ramp_rate = 10000.0f;  // [(counts/s) / s]
         bool setpoints_in_cpr = false;
+        Harmonic_t harmonics[NUM_HARMONICS];
     };
 
     Controller(Config_t& config);
@@ -48,6 +56,11 @@ public:
     // TODO: make this more similar to other calibration loops
     void start_anticogging_calibration();
     bool anticogging_calibration(float pos_estimate, float vel_estimate);
+    void extract_harmonics();
+    void find_n_highest_indices(float* arr, uint32_t arr_size, uint32_t* indices, uint32_t n);
+    float write_anticogging_map(int32_t index, float value);
+    float write_harmonics(int32_t index, int32_t harmonic, int32_t imag, float value);
+    void init_anticogging_map();
 
     bool update(float pos_estimate, float vel_estimate, float* current_setpoint);
 
@@ -106,7 +119,12 @@ public:
                 make_protocol_property("vel_integrator_gain", &config_.vel_integrator_gain),
                 make_protocol_property("vel_limit", &config_.vel_limit),
                 make_protocol_property("vel_limit_tolerance", &config_.vel_limit_tolerance),
+<<<<<<< HEAD
                 make_protocol_property("vel_ramp_rate", &config_.vel_ramp_rate),
+=======
+                make_protocol_property("vel_ramp_limit", &config_.vel_ramp_limit),
+                make_protocol_property("use_anticogging", &anticogging_.use_anticogging),
+>>>>>>> fcd3c8b4d13ccb2e9d176873b0423384af696d28
                 make_protocol_property("setpoints_in_cpr", &config_.setpoints_in_cpr)
             ),
             make_protocol_function("set_pos_setpoint", *this, &Controller::set_pos_setpoint,
@@ -116,6 +134,11 @@ public:
             make_protocol_function("set_current_setpoint", *this, &Controller::set_current_setpoint,
                 "current_setpoint"),
             make_protocol_function("move_to_pos", *this, &Controller::move_to_pos, "goal_point"),
+            make_protocol_function("write_anticogging_map", *this, &Controller::write_anticogging_map,
+                "index", "value"),
+            make_protocol_function("write_harmonics", *this, &Controller::write_harmonics,
+                        "index", "harmonic", "imag", "value"),
+            make_protocol_function("init_anticogging_map", *this, &Controller::init_anticogging_map),
             make_protocol_function("start_anticogging_calibration", *this, &Controller::start_anticogging_calibration)
         );
     }

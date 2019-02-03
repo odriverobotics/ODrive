@@ -19,12 +19,15 @@ public:
 
     enum Mode_t {
         MODE_INCREMENTAL,
+        MODE_INCREMENTAL_PWM,
+        MODE_ABSOLUTE,
         MODE_HALL
     };
 
     struct Config_t {
         Encoder::Mode_t mode = Encoder::MODE_INCREMENTAL;
         bool use_index = false;
+        int32_t pwm_pin = 0;    // GPIO pin of the absolue PWM signal, must be 4 or 5
         bool pre_calibrated = false; // If true, this means the offset stored in
                                     // configuration is valid and does not need
                                     // be determined by run_offset_calibration.
@@ -48,6 +51,8 @@ public:
 
     void enc_index_cb();
 
+    void enc_pwm_cb(uint32_t rise_time, uint32_t fall_time);
+
     void set_linear_count(int32_t count);
     void set_circular_count(int32_t count, bool update_offset);
     bool calib_enc_offset(float voltage_magnitude);
@@ -65,6 +70,7 @@ public:
 
     Error_t error_ = ERROR_NONE;
     bool index_found_ = false;
+    bool pwm_updated_ = false;
     bool is_ready_ = false;
     int32_t shadow_count_ = 0;
     int32_t count_in_cpr_ = 0;
@@ -75,6 +81,7 @@ public:
     float vel_estimate_ = 0.0f;  // [count/s]
     float pll_kp_ = 0.0f;   // [count/s / count]
     float pll_ki_ = 0.0f;   // [(count/s^2) / count]
+    int32_t pos_abs_ = 0;
 
     // Updated by low_level pwm_adc_cb
     uint8_t hall_state_ = 0x0; // bit[0] = HallA, .., bit[2] = HallC
@@ -93,11 +100,13 @@ public:
             make_protocol_property("pos_cpr", &pos_cpr_),
             make_protocol_property("hall_state", &hall_state_),
             make_protocol_property("vel_estimate", &vel_estimate_),
+            make_protocol_property("pos_abs", &pos_abs_),
             // make_protocol_property("pll_kp", &pll_kp_),
             // make_protocol_property("pll_ki", &pll_ki_),
             make_protocol_object("config",
                 make_protocol_property("mode", &config_.mode),
                 make_protocol_property("use_index", &config_.use_index),
+                make_protocol_property("pwm_pin", &config_.pwm_pin),
                 make_protocol_property("pre_calibrated", &config_.pre_calibrated),
                 make_protocol_property("idx_search_speed", &config_.idx_search_speed),
                 make_protocol_property("zero_count_on_find_idx", &config_.zero_count_on_find_idx),
