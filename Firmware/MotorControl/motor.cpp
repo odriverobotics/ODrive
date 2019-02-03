@@ -143,12 +143,52 @@ void Motor::set_error(Motor::Error_t error){
     update_brake_current();
 }
 
+float Motor::get_inverter_temp() {
+    float adc = adc_measurements_[hw_config_.inverter_thermistor_adc_ch];
+    float normalized_voltage = adc / adc_full_scale;
+    return horner_fma(normalized_voltage, thermistor_poly_coeffs, thermistor_num_coeffs);
+}
+
+bool Motor::update_thermal_limits() {
+    float fet_temp = get_inverter_temp();
+    float temp_margin = config_.inverter_temp_limit_upper - fet_temp;
+    float derating_range = config_.inverter_temp_limit_upper - config_.inverter_temp_limit_lower;
+    thermal_current_lim_ = config_.current_lim * (temp_margin / derating_range);
+    if (!(thermal_current_lim_ >= 0.0f)) { //Funny polarity to also catch NaN
+        thermal_current_lim_ = 0.0f;
+    }
+    if (fet_temp > config_.inverter_temp_limit_upper + 5) {
+        set_error(ERROR_INVERTER_OVER_TEMP);
+        return false;
+    }
+    return true;
+}
+
 bool Motor::do_checks() {
     if (!check_DRV_fault()) {
         set_error(ERROR_DRV_FAULT);
         return false;
     }
+    if (!update_thermal_limits()) {
+        //error already set in function
+        return false;
+    }
     return true;
+}
+
+float Motor::effective_current_lim() {
+    // Configured limit
+    float current_lim = config_.current_lim;
+    // Hardware limit
+    if (axis_->motor_.config_.motor_type == Motor::MOTOR_TYPE_GIMBAL) {
+        current_lim = std::min(current_lim, 0.98f*one_by_sqrt3*vbus_voltage);
+    } else {
+        current_lim = std::min(current_lim, axis_->motor_.current_control_.max_allowed_current);
+    }
+    // Thermal limit
+    current_lim = std::min(current_lim, thermal_current_lim_);
+
+    return current_lim;
 }
 
 void Motor::log_timing(TimingLog_t log_idx) {
@@ -282,7 +322,6 @@ bool Motor::enqueue_voltage_timings(float v_alpha, float v_beta) {
     return true;
 }
 
-// TODO: This doesn't update brake current
 // We should probably make FOC Current call FOC Voltage to avoid duplication.
 bool Motor::FOC_voltage(float v_d, float v_q, float phase) {
     float c = our_arm_cos_f32(phase);

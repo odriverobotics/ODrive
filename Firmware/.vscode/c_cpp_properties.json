@@ -5,6 +5,7 @@
             "includePath": [
                 "${workspaceRoot}",
                 "${workspaceRoot}/fibre/cpp/include/**",
+                "${workspaceRoot}/Encoders",
                 "${workspaceRoot}/MotorControl",
                 "${workspaceRoot}/Drivers/DRV8301",
                 "${workspaceRoot}/Board/v3/Inc",
@@ -31,7 +32,7 @@
                 "__packed=\"__attribute__((__packed__))\"",
                 "__GNUC__"
             ],
-            "intelliSenseMode": "clang-x64",
+            "intelliSenseMode": "gcc-x64",
             "browse": {
                 "path": [
                     "${workspaceRoot}",

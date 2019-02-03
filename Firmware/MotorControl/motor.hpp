@@ -21,7 +21,8 @@ public:
         ERROR_MODULATION_MAGNITUDE = 0x0080,
         ERROR_BRAKE_DEADTIME_VIOLATION = 0x0100,
         ERROR_UNEXPECTED_TIMER_CALLBACK = 0x0200,
-        ERROR_CURRENT_SENSE_SATURATION = 0x0400
+        ERROR_CURRENT_SENSE_SATURATION = 0x0400,
+        ERROR_INVERTER_OVER_TEMP = 0x0800
     };
 
     enum MotorType_t {
@@ -68,6 +69,8 @@ public:
         // Value used to compute shunt amplifier gains
         float requested_current_range = 60.0f; // [A]
         float current_control_bandwidth = 1000.0f;  // [rad/s]
+        float inverter_temp_limit_lower = 100;
+        float inverter_temp_limit_upper = 120;
     };
 
     enum TimingLog_t {
@@ -106,6 +109,9 @@ public:
     bool check_DRV_fault();
     void set_error(Error_t error);
     bool do_checks();
+    float get_inverter_temp();
+    bool update_thermal_limits();
+    float effective_current_lim();
     void log_timing(TimingLog_t log_idx);
     float phase_current_from_adcval(uint32_t ADCValue);
     bool measure_phase_resistance(float test_current, float max_voltage);
@@ -159,6 +165,7 @@ public:
     };
     DRV8301_FaultType_e drv_fault_ = DRV8301_FaultType_NoFault;
     DRV_SPI_8301_Vars_t gate_driver_regs_; //Local view of DRV registers (initialized by DRV8301_setup)
+    float thermal_current_lim_ = 10.0f;  //[A]
 
     // Communication protocol definitions
     auto make_protocol_definitions() {
@@ -171,6 +178,8 @@ public:
             make_protocol_property("DC_calib_phB", &DC_calib_.phB),
             make_protocol_property("DC_calib_phC", &DC_calib_.phC),
             make_protocol_property("phase_current_rev_gain", &phase_current_rev_gain_),
+            make_protocol_ro_property("thermal_current_lim", &thermal_current_lim_),
+            make_protocol_function("get_inverter_temp", *this, &Motor::get_inverter_temp),
             make_protocol_object("current_control",
                 make_protocol_property("p_gain", &current_control_.p_gain),
                 make_protocol_property("i_gain", &current_control_.i_gain),
@@ -212,6 +221,8 @@ public:
                 make_protocol_property("direction", &config_.direction),
                 make_protocol_property("motor_type", &config_.motor_type),
                 make_protocol_property("current_lim", &config_.current_lim),
+                make_protocol_property("inverter_temp_limit_lower", &config_.inverter_temp_limit_lower),
+                make_protocol_property("inverter_temp_limit_upper", &config_.inverter_temp_limit_upper),
                 make_protocol_property("requested_current_range", &config_.requested_current_range),
                 make_protocol_property("current_control_bandwidth", &config_.current_control_bandwidth,
                     [](void* ctx) { static_cast<Motor*>(ctx)->update_current_controller_gains(); }, this)

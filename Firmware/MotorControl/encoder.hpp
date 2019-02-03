@@ -5,6 +5,8 @@
 #error "This file should not be included directly. Include odrive_main.h instead."
 #endif
 
+#include <Encoders/amt203.hpp>
+
 class Encoder {
 public:
     enum Error_t {
@@ -15,6 +17,7 @@ public:
         ERROR_UNSUPPORTED_ENCODER_MODE = 0x08,
         ERROR_ILLEGAL_HALL_STATE = 0x10,
         ERROR_INDEX_NOT_FOUND_YET = 0x20,
+        ERROR_INVALID_ABSOLUTE_ENCODER = 0x40,
     };
 
     enum Mode_t {
@@ -27,7 +30,7 @@ public:
     struct Config_t {
         Encoder::Mode_t mode = Encoder::MODE_INCREMENTAL;
         bool use_index = false;
-        int32_t pwm_pin = 0;    // GPIO pin of the absolue PWM signal, must be 4 or 5
+        int32_t pwm_pin = 0;    // GPIO pin of the absolute PWM signal, must be 3 or 4
         bool pre_calibrated = false; // If true, this means the offset stored in
                                     // configuration is valid and does not need
                                     // be determined by run_offset_calibration.
@@ -40,6 +43,10 @@ public:
         float offset_float = 0.0f; // Sub-count phase alignment offset
         float calib_range = 0.02f;
         float bandwidth = 1000.0f;
+        int32_t offset_abs = 0; // Offset for absolute position and some mechanical zero
+        bool ignore_illegal_hall_state = false;
+        AbsEncoderType_t abs_enc_type = NONE;
+        int32_t spi_cs_gpio_pin = 0;
     };
 
     Encoder(const EncoderHardwareConfig_t& hw_config,
@@ -62,11 +69,14 @@ public:
     bool run_offset_calibration();
     bool update();
 
+    void decode_spi_cs_pin();
+
     void update_pll_gains();
 
     const EncoderHardwareConfig_t& hw_config_;
     Config_t& config_;
     Axis* axis_ = nullptr; // set by Axis constructor
+    AbsoluteEncoder* abs_enc_ = nullptr; // Initialized in Encoder constructor
 
     Error_t error_ = ERROR_NONE;
     bool index_found_ = false;
@@ -82,7 +92,8 @@ public:
     float pll_kp_ = 0.0f;   // [count/s / count]
     float pll_ki_ = 0.0f;   // [(count/s^2) / count]
     int32_t pos_abs_ = 0;
-
+    GPIO_TypeDef* spi_cs_port_;
+    uint16_t spi_cs_pin_;
     // Updated by low_level pwm_adc_cb
     uint8_t hall_state_ = 0x0; // bit[0] = HallA, .., bit[2] = HallC
 
@@ -107,15 +118,20 @@ public:
                 make_protocol_property("mode", &config_.mode),
                 make_protocol_property("use_index", &config_.use_index),
                 make_protocol_property("pwm_pin", &config_.pwm_pin),
+                make_protocol_property("spi_cs_pin", &config_.spi_cs_gpio_pin, 
+                [](void* ctx) { static_cast<Encoder*>(ctx)->decode_spi_cs_pin(); }, this),
+                make_protocol_property("abs_encoder_type", &config_.abs_enc_type),
                 make_protocol_property("pre_calibrated", &config_.pre_calibrated),
                 make_protocol_property("idx_search_speed", &config_.idx_search_speed),
                 make_protocol_property("zero_count_on_find_idx", &config_.zero_count_on_find_idx),
                 make_protocol_property("cpr", &config_.cpr),
                 make_protocol_property("offset", &config_.offset),
+                make_protocol_property("offset_abs", &config_.offset_abs),
                 make_protocol_property("offset_float", &config_.offset_float),
                 make_protocol_property("bandwidth", &config_.bandwidth,
                     [](void* ctx) { static_cast<Encoder*>(ctx)->update_pll_gains(); }, this),
-                make_protocol_property("calib_range", &config_.calib_range)
+                make_protocol_property("calib_range", &config_.calib_range),
+                make_protocol_property("ignore_illegal_hall_state", &config_.ignore_illegal_hall_state)
             )
         );
     }
