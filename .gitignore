@@ -41,3 +41,12 @@ tup.config
 /_site
 /.bundle
 
+# QtCreator
+*\.config
+*\.creator
+*\.creator\.user
+*\.files
+*\.includes
+
+#PyCharm
+tools/\.idea/
