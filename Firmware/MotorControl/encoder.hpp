@@ -19,7 +19,8 @@ public:
 
     enum Mode_t {
         MODE_INCREMENTAL,
-        MODE_HALL
+        MODE_HALL,
+        MODE_SINCOS
     };
 
     struct Config_t {
@@ -56,6 +57,7 @@ public:
 
     bool run_index_search();
     bool run_offset_calibration();
+    void sample_now();
     bool update();
 
     void update_pll_gains();
@@ -77,8 +79,11 @@ public:
     float pll_kp_ = 0.0f;   // [count/s / count]
     float pll_ki_ = 0.0f;   // [(count/s^2) / count]
 
+    int16_t tim_cnt_sample_ = 0; // 
     // Updated by low_level pwm_adc_cb
     uint8_t hall_state_ = 0x0; // bit[0] = HallA, .., bit[2] = HallC
+    float sincos_sample_s_ = 0.0f;
+    float sincos_sample_c_ = 0.0f;
 
     // Communication protocol definitions
     auto make_protocol_definitions() {

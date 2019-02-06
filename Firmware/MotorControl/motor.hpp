@@ -21,7 +21,8 @@ public:
         ERROR_MODULATION_MAGNITUDE = 0x0080,
         ERROR_BRAKE_DEADTIME_VIOLATION = 0x0100,
         ERROR_UNEXPECTED_TIMER_CALLBACK = 0x0200,
-        ERROR_CURRENT_SENSE_SATURATION = 0x0400
+        ERROR_CURRENT_SENSE_SATURATION = 0x0400,
+        ERROR_INVERTER_OVER_TEMP = 0x0800
     };
 
     enum MotorType_t {
@@ -46,6 +47,8 @@ public:
         float final_v_beta; // [V]
         float Iq_setpoint; // [A]
         float Iq_measured; // [A]
+        float Id_measured; // [A]
+        float I_measured_report_filter_k;
         float max_allowed_current; // [A]
         float overcurrent_trip_level; // [A]
     };
@@ -68,6 +71,8 @@ public:
         // Value used to compute shunt amplifier gains
         float requested_current_range = 60.0f; // [A]
         float current_control_bandwidth = 1000.0f;  // [rad/s]
+        float inverter_temp_limit_lower = 100;
+        float inverter_temp_limit_upper = 120;
     };
 
     enum TimingLog_t {
@@ -106,6 +111,9 @@ public:
     bool check_DRV_fault();
     void set_error(Error_t error);
     bool do_checks();
+    float get_inverter_temp();
+    bool update_thermal_limits();
+    float effective_current_lim();
     void log_timing(TimingLog_t log_idx);
     float phase_current_from_adcval(uint32_t ADCValue);
     bool measure_phase_resistance(float test_current, float max_voltage);
@@ -113,9 +121,9 @@ public:
     bool run_calibration();
     bool enqueue_modulation_timings(float mod_alpha, float mod_beta);
     bool enqueue_voltage_timings(float v_alpha, float v_beta);
-    bool FOC_voltage(float v_d, float v_q, float phase);
-    bool FOC_current(float Id_des, float Iq_des, float phase);
-    bool update(float current_setpoint, float phase);
+    bool FOC_voltage(float v_d, float v_q, float pwm_phase);
+    bool FOC_current(float Id_des, float Iq_des, float I_phase, float pwm_phase);
+    bool update(float current_setpoint, float phase, float phase_vel);
 
     const MotorHardwareConfig_t& hw_config_;
     const GateDriverHardwareConfig_t gate_driver_config_;
@@ -154,11 +162,14 @@ public:
         .final_v_beta = 0.0f,
         .Iq_setpoint = 0.0f,
         .Iq_measured = 0.0f,
+        .Id_measured = 0.0f,
+        .I_measured_report_filter_k = 1.0f,
         .max_allowed_current = 0.0f,
         .overcurrent_trip_level = 0.0f,
     };
     DRV8301_FaultType_e drv_fault_ = DRV8301_FaultType_NoFault;
     DRV_SPI_8301_Vars_t gate_driver_regs_; //Local view of DRV registers (initialized by DRV8301_setup)
+    float thermal_current_lim_ = 10.0f;  //[A]
 
     // Communication protocol definitions
     auto make_protocol_definitions() {
@@ -171,6 +182,8 @@ public:
             make_protocol_property("DC_calib_phB", &DC_calib_.phB),
             make_protocol_property("DC_calib_phC", &DC_calib_.phC),
             make_protocol_property("phase_current_rev_gain", &phase_current_rev_gain_),
+            make_protocol_ro_property("thermal_current_lim", &thermal_current_lim_),
+            make_protocol_function("get_inverter_temp", *this, &Motor::get_inverter_temp),
             make_protocol_object("current_control",
                 make_protocol_property("p_gain", &current_control_.p_gain),
                 make_protocol_property("i_gain", &current_control_.i_gain),
@@ -181,6 +194,8 @@ public:
                 make_protocol_property("final_v_beta", &current_control_.final_v_beta),
                 make_protocol_property("Iq_setpoint", &current_control_.Iq_setpoint),
                 make_protocol_property("Iq_measured", &current_control_.Iq_measured),
+                make_protocol_property("Id_measured", &current_control_.Id_measured),
+                make_protocol_property("I_measured_report_filter_k", &current_control_.I_measured_report_filter_k),
                 make_protocol_ro_property("max_allowed_current", &current_control_.max_allowed_current),
                 make_protocol_ro_property("overcurrent_trip_level", &current_control_.overcurrent_trip_level)
             ),
@@ -212,6 +227,8 @@ public:
                 make_protocol_property("direction", &config_.direction),
                 make_protocol_property("motor_type", &config_.motor_type),
                 make_protocol_property("current_lim", &config_.current_lim),
+                make_protocol_property("inverter_temp_limit_lower", &config_.inverter_temp_limit_lower),
+                make_protocol_property("inverter_temp_limit_upper", &config_.inverter_temp_limit_upper),
                 make_protocol_property("requested_current_range", &config_.requested_current_range),
                 make_protocol_property("current_control_bandwidth", &config_.current_control_bandwidth,
                     [](void* ctx) { static_cast<Motor*>(ctx)->update_current_controller_gains(); }, this)

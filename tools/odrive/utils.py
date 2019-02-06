@@ -59,7 +59,7 @@ def dump_errors(odrv, clear=False):
             else:
                 print(prefix + _VT100Colors['green'] + "no error" + _VT100Colors['default'])
 
-data_rate = 100
+data_rate = 10
 plot_rate = 10
 num_samples = 1000
 def start_liveplotter(get_var_callback):
@@ -106,6 +106,7 @@ def start_liveplotter(get_var_callback):
         while not cancellation_token.is_set():
             plt.clf()
             plt.plot(vals)
+            plt.legend(list(range(len(vals))))
             fig.canvas.draw()
             fig.canvas.start_event_loop(1/plot_rate)
 

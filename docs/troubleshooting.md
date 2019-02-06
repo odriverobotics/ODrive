@@ -20,6 +20,7 @@ The following sections will give some guidance on the most common errors. You ma
 * Axis error flags defined [here](../Firmware/MotorControl/axis.hpp).
 * Motor error flags defined [here](../Firmware/MotorControl/motor.hpp).
 * Encoder error flags defined [here](../Firmware/MotorControl/encoder.hpp).
+* Controller error flags defined [here](../Firmware/MotorControl/controller.hpp).
 * Sensorless estimator error flags defined [here](../Firmware/MotorControl/sensorless_estimator.hpp).
 
 ## Common Axis Errors 
@@ -58,7 +59,8 @@ Some motors will have a considerably different phase resistance and inductance t
 
 In general, you need
 ```text
-resistance_calib_max_voltage > calibration_current * phase_resistance`.
+resistance_calib_max_voltage > calibration_current * phase_resistance
+resistance_calib_max_voltage < 0.5 * vbus_voltage
 ```
 
 * `ERROR_DRV_FAULT = 0x0008`
@@ -71,6 +73,12 @@ The conjecture is that the high switching current creates large ripples in the
 power supply of the DRV8301 gate driver chips, thus tripping its under-voltage fault detection. 
 
 To resolve this issue you can limit the M0 current to 40A. The lowest current at which the DRV fault was observed is 45A on one test motor and 50A on another test motor. Refer to [this post](https://discourse.odriverobotics.com/t/drv-fault-on-odrive-v3-4/558) for instructions for a hardware fix.
+
+* `ERROR_MODULATION_MAGNITUDE = 0x0080`
+
+The bus voltage was insufficent to push the requested current through the motor. Reduce `motor.config.calibration_current` and/or `motor.config.current_lim`, for errors at calibration-time and closed loop control respectively.
+
+For gimbal motors, it is recommended to set the calibration_current and current_lim to half your bus voltage, or less.
 
 ## Common Encoder Errors
 

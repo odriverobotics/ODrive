@@ -102,6 +102,21 @@ void ASCII_protocol_process_line(const uint8_t* buffer, size_t len, StreamSink& 
             axes[motor_number]->controller_.set_pos_setpoint(pos_setpoint, vel_feed_forward, current_feed_forward);
         }
 
+    } else if (cmd[0] == 'q') { // position control with limits
+        unsigned motor_number;
+        float pos_setpoint, vel_limit, current_lim;
+        int numscan = sscanf(cmd, "q %u %f %f %f", &motor_number, &pos_setpoint, &vel_limit, &current_lim);
+        if (numscan < 4) {
+            respond(response_channel, use_checksum, "invalid command format");
+        } else if (motor_number >= AXIS_COUNT) {
+            respond(response_channel, use_checksum, "invalid motor %u", motor_number);
+        } else {
+            Axis* axis = axes[motor_number];
+            axis->controller_.pos_setpoint_ = pos_setpoint;
+            axis->controller_.config_.vel_limit = vel_limit;
+            axis->motor_.config_.current_lim = current_lim;
+        }
+
     } else if (cmd[0] == 'v') { // velocity control
         unsigned motor_number;
         float vel_setpoint, current_feed_forward;
@@ -159,6 +174,13 @@ void ASCII_protocol_process_line(const uint8_t* buffer, size_t len, StreamSink& 
         respond(response_channel, use_checksum, "Hardware version: %d.%d-%dV", HW_VERSION_MAJOR, HW_VERSION_MINOR, HW_VERSION_VOLTAGE);
         respond(response_channel, use_checksum, "Firmware version: %d.%d.%d", FW_VERSION_MAJOR, FW_VERSION_MINOR, FW_VERSION_REVISION);
         respond(response_channel, use_checksum, "Serial number: %s", serial_number_str);
+
+    } else if (cmd[0] == 's'){ // Save config
+        save_configuration();
+    } else if (cmd[0] == 'e'){ // Erase config
+        erase_configuration();
+    } else if (cmd[0] == 'b'){ // Reboot
+        NVIC_SystemReset();
 
     } else if (cmd[0] == 'r') { // read property
         char name[MAX_LINE_LENGTH];
