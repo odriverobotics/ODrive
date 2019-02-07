@@ -267,7 +267,7 @@ bool Motor::measure_pm_flux_linkage()
     // Set up variables for calculation
     float Id = 0;
     float Iq = axis_->config_.spin_up_current;
-    float V_squared = SQ(cached_v_current_control_integral_d_) + SQ(cached_v_current_control_integral_q_);
+    float V_squared = SQ(saved_steady_state_v_current_control_integral_d_) + SQ(saved_steady_state_v_current_control_integral_q_);
     float Rs = config_.phase_resistance;
     float Ld = config_.phase_inductance; // Wrong but close enough for now
     float Lq = config_.phase_inductance; // Wrong but close enough for now
@@ -301,6 +301,8 @@ bool Motor::run_calibration() {
         if (!measure_phase_resistance(config_.calibration_current, R_calib_max_voltage))
             return false;
         if (!measure_phase_inductance(-R_calib_max_voltage, R_calib_max_voltage))
+            return false;
+        if (!measure_flux_linkage())
             return false;
     } else if (config_.motor_type == MOTOR_TYPE_GIMBAL) {
         // no calibration needed
