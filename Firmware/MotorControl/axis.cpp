@@ -200,8 +200,8 @@ bool Axis::run_sensorless_spin_up(float constant_velocity_period = 0) {
             }
             else
             {
-                motor_.cached_v_current_control_integral_d_ = motor_.current_control_.v_current_control_integral_d;
-                motor_.cached_v_current_control_integral_q_ = motor_.current_control_.v_current_control_integral_q;
+                motor_.saved_steady_state_v_current_control_integral_d_ = motor_.current_control_.v_current_control_integral_d;
+                motor_.saved_steady_state_v_current_control_integral_q_ = motor_.current_control_.v_current_control_integral_q;
                 return false;
             }
         });
@@ -321,8 +321,6 @@ void Axis::run_state_machine_loop() {
         switch (current_state_) {
             case AXIS_STATE_MOTOR_CALIBRATION:
                 status = motor_.run_calibration();
-                if(status)
-                    motor_.measure_pm_flux_linkage();
                 break;
 
             case AXIS_STATE_ENCODER_INDEX_SEARCH:
