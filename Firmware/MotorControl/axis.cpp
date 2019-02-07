@@ -176,10 +176,10 @@ bool Axis::run_sensorless_spin_up(float constant_velocity_period = 0) {
     // Optional constant velocity section
     if(constant_velocity_period > 0.0f)
     {
-        uint32_t const_velocity_loops = (uint32_t)((float)(constant_velocity_period / current_meas_period));
+        uint32_t constant_velocity_loops = (uint32_t)((float)(constant_velocity_period / current_meas_period));
 
         loop_counter_timer_start_ = loop_counter_;
-        loop_counter_timer_end_ = loop_counter_timer_start_ + const_velocity_loops;
+        loop_counter_timer_end_ = loop_counter_timer_start_ + constant_velocity_loops;
 
         vel = config_.spin_up_target_vel;
 
