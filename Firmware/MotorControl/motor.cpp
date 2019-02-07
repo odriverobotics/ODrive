@@ -302,7 +302,7 @@ bool Motor::run_calibration() {
             return false;
         if (!measure_phase_inductance(-R_calib_max_voltage, R_calib_max_voltage))
             return false;
-        if (!measure_flux_linkage())
+        if (!measure_pm_flux_linkage())
             return false;
     } else if (config_.motor_type == MOTOR_TYPE_GIMBAL) {
         // no calibration needed
