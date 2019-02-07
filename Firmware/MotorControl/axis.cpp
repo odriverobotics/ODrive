@@ -147,7 +147,7 @@ float Axis::get_temp() {
     return horner_fma(normalized_voltage, thermistor_poly_coeffs, thermistor_num_coeffs);
 }
 
-bool Axis::run_sensorless_spin_up() {
+bool Axis::run_sensorless_spin_up(float constant_velocity_period = 0) {
     // Early Spin-up: spiral up current
     float x = 0.0f;
     run_control_loop([&](){
@@ -172,6 +172,40 @@ bool Axis::run_sensorless_spin_up() {
             return error_ |= ERROR_MOTOR_FAILED, false;
         return vel < config_.spin_up_target_vel;
     });
+
+    // Optional constant velocity section
+    if(constant_velocity_period > 0.0f)
+    {
+        uint32_t const_velocity_loops = (uint32_t)((float)(constant_velocity_period / current_meas_period));
+
+        loop_counter_timer_start_ = loop_counter_;
+        loop_counter_timer_end_ = loop_counter_timer_start_ + const_velocity_loops;
+
+        vel = config_.spin_up_target_vel;
+
+        run_control_loop([&]()
+        {           
+            phase = wrap_pm_pi(phase + vel * current_meas_period);
+            
+            float I_mag = config_.spin_up_current;
+
+            if (!motor_.update(I_mag, phase))
+            {
+                return error_ |= ERROR_MOTOR_FAILED, false;
+            }
+            
+            if(loop_counter_ < loop_counter_timer_end_)
+            {
+                return true;
+            }
+            else
+            {
+                motor_.cached_v_current_control_integral_d_ = motor_.current_control_.v_current_control_integral_d;
+                motor_.cached_v_current_control_integral_q_ = motor_.current_control_.v_current_control_integral_q;
+                return false;
+            }
+        });
+    }
 
     // call to controller.reset() that happend when arming means that vel_setpoint
     // is zeroed. So we make the setpoint the spinup target for smooth transition.
@@ -287,6 +321,8 @@ void Axis::run_state_machine_loop() {
         switch (current_state_) {
             case AXIS_STATE_MOTOR_CALIBRATION:
                 status = motor_.run_calibration();
+                if(status)
+                    motor_.measure_pm_flux_linkage();
                 break;
 
             case AXIS_STATE_ENCODER_INDEX_SEARCH:

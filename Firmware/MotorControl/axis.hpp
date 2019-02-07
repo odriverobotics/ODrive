@@ -152,7 +152,7 @@ public:
         }
     }
 
-    bool run_sensorless_spin_up();
+    bool run_sensorless_spin_up(float constant_velocity_period);
     bool run_sensorless_control_loop();
     bool run_closed_loop_control_loop();
     bool run_idle_loop();
@@ -185,6 +185,10 @@ public:
     State_t task_chain_[10] = { AXIS_STATE_UNDEFINED };
     State_t& current_state_ = task_chain_[0];
     uint32_t loop_counter_ = 0;
+
+    // Vars for PM flux measurement    
+    uint32_t loop_counter_timer_start_ = 0;
+    uint32_t loop_counter_timer_end_   = 0;
 
     // Communication protocol definitions
     auto make_protocol_definitions() {

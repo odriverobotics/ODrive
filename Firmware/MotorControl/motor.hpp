@@ -21,7 +21,8 @@ public:
         ERROR_MODULATION_MAGNITUDE = 0x0080,
         ERROR_BRAKE_DEADTIME_VIOLATION = 0x0100,
         ERROR_UNEXPECTED_TIMER_CALLBACK = 0x0200,
-        ERROR_CURRENT_SENSE_SATURATION = 0x0400
+        ERROR_CURRENT_SENSE_SATURATION = 0x0400, 
+        ERROR_PM_FLUX_LINKAGE_OUT_OF_RANGE = 0x0800
     };
 
     enum MotorType_t {
@@ -49,6 +50,9 @@ public:
         float max_allowed_current; // [A]
         float overcurrent_trip_level; // [A]
     };
+
+    float cached_v_current_control_integral_d_;
+    float cached_v_current_control_integral_q_;  
 
     // NOTE: for gimbal motors, all units of A are instead V.
     // example: vel_gain is [V/(count/s)] instead of [A/(count/s)]
@@ -110,6 +114,7 @@ public:
     float phase_current_from_adcval(uint32_t ADCValue);
     bool measure_phase_resistance(float test_current, float max_voltage);
     bool measure_phase_inductance(float voltage_low, float voltage_high);
+    bool measure_pm_flux_linkage();    
     bool run_calibration();
     bool enqueue_modulation_timings(float mod_alpha, float mod_beta);
     bool enqueue_voltage_timings(float v_alpha, float v_beta);
