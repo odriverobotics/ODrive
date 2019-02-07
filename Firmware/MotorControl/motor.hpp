@@ -51,8 +51,8 @@ public:
         float overcurrent_trip_level; // [A]
     };
 
-    float cached_v_current_control_integral_d_;
-    float cached_v_current_control_integral_q_;  
+    float saved_steady_state_v_current_control_integral_d_;
+    float saved_steady_state_v_current_control_integral_q_;  
 
     // NOTE: for gimbal motors, all units of A are instead V.
     // example: vel_gain is [V/(count/s)] instead of [A/(count/s)]
