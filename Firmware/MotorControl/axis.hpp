@@ -184,9 +184,9 @@ public:
     State_t requested_state_ = AXIS_STATE_STARTUP_SEQUENCE;
     State_t task_chain_[10] = { AXIS_STATE_UNDEFINED };
     State_t& current_state_ = task_chain_[0];
-    uint32_t loop_counter_ = 0;
 
-    // Vars for PM flux measurement    
+    // Vars for timing in control loop   
+    uint32_t loop_counter_ = 0;
     uint32_t loop_counter_timer_start_ = 0;
     uint32_t loop_counter_timer_end_   = 0;
 
