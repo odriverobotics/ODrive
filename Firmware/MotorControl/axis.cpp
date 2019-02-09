@@ -148,13 +148,14 @@ float Axis::get_temp() {
 }
 
 bool Axis::run_sensorless_spin_up(float constant_velocity_period = 0) {
+  
     // Early Spin-up: spiral up current
     float x = 0.0f;
     run_control_loop([&](){
         float phase = wrap_pm_pi(config_.ramp_up_distance * x);
         float I_mag = config_.spin_up_current * x;
         x += current_meas_period / config_.ramp_up_time;
-        if (!motor_.update(I_mag, phase))
+        if (!motor_.update(I_mag, phase, 0.0f))
             return error_ |= ERROR_MOTOR_FAILED, false;
         return x < 1.0f;
     });
@@ -168,7 +169,7 @@ bool Axis::run_sensorless_spin_up(float constant_velocity_period = 0) {
         vel += config_.spin_up_acceleration * current_meas_period;
         phase = wrap_pm_pi(phase + vel * current_meas_period);
         float I_mag = config_.spin_up_current;
-        if (!motor_.update(I_mag, phase))
+        if (!motor_.update(I_mag, phase, vel))
             return error_ |= ERROR_MOTOR_FAILED, false;
         return vel < config_.spin_up_target_vel;
     });
@@ -224,7 +225,7 @@ bool Axis::run_sensorless_control_loop() {
         float current_setpoint;
         if (!controller_.update(sensorless_estimator_.pll_pos_, sensorless_estimator_.vel_estimate_, &current_setpoint))
             return error_ |= ERROR_CONTROLLER_FAILED, false;
-        if (!motor_.update(current_setpoint, sensorless_estimator_.phase_))
+        if (!motor_.update(current_setpoint, sensorless_estimator_.phase_, sensorless_estimator_.vel_estimate_))
             return false; // set_error should update axis.error_
         return true;
     });
@@ -240,7 +241,8 @@ bool Axis::run_closed_loop_control_loop() {
         float current_setpoint;
         if (!controller_.update(encoder_.pos_estimate_, encoder_.vel_estimate_, &current_setpoint))
             return error_ |= ERROR_CONTROLLER_FAILED, false; //TODO: Make controller.set_error
-        if (!motor_.update(current_setpoint, encoder_.phase_))
+        float phase_vel = 2*M_PI * encoder_.vel_estimate_ / (float)encoder_.config_.cpr * motor_.config_.pole_pairs;
+        if (!motor_.update(current_setpoint, encoder_.phase_, phase_vel))
             return false; // set_error should update axis.error_
         return true;
     });

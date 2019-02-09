@@ -125,7 +125,7 @@ bool safety_critical_disarm_motor_pwm(Motor& motor) {
 void safety_critical_apply_motor_pwm_timings(Motor& motor, uint16_t timings[3]) {
     uint32_t mask = cpu_enter_critical();
     if (!brake_resistor_armed) {
-        motor.armed_state_ = Motor::ARMED_STATE_ARMED;
+        motor.armed_state_ = Motor::ARMED_STATE_DISARMED;
     }
 
     motor.hw_config_.timer->Instance->CCR1 = timings[0];
@@ -539,6 +539,7 @@ void pwm_trig_adc_cb(ADC_HandleTypeDef* hadc, bool injected) {
             axis.motor_.current_meas_.phC = current - axis.motor_.DC_calib_.phC;
         }
         // Prepare hall readings
+        // TODO move this to inside encoder update function
         decode_hall_samples(axis.encoder_, GPIO_port_samples[axis_num]);
         // Trigger axis thread
         axis.signal_current_meas();
@@ -553,18 +554,30 @@ void pwm_trig_adc_cb(ADC_HandleTypeDef* hadc, bool injected) {
 }
 
 void tim_update_cb(TIM_HandleTypeDef* htim) {
-    int portsamples_arr;
+    
+    // If the corresponding timer is counting up, we just sampled in SVM vector 0, i.e. real current
+    // If we are counting down, we just sampled in SVM vector 7, with zero current
+    bool counting_down = htim->Instance->CR1 & TIM_CR1_DIR;
+    if (counting_down)
+        return;
+    
+    int sample_ch;
+    Axis* axis;
     if (htim == &htim1) {
-        portsamples_arr = 0;
+        sample_ch = 0;
+        axis = axes[0];
     } else if (htim == &htim8) {
-        portsamples_arr = 1;
+        sample_ch = 1;
+        axis = axes[1];
     } else {
         low_level_fault(Motor::ERROR_UNEXPECTED_TIMER_CALLBACK);
         return;
     }
 
+    axis->encoder_.sample_now();
+
     for (int i = 0; i < num_GPIO; ++i) {
-        GPIO_port_samples[portsamples_arr][i] = GPIOs_to_samp[i]->IDR;
+        GPIO_port_samples[sample_ch][i] = GPIOs_to_samp[i]->IDR;
     }
 }
 
@@ -713,4 +726,33 @@ void pwm_in_cb(int channel, uint32_t timestamp) {
     last_timestamp[gpio_num - 1] = timestamp;
     last_pin_state[gpio_num - 1] = current_pin_state;
     last_sample_valid[gpio_num - 1] = true;
+}
+
+
+/* Analog speed control input */
+
+static void update_analog_endpoint(const struct PWMMapping_t *map, int gpio)
+{
+    float fraction = get_adc_voltage(get_gpio_port_by_pin(gpio), get_gpio_pin_by_pin(gpio)) / 3.3f;
+    float value = map->min + (fraction * (map->max - map->min));
+    get_endpoint(map->endpoint)->set_from_float(value);
+}
+
+static void analog_polling_thread(void *)
+{
+    while (true) {
+        for (int i = 0; i < GPIO_COUNT; i++) {
+            struct PWMMapping_t *map = &board_config.analog_mappings[i];
+
+            if (is_endpoint_ref_valid(map->endpoint))
+                update_analog_endpoint(map, i + 1);
+        }
+        osDelay(10);
+    }
+}
+
+void start_analog_thread()
+{
+    osThreadDef(thread_def, analog_polling_thread, osPriorityLow, 0, 4*512);
+    osThreadCreate(osThread(thread_def), NULL);
 }
