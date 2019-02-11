@@ -36,11 +36,11 @@ public:
         int32_t cpr = (2048 * 4);   // Default resolution of CUI-AMT102 encoder,
         int32_t offset = 0;        // Offset between encoder count and rotor electrical phase
         float offset_float = 0.0f; // Sub-count phase alignment offset
-        float calib_range = 0.02f;
+        float calib_range = 0.02f; // Accuracy required to pass encoder cpr check
         float bandwidth = 1000.0f;
-        bool find_idx_on_lockin = false;
-        bool idx_search_unidirectional = false;
-        bool ignore_illegal_hall_state = false;
+        bool find_idx_on_lockin_only = false; // Only be sensitive during lockin scan constant vel state
+        bool idx_search_unidirectional = false; // Only allow index search in known direction
+        bool ignore_illegal_hall_state = false; // dont error on bad states like 000 or 111
     };
 
     Encoder(const EncoderHardwareConfig_t& hw_config,
@@ -114,7 +114,7 @@ public:
                 make_protocol_property("bandwidth", &config_.bandwidth,
                     [](void* ctx) { static_cast<Encoder*>(ctx)->update_pll_gains(); }, this),
                 make_protocol_property("calib_range", &config_.calib_range),
-                make_protocol_property("find_idx_on_lockin", &config_.find_idx_on_lockin),
+                make_protocol_property("find_idx_on_lockin_only", &config_.find_idx_on_lockin_only),
                 make_protocol_property("idx_search_unidirectional", &config_.idx_search_unidirectional),
                 make_protocol_property("ignore_illegal_hall_state", &config_.ignore_illegal_hall_state)
             )

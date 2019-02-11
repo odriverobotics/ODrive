@@ -43,7 +43,7 @@ bool Encoder::do_checks(){
 // TODO: disable interrupt once we found the index
 void Encoder::enc_index_cb() {
     if (config_.use_index && !index_found_) {
-        if (config_.find_idx_on_lockin && axis_->lockin_state_ != Axis::LOCKIN_STATE_CONST_VEL)
+        if (config_.find_idx_on_lockin_only && axis_->lockin_state_ != Axis::LOCKIN_STATE_CONST_VEL)
             return;
         set_circular_count(0, false);
         if (config_.zero_count_on_find_idx)
