@@ -191,7 +191,7 @@ bool Axis::run_lockin_spin() {
             distance += vel * current_meas_period;
             phase = wrap_pm_pi(phase + vel * current_meas_period);
 
-            if (!motor_.update(config_.lockin_current, phase))
+            if (!motor_.update(config_.lockin_current, phase, vel))
                 return false;
             return !spin_done();
         });
