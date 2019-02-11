@@ -13,6 +13,11 @@ void Controller::reset() {
     current_setpoint_ = 0.0f;
 }
 
+void Controller::set_error(Error_t error) {
+    error_ |= error;
+    axis_->error_ |= Axis::ERROR_CONTROLLER_FAILED;
+}
+
 //--------------------------------
 // Command Handling
 //--------------------------------
@@ -113,11 +118,36 @@ bool Controller::update(float pos_estimate, float vel_estimate, float* current_s
         anticogging_pos = pos_setpoint_; // FF the position setpoint instead of the pos_estimate
     }
 
+    // Ramp rate limited velocity setpoint
+    if (config_.control_mode == CTRL_MODE_VELOCITY_CONTROL && vel_ramp_enable_) {
+        float max_step_size = current_meas_period * config_.vel_ramp_rate;
+        float full_step = vel_ramp_target_ - vel_setpoint_;
+        float step;
+        if (fabsf(full_step) > max_step_size) {
+            step = std::copysignf(max_step_size, full_step);
+        } else {
+            step = full_step;
+        }
+        vel_setpoint_ += step;
+    }
+
     // Position control
     // TODO Decide if we want to use encoder or pll position here
     float vel_des = vel_setpoint_;
     if (config_.control_mode >= CTRL_MODE_POSITION_CONTROL) {
-        float pos_err = pos_setpoint_ - pos_estimate;
+        float pos_err;
+        if (config_.setpoints_in_cpr) {
+            // TODO this breaks the semantics that estimates come in on the arguments.
+            // It's probably better to call a get_estimate that will arbitrate (enc vs sensorless) instead.
+            float cpr = (float)(axis_->encoder_.config_.cpr);
+            // Keep pos setpoint from drifting
+            pos_setpoint_ = fmodf_pos(pos_setpoint_, cpr);
+            // Circular delta
+            pos_err = pos_setpoint_ - axis_->encoder_.pos_cpr_;
+            pos_err = wrap_pm(pos_err, 0.5f * cpr);
+        } else {
+            pos_err = pos_setpoint_ - pos_estimate;
+        }
         vel_des += config_.pos_gain * pos_err;
     }
 
@@ -125,6 +155,14 @@ bool Controller::update(float pos_estimate, float vel_estimate, float* current_s
     float vel_lim = config_.vel_limit;
     if (vel_des > vel_lim) vel_des = vel_lim;
     if (vel_des < -vel_lim) vel_des = -vel_lim;
+
+    // Check for overspeed fault (done in this module (controller) for cohesion with vel_lim)
+    if (config_.vel_limit_tolerance > 0.0f) { // 0.0f to disable
+        if (fabsf(vel_estimate) > config_.vel_limit_tolerance * vel_lim) {
+            set_error(ERROR_OVERSPEED);
+            return false;
+        }
+    }
 
     // Velocity control
     float Iq = current_setpoint_;
@@ -145,8 +183,8 @@ bool Controller::update(float pos_estimate, float vel_estimate, float* current_s
     Iq += vel_integrator_current_;
 
     // Current limiting
-    float Ilim = std::min(axis_->motor_.config_.current_lim, axis_->motor_.current_control_.max_allowed_current);
     bool limited = false;
+    float Ilim = axis_->motor_.effective_current_lim();
     if (Iq > Ilim) {
         limited = true;
         Iq = Ilim;

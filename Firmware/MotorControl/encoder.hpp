@@ -20,7 +20,8 @@ public:
 
     enum Mode_t {
         MODE_INCREMENTAL,
-        MODE_HALL
+        MODE_HALL,
+        MODE_SINCOS
     };
 
     struct Config_t {
@@ -32,6 +33,7 @@ public:
                                     // In this case the encoder will enter ready
                                     // state as soon as the index is found.
         float idx_search_speed = 10.0f; // [rad/s electrical]
+        bool zero_count_on_find_idx = true;
         int32_t cpr = (2048 * 4);   // Default resolution of CUI-AMT102 encoder,
         int32_t offset = 0;        // Offset between encoder count and rotor electrical phase
         float offset_float = 0.0f; // Sub-count phase alignment offset
@@ -40,6 +42,7 @@ public:
         float overspeed_fault_ratio = 1.2f; // ratio of vel_lim, 0.0f = disabled
         bool find_idx_on_lockin = false;
         bool idx_search_unidirectional = false;
+        bool ignore_illegal_hall_state = false;
     };
 
     Encoder(const EncoderHardwareConfig_t& hw_config,
@@ -57,6 +60,7 @@ public:
 
     bool run_index_search();
     bool run_offset_calibration();
+    void sample_now();
     bool update();
 
     void update_pll_gains();
@@ -71,15 +75,18 @@ public:
     int32_t shadow_count_ = 0;
     int32_t count_in_cpr_ = 0;
     float interpolation_ = 0.0f;
-    float phase_ = 0.0f;    // [rad]
-    float pos_estimate_ = 0.0f;  // [rad]
-    float pos_cpr_ = 0.0f;  // [rad]
-    float vel_estimate_ = 0.0f;  // [rad/s]
-    float pll_kp_ = 0.0f;   // [rad/s / rad]
-    float pll_ki_ = 0.0f;   // [(rad/s^2) / rad]
+    float phase_ = 0.0f;    // [count]
+    float pos_estimate_ = 0.0f;  // [count]
+    float pos_cpr_ = 0.0f;  // [count]
+    float vel_estimate_ = 0.0f;  // [count/s]
+    float pll_kp_ = 0.0f;   // [count/s / count]
+    float pll_ki_ = 0.0f;   // [(count/s^2) / count]
 
+    int16_t tim_cnt_sample_ = 0; // 
     // Updated by low_level pwm_adc_cb
     uint8_t hall_state_ = 0x0; // bit[0] = HallA, .., bit[2] = HallC
+    float sincos_sample_s_ = 0.0f;
+    float sincos_sample_c_ = 0.0f;
 
     // Communication protocol definitions
     auto make_protocol_definitions() {
@@ -103,6 +110,7 @@ public:
                 make_protocol_property("pre_calibrated", &config_.pre_calibrated),
                 make_protocol_property("overspeed_fault_ratio", &config_.overspeed_fault_ratio),
                 make_protocol_property("idx_search_speed", &config_.idx_search_speed),
+                make_protocol_property("zero_count_on_find_idx", &config_.zero_count_on_find_idx),
                 make_protocol_property("cpr", &config_.cpr),
                 make_protocol_property("offset", &config_.offset),
                 make_protocol_property("offset_float", &config_.offset_float),
@@ -110,7 +118,8 @@ public:
                     [](void* ctx) { static_cast<Encoder*>(ctx)->update_pll_gains(); }, this),
                 make_protocol_property("calib_range", &config_.calib_range),
                 make_protocol_property("find_idx_on_lockin", &config_.find_idx_on_lockin),
-                make_protocol_property("idx_search_unidirectional", &config_.idx_search_unidirectional)
+                make_protocol_property("idx_search_unidirectional", &config_.idx_search_unidirectional),
+                make_protocol_property("ignore_illegal_hall_state", &config_.ignore_illegal_hall_state)
             )
         );
     }

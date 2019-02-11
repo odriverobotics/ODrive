@@ -45,8 +45,11 @@ public:
         bool startup_sensorless_control = false; //<! enable sensorless control after calibration/startup
         bool enable_step_dir = false; //<! enable step/dir input after calibration
                                     //   For M0 this has no effect if enable_uart is true
-
         float counts_per_step = 2.0f;
+
+        // Defaults loaded from hw_config in load_configuration in main.cpp
+        uint16_t step_gpio_pin = 0;
+        uint16_t dir_gpio_pin = 0;
 
         // Spinup settings
         float lockin_current = 10.0f;           // [A]
@@ -85,13 +88,15 @@ public:
     bool wait_for_current_meas();
 
     void step_cb();
-    void set_step_dir_enabled(bool enable);
+    void set_step_dir_active(bool enable);
+    void decode_step_dir_pins();
+    static void load_default_step_dir_pin_config(
+        const AxisHardwareConfig_t& hw_config, Config_t* config);
 
     bool check_DRV_fault();
     bool check_PSU_brownout();
     bool do_checks();
     bool do_updates();
-    float get_temp();
 
     // True if there are no errors
     bool inline check_for_errors() {
@@ -177,7 +182,14 @@ public:
 
     // variables exposed on protocol
     Error_t error_ = ERROR_NONE;
-    bool enable_step_dir_ = false; // auto enabled after calibration, based on config.enable_step_dir
+    bool step_dir_active_ = false; // auto enabled after calibration, based on config.enable_step_dir
+
+    // updated from config in constructor, and on protocol hook
+    GPIO_TypeDef* step_port_;
+    uint16_t step_pin_;
+    GPIO_TypeDef* dir_port_;
+    uint16_t dir_pin_;
+
     State_t requested_state_ = AXIS_STATE_STARTUP_SEQUENCE;
     State_t task_chain_[10] = { AXIS_STATE_UNDEFINED };
     State_t& current_state_ = task_chain_[0];
@@ -188,7 +200,7 @@ public:
     auto make_protocol_definitions() {
         return make_protocol_member_list(
             make_protocol_property("error", &error_),
-            make_protocol_property("enable_step_dir", &enable_step_dir_),
+            make_protocol_ro_property("step_dir_active", &step_dir_active_),
             make_protocol_ro_property("current_state", &current_state_),
             make_protocol_property("requested_state", &requested_state_),
             make_protocol_ro_property("loop_counter", &loop_counter_),
@@ -209,9 +221,12 @@ public:
                 make_protocol_property("lockin_finish_distance", &config_.lockin_finish_distance),
                 make_protocol_property("lockin_finish_on_vel", &config_.lockin_finish_on_vel),
                 make_protocol_property("lockin_finish_on_distance", &config_.lockin_finish_on_distance),
-                make_protocol_property("lockin_finish_on_enc_idx", &config_.lockin_finish_on_enc_idx)
+                make_protocol_property("lockin_finish_on_enc_idx", &config_.lockin_finish_on_enc_idx),
+                make_protocol_property("step_gpio_pin", &config_.step_gpio_pin,
+                    [](void* ctx) { static_cast<Axis*>(ctx)->decode_step_dir_pins(); }, this),
+                make_protocol_property("dir_gpio_pin", &config_.dir_gpio_pin,
+                    [](void* ctx) { static_cast<Axis*>(ctx)->decode_step_dir_pins(); }, this)
             ),
-            make_protocol_function("get_temp", *this, &Axis::get_temp),
             make_protocol_object("motor", motor_.make_protocol_definitions()),
             make_protocol_object("controller", controller_.make_protocol_definitions()),
             make_protocol_object("encoder", encoder_.make_protocol_definitions()),

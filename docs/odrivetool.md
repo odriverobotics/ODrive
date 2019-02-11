@@ -123,11 +123,52 @@ You can use the DfuSe app from ST.
 1. Congratulations your ODrive should now be flashed; you can now quit DfuSeDemo.
 1. Turn off the power to the ODrive and set the DIP switch back to RUN mode.
 
-#### MacOS or Linux
-**This section needs more detail. Please consider adding detail if you got it to work.**
-You may be able to use [dfu-util](http://dfu-util.sourceforge.net/) to upgrade the firmware. You will need to convert the .hex file to a .dfu file. You may be able to do it with the python script [dfu-convert](https://github.com/plietar/dfuse-tool/blob/master/dfu-convert) or the c program [hex2dfu](https://github.com/encedo/hex2dfu).
+#### Linux
+Install `dfu-util`:
+```text
+sudo apt install dfu-util
+```
 
-You probably need to force DFU mode, as per the instructions above.
+Force DFU mode, as per the instructions above.
+In the Firmware directory, after finishing building the firmware:
+```text
+sudo dfu-util -a 0 -s 0x08000000 -D build/ODriveFirmware.bin
+```
+
+#### macOS
+
+First, you need to install the arm development tools to copy the binary into the appropriate format.
+
+```text
+$ brew cask install gcc-arm-embedded
+```
+
+Then convert the binary to .bin format
+
+```text
+$ arm-none-eabi-objcopy -O binary ODriveFirmware_v3.5-48V.elf ODriveFirmware_v3.5-48V.bin
+```
+
+Install `dfu-util`:
+
+```text
+$ sudo port install dfu-util   # via MacPorts; for HomeBrew use "brew install dfu-util"
+```
+
+Find the correct device serial number to use:
+
+```text
+$ dfu-util --list              # list the DFU capable devices
+[...]
+Found DFU: [0483:df11] ver=2200, devnum=5, cfg=1, intf=0, path="20-2", alt=0, 
+ name="@Internal Flash  /0x08000000/04*016Kg,01*064Kg,07*128Kg", serial="388237123123"
+```
+
+Finally, flash the firmware using the found serial number:
+
+```text
+$ sudo dfu-util -S 388237123123 -a 0 -s 0x08000000 -D ODriveFirmware_v3.5-48V.bin
+```
 
 ## Flashing with an STLink
 

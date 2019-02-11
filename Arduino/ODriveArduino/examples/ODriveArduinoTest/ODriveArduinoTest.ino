@@ -8,6 +8,7 @@ template<>        inline Print& operator <<(Print &obj, float arg) { obj.print(a
 
 // Serial to the ODrive
 SoftwareSerial odrive_serial(8, 9); //RX (ODrive TX), TX (ODrive RX)
+// Note: you must also connect GND on ODrive to GND on Arduino!
 
 // ODrive object
 ODriveArduino odrive(odrive_serial);
