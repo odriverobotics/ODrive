@@ -15,7 +15,6 @@ public:
         ERROR_UNSUPPORTED_ENCODER_MODE = 0x08,
         ERROR_ILLEGAL_HALL_STATE = 0x10,
         ERROR_INDEX_NOT_FOUND_YET = 0x20,
-        ERROR_OVERSPEED = 0x40,
     };
 
     enum Mode_t {
@@ -39,7 +38,6 @@ public:
         float offset_float = 0.0f; // Sub-count phase alignment offset
         float calib_range = 0.02f;
         float bandwidth = 1000.0f;
-        float overspeed_fault_ratio = 1.2f; // ratio of vel_lim, 0.0f = disabled
         bool find_idx_on_lockin = false;
         bool idx_search_unidirectional = false;
         bool ignore_illegal_hall_state = false;
@@ -108,7 +106,6 @@ public:
                 make_protocol_property("mode", &config_.mode),
                 make_protocol_property("use_index", &config_.use_index),
                 make_protocol_property("pre_calibrated", &config_.pre_calibrated),
-                make_protocol_property("overspeed_fault_ratio", &config_.overspeed_fault_ratio),
                 make_protocol_property("idx_search_speed", &config_.idx_search_speed),
                 make_protocol_property("zero_count_on_find_idx", &config_.zero_count_on_find_idx),
                 make_protocol_property("cpr", &config_.cpr),

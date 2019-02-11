@@ -309,15 +309,6 @@ bool Encoder::update() {
         snap_to_zero_vel = true;
     }
 
-    // Check overspeed fault
-    if (config_.overspeed_fault_ratio != 0.0f) { // 0.0f = disabled
-        // TODO: Use separate encoder, motor, controller vel_lim: take min
-        if (fabsf(vel_estimate_) > config_.overspeed_fault_ratio * axis_->controller_.config_.vel_limit) {
-            set_error(ERROR_OVERSPEED);
-            return false;
-        }
-    }
-
     //// run encoder count interpolation
     int32_t corrected_enc = count_in_cpr_ - config_.offset;
     // if we are stopped, make sure we don't randomly drift
