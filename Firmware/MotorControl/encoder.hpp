@@ -57,6 +57,7 @@ public:
     bool calib_enc_offset(float voltage_magnitude);
 
     bool run_index_search();
+    bool run_direction_find();
     bool run_offset_calibration();
     void sample_now();
     bool update();

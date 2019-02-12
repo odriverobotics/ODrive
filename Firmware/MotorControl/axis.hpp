@@ -36,6 +36,18 @@ public:
         AXIS_STATE_ENCODER_DIR_FIND = 10,
     };
 
+    struct LockinConfig_t {
+        float current = 10.0f;           // [A]
+        float ramp_time = 0.4f;          // [s]
+        float ramp_distance = 1 * M_PI;  // [rad]
+        float accel = 10.0f;     // [rad/s^2]
+        float vel = 100.0f; // [rad/s]
+        float finish_distance = 1000.0f;  // [rad]
+        bool finish_on_vel = false;
+        bool finish_on_distance = false;
+        bool finish_on_enc_idx = false;
+    };
+
     struct Config_t {
         bool startup_motor_calibration = false;   //<! run motor calibration at startup, skip otherwise
         bool startup_encoder_index_search = false; //<! run encoder index search after startup, skip otherwise
@@ -51,16 +63,7 @@ public:
         uint16_t step_gpio_pin = 0;
         uint16_t dir_gpio_pin = 0;
 
-        // Spinup settings
-        float lockin_current = 10.0f;           // [A]
-        float lockin_ramp_time = 0.4f;          // [s]
-        float lockin_ramp_distance = 1 * M_PI;  // [rad]
-        float lockin_accel = 10.0f;     // [rad/s^2]
-        float lockin_vel = 100.0f; // [rad/s]
-        float lockin_finish_distance = 1000.0f;  // [rad]
-        bool lockin_finish_on_vel = false;
-        bool lockin_finish_on_distance = false;
-        bool lockin_finish_on_enc_idx = false;
+        LockinConfig_t lockin;
     };
 
     enum thread_signals {
@@ -213,19 +216,21 @@ public:
                 make_protocol_property("startup_sensorless_control", &config_.startup_sensorless_control),
                 make_protocol_property("enable_step_dir", &config_.enable_step_dir),
                 make_protocol_property("counts_per_step", &config_.counts_per_step),
-                make_protocol_property("lockin_current", &config_.lockin_current),
-                make_protocol_property("lockin_ramp_time", &config_.lockin_ramp_time),
-                make_protocol_property("lockin_ramp_distance", &config_.lockin_ramp_distance),
-                make_protocol_property("lockin_accel", &config_.lockin_accel),
-                make_protocol_property("lockin_vel", &config_.lockin_vel),
-                make_protocol_property("lockin_finish_distance", &config_.lockin_finish_distance),
-                make_protocol_property("lockin_finish_on_vel", &config_.lockin_finish_on_vel),
-                make_protocol_property("lockin_finish_on_distance", &config_.lockin_finish_on_distance),
-                make_protocol_property("lockin_finish_on_enc_idx", &config_.lockin_finish_on_enc_idx),
                 make_protocol_property("step_gpio_pin", &config_.step_gpio_pin,
                     [](void* ctx) { static_cast<Axis*>(ctx)->decode_step_dir_pins(); }, this),
                 make_protocol_property("dir_gpio_pin", &config_.dir_gpio_pin,
-                    [](void* ctx) { static_cast<Axis*>(ctx)->decode_step_dir_pins(); }, this)
+                    [](void* ctx) { static_cast<Axis*>(ctx)->decode_step_dir_pins(); }, this),
+                make_protocol_object("lockin",
+                    make_protocol_property("current", &config_.lockin.current),
+                    make_protocol_property("ramp_time", &config_.lockin.ramp_time),
+                    make_protocol_property("ramp_distance", &config_.lockin.ramp_distance),
+                    make_protocol_property("accel", &config_.lockin.accel),
+                    make_protocol_property("vel", &config_.lockin.vel),
+                    make_protocol_property("finish_distance", &config_.lockin.finish_distance),
+                    make_protocol_property("finish_on_vel", &config_.lockin.finish_on_vel),
+                    make_protocol_property("finish_on_distance", &config_.lockin.finish_on_distance),
+                    make_protocol_property("finish_on_enc_idx", &config_.lockin.finish_on_enc_idx)
+                )
             ),
             make_protocol_object("motor", motor_.make_protocol_definitions()),
             make_protocol_object("controller", controller_.make_protocol_definitions()),

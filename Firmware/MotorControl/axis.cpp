@@ -146,27 +146,27 @@ bool Axis::run_lockin_spin() {
     lockin_state_ = LOCKIN_STATE_RAMP;
     float x = 0.0f;
     run_control_loop([&]() {
-        float phase = wrap_pm_pi(config_.lockin_ramp_distance * x);
-        float I_mag = config_.lockin_current * x;
-        x += current_meas_period / config_.lockin_ramp_time;
+        float phase = wrap_pm_pi(config_.lockin.ramp_distance * x);
+        float I_mag = config_.lockin.current * x;
+        x += current_meas_period / config_.lockin.ramp_time;
         if (!motor_.update(I_mag, phase, 0.0f))
             return false;
         return x < 1.0f;
     });
     
     // Spin states
-    float distance = config_.lockin_ramp_distance;
+    float distance = config_.lockin.ramp_distance;
     float phase = wrap_pm_pi(distance);
-    float vel = distance / config_.lockin_ramp_time;
+    float vel = distance / config_.lockin.ramp_time;
 
     // Function of states to check if we are done
     auto spin_done = [&](bool vel_override = false) -> bool {
         bool done = false;
-        if (config_.lockin_finish_on_vel || vel_override)
-            done = done || fabsf(vel) >= fabsf(config_.lockin_vel);
-        if (config_.lockin_finish_on_distance)
-            done = done || fabsf(distance) >= fabsf(config_.lockin_finish_distance);
-        if (config_.lockin_finish_on_enc_idx)
+        if (config_.lockin.finish_on_vel || vel_override)
+            done = done || fabsf(vel) >= fabsf(config_.lockin.vel);
+        if (config_.lockin.finish_on_distance)
+            done = done || fabsf(distance) >= fabsf(config_.lockin.finish_distance);
+        if (config_.lockin.finish_on_enc_idx)
             done = done || encoder_.index_found_;
         return done;
     };
@@ -174,11 +174,11 @@ bool Axis::run_lockin_spin() {
     // Accelerate
     lockin_state_ = LOCKIN_STATE_ACCELERATE;
     run_control_loop([&]() {
-        vel += config_.lockin_accel * current_meas_period;
+        vel += config_.lockin.accel * current_meas_period;
         distance += vel * current_meas_period;
         phase = wrap_pm_pi(phase + vel * current_meas_period);
 
-        if (!motor_.update(config_.lockin_current, phase, vel))
+        if (!motor_.update(config_.lockin.current, phase, vel))
             return false;
         return !spin_done(true); //vel_override to go to next phase
     });
@@ -186,12 +186,12 @@ bool Axis::run_lockin_spin() {
     // Constant speed
     if (!spin_done()) {
         lockin_state_ = LOCKIN_STATE_CONST_VEL;
-        vel = config_.lockin_vel; // reset to actual specified vel to avoid small integration error
+        vel = config_.lockin.vel; // reset to actual specified vel to avoid small integration error
         run_control_loop([&]() {
             distance += vel * current_meas_period;
             phase = wrap_pm_pi(phase + vel * current_meas_period);
 
-            if (!motor_.update(config_.lockin_current, phase, vel))
+            if (!motor_.update(config_.lockin.current, phase, vel))
                 return false;
             return !spin_done();
         });
@@ -311,40 +311,14 @@ void Axis::run_state_machine_loop() {
                 if (encoder_.config_.idx_search_unidirectional && motor_.config_.direction==0)
                     goto invalid_state_label;
 
-                // TODO: move code body to function in Encoder
-                encoder_.config_.use_index = true;
-                encoder_.index_found_ = false;
-
-                bool orig_setting = config_.lockin_finish_on_enc_idx;
-                config_.lockin_finish_on_enc_idx = true;
-                status = run_lockin_spin();
-                config_.lockin_finish_on_enc_idx = orig_setting;
+                status = encoder_.run_index_search();
             } break;
 
             case AXIS_STATE_ENCODER_DIR_FIND: {
                 if (!motor_.is_calibrated_)
                     goto invalid_state_label;
 
-                // TODO: move code body to function in Encoder
-                int32_t init_enc_val = encoder_.shadow_count_;
-                bool orig_setting = config_.lockin_finish_on_distance;
-                config_.lockin_finish_on_distance = true;
-                motor_.config_.direction = 1; // Must test spin forwards for direction detect logic
-                status = run_lockin_spin();
-                config_.lockin_finish_on_distance = orig_setting;
-
-                if (status) {
-                    // Check response and direction
-                    if (encoder_.shadow_count_ > init_enc_val + 8) {
-                        // motor same dir as encoder
-                        motor_.config_.direction = 1;
-                    } else if (encoder_.shadow_count_ < init_enc_val - 8) {
-                        // motor opposite dir as encoder
-                        motor_.config_.direction = -1;
-                    } else {
-                        motor_.config_.direction = 0;
-                    }
-                }
+                status = encoder_.run_direction_find();
             } break;
 
             case AXIS_STATE_ENCODER_OFFSET_CALIBRATION: {
@@ -366,7 +340,7 @@ void Axis::run_state_machine_loop() {
                 if (status) {
                     // call to controller.reset() that happend when arming means that vel_setpoint
                     // is zeroed. So we make the setpoint the spinup target for smooth transition.
-                    controller_.vel_setpoint_ = config_.lockin_vel;
+                    controller_.vel_setpoint_ = config_.lockin.vel;
                     status = run_sensorless_control_loop();
                 }
             } break;

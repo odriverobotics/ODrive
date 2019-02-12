@@ -92,6 +92,44 @@ void Encoder::set_circular_count(int32_t count, bool update_offset) {
     cpu_exit_critical(prim);
 }
 
+bool Encoder::run_index_search() {
+    config_.use_index = true;
+    index_found_ = false;
+    if (!config_.idx_search_unidirectional && axis_->motor_.config_.direction == 0) {
+        axis_->motor_.config_.direction = 1;
+    }
+
+    bool orig_finish_on_enc_idx = axis_->config_.lockin.finish_on_enc_idx;
+    axis_->config_.lockin.finish_on_enc_idx = true;
+    bool status = axis_->run_lockin_spin();
+    axis_->config_.lockin.finish_on_enc_idx = orig_finish_on_enc_idx;
+    return status;
+}
+
+bool Encoder::run_direction_find() {
+    int32_t init_enc_val = shadow_count_;
+    bool orig_finish_on_distance = axis_->config_.lockin.finish_on_distance;
+    axis_->config_.lockin.finish_on_distance = true;
+    axis_->motor_.config_.direction = 1; // Must test spin forwards for direction detect logic
+    bool status = axis_->run_lockin_spin();
+    axis_->config_.lockin.finish_on_distance = orig_finish_on_distance;
+
+    if (status) {
+        // Check response and direction
+        if (shadow_count_ > init_enc_val + 8) {
+            // motor same dir as encoder
+            axis_->motor_.config_.direction = 1;
+        } else if (shadow_count_ < init_enc_val - 8) {
+            // motor opposite dir as encoder
+            axis_->motor_.config_.direction = -1;
+        } else {
+            axis_->motor_.config_.direction = 0;
+        }
+    }
+
+    return status;
+}
+
 // @brief Turns the motor in one direction for a bit and then in the other
 // direction in order to find the offset between the electrical phase 0
 // and the encoder state 0.
