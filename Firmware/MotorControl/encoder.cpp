@@ -9,7 +9,7 @@ Encoder::Encoder(const EncoderHardwareConfig_t& hw_config,
 {
     update_pll_gains();
 
-    if (config.pre_calibrated && (config.mode == Encoder::MODE_HALL)) {
+    if (config.pre_calibrated && (config.mode == Encoder::MODE_HALL || config.mode == Encoder::MODE_SINCOS)) {
         is_ready_ = true;
     }
 }
