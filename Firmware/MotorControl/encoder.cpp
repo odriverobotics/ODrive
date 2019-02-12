@@ -342,7 +342,7 @@ bool Encoder::update() {
     //// run encoder count interpolation
     int32_t corrected_enc = count_in_cpr_ - config_.offset;
     // if we are stopped, make sure we don't randomly drift
-    if (snap_to_zero_vel) {
+    if (snap_to_zero_vel || !config_.enable_phase_interpolation) {
         interpolation_ = 0.5f;
     // reset interpolation if encoder edge comes
     } else if (delta_enc > 0) {
