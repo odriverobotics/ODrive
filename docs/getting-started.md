@@ -16,6 +16,7 @@ permalink: /
 - [Start `odrivetool`](#start-odrivetool)
 - [Configure M0](#configure-m0)
 - [Position control of M0](#position-control-of-m0)
+- [Other control modes](#other-control-modes)
 - [What's next?](#whats-next)
 
 <!-- /TOC -->
@@ -39,7 +40,7 @@ permalink: /
 
   </div></details>
 
-* A power supply (12V-24V for the 24V board variant, 12V-48V for the 48V board variant). A battery is also fine.
+* A power supply (12V-24V for the 24V board variant, 12V-48V for the 48V board variant). A battery is also fine. Some advice on choosing a power supply can be found [here](https://things-in-motion.blogspot.com/2018/12/how-to-select-right-power-source-for.html).
   <details><summary markdown="span">What voltage variant do I have?</summary><div markdown="block">
   On all ODrives shipped July 2018 or after have a silkscreen label clearly indicating the voltage variant.
 
@@ -55,13 +56,18 @@ All non-power I/O is 3.3V output and 5V tolerant on input, on ODrive v3.3 and ne
 
 ### Wiring up the motors
 * Connect the motor phases into the 3-phase screw terminals. It is not recommended to use a clip-on connector such as an alligator clip, as this can cause issues with the phase resistance/inductance measurements. 
-* Connect the power source to the DC terminals. Make sure to pay attention to the polarity.
-* Do not apply power just yet.
 
 ### Wiring up the encoders
 Connect the encoder(s) to J4. The A,B phases are required, and the Z (index pulse) is optional. The A,B and Z lines have 3.3k pull up resistors, for use with open-drain encoder outputs. For single ended push-pull signals with weak drive current (\<4mA), you may want to desolder the pull-ups.
 
 ![Image of ODrive all hooked up](https://docs.google.com/drawings/d/e/2PACX-1vTCD0P40Cd-wvD7Fl8UYEaxp3_UL81oI4qUVqrrCJPi6tkJeSs2rsffIXQRpdu6rNZs6-2mRKKYtILG/pub?w=1716&h=1281)
+
+### Safety & Power UP
+<div class="alert">
+ Always think safety before powering up the ODrive if motors are attached. Consider what might happen if the motor spins as soon as power is applied.
+</div>
+* Unlike some devices, the ODrive does not recieve power over the USB port so the 24/48 volt power input is required even just to communicate with it using USB. It is ok to power up the ODrive before or after connecting the USB cable.
+* To power up the ODrive, connect the power source to the DC terminals. Make sure to pay attention to the polarity. A small spark is normal. This is caused by the capacitors charging up.
 
 ## Downloading and Installing Tools
 Most instructions in this guide refer to a utility called `odrivetool`, so you should install that first.
@@ -129,10 +135,10 @@ Try step 5 again
 
 ## Firmware
 **ODrive v3.5 and later**<br>
-Your board should come preflashed with firmware. If you run into problems, follow the instructions [here](odrivetool.md#device-firmware-update) on the DFU procedure before you continue.</div>
+Your board should come preflashed with firmware. If you run into problems, follow the instructions [here](odrivetool.md#device-firmware-update) on the DFU procedure before you continue.
 
 **ODrive v3.4 and earlier**<br>
-Your board does **not** come preflashed with any firmware. Follow the instructions [here](odrivetool.md#device-firmware-update) on the STP Link procedure before you continue.</div>
+Your board does **not** come preflashed with any firmware. Follow the instructions [here](odrivetool.md#device-firmware-update) on the STP Link procedure before you continue.
 
 ## Start `odrivetool`
 To launch the main interactive ODrive tool, type `odrivetool` <kbd>Enter</kbd>. Connect your ODrive and wait for the tool to find it. Now you can, for instance type `odrv0.vbus_voltage` <kbd>Enter</kbd> to inpect the boards main supply voltage.
@@ -165,7 +171,7 @@ For instance, to set the current limit of M0 to 10A you would type: `odrv0.axis0
 
 **Current limit**<br>
 `odrv0.axis0.motor.config.current_lim` [A].  
-The default current limit, for safety reasons, is set to 10A. This is quite weak, but good for making sure the drive is stable. Once you have tuned the oDrive, you can increase this to 75A to increase performance. Note that above 75A, you must change the current amplifier gains. You do this by requesting a different current range. i.e. for 90A on M0: `odrv0.axis0.motor.config.requested_current_range = 90` [A], then save the configuration and reboot as the gains are written out to the DRV (MOSFET driver) only during startup.
+The default current limit, for safety reasons, is set to 10A. This is quite weak, but good for making sure the drive is stable. Once you have tuned the oDrive, you can increase this to 60A to increase performance. Note that above 60A, you must change the current amplifier gains. You do this by requesting a different current range. i.e. for 90A on M0: `odrv0.axis0.motor.config.requested_current_range = 90` [A], then save the configuration and reboot as the gains are written out to the DRV (MOSFET driver) only during startup.
 
 *Note: The motor current and the current drawn from the power supply is not the same in general. You should not look at the power supply current to see what is going on with the motor current.*
 <details><summary markdown="span">Ok, so tell me how it actually works then...</summary><div markdown="block">
@@ -188,6 +194,7 @@ This is the resistance of the brake resistor. If you are not using it, you may s
 `odrv0.axis0.motor.config.pole_pairs`  
 This is the number of **magnet poles** in the rotor, **divided by two**. To find this, you can simply count the number of permanent magnets in the rotor, if you can see them. _Note: this is not the same as the number of coils in the stator._
 If you can't see them, try sliding a magnet around the rotor, and counting how many times it stops. This will be the number of **pole pairs**. If you use a magnetic piece of metal instead of a magnet, you will get the number of **magnet poles**.
+
 `odrv0.axis0.motor.config.motor_type`  
 This is the type of motor being used. Currently two types of motors are supported: High-current motors (`MOTOR_TYPE_HIGH_CURRENT`) and gimbal motors (`MOTOR_TYPE_GIMBAL`).
 <details><summary markdown="span">Which <code>motor_type</code> to choose?</summary><div markdown="block">
@@ -241,16 +248,77 @@ Let's get motor 0 up and running. The procedure for motor 1 is exactly the same,
 2. Type `odrv0.axis0.requested_state = AXIS_STATE_CLOSED_LOOP_CONTROL` <kbd>Enter</kbd>. From now on the ODrive will try to hold the motor's position. If you try to turn it by hand, it will fight you gently. That is unless you bump up `odrv0.axis0.motor.config.current_lim`, in which case it will fight you more fiercely.
 3. Send the motor a new position setpoint. `odrv0.axis0.controller.pos_setpoint = 10000` <kbd>Enter</kbd>. The units are in encoder counts.
 
-### Other control modes
-The ODrive also supports velocity control and current (torque) control.
+## Other control modes
+The default control mode is unfiltered position control in the absolute encoder reference frame. You may wish to use a controlled trajectory instead. Or you may wish to control position in a circular frame to allow continous rotation forever without growing the numeric value of the setpoint too large.
+You may also wish to control velocity (directly or with a ramping filter).
+You can also directly control the current of the motor, which is proportional to torque.
 
-**Velocity control**<br>
-Set `odrv0.axis0.controller.config.control_mode = CTRL_MODE_VELOCITY_CONTROL`.  
-You can now control the velocity with `odrv0.axis0.controller.vel_setpoint = 5000` [count/s].
+- [Trajectory control](#trajectory-control)
+- [Circular position control](#circular-position-control)
+- [Velocity control](#velocity-control)
+- [Ramped velocity control](#ramped-velocity-control)
+- [Current control](#current-control)
 
-**Current control**<br>
-Set `odrv0.axis0.controller.config.control_mode = CTRL_MODE_CURRENT_CONTROL`.  
-You can now control the current with `odrv0.axis0.controller.current_setpoint = 3` [A].
+
+### Trajectory control
+Set `axis.controller.config.control_mode = CTRL_MODE_TRAJECTORY_CONTROL`.<br>
+This mode lets you smoothly accelerate, coast, and decelerate the axis from one position to another. With raw position control, the controller simply tries to go to the setpoint as quickly as possible. Using a trajectory lets you tune the feedback gains more aggressively to reject disturbance, while keeping smooth motion.
+
+![Taptraj](TrapTrajPosVel.PNG)<br>
+In the above image blue is position and orange is velocity.
+
+#### Parameters
+```
+<odrv>.<axis>.trap_traj.config.vel_limit = <Float>
+<odrv>.<axis>.trap_traj.config.accel_limit = <Float>
+<odrv>.<axis>.trap_traj.config.decel_limit = <Float>
+<odrv>.<axis>.trap_traj.config.A_per_css = <Float>
+```
+
+`vel_limit` is the maximum planned trajectory speed.  This sets your coasting speed.<br>
+`accel_limit` is the maximum acceleration in counts / sec^2<br>
+`decel_limit` is the maximum deceleration in counts / sec^2<br>
+`A_per_css` is a value which correlates acceleration (in counts / sec^2) and motor current. It is 0 by default. It is optional, but can improve response of your system if correctly tuned. Keep in mind this will need to change with the load / mass of your system.
+
+All values should be strictly positive (>= 0).
+
+Keep in mind that you must still set your safety limits as before.  I recommend you set these a little higher ( > 10%) than the planner values, to give the controller enough control authority.
+```
+<odrv>.<axis>.motor.config.current_lim = <Float>
+<odrv>.<axis>.controller.config.vel_limit = <Float>
+```
+
+#### Usage
+Use the `move_to_pos` function to move to an absolute position:
+```
+<odrv>.<axis>.controller.move_to_pos(<Float>)
+```
+
+### Circular position control
+
+To enable Circular position control, set `axis.controller.config.setpoints_in_cpr = True`
+
+This mode is useful for continuos incremental position movement. For example a robot rolling indefinitely, or an extruder motor or conveyor belt moving with controlled increments indefinitely.
+In the regular position mode, the `pos_setpoint` would grow to a very large value and would lose precision due to floating point rounding.
+
+In this mode, the controller will try to track the position within only one turn of the motor. Specifically, `pos_setpoint` is expected in the range `[0, cpr-1]`, where `cpr` is the number of encoder counts in one revolution. If the `pos_setpoint` is incremented to outside this range (say via step/dir input), it is automatically wrapped around into the correct value.
+Note that in this mode `encoder.pos_cpr` is used for feedback in stead of `encoder.pos_estimate`.
+
+If you try to increment the axis with a large step in one go that exceeds `cpr/2` steps, the motor will go to the same angle around the wrong way. This is also the case if there is a large disturbance. If you have an application where you would like to handle larger steps, you can use a virtual CPR that is an integer times larger than your encoder's actual CPR. Set `encoder.config.cpr = N * your_enc_cpr`, where N is some integer. Choose N to give you an appropriate circular space for your application.
+
+### Velocity control
+Set `axis.controller.config.control_mode = CTRL_MODE_VELOCITY_CONTROL`.<br>
+You can now control the velocity with `axis.controller.vel_setpoint = 5000` [count/s].
+
+### Ramped velocity control
+Set `axis.controller.config.control_mode = CTRL_MODE_VELOCITY_CONTROL`.<br>
+Set the velocity ramp rate (acceleration): `axis.controller.config.vel_ramp_rate = 2000` [counts/s^2]<br>
+Activate the ramped velocity mode: `axis.controller.vel_ramp_enable = True`.<br>
+You can now control the velocity with `axis.controller.vel_ramp_target = 5000` [count/s].
+
+### Current control
+Set `axis.controller.config.control_mode = CTRL_MODE_CURRENT_CONTROL`.<br>
+You can now control the current with `axis.controller.current_setpoint = 3` [A].
 
 *Note: There is no velocity limiting in current control mode. Make sure that you don't overrev the motor, or exceed the max speed for your encoder.*
 

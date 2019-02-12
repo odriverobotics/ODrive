@@ -22,7 +22,7 @@ The current state of an axis is indicated by `<axis>.current_state`. The user ca
 
  1. `AXIS_STATE_IDLE` Disable motor PWM and do nothing.
  2. `AXIS_STATE_STARTUP_SEQUENCE` Run the [startup procedure](#startup-procedure).
- 3. `AXIS_STATE_FULL_CALIBRATION_SEQUENCE` Run motor calibration and then encoder offset calibration (or encoder index search if `<axis>.encoder.use_index` is `True`).
+ 3. `AXIS_STATE_FULL_CALIBRATION_SEQUENCE` Run motor calibration and then encoder offset calibration (or encoder index search if `<axis>.encoder.config.use_index` is `True`).
  4. `AXIS_STATE_MOTOR_CALIBRATION` Measure phase resistance and phase inductance of the motor.
     * To store the results set `<axis>.motor.config.pre_calibrated` to `True` and [save the configuration](#saving-the-configuration). After that you don't have to run the motor calibration on the next start up.
     * This modifies the variables `<axis>.motor.config.phase_resistance` and `<axis>.motor.config.phase_inductance`.

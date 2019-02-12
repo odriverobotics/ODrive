@@ -73,7 +73,8 @@ void Motor::DRV8301_setup() {
     // Solve for exact gain, then snap down to have equal or larger range as requested
     // or largest possible range otherwise
     static const float kMargin = 0.90f;
-    static const float max_output_swing = 1.6f; // [V] out of amplifier
+    static const float kTripMargin = 1.0f; // Trip level is at edge of linear range of amplifer
+    static const float max_output_swing = 1.35f; // [V] out of amplifier
     float max_unity_gain_current = kMargin * max_output_swing * hw_config_.shunt_conductance; // [A]
     float requested_gain = max_unity_gain_current / config_.requested_current_range; // [V/V]
 
@@ -99,6 +100,8 @@ void Motor::DRV8301_setup() {
     phase_current_rev_gain_ = 1.0f / gain_snap_down->first;
     // Clip all current control to actual usable range
     current_control_.max_allowed_current = max_unity_gain_current * phase_current_rev_gain_;
+    // Set trip level
+    current_control_.overcurrent_trip_level = (kTripMargin / kMargin) * current_control_.max_allowed_current;
 
     // We now have the gain settings we want to use, lets set up DRV chip
     DRV_SPI_8301_Vars_t* local_regs = &gate_driver_regs_;
@@ -140,22 +143,57 @@ void Motor::set_error(Motor::Error_t error){
     update_brake_current();
 }
 
-bool Motor::do_checks() {
-    if (!check_DRV_fault()) {
-        set_error(ERROR_DRV_FAULT);
+float Motor::get_inverter_temp() {
+    float adc = adc_measurements_[hw_config_.inverter_thermistor_adc_ch];
+    float normalized_voltage = adc / adc_full_scale;
+    return horner_fma(normalized_voltage, thermistor_poly_coeffs, thermistor_num_coeffs);
+}
+
+bool Motor::update_thermal_limits() {
+    float fet_temp = get_inverter_temp();
+    float temp_margin = config_.inverter_temp_limit_upper - fet_temp;
+    float derating_range = config_.inverter_temp_limit_upper - config_.inverter_temp_limit_lower;
+    thermal_current_lim_ = config_.current_lim * (temp_margin / derating_range);
+    if (!(thermal_current_lim_ >= 0.0f)) { //Funny polarity to also catch NaN
+        thermal_current_lim_ = 0.0f;
+    }
+    if (fet_temp > config_.inverter_temp_limit_upper + 5) {
+        set_error(ERROR_INVERTER_OVER_TEMP);
         return false;
     }
     return true;
 }
 
-void Motor::log_timing(TimingLog_t log_idx) {
-    TIM_HandleTypeDef* htim = hw_config_.timer;
-    uint16_t timing = htim->Instance->CNT;
-    bool down = htim->Instance->CR1 & TIM_CR1_DIR;
-    if (down) {
-        uint16_t delta = TIM_1_8_PERIOD_CLOCKS - timing;
-        timing = TIM_1_8_PERIOD_CLOCKS + delta;
+bool Motor::do_checks() {
+    if (!check_DRV_fault()) {
+        set_error(ERROR_DRV_FAULT);
+        return false;
     }
+    if (!update_thermal_limits()) {
+        //error already set in function
+        return false;
+    }
+    return true;
+}
+
+float Motor::effective_current_lim() {
+    // Configured limit
+    float current_lim = config_.current_lim;
+    // Hardware limit
+    if (axis_->motor_.config_.motor_type == Motor::MOTOR_TYPE_GIMBAL) {
+        current_lim = std::min(current_lim, 0.98f*one_by_sqrt3*vbus_voltage);
+    } else {
+        current_lim = std::min(current_lim, axis_->motor_.current_control_.max_allowed_current);
+    }
+    // Thermal limit
+    current_lim = std::min(current_lim, thermal_current_lim_);
+
+    return current_lim;
+}
+
+void Motor::log_timing(TimingLog_t log_idx) {
+    static const uint16_t clocks_per_cnt = (uint16_t)((float)TIM_1_8_CLOCK_HZ / (float)TIM_APB1_CLOCK_HZ);
+    uint16_t timing = clocks_per_cnt * htim13.Instance->CNT; // TODO: Use a hw_config
 
     if (log_idx < TIMING_LOG_NUM_SLOTS) {
         timing_log_[log_idx] = timing;
@@ -238,7 +276,7 @@ bool Motor::measure_phase_inductance(float voltage_low, float voltage_high) {
 
     config_.phase_inductance = L;
     // TODO arbitrary values set for now
-    if (L < 1e-6f || L > 2500e-6f)
+    if (L < 2e-6f || L > 4000e-6f)
         return set_error(ERROR_PHASE_INDUCTANCE_OUT_OF_RANGE), false;
     return true;
 }
@@ -284,33 +322,39 @@ bool Motor::enqueue_voltage_timings(float v_alpha, float v_beta) {
     return true;
 }
 
-// TODO: This doesn't update brake current
 // We should probably make FOC Current call FOC Voltage to avoid duplication.
-bool Motor::FOC_voltage(float v_d, float v_q, float phase) {
-    float c = our_arm_cos_f32(phase);
-    float s = our_arm_sin_f32(phase);
+bool Motor::FOC_voltage(float v_d, float v_q, float pwm_phase) {
+    float c = our_arm_cos_f32(pwm_phase);
+    float s = our_arm_sin_f32(pwm_phase);
     float v_alpha = c*v_d - s*v_q;
     float v_beta  = c*v_q + s*v_d;
     return enqueue_voltage_timings(v_alpha, v_beta);
 }
 
-bool Motor::FOC_current(float Id_des, float Iq_des, float phase) {
+bool Motor::FOC_current(float Id_des, float Iq_des, float I_phase, float pwm_phase) {
     // Syntactic sugar
     CurrentControl_t& ictrl = current_control_;
 
     // For Reporting
     ictrl.Iq_setpoint = Iq_des;
 
+    // Check for current sense saturation
+    if (fabsf(current_meas_.phB) > ictrl.overcurrent_trip_level
+     || fabsf(current_meas_.phC) > ictrl.overcurrent_trip_level) {
+        set_error(ERROR_CURRENT_SENSE_SATURATION);
+    }
+
     // Clarke transform
     float Ialpha = -current_meas_.phB - current_meas_.phC;
     float Ibeta = one_by_sqrt3 * (current_meas_.phB - current_meas_.phC);
 
     // Park transform
-    float c = our_arm_cos_f32(phase);
-    float s = our_arm_sin_f32(phase);
-    float Id = c * Ialpha + s * Ibeta;
-    float Iq = c * Ibeta - s * Ialpha;
-    ictrl.Iq_measured = Iq;
+    float c_I = our_arm_cos_f32(I_phase);
+    float s_I = our_arm_sin_f32(I_phase);
+    float Id = c_I * Ialpha + s_I * Ibeta;
+    float Iq = c_I * Ibeta - s_I * Ialpha;
+    ictrl.Iq_measured += ictrl.I_measured_report_filter_k * (Iq - ictrl.Iq_measured);
+    ictrl.Id_measured += ictrl.I_measured_report_filter_k * (Id - ictrl.Id_measured);
 
     // Current error
     float Ierr_d = Id_des - Id;
@@ -344,8 +388,10 @@ bool Motor::FOC_current(float Id_des, float Iq_des, float phase) {
     ictrl.Ibus = mod_d * Id + mod_q * Iq;
 
     // Inverse park transform
-    float mod_alpha = c * mod_d - s * mod_q;
-    float mod_beta  = c * mod_q + s * mod_d;
+    float c_p = our_arm_cos_f32(pwm_phase);
+    float s_p = our_arm_sin_f32(pwm_phase);
+    float mod_alpha = c_p * mod_d - s_p * mod_q;
+    float mod_beta  = c_p * mod_q + s_p * mod_d;
 
     // Report final applied voltage in stationary frame (for sensorles estimator)
     ictrl.final_v_alpha = mod_to_V * mod_alpha;
@@ -360,19 +406,22 @@ bool Motor::FOC_current(float Id_des, float Iq_des, float phase) {
 }
 
 
-bool Motor::update(float current_setpoint, float phase) {
+bool Motor::update(float current_setpoint, float phase, float phase_vel) {
     current_setpoint *= config_.direction;
     phase *= config_.direction;
+    phase_vel *= config_.direction;
+
+    float pwm_phase = phase + 1.5f * current_meas_period * phase_vel;
 
     // Execute current command
     // TODO: move this into the mot
     if (config_.motor_type == MOTOR_TYPE_HIGH_CURRENT) {
-        if(!FOC_current(0.0f, current_setpoint, phase)){
+        if(!FOC_current(0.0f, current_setpoint, phase, pwm_phase)){
             return false;
         }
     } else if (config_.motor_type == MOTOR_TYPE_GIMBAL) {
         //In gimbal motor mode, current is reinterptreted as voltage.
-        if(!FOC_voltage(0.0f, current_setpoint, phase))
+        if(!FOC_voltage(0.0f, current_setpoint, pwm_phase))
             return false;
     } else {
         set_error(ERROR_NOT_IMPLEMENTED_MOTOR_TYPE);

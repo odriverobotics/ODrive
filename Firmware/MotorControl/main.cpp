@@ -65,6 +65,8 @@ void load_configuration(void) {
             motor_configs[i] = Motor::Config_t();
             trap_configs[i] = TrapezoidalTrajectory::Config_t();
             axis_configs[i] = Axis::Config_t();
+            // Default step/dir pins are different, so we need to explicitly load them
+            Axis::load_default_step_dir_pin_config(hw_configs[i].axis_config, &axis_configs[i]);
         }
     } else {
         user_config_loaded_ = true;
@@ -95,7 +97,7 @@ void enter_dfu_mode() {
 
 extern "C" {
 int odrive_main(void);
-void vApplicationStackOverflowHook(void) {
+void vApplicationStackOverflowHook(xTaskHandle *pxTask, signed portCHAR *pcTaskName) {
     for (;;); // TODO: safe action
 }
 void vApplicationIdleHook(void) {
@@ -178,8 +180,6 @@ int odrive_main(void) {
     // TODO: make dynamically reconfigurable
 #if HW_VERSION_MAJOR == 3 && HW_VERSION_MINOR >= 3
     if (board_config.enable_uart) {
-        axes[0]->config_.enable_step_dir = false;
-        axes[0]->set_step_dir_enabled(false);
         SetGPIO12toUART();
     }
 #endif
@@ -213,6 +213,8 @@ int odrive_main(void) {
     for (size_t i = 0; i < AXIS_COUNT; ++i) {
         axes[i]->start_thread();
     }
+
+    start_analog_thread();
 
     system_stats_.fully_booted = true;
     return 0;

@@ -33,7 +33,7 @@ install:
 
 - export TUP_DIR=$HOME/dl/tup_0.7.5-0~16.04.york0_amd64
 - export TUP_ARCHIVE=$HOME/dl/tup_0.7.5-0~16.04.york0_amd64.deb
-- export TUP_URL=http://ppa.launchpad.net/jonathonf/tup/ubuntu/pool/main/t/tup/tup_0.7.5-0~16.04.york0_amd64.deb
+- export TUP_URL=http://ppa.launchpad.net/jonathonf/tup/ubuntu/pool/main/t/tup/tup_0.7.8-2~16.04.york0_amd64.deb
 - if [ ! -e $TUP_DIR/bin/tup ]; then wget $TUP_URL -O $TUP_ARCHIVE; dpkg-deb -R $TUP_ARCHIVE $TUP_DIR; fi
 - export PATH=$PATH:$TUP_DIR/usr/bin
 
