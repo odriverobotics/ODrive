@@ -35,6 +35,7 @@ public:
         int32_t cpr = (2048 * 4);   // Default resolution of CUI-AMT102 encoder,
         int32_t offset = 0;        // Offset between encoder count and rotor electrical phase
         float offset_float = 0.0f; // Sub-count phase alignment offset
+        bool enable_phase_interpolation = true; // Use velocity to interpolate inside the count state
         float calib_range = 0.02f; // Accuracy required to pass encoder cpr check
         float bandwidth = 1000.0f;
         bool find_idx_on_lockin_only = false; // Only be sensitive during lockin scan constant vel state
@@ -114,6 +115,7 @@ public:
                 make_protocol_property("cpr", &config_.cpr),
                 make_protocol_property("offset", &config_.offset),
                 make_protocol_property("offset_float", &config_.offset_float),
+                make_protocol_property("enable_phase_interpolation", &config_.enable_phase_interpolation),
                 make_protocol_property("bandwidth", &config_.bandwidth,
                     [](void* ctx) { static_cast<Encoder*>(ctx)->update_pll_gains(); }, this),
                 make_protocol_property("calib_range", &config_.calib_range),
