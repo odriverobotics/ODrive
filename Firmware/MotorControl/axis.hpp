@@ -40,9 +40,9 @@ public:
         float current = 10.0f;           // [A]
         float ramp_time = 0.4f;          // [s]
         float ramp_distance = 1 * M_PI;  // [rad]
-        float accel = 10.0f;     // [rad/s^2]
-        float vel = 100.0f; // [rad/s]
-        float finish_distance = 1000.0f;  // [rad]
+        float accel = 20.0f;     // [rad/s^2]
+        float vel = 40.0f; // [rad/s]
+        float finish_distance = 100.0f;  // [rad]
         bool finish_on_vel = false;
         bool finish_on_distance = false;
         bool finish_on_enc_idx = false;

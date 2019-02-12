@@ -20,8 +20,7 @@ static void enc_index_cb_wrapper(void* ctx) {
 
 void Encoder::setup() {
     HAL_TIM_Encoder_Start(hw_config_.timer, TIM_CHANNEL_ALL);
-    GPIO_subscribe(hw_config_.index_port, hw_config_.index_pin, GPIO_NOPULL,
-            enc_index_cb_wrapper, this);
+    set_idx_subscribe();
 }
 
 void Encoder::set_error(Error_t error) {
@@ -43,8 +42,6 @@ bool Encoder::do_checks(){
 // TODO: disable interrupt once we found the index
 void Encoder::enc_index_cb() {
     if (config_.use_index && !index_found_) {
-        if (config_.find_idx_on_lockin_only && axis_->lockin_state_ != Axis::LOCKIN_STATE_CONST_VEL)
-            return;
         set_circular_count(0, false);
         if (config_.zero_count_on_find_idx)
             set_linear_count(0); // Avoid position control transient after search
@@ -57,6 +54,20 @@ void Encoder::enc_index_cb() {
             is_ready_ = false;
         }
         index_found_ = true;
+    }
+
+    // Disable interrupt
+    GPIO_unsubscribe(hw_config_.index_port, hw_config_.index_pin);
+}
+
+void Encoder::set_idx_subscribe(bool override_enable) {
+    if (override_enable || (config_.use_index && !config_.find_idx_on_lockin_only)) {
+        GPIO_subscribe(hw_config_.index_port, hw_config_.index_pin, GPIO_PULLDOWN,
+                enc_index_cb_wrapper, this);
+    }
+
+    if (!config_.use_index || config_.find_idx_on_lockin_only) {
+        GPIO_unsubscribe(hw_config_.index_port, hw_config_.index_pin);
     }
 }
 
