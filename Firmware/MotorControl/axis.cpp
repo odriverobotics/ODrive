@@ -178,29 +178,24 @@ bool Axis::run_sensorless_spin_up(float constant_velocity_period = 0) {
 
         vel = config_.spin_up_target_vel;
 
-        run_control_loop([&]()
-        {           
+        run_control_loop([&]() {           
             phase = wrap_pm_pi(phase + vel * current_meas_period);
             
             float I_mag = config_.spin_up_current;
 
-            if (!motor_.update(I_mag, phase))
-            {
+            if (!motor_.update(I_mag, phase, vel)) {
                 return error_ |= ERROR_MOTOR_FAILED, false;
             }
             
-            if(loop_counter_ < loop_counter_timer_end_)
-            {
+            if(loop_counter_ < loop_counter_timer_end_) {
                 return true;
-            }
-            else
-            {
+            } else {
                 motor_.saved_steady_state_v_current_control_integral_d_ = motor_.current_control_.v_current_control_integral_d;
                 motor_.saved_steady_state_v_current_control_integral_q_ = motor_.current_control_.v_current_control_integral_q;
                 return false;
             }
         });
-    }
+    };
 
     // call to controller.reset() that happend when arming means that vel_setpoint
     // is zeroed. So we make the setpoint the spinup target for smooth transition.
