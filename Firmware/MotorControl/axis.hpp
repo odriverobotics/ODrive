@@ -86,7 +86,6 @@ public:
     bool check_PSU_brownout();
     bool do_checks();
     bool do_updates();
-    float get_temp();
 
 
     // True if there are no errors
@@ -212,7 +211,6 @@ public:
                 make_protocol_property("spin_up_acceleration", &config_.spin_up_acceleration),
                 make_protocol_property("spin_up_target_vel", &config_.spin_up_target_vel)
             ),
-            make_protocol_function("get_temp", *this, &Axis::get_temp),
             make_protocol_object("motor", motor_.make_protocol_definitions()),
             make_protocol_object("controller", controller_.make_protocol_definitions()),
             make_protocol_object("encoder", encoder_.make_protocol_definitions()),

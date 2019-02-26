@@ -19,7 +19,8 @@ public:
 
     enum Mode_t {
         MODE_INCREMENTAL,
-        MODE_HALL
+        MODE_HALL,
+        MODE_SINCOS
     };
 
     struct Config_t {
@@ -35,8 +36,10 @@ public:
         int32_t cpr = (2048 * 4);   // Default resolution of CUI-AMT102 encoder,
         int32_t offset = 0;        // Offset between encoder count and rotor electrical phase
         float offset_float = 0.0f; // Sub-count phase alignment offset
-        float calib_range = 0.02f;
+        bool enable_phase_interpolation = true; // Use velocity to interpolate inside the count state
+        float calib_range = 0.02f; // Accuracy required to pass encoder cpr check
         float bandwidth = 1000.0f;
+        bool ignore_illegal_hall_state = false;
     };
 
     Encoder(const EncoderHardwareConfig_t& hw_config,
@@ -55,6 +58,7 @@ public:
 
     bool run_index_search();
     bool run_offset_calibration();
+    void sample_now();
     bool update();
 
     void update_pll_gains();
@@ -76,8 +80,11 @@ public:
     float pll_kp_ = 0.0f;   // [count/s / count]
     float pll_ki_ = 0.0f;   // [(count/s^2) / count]
 
+    int16_t tim_cnt_sample_ = 0; // 
     // Updated by low_level pwm_adc_cb
     uint8_t hall_state_ = 0x0; // bit[0] = HallA, .., bit[2] = HallC
+    float sincos_sample_s_ = 0.0f;
+    float sincos_sample_c_ = 0.0f;
 
     // Communication protocol definitions
     auto make_protocol_definitions() {
@@ -104,9 +111,11 @@ public:
                 make_protocol_property("cpr", &config_.cpr),
                 make_protocol_property("offset", &config_.offset),
                 make_protocol_property("offset_float", &config_.offset_float),
+                make_protocol_property("enable_phase_interpolation", &config_.enable_phase_interpolation),
                 make_protocol_property("bandwidth", &config_.bandwidth,
                     [](void* ctx) { static_cast<Encoder*>(ctx)->update_pll_gains(); }, this),
-                make_protocol_property("calib_range", &config_.calib_range)
+                make_protocol_property("calib_range", &config_.calib_range),
+                make_protocol_property("ignore_illegal_hall_state", &config_.ignore_illegal_hall_state)
             )
         );
     }

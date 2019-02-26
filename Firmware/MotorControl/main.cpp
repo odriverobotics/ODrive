@@ -97,7 +97,7 @@ void enter_dfu_mode() {
 
 extern "C" {
 int odrive_main(void);
-void vApplicationStackOverflowHook(void) {
+void vApplicationStackOverflowHook(xTaskHandle *pxTask, signed portCHAR *pcTaskName) {
     for (;;); // TODO: safe action
 }
 void vApplicationIdleHook(void) {
@@ -213,6 +213,8 @@ int odrive_main(void) {
     for (size_t i = 0; i < AXIS_COUNT; ++i) {
         axes[i]->start_thread();
     }
+
+    start_analog_thread();
 
     system_stats_.fully_booted = true;
     return 0;

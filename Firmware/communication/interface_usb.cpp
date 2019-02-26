@@ -177,6 +177,6 @@ void usb_rx_process_packet(uint8_t *buf, uint32_t len, uint8_t endpoint_pair) {
 
 void start_usb_server() {
     // Start USB communication thread
-    osThreadDef(usb_server_thread_def, usb_server_thread, osPriorityNormal, 0, 512);
+    osThreadDef(usb_server_thread_def, usb_server_thread, osPriorityNormal, 0, 1024);
     usb_thread = osThreadCreate(osThread(usb_server_thread_def), NULL);
 }
