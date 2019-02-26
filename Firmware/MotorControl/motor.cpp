@@ -286,15 +286,20 @@ bool Motor::measure_pm_flux_linkage()
     // Cache old controller values
     float cached_vel_gain = axis_->controller_.config_.vel_gain;
     float cached_vel_integrator_gain = axis_->controller_.config_.vel_integrator_gain;
-    float cached_spin_up_taget_vel = axis_->config_.spin_up_target_vel;
+    float cached_spin_up_target_vel = axis_->config_.lockin.vel;
+    float cached_spin_up_target_accel = axis_->config_.lockin.accel;
 
     // Set sensible controller values for detection
     axis_->controller_.config_.vel_gain = 0.1f;
     axis_->controller_.config_.vel_integrator_gain = 0;
-    axis_->config_.spin_up_target_vel = 200;
+    axis_->config_.lockin.vel = 200.0f;
+    axis_->config_.lockin.accel = 400.0f;
 
-    // Spin up and run motor for 2 seconds
-    axis_->run_sensorless_spin_up(2.0f);
+    // Spin up and run motor for 500 erads
+    axis_->config_.lockin.finish_distance = 500;
+    axis_->config_.lockin.finish_on_distance = true;
+
+    axis_->run_lockin_spin();
 
     // Coast
     safety_critical_disarm_motor_pwm(axis_->motor_);
@@ -302,16 +307,18 @@ bool Motor::measure_pm_flux_linkage()
     // Restore cached values to controller
     axis_->controller_.config_.vel_gain = cached_vel_gain;
     axis_->controller_.config_.vel_integrator_gain = cached_vel_integrator_gain;   
-    axis_->config_.spin_up_target_vel = cached_spin_up_taget_vel;    
+    axis_->config_.lockin.vel = cached_spin_up_target_vel;  
+    axis_->config_.lockin.accel = cached_spin_up_target_accel;  
+    axis_->config_.lockin.finish_on_distance = false;
 
     // Set up variables for calculation
     float Id = 0;
-    float Iq = axis_->config_.spin_up_current;
+    float Iq = axis_->config_.lockin.current;
     float V_squared = SQ(saved_steady_state_v_current_control_integral_d_) + SQ(saved_steady_state_v_current_control_integral_q_);
     float Rs = config_.phase_resistance;
     float Ld = config_.phase_inductance; // Wrong but close enough for now
     float Lq = config_.phase_inductance; // Wrong but close enough for now
-    float omega = cached_spin_up_taget_vel;
+    float omega = cached_spin_up_target_vel;
 
     // Calculate flux linkage
     //  Vq = Rs Iq + ω Ld Id + ω λm
