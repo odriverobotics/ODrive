@@ -157,6 +157,19 @@ void ASCII_protocol_process_line(const uint8_t* buffer, size_t len, StreamSink& 
             axes[motor_number]->controller_.move_to_pos(goal_point);
         }
 
+    } else if (cmd[0] == 'f') { // feedback
+        unsigned motor_number;
+        int numscan = sscanf(cmd, "f %u", &motor_number);
+        if (numscan < 1) {
+            respond(response_channel, use_checksum, "invalid command format");
+        } else if (motor_number >= AXIS_COUNT) {
+            respond(response_channel, use_checksum, "invalid motor %u", motor_number);
+        } else {
+            respond(response_channel, use_checksum, "%f %f",
+                    (double)axes[motor_number]->encoder_.pos_estimate_,
+                    (double)axes[motor_number]->encoder_.vel_estimate_);
+        }
+
     } else if (cmd[0] == 'h') {  // Help
         respond(response_channel, use_checksum, "Please see documentation for more details");
         respond(response_channel, use_checksum, "");

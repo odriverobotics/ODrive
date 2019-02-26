@@ -7,6 +7,12 @@ Please add a note of your changes below this heading if you make a Pull Request.
 * Voltage limit soft clamping instead of ERROR_MODULATION_MAGNITUDE in gimbal motor closed loop.
 * Thermal current limit with linear derating.
 
+### Changed
+* Unified lockin drive modes. Current for index searching and encoder offset calibration now moved to axis.lockin.current.
+
+### Fixed
+* Added required 1.5 cycle phase shift between ADC and PWM, lack thereof caused unstable current controller at high eRPM.
+
 # Releases
 ## [0.4.7] - 2018-11-28
 ### Added

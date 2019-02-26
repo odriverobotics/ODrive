@@ -67,7 +67,7 @@ public:
         float resistance_calib_max_voltage = 2.0f; // [V] - You may need to increase this if this voltage isn't sufficient to drive calibration_current through the motor.
         float phase_inductance = 0.0f;        // to be set by measure_phase_inductance
         float phase_resistance = 0.0f;        // to be set by measure_phase_resistance
-        int32_t direction = 1;                // 1 or -1
+        int32_t direction = 0;                // 1 or -1 (0 = unspecified)
         MotorType_t motor_type = MOTOR_TYPE_HIGH_CURRENT;
         // Read out max_allowed_current to see max supported value for current_lim.
         // float current_lim = 70.0f; //[A]
