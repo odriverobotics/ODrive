@@ -32,9 +32,10 @@ class OperationAbortedException(Exception):
     pass
 
 def dump_errors(odrv, clear=False):
-    axes = [axis for name, axis in odrv._remote_attributes.items() if 'axis' in name]
-    for num, axis in enumerate(axes):
-        print('Axis{}:'.format(num))
+    axes = [(name, axis) for name, axis in odrv._remote_attributes.items() if 'axis' in name]
+    axes.sort()
+    for name, axis in axes:
+        print(name)
 
         # Flatten axis and submodules
         # (name, remote_obj, errorcode)
