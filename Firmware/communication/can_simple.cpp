@@ -24,87 +24,92 @@ void CANSimple::handle_can_message(CAN_message_t& msg) {
 
     Axis* axis = nullptr;
 
+    bool validAxis = false;
     for (uint8_t i = 0; i < AXIS_COUNT; i++) {
         if (axes[i]->config_.can_node_id == nodeID) {
             axis = axes[i];
+            validAxis = true;
         }
     }
-    switch (cmd) {
-        case MSG_CO_NMT_CTRL:
-            break;
-        case MSG_CO_HEARTBEAT_CMD:
-            break;
-        case MSG_ODRIVE_HEARTBEAT:
-            // We don't currently do anything to respond to ODrive heartbeat messages
-            break;
-        case MSG_ODRIVE_ESTOP:
-            estop_callback(axis, msg);
-            break;
-        case MSG_GET_MOTOR_ERROR:
-            get_motor_error_callback(axis, msg);
-            break;
-        case MSG_GET_ENCODER_ERROR:
-            get_encoder_error_callback(axis, msg);
-            break;
-        case MSG_GET_SENSORLESS_ERROR:
-            get_sensorless_error_callback(axis, msg);
-            break;
-        case MSG_SET_AXIS_NODE_ID:
-            set_axis_nodeid_callback(axis, msg);
-            break;
-        case MSG_SET_AXIS_REQUESTED_STATE:
-            set_axis_requested_state_callback(axis, msg);
-            break;
-        case MSG_SET_AXIS_STARTUP_CONFIG:
-            set_axis_startup_config_callback(axis, msg);
-            break;
-        case MSG_GET_ENCODER_ESTIMATES:
-            get_encoder_estimates_callback(axis, msg);
-            break;
-        case MSG_GET_ENCODER_COUNT:
-            get_encoder_count_callback(axis, msg);
-            break;
-        case MSG_MOVE_TO_POS:
-            move_to_pos_callback(axis, msg);
-            break;
-        case MSG_SET_POS_SETPOINT:
-            set_pos_setpoint_callback(axis, msg);
-            break;
-        case MSG_SET_VEL_SETPOINT:
-            set_vel_setpoint_callback(axis, msg);
-            break;
-        case MSG_SET_CUR_SETPOINT:
-            set_current_setpoint_callback(axis, msg);
-            break;
-        case MSG_SET_VEL_LIMIT:
-            set_vel_limit_callback(axis, msg);
-            break;
-        case MSG_START_ANTICOGGING:
-            start_anticogging_callback(axis, msg);
-            break;
-        case MSG_SET_TRAJ_A_PER_CSS:
-            set_traj_A_per_css_callback(axis, msg);
-            break;
-        case MSG_SET_TRAJ_ACCEL_LIMITS:
-            set_traj_accel_limits_callback(axis, msg);
-            break;
-        case MSG_SET_TRAJ_VEL_LIMIT:
-            set_traj_vel_limit_callback(axis, msg);
-            break;
-        case MSG_GET_IQ:
-            get_iq_callback(axis, msg);
-            break;
-        case MSG_GET_SENSORLESS_ESTIMATES:
-            get_sensorless_estimates_callback(axis, msg);
-            break;
+
+    if (validAxis) {
+        switch (cmd) {
+            case MSG_CO_NMT_CTRL:
+                break;
+            case MSG_CO_HEARTBEAT_CMD:
+                break;
+            case MSG_ODRIVE_HEARTBEAT:
+                // We don't currently do anything to respond to ODrive heartbeat messages
+                break;
+            case MSG_ODRIVE_ESTOP:
+                estop_callback(axis, msg);
+                break;
+            case MSG_GET_MOTOR_ERROR:
+                get_motor_error_callback(axis, msg);
+                break;
+            case MSG_GET_ENCODER_ERROR:
+                get_encoder_error_callback(axis, msg);
+                break;
+            case MSG_GET_SENSORLESS_ERROR:
+                get_sensorless_error_callback(axis, msg);
+                break;
+            case MSG_SET_AXIS_NODE_ID:
+                set_axis_nodeid_callback(axis, msg);
+                break;
+            case MSG_SET_AXIS_REQUESTED_STATE:
+                set_axis_requested_state_callback(axis, msg);
+                break;
+            case MSG_SET_AXIS_STARTUP_CONFIG:
+                set_axis_startup_config_callback(axis, msg);
+                break;
+            case MSG_GET_ENCODER_ESTIMATES:
+                get_encoder_estimates_callback(axis, msg);
+                break;
+            case MSG_GET_ENCODER_COUNT:
+                get_encoder_count_callback(axis, msg);
+                break;
+            case MSG_MOVE_TO_POS:
+                move_to_pos_callback(axis, msg);
+                break;
+            case MSG_SET_POS_SETPOINT:
+                set_pos_setpoint_callback(axis, msg);
+                break;
+            case MSG_SET_VEL_SETPOINT:
+                set_vel_setpoint_callback(axis, msg);
+                break;
+            case MSG_SET_CUR_SETPOINT:
+                set_current_setpoint_callback(axis, msg);
+                break;
+            case MSG_SET_VEL_LIMIT:
+                set_vel_limit_callback(axis, msg);
+                break;
+            case MSG_START_ANTICOGGING:
+                start_anticogging_callback(axis, msg);
+                break;
+            case MSG_SET_TRAJ_A_PER_CSS:
+                set_traj_A_per_css_callback(axis, msg);
+                break;
+            case MSG_SET_TRAJ_ACCEL_LIMITS:
+                set_traj_accel_limits_callback(axis, msg);
+                break;
+            case MSG_SET_TRAJ_VEL_LIMIT:
+                set_traj_vel_limit_callback(axis, msg);
+                break;
+            case MSG_GET_IQ:
+                get_iq_callback(axis, msg);
+                break;
+            case MSG_GET_SENSORLESS_ESTIMATES:
+                get_sensorless_estimates_callback(axis, msg);
+                break;
             case MSG_RESET_ODRIVE:
                 NVIC_SystemReset();
                 break;
             case MSG_GET_VBUS_VOLTAGE:
                 get_vbus_voltage_callback(axis, msg);
                 break;
-        default:
-            break;
+            default:
+                break;
+        }
     }
 }
 
@@ -162,7 +167,7 @@ void CANSimple::get_sensorless_error_callback(Axis* axis, CAN_message_t& msg) {
 }
 
 void CANSimple::set_axis_nodeid_callback(Axis* axis, CAN_message_t& msg) {
-    axis->config_.can_node_id = msg.buf[0] & 0x3F; // Node ID bitmask
+    axis->config_.can_node_id = msg.buf[0] & 0x3F;  // Node ID bitmask
 }
 
 void CANSimple::set_axis_requested_state_callback(Axis* axis, CAN_message_t& msg) {
@@ -185,7 +190,7 @@ void CANSimple::get_encoder_estimates_callback(Axis* axis, CAN_message_t& msg) {
     uint32_t floatBytes;
     static_assert(sizeof axis->encoder_.pos_estimate_ == sizeof floatBytes);
     std::memcpy(&floatBytes, &axis->encoder_.pos_estimate_, sizeof floatBytes);
-    
+
     txmsg.buf[0] = floatBytes;
     txmsg.buf[1] = floatBytes >> 8;
     txmsg.buf[2] = floatBytes >> 16;
@@ -214,7 +219,7 @@ void CANSimple::get_sensorless_estimates_callback(Axis* axis, CAN_message_t& msg
     uint32_t floatBytes;
     static_assert(sizeof axis->sensorless_estimator_.pll_pos_ == sizeof floatBytes);
     std::memcpy(&floatBytes, &axis->sensorless_estimator_.pll_pos_, sizeof floatBytes);
-    
+
     txmsg.buf[0] = floatBytes;
     txmsg.buf[1] = floatBytes >> 8;
     txmsg.buf[2] = floatBytes >> 16;
@@ -230,7 +235,7 @@ void CANSimple::get_sensorless_estimates_callback(Axis* axis, CAN_message_t& msg
     odCAN->write(txmsg);
 }
 
-void CANSimple::get_encoder_count_callback(Axis* axis, CAN_message_t& msg){
+void CANSimple::get_encoder_count_callback(Axis* axis, CAN_message_t& msg) {
     CAN_message_t txmsg;
     txmsg.id = axis->config_.can_node_id << NUM_CMD_ID_BITS;
     txmsg.id += MSG_GET_ENCODER_COUNT;
@@ -287,7 +292,7 @@ void CANSimple::set_traj_A_per_css_callback(Axis* axis, CAN_message_t& msg) {
     axis->trap_.config_.A_per_css = get_float(msg, 0);
 }
 
-void CANSimple::get_iq_callback(Axis* axis, CAN_message_t& msg){
+void CANSimple::get_iq_callback(Axis* axis, CAN_message_t& msg) {
     CAN_message_t txmsg;
     txmsg.id = axis->config_.can_node_id << NUM_CMD_ID_BITS;
     txmsg.id += MSG_GET_IQ;
@@ -297,7 +302,7 @@ void CANSimple::get_iq_callback(Axis* axis, CAN_message_t& msg){
     uint32_t floatBytes;
     static_assert(sizeof axis->motor_.current_control_.Iq_setpoint == sizeof floatBytes);
     std::memcpy(&floatBytes, &axis->motor_.current_control_.Iq_setpoint, sizeof floatBytes);
-    
+
     txmsg.buf[0] = floatBytes;
     txmsg.buf[1] = floatBytes >> 8;
     txmsg.buf[2] = floatBytes >> 16;
@@ -376,11 +381,11 @@ int32_t CANSimple::get_32bit_val(CAN_message_t& msg, uint8_t start_byte) {
     return get_16bit_val(msg, start_byte) + (get_16bit_val(msg, start_byte + 2) << 16);
 }
 
-float CANSimple::get_float(CAN_message_t& msg, uint8_t start_byte){
+float CANSimple::get_float(CAN_message_t& msg, uint8_t start_byte) {
     int32_t val = get_32bit_val(msg, start_byte);
     float retVal;
-    
+
     static_assert(sizeof retVal == sizeof val);
-    std::memcpy(&retVal, &val, sizeof val); // Sexier int32_t -> float cast that isn't UB
+    std::memcpy(&retVal, &val, sizeof val);  // Sexier int32_t -> float cast that isn't UB
     return retVal;
 }
