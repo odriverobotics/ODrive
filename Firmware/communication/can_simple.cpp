@@ -97,6 +97,12 @@ void CANSimple::handle_can_message(CAN_message_t& msg) {
         case MSG_GET_SENSORLESS_ESTIMATES:
             get_sensorless_estimates_callback(axis, msg);
             break;
+            case MSG_RESET_ODRIVE:
+                NVIC_SystemReset();
+                break;
+            case MSG_GET_VBUS_VOLTAGE:
+                get_vbus_voltage_callback(axis, msg);
+                break;
         default:
             break;
     }
@@ -307,6 +313,31 @@ void CANSimple::get_iq_callback(Axis* axis, CAN_message_t& msg){
     odCAN->write(txmsg);
 }
 
+void CANSimple::get_vbus_voltage_callback(Axis* axis, CAN_message_t& msg) {
+    CAN_message_t txmsg;
+
+    txmsg.id = axis->config_.can_node_id << NUM_CMD_ID_BITS;
+    txmsg.id += MSG_GET_VBUS_VOLTAGE;
+    txmsg.isExt = false;
+    txmsg.len = 8;
+
+    uint32_t floatBytes;
+    static_assert(sizeof vbus_voltage == sizeof floatBytes);
+    std::memcpy(&floatBytes, &vbus_voltage, sizeof floatBytes);
+
+    // This also works in principle, but I don't have hardware to verify endianness
+    // std::memcpy(&txmsg.buf[0], &vbus_voltage, sizeof vbus_voltage);
+
+    txmsg.buf[0] = floatBytes;
+    txmsg.buf[1] = floatBytes >> 8;
+    txmsg.buf[2] = floatBytes >> 16;
+    txmsg.buf[3] = floatBytes >> 24;
+
+    txmsg.buf[4] = 0;
+    txmsg.buf[5] = 0;
+    txmsg.buf[6] = 0;
+    txmsg.buf[7] = 0;
+}
 
 void CANSimple::send_heartbeat(Axis* axis) {
     CAN_message_t txmsg;

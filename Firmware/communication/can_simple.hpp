@@ -29,6 +29,8 @@ class CANSimple {
         MSG_SET_TRAJ_A_PER_CSS,
         MSG_GET_IQ,
         MSG_GET_SENSORLESS_ESTIMATES,
+        MSG_RESET_ODRIVE,
+        MSG_GET_VBUS_VOLTAGE,
     };
 
     static void handle_can_message(CAN_message_t& msg);
@@ -56,7 +58,8 @@ class CANSimple {
     static void set_traj_accel_limits_callback(Axis* axis, CAN_message_t& msg);
     static void set_traj_A_per_css_callback(Axis* axis, CAN_message_t& msg);
     static void get_iq_callback(Axis* axis, CAN_message_t& msg);
-    static void get_sensorless_estimates_callback(Axis* axis, CAN_message_t& ms);
+    static void get_sensorless_estimates_callback(Axis* axis, CAN_message_t& msg);
+    static void get_vbus_voltage_callback(Axis* axis, CAN_message_t& msg);
 
 
     // Utility functions
