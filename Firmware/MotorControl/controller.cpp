@@ -56,6 +56,15 @@ void Controller::move_to_pos(float goal_point) {
                                  axis_->trap_.config_.decel_limit);
     traj_start_loop_count_ = axis_->loop_counter_;
     config_.control_mode = CTRL_MODE_TRAJECTORY_CONTROL;
+    goal_point_ = goal_point;
+}
+
+void Controller::move_incremental(float displacement, bool from_goal_point = true){
+    if(from_goal_point){
+        move_to_pos(goal_point_ + displacement);
+    } else{
+        move_to_pos(pos_setpoint_ + displacement);
+    }
 }
 
 void Controller::start_anticogging_calibration() {

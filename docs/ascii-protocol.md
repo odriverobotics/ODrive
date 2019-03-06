@@ -37,6 +37,20 @@ Example: `t 0 -20000`
 For general moving around of the axis, this is the recommended command.
 
 #### Motor Position command
+For basic use where you send one setpoint at at a time, use the `q` command.
+If you have a realtime controller that is streaming setpoints and tracking a trajectory, use the `p` command.
+
+```
+q motor position velocity_lim current_lim
+```
+* `q` for position
+* `motor` is the motor number, `0` or `1`.
+* `position` is the desired position, in encoder counts.
+* `velocity_lim` is the velocity limit, in counts/s (optional).
+* `current_lim` is the current limit, in A (optional).
+
+Example: `q 0 -20000 10000 10`
+
 ```
 p motor position velocity_ff current_ff
 ```
@@ -90,3 +104,8 @@ Not all parameters can be accessed via the ASCII protocol but at least all param
    * `property` name of the property, as seen in ODrive Tool
    * `value` text representation of the value to be written
    * Example: `w axis0.controller.pos_setpoint -123.456`
+
+#### System commands:
+* `ss` - Save config
+* `se` - Erase config
+* `sr` - Reboot

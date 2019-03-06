@@ -42,6 +42,10 @@ void ODriveArduino::SetCurrent(int motor_number, float current) {
     serial_ << "c " << motor_number << " " << current << "\n";
 }
 
+void ODriveArduino::TrapezoidalMove(int motor_number, float position){
+    serial_ << "t " << motor_number << " " << position << "\n";
+}
+
 float ODriveArduino::readFloat() {
     return readString().toFloat();
 }
