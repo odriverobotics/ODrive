@@ -281,24 +281,26 @@ bool Motor::measure_phase_inductance(float voltage_low, float voltage_high) {
     return true;
 }
 
-bool Motor::measure_pm_flux_linkage()
-{
+bool Motor::measure_pm_flux_linkage() {
     // Cache old controller values
     float cached_vel_gain = axis_->controller_.config_.vel_gain;
     float cached_vel_integrator_gain = axis_->controller_.config_.vel_integrator_gain;
     float cached_spin_up_target_vel = axis_->config_.lockin.vel;
     float cached_spin_up_target_accel = axis_->config_.lockin.accel;
 
+    //
+    float measurement_target_vel = 400.0f;
+    float measurement_target_accel = 200.0f;
+
     // Set sensible controller values for detection
     axis_->controller_.config_.vel_gain = 0.1f;
     axis_->controller_.config_.vel_integrator_gain = 0;
-    axis_->config_.lockin.vel = 200.0f;
-    axis_->config_.lockin.accel = 400.0f;
+    axis_->config_.lockin.vel = measurement_target_vel;
+    axis_->config_.lockin.accel = measurement_target_accel;
 
-    // Spin up and run motor for 500 erads
-    axis_->config_.lockin.finish_distance = 500;
+    // Spin up and run motor for 1000 erads
+    axis_->config_.lockin.finish_distance = 1000;
     axis_->config_.lockin.finish_on_distance = true;
-
     axis_->run_lockin_spin();
 
     // Coast
@@ -318,7 +320,7 @@ bool Motor::measure_pm_flux_linkage()
     float Rs = config_.phase_resistance;
     float Ld = config_.phase_inductance; // Wrong but close enough for now
     float Lq = config_.phase_inductance; // Wrong but close enough for now
-    float omega = cached_spin_up_target_vel;
+    float omega = measurement_target_vel;
 
     // Calculate flux linkage
     //  Vq = Rs Iq + ω Ld Id + ω λm
@@ -331,8 +333,7 @@ bool Motor::measure_pm_flux_linkage()
     float lambda_m = (sqrt( V_squared - SQ(Rs * Id - omega * Lq * Iq)) - Rs * Iq - omega * Ld * Id) / omega;
 
     // Check if value is reasonable, error if out of bounds
-    if(lambda_m < 0 || lambda_m > 1)
-    {
+    if(lambda_m < 0 || lambda_m > 1) {
         return set_error(ERROR_PM_FLUX_LINKAGE_OUT_OF_RANGE), false;
     }
     
