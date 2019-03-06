@@ -20,6 +20,7 @@ public:
         ERROR_ENCODER_FAILED = 0x100, // Go to encoder.hpp for information, check odrvX.axisX.encoder.error for error value
         ERROR_CONTROLLER_FAILED = 0x200,
         ERROR_POS_CTRL_DURING_SENSORLESS = 0x400,
+        ERROR_WATCHDOG_TIMER_EXPIRED = 0x800,
     };
 
     // Warning: Do not reorder these enum values.
@@ -46,6 +47,8 @@ public:
         bool enable_step_dir = false; //<! enable step/dir input after calibration
                                     //   For M0 this has no effect if enable_uart is true
         float counts_per_step = 2.0f;
+
+        float watchdog_timeout = 0.0f; // [s] (0 disables watchdog)
 
         // Defaults loaded from hw_config in load_configuration in main.cpp
         uint16_t step_gpio_pin = 0;
@@ -79,6 +82,8 @@ public:
     void step_cb();
     void set_step_dir_active(bool enable);
     void decode_step_dir_pins();
+    void update_watchdog_settings();
+
     static void load_default_step_dir_pin_config(
         const AxisHardwareConfig_t& hw_config, Config_t* config);
 
@@ -86,6 +91,9 @@ public:
     bool check_PSU_brownout();
     bool do_checks();
     bool do_updates();
+
+    void watchdog_feed();
+    bool watchdog_check();
 
 
     // True if there are no errors
@@ -121,8 +129,11 @@ public:
             // Update all estimators
             // Note: updates run even if checks fail
             bool updates_ok = do_updates(); 
+
+            // make sure the watchdog is being fed. 
+            bool watchdog_ok = watchdog_check();
             
-            if (!checks_ok || !updates_ok) {
+            if (!checks_ok || !updates_ok || !watchdog_ok) {
                 // It's not useful to quit idle since that is the safe action
                 // Also leaving idle would rearm the motors
                 if (current_state_ != AXIS_STATE_IDLE)
@@ -185,6 +196,10 @@ public:
     State_t& current_state_ = task_chain_[0];
     uint32_t loop_counter_ = 0;
 
+    // watchdog
+    uint32_t watchdog_reset_value_ = 0; //computed from config_.watchdog_timeout in update_watchdog_settings()
+    uint32_t watchdog_current_value_= 0;
+
     // Communication protocol definitions
     auto make_protocol_definitions() {
         return make_protocol_member_list(
@@ -201,6 +216,8 @@ public:
                 make_protocol_property("startup_sensorless_control", &config_.startup_sensorless_control),
                 make_protocol_property("enable_step_dir", &config_.enable_step_dir),
                 make_protocol_property("counts_per_step", &config_.counts_per_step),
+                make_protocol_property("watchdog_timeout", &config_.watchdog_timeout,
+                    [](void* ctx) { static_cast<Axis*>(ctx)->update_watchdog_settings(); }, this),
                 make_protocol_property("step_gpio_pin", &config_.step_gpio_pin,
                     [](void* ctx) { static_cast<Axis*>(ctx)->decode_step_dir_pins(); }, this),
                 make_protocol_property("dir_gpio_pin", &config_.dir_gpio_pin,
@@ -215,7 +232,8 @@ public:
             make_protocol_object("controller", controller_.make_protocol_definitions()),
             make_protocol_object("encoder", encoder_.make_protocol_definitions()),
             make_protocol_object("sensorless_estimator", sensorless_estimator_.make_protocol_definitions()),
-            make_protocol_object("trap_traj", trap_.make_protocol_definitions())
+            make_protocol_object("trap_traj", trap_.make_protocol_definitions()),
+            make_protocol_function("watchdog_feed", *this, &Axis::watchdog_feed)
         );
     }
 };
