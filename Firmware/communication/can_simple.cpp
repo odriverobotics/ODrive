@@ -374,11 +374,17 @@ uint8_t CANSimple::get_cmd_id(uint32_t msgID) {
 }
 
 int16_t CANSimple::get_16bit_val(CAN_message_t& msg, uint8_t start_byte) {
-    return msg.buf[start_byte] + (msg.buf[start_byte + 1] << 8);
+    int16_t retVal = 0;
+    if(msg.len - start_byte >= sizeof(retVal))
+        retVal = std::memcpy(&retVal, &(msg.buf[start_byte]), sizeof(retVal));
+    return retVal;
 }
 
 int32_t CANSimple::get_32bit_val(CAN_message_t& msg, uint8_t start_byte) {
-    return get_16bit_val(msg, start_byte) + (get_16bit_val(msg, start_byte + 2) << 16);
+    int32_t retVal = 0;
+    if(msg.len - start_byte >= sizeof(retVal))
+        std::memcpy(&retVal, &(msg.buf[start_byte]), sizeof(retVal));
+    return retVal;
 }
 
 float CANSimple::get_float(CAN_message_t& msg, uint8_t start_byte) {
