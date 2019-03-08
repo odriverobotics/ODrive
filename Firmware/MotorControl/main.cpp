@@ -74,6 +74,7 @@ void load_configuration(void) {
             axis_configs[i] = Axis::Config_t();
             // Default step/dir pins are different, so we need to explicitly load them
             Axis::load_default_step_dir_pin_config(hw_configs[i].axis_config, &axis_configs[i]);
+            Axis::load_default_can_id(i, axis_configs[i]);
         }
     } else {
         user_config_loaded_ = true;

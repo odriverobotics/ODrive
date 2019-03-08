@@ -81,6 +81,10 @@ void Axis::load_default_step_dir_pin_config(
     config->dir_gpio_pin = hw_config.dir_gpio_pin;
 }
 
+void Axis::load_default_can_id(const int& id, Config_t& config){
+    config.can_node_id = id;
+}
+
 void Axis::decode_step_dir_pins() {
     step_port_ = get_gpio_port_by_pin(config_.step_gpio_pin);
     step_pin_ = get_gpio_pin_by_pin(config_.step_gpio_pin);

@@ -97,6 +97,7 @@ public:
     void decode_step_dir_pins();
     static void load_default_step_dir_pin_config(
         const AxisHardwareConfig_t& hw_config, Config_t* config);
+    static void load_default_can_id(const int& id, Config_t& config);
 
     bool check_DRV_fault();
     bool check_PSU_brownout();
