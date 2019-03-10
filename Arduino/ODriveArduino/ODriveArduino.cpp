@@ -46,6 +46,14 @@ void ODriveArduino::TrapezoidalMove(int motor_number, float position){
     serial_ << "t " << motor_number << " " << position << "\n";
 }
 
+void ODriveArduino::SetControlModeCurrent(int motor_number){
+    serial_<< "w axis" << motor_number << ".controller.config.control_mode " << 1 << "\n";
+}
+
+void ODriveArduino::SetControlModeVelocity(int motor_number){
+    serial_<< "w axis" << motor_number << ".controller.config.control_mode " << 2 << "\n";
+}
+
 float ODriveArduino::readFloat() {
     return readString().toFloat();
 }
