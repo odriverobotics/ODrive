@@ -37,9 +37,9 @@ You can monitor your PUS voltage using liveplotter in odrive tool by entering `s
 
 * `ERROR_DC_BUS_OVER_VOLTAGE = 0x04`
 
-Confirm that you have a break resistor of the correct value connected securly and that `odrv0.config.brake_resistance` is set to the value of your break resistor. 
+Confirm that you have a brake resistor of the correct value connected securly and that `odrv0.config.brake_resistance` is set to the value of your brake resistor. 
 
-You can monitor your PUS voltage using liveplotter in odrive tool by entering `start_liveplotter(lambda: [odrv0.vbus_voltage])`. If during a move you see the voltage rise above your PSU's nominal set voltage then you have your break resistance set too low. This may happen if you are using long wires or small gauge wires to connect your break resistor to your odrive which will added extra resistance. This extra resistance needs to be accounted for to prevent this voltage spike. If you have checked all your connections you can also try increasing your break resistance by ~ 0.01 Ohm at a time to a maximum of 0.05 greater than your break resistor value.
+You can monitor your PUS voltage using liveplotter in odrive tool by entering `start_liveplotter(lambda: [odrv0.vbus_voltage])`. If during a move you see the voltage rise above your PSU's nominal set voltage then you have your brake resistance set too low. This may happen if you are using long wires or small gauge wires to connect your brake resistor to your odrive which will added extra resistance. This extra resistance needs to be accounted for to prevent this voltage spike. If you have checked all your connections you can also try increasing your brake resistance by ~ 0.01 Ohm at a time to a maximum of 0.05 greater than your brake resistor value.
 
 ## Common Motor Errors 
 
