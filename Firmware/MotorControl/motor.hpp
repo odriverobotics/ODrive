@@ -5,7 +5,8 @@
 #error "This file should not be included directly. Include odrive_main.h instead."
 #endif
 
-#include "drv8301.h"
+#include <devices.hpp>
+#include <thermistor.hpp>
 
 class Motor {
 public:
@@ -22,7 +23,8 @@ public:
         ERROR_BRAKE_DEADTIME_VIOLATION = 0x0100,
         ERROR_UNEXPECTED_TIMER_CALLBACK = 0x0200,
         ERROR_CURRENT_SENSE_SATURATION = 0x0400,
-        ERROR_INVERTER_OVER_TEMP = 0x0800
+        ERROR_INVERTER_OVER_TEMP = 0x0800,
+        ERROR_CURRENT_SENSOR = 0x1000,
     };
 
     enum MotorType_t {
@@ -31,7 +33,8 @@ public:
         MOTOR_TYPE_GIMBAL = 2
     };
 
-    struct Iph_BC_t {
+    struct Iph_ABC_t {
+        float phA;
         float phB;
         float phC;
     };
@@ -95,27 +98,36 @@ public:
         ARMED_STATE_ARMED,
     };
 
-    Motor(const MotorHardwareConfig_t& hw_config,
-         const GateDriverHardwareConfig_t& gate_driver_config,
+    Motor(STM32_Timer_t* timer,
+         STM32_GPIO_t* pwm_al_gpio, STM32_GPIO_t* pwm_bl_gpio, STM32_GPIO_t* pwm_cl_gpio,
+         STM32_GPIO_t* pwm_ah_gpio, STM32_GPIO_t* pwm_bh_gpio, STM32_GPIO_t* pwm_ch_gpio,
+         GateDriver_t* gate_driver_a,
+         GateDriver_t* gate_driver_b,
+         GateDriver_t* gate_driver_c,
+         CurrentSensor_t* current_sensor_a,
+         CurrentSensor_t* current_sensor_b,
+         CurrentSensor_t* current_sensor_c,
+         Thermistor_t* inverter_thermistor,
+         uint16_t period, uint16_t repetition_counter, uint16_t dead_time,
          Config_t& config);
 
     bool arm();
     void disarm();
-    void setup() {
-        DRV8301_setup();
-    }
-    void reset_current_control();
 
+    void handle_timer_update();
+    void handle_current_sensor_update();
+
+    bool init();
+    bool start_updates();
+
+    void reset_current_control();
     void update_current_controller_gains();
-    void DRV8301_setup();
     bool check_DRV_fault();
     void set_error(Error_t error);
     bool do_checks();
     float get_inverter_temp();
     bool update_thermal_limits();
     float effective_current_lim();
-    void log_timing(TimingLog_t log_idx);
-    float phase_current_from_adcval(uint32_t ADCValue);
     bool measure_phase_resistance(float test_current, float max_voltage);
     bool measure_phase_inductance(float voltage_low, float voltage_high);
     bool run_calibration();
@@ -125,23 +137,37 @@ public:
     bool FOC_current(float Id_des, float Iq_des, float I_phase, float pwm_phase);
     bool update(float current_setpoint, float phase, float phase_vel);
 
-    const MotorHardwareConfig_t& hw_config_;
-    const GateDriverHardwareConfig_t gate_driver_config_;
+    STM32_Timer_t* timer_;
+    STM32_GPIO_t* pwm_al_gpio_;
+    STM32_GPIO_t* pwm_bl_gpio_;
+    STM32_GPIO_t* pwm_cl_gpio_;
+    STM32_GPIO_t* pwm_ah_gpio_;
+    STM32_GPIO_t* pwm_bh_gpio_;
+    STM32_GPIO_t* pwm_ch_gpio_;
+    GateDriver_t* gate_driver_a_;
+    GateDriver_t* gate_driver_b_;
+    GateDriver_t* gate_driver_c_;
+    CurrentSensor_t* current_sensor_a_;
+    CurrentSensor_t* current_sensor_b_;
+    CurrentSensor_t* current_sensor_c_;
+    Thermistor_t* inverter_thermistor_;
+
+    uint16_t period_;
+    uint16_t repetition_counter_;
+    uint16_t dead_time_;
+
     Config_t& config_;
     Axis* axis_ = nullptr; // set by Axis constructor
 
 //private:
 
-    DRV8301_Obj gate_driver_; // initialized in constructor
-    uint16_t next_timings_[3] = {
-        TIM_1_8_PERIOD_CLOCKS / 2,
-        TIM_1_8_PERIOD_CLOCKS / 2,
-        TIM_1_8_PERIOD_CLOCKS / 2
-    };
-    bool next_timings_valid_ = false;
-    uint16_t last_cpu_time_ = 0;
-    int timing_log_index_ = 0;
-    uint16_t timing_log_[TIMING_LOG_NUM_SLOTS] = { 0 };
+
+    uint16_t GPIO_port_samples[n_GPIO_samples];
+
+    volatile uint8_t new_current_readings_ = 0; // bitfield (values 0...7) to indicate which of the current measurements are new. If ==7, the next current control iteration can happen. Reset by the current control iteration.
+    volatile bool is_updating_pwm_timings_ = false; // true while the PWM timings are being updated
+    volatile uint32_t last_pwm_update_timestamp_ = 0xffffffff; // set to the current timer value after the PWM timings are committed
+    uint16_t pwm_control_deadline_; // set in start()
 
     // variables exposed on protocol
     Error_t error_ = ERROR_NONE;
@@ -149,9 +175,8 @@ public:
     // It is for exclusive use by the safety_critical_... functions.
     ArmedState_t armed_state_ = ARMED_STATE_DISARMED; 
     bool is_calibrated_ = config_.pre_calibrated;
-    Iph_BC_t current_meas_ = {0.0f, 0.0f};
-    Iph_BC_t DC_calib_ = {0.0f, 0.0f};
-    float phase_current_rev_gain_ = 0.0f; // Reverse gain for ADC to Amps (to be set by DRV8301_setup)
+    Iph_ABC_t current_meas_ = {0.0f, 0.0f};
+    Iph_ABC_t DC_calib_ = {0.0f, 0.0f};
     CurrentControl_t current_control_ = {
         .p_gain = 0.0f,        // [V/A] should be auto set after resistance and inductance measurement
         .i_gain = 0.0f,        // [V/As] should be auto set after resistance and inductance measurement
@@ -167,8 +192,6 @@ public:
         .max_allowed_current = 0.0f,
         .overcurrent_trip_level = 0.0f,
     };
-    DRV8301_FaultType_e drv_fault_ = DRV8301_FaultType_NoFault;
-    DRV_SPI_8301_Vars_t gate_driver_regs_; //Local view of DRV registers (initialized by DRV8301_setup)
     float thermal_current_lim_ = 10.0f;  //[A]
 
     // Communication protocol definitions
@@ -181,7 +204,6 @@ public:
             make_protocol_ro_property("current_meas_phC", &current_meas_.phC),
             make_protocol_property("DC_calib_phB", &DC_calib_.phB),
             make_protocol_property("DC_calib_phC", &DC_calib_.phC),
-            make_protocol_property("phase_current_rev_gain", &phase_current_rev_gain_),
             make_protocol_ro_property("thermal_current_lim", &thermal_current_lim_),
             make_protocol_function("get_inverter_temp", *this, &Motor::get_inverter_temp),
             make_protocol_object("current_control",
@@ -199,24 +221,25 @@ public:
                 make_protocol_ro_property("max_allowed_current", &current_control_.max_allowed_current),
                 make_protocol_ro_property("overcurrent_trip_level", &current_control_.overcurrent_trip_level)
             ),
-            make_protocol_object("gate_driver",
-                make_protocol_ro_property("drv_fault", &drv_fault_)
-                // make_protocol_ro_property("status_reg_1", &gate_driver_regs_.Stat_Reg_1_Value),
-                // make_protocol_ro_property("status_reg_2", &gate_driver_regs_.Stat_Reg_2_Value),
-                // make_protocol_ro_property("ctrl_reg_1", &gate_driver_regs_.Ctrl_Reg_1_Value),
-                // make_protocol_ro_property("ctrl_reg_2", &gate_driver_regs_.Ctrl_Reg_2_Value)
-            ),
-            make_protocol_object("timing_log",
-                make_protocol_ro_property("TIMING_LOG_GENERAL", &timing_log_[TIMING_LOG_GENERAL]),
-                make_protocol_ro_property("TIMING_LOG_ADC_CB_I", &timing_log_[TIMING_LOG_ADC_CB_I]),
-                make_protocol_ro_property("TIMING_LOG_ADC_CB_DC", &timing_log_[TIMING_LOG_ADC_CB_DC]),
-                make_protocol_ro_property("TIMING_LOG_MEAS_R", &timing_log_[TIMING_LOG_MEAS_R]),
-                make_protocol_ro_property("TIMING_LOG_MEAS_L", &timing_log_[TIMING_LOG_MEAS_L]),
-                make_protocol_ro_property("TIMING_LOG_ENC_CALIB", &timing_log_[TIMING_LOG_ENC_CALIB]),
-                make_protocol_ro_property("TIMING_LOG_IDX_SEARCH", &timing_log_[TIMING_LOG_IDX_SEARCH]),
-                make_protocol_ro_property("TIMING_LOG_FOC_VOLTAGE", &timing_log_[TIMING_LOG_FOC_VOLTAGE]),
-                make_protocol_ro_property("TIMING_LOG_FOC_CURRENT", &timing_log_[TIMING_LOG_FOC_CURRENT])
-            ),
+
+            //make_protocol_object("gate_driver_a", gate_driver_a->make_protocol_definitions()),
+            //make_protocol_object("gate_driver_b", gate_driver_b->make_protocol_definitions()),
+            //make_protocol_object("gate_driver_c", gate_driver_c->make_protocol_definitions()),
+            //make_protocol_object("current_sensor_a", current_sensor_a.make_protocol_definitions()),
+            //make_protocol_object("current_sensor_b", current_sensor_b.make_protocol_definitions()),
+            //make_protocol_object("current_sensor_c", current_sensor_c.make_protocol_definitions()),
+
+//            make_protocol_object("timing_log",
+//                make_protocol_ro_property("TIMING_LOG_GENERAL", &timing_log_[TIMING_LOG_GENERAL]),
+//                make_protocol_ro_property("TIMING_LOG_ADC_CB_I", &timing_log_[TIMING_LOG_ADC_CB_I]),
+//                make_protocol_ro_property("TIMING_LOG_ADC_CB_DC", &timing_log_[TIMING_LOG_ADC_CB_DC]),
+//                make_protocol_ro_property("TIMING_LOG_MEAS_R", &timing_log_[TIMING_LOG_MEAS_R]),
+//                make_protocol_ro_property("TIMING_LOG_MEAS_L", &timing_log_[TIMING_LOG_MEAS_L]),
+//                make_protocol_ro_property("TIMING_LOG_ENC_CALIB", &timing_log_[TIMING_LOG_ENC_CALIB]),
+//                make_protocol_ro_property("TIMING_LOG_IDX_SEARCH", &timing_log_[TIMING_LOG_IDX_SEARCH]),
+//                make_protocol_ro_property("TIMING_LOG_FOC_VOLTAGE", &timing_log_[TIMING_LOG_FOC_VOLTAGE]),
+//                make_protocol_ro_property("TIMING_LOG_FOC_CURRENT", &timing_log_[TIMING_LOG_FOC_CURRENT])
+//            ),
             make_protocol_object("config",
                 make_protocol_property("pre_calibrated", &config_.pre_calibrated),
                 make_protocol_property("pole_pairs", &config_.pole_pairs),

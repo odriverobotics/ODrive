@@ -1,45 +1,50 @@
 
 #include <stdlib.h>
 #include <functional>
-#include "gpio.h"
+#include <stm32_gpio.hpp>
 
 #include "utils.h"
 #include "odrive_main.h"
 
-Axis::Axis(const AxisHardwareConfig_t& hw_config,
-           Config_t& config,
-           Encoder& encoder,
-           SensorlessEstimator& sensorless_estimator,
-           Controller& controller,
-           Motor& motor,
-           TrapezoidalTrajectory& trap)
-    : hw_config_(hw_config),
-      config_(config),
+Axis::Axis(Motor motor,
+           Encoder encoder,
+           SensorlessEstimator sensorless_estimator,
+           Controller controller,
+           TrapezoidalTrajectory trap,
+           osPriority thread_priority,
+           Config_t& config)
+    : motor_(motor),
       encoder_(encoder),
       sensorless_estimator_(sensorless_estimator),
       controller_(controller),
-      motor_(motor),
-      trap_(trap)
+      trap_(trap),
+      thread_priority_(thread_priority),
+      config_(config)
 {
+    motor_.axis_ = this;
     encoder_.axis_ = this;
     sensorless_estimator_.axis_ = this;
     controller_.axis_ = this;
-    motor_.axis_ = this;
     trap_.axis_ = this;
-
-    decode_step_dir_pins();
-    update_watchdog_settings();
-}
-
-static void step_cb_wrapper(void* ctx) {
-    reinterpret_cast<Axis*>(ctx)->step_cb();
 }
 
 // @brief Sets up all components of the axis,
 // such as gate driver and encoder hardware.
-void Axis::setup() {
-    encoder_.setup();
-    motor_.setup();
+bool Axis::init() {
+    if (!motor_.init())
+        return false;
+    if (!encoder_.init())
+        return false;
+    if (!sensorless_estimator_.init())
+        return false;
+    if (!controller_.init())
+        return false;
+    if (!trap_.init())
+        return false;
+
+    decode_step_dir_pins();
+    update_watchdog_settings();
+    return true;
 }
 
 static void run_state_machine_loop_wrapper(void* ctx) {
@@ -49,7 +54,7 @@ static void run_state_machine_loop_wrapper(void* ctx) {
 
 // @brief Starts run_state_machine_loop in a new thread
 void Axis::start_thread() {
-    osThreadDef(thread_def, run_state_machine_loop_wrapper, hw_config_.thread_priority, 0, 4*512);
+    osThreadDef(thread_def, run_state_machine_loop_wrapper, thread_priority_, 0, 4*512);
     thread_id_ = osThreadCreate(osThread(thread_def), this);
     thread_id_valid_ = true;
 }
@@ -70,23 +75,20 @@ bool Axis::wait_for_current_meas() {
 // step/direction interface
 void Axis::step_cb() {
     if (step_dir_active_) {
-        GPIO_PinState dir_pin = HAL_GPIO_ReadPin(dir_port_, dir_pin_);
+        bool dir_pin = dir_gpio_->read();
         float dir = (dir_pin == GPIO_PIN_SET) ? 1.0f : -1.0f;
         controller_.pos_setpoint_ += dir * config_.counts_per_step;
     }
-};
-
-void Axis::load_default_step_dir_pin_config(
-        const AxisHardwareConfig_t& hw_config, Config_t* config) {
-    config->step_gpio_pin = hw_config.step_gpio_pin;
-    config->dir_gpio_pin = hw_config.dir_gpio_pin;
 }
 
 void Axis::decode_step_dir_pins() {
-    step_port_ = get_gpio_port_by_pin(config_.step_gpio_pin);
-    step_pin_ = get_gpio_pin_by_pin(config_.step_gpio_pin);
-    dir_port_ = get_gpio_port_by_pin(config_.dir_gpio_pin);
-    dir_pin_ = get_gpio_pin_by_pin(config_.dir_gpio_pin);
+    if (step_gpio_)
+        step_gpio_->deinit();
+    if (dir_gpio_)
+        dir_gpio_->deinit();
+    step_gpio_ = gpios[config_.step_gpio_num];
+    dir_gpio_ = gpios[config_.dir_gpio_num];
+    // TODO: reinit GPIOs here
 }
 
 // @brief: Setup the watchdog reset value from the configuration watchdog timeout interval. 
@@ -107,23 +109,23 @@ void Axis::update_watchdog_settings() {
 // @brief (de)activates step/dir input
 void Axis::set_step_dir_active(bool active) {
     if (active) {
-        // Set up the direction GPIO as input
-        GPIO_InitTypeDef GPIO_InitStruct;
-        GPIO_InitStruct.Pin = dir_pin_;
-        GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
-        GPIO_InitStruct.Pull = GPIO_NOPULL;
-        HAL_GPIO_Init(dir_port_, &GPIO_InitStruct);
-
-        // Subscribe to rising edges of the step GPIO
-        GPIO_subscribe(step_port_, step_pin_, GPIO_PULLDOWN,
-                step_cb_wrapper, this);
+        if (dir_gpio_) {
+            dir_gpio_->init(GPIO_t::INPUT, GPIO_t::NO_PULL);
+        }
+        if (step_gpio_) {
+            step_gpio_->init(GPIO_t::INPUT, GPIO_t::PULL_DOWN);
+            step_gpio_->subscribe(true, false,
+                [](void* ctx){ reinterpret_cast<Axis*>(ctx)->step_cb(); }, this);
+        }
 
         step_dir_active_ = true;
     } else {
         step_dir_active_ = false;
 
-        // Unsubscribe from step GPIO
-        GPIO_unsubscribe(step_port_, step_pin_);
+        if (step_gpio_)
+            step_gpio_->deinit();
+        if (dir_gpio_)
+            dir_gpio_->deinit();
     }
 }
 
@@ -408,6 +410,6 @@ void Axis::run_state_machine_loop() {
         if (!status)
             current_state_ = AXIS_STATE_IDLE;
         else
-            memcpy(task_chain_, task_chain_ + 1, sizeof(task_chain_) - sizeof(task_chain_[0]));
+            memmove(task_chain_, task_chain_ + 1, sizeof(task_chain_) - sizeof(task_chain_[0]));
     }
 }

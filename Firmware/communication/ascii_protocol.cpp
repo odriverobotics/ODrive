@@ -92,16 +92,16 @@ void ASCII_protocol_process_line(const uint8_t* buffer, size_t len, StreamSink& 
         int numscan = sscanf(cmd, "p %u %f %f %f", &motor_number, &pos_setpoint, &vel_feed_forward, &current_feed_forward);
         if (numscan < 2) {
             respond(response_channel, use_checksum, "invalid command format");
-        } else if (motor_number >= AXIS_COUNT) {
+        } else if (motor_number >= n_axes) {
             respond(response_channel, use_checksum, "invalid motor %u", motor_number);
         } else {
             if (numscan < 3)
                 vel_feed_forward = 0.0f;
             if (numscan < 4)
                 current_feed_forward = 0.0f;
-            Axis* axis = axes[motor_number];
-            axis->controller_.set_pos_setpoint(pos_setpoint, vel_feed_forward, current_feed_forward);
-            axis->watchdog_feed();
+            Axis& axis = axes[motor_number];
+            axis.controller_.set_pos_setpoint(pos_setpoint, vel_feed_forward, current_feed_forward);
+            axis.watchdog_feed();
         }
 
     } else if (cmd[0] == 'q') { // position control with limits
@@ -110,17 +110,17 @@ void ASCII_protocol_process_line(const uint8_t* buffer, size_t len, StreamSink& 
         int numscan = sscanf(cmd, "q %u %f %f %f", &motor_number, &pos_setpoint, &vel_limit, &current_lim);
         if (numscan < 2) {
             respond(response_channel, use_checksum, "invalid command format");
-        } else if (motor_number >= AXIS_COUNT) {
+        } else if (motor_number >= n_axes) {
             respond(response_channel, use_checksum, "invalid motor %u", motor_number);
         } else {
-            Axis* axis = axes[motor_number];
-            axis->controller_.pos_setpoint_ = pos_setpoint;
+            Axis& axis = axes[motor_number];
+            axis.controller_.pos_setpoint_ = pos_setpoint;
             if (numscan >= 3)
-                axis->controller_.config_.vel_limit = vel_limit;
+                axis.controller_.config_.vel_limit = vel_limit;
             if (numscan >= 4)
-                axis->motor_.config_.current_lim = current_lim;
+                axis.motor_.config_.current_lim = current_lim;
 
-            axis->watchdog_feed();
+            axis.watchdog_feed();
         }
 
     } else if (cmd[0] == 'v') { // velocity control
@@ -129,14 +129,14 @@ void ASCII_protocol_process_line(const uint8_t* buffer, size_t len, StreamSink& 
         int numscan = sscanf(cmd, "v %u %f %f", &motor_number, &vel_setpoint, &current_feed_forward);
         if (numscan < 2) {
             respond(response_channel, use_checksum, "invalid command format");
-        } else if (motor_number >= AXIS_COUNT) {
+        } else if (motor_number >= n_axes) {
             respond(response_channel, use_checksum, "invalid motor %u", motor_number);
         } else {
             if (numscan < 3)
                 current_feed_forward = 0.0f;
-            Axis* axis = axes[motor_number];
-            axis->controller_.set_vel_setpoint(vel_setpoint, current_feed_forward);
-            axis->watchdog_feed();
+            Axis& axis = axes[motor_number];
+            axis.controller_.set_vel_setpoint(vel_setpoint, current_feed_forward);
+            axis.watchdog_feed();
         }
 
     } else if (cmd[0] == 'c') { // current control
@@ -145,12 +145,12 @@ void ASCII_protocol_process_line(const uint8_t* buffer, size_t len, StreamSink& 
         int numscan = sscanf(cmd, "c %u %f", &motor_number, &current_setpoint);
         if (numscan < 2) {
             respond(response_channel, use_checksum, "invalid command format");
-        } else if (motor_number >= AXIS_COUNT) {
+        } else if (motor_number >= n_axes) {
             respond(response_channel, use_checksum, "invalid motor %u", motor_number);
         } else {
-            Axis* axis = axes[motor_number];
-            axis->controller_.set_current_setpoint(current_setpoint);
-            axis->watchdog_feed();
+            Axis& axis = axes[motor_number];
+            axis.controller_.set_current_setpoint(current_setpoint);
+            axis.watchdog_feed();
         }
 
     } else if (cmd[0] == 't') { // trapezoidal trajectory
@@ -159,12 +159,12 @@ void ASCII_protocol_process_line(const uint8_t* buffer, size_t len, StreamSink& 
         int numscan = sscanf(cmd, "t %u %f", &motor_number, &goal_point);
         if (numscan < 2) {
             respond(response_channel, use_checksum, "invalid command format");
-        } else if (motor_number >= AXIS_COUNT) {
+        } else if (motor_number >= n_axes) {
             respond(response_channel, use_checksum, "invalid motor %u", motor_number);
         } else {
-            Axis* axis = axes[motor_number];
-            axis->controller_.move_to_pos(goal_point);
-            axis->watchdog_feed();
+            Axis& axis = axes[motor_number];
+            axis.controller_.move_to_pos(goal_point);
+            axis.watchdog_feed();
         }
 
     } else if (cmd[0] == 'f') { // feedback
@@ -172,12 +172,12 @@ void ASCII_protocol_process_line(const uint8_t* buffer, size_t len, StreamSink& 
         int numscan = sscanf(cmd, "f %u", &motor_number);
         if (numscan < 1) {
             respond(response_channel, use_checksum, "invalid command format");
-        } else if (motor_number >= AXIS_COUNT) {
+        } else if (motor_number >= n_axes) {
             respond(response_channel, use_checksum, "invalid motor %u", motor_number);
         } else {
             respond(response_channel, use_checksum, "%f %f",
-                    (double)axes[motor_number]->encoder_.pos_estimate_,
-                    (double)axes[motor_number]->encoder_.vel_estimate_);
+                    (double)axes[motor_number].encoder_.pos_estimate_,
+                    (double)axes[motor_number].encoder_.vel_estimate_);
         }
 
     } else if (cmd[0] == 'h') {  // Help
@@ -255,10 +255,10 @@ void ASCII_protocol_process_line(const uint8_t* buffer, size_t len, StreamSink& 
         int numscan = sscanf(cmd, "u %u", &motor_number);
         if(numscan < 1){
             respond(response_channel, use_checksum, "invalid command format");
-        } else if (motor_number >= AXIS_COUNT) {
+        } else if (motor_number >= n_axes) {
             respond(response_channel, use_checksum, "invalid motor %u", motor_number);
         }else {
-            axes[motor_number]->watchdog_feed();
+            axes[motor_number].watchdog_feed();
         }
 
     } else if (cmd[0] != 0) {

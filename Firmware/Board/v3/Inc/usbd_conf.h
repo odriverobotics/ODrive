@@ -89,7 +89,9 @@
   * @brief Defines for configuration of the Usb device.
   * @{
   */
- #define MS_VendorCode 'P'
+
+// TODO: move to winusb_compat.cpp
+#define MS_VendorCode 'P'
 
 /*---------- -----------*/
 #define USBD_MAX_NUM_INTERFACES     1

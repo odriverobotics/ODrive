@@ -15,8 +15,6 @@ float sign_hard(float val) {
 // Vmax, Amax, Dmax and jmax  Kinematic bounds
 // Ar, Dr and Vr              Reached values of acceleration and velocity
 
-TrapezoidalTrajectory::TrapezoidalTrajectory(Config_t& config) : config_(config) {}
-
 bool TrapezoidalTrajectory::planTrapezoidal(float Xf, float Xi, float Vi,
                                             float Vmax, float Amax, float Dmax) {
     float dX = Xf - Xi;  // Distance to travel

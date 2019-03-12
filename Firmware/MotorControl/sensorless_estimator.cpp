@@ -1,10 +1,6 @@
 
 #include "odrive_main.h"
 
-SensorlessEstimator::SensorlessEstimator(Config_t& config) :
-        config_(config)
-    {};
-
 bool SensorlessEstimator::update() {
     // Algorithm based on paper: Sensorless Control of Surface-Mount Permanent-Magnet Synchronous Motors Based on a Nonlinear Observer
     // http://cas.ensmp.fr/~praly/Telechargement/Journaux/2010-IEEE_TPEL-Lee-Hong-Nam-Ortega-Praly-Astolfi.pdf

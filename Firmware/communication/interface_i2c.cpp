@@ -2,7 +2,7 @@
 #include "interface_i2c.h"
 #include "fibre/protocol.hpp"
 
-#include <i2c.h>
+#include <stm32_i2c.hpp>
 
 #define I2C_RX_BUFFER_SIZE 128
 #define I2C_RX_BUFFER_PREAMBLE_SIZE   4

@@ -2,10 +2,6 @@
 #include "odrive_main.h"
 
 
-Controller::Controller(Config_t& config) :
-    config_(config)
-{}
-
 void Controller::reset() {
     pos_setpoint_ = 0.0f;
     vel_setpoint_ = 0.0f;

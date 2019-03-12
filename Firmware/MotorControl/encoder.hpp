@@ -5,6 +5,10 @@
 #error "This file should not be included directly. Include odrive_main.h instead."
 #endif
 
+#include <stm32_tim.hpp>
+#include <gpio.hpp>
+#include <stm32_adc.hpp>
+
 class Encoder {
 public:
     enum Error_t {
@@ -45,10 +49,12 @@ public:
         bool ignore_illegal_hall_state = false; // dont error on bad states like 000 or 111
     };
 
-    Encoder(const EncoderHardwareConfig_t& hw_config,
-                     Config_t& config);
-    
-    void setup();
+    Encoder(STM32_Timer_t* counter, STM32_GPIO_t* index_gpio,
+            STM32_GPIO_t* hallA_gpio, STM32_GPIO_t* hallB_gpio, STM32_GPIO_t* hallC_gpio,
+            STM32_ADCChannel_t* adc_sincos_s, STM32_ADCChannel_t* adc_sincos_c,
+            Config_t& config);
+
+    bool init();
     void set_error(Error_t error);
     bool do_checks();
 
@@ -65,11 +71,19 @@ public:
     bool run_direction_find();
     bool run_offset_calibration();
     void sample_now();
+    void decode_hall_samples(uint16_t GPIO_samples[n_GPIO_samples]);
     bool update();
 
 
 
-    const EncoderHardwareConfig_t& hw_config_;
+    STM32_Timer_t* counter_;
+    STM32_GPIO_t* index_gpio_;
+    STM32_GPIO_t* hallA_gpio_;
+    STM32_GPIO_t* hallB_gpio_;
+    STM32_GPIO_t* hallC_gpio_;
+    STM32_ADCChannel_t* adc_sincos_s_;
+    STM32_ADCChannel_t* adc_sincos_c_;
+
     Config_t& config_;
     Axis* axis_ = nullptr; // set by Axis constructor
 

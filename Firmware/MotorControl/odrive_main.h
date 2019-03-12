@@ -8,40 +8,33 @@
 // the forward declarations and right ordering
 // btw this pattern is not so uncommon, for instance IIRC the stdlib uses it too
 
+
 #ifdef __cplusplus
 #include <fibre/protocol.hpp>
 extern "C" {
 #endif
 
+#include <stdbool.h>
+
 // STM specific includes
+#include "stm32_system.h"
 #include <stm32f4xx_hal.h>  // Sets up the correct chip specifc defines required by arm_math
-#include <can.h>
-#include <i2c.h>
 #define ARM_MATH_CM4 // TODO: might change in future board versions
 #include <arm_math.h>
+
 
 // OS includes
 #include <cmsis_os.h>
 
-// Hardware configuration
-#if HW_VERSION_MAJOR == 3
-#include "board_config_v3.h"
-#else
-#error "unknown board version"
-#endif
 
 //default timeout waiting for phase measurement signals
 #define PH_CURRENT_MEAS_TIMEOUT 2 // [ms]
 
-//TODO clean this up
-static const float current_meas_period = CURRENT_MEAS_PERIOD;
-static const int current_meas_hz = CURRENT_MEAS_HZ;
-// extern const float elec_rad_per_enc;
-extern uint32_t _reboot_cookie;
-extern bool user_config_loaded_;
+// TODO: move to board definition file
+#define TIM_APB1_CLOCK_HZ 84000000
+#define TIM_APB1_PERIOD_CLOCKS 4096
+#define TIM_APB1_DEADTIME_CLOCKS 40
 
-extern uint64_t serial_number;
-extern char serial_number_str[13];
 
 typedef struct {
     bool fully_booted;
@@ -54,17 +47,28 @@ typedef struct {
     uint32_t min_stack_space_uart;
     uint32_t min_stack_space_usb_irq;
     uint32_t min_stack_space_startup;
+    uint32_t boot_progress;
 } SystemStats_t;
 extern SystemStats_t system_stats_;
 
 #ifdef __cplusplus
 }
 
+#include <stm32_usb.hpp> // TODO: replace with generic header
+#include <stm32_usart.hpp> // TODO: replace with generic header
+
 struct PWMMapping_t {
     endpoint_ref_t endpoint = { 0 };
     float min = 0;
     float max = 0;
 };
+
+
+#if HW_VERSION_MAJOR == 3 && HW_VERSION_MINOR <= 4
+#define GPIO_COUNT  5
+#else
+#define GPIO_COUNT  8
+#endif
 
 // @brief general user configurable board configuration
 struct BoardConfig_t {
@@ -87,11 +91,28 @@ struct BoardConfig_t {
 extern BoardConfig_t board_config;
 extern bool user_config_loaded_;
 
+extern STM32_USART_t* comm_uart;
+extern USB_t* comm_usb;
+extern STM32_USBTxEndpoint_t cdc_tx_endpoint;
+extern STM32_USBRxEndpoint_t cdc_rx_endpoint;
+extern STM32_USBIntEndpoint_t cdc_cmd_endpoint;
+extern STM32_USBTxEndpoint_t odrive_tx_endpoint;
+extern STM32_USBRxEndpoint_t odrive_rx_endpoint;
+
+
+extern STM32_GPIO_t* gpios[];
+extern const size_t num_gpios;
+
+// Sampling port A,B,C (coherent with current meas timing)
+// TODO: make more flexible
+static constexpr const GPIO_TypeDef* GPIOs_to_samp[] = { GPIOA, GPIOB, GPIOC };
+static constexpr const int n_GPIO_samples = sizeof(GPIOs_to_samp) / sizeof(GPIOs_to_samp[0]);
+
 class Axis;
 class Motor;
 
-constexpr size_t AXIS_COUNT = 2;
-extern Axis *axes[AXIS_COUNT];
+extern Axis* axes;
+extern const size_t n_axes;
 
 // if you use the oscilloscope feature you can bump up this value
 #define OSCILLOSCOPE_SIZE 128
@@ -111,6 +132,7 @@ inline ENUMTYPE operator ~ (ENUMTYPE a) { return static_cast<ENUMTYPE>(~static_c
 
 
 // ODrive specific includes
+
 #include <utils.h>
 #include <low_level.h>
 #include <encoder.hpp>
@@ -121,8 +143,18 @@ inline ENUMTYPE operator ~ (ENUMTYPE a) { return static_cast<ENUMTYPE>(~static_c
 #include <axis.hpp>
 #include <communication/communication.h>
 
+//TODO clean this up
+extern const float current_meas_period;
+extern const int current_meas_hz;
+extern bool user_config_loaded_;
+
+extern uint64_t serial_number;
+extern char serial_number_str[13];
+
 #endif // __cplusplus
 
+
+float get_adc_voltage(uint32_t gpio_num);
 
 // general system functions defined in main.cpp
 void save_configuration(void);

@@ -8,8 +8,8 @@
 #include <cmsis_os.h>
 #include <freertos_vars.h>
 #include <sys/unistd.h>
-#include <usart.h>
-#include <usbd_cdc_if.h>
+//#include <usart.h>
+//#include <usbd_cdc_if.h>
 
 
 //int _read(int file, char *data, int len) {}

@@ -14,12 +14,14 @@ public:
         float pm_flux_linkage = 1.58e-3f; // [V / (rad/s)]  { 5.51328895422 / (<pole pairs> * <rpm/v>) }
     };
 
-    explicit SensorlessEstimator(Config_t& config);
+    explicit SensorlessEstimator(Config_t& config) : config_(config) {}
+
+    bool init() { return true; }
 
     bool update();
 
-    Axis* axis_ = nullptr; // set by Axis constructor
     Config_t& config_;
+    Axis* axis_ = nullptr; // set by Axis constructor
 
     // TODO: expose on protocol
     Error_t error_ = ERROR_NONE;

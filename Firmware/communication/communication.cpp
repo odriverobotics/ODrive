@@ -19,7 +19,7 @@
 //#include <usbd_cdc_if.h>
 //#include <usb_device.h>
 //#include <usart.h>
-#include <gpio.h>
+//#include <stm32_gpio.h>
 
 #include <type_traits>
 
@@ -28,10 +28,6 @@
 /* Private typedef -----------------------------------------------------------*/
 /* Global constant data ------------------------------------------------------*/
 /* Global variables ----------------------------------------------------------*/
-
-uint64_t serial_number;
-char serial_number_str[13]; // 12 digits + null termination
-
 /* Private constant data -----------------------------------------------------*/
 /* Private variables ---------------------------------------------------------*/
 
@@ -98,6 +94,10 @@ size_t oscilloscope_pos = 0;
 
 static CAN_context can1_ctx;
 
+// These are used by the printf feature.
+StreamSink* uart4_stream_output_ptr = nullptr;
+StreamSink* usb_stream_output_ptr = nullptr;
+
 // Helper class because the protocol library doesn't yet
 // support non-member functions
 // TODO: make this go away
@@ -108,7 +108,7 @@ public:
     void NVIC_SystemReset_helper() { NVIC_SystemReset(); }
     void enter_dfu_mode_helper() { enter_dfu_mode(); }
     float get_oscilloscope_val(uint32_t index) { return oscilloscope[index]; }
-    float get_adc_voltage_(uint32_t gpio) { return get_adc_voltage(get_gpio_port_by_pin(gpio), get_gpio_pin_by_pin(gpio)); }
+    float get_adc_voltage_(uint32_t gpio_num) { return get_adc_voltage(gpio_num); }
     int32_t test_function(int32_t delta) { static int cnt = 0; return cnt += delta; }
 } static_functions;
 
@@ -127,9 +127,11 @@ static inline auto make_obj_tree() {
         make_protocol_ro_property("fw_version_revision", &fw_version_revision),
         make_protocol_ro_property("fw_version_unreleased", &fw_version_unreleased),
         make_protocol_ro_property("user_config_loaded", const_cast<const bool *>(&user_config_loaded_)),
-        make_protocol_ro_property("brake_resistor_armed", &brake_resistor_armed),
+        //make_protocol_ro_property("brake_resistor_armed", &brake_resistor_armed),
         make_protocol_object("system_stats",
+            make_protocol_ro_property("fully_booted", &system_stats_.fully_booted),
             make_protocol_ro_property("uptime", &system_stats_.uptime),
+            make_protocol_ro_property("boot_progress", &system_stats_.boot_progress),
             make_protocol_ro_property("min_heap_space", &system_stats_.min_heap_space),
             make_protocol_ro_property("min_stack_space_axis0", &system_stats_.min_stack_space_axis0),
             make_protocol_ro_property("min_stack_space_axis1", &system_stats_.min_stack_space_axis1),
@@ -142,13 +144,13 @@ static inline auto make_obj_tree() {
                 make_protocol_ro_property("rx_cnt", &usb_stats_.rx_cnt),
                 make_protocol_ro_property("tx_cnt", &usb_stats_.tx_cnt),
                 make_protocol_ro_property("tx_overrun_cnt", &usb_stats_.tx_overrun_cnt)
-            ),
-            make_protocol_object("i2c",
-                make_protocol_ro_property("addr", &i2c_stats_.addr),
-                make_protocol_ro_property("addr_match_cnt", &i2c_stats_.addr_match_cnt),
-                make_protocol_ro_property("rx_cnt", &i2c_stats_.rx_cnt),
-                make_protocol_ro_property("error_cnt", &i2c_stats_.error_cnt)
-            )
+            )//,
+            //make_protocol_object("i2c",
+            //    make_protocol_ro_property("addr", &i2c_stats_.addr),
+            //    make_protocol_ro_property("addr_match_cnt", &i2c_stats_.addr_match_cnt),
+            //    make_protocol_ro_property("rx_cnt", &i2c_stats_.rx_cnt),
+            //    make_protocol_ro_property("error_cnt", &i2c_stats_.error_cnt)
+            //)
         ),
         make_protocol_object("config",
             make_protocol_property("brake_resistance", &board_config.brake_resistance),
@@ -168,8 +170,8 @@ static inline auto make_obj_tree() {
             make_protocol_object("gpio3_analog_mapping", make_protocol_definitions(board_config.analog_mappings[2])),
             make_protocol_object("gpio4_analog_mapping", make_protocol_definitions(board_config.analog_mappings[3]))
             ),
-        make_protocol_object("axis0", axes[0]->make_protocol_definitions()),
-        make_protocol_object("axis1", axes[1]->make_protocol_definitions()),
+        //make_protocol_object("axis0", axes[0].make_protocol_definitions()),
+        //make_protocol_object("axis1", axes[1].make_protocol_definitions()),
         make_protocol_object("can", can1_ctx.make_protocol_definitions()),
         make_protocol_property("test_property", &test_property),
         make_protocol_function("test_function", static_functions, &StaticFunctions::test_function, "delta"),
@@ -186,6 +188,11 @@ using tree_type = decltype(make_obj_tree());
 uint8_t tree_buffer[sizeof(tree_type)];
 
 
+UARTInterface uart4_interface(comm_uart);
+USBInterface usb_interface_0(&cdc_rx_endpoint, &cdc_tx_endpoint);
+USBInterface usb_interface_1(&odrive_rx_endpoint, &odrive_tx_endpoint);
+
+
 // Thread to handle deffered processing of USB interrupt, and
 // read commands out of the UART DMA circular buffer
 void communication_task(void * ctx) {
@@ -200,14 +207,22 @@ void communication_task(void * ctx) {
     // Allow main init to continue
     endpoint_list_valid = true;
     
-    start_uart_server();
-    start_usb_server();
+    uart4_interface.start_server();
+    uart4_stream_output_ptr = &uart4_interface.stream_output;
+
+
+    usb_interface_0.start_server(board_config.enable_ascii_protocol_on_usb);
+    usb_interface_1.start_server(false);
+
+/*    usb_stream_output_ptr = &usb_interface_0.stream_output;
+
     if (board_config.enable_i2c_instead_of_can) {
+        // TODO: finish implementing I2C
         start_i2c_server();
     } else {
         // TODO: finish implementing CAN
         // start_can_server(can1_ctx, CAN1, serial_number);
-    }
+    }*/
 
     for (;;) {
         osDelay(1000); // nothing to do
@@ -221,10 +236,12 @@ int _write(int file, const char* data, int len);
 // @brief This is what printf calls internally
 int _write(int file, const char* data, int len) {
 #ifdef USB_PROTOCOL_STDOUT
-    usb_stream_output_ptr->process_bytes((const uint8_t *)data, len, nullptr);
+    if (usb_stream_output_ptr)
+        usb_stream_output_ptr->process_bytes((const uint8_t *)data, len, nullptr);
 #endif
 #ifdef UART_PROTOCOL_STDOUT
-    uart4_stream_output_ptr->process_bytes((const uint8_t *)data, len, nullptr);
+    if (uart4_stream_output_ptr)
+        uart4_stream_output_ptr->process_bytes((const uint8_t *)data, len, nullptr);
 #endif
     return len;
 }

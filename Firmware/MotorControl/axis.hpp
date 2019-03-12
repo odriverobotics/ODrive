@@ -63,8 +63,8 @@ public:
         float watchdog_timeout = 0.0f; // [s] (0 disables watchdog)
 
         // Defaults loaded from hw_config in load_configuration in main.cpp
-        uint16_t step_gpio_pin = 0;
-        uint16_t dir_gpio_pin = 0;
+        uint16_t step_gpio_num = 0;
+        uint16_t dir_gpio_num = 0;
 
         LockinConfig_t lockin;
     };
@@ -80,15 +80,15 @@ public:
         LOCKIN_STATE_CONST_VEL,
     };
 
-    Axis(const AxisHardwareConfig_t& hw_config,
-            Config_t& config,
-            Encoder& encoder,
-            SensorlessEstimator& sensorless_estimator,
-            Controller& controller,
-            Motor& motor,
-            TrapezoidalTrajectory& trap);
+    Axis(Motor motor,
+        Encoder encoder,
+        SensorlessEstimator sensorless_estimator,
+        Controller controller,
+        TrapezoidalTrajectory trap,
+        osPriority thread_priority,
+        Config_t& config);
 
-    void setup();
+    bool init();
     void start_thread();
     void signal_current_meas();
     bool wait_for_current_meas();
@@ -97,9 +97,6 @@ public:
     void set_step_dir_active(bool enable);
     void decode_step_dir_pins();
     void update_watchdog_settings();
-
-    static void load_default_step_dir_pin_config(
-        const AxisHardwareConfig_t& hw_config, Config_t* config);
 
     bool check_DRV_fault();
     bool check_PSU_brownout();
@@ -183,27 +180,26 @@ public:
 
     void run_state_machine_loop();
 
-    const AxisHardwareConfig_t& hw_config_;
-    Config_t& config_;
 
-    Encoder& encoder_;
-    SensorlessEstimator& sensorless_estimator_;
-    Controller& controller_;
-    Motor& motor_;
-    TrapezoidalTrajectory& trap_;
-
+    Motor motor_;
+    Encoder encoder_;
+    SensorlessEstimator sensorless_estimator_;
+    Controller controller_;
+    TrapezoidalTrajectory trap_;
+    
+    osPriority thread_priority_;
     osThreadId thread_id_;
     volatile bool thread_id_valid_ = false;
+
+    Config_t& config_;
 
     // variables exposed on protocol
     Error_t error_ = ERROR_NONE;
     bool step_dir_active_ = false; // auto enabled after calibration, based on config.enable_step_dir
 
-    // updated from config in constructor, and on protocol hook
-    GPIO_TypeDef* step_port_;
-    uint16_t step_pin_;
-    GPIO_TypeDef* dir_port_;
-    uint16_t dir_pin_;
+    // updated from config, and on protocol hook
+    GPIO_t* step_gpio_ = nullptr;
+    GPIO_t* dir_gpio_ = nullptr;
 
     State_t requested_state_ = AXIS_STATE_STARTUP_SEQUENCE;
     State_t task_chain_[10] = { AXIS_STATE_UNDEFINED };
@@ -234,9 +230,9 @@ public:
                 make_protocol_property("counts_per_step", &config_.counts_per_step),
                 make_protocol_property("watchdog_timeout", &config_.watchdog_timeout,
                     [](void* ctx) { static_cast<Axis*>(ctx)->update_watchdog_settings(); }, this),
-                make_protocol_property("step_gpio_pin", &config_.step_gpio_pin,
+                make_protocol_property("step_gpio_pin", &config_.step_gpio_num, // TODO: rename
                     [](void* ctx) { static_cast<Axis*>(ctx)->decode_step_dir_pins(); }, this),
-                make_protocol_property("dir_gpio_pin", &config_.dir_gpio_pin,
+                make_protocol_property("dir_gpio_pin", &config_.dir_gpio_num, // TODO: rename
                     [](void* ctx) { static_cast<Axis*>(ctx)->decode_step_dir_pins(); }, this),
                 make_protocol_object("lockin",
                     make_protocol_property("current", &config_.lockin.current),

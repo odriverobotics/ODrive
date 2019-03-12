@@ -184,22 +184,3 @@ int is_in_the_future(uint32_t time_ms) {
     return deadline_to_timeout(time_ms);
 }
 
-// @brief: Returns number of microseconds since system startup
-uint32_t micros(void) {
-    register uint32_t ms, cycle_cnt;
-    do {
-        ms = HAL_GetTick();
-        cycle_cnt = TIM_TIME_BASE->CNT;
-     } while (ms != HAL_GetTick());
-
-    return (ms * 1000) + cycle_cnt;
-}
-
-// @brief: Busy wait delay for given amount of microseconds (us)
-void delay_us(uint32_t us)
-{
-    uint32_t start = micros();
-    while (micros() - start < (uint32_t) us) {
-        __ASM("nop");
-    }
-}
