@@ -1,6 +1,8 @@
 # Unreleased Features
 Please add a note of your changes below this heading if you make a Pull Request.
 
+# Releases
+## [0.4.8] - 2019-02-25
 ### Added
 * `dump_errors()` utility function in odrivetool to dump, decode and optionally clear errors.
 * `f` command to ascii protocol to get encoder position and velocity feedback.
@@ -19,7 +21,6 @@ Please add a note of your changes below this heading if you make a Pull Request.
 ### Fixed
 * Added required 1.5 cycle phase shift between ADC and PWM, lack thereof caused unstable current controller at high eRPM.
 
-# Releases
 ## [0.4.7] - 2018-11-28
 ### Added
 * Overspeed fault
