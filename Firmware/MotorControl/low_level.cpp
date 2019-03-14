@@ -497,7 +497,8 @@ void pwm_trig_adc_cb(ADC_HandleTypeDef* hadc, bool injected) {
         else if (&axis == axes[0] && !counting_down)
             update_timings = true; // update timings of M1
 
-        if(current_meas_not_DC_CAL){
+        if((current_meas_not_DC_CAL && !axis_num) ||
+                (axis_num && !current_meas_not_DC_CAL)){
             axis.encoder_.abs_spi_start_transaction();
         }
     }
