@@ -7,6 +7,7 @@
                 "${workspaceRoot}/fibre/cpp/include/**",
                 "${workspaceRoot}/MotorControl",
                 "${workspaceRoot}/Drivers/DRV8301",
+                "${workspaceRoot}/communication",
                 "${workspaceRoot}/Board/v3/Inc",
                 "${workspaceRoot}/Board/v3/Drivers/CMSIS/Include",
                 "${workspaceRoot}/Board/v3/Drivers/CMSIS/Device/ST/STM32F4xx/Include",
@@ -39,7 +40,7 @@
                 ],
                 "limitSymbolsToIncludedHeaders": true
             },
-            "compilerPath": "${ARM_GCC_ROOT}/bin/arm-none-eabi-gcc.exe -mthumb -mcpu=cortex-m4 -mfpu=fpv4-sp-d16 -mfloat-abi=hard -specs=nosys.specs -specs=nano.specs -u _printf_float -u _scanf_float",
+            "compilerPath": "\"${ARM_GCC_ROOT}/bin/arm-none-eabi-gcc.exe\" -mthumb -mcpu=cortex-m4 -mfpu=fpv4-sp-d16 -mfloat-abi=hard -specs=nosys.specs -specs=nano.specs -u _printf_float -u _scanf_float",
             "cStandard": "c11",
             "cppStandard": "c++14"
         },
