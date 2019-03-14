@@ -28,7 +28,14 @@ void CANSimple::handle_can_message(CAN_message_t& msg) {
     for (uint8_t i = 0; i < AXIS_COUNT; i++) {
         if (axes[i]->config_.can_node_id == nodeID) {
             axis = axes[i];
-            validAxis = true;
+            if (!validAxis) {
+                validAxis = true;
+            } else {
+                // Duplicate can IDs, don't assign to any axis
+                odCAN->set_error(ODriveCAN::ERROR_DUPLICATE_CAN_IDS);
+                validAxis = false;
+                break;
+            }
         }
     }
 

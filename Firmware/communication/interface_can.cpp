@@ -171,6 +171,9 @@ void ODriveCAN::reinit_can() {
         status = HAL_CAN_ActivateNotification(handle_, CAN_IT_RX_FIFO0_MSG_PENDING);
 }
 
+void ODriveCAN::set_error(Error_t error){
+    error_ |= error;
+}
 // This function is called by each axis.
 // It provides an abstraction from the specific CAN protocol in use
 void ODriveCAN::send_heartbeat(Axis *axis) {
