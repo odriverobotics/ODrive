@@ -382,14 +382,14 @@ uint8_t CANSimple::get_cmd_id(uint32_t msgID) {
 
 int16_t CANSimple::get_16bit_val(CAN_message_t& msg, uint8_t start_byte) {
     int16_t retVal = 0;
-    if(msg.len >= start_byte && size_t(msg.len - start_byte) >= sizeof(retVal))
+    if (msg.len >= start_byte && size_t(msg.len - start_byte) >= sizeof(retVal))
         std::memcpy(&retVal, &(msg.buf[start_byte]), sizeof(retVal));
     return retVal;
 }
 
 int32_t CANSimple::get_32bit_val(CAN_message_t& msg, uint8_t start_byte) {
     int32_t retVal = 0;
-    if(msg.len >= start_byte && size_t(msg.len - start_byte) >= sizeof(retVal))
+    if (msg.len >= start_byte && size_t(msg.len - start_byte) >= sizeof(retVal))
         std::memcpy(&retVal, &(msg.buf[start_byte]), sizeof(retVal));
     return retVal;
 }
