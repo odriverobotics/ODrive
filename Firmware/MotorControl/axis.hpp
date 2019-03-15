@@ -66,6 +66,7 @@ public:
 
         LockinConfig_t lockin;
         uint8_t can_node_id = 0; // Both axes will have the same id to start
+        uint32_t can_heartbeat_rate_ms = 100;
     };
 
     enum thread_signals {

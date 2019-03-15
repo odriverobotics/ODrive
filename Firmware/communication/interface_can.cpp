@@ -159,7 +159,7 @@ void ODriveCAN::set_baud_rate(uint32_t baudRate) {
 
         default:
             // baudRate is invalid, so don't accept it.
-            break;  
+            break;
     }
 }
 
@@ -171,21 +171,23 @@ void ODriveCAN::reinit_can() {
         status = HAL_CAN_ActivateNotification(handle_, CAN_IT_RX_FIFO0_MSG_PENDING);
 }
 
-void ODriveCAN::set_error(Error_t error){
+void ODriveCAN::set_error(Error_t error) {
     error_ |= error;
 }
 // This function is called by each axis.
 // It provides an abstraction from the specific CAN protocol in use
 void ODriveCAN::send_heartbeat(Axis *axis) {
     // Handle heartbeat message
-    uint32_t now = osKernelSysTick();
-    if (now - axis->last_heartbeat_ >= 100) {
-        switch (config_.protocol) {
-            case CAN_PROTOCOL_SIMPLE:
-                CANSimple::send_heartbeat(axis);
-                break;
+    if (axis->config_.can_heartbeat_rate_ms > 0) {
+        uint32_t now = osKernelSysTick();
+        if ((now - axis->last_heartbeat_) >= axis->config_.can_heartbeat_rate_ms) {
+            switch (config_.protocol) {
+                case CAN_PROTOCOL_SIMPLE:
+                    CANSimple::send_heartbeat(axis);
+                    break;
+            }
+            axis->last_heartbeat_ = now;
         }
-        axis->last_heartbeat_ = now;
     }
 }
 
