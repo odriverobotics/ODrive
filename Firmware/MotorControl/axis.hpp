@@ -236,7 +236,8 @@ public:
                     make_protocol_property("finish_on_distance", &config_.lockin.finish_on_distance),
                     make_protocol_property("finish_on_enc_idx", &config_.lockin.finish_on_enc_idx)
                 ),
-                make_protocol_property("can_node_id", &config_.can_node_id)
+                make_protocol_property("can_node_id", &config_.can_node_id),
+                make_protocol_property("can_heartbeat_rate_ms", &config_.can_heartbeat_rate_ms)
             ),
             make_protocol_object("motor", motor_.make_protocol_definitions()),
             make_protocol_object("controller", controller_.make_protocol_definitions()),
