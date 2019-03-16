@@ -56,7 +56,7 @@ function GCCToolchain(prefix, builddir, compiler_flags, linker_flags)
         compiler_flags += '-fstack-usage'
     end
 
-    gcc_generic_compiler = function(compiler, compiler_flags, gen_su_file, src, flags, includes, outputs)
+    local gcc_generic_compiler = function(compiler, compiler_flags, gen_su_file, src, flags, includes, outputs)
         -- convert include list to flags
         inc_flags = {}
         for _,inc in pairs(includes) do
