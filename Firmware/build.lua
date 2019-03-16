@@ -63,7 +63,7 @@ function GCCToolchain(prefix, builddir, compiler_flags, linker_flags)
             inc_flags += "-I"..inc
         end
         -- todo: vary build directory
-        obj_file = builddir.."/"..src:gsub("/","_")..".o"
+        obj_file = builddir.."/obj/"..src:gsub("/","_")..".o"
         outputs.object_files += obj_file
         if gen_su_file then
             su_file = builddir.."/"..src:gsub("/","_")..".su"
