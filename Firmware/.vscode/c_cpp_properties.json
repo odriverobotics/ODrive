@@ -6,6 +6,7 @@
                 "${workspaceRoot}",
                 "${workspaceRoot}/fibre/cpp/include/**",
                 "${workspaceRoot}/MotorControl",
+                "${workspaceRoot}/communication",
                 "${workspaceRoot}/Drivers/DRV8301",
                 "${workspaceRoot}/communication",
                 "${workspaceRoot}/Board/v3/Inc",
@@ -17,9 +18,7 @@
                 "${workspaceRoot}/Board/v3/Middlewares/ST/STM32_USB_Device_Library/Class/CDC/Inc",
                 "${workspaceRoot}/Board/v3/Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS",
                 "${workspaceRoot}/Board/v3/Middlewares/Third_Party/FreeRTOS/Source/include",
-                "${workspaceRoot}/Board/v3/Middlewares/Third_Party/FreeRTOS/Source/portable/GCC/ARM_CM4F",
-                "${ARM_GCC_ROOT}/arm-none-eabi/include/**",
-                "${ARM_GCC_ROOT}/lib/gcc/arm-none-eabi/**"
+                "${workspaceRoot}/Board/v3/Middlewares/Third_Party/FreeRTOS/Source/portable/GCC/ARM_CM4F"
             ],
             "defines": [
                 "STM32F405xx",
@@ -50,6 +49,7 @@
                 "${workspaceRoot}",
                 "${workspaceRoot}/fibre/cpp/include/**",
                 "${workspaceRoot}/MotorControl",
+                "${workspaceRoot}/communication",
                 "${workspaceRoot}/Drivers/DRV8301",
                 "${workspaceRoot}/Board/v3/Inc",
                 "${workspaceRoot}/Board/v3/Middlewares/Third_Party/FreeRTOS/Source/portable/GCC/ARM_CM4F",
@@ -93,6 +93,7 @@
                 "${workspaceRoot}",
                 "${workspaceRoot}/fibre/cpp/include/**",
                 "${workspaceRoot}/MotorControl",
+                "${workspaceRoot}/communication",
                 "${workspaceRoot}/Drivers/DRV8301",
                 "${workspaceRoot}/Board/v3/Inc",
                 "${workspaceRoot}/Board/v3/Middlewares/Third_Party/FreeRTOS/Source/portable/GCC/ARM_CM4F",
