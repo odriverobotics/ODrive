@@ -162,7 +162,7 @@ function build(args)
 
         outputs.includes = {}
         for _,inc in pairs(args.includes) do
-            table.insert(outputs.includes, tup.nodevariable(inc))
+            table.insert(outputs.includes, inc)
         end
         if args.name != nil then
             all_packages[args.name] = outputs
