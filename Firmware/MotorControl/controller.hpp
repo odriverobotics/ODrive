@@ -34,7 +34,7 @@ public:
         bool setpoints_in_cpr = false;
     };
 
-    Controller(Config_t& config);
+    explicit Controller(Config_t& config);
     void reset();
     void set_error(Error_t error);
 
