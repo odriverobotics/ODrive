@@ -12,6 +12,7 @@
 typedef struct {
     uint32_t id = 0x000;  // 11-bit max is 0x7ff, 29-bit max is 0x1FFFFFFF
     bool isExt = false;
+    bool rtr = false;
     uint8_t len = 8;
     uint8_t buf[8] = {0, 0, 0, 0, 0, 0, 0, 0};
 } CAN_message_t;
