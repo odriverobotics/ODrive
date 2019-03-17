@@ -129,48 +129,54 @@ void CANSimple::estop_callback(Axis* axis, CAN_message_t& msg) {
 }
 
 void CANSimple::get_motor_error_callback(Axis* axis, CAN_message_t& msg) {
-    CAN_message_t txmsg;
-    txmsg.id = axis->config_.can_node_id << NUM_CMD_ID_BITS;
-    txmsg.id += MSG_GET_MOTOR_ERROR;  // heartbeat ID
-    txmsg.isExt = false;
-    txmsg.len = 8;
+    if (msg.rtr) {
+        CAN_message_t txmsg;
+        txmsg.id = axis->config_.can_node_id << NUM_CMD_ID_BITS;
+        txmsg.id += MSG_GET_MOTOR_ERROR;  // heartbeat ID
+        txmsg.isExt = false;
+        txmsg.len = 8;
 
-    txmsg.buf[0] = axis->motor_.error_;
-    txmsg.buf[1] = axis->motor_.error_ >> 8;
-    txmsg.buf[2] = axis->motor_.error_ >> 16;
-    txmsg.buf[3] = axis->motor_.error_ >> 24;
+        txmsg.buf[0] = axis->motor_.error_;
+        txmsg.buf[1] = axis->motor_.error_ >> 8;
+        txmsg.buf[2] = axis->motor_.error_ >> 16;
+        txmsg.buf[3] = axis->motor_.error_ >> 24;
 
-    odCAN->write(txmsg);
+        odCAN->write(txmsg);
+    }
 }
 
 void CANSimple::get_encoder_error_callback(Axis* axis, CAN_message_t& msg) {
-    CAN_message_t txmsg;
-    txmsg.id = axis->config_.can_node_id << NUM_CMD_ID_BITS;
-    txmsg.id += MSG_GET_ENCODER_ERROR;  // heartbeat ID
-    txmsg.isExt = false;
-    txmsg.len = 8;
+    if (msg.rtr) {
+        CAN_message_t txmsg;
+        txmsg.id = axis->config_.can_node_id << NUM_CMD_ID_BITS;
+        txmsg.id += MSG_GET_ENCODER_ERROR;  // heartbeat ID
+        txmsg.isExt = false;
+        txmsg.len = 8;
 
-    txmsg.buf[0] = axis->encoder_.error_;
-    txmsg.buf[1] = axis->encoder_.error_ >> 8;
-    txmsg.buf[2] = axis->encoder_.error_ >> 16;
-    txmsg.buf[3] = axis->encoder_.error_ >> 24;
+        txmsg.buf[0] = axis->encoder_.error_;
+        txmsg.buf[1] = axis->encoder_.error_ >> 8;
+        txmsg.buf[2] = axis->encoder_.error_ >> 16;
+        txmsg.buf[3] = axis->encoder_.error_ >> 24;
 
-    odCAN->write(txmsg);
+        odCAN->write(txmsg);
+    }
 }
 
 void CANSimple::get_sensorless_error_callback(Axis* axis, CAN_message_t& msg) {
-    CAN_message_t txmsg;
-    txmsg.id = axis->config_.can_node_id << NUM_CMD_ID_BITS;
-    txmsg.id += MSG_GET_SENSORLESS_ERROR;  // heartbeat ID
-    txmsg.isExt = false;
-    txmsg.len = 8;
+    if (msg.rtr) {
+        CAN_message_t txmsg;
+        txmsg.id = axis->config_.can_node_id << NUM_CMD_ID_BITS;
+        txmsg.id += MSG_GET_SENSORLESS_ERROR;  // heartbeat ID
+        txmsg.isExt = false;
+        txmsg.len = 8;
 
-    txmsg.buf[0] = axis->sensorless_estimator_.error_;
-    txmsg.buf[1] = axis->sensorless_estimator_.error_ >> 8;
-    txmsg.buf[2] = axis->sensorless_estimator_.error_ >> 16;
-    txmsg.buf[3] = axis->sensorless_estimator_.error_ >> 24;
+        txmsg.buf[0] = axis->sensorless_estimator_.error_;
+        txmsg.buf[1] = axis->sensorless_estimator_.error_ >> 8;
+        txmsg.buf[2] = axis->sensorless_estimator_.error_ >> 16;
+        txmsg.buf[3] = axis->sensorless_estimator_.error_ >> 24;
 
-    odCAN->write(txmsg);
+        odCAN->write(txmsg);
+    }
 }
 
 void CANSimple::set_axis_nodeid_callback(Axis* axis, CAN_message_t& msg) {
@@ -185,81 +191,87 @@ void CANSimple::set_axis_startup_config_callback(Axis* axis, CAN_message_t& msg)
 }
 
 void CANSimple::get_encoder_estimates_callback(Axis* axis, CAN_message_t& msg) {
-    CAN_message_t txmsg;
-    txmsg.id = axis->config_.can_node_id << NUM_CMD_ID_BITS;
-    txmsg.id += MSG_GET_ENCODER_ESTIMATES;  // heartbeat ID
-    txmsg.isExt = false;
-    txmsg.len = 8;
+    if (msg.rtr) {
+        CAN_message_t txmsg;
+        txmsg.id = axis->config_.can_node_id << NUM_CMD_ID_BITS;
+        txmsg.id += MSG_GET_ENCODER_ESTIMATES;  // heartbeat ID
+        txmsg.isExt = false;
+        txmsg.len = 8;
 
-    // Undefined behaviour!
-    // uint32_t floatBytes = *(reinterpret_cast<int32_t*>(&(axis->encoder_.pos_estimate_)));
+        // Undefined behaviour!
+        // uint32_t floatBytes = *(reinterpret_cast<int32_t*>(&(axis->encoder_.pos_estimate_)));
 
-    uint32_t floatBytes;
-    static_assert(sizeof axis->encoder_.pos_estimate_ == sizeof floatBytes);
-    std::memcpy(&floatBytes, &axis->encoder_.pos_estimate_, sizeof floatBytes);
+        uint32_t floatBytes;
+        static_assert(sizeof axis->encoder_.pos_estimate_ == sizeof floatBytes);
+        std::memcpy(&floatBytes, &axis->encoder_.pos_estimate_, sizeof floatBytes);
 
-    txmsg.buf[0] = floatBytes;
-    txmsg.buf[1] = floatBytes >> 8;
-    txmsg.buf[2] = floatBytes >> 16;
-    txmsg.buf[3] = floatBytes >> 24;
+        txmsg.buf[0] = floatBytes;
+        txmsg.buf[1] = floatBytes >> 8;
+        txmsg.buf[2] = floatBytes >> 16;
+        txmsg.buf[3] = floatBytes >> 24;
 
-    static_assert(sizeof floatBytes == sizeof axis->encoder_.vel_estimate_);
-    std::memcpy(&floatBytes, &axis->encoder_.vel_estimate_, sizeof floatBytes);
-    txmsg.buf[4] = floatBytes;
-    txmsg.buf[5] = floatBytes >> 8;
-    txmsg.buf[6] = floatBytes >> 16;
-    txmsg.buf[7] = floatBytes >> 24;
+        static_assert(sizeof floatBytes == sizeof axis->encoder_.vel_estimate_);
+        std::memcpy(&floatBytes, &axis->encoder_.vel_estimate_, sizeof floatBytes);
+        txmsg.buf[4] = floatBytes;
+        txmsg.buf[5] = floatBytes >> 8;
+        txmsg.buf[6] = floatBytes >> 16;
+        txmsg.buf[7] = floatBytes >> 24;
 
-    odCAN->write(txmsg);
+        odCAN->write(txmsg);
+    }
 }
 
 void CANSimple::get_sensorless_estimates_callback(Axis* axis, CAN_message_t& msg) {
-    CAN_message_t txmsg;
-    txmsg.id = axis->config_.can_node_id << NUM_CMD_ID_BITS;
-    txmsg.id += MSG_GET_SENSORLESS_ESTIMATES;  // heartbeat ID
-    txmsg.isExt = false;
-    txmsg.len = 8;
+    if (msg.rtr) {
+        CAN_message_t txmsg;
+        txmsg.id = axis->config_.can_node_id << NUM_CMD_ID_BITS;
+        txmsg.id += MSG_GET_SENSORLESS_ESTIMATES;  // heartbeat ID
+        txmsg.isExt = false;
+        txmsg.len = 8;
 
-    // Undefined behaviour!
-    // uint32_t floatBytes = *(reinterpret_cast<int32_t*>(&(axis->encoder_.pos_estimate_)));
+        // Undefined behaviour!
+        // uint32_t floatBytes = *(reinterpret_cast<int32_t*>(&(axis->encoder_.pos_estimate_)));
 
-    uint32_t floatBytes;
-    static_assert(sizeof axis->sensorless_estimator_.pll_pos_ == sizeof floatBytes);
-    std::memcpy(&floatBytes, &axis->sensorless_estimator_.pll_pos_, sizeof floatBytes);
+        uint32_t floatBytes;
+        static_assert(sizeof axis->sensorless_estimator_.pll_pos_ == sizeof floatBytes);
+        std::memcpy(&floatBytes, &axis->sensorless_estimator_.pll_pos_, sizeof floatBytes);
 
-    txmsg.buf[0] = floatBytes;
-    txmsg.buf[1] = floatBytes >> 8;
-    txmsg.buf[2] = floatBytes >> 16;
-    txmsg.buf[3] = floatBytes >> 24;
+        txmsg.buf[0] = floatBytes;
+        txmsg.buf[1] = floatBytes >> 8;
+        txmsg.buf[2] = floatBytes >> 16;
+        txmsg.buf[3] = floatBytes >> 24;
 
-    static_assert(sizeof floatBytes == sizeof axis->sensorless_estimator_.vel_estimate_);
-    std::memcpy(&floatBytes, &axis->sensorless_estimator_.vel_estimate_, sizeof floatBytes);
-    txmsg.buf[4] = floatBytes;
-    txmsg.buf[5] = floatBytes >> 8;
-    txmsg.buf[6] = floatBytes >> 16;
-    txmsg.buf[7] = floatBytes >> 24;
+        static_assert(sizeof floatBytes == sizeof axis->sensorless_estimator_.vel_estimate_);
+        std::memcpy(&floatBytes, &axis->sensorless_estimator_.vel_estimate_, sizeof floatBytes);
+        txmsg.buf[4] = floatBytes;
+        txmsg.buf[5] = floatBytes >> 8;
+        txmsg.buf[6] = floatBytes >> 16;
+        txmsg.buf[7] = floatBytes >> 24;
 
-    odCAN->write(txmsg);
+        odCAN->write(txmsg);
+    }
 }
 
 void CANSimple::get_encoder_count_callback(Axis* axis, CAN_message_t& msg) {
-    CAN_message_t txmsg;
-    txmsg.id = axis->config_.can_node_id << NUM_CMD_ID_BITS;
-    txmsg.id += MSG_GET_ENCODER_COUNT;
-    txmsg.isExt = false;
-    txmsg.len = 8;
+    if (msg.rtr) {
+        CAN_message_t txmsg;
+        txmsg.id = axis->config_.can_node_id << NUM_CMD_ID_BITS;
+        txmsg.id += MSG_GET_ENCODER_COUNT;
+        txmsg.isExt = false;
+        txmsg.len = 8;
 
-    txmsg.buf[0] = axis->encoder_.shadow_count_;
-    txmsg.buf[1] = axis->encoder_.shadow_count_ >> 8;
-    txmsg.buf[2] = axis->encoder_.shadow_count_ >> 16;
-    txmsg.buf[3] = axis->encoder_.shadow_count_ >> 24;
+        txmsg.buf[0] = axis->encoder_.shadow_count_;
+        txmsg.buf[1] = axis->encoder_.shadow_count_ >> 8;
+        txmsg.buf[2] = axis->encoder_.shadow_count_ >> 16;
+        txmsg.buf[3] = axis->encoder_.shadow_count_ >> 24;
 
-    txmsg.buf[4] = axis->encoder_.count_in_cpr_;
-    txmsg.buf[5] = axis->encoder_.count_in_cpr_ >> 8;
-    txmsg.buf[6] = axis->encoder_.count_in_cpr_ >> 16;
-    txmsg.buf[7] = axis->encoder_.count_in_cpr_ >> 24;
+        txmsg.buf[4] = axis->encoder_.count_in_cpr_;
+        txmsg.buf[5] = axis->encoder_.count_in_cpr_ >> 8;
+        txmsg.buf[6] = axis->encoder_.count_in_cpr_ >> 16;
+        txmsg.buf[7] = axis->encoder_.count_in_cpr_ >> 24;
 
-    odCAN->write(txmsg);
+        odCAN->write(txmsg);
+    }
 }
 
 void CANSimple::move_to_pos_callback(Axis* axis, CAN_message_t& msg) {
@@ -300,56 +312,61 @@ void CANSimple::set_traj_A_per_css_callback(Axis* axis, CAN_message_t& msg) {
 }
 
 void CANSimple::get_iq_callback(Axis* axis, CAN_message_t& msg) {
-    CAN_message_t txmsg;
-    txmsg.id = axis->config_.can_node_id << NUM_CMD_ID_BITS;
-    txmsg.id += MSG_GET_IQ;
-    txmsg.isExt = false;
-    txmsg.len = 8;
+    if (msg.rtr) {
+        CAN_message_t txmsg;
+        txmsg.id = axis->config_.can_node_id << NUM_CMD_ID_BITS;
+        txmsg.id += MSG_GET_IQ;
+        txmsg.isExt = false;
+        txmsg.len = 8;
 
-    uint32_t floatBytes;
-    static_assert(sizeof axis->motor_.current_control_.Iq_setpoint == sizeof floatBytes);
-    std::memcpy(&floatBytes, &axis->motor_.current_control_.Iq_setpoint, sizeof floatBytes);
+        uint32_t floatBytes;
+        static_assert(sizeof axis->motor_.current_control_.Iq_setpoint == sizeof floatBytes);
+        std::memcpy(&floatBytes, &axis->motor_.current_control_.Iq_setpoint, sizeof floatBytes);
 
-    txmsg.buf[0] = floatBytes;
-    txmsg.buf[1] = floatBytes >> 8;
-    txmsg.buf[2] = floatBytes >> 16;
-    txmsg.buf[3] = floatBytes >> 24;
+        txmsg.buf[0] = floatBytes;
+        txmsg.buf[1] = floatBytes >> 8;
+        txmsg.buf[2] = floatBytes >> 16;
+        txmsg.buf[3] = floatBytes >> 24;
 
-    static_assert(sizeof floatBytes == sizeof axis->motor_.current_control_.Iq_measured);
-    std::memcpy(&floatBytes, &axis->motor_.current_control_.Iq_measured, sizeof floatBytes);
-    txmsg.buf[4] = floatBytes;
-    txmsg.buf[5] = floatBytes >> 8;
-    txmsg.buf[6] = floatBytes >> 16;
-    txmsg.buf[7] = floatBytes >> 24;
+        static_assert(sizeof floatBytes == sizeof axis->motor_.current_control_.Iq_measured);
+        std::memcpy(&floatBytes, &axis->motor_.current_control_.Iq_measured, sizeof floatBytes);
+        txmsg.buf[4] = floatBytes;
+        txmsg.buf[5] = floatBytes >> 8;
+        txmsg.buf[6] = floatBytes >> 16;
+        txmsg.buf[7] = floatBytes >> 24;
 
-    odCAN->write(txmsg);
+        odCAN->write(txmsg);
+    }
 }
 
 void CANSimple::get_vbus_voltage_callback(Axis* axis, CAN_message_t& msg) {
-    CAN_message_t txmsg;
+    if (msg.rtr) {
+        CAN_message_t txmsg;
 
-    txmsg.id = axis->config_.can_node_id << NUM_CMD_ID_BITS;
-    txmsg.id += MSG_GET_VBUS_VOLTAGE;
-    txmsg.isExt = false;
-    txmsg.len = 8;
+        txmsg.id = axis->config_.can_node_id << NUM_CMD_ID_BITS;
+        txmsg.id += MSG_GET_VBUS_VOLTAGE;
+        txmsg.isExt = false;
+        txmsg.len = 8;
 
-    uint32_t floatBytes;
-    static_assert(sizeof vbus_voltage == sizeof floatBytes);
-    std::memcpy(&floatBytes, &vbus_voltage, sizeof floatBytes);
+        uint32_t floatBytes;
+        static_assert(sizeof vbus_voltage == sizeof floatBytes);
+        std::memcpy(&floatBytes, &vbus_voltage, sizeof floatBytes);
 
-    // This also works in principle, but I don't have hardware to verify endianness
-    // std::memcpy(&txmsg.buf[0], &vbus_voltage, sizeof vbus_voltage);
+        // This also works in principle, but I don't have hardware to verify endianness
+        // std::memcpy(&txmsg.buf[0], &vbus_voltage, sizeof vbus_voltage);
 
-    txmsg.buf[0] = floatBytes;
-    txmsg.buf[1] = floatBytes >> 8;
-    txmsg.buf[2] = floatBytes >> 16;
-    txmsg.buf[3] = floatBytes >> 24;
+        txmsg.buf[0] = floatBytes;
+        txmsg.buf[1] = floatBytes >> 8;
+        txmsg.buf[2] = floatBytes >> 16;
+        txmsg.buf[3] = floatBytes >> 24;
 
-    txmsg.buf[4] = 0;
-    txmsg.buf[5] = 0;
-    txmsg.buf[6] = 0;
-    txmsg.buf[7] = 0;
+        txmsg.buf[4] = 0;
+        txmsg.buf[5] = 0;
+        txmsg.buf[6] = 0;
+        txmsg.buf[7] = 0;
+
         odCAN->write(txmsg);
+    }
 }
 
 void CANSimple::send_heartbeat(Axis* axis) {
