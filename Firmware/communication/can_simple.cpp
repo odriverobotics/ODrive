@@ -349,6 +349,7 @@ void CANSimple::get_vbus_voltage_callback(Axis* axis, CAN_message_t& msg) {
     txmsg.buf[5] = 0;
     txmsg.buf[6] = 0;
     txmsg.buf[7] = 0;
+        odCAN->write(txmsg);
 }
 
 void CANSimple::send_heartbeat(Axis* axis) {
