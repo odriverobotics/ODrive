@@ -82,12 +82,11 @@ typedef struct {
     uint16_t endpoint_id;
 } endpoint_ref_t;
 
+#include <cstring>
 
 template<typename T, typename = typename std::enable_if_t<!std::is_const<T>::value>>
 inline size_t write_le(T value, uint8_t* buffer){
-    for(size_t i = 0; i < sizeof(value); ++i){
-        buffer[i] = (value >> 8*i) & 0xff;
-    }
+    std::memcpy(&buffer[0], &value, sizeof(value));
     return sizeof(value);
 }
 
@@ -118,6 +117,7 @@ template<>
 inline size_t read_le<float>(float* value, const uint8_t* buffer) {
     static_assert(CHAR_BIT * sizeof(float) == 32, "32 bit floating point expected");
     static_assert(std::numeric_limits<float>::is_iec559, "IEEE 754 floating point expected");
+
     return read_le(reinterpret_cast<uint32_t*>(value), buffer);
 }
 
