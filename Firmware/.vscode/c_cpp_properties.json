@@ -28,16 +28,10 @@
                 "USB_PROTOCOL_NATIVE",
                 "__weak=\"__attribute__((weak))\"",
                 "__packed=\"__attribute__((__packed__))\"",
-                "__GNUC__"
+                "__GNUC__",
+                "__ODRIVE_MAIN_H"
             ],
             "intelliSenseMode": "clang-x64",
-            "browse": {
-                "path": [
-                    "${workspaceRoot}",
-                    "${ARM_GCC_ROOT}"
-                ],
-                "limitSymbolsToIncludedHeaders": true
-            },
             "compilerPath": "\"${ARM_GCC_ROOT}/bin/arm-none-eabi-gcc.exe\" -mthumb -mcpu=cortex-m4 -mfpu=fpv4-sp-d16 -mfloat-abi=hard -specs=nosys.specs -specs=nano.specs -u _printf_float -u _scanf_float",
             "cStandard": "c11",
             "cppStandard": "c++14"
