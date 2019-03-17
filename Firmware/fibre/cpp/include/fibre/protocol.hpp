@@ -106,10 +106,7 @@ inline size_t write_le<float>(float value, uint8_t* buffer) {
 
 template<typename T>
 inline size_t read_le(T* value, const uint8_t* buffer){
-    *value = static_cast<T>(buffer[0]);
-    for(size_t i = 1; i < sizeof(*value); ++i){
-        *value |= static_cast<T>(buffer[i]) << i*8;
-    }
+    std::memcpy(value, buffer, sizeof(*value));
     return sizeof(*value);
 }
 
