@@ -13,8 +13,8 @@ Axis::Axis(const AxisHardwareConfig_t& hw_config,
            SensorlessEstimator& sensorless_estimator,
            Controller& controller,
            Motor& motor,
-           TrapezoidalTrajectory& trap)
-    : hw_config_(hw_config),
+           TrapezoidalTrajectory& trap) :
+      hw_config_(hw_config),
       config_(config),
       encoder_(encoder),
       sensorless_estimator_(sensorless_estimator),
