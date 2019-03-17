@@ -28,8 +28,7 @@
                 "USB_PROTOCOL_NATIVE",
                 "__weak=\"__attribute__((weak))\"",
                 "__packed=\"__attribute__((__packed__))\"",
-                "__GNUC__",
-                "__ODRIVE_MAIN_H"
+                "__GNUC__"
             ],
             "intelliSenseMode": "clang-x64",
             "compilerPath": "\"${ARM_GCC_ROOT}/bin/arm-none-eabi-gcc.exe\" -mthumb -mcpu=cortex-m4 -mfpu=fpv4-sp-d16 -mfloat-abi=hard -specs=nosys.specs -specs=nano.specs -u _printf_float -u _scanf_float",
