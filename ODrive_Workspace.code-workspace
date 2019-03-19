@@ -11,6 +11,14 @@
 		}
 	],
 	"settings": {
+
+		"c-cpp-flylint.cppcheck.includePaths": [
+			"${workspaceRoot}",
+			"${workspaceRoot}/fibre/cpp/include/fibre",
+			"${workspaceRoot}/communication",
+			"${workspaceRoot}/MotorControl",
+		],
+
 		"files.associations": {
 			"memory": "cpp",
 			"utility": "cpp",

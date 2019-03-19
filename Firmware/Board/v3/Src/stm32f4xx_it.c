@@ -91,22 +91,34 @@ void NMI_Handler(void)
   /* USER CODE END NonMaskableInt_IRQn 1 */
 }
 
+void get_regs(void** stack_ptr) {
+  void* volatile r0 __attribute__((unused)) = stack_ptr[0];
+  void* volatile r1 __attribute__((unused)) = stack_ptr[1];
+  void* volatile r2 __attribute__((unused)) = stack_ptr[2];
+  void* volatile r3 __attribute__((unused)) = stack_ptr[3];
+
+  void* volatile r12 __attribute__((unused)) = stack_ptr[4];
+  void* volatile lr __attribute__((unused)) = stack_ptr[5];  // Link register
+  void* volatile pc __attribute__((unused)) = stack_ptr[6];  // Program counter
+  void* volatile psr __attribute__((unused)) = stack_ptr[7];  // Program status register
+
+  volatile bool stay_looping = true;
+  while(stay_looping);
+}
+
 /**
 * @brief This function handles Hard fault interrupt.
 */
+__attribute__((naked))
 void HardFault_Handler(void)
 {
-  /* USER CODE BEGIN HardFault_IRQn 0 */
-
-  /* USER CODE END HardFault_IRQn 0 */
-  while (1)
-  {
-    /* USER CODE BEGIN W1_HardFault_IRQn 0 */
-    /* USER CODE END W1_HardFault_IRQn 0 */
-  }
-  /* USER CODE BEGIN HardFault_IRQn 1 */
-
-  /* USER CODE END HardFault_IRQn 1 */
+  __asm(
+    " tst lr, #4     \n\t"
+    " ite eq         \n\t"
+    " mrseq r0, msp  \n\t"
+    " mrsne r0, psp  \n\t"
+    " b get_regs     \n\t"
+  );
 }
 
 /**
