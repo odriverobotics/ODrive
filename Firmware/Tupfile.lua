@@ -100,7 +100,12 @@ FLAGS += '-mfloat-abi=hard'
 FLAGS += { '-Wall', '-Wdouble-promotion', '-Wfloat-conversion', '-fdata-sections', '-ffunction-sections'}
 
 -- debug build
-FLAGS += '-g -gdwarf-2'
+if tup.getconfig("DEBUG") == "true" then
+    FLAGS += '-g -gdwarf-2'
+    OPT += '-Og'
+else
+    OPT += '-O2'
+end
 
 
 -- linker flags
@@ -112,7 +117,8 @@ LDFLAGS += '-Wl,--undefined=uxTopUsedPriority'
 
 
 -- common flags for ASM, C and C++
-OPT += '-Og'
+-- OPT += '-Og'
+-- OPT += '-O2'
 -- OPT += '-O0'
 OPT += '-ffast-math -fno-finite-math-only'
 tup.append_table(FLAGS, OPT)

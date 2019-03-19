@@ -56,14 +56,14 @@ function GCCToolchain(prefix, builddir, compiler_flags, linker_flags)
         compiler_flags += '-fstack-usage'
     end
 
-    gcc_generic_compiler = function(compiler, compiler_flags, gen_su_file, src, flags, includes, outputs)
+    local gcc_generic_compiler = function(compiler, compiler_flags, gen_su_file, src, flags, includes, outputs)
         -- convert include list to flags
         inc_flags = {}
         for _,inc in pairs(includes) do
             inc_flags += "-I"..inc
         end
         -- todo: vary build directory
-        obj_file = builddir.."/"..src:gsub("/","_")..".o"
+        obj_file = builddir.."/obj/"..src:gsub("/","_")..".o"
         outputs.object_files += obj_file
         if gen_su_file then
             su_file = builddir.."/"..src:gsub("/","_")..".su"
@@ -162,7 +162,7 @@ function build(args)
 
         outputs.includes = {}
         for _,inc in pairs(args.includes) do
-            table.insert(outputs.includes, tup.nodevariable(inc))
+            table.insert(outputs.includes, inc)
         end
         if args.name != nil then
             all_packages[args.name] = outputs
