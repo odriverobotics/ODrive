@@ -99,6 +99,13 @@ FLAGS += '-mfpu=fpv4-sp-d16'
 FLAGS += '-mfloat-abi=hard'
 FLAGS += { '-Wall', '-Wdouble-promotion', '-Wfloat-conversion', '-fdata-sections', '-ffunction-sections'}
 
+-- linker flags
+LDFLAGS += '-T'..boarddir..'/STM32F405RGTx_FLASH.ld'
+LDFLAGS += '-L'..boarddir..'/Drivers/CMSIS/Lib' -- lib dir
+LDFLAGS += '-lc -lm -lnosys -larm_cortexM4lf_math' -- libs
+LDFLAGS += '-mthumb -mcpu=cortex-m4 -mfpu=fpv4-sp-d16 -mfloat-abi=hard -specs=nosys.specs -specs=nano.specs -u _printf_float -u _scanf_float -Wl,--cref -Wl,--gc-sections'
+LDFLAGS += '-Wl,--undefined=uxTopUsedPriority'
+
 -- debug build
 if tup.getconfig("DEBUG") == "true" then
     FLAGS += '-g -gdwarf-2'
@@ -107,19 +114,7 @@ else
     OPT += '-O2'
 end
 
-
--- linker flags
-LDFLAGS += '-T'..boarddir..'/STM32F405RGTx_FLASH.ld'
-LDFLAGS += '-L'..boarddir..'/Drivers/CMSIS/Lib' -- lib dir
-LDFLAGS += '-lc -lm -lnosys -larm_cortexM4lf_math' -- libs
-LDFLAGS += '-mthumb -mcpu=cortex-m4 -mfpu=fpv4-sp-d16 -mfloat-abi=hard -specs=nosys.specs -specs=nano.specs -u _printf_float -u _scanf_float -Wl,--cref -Wl,--gc-sections'
-LDFLAGS += '-Wl,--undefined=uxTopUsedPriority'
-
-
 -- common flags for ASM, C and C++
--- OPT += '-Og'
--- OPT += '-O2'
--- OPT += '-O0'
 OPT += '-ffast-math -fno-finite-math-only'
 tup.append_table(FLAGS, OPT)
 tup.append_table(LDFLAGS, OPT)
