@@ -99,6 +99,9 @@ void Axis::update_watchdog_settings() {
     } else {
         watchdog_reset_value_ = static_cast<uint32_t>(config_.watchdog_timeout * current_meas_hz);
     }
+
+    // Do a feed to avoid instant timeout
+    watchdog_feed();
 }
 
 // @brief (de)activates step/dir input
