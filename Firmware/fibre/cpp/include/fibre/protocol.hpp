@@ -86,6 +86,7 @@ typedef struct {
 
 template<typename T, typename = typename std::enable_if_t<!std::is_const<T>::value>>
 inline size_t write_le(T value, uint8_t* buffer){
+    //TODO: add static_assert that this is still a little endian machine
     std::memcpy(&buffer[0], &value, sizeof(value));
     return sizeof(value);
 }
@@ -106,6 +107,7 @@ inline size_t write_le<float>(float value, uint8_t* buffer) {
 
 template<typename T>
 inline size_t read_le(T* value, const uint8_t* buffer){
+    // TODO: add static_assert that this is still a little endian machine
     std::memcpy(value, buffer, sizeof(*value));
     return sizeof(*value);
 }

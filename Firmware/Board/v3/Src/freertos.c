@@ -189,6 +189,7 @@ void MX_FREERTOS_Init(void) {
 
   init_deferred_interrupts();
 
+  // Load persistent configuration (or defaults)
   load_configuration();
   /* USER CODE END RTOS_SEMAPHORES */
 
