@@ -331,6 +331,18 @@ You can now control the current with `axis.controller.current_setpoint = 3` [A].
 
 *Note: There is no velocity limiting in current control mode. Make sure that you don't overrev the motor, or exceed the max speed for your encoder.*
 
+
+## Watchdog Timer
+Each axis has a configurable watchdog timer that can stop the motors if the
+control connection to the ODrive is interrupted.
+
+Each axis has a configurable watchdog timeout: `axis.config.watchdog_timeout`,
+measured in seconds. A value of `0` disables the watchdog functionality. Any value
+`> 0` will stop the motors if the watchdog has not been fed in the configured
+time interval. 
+
+The watchdog is fed using the `axis.watchdog_feed()` method of each axis. 
+
 ## What's next?
 You can now:
 * See what other [commands and parameters](commands.md) are available, including setting tuning parameters for better performance.

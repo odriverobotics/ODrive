@@ -39,9 +39,8 @@ bool Encoder::do_checks(){
 // Triggered when an encoder passes over the "Index" pin
 // TODO: only arm index edge interrupt when we know encoder has powered up
 // (maybe by attaching the interrupt on start search, synergistic with following)
-// TODO: disable interrupt once we found the index
 void Encoder::enc_index_cb() {
-    if (config_.use_index && !index_found_) {
+    if (config_.use_index) {
         set_circular_count(0, false);
         if (config_.zero_count_on_find_idx)
             set_linear_count(0); // Avoid position control transient after search
@@ -69,6 +68,23 @@ void Encoder::set_idx_subscribe(bool override_enable) {
     if (!config_.use_index || config_.find_idx_on_lockin_only) {
         GPIO_unsubscribe(hw_config_.index_port, hw_config_.index_pin);
     }
+}
+
+void Encoder::update_pll_gains() {
+    pll_kp_ = 2.0f * config_.bandwidth;  // basic conversion to discrete time
+    pll_ki_ = 0.25f * (pll_kp_ * pll_kp_); // Critically damped
+
+    // Check that we don't get problems with discrete time approximation
+    if (!(current_meas_period * pll_kp_ < 1.0f)) {
+        set_error(ERROR_UNSTABLE_GAIN);
+    }
+}
+
+void Encoder::check_pre_calibrated() {
+    if (!is_ready_)
+        config_.pre_calibrated = false;
+    if (config_.mode == MODE_INCREMENTAL && !index_found_)
+        config_.pre_calibrated = false;
 }
 
 // Function that sets the current encoder count to a desired 32-bit value.
@@ -258,16 +274,6 @@ static bool decode_hall(uint8_t hall_state, int32_t* hall_cnt) {
         case 0b100: *hall_cnt = 4; return true;
         case 0b101: *hall_cnt = 5; return true;
         default: return false;
-    }
-}
-
-void Encoder::update_pll_gains() {
-    pll_kp_ = 2.0f * config_.bandwidth;  // basic conversion to discrete time
-    pll_ki_ = 0.25f * (pll_kp_ * pll_kp_); // Critically damped
-
-    // Check that we don't get problems with discrete time approximation
-    if (!(current_meas_period * pll_kp_ < 1.0f)) {
-        set_error(ERROR_UNSTABLE_GAIN);
     }
 }
 

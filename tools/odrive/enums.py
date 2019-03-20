@@ -27,6 +27,7 @@ class errors:
         ERROR_ENCODER_FAILED = 0x100 # Go to encoder.hpp for information, check odrvX.axisX.encoder.error for error value
         ERROR_CONTROLLER_FAILED = 0x200
         ERROR_POS_CTRL_DURING_SENSORLESS = 0x400
+        ERROR_WATCHDOG_TIMER_EXPIRED = 0x800
 
     class motor:
         ERROR_NONE = 0

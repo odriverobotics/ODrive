@@ -9,13 +9,14 @@ public:
         float decel_limit = 5000.0f; // [count/s^2]
         float A_per_css = 0.0f;      // [A/(count/s^2)]
     };
+    
     struct Step_t {
         float Y;
         float Yd;
         float Ydd;
     };
 
-    TrapezoidalTrajectory(Config_t& config);
+    explicit TrapezoidalTrajectory(Config_t& config);
     bool planTrapezoidal(float Xf, float Xi, float Vi,
                          float Vmax, float Amax, float Dmax);
     Step_t eval(float t);

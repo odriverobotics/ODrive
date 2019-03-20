@@ -116,6 +116,7 @@ You can use the DfuSe app from ST.
 1. Force the ODrive into DFU mode, as per the instructions above "How to force DFU mode".
 1. In the top left it should now be connected to "STM Device in DFU Mode".
    1. If it doesn't appear, it may be because the driver is set to libusb by Zadig. We need to set it back to the original driver. Follow [these instructions](https://github.com/pbatard/libwdi/wiki/FAQ#Help_Zadig_replaced_the_driver_for_the_wrong_device_How_do_I_restore_it).
+   2. If, after doing the above step, the ODrive still installs itself as a libusb device in Device Manager, you can try to delete the libusb driver (this is OK, since we can use Zadig to install it again). You can simply delete the file `C:\Windows\System32\drivers\libusb0.sys`.
 1. In the bottom right section called "Upgrade or Verify Action" click the button "Choose...".
 1. Locate the `ODriveFirmware.dfu` we made before.
 1. Click button "Upgrade".

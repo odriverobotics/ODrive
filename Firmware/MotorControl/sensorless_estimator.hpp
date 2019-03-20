@@ -14,7 +14,7 @@ public:
         float pm_flux_linkage = 1.58e-3f; // [V / (rad/s)]  { 5.51328895422 / (<pole pairs> * <rpm/v>) }
     };
 
-    SensorlessEstimator(Config_t& config);
+    explicit SensorlessEstimator(Config_t& config);
 
     bool update();
 

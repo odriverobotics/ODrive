@@ -52,6 +52,8 @@ public:
 
     void enc_index_cb();
     void set_idx_subscribe(bool override_enable = false);
+    void update_pll_gains();
+    void check_pre_calibrated();
 
     void set_linear_count(int32_t count);
     void set_circular_count(int32_t count, bool update_offset);
@@ -63,7 +65,7 @@ public:
     void sample_now();
     bool update();
 
-    void update_pll_gains();
+
 
     const EncoderHardwareConfig_t& hw_config_;
     Config_t& config_;
@@ -92,8 +94,8 @@ public:
     auto make_protocol_definitions() {
         return make_protocol_member_list(
             make_protocol_property("error", &error_),
-            make_protocol_ro_property("is_ready", &is_ready_),
-            make_protocol_ro_property("index_found", const_cast<bool*>(&index_found_)),
+            make_protocol_property("is_ready", &is_ready_),
+            make_protocol_property("index_found", const_cast<bool*>(&index_found_)),
             make_protocol_property("shadow_count", &shadow_count_),
             make_protocol_property("count_in_cpr", &count_in_cpr_),
             make_protocol_property("interpolation", &interpolation_),
@@ -110,7 +112,8 @@ public:
                     [](void* ctx) { static_cast<Encoder*>(ctx)->set_idx_subscribe(); }, this),
                 make_protocol_property("find_idx_on_lockin_only", &config_.find_idx_on_lockin_only,
                     [](void* ctx) { static_cast<Encoder*>(ctx)->set_idx_subscribe(); }, this),
-                make_protocol_property("pre_calibrated", &config_.pre_calibrated),
+                make_protocol_property("pre_calibrated", &config_.pre_calibrated,
+                    [](void* ctx) { static_cast<Encoder*>(ctx)->check_pre_calibrated(); }, this),
                 make_protocol_property("zero_count_on_find_idx", &config_.zero_count_on_find_idx),
                 make_protocol_property("cpr", &config_.cpr),
                 make_protocol_property("offset", &config_.offset),
