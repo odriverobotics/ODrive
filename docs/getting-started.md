@@ -7,7 +7,20 @@ permalink: /
 # Getting Started
 
 ### Table of contents
-<!-- TOC depthFrom:2 depthTo:2 -->autoauto- [Hardware Requirements](#hardware-requirements)auto- [Wiring up the ODrive](#wiring-up-the-odrive)auto- [Downloading and Installing Tools](#downloading-and-installing-tools)auto- [Firmware](#firmware)auto- [Start `odrivetool`](#start-odrivetool)auto- [Configure M0](#configure-m0)auto- [Position control of M0](#position-control-of-m0)auto- [Other control modes](#other-control-modes)auto- [What's next?](#whats-next)autoauto<!-- /TOC -->
+<!-- TOC depthFrom:2 depthTo:2 -->
+
+- [Hardware Requirements](#hardware-requirements)
+- [Wiring up the ODrive](#wiring-up-the-odrive)
+- [Downloading and Installing Tools](#downloading-and-installing-tools)
+- [Firmware](#firmware)
+- [Start `odrivetool`](#start-odrivetool)
+- [Configure M0](#configure-m0)
+- [Position control of M0](#position-control-of-m0)
+- [Other control modes](#other-control-modes)
+- [Watchdog Timer](#watchdog-timer)
+- [What's next?](#whats-next)
+
+<!-- /TOC -->
 
 ## Hardware Requirements
 
