@@ -18,6 +18,8 @@ You may wire the motor phases in any order into a motor connector on the ODrive,
 | Green     | Z         |
 | Black     | GND       |
 
+Note: In order to ber compatible with encoder inputs, the ODrive doesn't have any filtering capacitors on the pins where the hall sensors connect. Therefore to get a reliable hall signal, it is recommended that you add some filter capacitors to these pins. You can see instructions [here](https://discourse.odriverobotics.com/t/encoder-error-error-illegal-hall-state/1047/7?u=madcowswe).
+
 
 ### Hoverboard motor configuration
 Standard 6.5 inch hoverboard hub motors have 30 permanent magnet poles, and thus 15 pole pairs. If you have a different motor you need to count the magnets or have a reliable datasheet for this information.
@@ -118,7 +120,7 @@ odrv0.axis0.requested_state = AXIS_STATE_IDLE
 Hopefully you got your motor to spin! Feel free to repeat all of the above for the other axis if appropriate.
 
 ### PWM input
-If you want to drive your hoverboard wheels around with an RC remote contro you can use the [RC PWM input](interfaces.md#rc-pwm-input). There is more information in that link.
+If you want to drive your hoverboard wheels around with an RC remote control you can use the [RC PWM input](interfaces.md#rc-pwm-input). There is more information in that link.
 Lets use GPIO 3/4 for the velocity inputs so that we don't have to disable UART.
 Then let's map the full stick range of these inputs to some suitable velocity setpoint range.
 We also have to reboot to activate the PWM input.
@@ -158,6 +160,9 @@ Ok, now we should be able to turn on the drive and control the wheels!
 odrv0.axis0.requested_state = AXIS_STATE_CLOSED_LOOP_CONTROL
 odrv0.axis1.requested_state = AXIS_STATE_CLOSED_LOOP_CONTROL
 ```
+
+### Safety
+Be sure to setup the Failsafe feature on your RC Receiver so that if connection is lost between the remote and the receiver, the receiver outputs 0 and 0 for the velocity setpoint of both axes (or whatever is safest for your configuration). Also note that if the receiver turns off (loss of power, etc) or if the signal from the receiver to the ODrive is lost (wire comes unplugged, etc), the ODrive will continue the last commanded velocity setpoint. There is currently no timeout function in the ODrive for PWM inputs.
 
 ### Automatic startup
 Try to reboot and then activate AXIS_STATE_CLOSED_LOOP_CONTROL on both axis. Check that everything is operational and works as expected.

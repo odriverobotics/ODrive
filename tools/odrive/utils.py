@@ -32,9 +32,10 @@ class OperationAbortedException(Exception):
     pass
 
 def dump_errors(odrv, clear=False):
-    axes = [axis for name, axis in odrv._remote_attributes.items() if 'axis' in name]
-    for num, axis in enumerate(axes):
-        print('Axis{}:'.format(num))
+    axes = [(name, axis) for name, axis in odrv._remote_attributes.items() if 'axis' in name]
+    axes.sort()
+    for name, axis in axes:
+        print(name)
 
         # Flatten axis and submodules
         # (name, remote_obj, errorcode)
@@ -59,7 +60,7 @@ def dump_errors(odrv, clear=False):
             else:
                 print(prefix + _VT100Colors['green'] + "no error" + _VT100Colors['default'])
 
-data_rate = 100
+data_rate = 10
 plot_rate = 10
 num_samples = 1000
 def start_liveplotter(get_var_callback):
@@ -106,6 +107,7 @@ def start_liveplotter(get_var_callback):
         while not cancellation_token.is_set():
             plt.clf()
             plt.plot(vals)
+            plt.legend(list(range(len(vals))))
             fig.canvas.draw()
             fig.canvas.start_event_loop(1/plot_rate)
 

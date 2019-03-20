@@ -58,6 +58,15 @@ void Controller::move_to_pos(float goal_point) {
                                  axis_->trap_.config_.decel_limit);
     traj_start_loop_count_ = axis_->loop_counter_;
     config_.control_mode = CTRL_MODE_TRAJECTORY_CONTROL;
+    goal_point_ = goal_point;
+}
+
+void Controller::move_incremental(float displacement, bool from_goal_point = true){
+    if(from_goal_point){
+        move_to_pos(goal_point_ + displacement);
+    } else{
+        move_to_pos(pos_setpoint_ + displacement);
+    }
 }
 
 void Controller::start_anticogging_calibration() {
@@ -129,12 +138,12 @@ bool Controller::update(float pos_estimate, float vel_estimate, float* current_s
         } break;
         case INPUT_MODE_POS_FILTER: {
             // 2nd order pos tracking filter
-            pos_setpoint_ += current_meas_period * vel_setpoint_; // Delta pos
             float delta_pos = input_pos_ - pos_setpoint_; // Pos error
             float delta_vel = input_vel_ - vel_setpoint_; // Vel error
             float accel = input_filter_kp_*delta_pos + input_filter_ki_*delta_vel; // Feedback
-            vel_setpoint_ += current_meas_period * accel; // delta vel
             current_setpoint_ = accel * config_.inertia; // Accel
+            vel_setpoint_ += current_meas_period * accel; // delta vel
+            pos_setpoint_ += current_meas_period * vel_setpoint_; // Delta pos
         } break;
         // case INPUT_MODE_MIX_CHANNELS: {
         //     // NOT YET IMPLEMENTED
@@ -224,8 +233,8 @@ bool Controller::update(float pos_estimate, float vel_estimate, float* current_s
     Iq += vel_integrator_current_;
 
     // Current limiting
-    float Ilim = std::min(axis_->motor_.config_.current_lim, axis_->motor_.current_control_.max_allowed_current);
     bool limited = false;
+    float Ilim = axis_->motor_.effective_current_lim();
     if (Iq > Ilim) {
         limited = true;
         Iq = Ilim;

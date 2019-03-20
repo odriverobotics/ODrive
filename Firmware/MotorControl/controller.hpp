@@ -48,7 +48,7 @@ public:
         float input_filter_bandwidth = 2.0f; // [1/s]
     };
 
-    Controller(Config_t& config);
+    explicit Controller(Config_t& config);
     void reset();
     void set_error(Error_t error);
 
@@ -58,6 +58,7 @@ public:
 
     // Trajectory-Planned control
     void move_to_pos(float goal_point);
+    void move_incremental(float displacement, bool from_goal_point);
     
     // TODO: make this more similar to other calibration loops
     void start_anticogging_calibration();
@@ -108,6 +109,8 @@ public:
 
     uint32_t traj_start_loop_count_ = 0;
 
+    float goal_point_ = 0.0f;
+
     // Communication protocol definitions
     auto make_protocol_definitions() {
         return make_protocol_member_list(
@@ -117,8 +120,8 @@ public:
             make_protocol_property("input_current", &input_current_),
             make_protocol_ro_property("pos_setpoint", &pos_setpoint_),
             make_protocol_ro_property("vel_setpoint", &vel_setpoint_),
-            make_protocol_ro_property("vel_integrator_current", &vel_integrator_current_),
             make_protocol_ro_property("current_setpoint", &current_setpoint_),
+            make_protocol_property("vel_integrator_current", &vel_integrator_current_),
             make_protocol_object("config",
                 make_protocol_property("control_mode", &config_.control_mode),
                 make_protocol_property("input_mode", &config_.input_mode),
@@ -133,6 +136,14 @@ public:
                 make_protocol_property("input_filter_bandwidth", &config_.input_filter_bandwidth,
                     [](void* ctx) { static_cast<Controller*>(ctx)->update_filter_gains(); }, this)
             ),
+            make_protocol_function("set_pos_setpoint", *this, &Controller::set_pos_setpoint,
+                "pos_setpoint", "vel_feed_forward", "current_feed_forward"),
+            make_protocol_function("set_vel_setpoint", *this, &Controller::set_vel_setpoint,
+                "vel_setpoint", "current_feed_forward"),
+            make_protocol_function("set_current_setpoint", *this, &Controller::set_current_setpoint,
+                                   "current_setpoint"),
+            make_protocol_function("move_to_pos", *this, &Controller::move_to_pos, "pos_setpoint"),
+            make_protocol_function("move_incremental", *this, &Controller::move_incremental, "displacement", "from_goal_point"),
             make_protocol_function("start_anticogging_calibration", *this, &Controller::start_anticogging_calibration)
         );
     }

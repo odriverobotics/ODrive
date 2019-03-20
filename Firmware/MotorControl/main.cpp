@@ -45,7 +45,7 @@ void save_configuration(void) {
     }
 }
 
-void load_configuration(void) {
+extern "C" int load_configuration(void) {
     // Try to load configs
     if (NVM_init() ||
         ConfigFormat::safe_load_config(
@@ -71,6 +71,7 @@ void load_configuration(void) {
     } else {
         user_config_loaded_ = true;
     }
+    return user_config_loaded_;
 }
 
 void erase_configuration(void) {
@@ -97,7 +98,7 @@ void enter_dfu_mode() {
 
 extern "C" {
 int odrive_main(void);
-void vApplicationStackOverflowHook(void) {
+void vApplicationStackOverflowHook(xTaskHandle *pxTask, signed portCHAR *pcTaskName) {
     for (;;); // TODO: safe action
 }
 void vApplicationIdleHook(void) {
@@ -116,8 +117,6 @@ void vApplicationIdleHook(void) {
 }
 
 int odrive_main(void) {
-    // Load persistent configuration (or defaults)
-    load_configuration();
 
 #if HW_VERSION_MAJOR == 3 && HW_VERSION_MINOR >= 3
     if (board_config.enable_i2c_instead_of_can) {
