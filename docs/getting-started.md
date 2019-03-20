@@ -261,7 +261,7 @@ You can now control the velocity with `axis.controller.input_pos = 1000` [counts
 Step response of a 1000 to 0 position input with a filter bandwidth of 1.0 [/sec].
 
 ### Trajectory control
-While in position control mode, use the `move_to_pos` or `move_incremental` functions. See the **Usage** section for details<br>
+See the **Usage** section for usage details.<br>
 This mode lets you smoothly accelerate, coast, and decelerate the axis from one position to another. With raw position control, the controller simply tries to go to the setpoint as quickly as possible. Using a trajectory lets you tune the feedback gains more aggressively to reject disturbance, while keeping smooth motion.
 
 ![Taptraj](TrapTrajPosVel.PNG)<br>
@@ -282,16 +282,21 @@ In the above image blue is position and orange is velocity.
 
 All values should be strictly positive (>= 0).
 
-Keep in mind that you must still set your safety limits as before.  I recommend you set these a little higher ( > 10%) than the planner values, to give the controller enough control authority.
+Keep in mind that you must still set your safety limits as before.  It is recommended you set these a little higher ( > 10%) than the planner values, to give the controller enough control authority.
 ```
 <odrv>.<axis>.motor.config.current_lim = <Float>
 <odrv>.<axis>.controller.config.vel_limit = <Float>
 ```
 
 #### Usage
-Use the `move_to_pos` function to move to an absolute position:
+Make sure you are in position control mode. To activate the trajectory module, set the input mode to trajectory:
 ```
-<odrv>.<axis>.controller.move_to_pos(your_absolute_pos)
+axis.controller.config.input_mode = INPUT_MODE_TRAP_TRAJ
+```
+
+Simply send a position command to execute the move:
+```
+<odrv>.<axis>.controller.input_pos = <Float>
 ```
 
 Use the `move_incremental` function to move to a relative position.
