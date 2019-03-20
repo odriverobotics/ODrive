@@ -20,8 +20,7 @@ public:
         CTRL_MODE_VOLTAGE_CONTROL = 0,
         CTRL_MODE_CURRENT_CONTROL = 1,
         CTRL_MODE_VELOCITY_CONTROL = 2,
-        CTRL_MODE_POSITION_CONTROL = 3,
-        CTRL_MODE_TRAJECTORY_CONTROL = 4
+        CTRL_MODE_POSITION_CONTROL = 3
     };
 
     enum InputMode_t{
@@ -35,7 +34,7 @@ public:
 
     struct Config_t {
         ControlMode_t control_mode = CTRL_MODE_POSITION_CONTROL;  //see: ControlMode_t
-        InputMode_t input_mode = INPUT_MODE_INACTIVE;  //see: InputMode_t
+        InputMode_t input_mode = INPUT_MODE_PASSTHROUGH;  //see: InputMode_t
         float pos_gain = 20.0f;  // [(counts/s) / counts]
         float vel_gain = 5.0f / 10000.0f;  // [A/(counts/s)]
         // float vel_gain = 5.0f / 200.0f, // [A/(rad/s)] <sensorless example>
@@ -52,9 +51,7 @@ public:
     void reset();
     void set_error(Error_t error);
 
-    void set_pos_setpoint(float pos_setpoint, float vel_feed_forward, float current_feed_forward);
-    void set_vel_setpoint(float vel_setpoint, float current_feed_forward);
-    void set_current_setpoint(float current_setpoint);
+    void input_pos_updated();
 
     // Trajectory-Planned control
     void move_to_pos(float goal_point);
@@ -94,7 +91,7 @@ public:
     };
 
     Error_t error_ = ERROR_NONE;
-    // variables exposed on protocol
+
     float pos_setpoint_ = 0.0f;
     float vel_setpoint_ = 0.0f;
     // float vel_setpoint = 800.0f; <sensorless example>
@@ -108,19 +105,21 @@ public:
     float input_filter_ki_ = 0.0f;
 
     uint32_t traj_start_loop_count_ = 0;
-
     float goal_point_ = 0.0f;
+    bool trajectory_done_ = true;
 
     // Communication protocol definitions
     auto make_protocol_definitions() {
         return make_protocol_member_list(
             make_protocol_property("error", &error_),
-            make_protocol_property("input_pos", &input_pos_),
+            make_protocol_property("input_pos", &input_pos_,
+                [](void* ctx) { static_cast<Controller*>(ctx)->input_pos_updated(); }, this),
             make_protocol_property("input_vel", &input_vel_),
             make_protocol_property("input_current", &input_current_),
             make_protocol_ro_property("pos_setpoint", &pos_setpoint_),
             make_protocol_ro_property("vel_setpoint", &vel_setpoint_),
             make_protocol_ro_property("current_setpoint", &current_setpoint_),
+            make_protocol_ro_property("trajectory_done", &trajectory_done_),
             make_protocol_property("vel_integrator_current", &vel_integrator_current_),
             make_protocol_object("config",
                 make_protocol_property("control_mode", &config_.control_mode),
@@ -136,13 +135,6 @@ public:
                 make_protocol_property("input_filter_bandwidth", &config_.input_filter_bandwidth,
                     [](void* ctx) { static_cast<Controller*>(ctx)->update_filter_gains(); }, this)
             ),
-            make_protocol_function("set_pos_setpoint", *this, &Controller::set_pos_setpoint,
-                "pos_setpoint", "vel_feed_forward", "current_feed_forward"),
-            make_protocol_function("set_vel_setpoint", *this, &Controller::set_vel_setpoint,
-                "vel_setpoint", "current_feed_forward"),
-            make_protocol_function("set_current_setpoint", *this, &Controller::set_current_setpoint,
-                                   "current_setpoint"),
-            make_protocol_function("move_to_pos", *this, &Controller::move_to_pos, "pos_setpoint"),
             make_protocol_function("move_incremental", *this, &Controller::move_incremental, "displacement", "from_goal_point"),
             make_protocol_function("start_anticogging_calibration", *this, &Controller::start_anticogging_calibration)
         );

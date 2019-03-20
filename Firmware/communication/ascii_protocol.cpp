@@ -95,12 +95,14 @@ void ASCII_protocol_process_line(const uint8_t* buffer, size_t len, StreamSink& 
         } else if (motor_number >= AXIS_COUNT) {
             respond(response_channel, use_checksum, "invalid motor %u", motor_number);
         } else {
-            if (numscan < 3)
-                vel_feed_forward = 0.0f;
-            if (numscan < 4)
-                current_feed_forward = 0.0f;
             Axis* axis = axes[motor_number];
-            axis->controller_.set_pos_setpoint(pos_setpoint, vel_feed_forward, current_feed_forward);
+            axis->controller_.config_.control_mode = Controller::CTRL_MODE_POSITION_CONTROL;
+            axis->controller_.input_pos_ = pos_setpoint;
+            if (numscan >= 3)
+                axis->controller_.input_vel_ = vel_feed_forward;
+            if (numscan >= 4)
+                axis->controller_.input_current_ = current_feed_forward;
+            axis->controller_.input_pos_updated();
             axis->watchdog_feed();
         }
 
@@ -114,12 +116,13 @@ void ASCII_protocol_process_line(const uint8_t* buffer, size_t len, StreamSink& 
             respond(response_channel, use_checksum, "invalid motor %u", motor_number);
         } else {
             Axis* axis = axes[motor_number];
-            axis->controller_.pos_setpoint_ = pos_setpoint;
+            axis->controller_.config_.control_mode = Controller::CTRL_MODE_POSITION_CONTROL;
+            axis->controller_.input_pos_ = pos_setpoint;
             if (numscan >= 3)
                 axis->controller_.config_.vel_limit = vel_limit;
             if (numscan >= 4)
                 axis->motor_.config_.current_lim = current_lim;
-
+            axis->controller_.input_pos_updated();
             axis->watchdog_feed();
         }
 
@@ -132,10 +135,11 @@ void ASCII_protocol_process_line(const uint8_t* buffer, size_t len, StreamSink& 
         } else if (motor_number >= AXIS_COUNT) {
             respond(response_channel, use_checksum, "invalid motor %u", motor_number);
         } else {
-            if (numscan < 3)
-                current_feed_forward = 0.0f;
             Axis* axis = axes[motor_number];
-            axis->controller_.set_vel_setpoint(vel_setpoint, current_feed_forward);
+            axis->controller_.config_.control_mode = Controller::CTRL_MODE_VELOCITY_CONTROL;
+            axis->controller_.input_vel_ = vel_setpoint;
+            if (numscan >= 3)
+                axis->controller_.input_current_ = current_feed_forward;
             axis->watchdog_feed();
         }
 
@@ -149,7 +153,8 @@ void ASCII_protocol_process_line(const uint8_t* buffer, size_t len, StreamSink& 
             respond(response_channel, use_checksum, "invalid motor %u", motor_number);
         } else {
             Axis* axis = axes[motor_number];
-            axis->controller_.set_current_setpoint(current_setpoint);
+            axis->controller_.config_.control_mode = Controller::CTRL_MODE_CURRENT_CONTROL;
+            axis->controller_.input_current_ = current_setpoint;
             axis->watchdog_feed();
         }
 
@@ -163,6 +168,7 @@ void ASCII_protocol_process_line(const uint8_t* buffer, size_t len, StreamSink& 
             respond(response_channel, use_checksum, "invalid motor %u", motor_number);
         } else {
             Axis* axis = axes[motor_number];
+            axis->controller_.config_.input_mode = Controller::INPUT_MODE_TRAP_TRAJ;
             axis->controller_.move_to_pos(goal_point);
             axis->watchdog_feed();
         }
