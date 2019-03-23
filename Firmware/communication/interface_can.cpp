@@ -124,7 +124,7 @@ bool ODriveCAN::read(CAN_message_t &rxmsg) {
     rxmsg.isExt = header.IDE;
     rxmsg.id = rxmsg.isExt ? header.ExtId : header.StdId;  // If it's an extended message, pass the extended ID
     rxmsg.len = header.DLC;
-    rxmsg.rtr = (header.RTR == CAN_RTR_REMOTE) ? true : false;
+    rxmsg.rtr = header.RTR;
 
     return validRead;
 }
