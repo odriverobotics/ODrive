@@ -93,6 +93,16 @@ c motor current
 
 This command updates the watchdog timer for the motor. 
 
+#### Request feedback
+```
+f motor
+
+response:
+pos vel
+```
+* `f` for feedback
+* `pos` is the encoder position in counts (float)
+* `vel` is the encoder velocity in counts/s (float)
 
 #### Update motor watchdog
 ```
