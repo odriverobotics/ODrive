@@ -40,6 +40,7 @@ void CANSimple::handle_can_message(CAN_message_t& msg) {
     }
 
     if (validAxis) {
+        axis->watchdog_feed();
         switch (cmd) {
             case MSG_CO_NMT_CTRL:
                 break;
