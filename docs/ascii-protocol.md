@@ -86,6 +86,29 @@ c motor current
 * `motor` is the motor number, `0` or `1`.
 * `current` is the desired current in A.
 
+This command updates the watchdog timer for the motor. 
+
+#### Request feedback
+```
+f motor
+
+response:
+pos vel
+```
+* `f` for feedback
+* `pos` is the encoder position in counts (float)
+* `vel` is the encoder velocity in counts/s (float)
+
+#### Update motor watchdog
+```
+u motor
+```
+* `u` for /u/pdate.
+* `motor` is the motor number, `0` or `1`.
+
+This command updates the watchdog timer for the motor, without changing any
+setpoints. 
+
 #### Parameter reading/writing
 
 Not all parameters can be accessed via the ASCII protocol but at least all parameters with float and integer type are supported.
