@@ -1,6 +1,10 @@
 # Unreleased Features
 Please add a note of your changes below this heading if you make a Pull Request.
 
+### Added
+* Communication watchdog feature.
+* `encoder.set_linear_count(count)` function.
+
 # Releases
 ## [0.4.8] - 2019-02-25
 ### Added

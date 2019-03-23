@@ -9,7 +9,7 @@ Encoder::Encoder(const EncoderHardwareConfig_t& hw_config,
 {
     update_pll_gains();
 
-    if (config.pre_calibrated && (config.mode == Encoder::MODE_HALL)) {
+    if (config.pre_calibrated && (config.mode == Encoder::MODE_HALL || config.mode == Encoder::MODE_SINCOS)) {
         is_ready_ = true;
     }
 }
@@ -288,8 +288,8 @@ void Encoder::sample_now() {
         } break;
 
         case MODE_SINCOS: {
-            sincos_sample_s_ = get_adc_voltage(GPIO_3_GPIO_Port, GPIO_3_Pin) / 3.3f;
-            sincos_sample_c_ = get_adc_voltage(GPIO_4_GPIO_Port, GPIO_4_Pin) / 3.3f;
+            sincos_sample_s_ = (get_adc_voltage(GPIO_3_GPIO_Port, GPIO_3_Pin) / 3.3f) - 0.5f;
+            sincos_sample_c_ = (get_adc_voltage(GPIO_4_GPIO_Port, GPIO_4_Pin) / 3.3f) - 0.5f;
         } break;
 
         default: {

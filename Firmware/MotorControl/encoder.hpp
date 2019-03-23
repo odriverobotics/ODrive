@@ -124,7 +124,8 @@ public:
                 make_protocol_property("calib_range", &config_.calib_range),
                 make_protocol_property("idx_search_unidirectional", &config_.idx_search_unidirectional),
                 make_protocol_property("ignore_illegal_hall_state", &config_.ignore_illegal_hall_state)
-            )
+            ),
+            make_protocol_function("set_linear_count", *this, &Encoder::set_linear_count, "count")
         );
     }
 };

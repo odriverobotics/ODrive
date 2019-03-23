@@ -31,6 +31,14 @@ elseif boardversion == "v3.5-48V" then
     boarddir = 'Board/v3'
     FLAGS += "-DHW_VERSION_MAJOR=3 -DHW_VERSION_MINOR=5"
     FLAGS += "-DHW_VERSION_VOLTAGE=48"
+elseif boardversion == "v3.6-24V" then
+    boarddir = 'Board/v3'
+    FLAGS += "-DHW_VERSION_MAJOR=3 -DHW_VERSION_MINOR=6"
+    FLAGS += "-DHW_VERSION_VOLTAGE=24"
+elseif boardversion == "v3.6-56V" then
+    boarddir = 'Board/v3'
+    FLAGS += "-DHW_VERSION_MAJOR=3 -DHW_VERSION_MINOR=6"
+    FLAGS += "-DHW_VERSION_VOLTAGE=56"
 elseif boardversion == "" then
     error("board version not specified - take a look at tup.config.default")
 else
@@ -91,10 +99,6 @@ FLAGS += '-mfpu=fpv4-sp-d16'
 FLAGS += '-mfloat-abi=hard'
 FLAGS += { '-Wall', '-Wdouble-promotion', '-Wfloat-conversion', '-fdata-sections', '-ffunction-sections'}
 
--- debug build
-FLAGS += '-g -gdwarf-2'
-
-
 -- linker flags
 LDFLAGS += '-T'..boarddir..'/STM32F405RGTx_FLASH.ld'
 LDFLAGS += '-L'..boarddir..'/Drivers/CMSIS/Lib' -- lib dir
@@ -102,10 +106,15 @@ LDFLAGS += '-lc -lm -lnosys -larm_cortexM4lf_math' -- libs
 LDFLAGS += '-mthumb -mcpu=cortex-m4 -mfpu=fpv4-sp-d16 -mfloat-abi=hard -specs=nosys.specs -specs=nano.specs -u _printf_float -u _scanf_float -Wl,--cref -Wl,--gc-sections'
 LDFLAGS += '-Wl,--undefined=uxTopUsedPriority'
 
+-- debug build
+if tup.getconfig("DEBUG") == "true" then
+    FLAGS += '-g -gdwarf-2'
+    OPT += '-Og'
+else
+    OPT += '-O2'
+end
 
 -- common flags for ASM, C and C++
-OPT += '-Og'
--- OPT += '-O0'
 OPT += '-ffast-math -fno-finite-math-only'
 tup.append_table(FLAGS, OPT)
 tup.append_table(LDFLAGS, OPT)

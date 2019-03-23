@@ -99,7 +99,9 @@ void ASCII_protocol_process_line(const uint8_t* buffer, size_t len, StreamSink& 
                 vel_feed_forward = 0.0f;
             if (numscan < 4)
                 current_feed_forward = 0.0f;
-            axes[motor_number]->controller_.set_pos_setpoint(pos_setpoint, vel_feed_forward, current_feed_forward);
+            Axis* axis = axes[motor_number];
+            axis->controller_.set_pos_setpoint(pos_setpoint, vel_feed_forward, current_feed_forward);
+            axis->watchdog_feed();
         }
 
     } else if (cmd[0] == 'q') { // position control with limits
@@ -117,6 +119,8 @@ void ASCII_protocol_process_line(const uint8_t* buffer, size_t len, StreamSink& 
                 axis->controller_.config_.vel_limit = vel_limit;
             if (numscan >= 4)
                 axis->motor_.config_.current_lim = current_lim;
+
+            axis->watchdog_feed();
         }
 
     } else if (cmd[0] == 'v') { // velocity control
@@ -130,7 +134,9 @@ void ASCII_protocol_process_line(const uint8_t* buffer, size_t len, StreamSink& 
         } else {
             if (numscan < 3)
                 current_feed_forward = 0.0f;
-            axes[motor_number]->controller_.set_vel_setpoint(vel_setpoint, current_feed_forward);
+            Axis* axis = axes[motor_number];
+            axis->controller_.set_vel_setpoint(vel_setpoint, current_feed_forward);
+            axis->watchdog_feed();
         }
 
     } else if (cmd[0] == 'c') { // current control
@@ -142,7 +148,9 @@ void ASCII_protocol_process_line(const uint8_t* buffer, size_t len, StreamSink& 
         } else if (motor_number >= AXIS_COUNT) {
             respond(response_channel, use_checksum, "invalid motor %u", motor_number);
         } else {
-            axes[motor_number]->controller_.set_current_setpoint(current_setpoint);
+            Axis* axis = axes[motor_number];
+            axis->controller_.set_current_setpoint(current_setpoint);
+            axis->watchdog_feed();
         }
 
     } else if (cmd[0] == 't') { // trapezoidal trajectory
@@ -154,7 +162,9 @@ void ASCII_protocol_process_line(const uint8_t* buffer, size_t len, StreamSink& 
         } else if (motor_number >= AXIS_COUNT) {
             respond(response_channel, use_checksum, "invalid motor %u", motor_number);
         } else {
-            axes[motor_number]->controller_.move_to_pos(goal_point);
+            Axis* axis = axes[motor_number];
+            axis->controller_.move_to_pos(goal_point);
+            axis->watchdog_feed();
         }
 
     } else if (cmd[0] == 'f') { // feedback
@@ -238,6 +248,17 @@ void ASCII_protocol_process_line(const uint8_t* buffer, size_t len, StreamSink& 
                 if (!success)
                     respond(response_channel, use_checksum, "not implemented");
             }
+        }
+
+    }else if (cmd[0] == 'u') { // Update axis watchdog. 
+        unsigned motor_number;
+        int numscan = sscanf(cmd, "u %u", &motor_number);
+        if(numscan < 1){
+            respond(response_channel, use_checksum, "invalid command format");
+        } else if (motor_number >= AXIS_COUNT) {
+            respond(response_channel, use_checksum, "invalid motor %u", motor_number);
+        }else {
+            axes[motor_number]->watchdog_feed();
         }
 
     } else if (cmd[0] != 0) {

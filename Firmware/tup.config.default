@@ -3,6 +3,7 @@
 #CONFIG_BOARD_VERSION=v3.5-24V
 CONFIG_USB_PROTOCOL=native
 CONFIG_UART_PROTOCOL=ascii
+CONFIG_DEBUG=false
 
 # Uncomment this to error on compilation warnings
 #CONFIG_STRICT=true

@@ -18,19 +18,7 @@
 			"${workspaceRoot}/Drivers/DRV8301",
 			"${workspaceRoot}/communication"
 		],
-		"c-cpp-flylint.cppcheck.language": "c++",
 		"c-cpp-flylint.cppcheck.standard": ["c99","c++14"],
-		"c-cpp-flylint.cppcheck.defines": [
-			"STM32F405xx",
-			"USE_HAL_DRIVER",
-			"HW_VERSION_MAJOR=3",
-			"HW_VERSION_MINOR=5",
-			"HW_VERSION_VOLTAGE=24",
-			"USB_PROTOCOL_NATIVE",
-			"__weak=\"__attribute__((weak))\"",
-			"__packed=\"__attribute__((__packed__))\"",
-			"__GNUC__"
-		],
 		"files.associations": {
 			"memory": "cpp",
 			"utility": "cpp",

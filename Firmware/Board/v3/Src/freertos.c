@@ -60,6 +60,7 @@
 #include "usb_device.h"
 extern PCD_HandleTypeDef hpcd_USB_OTG_FS;
 int odrive_main(void);
+int load_configuration(void);
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -192,6 +193,9 @@ void MX_FREERTOS_Init(void) {
   osSemaphoreWait(sem_can, 0);
 
   init_deferred_interrupts();
+
+  // Load persistent configuration (or defaults)
+  load_configuration();
   /* USER CODE END RTOS_SEMAPHORES */
 
   /* USER CODE BEGIN RTOS_TIMERS */
