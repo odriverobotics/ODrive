@@ -60,7 +60,7 @@ CMD ID | Name | Sender | Signals | Start byte
 0x016 | Reboot ODrive | Master\*\*\* | | 
 0x017 | Get Vbus Voltage | Master\*\*\* | Vbus Voltage | 0
 
-\* Note: These messages are call & response.  The Master node sends a message with no payload, and the axis responds with the same ID and specified payload.  
+\* Note: These messages are call & response.  The Master node sends a message with the RTR bit set, and the axis responds with the same ID and specified payload.  
 \*\* Note:  These CANOpen messages are reserved to avoid bus collisions with CANOpen devices.  They are not used by CAN Simple.
 \*\*\* Note:  These messages can be sent to either address on a given ODrive board.
 
