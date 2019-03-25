@@ -590,10 +590,10 @@ void update_brake_current() {
             Ibus_sum += axes[i]->motor_.current_control_.Ibus;
         }
     }
-    float brake_current = -Ibus_sum;
-    // Clip negative values to 0.0f
-    if (brake_current < 0.0f) brake_current = 0.0f;
-    float brake_duty = brake_current * board_config.brake_resistance / vbus_voltage;
+    
+    // Don't start braking until -Ibus > regen_current_allowed
+    float brake_current        = std::max(-Ibus_sum - board_config.max_regen_current, 0.0f);
+    float brake_duty           = std::max(brake_current * std::abs(board_config.brake_resistance) / vbus_voltage, 0.0f);
 
     // Duty limit at 90% to allow bootstrap caps to charge
     // If brake_duty is NaN, this expression will also evaluate to false
