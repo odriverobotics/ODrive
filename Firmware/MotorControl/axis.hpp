@@ -21,6 +21,7 @@ public:
         ERROR_CONTROLLER_FAILED = 0x200,
         ERROR_POS_CTRL_DURING_SENSORLESS = 0x400,
         ERROR_WATCHDOG_TIMER_EXPIRED = 0x800,
+        ERROR_DC_BUS_OVER_POWER = 0x1000,
     };
 
     enum State_t {
