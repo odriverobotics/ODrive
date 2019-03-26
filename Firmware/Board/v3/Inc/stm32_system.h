@@ -61,6 +61,35 @@ static inline void delay_us(uint32_t us) {
 }
 
 #ifdef __cplusplus
+
+class PerformanceCounter_t {
+public:
+    PerformanceCounter_t(volatile uint32_t& var)
+            : start_(DWT->CYCCNT), upper_counter_(current_counter), var_(var) {
+        // Fun fact: there's a race condition here.
+        current_counter = this;
+    }
+
+    ~PerformanceCounter_t() {
+        uint32_t mask = cpu_enter_critical();
+        uint32_t cnt = DWT->CYCCNT;
+        uint32_t subtract = interrupted_;
+        cpu_exit_critical(mask);
+        uint32_t total_time = cnt - start_;
+        var_ += total_time - subtract;
+        if (upper_counter_) {
+            upper_counter_->interrupted_ += total_time;
+        }
+        current_counter = upper_counter_;
+    }
+private:
+    uint32_t start_;
+    volatile uint32_t interrupted_ = 0;
+    PerformanceCounter_t* upper_counter_;
+    volatile uint32_t& var_;
+    static PerformanceCounter_t* current_counter;
+};
+
 }
 #endif
 

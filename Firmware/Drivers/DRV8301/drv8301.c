@@ -357,8 +357,7 @@ bool DRV8301_isReset(DRV8301_Handle handle)
   return(status);
 } // end of DRV8301_isReset() function
 
-
-uint16_t DRV8301_readSpi(DRV8301_Handle handle, const DRV8301_RegName_e regName)
+bool DRV8301_readSpi_ex(DRV8301_Handle handle, const DRV8301_RegName_e regName, uint16_t* output)
 {
 
   // Actuate chipselect
@@ -369,7 +368,8 @@ uint16_t DRV8301_readSpi(DRV8301_Handle handle, const DRV8301_RegName_e regName)
   uint16_t zerobuff = 0;
   uint16_t controlword = (uint16_t)DRV8301_buildCtrlWord(DRV8301_CtrlMode_Read, regName, 0);
   uint16_t recbuff = 0xbeef;
-  HAL_SPI_Transmit(handle->spiHandle, (uint8_t*)(&controlword), 1, 1000);
+  if (HAL_SPI_Transmit(handle->spiHandle, (uint8_t*)(&controlword), 1, 1000) != HAL_OK)
+    return false;
 
   // Datasheet says you don't have to pulse the nCS between transfers, (16 clocks should commit the transfer)
   // but for some reason you actually need to pulse it.
@@ -380,16 +380,22 @@ uint16_t DRV8301_readSpi(DRV8301_Handle handle, const DRV8301_RegName_e regName)
   HAL_GPIO_WritePin(handle->nCSgpioHandle, handle->nCSgpioNumber, GPIO_PIN_RESET);
   delay_us(1);
 
-  HAL_SPI_TransmitReceive(handle->spiHandle, (uint8_t*)(&zerobuff), (uint8_t*)(&recbuff), 1, 1000);
+  if (HAL_SPI_TransmitReceive(handle->spiHandle, (uint8_t*)(&zerobuff), (uint8_t*)(&recbuff), 1, 1000) != HAL_OK)
+    return false;
   delay_us(1);
 
   // Actuate chipselect
   HAL_GPIO_WritePin(handle->nCSgpioHandle, handle->nCSgpioNumber, GPIO_PIN_SET);
   delay_us(1);
 
-  assert(recbuff != 0xbeef);
-
-  return(recbuff & DRV8301_DATA_MASK);
+  if (recbuff == 0xbeef) {
+    return false;
+  } else {
+    if (output) {
+      *output = (recbuff & DRV8301_DATA_MASK);
+    }
+    return true;
+  }
 }  // end of DRV8301_readSpi() function
 
 
@@ -410,6 +416,13 @@ void DRV8301_reset(DRV8301_Handle handle)
   return;
 }  // end of DRV8301_reset() function
 
+uint16_t DRV8301_readSpi(DRV8301_Handle handle, const DRV8301_RegName_e regName) {
+  uint16_t output;
+  if (DRV8301_readSpi_ex(handle, regName, &output))
+    return output;
+  else
+    return 0xffff;
+}
   
 void DRV8301_setDcCalMode(DRV8301_Handle handle,const DRV8301_ShuntAmpNumber_e ampNumber,const DRV8301_DcCalMode_e mode)
 {

@@ -135,6 +135,7 @@ public:
      */
     virtual bool apply() = 0;
     virtual bool enable() = 0;
+    virtual bool disable() = 0;
     virtual bool get_raw_value(size_t channel_num, uint16_t *raw_value) = 0;
 
     STM32_ADCChannel_t get_channel(STM32_GPIO_t* gpio) {
@@ -221,6 +222,7 @@ public:
     STM32_DMAStream_t* dma_ = nullptr;
     uint32_t trigger_source = ADC_SOFTWARE_START;
     uint32_t next_pos = 0; // TODO: ensure that this is properly synced to the ADC
+    bool error_ = false;
 
     STM32_ADCRegular_t(STM32_ADC_t* adc) : STM32_ADCSequence_N_t(adc) {}
 
@@ -228,6 +230,7 @@ public:
     bool set_trigger(STM32_Timer_t* timer) final;
     bool apply() final;
     bool enable() final;
+    bool disable() final;
     void handle_irq();
     void handle_dma_complete();
 };
@@ -242,9 +245,11 @@ public:
     bool set_trigger(STM32_Timer_t* timer) final;
     bool apply() final;
     bool enable() final;
+    bool disable() final;
     void handle_irq();
 };
 
+extern volatile uint32_t adc_irq_ticks;
 
 extern STM32_ADC_t adc1, adc2, adc3;
 extern STM32_ADCRegular_t adc1_regular, adc2_regular, adc3_regular;

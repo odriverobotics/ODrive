@@ -345,9 +345,9 @@ void OTG_FS_IRQHandler(void) {
     // instead we mask the interrupt and signal processing of interrupt by
     // deferred_interrupt_thread.
     // The thread will re-enable the interrupt when all pending irqs are clear.
-    //HAL_NVIC_DisableIRQ(OTG_FS_IRQn);
-    //osSemaphoreRelease(usb.sem_irq);
-    HAL_PCD_IRQHandler(&hpcd_USB_OTG_FS);
+    HAL_NVIC_DisableIRQ(OTG_FS_IRQn);
+    osSemaphoreRelease(usb.sem_irq);
+    //HAL_PCD_IRQHandler(&hpcd_USB_OTG_FS);
 }
 
 

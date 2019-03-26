@@ -135,6 +135,21 @@ public:
     template<typename T>
     void run_control_loop(const T& update_handler) {
         while (requested_state_ == AXIS_STATE_UNDEFINED) {
+            // Wait until the current measurement interrupt fires
+            if (!wait_for_current_meas()) {
+                // maybe the interrupt handler is dead, let's be
+                // safe and float the phases
+                safety_critical_disarm_motor_pwm(motor_);
+                update_brake_current();
+                error_ |= ERROR_CURRENT_MEASUREMENT_TIMEOUT;
+                break;
+            }
+
+            // if another state was requested, exit
+            if (requested_state_ != AXIS_STATE_UNDEFINED) {
+                break;
+            }
+
             // look for errors at axis level and also all subcomponents
             bool checks_ok = do_checks();
             // Update all estimators
@@ -157,16 +172,6 @@ public:
 
             // Check we meet deadlines after queueing
             ++loop_counter_;
-
-            // Wait until the current measurement interrupt fires
-            if (!wait_for_current_meas()) {
-                // maybe the interrupt handler is dead, let's be
-                // safe and float the phases
-                safety_critical_disarm_motor_pwm(motor_);
-                update_brake_current();
-                error_ |= ERROR_CURRENT_MEASUREMENT_TIMEOUT;
-                break;
-            }
 
             if (!main_continue)
                 break;

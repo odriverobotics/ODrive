@@ -48,6 +48,11 @@ typedef struct {
     uint32_t min_stack_space_usb_irq;
     uint32_t min_stack_space_startup;
     uint32_t boot_progress;
+    float adc_irq_usage = 0.0f;
+    float dma2_stream1_irq_usage = 0.0f;
+    float dma2_stream2_irq_usage = 0.0f;
+    float tim1_up_usage = 0.0f;
+    float tim8_up_usage = 0.0f;
 } SystemStats_t;
 extern SystemStats_t system_stats_;
 

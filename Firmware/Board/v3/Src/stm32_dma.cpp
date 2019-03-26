@@ -1,5 +1,6 @@
 
 #include "stm32_dma.hpp"
+#include "stm32_system.h"
 
 static uint32_t channel_ids[] = {
     DMA_CHANNEL_0,
@@ -109,6 +110,9 @@ bool STM32_DMAStream_t::init(const STM32_DMAChannel_t* channels, DOMAIN src, DOM
 
 /* Interrupt entrypoints -----------------------------------------------------*/
 
+volatile uint32_t dma2_stream1_irq_ticks = 0;
+volatile uint32_t dma2_stream2_irq_ticks = 0;
+
 extern "C" {
 void DMA1_Stream0_IRQHandler(void);
 void DMA1_Stream1_IRQHandler(void);
@@ -175,11 +179,13 @@ void DMA2_Stream0_IRQHandler(void) {
 
 /** @brief This function handles DMA2 stream1 global interrupt. */
 void DMA2_Stream1_IRQHandler(void) {
+    PerformanceCounter_t cnt(dma2_stream1_irq_ticks);
     HAL_DMA_IRQHandler(&dma2_stream1.hdma);
 }
 
 /** @brief This function handles DMA2 stream2 global interrupt. */
 void DMA2_Stream2_IRQHandler(void) {
+    PerformanceCounter_t cnt(dma2_stream2_irq_ticks);
     HAL_DMA_IRQHandler(&dma2_stream2.hdma);
 }
 

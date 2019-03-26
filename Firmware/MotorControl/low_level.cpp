@@ -32,8 +32,7 @@
 
 /* Global variables ----------------------------------------------------------*/
 
-// This value is updated by the DC-bus reading ADC.
-// Arbitrary non-zero inital value to avoid division by zero if ADC reading is late
+bool brake_resistor_enabled = false; // Todo: don't hardcode to false
 bool brake_resistor_armed = false;
 /* Private constant data -----------------------------------------------------*/
 
@@ -89,67 +88,74 @@ void low_level_fault(Motor::Error_t error) {
     safety_critical_disarm_brake_resistor();
 }
 
-// @brief Kicks off the arming process of the motor.
+// @brief Arms the motor.
+//
+// A subsequent call to safety_critical_apply_motor_pwm_timings() will enable
+// the PWM outputs on the next timer update event, unless the motor is disarmed
+// again before the update event.
+//
 // All calls to this function must clearly originate
 // from user input.
 void safety_critical_arm_motor_pwm(Motor& motor) {
     uint32_t mask = cpu_enter_critical();
-    if (brake_resistor_armed) {
-        motor.armed_state_ = Motor::ARMED_STATE_WAITING_FOR_TIMINGS;
+    if (!brake_resistor_enabled || brake_resistor_armed) {
+        motor.is_armed_ = true;
     }
     cpu_exit_critical(mask);
 }
 
 // @brief Disarms the motor PWM.
+//
 // After calling this function, it is guaranteed that all three
 // motor phases are floating and will not be enabled again until
 // safety_critical_arm_motor_phases is called.
-// @returns true if the motor was in a state other than disarmed before
+//
+// @returns true if the motor was armed before.
 bool safety_critical_disarm_motor_pwm(Motor& motor) {
     uint32_t mask = cpu_enter_critical();
-    bool was_armed = motor.armed_state_ != Motor::ARMED_STATE_DISARMED;
-    motor.armed_state_ = Motor::ARMED_STATE_DISARMED;
+    bool was_armed = motor.is_armed_;
+    motor.is_armed_ = false;
+    motor.timer_->htim.Instance->BDTR &= ~TIM_BDTR_AOE;
     __HAL_TIM_MOE_DISABLE_UNCONDITIONALLY(&motor.timer_->htim);
+    motor.did_refresh_pwm_timings_ = false;
     cpu_exit_critical(mask);
     return was_armed;
 }
 
-// @brief Updates the phase timings unless the motor is disarmed.
+// @brief Updates the phase PWM timings unless the motor is disarmed.
 //
-// If this is called at a rate higher than the motor's timer period,
-// the actual PMW timings on the pins can be undefined for up to one
-// timer period.
-// TODO: update this and the description
-void safety_critical_apply_motor_pwm_timings(Motor& motor, uint16_t period, uint16_t timings[3]) {
+// If the motor is armed, the PWM timings come into effect at the next update
+// event (and are enabled if they weren't already), unless the motor is disarmed
+// prior to that.
+void safety_critical_apply_motor_pwm_timings(Motor& motor, uint16_t period, uint16_t timings[3], bool tentative) {
     uint32_t mask = cpu_enter_critical();
-    if (!brake_resistor_armed) {
-        motor.armed_state_ = Motor::ARMED_STATE_DISARMED;
+    if (brake_resistor_enabled && !brake_resistor_armed) {
+        motor.set_error(Motor::ERROR_BRAKE_RESISTOR_DISARMED);
     }
 
-    motor.is_updating_pwm_timings_ = true;
     motor.timer_->htim.Instance->CCR1 = timings[0];
     motor.timer_->htim.Instance->CCR2 = timings[1];
     motor.timer_->htim.Instance->CCR3 = timings[2];
     motor.timer_->htim.Instance->ARR = period;
-    motor.pwm_control_deadline_ = period - 1;
-    motor.is_updating_pwm_timings_ = false;
-
-    if (motor.armed_state_ == Motor::ARMED_STATE_WAITING_FOR_TIMINGS) {
-        // timings were just loaded into the timer registers
-        // the timer register are buffered, so they won't have an effect
-        // on the output just yet so we need to wait until the next
-        // interrupt before we actually enable the output
-        motor.armed_state_ = Motor::ARMED_STATE_WAITING_FOR_UPDATE;
-    } else if (motor.armed_state_ == Motor::ARMED_STATE_WAITING_FOR_UPDATE) {
-        // now we waited long enough. Enter armed state and
-        // enable the actual PWM outputs.
-        motor.armed_state_ = Motor::ARMED_STATE_ARMED;
-    } else if (motor.armed_state_ == Motor::ARMED_STATE_ARMED) {
-        // nothing to do, PWM is running, all good
-    } else {
-        // unknown state oh no
-        safety_critical_disarm_motor_pwm(motor);
+    
+    if (!tentative) {
+        motor.did_refresh_pwm_timings_ = true;
+        if (motor.is_armed_) {
+            // Set the Automatic Output Enable, so that the Master Output Enable bit
+            // will be automatically enabled on the next update event.
+            motor.timer_->htim.Instance->BDTR |= TIM_BDTR_AOE;
+        }
     }
+    
+    // If a timer update event occurred just now while we were updating the
+    // timings, we can't be sure what values the shadow registers now contain,
+    // so we must disarm the motor.
+    // (this also protects against the case where the update interrupt has too
+    // low priority, but that should not happen)
+    if (__HAL_TIM_GET_FLAG(&motor.timer_->htim, TIM_FLAG_UPDATE)) {
+        motor.set_error(Motor::ERROR_CONTROL_DEADLINE_MISSED);
+    }
+    
     cpu_exit_critical(mask);
 }
 
@@ -207,7 +213,7 @@ void safety_critical_apply_brake_resistor_timings(uint32_t low_off, uint32_t hig
 void update_brake_current() {
     float Ibus_sum = 0.0f;
     for (size_t i = 0; i < n_axes; ++i) {
-        if (axes[i].motor_.armed_state_ == Motor::ARMED_STATE_ARMED) {
+        if (axes[i].motor_.is_armed_) {
             Ibus_sum += axes[i].motor_.current_control_.Ibus;
         }
     }

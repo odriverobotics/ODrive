@@ -26,6 +26,7 @@
 #include "odrive_v3_x.hpp"
 
 
+PerformanceCounter_t* PerformanceCounter_t::current_counter = 0;
 
 
 
@@ -44,8 +45,11 @@ PerChannelConfig_t axis_configs[AXIS_COUNT];
 bool user_config_loaded_;
 
 const float current_meas_period = CURRENT_MEAS_PERIOD;
-const int current_meas_hz = CURRENT_MEAS_HZ;
+const int current_meas_hz = (int)(CURRENT_MEAS_HZ);
 SystemStats_t system_stats_ = { 0 };
+
+// This value is updated by the DC-bus reading ADC.
+// Arbitrary non-zero inital value to avoid division by zero if ADC reading is late
 float vbus_voltage = 12.0f;
 
 
@@ -306,8 +310,7 @@ int main_task(void) {
     }
 #endif
 
-    // TODO: DMA is not really used by the DRV8301 driver, remove stream
-    if (!spi3.init(&pc10, &pc11, &pc12, &dma1_stream5, &dma1_stream0)) {
+    if (!spi3.init(&pc10, &pc11, &pc12, nullptr, nullptr)) {
         goto fail;
     }
 
@@ -383,7 +386,9 @@ int main_task(void) {
         !adc3_injected.append(&adc_m0_c) ||
         !adc2_regular.append(&adc_m1_b) ||
         !adc3_regular.append(&adc_m1_c) ||
-        !adc1_injected.append(&adc_vbus_sense)) {
+        !adc1_injected.append(&adc_vbus_sense) ||
+        !adc1_regular.append(&adc_m0_inv_temp) ||
+        !adc1_regular.append(&adc_m1_inv_temp)) {
         goto fail;
     }
 
@@ -438,6 +443,13 @@ int main_task(void) {
     pwm_in_init();
 #endif
 
+    // start CPU cycle counter
+    DWT->CTRL |= 0x1;
+
+    system_stats_.boot_progress = 100;
+
+    osDelay(100);
+
     // Setup hardware for all components
     for (size_t i = 0; i < AXIS_COUNT; ++i) {
         if (!axes[i].init()) {
@@ -463,7 +475,6 @@ int main_task(void) {
     start_brake_pwm();
 #endif
 
-#if 0
     // This delay serves two purposes:
     //  - Let the current sense calibration converge (the current
     //    sense interrupts are firing in background by now)
@@ -479,10 +490,11 @@ int main_task(void) {
         axes[i].start_thread();
     }
 
+
+
+#if 0
     start_analog_thread();
-
 #endif
-
 
     system_stats_.fully_booted = true;
     for (;;) {
@@ -494,6 +506,23 @@ int main_task(void) {
 //        printf("USB ints: %08" PRIx32 "\r\n", prev_ints);
 //        //printf("uptime: %" PRIu32 "\r\n", system_stats_.uptime);
         osDelay(100);
+
+        // Read and publish ISR CPU usage
+        uint32_t mask = cpu_enter_critical();
+        uint32_t total_cnt = DWT->CYCCNT;
+        DWT->CYCCNT = 0;
+        uint32_t adc_irq_ticks_copy = adc_irq_ticks; adc_irq_ticks = 0;
+        uint32_t dma2_stream1_irq_ticks_copy = dma2_stream1_irq_ticks; dma2_stream1_irq_ticks = 0;
+        uint32_t dma2_stream2_irq_ticks_copy = dma2_stream2_irq_ticks; dma2_stream2_irq_ticks = 0;
+        uint32_t tim1_up_ticks_copy = tim1_up_tim10_irq_ticks; tim1_up_tim10_irq_ticks = 0;
+        uint32_t tim8_up_ticks_copy = tim8_up_tim13_irq_ticks; tim8_up_tim13_irq_ticks = 0;
+        cpu_exit_critical(mask);
+
+        system_stats_.adc_irq_usage = (float)adc_irq_ticks_copy / (float)total_cnt;
+        system_stats_.dma2_stream1_irq_usage = (float)dma2_stream1_irq_ticks_copy / (float)total_cnt;
+        system_stats_.dma2_stream2_irq_usage = (float)dma2_stream2_irq_ticks_copy / (float)total_cnt;
+        system_stats_.tim1_up_usage = (float)tim1_up_ticks_copy / (float)total_cnt;
+        system_stats_.tim8_up_usage = (float)tim8_up_ticks_copy / (float)total_cnt;
     }
     return 0;
     goto fail;

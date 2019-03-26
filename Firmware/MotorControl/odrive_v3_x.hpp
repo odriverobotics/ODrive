@@ -50,9 +50,10 @@ const size_t thermistor_num_coeffs = sizeof(thermistor_poly_coeffs)/sizeof(therm
 
 // TODO: make dynamic
 #define TIM_1_8_CLOCK_HZ 168000000
-#define TIM_1_8_PERIOD_CLOCKS 3500
+//#define TIM_1_8_PERIOD_CLOCKS (3500) // not 1kHz
+#define TIM_1_8_PERIOD_CLOCKS (65000) // not 1kHz
 #define TIM_1_8_DEADTIME_CLOCKS 20
-#define TIM_1_8_RCR 2
+#define TIM_1_8_RCR 0
 
 #define CURRENT_MEAS_PERIOD ( (float)2*TIM_1_8_PERIOD_CLOCKS*(TIM_1_8_RCR+1) / (float)TIM_1_8_CLOCK_HZ )
 #define CURRENT_MEAS_HZ ( (float)(TIM_1_8_CLOCK_HZ) / (float)(2*TIM_1_8_PERIOD_CLOCKS*(TIM_1_8_RCR+1)) )
@@ -118,10 +119,8 @@ STM32_ADCChannel_t adc_m1_b = adc2_regular.get_channel(&pc3);
 STM32_ADCChannel_t adc_m1_c = adc3_regular.get_channel(&pc2);
 Shunt_t current_sensor_m0_b(&adc_m0_b, &gate_driver_m0, 1.0f / SHUNT_RESISTANCE);
 Shunt_t current_sensor_m0_c(&adc_m0_c, &gate_driver_m0, 1.0f / SHUNT_RESISTANCE);
-DerivedCurrentSensor_t<2> current_sensor_m0_a({&current_sensor_m0_b, &current_sensor_m0_c});
 Shunt_t current_sensor_m1_b(&adc_m1_b, &gate_driver_m1, 1.0f / SHUNT_RESISTANCE);
 Shunt_t current_sensor_m1_c(&adc_m1_c, &gate_driver_m1, 1.0f / SHUNT_RESISTANCE);
-DerivedCurrentSensor_t<2> current_sensor_m1_a({&current_sensor_m1_b, &current_sensor_m1_c});
 
 STM32_ADCChannel_t adc_m0_inv_temp = adc1_regular.get_channel(&pc5);
 #if HW_VERSION_MINOR <= 2
@@ -161,7 +160,7 @@ static inline bool board_init(Axis axes[AXIS_COUNT]) {
             &gate_driver_m0, // gate_driver_a
             &gate_driver_m0, // gate_driver_b
             &gate_driver_m0, // gate_driver_c
-            &current_sensor_m0_a, // current_sensor_a
+            nullptr, // current_sensor_a
             &current_sensor_m0_b, // current_sensor_b
             &current_sensor_m0_c, // current_sensor_c
             &temp_sensor_m0_inv, // inverter_thermistor
@@ -200,7 +199,7 @@ static inline bool board_init(Axis axes[AXIS_COUNT]) {
             &gate_driver_m1, // gate_driver_a
             &gate_driver_m1, // gate_driver_b
             &gate_driver_m1, // gate_driver_c
-            &current_sensor_m1_a, // current_sensor_a
+            nullptr, // current_sensor_a
             &current_sensor_m1_b, // current_sensor_b
             &current_sensor_m1_c, // current_sensor_c
             &temp_sensor_m1_inv, // inverter_thermistor

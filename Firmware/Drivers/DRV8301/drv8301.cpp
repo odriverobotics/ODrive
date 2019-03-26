@@ -17,7 +17,7 @@ bool DRV8301_t::init() {
             if (!enable_gpio->init(GPIO_t::OUTPUT, GPIO_t::NO_PULL, false))
                 return false;
         if (nfault_gpio)
-            if (!nfault_gpio->init(GPIO_t::INPUT, GPIO_t::PULL_DOWN, false))
+            if (!nfault_gpio->init(GPIO_t::INPUT, GPIO_t::PULL_UP, false))
                 return false;
 
         DRV8301_enable(&gate_driver_);
@@ -31,16 +31,23 @@ bool DRV8301_t::init() {
 bool DRV8301_t::check_fault() {
     if (nfault_gpio) {
         if (!nfault_gpio->read()) {
+            // Note: the SPI usage of the two axes might collide if we check the registers here
+
             // Update DRV Fault Code
-            drv_fault_ = DRV8301_getFaultType(&gate_driver_);
+        //    drv_fault_ = DRV8301_getFaultType(&gate_driver_); TODO: re-enable
             // Update/Cache all SPI device registers
             // DRV_SPI_8301_Vars_t* local_regs = &gate_driver_regs_;
             // local_regs->RcvCmd = true;
             // DRV8301_readData(&gate_driver_, local_regs);
+            //osSemaphoreRelease(usb.sem_irq);
             return false;
         }
     }
     return true;
+}
+
+uint32_t DRV8301_t::get_error() {
+    return DRV8301_getFaultType(&gate_driver_);
 }
 
 float DRV8301_t::set_gain(float requested_gain) {

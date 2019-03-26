@@ -63,6 +63,9 @@ public:
     }
 };
 
+extern volatile uint32_t dma2_stream1_irq_ticks;
+extern volatile uint32_t dma2_stream2_irq_ticks;
+
 extern STM32_DMAStream_t dma1_stream0, dma1_stream1, dma1_stream2, dma1_stream3, dma1_stream4, dma1_stream5, dma1_stream6, dma1_stream7;
 extern STM32_DMAStream_t dma2_stream0, dma2_stream1, dma2_stream2, dma2_stream3, dma2_stream4, dma2_stream5, dma2_stream6, dma2_stream7;
 

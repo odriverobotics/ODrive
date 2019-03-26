@@ -1,5 +1,6 @@
 
 #include "stm32_tim.hpp"
+#include "stm32_system.h"
 
 bool STM32_Timer_t::init(uint32_t period, MODE mode, uint32_t prescaler, uint32_t repetition_counter) {
     if (htim.Instance == TIM1)
@@ -206,7 +207,7 @@ bool STM32_Timer_t::set_freeze_on_dbg(bool freeze_on_dbg) {
 static bool enable_ccx(TIM_TypeDef* instance, uint32_t channel_id) {
     if (IS_TIM_CCX_INSTANCE(instance, channel_id)) {
         /* Reset the CCxE Bit */
-        instance->CCER &= ~(TIM_CCER_CC1E << channel_id);
+        instance->CCER &= ~(uint32_t)(TIM_CCER_CC1E << channel_id);
         /* Set or reset the CCxE Bit */ 
         instance->CCER |= (uint32_t)(TIM_CCx_ENABLE << channel_id);
         return true;
@@ -218,7 +219,7 @@ static bool enable_ccx(TIM_TypeDef* instance, uint32_t channel_id) {
 static bool enable_ccxn(TIM_TypeDef* instance, uint32_t channel_id) {
     if (IS_TIM_CCXN_INSTANCE(instance, channel_id) && IS_TIM_COMPLEMENTARY_CHANNELS(channel_id)) {
         /* Reset the CCxNE Bit */
-        instance->CCER &= ~~(uint32_t)(TIM_CCER_CC1NE << channel_id);
+        instance->CCER &= ~(uint32_t)(TIM_CCER_CC1NE << channel_id);
         /* Set or reset the CCxNE Bit */ 
         instance->CCER |= (uint32_t)(TIM_CCxN_ENABLE << channel_id);
         return true;
@@ -537,27 +538,14 @@ void sync_timers(STM32_Timer_t* tim_a, STM32_Timer_t* tim_b,
 
 /* Interrupt entrypoints -----------------------------------------------------*/
 
+volatile uint32_t tim1_up_tim10_irq_ticks = 0;
+volatile uint32_t tim8_up_tim13_irq_ticks = 0;
+
 extern "C" {
-void TIM1_UP_TIM10_IRQHandler(void);
-void TIM1_TRG_COM_TIM11_IRQHandler(void);
-void TIM1_CC_IRQHandler(void);
-void TIM1_BRK_TIM9_IRQHandler(void);
-
-void TIM8_UP_TIM13_IRQHandler(void);
-void TIM8_TRG_COM_TIM14_IRQHandler(void);
-void TIM8_CC_IRQHandler(void);
-void TIM8_BRK_TIM12_IRQHandler(void);
-
-void TIM2_IRQHandler(void);
-void TIM3_IRQHandler(void);
-void TIM4_IRQHandler(void);
-void TIM5_IRQHandler(void);
-void TIM6_DAC_IRQHandler(void);
-void TIM7_IRQHandler(void);
-}
 
 /** @brief Entrypoint for the TIM1 update interrupt and TIM10 global interrupt. */
 void TIM1_UP_TIM10_IRQHandler(void) {
+    PerformanceCounter_t cnt(tim1_up_tim10_irq_ticks);
     tim1.handle_update_irq();
     tim10.handle_any_irq();
 }
@@ -581,6 +569,7 @@ void TIM1_BRK_TIM9_IRQHandler(void) {
 
 /** @brief Entrypoint for the TIM8 update interrupt and TIM13 global interrupt. */
 void TIM8_UP_TIM13_IRQHandler(void) {
+    PerformanceCounter_t cnt(tim8_up_tim13_irq_ticks);
     tim8.handle_update_irq();
     tim13.handle_any_irq();
 }
@@ -630,6 +619,8 @@ void TIM6_DAC_IRQHandler(void) {
 /** @brief Entrypoint for the TIM7 global interrupt. */
 void TIM7_IRQHandler(void) {
     tim7.handle_any_irq();
+}
+
 }
 
 

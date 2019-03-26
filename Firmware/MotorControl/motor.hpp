@@ -25,6 +25,7 @@ public:
         ERROR_CURRENT_SENSE_SATURATION = 0x0400,
         ERROR_INVERTER_OVER_TEMP = 0x0800,
         ERROR_CURRENT_SENSOR = 0x1000,
+        ERROR_BRAKE_RESISTOR_DISARMED = 0x2000,
     };
 
     enum MotorType_t {
@@ -89,13 +90,6 @@ public:
         TIMING_LOG_FOC_VOLTAGE,
         TIMING_LOG_FOC_CURRENT,
         TIMING_LOG_NUM_SLOTS
-    };
-
-    enum ArmedState_t {
-        ARMED_STATE_DISARMED,
-        ARMED_STATE_WAITING_FOR_TIMINGS,
-        ARMED_STATE_WAITING_FOR_UPDATE,
-        ARMED_STATE_ARMED,
     };
 
     Motor(STM32_Timer_t* timer,
@@ -166,17 +160,21 @@ public:
 
     volatile uint8_t new_current_readings_ = 0; // bitfield (values 0...7) to indicate which of the current measurements are new. If ==7, the next current control iteration can happen. Reset by the current control iteration.
     volatile bool is_updating_pwm_timings_ = false; // true while the PWM timings are being updated
-    volatile uint32_t last_pwm_update_timestamp_ = 0xffffffff; // set to the current timer value after the PWM timings are committed
-    uint16_t pwm_control_deadline_; // set in start()
+    volatile bool did_refresh_pwm_timings_ = false; // set after new PWM timings are loaded into the timer, checked and reset after every timer update event by the ISR
 
     // variables exposed on protocol
     Error_t error_ = ERROR_NONE;
     // Do not write to this variable directly!
     // It is for exclusive use by the safety_critical_... functions.
-    ArmedState_t armed_state_ = ARMED_STATE_DISARMED; 
+    bool is_armed_ = false;
     bool is_calibrated_ = config_.pre_calibrated;
-    Iph_ABC_t current_meas_ = {0.0f, 0.0f};
-    Iph_ABC_t DC_calib_ = {0.0f, 0.0f};
+    Iph_ABC_t current_meas_ = {0.0f, 0.0f, 0.0f};
+    Iph_ABC_t DC_calib_ = {0.0f, 0.0f, 0.0f};
+    float I_alpha_measured_ = 0.0f;
+    float I_beta_measured_ = 0.0f;
+
+    uint32_t update_events_ = 0;
+
     CurrentControl_t current_control_ = {
         .p_gain = 0.0f,        // [V/A] should be auto set after resistance and inductance measurement
         .i_gain = 0.0f,        // [V/As] should be auto set after resistance and inductance measurement
@@ -198,14 +196,19 @@ public:
     auto make_protocol_definitions() {
         return make_protocol_member_list(
             make_protocol_property("error", &error_),
-            make_protocol_ro_property("armed_state", &armed_state_),
+            make_protocol_ro_property("is_armed", &is_armed_),
             make_protocol_ro_property("is_calibrated", &is_calibrated_),
+            make_protocol_ro_property("current_meas_phA", &current_meas_.phA),
             make_protocol_ro_property("current_meas_phB", &current_meas_.phB),
             make_protocol_ro_property("current_meas_phC", &current_meas_.phC),
+            make_protocol_property("DC_calib_phA", &DC_calib_.phA),
             make_protocol_property("DC_calib_phB", &DC_calib_.phB),
             make_protocol_property("DC_calib_phC", &DC_calib_.phC),
+            make_protocol_ro_property("I_alpha", &I_alpha_measured_),
+            make_protocol_ro_property("I_beta", &I_beta_measured_),
             make_protocol_ro_property("thermal_current_lim", &thermal_current_lim_),
             make_protocol_function("get_inverter_temp", *this, &Motor::get_inverter_temp),
+            make_protocol_ro_property("update_events", &update_events_),
             make_protocol_object("current_control",
                 make_protocol_property("p_gain", &current_control_.p_gain),
                 make_protocol_property("i_gain", &current_control_.i_gain),
@@ -221,6 +224,14 @@ public:
                 make_protocol_ro_property("max_allowed_current", &current_control_.max_allowed_current),
                 make_protocol_ro_property("overcurrent_trip_level", &current_control_.overcurrent_trip_level)
             ),
+
+
+            //make_protocol_object("gate_driver_a", gate_driver_a->make_protocol_definitions()),
+            //make_protocol_object("gate_driver_b", gate_driver_b->make_protocol_definitions()),
+            //make_protocol_object("gate_driver_c", gate_driver_c->make_protocol_definitions()),
+
+            make_protocol_function("gate_driver_c_get_fault", *gate_driver_c_,
+                    &GateDriver_t::get_error),
 
             //make_protocol_object("gate_driver_a", gate_driver_a->make_protocol_definitions()),
             //make_protocol_object("gate_driver_b", gate_driver_b->make_protocol_definitions()),

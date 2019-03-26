@@ -7,12 +7,7 @@ public:
         adc_(adc), coeffs_(coeffs), n_coeffs_(n_coeffs) {}
 
     bool init() {
-        if (!adc_)
-            return false;
-
-        // TODO: ensure ADC is initialized (currently done in main.cpp)
-
-        return true;
+        return adc_ && adc_->init();
     }
 
     /**

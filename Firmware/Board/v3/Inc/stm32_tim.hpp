@@ -153,6 +153,10 @@ void sync_timers(STM32_Timer_t* tim_a, STM32_Timer_t* tim_b,
                  uint16_t TIM_CLOCKSOURCE_ITRx, uint16_t count_offset,
                  STM32_Timer_t* tim_refbase);
 
+
+extern volatile uint32_t tim1_up_tim10_irq_ticks;
+extern volatile uint32_t tim8_up_tim13_irq_ticks;
+
 extern STM32_Timer_t tim1, tim2, tim3, tim4, tim5, tim6, tim7, tim8, tim9, tim10, tim11, tim12, tim13, tim13, tim14;
 
 #endif // __STM32_TIM_HPP

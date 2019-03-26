@@ -1,5 +1,6 @@
 
 #include "stm32_adc.hpp"
+#include "stm32_system.h"
 
 const float adc_full_scale = (float)(1 << 12);
 const float adc_ref_voltage = 3.3f;
@@ -154,6 +155,14 @@ bool STM32_ADCRegular_t::enable() {
     }
 }
 
+bool STM32_ADCRegular_t::disable() {
+    if (adc) {
+        return HAL_ADC_Stop_DMA(&adc->hadc) == HAL_OK;
+    } else {
+        return false;
+    }
+}
+
 bool STM32_ADCInjected_t::apply() {
     if (!adc)
         return false;
@@ -193,9 +202,25 @@ bool STM32_ADCInjected_t::enable() {
     }
 }
 
-void STM32_ADCRegular_t::handle_irq() {
+bool STM32_ADCInjected_t::disable() {
     if (adc) {
-        uint32_t EOC = __HAL_ADC_GET_FLAG(&adc->hadc, ADC_FLAG_EOC);
+        __HAL_ADC_DISABLE_IT(&adc->hadc, ADC_IT_JEOC);
+        return true;
+    } else {
+        return false;
+    }
+}
+
+void STM32_ADCRegular_t::handle_irq() {
+    if (adc) {        
+        uint32_t OVR = __HAL_ADC_GET_FLAG(&adc->hadc, ADC_FLAG_OVR);
+        uint32_t OVR_IT_EN = __HAL_ADC_GET_IT_SOURCE(&adc->hadc, ADC_IT_OVR);
+        if (OVR && OVR_IT_EN) {
+            disable();
+            error_ = true;
+        }
+
+/*        uint32_t EOC = __HAL_ADC_GET_FLAG(&adc->hadc, ADC_FLAG_EOC);
         uint32_t EOC_IT_EN = __HAL_ADC_GET_IT_SOURCE(&adc->hadc, ADC_IT_EOC);
         if (EOC && EOC_IT_EN) {
             __HAL_ADC_CLEAR_FLAG(&adc->hadc, (ADC_FLAG_STRT | ADC_FLAG_EOC));
@@ -210,7 +235,7 @@ void STM32_ADCRegular_t::handle_irq() {
             }
             
             next_pos++;
-        }
+        }*/
     }
 }
 
@@ -261,7 +286,7 @@ bool STM32_ADCChannel_t::get_voltage(float* value) {
 bool STM32_ADCChannel_t::get_normalized(float* value) {
     uint16_t raw_value;
 
-    if (!adc_ || adc_->get_raw_value(seq_pos_, &raw_value))
+    if (!adc_ || !adc_->get_raw_value(seq_pos_, &raw_value))
         return false;
 
     if (value)
@@ -282,14 +307,17 @@ bool STM32_ADCChannel_t::enable_updates() {
 
 /* Interrupt entrypoints -----------------------------------------------------*/
 
+volatile uint32_t adc_irq_ticks = 0;
+
 /** @brief Entrypoint for the ADC1, ADC2 and ADC3 global interrupts. */
 extern "C" void ADC_IRQHandler(void) {
+    PerformanceCounter_t cnt(adc_irq_ticks);
     adc1_injected.handle_irq();
     adc2_injected.handle_irq();
     adc3_injected.handle_irq();
-    // adc1_regular.handle_irq(); // non-DMA regular conversions not used
-    // adc2_regular.handle_irq(); // non-DMA regular conversions not used
-    // adc3_regular.handle_irq(); // non-DMA regular conversions not used
+    adc1_regular.handle_irq();
+    adc2_regular.handle_irq();
+    adc3_regular.handle_irq();
 }
 
 extern "C" void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc) {

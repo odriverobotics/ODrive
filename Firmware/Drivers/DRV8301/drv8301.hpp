@@ -31,6 +31,7 @@ public:
     
     bool init() final;
     bool check_fault();
+    uint32_t get_error() final;
     float set_gain(float requested_gain) final;
     float get_gain() final;
 
