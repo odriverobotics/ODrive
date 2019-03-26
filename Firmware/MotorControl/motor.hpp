@@ -54,7 +54,7 @@ public:
         float Id_measured; // [A]
         float I_measured_report_filter_k;
         float max_allowed_current; // [A]
-        float overcurrent_trip_level; // [A]
+        Iph_ABC_t overcurrent_trip_level; // [A]
     };
 
     // NOTE: for gimbal motors, all units of A are instead V.

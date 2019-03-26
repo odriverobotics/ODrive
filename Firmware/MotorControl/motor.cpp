@@ -501,8 +501,7 @@ bool Motor::FOC_current(float Id_des, float Iq_des, float I_phase, float pwm_pha
         set_error(ERROR_CURRENT_SENSE_SATURATION);
     }
 
-    // Clarke transform
-    float Ialpha = I_alpha_measured_;
+    if (current_sense_saturation_) {
     float Ibeta = I_beta_measured_;
 
     // Park transform
