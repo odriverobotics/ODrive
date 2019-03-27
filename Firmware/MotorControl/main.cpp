@@ -173,6 +173,9 @@ USB_ODriveNativeClass_t odrive_class(&odrive_tx_endpoint, &odrive_rx_endpoint);
 
 int main_task(void);
 
+/**
+ * @brief Main entry point called from assembly startup code
+ */
 int main(void) {
     if (!system_init()) {
         for (;;); // TODO: define error action
@@ -197,7 +200,9 @@ int main(void) {
     for (;;);
 }
 
-
+/**
+ * @brief Startup task that is started once FreeRTOS is set up.
+ */
 int main_task(void) {
     // This procedure of building a USB serial number should be identical
     // to the way the STM's built-in USB bootloader does it. This means

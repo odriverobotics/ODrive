@@ -71,11 +71,11 @@ void Motor::handle_timer_update() {
     update_events_++;
     // If the corresponding timer is counting up, we just sampled in SVM vector 0, i.e. real current
     // If we are counting down, we just sampled in SVM vector 7, with zero current
-    bool counting_down = timer_->htim.Instance->CR1 & TIM_CR1_DIR;
+    counting_down_ = timer_->htim.Instance->CR1 & TIM_CR1_DIR;
 
     // TODO: implement double rate updates, then we need to run this check also
     // while counting down
-    if (!counting_down) {
+    if (!counting_down_) {
         // We only care about the PWM timings being refreshed if the output is
         // actually enabled. This gives the application time to do some tasks
         // after arming the motor but before applying the first PWM timings.
@@ -102,7 +102,7 @@ void Motor::handle_timer_update() {
         }
     }
 
-    if (!counting_down) {
+    if (!counting_down_) {
         axis_->encoder_.sample_now();
 
         for (int i = 0; i < n_GPIO_samples; ++i) {
@@ -117,10 +117,7 @@ void Motor::handle_current_sensor_update() {
 #define calib_tau 0.2f  //@TOTO make more easily configurable
     static const float calib_filter_k = current_meas_period / calib_tau;
 
-    // If the corresponding timer is counting up, we just sampled in SVM vector 0, i.e. real current
-    // If we are counting down, we just sampled in SVM vector 7, with zero current
-    bool counting_down = timer_->htim.Instance->CR1 & TIM_CR1_DIR;
-    bool current_meas_not_DC_CAL = !counting_down;
+    bool current_meas_not_DC_CAL = !counting_down_;
 
     bool have_all_values = (!current_sensor_a_ || current_sensor_a_->has_value())
                         && (!current_sensor_b_ || current_sensor_b_->has_value())
@@ -151,6 +148,11 @@ void Motor::handle_current_sensor_update() {
             current_meas_.phA = current.phA - DC_calib_.phA;
             current_meas_.phB = current.phB - DC_calib_.phB;
             current_meas_.phC = current.phC - DC_calib_.phC;
+
+            current_sense_saturation_ =
+                (current_sensor_a_ && (current_meas_.phA > current_control_.overcurrent_trip_level.phA)) ||
+                (current_sensor_b_ && (current_meas_.phB > current_control_.overcurrent_trip_level.phB)) ||
+                (current_sensor_c_ && (current_meas_.phC > current_control_.overcurrent_trip_level.phC));
 
             // Clarke transform
             I_alpha_measured_ = current_meas_.phA;
@@ -238,10 +240,13 @@ bool Motor::init() {
         return false;
     float min_range = std::min(std::min(range_a, range_b), range_c);
 
+    // Set trip level
+    current_control_.overcurrent_trip_level.phA = (kTripMargin / kMargin) * range_a;
+    current_control_.overcurrent_trip_level.phB = (kTripMargin / kMargin) * range_b;
+    current_control_.overcurrent_trip_level.phC = (kTripMargin / kMargin) * range_c;
+
     // Clip all current control to actual usable range
     current_control_.max_allowed_current = min_range;
-    // Set trip level
-    current_control_.overcurrent_trip_level = (kTripMargin / kMargin) * current_control_.max_allowed_current;
 
     system_stats_.boot_progress++;
 
@@ -400,7 +405,7 @@ bool Motor::measure_phase_resistance(float test_current, float max_voltage) {
 bool Motor::measure_phase_inductance(float voltage_low, float voltage_high) {
     float test_voltages[2] = {voltage_low, voltage_high};
     float Ialphas[2] = {0.0f, 0.0f};
-    static const int num_cycles = 1000;
+    static const int num_cycles = 5000; // TODO: make dependent on control loop frequency
 
     size_t t = 0;
     axis_->run_control_loop([&](){
@@ -442,6 +447,7 @@ bool Motor::run_calibration() {
             return false;
         if (!measure_phase_inductance(-R_calib_max_voltage, R_calib_max_voltage))
             return false;
+        is_calibrated_ = true;
     } else if (config_.motor_type == MOTOR_TYPE_GIMBAL) {
         // no calibration needed
     } else {
@@ -450,7 +456,6 @@ bool Motor::run_calibration() {
 
     update_current_controller_gains();
     
-    is_calibrated_ = true;
     return true;
 }
 
@@ -496,12 +501,16 @@ bool Motor::FOC_current(float Id_des, float Iq_des, float I_phase, float pwm_pha
     ictrl.Iq_setpoint = Iq_des;
 
     // Check for current sense saturation
-    if (fabsf(current_meas_.phB) > ictrl.overcurrent_trip_level
-     || fabsf(current_meas_.phC) > ictrl.overcurrent_trip_level) {
+    if (current_sense_saturation_) {
         set_error(ERROR_CURRENT_SENSE_SATURATION);
     }
+    if (!is_calibrated_) {
+        set_error(ERROR_NOT_CALIBRATED);
+        return false;
+    }
 
-    if (current_sense_saturation_) {
+    // Clarke transform
+    float Ialpha = I_alpha_measured_;
     float Ibeta = I_beta_measured_;
 
     // Park transform
@@ -563,6 +572,8 @@ bool Motor::FOC_current(float Id_des, float Iq_des, float I_phase, float pwm_pha
 
 
 bool Motor::update(float current_setpoint, float phase, float phase_vel) {
+    phase += config_.phase_delay;
+
     current_setpoint *= config_.direction;
     phase *= config_.direction;
     phase_vel *= config_.direction;

@@ -26,6 +26,7 @@ public:
         ERROR_INVERTER_OVER_TEMP = 0x0800,
         ERROR_CURRENT_SENSOR = 0x1000,
         ERROR_BRAKE_RESISTOR_DISARMED = 0x2000,
+        ERROR_NOT_CALIBRATED = 0x4000,                  // current control was used without calibrating phase R and L first
     };
 
     enum MotorType_t {
@@ -62,7 +63,7 @@ public:
     // example: current_lim and calibration_current will instead determine the maximum voltage applied to the motor.
     struct Config_t {
         bool pre_calibrated = false; // can be set to true to indicate that all values here are valid
-        int32_t pole_pairs = 7;
+        int32_t pole_pairs = 7; // for linear motors put polepairs per meter here
         float calibration_current = 10.0f;    // [A]
         float resistance_calib_max_voltage = 2.0f; // [V] - You may need to increase this if this voltage isn't sufficient to drive calibration_current through the motor.
         float phase_inductance = 0.0f;        // to be set by measure_phase_inductance
@@ -77,6 +78,8 @@ public:
         float current_control_bandwidth = 1000.0f;  // [rad/s]
         float inverter_temp_limit_lower = 100;
         float inverter_temp_limit_upper = 120;
+        bool phase_locked = false; // currently only used in open loop control
+        float phase_delay = 0.0f;
     };
 
     enum TimingLog_t {
@@ -172,8 +175,12 @@ public:
     Iph_ABC_t DC_calib_ = {0.0f, 0.0f, 0.0f};
     float I_alpha_measured_ = 0.0f;
     float I_beta_measured_ = 0.0f;
+    bool current_sense_saturation_ = false; // if true, the measured current values must not be used for control
 
-    uint32_t update_events_ = 0;
+    float phase_setpoint_ = 0.0f;
+
+    uint32_t update_events_ = 0; // for debugging
+    bool counting_down_ = false; // set on timer update event
 
     CurrentControl_t current_control_ = {
         .p_gain = 0.0f,        // [V/A] should be auto set after resistance and inductance measurement
@@ -188,7 +195,7 @@ public:
         .Id_measured = 0.0f,
         .I_measured_report_filter_k = 1.0f,
         .max_allowed_current = 0.0f,
-        .overcurrent_trip_level = 0.0f,
+        .overcurrent_trip_level = { 0.0f, 0.0f, 0.0f },
     };
     float thermal_current_lim_ = 10.0f;  //[A]
 
@@ -222,7 +229,9 @@ public:
                 make_protocol_property("Id_measured", &current_control_.Id_measured),
                 make_protocol_property("I_measured_report_filter_k", &current_control_.I_measured_report_filter_k),
                 make_protocol_ro_property("max_allowed_current", &current_control_.max_allowed_current),
-                make_protocol_ro_property("overcurrent_trip_level", &current_control_.overcurrent_trip_level)
+                make_protocol_ro_property("overcurrent_trip_level_a", &current_control_.overcurrent_trip_level.phA),
+                make_protocol_ro_property("overcurrent_trip_level_b", &current_control_.overcurrent_trip_level.phB),
+                make_protocol_ro_property("overcurrent_trip_level_c", &current_control_.overcurrent_trip_level.phC)
             ),
 
 

@@ -32,9 +32,10 @@ public:
         AXIS_STATE_SENSORLESS_CONTROL = 5,  //<! run sensorless control
         AXIS_STATE_ENCODER_INDEX_SEARCH = 6, //<! run encoder index search
         AXIS_STATE_ENCODER_OFFSET_CALIBRATION = 7, //<! run encoder offset calibration
-        AXIS_STATE_CLOSED_LOOP_CONTROL = 8,  //<! run closed loop control
+        AXIS_STATE_CLOSED_LOOP_CONTROL = 8,  //<! run closed loop control with an encoder or estimator
         AXIS_STATE_LOCKIN_SPIN = 9,       //<! run lockin spin
         AXIS_STATE_ENCODER_DIR_FIND = 10,
+        AXIS_STATE_OPEN_LOOP_CONTROL = 11,  //<! run open loop control - the velocity setpoint is interpreted as rounds per second (or [m/s] for linear motors)
     };
 
     struct LockinConfig_t {
@@ -181,6 +182,7 @@ public:
     bool run_lockin_spin();
     bool run_sensorless_control_loop();
     bool run_closed_loop_control_loop();
+    bool run_open_loop_control_loop();
     bool run_idle_loop();
 
     void run_state_machine_loop();

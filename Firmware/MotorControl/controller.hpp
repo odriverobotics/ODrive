@@ -84,7 +84,7 @@ public:
     Error_t error_ = ERROR_NONE;
     // variables exposed on protocol
     float pos_setpoint_ = 0.0f;
-    float vel_setpoint_ = 0.0f;
+    float vel_setpoint_ = 0.0f; // [counts/s] (for linear motors: [m/s])
     // float vel_setpoint = 800.0f; <sensorless example>
     float vel_integrator_current_ = 0.0f;  // [A]
     float current_setpoint_ = 0.0f;        // [A]

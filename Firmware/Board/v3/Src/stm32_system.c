@@ -197,9 +197,6 @@ void MemManage_Handler(void) {
         " mrsne r0, psp  \n\t"
         " b get_regs     \n\t"
     );
-    while (1) {
-        // TODO: add proper handling
-    }
 }
 
 /** @brief Entrypoint for Pre-fetch fault, memory access fault. */
@@ -211,12 +208,10 @@ void BusFault_Handler(void) {
         " mrsne r0, psp  \n\t"
         " b get_regs     \n\t"
     );
-    while (1) {
-        // TODO: add proper handling
-    }
 }
 
 /** @brief Entrypoint for Undefined instruction or illegal state. */
+__attribute__((naked))
 void UsageFault_Handler(void) {
     __asm( // TODO: not sure if this is a valid action in this situation
         " tst lr, #4     \n\t"
@@ -225,9 +220,6 @@ void UsageFault_Handler(void) {
         " mrsne r0, psp  \n\t"
         " b get_regs     \n\t"
     );
-    while (1) {
-        // TODO: add proper handling
-    }
 }
 
 /** @brief Entrypoint for Debug monitor. */

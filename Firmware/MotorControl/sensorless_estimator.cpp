@@ -12,8 +12,9 @@ bool SensorlessEstimator::update() {
 
     // Clarke transform
     float I_alpha_beta[2] = {
-        -axis_->motor_.current_meas_.phB - axis_->motor_.current_meas_.phC,
-        one_by_sqrt3 * (axis_->motor_.current_meas_.phB - axis_->motor_.current_meas_.phC)};
+        axis_->motor_.I_alpha_measured_,
+        axis_->motor_.I_beta_measured_
+    };
 
     // Swap sign of I_beta if motor is reversed
     I_alpha_beta[1] *= axis_->motor_.config_.direction;
