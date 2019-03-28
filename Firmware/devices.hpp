@@ -11,6 +11,13 @@ struct ADCChannel_t {
     virtual bool init() = 0;
 
     /**
+     * @brief Returns the minimum and maximum voltages that this channel can
+     * measure.
+     * Returns true on success or false otherwise.
+     */
+    virtual bool get_range(float* min, float* max) = 0;
+
+    /**
      * @brief Fetches the latest reading in volts.
      * Returns true if the value could be obtained or false otherwise.
      */
@@ -44,13 +51,26 @@ public:
             && adc_->init();
     }
 
+    bool get_range(float* min, float* max) final {
+        if (adc_) {
+            if (!adc_->get_range(min, max))
+                return false;
+            if (min)
+                *min *= divider_ratio_;
+            if (max)
+                *max *= divider_ratio_;
+            return true;
+        } else {
+            return false;
+        }
+    }
+
     bool get_voltage(float *value) final {
         if (adc_) {
             if (!adc_->get_voltage(value))
                 return false;
-            if (!value)
-                return false;
-            *value *= divider_ratio_;
+            if (value)
+                *value *= divider_ratio_;
             return true;
         } else {
             return false;

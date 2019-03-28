@@ -141,8 +141,6 @@ void Motor::handle_current_sensor_update() {
         if (!current_sensor_c_)
             current.phC = -(current.phA + current.phB);
 
-        // TODO: raise error if the three current sensors diverge too much
-
         // TODO: make DC cal optional
         if (current_meas_not_DC_CAL) {
             current_meas_.phA = current.phA - DC_calib_.phA;
@@ -155,8 +153,10 @@ void Motor::handle_current_sensor_update() {
                 (current_sensor_c_ && (current_meas_.phC > current_control_.overcurrent_trip_level.phC));
 
             // Clarke transform
-            I_alpha_measured_ = current_meas_.phA;
-            I_beta_measured_ = one_by_sqrt3 * (current_meas_.phB - current_meas_.phC);
+            I_alpha_beta_measured_[0] = current_meas_.phA;
+            I_alpha_beta_measured_[1] = one_by_sqrt3 * (current_meas_.phB - current_meas_.phC);
+
+            // TODO: raise error if the sum of the current sensors diverge too much from 0
 
             // Prepare hall readings
             // TODO move this to inside encoder update function
@@ -370,6 +370,88 @@ float Motor::effective_current_lim() {
 // Measurement and calibration
 //--------------------------------
 
+/**
+ * @brief Enables the PWM outputs for 1s at 50% duty cycle and monitors the
+ * phase current and DC voltage measurements.
+ * 
+ * This is useful to verify the following:
+ *  - liveness of current sensors and DC voltage sensor
+ *  - current measurements are close to zero on average
+ *  - PWM switching does not generate excessive noise (with respect to the full
+ *    dynamic range of the sensors)
+ * 
+ * If any of the above conditions do not hold, an error is set.
+ * This test can be run with or without any load connected.
+ * 
+ * TODO: include temperature sensor
+ * 
+ * @param duration: Duration of the test in seconds
+ */
+bool Motor::pwm_test(float duration) {
+    const size_t num_test_cycles = static_cast<size_t>(duration / current_meas_period); // Test runs for 1s
+    //const float epsilon = nextafterf(0.0f, INFINITY);
+
+    Iph_ABC_t I_ph_min = {INFINITY, INFINITY, INFINITY};
+    Iph_ABC_t I_ph_max = {-INFINITY, -INFINITY, -INFINITY};
+    float vbus_voltage_avg = vbus_voltage;
+    float vbus_voltage_min = INFINITY;
+    float vbus_voltage_max = -INFINITY;
+    
+    size_t i = 0;
+    axis_->run_control_loop([&](){
+        I_ph_min.phA = std::min(I_ph_min.phA, current_meas_.phA);
+        I_ph_min.phB = std::min(I_ph_min.phB, current_meas_.phB);
+        I_ph_min.phC = std::min(I_ph_min.phC, current_meas_.phC);
+        I_ph_max.phA = std::max(I_ph_max.phA, current_meas_.phA);
+        I_ph_max.phB = std::max(I_ph_max.phB, current_meas_.phB);
+        I_ph_max.phC = std::max(I_ph_max.phC, current_meas_.phC);
+        vbus_voltage_min = std::min(vbus_voltage_min, vbus_voltage);
+        vbus_voltage_max = std::max(vbus_voltage_max, vbus_voltage);
+
+        // Test voltage along phase A
+        if (!enqueue_voltage_timings(0.0f, 0.0f))
+            return false; // error set inside enqueue_voltage_timings
+
+        return ++i < num_test_cycles;
+    });
+    if (axis_->error_ != Axis::ERROR_NONE)
+        return false;
+
+    bool is_current_sensor_live = (I_ph_min.phA < 0.0f && I_ph_max.phA > 0.0f)
+                               && (I_ph_min.phB < 0.0f && I_ph_max.phB > 0.0f)
+                               && (I_ph_min.phC < 0.0f && I_ph_max.phC > 0.0f);
+    if (!is_current_sensor_live)
+        return set_error(ERROR_CURRENT_SENSOR_DEAD), false;
+
+    bool is_vbus_sensor_live = (vbus_voltage_min < vbus_voltage_avg && vbus_voltage_max > vbus_voltage_avg);
+    if (!is_vbus_sensor_live)
+        return set_error(ERROR_V_BUS_SENSOR_DEAD), false;
+
+    float range_a = INFINITY, range_b = INFINITY, range_c = INFINITY;
+    if (current_sensor_a_ && !current_sensor_a_->get_range(&range_a))
+        return false;
+    if (current_sensor_b_ && !current_sensor_b_->get_range(&range_b))
+        return false;
+    if (current_sensor_c_ && !current_sensor_c_->get_range(&range_c))
+        return false;
+
+    float vbus_voltage_range_min;
+    float vbus_voltage_range_max;
+    if (!vbus_sense.get_range(&vbus_voltage_range_min, &vbus_voltage_range_max))
+        return false;
+
+    bool is_noise_within_range = ((I_ph_max.phA - I_ph_min.phA) < current_control_.overcurrent_trip_level.phA * 0.05f)
+                              && ((I_ph_max.phB - I_ph_min.phB) < current_control_.overcurrent_trip_level.phB * 0.05f)
+                              && ((I_ph_max.phC - I_ph_min.phC) < current_control_.overcurrent_trip_level.phC * 0.05f)
+                              && ((vbus_voltage_max - vbus_voltage_min) < (vbus_voltage_range_max - vbus_voltage_range_min) * 0.05f);
+
+    if (!is_noise_within_range)
+        return set_error(ERROR_TOO_NOISY), false;
+
+    return true;
+}
+
+
 // TODO check Ibeta balance to verify good motor connection
 bool Motor::measure_phase_resistance(float test_current, float max_voltage) {
     static const float kI = 10.0f;                                 // [(V/s)/A]
@@ -378,7 +460,7 @@ bool Motor::measure_phase_resistance(float test_current, float max_voltage) {
     
     size_t i = 0;
     axis_->run_control_loop([&](){
-        float Ialpha = I_alpha_measured_;
+        float Ialpha = I_alpha_beta_measured_[0];
         test_voltage += (kI * current_meas_period) * (test_current - Ialpha);
         if (test_voltage > max_voltage || test_voltage < -max_voltage)
             return set_error(ERROR_PHASE_RESISTANCE_OUT_OF_RANGE), false;
@@ -410,7 +492,7 @@ bool Motor::measure_phase_inductance(float voltage_low, float voltage_high) {
     size_t t = 0;
     axis_->run_control_loop([&](){
         int i = t & 1;
-        Ialphas[i] += I_alpha_measured_;
+        Ialphas[i] += I_alpha_beta_measured_[0];
 
         // Test voltage along phase A
         if (!enqueue_voltage_timings(test_voltages[i], 0.0f))
@@ -510,8 +592,8 @@ bool Motor::FOC_current(float Id_des, float Iq_des, float I_phase, float pwm_pha
     }
 
     // Clarke transform
-    float Ialpha = I_alpha_measured_;
-    float Ibeta = I_beta_measured_;
+    float Ialpha = I_alpha_beta_measured_[0];
+    float Ibeta = I_alpha_beta_measured_[1];
 
     // Park transform
     float c_I = our_arm_cos_f32(I_phase);

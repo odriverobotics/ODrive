@@ -36,6 +36,7 @@ public:
         AXIS_STATE_LOCKIN_SPIN = 9,       //<! run lockin spin
         AXIS_STATE_ENCODER_DIR_FIND = 10,
         AXIS_STATE_OPEN_LOOP_CONTROL = 11,  //<! run open loop control - the velocity setpoint is interpreted as rounds per second (or [m/s] for linear motors)
+        AXIS_STATE_PWM_TEST = 12            //<! see Motor::pwm_test()
     };
 
     struct LockinConfig_t {

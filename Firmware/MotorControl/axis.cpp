@@ -86,8 +86,14 @@ void Axis::decode_step_dir_pins() {
         step_gpio_->deinit();
     if (dir_gpio_)
         dir_gpio_->deinit();
-    step_gpio_ = gpios[config_.step_gpio_num];
-    dir_gpio_ = gpios[config_.dir_gpio_num];
+    if (config_.step_gpio_num < num_gpios)
+        step_gpio_ = gpios[config_.step_gpio_num];
+    else
+        step_gpio_ = nullptr;
+    if (config_.dir_gpio_num < num_gpios)
+        dir_gpio_ = gpios[config_.dir_gpio_num];
+    else
+        dir_gpio_ = nullptr;
     // TODO: reinit GPIOs here
 }
 
@@ -277,6 +283,35 @@ bool Axis::run_closed_loop_control_loop() {
     return check_for_errors();
 }
 
+/**
+ * @brief Spins the magnetic field at a fixed velocity (defined by the velocity
+ * setpoint) and current/voltage setpoint. The current controller still runs in
+ * closed loop mode.
+ */
+bool Axis::run_open_loop_control_loop() {
+    set_step_dir_active(config_.enable_step_dir);
+
+    run_control_loop([this](){
+        float phase_vel;
+        if (!motor_.config_.phase_locked) {
+            phase_vel = 2 * M_PI * controller_.vel_setpoint_ * motor_.config_.pole_pairs;
+            motor_.phase_setpoint_ = wrap_pm_pi(motor_.phase_setpoint_ + phase_vel * current_meas_period);
+        } else {
+            Axis other_axis = (this == &axes[0]) ? axes[1] : axes[0];
+            if (other_axis.current_state_ != AXIS_STATE_OPEN_LOOP_CONTROL)
+                return error_ |= ERROR_INVALID_STATE, false;
+            phase_vel = 2 * M_PI * other_axis.controller_.vel_setpoint_ * other_axis.motor_.config_.pole_pairs;
+            motor_.phase_setpoint_ = other_axis.motor_.phase_setpoint_; // TODO: add an offset here to account for delayed PWM
+        }
+
+        if (!motor_.update(controller_.current_setpoint_, motor_.phase_setpoint_, phase_vel))
+            return false; // set_error should update axis.error_
+        return true;
+    });
+    set_step_dir_active(false);
+    return check_for_errors();
+}
+
 bool Axis::run_idle_loop() {
     // run_control_loop ignores missed modulation timing updates
     // if and only if we're in AXIS_STATE_IDLE
@@ -342,13 +377,15 @@ void Axis::run_state_machine_loop() {
         // Handlers should exit if requested_state != AXIS_STATE_UNDEFINED
         bool status;
         switch (current_state_) {
+            case AXIS_STATE_PWM_TEST: {
+                status = motor_.pwm_test(1.0f);
+            } break;
+
             case AXIS_STATE_MOTOR_CALIBRATION: {
                 status = motor_.run_calibration();
             } break;
 
             case AXIS_STATE_ENCODER_INDEX_SEARCH: {
-                if (!motor_.is_calibrated_)
-                    goto invalid_state_label;
                 if (encoder_.config_.idx_search_unidirectional && motor_.config_.direction==0)
                     goto invalid_state_label;
 
@@ -356,26 +393,21 @@ void Axis::run_state_machine_loop() {
             } break;
 
             case AXIS_STATE_ENCODER_DIR_FIND: {
-                if (!motor_.is_calibrated_)
-                    goto invalid_state_label;
-
                 status = encoder_.run_direction_find();
             } break;
 
             case AXIS_STATE_ENCODER_OFFSET_CALIBRATION: {
-                if (!motor_.is_calibrated_)
-                    goto invalid_state_label;
                 status = encoder_.run_offset_calibration();
             } break;
 
             case AXIS_STATE_LOCKIN_SPIN: {
-                if (!motor_.is_calibrated_ || motor_.config_.direction==0)
+                if (motor_.config_.direction==0)
                     goto invalid_state_label;
                 status = run_lockin_spin();
             } break;
 
             case AXIS_STATE_SENSORLESS_CONTROL: {
-                if (!motor_.is_calibrated_ || motor_.config_.direction==0)
+                if (motor_.config_.direction==0)
                         goto invalid_state_label;
                 status = run_lockin_spin(); // TODO: restart if desired
                 if (status) {
@@ -387,11 +419,17 @@ void Axis::run_state_machine_loop() {
             } break;
 
             case AXIS_STATE_CLOSED_LOOP_CONTROL: {
-                if (!motor_.is_calibrated_ || motor_.config_.direction==0)
+                if (motor_.config_.direction==0)
                     goto invalid_state_label;
                 if (!encoder_.is_ready_)
                     goto invalid_state_label;
                 status = run_closed_loop_control_loop();
+            } break;
+
+            case AXIS_STATE_OPEN_LOOP_CONTROL: {
+                if (motor_.config_.direction==0)
+                    goto invalid_state_label;
+                status = run_open_loop_control_loop();
             } break;
 
             case AXIS_STATE_IDLE: {

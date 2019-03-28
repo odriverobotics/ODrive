@@ -398,7 +398,7 @@ bool default_readwrite_endpoint_handler(endpoint_ref_t* value, const uint8_t* in
 }
 
 template<typename T>
-static inline const char* get_default_json_modifier();
+inline constexpr const char* get_default_json_modifier();
 
 template<>
 inline constexpr const char* get_default_json_modifier<const float>() {
@@ -431,6 +431,14 @@ inline constexpr const char* get_default_json_modifier<const int32_t>() {
 template<>
 inline constexpr const char* get_default_json_modifier<int32_t>() {
     return "\"type\":\"int32\",\"access\":\"rw\"";
+}
+template<>
+inline constexpr const char* get_default_json_modifier<const unsigned int>() {
+    return "\"type\":\"int32\",\"access\":\"r\""; // TODO: automatically detect size
+}
+template<>
+inline constexpr const char* get_default_json_modifier<unsigned int>() {
+    return "\"type\":\"int32\",\"access\":\"rw\""; // TODO: automatically detect size
 }
 template<>
 inline constexpr const char* get_default_json_modifier<const uint32_t>() {
@@ -536,6 +544,11 @@ template<> struct format_traits_t<int32_t> { using type = void;
 template<> struct format_traits_t<uint32_t> { using type = void;
     static constexpr const char * fmt = "%lu";
     static constexpr const char * fmtp = "%lu";
+};
+// TODO: change all overloads to fundamental int type space
+template<> struct format_traits_t<unsigned int> { using type = void;
+    static constexpr const char * fmt = "%ud";
+    static constexpr const char * fmtp = "%ud";
 };
 template<> struct format_traits_t<int16_t> { using type = void;
     static constexpr const char * fmt = "%hd";

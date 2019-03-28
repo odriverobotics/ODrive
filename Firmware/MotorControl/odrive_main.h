@@ -103,6 +103,8 @@ extern STM32_USBRxEndpoint_t cdc_rx_endpoint;
 extern STM32_USBIntEndpoint_t cdc_cmd_endpoint;
 extern STM32_USBTxEndpoint_t odrive_tx_endpoint;
 extern STM32_USBRxEndpoint_t odrive_rx_endpoint;
+#include "devices.hpp"
+extern VoltageDivider_t vbus_sense;
 
 
 extern STM32_GPIO_t* gpios[];

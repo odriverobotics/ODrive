@@ -27,6 +27,9 @@ public:
         ERROR_CURRENT_SENSOR = 0x1000,
         ERROR_BRAKE_RESISTOR_DISARMED = 0x2000,
         ERROR_NOT_CALIBRATED = 0x4000,                  // current control was used without calibrating phase R and L first
+        ERROR_CURRENT_SENSOR_DEAD = 0x8000,
+        ERROR_V_BUS_SENSOR_DEAD = 0x10000,
+        ERROR_TOO_NOISY = 0x20000
     };
 
     enum MotorType_t {
@@ -125,6 +128,7 @@ public:
     float get_inverter_temp();
     bool update_thermal_limits();
     float effective_current_lim();
+    bool pwm_test(float duration);
     bool measure_phase_resistance(float test_current, float max_voltage);
     bool measure_phase_inductance(float voltage_low, float voltage_high);
     bool run_calibration();
@@ -173,8 +177,7 @@ public:
     bool is_calibrated_ = config_.pre_calibrated;
     Iph_ABC_t current_meas_ = {0.0f, 0.0f, 0.0f};
     Iph_ABC_t DC_calib_ = {0.0f, 0.0f, 0.0f};
-    float I_alpha_measured_ = 0.0f;
-    float I_beta_measured_ = 0.0f;
+    float I_alpha_beta_measured_[2] = {0.0f, 0.0f};
     bool current_sense_saturation_ = false; // if true, the measured current values must not be used for control
 
     float phase_setpoint_ = 0.0f;
@@ -211,8 +214,8 @@ public:
             make_protocol_property("DC_calib_phA", &DC_calib_.phA),
             make_protocol_property("DC_calib_phB", &DC_calib_.phB),
             make_protocol_property("DC_calib_phC", &DC_calib_.phC),
-            make_protocol_ro_property("I_alpha", &I_alpha_measured_),
-            make_protocol_ro_property("I_beta", &I_beta_measured_),
+            make_protocol_ro_property("I_alpha", &I_alpha_beta_measured_[0]),
+            make_protocol_ro_property("I_beta", &I_alpha_beta_measured_[1]),
             make_protocol_ro_property("thermal_current_lim", &thermal_current_lim_),
             make_protocol_function("get_inverter_temp", *this, &Motor::get_inverter_temp),
             make_protocol_ro_property("update_events", &update_events_),
