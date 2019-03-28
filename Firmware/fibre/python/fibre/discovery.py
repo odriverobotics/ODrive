@@ -12,6 +12,8 @@ import fibre.utils
 import fibre.remote_object
 from fibre.utils import Event, Logger
 from fibre.protocol import ChannelBrokenException, TimeoutError
+import tempfile
+import os
 
 # Load all installed transport layers
 
@@ -41,6 +43,7 @@ try:
 except ImportError:
     pass
 
+
 def noprint(text):
     pass
 
@@ -54,7 +57,6 @@ def find_all(path, serial_number,
     the callback for each Fibre node that is found.
     This function is non-blocking.
     """
-
     def did_discover_channel(channel):
         """
         Inits an object from a given channel and then calls did_discover_object_callback
@@ -64,25 +66,63 @@ def find_all(path, serial_number,
         """
         try:
             logger.debug("Connecting to device on " + channel._name)
+
+            temp_dir = tempfile.gettempdir()
+
             try:
-                json_bytes = channel.remote_endpoint_read_buffer(0)
-            except (TimeoutError, ChannelBrokenException):
-                logger.debug("no response - probably incompatible")
-                return
+                json_cache = open(temp_dir + '/fibre_json_cache.txt', 'r+')
+            except:
+                json_cache = open(temp_dir + '/fibre_json_cache.txt', 'w+')
+
+            # Check if cache is valid
+            json_cache.seek(0, os.SEEK_END)
+            json_cache_size = json_cache.tell()
+            json_cache.seek(0)
+
+            if json_cache_size > 64:
+                cache_is_valid = 1
+            else:
+                cache_is_valid = 0
+
+            if cache_is_valid:
+                try:
+                    json_bytes = json_cache.read().encode("ascii")
+                    logger.debug("loaded json_bytes from " + temp_dir + "/fibre_json_cache.txt")
+
+                except (TimeoutError, ChannelBrokenException):
+                    logger.debug("could not read cache file")
+                    return
+            else:
+                try:
+                    json_bytes = channel.remote_endpoint_read_buffer(0)
+                    json_cache.close()
+                    json_cache = open(temp_dir + '/fibre_json_cache.txt', 'w+')
+                    json_cache.write(json_bytes.decode("ascii"))
+                    logger.debug("saved json_bytes to file")
+
+                except (TimeoutError, ChannelBrokenException):
+                    logger.debug("no response - probably incompatible")
+                    return
+
+
             json_crc16 = fibre.protocol.calc_crc16(fibre.protocol.PROTOCOL_VERSION, json_bytes)
             channel._interface_definition_crc = json_crc16
+            
             try:
                 json_string = json_bytes.decode("ascii")
             except UnicodeDecodeError:
                 logger.debug("device responded on endpoint 0 with something that is not ASCII")
                 return
+
             logger.debug("JSON: " + json_string.replace('{"name"', '\n{"name"'))
             logger.debug("JSON checksum: 0x{:02X} 0x{:02X}".format(json_crc16 & 0xff, (json_crc16 >> 8) & 0xff))
+
             try:
                 json_data = json.loads(json_string)
             except json.decoder.JSONDecodeError as error:
                 logger.debug("device responded on endpoint 0 with something that is not JSON: " + str(error))
                 return
+
             json_data = {"name": "fibre_node", "members": json_data}
             obj = fibre.remote_object.RemoteObject(json_data, None, channel, logger)
 
@@ -93,7 +133,10 @@ def find_all(path, serial_number,
             if serial_number != None and device_serial_number != serial_number:
                 logger.debug("Ignoring device with serial number {}".format(device_serial_number))
                 return
+            
             did_discover_object_callback(obj)
+
+
         except Exception:
             logger.debug("Unexpected exception after discovering channel: " + traceback.format_exc())
 

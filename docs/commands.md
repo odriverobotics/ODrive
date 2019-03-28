@@ -79,7 +79,7 @@ An upcoming feature will enable automatic tuning. Until then, here is a rough tu
 * Back down `vel_gain` to 50% of the vibrating value.
 * Increase `pos_gain` by around 30% per iteration until you see some overshoot.
 * Back down `pos_gain` until you do not have overshoot anymore.
-* The integrator can be set to `2 * bandwidth * vel_gain`, where `bandwidth` is the overall resulting tracking bandwidth of your system. Say your tuning made it track commands with a settling time of 100ms: this means the bandwidth was 1/100ms or 10. In this case you should set the `vel_integrator_gain = 2.0 * 10 * vel_gain`.
+* The integrator can be set to `0.5 * bandwidth * vel_gain`, where `bandwidth` is the overall resulting tracking bandwidth of your system. Say your tuning made it track commands with a settling time of 100ms: this means the bandwidth was 1/100ms or 10. In this case you should set the `vel_integrator_gain = 0.5 * 10 * vel_gain`.
 
 ## System monitoring commands
 
