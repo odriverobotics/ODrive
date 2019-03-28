@@ -16,6 +16,7 @@ public:
     STM32_GPIO_t* gpio_; // may be NULL (e.g. for internal temp sensor)
     uint32_t channel_num_;
     uint32_t seq_pos_ = 0xffffffff; // position in the parent sequence (set in link())
+    uint32_t sampling_time = 3; // TODO: expose in constructor
 
     STM32_ADCChannel_t(STM32_ADCSequence_t* adc, STM32_GPIO_t* gpio, uint32_t channel_num) :
         adc_(adc),
@@ -40,6 +41,15 @@ public:
     bool get_voltage(float *value) final;
     bool get_normalized(float *value) final;
     bool enable_updates() final;
+
+    bool get_range(float* min, float* max) final { // TODO: this should depend on reference voltages
+        if (min) *min = 0.0f;
+        if (max) *max = 3.3f;
+        return true;
+    }
+
+    /** @brief See STM32_ADCSequence_t::get_timing() for details */
+    bool get_timing(uint32_t* sample_start_timestamp, uint32_t* sample_end_timestamp);
 
     bool is_valid() {
         return adc_ && channel_num_ < 19;
@@ -88,8 +98,6 @@ public:
  */
 class STM32_ADCSequence_t {
 public:
-    STM32_ADC_t* adc;
-
     STM32_ADCSequence_t(STM32_ADC_t* adc) : adc(adc) {}
 
     /**
@@ -138,6 +146,24 @@ public:
     virtual bool disable() = 0;
     virtual bool get_raw_value(size_t channel_num, uint16_t *raw_value) = 0;
 
+    /**
+     * @brief Reports the timing of the sampling window of a particular item in the
+     * sequence.
+     * 
+     * The sequence must be initialized before this can be used.
+     * The timing is reported as number of HCLK ticks relative to the trigger event.
+     * 
+     * @param sample_start_timestamp: Minimum number of HCLK ticks between the
+     *        trigger event and the opening of the sampling window of the specified
+     *        channel. For the first channel in the sequence this is 0.
+     * @param sample_end_timestamp: Maximum number of HCLK ticks between the trigger
+     *        event and the closing of the sampling window. For the first
+     *        channel in the sequennce this is the sampling time + 1 ADC clock
+     *        cycle to account for the fact that the trigger may fire right
+     *        after an ADC clock tick.
+     */
+    bool get_timing(size_t seq_pos, uint32_t* sample_start_timestamp, uint32_t* sample_end_timestamp);
+
     STM32_ADCChannel_t get_channel(STM32_GPIO_t* gpio) {
         if (adc) {
             for (size_t i = 0; i < adc->gpios.size(); ++i) {
@@ -182,13 +208,17 @@ public:
         }
         return STM32_ADCChannel_t::invalid_channel();
     }
+
+    virtual STM32_ADCChannel_t* get_item(size_t item_pos) = 0;
+
+    STM32_ADC_t* adc;
+    uint32_t channel_sequence_length = 0;
 };
 
 template<unsigned int MAX_SEQ_LENGTH>
 class STM32_ADCSequence_N_t : public STM32_ADCSequence_t {
 public:
     STM32_ADCChannel_t* channel_sequence[MAX_SEQ_LENGTH] = { nullptr };
-    uint32_t channel_sequence_length = 0;
     uint16_t raw_values[MAX_SEQ_LENGTH];
 
     STM32_ADCSequence_N_t(STM32_ADC_t* adc) : STM32_ADCSequence_t(adc) {}
@@ -212,6 +242,14 @@ public:
             return true;
         } else {
             return false;
+        }
+    }
+
+    STM32_ADCChannel_t* get_item(size_t item_pos) final {
+        if (item_pos < channel_sequence_length) {
+            return channel_sequence[item_pos];
+        } else {
+            return nullptr;
         }
     }
 };

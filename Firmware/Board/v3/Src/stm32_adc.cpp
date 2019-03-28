@@ -5,6 +5,24 @@
 const float adc_full_scale = (float)(1 << 12);
 const float adc_ref_voltage = 3.3f;
 
+static bool convert_sampling_time(uint32_t sampling_time, uint32_t* result) {
+    uint32_t dummy;
+    if (!result) {
+        result = &dummy;
+    }
+    switch (sampling_time) {
+        case 3: return (*result = ADC_SAMPLETIME_3CYCLES), true;
+        case 15: return (*result = ADC_SAMPLETIME_15CYCLES), true;
+        case 28: return (*result = ADC_SAMPLETIME_28CYCLES), true;
+        case 56: return (*result = ADC_SAMPLETIME_56CYCLES), true;
+        case 84: return (*result = ADC_SAMPLETIME_84CYCLES), true;
+        case 112: return (*result = ADC_SAMPLETIME_112CYCLES), true;
+        case 144: return (*result = ADC_SAMPLETIME_144CYCLES), true;
+        case 480: return (*result = ADC_SAMPLETIME_480CYCLES), true;
+        default: return false;
+    }
+}
+
 bool STM32_ADC_t::init() {
     if (is_setup_) {
         return true;
@@ -37,6 +55,59 @@ bool STM32_ADC_t::init() {
 
     is_setup_ = true;
     return true;
+}
+
+
+bool STM32_ADCSequence_t::get_timing(size_t seq_pos, uint32_t* sample_start_timestamp, uint32_t* sample_end_timestamp) {
+    if (adc) {
+        return false;
+    }
+
+    uint32_t conversion_time;
+    switch (ADC_GET_RESOLUTION(&adc->hadc)) {
+        case ADC_RESOLUTION_6B: conversion_time = 6; break;
+        case ADC_RESOLUTION_8B: conversion_time = 8; break;
+        case ADC_RESOLUTION_10B: conversion_time = 10; break;
+        case ADC_RESOLUTION_12B: conversion_time = 12; break;
+        default: return false;
+    }
+
+    uint32_t clk_mult = HAL_RCC_GetHCLKFreq() / HAL_RCC_GetPCLK2Freq();
+    switch (ADC_COMMON_REGISTER(adc->hadc.Instance)->CCR & ADC_CCR_ADCPRE) {
+#if defined(ADC_CLOCK_SYNC_PCLK_DIV1)
+        case ADC_CLOCK_SYNC_PCLK_DIV1: clk_mult *= 1; break;
+#endif
+        case ADC_CLOCK_SYNC_PCLK_DIV2: clk_mult *= 2; break;
+        case ADC_CLOCK_SYNC_PCLK_DIV4: clk_mult *= 4; break;
+        case ADC_CLOCK_SYNC_PCLK_DIV6: clk_mult *= 6; break;
+        case ADC_CLOCK_SYNC_PCLK_DIV8: clk_mult *= 8; break;
+        default: return false;
+    }
+
+    uint32_t timestamp = 0;
+    for (uint32_t i = 0; i < channel_sequence_length; ++i) {
+        if (sample_start_timestamp) {
+            *sample_start_timestamp = timestamp * clk_mult;
+        }
+        STM32_ADCChannel_t* item = get_item(i);
+        if (!item) {
+            return false;
+        }
+        timestamp += item->sampling_time;
+        if (sample_end_timestamp) {
+            *sample_end_timestamp = (timestamp + 1) * clk_mult;
+        }
+        timestamp += conversion_time * clk_mult;
+        if (i == seq_pos) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+bool STM32_ADCChannel_t::get_timing(uint32_t* sample_start_timestamp, uint32_t* sample_end_timestamp) {
+    return adc_ ? adc_->get_timing(seq_pos_, sample_start_timestamp, sample_end_timestamp) : false;
 }
 
 bool STM32_ADCInjected_t::init(STM32_DMAStream_t* dma) {
@@ -128,7 +199,8 @@ bool STM32_ADCRegular_t::apply() {
         ADC_ChannelConfTypeDef sConfig;
         sConfig.Channel = channel->channel_num_ << ADC_CR1_AWDCH_Pos;
         sConfig.Rank = i + 1;
-        sConfig.SamplingTime = ADC_SAMPLETIME_3CYCLES;
+        if (!convert_sampling_time(channel->sampling_time, &sConfig.SamplingTime))
+            return false;
         if (HAL_ADC_ConfigChannel(&adc->hadc, &sConfig) != HAL_OK)
             return false;
     }
@@ -176,7 +248,8 @@ bool STM32_ADCInjected_t::apply() {
         sConfigInjected.InjectedChannel = channel->channel_num_ << ADC_CR1_AWDCH_Pos;
         sConfigInjected.InjectedRank = i + 1; // TODO not sure if the numbering should depend on sequence length, see note on ADC_JSQR (datasheet page 424)
         sConfigInjected.InjectedNbrOfConversion = channel_sequence_length;
-        sConfigInjected.InjectedSamplingTime = ADC_SAMPLETIME_3CYCLES;
+        if (!convert_sampling_time(channel->sampling_time, &sConfigInjected.InjectedSamplingTime))
+            return false;
         sConfigInjected.ExternalTrigInjecConvEdge = ADC_EXTERNALTRIGINJECCONVEDGE_RISING;
         sConfigInjected.ExternalTrigInjecConv = trigger_source;
         sConfigInjected.AutoInjectedConv = DISABLE;
