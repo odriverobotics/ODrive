@@ -7,8 +7,6 @@
 class STM32_USART_t {
 public:
     UART_HandleTypeDef huart;
-    DMA_HandleTypeDef hdma_rx;
-    DMA_HandleTypeDef hdma_tx;
 
     const STM32_GPIO_t** tx_gpios;
     const STM32_GPIO_t** rx_gpios;
@@ -16,6 +14,8 @@ public:
     const STM32_DMAChannel_t* tx_dmas;
     const STM32_DMAChannel_t* rx_dmas;
 
+    STM32_DMAStream_t* tx_dma_ = nullptr;
+    STM32_DMAStream_t* rx_dma_ = nullptr;
     void (*tx_callback_)(void*) = nullptr;
     void* tx_ctx_ = nullptr;
     size_t rx_last_rcv_idx_ = 0;
@@ -47,6 +47,7 @@ public:
     }
 
     bool init(uint32_t baudrate, STM32_GPIO_t* tx_gpio, STM32_GPIO_t* rx_gpio, STM32_DMAStream_t* tx_dma, STM32_DMAStream_t* rx_dma);
+    bool enable_interrupts(uint8_t priority);
     bool start_rx(uint8_t* data, size_t length);
     bool stop_rx();
     bool check_error();

@@ -1,5 +1,6 @@
 
 #include "stm32_i2c.hpp"
+#include "stm32_system.h"
 
 bool STM32_I2C_t::setup_as_slave(uint32_t freq, uint8_t addr, STM32_GPIO_t* scl_gpio, STM32_GPIO_t* sda_gpio, STM32_DMAStream_t* tx_dma, STM32_DMAStream_t* rx_dma) {
     if (hi2c.Instance == I2C1)
@@ -10,6 +11,9 @@ bool STM32_I2C_t::setup_as_slave(uint32_t freq, uint8_t addr, STM32_GPIO_t* scl_
         __HAL_RCC_I2C3_CLK_ENABLE();
     else
         return false;
+
+    tx_dma_ = tx_dma;
+    rx_dma_ = rx_dma;
 
     if (tx_dma) {
         if (!tx_dma->init(tx_dmas, DMA_t::MEMORY, DMA_t::PERIPHERAL, DMA_t::ALIGN_8_BIT, DMA_t::LINEAR, DMA_t::LOW)) {
@@ -43,26 +47,25 @@ bool STM32_I2C_t::setup_as_slave(uint32_t freq, uint8_t addr, STM32_GPIO_t* scl_
     if (HAL_I2C_Init(&hi2c) != HAL_OK)
         return false;
 
+    return true;
+}
+
+bool STM32_I2C_t::enable_interrupts(uint8_t priority) {
     if (hi2c.Instance == I2C1) {
-        HAL_NVIC_SetPriority(I2C1_EV_IRQn, 5, 0);
-        HAL_NVIC_EnableIRQ(I2C1_EV_IRQn);
-        HAL_NVIC_SetPriority(I2C1_ER_IRQn, 5, 0);
-        HAL_NVIC_EnableIRQ(I2C1_ER_IRQn);
+        enable_interrupt(I2C1_EV_IRQn, priority);
+        enable_interrupt(I2C1_ER_IRQn, priority);
     } else if (hi2c.Instance == I2C2) {
-        HAL_NVIC_SetPriority(I2C2_EV_IRQn, 5, 0);
-        HAL_NVIC_EnableIRQ(I2C2_EV_IRQn);
-        HAL_NVIC_SetPriority(I2C2_ER_IRQn, 5, 0);
-        HAL_NVIC_EnableIRQ(I2C2_ER_IRQn);
+        enable_interrupt(I2C2_EV_IRQn, priority);
+        enable_interrupt(I2C2_ER_IRQn, priority);
     } else if (hi2c.Instance == I2C3) {
-        HAL_NVIC_SetPriority(I2C3_EV_IRQn, 5, 0);
-        HAL_NVIC_EnableIRQ(I2C3_EV_IRQn);
-        HAL_NVIC_SetPriority(I2C3_ER_IRQn, 5, 0);
-        HAL_NVIC_EnableIRQ(I2C3_ER_IRQn);
+        enable_interrupt(I2C3_EV_IRQn, priority);
+        enable_interrupt(I2C3_ER_IRQn, priority);
     } else {
         return false;
     }
 
-    return true;
+    return (!tx_dma_ || tx_dma_->enable_interrupts(priority))
+        && (!rx_dma_ || rx_dma_->enable_interrupts(priority));
 }
 
 /** @brief This function handles I2C1 event interrupt. */

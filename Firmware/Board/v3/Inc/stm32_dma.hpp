@@ -61,6 +61,8 @@ public:
         owner.*field = &hdma;
         hdma.Parent = &owner;
     }
+
+    bool enable_interrupts(uint8_t priority);
 };
 
 extern volatile uint32_t dma2_stream1_irq_ticks;

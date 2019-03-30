@@ -2,6 +2,48 @@
 #include "stm32_tim.hpp"
 #include "stm32_system.h"
 
+bool STM32_Timer_t::get_source_freq(uint32_t* freq) {
+    uint32_t dummy;
+    if (!freq)
+        freq = &dummy;
+
+    if (htim.Instance == TIM1)
+        *freq = HAL_RCC_GetPCLK2Freq();
+    else if (htim.Instance == TIM2)
+        *freq = HAL_RCC_GetPCLK1Freq();
+    else if (htim.Instance == TIM3)
+        *freq = HAL_RCC_GetPCLK1Freq();
+    else if (htim.Instance == TIM4)
+        *freq = HAL_RCC_GetPCLK1Freq();
+    else if (htim.Instance == TIM5)
+        *freq = HAL_RCC_GetPCLK1Freq();
+    else if (htim.Instance == TIM6)
+        *freq = HAL_RCC_GetPCLK1Freq();
+    else if (htim.Instance == TIM7)
+        *freq = HAL_RCC_GetPCLK1Freq();
+    else if (htim.Instance == TIM8)
+        *freq = HAL_RCC_GetPCLK2Freq();
+    else if (htim.Instance == TIM9)
+        *freq = HAL_RCC_GetPCLK2Freq();
+    else if (htim.Instance == TIM10)
+        *freq = HAL_RCC_GetPCLK2Freq();
+    else if (htim.Instance == TIM11)
+        *freq = HAL_RCC_GetPCLK2Freq();
+    else if (htim.Instance == TIM12)
+        *freq = HAL_RCC_GetPCLK1Freq();
+    else if (htim.Instance == TIM13)
+        *freq = HAL_RCC_GetPCLK1Freq();
+    else if (htim.Instance == TIM14)
+        *freq = HAL_RCC_GetPCLK1Freq();
+    else
+        return false;
+    
+    // All timers are fed by double their respective bus clock frequency
+    // unless the bus clock uses a prescaler of 1 (which is not allowed on the STM32F405).
+    *freq *= 2;
+    return true;
+}
+
 bool STM32_Timer_t::init(uint32_t period, MODE mode, uint32_t prescaler, uint32_t repetition_counter) {
     if (htim.Instance == TIM1)
         __HAL_RCC_TIM1_CLK_ENABLE();
@@ -363,7 +405,7 @@ bool STM32_Timer_t::get_general_irqn(IRQn_Type* irqn) {
     }
 };
 
-bool STM32_Timer_t::enable_update_interrupt() {
+bool STM32_Timer_t::enable_update_interrupt(uint8_t priority) {
     IRQn_Type irqn;
     if (htim.Instance == TIM1) {
         irqn = TIM1_UP_TIM10_IRQn;
@@ -373,15 +415,14 @@ bool STM32_Timer_t::enable_update_interrupt() {
         return false;
     }
 
-    HAL_NVIC_SetPriority(irqn, 0, 0);
-    HAL_NVIC_EnableIRQ(irqn);
+    enable_interrupt(irqn, priority);
 
     __HAL_TIM_ENABLE_IT(&htim, TIM_IT_UPDATE);
 
     return true;
 }
 
-bool STM32_Timer_t::enable_trigger_interrupt() {
+bool STM32_Timer_t::enable_trigger_interrupt(uint8_t priority) {
     IRQn_Type irqn;
     if (htim.Instance == TIM1) {
         irqn = TIM1_TRG_COM_TIM11_IRQn;
@@ -391,13 +432,12 @@ bool STM32_Timer_t::enable_trigger_interrupt() {
         return false;
     }
 
-    HAL_NVIC_SetPriority(irqn, 0, 0);
-    HAL_NVIC_EnableIRQ(irqn);
+    enable_interrupt(irqn, priority);
 
     return true;
 }
 
-bool STM32_Timer_t::enable_cc_interrupt() {
+bool STM32_Timer_t::enable_cc_interrupt(uint8_t priority) {
     IRQn_Type irqn;
     if (htim.Instance == TIM1) {
         irqn = TIM1_CC_IRQn;
@@ -407,13 +447,17 @@ bool STM32_Timer_t::enable_cc_interrupt() {
         return false;
     }
 
-    HAL_NVIC_SetPriority(irqn, 0, 0);
-    HAL_NVIC_EnableIRQ(irqn);
+    __HAL_TIM_ENABLE_IT(&htim, TIM_IT_CC1);
+    __HAL_TIM_ENABLE_IT(&htim, TIM_IT_CC2);
+    __HAL_TIM_ENABLE_IT(&htim, TIM_IT_CC3);
+    __HAL_TIM_ENABLE_IT(&htim, TIM_IT_CC4);
+
+    enable_interrupt(irqn, priority);
 
     return true;
 }
 
-bool STM32_Timer_t::enable_break_interrupt() {
+bool STM32_Timer_t::enable_break_interrupt(uint8_t priority) {
     IRQn_Type irqn;
     if (htim.Instance == TIM1) {
         irqn = TIM1_BRK_TIM9_IRQn;
@@ -423,8 +467,7 @@ bool STM32_Timer_t::enable_break_interrupt() {
         return false;
     }
 
-    HAL_NVIC_SetPriority(irqn, 0, 0);
-    HAL_NVIC_EnableIRQ(irqn);
+    enable_interrupt(irqn, priority);
 
     return true;
 }

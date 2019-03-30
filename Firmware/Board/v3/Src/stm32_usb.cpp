@@ -1,5 +1,6 @@
 
 #include "stm32_usb.hpp"
+#include "stm32_system.h"
 
 #include "usbd_conf.h"
 #include "usbd_core.h"
@@ -153,11 +154,21 @@ bool STM32_USB_t::init(
     // Init Device Library, add supported class and start the library.
     hUsbDeviceFS.pUserData = this;
     hUsbDeviceFS.pClassData = device_class_;
-    USBD_Init(&hUsbDeviceFS, &usb_desc, DEVICE_FS);
-    USBD_RegisterClass(&hUsbDeviceFS, &usb_class);
-    USBD_Start(&hUsbDeviceFS);
+    if (USBD_Init(&hUsbDeviceFS, &usb_desc, DEVICE_FS) != USBD_OK)
+        return false;
+    if (USBD_RegisterClass(&hUsbDeviceFS, &usb_class) != USBD_OK)
+        return false;
 
     return true;
+}
+
+bool STM32_USB_t::enable_interrupts(uint8_t priority) {
+    enable_interrupt(OTG_FS_IRQn, priority);
+    return true;
+}
+
+bool STM32_USB_t::start() {
+    return USBD_Start(&hUsbDeviceFS) == USBD_OK;
 }
 
 USBD_StatusTypeDef STM32_USB_t::handle_init(uint8_t cfgidx) {

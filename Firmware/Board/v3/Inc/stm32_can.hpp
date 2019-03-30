@@ -18,6 +18,7 @@ public:
         gpio_af(gpio_af) {}
 
     bool setup(STM32_GPIO_t* rx_gpio, STM32_GPIO_t* tx_gpio);
+    bool enable_interrupts(uint8_t priority);
 };
 
 extern STM32_CAN_t can1, can2;

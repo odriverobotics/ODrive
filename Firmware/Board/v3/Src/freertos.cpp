@@ -57,6 +57,9 @@
 /* USER CODE BEGIN Includes */     
 #include "freertos_vars.h"
 #include "freertos.hpp"
+
+#include "stm32_system.h"
+
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -131,37 +134,10 @@ void start_main_task(void* main_task) {
     vTaskDelete(defaultTaskHandle);
 }
 
-void tick_callback(void* ctx) {
-    (void)ctx;
-    HAL_IncTick();
-}
+
 
 /** @brief  FreeRTOS initialization */
-bool freertos_init(STM32_Timer_t* system_timer, main_task_t main_task) {
-    if (!system_timer) {
-        return false;
-    }
-
-    // Compute timer clock (TODO: this assumes the timer is on PCLK1, make automatic)
-    uint32_t uwTimclock = 2 * HAL_RCC_GetPCLK1Freq();
-    // Compute the prescaler value to have counter clock equal to 1MHz
-    uint32_t uwPrescalerValue = (uint32_t) ((uwTimclock / 1000000) - 1);
-
-    /* Initialize TIMx peripheral as follow:
-    + Period = [(TIMxCLK/1000) - 1]. to have a (1/1000) s time base.
-    + Prescaler = (uwTimclock/1000000 - 1) to have a 1MHz counter clock.
-    + ClockDivision = 0
-    + Counter direction = Up
-    */
-    tim14.init(
-        (1000000 / 1000) - 1,
-        STM32_Timer_t::UP,
-        uwPrescalerValue
-    );
-    tim14.on_update_.set<void>(tick_callback, nullptr);
-    tim14.enable_update_interrupt();
-    tim14.start();
-
+bool freertos_init(main_task_t main_task) {
     /* Create the thread(s) */
     /* definition and creation of defaultTask */
     osThreadDef(defaultTask, start_main_task, osPriorityNormal, 0, 256);

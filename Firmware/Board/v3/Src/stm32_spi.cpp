@@ -1,5 +1,6 @@
 
 #include "stm32_spi.hpp"
+#include "stm32_system.h"
 
 bool STM32_SPI_t::init(STM32_GPIO_t* sck_gpio, STM32_GPIO_t* miso_gpio, STM32_GPIO_t* mosi_gpio, STM32_DMAStream_t* tx_dma, STM32_DMAStream_t* rx_dma) {
     if (hspi.Instance == SPI1)
@@ -11,6 +12,9 @@ bool STM32_SPI_t::init(STM32_GPIO_t* sck_gpio, STM32_GPIO_t* miso_gpio, STM32_GP
     else
         return false;
     
+    tx_dma_ = tx_dma;
+    rx_dma_ = rx_dma;
+
     if (tx_dma) {
         if (!tx_dma->init(tx_dmas, DMA_t::MEMORY, DMA_t::PERIPHERAL, DMA_t::ALIGN_16_BIT, DMA_t::LINEAR, DMA_t::MEDIUM)) {
             return false;
@@ -49,10 +53,14 @@ bool STM32_SPI_t::init(STM32_GPIO_t* sck_gpio, STM32_GPIO_t* miso_gpio, STM32_GP
         if (!mosi_gpio->setup_alternate_function(mosi_gpios, gpio_af, GPIO_t::NO_PULL, GPIO_t::VERY_FAST))
             return false;
 
-    HAL_NVIC_SetPriority(get_irq_number(), 5, 0);
-    HAL_NVIC_EnableIRQ(get_irq_number());
-
     return true;
+}
+
+bool STM32_SPI_t::enable_interrupts(uint8_t priority) {
+    enable_interrupt(get_irq_number(), priority);
+
+    return (!tx_dma_ || tx_dma_->enable_interrupts(priority))
+        && (!rx_dma_ || rx_dma_->enable_interrupts(priority));
 }
 
 

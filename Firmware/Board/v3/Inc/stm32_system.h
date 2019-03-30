@@ -4,9 +4,6 @@
 #include <stdbool.h>
 #include "stm32f4xx_hal.h"
 
-//TODO: this should come from FreeRTOS files
-#define TIM_TIME_BASE TIM14
-
 
 #ifdef __cplusplus
 extern "C" {
@@ -41,18 +38,14 @@ static inline void cpu_exit_critical(uint32_t priority_mask) {
     __set_PRIMASK(priority_mask);
 }
 
+uint64_t get_ticks_us();
+
 /** @brief: Returns number of microseconds since system startup */
 static inline uint32_t micros(void) {
-    register uint32_t ms, cycle_cnt;
-    do {
-        ms = HAL_GetTick();
-        cycle_cnt = TIM_TIME_BASE->CNT;
-     } while (ms != HAL_GetTick());
-
-    return (ms * 1000) + cycle_cnt;
+    return (uint32_t) get_ticks_us();
 }
 
-// @brief: Busy wait delay for given amount of microseconds (us)
+/** @brief: Busy wait delay for given amount of microseconds (us) */
 static inline void delay_us(uint32_t us) {
     uint32_t start = micros();
     while (micros() - start < (uint32_t) us) {
@@ -60,7 +53,18 @@ static inline void delay_us(uint32_t us) {
     }
 }
 
+static inline void enable_interrupt(IRQn_Type irqn, uint8_t priority) {
+    // TODO: do reference counting and ensure that the priority is not changed when already enabled
+    NVIC_SetPriority(irqn, priority >> __NVIC_PRIO_BITS);
+    HAL_NVIC_EnableIRQ(irqn);
+}
+
 #ifdef __cplusplus
+} // extern "C"
+
+/* C++ declarations ----------------------------------------------------------*/
+
+#include "stm32_tim.hpp"
 
 class PerformanceCounter_t {
 public:
@@ -90,7 +94,19 @@ private:
     static PerformanceCounter_t* current_counter;
 };
 
-}
+/**
+ * @brief Uses the given timer to initialize a monotonic 64 bit microsecond
+ * resolution clock.
+ * 
+ * The current clock value can be accessed through get_ticks_us() and
+ * get_ticks_ms().
+ * 
+ * This will enable an interrupt with `tick_timer_priority` that fires roughly
+ * every ~25ms. If the interrupt handler is delayed by more than ~25ms the clock
+ * value becomes inaccurate.
+ */
+bool init_monotonic_clock(STM32_Timer_t* tick_timer, uint8_t tick_timer_priority);
+
 #endif
 
 #endif // __STM32_SYSTEM_HPP

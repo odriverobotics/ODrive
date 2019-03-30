@@ -98,12 +98,13 @@ bool STM32_DMAStream_t::init(const STM32_DMAChannel_t* channels, DOMAIN src, DOM
     }
 
     if (HAL_DMA_Init(&hdma) != HAL_OK)
-        return false;    
+        return false;
 
-    // TODO: move to a separate function
-    HAL_NVIC_SetPriority(irqn, 5, 0);
-    HAL_NVIC_EnableIRQ(irqn);
+    return true;
+}
 
+bool STM32_DMAStream_t::enable_interrupts(uint8_t priority) {
+    enable_interrupt(irqn, priority);
     return true;
 }
 

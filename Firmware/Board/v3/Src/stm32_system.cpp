@@ -5,12 +5,14 @@
 
 #include "freertos_vars.h"
 
+#include "stm32_system.h"
+
 
 uint32_t _reboot_cookie __attribute__ ((section (".noinit")));
 extern char _estack; // provided by the linker script
 
 // Gets called from the startup assembly code
-void early_start_checks(void) {
+extern "C" void early_start_checks(void) {
   if(_reboot_cookie == 0xDEADFE75) {
     /* The STM DFU bootloader enables internal pull-up resistors on PB10 (AUX_H)
     * and PB11 (AUX_L), thereby causing shoot-through on the brake resistor
@@ -52,6 +54,76 @@ void early_start_checks(void) {
     NVIC_SystemReset();
   }
 }
+
+#define TICK_TIMER_ARR  50000
+STM32_Timer_t* tick_timer_ = nullptr;
+
+uint64_t get_ticks_us() {
+    static volatile uint64_t tick_us = 0; // rolls over after ~600'000 years
+    static volatile uint16_t last_cnt = 0;
+
+    if (tick_timer_) {
+        uint32_t mask = cpu_enter_critical();
+        uint16_t new_cnt = tick_timer_->htim.Instance->CNT;
+        uint16_t delta = new_cnt - last_cnt;
+        tick_us += delta;
+        last_cnt = new_cnt;
+        cpu_exit_critical(mask);
+    }
+
+    return tick_us;
+}
+
+uint32_t get_ticks_ms() {
+    return  get_ticks_us() / 1000ULL;
+}
+
+extern "C" uint32_t HAL_GetTick(void) {
+    return get_ticks_ms();
+}
+
+// the interval between two calls to this function must be less than the
+// overflow of the tick timer
+void tick_callback(void* ctx) {
+    (void)ctx;
+    (void)get_ticks_us();
+}
+
+bool init_monotonic_clock(STM32_Timer_t* tick_timer, uint8_t tick_timer_priority) {
+    if (!tick_timer) {
+        return false;
+    }
+
+    tick_timer_ = tick_timer;
+
+    uint32_t freq;
+    if (!tick_timer->get_source_freq(&freq))
+        return false;
+
+    // Compute the prescaler value to have counter clock equal to 1MHz
+    uint32_t prescaler = (uint32_t) ((freq / 1000000) - 1);
+
+    /* Initialize TIMx peripheral as follow:
+    + Period = [(TIMxCLK/1000) - 1]. to have a (1/1000) s time base.
+    + Prescaler = (freq/1000000 - 1) to have a 1MHz counter clock.
+    + ClockDivision = 0
+    + Counter direction = Up
+    */
+    if (!tick_timer->init(TICK_TIMER_ARR, STM32_Timer_t::UP, prescaler))
+        return false;
+    if (!tick_timer->setup_pwm(1, nullptr, nullptr, true, true, TICK_TIMER_ARR >> 1)
+        || !tick_timer->on_cc_.set<void>([](void*, uint32_t, uint32_t) { tick_callback(nullptr); }, nullptr)
+        || !tick_timer->on_update_.set<void>(tick_callback, nullptr)
+        || !tick_timer->enable_cc_interrupt(tick_timer_priority)
+        || !tick_timer->enable_update_interrupt(tick_timer_priority)
+        || !tick_timer->start()) {
+
+        return false;
+    }
+
+    return true;
+}
+
 
 bool system_clock_config(void) {
     RCC_OscInitTypeDef RCC_OscInitStruct;
@@ -118,9 +190,9 @@ bool system_init(void) {
     /* DebugMonitor_IRQn interrupt configuration */
     HAL_NVIC_SetPriority(DebugMonitor_IRQn, 0, 0);
     /* PendSV_IRQn interrupt configuration */
-    HAL_NVIC_SetPriority(PendSV_IRQn, 15, 0);
+    HAL_NVIC_SetPriority(PendSV_IRQn, TICK_INT_PRIORITY, 0);
     /* SysTick_IRQn interrupt configuration */
-    HAL_NVIC_SetPriority(SysTick_IRQn, 15, 0);
+    HAL_NVIC_SetPriority(SysTick_IRQn, TICK_INT_PRIORITY, 0);
 
     return system_clock_config();
 }
@@ -155,6 +227,8 @@ void assert_failed(uint8_t* file, uint32_t line) {
 
 
 /* Cortex-M4 Processor Exception Handlers ------------------------------------*/
+
+extern "C" {
 
 void get_regs(void** stack_ptr) {
     void* volatile r0 __attribute__((unused)) = stack_ptr[0];
@@ -230,4 +304,6 @@ void DebugMon_Handler(void) {
 /** @brief Entrypoint for System tick timer. */
 void SysTick_Handler(void) {
     osSystickHandler();
+}
+
 }

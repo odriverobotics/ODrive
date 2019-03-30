@@ -98,6 +98,13 @@ public:
         TIMING_LOG_NUM_SLOTS
     };
 
+    enum UpdateMode_t {
+        NONE = 0,
+        ON_BOTTOM = 0x1,    // corresponds to SVM vector 7 (0b111)
+        ON_TOP = 0x2,       // corresponds to SVM vector 0 (0b000)
+        ON_BOTH = 0x3,
+    };
+
     Motor(STM32_Timer_t* timer,
          STM32_GPIO_t* pwm_al_gpio, STM32_GPIO_t* pwm_bl_gpio, STM32_GPIO_t* pwm_cl_gpio,
          STM32_GPIO_t* pwm_ah_gpio, STM32_GPIO_t* pwm_bh_gpio, STM32_GPIO_t* pwm_ch_gpio,
@@ -109,13 +116,13 @@ public:
          CurrentSensor_t* current_sensor_c,
          Thermistor_t* inverter_thermistor,
          uint16_t period, uint16_t repetition_counter, uint16_t dead_time,
+         uint8_t interrupt_priority,
          Config_t& config);
 
     bool arm();
     void disarm();
 
     void handle_timer_update();
-    void handle_current_sensor_update();
 
     bool init();
     bool start_updates();
@@ -156,9 +163,14 @@ public:
     uint16_t period_;
     uint16_t repetition_counter_;
     uint16_t dead_time_;
+    uint8_t interrupt_priority_;
 
     Config_t& config_;
     Axis* axis_ = nullptr; // set by Axis constructor
+
+    UpdateMode_t pwm_update_mode_ = ON_BOTTOM;
+    UpdateMode_t current_sample_mode_ = ON_BOTTOM;
+    UpdateMode_t current_dc_calib_mode_ = ON_TOP;
 
 //private:
 

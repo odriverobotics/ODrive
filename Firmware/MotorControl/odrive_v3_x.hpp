@@ -51,7 +51,7 @@ const size_t thermistor_num_coeffs = sizeof(thermistor_poly_coeffs)/sizeof(therm
 // TODO: make dynamic
 #define TIM_1_8_CLOCK_HZ 168000000
 //#define TIM_1_8_PERIOD_CLOCKS (3500) // not 1kHz
-#define TIM_1_8_PERIOD_CLOCKS (65000) // not 1kHz
+#define TIM_1_8_PERIOD_CLOCKS (10000) // not 1kHz
 #define TIM_1_8_DEADTIME_CLOCKS 20
 #define TIM_1_8_RCR 0
 
@@ -165,6 +165,7 @@ static inline bool board_init(Axis axes[AXIS_COUNT]) {
             &current_sensor_m0_c, // current_sensor_c
             &temp_sensor_m0_inv, // inverter_thermistor
             TIM_1_8_PERIOD_CLOCKS, TIM_1_8_RCR, TIM_1_8_DEADTIME_CLOCKS,
+            NVIC_PRIO_M0,
             axis_configs[0].motor_config
         ),
         Encoder(
@@ -204,6 +205,7 @@ static inline bool board_init(Axis axes[AXIS_COUNT]) {
             &current_sensor_m1_c, // current_sensor_c
             &temp_sensor_m1_inv, // inverter_thermistor
             TIM_1_8_PERIOD_CLOCKS, TIM_1_8_RCR, TIM_1_8_DEADTIME_CLOCKS,
+            NVIC_PRIO_M1,
             axis_configs[1].motor_config
         ),
         Encoder(

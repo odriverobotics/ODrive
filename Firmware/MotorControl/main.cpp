@@ -181,6 +181,10 @@ int main(void) {
         for (;;); // TODO: define error action
     }
 
+    if (!init_monotonic_clock(&tim14, NVIC_PRIO_TICK_TIMER)) {
+        for (;;); // TODO: define error action
+    }
+
     // Load persistent configuration (or defaults)
     load_configuration();
 
@@ -190,7 +194,7 @@ int main(void) {
     // Init timer for FreeRTOS scheduler
 
     /* Init FreeRTOS resources (in freertos.cpp) */
-    freertos_init(&tim14, &main_task);
+    freertos_init(&main_task);
 
     /* Start scheduler */
     osKernelStart();
@@ -254,6 +258,10 @@ int main_task(void) {
         &composite_device
     ))
         goto fail;
+    if (!usb.enable_interrupts(NVIC_PRIO_USB))
+        goto fail;
+    if (!usb.start())
+        goto fail;
 
     system_stats_.boot_progress++;
 
@@ -281,11 +289,17 @@ int main_task(void) {
         i2c_stats_.addr |= i2c_a0_gpio->read() ? 0x1 : 0;
         i2c_stats_.addr |= i2c_a1_gpio->read() ? 0x2 : 0;
         i2c_stats_.addr |= i2c_a2_gpio->read() ? 0x4 : 0;
-        i2c1.setup_as_slave(100000, i2c_stats_.addr, &pb8, &pb9, &dma1_stream6, &dma1_stream0); // TODO: DMA stream conflict with SPI3?
+        if (!i2c1.setup_as_slave(100000, i2c_stats_.addr, &pb8, &pb9, &dma1_stream6, &dma1_stream0)) // TODO: DMA stream conflict with SPI3?
+            goto fail;
+        if (!i2c1.enable_interrupts(NVIC_PRIO_I2C))
+            goto fail;
     } else
 #endif
     {
-        can1.init(&pb8, &pb9);
+        if (!can1.init(&pb8, &pb9))
+            goto fail;
+        if (!can1.enable_interrupts(NVIC_PRIO_CAN))
+            goto fail;
     }
 
     // Init general user ADC on some GPIOs.
@@ -312,12 +326,15 @@ int main_task(void) {
     if (board_config.enable_uart) {
         if (!uart4.init(115200, gpios[0], gpios[1], &dma1_stream4, &dma1_stream2)) // Provisionally this can be changed to 921600 for faster transfers, the low power Arduinos will not keep up. 
             goto fail;
+        if (!uart4.enable_interrupts(NVIC_PRIO_UART))
+            goto fail;
     }
 #endif
 
-    if (!spi3.init(&pc10, &pc11, &pc12, nullptr, nullptr)) {
+    if (!spi3.init(&pc10, &pc11, &pc12, nullptr, nullptr))
         goto fail;
-    }
+    if (!spi3.enable_interrupts(NVIC_PRIO_SPI))
+        goto fail;
 
     // Diagnostics timer
     //tim13.init(
@@ -331,16 +348,6 @@ int main_task(void) {
     /* Set up ADC ------------------------------------------------------------*/
 
     if (!vbus_sense.init()) {
-        goto fail;
-    }
-    if (!vbus_sense.on_update_.set<void>([](void*) {
-        vbus_sense.get_voltage(&vbus_voltage);
-        //if (axes[0] && !axes[0]->error_ && axes[1] && !axes[1]->error_) {
-        //    if (oscilloscope_pos >= OSCILLOSCOPE_SIZE)
-        //        oscilloscope_pos = 0;
-        //    oscilloscope[oscilloscope_pos++] = vbus_voltage;
-        //}
-    }, nullptr)) {
         goto fail;
     }
 
@@ -433,12 +440,12 @@ int main_task(void) {
     system_stats_.boot_progress++;
     
     // Start ADC for temperature measurements and user measurements
-    if (!adc1_regular.enable() ||
-        !adc2_regular.enable() ||
-        !adc3_regular.enable() ||
-        !adc1_injected.enable() ||
-        !adc2_injected.enable() ||
-        !adc3_injected.enable()) {
+    if (!adc1_regular.enable_updates() ||
+        !adc2_regular.enable_updates() ||
+        !adc3_regular.enable_updates() ||
+        !adc1_injected.enable_updates() ||
+        !adc2_injected.enable_updates() ||
+        !adc3_injected.enable_updates()) {
         goto fail;
     }
 

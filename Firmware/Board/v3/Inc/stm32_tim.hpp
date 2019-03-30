@@ -41,6 +41,15 @@ public:
     {}
 
     /**
+     * @brief Returns the frequency of the clock domain to which this timer
+     * belongs.
+     * 
+     * This is equal to the rate at which the counter is updated if a prescaler
+     * of 1 is used.
+     */
+    bool get_source_freq(uint32_t* freq);
+
+    /**
      * @brief Initializes the timer.
      * This will generate an update event whether you want it or not, because... well... STM code.
      */
@@ -51,6 +60,7 @@ public:
      * The actual output must then be enabled using enable_pwm().
      * Call init() prior to calling this.
      * 
+     * @param channel: A channel number in 1...4 (not all channels available for all timers).
      * @param gpio_p: Specifies the pin to use for the positive output. NULL if
      *        the negative output channel is not used.
      *        Only a few pins are valid for each timer and channel. Refer to the
@@ -120,21 +130,37 @@ public:
 
     bool get_general_irqn(IRQn_Type* irqn);
 
-    /** @brief Enables the update interrupt.
-     * The on_update_ subscriber should be set first. */
-    bool enable_update_interrupt();
+    /**
+     * @brief Enables the update interrupt.
+     * The on_update_ subscriber should be set first.
+     * @param priority: The Cortex-M4 interrupt priority, 0 being the highest
+     *        and 255 being the lowest logical priority.
+     */
+    bool enable_update_interrupt(uint8_t priority);
 
-    /** @brief Enables the trigger interrupt.
-     * The on_trigger_ subscriber should be set first. */
-    bool enable_trigger_interrupt();
+    /**
+     * @brief Enables the trigger interrupt.
+     * The on_trigger_ subscriber should be set first.
+     * @param priority: The Cortex-M4 interrupt priority, 0 being the highest
+     *        and 255 being the lowest logical priority.
+     */
+    bool enable_trigger_interrupt(uint8_t priority);
 
-    /** @brief Enables the cc interrupt.
-     * The on_cc_ subscriber should be set first. */
-    bool enable_cc_interrupt();
+    /**
+     * @brief Enables the cc interrupt.
+     * The on_cc_ subscriber should be set first.
+     * @param priority: The Cortex-M4 interrupt priority, 0 being the highest
+     *        and 255 being the lowest logical priority.
+     */
+    bool enable_cc_interrupt(uint8_t priority);
 
-    /** @brief Enables the break interrupt.
-     * The on_break_ subscriber should be set first. */
-    bool enable_break_interrupt();
+    /**
+     * @brief Enables the break interrupt.
+     * The on_break_ subscriber should be set first.
+     * @param priority: The Cortex-M4 interrupt priority, 0 being the highest
+     *        and 255 being the lowest logical priority.
+     */
+    bool enable_break_interrupt(uint8_t priority);
 
     void handle_update_irq();
     void handle_trigger_irq();

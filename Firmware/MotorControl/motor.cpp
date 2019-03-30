@@ -16,6 +16,7 @@ Motor::Motor(STM32_Timer_t* timer,
              CurrentSensor_t* current_sensor_c,
              Thermistor_t* inverter_thermistor,
              uint16_t period, uint16_t repetition_counter, uint16_t dead_time,
+             uint8_t interrupt_priority,
              Config_t& config) :
         timer_(timer),
         pwm_al_gpio_(pwm_al_gpio), pwm_bl_gpio_(pwm_bl_gpio), pwm_cl_gpio_(pwm_cl_gpio),
@@ -28,6 +29,7 @@ Motor::Motor(STM32_Timer_t* timer,
         current_sensor_c_(current_sensor_c),
         inverter_thermistor_(inverter_thermistor),
         period_(period), repetition_counter_(repetition_counter), dead_time_(dead_time),
+        interrupt_priority_(interrupt_priority),
         config_(config) {
 }
 
@@ -67,15 +69,31 @@ void Motor::update_current_controller_gains() {
     current_control_.i_gain = plant_pole * current_control_.p_gain;
 }
 
+static bool check_update_mode(Motor::UpdateMode_t mode, bool counting_down) {
+    switch (mode) {
+        case Motor::ON_TOP: return counting_down;
+        case Motor::ON_BOTTOM: return !counting_down;
+        case Motor::ON_BOTH: return true;
+        default: return false;
+    }
+}
+
+// TODO: Document how the phasing is done, link to timing diagram
 void Motor::handle_timer_update() {
-    update_events_++;
+#define calib_tau 0.2f  //@TOTO make more easily configurable
+    static const float calib_filter_k = current_meas_period / calib_tau;
+
+    update_events_++; // for debugging only
+
     // If the corresponding timer is counting up, we just sampled in SVM vector 0, i.e. real current
     // If we are counting down, we just sampled in SVM vector 7, with zero current
     counting_down_ = timer_->htim.Instance->CR1 & TIM_CR1_DIR;
 
+    bool should_have_updated_pwm = check_update_mode(pwm_update_mode_, counting_down_);
+
     // TODO: implement double rate updates, then we need to run this check also
     // while counting down
-    if (!counting_down_) {
+    if (should_have_updated_pwm) {
         // We only care about the PWM timings being refreshed if the output is
         // actually enabled. This gives the application time to do some tasks
         // after arming the motor but before applying the first PWM timings.
@@ -102,32 +120,43 @@ void Motor::handle_timer_update() {
         }
     }
 
-    if (!counting_down_) {
+    if (should_have_updated_pwm) {
         axis_->encoder_.sample_now();
 
         for (int i = 0; i < n_GPIO_samples; ++i) {
             GPIO_port_samples[i] = GPIOs_to_samp[i]->IDR;
         }
     }
-}
 
-// This is the callback from the ADC that we expect after the PWM has triggered an ADC conversion.
-// TODO: Document how the phasing is done, link to timing diagram
-void Motor::handle_current_sensor_update() {
-#define calib_tau 0.2f  //@TOTO make more easily configurable
-    static const float calib_filter_k = current_meas_period / calib_tau;
+    bool was_current_sense = check_update_mode(current_sample_mode_, counting_down_);
+    bool was_current_dc_calib = check_update_mode(current_dc_calib_mode_, counting_down_);
+    if (was_current_sense || was_current_dc_calib) {
+        // Wait for the current measurements to become available
+        bool have_all_values = false;
+        do {
+            have_all_values = (!current_sensor_a_ || current_sensor_a_->has_value())
+                           && (!current_sensor_b_ || current_sensor_b_->has_value())
+                           && (!current_sensor_c_ || current_sensor_c_->has_value());
+        } while (!have_all_values); // TODO: add timeout
 
-    bool current_meas_not_DC_CAL = !counting_down_;
+        if (!vbus_sense.get_voltage(&vbus_voltage)) {
+            set_error(ERROR_V_BUS_SENSOR_DEAD);
+            return;
+        }
 
-    bool have_all_values = (!current_sensor_a_ || current_sensor_a_->has_value())
-                        && (!current_sensor_b_ || current_sensor_b_->has_value())
-                        && (!current_sensor_c_ || current_sensor_c_->has_value());
-    if (have_all_values) {
         Iph_ABC_t current = { 0 };
-        bool read_all_values = (!current_sensor_a_ || current_sensor_a_->consume_value(&current.phA))
-                            && (!current_sensor_b_ || current_sensor_b_->consume_value(&current.phB))
-                            && (!current_sensor_c_ || current_sensor_c_->consume_value(&current.phC));
+        bool read_all_values = (!current_sensor_a_ || current_sensor_a_->get_current(&current.phA))
+                            && (!current_sensor_b_ || current_sensor_b_->get_current(&current.phB))
+                            && (!current_sensor_c_ || current_sensor_c_->get_current(&current.phC));
         if (!read_all_values) {
+            set_error(ERROR_CURRENT_SENSOR);
+            return;
+        }
+
+        bool reset_all_values = (!current_sensor_a_ || current_sensor_a_->reset_value())
+                             && (!current_sensor_b_ || current_sensor_b_->reset_value())
+                             && (!current_sensor_c_ || current_sensor_c_->reset_value());
+        if (!reset_all_values) {
             set_error(ERROR_CURRENT_SENSOR);
             return;
         }
@@ -141,8 +170,7 @@ void Motor::handle_current_sensor_update() {
         if (!current_sensor_c_)
             current.phC = -(current.phA + current.phB);
 
-        // TODO: make DC cal optional
-        if (current_meas_not_DC_CAL) {
+        if (was_current_sense) {
             current_meas_.phA = current.phA - DC_calib_.phA;
             current_meas_.phB = current.phB - DC_calib_.phB;
             current_meas_.phC = current.phC - DC_calib_.phC;
@@ -163,7 +191,9 @@ void Motor::handle_current_sensor_update() {
             axis_->encoder_.decode_hall_samples(GPIO_port_samples);
             // Trigger axis thread
             axis_->signal_current_meas();
-        } else {
+        }
+        
+        if (was_current_dc_calib) {
             // DC_CAL measurement
             DC_calib_.phA += (current.phA - DC_calib_.phA) * calib_filter_k;
             DC_calib_.phB += (current.phB - DC_calib_.phB) * calib_filter_k;
@@ -250,13 +280,6 @@ bool Motor::init() {
 
     system_stats_.boot_progress++;
 
-    if (current_sensor_a_ && !current_sensor_a_->on_update_.set<Motor, &Motor::handle_current_sensor_update>(*this))
-        return false;
-    if (current_sensor_b_ && !current_sensor_b_->on_update_.set<Motor, &Motor::handle_current_sensor_update>(*this))
-        return false;
-    if (current_sensor_c_ && !current_sensor_c_->on_update_.set<Motor, &Motor::handle_current_sensor_update>(*this))
-        return false;
-
     if (inverter_thermistor_ && !inverter_thermistor_->init())
         return false;
 
@@ -283,7 +306,7 @@ bool Motor::start_updates() {
     safety_critical_apply_motor_pwm_timings(*this, period_, half_timings, true);
 
     // Enable the update interrupt (used to coherently sample GPIO)
-    if (!timer_->enable_update_interrupt())
+    if (!timer_->enable_update_interrupt(interrupt_priority_))
         return false;
 
     if (!timer_->enable_pwm(true, true, true, true, true, true, false, false))

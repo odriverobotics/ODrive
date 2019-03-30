@@ -8,24 +8,35 @@
 // the forward declarations and right ordering
 // btw this pattern is not so uncommon, for instance IIRC the stdlib uses it too
 
-
-#ifdef __cplusplus
-#include <fibre/protocol.hpp>
-extern "C" {
-#endif
+/* C includes ----------------------------------------------------------------*/
 
 #include <stdbool.h>
 
 // STM specific includes
-#include "stm32_system.h"
 #include <stm32f4xx_hal.h>  // Sets up the correct chip specifc defines required by arm_math
 #define ARM_MATH_CM4 // TODO: might change in future board versions
 #include <arm_math.h>
 
-
 // OS includes
 #include <cmsis_os.h>
 
+#include <stm32_system.h>
+
+/* C++ includes --------------------------------------------------------------*/
+
+#ifdef __cplusplus
+
+#include <fibre/protocol.hpp>
+#include <stm32_usb.hpp> // TODO: replace with generic header
+#include <stm32_usart.hpp> // TODO: replace with generic header
+
+#endif // __cplusplus
+
+/* Exported Declarations -----------------------------------------------------*/
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 //default timeout waiting for phase measurement signals
 #define PH_CURRENT_MEAS_TIMEOUT 2 // [ms]
@@ -34,6 +45,22 @@ extern "C" {
 #define TIM_APB1_CLOCK_HZ 84000000
 #define TIM_APB1_PERIOD_CLOCKS 4096
 #define TIM_APB1_DEADTIME_CLOCKS 40
+
+//#define NVIC_PRIO_M0                    configMAX_SYSCALL_INTERRUPT_PRIORITY - (1 << (8 - configPRIO_BITS))
+//#define NVIC_PRIO_M1                    configMAX_SYSCALL_INTERRUPT_PRIORITY - (1 << (8 - configPRIO_BITS)) + 1
+#define NVIC_PRIO_M0            (configMAX_SYSCALL_INTERRUPT_PRIORITY)
+#define NVIC_PRIO_M1            (configMAX_SYSCALL_INTERRUPT_PRIORITY + (1 << (8 - configPRIO_BITS)))
+
+#define NVIC_PRIO_UART          (configMAX_SYSCALL_INTERRUPT_PRIORITY + (2 << (8 - configPRIO_BITS)))
+#define NVIC_PRIO_USB           (configMAX_SYSCALL_INTERRUPT_PRIORITY + (2 << (8 - configPRIO_BITS)))
+#define NVIC_PRIO_SPI           (configMAX_SYSCALL_INTERRUPT_PRIORITY + (2 << (8 - configPRIO_BITS)))
+#define NVIC_PRIO_I2C           (configMAX_SYSCALL_INTERRUPT_PRIORITY + (2 << (8 - configPRIO_BITS)))
+#define NVIC_PRIO_CAN           (configMAX_SYSCALL_INTERRUPT_PRIORITY + (2 << (8 - configPRIO_BITS)))
+
+// very low priority (it's ok for this one to be delayed up to ~25ms)
+#define NVIC_PRIO_TICK_TIMER    (255)       // updates the tick count (TODO: use chained timers to do this without CPU)
+
+//#define NVIC_PRIO_TASK_SWITCHER 255     //
 
 
 typedef struct {
@@ -59,8 +86,7 @@ extern SystemStats_t system_stats_;
 #ifdef __cplusplus
 }
 
-#include <stm32_usb.hpp> // TODO: replace with generic header
-#include <stm32_usart.hpp> // TODO: replace with generic header
+/* C++ declarations ----------------------------------------------------------*/
 
 struct PWMMapping_t {
     endpoint_ref_t endpoint = { 0 };

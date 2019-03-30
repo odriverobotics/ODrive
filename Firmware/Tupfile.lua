@@ -163,7 +163,7 @@ build{
         'Board/v3/Src/stm32_gpio.cpp',
         'Board/v3/Src/stm32_i2c.cpp',
         'Board/v3/Src/stm32_spi.cpp',
-        'Board/v3/Src/stm32_system.c',
+        'Board/v3/Src/stm32_system.cpp',
         'Board/v3/Src/stm32_tim.cpp',
         'Board/v3/Src/stm32_usart.cpp',
         'Board/v3/Src/stm32_usb.cpp',

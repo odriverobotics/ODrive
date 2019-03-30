@@ -1,5 +1,6 @@
 
 #include "stm32_usart.hpp"
+#include "stm32_system.h"
 
 bool STM32_USART_t::init(uint32_t baudrate, STM32_GPIO_t* tx_gpio, STM32_GPIO_t* rx_gpio, STM32_DMAStream_t* tx_dma, STM32_DMAStream_t* rx_dma) {
     if (huart.Instance == USART1)
@@ -17,6 +18,9 @@ bool STM32_USART_t::init(uint32_t baudrate, STM32_GPIO_t* tx_gpio, STM32_GPIO_t*
     else
         return false;
     
+    tx_dma_ = tx_dma;
+    rx_dma_ = rx_dma;
+
     if (tx_dma) {
         if (!tx_dma->init(tx_dmas, DMA_t::MEMORY, DMA_t::PERIPHERAL, DMA_t::ALIGN_8_BIT, DMA_t::LINEAR, DMA_t::LOW)) {
             return false;
@@ -47,11 +51,15 @@ bool STM32_USART_t::init(uint32_t baudrate, STM32_GPIO_t* tx_gpio, STM32_GPIO_t*
     if (tx_gpio) // TODO: shouldn't RX be pulled down instead of TX?
         if (!tx_gpio->setup_alternate_function(tx_gpios, gpio_af, GPIO_t::PULL_DOWN, GPIO_t::VERY_FAST))
             return false;
-    
-    HAL_NVIC_SetPriority(get_irq_number(), 5, 0);
-    HAL_NVIC_EnableIRQ(get_irq_number());
 
     return true;
+}
+
+bool STM32_USART_t::enable_interrupts(uint8_t priority) {
+    enable_interrupt(get_irq_number(), priority);
+
+    return (!tx_dma_ || tx_dma_->enable_interrupts(priority))
+        && (!rx_dma_ || rx_dma_->enable_interrupts(priority));
 }
 
 bool STM32_USART_t::start_rx(uint8_t* data, size_t length) {

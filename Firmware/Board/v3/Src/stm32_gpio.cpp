@@ -164,6 +164,7 @@ bool STM32_GPIO_t::subscribe(bool rising_edge, bool falling_edge,
     HAL_GPIO_Init(port, &GPIO_InitStruct);
 
     // Enable interrupt
+    // TODO: use configurable priority
     HAL_NVIC_SetPriority(get_irq_number(), 0, 0);
     HAL_NVIC_EnableIRQ(get_irq_number());
     return true;

@@ -2,6 +2,14 @@
 #include "stm32_adc.hpp"
 #include "stm32_system.h"
 
+#ifdef STM32F4
+typedef struct {
+    __IO uint32_t ISR;   /*!< DMA interrupt status register */
+    __IO uint32_t Reserved0;
+    __IO uint32_t IFCR;  /*!< DMA interrupt flag clear register */
+} DMA_Base_Registers;
+#endif
+
 const float adc_full_scale = (float)(1 << 12);
 const float adc_ref_voltage = 3.3f;
 
@@ -55,6 +63,48 @@ bool STM32_ADC_t::init() {
 
     is_setup_ = true;
     return true;
+}
+
+bool STM32_ADCChannel_t::get_voltage(float* value) {
+    static const float voltage_scale = adc_ref_voltage / adc_full_scale;
+    uint16_t raw_value;
+
+    if (!adc_ || !adc_->get_raw_value(seq_pos_, &raw_value))
+        return false;
+
+    if (value)
+        *value = (float)raw_value * voltage_scale;
+
+    return true;
+}
+
+bool STM32_ADCChannel_t::get_normalized(float* value) {
+    uint16_t raw_value;
+
+    if (!adc_ || !adc_->get_raw_value(seq_pos_, &raw_value))
+        return false;
+
+    if (value)
+        *value = (float)raw_value / adc_full_scale;
+
+    return true;
+}
+
+bool STM32_ADCChannel_t::has_value() {
+    return adc_ && adc_->has_completed();
+}
+
+bool STM32_ADCChannel_t::reset_value() {
+    return adc_ && adc_->reset_values();
+}
+
+bool STM32_ADCChannel_t::enable_updates() {
+    if (adc_) {
+        adc_->enable_updates();
+        return true;
+    } else {
+        return false;
+    }
 }
 
 
@@ -187,7 +237,7 @@ bool STM32_ADCRegular_t::apply() {
     adc->hadc.Init.DataAlign = ADC_DATAALIGN_RIGHT;
     adc->hadc.Init.NbrOfConversion = channel_sequence_length;
     adc->hadc.Init.DMAContinuousRequests = dma_ ? ENABLE : DISABLE;
-    adc->hadc.Init.EOCSelection = ADC_EOC_SINGLE_CONV; // generate an interrupt after end of each regular conversion
+    adc->hadc.Init.EOCSelection = ADC_EOC_SEQ_CONV; // generate an interrupt after end of each regular conversion
     if (HAL_ADC_Init(&adc->hadc) != HAL_OK)
         return false;
     
@@ -208,19 +258,27 @@ bool STM32_ADCRegular_t::apply() {
     return true;
 }
 
-bool STM32_ADCRegular_t::enable() {
+bool STM32_ADCRegular_t::enable_updates() {
     if (adc) {
-        HAL_NVIC_SetPriority(ADC_IRQn, 5, 0);
-        HAL_NVIC_EnableIRQ(ADC_IRQn);
+        if (dma_ && (HAL_ADC_Start_DMA(&adc->hadc, reinterpret_cast<uint32_t*>(raw_values), channel_sequence_length) != HAL_OK)) {
+            return false;
+        }
+        __HAL_ADC_ENABLE(&adc->hadc);
+        return true;
+    } else {
+        return false;
+    }
+}
+
+bool STM32_ADCRegular_t::enable_interrupts(uint8_t priority) {
+    if (adc) {
+        enable_interrupt(ADC_IRQn, priority);
 
         if (dma_) {
-            if (HAL_ADC_Start_DMA(&adc->hadc, reinterpret_cast<uint32_t*>(raw_values), channel_sequence_length) != HAL_OK) {
-                return false;
-            }
+            dma_->enable_interrupts(priority);
         } else {
             __HAL_ADC_ENABLE_IT(&adc->hadc, ADC_IT_EOC);
         }
-        __HAL_ADC_ENABLE(&adc->hadc);
         return true;
     } else {
         return false;
@@ -230,6 +288,52 @@ bool STM32_ADCRegular_t::enable() {
 bool STM32_ADCRegular_t::disable() {
     if (adc) {
         return HAL_ADC_Stop_DMA(&adc->hadc) == HAL_OK;
+    } else {
+        return false;
+    }
+}
+
+bool STM32_ADCRegular_t::has_completed() {
+    if (adc) {
+        uint32_t OVR = __HAL_ADC_GET_FLAG(&adc->hadc, ADC_FLAG_OVR);
+        if (OVR) {
+            disable();
+            error_ = true;
+        }
+        if (error_) {
+            return false;
+        }
+        if (dma_) {
+            DMA_Base_Registers *regs = (DMA_Base_Registers *)dma_->hdma.StreamBaseAddress;
+            return regs->ISR & (DMA_FLAG_TCIF0_4 << dma_->hdma.StreamIndex);
+        } else {
+            return __HAL_ADC_GET_FLAG(&adc->hadc, ADC_FLAG_EOC);
+        }
+    } else {
+        return false;
+    }
+}
+
+bool STM32_ADCRegular_t::reset_values() {
+    if (adc) {
+        if (dma_) {
+            DMA_Base_Registers *regs = (DMA_Base_Registers *)dma_->hdma.StreamBaseAddress;
+            regs->IFCR = DMA_FLAG_TCIF0_4 << dma_->hdma.StreamIndex;
+        } else {
+            __HAL_ADC_CLEAR_FLAG(&adc->hadc, ADC_FLAG_EOC);
+        }
+        return true;
+    } else {
+        return false;
+    }
+}
+
+bool STM32_ADCRegular_t::get_raw_value(size_t seq_pos, uint16_t *raw_value) {
+    if (seq_pos < channel_sequence_length) {
+        if (raw_value) {
+            *raw_value = raw_values[seq_pos];
+        }
+        return true;
     } else {
         return false;
     }
@@ -262,13 +366,20 @@ bool STM32_ADCInjected_t::apply() {
     return true;
 }
 
-bool STM32_ADCInjected_t::enable() {
+bool STM32_ADCInjected_t::enable_updates() {
     if (adc) {
-        HAL_NVIC_SetPriority(ADC_IRQn, 5, 0);
-        HAL_NVIC_EnableIRQ(ADC_IRQn);
+        __HAL_ADC_ENABLE(&adc->hadc);
+        return true;
+    } else {
+        return false;
+    }
+}
+
+bool STM32_ADCInjected_t::enable_interrupts(uint8_t priority) {
+    if (adc) {
+        enable_interrupt(ADC_IRQn, priority);
 
         __HAL_ADC_ENABLE_IT(&adc->hadc, ADC_IT_JEOC);
-        __HAL_ADC_ENABLE(&adc->hadc);
         return true;
     } else {
         return false;
@@ -284,11 +395,40 @@ bool STM32_ADCInjected_t::disable() {
     }
 }
 
+bool STM32_ADCInjected_t::has_completed() {
+    if (adc) {
+        return __HAL_ADC_GET_FLAG(&adc->hadc, ADC_FLAG_JEOC) != 0;
+    } else {
+        return false;
+    }
+}
+
+bool STM32_ADCInjected_t::reset_values() {
+    if (adc) {
+        return __HAL_ADC_CLEAR_FLAG(&adc->hadc, ADC_FLAG_JEOC), true;
+    } else {
+        return false;
+    }
+}
+
+bool STM32_ADCInjected_t::get_raw_value(size_t seq_pos, uint16_t *raw_value) {
+    uint16_t dummy;
+    if (!raw_value)
+        raw_value = &dummy;
+
+    switch (seq_pos) {
+        case 0: return (*raw_value = adc->hadc.Instance->JDR1), true;
+        case 1: return (*raw_value = adc->hadc.Instance->JDR2), true;
+        case 2: return (*raw_value = adc->hadc.Instance->JDR3), true;
+        case 3: return (*raw_value = adc->hadc.Instance->JDR4), true;
+        default: return false;
+    }
+}
+
 void STM32_ADCRegular_t::handle_irq() {
     if (adc) {        
         uint32_t OVR = __HAL_ADC_GET_FLAG(&adc->hadc, ADC_FLAG_OVR);
-        uint32_t OVR_IT_EN = __HAL_ADC_GET_IT_SOURCE(&adc->hadc, ADC_IT_OVR);
-        if (OVR && OVR_IT_EN) {
+        if (OVR) {
             disable();
             error_ = true;
         }
@@ -329,10 +469,6 @@ void STM32_ADCInjected_t::handle_irq() {
         uint32_t JEOC_IT_EN = __HAL_ADC_GET_IT_SOURCE(&adc->hadc, ADC_IT_JEOC);
         if (JEOC && JEOC_IT_EN) {
             __HAL_ADC_CLEAR_FLAG(&adc->hadc, (ADC_FLAG_JSTRT | ADC_FLAG_JEOC));
-            raw_values[0] = adc->hadc.Instance->JDR1;
-            raw_values[1] = adc->hadc.Instance->JDR2;
-            raw_values[2] = adc->hadc.Instance->JDR3;
-            raw_values[3] = adc->hadc.Instance->JDR4;
             for (size_t i = 0; i < channel_sequence_length; ++i) {
                 STM32_ADCChannel_t* channel = channel_sequence[i];
                 if (channel) {
@@ -340,40 +476,6 @@ void STM32_ADCInjected_t::handle_irq() {
                 }
             }
         }
-    }
-}
-
-bool STM32_ADCChannel_t::get_voltage(float* value) {
-    static const float voltage_scale = adc_ref_voltage / adc_full_scale;
-    uint16_t raw_value;
-
-    if (!adc_ || !adc_->get_raw_value(seq_pos_, &raw_value))
-        return false;
-
-    if (value)
-        *value = (float)raw_value * voltage_scale;
-
-    return true;
-}
-
-bool STM32_ADCChannel_t::get_normalized(float* value) {
-    uint16_t raw_value;
-
-    if (!adc_ || !adc_->get_raw_value(seq_pos_, &raw_value))
-        return false;
-
-    if (value)
-        *value = (float)raw_value / adc_full_scale;
-
-    return true;
-}
-
-bool STM32_ADCChannel_t::enable_updates() {
-    if (adc_) {
-        adc_->enable();
-        return true;
-    } else {
-        return false;
     }
 }
 

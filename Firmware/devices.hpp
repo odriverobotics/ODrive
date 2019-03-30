@@ -30,6 +30,18 @@ struct ADCChannel_t {
     virtual bool get_normalized(float *value) = 0;
 
     /**
+     * @brief Returns true if there is a new value since reset_value() was
+     * last called. The underlying ADC must be running, else this will never
+     * become true.
+     */
+    virtual bool has_value() = 0;
+
+    /**
+     * @brief Resets the state of has_value().
+     */
+    virtual bool reset_value() = 0;
+
+    /**
      * @brief Enables the update event on this ADC channel.
      * The underlying ADC must be configured beforehand, i.e. with a timer as
      * trigger or in continuous mode.
@@ -79,6 +91,14 @@ public:
 
     bool get_normalized(float *value) final {
         return adc_ ? adc_->get_normalized(value) : false;
+    }
+
+    bool has_value() final {
+        return adc_ && adc_->has_value();
+    }
+
+    bool reset_value() final {
+        return adc_ && adc_->reset_value();
     }
 
     bool enable_updates() {
@@ -160,21 +180,22 @@ struct CurrentSensor_t {
      */
     virtual bool get_range(float* max_range) = 0;
 
-    /** @brief Returns true if there is a new value since consume_value() was
+    /**
+     * @brief Returns true if there is a new value since reset_value() was
      * last called. The underlying ADC must be running, else this will never
-     * become true. */
+     * become true.
+     */
     virtual bool has_value() = 0;
+
+    /**
+     * @brief Resets the state of has_value().
+     */
+    virtual bool reset_value() = 0;
 
     /**
      * @brief Returns the most recent current measurement in Amps.
      */
     virtual bool get_current(float* current) = 0;
-
-    /**
-     * @brief Returns the most recent current measurement in Amps and resets the
-     * state of has_value().
-     */
-    virtual bool consume_value(float* current) = 0;
 
     Subscriber<> on_update_;
 };
@@ -256,16 +277,20 @@ public:
         }
     }
 
+    bool has_value() final {
+        return adc_ && adc_->has_value();
+    }
+
+    bool reset_value() final {
+        return adc_ && adc_->reset_value();
+    }
+
     bool enable_updates() final {
         if (adc_) {
             return adc_->enable_updates();
         } else {
             return false;
         }
-    }
-
-    bool has_value() final {
-        return has_value_;
     }
 
     bool get_current(float* current) final {
@@ -279,15 +304,6 @@ public:
             *current = shunt_volt * conductance_;
         }
         return true;
-    }
-
-    bool consume_value(float* current) final {
-        if (adc_) {
-            has_value_ = false;
-            return get_current(current);
-        } else {
-            return false;
-        }
     }
 
 private:

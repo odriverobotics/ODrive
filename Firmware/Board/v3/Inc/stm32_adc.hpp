@@ -40,6 +40,8 @@ public:
     }
     bool get_voltage(float *value) final;
     bool get_normalized(float *value) final;
+    bool has_value() final;
+    bool reset_value() final;
     bool enable_updates() final;
 
     bool get_range(float* min, float* max) final { // TODO: this should depend on reference voltages
@@ -142,8 +144,25 @@ public:
      * Returns true on success or false otherwise.
      */
     virtual bool apply() = 0;
-    virtual bool enable() = 0;
+
+    virtual bool enable_updates() = 0;
+
+    virtual bool enable_interrupts(uint8_t priority) = 0;
+
     virtual bool disable() = 0;
+
+    /**
+     * @brief Returns true if the complete sequence was refreshed since the last
+     * time reset_values() was called.
+     */
+    virtual bool has_completed() = 0;
+
+    /**
+     * @brief Resets the state of has_values(). Should not be called while a
+     * the sequence is running, otherwise the result may be undefined.
+     */
+    virtual bool reset_values() = 0;
+
     virtual bool get_raw_value(size_t channel_num, uint16_t *raw_value) = 0;
 
     /**
@@ -219,7 +238,6 @@ template<unsigned int MAX_SEQ_LENGTH>
 class STM32_ADCSequence_N_t : public STM32_ADCSequence_t {
 public:
     STM32_ADCChannel_t* channel_sequence[MAX_SEQ_LENGTH] = { nullptr };
-    uint16_t raw_values[MAX_SEQ_LENGTH];
 
     STM32_ADCSequence_N_t(STM32_ADC_t* adc) : STM32_ADCSequence_t(adc) {}
 
@@ -232,17 +250,6 @@ public:
             return false;
         channel_sequence[channel_sequence_length++] = channel;
         return true;
-    }
-
-    bool get_raw_value(size_t seq_pos, uint16_t *raw_value) final {
-        if (seq_pos < channel_sequence_length) {
-            if (raw_value) {
-                *raw_value = raw_values[seq_pos];
-            }
-            return true;
-        } else {
-            return false;
-        }
     }
 
     STM32_ADCChannel_t* get_item(size_t item_pos) final {
@@ -260,6 +267,7 @@ public:
     STM32_DMAStream_t* dma_ = nullptr;
     uint32_t trigger_source = ADC_SOFTWARE_START;
     uint32_t next_pos = 0; // TODO: ensure that this is properly synced to the ADC
+    uint16_t raw_values[16];
     bool error_ = false;
 
     STM32_ADCRegular_t(STM32_ADC_t* adc) : STM32_ADCSequence_N_t(adc) {}
@@ -267,8 +275,12 @@ public:
     bool init(STM32_DMAStream_t* dma) final;
     bool set_trigger(STM32_Timer_t* timer) final;
     bool apply() final;
-    bool enable() final;
+    bool enable_updates() final;
+    bool enable_interrupts(uint8_t priority) final;
     bool disable() final;
+    bool has_completed() final;
+    bool reset_values() final;
+    bool get_raw_value(size_t seq_pos, uint16_t *raw_value) final;
     void handle_irq();
     void handle_dma_complete();
 };
@@ -282,8 +294,12 @@ public:
     bool init(STM32_DMAStream_t* dma) final;
     bool set_trigger(STM32_Timer_t* timer) final;
     bool apply() final;
-    bool enable() final;
+    bool enable_updates() final;
+    bool enable_interrupts(uint8_t priority) final;
     bool disable() final;
+    bool has_completed() final;
+    bool reset_values() final;
+    bool get_raw_value(size_t seq_pos, uint16_t *raw_value) final;
     void handle_irq();
 };
 

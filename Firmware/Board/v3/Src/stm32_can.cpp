@@ -1,5 +1,6 @@
 
 #include "stm32_can.hpp"
+#include "stm32_system.h"
 
 bool STM32_CAN_t::setup(STM32_GPIO_t* rx_gpio, STM32_GPIO_t* tx_gpio) {
     if (hcan.Instance == CAN1)
@@ -29,25 +30,21 @@ bool STM32_CAN_t::setup(STM32_GPIO_t* rx_gpio, STM32_GPIO_t* tx_gpio) {
     if (tx_gpio)
         if (!tx_gpio->setup_alternate_function(tx_gpios, gpio_af, GPIO_t::NO_PULL, GPIO_t::VERY_FAST))
             return false;
-    
+
+    return true;
+}
+
+bool STM32_CAN_t::enable_interrupts(uint8_t priority) {
     if (hcan.Instance == CAN1) {
-        HAL_NVIC_SetPriority(CAN1_TX_IRQn, 6, 0);
-        HAL_NVIC_EnableIRQ(CAN1_TX_IRQn);
-        HAL_NVIC_SetPriority(CAN1_RX0_IRQn, 6, 0);
-        HAL_NVIC_EnableIRQ(CAN1_RX0_IRQn);
-        HAL_NVIC_SetPriority(CAN1_RX1_IRQn, 6, 0);
-        HAL_NVIC_EnableIRQ(CAN1_RX1_IRQn);
-        HAL_NVIC_SetPriority(CAN1_SCE_IRQn, 6, 0);
-        HAL_NVIC_EnableIRQ(CAN1_SCE_IRQn);
+        enable_interrupt(CAN1_TX_IRQn, priority);
+        enable_interrupt(CAN1_RX0_IRQn, priority);
+        enable_interrupt(CAN1_RX1_IRQn, priority);
+        enable_interrupt(CAN1_SCE_IRQn, priority);
     } else if (hcan.Instance == CAN2) {
-        HAL_NVIC_SetPriority(CAN2_TX_IRQn, 6, 0);
-        HAL_NVIC_EnableIRQ(CAN2_TX_IRQn);
-        HAL_NVIC_SetPriority(CAN2_RX0_IRQn, 6, 0);
-        HAL_NVIC_EnableIRQ(CAN2_RX0_IRQn);
-        HAL_NVIC_SetPriority(CAN2_RX1_IRQn, 6, 0);
-        HAL_NVIC_EnableIRQ(CAN2_RX1_IRQn);
-        HAL_NVIC_SetPriority(CAN2_SCE_IRQn, 6, 0);
-        HAL_NVIC_EnableIRQ(CAN2_SCE_IRQn);
+        enable_interrupt(CAN2_TX_IRQn, priority);
+        enable_interrupt(CAN2_RX0_IRQn, priority);
+        enable_interrupt(CAN2_RX1_IRQn, priority);
+        enable_interrupt(CAN2_SCE_IRQn, priority);
     } else {
         return false;
     }

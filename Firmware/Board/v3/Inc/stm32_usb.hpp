@@ -191,6 +191,9 @@ public:
         const char* manufacturer_string, const char* product_string, const char* serial_string, const char* config_string, const char* interface_string, const char* native_interface_string,
         USBClass_t* device_class);
     
+    bool enable_interrupts(uint8_t priority);
+    bool start();
+    
     bool add_int_endpoint(STM32_USBIntEndpoint_t* ep) {
         if (n_int_endpoints_ < sizeof(int_endpoints_) / sizeof(int_endpoints_[0])) {
             int_endpoints_[n_int_endpoints_++] = ep;
