@@ -13,6 +13,8 @@ import fibre.utils
 import fibre.remote_object
 from fibre.utils import Event, Logger
 from fibre.protocol import ChannelBrokenException, TimeoutError
+import tempfile
+import os
 
 # Load all installed transport layers
 
@@ -42,6 +44,7 @@ try:
 except ImportError:
     pass
 
+
 def noprint(text):
     pass
 
@@ -55,7 +58,6 @@ def find_all(path, serial_number,
     the callback for each Fibre node that is found.
     This function is non-blocking.
     """
-
     def did_discover_channel(channel):
         """
         Inits an object from a given channel and then calls did_discover_object_callback
@@ -66,8 +68,12 @@ def find_all(path, serial_number,
         try:
             logger.debug("Connecting to device on " + channel._name)
 
-            # Fetching the json crc to check cache
+            temp_dir = tempfile.gettempdir()
+
             cache_miss = True
+            json_crc16 = 0
+
+            # Fetching the json crc to check cache
             try:
                 json_crc16 = channel.remote_endpoint_operation(0, struct.pack("<I", 0xffffffff), True, 2)
                 json_crc16 = struct.unpack("<H", json_crc16)[0]
@@ -76,31 +82,56 @@ def find_all(path, serial_number,
                 logger.debug("Error fetching JSON CRC, falling back to downloading full JSON")
                 #logger.debug(traceback.format_exc())
 
-            #TODO check cache using json_crc16
-            # Hence set cache_miss = False
+            cache_path =  temp_dir + '/fibre_schema_cache_' + str(json_crc16)
 
+            try:
+                json_cache = open(cache_path, 'r+')
+                logger.debug("Found cache file with crc")
+                cache_miss = False
+            except:
+                logger.debug("Cache miss, there is no cache file")
+                cache_miss = True
+         
             if (cache_miss):
                 # Download the JSON data
                 try:
+                    logger.debug("Getting json schema from USB... this is slow...")
                     json_bytes = channel.remote_endpoint_read_buffer(0)
+                    json_cache = open(cache_path, 'w+')
+                    json_cache.write(json_bytes.decode("ascii"))
+                    logger.debug("saved json_bytes to file")
+
                 except (TimeoutError, ChannelBrokenException):
                     logger.debug("no response - probably incompatible")
                     return
-                json_crc16 = fibre.protocol.calc_crc16(fibre.protocol.PROTOCOL_VERSION, json_bytes)
+            else:
+                try:
+                    json_bytes = json_cache.read().encode("ascii")
+                    logger.debug("loaded json_bytes from " + cache_path)
+
+                except (TimeoutError, ChannelBrokenException):
+                    logger.debug("could not read cache file")
+                    return              
+            
+            json_crc16 = fibre.protocol.calc_crc16(fibre.protocol.PROTOCOL_VERSION, json_bytes)
 
             channel._interface_definition_crc = json_crc16
+            
             try:
                 json_string = json_bytes.decode("ascii")
             except UnicodeDecodeError:
                 logger.debug("device responded on endpoint 0 with something that is not ASCII")
                 return
+
             logger.debug("JSON: " + json_string.replace('{"name"', '\n{"name"'))
             logger.debug("JSON checksum: 0x{:02X} 0x{:02X}".format(json_crc16 & 0xff, (json_crc16 >> 8) & 0xff))
+
             try:
                 json_data = json.loads(json_string)
             except json.decoder.JSONDecodeError as error:
                 logger.debug("device responded on endpoint 0 with something that is not JSON: " + str(error))
                 return
+
             json_data = {"name": "fibre_node", "members": json_data}
             obj = fibre.remote_object.RemoteObject(json_data, None, channel, logger)
 
@@ -111,7 +142,10 @@ def find_all(path, serial_number,
             if serial_number != None and device_serial_number != serial_number:
                 logger.debug("Ignoring device with serial number {}".format(device_serial_number))
                 return
+            
             did_discover_object_callback(obj)
+
+
         except Exception:
             logger.debug("Unexpected exception after discovering channel: " + traceback.format_exc())
 
