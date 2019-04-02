@@ -7,6 +7,7 @@ import json
 import time
 import threading
 import traceback
+import struct
 import fibre.protocol
 import fibre.utils
 import fibre.remote_object
@@ -64,12 +65,24 @@ def find_all(path, serial_number,
         """
         try:
             logger.debug("Connecting to device on " + channel._name)
-            try:
-                json_bytes = channel.remote_endpoint_read_buffer(0)
-            except (TimeoutError, ChannelBrokenException):
-                logger.debug("no response - probably incompatible")
-                return
-            json_crc16 = fibre.protocol.calc_crc16(fibre.protocol.PROTOCOL_VERSION, json_bytes)
+
+            # Fetching the json crc to check cache
+            json_crc16 = channel.remote_endpoint_operation(0, struct.pack("<I", 0xffffffff), True, 2)
+            json_crc16 = struct.unpack("<H", json_crc16)[0]
+            logger.debug("Device JSON checksum: 0x{:02X} 0x{:02X}".format(json_crc16 & 0xff, (json_crc16 >> 8) & 0xff))
+
+            #TODO check cache using json_crc16
+            cache_miss = True
+
+            if (cache_miss):
+                # Download the JSON data
+                try:
+                    json_bytes = channel.remote_endpoint_read_buffer(0)
+                except (TimeoutError, ChannelBrokenException):
+                    logger.debug("no response - probably incompatible")
+                    return
+                json_crc16 = fibre.protocol.calc_crc16(fibre.protocol.PROTOCOL_VERSION, json_bytes)
+
             channel._interface_definition_crc = json_crc16
             try:
                 json_string = json_bytes.decode("ascii")
