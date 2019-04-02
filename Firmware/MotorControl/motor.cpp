@@ -281,6 +281,67 @@ bool Motor::measure_phase_inductance(float voltage_low, float voltage_high) {
     return true;
 }
 
+bool Motor::measure_pm_flux_linkage() {
+    // Cache old controller values
+    float cached_vel_gain = axis_->controller_.config_.vel_gain;
+    float cached_vel_integrator_gain = axis_->controller_.config_.vel_integrator_gain;
+    float cached_spin_up_target_vel = axis_->config_.lockin.vel;
+    float cached_spin_up_target_accel = axis_->config_.lockin.accel;
+
+    //
+    float measurement_target_vel = 400.0f;
+    float measurement_target_accel = 200.0f;
+
+    // Set sensible controller values for detection
+    axis_->controller_.config_.vel_gain = 0.1f;
+    axis_->controller_.config_.vel_integrator_gain = 0;
+    axis_->config_.lockin.vel = measurement_target_vel;
+    axis_->config_.lockin.accel = measurement_target_accel;
+
+    // Spin up and run motor for 1000 erads
+    axis_->config_.lockin.finish_distance = 1000;
+    axis_->config_.lockin.finish_on_distance = true;
+    axis_->run_lockin_spin();
+
+    // Coast
+    safety_critical_disarm_motor_pwm(axis_->motor_);
+
+    // Restore cached values to controller
+    axis_->controller_.config_.vel_gain = cached_vel_gain;
+    axis_->controller_.config_.vel_integrator_gain = cached_vel_integrator_gain;   
+    axis_->config_.lockin.vel = cached_spin_up_target_vel;  
+    axis_->config_.lockin.accel = cached_spin_up_target_accel;  
+    axis_->config_.lockin.finish_on_distance = false;
+
+    // Set up variables for calculation
+    float Id = 0;
+    float Iq = axis_->config_.lockin.current;
+    float V_squared = SQ(saved_steady_state_v_current_control_integral_d_) + SQ(saved_steady_state_v_current_control_integral_q_);
+    float Rs = config_.phase_resistance;
+    float Ld = config_.phase_inductance; // Wrong but close enough for now
+    float Lq = config_.phase_inductance; // Wrong but close enough for now
+    float omega = measurement_target_vel;
+
+    // Calculate flux linkage
+    //  Vq = Rs Iq + ω Ld Id + ω λm
+    //  Vd = Rs Id - ω Lq Iq   
+    //  V^2 = Vq^2 + Vd^2
+    //  V^2 = (Rs Iq + ω Ld Id + ω λ)^2 + (Rs Id - ω Lq Iq)^2
+    //  V^2 - (Rs Id - ω Lq Iq)^2 = (Rs Iq + ω Ld Id + ω λm)^2
+    //  sqrt[ V^2 - (Rs Id - ω Lq Iq)^2 ] = Rs Iq + ω Ld Id + ω λm
+    //  sqrt[ V^2 - (Rs Id - ω Lq Iq)^2 ] - Rs Iq - ω Ld Id / ω = λm
+    float lambda_m = (sqrt( V_squared - SQ(Rs * Id - omega * Lq * Iq)) - Rs * Iq - omega * Ld * Id) / omega;
+
+    // Check if value is reasonable, error if out of bounds
+    if(lambda_m < 0 || lambda_m > 1) {
+        return set_error(ERROR_PM_FLUX_LINKAGE_OUT_OF_RANGE), false;
+    }
+    
+    // Save if value is good
+    axis_->sensorless_estimator_.config_.pm_flux_linkage = lambda_m;
+
+    return true;
+}
 
 bool Motor::run_calibration() {
     float R_calib_max_voltage = config_.resistance_calib_max_voltage;
@@ -288,6 +349,8 @@ bool Motor::run_calibration() {
         if (!measure_phase_resistance(config_.calibration_current, R_calib_max_voltage))
             return false;
         if (!measure_phase_inductance(-R_calib_max_voltage, R_calib_max_voltage))
+            return false;
+        if (!measure_pm_flux_linkage())
             return false;
     } else if (config_.motor_type == MOTOR_TYPE_GIMBAL) {
         // no calibration needed

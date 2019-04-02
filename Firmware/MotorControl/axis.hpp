@@ -208,7 +208,10 @@ public:
     State_t requested_state_ = AXIS_STATE_STARTUP_SEQUENCE;
     State_t task_chain_[10] = { AXIS_STATE_UNDEFINED };
     State_t& current_state_ = task_chain_[0];
+
+    // Vars for timing in control loop   
     uint32_t loop_counter_ = 0;
+
     LockinState_t lockin_state_ = LOCKIN_STATE_INACTIVE;
 
     // watchdog

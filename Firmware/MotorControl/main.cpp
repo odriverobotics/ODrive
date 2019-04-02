@@ -21,6 +21,11 @@ SystemStats_t system_stats_ = { 0 };
 
 Axis *axes[AXIS_COUNT];
 
+// Added for environments where new is not defined
+#include <stdlib.h> // for malloc and free
+void* operator new(size_t size) { return malloc(size); }
+void operator delete(void* ptr) { free(ptr); }
+
 typedef Config<
     BoardConfig_t,
     Encoder::Config_t[AXIS_COUNT],

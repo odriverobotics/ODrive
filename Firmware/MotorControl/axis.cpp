@@ -178,6 +178,7 @@ bool Axis::watchdog_check() {
 }
 
 bool Axis::run_lockin_spin() {
+
     // Spiral up current for softer rotor lock-in
     lockin_state_ = LOCKIN_STATE_RAMP;
     float x = 0.0f;
@@ -231,8 +232,20 @@ bool Axis::run_lockin_spin() {
             phase = wrap_pm_pi(phase + vel * current_meas_period);
 
             if (!motor_.update(config_.lockin.current, phase, vel))
+            {
                 return false;
-            return !spin_done();
+            }
+
+            if(spin_done())
+            {
+                motor_.saved_steady_state_v_current_control_integral_d_ = motor_.current_control_.v_current_control_integral_d;
+                motor_.saved_steady_state_v_current_control_integral_q_ = motor_.current_control_.v_current_control_integral_q;
+                return false;  
+            }
+            else
+            {
+                return true;
+            }
         });
     }
 
