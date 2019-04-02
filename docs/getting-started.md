@@ -261,7 +261,7 @@ You can also directly control the current of the motor, which is proportional to
 
 
 ### Trajectory control
-Set `axis.controller.config.control_mode = CTRL_MODE_TRAJECTORY_CONTROL`.<br>
+While in position control mode, use the `move_to_pos` or `move_incremental` functions. See the **Usage** section for details<br>
 This mode lets you smoothly accelerate, coast, and decelerate the axis from one position to another. With raw position control, the controller simply tries to go to the setpoint as quickly as possible. Using a trajectory lets you tune the feedback gains more aggressively to reject disturbance, while keeping smooth motion.
 
 ![Taptraj](TrapTrajPosVel.PNG)<br>
@@ -291,8 +291,17 @@ Keep in mind that you must still set your safety limits as before.  I recommend 
 #### Usage
 Use the `move_to_pos` function to move to an absolute position:
 ```
-<odrv>.<axis>.controller.move_to_pos(<Float>)
+<odrv>.<axis>.controller.move_to_pos(your_absolute_pos)
 ```
+
+Use the `move_incremental` function to move to a relative position.
+To set the goal relative to the current actual position, use `from_goal_point = False`
+To set the goal relative to the previous destination, use `from_goal_point = True`
+```
+<odrv>.<axis>.controller.move_incremental(pos_increment, from_goal_point)
+```
+
+You can also execute a move with the [appropriate ascii command](ascii-protocol.md#motor-trajectory-command).
 
 ### Circular position control
 
@@ -321,6 +330,18 @@ Set `axis.controller.config.control_mode = CTRL_MODE_CURRENT_CONTROL`.<br>
 You can now control the current with `axis.controller.current_setpoint = 3` [A].
 
 *Note: There is no velocity limiting in current control mode. Make sure that you don't overrev the motor, or exceed the max speed for your encoder.*
+
+
+## Watchdog Timer
+Each axis has a configurable watchdog timer that can stop the motors if the
+control connection to the ODrive is interrupted.
+
+Each axis has a configurable watchdog timeout: `axis.config.watchdog_timeout`,
+measured in seconds. A value of `0` disables the watchdog functionality. Any value
+`> 0` will stop the motors if the watchdog has not been fed in the configured
+time interval. 
+
+The watchdog is fed using the `axis.watchdog_feed()` method of each axis. 
 
 ## What's next?
 You can now:
