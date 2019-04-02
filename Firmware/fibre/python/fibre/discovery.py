@@ -70,25 +70,34 @@ def find_all(path, serial_number,
 
             temp_dir = tempfile.gettempdir()
 
-            try:
-                json_cache = open(temp_dir + '/fibre_json_cache.txt', 'r+')
-            except:
-                json_cache = open(temp_dir + '/fibre_json_cache.txt', 'w+')            
+            cache_miss = True
+            json_crc16 = 0
 
             # Fetching the json crc to check cache
-            json_crc16 = channel.remote_endpoint_operation(0, struct.pack("<I", 0xffffffff), True, 2)
-            json_crc16 = struct.unpack("<H", json_crc16)[0]
-            logger.debug("Device JSON checksum: 0x{:02X} 0x{:02X}".format(json_crc16 & 0xff, (json_crc16 >> 8) & 0xff))
+            try:
+                json_crc16 = channel.remote_endpoint_operation(0, struct.pack("<I", 0xffffffff), True, 2)
+                json_crc16 = struct.unpack("<H", json_crc16)[0]
+                logger.debug("Device JSON checksum: 0x{:02X} 0x{:02X}".format(json_crc16 & 0xff, (json_crc16 >> 8) & 0xff))
+            except Exception as error:
+                logger.debug("Error fetching JSON CRC, falling back to downloading full JSON")
+                #logger.debug(traceback.format_exc())
 
-            #TODO check cache using json_crc16
-            cache_miss = True
+            cache_path =  temp_dir + '/fibre_schema_cache_' + str(json_crc16)
 
+            try:
+                json_cache = open(cache_path, 'r+')
+                logger.debug("Found cache file with crc")
+                cache_miss = False
+            except:
+                logger.debug("Cache miss, there is no cache file")
+                cache_miss = True
+         
             if (cache_miss):
                 # Download the JSON data
                 try:
+                    logger.debug("Getting json schema from USB... this is slow...")
                     json_bytes = channel.remote_endpoint_read_buffer(0)
-                    json_cache.close()
-                    json_cache = open(temp_dir + '/fibre_json_cache.txt', 'w+')
+                    json_cache = open(cache_path, 'w+')
                     json_cache.write(json_bytes.decode("ascii"))
                     logger.debug("saved json_bytes to file")
 
@@ -98,7 +107,7 @@ def find_all(path, serial_number,
             else:
                 try:
                     json_bytes = json_cache.read().encode("ascii")
-                    logger.debug("loaded json_bytes from " + temp_dir + "/fibre_json_cache.txt")
+                    logger.debug("loaded json_bytes from " + cache_path)
 
                 except (TimeoutError, ChannelBrokenException):
                     logger.debug("could not read cache file")
