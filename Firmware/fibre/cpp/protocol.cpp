@@ -140,15 +140,21 @@ void JSONDescriptorEndpoint::handle(const uint8_t* input, size_t input_length, S
         return;
     uint32_t offset = 0;
     read_le<uint32_t>(&offset, input);
-    NullStreamSink output_with_offset = NullStreamSink(offset, *output);
 
-    size_t id = 0;
-    write_string("[", &output_with_offset);
-    json_file_endpoint_.write_json(id, &output_with_offset);
-    id += decltype(json_file_endpoint_)::endpoint_count;
-    write_string(",", &output_with_offset);
-    application_endpoints_->write_json(id, &output_with_offset);
-    write_string("]", &output_with_offset);
+    // If the offset is special value 0xFFFFFFFF, send back the JSON crc instead
+    if (offset == 0xffffffff) {
+        default_readwrite_endpoint_handler(&json_crc_, nullptr, 0, output);
+    } else {
+        NullStreamSink output_with_offset = NullStreamSink(offset, *output);
+
+        size_t id = 0;
+        write_string("[", &output_with_offset);
+        json_file_endpoint_.write_json(id, &output_with_offset);
+        id += decltype(json_file_endpoint_)::endpoint_count;
+        write_string(",", &output_with_offset);
+        application_endpoints_->write_json(id, &output_with_offset);
+        write_string("]", &output_with_offset);
+    }
 }
 
 int BidirectionalPacketBasedChannel::process_packet(const uint8_t* buffer, size_t length) {

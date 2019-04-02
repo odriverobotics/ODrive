@@ -36,6 +36,8 @@ Example: `t 0 -20000`
 
 For general moving around of the axis, this is the recommended command.
 
+This command updates the watchdog timer for the motor. 
+
 #### Motor Position command
 For basic use where you send one setpoint at at a time, use the `q` command.
 If you have a realtime controller that is streaming setpoints and tracking a trajectory, use the `p` command.
@@ -64,6 +66,7 @@ Example: `p 0 -20000 0 0`
 
 Note that if you don't know what feed-forward is or what it's used for, simply omit it.
 
+This command updates the watchdog timer for the motor. 
 
 #### Motor Velocity command
 ```
@@ -77,6 +80,8 @@ v motor velocity current_ff
 Example: `v 0 1000 0`
 
 Note that if you don't know what feed-forward is or what it's used for, simply omit it.
+
+This command updates the watchdog timer for the motor. 
 
 #### Motor Current command
 ```

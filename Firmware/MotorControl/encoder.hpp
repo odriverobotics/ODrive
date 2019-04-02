@@ -31,7 +31,6 @@ public:
                                     // be determined by run_offset_calibration.
                                     // In this case the encoder will enter ready
                                     // state as soon as the index is found.
-        float idx_search_speed = 10.0f; // [rad/s electrical]
         bool zero_count_on_find_idx = true;
         int32_t cpr = (2048 * 4);   // Default resolution of CUI-AMT102 encoder,
         int32_t offset = 0;        // Offset between encoder count and rotor electrical phase
@@ -39,7 +38,9 @@ public:
         bool enable_phase_interpolation = true; // Use velocity to interpolate inside the count state
         float calib_range = 0.02f; // Accuracy required to pass encoder cpr check
         float bandwidth = 1000.0f;
-        bool ignore_illegal_hall_state = false;
+        bool find_idx_on_lockin_only = false; // Only be sensitive during lockin scan constant vel state
+        bool idx_search_unidirectional = false; // Only allow index search in known direction
+        bool ignore_illegal_hall_state = false; // dont error on bad states like 000 or 111
     };
 
     Encoder(const EncoderHardwareConfig_t& hw_config,
@@ -50,18 +51,21 @@ public:
     bool do_checks();
 
     void enc_index_cb();
+    void set_idx_subscribe(bool override_enable = false);
+    void update_pll_gains();
+    void check_pre_calibrated();
 
     void set_linear_count(int32_t count);
     void set_circular_count(int32_t count, bool update_offset);
     bool calib_enc_offset(float voltage_magnitude);
-    bool scan_for_enc_idx(float omega, float voltage_magnitude);
 
     bool run_index_search();
+    bool run_direction_find();
     bool run_offset_calibration();
     void sample_now();
     bool update();
 
-    void update_pll_gains();
+
 
     const EncoderHardwareConfig_t& hw_config_;
     Config_t& config_;
@@ -90,8 +94,8 @@ public:
     auto make_protocol_definitions() {
         return make_protocol_member_list(
             make_protocol_property("error", &error_),
-            make_protocol_ro_property("is_ready", &is_ready_),
-            make_protocol_ro_property("index_found", const_cast<bool*>(&index_found_)),
+            make_protocol_property("is_ready", &is_ready_),
+            make_protocol_property("index_found", const_cast<bool*>(&index_found_)),
             make_protocol_property("shadow_count", &shadow_count_),
             make_protocol_property("count_in_cpr", &count_in_cpr_),
             make_protocol_property("interpolation", &interpolation_),
@@ -104,9 +108,12 @@ public:
             // make_protocol_property("pll_ki", &pll_ki_),
             make_protocol_object("config",
                 make_protocol_property("mode", &config_.mode),
-                make_protocol_property("use_index", &config_.use_index),
-                make_protocol_property("pre_calibrated", &config_.pre_calibrated),
-                make_protocol_property("idx_search_speed", &config_.idx_search_speed),
+                make_protocol_property("use_index", &config_.use_index,
+                    [](void* ctx) { static_cast<Encoder*>(ctx)->set_idx_subscribe(); }, this),
+                make_protocol_property("find_idx_on_lockin_only", &config_.find_idx_on_lockin_only,
+                    [](void* ctx) { static_cast<Encoder*>(ctx)->set_idx_subscribe(); }, this),
+                make_protocol_property("pre_calibrated", &config_.pre_calibrated,
+                    [](void* ctx) { static_cast<Encoder*>(ctx)->check_pre_calibrated(); }, this),
                 make_protocol_property("zero_count_on_find_idx", &config_.zero_count_on_find_idx),
                 make_protocol_property("cpr", &config_.cpr),
                 make_protocol_property("offset", &config_.offset),
@@ -115,8 +122,10 @@ public:
                 make_protocol_property("bandwidth", &config_.bandwidth,
                     [](void* ctx) { static_cast<Encoder*>(ctx)->update_pll_gains(); }, this),
                 make_protocol_property("calib_range", &config_.calib_range),
+                make_protocol_property("idx_search_unidirectional", &config_.idx_search_unidirectional),
                 make_protocol_property("ignore_illegal_hall_state", &config_.ignore_illegal_hall_state)
-            )
+            ),
+            make_protocol_function("set_linear_count", *this, &Encoder::set_linear_count, "count")
         );
     }
 };
