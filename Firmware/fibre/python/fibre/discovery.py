@@ -67,12 +67,17 @@ def find_all(path, serial_number,
             logger.debug("Connecting to device on " + channel._name)
 
             # Fetching the json crc to check cache
-            json_crc16 = channel.remote_endpoint_operation(0, struct.pack("<I", 0xffffffff), True, 2)
-            json_crc16 = struct.unpack("<H", json_crc16)[0]
-            logger.debug("Device JSON checksum: 0x{:02X} 0x{:02X}".format(json_crc16 & 0xff, (json_crc16 >> 8) & 0xff))
+            cache_miss = True
+            try:
+                json_crc16 = channel.remote_endpoint_operation(0, struct.pack("<I", 0xffffffff), True, 2)
+                json_crc16 = struct.unpack("<H", json_crc16)[0]
+                logger.debug("Device JSON checksum: 0x{:02X} 0x{:02X}".format(json_crc16 & 0xff, (json_crc16 >> 8) & 0xff))
+            except Exception as error:
+                logger.debug("Error fetching JSON CRC, falling back to downloading full JSON")
+                #logger.debug(traceback.format_exc())
 
             #TODO check cache using json_crc16
-            cache_miss = True
+            # Hence set cache_miss = False
 
             if (cache_miss):
                 # Download the JSON data
