@@ -92,37 +92,41 @@ def find_all(path, serial_number,
                 # Download the JSON data
                 if(cache_miss == True):
                     try:
-                        logger.debug("Getting json schema from USB... this is slow...")
+                        logger.debug("Getting JSON schema from USB... this is slow...")
                         json_bytes = channel.remote_endpoint_read_buffer(0)
+                        try:
+                            json_string = json_bytes.decode("ascii")
+                        except UnicodeDecodeError:
+                            logger.debug("Device responded on endpoint 0 with something that is not ASCII")
+                            return  
                         json_cache = open(cache_path, 'w+')
-                        json_cache.write(json_bytes.decode("ascii"))
-                        logger.debug("saved json_bytes to file")
+                        json_cache.write(json_string)
+                        logger.debug("Saved JSON to cache file " + cache_path)
 
                     except (TimeoutError, ChannelBrokenException):
-                        logger.debug("no response - probably incompatible")
+                        logger.debug("No response - probably incompatible")
                         return
                 else:
                     try:
-                        json_bytes = json_cache.read().encode("ascii")
-                        logger.debug("loaded json_bytes from " + cache_path)
+                        json_string = json_cache.read()
+                        logger.debug("Loaded JSON from cache file " + cache_path)
 
                     except (TimeoutError, ChannelBrokenException):
-                        logger.debug("could not read cache file")
+                        logger.debug("Could not read cache file " + cache_path)
                         return     
 
             except Exception as error:
                 logger.debug("Error fetching JSON CRC, falling back to downloading full JSON")
                 logger.debug("Getting json schema from USB... this is slow...")
                 json_bytes = channel.remote_endpoint_read_buffer(0)
+                try:
+                    json_string = json_bytes.decode("ascii")
+                except UnicodeDecodeError:
+                    logger.debug("Device responded on endpoint 0 with something that is not ASCII")
+                    return  
                 json_crc16 = fibre.protocol.calc_crc16(fibre.protocol.PROTOCOL_VERSION, json_bytes)
 
             channel._interface_definition_crc = json_crc16
-            
-            try:
-                json_string = json_bytes.decode("ascii")
-            except UnicodeDecodeError:
-                logger.debug("device responded on endpoint 0 with something that is not ASCII")
-                return
 
             logger.debug("JSON: " + json_string.replace('{"name"', '\n{"name"'))
             logger.debug("JSON checksum: 0x{:02X} 0x{:02X}".format(json_crc16 & 0xff, (json_crc16 >> 8) & 0xff))
@@ -130,7 +134,7 @@ def find_all(path, serial_number,
             try:
                 json_data = json.loads(json_string)
             except json.decoder.JSONDecodeError as error:
-                logger.debug("device responded on endpoint 0 with something that is not JSON: " + str(error))
+                logger.debug("Device responded on endpoint 0 with something that is not JSON: " + str(error))
                 return
 
             json_data = {"name": "fibre_node", "members": json_data}
