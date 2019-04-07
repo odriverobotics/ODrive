@@ -76,9 +76,10 @@ To resolve this issue you can limit the M0 current to 40A. The lowest current at
 
 * `ERROR_MODULATION_MAGNITUDE = 0x0080`
 
-The bus voltage was insufficent to push the requested current through the motor. Reduce `motor.config.calibration_current` and/or `motor.config.current_lim`, for errors at calibration-time and closed loop control respectively.
+The bus voltage was insufficent to push the requested current through the motor.
+If you are getting this during motor calibration, make sure that `motor.config.resistance_calib_max_voltage` is no more than half your bus voltage.
 
-For gimbal motors, it is recommended to set the calibration_current and current_lim to half your bus voltage, or less.
+For gimbal motors, it is recommended to set the `motor.config.calibration_current` and `motor.config.current_lim` to half your bus voltage, or less.
 
 ## Common Encoder Errors
 
