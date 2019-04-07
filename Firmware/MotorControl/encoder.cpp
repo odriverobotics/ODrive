@@ -163,9 +163,7 @@ bool Encoder::run_direction_find() {
 // TODO: Do the scan with current, not voltage!
 bool Encoder::run_offset_calibration() {
     static const float start_lock_duration = 1.0f;
-    static const float scan_omega = 4.0f * M_PI;
-    static const float scan_distance = 16.0f * M_PI;
-    static const int num_steps = (int)(scan_distance / scan_omega * (float)current_meas_hz);
+    static const int num_steps = (int)(config_.calib_scan_distance / config_.calib_scan_omega * (float)current_meas_hz);
 
     // Require index found if enabled
     if (config_.use_index && !index_found_) {
@@ -202,7 +200,7 @@ bool Encoder::run_offset_calibration() {
     // scan forward
     i = 0;
     axis_->run_control_loop([&](){
-        float phase = wrap_pm_pi(scan_distance * (float)i / (float)num_steps - scan_distance / 2.0f);
+        float phase = wrap_pm_pi(config_.calib_scan_distance * (float)i / (float)num_steps - config_.calib_scan_distance / 2.0f);
         float v_alpha = voltage_magnitude * our_arm_cos_f32(phase);
         float v_beta = voltage_magnitude * our_arm_sin_f32(phase);
         if (!axis_->motor_.enqueue_voltage_timings(v_alpha, v_beta))
@@ -232,9 +230,9 @@ bool Encoder::run_offset_calibration() {
     //TODO avoid recomputing elec_rad_per_enc every time
     // Check CPR
     float elec_rad_per_enc = axis_->motor_.config_.pole_pairs * 2 * M_PI * (1.0f / (float)(config_.cpr));
-    float expected_encoder_delta = scan_distance / elec_rad_per_enc;
-    float actual_encoder_delta_abs = fabsf(shadow_count_-init_enc_val);
-    if(fabsf(actual_encoder_delta_abs - expected_encoder_delta)/expected_encoder_delta > config_.calib_range)
+    float expected_encoder_delta = config_.calib_scan_distance / elec_rad_per_enc;
+    calib_scan_response_ = fabsf(shadow_count_-init_enc_val);
+    if(fabsf(calib_scan_response_ - expected_encoder_delta)/expected_encoder_delta > config_.calib_range)
     {
         set_error(ERROR_CPR_OUT_OF_RANGE);
         return false;
@@ -243,7 +241,7 @@ bool Encoder::run_offset_calibration() {
     // scan backwards
     i = 0;
     axis_->run_control_loop([&](){
-        float phase = wrap_pm_pi(-scan_distance * (float)i / (float)num_steps + scan_distance / 2.0f);
+        float phase = wrap_pm_pi(-config_.calib_scan_distance * (float)i / (float)num_steps + config_.calib_scan_distance / 2.0f);
         float v_alpha = voltage_magnitude * our_arm_cos_f32(phase);
         float v_beta = voltage_magnitude * our_arm_sin_f32(phase);
         if (!axis_->motor_.enqueue_voltage_timings(v_alpha, v_beta))

@@ -37,6 +37,8 @@ public:
         float offset_float = 0.0f; // Sub-count phase alignment offset
         bool enable_phase_interpolation = true; // Use velocity to interpolate inside the count state
         float calib_range = 0.02f; // Accuracy required to pass encoder cpr check
+        float calib_scan_distance = 16.0f * M_PI; // rad electrical
+        float calib_scan_omega = 4.0f * M_PI; // rad/s electrical
         float bandwidth = 1000.0f;
         bool find_idx_on_lockin_only = false; // Only be sensitive during lockin scan constant vel state
         bool idx_search_unidirectional = false; // Only allow index search in known direction
@@ -83,6 +85,7 @@ public:
     float vel_estimate_ = 0.0f;  // [count/s]
     float pll_kp_ = 0.0f;   // [count/s / count]
     float pll_ki_ = 0.0f;   // [(count/s^2) / count]
+    float calib_scan_response_ = 0.0f; // debug report from offset calib
 
     int16_t tim_cnt_sample_ = 0; // 
     // Updated by low_level pwm_adc_cb
@@ -99,11 +102,12 @@ public:
             make_protocol_property("shadow_count", &shadow_count_),
             make_protocol_property("count_in_cpr", &count_in_cpr_),
             make_protocol_property("interpolation", &interpolation_),
-            make_protocol_property("phase", &phase_),
+            make_protocol_ro_property("phase", &phase_),
             make_protocol_property("pos_estimate", &pos_estimate_),
             make_protocol_property("pos_cpr", &pos_cpr_),
-            make_protocol_property("hall_state", &hall_state_),
+            make_protocol_ro_property("hall_state", &hall_state_),
             make_protocol_property("vel_estimate", &vel_estimate_),
+            make_protocol_ro_property("calib_scan_response", &calib_scan_response_),
             // make_protocol_property("pll_kp", &pll_kp_),
             // make_protocol_property("pll_ki", &pll_ki_),
             make_protocol_object("config",
@@ -122,6 +126,8 @@ public:
                 make_protocol_property("bandwidth", &config_.bandwidth,
                     [](void* ctx) { static_cast<Encoder*>(ctx)->update_pll_gains(); }, this),
                 make_protocol_property("calib_range", &config_.calib_range),
+                make_protocol_property("calib_scan_distance", &config_.calib_scan_distance),
+                make_protocol_property("calib_scan_omega", &config_.calib_scan_omega),
                 make_protocol_property("idx_search_unidirectional", &config_.idx_search_unidirectional),
                 make_protocol_property("ignore_illegal_hall_state", &config_.ignore_illegal_hall_state)
             ),

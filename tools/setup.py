@@ -91,11 +91,10 @@ if creating_package:
 if not creating_package:
   import platform
   if platform.system() == 'Linux':
-    import odrive.utils
     from fibre.utils import Logger
     try:
-      odrive.utils.setup_udev_rules(Logger())
-    except PermissionError:
+      odrive.version.setup_udev_rules(Logger())
+    except Exception:
       print("Warning: could not set up udev rules. Run `sudo odrivetool udev-setup` to try again.")
 
 try:
@@ -117,6 +116,7 @@ try:
       'requests', # Used to by DFU to load firmware files
       'IntelHex', # Used to by DFU to download firmware from github
       'matplotlib', # Required to run the liveplotter
+      'monotonic', # For compatibility with older python versions
       'pywin32 >= 222; platform_system == "Windows"' # Required for fancy terminal features on Windows
     ],
     package_data={'': ['version.txt']},
