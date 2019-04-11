@@ -80,7 +80,7 @@ void init_communication(void) {
     printf("hi!\r\n");
 
     // Start command handling thread
-    osThreadDef(task_cmd_parse, communication_task, osPriorityNormal, 0, 8000 /* in 32-bit words */); // TODO: fix stack issues
+    osThreadDef(task_cmd_parse, communication_task, RTOS_PRIO_COMM, 0, 8000 /* in 32-bit words */); // TODO: fix stack issues
     comm_thread = osThreadCreate(osThread(task_cmd_parse), NULL);
 
     while (!endpoint_list_valid)
@@ -230,7 +230,7 @@ void communication_task(void * ctx) {
     }*/
 
     for (;;) {
-        osDelay(1000); // nothing to do
+        osThreadSuspend(nullptr);
     }
 }
 

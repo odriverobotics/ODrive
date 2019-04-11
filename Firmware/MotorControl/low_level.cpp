@@ -303,6 +303,6 @@ static void analog_polling_thread(void *)
 
 void start_analog_thread()
 {
-    osThreadDef(thread_def, analog_polling_thread, osPriorityLow, 0, 4*512);
+    osThreadDef(thread_def, analog_polling_thread, RTOS_PRIO_ANALOG_IN, 0, 4*512);
     osThreadCreate(osThread(thread_def), NULL);
 }

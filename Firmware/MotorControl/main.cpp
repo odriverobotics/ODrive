@@ -194,7 +194,7 @@ int main(void) {
     // Init timer for FreeRTOS scheduler
 
     /* Init FreeRTOS resources (in freertos.cpp) */
-    freertos_init(&main_task);
+    freertos_init(&main_task, RTOS_PRIO_MAIN_TASK);
 
     /* Start scheduler */
     osKernelStart();
@@ -255,7 +255,7 @@ int main_task(void) {
     if (!usb.init(
         0x1209, 0x0D32, 1033, // VID, PID, LangID
         "ODrive Robotics", product_str, serial_number_str, "CDC Config", "CDC Interface", native_interface_str,
-        &composite_device
+        &composite_device, RTOS_PRIO_USB
     ))
         goto fail;
     if (!usb.enable_interrupts(NVIC_PRIO_USB))

@@ -87,7 +87,12 @@ void Motor::handle_timer_update() {
 
     // If the corresponding timer is counting up, we just sampled in SVM vector 0, i.e. real current
     // If we are counting down, we just sampled in SVM vector 7, with zero current
-    counting_down_ = timer_->htim.Instance->CR1 & TIM_CR1_DIR;
+    bool counting_down = timer_->htim.Instance->CR1 & TIM_CR1_DIR;
+    if (counting_down_ == counting_down) {
+        set_error(Motor::ERROR_TIMER_UPDATE_MISSED);
+        return;
+    }
+    counting_down_ = counting_down;
 
     bool should_have_updated_pwm = check_update_mode(pwm_update_mode_, counting_down_);
 
@@ -389,6 +394,15 @@ float Motor::effective_current_lim() {
     return current_lim;
 }
 
+void Motor::log_timing(TimingLog_t log_idx) {
+    //static const uint16_t clocks_per_cnt = (uint16_t)((float)TIM_1_8_CLOCK_HZ / (float)TIM_APB1_CLOCK_HZ);
+    uint16_t timing = timer_->htim.Instance->CNT;
+
+    if (log_idx < TIMING_LOG_NUM_SLOTS) {
+        timing_log_[log_idx] = timing;
+    }
+}
+
 //--------------------------------
 // Measurement and calibration
 //--------------------------------
@@ -491,7 +505,7 @@ bool Motor::measure_phase_resistance(float test_current, float max_voltage) {
         // Test voltage along phase A
         if (!enqueue_voltage_timings(test_voltage, 0.0f))
             return false; // error set inside enqueue_voltage_timings
-        //log_timing(TIMING_LOG_MEAS_R);
+        log_timing(TIMING_LOG_MEAS_R);
 
         return ++i < num_test_cycles;
     });
@@ -520,7 +534,7 @@ bool Motor::measure_phase_inductance(float voltage_low, float voltage_high) {
         // Test voltage along phase A
         if (!enqueue_voltage_timings(test_voltages[i], 0.0f))
             return false; // error set inside enqueue_voltage_timings
-        //log_timing(TIMING_LOG_MEAS_L);
+        log_timing(TIMING_LOG_MEAS_L);
 
         return ++t < (num_cycles << 1);
     });
@@ -584,7 +598,7 @@ bool Motor::enqueue_voltage_timings(float v_alpha, float v_beta) {
     float mod_beta = vfactor * v_beta;
     if (!enqueue_modulation_timings(mod_alpha, mod_beta))
         return false;
-    //log_timing(TIMING_LOG_FOC_VOLTAGE);
+    log_timing(TIMING_LOG_FOC_VOLTAGE);
     return true;
 }
 

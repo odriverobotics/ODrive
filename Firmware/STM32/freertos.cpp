@@ -137,10 +137,10 @@ void start_main_task(void* main_task) {
 
 
 /** @brief  FreeRTOS initialization */
-bool freertos_init(main_task_t main_task) {
+bool freertos_init(main_task_t main_task, osPriority task_priority) {
     /* Create the thread(s) */
     /* definition and creation of defaultTask */
-    osThreadDef(defaultTask, start_main_task, osPriorityNormal, 0, 256);
+    osThreadDef(defaultTask, start_main_task, task_priority, 0, 256);
     defaultTaskHandle = osThreadCreate(osThread(defaultTask), (void*)main_task); // TODO: technically it's not legal to cast a function pointer to a data pointer
 
     return true;

@@ -189,7 +189,7 @@ static inline bool board_init(Axis axes[AXIS_COUNT]) {
         SensorlessEstimator(axis_configs[0].sensorless_estimator_config),
         Controller(axis_configs[0].controller_config),
         TrapezoidalTrajectory(axis_configs[0].trap_config),
-        (osPriority)(osPriorityHigh + (osPriority)1), // thread_priority
+        RTOS_PRIO_AXIS0, // thread_priority
         axis_configs[0].axis_config
     );
     new (&axes[1]) Axis(
@@ -229,7 +229,7 @@ static inline bool board_init(Axis axes[AXIS_COUNT]) {
         SensorlessEstimator(axis_configs[1].sensorless_estimator_config),
         Controller(axis_configs[1].controller_config),
         TrapezoidalTrajectory(axis_configs[1].trap_config),
-        osPriorityHigh, // thread_priority
+        RTOS_PRIO_AXIS1, // thread_priority
         axis_configs[1].axis_config
     );
 

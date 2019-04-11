@@ -144,6 +144,7 @@ build{
         'ThirdParty/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_gpio.c',
         'ThirdParty/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_i2c.c',
         'ThirdParty/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_i2c_ex.c',
+        'ThirdParty/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_wwdg.c',
     },
     includes={
         'ThirdParty/STM32F4xx_HAL_Driver/Inc',

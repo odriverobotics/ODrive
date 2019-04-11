@@ -5,6 +5,8 @@
 #error "This file should not be included directly. Include odrive_main.h instead."
 #endif
 
+#include <stm32_system.h>
+
 class Axis {
 public:
     enum Error_t {
@@ -136,6 +138,10 @@ public:
     // @tparam T Must be a callable type that takes no arguments and returns a bool
     template<typename T>
     void run_control_loop(const T& update_handler) {
+        // ensure the token is taken so we have the full time quota for the
+        // first iteration
+        osSignalWait(M_SIGNAL_PH_CURRENT_MEAS, 0);
+
         while (requested_state_ == AXIS_STATE_UNDEFINED) {
             // Wait until the current measurement interrupt fires
             if (!wait_for_current_meas()) {

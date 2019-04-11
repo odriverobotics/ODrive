@@ -9,6 +9,7 @@
 #include <stm32_usart.hpp>
 #include <cmsis_os.h>
 #include <freertos_vars.h>
+#include <odrive_main.h>
 
 // FIXME: the stdlib doesn't know about CMSIS threads, so this is just a global variable
 // static thread_local uint32_t deadline_ms = 0;
@@ -57,7 +58,7 @@ bool UARTInterface::start_server() {
     // Start UART communication thread
     osThreadDef(server_thread_def,
             [](void* ctx){ if (ctx) ((UARTInterface*)ctx)->server_thread(); },
-            osPriorityNormal, 0, 1024 /* the ascii protocol needs considerable stack space */);
+            RTOS_PRIO_UART, 0, 1024 /* the ascii protocol needs considerable stack space */);
     uart_thread = osThreadCreate(osThread(server_thread_def), this);
 
     return false;

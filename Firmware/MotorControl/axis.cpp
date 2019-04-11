@@ -316,14 +316,22 @@ bool Axis::run_idle_loop() {
     // run_control_loop ignores missed modulation timing updates
     // if and only if we're in AXIS_STATE_IDLE
     safety_critical_disarm_motor_pwm(motor_);
-    run_control_loop([this](){
-        return true;
-    });
+    // the only valid reason to leave idle is an external request
+    while (requested_state_ == AXIS_STATE_UNDEFINED) {
+        run_control_loop([this](){
+            return true;
+        });
+    }
     return check_for_errors();
 }
 
 // Infinite loop that does calibration and enters main control loop as appropriate
 void Axis::run_state_machine_loop() {
+    while (!thread_id_valid_) {
+        // Wait until the main task has signalled the readiness of this task,
+        // otherwise the current measurement updates won't signal this thread.
+        osDelay(1);
+    }
 
     // Allocate the map for anti-cogging algorithm and initialize all values to 0.0f
     // TODO: Move this somewhere else

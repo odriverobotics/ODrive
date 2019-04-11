@@ -6,6 +6,6 @@
 typedef int (*main_task_t)();
 
 // TODO: use generic timer type
-bool freertos_init(main_task_t main_task);
+bool freertos_init(main_task_t main_task, osPriority task_priority);
 
 #endif //  __FREERTOS_HPP
