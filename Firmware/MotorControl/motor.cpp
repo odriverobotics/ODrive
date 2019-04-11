@@ -602,31 +602,17 @@ bool Motor::enqueue_voltage_timings(float v_alpha, float v_beta) {
     return true;
 }
 
-// We should probably make FOC Current call FOC Voltage to avoid duplication.
-bool Motor::FOC_voltage(float v_d, float v_q, float pwm_phase) {
-    float c = our_arm_cos_f32(pwm_phase);
-    float s = our_arm_sin_f32(pwm_phase);
-    float v_alpha = c*v_d - s*v_q;
-    float v_beta  = c*v_q + s*v_d;
-    // TODO: Ibus is not updated here, so the brake resistor will not work
-    return enqueue_voltage_timings(v_alpha, v_beta);
-}
 
-bool Motor::FOC_current(float Id_des, float Iq_des, float I_phase, float pwm_phase) {
+
+bool Motor::FOC(float Id_des, float Iq_des, float I_phase, float pwm_phase) {
+    float mod_to_V = (2.0f / 3.0f) * vbus_voltage;
+    float V_to_mod = 1.0f / mod_to_V;
+
     // Syntactic sugar
     CurrentControl_t& ictrl = current_control_;
 
     // For Reporting
     ictrl.Iq_setpoint = Iq_des;
-
-    // Check for current sense saturation
-    if (current_sense_saturation_) {
-        set_error(ERROR_CURRENT_SENSE_SATURATION);
-    }
-    if (!is_calibrated_) {
-        set_error(ERROR_NOT_CALIBRATED);
-        return false;
-    }
 
     // Clarke transform
     float Ialpha = I_alpha_beta_measured_[0];
@@ -644,22 +630,70 @@ bool Motor::FOC_current(float Id_des, float Iq_des, float I_phase, float pwm_pha
     float Ierr_d = Id_des - Id;
     float Ierr_q = Iq_des - Iq;
 
-    // TODO look into feed forward terms (esp omega, since PI pole maps to RL tau)
-    // Apply PI control
-    float Vd = ictrl.v_current_control_integral_d + Ierr_d * ictrl.p_gain;
-    float Vq = ictrl.v_current_control_integral_q + Ierr_q * ictrl.p_gain;
+    if (config_.motor_type == MOTOR_TYPE_HIGH_CURRENT) {
+        // Check for current sense saturation
+        if (current_sense_saturation_) {
+            set_error(ERROR_CURRENT_SENSE_SATURATION);
+        }
+        if (!is_calibrated_) { // if not calibrated, p_gain and i_gain are not configured
+            set_error(ERROR_NOT_CALIBRATED);
+            return false;
+        }
 
-    float mod_to_V = (2.0f / 3.0f) * vbus_voltage;
-    float V_to_mod = 1.0f / mod_to_V;
-    float mod_d = V_to_mod * Vd;
-    float mod_q = V_to_mod * Vq;
+        // TODO look into feed forward terms (esp omega, since PI pole maps to RL tau)
+        // Apply PI control
+        ictrl.Vd_setpoint = ictrl.v_current_control_integral_d + Ierr_d * ictrl.p_gain;
+        ictrl.Vq_setpoint = ictrl.v_current_control_integral_q + Ierr_q * ictrl.p_gain;
+
+    } else if (config_.motor_type == MOTOR_TYPE_GIMBAL) {
+        // dq-current setpoint reinterpreted as dq-voltage setpoint
+        ictrl.Vd_setpoint = Id_des;
+        ictrl.Vq_setpoint = Iq_des;
+
+    } else {
+        set_error(ERROR_NOT_IMPLEMENTED_MOTOR_TYPE);
+        return false;
+    }
+
+    float mod_d = V_to_mod * ictrl.Vd_setpoint;
+    float mod_q = V_to_mod * ictrl.Vq_setpoint;
+    bool is_mod_saturated = false;
 
     // Vector modulation saturation, lock integrator if saturated
     // TODO make maximum modulation configurable
     float mod_scalefactor = 0.80f * sqrt3_by_2 * 1.0f / sqrtf(mod_d * mod_d + mod_q * mod_q);
+    mod_scalefactor = std::min(mod_scalefactor, 1.0f);
     if (mod_scalefactor < 1.0f) {
         mod_d *= mod_scalefactor;
         mod_q *= mod_scalefactor;
+        is_mod_saturated = true;
+    }
+
+    // Estimate bus current and apply limit
+    float I_bus = mod_d * Id + mod_q * Iq;
+
+    /* TODO: apply I_bus limit
+    
+    float I_bus_delta = 0.0f;
+
+    if (I_bus > ictrl.Ibus_max_soft) {
+        I_bus_delta = ictrl.Ibus_max_soft - I_bus;
+        is_mod_saturated = true;
+    }
+    if (I_bus < ictrl.Ibus_min_soft) {
+        I_bus_delta = ictrl.Ibus_min_soft - I_bus;
+        is_mod_saturated = true;
+    }*/
+
+    if (I_bus < config_.I_bus_hard_min || I_bus > config_.I_bus_hard_max) {
+        set_error(ERROR_I_BUS_OUT_OF_RANGE);
+        return false;
+    }
+
+    ictrl.Ibus = I_bus;
+
+    // Voltage saturation
+    if (is_mod_saturated) {
         // TODO make decayfactor configurable
         ictrl.v_current_control_integral_d *= 0.99f;
         ictrl.v_current_control_integral_q *= 0.99f;
@@ -668,14 +702,15 @@ bool Motor::FOC_current(float Id_des, float Iq_des, float I_phase, float pwm_pha
         ictrl.v_current_control_integral_q += Ierr_q * (ictrl.i_gain * current_meas_period);
     }
 
-    // Compute estimated bus current
-    ictrl.Ibus = mod_d * Id + mod_q * Iq;
-
     // Inverse park transform
     float c_p = our_arm_cos_f32(pwm_phase);
     float s_p = our_arm_sin_f32(pwm_phase);
     float mod_alpha = c_p * mod_d - s_p * mod_q;
     float mod_beta  = c_p * mod_q + s_p * mod_d;
+
+    // Report final applied voltage in rotating frame
+    ictrl.final_v_d = mod_to_V * mod_d;
+    ictrl.final_v_q = mod_to_V * mod_q;
 
     // Report final applied voltage in stationary frame (for sensorles estimator)
     ictrl.final_v_alpha = mod_to_V * mod_alpha;
@@ -684,7 +719,7 @@ bool Motor::FOC_current(float Id_des, float Iq_des, float I_phase, float pwm_pha
     // Apply SVM
     if (!enqueue_modulation_timings(mod_alpha, mod_beta))
         return false; // error set inside enqueue_modulation_timings
-    //log_timing(TIMING_LOG_FOC_CURRENT);
+    log_timing(TIMING_LOG_FOC_CURRENT);
 
     return true;
 }
@@ -699,19 +734,5 @@ bool Motor::update(float current_setpoint, float phase, float phase_vel) {
 
     float pwm_phase = phase + 1.5f * current_meas_period * phase_vel;
 
-    // Execute current command
-    // TODO: move this into the mot
-    if (config_.motor_type == MOTOR_TYPE_HIGH_CURRENT) {
-        if(!FOC_current(0.0f, current_setpoint, phase, pwm_phase)){
-            return false;
-        }
-    } else if (config_.motor_type == MOTOR_TYPE_GIMBAL) {
-        //In gimbal motor mode, current is reinterptreted as voltage.
-        if(!FOC_voltage(0.0f, current_setpoint, pwm_phase))
-            return false;
-    } else {
-        set_error(ERROR_NOT_IMPLEMENTED_MOTOR_TYPE);
-        return false;
-    }
-    return true;
+    return FOC(0.0f, current_setpoint, phase, pwm_phase);
 }

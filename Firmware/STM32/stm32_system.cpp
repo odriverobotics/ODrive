@@ -1,15 +1,18 @@
 
+#include <inttypes.h>
+
 #include "stm32_system.h"
 #include "stm32f4xx_hal.h"
 #include "cmsis_os.h"
 
 #include "freertos_vars.h"
 
-#include "stm32_system.h"
-
-
 uint32_t _reboot_cookie __attribute__ ((section (".noinit")));
 extern char _estack; // provided by the linker script
+
+volatile uint32_t* tick_timer_cnt = nullptr;
+volatile uint64_t ticks_us = 0; // rolls over after ~600'000 years
+volatile uint16_t tick_timer_last_cnt = 0;
 
 // Gets called from the startup assembly code
 extern "C" void early_start_checks(void) {
@@ -55,29 +58,6 @@ extern "C" void early_start_checks(void) {
   }
 }
 
-#define TICK_TIMER_ARR  50000
-STM32_Timer_t* tick_timer_ = nullptr;
-
-uint64_t get_ticks_us() {
-    static volatile uint64_t tick_us = 0; // rolls over after ~600'000 years
-    static volatile uint16_t last_cnt = 0;
-
-    if (tick_timer_) {
-        uint32_t mask = cpu_enter_critical();
-        uint16_t new_cnt = tick_timer_->htim.Instance->CNT;
-        uint16_t delta = new_cnt - last_cnt;
-        tick_us += delta;
-        last_cnt = new_cnt;
-        cpu_exit_critical(mask);
-    }
-
-    return tick_us;
-}
-
-uint32_t get_ticks_ms() {
-    return  get_ticks_us() / 1000ULL;
-}
-
 extern "C" uint32_t HAL_GetTick(void) {
     return get_ticks_ms();
 }
@@ -94,8 +74,6 @@ bool init_monotonic_clock(STM32_Timer_t* tick_timer, uint8_t tick_timer_priority
         return false;
     }
 
-    tick_timer_ = tick_timer;
-
     uint32_t freq;
     if (!tick_timer->get_source_freq(&freq))
         return false;
@@ -109,9 +87,10 @@ bool init_monotonic_clock(STM32_Timer_t* tick_timer, uint8_t tick_timer_priority
     + ClockDivision = 0
     + Counter direction = Up
     */
-    if (!tick_timer->init(TICK_TIMER_ARR, STM32_Timer_t::UP, prescaler))
+    if (!tick_timer->init(TICK_TIMER_PERIOD - 1, STM32_Timer_t::UP, prescaler))
         return false;
-    if (!tick_timer->setup_pwm(1, nullptr, nullptr, true, true, TICK_TIMER_ARR >> 1)
+    if (!tick_timer->setup_pwm(1, nullptr, nullptr, true, true, TICK_TIMER_PERIOD >> 1)
+        || !tick_timer->set_freeze_on_dbg(true)
         || !tick_timer->on_cc_.set<void>([](void*, uint32_t, uint32_t) { tick_callback(nullptr); }, nullptr)
         || !tick_timer->on_update_.set<void>(tick_callback, nullptr)
         || !tick_timer->enable_cc_interrupt(tick_timer_priority)
@@ -120,6 +99,8 @@ bool init_monotonic_clock(STM32_Timer_t* tick_timer, uint8_t tick_timer_priority
 
         return false;
     }
+    tick_timer_last_cnt = tick_timer->htim.Instance->CNT;
+    tick_timer_cnt = &(tick_timer->htim.Instance->CNT);
 
     return true;
 }
@@ -195,6 +176,21 @@ bool system_init(void) {
     HAL_NVIC_SetPriority(SysTick_IRQn, TICK_INT_PRIORITY, 0);
 
     return system_clock_config();
+}
+
+/**
+ * @brief Dumps the state of all interrupts via printf.
+ */
+void dump_interrupts(bool show_enabled_only) {
+    printf("IRQn    prio    enabled\r\n");
+    for (uint32_t irqn = -14; irqn < 82; ++irqn) {
+        uint32_t prio = NVIC_GetPriority((IRQn_Type)irqn);
+        bool is_enabled = get_interrupt_enabled((IRQn_Type)irqn);
+        if (!is_enabled && show_enabled_only)
+            continue;
+        printf("%4" PRIu32 "    %4" PRIu32 "    %7s\r\n", irqn, prio, is_enabled ? "yes" : "no");
+        delay_us(100);
+    }
 }
 
 /**
@@ -304,6 +300,17 @@ void DebugMon_Handler(void) {
 /** @brief Entrypoint for System tick timer. */
 void SysTick_Handler(void) {
     osSystickHandler();
+}
+
+__attribute__((naked))
+void WWDG_IRQHandler(void) {
+    __asm( // TODO: not sure if this is a valid action in this situation
+        " tst lr, #4     \n\t"
+        " ite eq         \n\t"
+        " mrseq r0, msp  \n\t"
+        " mrsne r0, psp  \n\t"
+        " b get_regs     \n\t"
+    );
 }
 
 }

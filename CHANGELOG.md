@@ -23,6 +23,8 @@ Please add a note of your changes below this heading if you make a Pull Request.
 * Define interrupt priorities in a central place
 * Change TIM14 monotonic clock from using a maximum priority interrupt every 1ms to a minimum priority interrupt every 25ms
 * Disable ADC interrupts and instead read values directly in the timer update ISR (20% CPU per timer for the ISRs @ 8kHz update frequency).
+* Ibus is always updated, also for gimbal motors
+* Calibration not needed for gimbal motors
 
 ### Changed
 * Encoder index search now based on the new lock-in drive feature

@@ -14,6 +14,13 @@ void _Error_Handler(char *, int);
 
 extern uint32_t _reboot_cookie;
 
+// Monotonic clock variables
+#define TICK_TIMER_PERIOD_BITS  16
+#define TICK_TIMER_PERIOD (1 << TICK_TIMER_PERIOD_BITS) // must be a power of 2
+extern volatile uint32_t* tick_timer_cnt;
+extern volatile uint64_t ticks_us;
+extern volatile uint16_t tick_timer_last_cnt;
+
 /**
  * @brief Initializes low level system features such as clocks, fault handlers
  * and memories.
@@ -38,7 +45,22 @@ static inline void cpu_exit_critical(uint32_t priority_mask) {
     __set_PRIMASK(priority_mask);
 }
 
-uint64_t get_ticks_us();
+static inline uint64_t get_ticks_us() {
+    if (tick_timer_cnt) {
+        uint32_t mask = cpu_enter_critical();
+        uint16_t new_cnt = *tick_timer_cnt;
+        uint16_t delta = (new_cnt - tick_timer_last_cnt) & (TICK_TIMER_PERIOD - 1);
+        ticks_us += delta;
+        tick_timer_last_cnt = new_cnt;
+        cpu_exit_critical(mask);
+    }
+
+    return ticks_us;
+}
+
+static inline uint32_t get_ticks_ms() {
+    return get_ticks_us() / 1000ULL;
+}
 
 /** @brief: Returns number of microseconds since system startup */
 static inline uint32_t micros(void) {
@@ -58,6 +80,15 @@ static inline void enable_interrupt(IRQn_Type irqn, uint8_t priority) {
     NVIC_SetPriority(irqn, priority >> __NVIC_PRIO_BITS);
     HAL_NVIC_EnableIRQ(irqn);
 }
+
+static inline bool get_interrupt_enabled(IRQn_Type IRQn) {
+    if (IRQn < 0)
+        return true;
+    else
+        return NVIC->ISER[(((uint32_t)(int32_t)IRQn) >> 5UL)] & (uint32_t)(1UL << (((uint32_t)(int32_t)IRQn) & 0x1FUL));
+}
+
+void dump_interrupts(bool show_enabled_only);
 
 #ifdef __cplusplus
 } // extern "C"
