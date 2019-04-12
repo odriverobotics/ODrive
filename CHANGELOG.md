@@ -7,6 +7,9 @@ Please add a note of your changes below this heading if you make a Pull Request.
 * Configurable encoder offset calibration distance and speed:`calib_scan_distance` and `calib_scan_omega`
 * Encoder offset calibration debug variable `calib_scan_response`
 
+### Fixed
+* Encoder index interrupts now disabled when not searching
+
 # Releases
 ## [0.4.8] - 2019-02-25
 ### Added
