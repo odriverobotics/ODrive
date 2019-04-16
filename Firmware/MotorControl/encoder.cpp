@@ -60,12 +60,10 @@ void Encoder::enc_index_cb() {
 }
 
 void Encoder::set_idx_subscribe(bool override_enable) {
-    if (override_enable || (config_.use_index && !config_.find_idx_on_lockin_only)) {
+    if (config_.use_index && (override_enable || !config_.find_idx_on_lockin_only)) {
         GPIO_subscribe(hw_config_.index_port, hw_config_.index_pin, GPIO_PULLDOWN,
                 enc_index_cb_wrapper, this);
-    }
-
-    if (!config_.use_index || config_.find_idx_on_lockin_only) {
+    } else if (!config_.use_index || config_.find_idx_on_lockin_only) {
         GPIO_unsubscribe(hw_config_.index_port, hw_config_.index_pin);
     }
 }

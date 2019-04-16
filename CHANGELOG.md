@@ -6,6 +6,7 @@ Please add a note of your changes below this heading if you make a Pull Request.
 * `encoder.set_linear_count(count)` function.
 * Configurable encoder offset calibration distance and speed:`calib_scan_distance` and `calib_scan_omega`
 * Encoder offset calibration debug variable `calib_scan_response`
+* Script to enable using a hall signal as index edge.
 
 # Releases
 ## [0.4.8] - 2019-02-25
