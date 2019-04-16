@@ -11,7 +11,7 @@ odrv = odrive.find_any()
 axes = [odrv.axis0];
 
 flip_index_search_direction = False
-save_and_reboot = False
+save_and_reboot = True
 
 print("Setting config...")
 # Settings to protect battery
