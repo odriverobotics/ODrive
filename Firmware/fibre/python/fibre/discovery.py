@@ -126,8 +126,12 @@ def find_any(path="usb", serial_number=None,
     find_all(path, serial_number, did_discover_object, done_signal, channel_termination_token, logger)
     try:
         done_signal.wait(timeout=timeout)
+    except TimeoutError:
+        if not find_multiple:
+            return None
     finally:
         done_signal.set() # terminate find_all
+
     if find_multiple:
         return result
     else:
