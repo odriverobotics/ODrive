@@ -112,18 +112,23 @@ def find_all(path, serial_number,
 
 def find_any(path="usb", serial_number=None,
         search_cancellation_token=None, channel_termination_token=None,
-        timeout=None, logger=Logger(verbose=False)):
+        timeout=None, logger=Logger(verbose=False), find_multiple=False):
     """
     Blocks until the first matching Fibre node is connected and then returns that node
     """
-    result = [ None ]
+    result = []
     done_signal = Event(search_cancellation_token)
     def did_discover_object(obj):
-        result[0] = obj
-        done_signal.set()
+        result.append(obj)
+        if not find_multiple:
+            done_signal.set()
+
     find_all(path, serial_number, did_discover_object, done_signal, channel_termination_token, logger)
     try:
         done_signal.wait(timeout=timeout)
     finally:
         done_signal.set() # terminate find_all
-    return result[0]
+    if find_multiple:
+        return result
+    else:
+        return result[0]
