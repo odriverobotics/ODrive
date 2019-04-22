@@ -66,21 +66,21 @@
     [..]
       (+) Transmit in master mode an amount of data in non blocking mode using HAL_I2C_Master_Transmit_IT()
       (+) At transmission end of transfer HAL_I2C_MasterTxCpltCallback is executed and user can
-           add his own code by customization of function pointer HAL_I2C_MasterTxCpltCallback
+           add their own code by customization of function pointer HAL_I2C_MasterTxCpltCallback
       (+) Receive in master mode an amount of data in non blocking mode using HAL_I2C_Master_Receive_IT()
       (+) At reception end of transfer HAL_I2C_MasterRxCpltCallback is executed and user can
-           add his own code by customization of function pointer HAL_I2C_MasterRxCpltCallback
+           add their own code by customization of function pointer HAL_I2C_MasterRxCpltCallback
       (+) Transmit in slave mode an amount of data in non blocking mode using HAL_I2C_Slave_Transmit_IT()
       (+) At transmission end of transfer HAL_I2C_SlaveTxCpltCallback is executed and user can
-           add his own code by customization of function pointer HAL_I2C_SlaveTxCpltCallback
+           add their own code by customization of function pointer HAL_I2C_SlaveTxCpltCallback
       (+) Receive in slave mode an amount of data in non blocking mode using HAL_I2C_Slave_Receive_IT()
       (+) At reception end of transfer HAL_I2C_SlaveRxCpltCallback is executed and user can
-           add his own code by customization of function pointer HAL_I2C_SlaveRxCpltCallback
+           add their own code by customization of function pointer HAL_I2C_SlaveRxCpltCallback
       (+) In case of transfer Error, HAL_I2C_ErrorCallback() function is executed and user can
-           add his own code by customization of function pointer HAL_I2C_ErrorCallback
+           add their own code by customization of function pointer HAL_I2C_ErrorCallback
       (+) Abort a master I2C process communication with Interrupt using HAL_I2C_Master_Abort_IT()
       (+) End of abort process, HAL_I2C_AbortCpltCallback() is executed and user can
-           add his own code by customization of function pointer HAL_I2C_AbortCpltCallback()
+           add their own code by customization of function pointer HAL_I2C_AbortCpltCallback()
 
     *** Interrupt mode IO sequential operation ***
     ==============================================
@@ -103,29 +103,29 @@
       (+) Differents sequential I2C interfaces are listed below:
       (++) Sequential transmit in master I2C mode an amount of data in non-blocking mode using HAL_I2C_Master_Sequential_Transmit_IT()
       (+++) At transmission end of current frame transfer, HAL_I2C_MasterTxCpltCallback() is executed and user can
-           add his own code by customization of function pointer HAL_I2C_MasterTxCpltCallback()
+           add their own code by customization of function pointer HAL_I2C_MasterTxCpltCallback()
       (++) Sequential receive in master I2C mode an amount of data in non-blocking mode using HAL_I2C_Master_Sequential_Receive_IT()
       (+++) At reception end of current frame transfer, HAL_I2C_MasterRxCpltCallback() is executed and user can
-           add his own code by customization of function pointer HAL_I2C_MasterRxCpltCallback()
+           add their own code by customization of function pointer HAL_I2C_MasterRxCpltCallback()
       (++) Abort a master I2C process communication with Interrupt using HAL_I2C_Master_Abort_IT()
       (+++) End of abort process, HAL_I2C_AbortCpltCallback() is executed and user can
-           add his own code by customization of function pointer HAL_I2C_AbortCpltCallback()
+           add their own code by customization of function pointer HAL_I2C_AbortCpltCallback()
       (++) Enable/disable the Address listen mode in slave I2C mode using HAL_I2C_EnableListen_IT() HAL_I2C_DisableListen_IT()
       (+++) When address slave I2C match, HAL_I2C_AddrCallback() is executed and user can
-           add his own code to check the Address Match Code and the transmission direction request by master (Write/Read).
+           add their own code to check the Address Match Code and the transmission direction request by master (Write/Read).
       (+++) At Listen mode end HAL_I2C_ListenCpltCallback() is executed and user can
-           add his own code by customization of function pointer HAL_I2C_ListenCpltCallback()
+           add their own code by customization of function pointer HAL_I2C_ListenCpltCallback()
       (++) Sequential transmit in slave I2C mode an amount of data in non-blocking mode using HAL_I2C_Slave_Sequential_Transmit_IT()
       (+++) At transmission end of current frame transfer, HAL_I2C_SlaveTxCpltCallback() is executed and user can
-           add his own code by customization of function pointer HAL_I2C_SlaveTxCpltCallback()
+           add their own code by customization of function pointer HAL_I2C_SlaveTxCpltCallback()
       (++) Sequential receive in slave I2C mode an amount of data in non-blocking mode using HAL_I2C_Slave_Sequential_Receive_IT()
       (+++) At reception end of current frame transfer, HAL_I2C_SlaveRxCpltCallback() is executed and user can
-           add his own code by customization of function pointer HAL_I2C_SlaveRxCpltCallback()
+           add their own code by customization of function pointer HAL_I2C_SlaveRxCpltCallback()
       (++) In case of transfer Error, HAL_I2C_ErrorCallback() function is executed and user can
-           add his own code by customization of function pointer HAL_I2C_ErrorCallback()
+           add their own code by customization of function pointer HAL_I2C_ErrorCallback()
       (++) Abort a master I2C process communication with Interrupt using HAL_I2C_Master_Abort_IT()
       (++) End of abort process, HAL_I2C_AbortCpltCallback() is executed and user can
-           add his own code by customization of function pointer HAL_I2C_AbortCpltCallback()
+           add their own code by customization of function pointer HAL_I2C_AbortCpltCallback()
 
     *** Interrupt mode IO MEM operation ***
     =======================================
@@ -133,13 +133,13 @@
       (+) Write an amount of data in no-blocking mode with Interrupt to a specific memory address using
           HAL_I2C_Mem_Write_IT()
       (+) At MEM end of write transfer HAL_I2C_MemTxCpltCallback is executed and user can
-           add his own code by customization of function pointer HAL_I2C_MemTxCpltCallback
+           add their own code by customization of function pointer HAL_I2C_MemTxCpltCallback
       (+) Read an amount of data in no-blocking mode with Interrupt from a specific memory address using
           HAL_I2C_Mem_Read_IT()
       (+) At MEM end of read transfer HAL_I2C_MemRxCpltCallback is executed and user can
-           add his own code by customization of function pointer HAL_I2C_MemRxCpltCallback
+           add their own code by customization of function pointer HAL_I2C_MemRxCpltCallback
       (+) In case of transfer Error, HAL_I2C_ErrorCallback() function is executed and user can
-           add his own code by customization of function pointer HAL_I2C_ErrorCallback
+           add their own code by customization of function pointer HAL_I2C_ErrorCallback
 
     *** DMA mode IO operation ***
     ==============================
@@ -147,24 +147,24 @@
       (+) Transmit in master mode an amount of data in non blocking mode (DMA) using
           HAL_I2C_Master_Transmit_DMA()
       (+) At transmission end of transfer HAL_I2C_MasterTxCpltCallback is executed and user can
-           add his own code by customization of function pointer HAL_I2C_MasterTxCpltCallback
+           add their own code by customization of function pointer HAL_I2C_MasterTxCpltCallback
       (+) Receive in master mode an amount of data in non blocking mode (DMA) using
           HAL_I2C_Master_Receive_DMA()
       (+) At reception end of transfer HAL_I2C_MasterRxCpltCallback is executed and user can
-           add his own code by customization of function pointer HAL_I2C_MasterRxCpltCallback
+           add their own code by customization of function pointer HAL_I2C_MasterRxCpltCallback
       (+) Transmit in slave mode an amount of data in non blocking mode (DMA) using
           HAL_I2C_Slave_Transmit_DMA()
       (+) At transmission end of transfer HAL_I2C_SlaveTxCpltCallback is executed and user can
-           add his own code by customization of function pointer HAL_I2C_SlaveTxCpltCallback
+           add their own code by customization of function pointer HAL_I2C_SlaveTxCpltCallback
       (+) Receive in slave mode an amount of data in non blocking mode (DMA) using
           HAL_I2C_Slave_Receive_DMA()
       (+) At reception end of transfer HAL_I2C_SlaveRxCpltCallback is executed and user can
-           add his own code by customization of function pointer HAL_I2C_SlaveRxCpltCallback
+           add their own code by customization of function pointer HAL_I2C_SlaveRxCpltCallback
       (+) In case of transfer Error, HAL_I2C_ErrorCallback() function is executed and user can
-           add his own code by customization of function pointer HAL_I2C_ErrorCallback
+           add their own code by customization of function pointer HAL_I2C_ErrorCallback
       (+) Abort a master I2C process communication with Interrupt using HAL_I2C_Master_Abort_IT()
       (+) End of abort process, HAL_I2C_AbortCpltCallback() is executed and user can
-           add his own code by customization of function pointer HAL_I2C_AbortCpltCallback()
+           add their own code by customization of function pointer HAL_I2C_AbortCpltCallback()
 
     *** DMA mode IO MEM operation ***
     =================================
@@ -172,13 +172,13 @@
       (+) Write an amount of data in no-blocking mode with DMA to a specific memory address using
           HAL_I2C_Mem_Write_DMA()
       (+) At MEM end of write transfer HAL_I2C_MemTxCpltCallback is executed and user can
-           add his own code by customization of function pointer HAL_I2C_MemTxCpltCallback
+           add their own code by customization of function pointer HAL_I2C_MemTxCpltCallback
       (+) Read an amount of data in no-blocking mode with DMA from a specific memory address using
           HAL_I2C_Mem_Read_DMA()
       (+) At MEM end of read transfer HAL_I2C_MemRxCpltCallback is executed and user can
-           add his own code by customization of function pointer HAL_I2C_MemRxCpltCallback
+           add their own code by customization of function pointer HAL_I2C_MemRxCpltCallback
       (+) In case of transfer Error, HAL_I2C_ErrorCallback() function is executed and user can
-           add his own code by customization of function pointer HAL_I2C_ErrorCallback
+           add their own code by customization of function pointer HAL_I2C_ErrorCallback
 
 
      *** I2C HAL driver macros list ***

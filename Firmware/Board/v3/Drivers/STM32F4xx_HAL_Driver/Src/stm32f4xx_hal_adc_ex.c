@@ -43,7 +43,7 @@
      [..]    
        (+) Start the ADC peripheral using HAL_ADCEx_InjectedStart() 
        (+) Wait for end of conversion using HAL_ADC_PollForConversion(), at this stage
-           user can specify the value of timeout according to his end application      
+           user can specify the value of timeout according to their end application      
        (+) To read the ADC converted values, use the HAL_ADCEx_InjectedGetValue() function.
        (+) Stop the ADC peripheral using HAL_ADCEx_InjectedStop()
   
@@ -53,9 +53,9 @@
        (+) Start the ADC peripheral using HAL_ADCEx_InjectedStart_IT() 
        (+) Use HAL_ADC_IRQHandler() called under ADC_IRQHandler() Interrupt subroutine
        (+) At ADC end of conversion HAL_ADCEx_InjectedConvCpltCallback() function is executed and user can 
-            add his own code by customization of function pointer HAL_ADCEx_InjectedConvCpltCallback 
+            add their own code by customization of function pointer HAL_ADCEx_InjectedConvCpltCallback 
        (+) In case of ADC Error, HAL_ADCEx_InjectedErrorCallback() function is executed and user can 
-            add his own code by customization of function pointer HAL_ADCEx_InjectedErrorCallback
+            add their own code by customization of function pointer HAL_ADCEx_InjectedErrorCallback
        (+) Stop the ADC peripheral using HAL_ADCEx_InjectedStop_IT()
        
             
@@ -65,9 +65,9 @@
        (+) Start the ADC peripheral using HAL_ADCEx_InjectedStart_DMA(), at this stage the user specify the length 
            of data to be transferred at each end of conversion 
        (+) At The end of data transfer ba HAL_ADCEx_InjectedConvCpltCallback() function is executed and user can 
-            add his own code by customization of function pointer HAL_ADCEx_InjectedConvCpltCallback 
+            add their own code by customization of function pointer HAL_ADCEx_InjectedConvCpltCallback 
        (+) In case of transfer Error, HAL_ADCEx_InjectedErrorCallback() function is executed and user can 
-            add his own code by customization of function pointer HAL_ADCEx_InjectedErrorCallback
+            add their own code by customization of function pointer HAL_ADCEx_InjectedErrorCallback
         (+) Stop the ADC peripheral using HAL_ADCEx_InjectedStop_DMA()
         
      *** Multi mode ADCs Regular channels configuration ***

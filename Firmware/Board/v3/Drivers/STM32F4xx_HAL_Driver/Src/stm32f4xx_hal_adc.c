@@ -89,7 +89,7 @@
      [..]    
        (+) Start the ADC peripheral using HAL_ADC_Start() 
        (+) Wait for end of conversion using HAL_ADC_PollForConversion(), at this stage
-           user can specify the value of timeout according to his end application      
+           user can specify the value of timeout according to their end application      
        (+) To read the ADC converted values, use the HAL_ADC_GetValue() function.
        (+) Stop the ADC peripheral using HAL_ADC_Stop()
        
@@ -99,9 +99,9 @@
        (+) Start the ADC peripheral using HAL_ADC_Start_IT() 
        (+) Use HAL_ADC_IRQHandler() called under ADC_IRQHandler() Interrupt subroutine
        (+) At ADC end of conversion HAL_ADC_ConvCpltCallback() function is executed and user can 
-           add his own code by customization of function pointer HAL_ADC_ConvCpltCallback 
+           add their own code by customization of function pointer HAL_ADC_ConvCpltCallback 
        (+) In case of ADC Error, HAL_ADC_ErrorCallback() function is executed and user can 
-           add his own code by customization of function pointer HAL_ADC_ErrorCallback
+           add their own code by customization of function pointer HAL_ADC_ErrorCallback
        (+) Stop the ADC peripheral using HAL_ADC_Stop_IT()     
 
      *** DMA mode IO operation ***    
@@ -110,9 +110,9 @@
        (+) Start the ADC peripheral using HAL_ADC_Start_DMA(), at this stage the user specify the length 
            of data to be transferred at each end of conversion 
        (+) At The end of data transfer by HAL_ADC_ConvCpltCallback() function is executed and user can 
-           add his own code by customization of function pointer HAL_ADC_ConvCpltCallback 
+           add their own code by customization of function pointer HAL_ADC_ConvCpltCallback 
        (+) In case of transfer Error, HAL_ADC_ErrorCallback() function is executed and user can 
-           add his own code by customization of function pointer HAL_ADC_ErrorCallback
+           add their own code by customization of function pointer HAL_ADC_ErrorCallback
        (+) Stop the ADC peripheral using HAL_ADC_Stop_DMA()
                     
      *** ADC HAL driver macros list ***

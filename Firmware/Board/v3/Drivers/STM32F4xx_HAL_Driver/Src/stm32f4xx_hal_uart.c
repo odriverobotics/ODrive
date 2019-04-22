@@ -78,28 +78,28 @@
      [..]    
        (+) Send an amount of data in non blocking mode using HAL_UART_Transmit_IT() 
        (+) At transmission end of transfer HAL_UART_TxCpltCallback is executed and user can 
-            add his own code by customization of function pointer HAL_UART_TxCpltCallback
+            add their own code by customization of function pointer HAL_UART_TxCpltCallback
        (+) Receive an amount of data in non blocking mode using HAL_UART_Receive_IT() 
        (+) At reception end of transfer HAL_UART_RxCpltCallback is executed and user can 
-            add his own code by customization of function pointer HAL_UART_RxCpltCallback
+            add their own code by customization of function pointer HAL_UART_RxCpltCallback
        (+) In case of transfer Error, HAL_UART_ErrorCallback() function is executed and user can 
-            add his own code by customization of function pointer HAL_UART_ErrorCallback
+            add their own code by customization of function pointer HAL_UART_ErrorCallback
 
      *** DMA mode IO operation ***    
      ==============================
      [..] 
        (+) Send an amount of data in non blocking mode (DMA) using HAL_UART_Transmit_DMA() 
        (+) At transmission end of half transfer HAL_UART_TxHalfCpltCallback is executed and user can 
-            add his own code by customization of function pointer HAL_UART_TxHalfCpltCallback 
+            add their own code by customization of function pointer HAL_UART_TxHalfCpltCallback 
        (+) At transmission end of transfer HAL_UART_TxCpltCallback is executed and user can 
-            add his own code by customization of function pointer HAL_UART_TxCpltCallback
+            add their own code by customization of function pointer HAL_UART_TxCpltCallback
        (+) Receive an amount of data in non blocking mode (DMA) using HAL_UART_Receive_DMA() 
        (+) At reception end of half transfer HAL_UART_RxHalfCpltCallback is executed and user can 
-            add his own code by customization of function pointer HAL_UART_RxHalfCpltCallback 
+            add their own code by customization of function pointer HAL_UART_RxHalfCpltCallback 
        (+) At reception end of transfer HAL_UART_RxCpltCallback is executed and user can 
-            add his own code by customization of function pointer HAL_UART_RxCpltCallback
+            add their own code by customization of function pointer HAL_UART_RxCpltCallback
        (+) In case of transfer Error, HAL_UART_ErrorCallback() function is executed and user can 
-            add his own code by customization of function pointer HAL_UART_ErrorCallback
+            add their own code by customization of function pointer HAL_UART_ErrorCallback
        (+) Pause the DMA Transfer using HAL_UART_DMAPause()      
        (+) Resume the DMA Transfer using HAL_UART_DMAResume()  
        (+) Stop the DMA Transfer using HAL_UART_DMAStop()      

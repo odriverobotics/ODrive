@@ -34,7 +34,7 @@
           (+) Use HAL_DMA_Start() to start DMA transfer after the configuration of Source 
               address and destination address and the Length of data to be transferred.
           (+) Use HAL_DMA_PollForTransfer() to poll for the end of current transfer, in this  
-              case a fixed Timeout can be configured by User depending from his application.
+              case a fixed Timeout can be configured by User depending from their application.
           (+) Use HAL_DMA_Abort() function to abort the current transfer.
 
      *** Interrupt mode IO operation ***
@@ -47,7 +47,7 @@
               case the DMA interrupt is configured 
           (+) Use HAL_DMA_IRQHandler() called under DMA_IRQHandler() Interrupt subroutine
           (+) At the end of data transfer HAL_DMA_IRQHandler() function is executed and user can 
-              add his own function by customization of function pointer XferCpltCallback and 
+              add their own function by customization of function pointer XferCpltCallback and 
               XferErrorCallback (i.e a member of DMA handle structure).
     [..]
      (#) Use HAL_DMA_GetState() function to return the DMA state and HAL_DMA_GetError() in case of error 

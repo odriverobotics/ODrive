@@ -1543,7 +1543,7 @@ HAL_StatusTypeDef HAL_TIMEx_ConfigCommutationEvent_IT(TIM_HandleTypeDef *htim, u
   *        configured in Hall sensor interface, this interface Timer will generate the 
   *        commutation at its TRGO output (connected to Timer used in this function) each time 
   *        the TI1 of the Interface Timer detect a commutation at its input TI1.
-  * @note: The user should configure the DMA in his own software, in This function only the COMDE bit is set
+  * @note: The user should configure the DMA in their own software, in This function only the COMDE bit is set
   * @param  htim pointer to a TIM_HandleTypeDef structure that contains
   *                the configuration information for TIM module.
   * @param  InputTrigger the Internal trigger corresponding to the Timer Interfacing with the Hall sensor.
