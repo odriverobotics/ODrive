@@ -205,8 +205,7 @@ size_t n_subscriptions = 0;
 // on a rising edge of the GPIO.
 // @param pull_up_down: one of GPIO_NOPULL, GPIO_PULLUP or GPIO_PULLDOWN
 bool GPIO_subscribe(GPIO_TypeDef* GPIO_port, uint16_t GPIO_pin,
-                    uint32_t pull_up_down, uint32_t interrupt_mode,
-                    void (*callback)(void*), void* ctx) {
+    uint32_t pull_up_down, void (*callback)(void*), void* ctx) {
   
   // Register handler (or reuse existing registration)
   // TODO: make thread safe
@@ -232,7 +231,7 @@ bool GPIO_subscribe(GPIO_TypeDef* GPIO_port, uint16_t GPIO_pin,
   // Set up GPIO
   GPIO_InitTypeDef GPIO_InitStruct;
   GPIO_InitStruct.Pin = GPIO_pin;
-  GPIO_InitStruct.Mode = interrupt_mode;
+  GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
   GPIO_InitStruct.Pull = pull_up_down;
   HAL_GPIO_Init(GPIO_port, &GPIO_InitStruct);
 
