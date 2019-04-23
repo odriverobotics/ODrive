@@ -28,8 +28,8 @@ public:
         ERROR_CONTROLLER_FAILED = 0x200,
         ERROR_POS_CTRL_DURING_SENSORLESS = 0x400,
         ERROR_WATCHDOG_TIMER_EXPIRED = 0x800,
-        ERROR_MIN_ENDSTOP_PRESSED = 0x800,
-        ERROR_MAX_ENDSTOP_PRESSED = 0x1000
+        ERROR_MIN_ENDSTOP_PRESSED = 0x1000,
+        ERROR_MAX_ENDSTOP_PRESSED = 0x2000
     };
 
     enum State_t {
@@ -44,7 +44,8 @@ public:
         AXIS_STATE_CLOSED_LOOP_CONTROL = 8,  //<! run closed loop control
         AXIS_STATE_LOCKIN_SPIN = 9,       //<! run lockin spin
         AXIS_STATE_ENCODER_DIR_FIND = 10,
-        AXIS_STATE_HOMING = 9   //<! run axis homing function
+        AXIS_STATE_HOMING = 11,   //<! run axis homing function
+    };
 
     struct LockinConfig_t {
         float current = 10.0f;           // [A]
