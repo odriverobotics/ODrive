@@ -177,7 +177,7 @@ try:
         rate_test(my_odrive)
 
     elif args.command == 'udev-setup':
-        from odrive.utils import setup_udev_rules
+        from odrive.version import setup_udev_rules
         setup_udev_rules(logger)
     
     elif args.command == 'generate-code':

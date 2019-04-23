@@ -27,12 +27,11 @@ public:
         ERROR_ENCODER_FAILED = 0x100, // Go to encoder.hpp for information, check odrvX.axisX.encoder.error for error value
         ERROR_CONTROLLER_FAILED = 0x200,
         ERROR_POS_CTRL_DURING_SENSORLESS = 0x400,
+        ERROR_WATCHDOG_TIMER_EXPIRED = 0x800,
         ERROR_MIN_ENDSTOP_PRESSED = 0x800,
         ERROR_MAX_ENDSTOP_PRESSED = 0x1000
     };
 
-    // Warning: Do not reorder these enum values.
-    // The state machine uses ">" comparision on them.
     enum State_t {
         AXIS_STATE_UNDEFINED = 0,           //<! will fall through to idle
         AXIS_STATE_IDLE = 1,                //<! disable PWM and do nothing
@@ -43,8 +42,21 @@ public:
         AXIS_STATE_ENCODER_INDEX_SEARCH = 6, //<! run encoder index search
         AXIS_STATE_ENCODER_OFFSET_CALIBRATION = 7, //<! run encoder offset calibration
         AXIS_STATE_CLOSED_LOOP_CONTROL = 8,  //<! run closed loop control
+        AXIS_STATE_LOCKIN_SPIN = 9,       //<! run lockin spin
+        AXIS_STATE_ENCODER_DIR_FIND = 10,
         AXIS_STATE_HOMING = 9   //<! run axis homing function
-};
+
+    struct LockinConfig_t {
+        float current = 10.0f;           // [A]
+        float ramp_time = 0.4f;          // [s]
+        float ramp_distance = 1 * M_PI;  // [rad]
+        float accel = 20.0f;     // [rad/s^2]
+        float vel = 40.0f; // [rad/s]
+        float finish_distance = 100.0f;  // [rad]
+        bool finish_on_vel = false;
+        bool finish_on_distance = false;
+        bool finish_on_enc_idx = false;
+    };
 
     struct Config_t {
         bool startup_motor_calibration = false;   //<! run motor calibration at startup, skip otherwise
@@ -58,20 +70,24 @@ public:
                                     //   For M0 this has no effect if enable_uart is true
         float counts_per_step = 2.0f;
 
+        float watchdog_timeout = 0.0f; // [s] (0 disables watchdog)
+
         // Defaults loaded from hw_config in load_configuration in main.cpp
         uint16_t step_gpio_pin = 0;
         uint16_t dir_gpio_pin = 0;
 
-        // Spinup settings
-        float ramp_up_time = 0.4f;            // [s]
-        float ramp_up_distance = 4 * M_PI;    // [rad]
-        float spin_up_current = 10.0f;        // [A]
-        float spin_up_acceleration = 400.0f;  // [rad/s^2]
-        float spin_up_target_vel = 400.0f;    // [rad/s]
+        LockinConfig_t lockin;
     };
 
     enum thread_signals {
         M_SIGNAL_PH_CURRENT_MEAS = 1u << 0
+    };
+
+    enum LockinState_t {
+        LOCKIN_STATE_INACTIVE,
+        LOCKIN_STATE_RAMP,
+        LOCKIN_STATE_ACCELERATE,
+        LOCKIN_STATE_CONST_VEL,
     };
 
     Axis(const AxisHardwareConfig_t& hw_config,
@@ -92,6 +108,8 @@ public:
     void step_cb();
     void set_step_dir_active(bool enable);
     void decode_step_dir_pins();
+    void update_watchdog_settings();
+
     static void load_default_step_dir_pin_config(
         const AxisHardwareConfig_t& hw_config, Config_t* config);
 
@@ -99,7 +117,9 @@ public:
     bool check_PSU_brownout();
     bool do_checks();
     bool do_updates();
-    float get_temp();
+
+    void watchdog_feed();
+    bool watchdog_check();
 
 
     // True if there are no errors
@@ -135,8 +155,11 @@ public:
             // Update all estimators
             // Note: updates run even if checks fail
             bool updates_ok = do_updates(); 
+
+            // make sure the watchdog is being fed. 
+            bool watchdog_ok = watchdog_check();
             
-            if (!checks_ok || !updates_ok) {
+            if (!checks_ok || !updates_ok || !watchdog_ok) {
                 // It's not useful to quit idle since that is the safe action
                 // Also leaving idle would rearm the motors
                 if (current_state_ != AXIS_STATE_IDLE)
@@ -165,7 +188,7 @@ public:
         }
     }
 
-    bool run_sensorless_spin_up();
+    bool run_lockin_spin();
     bool run_sensorless_control_loop();
     bool run_closed_loop_control_loop();
     bool run_idle_loop();
@@ -200,7 +223,12 @@ public:
     State_t task_chain_[10] = { AXIS_STATE_UNDEFINED };
     State_t& current_state_ = task_chain_[0];
     uint32_t loop_counter_ = 0;
+    LockinState_t lockin_state_ = LOCKIN_STATE_INACTIVE;
     HomingState_t homing_state_ = HOMING_STATE_IDLE;
+
+    // watchdog
+    uint32_t watchdog_reset_value_ = 0; //computed from config_.watchdog_timeout in update_watchdog_settings()
+    uint32_t watchdog_current_value_= 0;
 
     // Communication protocol definitions
     auto make_protocol_definitions() {
@@ -210,6 +238,7 @@ public:
             make_protocol_ro_property("current_state", &current_state_),
             make_protocol_property("requested_state", &requested_state_),
             make_protocol_ro_property("loop_counter", &loop_counter_),
+            make_protocol_ro_property("lockin_state", &lockin_state_),
             make_protocol_ro_property("homing_state", &homing_state_),
             make_protocol_object("config",
                 make_protocol_property("startup_motor_calibration", &config_.startup_motor_calibration),
@@ -220,24 +249,32 @@ public:
                 make_protocol_property("startup_homing", &config_.startup_homing),
                 make_protocol_property("enable_step_dir", &config_.enable_step_dir),
                 make_protocol_property("counts_per_step", &config_.counts_per_step),
+                make_protocol_property("watchdog_timeout", &config_.watchdog_timeout,
+                    [](void* ctx) { static_cast<Axis*>(ctx)->update_watchdog_settings(); }, this),
                 make_protocol_property("step_gpio_pin", &config_.step_gpio_pin,
                     [](void* ctx) { static_cast<Axis*>(ctx)->decode_step_dir_pins(); }, this),
                 make_protocol_property("dir_gpio_pin", &config_.dir_gpio_pin,
                     [](void* ctx) { static_cast<Axis*>(ctx)->decode_step_dir_pins(); }, this),
-                make_protocol_property("ramp_up_time", &config_.ramp_up_time),
-                make_protocol_property("ramp_up_distance", &config_.ramp_up_distance),
-                make_protocol_property("spin_up_current", &config_.spin_up_current),
-                make_protocol_property("spin_up_acceleration", &config_.spin_up_acceleration),
-                make_protocol_property("spin_up_target_vel", &config_.spin_up_target_vel)
+                make_protocol_object("lockin",
+                    make_protocol_property("current", &config_.lockin.current),
+                    make_protocol_property("ramp_time", &config_.lockin.ramp_time),
+                    make_protocol_property("ramp_distance", &config_.lockin.ramp_distance),
+                    make_protocol_property("accel", &config_.lockin.accel),
+                    make_protocol_property("vel", &config_.lockin.vel),
+                    make_protocol_property("finish_distance", &config_.lockin.finish_distance),
+                    make_protocol_property("finish_on_vel", &config_.lockin.finish_on_vel),
+                    make_protocol_property("finish_on_distance", &config_.lockin.finish_on_distance),
+                    make_protocol_property("finish_on_enc_idx", &config_.lockin.finish_on_enc_idx)
+                )
             ),
-            make_protocol_function("get_temp", *this, &Axis::get_temp),
             make_protocol_object("motor", motor_.make_protocol_definitions()),
             make_protocol_object("controller", controller_.make_protocol_definitions()),
             make_protocol_object("encoder", encoder_.make_protocol_definitions()),
             make_protocol_object("sensorless_estimator", sensorless_estimator_.make_protocol_definitions()),
+            make_protocol_object("trap_traj", trap_.make_protocol_definitions()),
             make_protocol_object("min_endstop", min_endstop_.make_protocol_definitions()),
             make_protocol_object("max_endstop", max_endstop_.make_protocol_definitions()),
-            make_protocol_object("trap_traj", trap_.make_protocol_definitions())
+            make_protocol_function("watchdog_feed", *this, &Axis::watchdog_feed)
         );
     }
 };

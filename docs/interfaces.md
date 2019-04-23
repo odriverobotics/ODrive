@@ -33,6 +33,7 @@ The ODrive can be controlled over various ports and protocols. If you're comfort
 (*) ODrive v3.5 and later
 
 Notes:
+* You must also connect GND between ODrive and your other board.
 * ODrive v3.3 and onward have 5V tolerant GPIO pins.
 * ODrive v3.5 and later have some noise supression filters on the default step/dir pins
 * You can change the step/dir pins using `axis.config.<step/dir>_gpio_pin`.
@@ -126,6 +127,8 @@ As an example, we'll configure GPIO4 to control the angle of axis 0. We want the
     In [5]: odrv0.reboot()
     ```
 5. With the ODrive powered off, connect the RC receiver ground to the ODrive's GND and one of the RC receiver signals to GPIO4. You may try to power the receiver from the ODrive's 5V supply if it doesn't draw too much power. Power up the the RC transmitter. You should now be able to control axis 0 from one of the RC sticks.
+
+Be sure to setup the Failsafe feature on your RC Receiver so that if connection is lost between the remote and the receiver, the receiver outputs 0 for the velocity setpoint of both axes (or whatever is safest for your configuration). Also note that if the receiver turns off (loss of power, etc) or if the signal from the receiver to the ODrive is lost (wire comes unplugged, etc), the ODrive will continue the last commanded velocity setpoint. There is currently no timeout function in the ODrive for PWM inputs.
 
 ## Ports
 Note: when you use an existing library you don't have to deal with the specifics described in this section.

@@ -35,7 +35,7 @@ public:
     float homing_speed = 2000.0f;   // [counts/s]
     };
 
-    Controller(Config_t& config);
+    explicit Controller(Config_t& config);
     void reset();
     void set_error(Error_t error);
 
@@ -45,6 +45,7 @@ public:
 
     // Trajectory-Planned control
     void move_to_pos(float goal_point);
+    void move_incremental(float displacement, bool from_goal_point);
 
     bool home_axis();
     
@@ -92,6 +93,8 @@ public:
 
     uint32_t traj_start_loop_count_ = 0;
 
+    float goal_point_ = 0.0f;
+
     // Communication protocol definitions
     auto make_protocol_definitions() {
         return make_protocol_member_list(
@@ -119,8 +122,9 @@ public:
                 "vel_setpoint", "current_feed_forward"),
             make_protocol_function("set_current_setpoint", *this, &Controller::set_current_setpoint,
                 "current_setpoint"),
+            make_protocol_function("move_to_pos", *this, &Controller::move_to_pos, "pos_setpoint"),
+            make_protocol_function("move_incremental", *this, &Controller::move_incremental, "displacement", "from_goal_point"),
             make_protocol_function("start_anticogging_calibration", *this, &Controller::start_anticogging_calibration),
-            make_protocol_function("move_to_pos", *this, &Controller::move_to_pos, "goal_point"),
             make_protocol_function("home_axis", *this, &Controller::home_axis)
         );
     }
