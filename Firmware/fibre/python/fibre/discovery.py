@@ -120,7 +120,10 @@ def find_any(path="usb", serial_number=None,
     done_signal = Event(search_cancellation_token)
     def did_discover_object(obj):
         result.append(obj)
-        if not find_multiple:
+        if find_multiple:
+            if len(result) >= int(find_multiple):
+               done_signal.set()
+        else:
             done_signal.set()
 
     find_all(path, serial_number, did_discover_object, done_signal, channel_termination_token, logger)
