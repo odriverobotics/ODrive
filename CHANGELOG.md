@@ -1,6 +1,8 @@
 # Unreleased Features
 Please add a note of your changes below this heading if you make a Pull Request.
 
+# Releases
+## [0.4.9] - 2019-04-23
 ### Added
 * A release target for ODrive v3.6
 * Communication watchdog feature.
@@ -16,7 +18,6 @@ Please add a note of your changes below this heading if you make a Pull Request.
 ### Fixed
 * Encoder index interrupts now disabled when not searching
 
-# Releases
 ## [0.4.8] - 2019-02-25
 ### Added
 * `dump_errors()` utility function in odrivetool to dump, decode and optionally clear errors.
