@@ -192,17 +192,6 @@ def usb_burn_in_test(get_var_callback, cancellation_token):
                 print("read {} values".format(i))
     threading.Thread(target=fetch_data, daemon=True).start()
 
-def setup_udev_rules(logger):
-    if platform.system() != 'Linux':
-        logger.error("This command only makes sense on Linux")
-    if os.getuid() != 0:
-        logger.warn("you should run this as root, otherwise it will probably not work")
-    with open('/etc/udev/rules.d/91-odrive.rules', 'w') as file:
-        file.write('SUBSYSTEM=="usb", ATTR{idVendor}=="1209", ATTR{idProduct}=="0d3[0-9]", MODE="0666"\n')
-    subprocess.check_call(["udevadm", "control", "--reload-rules"])
-    subprocess.check_call(["udevadm", "trigger"])
-    logger.info('udev rules configured successfully')
-
 def yes_no_prompt(question, default=None):
     if default is None:
         question += " [y/n] "

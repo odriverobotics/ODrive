@@ -82,61 +82,19 @@ typedef struct {
     uint16_t endpoint_id;
 } endpoint_ref_t;
 
+#include <cstring>
 
 template<typename T, typename = typename std::enable_if_t<!std::is_const<T>::value>>
-inline size_t write_le(T value, uint8_t* buffer);
+inline size_t write_le(T value, uint8_t* buffer){
+    //TODO: add static_assert that this is still a little endian machine
+    std::memcpy(&buffer[0], &value, sizeof(value));
+    return sizeof(value);
+}
 
 template<typename T>
-inline size_t read_le(T* value, const uint8_t* buffer);
-
-template<>
-inline size_t write_le<bool>(bool value, uint8_t* buffer) {
-    buffer[0] = value ? 1 : 0;
-    return 1;
-}
-
-template<>
-inline size_t write_le<uint8_t>(uint8_t value, uint8_t* buffer) {
-    buffer[0] = value;
-    return 1;
-}
-
-template<>
-inline size_t write_le<uint16_t>(uint16_t value, uint8_t* buffer) {
-    buffer[0] = (value >> 0) & 0xff;
-    buffer[1] = (value >> 8) & 0xff;
-    return 2;
-}
-
-template<>
-inline size_t write_le<uint32_t>(uint32_t value, uint8_t* buffer) {
-    buffer[0] = (value >> 0) & 0xff;
-    buffer[1] = (value >> 8) & 0xff;
-    buffer[2] = (value >> 16) & 0xff;
-    buffer[3] = (value >> 24) & 0xff;
-    return 4;
-}
-
-template<>
-inline size_t write_le<int32_t>(int32_t value, uint8_t* buffer) {
-    buffer[0] = (value >> 0) & 0xff;
-    buffer[1] = (value >> 8) & 0xff;
-    buffer[2] = (value >> 16) & 0xff;
-    buffer[3] = (value >> 24) & 0xff;
-    return 4;
-}
-
-template<>
-inline size_t write_le<uint64_t>(uint64_t value, uint8_t* buffer) {
-    buffer[0] = (value >> 0) & 0xff;
-    buffer[1] = (value >> 8) & 0xff;
-    buffer[2] = (value >> 16) & 0xff;
-    buffer[3] = (value >> 24) & 0xff;
-    buffer[4] = (value >> 32) & 0xff;
-    buffer[5] = (value >> 40) & 0xff;
-    buffer[6] = (value >> 48) & 0xff;
-    buffer[7] = (value >> 56) & 0xff;
-    return 8;
+typename std::enable_if_t<std::is_const<T>::value, size_t>
+write_le(T value, uint8_t* buffer) {
+    return write_le<std::remove_const_t<T>>(value, buffer);
 }
 
 template<>
@@ -148,65 +106,17 @@ inline size_t write_le<float>(float value, uint8_t* buffer) {
 }
 
 template<typename T>
-typename std::enable_if_t<std::is_const<T>::value, size_t>
-write_le(T value, uint8_t* buffer) {
-    return write_le<std::remove_const_t<T>>(value, buffer);
-}
-
-template<>
-inline size_t read_le<bool>(bool* value, const uint8_t* buffer) {
-    *value = buffer[0];
-    return 1;
-}
-
-template<>
-inline size_t read_le<uint8_t>(uint8_t* value, const uint8_t* buffer) {
-    *value = buffer[0];
-    return 1;
-}
-
-template<>
-inline size_t read_le<uint16_t>(uint16_t* value, const uint8_t* buffer) {
-    *value = (static_cast<uint16_t>(buffer[0]) << 0) |
-             (static_cast<uint16_t>(buffer[1]) << 8);
-    return 2;
-}
-
-template<>
-inline size_t read_le<int32_t>(int32_t* value, const uint8_t* buffer) {
-    *value = (static_cast<int32_t>(buffer[0]) << 0) |
-             (static_cast<int32_t>(buffer[1]) << 8) |
-             (static_cast<int32_t>(buffer[2]) << 16) |
-             (static_cast<int32_t>(buffer[3]) << 24);
-    return 4;
-}
-
-template<>
-inline size_t read_le<uint32_t>(uint32_t* value, const uint8_t* buffer) {
-    *value = (static_cast<uint32_t>(buffer[0]) << 0) |
-             (static_cast<uint32_t>(buffer[1]) << 8) |
-             (static_cast<uint32_t>(buffer[2]) << 16) |
-             (static_cast<uint32_t>(buffer[3]) << 24);
-    return 4;
-}
-
-template<>
-inline size_t read_le<uint64_t>(uint64_t* value, const uint8_t* buffer) {
-    *value = (static_cast<uint64_t>(buffer[0]) << 0) |
-             (static_cast<uint64_t>(buffer[1]) << 8) |
-             (static_cast<uint64_t>(buffer[2]) << 16) |
-             (static_cast<uint64_t>(buffer[3]) << 24) |
-             (static_cast<uint64_t>(buffer[4]) << 32) |
-             (static_cast<uint64_t>(buffer[5]) << 40) |
-             (static_cast<uint64_t>(buffer[6]) << 48) |
-             (static_cast<uint64_t>(buffer[7]) << 56);
-    return 8;
+inline size_t read_le(T* value, const uint8_t* buffer){
+    // TODO: add static_assert that this is still a little endian machine
+    std::memcpy(value, buffer, sizeof(*value));
+    return sizeof(*value);
 }
 
 template<>
 inline size_t read_le<float>(float* value, const uint8_t* buffer) {
     static_assert(CHAR_BIT * sizeof(float) == 32, "32 bit floating point expected");
     static_assert(std::numeric_limits<float>::is_iec559, "IEEE 754 floating point expected");
+
     return read_le(reinterpret_cast<uint32_t*>(value), buffer);
 }
 
@@ -497,6 +407,14 @@ inline constexpr const char* get_default_json_modifier<const float>() {
 template<>
 inline constexpr const char* get_default_json_modifier<float>() {
     return "\"type\":\"float\",\"access\":\"rw\"";
+}
+template<>
+inline constexpr const char* get_default_json_modifier<const int64_t>() {
+    return "\"type\":\"int64\",\"access\":\"r\"";
+}
+template<>
+inline constexpr const char* get_default_json_modifier<int64_t>() {
+    return "\"type\":\"int64\",\"access\":\"rw\"";
 }
 template<>
 inline constexpr const char* get_default_json_modifier<const uint64_t>() {
