@@ -2,6 +2,10 @@
 Please add a note of your changes below this heading if you make a Pull Request.
 
 # Releases
+## [0.4.10] - 2019-04-24
+### Fixed
+* Index search would trigger in the wrong place.
+
 ## [0.4.9] - 2019-04-23
 ### Added
 * A release target for ODrive v3.6
