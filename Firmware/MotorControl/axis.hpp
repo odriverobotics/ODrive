@@ -86,6 +86,7 @@ public:
     Axis(Motor motor,
         Encoder encoder,
         SensorlessEstimator sensorless_estimator,
+        AsyncEstimator async_estimator,
         Controller controller,
         TrapezoidalTrajectory trap,
         osPriority thread_priority,
@@ -193,6 +194,7 @@ public:
     Motor motor_;
     Encoder encoder_;
     SensorlessEstimator sensorless_estimator_;
+    AsyncEstimator async_estimator_;
     Controller controller_;
     TrapezoidalTrajectory trap_;
     
@@ -258,6 +260,7 @@ public:
             make_protocol_object("controller", controller_.make_protocol_definitions()),
             make_protocol_object("encoder", encoder_.make_protocol_definitions()),
             make_protocol_object("sensorless_estimator", sensorless_estimator_.make_protocol_definitions()),
+            make_protocol_object("async_estimator", async_estimator_.make_protocol_definitions()),
             make_protocol_object("trap_traj", trap_.make_protocol_definitions()),
             make_protocol_function("watchdog_feed", *this, &Axis::watchdog_feed)
         );

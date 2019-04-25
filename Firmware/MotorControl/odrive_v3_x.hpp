@@ -19,6 +19,7 @@ struct PerChannelConfig_t {
     Motor::Config_t motor_config;
     Encoder::Config_t encoder_config;
     SensorlessEstimator::Config_t sensorless_estimator_config;
+    AsyncEstimator::Config_t async_estimator_config;
     Controller::Config_t controller_config;
     TrapezoidalTrajectory::Config_t trap_config;
     Axis::Config_t axis_config;
@@ -187,6 +188,7 @@ static inline bool board_init(Axis axes[AXIS_COUNT]) {
             axis_configs[0].encoder_config
         ),
         SensorlessEstimator(axis_configs[0].sensorless_estimator_config),
+        AsyncEstimator(axis_configs[0].async_estimator_config),
         Controller(axis_configs[0].controller_config),
         TrapezoidalTrajectory(axis_configs[0].trap_config),
         RTOS_PRIO_AXIS0, // thread_priority
@@ -227,6 +229,7 @@ static inline bool board_init(Axis axes[AXIS_COUNT]) {
             axis_configs[1].encoder_config
         ),
         SensorlessEstimator(axis_configs[1].sensorless_estimator_config),
+        AsyncEstimator(axis_configs[1].async_estimator_config),
         Controller(axis_configs[1].controller_config),
         TrapezoidalTrajectory(axis_configs[1].trap_config),
         RTOS_PRIO_AXIS1, // thread_priority

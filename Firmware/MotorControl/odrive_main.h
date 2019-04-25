@@ -182,6 +182,7 @@ inline ENUMTYPE operator ~ (ENUMTYPE a) { return static_cast<ENUMTYPE>(~static_c
 #include <low_level.h>
 #include <encoder.hpp>
 #include <sensorless_estimator.hpp>
+#include <async_estimator.hpp>
 #include <controller.hpp>
 #include <motor.hpp>
 #include <trapTraj.hpp>

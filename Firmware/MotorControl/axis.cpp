@@ -6,9 +6,14 @@
 #include "utils.h"
 #include "odrive_main.h"
 
+#ifndef M_SQRT1_2
+#define M_SQRT1_2 0.70710678118
+#endif
+
 Axis::Axis(Motor motor,
            Encoder encoder,
            SensorlessEstimator sensorless_estimator,
+           AsyncEstimator async_estimator,
            Controller controller,
            TrapezoidalTrajectory trap,
            osPriority thread_priority,
@@ -16,6 +21,7 @@ Axis::Axis(Motor motor,
     : motor_(motor),
       encoder_(encoder),
       sensorless_estimator_(sensorless_estimator),
+      async_estimator_(async_estimator),
       controller_(controller),
       trap_(trap),
       thread_priority_(thread_priority),
@@ -24,6 +30,7 @@ Axis::Axis(Motor motor,
     motor_.axis_ = this;
     encoder_.axis_ = this;
     sensorless_estimator_.axis_ = this;
+    async_estimator_.axis_ = this;
     controller_.axis_ = this;
     trap_.axis_ = this;
 }
@@ -36,6 +43,8 @@ bool Axis::init() {
     if (!encoder_.init())
         return false;
     if (!sensorless_estimator_.init())
+        return false;
+    if (!async_estimator_.init())
         return false;
     if (!controller_.init())
         return false;
@@ -62,14 +71,26 @@ void Axis::start_thread() {
 // @brief Unblocks the control loop thread.
 // This is called from the current sense interrupt handler.
 void Axis::signal_current_meas() {
-    if (thread_id_valid_)
+    if (thread_id_valid_) {
+        current_meas_events_++;
         osSignalSet(thread_id_, M_SIGNAL_PH_CURRENT_MEAS);
+    }
 }
 
 // @brief Blocks until a current measurement is completed
 // @returns True on success, false otherwise
 bool Axis::wait_for_current_meas() {
-    return osSignalWait(M_SIGNAL_PH_CURRENT_MEAS, PH_CURRENT_MEAS_TIMEOUT).status == osEventSignal;
+    uint64_t start = get_ticks_us();
+    uint32_t meas_evt = current_meas_events_;
+    uint32_t updt_evt = motor_.update_events_;
+    bool result = osSignalWait(M_SIGNAL_PH_CURRENT_MEAS, PH_CURRENT_MEAS_TIMEOUT).status == osEventSignal;
+    uint64_t wait = get_ticks_us() - start;
+    if (wait > max_wait_us_) {
+        max_wait_us_ = wait;
+        max_wait_meas_evt_ = current_meas_events_ - meas_evt;
+        max_wait_updt_evt_ = motor_.update_events_ - updt_evt;
+    }
+    return result;
 }
 
 // step/direction interface
@@ -153,6 +174,7 @@ bool Axis::do_updates(float dt) {
     // Sub-components should use set_error which will propagate to this error_
     encoder_.update(dt);
     sensorless_estimator_.update(dt);
+    async_estimator_.update(dt);
     return check_for_errors();
 }
 
@@ -289,28 +311,92 @@ bool Axis::run_closed_loop_control_loop() {
     return check_for_errors();
 }
 
+
+
+
 /**
  * @brief Spins the magnetic field at a fixed velocity (defined by the velocity
  * setpoint) and current/voltage setpoint. The current controller still runs in
  * closed loop mode.
  */
 bool Axis::run_open_loop_control_loop() {
+    if (!motor_.is_calibrated_ || !motor_.config_.async_calibrated)
+        return error_ |= ERROR_MOTOR_FAILED, false;
+
+    float sigma = 1 - (motor_.config_.mutual_inductance * motor_.config_.mutual_inductance) / (motor_.config_.rotor_inductance * motor_.config_.phase_inductance);
+    float l_s_sqr = motor_.config_.phase_inductance * motor_.config_.phase_inductance;
+    float sigma_sqr = sigma * sigma;
+    float sigma_l_s_sqr = sigma_sqr * l_s_sqr;
+    float fw2_factor = sqrtf((1 + sigma_sqr) / (2 * sigma_l_s_sqr));
+
+    if (!motor_.arm_foc())
+        return error_ |= ERROR_MOTOR_FAILED, false;
+
     set_step_dir_active(config_.enable_step_dir);
 
-    run_control_loop([this](){
-        float phase_vel;
-        if (!motor_.config_.phase_locked) {
-            phase_vel = 2 * M_PI * controller_.vel_setpoint_ * motor_.config_.pole_pairs;
-            motor_.phase_setpoint_ = wrap_pm_pi(motor_.phase_setpoint_ + phase_vel * current_meas_period);
+    //float phase = 0.0f;
+    run_control_loop([&](float dt){
+        if (encoder_.error_ != Encoder::ERROR_NONE)
+            return error_ |= ERROR_ENCODER_FAILED, false;
+        if (async_estimator_.error_ != AsyncEstimator::ERROR_NONE)
+            return error_ |= ERROR_ENCODER_FAILED, false;
+#if 0
+        controller_.vel_setpoint_ = encoder_.vel_estimate_ / encoder_.config_.cpr + controller_.config_.optimal_slip;
+        float phase_vel = 2 * M_PI * controller_.vel_setpoint_ * motor_.config_.pole_pairs;
+        phase = wrap_pm_pi(phase + phase_vel * dt);
+        if (!motor_.FOC_update(0.0f, controller_.current_setpoint_, phase, phase_vel))
+            return false; // set_error should update axis.error_
+#endif
+        float phase = async_estimator_.phase_;
+        float phase_vel = async_estimator_.phase_vel_;
+
+        float max_voltage = vbus_voltage * V_DC_TO_V_PHASE_MAX;
+        float max_current = controller_.current_setpoint_;
+        float max_current_sqr = max_current * max_current;
+
+        // assumptions:
+        //  - stator resistance is negligible
+        //  - change of current amplitude is slow
+        // source:
+        //  http://shodhganga.inflibnet.ac.in/bitstream/10603/93562/12/12_chapter6.pdf
+        //  (note: paper has some typos, also in some equations)
+
+        float Id_setpoint;
+        float Iq_setpoint;
+
+        // Eq 6.18 in [1]
+        if (!(phase_vel > max_voltage / abs(max_current) * fw2_factor)) {
+            // Field Weakening region I (aka constant power region)
+            // Eq 6.16 and 6.17 in [1]
+            float v_max_over_omega = max_voltage / phase_vel;
+            float Id_sqr = (v_max_over_omega * v_max_over_omega - sigma_l_s_sqr * max_current_sqr) / (l_s_sqr - sigma_l_s_sqr);
+            float Iq_sqr = max_current_sqr - Id_sqr;
+
+            if (!(Id_sqr < Iq_sqr)) {
+                // Constant torque region (no field weakening)
+                // To achieve maximum torque-per-amps the rotor flux angle
+                // should be 45° to the rotor flux angle
+                Id_sqr = Iq_sqr = max_current_sqr / 2;
+                motor_.field_weakening_status_ = 0;
+            } else {
+                motor_.field_weakening_status_ = 1;
+            }
+            Id_setpoint = sqrtf(Id_sqr);
+            Iq_setpoint = sqrtf(Iq_sqr);
+
         } else {
-            Axis other_axis = (this == &axes[0]) ? axes[1] : axes[0];
-            if (other_axis.current_state_ != AXIS_STATE_OPEN_LOOP_CONTROL)
-                return error_ |= ERROR_INVALID_STATE, false;
-            phase_vel = 2 * M_PI * other_axis.controller_.vel_setpoint_ * other_axis.motor_.config_.pole_pairs;
-            motor_.phase_setpoint_ = other_axis.motor_.phase_setpoint_; // TODO: add an offset here to account for delayed PWM
+            // Field Weakening region II (aka constant slip region)
+            // Eq 6.19 and 6.20 in [1]
+            Id_setpoint = max_voltage * ((float)M_SQRT1_2) / (phase_vel * motor_.config_.phase_inductance);
+            Iq_setpoint = Id_setpoint / sigma;
+            motor_.field_weakening_status_ = 2;
         }
 
-        if (!motor_.update(controller_.current_setpoint_, motor_.phase_setpoint_, phase_vel))
+        if (max_current < 0) {
+            Iq_setpoint = -Iq_setpoint;
+        }
+
+        if (!motor_.FOC_update(Id_setpoint, Iq_setpoint, phase, phase_vel))
             return false; // set_error should update axis.error_
         return true;
     });
