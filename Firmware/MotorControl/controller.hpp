@@ -53,7 +53,7 @@ public:
     void start_anticogging_calibration();
     bool anticogging_calibration(float pos_estimate, float vel_estimate);
 
-    bool update(float pos_estimate, float vel_estimate, float* current_setpoint);
+    bool update(float dt, float pos_estimate, float vel_estimate, float* current_setpoint);
 
     Config_t& config_;
     Axis* axis_ = nullptr; // set by Axis constructor
@@ -91,7 +91,7 @@ public:
     float vel_ramp_target_ = 0.0f;
     bool vel_ramp_enable_ = false;
 
-    uint32_t traj_start_loop_count_ = 0;
+    uint32_t traj_start_us_ = 0; // overflows after ~1.2h
 
     float goal_point_ = 0.0f;
 

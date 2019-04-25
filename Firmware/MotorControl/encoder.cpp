@@ -46,11 +46,6 @@ bool Encoder::init() {
 
 void Encoder::set_error(Error_t error) {
     error_ |= error;
-    axis_->error_ |= Axis::ERROR_ENCODER_FAILED;
-}
-
-bool Encoder::do_checks(){
-    return error_ == ERROR_NONE;
 }
 
 //--------------------
@@ -92,11 +87,6 @@ void Encoder::set_idx_subscribe(bool override_enable) {
 void Encoder::update_pll_gains() {
     pll_kp_ = 2.0f * config_.bandwidth;  // basic conversion to discrete time
     pll_ki_ = 0.25f * (pll_kp_ * pll_kp_); // Critically damped
-
-    // Check that we don't get problems with discrete time approximation
-    if (!(current_meas_period * pll_kp_ < 1.0f)) {
-        set_error(ERROR_UNSTABLE_GAIN);
-    }
 }
 
 void Encoder::check_pre_calibrated() {
@@ -182,7 +172,7 @@ bool Encoder::run_direction_find() {
 // TODO: Do the scan with current, not voltage!
 bool Encoder::run_offset_calibration() {
     static const float start_lock_duration = 1.0f;
-    static const int num_steps = (int)(config_.calib_scan_distance / config_.calib_scan_omega * (float)current_meas_hz);
+    const float scan_duration = config_.calib_scan_distance / config_.calib_scan_omega;
 
     // Require index found if enabled
     if (config_.use_index && !index_found_) {
@@ -203,32 +193,34 @@ bool Encoder::run_offset_calibration() {
         return false;
 
     // go to motor zero phase for start_lock_duration to get ready to scan
-    int i = 0;
-    axis_->run_control_loop([&](){
-        if (!axis_->motor_.enqueue_voltage_timings(voltage_magnitude, 0.0f))
+    uint32_t start_ms = get_ticks_ms();
+    if (!axis_->motor_.arm_foc())
+        return axis_->error_ |= Axis::ERROR_MOTOR_FAILED, false;
+    axis_->run_control_loop([&](float dt){
+        float t = (float)(get_ticks_ms() - start_ms) / 1000.f;
+        if (!axis_->motor_.FOC_update(0.0f, voltage_magnitude, 0.0f, 0.0f, 1000, true))
             return false; // error set inside enqueue_voltage_timings
-        axis_->motor_.log_timing(Motor::TIMING_LOG_ENC_CALIB);
-        return ++i < start_lock_duration * current_meas_hz;
+        return t > start_lock_duration;
     });
     if (axis_->error_ != Axis::ERROR_NONE)
         return false;
 
     int32_t init_enc_val = shadow_count_;
     int64_t encvaluesum = 0;
+    uint64_t num_steps = 0;
 
     // scan forward
-    i = 0;
-    axis_->run_control_loop([&](){
-        float phase = wrap_pm_pi(config_.calib_scan_distance * (float)i / (float)num_steps - config_.calib_scan_distance / 2.0f);
-        float v_alpha = voltage_magnitude * our_arm_cos_f32(phase);
-        float v_beta = voltage_magnitude * our_arm_sin_f32(phase);
-        if (!axis_->motor_.enqueue_voltage_timings(v_alpha, v_beta))
+    start_ms = get_ticks_ms();
+    axis_->run_control_loop([&](float dt){
+        float t = (float)(get_ticks_ms() - start_ms) / 1000.f;
+        float phase = wrap_pm_pi(config_.calib_scan_omega * t - config_.calib_scan_distance / 2.0f);
+        if (!axis_->motor_.FOC_update(0.0f, voltage_magnitude, phase, config_.calib_scan_omega, 1000, true))
             return false; // error set inside enqueue_voltage_timings
-        axis_->motor_.log_timing(Motor::TIMING_LOG_ENC_CALIB);
 
         encvaluesum += shadow_count_;
+        num_steps++;
         
-        return ++i < num_steps;
+        return t > scan_duration;
     });
     if (axis_->error_ != Axis::ERROR_NONE)
         return false;
@@ -258,18 +250,17 @@ bool Encoder::run_offset_calibration() {
     }
 
     // scan backwards
-    i = 0;
-    axis_->run_control_loop([&](){
-        float phase = wrap_pm_pi(-config_.calib_scan_distance * (float)i / (float)num_steps + config_.calib_scan_distance / 2.0f);
-        float v_alpha = voltage_magnitude * our_arm_cos_f32(phase);
-        float v_beta = voltage_magnitude * our_arm_sin_f32(phase);
-        if (!axis_->motor_.enqueue_voltage_timings(v_alpha, v_beta))
+    start_ms = get_ticks_ms();
+    axis_->run_control_loop([&](float dt){
+        float t = (float)(get_ticks_ms() - start_ms) / 1000.f;
+        float phase = wrap_pm_pi(-config_.calib_scan_omega * t + config_.calib_scan_distance / 2.0f);
+        if (!axis_->motor_.FOC_update(0.0f, voltage_magnitude, phase, -config_.calib_scan_omega, 1000, true))
             return false; // error set inside enqueue_voltage_timings
-        axis_->motor_.log_timing(Motor::TIMING_LOG_ENC_CALIB);
 
         encvaluesum += shadow_count_;
+        num_steps++;
         
-        return ++i < num_steps;
+        return t > scan_duration;
     });
     if (axis_->error_ != Axis::ERROR_NONE)
         return false;
@@ -346,7 +337,12 @@ void Encoder::decode_hall_samples(uint16_t GPIO_samples[n_GPIO_samples]) {
     hall_state_ = hall_state;
 }
 
-bool Encoder::update() {
+bool Encoder::update(float dt) {
+    // Check that we don't get problems with discrete time approximation
+    if (!(dt * pll_kp_ < 1.0f)) {
+        set_error(ERROR_UNSTABLE_GAIN);
+    }
+
     // update internal encoder state.
     int32_t delta_enc = 0;
     switch (config_.mode) {
@@ -395,19 +391,19 @@ bool Encoder::update() {
 
     //// run pll (for now pll is in units of encoder counts)
     // Predict current pos
-    pos_estimate_ += current_meas_period * vel_estimate_;
-    pos_cpr_      += current_meas_period * vel_estimate_;
+    pos_estimate_ += dt * vel_estimate_;
+    pos_cpr_      += dt * vel_estimate_;
     // discrete phase detector
     float delta_pos     = (float)(shadow_count_ - (int32_t)floorf(pos_estimate_));
     float delta_pos_cpr = (float)(count_in_cpr_ - (int32_t)floorf(pos_cpr_));
     delta_pos_cpr = wrap_pm(delta_pos_cpr, 0.5f * (float)(config_.cpr));
     // pll feedback
-    pos_estimate_ += current_meas_period * pll_kp_ * delta_pos;
-    pos_cpr_      += current_meas_period * pll_kp_ * delta_pos_cpr;
+    pos_estimate_ += dt * pll_kp_ * delta_pos;
+    pos_cpr_      += dt * pll_kp_ * delta_pos_cpr;
     pos_cpr_ = fmodf_pos(pos_cpr_, (float)(config_.cpr));
-    vel_estimate_      += current_meas_period * pll_ki_ * delta_pos_cpr;
+    vel_estimate_      += dt * pll_ki_ * delta_pos_cpr;
     bool snap_to_zero_vel = false;
-    if (fabsf(vel_estimate_) < 0.5f * current_meas_period * pll_ki_) {
+    if (fabsf(vel_estimate_) < 0.5f * dt * pll_ki_) {
         vel_estimate_ = 0.0f; //align delta-sigma on zero to prevent jitter
         snap_to_zero_vel = true;
     }
@@ -424,7 +420,7 @@ bool Encoder::update() {
         interpolation_ = 1.0f;
     } else {
         // Interpolate (predict) between encoder counts using vel_estimate,
-        interpolation_ += current_meas_period * vel_estimate_;
+        interpolation_ += dt * vel_estimate_;
         // don't allow interpolation indicated position outside of [enc, enc+1)
         if (interpolation_ > 1.0f) interpolation_ = 1.0f;
         if (interpolation_ < 0.0f) interpolation_ = 0.0f;

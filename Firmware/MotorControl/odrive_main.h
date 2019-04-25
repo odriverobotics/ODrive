@@ -46,6 +46,9 @@ extern "C" {
 #define TIM_APB1_PERIOD_CLOCKS 4096
 #define TIM_APB1_DEADTIME_CLOCKS 40
 
+#define MAX_MODULATION 0.80f // accounts for dead-time and the likes
+#define V_DC_TO_V_PHASE_MAX (MAX_MODULATION * 0.57735026919f)
+
 //#define NVIC_PRIO_M0                    configMAX_SYSCALL_INTERRUPT_PRIORITY - (1 << (8 - configPRIO_BITS))
 //#define NVIC_PRIO_M1                    configMAX_SYSCALL_INTERRUPT_PRIORITY - (1 << (8 - configPRIO_BITS)) + 1
 #define NVIC_PRIO_M0            (configMAX_SYSCALL_INTERRUPT_PRIORITY)
@@ -62,6 +65,15 @@ extern "C" {
 
 //#define NVIC_PRIO_TASK_SWITCHER 255     //
 
+#define RTOS_PRIO_USB osPriorityAboveNormal
+#define RTOS_PRIO_COMM osPriorityNormal
+#define RTOS_PRIO_UART osPriorityNormal
+#define RTOS_PRIO_ANALOG_IN osPriorityLow
+#define RTOS_PRIO_MAIN_TASK osPriorityIdle
+#define RTOS_PRIO_AXIS0 (osPriority)(osPriorityHigh + (osPriority)1)
+#define RTOS_PRIO_AXIS1 osPriorityHigh
+//#define RTOS_PRIO_AXIS0 osPriorityRealtime
+//#define RTOS_PRIO_AXIS1 osPriorityRealtime
 
 typedef struct {
     bool fully_booted;

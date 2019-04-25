@@ -3,9 +3,6 @@
 
 #include "stm32_system.h"
 #include "stm32f4xx_hal.h"
-#include "cmsis_os.h"
-
-#include "freertos_vars.h"
 
 uint32_t _reboot_cookie __attribute__ ((section (".noinit")));
 extern char _estack; // provided by the linker script
@@ -13,6 +10,8 @@ extern char _estack; // provided by the linker script
 volatile uint32_t* tick_timer_cnt = nullptr;
 volatile uint64_t ticks_us = 0; // rolls over after ~600'000 years
 volatile uint16_t tick_timer_last_cnt = 0;
+
+PerformanceCounter_t* PerformanceCounter_t::current_counter = 0;
 
 // Gets called from the startup assembly code
 extern "C" void early_start_checks(void) {
@@ -237,6 +236,15 @@ void get_regs(void** stack_ptr) {
     void* volatile pc __attribute__((unused)) = stack_ptr[6];  // Program counter
     void* volatile psr __attribute__((unused)) = stack_ptr[7];  // Program status register
 
+    volatile uint32_t shcsr __attribute__((unused)) = SCB->SHCSR; // system handler control and state register
+    volatile uint32_t cfsr __attribute__((unused)) = SCB->CFSR; // configurable fault status register
+    void* volatile bfar __attribute__((unused)) = reinterpret_cast<void*>(SCB->BFAR); // bus fault address register
+    volatile uint32_t hfsr __attribute__((unused)) = SCB->HFSR; // hard fault status register
+    volatile bool is_bfar_valid __attribute__((unused)) = cfsr & 0x8000; // the BFAR is valid and points to the offending data bus address
+    volatile bool is_pc_imprecise __attribute__((unused)) = cfsr & 0x400; // pc does not point to the instruction that caused the error
+    volatile bool is_pc_precise __attribute__((unused)) = cfsr & 0x200; // pc points to the instruction that caused the error
+    volatile bool is_ibus_error __attribute__((unused)) = cfsr & 0x100; // the error occurred on the instruction bus
+
     volatile bool stay_looping = true;
     while(stay_looping);
 }
@@ -254,7 +262,7 @@ void HardFault_Handler(void) {
         " ite eq         \n\t"
         " mrseq r0, msp  \n\t"
         " mrsne r0, psp  \n\t"
-        " b get_regs     \n\t"
+        " bl get_regs     \n\t"
     );
 }
 
@@ -265,7 +273,7 @@ void MemManage_Handler(void) {
         " ite eq         \n\t"
         " mrseq r0, msp  \n\t"
         " mrsne r0, psp  \n\t"
-        " b get_regs     \n\t"
+        " bl get_regs     \n\t"
     );
 }
 
@@ -276,7 +284,7 @@ void BusFault_Handler(void) {
         " ite eq         \n\t"
         " mrseq r0, msp  \n\t"
         " mrsne r0, psp  \n\t"
-        " b get_regs     \n\t"
+        " bl get_regs     \n\t"
     );
 }
 
@@ -288,18 +296,13 @@ void UsageFault_Handler(void) {
         " ite eq         \n\t"
         " mrseq r0, msp  \n\t"
         " mrsne r0, psp  \n\t"
-        " b get_regs     \n\t"
+        " bl get_regs     \n\t"
     );
 }
 
 /** @brief Entrypoint for Debug monitor. */
 void DebugMon_Handler(void) {
     // TODO: add debug support code (allows adding breakpoints while the CPU is running)
-}
-
-/** @brief Entrypoint for System tick timer. */
-void SysTick_Handler(void) {
-    osSystickHandler();
 }
 
 __attribute__((naked))
@@ -309,7 +312,7 @@ void WWDG_IRQHandler(void) {
         " ite eq         \n\t"
         " mrseq r0, msp  \n\t"
         " mrsne r0, psp  \n\t"
-        " b get_regs     \n\t"
+        " bl get_regs     \n\t"
     );
 }
 

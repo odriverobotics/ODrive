@@ -12,8 +12,7 @@ public:
     enum Error_t {
         ERROR_NONE = 0x00,
         ERROR_INVALID_STATE = 0x01, //<! an invalid state was requested
-        ERROR_DC_BUS_UNDER_VOLTAGE = 0x02,
-        ERROR_DC_BUS_OVER_VOLTAGE = 0x04,
+        // undervoltage and overvoltage moved to motor errors
         ERROR_CURRENT_MEASUREMENT_TIMEOUT = 0x08,
         ERROR_BRAKE_RESISTOR_DISARMED = 0x10, //<! the brake resistor was unexpectedly disarmed
         ERROR_MOTOR_DISARMED = 0x20, //<! the motor was unexpectedly disarmed
@@ -105,7 +104,7 @@ public:
     bool check_DRV_fault();
     bool check_PSU_brownout();
     bool do_checks();
-    bool do_updates();
+    bool do_updates(float dt);
 
     void watchdog_feed();
     bool watchdog_check();
@@ -142,27 +141,23 @@ public:
         // first iteration
         osSignalWait(M_SIGNAL_PH_CURRENT_MEAS, 0);
 
+        uint32_t last_time = get_ticks_us();
+
         while (requested_state_ == AXIS_STATE_UNDEFINED) {
-            // Wait until the current measurement interrupt fires
-            if (!wait_for_current_meas()) {
-                // maybe the interrupt handler is dead, let's be
-                // safe and float the phases
-                safety_critical_disarm_motor_pwm(motor_);
-                update_brake_current();
-                error_ |= ERROR_CURRENT_MEASUREMENT_TIMEOUT;
-                break;
-            }
+            uint32_t now = get_ticks_us();
+            float dt = (float)(now - last_time) / 1e6f;
+            last_time = now;
 
             // if another state was requested, exit
             if (requested_state_ != AXIS_STATE_UNDEFINED) {
                 break;
             }
 
-            // look for errors at axis level and also all subcomponents
+            // look for errors at axis level
             bool checks_ok = do_checks();
             // Update all estimators
             // Note: updates run even if checks fail
-            bool updates_ok = do_updates(); 
+            bool updates_ok = do_updates(dt);
 
             // make sure the watchdog is being fed. 
             bool watchdog_ok = watchdog_check();
@@ -176,13 +171,12 @@ public:
 
             // Run main loop function, defer quitting for after wait
             // TODO: change arming logic to arm after waiting
-            bool main_continue = update_handler();
-
-            // Check we meet deadlines after queueing
-            ++loop_counter_;
+            bool main_continue = update_handler(dt);
 
             if (!main_continue)
                 break;
+
+            osDelay(1); // give other threads time TODO: wait less than 1ms
         }
     }
 
@@ -190,6 +184,7 @@ public:
     bool run_sensorless_control_loop();
     bool run_closed_loop_control_loop();
     bool run_open_loop_control_loop();
+    bool run_phase_locked_control();
     bool run_idle_loop();
 
     void run_state_machine_loop();
@@ -218,7 +213,6 @@ public:
     State_t requested_state_ = AXIS_STATE_STARTUP_SEQUENCE;
     State_t task_chain_[10] = { AXIS_STATE_UNDEFINED };
     State_t& current_state_ = task_chain_[0];
-    uint32_t loop_counter_ = 0;
     LockinState_t lockin_state_ = LOCKIN_STATE_INACTIVE;
 
     // watchdog
@@ -232,7 +226,7 @@ public:
             make_protocol_ro_property("step_dir_active", &step_dir_active_),
             make_protocol_ro_property("current_state", &current_state_),
             make_protocol_property("requested_state", &requested_state_),
-            make_protocol_ro_property("loop_counter", &loop_counter_),
+            //make_protocol_ro_property("loop_counter", &loop_counter_),
             make_protocol_ro_property("lockin_state", &lockin_state_),
             make_protocol_object("config",
                 make_protocol_property("startup_motor_calibration", &config_.startup_motor_calibration),

@@ -122,13 +122,20 @@ int SVM(float alpha, float beta, float* tA, float* tB, float* tC) {
     return result_valid ? 0 : -1;
 }
 
+bool SVM_voltage(float v_dc, float v_alpha, float v_beta, float pwm_timings[3]) {
+    float vfactor = 1.0f / ((2.0f / 3.0f) * v_dc);
+    float mod_alpha = vfactor * v_alpha;
+    float mod_beta = vfactor * v_beta;
+    return SVM(mod_alpha, mod_beta, &pwm_timings[0], &pwm_timings[1], &pwm_timings[2]) != 0;
+}
+
 // based on https://math.stackexchange.com/a/1105038/81278
 float fast_atan2(float y, float x) {
     // a := min (|x|, |y|) / max (|x|, |y|)
     float abs_y = fabsf(y);
     float abs_x = fabsf(x);
     // inject FLT_MIN in denominator to avoid division by zero
-    float a = MACRO_MIN(abs_x, abs_y) / (MACRO_MAX(abs_x, abs_y) + FLT_MIN);
+    float a = MACRO_MIN(abs_x, abs_y) / (MACRO_MAX(abs_x, abs_y) + 1e-10f);
     // s := a * a
     float s = a * a;
     // r := ((-0.0464964749 * s + 0.15931422) * s - 0.327622764) * s * a + a

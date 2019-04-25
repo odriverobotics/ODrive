@@ -8,6 +8,7 @@ extern "C" {
 
 #include <stdint.h>
 #include <math.h>
+#include <stdbool.h>
 
 /**
  * @brief Flash size register address
@@ -94,6 +95,7 @@ static inline float fmodf_pos(float x, float y) {
 // The magnitude of the alpha-beta vector may not be larger than sqrt(3)/2
 // Returns 0 on success, and -1 if the input was out of range
 int SVM(float alpha, float beta, float* tA, float* tB, float* tC);
+bool SVM_voltage(float v_dc, float v_alpha, float v_beta, float pwm_timings[3]);
 
 float fast_atan2(float y, float x);
 float horner_fma(float x, const float *coeffs, size_t count);

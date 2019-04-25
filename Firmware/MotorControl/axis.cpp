@@ -143,25 +143,16 @@ bool Axis::do_checks() {
     if ((current_state_ != AXIS_STATE_IDLE) && !motor_.is_armed_)
         // motor got disarmed in something other than the idle loop
         error_ |= ERROR_MOTOR_DISARMED;
-    if (!(vbus_voltage >= board_config.dc_bus_undervoltage_trip_level))
-        error_ |= ERROR_DC_BUS_UNDER_VOLTAGE;
-    if (!(vbus_voltage <= board_config.dc_bus_overvoltage_trip_level))
-        error_ |= ERROR_DC_BUS_OVER_VOLTAGE;
 
-    // Sub-components should use set_error which will propegate to this error_
-    motor_.do_checks();
-    encoder_.do_checks();
-    // sensorless_estimator_.do_checks();
-    // controller_.do_checks();
-
+    // Sub-components should use set_error
     return check_for_errors();
 }
 
 // @brief Update all esitmators
-bool Axis::do_updates() {
-    // Sub-components should use set_error which will propegate to this error_
-    encoder_.update();
-    sensorless_estimator_.update();
+bool Axis::do_updates(float dt) {
+    // Sub-components should use set_error which will propagate to this error_
+    encoder_.update(dt);
+    sensorless_estimator_.update(dt);
     return check_for_errors();
 }
 
@@ -188,14 +179,17 @@ bool Axis::watchdog_check() {
 bool Axis::run_lockin_spin() {
     // Spiral up current for softer rotor lock-in
     lockin_state_ = LOCKIN_STATE_RAMP;
-    float x = 0.0f;
-    run_control_loop([&]() {
+
+    uint32_t start_ms = get_ticks_ms();
+    float phase_vel = config_.lockin.ramp_distance / config_.lockin.ramp_time;
+    if (!motor_.arm_foc())
+        return error_ |= ERROR_MOTOR_FAILED, false;
+    run_control_loop([&](float dt) {
+        uint32_t delta_ms = get_ticks_ms() - start_ms;
+        float x = delta_ms / (config_.lockin.ramp_time * 1000.0f);
         float phase = wrap_pm_pi(config_.lockin.ramp_distance * x);
-        float I_mag = config_.lockin.current * x;
-        x += current_meas_period / config_.lockin.ramp_time;
-        if (!motor_.update(I_mag, phase, 0.0f))
-            return false;
-        return x < 1.0f;
+        float I_mag = std::min(std::max(x, 0.0f), 1.0f) * config_.lockin.current;
+        return motor_.FOC_update(0.0f, I_mag, phase, phase_vel);
     });
     
     // Spin states
@@ -217,12 +211,14 @@ bool Axis::run_lockin_spin() {
 
     // Accelerate
     lockin_state_ = LOCKIN_STATE_ACCELERATE;
-    run_control_loop([&]() {
-        vel += config_.lockin.accel * current_meas_period;
-        distance += vel * current_meas_period;
-        phase = wrap_pm_pi(phase + vel * current_meas_period);
+    run_control_loop([&](float dt) {
+        vel += config_.lockin.accel * dt;
+        distance += vel * dt;
+        phase = wrap_pm_pi(phase + vel * dt);
 
-        if (!motor_.update(config_.lockin.current, phase, vel))
+        if (encoder_.error_ != Encoder::ERROR_NONE)
+            return error_ |= ERROR_ENCODER_FAILED, false;
+        if (!motor_.FOC_update(0.0f, config_.lockin.current, phase, vel))
             return false;
         return !spin_done(true); //vel_override to go to next phase
     });
@@ -234,11 +230,13 @@ bool Axis::run_lockin_spin() {
     if (!spin_done()) {
         lockin_state_ = LOCKIN_STATE_CONST_VEL;
         vel = config_.lockin.vel; // reset to actual specified vel to avoid small integration error
-        run_control_loop([&]() {
-            distance += vel * current_meas_period;
-            phase = wrap_pm_pi(phase + vel * current_meas_period);
+        run_control_loop([&](float dt) {
+            distance += vel * dt;
+            phase = wrap_pm_pi(phase + vel * dt);
 
-            if (!motor_.update(config_.lockin.current, phase, vel))
+            if (encoder_.error_ != Encoder::ERROR_NONE)
+                return error_ |= ERROR_ENCODER_FAILED, false;
+            if (!motor_.FOC_update(0.0f, config_.lockin.current, phase, vel))
                 return false;
             return !spin_done();
         });
@@ -250,15 +248,19 @@ bool Axis::run_lockin_spin() {
 
 // Note run_sensorless_control_loop and run_closed_loop_control_loop are very similar and differ only in where we get the estimate from.
 bool Axis::run_sensorless_control_loop() {
-    run_control_loop([this](){
+    if (!motor_.arm_foc())
+        return error_ |= ERROR_MOTOR_FAILED, false;
+    run_control_loop([this](float dt){
         if (controller_.config_.control_mode >= Controller::CTRL_MODE_POSITION_CONTROL)
             return error_ |= ERROR_POS_CTRL_DURING_SENSORLESS, false;
 
         // Note that all estimators are updated in the loop prefix in run_control_loop
         float current_setpoint;
-        if (!controller_.update(sensorless_estimator_.pll_pos_, sensorless_estimator_.vel_estimate_, &current_setpoint))
+        if (sensorless_estimator_.error_ != SensorlessEstimator::ERROR_NONE)
+            return error_ |= ERROR_SENSORLESS_ESTIMATOR_FAILED, false;
+        if (!controller_.update(dt, sensorless_estimator_.pll_pos_, sensorless_estimator_.vel_estimate_, &current_setpoint))
             return error_ |= ERROR_CONTROLLER_FAILED, false;
-        if (!motor_.update(current_setpoint, sensorless_estimator_.phase_, sensorless_estimator_.vel_estimate_))
+        if (!motor_.FOC_update(0.0f, current_setpoint, sensorless_estimator_.phase_, sensorless_estimator_.vel_estimate_))
             return false; // set_error should update axis.error_
         return true;
     });
@@ -269,13 +271,17 @@ bool Axis::run_closed_loop_control_loop() {
     // To avoid any transient on startup, we intialize the setpoint to be the current position
     controller_.pos_setpoint_ = encoder_.pos_estimate_;
     set_step_dir_active(config_.enable_step_dir);
-    run_control_loop([this](){
+    if (!motor_.arm_foc())
+        return error_ |= ERROR_MOTOR_FAILED, false;
+    run_control_loop([this](float dt){
         // Note that all estimators are updated in the loop prefix in run_control_loop
         float current_setpoint;
-        if (!controller_.update(encoder_.pos_estimate_, encoder_.vel_estimate_, &current_setpoint))
+        if (encoder_.error_ != Encoder::ERROR_NONE)
+            return error_ |= ERROR_ENCODER_FAILED, false;
+        if (!controller_.update(dt, encoder_.pos_estimate_, encoder_.vel_estimate_, &current_setpoint))
             return error_ |= ERROR_CONTROLLER_FAILED, false; //TODO: Make controller.set_error
         float phase_vel = 2*M_PI * encoder_.vel_estimate_ / (float)encoder_.config_.cpr * motor_.config_.pole_pairs;
-        if (!motor_.update(current_setpoint, encoder_.phase_, phase_vel))
+        if (!motor_.FOC_update(0.0f, current_setpoint, encoder_.phase_, phase_vel))
             return false; // set_error should update axis.error_
         return true;
     });
@@ -312,13 +318,31 @@ bool Axis::run_open_loop_control_loop() {
     return check_for_errors();
 }
 
+bool Axis::run_phase_locked_control() {
+    Axis other_axis = (this == &axes[0]) ? axes[1] : axes[0];
+    if (!motor_.arm_foc())
+        return error_ |= ERROR_MOTOR_FAILED, false;
+
+    run_control_loop([&](float dt){
+        float phase = other_axis.motor_.current_control_.phase; // TODO: add an offset here to account for delayed PWM
+        float phase_vel = other_axis.motor_.current_control_.phase_vel;
+        if (!motor_.FOC_update(0.0f, controller_.current_setpoint_, phase, phase_vel))
+            return false; // set_error should update axis.error_
+        return true;
+    });
+    
+    return check_for_errors();
+}
+
 bool Axis::run_idle_loop() {
     // run_control_loop ignores missed modulation timing updates
     // if and only if we're in AXIS_STATE_IDLE
     safety_critical_disarm_motor_pwm(motor_);
     // the only valid reason to leave idle is an external request
     while (requested_state_ == AXIS_STATE_UNDEFINED) {
-        run_control_loop([this](){
+        //motor_.disarm();
+        run_control_loop([this](float dt){
+            (void) dt;
             return true;
         });
     }
@@ -344,8 +368,8 @@ void Axis::run_state_machine_loop() {
         }
     }
 
-    // arm!
-    motor_.arm();
+    //// arm!
+    //motor_.arm();
     
     for (;;) {
         // Load the task chain if a specific request is pending
@@ -442,7 +466,7 @@ void Axis::run_state_machine_loop() {
 
             case AXIS_STATE_IDLE: {
                 run_idle_loop();
-                status = motor_.arm(); // done with idling - try to arm the motor
+                status = true;
             } break;
 
             default:

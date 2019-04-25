@@ -18,7 +18,7 @@ public:
 
     bool init() { return true; }
 
-    bool update();
+    bool update(float dt);
 
     Config_t& config_;
     Axis* axis_ = nullptr; // set by Axis constructor

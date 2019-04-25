@@ -4,7 +4,7 @@
 #include <stm32_gpio.hpp>
 #include <stm32_tim.hpp>
 #include <stm32_dma.hpp>
-#include <devices.hpp>
+#include <adc.hpp>
 
 #include <array>
 

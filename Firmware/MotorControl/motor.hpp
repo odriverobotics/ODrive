@@ -10,6 +10,8 @@
 
 class Motor {
 public:
+    typedef bool(*control_law_t)(Motor& motor, void* ctx, float pwm_timings[3]);
+
     enum Error_t {
         ERROR_NONE = 0,
         ERROR_PHASE_RESISTANCE_OUT_OF_RANGE = 0x0001,
@@ -29,7 +31,14 @@ public:
         ERROR_NOT_CALIBRATED = 0x4000,                  // current control was used without calibrating phase R and L first
         ERROR_CURRENT_SENSOR_DEAD = 0x8000,
         ERROR_V_BUS_SENSOR_DEAD = 0x10000,
-        ERROR_TOO_NOISY = 0x20000
+        ERROR_TOO_NOISY = 0x20000,
+        ERROR_I_BUS_OUT_OF_RANGE = 0x40000,
+        ERROR_TIMER_UPDATE_MISSED = 0x80000,
+        ERROR_CONTROLLER_FAILED = 0x100000,
+        ERROR_DC_BUS_UNDER_VOLTAGE = 0x200000,
+        ERROR_DC_BUS_OVER_VOLTAGE = 0x400000,
+        ERROR_FAILED_TO_ARM = 0x800000,
+        ERROR_FOC_TIMEOUT = 0x1000000,
     };
 
     enum MotorType_t {
@@ -45,32 +54,55 @@ public:
     };
 
     struct CurrentControl_t{
-        float p_gain; // [V/A]
-        float i_gain; // [V/As]
-        float v_current_control_integral_d; // [V]
-        float v_current_control_integral_q; // [V]
-        float Ibus; // DC bus current [A]
+        float p_gain = 0.0f; // [V/A] should be auto set after resistance and inductance measurement
+        float i_gain = 0.0f; // [V/As] should be auto set after resistance and inductance measurement
+
+        bool enable_current_control = false; // true: FOC runs in current control mode using I{dq}_setpoint, false: FOC runs in voltage control mode using V{dq}_setpoint
+        float phase = 0.0f; // electrical phase of last current measurement [rad]
+        float phase_vel = 0.0f; // electrical phase velocity [rad/s]
+        float Id_setpoint = 0.0f; // [A]
+        float Iq_setpoint = 0.0f; // [A]
+        float Vd_setpoint = 0.0f; // [A]
+        float Vq_setpoint = 0.0f; // [A]
+        uint32_t cmd_expiry = 0; // time at which the FOC command expires
+
+        float v_current_control_integral_d = 0.0f; // [V]
+        float v_current_control_integral_q = 0.0f; // [V]
+
         // Voltage applied at end of cycle:
-        float final_v_alpha; // [V]
-        float final_v_beta; // [V]
-        float Iq_setpoint; // [A]
-        float Iq_measured; // [A]
-        float Id_measured; // [A]
-        float I_measured_report_filter_k;
-        float max_allowed_current; // [A]
-        Iph_ABC_t overcurrent_trip_level; // [A]
+        float final_v_d = 0.0f; // [V]
+        float final_v_q = 0.0f; // [V]
+        float final_v_alpha = 0.0f; // [V]
+        float final_v_beta = 0.0f; // [V]
+
+        float Ibus = 0.0f; // DC bus current [A]
+
+        float Iq_measured = 0.0f; // [A]
+        float Id_measured = 0.0f; // [A]
+
+        float I_measured_report_filter_k = 1.0f;
+        float max_allowed_current = 0.0f; // [A]
+        Iph_ABC_t overcurrent_trip_level = { 0.0f, 0.0f, 0.0f }; // [A]
     };
 
     // NOTE: for gimbal motors, all units of A are instead V.
     // example: vel_gain is [V/(count/s)] instead of [A/(count/s)]
     // example: current_lim and calibration_current will instead determine the maximum voltage applied to the motor.
     struct Config_t {
-        bool pre_calibrated = false; // can be set to true to indicate that all values here are valid
+        bool pre_calibrated = false; // if true, phase_inductance and phase_resistance are assumed to be valid
+        bool async_calibrated = false; // if true, rotor_inductance, rotor_resistance and mutual_inductance are assumed to be valid
+
         int32_t pole_pairs = 7; // for linear motors put polepairs per meter here
         float calibration_current = 10.0f;    // [A]
         float resistance_calib_max_voltage = 2.0f; // [V] - You may need to increase this if this voltage isn't sufficient to drive calibration_current through the motor.
+
         float phase_inductance = 0.0f;        // to be set by measure_phase_inductance
         float phase_resistance = 0.0f;        // to be set by measure_phase_resistance
+
+        float rotor_inductance = 0.0f;      // [H] - only needed for induction motors
+        float rotor_resistance = 0.0f;      // [Ohm] - only needed for induction motors
+        float mutual_inductance = 0.0f;     // [H] - only needed for induction motors. Must be smaller than phase_inductance and rotor_inductance
+
         int32_t direction = 0;                // 1 or -1 (0 = unspecified)
         MotorType_t motor_type = MOTOR_TYPE_HIGH_CURRENT;
         // Read out max_allowed_current to see max supported value for current_lim.
@@ -81,8 +113,11 @@ public:
         float current_control_bandwidth = 1000.0f;  // [rad/s]
         float inverter_temp_limit_lower = 100;
         float inverter_temp_limit_upper = 120;
-        bool phase_locked = false; // currently only used in open loop control
-        float phase_delay = 0.0f;
+        
+        float phase_delay = 0.0f; // this is useful mostly if phase_locked is true. Must not be changed after calibrating the encoder with a synchronous motor
+
+        float I_bus_hard_min = -INFINITY; // hard lower limit for bus current contribution
+        float I_bus_hard_max = INFINITY; // hard upper limit for bus current contribution
     };
 
     enum TimingLog_t {
@@ -119,7 +154,10 @@ public:
          uint8_t interrupt_priority,
          Config_t& config);
 
-    bool arm();
+    bool arm(control_law_t control_law, void* ctx);
+    bool arm_foc() {
+        return arm(&Motor::FOC, &this->current_control_);
+    }
     void disarm();
 
     void handle_timer_update();
@@ -135,15 +173,13 @@ public:
     float get_inverter_temp();
     bool update_thermal_limits();
     float effective_current_lim();
+    void log_timing(TimingLog_t log_idx);
     bool pwm_test(float duration);
     bool measure_phase_resistance(float test_current, float max_voltage);
     bool measure_phase_inductance(float voltage_low, float voltage_high);
     bool run_calibration();
-    bool enqueue_modulation_timings(float mod_alpha, float mod_beta);
-    bool enqueue_voltage_timings(float v_alpha, float v_beta);
-    bool FOC_voltage(float v_d, float v_q, float pwm_phase);
-    bool FOC_current(float Id_des, float Iq_des, float I_phase, float pwm_phase);
-    bool update(float current_setpoint, float phase, float phase_vel);
+    static bool FOC(Motor& motor, void* ctx, float pwm_timings[3]);
+    bool FOC_update(float Id_setpoint, float Iq_setpoint, float phase, float phase_vel, uint32_t expiry_us = 2000, bool force_voltage_control = false);
 
     STM32_Timer_t* timer_;
     STM32_GPIO_t* pwm_al_gpio_;
@@ -180,6 +216,7 @@ public:
     volatile uint8_t new_current_readings_ = 0; // bitfield (values 0...7) to indicate which of the current measurements are new. If ==7, the next current control iteration can happen. Reset by the current control iteration.
     volatile bool is_updating_pwm_timings_ = false; // true while the PWM timings are being updated
     volatile bool did_refresh_pwm_timings_ = false; // set after new PWM timings are loaded into the timer, checked and reset after every timer update event by the ISR
+    uint16_t timing_log_[TIMING_LOG_NUM_SLOTS] = { 0 };
 
     // variables exposed on protocol
     Error_t error_ = ERROR_NONE;
@@ -191,28 +228,22 @@ public:
     Iph_ABC_t DC_calib_ = {0.0f, 0.0f, 0.0f};
     float I_alpha_beta_measured_[2] = {0.0f, 0.0f};
     bool current_sense_saturation_ = false; // if true, the measured current values must not be used for control
-
-    float phase_setpoint_ = 0.0f;
+    float I_bus_ = 0.0f;
 
     uint32_t update_events_ = 0; // for debugging
-    bool counting_down_ = false; // set on timer update event
+    bool counting_down_ = false; // set on timer update event. First timer update event must be on upper peak.
 
-    CurrentControl_t current_control_ = {
-        .p_gain = 0.0f,        // [V/A] should be auto set after resistance and inductance measurement
-        .i_gain = 0.0f,        // [V/As] should be auto set after resistance and inductance measurement
-        .v_current_control_integral_d = 0.0f,
-        .v_current_control_integral_q = 0.0f,
-        .Ibus = 0.0f,
-        .final_v_alpha = 0.0f,
-        .final_v_beta = 0.0f,
-        .Iq_setpoint = 0.0f,
-        .Iq_measured = 0.0f,
-        .Id_measured = 0.0f,
-        .I_measured_report_filter_k = 1.0f,
-        .max_allowed_current = 0.0f,
-        .overcurrent_trip_level = { 0.0f, 0.0f, 0.0f },
-    };
+
+    uint64_t longest_wait_ = 0;
+    uint64_t max_it_ = 0;
+
+    uint8_t field_weakening_status_ = 0;
+
+    CurrentControl_t current_control_;
     float thermal_current_lim_ = 10.0f;  //[A]
+
+    control_law_t control_law_ = nullptr; // set by arm() and reset by disarm()
+    void* control_law_ctx_ = nullptr; // set by arm() and reset by disarm()
 
     // Communication protocol definitions
     auto make_protocol_definitions() {
@@ -231,17 +262,26 @@ public:
             make_protocol_ro_property("thermal_current_lim", &thermal_current_lim_),
             make_protocol_function("get_inverter_temp", *this, &Motor::get_inverter_temp),
             make_protocol_ro_property("update_events", &update_events_),
+            make_protocol_property("longest_wait", &longest_wait_),
+            make_protocol_property("max_it", &max_it_),
+            make_protocol_property("field_weakening_status", &field_weakening_status_),
             make_protocol_object("current_control",
                 make_protocol_property("p_gain", &current_control_.p_gain),
                 make_protocol_property("i_gain", &current_control_.i_gain),
                 make_protocol_property("v_current_control_integral_d", &current_control_.v_current_control_integral_d),
                 make_protocol_property("v_current_control_integral_q", &current_control_.v_current_control_integral_q),
-                make_protocol_property("Ibus", &current_control_.Ibus),
+                make_protocol_property("phase", &current_control_.phase),
+                make_protocol_property("phase_vel", &current_control_.phase_vel),
+                make_protocol_property("final_v_d", &current_control_.final_v_d),
+                make_protocol_property("final_v_q", &current_control_.final_v_q),
                 make_protocol_property("final_v_alpha", &current_control_.final_v_alpha),
                 make_protocol_property("final_v_beta", &current_control_.final_v_beta),
+                make_protocol_property("Id_setpoint", &current_control_.Id_setpoint),
                 make_protocol_property("Iq_setpoint", &current_control_.Iq_setpoint),
-                make_protocol_property("Iq_measured", &current_control_.Iq_measured),
+                make_protocol_property("Vd_setpoint", &current_control_.Vd_setpoint),
+                make_protocol_property("Vq_setpoint", &current_control_.Vq_setpoint),
                 make_protocol_property("Id_measured", &current_control_.Id_measured),
+                make_protocol_property("Iq_measured", &current_control_.Iq_measured),
                 make_protocol_property("I_measured_report_filter_k", &current_control_.I_measured_report_filter_k),
                 make_protocol_ro_property("max_allowed_current", &current_control_.max_allowed_current),
                 make_protocol_ro_property("overcurrent_trip_level_a", &current_control_.overcurrent_trip_level.phA),
@@ -264,24 +304,28 @@ public:
             //make_protocol_object("current_sensor_b", current_sensor_b.make_protocol_definitions()),
             //make_protocol_object("current_sensor_c", current_sensor_c.make_protocol_definitions()),
 
-//            make_protocol_object("timing_log",
-//                make_protocol_ro_property("TIMING_LOG_GENERAL", &timing_log_[TIMING_LOG_GENERAL]),
-//                make_protocol_ro_property("TIMING_LOG_ADC_CB_I", &timing_log_[TIMING_LOG_ADC_CB_I]),
-//                make_protocol_ro_property("TIMING_LOG_ADC_CB_DC", &timing_log_[TIMING_LOG_ADC_CB_DC]),
-//                make_protocol_ro_property("TIMING_LOG_MEAS_R", &timing_log_[TIMING_LOG_MEAS_R]),
-//                make_protocol_ro_property("TIMING_LOG_MEAS_L", &timing_log_[TIMING_LOG_MEAS_L]),
-//                make_protocol_ro_property("TIMING_LOG_ENC_CALIB", &timing_log_[TIMING_LOG_ENC_CALIB]),
-//                make_protocol_ro_property("TIMING_LOG_IDX_SEARCH", &timing_log_[TIMING_LOG_IDX_SEARCH]),
-//                make_protocol_ro_property("TIMING_LOG_FOC_VOLTAGE", &timing_log_[TIMING_LOG_FOC_VOLTAGE]),
-//                make_protocol_ro_property("TIMING_LOG_FOC_CURRENT", &timing_log_[TIMING_LOG_FOC_CURRENT])
-//            ),
+            make_protocol_object("timing_log",
+                make_protocol_ro_property("TIMING_LOG_GENERAL", &timing_log_[TIMING_LOG_GENERAL]),
+                make_protocol_ro_property("TIMING_LOG_ADC_CB_I", &timing_log_[TIMING_LOG_ADC_CB_I]),
+                make_protocol_ro_property("TIMING_LOG_ADC_CB_DC", &timing_log_[TIMING_LOG_ADC_CB_DC]),
+                make_protocol_ro_property("TIMING_LOG_MEAS_R", &timing_log_[TIMING_LOG_MEAS_R]),
+                make_protocol_ro_property("TIMING_LOG_MEAS_L", &timing_log_[TIMING_LOG_MEAS_L]),
+                make_protocol_ro_property("TIMING_LOG_ENC_CALIB", &timing_log_[TIMING_LOG_ENC_CALIB]),
+                make_protocol_ro_property("TIMING_LOG_IDX_SEARCH", &timing_log_[TIMING_LOG_IDX_SEARCH]),
+                make_protocol_ro_property("TIMING_LOG_FOC_VOLTAGE", &timing_log_[TIMING_LOG_FOC_VOLTAGE]),
+                make_protocol_ro_property("TIMING_LOG_FOC_CURRENT", &timing_log_[TIMING_LOG_FOC_CURRENT])
+            ),
             make_protocol_object("config",
                 make_protocol_property("pre_calibrated", &config_.pre_calibrated),
+                make_protocol_property("async_calibrated", &config_.async_calibrated),
                 make_protocol_property("pole_pairs", &config_.pole_pairs),
                 make_protocol_property("calibration_current", &config_.calibration_current),
                 make_protocol_property("resistance_calib_max_voltage", &config_.resistance_calib_max_voltage),
                 make_protocol_property("phase_inductance", &config_.phase_inductance),
                 make_protocol_property("phase_resistance", &config_.phase_resistance),
+                make_protocol_property("rotor_inductance", &config_.rotor_inductance),
+                make_protocol_property("rotor_resistance", &config_.rotor_resistance),
+                make_protocol_property("mutual_inductance", &config_.mutual_inductance),
                 make_protocol_property("direction", &config_.direction),
                 make_protocol_property("motor_type", &config_.motor_type),
                 make_protocol_property("current_lim", &config_.current_lim),
@@ -289,7 +333,10 @@ public:
                 make_protocol_property("inverter_temp_limit_upper", &config_.inverter_temp_limit_upper),
                 make_protocol_property("requested_current_range", &config_.requested_current_range),
                 make_protocol_property("current_control_bandwidth", &config_.current_control_bandwidth,
-                    [](void* ctx) { static_cast<Motor*>(ctx)->update_current_controller_gains(); }, this)
+                    [](void* ctx) { static_cast<Motor*>(ctx)->update_current_controller_gains(); }, this),
+                make_protocol_property("phase_delay", &config_.phase_delay),
+                make_protocol_property("I_bus_hard_min", &config_.I_bus_hard_min),
+                make_protocol_property("I_bus_hard_max", &config_.I_bus_hard_max)
             )
         );
     }

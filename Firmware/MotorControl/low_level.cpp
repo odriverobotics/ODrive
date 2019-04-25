@@ -112,12 +112,24 @@ void safety_critical_arm_motor_pwm(Motor& motor) {
 //
 // @returns true if the motor was armed before.
 bool safety_critical_disarm_motor_pwm(Motor& motor) {
+    //if (reinterpret_cast<uint32_t>(motor.timer_->htim.Instance) == 0x13881388)
+    if (&motor != &axes[0].motor_ && &motor != &axes[1].motor_) {
+        //NVIC_SystemReset(); // this should never happen
+        motor.error_ = Motor::ERROR_UNEXPECTED_TIMER_CALLBACK;
+        return false;
+    }
+
     uint32_t mask = cpu_enter_critical();
     bool was_armed = motor.is_armed_;
     motor.is_armed_ = false;
-    motor.timer_->htim.Instance->BDTR &= ~TIM_BDTR_AOE;
+    auto instance = motor.timer_->htim.Instance;
+    //if (reinterpret_cast<uint32_t>(instance) == 0x20020000 || reinterpret_cast<uint32_t>(instance) == 0x13881388)
+    //    motor.error_ = Motor::ERROR_UNEXPECTED_TIMER_CALLBACK;
+    instance->BDTR &= ~TIM_BDTR_AOE;
     __HAL_TIM_MOE_DISABLE_UNCONDITIONALLY(&motor.timer_->htim);
     motor.did_refresh_pwm_timings_ = false;
+    motor.control_law_ = nullptr;
+    motor.control_law_ctx_ = nullptr;
     cpu_exit_critical(mask);
     return was_armed;
 }

@@ -1,7 +1,7 @@
 
 #include "odrive_main.h"
 
-bool SensorlessEstimator::update() {
+bool SensorlessEstimator::update(float dt) {
     // Algorithm based on paper: Sensorless Control of Surface-Mount Permanent-Magnet Synchronous Motors Based on a Nonlinear Observer
     // http://cas.ensmp.fr/~praly/Telechargement/Journaux/2010-IEEE_TPEL-Lee-Hong-Nam-Ortega-Praly-Astolfi.pdf
     // In particular, equation 8 (and by extension eqn 4 and 6).
@@ -27,7 +27,7 @@ bool SensorlessEstimator::update() {
         // flux dynamics (prediction)
         float x_dot = y;
         // integrate prediction to current timestep
-        flux_state_[i] += x_dot * current_meas_period;
+        flux_state_[i] += x_dot * dt;
 
         // eta is the estimated permanent magnet flux (see paper eqn 6)
         eta[i] = flux_state_[i] - axis_->motor_.config_.phase_inductance * I_alpha_beta[i];
@@ -44,7 +44,7 @@ bool SensorlessEstimator::update() {
         // add observer action to flux estimate dynamics
         float x_dot = eta_factor * eta[i];
         // convert action to discrete-time
-        flux_state_[i] += x_dot * current_meas_period;
+        flux_state_[i] += x_dot * dt;
         // update new eta
         eta[i] = flux_state_[i] - axis_->motor_.config_.phase_inductance * I_alpha_beta[i];
     }
@@ -60,19 +60,19 @@ bool SensorlessEstimator::update() {
     // Critically damped
     float pll_ki = 0.25f * (pll_kp * pll_kp);
     // Check that we don't get problems with discrete time approximation
-    if (!(current_meas_period * pll_kp < 1.0f)) {
+    if (!(dt * pll_kp < 1.0f)) {
         error_ |= ERROR_UNSTABLE_GAIN;
         return false;
     }
 
     // predict PLL phase with velocity
-    pll_pos_ = wrap_pm_pi(pll_pos_ + current_meas_period * vel_estimate_);
+    pll_pos_ = wrap_pm_pi(pll_pos_ + dt * vel_estimate_);
     // update PLL phase with observer permanent magnet phase
     phase_ = fast_atan2(eta[1], eta[0]);
     float delta_phase = wrap_pm_pi(phase_ - pll_pos_);
-    pll_pos_ = wrap_pm_pi(pll_pos_ + current_meas_period * pll_kp * delta_phase);
+    pll_pos_ = wrap_pm_pi(pll_pos_ + dt * pll_kp * delta_phase);
     // update PLL velocity
-    vel_estimate_ += current_meas_period * pll_ki * delta_phase;
+    vel_estimate_ += dt * pll_ki * delta_phase;
 
     return true;
 };

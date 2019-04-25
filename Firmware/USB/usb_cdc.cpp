@@ -1,10 +1,6 @@
 
 #include "usb_cdc.hpp"
 #include <algorithm>
-//#include "usbd_desc.h"
-//#include "usbd_ctlreq.h"
-
-#include "cmsis_os.h"
 
 /*---------------------------------------------------------------------*/
 /*  CDC definitions                                                    */

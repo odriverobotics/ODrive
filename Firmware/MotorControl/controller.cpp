@@ -50,7 +50,7 @@ void Controller::move_to_pos(float goal_point) {
                                  axis_->trap_.config_.vel_limit,
                                  axis_->trap_.config_.accel_limit,
                                  axis_->trap_.config_.decel_limit);
-    traj_start_loop_count_ = axis_->loop_counter_;
+    traj_start_us_ = get_ticks_us();
     config_.control_mode = CTRL_MODE_TRAJECTORY_CONTROL;
     goal_point_ = goal_point;
 }
@@ -98,16 +98,16 @@ bool Controller::anticogging_calibration(float pos_estimate, float vel_estimate)
     return false;
 }
 
-bool Controller::update(float pos_estimate, float vel_estimate, float* current_setpoint_output) {
+bool Controller::update(float dt, float pos_estimate, float vel_estimate, float* current_setpoint_output) {
     // Only runs if anticogging_.calib_anticogging is true; non-blocking
     anticogging_calibration(pos_estimate, vel_estimate);
     float anticogging_pos = pos_estimate;
 
     // Trajectory control
     if (config_.control_mode == CTRL_MODE_TRAJECTORY_CONTROL) {
-        // Note: uint32_t loop count delta is OK across overflow
+        // Note: uint32_t time delta is OK across overflow
         // Beware of negative deltas, as they will not be well behaved due to uint!
-        float t = (axis_->loop_counter_ - traj_start_loop_count_) * current_meas_period;
+        float t = ((uint32_t)get_ticks_us() - traj_start_us_);
         if (t > axis_->trap_.Tf_) {
             // Drop into position control mode when done to avoid problems on loop counter delta overflow
             config_.control_mode = CTRL_MODE_POSITION_CONTROL;
@@ -125,7 +125,7 @@ bool Controller::update(float pos_estimate, float vel_estimate, float* current_s
 
     // Ramp rate limited velocity setpoint
     if (config_.control_mode == CTRL_MODE_VELOCITY_CONTROL && vel_ramp_enable_) {
-        float max_step_size = current_meas_period * config_.vel_ramp_rate;
+        float max_step_size = dt * config_.vel_ramp_rate;
         float full_step = vel_ramp_target_ - vel_setpoint_;
         float step;
         if (fabsf(full_step) > max_step_size) {
@@ -208,7 +208,7 @@ bool Controller::update(float pos_estimate, float vel_estimate, float* current_s
             // TODO make decayfactor configurable
             vel_integrator_current_ *= 0.99f;
         } else {
-            vel_integrator_current_ += (config_.vel_integrator_gain * current_meas_period) * v_err;
+            vel_integrator_current_ += (config_.vel_integrator_gain * dt) * v_err;
         }
     }
 

@@ -26,7 +26,6 @@
 #include "odrive_v3_x.hpp"
 
 
-PerformanceCounter_t* PerformanceCounter_t::current_counter = 0;
 
 
 

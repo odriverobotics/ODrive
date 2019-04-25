@@ -44,7 +44,11 @@ Motor::Motor(STM32_Timer_t* timer,
 // the motor can be considered disarmed.
 //
 // @returns: True on success, false otherwise
-bool Motor::arm() {
+bool Motor::arm(control_law_t control_law, void* ctx) {
+    uint32_t mask = cpu_enter_critical();
+    control_law_ctx_ = ctx;
+    control_law_ = control_law;
+    cpu_exit_critical(mask);
 
     // Reset controller states, integrators, setpoints, etc.
     axis_->controller_.reset();
@@ -133,77 +137,127 @@ void Motor::handle_timer_update() {
         }
     }
 
-    bool was_current_sense = check_update_mode(current_sample_mode_, counting_down_);
+    
+    // Wait for the current measurements to become available
+    bool have_all_values = false;
+    uint64_t start = get_ticks_us();
+    uint64_t iterations = 0;
+    do {
+        iterations++;
+        have_all_values = (!current_sensor_a_ || current_sensor_a_->has_value())
+                       && (!current_sensor_b_ || current_sensor_b_->has_value())
+                       && (!current_sensor_c_ || current_sensor_c_->has_value());
+    } while (!have_all_values); // TODO: add timeout
+    longest_wait_ = std::max(get_ticks_us() - start, longest_wait_);
+    max_it_ = std::max(iterations, max_it_);
+
+    if (!vbus_sense.get_voltage(&vbus_voltage)) {
+        set_error(ERROR_V_BUS_SENSOR_DEAD);
+        return;
+    }
+
+    Iph_ABC_t current = { 0 };
+    bool read_all_values = (!current_sensor_a_ || current_sensor_a_->get_current(&current.phA))
+                        && (!current_sensor_b_ || current_sensor_b_->get_current(&current.phB))
+                        && (!current_sensor_c_ || current_sensor_c_->get_current(&current.phC));
+    if (!read_all_values) {
+        set_error(ERROR_CURRENT_SENSOR);
+        return;
+    }
+
+    bool reset_all_values = (!current_sensor_a_ || current_sensor_a_->reset_value())
+                         && (!current_sensor_b_ || current_sensor_b_->reset_value())
+                         && (!current_sensor_c_ || current_sensor_c_->reset_value());
+    if (!reset_all_values) {
+        set_error(ERROR_CURRENT_SENSOR);
+        return;
+    }
+
+    // Infer the missing current value
+    // This assumes that at least two current sensors are non-NULL (checked in init())
+    if (!current_sensor_a_)
+        current.phA = -(current.phB + current.phC);
+    if (!current_sensor_b_)
+        current.phB = -(current.phC + current.phA);
+    if (!current_sensor_c_)
+        current.phC = -(current.phA + current.phB);
+
     bool was_current_dc_calib = check_update_mode(current_dc_calib_mode_, counting_down_);
-    if (was_current_sense || was_current_dc_calib) {
-        // Wait for the current measurements to become available
-        bool have_all_values = false;
-        do {
-            have_all_values = (!current_sensor_a_ || current_sensor_a_->has_value())
-                           && (!current_sensor_b_ || current_sensor_b_->has_value())
-                           && (!current_sensor_c_ || current_sensor_c_->has_value());
-        } while (!have_all_values); // TODO: add timeout
+    if (was_current_dc_calib) {
+        // DC_CAL measurement
+        DC_calib_.phA += (current.phA - DC_calib_.phA) * calib_filter_k;
+        DC_calib_.phB += (current.phB - DC_calib_.phB) * calib_filter_k;
+        DC_calib_.phC += (current.phC - DC_calib_.phC) * calib_filter_k;
+    }
 
-        if (!vbus_sense.get_voltage(&vbus_voltage)) {
-            set_error(ERROR_V_BUS_SENSOR_DEAD);
-            return;
+    bool was_current_sense = check_update_mode(current_sample_mode_, counting_down_);
+    if (was_current_sense) {
+        current_meas_.phA = current.phA - DC_calib_.phA;
+        current_meas_.phB = current.phB - DC_calib_.phB;
+        current_meas_.phC = current.phC - DC_calib_.phC;
+
+        current_sense_saturation_ =
+            (current_sensor_a_ && (current_meas_.phA > current_control_.overcurrent_trip_level.phA)) ||
+            (current_sensor_b_ && (current_meas_.phB > current_control_.overcurrent_trip_level.phB)) ||
+            (current_sensor_c_ && (current_meas_.phC > current_control_.overcurrent_trip_level.phC));
+
+        // Clarke transform
+        I_alpha_beta_measured_[0] = current_meas_.phA;
+        I_alpha_beta_measured_[1] = one_by_sqrt3 * (current_meas_.phB - current_meas_.phC);
+
+        // TODO: raise error if the sum of the current sensors diverge too much from 0
+
+        // Prepare hall readings
+        // TODO move this to inside encoder update function
+        axis_->encoder_.decode_hall_samples(GPIO_port_samples);
+
+        // Apply control law to calculate PWM duty cycles
+        if (is_armed_) {
+            if (!do_checks()) {
+                return; // error set in do_checks()
+            }
+
+            float pwm_timings[3];
+            bool success = false;
+            // control_law_ and control_law_ctx_ are supposed to be set atomically in arm()
+            if (control_law_) {
+                success = control_law_(*this, control_law_ctx_, pwm_timings);
+            }
+
+            if (!success) {
+                set_error(ERROR_CONTROLLER_FAILED);
+                return;
+            }
+
+            // Calculate DC power consumption
+            float I_bus = (pwm_timings[0] - 0.5f) * current.phA + (pwm_timings[1] - 0.5f) * current.phB + (pwm_timings[2] - 0.5f) * current.phC;
+            if (I_bus < config_.I_bus_hard_min || I_bus > config_.I_bus_hard_max) {
+                set_error(ERROR_I_BUS_OUT_OF_RANGE);
+                return;
+            }
+            I_bus_ = I_bus;
+
+            uint16_t next_timings[] = {
+                (uint16_t)(pwm_timings[0] * (float)period_),
+                (uint16_t)(pwm_timings[1] * (float)period_),
+                (uint16_t)(pwm_timings[2] * (float)period_)
+            };
+
+            safety_critical_apply_motor_pwm_timings(*this, period_, next_timings, false);
+        } else {
+            // if the phases are floating and we still have current it's because
+            // the diodes are conducting, which implies a phase voltage of DC+ or DC-
+            float pwm_timings[3] = {
+                current.phA > 0.0f ? 0.0f : 1.0f,
+                current.phB > 0.0f ? 0.0f : 1.0f,
+                current.phC > 0.0f ? 0.0f : 1.0f
+            };
+            float I_bus = (pwm_timings[0] - 0.5f) * current.phA + (pwm_timings[1] - 0.5f) * current.phB + (pwm_timings[2] - 0.5f) * current.phC;
+            (void) I_bus; // TODO: discuss whether we want to handle overvoltage on the phases or just be passive about it
+            I_bus_ = 0.0f;
         }
 
-        Iph_ABC_t current = { 0 };
-        bool read_all_values = (!current_sensor_a_ || current_sensor_a_->get_current(&current.phA))
-                            && (!current_sensor_b_ || current_sensor_b_->get_current(&current.phB))
-                            && (!current_sensor_c_ || current_sensor_c_->get_current(&current.phC));
-        if (!read_all_values) {
-            set_error(ERROR_CURRENT_SENSOR);
-            return;
-        }
-
-        bool reset_all_values = (!current_sensor_a_ || current_sensor_a_->reset_value())
-                             && (!current_sensor_b_ || current_sensor_b_->reset_value())
-                             && (!current_sensor_c_ || current_sensor_c_->reset_value());
-        if (!reset_all_values) {
-            set_error(ERROR_CURRENT_SENSOR);
-            return;
-        }
-
-        // Infer the missing current value
-        // This assumes that at least two current sensors are non-NULL (checked in init())
-        if (!current_sensor_a_)
-            current.phA = -(current.phB + current.phC);
-        if (!current_sensor_b_)
-            current.phB = -(current.phC + current.phA);
-        if (!current_sensor_c_)
-            current.phC = -(current.phA + current.phB);
-
-        if (was_current_sense) {
-            current_meas_.phA = current.phA - DC_calib_.phA;
-            current_meas_.phB = current.phB - DC_calib_.phB;
-            current_meas_.phC = current.phC - DC_calib_.phC;
-
-            current_sense_saturation_ =
-                (current_sensor_a_ && (current_meas_.phA > current_control_.overcurrent_trip_level.phA)) ||
-                (current_sensor_b_ && (current_meas_.phB > current_control_.overcurrent_trip_level.phB)) ||
-                (current_sensor_c_ && (current_meas_.phC > current_control_.overcurrent_trip_level.phC));
-
-            // Clarke transform
-            I_alpha_beta_measured_[0] = current_meas_.phA;
-            I_alpha_beta_measured_[1] = one_by_sqrt3 * (current_meas_.phB - current_meas_.phC);
-
-            // TODO: raise error if the sum of the current sensors diverge too much from 0
-
-            // Prepare hall readings
-            // TODO move this to inside encoder update function
-            axis_->encoder_.decode_hall_samples(GPIO_port_samples);
-            // Trigger axis thread
-            axis_->signal_current_meas();
-        }
-        
-        if (was_current_dc_calib) {
-            // DC_CAL measurement
-            DC_calib_.phA += (current.phA - DC_calib_.phA) * calib_filter_k;
-            DC_calib_.phB += (current.phB - DC_calib_.phB) * calib_filter_k;
-            DC_calib_.phC += (current.phC - DC_calib_.phC) * calib_filter_k;
-        }
+        update_brake_current();
     }
 }
 
@@ -368,6 +422,14 @@ bool Motor::update_thermal_limits() {
 }
 
 bool Motor::do_checks() {
+    if (!(vbus_voltage >= board_config.dc_bus_undervoltage_trip_level)) {
+        set_error(ERROR_DC_BUS_UNDER_VOLTAGE);
+        return false;
+    }
+    if (!(vbus_voltage <= board_config.dc_bus_overvoltage_trip_level)) {
+        set_error(ERROR_DC_BUS_OVER_VOLTAGE);
+        return false;
+    }
     if (!check_DRV_fault()) {
         set_error(ERROR_DRV_FAULT);
         return false;
@@ -425,17 +487,18 @@ void Motor::log_timing(TimingLog_t log_idx) {
  * @param duration: Duration of the test in seconds
  */
 bool Motor::pwm_test(float duration) {
-    const size_t num_test_cycles = static_cast<size_t>(duration / current_meas_period); // Test runs for 1s
-    //const float epsilon = nextafterf(0.0f, INFINITY);
-
     Iph_ABC_t I_ph_min = {INFINITY, INFINITY, INFINITY};
     Iph_ABC_t I_ph_max = {-INFINITY, -INFINITY, -INFINITY};
     float vbus_voltage_avg = vbus_voltage;
     float vbus_voltage_min = INFINITY;
     float vbus_voltage_max = -INFINITY;
-    
-    size_t i = 0;
-    axis_->run_control_loop([&](){
+
+    if (!arm_foc())
+        return false;
+    FOC_update(0.0f, 0.0f, 0.0f,(uint32_t)(duration * 1.0e6f) + 1000, true);
+
+    uint32_t start = get_ticks_ms();
+    while (get_ticks_ms() - start < duration * 1000.f) {
         I_ph_min.phA = std::min(I_ph_min.phA, current_meas_.phA);
         I_ph_min.phB = std::min(I_ph_min.phB, current_meas_.phB);
         I_ph_min.phC = std::min(I_ph_min.phC, current_meas_.phC);
@@ -444,13 +507,9 @@ bool Motor::pwm_test(float duration) {
         I_ph_max.phC = std::max(I_ph_max.phC, current_meas_.phC);
         vbus_voltage_min = std::min(vbus_voltage_min, vbus_voltage);
         vbus_voltage_max = std::max(vbus_voltage_max, vbus_voltage);
+        osDelay(1);
+    }
 
-        // Test voltage along phase A
-        if (!enqueue_voltage_timings(0.0f, 0.0f))
-            return false; // error set inside enqueue_voltage_timings
-
-        return ++i < num_test_cycles;
-    });
     if (axis_->error_ != Axis::ERROR_NONE)
         return false;
 
@@ -492,23 +551,34 @@ bool Motor::pwm_test(float duration) {
 // TODO check Ibeta balance to verify good motor connection
 bool Motor::measure_phase_resistance(float test_current, float max_voltage) {
     static const float kI = 10.0f;                                 // [(V/s)/A]
-    static const size_t num_test_cycles = static_cast<size_t>(3.0f / current_meas_period); // Test runs for 3s
-    float test_voltage = 0.0f;
     
-    size_t i = 0;
-    axis_->run_control_loop([&](){
-        float Ialpha = I_alpha_beta_measured_[0];
-        test_voltage += (kI * current_meas_period) * (test_current - Ialpha);
-        if (test_voltage > max_voltage || test_voltage < -max_voltage)
-            return set_error(ERROR_PHASE_RESISTANCE_OUT_OF_RANGE), false;
+    struct control_law_ctx_t {
+        size_t i = 0;
+        float test_voltage = 0.0f;
+        float test_current;
+        float max_voltage;
+    } ctx;
+    ctx.test_current = test_current;
+    ctx.max_voltage = max_voltage;
+
+    bool did_arm = arm([](Motor& motor, void* vctx, float pwm_timings[3]) {
+        control_law_ctx_t& ctx = *(control_law_ctx_t*)vctx;
+
+        float Ialpha = motor.I_alpha_beta_measured_[0];
+        ctx.test_voltage += (kI * current_meas_period) * (ctx.test_current - Ialpha);
+        if (ctx.test_voltage > ctx.max_voltage || ctx.test_voltage < -ctx.max_voltage)
+            return motor.set_error(ERROR_PHASE_RESISTANCE_OUT_OF_RANGE), false;
 
         // Test voltage along phase A
-        if (!enqueue_voltage_timings(test_voltage, 0.0f))
-            return false; // error set inside enqueue_voltage_timings
-        log_timing(TIMING_LOG_MEAS_R);
+        return SVM_voltage(vbus_voltage, ctx.test_voltage, 0.0f, pwm_timings);
+    }, &ctx);
 
-        return ++i < num_test_cycles;
-    });
+    if (!did_arm) {
+        return set_error(ERROR_FAILED_TO_ARM), false;
+    }
+
+    osDelay(3.0f); // Test runs for 3s
+
     if (axis_->error_ != Axis::ERROR_NONE)
         return false;
 
@@ -516,30 +586,33 @@ bool Motor::measure_phase_resistance(float test_current, float max_voltage) {
     //if (!enqueue_voltage_timings(motor, 0.0f, 0.0f))
     //    return false; // error set inside enqueue_voltage_timings
 
-    float R = test_voltage / test_current;
+    float R = ctx.test_voltage / ctx.test_current;
     config_.phase_resistance = R;
     return true; // if we ran to completion that means success
 }
 
 bool Motor::measure_phase_inductance(float voltage_low, float voltage_high) {
-    float test_voltages[2] = {voltage_low, voltage_high};
-    float Ialphas[2] = {0.0f, 0.0f};
-    static const int num_cycles = 5000; // TODO: make dependent on control loop frequency
+    struct control_law_ctx_t {
+        float test_voltages[2];
+        float Ialphas[2] = {0.0f, 0.0f};
+        size_t t = 0;
+    } ctx = { .test_voltages = {voltage_low, voltage_high} };
 
-    size_t t = 0;
-    axis_->run_control_loop([&](){
-        int i = t & 1;
-        Ialphas[i] += I_alpha_beta_measured_[0];
+    bool did_arm = arm([](Motor& motor, void* vctx, float pwm_timings[3]) {
+        control_law_ctx_t& ctx = *(control_law_ctx_t*)vctx;
+
+        int i = ctx.t & 1;
+        ctx.Ialphas[i] += motor.I_alpha_beta_measured_[0];
 
         // Test voltage along phase A
-        if (!enqueue_voltage_timings(test_voltages[i], 0.0f))
-            return false; // error set inside enqueue_voltage_timings
-        log_timing(TIMING_LOG_MEAS_L);
+        return SVM_voltage(vbus_voltage, ctx.test_voltages[i], 0.0f, pwm_timings);
+    }, &ctx);
+    
+    if (!did_arm) {
+        return set_error(ERROR_FAILED_TO_ARM), false;
+    }
 
-        return ++t < (num_cycles << 1);
-    });
-    if (axis_->error_ != Axis::ERROR_NONE)
-        return false;
+    osDelay(5000);
 
     //// De-energize motor
     //if (!enqueue_voltage_timings(motor, 0.0f, 0.0f))
@@ -548,7 +621,7 @@ bool Motor::measure_phase_inductance(float voltage_low, float voltage_high) {
     float v_L = 0.5f * (voltage_high - voltage_low);
     // Note: A more correct formula would also take into account that there is a finite timestep.
     // However, the discretisation in the current control loop inverts the same discrepancy
-    float dI_by_dt = (Ialphas[1] - Ialphas[0]) / (current_meas_period * (float)num_cycles);
+    float dI_by_dt = (ctx.Ialphas[1] - ctx.Ialphas[0]) / (current_meas_period * (float)ctx.t);
     float L = v_L / dI_by_dt;
 
     config_.phase_inductance = L;
@@ -578,45 +651,29 @@ bool Motor::run_calibration() {
     return true;
 }
 
-bool Motor::enqueue_modulation_timings(float mod_alpha, float mod_beta) {
-    float tA, tB, tC;
-    if (SVM(mod_alpha, mod_beta, &tA, &tB, &tC) != 0)
-        return set_error(ERROR_MODULATION_MAGNITUDE), false;
-    uint16_t next_timings[] = {
-        (uint16_t)(tA * (float)period_),
-        (uint16_t)(tB * (float)period_),
-        (uint16_t)(tC * (float)period_)
-    };
-    safety_critical_apply_motor_pwm_timings(*this, period_, next_timings, false);
-    update_brake_current();
-    return true;
-}
 
-bool Motor::enqueue_voltage_timings(float v_alpha, float v_beta) {
-    float vfactor = 1.0f / ((2.0f / 3.0f) * vbus_voltage);
-    float mod_alpha = vfactor * v_alpha;
-    float mod_beta = vfactor * v_beta;
-    if (!enqueue_modulation_timings(mod_alpha, mod_beta))
-        return false;
-    log_timing(TIMING_LOG_FOC_VOLTAGE);
-    return true;
-}
-
-
-
-bool Motor::FOC(float Id_des, float Iq_des, float I_phase, float pwm_phase) {
+bool Motor::FOC(Motor& motor, void* ctx, float pwm_timings[3]) {
     float mod_to_V = (2.0f / 3.0f) * vbus_voltage;
     float V_to_mod = 1.0f / mod_to_V;
 
     // Syntactic sugar
-    CurrentControl_t& ictrl = current_control_;
+    CurrentControl_t& ictrl = motor.current_control_;
 
-    // For Reporting
-    ictrl.Iq_setpoint = Iq_des;
+    if (get_ticks_us() > ictrl.cmd_expiry) {
+        motor.set_error(ERROR_CONTROL_DEADLINE_MISSED);
+        return false;
+    }
+
+    float I_phase = ictrl.phase;
+    float phase_vel = ictrl.phase_vel;
+    ictrl.phase = wrap_pm_pi(ictrl.phase + current_meas_period * phase_vel);
+    float pwm_phase = I_phase + 1.5f * current_meas_period * phase_vel;
+    float Id_des = ictrl.Id_setpoint;
+    float Iq_des = ictrl.Iq_setpoint;
 
     // Clarke transform
-    float Ialpha = I_alpha_beta_measured_[0];
-    float Ibeta = I_alpha_beta_measured_[1];
+    float Ialpha = motor.I_alpha_beta_measured_[0];
+    float Ibeta = motor.I_alpha_beta_measured_[1];
 
     // Park transform
     float c_I = our_arm_cos_f32(I_phase);
@@ -630,13 +687,14 @@ bool Motor::FOC(float Id_des, float Iq_des, float I_phase, float pwm_phase) {
     float Ierr_d = Id_des - Id;
     float Ierr_q = Iq_des - Iq;
 
-    if (config_.motor_type == MOTOR_TYPE_HIGH_CURRENT) {
+    if (ictrl.enable_current_control) {
         // Check for current sense saturation
-        if (current_sense_saturation_) {
-            set_error(ERROR_CURRENT_SENSE_SATURATION);
+        if (motor.current_sense_saturation_) {
+            motor.set_error(ERROR_CURRENT_SENSE_SATURATION);
+            return false;
         }
-        if (!is_calibrated_) { // if not calibrated, p_gain and i_gain are not configured
-            set_error(ERROR_NOT_CALIBRATED);
+        if (!motor.is_calibrated_) { // if not calibrated, p_gain and i_gain are not configured
+            motor.set_error(ERROR_NOT_CALIBRATED);
             return false;
         }
 
@@ -644,16 +702,8 @@ bool Motor::FOC(float Id_des, float Iq_des, float I_phase, float pwm_phase) {
         // Apply PI control
         ictrl.Vd_setpoint = ictrl.v_current_control_integral_d + Ierr_d * ictrl.p_gain;
         ictrl.Vq_setpoint = ictrl.v_current_control_integral_q + Ierr_q * ictrl.p_gain;
-
-    } else if (config_.motor_type == MOTOR_TYPE_GIMBAL) {
-        // dq-current setpoint reinterpreted as dq-voltage setpoint
-        ictrl.Vd_setpoint = Id_des;
-        ictrl.Vq_setpoint = Iq_des;
-
-    } else {
-        set_error(ERROR_NOT_IMPLEMENTED_MOTOR_TYPE);
-        return false;
     }
+
 
     float mod_d = V_to_mod * ictrl.Vd_setpoint;
     float mod_q = V_to_mod * ictrl.Vq_setpoint;
@@ -661,7 +711,7 @@ bool Motor::FOC(float Id_des, float Iq_des, float I_phase, float pwm_phase) {
 
     // Vector modulation saturation, lock integrator if saturated
     // TODO make maximum modulation configurable
-    float mod_scalefactor = 0.80f * sqrt3_by_2 * 1.0f / sqrtf(mod_d * mod_d + mod_q * mod_q);
+    float mod_scalefactor = MAX_MODULATION * sqrt3_by_2 * 1.0f / sqrtf(mod_d * mod_d + mod_q * mod_q);
     mod_scalefactor = std::min(mod_scalefactor, 1.0f);
     if (mod_scalefactor < 1.0f) {
         mod_d *= mod_scalefactor;
@@ -671,6 +721,7 @@ bool Motor::FOC(float Id_des, float Iq_des, float I_phase, float pwm_phase) {
 
     // Estimate bus current and apply limit
     float I_bus = mod_d * Id + mod_q * Iq;
+    (void) I_bus;
 
     /* TODO: apply I_bus limit
     
@@ -685,21 +736,16 @@ bool Motor::FOC(float Id_des, float Iq_des, float I_phase, float pwm_phase) {
         is_mod_saturated = true;
     }*/
 
-    if (I_bus < config_.I_bus_hard_min || I_bus > config_.I_bus_hard_max) {
-        set_error(ERROR_I_BUS_OUT_OF_RANGE);
-        return false;
-    }
-
-    ictrl.Ibus = I_bus;
-
-    // Voltage saturation
-    if (is_mod_saturated) {
-        // TODO make decayfactor configurable
-        ictrl.v_current_control_integral_d *= 0.99f;
-        ictrl.v_current_control_integral_q *= 0.99f;
-    } else {
-        ictrl.v_current_control_integral_d += Ierr_d * (ictrl.i_gain * current_meas_period);
-        ictrl.v_current_control_integral_q += Ierr_q * (ictrl.i_gain * current_meas_period);
+    if (ictrl.enable_current_control) {
+        // Voltage saturation
+        if (is_mod_saturated) {
+            // TODO make decayfactor configurable
+            ictrl.v_current_control_integral_d *= 0.99f;
+            ictrl.v_current_control_integral_q *= 0.99f;
+        } else {
+            ictrl.v_current_control_integral_d += Ierr_d * (ictrl.i_gain * current_meas_period);
+            ictrl.v_current_control_integral_q += Ierr_q * (ictrl.i_gain * current_meas_period);
+        }
     }
 
     // Inverse park transform
@@ -717,22 +763,40 @@ bool Motor::FOC(float Id_des, float Iq_des, float I_phase, float pwm_phase) {
     ictrl.final_v_beta = mod_to_V * mod_beta;
 
     // Apply SVM
-    if (!enqueue_modulation_timings(mod_alpha, mod_beta))
-        return false; // error set inside enqueue_modulation_timings
-    log_timing(TIMING_LOG_FOC_CURRENT);
-
+    if (SVM(mod_alpha, mod_beta, &pwm_timings[0], &pwm_timings[1], &pwm_timings[2]) != 0)
+        return motor.set_error(ERROR_MODULATION_MAGNITUDE), false;
+    motor.log_timing(TIMING_LOG_FOC_CURRENT);
     return true;
 }
 
 
-bool Motor::update(float current_setpoint, float phase, float phase_vel) {
-    phase += config_.phase_delay;
+bool Motor::FOC_update(float Id_setpoint, float Iq_setpoint, float phase, float phase_vel, uint32_t expiry_us, bool force_voltage_control) {
+    bool enable_current_control;
+    if (config_.motor_type == MOTOR_TYPE_GIMBAL || force_voltage_control) {
+        enable_current_control = false;
+    } else if (config_.motor_type == MOTOR_TYPE_HIGH_CURRENT) {
+        enable_current_control = true;
+    } else {
+        set_error(ERROR_NOT_IMPLEMENTED_MOTOR_TYPE);
+        return false;
+    }
+    if (error_ != ERROR_NONE) {
+        return false;
+    }
 
-    current_setpoint *= config_.direction;
-    phase *= config_.direction;
-    phase_vel *= config_.direction;
+    uint32_t mask = cpu_enter_critical();
+    current_control_.enable_current_control = enable_current_control;
+    if (enable_current_control) {
+        current_control_.Id_setpoint = Id_setpoint;
+        current_control_.Iq_setpoint = Iq_setpoint * config_.direction;
+    } else {
+        current_control_.Vd_setpoint = Id_setpoint;
+        current_control_.Vq_setpoint = Iq_setpoint * config_.direction;
+    }
+    current_control_.phase = phase * config_.direction + config_.phase_delay;
+    current_control_.phase_vel = phase_vel * config_.direction;
+    current_control_.cmd_expiry = get_ticks_us() + expiry_us; // data expires in 1ms
+    cpu_exit_critical(mask);
 
-    float pwm_phase = phase + 1.5f * current_meas_period * phase_vel;
-
-    return FOC(0.0f, current_setpoint, phase, pwm_phase);
+    return true;
 }

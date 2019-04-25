@@ -146,6 +146,11 @@ bool freertos_init(main_task_t main_task, osPriority task_priority) {
     return true;
 }
 
+/** @brief Entrypoint for System tick timer. */
+extern "C" void SysTick_Handler(void) {
+    osSystickHandler();
+}
+
 /* Private application code --------------------------------------------------*/
 /* USER CODE BEGIN Application */
 
