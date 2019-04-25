@@ -123,6 +123,7 @@ bool Encoder::run_index_search() {
     if (!config_.idx_search_unidirectional && axis_->motor_.config_.direction == 0) {
         axis_->motor_.config_.direction = 1;
     }
+    set_idx_subscribe();
 
     bool orig_finish_on_enc_idx = axis_->config_.lockin.finish_on_enc_idx;
     axis_->config_.lockin.finish_on_enc_idx = true;
