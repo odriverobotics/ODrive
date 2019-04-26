@@ -2,11 +2,16 @@
 Please add a note of your changes below this heading if you make a Pull Request.
 
 ### Added
+* A release target for ODrive v3.6
 * Communication watchdog feature.
 * `encoder.set_linear_count(count)` function.
 * Configurable encoder offset calibration distance and speed:`calib_scan_distance` and `calib_scan_omega`
 * Encoder offset calibration debug variable `calib_scan_response`
+* Lock-in drive feature
 * Script to enable using a hall signal as index edge.
+
+### Changed
+* Encoder index search now based on the new lock-in drive feature
 
 ### Fixed
 * Encoder index interrupts now disabled when not searching
