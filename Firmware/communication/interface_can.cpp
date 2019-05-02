@@ -4,7 +4,7 @@
 #include "freertos_vars.h"
 #include "utils.h"
 
-#include <can.h>
+#include <stm32_can.hpp>
 #include <cmsis_os.h>
 #include <stm32f4xx_hal.h>
 
@@ -204,7 +204,7 @@ void HAL_CAN_TxMailbox1AbortCallback(CAN_HandleTypeDef *hcan) {}
 void HAL_CAN_TxMailbox2AbortCallback(CAN_HandleTypeDef *hcan) {}
 void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan) {
     HAL_CAN_DeactivateNotification(hcan, CAN_IT_RX_FIFO0_MSG_PENDING);
-    osSemaphoreRelease(sem_can);
+    osSemaphoreRelease(odCAN->sem_can);
 }
 void HAL_CAN_RxFifo0FullCallback(CAN_HandleTypeDef *hcan) {
     // osSemaphoreRelease(sem_can);

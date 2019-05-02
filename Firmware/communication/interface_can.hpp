@@ -72,6 +72,8 @@ class ODriveCAN {
             make_protocol_function("set_baud_rate", *this, &ODriveCAN::set_baud_rate, "baudRate"));
     }
 
+    osSemaphoreId sem_can;
+
    private:
     CAN_HandleTypeDef *handle_ = nullptr;
     ODriveCAN::Config_t &config_;

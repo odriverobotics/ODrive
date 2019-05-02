@@ -25,9 +25,9 @@ void CANSimple::handle_can_message(CAN_message_t& msg) {
     Axis* axis = nullptr;
 
     bool validAxis = false;
-    for (uint8_t i = 0; i < AXIS_COUNT; i++) {
-        if (axes[i]->config_.can_node_id == nodeID) {
-            axis = axes[i];
+    for (uint8_t i = 0; i < n_axes; i++) {
+        if (axes[i].config_.can_node_id == nodeID) {
+            axis = &axes[i];
             if (!validAxis) {
                 validAxis = true;
             } else {
