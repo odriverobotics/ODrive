@@ -10,7 +10,7 @@
 
 class DRV8301_t : public GateDriver_t, public OpAmp_t {
 public:
-    STM32_SPI_t* spi;
+    STM32_SPI_t* spi_;
     STM32_GPIO_t* chip_select_gpio;
     STM32_GPIO_t* enable_gpio;
     GPIO_t* nfault_gpio;
@@ -19,9 +19,9 @@ public:
     bool is_setup_ = false;
 
     DRV8301_t(STM32_SPI_t* spi, STM32_GPIO_t* chip_select_gpio, STM32_GPIO_t* enable_gpio, GPIO_t* nfault_gpio) :
-        spi(spi), chip_select_gpio(chip_select_gpio), enable_gpio(enable_gpio), nfault_gpio(nfault_gpio),
+        spi_(spi), chip_select_gpio(chip_select_gpio), enable_gpio(enable_gpio), nfault_gpio(nfault_gpio),
         gate_driver_{
-            .spiHandle = &spi->hspi,
+            .spiHandle = &spi_->hspi,
             .EngpioHandle = enable_gpio->port,
             .EngpioNumber = (uint16_t)(1U << enable_gpio->pin_number),
             .nCSgpioHandle = chip_select_gpio->port,
@@ -30,17 +30,18 @@ public:
     }
     
     bool init() final;
+    bool set_enabled(bool enabled) final { return true; }
     bool check_fault();
     uint32_t get_error() final;
     float set_gain(float requested_gain) final;
     float get_gain() final;
 
     float get_midpoint() final {
-        return 3.3f / 2.0f; // [V]
+        return 0.5f; // [V]
     }
 
     float get_max_output_swing() final {
-        return 1.35f; // [V] out of amplifier
+        return 1.35f / 1.65f; // +-1.35V, normalized from a scale of +-1.65V to +-0.5
     }
 
 private:

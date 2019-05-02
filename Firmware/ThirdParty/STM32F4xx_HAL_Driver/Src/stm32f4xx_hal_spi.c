@@ -1549,14 +1549,15 @@ HAL_StatusTypeDef HAL_SPI_TransmitReceive_DMA(SPI_HandleTypeDef *hspi, uint8_t *
   if(hspi->State == HAL_SPI_STATE_BUSY_RX)
   {
     /* Set the SPI Rx DMA Half transfer complete callback */
-    hspi->hdmarx->XferHalfCpltCallback = SPI_DMAHalfReceiveCplt;
-    hspi->hdmarx->XferCpltCallback     = SPI_DMAReceiveCplt;
+    hspi->hdmarx->XferHalfCpltCallback = NULL;
+    //hspi->hdmarx->XferCpltCallback     = SPI_DMAReceiveCplt;
   }
   else
   {
     /* Set the SPI Tx/Rx DMA Half transfer complete callback */
-    hspi->hdmarx->XferHalfCpltCallback = SPI_DMAHalfTransmitReceiveCplt;
-    hspi->hdmarx->XferCpltCallback     = SPI_DMATransmitReceiveCplt;
+    hspi->hdmarx->XferHalfCpltCallback = NULL;
+    //hspi->hdmarx->XferCpltCallback     = SPI_DMATransmitReceiveCplt;
+    (void) SPI_DMAHalfTransmitReceiveCplt; // mute warning
   }
 
   /* Set the DMA error callback */
@@ -1904,6 +1905,8 @@ HAL_StatusTypeDef HAL_SPI_DMAStop(SPI_HandleTypeDef *hspi)
      when calling HAL_DMA_Abort() API the DMA TX/RX Transfer complete interrupt is generated
      and the correspond call back is executed HAL_SPI_TxCpltCallback() or HAL_SPI_RxCpltCallback() or HAL_SPI_TxRxCpltCallback()
      */
+
+  SPI_DMATransmitReceiveCplt(hspi->hdmarx);
 
   /* Abort the SPI DMA tx Stream */
   if(hspi->hdmatx != NULL)
@@ -2305,7 +2308,7 @@ static void SPI_DMAReceiveCplt(DMA_HandleTypeDef *hdma)
       return;
     }
   }
-  HAL_SPI_RxCpltCallback(hspi);
+  //HAL_SPI_RxCpltCallback(hspi);
 }
 
 /**
@@ -2369,7 +2372,7 @@ static void SPI_DMATransmitReceiveCplt(DMA_HandleTypeDef *hdma)
       return;
     }
   }
-  HAL_SPI_TxRxCpltCallback(hspi);
+  //HAL_SPI_TxRxCpltCallback(hspi);
 }
 
 /**

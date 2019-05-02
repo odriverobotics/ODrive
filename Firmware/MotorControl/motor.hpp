@@ -118,6 +118,8 @@ public:
 
         float I_bus_hard_min = -INFINITY; // hard lower limit for bus current contribution
         float I_bus_hard_max = INFINITY; // hard upper limit for bus current contribution
+
+        float vbus_voltage_override = 0.0f; // if non-zero, overrides the DC voltage sensor (MAINLY INTENDED FOR DEVELOPMENT, USE WITH CAUTION!)
     };
 
     enum TimingLog_t {
@@ -149,7 +151,10 @@ public:
          CurrentSensor_t* current_sensor_a,
          CurrentSensor_t* current_sensor_b,
          CurrentSensor_t* current_sensor_c,
-         Thermistor_t* inverter_thermistor,
+         Thermistor_t* inverter_thermistor_a,
+         Thermistor_t* inverter_thermistor_b,
+         Thermistor_t* inverter_thermistor_c,
+         VoltageSensor_t* vbus_sense,
          uint16_t period, uint16_t repetition_counter, uint16_t dead_time,
          uint8_t interrupt_priority,
          Config_t& config);
@@ -194,7 +199,10 @@ public:
     CurrentSensor_t* current_sensor_a_;
     CurrentSensor_t* current_sensor_b_;
     CurrentSensor_t* current_sensor_c_;
-    Thermistor_t* inverter_thermistor_;
+    Thermistor_t* inverter_thermistor_a_;
+    Thermistor_t* inverter_thermistor_b_;
+    Thermistor_t* inverter_thermistor_c_;
+    VoltageSensor_t* vbus_sense_;
 
     uint16_t period_;
     uint16_t repetition_counter_;
@@ -230,6 +238,8 @@ public:
     bool current_sense_saturation_ = false; // if true, the measured current values must not be used for control
     float I_bus_ = 0.0f;
 
+    float vbus_voltage_ = 1000.0f; // Arbitrary non-zero inital value to avoid division by zero if ADC reading is late
+
     uint32_t update_events_ = 0; // for debugging
     bool counting_down_ = false; // set on timer update event. First timer update event must be on upper peak.
 
@@ -251,6 +261,7 @@ public:
             make_protocol_property("error", &error_),
             make_protocol_ro_property("is_armed", &is_armed_),
             make_protocol_ro_property("is_calibrated", &is_calibrated_),
+            make_protocol_ro_property("vbus_voltage", &vbus_voltage_),
             make_protocol_ro_property("current_meas_phA", &current_meas_.phA),
             make_protocol_ro_property("current_meas_phB", &current_meas_.phB),
             make_protocol_ro_property("current_meas_phC", &current_meas_.phC),
@@ -336,7 +347,8 @@ public:
                     [](void* ctx) { static_cast<Motor*>(ctx)->update_current_controller_gains(); }, this),
                 make_protocol_property("phase_delay", &config_.phase_delay),
                 make_protocol_property("I_bus_hard_min", &config_.I_bus_hard_min),
-                make_protocol_property("I_bus_hard_max", &config_.I_bus_hard_max)
+                make_protocol_property("I_bus_hard_max", &config_.I_bus_hard_max),
+                make_protocol_property("vbus_voltage_override", &config_.vbus_voltage_override)
             )
         );
     }

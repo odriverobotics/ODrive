@@ -121,6 +121,11 @@ bool safety_critical_disarm_motor_pwm(Motor& motor) {
 
     uint32_t mask = cpu_enter_critical();
     bool was_armed = motor.is_armed_;
+    if (motor.is_armed_) {
+        motor.gate_driver_a_->set_enabled(false);
+        motor.gate_driver_b_->set_enabled(false);
+        motor.gate_driver_c_->set_enabled(false);
+    }
     motor.is_armed_ = false;
     auto instance = motor.timer_->htim.Instance;
     //if (reinterpret_cast<uint32_t>(instance) == 0x20020000 || reinterpret_cast<uint32_t>(instance) == 0x13881388)
@@ -232,7 +237,7 @@ void update_brake_current() {
     float brake_current = -Ibus_sum;
     // Clip negative values to 0.0f
     if (brake_current < 0.0f) brake_current = 0.0f;
-    float brake_duty = brake_current * board_config.brake_resistance / vbus_voltage;
+    float brake_duty = brake_current * board_config.brake_resistance / ((axes[0].motor_.vbus_voltage_ + axes[1].motor_.vbus_voltage_) / 2); // TODO: cleaner definition of voltage domain of brake resistor
 
     // Duty limit at 90% to allow bootstrap caps to charge
     // If brake_duty is NaN, this expression will also evaluate to false

@@ -9,6 +9,14 @@
 extern "C" {
 #endif
 
+#ifdef STM32F4
+typedef struct {
+    __IO uint32_t ISR;   /*!< DMA interrupt status register */
+    __IO uint32_t Reserved0;
+    __IO uint32_t IFCR;  /*!< DMA interrupt flag clear register */
+} DMA_Base_Registers;
+#endif
+
 void _Error_Handler(char *, int);
 #define Error_Handler() _Error_Handler(__FILE__, __LINE__)
 

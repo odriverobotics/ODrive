@@ -47,9 +47,10 @@ const float current_meas_period = CURRENT_MEAS_PERIOD;
 const int current_meas_hz = (int)(CURRENT_MEAS_HZ);
 SystemStats_t system_stats_ = { 0 };
 
-// This value is updated by the DC-bus reading ADC.
-// Arbitrary non-zero inital value to avoid division by zero if ADC reading is late
-float vbus_voltage = 12.0f;
+uint64_t serial_number = 0;
+char serial_number_str[13]; // 12 digits + null termination
+char hw_version_str[16];
+char product_name_str[64];
 
 
 typedef Config<
@@ -77,7 +78,8 @@ typedef Config<
 float get_adc_voltage(uint32_t gpio_num) {
     float result = 0.0f / 0.0f;
     if (gpio_num < sizeof(gpio_adcs) / sizeof(gpio_adcs[0])) {
-        gpio_adcs[gpio_num].get_voltage(&result);
+        gpio_adcs[gpio_num].get_normalized(&result);
+        result *= 3.3f;
     }
     return result;
 }
@@ -114,10 +116,15 @@ extern "C" int load_configuration(void) {
         for (size_t i = 0; i < AXIS_COUNT; ++i) {
             axis_configs[i] = PerChannelConfig_t();
 
-            // Default step/dir pins are different across hardware versions, so we need to explicitly load them
+            // Load board-specific defaults
             axis_configs[i].axis_config.step_gpio_num = default_step_gpio_nums[i];
             axis_configs[i].axis_config.dir_gpio_num = default_dir_gpio_nums[i];
         }
+
+        // Load board-specific defaults
+        board_config.brake_resistance = DEFAULT_BRAKE_RESISTANCE;
+        board_config.dc_bus_undervoltage_trip_level = DEFAULT_UNDERVOLTAGE_TRIP_LEVEL;
+        board_config.dc_bus_overvoltage_trip_level = DEFAULT_OVERVOLTAGE_TRIP_LEVEL;
     } else {
         user_config_loaded_ = true;
     }
@@ -223,11 +230,11 @@ int main_task(void) {
     }
     serial_number_str[12] = 0;
 
-    char product_str[64];
-    sprintf(product_str, "ODrive %d.%d CDC Interface", HW_VERSION_MAJOR, HW_VERSION_MINOR);
+    char cdc_interface_str[64];
+    sprintf(cdc_interface_str, "%s CDC Interface", hw_version_str);
 
     char native_interface_str[64];
-    sprintf(native_interface_str, "ODrive %d.%d Native Interface", HW_VERSION_MAJOR, HW_VERSION_MINOR);
+    sprintf(native_interface_str, "%s Native Interface", hw_version_str);
 
 
     /* Setup Communication I/O -----------------------------------------------*/
@@ -253,7 +260,7 @@ int main_task(void) {
         goto fail;
     if (!usb.init(
         0x1209, 0x0D32, 1033, // VID, PID, LangID
-        "ODrive Robotics", product_str, serial_number_str, "CDC Config", "CDC Interface", native_interface_str,
+        "ODrive Robotics", cdc_interface_str, serial_number_str, "CDC Config", "CDC Interface", native_interface_str,
         &composite_device, RTOS_PRIO_USB
     ))
         goto fail;
@@ -288,7 +295,7 @@ int main_task(void) {
         i2c_stats_.addr |= i2c_a0_gpio->read() ? 0x1 : 0;
         i2c_stats_.addr |= i2c_a1_gpio->read() ? 0x2 : 0;
         i2c_stats_.addr |= i2c_a2_gpio->read() ? 0x4 : 0;
-        if (!i2c1.setup_as_slave(100000, i2c_stats_.addr, &pb8, &pb9, &dma1_stream6, &dma1_stream0)) // TODO: DMA stream conflict with SPI3?
+        if (!i2c1.setup_as_slave(100000, i2c_stats_.addr, &pb8, &pb9, &dma1_stream6, &dma1_stream5))
             goto fail;
         if (!i2c1.enable_interrupts(NVIC_PRIO_I2C))
             goto fail;
@@ -330,7 +337,10 @@ int main_task(void) {
     }
 #endif
 
-    if (!spi3.init(&pc10, &pc11, &pc12, nullptr, nullptr))
+    // TODO: check if clock polarity can be reconfigured on the fly. Datasheet
+    // suggests SPI must be disabled first but it doesn't explicitly state that
+    // it doesn't work while enabled when timing carefully.
+    if (!spi3.init(&pc10, &pc11, &pc12, &dma1_stream7, &dma1_stream0, SPI_CLOCK_POLARITY))
         goto fail;
     if (!spi3.enable_interrupts(NVIC_PRIO_SPI))
         goto fail;
@@ -353,20 +363,22 @@ int main_task(void) {
     system_stats_.boot_progress++;
 
     // AUX PWM
-    tim2.init(
-        TIM_APB1_PERIOD_CLOCKS, // period
-        STM32_Timer_t::UP_DOWN
-    );
-    tim2.setup_pwm(3,
-            aux_l, nullptr,
-            true, true, // active high
-            0 // initial value
-    ); // AUX L
-    tim2.setup_pwm(4,
-            aux_h, nullptr,
-            true, true, // active high
-            TIM_APB1_PERIOD_CLOCKS + 1 // initial value
-    ); // AUX H
+    if (aux_l && aux_h) {
+        tim2.init(
+            TIM_APB1_PERIOD_CLOCKS, // period
+            STM32_Timer_t::UP_DOWN
+        );
+        tim2.setup_pwm(3,
+                aux_l, nullptr,
+                true, true, // active high
+                0 // initial value
+        ); // AUX L
+        tim2.setup_pwm(4,
+                aux_h, nullptr,
+                true, true, // active high
+                TIM_APB1_PERIOD_CLOCKS + 1 // initial value
+        ); // AUX H
+    }
 
     system_stats_.boot_progress++;
 
@@ -393,14 +405,10 @@ int main_task(void) {
 
     system_stats_.boot_progress++;
 
-    if (!adc2_injected.append(&adc_m0_b) ||
-        !adc3_injected.append(&adc_m0_c) ||
-        !adc2_regular.append(&adc_m1_b) ||
-        !adc3_regular.append(&adc_m1_c) ||
-        !adc1_injected.append(&adc_vbus_sense) ||
-        !adc1_regular.append(&adc_m0_inv_temp) ||
-        !adc1_regular.append(&adc_m1_inv_temp)) {
-        goto fail;
+    for (size_t i = 0; i < sizeof(adc_init_list) / sizeof(adc_init_list[0]); ++i) {
+        if (!adc_init_list[i]->enqueue()) {
+            goto fail;
+        }
     }
 
     system_stats_.boot_progress = 10;

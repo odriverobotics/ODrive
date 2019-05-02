@@ -365,10 +365,11 @@ bool DRV8301_readSpi_ex(DRV8301_Handle handle, const DRV8301_RegName_e regName, 
   delay_us(1);
 
   // Do blocking read
-  uint16_t zerobuff = 0;
+  uint8_t zerobuff[] = {0, 0};
   uint16_t controlword = (uint16_t)DRV8301_buildCtrlWord(DRV8301_CtrlMode_Read, regName, 0);
-  uint16_t recbuff = 0xbeef;
-  if (HAL_SPI_Transmit(handle->spiHandle, (uint8_t*)(&controlword), 1, 1000) != HAL_OK)
+  uint8_t tx_buf[] = { (controlword >> 8) & 0xff, controlword & 0xff };
+  uint8_t rx_buf[] = { 0xbe, 0xef };
+  if (HAL_SPI_Transmit(handle->spiHandle, tx_buf, 2, 1000) != HAL_OK)
     return false;
 
   // Datasheet says you don't have to pulse the nCS between transfers, (16 clocks should commit the transfer)
@@ -380,7 +381,7 @@ bool DRV8301_readSpi_ex(DRV8301_Handle handle, const DRV8301_RegName_e regName, 
   HAL_GPIO_WritePin(handle->nCSgpioHandle, handle->nCSgpioNumber, GPIO_PIN_RESET);
   delay_us(1);
 
-  if (HAL_SPI_TransmitReceive(handle->spiHandle, (uint8_t*)(&zerobuff), (uint8_t*)(&recbuff), 1, 1000) != HAL_OK)
+  if (HAL_SPI_TransmitReceive(handle->spiHandle, zerobuff, rx_buf, 2, 1000) != HAL_OK)
     return false;
   delay_us(1);
 
@@ -388,11 +389,11 @@ bool DRV8301_readSpi_ex(DRV8301_Handle handle, const DRV8301_RegName_e regName, 
   HAL_GPIO_WritePin(handle->nCSgpioHandle, handle->nCSgpioNumber, GPIO_PIN_SET);
   delay_us(1);
 
-  if (recbuff == 0xbeef) {
+  if (rx_buf[0] == 0xbe && rx_buf[1] == 0xef) {
     return false;
   } else {
     if (output) {
-      *output = (recbuff & DRV8301_DATA_MASK);
+      *output = ((rx_buf[0] << 8) | (rx_buf[1])) & DRV8301_DATA_MASK;
     }
     return true;
   }
@@ -608,7 +609,8 @@ void DRV8301_writeSpi(DRV8301_Handle handle, const DRV8301_RegName_e regName,con
 
   // Do blocking write
   uint16_t controlword = (uint16_t)DRV8301_buildCtrlWord(DRV8301_CtrlMode_Write, regName, data);
-  HAL_SPI_Transmit(handle->spiHandle, (uint8_t*)(&controlword), 1, 1000);
+  uint8_t tx_buf[] = { (controlword >> 8) & 0xff, controlword & 0xff };
+  HAL_SPI_Transmit(handle->spiHandle, tx_buf, 2, 1000);
   delay_us(1);
 
   // Actuate chipselect

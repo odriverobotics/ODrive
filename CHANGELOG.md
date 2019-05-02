@@ -25,6 +25,11 @@ Please add a note of your changes below this heading if you make a Pull Request.
 * Disable ADC interrupts and instead read values directly in the timer update ISR (20% CPU per timer for the ISRs @ 8kHz update frequency).
 * Ibus is always updated, also for gimbal motors
 * Calibration not needed for gimbal motors
+* Overvoltage/undervoltage is now a motor error (instead of axis error)
+* Always run certain motor checks (over/undervoltage, temp, driver fault, ...)
+* Allow for compile-time disabling of encoder by passing NULL-GPIOs
+* Make V_BUS measurement per-axis (might wanna use defines to change this)
+* change SPI mode to 8-bit
 
 ### Changed
 * Encoder index search now based on the new lock-in drive feature

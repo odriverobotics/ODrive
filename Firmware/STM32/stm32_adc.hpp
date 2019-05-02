@@ -24,31 +24,21 @@ public:
         channel_num_(channel_num) {}
 
     /**
-     * @brief For internal use by STM32_ADCSequence_t::append()
+     * @brief Appends the channel to it's associated sequence.
+     * 
+     * Take care of the init order described on the STM32_ADCSequence_t class.
+     * 
+     * Returns true on success or false otherwise (e.g. if the sequence is full).
      */
-    bool link(STM32_ADCSequence_t* adc, uint32_t seq_pos) {
-        if (adc_ == adc) {
-            seq_pos_ = seq_pos;
-            return true;
-        } else {
-            return false;
-        }
-    }
+    bool enqueue();
 
     bool init() final {
         return !gpio_ || gpio_->setup_analog();
     }
-    bool get_voltage(float *value) final;
-    bool get_normalized(float *value) final;
+    bool get_normalized(float* value) final;
     bool has_value() final;
     bool reset_value() final;
     bool enable_updates() final;
-
-    bool get_range(float* min, float* max) final { // TODO: this should depend on reference voltages
-        if (min) *min = 0.0f;
-        if (max) *max = 3.3f;
-        return true;
-    }
 
     /** @brief See STM32_ADCSequence_t::get_timing() for details */
     bool get_timing(uint32_t* sample_start_timestamp, uint32_t* sample_end_timestamp);
@@ -130,12 +120,11 @@ public:
 
     /**
      * @brief Appends the given channel to this sequence.
-     * 
-     * Take care of the init order described on the STM32_ADCSequence_t class.
-     * 
+     * Do not use this function directly, use STM32_ADCChannel_t::enqueue()
+     * instead.
      * Returns true on success or false otherwise (e.g. if the sequence is full).
      */
-    virtual bool append(STM32_ADCChannel_t* channel) = 0;
+    virtual bool append(STM32_ADCChannel_t* channel, uint32_t *seq_pos) = 0;
 
     /**
      * @brief Applies the settings that were configured using set_trigger() and
@@ -241,13 +230,13 @@ public:
 
     STM32_ADCSequence_N_t(STM32_ADC_t* adc) : STM32_ADCSequence_t(adc) {}
 
-    bool append(STM32_ADCChannel_t* channel) final {
+    bool append(STM32_ADCChannel_t* channel, uint32_t* seq_pos) final {
         if (!channel || !channel->is_valid())
             return false;
         if (channel_sequence_length >= MAX_SEQ_LENGTH)
             return false;
-        if (!channel->link(this, channel_sequence_length))
-            return false;
+        if (seq_pos)
+            *seq_pos = channel_sequence_length;
         channel_sequence[channel_sequence_length++] = channel;
         return true;
     }

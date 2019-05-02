@@ -682,7 +682,7 @@ const STM32_GPIO_t* tim1_ch4n_gpios[] = { nullptr };
 const STM32_GPIO_t* tim1_bkin_gpios[] = { &pa6, &pb12, &pe15, nullptr };
 const STM32_GPIO_t* tim1_etr_gpios[] = { &pa12, &pe7, nullptr };
 
-const STM32_GPIO_t* tim2_ch1p_gpios[] = { &pa0, &pa5, nullptr };
+const STM32_GPIO_t* tim2_ch1p_gpios[] = { &pa0, &pa5, &pa15 };
 const STM32_GPIO_t* tim2_ch2p_gpios[] = { &pa1, &pb3, nullptr };
 const STM32_GPIO_t* tim2_ch3p_gpios[] = { &pa2, &pb10, nullptr };
 const STM32_GPIO_t* tim2_ch4p_gpios[] = { &pa3, &pb11, nullptr };

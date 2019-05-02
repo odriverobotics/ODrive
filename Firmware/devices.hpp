@@ -4,26 +4,34 @@
 #include "subscriber.hpp"
 #include "adc.hpp"
 
-class VoltageDivider_t : public ADCChannel_t {
+#include <math.h>
+#include <array>
+
+class VoltageSensor_t {
 public:
-    VoltageDivider_t(ADCChannel_t* adc, float divider_ratio) :
+    virtual ~VoltageSensor_t() = default;
+
+    virtual bool init() = 0;
+    virtual bool get_range(float* min, float* max) = 0;
+    virtual bool get_voltage(float *value) = 0;
+};
+
+class ADCVoltageSensor_t : public VoltageSensor_t {
+public:
+    ADCVoltageSensor_t(ADCChannel_t* adc, float full_scale) :
         adc_(adc),
-        divider_ratio_(divider_ratio) {}
+        full_scale_(full_scale) {}
 
     bool init() final {
-        return adc_
-            && adc_->on_update_.set<VoltageDivider_t, &VoltageDivider_t::handle_update>(*this)
-            && adc_->init();
+        return adc_ && adc_->init();
     }
 
     bool get_range(float* min, float* max) final {
         if (adc_) {
-            if (!adc_->get_range(min, max))
-                return false;
             if (min)
-                *min *= divider_ratio_;
+                *min = 0;
             if (max)
-                *max *= divider_ratio_;
+                *max = full_scale_;
             return true;
         } else {
             return false;
@@ -32,46 +40,62 @@ public:
 
     bool get_voltage(float *value) final {
         if (adc_) {
-            if (!adc_->get_voltage(value))
+            if (!adc_->get_normalized(value))
                 return false;
             if (value)
-                *value *= divider_ratio_;
+                *value *= full_scale_;
             return true;
         } else {
             return false;
-        }
-    }
-
-    bool get_normalized(float *value) final {
-        return adc_ ? adc_->get_normalized(value) : false;
-    }
-
-    bool has_value() final {
-        return adc_ && adc_->has_value();
-    }
-
-    bool reset_value() final {
-        return adc_ && adc_->reset_value();
-    }
-
-    bool enable_updates() {
-        if (!adc_) {
-            return false;
-        } else {
-            return adc_->enable_updates();
-            return true;
         }
     }
 
     ADCChannel_t* adc_;
-    float divider_ratio_;
-    Subscriber<> on_update_;
+    float full_scale_;
+};
 
-private:
-    void handle_update() {
-        on_update_.invoke();
+template<size_t N>
+class AveragingVoltageSensor_t : public VoltageSensor_t {
+public:
+    std::array<VoltageSensor_t*, N> sensors_;
+    template<typename ... Ts>
+    AveragingVoltageSensor_t(Ts ... sensors) : sensors_{sensors...} {}
+    
+    bool init() final {
+        for (size_t i = 0; i < N; ++i) {
+            if (!sensors_[i] || !sensors_[i]->init()) {
+                return false;
+            }
+        }
+        return true;
+    }
+    bool get_range(float* min, float* max) final {
+        float _min = INFINITY, _max = -INFINITY;
+        for (size_t i = 0; i < N; ++i) {
+            float temp_min, temp_max;
+            if (!sensors_[i] || !sensors_[i]->get_range(&temp_min, &temp_max))
+                return false;
+            _min = std::min(_min, temp_min);
+            _max = std::max(_max, temp_max);
+        }
+        if (min) *min = _min;
+        if (max) *max = _max;
+        return true;
+    }
+    bool get_voltage(float *value) final {
+        float sum = 0.0f;
+        for (size_t i = 0; i < N; ++i) {
+            float val;
+            if (!sensors_[i] || !sensors_[i]->get_voltage(&val))
+                return false;
+            sum += val;
+        }
+        if (value)
+            *value = sum / (float)N;
+        return true;
     }
 };
+
 
 struct SPI_t {
     /**
@@ -87,6 +111,16 @@ struct GateDriver_t {
      * Must be callable multiple times.
      */
     virtual bool init() = 0;
+
+    /**
+     * @brief Unlocks or locks the gate signals of the gate driver.
+     * 
+     * While locked the PWM inputs are ignored and the switches are always in
+     * OFF state.
+     * Not all gate drivers implement this function and may return true even if
+     * the gate driver was not locked.
+     */
+    virtual bool set_enabled(bool enabled) = 0;
 
     /**
      * @brief Checks for a fault condition. Returns false if the driver is in a
@@ -182,17 +216,18 @@ struct OpAmp_t {
     virtual float get_max_output_swing() = 0;
 };
 
-class Shunt_t : public CurrentSensor_t {
+
+class LinearCurrentSensor_t : public CurrentSensor_t {
 public:
-    Shunt_t(ADCChannel_t* adc, OpAmp_t* opamp_, float conductance) :
-        adc_(adc), opamp_(opamp_), conductance_(conductance) {}
+    LinearCurrentSensor_t(ADCChannel_t* adc, OpAmp_t* opamp, float adc_to_i, float adc_midpoint) :
+        adc_(adc), opamp_(opamp), adc_to_i_(adc_to_i), adc_midpoint_(adc_midpoint) {}
 
     bool init(float requested_range) final {
         if (!is_setup_) {
             if (!(adc_ && adc_->init()
-                && opamp_ && opamp_->init()
+                && (!opamp_ || opamp_->init())
                 && set_range(requested_range)
-                && adc_->on_update_.set<Shunt_t, &Shunt_t::handle_update>(*this))) {
+                && adc_->on_update_.set<LinearCurrentSensor_t, &LinearCurrentSensor_t::handle_update>(*this))) {
                 return false;
             }
             is_setup_ = true;
@@ -200,34 +235,39 @@ public:
         return true;
     }
 
+    void get_unity_gain_range(float* min_current, float* max_current) {
+        float adc_min = opamp_ ? std::max(-opamp_->get_max_output_swing(), -adc_midpoint_) : -adc_midpoint_;
+        float adc_max = opamp_ ? std::min(opamp_->get_max_output_swing(), 1 - adc_midpoint_) : (1 - adc_midpoint_);
+        *min_current = adc_min * adc_to_i_ * rev_gain_;
+        *max_current = adc_max * adc_to_i_ * rev_gain_;
+    }
+
     bool set_range(float requested_range) final {
         if (opamp_) {
-            const float max_output_swing = opamp_->get_max_output_swing(); // [V] out of amplifier TODO: respect ADC max input range
-            float max_unity_gain_current = max_output_swing * conductance_; // [A]
-            float requested_gain = max_unity_gain_current / requested_range; // [V/V]
+            float min_unity_gain_current;
+            float max_unity_gain_current;
+            get_unity_gain_range(&min_unity_gain_current, &max_unity_gain_current);
+            float unity_gain_current_range = std::min(-min_unity_gain_current, max_unity_gain_current);
+            float requested_gain = unity_gain_current_range / requested_range; // [V/V]
 
             // set gain
             float actual_gain = opamp_->set_gain(requested_gain);
             rev_gain_ = 1.0f / actual_gain;
-            //float actual_max_current = max_unity_gain_current * rev_gain_;
-            //return actual_max_current;
-            return true;
         } else {
-            return false;
+            // if no opamp is present we just ignore the request and leave the gain at 1.0
+            rev_gain_ = 1.0f;
         }
+        return true;
     }
 
     bool get_range(float* max_current) final {
-        if (opamp_) {
-            const float max_output_swing = opamp_->get_max_output_swing(); // [V] out of amplifier TODO: respect ADC max input range
-            float max_unity_gain_current = max_output_swing * conductance_; // [A]
-            if (max_current) {
-                *max_current = max_unity_gain_current * rev_gain_;
-            }
-            return true;
-        } else {
-            return false;
+        float min_unity_gain_current;
+        float max_unity_gain_current;
+        get_unity_gain_range(&min_unity_gain_current, &max_unity_gain_current);
+        if (max_current) {
+            *max_current = std::min(-min_unity_gain_current, max_unity_gain_current);
         }
+        return true;
     }
 
     bool has_value() final {
@@ -247,14 +287,12 @@ public:
     }
 
     bool get_current(float* current) final {
-        float amp_out_volt = 0;
-        if (!adc_->get_voltage(&amp_out_volt)) {
+        float adc_val = 0;
+        if (!adc_->get_normalized(&adc_val)) {
             return false;
         }
-        amp_out_volt -= opamp_->get_midpoint();
-        float shunt_volt = amp_out_volt * rev_gain_;
         if (current) {
-            *current = shunt_volt * conductance_;
+            *current = (adc_val - adc_midpoint_) * adc_to_i_ * rev_gain_;
         }
         return true;
     }
@@ -262,23 +300,17 @@ public:
 private:
     ADCChannel_t* adc_;
     OpAmp_t* opamp_;
-    float conductance_;
+    float adc_to_i_; // factor to get from normalized ADC value to unity gain current value [A]
+    float adc_midpoint_;
     bool is_setup_ = false;
     bool has_value_ = false;
-    float rev_gain_;
+    float rev_gain_ = 1.0f;
 
     void handle_update() {
         // TODO: set new current
         has_value_ = true;
         on_update_.invoke();
     }
-
-    //// Communication protocol definitions
-    //auto make_protocol_definitions() {
-    //    return make_protocol_member_list(
-    //        make_protocol_property("rev_gain", &rev_gain_)
-    //    );
-    //}
 };
 
 

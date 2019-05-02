@@ -143,7 +143,6 @@ void USART3_IRQHandler(void);
 void UART4_IRQHandler(void);
 void UART5_IRQHandler(void);
 void USART6_IRQHandler(void);
-void HAL_UART_TxCpltCallback(UART_HandleTypeDef* huart);
 }
 
 /** @brief Entrypoint for the USART1 global interrupt. */
@@ -181,7 +180,7 @@ void USART6_IRQHandler(void) {
 
 static STM32_USART_t* all_usarts[] = { &usart1, &usart2, &usart3, &uart4, &uart5, &usart6 }; // TODO: this prevents compile time garbage collection
 
-void HAL_UART_TxCpltCallback(UART_HandleTypeDef* huart) {
+extern "C" void HAL_UART_TxCpltCallback(UART_HandleTypeDef* huart) {
     for (size_t i = 0; i < sizeof(all_usarts) / sizeof(all_usarts[0]); ++i) {
         if (&all_usarts[i]->huart == huart) {
             all_usarts[i]->handle_tx_complete();
@@ -189,7 +188,7 @@ void HAL_UART_TxCpltCallback(UART_HandleTypeDef* huart) {
     }
 }
 
-void HAL_UART_ErrorCallback(UART_HandleTypeDef *huart) {
+extern "C" void HAL_UART_ErrorCallback(UART_HandleTypeDef *huart) {
     for (size_t i = 0; i < sizeof(all_usarts) / sizeof(all_usarts[0]); ++i) {
         if (&all_usarts[i]->huart == huart) {
             all_usarts[i]->handle_error();

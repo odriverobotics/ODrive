@@ -11,23 +11,10 @@ struct ADCChannel_t {
     virtual bool init() = 0;
 
     /**
-     * @brief Returns the minimum and maximum voltages that this channel can
-     * measure.
-     * Returns true on success or false otherwise.
-     */
-    virtual bool get_range(float* min, float* max) = 0;
-
-    /**
-     * @brief Fetches the latest reading in volts.
-     * Returns true if the value could be obtained or false otherwise.
-     */
-    virtual bool get_voltage(float *value) = 0;
-
-    /**
      * @brief Fetches the latest reading as a number in {0...1}.
      * Returns true if the value could be obtained or false otherwise.
      */
-    virtual bool get_normalized(float *value) = 0;
+    virtual bool get_normalized(float* value) = 0;
 
     /**
      * @brief Returns true if there is a new value since reset_value() was

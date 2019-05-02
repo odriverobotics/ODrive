@@ -72,15 +72,19 @@ void Encoder::enc_index_cb() {
     }
 
     // Disable interrupt
-    index_gpio_->unsubscribe();
+    if (index_gpio_) {
+        index_gpio_->unsubscribe();
+    }
 }
 
 void Encoder::set_idx_subscribe(bool override_enable) {
-    if (config_.use_index && (override_enable || !config_.find_idx_on_lockin_only)) {
-        index_gpio_->init(GPIO_t::INPUT, GPIO_t::PULL_DOWN);
-        index_gpio_->subscribe(true, false, enc_index_cb_wrapper, this);
-    } else if (!config_.use_index || config_.find_idx_on_lockin_only) {
-        index_gpio_->unsubscribe();
+    if (index_gpio_) {
+        if (config_.use_index && (override_enable || !config_.find_idx_on_lockin_only)) {
+            index_gpio_->init(GPIO_t::INPUT, GPIO_t::PULL_DOWN);
+            index_gpio_->subscribe(true, false, enc_index_cb_wrapper, this);
+        } else if (!config_.use_index || config_.find_idx_on_lockin_only) {
+            index_gpio_->unsubscribe();
+        }
     }
 }
 
@@ -288,19 +292,28 @@ static bool decode_hall(uint8_t hall_state, int32_t* hall_cnt) {
 void Encoder::sample_now() {
     switch (config_.mode) {
         case MODE_INCREMENTAL: {
+            if (!hallA_gpio_ || !hallB_gpio_) {
+                set_error(ERROR_UNSUPPORTED_ENCODER_MODE);
+            }
             tim_cnt_sample_ = (int16_t)counter_->htim.Instance->CNT;
         } break;
 
         case MODE_HALL: {
+            if (!hallA_gpio_ || !hallB_gpio_ || !hallC_gpio_) {
+                set_error(ERROR_UNSUPPORTED_ENCODER_MODE);
+            }
             // do nothing: samples already captured in general GPIO capture
         } break;
 
         case MODE_SINCOS: {
             float val_sin, val_cos;
-            adc_sincos_s_->get_normalized(&val_sin);
-            adc_sincos_c_->get_normalized(&val_cos);
-            sincos_sample_s_ = val_sin - 0.5f;
-            sincos_sample_c_ = val_cos - 0.5f;
+            if (adc_sincos_s_ && adc_sincos_s_->get_normalized(&val_sin)
+                && adc_sincos_c_ && adc_sincos_c_->get_normalized(&val_cos)) {
+                sincos_sample_s_ = val_sin - 0.5f;
+                sincos_sample_c_ = val_cos - 0.5f;
+            } else {
+                set_error(ERROR_UNSUPPORTED_ENCODER_MODE);
+            }
         } break;
 
         default: {
@@ -310,6 +323,10 @@ void Encoder::sample_now() {
 }
 
 void Encoder::decode_hall_samples(uint16_t GPIO_samples[n_GPIO_samples]) {
+    if (!hallA_gpio_ || !hallB_gpio_ || !hallC_gpio_) {
+        return;
+    }
+
     STM32_GPIO_t* hall_gpios[] = {
         hallC_gpio_,
         hallB_gpio_,

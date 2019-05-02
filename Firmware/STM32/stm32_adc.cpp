@@ -2,14 +2,6 @@
 #include "stm32_adc.hpp"
 #include "stm32_system.h"
 
-#ifdef STM32F4
-typedef struct {
-    __IO uint32_t ISR;   /*!< DMA interrupt status register */
-    __IO uint32_t Reserved0;
-    __IO uint32_t IFCR;  /*!< DMA interrupt flag clear register */
-} DMA_Base_Registers;
-#endif
-
 const float adc_full_scale = (float)(1 << 12);
 const float adc_ref_voltage = 3.3f;
 
@@ -65,17 +57,8 @@ bool STM32_ADC_t::init() {
     return true;
 }
 
-bool STM32_ADCChannel_t::get_voltage(float* value) {
-    static const float voltage_scale = adc_ref_voltage / adc_full_scale;
-    uint16_t raw_value;
-
-    if (!adc_ || !adc_->get_raw_value(seq_pos_, &raw_value))
-        return false;
-
-    if (value)
-        *value = (float)raw_value * voltage_scale;
-
-    return true;
+bool STM32_ADCChannel_t::enqueue() {
+    return adc_->append(this, &seq_pos_);
 }
 
 bool STM32_ADCChannel_t::get_normalized(float* value) {

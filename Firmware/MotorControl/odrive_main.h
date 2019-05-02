@@ -56,9 +56,9 @@ extern "C" {
 
 #define NVIC_PRIO_UART          (configMAX_SYSCALL_INTERRUPT_PRIORITY + (2 << (8 - configPRIO_BITS)))
 #define NVIC_PRIO_USB           (configMAX_SYSCALL_INTERRUPT_PRIORITY + (2 << (8 - configPRIO_BITS)))
-#define NVIC_PRIO_SPI           (configMAX_SYSCALL_INTERRUPT_PRIORITY + (2 << (8 - configPRIO_BITS)))
 #define NVIC_PRIO_I2C           (configMAX_SYSCALL_INTERRUPT_PRIORITY + (2 << (8 - configPRIO_BITS)))
 #define NVIC_PRIO_CAN           (configMAX_SYSCALL_INTERRUPT_PRIORITY + (2 << (8 - configPRIO_BITS)))
+#define NVIC_PRIO_SPI           (configMAX_SYSCALL_INTERRUPT_PRIORITY + (3 << (8 - configPRIO_BITS)))
 
 // very low priority (it's ok for this one to be delayed up to ~25ms)
 #define NVIC_PRIO_TICK_TIMER    (255)       // updates the tick count (TODO: use chained timers to do this without CPU)
@@ -118,16 +118,12 @@ struct BoardConfig_t {
     bool enable_uart = true;
     bool enable_i2c_instead_of_can = false;
     bool enable_ascii_protocol_on_usb = true;
-#if HW_VERSION_MAJOR == 3 && HW_VERSION_MINOR >= 5 && HW_VERSION_VOLTAGE >= 48
-    float brake_resistance = 2.0f;     // [ohm]
-#else
-    float brake_resistance = 0.47f;     // [ohm]
-#endif
-    float dc_bus_undervoltage_trip_level = 8.0f;                        //<! [V] minimum voltage below which the motor stops operating
-    float dc_bus_overvoltage_trip_level = 1.07f * HW_VERSION_VOLTAGE;   //<! [V] maximum voltage above which the motor stops operating.
-                                                                        //<! This protects against cases in which the power supply fails to dissipate
-                                                                        //<! the brake power if the brake resistor is disabled.
-                                                                        //<! The default is 26V for the 24V board version and 52V for the 48V board version.
+    float brake_resistance = 0.0;
+    float dc_bus_undervoltage_trip_level = 0.0f;    //<! [V] minimum voltage below which the motor stops operating
+    float dc_bus_overvoltage_trip_level = 0.0f;     //<! [V] maximum voltage above which the motor stops operating.
+                                                    //<! This protects against cases in which the power supply fails to dissipate
+                                                    //<! the brake power if the brake resistor is disabled.
+                                                    //<! The default is 26V for the 24V board version and 52V for the 48V board version.
     PWMMapping_t pwm_mappings[GPIO_COUNT];
     PWMMapping_t analog_mappings[GPIO_COUNT];
 };
@@ -142,7 +138,6 @@ extern STM32_USBIntEndpoint_t cdc_cmd_endpoint;
 extern STM32_USBTxEndpoint_t odrive_tx_endpoint;
 extern STM32_USBRxEndpoint_t odrive_rx_endpoint;
 #include "devices.hpp"
-extern VoltageDivider_t vbus_sense;
 
 
 extern STM32_GPIO_t* gpios[];
@@ -196,6 +191,12 @@ extern bool user_config_loaded_;
 
 extern uint64_t serial_number;
 extern char serial_number_str[13];
+extern char hw_version_str[16];
+extern char product_name_str[64];
+
+extern const uint8_t hw_version_major;
+extern const uint8_t hw_version_minor;
+extern const uint8_t hw_version_variant;
 
 #endif // __cplusplus
 

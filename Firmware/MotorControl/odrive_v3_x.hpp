@@ -49,6 +49,14 @@ const size_t thermistor_num_coeffs = sizeof(thermistor_poly_coeffs)/sizeof(therm
 #  error "unknown board voltage"
 #endif
 
+#if HW_VERSION_MAJOR == 3 && HW_VERSION_MINOR >= 5 && HW_VERSION_VOLTAGE >= 48
+#  define DEFAULT_BRAKE_RESISTANCE 2.0f
+#else
+#  define DEFAULT_BRAKE_RESISTANCE 0.47f
+#endif
+#define DEFAULT_UNDERVOLTAGE_TRIP_LEVEL 8.0f
+#define DEFAULT_OVERVOLTAGE_TRIP_LEVEL (1.07f * HW_VERSION_VOLTAGE)
+
 // TODO: make dynamic
 #define TIM_1_8_CLOCK_HZ 168000000
 //#define TIM_1_8_PERIOD_CLOCKS (3500) // not 1kHz
@@ -59,15 +67,15 @@ const size_t thermistor_num_coeffs = sizeof(thermistor_poly_coeffs)/sizeof(therm
 #define CURRENT_MEAS_PERIOD ( (float)2*TIM_1_8_PERIOD_CLOCKS*(TIM_1_8_RCR+1) / (float)TIM_1_8_CLOCK_HZ )
 #define CURRENT_MEAS_HZ ( (float)(TIM_1_8_CLOCK_HZ) / (float)(2*TIM_1_8_PERIOD_CLOCKS*(TIM_1_8_RCR+1)) )
 
-
+#define SPI_CLOCK_POLARITY false
 
 
 #if HW_VERSION_MINOR <= 2
-STM32_ADCChannel_t adc_vbus_sense = adc1_injected.get_channel(&pa0);
+STM32_ADCChannel_t vbus_sense_adc = adc1_injected.get_channel(&pa0);
 #else
-STM32_ADCChannel_t adc_vbus_sense = adc1_injected.get_channel(&pa6);
+STM32_ADCChannel_t vbus_sense_adc = adc1_injected.get_channel(&pa6);
 #endif
-VoltageDivider_t vbus_sense(&adc_vbus_sense, VBUS_S_DIVIDER_RATIO);
+ADCVoltageSensor_t vbus_sense(&vbus_sense_adc, 3.3f * VBUS_S_DIVIDER_RATIO);
 
 
 #if (HW_VERSION_MINOR == 1) || (HW_VERSION_MINOR == 2)
@@ -114,24 +122,24 @@ DRV8301_t gate_driver_m1(
 );
 
 
-STM32_ADCChannel_t adc_m0_b = adc2_injected.get_channel(&pc0);
-STM32_ADCChannel_t adc_m0_c = adc3_injected.get_channel(&pc1);
-STM32_ADCChannel_t adc_m1_b = adc2_regular.get_channel(&pc3);
-STM32_ADCChannel_t adc_m1_c = adc3_regular.get_channel(&pc2);
-Shunt_t current_sensor_m0_b(&adc_m0_b, &gate_driver_m0, 1.0f / SHUNT_RESISTANCE);
-Shunt_t current_sensor_m0_c(&adc_m0_c, &gate_driver_m0, 1.0f / SHUNT_RESISTANCE);
-Shunt_t current_sensor_m1_b(&adc_m1_b, &gate_driver_m1, 1.0f / SHUNT_RESISTANCE);
-Shunt_t current_sensor_m1_c(&adc_m1_c, &gate_driver_m1, 1.0f / SHUNT_RESISTANCE);
+STM32_ADCChannel_t current_sensor_m0_b_adc = adc2_injected.get_channel(&pc0);
+STM32_ADCChannel_t current_sensor_m0_c_adc = adc3_injected.get_channel(&pc1);
+STM32_ADCChannel_t current_sensor_m1_b_adc = adc2_regular.get_channel(&pc3);
+STM32_ADCChannel_t current_sensor_m1_c_adc = adc3_regular.get_channel(&pc2);
+LinearCurrentSensor_t current_sensor_m0_b(&current_sensor_m0_b_adc, &gate_driver_m0, 1.0f / SHUNT_RESISTANCE * 3.3f, 0.5f);
+LinearCurrentSensor_t current_sensor_m0_c(&current_sensor_m0_c_adc, &gate_driver_m0, 1.0f / SHUNT_RESISTANCE * 3.3f, 0.5f);
+LinearCurrentSensor_t current_sensor_m1_b(&current_sensor_m1_b_adc, &gate_driver_m1, 1.0f / SHUNT_RESISTANCE * 3.3f, 0.5f);
+LinearCurrentSensor_t current_sensor_m1_c(&current_sensor_m1_c_adc, &gate_driver_m1, 1.0f / SHUNT_RESISTANCE * 3.3f, 0.5f);
 
-STM32_ADCChannel_t adc_m0_inv_temp = adc1_regular.get_channel(&pc5);
+STM32_ADCChannel_t temp_sensor_m0_inv_adc = adc1_regular.get_channel(&pc5);
 #if HW_VERSION_MINOR <= 2
-STM32_ADCChannel_t adc_m1_inv_temp = adc1_regular.get_channel(&pa1);
+STM32_ADCChannel_t temp_sensor_m1_inv_adc = adc1_regular.get_channel(&pa1);
 #else
-STM32_ADCChannel_t adc_m1_inv_temp = adc1_regular.get_channel(&pa4);
+STM32_ADCChannel_t temp_sensor_m1_inv_adc = adc1_regular.get_channel(&pa4);
 #endif
 
-Thermistor_t temp_sensor_m0_inv(&adc_m0_inv_temp, thermistor_poly_coeffs, thermistor_num_coeffs);
-Thermistor_t temp_sensor_m1_inv(&adc_m1_inv_temp, thermistor_poly_coeffs, thermistor_num_coeffs);
+Thermistor_t temp_sensor_m0_inv(&temp_sensor_m0_inv_adc, thermistor_poly_coeffs, thermistor_num_coeffs);
+Thermistor_t temp_sensor_m1_inv(&temp_sensor_m1_inv_adc, thermistor_poly_coeffs, thermistor_num_coeffs);
 
 STM32_ADCChannel_t* adc_sincos_s = &gpio_adcs[2];
 STM32_ADCChannel_t* adc_sincos_c = &gpio_adcs[3];
@@ -149,6 +157,15 @@ STM32_ADCChannel_t adc_aux_i = adc1_regular.get_channel(&pa5);
 STM32_ADCChannel_t adc_aux_temp = adc1_regular.get_channel(&pc4);
 #endif
 
+STM32_ADCChannel_t* adc_init_list[] = {
+    &current_sensor_m0_b_adc,
+    &current_sensor_m0_c_adc,
+    &current_sensor_m1_b_adc,
+    &current_sensor_m1_c_adc,
+    &vbus_sense_adc,
+    &temp_sensor_m0_inv_adc,
+    &temp_sensor_m1_inv_adc
+};
 
 const size_t n_axes = AXIS_COUNT;
 
@@ -164,7 +181,10 @@ static inline bool board_init(Axis axes[AXIS_COUNT]) {
             nullptr, // current_sensor_a
             &current_sensor_m0_b, // current_sensor_b
             &current_sensor_m0_c, // current_sensor_c
-            &temp_sensor_m0_inv, // inverter_thermistor
+            &temp_sensor_m0_inv, // inverter_thermistor_a
+            &temp_sensor_m0_inv, // inverter_thermistor_b
+            &temp_sensor_m0_inv, // inverter_thermistor_c
+            &vbus_sense, // vbus_sense
             TIM_1_8_PERIOD_CLOCKS, TIM_1_8_RCR, TIM_1_8_DEADTIME_CLOCKS,
             NVIC_PRIO_M0,
             axis_configs[0].motor_config
@@ -205,7 +225,10 @@ static inline bool board_init(Axis axes[AXIS_COUNT]) {
             nullptr, // current_sensor_a
             &current_sensor_m1_b, // current_sensor_b
             &current_sensor_m1_c, // current_sensor_c
-            &temp_sensor_m1_inv, // inverter_thermistor
+            &temp_sensor_m1_inv, // inverter_thermistor_a
+            &temp_sensor_m1_inv, // inverter_thermistor_b
+            &temp_sensor_m1_inv, // inverter_thermistor_c
+            &vbus_sense, // vbus_sense
             TIM_1_8_PERIOD_CLOCKS, TIM_1_8_RCR, TIM_1_8_DEADTIME_CLOCKS,
             NVIC_PRIO_M1,
             axis_configs[1].motor_config
@@ -236,6 +259,8 @@ static inline bool board_init(Axis axes[AXIS_COUNT]) {
         axis_configs[1].axis_config
     );
 
+    sprintf(hw_version_str, "%d.%d-%dV", hw_version_major, hw_version_minor, hw_version_variant);
+    sprintf(product_name_str, "ODrive v%s", hw_version_str);
     return true;
 }
 
@@ -264,5 +289,28 @@ STM32_USBRxEndpoint_t odrive_rx_endpoint(&usb.hUsbDeviceFS, 0x03); /* EP3 OUT: O
 
 
 STM32_USART_t* comm_uart = &uart4;
+
+#if HW_VERSION_MAJOR == 3
+// Determine start address of the OTP struct:
+// The OTP is organized into 16-byte blocks.
+// If the first block starts with "0xfe" we use the first block.
+// If the first block starts with "0x00" and the second block starts with "0xfe",
+// we use the second block. This gives the user the chance to screw up once.
+// If none of the above is the case, we consider the OTP invalid (otp_ptr will be NULL).
+const uint8_t* otp_ptr =
+    (*(uint8_t*)FLASH_OTP_BASE == 0xfe) ? (uint8_t*)FLASH_OTP_BASE :
+    (*(uint8_t*)FLASH_OTP_BASE != 0x00) ? NULL :
+        (*(uint8_t*)(FLASH_OTP_BASE + 0x10) != 0xfe) ? NULL :
+            (uint8_t*)(FLASH_OTP_BASE + 0x10);
+
+// Read hardware version from OTP if available, otherwise fall back
+// to software defined version.
+const uint8_t hw_version_major = otp_ptr ? otp_ptr[3] : HW_VERSION_MAJOR;
+const uint8_t hw_version_minor = otp_ptr ? otp_ptr[4] : HW_VERSION_MINOR;
+const uint8_t hw_version_variant = otp_ptr ? otp_ptr[5] : HW_VERSION_VOLTAGE;
+#else
+#error "not implemented"
+#endif
+
 
 #endif // __BOARD_HPP

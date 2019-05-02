@@ -320,6 +320,30 @@ bool Axis::run_closed_loop_control_loop() {
  * closed loop mode.
  */
 bool Axis::run_open_loop_control_loop() {
+    if (!motor_.arm_foc())
+        return error_ |= ERROR_MOTOR_FAILED, false;
+
+    set_step_dir_active(config_.enable_step_dir);
+
+    float phase = 0.0f;
+    run_control_loop([&](float dt){
+        float phase_vel = 2 * M_PI * controller_.vel_setpoint_ * motor_.config_.pole_pairs;
+        phase = wrap_pm_pi(phase + phase_vel * dt);
+        if (!motor_.FOC_update(0.0f, controller_.current_setpoint_, phase, phase_vel))
+            return false; // set_error should update axis.error_
+        return true;
+    });
+    set_step_dir_active(false);
+    return check_for_errors();
+}
+
+
+/**
+ * @brief Spins the magnetic field at a fixed velocity (defined by the velocity
+ * setpoint) and current/voltage setpoint. The current controller still runs in
+ * closed loop mode.
+ */
+bool Axis::run_async_control_loop() {
     if (!motor_.is_calibrated_ || !motor_.config_.async_calibrated)
         return error_ |= ERROR_MOTOR_FAILED, false;
 
@@ -350,7 +374,7 @@ bool Axis::run_open_loop_control_loop() {
         float phase = async_estimator_.phase_;
         float phase_vel = async_estimator_.phase_vel_;
 
-        float max_voltage = vbus_voltage * V_DC_TO_V_PHASE_MAX;
+        float max_voltage = motor_.vbus_voltage_ * V_DC_TO_V_PHASE_MAX;
         float max_current = controller_.current_setpoint_;
         float max_current_sqr = max_current * max_current;
 
@@ -545,6 +569,12 @@ void Axis::run_state_machine_loop() {
             } break;
 
             case AXIS_STATE_OPEN_LOOP_CONTROL: {
+                if (motor_.config_.direction==0)
+                    goto invalid_state_label;
+                status = run_open_loop_control_loop();
+            } break;
+
+            case AXIS_STATE_ASYNC_CONTROL: {
                 if (motor_.config_.direction==0)
                     goto invalid_state_label;
                 status = run_open_loop_control_loop();

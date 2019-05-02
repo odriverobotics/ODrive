@@ -7,6 +7,10 @@
 #include <algorithm>
 
 bool DRV8301_t::init() {
+    // Verify that clock polarity is configured to active low
+    if ((spi_->hspi.Instance->CR1 & SPI_CR1_CPOL_Msk) != SPI_POLARITY_LOW)
+        return false;
+
     if (!is_setup_) {
         //if (!spi.init()) // handled in main init function
         //    return false;

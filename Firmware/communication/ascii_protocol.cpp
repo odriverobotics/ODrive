@@ -201,7 +201,7 @@ void ASCII_protocol_process_line(const uint8_t* buffer, size_t len, StreamSink& 
         // respond(response_channel, use_checksum, "Signature: %#x", STM_ID_GetSignature());
         // respond(response_channel, use_checksum, "Revision: %#x", STM_ID_GetRevision());
         // respond(response_channel, use_checksum, "Flash Size: %#x KiB", STM_ID_GetFlashSize());
-        respond(response_channel, use_checksum, "Hardware version: %d.%d-%dV", HW_VERSION_MAJOR, HW_VERSION_MINOR, HW_VERSION_VOLTAGE);
+        respond(response_channel, use_checksum, "Hardware version: %s", hw_version_str);
         respond(response_channel, use_checksum, "Firmware version: %d.%d.%d", FW_VERSION_MAJOR, FW_VERSION_MINOR, FW_VERSION_REVISION);
         respond(response_channel, use_checksum, "Serial number: %s", serial_number_str);
 

@@ -14,7 +14,10 @@ Motor::Motor(STM32_Timer_t* timer,
              CurrentSensor_t* current_sensor_a,
              CurrentSensor_t* current_sensor_b,
              CurrentSensor_t* current_sensor_c,
-             Thermistor_t* inverter_thermistor,
+             Thermistor_t* inverter_thermistor_a,
+             Thermistor_t* inverter_thermistor_b,
+             Thermistor_t* inverter_thermistor_c,
+             VoltageSensor_t* vbus_sense,
              uint16_t period, uint16_t repetition_counter, uint16_t dead_time,
              uint8_t interrupt_priority,
              Config_t& config) :
@@ -27,7 +30,10 @@ Motor::Motor(STM32_Timer_t* timer,
         current_sensor_a_(current_sensor_a),
         current_sensor_b_(current_sensor_b),
         current_sensor_c_(current_sensor_c),
-        inverter_thermistor_(inverter_thermistor),
+        inverter_thermistor_a_(inverter_thermistor_a),
+        inverter_thermistor_b_(inverter_thermistor_b),
+        inverter_thermistor_c_(inverter_thermistor_c),
+        vbus_sense_(vbus_sense),
         period_(period), repetition_counter_(repetition_counter), dead_time_(dead_time),
         interrupt_priority_(interrupt_priority),
         config_(config) {
@@ -53,6 +59,10 @@ bool Motor::arm(control_law_t control_law, void* ctx) {
     // Reset controller states, integrators, setpoints, etc.
     axis_->controller_.reset();
     reset_current_control();
+
+    gate_driver_a_->set_enabled(true);
+    gate_driver_b_->set_enabled(true);
+    gate_driver_c_->set_enabled(true);
 
     safety_critical_arm_motor_pwm(*this);
     return true;
@@ -137,7 +147,15 @@ void Motor::handle_timer_update() {
         }
     }
 
-    
+    if (config_.vbus_voltage_override > 1.0f) {
+        vbus_voltage_ = config_.vbus_voltage_override;
+    } else {
+        if (!vbus_sense_ || !vbus_sense_->get_voltage(&vbus_voltage_)) {
+            set_error(ERROR_V_BUS_SENSOR_DEAD);
+            return;
+        }
+    }
+
     // Wait for the current measurements to become available
     bool have_all_values = false;
     uint64_t start = get_ticks_us();
@@ -150,11 +168,6 @@ void Motor::handle_timer_update() {
     } while (!have_all_values); // TODO: add timeout
     longest_wait_ = std::max(get_ticks_us() - start, longest_wait_);
     max_it_ = std::max(iterations, max_it_);
-
-    if (!vbus_sense.get_voltage(&vbus_voltage)) {
-        set_error(ERROR_V_BUS_SENSOR_DEAD);
-        return;
-    }
 
     Iph_ABC_t current = { 0 };
     bool read_all_values = (!current_sensor_a_ || current_sensor_a_->get_current(&current.phA))
@@ -211,11 +224,12 @@ void Motor::handle_timer_update() {
         // TODO move this to inside encoder update function
         axis_->encoder_.decode_hall_samples(GPIO_port_samples);
 
+        if (!do_checks()) {
+            return; // error set in do_checks()
+        }
+
         // Apply control law to calculate PWM duty cycles
         if (is_armed_) {
-            if (!do_checks()) {
-                return; // error set in do_checks()
-            }
 
             float pwm_timings[3];
             bool success = false;
@@ -287,8 +301,6 @@ bool Motor::init() {
         || !timer_->on_update_.set<Motor, &Motor::handle_timer_update>(*this)) {
         return false;
     }
-    vbus_voltage = 124;
-    //timer_.enable_interrupt(TRIGGER_AND_COMMUTATION, 0, 0); // TODO: M1 used to enable this one too, why?
 
     static const float kMargin = 0.90f;
     static const float kTripMargin = 1.0f; // Trip level is at edge of linear range of amplifer
@@ -339,7 +351,11 @@ bool Motor::init() {
 
     system_stats_.boot_progress++;
 
-    if (inverter_thermistor_ && !inverter_thermistor_->init())
+    if (inverter_thermistor_a_ && !inverter_thermistor_a_->init())
+        return false;
+    if (inverter_thermistor_b_ && !inverter_thermistor_b_->init())
+        return false;
+    if (inverter_thermistor_c_ && !inverter_thermistor_c_->init())
         return false;
 
     return true;
@@ -399,7 +415,7 @@ void Motor::set_error(Motor::Error_t error) {
 float Motor::get_inverter_temp() {
     // TODO: support more than one temp sensor
     float temp;
-    if (inverter_thermistor_ && inverter_thermistor_->read_temp(&temp)) {
+    if (inverter_thermistor_a_ && inverter_thermistor_a_->read_temp(&temp)) {
         return temp;
     } else {
         return 0.0f;
@@ -422,23 +438,17 @@ bool Motor::update_thermal_limits() {
 }
 
 bool Motor::do_checks() {
-    if (!(vbus_voltage >= board_config.dc_bus_undervoltage_trip_level)) {
+    if (!(vbus_voltage_ >= board_config.dc_bus_undervoltage_trip_level)) {
         set_error(ERROR_DC_BUS_UNDER_VOLTAGE);
-        return false;
     }
-    if (!(vbus_voltage <= board_config.dc_bus_overvoltage_trip_level)) {
+    if (!(vbus_voltage_ <= board_config.dc_bus_overvoltage_trip_level)) {
         set_error(ERROR_DC_BUS_OVER_VOLTAGE);
-        return false;
     }
     if (!check_DRV_fault()) {
         set_error(ERROR_DRV_FAULT);
-        return false;
     }
-    if (!update_thermal_limits()) {
-        //error already set in function
-        return false;
-    }
-    return true;
+    update_thermal_limits(); // error set in function
+    return error_ == ERROR_NONE;
 }
 
 float Motor::effective_current_lim() {
@@ -446,7 +456,7 @@ float Motor::effective_current_lim() {
     float current_lim = config_.current_lim;
     // Hardware limit
     if (axis_->motor_.config_.motor_type == Motor::MOTOR_TYPE_GIMBAL) {
-        current_lim = std::min(current_lim, 0.98f*one_by_sqrt3*vbus_voltage);
+        current_lim = std::min(current_lim, 0.98f*one_by_sqrt3*vbus_voltage_);
     } else {
         current_lim = std::min(current_lim, axis_->motor_.current_control_.max_allowed_current);
     }
@@ -489,7 +499,7 @@ void Motor::log_timing(TimingLog_t log_idx) {
 bool Motor::pwm_test(float duration) {
     Iph_ABC_t I_ph_min = {INFINITY, INFINITY, INFINITY};
     Iph_ABC_t I_ph_max = {-INFINITY, -INFINITY, -INFINITY};
-    float vbus_voltage_avg = vbus_voltage;
+    float vbus_voltage_avg = vbus_voltage_;
     float vbus_voltage_min = INFINITY;
     float vbus_voltage_max = -INFINITY;
 
@@ -505,8 +515,8 @@ bool Motor::pwm_test(float duration) {
         I_ph_max.phA = std::max(I_ph_max.phA, current_meas_.phA);
         I_ph_max.phB = std::max(I_ph_max.phB, current_meas_.phB);
         I_ph_max.phC = std::max(I_ph_max.phC, current_meas_.phC);
-        vbus_voltage_min = std::min(vbus_voltage_min, vbus_voltage);
-        vbus_voltage_max = std::max(vbus_voltage_max, vbus_voltage);
+        vbus_voltage_min = std::min(vbus_voltage_min, vbus_voltage_);
+        vbus_voltage_max = std::max(vbus_voltage_max, vbus_voltage_);
         osDelay(1);
     }
 
@@ -533,7 +543,7 @@ bool Motor::pwm_test(float duration) {
 
     float vbus_voltage_range_min;
     float vbus_voltage_range_max;
-    if (!vbus_sense.get_range(&vbus_voltage_range_min, &vbus_voltage_range_max))
+    if (!vbus_sense_ || !vbus_sense_->get_range(&vbus_voltage_range_min, &vbus_voltage_range_max))
         return false;
 
     bool is_noise_within_range = ((I_ph_max.phA - I_ph_min.phA) < current_control_.overcurrent_trip_level.phA * 0.05f)
@@ -570,7 +580,7 @@ bool Motor::measure_phase_resistance(float test_current, float max_voltage) {
             return motor.set_error(ERROR_PHASE_RESISTANCE_OUT_OF_RANGE), false;
 
         // Test voltage along phase A
-        return SVM_voltage(vbus_voltage, ctx.test_voltage, 0.0f, pwm_timings);
+        return SVM_voltage(motor.vbus_voltage_, ctx.test_voltage, 0.0f, pwm_timings);
     }, &ctx);
 
     if (!did_arm) {
@@ -605,7 +615,7 @@ bool Motor::measure_phase_inductance(float voltage_low, float voltage_high) {
         ctx.Ialphas[i] += motor.I_alpha_beta_measured_[0];
 
         // Test voltage along phase A
-        return SVM_voltage(vbus_voltage, ctx.test_voltages[i], 0.0f, pwm_timings);
+        return SVM_voltage(motor.vbus_voltage_, ctx.test_voltages[i], 0.0f, pwm_timings);
     }, &ctx);
     
     if (!did_arm) {
@@ -653,7 +663,7 @@ bool Motor::run_calibration() {
 
 
 bool Motor::FOC(Motor& motor, void* ctx, float pwm_timings[3]) {
-    float mod_to_V = (2.0f / 3.0f) * vbus_voltage;
+    float mod_to_V = (2.0f / 3.0f) * motor.vbus_voltage_;
     float V_to_mod = 1.0f / mod_to_V;
 
     // Syntactic sugar
