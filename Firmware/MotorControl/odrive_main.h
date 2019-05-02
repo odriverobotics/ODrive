@@ -86,6 +86,7 @@ typedef struct {
     uint32_t min_stack_space_uart;
     uint32_t min_stack_space_usb_irq;
     uint32_t min_stack_space_startup;
+    uint32_t min_stack_space_can;
     uint32_t boot_progress;
     float adc_irq_usage = 0.0f;
     float dma2_stream1_irq_usage = 0.0f;
@@ -148,11 +149,14 @@ extern const size_t num_gpios;
 static constexpr const GPIO_TypeDef* GPIOs_to_samp[] = { GPIOA, GPIOB, GPIOC };
 static constexpr const int n_GPIO_samples = sizeof(GPIOs_to_samp) / sizeof(GPIOs_to_samp[0]);
 
+// Forward Declarations
 class Axis;
 class Motor;
+class ODriveCAN;
 
 extern Axis* axes;
 extern const size_t n_axes;
+extern ODriveCAN *odCAN;
 
 // if you use the oscilloscope feature you can bump up this value
 #define OSCILLOSCOPE_SIZE 128

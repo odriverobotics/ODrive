@@ -16,9 +16,9 @@ bool STM32_CAN_t::setup(STM32_GPIO_t* rx_gpio, STM32_GPIO_t* tx_gpio) {
     hcan.Init.TimeSeg1 = CAN_BS1_16TQ;
     hcan.Init.TimeSeg2 = CAN_BS2_4TQ;
     hcan.Init.TimeTriggeredMode = DISABLE;
-    hcan.Init.AutoBusOff = DISABLE;
+    hcan.Init.AutoBusOff = ENABLE;
     hcan.Init.AutoWakeUp = ENABLE;
-    hcan.Init.AutoRetransmission = DISABLE;
+    hcan.Init.AutoRetransmission = ENABLE;
     hcan.Init.ReceiveFifoLocked = DISABLE;
     hcan.Init.TransmitFifoPriority = DISABLE;
     if (HAL_CAN_Init(&hcan) != HAL_OK)

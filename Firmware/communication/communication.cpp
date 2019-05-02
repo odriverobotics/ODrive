@@ -65,12 +65,8 @@ void init_communication(void) {
         osDelay(1);
 }
 
-
 float oscilloscope[OSCILLOSCOPE_SIZE] = {0};
 size_t oscilloscope_pos = 0;
-
-
-static CAN_context can1_ctx;
 
 // These are used by the printf feature.
 StreamSink* uart4_stream_output_ptr = nullptr;
@@ -115,6 +111,7 @@ static inline auto make_obj_tree() {
             make_protocol_ro_property("min_stack_space_comms", &system_stats_.min_stack_space_comms),
             make_protocol_ro_property("min_stack_space_usb", &system_stats_.min_stack_space_usb),
             make_protocol_ro_property("min_stack_space_uart", &system_stats_.min_stack_space_uart),
+            make_protocol_ro_property("min_stack_space_can", &system_stats_.min_stack_space_can),
             make_protocol_ro_property("min_stack_space_usb_irq", &system_stats_.min_stack_space_usb_irq),
             make_protocol_ro_property("min_stack_space_startup", &system_stats_.min_stack_space_startup),
             make_protocol_ro_property("adc_irq_usage", &system_stats_.adc_irq_usage),
@@ -154,7 +151,7 @@ static inline auto make_obj_tree() {
             ),
         make_protocol_object("axis0", axes[0].make_protocol_definitions()),
         make_protocol_object("axis1", axes[1].make_protocol_definitions()),
-        make_protocol_object("can", can1_ctx.make_protocol_definitions()),
+        make_protocol_object("can", odCAN->make_protocol_definitions()),
         make_protocol_property("test_property", &test_property),
         make_protocol_function("test_function", static_functions, &StaticFunctions::test_function, "delta"),
         make_protocol_function("get_oscilloscope_val", static_functions, &StaticFunctions::get_oscilloscope_val, "index"),
@@ -203,9 +200,9 @@ void communication_task(void * ctx) {
         start_i2c_server();
     } else {
         // TODO: finish implementing CAN
-        // start_can_server(can1_ctx, CAN1, serial_number);
+        odCAN->start_can_server();
     }*/
-
+    
     for (;;) {
         osThreadSuspend(nullptr);
     }

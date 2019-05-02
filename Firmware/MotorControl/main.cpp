@@ -38,8 +38,10 @@ Axis* axes = reinterpret_cast<Axis*>(axes_obj_bufs);
 #include <communication/interface_usb.h>
 #include <communication/interface_uart.h>
 #include <communication/interface_i2c.h>
+#include <communication/interface_can.hpp>
 
 BoardConfig_t board_config;
+ODriveCAN::Config_t can_config;
 PerChannelConfig_t axis_configs[AXIS_COUNT];
 bool user_config_loaded_;
 
@@ -52,9 +54,11 @@ char serial_number_str[13]; // 12 digits + null termination
 char hw_version_str[16];
 char product_name_str[64];
 
+ODriveCAN *odCAN;
 
 typedef Config<
     BoardConfig_t,
+    ODriveCAN::Config_t,
     PerChannelConfig_t[AXIS_COUNT]> ConfigFormat;
 
 
@@ -98,6 +102,7 @@ void start_brake_pwm() {
 void save_configuration(void) {
     if (ConfigFormat::safe_store_config(
             &board_config,
+            &can_config,
             &axis_configs)) {
         //printf("saving configuration failed\r\n"); osDelay(5);
     } else {
@@ -110,15 +115,18 @@ extern "C" int load_configuration(void) {
     if (NVM_init() ||
         ConfigFormat::safe_load_config(
                 &board_config,
+                &can_config,
                 &axis_configs)) {
         //If loading failed, restore defaults
         board_config = BoardConfig_t();
+        can_config = ODriveCAN::Config_t();
         for (size_t i = 0; i < AXIS_COUNT; ++i) {
             axis_configs[i] = PerChannelConfig_t();
 
             // Load board-specific defaults
             axis_configs[i].axis_config.step_gpio_num = default_step_gpio_nums[i];
             axis_configs[i].axis_config.dir_gpio_num = default_dir_gpio_nums[i];
+            axis_configs[i].axis_config.can_node_id = i;
         }
 
         // Load board-specific defaults
@@ -169,6 +177,7 @@ void vApplicationIdleHook(void) {
 //        system_stats_.min_stack_space_uart = uxTaskGetStackHighWaterMark(uart_thread) * sizeof(StackType_t);
 //        system_stats_.min_stack_space_usb_irq = uxTaskGetStackHighWaterMark(usb.irq_thread) * sizeof(StackType_t);
         system_stats_.min_stack_space_startup = uxTaskGetStackHighWaterMark(defaultTaskHandle) * sizeof(StackType_t);
+        system_stats_.min_stack_space_can = uxTaskGetStackHighWaterMark(odCAN->thread_id_) * sizeof(StackType_t);
     }
 }
 }
@@ -315,6 +324,7 @@ int main_task(void) {
     }
 /*
     // Construct all objects.
+    odCAN = new ODriveCAN(&hcan1, can_config);
     for (size_t i = 0; i < AXIS_COUNT; ++i) {
         Encoder *encoder = new Encoder(encoder_configs[i]);
         SensorlessEstimator *sensorless_estimator = new SensorlessEstimator(sensorless_configs[i]);

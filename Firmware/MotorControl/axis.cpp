@@ -3,8 +3,9 @@
 #include <functional>
 #include <stm32_gpio.hpp>
 
-#include "utils.h"
 #include "odrive_main.h"
+#include "utils.h"
+#include "communication/interface_can.hpp"
 
 #ifndef M_SQRT1_2
 #define M_SQRT1_2 0.70710678118
@@ -17,16 +18,15 @@ Axis::Axis(Motor motor,
            Controller controller,
            TrapezoidalTrajectory trap,
            osPriority thread_priority,
-           Config_t& config)
-    : motor_(motor),
+           Config_t& config) :
+      motor_(motor),
       encoder_(encoder),
       sensorless_estimator_(sensorless_estimator),
       async_estimator_(async_estimator),
       controller_(controller),
       trap_(trap),
       thread_priority_(thread_priority),
-      config_(config)
-{
+      config_(config) {
     motor_.axis_ = this;
     encoder_.axis_ = this;
     sensorless_estimator_.axis_ = this;
@@ -63,7 +63,7 @@ static void run_state_machine_loop_wrapper(void* ctx) {
 
 // @brief Starts run_state_machine_loop in a new thread
 void Axis::start_thread() {
-    osThreadDef(thread_def, run_state_machine_loop_wrapper, thread_priority_, 0, 4*512);
+    osThreadDef(thread_def, run_state_machine_loop_wrapper, thread_priority_, 0, 4 * 512);
     thread_id_ = osThreadCreate(osThread(thread_def), this);
     thread_id_valid_ = true;
 }
@@ -175,7 +175,9 @@ bool Axis::do_updates(float dt) {
     encoder_.update(dt);
     sensorless_estimator_.update(dt);
     async_estimator_.update(dt);
-    return check_for_errors();
+    bool ret = check_for_errors();
+    odCAN->send_heartbeat(this);
+    return ret;
 }
 
 // @brief Feed the watchdog to prevent watchdog timeouts.
@@ -451,7 +453,7 @@ bool Axis::run_idle_loop() {
     // the only valid reason to leave idle is an external request
     while (requested_state_ == AXIS_STATE_UNDEFINED) {
         //motor_.disarm();
-        run_control_loop([this](float dt){
+        run_control_loop([this](float dt) {
             (void) dt;
             return true;
         });
@@ -507,7 +509,7 @@ void Axis::run_state_machine_loop() {
                 task_chain_[pos++] = requested_state_;
                 task_chain_[pos++] = AXIS_STATE_IDLE;
             }
-            task_chain_[pos++] = AXIS_STATE_UNDEFINED; // TODO: bounds checking
+            task_chain_[pos++] = AXIS_STATE_UNDEFINED;  // TODO: bounds checking
             requested_state_ = AXIS_STATE_UNDEFINED;
             // Auto-clear any invalid state error
             error_ &= ~ERROR_INVALID_STATE;
@@ -588,7 +590,7 @@ void Axis::run_state_machine_loop() {
             default:
             invalid_state_label:
                 error_ |= ERROR_INVALID_STATE;
-                status = false; // this will set the state to idle
+                status = false;  // this will set the state to idle
                 break;
         }
 
