@@ -68,9 +68,9 @@ Possible values are:
 
 ### Tuning parameters
 The motion control gains are currently manually tuned:
-* `<axis>.controller.config.pos_gain = 20.0f` [(counts/s) / counts]
-* `<axis>.controller.config.vel_gain = 5.0f / 10000.0f` [A/(counts/s)]
-* `<axis>.controller.config.vel_integrator_gain = 10.0f / 10000.0f` [A/((counts/s) * s)]
+* `<axis>.controller.config.pos_gain = 20.0` [(counts/s) / counts]
+* `<axis>.controller.config.vel_gain = 5.0 / 10000.0` [A/(counts/s)]
+* `<axis>.controller.config.vel_integrator_gain = 10.0 / 10000.0` [A/((counts/s) * s)]
 
 An upcoming feature will enable automatic tuning. Until then, here is a rough tuning procedure:
 * Set the integrator gain to 0
