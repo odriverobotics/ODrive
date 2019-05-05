@@ -149,6 +149,7 @@ You can also try increasing `<axis>.controller.config.vel_limit_tolerance`. The 
 
 ### Motor feels like it has less torque than it should and/or gets hot sitting still while under no load.
 - Encoder has likely slipped causing the motor controller to commutate the wrong windings slightly which reduces output torque and produces excess heat as the motor 'fights itself'.
+- This can also be caused if the rotor bell slips on the motor shaft. On some motors the rotor bell is secured against the shaft with a grub screw. Confirm that this screw is tight enough. For further details on how to resolve this issue see [this forum post](https://discourse.odriverobotics.com/t/motor-gets-hot-has-less-torque-in-one-direction-than-the-other/2394).
 
 ### False steps or direction changes when using step/dir
 - Prior to Odrive board V3.5 no filtering is present on the GPIO pins used for step/dir interface and so inductively coupled noise may causes false steps to be detected. Odrive V3.5 and has onboard filtering to resolve this issue.
