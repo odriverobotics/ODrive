@@ -95,6 +95,11 @@ Confirm that your encoder is plugged into the right pins on the odrive board.
 
 Check that your encoder is a model that has an index pulse. If your encoder does not have a wire connected to pin Z on your odrive then it does not output an index pulse.
 
+## Common Controller Errors
+
+* `ERROR_OVERSPEED = 0x01`
+
+Try increasing `<axis>.controller.config.vel_limit`. The default `vel_limit` of 20,000 encoder counts per second gives a motor speed of only ~146 RPM with the common CUI-AMT102 8192 count per rotation encoder. Note: Even if you do not commanded your motor to exceed `vel_limit` sudden changes in the load placed on a motor may cause this speed to be temporarily exceeded, resulting in this error. Therefore, provided it is safe to do so, setting `vel_limit` 1.5x above your maximum intended speed may help avoid this error.
 
 ## USB Connectivity Issues
 
