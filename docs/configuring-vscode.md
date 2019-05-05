@@ -2,7 +2,7 @@
 
 VSCode is the recommended IDE for working with the ODrive codebase.  It is a light-weight text editor with Git integration and GDB debugging functionality.
 
-Before doing the VSCode setup, make sure you've installed all of your [prerequisites](README.md#installing-prerequisites)
+Before doing the VSCode setup, make sure you've installed all of your [prerequisites](developer-guide#installing-prerequisites)
 
 ## Setup Procedure
 1. Clone the ODrive repository
@@ -32,7 +32,7 @@ A terminal window will open with your native shell.  VSCode is configured to run
 
 A terminal window will open with your native shell.  VSCode is configured to run the command `make flash` in this terminal.
 
-If the flashing worked, you can connect to the board using the [odrivetool](../docs/getting-started#start-odrivetool).
+If the flashing worked, you can connect to the board using the [odrivetool](getting-started#start-odrivetool).
 
 ## Debugging
 An extension called Cortex-Debug has recently been released which is designed specifically for debugging ARM Cortex projects.  You can read more on Cortex-Debug here: https://github.com/Marus/cortex-debug
