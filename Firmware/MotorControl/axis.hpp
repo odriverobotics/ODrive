@@ -227,6 +227,8 @@ public:
     uint32_t watchdog_reset_value_ = 0; //computed from config_.watchdog_timeout in update_watchdog_settings()
     uint32_t watchdog_current_value_= 0;
 
+    Subscriber<Axis*> did_update_; // invoked whenever the subcomponent states have been updated
+
     // Communication protocol definitions
     auto make_protocol_definitions() {
         return make_protocol_member_list(

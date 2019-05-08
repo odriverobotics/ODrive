@@ -5,7 +5,6 @@
 
 #include "odrive_main.h"
 #include "utils.h"
-#include "communication/interface_can.hpp"
 
 #ifndef M_SQRT1_2
 #define M_SQRT1_2 0.70710678118
@@ -175,9 +174,8 @@ bool Axis::do_updates(float dt) {
     encoder_.update(dt);
     sensorless_estimator_.update(dt);
     async_estimator_.update(dt);
-    bool ret = check_for_errors();
-    odCAN->send_heartbeat(this);
-    return ret;
+    did_update_.invoke(this);
+    return check_for_errors();
 }
 
 // @brief Feed the watchdog to prevent watchdog timeouts.

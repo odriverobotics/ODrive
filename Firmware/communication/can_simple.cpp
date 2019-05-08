@@ -7,6 +7,86 @@
 static const uint8_t NUM_NODE_ID_BITS = 6;
 static constexpr uint8_t NUM_CMD_ID_BITS = 11 - NUM_NODE_ID_BITS;
 
+CANSimple::Config_t can_config;
+
+// Safer context handling via maps instead of arrays
+// #include <unordered_map>
+// std::unordered_map<CAN_HandleTypeDef *, ODriveCAN *> ctxMap;
+
+// Constructor is called by communication.cpp and the handle is assigned appropriately
+CANSimple::CANSimple(STM32_CAN_t* can, Config_t &config)
+    : can_{can},
+      config_{config} {
+    // ctxMap[handle_] = this;
+
+    osSemaphoreDef(sem_can_);
+    sem_can_ = osSemaphoreCreate(osSemaphore(sem_can_), 1);
+    osSemaphoreWait(sem_can_, 0);
+}
+
+bool CANSimple::start_can_server() {
+    // set up CAN
+    if (!can_)
+        return false;
+    if (!can_->config(config_.baud))
+        return false;
+    if (!can_->subscribe(0 /* id */, 0 /* mask */, 0 /* fifo */, [](void* ctx, CAN_message_t& msg){ ((CANSimple*)ctx)->handle_can_message(msg); }, this))
+        return false;
+
+    if (!axes[0].did_update_.set<CANSimple, &CANSimple::send_heartbeat>(*this))
+        return false;
+
+    return true;
+}
+
+bool CANSimple::reinit() {
+    if (!can_)
+        return false;
+    if (!can_->stop())
+        return false;
+    if (!can_->config(config_.baud))
+        return false;
+    if (!can_->start())
+        return false;
+    return true;
+}
+
+// This function is called by each axis.
+// It provides an abstraction from the specific CAN protocol in use
+void CANSimple::send_heartbeat(Axis *axis) {
+    // Handle heartbeat message
+    if (axis->config_.can_heartbeat_rate_ms > 0) {
+        uint32_t now = osKernelSysTick();
+        if ((now - axis->last_heartbeat_) >= axis->config_.can_heartbeat_rate_ms) {
+            CAN_message_t txmsg;
+            txmsg.id = axis->config_.can_node_id << NUM_CMD_ID_BITS;
+            txmsg.id += MSG_ODRIVE_HEARTBEAT;  // heartbeat ID
+            txmsg.isExt = false;
+            txmsg.len = 8;
+
+            // Axis errors in 1st 32-bit value
+            txmsg.buf[0] = axis->error_;
+            txmsg.buf[1] = axis->error_ >> 8;
+            txmsg.buf[2] = axis->error_ >> 16;
+            txmsg.buf[3] = axis->error_ >> 24;
+
+            // Current state of axis in 2nd 32-bit value
+            txmsg.buf[4] = axis->current_state_;
+            txmsg.buf[5] = axis->current_state_ >> 8;
+            txmsg.buf[6] = axis->current_state_ >> 16;
+            txmsg.buf[7] = axis->current_state_ >> 24;
+
+            can_->send(txmsg);
+
+            axis->last_heartbeat_ = now;
+        }
+    }
+}
+
+void CANSimple::set_error(Error_t error) {
+    error_ |= error;
+}
+
 void CANSimple::handle_can_message(CAN_message_t& msg) {
     // This functional way of handling the messages is neat and is much cleaner from
     // a data security point of view, but it will require some tweaking to fix the syntax.
@@ -32,7 +112,7 @@ void CANSimple::handle_can_message(CAN_message_t& msg) {
                 validAxis = true;
             } else {
                 // Duplicate can IDs, don't assign to any axis
-                odCAN->set_error(ODriveCAN::ERROR_DUPLICATE_CAN_IDS);
+                set_error(ERROR_DUPLICATE_CAN_IDS);
                 validAxis = false;
                 break;
             }
@@ -142,7 +222,7 @@ void CANSimple::get_motor_error_callback(Axis* axis, CAN_message_t& msg) {
         txmsg.buf[2] = axis->motor_.error_ >> 16;
         txmsg.buf[3] = axis->motor_.error_ >> 24;
 
-        odCAN->write(txmsg);
+        can_->send(txmsg);
     }
 }
 
@@ -159,7 +239,7 @@ void CANSimple::get_encoder_error_callback(Axis* axis, CAN_message_t& msg) {
         txmsg.buf[2] = axis->encoder_.error_ >> 16;
         txmsg.buf[3] = axis->encoder_.error_ >> 24;
 
-        odCAN->write(txmsg);
+        can_->send(txmsg);
     }
 }
 
@@ -176,7 +256,7 @@ void CANSimple::get_sensorless_error_callback(Axis* axis, CAN_message_t& msg) {
         txmsg.buf[2] = axis->sensorless_estimator_.error_ >> 16;
         txmsg.buf[3] = axis->sensorless_estimator_.error_ >> 24;
 
-        odCAN->write(txmsg);
+        can_->send(txmsg);
     }
 }
 
@@ -218,7 +298,7 @@ void CANSimple::get_encoder_estimates_callback(Axis* axis, CAN_message_t& msg) {
         txmsg.buf[6] = floatBytes >> 16;
         txmsg.buf[7] = floatBytes >> 24;
 
-        odCAN->write(txmsg);
+        can_->send(txmsg);
     }
 }
 
@@ -249,7 +329,7 @@ void CANSimple::get_sensorless_estimates_callback(Axis* axis, CAN_message_t& msg
         txmsg.buf[6] = floatBytes >> 16;
         txmsg.buf[7] = floatBytes >> 24;
 
-        odCAN->write(txmsg);
+        can_->send(txmsg);
     }
 }
 
@@ -271,7 +351,7 @@ void CANSimple::get_encoder_count_callback(Axis* axis, CAN_message_t& msg) {
         txmsg.buf[6] = axis->encoder_.count_in_cpr_ >> 16;
         txmsg.buf[7] = axis->encoder_.count_in_cpr_ >> 24;
 
-        odCAN->write(txmsg);
+        can_->send(txmsg);
     }
 }
 
@@ -336,7 +416,7 @@ void CANSimple::get_iq_callback(Axis* axis, CAN_message_t& msg) {
         txmsg.buf[6] = floatBytes >> 16;
         txmsg.buf[7] = floatBytes >> 24;
 
-        odCAN->write(txmsg);
+        can_->send(txmsg);
     }
 }
 
@@ -349,9 +429,9 @@ void CANSimple::get_vbus_voltage_callback(Axis* axis, CAN_message_t& msg) {
         txmsg.isExt = false;
         txmsg.len = 8;
 
-        uint32_t floatBytes;
-        static_assert(sizeof vbus_voltage == sizeof floatBytes);
-        std::memcpy(&floatBytes, &vbus_voltage, sizeof floatBytes);
+        uint32_t floatBytes = 0;
+        static_assert(sizeof axes[0].motor_.vbus_voltage_ == sizeof floatBytes);
+        std::memcpy(&floatBytes, &axes[0].motor_.vbus_voltage_, sizeof floatBytes);
 
         // This also works in principle, but I don't have hardware to verify endianness
         // std::memcpy(&txmsg.buf[0], &vbus_voltage, sizeof vbus_voltage);
@@ -366,29 +446,8 @@ void CANSimple::get_vbus_voltage_callback(Axis* axis, CAN_message_t& msg) {
         txmsg.buf[6] = 0;
         txmsg.buf[7] = 0;
 
-        odCAN->write(txmsg);
+        can_->send(txmsg);
     }
-}
-
-void CANSimple::send_heartbeat(Axis* axis) {
-    CAN_message_t txmsg;
-    txmsg.id = axis->config_.can_node_id << NUM_CMD_ID_BITS;
-    txmsg.id += MSG_ODRIVE_HEARTBEAT;  // heartbeat ID
-    txmsg.isExt = false;
-    txmsg.len = 8;
-
-    // Axis errors in 1st 32-bit value
-    txmsg.buf[0] = axis->error_;
-    txmsg.buf[1] = axis->error_ >> 8;
-    txmsg.buf[2] = axis->error_ >> 16;
-    txmsg.buf[3] = axis->error_ >> 24;
-
-    // Current state of axis in 2nd 32-bit value
-    txmsg.buf[4] = axis->current_state_;
-    txmsg.buf[5] = axis->current_state_ >> 8;
-    txmsg.buf[6] = axis->current_state_ >> 16;
-    txmsg.buf[7] = axis->current_state_ >> 24;
-    odCAN->write(txmsg);
 }
 
 uint8_t CANSimple::get_node_id(uint32_t msgID) {

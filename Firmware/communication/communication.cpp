@@ -5,8 +5,8 @@
 
 #include "interface_usb.h"
 #include "interface_uart.h"
-#include "interface_can.hpp"
 #include "interface_i2c.h"
+#include "can_simple.hpp"
 
 #include "odrive_main.h"
 #include "freertos_vars.h"
@@ -41,6 +41,8 @@ osThreadId comm_thread;
 volatile bool endpoint_list_valid = false;
 
 static uint32_t test_property = 0;
+
+CANSimple *odCAN;
 
 /* Private function prototypes -----------------------------------------------*/
 
@@ -135,7 +137,9 @@ static inline auto make_obj_tree() {
             make_protocol_property("brake_resistance", &board_config.brake_resistance),
             // TODO: changing this currently requires a reboot - fix this
             make_protocol_property("enable_uart", &board_config.enable_uart),
-            make_protocol_property("enable_i2c_instead_of_can" , &board_config.enable_i2c_instead_of_can), // requires a reboot
+            make_protocol_property("enable_i2c" , &board_config.enable_i2c), // requires a reboot and hardware mod
+            make_protocol_property("enable_can" , &board_config.enable_can), // requires a reboot
+            make_protocol_property("can_protocol", &board_config.can_protocol), // requires a reboot
             make_protocol_property("enable_ascii_protocol_on_usb", &board_config.enable_ascii_protocol_on_usb),
             make_protocol_property("dc_bus_undervoltage_trip_level", &board_config.dc_bus_undervoltage_trip_level),
             make_protocol_property("dc_bus_overvoltage_trip_level", &board_config.dc_bus_overvoltage_trip_level),
@@ -186,22 +190,31 @@ void communication_task(void * ctx) {
     // Allow main init to continue
     endpoint_list_valid = true;
     
-    uart4_interface.start_server();
-    uart4_stream_output_ptr = &uart4_interface.stream_output;
-
+    if (board_config.enable_uart) {
+        uart4_interface.start_server();
+        uart4_stream_output_ptr = &uart4_interface.stream_output;
+    }
 
     usb_interface_0.start_server(board_config.enable_ascii_protocol_on_usb);
     usb_interface_1.start_server(false);
 
-/*    usb_stream_output_ptr = &usb_interface_0.stream_output;
+    /*usb_stream_output_ptr = &usb_interface_0.stream_output;*/
 
-    if (board_config.enable_i2c_instead_of_can) {
+    /*if (board_config.enable_i2c) {
         // TODO: finish implementing I2C
         start_i2c_server();
-    } else {
-        // TODO: finish implementing CAN
-        odCAN->start_can_server();
     }*/
+    
+
+    if (board_config.enable_can) {
+        switch (board_config.can_protocol) {
+            case CAN_PROTOCOL_SIMPLE:
+                odCAN = new CANSimple(&can1, can_config);
+                odCAN->start_can_server();
+            default:
+                break;
+        }
+    }
     
     for (;;) {
         osThreadSuspend(nullptr);

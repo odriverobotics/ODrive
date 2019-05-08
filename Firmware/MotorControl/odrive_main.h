@@ -114,10 +114,16 @@ struct PWMMapping_t {
 #define GPIO_COUNT  8
 #endif
 
+enum CAN_Protocol_t {
+    CAN_PROTOCOL_SIMPLE,
+};
+
 // @brief general user configurable board configuration
 struct BoardConfig_t {
     bool enable_uart = true;
-    bool enable_i2c_instead_of_can = false;
+    bool enable_i2c = false;
+    bool enable_can = true;
+    CAN_Protocol_t can_protocol = CAN_PROTOCOL_SIMPLE;
     bool enable_ascii_protocol_on_usb = true;
     float brake_resistance = 0.0;
     float dc_bus_undervoltage_trip_level = 0.0f;    //<! [V] minimum voltage below which the motor stops operating
@@ -156,7 +162,6 @@ class ODriveCAN;
 
 extern Axis* axes;
 extern const size_t n_axes;
-extern ODriveCAN *odCAN;
 
 // if you use the oscilloscope feature you can bump up this value
 #define OSCILLOSCOPE_SIZE 128

@@ -38,10 +38,9 @@ Axis* axes = reinterpret_cast<Axis*>(axes_obj_bufs);
 #include <communication/interface_usb.h>
 #include <communication/interface_uart.h>
 #include <communication/interface_i2c.h>
-#include <communication/interface_can.hpp>
+#include <communication/can_simple.hpp>
 
 BoardConfig_t board_config;
-ODriveCAN::Config_t can_config;
 PerChannelConfig_t axis_configs[AXIS_COUNT];
 bool user_config_loaded_;
 
@@ -54,11 +53,10 @@ char serial_number_str[13]; // 12 digits + null termination
 char hw_version_str[16];
 char product_name_str[64];
 
-ODriveCAN *odCAN;
 
 typedef Config<
     BoardConfig_t,
-    ODriveCAN::Config_t,
+    CANSimple::Config_t,
     PerChannelConfig_t[AXIS_COUNT]> ConfigFormat;
 
 
@@ -119,7 +117,7 @@ extern "C" int load_configuration(void) {
                 &axis_configs)) {
         //If loading failed, restore defaults
         board_config = BoardConfig_t();
-        can_config = ODriveCAN::Config_t();
+        can_config = CANSimple::Config_t();
         for (size_t i = 0; i < AXIS_COUNT; ++i) {
             axis_configs[i] = PerChannelConfig_t();
 
@@ -177,7 +175,7 @@ void vApplicationIdleHook(void) {
 //        system_stats_.min_stack_space_uart = uxTaskGetStackHighWaterMark(uart_thread) * sizeof(StackType_t);
 //        system_stats_.min_stack_space_usb_irq = uxTaskGetStackHighWaterMark(usb.irq_thread) * sizeof(StackType_t);
         system_stats_.min_stack_space_startup = uxTaskGetStackHighWaterMark(defaultTaskHandle) * sizeof(StackType_t);
-        system_stats_.min_stack_space_can = uxTaskGetStackHighWaterMark(odCAN->thread_id_) * sizeof(StackType_t);
+//        system_stats_.min_stack_space_can = uxTaskGetStackHighWaterMark(odCAN->thread_id_) * sizeof(StackType_t);
     }
 }
 }
@@ -290,7 +288,7 @@ int main_task(void) {
     tim5.enable_cc_interrupt(pwm_in_cb, nullptr);
 
 #if HW_VERSION_MAJOR == 3 && HW_VERSION_MINOR >= 3
-    if (board_config.enable_i2c_instead_of_can) {
+    if (board_config.enable_i2c) {
         // TODO: make
         if (i2c_a0_gpio)
             i2c_a0_gpio->init(GPIO_t::INPUT, GPIO_t::PULL_UP);
@@ -308,33 +306,27 @@ int main_task(void) {
             goto fail;
         if (!i2c1.enable_interrupts(NVIC_PRIO_I2C))
             goto fail;
-    } else
+    }
 #endif
-    {
+#endif
+
+    if (board_config.enable_can) {
         if (!can1.init(&pb8, &pb9))
             goto fail;
         if (!can1.enable_interrupts(NVIC_PRIO_CAN))
             goto fail;
+        if (!can1.config(can_config.baud))
+            goto fail;
+        if (!can1.start())
+            goto fail;
     }
 
+#if 0
     // Init general user ADC on some GPIOs.
     for (size_t i = 0; i < sizeof(gpios) / sizeof(gpios[0]); ++i) {
         // todo: only set to analog if supported
         gpios[i]->setup_analog();
-    }
-/*
-    // Construct all objects.
-    odCAN = new ODriveCAN(&hcan1, can_config);
-    for (size_t i = 0; i < AXIS_COUNT; ++i) {
-        Encoder *encoder = new Encoder(encoder_configs[i]);
-        SensorlessEstimator *sensorless_estimator = new SensorlessEstimator(sensorless_configs[i]);
-        Controller *controller = new Controller(controller_configs[i]);
-        Motor *motor = new Motor(hw_configs[i].motor_config,
-                                 motor_configs[i]);
-        TrapezoidalTrajectory *trap = new TrapezoidalTrajectory(trap_configs[i]);
-        axes[i] = new Axis(hw_configs[i].axis_config, axis_configs[i],
-                *encoder, *sensorless_estimator, *controller, *motor, *trap);
-    }*/
+    }    
 #endif
 
     // TODO: make dynamically reconfigurable

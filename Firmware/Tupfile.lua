@@ -239,7 +239,6 @@ build{
         'communication/ascii_protocol.cpp',
         'communication/interface_uart.cpp',
         'communication/interface_usb.cpp',
-        'communication/interface_can.cpp',
 --        'communication/interface_i2c.cpp',
         'fibre/cpp/protocol.cpp',
     },

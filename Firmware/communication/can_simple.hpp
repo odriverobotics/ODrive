@@ -1,10 +1,15 @@
 #ifndef __CAN_SIMPLE_HPP_
 #define __CAN_SIMPLE_HPP_
 
-#include "interface_can.hpp"
+#include <stm32_can.hpp>
+
+#include "odrive_main.h"
+
+#define CAN_CLK_HZ (42000000)
+#define CAN_CLK_MHZ (42)
 
 class CANSimple {
-   public:
+public:
     enum {
         MSG_CO_NMT_CTRL = 0x000,         // CANOpen NMT Message REC
         MSG_CO_HEARTBEAT_CMD = 0x700,    // CANOpen NMT Heartbeat  SEND
@@ -33,33 +38,58 @@ class CANSimple {
         MSG_GET_VBUS_VOLTAGE,
     };
 
-    static void handle_can_message(CAN_message_t& msg);
-    static void send_heartbeat(Axis* axis);
+    enum Error_t {
+        ERROR_NONE = 0x00,
+        ERROR_DUPLICATE_CAN_IDS = 0x01
+    };
 
-   private:
-    static void nmt_callback(Axis* axis, CAN_message_t& msg);
-    static void estop_callback(Axis* axis, CAN_message_t& msg);
-    static void get_motor_error_callback(Axis* axis, CAN_message_t& msg);
-    static void get_encoder_error_callback(Axis* axis, CAN_message_t& msg);
-    static void get_controller_error_callback(Axis* axis, CAN_message_t& msg);
-    static void get_sensorless_error_callback(Axis* axis, CAN_message_t& msg);
-    static void set_axis_nodeid_callback(Axis* axis, CAN_message_t& msg);
-    static void set_axis_requested_state_callback(Axis* axis, CAN_message_t& msg);
-    static void set_axis_startup_config_callback(Axis* axis, CAN_message_t& msg);
-    static void get_encoder_estimates_callback(Axis* axis, CAN_message_t& msg);
-    static void get_encoder_count_callback(Axis* axis, CAN_message_t& msg);
-    static void move_to_pos_callback(Axis* axis, CAN_message_t& msg);
-    static void set_pos_setpoint_callback(Axis* axis, CAN_message_t& msg);
-    static void set_vel_setpoint_callback(Axis* axis, CAN_message_t& msg);
-    static void set_current_setpoint_callback(Axis* axis, CAN_message_t& msg);
-    static void set_vel_limit_callback(Axis* axis, CAN_message_t& msg);
-    static void start_anticogging_callback(Axis* axis, CAN_message_t& msg);
-    static void set_traj_vel_limit_callback(Axis* axis, CAN_message_t& msg);
-    static void set_traj_accel_limits_callback(Axis* axis, CAN_message_t& msg);
-    static void set_traj_A_per_css_callback(Axis* axis, CAN_message_t& msg);
-    static void get_iq_callback(Axis* axis, CAN_message_t& msg);
-    static void get_sensorless_estimates_callback(Axis* axis, CAN_message_t& msg);
-    static void get_vbus_voltage_callback(Axis* axis, CAN_message_t& msg);
+    struct Config_t {
+        CAN_baudrate_t baud = CAN_BAUD_250K;
+    };
+
+    CANSimple(STM32_CAN_t* can, Config_t &config);
+
+    bool start_can_server();
+    void server_thread();
+    void send_heartbeat(Axis *axis);
+
+    void set_error(Error_t error);
+
+    // I/O Functions
+    //uint32_t available() { return can_->get_rx_pending(0) + can_->get_rx_pending(1); }
+
+    void handle_can_message(CAN_message_t& msg);
+
+    // Thread Relevant Data
+    osThreadId thread_id_;
+    osSemaphoreId sem_can_;
+    volatile bool thread_id_valid_ = false;
+
+    Error_t error_ = ERROR_NONE;
+
+    void nmt_callback(Axis* axis, CAN_message_t& msg);
+    void estop_callback(Axis* axis, CAN_message_t& msg);
+    void get_motor_error_callback(Axis* axis, CAN_message_t& msg);
+    void get_encoder_error_callback(Axis* axis, CAN_message_t& msg);
+    void get_controller_error_callback(Axis* axis, CAN_message_t& msg);
+    void get_sensorless_error_callback(Axis* axis, CAN_message_t& msg);
+    void set_axis_nodeid_callback(Axis* axis, CAN_message_t& msg);
+    void set_axis_requested_state_callback(Axis* axis, CAN_message_t& msg);
+    void set_axis_startup_config_callback(Axis* axis, CAN_message_t& msg);
+    void get_encoder_estimates_callback(Axis* axis, CAN_message_t& msg);
+    void get_encoder_count_callback(Axis* axis, CAN_message_t& msg);
+    void move_to_pos_callback(Axis* axis, CAN_message_t& msg);
+    void set_pos_setpoint_callback(Axis* axis, CAN_message_t& msg);
+    void set_vel_setpoint_callback(Axis* axis, CAN_message_t& msg);
+    void set_current_setpoint_callback(Axis* axis, CAN_message_t& msg);
+    void set_vel_limit_callback(Axis* axis, CAN_message_t& msg);
+    void start_anticogging_callback(Axis* axis, CAN_message_t& msg);
+    void set_traj_vel_limit_callback(Axis* axis, CAN_message_t& msg);
+    void set_traj_accel_limits_callback(Axis* axis, CAN_message_t& msg);
+    void set_traj_A_per_css_callback(Axis* axis, CAN_message_t& msg);
+    void get_iq_callback(Axis* axis, CAN_message_t& msg);
+    void get_sensorless_estimates_callback(Axis* axis, CAN_message_t& msg);
+    void get_vbus_voltage_callback(Axis* axis, CAN_message_t& msg);
 
 
     // Utility functions
@@ -76,6 +106,30 @@ class CANSimple {
     // const std::map<uint32_t, std::function<void(CAN_message_t&)>> callback_map = {
     //     {0x000, std::bind(&CANSimple::heartbeat_callback, this, _1)}
     // };
+
+    // Communication Protocol Handling
+    auto make_protocol_definitions() {
+        return make_protocol_member_list(
+            make_protocol_property("error", &error_),
+            make_protocol_object("config",
+                                 make_protocol_ro_property("baud_rate", &config_.baud)),
+            make_protocol_function("set_baud_rate", *this, &CANSimple::set_baud_rate, "baudRate"));
+    }
+
+private:
+    bool reinit();
+
+    bool set_baud_rate(uint32_t baudRate) {
+        config_.baud = static_cast<CAN_baudrate_t>(baudRate);
+        return reinit();
+    }
+
+    STM32_CAN_t* can_ = nullptr;
+    Config_t& config_;
 };
+
+DEFINE_ENUM_FLAG_OPERATORS(CANSimple::Error_t)
+
+extern CANSimple::Config_t can_config;
 
 #endif
