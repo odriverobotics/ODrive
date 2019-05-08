@@ -85,7 +85,7 @@ Some instructions in this document may assume that you're using a bash command p
   * __Note 1__: After installing, create an environment variable named `ARM_GCC_ROOT` whose value is the path you installed to.  e.g. `C:\Program Files (x86)\GNU Tools Arm Embedded\7 2018-q2-update`.  This variable is used to locate include files for the c/c++ Visual Studio Code extension.
   * __Note 2__: 8-2018-q4-major seems to have a bug on Windows.  Please use 7-2018-q2-update.
 * [Tup](http://gittup.org/tup/index.html)
-* [Make for Windows](http://gnuwin32.sourceforge.net/packages/make.htm)
+* [GNU MCU Eclipse's Windows Build Tools](https://github.com/gnu-mcu-eclipse/windows-build-tools/releases)
 * [OpenOCD](http://gnuarmeclipse.github.io/openocd/install/). Also follow the instructions on the ST-LINK/V2 drivers.
 
 <br>
