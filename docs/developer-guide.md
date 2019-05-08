@@ -86,7 +86,8 @@ Some instructions in this document may assume that you're using a bash command p
   * __Note 2__: 8-2018-q4-major seems to have a bug on Windows.  Please use 7-2018-q2-update.
 * [Tup](http://gittup.org/tup/index.html)
 * [GNU MCU Eclipse's Windows Build Tools](https://github.com/gnu-mcu-eclipse/windows-build-tools/releases)
-* [OpenOCD](http://gnuarmeclipse.github.io/openocd/install/). Also follow the instructions on the ST-LINK/V2 drivers.
+* [OpenOCD](http://gnuarmeclipse.github.io/openocd/install/). 
+* [ST-Link/V2 Drivers](http://www.st.com/web/en/catalog/tools/FM147/SC1887/PF260219)
 
 <br>
 
