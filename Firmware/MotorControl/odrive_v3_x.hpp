@@ -313,4 +313,9 @@ const uint8_t hw_version_variant = otp_ptr ? otp_ptr[5] : HW_VERSION_VOLTAGE;
 #endif
 
 
+static inline bool board_init_devices(void) {
+    return true; // nothing to do
+}
+
+
 #endif // __BOARD_HPP

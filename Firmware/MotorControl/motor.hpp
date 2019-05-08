@@ -39,6 +39,7 @@ public:
         ERROR_DC_BUS_OVER_VOLTAGE = 0x400000,
         ERROR_FAILED_TO_ARM = 0x800000,
         ERROR_FOC_TIMEOUT = 0x1000000,
+        ERROR_LEAK_CURRENT_TOO_HIGH = 0x2000000,
     };
 
     enum MotorType_t {
@@ -119,6 +120,8 @@ public:
         float I_bus_hard_min = -INFINITY; // hard lower limit for bus current contribution
         float I_bus_hard_max = INFINITY; // hard upper limit for bus current contribution
 
+        float max_leak_current = INFINITY; // [A] if three current sensors are available, the motor will disarm if this much current leaks out of the three phases
+
         float vbus_voltage_override = 0.0f; // if non-zero, overrides the DC voltage sensor (MAINLY INTENDED FOR DEVELOPMENT, USE WITH CAUTION!)
     };
 
@@ -175,7 +178,6 @@ public:
     bool check_DRV_fault();
     void set_error(Error_t error);
     bool do_checks();
-    float get_inverter_temp();
     bool update_thermal_limits();
     float effective_current_lim();
     void log_timing(TimingLog_t log_idx);
@@ -235,6 +237,7 @@ public:
     Iph_ABC_t current_meas_ = {0.0f, 0.0f, 0.0f};
     Iph_ABC_t DC_calib_ = {0.0f, 0.0f, 0.0f};
     float I_alpha_beta_measured_[2] = {0.0f, 0.0f};
+    float I_leak = 0.0f; // close to zero if only two current sensors are available
     bool current_sense_saturation_ = false; // if true, the measured current values must not be used for control
     float I_bus_ = 0.0f;
 
@@ -251,6 +254,10 @@ public:
 
     CurrentControl_t current_control_;
     float thermal_current_lim_ = 10.0f;  //[A]
+
+    float inv_temp_a_ = -INFINITY;
+    float inv_temp_b_ = -INFINITY;
+    float inv_temp_c_ = -INFINITY;
 
     control_law_t control_law_ = nullptr; // set by arm() and reset by disarm()
     void* control_law_ctx_ = nullptr; // set by arm() and reset by disarm()
@@ -270,8 +277,11 @@ public:
             make_protocol_property("DC_calib_phC", &DC_calib_.phC),
             make_protocol_ro_property("I_alpha", &I_alpha_beta_measured_[0]),
             make_protocol_ro_property("I_beta", &I_alpha_beta_measured_[1]),
+            make_protocol_ro_property("I_leak", &I_leak),
             make_protocol_ro_property("thermal_current_lim", &thermal_current_lim_),
-            make_protocol_function("get_inverter_temp", *this, &Motor::get_inverter_temp),
+            make_protocol_ro_property("inv_temp_a", &inv_temp_a_),
+            make_protocol_ro_property("inv_temp_b", &inv_temp_b_),
+            make_protocol_ro_property("inv_temp_c", &inv_temp_c_),
             make_protocol_ro_property("update_events", &update_events_),
             make_protocol_property("longest_wait", &longest_wait_),
             make_protocol_property("max_it", &max_it_),
@@ -348,6 +358,7 @@ public:
                 make_protocol_property("phase_delay", &config_.phase_delay),
                 make_protocol_property("I_bus_hard_min", &config_.I_bus_hard_min),
                 make_protocol_property("I_bus_hard_max", &config_.I_bus_hard_max),
+                make_protocol_property("max_leak_current", &config_.max_leak_current),
                 make_protocol_property("vbus_voltage_override", &config_.vbus_voltage_override)
             )
         );

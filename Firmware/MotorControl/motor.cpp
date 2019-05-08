@@ -156,6 +156,17 @@ void Motor::handle_timer_update() {
         }
     }
 
+    float temp = 0.0f;
+    if (inverter_thermistor_a_) {
+        inv_temp_a_ = inverter_thermistor_a_->read_temp(&temp) ? temp : INFINITY;
+    }
+    if (inverter_thermistor_b_) {
+        inv_temp_b_ = inverter_thermistor_b_->read_temp(&temp) ? temp : INFINITY;
+    }
+    if (inverter_thermistor_c_) {
+        inv_temp_c_ = inverter_thermistor_c_->read_temp(&temp) ? temp : INFINITY;
+    }
+
     // Wait for the current measurements to become available
     bool have_all_values = false;
     uint64_t start = get_ticks_us();
@@ -195,7 +206,7 @@ void Motor::handle_timer_update() {
     if (!current_sensor_c_)
         current.phC = -(current.phA + current.phB);
 
-    bool was_current_dc_calib = check_update_mode(current_dc_calib_mode_, counting_down_);
+    bool was_current_dc_calib = check_update_mode(current_dc_calib_mode_, counting_down_) || !is_armed_;
     if (was_current_dc_calib) {
         // DC_CAL measurement
         DC_calib_.phA += (current.phA - DC_calib_.phA) * calib_filter_k;
@@ -205,14 +216,28 @@ void Motor::handle_timer_update() {
 
     bool was_current_sense = check_update_mode(current_sample_mode_, counting_down_);
     if (was_current_sense) {
-        current_meas_.phA = current.phA - DC_calib_.phA;
-        current_meas_.phB = current.phB - DC_calib_.phB;
-        current_meas_.phC = current.phC - DC_calib_.phC;
+        current.phA -= DC_calib_.phA;
+        current.phB -= DC_calib_.phB;
+        current.phC -= DC_calib_.phC;
+        I_leak = current.phA + current.phB + current.phC; // sum should be close to 0
+        current_meas_.phA = current.phA - I_leak / 3;
+        current_meas_.phB = current.phB - I_leak / 3;
+        current_meas_.phC = current.phC - I_leak / 3;
+        if (!(abs(I_leak) < config_.max_leak_current)) {
+            set_error(ERROR_LEAK_CURRENT_TOO_HIGH);
+            return;
+        }
 
         current_sense_saturation_ =
             (current_sensor_a_ && (current_meas_.phA > current_control_.overcurrent_trip_level.phA)) ||
             (current_sensor_b_ && (current_meas_.phB > current_control_.overcurrent_trip_level.phB)) ||
             (current_sensor_c_ && (current_meas_.phC > current_control_.overcurrent_trip_level.phC));
+        
+        //if (enable_online_calib) {
+        //    DC_calib_.phA += (I_leak / 3 - DC_calib_.phA) * calib_filter_k;
+        //    DC_calib_.phB += (I_leak / 3 - DC_calib_.phB) * calib_filter_k;
+        //    DC_calib_.phC += (I_leak / 3 - DC_calib_.phC) * calib_filter_k;
+        //}
 
         // Clarke transform
         I_alpha_beta_measured_[0] = current_meas_.phA;
@@ -339,6 +364,7 @@ bool Motor::init() {
         return false;
     if (current_sensor_c_ && !current_sensor_c_->get_range(&range_c))
         return false;
+    //enable_online_calib = current_sensor_a_ && current_sensor_b_ && current_sensor_c_;
     float min_range = std::min(std::min(range_a, range_b), range_c);
 
     // Set trip level
@@ -412,18 +438,8 @@ void Motor::set_error(Motor::Error_t error) {
     update_brake_current();
 }
 
-float Motor::get_inverter_temp() {
-    // TODO: support more than one temp sensor
-    float temp;
-    if (inverter_thermistor_a_ && inverter_thermistor_a_->read_temp(&temp)) {
-        return temp;
-    } else {
-        return 0.0f;
-    }
-}
-
 bool Motor::update_thermal_limits() {
-    float fet_temp = get_inverter_temp();
+    float fet_temp = std::max(std::max(inv_temp_a_, inv_temp_b_), inv_temp_c_);
     float temp_margin = config_.inverter_temp_limit_upper - fet_temp;
     float derating_range = config_.inverter_temp_limit_upper - config_.inverter_temp_limit_lower;
     thermal_current_lim_ = config_.current_lim * (temp_margin / derating_range);

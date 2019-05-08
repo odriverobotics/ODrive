@@ -356,6 +356,10 @@ int main_task(void) {
 
     system_stats_.boot_progress++;
 
+    board_init_devices();
+
+    system_stats_.boot_progress++;
+
     /* Set up ADC ------------------------------------------------------------*/
 
     if (!vbus_sense.init()) {
