@@ -434,8 +434,12 @@ bool Axis::run_phase_locked_control() {
         return error_ |= ERROR_MOTOR_FAILED, false;
 
     run_control_loop([&](float dt){
-        float phase = other_axis.motor_.current_control_.phase; // TODO: add an offset here to account for delayed PWM
-        float phase_vel = other_axis.motor_.current_control_.phase_vel;
+        float phase = 0.0f;
+        float phase_vel = 0.0f;
+        if (other_axis.current_state_ != AXIS_STATE_IDLE) {
+            phase = other_axis.motor_.current_control_.phase; // TODO: add an offset here to account for delayed PWM
+            phase_vel = other_axis.motor_.current_control_.phase_vel;
+        }
         if (!motor_.FOC_update(0.0f, controller_.current_setpoint_, phase, phase_vel))
             return false; // set_error should update axis.error_
         return true;
