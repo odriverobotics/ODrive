@@ -12,11 +12,6 @@ Encoder::Encoder(const EncoderHardwareConfig_t& hw_config,
     if (config.pre_calibrated && (config.mode == Encoder::MODE_HALL)) {
         is_ready_ = true;
     }
-
-    if(config.mode & Encoder::MODE_FLAG_ABS){
-        decode_abs_spi_cs_pin();
-        HAL_GPIO_WritePin(abs_spi_cs_port_, abs_spi_cs_pin_, GPIO_PIN_SET);
-    }
 }
 
 static void enc_index_cb_wrapper(void* ctx) {
@@ -28,8 +23,10 @@ void Encoder::setup() {
     GPIO_subscribe(hw_config_.index_port, hw_config_.index_pin, GPIO_NOPULL,
             enc_index_cb_wrapper, this);
 
-    if(config_.mode & MODE_FLAG_ABS)
+    if(config_.mode & MODE_FLAG_ABS){
+        abs_spi_cs_pin_init();
         abs_spi_init();
+    }
 }
 
 void Encoder::set_error(Error_t error) {
@@ -261,14 +258,8 @@ void Encoder::update_pll_gains() {
 }
 
 bool Encoder::abs_spi_init(){
-    // Init cs pin
-    HAL_GPIO_DeInit(abs_spi_cs_port_, abs_spi_cs_pin_);
-    GPIO_InitTypeDef GPIO_InitStruct;
-    GPIO_InitStruct.Pin = abs_spi_cs_pin_;
-    GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
-    GPIO_InitStruct.Pull = GPIO_PULLUP;
-    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-    HAL_GPIO_Init(abs_spi_cs_port_, &GPIO_InitStruct);
+    if ((config_.mode & MODE_FLAG_ABS) == 0x0)
+        return false;
 
     uint32_t cr1,cr2;
     cr1 = hw_config_.spi->Instance->CR1;
@@ -345,9 +336,22 @@ void Encoder::abs_spi_cb(){
     is_ready_ = true;
 }
 
-void Encoder::decode_abs_spi_cs_pin(){
+void Encoder::abs_spi_cs_pin_init(){
+    // Decode cs pin
     abs_spi_cs_port_ = get_gpio_port_by_pin(config_.abs_spi_cs_gpio_pin);
     abs_spi_cs_pin_ = get_gpio_pin_by_pin(config_.abs_spi_cs_gpio_pin);
+
+    // Init cs pin
+    HAL_GPIO_DeInit(abs_spi_cs_port_, abs_spi_cs_pin_);
+    GPIO_InitTypeDef GPIO_InitStruct;
+    GPIO_InitStruct.Pin = abs_spi_cs_pin_;
+    GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+    GPIO_InitStruct.Pull = GPIO_PULLUP;
+    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+    HAL_GPIO_Init(abs_spi_cs_port_, &GPIO_InitStruct);
+
+    // Write pin high
+    HAL_GPIO_WritePin(abs_spi_cs_port_, abs_spi_cs_pin_, GPIO_PIN_SET);
 }
 
 bool Encoder::update() {

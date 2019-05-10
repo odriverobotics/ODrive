@@ -92,7 +92,7 @@ public:
     bool abs_spi_init();
     bool abs_spi_start_transaction();
     void abs_spi_cb();
-    void decode_abs_spi_cs_pin();
+    void abs_spi_cs_pin_init();
     uint16_t abs_spi_dma_tx_[2] = {0xFFFF, 0x0000};
     uint16_t abs_spi_dma_rx_[2];
     bool abs_spi_pos_updated_;
@@ -119,10 +119,11 @@ public:
             // make_protocol_property("pll_kp", &pll_kp_),
             // make_protocol_property("pll_ki", &pll_ki_),
             make_protocol_object("config",
-                make_protocol_property("mode", &config_.mode),
+                make_protocol_property("mode", &config_.mode,
+                    [](void* ctx) { static_cast<Encoder*>(ctx)->abs_spi_init(); }, this),
                 make_protocol_property("use_index", &config_.use_index),
                 make_protocol_property("abs_spi_cs_gpio_pin", &config_.abs_spi_cs_gpio_pin,
-                    [](void* ctx) { static_cast<Encoder*>(ctx)->decode_abs_spi_cs_pin(); }, this),
+                    [](void* ctx) { static_cast<Encoder*>(ctx)->abs_spi_cs_pin_init(); }, this),
                 make_protocol_property("pre_calibrated", &config_.pre_calibrated),
                 make_protocol_property("idx_search_speed", &config_.idx_search_speed),
                 make_protocol_property("zero_count_on_find_idx", &config_.zero_count_on_find_idx),
