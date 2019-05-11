@@ -216,7 +216,7 @@ void ASCII_protocol_process_line(const uint8_t* buffer, size_t len, StreamSink& 
 
     } else if (cmd[0] == 'r') { // read property
         char name[MAX_LINE_LENGTH];
-        int numscan = sscanf(cmd, "r %" TO_STR(MAX_LINE_LENGTH) "s", name);
+        int numscan = sscanf(cmd, "r %255s", name);
         if (numscan < 1) {
             respond(response_channel, use_checksum, "invalid command format");
         } else {
@@ -236,7 +236,7 @@ void ASCII_protocol_process_line(const uint8_t* buffer, size_t len, StreamSink& 
     } else if (cmd[0] == 'w') { // write property
         char name[MAX_LINE_LENGTH];
         char value[MAX_LINE_LENGTH];
-        int numscan = sscanf(cmd, "w %" TO_STR(MAX_LINE_LENGTH) "s %" TO_STR(MAX_LINE_LENGTH) "s", name, value);
+        int numscan = sscanf(cmd, "w %255s %255s", name, value);
         if (numscan < 1) {
             respond(response_channel, use_checksum, "invalid command format");
         } else {
