@@ -229,10 +229,19 @@ public:
 
     Subscriber<Axis*> did_update_; // invoked whenever the subcomponent states have been updated
 
+    uint64_t max_wait_us_ = 0;
+    uint32_t current_meas_events_ = 0;
+    uint32_t max_wait_meas_evt_ = 0;
+    uint32_t max_wait_updt_evt_ = 0;
+
     // Communication protocol definitions
     auto make_protocol_definitions() {
         return make_protocol_member_list(
             make_protocol_property("error", &error_),
+            make_protocol_property("max_wait_us", &max_wait_us_),
+            make_protocol_property("max_wait_meas_evt", &max_wait_meas_evt_),
+            make_protocol_property("max_wait_updt_evt", &max_wait_updt_evt_),
+            make_protocol_property("current_meas_events", &current_meas_events_),
             make_protocol_ro_property("step_dir_active", &step_dir_active_),
             make_protocol_ro_property("current_state", &current_state_),
             make_protocol_property("requested_state", &requested_state_),
