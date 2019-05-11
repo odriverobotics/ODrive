@@ -23,7 +23,7 @@ public:
     enum Mode_t {
         MODE_INCREMENTAL,
         MODE_HALL,
-        MODE_SINCOS
+        MODE_SINCOS,
         MODE_SPI_ABS_CUI = 0x100,
         MODE_SPI_ABS_AMS = 0x101,
     };
