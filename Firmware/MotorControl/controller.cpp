@@ -27,6 +27,7 @@ void Controller::set_pos_setpoint(float pos_setpoint, float vel_feed_forward, fl
     vel_setpoint_ = vel_feed_forward;
     current_setpoint_ = current_feed_forward;
     config_.control_mode = CTRL_MODE_POSITION_CONTROL;
+    axis_->requested_state_ = Axis::AXIS_STATE_CLOSED_LOOP_CONTROL;
 #ifdef DEBUG_PRINT
     printf("POSITION_CONTROL %6.0f %3.3f %3.3f\n", pos_setpoint, vel_setpoint_, current_setpoint_);
 #endif
@@ -36,6 +37,7 @@ void Controller::set_vel_setpoint(float vel_setpoint, float current_feed_forward
     vel_setpoint_ = vel_setpoint;
     current_setpoint_ = current_feed_forward;
     config_.control_mode = CTRL_MODE_VELOCITY_CONTROL;
+    axis_->requested_state_ = Axis::AXIS_STATE_CLOSED_LOOP_CONTROL;
 #ifdef DEBUG_PRINT
     printf("VELOCITY_CONTROL %3.3f %3.3f\n", vel_setpoint_, motor->current_setpoint_);
 #endif
@@ -44,6 +46,7 @@ void Controller::set_vel_setpoint(float vel_setpoint, float current_feed_forward
 void Controller::set_current_setpoint(float current_setpoint) {
     current_setpoint_ = current_setpoint;
     config_.control_mode = CTRL_MODE_CURRENT_CONTROL;
+    axis_->requested_state_ = Axis::AXIS_STATE_CLOSED_LOOP_CONTROL;
 #ifdef DEBUG_PRINT
     printf("CURRENT_CONTROL %3.3f\n", current_setpoint_);
 #endif
