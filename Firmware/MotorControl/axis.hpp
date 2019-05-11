@@ -41,7 +41,8 @@ public:
         AXIS_STATE_ASYNC_CONTROL = 12,      //<! run asynchronous motor control loop control based on the current setpoint.
                                             // For async motors the torque is roughly quadratic with the current setpoint if not in the field weakening region.
                                             // TODO: integrate into closed loop current control loop
-        AXIS_STATE_PWM_TEST = 13            //<! see Motor::pwm_test()
+        AXIS_STATE_PWM_TEST = 13,           //<! see Motor::pwm_test()
+        AXIS_STATE_PHASE_LOCKED_CONTROL = 14, //<! lock the electrical phase of the motor to the electrical phase of the other motor
     };
 
     struct LockinConfig_t {

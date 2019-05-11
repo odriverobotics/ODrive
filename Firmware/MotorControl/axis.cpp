@@ -584,6 +584,12 @@ void Axis::run_state_machine_loop() {
                 status = run_open_loop_control_loop();
             } break;
 
+            case AXIS_STATE_PHASE_LOCKED_CONTROL: {
+                if (motor_.config_.direction==0)
+                    goto invalid_state_label;
+                status = run_phase_locked_control();
+            } break;
+
             case AXIS_STATE_IDLE: {
                 run_idle_loop();
                 status = true;
