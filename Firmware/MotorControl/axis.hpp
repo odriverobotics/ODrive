@@ -38,7 +38,9 @@ public:
         AXIS_STATE_LOCKIN_SPIN = 9,       //<! run lockin spin
         AXIS_STATE_ENCODER_DIR_FIND = 10,
         AXIS_STATE_OPEN_LOOP_CONTROL = 11,  //<! run open loop control - the velocity setpoint is interpreted as rounds per second (or [m/s] for linear motors)
-        AXIS_STATE_ASYNC_CONTROL = 12,  //<! run open loop control - the velocity setpoint is interpreted as rounds per second (or [m/s] for linear motors)
+        AXIS_STATE_ASYNC_CONTROL = 12,      //<! run asynchronous motor control loop control based on the current setpoint.
+                                            // For async motors the torque is roughly quadratic with the current setpoint if not in the field weakening region.
+                                            // TODO: integrate into closed loop current control loop
         AXIS_STATE_PWM_TEST = 13            //<! see Motor::pwm_test()
     };
 
