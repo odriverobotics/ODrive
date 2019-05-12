@@ -710,8 +710,10 @@ bool Motor::FOC(Motor& motor, void* ctx, float pwm_timings[3]) {
     float s_I = our_arm_sin_f32(I_phase);
     float Id = c_I * Ialpha + s_I * Ibeta;
     float Iq = c_I * Ibeta - s_I * Ialpha;
-    ictrl.Iq_measured += ictrl.I_measured_report_filter_k * (Iq - ictrl.Iq_measured);
     ictrl.Id_measured += ictrl.I_measured_report_filter_k * (Id - ictrl.Id_measured);
+    ictrl.Iq_measured += ictrl.I_measured_report_filter_k * (Iq - ictrl.Iq_measured);
+    Id = ictrl.Id_measured;
+    Iq = ictrl.Iq_measured;
 
     // Current error
     float Ierr_d = Id_des - Id;
