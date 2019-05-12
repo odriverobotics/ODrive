@@ -123,6 +123,9 @@ public:
         float max_leak_current = INFINITY; // [A] if three current sensors are available, the motor will disarm if this much current leaks out of the three phases
 
         float vbus_voltage_override = 0.0f; // if non-zero, overrides the DC voltage sensor (MAINLY INTENDED FOR DEVELOPMENT, USE WITH CAUTION!)
+
+        float inv_temp_tau = 0.01f;
+        float vbus_voltage_tau = 0.01f;
     };
 
     enum TimingLog_t {
@@ -258,6 +261,7 @@ public:
     float inv_temp_a_ = -INFINITY;
     float inv_temp_b_ = -INFINITY;
     float inv_temp_c_ = -INFINITY;
+    float max_inv_temp_ = -INFINITY;
 
     control_law_t control_law_ = nullptr; // set by arm() and reset by disarm()
     void* control_law_ctx_ = nullptr; // set by arm() and reset by disarm()
@@ -282,6 +286,7 @@ public:
             make_protocol_ro_property("inv_temp_a", &inv_temp_a_),
             make_protocol_ro_property("inv_temp_b", &inv_temp_b_),
             make_protocol_ro_property("inv_temp_c", &inv_temp_c_),
+            make_protocol_property("max_inv_temp", &max_inv_temp_),
             make_protocol_ro_property("update_events", &update_events_),
             make_protocol_property("longest_wait", &longest_wait_),
             make_protocol_property("max_it", &max_it_),
@@ -359,7 +364,8 @@ public:
                 make_protocol_property("I_bus_hard_min", &config_.I_bus_hard_min),
                 make_protocol_property("I_bus_hard_max", &config_.I_bus_hard_max),
                 make_protocol_property("max_leak_current", &config_.max_leak_current),
-                make_protocol_property("vbus_voltage_override", &config_.vbus_voltage_override)
+                make_protocol_property("vbus_voltage_override", &config_.vbus_voltage_override),
+                make_protocol_property("inv_temp_tau", &config_.inv_temp_tau)
             )
         );
     }

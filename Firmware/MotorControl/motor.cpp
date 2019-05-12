@@ -147,24 +147,27 @@ void Motor::handle_timer_update() {
         }
     }
 
+    float temp = 0.0f;
+    float vbus_voltage_k = std::min(current_meas_period / config_.vbus_voltage_tau, 1.0f);
     if (config_.vbus_voltage_override > 1.0f) {
         vbus_voltage_ = config_.vbus_voltage_override;
     } else {
-        if (!vbus_sense_ || !vbus_sense_->get_voltage(&vbus_voltage_)) {
+        if (!vbus_sense_ || !vbus_sense_->get_voltage(&temp)) {
             set_error(ERROR_V_BUS_SENSOR_DEAD);
             return;
         }
+        vbus_voltage_ += vbus_voltage_k * (temp - vbus_voltage_);
     }
 
-    float temp = 0.0f;
+    float inv_temp_k = std::min(current_meas_period / config_.inv_temp_tau, 1.0f);
     if (inverter_thermistor_a_) {
-        inv_temp_a_ = inverter_thermistor_a_->read_temp(&temp) ? temp : INFINITY;
+        inv_temp_a_ = inverter_thermistor_b_->read_temp(&temp) ? ((abs(inv_temp_a_) < INFINITY) ? (inv_temp_a_ + inv_temp_k * (temp - inv_temp_a_)) : temp) : INFINITY;
     }
     if (inverter_thermistor_b_) {
-        inv_temp_b_ = inverter_thermistor_b_->read_temp(&temp) ? temp : INFINITY;
+        inv_temp_b_ = inverter_thermistor_b_->read_temp(&temp) ? ((abs(inv_temp_b_) < INFINITY) ? (inv_temp_b_ + inv_temp_k * (temp - inv_temp_b_)) : temp) : INFINITY;
     }
     if (inverter_thermistor_c_) {
-        inv_temp_c_ = inverter_thermistor_c_->read_temp(&temp) ? temp : INFINITY;
+        inv_temp_c_ = inverter_thermistor_c_->read_temp(&temp) ? ((abs(inv_temp_c_) < INFINITY) ? (inv_temp_c_ + inv_temp_k * (temp - inv_temp_c_)) : temp) : INFINITY;
     }
 
     // Wait for the current measurements to become available
@@ -440,6 +443,7 @@ void Motor::set_error(Motor::Error_t error) {
 
 bool Motor::update_thermal_limits() {
     float fet_temp = std::max(std::max(inv_temp_a_, inv_temp_b_), inv_temp_c_);
+    max_inv_temp_ = std::max(fet_temp, max_inv_temp_);
     float temp_margin = config_.inverter_temp_limit_upper - fet_temp;
     float derating_range = config_.inverter_temp_limit_upper - config_.inverter_temp_limit_lower;
     thermal_current_lim_ = config_.current_lim * (temp_margin / derating_range);
