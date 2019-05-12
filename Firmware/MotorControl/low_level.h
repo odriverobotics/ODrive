@@ -39,7 +39,6 @@ void safety_critical_apply_brake_resistor_timings(uint32_t low_off, uint32_t hig
 //void start_adc_pwm();
 //void start_pwm(TIM_HandleTypeDef* htim);
 void start_general_purpose_adc();
-void pwm_in_init();
 void start_analog_thread();
 
 void update_brake_current();

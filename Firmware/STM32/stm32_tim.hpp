@@ -98,7 +98,7 @@ public:
     /**
      * @brief Configures input compare on the specified channels
      */
-    bool config_input_compare_mode(STM32_GPIO_t* gpio_ch3, STM32_GPIO_t* gpio_ch4);
+    bool config_input_capture_mode(STM32_GPIO_t* gpio_ch1, STM32_GPIO_t* gpio_ch2, STM32_GPIO_t* gpio_ch3, STM32_GPIO_t* gpio_ch4);
 
     /**
      * @brief Sets the freeze-on-debug setting of the timer.

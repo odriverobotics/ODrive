@@ -59,6 +59,7 @@ extern "C" {
 #define NVIC_PRIO_I2C           (configMAX_SYSCALL_INTERRUPT_PRIORITY + (2 << (8 - configPRIO_BITS)))
 #define NVIC_PRIO_CAN           (configMAX_SYSCALL_INTERRUPT_PRIORITY + (2 << (8 - configPRIO_BITS)))
 #define NVIC_PRIO_SPI           (configMAX_SYSCALL_INTERRUPT_PRIORITY + (3 << (8 - configPRIO_BITS)))
+#define NVIC_PRIO_PWM_INPUT     (configMAX_SYSCALL_INTERRUPT_PRIORITY + (3 << (8 - configPRIO_BITS)))
 
 // very low priority (it's ok for this one to be delayed up to ~25ms)
 #define NVIC_PRIO_TICK_TIMER    (255)       // updates the tick count (TODO: use chained timers to do this without CPU)
@@ -206,6 +207,8 @@ extern char product_name_str[64];
 extern const uint8_t hw_version_major;
 extern const uint8_t hw_version_minor;
 extern const uint8_t hw_version_variant;
+
+extern uint32_t pwm_in_gpios[4];
 
 #endif // __cplusplus
 

@@ -347,24 +347,38 @@ bool STM32_Timer_t::config_encoder_mode(STM32_GPIO_t* gpio_ch1, STM32_GPIO_t* gp
     return true;
 }
 
-bool STM32_Timer_t::config_input_compare_mode(STM32_GPIO_t* gpio_ch3, STM32_GPIO_t* gpio_ch4) {
+bool STM32_Timer_t::config_input_capture_mode(STM32_GPIO_t* gpio_ch1, STM32_GPIO_t* gpio_ch2, STM32_GPIO_t* gpio_ch3, STM32_GPIO_t* gpio_ch4) {
     TIM_IC_InitTypeDef sConfigIC;
     sConfigIC.ICPolarity = TIM_INPUTCHANNELPOLARITY_BOTHEDGE;
     sConfigIC.ICSelection = TIM_ICSELECTION_DIRECTTI;
     sConfigIC.ICPrescaler = TIM_ICPSC_DIV1;
     sConfigIC.ICFilter = 15;
 
+    if (gpio_ch1) {
+        if (HAL_TIM_IC_ConfigChannel(&htim, &sConfigIC, TIM_CHANNEL_1) != HAL_OK)
+            return false;
+        if (!gpio_ch1->setup_alternate_function(p_gpios[0], gpio_af, GPIO_t::PULL_DOWN, GPIO_t::SLOW))
+            return false;
+    }
+
+    if (gpio_ch2) {
+        if (HAL_TIM_IC_ConfigChannel(&htim, &sConfigIC, TIM_CHANNEL_2) != HAL_OK)
+            return false;
+        if (!gpio_ch2->setup_alternate_function(p_gpios[1], gpio_af, GPIO_t::PULL_DOWN, GPIO_t::SLOW))
+            return false;
+    }
+
     if (gpio_ch3) {
         if (HAL_TIM_IC_ConfigChannel(&htim, &sConfigIC, TIM_CHANNEL_3) != HAL_OK)
             return false;
-        if (!gpio_ch3->setup_alternate_function(p_gpios[2], gpio_af, GPIO_t::NO_PULL, GPIO_t::SLOW))
+        if (!gpio_ch3->setup_alternate_function(p_gpios[2], gpio_af, GPIO_t::PULL_DOWN, GPIO_t::SLOW))
             return false;
     }
 
     if (gpio_ch4) {
         if (HAL_TIM_IC_ConfigChannel(&htim, &sConfigIC, TIM_CHANNEL_4) != HAL_OK)
             return false;
-        if (!gpio_ch4->setup_alternate_function(p_gpios[3], gpio_af, GPIO_t::NO_PULL, GPIO_t::SLOW))
+        if (!gpio_ch4->setup_alternate_function(p_gpios[3], gpio_af, GPIO_t::PULL_DOWN, GPIO_t::SLOW))
             return false;
     }
 

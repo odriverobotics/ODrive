@@ -88,8 +88,13 @@ STM32_GPIO_t* gpios[] = { &pa0, &pa1, &pa2, &pa3, &pc4, &pb2, &pa15, &pb3 };
 #error "unknown GPIOs"
 #endif
 
-
 const size_t num_gpios = sizeof(gpios) / sizeof(gpios[0]);
+
+#if HW_VERSION_MAJOR == 3 && HW_VERSION_MINOR >= 3
+uint32_t pwm_in_gpios[4] = { 1, 2, 3, 4 };
+#else
+uint32_t pwm_in_gpios[4] = { 0, 0, 0, 4 }; // 0 means not in use
+#endif
 
 // TODO: adapt to GPIOs count
 STM32_ADCChannel_t gpio_adcs[num_gpios] = {

@@ -16,6 +16,7 @@
 #include <drv8301.hpp>
 
 #include <odrive_main.h>
+#include <pwm_in.hpp>
 
 #include <freertos.hpp>
 
@@ -279,14 +280,6 @@ int main_task(void) {
     system_stats_.boot_progress++;
 
 #if 0
-    // M0/M1 PWM input
-    tim5.init(
-        0xFFFFFFFF, // period
-        STM32_Timer_t::UP
-    );
-    tim5.config_input_compare_mode(&pa2, &pa3);
-    tim5.enable_cc_interrupt(pwm_in_cb, nullptr);
-
 #if HW_VERSION_MAJOR == 3 && HW_VERSION_MINOR >= 3
     if (board_config.enable_i2c) {
         // TODO: make
@@ -462,12 +455,6 @@ int main_task(void) {
         goto fail;
     }
 
-#if 0
-    // Start pwm-in compare modules
-    // must happen after communication is initialized
-    pwm_in_init();
-#endif
-
     // start CPU cycle counter
     DWT->CTRL |= 0x1;
 
@@ -486,6 +473,10 @@ int main_task(void) {
     // Init communications
     init_communication();
 
+    // Start pwm-in compare modules
+    // must happen after communication is initialized
+    if (!pwm_in_init(&tim5, NVIC_PRIO_PWM_INPUT))
+        goto fail;
 
 #if 1
     for (size_t i = 0; i < AXIS_COUNT; ++i) {
