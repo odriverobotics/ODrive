@@ -203,6 +203,7 @@ build{
         'STM32/stm32_tim.cpp',
         'STM32/stm32_usart.cpp',
         'STM32/stm32_usb.cpp',
+        'STM32/stm32_wwdg.cpp',
         'STM32/startup_stm32f405xx.s',
         'ThirdParty/STM32_USB_Device_Library/Core/Src/usbd_ioreq.c',
         'ThirdParty/STM32_USB_Device_Library/Core/Src/usbd_core.c',

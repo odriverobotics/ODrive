@@ -8,6 +8,7 @@
 #include <stm32_spi.hpp>
 #include <stm32_usart.hpp>
 #include <stm32_usb.hpp>
+#include <stm32_wwdg.hpp>
 
 #include <usb_cdc.hpp>
 #include <winusb_compat.hpp>
@@ -486,6 +487,11 @@ int main_task(void) {
     }
     // Synchronize PWM of both motors up to a 90° PWM phase shift
     sync_timers(m0.get_timer(), m1.get_timer(), TIM_CLOCKSOURCE_ITR0, TIM_1_8_PERIOD_CLOCKS / 2 - 1 * 128, nullptr);
+    system_stats_.min_stack_space_usb = (uint32_t)((1.0f / ((float)HAL_RCC_GetPCLK1Freq() / 4096.0f / 1)) * 1e6f);
+    if (!wwdg.config(0.0f, 1.0f / 200.0f)) // min refresh rate: 200Hz
+        goto fail;
+    if (!motor_watchdog.start())
+        goto fail;
 
 #if 0
     // Start brake resistor PWM

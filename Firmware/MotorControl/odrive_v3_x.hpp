@@ -164,6 +164,8 @@ STM32_ADCRegular_t::Channel_t adc_aux_temp = adc1_regular.get_channel(&pc4);
 
 const size_t n_axes = AXIS_COUNT;
 
+MultiWatchdog<decltype(wwdg), wwdg, AXIS_COUNT> motor_watchdog;
+
 MotorImpl<
     STM32_Timer_t,
     &tim1,
@@ -182,7 +184,9 @@ MotorImpl<
     &temp_sensor_m0_inv, // inverter_thermistor_b
     &temp_sensor_m0_inv, // inverter_thermistor_c
     ADCVoltageSensor_t,
-    &vbus_sense // vbus_sense
+    &vbus_sense, // vbus_sense
+    decltype(motor_watchdog),
+    &motor_watchdog, 0 // watchdog, watchdog_slot
 > m0(
     TIM_1_8_PERIOD_CLOCKS, TIM_1_8_RCR, TIM_1_8_DEADTIME_CLOCKS,
     NVIC_PRIO_M0
@@ -206,7 +210,9 @@ MotorImpl<
     &temp_sensor_m1_inv, // inverter_thermistor_b
     &temp_sensor_m1_inv, // inverter_thermistor_c
     ADCVoltageSensor_t,
-    &vbus_sense // vbus_sense
+    &vbus_sense, // vbus_sense
+    decltype(motor_watchdog),
+    &motor_watchdog, 1 // watchdog, watchdog_slot
 > m1(
     TIM_1_8_PERIOD_CLOCKS, TIM_1_8_RCR, TIM_1_8_DEADTIME_CLOCKS,
     NVIC_PRIO_M1

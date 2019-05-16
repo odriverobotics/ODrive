@@ -123,6 +123,8 @@ public:
 
         float vbus_voltage_override = 0.0f; // if non-zero, overrides the DC voltage sensor (MAINLY INTENDED FOR DEVELOPMENT, USE WITH CAUTION!)
 
+        float calib_tau = 0.2f;
+        float I_measured_tau = 1.0f;
         float I_measured_report_filter_k = 1.0f;
         float inv_temp_tau = 0.01f;
         float vbus_voltage_tau = 0.01f;
@@ -160,7 +162,7 @@ public:
     Config_t config_;
     Axis* axis_ = nullptr; // set by Axis constructor
 
-    UpdateMode_t pwm_update_mode_ = ON_BOTTOM;
+    UpdateMode_t pwm_update_mode_ = ON_TOP; // update current measurement on top of 
     UpdateMode_t current_sample_mode_ = ON_BOTTOM;
     UpdateMode_t current_dc_calib_mode_ = ON_TOP;
 
@@ -184,7 +186,7 @@ public:
     bool current_sense_saturation_ = false; // if true, the measured current values must not be used for control
     float I_bus_ = 0.0f;
 
-    float vbus_voltage_ = 1000.0f; // Arbitrary non-zero inital value to avoid division by zero if ADC reading is late
+    float vbus_voltage_ = INFINITY; // Non-zero inital value to avoid division by zero if ADC reading is late
 
     uint32_t update_events_ = 0; // for debugging
     bool counting_down_ = false; // set on timer update event. First timer update event must be on upper peak.
@@ -293,6 +295,7 @@ public:
                 make_protocol_property("I_bus_hard_min", &config_.I_bus_hard_min),
                 make_protocol_property("I_bus_hard_max", &config_.I_bus_hard_max),
                 make_protocol_property("max_leak_current", &config_.max_leak_current),
+                make_protocol_property("calib_tau", &config_.calib_tau),
                 make_protocol_property("vbus_voltage_override", &config_.vbus_voltage_override),
                 make_protocol_property("inv_temp_tau", &config_.inv_temp_tau),
                 make_protocol_property("I_measured_report_filter_k", &config_.I_measured_report_filter_k)

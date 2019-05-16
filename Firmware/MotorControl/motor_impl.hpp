@@ -23,7 +23,9 @@ template<typename TTimer,
         TThermistor* inverter_thermistor_b,
         TThermistor* inverter_thermistor_c,
         typename TVoltageSensor,
-        TVoltageSensor* vbus_sense>
+        TVoltageSensor* vbus_sense,
+        typename TWatchdog,
+        TWatchdog* watchdog, uint32_t watchdog_slot>
 class MotorImpl : public Motor {
 public:
     MotorImpl(uint16_t period, uint16_t repetition_counter, uint16_t dead_time,
@@ -701,6 +703,10 @@ private:
         if (__HAL_TIM_GET_FLAG(&timer->htim, TIM_FLAG_UPDATE)) {
             set_error(Motor::ERROR_CONTROL_DEADLINE_MISSED);
         }
+
+        if (!tentative && not_null(watchdog)) {
+            watchdog->reset(watchdog_slot);
+        }
         
         cpu_exit_critical(mask);
     }
@@ -714,6 +720,18 @@ private:
         }
     }
 
+    static void filter(bool valid, float *previous_value, float measured, float k) {
+        if (valid) {
+            if (*previous_value > -INFINITY && *previous_value < INFINITY) {
+                *previous_value += k * (measured - *previous_value);
+            } else {
+                *previous_value = measured;
+            }
+        } else {
+            *previous_value = INFINITY;
+        }
+    }
+
     /**
      * @brief Callback for the timer update event.
      * 
@@ -724,9 +742,6 @@ private:
      * TODO: Document how the phasing is done, link to timing diagram
      */
     void handle_timer_update() {
-#define calib_tau 0.2f  //@TODO make more easily configurable
-        static const float calib_filter_k = current_meas_period / calib_tau;
-
         update_events_++; // for debugging only
 
         // If the corresponding timer is counting up, we just sampled in SVM vector 0, i.e. real current
@@ -740,38 +755,28 @@ private:
 
         log_timing(TIMING_LOG_UPDATE_START);
 
-        bool should_have_updated_pwm = check_update_mode(pwm_update_mode_, counting_down_);
-
-        // TODO: implement double rate updates, then we need to run this check also
-        // while counting down
-        if (should_have_updated_pwm) {
-            // We only care about the PWM timings being refreshed if the output is
-            // actually enabled. This gives the application time to do some tasks
-            // after arming the motor but before applying the first PWM timings.
-            bool is_output_enabled = timer->htim.Instance->BDTR & TIM_BDTR_MOE;
-            if (is_output_enabled && !did_refresh_pwm_timings_) {
-                // PWM values were not updated in time - shut down PWM
-                set_error(ERROR_CONTROL_DEADLINE_MISSED);
-            }
-            did_refresh_pwm_timings_ = false;
-        } else {
-            if (!did_refresh_pwm_timings_) {
-                // We're already at half the PWM period and the new timings were not
-                // yet written.
-                // Therefore we tentatively reset PWM values to 50%. If they are
-                // overwritten before the next timer update occurs, this has no
-                // effect. Otherwise, 50% duty cycle comes into effect until this
-                // interrupt handler is executed again and disarms the output alltogether.
-                uint16_t half_timings[] = {
-                    (uint16_t)(period_ / 2),
-                    (uint16_t)(period_ / 2),
-                    (uint16_t)(period_ / 2)
-                };
-                apply_motor_pwm_timings(period_, half_timings, true);
-            }
+        // make the watchdog happy if not armed
+        if (!is_armed_ && not_null(watchdog)) {
+            watchdog->reset(watchdog_slot);
         }
 
-        if (should_have_updated_pwm) {
+        const bool should_update_pwm = check_update_mode(pwm_update_mode_, !counting_down_);
+        const bool was_current_dc_calib = check_update_mode(current_dc_calib_mode_, counting_down_) || !is_armed_;
+        const bool was_current_sense = check_update_mode(current_sample_mode_, counting_down_);
+
+        if (should_update_pwm) {
+            // Tentatively reset PWM values to 50% duty cycle in case the
+            // function does not succeed for any reason or miss the timing
+            // deadline.
+            uint16_t half_timings[] = {
+                (uint16_t)(period_ / 2),
+                (uint16_t)(period_ / 2),
+                (uint16_t)(period_ / 2)
+            };
+            apply_motor_pwm_timings(period_, half_timings, true);
+        }
+
+        if (was_current_sense) {
             axis_->encoder_.sample_now();
 
             for (int i = 0; i < n_GPIO_samples; ++i) {
@@ -779,30 +784,8 @@ private:
             }
         }
 
-        float temp = 0.0f;
-        float vbus_voltage_k = std::min(current_meas_period / config_.vbus_voltage_tau, 1.0f);
-        if (config_.vbus_voltage_override > 1.0f) {
-            vbus_voltage_ = config_.vbus_voltage_override;
-        } else {
-            if (is_null(vbus_sense) || !vbus_sense->get_voltage(&temp)) {
-                set_error(ERROR_V_BUS_SENSOR_DEAD);
-                return;
-            }
-            vbus_voltage_ += vbus_voltage_k * (temp - vbus_voltage_);
-        }
-
-        float inv_temp_k = std::min(current_meas_period / config_.inv_temp_tau, 1.0f);
-        if (not_null(inverter_thermistor_a)) {
-            inv_temp_a_ = inverter_thermistor_a->read_temp(&temp) ? ((abs(inv_temp_a_) < INFINITY) ? (inv_temp_a_ + inv_temp_k * (temp - inv_temp_a_)) : temp) : INFINITY;
-        }
-        if (not_null(inverter_thermistor_b)) {
-            inv_temp_b_ = inverter_thermistor_b->read_temp(&temp) ? ((abs(inv_temp_b_) < INFINITY) ? (inv_temp_b_ + inv_temp_k * (temp - inv_temp_b_)) : temp) : INFINITY;
-        }
-        if (not_null(inverter_thermistor_c)) {
-            inv_temp_c_ = inverter_thermistor_c->read_temp(&temp) ? ((abs(inv_temp_c_) < INFINITY) ? (inv_temp_c_ + inv_temp_k * (temp - inv_temp_c_)) : temp) : INFINITY;
-        }
-
-        // Wait for the current measurements to become available
+        // Since the above stuff takes a bit of time the ADC should be done
+        // sampling the current sensors by now.
         bool have_all_values = false;
         have_all_values = (is_null(current_sensor_a) || current_sensor_a->has_value())
                     && (is_null(current_sensor_b) || current_sensor_b->has_value())
@@ -838,18 +821,49 @@ private:
         if (is_null(current_sensor_c))
             current.phC = -(current.phA + current.phB);
 
-        log_timing(TIMING_LOG_CURRENT_MEAS);    
+        log_timing(TIMING_LOG_CURRENT_MEAS);
 
-        bool was_current_dc_calib = check_update_mode(current_dc_calib_mode_, counting_down_) || !is_armed_;
+        // Sample VBUS voltage and temperatures coherently with the current sensors
+        if (was_current_sense) {
+            delay_us(1);
+            float temp = 0.0f;
+            bool is_valid;
+            float vbus_voltage_k = std::min(current_meas_period / config_.vbus_voltage_tau, 1.0f);
+            if (config_.vbus_voltage_override > 1.0f) {
+                vbus_voltage_ = config_.vbus_voltage_override;
+            } else {
+                is_valid = not_null(vbus_sense) && vbus_sense->get_voltage(&temp);
+                filter(is_valid, &vbus_voltage_, temp, vbus_voltage_k);
+                if (!is_valid) {
+                    set_error(ERROR_V_BUS_SENSOR_DEAD);
+                    return;
+                }
+            }
+
+            float inv_temp_k = std::min(current_meas_period / config_.inv_temp_tau, 1.0f);
+            if (not_null(inverter_thermistor_a)) {
+                is_valid = inverter_thermistor_a->read_temp(&temp);
+                filter(is_valid, &inv_temp_a_, temp, inv_temp_k);
+            }
+            if (not_null(inverter_thermistor_b)) {
+                is_valid = inverter_thermistor_b->read_temp(&temp);
+                filter(is_valid, &inv_temp_b_, temp, inv_temp_k);
+            }
+            if (not_null(inverter_thermistor_c)) {
+                is_valid = inverter_thermistor_c->read_temp(&temp);
+                filter(is_valid, &inv_temp_c_, temp, inv_temp_k);
+            }
+        }
+
         if (was_current_dc_calib) {
             // DC_CAL measurement
+            const float calib_filter_k = std::min(current_meas_period / config_.calib_tau, 1.0f); // TODO current_meas_perdiod does not have to equal dc calibration
             DC_calib_.phA += (current.phA - DC_calib_.phA) * calib_filter_k;
             DC_calib_.phB += (current.phB - DC_calib_.phB) * calib_filter_k;
             DC_calib_.phC += (current.phC - DC_calib_.phC) * calib_filter_k;
             log_timing(TIMING_LOG_DC_CAL);
         }
 
-        bool was_current_sense = check_update_mode(current_sample_mode_, counting_down_);
         if (was_current_sense) {
             current.phA -= DC_calib_.phA;
             current.phB -= DC_calib_.phB;
@@ -883,7 +897,9 @@ private:
             // Prepare hall readings
             // TODO move this to inside encoder update function
             axis_->encoder_.decode_hall_samples(GPIO_port_samples);
+        }
 
+        if (should_update_pwm) {
             if (!do_checks()) {
                 return; // error set in do_checks()
             }
