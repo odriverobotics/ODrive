@@ -127,11 +127,39 @@ bool Controller::update(float pos_estimate, float vel_estimate, float* current_s
         anticogging_pos = pos_setpoint_; // FF the position setpoint instead of the pos_estimate
     }
 
+    // Self generated test pattern (M0 master, M1 slave)
+    if (config_.control_mode == CTRL_MODE_PATTERN) {
+        if (axis_->axis_num_ == 0) {
+            // Ramp parameter rate, advance phase
+            float max_step_size = current_meas_period * config_.pattern_vel_ramp_rate;
+            float full_step = pattern_vel_ramp_target_ - pattern_vel_;
+            float step = 0.0f;
+            if (fabsf(full_step) > max_step_size) {
+                step = std::copysignf(max_step_size, full_step);
+            } else {
+                step = full_step;
+            }
+            pattern_vel_ += step;
+            pattern_phase_ = wrap_pm_pi(pattern_phase_ + pattern_vel_ * current_meas_period);
+        } else {
+            pattern_phase_ = axes[0]->controller_.pattern_phase_;
+            pattern_vel_ = axes[0]->controller_.pattern_vel_;
+        }
+
+        if (axis_->axis_num_ == 0) {
+            pos_setpoint_ = config_.pattern_scale * our_arm_sin_f32(pattern_phase_);
+            vel_setpoint_ = config_.pattern_scale * our_arm_cos_f32(pattern_phase_);
+        } else {
+            pos_setpoint_ = config_.pattern_scale * our_arm_sin_f32(2.0f * pattern_phase_);
+            vel_setpoint_ = 
+        }
+    }
+
     // Ramp rate limited velocity setpoint
     if (config_.control_mode == CTRL_MODE_VELOCITY_CONTROL && vel_ramp_enable_) {
         float max_step_size = current_meas_period * config_.vel_ramp_rate;
         float full_step = vel_ramp_target_ - vel_setpoint_;
-        float step;
+        float step = 0.0f;
         if (fabsf(full_step) > max_step_size) {
             step = std::copysignf(max_step_size, full_step);
         } else {

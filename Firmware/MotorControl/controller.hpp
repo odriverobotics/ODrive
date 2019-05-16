@@ -19,7 +19,8 @@ public:
         CTRL_MODE_CURRENT_CONTROL = 1,
         CTRL_MODE_VELOCITY_CONTROL = 2,
         CTRL_MODE_POSITION_CONTROL = 3,
-        CTRL_MODE_TRAJECTORY_CONTROL = 4
+        CTRL_MODE_TRAJECTORY_CONTROL = 4,
+        CTRL_MODE_PATTERN = 5
     };
 
     struct Config_t {
@@ -32,6 +33,9 @@ public:
         float vel_limit_tolerance = 1.2f;  // ratio to vel_lim. 0.0f to disable
         float vel_ramp_rate = 10000.0f;  // [(counts/s) / s]
         bool setpoints_in_cpr = false;
+
+        float pattern_scale = 1000.0f; // [count]
+        float pattern_vel_ramp_rate = 0.2f; //[rad/s^2]
     };
 
     explicit Controller(Config_t& config);
@@ -92,6 +96,10 @@ public:
 
     float goal_point_ = 0.0f;
 
+    float pattern_phase_ = 0.0f;
+    float pattern_vel_ = 0.0f;
+    float pattern_vel_ramp_target_ = 0.0f;
+
     // Communication protocol definitions
     auto make_protocol_definitions() {
         return make_protocol_member_list(
@@ -102,6 +110,9 @@ public:
             make_protocol_property("current_setpoint", &current_setpoint_),
             make_protocol_property("vel_ramp_target", &vel_ramp_target_),
             make_protocol_property("vel_ramp_enable", &vel_ramp_enable_),
+            make_protocol_property("pattern_phase", &pattern_phase_),
+            make_protocol_property("pattern_vel", &pattern_vel_),
+            make_protocol_property("pattern_vel_ramp_target", &pattern_vel_ramp_target_),
             make_protocol_object("config",
                 make_protocol_property("control_mode", &config_.control_mode),
                 make_protocol_property("pos_gain", &config_.pos_gain),
@@ -110,7 +121,8 @@ public:
                 make_protocol_property("vel_limit", &config_.vel_limit),
                 make_protocol_property("vel_limit_tolerance", &config_.vel_limit_tolerance),
                 make_protocol_property("vel_ramp_rate", &config_.vel_ramp_rate),
-                make_protocol_property("setpoints_in_cpr", &config_.setpoints_in_cpr)
+                make_protocol_property("setpoints_in_cpr", &config_.setpoints_in_cpr),
+                make_protocol_property("pattern_scale", &config_.pattern_scale)
             ),
             make_protocol_function("set_pos_setpoint", *this, &Controller::set_pos_setpoint,
                 "pos_setpoint", "vel_feed_forward", "current_feed_forward"),
