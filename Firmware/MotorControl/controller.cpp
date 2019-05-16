@@ -1,6 +1,5 @@
 
-#include "odrive_main.h"
-
+#include "controller.hpp"
 
 void Controller::reset() {
     pos_setpoint_ = 0.0f;
@@ -189,7 +188,7 @@ bool Controller::update(float dt, float pos_estimate, float vel_estimate, float*
 
     // Current limiting
     bool limited = false;
-    float Ilim = axis_->motor_.effective_current_lim();
+    float Ilim = axis_->motor_.get_effective_current_lim();
     if (Iq > Ilim) {
         limited = true;
         Iq = Ilim;

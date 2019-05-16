@@ -1,11 +1,19 @@
 #ifndef __AXIS_HPP
 #define __AXIS_HPP
 
-#ifndef __ODRIVE_MAIN_H
-#error "This file should not be included directly. Include odrive_main.h instead."
-#endif
+//#ifndef __ODRIVE_MAIN_H
+//#error "This file should not be included directly. Include odrive_main.h instead."
+//#endif
+
+class Axis;
 
 #include <stm32_system.h>
+#include "motor.hpp"
+#include "encoder.hpp"
+#include "sensorless_estimator.hpp"
+#include "controller.hpp"
+#include "async_estimator.hpp"
+#include "trapTraj.hpp"
 
 class Axis {
 public:
@@ -90,7 +98,7 @@ public:
         LOCKIN_STATE_CONST_VEL,
     };
 
-    Axis(Motor motor,
+    Axis(Motor& motor,
         Encoder encoder,
         SensorlessEstimator sensorless_estimator,
         AsyncEstimator async_estimator,
@@ -199,7 +207,7 @@ public:
     void run_state_machine_loop();
 
 
-    Motor motor_;
+    Motor& motor_;
     Encoder encoder_;
     SensorlessEstimator sensorless_estimator_;
     AsyncEstimator async_estimator_;

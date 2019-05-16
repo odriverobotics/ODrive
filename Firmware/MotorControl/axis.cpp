@@ -1,16 +1,11 @@
 
-#include <stdlib.h>
-#include <functional>
+#include "axis.hpp"
+#include "low_level.h"
 #include <stm32_gpio.hpp>
+#include <functional>
+#include <stdlib.h>
 
-#include "odrive_main.h"
-#include "utils.h"
-
-#ifndef M_SQRT1_2
-#define M_SQRT1_2 0.70710678118
-#endif
-
-Axis::Axis(Motor motor,
+Axis::Axis(Motor& motor,
            Encoder encoder,
            SensorlessEstimator sensorless_estimator,
            AsyncEstimator async_estimator,
@@ -451,7 +446,7 @@ bool Axis::run_phase_locked_control() {
 bool Axis::run_idle_loop() {
     // run_control_loop ignores missed modulation timing updates
     // if and only if we're in AXIS_STATE_IDLE
-    safety_critical_disarm_motor_pwm(motor_);
+    motor_.disarm();
     // the only valid reason to leave idle is an external request
     while (requested_state_ == AXIS_STATE_UNDEFINED) {
         //motor_.disarm();

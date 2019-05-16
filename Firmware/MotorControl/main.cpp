@@ -36,6 +36,7 @@ Axis* axes = reinterpret_cast<Axis*>(axes_obj_bufs);
 #include "nvm_config.hpp"
 
 #include "freertos_vars.h"
+#include <communication/communication.h>
 #include <communication/interface_usb.h>
 #include <communication/interface_uart.h>
 #include <communication/interface_i2c.h>
@@ -58,7 +59,9 @@ char product_name_str[64];
 typedef Config<
     BoardConfig_t,
     CANSimple::Config_t,
-    PerChannelConfig_t[AXIS_COUNT]> ConfigFormat;
+    PerChannelConfig_t[AXIS_COUNT],
+    Motor::Config_t,
+    Motor::Config_t> ConfigFormat;
 
 
 // @brief Returns the ADC voltage associated with the specified pin.
@@ -102,7 +105,9 @@ void save_configuration(void) {
     if (ConfigFormat::safe_store_config(
             &board_config,
             &can_config,
-            &axis_configs)) {
+            &axis_configs,
+            &axes[0].motor_.config_,
+            &axes[1].motor_.config_)) {
         //printf("saving configuration failed\r\n"); osDelay(5);
     } else {
         user_config_loaded_ = true;
@@ -115,7 +120,9 @@ extern "C" int load_configuration(void) {
         ConfigFormat::safe_load_config(
                 &board_config,
                 &can_config,
-                &axis_configs)) {
+                &axis_configs,
+                &axes[0].motor_.config_,
+                &axes[1].motor_.config_)) {
         //If loading failed, restore defaults
         board_config = BoardConfig_t();
         can_config = CANSimple::Config_t();
@@ -402,12 +409,8 @@ int main_task(void) {
         goto fail;
     }
 
-    system_stats_.boot_progress++;
-
-    for (size_t i = 0; i < sizeof(adc_init_list) / sizeof(adc_init_list[0]); ++i) {
-        if (!adc_init_list[i]->enqueue()) {
-            goto fail;
-        }
+    if (!enqueue_adc_channels()) {
+        goto fail;
     }
 
     system_stats_.boot_progress = 10;
@@ -478,13 +481,11 @@ int main_task(void) {
     if (!pwm_in_init(&tim5, NVIC_PRIO_PWM_INPUT))
         goto fail;
 
-#if 1
     for (size_t i = 0; i < AXIS_COUNT; ++i) {
         axes[i].motor_.start_updates();
     }
     // Synchronize PWM of both motors up to a 90° PWM phase shift
-    sync_timers(axes[0].motor_.timer_, axes[1].motor_.timer_, TIM_CLOCKSOURCE_ITR0, TIM_1_8_PERIOD_CLOCKS / 2 - 1 * 128, nullptr);
-#endif
+    sync_timers(m0.get_timer(), m1.get_timer(), TIM_CLOCKSOURCE_ITR0, TIM_1_8_PERIOD_CLOCKS / 2 - 1 * 128, nullptr);
 
 #if 0
     // Start brake resistor PWM
@@ -521,7 +522,8 @@ int main_task(void) {
 //        all_usb_ints = 0;
 //        printf("USB ints: %08" PRIx32 "\r\n", prev_ints);
 //        //printf("uptime: %" PRIu32 "\r\n", system_stats_.uptime);
-        osDelay(100);
+        osDelay(1000);
+        dump_interrupts(true);
 
         // Read and publish ISR CPU usage
         uint32_t mask = cpu_enter_critical();

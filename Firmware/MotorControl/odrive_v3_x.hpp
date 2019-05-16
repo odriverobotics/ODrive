@@ -13,10 +13,10 @@
 #include "stm32_tim.hpp"
 #include "stm32_usart.hpp"
 #include "drv8301.hpp"
+#include "motor_impl.hpp"
 
 
 struct PerChannelConfig_t {
-    Motor::Config_t motor_config;
     Encoder::Config_t encoder_config;
     SensorlessEstimator::Config_t sensorless_estimator_config;
     AsyncEstimator::Config_t async_estimator_config;
@@ -71,9 +71,9 @@ const size_t thermistor_num_coeffs = sizeof(thermistor_poly_coeffs)/sizeof(therm
 
 
 #if HW_VERSION_MINOR <= 2
-STM32_ADCChannel_t vbus_sense_adc = adc1_injected.get_channel(&pa0);
+STM32_ADCInjected_t::Channel_t vbus_sense_adc = adc1_injected.get_channel(&pa0);
 #else
-STM32_ADCChannel_t vbus_sense_adc = adc1_injected.get_channel(&pa6);
+STM32_ADCInjected_t::Channel_t vbus_sense_adc = adc1_injected.get_channel(&pa6);
 #endif
 ADCVoltageSensor_t vbus_sense(&vbus_sense_adc, 3.3f * VBUS_S_DIVIDER_RATIO);
 
@@ -97,7 +97,7 @@ uint32_t pwm_in_gpios[4] = { 0, 0, 0, 4 }; // 0 means not in use
 #endif
 
 // TODO: adapt to GPIOs count
-STM32_ADCChannel_t gpio_adcs[num_gpios] = {
+STM32_ADCRegular_t::Channel_t gpio_adcs[num_gpios] = {
     adc1_regular.get_channel(gpios[0]),
     adc1_regular.get_channel(gpios[1]),
     adc1_regular.get_channel(gpios[2]),
@@ -127,73 +127,94 @@ DRV8301_t gate_driver_m1(
 );
 
 
-STM32_ADCChannel_t current_sensor_m0_b_adc = adc2_injected.get_channel(&pc0);
-STM32_ADCChannel_t current_sensor_m0_c_adc = adc3_injected.get_channel(&pc1);
-STM32_ADCChannel_t current_sensor_m1_b_adc = adc2_regular.get_channel(&pc3);
-STM32_ADCChannel_t current_sensor_m1_c_adc = adc3_regular.get_channel(&pc2);
-LinearCurrentSensor_t current_sensor_m0_b(&current_sensor_m0_b_adc, &gate_driver_m0, 1.0f / SHUNT_RESISTANCE * 3.3f, 0.5f);
-LinearCurrentSensor_t current_sensor_m0_c(&current_sensor_m0_c_adc, &gate_driver_m0, 1.0f / SHUNT_RESISTANCE * 3.3f, 0.5f);
-LinearCurrentSensor_t current_sensor_m1_b(&current_sensor_m1_b_adc, &gate_driver_m1, 1.0f / SHUNT_RESISTANCE * 3.3f, 0.5f);
-LinearCurrentSensor_t current_sensor_m1_c(&current_sensor_m1_c_adc, &gate_driver_m1, 1.0f / SHUNT_RESISTANCE * 3.3f, 0.5f);
+STM32_ADCInjected_t::Channel_t current_sensor_m0_b_adc = adc2_injected.get_channel(&pc0);
+STM32_ADCInjected_t::Channel_t current_sensor_m0_c_adc = adc3_injected.get_channel(&pc1);
+STM32_ADCRegular_t::Channel_t current_sensor_m1_b_adc = adc2_regular.get_channel(&pc3);
+STM32_ADCRegular_t::Channel_t current_sensor_m1_c_adc = adc3_regular.get_channel(&pc2);
+LinearCurrentSensor_t<decltype(current_sensor_m0_b_adc), &current_sensor_m0_b_adc, decltype(gate_driver_m0), &gate_driver_m0> current_sensor_m0_b(1.0f / SHUNT_RESISTANCE * 3.3f, 0.5f);
+LinearCurrentSensor_t<decltype(current_sensor_m0_c_adc), &current_sensor_m0_c_adc, decltype(gate_driver_m0), &gate_driver_m0> current_sensor_m0_c(1.0f / SHUNT_RESISTANCE * 3.3f, 0.5f);
+LinearCurrentSensor_t<decltype(current_sensor_m1_b_adc), &current_sensor_m1_b_adc, decltype(gate_driver_m1), &gate_driver_m1> current_sensor_m1_b(1.0f / SHUNT_RESISTANCE * 3.3f, 0.5f);
+LinearCurrentSensor_t<decltype(current_sensor_m1_c_adc), &current_sensor_m1_c_adc, decltype(gate_driver_m1), &gate_driver_m1> current_sensor_m1_c(1.0f / SHUNT_RESISTANCE * 3.3f, 0.5f);
 
-STM32_ADCChannel_t temp_sensor_m0_inv_adc = adc1_regular.get_channel(&pc5);
+STM32_ADCRegular_t::Channel_t temp_sensor_m0_inv_adc = adc1_regular.get_channel(&pc5);
 #if HW_VERSION_MINOR <= 2
-STM32_ADCChannel_t temp_sensor_m1_inv_adc = adc1_regular.get_channel(&pa1);
+STM32_ADCRegular_t::Channel_t temp_sensor_m1_inv_adc = adc1_regular.get_channel(&pa1);
 #else
-STM32_ADCChannel_t temp_sensor_m1_inv_adc = adc1_regular.get_channel(&pa4);
+STM32_ADCRegular_t::Channel_t temp_sensor_m1_inv_adc = adc1_regular.get_channel(&pa4);
 #endif
 
 Thermistor_t temp_sensor_m0_inv(&temp_sensor_m0_inv_adc, thermistor_poly_coeffs, thermistor_num_coeffs);
 Thermistor_t temp_sensor_m1_inv(&temp_sensor_m1_inv_adc, thermistor_poly_coeffs, thermistor_num_coeffs);
 
-STM32_ADCChannel_t* adc_sincos_s = &gpio_adcs[2];
-STM32_ADCChannel_t* adc_sincos_c = &gpio_adcs[3];
+ADCChannel_t* adc_sincos_s = &gpio_adcs[2];
+ADCChannel_t* adc_sincos_c = &gpio_adcs[3];
 
 STM32_GPIO_t* aux_l = &pb10;
 STM32_GPIO_t* aux_h = &pb11;
 
 
 #if (HW_VERSION_MINOR <= 2)
-STM32_ADCChannel_t adc_aux_v = adc1_regular.get_channel(&pa6);
-STM32_ADCChannel_t adc_aux_i = adc1_regular.get_channel(&pa2);
-STM32_ADCChannel_t adc_aux_temp = adc1_regular.get_channel(&pc4);
+STM32_ADCRegular_t::Channel_t adc_aux_v = adc1_regular.get_channel(&pa6);
+STM32_ADCRegular_t::Channel_t adc_aux_i = adc1_regular.get_channel(&pa2);
+STM32_ADCRegular_t::Channel_t adc_aux_temp = adc1_regular.get_channel(&pc4);
 #elif (HW_VERSION_MINOR <= 4)
-STM32_ADCChannel_t adc_aux_i = adc1_regular.get_channel(&pa5);
-STM32_ADCChannel_t adc_aux_temp = adc1_regular.get_channel(&pc4);
+STM32_ADCRegular_t::Channel_t adc_aux_i = adc1_regular.get_channel(&pa5);
+STM32_ADCRegular_t::Channel_t adc_aux_temp = adc1_regular.get_channel(&pc4);
 #endif
-
-STM32_ADCChannel_t* adc_init_list[] = {
-    &current_sensor_m0_b_adc,
-    &current_sensor_m0_c_adc,
-    &current_sensor_m1_b_adc,
-    &current_sensor_m1_c_adc,
-    &vbus_sense_adc,
-    &temp_sensor_m0_inv_adc,
-    &temp_sensor_m1_inv_adc
-};
 
 const size_t n_axes = AXIS_COUNT;
 
+MotorImpl<
+    STM32_Timer_t,
+    &tim1,
+    STM32_GPIO_t,
+    &pb13, &pb14, &pb15, // pwm_{a,b,c}_l_gpio
+    &pa8, &pa9, &pa10, // pwm_{a,b,c}_h_gpio
+    DRV8301_t,
+    &gate_driver_m0, // gate_driver_a
+    &gate_driver_m0, // gate_driver_b
+    &gate_driver_m0, // gate_driver_c
+    CurrentSensor_t, nullptr, // current_sensor_a
+    decltype(current_sensor_m0_b), &current_sensor_m0_b, // current_sensor_b
+    decltype(current_sensor_m0_c), &current_sensor_m0_c, // current_sensor_c
+    Thermistor_t,
+    &temp_sensor_m0_inv, // inverter_thermistor_a
+    &temp_sensor_m0_inv, // inverter_thermistor_b
+    &temp_sensor_m0_inv, // inverter_thermistor_c
+    ADCVoltageSensor_t,
+    &vbus_sense // vbus_sense
+> m0(
+    TIM_1_8_PERIOD_CLOCKS, TIM_1_8_RCR, TIM_1_8_DEADTIME_CLOCKS,
+    NVIC_PRIO_M0
+);
+
+MotorImpl<
+    STM32_Timer_t,
+    &tim8,
+    STM32_GPIO_t,
+    &pa7, &pb0, &pb1, // pwm_{a,b,c}_l_gpio
+    &pc6, &pc7, &pc8, // pwm_{a,b,c}_h_gpio
+    DRV8301_t,
+    &gate_driver_m1, // gate_driver_a
+    &gate_driver_m1, // gate_driver_b
+    &gate_driver_m1, // gate_driver_c
+    CurrentSensor_t, nullptr, // current_sensor_a
+    decltype(current_sensor_m1_b), &current_sensor_m1_b, // current_sensor_b
+    decltype(current_sensor_m1_c), &current_sensor_m1_c, // current_sensor_c
+    Thermistor_t,
+    &temp_sensor_m1_inv, // inverter_thermistor_a
+    &temp_sensor_m1_inv, // inverter_thermistor_b
+    &temp_sensor_m1_inv, // inverter_thermistor_c
+    ADCVoltageSensor_t,
+    &vbus_sense // vbus_sense
+> m1(
+    TIM_1_8_PERIOD_CLOCKS, TIM_1_8_RCR, TIM_1_8_DEADTIME_CLOCKS,
+    NVIC_PRIO_M1
+);
+
 static inline bool board_init(Axis axes[AXIS_COUNT]) {
     new (&axes[0]) Axis(
-        Motor(
-            &tim1,
-            &pb13, &pb14, &pb15, // pwm_{a,b,c}_l_gpio
-            &pa8, &pa9, &pa10, // pwm_{a,b,c}_h_gpio
-            &gate_driver_m0, // gate_driver_a
-            &gate_driver_m0, // gate_driver_b
-            &gate_driver_m0, // gate_driver_c
-            nullptr, // current_sensor_a
-            &current_sensor_m0_b, // current_sensor_b
-            &current_sensor_m0_c, // current_sensor_c
-            &temp_sensor_m0_inv, // inverter_thermistor_a
-            &temp_sensor_m0_inv, // inverter_thermistor_b
-            &temp_sensor_m0_inv, // inverter_thermistor_c
-            &vbus_sense, // vbus_sense
-            TIM_1_8_PERIOD_CLOCKS, TIM_1_8_RCR, TIM_1_8_DEADTIME_CLOCKS,
-            NVIC_PRIO_M0,
-            axis_configs[0].motor_config
-        ),
+        m0,
         Encoder(
             &tim3, // counter
 #if (HW_VERSION_MINOR == 3) || (HW_VERSION_MINOR == 4)
@@ -220,24 +241,7 @@ static inline bool board_init(Axis axes[AXIS_COUNT]) {
         axis_configs[0].axis_config
     );
     new (&axes[1]) Axis(
-        Motor(
-            &tim8,
-            &pa7, &pb0, &pb1, // pwm_{a,b,c}_l_gpio
-            &pc6, &pc7, &pc8, // pwm_{a,b,c}_h_gpio
-            &gate_driver_m1, // gate_driver_a
-            &gate_driver_m1, // gate_driver_b
-            &gate_driver_m1, // gate_driver_c
-            nullptr, // current_sensor_a
-            &current_sensor_m1_b, // current_sensor_b
-            &current_sensor_m1_c, // current_sensor_c
-            &temp_sensor_m1_inv, // inverter_thermistor_a
-            &temp_sensor_m1_inv, // inverter_thermistor_b
-            &temp_sensor_m1_inv, // inverter_thermistor_c
-            &vbus_sense, // vbus_sense
-            TIM_1_8_PERIOD_CLOCKS, TIM_1_8_RCR, TIM_1_8_DEADTIME_CLOCKS,
-            NVIC_PRIO_M1,
-            axis_configs[1].motor_config
-        ),
+        m1,
         Encoder(
             &tim4, // counter
 #if (HW_VERSION_MINOR <= 4)
@@ -267,6 +271,17 @@ static inline bool board_init(Axis axes[AXIS_COUNT]) {
     sprintf(hw_version_str, "%d.%d-%dV", hw_version_major, hw_version_minor, hw_version_variant);
     sprintf(product_name_str, "ODrive v%s", hw_version_str);
     return true;
+}
+
+bool enqueue_adc_channels() {
+    bool success = current_sensor_m0_b_adc.enqueue() &&
+                   current_sensor_m0_c_adc.enqueue() &&
+                   current_sensor_m1_b_adc.enqueue() &&
+                   current_sensor_m1_c_adc.enqueue() &&
+                   vbus_sense_adc.enqueue() &&
+                   temp_sensor_m0_inv_adc.enqueue() &&
+                   temp_sensor_m1_inv_adc.enqueue();
+    return success;
 }
 
 GPIO_t* i2c_a0_gpio = gpios[2];

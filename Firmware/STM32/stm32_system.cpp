@@ -182,12 +182,12 @@ bool system_init(void) {
  */
 void dump_interrupts(bool show_enabled_only) {
     printf("IRQn    prio    enabled\r\n");
-    for (uint32_t irqn = -14; irqn < 82; ++irqn) {
+    for (int32_t irqn = -14; irqn < 82; ++irqn) {
         uint32_t prio = NVIC_GetPriority((IRQn_Type)irqn);
         bool is_enabled = get_interrupt_enabled((IRQn_Type)irqn);
         if (!is_enabled && show_enabled_only)
             continue;
-        printf("%4" PRIu32 "    %4" PRIu32 "    %7s\r\n", irqn, prio, is_enabled ? "yes" : "no");
+        printf("%4" PRId32 "    %4" PRIu32 "    %7s\r\n", irqn, prio, is_enabled ? "yes" : "no");
         delay_us(100);
     }
 }

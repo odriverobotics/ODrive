@@ -1,6 +1,11 @@
 #ifndef __SENSORLESS_ESTIMATOR_HPP
 #define __SENSORLESS_ESTIMATOR_HPP
 
+#include "utils.h"
+#include <fibre/protocol.hpp>
+
+class Axis;
+
 class SensorlessEstimator {
 public:
     enum Error_t {
@@ -53,5 +58,7 @@ public:
 };
 
 DEFINE_ENUM_FLAG_OPERATORS(SensorlessEstimator::Error_t)
+
+#include "axis.hpp"
 
 #endif /* __SENSORLESS_ESTIMATOR_HPP */

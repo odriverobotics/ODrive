@@ -7,20 +7,17 @@
 #define ARM_MATH_CM4
 #include <arm_math.h>
 
+#include "low_level.h"
+#include "axis.hpp"
+#include "odrive_main.h"
+
 #include <cmsis_os.h>
 #include <math.h>
 #include <stdint.h>
 #include <stdlib.h>
 
-//#include <adc.h>
-//#include <gpio.hpp>
-//#include <main.h>
-//#include <spi.h>
-//#include <tim.h>
 #include <utils.h>
 #include <stm32_tim.hpp>
-
-#include "odrive_main.h"
 
 /* Private defines -----------------------------------------------------------*/
 
@@ -81,7 +78,7 @@ bool brake_resistor_armed = false;
 void low_level_fault(Motor::Error_t error) {
     // Disable all motors NOW!
     for (size_t i = 0; i < n_axes; ++i) {
-        safety_critical_disarm_motor_pwm(axes[i].motor_);
+        axes[i].motor_.disarm();
         axes[i].motor_.error_ |= error;
     }
 
@@ -96,85 +93,9 @@ void low_level_fault(Motor::Error_t error) {
 //
 // All calls to this function must clearly originate
 // from user input.
-void safety_critical_arm_motor_pwm(Motor& motor) {
-    uint32_t mask = cpu_enter_critical();
-    if (!brake_resistor_enabled || brake_resistor_armed) {
-        motor.is_armed_ = true;
-    }
-    cpu_exit_critical(mask);
-}
-
-// @brief Disarms the motor PWM.
-//
-// After calling this function, it is guaranteed that all three
-// motor phases are floating and will not be enabled again until
-// safety_critical_arm_motor_phases is called.
-//
-// @returns true if the motor was armed before.
-bool safety_critical_disarm_motor_pwm(Motor& motor) {
-    //if (reinterpret_cast<uint32_t>(motor.timer_->htim.Instance) == 0x13881388)
-    if (&motor != &axes[0].motor_ && &motor != &axes[1].motor_) {
-        //NVIC_SystemReset(); // this should never happen
-        motor.error_ = Motor::ERROR_UNEXPECTED_TIMER_CALLBACK;
-        return false;
-    }
-
-    uint32_t mask = cpu_enter_critical();
-    bool was_armed = motor.is_armed_;
-    if (motor.is_armed_) {
-        motor.gate_driver_a_->set_enabled(false);
-        motor.gate_driver_b_->set_enabled(false);
-        motor.gate_driver_c_->set_enabled(false);
-    }
-    motor.is_armed_ = false;
-    auto instance = motor.timer_->htim.Instance;
-    //if (reinterpret_cast<uint32_t>(instance) == 0x20020000 || reinterpret_cast<uint32_t>(instance) == 0x13881388)
-    //    motor.error_ = Motor::ERROR_UNEXPECTED_TIMER_CALLBACK;
-    instance->BDTR &= ~TIM_BDTR_AOE;
-    __HAL_TIM_MOE_DISABLE_UNCONDITIONALLY(&motor.timer_->htim);
-    motor.did_refresh_pwm_timings_ = false;
-    motor.control_law_ = nullptr;
-    motor.control_law_ctx_ = nullptr;
-    cpu_exit_critical(mask);
-    return was_armed;
-}
-
-// @brief Updates the phase PWM timings unless the motor is disarmed.
-//
-// If the motor is armed, the PWM timings come into effect at the next update
-// event (and are enabled if they weren't already), unless the motor is disarmed
-// prior to that.
-void safety_critical_apply_motor_pwm_timings(Motor& motor, uint16_t period, uint16_t timings[3], bool tentative) {
-    uint32_t mask = cpu_enter_critical();
-    if (brake_resistor_enabled && !brake_resistor_armed) {
-        motor.set_error(Motor::ERROR_BRAKE_RESISTOR_DISARMED);
-    }
-
-    motor.timer_->htim.Instance->CCR1 = timings[0];
-    motor.timer_->htim.Instance->CCR2 = timings[1];
-    motor.timer_->htim.Instance->CCR3 = timings[2];
-    motor.timer_->htim.Instance->ARR = period;
-    
-    if (!tentative) {
-        motor.did_refresh_pwm_timings_ = true;
-        if (motor.is_armed_) {
-            // Set the Automatic Output Enable, so that the Master Output Enable bit
-            // will be automatically enabled on the next update event.
-            motor.timer_->htim.Instance->BDTR |= TIM_BDTR_AOE;
-        }
-    }
-    
-    // If a timer update event occurred just now while we were updating the
-    // timings, we can't be sure what values the shadow registers now contain,
-    // so we must disarm the motor.
-    // (this also protects against the case where the update interrupt has too
-    // low priority, but that should not happen)
-    if (__HAL_TIM_GET_FLAG(&motor.timer_->htim, TIM_FLAG_UPDATE)) {
-        motor.set_error(Motor::ERROR_CONTROL_DEADLINE_MISSED);
-    }
-    
-    cpu_exit_critical(mask);
-}
+//void safety_critical_arm_motor_pwm(Motor& motor) {
+//    
+//}
 
 // @brief Arms the brake resistor
 void safety_critical_arm_brake_resistor() {
@@ -195,7 +116,7 @@ void safety_critical_disarm_brake_resistor() {
     tim2.htim.Instance->CCR3 = 0;
     tim2.htim.Instance->CCR4 = TIM_APB1_PERIOD_CLOCKS + 1;
     for (size_t i = 0; i < n_axes; ++i) {
-        safety_critical_disarm_motor_pwm(axes[i].motor_);
+        axes[i].motor_.disarm();
     }
     cpu_exit_critical(mask);
 }

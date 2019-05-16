@@ -1,13 +1,14 @@
 #ifndef __ENCODER_HPP
 #define __ENCODER_HPP
 
-#ifndef __ODRIVE_MAIN_H
-#error "This file should not be included directly. Include odrive_main.h instead."
-#endif
-
 #include <stm32_tim.hpp>
 #include <gpio.hpp>
-#include <stm32_adc.hpp>
+#include <adc.hpp>
+#include <utils.h>
+#include <fibre/protocol.hpp>
+#include <odrive_main.h>
+
+class Axis;
 
 class Encoder {
 public:
@@ -51,7 +52,7 @@ public:
 
     Encoder(STM32_Timer_t* counter, STM32_GPIO_t* index_gpio,
             STM32_GPIO_t* hallA_gpio, STM32_GPIO_t* hallB_gpio, STM32_GPIO_t* hallC_gpio,
-            STM32_ADCChannel_t* adc_sincos_s, STM32_ADCChannel_t* adc_sincos_c,
+            ADCChannel_t* adc_sincos_s, ADCChannel_t* adc_sincos_c,
             Config_t& config);
 
     bool init();
@@ -80,8 +81,8 @@ public:
     STM32_GPIO_t* hallA_gpio_;
     STM32_GPIO_t* hallB_gpio_;
     STM32_GPIO_t* hallC_gpio_;
-    STM32_ADCChannel_t* adc_sincos_s_;
-    STM32_ADCChannel_t* adc_sincos_c_;
+    ADCChannel_t* adc_sincos_s_;
+    ADCChannel_t* adc_sincos_c_;
 
     Config_t& config_;
     Axis* axis_ = nullptr; // set by Axis constructor
@@ -150,5 +151,7 @@ public:
 };
 
 DEFINE_ENUM_FLAG_OPERATORS(Encoder::Error_t)
+
+#include "axis.hpp"
 
 #endif // __ENCODER_HPP

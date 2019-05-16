@@ -216,18 +216,26 @@ struct OpAmp_t {
     virtual float get_max_output_swing() = 0;
 };
 
-
+template<typename TADCChannel,
+        TADCChannel* adc,
+        typename TOpAmp,
+        TOpAmp* opamp>
 class LinearCurrentSensor_t : public CurrentSensor_t {
 public:
-    LinearCurrentSensor_t(ADCChannel_t* adc, OpAmp_t* opamp, float adc_to_i, float adc_midpoint) :
-        adc_(adc), opamp_(opamp), adc_to_i_(adc_to_i), adc_midpoint_(adc_midpoint) {}
+    LinearCurrentSensor_t(float adc_to_i, float adc_midpoint) :
+        adc_to_i_(adc_to_i), adc_midpoint_(adc_midpoint) {}
 
     bool init(float requested_range) final {
         if (!is_setup_) {
-            if (!(adc_ && adc_->init()
-                && (!opamp_ || opamp_->init())
-                && set_range(requested_range)
-                && adc_->on_update_.set<LinearCurrentSensor_t, &LinearCurrentSensor_t::handle_update>(*this))) {
+            bool success = not_null(adc) &&
+                           adc->init() &&
+                           (is_null(opamp) || opamp->init()) &&
+                           set_range(requested_range);
+            if (!success) {
+                return false;
+            }
+            Subscriber<> on_update = adc->on_update_;
+            if (!on_update.set<LinearCurrentSensor_t, &LinearCurrentSensor_t::handle_update>(*this)) {
                 return false;
             }
             is_setup_ = true;
@@ -236,14 +244,14 @@ public:
     }
 
     void get_unity_gain_range(float* min_current, float* max_current) {
-        float adc_min = opamp_ ? std::max(-opamp_->get_max_output_swing(), -adc_midpoint_) : -adc_midpoint_;
-        float adc_max = opamp_ ? std::min(opamp_->get_max_output_swing(), 1 - adc_midpoint_) : (1 - adc_midpoint_);
+        float adc_min = not_null(opamp) ? std::max(-opamp->get_max_output_swing(), -adc_midpoint_) : -adc_midpoint_;
+        float adc_max = not_null(opamp) ? std::min(opamp->get_max_output_swing(), 1 - adc_midpoint_) : (1 - adc_midpoint_);
         *min_current = adc_min * adc_to_i_ * rev_gain_;
         *max_current = adc_max * adc_to_i_ * rev_gain_;
     }
 
     bool set_range(float requested_range) final {
-        if (opamp_) {
+        if (not_null(opamp)) {
             float min_unity_gain_current;
             float max_unity_gain_current;
             get_unity_gain_range(&min_unity_gain_current, &max_unity_gain_current);
@@ -251,7 +259,7 @@ public:
             float requested_gain = unity_gain_current_range / requested_range; // [V/V]
 
             // set gain
-            float actual_gain = opamp_->set_gain(requested_gain);
+            float actual_gain = opamp->set_gain(requested_gain);
             rev_gain_ = 1.0f / actual_gain;
         } else {
             // if no opamp is present we just ignore the request and leave the gain at 1.0
@@ -271,16 +279,16 @@ public:
     }
 
     bool has_value() final {
-        return adc_ && adc_->has_value();
+        return not_null(adc) && adc->has_value();
     }
 
     bool reset_value() final {
-        return adc_ && adc_->reset_value();
+        return not_null(adc) && adc->reset_value();
     }
 
     bool enable_updates() final {
-        if (adc_) {
-            return adc_->enable_updates();
+        if (not_null(adc)) {
+            return adc->enable_updates();
         } else {
             return false;
         }
@@ -288,7 +296,7 @@ public:
 
     bool get_current(float* current) final {
         float adc_val = 0;
-        if (!adc_->get_normalized(&adc_val)) {
+        if (!adc->get_normalized(&adc_val)) {
             return false;
         }
         if (current) {
@@ -298,8 +306,6 @@ public:
     }
 
 private:
-    ADCChannel_t* adc_;
-    OpAmp_t* opamp_;
     float adc_to_i_; // factor to get from normalized ADC value to unity gain current value [A]
     float adc_midpoint_;
     bool is_setup_ = false;

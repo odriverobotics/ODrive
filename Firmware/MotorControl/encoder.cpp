@@ -1,10 +1,9 @@
 
-#include "odrive_main.h"
-
+#include "encoder.hpp"
 
 Encoder::Encoder(STM32_Timer_t* counter, STM32_GPIO_t* index_gpio,
                  STM32_GPIO_t* hallA_gpio, STM32_GPIO_t* hallB_gpio, STM32_GPIO_t* hallC_gpio,
-                 STM32_ADCChannel_t* adc_sincos_s, STM32_ADCChannel_t* adc_sincos_c,
+                 ADCChannel_t* adc_sincos_s, ADCChannel_t* adc_sincos_c,
                  Config_t& config) :
         counter_(counter),
         index_gpio_(index_gpio),

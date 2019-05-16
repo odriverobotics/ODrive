@@ -2,10 +2,6 @@
 #ifndef __LOW_LEVEL_H
 #define __LOW_LEVEL_H
 
-#ifndef __ODRIVE_MAIN_H
-#error "This file should not be included directly. Include odrive_main.h instead."
-#endif
-
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -17,8 +13,6 @@ extern "C" {
 /* Exported types ------------------------------------------------------------*/
 /* Exported constants --------------------------------------------------------*/
 #define ADC_CHANNEL_COUNT 16
-extern const float adc_full_scale;
-extern const float adc_ref_voltage;
 /* Exported variables --------------------------------------------------------*/
 extern float vbus_voltage;
 extern bool brake_resistor_enabled;
@@ -27,9 +21,6 @@ extern uint16_t adc_measurements_[ADC_CHANNEL_COUNT];
 /* Exported macro ------------------------------------------------------------*/
 /* Exported functions --------------------------------------------------------*/
 
-void safety_critical_arm_motor_pwm(Motor& motor);
-bool safety_critical_disarm_motor_pwm(Motor& motor);
-void safety_critical_apply_motor_pwm_timings(Motor& motor, uint16_t period, uint16_t timings[3], bool tentative);
 void safety_critical_arm_brake_resistor();
 void safety_critical_disarm_brake_resistor();
 void safety_critical_apply_brake_resistor_timings(uint32_t low_off, uint32_t high_on);

@@ -1,5 +1,5 @@
 
-#include "odrive_main.h"
+#include "sensorless_estimator.hpp"
 
 bool SensorlessEstimator::update(float dt) {
     // Algorithm based on paper: Sensorless Control of Surface-Mount Permanent-Magnet Synchronous Motors Based on a Nonlinear Observer

@@ -229,7 +229,6 @@ build{
         'MotorControl/low_level.cpp',
         'MotorControl/nvm.c',
         'MotorControl/axis.cpp',
-        'MotorControl/motor.cpp',
         'MotorControl/encoder.cpp',
         'MotorControl/controller.cpp',
         'MotorControl/sensorless_estimator.cpp',

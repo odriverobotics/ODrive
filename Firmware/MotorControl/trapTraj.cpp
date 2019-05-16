@@ -1,6 +1,7 @@
-#include <math.h>
-#include "odrive_main.h"
+
+#include "trapTraj.hpp"
 #include "utils.h"
+#include <math.h>
 
 // A sign function where input 0 has positive sign (not 0)
 float sign_hard(float val) {

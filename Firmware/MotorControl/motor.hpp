@@ -1,12 +1,12 @@
 #ifndef __MOTOR_HPP
 #define __MOTOR_HPP
 
-#ifndef __ODRIVE_MAIN_H
-#error "This file should not be included directly. Include odrive_main.h instead."
-#endif
-
+#include "utils.h"
 #include <devices.hpp>
 #include <thermistor.hpp>
+#include <fibre/protocol.hpp>
+
+class Axis;
 
 class Motor {
 public:
@@ -81,7 +81,6 @@ public:
         float Iq_measured = 0.0f; // [A]
         float Id_measured = 0.0f; // [A]
 
-        float I_measured_report_filter_k = 1.0f;
         float max_allowed_current = 0.0f; // [A]
         Iph_ABC_t overcurrent_trip_level = { 0.0f, 0.0f, 0.0f }; // [A]
     };
@@ -124,20 +123,16 @@ public:
 
         float vbus_voltage_override = 0.0f; // if non-zero, overrides the DC voltage sensor (MAINLY INTENDED FOR DEVELOPMENT, USE WITH CAUTION!)
 
+        float I_measured_report_filter_k = 1.0f;
         float inv_temp_tau = 0.01f;
         float vbus_voltage_tau = 0.01f;
     };
 
     enum TimingLog_t {
-        TIMING_LOG_GENERAL,
-        TIMING_LOG_ADC_CB_I,
-        TIMING_LOG_ADC_CB_DC,
-        TIMING_LOG_MEAS_R,
-        TIMING_LOG_MEAS_L,
-        TIMING_LOG_ENC_CALIB,
-        TIMING_LOG_IDX_SEARCH,
-        TIMING_LOG_FOC_VOLTAGE,
-        TIMING_LOG_FOC_CURRENT,
+        TIMING_LOG_UPDATE_START,
+        TIMING_LOG_CURRENT_MEAS,
+        TIMING_LOG_DC_CAL,
+        TIMING_LOG_CTRL_DONE,
         TIMING_LOG_NUM_SLOTS
     };
 
@@ -148,73 +143,21 @@ public:
         ON_BOTH = 0x3,
     };
 
-    Motor(STM32_Timer_t* timer,
-         STM32_GPIO_t* pwm_al_gpio, STM32_GPIO_t* pwm_bl_gpio, STM32_GPIO_t* pwm_cl_gpio,
-         STM32_GPIO_t* pwm_ah_gpio, STM32_GPIO_t* pwm_bh_gpio, STM32_GPIO_t* pwm_ch_gpio,
-         GateDriver_t* gate_driver_a,
-         GateDriver_t* gate_driver_b,
-         GateDriver_t* gate_driver_c,
-         CurrentSensor_t* current_sensor_a,
-         CurrentSensor_t* current_sensor_b,
-         CurrentSensor_t* current_sensor_c,
-         Thermistor_t* inverter_thermistor_a,
-         Thermistor_t* inverter_thermistor_b,
-         Thermistor_t* inverter_thermistor_c,
-         VoltageSensor_t* vbus_sense,
-         uint16_t period, uint16_t repetition_counter, uint16_t dead_time,
-         uint8_t interrupt_priority,
-         Config_t& config);
+    virtual bool init() = 0;
+    virtual bool start_updates() = 0;
+    virtual bool arm(control_law_t control_law, void* ctx) = 0;
+    virtual bool arm_foc() = 0;
+    virtual bool disarm(bool* was_armed = nullptr) = 0;
 
-    bool arm(control_law_t control_law, void* ctx);
-    bool arm_foc() {
-        return arm(&Motor::FOC, &this->current_control_);
-    }
-    void disarm();
 
-    void handle_timer_update();
+    virtual void update_current_controller_gains() = 0;
+    virtual void set_error(Error_t error) = 0;
+    virtual float get_effective_current_lim() = 0;
+    virtual bool pwm_test(float duration) = 0;
+    virtual bool run_calibration() = 0;
+    virtual bool FOC_update(float Id_setpoint, float Iq_setpoint, float phase, float phase_vel, uint32_t expiry_us = 2000, bool force_voltage_control = false) = 0;
 
-    bool init();
-    bool start_updates();
-
-    void reset_current_control();
-    void update_current_controller_gains();
-    bool check_DRV_fault();
-    void set_error(Error_t error);
-    bool do_checks();
-    bool update_thermal_limits();
-    float effective_current_lim();
-    void log_timing(TimingLog_t log_idx);
-    bool pwm_test(float duration);
-    bool measure_phase_resistance(float test_current, float max_voltage);
-    bool measure_phase_inductance(float voltage_low, float voltage_high);
-    bool run_calibration();
-    static bool FOC(Motor& motor, void* ctx, float pwm_timings[3]);
-    bool FOC_update(float Id_setpoint, float Iq_setpoint, float phase, float phase_vel, uint32_t expiry_us = 2000, bool force_voltage_control = false);
-
-    STM32_Timer_t* timer_;
-    STM32_GPIO_t* pwm_al_gpio_;
-    STM32_GPIO_t* pwm_bl_gpio_;
-    STM32_GPIO_t* pwm_cl_gpio_;
-    STM32_GPIO_t* pwm_ah_gpio_;
-    STM32_GPIO_t* pwm_bh_gpio_;
-    STM32_GPIO_t* pwm_ch_gpio_;
-    GateDriver_t* gate_driver_a_;
-    GateDriver_t* gate_driver_b_;
-    GateDriver_t* gate_driver_c_;
-    CurrentSensor_t* current_sensor_a_;
-    CurrentSensor_t* current_sensor_b_;
-    CurrentSensor_t* current_sensor_c_;
-    Thermistor_t* inverter_thermistor_a_;
-    Thermistor_t* inverter_thermistor_b_;
-    Thermistor_t* inverter_thermistor_c_;
-    VoltageSensor_t* vbus_sense_;
-
-    uint16_t period_;
-    uint16_t repetition_counter_;
-    uint16_t dead_time_;
-    uint8_t interrupt_priority_;
-
-    Config_t& config_;
+    Config_t config_;
     Axis* axis_ = nullptr; // set by Axis constructor
 
     UpdateMode_t pwm_update_mode_ = ON_BOTTOM;
@@ -222,9 +165,6 @@ public:
     UpdateMode_t current_dc_calib_mode_ = ON_TOP;
 
 //private:
-
-
-    uint16_t GPIO_port_samples[n_GPIO_samples];
 
     volatile uint8_t new_current_readings_ = 0; // bitfield (values 0...7) to indicate which of the current measurements are new. If ==7, the next current control iteration can happen. Reset by the current control iteration.
     volatile bool is_updating_pwm_timings_ = false; // true while the PWM timings are being updated
@@ -248,10 +188,6 @@ public:
 
     uint32_t update_events_ = 0; // for debugging
     bool counting_down_ = false; // set on timer update event. First timer update event must be on upper peak.
-
-
-    uint64_t longest_wait_ = 0;
-    uint64_t max_it_ = 0;
 
     uint8_t field_weakening_status_ = 0;
 
@@ -288,8 +224,6 @@ public:
             make_protocol_ro_property("inv_temp_c", &inv_temp_c_),
             make_protocol_property("max_inv_temp", &max_inv_temp_),
             make_protocol_ro_property("update_events", &update_events_),
-            make_protocol_property("longest_wait", &longest_wait_),
-            make_protocol_property("max_it", &max_it_),
             make_protocol_property("field_weakening_status", &field_weakening_status_),
             make_protocol_object("current_control",
                 make_protocol_property("p_gain", &current_control_.p_gain),
@@ -308,7 +242,6 @@ public:
                 make_protocol_property("Vq_setpoint", &current_control_.Vq_setpoint),
                 make_protocol_property("Id_measured", &current_control_.Id_measured),
                 make_protocol_property("Iq_measured", &current_control_.Iq_measured),
-                make_protocol_property("I_measured_report_filter_k", &current_control_.I_measured_report_filter_k),
                 make_protocol_ro_property("max_allowed_current", &current_control_.max_allowed_current),
                 make_protocol_ro_property("overcurrent_trip_level_a", &current_control_.overcurrent_trip_level.phA),
                 make_protocol_ro_property("overcurrent_trip_level_b", &current_control_.overcurrent_trip_level.phB),
@@ -320,8 +253,8 @@ public:
             //make_protocol_object("gate_driver_b", gate_driver_b->make_protocol_definitions()),
             //make_protocol_object("gate_driver_c", gate_driver_c->make_protocol_definitions()),
 
-            make_protocol_function("gate_driver_c_get_fault", *gate_driver_c_,
-                    &GateDriver_t::get_error),
+            //make_protocol_function("gate_driver_c_get_fault", *gate_driver_c_,
+            //        &GateDriver_t::get_error),
 
             //make_protocol_object("gate_driver_a", gate_driver_a->make_protocol_definitions()),
             //make_protocol_object("gate_driver_b", gate_driver_b->make_protocol_definitions()),
@@ -331,18 +264,14 @@ public:
             //make_protocol_object("current_sensor_c", current_sensor_c.make_protocol_definitions()),
 
             make_protocol_object("timing_log",
-                make_protocol_ro_property("TIMING_LOG_GENERAL", &timing_log_[TIMING_LOG_GENERAL]),
-                make_protocol_ro_property("TIMING_LOG_ADC_CB_I", &timing_log_[TIMING_LOG_ADC_CB_I]),
-                make_protocol_ro_property("TIMING_LOG_ADC_CB_DC", &timing_log_[TIMING_LOG_ADC_CB_DC]),
-                make_protocol_ro_property("TIMING_LOG_MEAS_R", &timing_log_[TIMING_LOG_MEAS_R]),
-                make_protocol_ro_property("TIMING_LOG_MEAS_L", &timing_log_[TIMING_LOG_MEAS_L]),
-                make_protocol_ro_property("TIMING_LOG_ENC_CALIB", &timing_log_[TIMING_LOG_ENC_CALIB]),
-                make_protocol_ro_property("TIMING_LOG_IDX_SEARCH", &timing_log_[TIMING_LOG_IDX_SEARCH]),
-                make_protocol_ro_property("TIMING_LOG_FOC_VOLTAGE", &timing_log_[TIMING_LOG_FOC_VOLTAGE]),
-                make_protocol_ro_property("TIMING_LOG_FOC_CURRENT", &timing_log_[TIMING_LOG_FOC_CURRENT])
+                make_protocol_ro_property("TIMING_LOG_UPDATE_START", &timing_log_[TIMING_LOG_UPDATE_START]),
+                make_protocol_ro_property("TIMING_LOG_CURRENT_MEAS", &timing_log_[TIMING_LOG_CURRENT_MEAS]),
+                make_protocol_ro_property("TIMING_LOG_DC_CAL", &timing_log_[TIMING_LOG_DC_CAL]),
+                make_protocol_ro_property("TIMING_LOG_CTRL_DONE", &timing_log_[TIMING_LOG_CTRL_DONE])
             ),
             make_protocol_object("config",
-                make_protocol_property("pre_calibrated", &config_.pre_calibrated),
+                make_protocol_property("pre_calibrated", &config_.pre_calibrated,
+                    [](void* ctx) { static_cast<Motor*>(ctx)->update_current_controller_gains(); static_cast<Motor*>(ctx)->is_calibrated_ = static_cast<Motor*>(ctx)->config_.pre_calibrated; }, this),
                 make_protocol_property("async_calibrated", &config_.async_calibrated),
                 make_protocol_property("pole_pairs", &config_.pole_pairs),
                 make_protocol_property("calibration_current", &config_.calibration_current),
@@ -365,12 +294,15 @@ public:
                 make_protocol_property("I_bus_hard_max", &config_.I_bus_hard_max),
                 make_protocol_property("max_leak_current", &config_.max_leak_current),
                 make_protocol_property("vbus_voltage_override", &config_.vbus_voltage_override),
-                make_protocol_property("inv_temp_tau", &config_.inv_temp_tau)
+                make_protocol_property("inv_temp_tau", &config_.inv_temp_tau),
+                make_protocol_property("I_measured_report_filter_k", &config_.I_measured_report_filter_k)
             )
         );
     }
 };
 
 DEFINE_ENUM_FLAG_OPERATORS(Motor::Error_t)
+
+#include "axis.hpp"
 
 #endif // __MOTOR_HPP

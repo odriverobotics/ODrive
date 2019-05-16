@@ -1,6 +1,11 @@
 #ifndef _TRAP_TRAJ_H
 #define _TRAP_TRAJ_H
 
+#include "utils.h"
+#include <fibre/protocol.hpp>
+
+class Axis;
+
 class TrapezoidalTrajectory {
 public:
     struct Config_t {
@@ -53,5 +58,7 @@ public:
 
     float yAccel_;
 };
+
+#include "axis.hpp"
 
 #endif

@@ -1,6 +1,11 @@
 #ifndef __ASYNC_ESTIMATOR_HPP
 #define __ASYNC_ESTIMATOR_HPP
 
+#include "utils.h"
+#include <fibre/protocol.hpp>
+
+class Axis;
+
 class AsyncEstimator {
 public:
     enum Error_t {
@@ -58,5 +63,7 @@ public:
 };
 
 DEFINE_ENUM_FLAG_OPERATORS(AsyncEstimator::Error_t)
+
+#include "axis.hpp"
 
 #endif /* __ASYNC_ESTIMATOR_HPP */

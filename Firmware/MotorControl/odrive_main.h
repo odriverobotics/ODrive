@@ -1,13 +1,6 @@
 #ifndef __ODRIVE_MAIN_H
 #define __ODRIVE_MAIN_H
 
-// Note on central include scheme by Samuel:
-// there are circular dependencies between some of the header files,
-// e.g. the Motor header needs a forward declaration of Axis and vice versa
-// so I figured I'd make one main header that takes care of
-// the forward declarations and right ordering
-// btw this pattern is not so uncommon, for instance IIRC the stdlib uses it too
-
 /* C includes ----------------------------------------------------------------*/
 
 #include <stdbool.h>
@@ -19,7 +12,6 @@
 
 // OS includes
 #include <cmsis_os.h>
-
 #include <stm32_system.h>
 
 /* C++ includes --------------------------------------------------------------*/
@@ -42,15 +34,12 @@ extern "C" {
 #define PH_CURRENT_MEAS_TIMEOUT 2 // [ms]
 
 // TODO: move to board definition file
-#define TIM_APB1_CLOCK_HZ 84000000
 #define TIM_APB1_PERIOD_CLOCKS 4096
 #define TIM_APB1_DEADTIME_CLOCKS 40
 
 #define MAX_MODULATION 0.80f // accounts for dead-time and the likes
 #define V_DC_TO_V_PHASE_MAX (MAX_MODULATION * 0.57735026919f)
 
-//#define NVIC_PRIO_M0                    configMAX_SYSCALL_INTERRUPT_PRIORITY - (1 << (8 - configPRIO_BITS))
-//#define NVIC_PRIO_M1                    configMAX_SYSCALL_INTERRUPT_PRIORITY - (1 << (8 - configPRIO_BITS)) + 1
 #define NVIC_PRIO_M0            (configMAX_SYSCALL_INTERRUPT_PRIORITY)
 #define NVIC_PRIO_M1            (configMAX_SYSCALL_INTERRUPT_PRIORITY + (1 << (8 - configPRIO_BITS)))
 
@@ -108,7 +97,7 @@ struct PWMMapping_t {
     float max = 0;
 };
 
-
+// TODO: this is hardware dependent and should not be here
 #if HW_VERSION_MAJOR == 3 && HW_VERSION_MINOR <= 4
 #define GPIO_COUNT  5
 #else
@@ -164,37 +153,14 @@ class ODriveCAN;
 extern Axis* axes;
 extern const size_t n_axes;
 
+#endif // __cplusplus
+
+
 // if you use the oscilloscope feature you can bump up this value
 #define OSCILLOSCOPE_SIZE 128
 extern float oscilloscope[OSCILLOSCOPE_SIZE];
 extern size_t oscilloscope_pos;
 
-// TODO: move
-// this is technically not thread-safe but practically it might be
-#define DEFINE_ENUM_FLAG_OPERATORS(ENUMTYPE) \
-inline ENUMTYPE operator | (ENUMTYPE a, ENUMTYPE b) { return static_cast<ENUMTYPE>(static_cast<std::underlying_type_t<ENUMTYPE>>(a) | static_cast<std::underlying_type_t<ENUMTYPE>>(b)); } \
-inline ENUMTYPE operator & (ENUMTYPE a, ENUMTYPE b) { return static_cast<ENUMTYPE>(static_cast<std::underlying_type_t<ENUMTYPE>>(a) & static_cast<std::underlying_type_t<ENUMTYPE>>(b)); } \
-inline ENUMTYPE operator ^ (ENUMTYPE a, ENUMTYPE b) { return static_cast<ENUMTYPE>(static_cast<std::underlying_type_t<ENUMTYPE>>(a) ^ static_cast<std::underlying_type_t<ENUMTYPE>>(b)); } \
-inline ENUMTYPE &operator |= (ENUMTYPE &a, ENUMTYPE b) { return reinterpret_cast<ENUMTYPE&>(reinterpret_cast<std::underlying_type_t<ENUMTYPE>&>(a) |= static_cast<std::underlying_type_t<ENUMTYPE>>(b)); } \
-inline ENUMTYPE &operator &= (ENUMTYPE &a, ENUMTYPE b) { return reinterpret_cast<ENUMTYPE&>(reinterpret_cast<std::underlying_type_t<ENUMTYPE>&>(a) &= static_cast<std::underlying_type_t<ENUMTYPE>>(b)); } \
-inline ENUMTYPE &operator ^= (ENUMTYPE &a, ENUMTYPE b) { return reinterpret_cast<ENUMTYPE&>(reinterpret_cast<std::underlying_type_t<ENUMTYPE>&>(a) ^= static_cast<std::underlying_type_t<ENUMTYPE>>(b)); } \
-inline ENUMTYPE operator ~ (ENUMTYPE a) { return static_cast<ENUMTYPE>(~static_cast<std::underlying_type_t<ENUMTYPE>>(a)); }
-
-
-// ODrive specific includes
-
-#include <utils.h>
-#include <low_level.h>
-#include <encoder.hpp>
-#include <sensorless_estimator.hpp>
-#include <async_estimator.hpp>
-#include <controller.hpp>
-#include <motor.hpp>
-#include <trapTraj.hpp>
-#include <axis.hpp>
-#include <communication/communication.h>
-
-//TODO clean this up
 extern const float current_meas_period;
 extern const int current_meas_hz;
 extern bool user_config_loaded_;
@@ -210,12 +176,8 @@ extern const uint8_t hw_version_variant;
 
 extern uint32_t pwm_in_gpios[4];
 
-#endif // __cplusplus
-
-
-float get_adc_voltage(uint32_t gpio_num);
-
 // general system functions defined in main.cpp
+float get_adc_voltage(uint32_t gpio_num);
 void save_configuration(void);
 void erase_configuration(void);
 void enter_dfu_mode(void);

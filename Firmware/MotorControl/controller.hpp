@@ -1,9 +1,10 @@
 #ifndef __CONTROLLER_HPP
 #define __CONTROLLER_HPP
 
-#ifndef __ODRIVE_MAIN_H
-#error "This file should not be included directly. Include odrive_main.h instead."
-#endif
+#include "utils.h"
+#include <fibre/protocol.hpp>
+
+class Axis;
 
 class Controller {
 public:
@@ -129,5 +130,7 @@ public:
 };
 
 DEFINE_ENUM_FLAG_OPERATORS(Controller::Error_t)
+
+#include "axis.hpp"
 
 #endif // __CONTROLLER_HPP

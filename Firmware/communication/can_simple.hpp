@@ -1,9 +1,9 @@
 #ifndef __CAN_SIMPLE_HPP_
 #define __CAN_SIMPLE_HPP_
 
+//#include "odrive_main.h"
+#include "axis.hpp"
 #include <stm32_can.hpp>
-
-#include "odrive_main.h"
 
 #define CAN_CLK_HZ (42000000)
 #define CAN_CLK_MHZ (42)

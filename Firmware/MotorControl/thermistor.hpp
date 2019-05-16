@@ -1,6 +1,8 @@
 #ifndef __THERMISTOR_HPP
 #define __THERMISTOR_HPP
 
+#include "utils.h"
+
 class Thermistor_t {
 public:
     Thermistor_t(ADCChannel_t* adc, const float* coeffs, size_t n_coeffs) :

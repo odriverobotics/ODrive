@@ -87,7 +87,7 @@ bool STM32_DMAStream_t::init(const STM32_DMAChannel_t* channels, DOMAIN src, DOM
         default: return false;
     }
     
-    hdma.Init.FIFOMode = DMA_FIFOMODE_ENABLE;
+    hdma.Init.FIFOMode = DMA_FIFOMODE_DISABLE;
     hdma.Init.FIFOThreshold = DMA_FIFO_THRESHOLD_1QUARTERFULL;
 
     if (hdma_parent == DMA1) {
