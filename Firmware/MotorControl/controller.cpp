@@ -151,7 +151,7 @@ bool Controller::update(float pos_estimate, float vel_estimate, float* current_s
             vel_setpoint_ = config_.pattern_scale * our_arm_cos_f32(pattern_phase_);
         } else {
             pos_setpoint_ = config_.pattern_scale * our_arm_sin_f32(2.0f * pattern_phase_);
-            vel_setpoint_ = 
+            vel_setpoint_ = config_.pattern_scale * 2 * our_arm_cos_f32(2.0f * pattern_phase_)
         }
     }
 
