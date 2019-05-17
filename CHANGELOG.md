@@ -30,6 +30,9 @@ Please add a note of your changes below this heading if you make a Pull Request.
 * Allow for compile-time disabling of encoder by passing NULL-GPIOs
 * Make V_BUS measurement per-axis (might wanna use defines to change this)
 * change SPI mode to 8-bit
+* implement VBUS voltage override
+* add driver for Pt100 thermistor
+* add motor temperature sensor support
 
 ### Changed
 * Encoder index search now based on the new lock-in drive feature

@@ -40,6 +40,7 @@ public:
         ERROR_FAILED_TO_ARM = 0x800000,
         ERROR_FOC_TIMEOUT = 0x1000000,
         ERROR_LEAK_CURRENT_TOO_HIGH = 0x2000000,
+        ERROR_MOTOR_OVER_TEMP = 0x4000000,
     };
 
     enum MotorType_t {
@@ -113,6 +114,8 @@ public:
         float current_control_bandwidth = 1000.0f;  // [rad/s]
         float inverter_temp_limit_lower = 100;
         float inverter_temp_limit_upper = 120;
+        float motor_temp_limit_lower = 100;
+        float motor_temp_limit_upper = 120;
         
         float phase_delay = 0.0f; // this is useful mostly if phase_locked is true. Must not be changed after calibrating the encoder with a synchronous motor
 
@@ -127,6 +130,7 @@ public:
         float I_measured_tau = 1.0f;
         float I_measured_report_filter_k = 1.0f;
         float inv_temp_tau = 0.01f;
+        float motor_temp_tau = 0.01f;
         float vbus_voltage_tau = 0.01f;
     };
 
@@ -201,6 +205,11 @@ public:
     float inv_temp_c_ = -INFINITY;
     float max_inv_temp_ = -INFINITY;
 
+    float motor_temp_a_ = -INFINITY;
+    float motor_temp_b_ = -INFINITY;
+    float motor_temp_c_ = -INFINITY;
+    float max_motor_temp_ = -INFINITY;
+
     control_law_t control_law_ = nullptr; // set by arm() and reset by disarm()
     void* control_law_ctx_ = nullptr; // set by arm() and reset by disarm()
 
@@ -225,6 +234,10 @@ public:
             make_protocol_ro_property("inv_temp_b", &inv_temp_b_),
             make_protocol_ro_property("inv_temp_c", &inv_temp_c_),
             make_protocol_property("max_inv_temp", &max_inv_temp_),
+            make_protocol_ro_property("motor_temp_a", &motor_temp_a_),
+            make_protocol_ro_property("motor_temp_b", &motor_temp_b_),
+            make_protocol_ro_property("motor_temp_c", &motor_temp_c_),
+            make_protocol_property("max_motor_temp", &max_motor_temp_),
             make_protocol_ro_property("update_events", &update_events_),
             make_protocol_property("field_weakening_status", &field_weakening_status_),
             make_protocol_object("current_control",

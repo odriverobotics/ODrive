@@ -18,10 +18,12 @@ template<typename TTimer,
         typename TCurrentSensorA, TCurrentSensorA* current_sensor_a,
         typename TCurrentSensorB, TCurrentSensorB* current_sensor_b,
         typename TCurrentSensorC, TCurrentSensorC* current_sensor_c,
-        typename TThermistor,
-        TThermistor* inverter_thermistor_a,
-        TThermistor* inverter_thermistor_b,
-        TThermistor* inverter_thermistor_c,
+        typename TInvThermistorA, TInvThermistorA* inverter_thermistor_a,
+        typename TInvThermistorB, TInvThermistorB* inverter_thermistor_b,
+        typename TInvThermistorC, TInvThermistorC* inverter_thermistor_c,
+        typename TMotorThermistorA, TMotorThermistorA* motor_thermistor_a,
+        typename TMotorThermistorB, TMotorThermistorB* motor_thermistor_b,
+        typename TMotorThermistorC, TMotorThermistorC* motor_thermistor_c,
         typename TVoltageSensor,
         TVoltageSensor* vbus_sense,
         typename TWatchdog,
@@ -120,6 +122,13 @@ public:
         if (not_null(inverter_thermistor_b) && !inverter_thermistor_b->init())
             return false;
         if (not_null(inverter_thermistor_c) && !inverter_thermistor_c->init())
+            return false;
+
+        if (not_null(motor_thermistor_a) && !motor_thermistor_a->init())
+            return false;
+        if (not_null(motor_thermistor_b) && !motor_thermistor_b->init())
+            return false;
+        if (not_null(motor_thermistor_c) && !motor_thermistor_c->init())
             return false;
 
         return true;
@@ -269,18 +278,33 @@ public:
     }
 
     bool update_thermal_limits() {
-        float fet_temp = std::max(std::max(inv_temp_a_, inv_temp_b_), inv_temp_c_);
-        max_inv_temp_ = std::max(fet_temp, max_inv_temp_);
-        float temp_margin = config_.inverter_temp_limit_upper - fet_temp;
-        float derating_range = config_.inverter_temp_limit_upper - config_.inverter_temp_limit_lower;
-        thermal_current_lim_ = config_.current_lim * (temp_margin / derating_range);
+        // Calculate derating based on inverter temp
+        float inv_temp = std::max(std::max(inv_temp_a_, inv_temp_b_), inv_temp_c_);
+        max_inv_temp_ = std::max(inv_temp, max_inv_temp_);
+        float inv_rating_coef = (config_.inverter_temp_limit_upper - inv_temp) /
+                                (config_.inverter_temp_limit_upper - config_.inverter_temp_limit_lower);
+
+        // Calculate derating based on motor temp
+        float motor_temp = std::max(std::max(motor_temp_a_, motor_temp_b_), motor_temp_c_);
+        max_motor_temp_ = std::max(motor_temp, max_motor_temp_);
+        float motor_rating_coef = (config_.motor_temp_limit_upper - motor_temp) /
+                                  (config_.motor_temp_limit_upper - config_.motor_temp_limit_lower);
+
+        thermal_current_lim_ = config_.current_lim * std::min(inv_rating_coef, motor_rating_coef);
         if (!(thermal_current_lim_ >= 0.0f)) { //Funny polarity to also catch NaN
             thermal_current_lim_ = 0.0f;
         }
-        if (fet_temp > config_.inverter_temp_limit_upper + 5) {
+
+        if (inv_temp > config_.inverter_temp_limit_upper + 5) {
             set_error(ERROR_INVERTER_OVER_TEMP);
             return false;
         }
+
+        if (motor_temp > config_.motor_temp_limit_upper + 5) {
+            set_error(ERROR_MOTOR_OVER_TEMP);
+            return false;
+        }
+        
         return true;
     }
 
@@ -852,6 +876,20 @@ private:
             if (not_null(inverter_thermistor_c)) {
                 is_valid = inverter_thermistor_c->read_temp(&temp);
                 filter(is_valid, &inv_temp_c_, temp, inv_temp_k);
+            }
+
+            float motor_temp_k = std::min(current_meas_period / config_.motor_temp_tau, 1.0f);
+            if (not_null(motor_thermistor_a)) {
+                is_valid = motor_thermistor_a->read_temp(&temp);
+                filter(is_valid, &inv_temp_a_, temp, motor_temp_k);
+            }
+            if (not_null(motor_thermistor_b)) {
+                is_valid = motor_thermistor_b->read_temp(&temp);
+                filter(is_valid, &inv_temp_b_, temp, motor_temp_k);
+            }
+            if (not_null(motor_thermistor_c)) {
+                is_valid = motor_thermistor_c->read_temp(&temp);
+                filter(is_valid, &inv_temp_c_, temp, motor_temp_k);
             }
         }
 

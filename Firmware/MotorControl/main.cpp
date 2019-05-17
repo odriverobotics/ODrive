@@ -85,7 +85,7 @@ typedef Config<
 float get_adc_voltage(uint32_t gpio_num) {
     float result = 0.0f / 0.0f;
     if (gpio_num < sizeof(gpio_adcs) / sizeof(gpio_adcs[0])) {
-        gpio_adcs[gpio_num].get_normalized(&result);
+        gpio_adcs[gpio_num]->get_normalized(&result);
         result *= 3.3f;
     }
     return result;

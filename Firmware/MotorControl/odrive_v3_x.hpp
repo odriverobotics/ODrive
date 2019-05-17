@@ -12,6 +12,7 @@
 #include "stm32_i2c.hpp"
 #include "stm32_tim.hpp"
 #include "stm32_usart.hpp"
+#include "stm32_wwdg.hpp"
 #include "drv8301.hpp"
 #include "motor_impl.hpp"
 
@@ -97,18 +98,26 @@ uint32_t pwm_in_gpios[4] = { 0, 0, 0, 4 }; // 0 means not in use
 #endif
 
 // TODO: adapt to GPIOs count
-STM32_ADCRegular_t::Channel_t gpio_adcs[num_gpios] = {
-    adc1_regular.get_channel(gpios[0]),
-    adc1_regular.get_channel(gpios[1]),
-    adc1_regular.get_channel(gpios[2]),
-    adc1_regular.get_channel(gpios[3]),
+STM32_ADCRegular_t::Channel_t gpio1_adc = adc1_regular.get_channel(gpios[0]);
+STM32_ADCRegular_t::Channel_t gpio2_adc = adc1_regular.get_channel(gpios[1]);
+STM32_ADCRegular_t::Channel_t gpio3_adc = adc1_regular.get_channel(gpios[2]);
+STM32_ADCRegular_t::Channel_t gpio4_adc = adc1_regular.get_channel(gpios[3]);
 #if (HW_VERSION_MINOR >= 3)
-    adc1_regular.get_channel(gpios[4]),
+STM32_ADCRegular_t::Channel_t gpio5_adc = adc1_regular.get_channel(gpios[4]);
 #endif
 #if (HW_VERSION_MINOR >= 5)
-    adc1_regular.get_channel(gpios[5]),
-    adc1_regular.get_channel(gpios[6]),
-    adc1_regular.get_channel(gpios[7]),
+STM32_ADCRegular_t::Channel_t gpio6_adc = adc1_regular.get_channel(gpios[5]);
+STM32_ADCRegular_t::Channel_t gpio7_adc = adc1_regular.get_channel(gpios[6]);
+STM32_ADCRegular_t::Channel_t gpio8_adc = adc1_regular.get_channel(gpios[7]);
+#endif
+
+STM32_ADCRegular_t::Channel_t* gpio_adcs[num_gpios] = {
+    &gpio1_adc, &gpio2_adc, &gpio3_adc, &gpio4_adc,
+#if (HW_VERSION_MINOR >= 3)
+    &gpio5_adc,
+#endif
+#if (HW_VERSION_MINOR >= 5)
+    &gpio6_adc, &gpio7_adc, &gpio8_adc
 #endif
 };
 
@@ -143,11 +152,11 @@ STM32_ADCRegular_t::Channel_t temp_sensor_m1_inv_adc = adc1_regular.get_channel(
 STM32_ADCRegular_t::Channel_t temp_sensor_m1_inv_adc = adc1_regular.get_channel(&pa4);
 #endif
 
-Thermistor_t temp_sensor_m0_inv(&temp_sensor_m0_inv_adc, thermistor_poly_coeffs, thermistor_num_coeffs);
-Thermistor_t temp_sensor_m1_inv(&temp_sensor_m1_inv_adc, thermistor_poly_coeffs, thermistor_num_coeffs);
+Thermistor_t<decltype(temp_sensor_m0_inv_adc), temp_sensor_m0_inv_adc> temp_sensor_m0_inv(thermistor_poly_coeffs, thermistor_num_coeffs);
+Thermistor_t<decltype(temp_sensor_m1_inv_adc), temp_sensor_m1_inv_adc> temp_sensor_m1_inv(thermistor_poly_coeffs, thermistor_num_coeffs);
 
-ADCChannel_t* adc_sincos_s = &gpio_adcs[2];
-ADCChannel_t* adc_sincos_c = &gpio_adcs[3];
+ADCChannel_t* adc_sincos_s = &gpio3_adc;
+ADCChannel_t* adc_sincos_c = &gpio4_adc;
 
 STM32_GPIO_t* aux_l = &pb10;
 STM32_GPIO_t* aux_h = &pb11;
@@ -179,14 +188,14 @@ MotorImpl<
     CurrentSensor_t, nullptr, // current_sensor_a
     decltype(current_sensor_m0_b), &current_sensor_m0_b, // current_sensor_b
     decltype(current_sensor_m0_c), &current_sensor_m0_c, // current_sensor_c
-    Thermistor_t,
-    &temp_sensor_m0_inv, // inverter_thermistor_a
-    &temp_sensor_m0_inv, // inverter_thermistor_b
-    &temp_sensor_m0_inv, // inverter_thermistor_c
-    ADCVoltageSensor_t,
-    &vbus_sense, // vbus_sense
-    decltype(motor_watchdog),
-    &motor_watchdog, 0 // watchdog, watchdog_slot
+    decltype(temp_sensor_m0_inv), &temp_sensor_m0_inv, // inverter_thermistor_a
+    decltype(temp_sensor_m0_inv), &temp_sensor_m0_inv, // inverter_thermistor_b
+    decltype(temp_sensor_m0_inv), &temp_sensor_m0_inv, // inverter_thermistor_c
+    TempSensor_t, nullptr, // motor_thermistor_a
+    TempSensor_t, nullptr, // motor_thermistor_b
+    TempSensor_t, nullptr, // motor_thermistor_c
+    ADCVoltageSensor_t, &vbus_sense, // vbus_sense
+    decltype(motor_watchdog), &motor_watchdog, 0 // watchdog, watchdog_slot
 > m0(
     TIM_1_8_PERIOD_CLOCKS, TIM_1_8_RCR, TIM_1_8_DEADTIME_CLOCKS,
     NVIC_PRIO_M0
@@ -205,10 +214,12 @@ MotorImpl<
     CurrentSensor_t, nullptr, // current_sensor_a
     decltype(current_sensor_m1_b), &current_sensor_m1_b, // current_sensor_b
     decltype(current_sensor_m1_c), &current_sensor_m1_c, // current_sensor_c
-    Thermistor_t,
-    &temp_sensor_m1_inv, // inverter_thermistor_a
-    &temp_sensor_m1_inv, // inverter_thermistor_b
-    &temp_sensor_m1_inv, // inverter_thermistor_c
+    decltype(temp_sensor_m1_inv), &temp_sensor_m1_inv, // inverter_thermistor_a
+    decltype(temp_sensor_m1_inv), &temp_sensor_m1_inv, // inverter_thermistor_b
+    decltype(temp_sensor_m1_inv), &temp_sensor_m1_inv, // inverter_thermistor_c
+    TempSensor_t, nullptr, // motor_thermistor_a
+    TempSensor_t, nullptr, // motor_thermistor_b
+    TempSensor_t, nullptr, // motor_thermistor_c
     ADCVoltageSensor_t,
     &vbus_sense, // vbus_sense
     decltype(motor_watchdog),
