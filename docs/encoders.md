@@ -53,7 +53,6 @@ The following are variables that MUST be set up for your encoder configuration. 
 
 The following are examples of values that MAY impact the success of calibration. Your values will vary depending on your setup:
 * `<axis>.motor.config.motor_type = MOTOR_TYPE_HIGH_CURRENT`
-* `<axis>.encoder.config.cpr = 4000`
 * `<axis>.encoder.config.calib_range = 0.05`
 * `<axis>.motor.config.calibration_current = 10.0`
 * `<axis>.motor.config.resistance_calib_max_voltage = 12.0`
