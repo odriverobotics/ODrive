@@ -113,8 +113,7 @@ must reflect the number of counts odrive receives after one complete turn of the
 You will probably never be able to properly debug if you have problems unless you use an oscilloscope. If you have one, try the following:
 Connect to the AB pins, see if you get square waves as you turn the motor.
 Connect to the I pin, see if you get a pulse on a complete rotation. Sometimes this is hard to see.
-If you are using SPI, connect to CLK, and CS pins, look for a signal like this:
-[INSERT PIC]
+If you are using SPI, have a lot at the signal on the CLK, and CS pins. There are many examples on the net for how these should behave. 
 
 ## Encoder Noise
 Noise is found in all circuits, life is just about figuring out if it is preventing your system from working. Lots of users have no problems with noise interferring with their odrive operation, others will tell you "_I've been using the same encoder as you with no problems_". Power to 'em, that may be true, but it doesn't mean it will work for you. If you are concerned about noise, there are several possible sources:
