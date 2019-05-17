@@ -5,15 +5,14 @@ Be sure to read the [ODrive Encoder Guide](https://docs.google.com/spreadsheets/
 
 ## Encoder Calibration
 Please take into account that all encoder types supported by ODrive require that you do some sort of encoder calibration. This requires the following:
-* selecting an encoder and mounting it to your motor
-* choosing an interface (e.g., AB, ABI or SPI)
-* connecting the pins to the odrive
-* loading the correct odrive firmware (the default will work in many cases)
-* motor calibration
-* saving the settings in the odrive for correct bootup
+* Selecting an encoder and mounting it to your motor
+* Choosing an interface (e.g., AB, ABI or SPI)
+* Connecting the pins to the odrive
+* Loading the correct odrive firmware (the default will work in many cases)
+* Motor calibration
+* Saving the settings in the odrive for correct bootup
 
 ### Encoder without index signal
-
 During encoder offset calibration the rotor must be allowed to rotate without any biased load during startup. That means mass and weak friction loads are fine, but gravity or spring loads are not okay.
 
 In the `odrivetool`, type `<axis>.requested_state = AXIS_STATE_ENCODER_OFFSET_CALIBRATION` <kbd>Enter</kbd>.
@@ -45,18 +44,17 @@ That's it, now on every reboot the motor will turn in one direction until it fin
 * If your motor has problems reaching the index location due to the mechanical load, you can increase `<axis>.motor.config.calibration_current`.
 
 ### Startup sequence notes
-
 The following are variables that MUST be set up for your encoder configuration. Your values will vary depending on your encoder:
 
 * `<axis>.encoder.config.cpr = 4000`
 * `<axis>.encoder.config.mode = ENCODER_MODE_INCREMENTAL`
 
-The following are examples of values that MAY impact the success of calibration. Do not use these values unless you understand why they are needed; your values will vary depending on your setup:
+The following are examples of values that MAY impact the success of calibration. These are not all the varibles you have to set for startup. Only change these when you understand why they are needed; your values will vary depending on your setup:
 * `<axis>.motor.config.motor_type = MOTOR_TYPE_HIGH_CURRENT` select if you have a gimbal or high amp motor
 * `<axis>.encoder.config.calib_range = 0.05` helps to relax the accuracy of encoder counts during calibration 
 * `<axis>.motor.config.calibration_current = 10.0` _sometimes_ needed if this is a large motor
 * `<axis>.motor.config.resistance_calib_max_voltage = 12.0` _sometimes_ needed depending on motor
-* `<axis>.controller.config.vel_limit = 50000`
+* `<axis>.controller.config.vel_limit = 50000` low values result in the spinning motor stopping abruptly during calibration
 
 Lots of other values can get you. It's a process. Thankfully there is a lot of good people that will help you debug calibration problems. 
 
