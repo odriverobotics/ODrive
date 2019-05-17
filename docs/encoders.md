@@ -51,11 +51,11 @@ The following are variables that MUST be set up for your encoder configuration. 
 * `<axis>.encoder.config.cpr = 4000`
 * `<axis>.encoder.config.mode = ENCODER_MODE_INCREMENTAL`
 
-The following are examples of values that MAY impact the success of calibration. Your values will vary depending on your setup:
-* `<axis>.motor.config.motor_type = MOTOR_TYPE_HIGH_CURRENT`
-* `<axis>.encoder.config.calib_range = 0.05`
-* `<axis>.motor.config.calibration_current = 10.0`
-* `<axis>.motor.config.resistance_calib_max_voltage = 12.0`
+The following are examples of values that MAY impact the success of calibration. Do not use these values unless you understand why they are needed; your values will vary depending on your setup:
+* `<axis>.motor.config.motor_type = MOTOR_TYPE_HIGH_CURRENT` select if you have a gimbal or high amp motor
+* `<axis>.encoder.config.calib_range = 0.05` helps to relax the accuracy of encoder counts during calibration 
+* `<axis>.motor.config.calibration_current = 10.0` _sometimes_ needed if this is a large motor
+* `<axis>.motor.config.resistance_calib_max_voltage = 12.0` _sometimes_ needed depending on motor
 * `<axis>.controller.config.vel_limit = 50000`
 
 Lots of other values can get you. It's a process. Thankfully there is a lot of good people that will help you debug calibration problems. 
