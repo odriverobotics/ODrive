@@ -46,7 +46,7 @@ That's it, now on every reboot the motor will turn in one direction until it fin
 ### Startup sequence notes
 The following are variables that MUST be set up for your encoder configuration. Your values will vary depending on your encoder:
 
-* `<axis>.encoder.config.cpr = 4000`
+* `<axis>.encoder.config.cpr = 8192`
 * `<axis>.encoder.config.mode = ENCODER_MODE_INCREMENTAL`
 
 The following are examples of values that MAY impact the success of calibration. These are not all the varibles you have to set for startup. Only change these when you understand why they are needed; your values will vary depending on your setup:
