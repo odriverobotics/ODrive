@@ -126,7 +126,7 @@ Noise is found in all circuits, life is just about figuring out if it is prevent
 * Long wires between encoder and ODrive
 * Use of ribbon cable
 
-The following _might_ mitigate noise problems. Use twisted pairs, where one side of each twisted pair is tied to ground, the other side is tied to your signal. If you are using SPI, use a 20-50 ohm resistor in series on CLK, which is more susceptable noise.
+The following _might_ mitigate noise problems. Use shielded cable, or use twisted pairs, where one side of each twisted pair is tied to ground, the other side is tied to your signal. If you are using SPI, use a 20-50 ohm resistor in series on CLK, which is more susceptable noise.
 
 ## AS5047/AS5048 Encoders
 The AS5047/AS5048 encoders are Hall Effect/Magenetic sensors that can serve as rotary encoders for the ODrive.
@@ -134,18 +134,18 @@ The AS5047/AS5048 encoders are Hall Effect/Magenetic sensors that can serve as r
 The AS5047 has 3 independent output interfaces: SPI, ABI, and PWM. 
 The AS5048 has 4 independent output interfaces: SPI, ABI, I2C, and PWM.
 
-Both chips come with evaluation boards that can simplify mounted the chips to your motor. For our purposes if you are using an evaluation board you should select the settings for 3.2v, and tie MOSI high to 3.2v. 
+Both chips come with evaluation boards that can simplify mounted the chips to your motor. For our purposes if you are using an evaluation board you should select the settings for 3.3v, and tie MOSI high to 3.3v. 
 
 If you are having calibration problems - make sure your magnet is centered on the axis of rotation on the motor, some users report this has a significant impact on calibration. Also make sure your magnet height is within range of the spec sheet. 
 
 #### Using ABI. 
-You can use ABI with the AS5047/AS5048 with the default ODrive firmware. For your wiring, connect A, B, 3.2v, GND to the labeled pins on the odrive
+You can use ABI with the AS5047/AS5048 with the default ODrive firmware. For your wiring, connect A, B, 3.3v, GND to the labeled pins on the odrive
 The acronym I and Z mean the same thing, connect those as well if you are using an index signal. 
 
 #### Using SPI.
 TobinHall has written a [branch](https://github.com/TobinHall/ODrive/tree/Non-Blocking_Absolute_SPI) that supports the SPI option on the AS5047/AS5048. Use his build to flash firmware on your ODrive and connect MISO, SCK, and CS to the labeled pins on the odrive
 
-Tie MOSI to 3.2v, connect to the SCK, CLK, MISO, GND and 3.2v pins on the ODrive. (note for SPI users, the acronym SCK and CLK mean the same thing, the acronym CSn and CS mean the same thing.)
+Tie MOSI to 3.3v, connect to the SCK, CLK, MISO, GND and 3.2v pins on the ODrive. (note for SPI users, the acronym SCK and CLK mean the same thing, the acronym CSn and CS mean the same thing.)
 
 Add these commands to your calibration / startup script:
 * `<axis>.encoder.config.abs_spi_cs_gpio_pin = 4` or which ever GPIO pin you choose
