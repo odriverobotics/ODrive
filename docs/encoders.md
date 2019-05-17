@@ -122,7 +122,7 @@ If you are using SPI, connect to CLK, and CS pins, look for a signal like this:
 ## Encoder Noise
 Noise is found in all circuits, life is just about figuring out if it is preventing your system from working. Lots of users have no problems with noise interferring with their odrive operation, others will tell you "_I've been using the same encoder as you with no problems_". Power to 'em, that may be true, but it doesn't mean it will work for you. If you are concerned about noise, there are several possible sources:
 
-* Encoder wires may be too close to motor wires
+* Importantly, encoder wires may be too close to motor wires, avoid overlap as much as possible
 * Long wires between encoder and ODrive
 * Use of ribbon cable
 
