@@ -87,25 +87,22 @@ and now see if after a reboot you can run:
 
 without getting errors. 
 
-## Encoder Problems
-
-There are several issues that may prevent you from completing encoder calibration. 
-
-ODrive may not complete the calibrate sequence when you go to:
+## What happens if calibration fails
+There are subtle ways that encoder problems will impact your ODrive. For example, ODrive may not complete the calibrate sequence when you go to:
 * `<axis>.requested_state = AXIS_STATE_FULL_CALIBRATION_SEQUENCE`
 
-It completes the calibrate sequence after:
+Or, ODrive may complete the calibrate sequence after:
 * `<axis>.requested_state = AXIS_STATE_FULL_CALIBRATION_SEQUENCE`
 
-but fails after you go to:
-* `odrvN.axisN.requested_state = AXIS_STATE_CLOSED_LOOP_CONTROL`
+but then it fails after you go to:
+* `<axis>.requested_state = AXIS_STATE_CLOSED_LOOP_CONTROL`
 
-Or maybe it vibrates in an entertaining way. See:
+Or ODrive may just vibrate in an entertaining way. See:
 https://www.youtube.com/watch?v=gaRUmwvSyAs
 
-## Encoder Signals
-
-If your encoder is properly connected, run the command:
+## Encoder Testing
+There are things you can test to make sure your encoder is properly connected. 
+This run the command:
 * `<axis>.encoder.shadow_count `
 
 and look at your value. Then turn your motor by hand and see if that value changes. Also, notice that the command:
