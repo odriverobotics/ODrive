@@ -40,7 +40,7 @@ Below are the steps to do the one-time calibration and configuration. Note that 
 
 That's it, now on every reboot the motor will turn in one direction until it finds the encoder index.
 
-* If you wish to scan for the index pulse in the other direction (if for example your axis usually starts close to a hard-stop), you can set a negative value in `<axis>.encoder.config.idx_search_speed`.
+* If you wish to scan for the index pulse in the other direction, that feature is currently undocumented.
 * If your motor has problems reaching the index location due to the mechanical load, you can increase `<axis>.motor.config.calibration_current`.
 
 ### Startup sequence notes
