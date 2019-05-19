@@ -41,3 +41,5 @@ tup.config
 /_site
 /.bundle
 
+
+*.exe

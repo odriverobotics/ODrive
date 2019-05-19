@@ -19,6 +19,7 @@
                 "${workspaceRoot}/Board/v3/Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS",
                 "${workspaceRoot}/Board/v3/Middlewares/Third_Party/FreeRTOS/Source/include",
                 "${workspaceRoot}/Board/v3/Middlewares/Third_Party/FreeRTOS/Source/portable/GCC/ARM_CM4F",
+                "${workspaceFolder}/Tests",
                 "C:/Tools/doctest/doctest"
             ],
             "defines": [
@@ -32,7 +33,7 @@
                 "__packed=\"__attribute__((__packed__))\"",
                 "__GNUC__"
             ],
-            "intelliSenseMode": "clang-x64",
+            "intelliSenseMode": "gcc-x64",
             "compilerPath": "\"${ARM_GCC_ROOT}/bin/arm-none-eabi-gcc.exe\" -mthumb -mcpu=cortex-m4 -mfpu=fpv4-sp-d16 -mfloat-abi=hard -specs=nosys.specs -specs=nano.specs -u _printf_float -u _scanf_float",
             "cStandard": "c11",
             "cppStandard": "c++14"
