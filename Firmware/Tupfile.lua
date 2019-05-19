@@ -177,12 +177,14 @@ build{
         'communication/interface_can.cpp',
         'communication/interface_i2c.cpp',
         'fibre/cpp/protocol.cpp',
-        'FreeRTOS-openocd.c'
+        'FreeRTOS-openocd.c',
+        'Tests/test_runner.cpp'
     },
     includes={
         'Drivers/DRV8301',
         'MotorControl',
         'fibre/cpp/include',
-        '.'
+        '.',
+        "C:/Tools/doctest/doctest"
     }
 }

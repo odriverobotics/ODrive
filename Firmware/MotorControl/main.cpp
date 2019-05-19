@@ -106,6 +106,7 @@ void enter_dfu_mode() {
 
 extern "C" {
 int odrive_main(void);
+
 void vApplicationStackOverflowHook(xTaskHandle *pxTask, signed portCHAR *pcTaskName) {
     for (;;); // TODO: safe action
 }
@@ -125,7 +126,15 @@ void vApplicationIdleHook(void) {
 }
 }
 
+#include <doctest.h>
 int odrive_main(void) {
+
+doctest::Context context;
+
+auto vals = context.run();
+while(vals){
+
+}
 
 #if HW_VERSION_MAJOR == 3 && HW_VERSION_MINOR >= 3
     if (board_config.enable_i2c_instead_of_can) {
