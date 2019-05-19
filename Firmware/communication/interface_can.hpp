@@ -9,16 +9,23 @@
 #define CAN_CLK_HZ (42000000)
 #define CAN_CLK_MHZ (42)
 
-typedef struct {
+struct can_Message_t {
     uint32_t id = 0x000;  // 11-bit max is 0x7ff, 29-bit max is 0x1FFFFFFF
     bool isExt = false;
     bool rtr = false;
     uint8_t len = 8;
     uint8_t buf[8] = {0, 0, 0, 0, 0, 0, 0, 0};
-} can_Message_t;
+} ;
+
+struct can_Signal_t {
+    uint8_t startBit = 0;
+    uint8_t length = 16;
+    bool isIntel = true;
+    float factor = 1.0f;
+    float offset = 0.0f;
+};
 
 // Anonymous enum for defining the most common CAN baud rates
-
 enum {
     CAN_BAUD_125K   = 125000,
     CAN_BAUD_250K   = 250000,
