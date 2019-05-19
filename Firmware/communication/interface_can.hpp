@@ -135,6 +135,16 @@ void can_setSignal(can_Message_t& msg, const T& val, const uint8_t startBit, con
     }
 }
 
+template <typename T>
+T can_getSignal(can_Message_t msg, const can_Signal_t& signal) {
+    return can_getSignal<T>(msg, signal.startBit, signal.length, signal.isIntel, signal.factor, signal.offset);
+}
+
+template <typename T>
+void can_setSignal(can_Message_t& msg, const T& val, const can_Signal_t& signal) {
+    can_setSignal(msg, val, signal.startBit, signal.length, signal.isIntel, signal.factor, signal.offset);
+}
+
 DEFINE_ENUM_FLAG_OPERATORS(ODriveCAN::Error_t)
 
 #endif  // __INTERFACE_CAN_HPP

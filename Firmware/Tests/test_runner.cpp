@@ -81,21 +81,26 @@ void can_setSignal(can_Message_t& msg, const T& val, const uint8_t startBit, con
     }
 }
 
-// template<typename T>
-// T can_getSignal(can_Message_t msg, can_Signal_t signal){
-//     return can_getSignal(msg, signal.startBit, signal.length, signal.isIntel, signal.factor, signal.offset);
-// }
+template <typename T>
+T can_getSignal(can_Message_t msg, const can_Signal_t& signal) {
+    return can_getSignal<T>(msg, signal.startBit, signal.length, signal.isIntel, signal.factor, signal.offset);
+}
 
-TEST_CASE("fake"){
+template <typename T>
+void can_setSignal(can_Message_t& msg, const T& val, const can_Signal_t& signal) {
+    can_setSignal(msg, val, signal.startBit, signal.length, signal.isIntel, signal.factor, signal.offset);
+}
+
+TEST_CASE("fake") {
     cout << endl;
 }
 
 TEST_SUITE("CAN Functions") {
     TEST_CASE("reverse") {
         can_Message_t rxmsg;
-        rxmsg.id = 0x000;
+        rxmsg.id    = 0x000;
         rxmsg.isExt = false;
-        rxmsg.len = 8;
+        rxmsg.len   = 8;
 
         rxmsg.buf[0] = 0x12;
         rxmsg.buf[1] = 0x34;
