@@ -6,8 +6,8 @@
 class CANSimple {
    public:
     enum {
-        MSG_CO_NMT_CTRL = 0x000,         // CANOpen NMT Message REC
-        MSG_CO_HEARTBEAT_CMD = 0x700,    // CANOpen NMT Heartbeat  SEND
+        MSG_CO_NMT_CTRL = 0x000,       // CANOpen NMT Message REC
+        MSG_CO_HEARTBEAT_CMD = 0x700,  // CANOpen NMT Heartbeat  SEND
         MSG_ODRIVE_HEARTBEAT = 0x001,
         MSG_ODRIVE_ESTOP,
         MSG_GET_MOTOR_ERROR,  // Errors
@@ -33,49 +33,67 @@ class CANSimple {
         MSG_GET_VBUS_VOLTAGE,
     };
 
-    static void handle_can_message(CAN_message_t& msg);
+    static void handle_can_message(can_Message_t& msg);
     static void send_heartbeat(Axis* axis);
 
    private:
-    static void nmt_callback(Axis* axis, CAN_message_t& msg);
-    static void estop_callback(Axis* axis, CAN_message_t& msg);
-    static void get_motor_error_callback(Axis* axis, CAN_message_t& msg);
-    static void get_encoder_error_callback(Axis* axis, CAN_message_t& msg);
-    static void get_controller_error_callback(Axis* axis, CAN_message_t& msg);
-    static void get_sensorless_error_callback(Axis* axis, CAN_message_t& msg);
-    static void set_axis_nodeid_callback(Axis* axis, CAN_message_t& msg);
-    static void set_axis_requested_state_callback(Axis* axis, CAN_message_t& msg);
-    static void set_axis_startup_config_callback(Axis* axis, CAN_message_t& msg);
-    static void get_encoder_estimates_callback(Axis* axis, CAN_message_t& msg);
-    static void get_encoder_count_callback(Axis* axis, CAN_message_t& msg);
-    static void move_to_pos_callback(Axis* axis, CAN_message_t& msg);
-    static void set_pos_setpoint_callback(Axis* axis, CAN_message_t& msg);
-    static void set_vel_setpoint_callback(Axis* axis, CAN_message_t& msg);
-    static void set_current_setpoint_callback(Axis* axis, CAN_message_t& msg);
-    static void set_vel_limit_callback(Axis* axis, CAN_message_t& msg);
-    static void start_anticogging_callback(Axis* axis, CAN_message_t& msg);
-    static void set_traj_vel_limit_callback(Axis* axis, CAN_message_t& msg);
-    static void set_traj_accel_limits_callback(Axis* axis, CAN_message_t& msg);
-    static void set_traj_A_per_css_callback(Axis* axis, CAN_message_t& msg);
-    static void get_iq_callback(Axis* axis, CAN_message_t& msg);
-    static void get_sensorless_estimates_callback(Axis* axis, CAN_message_t& msg);
-    static void get_vbus_voltage_callback(Axis* axis, CAN_message_t& msg);
-
+    static void nmt_callback(Axis* axis, can_Message_t& msg);
+    static void estop_callback(Axis* axis, can_Message_t& msg);
+    static void get_motor_error_callback(Axis* axis, can_Message_t& msg);
+    static void get_encoder_error_callback(Axis* axis, can_Message_t& msg);
+    static void get_controller_error_callback(Axis* axis, can_Message_t& msg);
+    static void get_sensorless_error_callback(Axis* axis, can_Message_t& msg);
+    static void set_axis_nodeid_callback(Axis* axis, can_Message_t& msg);
+    static void set_axis_requested_state_callback(Axis* axis, can_Message_t& msg);
+    static void set_axis_startup_config_callback(Axis* axis, can_Message_t& msg);
+    static void get_encoder_estimates_callback(Axis* axis, can_Message_t& msg);
+    static void get_encoder_count_callback(Axis* axis, can_Message_t& msg);
+    static void move_to_pos_callback(Axis* axis, can_Message_t& msg);
+    static void set_pos_setpoint_callback(Axis* axis, can_Message_t& msg);
+    static void set_vel_setpoint_callback(Axis* axis, can_Message_t& msg);
+    static void set_current_setpoint_callback(Axis* axis, can_Message_t& msg);
+    static void set_vel_limit_callback(Axis* axis, can_Message_t& msg);
+    static void start_anticogging_callback(Axis* axis, can_Message_t& msg);
+    static void set_traj_vel_limit_callback(Axis* axis, can_Message_t& msg);
+    static void set_traj_accel_limits_callback(Axis* axis, can_Message_t& msg);
+    static void set_traj_A_per_css_callback(Axis* axis, can_Message_t& msg);
+    static void get_iq_callback(Axis* axis, can_Message_t& msg);
+    static void get_sensorless_estimates_callback(Axis* axis, can_Message_t& msg);
+    static void get_vbus_voltage_callback(Axis* axis, can_Message_t& msg);
 
     // Utility functions
     static uint8_t get_node_id(uint32_t msgID);
     static uint8_t get_cmd_id(uint32_t msgID);
 
-    static int16_t get_16bit_val(CAN_message_t& msg, uint8_t start_byte);
-    static int32_t get_32bit_val(CAN_message_t& msg, uint8_t start_byte);
-    static float get_float(CAN_message_t& msg, uint8_t start_byte);
+    // Fetch a specific signal from the message
 
     // This functional way of handling the messages is neat and is much cleaner from
     // a data security point of view, but it will require some tweaking
     //
-    // const std::map<uint32_t, std::function<void(CAN_message_t&)>> callback_map = {
+    // const std::map<uint32_t, std::function<void(can_Message_t&)>> callback_map = {
     //     {0x000, std::bind(&CANSimple::heartbeat_callback, this, _1)}
     // };
 };
+
+
+#include <iterator>
+template <typename T>
+T can_getSignal(can_Message_t msg, uint8_t startBit, uint8_t length, bool isIntel, float factor, float offset) {
+    uint64_t tempVal = 0;
+    uint64_t mask = (1ULL << length) - 1;
+
+    if (isIntel) {
+        std::memcpy(&tempVal, msg.buf, sizeof(tempVal));
+        tempVal = (tempVal >> startBit) & mask;
+    } else {
+        std::reverse(std::begin(msg.buf), std::end(msg.buf));
+        std::memcpy(&tempVal, msg.buf, sizeof(tempVal));
+        tempVal = (tempVal >> (64 - startBit - length)) & mask;
+    }
+
+    T retVal;
+    std::memcpy(&retVal, &tempVal, sizeof(T));
+    return static_cast<T>((retVal * factor) + offset);
+}
 
 #endif

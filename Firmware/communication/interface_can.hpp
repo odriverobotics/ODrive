@@ -15,7 +15,7 @@ typedef struct {
     bool rtr = false;
     uint8_t len = 8;
     uint8_t buf[8] = {0, 0, 0, 0, 0, 0, 0, 0};
-} CAN_message_t;
+} can_Message_t;
 
 // Anonymous enum for defining the most common CAN baud rates
 
@@ -59,8 +59,8 @@ class ODriveCAN {
 
     // I/O Functions
     uint32_t available();
-    uint32_t write(CAN_message_t &txmsg);
-    bool read(CAN_message_t &rxmsg);
+    uint32_t write(can_Message_t &txmsg);
+    bool read(can_Message_t &rxmsg);
 
     // Communication Protocol Handling
     auto make_protocol_definitions() {

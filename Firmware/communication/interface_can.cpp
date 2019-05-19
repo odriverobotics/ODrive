@@ -26,7 +26,7 @@ void ODriveCAN::can_server_thread() {
     for (;;) {
         uint32_t status = HAL_CAN_GetError(handle_);
         if (status == HAL_CAN_ERROR_NONE) {
-            CAN_message_t rxmsg;
+            can_Message_t rxmsg;
 
             osSemaphoreWait(sem_can, 10);  // Poll every 10ms regardless of sempahore status
             while (available()) {
@@ -86,7 +86,7 @@ bool ODriveCAN::start_can_server() {
 }
 
 // Send a CAN message on the bus
-uint32_t ODriveCAN::write(CAN_message_t &txmsg) {
+uint32_t ODriveCAN::write(can_Message_t &txmsg) {
     if (HAL_CAN_GetError(handle_) == HAL_CAN_ERROR_NONE) {
         CAN_TxHeaderTypeDef header;
         header.StdId = txmsg.id;
@@ -110,7 +110,7 @@ uint32_t ODriveCAN::available() {
     return (HAL_CAN_GetRxFifoFillLevel(handle_, CAN_RX_FIFO0) + HAL_CAN_GetRxFifoFillLevel(handle_, CAN_RX_FIFO1));
 }
 
-bool ODriveCAN::read(CAN_message_t &rxmsg) {
+bool ODriveCAN::read(can_Message_t &rxmsg) {
     CAN_RxHeaderTypeDef header;
     bool validRead = false;
     if (HAL_CAN_GetRxFifoFillLevel(handle_, CAN_RX_FIFO0) > 0) {

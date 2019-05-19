@@ -53,7 +53,18 @@
 			"chrono": "cpp",
 			"condition_variable": "cpp",
 			"future": "cpp",
-			"arm_math.h": "c"
+			"arm_math.h": "c",
+			"iostream": "cpp",
+			"cmath": "cpp",
+			"csignal": "cpp",
+			"cstdarg": "cpp",
+			"cstddef": "cpp",
+			"ctime": "cpp",
+			"unordered_map": "cpp",
+			"fstream": "cpp",
+			"iomanip": "cpp",
+			"optional": "cpp",
+			"sstream": "cpp"
 		}
 	}
 }
