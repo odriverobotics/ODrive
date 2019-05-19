@@ -177,8 +177,7 @@ build{
         'communication/interface_can.cpp',
         'communication/interface_i2c.cpp',
         'fibre/cpp/protocol.cpp',
-        'FreeRTOS-openocd.c',
-        'Tests/test_runner.cpp'
+        'FreeRTOS-openocd.c'
     },
     includes={
         'Drivers/DRV8301',
