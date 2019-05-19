@@ -86,6 +86,55 @@ class ODriveCAN {
     void set_baud_rate(uint32_t baudRate);
 };
 
+#include <iterator>
+template <typename T>
+T can_getSignal(can_Message_t msg, const uint8_t startBit, const uint8_t length, const bool isIntel, const float factor, const float offset) {
+    uint64_t tempVal = 0;
+    uint64_t mask = (1ULL << length) - 1;
+
+    if (isIntel) {
+        std::memcpy(&tempVal, msg.buf, sizeof(tempVal));
+        tempVal = (tempVal >> startBit) & mask;
+    } else {
+        std::reverse(std::begin(msg.buf), std::end(msg.buf));
+        std::memcpy(&tempVal, msg.buf, sizeof(tempVal));
+        tempVal = (tempVal >> (64 - startBit - length)) & mask;
+    }
+
+    T retVal;
+    std::memcpy(&retVal, &tempVal, sizeof(T));
+    return static_cast<T>((retVal * factor) + offset);
+}
+
+template <typename T>
+void can_setSignal(can_Message_t& msg, const T& val, const uint8_t startBit, const uint8_t length, const bool isIntel, const float factor, const float offset) {
+    T scaledVal = (val - offset) / factor;
+    uint64_t valAsBits = 0;
+    std::memcpy(&valAsBits, &scaledVal, sizeof(scaledVal));
+
+    uint64_t mask = (1ULL << length) - 1;
+
+    if (isIntel) {
+        uint64_t data = 0;
+        std::memcpy(&data, msg.buf, sizeof(data));
+
+        data &= ~(mask << startBit);
+        data |= valAsBits << startBit;
+
+        std::memcpy(msg.buf, &data, sizeof(data));
+    } else {
+        uint64_t data = 0;
+        std::reverse(std::begin(msg.buf), std::end(msg.buf));
+        std::memcpy(&data, msg.buf, sizeof(data));
+
+        data &= ~(mask << (64 - startBit - length));
+        data |= valAsBits << (64 - startBit - length);
+
+        std::memcpy(msg.buf, &data, sizeof(data));
+        std::reverse(std::begin(msg.buf), std::end(msg.buf));
+    }
+}
+
 DEFINE_ENUM_FLAG_OPERATORS(ODriveCAN::Error_t)
 
 #endif  // __INTERFACE_CAN_HPP

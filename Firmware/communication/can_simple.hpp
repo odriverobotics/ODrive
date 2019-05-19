@@ -76,24 +76,7 @@ class CANSimple {
 };
 
 
-#include <iterator>
-template <typename T>
-T can_getSignal(can_Message_t msg, uint8_t startBit, uint8_t length, bool isIntel, float factor, float offset) {
-    uint64_t tempVal = 0;
-    uint64_t mask = (1ULL << length) - 1;
 
-    if (isIntel) {
-        std::memcpy(&tempVal, msg.buf, sizeof(tempVal));
-        tempVal = (tempVal >> startBit) & mask;
-    } else {
-        std::reverse(std::begin(msg.buf), std::end(msg.buf));
-        std::memcpy(&tempVal, msg.buf, sizeof(tempVal));
-        tempVal = (tempVal >> (64 - startBit - length)) & mask;
-    }
 
-    T retVal;
-    std::memcpy(&retVal, &tempVal, sizeof(T));
-    return static_cast<T>((retVal * factor) + offset);
-}
 
 #endif
