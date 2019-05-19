@@ -18,11 +18,11 @@ struct can_Message_t {
 } ;
 
 struct can_Signal_t {
-    uint8_t startBit = 0;
-    uint8_t length = 16;
-    bool isIntel = true;
-    float factor = 1.0f;
-    float offset = 0.0f;
+    const uint8_t startBit;
+    const uint8_t length;
+    const bool isIntel;
+    const float factor;
+    const float offset;
 };
 
 // Anonymous enum for defining the most common CAN baud rates
