@@ -34,13 +34,13 @@ You tried to run a state before you are allowed to. Typically you tried to run e
 
 Confirm that your power leads are connected securely. For initial testing a 12V PSU which can supply a couple of amps should be sufficient while the use of low current 'wall wart' plug packs may lead to inconsistent behaviour and is not recommended. 
 
-You can monitor your PUS voltage using liveplotter in odrive tool by entering `start_liveplotter(lambda: [odrv0.vbus_voltage])`. If you see your votlage drop below ~ 8V then you will trip this error. Even a relatively small motor can draw multiple kW momentary and so unless you have a very large PSU or are running of a battery you may encounter this error when executing high speed movements with a high current limit. To limit your PSU power draw you can limit your motor current and/or velocity limit `odrv0.axis0.controller.config.vel_limit` and `odrv0.axis0.motor.config.current_lim`.
+You can monitor your PSU voltage using liveplotter in odrive tool by entering `start_liveplotter(lambda: [odrv0.vbus_voltage])`. If you see your votlage drop below ~ 8V then you will trip this error. Even a relatively small motor can draw multiple kW momentary and so unless you have a very large PSU or are running of a battery you may encounter this error when executing high speed movements with a high current limit. To limit your PSU power draw you can limit your motor current and/or velocity limit `odrv0.axis0.controller.config.vel_limit` and `odrv0.axis0.motor.config.current_lim`.
 
 * `ERROR_DC_BUS_OVER_VOLTAGE = 0x04`
 
 Confirm that you have a brake resistor of the correct value connected securly and that `odrv0.config.brake_resistance` is set to the value of your brake resistor. 
 
-You can monitor your PUS voltage using liveplotter in odrive tool by entering `start_liveplotter(lambda: [odrv0.vbus_voltage])`. If during a move you see the voltage rise above your PSU's nominal set voltage then you have your brake resistance set too low. This may happen if you are using long wires or small gauge wires to connect your brake resistor to your odrive which will added extra resistance. This extra resistance needs to be accounted for to prevent this voltage spike. If you have checked all your connections you can also try increasing your brake resistance by ~ 0.01 Ohm at a time to a maximum of 0.05 greater than your brake resistor value.
+You can monitor your PSU voltage using liveplotter in odrive tool by entering `start_liveplotter(lambda: [odrv0.vbus_voltage])`. If during a move you see the voltage rise above your PSU's nominal set voltage then you have your brake resistance set too low. This may happen if you are using long wires or small gauge wires to connect your brake resistor to your odrive which will added extra resistance. This extra resistance needs to be accounted for to prevent this voltage spike. If you have checked all your connections you can also try increasing your brake resistance by ~ 0.01 Ohm at a time to a maximum of 0.05 greater than your brake resistor value.
 
 ## Common Motor Errors 
 
