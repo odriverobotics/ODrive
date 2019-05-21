@@ -35,7 +35,7 @@ public:
         bool setpoints_in_cpr = false;
 
         float pattern_scale = 1000.0f; // [count]
-        float pattern_vel_ramp_rate = 0.2f; //[rad/s^2]
+        float pattern_vel_ramp_rate = 0.5f; //[rad/s^2]
     };
 
     explicit Controller(Config_t& config);
@@ -122,7 +122,8 @@ public:
                 make_protocol_property("vel_limit_tolerance", &config_.vel_limit_tolerance),
                 make_protocol_property("vel_ramp_rate", &config_.vel_ramp_rate),
                 make_protocol_property("setpoints_in_cpr", &config_.setpoints_in_cpr),
-                make_protocol_property("pattern_scale", &config_.pattern_scale)
+                make_protocol_property("pattern_scale", &config_.pattern_scale),
+                make_protocol_property("pattern_vel_ramp_rate", &config_.pattern_vel_ramp_rate)
             ),
             make_protocol_function("set_pos_setpoint", *this, &Controller::set_pos_setpoint,
                 "pos_setpoint", "vel_feed_forward", "current_feed_forward"),
