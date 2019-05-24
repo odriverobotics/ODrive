@@ -181,6 +181,10 @@ public:
     bool run_closed_loop_control_loop();
     bool run_idle_loop();
 
+    constexpr uint32_t get_watchdog_reset() {
+        return static_cast<uint32_t>(std::clamp<float>(config_.watchdog_timeout, 0, UINT32_MAX / (current_meas_hz + 1)) * current_meas_hz);
+    }
+
     void run_state_machine_loop();
 
     const AxisHardwareConfig_t& hw_config_;
@@ -212,7 +216,6 @@ public:
     LockinState_t lockin_state_ = LOCKIN_STATE_INACTIVE;
 
     // watchdog
-    uint32_t watchdog_reset_value_ = 0; //computed from config_.watchdog_timeout in update_watchdog_settings()
     uint32_t watchdog_current_value_= 0;
 
     // Communication protocol definitions
@@ -232,8 +235,7 @@ public:
                 make_protocol_property("startup_sensorless_control", &config_.startup_sensorless_control),
                 make_protocol_property("enable_step_dir", &config_.enable_step_dir),
                 make_protocol_property("counts_per_step", &config_.counts_per_step),
-                make_protocol_property("watchdog_timeout", &config_.watchdog_timeout,
-                    [](void* ctx) { static_cast<Axis*>(ctx)->update_watchdog_settings(); }, this),
+                make_protocol_property("watchdog_timeout", &config_.watchdog_timeout),
                 make_protocol_property("step_gpio_pin", &config_.step_gpio_pin,
                     [](void* ctx) { static_cast<Axis*>(ctx)->decode_step_dir_pins(); }, this),
                 make_protocol_property("dir_gpio_pin", &config_.dir_gpio_pin,
