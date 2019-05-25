@@ -445,8 +445,8 @@ bool Encoder::update() {
             if(abs_spi_pos_updated_ == false && abs_spi_pos_init_once_){
                 // Low pass filter the error
                 spi_error_rate_ += current_meas_period * (1.0f - spi_error_rate_);
-                if (spi_error_rate_ > 0.005f)
-                    set_error(ERROR_ABS_SPI_COM_FAIL);
+                // if (spi_error_rate_ > 0.005f)
+                //     set_error(ERROR_ABS_SPI_COM_FAIL);
             }
             else
                 // Low pass filter the error

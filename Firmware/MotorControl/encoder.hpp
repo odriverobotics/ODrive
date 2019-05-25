@@ -133,8 +133,8 @@ public:
             make_protocol_ro_property("vel_estimate", &vel_estimate_),
             make_protocol_ro_property("calib_scan_response", &calib_scan_response_),
             make_protocol_property("pos_abs", &pos_abs_),
-            // make_protocol_property("pll_kp", &pll_kp_),
-            // make_protocol_property("pll_ki", &pll_ki_),
+            make_protocol_ro_property("spi_error_rate", &spi_error_rate_),
+
             make_protocol_object("config",
                 make_protocol_property("mode", &config_.mode,
                     [](void* ctx) { static_cast<Encoder*>(ctx)->abs_spi_init(); }, this),
