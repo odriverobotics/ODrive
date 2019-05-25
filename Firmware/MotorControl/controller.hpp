@@ -56,6 +56,8 @@ public:
         float input_filter_bandwidth = 2.0f; // [1/s]
         float homing_speed = 2000.0f;   // [counts/s]
         Anticogging_t anticogging;
+        float gain_scheduling_width = 10.0f;
+        bool enable_gain_scheduling = false;
     };
 
     explicit Controller(Config_t& config);
@@ -120,6 +122,8 @@ public:
             make_protocol_ro_property("trajectory_done", &trajectory_done_),
             make_protocol_property("vel_integrator_current", &vel_integrator_current_),
             make_protocol_property("anticogging_valid", &anticogging_valid_),
+            make_protocol_property("gain_scheduling_width", &config_.gain_scheduling_width),
+            make_protocol_property("enable_gain_scheduling", &config_.enable_gain_scheduling),
             make_protocol_object("config",
                 make_protocol_property("control_mode", &config_.control_mode),
                 make_protocol_property("input_mode", &config_.input_mode),

@@ -181,6 +181,7 @@ bool Controller::update(float pos_estimate, float vel_estimate, float* current_s
 
     // Position control
     // TODO Decide if we want to use encoder or pll position here
+    float gain_scheduling_multiplier = 1.0f;
     float vel_des = vel_setpoint_;
     if (config_.control_mode >= CTRL_MODE_POSITION_CONTROL) {
         float pos_err;
@@ -197,6 +198,11 @@ bool Controller::update(float pos_estimate, float vel_estimate, float* current_s
             pos_err = pos_setpoint_ - pos_estimate;
         }
         vel_des += config_.pos_gain * pos_err;
+                // V-shaped gain shedule based on position error
+        float abs_pos_err = fabsf(pos_err);
+        if (config_.enable_gain_scheduling && abs_pos_err <= config_.gain_scheduling_width) {
+            gain_scheduling_multiplier = abs_pos_err / config_.gain_scheduling_width;
+        }
     }
 
     // Velocity limiting
@@ -224,7 +230,7 @@ bool Controller::update(float pos_estimate, float vel_estimate, float* current_s
 
     float v_err = vel_des - vel_estimate;
     if (config_.control_mode >= CTRL_MODE_VELOCITY_CONTROL) {
-        Iq += config_.vel_gain * v_err;
+        Iq += (config_.vel_gain * gain_scheduling_multiplier) * v_err;
     }
 
     // Velocity integral action before limiting
@@ -251,7 +257,7 @@ bool Controller::update(float pos_estimate, float vel_estimate, float* current_s
             // TODO make decayfactor configurable
             vel_integrator_current_ *= 0.99f;
         } else {
-            vel_integrator_current_ += (config_.vel_integrator_gain * current_meas_period) * v_err;
+            vel_integrator_current_ += ((config_.vel_integrator_gain * gain_scheduling_multiplier) * current_meas_period) * v_err;
         }
     }
 
