@@ -33,9 +33,9 @@ public:
     };
 
     typedef struct {
-        int index = 0;
+        uint32_t index = 0;
         float cogging_map[3600];
-        bool use_anticogging = false;
+        bool anticogging_valid = false;
         bool calib_anticogging = false;
         float calib_pos_threshold = 1.0f;
         float calib_vel_threshold = 1.0f;
@@ -131,6 +131,14 @@ public:
                 make_protocol_property("inertia", &config_.inertia),
                 make_protocol_property("input_filter_bandwidth", &config_.input_filter_bandwidth,
                     [](void* ctx) { static_cast<Controller*>(ctx)->update_filter_gains(); }, this)
+                make_protocol_object("anticogging",
+                    make_protocol_ro_property("index", &config_.anticogging.index),
+                    make_protocol_property("anticogging_valid", &config_.anticogging.anticogging_valid),
+                    make_protocol_ro_property("calib_anticogging", &config_.anticogging.calib_anticogging),
+                    make_protocol_property("calib_pos_threshold", &config_.anticogging.calib_pos_threshold),
+                    make_protocol_property("calib_vel_threshold", &config_.anticogging.calib_vel_threshold),
+                    make_protocol_ro_property("cogging_ratio", &config_.anticogging.cogging_ratio)
+                )
             ),
             make_protocol_function("move_incremental", *this, &Controller::move_incremental, "displacement", "from_goal_point"),
             make_protocol_function("start_anticogging_calibration", *this, &Controller::start_anticogging_calibration),

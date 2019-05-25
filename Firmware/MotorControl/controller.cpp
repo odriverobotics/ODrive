@@ -84,7 +84,7 @@ bool Controller::anticogging_calibration(float pos_estimate, float vel_estimate)
         float pos_err = config_.anticogging.index - pos_estimate;
         if (fabsf(pos_err) <= config_.anticogging.calib_pos_threshold &&
             fabsf(vel_estimate) < config_.anticogging.calib_vel_threshold) {
-            config_.anticogging.cogging_map[std::clamp(config_.anticogging.index++, 0, 3600)] = vel_integrator_current_;
+            config_.anticogging.cogging_map[std::clamp<uint32_t>(config_.anticogging.index++, 0, 3600)] = vel_integrator_current_;
         }
         if (config_.anticogging.index < 3600) {
             config_.control_mode = CTRL_MODE_POSITION_CONTROL;
@@ -116,7 +116,7 @@ void Controller::update_filter_gains() {
 bool Controller::update(float pos_estimate, float vel_estimate, float* current_setpoint_output) {
     // Only runs if config_.anticogging.calib_anticogging is true; non-blocking
     anticogging_calibration(pos_estimate, vel_estimate);
-    float anticogging_pos = pos_estimate / config_.anticogging.cogging_ratio;
+    float anticogging_pos = pos_estimate / axis_->encoder_.getCoggingRatio();
 
     // Update inputs
     switch (config_.input_mode) {
@@ -218,7 +218,7 @@ bool Controller::update(float pos_estimate, float vel_estimate, float* current_s
     // Anti-cogging is enabled after calibration
     // We get the current position and apply a current feed-forward
     // ensuring that we handle negative encoder positions properly (-1 == motor->encoder.encoder_cpr - 1)
-    if (config_.anticogging.use_anticogging) {
+    if (config_.anticogging.anticogging_valid) {
         Iq += config_.anticogging.cogging_map[std::clamp(mod(static_cast<int>(anticogging_pos), axis_->encoder_.config_.cpr), 0, 3600)];
     }
 
