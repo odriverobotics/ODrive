@@ -99,10 +99,6 @@ void Encoder::set_linear_count(int32_t count) {
     cpu_exit_critical(prim);
 }
 
-void Encoder::cpr_changed_callback(){
-    axis_->controller_.config_.anticogging.cogging_ratio = config_.cpr / 3600.0f;
-}
-
 // Function that sets the CPR circular tracking encoder count to a desired 32-bit value.
 // Note that this will get mod'ed down to [0, cpr)
 void Encoder::set_circular_count(int32_t count, bool update_offset) {

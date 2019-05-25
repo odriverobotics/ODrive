@@ -5,7 +5,8 @@
 
 Controller::Controller(Config_t& config) :
     config_(config)
-{}
+{
+}
 
 void Controller::reset() {
     pos_setpoint_ = 0.0f;
@@ -90,7 +91,7 @@ bool Controller::anticogging_calibration(float pos_estimate, float vel_estimate)
             config_.anticogging.cogging_map[std::clamp<uint32_t>(config_.anticogging.index++, 0, 3600)] = vel_integrator_current_;
         }
         if (config_.anticogging.index < 3600) {
-            set_pos_setpoint(config_.anticogging.index * config_.anticogging.cogging_ratio, 0.0f, 0.0f);
+            set_pos_setpoint(config_.anticogging.index * axis_->encoder_.getCoggingRatio(), 0.0f, 0.0f);
             return false;
         } else {
             config_.anticogging.index = 0;
@@ -106,7 +107,7 @@ bool Controller::anticogging_calibration(float pos_estimate, float vel_estimate)
 bool Controller::update(float pos_estimate, float vel_estimate, float* current_setpoint_output) {
     // Only runs if config_.anticogging.calib_anticogging is true; non-blocking
     anticogging_calibration(pos_estimate, vel_estimate);
-    float anticogging_pos = pos_estimate / config_.anticogging.cogging_ratio;
+    float anticogging_pos = pos_estimate / axis_->encoder_.getCoggingRatio();
 
     // Trajectory control
     if (config_.control_mode == CTRL_MODE_TRAJECTORY_CONTROL) {
