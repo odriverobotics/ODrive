@@ -30,6 +30,15 @@ struct can_Signal_t {
     const float offset;
 };
 
+enum InputMode_t {
+    INPUT_MODE_INACTIVE,
+    INPUT_MODE_PASSTHROUGH,
+    INPUT_MODE_VEL_RAMP,
+    INPUT_MODE_POS_FILTER,
+    INPUT_MODE_MIX_CHANNELS,
+    INPUT_MODE_TRAP_TRAJ,
+};
+
 // Fetch a specific signal from the message
 template <typename T>
 T can_getSignal(can_Message_t msg, const uint8_t startBit, const uint8_t length, const bool isIntel, const float factor, const float offset) {
@@ -149,5 +158,13 @@ TEST_SUITE("CAN Functions") {
 
         can_setSignal<float>(txmsg, 234981.0f, 12, 32, false, 2.0f, 1.1f);
         CHECK(can_getSignal<float>(txmsg, 12, 32, false, 2.0f, 1.1f) == 234981.0f);
+    }
+
+    TEST_CASE("getSignal enums") {
+        can_Message_t rxmsg;
+        rxmsg.buf[0] = INPUT_MODE_MIX_CHANNELS;
+        rxmsg.buf[1] = INPUT_MODE_PASSTHROUGH;
+        CHECK(can_getSignal<InputMode_t>(rxmsg, 0, 8, true, 1, 0) == INPUT_MODE_MIX_CHANNELS);
+        CHECK(can_getSignal<InputMode_t>(rxmsg, 8, 8, true, 1, 0) == INPUT_MODE_PASSTHROUGH);
     }
 }
