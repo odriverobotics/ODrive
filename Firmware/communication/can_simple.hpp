@@ -7,8 +7,7 @@ class CANSimple {
    public:
     enum {
         MSG_CO_NMT_CTRL = 0x000,       // CANOpen NMT Message REC
-        MSG_CO_HEARTBEAT_CMD = 0x700,  // CANOpen NMT Heartbeat  SEND
-        MSG_ODRIVE_HEARTBEAT = 0x001,
+        MSG_ODRIVE_HEARTBEAT,
         MSG_ODRIVE_ESTOP,
         MSG_GET_MOTOR_ERROR,  // Errors
         MSG_GET_ENCODER_ERROR,
@@ -18,10 +17,10 @@ class CANSimple {
         MSG_SET_AXIS_STARTUP_CONFIG,
         MSG_GET_ENCODER_ESTIMATES,
         MSG_GET_ENCODER_COUNT,
-        MSG_MOVE_TO_POS,
-        MSG_SET_POS_SETPOINT,
-        MSG_SET_VEL_SETPOINT,
-        MSG_SET_CUR_SETPOINT,
+        MSG_SET_CONTROLLER_MODES,
+        MSG_SET_INPUT_POS,
+        MSG_SET_INPUT_VEL,
+        MSG_SET_INPUT_CURRENT,
         MSG_SET_VEL_LIMIT,
         MSG_START_ANTICOGGING,
         MSG_SET_TRAJ_VEL_LIMIT,
@@ -31,6 +30,7 @@ class CANSimple {
         MSG_GET_SENSORLESS_ESTIMATES,
         MSG_RESET_ODRIVE,
         MSG_GET_VBUS_VOLTAGE,
+        MSG_CO_HEARTBEAT_CMD = 0x700,  // CANOpen NMT Heartbeat  SEND
     };
 
     static void handle_can_message(can_Message_t& msg);
@@ -48,10 +48,10 @@ class CANSimple {
     static void set_axis_startup_config_callback(Axis* axis, can_Message_t& msg);
     static void get_encoder_estimates_callback(Axis* axis, can_Message_t& msg);
     static void get_encoder_count_callback(Axis* axis, can_Message_t& msg);
-    static void move_to_pos_callback(Axis* axis, can_Message_t& msg);
-    static void set_pos_setpoint_callback(Axis* axis, can_Message_t& msg);
-    static void set_vel_setpoint_callback(Axis* axis, can_Message_t& msg);
-    static void set_current_setpoint_callback(Axis* axis, can_Message_t& msg);
+    static void set_input_pos_callback(Axis* axis, can_Message_t& msg);
+    static void set_input_vel_callback(Axis* axis, can_Message_t& msg);
+    static void set_input_current_callback(Axis* axis, can_Message_t& msg);
+    static void set_controller_modes_callback(Axis* axis, can_Message_t& msg);
     static void set_vel_limit_callback(Axis* axis, can_Message_t& msg);
     static void start_anticogging_callback(Axis* axis, can_Message_t& msg);
     static void set_traj_vel_limit_callback(Axis* axis, can_Message_t& msg);

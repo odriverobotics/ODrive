@@ -46,10 +46,10 @@ CMD ID | Name | Sender | Signals | Start byte
 0x008 | Set Axis Startup Config | Master | - Not yet implemented - | -
 0x009 | Get Encoder Estimates\* | Master | Encoder Pos Estimate<br>Encoder Vel Estimate | 0<br>4
 0x00A | Get Encoder Count\* | Master | Encoder Shadow Count<br>Encoder Count in CPR | 0<br>4
-0x00B | Move To Pos | Master | Goal Position | 0
-0x00C | Set Pos Setpoint | Master | Pos Setpoint<br>Vel FF<br>Current FF | 0<br>4<br>6
-0x00D | Set Vel Setpoint | Master | Vel Setpoint<br>Current FF | 0<br>4
-0x00E | Set Current Setpoint | Master | Current Setpoint | 0
+0x00B | Set Controller Modes | Master | Control Mode<br>Input Mode | 0<br>4
+0x00C | Set Input Pos | Master | Input Pos<br>Vel FF<br>Current FF | 0<br>4<br>6
+0x00D | Set Input Vel | Master | Input Current<br>Current FF | 0<br>4
+0x00E | Set Input Current | Master | Input Current | 0
 0x00F | Set Velocity Limit | Master | Velocity Limit | 0
 0x010 | Start Anticogging | Master | - | -
 0x011 | Set Traj Vel Limit | Master | Traj Vel Limit | 0
@@ -79,12 +79,13 @@ Encoder Pos Estimate | IEEE 754 Float | 32 | 1 | 0 | Intel
 Encoder Vel Estimate | IEEE 754 Float | 32 | 1 | 0 | Intel
 Encoder Shadow Count | Signed Int | 32 | 1 | 0 | Intel
 Encoder Count In CPR | Signed Int | 32 | 1 | 0 | Intel
-Goal Position | Signed Int | 32 | 1 | 0 | Intel
-Pos Setpoint | Signed Int | 32 | 1 | 0 | Intel
+Control Mode | Signed Int | 32 | 1 | 0 | Intel
+Input Mode | Signed Int | 32 | 1 | 0 | Intel
+Input Pos | Signed Int | 32 | 1 | 0 | Intel
 Vel FF | Signed Int | 16 | 0.1 | 0 | Intel
 Current FF | Signed Int | 16 | 0.01 | 0 | Intel
-Vel Setpoint | Signed Int | 32 | 0.01 | 0 | Intel
-Current Setpoint | Signed Int | 32 | 0.01 | 0 | Intel
+Input Vel | Signed Int | 32 | 0.01 | 0 | Intel
+Input Current | Signed Int | 32 | 0.01 | 0 | Intel
 Velocity Limit | IEEE 754 Float | 32 | 1 | 0 | Intel
 Traj Vel Limit | IEEE 754 Float | 32 | 1 | 0 | Intel
 Traj Accel Limit | IEEE 754 Float | 32 | 1 | 0 | Intel

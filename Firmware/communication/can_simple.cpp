@@ -76,17 +76,17 @@ void CANSimple::handle_can_message(can_Message_t& msg) {
             case MSG_GET_ENCODER_COUNT:
                 get_encoder_count_callback(axis, msg);
                 break;
-            case MSG_MOVE_TO_POS:
-                move_to_pos_callback(axis, msg);
+            case MSG_SET_INPUT_POS:
+                set_input_pos_callback(axis, msg);
                 break;
-            case MSG_SET_POS_SETPOINT:
-                set_pos_setpoint_callback(axis, msg);
+            case MSG_SET_INPUT_VEL:
+                set_input_pos_callback(axis, msg);
                 break;
-            case MSG_SET_VEL_SETPOINT:
-                set_vel_setpoint_callback(axis, msg);
+            case MSG_SET_INPUT_CURRENT:
+                set_input_pos_callback(axis, msg);
                 break;
-            case MSG_SET_CUR_SETPOINT:
-                set_current_setpoint_callback(axis, msg);
+            case MSG_SET_CONTROLLER_MODES:
+                set_controller_modes_callback(axis, msg);
                 break;
             case MSG_SET_VEL_LIMIT:
                 set_vel_limit_callback(axis, msg);
@@ -275,23 +275,25 @@ void CANSimple::get_encoder_count_callback(Axis* axis, can_Message_t& msg) {
     }
 }
 
-void CANSimple::move_to_pos_callback(Axis* axis, can_Message_t& msg) {
-    axis->controller_.move_to_pos(can_getSignal<int32_t>(msg, 0, 32, true, 1, 0));
+void CANSimple::set_input_pos_callback(Axis* axis, can_Message_t& msg) {
+    axis->controller_.input_pos_ = can_getSignal<int32_t>(msg, 0, 32, true, 1, 0);
+    axis->controller_.input_vel_ = can_getSignal<int16_t>(msg, 32, 16, true, 0.1f, 0);
+    axis->controller_.input_current_ = can_getSignal<int16_t>(msg, 48, 16, true, 0.01f, 0);
+    axis->controller_.input_pos_updated();
 }
 
-void CANSimple::set_pos_setpoint_callback(Axis* axis, can_Message_t& msg) {
-    axis->controller_.pos_setpoint_ = can_getSignal<int32_t>(msg, 0, 32, true, 1, 0);
-    axis->controller_.vel_setpoint_ = can_getSignal<int16_t>(msg, 32, 16, true, 0.1f, 0);
-    axis->controller_.current_setpoint_ = can_getSignal<int16_t>(msg, 48, 16, true, 0.01f, 0);
+void CANSimple::set_input_vel_callback(Axis* axis, can_Message_t& msg) {
+    axis->controller_.input_vel_ = can_getSignal<int32_t>(msg, 0, 32, true, 0.01f, 0.0f);
+    axis->controller_.input_current_ = can_getSignal<int16_t>(msg, 32, 16, true, 0.01f, 0.0f);
 }
 
-void CANSimple::set_vel_setpoint_callback(Axis* axis, can_Message_t& msg) {
-    axis->controller_.vel_setpoint_ = can_getSignal<int32_t>(msg, 0, 32, true, 0.01f, 0.0f);
-    axis->controller_.current_setpoint_ = can_getSignal<int16_t>(msg, 32, 16, true, 0.01f, 0.0f);
+void CANSimple::set_input_current_callback(Axis* axis, can_Message_t& msg) {
+    axis->controller_.input_current_ = can_getSignal<int32_t>(msg, 0, 32, true, 0.01f, 0);
 }
 
-void CANSimple::set_current_setpoint_callback(Axis* axis, can_Message_t& msg) {
-    axis->controller_.current_setpoint_ = can_getSignal<int32_t>(msg, 0, 32, true, 0.01f, 0);
+void CANSimple::set_controller_modes_callback(Axis* axis, can_Message_t& msg){
+    axis->controller_.config_.control_mode = can_getSignal<Controller::ControlMode_t>(msg, 0, 32, true, 1, 0);
+    axis->controller_.config_.input_mode = can_getSignal<Controller::InputMode_t>(msg, 32, 32, true, 1, 0);
 }
 
 void CANSimple::set_vel_limit_callback(Axis* axis, can_Message_t& msg) {
