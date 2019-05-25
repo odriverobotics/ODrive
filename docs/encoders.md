@@ -43,6 +43,8 @@ That's it, now on every reboot the motor will turn in one direction until it fin
 * If you wish to scan for the index pulse in the other direction, that feature is currently undocumented.
 * If your motor has problems reaching the index location due to the mechanical load, you can increase `<axis>.motor.config.calibration_current`.
 
+*IMPORTANT:* Your motor should find the same rotational position when the ODrive performs an index search if the index signal is working properly. This means that the motor should spin, and stop at the same position if you have set <axis>.config.startup_encoder_index_search so the search starts on reboot, or you if call the command:<axis>.requested_state = AXIS_STATE_ENCODER_INDEX_SEARCH after reboot. You can test this. Send the reboot() command, and while it's rebooting turn your motor, then make sure the motor returns back to the correct position each time when it comes out of reboot. Try this procedure a couple of times to be sure. 
+
 ### Startup sequence notes
 The following are variables that MUST be set up for your encoder configuration. Your values will vary depending on your encoder:
 
@@ -121,6 +123,12 @@ Noise is found in all circuits, life is just about figuring out if it is prevent
 * Use of ribbon cable
 
 The following _might_ mitigate noise problems. Use shielded cable, or use twisted pairs, where one side of each twisted pair is tied to ground, the other side is tied to your signal. If you are using SPI, use a 20-50 ohm resistor in series on CLK, which is more susceptable noise.
+
+If you are using an encoder with an index signal, another problem that has been encountered is with noise on the Z input of ODrive. Symptoms for this problem include:
+* difficulty with requested_state = AXIS_STATE_FULL_CALIBRATION_SEQUENCE, where your calibration sequence may not complete
+* strange behavior after performing odrv0.save_configuration() and odrv0.reboot()
+* when performing an index_search, the motor does not return to the same position each time.
+One easy step that _might_ fix the noise on the Z input has been to solder a 0.1uF capacitor to the Z pin and the GND pin on the underside of the ODrive board. 
 
 ## AS5047/AS5048 Encoders
 The AS5047/AS5048 encoders are Hall Effect/Magenetic sensors that can serve as rotary encoders for the ODrive.
