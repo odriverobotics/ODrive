@@ -15,6 +15,7 @@
 #include "stm32_wwdg.hpp"
 #include "drv8301.hpp"
 #include "motor_impl.hpp"
+#include <current_sensor.hpp>
 
 
 struct PerChannelConfig_t {
