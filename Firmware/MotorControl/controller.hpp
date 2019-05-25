@@ -32,6 +32,16 @@ public:
         INPUT_MODE_TRAP_TRAJ,
     };
 
+    typedef struct {
+        int index = 0;
+        float cogging_map[3600];
+        bool use_anticogging = false;
+        bool calib_anticogging = false;
+        float calib_pos_threshold = 1.0f;
+        float calib_vel_threshold = 1.0f;
+        float cogging_ratio = 1.0f;
+    } Anticogging_t;
+
     struct Config_t {
         ControlMode_t control_mode = CTRL_MODE_POSITION_CONTROL;  //see: ControlMode_t
         InputMode_t input_mode = INPUT_MODE_PASSTHROUGH;  //see: InputMode_t
@@ -46,6 +56,7 @@ public:
         float inertia = 0.0f;      // [A/(count/s^2)]
         float input_filter_bandwidth = 2.0f; // [1/s]
         float homing_speed = 2000.0f;   // [counts/s]
+        Anticogging_t anticogging;
     };
 
     explicit Controller(Config_t& config);
@@ -75,23 +86,6 @@ public:
     // - make calibration user experience similar to motor & encoder calibration
     // - use python tools to Fourier transform and write back the smoothed map or Fourier coefficients
     // - make the calibration persistent
-
-    typedef struct {
-        int index;
-        float *cogging_map;
-        bool use_anticogging;
-        bool calib_anticogging;
-        float calib_pos_threshold;
-        float calib_vel_threshold;
-    } Anticogging_t;
-    Anticogging_t anticogging_ = {
-        .index = 0,
-        .cogging_map = nullptr,
-        .use_anticogging = false,
-        .calib_anticogging = false,
-        .calib_pos_threshold = 1.0f,
-        .calib_vel_threshold = 1.0f,
-    };
 
     Error_t error_ = ERROR_NONE;
 

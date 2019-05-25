@@ -67,6 +67,7 @@ public:
     void sample_now();
     bool update();
 
+    void cpr_changed_callback();
 
 
     const EncoderHardwareConfig_t& hw_config_;
@@ -119,7 +120,7 @@ public:
                 make_protocol_property("pre_calibrated", &config_.pre_calibrated,
                     [](void* ctx) { static_cast<Encoder*>(ctx)->check_pre_calibrated(); }, this),
                 make_protocol_property("zero_count_on_find_idx", &config_.zero_count_on_find_idx),
-                make_protocol_property("cpr", &config_.cpr),
+                make_protocol_property("cpr", &config_.cpr, [](void* ctx) { static_cast<Encoder*>(ctx)->cpr_changed_callback(); }, this),
                 make_protocol_property("offset", &config_.offset),
                 make_protocol_property("offset_float", &config_.offset_float),
                 make_protocol_property("enable_phase_interpolation", &config_.enable_phase_interpolation),
