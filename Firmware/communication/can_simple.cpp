@@ -280,15 +280,18 @@ void CANSimple::move_to_pos_callback(Axis* axis, can_Message_t& msg) {
 }
 
 void CANSimple::set_pos_setpoint_callback(Axis* axis, can_Message_t& msg) {
-    axis->controller_.set_pos_setpoint(can_getSignal<int32_t>(msg, 0, 32, true, 1, 0), can_getSignal<int16_t>(msg, 32, 16, true, 0.1f, 0), can_getSignal<int16_t>(msg, 48, 16, true, 0.01f, 0));
+    axis->controller_.pos_setpoint_ = can_getSignal<int32_t>(msg, 0, 32, true, 1, 0);
+    axis->controller_.vel_setpoint_ = can_getSignal<int16_t>(msg, 32, 16, true, 0.1f, 0);
+    axis->controller_.current_setpoint_ = can_getSignal<int16_t>(msg, 48, 16, true, 0.01f, 0);
 }
 
 void CANSimple::set_vel_setpoint_callback(Axis* axis, can_Message_t& msg) {
-    axis->controller_.set_vel_setpoint(can_getSignal<int32_t>(msg, 0, 32, true, 0.01f, 0.0f), can_getSignal<int32_t>(msg, 4, 32, true, 0.01f, 0.0f));
+    axis->controller_.vel_setpoint_ = can_getSignal<int32_t>(msg, 0, 32, true, 0.01f, 0.0f);
+    axis->controller_.current_setpoint_ = can_getSignal<int16_t>(msg, 32, 16, true, 0.01f, 0.0f);
 }
 
 void CANSimple::set_current_setpoint_callback(Axis* axis, can_Message_t& msg) {
-    axis->controller_.set_current_setpoint(can_getSignal<int32_t>(msg, 0, 32, true, 0.01f, 0));
+    axis->controller_.current_setpoint_ = can_getSignal<int32_t>(msg, 0, 32, true, 0.01f, 0);
 }
 
 void CANSimple::set_vel_limit_callback(Axis* axis, can_Message_t& msg) {
@@ -309,7 +312,7 @@ void CANSimple::set_traj_accel_limits_callback(Axis* axis, can_Message_t& msg) {
 }
 
 void CANSimple::set_traj_A_per_css_callback(Axis* axis, can_Message_t& msg) {
-    axis->trap_.config_.A_per_css = can_getSignal<float>(msg, 0, 32, true, 1, 0);
+    axis->controller_.config_.inertia = can_getSignal<float>(msg, 0, 32, true, 1, 0);
 }
 
 void CANSimple::get_iq_callback(Axis* axis, can_Message_t& msg) {

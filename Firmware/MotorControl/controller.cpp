@@ -59,7 +59,10 @@ void Controller::start_anticogging_calibration() {
 // When pressed, set the linear count to the offset (default 0), and then
 bool Controller::home_axis() {
     if (axis_->min_endstop_.config_.enabled) {
-        set_vel_setpoint(-config_.homing_speed, 0.0f);
+        config_.control_mode = CTRL_MODE_VELOCITY_CONTROL;
+        pos_setpoint_ = 0.0f;
+        vel_setpoint_ = -config_.homing_speed;
+        current_setpoint_ = 0.0f;
         axis_->homing_state_ = HOMING_STATE_HOMING;
     } else {
         return false;

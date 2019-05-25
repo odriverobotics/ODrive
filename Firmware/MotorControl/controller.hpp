@@ -133,7 +133,7 @@ public:
                 make_protocol_property("vel_limit", &config_.vel_limit),
                 make_protocol_property("vel_limit_tolerance", &config_.vel_limit_tolerance),
                 make_protocol_property("vel_ramp_rate", &config_.vel_ramp_rate),
-                make_protocol_property("homing_speed", &config_.homing_speed)
+                make_protocol_property("homing_speed", &config_.homing_speed),
                 make_protocol_property("inertia", &config_.inertia),
                 make_protocol_property("input_filter_bandwidth", &config_.input_filter_bandwidth,
                     [](void* ctx) { static_cast<Controller*>(ctx)->update_filter_gains(); }, this)
