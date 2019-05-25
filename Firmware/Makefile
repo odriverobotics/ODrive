@@ -40,6 +40,10 @@ erase:
 erase_config:
 	$(OPENOCD) -c init -c reset\ halt -c flash\ erase_address\ 0x80C0000\ 0x40000 -c reset\ init -c reset\ run -c exit
 
+# Sometimes the STM32 will get it's protection bits set for unknown reasons. Unlock it with this command
+unlock:
+	$(OPENOCD) -c init -c reset\ halt -c stm32f2x\ unlock\ 0
+
 # The one-time programmable memory stores the board version
 # has the following format:
 #  - OTP format version (0xFE: version 1)

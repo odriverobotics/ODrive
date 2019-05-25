@@ -2,14 +2,21 @@
 Please add a note of your changes below this heading if you make a Pull Request.
 
 ### Added
-* `dump_errors()` utility function in odrivetool to dump, decode and optionally clear errors.
-* Second order setpoint input filter.
+* A release target for ODrive v3.6
 * Communication watchdog feature.
+* `encoder.set_linear_count(count)` function.
+* Configurable encoder offset calibration distance and speed:`calib_scan_distance` and `calib_scan_omega`
+* Encoder offset calibration debug variable `calib_scan_response`
+* Lock-in drive feature
+* Script to enable using a hall signal as index edge.
 
 ### Changed
 * Moved `traptraj.A_per_css` to `controller.inertia`
 * Refactored velocity ramp mode into the new general input filtering structure
+* Encoder index search now based on the new lock-in drive feature
 
+### Fixed
+* Encoder index interrupts now disabled when not searching
 
 # Releases
 ## [0.4.8] - 2019-02-25
