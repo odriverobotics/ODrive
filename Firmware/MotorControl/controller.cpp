@@ -86,11 +86,17 @@ bool Controller::anticogging_calibration(float pos_estimate, float vel_estimate)
             config_.anticogging.cogging_map[std::clamp(config_.anticogging.index++, 0, 3600)] = vel_integrator_current_;
         }
         if (config_.anticogging.index < 3600) {
-            set_pos_setpoint(config_.anticogging.index * config_.anticogging.cogging_ratio, 0.0f, 0.0f);
+            config_.control_mode = CTRL_MODE_POSITION_CONTROL;
+            pos_setpoint_ = config_.anticogging.index * config_.anticogging.cogging_ratio;
+            vel_setpoint_ = 0.0f;
+            current_setpoint_ = 0.0f;
             return false;
         } else {
             config_.anticogging.index = 0;
-            set_pos_setpoint(0.0f, 0.0f, 0.0f);  // Send the motor home
+            config_.control_mode = CTRL_MODE_POSITION_CONTROL;
+            pos_setpoint_ = 0.0f;  // Send the motor home
+            vel_setpoint_ = 0.0f;
+            current_setpoint_ = 0.0f;
             config_.anticogging.use_anticogging = true;  // We're good to go, enable anti-cogging
             config_.anticogging.calib_anticogging = false;
             return true;
