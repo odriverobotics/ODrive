@@ -32,6 +32,7 @@ public:
         float vel_limit_tolerance = 1.2f;  // ratio to vel_lim. 0.0f to disable
         float vel_ramp_rate = 10000.0f;  // [(counts/s) / s]
         bool setpoints_in_cpr = false;
+        float homing_speed = 2000.0f;   // [counts/s]
     };
 
     explicit Controller(Config_t& config);
@@ -45,6 +46,8 @@ public:
     // Trajectory-Planned control
     void move_to_pos(float goal_point);
     void move_incremental(float displacement, bool from_goal_point);
+
+    bool home_axis();
     
     // TODO: make this more similar to other calibration loops
     void start_anticogging_calibration();
@@ -110,17 +113,19 @@ public:
                 make_protocol_property("vel_limit", &config_.vel_limit),
                 make_protocol_property("vel_limit_tolerance", &config_.vel_limit_tolerance),
                 make_protocol_property("vel_ramp_rate", &config_.vel_ramp_rate),
-                make_protocol_property("setpoints_in_cpr", &config_.setpoints_in_cpr)
+                make_protocol_property("setpoints_in_cpr", &config_.setpoints_in_cpr),
+                make_protocol_property("homing_speed", &config_.homing_speed)
             ),
             make_protocol_function("set_pos_setpoint", *this, &Controller::set_pos_setpoint,
                 "pos_setpoint", "vel_feed_forward", "current_feed_forward"),
             make_protocol_function("set_vel_setpoint", *this, &Controller::set_vel_setpoint,
                 "vel_setpoint", "current_feed_forward"),
             make_protocol_function("set_current_setpoint", *this, &Controller::set_current_setpoint,
-                                   "current_setpoint"),
+                "current_setpoint"),
             make_protocol_function("move_to_pos", *this, &Controller::move_to_pos, "pos_setpoint"),
             make_protocol_function("move_incremental", *this, &Controller::move_incremental, "displacement", "from_goal_point"),
-            make_protocol_function("start_anticogging_calibration", *this, &Controller::start_anticogging_calibration)
+            make_protocol_function("start_anticogging_calibration", *this, &Controller::start_anticogging_calibration),
+            make_protocol_function("home_axis", *this, &Controller::home_axis)
         );
     }
 };

@@ -13,27 +13,34 @@ Axis::Axis(const AxisHardwareConfig_t& hw_config,
            SensorlessEstimator& sensorless_estimator,
            Controller& controller,
            Motor& motor,
-           TrapezoidalTrajectory& trap) :
-      hw_config_(hw_config),
+           TrapezoidalTrajectory& trap,
+           Endstop& min_endstop,
+           Endstop& max_endstop)
+    : hw_config_(hw_config),
       config_(config),
       encoder_(encoder),
       sensorless_estimator_(sensorless_estimator),
       controller_(controller),
       motor_(motor),
-      trap_(trap) {
+      trap_(trap),
+      min_endstop_(min_endstop),
+      max_endstop_(max_endstop)
+{
     encoder_.axis_ = this;
     sensorless_estimator_.axis_ = this;
     controller_.axis_ = this;
     motor_.axis_ = this;
     trap_.axis_ = this;
-
     decode_step_dir_pins();
     update_watchdog_settings();
+    min_endstop_.axis_ = this;
+    max_endstop_.axis_ = this;
 }
 
 static void step_cb_wrapper(void* ctx) {
     reinterpret_cast<Axis*>(ctx)->step_cb();
 }
+
 
 // @brief Sets up all components of the axis,
 // such as gate driver and encoder hardware.
@@ -119,8 +126,7 @@ void Axis::set_step_dir_active(bool active) {
         HAL_GPIO_Init(dir_port_, &GPIO_InitStruct);
 
         // Subscribe to rising edges of the step GPIO
-        GPIO_subscribe(step_port_, step_pin_, GPIO_PULLDOWN,
-                step_cb_wrapper, this);
+        GPIO_subscribe(step_port_, step_pin_, GPIO_PULLDOWN, step_cb_wrapper, this);
 
         step_dir_active_ = true;
     } else {
@@ -158,6 +164,8 @@ bool Axis::do_updates() {
     // Sub-components should use set_error which will propegate to this error_
     encoder_.update();
     sensorless_estimator_.update();
+    min_endstop_.update();
+    max_endstop_.update();
     bool ret = check_for_errors();
     odCAN->send_heartbeat(this);
     return ret;
@@ -275,6 +283,26 @@ bool Axis::run_closed_loop_control_loop() {
         float phase_vel = 2*M_PI * encoder_.vel_estimate_ / (float)encoder_.config_.cpr * motor_.config_.pole_pairs;
         if (!motor_.update(current_setpoint, encoder_.phase_, phase_vel))
             return false; // set_error should update axis.error_
+
+        // Handle the homing case
+        if (homing_state_ == HOMING_STATE_HOMING) {
+            if (min_endstop_.getEndstopState()) {
+                encoder_.set_linear_count(min_endstop_.config_.offset);
+                controller_.set_pos_setpoint(0.0f, 0.0f, 0.0f);
+                homing_state_ = HOMING_STATE_MOVE_TO_ZERO;
+            }
+        } else if (homing_state_ == HOMING_STATE_MOVE_TO_ZERO) {
+            if(!min_endstop_.getEndstopState()){
+                homing_state_ = HOMING_STATE_IDLE;
+            }
+        } else {
+            // Check for endstop presses
+            if (min_endstop_.config_.enabled && min_endstop_.getEndstopState()) {
+                return error_ |= ERROR_MIN_ENDSTOP_PRESSED, false;
+            } else if (max_endstop_.config_.enabled && max_endstop_.getEndstopState()) {
+                return error_ |= ERROR_MAX_ENDSTOP_PRESSED, false;
+            }
+        }
         return true;
     });
     set_step_dir_active(false);
@@ -318,10 +346,17 @@ void Axis::run_state_machine_loop() {
                     task_chain_[pos++] = AXIS_STATE_ENCODER_INDEX_SEARCH;
                 if (config_.startup_encoder_offset_calibration)
                     task_chain_[pos++] = AXIS_STATE_ENCODER_OFFSET_CALIBRATION;
-                if (config_.startup_closed_loop_control)
+                if (config_.startup_closed_loop_control){
+                    if(config_.startup_homing)
+                        task_chain_[pos++] = AXIS_STATE_HOMING;
                     task_chain_[pos++] = AXIS_STATE_CLOSED_LOOP_CONTROL;
+                }
                 else if (config_.startup_sensorless_control)
                     task_chain_[pos++] = AXIS_STATE_SENSORLESS_CONTROL;
+                task_chain_[pos++] = AXIS_STATE_IDLE;
+            } else if (requested_state_ == AXIS_STATE_HOMING){
+                task_chain_[pos++] = AXIS_STATE_HOMING;
+                task_chain_[pos++] = AXIS_STATE_CLOSED_LOOP_CONTROL;
                 task_chain_[pos++] = AXIS_STATE_IDLE;
             } else if (requested_state_ == AXIS_STATE_FULL_CALIBRATION_SEQUENCE) {
                 task_chain_[pos++] = AXIS_STATE_MOTOR_CALIBRATION;
@@ -364,6 +399,10 @@ void Axis::run_state_machine_loop() {
 
                 status = encoder_.run_direction_find();
             } break;
+
+            case AXIS_STATE_HOMING:
+                status = controller_.home_axis();
+                break;
 
             case AXIS_STATE_ENCODER_OFFSET_CALIBRATION: {
                 if (!motor_.is_calibrated_)

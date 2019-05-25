@@ -17,6 +17,8 @@ Controller::Config_t controller_configs[AXIS_COUNT];
 Motor::Config_t motor_configs[AXIS_COUNT];
 Axis::Config_t axis_configs[AXIS_COUNT];
 TrapezoidalTrajectory::Config_t trap_configs[AXIS_COUNT];
+Endstop::Config_t min_endstop_configs[AXIS_COUNT];
+Endstop::Config_t max_endstop_configs[AXIS_COUNT];
 bool user_config_loaded_;
 
 SystemStats_t system_stats_ = { 0 };
@@ -32,6 +34,8 @@ typedef Config<
     Controller::Config_t[AXIS_COUNT],
     Motor::Config_t[AXIS_COUNT],
     TrapezoidalTrajectory::Config_t[AXIS_COUNT],
+    Endstop::Config_t[AXIS_COUNT],
+    Endstop::Config_t[AXIS_COUNT],
     Axis::Config_t[AXIS_COUNT]> ConfigFormat;
 
 void save_configuration(void) {
@@ -43,8 +47,10 @@ void save_configuration(void) {
             &controller_configs,
             &motor_configs,
             &trap_configs,
+            &min_endstop_configs,
+            &max_endstop_configs,
             &axis_configs)) {
-        //printf("saving configuration failed\r\n"); osDelay(5);
+        printf("saving configuration failed\r\n"); osDelay(5);
     } else {
         user_config_loaded_ = true;
     }
@@ -61,6 +67,8 @@ extern "C" int load_configuration(void) {
                 &controller_configs,
                 &motor_configs,
                 &trap_configs,
+                &min_endstop_configs,
+                &max_endstop_configs,
                 &axis_configs)) {
         //If loading failed, restore defaults
         board_config = BoardConfig_t();
@@ -75,6 +83,8 @@ extern "C" int load_configuration(void) {
             // Default step/dir pins are different, so we need to explicitly load them
             Axis::load_default_step_dir_pin_config(hw_configs[i].axis_config, &axis_configs[i]);
             Axis::load_default_can_id(i, axis_configs[i]);
+            min_endstop_configs[i] = Endstop::Config_t();
+            max_endstop_configs[i] = Endstop::Config_t();
         }
     } else {
         user_config_loaded_ = true;
@@ -180,8 +190,10 @@ int odrive_main(void) {
                                  hw_configs[i].gate_driver_config,
                                  motor_configs[i]);
         TrapezoidalTrajectory *trap = new TrapezoidalTrajectory(trap_configs[i]);
+        Endstop *min_endstop = new Endstop(min_endstop_configs[i]);
+        Endstop *max_endstop = new Endstop(max_endstop_configs[i]);
         axes[i] = new Axis(hw_configs[i].axis_config, axis_configs[i],
-                *encoder, *sensorless_estimator, *controller, *motor, *trap);
+                *encoder, *sensorless_estimator, *controller, *motor, *trap, *min_endstop, *max_endstop);
     }
     
     // Start ADC for temperature measurements and user measurements
