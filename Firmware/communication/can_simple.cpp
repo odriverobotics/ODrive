@@ -284,7 +284,7 @@ void CANSimple::set_pos_setpoint_callback(Axis* axis, can_Message_t& msg) {
 }
 
 void CANSimple::set_vel_setpoint_callback(Axis* axis, can_Message_t& msg) {
-    axis->controller_.set_vel_setpoint(can_getSignal<int32_t>(msg, 0, 32, true, 0.01f, 0.0f), can_getSignal<int32_t>(msg, 4, 32, true, 0.01f, 0.0f));
+    axis->controller_.set_vel_setpoint(can_getSignal<int32_t>(msg, 0, 32, true, 0.01f, 0.0f), can_getSignal<int16_t>(msg, 32, 16, true, 0.01f, 0.0f));
 }
 
 void CANSimple::set_current_setpoint_callback(Axis* axis, can_Message_t& msg) {
