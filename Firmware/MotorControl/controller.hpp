@@ -23,9 +23,9 @@ public:
     };
 
     typedef struct {
-        int index = 0;
+        uint32_t index = 0;
         float cogging_map[3600];
-        bool use_anticogging = false;
+        bool anticogging_valid = false;
         bool calib_anticogging = false;
         float calib_pos_threshold = 1.0f;
         float calib_vel_threshold = 1.0f;
@@ -104,7 +104,15 @@ public:
                 make_protocol_property("vel_limit", &config_.vel_limit),
                 make_protocol_property("vel_limit_tolerance", &config_.vel_limit_tolerance),
                 make_protocol_property("vel_ramp_rate", &config_.vel_ramp_rate),
-                make_protocol_property("setpoints_in_cpr", &config_.setpoints_in_cpr)
+                make_protocol_property("setpoints_in_cpr", &config_.setpoints_in_cpr),
+                make_protocol_object("anticogging",
+                    make_protocol_ro_property("index", &config_.anticogging.index),
+                    make_protocol_property("anticogging_valid", &config_.anticogging.anticogging_valid),
+                    make_protocol_ro_property("calib_anticogging", &config_.anticogging.calib_anticogging),
+                    make_protocol_property("calib_pos_threshold", &config_.anticogging.calib_pos_threshold),
+                    make_protocol_property("calib_vel_threshold", &config_.anticogging.calib_vel_threshold),
+                    make_protocol_ro_property("cogging_ratio", &config_.anticogging.cogging_ratio)
+                )
             ),
             make_protocol_function("set_pos_setpoint", *this, &Controller::set_pos_setpoint,
                 "pos_setpoint", "vel_feed_forward", "current_feed_forward"),
