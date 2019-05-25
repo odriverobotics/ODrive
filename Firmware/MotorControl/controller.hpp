@@ -32,6 +32,8 @@ public:
         float vel_limit_tolerance = 1.2f;  // ratio to vel_lim. 0.0f to disable
         float vel_ramp_rate = 10000.0f;  // [(counts/s) / s]
         bool setpoints_in_cpr = false;
+        float gain_scheduling_width = 10.0f;
+        bool enable_gain_scheduling = false;
     };
 
     explicit Controller(Config_t& config);
@@ -102,6 +104,8 @@ public:
             make_protocol_property("current_setpoint", &current_setpoint_),
             make_protocol_property("vel_ramp_target", &vel_ramp_target_),
             make_protocol_property("vel_ramp_enable", &vel_ramp_enable_),
+            make_protocol_property("gain_scheduling_width", &config_.gain_scheduling_width),
+            make_protocol_property("enable_gain_scheduling", &config_.enable_gain_scheduling),
             make_protocol_object("config",
                 make_protocol_property("control_mode", &config_.control_mode),
                 make_protocol_property("pos_gain", &config_.pos_gain),
