@@ -35,7 +35,6 @@ public:
     typedef struct {
         uint32_t index = 0;
         float cogging_map[3600];
-        bool anticogging_valid = false;
         bool calib_anticogging = false;
         float calib_pos_threshold = 1.0f;
         float calib_vel_threshold = 1.0f;
@@ -105,6 +104,8 @@ public:
     float goal_point_ = 0.0f;
     bool trajectory_done_ = true;
 
+    bool anticogging_valid_ = false;
+
     // Communication protocol definitions
     auto make_protocol_definitions() {
         return make_protocol_member_list(
@@ -118,6 +119,7 @@ public:
             make_protocol_ro_property("current_setpoint", &current_setpoint_),
             make_protocol_ro_property("trajectory_done", &trajectory_done_),
             make_protocol_property("vel_integrator_current", &vel_integrator_current_),
+            make_protocol_property("anticogging_valid", &anticogging_valid_),
             make_protocol_object("config",
                 make_protocol_property("control_mode", &config_.control_mode),
                 make_protocol_property("input_mode", &config_.input_mode),
@@ -133,7 +135,7 @@ public:
                     [](void* ctx) { static_cast<Controller*>(ctx)->update_filter_gains(); }, this),
                 make_protocol_object("anticogging",
                     make_protocol_ro_property("index", &config_.anticogging.index),
-                    make_protocol_property("anticogging_valid", &config_.anticogging.anticogging_valid),
+                    
                     make_protocol_ro_property("calib_anticogging", &config_.anticogging.calib_anticogging),
                     make_protocol_property("calib_pos_threshold", &config_.anticogging.calib_pos_threshold),
                     make_protocol_property("calib_vel_threshold", &config_.anticogging.calib_vel_threshold),
