@@ -496,6 +496,11 @@ void pwm_trig_adc_cb(ADC_HandleTypeDef* hadc, bool injected) {
             update_timings = true; // update timings of M0
         else if (&axis == axes[0] && !counting_down)
             update_timings = true; // update timings of M1
+
+        if((current_meas_not_DC_CAL && !axis_num) ||
+                (axis_num && !current_meas_not_DC_CAL)){
+            axis.encoder_.abs_spi_start_transaction();
+        }
     }
 
     // Load next timings for the motor that we're not currently sampling
@@ -755,4 +760,13 @@ void start_analog_thread()
 {
     osThreadDef(thread_def, analog_polling_thread, osPriorityLow, 0, 4*512);
     osThreadCreate(osThread(thread_def), NULL);
+}
+
+
+void HAL_SPI_TxRxCpltCallback(SPI_HandleTypeDef *hspi)
+{
+    if(hspi->pRxBuffPtr == (uint8_t*)axes[0]->encoder_.abs_spi_dma_rx_)
+        axes[0]->encoder_.abs_spi_cb();
+    else if (hspi->pRxBuffPtr == (uint8_t*)axes[1]->encoder_.abs_spi_dma_rx_)
+        axes[1]->encoder_.abs_spi_cb();
 }

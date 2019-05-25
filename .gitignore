@@ -43,3 +43,13 @@ tup.config
 
 
 *.exe
+
+ODrive\.config
+
+ODrive\.creator
+
+ODrive\.creator\.user
+
+ODrive\.files
+
+ODrive\.includes
