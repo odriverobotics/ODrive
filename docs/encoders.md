@@ -68,7 +68,7 @@ Now try:
 let it loop a few times and then set:
 * `<axis>.requested_state = AXIS_STATE_IDLE`
 
-Do you still have no errors? Awesome. Now set these variables:
+Do you still have no errors? Awesome. Now save the calibration, you can set the below. Note that this only works if you are using an absolute encoder or the encoder index input (see "Encoder with index signal" above).
 * `<axis>.encoder.config.pre_calibrated = True`
 * `<axis>.motor.config.pre_calibrated  = True `
 
@@ -78,7 +78,6 @@ And see if ODrive agrees that calibration worked by just running
 (using no "= True" ). Make sure that 'pre_calibrated' is in fact True. 
 
 Also, if you have calibrated and encoder.pre_calibrated is equal to true, and you had no errors so far. Run this: 
-* `<axis>.encoder.config.use_index = True`
 * `odrv0.save_configuration()`
 * `odrv0.reboot()`
 
