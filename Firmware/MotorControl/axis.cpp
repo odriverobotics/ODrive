@@ -150,6 +150,20 @@ bool Axis::do_checks() {
     if (!(vbus_voltage <= board_config.dc_bus_overvoltage_trip_level))
         error_ |= ERROR_DC_BUS_OVER_VOLTAGE;
 
+    // This is the same math that's used in update_brake_current().  Should we calculate IBus globally?
+    float Ibus_sum = 0.0f;
+    for (size_t i = 0; i < AXIS_COUNT; ++i) {
+        if (axes[i]->motor_.armed_state_ == Motor::ARMED_STATE_ARMED) {
+            Ibus_sum += axes[i]->motor_.current_control_.Ibus;
+        }
+    }
+
+    if(board_config.power_supply_wattage > 0.0f && 
+            (Ibus_sum * vbus_voltage) > board_config.power_supply_wattage) 
+    {
+        error_ |= ERROR_DC_BUS_OVER_POWER;
+    }
+
     // Sub-components should use set_error which will propegate to this error_
     motor_.do_checks();
     encoder_.do_checks();

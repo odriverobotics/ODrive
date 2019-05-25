@@ -31,6 +31,7 @@ public:
         ERROR_MIN_ENDSTOP_PRESSED = 0x1000,
         ERROR_MAX_ENDSTOP_PRESSED = 0x2000,
         ERROR_ESTOP_REQUESTED = 0x4000,
+        ERROR_DC_BUS_OVER_POWER = 0x8000,
     };
 
     enum State_t {
