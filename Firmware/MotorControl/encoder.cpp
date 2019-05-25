@@ -442,7 +442,7 @@ bool Encoder::update() {
         
         case MODE_SPI_ABS_AMS:
         case MODE_SPI_ABS_CUI:{
-            if(abs_spi_pos_updated_ == false){
+            if(abs_spi_pos_updated_ == false && abs_spi_pos_init_once_){
                 // Low pass filter the error
                 spi_error_rate_ += current_meas_period * (1.0f - spi_error_rate_);
                 if (spi_error_rate_ > 0.005f)
@@ -457,6 +457,9 @@ bool Encoder::update() {
             delta_enc = mod(delta_enc, config_.cpr);
             if (delta_enc > config_.cpr/2)
                 delta_enc -= config_.cpr;
+            if(!abs_spi_pos_init_once_ && delta_enc != 0){
+                abs_spi_pos_init_once_ = true;
+            }
 
         }break;
         default: {
