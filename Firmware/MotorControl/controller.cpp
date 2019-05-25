@@ -4,7 +4,9 @@
 
 Controller::Controller(Config_t& config) :
     config_(config)
-{}
+{
+    update_filter_gains();
+}
 
 void Controller::reset() {
     pos_setpoint_ = 0.0f;
@@ -22,31 +24,10 @@ void Controller::set_error(Error_t error) {
 // Command Handling
 //--------------------------------
 
-void Controller::set_pos_setpoint(float pos_setpoint, float vel_feed_forward, float current_feed_forward) {
-    pos_setpoint_ = pos_setpoint;
-    vel_setpoint_ = vel_feed_forward;
-    current_setpoint_ = current_feed_forward;
-    config_.control_mode = CTRL_MODE_POSITION_CONTROL;
-#ifdef DEBUG_PRINT
-    printf("POSITION_CONTROL %6.0f %3.3f %3.3f\n", pos_setpoint, vel_setpoint_, current_setpoint_);
-#endif
-}
-
-void Controller::set_vel_setpoint(float vel_setpoint, float current_feed_forward) {
-    vel_setpoint_ = vel_setpoint;
-    current_setpoint_ = current_feed_forward;
-    config_.control_mode = CTRL_MODE_VELOCITY_CONTROL;
-#ifdef DEBUG_PRINT
-    printf("VELOCITY_CONTROL %3.3f %3.3f\n", vel_setpoint_, motor->current_setpoint_);
-#endif
-}
-
-void Controller::set_current_setpoint(float current_setpoint) {
-    current_setpoint_ = current_setpoint;
-    config_.control_mode = CTRL_MODE_CURRENT_CONTROL;
-#ifdef DEBUG_PRINT
-    printf("CURRENT_CONTROL %3.3f\n", current_setpoint_);
-#endif
+void Controller::input_pos_updated() {
+    if (config_.input_mode == INPUT_MODE_TRAP_TRAJ) {
+        move_to_pos(input_pos_);
+    }
 }
 
 void Controller::move_to_pos(float goal_point) {
@@ -55,7 +36,7 @@ void Controller::move_to_pos(float goal_point) {
                                  axis_->trap_.config_.accel_limit,
                                  axis_->trap_.config_.decel_limit);
     traj_start_loop_count_ = axis_->loop_counter_;
-    config_.control_mode = CTRL_MODE_TRAJECTORY_CONTROL;
+    trajectory_done_ = false;
     goal_point_ = goal_point;
 }
 
@@ -101,11 +82,10 @@ bool Controller::anticogging_calibration(float pos_estimate, float vel_estimate)
             anticogging_.cogging_map[anticogging_.index++] = vel_integrator_current_;
         }
         if (anticogging_.index < axis_->encoder_.config_.cpr) { // TODO: remove the dependency on encoder CPR
-            set_pos_setpoint(anticogging_.index, 0.0f, 0.0f);
+            pos_setpoint_ = anticogging_.index;
             return false;
         } else {
             anticogging_.index = 0;
-            set_pos_setpoint(0.0f, 0.0f, 0.0f);  // Send the motor home
             anticogging_.use_anticogging = true;  // We're good to go, enable anti-cogging
             anticogging_.calib_anticogging = false;
             return true;
@@ -114,42 +94,75 @@ bool Controller::anticogging_calibration(float pos_estimate, float vel_estimate)
     return false;
 }
 
+void Controller::update_filter_gains() {
+    input_filter_ki_ = 2.0f * config_.input_filter_bandwidth;  // basic conversion to discrete time
+    input_filter_kp_ = 0.25f * (input_filter_ki_ * input_filter_ki_); // Critically damped
+}
+
 bool Controller::update(float pos_estimate, float vel_estimate, float* current_setpoint_output) {
     // Only runs if anticogging_.calib_anticogging is true; non-blocking
     anticogging_calibration(pos_estimate, vel_estimate);
     float anticogging_pos = pos_estimate;
 
-    // Trajectory control
-    if (config_.control_mode == CTRL_MODE_TRAJECTORY_CONTROL) {
-        // Note: uint32_t loop count delta is OK across overflow
-        // Beware of negative deltas, as they will not be well behaved due to uint!
-        float t = (axis_->loop_counter_ - traj_start_loop_count_) * current_meas_period;
-        if (t > axis_->trap_.Tf_) {
-            // Drop into position control mode when done to avoid problems on loop counter delta overflow
-            config_.control_mode = CTRL_MODE_POSITION_CONTROL;
-            // pos_setpoint already set by trajectory
-            vel_setpoint_ = 0.0f;
-            current_setpoint_ = 0.0f;
-        } else {
-            TrapezoidalTrajectory::Step_t traj_step = axis_->trap_.eval(t);
-            pos_setpoint_ = traj_step.Y;
-            vel_setpoint_ = traj_step.Yd;
-            current_setpoint_ = traj_step.Ydd * axis_->trap_.config_.A_per_css;
+    // Update inputs
+    switch (config_.input_mode) {
+        case INPUT_MODE_INACTIVE: {
+            // do nothing
+        } break;
+        case INPUT_MODE_PASSTHROUGH: {
+            pos_setpoint_ = input_pos_;
+            vel_setpoint_ = input_vel_;
+            current_setpoint_ = input_current_;
+        } break;
+        case INPUT_MODE_VEL_RAMP: {
+            float max_step_size = current_meas_period * config_.vel_ramp_rate;
+            float full_step = input_vel_ - vel_setpoint_;
+            float step;
+            if (fabsf(full_step) > max_step_size) {
+                step = std::copysignf(max_step_size, full_step);
+            } else {
+                step = full_step;
+            }
+            vel_setpoint_ += step;
+            current_setpoint_ = step / current_meas_period * config_.inertia;
+        } break;
+        case INPUT_MODE_POS_FILTER: {
+            // 2nd order pos tracking filter
+            float delta_pos = input_pos_ - pos_setpoint_; // Pos error
+            float delta_vel = input_vel_ - vel_setpoint_; // Vel error
+            float accel = input_filter_kp_*delta_pos + input_filter_ki_*delta_vel; // Feedback
+            current_setpoint_ = accel * config_.inertia; // Accel
+            vel_setpoint_ += current_meas_period * accel; // delta vel
+            pos_setpoint_ += current_meas_period * vel_setpoint_; // Delta pos
+        } break;
+        // case INPUT_MODE_MIX_CHANNELS: {
+        //     // NOT YET IMPLEMENTED
+        // } break;
+        case INPUT_MODE_TRAP_TRAJ: {
+            // Avoid updating uninitialized trajectory
+            if (trajectory_done_)
+                break;
+            // Note: uint32_t loop count delta is OK across overflow
+            // Beware of negative deltas, as they will not be well behaved due to uint!
+            float t = (axis_->loop_counter_ - traj_start_loop_count_) * current_meas_period;
+            if (t > axis_->trap_.Tf_) {
+                // Drop into position control mode when done to avoid problems on loop counter delta overflow
+                config_.control_mode = CTRL_MODE_POSITION_CONTROL;
+                pos_setpoint_ = input_pos_;
+                vel_setpoint_ = 0.0f;
+                current_setpoint_ = 0.0f;
+            } else {
+                TrapezoidalTrajectory::Step_t traj_step = axis_->trap_.eval(t);
+                pos_setpoint_ = traj_step.Y;
+                vel_setpoint_ = traj_step.Yd;
+                current_setpoint_ = traj_step.Ydd * config_.inertia;
+            }
+            anticogging_pos = pos_setpoint_; // FF the position setpoint instead of the pos_estimate
+        } break;
+        default: {
+            set_error(ERROR_INVALID_INPUT_MODE);
+            return false;
         }
-        anticogging_pos = pos_setpoint_; // FF the position setpoint instead of the pos_estimate
-    }
-
-    // Ramp rate limited velocity setpoint
-    if (config_.control_mode == CTRL_MODE_VELOCITY_CONTROL && vel_ramp_enable_) {
-        float max_step_size = current_meas_period * config_.vel_ramp_rate;
-        float full_step = vel_ramp_target_ - vel_setpoint_;
-        float step;
-        if (fabsf(full_step) > max_step_size) {
-            step = std::copysignf(max_step_size, full_step);
-        } else {
-            step = full_step;
-        }
-        vel_setpoint_ += step;
     }
 
     // Position control

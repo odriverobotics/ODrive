@@ -11,6 +11,8 @@ Please add a note of your changes below this heading if you make a Pull Request.
 * Script to enable using a hall signal as index edge.
 
 ### Changed
+* Moved `traptraj.A_per_css` to `controller.inertia`
+* Refactored velocity ramp mode into the new general input filtering structure
 * Encoder index search now based on the new lock-in drive feature
 
 ### Fixed
