@@ -32,7 +32,7 @@ Axis::Axis(const AxisHardwareConfig_t& hw_config,
     motor_.axis_ = this;
     trap_.axis_ = this;
     decode_step_dir_pins();
-    update_watchdog_settings();
+    watchdog_feed();
     min_endstop_.axis_ = this;
     max_endstop_.axis_ = this;
 }
@@ -98,21 +98,6 @@ void Axis::decode_step_dir_pins() {
     step_pin_ = get_gpio_pin_by_pin(config_.step_gpio_pin);
     dir_port_ = get_gpio_port_by_pin(config_.dir_gpio_pin);
     dir_pin_ = get_gpio_pin_by_pin(config_.dir_gpio_pin);
-}
-
-// @brief: Setup the watchdog reset value from the configuration watchdog timeout interval. 
-void Axis::update_watchdog_settings() {
-
-    if(config_.watchdog_timeout <= 0.0f) { // watchdog disabled 
-        watchdog_reset_value_ = 0;
-    } else if(config_.watchdog_timeout >= UINT32_MAX / (current_meas_hz+1)) { //overflow! 
-        watchdog_reset_value_ = UINT32_MAX;
-    } else {
-        watchdog_reset_value_ = static_cast<uint32_t>(config_.watchdog_timeout * current_meas_hz);
-    }
-
-    // Do a feed to avoid instant timeout
-    watchdog_feed();
 }
 
 // @brief (de)activates step/dir input
@@ -187,16 +172,16 @@ bool Axis::do_updates() {
 
 // @brief Feed the watchdog to prevent watchdog timeouts.
 void Axis::watchdog_feed() {
-    watchdog_current_value_ = watchdog_reset_value_;
+    watchdog_current_value_ = get_watchdog_reset();
 }
 
-// @brief Check the watchdog timer for expiration. Also sets the watchdog error bit if expired. 
+// @brief Check the watchdog timer for expiration. Also sets the watchdog error bit if expired.
 bool Axis::watchdog_check() {
-    // reset value = 0 means watchdog disabled. 
-    if(watchdog_reset_value_ == 0) return true;
+    // reset value = 0 means watchdog disabled.
+    if (get_watchdog_reset() == 0) return true;
 
     // explicit check here to ensure that we don't underflow back to UINT32_MAX
-    if(watchdog_current_value_ > 0) {
+    if (watchdog_current_value_ > 0) {
         watchdog_current_value_--;
         return true;
     } else {
