@@ -293,6 +293,12 @@ void Encoder::sample_now() {
             sincos_sample_c_ = (get_adc_voltage(GPIO_4_GPIO_Port, GPIO_4_Pin) / 3.3f) - 0.5f;
         } break;
 
+        case MODE_SPI_ABS_AMS:
+        case MODE_SPI_ABS_CUI:
+        {
+            // Do nothing
+        } break;
+
         default: {
            set_error(ERROR_UNSUPPORTED_ENCODER_MODE);
         } break;
