@@ -88,7 +88,7 @@ bool Controller::anticogging_calibration(float pos_estimate, float vel_estimate)
         }
         if (config_.anticogging.index < 3600) {
             config_.control_mode = CTRL_MODE_POSITION_CONTROL;
-            input_pos_ = config_.anticogging.index * config_.anticogging.cogging_ratio;
+            input_pos_ = config_.anticogging.index * axis_->encoder_.getCoggingRatio();
             input_vel_ = 0.0f;
             input_current_ = 0.0f;
             input_pos_updated();
@@ -100,7 +100,7 @@ bool Controller::anticogging_calibration(float pos_estimate, float vel_estimate)
             input_vel_ = 0.0f;
             input_current_ = 0.0f;
             input_pos_updated();
-            config_.anticogging.use_anticogging = true;  // We're good to go, enable anti-cogging
+            config_.anticogging.anticogging_valid = true;  // We're good to go, enable anti-cogging
             config_.anticogging.calib_anticogging = false;
             return true;
         }

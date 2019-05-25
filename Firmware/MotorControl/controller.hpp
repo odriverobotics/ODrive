@@ -130,7 +130,7 @@ public:
                 make_protocol_property("homing_speed", &config_.homing_speed),
                 make_protocol_property("inertia", &config_.inertia),
                 make_protocol_property("input_filter_bandwidth", &config_.input_filter_bandwidth,
-                    [](void* ctx) { static_cast<Controller*>(ctx)->update_filter_gains(); }, this)
+                    [](void* ctx) { static_cast<Controller*>(ctx)->update_filter_gains(); }, this),
                 make_protocol_object("anticogging",
                     make_protocol_ro_property("index", &config_.anticogging.index),
                     make_protocol_property("anticogging_valid", &config_.anticogging.anticogging_valid),
