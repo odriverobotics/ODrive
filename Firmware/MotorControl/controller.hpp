@@ -32,7 +32,7 @@ public:
         float vel_limit_tolerance = 1.2f;  // ratio to vel_lim. 0.0f to disable
         float vel_ramp_rate = 10000.0f;  // [(counts/s) / s]
         bool setpoints_in_cpr = false;
-    float homing_speed = 2000.0f;   // [counts/s]
+        float homing_speed = 2000.0f;   // [counts/s]
     };
 
     explicit Controller(Config_t& config);
