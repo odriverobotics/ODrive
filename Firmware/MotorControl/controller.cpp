@@ -81,7 +81,8 @@ bool Controller::home_axis() {
  */
 bool Controller::anticogging_calibration(float pos_estimate, float vel_estimate) {
     if (config_.anticogging.calib_anticogging) {
-        float pos_err = config_.anticogging.index - pos_estimate;
+        config_.anticogging.anticogging_valid = false;
+        float pos_err = input_pos_ - pos_estimate;
         if (fabsf(pos_err) <= config_.anticogging.calib_pos_threshold &&
             fabsf(vel_estimate) < config_.anticogging.calib_vel_threshold) {
             config_.anticogging.cogging_map[std::clamp<uint32_t>(config_.anticogging.index++, 0, 3600)] = vel_integrator_current_;
