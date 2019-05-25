@@ -21,6 +21,7 @@ public:
         ERROR_CONTROLLER_FAILED = 0x200,
         ERROR_POS_CTRL_DURING_SENSORLESS = 0x400,
         ERROR_WATCHDOG_TIMER_EXPIRED = 0x800,
+        ERROR_ESTOP_REQUESTED = 0x1000
     };
 
     enum State_t {
@@ -67,6 +68,8 @@ public:
         uint16_t dir_gpio_pin = 0;
 
         LockinConfig_t lockin;
+        uint8_t can_node_id = 0; // Both axes will have the same id to start
+        uint32_t can_heartbeat_rate_ms = 100;
     };
 
     enum thread_signals {
@@ -100,6 +103,7 @@ public:
 
     static void load_default_step_dir_pin_config(
         const AxisHardwareConfig_t& hw_config, Config_t* config);
+    static void load_default_can_id(const int& id, Config_t& config);
 
     bool check_DRV_fault();
     bool check_PSU_brownout();
@@ -210,6 +214,7 @@ public:
     State_t& current_state_ = task_chain_[0];
     uint32_t loop_counter_ = 0;
     LockinState_t lockin_state_ = LOCKIN_STATE_INACTIVE;
+    uint32_t last_heartbeat_ = 0;
 
     // watchdog
     uint32_t watchdog_reset_value_ = 0; //computed from config_.watchdog_timeout in update_watchdog_settings()
@@ -248,7 +253,9 @@ public:
                     make_protocol_property("finish_on_vel", &config_.lockin.finish_on_vel),
                     make_protocol_property("finish_on_distance", &config_.lockin.finish_on_distance),
                     make_protocol_property("finish_on_enc_idx", &config_.lockin.finish_on_enc_idx)
-                )
+                ),
+                make_protocol_property("can_node_id", &config_.can_node_id),
+                make_protocol_property("can_heartbeat_rate_ms", &config_.can_heartbeat_rate_ms)
             ),
             make_protocol_object("motor", motor_.make_protocol_definitions()),
             make_protocol_object("controller", controller_.make_protocol_definitions()),

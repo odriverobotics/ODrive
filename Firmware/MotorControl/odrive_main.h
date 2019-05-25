@@ -54,6 +54,7 @@ typedef struct {
     uint32_t min_stack_space_uart;
     uint32_t min_stack_space_usb_irq;
     uint32_t min_stack_space_startup;
+    uint32_t min_stack_space_can;
 } SystemStats_t;
 extern SystemStats_t system_stats_;
 
@@ -87,11 +88,14 @@ struct BoardConfig_t {
 extern BoardConfig_t board_config;
 extern bool user_config_loaded_;
 
+// Forward Declarations
 class Axis;
 class Motor;
+class ODriveCAN;
 
 constexpr size_t AXIS_COUNT = 2;
 extern Axis *axes[AXIS_COUNT];
+extern ODriveCAN *odCAN;
 
 // if you use the oscilloscope feature you can bump up this value
 #define OSCILLOSCOPE_SIZE 128
