@@ -287,10 +287,11 @@ bool Axis::run_closed_loop_control_loop() {
         if (homing_state_ == HOMING_STATE_HOMING) {
             if (min_endstop_.getEndstopState()) {
                 encoder_.set_linear_count(min_endstop_.config_.offset);
-                controller_.pos_setpoint_ = 0.0f;
-                controller_.vel_setpoint_ = 0.0f;
-                controller_.current_setpoint_ = 0.0f;
+                controller_.input_pos_ = 0.0f;
+                controller_.input_vel_ = 0.0f;
+                controller_.input_current_ = 0.0f;
                 controller_.config_.control_mode = Controller::CTRL_MODE_POSITION_CONTROL;
+                controller_.input_pos_updated();
                 homing_state_ = HOMING_STATE_MOVE_TO_ZERO;
             }
         } else if (homing_state_ == HOMING_STATE_MOVE_TO_ZERO) {

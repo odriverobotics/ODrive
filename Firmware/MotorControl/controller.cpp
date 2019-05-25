@@ -61,9 +61,10 @@ void Controller::start_anticogging_calibration() {
 bool Controller::home_axis() {
     if (axis_->min_endstop_.config_.enabled) {
         config_.control_mode = CTRL_MODE_VELOCITY_CONTROL;
-        pos_setpoint_ = 0.0f;
-        vel_setpoint_ = -config_.homing_speed;
-        current_setpoint_ = 0.0f;
+        input_pos_ = 0.0f;
+        input_pos_updated();
+        input_vel_ = -config_.homing_speed;
+        input_current_ = 0.0f;
         axis_->homing_state_ = HOMING_STATE_HOMING;
     } else {
         return false;
@@ -87,16 +88,18 @@ bool Controller::anticogging_calibration(float pos_estimate, float vel_estimate)
         }
         if (config_.anticogging.index < 3600) {
             config_.control_mode = CTRL_MODE_POSITION_CONTROL;
-            pos_setpoint_ = config_.anticogging.index * config_.anticogging.cogging_ratio;
-            vel_setpoint_ = 0.0f;
-            current_setpoint_ = 0.0f;
+            input_pos_ = config_.anticogging.index * config_.anticogging.cogging_ratio;
+            input_vel_ = 0.0f;
+            input_current_ = 0.0f;
+            input_pos_updated();
             return false;
         } else {
             config_.anticogging.index = 0;
             config_.control_mode = CTRL_MODE_POSITION_CONTROL;
-            pos_setpoint_ = 0.0f;  // Send the motor home
-            vel_setpoint_ = 0.0f;
-            current_setpoint_ = 0.0f;
+            input_pos_ = 0.0f;  // Send the motor home
+            input_vel_ = 0.0f;
+            input_current_ = 0.0f;
+            input_pos_updated();
             config_.anticogging.use_anticogging = true;  // We're good to go, enable anti-cogging
             config_.anticogging.calib_anticogging = false;
             return true;
