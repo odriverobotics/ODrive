@@ -127,7 +127,7 @@ If you are using an encoder with an index signal, another problem that has been 
 * difficulty with requested_state = AXIS_STATE_FULL_CALIBRATION_SEQUENCE, where your calibration sequence may not complete
 * strange behavior after performing odrv0.save_configuration() and odrv0.reboot()
 * when performing an index_search, the motor does not return to the same position each time.
-One easy step that _might_ fix the noise on the Z input has been to solder a 0.1uF capacitor to the Z pin and the GND pin on the underside of the ODrive board. 
+One easy step that _might_ fix the noise on the Z input has been to solder a 22nF-47nF capacitor to the Z pin and the GND pin on the underside of the ODrive board. 
 
 ## AS5047/AS5048 Encoders
 The AS5047/AS5048 encoders are Hall Effect/Magenetic sensors that can serve as rotary encoders for the ODrive.
