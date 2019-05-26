@@ -80,6 +80,7 @@ void Axis::step_cb() {
         GPIO_PinState dir_pin = HAL_GPIO_ReadPin(dir_port_, dir_pin_);
         float dir = (dir_pin == GPIO_PIN_SET) ? 1.0f : -1.0f;
         controller_.input_pos_ += dir * config_.counts_per_step;
+        controller_.input_pos_updated();
     }
 };
 
