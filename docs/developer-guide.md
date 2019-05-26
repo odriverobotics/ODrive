@@ -137,6 +137,8 @@ Example usage: `./run_tests.py --test-rig-yaml ../tools/test-rig-parallel.yaml`
 
 <br><br>
 ## Debugging
+If you're using VSCode, make sure you have the Cortex Debug extension, OpenOCD, and the STLink.  You can verify that OpenOCD and STLink are working by ensuring you can flash code.  Open the ODrive_Workspace.code-workspace file, and start a debugging session (F5).  VSCode will pick up the correct settings from the workspace and automatically connect.  Breakpoints can be added graphically in VSCode.
+
 * Run `make gdb`. This will reset and halt at program start. Now you can set breakpoints and run the program. If you know how to use gdb, you are good to go.
 
 <br><br>
