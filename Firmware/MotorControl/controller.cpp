@@ -41,12 +41,14 @@ void Controller::move_to_pos(float goal_point) {
     goal_point_ = goal_point;
 }
 
-void Controller::move_incremental(float displacement, bool from_goal_point = true){
-    if(from_goal_point){
-        move_to_pos(goal_point_ + displacement);
+void Controller::move_incremental(float displacement, bool from_input_pos = true){
+    if(from_input_pos){
+        input_pos_ += displacement;
     } else{
-        move_to_pos(pos_setpoint_ + displacement);
+        input_pos_ = pos_setpoint_ + displacement;
     }
+
+    input_pos_updated();
 }
 
 void Controller::start_anticogging_calibration() {
