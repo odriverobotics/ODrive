@@ -85,8 +85,9 @@ Some instructions in this document may assume that you're using a bash command p
   * __Note 1__: After installing, create an environment variable named `ARM_GCC_ROOT` whose value is the path you installed to.  e.g. `C:\Program Files (x86)\GNU Tools Arm Embedded\7 2018-q2-update`.  This variable is used to locate include files for the c/c++ Visual Studio Code extension.
   * __Note 2__: 8-2018-q4-major seems to have a bug on Windows.  Please use 7-2018-q2-update.
 * [Tup](http://gittup.org/tup/index.html)
-* [Make for Windows](http://gnuwin32.sourceforge.net/packages/make.htm)
-* [OpenOCD](http://gnuarmeclipse.github.io/openocd/install/). Also follow the instructions on the ST-LINK/V2 drivers.
+* [GNU MCU Eclipse's Windows Build Tools](https://github.com/gnu-mcu-eclipse/windows-build-tools/releases)
+* [OpenOCD](http://gnuarmeclipse.github.io/openocd/install/). 
+* [ST-Link/V2 Drivers](http://www.st.com/web/en/catalog/tools/FM147/SC1887/PF260219)
 
 <br>
 
@@ -136,6 +137,8 @@ Example usage: `./run_tests.py --test-rig-yaml ../tools/test-rig-parallel.yaml`
 
 <br><br>
 ## Debugging
+If you're using VSCode, make sure you have the Cortex Debug extension, OpenOCD, and the STLink.  You can verify that OpenOCD and STLink are working by ensuring you can flash code.  Open the ODrive_Workspace.code-workspace file, and start a debugging session (F5).  VSCode will pick up the correct settings from the workspace and automatically connect.  Breakpoints can be added graphically in VSCode.
+
 * Run `make gdb`. This will reset and halt at program start. Now you can set breakpoints and run the program. If you know how to use gdb, you are good to go.
 
 <br><br>

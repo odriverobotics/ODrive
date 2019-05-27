@@ -49,6 +49,9 @@ For predictable results, try to have only one feature enabled for any one pin. W
 * `odrv0.save_configuration()`
 * `odrv0.reboot()`
 
+### Analog input
+Analog inputs can be used to measure voltages between 0 and 3.3V. Odrive uses a 12 bit ADC (4096 steps) and so has a maximum resolution of 0.8 mV. Some GPIO pins require the appropriate pin priority (see above) to be set before they can be used as an analog input. To read the voltage on GPIO1 in odrive tool the following would be entered: `odrv0.get_adc_voltage(1)`
+
 ### Hall feedback pinout
 When the encoder mode is set to hall feedback, the pinout on the encoder port is as follows:
 
