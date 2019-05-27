@@ -83,7 +83,7 @@ After testing, don't forget to save and reboot:
 
 ---
 
-## Homing Procedure Configuration
+## Homing Configuration
 There is one additional configuration parameter specifically for the homing process:
 
 Name |  Type | Default
@@ -93,7 +93,7 @@ homing_speed | float | 2000.0f
 `homing_speed` is the axis travel speed during homing, in counts/second.
 
 
-## Performing the Homing Sequence
+### Performing the Homing Sequence
 Homing is possible once the ODrive has closed-loop control over the axis.  To trigger homing, we must first be in `AXIS_STATE_CLOSED_LOOP_CONTROL`, then call `<odrv>.<axis>.controller.home_axis()`  This starts the homing sequence, which works as follows:
 
 1. The axis moves towards the `min_endstop` at `homing_speed`
