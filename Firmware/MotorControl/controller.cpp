@@ -60,6 +60,8 @@ void Controller::start_anticogging_calibration() {
 
 // Slowly drive in the negative direction at homing_speed until the min endstop is pressed
 // When pressed, set the linear count to the offset (default 0), and then
+
+//TODO: This needs to be upgraded to use its own run_control_loop!
 bool Controller::home_axis() {
     if (axis_->min_endstop_.config_.enabled) {
         config_.control_mode = CTRL_MODE_VELOCITY_CONTROL;

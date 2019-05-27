@@ -348,10 +348,6 @@ void Axis::run_state_machine_loop() {
                 else if (config_.startup_sensorless_control)
                     task_chain_[pos++] = AXIS_STATE_SENSORLESS_CONTROL;
                 task_chain_[pos++] = AXIS_STATE_IDLE;
-            } else if (requested_state_ == AXIS_STATE_HOMING){
-                task_chain_[pos++] = AXIS_STATE_HOMING;
-                task_chain_[pos++] = AXIS_STATE_CLOSED_LOOP_CONTROL;
-                task_chain_[pos++] = AXIS_STATE_IDLE;
             } else if (requested_state_ == AXIS_STATE_FULL_CALIBRATION_SEQUENCE) {
                 task_chain_[pos++] = AXIS_STATE_MOTOR_CALIBRATION;
                 if (encoder_.config_.use_index)
