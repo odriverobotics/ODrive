@@ -1,10 +1,13 @@
-# Endstops
+# Endstops and Homing
 
-Endstops are used for both "homing" the axis of a machine and for stopping the machine in the event it attempts to go "out of bounds".
+By default, the ODrive assumes that your motor encoder's zero position is the same as your machine's zero position, but in real life this is rarely the case.  In these systems it is useful to allow your motor to move until a physical or electronic device orders the system to stop. That `endstop` can be used as a known reference point. Once the ODrive has hit that position it may then want to move to a final zero, or `home`, position.  The process of finding your machine's zero position is known as `homing`.
 
-## Configuration Properties
+ODrive supports the use of its GPIO pins to connect to phyiscal limit switches or other sensors that can serve as endstops.  Before you can home your machine, you must be able to adequately control your motor in  `AXIS_STATE_CLOSED_LOOP_CONTROL`.
 
-Each axis has two endstops: a "min" and a "max".  Each endstop has the following properties:
+---
+
+## Endstop Configuration
+Each axis supports two endstops: `min_endstop` and `max_endstop`.  For each endstop, the following properties are accessible through `odrivetool`:
 
 Name |  Type | Default
 --- | -- | -- 
@@ -14,60 +17,99 @@ offset | int | 0
 debounce_ms | float | 100.0
 is_active_high | boolean | False
 
-
 ### gpio_num
-The GPIO pin number, according to the silkscreen labels on ODrive
+The GPIO pin number, according to the silkscreen labels on ODrive. Set with these commands:
+```
+<odrv>.<axis>.max_endstop.config.gpio_num = <1, 2, 3, 4, 5, 6, 7, 8>
+<odrv>.<axis>.min_endstop.config.gpio_num = <1, 2, 3, 4, 5, 6, 7, 8>
+```
 
 ### enabled
-Enables/disables detection of the endstop.  If disabled, homing and e-stop cannot take place.
+Enables/disables detection of the endstop.  If disabled, homing and e-stop cannot take place. Set with:
+```
+<odrv>.<axis>.max_endstop.config.enabled = <True, False>
+<odrv>.<axis>.min_endstop.config.enabled = <True, False>
+```
 
 ### offset
-This is the location along the axis, in counts, that the endstop is positioned at.  For example, if you want a position command of `0` to represent a position 100 counts away from the endstop, the offset would be -100 (because the endstop is at position -100)
+This is the position of the endstops on the relevant axis, in counts.  For example, if you want a position command of `0` to represent a position 100 counts away from the endstop, the offset would be `-100.0` (because the endstop is located at axis position `-100.0`).
+
+```
+<odrv>.<axis>.max_endstop.config.offset = <int>
+<odrv>.<axis>.min_endstop.config.offset = <int>
+```
 
 ### debounce_ms
-The debouncing time, in milliseconds, for this endstop.  Most switches exhibit some sort of bounce, and this setting will help prevent the switch from triggering repeatedly. It works for both HIGH and LOW transitions, regardless of the setting of `is_active_high`.
+The debouncing time for this endstop.  Most switches exhibit some sort of bounce, and this setting will help prevent the switch from triggering repeatedly. It works for both HIGH and LOW transitions, regardless of the setting of `is_active_high`. Debouncing is a good practice for digital inputs, read up on it [here](https://en.wikipedia.org/wiki/Switch). `debounce_ms` has units of miliseconds.
+
+```
+<odrv>.<axis>.max_endstop.config.debounce_ms = <Float>
+<odrv>.<axis>.min_endstop.config.debounce_ms = <Float>
+```
 
 ### is_active_high
 This is how you configure the endstop to be either "NPN" or "PNP".  An "NPN" configuration would be `is_active_high = False` whereas a PNP configuration is `is_active_high = True`.  Refer to the following table for more information:
 
-![Endstop configuration](Endstop_configuration.png)
-
 3D printer endstops (like those that come with a RAMPS 1.4) are typically configuration **4**.
 
-### Configuring an endstop
+![Endstop configuration](Endstop_configuration.png)  
 
-You can access these configuration properties through odrivetool.  For example, if we want to configure a 3D printer-style minimum endstop on GPIO 5 for homing, and you want your motor to pull off the endstop about a quarter turn with a 8192 cpr encoder, you would set:
+
+### Example
+
+If we want to configure a 3D printer-style minimum endstop for homing on GPIO 5 and we want our motor to move away from the endstop about a quarter turn with a 8192 cpr encoder, we would set:
 
 ```
 <odrv>.<axis>.min_endstop.config.gpio_num = 5
-<odrv>.<axis>.min_endstop.config.is_active_high = 4
-<odrv>.<axis>.min_endstop.config.offset = -2048;
+<odrv>.<axis>.min_endstop.config.is_active_high = False
 <odrv>.<axis>.min_endstop.config.enabled = True
+```
 
+### Testing The Endstops
+Once the endstops are configured you can test your endstops for correct functionality. Try activating your endstops and check the states of these variables through odrivetool:
+
+```
+<odrv>.<axis>.max_endstop.endstop_state
+<odrv>.<axis>.min_endstop.endstop_state
+```
+
+A state of `True` means the switch is pressed.  A state of `False` means the switch is NOT pressed.  As simple as that. Give it a try. Click your switches, or put a magnet on your hall switch and see if the states change. 
+
+After testing, don't forget to save and reboot:
+```
 <odrv>.save_configuration()
 <odrv>.reboot()
 ```
 
+---
 
-## Homing
+## Homing Procedure Configuration
+There is one additional configuration parameter specifically for the homing process:
 
-Homing is possible once the ODrive has closed loop control over the axis.  To trigger homing, we use must first be in AXIS_STATE_CLOSED_LOOP_CONTROL, then we call`<odrv>.<axis>.controller.home_axis()`  This starts the homing sequence.  The homing sequence works as follows:
+Name |  Type | Default
+--- | -- | -- 
+homing_speed | float | 2000.0f
 
-1. Verify that the `min_endstop` is `enabled`
-2. Drive towards the `min_endstop` in velocity control mode at `controller.config.homing_speed`
-3. When the `min_endstop` is pressed, set the current position = `min_endstop.config.offset`
-4. Request position control mode, and move to the positon = `0`
+`homing_speed` is the axis travel speed during homing, in counts/second.
 
-### Homing Speed
-Homing speed is configurable through the value
-`<odrv>.<axis>.controller.config.homing_speed` in counts/second.  It has the default value of 2000 counts/second.
 
-Note the assumption is made that `min_endstop` is in the negative direction, thus the velocity commanded is `-controller.config.homing_speed`, which will drive the axis towards the endstop.  If you have an unusual setup and want to change this behaviour, simply use a negative value for `homing_speed`.
+## Performing the Homing Sequence
+Homing is possible once the ODrive has closed-loop control over the axis.  To trigger homing, we must first be in `AXIS_STATE_CLOSED_LOOP_CONTROL`, then call `<odrv>.<axis>.controller.home_axis()`  This starts the homing sequence, which works as follows:
 
-### Homing at startup
-It is possible to configure the odrive to enter homing immediately at startup. For safety reasons, we require the user to specifically enable closed loop control at startup, even if homing is requested.  Thus, to enable homing at startup, the following must be configured:
+1. The axis moves towards the `min_endstop` at `homing_speed`
+2. The axis presses the `min_endstop`
+3. The axis moves away from the `min_endstop` to the home position
+
+### Homing at Startup
+It is possible to configure the odrive to enter homing immediately after startup. For safety reasons, we require the user to specifically enable closed loop control at startup, even if homing is requested.  Thus, to enable homing at startup, the following must be configured:
 
 ```
 <odrv>.<axis>.config.startup_closed_loop_control = True
 <odrv>.<axis>.config.startup_homing = True
 ```
+
+## Additional endstop devices
+
+In addition to phyiscal switches there are other options for wiring up your endstops - you will have to work out the details of connecting your device but here are some suggested approaches:
+
+![endstop figure](https://github.com/owhite/ODrive/blob/master/docs/endstop_figure.png)
