@@ -112,4 +112,4 @@ It is possible to configure the odrive to enter homing immediately after startup
 
 In addition to phyiscal switches there are other options for wiring up your endstops - you will have to work out the details of connecting your device but here are some suggested approaches:
 
-![endstop figure](https://github.com/owhite/ODrive/blob/master/docs/endstop_figure.png)
+![endstop figure](endstop_figure.png)
