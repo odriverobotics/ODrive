@@ -50,6 +50,11 @@ float ODriveArduino::readFloat() {
     return readString().toFloat();
 }
 
+float ODriveArduino::GetVelocity(int motor_number){
+	serial_<< "r axis" << motor_number << ".encoder.vel_estimate\n";
+	return ODriveArduino::readFloat();
+}
+
 int32_t ODriveArduino::readInt() {
     return readString().toInt();
 }
