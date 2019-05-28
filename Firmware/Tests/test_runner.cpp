@@ -32,7 +32,7 @@ struct can_Signal_t {
 
 // Fetch a specific signal from the message
 template <typename T>
-T can_getSignal(can_Message_t msg, const uint8_t startBit, const uint8_t length, const bool isIntel, const float factor, const float offset) {
+float can_getSignal(can_Message_t msg, const uint8_t startBit, const uint8_t length, const bool isIntel, const float factor, const float offset) {
     uint64_t tempVal = 0;
     uint64_t mask    = (1ULL << length) - 1;
 
@@ -47,7 +47,7 @@ T can_getSignal(can_Message_t msg, const uint8_t startBit, const uint8_t length,
 
     T retVal;
     std::memcpy(&retVal, &tempVal, sizeof(T));
-    return static_cast<T>((retVal * factor) + offset);
+    return (retVal * factor) + offset;
 }
 
 template <typename T>
@@ -80,7 +80,7 @@ void can_setSignal(can_Message_t& msg, const T& val, const uint8_t startBit, con
 }
 
 template <typename T>
-T can_getSignal(can_Message_t msg, const can_Signal_t& signal) {
+float can_getSignal(can_Message_t msg, const can_Signal_t& signal) {
     return can_getSignal<T>(msg, signal.startBit, signal.length, signal.isIntel, signal.factor, signal.offset);
 }
 
@@ -125,6 +125,14 @@ TEST_SUITE("CAN Functions") {
         std::memcpy(rxmsg.buf, &myFloat, sizeof(myFloat));
         auto floatVal = can_getSignal<float>(rxmsg, 0, 32, true, 1, 0);
         CHECK(floatVal == 1234.6789f);
+
+        can_Message_t msg;
+        msg.id     = 0x00E;
+        msg.buf[0] = 0x96;
+        msg.buf[1] = 0x00;
+        msg.buf[2] = 0x00;
+        msg.buf[3] = 0x00;
+        CHECK(can_getSignal<int32_t>(msg, 0, 32, true, 0.01f, 0.0f) == 1.50f);
     }
 
     TEST_CASE("setSignal") {
