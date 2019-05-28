@@ -291,9 +291,9 @@ void CANSimple::set_input_current_callback(Axis* axis, can_Message_t& msg) {
     axis->controller_.input_current_ = can_getSignal<int32_t>(msg, 0, 32, true, 0.01f, 0);
 }
 
-void CANSimple::set_controller_modes_callback(Axis* axis, can_Message_t& msg){
-    axis->controller_.config_.control_mode = can_getSignal<Controller::ControlMode_t>(msg, 0, 32, true, 1, 0);
-    axis->controller_.config_.input_mode = can_getSignal<Controller::InputMode_t>(msg, 32, 32, true, 1, 0);
+void CANSimple::set_controller_modes_callback(Axis* axis, can_Message_t& msg) {
+    axis->controller_.config_.control_mode = static_cast<Controller::ControlMode_t>(can_getSignal<int32_t>(msg, 0, 32, true, 1, 0));
+    axis->controller_.config_.input_mode = static_cast<Controller::InputMode_t>(can_getSignal<int32_t>(msg, 32, 32, true, 1, 0));
 }
 
 void CANSimple::set_vel_limit_callback(Axis* axis, can_Message_t& msg) {
