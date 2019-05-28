@@ -88,9 +88,9 @@ class ODriveCAN {
 
 #include <iterator>
 template <typename T>
-T can_getSignal(can_Message_t msg, const uint8_t startBit, const uint8_t length, const bool isIntel, const float factor, const float offset) {
+float can_getSignal(can_Message_t msg, const uint8_t startBit, const uint8_t length, const bool isIntel, const float factor, const float offset) {
     uint64_t tempVal = 0;
-    uint64_t mask = (1ULL << length) - 1;
+    uint64_t mask    = (1ULL << length) - 1;
 
     if (isIntel) {
         std::memcpy(&tempVal, msg.buf, sizeof(tempVal));
@@ -103,12 +103,12 @@ T can_getSignal(can_Message_t msg, const uint8_t startBit, const uint8_t length,
 
     T retVal;
     std::memcpy(&retVal, &tempVal, sizeof(T));
-    return static_cast<T>((retVal * factor) + offset);
+    return (retVal * factor) + offset;
 }
 
 template <typename T>
 void can_setSignal(can_Message_t& msg, const T& val, const uint8_t startBit, const uint8_t length, const bool isIntel, const float factor, const float offset) {
-    T scaledVal = (val - offset) / factor;
+    T scaledVal        = (val - offset) / factor;
     uint64_t valAsBits = 0;
     std::memcpy(&valAsBits, &scaledVal, sizeof(scaledVal));
 
@@ -136,7 +136,7 @@ void can_setSignal(can_Message_t& msg, const T& val, const uint8_t startBit, con
 }
 
 template <typename T>
-T can_getSignal(can_Message_t msg, const can_Signal_t& signal) {
+float can_getSignal(can_Message_t msg, const can_Signal_t& signal) {
     return can_getSignal<T>(msg, signal.startBit, signal.length, signal.isIntel, signal.factor, signal.offset);
 }
 
