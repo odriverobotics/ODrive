@@ -52,12 +52,15 @@ const size_t thermistor_num_coeffs = sizeof(thermistor_poly_coeffs)/sizeof(therm
 #endif
 
 #if HW_VERSION_MAJOR == 3 && HW_VERSION_MINOR >= 5 && HW_VERSION_VOLTAGE >= 48
-#  define DEFAULT_BRAKE_RESISTANCE 2.0f
+#  define DEFAULT_BRAKE_RESISTANCE 2.0f         // [Ohm]
 #else
-#  define DEFAULT_BRAKE_RESISTANCE 0.47f
+#  define DEFAULT_BRAKE_RESISTANCE 0.47f        // [Ohm]
 #endif
-#define DEFAULT_UNDERVOLTAGE_TRIP_LEVEL 8.0f
-#define DEFAULT_OVERVOLTAGE_TRIP_LEVEL (1.07f * HW_VERSION_VOLTAGE)
+#define DEFAULT_UNDERVOLTAGE_TRIP_LEVEL 8.0f    // [V]
+#define DEFAULT_OVERVOLTAGE_TRIP_LEVEL (1.07f * HW_VERSION_VOLTAGE) // [V]
+#define DEFAULT_PWM_FREQUENCY 24000.0f          // [Hz]
+#define DEFAULT_CTRL_FREQ_DIV 3                 // 8kHz control frequency
+#define DEFAULT_DEAD_TIME_NS  120               // [ns]
 
 // TODO: make dynamic
 #define TIM_1_8_CLOCK_HZ 168000000
@@ -196,11 +199,9 @@ MotorImpl<
     TempSensor_t, nullptr, // motor_thermistor_b
     TempSensor_t, nullptr, // motor_thermistor_c
     ADCVoltageSensor_t, &vbus_sense, // vbus_sense
-    decltype(motor_watchdog), &motor_watchdog, 0 // watchdog, watchdog_slot
-> m0(
-    TIM_1_8_PERIOD_CLOCKS, TIM_1_8_RCR, TIM_1_8_DEADTIME_CLOCKS,
-    NVIC_PRIO_M0
-);
+    decltype(motor_watchdog), &motor_watchdog, 0, // watchdog, watchdog_slot
+    DEFAULT_DEAD_TIME_NS // dead_time_ns
+> m0(NVIC_PRIO_M0);
 
 MotorImpl<
     STM32_Timer_t,
@@ -223,12 +224,9 @@ MotorImpl<
     TempSensor_t, nullptr, // motor_thermistor_c
     ADCVoltageSensor_t,
     &vbus_sense, // vbus_sense
-    decltype(motor_watchdog),
-    &motor_watchdog, 1 // watchdog, watchdog_slot
-> m1(
-    TIM_1_8_PERIOD_CLOCKS, TIM_1_8_RCR, TIM_1_8_DEADTIME_CLOCKS,
-    NVIC_PRIO_M1
-);
+    decltype(motor_watchdog), &motor_watchdog, 1, // watchdog, watchdog_slot
+    DEFAULT_DEAD_TIME_NS // dead_time_ns
+> m1(NVIC_PRIO_M1);
 
 static inline bool board_init(Axis axes[AXIS_COUNT]) {
     new (&axes[0]) Axis(

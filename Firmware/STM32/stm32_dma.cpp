@@ -35,7 +35,7 @@ uint8_t STM32_DMAStream_t::find_in_list(const STM32_DMAChannel_t* channel_list) 
     return UINT8_MAX;
 }
 
-bool STM32_DMAStream_t::init(const STM32_DMAChannel_t* channels, DOMAIN src, DOMAIN dst, ALIGNMENT alignment, MODE mode, PRIORITY priority) {
+bool STM32_DMAStream_t::init(const STM32_DMAChannel_t* channels, DOMAIN src, DOMAIN dst, ALIGNMENT alignment, MODE mode, PRIORITY priority, uint32_t fifo_size) {
     uint8_t channel_number = find_in_list(channels);
     if (channel_number >= sizeof(channel_ids) / sizeof(channel_ids[0]))
         return false;
@@ -87,8 +87,16 @@ bool STM32_DMAStream_t::init(const STM32_DMAChannel_t* channels, DOMAIN src, DOM
         default: return false;
     }
     
-    hdma.Init.FIFOMode = DMA_FIFOMODE_DISABLE;
+    hdma.Init.FIFOMode = DMA_FIFOMODE_ENABLE;
     hdma.Init.FIFOThreshold = DMA_FIFO_THRESHOLD_1QUARTERFULL;
+    switch (fifo_size) {
+        case 0: hdma.Init.FIFOMode = DMA_FIFOMODE_DISABLE; break;
+        case 1: hdma.Init.FIFOThreshold = DMA_FIFO_THRESHOLD_1QUARTERFULL; break;
+        case 2: hdma.Init.FIFOThreshold = DMA_FIFO_THRESHOLD_HALFFULL; break;
+        case 3: hdma.Init.FIFOThreshold = DMA_FIFO_THRESHOLD_3QUARTERSFULL; break;
+        case 4: hdma.Init.FIFOThreshold = DMA_FIFO_THRESHOLD_FULL; break;
+        default: return false;
+    }
 
     if (hdma_parent == DMA1) {
         __HAL_RCC_DMA1_CLK_ENABLE();

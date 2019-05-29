@@ -33,6 +33,7 @@ Please add a note of your changes below this heading if you make a Pull Request.
 * implement VBUS voltage override
 * add driver for Pt100 thermistor
 * add motor temperature sensor support
+* add support for changing switching frequency on the fly
 
 ### Changed
 * Encoder index search now based on the new lock-in drive feature

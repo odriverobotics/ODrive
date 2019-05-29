@@ -68,7 +68,7 @@ bool STM32_ADCRegular_t::init(STM32_DMAStream_t* dma) {
     
     if (dma) {
         dma_ = dma;
-        if (!dma->init(adc_.dmas, DMA_t::PERIPHERAL, DMA_t::MEMORY, DMA_t::ALIGN_16_BIT, DMA_t::CIRCULAR, DMA_t::VERY_HIGH)) {
+        if (!dma->init(adc_.dmas, DMA_t::PERIPHERAL, DMA_t::MEMORY, DMA_t::ALIGN_16_BIT, DMA_t::CIRCULAR, DMA_t::VERY_HIGH, 0)) {
             return false;
         }
         dma->link(adc_.hadc, &ADC_HandleTypeDef::DMA_Handle);

@@ -114,10 +114,10 @@ void Axis::decode_step_dir_pins() {
 
 // @brief: Setup the watchdog reset value from the configuration watchdog timeout interval. 
 void Axis::update_watchdog_settings() {
-
-    if(config_.watchdog_timeout <= 0.0f) { // watchdog disabled 
+    uint32_t current_meas_hz = (uint32_t)motor_.config_.switching_frequency; // TODO: this is a hack and the watchdog needs to be changed to use the monotonic system clock
+    if (config_.watchdog_timeout <= 0.0f) { // watchdog disabled 
         watchdog_reset_value_ = 0;
-    } else if(config_.watchdog_timeout >= UINT32_MAX / (current_meas_hz+1)) { //overflow! 
+    } else if (config_.watchdog_timeout >= UINT32_MAX / (current_meas_hz+1)) { //overflow! 
         watchdog_reset_value_ = UINT32_MAX;
     } else {
         watchdog_reset_value_ = static_cast<uint32_t>(config_.watchdog_timeout * current_meas_hz);
@@ -181,10 +181,10 @@ void Axis::watchdog_feed() {
 // @brief Check the watchdog timer for expiration. Also sets the watchdog error bit if expired. 
 bool Axis::watchdog_check() {
     // reset value = 0 means watchdog disabled. 
-    if(watchdog_reset_value_ == 0) return true;
+    if (watchdog_reset_value_ == 0) return true;
 
     // explicit check here to ensure that we don't underflow back to UINT32_MAX
-    if(watchdog_current_value_ > 0) {
+    if (watchdog_current_value_ > 0) {
         watchdog_current_value_--;
         return true;
     } else {
@@ -424,18 +424,21 @@ bool Axis::run_async_control_loop() {
 }
 
 bool Axis::run_phase_locked_control() {
-    Axis other_axis = (this == &axes[0]) ? axes[1] : axes[0];
+    Axis& other_axis = (this == &axes[0]) ? axes[1] : axes[0];
     if (!motor_.arm_foc())
         return error_ |= ERROR_MOTOR_FAILED, false;
 
     run_control_loop([&](float dt){
         float phase = 0.0f;
         float phase_vel = 0.0f;
+        float current_setpoint = 0.0f;
         if (other_axis.current_state_ != AXIS_STATE_IDLE) {
             phase = other_axis.motor_.current_control_.phase; // TODO: add an offset here to account for delayed PWM
             phase_vel = other_axis.motor_.current_control_.phase_vel;
+            //current_setpoint = other_axis.controller_.current_setpoint_;
+            current_setpoint = controller_.current_setpoint_;
         }
-        if (!motor_.FOC_update(0.0f, controller_.current_setpoint_, phase, phase_vel))
+        if (!motor_.FOC_update(0.0f, current_setpoint, phase, phase_vel))
             return false; // set_error should update axis.error_
         return true;
     });

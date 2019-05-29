@@ -27,13 +27,12 @@ template<typename TTimer,
         typename TVoltageSensor,
         TVoltageSensor* vbus_sense,
         typename TWatchdog,
-        TWatchdog* watchdog, uint32_t watchdog_slot>
+        TWatchdog* watchdog, uint32_t watchdog_slot,
+        uint32_t dead_time_ns>
 class MotorImpl : public Motor {
 public:
-    MotorImpl(uint16_t period, uint16_t repetition_counter, uint16_t dead_time,
-              uint8_t interrupt_priority)
-          : period_(period), repetition_counter_(repetition_counter), dead_time_(dead_time),
-            interrupt_priority_(interrupt_priority)
+    MotorImpl(uint8_t interrupt_priority)
+          : interrupt_priority_(interrupt_priority)
     {}
 
     /**
@@ -43,25 +42,37 @@ public:
         // Let's be extra sure nothing unexpected happens
         disarm();
 
+        is_calibrated_ = config_.pre_calibrated;
+
+        uint32_t freq;
+        if (!timer->get_source_freq(&freq))
+            return false;
+        timer_freq_ = freq;
+
+        if (!update_switching_frequency())
+            return false;
+        period_ = target_period_;
+        timer_sync_delay_ = target_period_ / 2;
+
         update_current_controller_gains();
 
         // Init PWM
         if (!timer->init(
-                period_ /* period */,
+                target_period_ /* period */,
                 STM32_Timer_t::UP_DOWN /* mode */,
                 0 /* prescaler */,
-                repetition_counter_ /* repetition counter */
+                repetition_counter_ /* repetition counter (reconfigured on first update) */
             )) {
             return false;
         }
 
-
+        uint32_t dead_time_ticks = static_cast<uint32_t>(dead_time_ns * (timer_freq_ / 1e9f));
         // Ensure that debug halting of the core doesn't leave the motor PWM running
         if (!timer->set_freeze_on_dbg(true)
             || !timer->setup_pwm(1, pwm_ah_gpio, pwm_al_gpio, true, true, period_ / 2)
             || !timer->setup_pwm(2, pwm_bh_gpio, pwm_bl_gpio, true, true, period_ / 2)
             || !timer->setup_pwm(3, pwm_ch_gpio, pwm_cl_gpio, true, true, period_ / 2)
-            || !timer->set_dead_time(dead_time_)) {
+            || !timer->set_dead_time(dead_time_ticks)) {
             return false;
         }
 
@@ -170,11 +181,15 @@ public:
     }
 
     bool arm_foc() {
+        current_control_.enable_current_control = false;
+        current_control_.Vd_setpoint = 0.0f;
+        current_control_.Vq_setpoint = 0.0f;
+        current_control_.cmd_expiry = get_ticks_us() + 5000; // give 5ms time for first current command
         return arm(
-            [](Motor& motor, void* ctx, float pwm_timings[3]){
+            [](Motor& motor, void* ctx, float dt, float pwm_timings[3]){
                 (void) ctx;
                 MotorImpl* asd = dynamic_cast<MotorImpl*>(&motor);
-                return asd && asd->FOC(pwm_timings);
+                return asd && asd->FOC(dt, pwm_timings);
             }, nullptr);
     }
 
@@ -232,7 +247,6 @@ public:
         auto instance = timer->htim.Instance;
         instance->BDTR &= ~TIM_BDTR_AOE; // prevent the PWMs from automatically enabling at the next update
         __HAL_TIM_MOE_DISABLE_UNCONDITIONALLY(&timer->htim);
-        did_refresh_pwm_timings_ = false;
         control_law_ = nullptr;
         control_law_ctx_ = nullptr;
         cpu_exit_critical(mask);
@@ -245,6 +259,35 @@ public:
     void reset_current_control() {
         current_control_.v_current_control_integral_d = 0.0f;
         current_control_.v_current_control_integral_q = 0.0f;
+    }
+
+    bool update_switching_frequency() {
+        uint32_t target_period = static_cast<uint32_t>(timer_freq_ / config_.switching_frequency / 2.0f);
+        target_period &= ~0x1; // make period even (so we can have exactly 90° delay between two timers)
+        
+        // Check if frequency is within range
+        if (target_period > 0xffff) {
+            set_error(ERROR_INVALID_FREQ_SETTING);
+            return false;
+        }
+
+        // The timer update repetition count must be uneven (i.e. RCR even) so
+        // we get an update event on top and bottom edge
+        uint32_t update_rate_divider = config_.control_frequency_divider;
+        if (!(update_rate_divider & 1)) {
+            update_rate_divider >>= 1; // update at double the controller update rate
+        }
+        if (!(update_rate_divider & 1)) {
+            set_error(ERROR_INVALID_FREQ_SETTING);
+            return false;
+        }
+
+        uint32_t mask = cpu_enter_critical();
+        repetition_counter_ = update_rate_divider - 1; // todo: check for too large value
+        target_period_ = target_period;
+        pwm_update_mode_ = (update_rate_divider == config_.control_frequency_divider) ? ON_BOTH : ON_TOP;
+        cpu_exit_critical(mask);
+        return true;
     }
 
     /**
@@ -445,11 +488,12 @@ public:
         ctx.test_current = test_current;
         ctx.max_voltage = max_voltage;
 
-        bool did_arm = arm([](Motor& motor, void* vctx, float pwm_timings[3]) {
+        bool did_arm = arm([](Motor& motor, void* vctx, float dt, float pwm_timings[3]) {
+            (void) dt;
             control_law_ctx_t& ctx = *(control_law_ctx_t*)vctx;
 
             float Ialpha = motor.I_alpha_beta_measured_[0];
-            ctx.test_voltage += (kI * current_meas_period) * (ctx.test_current - Ialpha);
+            ctx.test_voltage += (kI * dt) * (ctx.test_current - Ialpha);
             if (ctx.test_voltage > ctx.max_voltage || ctx.test_voltage < -ctx.max_voltage)
                 return motor.set_error(ERROR_PHASE_RESISTANCE_OUT_OF_RANGE), false;
 
@@ -461,7 +505,7 @@ public:
             return set_error(ERROR_FAILED_TO_ARM), false;
         }
 
-        osDelay(3.0f); // Test runs for 3s
+        osDelay(3000); // Test runs for 3s
 
         if (axis_->error_ != Axis::ERROR_NONE)
             return false;
@@ -476,27 +520,30 @@ public:
     }
 
     bool measure_phase_inductance(float voltage_low, float voltage_high) {
+        const uint32_t duration_ms = 5000;
+
         struct control_law_ctx_t {
             float test_voltages[2];
             float Ialphas[2] = {0.0f, 0.0f};
-            size_t t = 0;
+            uint8_t i = 0;
         } ctx = { .test_voltages = {voltage_low, voltage_high} };
 
-        bool did_arm = arm([](Motor& motor, void* vctx, float pwm_timings[3]) {
+        bool did_arm = arm([](Motor& motor, void* vctx, float dt, float pwm_timings[3]) {
+            (void) dt;
             control_law_ctx_t& ctx = *(control_law_ctx_t*)vctx;
 
-            int i = ctx.t & 1;
-            ctx.Ialphas[i] += motor.I_alpha_beta_measured_[0];
+            ctx.i = (ctx.i + 1) & 1;
+            ctx.Ialphas[ctx.i] += motor.I_alpha_beta_measured_[0];
 
             // Test voltage along phase A
-            return SVM_voltage(motor.vbus_voltage_, ctx.test_voltages[i], 0.0f, pwm_timings);
+            return SVM_voltage(motor.vbus_voltage_, ctx.test_voltages[ctx.i], 0.0f, pwm_timings);
         }, &ctx);
         
         if (!did_arm) {
             return set_error(ERROR_FAILED_TO_ARM), false;
         }
 
-        osDelay(5000);
+        osDelay(duration_ms);
 
         //// De-energize motor
         //if (!enqueue_voltage_timings(motor, 0.0f, 0.0f))
@@ -505,7 +552,7 @@ public:
         float v_L = 0.5f * (voltage_high - voltage_low);
         // Note: A more correct formula would also take into account that there is a finite timestep.
         // However, the discretisation in the current control loop inverts the same discrepancy
-        float dI_by_dt = (ctx.Ialphas[1] - ctx.Ialphas[0]) / (current_meas_period * (float)ctx.t);
+        float dI_by_dt = (ctx.Ialphas[1] - ctx.Ialphas[0]) / (static_cast<float>(duration_ms) / 1000.0f);
         float L = v_L / dI_by_dt;
 
         config_.phase_inductance = L;
@@ -535,22 +582,23 @@ public:
     }
 
 
-    bool FOC(float pwm_timings[3]) {
+    bool FOC(float dt, float pwm_timings[3]) {
         float mod_to_V = (2.0f / 3.0f) * vbus_voltage_;
         float V_to_mod = 1.0f / mod_to_V;
 
         // Syntactic sugar
         CurrentControl_t& ictrl = current_control_;
 
-        if (get_ticks_us() > ictrl.cmd_expiry) {
-            set_error(ERROR_CONTROL_DEADLINE_MISSED);
+        uint64_t now = get_ticks_us();
+        if (now > ictrl.cmd_expiry) {
+            set_error(ERROR_FOC_CMD_TIMEOUT);
             return false;
         }
 
         float I_phase = ictrl.phase;
         float phase_vel = ictrl.phase_vel;
-        ictrl.phase = wrap_pm_pi(ictrl.phase + current_meas_period * phase_vel);
-        float pwm_phase = I_phase + 1.5f * current_meas_period * phase_vel;
+        ictrl.phase = wrap_pm_pi(ictrl.phase + dt * phase_vel);
+        float pwm_phase = I_phase + 0.75f * dt * phase_vel;
         float Id_des = ictrl.Id_setpoint;
         float Iq_des = ictrl.Iq_setpoint;
 
@@ -563,8 +611,11 @@ public:
         float s_I = our_arm_sin_f32(I_phase);
         float Id = c_I * Ialpha + s_I * Ibeta;
         float Iq = c_I * Ibeta - s_I * Ialpha;
-        ictrl.Id_measured += config_.I_measured_report_filter_k * (Id - ictrl.Id_measured);
-        ictrl.Iq_measured += config_.I_measured_report_filter_k * (Iq - ictrl.Iq_measured);
+        float I_measured_k = std::min(dt / config_.I_measured_tau, 1.0f);
+        ictrl.Id_measured += I_measured_k * (Id - ictrl.Id_measured);
+        ictrl.Iq_measured += I_measured_k * (Iq - ictrl.Iq_measured);
+        //ictrl.Id_measured_filtered += config_.I_measured_report_filter_tau * (Id - ictrl.Id_measured_filtered);
+        //ictrl.Iq_measured_filtered += config_.I_measured_report_filter_tau * (Iq - ictrl.Iq_measured_filtered);
         Id = ictrl.Id_measured;
         Iq = ictrl.Iq_measured;
 
@@ -628,8 +679,8 @@ public:
                 ictrl.v_current_control_integral_d *= 0.99f;
                 ictrl.v_current_control_integral_q *= 0.99f;
             } else {
-                ictrl.v_current_control_integral_d += Ierr_d * (ictrl.i_gain * current_meas_period);
-                ictrl.v_current_control_integral_q += Ierr_q * (ictrl.i_gain * current_meas_period);
+                ictrl.v_current_control_integral_d += Ierr_d * (ictrl.i_gain * dt);
+                ictrl.v_current_control_integral_q += Ierr_q * (ictrl.i_gain * dt);
             }
         }
 
@@ -711,7 +762,6 @@ private:
         timer->htim.Instance->ARR = period;
         
         if (!tentative) {
-            did_refresh_pwm_timings_ = true;
             if (is_armed_) {
                 // Set the Automatic Output Enable, so that the Master Output Enable bit
                 // will be automatically enabled on the next update event.
@@ -847,9 +897,11 @@ private:
 
         log_timing(TIMING_LOG_CURRENT_MEAS);
 
+        uint32_t current_meas_period_ticks = period_ * (current_sample_mode_ == ON_BOTH ? 1 : 2) * (repetition_counter_ + 1);
+        float current_meas_period = static_cast<float>(current_meas_period_ticks) / timer_freq_;
+
         // Sample VBUS voltage and temperatures coherently with the current sensors
         if (was_current_sense) {
-            delay_us(1);
             float temp = 0.0f;
             bool is_valid;
             float vbus_voltage_k = std::min(current_meas_period / config_.vbus_voltage_tau, 1.0f);
@@ -878,18 +930,24 @@ private:
                 filter(is_valid, &inv_temp_c_, temp, inv_temp_k);
             }
 
-            float motor_temp_k = std::min(current_meas_period / config_.motor_temp_tau, 1.0f);
-            if (not_null(motor_thermistor_a)) {
-                is_valid = motor_thermistor_a->read_temp(&temp);
-                filter(is_valid, &inv_temp_a_, temp, motor_temp_k);
-            }
-            if (not_null(motor_thermistor_b)) {
-                is_valid = motor_thermistor_b->read_temp(&temp);
-                filter(is_valid, &inv_temp_b_, temp, motor_temp_k);
-            }
-            if (not_null(motor_thermistor_c)) {
-                is_valid = motor_thermistor_c->read_temp(&temp);
-                filter(is_valid, &inv_temp_c_, temp, motor_temp_k);
+            if (!isnan(config_.motor_temp_override)) {
+                motor_temp_a_ = config_.motor_temp_override;
+                motor_temp_b_ = config_.motor_temp_override;
+                motor_temp_c_ = config_.motor_temp_override;
+            } else {
+                float motor_temp_k = std::min(current_meas_period / config_.motor_temp_tau, 1.0f);
+                if (not_null(motor_thermistor_a)) {
+                    is_valid = motor_thermistor_a->read_temp(&temp);
+                    filter(is_valid, &motor_temp_a_, temp, motor_temp_k);
+                }
+                if (not_null(motor_thermistor_b)) {
+                    is_valid = motor_thermistor_b->read_temp(&temp);
+                    filter(is_valid, &motor_temp_b_, temp, motor_temp_k);
+                }
+                if (not_null(motor_thermistor_c)) {
+                    is_valid = motor_thermistor_c->read_temp(&temp);
+                    filter(is_valid, &motor_temp_c_, temp, motor_temp_k);
+                }
             }
         }
 
@@ -942,6 +1000,36 @@ private:
                 return; // error set in do_checks()
             }
 
+            // If there is a motor that synchronizes it's PWM timer to this motor,
+            // the other timer must first complete a cycle that with a period
+            // of (current period + target period) / 2. This ensures that a 90°
+            // phase offset is preserved between both timers.
+            uint32_t target_period = target_period_;
+            uint32_t target_delay = target_period / 2; // 90° phase shift
+
+            if (target_period - target_delay != target_delay) {
+                // phase delay other than 90° currently not supported
+                set_error(ERROR_INVALID_FREQ_SETTING);
+                return;
+            }
+            
+            Motor& other_motor = (&axes[0] == axis_ ? axes[1] : axes[0]).motor_;
+            if (timer_sync_delay_ != target_delay) {
+                // This temporary period only makes sense if it is in effect for
+                // exactly one PWM half cycle.
+                period_ = period_ + target_delay - timer_sync_delay_;
+                timer_sync_delay_ = target_delay;
+                other_motor.target_period_ = target_period;
+                other_motor.timer_sync_delay_ = target_period - target_delay;
+
+                if (config_.control_frequency_divider != 1) { // see note above why this is not yet supported
+                    set_error(ERROR_INVALID_FREQ_SETTING);
+                    return;
+                }
+            } else {
+                period_ = target_period;
+            }
+
             // Apply control law to calculate PWM duty cycles
             if (is_armed_) {
 
@@ -949,7 +1037,7 @@ private:
                 bool success = false;
                 // control_law_ and control_law_ctx_ are supposed to be set atomically in arm()
                 if (control_law_) {
-                    success = control_law_(*this, control_law_ctx_, pwm_timings);
+                    success = control_law_(*this, control_law_ctx_, current_meas_period, pwm_timings);
                 }
 
                 if (!success) {
@@ -990,9 +1078,7 @@ private:
         }
     }
 
-    uint16_t period_;
     uint16_t repetition_counter_;
-    uint16_t dead_time_;
     uint8_t interrupt_priority_;
 
     uint16_t GPIO_port_samples[n_GPIO_samples];

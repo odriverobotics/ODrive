@@ -42,7 +42,7 @@ volatile bool endpoint_list_valid = false;
 
 static uint32_t test_property = 0;
 
-CANSimple *odCAN;
+CANSimple *odCAN = nullptr;
 
 /* Private function prototypes -----------------------------------------------*/
 

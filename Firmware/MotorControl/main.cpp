@@ -47,8 +47,6 @@ BoardConfig_t board_config;
 PerChannelConfig_t axis_configs[AXIS_COUNT];
 bool user_config_loaded_;
 
-const float current_meas_period = CURRENT_MEAS_PERIOD;
-const int current_meas_hz = (int)(CURRENT_MEAS_HZ);
 SystemStats_t system_stats_ = { 0 };
 
 uint64_t serial_number = 0;
@@ -116,14 +114,16 @@ void save_configuration(void) {
 }
 
 extern "C" int load_configuration(void) {
+    // TODO: construct objects before config loading
+
     // Try to load configs
     if (NVM_init() ||
         ConfigFormat::safe_load_config(
                 &board_config,
                 &can_config,
                 &axis_configs,
-                &axes[0].motor_.config_,
-                &axes[1].motor_.config_)) {
+                &m0.config_, // at this point axes[...].motor_ is not assigned yet
+                &m1.config_)) {
         //If loading failed, restore defaults
         board_config = BoardConfig_t();
         can_config = CANSimple::Config_t();
@@ -135,6 +135,14 @@ extern "C" int load_configuration(void) {
             axis_configs[i].axis_config.dir_gpio_num = default_dir_gpio_nums[i];
             axis_configs[i].axis_config.can_node_id = i;
         }
+
+        // TODO: move up
+        m0.config_ = Motor::Config_t();
+        m0.config_.switching_frequency = DEFAULT_PWM_FREQUENCY;
+        m0.config_.control_frequency_divider = DEFAULT_CTRL_FREQ_DIV;
+        m1.config_ = Motor::Config_t();
+        m1.config_.switching_frequency = DEFAULT_PWM_FREQUENCY;
+        m1.config_.control_frequency_divider = DEFAULT_CTRL_FREQ_DIV;
 
         // Load board-specific defaults
         board_config.brake_resistance = DEFAULT_BRAKE_RESISTANCE;
@@ -486,8 +494,7 @@ int main_task(void) {
         axes[i].motor_.start_updates();
     }
     // Synchronize PWM of both motors up to a 90° PWM phase shift
-    sync_timers(m0.get_timer(), m1.get_timer(), TIM_CLOCKSOURCE_ITR0, TIM_1_8_PERIOD_CLOCKS / 2 - 1 * 128, nullptr);
-    system_stats_.min_stack_space_usb = (uint32_t)((1.0f / ((float)HAL_RCC_GetPCLK1Freq() / 4096.0f / 1)) * 1e6f);
+    sync_timers(m0.get_timer(), m1.get_timer(), TIM_CLOCKSOURCE_ITR0, m0.target_period_ / 2, nullptr);
     if (!wwdg.config(0.0f, 1.0f / 200.0f)) // min refresh rate: 200Hz
         goto fail;
     if (!motor_watchdog.start())

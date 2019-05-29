@@ -161,8 +161,6 @@ extern const size_t n_axes;
 extern float oscilloscope[OSCILLOSCOPE_SIZE];
 extern size_t oscilloscope_pos;
 
-extern const float current_meas_period;
-extern const int current_meas_hz;
 extern bool user_config_loaded_;
 
 extern uint64_t serial_number;

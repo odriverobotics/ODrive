@@ -10,7 +10,7 @@ class Axis;
 
 class Motor {
 public:
-    typedef bool(*control_law_t)(Motor& motor, void* ctx, float pwm_timings[3]);
+    typedef bool(*control_law_t)(Motor& motor, void* ctx, float dt, float pwm_timings[3]);
 
     enum Error_t {
         ERROR_NONE = 0,
@@ -41,6 +41,8 @@ public:
         ERROR_FOC_TIMEOUT = 0x1000000,
         ERROR_LEAK_CURRENT_TOO_HIGH = 0x2000000,
         ERROR_MOTOR_OVER_TEMP = 0x4000000,
+        ERROR_INVALID_FREQ_SETTING = 0x8000000,
+        ERROR_FOC_CMD_TIMEOUT = 0x10000000,
     };
 
     enum MotorType_t {
@@ -124,11 +126,36 @@ public:
 
         float max_leak_current = INFINITY; // [A] if three current sensors are available, the motor will disarm if this much current leaks out of the three phases
 
+        /**
+         * @brief PWM switching frequency [Hz].
+         * 
+         * Be careful when changing this value! Too high value can lead
+         * excessive switching losses, too low value can lead to excessive
+         * current ripples. Both can damage the inverter by overheating.
+         * Default value assigned in main.cpp.
+         */
+        float switching_frequency = 0.0f;
+
+        /**
+         * @brief Number of PWM half cycles between PWM updates.
+         * 
+         * This defines the update frequency of the current controller. A value
+         * of 1 means that the current controller runs at twice the switching
+         * frequency. If the interval is too small, the controller will violate
+         * timing constraints (and assert an error) or starve other processes on
+         * the system (such as USB communication). Currently a control frequency
+         * of 8kHz is viable.
+         * 
+         * Default value assigned in main.cpp.
+         */
+        uint8_t control_frequency_divider = 0;
+
         float vbus_voltage_override = 0.0f; // if non-zero, overrides the DC voltage sensor (MAINLY INTENDED FOR DEVELOPMENT, USE WITH CAUTION!)
+        float motor_temp_override = NAN; // if not NaN, overrides the motor temp sensor (MAINLY INTENDED FOR DEVELOPMENT, USE WITH CAUTION!)
 
         float calib_tau = 0.2f;
-        float I_measured_tau = 1.0f;
-        float I_measured_report_filter_k = 1.0f;
+        float I_measured_tau = 0.0f;
+        float I_measured_report_filter_tau = 0.0f;
         float inv_temp_tau = 0.01f;
         float motor_temp_tau = 0.01f;
         float vbus_voltage_tau = 0.01f;
@@ -156,25 +183,23 @@ public:
     virtual bool disarm(bool* was_armed = nullptr) = 0;
 
 
+    virtual bool update_switching_frequency() = 0;
     virtual void update_current_controller_gains() = 0;
     virtual void set_error(Error_t error) = 0;
     virtual float get_effective_current_lim() = 0;
     virtual bool pwm_test(float duration) = 0;
     virtual bool run_calibration() = 0;
-    virtual bool FOC_update(float Id_setpoint, float Iq_setpoint, float phase, float phase_vel, uint32_t expiry_us = 2000, bool force_voltage_control = false) = 0;
+    virtual bool FOC_update(float Id_setpoint, float Iq_setpoint, float phase, float phase_vel, uint32_t expiry_us = 5000, bool force_voltage_control = false) = 0;
 
     Config_t config_;
     Axis* axis_ = nullptr; // set by Axis constructor
 
     UpdateMode_t pwm_update_mode_ = ON_TOP; // update current measurement on top of 
-    UpdateMode_t current_sample_mode_ = ON_BOTTOM;
+    UpdateMode_t current_sample_mode_ = ON_BOTTOM; // TODO: move to template
     UpdateMode_t current_dc_calib_mode_ = ON_TOP;
 
 //private:
 
-    volatile uint8_t new_current_readings_ = 0; // bitfield (values 0...7) to indicate which of the current measurements are new. If ==7, the next current control iteration can happen. Reset by the current control iteration.
-    volatile bool is_updating_pwm_timings_ = false; // true while the PWM timings are being updated
-    volatile bool did_refresh_pwm_timings_ = false; // set after new PWM timings are loaded into the timer, checked and reset after every timer update event by the ISR
     uint16_t timing_log_[TIMING_LOG_NUM_SLOTS] = { 0 };
 
     // variables exposed on protocol
@@ -182,7 +207,7 @@ public:
     // Do not write to this variable directly!
     // It is for exclusive use by the safety_critical_... functions.
     bool is_armed_ = false;
-    bool is_calibrated_ = config_.pre_calibrated;
+    bool is_calibrated_ = false; // assigned in init()
     Iph_ABC_t current_meas_ = {0.0f, 0.0f, 0.0f};
     Iph_ABC_t DC_calib_ = {0.0f, 0.0f, 0.0f};
     float I_alpha_beta_measured_[2] = {0.0f, 0.0f};
@@ -213,6 +238,22 @@ public:
     control_law_t control_law_ = nullptr; // set by arm() and reset by disarm()
     void* control_law_ctx_ = nullptr; // set by arm() and reset by disarm()
 
+    float timer_freq_ = 0.0f; // base frequency of the timer, assigned in init()
+    uint32_t period_; // Updated by the timer update handler based on
+                      // target_period_. By the time the timer update handler is
+                      // invoked, this value is equal to the true period currently
+                      // in effect. By the time the timer update handler completes,
+                      // this value is equal to the period that comes into effect
+                      // at the next timer update.
+    uint32_t timer_sync_delay_; // the delay of this motor's timer with respect
+                                // to the other motor.
+    uint32_t target_period_; // Can be written from anywhere to request a new
+                             // period. If timers of multiple motors are
+                             // synchronized, it is sufficient to update this
+                             // value on one motor only.
+
+
+public:
     // Communication protocol definitions
     auto make_protocol_definitions() {
         return make_protocol_member_list(
@@ -239,6 +280,7 @@ public:
             make_protocol_ro_property("motor_temp_c", &motor_temp_c_),
             make_protocol_property("max_motor_temp", &max_motor_temp_),
             make_protocol_ro_property("update_events", &update_events_),
+            make_protocol_ro_property("timer_freq", &timer_freq_),
             make_protocol_property("field_weakening_status", &field_weakening_status_),
             make_protocol_object("current_control",
                 make_protocol_property("p_gain", &current_control_.p_gain),
@@ -301,6 +343,8 @@ public:
                 make_protocol_property("current_lim", &config_.current_lim),
                 make_protocol_property("inverter_temp_limit_lower", &config_.inverter_temp_limit_lower),
                 make_protocol_property("inverter_temp_limit_upper", &config_.inverter_temp_limit_upper),
+                make_protocol_property("motor_temp_limit_lower", &config_.motor_temp_limit_lower),
+                make_protocol_property("motor_temp_limit_upper", &config_.motor_temp_limit_upper),
                 make_protocol_property("requested_current_range", &config_.requested_current_range),
                 make_protocol_property("current_control_bandwidth", &config_.current_control_bandwidth,
                     [](void* ctx) { static_cast<Motor*>(ctx)->update_current_controller_gains(); }, this),
@@ -308,10 +352,18 @@ public:
                 make_protocol_property("I_bus_hard_min", &config_.I_bus_hard_min),
                 make_protocol_property("I_bus_hard_max", &config_.I_bus_hard_max),
                 make_protocol_property("max_leak_current", &config_.max_leak_current),
-                make_protocol_property("calib_tau", &config_.calib_tau),
+                make_protocol_property("switching_frequency", &config_.switching_frequency,
+                    [](void* ctx) { static_cast<Motor*>(ctx)->update_switching_frequency(); }, this),
+                make_protocol_property("control_frequency_divider", &config_.control_frequency_divider,
+                    [](void* ctx) { static_cast<Motor*>(ctx)->update_switching_frequency(); }, this),
                 make_protocol_property("vbus_voltage_override", &config_.vbus_voltage_override),
+                make_protocol_property("motor_temp_override", &config_.motor_temp_override),
+                make_protocol_property("calib_tau", &config_.calib_tau),
+                make_protocol_property("I_measured_tau", &config_.I_measured_tau),
+                make_protocol_property("I_measured_report_filter_tau", &config_.I_measured_report_filter_tau),
                 make_protocol_property("inv_temp_tau", &config_.inv_temp_tau),
-                make_protocol_property("I_measured_report_filter_k", &config_.I_measured_report_filter_k)
+                make_protocol_property("motor_temp_tau", &config_.motor_temp_tau),
+                make_protocol_property("vbus_voltage_tau", &config_.vbus_voltage_tau)
             )
         );
     }
