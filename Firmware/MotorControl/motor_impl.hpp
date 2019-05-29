@@ -184,7 +184,8 @@ public:
         current_control_.enable_current_control = false;
         current_control_.Vd_setpoint = 0.0f;
         current_control_.Vq_setpoint = 0.0f;
-        current_control_.cmd_expiry = get_ticks_us() + 5000; // give 5ms time for first current command
+        current_control_.cmd_timeout_us = 5000; // give 5ms time for first current command
+        current_control_.cmd_timestamp_us = get_ticks_us();
         return arm(
             [](Motor& motor, void* ctx, float dt, float pwm_timings[3]){
                 (void) ctx;
@@ -589,8 +590,8 @@ public:
         // Syntactic sugar
         CurrentControl_t& ictrl = current_control_;
 
-        uint64_t now = get_ticks_us();
-        if (now > ictrl.cmd_expiry) {
+        uint32_t now = get_ticks_us();
+        if (now - ictrl.cmd_timestamp_us > ictrl.cmd_timeout_us) {
             set_error(ERROR_FOC_CMD_TIMEOUT);
             return false;
         }
@@ -731,7 +732,8 @@ public:
         }
         current_control_.phase = phase * config_.direction + config_.phase_delay;
         current_control_.phase_vel = phase_vel * config_.direction;
-        current_control_.cmd_expiry = get_ticks_us() + expiry_us; // data expires in 1ms
+        current_control_.cmd_timeout_us = expiry_us;
+        current_control_.cmd_timestamp_us = get_ticks_us();
         cpu_exit_critical(mask);
 
         return true;

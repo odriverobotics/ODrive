@@ -68,7 +68,8 @@ public:
         float Iq_setpoint = 0.0f; // [A]
         float Vd_setpoint = 0.0f; // [A]
         float Vq_setpoint = 0.0f; // [A]
-        uint32_t cmd_expiry = 0; // time at which the FOC command expires
+        uint32_t cmd_timeout_us = 0; // timespan after which the FOC command expires
+        uint32_t cmd_timestamp_us = 0; // time at which the FOC command was enqueued
 
         float v_current_control_integral_d = 0.0f; // [V]
         float v_current_control_integral_q = 0.0f; // [V]
