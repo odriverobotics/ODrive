@@ -122,8 +122,37 @@ public:
         
         float phase_delay = 0.0f; // this is useful mostly if phase_locked is true. Must not be changed after calibrating the encoder with a synchronous motor
 
-        float I_bus_hard_min = -INFINITY; // hard lower limit for bus current contribution
-        float I_bus_hard_max = INFINITY; // hard upper limit for bus current contribution
+        /**
+         * @brief Hard lower limit for bus current contribution
+         * 
+         * If the controller fails to keep the DC current within the range
+         * I_bus_hard_min ... I_bus_hard_max, the motor is disarmed.
+         */
+        float I_bus_hard_min = -INFINITY;
+
+        /** @brief Hard upper limit for bus current contribution. See I_bus_hard_min for details. */
+        float I_bus_hard_max = INFINITY;
+
+        /**
+         * @brief Soft lower limit for bus current contribution
+         * 
+         * Negative I_bus means power flows from the motor to the power supply,
+         * therefore a lower limit of -10A means that at most 10A is pumped back
+         * into the power supply and braking resistor.
+         * 
+         * NOT IMPLEMENTED YET
+         */
+        //float I_bus_soft_min = -INFINITY;
+
+        /**
+         * @brief Soft upper limit for bus current contribution
+         *
+         * Positive I_bus means power flows from the power supply to the motor,
+         * therefore an upper limit of 10A means that at most 10A is drained
+         * from the power supply.
+         */
+        float I_bus_soft_max = INFINITY; // hard upper limit for bus current contribution
+
 
         float max_leak_current = INFINITY; // [A] if three current sensors are available, the motor will disarm if this much current leaks out of the three phases
 
@@ -274,6 +303,7 @@ public:
             make_protocol_ro_property("I_alpha", &I_alpha_beta_measured_[0]),
             make_protocol_ro_property("I_beta", &I_alpha_beta_measured_[1]),
             make_protocol_ro_property("I_leak", &I_leak),
+            make_protocol_ro_property("I_bus", &I_bus_),
             make_protocol_ro_property("thermal_current_lim", &thermal_current_lim_),
             make_protocol_ro_property("inv_temp_a", &inv_temp_a_),
             make_protocol_ro_property("inv_temp_b", &inv_temp_b_),
@@ -355,6 +385,8 @@ public:
                 make_protocol_property("phase_delay", &config_.phase_delay),
                 make_protocol_property("I_bus_hard_min", &config_.I_bus_hard_min),
                 make_protocol_property("I_bus_hard_max", &config_.I_bus_hard_max),
+                make_protocol_property("I_bus_soft_max", &config_.I_bus_soft_max),
+                //make_protocol_property("I_bus_soft_min", &config_.I_bus_soft_min),
                 make_protocol_property("max_leak_current", &config_.max_leak_current),
                 make_protocol_property("switching_frequency", &config_.switching_frequency,
                     [](void* ctx) { static_cast<Motor*>(ctx)->update_switching_frequency(); }, this),
