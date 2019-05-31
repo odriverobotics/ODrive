@@ -183,6 +183,9 @@ public:
     virtual bool arm_foc() = 0;
     virtual bool disarm(bool* was_armed = nullptr) = 0;
 
+    float get_switching_frequency() {
+        return timer_freq_ / static_cast<float>(period_) / config_.control_frequency_divider;
+    }
 
     virtual bool update_switching_frequency() = 0;
     virtual void update_current_controller_gains() = 0;

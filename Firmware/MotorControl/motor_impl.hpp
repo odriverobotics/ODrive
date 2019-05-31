@@ -352,16 +352,69 @@ public:
         return true;
     }
 
-    bool do_checks() {
+    bool do_realtime_checks(float dt) {
+        float temp = 0.0f;
+        float vbus_voltage_k = std::min(dt / config_.vbus_voltage_tau, 1.0f);
+        if (config_.vbus_voltage_override > 1.0f) {
+            vbus_voltage_ = config_.vbus_voltage_override;
+        } else {
+            bool is_valid = not_null(vbus_sense) && vbus_sense->get_voltage(&temp);
+            filter(is_valid, &vbus_voltage_, temp, vbus_voltage_k);
+            if (!is_valid) {
+                set_error(ERROR_V_BUS_SENSOR_DEAD);
+            }
+        }
+
         if (!(vbus_voltage_ >= board_config.dc_bus_undervoltage_trip_level)) {
             set_error(ERROR_DC_BUS_UNDER_VOLTAGE);
         }
         if (!(vbus_voltage_ <= board_config.dc_bus_overvoltage_trip_level)) {
             set_error(ERROR_DC_BUS_OVER_VOLTAGE);
         }
+        return error_ == ERROR_NONE;
+    }
+
+    bool do_slow_checks(float dt) {
         if (!check_DRV_fault()) {
             set_error(ERROR_DRV_FAULT);
         }
+
+        float temp;
+
+        float inv_temp_k = std::min(dt / config_.inv_temp_tau, 1.0f);
+        if (not_null(inverter_thermistor_a)) {
+            bool is_valid = inverter_thermistor_a->read_temp(&temp);
+            filter(is_valid, &inv_temp_a_, temp, inv_temp_k);
+        }
+        if (not_null(inverter_thermistor_b)) {
+            bool is_valid = inverter_thermistor_b->read_temp(&temp);
+            filter(is_valid, &inv_temp_b_, temp, inv_temp_k);
+        }
+        if (not_null(inverter_thermistor_c)) {
+            bool is_valid = inverter_thermistor_c->read_temp(&temp);
+            filter(is_valid, &inv_temp_c_, temp, inv_temp_k);
+        }
+
+        if (!isnan(config_.motor_temp_override)) {
+            motor_temp_a_ = config_.motor_temp_override;
+            motor_temp_b_ = config_.motor_temp_override;
+            motor_temp_c_ = config_.motor_temp_override;
+        } else {
+            float motor_temp_k = std::min(dt / config_.motor_temp_tau, 1.0f);
+            if (not_null(motor_thermistor_a)) {
+                bool is_valid = motor_thermistor_a->read_temp(&temp);
+                filter(is_valid, &motor_temp_a_, temp, motor_temp_k);
+            }
+            if (not_null(motor_thermistor_b)) {
+                bool is_valid = motor_thermistor_b->read_temp(&temp);
+                filter(is_valid, &motor_temp_b_, temp, motor_temp_k);
+            }
+            if (not_null(motor_thermistor_c)) {
+                bool is_valid = motor_thermistor_c->read_temp(&temp);
+                filter(is_valid, &motor_temp_c_, temp, motor_temp_k);
+            }
+        }
+        
         update_thermal_limits(); // error set in function
         return error_ == ERROR_NONE;
     }
@@ -499,7 +552,9 @@ public:
                 return motor.set_error(ERROR_PHASE_RESISTANCE_OUT_OF_RANGE), false;
 
             // Test voltage along phase A
-            return SVM_voltage(motor.vbus_voltage_, ctx.test_voltage, 0.0f, pwm_timings);
+            if (!SVM_voltage(motor.vbus_voltage_, ctx.test_voltage, 0.0f, pwm_timings))
+                return motor.set_error(ERROR_MODULATION_MAGNITUDE), false;
+            return true;
         }, &ctx);
 
         if (!did_arm) {
@@ -537,7 +592,9 @@ public:
             ctx.Ialphas[ctx.i] += motor.I_alpha_beta_measured_[0];
 
             // Test voltage along phase A
-            return SVM_voltage(motor.vbus_voltage_, ctx.test_voltages[ctx.i], 0.0f, pwm_timings);
+            if (!SVM_voltage(motor.vbus_voltage_, ctx.test_voltages[ctx.i], 0.0f, pwm_timings))
+                return motor.set_error(ERROR_MODULATION_MAGNITUDE), false;
+            return true;
         }, &ctx);
         
         if (!did_arm) {
@@ -558,7 +615,7 @@ public:
 
         config_.phase_inductance = L;
         // TODO arbitrary values set for now
-        if (L < 2e-6f || L > 4000e-6f)
+        if (L < 2e-6f || L > 15000e-6f)
             return set_error(ERROR_PHASE_INDUCTANCE_OUT_OF_RANGE), false;
         return true;
     }
@@ -596,10 +653,10 @@ public:
             return false;
         }
 
-        float I_phase = ictrl.phase;
+        float I_phase = wrap_pm_pi(ictrl.phase);
         float phase_vel = ictrl.phase_vel;
         ictrl.phase = wrap_pm_pi(ictrl.phase + dt * phase_vel);
-        float pwm_phase = I_phase + 0.75f * dt * phase_vel;
+        float pwm_phase = wrap_pm_pi(I_phase + (pwm_update_mode_ == ON_BOTH ? 0.75f : 1.5f) * dt * phase_vel);
         float Id_des = ictrl.Id_setpoint;
         float Iq_des = ictrl.Iq_setpoint;
 
@@ -899,63 +956,13 @@ private:
 
         log_timing(TIMING_LOG_CURRENT_MEAS);
 
-        uint32_t current_meas_period_ticks = period_ * (current_sample_mode_ == ON_BOTH ? 1 : 2) * (repetition_counter_ + 1);
-        float current_meas_period = static_cast<float>(current_meas_period_ticks) / timer_freq_;
-
-        // Sample VBUS voltage and temperatures coherently with the current sensors
-        if (was_current_sense) {
-            float temp = 0.0f;
-            bool is_valid;
-            float vbus_voltage_k = std::min(current_meas_period / config_.vbus_voltage_tau, 1.0f);
-            if (config_.vbus_voltage_override > 1.0f) {
-                vbus_voltage_ = config_.vbus_voltage_override;
-            } else {
-                is_valid = not_null(vbus_sense) && vbus_sense->get_voltage(&temp);
-                filter(is_valid, &vbus_voltage_, temp, vbus_voltage_k);
-                if (!is_valid) {
-                    set_error(ERROR_V_BUS_SENSOR_DEAD);
-                    return;
-                }
-            }
-
-            float inv_temp_k = std::min(current_meas_period / config_.inv_temp_tau, 1.0f);
-            if (not_null(inverter_thermistor_a)) {
-                is_valid = inverter_thermistor_a->read_temp(&temp);
-                filter(is_valid, &inv_temp_a_, temp, inv_temp_k);
-            }
-            if (not_null(inverter_thermistor_b)) {
-                is_valid = inverter_thermistor_b->read_temp(&temp);
-                filter(is_valid, &inv_temp_b_, temp, inv_temp_k);
-            }
-            if (not_null(inverter_thermistor_c)) {
-                is_valid = inverter_thermistor_c->read_temp(&temp);
-                filter(is_valid, &inv_temp_c_, temp, inv_temp_k);
-            }
-
-            if (!isnan(config_.motor_temp_override)) {
-                motor_temp_a_ = config_.motor_temp_override;
-                motor_temp_b_ = config_.motor_temp_override;
-                motor_temp_c_ = config_.motor_temp_override;
-            } else {
-                float motor_temp_k = std::min(current_meas_period / config_.motor_temp_tau, 1.0f);
-                if (not_null(motor_thermistor_a)) {
-                    is_valid = motor_thermistor_a->read_temp(&temp);
-                    filter(is_valid, &motor_temp_a_, temp, motor_temp_k);
-                }
-                if (not_null(motor_thermistor_b)) {
-                    is_valid = motor_thermistor_b->read_temp(&temp);
-                    filter(is_valid, &motor_temp_b_, temp, motor_temp_k);
-                }
-                if (not_null(motor_thermistor_c)) {
-                    is_valid = motor_thermistor_c->read_temp(&temp);
-                    filter(is_valid, &motor_temp_c_, temp, motor_temp_k);
-                }
-            }
-        }
+        float interrupt_period = static_cast<float>(period_ * (repetition_counter_ + 1)) / timer_freq_;
 
         if (was_current_dc_calib) {
+            float dc_calib_period = interrupt_period * (current_dc_calib_mode_ == ON_BOTH || current_dc_calib_mode_ == NONE ? 1 : 2);
+
             // DC_CAL measurement
-            const float calib_filter_k = std::min(current_meas_period / config_.calib_tau, 1.0f); // TODO current_meas_perdiod does not have to equal dc calibration
+            const float calib_filter_k = std::min(dc_calib_period / config_.calib_tau, 1.0f); // TODO current_meas_perdiod does not have to equal dc calibration
             DC_calib_.phA += (current.phA - DC_calib_.phA) * calib_filter_k;
             DC_calib_.phB += (current.phB - DC_calib_.phB) * calib_filter_k;
             DC_calib_.phC += (current.phC - DC_calib_.phC) * calib_filter_k;
@@ -963,6 +970,8 @@ private:
         }
 
         if (was_current_sense) {
+            //float current_meas_period = interrupt_period * (current_sample_mode_ == ON_BOTH ? 1 : 2);
+            
             current.phA -= DC_calib_.phA;
             current.phB -= DC_calib_.phB;
             current.phC -= DC_calib_.phC;
@@ -998,8 +1007,14 @@ private:
         }
 
         if (should_update_pwm) {
-            if (!do_checks()) {
-                return; // error set in do_checks()
+            float pwm_update_period = interrupt_period * (pwm_update_mode_ == ON_BOTH ? 1 : 2);
+
+            if (!do_realtime_checks(pwm_update_period)) {
+                return; // error set in do_realtime_checks()
+            }
+
+            if (!do_slow_checks(pwm_update_period)) { // TODO: move out of interrupt
+                return; // error set in do_slow_checks()
             }
 
             // If there is a motor that synchronizes it's PWM timer to this motor,
@@ -1039,7 +1054,7 @@ private:
                 bool success = false;
                 // control_law_ and control_law_ctx_ are supposed to be set atomically in arm()
                 if (control_law_) {
-                    success = control_law_(*this, control_law_ctx_, current_meas_period, pwm_timings);
+                    success = control_law_(*this, control_law_ctx_, pwm_update_period, pwm_timings);
                 }
 
                 if (!success) {

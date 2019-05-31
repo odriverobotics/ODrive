@@ -59,7 +59,7 @@ const size_t thermistor_num_coeffs = sizeof(thermistor_poly_coeffs)/sizeof(therm
 #define DEFAULT_UNDERVOLTAGE_TRIP_LEVEL 8.0f    // [V]
 #define DEFAULT_OVERVOLTAGE_TRIP_LEVEL (1.07f * HW_VERSION_VOLTAGE) // [V]
 #define DEFAULT_PWM_FREQUENCY 24000.0f          // [Hz]
-#define DEFAULT_CTRL_FREQ_DIV 3                 // 8kHz control frequency
+#define DEFAULT_CTRL_FREQ_DIV 6                 // 8kHz control frequency
 #define DEFAULT_DEAD_TIME_NS  120               // [ns]
 
 // TODO: make dynamic

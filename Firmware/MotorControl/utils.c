@@ -126,7 +126,7 @@ bool SVM_voltage(float v_dc, float v_alpha, float v_beta, float pwm_timings[3]) 
     float vfactor = 1.0f / ((2.0f / 3.0f) * v_dc);
     float mod_alpha = vfactor * v_alpha;
     float mod_beta = vfactor * v_beta;
-    return SVM(mod_alpha, mod_beta, &pwm_timings[0], &pwm_timings[1], &pwm_timings[2]) != 0;
+    return SVM(mod_alpha, mod_beta, &pwm_timings[0], &pwm_timings[1], &pwm_timings[2]) == 0;
 }
 
 // based on https://math.stackexchange.com/a/1105038/81278
