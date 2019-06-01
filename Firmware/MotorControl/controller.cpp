@@ -26,9 +26,7 @@ void Controller::set_error(Error_t error) {
 //--------------------------------
 
 void Controller::input_pos_updated() {
-    if (config_.input_mode == INPUT_MODE_TRAP_TRAJ) {
-        move_to_pos(input_pos_);
-    }
+    input_pos_updated_ = true;
 }
 
 void Controller::move_to_pos(float goal_point) {
@@ -157,6 +155,8 @@ bool Controller::update(float pos_estimate, float vel_estimate, float* current_s
         //     // NOT YET IMPLEMENTED
         // } break;
         case INPUT_MODE_TRAP_TRAJ: {
+            if(input_pos_updated_)
+                move_to_pos(input_pos_);
             // Avoid updating uninitialized trajectory
             if (trajectory_done_)
                 break;
@@ -181,6 +181,7 @@ bool Controller::update(float pos_estimate, float vel_estimate, float* current_s
             set_error(ERROR_INVALID_INPUT_MODE);
             return false;
         }
+        input_pos_updated_ = false;
     }
 
     // Position control

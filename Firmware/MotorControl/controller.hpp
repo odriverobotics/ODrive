@@ -102,6 +102,8 @@ public:
     float input_filter_kp_ = 0.0f;
     float input_filter_ki_ = 0.0f;
 
+    bool input_pos_updated_ = false;
+    
     uint32_t traj_start_loop_count_ = 0;
     float goal_point_ = 0.0f;
     bool trajectory_done_ = true;
