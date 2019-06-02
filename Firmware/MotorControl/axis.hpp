@@ -95,7 +95,8 @@ public:
         LOCKIN_STATE_CONST_VEL,
     };
 
-    Axis(const AxisHardwareConfig_t& hw_config,
+    Axis(int axis_num,
+            const AxisHardwareConfig_t& hw_config,
             Config_t& config,
             Encoder& encoder,
             SensorlessEstimator& sensorless_estimator,
@@ -205,6 +206,7 @@ public:
 
     void run_state_machine_loop();
 
+    int axis_num_;
     const AxisHardwareConfig_t& hw_config_;
     Config_t& config_;
 

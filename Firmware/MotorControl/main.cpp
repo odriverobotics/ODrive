@@ -192,7 +192,7 @@ int odrive_main(void) {
         TrapezoidalTrajectory *trap = new TrapezoidalTrajectory(trap_configs[i]);
         Endstop *min_endstop = new Endstop(min_endstop_configs[i]);
         Endstop *max_endstop = new Endstop(max_endstop_configs[i]);
-        axes[i] = new Axis(hw_configs[i].axis_config, axis_configs[i],
+        axes[i] = new Axis(i, hw_configs[i].axis_config, axis_configs[i],
                 *encoder, *sensorless_estimator, *controller, *motor, *trap, *min_endstop, *max_endstop);
     }
     

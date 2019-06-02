@@ -22,7 +22,8 @@ public:
         ERROR_BRAKE_DEADTIME_VIOLATION = 0x0100,
         ERROR_UNEXPECTED_TIMER_CALLBACK = 0x0200,
         ERROR_CURRENT_SENSE_SATURATION = 0x0400,
-        ERROR_INVERTER_OVER_TEMP = 0x0800
+        ERROR_INVERTER_OVER_TEMP = 0x0800,
+        ERROR_CURRENT_UNSTABLE = 0x1000
     };
 
     enum MotorType_t {
@@ -68,6 +69,7 @@ public:
         // Read out max_allowed_current to see max supported value for current_lim.
         // float current_lim = 70.0f; //[A]
         float current_lim = 10.0f;  //[A]
+        float current_lim_tolerance = 1.25f;  // multiple of current_lim
         // Value used to compute shunt amplifier gains
         float requested_current_range = 60.0f; // [A]
         float current_control_bandwidth = 1000.0f;  // [rad/s]
@@ -227,6 +229,7 @@ public:
                 make_protocol_property("direction", &config_.direction),
                 make_protocol_property("motor_type", &config_.motor_type),
                 make_protocol_property("current_lim", &config_.current_lim),
+                make_protocol_property("current_lim_tolerance", &config_.current_lim_tolerance),
                 make_protocol_property("inverter_temp_limit_lower", &config_.inverter_temp_limit_lower),
                 make_protocol_property("inverter_temp_limit_upper", &config_.inverter_temp_limit_upper),
                 make_protocol_property("requested_current_range", &config_.requested_current_range),

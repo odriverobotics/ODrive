@@ -7,6 +7,7 @@ Table of Contents:
 - [Common Axis Errors](#common-axis-errors)
 - [Common Motor Errors](#common-motor-errors)
 - [Common Encoder Errors](#common-encoder-errors)
+- [Common Controller Errors](#common-controller-errors)
 - [USB Connectivity Issues](#usb-connectivity-issues)
 - [Firmware Issues](#firmware-issues)
 - [Other issues that may not produce an error code](#other-issues-that-may-not-produce-an-error-code)
@@ -33,13 +34,13 @@ You tried to run a state before you are allowed to. Typically you tried to run e
 
 Confirm that your power leads are connected securely. For initial testing a 12V PSU which can supply a couple of amps should be sufficient while the use of low current 'wall wart' plug packs may lead to inconsistent behaviour and is not recommended. 
 
-You can monitor your PUS voltage using liveplotter in odrive tool by entering `start_liveplotter(lambda: [odrv0.vbus_voltage])`. If you see your votlage drop below ~ 8V then you will trip this error. Even a relatively small motor can draw multiple kW momentary and so unless you have a very large PSU or are running of a battery you may encounter this error when executing high speed movements with a high current limit. To limit your PSU power draw you can limit your motor current and/or velocity limit `odrv0.axis0.controller.config.vel_limit` and `odrv0.axis0.motor.config.current_lim`.
+You can monitor your PSU voltage using liveplotter in odrive tool by entering `start_liveplotter(lambda: [odrv0.vbus_voltage])`. If you see your votlage drop below ~ 8V then you will trip this error. Even a relatively small motor can draw multiple kW momentary and so unless you have a very large PSU or are running of a battery you may encounter this error when executing high speed movements with a high current limit. To limit your PSU power draw you can limit your motor current and/or velocity limit `odrv0.axis0.controller.config.vel_limit` and `odrv0.axis0.motor.config.current_lim`.
 
 * `ERROR_DC_BUS_OVER_VOLTAGE = 0x04`
 
 Confirm that you have a brake resistor of the correct value connected securly and that `odrv0.config.brake_resistance` is set to the value of your brake resistor. 
 
-You can monitor your PUS voltage using liveplotter in odrive tool by entering `start_liveplotter(lambda: [odrv0.vbus_voltage])`. If during a move you see the voltage rise above your PSU's nominal set voltage then you have your brake resistance set too low. This may happen if you are using long wires or small gauge wires to connect your brake resistor to your odrive which will added extra resistance. This extra resistance needs to be accounted for to prevent this voltage spike. If you have checked all your connections you can also try increasing your brake resistance by ~ 0.01 Ohm at a time to a maximum of 0.05 greater than your brake resistor value.
+You can monitor your PSU voltage using liveplotter in odrive tool by entering `start_liveplotter(lambda: [odrv0.vbus_voltage])`. If during a move you see the voltage rise above your PSU's nominal set voltage then you have your brake resistance set too low. This may happen if you are using long wires or small gauge wires to connect your brake resistor to your odrive which will added extra resistance. This extra resistance needs to be accounted for to prevent this voltage spike. If you have checked all your connections you can also try increasing your brake resistance by ~ 0.01 Ohm at a time to a maximum of 0.05 greater than your brake resistor value.
 
 ## Common Motor Errors 
 
@@ -76,9 +77,10 @@ To resolve this issue you can limit the M0 current to 40A. The lowest current at
 
 * `ERROR_MODULATION_MAGNITUDE = 0x0080`
 
-The bus voltage was insufficent to push the requested current through the motor. Reduce `motor.config.calibration_current` and/or `motor.config.current_lim`, for errors at calibration-time and closed loop control respectively.
+The bus voltage was insufficent to push the requested current through the motor.
+If you are getting this during motor calibration, make sure that `motor.config.resistance_calib_max_voltage` is no more than half your bus voltage.
 
-For gimbal motors, it is recommended to set the calibration_current and current_lim to half your bus voltage, or less.
+For gimbal motors, it is recommended to set the `motor.config.calibration_current` and `motor.config.current_lim` to half your bus voltage, or less.
 
 ## Common Encoder Errors
 
@@ -94,6 +96,13 @@ Confirm that your encoder is plugged into the right pins on the odrive board.
 
 Check that your encoder is a model that has an index pulse. If your encoder does not have a wire connected to pin Z on your odrive then it does not output an index pulse.
 
+## Common Controller Errors
+
+* `ERROR_OVERSPEED = 0x01`
+
+Try increasing `<axis>.controller.config.vel_limit`. The default `vel_limit` of 20,000 encoder counts per second gives a motor speed of only ~146 RPM with the common CUI-AMT102 8192 count per rotation encoder. Note: Even if you do not commanded your motor to exceed `vel_limit` sudden changes in the load placed on a motor may cause this speed to be temporarily exceeded, resulting in this error.
+
+You can also try increasing `<axis>.controller.config.vel_limit_tolerance`. The default value of 1.2 means it will only allow a 20% violation of the speed limit. You can set the `vel_limit_tolerance` to 0 to disable the check altogether.
 
 ## USB Connectivity Issues
 
@@ -140,6 +149,7 @@ Check that your encoder is a model that has an index pulse. If your encoder does
 
 ### Motor feels like it has less torque than it should and/or gets hot sitting still while under no load.
 - Encoder has likely slipped causing the motor controller to commutate the wrong windings slightly which reduces output torque and produces excess heat as the motor 'fights itself'.
+- This can also be caused if the rotor bell slips on the motor shaft. On some motors the rotor bell is secured against the shaft with a grub screw. Confirm that this screw is tight enough. For further details on how to resolve this issue see [this forum post](https://discourse.odriverobotics.com/t/motor-gets-hot-has-less-torque-in-one-direction-than-the-other/2394).
 
 ### False steps or direction changes when using step/dir
 - Prior to Odrive board V3.5 no filtering is present on the GPIO pins used for step/dir interface and so inductively coupled noise may causes false steps to be detected. Odrive V3.5 and has onboard filtering to resolve this issue.

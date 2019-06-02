@@ -7,7 +7,8 @@
 #include "utils.h"
 #include "communication/interface_can.hpp"
 
-Axis::Axis(const AxisHardwareConfig_t& hw_config,
+Axis::Axis(int axis_num,
+           const AxisHardwareConfig_t& hw_config,
            Config_t& config,
            Encoder& encoder,
            SensorlessEstimator& sensorless_estimator,
@@ -16,7 +17,8 @@ Axis::Axis(const AxisHardwareConfig_t& hw_config,
            TrapezoidalTrajectory& trap,
            Endstop& min_endstop,
            Endstop& max_endstop)
-    : hw_config_(hw_config),
+    : axis_num_(axis_num),
+      hw_config_(hw_config),
       config_(config),
       encoder_(encoder),
       sensorless_estimator_(sensorless_estimator),
