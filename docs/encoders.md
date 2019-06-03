@@ -40,8 +40,14 @@ Below are the steps to do the one-time calibration and configuration. Note that 
 
 That's it, now on every reboot the motor will turn in one direction until it finds the encoder index.
 
-* If you wish to scan for the index pulse in the other direction, that feature is currently undocumented.
 * If your motor has problems reaching the index location due to the mechanical load, you can increase `<axis>.motor.config.calibration_current`.
+
+### Reversing index search
+Sometimes you would like the index search to only happen in a particular direction (the reverse of the default), instead of swapping the motor leads, you can run the following commands
+* `<axis0>.config.calibration_lockin.vel = -<axis>.config.calibration_lockin.vel`
+* `<axis0>.config.calibration_lockin.accel = -<axis>.config.calibration_lockin.accel`
+* `<axis0>.config.calibration_lockin.ramp_distance = -<axis>.config.calibration_lockin.ramp_distance`
+
 
 *IMPORTANT:* Your motor should find the same rotational position when the ODrive performs an index search if the index signal is working properly. This means that the motor should spin, and stop at the same position if you have set <axis>.config.startup_encoder_index_search so the search starts on reboot, or you if call the command:<axis>.requested_state = AXIS_STATE_ENCODER_INDEX_SEARCH after reboot. You can test this. Send the reboot() command, and while it's rebooting turn your motor, then make sure the motor returns back to the correct position each time when it comes out of reboot. Try this procedure a couple of times to be sure. 
 
@@ -85,12 +91,6 @@ and now see if after a reboot you can run:
 * `<axis>.requested_state = AXIS_STATE_ENCODER_INDEX_SEARCH`
 
 without getting errors. 
-
-### Reversing index search
-Sometimes you would like the index search to only happen in a particular direction (the reverse of the default), instead of swapping the motor leads, you can run the following commands
-* `<axis0>.config.calibration_lockin.vel = -<axis>.config.calibration_lockin.vel`
-* `<axis0>.config.calibration_lockin.accel = -<axis>.config.calibration_lockin.accel`
-* `<axis0>.config.calibration_lockin.ramp_distance = -<axis>.config.calibration_lockin.ramp_distance`
 
 ## What happens if calibration fails
 There are subtle ways that encoder problems will impact your ODrive. For example, ODrive may not complete the calibrate sequence when you go to:
