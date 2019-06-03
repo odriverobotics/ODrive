@@ -13,7 +13,7 @@ import fibre.utils
 import fibre.remote_object
 from fibre.utils import Event, Logger
 from fibre.protocol import ChannelBrokenException, TimeoutError
-import tempfile
+import appdirs
 import os
 
 # Load all installed transport layers
@@ -54,6 +54,32 @@ def find_all(path, serial_number,
          channel_termination_token,
          logger):
     """
+    Load a json file from disk, return None if it does not exist or is invalid json
+    """
+    def load_json_file(name):
+        try:
+            file = open(name, "r+")
+        except:
+            logger.debug(f"Failed to open json file {name}")
+            return None
+
+        try:
+            file_str = file.read()
+        except:
+            logger.debug(f"Failed to read json file {name}")
+            return None
+
+        try:
+            json_data = json.loads(file_str)
+        except:
+            logger.debug(f"Failed to deserialize json file {name}")
+            return None
+
+        file.close()
+
+        return json_data
+    
+    """
     Starts scanning for Fibre nodes that match the specified path spec and calls
     the callback for each Fibre node that is found.
     This function is non-blocking.
@@ -68,74 +94,51 @@ def find_all(path, serial_number,
         try:
             logger.debug("Connecting to device on " + channel._name)
 
-            temp_dir = tempfile.gettempdir()
+            temp_dir = appdirs.user_cache_dir("odrivetool")
+            try:
+                os.mkdir(temp_dir)
+            except FileExistsError:
+                pass
 
-            cache_miss = True
+            cache_path = ""
 
             # Fetching the json crc to check cache
             try:
                 json_crc16 = channel.remote_endpoint_operation(0, struct.pack("<I", 0xffffffff), True, 2)
                 json_crc16 = struct.unpack("<H", json_crc16)[0]
                 logger.debug("Device JSON checksum: 0x{:02X} 0x{:02X}".format(json_crc16 & 0xff, (json_crc16 >> 8) & 0xff))
+                cache_path = temp_dir + '/fibre_schema_cache_' + str(json_crc16)
+            except:
+                logger.debug("Failed to get JSON checksum")
 
-                cache_path =  temp_dir + '/fibre_schema_cache_' + str(json_crc16)
-
-                try:
-                    json_cache = open(cache_path, 'r+')
-                    logger.debug("Found cache file with crc")
-                    cache_miss = False
-
-                except:
-                    logger.debug("Cache miss, there is no cache file")
-                    cache_miss = True
-
-                # Download the JSON data
-                if(cache_miss == True):
-                    try:
-                        logger.debug("Getting JSON schema from USB... this is slow...")
-                        json_bytes = channel.remote_endpoint_read_buffer(0)
-                        try:
-                            json_string = json_bytes.decode("ascii")
-                        except UnicodeDecodeError:
-                            logger.debug("Device responded on endpoint 0 with something that is not ASCII")
-                            return  
-                        json_cache = open(cache_path, 'w+')
-                        json_cache.write(json_string)
-                        logger.debug("Saved JSON to cache file " + cache_path)
-
-                    except (TimeoutError, ChannelBrokenException):
-                        logger.debug("No response - probably incompatible")
-                        return
-                else:
-                    try:
-                        json_string = json_cache.read()
-                        logger.debug("Loaded JSON from cache file " + cache_path)
-
-                    except (TimeoutError, ChannelBrokenException):
-                        logger.debug("Could not read cache file " + cache_path)
-                        return     
-
-            except Exception as error:
-                logger.debug("Error fetching JSON CRC, falling back to downloading full JSON")
-                logger.debug("Getting json schema from USB... this is slow...")
+            if cache_path == "" or load_json_file(cache_path) is None:
+                # Downloading json data
+                logger.info("Downloading json data from ODrive... (this might take a while)")
                 json_bytes = channel.remote_endpoint_read_buffer(0)
                 try:
                     json_string = json_bytes.decode("ascii")
                 except UnicodeDecodeError:
                     logger.debug("Device responded on endpoint 0 with something that is not ASCII")
-                    return  
+                    raise UnicodeDecodeError
+
                 json_crc16 = fibre.protocol.calc_crc16(fibre.protocol.PROTOCOL_VERSION, json_bytes)
+
+                cache_path = temp_dir + '/fibre_schema_cache_' + str(json_crc16)
+
+                logger.debug(f"Opening json cache file {cache_path}")
+                with open(cache_path, 'w+') as json_cache:
+                    json_cache.write(json_string)
+                logger.debug("Saved JSON to cache file " + cache_path)
+                json_data = load_json_file(cache_path)
+            else:
+                with open(cache_path, "rb") as f:
+                    json_crc16 = fibre.protocol.calc_crc16(fibre.protocol.PROTOCOL_VERSION, f.read())
+                    json_data = load_json_file(cache_path)
 
             channel._interface_definition_crc = json_crc16
 
-            logger.debug("JSON: " + json_string.replace('{"name"', '\n{"name"'))
+            logger.debug("JSON: " + str(json_data).replace('{"name"', '\n{"name"'))
             logger.debug("JSON checksum: 0x{:02X} 0x{:02X}".format(json_crc16 & 0xff, (json_crc16 >> 8) & 0xff))
-
-            try:
-                json_data = json.loads(json_string)
-            except json.decoder.JSONDecodeError as error:
-                logger.debug("Device responded on endpoint 0 with something that is not JSON: " + str(error))
-                return
 
             json_data = {"name": "fibre_node", "members": json_data}
             obj = fibre.remote_object.RemoteObject(json_data, None, channel, logger)
