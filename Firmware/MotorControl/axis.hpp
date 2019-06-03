@@ -71,8 +71,8 @@ public:
         uint16_t dir_gpio_pin = 0;
 
         LockinConfig_t calibration_lockin = default_calibration();
-        LockinConfig_t lockin = default_lockin();
         LockinConfig_t sensorless_ramp = default_sensorless();
+        LockinConfig_t lockin;
     };
 
     enum thread_signals {

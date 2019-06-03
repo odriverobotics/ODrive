@@ -61,20 +61,6 @@ Axis::LockinConfig_t Axis::default_sensorless() {
     return config;
 }
 
-Axis::LockinConfig_t Axis::default_lockin() {
-    Axis::LockinConfig_t config;
-    config.current = 10.0f;           // [A]
-    config.ramp_time = 0.4f;          // [s]
-    config.ramp_distance = 1 * M_PI;  // [rad]
-    config.accel = 20.0f;     // [rad/s^2]
-    config.vel = 400.0f; // [rad/s]
-    config.finish_distance = 100.0f;  // [rad]
-    config.finish_on_vel = false;
-    config.finish_on_distance = false;
-    config.finish_on_enc_idx = false;
-    return config;
-}
-
 static void step_cb_wrapper(void* ctx) {
     reinterpret_cast<Axis*>(ctx)->step_cb();
 }
