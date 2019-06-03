@@ -36,7 +36,6 @@ void Controller::move_to_pos(float goal_point) {
                                  axis_->trap_.config_.decel_limit);
     traj_start_loop_count_ = axis_->loop_counter_;
     trajectory_done_ = false;
-    goal_point_ = goal_point;
 }
 
 void Controller::move_incremental(float displacement, bool from_input_pos = true){
@@ -155,8 +154,10 @@ bool Controller::update(float pos_estimate, float vel_estimate, float* current_s
         //     // NOT YET IMPLEMENTED
         // } break;
         case INPUT_MODE_TRAP_TRAJ: {
-            if(input_pos_updated_)
+            if(input_pos_updated_){
                 move_to_pos(input_pos_);
+                input_pos_updated_ = false;
+            }
             // Avoid updating uninitialized trajectory
             if (trajectory_done_)
                 break;
@@ -169,6 +170,7 @@ bool Controller::update(float pos_estimate, float vel_estimate, float* current_s
                 pos_setpoint_ = input_pos_;
                 vel_setpoint_ = 0.0f;
                 current_setpoint_ = 0.0f;
+                trajectory_done_ = true;
             } else {
                 TrapezoidalTrajectory::Step_t traj_step = axis_->trap_.eval(t);
                 pos_setpoint_ = traj_step.Y;
@@ -181,7 +183,7 @@ bool Controller::update(float pos_estimate, float vel_estimate, float* current_s
             set_error(ERROR_INVALID_INPUT_MODE);
             return false;
         }
-        input_pos_updated_ = false;
+        
     }
 
     // Position control

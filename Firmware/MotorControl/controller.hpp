@@ -105,7 +105,6 @@ public:
     bool input_pos_updated_ = false;
     
     uint32_t traj_start_loop_count_ = 0;
-    float goal_point_ = 0.0f;
     bool trajectory_done_ = true;
 
     bool anticogging_valid_ = false;
