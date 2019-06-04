@@ -115,6 +115,9 @@ void CANSimple::handle_can_message(can_Message_t& msg) {
             case MSG_GET_VBUS_VOLTAGE:
                 get_vbus_voltage_callback(axis, msg);
                 break;
+            case MSG_CLEAR_ERRORS:
+                clear_errors_callback(axis, msg);
+                break;
             default:
                 break;
         }
@@ -373,6 +376,15 @@ void CANSimple::get_vbus_voltage_callback(Axis* axis, can_Message_t& msg) {
 
         odCAN->write(txmsg);
     }
+}
+
+void CANSimple::clear_errors_callback(Axis* axis, can_Message_t& msg) {
+    axis->motor_.error_                = Motor::ERROR_NONE;
+    axis->controller_.error_           = Controller::ERROR_NONE;
+    axis->sensorless_estimator_.error_ = SensorlessEstimator::ERROR_NONE;
+    axis->encoder_.error_              = Encoder::ERROR_NONE;
+    
+    axis->error_                       = Axis::ERROR_NONE;
 }
 
 void CANSimple::send_heartbeat(Axis* axis) {

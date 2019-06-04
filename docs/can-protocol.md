@@ -34,9 +34,9 @@ Be careful that you don't assign too many nodeIDs per PDO group.  Four CAN Simpl
 ### Messages
 CMD ID | Name | Sender | Signals | Start byte
 --:    | :--  | :--  | :-- | :--
-0x000 | CANOpen NMT Message\*\* | Master | - | - | -
+0x000 | CANOpen NMT Message\*\* | Master | - | -
 0x001 | ODrive Heartbeat Message | Axis | Axis Error<br>Axis Current State | 0<br>4
-0x002 | ODrive Estop Message | Master | - | - | -
+0x002 | ODrive Estop Message | Master | - | -
 0x003 | Get Motor Error\* | Axis  | Motor Error | 0
 0x004 | Get Encoder Error\*  | Axis | Encoder Error | 0
 0x005 | Get Sensorless Error\* | Axis | Sensorless Error | 0
@@ -56,9 +56,10 @@ CMD ID | Name | Sender | Signals | Start byte
 0x013 | Set Traj A per Count / s^2 | Master | Traj A per CSS | 0
 0x014 | Get IQ\* | Axis | Iq Setpoint<br>Iq Measured | 0<br>4
 0x015 | Get Sensorless Estimates\* | Master | Sensorless Pos Estimate<br>Sensorless Vel Estimate | 0<br>4
-0x016 | Reboot ODrive | Master\*\*\* | | 
+0x016 | Reboot ODrive | Master\*\*\* | - | -
 0x017 | Get Vbus Voltage | Master\*\*\* | Vbus Voltage | 0
-0x700 | CANOpen Heartbeat Message\*\* | Slave | - | - | -
+0x018 | Clear Errors | Master | - | -
+0x700 | CANOpen Heartbeat Message\*\* | Slave | - | - 
 
 \* Note: These messages are call & response.  The Master node sends a message with the RTR bit set, and the axis responds with the same ID and specified payload.  
 \*\* Note:  These CANOpen messages are reserved to avoid bus collisions with CANOpen devices.  They are not used by CAN Simple.

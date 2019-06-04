@@ -30,6 +30,7 @@ class CANSimple {
         MSG_GET_SENSORLESS_ESTIMATES,
         MSG_RESET_ODRIVE,
         MSG_GET_VBUS_VOLTAGE,
+        MSG_CLEAR_ERRORS,
         MSG_CO_HEARTBEAT_CMD = 0x700,  // CANOpen NMT Heartbeat  SEND
     };
 
@@ -60,6 +61,7 @@ class CANSimple {
     static void get_iq_callback(Axis* axis, can_Message_t& msg);
     static void get_sensorless_estimates_callback(Axis* axis, can_Message_t& msg);
     static void get_vbus_voltage_callback(Axis* axis, can_Message_t& msg);
+    static void clear_errors_callback(Axis* axis, can_Message_t& msg);
 
     // Utility functions
     static uint8_t get_node_id(uint32_t msgID);
