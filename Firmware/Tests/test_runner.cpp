@@ -187,3 +187,46 @@ TEST_SUITE("CAN Functions") {
         CHECK(static_cast<InputMode_t>(can_getSignal<InputMode_t>(rxmsg, 8, 8, true, 1, 0)) == INPUT_MODE_PASSTHROUGH);
     }
 }
+
+
+TEST_SUITE("delta_enc"){
+    // Modulo (as opposed to remainder), per https://stackoverflow.com/a/19288271
+    int mod(int dividend, int divisor){
+        int r = dividend % divisor;
+        return (r < 0) ? (r + divisor) : r;
+    }
+
+    int getDelta(int pos_abs, int count_in_cpr, int cpr) {
+        int delta_enc = pos_abs - count_in_cpr;
+        delta_enc = mod(delta_enc, cpr);
+        if (delta_enc > (cpr / 2))
+            delta_enc -= cpr;
+        return delta_enc;
+    }
+
+    TEST_CASE("mod"){
+
+        int cpr = 1000;
+
+        // Check moves around 0
+        CHECK(getDelta(1, 0, cpr) == 1);
+        CHECK(getDelta(0, 1, cpr) == -1);
+        CHECK(getDelta(999, 0, cpr) == -1);
+        CHECK(getDelta(50, 650, cpr) == 400);
+        CHECK(getDelta(650, 50, cpr) == -400);
+        CHECK(getDelta(50, 500, cpr) == -450);
+        CHECK(getDelta(500, 50, cpr) == 450);
+
+        
+        // Test moving a distance larger than cpr / 2
+        CHECK(getDelta(950, 450, cpr) == 500);
+        CHECK(getDelta(451, 950, cpr) == -499);
+        CHECK(getDelta(450, 950, cpr) == 500);
+        
+        // Test handling around mid-point
+        CHECK(getDelta(501, 499, cpr) == 2);   
+        CHECK(getDelta(499, 501, cpr) == -2);
+        CHECK(getDelta(550, 450, cpr) == 100);
+        CHECK(getDelta(450, 550, cpr) == -100);
+    }
+}
