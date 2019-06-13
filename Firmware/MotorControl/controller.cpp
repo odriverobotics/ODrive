@@ -1,10 +1,7 @@
 
 #include "odrive_main.h"
 
-
-Controller::Controller(Config_t& config) :
-    config_(config)
-{}
+Controller::Controller(Config_t& config) : config_(config) {}
 
 void Controller::reset() {
     pos_setpoint_ = 0.0f;
@@ -59,10 +56,10 @@ void Controller::move_to_pos(float goal_point) {
     goal_point_ = goal_point;
 }
 
-void Controller::move_incremental(float displacement, bool from_goal_point = true){
-    if(from_goal_point){
+void Controller::move_incremental(float displacement, bool from_goal_point = true) {
+    if (from_goal_point) {
         move_to_pos(goal_point_ + displacement);
-    } else{
+    } else {
         move_to_pos(pos_setpoint_ + displacement);
     }
 }
@@ -88,12 +85,12 @@ bool Controller::anticogging_calibration(float pos_estimate, float vel_estimate)
             fabsf(vel_estimate) < anticogging_.calib_vel_threshold) {
             anticogging_.cogging_map[anticogging_.index++] = vel_integrator_current_;
         }
-        if (anticogging_.index < axis_->encoder_.config_.cpr) { // TODO: remove the dependency on encoder CPR
+        if (anticogging_.index < axis_->encoder_.config_.cpr) {  // TODO: remove the dependency on encoder CPR
             set_pos_setpoint(anticogging_.index, 0.0f, 0.0f);
             return false;
         } else {
             anticogging_.index = 0;
-            set_pos_setpoint(0.0f, 0.0f, 0.0f);  // Send the motor home
+            set_pos_setpoint(0.0f, 0.0f, 0.0f);   // Send the motor home
             anticogging_.use_anticogging = true;  // We're good to go, enable anti-cogging
             anticogging_.calib_anticogging = false;
             return true;
@@ -124,7 +121,7 @@ bool Controller::update(float pos_estimate, float vel_estimate, float* current_s
             vel_setpoint_ = traj_step.Yd;
             current_setpoint_ = traj_step.Ydd * axis_->trap_.config_.A_per_css;
         }
-        anticogging_pos = pos_setpoint_; // FF the position setpoint instead of the pos_estimate
+        anticogging_pos = pos_setpoint_;  // FF the position setpoint instead of the pos_estimate
     }
 
     // Ramp rate limited velocity setpoint
@@ -166,7 +163,7 @@ bool Controller::update(float pos_estimate, float vel_estimate, float* current_s
     if (vel_des < -vel_lim) vel_des = -vel_lim;
 
     // Check for overspeed fault (done in this module (controller) for cohesion with vel_lim)
-    if (config_.vel_limit_tolerance > 0.0f) { // 0.0f to disable
+    if (config_.vel_limit_tolerance > 0.0f) {  // 0.0f to disable
         if (fabsf(vel_estimate) > config_.vel_limit_tolerance * vel_lim) {
             set_error(ERROR_OVERSPEED);
             return false;
@@ -201,6 +198,26 @@ bool Controller::update(float pos_estimate, float vel_estimate, float* current_s
     if (Iq < -Ilim) {
         limited = true;
         Iq = -Ilim;
+    }
+
+    // Velocity limiting in current mode
+    if (config_.control_mode < CTRL_MODE_VELOCITY_CONTROL) {
+        float vmax = (config_.vel_limit - fabsf(vel_estimate)) * config_.vel_gain;
+        if (Iq > 0 && Iq > vmax) {
+            limited = true;
+            if (vmax > 0) {
+                Iq = vmax;
+            } else {
+                Iq = 0;
+            }
+        } else if (Iq < 0 && Iq < -vmax) {
+            limited = true;
+            if (vmax > 0) {
+                Iq = -vmax;
+            } else {
+                Iq = 0;
+            }
+        }
     }
 
     // Velocity integrator (behaviour dependent on limiting)
