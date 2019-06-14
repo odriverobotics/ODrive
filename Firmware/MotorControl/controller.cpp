@@ -201,7 +201,7 @@ bool Controller::update(float pos_estimate, float vel_estimate, float* current_s
     }
 
     // Velocity limiting in current mode
-    if (config_.control_mode < CTRL_MODE_VELOCITY_CONTROL && config_.vel_limit > 0) {
+    if (config_.control_mode < CTRL_MODE_VELOCITY_CONTROL && config_.vel_limit > 0 && config_.vel_gain > 0) {
         float Imax = (config_.vel_limit - fabsf(vel_estimate)) * config_.vel_gain;
         if (Iq > 0 && Iq > Imax) {
             limited = true;
