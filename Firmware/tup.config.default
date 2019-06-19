@@ -1,7 +1,7 @@
 # Copy this file to tup.config and adapt it to your needs
 # make sure this fits your board
 #CONFIG_BOARD_VERSION=v3.5-24V
-CONFIG_USB_PROTOCOL=native
+CONFIG_USB_CDC_PROTOCOL=native-stream
 CONFIG_UART_PROTOCOL=ascii
 CONFIG_DEBUG=false
 

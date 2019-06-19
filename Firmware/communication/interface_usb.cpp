@@ -72,19 +72,19 @@ public:
     size_t get_free_space() { return SIZE_MAX; }
 private:
     PacketSink& output_;
-} usb_stream_output(usb_packet_output_cdc);
+} usb_cdc_stream_output(usb_packet_output_cdc);
 
 // This is used by the printf feature. Hence the above statics, and below seemingly random ptr (it's externed)
 // TODO: less spaghetti code
-StreamSink* usb_stream_output_ptr = &usb_stream_output;
+StreamSink* usb_stream_output_ptr = &usb_cdc_stream_output;
 
-#if defined(USB_PROTOCOL_NATIVE)
+// #if defined(USB_PROTOCOL_NATIVE)
 BidirectionalPacketBasedChannel usb_channel(usb_packet_output_native);
-#elif defined(USB_PROTOCOL_NATIVE_STREAM_BASED)
-StreamBasedPacketSink usb_packetized_output(usb_stream_output);
-BidirectionalPacketBasedChannel usb_channel(usb_packetized_output);
-StreamToPacketSegmenter usb_native_stream_input(usb_channel);
-#endif
+// #elif defined(USB_PROTOCOL_NATIVE_STREAM_BASED)
+StreamBasedPacketSink usb_cdc_packetized_output(usb_cdc_stream_output);
+BidirectionalPacketBasedChannel usb_cdc_channel(usb_cdc_packetized_output);
+StreamToPacketSegmenter usb_cdc_native_stream_input(usb_cdc_channel);
+// #endif
 
 struct USBInterface {
     uint8_t* rx_buf = nullptr;
@@ -128,12 +128,12 @@ static void usb_server_thread(void * ctx) {
                 CDC_interface.data_pending = false;
                 if (board_config.enable_ascii_protocol_on_usb) {
                     ASCII_protocol_parse_stream(CDC_interface.rx_buf,
-                            CDC_interface.rx_len, usb_stream_output);
+                            CDC_interface.rx_len, usb_cdc_stream_output);
                 } else {
-#if defined(USB_PROTOCOL_NATIVE)
+#if defined(USB_CDC_PROTOCOL_NATIVE)
                     usb_channel.process_packet(CDC_interface.rx_buf, CDC_interface.rx_len);
-#elif defined(USB_PROTOCOL_NATIVE_STREAM_BASED)
-                    usb_native_stream_input.process_bytes(
+#elif defined(USB_CDC_PROTOCOL_NATIVE_STREAM_BASED)
+                    usb_cdc_native_stream_input.process_bytes(
                             CDC_interface.rx_buf, CDC_interface.rx_len, nullptr);
 #endif
                 }
@@ -143,12 +143,12 @@ static void usb_server_thread(void * ctx) {
             // Native Interface
             if (ODrive_interface.data_pending) {
                 ODrive_interface.data_pending = false;
-#if defined(USB_PROTOCOL_NATIVE)
+// #if defined(USB_PROTOCOL_NATIVE)
                 usb_channel.process_packet(ODrive_interface.rx_buf, ODrive_interface.rx_len);
-#elif defined(USB_PROTOCOL_NATIVE_STREAM_BASED)
-                usb_native_stream_input.process_bytes(
-                        ODrive_interface.rx_buf, ODrive_interface.rx_len, nullptr);
-#endif
+// #elif defined(USB_PROTOCOL_NATIVE_STREAM_BASED)
+//                 usb_native_stream_input.process_bytes(
+//                         ODrive_interface.rx_buf, ODrive_interface.rx_len, nullptr);
+// #endif
                 USBD_CDC_ReceivePacket(&hUsbDeviceFS, ODrive_interface.out_ep);  // Allow next packet
             }
         }

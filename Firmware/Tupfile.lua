@@ -47,14 +47,14 @@ end
 buildsuffix = boardversion
 
 -- USB I/O settings
-if tup.getconfig("USB_PROTOCOL") == "native" or tup.getconfig("USB_PROTOCOL") == "" then
-    FLAGS += "-DUSB_PROTOCOL_NATIVE"
-elseif tup.getconfig("USB_PROTOCOL") == "native-stream" then
-    FLAGS += "-DUSB_PROTOCOL_NATIVE_STREAM_BASED"
-elseif tup.getconfig("USB_PROTOCOL") == "stdout" then
-    FLAGS += "-DUSB_PROTOCOL_STDOUT"
-elseif tup.getconfig("USB_PROTOCOL") == "none" then
-    FLAGS += "-DUSB_PROTOCOL_NONE"
+if tup.getconfig("USB_CDC_PROTOCOL") == "native-stream" or tup.getconfig("USB_CDC_PROTOCOL") == "" then
+    FLAGS += "-DUSB_CDC_PROTOCOL_NATIVE_STREAM_BASED"
+elseif tup.getconfig("USB_CDC_PROTOCOL") == "native" then
+    FLAGS += "-DUSB_CDC_PROTOCOL_NATIVE"
+elseif tup.getconfig("USB_CDC_PROTOCOL") == "stdout" then
+    FLAGS += "-DUSB_CDC_PROTOCOL_STDOUT"
+elseif tup.getconfig("USB_CDC_PROTOCOL") == "none" then
+    FLAGS += "-DUSB_CDC_PROTOCOL_NONE"
 else
     error("unknown USB protocol")
 end
