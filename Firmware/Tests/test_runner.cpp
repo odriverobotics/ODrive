@@ -9,6 +9,7 @@
 #define DOCTEST_CONFIG_NO_POSIX_SIGNALS
 // #define DOCTEST_CONFIG_VOID_CAST_EXPRESSIONS
 
+
 #include <doctest.h>
 
 using std::cout;
@@ -232,34 +233,42 @@ TEST_SUITE("delta_enc"){
 }
 
 TEST_SUITE("velLimiter") {
-    // Velocity limiting in current mode
-    auto limitVel(float vel_limit, float vel_estimate, float vel_gain, float Iq) {
-        float Imax = (vel_limit - fabsf(vel_estimate)) * vel_gain;
-        // bool limited = false;
-        if (Iq > 0 && Iq > Imax) {
-            // limited = true;
-            if (Imax > 0) {
-                Iq = Imax;
-            } else {
-                Iq = 0;
-            }
-        } else if (Iq < 0 && Iq < -Imax) {
-            // limited = true;
-            if (Imax > 0) {
-                Iq = -Imax;
-            } else {
-                Iq = 0;
-            }
+// Velocity limiting in current mode
+#include <algorithm>
+
+    auto limitVel(float vel_limit, float vel_estimate, float vel_gain, float Iq, float current_lim = 50.0f) {
+        float Imax = (vel_limit - std::abs(vel_estimate)) * vel_gain;
+        if (vel_estimate > 0.0f) {
+            return std::clamp(Iq, -current_lim, Imax);
+        } else {
+            return std::clamp(Iq, -Imax, current_lim);
         }
-        return Iq;
     }
 
-    TEST_CASE("limit Vel"){
+    TEST_CASE("limit Vel") {
         CHECK(limitVel(0, 0, 0, 0) == 0.0f);
         CHECK(limitVel(1000.0f, 1.0f, 0.0f, 0.0f) == 0.0f);
         CHECK(limitVel(1000.0f, 500.0f, 1.0f, 1.0f) == 1.0f);
         CHECK(limitVel(1000.0f, 500.0f, 1.0f, -20.0f) == -20.0f);
         CHECK(limitVel(1000.0f, 999.0f, 1.0f, 2.0f) == 1.0f);
         CHECK(limitVel(1000.0f, 999.0f, 1.0f, -5.0f) == -5.0f);
+        CHECK(limitVel(1000.0f, -999.0f, 1.0f, -5.0f) == -1.0f);
+        CHECK(limitVel(1000.0f, -999.0f, 1.0f, 5.0f) == 5.0f);
+        CHECK(limitVel(1000.0f, 0.0f, 1.0f, 1.0f) == 1.0f);
+        CHECK(limitVel(1000.0f, 0.0f, 1.0f, -1.0f) == -1.0f);
+    }
+
+    TEST_CASE("Accelerating"){
+        CHECK(limitVel(200000.0f, 195000.0f, 5.0E-4f, 30.0f) == 2.5f);
+        CHECK(limitVel(200000.0f, 205000.0f, 5.0E-4f, 30.0f) == -2.5f);
+        CHECK(limitVel(200000.0f, -195000.0f, 5.0E-4, -30.0f) == -2.5f);
+        CHECK(limitVel(200000.0f, -205000.0f, 5.0E-4f, -30.0f) == 2.5f);
+    }
+
+    TEST_CASE("Decelerating"){
+        CHECK(limitVel(200000.0f, 195000.0f, 5.0E-4f, -30.0f) == -30.0f);
+        CHECK(limitVel(200000.0f, 205000.0f, 5.0E-4f, -30.0f) == -30.0f);
+        CHECK(limitVel(200000.0f, -195000.0f, 5.0E-4, 30.0f) == 30.0f);
+        CHECK(limitVel(200000.0f, -205000.0f, 5.0E-4f, 30.0f) == 30.0f);
     }
 }

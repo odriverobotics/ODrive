@@ -114,6 +114,17 @@ void Controller::update_filter_gains() {
     input_filter_kp_ = 0.25f * (input_filter_ki_ * input_filter_ki_); // Critically damped
 }
 
+namespace {
+float limitVel(float vel_limit, float vel_estimate, float vel_gain, float Iq, float current_lim) {
+    float Imax = (vel_limit - std::abs(vel_estimate)) * vel_gain;
+    if (vel_estimate > 0.0f) {
+        return std::clamp(Iq, -current_lim, Imax);
+    } else {
+        return std::clamp(Iq, -Imax, current_lim);
+    }
+}
+}  // namespace
+
 bool Controller::update(float pos_estimate, float vel_estimate, float* current_setpoint_output) {
     // Only runs if config_.anticogging.calib_anticogging is true; non-blocking
     anticogging_calibration(pos_estimate, vel_estimate);
@@ -256,23 +267,8 @@ bool Controller::update(float pos_estimate, float vel_estimate, float* current_s
     }
 
     // Velocity limiting in current mode
-    if (config_.control_mode < CTRL_MODE_VELOCITY_CONTROL && config_.vel_limit > 0.0f && config_.vel_gain > 0.0f) {
-        float Imax = (config_.vel_limit - fabsf(vel_estimate)) * config_.vel_gain;
-        if (Iq > 0 && Iq > Imax) {
-            limited = true;
-            if (Imax > 0) {
-                Iq = Imax;
-            } else {
-                Iq = 0;
-            }
-        } else if (Iq < 0 && Iq < -Imax) {
-            limited = true;
-            if (Imax > 0) {
-                Iq = -Imax;
-            } else {
-                Iq = 0;
-            }
-        }
+    if (config_.control_mode < CTRL_MODE_VELOCITY_CONTROL && config_.vel_limit > 0.0f) {
+        Iq = limitVel(config_.vel_limit, vel_estimate, config_.vel_gain, Iq, Ilim);
     }
 
     // Velocity integrator (behaviour dependent on limiting)
