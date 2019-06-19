@@ -218,7 +218,7 @@ bool Controller::update(float pos_estimate, float vel_estimate, float* current_s
     if (vel_des < -vel_lim) vel_des = -vel_lim;
 
     // Check for overspeed fault (done in this module (controller) for cohesion with vel_lim)
-    if (config_.vel_limit_tolerance > 0.0f) { // 0.0f to disable
+    if (config_.vel_limit_tolerance > 0.0f) {  // 0.0f to disable
         if (fabsf(vel_estimate) > config_.vel_limit_tolerance * vel_lim) {
             set_error(ERROR_OVERSPEED);
             return false;
@@ -253,6 +253,26 @@ bool Controller::update(float pos_estimate, float vel_estimate, float* current_s
     if (Iq < -Ilim) {
         limited = true;
         Iq = -Ilim;
+    }
+
+    // Velocity limiting in current mode
+    if (config_.control_mode < CTRL_MODE_VELOCITY_CONTROL && config_.vel_limit > 0.0f && config_.vel_gain > 0.0f) {
+        float Imax = (config_.vel_limit - fabsf(vel_estimate)) * config_.vel_gain;
+        if (Iq > 0 && Iq > Imax) {
+            limited = true;
+            if (Imax > 0) {
+                Iq = Imax;
+            } else {
+                Iq = 0;
+            }
+        } else if (Iq < 0 && Iq < -Imax) {
+            limited = true;
+            if (Imax > 0) {
+                Iq = -Imax;
+            } else {
+                Iq = 0;
+            }
+        }
     }
 
     // Velocity integrator (behaviour dependent on limiting)
