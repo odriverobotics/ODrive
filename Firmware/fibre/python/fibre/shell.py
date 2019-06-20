@@ -80,11 +80,23 @@ def launch_shell(args,
 
     # If IPython is installed, embed IPython shell, otherwise embed regular shell
     if use_ipython:
-        help = lambda: print_help(args, len(discovered_devices) > 0) # Override help function # pylint: disable=W0612
-        locals()['__name__'] = globals()['__name__'] # to fix broken "%run -i script.py"
+        # Override help function # pylint: disable=W0612
+        help = lambda: print_help(args, len(discovered_devices) > 0) 
+        # to fix broken "%run -i script.py"
+        locals()['__name__'] = globals()['__name__'] 
         console = IPython.terminal.embed.InteractiveShellEmbed(banner1='')
-        console.runcode = console.run_code # hack to make IPython look like the regular console
+
+        # hack to make IPython look like the regular console
+        console.runcode = console.run_cell 
         interact = console
+
+        # Catch ChannelBrokenException (since disconnect is not always an error)
+        default_exception_hook = console._showtraceback
+        def filtered_exception_hook(ex_class, ex, trace):
+            if(ex_class.__module__+'.'+ex_class.__name__ != 'fibre.protocol.ChannelBrokenException'):
+                default_exception_hook(ex_class,ex,trace)
+            
+        console._showtraceback = filtered_exception_hook
     else:
         # Enable tab complete if possible
         try:
@@ -100,13 +112,13 @@ def launch_shell(args,
         console = code.InteractiveConsole(locals=interactive_variables)
         interact = lambda: console.interact(banner='')
 
-    # install hook to hide ChannelBrokenException
-    console.runcode('import sys')
-    console.runcode('superexcepthook = sys.excepthook')
-    console.runcode('def newexcepthook(ex_class,ex,trace):\n'
-                    '  if ex_class.__module__ + "." + ex_class.__name__ != "fibre.ChannelBrokenException":\n'
-                    '    superexcepthook(ex_class,ex,trace)')
-    console.runcode('sys.excepthook=newexcepthook')
+        # Catch ChannelBrokenException (since disconnect is not alway an error)
+        console.runcode("import sys")
+        console.runcode("default_exception_hook = sys.excepthook")
+        console.runcode("def filtered_exception_hook(ex_class, ex, trace):\n"
+                        "  if ex_class.__module__ + '.' + ex_class.__name__ != 'fibre.protocol.ChannelBrokenException':\n"
+                        "    default_exception_hook(ex_class,ex,trace)")
+        console.runcode("sys.excepthook=filtered_exception_hook")
 
 
     # Launch shell
