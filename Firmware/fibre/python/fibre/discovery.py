@@ -104,10 +104,12 @@ def find_all(path, serial_number,
 
             # Fetching the json crc to check cache
             try:
-                json_crc16 = channel.remote_endpoint_operation(0, struct.pack("<I", 0xffffffff), True, 2)
-                json_crc16 = struct.unpack("<H", json_crc16)[0]
-                logger.debug("Device JSON checksum: 0x{:02X} 0x{:02X}".format(json_crc16 & 0xff, (json_crc16 >> 8) & 0xff))
-                cache_path = temp_dir + '/fibre_schema_cache_' + str(json_crc16)
+                json_fibre_cache_entropy = channel.remote_endpoint_operation(0, struct.pack("<I", 0xffffffff), True, 4)
+                json_fibre_cache_entropy = struct.unpack("<I", json_fibre_cache_entropy)[0]
+                json_crc16 = json_fibre_cache_entropy >> 16
+
+                logger.debug("Device reported JSON entropy: {:08d}".format(json_fibre_cache_entropy))
+                cache_path = temp_dir + '/fibre_schema_cache_' + str(json_fibre_cache_entropy)
             except:
                 logger.debug("Failed to get JSON checksum")
 
@@ -122,23 +124,25 @@ def find_all(path, serial_number,
                     raise UnicodeDecodeError
 
                 json_crc16 = fibre.protocol.calc_crc16(fibre.protocol.PROTOCOL_VERSION, json_bytes)
-
-                cache_path = temp_dir + '/fibre_schema_cache_' + str(json_crc16)
-
-                logger.debug(f"Opening json cache file {cache_path}")
+                json_fibre_cache_entropy = fibre.protocol.calc_crc16(json_crc16, json_bytes) | (json_crc16 << 16)
+                cache_path = temp_dir + '/fibre_schema_cache_' + str(json_fibre_cache_entropy)
+                logger.debug(f"Creating new JSON cache file {cache_path}")
                 with open(cache_path, 'w+') as json_cache:
                     json_cache.write(json_string)
                 logger.debug("Saved JSON to cache file " + cache_path)
                 json_data = load_json_file(cache_path)
             else:
                 with open(cache_path, "rb") as f:
+                    logger.debug(f"Loaded JSON from cache file {cache_path}")
                     json_crc16 = fibre.protocol.calc_crc16(fibre.protocol.PROTOCOL_VERSION, f.read())
+                    f.seek(0)
+                    json_fibre_cache_entropy = fibre.protocol.calc_crc16(json_crc16, f.read()) | (json_crc16 << 16)
                     json_data = load_json_file(cache_path)
 
             channel._interface_definition_crc = json_crc16
 
-            logger.debug("JSON: " + str(json_data).replace('{"name"', '\n{"name"'))
-            logger.debug("JSON checksum: 0x{:02X} 0x{:02X}".format(json_crc16 & 0xff, (json_crc16 >> 8) & 0xff))
+            logger.debug("JSON: " + str(json_data).replace("{'name'", "\n{'name'"))
+            logger.debug("Local cache JSON entropy: {:08d}".format(json_fibre_cache_entropy))
 
             json_data = {"name": "fibre_node", "members": json_data}
             obj = fibre.remote_object.RemoteObject(json_data, None, channel, logger)
