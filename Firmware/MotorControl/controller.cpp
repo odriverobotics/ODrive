@@ -115,9 +115,9 @@ void Controller::update_filter_gains() {
 }
 
 namespace {
-float limitVel(const float vel_limit, const float vel_estimate, const float vel_gain, const float Iq, const float current_lim) {
-    float Imax = std::min((vel_limit - vel_estimate) * vel_gain, current_lim);
-    float Imin = std::max((-vel_limit - vel_estimate) * vel_gain, -current_lim);
+float limitVel(const float vel_limit, const float vel_estimate, const float vel_gain, const float Iq) {
+    float Imax = (vel_limit - vel_estimate) * vel_gain;
+    float Imin = (-vel_limit - vel_estimate) * vel_gain;
     return std::clamp(Iq, Imin, Imax);
 }
 }  // namespace
@@ -251,6 +251,11 @@ bool Controller::update(float pos_estimate, float vel_estimate, float* current_s
     // Velocity integral action before limiting
     Iq += vel_integrator_current_;
 
+    // Velocity limiting in current mode
+    if (config_.control_mode < CTRL_MODE_VELOCITY_CONTROL && config_.vel_limit > 0.0f) {
+        Iq = limitVel(config_.vel_limit, vel_estimate, config_.vel_gain, Iq);
+    }
+
     // Current limiting
     bool limited = false;
     float Ilim = axis_->motor_.effective_current_lim();
@@ -261,11 +266,6 @@ bool Controller::update(float pos_estimate, float vel_estimate, float* current_s
     if (Iq < -Ilim) {
         limited = true;
         Iq = -Ilim;
-    }
-
-    // Velocity limiting in current mode
-    if (config_.control_mode < CTRL_MODE_VELOCITY_CONTROL && config_.vel_limit > 0.0f) {
-        Iq = limitVel(config_.vel_limit, vel_estimate, config_.vel_gain, Iq, Ilim);
     }
 
     // Velocity integrator (behaviour dependent on limiting)

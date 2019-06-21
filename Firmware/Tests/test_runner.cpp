@@ -237,9 +237,9 @@ TEST_SUITE("velLimiter") {
 #include <algorithm>
 using doctest::Approx;
 
-    auto limitVel(float vel_limit, float vel_estimate, float vel_gain, float Iq, float current_lim = 50.0f) {
-        float Imax = std::min((vel_limit - vel_estimate) * vel_gain, current_lim);
-        float Imin = std::max((-vel_limit - vel_estimate) * vel_gain, -current_lim);
+    auto limitVel(float vel_limit, float vel_estimate, float vel_gain, float Iq) {
+        float Imax = (vel_limit - vel_estimate) * vel_gain;
+        float Imin = (-vel_limit - vel_estimate) * vel_gain;
         return std::clamp(Iq, Imin, Imax);
     }
 
