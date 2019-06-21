@@ -235,6 +235,7 @@ TEST_SUITE("delta_enc"){
 TEST_SUITE("velLimiter") {
 // Velocity limiting in current mode
 #include <algorithm>
+using doctest::Approx;
 
     auto limitVel(float vel_limit, float vel_estimate, float vel_gain, float Iq, float current_lim = 50.0f) {
         float Imax = std::min((vel_limit - vel_estimate) * vel_gain, current_lim);
@@ -267,5 +268,10 @@ TEST_SUITE("velLimiter") {
         CHECK(limitVel(200000.0f, 205000.0f, 5.0E-4f, -30.0f) == -30.0f);
         CHECK(limitVel(200000.0f, -195000.0f, 5.0E-4, 30.0f) == 30.0f);
         CHECK(limitVel(200000.0f, -205000.0f, 5.0E-4f, 30.0f) == 30.0f);
+    }
+
+    TEST_CASE("Over-Center"){
+        CHECK(limitVel(20000.0f, 1000.0f, 5.0E-4f, 30.0f) == 9.5f);
+        CHECK(limitVel(20000.0f, -1000.0f, 5.0E-4f, 30.0f) == Approx(10.5f));
     }
 }
