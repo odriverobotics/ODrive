@@ -115,7 +115,7 @@ void Controller::update_filter_gains() {
 }
 
 namespace {
-float limitVel(float vel_limit, float vel_estimate, float vel_gain, float Iq, float current_lim) {
+float limitVel(const float vel_limit, const float vel_estimate, const float vel_gain, const float Iq, const float current_lim) {
     float Imax = std::min((vel_limit - vel_estimate) * vel_gain, current_lim);
     float Imin = std::max((-vel_limit - vel_estimate) * vel_gain, -current_lim);
     return std::clamp(Iq, Imin, Imax);
