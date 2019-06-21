@@ -237,12 +237,9 @@ TEST_SUITE("velLimiter") {
 #include <algorithm>
 
     auto limitVel(float vel_limit, float vel_estimate, float vel_gain, float Iq, float current_lim = 50.0f) {
-        float Imax = (vel_limit - std::abs(vel_estimate)) * vel_gain;
-        if (vel_estimate > 0.0f) {
-            return std::clamp(Iq, -current_lim, Imax);
-        } else {
-            return std::clamp(Iq, -Imax, current_lim);
-        }
+        float Imax = std::min((vel_limit - vel_estimate) * vel_gain, current_lim);
+        float Imin = std::max((-vel_limit - vel_estimate) * vel_gain, -current_lim);
+        return std::clamp(Iq, Imin, Imax);
     }
 
     TEST_CASE("limit Vel") {
