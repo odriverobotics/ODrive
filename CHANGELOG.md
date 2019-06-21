@@ -2,7 +2,31 @@
 Please add a note of your changes below this heading if you make a Pull Request.
 
 ### Added
-* Check current limit violation: added `ERROR_CURRENT_UNSTABLE`, `motor.config.current_lim_tolerance`.
+* Simplified control interface ("Input Filter" branch)
+    * New input variables: `input_pos`, `input_vel`, and `input_current`
+    * New setting `input_mode` to switch between different input behaviours
+      * Passthrough
+      * Velocity Ramp
+      * 2nd Order Position Filter
+      * Trapezoidal Trajectory Planner
+    * Removed `set_xxx_setpoint()` functions and made `xxx_setpoint` variables read-only
+* [Preliminary support for Absolute Encoders](docs/encoders.md)
+* [Preliminary support for endstops and homing](docs/endstops.md)
+* [CAN Communication with CANSimple stack](can-protocol.md)
+* Gain scheduling for anti-hunt when close to 0 position error
+* Velocity Limiting in Current Control mode according to `vel_limit` and `vel_gain`
+* Current limit violation added `ERROR_CURRENT_UNSTABLE`, `motor.config.current_lim_tolerance`.
+* Regen current limiting according to `max_regen_limit`, in Amps
+* DC Bus Power limiting according to `power_supply_wattage`
+* Unit Testing with Doctest has been started for select algorithms, see [Firmware/Tests/test_runner.cpp](Firmware/Tests/test_runner.cpp)
+* Added support for Flylint VSCode Extension for static code analysis
+* Using an STM32F405 .svd file allows CortexDebug to view registers during debugging
+
+### Changed
+* Anticogging map is temporarily forced to 0.1 deg precision, but saves with the config
+* Some Encoder settings have been made read-only
+* Cleaned up VSCode C/C++ Configuration settings on Windows with recursive includePath
+* Now compiling with C++17
 
 # Releases
 ## [0.4.10] - 2019-04-24
