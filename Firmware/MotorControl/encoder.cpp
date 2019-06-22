@@ -98,6 +98,8 @@ void Encoder::set_linear_count(int32_t count) {
     // Update states
     shadow_count_ = count;
     pos_estimate_ = (float)count;
+    tim_cnt_sample_ = count;
+
     //Write hardware last
     hw_config_.timer->Instance->CNT = count;
 
@@ -130,20 +132,17 @@ bool Encoder::run_index_search() {
     }
     set_idx_subscribe();
 
-    bool orig_finish_on_enc_idx = axis_->config_.lockin.finish_on_enc_idx;
-    axis_->config_.lockin.finish_on_enc_idx = true;
-    bool status = axis_->run_lockin_spin();
-    axis_->config_.lockin.finish_on_enc_idx = orig_finish_on_enc_idx;
+    bool status = axis_->run_lockin_spin(axis_->config_.calibration_lockin);
     return status;
 }
 
 bool Encoder::run_direction_find() {
     int32_t init_enc_val = shadow_count_;
-    bool orig_finish_on_distance = axis_->config_.lockin.finish_on_distance;
-    axis_->config_.lockin.finish_on_distance = true;
+    bool orig_finish_on_distance = axis_->config_.calibration_lockin.finish_on_distance;
+    axis_->config_.calibration_lockin.finish_on_distance = true;
     axis_->motor_.config_.direction = 1; // Must test spin forwards for direction detect logic
-    bool status = axis_->run_lockin_spin();
-    axis_->config_.lockin.finish_on_distance = orig_finish_on_distance;
+    bool status = axis_->run_lockin_spin(axis_->config_.calibration_lockin);
+    axis_->config_.calibration_lockin.finish_on_distance = orig_finish_on_distance;
 
     if (status) {
         // Check response and direction
