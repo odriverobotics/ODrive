@@ -290,6 +290,10 @@ bool Motor::run_calibration() {
             return false;
     } else if (config_.motor_type == MOTOR_TYPE_GIMBAL) {
         // no calibration needed
+    } else if (config_.motor_type == MOTOR_TYPE_BRUSHED_CURRENT) {
+        // no calibration needed
+    } else if (config_.motor_type == MOTOR_TYPE_BRUSHED_VOLTAGE) {
+        // no calibration needed
     } else {
         return false;
     }
@@ -321,6 +325,28 @@ bool Motor::enqueue_voltage_timings(float v_alpha, float v_beta) {
     return true;
 }
 
+bool Motor::enqueue_brushed_voltage_timings(float voltage_setpoint) {
+
+    // Clamp voltage_setpoint to just shy of vbus voltage.
+    if((-vbus_voltage * BRUSHED_VOLTAGE_MAX_RATIO) > voltage_setpoint)
+      voltage_setpoint = -vbus_voltage * BRUSHED_VOLTAGE_MAX_RATIO;
+    if((vbus_voltage * BRUSHED_VOLTAGE_MAX_RATIO) < voltage_setpoint)
+      voltage_setpoint = vbus_voltage * BRUSHED_VOLTAGE_MAX_RATIO;
+
+    float drive_ratio = voltage_setpoint/vbus_voltage;
+
+    float tA, tB, tC;
+
+    tA = 0.5f;
+    tB = (drive_ratio + 1.0f)/2.0f;
+    tC = 1.0f - tB;
+
+    next_timings_[0] = (uint16_t)(tA * (float)TIM_1_8_PERIOD_CLOCKS);
+    next_timings_[1] = (uint16_t)(tB * (float)TIM_1_8_PERIOD_CLOCKS);
+    next_timings_[2] = (uint16_t)(tC * (float)TIM_1_8_PERIOD_CLOCKS);
+    next_timings_valid_ = true;
+    return true;
+}
 // We should probably make FOC Current call FOC Voltage to avoid duplication.
 bool Motor::FOC_voltage(float v_d, float v_q, float pwm_phase) {
     float c = our_arm_cos_f32(pwm_phase);
@@ -495,6 +521,8 @@ bool Motor::update(float torque_setpoint, float phase, float phase_vel) {
         case MOTOR_TYPE_HIGH_CURRENT: return FOC_current(id, iq, phase, pwm_phase); break;
         case MOTOR_TYPE_ACIM: return FOC_current(id, iq, phase, pwm_phase); break;
         case MOTOR_TYPE_GIMBAL: return FOC_voltage(id, iq, pwm_phase); break;
+        //In brushed motor mode, current is reinterptreted as voltage.
+        case MOTOR_TYPE_BRUSHED_VOLTAGE: return enqueue_brushed_voltage_timings(current_setpoint); break;
         default: set_error(ERROR_NOT_IMPLEMENTED_MOTOR_TYPE); return false; break;
     }
     return true;
