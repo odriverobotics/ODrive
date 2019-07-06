@@ -146,6 +146,16 @@ bool Encoder::run_index_search() {
     set_idx_subscribe();
 
     bool status = axis_->run_lockin_spin(axis_->config_.calibration_lockin);
+
+    if (axis_->motor_.config_.motor_type == Motor::MOTOR_TYPE_BRUSHED_VOLTAGE
+      || axis_->motor_.config_.motor_type == Motor::MOTOR_TYPE_BRUSHED_CURRENT
+      || axis_->motor_.config_.motor_type == Motor::MOTOR_TYPE_BRUSHED_POWER)
+    {
+      config_.offset = 0;
+      config_.offset_float = 0.0f;
+      is_ready_ = true;
+    }
+
     return status;
 }
 
@@ -227,7 +237,7 @@ bool Encoder::run_offset_calibration() {
         axis_->motor_.log_timing(TIMING_LOG_ENC_CALIB);
 
         encvaluesum += shadow_count_;
-        
+
         return ++i < num_steps;
     });
     if (axis_->error_ != Axis::ERROR_NONE)
@@ -267,7 +277,7 @@ bool Encoder::run_offset_calibration() {
         axis_->motor_.log_timing(TIMING_LOG_ENC_CALIB);
 
         encvaluesum += shadow_count_;
-        
+
         return ++i < num_steps;
     });
     if (axis_->error_ != Axis::ERROR_NONE)
@@ -498,6 +508,7 @@ bool Encoder::update() {
             }
 
         }break;
+
         default: {
            set_error(ERROR_UNSUPPORTED_ENCODER_MODE);
            return false;
