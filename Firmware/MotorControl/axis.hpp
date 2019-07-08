@@ -134,6 +134,14 @@ public:
     void watchdog_feed();
     bool watchdog_check();
 
+    void clear_errors() {
+        motor_.error_                = Motor::ERROR_NONE;
+        controller_.error_           = Controller::ERROR_NONE;
+        sensorless_estimator_.error_ = SensorlessEstimator::ERROR_NONE;
+        encoder_.error_              = Encoder::ERROR_NONE;
+
+        error_ = Axis::ERROR_NONE;
+    }
 
     // True if there are no errors
     bool inline check_for_errors() {
@@ -311,7 +319,8 @@ public:
             make_protocol_object("trap_traj", trap_.make_protocol_definitions()),
             make_protocol_object("min_endstop", min_endstop_.make_protocol_definitions()),
             make_protocol_object("max_endstop", max_endstop_.make_protocol_definitions()),
-            make_protocol_function("watchdog_feed", *this, &Axis::watchdog_feed)
+            make_protocol_function("watchdog_feed", *this, &Axis::watchdog_feed),
+            make_protocol_function("clear_errors", *this, &Axis::clear_errors)
         );
     }
 };
