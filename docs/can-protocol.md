@@ -47,7 +47,7 @@ CMD ID | Name | Sender | Signals | Start byte
 0x00A | Get Encoder Count\* | Master | Encoder Shadow Count<br>Encoder Count in CPR | 0<br>4
 0x00B | Set Controller Modes | Master | Control Mode<br>Input Mode | 0<br>4
 0x00C | Set Input Pos | Master | Input Pos<br>Vel FF<br>Current FF | 0<br>4<br>6
-0x00D | Set Input Vel | Master | Input Current<br>Current FF | 0<br>4
+0x00D | Set Input Vel | Master | Input Vel<br>Current FF | 0<br>4
 0x00E | Set Input Current | Master | Input Current | 0
 0x00F | Set Velocity Limit | Master | Velocity Limit | 0
 0x010 | Start Anticogging | Master | - | -
