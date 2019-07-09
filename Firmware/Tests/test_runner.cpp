@@ -275,3 +275,45 @@ using doctest::Approx;
         CHECK(limitVel(20000.0f, -1000.0f, 5.0E-4f, 30.0f) == Approx(10.5f));
     }
 }
+
+TEST_SUITE("vel_ramp") {
+    float vel_ramp_old(float input_vel_, float vel_setpoint_, float vel_ramp_rate) {
+        float max_step_size = 0.000125f * vel_ramp_rate;
+        float full_step     = input_vel_ - vel_setpoint_;
+        float step;
+        if (fabsf(full_step) > max_step_size) {
+            step = std::copysignf(max_step_size, full_step);
+        } else {
+            step = full_step;
+        }
+        return step;
+    }
+
+    float vel_ramp_new(float input_vel_, float vel_setpoint_, float vel_ramp_rate){
+        float max_step_size = 0.000125f * vel_ramp_rate;
+        float full_step     = input_vel_ - vel_setpoint_;
+        return std::clamp(full_step, -max_step_size, max_step_size);
+    }
+
+    TEST_CASE("Blah") {
+        float vel_setpoint = 0.0f;
+        float vel_ramp_rate = 8000;
+        float input_vel = 0.0f;
+        CHECK(vel_ramp_old(input_vel, vel_setpoint, vel_ramp_rate) == vel_ramp_new(input_vel, vel_setpoint, vel_ramp_rate));
+
+        input_vel = 10.0f;
+        CHECK(vel_ramp_old(input_vel, vel_setpoint, vel_ramp_rate) == vel_ramp_new(input_vel, vel_setpoint, vel_ramp_rate));
+
+        input_vel = 10000.0f;
+        CHECK(vel_ramp_old(input_vel, vel_setpoint, vel_ramp_rate) == vel_ramp_new(input_vel, vel_setpoint, vel_ramp_rate));
+
+        input_vel = -10000.0f;
+        CHECK(vel_ramp_old(input_vel, vel_setpoint, vel_ramp_rate) == vel_ramp_new(input_vel, vel_setpoint, vel_ramp_rate));
+
+        input_vel = -0.1234f;
+        CHECK(vel_ramp_old(input_vel, vel_setpoint, vel_ramp_rate) == vel_ramp_new(input_vel, vel_setpoint, vel_ramp_rate));
+
+        input_vel = 0.1234f;
+        CHECK(vel_ramp_old(input_vel, vel_setpoint, vel_ramp_rate) == vel_ramp_new(input_vel, vel_setpoint, vel_ramp_rate));
+    }
+}

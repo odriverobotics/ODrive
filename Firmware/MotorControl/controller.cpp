@@ -138,14 +138,10 @@ bool Controller::update(float pos_estimate, float vel_estimate, float* current_s
             current_setpoint_ = input_current_;
         } break;
         case INPUT_MODE_VEL_RAMP: {
-            float max_step_size = current_meas_period * config_.vel_ramp_rate;
+            float max_step_size = std::abs(current_meas_period * config_.vel_ramp_rate);
             float full_step = input_vel_ - vel_setpoint_;
-            float step;
-            if (fabsf(full_step) > max_step_size) {
-                step = std::copysignf(max_step_size, full_step);
-            } else {
-                step = full_step;
-            }
+            float step = std::clamp(full_step, -max_step_size, max_step_size);
+
             vel_setpoint_ += step;
             current_setpoint_ = step / current_meas_period * config_.inertia;
         } break;
