@@ -315,19 +315,25 @@ bool Axis::run_closed_loop_control_loop() {
             return false; // set_error should update axis.error_
 
         // Handle the homing case
-        if (homing_state_ == HOMING_STATE_HOMING) {
+        if (homing_.homing_state == HOMING_STATE_HOMING) {
             if (min_endstop_.getEndstopState()) {
                 encoder_.set_linear_count(min_endstop_.config_.offset);
+
+                controller_.config_.control_mode = Controller::CTRL_MODE_POSITION_CONTROL;
+                controller_.config_.input_mode = Controller::INPUT_MODE_TRAP_TRAJ;
+
                 controller_.input_pos_ = 0.0f;
+                controller_.input_pos_updated();
                 controller_.input_vel_ = 0.0f;
                 controller_.input_current_ = 0.0f;
-                controller_.config_.control_mode = Controller::CTRL_MODE_POSITION_CONTROL;
-                controller_.input_pos_updated();
-                homing_state_ = HOMING_STATE_MOVE_TO_ZERO;
+
+                homing_.homing_state = HOMING_STATE_MOVE_TO_ZERO;
             }
-        } else if (homing_state_ == HOMING_STATE_MOVE_TO_ZERO) {
-            if(!min_endstop_.getEndstopState()){
-                homing_state_ = HOMING_STATE_IDLE;
+        } else if (homing_.homing_state == HOMING_STATE_MOVE_TO_ZERO) {
+            if(!min_endstop_.getEndstopState() && controller_.trajectory_done_){
+                controller_.config_.control_mode = homing_.storedControlMode;
+                controller_.config_.input_mode = homing_.storedInputMode;
+                homing_.homing_state = HOMING_STATE_IDLE;
             }
         } else {
             // Check for endstop presses

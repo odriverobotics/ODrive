@@ -61,12 +61,18 @@ void Controller::start_anticogging_calibration() {
 //TODO: This needs to be upgraded to use its own run_control_loop!
 bool Controller::home_axis() {
     if (axis_->min_endstop_.config_.enabled) {
+        axis_->homing_.storedControlMode = config_.control_mode;
+        axis_->homing_.storedInputMode = config_.input_mode;
+
         config_.control_mode = CTRL_MODE_VELOCITY_CONTROL;
+        config_.input_mode = INPUT_MODE_VEL_RAMP;
+
         input_pos_ = 0.0f;
         input_pos_updated();
         input_vel_ = -config_.homing_speed;
         input_current_ = 0.0f;
-        axis_->homing_state_ = HOMING_STATE_HOMING;
+
+        axis_->homing_.homing_state = HOMING_STATE_HOMING;
     } else {
         return false;
     }
