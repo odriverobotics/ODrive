@@ -121,6 +121,7 @@ odrv0.axis0.controller.config.vel_gain = 0.01
 odrv0.axis0.controller.config.vel_integrator_gain = 0.05
 odrv0.axis0.controller.config.control_mode = 2
 odrv0.axis0.controller.vel_setpoint = 400
+odrv0.axis0.motor.config.direction = 1
 odrv0.axis0.sensorless_estimator.config.pm_flux_linkage = 5.51328895422 / (<pole pairs> * <motor kv>)
 ```
 
