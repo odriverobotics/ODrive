@@ -35,15 +35,15 @@ The ODrive can be controlled over various ports and protocols. If you're comfort
 Notes:
 * You must also connect GND between ODrive and your other board.
 * ODrive v3.3 and onward have 5V tolerant GPIO pins.
-* ODrive v3.5 and later have some noise supression filters on the default step/dir pins
+* ODrive v3.5 and later have some noise suppression filters on the default step/dir pins
 * You can change the step/dir pins using `axis.config.<step/dir>_gpio_pin`.
 
 ### Pin function priorities
 1. PWM in, if enabled. Disabled by default.
 1. UART, **Enabled by default**.
 1. Step/Dir, if enabled. Disabled by default.
-1. Analog, default behaviour if not overriden (only on supported pins).
-1. Digital in, default behaviour on pins not capable of analog input.
+1. Analog, default behavior if not overridden (only on supported pins).
+1. Digital in, default behavior on pins not capable of analog input.
 
 For predictable results, try to have only one feature enabled for any one pin. When changing pin assignments you must:
 * `odrv0.save_configuration()`
@@ -90,7 +90,7 @@ This is a simpler alternative to the native protocol if you don't need all its b
 For more details, see the [ASCII protocol specification](ascii-protocol.md).
 
 ### Arduino
-There is an Arduino library that gives some expamples on how to use the ASCII protocol to communicate with the ODrive. Check it out [here](../Arduino/ODriveArduino).
+There is an Arduino library that gives some examples on how to use the ASCII protocol to communicate with the ODrive. Check it out [here](../Arduino/ODriveArduino).
 
 ## Step/direction
 This is the simplest possible way of controlling the ODrive. It is also the most primitive and fragile one. So don't use it unless you must interoperate with other hardware that you don't control.
