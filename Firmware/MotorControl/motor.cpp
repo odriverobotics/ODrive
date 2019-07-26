@@ -342,6 +342,7 @@ bool Motor::FOC_current(float Id_des, float Iq_des, float I_phase, float pwm_pha
     if (fabsf(current_meas_.phB) > ictrl.overcurrent_trip_level
      || fabsf(current_meas_.phC) > ictrl.overcurrent_trip_level) {
         set_error(ERROR_CURRENT_SENSE_SATURATION);
+        return false;
     }
 
     // Clarke transform
@@ -355,6 +356,13 @@ bool Motor::FOC_current(float Id_des, float Iq_des, float I_phase, float pwm_pha
     float Iq = c_I * Ibeta - s_I * Ialpha;
     ictrl.Iq_measured += ictrl.I_measured_report_filter_k * (Iq - ictrl.Iq_measured);
     ictrl.Id_measured += ictrl.I_measured_report_filter_k * (Id - ictrl.Id_measured);
+
+    // Check for violation of current limit
+    float I_trip = config_.current_lim_tolerance * effective_current_lim();
+    if (SQ(Id) + SQ(Iq) > SQ(I_trip)) {
+        set_error(ERROR_CURRENT_UNSTABLE);
+        return false;
+    }
 
     // Current error
     float Ierr_d = Id_des - Id;

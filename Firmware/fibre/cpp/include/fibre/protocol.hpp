@@ -976,17 +976,17 @@ public:
         output_properties_.register_endpoints(list, id + 1 + decltype(input_properties_)::endpoint_count, length);
     }
 
-    template<typename> std::enable_if_t<sizeof...(TOutputs) == 0>
+    template<size_t i = sizeof...(TOutputs)> std::enable_if_t<i == 0>
     handle_ex() {
         invoke_function_with_tuple(*obj_, func_ptr_, in_args_);
     }
 
-    template<typename> std::enable_if_t<sizeof...(TOutputs) == 1>
+    template<size_t i = sizeof...(TOutputs)> std::enable_if_t<i == 1>
     handle_ex() {
         std::get<0>(out_args_) = invoke_function_with_tuple(*obj_, func_ptr_, in_args_);
     }
     
-    template<typename> std::enable_if_t<sizeof...(TOutputs) >= 2>
+    template<size_t i = sizeof...(TOutputs)> std::enable_if_t<i >= 2>
     handle_ex() {
         out_args_ = invoke_function_with_tuple(*obj_, func_ptr_, in_args_);
     }
@@ -997,7 +997,7 @@ public:
         (void) output;
         LOG_FIBRE("tuple still at %x and of size %u\r\n", (uintptr_t)&in_args_, sizeof(in_args_));
         LOG_FIBRE("invoke function using %d and %.3f\r\n", std::get<0>(in_args_), std::get<1>(in_args_));
-        handle_ex<void>();
+        handle_ex();
     }
 
     const char * name_;
