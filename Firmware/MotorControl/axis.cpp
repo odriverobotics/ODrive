@@ -33,6 +33,34 @@ Axis::Axis(int axis_num,
     update_watchdog_settings();
 }
 
+Axis::LockinConfig_t Axis::default_calibration() {
+    Axis::LockinConfig_t config;
+    config.current = 10.0f;           // [A]
+    config.ramp_time = 0.4f;          // [s]
+    config.ramp_distance = 1 * M_PI;  // [rad]
+    config.accel = 20.0f;     // [rad/s^2]
+    config.vel = 40.0f; // [rad/s]
+    config.finish_distance = 100.0f * 2.0f * M_PI;  // [rad]
+    config.finish_on_vel = false;
+    config.finish_on_distance = true;
+    config.finish_on_enc_idx = true;
+    return config;
+}
+
+Axis::LockinConfig_t Axis::default_sensorless() {
+    Axis::LockinConfig_t config;
+    config.current = 10.0f;           // [A]
+    config.ramp_time = 0.4f;          // [s]
+    config.ramp_distance = 1 * M_PI;  // [rad]
+    config.accel = 200.0f;     // [rad/s^2]
+    config.vel = 400.0f; // [rad/s]
+    config.finish_distance = 100.0f;  // [rad]
+    config.finish_on_vel = true;
+    config.finish_on_distance = false;
+    config.finish_on_enc_idx = false;
+    return config;
+}
+
 static void step_cb_wrapper(void* ctx) {
     reinterpret_cast<Axis*>(ctx)->step_cb();
 }
@@ -179,32 +207,32 @@ bool Axis::watchdog_check() {
     }
 }
 
-bool Axis::run_lockin_spin() {
+bool Axis::run_lockin_spin(const LockinConfig_t &lockin_config) {
     // Spiral up current for softer rotor lock-in
     lockin_state_ = LOCKIN_STATE_RAMP;
     float x = 0.0f;
     run_control_loop([&]() {
-        float phase = wrap_pm_pi(config_.lockin.ramp_distance * x);
-        float I_mag = config_.lockin.current * x;
-        x += current_meas_period / config_.lockin.ramp_time;
+        float phase = wrap_pm_pi(lockin_config.ramp_distance * x);
+        float I_mag = lockin_config.current * x;
+        x += current_meas_period / lockin_config.ramp_time;
         if (!motor_.update(I_mag, phase, 0.0f))
             return false;
         return x < 1.0f;
     });
     
     // Spin states
-    float distance = config_.lockin.ramp_distance;
+    float distance = lockin_config.ramp_distance;
     float phase = wrap_pm_pi(distance);
-    float vel = distance / config_.lockin.ramp_time;
+    float vel = distance / lockin_config.ramp_time;
 
     // Function of states to check if we are done
     auto spin_done = [&](bool vel_override = false) -> bool {
         bool done = false;
-        if (config_.lockin.finish_on_vel || vel_override)
-            done = done || fabsf(vel) >= fabsf(config_.lockin.vel);
-        if (config_.lockin.finish_on_distance)
-            done = done || fabsf(distance) >= fabsf(config_.lockin.finish_distance);
-        if (config_.lockin.finish_on_enc_idx)
+        if (lockin_config.finish_on_vel || vel_override)
+            done = done || fabsf(vel) >= fabsf(lockin_config.vel);
+        if (lockin_config.finish_on_distance)
+            done = done || fabsf(distance) >= fabsf(lockin_config.finish_distance);
+        if (lockin_config.finish_on_enc_idx)
             done = done || encoder_.index_found_;
         return done;
     };
@@ -212,11 +240,11 @@ bool Axis::run_lockin_spin() {
     // Accelerate
     lockin_state_ = LOCKIN_STATE_ACCELERATE;
     run_control_loop([&]() {
-        vel += config_.lockin.accel * current_meas_period;
+        vel += lockin_config.accel * current_meas_period;
         distance += vel * current_meas_period;
         phase = wrap_pm_pi(phase + vel * current_meas_period);
 
-        if (!motor_.update(config_.lockin.current, phase, vel))
+        if (!motor_.update(lockin_config.current, phase, vel))
             return false;
         return !spin_done(true); //vel_override to go to next phase
     });
@@ -227,12 +255,12 @@ bool Axis::run_lockin_spin() {
     // Constant speed
     if (!spin_done()) {
         lockin_state_ = LOCKIN_STATE_CONST_VEL;
-        vel = config_.lockin.vel; // reset to actual specified vel to avoid small integration error
+        vel = lockin_config.vel; // reset to actual specified vel to avoid small integration error
         run_control_loop([&]() {
             distance += vel * current_meas_period;
             phase = wrap_pm_pi(phase + vel * current_meas_period);
 
-            if (!motor_.update(config_.lockin.current, phase, vel))
+            if (!motor_.update(lockin_config.current, phase, vel))
                 return false;
             return !spin_done();
         });
@@ -371,17 +399,17 @@ void Axis::run_state_machine_loop() {
             case AXIS_STATE_LOCKIN_SPIN: {
                 if (!motor_.is_calibrated_ || motor_.config_.direction==0)
                     goto invalid_state_label;
-                status = run_lockin_spin();
+                status = run_lockin_spin(config_.lockin);
             } break;
 
             case AXIS_STATE_SENSORLESS_CONTROL: {
                 if (!motor_.is_calibrated_ || motor_.config_.direction==0)
                         goto invalid_state_label;
-                status = run_lockin_spin(); // TODO: restart if desired
+                status = run_lockin_spin(config_.sensorless_ramp); // TODO: restart if desired
                 if (status) {
                     // call to controller.reset() that happend when arming means that vel_setpoint
                     // is zeroed. So we make the setpoint the spinup target for smooth transition.
-                    controller_.vel_setpoint_ = config_.lockin.vel;
+                    controller_.vel_setpoint_ = config_.sensorless_ramp.vel;
                     status = run_sensorless_control_loop();
                 }
             } break;

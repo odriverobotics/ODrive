@@ -49,6 +49,10 @@ public:
         bool finish_on_enc_idx = false;
     };
 
+    static LockinConfig_t default_calibration();
+    static LockinConfig_t default_sensorless();
+    static LockinConfig_t default_lockin();
+
     struct Config_t {
         bool startup_motor_calibration = false;   //<! run motor calibration at startup, skip otherwise
         bool startup_encoder_index_search = false; //<! run encoder index search after startup, skip otherwise
@@ -66,6 +70,8 @@ public:
         uint16_t step_gpio_pin = 0;
         uint16_t dir_gpio_pin = 0;
 
+        LockinConfig_t calibration_lockin = default_calibration();
+        LockinConfig_t sensorless_ramp = default_sensorless();
         LockinConfig_t lockin;
     };
 
@@ -177,7 +183,7 @@ public:
         }
     }
 
-    bool run_lockin_spin();
+    bool run_lockin_spin(const LockinConfig_t &lockin_config);
     bool run_sensorless_control_loop();
     bool run_closed_loop_control_loop();
     bool run_idle_loop();
@@ -240,7 +246,25 @@ public:
                     [](void* ctx) { static_cast<Axis*>(ctx)->decode_step_dir_pins(); }, this),
                 make_protocol_property("dir_gpio_pin", &config_.dir_gpio_pin,
                     [](void* ctx) { static_cast<Axis*>(ctx)->decode_step_dir_pins(); }, this),
-                make_protocol_object("lockin",
+                make_protocol_object("calibration_lockin",
+                    make_protocol_property("current", &config_.calibration_lockin.current),
+                    make_protocol_property("ramp_time", &config_.calibration_lockin.ramp_time),
+                    make_protocol_property("ramp_distance", &config_.calibration_lockin.ramp_distance),
+                    make_protocol_property("accel", &config_.calibration_lockin.accel),
+                    make_protocol_property("vel", &config_.calibration_lockin.vel)
+                ),
+                make_protocol_object("sensorless_ramp",
+                    make_protocol_property("current", &config_.sensorless_ramp.current),
+                    make_protocol_property("ramp_time", &config_.sensorless_ramp.ramp_time),
+                    make_protocol_property("ramp_distance", &config_.sensorless_ramp.ramp_distance),
+                    make_protocol_property("accel", &config_.sensorless_ramp.accel),
+                    make_protocol_property("vel", &config_.sensorless_ramp.vel),
+                    make_protocol_property("finish_distance", &config_.sensorless_ramp.finish_distance),
+                    make_protocol_property("finish_on_vel", &config_.sensorless_ramp.finish_on_vel),
+                    make_protocol_property("finish_on_distance", &config_.sensorless_ramp.finish_on_distance),
+                    make_protocol_property("finish_on_enc_idx", &config_.sensorless_ramp.finish_on_enc_idx)
+                ),
+                make_protocol_object("general_lockin",
                     make_protocol_property("current", &config_.lockin.current),
                     make_protocol_property("ramp_time", &config_.lockin.ramp_time),
                     make_protocol_property("ramp_distance", &config_.lockin.ramp_distance),
