@@ -1,6 +1,8 @@
 # Unreleased Features
 Please add a note of your changes below this heading if you make a Pull Request.
 
+# Releases
+## [0.4.11] - 2019-07-25
 ### Added
 * Separate lockin configs for sensorless, index search, and general.
 * Check current limit violation: added `ERROR_CURRENT_UNSTABLE`, `motor.config.current_lim_tolerance`.
