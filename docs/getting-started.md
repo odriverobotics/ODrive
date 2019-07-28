@@ -235,16 +235,18 @@ Let's get motor 0 up and running. The procedure for motor 1 is exactly the same,
 
   <details><summary markdown="span">Help, something isn't working!</summary><div markdown="block">
   
-  Check the encoder wiring and that the encoder is firmly connected to the motor. Check the value of `hex(odrv0.axis0.error)` and then refer to the [error code documentation](troubleshooting.md#error-codes) for details.
+  Check the encoder wiring and that the encoder is firmly connected to the motor. Check the value of `dump_errors(odrv0)` and then refer to the [error code documentation](troubleshooting.md#error-codes) for details.
 
-  Once you understand the error and have fixed its cause, you may clear the error state with (`odrv0.axis0.error = 0` <kbd>Enter</kbd>) and retry. You may also need to clear the error state of other subcomponents (e.g. `odrv0.axis0.motor.error = 0`).
+  Once you understand the error and have fixed its cause, you may clear the error state with (`dump_errors(odrv0, True)` <kbd>Enter</kbd>) and retry.
   </div></details>
 
-2. Type `odrv0.axis0.requested_state = AXIS_STATE_CLOSED_LOOP_CONTROL` <kbd>Enter</kbd>. From now on the ODrive will try to hold the motor's position. If you try to turn it by hand, it will fight you gently. That is unless you bump up `odrv0.axis0.motor.config.current_lim`, in which case it will fight you more fiercely.
+2. Type `odrv0.axis0.requested_state = AXIS_STATE_CLOSED_LOOP_CONTROL` <kbd>Enter</kbd>. From now on the ODrive will try to hold the motor's position. If you try to turn it by hand, it will fight you gently. That is unless you bump up `odrv0.axis0.motor.config.current_lim`, in which case it will fight you more fiercely. If the motor begins to vibrate either immediately or after being disturbed you will need to [lower the controller gains](control.md).
 3. Send the motor a new position setpoint. `odrv0.axis0.controller.pos_setpoint = 10000` <kbd>Enter</kbd>. The units are in encoder counts.
+4. At this point you will probably want to [Properly tune](control.md) the motor controller in order to maximize system performance.
 
 ## Other control modes
-The default control mode is unfiltered position control in the absolute encoder reference frame. You may wish to use a controlled trajectory instead. Or you may wish to control position in a circular frame to allow continous rotation forever without growing the numeric value of the setpoint too large.
+The default control mode is unfiltered position control in the absolute encoder reference frame. You may wish to use a controlled trajectory instead. Or you may wish to control position in a circular frame to allow continuous rotation forever without growing the numeric value of the setpoint too large.
+
 You may also wish to control velocity (directly or with a ramping filter).
 You can also directly control the current of the motor, which is proportional to torque.
 
@@ -340,7 +342,8 @@ The watchdog is fed using the `axis.watchdog_feed()` method of each axis.
 
 ## What's next?
 You can now:
-* See what other [commands and parameters](commands.md) are available, including setting tuning parameters for better performance.
+* [Properly tune](control.md) the motor controller to unlock the full potential of the ODrive.
+* See what other [commands and parameters](commands.md) are available, in order to better control the ODrive.
 * Control the ODrive from your own program or hook it up to an existing system through one of it's [interfaces](interfaces.md).
 * See how you can improve the behavior during the startup procedure, like [bypassing encoder calibration](encoders.md#encoder-with-index-signal).
 
