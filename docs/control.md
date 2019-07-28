@@ -47,5 +47,4 @@ An upcoming feature will enable automatic tuning. Until then, here is a rough tu
 
 The liveplotter tool can be immensely helpful in dialing in these values. To display a graph that plots the position setpoint vs the measured position value run the following in the ODrive tool:
 
-`start_liveplotter(lambda:[odrv0.axis0.encoder.pos_estimate - odrv0.axis0
-   ...: .controller.pos_setpoint])` 
+`start_liveplotter(lambda:[odrv0.axis0.encoder.pos_estimate, odrv0.axis0.controller.pos_setpoint])` 
