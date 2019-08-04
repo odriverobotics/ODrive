@@ -89,7 +89,7 @@ To compile firmware from source, refer to the [developer guide](developer-guide)
 * If the DFU script can't find the device, try forcing it into DFU mode.
 
   <details><summary markdown="span">How to force DFU mode (ODrive v3.5)</summary><div markdown="block">
-  Flick the DIP switch that "DFU, RUN" to "DFU" and power cycle the board. After you're done, put the switch back into the "RUN" position and power cycle the board again.
+  Flick the DIP switch that "DFU, RUN" to "DFU" and power cycle the board. After you're done upgrading firmware, don't forget to put the switch back into the "RUN" position and power cycle the board again.
   </div></details>
 
   <details><summary markdown="span">How to force DFU mode (ODrive v3.1, v3.2)</summary><div markdown="block">
