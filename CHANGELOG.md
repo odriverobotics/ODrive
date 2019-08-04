@@ -1,6 +1,7 @@
 # Unreleased Features
 Please add a note of your changes below this heading if you make a Pull Request.
 
+### Added
 * Simplified control interface ("Input Filter" branch)
     * New input variables: `input_pos`, `input_vel`, and `input_current`
     * New setting `input_mode` to switch between different input behaviours
