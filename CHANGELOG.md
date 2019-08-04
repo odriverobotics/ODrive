@@ -1,7 +1,6 @@
 # Unreleased Features
 Please add a note of your changes below this heading if you make a Pull Request.
 
-### Added
 * Simplified control interface ("Input Filter" branch)
     * New input variables: `input_pos`, `input_vel`, and `input_current`
     * New setting `input_mode` to switch between different input behaviours
@@ -15,7 +14,6 @@ Please add a note of your changes below this heading if you make a Pull Request.
 * [CAN Communication with CANSimple stack](can-protocol.md)
 * Gain scheduling for anti-hunt when close to 0 position error
 * Velocity Limiting in Current Control mode according to `vel_limit` and `vel_gain`
-* Current limit violation added `ERROR_CURRENT_UNSTABLE`, `motor.config.current_lim_tolerance`.
 * Regen current limiting according to `max_regen_limit`, in Amps
 * DC Bus Power limiting according to `power_supply_wattage`
 * Unit Testing with Doctest has been started for select algorithms, see [Firmware/Tests/test_runner.cpp](Firmware/Tests/test_runner.cpp)
@@ -27,6 +25,15 @@ Please add a note of your changes below this heading if you make a Pull Request.
 * Some Encoder settings have been made read-only
 * Cleaned up VSCode C/C++ Configuration settings on Windows with recursive includePath
 * Now compiling with C++17
+
+# Releases
+## [0.4.11] - 2019-07-25
+### Added
+* Separate lockin configs for sensorless, index search, and general.
+* Check current limit violation: added `ERROR_CURRENT_UNSTABLE`, `motor.config.current_lim_tolerance`.
+
+### Changed
+* Ascii command for reboot changed from `sb` to `sr`.
 
 # Releases
 ## [0.4.10] - 2019-04-24

@@ -216,7 +216,7 @@ void ASCII_protocol_process_line(const uint8_t* buffer, size_t len, StreamSink& 
             save_configuration();
         } else if (cmd[1] == 'e'){ // Erase config
             erase_configuration();
-        } else if (cmd[1] == 'b'){ // Reboot
+        } else if (cmd[1] == 'r'){ // Reboot
             NVIC_SystemReset();
         }
 
