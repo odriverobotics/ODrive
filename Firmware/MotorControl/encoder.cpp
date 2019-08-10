@@ -232,7 +232,7 @@ bool Encoder::run_offset_calibration() {
     calib_scan_response_ = fabsf(shadow_count_-init_enc_val);
     if(fabsf(calib_scan_response_ - expected_encoder_delta)/expected_encoder_delta > config_.calib_range)
     {
-        set_error(ERROR_CPR_OUT_OF_RANGE);
+        set_error(ERROR_CPR_POLEPAIRS_MISMATCH);
         return false;
     }
 
