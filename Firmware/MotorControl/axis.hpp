@@ -94,6 +94,7 @@ public:
         HomingState_t homing_state = HOMING_STATE_IDLE;
         Controller::ControlMode_t storedControlMode = Controller::CTRL_MODE_POSITION_CONTROL;
         Controller::InputMode_t storedInputMode = Controller::INPUT_MODE_PASSTHROUGH;
+        bool isHomed = false;
     };
 
     enum thread_signals {
@@ -272,6 +273,7 @@ public:
             make_protocol_ro_property("loop_counter", &loop_counter_),
             make_protocol_ro_property("lockin_state", &lockin_state_),
             make_protocol_ro_property("homing_state", &homing_.homing_state),
+            make_protocol_property("is_homed", &homing_.isHomed),
             make_protocol_object("config",
                 make_protocol_property("startup_motor_calibration", &config_.startup_motor_calibration),
                 make_protocol_property("startup_encoder_index_search", &config_.startup_encoder_index_search),

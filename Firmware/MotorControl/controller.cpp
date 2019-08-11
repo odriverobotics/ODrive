@@ -72,6 +72,7 @@ bool Controller::home_axis() {
         input_vel_ = -config_.homing_speed;
         input_current_ = 0.0f;
 
+        axis_->homing_.isHomed = false;
         axis_->homing_.homing_state = HOMING_STATE_HOMING;
     } else {
         return false;

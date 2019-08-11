@@ -334,6 +334,7 @@ bool Axis::run_closed_loop_control_loop() {
                 controller_.config_.control_mode = homing_.storedControlMode;
                 controller_.config_.input_mode = homing_.storedInputMode;
                 homing_.homing_state = HOMING_STATE_IDLE;
+                homing_.isHomed = true;
             }
         } else {
             // Check for endstop presses
