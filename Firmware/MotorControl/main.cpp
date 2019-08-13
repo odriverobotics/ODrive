@@ -169,7 +169,7 @@ int odrive_main(void) {
                                  hw_configs[i].gate_driver_config,
                                  motor_configs[i]);
         TrapezoidalTrajectory *trap = new TrapezoidalTrajectory(trap_configs[i]);
-        axes[i] = new Axis(hw_configs[i].axis_config, axis_configs[i],
+        axes[i] = new Axis(i, hw_configs[i].axis_config, axis_configs[i],
                 *encoder, *sensorless_estimator, *controller, *motor, *trap);
     }
     

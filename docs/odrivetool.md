@@ -89,7 +89,7 @@ To compile firmware from source, refer to the [developer guide](developer-guide)
 * If the DFU script can't find the device, try forcing it into DFU mode.
 
   <details><summary markdown="span">How to force DFU mode (ODrive v3.5)</summary><div markdown="block">
-  Flick the DIP switch that "DFU, RUN" to "DFU" and power cycle the board. After you're done, put the switch back into the "RUN" position and power cycle the board again.
+  Flick the DIP switch that "DFU, RUN" to "DFU" and power cycle the board. After you're done upgrading firmware, don't forget to put the switch back into the "RUN" position and power cycle the board again.
   </div></details>
 
   <details><summary markdown="span">How to force DFU mode (ODrive v3.1, v3.2)</summary><div markdown="block">
@@ -198,7 +198,7 @@ If something doesn't work, make sure `openocd` is in your `PATH` variable, check
 
 ## Liveplotter
 
-Liveplotter is used for the graphical plotting of odrive parameters (i.e. position) in real time. To start liveplotter, close any other instances of liveplotter and run `odrivetool liveplotter` from a new anaconda prompt window. By defult two parameters are plotted on startup; the encoder positon of axis 1 and axis 2. In the below example the motors are running in `closed_loop_control` while they are being forced off position by hand.
+Liveplotter is used for the graphical plotting of odrive parameters (i.e. position) in real time. To start liveplotter, close any other instances of liveplotter and run `odrivetool liveplotter` from a new anaconda prompt window. By default two parameters are plotted on startup; the encoder position of axis 1 and axis 2. In the below example the motors are running in `closed_loop_control` while they are being forced off position by hand.
 
 ![Liveplotter position plot](figure_1.png)
 
@@ -232,7 +232,7 @@ plot_rate = 10
 num_samples = 1000
 ```
 
-For more examples on how to interact with the plotting functinality refer to the [Matplotlib examples.](https://matplotlib.org/examples)
+For more examples on how to interact with the plotting functionality refer to the [Matplotlib examples.](https://matplotlib.org/examples)
 
 ### Liveplotter from interactive odrivetool instance
 You can also run `start_liveplotter(...)` directly from the interactive odrivetool prompt. This is useful if you want to issue commands or otherwise keep interacting with the odrive while plotting.

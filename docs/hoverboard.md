@@ -1,14 +1,15 @@
 
 # Hoverboard motor and remote control setup guide
 By popular request here follows a step-by-step guide on how to setup the ODrive to drive hoverboard motors using RC PWM input.
-Each step is acompanied by some explanation so hopefully you can carry over some of the steps to other setups and configurations.
+Each step is accompanied by some explanation so hopefully you can carry over some of the steps to other setups and configurations.
+
 
 [![IMAGE ALT TEXT HERE](https://img.youtube.com/vi/ponx_U4xhoM/0.jpg)](https://www.youtube.com/watch?v=ponx_U4xhoM) <br> Click above to play video.
 
 ### Hoverboard motor wiring
 Hoverboard motors come with three motor phases (usually colored yellow, blue, green) which are thicker, and a set of 5 thinner wires for the hall sensor feedback (usually colored red, yellow, blue, green, black).
 
-You may wire the motor phases in any order into a motor connector on the ODrive, as we will calibrate the phase alignment later anyway. Wire the hall feedback into the ODrive J4 conenctor (make sure that the motor channel number matches) as follows:
+You may wire the motor phases in any order into a motor connector on the ODrive, as we will calibrate the phase alignment later anyway. Wire the hall feedback into the ODrive J4 connector (make sure that the motor channel number matches) as follows:
 
 | Hall wire | J4 signal |
 |-----------|-----------|
@@ -54,7 +55,7 @@ odrv0.axis0.controller.config.vel_limit = 1000
 odrv0.axis0.controller.config.control_mode = CTRL_MODE_VELOCITY_CONTROL
 ```
 
-In the next step we are going to start powering the motor and so we want to make sure that some of the above settings that requrie a reboot are applied first.
+In the next step we are going to start powering the motor and so we want to make sure that some of the above settings that require a reboot are applied first.
 ```txt
 odrv0.save_configuration()
 odrv0.reboot()
@@ -77,7 +78,7 @@ Check to see that there is no error and that the phase resistance and inductance
   phase_resistance = 0.1793474406003952 (float)
 ```
 
-If all looks good then you can tell the ODrive that saving this calibration to presistent memory is OK:
+If all looks good then you can tell the ODrive that saving this calibration to persistent memory is OK:
 ```txt
 odrv0.axis0.motor.config.pre_calibrated = True
 ```
