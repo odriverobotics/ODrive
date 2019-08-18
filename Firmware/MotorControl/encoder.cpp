@@ -51,6 +51,9 @@ void Encoder::enc_index_cb() {
             set_linear_count(0); // Avoid position control transient after search
         if (config_.pre_calibrated) {
             is_ready_ = true;
+            if(axis_->controller_.config_.anticogging.pre_calibrated){
+                axis_->controller_.anticogging_valid_ = true;
+            }
         } else {
             // We can't use the update_offset facility in set_circular_count because
             // we also set the linear count before there is a chance to update. Therefore:

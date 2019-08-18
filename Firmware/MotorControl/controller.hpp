@@ -35,6 +35,7 @@ public:
     typedef struct {
         uint32_t index = 0;
         float cogging_map[3600];
+        bool pre_calibrated = false;
         bool calib_anticogging = false;
         float calib_pos_threshold = 1.0f;
         float calib_vel_threshold = 1.0f;
@@ -140,7 +141,7 @@ public:
                     [](void* ctx) { static_cast<Controller*>(ctx)->update_filter_gains(); }, this),
                 make_protocol_object("anticogging",
                     make_protocol_ro_property("index", &config_.anticogging.index),
-                    
+                    make_protocol_property("pre_calibrated", &config_.anticogging.pre_calibrated),
                     make_protocol_ro_property("calib_anticogging", &config_.anticogging.calib_anticogging),
                     make_protocol_property("calib_pos_threshold", &config_.anticogging.calib_pos_threshold),
                     make_protocol_property("calib_vel_threshold", &config_.anticogging.calib_vel_threshold),
