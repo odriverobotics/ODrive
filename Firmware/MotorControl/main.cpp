@@ -1,13 +1,13 @@
 
 #define __MAIN_CPP__
-#include "odrive_main.h"
 #include "nvm_config.hpp"
+#include "odrive_main.h"
 
-#include "freertos_vars.h"
-#include <communication/interface_usb.h>
-#include <communication/interface_uart.h>
 #include <communication/interface_i2c.h>
+#include <communication/interface_uart.h>
+#include <communication/interface_usb.h>
 #include <communication/interface_can.hpp>
+#include "freertos_vars.h"
 
 BoardConfig_t board_config;
 ODriveCAN::Config_t can_config;
@@ -21,7 +21,7 @@ Endstop::Config_t min_endstop_configs[AXIS_COUNT];
 Endstop::Config_t max_endstop_configs[AXIS_COUNT];
 bool user_config_loaded_;
 
-SystemStats_t system_stats_ = { 0 };
+SystemStats_t system_stats_ = {0};
 
 Axis *axes[AXIS_COUNT];
 ODriveCAN *odCAN;
@@ -36,7 +36,8 @@ typedef Config<
     TrapezoidalTrajectory::Config_t[AXIS_COUNT],
     Endstop::Config_t[AXIS_COUNT],
     Endstop::Config_t[AXIS_COUNT],
-    Axis::Config_t[AXIS_COUNT]> ConfigFormat;
+    Axis::Config_t[AXIS_COUNT]>
+    ConfigFormat;
 
 void save_configuration(void) {
     if (ConfigFormat::safe_store_config(
@@ -50,7 +51,8 @@ void save_configuration(void) {
             &min_endstop_configs,
             &max_endstop_configs,
             &axis_configs)) {
-        printf("saving configuration failed\r\n"); osDelay(5);
+        printf("saving configuration failed\r\n");
+        osDelay(5);
     } else {
         user_config_loaded_ = true;
     }
@@ -60,26 +62,26 @@ extern "C" int load_configuration(void) {
     // Try to load configs
     if (NVM_init() ||
         ConfigFormat::safe_load_config(
-                &board_config,
-                &can_config,
-                &encoder_configs,
-                &sensorless_configs,
-                &controller_configs,
-                &motor_configs,
-                &trap_configs,
-                &min_endstop_configs,
-                &max_endstop_configs,
-                &axis_configs)) {
+            &board_config,
+            &can_config,
+            &encoder_configs,
+            &sensorless_configs,
+            &controller_configs,
+            &motor_configs,
+            &trap_configs,
+            &min_endstop_configs,
+            &max_endstop_configs,
+            &axis_configs)) {
         //If loading failed, restore defaults
         board_config = BoardConfig_t();
-        can_config = ODriveCAN::Config_t();
+        can_config   = ODriveCAN::Config_t();
         for (size_t i = 0; i < AXIS_COUNT; ++i) {
-            encoder_configs[i] = Encoder::Config_t();
+            encoder_configs[i]    = Encoder::Config_t();
             sensorless_configs[i] = SensorlessEstimator::Config_t();
             controller_configs[i] = Controller::Config_t();
-            motor_configs[i] = Motor::Config_t();
-            trap_configs[i] = TrapezoidalTrajectory::Config_t();
-            axis_configs[i] = Axis::Config_t();
+            motor_configs[i]      = Motor::Config_t();
+            trap_configs[i]       = TrapezoidalTrajectory::Config_t();
+            axis_configs[i]       = Axis::Config_t();
             // Default step/dir pins are different, so we need to explicitly load them
             Axis::load_default_step_dir_pin_config(hw_configs[i].axis_config, &axis_configs[i]);
             Axis::load_default_can_id(i, axis_configs[i]);
@@ -98,7 +100,8 @@ void erase_configuration(void) {
 
 void enter_dfu_mode() {
     if ((hw_version_major == 3) && (hw_version_minor >= 5)) {
-        __asm volatile ("CPSID I\n\t":::"memory"); // disable interrupts
+        __asm volatile("CPSID I\n\t" ::
+                           : "memory");  // disable interrupts
         _reboot_cookie = 0xDEADBEEF;
         NVIC_SystemReset();
     } else {
@@ -118,26 +121,26 @@ extern "C" {
 int odrive_main(void);
 
 void vApplicationStackOverflowHook(xTaskHandle *pxTask, signed portCHAR *pcTaskName) {
-    for (;;); // TODO: safe action
+    for (;;)
+        ;  // TODO: safe action
 }
 void vApplicationIdleHook(void) {
     if (system_stats_.fully_booted) {
-        system_stats_.uptime = xTaskGetTickCount();
-        system_stats_.min_heap_space = xPortGetMinimumEverFreeHeapSize();
-        system_stats_.min_stack_space_comms = uxTaskGetStackHighWaterMark(comm_thread) * sizeof(StackType_t);
-        system_stats_.min_stack_space_axis0 = uxTaskGetStackHighWaterMark(axes[0]->thread_id_) * sizeof(StackType_t);
-        system_stats_.min_stack_space_axis1 = uxTaskGetStackHighWaterMark(axes[1]->thread_id_) * sizeof(StackType_t);
-        system_stats_.min_stack_space_usb = uxTaskGetStackHighWaterMark(usb_thread) * sizeof(StackType_t);
-        system_stats_.min_stack_space_uart = uxTaskGetStackHighWaterMark(uart_thread) * sizeof(StackType_t);
+        system_stats_.uptime                  = xTaskGetTickCount();
+        system_stats_.min_heap_space          = xPortGetMinimumEverFreeHeapSize();
+        system_stats_.min_stack_space_comms   = uxTaskGetStackHighWaterMark(comm_thread) * sizeof(StackType_t);
+        system_stats_.min_stack_space_axis0   = uxTaskGetStackHighWaterMark(axes[0]->thread_id_) * sizeof(StackType_t);
+        system_stats_.min_stack_space_axis1   = uxTaskGetStackHighWaterMark(axes[1]->thread_id_) * sizeof(StackType_t);
+        system_stats_.min_stack_space_usb     = uxTaskGetStackHighWaterMark(usb_thread) * sizeof(StackType_t);
+        system_stats_.min_stack_space_uart    = uxTaskGetStackHighWaterMark(uart_thread) * sizeof(StackType_t);
         system_stats_.min_stack_space_usb_irq = uxTaskGetStackHighWaterMark(usb_irq_thread) * sizeof(StackType_t);
         system_stats_.min_stack_space_startup = uxTaskGetStackHighWaterMark(defaultTaskHandle) * sizeof(StackType_t);
-        system_stats_.min_stack_space_can = uxTaskGetStackHighWaterMark(odCAN->thread_id_) * sizeof(StackType_t);
+        system_stats_.min_stack_space_can     = uxTaskGetStackHighWaterMark(odCAN->thread_id_) * sizeof(StackType_t);
     }
 }
 }
 
 int odrive_main(void) {
-
 #if HW_VERSION_MAJOR == 3 && HW_VERSION_MINOR >= 3
     if (board_config.enable_i2c_instead_of_can) {
         // Set up the direction GPIO as input
@@ -166,7 +169,7 @@ int odrive_main(void) {
     GPIO_InitTypeDef GPIO_InitStruct;
     GPIO_InitStruct.Mode = GPIO_MODE_ANALOG;
     GPIO_InitStruct.Pull = GPIO_NOPULL;
-    GPIO_InitStruct.Pin = GPIO_1_Pin;
+    GPIO_InitStruct.Pin  = GPIO_1_Pin;
     HAL_GPIO_Init(GPIO_1_GPIO_Port, &GPIO_InitStruct);
     GPIO_InitStruct.Pin = GPIO_2_Pin;
     HAL_GPIO_Init(GPIO_2_GPIO_Port, &GPIO_InitStruct);
@@ -182,20 +185,20 @@ int odrive_main(void) {
     // Construct all objects.
     odCAN = new ODriveCAN(&hcan1, can_config);
     for (size_t i = 0; i < AXIS_COUNT; ++i) {
-        Encoder *encoder = new Encoder(hw_configs[i].encoder_config,
+        Encoder *encoder                          = new Encoder(hw_configs[i].encoder_config,
                                        encoder_configs[i]);
         SensorlessEstimator *sensorless_estimator = new SensorlessEstimator(sensorless_configs[i]);
-        Controller *controller = new Controller(controller_configs[i]);
-        Motor *motor = new Motor(hw_configs[i].motor_config,
+        Controller *controller                    = new Controller(controller_configs[i]);
+        Motor *motor                              = new Motor(hw_configs[i].motor_config,
                                  hw_configs[i].gate_driver_config,
                                  motor_configs[i]);
-        TrapezoidalTrajectory *trap = new TrapezoidalTrajectory(trap_configs[i]);
-        Endstop *min_endstop = new Endstop(min_endstop_configs[i]);
-        Endstop *max_endstop = new Endstop(max_endstop_configs[i]);
-        axes[i] = new Axis(i, hw_configs[i].axis_config, axis_configs[i],
-                *encoder, *sensorless_estimator, *controller, *motor, *trap, *min_endstop, *max_endstop);
+        TrapezoidalTrajectory *trap               = new TrapezoidalTrajectory(trap_configs[i]);
+        Endstop *min_endstop                      = new Endstop(min_endstop_configs[i]);
+        Endstop *max_endstop                      = new Endstop(max_endstop_configs[i]);
+        axes[i]                                   = new Axis(i, hw_configs[i].axis_config, axis_configs[i],
+                           *encoder, *sensorless_estimator, *controller, *motor, *trap, *min_endstop, *max_endstop);
     }
-    
+
     // Start ADC for temperature measurements and user measurements
     start_general_purpose_adc();
 

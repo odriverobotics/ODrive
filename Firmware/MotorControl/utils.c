@@ -1,10 +1,9 @@
 
-#include <utils.h>
-#include <math.h>
-#include <float.h>
 #include <cmsis_os.h>
+#include <float.h>
+#include <math.h>
 #include <stm32f4xx_hal.h>
-
+#include <utils.h>
 
 int SVM(float alpha, float beta, float* tA, float* tB, float* tC) {
     int Sextant;
@@ -13,30 +12,30 @@ int SVM(float alpha, float beta, float* tA, float* tB, float* tC) {
         if (alpha >= 0.0f) {
             //quadrant I
             if (one_by_sqrt3 * beta > alpha)
-                Sextant = 2; //sextant v2-v3
+                Sextant = 2;  //sextant v2-v3
             else
-                Sextant = 1; //sextant v1-v2
+                Sextant = 1;  //sextant v1-v2
 
         } else {
             //quadrant II
             if (-one_by_sqrt3 * beta > alpha)
-                Sextant = 3; //sextant v3-v4
+                Sextant = 3;  //sextant v3-v4
             else
-                Sextant = 2; //sextant v2-v3
+                Sextant = 2;  //sextant v2-v3
         }
     } else {
         if (alpha >= 0.0f) {
             //quadrant IV
             if (-one_by_sqrt3 * beta > alpha)
-                Sextant = 5; //sextant v5-v6
+                Sextant = 5;  //sextant v5-v6
             else
-                Sextant = 6; //sextant v6-v1
+                Sextant = 6;  //sextant v6-v1
         } else {
             //quadrant III
             if (one_by_sqrt3 * beta > alpha)
-                Sextant = 4; //sextant v4-v5
+                Sextant = 4;  //sextant v4-v5
             else
-                Sextant = 5; //sextant v5-v6
+                Sextant = 5;  //sextant v5-v6
         }
     }
 
@@ -116,9 +115,7 @@ int SVM(float alpha, float beta, float* tA, float* tB, float* tC) {
 
     // if any of the results becomes NaN, result_valid will evaluate to false
     int result_valid =
-            *tA >= 0.0f && *tA <= 1.0f
-         && *tB >= 0.0f && *tB <= 1.0f
-         && *tC >= 0.0f && *tC <= 1.0f;
+        *tA >= 0.0f && *tA <= 1.0f && *tB >= 0.0f && *tB <= 1.0f && *tC >= 0.0f && *tC <= 1.0f;
     return result_valid ? 0 : -1;
 }
 
@@ -149,7 +146,7 @@ float fast_atan2(float y, float x) {
 // Evaluate polynomials using Fused Multiply Add intrisic instruction.
 // coeffs[0] is highest order, as per numpy.polyfit
 // p(x) = coeffs[0] * x^deg + ... + coeffs[deg], for some degree "deg"
-float horner_fma(float x, const float *coeffs, size_t count) {
+float horner_fma(float x, const float* coeffs, size_t count) {
     float result = 0.0f;
     for (int idx = 0; idx < count; ++idx)
         result = fmaf(result, x, coeffs[idx]);
@@ -157,7 +154,7 @@ float horner_fma(float x, const float *coeffs, size_t count) {
 }
 
 // Modulo (as opposed to remainder), per https://stackoverflow.com/a/19288271
-int mod(int dividend, int divisor){
+int mod(int dividend, int divisor) {
     int r = dividend % divisor;
     return (r < 0) ? (r + divisor) : r;
 }
@@ -166,7 +163,7 @@ int mod(int dividend, int divisor){
 // If the deadline has already passed, the return value is 0 (except if
 // the deadline is very far in the past)
 uint32_t deadline_to_timeout(uint32_t deadline_ms) {
-    uint32_t now_ms = (uint32_t)((1000ull * (uint64_t)osKernelSysTick()) / osKernelSysTickFrequency);
+    uint32_t now_ms     = (uint32_t)((1000ull * (uint64_t)osKernelSysTick()) / osKernelSysTickFrequency);
     uint32_t timeout_ms = deadline_ms - now_ms;
     return (timeout_ms & 0x80000000) ? 0 : timeout_ms;
 }
@@ -188,18 +185,17 @@ int is_in_the_future(uint32_t time_ms) {
 uint32_t micros(void) {
     register uint32_t ms, cycle_cnt;
     do {
-        ms = HAL_GetTick();
+        ms        = HAL_GetTick();
         cycle_cnt = TIM_TIME_BASE->CNT;
-     } while (ms != HAL_GetTick());
+    } while (ms != HAL_GetTick());
 
     return (ms * 1000) + cycle_cnt;
 }
 
 // @brief: Busy wait delay for given amount of microseconds (us)
-void delay_us(uint32_t us)
-{
+void delay_us(uint32_t us) {
     uint32_t start = micros();
-    while (micros() - start < (uint32_t) us) {
+    while (micros() - start < (uint32_t)us) {
         __ASM("nop");
     }
 }

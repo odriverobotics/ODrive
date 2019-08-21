@@ -6,18 +6,18 @@
 #endif
 
 class Encoder {
-public:
+   public:
     enum Error_t {
-        ERROR_NONE = 0,
-        ERROR_UNSTABLE_GAIN = 0x01,
-        ERROR_CPR_OUT_OF_RANGE = 0x02,
-        ERROR_NO_RESPONSE = 0x04,
+        ERROR_NONE                     = 0,
+        ERROR_UNSTABLE_GAIN            = 0x01,
+        ERROR_CPR_OUT_OF_RANGE         = 0x02,
+        ERROR_NO_RESPONSE              = 0x04,
         ERROR_UNSUPPORTED_ENCODER_MODE = 0x08,
-        ERROR_ILLEGAL_HALL_STATE = 0x10,
-        ERROR_INDEX_NOT_FOUND_YET = 0x20,
-        ERROR_ABS_SPI_TIMEOUT = 0x40,
-        ERROR_ABS_SPI_COM_FAIL = 0x80,
-        ERROR_ABS_SPI_NOT_READY = 0x100,
+        ERROR_ILLEGAL_HALL_STATE       = 0x10,
+        ERROR_INDEX_NOT_FOUND_YET      = 0x20,
+        ERROR_ABS_SPI_TIMEOUT          = 0x40,
+        ERROR_ABS_SPI_COM_FAIL         = 0x80,
+        ERROR_ABS_SPI_NOT_READY        = 0x100,
     };
 
     enum Mode_t {
@@ -31,30 +31,30 @@ public:
 
     struct Config_t {
         Encoder::Mode_t mode = Encoder::MODE_INCREMENTAL;
-        bool use_index = false;
-        bool pre_calibrated = false; // If true, this means the offset stored in
-                                    // configuration is valid and does not need
-                                    // be determined by run_offset_calibration.
-                                    // In this case the encoder will enter ready
-                                    // state as soon as the index is found.
-        bool zero_count_on_find_idx = true;
-        int32_t cpr = (2048 * 4);   // Default resolution of CUI-AMT102 encoder,
-        int32_t offset = 0;        // Offset between encoder count and rotor electrical phase
-        float offset_float = 0.0f; // Sub-count phase alignment offset
-        bool enable_phase_interpolation = true; // Use velocity to interpolate inside the count state
-        float calib_range = 0.02f; // Accuracy required to pass encoder cpr check
-        float calib_scan_distance = 16.0f * M_PI; // rad electrical
-        float calib_scan_omega = 4.0f * M_PI; // rad/s electrical
-        float bandwidth = 1000.0f;
-        bool find_idx_on_lockin_only = false; // Only be sensitive during lockin scan constant vel state
-        bool idx_search_unidirectional = false; // Only allow index search in known direction
-        bool ignore_illegal_hall_state = false; // dont error on bad states like 000 or 111
-        uint16_t abs_spi_cs_gpio_pin = 0;
+        bool use_index       = false;
+        bool pre_calibrated  = false;  // If true, this means the offset stored in
+                                       // configuration is valid and does not need
+                                       // be determined by run_offset_calibration.
+                                       // In this case the encoder will enter ready
+                                       // state as soon as the index is found.
+        bool zero_count_on_find_idx     = true;
+        int32_t cpr                     = (2048 * 4);    // Default resolution of CUI-AMT102 encoder,
+        int32_t offset                  = 0;             // Offset between encoder count and rotor electrical phase
+        float offset_float              = 0.0f;          // Sub-count phase alignment offset
+        bool enable_phase_interpolation = true;          // Use velocity to interpolate inside the count state
+        float calib_range               = 0.02f;         // Accuracy required to pass encoder cpr check
+        float calib_scan_distance       = 16.0f * M_PI;  // rad electrical
+        float calib_scan_omega          = 4.0f * M_PI;   // rad/s electrical
+        float bandwidth                 = 1000.0f;
+        bool find_idx_on_lockin_only    = false;  // Only be sensitive during lockin scan constant vel state
+        bool idx_search_unidirectional  = false;  // Only allow index search in known direction
+        bool ignore_illegal_hall_state  = false;  // dont error on bad states like 000 or 111
+        uint16_t abs_spi_cs_gpio_pin    = 0;
     };
 
     Encoder(const EncoderHardwareConfig_t& hw_config,
-                     Config_t& config);
-    
+            Config_t& config);
+
     void setup();
     void set_error(Error_t error);
     bool do_checks();
@@ -76,27 +76,27 @@ public:
 
     const EncoderHardwareConfig_t& hw_config_;
     Config_t& config_;
-    Axis* axis_ = nullptr; // set by Axis constructor
+    Axis* axis_ = nullptr;  // set by Axis constructor
 
-    Error_t error_ = ERROR_NONE;
-    bool index_found_ = false;
-    bool is_ready_ = false;
-    int32_t shadow_count_ = 0;
-    int32_t count_in_cpr_ = 0;
-    float interpolation_ = 0.0f;
-    float phase_ = 0.0f;    // [count]
-    float pos_estimate_ = 0.0f;  // [count]
-    float pos_cpr_ = 0.0f;  // [count]
-    float vel_estimate_ = 0.0f;  // [count/s]
-    float pll_kp_ = 0.0f;   // [count/s / count]
-    float pll_ki_ = 0.0f;   // [(count/s^2) / count]
-    float calib_scan_response_ = 0.0f; // debug report from offset calib
-    int32_t pos_abs_ = 0;
-    float spi_error_rate_ = 0.0f;
+    Error_t error_             = ERROR_NONE;
+    bool index_found_          = false;
+    bool is_ready_             = false;
+    int32_t shadow_count_      = 0;
+    int32_t count_in_cpr_      = 0;
+    float interpolation_       = 0.0f;
+    float phase_               = 0.0f;  // [count]
+    float pos_estimate_        = 0.0f;  // [count]
+    float pos_cpr_             = 0.0f;  // [count]
+    float vel_estimate_        = 0.0f;  // [count/s]
+    float pll_kp_              = 0.0f;  // [count/s / count]
+    float pll_ki_              = 0.0f;  // [(count/s^2) / count]
+    float calib_scan_response_ = 0.0f;  // debug report from offset calib
+    int32_t pos_abs_           = 0;
+    float spi_error_rate_      = 0.0f;
 
-    int16_t tim_cnt_sample_ = 0; // 
+    int16_t tim_cnt_sample_ = 0;  //
     // Updated by low_level pwm_adc_cb
-    uint8_t hall_state_ = 0x0; // bit[0] = HallA, .., bit[2] = HallC
+    uint8_t hall_state_    = 0x0;  // bit[0] = HallA, .., bit[2] = HallC
     float sincos_sample_s_ = 0.0f;
     float sincos_sample_c_ = 0.0f;
 
@@ -106,14 +106,14 @@ public:
     void abs_spi_cs_pin_init();
     uint16_t abs_spi_dma_tx_[2] = {0xFFFF, 0x0000};
     uint16_t abs_spi_dma_rx_[2];
-    bool abs_spi_pos_updated_ = false;
+    bool abs_spi_pos_updated_   = false;
     bool abs_spi_pos_init_once_ = false;
     GPIO_TypeDef* abs_spi_cs_port_;
     uint16_t abs_spi_cs_pin_;
     uint32_t abs_spi_cr1;
     uint32_t abs_spi_cr2;
 
-    constexpr float getCoggingRatio(){
+    constexpr float getCoggingRatio() {
         return config_.cpr / 3600.0f;
     }
 
@@ -136,34 +136,32 @@ public:
             make_protocol_ro_property("spi_error_rate", &spi_error_rate_),
 
             make_protocol_object("config",
-                make_protocol_property("mode", &config_.mode,
-                    [](void* ctx) { static_cast<Encoder*>(ctx)->abs_spi_init(); }, this),
-                make_protocol_property("use_index", &config_.use_index,
-                    [](void* ctx) { static_cast<Encoder*>(ctx)->set_idx_subscribe(); }, this),
-                make_protocol_property("find_idx_on_lockin_only", &config_.find_idx_on_lockin_only,
-                    [](void* ctx) { static_cast<Encoder*>(ctx)->set_idx_subscribe(); }, this),
-                make_protocol_property("pre_calibrated", &config_.pre_calibrated,
-                    [](void* ctx) { static_cast<Encoder*>(ctx)->check_pre_calibrated(); }, this),
-                make_protocol_property("abs_spi_cs_gpio_pin", &config_.abs_spi_cs_gpio_pin,
-                    [](void* ctx) { static_cast<Encoder*>(ctx)->abs_spi_cs_pin_init(); }, this),
-                make_protocol_property("zero_count_on_find_idx", &config_.zero_count_on_find_idx),
-                make_protocol_property("cpr", &config_.cpr),
-                make_protocol_property("offset", &config_.offset),
-                make_protocol_property("offset_float", &config_.offset_float),
-                make_protocol_property("enable_phase_interpolation", &config_.enable_phase_interpolation),
-                make_protocol_property("bandwidth", &config_.bandwidth,
-                    [](void* ctx) { static_cast<Encoder*>(ctx)->update_pll_gains(); }, this),
-                make_protocol_property("calib_range", &config_.calib_range),
-                make_protocol_property("calib_scan_distance", &config_.calib_scan_distance),
-                make_protocol_property("calib_scan_omega", &config_.calib_scan_omega),
-                make_protocol_property("idx_search_unidirectional", &config_.idx_search_unidirectional),
-                make_protocol_property("ignore_illegal_hall_state", &config_.ignore_illegal_hall_state)
-            ),
-            make_protocol_function("set_linear_count", *this, &Encoder::set_linear_count, "count")
-        );
+                                 make_protocol_property("mode", &config_.mode,
+                                                        [](void* ctx) { static_cast<Encoder*>(ctx)->abs_spi_init(); }, this),
+                                 make_protocol_property("use_index", &config_.use_index,
+                                                        [](void* ctx) { static_cast<Encoder*>(ctx)->set_idx_subscribe(); }, this),
+                                 make_protocol_property("find_idx_on_lockin_only", &config_.find_idx_on_lockin_only,
+                                                        [](void* ctx) { static_cast<Encoder*>(ctx)->set_idx_subscribe(); }, this),
+                                 make_protocol_property("pre_calibrated", &config_.pre_calibrated,
+                                                        [](void* ctx) { static_cast<Encoder*>(ctx)->check_pre_calibrated(); }, this),
+                                 make_protocol_property("abs_spi_cs_gpio_pin", &config_.abs_spi_cs_gpio_pin,
+                                                        [](void* ctx) { static_cast<Encoder*>(ctx)->abs_spi_cs_pin_init(); }, this),
+                                 make_protocol_property("zero_count_on_find_idx", &config_.zero_count_on_find_idx),
+                                 make_protocol_property("cpr", &config_.cpr),
+                                 make_protocol_property("offset", &config_.offset),
+                                 make_protocol_property("offset_float", &config_.offset_float),
+                                 make_protocol_property("enable_phase_interpolation", &config_.enable_phase_interpolation),
+                                 make_protocol_property("bandwidth", &config_.bandwidth,
+                                                        [](void* ctx) { static_cast<Encoder*>(ctx)->update_pll_gains(); }, this),
+                                 make_protocol_property("calib_range", &config_.calib_range),
+                                 make_protocol_property("calib_scan_distance", &config_.calib_scan_distance),
+                                 make_protocol_property("calib_scan_omega", &config_.calib_scan_omega),
+                                 make_protocol_property("idx_search_unidirectional", &config_.idx_search_unidirectional),
+                                 make_protocol_property("ignore_illegal_hall_state", &config_.ignore_illegal_hall_state)),
+            make_protocol_function("set_linear_count", *this, &Encoder::set_linear_count, "count"));
     }
 };
 
 DEFINE_ENUM_FLAG_OPERATORS(Encoder::Error_t)
 
-#endif // __ENCODER_HPP
+#endif  // __ENCODER_HPP

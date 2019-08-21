@@ -11,9 +11,9 @@ extern "C" {
 #endif
 
 /* Includes ------------------------------------------------------------------*/
+#include <adc.h>
 #include <cmsis_os.h>
 #include <stdbool.h>
-#include <adc.h>
 
 /* Exported types ------------------------------------------------------------*/
 /* Exported constants --------------------------------------------------------*/
@@ -69,4 +69,4 @@ inline void cpu_exit_critical(uint32_t priority_mask) {
 }
 #endif
 
-#endif //__LOW_LEVEL_H
+#endif  //__LOW_LEVEL_H

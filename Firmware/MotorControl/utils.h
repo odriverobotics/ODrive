@@ -6,8 +6,8 @@
 extern "C" {
 #endif
 
-#include <stdint.h>
 #include <math.h>
+#include <stdint.h>
 
 /**
  * @brief Flash size register address
@@ -67,7 +67,7 @@ extern "C" {
 
 static const float one_by_sqrt3 = 0.57735026919f;
 static const float two_by_sqrt3 = 1.15470053838f;
-static const float sqrt3_by_2 = 0.86602540378f;
+static const float sqrt3_by_2   = 0.86602540378f;
 
 //beware of inserting large values!
 static inline float wrap_pm(float x, float pm_range) {
@@ -93,7 +93,7 @@ static inline float fmodf_pos(float x, float y) {
 // as per the magnitude invariant clarke transform
 // The magnitude of the alpha-beta vector may not be larger than sqrt(3)/2
 // Returns 0 on success, and -1 if the input was out of range
-int SVM(float alpha, float beta, float* tA, float* tB, float* tC);
+int SVM(float alpha, float beta, float *tA, float *tB, float *tC);
 
 float fast_atan2(float y, float x);
 float horner_fma(float x, const float *coeffs, size_t count);
