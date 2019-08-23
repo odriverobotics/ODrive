@@ -96,8 +96,8 @@ Iq Measured | IEEE 754 Float | 32 | 1 | 0 | Intel
 Sensorless Pos Estimate | IEEE 754 Float | 32 | 1 | 0 | Intel
 Sensorless Vel Estimate | IEEE 754 Float | 32 | 1 | 0 | Intel
 Vbus Voltage | IEEE 754 Float | 32 | 1 | 0 | Intel
-P-gain | IEEE 754 Float | 32 | 1 | 0 | Intel
-I-gain | IEEE 754 Float | 32 | 1 | 0 | Intel
+Velocity P-gain | IEEE 754 Float | 32 | 1 | 0 | Intel
+Velocity I-gain | IEEE 754 Float | 32 | 1 | 0 | Intel
 
 ---
 ## Configuring ODrive for CAN
