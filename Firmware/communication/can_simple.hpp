@@ -31,6 +31,7 @@ class CANSimple {
         MSG_GET_SENSORLESS_ESTIMATES,
         MSG_RESET_ODRIVE,
         MSG_GET_VBUS_VOLTAGE,
+        MSG_SET_PI_GAIN,
     };
 
     static void handle_can_message(can_Message_t& msg);
@@ -60,6 +61,7 @@ class CANSimple {
     static void get_iq_callback(Axis* axis, can_Message_t& msg);
     static void get_sensorless_estimates_callback(Axis* axis, can_Message_t& msg);
     static void get_vbus_voltage_callback(Axis* axis, can_Message_t& msg);
+    static void set_pi_gain(Axis* axis, can_Message_t& msg);
 
     // Utility functions
     static uint8_t get_node_id(uint32_t msgID);
