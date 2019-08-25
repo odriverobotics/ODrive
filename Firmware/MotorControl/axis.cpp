@@ -241,9 +241,9 @@ bool Axis::run_lockin_spin(const LockinConfig_t& lockin_config) {
     auto spin_done = [&](bool vel_override = false) -> bool {
         bool done = false;
         if (lockin_config.finish_on_vel || vel_override)
-            done = done || fabsf(vel) >= fabsf(lockin_config.vel);
+            done = done || std::abs(vel) >= std::abs(lockin_config.vel);
         if (lockin_config.finish_on_distance)
-            done = done || fabsf(distance) >= fabsf(lockin_config.finish_distance);
+            done = done || std::abs(distance) >= std::abs(lockin_config.finish_distance);
         if (lockin_config.finish_on_enc_idx)
             done = done || encoder_.index_found_;
         return done;

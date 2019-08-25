@@ -281,7 +281,7 @@ TEST_SUITE("vel_ramp") {
         float max_step_size = 0.000125f * vel_ramp_rate;
         float full_step     = input_vel_ - vel_setpoint_;
         float step;
-        if (fabsf(full_step) > max_step_size) {
+        if (std::abs(full_step) > max_step_size) {
             step = std::copysignf(max_step_size, full_step);
         } else {
             step = full_step;

@@ -334,7 +334,7 @@ bool Motor::FOC_current(float Id_des, float Iq_des, float I_phase, float pwm_pha
     ictrl.Iq_setpoint = Iq_des;
 
     // Check for current sense saturation
-    if (fabsf(current_meas_.phB) > ictrl.overcurrent_trip_level || fabsf(current_meas_.phC) > ictrl.overcurrent_trip_level) {
+    if (std::abs(current_meas_.phB) > ictrl.overcurrent_trip_level || std::abs(current_meas_.phC) > ictrl.overcurrent_trip_level) {
         set_error(ERROR_CURRENT_SENSE_SATURATION);
         return false;
     }

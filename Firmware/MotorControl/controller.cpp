@@ -88,8 +88,8 @@ bool Controller::home_axis() {
 bool Controller::anticogging_calibration(float pos_estimate, float vel_estimate) {
     if (config_.anticogging.calib_anticogging) {
         float pos_err = input_pos_ - pos_estimate;
-        if (fabsf(pos_err) <= config_.anticogging.calib_pos_threshold &&
-            fabsf(vel_estimate) < config_.anticogging.calib_vel_threshold) {
+        if (std::abs(pos_err) <= config_.anticogging.calib_pos_threshold &&
+            std::abs(vel_estimate) < config_.anticogging.calib_vel_threshold) {
             config_.anticogging.cogging_map[std::clamp<uint32_t>(config_.anticogging.index++, 0, 3600)] = vel_integrator_current_;
         }
         if (config_.anticogging.index < 3600) {
@@ -214,7 +214,7 @@ bool Controller::update(float pos_estimate, float vel_estimate, float* current_s
         }
         vel_des += config_.pos_gain * pos_err;
         // V-shaped gain shedule based on position error
-        float abs_pos_err = fabsf(pos_err);
+        float abs_pos_err = std::abs(pos_err);
         if (config_.enable_gain_scheduling && abs_pos_err <= config_.gain_scheduling_width) {
             gain_scheduling_multiplier = abs_pos_err / config_.gain_scheduling_width;
         }
