@@ -77,6 +77,7 @@ class Axis {
         float counts_per_step = 2.0f;
 
         float watchdog_timeout = 0.0f;  // [s] (0 disables watchdog)
+        bool enable_watchdog = false;
 
         // Defaults loaded from hw_config in load_configuration in main.cpp
         uint16_t step_gpio_pin = 0;
@@ -283,6 +284,7 @@ class Axis {
                                  make_protocol_property("enable_step_dir", &config_.enable_step_dir),
                                  make_protocol_property("counts_per_step", &config_.counts_per_step),
                                  make_protocol_property("watchdog_timeout", &config_.watchdog_timeout),
+                                 make_protocol_property("enable_watchdog", &config_.enable_watchdog),
                                  make_protocol_property("step_gpio_pin", &config_.step_gpio_pin,
                                                         [](void* ctx) { static_cast<Axis*>(ctx)->decode_step_dir_pins(); }, this),
                                  make_protocol_property("dir_gpio_pin", &config_.dir_gpio_pin,

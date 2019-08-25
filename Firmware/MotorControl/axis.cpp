@@ -206,6 +206,7 @@ void Axis::watchdog_feed() {
 // @brief Check the watchdog timer for expiration. Also sets the watchdog error bit if expired.
 bool Axis::watchdog_check() {
     // reset value = 0 means watchdog disabled.
+    if(!config_.enable_watchdog) return true;
     if (get_watchdog_reset() == 0) return true;
 
     // explicit check here to ensure that we don't underflow back to UINT32_MAX
