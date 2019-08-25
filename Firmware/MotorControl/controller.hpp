@@ -40,6 +40,7 @@ class Controller {
         float calib_pos_threshold = 1.0f;
         float calib_vel_threshold = 1.0f;
         float cogging_ratio       = 1.0f;
+        bool enable               = true;
     } Anticogging_t;
 
     struct Config_t {
@@ -57,8 +58,11 @@ class Controller {
         float input_filter_bandwidth = 2.0f;     // [1/s]
         float homing_speed           = 2000.0f;  // [counts/s]
         Anticogging_t anticogging;
-        float gain_scheduling_width = 10.0f;
-        bool enable_gain_scheduling = false;
+        float gain_scheduling_width   = 10.0f;
+        bool enable_gain_scheduling   = false;
+        bool enable_vel_limit         = true;
+        bool enable_overspeed_error   = true;
+        bool enable_current_vel_limit = true;
     };
 
     explicit Controller(Config_t& config);
@@ -125,8 +129,11 @@ class Controller {
             make_protocol_property("vel_integrator_current", &vel_integrator_current_),
             make_protocol_property("anticogging_valid", &anticogging_valid_),
             make_protocol_property("gain_scheduling_width", &config_.gain_scheduling_width),
-            make_protocol_property("enable_gain_scheduling", &config_.enable_gain_scheduling),
             make_protocol_object("config",
+                                 make_protocol_property("enable_vel_limit", &config_.enable_vel_limit),
+                                 make_protocol_property("enable_current_mode_vel_limit", &config_.enable_current_vel_limit),
+                                 make_protocol_property("enable_gain_scheduling", &config_.enable_gain_scheduling),
+                                 make_protocol_property("enable_overspeed_error", &config_.enable_overspeed_error),
                                  make_protocol_property("control_mode", &config_.control_mode),
                                  make_protocol_property("input_mode", &config_.input_mode),
                                  make_protocol_property("pos_gain", &config_.pos_gain),
@@ -145,7 +152,8 @@ class Controller {
                                                       make_protocol_ro_property("calib_anticogging", &config_.anticogging.calib_anticogging),
                                                       make_protocol_property("calib_pos_threshold", &config_.anticogging.calib_pos_threshold),
                                                       make_protocol_property("calib_vel_threshold", &config_.anticogging.calib_vel_threshold),
-                                                      make_protocol_ro_property("cogging_ratio", &config_.anticogging.cogging_ratio))),
+                                                      make_protocol_ro_property("cogging_ratio", &config_.anticogging.cogging_ratio),
+                                                      make_protocol_property("anticogging_enabled", &config_.anticogging.enable))),
             make_protocol_function("move_incremental", *this, &Controller::move_incremental, "displacement", "from_goal_point"),
             make_protocol_function("start_anticogging_calibration", *this, &Controller::start_anticogging_calibration),
             make_protocol_function("home_axis", *this, &Controller::home_axis));

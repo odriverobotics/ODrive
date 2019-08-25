@@ -222,12 +222,14 @@ bool Controller::update(float pos_estimate, float vel_estimate, float* current_s
 
     // Velocity limiting
     float vel_lim = config_.vel_limit;
-    if (vel_des > vel_lim) vel_des = vel_lim;
-    if (vel_des < -vel_lim) vel_des = -vel_lim;
+    if (config_.enable_vel_limit) {
+        if (vel_des > vel_lim) vel_des = vel_lim;
+        if (vel_des < -vel_lim) vel_des = -vel_lim;
+    }
 
     // Check for overspeed fault (done in this module (controller) for cohesion with vel_lim)
-    if (config_.vel_limit_tolerance > 0.0f) {  // 0.0f to disable
-        if (fabsf(vel_estimate) > config_.vel_limit_tolerance * vel_lim) {
+    if (config_.enable_overspeed_error) {  // 0.0f to disable
+        if (std::abs(vel_estimate) > config_.vel_limit_tolerance * vel_lim) {
             set_error(ERROR_OVERSPEED);
             return false;
         }
@@ -239,7 +241,7 @@ bool Controller::update(float pos_estimate, float vel_estimate, float* current_s
     // Anti-cogging is enabled after calibration
     // We get the current position and apply a current feed-forward
     // ensuring that we handle negative encoder positions properly (-1 == motor->encoder.encoder_cpr - 1)
-    if (anticogging_valid_) {
+    if (anticogging_valid_ && config_.anticogging.enable) {
         Iq += config_.anticogging.cogging_map[std::clamp(mod(static_cast<int>(anticogging_pos), 3600), 0, 3600)];
     }
 
@@ -252,7 +254,7 @@ bool Controller::update(float pos_estimate, float vel_estimate, float* current_s
     Iq += vel_integrator_current_;
 
     // Velocity limiting in current mode
-    if (config_.control_mode < CTRL_MODE_VELOCITY_CONTROL && config_.vel_limit > 0.0f) {
+    if (config_.control_mode < CTRL_MODE_VELOCITY_CONTROL && config_.enable_current_vel_limit) {
         Iq = limitVel(config_.vel_limit, vel_estimate, config_.vel_gain, Iq);
     }
 
