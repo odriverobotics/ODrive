@@ -354,7 +354,7 @@ bool Motor::FOC_current(float Id_des, float Iq_des, float I_phase, float pwm_pha
     // Check for violation of current limit
     float I_trip = config_.current_lim_tolerance * effective_current_lim();
     if (SQ(Id) + SQ(Iq) > SQ(I_trip)) {
-        set_error(ERROR_CURRENT_UNSTABLE);
+        set_error(ERROR_CURRENT_LIMIT_VIOLATION);
         return false;
     }
 

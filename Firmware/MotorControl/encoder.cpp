@@ -236,7 +236,7 @@ bool Encoder::run_offset_calibration() {
     float expected_encoder_delta = config_.calib_scan_distance / elec_rad_per_enc;
     calib_scan_response_         = std::abs(shadow_count_ - init_enc_val);
     if (std::abs(calib_scan_response_ - expected_encoder_delta) / expected_encoder_delta > config_.calib_range) {
-        set_error(ERROR_CPR_OUT_OF_RANGE);
+        set_error(ERROR_CPR_POLEPAIRS_MISMATCH);
         return false;
     }
 

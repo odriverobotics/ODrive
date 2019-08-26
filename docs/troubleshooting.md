@@ -84,7 +84,7 @@ For gimbal motors, it is recommended to set the `motor.config.calibration_curren
 
 ## Common Encoder Errors
 
-* `ERROR_CPR_OUT_OF_RANGE = 0x02`
+* `ERROR_CPR_POLEPAIRS_MISMATCH = 0x02`
 
 Confirm you have entered the correct count per rotation (CPR) for [your encoder](https://docs.odriverobotics.com/encoders). Note that the AMT encoders are configurable using the micro-switches on the encoder PCB and so you may need to check that these are in the right positions. If your encoder lists its pulse per rotation (PPR) multiply that number by four to get CPR.
 
