@@ -4,11 +4,11 @@
 class Endstop {
    public:
     struct Config_t {
+        float offset      = 0;
+        float debounce_ms = 50.0f;
         uint16_t gpio_num;
         bool enabled        = false;
-        int32_t offset      = 0;
         bool is_active_high = false;
-        float debounce_ms   = 50.0f;
     };
 
     Endstop(Endstop::Config_t& config);
