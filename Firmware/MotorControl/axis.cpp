@@ -302,6 +302,10 @@ bool Axis::run_sensorless_control_loop() {
 bool Axis::run_closed_loop_control_loop() {
     // To avoid any transient on startup, we intialize the setpoint to be the current position
     controller_.pos_setpoint_ = encoder_.pos_estimate_;
+
+    // Avoid integrator windup issues
+    controller_.vel_integrator_current_ = 0.0f;
+    
     set_step_dir_active(config_.enable_step_dir);
     run_control_loop([this]() {
         // Note that all estimators are updated in the loop prefix in run_control_loop
