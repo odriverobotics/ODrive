@@ -150,6 +150,13 @@ bool Controller::update(float pos_estimate, float vel_estimate, float* current_s
             vel_setpoint_ += step;
             current_setpoint_ = step / current_meas_period * config_.inertia;
         } break;
+        case INPUT_MODE_CURRENT_RAMP: {
+            float max_step_size = std::abs(current_meas_period * config_.current_ramp_rate);
+            float full_step = input_current_ - current_setpoint_;
+            float step = std::clamp(full_step, -max_step_size, max_step_size);
+
+            current_setpoint_ += step;
+        } break;
         case INPUT_MODE_POS_FILTER: {
             // 2nd order pos tracking filter
             float delta_pos   = input_pos_ - pos_setpoint_;                                   // Pos error

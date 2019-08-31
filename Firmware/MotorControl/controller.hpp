@@ -30,6 +30,7 @@ class Controller {
         INPUT_MODE_POS_FILTER,
         INPUT_MODE_MIX_CHANNELS,
         INPUT_MODE_TRAP_TRAJ,
+        INPUT_MODE_CURRENT_RAMP,
     };
 
     typedef struct {
@@ -53,6 +54,7 @@ class Controller {
         float vel_limit              = 20000.0f;          // [counts/s]
         float vel_limit_tolerance    = 1.2f;              // ratio to vel_lim. 0.0f to disable
         float vel_ramp_rate          = 10000.0f;          // [(counts/s) / s]
+        float current_ramp_rate      = 1.0f;     // A / sec
         bool setpoints_in_cpr        = false;
         float inertia                = 0.0f;     // [A/(count/s^2)]
         float input_filter_bandwidth = 2.0f;     // [1/s]
