@@ -152,8 +152,8 @@ bool Controller::update(float pos_estimate, float vel_estimate, float* current_s
         } break;
         case INPUT_MODE_CURRENT_RAMP: {
             float max_step_size = std::abs(current_meas_period * config_.current_ramp_rate);
-            float full_step = input_current_ - current_setpoint_;
-            float step = std::clamp(full_step, -max_step_size, max_step_size);
+            float full_step     = input_current_ - current_setpoint_;
+            float step          = std::clamp(full_step, -max_step_size, max_step_size);
 
             current_setpoint_ += step;
         } break;
@@ -165,6 +165,14 @@ bool Controller::update(float pos_estimate, float vel_estimate, float* current_s
             current_setpoint_ = accel * config_.inertia;                                      // Accel
             vel_setpoint_ += current_meas_period * accel;                                     // delta vel
             pos_setpoint_ += current_meas_period * vel_setpoint_;                             // Delta pos
+        } break;
+        case INPUT_MODE_MIRROR: {
+            if (config_.axis_to_mirror < AXIS_COUNT) {
+                input_pos_ = axes[config_.axis_to_mirror]->encoder_.pos_estimate_;
+                input_vel_ = axes[config_.axis_to_mirror]->encoder_.vel_estimate_;
+            } else {
+                set_error(ERROR_INVALID_MIRROR_AXIS);
+            }
         } break;
         // case INPUT_MODE_MIX_CHANNELS: {
         //     // NOT YET IMPLEMENTED

@@ -8,10 +8,11 @@
 class Controller {
    public:
     enum Error_t {
-        ERROR_NONE               = 0,
-        ERROR_OVERSPEED          = 0x01,
-        ERROR_INVALID_INPUT_MODE = 0x02,
-        ERROR_UNSTABLE_GAIN      = 0x04,
+        ERROR_NONE                = 0,
+        ERROR_OVERSPEED           = 0x01,
+        ERROR_INVALID_INPUT_MODE  = 0x02,
+        ERROR_UNSTABLE_GAIN       = 0x04,
+        ERROR_INVALID_MIRROR_AXIS = 0x08,
     };
 
     // Note: these should be sorted from lowest level of control to
@@ -31,6 +32,7 @@ class Controller {
         INPUT_MODE_MIX_CHANNELS,
         INPUT_MODE_TRAP_TRAJ,
         INPUT_MODE_CURRENT_RAMP,
+        INPUT_MODE_MIRROR,
     };
 
     typedef struct {
@@ -54,7 +56,7 @@ class Controller {
         float vel_limit              = 20000.0f;          // [counts/s]
         float vel_limit_tolerance    = 1.2f;              // ratio to vel_lim. 0.0f to disable
         float vel_ramp_rate          = 10000.0f;          // [(counts/s) / s]
-        float current_ramp_rate      = 1.0f;     // A / sec
+        float current_ramp_rate      = 1.0f;              // A / sec
         bool setpoints_in_cpr        = false;
         float inertia                = 0.0f;     // [A/(count/s^2)]
         float input_filter_bandwidth = 2.0f;     // [1/s]
@@ -65,6 +67,7 @@ class Controller {
         bool enable_vel_limit         = true;
         bool enable_overspeed_error   = true;
         bool enable_current_vel_limit = true;
+        uint8_t axis_to_mirror        = -1;
     };
 
     explicit Controller(Config_t& config);
@@ -144,8 +147,10 @@ class Controller {
                                  make_protocol_property("vel_limit", &config_.vel_limit),
                                  make_protocol_property("vel_limit_tolerance", &config_.vel_limit_tolerance),
                                  make_protocol_property("vel_ramp_rate", &config_.vel_ramp_rate),
+                                 make_protocol_property("current_ramp_rate", &config_.current_ramp_rate),
                                  make_protocol_property("homing_speed", &config_.homing_speed),
                                  make_protocol_property("inertia", &config_.inertia),
+                                 make_protocol_property("axis_to_mirror", &config_.axis_to_mirror),
                                  make_protocol_property("input_filter_bandwidth", &config_.input_filter_bandwidth,
                                                         [](void* ctx) { static_cast<Controller*>(ctx)->update_filter_gains(); }, this),
                                  make_protocol_object("anticogging",
