@@ -168,10 +168,11 @@ bool Controller::update(float pos_estimate, float vel_estimate, float* current_s
         } break;
         case INPUT_MODE_MIRROR: {
             if (config_.axis_to_mirror < AXIS_COUNT) {
-                input_pos_ = axes[config_.axis_to_mirror]->encoder_.pos_estimate_;
-                input_vel_ = axes[config_.axis_to_mirror]->encoder_.vel_estimate_;
+                pos_setpoint_ = axes[config_.axis_to_mirror]->encoder_.pos_estimate_ * config_.mirror_ratio;
+                vel_setpoint_ = axes[config_.axis_to_mirror]->encoder_.vel_estimate_ * config_.mirror_ratio;
             } else {
                 set_error(ERROR_INVALID_MIRROR_AXIS);
+                return false;
             }
         } break;
         // case INPUT_MODE_MIX_CHANNELS: {

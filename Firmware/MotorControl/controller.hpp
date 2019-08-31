@@ -68,6 +68,7 @@ class Controller {
         bool enable_overspeed_error   = true;
         bool enable_current_vel_limit = true;
         uint8_t axis_to_mirror        = -1;
+        float mirror_ratio            = 1.0f;
     };
 
     explicit Controller(Config_t& config);
@@ -151,6 +152,7 @@ class Controller {
                                  make_protocol_property("homing_speed", &config_.homing_speed),
                                  make_protocol_property("inertia", &config_.inertia),
                                  make_protocol_property("axis_to_mirror", &config_.axis_to_mirror),
+                                 make_protocol_property("mirror_ratio", &config_.mirror_ratio),
                                  make_protocol_property("input_filter_bandwidth", &config_.input_filter_bandwidth,
                                                         [](void* ctx) { static_cast<Controller*>(ctx)->update_filter_gains(); }, this),
                                  make_protocol_object("anticogging",
