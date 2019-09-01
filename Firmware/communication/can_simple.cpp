@@ -115,6 +115,9 @@ void CANSimple::handle_can_message(can_Message_t& msg) {
             case MSG_GET_VBUS_VOLTAGE:
                 get_vbus_voltage_callback(axis, msg);
                 break;
+			case MSG_SET_PI_GAIN:
+				set_pi_gain(axis, msg);
+				break;
             default:
                 break;
         }
@@ -368,6 +371,11 @@ void CANSimple::get_vbus_voltage_callback(Axis* axis, can_Message_t& msg) {
 
         odCAN->write(txmsg);
     }
+}
+
+void CANSimple::set_pi_gain(Axis* axis, can_Message_t& msg) {
+    axis->controller_.config_.vel_gain = can_getSignal<float>(msg, 0, 32, true, 1, 0);
+    axis->controller_.config_.vel_integrator_gain = can_getSignal<float>(msg, 32, 32, true, 1, 0);
 }
 
 void CANSimple::send_heartbeat(Axis* axis) {

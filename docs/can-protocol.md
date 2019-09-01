@@ -59,6 +59,7 @@ CMD ID | Name | Sender | Signals | Start byte
 0x015 | Get Sensorless Estimates\* | Master | Sensorless Pos Estimate<br>Sensorless Vel Estimate | 0<br>4
 0x016 | Reboot ODrive | Master\*\*\* | | 
 0x017 | Get Vbus Voltage | Master\*\*\* | Vbus Voltage | 0
+0x018 | Set Vel PI-gain | Master\*\*\* | P-gain<br>I-gain | 0<br>4
 
 \* Note: These messages are call & response.  The Master node sends a message with the RTR bit set, and the axis responds with the same ID and specified payload.  
 \*\* Note:  These CANOpen messages are reserved to avoid bus collisions with CANOpen devices.  They are not used by CAN Simple.
@@ -95,6 +96,8 @@ Iq Measured | IEEE 754 Float | 32 | 1 | 0 | Intel
 Sensorless Pos Estimate | IEEE 754 Float | 32 | 1 | 0 | Intel
 Sensorless Vel Estimate | IEEE 754 Float | 32 | 1 | 0 | Intel
 Vbus Voltage | IEEE 754 Float | 32 | 1 | 0 | Intel
+Velocity P-gain | IEEE 754 Float | 32 | 1 | 0 | Intel
+Velocity I-gain | IEEE 754 Float | 32 | 1 | 0 | Intel
 
 ---
 ## Configuring ODrive for CAN
