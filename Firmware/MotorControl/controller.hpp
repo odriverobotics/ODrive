@@ -8,11 +8,12 @@
 class Controller {
    public:
     enum Error_t {
-        ERROR_NONE                = 0,
-        ERROR_OVERSPEED           = 0x01,
-        ERROR_INVALID_INPUT_MODE  = 0x02,
-        ERROR_UNSTABLE_GAIN       = 0x04,
-        ERROR_INVALID_MIRROR_AXIS = 0x08,
+        ERROR_NONE                 = 0,
+        ERROR_OVERSPEED            = 0x01,
+        ERROR_INVALID_INPUT_MODE   = 0x02,
+        ERROR_UNSTABLE_GAIN        = 0x04,
+        ERROR_INVALID_MIRROR_AXIS  = 0x08,
+        ERROR_INVALID_LOAD_ENCODER = 0x10,
     };
 
     // Note: these should be sorted from lowest level of control to
@@ -69,6 +70,9 @@ class Controller {
         bool enable_current_vel_limit = true;
         uint8_t axis_to_mirror        = -1;
         float mirror_ratio            = 1.0f;
+        bool use_load_encoder         = false;
+        uint8_t load_encoder_axis     = -1;
+        float load_encoder_ratio      = 1.0f;
     };
 
     explicit Controller(Config_t& config);
@@ -153,6 +157,9 @@ class Controller {
                                  make_protocol_property("inertia", &config_.inertia),
                                  make_protocol_property("axis_to_mirror", &config_.axis_to_mirror),
                                  make_protocol_property("mirror_ratio", &config_.mirror_ratio),
+                                 make_protocol_property("use_load_encoder", &config_.use_load_encoder),
+                                 make_protocol_property("load_encoder_ratio", &config_.load_encoder_ratio),
+                                 make_protocol_property("load_encoder_axis", &config_.load_encoder_axis),
                                  make_protocol_property("input_filter_bandwidth", &config_.input_filter_bandwidth,
                                                         [](void* ctx) { static_cast<Controller*>(ctx)->update_filter_gains(); }, this),
                                  make_protocol_object("anticogging",

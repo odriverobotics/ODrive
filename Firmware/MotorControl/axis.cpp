@@ -206,7 +206,7 @@ void Axis::watchdog_feed() {
 // @brief Check the watchdog timer for expiration. Also sets the watchdog error bit if expired.
 bool Axis::watchdog_check() {
     // reset value = 0 means watchdog disabled.
-    if(!config_.enable_watchdog) return true;
+    if (!config_.enable_watchdog) return true;
     if (get_watchdog_reset() == 0) return true;
 
     // explicit check here to ensure that we don't underflow back to UINT32_MAX
@@ -305,12 +305,21 @@ bool Axis::run_closed_loop_control_loop() {
 
     // Avoid integrator windup issues
     controller_.vel_integrator_current_ = 0.0f;
-    
+
     set_step_dir_active(config_.enable_step_dir);
     run_control_loop([this]() {
         // Note that all estimators are updated in the loop prefix in run_control_loop
         float current_setpoint;
-        if (!controller_.update(encoder_.pos_estimate_, encoder_.vel_estimate_, &current_setpoint))
+        if (controller_.config_.use_load_encoder) {
+            if (controller_.config_.load_encoder_axis < AXIS_COUNT) {
+                Axis* ax = axes[controller_.config_.load_encoder_axis];
+                if (!controller_.update(ax->encoder_.pos_estimate_, encoder_.vel_estimate_, &current_setpoint))
+                    return error_ |= ERROR_CONTROLLER_FAILED, false;
+            } else{
+                controller_.set_error(Controller::ERROR_INVALID_LOAD_ENCODER);
+                return error_ |= ERROR_CONTROLLER_FAILED, false;
+            }
+        } else if (!controller_.update(encoder_.pos_estimate_, encoder_.vel_estimate_, &current_setpoint))
             return error_ |= ERROR_CONTROLLER_FAILED, false;  //TODO: Make controller.set_error
         float phase_vel = 2 * M_PI * encoder_.vel_estimate_ / (float)encoder_.config_.cpr * motor_.config_.pole_pairs;
         if (!motor_.update(current_setpoint, encoder_.phase_, phase_vel))

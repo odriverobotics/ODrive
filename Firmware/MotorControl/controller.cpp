@@ -129,8 +129,8 @@ float limitVel(const float vel_limit, const float vel_estimate, const float vel_
 
 bool Controller::update(float pos_estimate, float vel_estimate, float* current_setpoint_output) {
     // Only runs if config_.anticogging.calib_anticogging is true; non-blocking
-    anticogging_calibration(pos_estimate, vel_estimate);
-    float anticogging_pos = pos_estimate / axis_->encoder_.getCoggingRatio();
+    anticogging_calibration(axis_->encoder_.pos_estimate_, vel_estimate);
+    float anticogging_pos = axis_->encoder_.pos_estimate_ / axis_->encoder_.getCoggingRatio();
 
     // Update inputs
     switch (config_.input_mode) {

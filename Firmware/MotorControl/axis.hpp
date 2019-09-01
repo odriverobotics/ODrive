@@ -88,6 +88,10 @@ class Axis {
         LockinConfig_t lockin;
         uint8_t can_node_id            = 0;  // Both axes will have the same id to start
         uint32_t can_heartbeat_rate_ms = 100;
+
+        bool use_load_encoder         = false;
+        uint8_t load_encoder_axis     = -1;
+        float load_encoder_ratio      = 1.0f;
     };
 
     struct Homing_t {
