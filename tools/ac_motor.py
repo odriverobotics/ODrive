@@ -44,7 +44,7 @@ class ACMotor():
         ) = self.params
 
         current_for_magnetization = np.absolute(stator_current + rotor_current)
-        dynamic_magnetization_inductance = max_magnetization_inductance / (1 + np.exp(saturation_current_slope*(current_for_magnetization-saturation_current))) + 0.001
+        dynamic_magnetization_inductance = max_magnetization_inductance #/ (1 + np.exp(saturation_current_slope*(current_for_magnetization-saturation_current))) + 0.001
         #import ipdb; ipdb.set_trace()
         stator_inductance = dynamic_magnetization_inductance + residual_stator_inductance
         rotor_inductance = dynamic_magnetization_inductance + residual_rotor_inductance
@@ -129,11 +129,11 @@ for run in realworld_runs:
 #motor_params = [1.2922684 , 0.01, 0.6692156 , 0.01, 0.3, 8.0, 0.5]
 motor_params = [1.298, 0.00000747, 0.975052932,  0.00952305924, 0.157221177, 12.7, 0.42]
 
-if len(realworld_runs) > 0 and False:
+if len(realworld_runs) > 0:
     def test_params(params):
         motor = ACMotor(params)
         residuals = []
-        for run in realworld_runs[:4] + realworld_runs[-7:]:
+        for run in realworld_runs:
             selected_values = run["timestamps"] < 2.5
             
             ys = motor.run(
