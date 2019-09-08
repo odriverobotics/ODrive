@@ -59,10 +59,10 @@ __Response__
 The stream based format is just a wrapper for the packet format.
 
   - __Byte 0__ Sync byte `0xAA`
-  - __Bytes 1, 2__ Packet length
+  - __Byte 1__ Packet length
       - Currently both parties shall only emit and accept values of 0 through 127.
-  - __Bytes 3__ CRC8 of bytes 0 through 2
+  - __Byte 2__ CRC8 of bytes 0 and 1
       - See protocol.hpp for CRC details.
-  - __Bytes 4 to N-3__ Packet
+  - __Bytes 3 to N-3__ Packet
   - __Bytes N-2, N-1__ CRC16
       - See protocol.hpp for CRC details.
