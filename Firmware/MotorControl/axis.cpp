@@ -329,7 +329,7 @@ bool Axis::run_closed_loop_control_loop() {
         if (homing_.homing_state == HOMING_STATE_HOMING) {
             if (min_endstop_.getEndstopState()) {
                 // pos_setpoint is the starting position for the trap_traj so we need to set it.
-                controller_.pos_setpoint_ = min_endstop_.config_.offset - (controller_.config_.homing_speed * (min_endstop_.config_.debounce_ms / 1000.0f));
+                controller_.pos_setpoint_ = min_endstop_.config_.offset;
                 controller_.vel_setpoint_ = 0.0f;  // Change directions without decelerating
 
                 // Set our current position in encoder counts to make control more logical
