@@ -124,21 +124,16 @@ Try step 5 again
 
 
 ### Linux
-1. [Install Python 3](https://www.python.org/downloads/).
-2. Install the ODrive tools by opening a terminal and typing `pip install odrive` <kbd>Enter</kbd>
-3. Set up USB permissions
-```bash
-    echo 'SUBSYSTEM=="usb", ATTR{idVendor}=="1209", ATTR{idProduct}=="0d[0-9][0-9]", MODE="0666"' | sudo tee /etc/udev/rules.d/91-odrive.rules
-    sudo udevadm control --reload-rules
-    sudo udevadm trigger
-```
+1. [Install Python 3](https://www.python.org/downloads/). (for example, on Ubuntu, `sudo apt install python3 python3-pip`)
+2. Install the ODrive tools by opening a terminal and typing `sudo pip3 install odrive` <kbd>Enter</kbd>
+3. (needed on Ubuntu, maybe other distros too) Add odrivetool into the path, by adding `~/.local/bin/` into `~/.bash_profile`, for example by running `nano ~/.bashrc`, scrolling to the bottom, pasting `PATH=$PATH:~/.local/bin/`, and then saving and closing, and close and reopen the terminal window.
 
 ## Firmware
 **ODrive v3.5 and later**<br>
 Your board should come preflashed with firmware. If you run into problems, follow the instructions [here](odrivetool.md#device-firmware-update) on the DFU procedure before you continue.
 
 **ODrive v3.4 and earlier**<br>
-Your board does **not** come preflashed with any firmware. Follow the instructions [here](odrivetool.md#device-firmware-update) on the STP Link procedure before you continue.
+Your board does **not** come preflashed with any firmware. Follow the instructions [here](odrivetool.md#device-firmware-update) on the ST Link procedure before you continue.
 
 ## Start `odrivetool`
 To launch the main interactive ODrive tool, type `odrivetool` <kbd>Enter</kbd>. Connect your ODrive and wait for the tool to find it. Now you can, for instance type `odrv0.vbus_voltage` <kbd>Enter</kbd> to inpect the boards main supply voltage.
@@ -193,7 +188,7 @@ This is the resistance of the brake resistor. If you are not using it, you may s
  
 `odrv0.axis0.motor.config.pole_pairs`  
 This is the number of **magnet poles** in the rotor, **divided by two**. To find this, you can simply count the number of permanent magnets in the rotor, if you can see them. _Note: this is not the same as the number of coils in the stator._
-If you can't see them, try sliding a magnet around the rotor, and counting how many times it stops. This will be the number of **pole pairs**. If you use a magnetic piece of metal instead of a magnet, you will get the number of **magnet poles**.
+If you can't see them, try sliding a loose magnet in your hand around the rotor, and counting how many times it stops. This will be the number of **pole pairs**. If you use a magnetic piece of metal instead of a magnet, you will get the number of **magnet poles**.
 
 `odrv0.axis0.motor.config.motor_type`  
 This is the type of motor being used. Currently two types of motors are supported: High-current motors (`MOTOR_TYPE_HIGH_CURRENT`) and gimbal motors (`MOTOR_TYPE_GIMBAL`).
@@ -240,16 +235,18 @@ Let's get motor 0 up and running. The procedure for motor 1 is exactly the same,
 
   <details><summary markdown="span">Help, something isn't working!</summary><div markdown="block">
   
-  Check the encoder wiring and that the encoder is firmly connected to the motor. Check the value of `hex(odrv0.axis0.error)` and then refer to the [error code documentation](troubleshooting.md#error-codes) for details.
+  Check the encoder wiring and that the encoder is firmly connected to the motor. Check the value of `dump_errors(odrv0)` and then refer to the [error code documentation](troubleshooting.md#error-codes) for details.
 
-  Once you understand the error and have fixed its cause, you may clear the error state with (`odrv0.axis0.error = 0` <kbd>Enter</kbd>) and retry. You may also need to clear the error state of other subcomponents (e.g. `odrv0.axis0.motor.error = 0`).
+  Once you understand the error and have fixed its cause, you may clear the error state with (`dump_errors(odrv0, True)` <kbd>Enter</kbd>) and retry.
   </div></details>
 
-2. Type `odrv0.axis0.requested_state = AXIS_STATE_CLOSED_LOOP_CONTROL` <kbd>Enter</kbd>. From now on the ODrive will try to hold the motor's position. If you try to turn it by hand, it will fight you gently. That is unless you bump up `odrv0.axis0.motor.config.current_lim`, in which case it will fight you more fiercely.
+2. Type `odrv0.axis0.requested_state = AXIS_STATE_CLOSED_LOOP_CONTROL` <kbd>Enter</kbd>. From now on the ODrive will try to hold the motor's position. If you try to turn it by hand, it will fight you gently. That is unless you bump up `odrv0.axis0.motor.config.current_lim`, in which case it will fight you more fiercely. If the motor begins to vibrate either immediately or after being disturbed you will need to [lower the controller gains](control.md).
 3. Send the motor a new position setpoint. `odrv0.axis0.controller.pos_setpoint = 10000` <kbd>Enter</kbd>. The units are in encoder counts.
+4. At this point you will probably want to [Properly tune](control.md) the motor controller in order to maximize system performance.
 
 ## Other control modes
-The default control mode is unfiltered position control in the absolute encoder reference frame. You may wish to use a controlled trajectory instead. Or you may wish to control position in a circular frame to allow continous rotation forever without growing the numeric value of the setpoint too large.
+The default control mode is unfiltered position control in the absolute encoder reference frame. You may wish to use a controlled trajectory instead. Or you may wish to control position in a circular frame to allow continuous rotation forever without growing the numeric value of the setpoint too large.
+
 You may also wish to control velocity (directly or with a ramping filter).
 You can also directly control the current of the motor, which is proportional to torque.
 
@@ -345,7 +342,8 @@ The watchdog is fed using the `axis.watchdog_feed()` method of each axis.
 
 ## What's next?
 You can now:
-* See what other [commands and parameters](commands.md) are available, including setting tuning parameters for better performance.
+* [Properly tune](control.md) the motor controller to unlock the full potential of the ODrive.
+* See what other [commands and parameters](commands.md) are available, in order to better control the ODrive.
 * Control the ODrive from your own program or hook it up to an existing system through one of it's [interfaces](interfaces.md).
 * See how you can improve the behavior during the startup procedure, like [bypassing encoder calibration](encoders.md#encoder-with-index-signal).
 

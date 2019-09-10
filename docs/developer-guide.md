@@ -70,8 +70,7 @@ sudo pacman -S tup
 #### Mac
 First install [Homebrew](https://brew.sh/). Then you can run these commands in Terminal:
 ```bash
-brew tap osx-cross/arm
-brew install arm-gcc-bin
+brew install armmbed/formulae/arm-none-eabi-gcc
 brew cask install osxfuse && brew install tup
 brew install openocd
 ```
@@ -98,8 +97,8 @@ To customize the compile time parameters, copy or rename the file `Firmware/tup.
 __CONFIG_BOARD_VERSION__: The board version you're using. Can be `v3.1`, `v3.2`, `v3.3`, `v3.4-24V`, `v3.4-48V`, `v3.5-24V`, `v3.5-48V`, etc. Check for a label on the upper side of the ODrive to find out which version you have. Some ODrive versions don't specify the voltage: in that case you can read the value of the main capacitors: 120uF are 48V ODrives, 470uF are 24V ODrives.
 
 __CONFIG_USB_PROTOCOL__: Defines which protocol the ODrive should use on the USB interface.
- * `native`: The native ODrive protocol. Use this if you want to use the python tools in this repo.
- * `native-stream`: Like the native ODrive protocol, but the ODrive will treat the USB connection exactly as if it was a UART connection. __Use this if you're on macOS__. This is necessary because macOS doesn't grant our python tools sufficient low-level access to treat the device as the USB device that it is.
+ * `native`: The native ODrive protocol. Use this if you want to use the python tools in this repo. Can maybe work with macOS.
+ * `native-stream`: Like the native ODrive protocol, but the ODrive will treat the USB connection exactly as if it was a UART connection. __ Maybe need to use this if you're on macOS__. This is necessary because macOS doesn't grant our python tools sufficient low-level access to treat the device as the USB device that it is.
  * `none`: Disable USB. The device will still show up when plugged in but it will ignore any commands.
  
  **Note**: There is a second USB interface that is always a serial port.

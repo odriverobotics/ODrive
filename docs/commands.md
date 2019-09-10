@@ -61,25 +61,9 @@ Possible values are:
 * `CTRL_MODE_VOLTAGE_CONTROL` - this one is not normally used.
 
 # Control Commands
-
 * `<axis>.controller.pos_setpoint = <encoder_counts>`
-* `<axis>.controller.current_setpoint = <current_in_A>`
 * `<axis>.controller.vel_setpoint = <encoder_counts/s>`
-
-### Tuning parameters
-The motion control gains are currently manually tuned:
-* `<axis>.controller.config.pos_gain = 20.0` [(counts/s) / counts]
-* `<axis>.controller.config.vel_gain = 5.0 / 10000.0` [A/(counts/s)]
-* `<axis>.controller.config.vel_integrator_gain = 10.0 / 10000.0` [A/((counts/s) * s)]
-
-An upcoming feature will enable automatic tuning. Until then, here is a rough tuning procedure:
-* Set the integrator gain to 0
-* Make sure you have a stable system. If it is not, decrease all gains until you have one.
-* Increase `vel_gain` by around 30% per iteration until the motor exhibits some vibration.
-* Back down `vel_gain` to 50% of the vibrating value.
-* Increase `pos_gain` by around 30% per iteration until you see some overshoot.
-* Back down `pos_gain` until you do not have overshoot anymore.
-* The integrator can be set to `0.5 * bandwidth * vel_gain`, where `bandwidth` is the overall resulting tracking bandwidth of your system. Say your tuning made it track commands with a settling time of 100ms: this means the bandwidth was 1/100ms or 10. In this case you should set the `vel_integrator_gain = 0.5 * 10 * vel_gain`.
+* `<axis>.controller.current_setpoint = <current_in_A>`
 
 ## System monitoring commands
 
@@ -89,7 +73,7 @@ An upcoming feature will enable automatic tuning. Until then, here is a rough tu
 
 ### Motor current and torque estimation
 * View the commanded motor current with `<axis>.motor.current_control.Iq_setpoint` [A] 
-* View the measured motor current with `<axis>.motor.current_control.Iq_measured` [A]. If you find that this returns noisy data then use the command motor current instead. The two values should be close so long as you are not approching the maximim achieveable rotational velocity of your motor for a given supply votlage, in which case the commanded current may become larger than the measured current. 
+* View the measured motor current with `<axis>.motor.current_control.Iq_measured` [A]. If you find that this returns noisy data then use the command motor current instead. The two values should be close so long as you are not approaching the maximum achievable rotational velocity of your motor for a given supply voltage, in which case the commanded current may become larger than the measured current. 
 
 Using the motor current and the known KV of your motor you can estimate the motors torque using the following relationship: Torque [N.m] = 8.27 * Current [A] / KV. 
 

@@ -135,13 +135,13 @@ You can also try increasing `<axis>.controller.config.vel_limit_tolerance`. The 
 
 ### Motor vibrates when stationary or makes constant noise
 
-- Likely due to incorrect gains, specifically `vel_gain` may be set too high. Try following the [tuning procedure](https://docs.odriverobotics.com/commands).
+- Likely due to incorrect gains, specifically `vel_gain` may be set too high. Try following the [tuning procedure](control.md#Tuning).
 - Check encoder shaft connection. Grub screws may vibrate lose with time. If using a CUI shaft encoder try remounting the plastic retaining ring and confirm that it is not coming into contact with the encoder housing. Also confirm that the encoder is securely mounted.
 - If you are using a high resolution encoder (>4000 counts/rotation) then increasing encoder_pll_bandwidth may help reduce vibration.
 - If you connect your motor to an object with a large moment of inertia (such as a flywheel) this will help reduce vibrations at high gians. However, make sure that all connections are ridged. Cheap shaft couplers or belts under low tension can introduce enough flex into a system that the motor may still vibrate independently.
 
 ### Motor overshoots target position or oscillates back and forth
-- Likely due to incorrect gains for a given motor current limit. Specifically `pos_gain` is set too high. Try following the [tuning procedure](https://docs.odriverobotics.com/commands).
+- Likely due to incorrect gains for a given motor current limit. Specifically `pos_gain` is set too high. Try following the [tuning procedure](control.md#Tuning).
 - Increase the current limit of your motor for more torque.
 
 ### Motor slowly starts to increase in speed
