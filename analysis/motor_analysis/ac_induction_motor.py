@@ -85,16 +85,10 @@ class ACMotor():
         self.omega_stator = omega_stator
         self.omega_rotor = omega_rotor
 
-        # y0 = np.nan * np.ones([2, time_series.size], dtype=np.complex)
-        # y0[:, 0] = [0.0, 0.0] # initial condition
         y0 = np.array([x[1] for x in ACMotor.state_definitions], dtype=np.complex)
 
         result = solve_ivp(self.system_function, (time_series[0], time_series[-1]), y0, t_eval=time_series)
         return result
-        # if not result.success:
-        #     return None
-        # y_func = interp1d(result.t, result.y)
-        # return y_func(time_series)
 
 def plot_data(t, y, ref, title):
     fig, ax1 = plt.subplots()
@@ -140,8 +134,6 @@ if(PLOT_INITAL):
         omega_stator = 0,
         omega_rotor= 0)
 
-    # plt.plot(t, result.y[0], label='Stator current [A] (initial)')
-    # plt.plot(t, 1000*result.y[1], label='Rotor flux [mWb] (initial)')
     plot_data(t, result.y, test_response, 'initial')
 
 
