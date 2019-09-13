@@ -47,6 +47,13 @@ class ACMotor():
         # self.omega_stator = None
         # self.omega_rotor = None
 
+    def get_mutual_inductance(self):
+        return np.sqrt(
+            self.params[ACMotor.pl['mutual_inductance_factor']]
+            * self.params[ACMotor.pl['stator_inductance']]
+            * self.params[ACMotor.pl['rotor_inductance']]
+        )
+
     def system_function(self, t, y):
         # local shorthand for params
         p = self.params
@@ -55,7 +62,7 @@ class ACMotor():
 
         # rotor_resistance = p[pl['rotor_resistance']] 
         rotor_resistance = 1.0
-        mutual_inductance = np.sqrt(p[pl['mutual_inductance_factor']] * p[pl['stator_inductance']] * p[pl['rotor_inductance']])
+        mutual_inductance = self.get_mutual_inductance()
 
         tau_rotor = p[pl['rotor_inductance']] / rotor_resistance # [s]
         coupling_factor = mutual_inductance / p[pl['rotor_inductance']] # aka k_r [unitless]
@@ -88,17 +95,24 @@ class ACMotor():
         y0 = np.array([x[1] for x in ACMotor.state_definitions], dtype=np.complex)
 
         result = solve_ivp(self.system_function, (time_series[0], time_series[-1]), y0, t_eval=time_series)
-        return result
+        y = result.y
+
+        # compute derived state
+        rotor_inductance = self.params[ACMotor.pl['rotor_inductance']]
+        rotor_current = (1/rotor_inductance) * (y[1] - self.get_mutual_inductance() * y[0])
+        return np.vstack((y, rotor_current))
 
 def plot_data(t, y, ref, title):
-    fig, ax1 = plt.subplots()
-    ax2 = ax1.twinx()
+    fig, (ax1, ax2) = plt.subplots(2, sharex=True)
+    ax1b = ax1.twinx()
     ax1.plot(t, ref, label='Measured current')
     ax1.plot(t, y[0], label='Stator current')
-    ax2.plot(t, 1000*y[1], 'g', label='Rotor flux')
+    ax2.plot(t, y[2], label='Rotor current')
+    ax1b.plot(t, 1000*y[1], 'g', label='Rotor flux')
     ax1.set_xlabel('time [s]')
     ax1.set_ylabel('Current [A]')
-    ax2.set_ylabel('Flux [mWb]')
+    ax1b.set_ylabel('Flux [mWb]')
+    ax2.set_ylabel('Current [A]')
     plt.title(title)
     fig.legend()
     plt.show()
@@ -128,31 +142,31 @@ inital_parameters[ACMotor.pl['mutual_inductance_factor']] = 0.8
 # Plot initial run
 if(PLOT_INITAL):
     motor = ACMotor(inital_parameters)
-    result = motor.run(
+    y = motor.run(
         time_series = t,
         voltage = voltage_step,
         omega_stator = 0,
         omega_rotor= 0)
 
-    plot_data(t, result.y, test_response, 'initial')
+    plot_data(t, y, test_response, 'initial')
 
 
 # Fit to data
 def get_residuals(params):
     print(params)
     motor = ACMotor(params)
-    result = motor.run(
+    y = motor.run(
         time_series = t,
         voltage = voltage_step,
         omega_stator = 0,
         omega_rotor= 0)
     
-    residuals = test_response - np.real(result.y[0])
+    residuals = test_response - np.real(y[0])
     fitness = sum(residuals**2)
     print(fitness)
 
     if(PLOT_PROGRESS):
-        plot_data(t, result.y, test_response, 'progress')
+        plot_data(t, y, test_response, 'progress')
     
     return residuals
 
@@ -175,11 +189,7 @@ for i, r in enumerate(ACMotor.parameter_definitions):
 
 print()
 print('Derived parameters:')
-mutual_inductance = np.sqrt(
-    optiresult.x[ACMotor.pl['mutual_inductance_factor']]
-    * optiresult.x[ACMotor.pl['stator_inductance']]
-    * optiresult.x[ACMotor.pl['rotor_inductance']]
-)
+mutual_inductance = motor.get_mutual_inductance()
 coupling_factor = mutual_inductance / optiresult.x[ACMotor.pl['rotor_inductance']]
 torque_constant = coupling_factor * mutual_inductance
 print('mutual_inductance = {}H'.format(EngNumber(mutual_inductance)))
@@ -187,14 +197,14 @@ print('coupling_factor = {}'.format(EngNumber(coupling_factor)))
 print('torque_constant = {}Nm/A^2'.format(EngNumber(torque_constant)))
 
 motor = ACMotor(optiresult.x)
-result = motor.run(
+y = motor.run(
     time_series = t,
     voltage = voltage_step,
     omega_stator = 0,
     omega_rotor= 0)
 
-final_stator_current = np.real(result.y[0,-1])
-final_rotor_flux = np.real(result.y[1,-1])
+final_stator_current = np.real(y[0,-1])
+final_rotor_flux = np.real(y[1,-1])
 
 final_torque_per_amp = coupling_factor * final_rotor_flux
 
@@ -204,5 +214,5 @@ print('final_rotor_flux = {}Wb'.format(EngNumber(final_rotor_flux)))
 print('final_stator_current = {}A'.format(EngNumber(final_stator_current)))
 print('final_torque_per_amp = {}Nm/A'.format(EngNumber(final_torque_per_amp)))
 
-plot_data(t, result.y, test_response, 'final')
+plot_data(t, y, test_response, 'final')
 
