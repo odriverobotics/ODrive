@@ -8,6 +8,9 @@
 		},
 		{
 			"path": "docs"
+		},
+		{
+			"path": "analysis"
 		}
 	],
 	"settings": {
