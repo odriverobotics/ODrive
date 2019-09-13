@@ -410,6 +410,31 @@ bool Motor::FOC_current(float Id_des, float Iq_des, float I_phase, float pwm_pha
         return false; // error set inside enqueue_modulation_timings
     log_timing(TIMING_LOG_FOC_CURRENT);
 
+    if (axis_->axis_num_ == 0) {
+
+        // Edit these to suit your capture needs
+        float trigger_data = ictrl.v_current_control_integral_d;
+        float trigger_threshold = 0.5f;
+        float sample_data = Ialpha;
+
+        static bool ready = false;
+        static bool capturing = false;
+        if (trigger_data < trigger_threshold) {
+            ready = true;
+        }
+        if (ready && trigger_data >= trigger_threshold) {
+            capturing = true;
+            ready = false;
+        }
+        if (capturing) {
+            oscilloscope[oscilloscope_pos] = sample_data;
+            if (++oscilloscope_pos >= OSCILLOSCOPE_SIZE) {
+                oscilloscope_pos = 0;
+                capturing = false;
+            }
+        }
+    }
+
     return true;
 }
 
