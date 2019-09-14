@@ -9,6 +9,8 @@ filename = "oscilloscope.csv"
 
 PLOT_INITAL = True
 PLOT_PROGRESS = False
+REPORT_PROGRESS = True
+assumed_rotor_resistance = 1.0 # (TODO: set to None to estimate)
 
 class ACMotor():
     """
@@ -22,11 +24,11 @@ class ACMotor():
 
     # parameters: (name, range)
     parameter_definitions = [
-        ('stator_inductance', (0, np.inf)), # aka l_s, [Henry]
-        ('stator_resistance', (0, np.inf)), # aka r_s, [Ohm]
-        ('rotor_inductance',  (0, np.inf)), # aka l_r [Henry]
-        # ('rotor_resistance',  (0, np.inf)), # aka r_r [Ohm]
-        ('mutual_inductance_factor', (0, 1.0)), #[unitless] = l_m**2 / (l_s * l_r) 
+        ('stator_inductance', (0, np.inf), 'H'), # aka l_s, [Henry]
+        ('stator_resistance', (0, np.inf), 'ohm'), # aka r_s, [Ohm]
+        ('rotor_inductance',  (0, np.inf), 'H'), # aka l_r [Henry]
+        # ('rotor_resistance',  (0, np.inf), 'ohm'), # aka r_r [Ohm]
+        ('mutual_inductance_factor', (0, 1.0), ''), #[unitless] = l_m**2 / (l_s * l_r)
     ]
     # parameter index lookup
     pl = {r[0]:i for i, r in enumerate(parameter_definitions)}
@@ -61,7 +63,7 @@ class ACMotor():
         sl = ACMotor.sl
 
         # rotor_resistance = p[pl['rotor_resistance']] 
-        rotor_resistance = 1.0
+        rotor_resistance = assumed_rotor_resistance
         mutual_inductance = self.get_mutual_inductance()
 
         tau_rotor = p[pl['rotor_inductance']] / rotor_resistance # [s]
@@ -153,7 +155,7 @@ if(PLOT_INITAL):
 
 # Fit to data
 def get_residuals(params):
-    print(params)
+    if REPORT_PROGRESS: print(params)
     motor = ACMotor(params)
     y = motor.run(
         time_series = t,
@@ -163,7 +165,7 @@ def get_residuals(params):
     
     residuals = test_response - np.real(y[0])
     fitness = sum(residuals**2)
-    print(fitness)
+    if REPORT_PROGRESS: print(fitness)
 
     if(PLOT_PROGRESS):
         plot_data(t, y, test_response, 'progress')
@@ -183,9 +185,13 @@ optiresult = least_squares(get_residuals, inital_parameters,
 print(optiresult.message)
 
 print()
+print('Given parameters:')
+print('rotor_resistance = {}ohm'.format(EngNumber(assumed_rotor_resistance)))
+
+print()
 print('Fitted parameters:')
 for i, r in enumerate(ACMotor.parameter_definitions):
-    print('{} = {}'.format(r[0], EngNumber(optiresult.x[i])))
+    print('{} = {}{}'.format(r[0], EngNumber(optiresult.x[i]), r[2]))
 
 print()
 print('Derived parameters:')
