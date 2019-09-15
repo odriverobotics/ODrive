@@ -11,8 +11,9 @@
 #include <stdlib.h>
 #include <stm32f405xx.h>
 
-#include <fibre/crc.hpp>
 #include "nvm.h"
+#include <fibre/crc.hpp>
+
 
 /* Private defines -----------------------------------------------------------*/
 #define CONFIG_CRC16_INIT 0xabcd
@@ -32,6 +33,7 @@ static constexpr uint16_t config_version = 0x0001;
 /* Private function prototypes -----------------------------------------------*/
 /* Function implementations --------------------------------------------------*/
 
+
 // @brief Manages configuration load and store operations from and to NVM
 //
 // The NVM stores consecutive one-to-one copies of arbitrary objects.
@@ -41,10 +43,10 @@ static constexpr uint16_t config_version = 0x0001;
 // - Config<T, Ts...> handles loading/storing of the first object (type T) and leaves
 //   the rest of the objects to an "inner" class Config<Ts...>.
 // - Config<> represents the leaf of the recursion.
-template <typename... Ts>
+template<typename ... Ts>
 struct Config;
 
-template <>
+template<>
 struct Config<> {
     static size_t get_size() {
         return 0;
@@ -57,7 +59,7 @@ struct Config<> {
     }
 };
 
-template <typename T, typename... Ts>
+template<typename T, typename ... Ts>
 struct Config<T, Ts...> {
     static size_t get_size() {
         return sizeof(T) + Config<Ts...>::get_size();
@@ -69,13 +71,13 @@ struct Config<T, Ts...> {
     // of the last comitted NVM block
     // @param crc16: the result of the CRC calculation is written to this address
     // @param val0, vals: the values to be loaded
-    static int load_config(size_t offset, uint16_t* crc16, T* val0, Ts*... vals) {
+    static int load_config(size_t offset, uint16_t* crc16, T* val0, Ts* ... vals) {
         size_t size = sizeof(T);
         // save current CRC (in case val0 and crc16 point to the same address)
         size_t previous_crc16 = *crc16;
-        if (NVM_read(offset, (uint8_t*)val0, size))
+        if (NVM_read(offset, (uint8_t *)val0, size))
             return -1;
-        *crc16 = calc_crc16<CONFIG_CRC16_POLYNOMIAL>(previous_crc16, (uint8_t*)val0, size);
+        *crc16 = calc_crc16<CONFIG_CRC16_POLYNOMIAL>(previous_crc16, (uint8_t *)val0, size);
         if (Config<Ts...>::load_config(offset + size, crc16, vals...))
             return -1;
         return 0;
@@ -87,13 +89,13 @@ struct Config<T, Ts...> {
     // of the currently active NVM write block
     // @param crc16: the result of the CRC calculation is written to this address
     // @param val0, vals: the values to be stored
-    static int store_config(size_t offset, uint16_t* crc16, const T* val0, const Ts*... vals) {
+    static int store_config(size_t offset, uint16_t* crc16, const T* val0, const Ts* ... vals) {
         size_t size = sizeof(T);
-        if (NVM_write(offset, (uint8_t*)val0, size))
+        if (NVM_write(offset, (uint8_t *)val0, size))
             return -1;
         // update CRC _after_ writing (in case val0 and crc16 point to the same address)
         if (crc16)
-            *crc16 = calc_crc16<CONFIG_CRC16_POLYNOMIAL>(*crc16, (uint8_t*)val0, size);
+            *crc16 = calc_crc16<CONFIG_CRC16_POLYNOMIAL>(*crc16, (uint8_t *)val0, size);
         if (Config<Ts...>::store_config(offset + size, crc16, vals...))
             return -1;
         return 0;
@@ -101,7 +103,7 @@ struct Config<T, Ts...> {
 
     // @brief Loads one or more consecutive objects from the NVM. The loaded data
     // is validated using a CRC value that is stored at the beginning of the data.
-    static int safe_load_config(T* val0, Ts*... vals) {
+    static int safe_load_config(T* val0, Ts* ... vals) {
         //printf("have %d bytes\r\n", NVM_get_max_read_length()); osDelay(5);
         if (Config<T, Ts..., uint16_t>::get_size() > NVM_get_max_read_length())
             return -1;
@@ -120,7 +122,7 @@ struct Config<T, Ts...> {
     // changes of the config structs during firmware update. Note that if the total
     // config data length changes, the CRC validation will fail even if the developer
     // forgets to update the config version number.
-    static int safe_store_config(const T* val0, const Ts*... vals) {
+    static int safe_store_config(const T* val0, const Ts* ... vals) {
         size_t size = Config<T, Ts...>::get_size() + 2;
         //printf("config is %d bytes\r\n", size); osDelay(5);
         if (size > NVM_get_max_write_length())
@@ -130,7 +132,7 @@ struct Config<T, Ts...> {
         uint16_t crc16 = CONFIG_CRC16_INIT ^ config_version;
         if (Config<T, Ts...>::store_config(0, &crc16, val0, vals...))
             return -1;
-        if (Config<uint8_t, uint8_t>::store_config(size - 2, nullptr, (uint8_t*)&crc16 + 1, (uint8_t*)&crc16))
+        if (Config<uint8_t, uint8_t>::store_config(size - 2, nullptr, (uint8_t *)&crc16 + 1, (uint8_t *)&crc16))
             return -1;
         if (NVM_commit())
             return -1;

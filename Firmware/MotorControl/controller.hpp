@@ -6,7 +6,7 @@
 #endif
 
 class Controller {
-   public:
+public:
     enum Error_t {
         ERROR_NONE                 = 0,
         ERROR_OVERSPEED            = 0x01,
@@ -18,14 +18,14 @@ class Controller {
 
     // Note: these should be sorted from lowest level of control to
     // highest level of control, to allow "<" style comparisons.
-    enum ControlMode_t {
-        CTRL_MODE_VOLTAGE_CONTROL  = 0,
-        CTRL_MODE_CURRENT_CONTROL  = 1,
+    enum ControlMode_t{
+        CTRL_MODE_VOLTAGE_CONTROL = 0,
+        CTRL_MODE_CURRENT_CONTROL = 1,
         CTRL_MODE_VELOCITY_CONTROL = 2,
         CTRL_MODE_POSITION_CONTROL = 3
     };
 
-    enum InputMode_t {
+    enum InputMode_t{
         INPUT_MODE_INACTIVE,
         INPUT_MODE_PASSTHROUGH,
         INPUT_MODE_VEL_RAMP,
@@ -39,8 +39,8 @@ class Controller {
     typedef struct {
         uint32_t index = 0;
         float cogging_map[3600];
-        bool pre_calibrated       = false;
-        bool calib_anticogging    = false;
+        bool pre_calibrated = false;
+        bool calib_anticogging = false;
         float calib_pos_threshold = 1.0f;
         float calib_vel_threshold = 1.0f;
         float cogging_ratio       = 1.0f;
@@ -49,9 +49,9 @@ class Controller {
 
     struct Config_t {
         ControlMode_t control_mode = CTRL_MODE_POSITION_CONTROL;  //see: ControlMode_t
-        InputMode_t input_mode     = INPUT_MODE_PASSTHROUGH;      //see: InputMode_t
-        float pos_gain             = 20.0f;                       // [(counts/s) / counts]
-        float vel_gain             = 5.0f / 10000.0f;             // [A/(counts/s)]
+        InputMode_t input_mode = INPUT_MODE_PASSTHROUGH;  //see: InputMode_t
+        float pos_gain = 20.0f;  // [(counts/s) / counts]
+        float vel_gain = 5.0f / 10000.0f;  // [A/(counts/s)]
         // float vel_gain = 5.0f / 200.0f, // [A/(rad/s)] <sensorless example>
         float vel_integrator_gain    = 10.0f / 10000.0f;  // [A/(counts/s * s)]
         float vel_limit              = 20000.0f;          // [counts/s]
@@ -86,7 +86,7 @@ class Controller {
     void move_incremental(float displacement, bool from_goal_point);
 
     bool home_axis();
-
+    
     // TODO: make this more similar to other calibration loops
     void start_anticogging_calibration();
     bool anticogging_calibration(float pos_estimate, float vel_estimate);
@@ -95,7 +95,7 @@ class Controller {
     bool update(float pos_estimate, float vel_estimate, float* current_setpoint);
 
     Config_t& config_;
-    Axis* axis_ = nullptr;  // set by Axis constructor
+    Axis* axis_ = nullptr; // set by Axis constructor
 
     // TODO: anticogging overhaul:
     // - expose selected (all?) variables on protocol
@@ -109,18 +109,18 @@ class Controller {
     float vel_setpoint_ = 0.0f;
     // float vel_setpoint = 800.0f; <sensorless example>
     float vel_integrator_current_ = 0.0f;  // [A]
-    float current_setpoint_       = 0.0f;  // [A]
+    float current_setpoint_ = 0.0f;        // [A]
 
-    float input_pos_       = 0.0f;
-    float input_vel_       = 0.0f;
-    float input_current_   = 0.0f;
+    float input_pos_ = 0.0f;
+    float input_vel_ = 0.0f;
+    float input_current_ = 0.0f;
     float input_filter_kp_ = 0.0f;
     float input_filter_ki_ = 0.0f;
 
     bool input_pos_updated_ = false;
-
+    
     uint32_t traj_start_loop_count_ = 0;
-    bool trajectory_done_           = true;
+    bool trajectory_done_ = true;
 
     bool anticogging_valid_ = false;
 
@@ -129,7 +129,7 @@ class Controller {
         return make_protocol_member_list(
             make_protocol_property("error", &error_),
             make_protocol_property("input_pos", &input_pos_,
-                                   [](void* ctx) { static_cast<Controller*>(ctx)->input_pos_updated(); }, this),
+                [](void* ctx) { static_cast<Controller*>(ctx)->input_pos_updated(); }, this),
             make_protocol_property("input_vel", &input_vel_),
             make_protocol_property("input_current", &input_current_),
             make_protocol_ro_property("pos_setpoint", &pos_setpoint_),
@@ -172,10 +172,11 @@ class Controller {
                                                       make_protocol_property("anticogging_enabled", &config_.anticogging.enable))),
             make_protocol_function("move_incremental", *this, &Controller::move_incremental, "displacement", "from_goal_point"),
             make_protocol_function("start_anticogging_calibration", *this, &Controller::start_anticogging_calibration),
-            make_protocol_function("home_axis", *this, &Controller::home_axis));
+            make_protocol_function("home_axis", *this, &Controller::home_axis)
+        );
     }
 };
 
 DEFINE_ENUM_FLAG_OPERATORS(Controller::Error_t)
 
-#endif  // __CONTROLLER_HPP
+#endif // __CONTROLLER_HPP
