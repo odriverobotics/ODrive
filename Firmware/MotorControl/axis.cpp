@@ -493,6 +493,6 @@ void Axis::run_state_machine_loop() {
         if (!status)
             current_state_ = AXIS_STATE_IDLE;
         else
-            memcpy(task_chain_, task_chain_ + 1, sizeof(task_chain_) - sizeof(task_chain_[0]));
+            memmove(task_chain_, task_chain_ + 1, sizeof(task_chain_) - sizeof(task_chain_[0]));
     }
 }
