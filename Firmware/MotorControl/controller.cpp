@@ -1,6 +1,6 @@
 
 #include "odrive_main.h"
-
+#include <algorithm>
 
 Controller::Controller(Config_t& config) :
     config_(config)
@@ -173,6 +173,19 @@ bool Controller::update(float pos_estimate, float vel_estimate, float* current_s
         }
     }
 
+    // TODO: Change to controller working in torque units
+    // Torque per amp gain scheduling (ACIM)
+    float vel_gain = config_.vel_gain;
+    float vel_integrator_gain = config_.vel_integrator_gain;
+    if (axis_->motor_.config_.motor_type == Motor::MOTOR_TYPE_ACIM) {
+        float effective_flux = axis_->motor_.current_control_.acim_rotor_flux;
+        float minflux = axis_->motor_.config_.acim_gain_min_flux;
+        if (fabsf(effective_flux) < minflux)
+            effective_flux = std::copysignf(minflux, effective_flux);
+        vel_gain /= effective_flux;
+        vel_integrator_gain /= effective_flux;
+    }
+
     // Velocity control
     float Iq = current_setpoint_;
 
@@ -185,13 +198,15 @@ bool Controller::update(float pos_estimate, float vel_estimate, float* current_s
 
     float v_err = vel_des - vel_estimate;
     if (config_.control_mode >= CTRL_MODE_VELOCITY_CONTROL) {
-        Iq += config_.vel_gain * v_err;
+        Iq += vel_gain * v_err;
     }
 
     // Velocity integral action before limiting
     Iq += vel_integrator_current_;
 
     // Current limiting
+    // TODO: Change to controller working in torque units
+    // and get the torque limits from a function of the motor
     bool limited = false;
     float Ilim = axis_->motor_.effective_current_lim();
     if (Iq > Ilim) {
@@ -212,7 +227,7 @@ bool Controller::update(float pos_estimate, float vel_estimate, float* current_s
             // TODO make decayfactor configurable
             vel_integrator_current_ *= 0.99f;
         } else {
-            vel_integrator_current_ += (config_.vel_integrator_gain * current_meas_period) * v_err;
+            vel_integrator_current_ += (vel_integrator_gain * current_meas_period) * v_err;
         }
     }
 

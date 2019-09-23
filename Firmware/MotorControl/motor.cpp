@@ -50,6 +50,7 @@ bool Motor::arm() {
 void Motor::reset_current_control() {
     current_control_.v_current_control_integral_d = 0.0f;
     current_control_.v_current_control_integral_q = 0.0f;
+    current_control_.acim_rotor_flux = 0.0f;
 }
 
 // @brief Tune the current controller based on phase resistance and inductance
@@ -284,7 +285,8 @@ bool Motor::measure_phase_inductance(float voltage_low, float voltage_high) {
 
 bool Motor::run_calibration() {
     float R_calib_max_voltage = config_.resistance_calib_max_voltage;
-    if (config_.motor_type == MOTOR_TYPE_HIGH_CURRENT) {
+    if (config_.motor_type == MOTOR_TYPE_HIGH_CURRENT
+        || config_.motor_type == MOTOR_TYPE_ACIM) {
         if (!measure_phase_resistance(config_.calibration_current, R_calib_max_voltage))
             return false;
         if (!measure_phase_inductance(-R_calib_max_voltage, R_calib_max_voltage))
@@ -444,17 +446,50 @@ bool Motor::update(float current_setpoint, float phase, float phase_vel) {
     phase *= config_.direction;
     phase_vel *= config_.direction;
 
+    // TODO: 2-norm vs independent clamping (current could be sqrt(2) bigger)
+    float ilim = effective_current_lim();
+    // TODO: use std::clamp (C++17)
+    float id = MACRO_MIN(MACRO_MAX(current_control_.Id_setpoint, -ilim), ilim);
+    float iq = MACRO_MIN(MACRO_MAX(current_setpoint, -ilim), ilim);
+
+    if (config_.motor_type == MOTOR_TYPE_ACIM) {
+        // Note that the effect of the current commands on the real currents is actually 1.5 PWM cycles later
+        // However the rotor time constant is (usually) so slow that it doesn't matter
+        // So we elect to write it as if the effect is immediate, to have cleaner code
+
+        // acim_rotor_flux is normalized to units of [A] tracking Id; rotor inductance is unspecified
+        float dflux_by_dt = config_.acim_slip_velocity * (id - current_control_.acim_rotor_flux);
+        current_control_.acim_rotor_flux += dflux_by_dt * current_meas_period;
+        float slip_velocity = config_.acim_slip_velocity * (iq / current_control_.acim_rotor_flux);
+        // Check for issues with small denominator. Polarity of check to catch NaN too
+        bool acceptable_vel = fabsf(slip_velocity) <= 0.1f * (float)current_meas_hz;
+        if (!acceptable_vel)
+            slip_velocity = 0.0f;
+        phase_vel += slip_velocity;
+        // reporting only:
+        current_control_.async_phase_vel = slip_velocity;
+
+        current_control_.async_phase_offset += slip_velocity * current_meas_period;
+        current_control_.async_phase_offset = wrap_pm_pi(current_control_.async_phase_offset);
+        phase += current_control_.async_phase_offset;
+        phase = wrap_pm_pi(phase);
+    }
+
     float pwm_phase = phase + 1.5f * current_meas_period * phase_vel;
 
     // Execute current command
     // TODO: move this into the mot
     if (config_.motor_type == MOTOR_TYPE_HIGH_CURRENT) {
-        if(!FOC_current(0.0f, current_setpoint, phase, pwm_phase)){
+        if(!FOC_current(id, iq, phase, pwm_phase)){
+            return false;
+        }
+    } else if (config_.motor_type == MOTOR_TYPE_ACIM) {
+        if(!FOC_current(id, iq, phase, pwm_phase)){
             return false;
         }
     } else if (config_.motor_type == MOTOR_TYPE_GIMBAL) {
         //In gimbal motor mode, current is reinterptreted as voltage.
-        if(!FOC_voltage(0.0f, current_setpoint, pwm_phase))
+        if(!FOC_voltage(id, iq, pwm_phase))
             return false;
     } else {
         set_error(ERROR_NOT_IMPLEMENTED_MOTOR_TYPE);

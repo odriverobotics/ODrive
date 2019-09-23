@@ -25,6 +25,7 @@
 		"c-cpp-flylint.cppcheck.standard": ["c99","c++14"],
 
 		"files.associations": {
+			"*.config": "yaml",
 			"memory": "cpp",
 			"utility": "cpp",
 			"deque": "cpp",
@@ -58,7 +59,8 @@
 			"chrono": "cpp",
 			"condition_variable": "cpp",
 			"future": "cpp",
-			"arm_math.h": "c"
+			"arm_math.h": "c",
+			"cmath": "cpp"
 		}
 	}
 }

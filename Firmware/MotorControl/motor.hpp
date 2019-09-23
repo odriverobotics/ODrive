@@ -29,7 +29,8 @@ public:
     enum MotorType_t {
         MOTOR_TYPE_HIGH_CURRENT = 0,
         // MOTOR_TYPE_LOW_CURRENT = 1, //Not yet implemented
-        MOTOR_TYPE_GIMBAL = 2
+        MOTOR_TYPE_GIMBAL = 2,
+        MOTOR_TYPE_ACIM = 3,
     };
 
     struct Iph_BC_t {
@@ -46,12 +47,16 @@ public:
         // Voltage applied at end of cycle:
         float final_v_alpha; // [V]
         float final_v_beta; // [V]
+        float Id_setpoint; // [A]
         float Iq_setpoint; // [A]
         float Iq_measured; // [A]
         float Id_measured; // [A]
         float I_measured_report_filter_k;
         float max_allowed_current; // [A]
         float overcurrent_trip_level; // [A]
+        float acim_rotor_flux; // [A]
+        float async_phase_vel; // [rad/s electrical]
+        float async_phase_offset; // [rad electrical]
     };
 
     // NOTE: for gimbal motors, all units of A are instead V.
@@ -75,6 +80,8 @@ public:
         float current_control_bandwidth = 1000.0f;  // [rad/s]
         float inverter_temp_limit_lower = 100;
         float inverter_temp_limit_upper = 120;
+        float acim_slip_velocity = 14.706f; // [rad/s electrical] = 1/rotor_tau
+        float acim_gain_min_flux = 10; // [A]
     };
 
     enum TimingLog_t {
@@ -162,12 +169,16 @@ public:
         .Ibus = 0.0f,
         .final_v_alpha = 0.0f,
         .final_v_beta = 0.0f,
+        .Id_setpoint = 0.0f,
         .Iq_setpoint = 0.0f,
         .Iq_measured = 0.0f,
         .Id_measured = 0.0f,
         .I_measured_report_filter_k = 1.0f,
         .max_allowed_current = 0.0f,
         .overcurrent_trip_level = 0.0f,
+        .acim_rotor_flux = 0.0f,
+        .async_phase_vel = 0.0f,
+        .async_phase_offset = 0.0f,
     };
     DRV8301_FaultType_e drv_fault_ = DRV8301_FaultType_NoFault;
     DRV_SPI_8301_Vars_t gate_driver_regs_; //Local view of DRV registers (initialized by DRV8301_setup)
@@ -194,12 +205,16 @@ public:
                 make_protocol_property("Ibus", &current_control_.Ibus),
                 make_protocol_property("final_v_alpha", &current_control_.final_v_alpha),
                 make_protocol_property("final_v_beta", &current_control_.final_v_beta),
-                make_protocol_property("Iq_setpoint", &current_control_.Iq_setpoint),
+                make_protocol_property("Id_setpoint", &current_control_.Id_setpoint),
+                make_protocol_ro_property("Iq_setpoint", &current_control_.Iq_setpoint),
                 make_protocol_property("Iq_measured", &current_control_.Iq_measured),
                 make_protocol_property("Id_measured", &current_control_.Id_measured),
                 make_protocol_property("I_measured_report_filter_k", &current_control_.I_measured_report_filter_k),
                 make_protocol_ro_property("max_allowed_current", &current_control_.max_allowed_current),
-                make_protocol_ro_property("overcurrent_trip_level", &current_control_.overcurrent_trip_level)
+                make_protocol_ro_property("overcurrent_trip_level", &current_control_.overcurrent_trip_level),
+                make_protocol_property("acim_rotor_flux", &current_control_.acim_rotor_flux),
+                make_protocol_ro_property("async_phase_vel", &current_control_.async_phase_vel),
+                make_protocol_property("async_phase_offset", &current_control_.async_phase_offset)
             ),
             make_protocol_object("gate_driver",
                 make_protocol_ro_property("drv_fault", &drv_fault_)
@@ -234,7 +249,9 @@ public:
                 make_protocol_property("inverter_temp_limit_upper", &config_.inverter_temp_limit_upper),
                 make_protocol_property("requested_current_range", &config_.requested_current_range),
                 make_protocol_property("current_control_bandwidth", &config_.current_control_bandwidth,
-                    [](void* ctx) { static_cast<Motor*>(ctx)->update_current_controller_gains(); }, this)
+                    [](void* ctx) { static_cast<Motor*>(ctx)->update_current_controller_gains(); }, this),
+                make_protocol_property("acim_slip_velocity", &config_.acim_slip_velocity),
+                make_protocol_property("acim_gain_min_flux", &config_.acim_gain_min_flux)
             )
         );
     }
