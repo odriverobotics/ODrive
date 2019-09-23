@@ -61,6 +61,7 @@
 extern PCD_HandleTypeDef hpcd_USB_OTG_FS;
 int odrive_main(void);
 int load_configuration(void);
+int construct_objects(void);
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -191,6 +192,7 @@ void MX_FREERTOS_Init(void) {
 
   // Load persistent configuration (or defaults)
   load_configuration();
+  construct_objects();
   /* USER CODE END RTOS_SEMAPHORES */
 
   /* USER CODE BEGIN RTOS_TIMERS */
