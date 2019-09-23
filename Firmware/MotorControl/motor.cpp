@@ -457,6 +457,14 @@ bool Motor::update(float current_setpoint, float phase, float phase_vel) {
         // However the rotor time constant is (usually) so slow that it doesn't matter
         // So we elect to write it as if the effect is immediate, to have cleaner code
 
+        if (config_.acim_autoflux_enable) {
+            float abs_iq = fabsf(iq);
+            float gain = abs_iq > id ? config_.acim_autoflux_attack_gain : config_.acim_autoflux_decay_gain;
+            id += gain * (abs_iq - id) * current_meas_period;
+            id = MACRO_MIN(MACRO_MAX(id, config_.acim_autoflux_min_Id), ilim);
+            current_control_.Id_setpoint = id;
+        }
+
         // acim_rotor_flux is normalized to units of [A] tracking Id; rotor inductance is unspecified
         float dflux_by_dt = config_.acim_slip_velocity * (id - current_control_.acim_rotor_flux);
         current_control_.acim_rotor_flux += dflux_by_dt * current_meas_period;

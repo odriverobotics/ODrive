@@ -184,6 +184,8 @@ bool Controller::update(float pos_estimate, float vel_estimate, float* current_s
             effective_flux = std::copysignf(minflux, effective_flux);
         vel_gain /= effective_flux;
         vel_integrator_gain /= effective_flux;
+        // TODO: also scale the integral value which is also changing units.
+        // (or again just do control in torque units)
     }
 
     // Velocity control

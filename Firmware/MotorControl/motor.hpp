@@ -82,6 +82,10 @@ public:
         float inverter_temp_limit_upper = 120;
         float acim_slip_velocity = 14.706f; // [rad/s electrical] = 1/rotor_tau
         float acim_gain_min_flux = 10; // [A]
+        float acim_autoflux_min_Id = 10; // [A]
+        bool acim_autoflux_enable = false;
+        float acim_autoflux_attack_gain = 10.0f;
+        float acim_autoflux_decay_gain = 1.0f;
     };
 
     enum TimingLog_t {
@@ -251,7 +255,11 @@ public:
                 make_protocol_property("current_control_bandwidth", &config_.current_control_bandwidth,
                     [](void* ctx) { static_cast<Motor*>(ctx)->update_current_controller_gains(); }, this),
                 make_protocol_property("acim_slip_velocity", &config_.acim_slip_velocity),
-                make_protocol_property("acim_gain_min_flux", &config_.acim_gain_min_flux)
+                make_protocol_property("acim_gain_min_flux", &config_.acim_gain_min_flux),
+                make_protocol_property("acim_autoflux_min_Id", &config_.acim_autoflux_min_Id),
+                make_protocol_property("acim_autoflux_enable", &config_.acim_autoflux_enable),
+                make_protocol_property("acim_autoflux_attack_gain", &config_.acim_autoflux_attack_gain),
+                make_protocol_property("acim_autoflux_decay_gain", &config_.acim_autoflux_decay_gain)
             )
         );
     }
