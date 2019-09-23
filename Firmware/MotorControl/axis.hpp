@@ -5,13 +5,6 @@
 #error "This file should not be included directly. Include odrive_main.h instead."
 #endif
 
-    
-enum HomingState_t {
-    HOMING_STATE_IDLE,
-    HOMING_STATE_HOMING,
-    HOMING_STATE_MOVE_TO_ZERO
-};
-
 class Axis {
 public:
     enum Error_t {
@@ -26,7 +19,7 @@ public:
         ERROR_SENSORLESS_ESTIMATOR_FAILED = 0x80,
         ERROR_ENCODER_FAILED = 0x100, // Go to encoder.hpp for information, check odrvX.axisX.encoder.error for error value
         ERROR_CONTROLLER_FAILED = 0x200,
-        ERROR_POS_CTRL_DURING_SENSORLESS = 0x400,
+        ERROR_POS_CTRL_DURING_SENSORLESS = 0x400, // DEPRECATED
         ERROR_WATCHDOG_TIMER_EXPIRED = 0x800,
         ERROR_MIN_ENDSTOP_PRESSED = 0x1000,
         ERROR_MAX_ENDSTOP_PRESSED = 0x2000,
@@ -96,10 +89,7 @@ public:
     };
 
     struct Homing_t {
-        HomingState_t homing_state = HOMING_STATE_IDLE;
-        Controller::ControlMode_t storedControlMode = Controller::CTRL_MODE_POSITION_CONTROL;
-        Controller::InputMode_t storedInputMode = Controller::INPUT_MODE_PASSTHROUGH;
-        bool isHomed = false;
+        bool is_homed = false;
     };
 
     enum thread_signals {
@@ -224,6 +214,7 @@ public:
     bool run_lockin_spin(const LockinConfig_t &lockin_config);
     bool run_sensorless_control_loop();
     bool run_closed_loop_control_loop();
+    bool run_homing();
     bool run_idle_loop();
 
     constexpr uint32_t get_watchdog_reset() {
@@ -277,8 +268,7 @@ public:
             make_protocol_property("requested_state", &requested_state_),
             make_protocol_ro_property("loop_counter", &loop_counter_),
             make_protocol_ro_property("lockin_state", &lockin_state_),
-            make_protocol_ro_property("homing_state", &homing_.homing_state),
-            make_protocol_property("is_homed", &homing_.isHomed),
+            make_protocol_property("is_homed", &homing_.is_homed),
             make_protocol_object("config",
                                  make_protocol_property("startup_motor_calibration", &config_.startup_motor_calibration),
                                  make_protocol_property("startup_encoder_index_search", &config_.startup_encoder_index_search),

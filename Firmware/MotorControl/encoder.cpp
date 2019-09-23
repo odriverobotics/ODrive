@@ -32,6 +32,8 @@ void Encoder::setup() {
 }
 
 void Encoder::set_error(Error_t error) {
+    vel_estimate_valid_ = false;
+    pos_estimate_valid_ = false;
     error_ |= error;
     axis_->error_ |= Axis::ERROR_ENCODER_FAILED;
 }
@@ -525,5 +527,7 @@ bool Encoder::update() {
     // ph = fmodf(ph, 2*M_PI);
     phase_ = wrap_pm_pi(ph);
 
+    vel_estimate_valid_ = true;
+    pos_estimate_valid_ = true;
     return true;
 }

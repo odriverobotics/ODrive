@@ -94,6 +94,9 @@ public:
     int32_t pos_abs_ = 0;
     float spi_error_rate_ = 0.0f;
 
+    bool pos_estimate_valid_ = false;
+    bool vel_estimate_valid_ = false;
+
     int16_t tim_cnt_sample_ = 0; // 
     // Updated by low_level pwm_adc_cb
     uint8_t hall_state_ = 0x0; // bit[0] = HallA, .., bit[2] = HallC

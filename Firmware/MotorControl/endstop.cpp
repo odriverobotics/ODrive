@@ -2,19 +2,19 @@
 
 Endstop::Endstop(Endstop::Config_t& config)
     : config_(config) {
-    set_endstop_enabled(config_.enabled);
+    update_config();
 }
 
 void Endstop::update() {
     uint16_t gpio_pin = get_gpio_pin_by_pin(config_.gpio_num);
     GPIO_TypeDef* gpio_port = get_gpio_port_by_pin(config_.gpio_num);
-    auto last_pin_state = pin_state_;
+    bool last_pin_state = pin_state_;
     pin_state_ = HAL_GPIO_ReadPin(gpio_port, gpio_pin);
+    float now = axis_->loop_counter_ * current_meas_period;
     if (pin_state_ != last_pin_state) {
-        debounce_timer_ = axis_->loop_counter_ * current_meas_period;
+        debounce_timer_ = now;
     }
     if (config_.enabled) {
-        float now = axis_->loop_counter_ * current_meas_period;
         if ((now - debounce_timer_) >= (config_.debounce_ms * 0.001f)) {         // Debounce timer expired, take the new pin state
             endstop_state_ = config_.is_active_high ? pin_state_ : !pin_state_;  // endstop_state is the logical state
             debounce_timer_ = now - (config_.debounce_ms * 0.001f);              // Ensure timer doesn't have overflow issues
@@ -26,15 +26,15 @@ void Endstop::update() {
     }
 }
 
-bool Endstop::getEndstopState() {
+bool Endstop::get_state() {
     return endstop_state_;
 }
 
-void Endstop::update_endstop_config(){
-    set_endstop_enabled(config_.enabled);
+void Endstop::update_config(){
+    set_enabled(config_.enabled);
 }
 
-void Endstop::set_endstop_enabled(bool enable) {
+void Endstop::set_enabled(bool enable) {
     if (config_.gpio_num != 0) {
         uint16_t gpio_pin = get_gpio_pin_by_pin(config_.gpio_num);
         GPIO_TypeDef* gpio_port = get_gpio_port_by_pin(config_.gpio_num);

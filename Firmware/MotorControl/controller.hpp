@@ -14,6 +14,7 @@ public:
         ERROR_UNSTABLE_GAIN        = 0x04,
         ERROR_INVALID_MIRROR_AXIS  = 0x08,
         ERROR_INVALID_LOAD_ENCODER = 0x10,
+        ERROR_INVALID_ESTIMATE     = 0x20,
     };
 
     // Note: these should be sorted from lowest level of control to
@@ -54,8 +55,8 @@ public:
         float vel_gain = 5.0f / 10000.0f;  // [A/(counts/s)]
         // float vel_gain = 5.0f / 200.0f, // [A/(rad/s)] <sensorless example>
         float vel_integrator_gain    = 10.0f / 10000.0f;  // [A/(counts/s * s)]
-        float vel_limit              = 20000.0f;          // [counts/s]
-        float vel_limit_tolerance    = 1.2f;              // ratio to vel_lim. 0.0f to disable
+        float vel_limit              = 20000.0f;          // [counts/s] Infinity to disable.
+        float vel_limit_tolerance    = 1.2f;              // ratio to vel_lim. Infinity to disable.
         float vel_ramp_rate          = 10000.0f;          // [(counts/s) / s]
         float current_ramp_rate      = 1.0f;              // A / sec
         bool setpoints_in_cpr        = false;
@@ -67,11 +68,10 @@ public:
         bool enable_gain_scheduling   = false;
         bool enable_vel_limit         = true;
         bool enable_overspeed_error   = true;
-        bool enable_current_vel_limit = true;
+        bool enable_current_vel_limit = true; // enable velocity limit in current control mode (requires a valid velocity estimator)
         uint8_t axis_to_mirror        = -1;
         float mirror_ratio            = 1.0f;
-        bool use_load_encoder         = false;
-        uint8_t load_encoder_axis     = -1;
+        uint8_t load_encoder_axis     = -1; // default depends on Axis number and is set in load_configuration()
         float load_encoder_ratio      = 1.0f;
     };
 
@@ -80,19 +80,18 @@ public:
     void set_error(Error_t error);
 
     void input_pos_updated();
+    bool select_encoder(size_t encoder_num);
 
     // Trajectory-Planned control
     void move_to_pos(float goal_point);
     void move_incremental(float displacement, bool from_goal_point);
-
-    bool home_axis();
     
     // TODO: make this more similar to other calibration loops
     void start_anticogging_calibration();
     bool anticogging_calibration(float pos_estimate, float vel_estimate);
 
     void update_filter_gains();
-    bool update(float pos_estimate, float vel_estimate, float* current_setpoint);
+    bool update(float* current_setpoint);
 
     Config_t& config_;
     Axis* axis_ = nullptr; // set by Axis constructor
@@ -104,6 +103,12 @@ public:
     // - make the calibration persistent
 
     Error_t error_ = ERROR_NONE;
+
+    float* pos_estimate_src_ = nullptr;
+    bool* pos_estimate_valid_src_ = nullptr;
+    float* vel_estimate_src_ = nullptr;
+    bool* vel_estimate_valid_src_ = nullptr;
+    int32_t* pos_wrap_src_ = nullptr; // enables circular position setpoints if not null. The value pointed to is the maximum position value.
 
     float pos_setpoint_ = 0.0f;
     float vel_setpoint_ = 0.0f;
@@ -157,7 +162,6 @@ public:
                                  make_protocol_property("inertia", &config_.inertia),
                                  make_protocol_property("axis_to_mirror", &config_.axis_to_mirror),
                                  make_protocol_property("mirror_ratio", &config_.mirror_ratio),
-                                 make_protocol_property("use_load_encoder", &config_.use_load_encoder),
                                  make_protocol_property("load_encoder_ratio", &config_.load_encoder_ratio),
                                  make_protocol_property("load_encoder_axis", &config_.load_encoder_axis),
                                  make_protocol_property("input_filter_bandwidth", &config_.input_filter_bandwidth,
@@ -171,8 +175,7 @@ public:
                                                       make_protocol_ro_property("cogging_ratio", &config_.anticogging.cogging_ratio),
                                                       make_protocol_property("anticogging_enabled", &config_.anticogging.enable))),
             make_protocol_function("move_incremental", *this, &Controller::move_incremental, "displacement", "from_goal_point"),
-            make_protocol_function("start_anticogging_calibration", *this, &Controller::start_anticogging_calibration),
-            make_protocol_function("home_axis", *this, &Controller::home_axis)
+            make_protocol_function("start_anticogging_calibration", *this, &Controller::start_anticogging_calibration)
         );
     }
 };

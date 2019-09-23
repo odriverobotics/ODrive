@@ -29,6 +29,25 @@ void Controller::input_pos_updated() {
     input_pos_updated_ = true;
 }
 
+bool Controller::select_encoder(size_t encoder_num) {
+    if (encoder_num < AXIS_COUNT) {
+        Axis* ax = axes[encoder_num];
+        if (config_.setpoints_in_cpr) {
+            pos_estimate_src_ = &ax->encoder_.pos_cpr_;
+            pos_wrap_src_ = &ax->encoder_.config_.cpr;
+        } else {
+            pos_estimate_src_ = &ax->encoder_.pos_estimate_;
+            pos_wrap_src_ = nullptr;
+        }
+        pos_estimate_valid_src_ = &ax->encoder_.pos_estimate_valid_;
+        vel_estimate_src_ = &ax->encoder_.vel_estimate_;
+        vel_estimate_valid_src_ = &ax->encoder_.vel_estimate_valid_;
+        return true;
+    } else {
+        return set_error(Controller::ERROR_INVALID_LOAD_ENCODER), false;
+    }
+}
+
 void Controller::move_to_pos(float goal_point) {
     axis_->trap_.planTrapezoidal(goal_point, pos_setpoint_, vel_setpoint_,
                                  axis_->trap_.config_.vel_limit,
@@ -55,30 +74,6 @@ void Controller::start_anticogging_calibration() {
     }
 }
 
-// Slowly drive in the negative direction at homing_speed until the min endstop is pressed
-// When pressed, set the linear count to the offset (default 0), and then
-
-//TODO: This needs to be upgraded to use its own run_control_loop!
-bool Controller::home_axis() {
-    if (axis_->min_endstop_.config_.enabled) {
-        axis_->homing_.storedControlMode = config_.control_mode;
-        axis_->homing_.storedInputMode = config_.input_mode;
-
-        config_.control_mode = CTRL_MODE_VELOCITY_CONTROL;
-        config_.input_mode = INPUT_MODE_VEL_RAMP;
-
-        input_pos_ = 0.0f;
-        input_pos_updated();
-        input_vel_ = -config_.homing_speed;
-        input_current_ = 0.0f;
-
-        axis_->homing_.isHomed = false;
-        axis_->homing_.homing_state = HOMING_STATE_HOMING;
-    } else {
-        return false;
-    }
-    return true;
-}
 
 /*
  * This anti-cogging implementation iterates through each encoder position,
@@ -88,32 +83,29 @@ bool Controller::home_axis() {
  * This holding current is added as a feedforward term in the control loop.
  */
 bool Controller::anticogging_calibration(float pos_estimate, float vel_estimate) {
-    if (config_.anticogging.calib_anticogging) {
-        float pos_err = input_pos_ - pos_estimate;
-        if (std::abs(pos_err) <= config_.anticogging.calib_pos_threshold &&
-            std::abs(vel_estimate) < config_.anticogging.calib_vel_threshold) {
-            config_.anticogging.cogging_map[std::clamp<uint32_t>(config_.anticogging.index++, 0, 3600)] = vel_integrator_current_;
-        }
-        if (config_.anticogging.index < 3600) {
-            config_.control_mode = CTRL_MODE_POSITION_CONTROL;
-            input_pos_ = config_.anticogging.index * axis_->encoder_.getCoggingRatio();
-            input_vel_ = 0.0f;
-            input_current_ = 0.0f;
-            input_pos_updated();
-            return false;
-        } else {
-            config_.anticogging.index = 0;
-            config_.control_mode = CTRL_MODE_POSITION_CONTROL;
-            input_pos_ = 0.0f;  // Send the motor home
-            input_vel_ = 0.0f;
-            input_current_ = 0.0f;
-            input_pos_updated();
-            anticogging_valid_ = true;
-            config_.anticogging.calib_anticogging = false;
-            return true;
-        }
+    float pos_err = input_pos_ - pos_estimate;
+    if (std::abs(pos_err) <= config_.anticogging.calib_pos_threshold &&
+        std::abs(vel_estimate) < config_.anticogging.calib_vel_threshold) {
+        config_.anticogging.cogging_map[std::clamp<uint32_t>(config_.anticogging.index++, 0, 3600)] = vel_integrator_current_;
     }
-    return false;
+    if (config_.anticogging.index < 3600) {
+        config_.control_mode = CTRL_MODE_POSITION_CONTROL;
+        input_pos_ = config_.anticogging.index * axis_->encoder_.getCoggingRatio();
+        input_vel_ = 0.0f;
+        input_current_ = 0.0f;
+        input_pos_updated();
+        return false;
+    } else {
+        config_.anticogging.index = 0;
+        config_.control_mode = CTRL_MODE_POSITION_CONTROL;
+        input_pos_ = 0.0f;  // Send the motor home
+        input_vel_ = 0.0f;
+        input_current_ = 0.0f;
+        input_pos_updated();
+        anticogging_valid_ = true;
+        config_.anticogging.calib_anticogging = false;
+        return true;
+    }
 }
 
 void Controller::update_filter_gains() {
@@ -129,10 +121,22 @@ float limitVel(const float vel_limit, const float vel_estimate, const float vel_
 }
 }  // namespace
 
-bool Controller::update(float pos_estimate, float vel_estimate, float* current_setpoint_output) {
-    // Only runs if config_.anticogging.calib_anticogging is true; non-blocking
-    anticogging_calibration(axis_->encoder_.pos_estimate_, vel_estimate);
-    float anticogging_pos = axis_->encoder_.pos_estimate_ / axis_->encoder_.getCoggingRatio();
+bool Controller::update(float* current_setpoint_output) {
+    float* pos_estimate_src = (pos_estimate_valid_src_ && *pos_estimate_valid_src_)
+            ? pos_estimate_src_ : nullptr;
+    float* vel_estimate_src = (vel_estimate_valid_src_ && *vel_estimate_valid_src_)
+            ? vel_estimate_src_ : nullptr;
+
+    float anticogging_pos = 0.0f;
+    if (config_.anticogging.calib_anticogging) {
+        if (!axis_->encoder_.pos_estimate_valid_ || !axis_->encoder_.vel_estimate_valid_) {
+            set_error(ERROR_INVALID_ESTIMATE);
+            return false;
+        }
+        // non-blocking
+        anticogging_calibration(axis_->encoder_.pos_estimate_, axis_->encoder_.vel_estimate_);
+        anticogging_pos = axis_->encoder_.pos_estimate_ / axis_->encoder_.getCoggingRatio();
+    }
 
     // Update inputs
     switch (config_.input_mode) {
@@ -219,18 +223,22 @@ bool Controller::update(float pos_estimate, float vel_estimate, float* current_s
     float vel_des = vel_setpoint_;
     if (config_.control_mode >= CTRL_MODE_POSITION_CONTROL) {
         float pos_err;
-        if (config_.setpoints_in_cpr) {
-            // TODO this breaks the semantics that estimates come in on the arguments.
-            // It's probably better to call a get_estimate that will arbitrate (enc vs sensorless) instead.
-            float cpr = (float)(axis_->encoder_.config_.cpr);
+        if (!pos_estimate_src) {
+            set_error(ERROR_INVALID_ESTIMATE);
+            return false;
+        }
+
+        if (pos_wrap_src_) {
+            float cpr = *pos_wrap_src_;
             // Keep pos setpoint from drifting
             pos_setpoint_ = fmodf_pos(pos_setpoint_, cpr);
             // Circular delta
-            pos_err = pos_setpoint_ - axis_->encoder_.pos_cpr_;
+            pos_err = pos_setpoint_ - *pos_estimate_src;
             pos_err = wrap_pm(pos_err, 0.5f * cpr);
         } else {
-            pos_err = pos_setpoint_ - pos_estimate;
+            pos_err = pos_setpoint_ - *pos_estimate_src;
         }
+
         vel_des += config_.pos_gain * pos_err;
         // V-shaped gain shedule based on position error
         float abs_pos_err = std::abs(pos_err);
@@ -248,7 +256,11 @@ bool Controller::update(float pos_estimate, float vel_estimate, float* current_s
 
     // Check for overspeed fault (done in this module (controller) for cohesion with vel_lim)
     if (config_.enable_overspeed_error) {  // 0.0f to disable
-        if (std::abs(vel_estimate) > config_.vel_limit_tolerance * vel_lim) {
+        if (!vel_estimate_src) {
+            set_error(ERROR_INVALID_ESTIMATE);
+            return false;
+        }
+        if (std::abs(*vel_estimate_src) > config_.vel_limit_tolerance * vel_lim) {
             set_error(ERROR_OVERSPEED);
             return false;
         }
@@ -264,17 +276,27 @@ bool Controller::update(float pos_estimate, float vel_estimate, float* current_s
         Iq += config_.anticogging.cogging_map[std::clamp(mod(static_cast<int>(anticogging_pos), 3600), 0, 3600)];
     }
 
-    float v_err = vel_des - vel_estimate;
+    float v_err = 0.0f;
     if (config_.control_mode >= CTRL_MODE_VELOCITY_CONTROL) {
-        Iq += (config_.vel_gain * gain_scheduling_multiplier) * v_err;
-    }
+        if (!vel_estimate_src) {
+            set_error(ERROR_INVALID_ESTIMATE);
+            return false;
+        }
 
-    // Velocity integral action before limiting
-    Iq += vel_integrator_current_;
+        v_err = vel_des - *vel_estimate_src;
+        Iq += (config_.vel_gain * gain_scheduling_multiplier) * v_err;
+
+        // Velocity integral action before limiting
+        Iq += vel_integrator_current_;
+    }
 
     // Velocity limiting in current mode
     if (config_.control_mode < CTRL_MODE_VELOCITY_CONTROL && config_.enable_current_vel_limit) {
-        Iq = limitVel(config_.vel_limit, vel_estimate, config_.vel_gain, Iq);
+        if (!vel_estimate_src) {
+            set_error(ERROR_INVALID_ESTIMATE);
+            return false;
+        }
+        Iq = limitVel(config_.vel_limit, *vel_estimate_src, config_.vel_gain, Iq);
     }
 
     // Current limiting

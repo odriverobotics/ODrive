@@ -85,6 +85,7 @@ extern "C" int load_configuration(void) {
             Axis::load_default_can_id(i, axis_configs[i]);
             min_endstop_configs[i] = Endstop::Config_t();
             max_endstop_configs[i] = Endstop::Config_t();
+            controller_configs[i].load_encoder_axis = i;
         }
     } else {
         user_config_loaded_ = true;
