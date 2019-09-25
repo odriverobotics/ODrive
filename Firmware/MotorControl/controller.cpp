@@ -127,7 +127,8 @@ bool Controller::update(float* current_setpoint_output) {
     float* vel_estimate_src = (vel_estimate_valid_src_ && *vel_estimate_valid_src_)
             ? vel_estimate_src_ : nullptr;
 
-    float anticogging_pos = 0.0f;
+    // Calib_anticogging is only true when calibration is occurring, so we can't block anticogging_pos
+    float anticogging_pos = axis_->encoder_.pos_estimate_ / axis_->encoder_.getCoggingRatio();
     if (config_.anticogging.calib_anticogging) {
         if (!axis_->encoder_.pos_estimate_valid_ || !axis_->encoder_.vel_estimate_valid_) {
             set_error(ERROR_INVALID_ESTIMATE);
@@ -135,7 +136,6 @@ bool Controller::update(float* current_setpoint_output) {
         }
         // non-blocking
         anticogging_calibration(axis_->encoder_.pos_estimate_, axis_->encoder_.vel_estimate_);
-        anticogging_pos = axis_->encoder_.pos_estimate_ / axis_->encoder_.getCoggingRatio();
     }
 
     // Update inputs
