@@ -64,6 +64,7 @@ const uint8_t fw_version_revision = FW_VERSION_REVISION;
 const uint8_t fw_version_unreleased = FW_VERSION_UNRELEASED; // 0 for official releases, 1 otherwise
 
 osThreadId comm_thread;
+const uint32_t stack_size_comm_thread = 2048; // Bytes
 volatile bool endpoint_list_valid = false;
 
 static uint32_t test_property = 0;
@@ -84,7 +85,7 @@ void init_communication(void) {
     printf("hi!\r\n");
 
     // Start command handling thread
-    osThreadDef(task_cmd_parse, communication_task, osPriorityNormal, 0, 8000 /* in 32-bit words */); // TODO: fix stack issues
+    osThreadDef(task_cmd_parse, communication_task, osPriorityNormal, 0, stack_size_comm_thread / sizeof(StackType_t));
     comm_thread = osThreadCreate(osThread(task_cmd_parse), NULL);
 
     while (!endpoint_list_valid)
@@ -135,6 +136,14 @@ static inline auto make_obj_tree() {
             make_protocol_ro_property("min_stack_space_can", &system_stats_.min_stack_space_can),
             make_protocol_ro_property("min_stack_space_usb_irq", &system_stats_.min_stack_space_usb_irq),
             make_protocol_ro_property("min_stack_space_startup", &system_stats_.min_stack_space_startup),
+            make_protocol_ro_property("stack_usage_axis0", &system_stats_.stack_usage_axis0),
+            make_protocol_ro_property("stack_usage_axis1", &system_stats_.stack_usage_axis1),
+            make_protocol_ro_property("stack_usage_comms", &system_stats_.stack_usage_comms),
+            make_protocol_ro_property("stack_usage_usb", &system_stats_.stack_usage_usb),
+            make_protocol_ro_property("stack_usage_uart", &system_stats_.stack_usage_uart),
+            make_protocol_ro_property("stack_usage_usb_irq", &system_stats_.stack_usage_usb_irq),
+            make_protocol_ro_property("stack_usage_startup", &system_stats_.stack_usage_startup),
+            make_protocol_ro_property("stack_usage_can", &system_stats_.stack_usage_can),
             make_protocol_object("usb",
                 make_protocol_ro_property("rx_cnt", &usb_stats_.rx_cnt),
                 make_protocol_ro_property("tx_cnt", &usb_stats_.tx_cnt),

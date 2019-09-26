@@ -78,7 +78,7 @@ bool ODriveCAN::start_can_server() {
     if (status == HAL_OK)
         status = HAL_CAN_ActivateNotification(handle_, CAN_IT_RX_FIFO0_MSG_PENDING);
 
-    osThreadDef(can_server_thread_def, can_server_thread_wrapper, osPriorityNormal, 0, 512);
+    osThreadDef(can_server_thread_def, can_server_thread_wrapper, osPriorityNormal, 0, stack_size_ / sizeof(StackType_t));
     thread_id_ = osThreadCreate(osThread(can_server_thread_def), this);
     thread_id_valid_ = true;
 

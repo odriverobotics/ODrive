@@ -244,6 +244,7 @@ class Axis {
     Endstop& max_endstop_;
 
     osThreadId thread_id_;
+    const uint32_t stack_size_ = 1024; // Bytes
     volatile bool thread_id_valid_ = false;
 
     // variables exposed on protocol

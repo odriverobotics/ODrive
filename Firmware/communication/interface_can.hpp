@@ -54,6 +54,7 @@ class ODriveCAN {
 
     // Thread Relevant Data
     osThreadId thread_id_;
+    const uint32_t stack_size_ = 1024; // Bytes
     Error_t error_ = ERROR_NONE;
 
     volatile bool thread_id_valid_ = false;
