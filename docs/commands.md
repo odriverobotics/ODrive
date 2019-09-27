@@ -61,9 +61,9 @@ Possible values are:
 * `CTRL_MODE_VOLTAGE_CONTROL` - this one is not normally used.
 
 # Control Commands
-* `<axis>.controller.pos_setpoint = <encoder_counts>`
-* `<axis>.controller.vel_setpoint = <encoder_counts/s>`
-* `<axis>.controller.current_setpoint = <current_in_A>`
+* `<axis>.controller.input_pos = <encoder_counts>`
+* `<axis>.controller.input_vel = <encoder_counts/s>`
+* `<axis>.controller.input_current = <current_in_A>`
 
 ## System monitoring commands
 

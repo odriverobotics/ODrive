@@ -35,9 +35,10 @@ Enables/disables detection of the endstop.  If disabled, homing and e-stop canno
 This is the position of the endstops on the relevant axis, in counts.  For example, if you want a position command of `0` to represent a position 100 counts away from the endstop, the offset would be `-100.0` (because the endstop is located at axis position `-100.0`).
 
 ```
-<odrv>.<axis>.max_endstop.config.offset = <int>
 <odrv>.<axis>.min_endstop.config.offset = <int>
 ```
+
+This setting is only used for homing. Only the offset of the `min_endstop` is used.
 
 ### debounce_ms
 The debouncing time for this endstop.  Most switches exhibit some sort of bounce, and this setting will help prevent the switch from triggering repeatedly. It works for both HIGH and LOW transitions, regardless of the setting of `is_active_high`. Debouncing is a good practice for digital inputs, read up on it [here](https://en.wikipedia.org/wiki/Switch). `debounce_ms` has units of miliseconds.
@@ -94,17 +95,16 @@ homing_speed | float | 2000.0f
 
 
 ### Performing the Homing Sequence
-Homing is possible once the ODrive has closed-loop control over the axis.  To trigger homing, we must first be in `AXIS_STATE_CLOSED_LOOP_CONTROL`, then call `<odrv>.<axis>.controller.home_axis()`  This starts the homing sequence, which works as follows:
+Homing is possible once the ODrive has closed-loop control over the axis.  To trigger homing, we must enter `AXIS_STATE_HOMING`. This starts the homing sequence, which works as follows:
 
 1. The axis moves towards the `min_endstop` at `homing_speed`
 2. The axis presses the `min_endstop`
 3. The axis moves away from the `min_endstop` to the home position
 
 ### Homing at Startup
-It is possible to configure the odrive to enter homing immediately after startup. For safety reasons, we require the user to specifically enable closed loop control at startup, even if homing is requested.  Thus, to enable homing at startup, the following must be configured:
+It is possible to configure the odrive to enter homing immediately after startup. To enable homing at startup, the following must be configured:
 
 ```
-<odrv>.<axis>.config.startup_closed_loop_control = True
 <odrv>.<axis>.config.startup_homing = True
 ```
 

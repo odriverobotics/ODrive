@@ -169,3 +169,7 @@ Pinout:
 * GPIO 1: Tx (connect to Rx of other device)
 * GPIO 2: Rx (connect to Tx of other device)
 * GND: you must connect the grounds of the devices together. Use any GND pin on J3 of the ODrive.
+
+## CAN Simple Protocol
+
+See [CAN Protocol](can-protocol).

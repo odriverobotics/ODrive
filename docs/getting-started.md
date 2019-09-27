@@ -343,8 +343,7 @@ You can now control the velocity with `axis.controller.input_vel = 5000` [count/
 Set `axis.controller.config.control_mode = CTRL_MODE_CURRENT_CONTROL`.<br>
 You can now control the current with `axis.controller.current_setpoint = 3` [A].
 
-*Note: There is no velocity limiting in current control mode. Make sure that you don't overrev the motor, or exceed the max speed for your encoder.*
-
+Note: If you exceed `vel_limit` in current control mode, the current is reduced. To disable this, set `axis.controller.enable_current_vel_limit = False`.
 
 ## Watchdog Timer
 Each axis has a configurable watchdog timer that can stop the motors if the
