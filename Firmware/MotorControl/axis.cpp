@@ -348,8 +348,10 @@ bool Axis::run_homing() {
     Controller::ControlMode_t stored_control_mode = controller_.config_.control_mode;
     Controller::InputMode_t stored_input_mode = controller_.config_.input_mode;
 
+    // TODO: theoretically this check should be inside the update loop,
+    // otherwise someone could disable the endstop while homing is in progress.
     if (!min_endstop_.config_.enabled) {
-        return error_ |= ERROR_MIN_ENDSTOP_PRESSED, false; // TODO: define new error code
+        return error_ |= ERROR_HOMING_WITHOUT_ENDSTOP, false;
     }
 
     controller_.config_.control_mode = Controller::CTRL_MODE_VELOCITY_CONTROL;

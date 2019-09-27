@@ -24,7 +24,7 @@ bool user_config_loaded_;
 SystemStats_t system_stats_ = { 0 };
 
 Axis *axes[AXIS_COUNT];
-ODriveCAN *odCAN;
+ODriveCAN *odCAN = nullptr;
 
 typedef Config<
     BoardConfig_t,
@@ -132,7 +132,7 @@ void vApplicationIdleHook(void) {
         system_stats_.min_stack_space_uart = uxTaskGetStackHighWaterMark(uart_thread) * sizeof(StackType_t);
         system_stats_.min_stack_space_usb_irq = uxTaskGetStackHighWaterMark(usb_irq_thread) * sizeof(StackType_t);
         system_stats_.min_stack_space_startup = uxTaskGetStackHighWaterMark(defaultTaskHandle) * sizeof(StackType_t);
-        system_stats_.min_stack_space_can = uxTaskGetStackHighWaterMark(odCAN->thread_id_) * sizeof(StackType_t);
+        system_stats_.min_stack_space_can = odCAN ? uxTaskGetStackHighWaterMark(odCAN->thread_id_) * sizeof(StackType_t) : 0;
     }
 }
 }

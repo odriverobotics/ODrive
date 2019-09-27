@@ -26,6 +26,7 @@ public:
         ERROR_ESTOP_REQUESTED = 0x4000,
         ERROR_DC_BUS_UNDER_CURRENT = 0x8000, // too much current pushed into the power supply
         ERROR_DC_BUS_OVER_CURRENT = 0x10000, // too much current pulled out of the power supply
+        ERROR_HOMING_WITHOUT_ENDSTOP = 0x20000, // the min endstop was not enabled during homing
     };
 
     enum State_t {
@@ -83,10 +84,6 @@ public:
         LockinConfig_t lockin;
         uint8_t can_node_id = 0; // Both axes will have the same id to start
         uint32_t can_heartbeat_rate_ms = 100;
-
-        bool use_load_encoder         = false;
-        uint8_t load_encoder_axis     = -1;
-        float load_encoder_ratio      = 1.0f;
     };
 
     struct Homing_t {

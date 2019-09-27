@@ -113,13 +113,11 @@ void Controller::update_filter_gains() {
     input_filter_kp_ = 0.25f * (input_filter_ki_ * input_filter_ki_); // Critically damped
 }
 
-namespace {
-float limitVel(const float vel_limit, const float vel_estimate, const float vel_gain, const float Iq) {
+static float limitVel(const float vel_limit, const float vel_estimate, const float vel_gain, const float Iq) {
     float Imax = (vel_limit - vel_estimate) * vel_gain;
     float Imin = (-vel_limit - vel_estimate) * vel_gain;
     return std::clamp(Iq, Imin, Imax);
 }
-}  // namespace
 
 bool Controller::update(float* current_setpoint_output) {
     float* pos_estimate_src = (pos_estimate_valid_src_ && *pos_estimate_valid_src_)
@@ -169,7 +167,7 @@ bool Controller::update(float* current_setpoint_output) {
             float delta_vel = input_vel_ - vel_setpoint_; // Vel error
             float accel = input_filter_kp_*delta_pos + input_filter_ki_*delta_vel; // Feedback
             current_setpoint_ = accel * config_.inertia; // Accel
-            vel_setpoint_ += current_meas_period * accel; // delta vel
+            vel_setpoint_ += std::clamp(current_meas_period * accel, 2.0f * std::abs(delta_vel), -2.0f * std::abs(delta_vel)); // delta vel
             pos_setpoint_ += current_meas_period * vel_setpoint_; // Delta pos
         } break;
         case INPUT_MODE_MIRROR: {

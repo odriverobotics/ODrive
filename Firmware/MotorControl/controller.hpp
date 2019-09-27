@@ -72,7 +72,6 @@ public:
         uint8_t axis_to_mirror        = -1;
         float mirror_ratio            = 1.0f;
         uint8_t load_encoder_axis     = -1; // default depends on Axis number and is set in load_configuration()
-        float load_encoder_ratio      = 1.0f;
     };
 
     explicit Controller(Config_t& config);
@@ -162,7 +161,6 @@ public:
                                  make_protocol_property("inertia", &config_.inertia),
                                  make_protocol_property("axis_to_mirror", &config_.axis_to_mirror),
                                  make_protocol_property("mirror_ratio", &config_.mirror_ratio),
-                                 make_protocol_property("load_encoder_ratio", &config_.load_encoder_ratio),
                                  make_protocol_property("load_encoder_axis", &config_.load_encoder_axis),
                                  make_protocol_property("input_filter_bandwidth", &config_.input_filter_bandwidth,
                                                         [](void* ctx) { static_cast<Controller*>(ctx)->update_filter_gains(); }, this),
