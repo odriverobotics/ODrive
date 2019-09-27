@@ -174,10 +174,11 @@ bool Axis::do_checks() {
         }
     }
 
-    if(board_config.power_supply_wattage > 0.0f && 
-            (Ibus_sum * vbus_voltage) > board_config.power_supply_wattage) 
-    {
-        error_ |= ERROR_DC_BUS_OVER_POWER;
+    if (Ibus_sum > board_config.power_supply_max_current) {
+        error_ |= ERROR_DC_BUS_OVER_CURRENT;
+    }
+    if (Ibus_sum < board_config.power_supply_min_current) {
+        error_ |= ERROR_DC_BUS_UNDER_CURRENT;
     }
 
     // Sub-components should use set_error which will propegate to this error_
