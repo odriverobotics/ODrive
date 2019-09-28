@@ -8,10 +8,11 @@ from engineering_notation import EngNumber
 filename = "oscilloscope.csv"
 
 PLOT_INITAL = True
-DO_FITTING = True
+DO_FITTING = False
 PLOT_PROGRESS = False
 REPORT_PROGRESS = True
 assumed_rotor_resistance = 1
+pole_pairs = 2
 
 class ACMotor():
     """
@@ -119,10 +120,12 @@ class ACMotor():
         print('Derived parameters:')
         mutual_inductance = motor.get_mutual_inductance()
         coupling_factor = mutual_inductance / self.params[ACMotor.pl['rotor_inductance']]
-        torque_constant = coupling_factor * mutual_inductance
+        torque_constant = pole_pairs * coupling_factor * mutual_inductance
+        motor_constant = torque_constant / (3.0 * self.params[ACMotor.pl['stator_resistance']])
         print('mutual_inductance = {}H'.format(EngNumber(mutual_inductance)))
         print('coupling_factor = {}'.format(EngNumber(coupling_factor)))
         print('torque_constant = {}Nm/A^2'.format(EngNumber(torque_constant)))
+        print('motor_constant = {}Nm/W'.format(EngNumber(motor_constant)))
 
     def print_run_info(self, y):
         final_stator_current_d = np.real(y[0,-1])
@@ -131,7 +134,7 @@ class ACMotor():
 
         mutual_inductance = self.get_mutual_inductance()
         coupling_factor = mutual_inductance / self.params[ACMotor.pl['rotor_inductance']]
-        final_torque_per_q_amp = coupling_factor * final_rotor_flux_d
+        final_torque_per_q_amp = pole_pairs * coupling_factor * final_rotor_flux_d
 
         print()
         print('Final values:')
