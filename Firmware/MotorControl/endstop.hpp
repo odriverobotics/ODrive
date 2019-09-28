@@ -28,13 +28,13 @@ class Endstop {
         return make_protocol_member_list(
             make_protocol_ro_property("endstop_state", &endstop_state_),
             make_protocol_object("config",
-                                 make_protocol_property("gpio_num", &config_.gpio_num,
-                                                        [](void* ctx) { static_cast<Endstop*>(ctx)->update_config(); }, this),
-                                 make_protocol_property("enabled", &config_.enabled,
-                                                        [](void* ctx) { static_cast<Endstop*>(ctx)->update_config(); }, this),
-                                 make_protocol_property("offset", &config_.offset),
-                                 make_protocol_property("is_active_high", &config_.is_active_high),
-                                 make_protocol_property("debounce_ms", &config_.debounce_ms)));
+                make_protocol_property("gpio_num", &config_.gpio_num,
+                                    [](void* ctx) { static_cast<Endstop*>(ctx)->update_config(); }, this),
+                make_protocol_property("enabled", &config_.enabled,
+                                    [](void* ctx) { static_cast<Endstop*>(ctx)->update_config(); }, this),
+                make_protocol_property("offset", &config_.offset),
+                make_protocol_property("is_active_high", &config_.is_active_high),
+                make_protocol_property("debounce_ms", &config_.debounce_ms)));
     }
 
    private:

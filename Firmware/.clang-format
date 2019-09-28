@@ -1,6 +1,5 @@
 ﻿---
 BasedOnStyle: Google
-AlignConsecutiveAssignments: 'true'
 AllowShortCaseLabelsOnASingleLine: 'true'
 IndentWidth: '4'
 
