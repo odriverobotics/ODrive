@@ -94,7 +94,7 @@ constexpr size_t AXIS_COUNT = 2;
 extern Axis *axes[AXIS_COUNT];
 
 // if you use the oscilloscope feature you can bump up this value
-#define OSCILLOSCOPE_SIZE 128
+#define OSCILLOSCOPE_SIZE 4096
 extern float oscilloscope[OSCILLOSCOPE_SIZE];
 extern size_t oscilloscope_pos;
 
