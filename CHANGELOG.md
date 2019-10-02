@@ -1,6 +1,11 @@
 # Unreleased Features
 Please add a note of your changes below this heading if you make a Pull Request.
 
+### Added
+* AC Induction Motor support.
+  * Tracking of rotor flux through rotor time constant
+  * Automatic d axis current for Maximum Torque Per Amp (MTPA)
+
 # Releases
 ## [0.4.11] - 2019-07-25
 ### Added
