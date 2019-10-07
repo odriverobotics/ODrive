@@ -46,40 +46,13 @@ public:
     // Trajectory-Planned control
     void move_to_pos(float goal_point);
     void move_incremental(float displacement, bool from_goal_point);
-    
-    // TODO: make this more similar to other calibration loops
-    void start_anticogging_calibration();
-    bool anticogging_calibration(float pos_estimate, float vel_estimate);
 
     bool update(float pos_estimate, float vel_estimate, float* current_setpoint);
 
     Config_t& config_;
     Axis* axis_ = nullptr; // set by Axis constructor
-
-    // TODO: anticogging overhaul:
-    // - expose selected (all?) variables on protocol
-    // - make calibration user experience similar to motor & encoder calibration
-    // - use python tools to Fourier transform and write back the smoothed map or Fourier coefficients
-    // - make the calibration persistent
-
-    typedef struct {
-        int index;
-        float *cogging_map;
-        bool use_anticogging;
-        bool calib_anticogging;
-        float calib_pos_threshold;
-        float calib_vel_threshold;
-    } Anticogging_t;
-    Anticogging_t anticogging_ = {
-        .index = 0,
-        .cogging_map = nullptr,
-        .use_anticogging = false,
-        .calib_anticogging = false,
-        .calib_pos_threshold = 1.0f,
-        .calib_vel_threshold = 1.0f,
-    };
-
     Error_t error_ = ERROR_NONE;
+
     // variables exposed on protocol
     float pos_setpoint_ = 0.0f;
     float vel_setpoint_ = 0.0f;
@@ -89,7 +62,6 @@ public:
     float vel_ramp_target_ = 0.0f;
 
     uint32_t traj_start_loop_count_ = 0;
-
     float goal_point_ = 0.0f;
 
     // Communication protocol definitions
@@ -119,8 +91,7 @@ public:
             make_protocol_function("set_current_setpoint", *this, &Controller::set_current_setpoint,
                                    "current_setpoint"),
             make_protocol_function("move_to_pos", *this, &Controller::move_to_pos, "pos_setpoint"),
-            make_protocol_function("move_incremental", *this, &Controller::move_incremental, "displacement", "from_goal_point"),
-            make_protocol_function("start_anticogging_calibration", *this, &Controller::start_anticogging_calibration)
+            make_protocol_function("move_incremental", *this, &Controller::move_incremental, "displacement", "from_goal_point")
         );
     }
 };

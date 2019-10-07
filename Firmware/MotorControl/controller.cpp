@@ -67,45 +67,7 @@ void Controller::move_incremental(float displacement, bool from_goal_point = tru
     }
 }
 
-void Controller::start_anticogging_calibration() {
-    // Ensure the cogging map was correctly allocated earlier and that the motor is capable of calibrating
-    if (anticogging_.cogging_map != NULL && axis_->error_ == Axis::ERROR_NONE) {
-        anticogging_.calib_anticogging = true;
-    }
-}
-
-/*
- * This anti-cogging implementation iterates through each encoder position,
- * waits for zero velocity & position error,
- * then samples the current required to maintain that position.
- * 
- * This holding current is added as a feedforward term in the control loop.
- */
-bool Controller::anticogging_calibration(float pos_estimate, float vel_estimate) {
-    if (anticogging_.calib_anticogging && anticogging_.cogging_map != NULL) {
-        float pos_err = anticogging_.index - pos_estimate;
-        if (fabsf(pos_err) <= anticogging_.calib_pos_threshold &&
-            fabsf(vel_estimate) < anticogging_.calib_vel_threshold) {
-            anticogging_.cogging_map[anticogging_.index++] = vel_integrator_current_;
-        }
-        if (anticogging_.index < axis_->encoder_.config_.cpr) { // TODO: remove the dependency on encoder CPR
-            set_pos_setpoint(anticogging_.index, 0.0f, 0.0f);
-            return false;
-        } else {
-            anticogging_.index = 0;
-            set_pos_setpoint(0.0f, 0.0f, 0.0f);  // Send the motor home
-            anticogging_.use_anticogging = true;  // We're good to go, enable anti-cogging
-            anticogging_.calib_anticogging = false;
-            return true;
-        }
-    }
-    return false;
-}
-
 bool Controller::update(float pos_estimate, float vel_estimate, float* current_setpoint_output) {
-    // Only runs if anticogging_.calib_anticogging is true; non-blocking
-    anticogging_calibration(pos_estimate, vel_estimate);
-    float anticogging_pos = pos_estimate;
 
     // Trajectory control
     if (config_.control_mode == CTRL_MODE_TRAJECTORY_CONTROL) {
@@ -124,7 +86,6 @@ bool Controller::update(float pos_estimate, float vel_estimate, float* current_s
             vel_setpoint_ = traj_step.Yd;
             current_setpoint_ = traj_step.Ydd * axis_->trap_.config_.A_per_css;
         }
-        anticogging_pos = pos_setpoint_; // FF the position setpoint instead of the pos_estimate
     }
 
     // Ramp rate limited velocity setpoint
@@ -194,9 +155,9 @@ bool Controller::update(float pos_estimate, float vel_estimate, float* current_s
     // Anti-cogging is enabled after calibration
     // We get the current position and apply a current feed-forward
     // ensuring that we handle negative encoder positions properly (-1 == motor->encoder.encoder_cpr - 1)
-    if (anticogging_.use_anticogging) {
-        Iq += anticogging_.cogging_map[mod(static_cast<int>(anticogging_pos), axis_->encoder_.config_.cpr)];
-    }
+    // if (anticogging_.use_anticogging) {
+    //     Iq += anticogging_.cogging_map[mod(static_cast<int>(anticogging_pos), axis_->encoder_.config_.cpr)];
+    // }
 
     float v_err = vel_des - vel_estimate;
     if (config_.control_mode >= CTRL_MODE_VELOCITY_CONTROL) {

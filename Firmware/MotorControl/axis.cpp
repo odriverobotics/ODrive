@@ -318,17 +318,6 @@ bool Axis::run_idle_loop() {
 // Infinite loop that does calibration and enters main control loop as appropriate
 void Axis::run_state_machine_loop() {
 
-    // Allocate the map for anti-cogging algorithm and initialize all values to 0.0f
-    // TODO: Move this somewhere else
-    // TODO: respect changes of CPR
-    int encoder_cpr = encoder_.config_.cpr;
-    controller_.anticogging_.cogging_map = (float*)malloc(encoder_cpr * sizeof(float));
-    if (controller_.anticogging_.cogging_map != NULL) {
-        for (int i = 0; i < encoder_cpr; i++) {
-            controller_.anticogging_.cogging_map[i] = 0.0f;
-        }
-    }
-
     // arm!
     motor_.arm();
     
