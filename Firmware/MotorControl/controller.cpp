@@ -128,7 +128,7 @@ bool Controller::update(float pos_estimate, float vel_estimate, float* current_s
     }
 
     // Ramp rate limited velocity setpoint
-    if (config_.control_mode == CTRL_MODE_VELOCITY_CONTROL && vel_ramp_enable_) {
+    if (config_.control_mode == CTRL_MODE_VELOCITY_CONTROL && config_.vel_ramp_enable) {
         float max_step_size = current_meas_period * config_.vel_ramp_rate;
         float full_step = vel_ramp_target_ - vel_setpoint_;
         float step;

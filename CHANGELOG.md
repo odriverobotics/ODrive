@@ -6,6 +6,9 @@ Please add a note of your changes below this heading if you make a Pull Request.
   * Tracking of rotor flux through rotor time constant
   * Automatic d axis current for Maximum Torque Per Amp (MTPA)
 
+### Changed
+* Moved `controller.vel_ramp_enable` into `controller.config`.
+
 # Releases
 ## [0.4.11] - 2019-07-25
 ### Added
