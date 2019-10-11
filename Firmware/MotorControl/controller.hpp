@@ -27,12 +27,16 @@ public:
         float pos_gain = 20.0f;  // [(counts/s) / counts]
         float vel_gain = 5.0f / 10000.0f;  // [A/(counts/s)]
         // float vel_gain = 5.0f / 200.0f, // [A/(rad/s)] <sensorless example>
-        float vel_integrator_gain = 10.0f / 10000.0f;  // [A/(counts/s * s)]
+        float vel_integrator_gain = 10.0f / 10000.0f;  // [(A/s) / (counts/s)]
         float vel_limit = 20000.0f;        // [counts/s]
         float vel_limit_tolerance = 1.2f;  // ratio to vel_lim. 0.0f to disable
         bool vel_ramp_enable = false;
         float vel_ramp_rate = 10000.0f;  // [(counts/s) / s]
         bool setpoints_in_cpr = false;
+        float cogmap_integrator_gain = 0.0f; // [(A/s) / (counts/s)]
+        float cogmap[1024] = {0}; // [A]
+        static constexpr size_t cogmap_size = sizeof(cogmap)/sizeof(cogmap[0]);
+        float cogmap_max_current = 5.0f; // [A]
     };
 
     explicit Controller(Config_t& config);
@@ -58,6 +62,8 @@ public:
     float vel_setpoint_ = 0.0f;
     // float vel_setpoint = 800.0f; <sensorless example>
     float vel_integrator_current_ = 0.0f;  // [A]
+    float cogmap_current_ = 0.0f; // [A] for reporting only
+    float cogmap_correction_pwr_ = 0.0f; // [(dA/dt)^2] for reporting only
     float current_setpoint_ = 0.0f;        // [A]
     float vel_ramp_target_ = 0.0f;
 
@@ -71,6 +77,8 @@ public:
             make_protocol_property("pos_setpoint", &pos_setpoint_),
             make_protocol_property("vel_setpoint", &vel_setpoint_),
             make_protocol_property("vel_integrator_current", &vel_integrator_current_),
+            make_protocol_ro_property("cogmap_current", &cogmap_current_),
+            make_protocol_ro_property("cogmap_correction_pwr", &cogmap_correction_pwr_),
             make_protocol_property("current_setpoint", &current_setpoint_),
             make_protocol_property("vel_ramp_target", &vel_ramp_target_),
             make_protocol_object("config",
@@ -82,7 +90,9 @@ public:
                 make_protocol_property("vel_limit_tolerance", &config_.vel_limit_tolerance),
                 make_protocol_property("vel_ramp_enable", &config_.vel_ramp_enable),
                 make_protocol_property("vel_ramp_rate", &config_.vel_ramp_rate),
-                make_protocol_property("setpoints_in_cpr", &config_.setpoints_in_cpr)
+                make_protocol_property("setpoints_in_cpr", &config_.setpoints_in_cpr),
+                make_protocol_property("cogmap_integrator_gain", &config_.cogmap_integrator_gain),
+                make_protocol_property("cogmap_max_current", &config_.cogmap_max_current)
             ),
             make_protocol_function("set_pos_setpoint", *this, &Controller::set_pos_setpoint,
                 "pos_setpoint", "vel_feed_forward", "current_feed_forward"),

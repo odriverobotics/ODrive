@@ -92,12 +92,7 @@ bool Controller::update(float pos_estimate, float vel_estimate, float* current_s
     if (config_.control_mode == CTRL_MODE_VELOCITY_CONTROL && config_.vel_ramp_enable) {
         float max_step_size = current_meas_period * config_.vel_ramp_rate;
         float full_step = vel_ramp_target_ - vel_setpoint_;
-        float step;
-        if (fabsf(full_step) > max_step_size) {
-            step = std::copysignf(max_step_size, full_step);
-        } else {
-            step = full_step;
-        }
+        float step = clamp_bidirf(full_step, max_step_size);
         vel_setpoint_ += step;
     }
 
@@ -149,19 +144,40 @@ bool Controller::update(float pos_estimate, float vel_estimate, float* current_s
         // (or again just do control in torque units)
     }
 
-    // Velocity control
+    // Current feed forward path
     float Iq = current_setpoint_;
 
-    // Anti-cogging is enabled after calibration
-    // We get the current position and apply a current feed-forward
-    // ensuring that we handle negative encoder positions properly (-1 == motor->encoder.encoder_cpr - 1)
-    // if (anticogging_.use_anticogging) {
-    //     Iq += anticogging_.cogging_map[mod(static_cast<int>(anticogging_pos), axis_->encoder_.config_.cpr)];
-    // }
+    // Anticogging
+    // Hard counts version
+    // 0 to 1 maps to full rotation
+    float pos_ratio = (float)axis_->encoder_.count_in_cpr_ / (float)axis_->encoder_.config_.cpr;
+    // Interpolated/filtered version
+    // 0 to 1 maps to full rotation
+    // float pos_ratio = axis_->encoder_.pos_cpr_ / (float)axis_->encoder_.config_.cpr
+    float idxf = pos_ratio * config_.cogmap_size;
+    size_t idx = (size_t)idxf;
+    size_t idx1 = (idx + 1) % config_.cogmap_size;
+    float frac = idxf - (float)idx;
+    // linear interpolation
+    cogmap_current_ = (1.0f - frac) * config_.cogmap[idx] + frac * config_.cogmap[idx1];
+    Iq += cogmap_current_;
 
+
+    // Velocity control
     float v_err = vel_des - vel_estimate;
     if (config_.control_mode >= CTRL_MODE_VELOCITY_CONTROL) {
+        // Proportional feedback
         Iq += vel_gain * v_err;
+
+        // Anticogging integral and linear broadcast
+        float cogmap_corr_rate = config_.cogmap_integrator_gain * v_err;
+        float cogmap_correction =  cogmap_corr_rate * current_meas_period;
+        config_.cogmap[idx] += (1.0f - frac) * cogmap_correction;
+        config_.cogmap[idx1] += frac * cogmap_correction;
+        config_.cogmap[idx] = clamp_bidirf(config_.cogmap[idx], config_.cogmap_max_current);
+        config_.cogmap[idx1] = clamp_bidirf(config_.cogmap[idx1], config_.cogmap_max_current);
+        // RMS correction for reporting
+        cogmap_correction_pwr_ += 0.001f * (cogmap_corr_rate*cogmap_corr_rate - cogmap_correction_pwr_);
     }
 
     // Velocity integral action before limiting
