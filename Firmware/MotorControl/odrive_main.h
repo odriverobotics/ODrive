@@ -113,10 +113,10 @@ inline ENUMTYPE operator ~ (ENUMTYPE a) { return static_cast<ENUMTYPE>(~static_c
 // ODrive specific includes
 #include <utils.h>
 #include <low_level.h>
+#include <motor.hpp>
 #include <encoder.hpp>
 #include <sensorless_estimator.hpp>
 #include <controller.hpp>
-#include <motor.hpp>
 #include <trapTraj.hpp>
 #include <axis.hpp>
 #include <communication/communication.h>

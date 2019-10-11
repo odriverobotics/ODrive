@@ -162,7 +162,7 @@ int odrive_main(void) {
     // Construct all objects.
     for (size_t i = 0; i < AXIS_COUNT; ++i) {
         Encoder *encoder = new Encoder(hw_configs[i].encoder_config,
-                                       encoder_configs[i]);
+                                       encoder_configs[i], motor_configs[i]);
         SensorlessEstimator *sensorless_estimator = new SensorlessEstimator(sensorless_configs[i]);
         Controller *controller = new Controller(controller_configs[i]);
         Motor *motor = new Motor(hw_configs[i].motor_config,
