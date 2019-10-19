@@ -97,9 +97,22 @@ homing_speed | float | 2000.0f
 ### Performing the Homing Sequence
 Homing is possible once the ODrive has closed-loop control over the axis.  To trigger homing, we must enter `AXIS_STATE_HOMING`. This starts the homing sequence, which works as follows:
 
-1. The axis moves towards the `min_endstop` at `homing_speed`
-2. The axis presses the `min_endstop`
-3. The axis moves away from the `min_endstop` to the home position
+1. The axis switches to `INPUT_MODE_VEL_RAMP`
+2. The axis ramps up to `homing_speed` in the direction of `min_endstop`
+3. The axis presses the `min_endstop`
+4. The axis switches to `INPUT_MODE_TRAP_TRAJ`
+5. The axis moves to the home position in a controlled manner
+
+It requires quite a few settings in addition to the endstop settings:
+
+```
+<odrv>.<axis>.controller.config.vel_ramp_rate
+<odrv>.<axis>.trap_traj.config.vel_limit
+<odrv>.<axis>.trap_traj.config.accel_limit
+<odrv>.<axis>.trap_traj.config.decel_limit
+```
+
+We realize this is a little excessive and we will work towards minimizing the setup, but this works well for smooth and reliable behaviour for now.
 
 ### Homing at Startup
 It is possible to configure the odrive to enter homing immediately after startup. To enable homing at startup, the following must be configured:
