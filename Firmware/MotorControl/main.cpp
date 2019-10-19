@@ -172,16 +172,28 @@ int odrive_main(void) {
         axes[i] = new Axis(i, hw_configs[i].axis_config, axis_configs[i],
                 *encoder, *sensorless_estimator, *controller, *motor, *trap);
     }
-    
+
     // Start ADC for temperature measurements and user measurements
     start_general_purpose_adc();
 
-    // TODO: make dynamically reconfigurable
 #if HW_VERSION_MAJOR == 3 && HW_VERSION_MINOR >= 3
     if (board_config.enable_uart) {
-        SetGPIO12toUART();
+#if HW_VERSION_MAJOR == 3 && HW_VERSION_MINOR >= 5
+        if (board_config.move_uart_to_gpio_3_and_4)
+        {
+            MX_USART2_UART_Init();
+        }
+        else
+#endif
+            SetGPIO12toUART();
     }
 #endif
+
+#if HW_VERSION_MAJOR == 3 && HW_VERSION_MINOR >= 5
+    if (not board_config.enable_uart or not board_config.move_uart_to_gpio_3_and_4)
+#endif
+        MX_TIM5_Init();
+
     //osDelay(100);
     // Init communications (this requires the axis objects to be constructed)
     init_communication();

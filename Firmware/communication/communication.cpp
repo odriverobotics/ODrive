@@ -154,6 +154,9 @@ static inline auto make_obj_tree() {
             make_protocol_property("brake_resistance", &board_config.brake_resistance),
             // TODO: changing this currently requires a reboot - fix this
             make_protocol_property("enable_uart", &board_config.enable_uart),
+#if HW_VERSION_MAJOR == 3 && HW_VERSION_MINOR >= 5
+            make_protocol_property("move_uart_to_gpio_3_and_4", &board_config.move_uart_to_gpio_3_and_4), // requires a reboot
+#endif
             make_protocol_property("enable_i2c_instead_of_can" , &board_config.enable_i2c_instead_of_can), // requires a reboot
             make_protocol_property("enable_ascii_protocol_on_usb", &board_config.enable_ascii_protocol_on_usb),
             make_protocol_property("dc_bus_undervoltage_trip_level", &board_config.dc_bus_undervoltage_trip_level),
@@ -199,8 +202,16 @@ void communication_task(void * ctx) {
 
     // Allow main init to continue
     endpoint_list_valid = true;
-    
-    start_uart_server();
+
+#if HW_VERSION_MAJOR == 3 && HW_VERSION_MINOR >= 5
+    if (board_config.enable_uart and board_config.move_uart_to_gpio_3_and_4)
+    {
+        start_uart_server(&huart2);
+    }
+    else
+#endif
+        start_uart_server(&huart4);
+
     start_usb_server();
     if (board_config.enable_i2c_instead_of_can) {
         start_i2c_server();
@@ -224,7 +235,7 @@ int _write(int file, const char* data, int len) {
     usb_stream_output_ptr->process_bytes((const uint8_t *)data, len, nullptr);
 #endif
 #ifdef UART_PROTOCOL_STDOUT
-    uart4_stream_output_ptr->process_bytes((const uint8_t *)data, len, nullptr);
+    uart_stream_output_ptr->process_bytes((const uint8_t *)data, len, nullptr);
 #endif
     return len;
 }

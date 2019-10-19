@@ -3,16 +3,17 @@
 
 #ifdef __cplusplus
 #include "fibre/protocol.hpp"
-extern StreamSink* uart4_stream_output_ptr;
+extern StreamSink* uart_stream_output_ptr;
 
 extern "C" {
 #endif
 
 #include <cmsis_os.h>
+#include <usart.h>
 
 extern osThreadId uart_thread;
 
-void start_uart_server(void);
+void start_uart_server(UART_HandleTypeDef*);
 
 #ifdef __cplusplus
 }

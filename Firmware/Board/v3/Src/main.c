@@ -189,7 +189,8 @@ int main(void)
   MX_ADC3_Init();
   MX_TIM2_Init();
   MX_UART4_Init();
-  MX_TIM5_Init();
+  // MX_TIM5_Init(); // TIM5 or USART2 decided in main.cpp instead
+  // MX_USART2_UART_Init();
   MX_TIM13_Init();
   /* USER CODE BEGIN 2 */
 

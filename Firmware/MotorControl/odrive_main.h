@@ -19,6 +19,7 @@ extern "C" {
 #include <i2c.h>
 #define ARM_MATH_CM4 // TODO: might change in future board versions
 #include <arm_math.h>
+#include <usart.h>
 
 // OS includes
 #include <cmsis_os.h>
@@ -69,6 +70,9 @@ struct PWMMapping_t {
 // @brief general user configurable board configuration
 struct BoardConfig_t {
     bool enable_uart = true;
+#if HW_VERSION_MAJOR == 3 && HW_VERSION_MINOR >= 5
+    bool move_uart_to_gpio_3_and_4 = false;
+#endif
     bool enable_i2c_instead_of_can = false;
     bool enable_ascii_protocol_on_usb = true;
 #if HW_VERSION_MAJOR == 3 && HW_VERSION_MINOR >= 5 && HW_VERSION_VOLTAGE >= 48
