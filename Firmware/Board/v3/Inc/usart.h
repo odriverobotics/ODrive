@@ -62,6 +62,7 @@
 /* USER CODE END Includes */
 
 extern UART_HandleTypeDef huart4;
+extern UART_HandleTypeDef huart2;
 
 /* USER CODE BEGIN Private defines */
 
@@ -70,6 +71,7 @@ extern UART_HandleTypeDef huart4;
 extern void _Error_Handler(char *, int);
 
 void MX_UART4_Init(void);
+void MX_USART2_UART_Init(void);
 
 /* USER CODE BEGIN Prototypes */
 
