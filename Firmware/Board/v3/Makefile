@@ -9,7 +9,6 @@
 C_SOURCES = \
 Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_cortex.c \
 Middlewares/ST/STM32_USB_Device_Library/Core/Src/usbd_ioreq.c \
-Src/stm32f4xx_hal_timebase_TIM.c \
 Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_can.c \
 Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_pwr_ex.c \
 Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_ll_usb.c \
@@ -61,7 +60,11 @@ Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_gpio.c \
 Middlewares/Third_Party/FreeRTOS/Source/event_groups.c \
 Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_i2c.c \
 Src/i2c.c \
-Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_i2c_ex.c
+Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_i2c_ex.c \
+Src/sys.c \
+Src/stm32f4xx_hal_timebase_tim.c \
+Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_exti.c \
+Middlewares/Third_Party/FreeRTOS/Source/stream_buffer.c
 
 ASM_SOURCES = \
   startup_stm32f405xx.s

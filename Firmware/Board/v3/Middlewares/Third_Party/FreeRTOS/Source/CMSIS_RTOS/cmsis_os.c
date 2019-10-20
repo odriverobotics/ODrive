@@ -58,7 +58,7 @@
   * @file    cmsis_os.c
   * @author  MCD Application Team
   * @date    13-July-2017
-  * @brief   CMSIS-RTOS API implementation for FreeRTOS V9.0.0
+  * @brief   CMSIS-RTOS API implementation for FreeRTOS V10.0.1
   ******************************************************************************
   * @attention
   *
