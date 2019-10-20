@@ -166,7 +166,7 @@ How to use these is shown in the following example.
 * We do all changes to the STM32CubeMX config and regenerate the code on top of `STM32CubeMX-start`.
   * `git checkout STM32CubeMX-start`
 * Run stm32cubeMX and load the `Firmware/Board/v3/Odrive.ioc` project file.
-  * If the tool asks if you wish to migrate to a new version, choose to migrate.
+  * If the tool asks if you wish to migrate to a new version, choose to download the old firmware package (unless you want to use the latest libraries)
 * Without changing any settings, press `Project -> Generate code`.
 * You may need to let it download some drivers and such.
 * STM32CubeMX may now have a newer version of some of the libraries, so there may be changes to the generated code even though we didn't change any settings. We need to check that everything is still working, and hence check in the changes:
