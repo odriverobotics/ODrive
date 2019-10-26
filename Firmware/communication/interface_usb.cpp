@@ -14,6 +14,7 @@
 #include <odrive_main.h>
 
 osThreadId usb_thread;
+const uint32_t stack_size_usb_thread = 2048; // Bytes
 USBStats_t usb_stats_ = {0};
 
 class USBSender : public PacketSink {
@@ -177,6 +178,6 @@ void usb_rx_process_packet(uint8_t *buf, uint32_t len, uint8_t endpoint_pair) {
 
 void start_usb_server() {
     // Start USB communication thread
-    osThreadDef(usb_server_thread_def, usb_server_thread, osPriorityNormal, 0, 1024);
+    osThreadDef(usb_server_thread_def, usb_server_thread, osPriorityNormal, 0, stack_size_usb_thread / sizeof(StackType_t));
     usb_thread = osThreadCreate(osThread(usb_server_thread_def), NULL);
 }

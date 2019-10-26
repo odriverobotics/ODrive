@@ -89,12 +89,14 @@ osSemaphoreId sem_usb_tx;
 osSemaphoreId sem_can;
 
 osThreadId usb_irq_thread;
+const uint32_t stack_size_usb_irq_thread = 1024; // Bytes
 
 // Place FreeRTOS heap in core coupled memory for better performance
 __attribute__((section(".ccmram")))
 uint8_t ucHeap[configTOTAL_HEAP_SIZE];
 /* USER CODE END Variables */
 osThreadId defaultTaskHandle;
+const uint32_t stack_size_default_task = 1024; // Bytes
 
 /* Private function prototypes -----------------------------------------------*/
 /* USER CODE BEGIN FunctionPrototypes */
@@ -150,7 +152,7 @@ void usb_deferred_interrupt_thread(void * ctx) {
 
 void init_deferred_interrupts(void) {
     // Start USB interrupt handler thread
-    osThreadDef(task_usb_pump, usb_deferred_interrupt_thread, osPriorityAboveNormal, 0, 512);
+    osThreadDef(task_usb_pump, usb_deferred_interrupt_thread, osPriorityAboveNormal, 0, stack_size_usb_irq_thread / sizeof(StackType_t));
     usb_irq_thread = osThreadCreate(osThread(task_usb_pump), NULL);
 }
 
@@ -206,7 +208,7 @@ void MX_FREERTOS_Init(void) {
 
   /* Create the thread(s) */
   /* definition and creation of defaultTask */
-  osThreadDef(defaultTask, StartDefaultTask, osPriorityNormal, 0, 256);
+  osThreadDef(defaultTask, StartDefaultTask, osPriorityNormal, 0, stack_size_default_task / sizeof(StackType_t));
   defaultTaskHandle = osThreadCreate(osThread(defaultTask), NULL);
 
   /* USER CODE BEGIN RTOS_THREADS */

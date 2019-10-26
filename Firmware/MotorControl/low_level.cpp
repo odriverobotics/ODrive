@@ -757,7 +757,7 @@ static void analog_polling_thread(void *)
 }
 
 void start_analog_thread() {
-    osThreadDef(thread_def, analog_polling_thread, osPriorityLow, 0, 128);
+    osThreadDef(thread_def, analog_polling_thread, osPriorityLow, 0, 512 / sizeof(StackType_t));
     osThreadCreate(osThread(thread_def), NULL);
 }
 

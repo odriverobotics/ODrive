@@ -22,6 +22,7 @@ static uint32_t dma_last_rcv_idx;
 // static thread_local uint32_t deadline_ms = 0;
 
 osThreadId uart_thread;
+const uint32_t stack_size_uart_thread = 2048;  // Bytes
 
 
 class UART4Sender : public StreamSink {
@@ -98,7 +99,7 @@ void start_uart_server() {
     dma_last_rcv_idx = UART_RX_BUFFER_SIZE - huart4.hdmarx->Instance->NDTR;
 
     // Start UART communication thread
-    osThreadDef(uart_server_thread_def, uart_server_thread, osPriorityNormal, 0, 1024 /* the ascii protocol needs considerable stack space */);
+    osThreadDef(uart_server_thread_def, uart_server_thread, osPriorityNormal, 0, stack_size_uart_thread / sizeof(StackType_t) /* the ascii protocol needs considerable stack space */);
     uart_thread = osThreadCreate(osThread(uart_server_thread_def), NULL);
 }
 

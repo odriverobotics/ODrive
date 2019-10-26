@@ -193,6 +193,17 @@ void vApplicationIdleHook(void) {
         system_stats_.min_stack_space_uart = uxTaskGetStackHighWaterMark(uart_thread) * sizeof(StackType_t);
         system_stats_.min_stack_space_usb_irq = uxTaskGetStackHighWaterMark(usb_irq_thread) * sizeof(StackType_t);
         system_stats_.min_stack_space_startup = uxTaskGetStackHighWaterMark(defaultTaskHandle) * sizeof(StackType_t);
+        system_stats_.min_stack_space_can = uxTaskGetStackHighWaterMark(odCAN->thread_id_) * sizeof(StackType_t);
+
+        // Actual usage, in bytes, so we don't have to math
+        system_stats_.stack_usage_axis0 = axes[0]->stack_size_ - system_stats_.min_stack_space_axis0;
+        system_stats_.stack_usage_axis1 = axes[1]->stack_size_ - system_stats_.min_stack_space_axis1;
+        system_stats_.stack_usage_comms = stack_size_comm_thread - system_stats_.min_stack_space_comms;
+        system_stats_.stack_usage_usb = stack_size_usb_thread - system_stats_.min_stack_space_usb;
+        system_stats_.stack_usage_uart = stack_size_uart_thread - system_stats_.min_stack_space_uart;
+        system_stats_.stack_usage_usb_irq = stack_size_usb_irq_thread - system_stats_.min_stack_space_usb_irq;
+        system_stats_.stack_usage_startup = stack_size_default_task - system_stats_.min_stack_space_startup;
+        system_stats_.stack_usage_can = odCAN->stack_size_ - system_stats_.min_stack_space_can;
     }
 }
 }
