@@ -115,31 +115,8 @@ void enter_dfu_mode() {
     }
 }
 
-extern "C" {
-int odrive_main(void);
-
-void vApplicationStackOverflowHook(xTaskHandle *pxTask, signed portCHAR *pcTaskName) {
-    for (;;); // TODO: safe action
-}
-void vApplicationIdleHook(void) {
-    if (system_stats_.fully_booted) {
-        system_stats_.uptime = xTaskGetTickCount();
-        system_stats_.min_heap_space = xPortGetMinimumEverFreeHeapSize();
-        system_stats_.min_stack_space_comms = uxTaskGetStackHighWaterMark(comm_thread) * sizeof(StackType_t);
-        system_stats_.min_stack_space_axis0 = uxTaskGetStackHighWaterMark(axes[0]->thread_id_) * sizeof(StackType_t);
-        system_stats_.min_stack_space_axis1 = uxTaskGetStackHighWaterMark(axes[1]->thread_id_) * sizeof(StackType_t);
-        system_stats_.min_stack_space_usb = uxTaskGetStackHighWaterMark(usb_thread) * sizeof(StackType_t);
-        system_stats_.min_stack_space_uart = uxTaskGetStackHighWaterMark(uart_thread) * sizeof(StackType_t);
-        system_stats_.min_stack_space_usb_irq = uxTaskGetStackHighWaterMark(usb_irq_thread) * sizeof(StackType_t);
-        system_stats_.min_stack_space_startup = uxTaskGetStackHighWaterMark(defaultTaskHandle) * sizeof(StackType_t);
-        system_stats_.min_stack_space_can = odCAN ? uxTaskGetStackHighWaterMark(odCAN->thread_id_) * sizeof(StackType_t) : 0;
-    }
-}
-}
-
-int odrive_main(void) {
-
-#if HW_VERSION_MAJOR == 3 && HW_VERSION_MINOR >= 3
+extern "C" int construct_objects(){
+    #if HW_VERSION_MAJOR == 3 && HW_VERSION_MINOR >= 3
     if (board_config.enable_i2c_instead_of_can) {
         // Set up the direction GPIO as input
         GPIO_InitTypeDef GPIO_InitStruct;
@@ -196,7 +173,31 @@ int odrive_main(void) {
         axes[i] = new Axis(i, hw_configs[i].axis_config, axis_configs[i],
                 *encoder, *sensorless_estimator, *controller, *motor, *trap, *min_endstop, *max_endstop);
     }
-    
+    initTree();
+    return 0;
+}
+
+extern "C" {
+int odrive_main(void);
+void vApplicationStackOverflowHook(xTaskHandle *pxTask, signed portCHAR *pcTaskName) {
+    for (;;); // TODO: safe action
+}
+void vApplicationIdleHook(void) {
+    if (system_stats_.fully_booted) {
+        system_stats_.uptime = xTaskGetTickCount();
+        system_stats_.min_heap_space = xPortGetMinimumEverFreeHeapSize();
+        system_stats_.min_stack_space_comms = uxTaskGetStackHighWaterMark(comm_thread) * sizeof(StackType_t);
+        system_stats_.min_stack_space_axis0 = uxTaskGetStackHighWaterMark(axes[0]->thread_id_) * sizeof(StackType_t);
+        system_stats_.min_stack_space_axis1 = uxTaskGetStackHighWaterMark(axes[1]->thread_id_) * sizeof(StackType_t);
+        system_stats_.min_stack_space_usb = uxTaskGetStackHighWaterMark(usb_thread) * sizeof(StackType_t);
+        system_stats_.min_stack_space_uart = uxTaskGetStackHighWaterMark(uart_thread) * sizeof(StackType_t);
+        system_stats_.min_stack_space_usb_irq = uxTaskGetStackHighWaterMark(usb_irq_thread) * sizeof(StackType_t);
+        system_stats_.min_stack_space_startup = uxTaskGetStackHighWaterMark(defaultTaskHandle) * sizeof(StackType_t);
+    }
+}
+}
+
+int odrive_main(void) {
     // Start ADC for temperature measurements and user measurements
     start_general_purpose_adc();
 
