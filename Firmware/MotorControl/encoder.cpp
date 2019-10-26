@@ -339,7 +339,9 @@ bool Encoder::abs_spi_init() {
     spi->Init.TIMode            = SPI_TIMODE_DISABLE;
     spi->Init.CRCCalculation    = SPI_CRCCALCULATION_DISABLE;
     spi->Init.CRCPolynomial     = 10;
-
+    if (config_.mode == MODE_SPI_ABS_AEAT) {
+        spi->Init.CLKPolarity   = SPI_POLARITY_HIGH;
+    }
     HAL_SPI_DeInit(spi);
     HAL_SPI_Init(spi);
     //stash our configuration
@@ -390,7 +392,10 @@ void Encoder::abs_spi_cb() {
                     abs_spi_pos_updated_ = true;
             }
         } break;
-
+        case MODE_SPI_ABS_AEAT: {
+            pos_abs_ = abs_spi_dma_rx_[0];
+            abs_spi_pos_updated_ = true;
+        } break;
         default: {
             set_error(ERROR_UNSUPPORTED_ENCODER_MODE);
         } break;
@@ -455,7 +460,8 @@ bool Encoder::update() {
         } break;
 
         case MODE_SPI_ABS_AMS:
-        case MODE_SPI_ABS_CUI: {
+        case MODE_SPI_ABS_CUI: 
+        case MODE_SPI_ABS_AEAT: {
             if (abs_spi_pos_updated_ == false && abs_spi_pos_init_once_) {
                 // Low pass filter the error
                 spi_error_rate_ += current_meas_period * (1.0f - spi_error_rate_);
