@@ -136,6 +136,13 @@ bool Controller::update(float* current_setpoint_output) {
         anticogging_calibration(axis_->encoder_.pos_estimate_, axis_->encoder_.vel_estimate_);
     }
 
+    // TODO also enable circular deltas for 2nd order filter, etc.
+    if (pos_wrap_src_) {
+        float cpr = *pos_wrap_src_;
+        // Keep pos setpoint from drifting
+        input_pos_ = fmodf_pos(input_pos_, cpr);
+    }
+
     // Update inputs
     switch (config_.input_mode) {
         case INPUT_MODE_INACTIVE: {
