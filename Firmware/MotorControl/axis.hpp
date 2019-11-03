@@ -35,6 +35,7 @@ public:
         AXIS_STATE_CLOSED_LOOP_CONTROL = 8,  //<! run closed loop control
         AXIS_STATE_LOCKIN_SPIN = 9,       //<! run lockin spin
         AXIS_STATE_ENCODER_DIR_FIND = 10,
+        AXIS_STATE_STARTUP_SEQUENCE_DONE = 11,
     };
 
     struct LockinConfig_t {
@@ -62,6 +63,8 @@ public:
         bool startup_sensorless_control = false; //<! enable sensorless control after calibration/startup
         bool enable_step_dir = false; //<! enable step/dir input after calibration
                                     //   For M0 this has no effect if enable_uart is true
+        bool use_enable_pin = false;
+        bool enable_pin_active_low = true;
         float counts_per_step = 2.0f;
 
         float watchdog_timeout = 0.0f; // [s] (0 disables watchdog)
@@ -69,6 +72,7 @@ public:
         // Defaults loaded from hw_config in load_configuration in main.cpp
         uint16_t step_gpio_pin = 0;
         uint16_t dir_gpio_pin = 0;
+        uint16_t en_gpio_pin = 0;
 
         LockinConfig_t calibration_lockin = default_calibration();
         LockinConfig_t sensorless_ramp = default_sensorless();
@@ -107,6 +111,9 @@ public:
 
     static void load_default_step_dir_pin_config(
         const AxisHardwareConfig_t& hw_config, Config_t* config);
+    
+    void enable_pin_cb();
+    void use_enable_pin_update();
 
     bool check_DRV_fault();
     bool check_PSU_brownout();
@@ -144,6 +151,7 @@ public:
     // @tparam T Must be a callable type that takes no arguments and returns a bool
     template<typename T>
     void run_control_loop(const T& update_handler) {
+        //enable_pin_cb();
         while (requested_state_ == AXIS_STATE_UNDEFINED) {
             // look for errors at axis level and also all subcomponents
             bool checks_ok = do_checks();
@@ -212,10 +220,13 @@ public:
     uint16_t step_pin_;
     GPIO_TypeDef* dir_port_;
     uint16_t dir_pin_;
+    GPIO_TypeDef* en_port_;
+    uint16_t en_pin_;
 
     State_t requested_state_ = AXIS_STATE_STARTUP_SEQUENCE;
     State_t task_chain_[10] = { AXIS_STATE_UNDEFINED };
     State_t& current_state_ = task_chain_[0];
+    bool startup_sequence_done_ = false;
     uint32_t loop_counter_ = 0;
     LockinState_t lockin_state_ = LOCKIN_STATE_INACTIVE;
 
@@ -240,12 +251,22 @@ public:
                 make_protocol_property("startup_sensorless_control", &config_.startup_sensorless_control),
                 make_protocol_property("enable_step_dir", &config_.enable_step_dir),
                 make_protocol_property("counts_per_step", &config_.counts_per_step),
+                make_protocol_property("use_enable_pin", &config_.use_enable_pin,
+                    [](void* ctx) { static_cast<Axis*>(ctx)->use_enable_pin_update(); }, this),
+                make_protocol_property("enable_pin_active_low", &config_.enable_pin_active_low,
+                    [](void* ctx) { static_cast<Axis*>(ctx)->use_enable_pin_update(); }, this),
                 make_protocol_property("watchdog_timeout", &config_.watchdog_timeout,
                     [](void* ctx) { static_cast<Axis*>(ctx)->update_watchdog_settings(); }, this),
                 make_protocol_property("step_gpio_pin", &config_.step_gpio_pin,
                     [](void* ctx) { static_cast<Axis*>(ctx)->decode_step_dir_pins(); }, this),
                 make_protocol_property("dir_gpio_pin", &config_.dir_gpio_pin,
                     [](void* ctx) { static_cast<Axis*>(ctx)->decode_step_dir_pins(); }, this),
+                //make_protocol_property("en_gpio_pin", &config_.en_gpio_pin),
+                make_protocol_property("en_gpio_pin", &config_.en_gpio_pin,
+                    [](void* ctx) {
+                        static_cast<Axis*>(ctx)->decode_step_dir_pins();
+                        static_cast<Axis*>(ctx)->use_enable_pin_update();
+                    }, this),
                 make_protocol_object("calibration_lockin",
                     make_protocol_property("current", &config_.calibration_lockin.current),
                     make_protocol_property("ramp_time", &config_.calibration_lockin.ramp_time),
