@@ -180,14 +180,13 @@ void Axis::use_enable_pin_update() {
 
 void Axis::enable_pin_cb() {
     if (config_.use_enable_pin) {
-        bool enable1 = HAL_GPIO_ReadPin(en_port_, en_pin_);
         bool enable = HAL_GPIO_ReadPin(en_port_, en_pin_) ^ config_.enable_pin_active_low;
         if (enable) {
             if ((startup_sequence_done_) && (current_state_ == AXIS_STATE_IDLE )) {
                 controller_.pos_setpoint_ = encoder_.pos_estimate_;
-                controller_.input_pos_ = 0 ; 
+                controller_.reset() ;
                 encoder_.set_linear_count(0);
-                controller_.pos_setpoint_ =0 ;
+                controller_.pos_setpoint_ =0 ; //maybe not need all this but it work ...
                 requested_state_ = AXIS_STATE_CLOSED_LOOP_CONTROL;  
             }
         }
@@ -380,12 +379,14 @@ void Axis::run_state_machine_loop() {
             if (requested_state_ == AXIS_STATE_STARTUP_SEQUENCE) {
                 if (config_.startup_motor_calibration)
                     task_chain_[pos++] = AXIS_STATE_MOTOR_CALIBRATION;
-                if (config_.startup_encoder_index_search && encoder_.config_.use_index)
+                if (config_.startup_encoder_index_search && encoder_.config_.use_index) {
                     task_chain_[pos++] = AXIS_STATE_ENCODER_INDEX_SEARCH;
                     task_chain_[pos++] = AXIS_STATE_STARTUP_SEQUENCE_DONE;
-                if (config_.startup_encoder_offset_calibration)
+                }
+                if (config_.startup_encoder_offset_calibration) {
                     task_chain_[pos++] = AXIS_STATE_ENCODER_OFFSET_CALIBRATION;
                     task_chain_[pos++] = AXIS_STATE_STARTUP_SEQUENCE_DONE;
+                }
                 if (config_.startup_closed_loop_control)
                     task_chain_[pos++] = AXIS_STATE_CLOSED_LOOP_CONTROL;
                 else if (config_.startup_sensorless_control)
