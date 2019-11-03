@@ -102,10 +102,10 @@ bool Controller::anticogging_calibration(float pos_estimate, float vel_estimate)
     return false;
 }
 
-bool Controller::update(float pos_estimate, float vel_estimate, float* current_setpoint_output) {
-    // Only runs if anticogging_.calib_anticogging is true; non-blocking
-    anticogging_calibration(pos_estimate, vel_estimate);
-    float anticogging_pos = pos_estimate;
+void Controller::update_setpoints() {
+    // // Only runs if anticogging_.calib_anticogging is true; non-blocking
+    // anticogging_calibration(pos_estimate, vel_estimate);
+    // float anticogging_pos = pos_estimate;
 
     // Trajectory control
     if (config_.control_mode == CTRL_MODE_TRAJECTORY_CONTROL) {
@@ -124,7 +124,7 @@ bool Controller::update(float pos_estimate, float vel_estimate, float* current_s
             vel_setpoint_ = traj_step.Yd;
             current_setpoint_ = traj_step.Ydd * axis_->trap_.config_.A_per_css;
         }
-        anticogging_pos = pos_setpoint_; // FF the position setpoint instead of the pos_estimate
+        // anticogging_pos = pos_setpoint_; // FF the position setpoint instead of the pos_estimate
     }
 
     // Ramp rate limited velocity setpoint
@@ -139,6 +139,9 @@ bool Controller::update(float pos_estimate, float vel_estimate, float* current_s
         }
         vel_setpoint_ += step;
     }
+}
+
+bool Controller::update_feedback(float pos_estimate, float vel_estimate, float* current_setpoint_output) {
 
     // Position control
     // TODO Decide if we want to use encoder or pll position here
@@ -194,9 +197,9 @@ bool Controller::update(float pos_estimate, float vel_estimate, float* current_s
     // Anti-cogging is enabled after calibration
     // We get the current position and apply a current feed-forward
     // ensuring that we handle negative encoder positions properly (-1 == motor->encoder.encoder_cpr - 1)
-    if (anticogging_.use_anticogging) {
-        Iq += anticogging_.cogging_map[mod(static_cast<int>(anticogging_pos), axis_->encoder_.config_.cpr)];
-    }
+    // if (anticogging_.use_anticogging) {
+    //     Iq += anticogging_.cogging_map[mod(static_cast<int>(anticogging_pos), axis_->encoder_.config_.cpr)];
+    // }
 
     float v_err = vel_des - vel_estimate;
     if (config_.control_mode >= CTRL_MODE_VELOCITY_CONTROL) {

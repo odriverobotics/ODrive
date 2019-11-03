@@ -73,6 +73,8 @@ public:
         LockinConfig_t calibration_lockin = default_calibration();
         LockinConfig_t sensorless_ramp = default_sensorless();
         LockinConfig_t lockin;
+
+        bool blind_closed_loop = false;
     };
 
     enum thread_signals {
@@ -240,6 +242,7 @@ public:
                 make_protocol_property("startup_sensorless_control", &config_.startup_sensorless_control),
                 make_protocol_property("enable_step_dir", &config_.enable_step_dir),
                 make_protocol_property("counts_per_step", &config_.counts_per_step),
+                make_protocol_property("blind_closed_loop", &config_.blind_closed_loop),
                 make_protocol_property("watchdog_timeout", &config_.watchdog_timeout,
                     [](void* ctx) { static_cast<Axis*>(ctx)->update_watchdog_settings(); }, this),
                 make_protocol_property("step_gpio_pin", &config_.step_gpio_pin,

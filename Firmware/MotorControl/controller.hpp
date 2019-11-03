@@ -51,7 +51,8 @@ public:
     void start_anticogging_calibration();
     bool anticogging_calibration(float pos_estimate, float vel_estimate);
 
-    bool update(float pos_estimate, float vel_estimate, float* current_setpoint);
+    void update_setpoints();
+    bool update_feedback(float pos_estimate, float vel_estimate, float* current_setpoint);
 
     Config_t& config_;
     Axis* axis_ = nullptr; // set by Axis constructor

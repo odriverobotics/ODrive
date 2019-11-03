@@ -277,8 +277,9 @@ bool Axis::run_sensorless_control_loop() {
             return error_ |= ERROR_POS_CTRL_DURING_SENSORLESS, false;
 
         // Note that all estimators are updated in the loop prefix in run_control_loop
+        controller_.update_setpoints();
         float current_setpoint;
-        if (!controller_.update(sensorless_estimator_.pll_pos_, sensorless_estimator_.vel_estimate_, &current_setpoint))
+        if (!controller_.update_feedback(sensorless_estimator_.pll_pos_, sensorless_estimator_.vel_estimate_, &current_setpoint))
             return error_ |= ERROR_CONTROLLER_FAILED, false;
         if (!motor_.update(current_setpoint, sensorless_estimator_.phase_, sensorless_estimator_.vel_estimate_))
             return false; // set_error should update axis.error_
@@ -292,13 +293,20 @@ bool Axis::run_closed_loop_control_loop() {
     controller_.pos_setpoint_ = encoder_.pos_estimate_;
     set_step_dir_active(config_.enable_step_dir);
     run_control_loop([this](){
-        // Note that all estimators are updated in the loop prefix in run_control_loop
-        float current_setpoint;
-        if (!controller_.update(encoder_.pos_estimate_, encoder_.vel_estimate_, &current_setpoint))
-            return error_ |= ERROR_CONTROLLER_FAILED, false; //TODO: Make controller.set_error
-        float phase_vel = 2*M_PI * encoder_.vel_estimate_ / (float)encoder_.config_.cpr * motor_.config_.pole_pairs;
-        if (!motor_.update(current_setpoint, encoder_.phase_, phase_vel))
-            return false; // set_error should update axis.error_
+        controller_.update_setpoints();
+        if (config_.blind_closed_loop){
+            float phase = wrap_pm_pi(controller_.pos_setpoint_);
+            if (!motor_.update(config_.lockin.current, phase, controller_.vel_setpoint_))
+                return false; // set_error should update axis.error_
+        } else {
+            // Note that all estimators are updated in the loop prefix in run_control_loop
+            float current_setpoint;
+            if (!controller_.update_feedback(encoder_.pos_estimate_, encoder_.vel_estimate_, &current_setpoint))
+                return error_ |= ERROR_CONTROLLER_FAILED, false; //TODO: Make controller.set_error
+            float phase_vel = 2*M_PI * encoder_.vel_estimate_ / (float)encoder_.config_.cpr * motor_.config_.pole_pairs;
+            if (!motor_.update(current_setpoint, encoder_.phase_, phase_vel))
+                return false; // set_error should update axis.error_
+        }
         return true;
     });
     set_step_dir_active(false);
