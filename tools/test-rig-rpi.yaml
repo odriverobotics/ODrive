@@ -1,0 +1,64 @@
+
+components:
+  - type: generalpurpose
+    name: homenet
+    net: homenet
+
+  - type: generalpurpose
+    name: rpi
+    ssh: odrv
+    net: homenet
+    can0: main_canbus
+    uart0: /dev/serial/by-id/[not-yet-used]
+
+  - type: programmer
+    name: The Blue STLink/v2
+    id: '\x53\x3f\x75\x06\x49\x3f\x49\x51\x44\x54\x19\x3f'
+
+  - type: odrive
+    name: ODrive
+    board-version: v3.6-58V
+    serial-number: "20703595524B"
+    brake-resistance: 0.47
+    usb: auto
+    can: main_canbus
+    vbus-voltage: 24 # [V]
+    max-brake-power: 150 # [W]
+    encoder0: virtual_encoder0
+    encoder1: virtual_encoder1
+    motor0: D5065-270KV_0
+    motor1: D5065-270KV_1
+
+  - type: motor
+    name: D5065-270KV_0
+    phase-resistance: 0.0245
+    phase-inductance: 2.03e-05
+    pole-pairs: 7
+    direction: 1
+    kv: 270
+    max-current: 70
+    max-voltage: 40
+
+  - type: motor
+    name: D5065-270KV_1
+    phase-resistance: 0.0245
+    phase-inductance: 2.03e-05
+    pole-pairs: 7
+    direction: 1
+    kv: 270
+    max-current: 70
+    max-voltage: 40
+
+  - type: encoder
+    name: real_encoder_0
+    cpr: 8192
+    max-rpm: 7000
+
+  - type: encoder
+    name: real_encoder_1
+    cpr: 8192
+    max-rpm: 7000
+
+  - type: teensy
+    name: teensy
+    
