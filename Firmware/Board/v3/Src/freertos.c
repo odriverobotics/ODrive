@@ -89,14 +89,14 @@ osSemaphoreId sem_usb_tx;
 osSemaphoreId sem_can;
 
 osThreadId usb_irq_thread;
-const uint32_t stack_size_usb_irq_thread = 1024; // Bytes
+const uint32_t stack_size_usb_irq_thread = 2048; // Bytes
 
 // Place FreeRTOS heap in core coupled memory for better performance
 __attribute__((section(".ccmram")))
 uint8_t ucHeap[configTOTAL_HEAP_SIZE];
 /* USER CODE END Variables */
 osThreadId defaultTaskHandle;
-const uint32_t stack_size_default_task = 1024; // Bytes
+const uint32_t stack_size_default_task = 2048; // Bytes
 
 /* Private function prototypes -----------------------------------------------*/
 /* USER CODE BEGIN FunctionPrototypes */

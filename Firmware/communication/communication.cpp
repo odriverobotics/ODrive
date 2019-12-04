@@ -64,7 +64,7 @@ const uint8_t fw_version_revision = FW_VERSION_REVISION;
 const uint8_t fw_version_unreleased = FW_VERSION_UNRELEASED; // 0 for official releases, 1 otherwise
 
 osThreadId comm_thread;
-const uint32_t stack_size_comm_thread = 2048; // Bytes
+const uint32_t stack_size_comm_thread = 4096; // Bytes
 volatile bool endpoint_list_valid = false;
 
 static uint32_t test_property = 0;
