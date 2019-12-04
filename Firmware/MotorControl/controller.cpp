@@ -178,9 +178,13 @@ bool Controller::update(float* current_setpoint_output) {
             pos_setpoint_ += current_meas_period * vel_setpoint_; // Delta pos
         } break;
         case INPUT_MODE_MIRROR: {
-            if (config_.axis_to_mirror < AXIS_COUNT) {
-                pos_setpoint_ = axes[config_.axis_to_mirror]->encoder_.pos_estimate_ * config_.mirror_ratio;
+            if (config_.axis_to_mirror >= 0 && config_.axis_to_mirror < AXIS_COUNT) {
                 vel_setpoint_ = axes[config_.axis_to_mirror]->encoder_.vel_estimate_ * config_.mirror_ratio;
+                if (config_.setpoints_in_cpr) {
+                    pos_setpoint_ += vel_setpoint_ * current_meas_period;
+                } else {
+                    pos_setpoint_ = axes[config_.axis_to_mirror]->encoder_.pos_estimate_ * config_.mirror_ratio;
+                }
             } else {
                 set_error(ERROR_INVALID_MIRROR_AXIS);
                 return false;
