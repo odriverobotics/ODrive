@@ -50,11 +50,15 @@ def dump_errors(odrv, clear=False):
         for name, remote_obj, errorcodes in module_decode_map:
             prefix = ' '*2 + name + ": "
             if (remote_obj.error != errorcodes.ERROR_NONE):
+                foundError = False
                 print(prefix + _VT100Colors['red'] + "Error(s):" + _VT100Colors['default'])
                 errorcodes_tup = [(name, val) for name, val in errorcodes.__dict__.items() if 'ERROR_' in name]
                 for codename, codeval in errorcodes_tup:
                     if remote_obj.error & codeval != 0:
+                        foundError = True
                         print("    " + codename)
+                if not foundError:
+                    print("    " + 'UNKNOWN ERROR!')
                 if clear:
                     remote_obj.error = errorcodes.ERROR_NONE
             else:
