@@ -426,11 +426,6 @@ void vbus_sense_adc_cb(ADC_HandleTypeDef* hadc, bool injected) {
     // Only one conversion in sequence, so only rank1
     uint32_t ADCValue = HAL_ADCEx_InjectedGetValue(hadc, ADC_INJECTED_RANK_1);
     vbus_voltage = ADCValue * voltage_scale;
-    if (axes[0] && !axes[0]->error_ && axes[1] && !axes[1]->error_) {
-        if (oscilloscope_pos >= OSCILLOSCOPE_SIZE)
-            oscilloscope_pos = 0;
-        oscilloscope[oscilloscope_pos++] = vbus_voltage;
-    }
 }
 
 static void decode_hall_samples(Encoder& enc, uint16_t GPIO_samples[num_GPIO]) {
@@ -753,6 +748,6 @@ static void analog_polling_thread(void *)
 
 void start_analog_thread()
 {
-    osThreadDef(thread_def, analog_polling_thread, osPriorityLow, 0, 4*512);
+    osThreadDef(thread_def, analog_polling_thread, osPriorityLow, 0, 128);
     osThreadCreate(osThread(thread_def), NULL);
 }

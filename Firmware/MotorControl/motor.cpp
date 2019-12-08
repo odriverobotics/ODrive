@@ -50,6 +50,7 @@ bool Motor::arm() {
 void Motor::reset_current_control() {
     current_control_.v_current_control_integral_d = 0.0f;
     current_control_.v_current_control_integral_q = 0.0f;
+    current_control_.acim_rotor_flux = 0.0f;
 }
 
 // @brief Tune the current controller based on phase resistance and inductance
@@ -284,7 +285,8 @@ bool Motor::measure_phase_inductance(float voltage_low, float voltage_high) {
 
 bool Motor::run_calibration() {
     float R_calib_max_voltage = config_.resistance_calib_max_voltage;
-    if (config_.motor_type == MOTOR_TYPE_HIGH_CURRENT) {
+    if (config_.motor_type == MOTOR_TYPE_HIGH_CURRENT
+        || config_.motor_type == MOTOR_TYPE_ACIM) {
         if (!measure_phase_resistance(config_.calibration_current, R_calib_max_voltage))
             return false;
         if (!measure_phase_inductance(-R_calib_max_voltage, R_calib_max_voltage))
@@ -358,7 +360,7 @@ bool Motor::FOC_current(float Id_des, float Iq_des, float I_phase, float pwm_pha
     ictrl.Id_measured += ictrl.I_measured_report_filter_k * (Id - ictrl.Id_measured);
 
     // Check for violation of current limit
-    float I_trip = config_.current_lim_tolerance * effective_current_lim();
+    float I_trip = effective_current_lim() + config_.current_lim_margin;
     if (SQ(Id) + SQ(Iq) > SQ(I_trip)) {
         set_error(ERROR_CURRENT_LIMIT_VIOLATION);
         return false;
@@ -410,6 +412,31 @@ bool Motor::FOC_current(float Id_des, float Iq_des, float I_phase, float pwm_pha
         return false; // error set inside enqueue_modulation_timings
     log_timing(TIMING_LOG_FOC_CURRENT);
 
+    if (axis_->axis_num_ == 0) {
+
+        // Edit these to suit your capture needs
+        float trigger_data = ictrl.v_current_control_integral_d;
+        float trigger_threshold = 0.5f;
+        float sample_data = Ialpha;
+
+        static bool ready = false;
+        static bool capturing = false;
+        if (trigger_data < trigger_threshold) {
+            ready = true;
+        }
+        if (ready && trigger_data >= trigger_threshold) {
+            capturing = true;
+            ready = false;
+        }
+        if (capturing) {
+            oscilloscope[oscilloscope_pos] = sample_data;
+            if (++oscilloscope_pos >= OSCILLOSCOPE_SIZE) {
+                oscilloscope_pos = 0;
+                capturing = false;
+            }
+        }
+    }
+
     return true;
 }
 
@@ -419,17 +446,58 @@ bool Motor::update(float current_setpoint, float phase, float phase_vel) {
     phase *= config_.direction;
     phase_vel *= config_.direction;
 
+    // TODO: 2-norm vs independent clamping (current could be sqrt(2) bigger)
+    float ilim = effective_current_lim();
+    // TODO: use std::clamp (C++17)
+    float id = MACRO_MIN(MACRO_MAX(current_control_.Id_setpoint, -ilim), ilim);
+    float iq = MACRO_MIN(MACRO_MAX(current_setpoint, -ilim), ilim);
+
+    if (config_.motor_type == MOTOR_TYPE_ACIM) {
+        // Note that the effect of the current commands on the real currents is actually 1.5 PWM cycles later
+        // However the rotor time constant is (usually) so slow that it doesn't matter
+        // So we elect to write it as if the effect is immediate, to have cleaner code
+
+        if (config_.acim_autoflux_enable) {
+            float abs_iq = fabsf(iq);
+            float gain = abs_iq > id ? config_.acim_autoflux_attack_gain : config_.acim_autoflux_decay_gain;
+            id += gain * (abs_iq - id) * current_meas_period;
+            id = MACRO_MIN(MACRO_MAX(id, config_.acim_autoflux_min_Id), ilim);
+            current_control_.Id_setpoint = id;
+        }
+
+        // acim_rotor_flux is normalized to units of [A] tracking Id; rotor inductance is unspecified
+        float dflux_by_dt = config_.acim_slip_velocity * (id - current_control_.acim_rotor_flux);
+        current_control_.acim_rotor_flux += dflux_by_dt * current_meas_period;
+        float slip_velocity = config_.acim_slip_velocity * (iq / current_control_.acim_rotor_flux);
+        // Check for issues with small denominator. Polarity of check to catch NaN too
+        bool acceptable_vel = fabsf(slip_velocity) <= 0.1f * (float)current_meas_hz;
+        if (!acceptable_vel)
+            slip_velocity = 0.0f;
+        phase_vel += slip_velocity;
+        // reporting only:
+        current_control_.async_phase_vel = slip_velocity;
+
+        current_control_.async_phase_offset += slip_velocity * current_meas_period;
+        current_control_.async_phase_offset = wrap_pm_pi(current_control_.async_phase_offset);
+        phase += current_control_.async_phase_offset;
+        phase = wrap_pm_pi(phase);
+    }
+
     float pwm_phase = phase + 1.5f * current_meas_period * phase_vel;
 
     // Execute current command
     // TODO: move this into the mot
     if (config_.motor_type == MOTOR_TYPE_HIGH_CURRENT) {
-        if(!FOC_current(0.0f, current_setpoint, phase, pwm_phase)){
+        if(!FOC_current(id, iq, phase, pwm_phase)){
+            return false;
+        }
+    } else if (config_.motor_type == MOTOR_TYPE_ACIM) {
+        if(!FOC_current(id, iq, phase, pwm_phase)){
             return false;
         }
     } else if (config_.motor_type == MOTOR_TYPE_GIMBAL) {
         //In gimbal motor mode, current is reinterptreted as voltage.
-        if(!FOC_voltage(0.0f, current_setpoint, pwm_phase))
+        if(!FOC_voltage(id, iq, pwm_phase))
             return false;
     } else {
         set_error(ERROR_NOT_IMPLEMENTED_MOTOR_TYPE);

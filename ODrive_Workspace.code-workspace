@@ -8,11 +8,15 @@
 		},
 		{
 			"path": "docs"
+		},
+		{
+			"path": "analysis"
 		}
 	],
 	"settings": {
 		"c-cpp-flylint.cppcheck.standard": ["c99","c++17"],
 		"files.associations": {
+			"*.config": "yaml",
 			"memory": "cpp",
 			"utility": "cpp",
 			"deque": "cpp",

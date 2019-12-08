@@ -1,6 +1,15 @@
 # Unreleased Features
 Please add a note of your changes below this heading if you make a Pull Request.
 
+### Added
+* AC Induction Motor support.
+  * Tracking of rotor flux through rotor time constant
+  * Automatic d axis current for Maximum Torque Per Amp (MTPA)
+
+### Changed
+* Changed ratiometric `motor.config.current_lim_tolerance` to absolute `motor.config.current_lim_margin`
+* Moved `controller.vel_ramp_enable` into `controller.config`.
+
 # Releases
 ## [0.4.11] - 2019-07-25
 ### Added

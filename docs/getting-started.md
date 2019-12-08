@@ -218,8 +218,6 @@ This is 4x the Pulse Per Revolution (PPR) value. Usually this is indicated in th
 You can save all `.config` parameters to persistent memory so the ODrive remembers them between power cycles. 
 * `odrv0.save_configuration()` <kbd>Enter</kbd>. 
 
-Due to a [known issue](https://github.com/madcowswe/ODrive/issues/183) it is strongly recommended that you reboot following every save of your configuration using `odrv0.reboot()`.
-
 
 ## Position control of M0
 Let's get motor 0 up and running. The procedure for motor 1 is exactly the same, so feel free to substitute `axis0` wherever it says `axis0`.
