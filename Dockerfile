@@ -1,4 +1,4 @@
-FROM ubuntu
+FROM ubuntu:bionic
 
 # Prepare the build environment and dependencies
 RUN apt-get update
