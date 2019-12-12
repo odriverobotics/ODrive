@@ -144,6 +144,7 @@ def program_teensy(hex_file_path, program_gpio: int, logger: Logger):
     
         echo 26 | sudo tee /sys/class/gpio/export
         sudo chmod a+rw /sys/class/gpio/gpio26/*
+        echo out > /sys/class/gpio/gpio26/direction
 
     """
 
