@@ -88,7 +88,7 @@ class CANTestContext():
 
         # TODO: read bus name from yaml
         import can
-        self.handle = can.interface.Bus(bustype='socketcan', channel='can0', bitrate=250000)
+        self.handle = can.interface.Bus(bustype='socketcan', channel=self.yaml['id'], bitrate=250000)
 
 
 # Helper functions ------------------------------------------------------------#
@@ -106,6 +106,10 @@ def yaml_to_test_objects(test_rig_yaml: dict, logger: Logger):
             add_component(odrv_ctx)
             for enc_ctx in odrv_ctx.encoders:
                 add_component(enc_ctx)
+        elif component_yaml['type'] == 'generalpurpose':
+            for (k, v) in [(k, v) for (k, v) in component_yaml.items() if k.startswith("can")]:
+                can_ctx = CANTestContext({'id': k, 'bus': v})
+                add_component(can_ctx)
         else:
             logger.warn('test rig has unsupported component ' + component_yaml['type'])
             continue

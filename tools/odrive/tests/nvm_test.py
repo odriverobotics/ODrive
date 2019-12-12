@@ -36,7 +36,7 @@ class TestStoreAndReboot():
         logger.debug("verifying configuration after reboot...")
         test_assert_eq(odrive.handle.config.brake_resistance, values[-1], accuracy=0.01)
 
-    def run_test(self, odrive: ODriveTestContext, logger):
+    def run_test(self, odrive: ODriveTestContext, logger: Logger):
         self.run_with_values([0.5, 1.0, 1.5], odrive, logger)
         self.run_with_values([2.5, 3.7], odrive, logger)
         self.run_with_values([0.47], odrive, logger)
