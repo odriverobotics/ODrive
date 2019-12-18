@@ -17,6 +17,7 @@ permalink: /
 - [Configure M0](#configure-m0)
 - [Position control of M0](#position-control-of-m0)
 - [Other control modes](#other-control-modes)
+- [Watchdog Timer](#watchdog-timer)
 - [What's next?](#whats-next)
 
 <!-- /TOC -->
@@ -126,6 +127,12 @@ Try step 5 again
 ### Linux
 1. [Install Python 3](https://www.python.org/downloads/). (for example, on Ubuntu, `sudo apt install python3 python3-pip`)
 2. Install the ODrive tools by opening a terminal and typing `sudo pip3 install odrive` <kbd>Enter</kbd>
+    * This should automatically add the udev rules. If this fails for some reason you can add them manually:
+    ```bash
+    echo 'SUBSYSTEM=="usb", ATTR{idVendor}=="1209", ATTR{idProduct}=="0d[0-9][0-9]", MODE="0666"' | sudo tee /etc/udev/rules.d/91-odrive.rules
+    sudo udevadm control --reload-rules
+    sudo udevadm trigger
+    ```
 3. (needed on Ubuntu, maybe other distros too) Add odrivetool into the path, by adding `~/.local/bin/` into `~/.bash_profile`, for example by running `nano ~/.bashrc`, scrolling to the bottom, pasting `PATH=$PATH:~/.local/bin/`, and then saving and closing, and close and reopen the terminal window.
 
 ## Firmware
