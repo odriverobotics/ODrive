@@ -40,6 +40,7 @@ An extension called Cortex-Debug has recently been released which is designed sp
 Note: If developing on Windows, you should have `arm-none-eabi-gdb` and `openOCD` on your PATH.
 
   * Make sure you have the Firmware folder as your active folder
+  * Set `CONFIG_DEBUG=true` in the tup.config file
   * Flash the board with the newest code (starting debug session doesn't do this)
   * Debug -> Start Debugging (or press F5)
   * The processor will reset and halt.
