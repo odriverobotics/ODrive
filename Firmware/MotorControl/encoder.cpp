@@ -328,11 +328,13 @@ bool Encoder::abs_spi_init(){
     spi->Init.CLKPhase = SPI_PHASE_2EDGE;
     spi->Init.NSS = SPI_NSS_SOFT;
     spi->Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_32;
-    spi->Init.FirstBit = SPI_FIRSTBIT_MSB;
-    spi->Init.TIMode = SPI_TIMODE_DISABLE;
-    spi->Init.CRCCalculation = SPI_CRCCALCULATION_DISABLE;
-    spi->Init.CRCPolynomial = 10;
-
+    spi->Init.FirstBit          = SPI_FIRSTBIT_MSB;
+    spi->Init.TIMode            = SPI_TIMODE_DISABLE;
+    spi->Init.CRCCalculation    = SPI_CRCCALCULATION_DISABLE;
+    spi->Init.CRCPolynomial     = 10;
+    if (config_.mode == MODE_SPI_ABS_AEAT) {
+        spi->Init.CLKPolarity   = SPI_POLARITY_HIGH;
+    }
     HAL_SPI_DeInit(spi);
     HAL_SPI_Init(spi);
     //stash our configuration
@@ -374,16 +376,19 @@ void Encoder::abs_spi_cb(){
         parity_calc = parity(abs_spi_dma_rx_[0]&0x7FFF);
         parity_bit = abs_spi_dma_rx_[0] >>15;
 
-        if(parity_calc == parity_bit){
-            pos_abs_ = abs_spi_dma_rx_[0] & 0x3FFF;
-            // We are going to ignore values all high or low
-            // This might happen in normal operation, but its unlikely
-            // The filter will handle these cases
-            if(pos_abs_ != 0  && pos_abs_ != 0x3FFF)
-                abs_spi_pos_updated_ = true;
-        }
-        }break;
-
+            if (parity_calc == parity_bit) {
+                pos_abs_ = abs_spi_dma_rx_[0] & 0x3FFF;
+                // We are going to ignore values all high or low
+                // This might happen in normal operation, but its unlikely
+                // The filter will handle these cases
+                if (pos_abs_ != 0 && pos_abs_ != 0x3FFF)
+                    abs_spi_pos_updated_ = true;
+            }
+        } break;
+        case MODE_SPI_ABS_AEAT: {
+            pos_abs_ = abs_spi_dma_rx_[0];
+            abs_spi_pos_updated_ = true;
+        } break;
         default: {
            set_error(ERROR_UNSUPPORTED_ENCODER_MODE);
         } break;
@@ -448,8 +453,9 @@ bool Encoder::update() {
         } break;
         
         case MODE_SPI_ABS_AMS:
-        case MODE_SPI_ABS_CUI:{
-            if (!abs_spi_pos_updated_ && abs_spi_pos_init_once_) {
+        case MODE_SPI_ABS_CUI: 
+        case MODE_SPI_ABS_AEAT: {
+            if (abs_spi_pos_updated_ == false && abs_spi_pos_init_once_) {
                 // Low pass filter the error
                 spi_error_rate_ += current_meas_period * (1.0f - spi_error_rate_);
                 if (spi_error_rate_ > 0.005f)
