@@ -4,14 +4,15 @@
 class Endstop {
    public:
     struct Config_t {
-        float offset      = 0;
+        float offset = 0;
         float debounce_ms = 50.0f;
         uint16_t gpio_num = 0;
-        bool enabled        = false;
+        bool enabled = false;
         bool is_active_high = false;
+        bool pullup = false;
     };
 
-    Endstop(Endstop::Config_t& config);
+    explicit Endstop(Endstop::Config_t& config);
 
     Endstop::Config_t& config_;
     Axis* axis_ = nullptr;
@@ -34,6 +35,7 @@ class Endstop {
                                     [](void* ctx) { static_cast<Endstop*>(ctx)->update_config(); }, this),
                 make_protocol_property("offset", &config_.offset),
                 make_protocol_property("is_active_high", &config_.is_active_high),
+                make_protocol_property("pullup", &config_.pullup),
                 make_protocol_property("debounce_ms", &config_.debounce_ms)));
     }
 

@@ -43,7 +43,7 @@ void Endstop::set_enabled(bool enable) {
             GPIO_InitTypeDef GPIO_InitStruct;
             GPIO_InitStruct.Pin = gpio_pin;
             GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
-            GPIO_InitStruct.Pull = config_.is_active_high ? GPIO_PULLDOWN : GPIO_PULLUP;
+            GPIO_InitStruct.Pull = config_.pullup ? GPIO_PULLUP : GPIO_PULLDOWN;
             HAL_GPIO_Init(gpio_port, &GPIO_InitStruct);
         }
     }
