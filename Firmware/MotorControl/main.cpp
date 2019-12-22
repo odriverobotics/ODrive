@@ -180,6 +180,10 @@ extern "C" int construct_objects(){
 extern "C" {
 int odrive_main(void);
 void vApplicationStackOverflowHook(xTaskHandle *pxTask, signed portCHAR *pcTaskName) {
+    for(auto& axis : axes){
+        safety_critical_disarm_motor_pwm(axis->motor_);
+    }
+        safety_critical_disarm_brake_resistor();
     for (;;); // TODO: safe action
 }
 void vApplicationIdleHook(void) {

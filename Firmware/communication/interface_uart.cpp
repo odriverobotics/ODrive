@@ -22,7 +22,7 @@ static uint32_t dma_last_rcv_idx;
 // static thread_local uint32_t deadline_ms = 0;
 
 osThreadId uart_thread;
-const uint32_t stack_size_uart_thread = 2048;  // Bytes
+const uint32_t stack_size_uart_thread = 4096;  // Bytes
 
 
 class UART4Sender : public StreamSink {
