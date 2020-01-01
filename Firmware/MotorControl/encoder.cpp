@@ -366,7 +366,7 @@ uint8_t parity(uint16_t v){
     v ^= v >> 4;
     v ^= v >> 2;
     v ^= v >> 1;
-    return v & 1;
+    return (~v) & 1;
 }
 void Encoder::abs_spi_cb(){
     HAL_GPIO_WritePin(abs_spi_cs_port_, abs_spi_cs_pin_, GPIO_PIN_SET);
@@ -379,11 +379,7 @@ void Encoder::abs_spi_cb(){
 
             if (parity_calc == parity_bit) {
                 pos_abs_ = rawVal & 0x3FFF;
-                // We are going to ignore values all high or low
-                // This might happen in normal operation, but its unlikely
-                // The filter will handle these cases
-                if (pos_abs_ != 0 && pos_abs_ != 0x3FFF)
-                    abs_spi_pos_updated_ = true;
+                abs_spi_pos_updated_ = true;
             }
         } break;
         case MODE_SPI_ABS_AEAT: {

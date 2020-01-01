@@ -295,7 +295,7 @@ TEST_SUITE("vel_ramp") {
         v ^= v >> 4;
         v ^= v >> 2;
         v ^= v >> 1;
-        return v & 1;
+        return (~v) & 1;
     }
 
     TEST_CASE("Blah") {
@@ -321,7 +321,10 @@ TEST_SUITE("vel_ramp") {
     }
 
     TEST_CASE("Parity") {
-        CHECK(parity(0x0DDF) == 0);
-        CHECK(parity(0x8DDF) == 1);
+        CHECK(parity(0x0DDF & 0x7FFF) == 1);
+        CHECK(parity(0x8DDF & 0x7FFF) == 1);
+        CHECK(parity(0x5BFF & 0x7FFF) == 0);
+        CHECK(parity(0x0 & 0x7FFF) == 1);
+        CHECK(__builtin_parity(0x5BFF & 0x7FFF) == 1);
     }
 }

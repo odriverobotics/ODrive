@@ -57,7 +57,14 @@
 			"fstream": "cpp",
 			"iomanip": "cpp",
 			"optional": "cpp",
-			"sstream": "cpp"
+			"sstream": "cpp",
+			"atomic": "cpp",
+			"iterator": "cpp",
+			"memory_resource": "cpp",
+			"ratio": "cpp",
+			"string": "cpp",
+			"mutex": "cpp",
+			"thread": "cpp"
 		}
 	}
 }
