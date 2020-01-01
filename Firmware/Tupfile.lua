@@ -188,3 +188,9 @@ build{
         "C:/Tools/doctest/doctest"
     }
 }
+
+if tup.getconfig('DOCTEST') == 'true' then
+    TEST_INCLUDES = '-IC:/Tools/doctest/doctest'
+    tup.frule{inputs='Tests/test_runner.cpp', command='g++ -std=gnu++17 '..TEST_INCLUDES..' %f -o %o', outputs='Tests/test_runner.exe'}
+    tup.frule{inputs='Tests/test_runner.exe', command='%f'}
+end

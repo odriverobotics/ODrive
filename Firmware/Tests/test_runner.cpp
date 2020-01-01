@@ -9,17 +9,16 @@
 #define DOCTEST_CONFIG_NO_POSIX_SIGNALS
 // #define DOCTEST_CONFIG_VOID_CAST_EXPRESSIONS
 
-
 #include <doctest.h>
 
 using std::cout;
 using std::endl;
 
 struct can_Message_t {
-    uint32_t id    = 0x000;  // 11-bit max is 0x7ff, 29-bit max is 0x1FFFFFFF
-    bool isExt     = false;
-    bool rtr       = false;
-    uint8_t len    = 8;
+    uint32_t id = 0x000;  // 11-bit max is 0x7ff, 29-bit max is 0x1FFFFFFF
+    bool isExt = false;
+    bool rtr = false;
+    uint8_t len = 8;
     uint8_t buf[8] = {0, 0, 0, 0, 0, 0, 0, 0};
 };
 
@@ -44,7 +43,7 @@ enum InputMode_t {
 template <typename T>
 T can_getSignal(can_Message_t msg, const uint8_t startBit, const uint8_t length, const bool isIntel) {
     uint64_t tempVal = 0;
-    uint64_t mask    = (1ULL << length) - 1;
+    uint64_t mask = (1ULL << length) - 1;
 
     if (isIntel) {
         std::memcpy(&tempVal, msg.buf, sizeof(tempVal));
@@ -60,18 +59,17 @@ T can_getSignal(can_Message_t msg, const uint8_t startBit, const uint8_t length,
     return retVal;
 }
 
-template<typename T>
+template <typename T>
 float can_getSignal(can_Message_t msg, const uint8_t startBit, const uint8_t length, const bool isIntel, const float factor, const float offset) {
     T retVal = can_getSignal<T>(msg, startBit, length, isIntel);
     return (retVal * factor) + offset;
 }
 
-template<typename T>
-void can_setSignal(can_Message_t& msg, const T& val, const uint8_t startBit, const uint8_t length, const bool isIntel){
+template <typename T>
+void can_setSignal(can_Message_t& msg, const T& val, const uint8_t startBit, const uint8_t length, const bool isIntel) {
     uint64_t mask = (1ULL << length) - 1;
     uint64_t valAsBits = 0;
     std::memcpy(&valAsBits, &val, sizeof(T));
-    
 
     if (isIntel) {
         uint64_t data = 0;
@@ -96,7 +94,7 @@ void can_setSignal(can_Message_t& msg, const T& val, const uint8_t startBit, con
 
 template <typename T>
 void can_setSignal(can_Message_t& msg, const T& val, const uint8_t startBit, const uint8_t length, const bool isIntel, const float factor, const float offset) {
-    T scaledVal        = (val - offset) / factor;
+    T scaledVal = (val - offset) / factor;
     can_setSignal<T>(msg, scaledVal, startBit, length, isIntel);
 }
 
@@ -117,9 +115,9 @@ TEST_CASE("fake") {
 TEST_SUITE("CAN Functions") {
     TEST_CASE("reverse") {
         can_Message_t rxmsg;
-        rxmsg.id    = 0x000;
+        rxmsg.id = 0x000;
         rxmsg.isExt = false;
-        rxmsg.len   = 8;
+        rxmsg.len = 8;
 
         rxmsg.buf[0] = 0x12;
         rxmsg.buf[1] = 0x34;
@@ -148,7 +146,7 @@ TEST_SUITE("CAN Functions") {
         CHECK(floatVal == 1234.6789f);
 
         can_Message_t msg;
-        msg.id     = 0x00E;
+        msg.id = 0x00E;
         msg.buf[0] = 0x96;
         msg.buf[1] = 0x00;
         msg.buf[2] = 0x00;
@@ -189,10 +187,9 @@ TEST_SUITE("CAN Functions") {
     }
 }
 
-
-TEST_SUITE("delta_enc"){
+TEST_SUITE("delta_enc") {
     // Modulo (as opposed to remainder), per https://stackoverflow.com/a/19288271
-    int mod(int dividend, int divisor){
+    int mod(int dividend, int divisor) {
         int r = dividend % divisor;
         return (r < 0) ? (r + divisor) : r;
     }
@@ -205,8 +202,7 @@ TEST_SUITE("delta_enc"){
         return delta_enc;
     }
 
-    TEST_CASE("mod"){
-
+    TEST_CASE("mod") {
         int cpr = 1000;
 
         // Check moves around 0
@@ -218,14 +214,13 @@ TEST_SUITE("delta_enc"){
         CHECK(getDelta(50, 500, cpr) == -450);
         CHECK(getDelta(500, 50, cpr) == 450);
 
-        
         // Test moving a distance larger than cpr / 2
         CHECK(getDelta(950, 450, cpr) == 500);
         CHECK(getDelta(451, 950, cpr) == -499);
         CHECK(getDelta(450, 950, cpr) == 500);
-        
+
         // Test handling around mid-point
-        CHECK(getDelta(501, 499, cpr) == 2);   
+        CHECK(getDelta(501, 499, cpr) == 2);
         CHECK(getDelta(499, 501, cpr) == -2);
         CHECK(getDelta(550, 450, cpr) == 100);
         CHECK(getDelta(450, 550, cpr) == -100);
@@ -235,7 +230,7 @@ TEST_SUITE("delta_enc"){
 TEST_SUITE("velLimiter") {
 // Velocity limiting in current mode
 #include <algorithm>
-using doctest::Approx;
+    using doctest::Approx;
 
     auto limitVel(float vel_limit, float vel_estimate, float vel_gain, float Iq) {
         float Imax = (vel_limit - vel_estimate) * vel_gain;
@@ -256,21 +251,21 @@ using doctest::Approx;
         CHECK(limitVel(1000.0f, 0.0f, 1.0f, -1.0f) == -1.0f);
     }
 
-    TEST_CASE("Accelerating"){
+    TEST_CASE("Accelerating") {
         CHECK(limitVel(200000.0f, 195000.0f, 5.0E-4f, 30.0f) == 2.5f);
         CHECK(limitVel(200000.0f, 205000.0f, 5.0E-4f, 30.0f) == -2.5f);
         CHECK(limitVel(200000.0f, -195000.0f, 5.0E-4, -30.0f) == -2.5f);
         CHECK(limitVel(200000.0f, -205000.0f, 5.0E-4f, -30.0f) == 2.5f);
     }
 
-    TEST_CASE("Decelerating"){
+    TEST_CASE("Decelerating") {
         CHECK(limitVel(200000.0f, 195000.0f, 5.0E-4f, -30.0f) == -30.0f);
         CHECK(limitVel(200000.0f, 205000.0f, 5.0E-4f, -30.0f) == -30.0f);
         CHECK(limitVel(200000.0f, -195000.0f, 5.0E-4, 30.0f) == 30.0f);
         CHECK(limitVel(200000.0f, -205000.0f, 5.0E-4f, 30.0f) == 30.0f);
     }
 
-    TEST_CASE("Over-Center"){
+    TEST_CASE("Over-Center") {
         CHECK(limitVel(20000.0f, 1000.0f, 5.0E-4f, 30.0f) == 9.5f);
         CHECK(limitVel(20000.0f, -1000.0f, 5.0E-4f, 30.0f) == Approx(10.5f));
     }
@@ -279,7 +274,7 @@ using doctest::Approx;
 TEST_SUITE("vel_ramp") {
     float vel_ramp_old(float input_vel_, float vel_setpoint_, float vel_ramp_rate) {
         float max_step_size = 0.000125f * vel_ramp_rate;
-        float full_step     = input_vel_ - vel_setpoint_;
+        float full_step = input_vel_ - vel_setpoint_;
         float step;
         if (std::abs(full_step) > max_step_size) {
             step = std::copysignf(max_step_size, full_step);
@@ -289,10 +284,18 @@ TEST_SUITE("vel_ramp") {
         return step;
     }
 
-    float vel_ramp_new(float input_vel_, float vel_setpoint_, float vel_ramp_rate){
+    float vel_ramp_new(float input_vel_, float vel_setpoint_, float vel_ramp_rate) {
         float max_step_size = 0.000125f * vel_ramp_rate;
-        float full_step     = input_vel_ - vel_setpoint_;
+        float full_step = input_vel_ - vel_setpoint_;
         return std::clamp(full_step, -max_step_size, max_step_size);
+    }
+    
+    uint8_t parity(uint16_t v) {
+        v ^= v >> 8;
+        v ^= v >> 4;
+        v ^= v >> 2;
+        v ^= v >> 1;
+        return v & 1;
     }
 
     TEST_CASE("Blah") {
@@ -315,5 +318,10 @@ TEST_SUITE("vel_ramp") {
 
         input_vel = 0.1234f;
         CHECK(vel_ramp_old(input_vel, vel_setpoint, vel_ramp_rate) == vel_ramp_new(input_vel, vel_setpoint, vel_ramp_rate));
+    }
+
+    TEST_CASE("Parity") {
+        CHECK(parity(0x0DDF) == 0);
+        CHECK(parity(0x8DDF) == 1);
     }
 }
