@@ -373,11 +373,12 @@ void Encoder::abs_spi_cb(){
     switch (config_.mode) {
         case MODE_SPI_ABS_AMS: {
         uint8_t parity_calc, parity_bit;
-        parity_calc = parity(abs_spi_dma_rx_[0]&0x7FFF);
-        parity_bit = abs_spi_dma_rx_[0] >>15;
+        auto rawVal = abs_spi_dma_rx_[0];
+        parity_calc = parity(rawVal & 0x7FFF);
+        parity_bit = rawVal >>15;
 
             if (parity_calc == parity_bit) {
-                pos_abs_ = abs_spi_dma_rx_[0] & 0x3FFF;
+                pos_abs_ = rawVal & 0x3FFF;
                 // We are going to ignore values all high or low
                 // This might happen in normal operation, but its unlikely
                 // The filter will handle these cases
