@@ -112,6 +112,7 @@ public:
     uint16_t abs_spi_dma_rx_[2];
     bool abs_spi_pos_updated_ = false;
     bool abs_spi_pos_init_once_ = false;
+    Mode_t mode_ = MODE_INCREMENTAL;
     GPIO_TypeDef* abs_spi_cs_port_;
     uint16_t abs_spi_cs_pin_;
     uint32_t abs_spi_cr1;
@@ -140,8 +141,7 @@ public:
             make_protocol_ro_property("spi_error_rate", &spi_error_rate_),
 
             make_protocol_object("config",
-                make_protocol_property("mode", &config_.mode,
-                    [](void* ctx) { static_cast<Encoder*>(ctx)->abs_spi_init(); }, this),
+                make_protocol_property("mode", &config_.mode),
                 make_protocol_property("use_index", &config_.use_index,
                     [](void* ctx) { static_cast<Encoder*>(ctx)->set_idx_subscribe(); }, this),
                 make_protocol_property("find_idx_on_lockin_only", &config_.find_idx_on_lockin_only,

@@ -22,7 +22,8 @@ void Encoder::setup() {
     HAL_TIM_Encoder_Start(hw_config_.timer, TIM_CHANNEL_ALL);
     set_idx_subscribe();
 
-    if(config_.mode & MODE_FLAG_ABS){
+    mode_ = config_.mode;
+    if(mode_ & MODE_FLAG_ABS){
         abs_spi_cs_pin_init();
         abs_spi_init();
         if (axis_->controller_.config_.anticogging.pre_calibrated) {
@@ -94,7 +95,7 @@ void Encoder::update_pll_gains() {
 void Encoder::check_pre_calibrated() {
     if (!is_ready_)
         config_.pre_calibrated = false;
-    if (config_.mode == MODE_INCREMENTAL && !index_found_)
+    if (mode_ == MODE_INCREMENTAL && !index_found_)
         config_.pre_calibrated = false;
 }
 
@@ -286,7 +287,7 @@ static bool decode_hall(uint8_t hall_state, int32_t* hall_cnt) {
 }
 
 void Encoder::sample_now() {
-    switch (config_.mode) {
+    switch (mode_) {
         case MODE_INCREMENTAL: {
             tim_cnt_sample_ = (int16_t)hw_config_.timer->Instance->CNT;
         } break;
@@ -313,12 +314,8 @@ void Encoder::sample_now() {
 }
 
 bool Encoder::abs_spi_init(){
-    if ((config_.mode & MODE_FLAG_ABS) == 0x0)
+    if ((mode_ & MODE_FLAG_ABS) == 0x0)
         return false;
-
-    uint32_t cr1,cr2;
-    cr1 = hw_config_.spi->Instance->CR1;
-    cr2 = hw_config_.spi->Instance->CR2;
 
     SPI_HandleTypeDef * spi = hw_config_.spi;
     spi->Init.Mode = SPI_MODE_MASTER;
@@ -332,29 +329,20 @@ bool Encoder::abs_spi_init(){
     spi->Init.TIMode            = SPI_TIMODE_DISABLE;
     spi->Init.CRCCalculation    = SPI_CRCCALCULATION_DISABLE;
     spi->Init.CRCPolynomial     = 10;
-    if (config_.mode == MODE_SPI_ABS_AEAT) {
+    if (mode_ == MODE_SPI_ABS_AEAT) {
         spi->Init.CLKPolarity   = SPI_POLARITY_HIGH;
     }
     HAL_SPI_DeInit(spi);
     HAL_SPI_Init(spi);
-    //stash our configuration
-    abs_spi_cr1 = hw_config_.spi->Instance->CR1;
-    abs_spi_cr2 = hw_config_.spi->Instance->CR2;
-
-    hw_config_.spi->Instance->CR1 = cr1;
-    hw_config_.spi->Instance->CR2 = cr2;
     return true;
 }
 
 bool Encoder::abs_spi_start_transaction(){
-    if (config_.mode & MODE_FLAG_ABS){
+    if (mode_ & MODE_FLAG_ABS){
         if(hw_config_.spi->State != HAL_SPI_STATE_READY){
             set_error(ERROR_ABS_SPI_NOT_READY);
             return false;
         }
-        //apply the stashed configuration
-        hw_config_.spi->Instance->CR1 = abs_spi_cr1;
-        hw_config_.spi->Instance->CR2 = abs_spi_cr2;
         HAL_GPIO_WritePin(abs_spi_cs_port_, abs_spi_cs_pin_, GPIO_PIN_RESET);
         HAL_SPI_TransmitReceive_DMA(hw_config_.spi,(uint8_t*)abs_spi_dma_tx_,(uint8_t*)abs_spi_dma_rx_,1);
     }
@@ -371,20 +359,16 @@ uint8_t parity(uint16_t v){
 
 void Encoder::abs_spi_cb(){
     HAL_GPIO_WritePin(abs_spi_cs_port_, abs_spi_cs_pin_, GPIO_PIN_SET);
-    switch (config_.mode) {
+    switch (mode_) {
         case MODE_SPI_ABS_AMS: {
         uint8_t parity_calc, parity_bit;
         auto rawVal = abs_spi_dma_rx_[0];
         parity_calc = parity(rawVal & 0x7FFF);
-        parity_bit = rawVal >>15;
+        parity_bit = rawVal >> 15;
 
             if (parity_calc == parity_bit) {
                 pos_abs_ = rawVal & 0x3FFF;
-                // We are going to ignore values all high or low
-                // This might happen in normal operation, but its unlikely
-                // The filter will handle these cases
-                if (pos_abs_ != 0 && pos_abs_ != 0x3FFF)
-                    abs_spi_pos_updated_ = true;
+                abs_spi_pos_updated_ = true;
             }
         } break;
         case MODE_SPI_ABS_AEAT: {
@@ -420,7 +404,7 @@ bool Encoder::update() {
     // update internal encoder state.
     int32_t delta_enc = 0;
 
-    switch (config_.mode) {
+    switch (mode_) {
         case MODE_INCREMENTAL: {
             //TODO: use count_in_cpr_ instead as shadow_count_ can overflow
             //or use 64 bit
@@ -488,7 +472,7 @@ bool Encoder::update() {
     count_in_cpr_ += delta_enc;
     count_in_cpr_ = mod(count_in_cpr_, config_.cpr);
 
-    if(config_.mode & MODE_FLAG_ABS)
+    if(mode_ & MODE_FLAG_ABS)
         count_in_cpr_ = pos_abs_;
 
     //// run pll (for now pll is in units of encoder counts)
