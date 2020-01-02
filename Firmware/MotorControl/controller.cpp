@@ -305,7 +305,7 @@ bool Controller::update(float* current_setpoint_output) {
         }
 
         v_err = vel_des - *vel_estimate_src;
-        Iq += (config_.vel_gain * gain_scheduling_multiplier) * v_err;
+        Iq += (vel_gain * gain_scheduling_multiplier) * v_err;
 
         // Velocity integral action before limiting
         Iq += vel_integrator_current_;
@@ -317,7 +317,7 @@ bool Controller::update(float* current_setpoint_output) {
             set_error(ERROR_INVALID_ESTIMATE);
             return false;
         }
-        Iq = limitVel(config_.vel_limit, *vel_estimate_src, config_.vel_gain, Iq);
+        Iq = limitVel(config_.vel_limit, *vel_estimate_src, vel_gain, Iq);
     }
 
     // Current limiting
@@ -343,7 +343,7 @@ bool Controller::update(float* current_setpoint_output) {
             // TODO make decayfactor configurable
             vel_integrator_current_ *= 0.99f;
         } else {
-            vel_integrator_current_ += ((config_.vel_integrator_gain * gain_scheduling_multiplier) * current_meas_period) * v_err;
+            vel_integrator_current_ += ((vel_integrator_gain * gain_scheduling_multiplier) * current_meas_period) * v_err;
         }
     }
 
