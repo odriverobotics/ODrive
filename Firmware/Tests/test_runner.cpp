@@ -321,7 +321,8 @@ TEST_SUITE("vel_ramp") {
     }
 
     TEST_CASE("Parity") {
-        CHECK(parity(0x0DDF) == 0);
-        CHECK(parity(0x8DDF) == 1);
+        CHECK(parity(0x0DDF & 0x7FFF) == 0);
+        CHECK(parity(0x8DDF & 0x7FFF) == 0);
+        CHECK(parity(0x5BFF & 0x7FFF) == 1);
     }
 }

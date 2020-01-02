@@ -368,6 +368,7 @@ uint8_t parity(uint16_t v){
     v ^= v >> 1;
     return v & 1;
 }
+
 void Encoder::abs_spi_cb(){
     HAL_GPIO_WritePin(abs_spi_cs_port_, abs_spi_cs_pin_, GPIO_PIN_SET);
     switch (config_.mode) {
