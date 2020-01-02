@@ -235,6 +235,10 @@ int odrive_main(void) {
         axes[i]->setup();
     }
 
+    for(auto axis : axes){
+        axis->encoder_.setup();
+    }
+
     // Start PWM and enable adc interrupts/callbacks
     start_adc_pwm();
 
