@@ -54,7 +54,7 @@ public:
     };
 
     Encoder(const EncoderHardwareConfig_t& hw_config,
-                     Config_t& config);
+            Config_t& config, Motor::Config_t motor_config);
     
     void setup();
     void set_error(Error_t error);
@@ -146,13 +146,13 @@ public:
                     [](void* ctx) { static_cast<Encoder*>(ctx)->set_idx_subscribe(); }, this),
                 make_protocol_property("find_idx_on_lockin_only", &config_.find_idx_on_lockin_only,
                     [](void* ctx) { static_cast<Encoder*>(ctx)->set_idx_subscribe(); }, this),
-                make_protocol_property("pre_calibrated", &config_.pre_calibrated,
-                    [](void* ctx) { static_cast<Encoder*>(ctx)->check_pre_calibrated(); }, this),
                 make_protocol_property("abs_spi_cs_gpio_pin", &config_.abs_spi_cs_gpio_pin,
                     [](void* ctx) { static_cast<Encoder*>(ctx)->abs_spi_cs_pin_init(); }, this),
                 make_protocol_property("zero_count_on_find_idx", &config_.zero_count_on_find_idx),
                 make_protocol_property("cpr", &config_.cpr),
                 make_protocol_property("offset", &config_.offset),
+                make_protocol_property("pre_calibrated", &config_.pre_calibrated,
+                    [](void* ctx) { static_cast<Encoder*>(ctx)->check_pre_calibrated(); }, this),
                 make_protocol_property("offset_float", &config_.offset_float),
                 make_protocol_property("enable_phase_interpolation", &config_.enable_phase_interpolation),
                 make_protocol_property("bandwidth", &config_.bandwidth,

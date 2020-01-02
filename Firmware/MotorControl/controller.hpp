@@ -114,6 +114,7 @@ public:
     // float vel_setpoint = 800.0f; <sensorless example>
     float vel_integrator_current_ = 0.0f;  // [A]
     float current_setpoint_ = 0.0f;        // [A]
+    float vel_ramp_target_ = 0.0f;
 
     float input_pos_ = 0.0f;
     float input_vel_ = 0.0f;
@@ -141,6 +142,7 @@ public:
             make_protocol_ro_property("current_setpoint", &current_setpoint_),
             make_protocol_ro_property("trajectory_done", &trajectory_done_),
             make_protocol_property("vel_integrator_current", &vel_integrator_current_),
+            make_protocol_property("vel_ramp_target", &vel_ramp_target_),
             make_protocol_property("anticogging_valid", &anticogging_valid_),
             make_protocol_property("gain_scheduling_width", &config_.gain_scheduling_width),
             make_protocol_object("config",
@@ -155,6 +157,7 @@ public:
                 make_protocol_property("vel_integrator_gain", &config_.vel_integrator_gain),
                 make_protocol_property("vel_limit", &config_.vel_limit),
                 make_protocol_property("vel_limit_tolerance", &config_.vel_limit_tolerance),
+                make_protocol_property("vel_ramp_enable", &config_.vel_ramp_enable),
                 make_protocol_property("vel_ramp_rate", &config_.vel_ramp_rate),
                 make_protocol_property("current_ramp_rate", &config_.current_ramp_rate),
                 make_protocol_property("homing_speed", &config_.homing_speed),

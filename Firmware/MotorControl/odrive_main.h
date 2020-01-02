@@ -110,7 +110,7 @@ extern Axis *axes[AXIS_COUNT];
 extern ODriveCAN *odCAN;
 
 // if you use the oscilloscope feature you can bump up this value
-#define OSCILLOSCOPE_SIZE 128
+#define OSCILLOSCOPE_SIZE 4096
 extern float oscilloscope[OSCILLOSCOPE_SIZE];
 extern size_t oscilloscope_pos;
 
@@ -129,10 +129,10 @@ inline ENUMTYPE operator ~ (ENUMTYPE a) { return static_cast<ENUMTYPE>(~static_c
 // ODrive specific includes
 #include <utils.h>
 #include <low_level.h>
+#include <motor.hpp>
 #include <encoder.hpp>
 #include <sensorless_estimator.hpp>
 #include <controller.hpp>
-#include <motor.hpp>
 #include <trapTraj.hpp>
 #include <endstop.hpp>
 #include <axis.hpp>

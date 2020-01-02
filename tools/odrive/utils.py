@@ -64,6 +64,12 @@ def dump_errors(odrv, clear=False):
             else:
                 print(prefix + _VT100Colors['green'] + "no error" + _VT100Colors['default'])
 
+def oscilloscope_dump(odrv, num_vals, filename='oscilloscope.csv'):
+    with open(filename, 'w') as f:
+        for x in range(num_vals):
+            f.write(str(odrv.get_oscilloscope_val(x)))
+            f.write('\n')
+
 data_rate = 10
 plot_rate = 10
 num_samples = 1000

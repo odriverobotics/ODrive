@@ -3,14 +3,17 @@
 
 
 Encoder::Encoder(const EncoderHardwareConfig_t& hw_config,
-                Config_t& config) :
+                Config_t& config, Motor::Config_t motor_config) :
         hw_config_(hw_config),
         config_(config)
 {
     update_pll_gains();
 
-    if (config.pre_calibrated && (config.mode == Encoder::MODE_HALL || config.mode == Encoder::MODE_SINCOS)) {
-        is_ready_ = true;
+    if (config.pre_calibrated) {
+        if (config.mode == Encoder::MODE_HALL || config.mode == Encoder::MODE_SINCOS)
+            is_ready_ = true;
+        if (motor_config.motor_type == Motor::MOTOR_TYPE_ACIM)
+            is_ready_ = true;
     }
 }
 
@@ -93,7 +96,8 @@ void Encoder::update_pll_gains() {
 }
 
 void Encoder::check_pre_calibrated() {
-    if (!is_ready_)
+    // TODO: restoring config from python backup is fragile here (ACIM motor type must be set first)
+    if (!is_ready_ && axis_->motor_.config_.motor_type != Motor::MOTOR_TYPE_ACIM)
         config_.pre_calibrated = false;
     if (mode_ == MODE_INCREMENTAL && !index_found_)
         config_.pre_calibrated = false;

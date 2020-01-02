@@ -2,6 +2,9 @@
 Please add a note of your changes below this heading if you make a Pull Request.
 
 ### Added
+* AC Induction Motor support.
+  * Tracking of rotor flux through rotor time constant
+  * Automatic d axis current for Maximum Torque Per Amp (MTPA)
 * Simplified control interface ("Input Filter" branch)
     * New input variables: `input_pos`, `input_vel`, and `input_current`
     * New setting `input_mode` to switch between different input behaviours
@@ -22,11 +25,12 @@ Please add a note of your changes below this heading if you make a Pull Request.
 * Using an STM32F405 .svd file allows CortexDebug to view registers during debugging
 
 ### Changed
+* Changed ratiometric `motor.config.current_lim_tolerance` to absolute `motor.config.current_lim_margin`
+* Moved `controller.vel_ramp_enable` into `controller.config`.
 * Anticogging map is temporarily forced to 0.1 deg precision, but saves with the config
 * Some Encoder settings have been made read-only
 * Cleaned up VSCode C/C++ Configuration settings on Windows with recursive includePath
 * Now compiling with C++17
-
 # Releases
 ## [0.4.11] - 2019-07-25
 ### Added
