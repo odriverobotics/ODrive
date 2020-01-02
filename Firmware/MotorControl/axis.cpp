@@ -319,6 +319,7 @@ bool Axis::run_closed_loop_control_loop() {
 
     // To avoid any transient on startup, we intialize the setpoint to be the current position
     controller_.pos_setpoint_ = *controller_.pos_estimate_src_;
+    controller_.input_pos_ = *controller_.pos_estimate_src_;
 
     // Avoid integrator windup issues
     controller_.vel_integrator_current_ = 0.0f;
