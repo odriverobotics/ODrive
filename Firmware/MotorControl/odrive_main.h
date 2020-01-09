@@ -71,7 +71,7 @@ extern SystemStats_t system_stats_;
 }
 
 struct PWMMapping_t {
-    endpoint_ref_t endpoint = { 0 };
+    endpoint_ref_t endpoint;
     float min = 0;
     float max = 0;
 };

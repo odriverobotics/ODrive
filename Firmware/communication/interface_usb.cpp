@@ -15,7 +15,7 @@
 
 osThreadId usb_thread;
 const uint32_t stack_size_usb_thread = 4096; // Bytes
-USBStats_t usb_stats_ = {0};
+USBStats_t usb_stats_;
 
 class USBSender : public PacketSink {
 public:

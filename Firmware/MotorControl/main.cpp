@@ -21,7 +21,7 @@ Endstop::Config_t min_endstop_configs[AXIS_COUNT];
 Endstop::Config_t max_endstop_configs[AXIS_COUNT];
 bool user_config_loaded_;
 
-SystemStats_t system_stats_ = { 0 };
+SystemStats_t system_stats_;
 
 Axis *axes[AXIS_COUNT];
 ODriveCAN *odCAN = nullptr;
