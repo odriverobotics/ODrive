@@ -2,7 +2,7 @@
 #include "interface_usb.h"
 #include "ascii_protocol.hpp"
 
-#include <MotorControl/utils.h>
+#include <MotorControl/utils.hpp>
 
 #include <fibre/protocol.hpp>
 #include <usbd_cdc.h>

@@ -3,7 +3,7 @@
 
 #include "ascii_protocol.hpp"
 
-#include <MotorControl/utils.h>
+#include <MotorControl/utils.hpp>
 
 #include <fibre/protocol.hpp>
 #include <usart.h>

@@ -157,7 +157,7 @@ build{
     packages={'stm_platform'},
     sources={
         'Drivers/DRV8301/drv8301.c',
-        'MotorControl/utils.c',
+        'MotorControl/utils.cpp',
         'MotorControl/arm_sin_f32.c',
         'MotorControl/arm_cos_f32.c',
         'MotorControl/low_level.cpp',
@@ -190,7 +190,7 @@ build{
 }
 
 if tup.getconfig('DOCTEST') == 'true' then
-    TEST_INCLUDES = '-IC:/Tools/doctest/doctest'
-    tup.frule{inputs='Tests/test_runner.cpp', command='g++ -O3 -std=gnu++17 '..TEST_INCLUDES..' %f -o %o', outputs='Tests/test_runner.exe'}
+    TEST_INCLUDES = '-I. -I./MotorControl -I./fibre/cpp/include -I./Drivers/DRV8301 -IC:/Tools/doctest/doctest'
+    tup.frule{inputs='Tests/*.cpp', command='g++ -O3 -std=gnu++17 '..TEST_INCLUDES..' %f -o %o', outputs='Tests/test_runner.exe'}
     tup.frule{inputs='Tests/test_runner.exe', command='%f'}
 end

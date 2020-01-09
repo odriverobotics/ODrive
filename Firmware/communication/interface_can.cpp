@@ -2,7 +2,7 @@
 
 #include "fibre/crc.hpp"
 #include "freertos_vars.h"
-#include "utils.h"
+#include "utils.hpp"
 
 #include <can.h>
 #include <cmsis_os.h>

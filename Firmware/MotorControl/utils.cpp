@@ -1,5 +1,5 @@
 
-#include <utils.h>
+#include <utils.hpp>
 #include <math.h>
 #include <float.h>
 #include <cmsis_os.h>
@@ -151,7 +151,7 @@ float fast_atan2(float y, float x) {
 // p(x) = coeffs[0] * x^deg + ... + coeffs[deg], for some degree "deg"
 float horner_fma(float x, const float *coeffs, size_t count) {
     float result = 0.0f;
-    for (int idx = 0; idx < count; ++idx)
+    for (size_t idx = 0; idx < count; ++idx)
         result = fmaf(result, x, coeffs[idx]);
     return result;
 }

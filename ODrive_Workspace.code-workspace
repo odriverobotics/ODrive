@@ -61,7 +61,8 @@
 			"fstream": "cpp",
 			"iomanip": "cpp",
 			"optional": "cpp",
-			"sstream": "cpp"
+			"sstream": "cpp",
+			"utils.h": "c"
 		}
 	}
 }

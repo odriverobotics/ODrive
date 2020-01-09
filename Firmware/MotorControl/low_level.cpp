@@ -17,7 +17,7 @@
 #include <main.h>
 #include <spi.h>
 #include <tim.h>
-#include <utils.h>
+#include <utils.hpp>
 
 #include "odrive_main.h"
 
