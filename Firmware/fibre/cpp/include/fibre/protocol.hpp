@@ -117,9 +117,7 @@ template<>
 inline size_t read_le<float>(float* value, const uint8_t* buffer) {
     static_assert(CHAR_BIT * sizeof(float) == 32, "32 bit floating point expected");
     static_assert(std::numeric_limits<float>::is_iec559, "IEEE 754 floating point expected");
-    uint32_t value_as_uint32;
-    std::memcpy(&value_as_uint32, &value, sizeof(uint32_t));
-    return read_le(&value_as_uint32, buffer);
+    return read_le(reinterpret_cast<uint32_t*>(value), buffer);
 }
 
 // @brief Reads a value of type T from the buffer.
