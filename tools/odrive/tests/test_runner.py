@@ -46,6 +46,7 @@ class ODriveTestContext():
         self.yaml = yaml
         #self.axes = [AxisTestContext(None), AxisTestContext(None)]
         self.encoders = [EncoderTestContext(self, 0, None), EncoderTestContext(self, 1, None)]
+        self.axes = [AxisTestContext(self, 0, None), AxisTestContext(self, 1, None)]
 
     def __repr__(self):
         return self.yaml['name']
@@ -64,6 +65,32 @@ class ODriveTestContext():
         #    axis_ctx.handle = self.handle.__dict__['axis{}'.format(axis_idx)]
         for encoder_idx, encoder_ctx in enumerate(self.encoders):
             encoder_ctx.handle = self.handle.__dict__['axis{}'.format(encoder_idx)].encoder
+        # TODO: distinguish between axis and motor context
+        for axis_idx, axis_ctx in enumerate(self.axes):
+            axis_ctx.handle = self.handle.__dict__['axis{}'.format(axis_idx)]
+
+class MotorTestContext():
+    def __init__(self, yaml: dict):
+        self.yaml = yaml
+    
+    def __repr__(self):
+        return self.yaml['name']
+
+    def make_available(self, logger: Logger):
+        pass
+
+class AxisTestContext():
+    def __init__(self, odrv_ctx: ODriveTestContext, num: int, yaml: dict):
+        self.handle = None
+        self.yaml = odrv_ctx.yaml[f'motor{num}'] # TODO: this is bad naming
+        self.odrv_ctx = odrv_ctx
+        self.num = num
+    
+    def __repr__(self):
+        return str(self.odrv_ctx) + '.axis' + str(self.num)
+
+    def make_available(self, logger: Logger):
+        self.odrv_ctx.make_available(logger)
 
 class EncoderTestContext():
     def __init__(self, odrv_ctx: ODriveTestContext, num: int, yaml: dict):
@@ -93,6 +120,35 @@ class CANTestContext():
 
 # Helper functions ------------------------------------------------------------#
 
+def request_state(axis_ctx: AxisTestContext, state, expect_success=True):
+    axis_ctx.handle.requested_state = state
+    time.sleep(0.001)
+    if expect_success:
+        test_assert_eq(axis_ctx.handle.current_state, state)
+    else:
+        test_assert_eq(axis_ctx.handle.current_state, AXIS_STATE_IDLE)
+        test_assert_eq(axis_ctx.handle.error, AXIS_ERROR_INVALID_STATE)
+        axis_ctx.handle.error = AXIS_ERROR_NONE # reset error
+
+def get_errors(axis_ctx: AxisTestContext):
+    errors = []
+    if axis_ctx.handle.motor.error != 0:
+        errors.append("motor failed with error 0x{:04X}".format(axis_ctx.handle.motor.error))
+    if axis_ctx.handle.encoder.error != 0:
+        errors.append("encoder failed with error 0x{:04X}".format(axis_ctx.handle.encoder.error))
+    if axis_ctx.handle.sensorless_estimator.error != 0:
+        errors.append("sensorless_estimator failed with error 0x{:04X}".format(axis_ctx.handle.sensorless_estimator.error))
+    if axis_ctx.handle.error != 0:
+        errors.append("axis failed with error 0x{:04X}".format(axis_ctx.handle.error))
+    elif len(errors) > 0:
+        errors.append("and by the way: axis reports no error even though there is one")
+    return errors
+
+def test_assert_no_error(axis_ctx: AxisTestContext):
+    errors = get_errors(axis_ctx)
+    if len(errors) > 0:
+        raise TestFailed("\n".join(errors))
+
 def yaml_to_test_objects(test_rig_yaml: dict, logger: Logger):
     available_test_objects = {}
 
@@ -106,10 +162,15 @@ def yaml_to_test_objects(test_rig_yaml: dict, logger: Logger):
             add_component(odrv_ctx)
             for enc_ctx in odrv_ctx.encoders:
                 add_component(enc_ctx)
+            for axis_ctx in odrv_ctx.axes:
+                add_component(axis_ctx)
         elif component_yaml['type'] == 'generalpurpose':
             for (k, v) in [(k, v) for (k, v) in component_yaml.items() if k.startswith("can")]:
                 can_ctx = CANTestContext({'id': k, 'bus': v})
                 add_component(can_ctx)
+        elif component_yaml['type'] == 'motor':
+            motor_ctx = MotorTestContext(component_yaml)
+            add_component(motor_ctx)
         else:
             logger.warn('test rig has unsupported component ' + component_yaml['type'])
             continue
@@ -158,43 +219,49 @@ def program_teensy(hex_file_path, program_gpio: int, logger: Logger):
     run_shell(["teensy_loader_cli", "-mmcu=imxrt1062", "-w", hex_file_path], logger, timeout = 5)
     time.sleep(0.5) # give it some time to boot
 
-def run(test_case):
-    # Parse arguments
-    parser = argparse.ArgumentParser(description='ODrive automated test tool\n')
-    parser.add_argument("--ignore", metavar='DEVICE', action='store', nargs='+',
-                        help="Ignore (disable) one or more components of the test rig")
-                        # TODO: implement
-    parser.add_argument("--test-rig-yaml", type=argparse.FileType('r'), required=True,
-                        help="test rig YAML file")
-    parser.set_defaults(ignore=[])
+def run(test_cases):
+    if not isinstance(test_cases, list):
+        test_cases = [test_cases]
 
-    args = parser.parse_args()
+    for test_case in test_cases:
+        # Compile a list of list of potential objects that might be compatible with this
+        # test
+        possible_parameters = []
+        sig = signature(test_case.is_compatible)
+        for param_name in sig.parameters:
+            param_type = sig.parameters[param_name].annotation
+            possible_parameters.append(available_test_objects[param_type])
 
-    # Load objects
-    test_rig_yaml = yaml.load(args.test_rig_yaml, Loader=yaml.BaseLoader)
-    logger = Logger()
+        # For each combination, check if the test is compatible with these objects
+        for param_combination in itertools.product(*possible_parameters):
+            if not test_case.is_compatible(*param_combination):
+                continue
+            
+            for param in param_combination:
+                param.make_available(logger)
 
-    available_test_objects = yaml_to_test_objects(test_rig_yaml, logger)
-
-    # Compile a list of list of potential objects that might be compatible with this
-    # test
-    possible_parameters = []
-    sig = signature(test_case.is_compatible)
-    for param_name in sig.parameters:
-        param_type = sig.parameters[param_name].annotation
-        possible_parameters.append(available_test_objects[param_type])
-
-    # For each combination, check if the test is compatible with these objects
-    for param_combination in itertools.product(*possible_parameters):
-        if not test_case.is_compatible(*param_combination):
-            continue
-        
-        for param in param_combination:
-            param.make_available(logger)
-
-        logger.notify('* running {} on {}...'.format(type(test_case).__name__,
-                [str(p) for p in param_combination]))
-        test_case.run_test(*param_combination, logger)
-
+            logger.notify('* running {} on {}...'.format(type(test_case).__name__,
+                    [str(p) for p in param_combination]))
+            test_case.run_test(*param_combination, logger)
 
     logger.success('All tests passed!')
+
+
+# Load test engine ------------------------------------------------------------#
+
+# Parse arguments
+parser = argparse.ArgumentParser(description='ODrive automated test tool\n')
+parser.add_argument("--ignore", metavar='DEVICE', action='store', nargs='+',
+                    help="Ignore (disable) one or more components of the test rig")
+                    # TODO: implement
+parser.add_argument("--test-rig-yaml", type=argparse.FileType('r'), required=True,
+                    help="test rig YAML file")
+parser.set_defaults(ignore=[])
+
+args = parser.parse_args()
+
+# Load objects
+test_rig_yaml = yaml.load(args.test_rig_yaml, Loader=yaml.BaseLoader)
+logger = Logger()
+
+available_test_objects = yaml_to_test_objects(test_rig_yaml, logger)

@@ -27,22 +27,12 @@ components:
     encoder0: virtual_encoder0
     encoder1: virtual_encoder1
     motor0: D5065-270KV_0
-    motor1: D5065-270KV_1
+    motor1: floating
 
   - type: motor
     name: D5065-270KV_0
-    phase-resistance: 0.0245
-    phase-inductance: 2.03e-05
-    pole-pairs: 7
-    direction: 1
-    kv: 270
-    max-current: 70
-    max-voltage: 40
-
-  - type: motor
-    name: D5065-270KV_1
-    phase-resistance: 0.0245
-    phase-inductance: 2.03e-05
+    phase-resistance: 0.039
+    phase-inductance: 1.57e-05
     pole-pairs: 7
     direction: 1
     kv: 270
