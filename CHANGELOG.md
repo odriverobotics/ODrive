@@ -23,6 +23,7 @@ Please add a note of your changes below this heading if you make a Pull Request.
 * Unit Testing with Doctest has been started for select algorithms, see [Firmware/Tests/test_runner.cpp](Firmware/Tests/test_runner.cpp)
 * Added support for Flylint VSCode Extension for static code analysis
 * Using an STM32F405 .svd file allows CortexDebug to view registers during debugging
+* Added scripts for building via docker.
 
 ### Changed
 * Changed ratiometric `motor.config.current_lim_tolerance` to absolute `motor.config.current_lim_margin`
