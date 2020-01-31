@@ -532,6 +532,7 @@ void Axis::run_state_machine_loop() {
                     goto invalid_state_label;
                 if (!encoder_.is_ready_)
                     goto invalid_state_label;
+                watchdog_feed();
                 status = run_closed_loop_control_loop();
             } break;
 
