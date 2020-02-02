@@ -194,9 +194,9 @@ You can change `odrv0.axis0.motor.config.calibration_current` [A] to the largest
 This is the resistance of the brake resistor. If you are not using it, you may set it to `0`. Note that there may be some extra resistance in your wiring and in the screw terminals, so if you are getting issues while braking you may want to increase this parameter by around 0.05 ohm.
  
 `odrv0.axis0.motor.config.pole_pairs`  
-This is the number of **magnet poles** in the rotor, **divided by two**. To find this, you can simply count the number of permanent magnets in the rotor, if you can see them.  
-**Note**: This is **not** the same as the number of coils in the stator.  
-If you can't see them, try sliding a loose magnet in your hand around the rotor, and counting how many times it stops. This will be the number of _pole pairs_. If you use a magnetic piece of metal instead of a magnet, you will get the number of _magnet poles_.
+This is the number of **magnet poles** in the rotor, **divided by two**. To find this, you can simply count the number of permanent magnets in the rotor, if you can see them.   
+If you can't see them, try sliding a loose magnet in your hand around the rotor, and counting how many times it stops. This will be the number of _pole pairs_. If you use a magnetic piece of metal instead of a magnet, you will get the number of _magnet poles_. Another way of finding this number is with a current limited power supply. Connect any two of the three phases to a power supply outputting around 2A, spin the motor by hand, and count the number of detents. This will be the number of pole pairs. If you can't distinguish the detents from the normal cogging present when the motor is disconnected, increase the current.   
+**Note**: This is **not** the same as the number of coils in the stator. 
 
 `odrv0.axis0.motor.config.motor_type`  
 This is the type of motor being used. Currently two types of motors are supported: High-current motors (`MOTOR_TYPE_HIGH_CURRENT`) and gimbal motors (`MOTOR_TYPE_GIMBAL`).
