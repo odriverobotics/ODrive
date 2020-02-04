@@ -171,13 +171,19 @@ size_t CCBBuffer<dataType_t>::remainingSpace()
 template <class dataType_t>
 size_t CCBBuffer<dataType_t>::remainingSpaceLinear()
 {
+size_t length = 0;
 
 /* if end is less than start index then data goes from start pointer to size of
  * array and start of array to end index. free space exists between end index
- * and start index. If start is less than end index, then data does from end
+ * and start index. If start is less than end index, then data goes from end
  * index to numElements of array and start of array to start index.
  */
-    return (size_t)(((m_cb.tracker.end < m_cb.tracker.start) ? m_cb.tracker.end : (int32_t)m_cb.tracker.numElements) - m_cb.tracker.end);
+    if (!isFull())
+    {
+        length = (size_t)(((m_cb.tracker.end < m_cb.tracker.start) ? m_cb.tracker.start : (int32_t)m_cb.tracker.numElements) - m_cb.tracker.end);
+    }
+
+    return length;
 }
 
 /**\brief   Checks used space in the buffer
