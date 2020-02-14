@@ -812,7 +812,11 @@ public:
 
     // special-purpose function - to be moved
     bool set_string(char * buffer, size_t length) final {
-        return from_string(buffer, length, property_, 0);
+        bool wrote = from_string(buffer, length, property_, 0);
+        if (wrote && written_hook_ != nullptr) {
+            written_hook_(ctx_);
+        }
+        return wrote;
     }
 
     bool set_from_float(float value) final {
