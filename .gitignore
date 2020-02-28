@@ -37,7 +37,7 @@ target/
 .tup
 tup.config
 
-/ruby-bundle
-/_site
-/.bundle
+docs/ruby-bundle
+docs/_site
+docs/.bundle
 

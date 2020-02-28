@@ -36,6 +36,11 @@ The current state of an axis is indicated by `<axis>.current_state`. The user ca
  8. `AXIS_STATE_CLOSED_LOOP_CONTROL` Run closed loop control.
     * The action depends on the [control mode](#control-mode).
     * Can only be entered if the motor is calibrated (`<axis>.motor.is_calibrated`) and the encoder is ready (`<axis>.encoder.is_ready`).
+ 9. `AXIS_STATE_LOCKIN_SPIN` Run lockin spin.
+    * Can only be entered if the motor is calibrated (`<axis>.motor.is_calibrated`) or the motor direction is unspecified (`<axis>.motor.config.direction == 1`)
+ 10. `AXIS_STATE_ENCODER_DIR_FIND` Run encoder direction search.
+    * Can only be entered if the motor is calibrated (`<axis>.motor.is_calibrated`).
+
 
 ### Startup Procedure
 
@@ -58,6 +63,7 @@ Possible values are:
 * `CTRL_MODE_POSITION_CONTROL`
 * `CTRL_MODE_VELOCITY_CONTROL`
 * `CTRL_MODE_CURRENT_CONTROL`
+* `CTRL_MODE_TRAJECTORY_CONTROL`
 * `CTRL_MODE_VOLTAGE_CONTROL` - this one is not normally used.
 
 # Control Commands
