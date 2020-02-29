@@ -118,7 +118,7 @@ must reflect the number of counts odrive receives after one complete turn of the
 You will probably never be able to properly debug if you have problems unless you use an oscilloscope. If you have one, try the following:
 Connect to the AB pins, see if you get square waves as you turn the motor.
 Connect to the I pin, see if you get a pulse on a complete rotation. Sometimes this is hard to see.
-If you are using SPI, have a lot at the signal on the CLK, and CS pins. There are many examples on the net for how these should behave. 
+If you are using SPI, use a logic analyzer and connect a wire to the CLK, MISO, and CS pins. Set a trigger for the CS pin and insure that the encoder position is being sent and is increasing/decreasing as you spin the motor. There is extremely cheap [Sigrok](https://sigrok.org/) supported hardware available for protocol analysis. 
 
 ## Encoder Noise
 Noise is found in all circuits, life is just about figuring out if it is preventing your system from working. Lots of users have no problems with noise interfering with their odrive operation, others will tell you "_I've been using the same encoder as you with no problems_". Power to 'em, that may be true, but it doesn't mean it will work for you. If you are concerned about noise, there are several possible sources:
@@ -152,9 +152,11 @@ The acronym I and Z mean the same thing, connect those as well if you are using 
 #### Using SPI.
 TobinHall has written a [branch](https://github.com/TobinHall/ODrive/tree/Non-Blocking_Absolute_SPI) that supports the SPI option on the AS5047/AS5048. Use his build to flash firmware on your ODrive and connect MISO, SCK, and CS to the labeled pins on the odrive
 
-Tie MOSI to 3.3v, connect to the SCK, CLK, MISO, GND and 3.2v pins on the ODrive. (note for SPI users, the acronym SCK and CLK mean the same thing, the acronym CSn and CS mean the same thing.)
+Wetmelon's Razor's Edge [branch](https://github.com/Wetmelon/ODrive/tree/RazorsEdge) also supports SPI without manually pulling MOSI high and using a standard SPI wiring
+
+Tie MOSI to 3.3v, connect to the SCK, CLK, MISO, GND and 3.3v pins on the ODrive. (note for SPI users, the acronym SCK and CLK mean the same thing, the acronym CSn and CS mean the same thing.)
 
 Add these commands to your calibration / startup script:
 * `<axis>.encoder.config.abs_spi_cs_gpio_pin = 4` or which ever GPIO pin you choose
-* `<axis>.encoder.config.mode = 257`
-* `<odrv>.axis0.encoder.config.cpr = 2**14`
+* `<axis>.encoder.config.mode = 257` 256 - CUI Encoder, 257 - AMS Encoder, 258 - AEAT Encoder
+* `<odrv>.axis0.encoder.config.cpr = 2**14` Resolution of the encoder `2**14` or `2**16` is common
