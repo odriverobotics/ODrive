@@ -10,14 +10,15 @@ Before doing the VSCode setup, make sure you've installed all of your [prerequis
 1. Open VSCode
 1. Install extensions.  This can be done directly from VSCode (Ctrl+Shift+X)
     * Required extensions:
-        * C/C++
-        * Cortex-Debug
+        * C/C++ `ext install ms-vscode.cpptools`
+        * Cortex-Debug `ext install marus25.cortex-debug`
+        * Cortex-Debug: Device Support Pack - STM32F4 `ext install marus25.cortex-debug-dp-stm32f4`
     * Recommended Extensions:
         * Include Autocomplete
         * Path Autocomplete
         * Auto Comment Blocks
-1. Create an environment variable named `ARM_GCC_ROOT` whose value is the location of the `GNU Arm Embedded Toolchain` (.e.g `C:\Program Files (x86)\GNU Tools Arm Embedded\7 2018-q2-update`) that you installed in the prerequisites section of the developer's guide.
-1. Restart VSCode 
+1. Create an environment variable named `ARM_GCC_ROOT` whose value is the location of the `GNU Arm Embedded Toolchain` (.e.g `C:\Program Files (x86)\GNU Tools Arm Embedded\7 2018-q2-update`) that you installed in the prerequisites section of the developer's guide. This is not strictly needed for Linux or Mac, and you can alternatively use the `Cortex-debug: Arm Toolchain Path` setting in VSCode extension settings.
+1. Relaunch VSCode 
 1. Open the VSCode Workspace file, which is located in the root of the ODrive repository.  It is called `ODrive_Workspace.code-workspace`.  The first time you open it, VSCode will install some dependencies.  If it fails, you may need to [change your proxy settings](https://code.visualstudio.com/docs/getstarted/settings).
 
 You should now be ready to compile and test the ODrive project.
