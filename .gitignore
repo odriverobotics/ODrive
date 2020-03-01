@@ -40,4 +40,5 @@ tup.config
 docs/ruby-bundle
 docs/_site
 docs/.bundle
+docs/Gemfile.lock
 
