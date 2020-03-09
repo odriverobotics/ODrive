@@ -81,6 +81,7 @@ public:
     size_t usedSpaceLinear();
     bool flushBuffer();
     int32_t write(const dataType_t * const elem, size_t length);
+    int32_t write(const dataType_t Data);
     int32_t read(dataType_t * elem, size_t length);
     bool readNewest(dataType_t * pData);
 
@@ -273,6 +274,18 @@ int32_t CCBBuffer<dataType_t>::write(const dataType_t * const pData, size_t leng
     }
 
     return writeCnt;
+}
+
+/**\brief   Writes a number of elements to the buffer, exiting if buffer is full
+ *
+ * \param   Data    - Single data element to be stored
+ *
+ * \return  number of entries written
+ */
+template <class dataType_t>
+int32_t CCBBuffer<dataType_t>::write(const dataType_t Data)
+{
+    return write(&Data, 1);
 }
 
 /**\brief   Reads a length of data starting from oldest element.
