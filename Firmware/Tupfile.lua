@@ -175,6 +175,11 @@ build{
         'communication/interface_usb.cpp',
         'communication/interface_can.cpp',
         'communication/interface_i2c.cpp',
+		'Utilities/Src/GPIODebounceTools.cpp',
+		'Utilities/Src/SubscribeBase.cpp',
+		'Utilities/Src/SubscribeEXTI.cpp',
+		'Utilities/Src/SubscribeDebounce.cpp',
+		'Tasks/Src/DebounceTask.cpp',
         'fibre/cpp/protocol.cpp',
         'FreeRTOS-openocd.c'
     },
@@ -182,6 +187,9 @@ build{
         'Drivers/DRV8301',
         'MotorControl',
         'fibre/cpp/include',
+		'Tasks/Inc',
+		'Utilities/Inc',
+		'communication',
         '.'
     }
 }
