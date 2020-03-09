@@ -310,11 +310,12 @@ threadHandle_t CThreadBase::createTask(char const * pTaskName, const uint32_t pr
 //                this,
 //                priority,
 //                &xHandle);
-//    configASSERT( xHandle );
 //
 //#endif
 
-    vTaskSuspend(m_pThreadHandle);
+    configASSERT(xHandle);
+
+    vTaskSuspend(xHandle);
 
     return xHandle;
 
