@@ -169,27 +169,27 @@ IRQn_Type get_irq_number(uint16_t pin) {
 
 // @brief Puts the GPIO's 1 and 2 into UART mode.
 // This will disable any interrupt subscribers of these GPIOs.
-void SetGPIO12toUART() {
-  GPIO_InitTypeDef GPIO_InitStruct;
-
-  // make sure nothing is hogging the GPIO's
-  GPIO_unsubscribe(GPIO_1_GPIO_Port, GPIO_1_Pin);
-  GPIO_unsubscribe(GPIO_2_GPIO_Port, GPIO_2_Pin);
-
-  GPIO_InitStruct.Pin = GPIO_1_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
-  GPIO_InitStruct.Pull = GPIO_PULLDOWN;
-  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
-  GPIO_InitStruct.Alternate = GPIO_AF8_UART4;
-  HAL_GPIO_Init(GPIO_1_GPIO_Port, &GPIO_InitStruct);
-
-  GPIO_InitStruct.Pin = GPIO_2_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
-  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
-  GPIO_InitStruct.Alternate = GPIO_AF8_UART4;
-  HAL_GPIO_Init(GPIO_2_GPIO_Port, &GPIO_InitStruct);
-}
+//void SetGPIO12toUART() {
+//  GPIO_InitTypeDef GPIO_InitStruct;
+//
+//  // make sure nothing is hogging the GPIO's
+//  GPIO_unsubscribe(GPIO_1_GPIO_Port, GPIO_1_Pin);
+//  GPIO_unsubscribe(GPIO_2_GPIO_Port, GPIO_2_Pin);
+//
+//  GPIO_InitStruct.Pin = GPIO_1_Pin;
+//  GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
+//  GPIO_InitStruct.Pull = GPIO_PULLDOWN;
+//  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
+//  GPIO_InitStruct.Alternate = GPIO_AF8_UART4;
+//  HAL_GPIO_Init(GPIO_1_GPIO_Port, &GPIO_InitStruct);
+//
+//  GPIO_InitStruct.Pin = GPIO_2_Pin;
+//  GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
+//  GPIO_InitStruct.Pull = GPIO_NOPULL;
+//  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
+//  GPIO_InitStruct.Alternate = GPIO_AF8_UART4;
+//  HAL_GPIO_Init(GPIO_2_GPIO_Port, &GPIO_InitStruct);
+//}
 
 // Expected subscriptions: 2x step signal + 2x encoder index signal
 #define MAX_SUBSCRIPTIONS 10
@@ -204,60 +204,60 @@ size_t n_subscriptions = 0;
 // Sets up the specified GPIO to trigger the specified callback
 // on a rising edge of the GPIO.
 // @param pull_up_down: one of GPIO_NOPULL, GPIO_PULLUP or GPIO_PULLDOWN
-bool GPIO_subscribe(GPIO_TypeDef* GPIO_port, uint16_t GPIO_pin,
-    uint32_t pull_up_down,
-    void (*callback)(void*), void* ctx) {
-  
-  // Register handler (or reuse existing registration)
-  // TODO: make thread safe
-  struct subscription_t* subscription = NULL;
-  for (size_t i = 0; i < n_subscriptions; ++i) {
-    if (subscriptions[i].GPIO_port == GPIO_port &&
-        subscriptions[i].GPIO_pin == GPIO_pin)
-      subscription = &subscriptions[i];
-  }
-  if (!subscription) {
-    if (n_subscriptions >= MAX_SUBSCRIPTIONS)
-      return false;
-    subscription = &subscriptions[n_subscriptions++];
-  }
-
-  *subscription = (struct subscription_t){
-    .GPIO_port = GPIO_port,
-    .GPIO_pin = GPIO_pin,
-    .callback = callback,
-    .ctx = ctx
-  };
-
-  // Set up GPIO
-  GPIO_InitTypeDef GPIO_InitStruct;
-  GPIO_InitStruct.Pin = GPIO_pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
-  GPIO_InitStruct.Pull = pull_up_down;
-  HAL_GPIO_Init(GPIO_port, &GPIO_InitStruct);
-
-  // Clear any previous triggers
-  __HAL_GPIO_EXTI_CLEAR_IT(GPIO_pin);
-  // Enable interrupt
-  HAL_NVIC_SetPriority(get_irq_number(GPIO_pin), 0, 0);
-  HAL_NVIC_EnableIRQ(get_irq_number(GPIO_pin));
-  return true;
-}
-
-void GPIO_unsubscribe(GPIO_TypeDef* GPIO_port, uint16_t GPIO_pin) {
-  bool is_pin_in_use = false;
-  for (size_t i = 0; i < n_subscriptions; ++i) {
-    if (subscriptions[i].GPIO_port == GPIO_port &&
-        subscriptions[i].GPIO_pin == GPIO_pin) {
-      subscriptions[i].callback = NULL;
-      subscriptions[i].ctx = NULL;
-    } else if (subscriptions[i].GPIO_pin == GPIO_pin) {
-      is_pin_in_use = true;
-    }
-  }
-  if (!is_pin_in_use)
-    HAL_NVIC_DisableIRQ(get_irq_number(GPIO_pin));
-}
+//bool GPIO_subscribe(GPIO_TypeDef* GPIO_port, uint16_t GPIO_pin,
+//    uint32_t pull_up_down,
+//    void (*callback)(void*), void* ctx) {
+//
+//  // Register handler (or reuse existing registration)
+//  // TODO: make thread safe
+//  struct subscription_t* subscription = NULL;
+//  for (size_t i = 0; i < n_subscriptions; ++i) {
+//    if (subscriptions[i].GPIO_port == GPIO_port &&
+//        subscriptions[i].GPIO_pin == GPIO_pin)
+//      subscription = &subscriptions[i];
+//  }
+//  if (!subscription) {
+//    if (n_subscriptions >= MAX_SUBSCRIPTIONS)
+//      return false;
+//    subscription = &subscriptions[n_subscriptions++];
+//  }
+//
+//  *subscription = (struct subscription_t){
+//    .GPIO_port = GPIO_port,
+//    .GPIO_pin = GPIO_pin,
+//    .callback = callback,
+//    .ctx = ctx
+//  };
+//
+//  // Set up GPIO
+//  GPIO_InitTypeDef GPIO_InitStruct;
+//  GPIO_InitStruct.Pin = GPIO_pin;
+//  GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
+//  GPIO_InitStruct.Pull = pull_up_down;
+//  HAL_GPIO_Init(GPIO_port, &GPIO_InitStruct);
+//
+//  // Clear any previous triggers
+//  __HAL_GPIO_EXTI_CLEAR_IT(GPIO_pin);
+//  // Enable interrupt
+//  HAL_NVIC_SetPriority(get_irq_number(GPIO_pin), 0, 0);
+//  HAL_NVIC_EnableIRQ(get_irq_number(GPIO_pin));
+//  return true;
+//}
+//
+//void GPIO_unsubscribe(GPIO_TypeDef* GPIO_port, uint16_t GPIO_pin) {
+//  bool is_pin_in_use = false;
+//  for (size_t i = 0; i < n_subscriptions; ++i) {
+//    if (subscriptions[i].GPIO_port == GPIO_port &&
+//        subscriptions[i].GPIO_pin == GPIO_pin) {
+//      subscriptions[i].callback = NULL;
+//      subscriptions[i].ctx = NULL;
+//    } else if (subscriptions[i].GPIO_pin == GPIO_pin) {
+//      is_pin_in_use = true;
+//    }
+//  }
+//  if (!is_pin_in_use)
+//    HAL_NVIC_DisableIRQ(get_irq_number(GPIO_pin));
+//}
 
 // @brief Configures the specified GPIO as an analog input.
 // This disables any subscriptions that were active for this pin.

@@ -145,7 +145,7 @@ void Axis::set_step_dir_active(bool active) {
         HAL_GPIO_Init(dir_port_, &GPIO_InitStruct);
 
         // Subscribe to rising edges of the step GPIO
-        GPIO_subscribe(step_port_, step_pin_, GPIO_PULLDOWN,
+        SubscribeEXTI.subscribe(step_port_, step_pin_, GPIO_PULLDOWN,
                 step_cb_wrapper, this);
 
         step_dir_active_ = true;
@@ -153,7 +153,7 @@ void Axis::set_step_dir_active(bool active) {
         step_dir_active_ = false;
 
         // Unsubscribe from step GPIO
-        GPIO_unsubscribe(step_port_, step_pin_);
+        SubscribeEXTI.unsubscribe(step_port_, step_pin_);
     }
 }
 
