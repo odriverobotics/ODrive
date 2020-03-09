@@ -77,6 +77,7 @@ public:
 
     CCBBuffer(dataType_t * pArray = nullptr, const size_t size = 0, const bool useMutex = false, const bool overwriteOldData = false);
     ~CCBBuffer() = default;
+    bool init(dataType_t * pArray, const size_t numElements, const bool useMutex, const bool overwriteOldData);
     bool isFull(void);
     bool isEmpty(void);
     size_t remainingSpace(void);
@@ -121,6 +122,29 @@ CCBBuffer<dataType_t>::CCBBuffer(dataType_t * pArray, const size_t numElements, 
 {
 //        assert(this->isPowerOfTwo(size), "The size must be of ^2 otherwise overflow condition of start/end tracker values will corrupt data in buffer ");
     (void)flushBuffer();
+}
+
+/**\brief   initialising function to reconfigure the circular buffer without
+ *          having to reconstruct the class
+ *
+ * \param   pArray              - pointer to external memory
+ * \param   numElements         - number of dataType_t's in ring buffer to be created, must be a value ^2 if doing bulk writes
+ * \param   useMutex            - enables or disables mutex locking. Defaults to false
+ * \param   overwriteOldData    - enables discarding of old data. Defaults to false
+ *
+ * \return  None
+ */
+template <class dataType_t>
+bool CCBBuffer<dataType_t>::init(dataType_t * pArray, const size_t numElements, const bool useMutex, const bool overwriteOldData)
+{
+    this.m_cb.tracker.numElements = numElements;
+    this.m_cb.tracker.start = 0;
+    this.m_cb.tracker.end = 0;
+    this.m_cb.pArray = pArray;
+    this.m_useMutex = useMutex;
+    this.m_overwriteOldData = overwriteOldData;
+//        assert(this->isPowerOfTwo(size), "The size must be of ^2 otherwise overflow condition of start/end tracker values will corrupt data in buffer ");
+    return flushBuffer();
 }
 
 /**\brief   Checks if the ring buffer is full
