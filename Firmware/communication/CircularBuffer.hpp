@@ -82,6 +82,7 @@ public:
     bool flushBuffer();
     int32_t write(const dataType_t * const elem, size_t length);
     int32_t write(const dataType_t Data);
+    int32_t peak(dataType_t * pData, size_t length);
     int32_t read(dataType_t * elem, size_t length);
     bool readNewest(dataType_t * pData);
 
@@ -286,6 +287,35 @@ template <class dataType_t>
 int32_t CCBBuffer<dataType_t>::write(const dataType_t Data)
 {
     return write(&Data, 1);
+}
+
+/**\brief   peaks at a length of data starting from oldest element. Does not remove from buffer
+ *
+ * \param   pData   - Pointer to place where data is to be returned
+ * \param   length  - number of entries to be read from the buffer
+ *
+ * \return  number of elements read
+ */
+template <class dataType_t>
+int32_t CCBBuffer<dataType_t>::peak(dataType_t * pData, size_t length)
+{
+    int32_t readCnt = 0;
+    size_t toRead = 0;
+
+    if(m_useMutex)
+    {
+
+    }
+
+    for (readCnt = 0; (!isEmpty() && readCnt < (int32_t)length); readCnt =+ toRead)
+    {
+        size_t linearLength = usedSpaceLinear();
+        size_t leftToRead = length - readCnt;
+        toRead = (leftToRead < linearLength) ? leftToRead : linearLength;
+        memcpy(&pData[readCnt], &m_cb.pArray[m_cb.tracker.start], toRead * sizeof(m_cb.pArray[0]));
+    }
+
+    return readCnt;
 }
 
 /**\brief   Reads a length of data starting from oldest element.
