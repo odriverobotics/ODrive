@@ -8,6 +8,8 @@
 #include <communication/interface_uart.h>
 #include <communication/interface_i2c.h>
 
+#include "WatchdogTask.hpp"
+
 BoardConfig_t board_config;
 Encoder::Config_t encoder_configs[AXIS_COUNT];
 SensorlessEstimator::Config_t sensorless_configs[AXIS_COUNT];
@@ -16,6 +18,15 @@ Motor::Config_t motor_configs[AXIS_COUNT];
 Axis::Config_t axis_configs[AXIS_COUNT];
 TrapezoidalTrajectory::Config_t trap_configs[AXIS_COUNT];
 bool user_config_loaded_;
+
+extern IWDG_HandleTypeDef hiwdg;
+uint32_t watchdogStack[1024];
+CWatchdogTask watchdogTask("WatchdogTask"
+                        , 100.0f
+                        , osPriorityRealtime
+                        , (void *)watchdogStack
+                        , ARRAY_LEN(watchdogStack)
+                        , &hiwdg);
 
 SystemStats_t system_stats_ = { 0 };
 
@@ -141,6 +152,8 @@ int odrive_main(void) {
     } else
 #endif
         MX_CAN1_Init();
+
+    watchdogTask.start(osPriorityRealtime);
 
     // Init general user ADC on some GPIOs.
     GPIO_InitTypeDef GPIO_InitStruct;
