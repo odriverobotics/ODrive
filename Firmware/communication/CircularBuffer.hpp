@@ -58,8 +58,8 @@ class CCBBuffer
     typedef struct
     {
         size_t numElements;                                                     /* maximum number of elements */
-        int32_t start;                                                          /* index of oldest element */
-        int32_t end;                                                            /* index at which to write new element */
+        volatile int32_t start;                                                 /* index of oldest element */
+        volatile int32_t end;                                                   /* index at which to write new element */
     }CBTracker_t;
 
     typedef struct
