@@ -87,6 +87,9 @@ public:
     bool readNewest(dataType_t * pData);
 
 private:
+    bool isPowerOfTwo(size_t x);
+
+private:
     circularBuffer_t m_cb;
     bool m_useMutex;
     bool m_overwriteOldData;
@@ -371,6 +374,20 @@ bool CCBBuffer<dataType_t>::readNewest(dataType_t * pData)
     }
 
     return !empty;
+}
+
+/**\brief   Calculates whether a value in the argument is to the power of 2
+ *          by taking the bit pattern of x and logically ANDing it with the bit
+ *          pattern of (x-1). If the result is 0 then the number is = ^2
+ *
+ * \param   x   - value to test
+ *
+ * \return  true if value is non-zero and to the power of 2, else returns false
+ */
+template <class dataType_t>
+bool CCBBuffer<dataType_t>::isPowerOfTwo(size_t x)
+{
+    return (x != 0u) && ((x & (x - 1u)) == 0u);
 }
 
 #endif /* CIRCULAR_BUFFER_H --------------------------------------------------*/
