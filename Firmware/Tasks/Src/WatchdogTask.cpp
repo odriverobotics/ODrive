@@ -28,13 +28,14 @@ DEFINITIONS
 *******************************************************************************/
 
 #ifndef SOFTWARE_BREAKPOINT
-
-#ifdef DEBUG
-#define SOFTWARE_BREAKPOINT __asm__("BKPT")                                     // TODO Move this to project config page and use macro to change software breakpoint to match operating system
-#else
-#define SOFTWARE_BREAKPOINT
+#define SOFTWARE_BREAKPOINT __asm__("BKPT")
 #endif
 
+// set DEBUG to true to enable a software breakpoint to catch a watchdog timeout
+#ifdef DEBUG
+#define CATCH_WATCHDOG_EVENT SOFTWARE_BREAKPOINT
+#else
+#define CATCH_WATCHDOG_EVENT
 #endif
 
 /*******************************************************************************
@@ -80,7 +81,7 @@ CWatchdogTask::CWatchdogTask(char const * const pName
     , m_pWatchdog(pWatchdog)
     , m_freq(freq)
     , m_activityTracker(taskTable, sizeof(taskTable))
-    , m_watchdogFeed(true)
+    , m_feed(true)
 {}
 
 /**\brief   Registers a task with the watchdog for timeout tracking. The task
@@ -244,8 +245,8 @@ void CWatchdogTask::funcBegin(void)
  */
 void CWatchdogTask::funcMain(void)
 {
-    m_watchdogFeed = true;
     size_t tableCount = m_activityTracker.countNodes();
+
     for(auto i = 0u; i < tableCount; ++i)
     {
         activity_t activityTracker;
@@ -254,30 +255,39 @@ void CWatchdogTask::funcMain(void)
         if(!activityTracker.sleep)
         {
             activityTracker.periodMS -= (0 < activityTracker.periodMS) ? 1 : 0;   /* don't want an underflow condition */
-            m_watchdogFeed = (m_watchdogFeed == true) && (0 < activityTracker.periodMS);
             (void)m_activityTracker.updateNode(i, &activityTracker);
 
             /* if the counter has expired, check to see if there's a callback
-             * and call it with the associated argument. If a callback is
-             * present, it should indicate 'true' if its ok to continue without
-             * restarting or 'false' if a restart should occur.
+             * and call it. If a callback is present, it should indicate 'true'
+             * if its ok to continue without a system restart or 'false' if a
+             * restart should occur.
              */
             if(0 < activityTracker.periodMS)
             {
+                /* If a callback is found, call it and 'AND' result with m_feed.
+                 * otherwise set m_feed to false. Prevents setting m_feed to
+                 * true when another task has stalled and requires a system
+                 * reset.
+                 */
                 if(activityTracker.callback)
                 {
-                    m_watchdogFeed = activityTracker.callback(activityTracker.pInstance, activityTracker.pMsg);
+                    m_feed = activityTracker.callback(activityTracker.pInstance, activityTracker.pMsg)
+                            && (m_feed == true);
+                }
+                else
+                {
+                    m_feed = false;
                 }
             }
         }
     }
 
-    if(m_watchdogFeed)
+    if(m_feed)
     {
         HAL_IWDG_Refresh(m_pWatchdog);
     }
     else
     {
-        SOFTWARE_BREAKPOINT;
+        CATCH_WATCHDOG_EVENT;
     }
 }

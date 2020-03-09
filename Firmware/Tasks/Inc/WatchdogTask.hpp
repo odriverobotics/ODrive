@@ -86,7 +86,7 @@ private:
     IWDG_HandleTypeDef * m_pWatchdog;
     float m_freq;
     CLinkedList<activity_t> m_activityTracker;
-    bool m_watchdogFeed;
+    bool m_feed;
 };
 
 /*******************************************************************************
