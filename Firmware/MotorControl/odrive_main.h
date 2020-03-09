@@ -75,6 +75,7 @@ struct BoardConfig_t {
     bool enable_uart = true;
     bool enable_i2c_instead_of_can = false;
     bool enable_ascii_protocol_on_usb = true;
+    float max_regen_current = 0.0f;
 #if HW_VERSION_MAJOR == 3 && HW_VERSION_MINOR >= 5 && HW_VERSION_VOLTAGE >= 48
     float brake_resistance = 2.0f;     // [ohm]
 #else
