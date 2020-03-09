@@ -24,6 +24,7 @@ INCLUDES
 #include <communication/interface_uart.h>
 #include <communication/interface_i2c.h>
 
+#include "DebounceTask.hpp"
 /*******************************************************************************
 NAMESPACE
 *******************************************************************************/
@@ -56,6 +57,8 @@ bool user_config_loaded_;
 SystemStats_t system_stats_ = { 0 };
 
 Axis *axes[AXIS_COUNT];
+
+CDebounceTask debounceTask(os_thread_def_debounce, DBTASKFREQUENCY_MS);
 
 uint8_t EXTIsubscriptionTable[10 * sizeof(CNode<CSubscribeDebounce::subscription_t>)]; // memory space for subscription table, effective number of active GPIO subscriptions at a given time
 CSubscribeEXTI SubscribeEXTI(EXTIsubscriptionTable, sizeof(EXTIsubscriptionTable));
@@ -245,6 +248,7 @@ int odrive_main(void) {
                 *encoder, *sensorless_estimator, *controller, *motor, *trap);
     }
     
+    debounceTask.start();
     // Start ADC for temperature measurements and user measurements
     start_general_purpose_adc();
 
