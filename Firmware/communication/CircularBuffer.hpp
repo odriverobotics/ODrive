@@ -112,6 +112,7 @@ INLINE FUNCTIONS
 template <class dataType_t>
 CCBBuffer<dataType_t>::CCBBuffer(dataType_t * pArray, const size_t numElements, const bool useMutex, const bool overwriteOldData)
     : m_cb {{numElements, 0, 0}, pArray}
+    , m_useMutex(useMutex)
     , m_overwriteOldData(overwriteOldData)
 {
 //        assert(this->isPowerOfTwo(size), "The size must be of ^2 otherwise overflow condition of start/end tracker values will corrupt data in buffer ");
