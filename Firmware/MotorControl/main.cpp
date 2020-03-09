@@ -25,6 +25,8 @@ INCLUDES
 #include <communication/interface_i2c.h>
 
 #include "DebounceTask.hpp"
+#include "TaskConfigs.hpp"
+
 /*******************************************************************************
 NAMESPACE
 *******************************************************************************/
