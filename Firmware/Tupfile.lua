@@ -176,12 +176,22 @@ build{
         'communication/interface_can.cpp',
         'communication/interface_i2c.cpp',
         'fibre/cpp/protocol.cpp',
-        'FreeRTOS-openocd.c'
+        'FreeRTOS-openocd.c',
+		'Tasks/ThreadUtilities/Src/ThreadControl.cpp',
+		'Tasks/ThreadUtilities/Src/ThreadBase.cpp',
+		'Tasks/ThreadUtilities/Src/SoftwareTimerBase.cpp',
+		'Tasks/Src/WatchdogTask.cpp',
+		'Tasks/Src/UARTControlTask.cpp'
     },
     includes={
         'Drivers/DRV8301',
         'MotorControl',
         'fibre/cpp/include',
+		'fibre/cpp/include/fibre',
+		'Utilities/Inc',
+		'communication',
+		'Tasks/ThreadUtilities/Inc',
+		'Tasks/Inc',
         '.'
     }
 }
