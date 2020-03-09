@@ -5,6 +5,7 @@ Please add a note of your changes below this heading if you make a Pull Request.
 * AC Induction Motor support.
   * Tracking of rotor flux through rotor time constant
   * Automatic d axis current for Maximum Torque Per Amp (MTPA)
+* ASCII "w" commands now execute write hooks.
 
 ### Changed
 * Changed ratiometric `motor.config.current_lim_tolerance` to absolute `motor.config.current_lim_margin`
