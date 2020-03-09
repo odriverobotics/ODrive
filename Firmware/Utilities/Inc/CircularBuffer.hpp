@@ -71,7 +71,10 @@ public:
 
 public:
 
-    CCBBuffer(dataType_t * pArray = nullptr, const size_t size = 0, const bool useMutex = false, const bool overwriteOldData = false);
+    CCBBuffer(dataType_t * pArray = nullptr
+              , const size_t size = 0
+              , const bool useMutex = false
+              , const bool overwriteOldData = false);
     ~CCBBuffer() = default;
     bool isFull();
     bool isEmpty();
