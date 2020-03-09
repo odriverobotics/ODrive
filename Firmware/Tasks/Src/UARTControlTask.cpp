@@ -114,14 +114,15 @@ void CUARTControlTask::funcMain(void)
     ASCII_protocol_parse_stream(RXData, (uint16_t)length, m_rStreamOut);
 }
 
-/**\brief   writes data to the circular buffer and tells the task to wake.
+/**\brief   Read's data in and writes it to the circular buffer, then wakes the
+ *          task to process the data.
  *
- * \param   pData       - pointer to the data to write to the circular buffer
- * \param   length      - number of characters to store
+ * \param   pData       - pointer to the data to read in
+ * \param   length      - number of characters in the buffer
  *
  * \return  None
  */
-void CUARTControlTask::writeData(uint8_t * pData, size_t length)
+void CUARTControlTask::readData(uint8_t * pData, size_t length)
 {
     (void)m_RXCircularBuffer.write(pData, length);
     this->resumeTaskFromISR();

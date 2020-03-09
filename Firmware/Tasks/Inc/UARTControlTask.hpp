@@ -59,7 +59,7 @@ public:
     ~CUARTControlTask() = default;
     void funcBegin(void) override;
     void funcMain(void) override;
-    void writeData(uint8_t * pData, size_t length);
+    void readData(uint8_t * pData, size_t length);
 
 private:
     UART_HandleTypeDef * m_pHuart;
