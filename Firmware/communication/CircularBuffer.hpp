@@ -93,19 +93,7 @@ private:
     circularBuffer_t m_cb;
     bool m_useMutex;
     bool m_overwriteOldData;
-private:
-    /**\brief   Calculates whether a value in the argument is to the power of 2
-     *          by taking the bit pattern of x and logically ANDing it with the bit
-     *          pattern of (x-1). If the result is 0 then the number is = ^2
-     *
-     * \param   x   - value to test
-     *
-     * \return  true if value is non-zero and to the power of 2, else returns false
-     */
-    static bool isPowerOfTwo(size_t x)
-    {
-        return (x != 0u) && ((x & (x - 1u)) == 0u);
-    }
+
 }; /* CCBBuffer */
 
 /*******************************************************************************
