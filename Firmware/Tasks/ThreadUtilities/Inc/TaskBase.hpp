@@ -192,11 +192,6 @@ inline void CTaskBase::threadFunc(void)
 
         funcMain();
 
-        if(nullptr != m_pWatchdog)
-        {
-            m_pWatchdog->sleep(this->getHandle());
-        }
-
         this->suspendTask();
     }
 }
@@ -262,6 +257,11 @@ inline bool CTaskBase::funcTimeout(void * pMsg)
  */
 inline void CTaskBase::suspendTask(void)
 {
+    if(nullptr != m_pWatchdog)
+    {
+        m_pWatchdog->sleep(this->getHandle());
+    }
+
     m_thread.suspend();
 }
 
