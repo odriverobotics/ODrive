@@ -1,3 +1,19 @@
+/*******************************************************************************
+* File          : main.cpp
+*
+* Description   :
+*
+* Project       :
+*
+* Author        :
+*
+* Created on    :
+*
+*******************************************************************************/
+
+/*******************************************************************************
+INCLUDES
+*******************************************************************************/
 
 #define __MAIN_CPP__
 #include "odrive_main.h"
@@ -7,6 +23,26 @@
 #include <communication/interface_usb.h>
 #include <communication/interface_uart.h>
 #include <communication/interface_i2c.h>
+
+/*******************************************************************************
+NAMESPACE
+*******************************************************************************/
+
+/*******************************************************************************
+DEFINITIONS
+*******************************************************************************/
+
+/*******************************************************************************
+TYPES
+*******************************************************************************/
+
+/*******************************************************************************
+GLOBAL VARIABLES
+*******************************************************************************/
+
+/*******************************************************************************
+MODULE VARIABLES
+*******************************************************************************/
 
 BoardConfig_t board_config;
 Encoder::Config_t encoder_configs[AXIS_COUNT];
@@ -32,6 +68,14 @@ typedef Config<
     Motor::Config_t[AXIS_COUNT],
     TrapezoidalTrajectory::Config_t[AXIS_COUNT],
     Axis::Config_t[AXIS_COUNT]> ConfigFormat;
+
+/*******************************************************************************
+INTERNAL FUNCTION PROTOTYPES
+*******************************************************************************/
+
+/*******************************************************************************
+FUNCTION IMPLEMENTATIONS
+*******************************************************************************/
 
 void save_configuration(void) {
     if (ConfigFormat::safe_store_config(
@@ -176,7 +220,7 @@ int odrive_main(void) {
     GPIO_InitStruct.Pull = GPIO_NOPULL;
     GPIO_InitStruct.Pin = GPIO_1_Pin;
     HAL_GPIO_Init(GPIO_1_GPIO_Port, &GPIO_InitStruct);
-    GPIO_InitStruct.Pin = GPIO_2_Pin;
+    GPIO_InitStruct.Pin = GPIO_2_Pin; // todo I think you can or these, SG
     HAL_GPIO_Init(GPIO_2_GPIO_Port, &GPIO_InitStruct);
     GPIO_InitStruct.Pin = GPIO_3_Pin;
     HAL_GPIO_Init(GPIO_3_GPIO_Port, &GPIO_InitStruct);
