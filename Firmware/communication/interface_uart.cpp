@@ -147,7 +147,7 @@ void start_uart_server(void)
 {
     uart_thread = UARTControl.getHandle();
     // Start UART communication thread
-    UARTControl.start(osPriorityNormal);
+    UARTControl.start();
 }
 
 /**
@@ -171,7 +171,7 @@ void start_uart_server(void)
    *                the configuration information for the specified UART module.
    * @retval None
    */
-void HAL_UART_TxCpltCallback(UART_HandleTypeDef* huart)
+void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart)
 {
     if(&huart4 == huart)
     {
@@ -189,7 +189,7 @@ void HAL_UART_RxHalfCpltCallback(UART_HandleTypeDef *huart)
 {
     if(&huart4 == huart)
     {
-        UARTControl.writeData(&huart->pRxBuffPtr[0], 1);
+        UARTControl.readData(&huart->pRxBuffPtr[0], 1);
     }
 }
 
@@ -203,6 +203,6 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 {
     if(&huart4 == huart)
     {
-        UARTControl.writeData(&huart->pRxBuffPtr[1], 1);
+        UARTControl.readData(&huart->pRxBuffPtr[1], 1);
     }
 }
