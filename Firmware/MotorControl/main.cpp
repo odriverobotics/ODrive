@@ -193,6 +193,11 @@ void SetGPIO12toUART() {
   HAL_GPIO_Init(GPIO_2_GPIO_Port, &GPIO_InitStruct);
 }
 
+void test(void * pTest)
+{
+    __asm__("BKPT");
+}
+
 int odrive_main(void) {
 
 #if HW_VERSION_MAJOR == 3 && HW_VERSION_MINOR >= 3
@@ -251,6 +256,7 @@ int odrive_main(void) {
     }
     
     debounceTask.start();
+//    debounceTask.subscribe(GPIO_1_GPIO_Port, GPIO_2_Pin, GPIO_PULLUP, test, nullptr);
     // Start ADC for temperature measurements and user measurements
     start_general_purpose_adc();
 
