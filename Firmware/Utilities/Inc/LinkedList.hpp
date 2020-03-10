@@ -53,6 +53,7 @@ using node_t = CNode<MyType>;
 public:
     CNode(MyType const * const pData, node_t const * const pPrevious = nullptr, node_t const * const pNext = nullptr);
     void populateNode(MyType const * const pData, node_t * pNext, node_t * pPrevious);
+    void populateNode(MyType const data, node_t * pNext, node_t * pPrevious);
     void flushNode(void);
     void getData(MyType * pData);
     void setData(MyType * pData);
@@ -136,6 +137,23 @@ template <class MyType>
 void CNode<MyType>::populateNode(MyType const * const pData, node_t * pNext, node_t * pPrevious)
 {
     (void)memcpy(&m_data, pData, sizeof(MyType));                               /* copy the data in to the node */
+    m_pNext = pNext;
+    m_pPrevious = pPrevious;
+}
+
+
+/**\brief   Populates current node with the data, and next and previous pointers
+ *
+ * \param   ata         - data to store
+ * \param   pNext       - pointer to next node
+ * \param   pPrevious   - pointer to previous node
+ *
+ * \return  None
+ */
+template <class MyType>
+void CNode<MyType>::populateNode(MyType const data, node_t * pNext, node_t * pPrevious)
+{
+    m_data = data;                                                              /* copy the data in to the node */
     m_pNext = pNext;
     m_pPrevious = pPrevious;
 }
