@@ -5,7 +5,7 @@ class Endstop {
    public:
     struct Config_t {
         float offset = 0;
-        float debounce_ms = 50.0f;
+        uint32_t debounce_ms = 50;
         uint16_t gpio_num = 0;
         bool enabled = false;
         bool is_active_high = false;
@@ -42,6 +42,6 @@ class Endstop {
    private:
     bool pin_state_                = false;
     float pos_when_pressed_        = 0.0f;
-    volatile float debounce_timer_ = 0;
+    uint32_t debounce_timer_ = 0;
 };
 #endif
