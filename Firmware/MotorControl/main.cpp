@@ -177,6 +177,9 @@ void SetGPIO12toUART() {
   // make sure nothing is hogging the GPIO's
   SubscribeEXTI.unsubscribe(GPIO_1_GPIO_Port, GPIO_1_Pin);
   SubscribeEXTI.unsubscribe(GPIO_2_GPIO_Port, GPIO_2_Pin);
+  debounceTask.unsubscribe(GPIO_1_GPIO_Port, GPIO_1_Pin);
+  debounceTask.unsubscribe(GPIO_2_GPIO_Port, GPIO_2_Pin);
+
 
   GPIO_InitStruct.Pin = GPIO_1_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
