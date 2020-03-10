@@ -55,6 +55,7 @@ public:
     void populateNode(MyType const * const pData, node_t * pNext, node_t * pPrevious);
     void flushNode(void);
     void getData(MyType * pData);
+    void setData(MyType * pData);
     node_t * getPrevious(void);
     void setPrevious(node_t * pPrevious);
     node_t * getNext(void);
@@ -162,6 +163,19 @@ template <class MyType>
 void CNode<MyType>::getData(MyType * pData)
 {
     (void)memcpy(pData, &m_data, sizeof(MyType));                               /* copy out the data to the target pointer */
+}
+
+
+/**\brief   sets the data in node
+ *
+ * \param   pData   - pointer to data to store
+ *
+ * \return  None
+ */
+template <class MyType>
+void CNode<MyType>::setData(MyType * pData)
+{
+    (void)memcpy(&m_data, pData, sizeof(MyType));                               /* copy in the data from the target pointer */
 }
 
 /**\brief   Gets the address of the previous node.
