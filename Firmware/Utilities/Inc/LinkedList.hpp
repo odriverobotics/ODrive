@@ -262,12 +262,13 @@ inline CLinkedList<MyType>::CLinkedList(void * pTable, size_t size)
     , m_activeNodes(0)
     , m_pHead(nullptr)
 {
-    memset(m_pTable, 0, size);
     for(auto i = 0u; i < m_length; ++i)
     {
         node_t * pTable = &m_pTable[i];
-        pTable->setNext((i < (m_length - 1))    ? &pTable[1]    : nullptr);
-        pTable->setPrevious((i == 0)            ? nullptr       : &pTable[-1]);
+
+        pTable->populateNode(0
+                             , (i < (m_length - 1)) ? &pTable[1]    : nullptr
+                             , (i == 0)             ? nullptr       : &pTable[-1]);
     }
 }
 
