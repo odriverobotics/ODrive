@@ -196,6 +196,20 @@ void SetGPIO12toUART() {
   HAL_GPIO_Init(GPIO_2_GPIO_Port, &GPIO_InitStruct);
 }
 
+
+// @brief Configures the specified GPIO as an analog input.
+// This disables any subscriptions that were active for this pin.
+void GPIO_set_to_analog(GPIO_TypeDef* GPIO_port, uint16_t GPIO_pin) {
+  GPIO_InitTypeDef GPIO_InitStruct;
+  SubscribeEXTI.unsubscribe(GPIO_port, GPIO_pin);
+  debounceTask.unsubscribe(GPIO_port, GPIO_pin);
+
+  GPIO_InitStruct.Pin = GPIO_pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_ANALOG;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  HAL_GPIO_Init(GPIO_port, &GPIO_InitStruct);
+}
+
 void test(void * pTest)
 {
     __asm__("BKPT");
