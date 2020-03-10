@@ -190,7 +190,6 @@ build{
 		'Tasks/Inc',
 		'Utilities/Inc',
 		'communication',
-		'Board/v3/Drivers/CMSIS/Device/ST/STM32F4xx/Include',
         '.'
     }
 }
