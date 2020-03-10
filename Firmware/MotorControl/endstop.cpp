@@ -17,7 +17,7 @@ void Endstop::update() {
     if (config_.enabled) {
         if ((now - debounce_timer_) >= config_.debounce_ms) {         // Debounce timer expired, take the new pin state
             endstop_state_ = config_.is_active_high ? pin_state_ : !pin_state_;  // endstop_state is the logical state
-            debounce_timer_ = config_.debounce_ms;              // Ensure timer doesn't have overflow issues
+            debounce_timer_ = now - config_.debounce_ms;              // Ensure timer doesn't have overflow issues
         } else {
             endstop_state_ = endstop_state_;  // Do nothing
         }
