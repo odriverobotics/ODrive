@@ -10,12 +10,12 @@ void Endstop::update() {
     GPIO_TypeDef* gpio_port = get_gpio_port_by_pin(config_.gpio_num);
     bool last_pin_state = pin_state_;
     pin_state_ = HAL_GPIO_ReadPin(gpio_port, gpio_pin);
-    uint32_t now = static_cast<uint32_t>(axis_->loop_counter_ * current_meas_period);
+    uint32_t now = static_cast<uint32_t>(axis_->loop_counter_ * current_meas_period * 1000);
     if (pin_state_ != last_pin_state) {
         debounce_timer_ = now;
     }
     if (config_.enabled) {
-        if ((now - debounce_timer_) >= (config_.debounce_ms * 0.001f)) {         // Debounce timer expired, take the new pin state
+        if ((now - debounce_timer_) >= config_.debounce_ms) {         // Debounce timer expired, take the new pin state
             endstop_state_ = config_.is_active_high ? pin_state_ : !pin_state_;  // endstop_state is the logical state
             debounce_timer_ = config_.debounce_ms;              // Ensure timer doesn't have overflow issues
         } else {
