@@ -104,6 +104,18 @@ bool CDebounceTask::subscribe(GPIO_TypeDef * GPIO_port
                                 , ctx);
 }
 
+/**\brief   Unregisters the callback of the specified port and pin combination
+ *
+ * \param   GPIO_port   - pointer to the port struct
+ * \param   GPIO_pin    - pin ID
+ *
+ * \return  None
+ */
+void CDebounceTask::unsubscribe(GPIO_TypeDef * GPIO_port, uint16_t GPIO_pin)
+{
+    m_subscribedGPIOs.unsubscribe(GPIO_port , GPIO_pin);
+}
+
 /**\brief   main thread function.
  *
  * \param   ctx - argument passed in from scheduler
