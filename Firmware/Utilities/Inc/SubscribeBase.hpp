@@ -11,8 +11,8 @@
 *
 *******************************************************************************/
 /* Define to prevent recursive inclusion -------------------------------------*/
-#ifndef SUBSCRIPTIONTOOLS_HPP
-#define SUBSCRIPTIONTOOLS_HPP
+#ifndef SUBSCRIBEBASE_HPP
+#define SUBSCRIBEBASE_HPP
 
 /******************************************************************************
 INCLUDES
@@ -86,4 +86,4 @@ private:
 INLINE FUNCTION DEFINITIONS
 *******************************************************************************/
 
-#endif /* SUBSCRIPTIONTOOLS_HPP */
+#endif /* SUBSCRIBEBASE_HPP */
