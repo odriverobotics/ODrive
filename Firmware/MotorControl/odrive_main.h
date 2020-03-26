@@ -76,6 +76,7 @@ struct BoardConfig_t {
 #else
     float brake_resistance = 0.47f;     // [ohm]
 #endif
+    float nominal_voltage = VBUS_OVERVOLTAGE_LEVEL;
     float dc_bus_undervoltage_trip_level = 8.0f;                        //<! [V] minimum voltage below which the motor stops operating
     float dc_bus_overvoltage_trip_level = 1.07f * HW_VERSION_VOLTAGE;   //<! [V] maximum voltage above which the motor stops operating.
                                                                         //<! This protects against cases in which the power supply fails to dissipate
