@@ -8,8 +8,8 @@ class Timer {
         timeout_ = timeout;
     }
 
-    void setInterval(const T interval) {
-        interval_ = interval;
+    void setIncrement(const T increment) {
+        increment_ = increment;
     }
 
     void start() {
@@ -20,9 +20,10 @@ class Timer {
         running_ = false;
     }
 
+    // If the timer is started, increment the timer
     void update() {
         if (running_)
-            timer_ = std::min<T>(timer_ + interval_, timeout_);
+            timer_ = std::min<T>(timer_ + increment_, timeout_);
     }
 
     void reset() {
@@ -36,6 +37,6 @@ class Timer {
    private:
     T timer_ = static_cast<T>(0);     // Current state
     T timeout_ = static_cast<T>(0);   // Time to count
-    T interval_ = static_cast<T>(0);  // Amount to increment each time update() is called
+    T increment_ = static_cast<T>(0);  // Amount to increment each time update() is called
     bool running_ = false;            // update() only increments if runing_ is true
 };

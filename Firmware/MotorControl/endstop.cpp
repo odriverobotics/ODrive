@@ -3,7 +3,7 @@
 Endstop::Endstop(Endstop::Config_t& config)
     : config_(config) {
     update_config();
-    debounceTimer_.setInterval(current_meas_period);
+    debounceTimer_.setIncrement(current_meas_period);
 }
 
 
@@ -33,7 +33,7 @@ bool Endstop::get_state() {
 
 void Endstop::update_config() {
     set_enabled(config_.enabled);
-    debounceTimer_.setInterval(config_.debounce_ms * 0.001f);
+    debounceTimer_.setIncrement(config_.debounce_ms * 0.001f);
 }
 
 void Endstop::set_enabled(bool enable) {
