@@ -33,9 +33,12 @@ extern "C" {
 //default timeout waiting for phase measurement signals
 #define PH_CURRENT_MEAS_TIMEOUT 2 // [ms]
 
-//TODO clean this up
+// Period in [s]
 static const float current_meas_period = CURRENT_MEAS_PERIOD;
+
+// Frequency in [Hz]
 static const int current_meas_hz = CURRENT_MEAS_HZ;
+
 // extern const float elec_rad_per_enc;
 extern uint32_t _reboot_cookie;
 extern bool user_config_loaded_;

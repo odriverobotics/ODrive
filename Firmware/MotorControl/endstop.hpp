@@ -1,6 +1,7 @@
 #ifndef __ENDSTOP_HPP
 #define __ENDSTOP_HPP
 
+#include "timer.hpp"
 class Endstop {
    public:
     struct Config_t {
@@ -36,12 +37,13 @@ class Endstop {
                 make_protocol_property("offset", &config_.offset),
                 make_protocol_property("is_active_high", &config_.is_active_high),
                 make_protocol_property("pullup", &config_.pullup),
-                make_protocol_property("debounce_ms", &config_.debounce_ms)));
+                make_protocol_property("debounce_ms", &config_.debounce_ms,
+                                    [](void* ctx) { static_cast<Endstop*>(ctx)->update_config(); }, this)));
     }
 
    private:
     bool pin_state_                = false;
     float pos_when_pressed_        = 0.0f;
-    uint32_t debounce_timer_ = 0;
+    Timer debounceTimer_;
 };
 #endif
