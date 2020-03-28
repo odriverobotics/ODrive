@@ -159,6 +159,7 @@ static inline auto make_obj_tree() {
         ),
         make_protocol_object("config",
             make_protocol_property("brake_resistance", &board_config.brake_resistance),
+            make_protocol_property("nominal_voltage", &board_config.nominal_voltage),
             make_protocol_property("max_regen_current", &board_config.max_regen_current),
             // TODO: changing this currently requires a reboot - fix this
             make_protocol_property("enable_uart", &board_config.enable_uart),

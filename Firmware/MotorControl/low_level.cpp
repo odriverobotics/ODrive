@@ -594,7 +594,11 @@ void update_brake_current() {
     // Don't start braking until -Ibus > regen_current_allowed
     float brake_current        = std::max(-Ibus_sum - board_config.max_regen_current, 0.0f);
     float brake_duty           = std::max(brake_current * std::abs(board_config.brake_resistance) / vbus_voltage, 0.0f);
+    brake_duty = std::max((vbus_voltage - board_config.nominal_voltage) / (VBUS_OVERVOLTAGE_LEVEL/0.9f - board_config.nominal_voltage), brake_duty);
 
+    // Clamp the duty cycle
+    brake_duty = brake_duty < 0.0f ? 0.0f : (brake_duty > 0.9f ? 0.9f : brake_duty);
+    
     // Duty limit at 90% to allow bootstrap caps to charge
     // If brake_duty is NaN, this expression will also evaluate to false
     if ((brake_duty >= 0.0f) && (brake_duty <= 0.9f)) {
