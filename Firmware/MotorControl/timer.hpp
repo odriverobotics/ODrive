@@ -22,7 +22,7 @@ class Timer {
 
     void update() {
         if (running_)
-            timer_ = std::min(timer_ + interval_, timeout_);
+            timer_ = std::min<T>(timer_ + interval_, timeout_);
     }
 
     void reset() {

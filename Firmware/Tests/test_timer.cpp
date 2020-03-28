@@ -1,9 +1,10 @@
 #define DOCTEST_IMPLEMENT
 #include <doctest.h>
 #include "MotorControl/timer.hpp"
+#include <stdint.h>
 
-TEST_CASE("Timer"){
-    Timer<int> myTimer;
+TEST_CASE_TEMPLATE("Timer2", T, float, int, char, uint32_t){
+    Timer<T> myTimer;
     myTimer.setTimeout(10);
     myTimer.setInterval(1);
     CHECK(!myTimer.expired());
@@ -26,5 +27,4 @@ TEST_CASE("Timer"){
 
     myTimer.reset();
     CHECK(!myTimer.expired());
-
 }
