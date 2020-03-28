@@ -44,6 +44,6 @@ class Endstop {
    private:
     bool pin_state_                = false;
     float pos_when_pressed_        = 0.0f;
-    Timer debounceTimer_;
+    Timer<float> debounceTimer_;
 };
 #endif

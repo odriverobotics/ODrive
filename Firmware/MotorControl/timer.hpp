@@ -1,13 +1,14 @@
 #pragma once
 
 #include <algorithm>
+template <class T>
 class Timer {
    public:
-    void setTimeout(const float timeout) {
+    void setTimeout(const T timeout) {
         timeout_ = timeout;
     }
 
-    void setInterval(const float interval) {
+    void setInterval(const T interval) {
         interval_ = interval;
     }
 
@@ -25,7 +26,7 @@ class Timer {
     }
 
     void reset() {
-        timer_ = 0.0f;
+        timer_ = static_cast<T>(0);
     }
 
     bool expired() {
@@ -33,8 +34,8 @@ class Timer {
     }
 
    private:
-    float timer_ = 0.0f;
-    float timeout_ = 0.0f;
-    float interval_ = 0.0f;
-    bool running_ = false;
+    T timer_ = static_cast<T>(0);     // Current state
+    T timeout_ = static_cast<T>(0);   // Time before
+    T interval_ = static_cast<T>(0);  // Amount to increment each time update() is called
+    bool running_ = false;            // update() only increments if runing_ is true
 };

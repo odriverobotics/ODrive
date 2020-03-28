@@ -3,7 +3,7 @@
 #include "MotorControl/timer.hpp"
 
 TEST_CASE("Timer"){
-    Timer myTimer;
+    Timer<int> myTimer;
     myTimer.setTimeout(10);
     myTimer.setInterval(1);
     CHECK(!myTimer.expired());
