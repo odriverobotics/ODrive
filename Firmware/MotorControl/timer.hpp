@@ -35,7 +35,7 @@ class Timer {
 
    private:
     T timer_ = static_cast<T>(0);     // Current state
-    T timeout_ = static_cast<T>(0);   // Time before
+    T timeout_ = static_cast<T>(0);   // Time to count
     T interval_ = static_cast<T>(0);  // Amount to increment each time update() is called
     bool running_ = false;            // update() only increments if runing_ is true
 };
