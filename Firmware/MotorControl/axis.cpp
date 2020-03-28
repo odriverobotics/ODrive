@@ -5,6 +5,7 @@
 
 #include "odrive_main.h"
 #include "utils.hpp"
+#include "gpio_utils.hpp"
 #include "communication/interface_can.hpp"
 
 Axis::Axis(int axis_num,

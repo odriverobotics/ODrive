@@ -185,12 +185,12 @@ build{
         'MotorControl',
         'fibre/cpp/include',
         '.',
-        "C:/Tools/doctest/doctest"
+        "doctest"
     }
 }
 
 if tup.getconfig('DOCTEST') == 'true' then
-    TEST_INCLUDES = '-I. -I./MotorControl -I./fibre/cpp/include -I./Drivers/DRV8301 -IC:/Tools/doctest/doctest'
+    TEST_INCLUDES = '-I. -I./MotorControl -I./fibre/cpp/include -I./Drivers/DRV8301 -I./doctest'
     tup.frule{inputs='Tests/*.cpp', command='g++ -O3 -std=gnu++17 '..TEST_INCLUDES..' %f -o %o', outputs='Tests/test_runner.exe'}
     tup.frule{inputs='Tests/test_runner.exe', command='%f'}
 end

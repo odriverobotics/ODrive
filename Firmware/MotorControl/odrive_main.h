@@ -131,6 +131,7 @@ inline ENUMTYPE operator ~ (ENUMTYPE a) { return static_cast<ENUMTYPE>(~static_c
 
 // ODrive specific includes
 #include <utils.hpp>
+#include <gpio_utils.hpp>
 #include <low_level.h>
 #include <motor.hpp>
 #include <encoder.hpp>
