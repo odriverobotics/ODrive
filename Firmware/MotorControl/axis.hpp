@@ -181,7 +181,7 @@ public:
     bool run_lockin_spin();
     bool run_sensorless_control_loop();
     bool run_closed_loop_control_loop();
-    bool run_brushed_voltage_control_loop();
+    bool run_brushed_control_loop();
     bool run_idle_loop();
 
     void run_state_machine_loop();

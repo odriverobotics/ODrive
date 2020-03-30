@@ -348,6 +348,82 @@ bool Motor::enqueue_brushed_voltage_timings(float voltage_setpoint) {
     next_timings_valid_ = true;
     return true;
 }
+
+bool Motor::enqueue_brushed_current_timings(float current_setpoint) {
+
+    // Syntactic sugar
+    CurrentControl_t& ictrl = current_control_;
+
+    if (fabsf(current_meas_.phB) > ictrl.overcurrent_trip_level
+     || fabsf(current_meas_.phC) > ictrl.overcurrent_trip_level) {
+        set_error(ERROR_CURRENT_SENSE_SATURATION);
+    }
+
+
+    // Current is just average od phB and phC where they have opposing signs.
+    float Iq = 0.5f * (current_meas_.phC - current_meas_.phB);
+
+    // Used to read measured current from host.
+    ictrl.Iq_measured = Iq;
+
+    // This relates to overvoltage conditions when reversing the motor.
+    // Obviously this hard coded value is a hack. We could find a better way to
+    // detect overvoltage, or add a max_voltage term to the ictrl object.
+    // TODO(tlalexander): This is a hack. See notes above.
+    if(vbus_voltage > 50)
+    {
+      ictrl.Ibus = (vbus_voltage-50.0f) * -5.0f;
+    } else
+    {
+      ictrl.Ibus = 0.0f;
+    }
+
+    float Ierr_q = current_setpoint - Iq;
+
+    //Integral control calculation.
+    ictrl.v_current_control_integral_q += Ierr_q * (ictrl.i_gain * current_meas_period);
+    float Vq = ictrl.v_current_control_integral_q + Ierr_q * ictrl.p_gain;
+
+
+    // TODO(tlalexander): final_v_beta has been hijacked to use as voltage ramp
+    // rate control. This is used to smooth high frequency voltage oscillation
+    // with high current gain values. Perhaps a dedicated term could be added
+    // to the protocol for this.
+    float V_ramp_limit;
+    if(ictrl.final_v_beta > 0.0001)
+    {
+      V_ramp_limit = ictrl.final_v_beta;
+    }else
+    {
+      V_ramp_limit = 1.0;
+    }
+    // Clamping voltage ramp rate.
+    if(Vq - ictrl.final_v_alpha > V_ramp_limit)
+    {
+      Vq = ictrl.final_v_alpha + V_ramp_limit;
+    }
+
+    if(Vq - ictrl.final_v_alpha < -V_ramp_limit)
+    {
+      Vq = ictrl.final_v_alpha - V_ramp_limit;
+    }
+
+    // Clamp commanded voltage to maximums.
+    if((-vbus_voltage * BRUSHED_VOLTAGE_MAX_RATIO) > Vq)
+    {
+      Vq = -vbus_voltage * BRUSHED_VOLTAGE_MAX_RATIO;
+    }
+
+    if((vbus_voltage * BRUSHED_VOLTAGE_MAX_RATIO) < Vq)
+    {
+      Vq = vbus_voltage * BRUSHED_VOLTAGE_MAX_RATIO;
+    }
+
+    // Set final_v_alpha to final voltage used so it can be read by the host.
+    ictrl.final_v_alpha = Vq;
+
+    return enqueue_brushed_voltage_timings(Vq);
+}
 // We should probably make FOC Current call FOC Voltage to avoid duplication.
 bool Motor::FOC_voltage(float v_d, float v_q, float pwm_phase) {
     float c = our_arm_cos_f32(pwm_phase);
@@ -450,6 +526,7 @@ bool Motor::update(float current_setpoint, float phase, float phase_vel) {
         if(!FOC_voltage(0.0f, current_setpoint, pwm_phase))
             return false;
     } else if (config_.motor_type == MOTOR_TYPE_BRUSHED_CURRENT) {
+        enqueue_brushed_current_timings(current_setpoint);
         //TBD
     } else if (config_.motor_type == MOTOR_TYPE_BRUSHED_VOLTAGE) {
         //In brushed motor mode, current is reinterptreted as voltage.
