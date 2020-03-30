@@ -10,7 +10,7 @@
                 "USE_HAL_DRIVER",
                 "HW_VERSION_MAJOR=3",
                 "HW_VERSION_MINOR=6",
-                "HW_VERSION_VOLTAGE=24",
+                "HW_VERSION_VOLTAGE=56",
                 "USB_PROTOCOL_NATIVE",
                 "__weak=\"__attribute__((weak))\"",
                 "__packed=\"__attribute__((__packed__))\"",

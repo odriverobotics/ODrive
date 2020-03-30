@@ -90,12 +90,12 @@ struct BoardConfig_t {
 #else
     float brake_resistance = 0.47f;     // [ohm]
 #endif
-    float nominal_voltage = VBUS_OVERVOLTAGE_LEVEL;
     float dc_bus_undervoltage_trip_level = 8.0f;                        //<! [V] minimum voltage below which the motor stops operating
     float dc_bus_overvoltage_trip_level = 1.07f * HW_VERSION_VOLTAGE;   //<! [V] maximum voltage above which the motor stops operating.
                                                                         //<! This protects against cases in which the power supply fails to dissipate
                                                                         //<! the brake power if the brake resistor is disabled.
                                                                         //<! The default is 26V for the 24V board version and 52V for the 48V board version.
+    float nominal_voltage = 1.07f * HW_VERSION_VOLTAGE;
     float power_supply_max_current = INFINITY; // Max current [A] the power supply can source
     float power_supply_min_current = -INFINITY; // Max current [A] the power supply can sink
     PWMMapping_t pwm_mappings[GPIO_COUNT];
