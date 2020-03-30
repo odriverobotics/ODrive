@@ -138,6 +138,21 @@ void Encoder::set_circular_count(int32_t count, bool update_offset) {
 }
 
 bool Encoder::run_index_search() {
+
+    // TODO (tlalexander): This is a hack. What I really want is to do is
+    // be able to use my encoder on the brushed motor without needing to run
+    // index search, but I did not sort out exactly how to do that.
+    if (axis_->motor_.config_.motor_type == Motor::MOTOR_TYPE_BRUSHED_VOLTAGE
+      || axis_->motor_.config_.motor_type == Motor::MOTOR_TYPE_BRUSHED_CURRENT)
+    {
+      config_.offset = 0;
+      config_.offset_float = 0.0f;
+      is_ready_ = true;
+      set_circular_count(0, false);
+      set_linear_count(0); // Avoid position control transient after search
+      return true;
+    }
+
     config_.use_index = true;
     index_found_ = false;
     if (!config_.idx_search_unidirectional && axis_->motor_.config_.direction == 0) {
@@ -146,15 +161,6 @@ bool Encoder::run_index_search() {
     set_idx_subscribe();
 
     bool status = axis_->run_lockin_spin(axis_->config_.calibration_lockin);
-
-    if (axis_->motor_.config_.motor_type == Motor::MOTOR_TYPE_BRUSHED_VOLTAGE
-      || axis_->motor_.config_.motor_type == Motor::MOTOR_TYPE_BRUSHED_CURRENT
-      || axis_->motor_.config_.motor_type == Motor::MOTOR_TYPE_BRUSHED_POWER)
-    {
-      config_.offset = 0;
-      config_.offset_float = 0.0f;
-      is_ready_ = true;
-    }
 
     return status;
 }

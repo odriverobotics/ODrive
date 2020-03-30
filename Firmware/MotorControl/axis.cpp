@@ -357,7 +357,7 @@ bool Axis::run_closed_loop_control_loop() {
     return check_for_errors();
 }
 
-bool Axis::run_brushed_voltage_control_loop() {
+bool Axis::run_brushed_control_loop() {
     run_control_loop([this](){
         if (controller_.config_.control_mode >= Controller::CONTROL_MODE_POSITION_CONTROL)
             return error_ |= ERROR_POS_CTRL_DURING_SENSORLESS, false;
@@ -513,6 +513,8 @@ void Axis::run_state_machine_loop() {
                 task_chain_[pos++] = AXIS_STATE_IDLE;
             } else if (requested_state_ == AXIS_STATE_BRUSHED_VOLTAGE_CONTROL) {
                 task_chain_[pos++] = AXIS_STATE_BRUSHED_VOLTAGE_CONTROL;
+            }  else if (requested_state_ == AXIS_STATE_BRUSHED_CURRENT_CONTROL) {
+                task_chain_[pos++] = AXIS_STATE_BRUSHED_CURRENT_CONTROL;
             } else if (requested_state_ != AXIS_STATE_UNDEFINED) {
                 task_chain_[pos++] = requested_state_;
                 task_chain_[pos++] = AXIS_STATE_IDLE;
@@ -587,15 +589,15 @@ void Axis::run_state_machine_loop() {
             } break;
 
             case AXIS_STATE_BRUSHED_CURRENT_CONTROL: {
-              // Not implemented.
-              goto invalid_state_label;
-
+                if (motor_.config_.direction==0)
+                        goto invalid_state_label;
+                status = run_brushed_control_loop();
             } break;
 
             case AXIS_STATE_BRUSHED_VOLTAGE_CONTROL: {
                 if (motor_.config_.direction==0)
                         goto invalid_state_label;
-                status = run_brushed_voltage_control_loop();
+                status = run_brushed_control_loop();
             } break;
 
             case AXIS_STATE_IDLE: {
