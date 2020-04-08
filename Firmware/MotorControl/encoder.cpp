@@ -151,11 +151,14 @@ bool Encoder::run_index_search() {
 
 bool Encoder::run_direction_find() {
     int32_t init_enc_val = shadow_count_;
-    bool orig_finish_on_distance = axis_->config_.calibration_lockin.finish_on_distance;
-    axis_->config_.calibration_lockin.finish_on_distance = true;
     axis_->motor_.config_.direction = 1; // Must test spin forwards for direction detect logic
-    bool status = axis_->run_lockin_spin(axis_->config_.calibration_lockin);
-    axis_->config_.calibration_lockin.finish_on_distance = orig_finish_on_distance;
+
+    Axis::LockinConfig_t lockin_config = axis_->config_.calibration_lockin;
+    lockin_config.finish_distance = lockin_config.vel * 3.0f; // run for 3 seconds
+    lockin_config.finish_on_distance = true;
+    lockin_config.finish_on_enc_idx = false;
+    lockin_config.finish_on_vel = false;
+    bool status = axis_->run_lockin_spin(lockin_config);
 
     if (status) {
         // Check response and direction
