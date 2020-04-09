@@ -51,6 +51,8 @@ public:
         bool idx_search_unidirectional = false; // Only allow index search in known direction
         bool ignore_illegal_hall_state = false; // dont error on bad states like 000 or 111
         uint16_t abs_spi_cs_gpio_pin = 1;
+        uint16_t sincos_gpio_pin_sin = 3;
+        uint16_t sincos_gpio_pin_cos = 4;
     };
 
     Encoder(const EncoderHardwareConfig_t& hw_config,
@@ -161,7 +163,9 @@ public:
                 make_protocol_property("calib_scan_distance", &config_.calib_scan_distance),
                 make_protocol_property("calib_scan_omega", &config_.calib_scan_omega),
                 make_protocol_property("idx_search_unidirectional", &config_.idx_search_unidirectional),
-                make_protocol_property("ignore_illegal_hall_state", &config_.ignore_illegal_hall_state)
+                make_protocol_property("ignore_illegal_hall_state", &config_.ignore_illegal_hall_state),
+                make_protocol_property("sincos_gpio_pin_sin", &config_.sincos_gpio_pin_sin),
+                make_protocol_property("sincos_gpio_pin_cos", &config_.sincos_gpio_pin_cos)
             ),
             make_protocol_function("set_linear_count", *this, &Encoder::set_linear_count, "count")
         );
