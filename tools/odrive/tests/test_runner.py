@@ -4,6 +4,7 @@
 import sys, os
 sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..'))
 
+import stat
 import odrive
 from fibre import Logger, Event
 import argparse
@@ -210,6 +211,8 @@ def program_teensy(hex_file_path, program_gpio: int, logger: Logger):
     """
 
     # Put Teensy into program mode by pulling it's program pin down
+    with open("/sys/class/gpio/gpio{}/direction".format(program_gpio), "w") as fp:
+        fp.write("out")
     with open("/sys/class/gpio/gpio{}/value".format(program_gpio), "w") as gpio:
         gpio.write("0")
     time.sleep(0.1)
@@ -256,6 +259,8 @@ parser.add_argument("--ignore", metavar='DEVICE', action='store', nargs='+',
                     # TODO: implement
 parser.add_argument("--test-rig-yaml", type=argparse.FileType('r'), required=True,
                     help="test rig YAML file")
+parser.add_argument("--setup-host", action='store_true', default=False,
+                    help="configure operating system functions such as GPIOs (requires root)")
 parser.set_defaults(ignore=[])
 
 args = parser.parse_args()
@@ -265,3 +270,18 @@ test_rig_yaml = yaml.load(args.test_rig_yaml, Loader=yaml.BaseLoader)
 logger = Logger()
 
 available_test_objects = yaml_to_test_objects(test_rig_yaml, logger)
+
+
+if args.setup_host:
+    def export_gpio(gpio):
+        if not os.path.isdir("/sys/class/gpio/gpio{}".format(gpio)):
+            with open("/sys/class/gpio/export", "w") as fp:
+                fp.write(str(gpio))
+        os.chmod("/sys/class/gpio/gpio{}/value".format(gpio), stat.S_IROTH | stat.S_IWOTH)
+        os.chmod("/sys/class/gpio/gpio{}/direction".format(gpio), stat.S_IROTH | stat.S_IWOTH)
+
+    # TODO: read configuration from yaml file
+    export_gpio(20) # connected to Teensy GPIO
+    export_gpio(26) # connected to Teensy Program pin
+
+    os.chmod("/dev/ttyS0", stat.S_IROTH | stat.S_IWOTH)

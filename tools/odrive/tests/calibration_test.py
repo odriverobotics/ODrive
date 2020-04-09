@@ -178,6 +178,8 @@ class TestEncoderIndexSearch():
         time.sleep(3)
 
         test_assert_eq(enc_ctx.handle.index_found, False)
+        with open("/sys/class/gpio/gpio{}/direction".format(20), "w") as fp:
+            fp.write("out")
         with open("/sys/class/gpio/gpio{}/value".format(20), "w") as gpio:
             gpio.write("0")
         time.sleep(0.1)
