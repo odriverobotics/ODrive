@@ -60,7 +60,7 @@ CMD ID | Name | Sender | Signals | Start byte | Signal Type | Bits | Factor | Of
 0x017 | Get Vbus Voltage | Master\*\*\* | Vbus Voltage | 0 | IEEE 754 Float | 32 | 1 | 0 | Intel
 0x018 | Clear Errors | Master | - | - | - | - | - | - | -
 0x700 | CANOpen Heartbeat Message\*\* | Slave | - | -  | - | - | - | - | -
-
+|_______|___________________________|_________|____________________|_____|_____________|________|______|______|______
 \* Note: These messages are call & response.  The Master node sends a message with the RTR bit set, and the axis responds with the same ID and specified payload.  
 \*\* Note:  These CANOpen messages are reserved to avoid bus collisions with CANOpen devices.  They are not used by CAN Simple.
 \*\*\* Note:  These messages can be sent to either address on a given ODrive board.
