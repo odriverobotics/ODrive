@@ -32,6 +32,7 @@ Receive PDO 0x200 + nodeID = 0x223, which does not conflict with the range [0x20
 Be careful that you don't assign too many nodeIDs per PDO group.  Four CAN Simple nodes (32*4) is all of the available address space of a single PDO.  If the bus is strictly ODrive CAN Simple nodes, a simple sequential Node ID assignment will work fine.
 
 ### Messages
+<style>table tr {white-space:nowrap;} </style>
 CMD ID | Name | Sender | Signals | Start byte | Signal Type | Bits | Factor | Offset | Byte Order
 --:    | :--  | :--  | :-- | :-- | :-- | :-- | :-- | :-- | :--
 0x000 | CANOpen NMT Message\*\* | Master | - | - | - | - | - | - | -
