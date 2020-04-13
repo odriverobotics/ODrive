@@ -32,7 +32,6 @@ Receive PDO 0x200 + nodeID = 0x223, which does not conflict with the range [0x20
 Be careful that you don't assign too many nodeIDs per PDO group.  Four CAN Simple nodes (32*4) is all of the available address space of a single PDO.  If the bus is strictly ODrive CAN Simple nodes, a simple sequential Node ID assignment will work fine.
 
 ### Messages
-<style>table tr {white-space:nowrap;} </style>
 CMD ID | Name | Sender | Signals | Start byte | Signal Type | Bits | Factor | Offset | Byte Order
 --:    | :--  | :--  | :-- | :-- | :-- | :-- | :-- | :-- | :--
 0x000 | CANOpen NMT Message\*\* | Master | - | - | - | - | - | - | -
@@ -62,6 +61,7 @@ CMD ID | Name | Sender | Signals | Start byte | Signal Type | Bits | Factor | Of
 0x018 | Clear Errors | Master | - | - | - | - | - | - | -
 0x700 | CANOpen Heartbeat Message\*\* | Slave | - | -  | - | - | - | - | -
 |_______|___________________________|_________|____________________|_____|_____________|________|______|______|______
+
 \* Note: These messages are call & response.  The Master node sends a message with the RTR bit set, and the axis responds with the same ID and specified payload.  
 \*\* Note:  These CANOpen messages are reserved to avoid bus collisions with CANOpen devices.  They are not used by CAN Simple.
 \*\*\* Note:  These messages can be sent to either address on a given ODrive board.
