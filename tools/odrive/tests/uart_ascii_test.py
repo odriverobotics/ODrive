@@ -24,10 +24,12 @@ def strip_checksum(command):
 
 def reset_state(ser):
     """Resets the state of the ASCII protocol by flushing all buffers"""
-    ser.write(b'\n')
-    ser.flushOutput()
-    time.sleep(0.1)
-    ser.flushInput()
+    ser.flushOutput() # ensure that all previous bytes are sent
+    time.sleep(0.1) # wait for ODrive to handle last input (buffer might be full)
+    ser.write(b'\n') # terminate line
+    ser.flushOutput() # ensure that end-of-line is sent
+    time.sleep(0.1) # wait for any response that this may generate
+    ser.flushInput() # discard response
 
 class TestUartAscii():
     def is_compatible(self, odrive: ODriveTestContext):
@@ -97,7 +99,7 @@ class TestUartAscii():
             ser.write(b'c 0 12.5\n')
             test_assert_eq(ser.readline(), b'')
             test_assert_eq(odrive.handle.axis0.controller.input_current, 12.5, accuracy=0.001)
-            test_assert_eq(odrive.handle.axis0.controller.config.control_mode, CtrlMode.CTRL_MODE_CURRENT_CONTROL)
+            test_assert_eq(odrive.handle.axis0.controller.config.control_mode, CTRL_MODE_CURRENT_CONTROL)
 
             odrive.handle.axis0.controller.input_vel = 0
             odrive.handle.axis0.controller.input_current = 0
@@ -164,7 +166,7 @@ class TestUartNoise():
 
     def run_test(self, odrive: ODriveTestContext, logger: Logger):
         """
-        Tests the most important functions of the ASCII protocol.
+        Tests if the UART can handle invalid signals.
         """
 
         # Disable noise
@@ -211,8 +213,46 @@ class TestUartNoise():
             test_assert_eq(response, odrive.handle.vbus_voltage, accuracy=0.1)
 
 
+
+class TestUartBurnIn():
+    def is_compatible(self, odrive: ODriveTestContext):
+        return True
+
+    def run_test(self, odrive: ODriveTestContext, logger: Logger):
+        """
+        Tests if the ASCII protocol can handle 64kB of random data being thrown at it.
+        """
+
+        # Disable noise
+        with open("/sys/class/gpio/gpio{}/direction".format(20), "w") as fp:
+            fp.write("out")
+        with open("/sys/class/gpio/gpio{}/value".format(20), "w") as gpio:
+            gpio.write("0")
+
+        hexfile = 'uart_pass_through.ino.hex'
+        program_teensy(os.path.join(os.path.dirname(__file__), hexfile), 26, logger)
+        time.sleep(1.0)
+
+        odrive.handle.axis0.config.enable_step_dir = False
+        odrive.handle.config.enable_uart = True
+
+        with serial.Serial('/dev/ttyS0', 115200, timeout=1) as ser:
+            with open('/dev/random', 'rb') as rand:
+                buf = rand.read(65536)
+            ser.write(buf)
+
+            # reset port to known state
+            reset_state(ser)
+
+            # Check if protocol still works
+            ser.write(b'r vbus_voltage\n')
+            response = float(ser.readline().strip())
+            test_assert_eq(response, odrive.handle.vbus_voltage, accuracy=0.1)
+
+
 if __name__ == '__main__':
     test_runner.run([
         TestUartAscii(),
-        TestUartNoise()
+        TestUartNoise(),
+        TestUartBurnIn(),
     ])
