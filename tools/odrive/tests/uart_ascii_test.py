@@ -10,8 +10,8 @@ import functools
 import operator
 
 from fibre.utils import Logger
-from odrive.enums import errors
-from test_runner import ODriveTestContext, test_assert_eq, program_teensy
+from odrive.enums import *
+from test_runner import ODriveTestContext, test_assert_eq, test_assert_no_error, program_teensy
 
 
 def append_checksum(command):
@@ -84,8 +84,77 @@ class TestUartAscii():
             response = float(ser.readline().strip())
             test_assert_eq(response, odrive.handle.axis0.motor.current_control.v_current_control_integral_d, accuracy=0.1)
 
+            # Write an attribute
+            ser.write(b'w test_property 12345\n')
+            ser.write(b'r test_property\n')
+            response = int(ser.readline().strip())
+            test_assert_eq(response, 12345)
 
-        # ascii: `r vbus_voltage`
+
+            # Test 'c', 'v', 'p', 'q' and 'f' commands
+
+            odrive.handle.axis0.controller.input_current = 0
+            ser.write(b'c 0 12.5\n')
+            test_assert_eq(ser.readline(), b'')
+            test_assert_eq(odrive.handle.axis0.controller.input_current, 12.5, accuracy=0.001)
+            test_assert_eq(odrive.handle.axis0.controller.config.control_mode, CtrlMode.CTRL_MODE_CURRENT_CONTROL)
+
+            odrive.handle.axis0.controller.input_vel = 0
+            odrive.handle.axis0.controller.input_current = 0
+            ser.write(b'v 0 567.8 12.5\n')
+            test_assert_eq(ser.readline(), b'')
+            test_assert_eq(odrive.handle.axis0.controller.input_vel, 567.8, accuracy=0.001)
+            test_assert_eq(odrive.handle.axis0.controller.input_current, 12.5, accuracy=0.001)
+            test_assert_eq(odrive.handle.axis0.controller.config.control_mode, CTRL_MODE_VELOCITY_CONTROL)
+
+            odrive.handle.axis0.controller.input_pos = 0
+            odrive.handle.axis0.controller.input_vel = 0
+            odrive.handle.axis0.controller.input_current = 0
+            ser.write(b'p 0 123.4 567.8 12.5\n')
+            test_assert_eq(ser.readline(), b'')
+            test_assert_eq(odrive.handle.axis0.controller.input_pos, 123.4, accuracy=0.001)
+            test_assert_eq(odrive.handle.axis0.controller.input_vel, 567.8, accuracy=0.001)
+            test_assert_eq(odrive.handle.axis0.controller.input_current, 12.5, accuracy=0.001)
+            test_assert_eq(odrive.handle.axis0.controller.config.control_mode, CTRL_MODE_POSITION_CONTROL)
+
+            odrive.handle.axis0.controller.input_pos = 0
+            odrive.handle.axis0.controller.config.vel_limit = 0
+            odrive.handle.axis0.motor.config.current_lim = 0
+            ser.write(b'q 0 123.4 567.8 12.5\n')
+            test_assert_eq(ser.readline(), b'')
+            test_assert_eq(odrive.handle.axis0.controller.input_pos, 123.4, accuracy=0.001)
+            test_assert_eq(odrive.handle.axis0.controller.config.vel_limit, 567.8, accuracy=0.001)
+            test_assert_eq(odrive.handle.axis0.motor.config.current_lim, 12.5, accuracy=0.001)
+            test_assert_eq(odrive.handle.axis0.controller.config.control_mode, CTRL_MODE_POSITION_CONTROL)
+
+            ser.write(b'f 0\n')
+            response = ser.readline().strip()
+            test_assert_eq(float(response.split()[0]), odrive.handle.axis0.encoder.pos_estimate, accuracy=0.001)
+            test_assert_eq(float(response.split()[1]), odrive.handle.axis0.encoder.vel_estimate, accuracy=0.001)
+
+
+            # Test watchdog (assumes that the testing host has no more than 300ms random delays)
+            start = time.monotonic()
+            odrive.handle.axis0.config.enable_watchdog = False
+            odrive.handle.axis0.error = 0
+            odrive.handle.axis0.config.watchdog_timeout = 1.0
+            odrive.handle.axis0.watchdog_feed()
+            odrive.handle.axis0.config.enable_watchdog = True
+            test_assert_eq(odrive.handle.axis0.error, 0)
+            for _ in range(5): # keep the watchdog alive for 3.5 seconds
+                time.sleep(0.7)
+                print('feeding watchdog at {}s'.format(time.monotonic() - start))
+                ser.write(b'u 0\n')
+                err = odrive.handle.axis0.error
+                print('checking error at {}s'.format(time.monotonic() - start))
+                test_assert_eq(err, 0)
+                
+            time.sleep(1.3) # let the watchdog expire
+            test_assert_eq(odrive.handle.axis0.error, errors.axis.ERROR_WATCHDOG_TIMER_EXPIRED)
+            test_assert_eq(ser.readline(), b'') # check if the device remained silent during the test
+
+
+            # TODO: test cases for 't', 'ss', 'se', 'sr' commands
 
 
 
