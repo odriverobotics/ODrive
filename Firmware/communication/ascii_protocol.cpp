@@ -72,18 +72,19 @@ void ASCII_protocol_process_line(const uint8_t* buffer, size_t len, StreamSink& 
     char cmd[MAX_LINE_LENGTH + 1];
     if (len > MAX_LINE_LENGTH) len = MAX_LINE_LENGTH;
     memcpy(cmd, buffer, len);
+    cmd[len] = 0; // null-terminate
 
     // optional checksum validation
     bool use_checksum = (checksum_start < len);
     if (use_checksum) {
         unsigned int received_checksum;
-        sscanf((const char *)cmd + checksum_start, "%u", &received_checksum);
-        if (received_checksum != checksum)
+        int numscan = sscanf((const char *)cmd + checksum_start, "%u", &received_checksum);
+        if ((numscan < 1) || (received_checksum != checksum))
             return;
         len = checksum_start - 1; // prune checksum and asterisk
+        cmd[len] = 0; // null-terminate
     }
 
-    cmd[len] = 0; // null-terminate
 
     // check incoming packet type
     if (cmd[0] == 'p') { // position control
@@ -256,7 +257,7 @@ void ASCII_protocol_process_line(const uint8_t* buffer, size_t len, StreamSink& 
             }
         }
 
-    }else if (cmd[0] == 'u') { // Update axis watchdog. 
+    } else if (cmd[0] == 'u') { // Update axis watchdog. 
         unsigned motor_number;
         int numscan = sscanf(cmd, "u %u", &motor_number);
         if(numscan < 1){
