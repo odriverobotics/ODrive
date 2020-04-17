@@ -5,13 +5,38 @@ import time
 import math
 import os
 
-import fibre
-from fibre.utils import Logger
 from odrive.enums import errors
-from test_runner import ODriveTestContext, test_assert_eq, program_teensy
+from test_runner import *
 
-#def modpm(val, lower_bound, upper_bound):
-#    return ((val - lower_bound) % (upper_bound - lower_bound)) - lower_bound
+
+teensy_code_template = """
+float position = 0; // between 0 and 1
+float velocity = 1; // [position per second]
+
+void setup() {
+{setup_code}
+}
+
+// the loop routine runs over and over again forever:
+void loop() {
+  int high_microseconds = 1000 + (int)(position * 1000.0f);
+
+{set_high_code}
+  delayMicroseconds(high_microseconds);
+{set_low_code}
+
+  // Wait for a total of 20ms.
+  // delayMicroseconds() only works well for values <= 16383
+  delayMicroseconds(10000 - high_microseconds);
+  delayMicroseconds(10000);
+
+  position += velocity * 0.02;
+  while (position > 1.0)
+      position -= 1.0;
+}
+"""
+
+
 
 def modpm(val, range):
     return ((val + (range / 2)) % range) - (range / 2)
@@ -28,8 +53,24 @@ class TestPwmInput():
     Note: this test is currently only written for ODrive 3.6 (or similar GPIO layout).
     """
 
-    def is_compatible(self, odrive: ODriveTestContext):
-        return True
+    def get_test_cases(self, testrig: TestRig):
+        for odrive in testrig.get_components(ODriveComponent):
+            # Find the Teensy that is connected to gpios 1-4 of the ODrive and the corresponding Teensy GPIOs
+
+            gpio_conns = [
+                testrig.get_directly_connected_components(odrive.gpio1),
+                testrig.get_directly_connected_components(odrive.gpio2),
+                testrig.get_directly_connected_components(odrive.gpio3),
+                testrig.get_directly_connected_components(odrive.gpio4)
+            ]
+
+            valid_combinations = [
+                [combination[0].parent] + list(combination)
+                for combination in itertools.product(*gpio_conns)
+                if ((len(set(c.parent for c in combination)) == 1) and isinstance(combination[0].parent, TeensyComponent))
+            ]
+
+            yield (odrive, valid_combinations)
 
     def run_delta_test(self, attr, with_min, with_max, timeout = 5.0):
         rounds_per_s = 1.0
@@ -84,10 +125,16 @@ class TestPwmInput():
         test_assert_eq(min_val, with_min, range = step_size)
         test_assert_eq(max_val, with_max, range = step_size)
 
-    def run_test(self, odrive: ODriveTestContext, logger: Logger):
+    def run_test(self, odrive: ODriveComponent, teensy: TeensyComponent, teensy_gpio1: int, teensy_gpio2: int, teensy_gpio3: int, teensy_gpio4: int, logger: Logger):
         # TODO: test each GPIO separately
-        hexfile = 'pwm_sim.ino.hex'
-        program_teensy(os.path.join(os.path.dirname(__file__), hexfile), 26, logger)
+        
+        setup_code = "\n".join("  pinMode(" + str(gpio.num) + ", OUTPUT);" for gpio in [teensy_gpio1, teensy_gpio2, teensy_gpio3, teensy_gpio4])
+        set_high_code = "\n".join("  digitalWrite(" + str(gpio.num) + ", HIGH);" for gpio in [teensy_gpio1, teensy_gpio2, teensy_gpio3, teensy_gpio4])
+        set_low_code = "\n".join("  digitalWrite(" + str(gpio.num) + ", LOW);" for gpio in [teensy_gpio1, teensy_gpio2, teensy_gpio3, teensy_gpio4])
+
+        code = teensy_code_template.replace("{setup_code}", setup_code).replace("{set_high_code}", set_high_code).replace("{set_low_code}", set_low_code)
+        teensy.compile_and_program(code)
+
         time.sleep(1.0) # wait for PLLs to stabilize
 
         logger.debug("Set up PWM input...")
@@ -106,15 +153,7 @@ class TestPwmInput():
         odrive.handle.config.gpio4_pwm_mapping.min = -20000
         odrive.handle.config.gpio4_pwm_mapping.max = 20000
         
-        # Save and reboot
-        odrive.handle.save_configuration()
-        try:
-            odrive.handle.reboot()
-        except fibre.ChannelBrokenException:
-            pass # this is expected
-        odrive.handle = None
-        time.sleep(2)
-        odrive.make_available(logger)
+        odrive.save_config_and_reboot()
 
         logger.debug("Check if PWM on GPIO1 works...")
         self.run_delta_test(odrive.handle.axis0.controller._remote_attributes['input_pos'], -50, 200)

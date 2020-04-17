@@ -5,13 +5,12 @@ import struct
 import time
 import os
 import io
-import serial
 import functools
 import operator
 
 from fibre.utils import Logger
 from odrive.enums import *
-from test_runner import ODriveTestContext, test_assert_eq, test_assert_no_error, program_teensy
+from test_runner import *
 
 
 def append_checksum(command):
@@ -32,28 +31,29 @@ def reset_state(ser):
     ser.flushInput() # discard response
 
 class TestUartAscii():
-    def is_compatible(self, odrive: ODriveTestContext):
-        return True
+    def get_test_cases(self, testrig: TestRig):
+        for odrive in testrig.get_components(ODriveComponent):
+            ports = list(testrig.get_connected_components({
+                'rx': (odrive.gpio1, True),
+                'tx': (odrive.gpio2, False)
+            }, SerialPortComponent))
+            yield (odrive, ports)
 
-    def run_test(self, odrive: ODriveTestContext, logger: Logger):
+    def run_test(self, odrive: ODriveComponent, port: SerialPortComponent, logger: Logger):
         """
         Tests the most important functions of the ASCII protocol.
         """
 
-        # Disable noise
-        with open("/sys/class/gpio/gpio{}/direction".format(20), "w") as fp:
-            fp.write("out")
-        with open("/sys/class/gpio/gpio{}/value".format(20), "w") as gpio:
-            gpio.write("0")
-
-        hexfile = 'uart_pass_through.ino.hex'
-        program_teensy(os.path.join(os.path.dirname(__file__), hexfile), 26, logger)
-        time.sleep(1.0)
+        if (odrive.handle.config.gpio1_pwm_mapping.endpoint != (0,0)) or (odrive.handle.config.gpio2_pwm_mapping.endpoint != (0,0)):
+            logger.debug('UART pins in use. Reconfiguring...')
+            odrive.handle.config.gpio1_pwm_mapping.endpoint = None
+            odrive.handle.config.gpio2_pwm_mapping.endpoint = None
+            odrive.save_config_and_reboot()
 
         odrive.handle.axis0.config.enable_step_dir = False
         odrive.handle.config.enable_uart = True
 
-        with serial.Serial('/dev/ttyS0', 115200, timeout=1) as ser:
+        with port.open(115200) as ser:
             # reset port to known state
             reset_state(ser)
 
@@ -159,84 +159,24 @@ class TestUartAscii():
             # TODO: test cases for 't', 'ss', 'se', 'sr' commands
 
 
-
-class TestUartNoise():
-    def is_compatible(self, odrive: ODriveTestContext):
-        return True
-
-    def run_test(self, odrive: ODriveTestContext, logger: Logger):
-        """
-        Tests if the UART can handle invalid signals.
-        """
-
-        # Disable noise
-        with open("/sys/class/gpio/gpio{}/direction".format(20), "w") as fp:
-            fp.write("out")
-        with open("/sys/class/gpio/gpio{}/value".format(20), "w") as gpio:
-            gpio.write("0")
-
-        hexfile = 'uart_pass_through.ino.hex'
-        program_teensy(os.path.join(os.path.dirname(__file__), hexfile), 26, logger)
-        time.sleep(1.0)
-
-        odrive.handle.axis0.config.enable_step_dir = False
-        odrive.handle.config.enable_uart = True
-
-        with serial.Serial('/dev/ttyS0', 115200, timeout=1) as ser:
-            # reset port to known state
-            reset_state(ser)
-
-            # Enable square wave of ~1.6MHz on the ODrive's RX line
-            with open("/sys/class/gpio/gpio{}/value".format(20), "w") as gpio:
-                gpio.write("1")
-
-            time.sleep(0.1)
-            reset_state(ser)
-
-            # Read an attribute (should fail because the command is not passed through)
-            ser.write(b'r vbus_voltage\n')
-            test_assert_eq(ser.readline(), b'')
-
-            # Disable square wave
-            with open("/sys/class/gpio/gpio{}/value".format(20), "w") as gpio:
-                gpio.write("0")
-
-            # Give receiver some time to recover
-            time.sleep(0.1)
-
-            # reset port to known state
-            reset_state(ser)
-
-            # Try again
-            ser.write(b'r vbus_voltage\n')
-            response = float(ser.readline().strip())
-            test_assert_eq(response, odrive.handle.vbus_voltage, accuracy=0.1)
-
-
-
 class TestUartBurnIn():
-    def is_compatible(self, odrive: ODriveTestContext):
-        return True
+    def get_test_cases(self, testrig: TestRig):
+        for odrive in testrig.get_components(ODriveComponent):
+            ports = list(testrig.get_connected_components({
+                'rx': (odrive.gpio1, True),
+                'tx': (odrive.gpio2, False)
+            }, SerialPortComponent))
+            yield (odrive, ports)
 
-    def run_test(self, odrive: ODriveTestContext, logger: Logger):
+    def run_test(self, odrive: ODriveComponent, port: SerialPortComponent, logger: Logger):
         """
         Tests if the ASCII protocol can handle 64kB of random data being thrown at it.
         """
 
-        # Disable noise
-        with open("/sys/class/gpio/gpio{}/direction".format(20), "w") as fp:
-            fp.write("out")
-        with open("/sys/class/gpio/gpio{}/value".format(20), "w") as gpio:
-            gpio.write("0")
-
-        hexfile = 'uart_pass_through.ino.hex'
-        program_teensy(os.path.join(os.path.dirname(__file__), hexfile), 26, logger)
-        time.sleep(1.0)
-
         odrive.handle.axis0.config.enable_step_dir = False
         odrive.handle.config.enable_uart = True
 
-        with serial.Serial('/dev/ttyS0', 115200, timeout=1) as ser:
+        with port.open(115200) as ser:
             with open('/dev/random', 'rb') as rand:
                 buf = rand.read(65536)
             ser.write(buf)
@@ -250,9 +190,81 @@ class TestUartBurnIn():
             test_assert_eq(response, odrive.handle.vbus_voltage, accuracy=0.1)
 
 
+class TestUartNoise():
+    def get_test_cases(self, testrig: TestRig):
+        for odrive in testrig.get_components(ODriveComponent):
+            # For every ODrive, find a connected serial port which has a teensy
+            # in between, so that we can inject noise,
+
+            ports = list(testrig.get_connected_components({
+                'rx': (odrive.gpio1, True),
+                'tx': (odrive.gpio2, False)
+            }, SerialPortComponent))
+
+            # Hack the bus objects to enable noise_enable functionality on the TX line.
+
+            def get_noise_gpio(bus):
+                teensy = bus.gpio_tuples[1][0]
+                for teensy_gpio in teensy.gpios:
+                    for other_gpio in testrig.get_directly_connected_components(teensy_gpio):
+                        if isinstance(other_gpio, LinuxGpioComponent):
+                            return teensy_gpio, other_gpio
+                return None
+
+            for idx, bus in enumerate(ports):
+                noise_gpio_on_teensy, noise_gpio_on_rpi = get_noise_gpio(bus)
+                assert(noise_gpio_on_rpi)
+                t, i, o, _ = bus.gpio_tuples[1]
+                bus.gpio_tuples[1] = (t, i, o, noise_gpio_on_teensy)
+                ports[idx] = (bus, noise_gpio_on_rpi)
+                
+            yield (odrive, ports)
+
+    def run_test(self, odrive: ODriveComponent, port: SerialPortComponent, noise_enable: LinuxGpioComponent, logger: Logger):
+        """
+        Tests if the UART can handle invalid signals.
+        """
+        noise_enable.config(output=True)
+        noise_enable.write(False)
+        time.sleep(0.1)
+
+        odrive.handle.axis0.config.enable_step_dir = False
+        odrive.handle.config.enable_uart = True
+
+        with port.open(115200) as ser:
+            # reset port to known state
+            reset_state(ser)
+
+            # Enable square wave of ~1.6MHz on the ODrive's RX line
+            noise_enable.write(True)
+
+            time.sleep(0.1)
+            reset_state(ser)
+
+            time.sleep(1.0)
+
+            # Read an attribute (should fail because the command is not passed through)
+            ser.write(b'r vbus_voltage\n')
+            test_assert_eq(ser.readline(), b'')
+
+            # Disable square wave
+            noise_enable.write(False)
+
+            # Give receiver some time to recover
+            time.sleep(0.1)
+
+            # reset port to known state
+            reset_state(ser)
+
+            # Try again
+            ser.write(b'r vbus_voltage\n')
+            response = float(ser.readline().strip())
+            test_assert_eq(response, odrive.handle.vbus_voltage, accuracy=0.1)
+
+
 if __name__ == '__main__':
     test_runner.run([
         TestUartAscii(),
-        TestUartNoise(),
         TestUartBurnIn(),
+        TestUartNoise(),
     ])
