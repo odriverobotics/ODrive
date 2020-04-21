@@ -17,12 +17,13 @@ components:
         name: can0
         interface: can0
         connected-to: odrive.can
-      - {type: gpio, num: 20} # need to specify GPIOs explicitly for the generalpurpose type
+      - {type: gpio, num: 19} # need to specify GPIOs explicitly for the generalpurpose type
+      - {type: gpio, num: 20}
       - {type: gpio, num: 26}
 
-  - type: programmer
-    name: The Blue STLink/v2
-    id: '\x53\x3f\x75\x06\x49\x3f\x49\x51\x44\x54\x19\x3f'
+#  - type: programmer
+#    name: The Blue STLink/v2
+#    id: '\x53\x3f\x75\x06\x49\x3f\x49\x51\x44\x54\x19\x3f'
 
   - type: odrive
     name: odrive
@@ -65,11 +66,12 @@ connections:
   - ['teensy.gpio9', 'odrive.gpio2']
   - ['teensy.gpio8', 'odrive.gpio3']
   - ['teensy.gpio7', 'odrive.gpio4']
-  - ['teensy.gpio15', 'odrive.gpio5']
-  - ['teensy.gpio16', 'odrive.gpio6']
-  - ['teensy.gpio17', 'odrive.gpio7']
-  - ['teensy.gpio18', 'odrive.gpio8']
+  - ['teensy.gpio14', 'odrive.gpio5']
+  - ['teensy.gpio15', 'odrive.gpio6']
+  - ['teensy.gpio16', 'odrive.gpio7']
+  - ['teensy.gpio17', 'odrive.gpio8']
   - ['teensy.gpio4', 'rpi.gpio20']
+  - ['teensy.gpio5', 'rpi.gpio19']
   - ['teensy.gpio23', 'odrive.encoder0.z']
   - ['teensy.gpio22', 'odrive.encoder0.a']
   - ['teensy.gpio21', 'odrive.encoder0.b']

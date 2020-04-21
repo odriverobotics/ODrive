@@ -68,8 +68,14 @@ public:
         bool startup_closed_loop_control = false; //<! enable closed loop control after calibration/startup
         bool startup_sensorless_control = false; //<! enable sensorless control after calibration/startup
         bool startup_homing = false; //<! enable homing after calibration/startup
+
         bool enable_step_dir = false; //<! enable step/dir input after calibration
                                     //   For M0 this has no effect if enable_uart is true
+        bool step_dir_always_on = false; //<! Keep step/dir enabled while the motor is disabled.
+                                         //<! This is ignored if enable_step_dir is false.
+                                         //<! This setting only takes effect on a state transition
+                                         //<! into idle or out of closed loop control.
+
         float counts_per_step = 2.0f;
 
         float watchdog_timeout = 0.0f;  // [s] (0 disables watchdog)
@@ -120,7 +126,6 @@ public:
     void step_cb();
     void set_step_dir_active(bool enable);
     void decode_step_dir_pins();
-    void update_watchdog_settings();
 
     static void load_default_step_dir_pin_config(
         const AxisHardwareConfig_t& hw_config, Config_t* config);
@@ -276,6 +281,7 @@ public:
                 make_protocol_property("startup_sensorless_control", &config_.startup_sensorless_control),
                 make_protocol_property("startup_homing", &config_.startup_homing),
                 make_protocol_property("enable_step_dir", &config_.enable_step_dir),
+                make_protocol_property("step_dir_always_on", &config_.step_dir_always_on),
                 make_protocol_property("counts_per_step", &config_.counts_per_step),
                 make_protocol_property("watchdog_timeout", &config_.watchdog_timeout),
                 make_protocol_property("enable_watchdog", &config_.enable_watchdog),

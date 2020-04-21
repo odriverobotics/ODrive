@@ -61,6 +61,10 @@ def disjoint_sets(list_of_sets: list):
 def is_list_like(arg):
     return hasattr(arg, '__iter__') and not isinstance(arg, str)
 
+def all_unique(lst):
+    seen = list()
+    return not any(i in seen or seen.append(i) for i in lst)
+
 # Test Components -------------------------------------------------------------#
 
 class Component(object):
@@ -72,8 +76,8 @@ class ODriveComponent(Component):
         self.handle = None
         self.yaml = yaml
         #self.axes = [ODriveAxisComponent(None), ODriveAxisComponent(None)]
-        self.encoders = [ODriveEncoderComponent(self, 0, None), ODriveEncoderComponent(self, 1, None)]
-        self.axes = [ODriveAxisComponent(self, 0, None), ODriveAxisComponent(self, 1, None)]
+        self.encoders = [ODriveEncoderComponent(self, 0, yaml['encoder0']), ODriveEncoderComponent(self, 1, yaml['encoder1'])]
+        self.axes = [ODriveAxisComponent(self, 0, yaml['motor0']), ODriveAxisComponent(self, 1, yaml['motor1'])]
         for i in range(1,9):
             self.__setattr__('gpio' + str(i), Component(self))
         self.can = Component(self)
@@ -123,19 +127,20 @@ class MotorComponent(Component):
         pass
 
 class ODriveAxisComponent(Component):
-    def __init__(self, odrv_ctx: ODriveComponent, num: int, yaml: dict):
+    def __init__(self, parent: ODriveComponent, num: int, yaml: dict):
+        Component.__init__(self, parent)
         self.handle = None
-        self.yaml = odrv_ctx.yaml[f'motor{num}'] # TODO: this is bad naming
-        self.odrv_ctx = odrv_ctx
+        self.yaml = yaml # TODO: this is bad naming
         self.num = num
 
     def prepare(self, logger: Logger):
-        self.odrv_ctx.prepare(logger)
+        self.parent.prepare(logger)
 
 class ODriveEncoderComponent(Component):
-    def __init__(self, odrv_ctx: ODriveComponent, num: int, yaml: dict):
+    def __init__(self, parent: ODriveComponent, num: int, yaml: dict):
+        Component.__init__(self, parent)
         self.handle = None
-        self.odrv_ctx = odrv_ctx
+        self.yaml = yaml
         self.num = num
         self.z = Component(self)
         self.a = Component(self)
@@ -145,7 +150,7 @@ class ODriveEncoderComponent(Component):
         return [('z', self.z), ('a', self.a), ('b', self.b)]
 
     def prepare(self, logger: Logger):
-        self.odrv_ctx.prepare(logger)
+        self.parent.prepare(logger)
 
 class EncoderComponent(Component):
     def __init__(self, parent: Component, yaml: dict):
@@ -310,6 +315,9 @@ class ProxiedComponent(Component):
 
     def __repr__(self):
         return testrig.get_component_name(self.impl) + ' (routed via ' + ', '.join((testrig.get_component_name(t) + ': ' + str(i.num) + ' => ' + str(o.num)) for t, i, o, n in self.gpio_tuples) + ')'
+
+    def __eq__(self, obj):
+        return isinstance(obj, ProxiedComponent) and (self.impl == obj.impl) #  and (self.gpio_tuples == obj.gpio_tuples)
 
     def prepare(self):
         for teensy, gpio_in, gpio_out, gpio_noise_enable in self.gpio_tuples:
@@ -480,24 +488,26 @@ def run_shell(command_line, logger, env=None, timeout=None):
         logger.error(result.stdout.decode(sys.stdout.encoding))
         raise TestFailed("command {} failed".format(command_line))
 
-def select_params(param_options):
-    params = []
 
+def get_combinations(param_options):
+    if len(param_options) > 0:
+        param = param_options[0]
+        if not is_list_like(param):
+            param = [param]
+        
+        for part1, part2 in itertools.product(param, get_combinations(param_options[1:]) if (len(param_options) > 1) else [()]):
+            if not isinstance(part1, tuple):
+                part1 = (part1,)
+            yield part1 + part2
+
+def select_params(param_options):
     # Select parameters from the resource list
     # (this could be arbitrarily complex to improve parallelization of the tests)
-    for param in param_options:
-        if is_list_like(param):
-            if len(param) == 0:
-                return None
-            else:
-                selection = param[0]
-                if is_list_like(selection):
-                    params = params + list(selection)
-                else:
-                    params.append(selection)
-        else:
-            params.append(param)
-    return params
+    for combination in get_combinations(param_options):
+        if all_unique(combination):
+            return list(combination)
+
+    return None
 
 def run(tests):
     if not isinstance(tests, list):
@@ -590,34 +600,37 @@ testrig = TestRig(test_rig_yaml, logger)
 
 
 if args.setup_host:
-    def export_gpio(gpio):
-        if not os.path.isdir("/sys/class/gpio/gpio{}".format(gpio)):
+    for gpio in testrig.get_components(LinuxGpioComponent):
+        num = gpio.num
+        logger.debug('exporting GPIO ' + str(num) + ' to user space...')
+        if not os.path.isdir("/sys/class/gpio/gpio{}".format(num)):
             with open("/sys/class/gpio/export", "w") as fp:
-                fp.write(str(gpio))
-        os.chmod("/sys/class/gpio/gpio{}/value".format(gpio), stat.S_IROTH | stat.S_IWOTH)
-        os.chmod("/sys/class/gpio/gpio{}/direction".format(gpio), stat.S_IROTH | stat.S_IWOTH)
+                fp.write(str(num))
+        os.chmod("/sys/class/gpio/gpio{}/value".format(num), stat.S_IROTH | stat.S_IWOTH)
+        os.chmod("/sys/class/gpio/gpio{}/direction".format(num), stat.S_IROTH | stat.S_IWOTH)
 
-    # TODO: read configuration from yaml file
-    export_gpio(20) # connected to Teensy GPIO
-    export_gpio(26) # connected to Teensy Program pin
+    for port in testrig.get_components(SerialPortComponent):
+        logger.debug('changing permissions on ' + port.yaml['port'] + '...')
+        os.chmod(port.yaml['port'], stat.S_IROTH | stat.S_IWOTH)
 
-    os.chmod("/dev/ttyS0", stat.S_IROTH | stat.S_IWOTH)
-
-    # This breaks the retarded teensy loader that shows up on every compile
-    if not os.path.isfile('/usr/share/arduino/hardware/tools/teensy_post_compile_old'):
-        os.rename('/usr/share/arduino/hardware/tools/teensy_post_compile', '/usr/share/arduino/hardware/tools/teensy_post_compile_old')
-    with open('/usr/share/arduino/hardware/tools/teensy_post_compile', 'w') as scr:
-        scr.write('#!/bin/bash\n')
-        scr.write('if [ "$ARDUINO_COMPILE_DESTINATION" != "" ]; then\n')
-        scr.write('  cp -r ${2#-path=}/*.ino.hex ${ARDUINO_COMPILE_DESTINATION}\n')
-        scr.write('fi\n')
-    os.chmod('/usr/share/arduino/hardware/tools/teensy_post_compile', stat.S_IRWXU | stat.S_IRGRP | stat.S_IXGRP | stat.S_IROTH | stat.S_IXOTH)
+    if len(list(testrig.get_components(TeensyComponent))):
+        # This breaks the annoying teensy loader that shows up on every compile
+        logger.debug('modifying teensyduino installation...')
+        if not os.path.isfile('/usr/share/arduino/hardware/tools/teensy_post_compile_old'):
+            os.rename('/usr/share/arduino/hardware/tools/teensy_post_compile', '/usr/share/arduino/hardware/tools/teensy_post_compile_old')
+        with open('/usr/share/arduino/hardware/tools/teensy_post_compile', 'w') as scr:
+            scr.write('#!/bin/bash\n')
+            scr.write('if [ "$ARDUINO_COMPILE_DESTINATION" != "" ]; then\n')
+            scr.write('  cp -r ${2#-path=}/*.ino.hex ${ARDUINO_COMPILE_DESTINATION}\n')
+            scr.write('fi\n')
+        os.chmod('/usr/share/arduino/hardware/tools/teensy_post_compile', stat.S_IRWXU | stat.S_IRGRP | stat.S_IXGRP | stat.S_IROTH | stat.S_IXOTH)
 
     # Bring up CAN interface(s)
     for intf in testrig.get_components(CanInterfaceComponent):
         name = intf.yaml['interface']
-        run_shell('ip link set dev {} down'.format(intf))
-        run_shell('ip link set dev {} type can bitrate 250000'.format(intf))
-        run_shell('ip link set dev {} type can loopback off'.format(intf))
-        run_shell('ip link set dev {} up'.format(intf))
+        logger.debug('bringing up {}...'.format(name))
+        run_shell('ip link set dev {} down'.format(name), logger)
+        run_shell('ip link set dev {} type can bitrate 250000'.format(name), logger)
+        run_shell('ip link set dev {} type can loopback off'.format(name), logger)
+        run_shell('ip link set dev {} up'.format(name), logger)
 
