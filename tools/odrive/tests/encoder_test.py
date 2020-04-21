@@ -37,9 +37,6 @@ void loop() {
 """
 
 
-def modpm(val, range):
-    return ((val + (range / 2)) % range) - (range / 2)
-
 class TestIncrementalEncoder():
 
     def get_test_cases(self, testrig: TestRig):

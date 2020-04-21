@@ -37,10 +37,6 @@ void loop() {
 """
 
 
-
-def modpm(val, range):
-    return ((val + (range / 2)) % range) - (range / 2)
-
 class TestPwmInput():
     """
     Verifies the PWM input.
@@ -125,7 +121,7 @@ class TestPwmInput():
         test_assert_eq(min_val, with_min, range = step_size)
         test_assert_eq(max_val, with_max, range = step_size)
 
-    def run_test(self, odrive: ODriveComponent, teensy: TeensyComponent, teensy_gpio1: int, teensy_gpio2: int, teensy_gpio3: int, teensy_gpio4: int, logger: Logger):
+    def run_test(self, odrive: ODriveComponent, teensy: TeensyComponent, teensy_gpio1: Component, teensy_gpio2: Component, teensy_gpio3: Component, teensy_gpio4: Component, logger: Logger):
         # TODO: test each GPIO separately
         
         setup_code = "\n".join("  pinMode(" + str(gpio.num) + ", OUTPUT);" for gpio in [teensy_gpio1, teensy_gpio2, teensy_gpio3, teensy_gpio4])

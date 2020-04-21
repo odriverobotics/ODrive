@@ -65,6 +65,9 @@ def all_unique(lst):
     seen = list()
     return not any(i in seen or seen.append(i) for i in lst)
 
+def modpm(val, range):
+    return ((val + (range / 2)) % range) - (range / 2)
+
 # Test Components -------------------------------------------------------------#
 
 class Component(object):
@@ -100,7 +103,8 @@ class ODriveComponent(Component):
 
         logger.debug('waiting for {} ({})'.format(self.yaml['name'], self.yaml['serial-number']))
         self.handle = odrive.find_any(
-            path="usb", serial_number=self.yaml['serial-number'], timeout=30)#, printer=print)
+            path="usb", serial_number=self.yaml['serial-number'], timeout=60)#, printer=print)
+        assert(self.handle)
         #for axis_idx, axis_ctx in enumerate(self.axes):
         #    axis_ctx.handle = self.handle.__dict__['axis{}'.format(axis_idx)]
         for encoder_idx, encoder_ctx in enumerate(self.encoders):
@@ -108,6 +112,17 @@ class ODriveComponent(Component):
         # TODO: distinguish between axis and motor context
         for axis_idx, axis_ctx in enumerate(self.axes):
             axis_ctx.handle = self.handle.__dict__['axis{}'.format(axis_idx)]
+
+    def unuse_gpios(self):
+        self.handle.config.enable_uart = False
+        self.handle.axis0.config.enable_step_dir = False
+        self.handle.axis1.config.enable_step_dir = False
+        self.handle.config.gpio1_pwm_mapping.endpoint = None
+        self.handle.config.gpio2_pwm_mapping.endpoint = None
+        self.handle.config.gpio3_pwm_mapping.endpoint = None
+        self.handle.config.gpio4_pwm_mapping.endpoint = None
+        self.handle.config.gpio3_analog_mapping.endpoint = None
+        self.handle.config.gpio4_analog_mapping.endpoint = None
 
     def save_config_and_reboot(self):
         self.handle.save_configuration()
@@ -302,6 +317,15 @@ class TeensyComponent(Component):
                 self.compile(code_fp.name, hex_fp.name)
                 self.program(hex_fp.name, logger)
 
+class LowPassFilterComponent(Component):
+    def __init__(self, parent: Component):
+        Component.__init__(self, parent)
+        self.en = Component(self)
+
+    def get_subcomponents(self):
+        yield 'en', self.en
+
+
 class ProxiedComponent(Component):
     def __init__(self, impl, *gpio_tuples):
         """
@@ -348,6 +372,8 @@ class TestRig():
                 add_component(component_yaml['name'], MotorComponent(component_yaml))
             elif component_yaml['type'] == 'encoder':
                 add_component(component_yaml['name'], EncoderComponent(self, component_yaml))
+            elif component_yaml['type'] == 'lpf':
+                add_component(component_yaml['name'], LowPassFilterComponent(self))
             else:
                 logger.warn('test rig has unsupported component ' + component_yaml['type'])
                 continue
@@ -490,15 +516,20 @@ def run_shell(command_line, logger, env=None, timeout=None):
 
 
 def get_combinations(param_options):
-    if len(param_options) > 0:
-        param = param_options[0]
-        if not is_list_like(param):
-            param = [param]
-        
-        for part1, part2 in itertools.product(param, get_combinations(param_options[1:]) if (len(param_options) > 1) else [()]):
-            if not isinstance(part1, tuple):
-                part1 = (part1,)
-            yield part1 + part2
+    if isinstance(param_options, tuple):
+        if len(param_options) > 0:
+            for part1, part2 in itertools.product(
+                    get_combinations(param_options[0]),
+                    get_combinations(param_options[1:]) if (len(param_options) > 1) else [()]):
+                assert(isinstance(part1, tuple))
+                assert(isinstance(part2, tuple))
+                yield part1 + part2
+    elif is_list_like(param_options):
+        for item in param_options:
+            for c in get_combinations(item):
+                yield c
+    else:
+        yield (param_options,)
 
 def select_params(param_options):
     # Select parameters from the resource list

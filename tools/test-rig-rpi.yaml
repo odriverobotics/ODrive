@@ -17,7 +17,9 @@ components:
         name: can0
         interface: can0
         connected-to: odrive.can
-      - {type: gpio, num: 19} # need to specify GPIOs explicitly for the generalpurpose type
+       # need to specify GPIOs explicitly for the generalpurpose type
+      - {type: gpio, num: 16}
+      - {type: gpio, num: 19}
       - {type: gpio, num: 20}
       - {type: gpio, num: 26}
 
@@ -57,6 +59,9 @@ components:
   - type: teensy
     name: teensy
 
+  - {type: lpf, name: lpf0}
+  - {type: lpf, name: lpf1}
+
 connections:
   - ['odrive.can', 'rpi.can0']
   - ['teensy.program', 'rpi.gpio26']
@@ -83,3 +88,6 @@ connections:
   - ['teensy.gpio2', 'real_encoder.b']
   - ['odrive.axis0', 'D5065-270KV_0']
   - ['D5065-270KV_0', 'real_encoder']
+  - ['odrive.gpio3', 'lpf0']
+  - ['odrive.gpio4', 'lpf1']
+  - ['lpf0.en', 'lpf1.en', 'rpi.gpio16']

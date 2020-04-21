@@ -9,9 +9,6 @@ from fibre.utils import Logger
 from test_runner import *
 from odrive.enums import *
 
-def modpm(val, range):
-    return ((val + (range / 2)) % range) - (range / 2)
-
 
 class TestMotorCalibration():
     """
