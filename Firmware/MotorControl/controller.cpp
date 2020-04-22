@@ -54,7 +54,7 @@ void Controller::move_to_pos(float goal_point) {
                                  axis_->trap_.config_.vel_limit,
                                  axis_->trap_.config_.accel_limit,
                                  axis_->trap_.config_.decel_limit);
-    traj_start_loop_count_ = axis_->loop_counter_;
+    axis_->trap_.t_ = 0.0f;
     trajectory_done_ = false;
 }
 
@@ -198,10 +198,8 @@ bool Controller::update(float* current_setpoint_output) {
             // Avoid updating uninitialized trajectory
             if (trajectory_done_)
                 break;
-            // Note: uint32_t loop count delta is OK across overflow
-            // Beware of negative deltas, as they will not be well behaved due to uint!
-            float t = (axis_->loop_counter_ - traj_start_loop_count_) * current_meas_period;
-            if (t > axis_->trap_.Tf_) {
+            
+            if (axis_->trap_.t_ > axis_->trap_.Tf_) {
                 // Drop into position control mode when done to avoid problems on loop counter delta overflow
                 config_.control_mode = CTRL_MODE_POSITION_CONTROL;
                 pos_setpoint_ = input_pos_;
@@ -209,10 +207,11 @@ bool Controller::update(float* current_setpoint_output) {
                 current_setpoint_ = 0.0f;
                 trajectory_done_ = true;
             } else {
-                TrapezoidalTrajectory::Step_t traj_step = axis_->trap_.eval(t);
+                TrapezoidalTrajectory::Step_t traj_step = axis_->trap_.eval(axis_->trap_.t_);
                 pos_setpoint_ = traj_step.Y;
                 vel_setpoint_ = traj_step.Yd;
                 current_setpoint_ = traj_step.Ydd * config_.inertia;
+                axis_->trap_.t_ += current_meas_period;
             }
             anticogging_pos = pos_setpoint_; // FF the position setpoint instead of the pos_estimate
         } break;

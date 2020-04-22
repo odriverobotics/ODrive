@@ -47,6 +47,8 @@ public:
     float Tf_;
 
     float yAccel_;
+
+    float t_;
 };
 
 #endif
