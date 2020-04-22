@@ -131,7 +131,7 @@ Not all parameters can be accessed via the ASCII protocol but at least all param
     ```
    * `property` name of the property, as seen in ODrive Tool
    * `value` text representation of the value to be written
-   * Example: `w axis0.controller.pos_setpoint -123.456`
+   * Example: `w axis0.controller.input_pos -123.456`
 
 #### System commands:
 * `ss` - Save config
