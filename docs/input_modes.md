@@ -51,6 +51,9 @@ Ramps a velocity command from the current value to the target value.
 ## INPUT_MODE_POS_FILTER
 Implements a 2nd order position tracking filter.  Inteded for use with step/dir interface, but can also be used with position-only commands.
 
+![POS Filter Response](secondOrderResponse.png)
+Result of a step command from 1000 to 0
+
 ### Configuration Values:
 * `<axis>.controller.config.input_filter_bandwidth`
 * `<axis>.controller.config.inertia`
@@ -67,6 +70,8 @@ Not Implemented.
 
 ## INPUT_MODE_TRAP_TRAJ
 Implementes an online trapezoidal trajectory planner.
+
+![Trapezoidal Planner Response](TrapTrajPosVel.png)
 
 ### Configuration Values:
 * `<axis>.trap_traj.config.vel_limit`
@@ -94,6 +99,8 @@ Ramp a current command from the current value to the target value.
 
 ## INPUT_MODE_MIRROR
 Implements "electronic mirroring".  This is like electronic camming, but you can only mirror exactly the movements of the other motor, according to a fixed ratio
+
+[![](http://img.youtube.com/vi/D4_vBtyVVzM/0.jpg)](http://www.youtube.com/watch?v=D4_vBtyVVzM "Example Mirroring Video")
 
 ### Configuration Values
 * `<axis>.controller.config.axis_to_mirror`
