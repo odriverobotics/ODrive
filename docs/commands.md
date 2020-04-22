@@ -60,6 +60,21 @@ Possible values are:
 * `CTRL_MODE_CURRENT_CONTROL`
 * `CTRL_MODE_VOLTAGE_CONTROL` - this one is not normally used.
 
+### Input Mode
+The default input mode is `INPUT_MODE_PASSTHROUGH`.
+Modes can be selected by changing `<axis>.controller.config.input_mode`.
+Possible values are:
+* `INPUT_MODE_INACTIVE`
+* `INPUT_MODE_PASSTHROUGH`
+* `INPUT_MODE_VEL_RAMP`
+* `INPUT_MODE_POS_FILTER`
+* `INPUT_MODE_MIX_CHANNELS`
+* `INPUT_MODE_TRAP_TRAJ`
+* `INPUT_MODE_CURRENT_RAMP`
+* `INPUT_MODE_MIRROR`
+
+For more information, see [input_modes](input_modes.md).
+
 # Control Commands
 * `<axis>.controller.input_pos = <encoder_counts>`
 * `<axis>.controller.input_vel = <encoder_counts/s>`
