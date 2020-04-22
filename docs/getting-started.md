@@ -337,7 +337,7 @@ If you try to increment the axis with a large step in one go that exceeds `cpr/2
 
 ### Velocity control
 Set `axis.controller.config.control_mode = CTRL_MODE_VELOCITY_CONTROL`.<br>
-You can now control the velocity with `axis.controller.vel_setpoint = 5000` [count/s].
+You can now control the velocity with `axis.controller.input_vel = 5000` [count/s].
 
 ### Ramped velocity control
 Set `axis.controller.config.control_mode = CTRL_MODE_VELOCITY_CONTROL`.<br>

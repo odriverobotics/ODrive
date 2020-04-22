@@ -111,7 +111,7 @@ All variables that are part of a `[...].config` object can be saved to non-volat
 The ODrive can run without encoder/hall feedback, but there is a minimum speed, usually around a few hunderd RPM.
 However the units of this mode is different from when using an encoder. Velocities are not measured in counts/s, instead it is electrical rad/s. This also applies to the gains. For example, `vel_gain` is in units of `A / (rad/s)` instead of `A / (count/s)`.
 
-To give an example, suppose you have a motor with 7 pole pairs, and you want to spin it at 3000 RPM. Then you would set the `vel_setpoint` to `3000 * 2*pi/60 * 7 = 2199 rad/s electrical`.
+To give an example, suppose you have a motor with 7 pole pairs, and you want to spin it at 3000 RPM. Then you would set the `input_vel` to `3000 * 2*pi/60 * 7 = 2199 rad/s electrical`.
 
 Below are some suggested starting parameters that you can use. Note that you _must_ set the `pm_flux_linkage` correctly for sensorless mode to work.
 
@@ -119,7 +119,7 @@ Below are some suggested starting parameters that you can use. Note that you _mu
 odrv0.axis0.controller.config.vel_gain = 0.01
 odrv0.axis0.controller.config.vel_integrator_gain = 0.05
 odrv0.axis0.controller.config.control_mode = 2
-odrv0.axis0.controller.vel_setpoint = 400
+odrv0.axis0.controller.input_vel = 400
 odrv0.axis0.motor.config.direction = 1
 odrv0.axis0.sensorless_estimator.config.pm_flux_linkage = 5.51328895422 / (<pole pairs> * <motor kv>)
 ```

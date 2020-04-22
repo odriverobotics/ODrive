@@ -112,9 +112,9 @@ The ODrive starts in idle (we will look at changing this later) so we can enable
 odrv0.save_configuration()
 odrv0.reboot()
 odrv0.axis0.requested_state = AXIS_STATE_CLOSED_LOOP_CONTROL
-odrv0.axis0.controller.vel_setpoint = 120
+odrv0.axis0.controller.input_vel = 120
 # Your motor should spin here
-odrv0.axis0.controller.vel_setpoint = 0
+odrv0.axis0.controller.input_vel = 0
 odrv0.axis0.requested_state = AXIS_STATE_IDLE
 ```
 
@@ -128,31 +128,31 @@ We also have to reboot to activate the PWM input.
 ```txt
 odrv0.config.gpio3_pwm_mapping.min = -200
 odrv0.config.gpio3_pwm_mapping.max = 200
-odrv0.config.gpio3_pwm_mapping.endpoint = odrv0.axis0.controller._remote_attributes['vel_setpoint']
+odrv0.config.gpio3_pwm_mapping.endpoint = odrv0.axis0.controller._remote_attributes['input_vel']
 
 odrv0.config.gpio4_pwm_mapping.min = -200
 odrv0.config.gpio4_pwm_mapping.max = 200
-odrv0.config.gpio4_pwm_mapping.endpoint = odrv0.axis1.controller._remote_attributes['vel_setpoint']
+odrv0.config.gpio4_pwm_mapping.endpoint = odrv0.axis1.controller._remote_attributes['input_vel']
 
 odrv0.save_configuration()
 odrv0.reboot()
 ```
 
-Now we can check that the sticks are writing to the velocity setpoint. Move the stick, print `vel_setpoint`, move to a different position, check again.
+Now we can check that the sticks are writing to the velocity setpoint. Move the stick, print `input_vel`, move to a different position, check again.
 ```txt
-In [1]: odrv0.axis1.controller.vel_setpoint
+In [1]: odrv0.axis1.controller.input_vel
 Out[1]: 0.1904754638671875
 
-In [2]: odrv0.axis1.controller.vel_setpoint
+In [2]: odrv0.axis1.controller.input_vel
 Out[2]: 0.1904754638671875
 
-In [3]: odrv0.axis1.controller.vel_setpoint
+In [3]: odrv0.axis1.controller.input_vel
 Out[3]: 28.152389526367188
 
-In [4]: odrv0.axis1.controller.vel_setpoint
+In [4]: odrv0.axis1.controller.input_vel
 Out[4]: 61.21905517578125
 
-In [5]: odrv0.axis1.controller.vel_setpoint
+In [5]: odrv0.axis1.controller.input_vel
 Out[5]: -52.990474700927734
 ```
 
