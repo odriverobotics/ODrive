@@ -34,7 +34,6 @@ void loop() {
     delayMicroseconds(microseconds_per_count);
   }
 }
-
 """
 
 teensy_code_template2 = """
@@ -55,6 +54,34 @@ void loop() {
   analogWrite({enc_sin}, (int)(512.0f + 512.0f * sin(2.0f * M_PI * pos)));
   analogWrite({enc_cos}, (int)(512.0f + 512.0f * cos(2.0f * M_PI * pos)));
   delay(1);
+}
+"""
+
+teensy_code_template3 = """
+void setup() {
+  pinMode({hall_a}, OUTPUT);
+  pinMode({hall_b}, OUTPUT);
+  pinMode({hall_c}, OUTPUT);
+  digitalWrite({hall_a}, HIGH);
+}
+
+int cpr = 90; // 15 pole-pairs. Value suggested in hoverboard.md
+int rpm = 60;
+int microseconds_per_count = (1000000 * 60 / cpr / rpm);
+
+void loop() {
+  digitalWrite({hall_b}, HIGH);
+  delayMicroseconds(microseconds_per_count);
+  digitalWrite({hall_a}, LOW);
+  delayMicroseconds(microseconds_per_count);
+  digitalWrite({hall_c}, HIGH);
+  delayMicroseconds(microseconds_per_count);
+  digitalWrite({hall_b}, LOW);
+  delayMicroseconds(microseconds_per_count);
+  digitalWrite({hall_a}, HIGH);
+  delayMicroseconds(microseconds_per_count);
+  digitalWrite({hall_c}, LOW);
+  delayMicroseconds(microseconds_per_count);
 }
 """
 
@@ -99,22 +126,22 @@ class TestEncoderBase():
         # encoder.shadow_count
         slope, offset, fitted_curve = fit_line(data[:,(0,1)])
         test_assert_eq(slope, true_cps, accuracy=0.005)
-        test_curve_fit(data[:,(0,1)], fitted_curve, max_mean_err = true_cpr * 0.01, inlier_range = true_cpr * 0.01, max_outliers = len(data[:,0]) * 0.02)
+        test_curve_fit(data[:,(0,1)], fitted_curve, max_mean_err = true_cpr * 0.01, inlier_range = true_cpr * 0.02, max_outliers = len(data[:,0]) * 0.02)
 
         # encoder.count_in_cpr
         slope, offset, fitted_curve = fit_sawtooth(data[:,(0,2)], true_cpr if reverse else 0, 0 if reverse else true_cpr)
         test_assert_eq(slope, true_cps, accuracy=0.005)
-        test_curve_fit(data[:,(0,2)], fitted_curve, max_mean_err = true_cpr * 0.01, inlier_range = true_cpr * 0.01, max_outliers = len(data[:,0]) * 0.02)
+        test_curve_fit(data[:,(0,2)], fitted_curve, max_mean_err = true_cpr * 0.01, inlier_range = true_cpr * 0.02, max_outliers = len(data[:,0]) * 0.02)
 
         # encoder.phase
-        slope, offset, fitted_curve = fit_sawtooth(data[:,(0,3)], -pi, pi, sigma=5)
-        test_assert_eq(slope / 7, 2*pi*abs(true_rps), accuracy=0.01)
-        test_curve_fit(data[:,(0,3)], fitted_curve, max_mean_err = true_cpr * 0.01, inlier_range = true_cpr * 0.01, max_outliers = len(data[:,0]) * 0.02)
+        slope, offset, fitted_curve = fit_sawtooth(data[:,(0,3)], pi if reverse else -pi, -pi if reverse else pi, sigma=5)
+        test_assert_eq(slope / 7, 2*pi*true_rps, accuracy=0.01)
+        test_curve_fit(data[:,(0,3)], fitted_curve, max_mean_err = true_cpr * 0.01, inlier_range = true_cpr * 0.02, max_outliers = len(data[:,0]) * 0.02)
 
         # encoder.pos_estimate
         slope, offset, fitted_curve = fit_line(data[:,(0,4)])
         test_assert_eq(slope, true_cps, accuracy=0.005)
-        test_curve_fit(data[:,(0,4)], fitted_curve, max_mean_err = true_cpr * 0.01, inlier_range = true_cpr * 0.01, max_outliers = len(data[:,0]) * 0.02)
+        test_curve_fit(data[:,(0,4)], fitted_curve, max_mean_err = true_cpr * 0.01, inlier_range = true_cpr * 0.02, max_outliers = len(data[:,0]) * 0.02)
         
         # encoder.pos_cpr
         slope, offset, fitted_curve = fit_sawtooth(data[:,(0,5)], true_cpr if reverse else 0, 0 if reverse else true_cpr)
@@ -123,8 +150,8 @@ class TestEncoderBase():
 
         # encoder.vel_estimate
         slope, offset, fitted_curve = fit_line(data[:,(0,6)])
-        test_assert_eq(slope, 0.0, range = true_cpr * abs(true_rps) * 0.005)
-        test_assert_eq(offset, true_cpr * true_rps, accuracy = 0.005)
+        test_assert_eq(slope, 0.0, range = true_cpr * abs(true_rps) * 0.01)
+        test_assert_eq(offset, true_cpr * true_rps, accuracy = 0.01)
         test_curve_fit(data[:,(0,6)], fitted_curve, max_mean_err = true_cpr * 0.05, inlier_range = true_cpr * 0.05, max_outliers = len(data[:,0]) * 0.02)
 
 
@@ -163,13 +190,13 @@ class TestIncrementalEncoder(TestEncoderBase):
         else:
             time.sleep(1.0) # wait for PLLs to stabilize
 
-        encoder = enc.handle
+        enc.handle.config.bandwidth = 1000
 
-        logger.debug("check if variables move at the correct velocity (8192 CPR)...")
+        logger.debug("testing with 8192 CPR...")
         self.run_generic_encoder_test(enc.handle, 8192, true_cps / 8192)
-        logger.debug("check if variables move at the correct velocity (65536 CPR)...")
+        logger.debug("testing with 65536 CPR...")
         self.run_generic_encoder_test(enc.handle, 65536, true_cps / 65536)
-        encoder.config.cpr = 8192
+        enc.handle.config.cpr = 8192
 
 
 
@@ -201,12 +228,56 @@ class TestSinCosEncoder(TestEncoderBase):
         else:
             time.sleep(1.0) # wait for PLLs to stabilize
 
+        enc.handle.config.bandwidth = 100
+
         self.run_generic_encoder_test(enc.handle, 6283, 1.0)
 
+
+
+class TestHallEffectEncoder(TestEncoderBase):
+
+    def get_test_cases(self, testrig: TestRig):
+        for odrive in testrig.get_components(ODriveComponent):
+            for encoder in odrive.encoders:
+                # Find the Teensy that is connected to the encoder pins and the corresponding Teensy GPIOs
+
+                gpio_conns = [
+                    testrig.get_directly_connected_components(encoder.a),
+                    testrig.get_directly_connected_components(encoder.b),
+                    testrig.get_directly_connected_components(encoder.z),
+                ]
+
+                valid_combinations = [
+                    (combination[0].parent,) + tuple(combination)
+                    for combination in itertools.product(*gpio_conns)
+                    if ((len(set(c.parent for c in combination)) == 1) and isinstance(combination[0].parent, TeensyComponent))
+                ]
+
+                yield (encoder, valid_combinations)
+
+
+    def run_test(self, enc: EncoderComponent, teensy: TeensyComponent, teensy_gpio_a: int, teensy_gpio_b: int, teensy_gpio_c: int, logger: Logger):
+        true_cpr = 90
+        true_rps = -1.0
+        
+        code = teensy_code_template3.replace("{hall_a}", str(teensy_gpio_a.num)).replace("{hall_b}", str(teensy_gpio_b.num)).replace("{hall_c}", str(teensy_gpio_c.num))
+        teensy.compile_and_program(code)
+
+        if enc.handle.config.mode != ENCODER_MODE_HALL:
+            enc.handle.config.mode = ENCODER_MODE_HALL
+            enc.parent.save_config_and_reboot()
+        else:
+            time.sleep(1.0) # wait for PLLs to stabilize
+
+        enc.handle.config.bandwidth = 100
+
+        self.run_generic_encoder_test(enc.handle, true_cpr, true_rps)
+        enc.handle.config.cpr = 8192
 
 
 if __name__ == '__main__':
     test_runner.run([
         TestIncrementalEncoder(),
         TestSinCosEncoder(),
+        TestHallEffectEncoder(),
     ])
