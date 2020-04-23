@@ -2,7 +2,7 @@
 
 The motor controller is a cascaded style position, velocity and current control loop, as per the diagram below. When the control mode is set to position control, the whole loop runs. When running in velocity control mode, the position control part is removed and the velocity command is fed directly in to the second stage input. In current control mode, only the current controller is used.
 
-![Cascaded pos vel I loops](https://github.com/madcowswe/ODrive/blob/master/docs/controller_with_ff.png?raw=true)
+![Cascaded pos vel I loops](controller_with_ff.png)
 
 Each stage of the control loop is a variation on a [PID controller](https://en.wikipedia.org/wiki/PID_controller). A PID controller is a mathematical model that can be adapted to control a wide variety of systems. This flexibility is essential as it allows the ODrive to be used to control all kinds of mechanical systems.
 

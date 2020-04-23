@@ -338,7 +338,7 @@ bool Axis::run_closed_loop_control_loop() {
 
         return true;
     });
-    set_step_dir_active(false);
+    set_step_dir_active(config_.enable_step_dir && config_.step_dir_always_on);
     return check_for_errors();
 }
 
@@ -428,6 +428,7 @@ bool Axis::run_idle_loop() {
     // run_control_loop ignores missed modulation timing updates
     // if and only if we're in AXIS_STATE_IDLE
     safety_critical_disarm_motor_pwm(motor_);
+    set_step_dir_active(config_.enable_step_dir && config_.step_dir_always_on);
     run_control_loop([this]() {
         return true;
     });

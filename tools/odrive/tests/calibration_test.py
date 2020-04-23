@@ -6,11 +6,8 @@ from math import pi
 import os
 
 from fibre.utils import Logger
-from test_runner import AxisTestContext, MotorTestContext, EncoderTestContext, test_assert_eq, test_assert_no_error, request_state, program_teensy
+from test_runner import *
 from odrive.enums import *
-
-def modpm(val, range):
-    return ((val + (range / 2)) % range) - (range / 2)
 
 
 class TestMotorCalibration():
@@ -19,14 +16,19 @@ class TestMotorCalibration():
     and checks if the measurements match the expectation.
     """
 
-    def is_compatible(self, axis_ctx: AxisTestContext, motor_ctx: MotorTestContext):
-        return axis_ctx.yaml == motor_ctx.yaml['name'] # check if connected
+    def get_test_cases(self, testrig: TestRig):
+        """Returns all axes that are connected to a motor, along with the corresponding motor(s)"""
+        for odrive in testrig.get_components(ODriveComponent):
+            for axis in odrive.axes:
+                for motor in testrig.get_connected_components(axis, MotorComponent):
+                    yield (axis, motor)
 
-    def run_test(self, axis_ctx: AxisTestContext, motor_ctx: MotorTestContext, logger: Logger):
+    def run_test(self, axis_ctx: ODriveAxisComponent, motor_ctx: MotorComponent, logger: Logger):
         # reset old calibration values
         axis_ctx.handle.motor.config.phase_resistance = 0.0
         axis_ctx.handle.motor.config.phase_inductance = 0.0
         axis_ctx.handle.motor.config.pre_calibrated = False
+        axis_ctx.handle.config.enable_watchdog = False
 
         axis_ctx.handle.clear_errors()
 
@@ -47,10 +49,14 @@ class TestDisconnectedMotorCalibration():
     Tests if the motor calibration fails as expected if the phases are floating.
     """
 
-    def is_compatible(self, axis_ctx: AxisTestContext):
-        return axis_ctx.yaml == 'floating'
+    def get_test_cases(self, testrig: TestRig):
+        """Returns all axes that are disconnected"""
+        for odrive in testrig.get_components(ODriveComponent):
+            for axis in odrive.axes:
+                if axis.yaml == 'floating':
+                    yield (axis,)
 
-    def run_test(self, axis_ctx: AxisTestContext, logger: Logger):
+    def run_test(self, axis_ctx: ODriveAxisComponent, logger: Logger):
         axis = axis_ctx.handle
 
         # reset old calibration values
@@ -73,14 +79,21 @@ class TestEncoderDirFind():
     Runs the encoder index search.
     """
 
-    def is_compatible(self, axis_ctx: AxisTestContext, motor_ctx: MotorTestContext, enc_ctx: EncoderTestContext):
-        return (axis_ctx.yaml == motor_ctx.yaml['name']) and (axis_ctx.num == enc_ctx.num) # check if connected
+    def get_test_cases(self, testrig: TestRig):
+        for odrive in testrig.get_components(ODriveComponent):
+            for num in range(2):
+                encoders = testrig.get_connected_components({
+                    'a': (odrive.encoders[num].a, False),
+                    'b': (odrive.encoders[num].b, False)
+                }, EncoderComponent)
+                motors = testrig.get_connected_components(odrive.axes[num], MotorComponent)
 
-    def run_test(self, axis_ctx: AxisTestContext, motor_ctx: MotorTestContext, enc_ctx: EncoderTestContext, logger: Logger):
+                for motor, encoder in itertools.product(motors, encoders):
+                    if encoder.impl in testrig.get_connected_components(motor):
+                        yield (odrive.axes[num], motor, encoder)
+
+    def run_test(self, axis_ctx: ODriveAxisComponent, motor_ctx: MotorComponent, enc_ctx: EncoderComponent, logger: Logger):
         axis = axis_ctx.handle
-        # TODO: read teensy config from YAML file
-        hexfile = 'encoder_pass_through.ino.hex'
-        program_teensy(os.path.join(os.path.dirname(__file__), hexfile), 26, logger)
         time.sleep(1.0) # wait for PLLs to stabilize
 
         # Set motor calibration values
@@ -110,14 +123,21 @@ class TestEncoderOffsetCalibration():
     Runs the encoder index search.
     """
 
-    def is_compatible(self, axis_ctx: AxisTestContext, motor_ctx: MotorTestContext, enc_ctx: EncoderTestContext):
-        return (axis_ctx.yaml == motor_ctx.yaml['name']) and (axis_ctx.num == enc_ctx.num) # check if connected
+    def get_test_cases(self, testrig: TestRig):
+        for odrive in testrig.get_components(ODriveComponent):
+            for num in range(2):
+                encoders = testrig.get_connected_components({
+                    'a': (odrive.encoders[num].a, False),
+                    'b': (odrive.encoders[num].b, False)
+                }, EncoderComponent)
+                motors = testrig.get_connected_components(odrive.axes[num], MotorComponent)
 
-    def run_test(self, axis_ctx: AxisTestContext, motor_ctx: MotorTestContext, enc_ctx: EncoderTestContext, logger: Logger):
+                for motor, encoder in itertools.product(motors, encoders):
+                    if encoder.impl in testrig.get_connected_components(motor):
+                        yield (odrive.axes[num], motor, encoder)
+
+    def run_test(self, axis_ctx: ODriveAxisComponent, motor_ctx: MotorComponent, enc_ctx: EncoderComponent, logger: Logger):
         axis = axis_ctx.handle
-        # TODO: read teensy config from YAML file
-        hexfile = 'encoder_pass_through.ino.hex'
-        program_teensy(os.path.join(os.path.dirname(__file__), hexfile), 26, logger)
         time.sleep(1.0) # wait for PLLs to stabilize
 
         # Set motor calibration values
@@ -127,9 +147,9 @@ class TestEncoderOffsetCalibration():
 
         # Set calibration settings
         axis_ctx.handle.motor.config.direction = 0
-        enc_ctx.handle.config.use_index = False
-        enc_ctx.handle.config.calib_scan_omega = 12.566 # 2 electrical revolutions per second
-        enc_ctx.handle.config.calib_scan_distance = 50.265 # 8 revolutions
+        axis_ctx.handle.encoder.config.use_index = False
+        axis_ctx.handle.encoder.config.calib_scan_omega = 12.566 # 2 electrical revolutions per second
+        axis_ctx.handle.encoder.config.calib_scan_distance = 50.265 # 8 revolutions
 
         axis_ctx.handle.clear_errors()
 
@@ -141,7 +161,7 @@ class TestEncoderOffsetCalibration():
         test_assert_eq(axis_ctx.handle.current_state, AXIS_STATE_IDLE)
         test_assert_no_error(axis_ctx)
 
-        test_assert_eq(enc_ctx.handle.is_ready, True)
+        test_assert_eq(axis_ctx.handle.encoder.is_ready, True)
         test_assert_eq(axis_ctx.handle.motor.config.direction in [-1, 1], True)
 
 
@@ -152,14 +172,27 @@ class TestEncoderIndexSearch():
     host's GPIO.
     """
 
-    def is_compatible(self, axis_ctx: AxisTestContext, motor_ctx: MotorTestContext, enc_ctx: EncoderTestContext):
-        return (axis_ctx.yaml == motor_ctx.yaml['name']) and (axis_ctx.num == enc_ctx.num) # check if connected
+    def get_test_cases(self, testrig: TestRig):
+        for odrive in testrig.get_components(ODriveComponent):
+            for num in range(2):
+                encoders = testrig.get_connected_components({
+                    'a': (odrive.encoders[num].a, False),
+                    'b': (odrive.encoders[num].b, False)
+                }, EncoderComponent)
+                motors = testrig.get_connected_components(odrive.axes[num], MotorComponent)
+                z_gpio = list(testrig.get_connected_components((odrive.encoders[num].z, False), LinuxGpioComponent))
 
-    def run_test(self, axis_ctx: AxisTestContext, motor_ctx: MotorTestContext, enc_ctx: EncoderTestContext, logger: Logger):
+                for motor, encoder in itertools.product(motors, encoders):
+                    if encoder.impl in testrig.get_connected_components(motor):
+                        yield (odrive.axes[num], motor, encoder, z_gpio)
+
+    def run_test(self, axis_ctx: ODriveAxisComponent, motor_ctx: MotorComponent, enc_ctx: EncoderComponent, z_gpio: LinuxGpioComponent, logger: Logger):
         axis = axis_ctx.handle
-        # TODO: read teensy config from YAML file
-        hexfile = 'encoder_pass_through.ino.hex'
-        program_teensy(os.path.join(os.path.dirname(__file__), hexfile), 26, logger)
+        cpr = int(enc_ctx.yaml['cpr'])
+        
+        z_gpio.config(output=True)
+        z_gpio.write(False)
+
         time.sleep(1.0) # wait for PLLs to stabilize
 
         # Set motor calibration values
@@ -177,24 +210,20 @@ class TestEncoderIndexSearch():
 
         time.sleep(3)
 
-        test_assert_eq(enc_ctx.handle.index_found, False)
-        with open("/sys/class/gpio/gpio{}/direction".format(20), "w") as fp:
-            fp.write("out")
-        with open("/sys/class/gpio/gpio{}/value".format(20), "w") as gpio:
-            gpio.write("0")
+        test_assert_eq(axis_ctx.handle.encoder.index_found, False)
         time.sleep(0.1)
-        with open("/sys/class/gpio/gpio{}/value".format(20), "w") as gpio:
-            gpio.write("1")
-        test_assert_eq(enc_ctx.handle.index_found, True)
+        z_gpio.write(True)
+        test_assert_eq(axis_ctx.handle.encoder.index_found, True)
+        z_gpio.write(False)
         
         test_assert_eq(axis_ctx.handle.current_state, AXIS_STATE_IDLE)
         test_assert_no_error(axis_ctx)
 
-        test_assert_eq(enc_ctx.handle.shadow_count, 0.0, range=20)
-        test_assert_eq(enc_ctx.handle.count_in_cpr, 0.0, range=20)
-        test_assert_eq(enc_ctx.handle.pos_estimate, 0.0, range=20)
-        test_assert_eq(enc_ctx.handle.pos_cpr, 0.0, range=20)
-        test_assert_eq(enc_ctx.handle.pos_abs, 0.0, range=20)
+        test_assert_eq(axis_ctx.handle.encoder.shadow_count, 0.0, range=20)
+        test_assert_eq(modpm(axis_ctx.handle.encoder.count_in_cpr, cpr), 0.0, range=20)
+        test_assert_eq(axis_ctx.handle.encoder.pos_estimate, 0.0, range=20)
+        test_assert_eq(axis_ctx.handle.encoder.pos_cpr, 0.0, range=20)
+        test_assert_eq(axis_ctx.handle.encoder.pos_abs, 0.0, range=20)
 
 
 if __name__ == '__main__':

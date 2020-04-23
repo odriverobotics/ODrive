@@ -6,12 +6,21 @@ sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..'))
 
 import stat
 import odrive
+import fibre
 from fibre import Logger, Event
 import argparse
 import yaml
 from inspect import signature
 import itertools
 import time
+import tempfile
+import io
+from typing import Union, Tuple
+
+# needed for curve fitting
+import numpy as np
+import scipy.optimize
+import scipy.ndimage.filters
 
 
 # Assert utils ----------------------------------------------------------------#
@@ -39,20 +48,131 @@ def test_assert_eq(observed, expected, range=None, accuracy=None):
             raise TestFailed("value mismatch: expected {} but observed {}".format(expected, observed))
 
 
+# Other utils -----------------------------------------------------------------#
+
+def disjoint_sets(list_of_sets: list):
+    while len(list_of_sets):
+        current_set, list_of_sets = list_of_sets[0], list_of_sets[1:]
+        did_update = True
+        while did_update:
+            did_update = False
+            for i, s in enumerate(list_of_sets):
+                if len(current_set.intersection(s)):
+                    current_set = current_set.union(s)
+                    list_of_sets = list_of_sets[:i] + list_of_sets[(i+1):]
+                    did_update = True
+        yield current_set
+
+def is_list_like(arg):
+    return hasattr(arg, '__iter__') and not isinstance(arg, str)
+
+def all_unique(lst):
+    seen = list()
+    return not any(i in seen or seen.append(i) for i in lst)
+
+def modpm(val, range):
+    return ((val + (range / 2)) % range) - (range / 2)
+
+def fit_line(data):
+    func = lambda x, a, b: x*a + b
+    slope, offset = scipy.optimize.curve_fit(func, data[:,0], data[:,1], [1.0, 0])[0]
+    return slope, offset, func(data[:,0], slope, offset)
+
+def fit_sawtooth(data, min_val, max_val, sigma=10):
+    """
+    Fits the data to a sawtooth function.
+    Returns the average absolute error and the number of outliers.
+    The sample data must span at least one full period.
+    data is expected to contain one row (t, y) for each sample.
+    """
+    
+    # Sawtooth function with free parameters for period and x-shift
+    func = lambda x, a, b: np.mod(a * x + b, max_val - min_val) + min_val
+    
+    # Fit period and x-shift
+    mid_point = (min_val + max_val) / 2
+    filtered_data = scipy.ndimage.filters.gaussian_filter(data[:,1], sigma=sigma)
+    if max_val > min_val:
+        zero_crossings = data[np.where((filtered_data[:-1] > mid_point) & (filtered_data[1:] < mid_point))[0], 0]
+    else:
+        zero_crossings = data[np.where((filtered_data[:-1] < mid_point) & (filtered_data[1:] > mid_point))[0], 0]
+
+    
+    if len(zero_crossings) == 0:
+        # No zero-crossing - fit simple line
+        slope, offset, _ = fit_line(data)
+
+    elif len(zero_crossings) == 1:
+        # One zero-crossing - fit line based on the longer half
+        z_index = np.where(data[:,0] > zero_crossings[0])[0][0]
+        if z_index > len(data[:,0]):
+            slope, offset, _ = fit_line(data[:z_index])
+        else:
+            slope, offset, _ = fit_line(data[z_index:])
+
+    else:
+        # Two or more zero-crossings - determine period based on average distance between zero-crossings
+
+        period = (zero_crossings[1:] - zero_crossings[:-1]).mean()
+        slope = (max_val - min_val) / period
+
+        #shift = scipy.optimize.curve_fit(lambda x, b: func(x, period, b), data[:,0], data[:,1], [0.0])[0][0]
+        if np.std(np.mod(zero_crossings, period)) < np.std(np.mod(zero_crossings + period/2, period)):
+            shift = np.mean(np.mod(zero_crossings, period))
+        else:
+            shift = np.mean(np.mod(zero_crossings + period/2, period)) - period/2
+        offset = -slope * shift
+
+    return slope, offset, func(data[:,0], slope, offset)
+
+def test_curve_fit(data, fitted_curve, max_mean_err, inlier_range, max_outliers):
+    def save():
+        import json
+        filename = '/tmp/log.json'
+        print('saving data to ' + filename)
+        with open(filename, 'w+') as fp:
+            json.dump(np.concatenate([data, np.array([fitted_curve]).transpose()], 1).tolist(), fp, indent=2)
+
+    diffs = data[:,1] - fitted_curve
+
+    mean_err = np.abs(diffs).mean()
+    if mean_err > max_mean_err:
+        save()
+        raise TestFailed("curve fit has too large mean error: {} > {}".format(mean_err, max_mean_err))
+    
+    outliers = np.count_nonzero((diffs > inlier_range) | (diffs < -inlier_range))
+    if outliers > max_outliers:
+        save()
+        raise TestFailed("curve fit has too many outliers (err > {}): {} > {}".format(inlier_range, outliers, max_outliers))
+
+
 # Test Components -------------------------------------------------------------#
 
-class ODriveTestContext():
+class Component(object):
+    def __init__(self, parent):
+        self.parent = parent
+
+class ODriveComponent(Component):
     def __init__(self, yaml: dict):
         self.handle = None
         self.yaml = yaml
-        #self.axes = [AxisTestContext(None), AxisTestContext(None)]
-        self.encoders = [EncoderTestContext(self, 0, None), EncoderTestContext(self, 1, None)]
-        self.axes = [AxisTestContext(self, 0, None), AxisTestContext(self, 1, None)]
+        #self.axes = [ODriveAxisComponent(None), ODriveAxisComponent(None)]
+        self.encoders = [ODriveEncoderComponent(self, 0, yaml['encoder0']), ODriveEncoderComponent(self, 1, yaml['encoder1'])]
+        self.axes = [ODriveAxisComponent(self, 0, yaml['motor0']), ODriveAxisComponent(self, 1, yaml['motor1'])]
+        for i in range(1,9):
+            self.__setattr__('gpio' + str(i), Component(self))
+        self.can = Component(self)
 
-    def __repr__(self):
-        return self.yaml['name']
+    def get_subcomponents(self):
+        for enc_ctx in self.encoders:
+            yield 'encoder' + str(enc_ctx.num), enc_ctx
+        for axis_ctx in self.axes:
+            yield 'axis' + str(axis_ctx.num), axis_ctx
+        for i in range(1,9):
+            yield ('gpio' + str(i)), getattr(self, 'gpio' + str(i))
+        yield 'can', self.can
 
-    def make_available(self, logger: Logger):
+    def prepare(self, logger: Logger):
         """
         Connects to the ODrive
         """
@@ -61,7 +181,8 @@ class ODriveTestContext():
 
         logger.debug('waiting for {} ({})'.format(self.yaml['name'], self.yaml['serial-number']))
         self.handle = odrive.find_any(
-            path="usb", serial_number=self.yaml['serial-number'], timeout=30)#, printer=print)
+            path="usb", serial_number=self.yaml['serial-number'], timeout=60)#, printer=print)
+        assert(self.handle)
         #for axis_idx, axis_ctx in enumerate(self.axes):
         #    axis_ctx.handle = self.handle.__dict__['axis{}'.format(axis_idx)]
         for encoder_idx, encoder_ctx in enumerate(self.encoders):
@@ -70,58 +191,361 @@ class ODriveTestContext():
         for axis_idx, axis_ctx in enumerate(self.axes):
             axis_ctx.handle = self.handle.__dict__['axis{}'.format(axis_idx)]
 
-class MotorTestContext():
+    def unuse_gpios(self):
+        self.handle.config.enable_uart = False
+        self.handle.axis0.config.enable_step_dir = False
+        self.handle.axis1.config.enable_step_dir = False
+        self.handle.config.gpio1_pwm_mapping.endpoint = None
+        self.handle.config.gpio2_pwm_mapping.endpoint = None
+        self.handle.config.gpio3_pwm_mapping.endpoint = None
+        self.handle.config.gpio4_pwm_mapping.endpoint = None
+        self.handle.config.gpio3_analog_mapping.endpoint = None
+        self.handle.config.gpio4_analog_mapping.endpoint = None
+
+    def save_config_and_reboot(self):
+        self.handle.save_configuration()
+        try:
+            self.handle.reboot()
+        except fibre.ChannelBrokenException:
+            pass # this is expected
+        self.handle = None
+        time.sleep(2)
+        self.prepare(logger)
+
+class MotorComponent(Component):
     def __init__(self, yaml: dict):
         self.yaml = yaml
-    
-    def __repr__(self):
-        return self.yaml['name']
 
-    def make_available(self, logger: Logger):
+    def prepare(self, logger: Logger):
         pass
 
-class AxisTestContext():
-    def __init__(self, odrv_ctx: ODriveTestContext, num: int, yaml: dict):
+class ODriveAxisComponent(Component):
+    def __init__(self, parent: ODriveComponent, num: int, yaml: dict):
+        Component.__init__(self, parent)
         self.handle = None
-        self.yaml = odrv_ctx.yaml[f'motor{num}'] # TODO: this is bad naming
-        self.odrv_ctx = odrv_ctx
+        self.yaml = yaml # TODO: this is bad naming
         self.num = num
-    
-    def __repr__(self):
-        return str(self.odrv_ctx) + '.axis' + str(self.num)
 
-    def make_available(self, logger: Logger):
-        self.odrv_ctx.make_available(logger)
+    def prepare(self, logger: Logger):
+        self.parent.prepare(logger)
 
-class EncoderTestContext():
-    def __init__(self, odrv_ctx: ODriveTestContext, num: int, yaml: dict):
+class ODriveEncoderComponent(Component):
+    def __init__(self, parent: ODriveComponent, num: int, yaml: dict):
+        Component.__init__(self, parent)
         self.handle = None
-        self.odrv_ctx = odrv_ctx
+        self.yaml = yaml
         self.num = num
-    
-    def __repr__(self):
-        return str(self.odrv_ctx) + '.encoder' + str(self.num)
+        self.z = Component(self)
+        self.a = Component(self)
+        self.b = Component(self)
 
-    def make_available(self, logger: Logger):
-        self.odrv_ctx.make_available(logger)
+    def get_subcomponents(self):
+        return [('z', self.z), ('a', self.a), ('b', self.b)]
 
-class CANTestContext():
+    def prepare(self, logger: Logger):
+        self.parent.prepare(logger)
+
+class EncoderComponent(Component):
+    def __init__(self, parent: Component, yaml: dict):
+        Component.__init__(self, parent)
+        self.yaml = yaml
+        self.z = Component(self)
+        self.a = Component(self)
+        self.b = Component(self)
+
+    def get_subcomponents(self):
+        return [('z', self.z), ('a', self.a), ('b', self.b)]
+
+class GeneralPurposeComponent(Component):
     def __init__(self, yaml: dict):
+        self.components = {}
+        for component_yaml in yaml.get('components', []):
+            if component_yaml['type'] == 'can':
+                self.components[component_yaml['name']] = CanInterfaceComponent(self, component_yaml)
+            if component_yaml['type'] == 'uart':
+                self.components[component_yaml['name']] = SerialPortComponent(self, component_yaml)
+            if component_yaml['type'] == 'gpio':
+                self.components['gpio' + str(component_yaml['num'])] = LinuxGpioComponent(self, component_yaml)
+
+    def get_subcomponents(self):
+        return self.components.items()
+
+class LinuxGpioComponent(Component):
+    def __init__(self, parent: Component, yaml: dict):
+        Component.__init__(self, parent)
+        self.num = int(yaml['num'])
+
+    def config(self, output: bool):
+        with open("/sys/class/gpio/gpio{}/direction".format(self.num), "w") as fp:
+            fp.write('out' if output else '0')
+
+    def write(self, state: bool):
+        with open("/sys/class/gpio/gpio{}/value".format(self.num), "w") as fp:
+            fp.write('1' if state else '0')
+
+
+class SerialPortComponent(Component):
+    def __init__(self, parent: Component, yaml: dict):
+        Component.__init__(self, parent)
+        self.yaml = yaml
+
+    def get_subcomponents(self):
+        yield 'tx', Component(self)
+        yield 'rx', Component(self)
+
+    def open(self, baudrate: int):
+        import serial
+        return serial.Serial(self.yaml['port'], baudrate, timeout=1)
+    
+class CanInterfaceComponent(Component):
+    def __init__(self, parent: Component, yaml: dict):
+        Component.__init__(self, parent)
         self.handle = None
         self.yaml = yaml
     
-    def make_available(self, logger: Logger):
+    def prepare(self, logger: Logger):
         if not self.handle is None:
             return
 
-        # TODO: read bus name from yaml
         import can
-        self.handle = can.interface.Bus(bustype='socketcan', channel=self.yaml['id'], bitrate=250000)
+        self.handle = can.interface.Bus(bustype='socketcan', channel=self.yaml['interface'], bitrate=250000)
+
+class TeensyGpio(Component):
+    def __init__(self, parent: Component, num: int):
+        Component.__init__(self, parent)
+        self.num = num
+
+class TeensyComponent(Component):
+    def __init__(self, testrig, yaml: dict):
+        self.testrig = testrig
+        self.yaml = yaml
+        self.gpios = [TeensyGpio(self, i) for i in range(24)]
+        self.routes = []
+        self.previous_routes = object()
+
+    def get_subcomponents(self):
+        for i, gpio in enumerate(self.gpios):
+            yield ('gpio' + str(i)), gpio
+        yield 'program', Component(self)
+
+    def add_route(self, input: TeensyGpio, output: TeensyGpio, noise_enable: TeensyGpio):
+        self.routes.append((input, output, noise_enable))
+
+    def commit_routing_config(self, logger: Logger):
+        if self.previous_routes == self.routes:
+            self.routes = []
+            return
+
+        code = ''
+        code += 'bool noise = false;\n'
+        code += 'void setup() {\n'
+        for i, o, n in self.routes:
+            code += '  pinMode({}, OUTPUT);\n'.format(o.num)
+        code += '}\n'
+        code += 'void loop() {\n'
+        code += '  noise = !noise;\n'
+        for i, o, n in self.routes:
+            if n:
+                # with noise enable
+                code += '  digitalWrite({}, digitalRead({}) ? noise : digitalRead({}));\n'.format(o.num, n.num, i.num)
+            else:
+                # no noise enable
+                code += '  digitalWrite({}, digitalRead({}));\n'.format(o.num, i.num)
+        code += '}\n'
+
+        self.compile_and_program(code)
+
+        self.previous_routes = self.routes
+        self.routes = []
+
+    def compile(self, sketchfile, hexfile):
+        env = os.environ.copy()
+        env['ARDUINO_COMPILE_DESTINATION'] = hexfile
+        run_shell(
+            ['arduino', '--board', 'teensy:avr:teensy40', '--verify', sketchfile],
+            logger, env = env, timeout = 60)
+
+    def program(self, hex_file_path: str, logger: Logger):
+        """
+        Programs the specified hex file onto the Teensy.
+        To reset the Teensy, a GPIO of the local system must be connected to the
+        Teensy's "Program" pin.
+        """
+
+        # todo: this should be treated like a regular setup resource
+        program_gpio = self.testrig.get_directly_connected_components(self.testrig.get_component_name(self) + '.program')[0]
+
+        # Put Teensy into program mode by pulling it's program pin down
+        program_gpio.config(output = True)
+        program_gpio.write(False)
+        time.sleep(0.1)
+        program_gpio.write(True)
+        
+        run_shell(["teensy-loader-cli", "-mmcu=imxrt1062", "-w", hex_file_path], logger, timeout = 5)
+        time.sleep(0.5) # give it some time to boot
+
+    def compile_and_program(self, code: str):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            with open(os.path.join(temp_dir, 'code.ino'), 'w+') as code_fp:
+                code_fp.write(code)
+                code_fp.flush()
+                code_fp.seek(0)
+                print('Writing code to teensy: ')
+                print(code_fp.read())
+                with tempfile.NamedTemporaryFile(suffix='.hex') as hex_fp:
+                    self.compile(code_fp.name, hex_fp.name)
+                    self.program(hex_fp.name, logger)
+
+class LowPassFilterComponent(Component):
+    def __init__(self, parent: Component):
+        Component.__init__(self, parent)
+        self.en = Component(self)
+
+    def get_subcomponents(self):
+        yield 'en', self.en
+
+
+class ProxiedComponent(Component):
+    def __init__(self, impl, *gpio_tuples):
+        """
+        Each element in gpio_tuples should be a tuple of the form:
+            (teensy: TeensyComponent, gpio_in, gpio_out, gpio_noise_enable)
+        """
+        Component.__init__(self, getattr(impl, 'parent', None))
+        self.impl = impl
+        assert(all([len(t) == 4 for t in gpio_tuples]))
+        self.gpio_tuples = list(gpio_tuples)
+
+    def __repr__(self):
+        return testrig.get_component_name(self.impl) + ' (routed via ' + ', '.join((testrig.get_component_name(t) + ': ' + str(i.num) + ' => ' + str(o.num)) for t, i, o, n in self.gpio_tuples) + ')'
+
+    def __eq__(self, obj):
+        return isinstance(obj, ProxiedComponent) and (self.impl == obj.impl) #  and (self.gpio_tuples == obj.gpio_tuples)
+
+    def prepare(self):
+        for teensy, gpio_in, gpio_out, gpio_noise_enable in self.gpio_tuples:
+            teensy.add_route(gpio_in, gpio_out, gpio_noise_enable)
+
+class TestRig():
+    def __init__(self, yaml: dict, logger: Logger):
+        # Contains all components (including subcomponents).
+        # Ports are components too.
+        self.components_by_name = {} # {'name': object, ...}
+        self.names_by_component = {} # {'name': object, ...}
+
+        def add_component(name, component):
+            self.components_by_name[name] = component
+            self.names_by_component[component] = name
+            if hasattr(component, 'get_subcomponents'):
+                for subname, subcomponent in component.get_subcomponents():
+                    add_component(name + '.' + subname, subcomponent)
+
+        for component_yaml in yaml['components']:
+            if component_yaml['type'] == 'odrive':
+                add_component(component_yaml['name'], ODriveComponent(component_yaml))
+            elif component_yaml['type'] == 'generalpurpose':
+                add_component(component_yaml['name'], GeneralPurposeComponent(component_yaml))
+            elif component_yaml['type'] == 'teensy':
+                add_component(component_yaml['name'], TeensyComponent(self, component_yaml))
+            elif component_yaml['type'] == 'motor':
+                add_component(component_yaml['name'], MotorComponent(component_yaml))
+            elif component_yaml['type'] == 'encoder':
+                add_component(component_yaml['name'], EncoderComponent(self, component_yaml))
+            elif component_yaml['type'] == 'lpf':
+                add_component(component_yaml['name'], LowPassFilterComponent(self))
+            else:
+                logger.warn('test rig has unsupported component ' + component_yaml['type'])
+                continue
+
+        # List of disjunct sets, where each set holds references of the mutually connected components
+        self.connections = []
+        for connection_yaml in yaml['connections']:
+            self.connections.append(set(self.components_by_name[name] for name in connection_yaml))
+        self.connections = list(disjoint_sets(self.connections))
+
+        # Dict for fast lookup of the connection sets for each port
+        self.net_by_component = {}
+        for s in self.connections:
+            for port in s:
+                self.net_by_component[port] = s
+
+    def get_components(self, t: type):
+        """Returns a tuple (name, component) for all components that are of the specified type"""
+        return (comp for comp in self.names_by_component.keys() if isinstance(comp, t))
+    
+    def get_component_name(self, component: Component):
+        if isinstance(component, ProxiedComponent):
+            return self.names_by_component[component.impl]
+        else:
+            return self.names_by_component[component]
+
+    def get_directly_connected_components(self, component: Union[str, Component]):
+        """
+        Returns all components that are directly connected to the specified
+        component, excluding the specified component itself.
+        """
+        if isinstance(component, str):
+            component = self.components_by_name[component]
+        result = self.net_by_component.get(component, set([component]))
+        return [c for c in result if (c != component)]
+
+    def get_connected_components(self, src: Union[dict, Tuple[Union[Component, str], bool]], comp_type: type = None):
+        """
+        Returns all components that are either directly or indirectly (through a
+        Teensy) connected to the specified component(s).
+
+        component: Either:
+            - A component object.
+            - A component name given as string.
+            - A tuple of the form (comp, dir) where comp is a component object
+              or name and dir specifies the data direction.
+              The direction is required if routing through a Teensy should be
+              considered.
+            - A dict {sumcomponent: val} where subcomponent is a string
+              such as 'tx' or 'rx' and val is of one of the forms described above.
+        
+        A type can be specified to filter the connected components.
+        """
+
+        if isinstance(src, dict):
+            component_list = []
+            for name, subsrc in src.items():
+                component_list.append([c for c in self.get_connected_components(subsrc) if self.get_component_name(c).endswith('.' + name)])
+            
+            for combination in itertools.product(*component_list):
+                if len(set(c.parent for c in combination)) != 1:
+                    continue # parent of the components don't match
+                proxied_dst = combination[0].parent
+                if comp_type and not isinstance(proxied_dst, comp_type):
+                    continue # not the requested type
+                gpio_tuples = [c2 for c in combination for c2 in c.gpio_tuples if isinstance(c, ProxiedComponent)]
+                if len(gpio_tuples):
+                    yield ProxiedComponent(proxied_dst, *gpio_tuples)
+                else:
+                    yield proxied_dst
+
+        else:
+
+            if isinstance(src, tuple):
+                src, dir = src
+            else:
+                dir = None
+
+            for dst in self.get_directly_connected_components(src):
+                if (not comp_type) or isinstance(dst, comp_type):
+                    yield dst
+
+                if (not dir is None) and isinstance(getattr(dst, 'parent', None), TeensyComponent):
+                    teensy = dst.parent
+                    for gpio2 in teensy.gpios:
+                        for proxied_dst in self.get_directly_connected_components(gpio2):
+                            if (not comp_type) or isinstance(proxied_dst, comp_type):
+                                yield ProxiedComponent(proxied_dst, (teensy, dst if dir else gpio2, gpio2 if dir else dst, None))
 
 
 # Helper functions ------------------------------------------------------------#
 
-def request_state(axis_ctx: AxisTestContext, state, expect_success=True):
+def request_state(axis_ctx: ODriveAxisComponent, state, expect_success=True):
     axis_ctx.handle.requested_state = state
     time.sleep(0.001)
     if expect_success:
@@ -131,7 +555,7 @@ def request_state(axis_ctx: AxisTestContext, state, expect_success=True):
         test_assert_eq(axis_ctx.handle.error, AXIS_ERROR_INVALID_STATE)
         axis_ctx.handle.error = AXIS_ERROR_NONE # reset error
 
-def get_errors(axis_ctx: AxisTestContext):
+def get_errors(axis_ctx: ODriveAxisComponent):
     errors = []
     if axis_ctx.handle.motor.error != 0:
         errors.append("motor failed with error 0x{:04X}".format(axis_ctx.handle.motor.error))
@@ -145,41 +569,12 @@ def get_errors(axis_ctx: AxisTestContext):
         errors.append("and by the way: axis reports no error even though there is one")
     return errors
 
-def test_assert_no_error(axis_ctx: AxisTestContext):
+def test_assert_no_error(axis_ctx: ODriveAxisComponent):
     errors = get_errors(axis_ctx)
     if len(errors) > 0:
         raise TestFailed("\n".join(errors))
 
-def yaml_to_test_objects(test_rig_yaml: dict, logger: Logger):
-    available_test_objects = {}
-
-    def add_component(component):
-        available_test_objects[type(component)] = available_test_objects.get(type(component), [])
-        available_test_objects[type(component)].append(component)
-
-    for component_yaml in test_rig_yaml['components']:
-        if component_yaml['type'] == 'odrive':
-            odrv_ctx = ODriveTestContext(component_yaml)
-            add_component(odrv_ctx)
-            for enc_ctx in odrv_ctx.encoders:
-                add_component(enc_ctx)
-            for axis_ctx in odrv_ctx.axes:
-                add_component(axis_ctx)
-        elif component_yaml['type'] == 'generalpurpose':
-            for (k, v) in [(k, v) for (k, v) in component_yaml.items() if k.startswith("can")]:
-                can_ctx = CANTestContext({'id': k, 'bus': v})
-                add_component(can_ctx)
-        elif component_yaml['type'] == 'motor':
-            motor_ctx = MotorTestContext(component_yaml)
-            add_component(motor_ctx)
-        else:
-            logger.warn('test rig has unsupported component ' + component_yaml['type'])
-            continue
-        
-
-    return available_test_objects
-
-def run_shell(command_line, logger, timeout=None):
+def run_shell(command_line, logger, env=None, timeout=None):
     """
     Runs a shell command in the current directory
     """
@@ -192,60 +587,102 @@ def run_shell(command_line, logger, timeout=None):
         cmd = shlex.split(command_line)
     result = subprocess.run(cmd, timeout=timeout,
         stdout=subprocess.PIPE,
-        stderr=subprocess.STDOUT)
+        stderr=subprocess.STDOUT,
+        env=env)
     if result.returncode != 0:
         logger.error(result.stdout.decode(sys.stdout.encoding))
         raise TestFailed("command {} failed".format(command_line))
 
-def program_teensy(hex_file_path, program_gpio: int, logger: Logger):
-    """
-    Programs the specified hex file onto the Teensy.
-    To reset the Teensy, a GPIO of the local system must be connected to the
-    Teensy's "Program" pin. This pin must first be manually made available to
-    user space:
-    
-        echo 26 | sudo tee /sys/class/gpio/export
-        sudo chmod a+rw /sys/class/gpio/gpio26/*
-        echo out > /sys/class/gpio/gpio26/direction
 
-    """
+def get_combinations(param_options):
+    if isinstance(param_options, tuple):
+        if len(param_options) > 0:
+            for part1, part2 in itertools.product(
+                    get_combinations(param_options[0]),
+                    get_combinations(param_options[1:]) if (len(param_options) > 1) else [()]):
+                assert(isinstance(part1, tuple))
+                assert(isinstance(part2, tuple))
+                yield part1 + part2
+    elif is_list_like(param_options):
+        for item in param_options:
+            for c in get_combinations(item):
+                yield c
+    else:
+        yield (param_options,)
 
-    # Put Teensy into program mode by pulling it's program pin down
-    with open("/sys/class/gpio/gpio{}/direction".format(program_gpio), "w") as fp:
-        fp.write("out")
-    with open("/sys/class/gpio/gpio{}/value".format(program_gpio), "w") as gpio:
-        gpio.write("0")
-    time.sleep(0.1)
-    with open("/sys/class/gpio/gpio{}/value".format(program_gpio), "w") as gpio:
-        gpio.write("1")
-    
-    run_shell(["teensy_loader_cli", "-mmcu=imxrt1062", "-w", hex_file_path], logger, timeout = 5)
-    time.sleep(0.5) # give it some time to boot
+def select_params(param_options):
+    # Select parameters from the resource list
+    # (this could be arbitrarily complex to improve parallelization of the tests)
+    for combination in get_combinations(param_options):
+        if all_unique(combination):
+            return list(combination)
 
-def run(test_cases):
-    if not isinstance(test_cases, list):
-        test_cases = [test_cases]
+    return None
 
-    for test_case in test_cases:
-        # Compile a list of list of potential objects that might be compatible with this
-        # test
-        possible_parameters = []
-        sig = signature(test_case.is_compatible)
-        for param_name in sig.parameters:
-            param_type = sig.parameters[param_name].annotation
-            possible_parameters.append(available_test_objects[param_type])
+def run(tests):
+    if not isinstance(tests, list):
+        tests = [tests]
 
-        # For each combination, check if the test is compatible with these objects
-        for param_combination in itertools.product(*possible_parameters):
-            if not test_case.is_compatible(*param_combination):
+    for test in tests:
+        # The result of get_test_cases can be described in ABNF grammar:
+        #   test-case-list    = *arglist
+        #   arglist           = *flexible-arg
+        #   flexible-arg      = component / *argvariant
+        #   argvariant        = component / arglist
+        #
+        # If for a particular test-case, the components are not given plainly
+        # but in some selectable form, the test driver will select exactly one
+        # of those options.
+        # In other words, it will bring arglist from the form *flexible-arg
+        # into the form *component before calling the test.
+        #
+        # All of the provided test-cases are executed. If none is provided,
+        # a warning is reported. A warning is also reported if for a particular
+        # test case no component combination can be resolved.
+
+        test_cases = list(test.get_test_cases(testrig))
+
+        if len(test_cases) == 0:
+            logger.warn('no resources are available to conduct the test {}'.format(type(test).__name__))
+            continue
+        
+        for test_case in test_cases:
+            params = select_params(test_case)
+            if params is None:
+                logger.warn('no resources are available to conduct the test {}'.format(type(test).__name__))
                 continue
-            
-            for param in param_combination:
-                param.make_available(logger)
 
-            logger.notify('* running {} on {}...'.format(type(test_case).__name__,
-                    [str(p) for p in param_combination]))
-            test_case.run_test(*param_combination, logger)
+            logger.notify('* preparing {} with {}...'.format(type(test).__name__,
+                    [(testrig.get_component_name(p) if isinstance(p, Component) else str(p)) for p in params]))
+            
+            teensies = set()
+            for param in params:
+                if isinstance(param, ProxiedComponent):
+                    param.prepare()
+                    for teensy, _, _, _ in param.gpio_tuples:
+                        teensies.add(teensy)
+
+            for teensy in teensies:
+                teensy.commit_routing_config(logger)
+
+            # prepare all components
+            teensies = set()
+            for param in params:
+                if isinstance(param, ProxiedComponent):
+                    continue
+                if hasattr(param, 'prepare'):
+                    param.prepare(logger)
+
+            logger.notify('* running {} on {}...'.format(type(test).__name__,
+                    [(testrig.get_component_name(p) if isinstance(p, Component) else str(p)) for p in params]))
+
+            # Resolve routed components
+            for i, param in enumerate(params):
+                if isinstance(param, ProxiedComponent):
+                    params[i] = param.impl
+
+            test.run_test(*params, logger)
+
 
     logger.success('All tests passed!')
 
@@ -269,19 +706,41 @@ args = parser.parse_args()
 test_rig_yaml = yaml.load(args.test_rig_yaml, Loader=yaml.BaseLoader)
 logger = Logger()
 
-available_test_objects = yaml_to_test_objects(test_rig_yaml, logger)
+testrig = TestRig(test_rig_yaml, logger)
 
 
 if args.setup_host:
-    def export_gpio(gpio):
-        if not os.path.isdir("/sys/class/gpio/gpio{}".format(gpio)):
+    for gpio in testrig.get_components(LinuxGpioComponent):
+        num = gpio.num
+        logger.debug('exporting GPIO ' + str(num) + ' to user space...')
+        if not os.path.isdir("/sys/class/gpio/gpio{}".format(num)):
             with open("/sys/class/gpio/export", "w") as fp:
-                fp.write(str(gpio))
-        os.chmod("/sys/class/gpio/gpio{}/value".format(gpio), stat.S_IROTH | stat.S_IWOTH)
-        os.chmod("/sys/class/gpio/gpio{}/direction".format(gpio), stat.S_IROTH | stat.S_IWOTH)
+                fp.write(str(num))
+        os.chmod("/sys/class/gpio/gpio{}/value".format(num), stat.S_IROTH | stat.S_IWOTH)
+        os.chmod("/sys/class/gpio/gpio{}/direction".format(num), stat.S_IROTH | stat.S_IWOTH)
 
-    # TODO: read configuration from yaml file
-    export_gpio(20) # connected to Teensy GPIO
-    export_gpio(26) # connected to Teensy Program pin
+    for port in testrig.get_components(SerialPortComponent):
+        logger.debug('changing permissions on ' + port.yaml['port'] + '...')
+        os.chmod(port.yaml['port'], stat.S_IROTH | stat.S_IWOTH)
 
-    os.chmod("/dev/ttyS0", stat.S_IROTH | stat.S_IWOTH)
+    if len(list(testrig.get_components(TeensyComponent))):
+        # This breaks the annoying teensy loader that shows up on every compile
+        logger.debug('modifying teensyduino installation...')
+        if not os.path.isfile('/usr/share/arduino/hardware/tools/teensy_post_compile_old'):
+            os.rename('/usr/share/arduino/hardware/tools/teensy_post_compile', '/usr/share/arduino/hardware/tools/teensy_post_compile_old')
+        with open('/usr/share/arduino/hardware/tools/teensy_post_compile', 'w') as scr:
+            scr.write('#!/bin/bash\n')
+            scr.write('if [ "$ARDUINO_COMPILE_DESTINATION" != "" ]; then\n')
+            scr.write('  cp -r ${2#-path=}/*.ino.hex ${ARDUINO_COMPILE_DESTINATION}\n')
+            scr.write('fi\n')
+        os.chmod('/usr/share/arduino/hardware/tools/teensy_post_compile', stat.S_IRWXU | stat.S_IRGRP | stat.S_IXGRP | stat.S_IROTH | stat.S_IXOTH)
+
+    # Bring up CAN interface(s)
+    for intf in testrig.get_components(CanInterfaceComponent):
+        name = intf.yaml['interface']
+        logger.debug('bringing up {}...'.format(name))
+        run_shell('ip link set dev {} down'.format(name), logger)
+        run_shell('ip link set dev {} type can bitrate 250000'.format(name), logger)
+        run_shell('ip link set dev {} type can loopback off'.format(name), logger)
+        run_shell('ip link set dev {} up'.format(name), logger)
+

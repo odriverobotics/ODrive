@@ -7,8 +7,8 @@ import asyncio
 import time
 
 from fibre.utils import Logger
-from odrive.enums import errors
-from test_runner import CANTestContext, ODriveTestContext, test_assert_eq
+from odrive.enums import *
+from test_runner import *
 
 # Each argument is described as tuple (name, format, scale).
 # Struct format codes: https://docs.python.org/2/library/struct.html
@@ -81,10 +81,12 @@ async def request(bus, node_id, cmd_name, timeout = 1.0):
 
 
 class TestSimpleCAN():
-    def is_compatible(self, canbus: CANTestContext, odrive: ODriveTestContext):
-        return canbus.yaml['bus'] == odrive.yaml['can'] # check if connected
+    def get_test_cases(self, testrig: TestRig):
+        for odrive in testrig.get_components(ODriveComponent):
+            can_interfaces = testrig.get_connected_components(odrive.can, CanInterfaceComponent)
+            yield (odrive, list(can_interfaces))
 
-    def run_test(self, canbus: CANTestContext, odrive: ODriveTestContext, logger: Logger):
+    def run_test(self, odrive: ODriveComponent, canbus: CanInterfaceComponent, logger: Logger):
         node_id = 0
         axis = odrive.handle.axis0
         axis.config.can_node_id = node_id
@@ -139,11 +141,13 @@ class TestSimpleCAN():
         test_assert_eq(axis.controller.input_vel, 2.0, range=0.01)
         test_assert_eq(axis.controller.input_current, 3.0, range=0.001)
 
+        axis.controller.config.control_mode = CTRL_MODE_VELOCITY_CONTROL
         my_cmd('set_input_vel', input_vel=-10.0, cur_ff=30.1234)
         fence()
         test_assert_eq(axis.controller.input_vel, -10.0, range=0.01)
         test_assert_eq(axis.controller.input_current, 30.1234, range=0.01)
 
+        axis.controller.config.control_mode = CTRL_MODE_CURRENT_CONTROL
         my_cmd('set_input_current', input_current=3.1415)
         fence()
         test_assert_eq(axis.controller.input_current, 3.1415, range=0.01)

@@ -70,7 +70,7 @@ If calibration works, congratulations.
 
 Now try: 
 * `<axis>.requested_state = AXIS_STATE_CLOSED_LOOP_CONTROL`
-* `<axis>.controller.set_vel_setpoint(3000,0) `
+* `<axis>.controller.input_vel = 3000`
 let it loop a few times and then set:
 * `<axis>.requested_state = AXIS_STATE_IDLE`
 

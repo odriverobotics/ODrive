@@ -247,7 +247,7 @@ Let's get motor 0 up and running. The procedure for motor 1 is exactly the same,
   </div></details>
 
 2. Type `odrv0.axis0.requested_state = AXIS_STATE_CLOSED_LOOP_CONTROL` <kbd>Enter</kbd>. From now on the ODrive will try to hold the motor's position. If you try to turn it by hand, it will fight you gently. That is unless you bump up `odrv0.axis0.motor.config.current_lim`, in which case it will fight you more fiercely. If the motor begins to vibrate either immediately or after being disturbed you will need to [lower the controller gains](control.md).
-3. Send the motor a new position setpoint. `odrv0.axis0.controller.pos_setpoint = 10000` <kbd>Enter</kbd>. The units are in encoder counts.
+3. Send the motor a new position setpoint. `odrv0.axis0.controller.input_pos = 10000` <kbd>Enter</kbd>. The units are in encoder counts.
 4. At this point you will probably want to [Properly tune](control.md) the motor controller in order to maximize system performance.
 
 ## Other control modes
@@ -328,16 +328,16 @@ You can also execute a move with the [appropriate ascii command](ascii-protocol.
 To enable Circular position control, set `axis.controller.config.setpoints_in_cpr = True`
 
 This mode is useful for continuos incremental position movement. For example a robot rolling indefinitely, or an extruder motor or conveyor belt moving with controlled increments indefinitely.
-In the regular position mode, the `pos_setpoint` would grow to a very large value and would lose precision due to floating point rounding.
+In the regular position mode, the `input_pos` would grow to a very large value and would lose precision due to floating point rounding.
 
-In this mode, the controller will try to track the position within only one turn of the motor. Specifically, `pos_setpoint` is expected in the range `[0, cpr-1]`, where `cpr` is the number of encoder counts in one revolution. If the `pos_setpoint` is incremented to outside this range (say via step/dir input), it is automatically wrapped around into the correct value.
+In this mode, the controller will try to track the position within only one turn of the motor. Specifically, `input_pos` is expected in the range `[0, cpr-1]`, where `cpr` is the number of encoder counts in one revolution. If the `input_pos` is incremented to outside this range (say via step/dir input), it is automatically wrapped around into the correct value.
 Note that in this mode `encoder.pos_cpr` is used for feedback in stead of `encoder.pos_estimate`.
 
 If you try to increment the axis with a large step in one go that exceeds `cpr/2` steps, the motor will go to the same angle around the wrong way. This is also the case if there is a large disturbance. If you have an application where you would like to handle larger steps, you can use a virtual CPR that is an integer times larger than your encoder's actual CPR. Set `encoder.config.cpr = N * your_enc_cpr`, where N is some integer. Choose N to give you an appropriate circular space for your application.
 
 ### Velocity control
 Set `axis.controller.config.control_mode = CTRL_MODE_VELOCITY_CONTROL`.<br>
-You can now control the velocity with `axis.controller.vel_setpoint = 5000` [count/s].
+You can now control the velocity with `axis.controller.input_vel = 5000` [count/s].
 
 ### Ramped velocity control
 Set `axis.controller.config.control_mode = CTRL_MODE_VELOCITY_CONTROL`.<br>
@@ -347,7 +347,7 @@ You can now control the velocity with `axis.controller.input_vel = 5000` [count/
 
 ### Current control
 Set `axis.controller.config.control_mode = CTRL_MODE_CURRENT_CONTROL`.<br>
-You can now control the current with `axis.controller.current_setpoint = 3` [A].
+You can now control the current with `axis.controller.input_current = 3` [A].
 
 Note: If you exceed `vel_limit` in current control mode, the current is reduced. To disable this, set `axis.controller.enable_current_vel_limit = False`.
 
