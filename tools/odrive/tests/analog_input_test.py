@@ -5,7 +5,6 @@ import time
 import math
 import os
 import numpy as np
-import scipy.optimize
 
 from odrive.enums import errors
 from test_runner import *
@@ -34,16 +33,6 @@ void loop() {
   delay(1);
 }
 """
-
-
-def fit_sawtooth(data, min_val, max_val, period, range):
-    """
-    Returns the average absolute error and the number of outliers
-    """
-    func = lambda x, a: np.mod((max_val - min_val) / a * (x - a/2)  - min_val, max_val - min_val) + min_val
-    params = scipy.optimize.curve_fit(func, data[:,0], data[:,1], [period])[0]
-    diffs = data[:,1] - func(data[:,0], *params)
-    return np.abs(diffs).mean(), np.count_nonzero((diffs > range) | (diffs < -range))
 
 
 class TestAnalogInput():
@@ -92,6 +81,7 @@ class TestAnalogInput():
         
         min_val = -20000
         max_val = 20000
+        period = 1.025 # period in teensy code is 1s, but due to tiny overhead it's a bit longer
 
         analog_mapping = [
             None, #odrive.handle.config.gpio1_analog_mapping,
@@ -108,24 +98,24 @@ class TestAnalogInput():
         odrive.save_config_and_reboot()
 
 
-        logger.debug("Log test_property...")
-        log_x = []
-        log_y = []
+        logger.debug("Recording log...")
+        data = []
         start = time.monotonic()
         analog_reset_gpio.write(False)
         while time.monotonic() - start < 5.0:
-            log_x.append(time.monotonic() - start)
-            log_y.append(odrive.handle.axis0.controller.input_pos)
+            data.append((
+                time.monotonic() - start,
+                odrive.handle.axis0.controller.input_pos
+            ))
 
+        data = np.array(data)
 
         # Expect mean error to be at most 2% (of the full scale).
-        # Expect there to be less than 1% outliers, where an outlier is anything that is more than 5% (of full scale) away from the expected value.
+        # Expect there to be less than 2% outliers, where an outlier is anything that is more than 5% (of full scale) away from the expected value.
         full_range = abs(max_val - min_val)
-        data = np.array([log_x, log_y]).transpose()
-        mean_error, n_outliers = fit_sawtooth(data, min_val, max_val, 1.05, full_range * 0.05)
-
-        test_assert_eq(mean_error, 0, range = full_range * 0.02)
-        test_assert_eq(n_outliers, 0, range = len(log_x) * 0.01)
+        slope, offset, fitted_curve = fit_sawtooth(data, min_val, max_val)
+        test_assert_eq(slope, (max_val - min_val) / period, accuracy=0.005) 
+        test_curve_fit(data, fitted_curve, max_mean_err = full_range * 0.02, inlier_range = full_range * 0.05, max_outliers = len(data[:,0]) * 0.02)
 
 
 

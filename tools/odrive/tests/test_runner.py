@@ -17,6 +17,11 @@ import tempfile
 import io
 from typing import Union, Tuple
 
+# needed for curve fitting
+import numpy as np
+import scipy.optimize
+import scipy.ndimage.filters
+
 
 # Assert utils ----------------------------------------------------------------#
 
@@ -67,6 +72,79 @@ def all_unique(lst):
 
 def modpm(val, range):
     return ((val + (range / 2)) % range) - (range / 2)
+
+def fit_line(data):
+    func = lambda x, a, b: x*a + b
+    slope, offset = scipy.optimize.curve_fit(func, data[:,0], data[:,1], [1.0, 0])[0]
+    return slope, offset, func(data[:,0], slope, offset)
+
+def fit_sawtooth(data, min_val, max_val, sigma=10):
+    """
+    Fits the data to a sawtooth function.
+    Returns the average absolute error and the number of outliers.
+    The sample data must span at least one full period.
+    data is expected to contain one row (t, y) for each sample.
+    """
+    
+    # Sawtooth function with free parameters for period and x-shift
+    func = lambda x, a, b: np.mod(a * x + b, max_val - min_val) + min_val
+    
+    # Fit period and x-shift
+    mid_point = (min_val + max_val) / 2
+    filtered_data = scipy.ndimage.filters.gaussian_filter(data[:,1], sigma=sigma)
+    if max_val > min_val:
+        zero_crossings = data[np.where((filtered_data[:-1] > mid_point) & (filtered_data[1:] < mid_point))[0], 0]
+    else:
+        zero_crossings = data[np.where((filtered_data[:-1] < mid_point) & (filtered_data[1:] > mid_point))[0], 0]
+
+    
+    if len(zero_crossings) == 0:
+        # No zero-crossing - fit simple line
+        slope, offset, _ = fit_line(data)
+
+    elif len(zero_crossings) == 1:
+        # One zero-crossing - fit line based on the longer half
+        z_index = np.where(data[:,0] > zero_crossings[0])[0][0]
+        if z_index > len(data[:,0]):
+            slope, offset, _ = fit_line(data[:z_index])
+        else:
+            slope, offset, _ = fit_line(data[z_index:])
+
+    else:
+        # Two or more zero-crossings - determine period based on average distance between zero-crossings
+
+        period = (zero_crossings[1:] - zero_crossings[:-1]).mean()
+        slope = (max_val - min_val) / period
+
+        #shift = scipy.optimize.curve_fit(lambda x, b: func(x, period, b), data[:,0], data[:,1], [0.0])[0][0]
+        if np.std(np.mod(zero_crossings, period)) < np.std(np.mod(zero_crossings + period/2, period)):
+            shift = np.mean(np.mod(zero_crossings, period))
+        else:
+            shift = np.mean(np.mod(zero_crossings + period/2, period)) - period/2
+        offset = -slope * shift
+
+    return slope, offset, func(data[:,0], slope, offset)
+
+def test_curve_fit(data, fitted_curve, max_mean_err, inlier_range, max_outliers):
+    def save():
+        import json
+        filename = '/tmp/log.json'
+        print('saving data to ' + filename)
+        with open(filename, 'w+') as fp:
+            json.dump(np.concatenate([data, np.array([fitted_curve]).transpose()], 1).tolist(), fp, indent=2)
+
+    diffs = data[:,1] - fitted_curve
+
+    mean_err = np.abs(diffs).mean()
+    if mean_err > max_mean_err:
+        save()
+        raise TestFailed("curve fit has too large mean error: {} > {}".format(mean_err, max_mean_err))
+    
+    outliers = np.count_nonzero((diffs > inlier_range) | (diffs < -inlier_range))
+    if outliers > max_outliers:
+        save()
+        raise TestFailed("curve fit has too many outliers (err > {}): {} > {}".format(inlier_range, outliers, max_outliers))
+
 
 # Test Components -------------------------------------------------------------#
 
@@ -307,15 +385,16 @@ class TeensyComponent(Component):
         time.sleep(0.5) # give it some time to boot
 
     def compile_and_program(self, code: str):
-        with io.TextIOWrapper(tempfile.NamedTemporaryFile(suffix='.ino')) as code_fp:
-            code_fp.write(code)
-            code_fp.flush()
-            code_fp.seek(0)
-            print('Writing code to teensy: ')
-            print(code_fp.read())
-            with tempfile.NamedTemporaryFile(suffix='.hex') as hex_fp:
-                self.compile(code_fp.name, hex_fp.name)
-                self.program(hex_fp.name, logger)
+        with tempfile.TemporaryDirectory() as temp_dir:
+            with open(os.path.join(temp_dir, 'code.ino'), 'w+') as code_fp:
+                code_fp.write(code)
+                code_fp.flush()
+                code_fp.seek(0)
+                print('Writing code to teensy: ')
+                print(code_fp.read())
+                with tempfile.NamedTemporaryFile(suffix='.hex') as hex_fp:
+                    self.compile(code_fp.name, hex_fp.name)
+                    self.program(hex_fp.name, logger)
 
 class LowPassFilterComponent(Component):
     def __init__(self, parent: Component):

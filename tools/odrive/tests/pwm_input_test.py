@@ -61,7 +61,7 @@ class TestPwmInput():
             ]
 
             valid_combinations = [
-                [combination[0].parent] + list(combination)
+                (combination[0].parent,) + tuple(combination)
                 for combination in itertools.product(*gpio_conns)
                 if ((len(set(c.parent for c in combination)) == 1) and isinstance(combination[0].parent, TeensyComponent))
             ]
