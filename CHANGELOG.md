@@ -32,6 +32,8 @@ Please add a note of your changes below this heading if you make a Pull Request.
 * Some Encoder settings have been made read-only
 * Cleaned up VSCode C/C++ Configuration settings on Windows with recursive includePath
 * Now compiling with C++17
+* Fixed a firmware hang that could occur from unlikely but possible user input
+
 # Releases
 ## [0.4.11] - 2019-07-25
 ### Added
