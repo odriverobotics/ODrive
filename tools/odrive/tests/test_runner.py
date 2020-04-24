@@ -73,6 +73,21 @@ def all_unique(lst):
 def modpm(val, range):
     return ((val + (range / 2)) % range) - (range / 2)
 
+def record_log(data_getter, duration=5.0):
+    logger.debug(f"Recording log for {duration}s...")
+    data = []
+    start = time.monotonic()
+    while time.monotonic() - start < duration:
+        data.append((time.monotonic() - start,) + tuple(data_getter()))
+    return np.array(data)
+
+def save_log(data):
+    import json
+    filename = '/tmp/log.json'
+    with open(filename, 'w+') as fp:
+        json.dump(data.tolist(), fp, indent=2)
+    print(f'data saved to {filename}')
+
 def fit_line(data):
     func = lambda x, a, b: x*a + b
     slope, offset = scipy.optimize.curve_fit(func, data[:,0], data[:,1], [1.0, 0])[0]
@@ -126,23 +141,16 @@ def fit_sawtooth(data, min_val, max_val, sigma=10):
     return slope, offset, func(data[:,0], slope, offset)
 
 def test_curve_fit(data, fitted_curve, max_mean_err, inlier_range, max_outliers):
-    def save():
-        import json
-        filename = '/tmp/log.json'
-        print('saving data to ' + filename)
-        with open(filename, 'w+') as fp:
-            json.dump(np.concatenate([data, np.array([fitted_curve]).transpose()], 1).tolist(), fp, indent=2)
-
     diffs = data[:,1] - fitted_curve
 
     mean_err = np.abs(diffs).mean()
     if mean_err > max_mean_err:
-        save()
+        save_log(np.concatenate([data, np.array([fitted_curve]).transpose()], 1))
         raise TestFailed("curve fit has too large mean error: {} > {}".format(mean_err, max_mean_err))
     
     outliers = np.count_nonzero((diffs > inlier_range) | (diffs < -inlier_range))
     if outliers > max_outliers:
-        save()
+        save_log(np.concatenate([data, np.array([fitted_curve]).transpose()], 1))
         raise TestFailed("curve fit has too many outliers (err > {}): {} > {}".format(inlier_range, outliers, max_outliers))
 
 
@@ -206,6 +214,15 @@ class ODriveComponent(Component):
         self.handle.save_configuration()
         try:
             self.handle.reboot()
+        except fibre.ChannelBrokenException:
+            pass # this is expected
+        self.handle = None
+        time.sleep(2)
+        self.prepare(logger)
+
+    def erase_config_and_reboot(self):
+        try:
+            self.handle.erase_configuration()
         except fibre.ChannelBrokenException:
             pass # this is expected
         self.handle = None
