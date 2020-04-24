@@ -33,6 +33,8 @@ Please add a note of your changes below this heading if you make a Pull Request.
 * Cleaned up VSCode C/C++ Configuration settings on Windows with recursive includePath
 * Now compiling with C++17
 * Fixed a firmware hang that could occur from unlikely but possible user input
+* Added JSON caching to Fibre. This drastically reduces the time odrivetool needs to connect to an ODrive (except for the first time or after firmware updates).
+* Fix IPython `RuntimeWarning` that would occur every time `odrivetool` was started.
 
 # Releases
 ## [0.4.11] - 2019-07-25
