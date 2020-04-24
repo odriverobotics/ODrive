@@ -35,6 +35,7 @@ Please add a note of your changes below this heading if you make a Pull Request.
 * Fixed a firmware hang that could occur from unlikely but possible user input
 * Added JSON caching to Fibre. This drastically reduces the time odrivetool needs to connect to an ODrive (except for the first time or after firmware updates).
 * Fix IPython `RuntimeWarning` that would occur every time `odrivetool` was started.
+* Reboot on `erase_configuration()`. This avoids unexpected behavior of a subsequent `save_configuration()` call, since the configuration is only erased from NVM, not from RAM.
 
 # Releases
 ## [0.4.11] - 2019-07-25

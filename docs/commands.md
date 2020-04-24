@@ -99,7 +99,7 @@ Using the motor current and the known KV of your motor you can estimate the moto
 All variables that are part of a `[...].config` object can be saved to non-volatile memory on the ODrive so they persist after you remove power. The relevant commands are:
 
  * `<odrv>.save_configuration()`: Stores the configuration to persistent memory on the ODrive.
- * `<odrv>.erase_configuration()`: Resets the configuration variables to their factory defaults. This only has an effect after a reboot. A side effect of this command is that motor control stops (in case it was running) and the USB communication breaks out temporarily. This is because erasing flash pages hangs the microcontroller for several seconds.
+ * `<odrv>.erase_configuration()`: Resets the configuration variables to their factory defaults. This also reboots the device.
 
 ### Diagnostics
 
