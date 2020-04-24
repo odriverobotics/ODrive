@@ -1098,6 +1098,7 @@ public:
 extern Endpoint** endpoint_list_;
 extern size_t n_endpoints_;
 extern uint16_t json_crc_;
+extern uint32_t json_version_id_; // exposed to hosts to facilitate cache lookup
 extern JSONDescriptorEndpoint json_file_endpoint_;
 extern EndpointProvider* application_endpoints_;
 
@@ -1124,9 +1125,15 @@ int fibre_publish(T& application_objects) {
     // Calculate the CRC16 of the JSON file.
     // The init value is the protocol version.
     CRC16Calculator crc16_calculator(PROTOCOL_VERSION);
+
     uint8_t offset[4] = { 0 };
     json_file_endpoint_.handle(offset, sizeof(offset), &crc16_calculator);
     json_crc_ = crc16_calculator.get_crc16();
+
+    // Add entropy for fibre cache
+    json_file_endpoint_.handle(offset, sizeof(offset), &crc16_calculator);
+    json_version_id_ = (uint32_t) crc16_calculator.get_crc16();
+    json_version_id_ += json_crc_ << 16;
 
     return 0;
 }
