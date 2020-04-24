@@ -13,9 +13,10 @@
 /* Global constant data ------------------------------------------------------*/
 /* Global variables ----------------------------------------------------------*/
 
-Endpoint** endpoint_list_ = nullptr; // initialized by calling fibre_publish
-size_t n_endpoints_ = 0; // initialized by calling fibre_publish
-uint16_t json_crc_; // initialized by calling fibre_publish
+Endpoint** endpoint_list_ = nullptr;    // initialized by calling fibre_publish
+size_t n_endpoints_ = 0;                // initialized by calling fibre_publish
+uint16_t json_crc_;                     // initialized by calling fibre_publish
+uint32_t json_version_id_;              // initialized by calling fibre_publish
 JSONDescriptorEndpoint json_file_endpoint_ = JSONDescriptorEndpoint();
 EndpointProvider* application_endpoints_;
 
@@ -140,15 +141,21 @@ void JSONDescriptorEndpoint::handle(const uint8_t* input, size_t input_length, S
         return;
     uint32_t offset = 0;
     read_le<uint32_t>(&offset, input);
-    NullStreamSink output_with_offset = NullStreamSink(offset, *output);
 
-    size_t id = 0;
-    write_string("[", &output_with_offset);
-    json_file_endpoint_.write_json(id, &output_with_offset);
-    id += decltype(json_file_endpoint_)::endpoint_count;
-    write_string(",", &output_with_offset);
-    application_endpoints_->write_json(id, &output_with_offset);
-    write_string("]", &output_with_offset);
+    // If the offset is special value 0xFFFFFFFF, send back the JSON version ID instead
+    if (offset == 0xffffffff) {
+        default_readwrite_endpoint_handler(&json_version_id_, nullptr, 0, output);
+    } else {
+        NullStreamSink output_with_offset = NullStreamSink(offset, *output);
+
+        size_t id = 0;
+        write_string("[", &output_with_offset);
+        json_file_endpoint_.write_json(id, &output_with_offset);
+        id += decltype(json_file_endpoint_)::endpoint_count;
+        write_string(",", &output_with_offset);
+        application_endpoints_->write_json(id, &output_with_offset);
+        write_string("]", &output_with_offset);
+    }
 }
 
 int BidirectionalPacketBasedChannel::process_packet(const uint8_t* buffer, size_t length) {
