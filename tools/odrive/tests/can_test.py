@@ -87,6 +87,10 @@ class TestSimpleCAN():
             yield (odrive, list(can_interfaces))
 
     def run_test(self, odrive: ODriveComponent, canbus: CanInterfaceComponent, logger: Logger):
+
+        # make sure no gpio input is overwriting our values
+        odrive.unuse_gpios()
+
         node_id = 0
         axis = odrive.handle.axis0
         axis.config.can_node_id = node_id
@@ -135,6 +139,9 @@ class TestSimpleCAN():
         test_assert_eq(axis.controller.config.control_mode, 3)
         test_assert_eq(axis.controller.config.input_mode, 1)
 
+        axis.controller.input_pos = 1234
+        axis.controller.input_vel = 1234
+        axis.controller.input_current = 1234
         my_cmd('set_input_pos', input_pos=1, vel_ff=2, cur_ff=3)
         fence()
         test_assert_eq(axis.controller.input_pos, 1.0, range=0.1)

@@ -103,20 +103,15 @@ class TestEncoderBase():
         encoder.config.cpr = true_cpr
         true_cps = true_cpr * true_rps
 
-        logger.debug("Recording log...")
-        data = []
-        start = time.monotonic()
         encoder.set_linear_count(0) # prevent numerical errors
-        while time.monotonic() - start < 5.0:
-            data.append((
-                time.monotonic() - start,
-                encoder.shadow_count,
-                encoder.count_in_cpr,
-                encoder.phase,
-                encoder.pos_estimate,
-                encoder.pos_cpr,
-                encoder.vel_estimate,
-            ))
+        data = record_log(lambda: [
+            encoder.shadow_count,
+            encoder.count_in_cpr,
+            encoder.phase,
+            encoder.pos_estimate,
+            encoder.pos_cpr,
+            encoder.vel_estimate,
+        ], duration=5.0)
         
         data = np.array(data)
 
@@ -151,7 +146,7 @@ class TestEncoderBase():
         # encoder.vel_estimate
         slope, offset, fitted_curve = fit_line(data[:,(0,6)])
         test_assert_eq(slope, 0.0, range = true_cpr * abs(true_rps) * 0.01)
-        test_assert_eq(offset, true_cpr * true_rps, accuracy = 0.01)
+        test_assert_eq(offset, true_cpr * true_rps, accuracy = 0.02)
         test_curve_fit(data[:,(0,6)], fitted_curve, max_mean_err = true_cpr * 0.05, inlier_range = true_cpr * 0.05, max_outliers = len(data[:,0]) * 0.02)
 
 

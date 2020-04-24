@@ -44,13 +44,10 @@ class TestUartAscii():
         Tests the most important functions of the ASCII protocol.
         """
 
-        if (odrive.handle.config.gpio1_pwm_mapping.endpoint != (0,0)) or (odrive.handle.config.gpio2_pwm_mapping.endpoint != (0,0)):
-            logger.debug('UART pins in use. Reconfiguring...')
-            odrive.handle.config.gpio1_pwm_mapping.endpoint = None
-            odrive.handle.config.gpio2_pwm_mapping.endpoint = None
-            odrive.save_config_and_reboot()
-
-        odrive.handle.axis0.config.enable_step_dir = False
+        logger.debug('Enabling UART...')
+        # GPIOs might be in use by something other than UART and some components
+        # might be configured so that they would fail in the later test.
+        odrive.erase_config_and_reboot()
         odrive.handle.config.enable_uart = True
 
         with port.open(115200) as ser:

@@ -25,6 +25,11 @@ class TestMotorCalibration():
 
     def run_test(self, axis_ctx: ODriveAxisComponent, motor_ctx: MotorComponent, logger: Logger):
         # reset old calibration values
+
+        if axis_ctx.handle.encoder.config.mode != ENCODER_MODE_INCREMENTAL:
+            axis_ctx.handle.encoder.config.mode = ENCODER_MODE_INCREMENTAL
+            axis_ctx.parent.save_config_and_reboot()
+
         axis_ctx.handle.motor.config.phase_resistance = 0.0
         axis_ctx.handle.motor.config.phase_inductance = 0.0
         axis_ctx.handle.motor.config.pre_calibrated = False
@@ -219,11 +224,11 @@ class TestEncoderIndexSearch():
         test_assert_eq(axis_ctx.handle.current_state, AXIS_STATE_IDLE)
         test_assert_no_error(axis_ctx)
 
-        test_assert_eq(axis_ctx.handle.encoder.shadow_count, 0.0, range=20)
-        test_assert_eq(modpm(axis_ctx.handle.encoder.count_in_cpr, cpr), 0.0, range=20)
-        test_assert_eq(axis_ctx.handle.encoder.pos_estimate, 0.0, range=20)
-        test_assert_eq(axis_ctx.handle.encoder.pos_cpr, 0.0, range=20)
-        test_assert_eq(axis_ctx.handle.encoder.pos_abs, 0.0, range=20)
+        test_assert_eq(axis_ctx.handle.encoder.shadow_count, 0.0, range=50)
+        test_assert_eq(modpm(axis_ctx.handle.encoder.count_in_cpr, cpr), 0.0, range=50)
+        test_assert_eq(axis_ctx.handle.encoder.pos_estimate, 0.0, range=50)
+        test_assert_eq(modpm(axis_ctx.handle.encoder.pos_cpr, cpr), 0.0, range=50)
+        test_assert_eq(axis_ctx.handle.encoder.pos_abs, 0.0, range=50)
 
 
 if __name__ == '__main__':
