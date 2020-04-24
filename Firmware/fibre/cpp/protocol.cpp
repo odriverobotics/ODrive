@@ -1,3 +1,4 @@
+
 /* Includes ------------------------------------------------------------------*/
 
 #include <memory>
@@ -15,7 +16,7 @@
 Endpoint** endpoint_list_ = nullptr;    // initialized by calling fibre_publish
 size_t n_endpoints_ = 0;                // initialized by calling fibre_publish
 uint16_t json_crc_;                     // initialized by calling fibre_publish
-uint32_t json_fibre_cache_entropy_;     // initialized by calling fibre_publish
+uint32_t json_version_id_;              // initialized by calling fibre_publish
 JSONDescriptorEndpoint json_file_endpoint_ = JSONDescriptorEndpoint();
 EndpointProvider* application_endpoints_;
 
@@ -141,10 +142,9 @@ void JSONDescriptorEndpoint::handle(const uint8_t* input, size_t input_length, S
     uint32_t offset = 0;
     read_le<uint32_t>(&offset, input);
 
-    // If the offset is special value 0xFFFFFFFF, send back the JSON crc instead
+    // If the offset is special value 0xFFFFFFFF, send back the JSON version ID instead
     if (offset == 0xffffffff) {
-        //default_readwrite_endpoint_handler(&json_crc_, nullptr, 0, output);
-        default_readwrite_endpoint_handler(&json_fibre_cache_entropy_, nullptr, 0, output);
+        default_readwrite_endpoint_handler(&json_version_id_, nullptr, 0, output);
     } else {
         NullStreamSink output_with_offset = NullStreamSink(offset, *output);
 
@@ -188,8 +188,8 @@ int BidirectionalPacketBasedChannel::process_packet(const uint8_t* buffer, size_
         // Verify packet trailer. The expected trailer value depends on the selected endpoint.
         // For endpoint 0 this is just the protocol version, for all other endpoints it's a
         // CRC over the entire JSON descriptor tree (this may change in future versions).
-        uint32_t expected_trailer = endpoint_id ? json_crc_ : PROTOCOL_VERSION;
-        uint32_t actual_trailer = buffer[length - 2] | (buffer[length - 1] << 8);
+        uint16_t expected_trailer = endpoint_id ? json_crc_ : PROTOCOL_VERSION;
+        uint16_t actual_trailer = buffer[length - 2] | (buffer[length - 1] << 8);
         if (expected_trailer != actual_trailer) {
             LOG_FIBRE("trailer mismatch for endpoint %d: expected %04x, got %04x\r\n", endpoint_id, expected_trailer, actual_trailer);
             return -1;

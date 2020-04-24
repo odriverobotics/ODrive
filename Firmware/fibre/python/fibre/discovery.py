@@ -54,36 +54,11 @@ def find_all(path, serial_number,
          channel_termination_token,
          logger):
     """
-    Load a json file from disk, return None if it does not exist or is invalid json
-    """
-    def load_json_file(name):
-        try:
-            file = open(name, "r+")
-        except:
-            logger.debug(f"Failed to open json file {name}")
-            return None
-
-        try:
-            file_str = file.read()
-        except:
-            logger.debug(f"Failed to read json file {name}")
-            return None
-
-        try:
-            json_data = json.loads(file_str)
-        except:
-            logger.debug(f"Failed to deserialize json file {name}")
-            return None
-
-        file.close()
-
-        return json_data
-    
-    """
     Starts scanning for Fibre nodes that match the specified path spec and calls
     the callback for each Fibre node that is found.
     This function is non-blocking.
     """
+
     def did_discover_channel(channel):
         """
         Inits an object from a given channel and then calls did_discover_object_callback
@@ -94,26 +69,32 @@ def find_all(path, serial_number,
         try:
             logger.debug("Connecting to device on " + channel._name)
 
-            temp_dir = appdirs.user_cache_dir("odrivetool")
+            cache_dir = appdirs.user_cache_dir("odrivetool")
+            cache_path = None
+
+            # Fetch the json version tag to check cache (only supported on firmware v0.5 or later)
             try:
-                os.mkdir(temp_dir)
-            except FileExistsError:
-                pass
+                json_version_tag = channel.remote_endpoint_operation(0, struct.pack("<I", 0xffffffff), True, 4)
+                json_version_tag = struct.unpack("<I", json_version_tag)[0]
 
-            cache_path = ""
-
-            # Fetching the json crc to check cache
-            try:
-                json_fibre_cache_entropy = channel.remote_endpoint_operation(0, struct.pack("<I", 0xffffffff), True, 4)
-                json_fibre_cache_entropy = struct.unpack("<I", json_fibre_cache_entropy)[0]
-                json_crc16 = json_fibre_cache_entropy >> 16
-
-                logger.debug("Device reported JSON entropy: {:08d}".format(json_fibre_cache_entropy))
-                cache_path = temp_dir + '/fibre_schema_cache_' + str(json_fibre_cache_entropy)
+                logger.debug("Device reported JSON version ID: {:08d}".format(json_version_tag))
+                cache_path = os.path.join(cache_dir, 'fibre_schema_cache_{:08d}'.format(json_version_tag))
             except:
                 logger.debug("Failed to get JSON checksum")
 
-            if cache_path == "" or load_json_file(cache_path) is None:
+            # Check cache
+            json_data = None
+            try:
+                if not cache_path is None:
+                    with open(cache_path, 'rb') as fp:
+                        json_crc16 = fibre.protocol.calc_crc16(fibre.protocol.PROTOCOL_VERSION, fp.read())
+                        fp.seek(0)
+                        json_data = json.load(fp)
+            except:
+                logger.debug(f"Failed load JSON cache file {cache_path}")
+
+            # Fallback to loading JSON from device
+            if json_data is None:
                 # Downloading json data
                 logger.info("Downloading json data from ODrive... (this might take a while)")
                 json_bytes = channel.remote_endpoint_read_buffer(0)
@@ -124,25 +105,19 @@ def find_all(path, serial_number,
                     raise UnicodeDecodeError
 
                 json_crc16 = fibre.protocol.calc_crc16(fibre.protocol.PROTOCOL_VERSION, json_bytes)
-                json_fibre_cache_entropy = fibre.protocol.calc_crc16(json_crc16, json_bytes) | (json_crc16 << 16)
-                cache_path = temp_dir + '/fibre_schema_cache_' + str(json_fibre_cache_entropy)
-                logger.debug(f"Creating new JSON cache file {cache_path}")
-                with open(cache_path, 'w+') as json_cache:
-                    json_cache.write(json_string)
-                logger.debug("Saved JSON to cache file " + cache_path)
-                json_data = load_json_file(cache_path)
-            else:
-                with open(cache_path, "rb") as f:
-                    logger.debug(f"Loaded JSON from cache file {cache_path}")
-                    json_crc16 = fibre.protocol.calc_crc16(fibre.protocol.PROTOCOL_VERSION, f.read())
-                    f.seek(0)
-                    json_fibre_cache_entropy = fibre.protocol.calc_crc16(json_crc16, f.read()) | (json_crc16 << 16)
-                    json_data = load_json_file(cache_path)
+                json_data = json.loads(json_string)
+
+                # Save JSON to cache
+                if not cache_path is None:
+                    logger.debug(f"Creating new JSON cache file {cache_path}")
+                    os.makedirs(cache_dir, exist_ok=True)
+                    with open(cache_path, 'w+') as json_cache:
+                        json_cache.write(json_string)
+                    logger.debug(f"Saved JSON to cache file {cache_path}")
 
             channel._interface_definition_crc = json_crc16
 
             logger.debug("JSON: " + str(json_data).replace("{'name'", "\n{'name'"))
-            logger.debug("Local cache JSON entropy: {:08d}".format(json_fibre_cache_entropy))
 
             json_data = {"name": "fibre_node", "members": json_data}
             obj = fibre.remote_object.RemoteObject(json_data, None, channel, logger)
