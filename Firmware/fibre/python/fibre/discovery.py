@@ -44,7 +44,6 @@ try:
 except ImportError:
     pass
 
-
 def noprint(text):
     pass
 
