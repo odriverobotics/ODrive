@@ -50,13 +50,20 @@ $ tup --version                 # should be 0.7.5 or later
 $ python --version              # should be 3.7 or later
 ```
 
-#### Linux (Ubuntu)
+#### Linux (Ubuntu < 20.04)
 ```bash
 sudo add-apt-repository ppa:team-gcc-arm-embedded/ppa
 sudo apt-get update
 sudo apt-get install gcc-arm-embedded
 sudo apt-get install openocd
 sudo add-apt-repository ppa:jonathonf/tup && sudo apt-get update && sudo apt-get install tup
+```
+
+#### Linux (Ubuntu >= 20.04)
+```bash
+sudo apt install gcc-arm-embedded
+sudo apt install openocd
+sudo apt install tup
 ```
 
 #### Arch Linux
@@ -118,6 +125,8 @@ You can also modify the compile-time defaults for all `.config` parameters. You 
 1. Run `make` in the `Firmware` directory.
 2. Connect the ODrive via USB and power it up.
 3. Flash the firmware using [odrivetool dfu](odrivetool#device-firmware-update).
+
+If you get `/bin/sh: 1: python: not found` while running `make`, change the tup file command to use `python3` 
 
 ### Flashing using an STLink/v2 programmer
 
