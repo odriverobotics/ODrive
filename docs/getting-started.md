@@ -127,6 +127,12 @@ Try step 5 again
 ### Linux
 1. [Install Python 3](https://www.python.org/downloads/). (for example, on Ubuntu, `sudo apt install python3 python3-pip`)
 2. Install the ODrive tools by opening a terminal and typing `sudo pip3 install odrive` <kbd>Enter</kbd>
+    * This should automatically add the udev rules. If this fails for some reason you can add them manually:
+    ```bash
+    echo 'SUBSYSTEM=="usb", ATTR{idVendor}=="1209", ATTR{idProduct}=="0d[0-9][0-9]", MODE="0666"' | sudo tee /etc/udev/rules.d/91-odrive.rules
+    sudo udevadm control --reload-rules
+    sudo udevadm trigger
+    ```
 3. (needed on Ubuntu, maybe other distros too) Add odrivetool into the path, by adding `~/.local/bin/` into `~/.bash_profile`, for example by running `nano ~/.bashrc`, scrolling to the bottom, pasting `PATH=$PATH:~/.local/bin/`, and then saving and closing, and close and reopen the terminal window.
 
 ## Firmware
@@ -188,9 +194,10 @@ You can change `odrv0.axis0.motor.config.calibration_current` [A] to the largest
 This is the resistance of the brake resistor. If you are not using it, you may set it to `0`. Note that there may be some extra resistance in your wiring and in the screw terminals, so if you are getting issues while braking you may want to increase this parameter by around 0.05 ohm.
  
 `odrv0.axis0.motor.config.pole_pairs`  
-This is the number of **magnet poles** in the rotor, **divided by two**. To find this, you can simply count the number of permanent magnets in the rotor, if you can see them.  
-**Note**: This is **not** the same as the number of coils in the stator.  
-If you can't see them, try sliding a loose magnet in your hand around the rotor, and counting how many times it stops. This will be the number of _pole pairs_. If you use a magnetic piece of metal instead of a magnet, you will get the number of _magnet poles_.
+This is the number of **magnet poles** in the rotor, **divided by two**. To find this, you can simply count the number of permanent magnets in the rotor, if you can see them.
+**Note**: This is **not** the same as the number of coils in the stator.
+A good way to find the number of pole pairs is with a current limited power supply. Connect any two of the three phases to a power supply outputting around 2A, spin the motor by hand, and count the number of detents. This will be the number of pole pairs. If you can't distinguish the detents from the normal cogging present when the motor is disconnected, increase the current.
+Another way is sliding a loose magnet in your hand around the rotor, and counting how many times it stops. This will be the number of _pole pairs_. If you use a ferrous piece of metal instead of a magnet, you will get the number of _magnet poles_.
 
 `odrv0.axis0.motor.config.motor_type`  
 This is the type of motor being used. Currently two types of motors are supported: High-current motors (`MOTOR_TYPE_HIGH_CURRENT`) and gimbal motors (`MOTOR_TYPE_GIMBAL`).
