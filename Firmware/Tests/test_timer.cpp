@@ -1,4 +1,3 @@
-#define DOCTEST_IMPLEMENT
 #include <doctest.h>
 #include "MotorControl/timer.hpp"
 #include <stdint.h>

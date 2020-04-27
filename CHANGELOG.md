@@ -24,6 +24,7 @@ Please add a note of your changes below this heading if you make a Pull Request.
 * Added support for Flylint VSCode Extension for static code analysis
 * Using an STM32F405 .svd file allows CortexDebug to view registers during debugging
 * Added scripts for building via docker.
+* Brake resistor logic now attempts to clamp voltage according to `odrv.config.nominal_voltage`
 
 ### Changed
 * Changed ratiometric `motor.config.current_lim_tolerance` to absolute `motor.config.current_lim_margin`
@@ -36,6 +37,7 @@ Please add a note of your changes below this heading if you make a Pull Request.
 * Added JSON caching to Fibre. This drastically reduces the time odrivetool needs to connect to an ODrive (except for the first time or after firmware updates).
 * Fix IPython `RuntimeWarning` that would occur every time `odrivetool` was started.
 * Reboot on `erase_configuration()`. This avoids unexpected behavior of a subsequent `save_configuration()` call, since the configuration is only erased from NVM, not from RAM.
+* Change `motor.get_inverter_temp()` to use a property which was already being sampled at `motor.inverter_temp`
 
 # Releases
 ## [0.4.11] - 2019-07-25

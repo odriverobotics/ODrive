@@ -125,7 +125,7 @@ public:
     void set_error(Error_t error);
     bool do_checks();
     float get_inverter_temp();
-    bool update_thermal_limits();
+    bool update_thermal_limits(float fet_temp);
     float effective_current_lim();
     void log_timing(TimingLog_t log_idx);
     float phase_current_from_adcval(uint32_t ADCValue);
@@ -187,6 +187,7 @@ public:
     DRV8301_FaultType_e drv_fault_ = DRV8301_FaultType_NoFault;
     DRV_SPI_8301_Vars_t gate_driver_regs_; //Local view of DRV registers (initialized by DRV8301_setup)
     float thermal_current_lim_ = 10.0f;  //[A]
+    float inverter_temp_ = 20.0f;
 
     // Communication protocol definitions
     auto make_protocol_definitions() {
@@ -200,7 +201,7 @@ public:
             make_protocol_property("DC_calib_phC", &DC_calib_.phC),
             make_protocol_property("phase_current_rev_gain", &phase_current_rev_gain_),
             make_protocol_ro_property("thermal_current_lim", &thermal_current_lim_),
-            make_protocol_function("get_inverter_temp", *this, &Motor::get_inverter_temp),
+            make_protocol_ro_property("inverter_temp", &inverter_temp_),
             make_protocol_object("current_control",
                 make_protocol_property("p_gain", &current_control_.p_gain),
                 make_protocol_property("i_gain", &current_control_.i_gain),

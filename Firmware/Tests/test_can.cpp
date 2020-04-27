@@ -1,5 +1,4 @@
 
-#define DOCTEST_IMPLEMENT
 #include <doctest.h>
 #include <algorithm>
 #include <cstring>

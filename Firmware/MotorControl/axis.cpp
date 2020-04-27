@@ -551,9 +551,12 @@ void Axis::run_state_machine_loop() {
         }
 
         // If the state failed, go to idle, else advance task chain
-        if (!status)
+        if (!status) {
+            std::fill(task_chain_.begin(), task_chain_.end(), AXIS_STATE_UNDEFINED);
             current_state_ = AXIS_STATE_IDLE;
-        else
-            memmove(task_chain_, task_chain_ + 1, sizeof(task_chain_) - sizeof(task_chain_[0]));
+        } else {
+            std::rotate(task_chain_.begin(), task_chain_.begin() + 1, task_chain_.end());
+            task_chain_.back() = AXIS_STATE_UNDEFINED;
+        }
     }
 }

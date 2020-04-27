@@ -150,8 +150,7 @@ float Motor::get_inverter_temp() {
     return horner_fma(normalized_voltage, thermistor_poly_coeffs, thermistor_num_coeffs);
 }
 
-bool Motor::update_thermal_limits() {
-    float fet_temp = get_inverter_temp();
+bool Motor::update_thermal_limits(float fet_temp) {
     float temp_margin = config_.inverter_temp_limit_upper - fet_temp;
     float derating_range = config_.inverter_temp_limit_upper - config_.inverter_temp_limit_lower;
     thermal_current_lim_ = config_.current_lim * (temp_margin / derating_range);
@@ -170,7 +169,8 @@ bool Motor::do_checks() {
         set_error(ERROR_DRV_FAULT);
         return false;
     }
-    if (!update_thermal_limits()) {
+    inverter_temp_ = get_inverter_temp();
+    if (!update_thermal_limits(inverter_temp_)) {
         //error already set in function
         return false;
     }
