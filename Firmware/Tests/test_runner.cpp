@@ -16,10 +16,6 @@
 using std::cout;
 using std::endl;
 
-
-
-
-
 TEST_SUITE("delta_enc") {
     // Modulo (as opposed to remainder), per https://stackoverflow.com/a/19288271
     int mod(int dividend, int divisor) {
@@ -131,7 +127,7 @@ TEST_SUITE("vel_ramp") {
         return v & 1;
     }
 
-    TEST_CASE("Blah") {
+    TEST_CASE("Equivalence") {
         float vel_setpoint = 0.0f;
         float vel_ramp_rate = 8000;
         float input_vel = 0.0f;
