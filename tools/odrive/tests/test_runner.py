@@ -6,6 +6,7 @@ sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..'))
 
 import stat
 import odrive
+from odrive.enums import *
 import fibre
 from fibre import Logger, Event
 import argparse
@@ -73,6 +74,21 @@ def all_unique(lst):
 def modpm(val, range):
     return ((val + (range / 2)) % range) - (range / 2)
 
+def record_log(data_getter, duration=5.0):
+    logger.debug(f"Recording log for {duration}s...")
+    data = []
+    start = time.monotonic()
+    while time.monotonic() - start < duration:
+        data.append((time.monotonic() - start,) + tuple(data_getter()))
+    return np.array(data)
+
+def save_log(data):
+    import json
+    filename = '/tmp/log.json'
+    with open(filename, 'w+') as fp:
+        json.dump(data.tolist(), fp, indent=2)
+    print(f'data saved to {filename}')
+
 def fit_line(data):
     func = lambda x, a, b: x*a + b
     slope, offset = scipy.optimize.curve_fit(func, data[:,0], data[:,1], [1.0, 0])[0]
@@ -126,25 +142,41 @@ def fit_sawtooth(data, min_val, max_val, sigma=10):
     return slope, offset, func(data[:,0], slope, offset)
 
 def test_curve_fit(data, fitted_curve, max_mean_err, inlier_range, max_outliers):
-    def save():
-        import json
-        filename = '/tmp/log.json'
-        print('saving data to ' + filename)
-        with open(filename, 'w+') as fp:
-            json.dump(np.concatenate([data, np.array([fitted_curve]).transpose()], 1).tolist(), fp, indent=2)
-
     diffs = data[:,1] - fitted_curve
 
     mean_err = np.abs(diffs).mean()
     if mean_err > max_mean_err:
-        save()
+        save_log(np.concatenate([data, np.array([fitted_curve]).transpose()], 1))
         raise TestFailed("curve fit has too large mean error: {} > {}".format(mean_err, max_mean_err))
     
     outliers = np.count_nonzero((diffs > inlier_range) | (diffs < -inlier_range))
     if outliers > max_outliers:
-        save()
+        save_log(np.concatenate([data, np.array([fitted_curve]).transpose()], 1))
         raise TestFailed("curve fit has too many outliers (err > {}): {} > {}".format(inlier_range, outliers, max_outliers))
 
+def test_watchdog(axis, feed_func, logger: Logger):
+    """
+    Tests the watchdog of one axis, using the provided function to feed the watchdog.
+    This test assumes that the testing host has no more than 300ms random delays.
+    """
+    start = time.monotonic()
+    axis.config.enable_watchdog = False
+    axis.error = 0
+    axis.config.watchdog_timeout = 1.0
+    axis.watchdog_feed()
+    axis.config.enable_watchdog = True
+    test_assert_eq(axis.error, 0)
+    for _ in range(5): # keep the watchdog alive for 3.5 seconds
+        time.sleep(0.7)
+        logger.debug('feeding watchdog at {}s'.format(time.monotonic() - start))
+        feed_func()
+        err = axis.error
+        logger.debug('checking error at {}s'.format(time.monotonic() - start))
+        test_assert_eq(err, 0)
+        
+    logger.debug('letting watchdog expire...')
+    time.sleep(1.3) # let the watchdog expire
+    test_assert_eq(axis.error, errors.axis.ERROR_WATCHDOG_TIMER_EXPIRED)
 
 # Test Components -------------------------------------------------------------#
 
@@ -206,6 +238,15 @@ class ODriveComponent(Component):
         self.handle.save_configuration()
         try:
             self.handle.reboot()
+        except fibre.ChannelBrokenException:
+            pass # this is expected
+        self.handle = None
+        time.sleep(2)
+        self.prepare(logger)
+
+    def erase_config_and_reboot(self):
+        try:
+            self.handle.erase_configuration()
         except fibre.ChannelBrokenException:
             pass # this is expected
         self.handle = None

@@ -97,18 +97,8 @@ class TestAnalogInput():
         analog_mapping.max = max_val
         odrive.save_config_and_reboot()
 
-
-        logger.debug("Recording log...")
-        data = []
-        start = time.monotonic()
         analog_reset_gpio.write(False)
-        while time.monotonic() - start < 5.0:
-            data.append((
-                time.monotonic() - start,
-                odrive.handle.axis0.controller.input_pos
-            ))
-
-        data = np.array(data)
+        data = record_log(lambda: [odrive.handle.axis0.controller.input_pos], duration=5.0)
 
         # Expect mean error to be at most 2% (of the full scale).
         # Expect there to be less than 2% outliers, where an outlier is anything that is more than 5% (of full scale) away from the expected value.

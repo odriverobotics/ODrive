@@ -95,6 +95,13 @@ extern "C" int load_configuration(void) {
 
 void erase_configuration(void) {
     NVM_erase();
+
+    // FIXME: this reboot is a workaround because we don't want the next save_configuration
+    // to write back the old configuration from RAM to NVM. The proper action would
+    // be to reset the values in RAM to default. However right now that's not
+    // practical because several startup actions depend on the config. The
+    // other problem is that the stack overflows if we reset to default here.
+    NVIC_SystemReset();
 }
 
 void enter_dfu_mode() {
