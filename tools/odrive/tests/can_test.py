@@ -13,7 +13,7 @@ from test_runner import *
 # Each argument is described as tuple (name, format, scale).
 # Struct format codes: https://docs.python.org/2/library/struct.html
 command_set = {
-    'heartbeat': (0x001, [('error', 'I', 1), ('current_state', 'I', 1)]), # untested
+    'heartbeat': (0x001, [('error', 'I', 1), ('current_state', 'I', 1)]), # tested
     'estop': (0x002, []), # tested
     'get_motor_error': (0x003, [('motor_error', 'I', 1)]), # untested
     'get_encoder_error': (0x004, [('encoder_error', 'I', 1)]), # untested
@@ -21,8 +21,8 @@ command_set = {
     'set_node_id': (0x006, [('node_id', 'H', 1)]), # tested
     'set_requested_state': (0x007, [('requested_state', 'I', 1)]), # tested
     # 0x008 not yet implemented
-    'get_encoder_estimates': (0x009, [('encoder_pos_estimate', 'f', 1), ('encoder_vel_estimate', 'f', 1)]), # untested
-    'get_encoder_count': (0x00a, [('encoder_shadow_count', 'i', 1), ('encoder_count', 'i', 1)]), # untested
+    'get_encoder_estimates': (0x009, [('encoder_pos_estimate', 'f', 1), ('encoder_vel_estimate', 'f', 1)]), # partially tested
+    'get_encoder_count': (0x00a, [('encoder_shadow_count', 'i', 1), ('encoder_count', 'i', 1)]), # partially tested
     'set_controller_modes': (0x00b, [('control_mode', 'i', 1), ('input_mode', 'i', 1)]), # tested
     'set_input_pos': (0x00c, [('input_pos', 'i', 1), ('vel_ff', 'h', 0.1), ('cur_ff', 'h', 0.01)]), # tested
     'set_input_vel': (0x00d, [('input_vel', 'i', 0.01), ('cur_ff', 'h', 0.01)]), # tested
@@ -34,7 +34,7 @@ command_set = {
     'set_traj_a_per_css': (0x013, [('a_per_css', 'f', 1)]), # tested
     'get_iq': (0x014, [('iq_setpoint', 'f', 1), ('iq_measured', 'f', 1)]), # untested
     'get_sensorless_estimates': (0x015, [('sensorless_pos_estimate', 'f', 1), ('sensorless_vel_estimate', 'f', 1)]), # untested
-    'reboot': (0x016, []), # untested
+    'reboot': (0x016, []), # tested
     'get_vbus_voltage': (0x017, [('vbus_voltage', 'f', 1)]), # tested
     'clear_errors': (0x018, []), # partially tested
 }
@@ -52,7 +52,12 @@ def command(bus, node_id_, cmd_name, **kwargs):
     msg = can.Message(arbitration_id=((node_id_ << 5) | cmd_id), data=data)
     bus.send(msg)
 
-async def request(bus, node_id, cmd_name, timeout = 1.0):
+async def record_messages(bus, node_id, cmd_name, timeout = 5.0):
+    """
+    Returns an async generator that yields a dictionary for each CAN message that
+    is received, provided that the CAN ID matches the expected value.
+    """
+
     cmd_spec = command_set[cmd_name]
     cmd_id = cmd_spec[0]
     fmt = '<' + ''.join([f for (n, f, s) in cmd_spec[1]]) # all little endian
@@ -61,23 +66,37 @@ async def request(bus, node_id, cmd_name, timeout = 1.0):
     notifier = can.Notifier(bus, [reader], timeout = timeout, loop = asyncio.get_event_loop())
 
     try:
-        msg = can.Message(arbitration_id=((node_id << 5) | cmd_id), data=[], is_remote_frame=True)
-        bus.send(msg)
-
         # The timeout in can.Notifier only triggers if no new messages are received at all,
         # so we need a second monitoring method.
         start = time.monotonic()
         while True:
             msg = await reader.get_message()
             if ((msg.arbitration_id == ((node_id << 5) | cmd_id)) and not msg.is_remote_frame):
-                break
+                fields = struct.unpack(fmt, msg.data[:(struct.calcsize(fmt))]) 
+                res = {n: (fields[i] * s) for (i, (n, f, s)) in enumerate(cmd_spec[1])}
+                res['t'] = time.monotonic()
+                yield res
             if (time.monotonic() - start) > timeout:
-                raise TimeoutError()
+                break
     finally:
         notifier.stop()
 
-    fields = struct.unpack(fmt, msg.data[:(struct.calcsize(fmt))]) 
-    return {n: (fields[i] * s) for (i, (n, f, s)) in enumerate(cmd_spec[1])}
+async def request(bus, node_id, cmd_name, timeout = 1.0):
+    cmd_spec = command_set[cmd_name]
+    cmd_id = cmd_spec[0]
+
+    msg_generator = record_messages(bus, node_id, cmd_name, timeout)
+
+    msg = can.Message(arbitration_id=((node_id << 5) | cmd_id), data=[], is_remote_frame=True)
+    bus.send(msg)
+
+    async for msg in msg_generator:
+        return msg
+
+    raise TimeoutError()
+
+async def get_all(async_iterator):
+    return [x async for x in async_iterator]
 
 
 class TestSimpleCAN():
@@ -110,6 +129,10 @@ class TestSimpleCAN():
         command(canbus.handle, node_id+20, 'set_node_id', node_id=node_id)
         fence()
         test_assert_eq(axis.config.can_node_id, node_id)
+
+        axis.encoder.set_linear_count(123)
+        test_assert_eq(my_req('get_encoder_estimates')['encoder_pos_estimate'], 123.0, accuracy=0.01)
+        test_assert_eq(my_req('get_encoder_count')['encoder_shadow_count'], 123.0, accuracy=0.01)
 
         my_cmd('clear_errors')
         fence()
@@ -175,6 +198,27 @@ class TestSimpleCAN():
         my_cmd('set_traj_a_per_css', a_per_css=55.086)
         fence()
         test_assert_eq(axis.controller.config.inertia, 55.086, range=0.0001)
+
+        # any CAN cmd will feed the watchdog
+        test_watchdog(axis, lambda: my_cmd('set_input_current', input_current=0.0), logger)
+
+        logger.debug('testing heartbeat...')
+        # note that this will include the heartbeats that were received during the
+        # watchdog test (which takes 4.8s).
+        heartbeats = asyncio.run(get_all(record_messages(canbus.handle, node_id, 'heartbeat', timeout = 1.0)))
+        test_assert_eq(len(heartbeats), 5.8 / 0.1, accuracy=0.05)
+        test_assert_eq([msg['error'] for msg in heartbeats[0:35]], [0] * 35) # before watchdog expiry
+        test_assert_eq([msg['error'] for msg in heartbeats[-10:]], [errors.axis.ERROR_WATCHDOG_TIMER_EXPIRED] * 10) # after watchdog expiry
+        test_assert_eq([msg['current_state'] for msg in heartbeats], [1] * len(heartbeats))
+
+        logger.debug('testing reboot...')
+        my_cmd('reboot')
+        time.sleep(0.5)
+        if len(odrive.handle._remote_attributes) != 0:
+            raise TestFailed("device didn't seem to reboot")
+        odrive.handle = None
+        time.sleep(2.0)
+        odrive.prepare(logger)
 
 
 if __name__ == '__main__':

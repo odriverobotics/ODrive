@@ -6,6 +6,7 @@ sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..'))
 
 import stat
 import odrive
+from odrive.enums import *
 import fibre
 from fibre import Logger, Event
 import argparse
@@ -153,6 +154,29 @@ def test_curve_fit(data, fitted_curve, max_mean_err, inlier_range, max_outliers)
         save_log(np.concatenate([data, np.array([fitted_curve]).transpose()], 1))
         raise TestFailed("curve fit has too many outliers (err > {}): {} > {}".format(inlier_range, outliers, max_outliers))
 
+def test_watchdog(axis, feed_func, logger: Logger):
+    """
+    Tests the watchdog of one axis, using the provided function to feed the watchdog.
+    This test assumes that the testing host has no more than 300ms random delays.
+    """
+    start = time.monotonic()
+    axis.config.enable_watchdog = False
+    axis.error = 0
+    axis.config.watchdog_timeout = 1.0
+    axis.watchdog_feed()
+    axis.config.enable_watchdog = True
+    test_assert_eq(axis.error, 0)
+    for _ in range(5): # keep the watchdog alive for 3.5 seconds
+        time.sleep(0.7)
+        logger.debug('feeding watchdog at {}s'.format(time.monotonic() - start))
+        feed_func()
+        err = axis.error
+        logger.debug('checking error at {}s'.format(time.monotonic() - start))
+        test_assert_eq(err, 0)
+        
+    logger.debug('letting watchdog expire...')
+    time.sleep(1.3) # let the watchdog expire
+    test_assert_eq(axis.error, errors.axis.ERROR_WATCHDOG_TIMER_EXPIRED)
 
 # Test Components -------------------------------------------------------------#
 

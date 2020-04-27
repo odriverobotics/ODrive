@@ -131,25 +131,7 @@ class TestUartAscii():
             test_assert_eq(float(response.split()[0]), odrive.handle.axis0.encoder.pos_estimate, accuracy=0.001)
             test_assert_eq(float(response.split()[1]), odrive.handle.axis0.encoder.vel_estimate, accuracy=0.001)
 
-
-            # Test watchdog (assumes that the testing host has no more than 300ms random delays)
-            start = time.monotonic()
-            odrive.handle.axis0.config.enable_watchdog = False
-            odrive.handle.axis0.error = 0
-            odrive.handle.axis0.config.watchdog_timeout = 1.0
-            odrive.handle.axis0.watchdog_feed()
-            odrive.handle.axis0.config.enable_watchdog = True
-            test_assert_eq(odrive.handle.axis0.error, 0)
-            for _ in range(5): # keep the watchdog alive for 3.5 seconds
-                time.sleep(0.7)
-                print('feeding watchdog at {}s'.format(time.monotonic() - start))
-                ser.write(b'u 0\n')
-                err = odrive.handle.axis0.error
-                print('checking error at {}s'.format(time.monotonic() - start))
-                test_assert_eq(err, 0)
-                
-            time.sleep(1.3) # let the watchdog expire
-            test_assert_eq(odrive.handle.axis0.error, errors.axis.ERROR_WATCHDOG_TIMER_EXPIRED)
+            test_watchdog(odrive.handle.axis0, lambda: ser.write(b'u 0\n'), logger)
             test_assert_eq(ser.readline(), b'') # check if the device remained silent during the test
 
 
