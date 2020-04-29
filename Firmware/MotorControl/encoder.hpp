@@ -24,9 +24,9 @@ public:
         MODE_INCREMENTAL,
         MODE_HALL,
         MODE_SINCOS,
-        MODE_SPI_ABS_CUI = 0x100,
-        MODE_SPI_ABS_AMS = 0x101,
-        MODE_SPI_ABS_AEAT = 0x102,
+        MODE_SPI_ABS_CUI = 0x100,   //!< compatible with CUI AMT23xx
+        MODE_SPI_ABS_AMS = 0x101,   //!< compatible with AMS AS5047P, AS5048A/AS5048B (no daisy chain support)
+        MODE_SPI_ABS_AEAT = 0x102,  //!< not yet implemented
     };
     const uint32_t MODE_FLAG_ABS = 0x100;
 
@@ -110,10 +110,9 @@ public:
     bool abs_spi_start_transaction();
     void abs_spi_cb();
     void abs_spi_cs_pin_init();
-    uint16_t abs_spi_dma_tx_[2] = {0xFFFF, 0x0000};
-    uint16_t abs_spi_dma_rx_[2];
+    uint16_t abs_spi_dma_tx_[1] = {0xFFFF};
+    uint16_t abs_spi_dma_rx_[1];
     bool abs_spi_pos_updated_ = false;
-    bool abs_spi_pos_init_once_ = false;
     Mode_t mode_ = MODE_INCREMENTAL;
     GPIO_TypeDef* abs_spi_cs_port_;
     uint16_t abs_spi_cs_pin_;

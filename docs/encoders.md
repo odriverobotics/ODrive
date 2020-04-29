@@ -121,7 +121,7 @@ Connect to the I pin, see if you get a pulse on a complete rotation. Sometimes t
 If you are using SPI, have a lot at the signal on the CLK, and CS pins. There are many examples on the net for how these should behave. 
 
 ## Encoder Noise
-Noise is found in all circuits, life is just about figuring out if it is preventing your system from working. Lots of users have no problems with noise interfering with their odrive operation, others will tell you "_I've been using the same encoder as you with no problems_". Power to 'em, that may be true, but it doesn't mean it will work for you. If you are concerned about noise, there are several possible sources:
+Noise is found in all circuits, life is just about figuring out if it is preventing your system from working. Lots of users have no problems with noise interfering with their ODrive operation, others will tell you "_I've been using the same encoder as you with no problems_". Power to 'em, that may be true, but it doesn't mean it will work for you. If you are concerned about noise, there are several possible sources:
 
 * Importantly, encoder wires may be too close to motor wires, avoid overlap as much as possible
 * Long wires between encoder and ODrive
@@ -135,26 +135,33 @@ If you are using an encoder with an index signal, another problem that has been 
 * when performing an index_search, the motor does not return to the same position each time.
 One easy step that _might_ fix the noise on the Z input has been to solder a 22nF-47nF capacitor to the Z pin and the GND pin on the underside of the ODrive board. 
 
-## AS5047/AS5048 Encoders
-The AS5047/AS5048 encoders are Hall Effect/Magnetic sensors that can serve as rotary encoders for the ODrive.
 
-The AS5047 has 3 independent output interfaces: SPI, ABI, and PWM. 
-The AS5048 has 4 independent output interfaces: SPI, ABI, I2C, and PWM.
+## SPI Encoders
 
-Both chips come with evaluation boards that can simplify mounted the chips to your motor. For our purposes if you are using an evaluation board you should select the settings for 3.3v, and tie MOSI high to 3.3v. 
+Apart from (incremental) quadrature encoders, ODrive also supports absolute SPI encoders (since firmware v0.5). These are usually based on are Hall Effect/Magnetic sensors and measure an absolute angle. This means you don't need to repeat the encoder calibration after every ODrive reboot. Currently, the following modes are supported:
 
-If you are having calibration problems - make sure your magnet is centered on the axis of rotation on the motor, some users report this has a significant impact on calibration. Also make sure your magnet height is within range of the spec sheet. 
+ * **CUI protocol**: Compatible with the AMT23xx family (AMT232A, AMT232B, AMT233A, AMT233B).
+ * **AMS protocol**: Compatible with AS5047P and AS5048A/AS5048B.
 
-#### Using ABI. 
-You can use ABI with the AS5047/AS5048 with the default ODrive firmware. For your wiring, connect A, B, 3.3v, GND to the labeled pins on the odrive
-The acronym I and Z mean the same thing, connect those as well if you are using an index signal. 
+Some of these chips come with evaluation boards that can simplify mounting the chips to your motor. For our purposes if you are using an evaluation board you should select the settings for 3.3v.
 
-#### Using SPI.
-TobinHall has written a [branch](https://github.com/TobinHall/ODrive/tree/Non-Blocking_Absolute_SPI) that supports the SPI option on the AS5047/AS5048. Use his build to flash firmware on your ODrive and connect MISO, SCK, and CS to the labeled pins on the odrive
+1. Connect the encoder to the ODrive's SPI interface:
+   
+    - The encoder's SCK, MISO (aka "DATA" on CUI encoders), GND and 3.3V should connect to the ODrive pins with the same label.
+    - The encoder's MOSI should be tied to 3.3V (AMS encoders only. CUI encoders don't have this pin.)
+    - The encoder's Chip Select (aka nCS/CSn) can be connected to any of the ODrive's GPIOs (caution: GPIOs 1 and 2 are usually used by UART).
 
-Tie MOSI to 3.3v, connect to the SCK, CLK, MISO, GND and 3.2v pins on the ODrive. (note for SPI users, the acronym SCK and CLK mean the same thing, the acronym CSn and CS mean the same thing.)
+2. In `odrivetool`, run:
 
-Add these commands to your calibration / startup script:
-* `<axis>.encoder.config.abs_spi_cs_gpio_pin = 4` or which ever GPIO pin you choose
-* `<axis>.encoder.config.mode = 257`
-* `<odrv>.axis0.encoder.config.cpr = 2**14`
+       <axis>.encoder.config.abs_spi_cs_gpio_pin = 4  # or which ever GPIO pin you choose
+       <axis>.encoder.config.mode = ENCODER_MODE_SPI_ABS_CUI   # or ENCODER_MODE_SPI_ABS_AMS
+       <axis>.encoder.config.cpr = 2**14              # or 2**12 for AMT232A and AMT233A
+       <odrv>.save_configuration()
+       <odrv>.reboot()
+
+3. Run the [offset calibration](#encoder-without-index-signal) and then save the calibration with `<odrv>.save_configuration()`.
+   The next time you reboot, the encoder should be immediately ready.
+
+Sometimes the encoder takes longer than the ODrive to start, in which case you need to clear the errors after every restart.
+
+If you are having calibration problems - make sure your magnet is centered on the axis of rotation on the motor, some users report this has a significant impact on calibration. Also make sure your magnet height is within range of the spec sheet.
