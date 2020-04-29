@@ -194,6 +194,9 @@ class ODriveComponent(Component):
         for i in range(1,9):
             self.__setattr__('gpio' + str(i), Component(self))
         self.can = Component(self)
+        self.sck = Component(self)
+        self.miso = Component(self)
+        self.mosi = Component(self)
 
     def get_subcomponents(self):
         for enc_ctx in self.encoders:
@@ -203,6 +206,9 @@ class ODriveComponent(Component):
         for i in range(1,9):
             yield ('gpio' + str(i)), getattr(self, 'gpio' + str(i))
         yield 'can', self.can
+        yield 'spi.sck', self.sck
+        yield 'spi.miso', self.miso
+        yield 'spi.mosi', self.mosi
 
     def prepare(self, logger: Logger):
         """

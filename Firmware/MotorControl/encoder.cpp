@@ -310,6 +310,7 @@ void Encoder::sample_now() {
 
         case MODE_SPI_ABS_AMS:
         case MODE_SPI_ABS_CUI:
+        case MODE_SPI_ABS_AEAT:
         {
             // Do nothing
         } break;
@@ -351,12 +352,12 @@ bool Encoder::abs_spi_start_transaction(){
             return false;
         }
         HAL_GPIO_WritePin(abs_spi_cs_port_, abs_spi_cs_pin_, GPIO_PIN_RESET);
-        HAL_SPI_TransmitReceive_DMA(hw_config_.spi,(uint8_t*)abs_spi_dma_tx_,(uint8_t*)abs_spi_dma_rx_,1);
+        HAL_SPI_TransmitReceive_DMA(hw_config_.spi, (uint8_t*)abs_spi_dma_tx_, (uint8_t*)abs_spi_dma_rx_, 1);
     }
     return true;
 }
 
-uint8_t parity(uint16_t v){
+uint8_t ams_parity(uint16_t v) {
     v ^= v >> 8;
     v ^= v >> 4;
     v ^= v >> 2;
@@ -364,29 +365,48 @@ uint8_t parity(uint16_t v){
     return v & 1;
 }
 
+uint8_t cui_parity(uint16_t v) {
+    v ^= v >> 8;
+    v ^= v >> 4;
+    v ^= v >> 2;
+    return ~v & 3;
+}
+
 void Encoder::abs_spi_cb(){
     HAL_GPIO_WritePin(abs_spi_cs_port_, abs_spi_cs_pin_, GPIO_PIN_SET);
+
+    uint16_t pos;
+
     switch (mode_) {
         case MODE_SPI_ABS_AMS: {
-        uint8_t parity_calc, parity_bit;
-        auto rawVal = abs_spi_dma_rx_[0];
-        parity_calc = parity(rawVal & 0x7FFF);
-        parity_bit = rawVal >> 15;
-
-            if (parity_calc == parity_bit) {
-                pos_abs_ = rawVal & 0x3FFF;
-                abs_spi_pos_updated_ = true;
+            uint16_t rawVal = abs_spi_dma_rx_[0];
+            // check if parity is correct (even) and error flag clear
+            if (ams_parity(rawVal) || ((rawVal >> 14) & 1)) {
+                return;
             }
+            pos = rawVal & 0x3fff;
         } break;
-        case MODE_SPI_ABS_AEAT: {
-            pos_abs_ = abs_spi_dma_rx_[0];
-            abs_spi_pos_updated_ = true;
+
+        case MODE_SPI_ABS_CUI: {
+            uint16_t rawVal = abs_spi_dma_rx_[0];
+            // check if parity is correct
+            if (cui_parity(rawVal)) {
+                return;
+            }
+            pos = rawVal & 0x3fff;
         } break;
+
         default: {
            set_error(ERROR_UNSUPPORTED_ENCODER_MODE);
+           return;
         } break;
     }
-    is_ready_ = true;
+
+    pos_abs_ = pos;
+    abs_spi_pos_updated_ = true;
+    if (config_.pre_calibrated) {
+        is_ready_ = true;
+    }
 }
 
 void Encoder::abs_spi_cs_pin_init(){
@@ -448,7 +468,7 @@ bool Encoder::update() {
         case MODE_SPI_ABS_AMS:
         case MODE_SPI_ABS_CUI: 
         case MODE_SPI_ABS_AEAT: {
-            if (abs_spi_pos_updated_ == false && abs_spi_pos_init_once_) {
+            if (abs_spi_pos_updated_ == false) {
                 // Low pass filter the error
                 spi_error_rate_ += current_meas_period * (1.0f - spi_error_rate_);
                 if (spi_error_rate_ > 0.005f)
@@ -463,9 +483,6 @@ bool Encoder::update() {
             delta_enc = mod(delta_enc, config_.cpr);
             if (delta_enc > config_.cpr/2) {
                 delta_enc -= config_.cpr;
-            }
-            if (!abs_spi_pos_init_once_ && delta_enc != 0) {
-                abs_spi_pos_init_once_ = true;
             }
 
         }break;
