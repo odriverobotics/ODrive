@@ -594,7 +594,10 @@ void update_brake_current() {
     // Don't start braking until -Ibus > regen_current_allowed
     float brake_current = -Ibus_sum - board_config.max_regen_current;
     float brake_duty    = brake_current * std::abs(board_config.brake_resistance) / vbus_voltage;
-    brake_duty          += std::max((vbus_voltage - board_config.nominal_voltage) / (board_config.dc_bus_overvoltage_trip_level / 0.9f - board_config.nominal_voltage), 0.0f);
+    
+    if (board_config.nominal_voltage < board_config.dc_bus_overvoltage_trip_level) {
+        brake_duty     += std::max((vbus_voltage - board_config.nominal_voltage) / (board_config.dc_bus_overvoltage_trip_level / 0.9f - board_config.nominal_voltage), 0.0f);
+    }
 
     // Clamp the duty cycle
     brake_duty = std::clamp(brake_duty, 0.0f, 0.9f);
