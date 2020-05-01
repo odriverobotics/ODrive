@@ -5,14 +5,19 @@ from scipy.integrate import solve_ivp
 import matplotlib.pyplot as plt
 
 do_mass_spring = True
-do_PLL = True
+do_PLL = False
 
-bandwidth = 1
+bandwidth = 10
 
 pos_ref = 0
 vel_ref = 0
 init_pos = 1000
 init_vel = 0
+
+plotend = 1
+plotfrequency = 1000.0
+
+fig, ax1 = plt.subplots()
 
 if do_mass_spring:
     # 2nd order system response with manipulation of velocity only
@@ -36,10 +41,20 @@ if do_mass_spring:
         Xdot = [pos_dot, vel_dot]
         return Xdot
 
-    sol = solve_ivp(get_Xdot, (0.0, 10.0), [init_pos, init_vel], t_eval=np.linspace(0, 10, 100))
+    sol = solve_ivp(get_Xdot, (0.0, plotend), [init_pos, init_vel], t_eval=np.linspace(0, plotend, plotend*plotfrequency))
 
-    plt.plot(np.transpose(sol.t), np.transpose(sol.y[0,:]), label='physical mass pos')
-    plt.plot(np.transpose(sol.t), np.transpose(sol.y[1,:]), label='physical mass vel')
+    color = 'tab:red'
+    ax1.set_xlabel('time (s)')
+    ax1.set_ylabel('pos', color=color)
+    ax1.plot(np.transpose(sol.t), np.transpose(sol.y[0,:]), label='physical mass', color=color)
+    ax1.tick_params(axis='y', labelcolor=color)
+
+    ax2 = ax1.twinx()  # instantiate a second axes that shares the same x-axis
+
+    color = 'tab:blue'
+    ax2.set_ylabel('vel', color=color)  # we already handled the x-label with ax1
+    ax2.plot(np.transpose(sol.t), np.transpose(sol.y[1,:]), label='physical mass', color=color)
+    ax2.tick_params(axis='y', labelcolor=color)
 
 
 if do_PLL:
@@ -64,7 +79,7 @@ if do_PLL:
         Xdot = [pos_dot, vel_dot]
         return Xdot
 
-    sol = solve_ivp(get_Xdot, (0.0, 10.0), [init_pos, init_vel], t_eval=np.linspace(0, 10, 100))
+    sol = solve_ivp(get_Xdot, (0.0, plotend), [init_pos, init_vel], t_eval=np.linspace(0, plotend, plotend*plotfrequency))
 
     plt.plot(np.transpose(sol.t), np.transpose(sol.y[0,:]), label='PLL pos')
     plt.plot(np.transpose(sol.t), np.transpose(sol.y[1,:]), label='PLL vel')
@@ -72,4 +87,4 @@ if do_PLL:
 
 
 plt.legend()
-plt.show(block=False)
+plt.show(block=True)
