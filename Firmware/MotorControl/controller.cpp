@@ -110,7 +110,8 @@ bool Controller::anticogging_calibration(float pos_estimate, float vel_estimate)
 }
 
 void Controller::update_filter_gains() {
-    input_filter_ki_ = 2.0f * config_.input_filter_bandwidth;  // basic conversion to discrete time
+    float bandwidth = std::min(config_.input_filter_bandwidth, 0.25f * current_meas_hz);
+    input_filter_ki_ = 2.0f * bandwidth;  // basic conversion to discrete time
     input_filter_kp_ = 0.25f * (input_filter_ki_ * input_filter_ki_); // Critically damped
 }
 
@@ -175,7 +176,7 @@ bool Controller::update(float* current_setpoint_output) {
             float delta_vel = input_vel_ - vel_setpoint_; // Vel error
             float accel = input_filter_kp_*delta_pos + input_filter_ki_*delta_vel; // Feedback
             current_setpoint_ = accel * config_.inertia; // Accel
-            vel_setpoint_ += std::clamp(current_meas_period * accel, 2.0f * std::abs(delta_vel), -2.0f * std::abs(delta_vel)); // delta vel
+            vel_setpoint_ += current_meas_period * accel; // delta vel
             pos_setpoint_ += current_meas_period * vel_setpoint_; // Delta pos
         } break;
         case INPUT_MODE_MIRROR: {
