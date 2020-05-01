@@ -167,8 +167,8 @@ static inline auto make_obj_tree() {
             make_protocol_property("enable_ascii_protocol_on_usb", &board_config.enable_ascii_protocol_on_usb),
             make_protocol_property("dc_bus_undervoltage_trip_level", &board_config.dc_bus_undervoltage_trip_level),
             make_protocol_property("dc_bus_overvoltage_trip_level", &board_config.dc_bus_overvoltage_trip_level),
-            make_protocol_property("power_supply_min_current", &board_config.power_supply_min_current),
-            make_protocol_property("power_supply_max_current", &board_config.power_supply_max_current),
+            make_protocol_property("dc_max_negative_current", &board_config.dc_max_negative_current),
+            make_protocol_property("dc_max_positive_current", &board_config.dc_max_positive_current),
 #if HW_VERSION_MAJOR == 3 && HW_VERSION_MINOR >= 3
             make_protocol_object("gpio1_pwm_mapping", make_protocol_definitions(board_config.pwm_mappings[0])),
             make_protocol_object("gpio2_pwm_mapping", make_protocol_definitions(board_config.pwm_mappings[1])),

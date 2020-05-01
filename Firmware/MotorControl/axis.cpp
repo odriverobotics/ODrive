@@ -174,11 +174,11 @@ bool Axis::do_checks() {
         }
     }
 
-    if (Ibus_sum > board_config.power_supply_max_current) {
+    if (Ibus_sum > board_config.dc_max_positive_current) {
         error_ |= ERROR_DC_BUS_OVER_CURRENT;
     }
-    if (Ibus_sum < board_config.power_supply_min_current) {
-        error_ |= ERROR_DC_BUS_UNDER_CURRENT;
+    if (Ibus_sum < board_config.dc_max_negative_current) {
+        error_ |= ERROR_DC_BUS_OVER_REGEN_CURRENT;
     }
 
     // Sub-components should use set_error which will propegate to this error_

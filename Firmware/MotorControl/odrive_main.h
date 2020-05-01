@@ -101,8 +101,8 @@ struct BoardConfig_t {
                                                         //!< The closer the voltage approaches dc_bus_overvoltage_trip_level,
                                                         //!< the more power is sunk into the resistor.
                                                         //!< This feature is disabled if dc_bus_overvoltage_trip_level <= nominal_voltage.
-    float power_supply_max_current = INFINITY; // Max current [A] the power supply can source
-    float power_supply_min_current = -INFINITY; // Max current [A] the power supply can sink
+    float dc_max_positive_current = INFINITY; // Max current [A] the power supply can source
+    float dc_max_negative_current = -INFINITY; // Max current [A] the power supply can sink
     PWMMapping_t pwm_mappings[GPIO_COUNT];
     PWMMapping_t analog_mappings[GPIO_COUNT];
 };
