@@ -593,16 +593,15 @@ void update_brake_current() {
     
     // Don't start braking until -Ibus > regen_current_allowed
     float brake_current = -Ibus_sum - board_config.max_regen_current;
-    float brake_duty    = brake_current * std::abs(board_config.brake_resistance) / vbus_voltage;
+    float brake_duty = brake_current * board_config.brake_resistance / vbus_voltage;
     
     if (board_config.nominal_voltage < board_config.dc_bus_overvoltage_trip_level) {
-        brake_duty     += std::max((vbus_voltage - board_config.nominal_voltage) / (board_config.dc_bus_overvoltage_trip_level / 0.9f - board_config.nominal_voltage), 0.0f);
+        brake_duty += std::max((vbus_voltage - board_config.nominal_voltage) / (board_config.dc_bus_overvoltage_trip_level / 0.9f - board_config.nominal_voltage), 0.0f);
     }
 
-    // Clamp the duty cycle
-    brake_duty = std::clamp(brake_duty, 0.0f, 0.9f);
+    // Duty limit at 95% to allow bootstrap caps to charge
+    brake_duty = std::clamp(brake_duty, 0.0f, 0.95f);
     
-    // Duty limit at 90% to allow bootstrap caps to charge
     // If brake_duty is NaN, this expression will also evaluate to false
     int high_on = static_cast<int>(TIM_APB1_PERIOD_CLOCKS * (1.0f - brake_duty));
     int low_off = high_on - TIM_APB1_DEADTIME_CLOCKS;
