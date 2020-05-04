@@ -24,7 +24,7 @@ Please add a note of your changes below this heading if you make a Pull Request.
 * Added support for Flylint VSCode Extension for static code analysis
 * Using an STM32F405 .svd file allows CortexDebug to view registers during debugging
 * Added scripts for building via docker.
-* Brake resistor logic now attempts to clamp voltage according to `odrv.config.nominal_voltage`
+* Brake resistor logic now attempts to clamp voltage according to `odrv.config.dc_bus_overvoltage_ramp_start` and `odrv.config.dc_bus_overvoltage_ramp_end`
 
 ### Changed
 * Changed ratiometric `motor.config.current_lim_tolerance` to absolute `motor.config.current_lim_margin`
