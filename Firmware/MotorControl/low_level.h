@@ -23,6 +23,7 @@ extern const float adc_ref_voltage;
 /* Exported variables --------------------------------------------------------*/
 extern float vbus_voltage;
 extern bool brake_resistor_armed;
+extern bool brake_resistor_saturated;
 extern uint16_t adc_measurements_[ADC_CHANNEL_COUNT];
 /* Exported macro ------------------------------------------------------------*/
 /* Exported functions --------------------------------------------------------*/

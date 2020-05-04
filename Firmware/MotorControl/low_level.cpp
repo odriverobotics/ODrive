@@ -36,6 +36,7 @@ const float adc_ref_voltage = 3.3f;
 // Arbitrary non-zero inital value to avoid division by zero if ADC reading is late
 float vbus_voltage = 12.0f;
 bool brake_resistor_armed = false;
+bool brake_resistor_saturated = false;
 /* Private constant data -----------------------------------------------------*/
 static const GPIO_TypeDef* GPIOs_to_samp[] = { GPIOA, GPIOB, GPIOC };
 static const int num_GPIO = sizeof(GPIOs_to_samp) / sizeof(GPIOs_to_samp[0]); 
@@ -595,19 +596,27 @@ void update_brake_current() {
     float brake_current = -Ibus_sum - board_config.max_regen_current;
     float brake_duty = brake_current * board_config.brake_resistance / vbus_voltage;
     
-    if (board_config.nominal_voltage < board_config.dc_bus_overvoltage_trip_level) {
-        brake_duty += std::max((vbus_voltage - board_config.nominal_voltage) / (board_config.dc_bus_overvoltage_trip_level / 0.9f - board_config.nominal_voltage), 0.0f);
+    if (board_config.enable_dc_bus_overvoltage_ramp && (board_config.dc_bus_overvoltage_ramp_start < board_config.dc_bus_overvoltage_ramp_end)) {
+        brake_duty += std::fmax((vbus_voltage - board_config.dc_bus_overvoltage_ramp_start) / (board_config.dc_bus_overvoltage_ramp_end - board_config.dc_bus_overvoltage_ramp_start), 0.0f);
     }
 
-    // Duty limit at 95% to allow bootstrap caps to charge
-    brake_duty = std::clamp(brake_duty, 0.0f, 0.95f);
-    
-    // If brake_duty is NaN, this expression will also evaluate to false
-    int high_on = static_cast<int>(TIM_APB1_PERIOD_CLOCKS * (1.0f - brake_duty));
-    int low_off = high_on - TIM_APB1_DEADTIME_CLOCKS;
-    if (low_off < 0) low_off = 0;
-    safety_critical_apply_brake_resistor_timings(low_off, high_on);
+    if (!std::isnan(brake_duty)) {
+        if (brake_duty >= 0.95f) {
+            brake_resistor_saturated = true;
+        }
 
+        // Duty limit at 95% to allow bootstrap caps to charge
+        brake_duty = std::clamp(brake_duty, 0.0f, 0.95f);
+        
+        // If brake_duty is NaN, this expression will also evaluate to false
+        int high_on = static_cast<int>(TIM_APB1_PERIOD_CLOCKS * (1.0f - brake_duty));
+        int low_off = high_on - TIM_APB1_DEADTIME_CLOCKS;
+        if (low_off < 0) low_off = 0;
+        safety_critical_apply_brake_resistor_timings(low_off, high_on);
+    } else {
+        // Shuts off all motors AND brake resistor, sets error code on all motors.
+        low_level_fault(Motor::ERROR_BRAKE_DUTY_CYCLE_NAN);
+    }
 }
 
 

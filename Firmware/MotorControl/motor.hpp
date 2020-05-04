@@ -23,7 +23,8 @@ public:
         ERROR_UNEXPECTED_TIMER_CALLBACK     = 0x0200,
         ERROR_CURRENT_SENSE_SATURATION      = 0x0400,
         ERROR_INVERTER_OVER_TEMP            = 0x0800,
-        ERROR_CURRENT_LIMIT_VIOLATION       = 0x1000
+        ERROR_CURRENT_LIMIT_VIOLATION       = 0x1000,
+        ERROR_BRAKE_DUTY_CYCLE_NAN          = 0x2000,
     };
 
     enum MotorType_t {
