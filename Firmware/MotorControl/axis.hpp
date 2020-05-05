@@ -24,8 +24,6 @@ public:
         ERROR_MIN_ENDSTOP_PRESSED = 0x1000,
         ERROR_MAX_ENDSTOP_PRESSED = 0x2000,
         ERROR_ESTOP_REQUESTED = 0x4000,
-        ERROR_DC_BUS_OVER_REGEN_CURRENT = 0x8000, // too much current pushed into the power supply
-        ERROR_DC_BUS_OVER_CURRENT = 0x10000, // too much current pulled out of the power supply
         ERROR_HOMING_WITHOUT_ENDSTOP = 0x20000, // the min endstop was not enabled during homing
     };
 

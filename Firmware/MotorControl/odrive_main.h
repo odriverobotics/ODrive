@@ -101,11 +101,14 @@ struct BoardConfig_t {
      * the ODrive will sink more power than usual into the the brake resistor
      * in an attempt to bring the voltage down again.
      * 
-     * This setting is active even if all motors are disarmed.
-     * 
      * The brake duty cycle is increased by the following amount:
      *  vbus_voltage == dc_bus_overvoltage_ramp_start  =>  brake_duty_cycle += 0%
      *  vbus_voltage == dc_bus_overvoltage_ramp_end  =>  brake_duty_cycle += 100%
+     * 
+     * Remarks:
+     *  - This setting is active even if all motors are disarmed.
+     *  - brake_resistance must be non-zero, otherwise this will immediately
+     *    result in overcurrent
      */
     bool enable_dc_bus_overvoltage_ramp = false;
     float dc_bus_overvoltage_ramp_start = 1.07f * HW_VERSION_VOLTAGE; //!< See `enable_dc_bus_overvoltage_ramp`.
@@ -116,7 +119,7 @@ struct BoardConfig_t {
                                                                     //!< otherwise the ramp feature is disabled.
 
     float dc_max_positive_current = INFINITY; // Max current [A] the power supply can source
-    float dc_max_negative_current = -INFINITY; // Max current [A] the power supply can sink
+    float dc_max_negative_current = -0.000001f; // Max current [A] the power supply can sink. You most likely want a non-positive value here. Set to -INFINITY to disable.
     PWMMapping_t pwm_mappings[GPIO_COUNT];
     PWMMapping_t analog_mappings[GPIO_COUNT];
 };

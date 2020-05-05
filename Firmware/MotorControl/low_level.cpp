@@ -35,6 +35,7 @@ const float adc_ref_voltage = 3.3f;
 // This value is updated by the DC-bus reading ADC.
 // Arbitrary non-zero inital value to avoid division by zero if ADC reading is late
 float vbus_voltage = 12.0f;
+float ibus_ = 0.0f; // exposed for monitoring only
 bool brake_resistor_armed = false;
 bool brake_resistor_saturated = false;
 /* Private constant data -----------------------------------------------------*/
@@ -600,23 +601,38 @@ void update_brake_current() {
         brake_duty += std::fmax((vbus_voltage - board_config.dc_bus_overvoltage_ramp_start) / (board_config.dc_bus_overvoltage_ramp_end - board_config.dc_bus_overvoltage_ramp_start), 0.0f);
     }
 
-    if (!std::isnan(brake_duty)) {
-        if (brake_duty >= 0.95f) {
-            brake_resistor_saturated = true;
-        }
-
-        // Duty limit at 95% to allow bootstrap caps to charge
-        brake_duty = std::clamp(brake_duty, 0.0f, 0.95f);
-        
-        // If brake_duty is NaN, this expression will also evaluate to false
-        int high_on = static_cast<int>(TIM_APB1_PERIOD_CLOCKS * (1.0f - brake_duty));
-        int low_off = high_on - TIM_APB1_DEADTIME_CLOCKS;
-        if (low_off < 0) low_off = 0;
-        safety_critical_apply_brake_resistor_timings(low_off, high_on);
-    } else {
+    if (std::isnan(brake_duty)) {
         // Shuts off all motors AND brake resistor, sets error code on all motors.
         low_level_fault(Motor::ERROR_BRAKE_DUTY_CYCLE_NAN);
+        return;
     }
+
+    if (brake_duty >= 0.95f) {
+        brake_resistor_saturated = true;
+    }
+
+    // Duty limit at 95% to allow bootstrap caps to charge
+    brake_duty = std::clamp(brake_duty, 0.0f, 0.95f);
+
+    // Special handling to avoid the case 0.0/0.0 == NaN.
+    Ibus_sum += brake_duty ? (brake_duty * vbus_voltage / board_config.brake_resistance) : 0.0f;
+
+    ibus_ = Ibus_sum;
+
+    if (Ibus_sum > board_config.dc_max_positive_current) {
+        low_level_fault(Motor::ERROR_DC_BUS_OVER_CURRENT);
+        return;
+    }
+    if (Ibus_sum < board_config.dc_max_negative_current) {
+        low_level_fault(Motor::ERROR_DC_BUS_OVER_REGEN_CURRENT);
+        return;
+    }
+    
+    // If brake_duty is NaN, this expression will also evaluate to false
+    int high_on = static_cast<int>(TIM_APB1_PERIOD_CLOCKS * (1.0f - brake_duty));
+    int low_off = high_on - TIM_APB1_DEADTIME_CLOCKS;
+    if (low_off < 0) low_off = 0;
+    safety_critical_apply_brake_resistor_timings(low_off, high_on);
 }
 
 

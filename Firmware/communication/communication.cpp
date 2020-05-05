@@ -116,6 +116,7 @@ public:
 static inline auto make_obj_tree() {
     return make_protocol_member_list(
         make_protocol_ro_property("vbus_voltage", &vbus_voltage),
+        make_protocol_ro_property("ibus", &ibus_),
         make_protocol_ro_property("serial_number", &serial_number),
         make_protocol_ro_property("hw_version_major", &hw_version_major),
         make_protocol_ro_property("hw_version_minor", &hw_version_minor),
