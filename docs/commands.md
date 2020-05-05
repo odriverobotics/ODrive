@@ -40,6 +40,8 @@ The current state of an axis is indicated by `<axis>.current_state`. The user ca
     * Can only be entered if the motor is calibrated (`<axis>.motor.is_calibrated`) or the motor direction is unspecified (`<axis>.motor.config.direction == 1`)
  10. `AXIS_STATE_ENCODER_DIR_FIND` Run encoder direction search.
     * Can only be entered if the motor is calibrated (`<axis>.motor.is_calibrated`).
+ 11. `AXIS_STATE_HOMING` Run axis homing function.
+    * Endstops must be enabled to use this feature.
 
 
 ### Startup Procedure

@@ -51,7 +51,7 @@ The debouncing time for this endstop.  Most switches exhibit some sort of bounce
 ### is_active_high
 This is how you configure the endstop to be either "NPN" or "PNP".  An "NPN" configuration would be `is_active_high = False` whereas a PNP configuration is `is_active_high = True`.  Refer to the following table for more information:
 
-3D printer endstops (like those that come with a RAMPS 1.4) are typically configuration **4**.
+3D printer endstops (like those that come with a RAMPS 1.4) are typically configuration **4**. Typically configuration **1** or **3** is preferred when using mechanical switches as the most common failure mode leaves the switch open.
 
 ![Endstop configuration](Endstop_configuration.png)  
 
