@@ -32,71 +32,40 @@ Receive PDO 0x200 + nodeID = 0x223, which does not conflict with the range [0x20
 Be careful that you don't assign too many nodeIDs per PDO group.  Four CAN Simple nodes (32*4) is all of the available address space of a single PDO.  If the bus is strictly ODrive CAN Simple nodes, a simple sequential Node ID assignment will work fine.
 
 ### Messages
-CMD ID | Name | Sender | Signals | Start byte
---:    | :--  | :--  | :-- | :--
-0x000 | CANOpen NMT Message\*\* | Master | - | -
-0x001 | ODrive Heartbeat Message | Axis | Axis Error<br>Axis Current State | 0<br>4
-0x002 | ODrive Estop Message | Master | - | -
-0x003 | Get Motor Error\* | Axis  | Motor Error | 0
-0x004 | Get Encoder Error\*  | Axis | Encoder Error | 0
-0x005 | Get Sensorless Error\* | Axis | Sensorless Error | 0
-0x006 | Set Axis Node ID | Master | Axis CAN Node ID | 0
-0x007 | Set Axis Requested State | Master | Axis Requested State | 0
-0x008 | Set Axis Startup Config | Master | - Not yet implemented - | -
-0x009 | Get Encoder Estimates\* | Master | Encoder Pos Estimate<br>Encoder Vel Estimate | 0<br>4
-0x00A | Get Encoder Count\* | Master | Encoder Shadow Count<br>Encoder Count in CPR | 0<br>4
-0x00B | Set Controller Modes | Master | Control Mode<br>Input Mode | 0<br>4
-0x00C | Set Input Pos | Master | Input Pos<br>Vel FF<br>Current FF | 0<br>4<br>6
-0x00D | Set Input Vel | Master | Input Vel<br>Current FF | 0<br>4
-0x00E | Set Input Current | Master | Input Current | 0
-0x00F | Set Velocity Limit | Master | Velocity Limit | 0
-0x010 | Start Anticogging | Master | - | -
-0x011 | Set Traj Vel Limit | Master | Traj Vel Limit | 0
-0x012 | Set Traj Accel Limits | Master | Traj Accel Limit<br>Traj Decel Limit | 0<br>4
-0x013 | Set Traj A per Count / s^2 | Master | Traj A per CSS | 0
-0x014 | Get IQ\* | Axis | Iq Setpoint<br>Iq Measured | 0<br>4
-0x015 | Get Sensorless Estimates\* | Master | Sensorless Pos Estimate<br>Sensorless Vel Estimate | 0<br>4
-0x016 | Reboot ODrive | Master\*\*\* | - | -
-0x017 | Get Vbus Voltage | Master\*\*\* | Vbus Voltage | 0
-0x018 | Clear Errors | Master | - | -
-0x700 | CANOpen Heartbeat Message\*\* | Slave | - | - 
+
+CMD ID | Name | Sender | Signals | Start byte | Signal Type | Bits | Factor | Offset | Byte Order
+--:    | :--  | :--  | :-- | :-- | :-- | :-- | :-- | :-- | :--
+0x000 | CANOpen NMT Message\*\* | Master | - | - | - | - | - | - | -
+0x001 | ODrive Heartbeat Message | Axis | Axis Error<br>Axis Current State | 0<br>4 | Unsigned Int<br>Unsigned Int | 32<br>32 | 1<br>1 | 0<br>0 | Intel<br>Intel
+0x002 | ODrive Estop Message | Master | - | - | - | - | - | - | -
+0x003 | Get Motor Error\* | Axis  | Motor Error | 0 | Unsigned Int | 32 | 1 | 0 | Intel
+0x004 | Get Encoder Error\*  | Axis | Encoder Error | 0 | Unsigned Int | 32 | 1 | 0 | Intel
+0x005 | Get Sensorless Error\* | Axis | Sensorless Error | 0 | Unsigned Int | 32 | 1 | 0 | Intel
+0x006 | Set Axis Node ID | Master | Axis CAN Node ID | 0 | Unsigned Int | 16 | 1 | 0 | Intel
+0x007 | Set Axis Requested State | Master | Axis Requested State | 0 | Unsigned Int | 32 | 1 | 0 | Intel
+0x008 | Set Axis Startup Config | Master | - Not yet implemented - | - | - | - | - | - | -
+0x009 | Get Encoder Estimates\* | Master | Encoder Pos Estimate<br>Encoder Vel Estimate | 0<br>4 | IEEE 754 Float<br>IEEE 754 Float | 32<br>32 | 1<br>1 | 0<br>0 | Intel<br>Intel
+0x00A | Get Encoder Count\* | Master | Encoder Shadow Count<br>Encoder Count in CPR | 0<br>4 | Signed Int<br>Signed Int | 32<br>32 | 1<br>1 | 0<br>0 | Intel<br>Intel
+0x00B | Set Controller Modes | Master | Control Mode<br>Input Mode | 0<br>4 | Signed Int<br>Signed Int | 32<br>32 | 1<br>1 | 0<br>0 | Intel<br>Intel
+0x00C | Set Input Pos | Master | Input Pos<br>Vel FF<br>Current FF | 0<br>4<br>6 | Signed Int<br>Signed Int<br>Signed Int | 32<br>16<br>16 | 1<br>0.1<br>0.01 | 0<br>0<br>0 | Intel<br>Intel<br>Intel
+0x00D | Set Input Vel | Master | Input Vel<br>Current FF | 0<br>4 | Signed Int<br>Signed Int | 32<br>32 | 0.01<br>0.01 | 0<br>0 | Intel<br>Intel
+0x00E | Set Input Current | Master | Input Current | 0 |  Signed Int | 32 | 0.01 | 0 | Intel
+0x00F | Set Velocity Limit | Master | Velocity Limit | 0 | IEEE 754 Float | 32 | 1 | 0 | Intel
+0x010 | Start Anticogging | Master | - | - | - | - | - | - | -
+0x011 | Set Traj Vel Limit | Master | Traj Vel Limit | 0 | IEEE 754 Float | 32 | 1 | 0 | Intel
+0x012 | Set Traj Accel Limits | Master | Traj Accel Limit<br>Traj Decel Limit | 0<br>4 | IEEE 754 Float<br>IEEE 754 Float | 32<br>32 | 1<br>1 | 0<br>0 | Intel<br>Intel
+0x013 | Set Traj A per Count / s^2 | Master | Traj A per CSS | 0 | IEEE 754 Float | 32 | 1 | 0 | Intel
+0x014 | Get IQ\* | Axis | Iq Setpoint<br>Iq Measured | 0<br>4 | IEEE 754 Float<br>IEEE 754 Float | 32<br>32 | 1<br>1 | 0<br>0 | Intel<br>Intel
+0x015 | Get Sensorless Estimates\* | Master | Sensorless Pos Estimate<br>Sensorless Vel Estimate | 0<br>4 | IEEE 754 Float<br>IEEE 754 Float | 32<br>32 | 1<br>1 | 0<br>0 | Intel<br>Intel
+0x016 | Reboot ODrive | Master\*\*\* | - | - | - | - | - | - | -
+0x017 | Get Vbus Voltage | Master\*\*\* | Vbus Voltage | 0 | IEEE 754 Float | 32 | 1 | 0 | Intel
+0x018 | Clear Errors | Master | - | - | - | - | - | - | -
+0x700 | CANOpen Heartbeat Message\*\* | Slave | - | -  | - | - | - | - | -
+-|-|-|----------------------------------|-|--------------------|-|-|-|_
 
 \* Note: These messages are call & response.  The Master node sends a message with the RTR bit set, and the axis responds with the same ID and specified payload.  
 \*\* Note:  These CANOpen messages are reserved to avoid bus collisions with CANOpen devices.  They are not used by CAN Simple.
 \*\*\* Note:  These messages can be sent to either address on a given ODrive board.
-
----
-### Signals
-Name | Type | Bits | Factor | Offset | Byte Order
-:-- | :-- | :--: | --: | :--: | :--:
-Axis Error | Unsigned Int | 32 | 1 | 0 | Intel
-Axis Current State | Unsigned Int | 32 | 1 | 0 | Intel
-Motor Error | Unsigned Int | 32 | 1 | 0 | Intel
-Encoder Error | Unsigned Int | 32 | 1 | 0 | Intel
-Sensorless Error | Unsigned Int | 32 | 1 | 0 | Intel
-Axis CAN Node ID | Unsigned Int | 16 | 1 | 0 | Intel
-Axis Requested State | Unsigned Int | 32 | 1 | 0 | Intel
-Encoder Pos Estimate | IEEE 754 Float | 32 | 1 | 0 | Intel
-Encoder Vel Estimate | IEEE 754 Float | 32 | 1 | 0 | Intel
-Encoder Shadow Count | Signed Int | 32 | 1 | 0 | Intel
-Encoder Count In CPR | Signed Int | 32 | 1 | 0 | Intel
-Control Mode | Signed Int | 32 | 1 | 0 | Intel
-Input Mode | Signed Int | 32 | 1 | 0 | Intel
-Input Pos | Signed Int | 32 | 1 | 0 | Intel
-Vel FF | Signed Int | 16 | 0.1 | 0 | Intel
-Current FF | Signed Int | 16 | 0.01 | 0 | Intel
-Input Vel | Signed Int | 32 | 0.01 | 0 | Intel
-Input Current | Signed Int | 32 | 0.01 | 0 | Intel
-Velocity Limit | IEEE 754 Float | 32 | 1 | 0 | Intel
-Traj Vel Limit | IEEE 754 Float | 32 | 1 | 0 | Intel
-Traj Accel Limit | IEEE 754 Float | 32 | 1 | 0 | Intel
-Traj Decel Limit | IEEE 754 Float | 32 | 1 | 0 | Intel
-Traj A per CSS | IEEE 754 Float | 32 | 1 | 0 | Intel
-Iq Setpoint | IEEE 754 Float | 32 | 1 | 0 | Intel
-Iq Measured | IEEE 754 Float | 32 | 1 | 0 | Intel
-Sensorless Pos Estimate | IEEE 754 Float | 32 | 1 | 0 | Intel
-Sensorless Vel Estimate | IEEE 754 Float | 32 | 1 | 0 | Intel
-Vbus Voltage | IEEE 754 Float | 32 | 1 | 0 | Intel
 
 ---
 ## Configuring ODrive for CAN
