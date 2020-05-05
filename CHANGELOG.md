@@ -19,7 +19,7 @@ Please add a note of your changes below this heading if you make a Pull Request.
 * Gain scheduling for anti-hunt when close to 0 position error
 * Velocity Limiting in Current Control mode according to `vel_limit` and `vel_gain`
 * Regen current limiting according to `max_regen_limit`, in Amps
-* DC Bus hard current limiting according to `power_supply_min_current` and `power_supply_max_current`
+* DC Bus hard current limiting according to `dc_max_negative_current` and `dc_max_positive_current`
 * Unit Testing with Doctest has been started for select algorithms, see [Firmware/Tests/test_runner.cpp](Firmware/Tests/test_runner.cpp)
 * Added support for Flylint VSCode Extension for static code analysis
 * Using an STM32F405 .svd file allows CortexDebug to view registers during debugging
