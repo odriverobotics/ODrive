@@ -38,6 +38,7 @@ Please add a note of your changes below this heading if you make a Pull Request.
 * Fix IPython `RuntimeWarning` that would occur every time `odrivetool` was started.
 * Reboot on `erase_configuration()`. This avoids unexpected behavior of a subsequent `save_configuration()` call, since the configuration is only erased from NVM, not from RAM.
 * Change `motor.get_inverter_temp()` to use a property which was already being sampled at `motor.inverter_temp`
+* Fixed a numerical issue in the trajectory planner that could cause sudden jumps of the position setpoint
 
 # Releases
 ## [0.4.11] - 2019-07-25
