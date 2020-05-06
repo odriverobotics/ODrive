@@ -132,7 +132,7 @@ class Motor;
 class ODriveCAN;
 
 constexpr size_t AXIS_COUNT = 2;
-extern Axis *axes[AXIS_COUNT];
+extern std::array<Axis*, AXIS_COUNT> axes;
 extern ODriveCAN *odCAN;
 
 // if you use the oscilloscope feature you can bump up this value
