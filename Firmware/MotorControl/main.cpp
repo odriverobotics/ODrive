@@ -242,7 +242,7 @@ int odrive_main(void) {
         axes[i]->setup();
     }
 
-    for(auto axis : axes){
+    for(auto& axis : axes){
         axis->encoder_.setup();
     }
 
