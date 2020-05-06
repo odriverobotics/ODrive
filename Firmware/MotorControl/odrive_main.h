@@ -106,9 +106,9 @@ struct BoardConfig_t {
      *  vbus_voltage == dc_bus_overvoltage_ramp_end  =>  brake_duty_cycle += 100%
      * 
      * Remarks:
-     *  - This setting is active even if all motors are disarmed.
-     *  - brake_resistance must be non-zero, otherwise this will immediately
-     *    result in overcurrent
+     *  - This setting is active even when all motors are disarmed.
+     *  - brake_resistance must be non-zero, otherwise this will result in an
+     *    overcurrent fault as soon as vbus_voltage exceeds dc_bus_overvoltage_ramp_start.
      */
     bool enable_dc_bus_overvoltage_ramp = false;
     float dc_bus_overvoltage_ramp_start = 1.07f * HW_VERSION_VOLTAGE; //!< See `enable_dc_bus_overvoltage_ramp`.

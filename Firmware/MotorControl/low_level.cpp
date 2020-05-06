@@ -628,7 +628,6 @@ void update_brake_current() {
         return;
     }
     
-    // If brake_duty is NaN, this expression will also evaluate to false
     int high_on = static_cast<int>(TIM_APB1_PERIOD_CLOCKS * (1.0f - brake_duty));
     int low_off = high_on - TIM_APB1_DEADTIME_CLOCKS;
     if (low_off < 0) low_off = 0;
