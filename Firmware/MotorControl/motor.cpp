@@ -484,22 +484,11 @@ bool Motor::update(float current_setpoint, float phase, float phase_vel) {
     float pwm_phase = phase + 1.5f * current_meas_period * phase_vel;
 
     // Execute current command
-    // TODO: move this into the mot
-    if (config_.motor_type == MOTOR_TYPE_HIGH_CURRENT) {
-        if(!FOC_current(id, iq, phase, pwm_phase)){
-            return false;
-        }
-    } else if (config_.motor_type == MOTOR_TYPE_ACIM) {
-        if(!FOC_current(id, iq, phase, pwm_phase)){
-            return false;
-        }
-    } else if (config_.motor_type == MOTOR_TYPE_GIMBAL) {
-        //In gimbal motor mode, current is reinterptreted as voltage.
-        if(!FOC_voltage(id, iq, pwm_phase))
-            return false;
-    } else {
-        set_error(ERROR_NOT_IMPLEMENTED_MOTOR_TYPE);
-        return false;
+    switch(config_.motor_type){
+        case MOTOR_TYPE_HIGH_CURRENT: return FOC_current(id, iq, phase, pwm_phase); break;
+        case MOTOR_TYPE_ACIM: return FOC_current(id, iq, phase, pwm_phase); break;
+        case MOTOR_TYPE_GIMBAL: return FOC_voltage(id, iq, pwm_phase); break;
+        default: set_error(ERROR_NOT_IMPLEMENTED_MOTOR_TYPE); return false; break;
     }
     return true;
 }
