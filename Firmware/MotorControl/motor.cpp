@@ -447,9 +447,8 @@ bool Motor::update(float current_setpoint, float phase, float phase_vel) {
 
     // TODO: 2-norm vs independent clamping (current could be sqrt(2) bigger)
     float ilim = effective_current_lim();
-    // TODO: use std::clamp (C++17)
-    float id = MACRO_MIN(MACRO_MAX(current_control_.Id_setpoint, -ilim), ilim);
-    float iq = MACRO_MIN(MACRO_MAX(current_setpoint, -ilim), ilim);
+    float id = std::clamp(current_control_.Id_setpoint, -ilim, ilim);
+    float iq = std::clamp(current_setpoint, -ilim, ilim);
 
     if (config_.motor_type == MOTOR_TYPE_ACIM) {
         // Note that the effect of the current commands on the real currents is actually 1.5 PWM cycles later
@@ -460,7 +459,7 @@ bool Motor::update(float current_setpoint, float phase, float phase_vel) {
             float abs_iq = fabsf(iq);
             float gain = abs_iq > id ? config_.acim_autoflux_attack_gain : config_.acim_autoflux_decay_gain;
             id += gain * (abs_iq - id) * current_meas_period;
-            id = MACRO_MIN(MACRO_MAX(id, config_.acim_autoflux_min_Id), ilim);
+            id = std::clamp(id, config_.acim_autoflux_min_Id, ilim);
             current_control_.Id_setpoint = id;
         }
 
