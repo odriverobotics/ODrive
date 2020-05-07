@@ -32,7 +32,7 @@ to publish packages with the name odrive.
 """
 
 # Set to true to make the current release
-is_release = False
+is_release = True
 
 # Set to true to make an official post-release, rather than dev of new version
 is_post_release = False
