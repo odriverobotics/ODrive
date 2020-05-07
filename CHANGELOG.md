@@ -18,7 +18,7 @@ Please add a note of your changes below this heading if you make a Pull Request.
 * [CAN Communication with CANSimple stack](can-protocol.md)
 * Gain scheduling for anti-hunt when close to 0 position error
 * Velocity Limiting in Current Control mode according to `vel_limit` and `vel_gain`
-* Regen current limiting according to `max_regen_limit`, in Amps
+* Regen current limiting according to `max_regen_current`, in Amps
 * DC Bus hard current limiting according to `dc_max_negative_current` and `dc_max_positive_current`
 * Unit Testing with Doctest has been started for select algorithms, see [Firmware/Tests/test_runner.cpp](Firmware/Tests/test_runner.cpp)
 * Added support for Flylint VSCode Extension for static code analysis
