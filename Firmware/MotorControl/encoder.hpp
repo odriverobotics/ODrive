@@ -56,7 +56,7 @@ public:
     };
 
     Encoder(const EncoderHardwareConfig_t& hw_config,
-            Config_t& config, Motor::Config_t motor_config);
+            Config_t& config, const Motor::Config_t& motor_config);
     
     void setup();
     void set_error(Error_t error);

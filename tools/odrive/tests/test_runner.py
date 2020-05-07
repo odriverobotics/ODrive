@@ -410,7 +410,7 @@ class TeensyComponent(Component):
         env['ARDUINO_COMPILE_DESTINATION'] = hexfile
         run_shell(
             ['arduino', '--board', 'teensy:avr:teensy40', '--verify', sketchfile],
-            logger, env = env, timeout = 60)
+            logger, env = env, timeout = 120)
 
     def program(self, hex_file_path: str, logger: Logger):
         """

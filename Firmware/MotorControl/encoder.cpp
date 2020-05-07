@@ -3,7 +3,7 @@
 
 
 Encoder::Encoder(const EncoderHardwareConfig_t& hw_config,
-                Config_t& config, Motor::Config_t motor_config) :
+                Config_t& config, const Motor::Config_t& motor_config) :
         hw_config_(hw_config),
         config_(config)
 {

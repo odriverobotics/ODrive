@@ -95,9 +95,31 @@ struct BoardConfig_t {
                                                                         //<! This protects against cases in which the power supply fails to dissipate
                                                                         //<! the brake power if the brake resistor is disabled.
                                                                         //<! The default is 26V for the 24V board version and 52V for the 48V board version.
-    float nominal_voltage = 1.07f * HW_VERSION_VOLTAGE;
-    float power_supply_max_current = INFINITY; // Max current [A] the power supply can source
-    float power_supply_min_current = -INFINITY; // Max current [A] the power supply can sink
+
+    /**
+     * If enabled, if the measured DC voltage exceeds `dc_bus_overvoltage_ramp_start`,
+     * the ODrive will sink more power than usual into the the brake resistor
+     * in an attempt to bring the voltage down again.
+     * 
+     * The brake duty cycle is increased by the following amount:
+     *  vbus_voltage == dc_bus_overvoltage_ramp_start  =>  brake_duty_cycle += 0%
+     *  vbus_voltage == dc_bus_overvoltage_ramp_end  =>  brake_duty_cycle += 100%
+     * 
+     * Remarks:
+     *  - This setting is active even when all motors are disarmed.
+     *  - brake_resistance must be non-zero, otherwise this will result in an
+     *    overcurrent fault as soon as vbus_voltage exceeds dc_bus_overvoltage_ramp_start.
+     */
+    bool enable_dc_bus_overvoltage_ramp = false;
+    float dc_bus_overvoltage_ramp_start = 1.07f * HW_VERSION_VOLTAGE; //!< See `enable_dc_bus_overvoltage_ramp`.
+                                                                      //!< Do not set this lower than your usual vbus_voltage,
+                                                                      //!< unless you like fried brake resistors.
+    float dc_bus_overvoltage_ramp_end = 1.07f * HW_VERSION_VOLTAGE; //!< See `enable_dc_bus_overvoltage_ramp`.
+                                                                    //!< Must be larger than `dc_bus_overvoltage_ramp_start`,
+                                                                    //!< otherwise the ramp feature is disabled.
+
+    float dc_max_positive_current = INFINITY; // Max current [A] the power supply can source
+    float dc_max_negative_current = -0.000001f; // Max current [A] the power supply can sink. You most likely want a non-positive value here. Set to -INFINITY to disable.
     PWMMapping_t pwm_mappings[GPIO_COUNT];
     PWMMapping_t analog_mappings[GPIO_COUNT];
 };
@@ -110,7 +132,7 @@ class Motor;
 class ODriveCAN;
 
 constexpr size_t AXIS_COUNT = 2;
-extern Axis *axes[AXIS_COUNT];
+extern std::array<Axis*, AXIS_COUNT> axes;
 extern ODriveCAN *odCAN;
 
 // if you use the oscilloscope feature you can bump up this value

@@ -23,7 +23,10 @@ public:
         ERROR_UNEXPECTED_TIMER_CALLBACK     = 0x0200,
         ERROR_CURRENT_SENSE_SATURATION      = 0x0400,
         ERROR_INVERTER_OVER_TEMP            = 0x0800,
-        ERROR_CURRENT_LIMIT_VIOLATION       = 0x1000
+        ERROR_CURRENT_LIMIT_VIOLATION       = 0x1000,
+        ERROR_BRAKE_DUTY_CYCLE_NAN          = 0x2000,
+        ERROR_DC_BUS_OVER_REGEN_CURRENT     = 0x4000, // too much current pushed into the power supply
+        ERROR_DC_BUS_OVER_CURRENT           = 0x8000, // too much current pulled out of the power supply
     };
 
     enum MotorType_t {

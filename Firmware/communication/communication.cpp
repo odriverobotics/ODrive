@@ -116,6 +116,7 @@ public:
 static inline auto make_obj_tree() {
     return make_protocol_member_list(
         make_protocol_ro_property("vbus_voltage", &vbus_voltage),
+        make_protocol_ro_property("ibus", &ibus_),
         make_protocol_ro_property("serial_number", &serial_number),
         make_protocol_ro_property("hw_version_major", &hw_version_major),
         make_protocol_ro_property("hw_version_minor", &hw_version_minor),
@@ -126,6 +127,7 @@ static inline auto make_obj_tree() {
         make_protocol_ro_property("fw_version_unreleased", &fw_version_unreleased),
         make_protocol_ro_property("user_config_loaded", const_cast<const bool *>(&user_config_loaded_)),
         make_protocol_ro_property("brake_resistor_armed", &brake_resistor_armed),
+        make_protocol_property("brake_resistor_saturated", &brake_resistor_saturated),
         make_protocol_object("system_stats",
             make_protocol_ro_property("uptime", &system_stats_.uptime),
             make_protocol_ro_property("min_heap_space", &system_stats_.min_heap_space),
@@ -159,7 +161,6 @@ static inline auto make_obj_tree() {
         ),
         make_protocol_object("config",
             make_protocol_property("brake_resistance", &board_config.brake_resistance),
-            make_protocol_property("nominal_voltage", &board_config.nominal_voltage),
             make_protocol_property("max_regen_current", &board_config.max_regen_current),
             // TODO: changing this currently requires a reboot - fix this
             make_protocol_property("enable_uart", &board_config.enable_uart),
@@ -167,8 +168,11 @@ static inline auto make_obj_tree() {
             make_protocol_property("enable_ascii_protocol_on_usb", &board_config.enable_ascii_protocol_on_usb),
             make_protocol_property("dc_bus_undervoltage_trip_level", &board_config.dc_bus_undervoltage_trip_level),
             make_protocol_property("dc_bus_overvoltage_trip_level", &board_config.dc_bus_overvoltage_trip_level),
-            make_protocol_property("power_supply_min_current", &board_config.power_supply_min_current),
-            make_protocol_property("power_supply_max_current", &board_config.power_supply_max_current),
+            make_protocol_property("enable_dc_bus_overvoltage_ramp", &board_config.enable_dc_bus_overvoltage_ramp),
+            make_protocol_property("dc_bus_overvoltage_ramp_start", &board_config.dc_bus_overvoltage_ramp_start),
+            make_protocol_property("dc_bus_overvoltage_ramp_end", &board_config.dc_bus_overvoltage_ramp_end),
+            make_protocol_property("dc_max_negative_current", &board_config.dc_max_negative_current),
+            make_protocol_property("dc_max_positive_current", &board_config.dc_max_positive_current),
 #if HW_VERSION_MAJOR == 3 && HW_VERSION_MINOR >= 3
             make_protocol_object("gpio1_pwm_mapping", make_protocol_definitions(board_config.pwm_mappings[0])),
             make_protocol_object("gpio2_pwm_mapping", make_protocol_definitions(board_config.pwm_mappings[1])),

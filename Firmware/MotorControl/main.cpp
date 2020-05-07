@@ -23,7 +23,7 @@ bool user_config_loaded_;
 
 SystemStats_t system_stats_;
 
-Axis *axes[AXIS_COUNT];
+std::array<Axis*, AXIS_COUNT> axes;
 ODriveCAN *odCAN = nullptr;
 
 typedef Config<
@@ -242,7 +242,7 @@ int odrive_main(void) {
         axes[i]->setup();
     }
 
-    for(auto axis : axes){
+    for(auto& axis : axes){
         axis->encoder_.setup();
     }
 
