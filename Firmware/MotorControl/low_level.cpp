@@ -262,6 +262,20 @@ void start_pwm(TIM_HandleTypeDef* htim) {
     HAL_TIM_PWM_Start_IT(htim, TIM_CHANNEL_4);
 }
 
+/*
+ * Initial intention of this function:
+ * Synchronize TIM1, TIM8 and TIM13 such that:
+ *  1. The triangle waveform of TIM1 leads the triangle waveform of TIM8 by a
+ *     90° phase shift.
+ *  2. The timer update events of TIM1 and TIM8 are symmetrically interleaved.
+ *  3. Each TIM13 reload coincides with a TIM1 lower update event.
+ * 
+ * However right now this function only ensures point (1) and (3) but because
+ * TIM1 and TIM3 only trigger an update on every third reload, this does not
+ * imply (or even allow for) (2).
+ * 
+ * TODO: revisit the timing topic in general.
+ */
 void sync_timers(TIM_HandleTypeDef* htim_a, TIM_HandleTypeDef* htim_b,
                  uint16_t TIM_CLOCKSOURCE_ITRx, uint16_t count_offset,
                  TIM_HandleTypeDef* htim_refbase) {
@@ -495,6 +509,10 @@ void pwm_trig_adc_cb(ADC_HandleTypeDef* hadc, bool injected) {
         else if (&axis == axes[0] && !counting_down)
             update_timings = true; // update timings of M1
 
+        // TODO: this is out of place here. However when moving it somewhere
+        // else we have to consider the timing requirements to prevent the SPI
+        // transfers of axis0 and axis1 from conflicting.
+        // Also see comment on sync_timers.
         if((current_meas_not_DC_CAL && !axis_num) ||
                 (axis_num && !current_meas_not_DC_CAL)){
             axis.encoder_.abs_spi_start_transaction();
