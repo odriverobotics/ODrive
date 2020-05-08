@@ -18,17 +18,17 @@ Please add a note of your changes below this heading if you make a Pull Request.
 * [CAN Communication with CANSimple stack](can-protocol.md)
 * Gain scheduling for anti-hunt when close to 0 position error
 * Velocity Limiting in Current Control mode according to `vel_limit` and `vel_gain`
-* Regen current limiting according to `max_regen_limit`, in Amps
+* Regen current limiting according to `max_regen_current`, in Amps
 * DC Bus hard current limiting according to `dc_max_negative_current` and `dc_max_positive_current`
+* Brake resistor logic now attempts to clamp voltage according to `odrv.config.dc_bus_overvoltage_ramp_start` and `odrv.config.dc_bus_overvoltage_ramp_end`
 * Unit Testing with Doctest has been started for select algorithms, see [Firmware/Tests/test_runner.cpp](Firmware/Tests/test_runner.cpp)
 * Added support for Flylint VSCode Extension for static code analysis
 * Using an STM32F405 .svd file allows CortexDebug to view registers during debugging
 * Added scripts for building via docker.
-* Brake resistor logic now attempts to clamp voltage according to `odrv.config.dc_bus_overvoltage_ramp_start` and `odrv.config.dc_bus_overvoltage_ramp_end`
 
 ### Changed
 * Changed ratiometric `motor.config.current_lim_tolerance` to absolute `motor.config.current_lim_margin`
-* Moved `controller.vel_ramp_enable` into `controller.config`.
+* Moved `controller.vel_ramp_enable` to INPUT_MODE_VEL_RAMP.
 * Anticogging map is temporarily forced to 0.1 deg precision, but saves with the config
 * Some Encoder settings have been made read-only
 * Cleaned up VSCode C/C++ Configuration settings on Windows with recursive includePath

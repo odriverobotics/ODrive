@@ -256,8 +256,7 @@ bool Controller::update(float* current_setpoint_output) {
     // Velocity limiting
     float vel_lim = config_.vel_limit;
     if (config_.enable_vel_limit) {
-        if (vel_des > vel_lim) vel_des = vel_lim;
-        if (vel_des < -vel_lim) vel_des = -vel_lim;
+        vel_des = std::clamp(vel_des, -vel_lim, vel_lim);
     }
 
     // Check for overspeed fault (done in this module (controller) for cohesion with vel_lim)

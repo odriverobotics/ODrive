@@ -447,9 +447,8 @@ bool Motor::update(float current_setpoint, float phase, float phase_vel) {
 
     // TODO: 2-norm vs independent clamping (current could be sqrt(2) bigger)
     float ilim = effective_current_lim();
-    // TODO: use std::clamp (C++17)
-    float id = MACRO_MIN(MACRO_MAX(current_control_.Id_setpoint, -ilim), ilim);
-    float iq = MACRO_MIN(MACRO_MAX(current_setpoint, -ilim), ilim);
+    float id = std::clamp(current_control_.Id_setpoint, -ilim, ilim);
+    float iq = std::clamp(current_setpoint, -ilim, ilim);
 
     if (config_.motor_type == MOTOR_TYPE_ACIM) {
         // Note that the effect of the current commands on the real currents is actually 1.5 PWM cycles later
@@ -460,7 +459,7 @@ bool Motor::update(float current_setpoint, float phase, float phase_vel) {
             float abs_iq = fabsf(iq);
             float gain = abs_iq > id ? config_.acim_autoflux_attack_gain : config_.acim_autoflux_decay_gain;
             id += gain * (abs_iq - id) * current_meas_period;
-            id = MACRO_MIN(MACRO_MAX(id, config_.acim_autoflux_min_Id), ilim);
+            id = std::clamp(id, config_.acim_autoflux_min_Id, ilim);
             current_control_.Id_setpoint = id;
         }
 
@@ -485,22 +484,11 @@ bool Motor::update(float current_setpoint, float phase, float phase_vel) {
     float pwm_phase = phase + 1.5f * current_meas_period * phase_vel;
 
     // Execute current command
-    // TODO: move this into the mot
-    if (config_.motor_type == MOTOR_TYPE_HIGH_CURRENT) {
-        if(!FOC_current(id, iq, phase, pwm_phase)){
-            return false;
-        }
-    } else if (config_.motor_type == MOTOR_TYPE_ACIM) {
-        if(!FOC_current(id, iq, phase, pwm_phase)){
-            return false;
-        }
-    } else if (config_.motor_type == MOTOR_TYPE_GIMBAL) {
-        //In gimbal motor mode, current is reinterptreted as voltage.
-        if(!FOC_voltage(id, iq, pwm_phase))
-            return false;
-    } else {
-        set_error(ERROR_NOT_IMPLEMENTED_MOTOR_TYPE);
-        return false;
+    switch(config_.motor_type){
+        case MOTOR_TYPE_HIGH_CURRENT: return FOC_current(id, iq, phase, pwm_phase); break;
+        case MOTOR_TYPE_ACIM: return FOC_current(id, iq, phase, pwm_phase); break;
+        case MOTOR_TYPE_GIMBAL: return FOC_voltage(id, iq, pwm_phase); break;
+        default: set_error(ERROR_NOT_IMPLEMENTED_MOTOR_TYPE); return false; break;
     }
     return true;
 }
