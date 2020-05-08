@@ -312,6 +312,7 @@ void Encoder::sample_now() {
         case MODE_SPI_ABS_CUI:
         case MODE_SPI_ABS_AEAT:
         {
+            axis_->motor_.log_timing(Motor::TIMING_LOG_SAMPLE_NOW);
             // Do nothing
         } break;
 
@@ -347,6 +348,7 @@ bool Encoder::abs_spi_init(){
 
 bool Encoder::abs_spi_start_transaction(){
     if (mode_ & MODE_FLAG_ABS){
+        axis_->motor_.log_timing(Motor::TIMING_LOG_SPI_START);
         if(hw_config_.spi->State != HAL_SPI_STATE_READY){
             set_error(ERROR_ABS_SPI_NOT_READY);
             return false;
@@ -374,6 +376,8 @@ uint8_t cui_parity(uint16_t v) {
 
 void Encoder::abs_spi_cb(){
     HAL_GPIO_WritePin(abs_spi_cs_port_, abs_spi_cs_pin_, GPIO_PIN_SET);
+
+    axis_->motor_.log_timing(Motor::TIMING_LOG_SPI_END);
 
     uint16_t pos;
 

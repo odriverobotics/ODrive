@@ -101,6 +101,9 @@ public:
         TIMING_LOG_IDX_SEARCH,
         TIMING_LOG_FOC_VOLTAGE,
         TIMING_LOG_FOC_CURRENT,
+        TIMING_LOG_SPI_START,
+        TIMING_LOG_SAMPLE_NOW,
+        TIMING_LOG_SPI_END,
         TIMING_LOG_NUM_SLOTS
     };
 
@@ -240,7 +243,10 @@ public:
                 make_protocol_ro_property("TIMING_LOG_ENC_CALIB", &timing_log_[TIMING_LOG_ENC_CALIB]),
                 make_protocol_ro_property("TIMING_LOG_IDX_SEARCH", &timing_log_[TIMING_LOG_IDX_SEARCH]),
                 make_protocol_ro_property("TIMING_LOG_FOC_VOLTAGE", &timing_log_[TIMING_LOG_FOC_VOLTAGE]),
-                make_protocol_ro_property("TIMING_LOG_FOC_CURRENT", &timing_log_[TIMING_LOG_FOC_CURRENT])
+                make_protocol_ro_property("TIMING_LOG_FOC_CURRENT", &timing_log_[TIMING_LOG_FOC_CURRENT]),
+                make_protocol_ro_property("TIMING_LOG_SPI_START", &timing_log_[TIMING_LOG_SPI_START]),
+                make_protocol_ro_property("TIMING_LOG_SAMPLE_NOW", &timing_log_[TIMING_LOG_SAMPLE_NOW]),
+                make_protocol_ro_property("TIMING_LOG_SPI_END", &timing_log_[TIMING_LOG_SPI_END])
             ),
             make_protocol_object("config",
                 make_protocol_property("pre_calibrated", &config_.pre_calibrated,
