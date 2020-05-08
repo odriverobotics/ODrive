@@ -598,7 +598,7 @@ void update_brake_current() {
     float brake_current = -Ibus_sum - board_config.max_regen_current;
     float brake_duty = brake_current * board_config.brake_resistance / vbus_voltage;
     
-    if (board_config.enable_dc_bus_overvoltage_ramp && (board_config.dc_bus_overvoltage_ramp_start < board_config.dc_bus_overvoltage_ramp_end)) {
+    if (board_config.enable_dc_bus_overvoltage_ramp && (board_config.brake_resistance > 0.0f) && (board_config.dc_bus_overvoltage_ramp_start < board_config.dc_bus_overvoltage_ramp_end)) {
         brake_duty += std::fmax((vbus_voltage - board_config.dc_bus_overvoltage_ramp_start) / (board_config.dc_bus_overvoltage_ramp_end - board_config.dc_bus_overvoltage_ramp_start), 0.0f);
     }
 
