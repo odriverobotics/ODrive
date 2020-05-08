@@ -2,7 +2,7 @@
 import test_runner
 
 import time
-from math import pi
+from math import pi, inf
 import os
 
 from fibre.utils import Logger
@@ -63,6 +63,8 @@ class TestClosedLoopControlBase():
                 pass
             def __exit__(self, exc_type, exc_val, exc_tb):
                 logger.debug('clearing config...')
+                axis_ctx.handle.requested_state = AXIS_STATE_IDLE
+                time.sleep(0.005)
                 axis_ctx.parent.erase_config_and_reboot()
         return safe_terminator()
 
@@ -209,9 +211,92 @@ class TestRegenProtection(TestClosedLoopControlBase):
             test_assert_eq(axis_ctx.handle.motor.error, errors.motor.ERROR_DC_BUS_OVER_REGEN_CURRENT)
 
 
+class TestVelLimitInCurrentControl(TestClosedLoopControlBase):
+    """
+    Ensures that the current setpoint in current control is always within the
+    parallelogram that arises from -Ilim, +Ilim, vel_limit and vel_gain.
+    """
+
+    def run_test(self, axis_ctx: ODriveAxisComponent, motor_ctx: MotorComponent, enc_ctx: EncoderComponent, logger: Logger):
+        with self.prepare(axis_ctx, motor_ctx, enc_ctx, logger):
+            max_rps = 20.0
+            max_vel = float(enc_ctx.yaml['cpr']) * max_rps
+            absolute_max_vel = max_vel * 1.2
+            max_current = 3.0
+
+            axis_ctx.handle.controller.config.vel_gain /= 10 # reduce the slope to make it easier to see what's going on
+            vel_gain = axis_ctx.handle.controller.config.vel_gain
+            logger.debug(f'vel gain is {vel_gain}')
+
+            axis_ctx.handle.controller.config.vel_limit = max_vel
+            axis_ctx.handle.controller.config.vel_limit_tolerance = inf # disable hard limit on velocity
+            axis_ctx.handle.motor.config.current_lim = max_current
+            axis_ctx.handle.controller.config.control_mode = CTRL_MODE_CURRENT_CONTROL
+
+            # Returns the expected limited setpoint for a given velocity and current
+            def get_expected_setpoint(input_setpoint, velocity):
+                return clamp(clamp(input_setpoint, (velocity + max_vel) * -vel_gain, (velocity - max_vel) * -vel_gain), -max_current, max_current)
+
+            def data_getter():
+                # sample velocity twice to avoid systematic bias
+                velocity0 = axis_ctx.handle.encoder.vel_estimate
+                current_setpoint = axis_ctx.handle.motor.current_control.Iq_setpoint
+                velocity1 = axis_ctx.handle.encoder.vel_estimate
+                velocity = ((velocity0 + velocity1) / 2)
+                # Abort immediately if the absolute limits are exceeded
+                test_assert_within(current_setpoint, -max_current, max_current)
+                test_assert_within(velocity, -absolute_max_vel, absolute_max_vel)
+                return input_current, velocity, current_setpoint, get_expected_setpoint(input_current, velocity)
+
+            axis_ctx.handle.controller.input_current = input_current = 0.0
+            request_state(axis_ctx, AXIS_STATE_CLOSED_LOOP_CONTROL)
+
+            # Move the system around its operating envelope
+            axis_ctx.handle.controller.input_current = input_current = 2.0
+            dataA = record_log(data_getter, duration=1.0)
+            axis_ctx.handle.controller.input_current = input_current = -2.0
+            dataA = np.concatenate([dataA, record_log(data_getter, duration=1.0)])
+            axis_ctx.handle.controller.input_current = input_current = 4.0
+            dataA = np.concatenate([dataA, record_log(data_getter, duration=1.0)])
+            axis_ctx.handle.controller.input_current = input_current = -4.0
+            dataA = np.concatenate([dataA, record_log(data_getter, duration=1.0)])
+
+            # Shrink the operating envelope while motor is moving faster than the envelope allows
+            max_rps = 5.0
+            max_vel = float(enc_ctx.yaml['cpr']) * max_rps
+            axis_ctx.handle.controller.config.vel_limit = max_vel
+
+            # Move the system around its operating envelope
+            axis_ctx.handle.controller.input_current = input_current = 2.0
+            dataB = record_log(data_getter, duration=1.0)
+            axis_ctx.handle.controller.input_current = input_current = -2.0
+            dataB = np.concatenate([dataB, record_log(data_getter, duration=1.0)])
+            axis_ctx.handle.controller.input_current = input_current = 4.0
+            dataB = np.concatenate([dataB, record_log(data_getter, duration=1.0)])
+            axis_ctx.handle.controller.input_current = input_current = -4.0
+            dataB = np.concatenate([dataB, record_log(data_getter, duration=1.0)])
+
+            # Try the shrink maneuver again at positive velocity
+            axis_ctx.handle.controller.config.vel_limit = 20.0 * float(enc_ctx.yaml['cpr'])
+            axis_ctx.handle.controller.input_current = 4.0
+            time.sleep(0.5)
+            axis_ctx.handle.controller.config.vel_limit = max_vel
+
+            axis_ctx.handle.controller.input_current = input_current = 2.0
+            dataB = np.concatenate([dataB, record_log(data_getter, duration=1.0)])
+
+            test_assert_no_error(axis_ctx)
+
+            axis_ctx.handle.requested_state=1
+            
+            test_curve_fit(dataA[:,(0,3)], dataA[:,4], max_mean_err=0.02, inlier_range=0.05, max_outliers=len(dataA[:,0]*0.01))
+            test_curve_fit(dataB[:,(0,3)], dataB[:,4], max_mean_err=0.1, inlier_range=0.2, max_outliers=len(dataB[:,0])*0.01)
+
+
 
 if __name__ == '__main__':
     test_runner.run([
         TestClosedLoopControl(),
         TestRegenProtection(),
+        TestVelLimitInCurrentControl()
     ])
