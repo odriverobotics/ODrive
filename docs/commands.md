@@ -65,13 +65,25 @@ Possible values are:
 * `CTRL_MODE_POSITION_CONTROL`
 * `CTRL_MODE_VELOCITY_CONTROL`
 * `CTRL_MODE_CURRENT_CONTROL`
-* `CTRL_MODE_TRAJECTORY_CONTROL`
 * `CTRL_MODE_VOLTAGE_CONTROL` - this one is not normally used.
 
-# Control Commands
+### Control Commands
 * `<axis>.controller.input_pos = <encoder_counts>`
 * `<axis>.controller.input_vel = <encoder_counts/s>`
 * `<axis>.controller.input_current = <current_in_A>`
+
+### Input Mode
+To modify the way the control command affects the motor, you can use the input mode. The default input mode is pass through.
+If you want a different mode, you can change `<axis>.controller.config.input_mode`.
+Possible values are:
+* `INPUT_MODE_INACTIVE`
+* `INPUT_MODE_PASSTHROUGH`
+* `INPUT_MODE_VEL_RAMP`
+* `INPUT_MODE_POS_FILTER`
+* `INPUT_MODE_MIX_CHANNELS`
+* `INPUT_MODE_TRAP_TRAJ`
+* `INPUT_MODE_CURRENT_RAMP`
+* `INPUT_MODE_MIRROR`
 
 ## System monitoring commands
 
