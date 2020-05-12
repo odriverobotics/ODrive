@@ -122,6 +122,7 @@ struct BoardConfig_t {
     float dc_max_negative_current = -0.000001f; // Max current [A] the power supply can sink. You most likely want a non-positive value here. Set to -INFINITY to disable.
     PWMMapping_t pwm_mappings[GPIO_COUNT];
     PWMMapping_t analog_mappings[GPIO_COUNT];
+    uint32_t uart_baudrate = 115200;
 };
 extern BoardConfig_t board_config;
 extern bool user_config_loaded_;
