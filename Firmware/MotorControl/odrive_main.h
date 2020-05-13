@@ -121,6 +121,32 @@ struct BoardConfig_t {
     float dc_max_negative_current = -0.000001f; // Max current [A] the power supply can sink. You most likely want a non-positive value here. Set to -INFINITY to disable.
     PWMMapping_t pwm_mappings[GPIO_COUNT];
     PWMMapping_t analog_mappings[GPIO_COUNT];
+
+    /**
+     * Defines the baudrate used on the UART interface.
+     * Some baudrates will have a small timing error due to hardware limitations.
+     * 
+     * Here's an (incomplete) list of baudrates for ODrive v3.x:
+     * 
+     *   Configured  | Actual        | Error [%]
+     *  -------------|---------------|-----------
+     *   1.2 KBps    | 1.2 KBps      | 0
+     *   2.4 KBps    | 2.4 KBps      | 0
+     *   9.6 KBps    | 9.6 KBps      | 0
+     *   19.2 KBps   | 19.195 KBps   | 0.02
+     *   38.4 KBps   | 38.391 KBps   | 0.02
+     *   57.6 KBps   | 57.613 KBps   | 0.02
+     *   115.2 KBps  | 115.068 KBps  | 0.11
+     *   230.4 KBps  | 230.769 KBps  | 0.16
+     *   460.8 KBps  | 461.538 KBps  | 0.16
+     *   921.6 KBps  | 913.043 KBps  | 0.93
+     *   1.792 MBps  | 1.826 MBps    | 1.9
+     *   1.8432 MBps | 1.826 MBps    | 0.93
+     * 
+     * For more information refer to Section 30.3.4 and Table 142 (the column with f_PCLK = 42 MHz) in the STM datasheet:
+     * https://www.st.com/content/ccc/resource/technical/document/reference_manual/3d/6d/5a/66/b4/99/40/d4/DM00031020.pdf/files/DM00031020.pdf/jcr:content/translations/en.DM00031020.pdf
+     */
+    uint32_t uart_baudrate = 115200;
 };
 extern BoardConfig_t board_config;
 extern bool user_config_loaded_;

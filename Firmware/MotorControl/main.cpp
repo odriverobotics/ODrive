@@ -3,6 +3,7 @@
 #include "odrive_main.h"
 #include "nvm_config.hpp"
 
+#include "usart.h"
 #include "freertos_vars.h"
 #include <communication/interface_usb.h>
 #include <communication/interface_uart.h>
@@ -123,7 +124,7 @@ void enter_dfu_mode() {
 }
 
 extern "C" int construct_objects(){
-    #if HW_VERSION_MAJOR == 3 && HW_VERSION_MINOR >= 3
+#if HW_VERSION_MAJOR == 3 && HW_VERSION_MINOR >= 3
     if (board_config.enable_i2c_instead_of_can) {
         // Set up the direction GPIO as input
         GPIO_InitTypeDef GPIO_InitStruct;
@@ -146,6 +147,10 @@ extern "C" int construct_objects(){
     } else
 #endif
         MX_CAN1_Init();
+
+    HAL_UART_DeInit(&huart4);
+    huart4.Init.BaudRate = board_config.uart_baudrate;
+    HAL_UART_Init(&huart4);
 
     // Init general user ADC on some GPIOs.
     GPIO_InitTypeDef GPIO_InitStruct;

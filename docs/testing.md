@@ -113,7 +113,7 @@ To flash and start remote debugging:
 
 To run a test:
 
-    rsync -avh -e ssh /path/to/ODriveFirmware odrv:/opt/odrivetest --exclude="Firmware/build" --exclude="Firmware/.tup" --exclude=".git" --delete
+    rsync -avh -e ssh /path/to/ODriveFirmware/ odrv:/opt/odrivetest --exclude="Firmware/build" --exclude="Firmware/.tup" --exclude=".git" --delete
 
     ssh odrv
     > cd /opt/odrivetest/tools/odrive/tests/

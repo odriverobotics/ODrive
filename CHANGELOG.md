@@ -25,6 +25,7 @@ Please add a note of your changes below this heading if you make a Pull Request.
 * Added support for Flylint VSCode Extension for static code analysis
 * Using an STM32F405 .svd file allows CortexDebug to view registers during debugging
 * Added scripts for building via docker.
+* Added ability to change uart baudrate via fibre
 
 ### Changed
 * Changed ratiometric `motor.config.current_lim_tolerance` to absolute `motor.config.current_lim_margin`

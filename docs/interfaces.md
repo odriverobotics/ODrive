@@ -164,7 +164,7 @@ The endpoint pairs `0x01, 0x81` and `0x03, 0x83` behave exactly identical, only 
 If you plan to access the USB endpoints directly it is recommended that you use interface 2. The other interfaces (the ones associated with the CDC device) are usually claimed by the CDC driver of the host OS, so their endpoints cannot be used without first detaching the CDC driver.
 
 ### UART
-Baud rate: 115200
+Baud rate: 115200 by default.  See `odrv0.config.uart_baudrate` to change value.  Requires a restart.
 Pinout:
 * GPIO 1: Tx (connect to Rx of other device)
 * GPIO 2: Rx (connect to Tx of other device)
