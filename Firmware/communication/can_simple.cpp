@@ -295,8 +295,8 @@ void CANSimple::set_input_current_callback(Axis* axis, can_Message_t& msg) {
 }
 
 void CANSimple::set_controller_modes_callback(Axis* axis, can_Message_t& msg) {
-    axis->controller_.config_.control_mode = static_cast<Controller::ControlMode_t>(can_getSignal<int32_t>(msg, 0, 32, true));
-    axis->controller_.config_.input_mode = static_cast<Controller::InputMode_t>(can_getSignal<int32_t>(msg, 32, 32, true));
+    axis->controller_.config_.control_mode = static_cast<Controller::ControlMode>(can_getSignal<int32_t>(msg, 0, 32, true));
+    axis->controller_.config_.input_mode = static_cast<Controller::InputMode>(can_getSignal<int32_t>(msg, 32, 32, true));
 }
 
 void CANSimple::set_vel_limit_callback(Axis* axis, can_Message_t& msg) {
@@ -308,12 +308,12 @@ void CANSimple::start_anticogging_callback(Axis* axis, can_Message_t& msg) {
 }
 
 void CANSimple::set_traj_vel_limit_callback(Axis* axis, can_Message_t& msg) {
-    axis->trap_.config_.vel_limit = can_getSignal<float>(msg, 0, 32, true);
+    axis->trap_traj_.config_.vel_limit = can_getSignal<float>(msg, 0, 32, true);
 }
 
 void CANSimple::set_traj_accel_limits_callback(Axis* axis, can_Message_t& msg) {
-    axis->trap_.config_.accel_limit = can_getSignal<float>(msg, 0, 32, true);
-    axis->trap_.config_.decel_limit = can_getSignal<float>(msg, 32, 32, true);
+    axis->trap_traj_.config_.accel_limit = can_getSignal<float>(msg, 0, 32, true);
+    axis->trap_traj_.config_.decel_limit = can_getSignal<float>(msg, 32, 32, true);
 }
 
 void CANSimple::set_traj_A_per_css_callback(Axis* axis, can_Message_t& msg) {

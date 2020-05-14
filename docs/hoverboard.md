@@ -52,7 +52,7 @@ odrv0.axis0.controller.config.pos_gain = 1
 odrv0.axis0.controller.config.vel_gain = 0.02
 odrv0.axis0.controller.config.vel_integrator_gain = 0.1
 odrv0.axis0.controller.config.vel_limit = 1000
-odrv0.axis0.controller.config.control_mode = CTRL_MODE_VELOCITY_CONTROL
+odrv0.axis0.controller.config.control_mode = CONTROL_MODE_VELOCITY_CONTROL
 ```
 
 In the next step we are going to start powering the motor and so we want to make sure that some of the above settings that require a reboot are applied first.

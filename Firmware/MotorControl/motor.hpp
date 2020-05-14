@@ -9,7 +9,7 @@
 
 class Motor {
 public:
-    enum Error_t {
+    enum Error {
         ERROR_NONE = 0,
         ERROR_PHASE_RESISTANCE_OUT_OF_RANGE = 0x0001,
         ERROR_PHASE_INDUCTANCE_OUT_OF_RANGE = 0x0002,
@@ -128,7 +128,7 @@ public:
     void update_current_controller_gains();
     void DRV8301_setup();
     bool check_DRV_fault();
-    void set_error(Error_t error);
+    void set_error(Error error);
     bool do_checks();
     float get_inverter_temp();
     bool update_thermal_limits(float fet_temp);
@@ -163,7 +163,7 @@ public:
     uint16_t timing_log_[TIMING_LOG_NUM_SLOTS] = { 0 };
 
     // variables exposed on protocol
-    Error_t error_ = ERROR_NONE;
+    Error error_ = ERROR_NONE;
     // Do not write to this variable directly!
     // It is for exclusive use by the safety_critical_... functions.
     ArmedState_t armed_state_ = ARMED_STATE_DISARMED; 
@@ -279,6 +279,6 @@ public:
     }
 };
 
-DEFINE_ENUM_FLAG_OPERATORS(Motor::Error_t)
+DEFINE_ENUM_FLAG_OPERATORS(Motor::Error)
 
 #endif // __MOTOR_HPP

@@ -30,7 +30,7 @@ for ax in axes:
     ax.encoder.config.find_idx_on_lockin_only = True
     ax.encoder.config.idx_search_unidirectional = True
 
-    ax.controller.config.control_mode = CTRL_MODE_VELOCITY_CONTROL
+    ax.controller.config.control_mode = CONTROL_MODE_VELOCITY_CONTROL
     ax.controller.config.vel_limit = 10000
     ax.controller.config.vel_gain = 0.002205736003816127
     ax.controller.config.vel_integrator_gain = 0.022057360038161278

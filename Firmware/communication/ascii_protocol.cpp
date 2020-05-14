@@ -97,7 +97,7 @@ void ASCII_protocol_process_line(const uint8_t* buffer, size_t len, StreamSink& 
             respond(response_channel, use_checksum, "invalid motor %u", motor_number);
         } else {
             Axis* axis = axes[motor_number];
-            axis->controller_.config_.control_mode = Controller::CTRL_MODE_POSITION_CONTROL;
+            axis->controller_.config_.control_mode = Controller::CONTROL_MODE_POSITION_CONTROL;
             axis->controller_.input_pos_ = pos_setpoint;
             if (numscan >= 3)
                 axis->controller_.input_vel_ = vel_feed_forward;
@@ -117,7 +117,7 @@ void ASCII_protocol_process_line(const uint8_t* buffer, size_t len, StreamSink& 
             respond(response_channel, use_checksum, "invalid motor %u", motor_number);
         } else {
             Axis* axis = axes[motor_number];
-            axis->controller_.config_.control_mode = Controller::CTRL_MODE_POSITION_CONTROL;
+            axis->controller_.config_.control_mode = Controller::CONTROL_MODE_POSITION_CONTROL;
             axis->controller_.input_pos_ = pos_setpoint;
             if (numscan >= 3)
                 axis->controller_.config_.vel_limit = vel_limit;
@@ -137,7 +137,7 @@ void ASCII_protocol_process_line(const uint8_t* buffer, size_t len, StreamSink& 
             respond(response_channel, use_checksum, "invalid motor %u", motor_number);
         } else {
             Axis* axis = axes[motor_number];
-            axis->controller_.config_.control_mode = Controller::CTRL_MODE_VELOCITY_CONTROL;
+            axis->controller_.config_.control_mode = Controller::CONTROL_MODE_VELOCITY_CONTROL;
             axis->controller_.input_vel_ = vel_setpoint;
             if (numscan >= 3)
                 axis->controller_.input_current_ = current_feed_forward;
@@ -154,7 +154,7 @@ void ASCII_protocol_process_line(const uint8_t* buffer, size_t len, StreamSink& 
             respond(response_channel, use_checksum, "invalid motor %u", motor_number);
         } else {
             Axis* axis = axes[motor_number];
-            axis->controller_.config_.control_mode = Controller::CTRL_MODE_CURRENT_CONTROL;
+            axis->controller_.config_.control_mode = Controller::CONTROL_MODE_CURRENT_CONTROL;
             axis->controller_.input_current_ = current_setpoint;
             axis->watchdog_feed();
         }

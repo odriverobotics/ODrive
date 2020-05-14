@@ -7,7 +7,7 @@ odrv0 = odrive.find_any()
 print('Odrive found')
 
 odrv0.axis1.controller.config.vel_limit = 50000
-odrv0.axis1.controller.config.control_mode = CTRL_MODE_POSITION_CONTROL
+odrv0.axis1.controller.config.control_mode = CONTROL_MODE_POSITION_CONTROL
 odrv0.axis1.controller.config.input_mode = INPUT_MODE_PASSTHROUGH
 odrv0.axis1.encoder.config.cpr = 2400
 odrv0.axis1.encoder.config.bandwidth = 1000

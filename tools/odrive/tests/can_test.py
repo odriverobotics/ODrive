@@ -171,13 +171,13 @@ class TestSimpleCAN():
         test_assert_eq(axis.controller.input_vel, 2.0, range=0.01)
         test_assert_eq(axis.controller.input_current, 3.0, range=0.001)
 
-        axis.controller.config.control_mode = CTRL_MODE_VELOCITY_CONTROL
+        axis.controller.config.control_mode = CONTROL_MODE_VELOCITY_CONTROL
         my_cmd('set_input_vel', input_vel=-10.0, cur_ff=30.1234)
         fence()
         test_assert_eq(axis.controller.input_vel, -10.0, range=0.01)
         test_assert_eq(axis.controller.input_current, 30.1234, range=0.01)
 
-        axis.controller.config.control_mode = CTRL_MODE_CURRENT_CONTROL
+        axis.controller.config.control_mode = CONTROL_MODE_CURRENT_CONTROL
         my_cmd('set_input_current', input_current=3.1415)
         fence()
         test_assert_eq(axis.controller.input_current, 3.1415, range=0.01)

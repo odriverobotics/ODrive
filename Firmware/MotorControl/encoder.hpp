@@ -7,7 +7,7 @@
 
 class Encoder {
 public:
-    enum Error_t {
+    enum Error {
         ERROR_NONE                     = 0,
         ERROR_UNSTABLE_GAIN            = 0x01,
         ERROR_CPR_POLEPAIRS_MISMATCH   = 0x02,
@@ -59,7 +59,7 @@ public:
             Config_t& config, const Motor::Config_t& motor_config);
     
     void setup();
-    void set_error(Error_t error);
+    void set_error(Error error);
     bool do_checks();
 
     void enc_index_cb();
@@ -81,7 +81,7 @@ public:
     Config_t& config_;
     Axis* axis_ = nullptr; // set by Axis constructor
 
-    Error_t error_ = ERROR_NONE;
+    Error error_ = ERROR_NONE;
     bool index_found_ = false;
     bool is_ready_ = false;
     int32_t shadow_count_ = 0;
@@ -171,6 +171,6 @@ public:
     }
 };
 
-DEFINE_ENUM_FLAG_OPERATORS(Encoder::Error_t)
+DEFINE_ENUM_FLAG_OPERATORS(Encoder::Error)
 
 #endif // __ENCODER_HPP

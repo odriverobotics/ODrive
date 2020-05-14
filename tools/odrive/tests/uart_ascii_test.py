@@ -96,7 +96,7 @@ class TestUartAscii():
             ser.write(b'c 0 12.5\n')
             test_assert_eq(ser.readline(), b'')
             test_assert_eq(odrive.handle.axis0.controller.input_current, 12.5, accuracy=0.001)
-            test_assert_eq(odrive.handle.axis0.controller.config.control_mode, CTRL_MODE_CURRENT_CONTROL)
+            test_assert_eq(odrive.handle.axis0.controller.config.control_mode, CONTROL_MODE_CURRENT_CONTROL)
 
             odrive.handle.axis0.controller.input_vel = 0
             odrive.handle.axis0.controller.input_current = 0
@@ -104,7 +104,7 @@ class TestUartAscii():
             test_assert_eq(ser.readline(), b'')
             test_assert_eq(odrive.handle.axis0.controller.input_vel, 567.8, accuracy=0.001)
             test_assert_eq(odrive.handle.axis0.controller.input_current, 12.5, accuracy=0.001)
-            test_assert_eq(odrive.handle.axis0.controller.config.control_mode, CTRL_MODE_VELOCITY_CONTROL)
+            test_assert_eq(odrive.handle.axis0.controller.config.control_mode, CONTROL_MODE_VELOCITY_CONTROL)
 
             odrive.handle.axis0.controller.input_pos = 0
             odrive.handle.axis0.controller.input_vel = 0
@@ -114,7 +114,7 @@ class TestUartAscii():
             test_assert_eq(odrive.handle.axis0.controller.input_pos, 123.4, accuracy=0.001)
             test_assert_eq(odrive.handle.axis0.controller.input_vel, 567.8, accuracy=0.001)
             test_assert_eq(odrive.handle.axis0.controller.input_current, 12.5, accuracy=0.001)
-            test_assert_eq(odrive.handle.axis0.controller.config.control_mode, CTRL_MODE_POSITION_CONTROL)
+            test_assert_eq(odrive.handle.axis0.controller.config.control_mode, CONTROL_MODE_POSITION_CONTROL)
 
             odrive.handle.axis0.controller.input_pos = 0
             odrive.handle.axis0.controller.config.vel_limit = 0
@@ -124,7 +124,7 @@ class TestUartAscii():
             test_assert_eq(odrive.handle.axis0.controller.input_pos, 123.4, accuracy=0.001)
             test_assert_eq(odrive.handle.axis0.controller.config.vel_limit, 567.8, accuracy=0.001)
             test_assert_eq(odrive.handle.axis0.motor.config.current_lim, 12.5, accuracy=0.001)
-            test_assert_eq(odrive.handle.axis0.controller.config.control_mode, CTRL_MODE_POSITION_CONTROL)
+            test_assert_eq(odrive.handle.axis0.controller.config.control_mode, CONTROL_MODE_POSITION_CONTROL)
 
             ser.write(b'f 0\n')
             response = ser.readline().strip()

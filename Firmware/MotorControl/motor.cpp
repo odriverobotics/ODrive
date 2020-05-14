@@ -137,7 +137,7 @@ bool Motor::check_DRV_fault() {
     return true;
 }
 
-void Motor::set_error(Motor::Error_t error){
+void Motor::set_error(Motor::Error error){
     error_ |= error;
     axis_->error_ |= Axis::ERROR_MOTOR_FAILED;
     safety_critical_disarm_motor_pwm(*this);

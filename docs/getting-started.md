@@ -337,20 +337,20 @@ Note that in this mode `encoder.pos_cpr` is used for feedback in stead of `encod
 If you try to increment the axis with a large step in one go that exceeds `cpr/2` steps, the motor will go to the same angle around the wrong way. This is also the case if there is a large disturbance. If you have an application where you would like to handle larger steps, you can use a virtual CPR that is an integer times larger than your encoder's actual CPR. Set `encoder.config.cpr = N * your_enc_cpr`, where N is some integer. Choose N to give you an appropriate circular space for your application.
 
 ### Velocity control
-Set `axis.controller.config.control_mode = CTRL_MODE_VELOCITY_CONTROL`.<br>
+Set `axis.controller.config.control_mode = CONTROL_MODE_VELOCITY_CONTROL`.<br>
 You can now control the velocity with `axis.controller.input_vel = 5000` [count/s].
 
 ### Ramped velocity control
-Set `axis.controller.config.control_mode = CTRL_MODE_VELOCITY_CONTROL`.<br>
+Set `axis.controller.config.control_mode = CONTROL_MODE_VELOCITY_CONTROL`.<br>
 Set the velocity ramp rate (acceleration): `axis.controller.config.vel_ramp_rate = 2000` [counts/s^2]<br>
 Activate the ramped velocity mode: `axis.controller.config.input_mode = INPUT_MODE_VEL_RAMP`.<br>
 You can now control the velocity with `axis.controller.input_vel = 5000` [count/s].
 
 ### Current control
-Set `axis.controller.config.control_mode = CTRL_MODE_CURRENT_CONTROL`.<br>
+Set `axis.controller.config.control_mode = CONTROL_MODE_CURRENT_CONTROL`.<br>
 You can now control the current with `axis.controller.input_current = 3` [A].
 
-Note: If you exceed `vel_limit` in current control mode, the current is reduced. To disable this, set `axis.controller.enable_current_vel_limit = False`.
+Note: If you exceed `vel_limit` in current control mode, the current is reduced. To disable this, set `axis.controller.enable_current_mode_vel_limit = False`.
 
 ## Watchdog Timer
 Each axis has a configurable watchdog timer that can stop the motors if the

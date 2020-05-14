@@ -7,7 +7,7 @@
 
 class Controller {
 public:
-    enum Error_t {
+    enum Error {
         ERROR_NONE                 = 0,
         ERROR_OVERSPEED            = 0x01,
         ERROR_INVALID_INPUT_MODE   = 0x02,
@@ -19,14 +19,14 @@ public:
 
     // Note: these should be sorted from lowest level of control to
     // highest level of control, to allow "<" style comparisons.
-    enum ControlMode_t{
-        CTRL_MODE_VOLTAGE_CONTROL = 0,
-        CTRL_MODE_CURRENT_CONTROL = 1,
-        CTRL_MODE_VELOCITY_CONTROL = 2,
-        CTRL_MODE_POSITION_CONTROL = 3
+    enum ControlMode{
+        CONTROL_MODE_VOLTAGE_CONTROL = 0,
+        CONTROL_MODE_CURRENT_CONTROL = 1,
+        CONTROL_MODE_VELOCITY_CONTROL = 2,
+        CONTROL_MODE_POSITION_CONTROL = 3
     };
 
-    enum InputMode_t{
+    enum InputMode{
         INPUT_MODE_INACTIVE,
         INPUT_MODE_PASSTHROUGH,
         INPUT_MODE_VEL_RAMP,
@@ -45,12 +45,12 @@ public:
         float calib_pos_threshold = 1.0f;
         float calib_vel_threshold = 1.0f;
         float cogging_ratio       = 1.0f;
-        bool enable               = true;
+        bool anticogging_enabled  = true;
     } Anticogging_t;
 
     struct Config_t {
-        ControlMode_t control_mode = CTRL_MODE_POSITION_CONTROL;  //see: ControlMode_t
-        InputMode_t input_mode = INPUT_MODE_PASSTHROUGH;  //see: InputMode_t
+        ControlMode control_mode = CONTROL_MODE_POSITION_CONTROL;  //see: ControlMode
+        InputMode input_mode = INPUT_MODE_PASSTHROUGH;  //see: InputMode
         float pos_gain = 20.0f;  // [(counts/s) / counts]
         float vel_gain = 5.0f / 10000.0f;  // [A/(counts/s)]
         // float vel_gain = 5.0f / 200.0f, // [A/(rad/s)] <sensorless example>
@@ -68,7 +68,7 @@ public:
         bool enable_gain_scheduling   = false;
         bool enable_vel_limit         = true;
         bool enable_overspeed_error   = true;
-        bool enable_current_vel_limit = true; // enable velocity limit in current control mode (requires a valid velocity estimator)
+        bool enable_current_mode_vel_limit = true; // enable velocity limit in current control mode (requires a valid velocity estimator)
         uint8_t axis_to_mirror        = -1;
         float mirror_ratio            = 1.0f;
         uint8_t load_encoder_axis     = -1; // default depends on Axis number and is set in load_configuration()
@@ -76,7 +76,7 @@ public:
 
     explicit Controller(Config_t& config);
     void reset();
-    void set_error(Error_t error);
+    void set_error(Error error);
 
     void input_pos_updated();
     bool select_encoder(size_t encoder_num);
@@ -95,7 +95,7 @@ public:
     Config_t& config_;
     Axis* axis_ = nullptr; // set by Axis constructor
 
-    Error_t error_ = ERROR_NONE;
+    Error error_ = ERROR_NONE;
 
     float* pos_estimate_src_ = nullptr;
     bool* pos_estimate_valid_src_ = nullptr;
@@ -138,7 +138,7 @@ public:
             make_protocol_property("gain_scheduling_width", &config_.gain_scheduling_width),
             make_protocol_object("config",
                 make_protocol_property("enable_vel_limit", &config_.enable_vel_limit),
-                make_protocol_property("enable_current_mode_vel_limit", &config_.enable_current_vel_limit),
+                make_protocol_property("enable_current_mode_vel_limit", &config_.enable_current_mode_vel_limit),
                 make_protocol_property("enable_gain_scheduling", &config_.enable_gain_scheduling),
                 make_protocol_property("enable_overspeed_error", &config_.enable_overspeed_error),
                 make_protocol_property("control_mode", &config_.control_mode),
@@ -164,13 +164,13 @@ public:
                     make_protocol_property("calib_pos_threshold", &config_.anticogging.calib_pos_threshold),
                     make_protocol_property("calib_vel_threshold", &config_.anticogging.calib_vel_threshold),
                     make_protocol_ro_property("cogging_ratio", &config_.anticogging.cogging_ratio),
-                    make_protocol_property("anticogging_enabled", &config_.anticogging.enable))),
+                    make_protocol_property("anticogging_enabled", &config_.anticogging.anticogging_enabled))),
             make_protocol_function("move_incremental", *this, &Controller::move_incremental, "displacement", "from_goal_point"),
             make_protocol_function("start_anticogging_calibration", *this, &Controller::start_anticogging_calibration)
         );
     }
 };
 
-DEFINE_ENUM_FLAG_OPERATORS(Controller::Error_t)
+DEFINE_ENUM_FLAG_OPERATORS(Controller::Error)
 
 #endif // __CONTROLLER_HPP

@@ -7,7 +7,7 @@
 
 class Axis {
 public:
-    enum Error_t {
+    enum Error {
         ERROR_NONE = 0x00,
         ERROR_INVALID_STATE = 0x01, //<! an invalid state was requested
         ERROR_DC_BUS_UNDER_VOLTAGE = 0x02,
@@ -85,7 +85,7 @@ public:
 
         LockinConfig_t calibration_lockin = default_calibration();
         LockinConfig_t sensorless_ramp = default_sensorless();
-        LockinConfig_t lockin;
+        LockinConfig_t general_lockin;
         uint8_t can_node_id = 0; // Both axes will have the same id to start
         uint32_t can_heartbeat_rate_ms = 100;
     };
@@ -232,7 +232,7 @@ public:
     SensorlessEstimator& sensorless_estimator_;
     Controller& controller_;
     Motor& motor_;
-    TrapezoidalTrajectory& trap_;
+    TrapezoidalTrajectory& trap_traj_;
     Endstop& min_endstop_;
     Endstop& max_endstop_;
 
@@ -241,7 +241,7 @@ public:
     volatile bool thread_id_valid_ = false;
 
     // variables exposed on protocol
-    Error_t error_ = ERROR_NONE;
+    Error error_ = ERROR_NONE;
     bool step_dir_active_ = false; // auto enabled after calibration, based on config.enable_step_dir
 
     // updated from config in constructor, and on protocol hook
@@ -304,22 +304,22 @@ public:
                     make_protocol_property("finish_on_distance", &config_.sensorless_ramp.finish_on_distance),
                     make_protocol_property("finish_on_enc_idx", &config_.sensorless_ramp.finish_on_enc_idx)),
                 make_protocol_object("general_lockin",
-                    make_protocol_property("current", &config_.lockin.current),
-                    make_protocol_property("ramp_time", &config_.lockin.ramp_time),
-                    make_protocol_property("ramp_distance", &config_.lockin.ramp_distance),
-                    make_protocol_property("accel", &config_.lockin.accel),
-                    make_protocol_property("vel", &config_.lockin.vel),
-                    make_protocol_property("finish_distance", &config_.lockin.finish_distance),
-                    make_protocol_property("finish_on_vel", &config_.lockin.finish_on_vel),
-                    make_protocol_property("finish_on_distance", &config_.lockin.finish_on_distance),
-                    make_protocol_property("finish_on_enc_idx", &config_.lockin.finish_on_enc_idx)),
+                    make_protocol_property("current", &config_.general_lockin.current),
+                    make_protocol_property("ramp_time", &config_.general_lockin.ramp_time),
+                    make_protocol_property("ramp_distance", &config_.general_lockin.ramp_distance),
+                    make_protocol_property("accel", &config_.general_lockin.accel),
+                    make_protocol_property("vel", &config_.general_lockin.vel),
+                    make_protocol_property("finish_distance", &config_.general_lockin.finish_distance),
+                    make_protocol_property("finish_on_vel", &config_.general_lockin.finish_on_vel),
+                    make_protocol_property("finish_on_distance", &config_.general_lockin.finish_on_distance),
+                    make_protocol_property("finish_on_enc_idx", &config_.general_lockin.finish_on_enc_idx)),
                 make_protocol_property("can_node_id", &config_.can_node_id),
                 make_protocol_property("can_heartbeat_rate_ms", &config_.can_heartbeat_rate_ms)),
             make_protocol_object("motor", motor_.make_protocol_definitions()),
             make_protocol_object("controller", controller_.make_protocol_definitions()),
             make_protocol_object("encoder", encoder_.make_protocol_definitions()),
             make_protocol_object("sensorless_estimator", sensorless_estimator_.make_protocol_definitions()),
-            make_protocol_object("trap_traj", trap_.make_protocol_definitions()),
+            make_protocol_object("trap_traj", trap_traj_.make_protocol_definitions()),
             make_protocol_object("min_endstop", min_endstop_.make_protocol_definitions()),
             make_protocol_object("max_endstop", max_endstop_.make_protocol_definitions()),
             make_protocol_function("watchdog_feed", *this, &Axis::watchdog_feed),
@@ -329,6 +329,6 @@ public:
 };
 
 
-DEFINE_ENUM_FLAG_OPERATORS(Axis::Error_t)
+DEFINE_ENUM_FLAG_OPERATORS(Axis::Error)
 
 #endif /* __AXIS_HPP */

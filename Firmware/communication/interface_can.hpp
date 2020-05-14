@@ -26,11 +26,11 @@ enum CAN_Protocol_t {
 class ODriveCAN {
    public:
     struct Config_t {
-        uint32_t baud = CAN_BAUD_250K;
+        uint32_t baud_rate = CAN_BAUD_250K;
         CAN_Protocol_t protocol = CAN_PROTOCOL_SIMPLE;
     };
 
-    enum Error_t {
+    enum Error {
         ERROR_NONE = 0x00,
         ERROR_DUPLICATE_CAN_IDS = 0x01
     };
@@ -40,7 +40,7 @@ class ODriveCAN {
     // Thread Relevant Data
     osThreadId thread_id_;
     const uint32_t stack_size_ = 1024; // Bytes
-    Error_t error_ = ERROR_NONE;
+    Error error_ = ERROR_NONE;
 
     volatile bool thread_id_valid_ = false;
     bool start_can_server();
@@ -48,7 +48,7 @@ class ODriveCAN {
     void send_heartbeat(Axis *axis);
     void reinit_can();
 
-    void set_error(Error_t error);
+    void set_error(Error error);
 
     // I/O Functions
     uint32_t available();
@@ -60,7 +60,7 @@ class ODriveCAN {
         return make_protocol_member_list(
             make_protocol_property("error", &error_),
             make_protocol_object("config",
-                                 make_protocol_ro_property("baud_rate", &config_.baud)),
+                                 make_protocol_ro_property("baud_rate", &config_.baud_rate)),
             make_protocol_property("can_protocol", &config_.protocol),
             make_protocol_function("set_baud_rate", *this, &ODriveCAN::set_baud_rate, "baudRate"));
     }
@@ -73,6 +73,6 @@ class ODriveCAN {
 };
 
 
-DEFINE_ENUM_FLAG_OPERATORS(ODriveCAN::Error_t)
+DEFINE_ENUM_FLAG_OPERATORS(ODriveCAN::Error)
 
 #endif  // __INTERFACE_CAN_HPP

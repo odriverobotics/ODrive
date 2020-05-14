@@ -17,7 +17,7 @@ void Controller::reset() {
     current_setpoint_ = 0.0f;
 }
 
-void Controller::set_error(Error_t error) {
+void Controller::set_error(Error error) {
     error_ |= error;
     axis_->error_ |= Axis::ERROR_CONTROLLER_FAILED;
 }
@@ -50,11 +50,11 @@ bool Controller::select_encoder(size_t encoder_num) {
 }
 
 void Controller::move_to_pos(float goal_point) {
-    axis_->trap_.planTrapezoidal(goal_point, pos_setpoint_, vel_setpoint_,
-                                 axis_->trap_.config_.vel_limit,
-                                 axis_->trap_.config_.accel_limit,
-                                 axis_->trap_.config_.decel_limit);
-    axis_->trap_.t_ = 0.0f;
+    axis_->trap_traj_.planTrapezoidal(goal_point, pos_setpoint_, vel_setpoint_,
+                                 axis_->trap_traj_.config_.vel_limit,
+                                 axis_->trap_traj_.config_.accel_limit,
+                                 axis_->trap_traj_.config_.decel_limit);
+    axis_->trap_traj_.t_ = 0.0f;
     trajectory_done_ = false;
 }
 
@@ -90,7 +90,7 @@ bool Controller::anticogging_calibration(float pos_estimate, float vel_estimate)
         config_.anticogging.cogging_map[std::clamp<uint32_t>(config_.anticogging.index++, 0, 3600)] = vel_integrator_current_;
     }
     if (config_.anticogging.index < 3600) {
-        config_.control_mode = CTRL_MODE_POSITION_CONTROL;
+        config_.control_mode = CONTROL_MODE_POSITION_CONTROL;
         input_pos_ = config_.anticogging.index * axis_->encoder_.getCoggingRatio();
         input_vel_ = 0.0f;
         input_current_ = 0.0f;
@@ -98,7 +98,7 @@ bool Controller::anticogging_calibration(float pos_estimate, float vel_estimate)
         return false;
     } else {
         config_.anticogging.index = 0;
-        config_.control_mode = CTRL_MODE_POSITION_CONTROL;
+        config_.control_mode = CONTROL_MODE_POSITION_CONTROL;
         input_pos_ = 0.0f;  // Send the motor home
         input_vel_ = 0.0f;
         input_current_ = 0.0f;
@@ -200,19 +200,19 @@ bool Controller::update(float* current_setpoint_output) {
             if (trajectory_done_)
                 break;
             
-            if (axis_->trap_.t_ > axis_->trap_.Tf_) {
+            if (axis_->trap_traj_.t_ > axis_->trap_traj_.Tf_) {
                 // Drop into position control mode when done to avoid problems on loop counter delta overflow
-                config_.control_mode = CTRL_MODE_POSITION_CONTROL;
+                config_.control_mode = CONTROL_MODE_POSITION_CONTROL;
                 pos_setpoint_ = input_pos_;
                 vel_setpoint_ = 0.0f;
                 current_setpoint_ = 0.0f;
                 trajectory_done_ = true;
             } else {
-                TrapezoidalTrajectory::Step_t traj_step = axis_->trap_.eval(axis_->trap_.t_);
+                TrapezoidalTrajectory::Step_t traj_step = axis_->trap_traj_.eval(axis_->trap_traj_.t_);
                 pos_setpoint_ = traj_step.Y;
                 vel_setpoint_ = traj_step.Yd;
                 current_setpoint_ = traj_step.Ydd * config_.inertia;
-                axis_->trap_.t_ += current_meas_period;
+                axis_->trap_traj_.t_ += current_meas_period;
             }
             anticogging_pos = pos_setpoint_; // FF the position setpoint instead of the pos_estimate
         } break;
@@ -227,7 +227,7 @@ bool Controller::update(float* current_setpoint_output) {
     // TODO Decide if we want to use encoder or pll position here
     float gain_scheduling_multiplier = 1.0f;
     float vel_des = vel_setpoint_;
-    if (config_.control_mode >= CTRL_MODE_POSITION_CONTROL) {
+    if (config_.control_mode >= CONTROL_MODE_POSITION_CONTROL) {
         float pos_err;
         if (!pos_estimate_src) {
             set_error(ERROR_INVALID_ESTIMATE);
@@ -292,12 +292,12 @@ bool Controller::update(float* current_setpoint_output) {
     // Anti-cogging is enabled after calibration
     // We get the current position and apply a current feed-forward
     // ensuring that we handle negative encoder positions properly (-1 == motor->encoder.encoder_cpr - 1)
-    if (anticogging_valid_ && config_.anticogging.enable) {
+    if (anticogging_valid_ && config_.anticogging.anticogging_enabled) {
         Iq += config_.anticogging.cogging_map[std::clamp(mod(static_cast<int>(anticogging_pos), 3600), 0, 3600)];
     }
 
     float v_err = 0.0f;
-    if (config_.control_mode >= CTRL_MODE_VELOCITY_CONTROL) {
+    if (config_.control_mode >= CONTROL_MODE_VELOCITY_CONTROL) {
         if (!vel_estimate_src) {
             set_error(ERROR_INVALID_ESTIMATE);
             return false;
@@ -311,7 +311,7 @@ bool Controller::update(float* current_setpoint_output) {
     }
 
     // Velocity limiting in current mode
-    if (config_.control_mode < CTRL_MODE_VELOCITY_CONTROL && config_.enable_current_vel_limit) {
+    if (config_.control_mode < CONTROL_MODE_VELOCITY_CONTROL && config_.enable_current_mode_vel_limit) {
         if (!vel_estimate_src) {
             set_error(ERROR_INVALID_ESTIMATE);
             return false;
@@ -334,7 +334,7 @@ bool Controller::update(float* current_setpoint_output) {
     }
 
     // Velocity integrator (behaviour dependent on limiting)
-    if (config_.control_mode < CTRL_MODE_VELOCITY_CONTROL) {
+    if (config_.control_mode < CONTROL_MODE_VELOCITY_CONTROL) {
         // reset integral if not in use
         vel_integrator_current_ = 0.0f;
     } else {

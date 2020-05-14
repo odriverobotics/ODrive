@@ -35,7 +35,7 @@ void Encoder::setup() {
     }
 }
 
-void Encoder::set_error(Error_t error) {
+void Encoder::set_error(Error error) {
     vel_estimate_valid_ = false;
     pos_estimate_valid_ = false;
     error_ |= error;

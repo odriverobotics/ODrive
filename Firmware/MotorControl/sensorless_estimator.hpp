@@ -3,7 +3,7 @@
 
 class SensorlessEstimator {
 public:
-    enum Error_t {
+    enum Error {
         ERROR_NONE = 0,
         ERROR_UNSTABLE_GAIN = 0x01,
     };
@@ -22,7 +22,7 @@ public:
     Config_t& config_;
 
     // TODO: expose on protocol
-    Error_t error_ = ERROR_NONE;
+    Error error_ = ERROR_NONE;
     float phase_ = 0.0f;                        // [rad]
     float pll_pos_ = 0.0f;                      // [rad]
     float vel_estimate_ = 0.0f;                      // [rad/s]
@@ -51,6 +51,6 @@ public:
     }
 };
 
-DEFINE_ENUM_FLAG_OPERATORS(SensorlessEstimator::Error_t)
+DEFINE_ENUM_FLAG_OPERATORS(SensorlessEstimator::Error)
 
 #endif /* __SENSORLESS_ESTIMATOR_HPP */
