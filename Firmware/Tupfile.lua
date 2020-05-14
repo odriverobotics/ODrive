@@ -1,6 +1,17 @@
 
 tup.include('build.lua')
 
+tup.frule{inputs={'fibre/cpp/interfaces_template.j2'}, command='python3 interface_generator.py --definitions odrive-interface.yaml --template %f --output %o', outputs='autogen/interfaces.hpp'}
+tup.frule{inputs={'fibre/cpp/function_stubs_template.j2'}, command='python3 interface_generator.py --definitions odrive-interface.yaml --template %f --output %o', outputs='autogen/function_stubs.hpp'}
+tup.frule{inputs={'fibre/cpp/endpoints_template.j2'}, command='python3 interface_generator.py --definitions odrive-interface.yaml --template %f --output %o', outputs='autogen/endpoints.hpp'}
+tup.frule{inputs={'ascii_type_info_template.j2'}, command='python3 interface_generator.py --definitions odrive-interface.yaml --template %f --output %o', outputs='autogen/ascii_type_info.hpp'}
+
+tup.frule{
+    command='python ../tools/odrive/version.py --output %o',
+    outputs={'autogen/version.h'}
+}
+
+
 -- Switch between board versions
 boardversion = tup.getconfig("BOARD_VERSION")
 if boardversion == "v3.1" then
@@ -86,7 +97,6 @@ if tup.getconfig("STRICT") == "true" then
     FLAGS += '-Werror'
 end
 
-
 -- C-specific flags
 FLAGS += '-D__weak="__attribute__((weak))"'
 FLAGS += '-D__packed="__attribute__((__packed__))"'
@@ -145,10 +155,6 @@ build{
     includes=stm_includes
 }
 
-tup.frule{
-    command='python ../tools/odrive/version.py --output %o',
-    outputs={'build/version.h'}
-}
 
 build{
     name='ODriveFirmware',

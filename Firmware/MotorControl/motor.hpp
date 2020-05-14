@@ -7,35 +7,8 @@
 
 #include "drv8301.h"
 
-class Motor {
+class Motor : public MotorIntf {
 public:
-    enum Error {
-        ERROR_NONE = 0,
-        ERROR_PHASE_RESISTANCE_OUT_OF_RANGE = 0x0001,
-        ERROR_PHASE_INDUCTANCE_OUT_OF_RANGE = 0x0002,
-        ERROR_ADC_FAILED                    = 0x0004,
-        ERROR_DRV_FAULT                     = 0x0008,
-        ERROR_CONTROL_DEADLINE_MISSED       = 0x0010,
-        ERROR_NOT_IMPLEMENTED_MOTOR_TYPE    = 0x0020,
-        ERROR_BRAKE_CURRENT_OUT_OF_RANGE    = 0x0040,
-        ERROR_MODULATION_MAGNITUDE          = 0x0080,
-        ERROR_BRAKE_DEADTIME_VIOLATION      = 0x0100,
-        ERROR_UNEXPECTED_TIMER_CALLBACK     = 0x0200,
-        ERROR_CURRENT_SENSE_SATURATION      = 0x0400,
-        ERROR_INVERTER_OVER_TEMP            = 0x0800,
-        ERROR_CURRENT_LIMIT_VIOLATION       = 0x1000,
-        ERROR_BRAKE_DUTY_CYCLE_NAN          = 0x2000,
-        ERROR_DC_BUS_OVER_REGEN_CURRENT     = 0x4000, // too much current pushed into the power supply
-        ERROR_DC_BUS_OVER_CURRENT           = 0x8000, // too much current pulled out of the power supply
-    };
-
-    enum MotorType_t {
-        MOTOR_TYPE_HIGH_CURRENT = 0,
-        // MOTOR_TYPE_LOW_CURRENT = 1, //Not yet implemented
-        MOTOR_TYPE_GIMBAL = 2,
-        MOTOR_TYPE_ACIM = 3,
-    };
-
     struct Iph_BC_t {
         float phB;
         float phC;
@@ -65,7 +38,7 @@ public:
     // NOTE: for gimbal motors, all units of A are instead V.
     // example: vel_gain is [V/(count/s)] instead of [A/(count/s)]
     // example: current_lim and calibration_current will instead determine the maximum voltage applied to the motor.
-    struct Config_t {
+    struct Config_t : public ConfigIntf {
         bool pre_calibrated = false; // can be set to true to indicate that all values here are valid
         int32_t pole_pairs = 7;
         float calibration_current = 10.0f;    // [A]
@@ -73,7 +46,7 @@ public:
         float phase_inductance = 0.0f;        // to be set by measure_phase_inductance
         float phase_resistance = 0.0f;        // to be set by measure_phase_resistance
         int32_t direction = 0;                // 1 or -1 (0 = unspecified)
-        MotorType_t motor_type = MOTOR_TYPE_HIGH_CURRENT;
+        MotorType motor_type = MOTOR_TYPE_HIGH_CURRENT;
         // Read out max_allowed_current to see max supported value for current_lim.
         // float current_lim = 70.0f; //[A]
         float current_lim = 10.0f;  //[A]
@@ -89,6 +62,16 @@ public:
         bool acim_autoflux_enable = false;
         float acim_autoflux_attack_gain = 10.0f;
         float acim_autoflux_decay_gain = 1.0f;
+
+        // custom property setters
+        Motor* parent = nullptr;
+        void set_pre_calibrated(bool value) {
+            pre_calibrated = value;
+            parent->is_calibrated_ = parent->is_calibrated_ || parent->config_.pre_calibrated;
+        }
+        void set_phase_inductance(float value) { phase_inductance = value; parent->update_current_controller_gains(); }
+        void set_phase_resistance(float value) { phase_resistance = value; parent->update_current_controller_gains(); }
+        void set_current_control_bandwidth(float value) { current_control_bandwidth = value; parent->update_current_controller_gains(); }
     };
 
     enum TimingLog_t {
@@ -105,13 +88,6 @@ public:
         TIMING_LOG_SAMPLE_NOW,
         TIMING_LOG_SPI_END,
         TIMING_LOG_NUM_SLOTS
-    };
-
-    enum ArmedState_t {
-        ARMED_STATE_DISARMED,
-        ARMED_STATE_WAITING_FOR_TIMINGS,
-        ARMED_STATE_WAITING_FOR_UPDATE,
-        ARMED_STATE_ARMED,
     };
 
     Motor(const MotorHardwareConfig_t& hw_config,
@@ -160,13 +136,17 @@ public:
     bool next_timings_valid_ = false;
     uint16_t last_cpu_time_ = 0;
     int timing_log_index_ = 0;
-    uint16_t timing_log_[TIMING_LOG_NUM_SLOTS] = { 0 };
+    struct {
+        uint16_t& operator[](size_t idx) { return content[idx]; }
+        uint16_t& get(size_t idx) { return content[idx]; }
+        uint16_t content[TIMING_LOG_NUM_SLOTS];
+    } timing_log_;
 
     // variables exposed on protocol
     Error error_ = ERROR_NONE;
     // Do not write to this variable directly!
     // It is for exclusive use by the safety_critical_... functions.
-    ArmedState_t armed_state_ = ARMED_STATE_DISARMED; 
+    ArmedState armed_state_ = ARMED_STATE_DISARMED; 
     bool is_calibrated_ = config_.pre_calibrated;
     Iph_BC_t current_meas_ = {0.0f, 0.0f};
     Iph_BC_t DC_calib_ = {0.0f, 0.0f};
@@ -190,95 +170,12 @@ public:
         .async_phase_vel = 0.0f,
         .async_phase_offset = 0.0f,
     };
-    DRV8301_FaultType_e drv_fault_ = DRV8301_FaultType_NoFault;
+    struct : GateDriverIntf {
+        DrvFault drv_fault = DRV_FAULT_NO_FAULT;
+    } gate_driver_exported_;
     DRV_SPI_8301_Vars_t gate_driver_regs_; //Local view of DRV registers (initialized by DRV8301_setup)
     float thermal_current_lim_ = 10.0f;  //[A]
     float inverter_temp_ = 20.0f;
-
-    // Communication protocol definitions
-    auto make_protocol_definitions() {
-        return make_protocol_member_list(
-            make_protocol_property("error", &error_),
-            make_protocol_ro_property("armed_state", &armed_state_),
-            make_protocol_ro_property("is_calibrated", &is_calibrated_),
-            make_protocol_ro_property("current_meas_phB", &current_meas_.phB),
-            make_protocol_ro_property("current_meas_phC", &current_meas_.phC),
-            make_protocol_property("DC_calib_phB", &DC_calib_.phB),
-            make_protocol_property("DC_calib_phC", &DC_calib_.phC),
-            make_protocol_property("phase_current_rev_gain", &phase_current_rev_gain_),
-            make_protocol_ro_property("thermal_current_lim", &thermal_current_lim_),
-            make_protocol_ro_property("inverter_temp", &inverter_temp_),
-            make_protocol_object("current_control",
-                make_protocol_property("p_gain", &current_control_.p_gain),
-                make_protocol_property("i_gain", &current_control_.i_gain),
-                make_protocol_property("v_current_control_integral_d", &current_control_.v_current_control_integral_d),
-                make_protocol_property("v_current_control_integral_q", &current_control_.v_current_control_integral_q),
-                make_protocol_property("Ibus", &current_control_.Ibus),
-                make_protocol_property("final_v_alpha", &current_control_.final_v_alpha),
-                make_protocol_property("final_v_beta", &current_control_.final_v_beta),
-                make_protocol_property("Id_setpoint", &current_control_.Id_setpoint),
-                make_protocol_ro_property("Iq_setpoint", &current_control_.Iq_setpoint),
-                make_protocol_property("Iq_measured", &current_control_.Iq_measured),
-                make_protocol_property("Id_measured", &current_control_.Id_measured),
-                make_protocol_property("I_measured_report_filter_k", &current_control_.I_measured_report_filter_k),
-                make_protocol_ro_property("max_allowed_current", &current_control_.max_allowed_current),
-                make_protocol_ro_property("overcurrent_trip_level", &current_control_.overcurrent_trip_level),
-                make_protocol_property("acim_rotor_flux", &current_control_.acim_rotor_flux),
-                make_protocol_ro_property("async_phase_vel", &current_control_.async_phase_vel),
-                make_protocol_property("async_phase_offset", &current_control_.async_phase_offset)
-            ),
-            make_protocol_object("gate_driver",
-                make_protocol_ro_property("drv_fault", &drv_fault_)
-                // make_protocol_ro_property("status_reg_1", &gate_driver_regs_.Stat_Reg_1_Value),
-                // make_protocol_ro_property("status_reg_2", &gate_driver_regs_.Stat_Reg_2_Value),
-                // make_protocol_ro_property("ctrl_reg_1", &gate_driver_regs_.Ctrl_Reg_1_Value),
-                // make_protocol_ro_property("ctrl_reg_2", &gate_driver_regs_.Ctrl_Reg_2_Value)
-            ),
-            make_protocol_object("timing_log",
-                make_protocol_ro_property("TIMING_LOG_GENERAL", &timing_log_[TIMING_LOG_GENERAL]),
-                make_protocol_ro_property("TIMING_LOG_ADC_CB_I", &timing_log_[TIMING_LOG_ADC_CB_I]),
-                make_protocol_ro_property("TIMING_LOG_ADC_CB_DC", &timing_log_[TIMING_LOG_ADC_CB_DC]),
-                make_protocol_ro_property("TIMING_LOG_MEAS_R", &timing_log_[TIMING_LOG_MEAS_R]),
-                make_protocol_ro_property("TIMING_LOG_MEAS_L", &timing_log_[TIMING_LOG_MEAS_L]),
-                make_protocol_ro_property("TIMING_LOG_ENC_CALIB", &timing_log_[TIMING_LOG_ENC_CALIB]),
-                make_protocol_ro_property("TIMING_LOG_IDX_SEARCH", &timing_log_[TIMING_LOG_IDX_SEARCH]),
-                make_protocol_ro_property("TIMING_LOG_FOC_VOLTAGE", &timing_log_[TIMING_LOG_FOC_VOLTAGE]),
-                make_protocol_ro_property("TIMING_LOG_FOC_CURRENT", &timing_log_[TIMING_LOG_FOC_CURRENT]),
-                make_protocol_ro_property("TIMING_LOG_SPI_START", &timing_log_[TIMING_LOG_SPI_START]),
-                make_protocol_ro_property("TIMING_LOG_SAMPLE_NOW", &timing_log_[TIMING_LOG_SAMPLE_NOW]),
-                make_protocol_ro_property("TIMING_LOG_SPI_END", &timing_log_[TIMING_LOG_SPI_END])
-            ),
-            make_protocol_object("config",
-                make_protocol_property("pre_calibrated", &config_.pre_calibrated,
-                    [](void* ctx) { static_cast<Motor*>(ctx)->is_calibrated_ =
-                        static_cast<Motor*>(ctx)->is_calibrated_ || static_cast<Motor*>(ctx)->config_.pre_calibrated; }, this),
-                make_protocol_property("pole_pairs", &config_.pole_pairs),
-                make_protocol_property("calibration_current", &config_.calibration_current),
-                make_protocol_property("resistance_calib_max_voltage", &config_.resistance_calib_max_voltage),
-                make_protocol_property("phase_inductance", &config_.phase_inductance,
-                    [](void* ctx) { static_cast<Motor*>(ctx)->update_current_controller_gains(); }, this),
-                make_protocol_property("phase_resistance", &config_.phase_resistance,
-                    [](void* ctx) { static_cast<Motor*>(ctx)->update_current_controller_gains(); }, this),
-                make_protocol_property("direction", &config_.direction),
-                make_protocol_property("motor_type", &config_.motor_type),
-                make_protocol_property("current_lim", &config_.current_lim),
-                make_protocol_property("current_lim_margin", &config_.current_lim_margin),
-                make_protocol_property("inverter_temp_limit_lower", &config_.inverter_temp_limit_lower),
-                make_protocol_property("inverter_temp_limit_upper", &config_.inverter_temp_limit_upper),
-                make_protocol_property("requested_current_range", &config_.requested_current_range),
-                make_protocol_property("current_control_bandwidth", &config_.current_control_bandwidth,
-                    [](void* ctx) { static_cast<Motor*>(ctx)->update_current_controller_gains(); }, this),
-                make_protocol_property("acim_slip_velocity", &config_.acim_slip_velocity),
-                make_protocol_property("acim_gain_min_flux", &config_.acim_gain_min_flux),
-                make_protocol_property("acim_autoflux_min_Id", &config_.acim_autoflux_min_Id),
-                make_protocol_property("acim_autoflux_enable", &config_.acim_autoflux_enable),
-                make_protocol_property("acim_autoflux_attack_gain", &config_.acim_autoflux_attack_gain),
-                make_protocol_property("acim_autoflux_decay_gain", &config_.acim_autoflux_decay_gain)
-            )
-        );
-    }
 };
-
-DEFINE_ENUM_FLAG_OPERATORS(Motor::Error)
 
 #endif // __MOTOR_HPP

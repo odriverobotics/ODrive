@@ -188,7 +188,7 @@ void CANSimple::set_axis_nodeid_callback(Axis* axis, can_Message_t& msg) {
 }
 
 void CANSimple::set_axis_requested_state_callback(Axis* axis, can_Message_t& msg) {
-    axis->requested_state_ = static_cast<Axis::State_t>(can_getSignal<int32_t>(msg, 0, 16, true));
+    axis->requested_state_ = static_cast<Axis::AxisState>(can_getSignal<int32_t>(msg, 0, 16, true));
 }
 void CANSimple::set_axis_startup_config_callback(Axis* axis, can_Message_t& msg) {
     // Not Implemented

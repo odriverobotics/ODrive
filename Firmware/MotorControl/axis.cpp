@@ -161,9 +161,9 @@ bool Axis::do_checks() {
     if ((current_state_ != AXIS_STATE_IDLE) && (motor_.armed_state_ == Motor::ARMED_STATE_DISARMED))
         // motor got disarmed in something other than the idle loop
         error_ |= ERROR_MOTOR_DISARMED;
-    if (!(vbus_voltage >= board_config.dc_bus_undervoltage_trip_level))
+    if (!(vbus_voltage >= odrv.config_.dc_bus_undervoltage_trip_level))
         error_ |= ERROR_DC_BUS_UNDER_VOLTAGE;
-    if (!(vbus_voltage <= board_config.dc_bus_overvoltage_trip_level))
+    if (!(vbus_voltage <= odrv.config_.dc_bus_overvoltage_trip_level))
         error_ |= ERROR_DC_BUS_OVER_VOLTAGE;
 
     // Sub-components should use set_error which will propegate to this error_

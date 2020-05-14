@@ -20,16 +20,6 @@ public:
                          float Vmax, float Amax, float Dmax);
     Step_t eval(float t);
 
-    auto make_protocol_definitions() {
-        return make_protocol_member_list(
-            make_protocol_object("config",
-                make_protocol_property("vel_limit", &config_.vel_limit),
-                make_protocol_property("accel_limit", &config_.accel_limit),
-                make_protocol_property("decel_limit", &config_.decel_limit)
-            )
-        );
-    }
-
     Axis* axis_ = nullptr;  // set by Axis constructor
     Config_t& config_;
 

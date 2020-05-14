@@ -72,7 +72,7 @@ function GCCToolchain(prefix, builddir, compiler_flags, linker_flags)
         else
             extra_outputs = {}
         end
-        if src == 'communication/communication.cpp' then extra_inputs = 'build/version.h' end -- TODO: fix hack
+        extra_inputs = {'autogen/version.h', 'autogen/interfaces.hpp', 'autogen/function_stubs.hpp', 'autogen/endpoints.hpp'} -- TODO: fix hack
         tup.frule{
             inputs= { src, extra_inputs=extra_inputs },
             command=compiler..' -c %f '..

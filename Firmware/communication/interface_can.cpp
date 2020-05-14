@@ -16,9 +16,9 @@
 // std::unordered_map<CAN_HandleTypeDef *, ODriveCAN *> ctxMap;
 
 // Constructor is called by communication.cpp and the handle is assigned appropriately
-ODriveCAN::ODriveCAN(CAN_HandleTypeDef *handle, ODriveCAN::Config_t &config)
-    : handle_{handle},
-      config_{config} {
+ODriveCAN::ODriveCAN(ODriveCAN::Config_t &config, CAN_HandleTypeDef *handle)
+    : config_{config},
+      handle_{handle} {
     // ctxMap[handle_] = this;
 }
 
@@ -32,7 +32,7 @@ void ODriveCAN::can_server_thread() {
             while (available()) {
                 read(rxmsg);
                 switch (config_.protocol) {
-                    case CAN_PROTOCOL_SIMPLE:
+                    case Config_t::PROTOCOL_SIMPLE:
                         CANSimple::handle_can_message(rxmsg);
                         break;
                 }
@@ -183,7 +183,7 @@ void ODriveCAN::send_heartbeat(Axis *axis) {
         uint32_t now = osKernelSysTick();
         if ((now - axis->last_heartbeat_) >= axis->config_.can_heartbeat_rate_ms) {
             switch (config_.protocol) {
-                case CAN_PROTOCOL_SIMPLE:
+                case Config_t::PROTOCOL_SIMPLE:
                     CANSimple::send_heartbeat(axis);
                     break;
             }

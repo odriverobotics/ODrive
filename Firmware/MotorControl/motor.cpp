@@ -127,7 +127,7 @@ bool Motor::check_DRV_fault() {
     GPIO_PinState nFAULT_state = HAL_GPIO_ReadPin(gate_driver_config_.nFAULT_port, gate_driver_config_.nFAULT_pin);
     if (nFAULT_state == GPIO_PIN_RESET) {
         // Update DRV Fault Code
-        drv_fault_ = DRV8301_getFaultType(&gate_driver_);
+        gate_driver_exported_.drv_fault = (GateDriverIntf::DrvFault)DRV8301_getFaultType(&gate_driver_);
         // Update/Cache all SPI device registers
         // DRV_SPI_8301_Vars_t* local_regs = &gate_driver_regs_;
         // local_regs->RcvCmd = true;

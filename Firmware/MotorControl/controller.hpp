@@ -5,38 +5,8 @@
 #error "This file should not be included directly. Include odrive_main.h instead."
 #endif
 
-class Controller {
+class Controller : public ControllerIntf {
 public:
-    enum Error {
-        ERROR_NONE                 = 0,
-        ERROR_OVERSPEED            = 0x01,
-        ERROR_INVALID_INPUT_MODE   = 0x02,
-        ERROR_UNSTABLE_GAIN        = 0x04,
-        ERROR_INVALID_MIRROR_AXIS  = 0x08,
-        ERROR_INVALID_LOAD_ENCODER = 0x10,
-        ERROR_INVALID_ESTIMATE     = 0x20,
-    };
-
-    // Note: these should be sorted from lowest level of control to
-    // highest level of control, to allow "<" style comparisons.
-    enum ControlMode{
-        CONTROL_MODE_VOLTAGE_CONTROL = 0,
-        CONTROL_MODE_CURRENT_CONTROL = 1,
-        CONTROL_MODE_VELOCITY_CONTROL = 2,
-        CONTROL_MODE_POSITION_CONTROL = 3
-    };
-
-    enum InputMode{
-        INPUT_MODE_INACTIVE,
-        INPUT_MODE_PASSTHROUGH,
-        INPUT_MODE_VEL_RAMP,
-        INPUT_MODE_POS_FILTER,
-        INPUT_MODE_MIX_CHANNELS,
-        INPUT_MODE_TRAP_TRAJ,
-        INPUT_MODE_CURRENT_RAMP,
-        INPUT_MODE_MIRROR,
-    };
-
     typedef struct {
         uint32_t index = 0;
         float cogging_map[3600];
@@ -48,7 +18,7 @@ public:
         bool anticogging_enabled  = true;
     } Anticogging_t;
 
-    struct Config_t {
+    struct Config_t : ConfigIntf {
         ControlMode control_mode = CONTROL_MODE_POSITION_CONTROL;  //see: ControlMode
         InputMode input_mode = INPUT_MODE_PASSTHROUGH;  //see: InputMode
         float pos_gain = 20.0f;  // [(counts/s) / counts]
@@ -72,6 +42,10 @@ public:
         uint8_t axis_to_mirror        = -1;
         float mirror_ratio            = 1.0f;
         uint8_t load_encoder_axis     = -1; // default depends on Axis number and is set in load_configuration()
+
+        // custom setters
+        Controller* parent;
+        void set_input_filter_bandwidth(float value) { input_filter_bandwidth = value; parent->update_filter_gains(); }
     };
 
     explicit Controller(Config_t& config);
@@ -121,56 +95,8 @@ public:
 
     bool anticogging_valid_ = false;
 
-    // Communication protocol definitions
-    auto make_protocol_definitions() {
-        return make_protocol_member_list(
-            make_protocol_property("error", &error_),
-            make_protocol_property("input_pos", &input_pos_,
-                [](void* ctx) { static_cast<Controller*>(ctx)->input_pos_updated(); }, this),
-            make_protocol_property("input_vel", &input_vel_),
-            make_protocol_property("input_current", &input_current_),
-            make_protocol_ro_property("pos_setpoint", &pos_setpoint_),
-            make_protocol_ro_property("vel_setpoint", &vel_setpoint_),
-            make_protocol_ro_property("current_setpoint", &current_setpoint_),
-            make_protocol_ro_property("trajectory_done", &trajectory_done_),
-            make_protocol_property("vel_integrator_current", &vel_integrator_current_),
-            make_protocol_property("anticogging_valid", &anticogging_valid_),
-            make_protocol_property("gain_scheduling_width", &config_.gain_scheduling_width),
-            make_protocol_object("config",
-                make_protocol_property("enable_vel_limit", &config_.enable_vel_limit),
-                make_protocol_property("enable_current_mode_vel_limit", &config_.enable_current_mode_vel_limit),
-                make_protocol_property("enable_gain_scheduling", &config_.enable_gain_scheduling),
-                make_protocol_property("enable_overspeed_error", &config_.enable_overspeed_error),
-                make_protocol_property("control_mode", &config_.control_mode),
-                make_protocol_property("input_mode", &config_.input_mode),
-                make_protocol_property("pos_gain", &config_.pos_gain),
-                make_protocol_property("vel_gain", &config_.vel_gain),
-                make_protocol_property("vel_integrator_gain", &config_.vel_integrator_gain),
-                make_protocol_property("vel_limit", &config_.vel_limit),
-                make_protocol_property("vel_limit_tolerance", &config_.vel_limit_tolerance),
-                make_protocol_property("vel_ramp_rate", &config_.vel_ramp_rate),
-                make_protocol_property("current_ramp_rate", &config_.current_ramp_rate),
-                make_protocol_property("homing_speed", &config_.homing_speed),
-                make_protocol_property("inertia", &config_.inertia),
-                make_protocol_property("axis_to_mirror", &config_.axis_to_mirror),
-                make_protocol_property("mirror_ratio", &config_.mirror_ratio),
-                make_protocol_property("load_encoder_axis", &config_.load_encoder_axis),
-                make_protocol_property("input_filter_bandwidth", &config_.input_filter_bandwidth,
-                                    [](void* ctx) { static_cast<Controller*>(ctx)->update_filter_gains(); }, this),
-                make_protocol_object("anticogging",
-                    make_protocol_ro_property("index", &config_.anticogging.index),
-                    make_protocol_property("pre_calibrated", &config_.anticogging.pre_calibrated),
-                    make_protocol_ro_property("calib_anticogging", &config_.anticogging.calib_anticogging),
-                    make_protocol_property("calib_pos_threshold", &config_.anticogging.calib_pos_threshold),
-                    make_protocol_property("calib_vel_threshold", &config_.anticogging.calib_vel_threshold),
-                    make_protocol_ro_property("cogging_ratio", &config_.anticogging.cogging_ratio),
-                    make_protocol_property("anticogging_enabled", &config_.anticogging.anticogging_enabled))),
-            make_protocol_function("move_incremental", *this, &Controller::move_incremental, "displacement", "from_goal_point"),
-            make_protocol_function("start_anticogging_calibration", *this, &Controller::start_anticogging_calibration)
-        );
-    }
+    // custom setters
+    void set_input_pos(float value) { input_pos_ = value; input_pos_updated(); }
 };
-
-DEFINE_ENUM_FLAG_OPERATORS(Controller::Error)
 
 #endif // __CONTROLLER_HPP

@@ -5,33 +5,12 @@
 #error "This file should not be included directly. Include odrive_main.h instead."
 #endif
 
-class Encoder {
+class Encoder : public EncoderIntf {
 public:
-    enum Error {
-        ERROR_NONE                     = 0,
-        ERROR_UNSTABLE_GAIN            = 0x01,
-        ERROR_CPR_POLEPAIRS_MISMATCH   = 0x02,
-        ERROR_NO_RESPONSE              = 0x04,
-        ERROR_UNSUPPORTED_ENCODER_MODE = 0x08,
-        ERROR_ILLEGAL_HALL_STATE = 0x10,
-        ERROR_INDEX_NOT_FOUND_YET = 0x20,
-        ERROR_ABS_SPI_TIMEOUT = 0x40,
-        ERROR_ABS_SPI_COM_FAIL = 0x80,
-        ERROR_ABS_SPI_NOT_READY = 0x100,
-    };
-
-    enum Mode_t {
-        MODE_INCREMENTAL,
-        MODE_HALL,
-        MODE_SINCOS,
-        MODE_SPI_ABS_CUI = 0x100,   //!< compatible with CUI AMT23xx
-        MODE_SPI_ABS_AMS = 0x101,   //!< compatible with AMS AS5047P, AS5048A/AS5048B (no daisy chain support)
-        MODE_SPI_ABS_AEAT = 0x102,  //!< not yet implemented
-    };
     const uint32_t MODE_FLAG_ABS = 0x100;
 
-    struct Config_t {
-        Encoder::Mode_t mode = Encoder::MODE_INCREMENTAL;
+    struct Config_t : EncoderIntf::ConfigIntf {
+        Mode mode = MODE_INCREMENTAL;
         bool use_index = false;
         bool pre_calibrated = false; // If true, this means the offset stored in
                                     // configuration is valid and does not need
@@ -53,6 +32,14 @@ public:
         uint16_t abs_spi_cs_gpio_pin = 1;
         uint16_t sincos_gpio_pin_sin = 3;
         uint16_t sincos_gpio_pin_cos = 4;
+
+        // custom setters
+        Encoder* parent = nullptr;
+        void set_use_index(bool value) { use_index = value; parent->set_idx_subscribe(); }
+        void set_find_idx_on_lockin_only(bool value) { find_idx_on_lockin_only = value; parent->set_idx_subscribe(); }
+        void set_abs_spi_cs_gpio_pin(uint16_t value) { abs_spi_cs_gpio_pin = value; parent->abs_spi_cs_pin_init(); }
+        void set_pre_calibrated(bool value) { pre_calibrated = value; parent->check_pre_calibrated(); }
+        void set_bandwidth(float value) { bandwidth = value; parent->update_pll_gains(); }
     };
 
     Encoder(const EncoderHardwareConfig_t& hw_config,
@@ -113,7 +100,7 @@ public:
     uint16_t abs_spi_dma_tx_[1] = {0xFFFF};
     uint16_t abs_spi_dma_rx_[1];
     bool abs_spi_pos_updated_ = false;
-    Mode_t mode_ = MODE_INCREMENTAL;
+    Mode mode_ = MODE_INCREMENTAL;
     GPIO_TypeDef* abs_spi_cs_port_;
     uint16_t abs_spi_cs_pin_;
     uint32_t abs_spi_cr1;
@@ -122,55 +109,6 @@ public:
     constexpr float getCoggingRatio(){
         return config_.cpr / 3600.0f;
     }
-
-    // Communication protocol definitions
-    auto make_protocol_definitions() {
-        return make_protocol_member_list(
-            make_protocol_property("error", &error_),
-            make_protocol_ro_property("is_ready", &is_ready_),
-            make_protocol_ro_property("index_found", const_cast<bool*>(&index_found_)),
-            make_protocol_ro_property("shadow_count", &shadow_count_),
-            make_protocol_ro_property("count_in_cpr", &count_in_cpr_),
-            make_protocol_ro_property("interpolation", &interpolation_),
-            make_protocol_ro_property("phase", &phase_),
-            make_protocol_ro_property("pos_estimate", &pos_estimate_),
-            make_protocol_ro_property("pos_cpr", &pos_cpr_),
-            make_protocol_ro_property("hall_state", &hall_state_),
-            make_protocol_ro_property("vel_estimate", &vel_estimate_),
-            make_protocol_ro_property("calib_scan_response", &calib_scan_response_),
-            make_protocol_property("pos_abs", &pos_abs_),
-            make_protocol_ro_property("spi_error_rate", &spi_error_rate_),
-
-            make_protocol_object("config",
-                make_protocol_property("mode", &config_.mode),
-                make_protocol_property("use_index", &config_.use_index,
-                    [](void* ctx) { static_cast<Encoder*>(ctx)->set_idx_subscribe(); }, this),
-                make_protocol_property("find_idx_on_lockin_only", &config_.find_idx_on_lockin_only,
-                    [](void* ctx) { static_cast<Encoder*>(ctx)->set_idx_subscribe(); }, this),
-                make_protocol_property("abs_spi_cs_gpio_pin", &config_.abs_spi_cs_gpio_pin,
-                    [](void* ctx) { static_cast<Encoder*>(ctx)->abs_spi_cs_pin_init(); }, this),
-                make_protocol_property("zero_count_on_find_idx", &config_.zero_count_on_find_idx),
-                make_protocol_property("cpr", &config_.cpr),
-                make_protocol_property("offset", &config_.offset),
-                make_protocol_property("pre_calibrated", &config_.pre_calibrated,
-                    [](void* ctx) { static_cast<Encoder*>(ctx)->check_pre_calibrated(); }, this),
-                make_protocol_property("offset_float", &config_.offset_float),
-                make_protocol_property("enable_phase_interpolation", &config_.enable_phase_interpolation),
-                make_protocol_property("bandwidth", &config_.bandwidth,
-                    [](void* ctx) { static_cast<Encoder*>(ctx)->update_pll_gains(); }, this),
-                make_protocol_property("calib_range", &config_.calib_range),
-                make_protocol_property("calib_scan_distance", &config_.calib_scan_distance),
-                make_protocol_property("calib_scan_omega", &config_.calib_scan_omega),
-                make_protocol_property("idx_search_unidirectional", &config_.idx_search_unidirectional),
-                make_protocol_property("ignore_illegal_hall_state", &config_.ignore_illegal_hall_state),
-                make_protocol_property("sincos_gpio_pin_sin", &config_.sincos_gpio_pin_sin),
-                make_protocol_property("sincos_gpio_pin_cos", &config_.sincos_gpio_pin_cos)
-            ),
-            make_protocol_function("set_linear_count", *this, &Encoder::set_linear_count, "count")
-        );
-    }
 };
-
-DEFINE_ENUM_FLAG_OPERATORS(Encoder::Error)
 
 #endif // __ENCODER_HPP

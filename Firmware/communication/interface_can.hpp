@@ -19,23 +19,14 @@ enum {
     CAN_BAUD_1M     = 1000000
 };
 
-enum CAN_Protocol_t {
-    CAN_PROTOCOL_SIMPLE
-};
-
-class ODriveCAN {
+class ODriveCAN : public OdriveIntf::CanIntf {
    public:
-    struct Config_t {
+    struct Config_t : ConfigIntf {
         uint32_t baud_rate = CAN_BAUD_250K;
-        CAN_Protocol_t protocol = CAN_PROTOCOL_SIMPLE;
+        Protocol protocol = PROTOCOL_SIMPLE;
     };
 
-    enum Error {
-        ERROR_NONE = 0x00,
-        ERROR_DUPLICATE_CAN_IDS = 0x01
-    };
-
-    ODriveCAN(CAN_HandleTypeDef *handle, ODriveCAN::Config_t &config);
+    ODriveCAN(ODriveCAN::Config_t &config, CAN_HandleTypeDef *handle);
 
     // Thread Relevant Data
     osThreadId thread_id_;
@@ -55,24 +46,12 @@ class ODriveCAN {
     uint32_t write(can_Message_t &txmsg);
     bool read(can_Message_t &rxmsg);
 
-    // Communication Protocol Handling
-    auto make_protocol_definitions() {
-        return make_protocol_member_list(
-            make_protocol_property("error", &error_),
-            make_protocol_object("config",
-                                 make_protocol_ro_property("baud_rate", &config_.baud_rate)),
-            make_protocol_property("can_protocol", &config_.protocol),
-            make_protocol_function("set_baud_rate", *this, &ODriveCAN::set_baud_rate, "baudRate"));
-    }
-
-   private:
-    CAN_HandleTypeDef *handle_ = nullptr;
     ODriveCAN::Config_t &config_;
+
+private:
+    CAN_HandleTypeDef *handle_ = nullptr;
 
     void set_baud_rate(uint32_t baudRate);
 };
-
-
-DEFINE_ENUM_FLAG_OPERATORS(ODriveCAN::Error)
 
 #endif  // __INTERFACE_CAN_HPP

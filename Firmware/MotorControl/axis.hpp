@@ -5,43 +5,8 @@
 #error "This file should not be included directly. Include odrive_main.h instead."
 #endif
 
-class Axis {
+class Axis : public AxisIntf {
 public:
-    enum Error {
-        ERROR_NONE = 0x00,
-        ERROR_INVALID_STATE = 0x01, //<! an invalid state was requested
-        ERROR_DC_BUS_UNDER_VOLTAGE = 0x02,
-        ERROR_DC_BUS_OVER_VOLTAGE = 0x04,
-        ERROR_CURRENT_MEASUREMENT_TIMEOUT = 0x08,
-        ERROR_BRAKE_RESISTOR_DISARMED = 0x10, //<! the brake resistor was unexpectedly disarmed
-        ERROR_MOTOR_DISARMED = 0x20, //<! the motor was unexpectedly disarmed
-        ERROR_MOTOR_FAILED = 0x40, // Go to motor.hpp for information, check odrvX.axisX.motor.error for error value 
-        ERROR_SENSORLESS_ESTIMATOR_FAILED = 0x80,
-        ERROR_ENCODER_FAILED = 0x100, // Go to encoder.hpp for information, check odrvX.axisX.encoder.error for error value
-        ERROR_CONTROLLER_FAILED = 0x200,
-        ERROR_POS_CTRL_DURING_SENSORLESS = 0x400, // DEPRECATED
-        ERROR_WATCHDOG_TIMER_EXPIRED = 0x800,
-        ERROR_MIN_ENDSTOP_PRESSED = 0x1000,
-        ERROR_MAX_ENDSTOP_PRESSED = 0x2000,
-        ERROR_ESTOP_REQUESTED = 0x4000,
-        ERROR_HOMING_WITHOUT_ENDSTOP = 0x20000, // the min endstop was not enabled during homing
-    };
-
-    enum State_t {
-        AXIS_STATE_UNDEFINED = 0,           //<! will fall through to idle
-        AXIS_STATE_IDLE = 1,                //<! disable PWM and do nothing
-        AXIS_STATE_STARTUP_SEQUENCE = 2, //<! the actual sequence is defined by the config.startup_... flags
-        AXIS_STATE_FULL_CALIBRATION_SEQUENCE = 3,   //<! run all calibration procedures, then idle
-        AXIS_STATE_MOTOR_CALIBRATION = 4,   //<! run motor calibration
-        AXIS_STATE_SENSORLESS_CONTROL = 5,  //<! run sensorless control
-        AXIS_STATE_ENCODER_INDEX_SEARCH = 6, //<! run encoder index search
-        AXIS_STATE_ENCODER_OFFSET_CALIBRATION = 7, //<! run encoder offset calibration
-        AXIS_STATE_CLOSED_LOOP_CONTROL = 8,  //<! run closed loop control
-        AXIS_STATE_LOCKIN_SPIN = 9,       //<! run lockin spin
-        AXIS_STATE_ENCODER_DIR_FIND = 10,
-        AXIS_STATE_HOMING = 11,   //<! run axis homing function
-    };
-
     struct LockinConfig_t {
         float current = 10.0f;           // [A]
         float ramp_time = 0.4f;          // [s]
@@ -88,6 +53,11 @@ public:
         LockinConfig_t general_lockin;
         uint8_t can_node_id = 0; // Both axes will have the same id to start
         uint32_t can_heartbeat_rate_ms = 100;
+
+        // custom setters
+        Axis* parent = nullptr;
+        void set_step_gpio_pin(uint16_t value) { step_gpio_pin = value; parent->decode_step_dir_pins(); }
+        void set_dir_gpio_pin(uint16_t value) { dir_gpio_pin = value; parent->decode_step_dir_pins(); }
     };
 
     struct Homing_t {
@@ -96,13 +66,6 @@ public:
 
     enum thread_signals {
         M_SIGNAL_PH_CURRENT_MEAS = 1u << 0
-    };
-
-    enum LockinState_t {
-        LOCKIN_STATE_INACTIVE,
-        LOCKIN_STATE_RAMP,
-        LOCKIN_STATE_ACCELERATE,
-        LOCKIN_STATE_CONST_VEL,
     };
 
     Axis(int axis_num,
@@ -143,7 +106,7 @@ public:
         sensorless_estimator_.error_ = SensorlessEstimator::ERROR_NONE;
         encoder_.error_              = Encoder::ERROR_NONE;
 
-        error_ = Axis::ERROR_NONE;
+        error_ = ERROR_NONE;
     }
 
     // True if there are no errors
@@ -250,85 +213,17 @@ public:
     GPIO_TypeDef* dir_port_;
     uint16_t dir_pin_;
 
-    State_t requested_state_ = AXIS_STATE_STARTUP_SEQUENCE;
-    std::array<State_t, 10> task_chain_ = { AXIS_STATE_UNDEFINED };
-    State_t& current_state_ = task_chain_.front();
+    AxisState requested_state_ = AXIS_STATE_STARTUP_SEQUENCE;
+    std::array<AxisState, 10> task_chain_ = { AXIS_STATE_UNDEFINED };
+    AxisState& current_state_ = task_chain_.front();
     uint32_t loop_counter_ = 0;
-    LockinState_t lockin_state_ = LOCKIN_STATE_INACTIVE;
+    LockinState lockin_state_ = LOCKIN_STATE_INACTIVE;
     Homing_t homing_;
     uint32_t last_heartbeat_ = 0;
 
     // watchdog
     uint32_t watchdog_current_value_= 0;
-
-    // Communication protocol definitions
-    auto make_protocol_definitions() {
-        return make_protocol_member_list(
-            make_protocol_property("error", &error_),
-            make_protocol_ro_property("step_dir_active", &step_dir_active_),
-            make_protocol_ro_property("current_state", &current_state_),
-            make_protocol_property("requested_state", &requested_state_),
-            make_protocol_ro_property("loop_counter", &loop_counter_),
-            make_protocol_ro_property("lockin_state", &lockin_state_),
-            make_protocol_property("is_homed", &homing_.is_homed),
-            make_protocol_object("config",
-                make_protocol_property("startup_motor_calibration", &config_.startup_motor_calibration),
-                make_protocol_property("startup_encoder_index_search", &config_.startup_encoder_index_search),
-                make_protocol_property("startup_encoder_offset_calibration", &config_.startup_encoder_offset_calibration),
-                make_protocol_property("startup_closed_loop_control", &config_.startup_closed_loop_control),
-                make_protocol_property("startup_sensorless_control", &config_.startup_sensorless_control),
-                make_protocol_property("startup_homing", &config_.startup_homing),
-                make_protocol_property("enable_step_dir", &config_.enable_step_dir),
-                make_protocol_property("step_dir_always_on", &config_.step_dir_always_on),
-                make_protocol_property("counts_per_step", &config_.counts_per_step),
-                make_protocol_property("watchdog_timeout", &config_.watchdog_timeout),
-                make_protocol_property("enable_watchdog", &config_.enable_watchdog),
-                make_protocol_property("step_gpio_pin", &config_.step_gpio_pin,
-                                    [](void* ctx) { static_cast<Axis*>(ctx)->decode_step_dir_pins(); }, this),
-                make_protocol_property("dir_gpio_pin", &config_.dir_gpio_pin,
-                                    [](void* ctx) { static_cast<Axis*>(ctx)->decode_step_dir_pins(); }, this),
-                make_protocol_object("calibration_lockin",
-                    make_protocol_property("current", &config_.calibration_lockin.current),
-                    make_protocol_property("ramp_time", &config_.calibration_lockin.ramp_time),
-                    make_protocol_property("ramp_distance", &config_.calibration_lockin.ramp_distance),
-                    make_protocol_property("accel", &config_.calibration_lockin.accel),
-                    make_protocol_property("vel", &config_.calibration_lockin.vel)),
-                make_protocol_object("sensorless_ramp",
-                    make_protocol_property("current", &config_.sensorless_ramp.current),
-                    make_protocol_property("ramp_time", &config_.sensorless_ramp.ramp_time),
-                    make_protocol_property("ramp_distance", &config_.sensorless_ramp.ramp_distance),
-                    make_protocol_property("accel", &config_.sensorless_ramp.accel),
-                    make_protocol_property("vel", &config_.sensorless_ramp.vel),
-                    make_protocol_property("finish_distance", &config_.sensorless_ramp.finish_distance),
-                    make_protocol_property("finish_on_vel", &config_.sensorless_ramp.finish_on_vel),
-                    make_protocol_property("finish_on_distance", &config_.sensorless_ramp.finish_on_distance),
-                    make_protocol_property("finish_on_enc_idx", &config_.sensorless_ramp.finish_on_enc_idx)),
-                make_protocol_object("general_lockin",
-                    make_protocol_property("current", &config_.general_lockin.current),
-                    make_protocol_property("ramp_time", &config_.general_lockin.ramp_time),
-                    make_protocol_property("ramp_distance", &config_.general_lockin.ramp_distance),
-                    make_protocol_property("accel", &config_.general_lockin.accel),
-                    make_protocol_property("vel", &config_.general_lockin.vel),
-                    make_protocol_property("finish_distance", &config_.general_lockin.finish_distance),
-                    make_protocol_property("finish_on_vel", &config_.general_lockin.finish_on_vel),
-                    make_protocol_property("finish_on_distance", &config_.general_lockin.finish_on_distance),
-                    make_protocol_property("finish_on_enc_idx", &config_.general_lockin.finish_on_enc_idx)),
-                make_protocol_property("can_node_id", &config_.can_node_id),
-                make_protocol_property("can_heartbeat_rate_ms", &config_.can_heartbeat_rate_ms)),
-            make_protocol_object("motor", motor_.make_protocol_definitions()),
-            make_protocol_object("controller", controller_.make_protocol_definitions()),
-            make_protocol_object("encoder", encoder_.make_protocol_definitions()),
-            make_protocol_object("sensorless_estimator", sensorless_estimator_.make_protocol_definitions()),
-            make_protocol_object("trap_traj", trap_traj_.make_protocol_definitions()),
-            make_protocol_object("min_endstop", min_endstop_.make_protocol_definitions()),
-            make_protocol_object("max_endstop", max_endstop_.make_protocol_definitions()),
-            make_protocol_function("watchdog_feed", *this, &Axis::watchdog_feed),
-            make_protocol_function("clear_errors", *this, &Axis::clear_errors)
-        );
-    }
 };
 
-
-DEFINE_ENUM_FLAG_OPERATORS(Axis::Error)
 
 #endif /* __AXIS_HPP */
