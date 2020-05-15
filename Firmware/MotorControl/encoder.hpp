@@ -9,7 +9,7 @@ class Encoder : public EncoderIntf {
 public:
     const uint32_t MODE_FLAG_ABS = 0x100;
 
-    struct Config_t : EncoderIntf::ConfigIntf {
+    struct Config_t {
         Mode mode = MODE_INCREMENTAL;
         bool use_index = false;
         bool pre_calibrated = false; // If true, this means the offset stored in

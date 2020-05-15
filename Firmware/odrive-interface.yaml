@@ -5,6 +5,7 @@ summary:  ODrive Interface Definitions
 
 interfaces:
   Odrive:
+    c_is_class: True
     attributes:
       vbus_voltage: readonly float32
       ibus: readonly float32
@@ -21,6 +22,7 @@ interfaces:
       brake_resistor_armed: readonly bool
       brake_resistor_saturated: bool
       system_stats:
+        c_is_class: False
         attributes:
           uptime: readonly uint32
           min_heap_space: readonly uint32
@@ -41,17 +43,20 @@ interfaces:
           stack_usage_startup: readonly uint32
           stack_usage_can: readonly uint32
           usb:
+            c_is_class: False
             attributes:
               rx_cnt: readonly uint32
               tx_cnt: readonly uint32
               tx_overrun_cnt: readonly uint32
           i2c:
+            c_is_class: False
             attributes:
               addr: readonly uint8
               addr_match_cnt: readonly uint32
               rx_cnt: readonly uint32
               error_cnt: readonly uint32
       config:
+        c_is_class: False
         attributes:
           enable_uart:
             type: bool
@@ -158,19 +163,21 @@ interfaces:
       enter_dfu_mode:
 
   Odrive.Can:
+    c_is_class: True
     attributes:
       error:
         nullflag: None
         flags: {DuplicateCanIds: }
       config:
+        c_is_class: False
         attributes:
           baud_rate: readonly uint32
-          protocol:
-            values: {Simple: }
+          protocol: Protocol
     functions:
       set_baud_rate: {in: {baudRate: uint32}}
 
   Axis:
+    c_is_class: True
     attributes:
       error:
         typeargs: {fibre.Property.mode: readonly}
@@ -212,6 +219,7 @@ interfaces:
           ConstVel:
       is_homed: {type: bool, c_name: homing_.is_homed}
       config:
+        c_is_class: False
         attributes:
           startup_motor_calibration:
             type: bool
@@ -250,6 +258,7 @@ interfaces:
           step_gpio_pin: {type: uint16, c_setter: 'set_step_gpio_pin'}
           dir_gpio_pin: {type: uint16, c_setter: 'set_dir_gpio_pin'}
           calibration_lockin: # TODO: this is a subset of lockin state
+            c_is_class: False
             attributes:
               current: float32
               ramp_time: float32
@@ -276,6 +285,7 @@ interfaces:
         doc: Check the watchdog timer for expiration. Also sets the watchdog error bit if expired.
 
   Axis.LockinState:
+    c_is_class: False
     attributes:
       current:
         type: float32
@@ -338,6 +348,7 @@ interfaces:
       thermal_current_lim: readonly float32
       inverter_temp: readonly float32
       current_control:
+        c_is_class: False
         attributes:
           p_gain: float32
           i_gain: float32
@@ -358,6 +369,7 @@ interfaces:
           async_phase_offset: float32
       gate_driver:
         c_name: gate_driver_exported_
+        c_is_class: False
         attributes:
           drv_fault:
             typeargs: {fibre.Property.mode: readonly}
@@ -379,6 +391,7 @@ interfaces:
           # ctrl_reg_1: readonly uint32
           # ctrl_reg_2: readonly uint32
       timing_log:
+        c_is_class: False
         attributes:
           general: {type: readonly uint16, c_name: 'get(Motor::TIMING_LOG_GENERAL)'}
           adc_cb_i: {type: readonly uint16, c_name: 'get(Motor::TIMING_LOG_ADC_CB_I)'}
@@ -393,6 +406,7 @@ interfaces:
           sample_now: {type: readonly uint16, c_name: 'get(Motor::TIMING_LOG_SAMPLE_NOW)'}
           spi_end: {type: readonly uint16, c_name: 'get(Motor::TIMING_LOG_SPI_END)'}
       config:
+        c_is_class: False
         attributes:
           pre_calibrated: {type: bool, c_setter: set_pre_calibrated}
           pole_pairs: int32
@@ -417,6 +431,7 @@ interfaces:
 
 
   Controller:
+    c_is_class: True
     attributes:
       error: 
         nullflag: None
@@ -437,6 +452,7 @@ interfaces:
       vel_integrator_current: float32
       anticogging_valid: bool
       config:
+        c_is_class: False
         attributes:
           gain_scheduling_width: float32
           enable_vel_limit: bool
@@ -484,6 +500,7 @@ interfaces:
             unit: 1/s
             c_setter: set_input_filter_bandwidth
           anticogging:
+            c_is_class: False
             attributes:
               index: readonly uint32
               pre_calibrated: bool
@@ -498,6 +515,7 @@ interfaces:
 
 
   Encoder:
+    c_is_class: True
     attributes:
       error:
         nullflag: None
@@ -525,6 +543,7 @@ interfaces:
       pos_abs: int32
       spi_error_rate: readonly float32
       config:
+        c_is_class: False
         attributes:
           mode: Mode
           use_index: {type: bool, c_setter: set_use_index}
@@ -561,6 +580,7 @@ interfaces:
       # pll_kp: float32
       # pll_ki: float32
       config:
+        c_is_class: False
         attributes:
           observer_gain: float32
           pll_bandwidth: float32
@@ -571,6 +591,7 @@ interfaces:
     c_is_class: True
     attributes:
       config:
+        c_is_class: False
         attributes:
           vel_limit: float32
           accel_limit: float32
@@ -582,6 +603,7 @@ interfaces:
     attributes:
       endstop_state: readonly bool
       config:
+        c_is_class: False
         attributes:
           gpio_num: {type: uint16, c_setter: set_gpio_num}
           enabled: {type: bool, c_setter: set_enabled}
@@ -592,6 +614,9 @@ interfaces:
 
 
 valuetypes:
+  Odrive.Can.Protocol:
+    values: {Simple: }
+
   Axis.AxisState: # TODO: remove redundant "Axis" in name
     values:
       Undefined:
@@ -657,6 +682,6 @@ valuetypes:
   Motor.MotorType:
     values:
       HighCurrent:
-      LowCurrent: # TODO: hide this in code
-      Gimbal:
+      #LowCurrent: # not implemented
+      Gimbal: {value: 2}
       Acim:

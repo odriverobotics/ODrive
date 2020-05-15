@@ -24,6 +24,7 @@ definitions:
         additionalProperties: {"$ref": "#/definitions/attribute"}
       __line__: {type: object}
       __column__: {type: object}
+    required: [c_is_class]
     additionalProperties: false
 
   valuetype:
@@ -239,6 +240,7 @@ def regularize_attribute(path, name, elem, c_is_class):
         elem['type'] = {}
         if 'attributes' in elem: elem['type']['attributes'] = elem.pop('attributes')
         if 'functions' in elem: elem['type']['functions'] = elem.pop('functions')
+        if 'c_is_class' in elem: elem['type']['c_is_class'] = elem.pop('c_is_class')
         if 'values' in elem: elem['type']['values'] = elem.pop('values')
         if 'flags' in elem: elem['type']['flags'] = elem.pop('flags')
         if 'nullflag' in elem: elem['type']['nullflag'] = elem.pop('nullflag')
@@ -275,7 +277,9 @@ def regularize_interface(path, name, elem):
     interfaces[path] = elem
     elem['functions'] = {name: regularize_func(path, name, func, {'obj': {'type': make_ref_type(elem)}})
                          for name, func in get_dict(elem, 'functions').items()}
-    treat_as_class = elem.get('c_is_class', None) or (len(elem['functions']) > 0)
+    if not 'c_is_class' in elem:
+        raise Exception(elem)
+    treat_as_class = elem['c_is_class'] # TODO: add command line arg to make this selectively optional
     elem['attributes'] = {name: regularize_attribute(path, name, prop, treat_as_class)
                           for name, prop in get_dict(elem, 'attributes').items()}
     elem['interfaces'] = []

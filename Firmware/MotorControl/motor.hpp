@@ -38,7 +38,7 @@ public:
     // NOTE: for gimbal motors, all units of A are instead V.
     // example: vel_gain is [V/(count/s)] instead of [A/(count/s)]
     // example: current_lim and calibration_current will instead determine the maximum voltage applied to the motor.
-    struct Config_t : public ConfigIntf {
+    struct Config_t {
         bool pre_calibrated = false; // can be set to true to indicate that all values here are valid
         int32_t pole_pairs = 7;
         float calibration_current = 10.0f;    // [A]

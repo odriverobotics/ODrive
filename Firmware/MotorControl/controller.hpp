@@ -18,7 +18,7 @@ public:
         bool anticogging_enabled  = true;
     } Anticogging_t;
 
-    struct Config_t : ConfigIntf {
+    struct Config_t {
         ControlMode control_mode = CONTROL_MODE_POSITION_CONTROL;  //see: ControlMode
         InputMode input_mode = INPUT_MODE_PASSTHROUGH;  //see: InputMode
         float pos_gain = 20.0f;  // [(counts/s) / counts]

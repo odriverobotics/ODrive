@@ -32,7 +32,7 @@ void ODriveCAN::can_server_thread() {
             while (available()) {
                 read(rxmsg);
                 switch (config_.protocol) {
-                    case Config_t::PROTOCOL_SIMPLE:
+                    case PROTOCOL_SIMPLE:
                         CANSimple::handle_can_message(rxmsg);
                         break;
                 }
@@ -183,7 +183,7 @@ void ODriveCAN::send_heartbeat(Axis *axis) {
         uint32_t now = osKernelSysTick();
         if ((now - axis->last_heartbeat_) >= axis->config_.can_heartbeat_rate_ms) {
             switch (config_.protocol) {
-                case Config_t::PROTOCOL_SIMPLE:
+                case PROTOCOL_SIMPLE:
                     CANSimple::send_heartbeat(axis);
                     break;
             }

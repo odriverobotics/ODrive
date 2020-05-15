@@ -13,7 +13,7 @@ class Endstop {
         bool pullup = true;
 
         // custom setters
-        Endstop* parent = nullptr
+        Endstop* parent = nullptr;
         void set_gpio_num(uint16_t value) { gpio_num = value; parent->update_config(); }
         void set_enabled(uint32_t value) { enabled = value; parent->update_config(); }
         void set_debounce_ms(uint32_t value) { debounce_ms = value; parent->update_config(); }
