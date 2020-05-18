@@ -180,7 +180,6 @@ interfaces:
     c_is_class: True
     attributes:
       error:
-        typeargs: {fibre.Property.mode: readonly}
         nullflag: 'None'
         flags:
           InvalidState:
@@ -393,18 +392,18 @@ interfaces:
       timing_log:
         c_is_class: False
         attributes:
-          general: {type: readonly uint16, c_name: 'get(Motor::TIMING_LOG_GENERAL)'}
-          adc_cb_i: {type: readonly uint16, c_name: 'get(Motor::TIMING_LOG_ADC_CB_I)'}
-          adc_cb_dc: {type: readonly uint16, c_name: 'get(Motor::TIMING_LOG_ADC_CB_DC)'}
-          meas_r: {type: readonly uint16, c_name: 'get(Motor::TIMING_LOG_MEAS_R)'}
-          meas_l: {type: readonly uint16, c_name: 'get(Motor::TIMING_LOG_MEAS_L)'}
-          enc_calib: {type: readonly uint16, c_name: 'get(Motor::TIMING_LOG_ENC_CALIB)'}
-          idx_search: {type: readonly uint16, c_name: 'get(Motor::TIMING_LOG_IDX_SEARCH)'}
-          foc_voltage: {type: readonly uint16, c_name: 'get(Motor::TIMING_LOG_FOC_VOLTAGE)'}
-          foc_current: {type: readonly uint16, c_name: 'get(Motor::TIMING_LOG_FOC_CURRENT)'}
-          spi_start: {type: readonly uint16, c_name: 'get(Motor::TIMING_LOG_SPI_START)'}
-          sample_now: {type: readonly uint16, c_name: 'get(Motor::TIMING_LOG_SAMPLE_NOW)'}
-          spi_end: {type: readonly uint16, c_name: 'get(Motor::TIMING_LOG_SPI_END)'}
+          general: {type: readonly uint16, c_name: 'get(TIMING_LOG_GENERAL)'}
+          adc_cb_i: {type: readonly uint16, c_name: 'get(TIMING_LOG_ADC_CB_I)'}
+          adc_cb_dc: {type: readonly uint16, c_name: 'get(TIMING_LOG_ADC_CB_DC)'}
+          meas_r: {type: readonly uint16, c_name: 'get(TIMING_LOG_MEAS_R)'}
+          meas_l: {type: readonly uint16, c_name: 'get(TIMING_LOG_MEAS_L)'}
+          enc_calib: {type: readonly uint16, c_name: 'get(TIMING_LOG_ENC_CALIB)'}
+          idx_search: {type: readonly uint16, c_name: 'get(TIMING_LOG_IDX_SEARCH)'}
+          foc_voltage: {type: readonly uint16, c_name: 'get(TIMING_LOG_FOC_VOLTAGE)'}
+          foc_current: {type: readonly uint16, c_name: 'get(TIMING_LOG_FOC_CURRENT)'}
+          spi_start: {type: readonly uint16, c_name: 'get(TIMING_LOG_SPI_START)'}
+          sample_now: {type: readonly uint16, c_name: 'get(TIMING_LOG_SAMPLE_NOW)'}
+          spi_end: {type: readonly uint16, c_name: 'get(TIMING_LOG_SPI_END)'}
       config:
         c_is_class: False
         attributes:

@@ -14,8 +14,8 @@
 #include <utils.hpp>
 #include <fibre/cpp_utils.hpp>
 
-//#include "autogen/interfaces.hpp"
-//#include "autogen/ascii_type_info.hpp"
+#include "autogen/type_info.hpp"
+#include "communication/interface_can.hpp"
 
 /* Private macros ------------------------------------------------------------*/
 /* Private typedef -----------------------------------------------------------*/
@@ -28,6 +28,9 @@
 #define TO_STR(s) TO_STR_INNER(s)
 
 /* Private variables ---------------------------------------------------------*/
+
+static Introspectable root_obj = OdriveTypeInfo<ODrive>::make_introspectable(odrv);
+
 /* Private function prototypes -----------------------------------------------*/
 /* Function implementations --------------------------------------------------*/
 
@@ -224,19 +227,18 @@ void ASCII_protocol_process_line(const uint8_t* buffer, size_t len, StreamSink& 
             odrv.reboot();
         }
 
-#if 0
     } else if (cmd[0] == 'r') { // read property
         char name[MAX_LINE_LENGTH];
         int numscan = sscanf(cmd, "r %255s", name);
         if (numscan < 1) {
             respond(response_channel, use_checksum, "invalid command format");
         } else {
-            Endpoint* endpoint = application_endpoints_->get_by_name(name, sizeof(name));
-            if (!endpoint) {
+            Introspectable property = root_obj.get_child(name, sizeof(name));
+            if (!property.is_valid()) {
                 respond(response_channel, use_checksum, "invalid property");
             } else {
                 char response[10];
-                bool success = endpoint->get_string(response, sizeof(response));
+                bool success = property.get_string(response, sizeof(response));
                 if (!success)
                     respond(response_channel, use_checksum, "not implemented");
                 else
@@ -251,16 +253,15 @@ void ASCII_protocol_process_line(const uint8_t* buffer, size_t len, StreamSink& 
         if (numscan < 1) {
             respond(response_channel, use_checksum, "invalid command format");
         } else {
-            Endpoint* endpoint = application_endpoints_->get_by_name(name, sizeof(name));
-            if (!endpoint) {
+            Introspectable property = root_obj.get_child(name, sizeof(name));
+            if (!property.is_valid()) {
                 respond(response_channel, use_checksum, "invalid property");
             } else {
-                bool success = endpoint->set_string(value, sizeof(value));
+                bool success = property.set_string(value, sizeof(value));
                 if (!success)
                     respond(response_channel, use_checksum, "not implemented");
             }
         }
-#endif
 
     } else if (cmd[0] == 'u') { // Update axis watchdog. 
         unsigned motor_number;

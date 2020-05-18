@@ -74,22 +74,6 @@ public:
         void set_current_control_bandwidth(float value) { current_control_bandwidth = value; parent->update_current_controller_gains(); }
     };
 
-    enum TimingLog_t {
-        TIMING_LOG_GENERAL,
-        TIMING_LOG_ADC_CB_I,
-        TIMING_LOG_ADC_CB_DC,
-        TIMING_LOG_MEAS_R,
-        TIMING_LOG_MEAS_L,
-        TIMING_LOG_ENC_CALIB,
-        TIMING_LOG_IDX_SEARCH,
-        TIMING_LOG_FOC_VOLTAGE,
-        TIMING_LOG_FOC_CURRENT,
-        TIMING_LOG_SPI_START,
-        TIMING_LOG_SAMPLE_NOW,
-        TIMING_LOG_SPI_END,
-        TIMING_LOG_NUM_SLOTS
-    };
-
     Motor(const MotorHardwareConfig_t& hw_config,
          const GateDriverHardwareConfig_t& gate_driver_config,
          Config_t& config);

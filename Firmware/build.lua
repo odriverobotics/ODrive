@@ -72,7 +72,7 @@ function GCCToolchain(prefix, builddir, compiler_flags, linker_flags)
         else
             extra_outputs = {}
         end
-        extra_inputs = {'autogen/version.h', 'autogen/interfaces.hpp', 'autogen/function_stubs.hpp', 'autogen/endpoints.hpp'} -- TODO: fix hack
+        extra_inputs = {'autogen/version.h', 'autogen/interfaces.hpp', 'autogen/function_stubs.hpp', 'autogen/endpoints.hpp', 'autogen/type_info.hpp'} -- TODO: fix hack
         tup.frule{
             inputs= { src, extra_inputs=extra_inputs },
             command=compiler..' -c %f '..

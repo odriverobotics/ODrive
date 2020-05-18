@@ -33,15 +33,30 @@ public:
 [%- endfor %]
     };
 [%- endfor %]
+
+[%- for property in intf.attributes.values() %]
+[%- if property.type.fullname.startswith("fibre.Property") %]
+[%- if not property.c_setter %]
+    template<typename T> static auto get_[[property.name]](T* obj) { return [[property.type.c_type]]{obj, [](void* ctx){ return ([[property.type.value_type.c_type]])((T*)ctx)->[[property.c_getter]]; }}; }
+[%- else %]
+    template<typename T> static auto get_[[property.name]](T* obj) { return [[property.type.c_type]]{obj, [](void* ctx){ return ([[property.type.value_type.c_type]])((T*)ctx)->[[property.c_getter]]; }, [](void* ctx, [[property.type.value_type.c_type]] value){ ((T*)ctx)->[[property.c_setter]](value); }}; }
+[%- endif %]
+[%- else %]
+    template<typename T> static auto get_[[property.name]](T* obj) { return &obj->[[property.c_name]]; }
+[%- endif %]
+[%- endfor %]
+
 [%- for func in intf.functions.values() %]
     virtual [[rettype(func)]] [[func.name | to_snake_case]]([% for in in func.in.values() %][% if loop.index0 %][[in.type.c_type]] [[in.name]][[', ' if not loop.last]][% endif %][% endfor %]) = 0;
 [%- endfor %]
 [%- for func in intf.functions.values() %]
 [%- for k, arg in func.in.items() | skip_first %]
     [[arg.type.c_type]] [[func.name | to_snake_case]]_in_[[arg.name]]_; // for internal use by Fibre
+    template<typename T> static auto get_[[func.name | to_snake_case]]_in_[[arg.name]]_(T* obj) { return Property<[[arg.type.c_type]]>{obj, [](void* ctx){ return ([[arg.type.c_type]])((T*)ctx)->[[func.name | to_snake_case]]_in_[[arg.name]]_; }, [](void* ctx, [[arg.type.c_type]] value){ ((T*)ctx)->[[func.name | to_snake_case]]_in_[[arg.name]]_ = value; }}; }
 [%- endfor %]
 [%- for k, arg in func.out.items() %]
     [[arg.type.c_type]] [[func.name | to_snake_case]]_out_[[arg.name]]_; // for internal use by Fibre
+    template<typename T> static auto get_[[func.name | to_snake_case]]_out_[[arg.name]]_(T* obj) { return Property<const [[arg.type.c_type]]>{obj, [](void* ctx){ return ([[arg.type.c_type]])((T*)ctx)->[[func.name | to_snake_case]]_out_[[arg.name]]_; }}; }
 [%- endfor %]
 [%- endfor %]
 };

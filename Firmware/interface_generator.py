@@ -160,9 +160,11 @@ def make_property_type(typeargs):
     prop_type = {
         'name': name,
         'fullname': fullname,
+        'purename': 'fibre.Property',
         'c_type': c_type,
         'value_type': value_type, # TODO: should be a metaarg
         'mode': mode, # TODO: should be a metaarg
+        'builtin': True,
         'attributes': {},
         'functions': {}
     }
@@ -249,15 +251,19 @@ def regularize_attribute(path, name, elem, c_is_class):
     elem['fullname'] = join_name(path, name)
     elem['typeargs'] = elem.get('typeargs', {})
     elem['c_name'] = elem.get('c_name', None) or (elem['name'] + ('_' if c_is_class else ''))
+    elem['c_getter'] = elem.get('c_getter', elem['c_name'])
+    elem['c_setter'] = elem.get('c_setter', elem['c_name'] + ' = ')
 
     if isinstance(elem['type'], str) and elem['type'].startswith('readonly '):
         elem['typeargs']['fibre.Property.mode'] = 'readonly'
         elem['typeargs']['fibre.Property.type'] = elem['type'][len('readonly '):]
         elem['type'] = 'fibre.Property'
+        if elem['typeargs']['fibre.Property.mode'] == 'readonly': elem.pop('c_setter')
     elif ('flags' in elem['type']) or ('values' in elem['type']):
         elem['typeargs']['fibre.Property.mode'] = elem['typeargs'].get('fibre.Property.mode', None) or 'readwrite'
         elem['typeargs']['fibre.Property.type'] = regularize_valuetype(path, to_pascal_case(name), elem['type'])
         elem['type'] = 'fibre.Property'
+        if elem['typeargs']['fibre.Property.mode'] == 'readonly': elem.pop('c_setter')
     else:
         elem['type'] = regularize_interface(path, to_pascal_case(name), elem['type'])
     return elem
@@ -375,19 +381,8 @@ def map_to_fibre01_type(t):
         return 'float'
     return t['fullname']
 
-def generate_endpoint_for_property(prop, bindto, idx):
-    c_value_type = prop['type']['value_type']['c_type']
-    if prop.get('c_setter', None) is None:
-        c_setter = '[](void* ctx, ' + c_value_type + ' val){ ((decltype(&' + bindto + '))ctx)->' + prop['c_name'] + ' = val; }'
-    else:
-        c_setter = '[](void* ctx, ' + c_value_type + ' val){ ((decltype(&' + bindto + '))ctx)->' + prop['c_setter'] + '(val); }'
-    c_getter = '[](void* ctx) { return (const ' + c_value_type + '&)((decltype(&' + bindto + '))ctx)->' + prop['c_name'] + '; }'
-    
+def generate_endpoint_for_property(prop, attr_bindto, idx):
     prop_intf = interfaces[prop['type']['fullname']]
-    if prop['type']['mode'] == 'readonly':
-        attr_bindto = prop_intf['c_type'] + '{(void*)&' + bindto + ', ' + c_getter + '}'
-    else:
-        attr_bindto = prop_intf['c_type'] + '{(void*)&' + bindto + ', ' + c_getter + ', ' + c_setter + '}'
 
     endpoint = {
         'id': idx,
@@ -416,14 +411,14 @@ def generate_endpoint_table(intf, bindto, idx):
     for k, prop in intf['attributes'].items():
         property_value_type = re.findall('^fibre\.Property<([^>]*), (readonly|readwrite)>$', prop['type']['fullname'])
         #attr_bindto = join_name(bindto, bindings_map.get(join_name(intf['fullname'], k), k + ('_' if len(intf['functions']) or (intf['fullname'] in treat_as_classes) else '')))
+        attr_bindto = intf['c_type'] + '::get_' + prop['name'] + '(' + bindto + ')'
         if len(property_value_type):
             # Special handling for Property<...> attributes: they resolve to one single endpoint
-            endpoint, endpoint_definition = generate_endpoint_for_property(prop, bindto, idx + cnt)
+            endpoint, endpoint_definition = generate_endpoint_for_property(prop, attr_bindto, idx + cnt)
             endpoints.append(endpoint)
             endpoint_definitions.append(endpoint_definition)
             cnt += 1
         else:
-            attr_bindto = join_name(bindto, prop['c_name'])
             inner_endpoints, inner_endpoint_definitions, inner_cnt = generate_endpoint_table(prop['type'], attr_bindto, idx + cnt)
             endpoints += inner_endpoints
             endpoint_definitions.append({
@@ -437,25 +432,23 @@ def generate_endpoint_table(intf, bindto, idx):
         endpoints.append({
             'id': idx + cnt,
             'function': func,
-            'in_bindings': {**{'obj': '&' + bindto}, **{k_arg: bindto + '.' + func['name'] + '_in_' + k_arg + '_' for k_arg in list(func['in'].keys())[1:]}},
-            'out_bindings': {k_arg: '&' + bindto + '.' + func['name'] + '_out_' + k_arg + '_' for k_arg in func['out'].keys()},
+            'in_bindings': {**{'obj': bindto}, **{k_arg: '(' + bindto + ')->' + func['name'] + '_in_' + k_arg + '_' for k_arg in list(func['in'].keys())[1:]}},
+            'out_bindings': {k_arg: '&(' + bindto + ')->' + func['name'] + '_out_' + k_arg + '_' for k_arg in func['out'].keys()},
         })
         in_def = []
         out_def = []
         for i, (k_arg, arg) in enumerate(list(func['in'].items())[1:]):
             endpoint, endpoint_definition = generate_endpoint_for_property({
                 'name': arg['name'],
-                'c_name': func['name'] + '_in_' + k_arg + '_',
                 'type': make_property_type({'fibre.Property.type': arg['type'], 'fibre.Property.mode': 'readwrite'})
-            }, bindto, idx + cnt + 1 + i)
+            }, intf['c_type'] + '::get_' + func['name'] + '_in_' + k_arg + '_' + '(' + bindto + ')', idx + cnt + 1 + i)
             endpoints.append(endpoint)
             in_def.append(endpoint_definition)
         for i, (k_arg, arg) in enumerate(func['out'].items()):
             endpoint, endpoint_definition = generate_endpoint_for_property({
                 'name': arg['name'],
-                'c_name': func['name'] + '_out_' + k_arg + '_',
-                'type': make_property_type({'fibre.Property.type': arg['type'], 'fibre.Property.mode': 'readwrite'})
-            }, bindto, idx + cnt + len(func['in']) + i)
+                'type': make_property_type({'fibre.Property.type': arg['type'], 'fibre.Property.mode': 'readonly'})
+            }, intf['c_type'] + '::get_' + func['name'] + '_out_' + k_arg + '_' + '(' + bindto + ')', idx + cnt + len(func['in']) + i)
             endpoints.append(endpoint)
             out_def.append(endpoint_definition)
 
@@ -558,7 +551,7 @@ for k, item in list(enums.items()):
 
 
 
-endpoints, embedded_endpoint_definitions, _ = generate_endpoint_table(interfaces['Odrive'], 'odrv', 1) # TODO: make user-configurable
+endpoints, embedded_endpoint_definitions, _ = generate_endpoint_table(interfaces['Odrive'], '&odrv', 1) # TODO: make user-configurable
 embedded_endpoint_definitions = [{'name': '', 'id': 0, 'type': 'json', 'access': 'r'}] + embedded_endpoint_definitions
 endpoints = [{'id': 0, 'function': {'fullname': 'endpoint0_handler', 'in': {}, 'out': {}}, 'bindings': {}}] + endpoints
 
