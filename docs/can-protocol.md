@@ -16,7 +16,7 @@ We've implemented a very basic CAN protocol that we call "CAN Simple" to get use
 ### CAN Frame
 At its most basic, the CAN Simple frame looks like this:
 
-* Upper 6 bits - Node ID - max 0x3F
+* Upper 6 bits - Node ID - max 0x3F (or 0xFFFFFF when using extended CAN IDs)
 * Lower 5 bits - Command ID - max 0x1F
 
 To understand how the Node ID and Command ID interact, let's look at an example
@@ -40,7 +40,7 @@ CMD ID | Name | Sender | Signals | Start byte | Signal Type | Bits | Factor | Of
 0x003 | Get Motor Error\* | Axis  | Motor Error | 0 | Unsigned Int | 32 | 1 | 0 | Intel
 0x004 | Get Encoder Error\*  | Axis | Encoder Error | 0 | Unsigned Int | 32 | 1 | 0 | Intel
 0x005 | Get Sensorless Error\* | Axis | Sensorless Error | 0 | Unsigned Int | 32 | 1 | 0 | Intel
-0x006 | Set Axis Node ID | Master | Axis CAN Node ID | 0 | Unsigned Int | 16 | 1 | 0 | Intel
+0x006 | Set Axis Node ID | Master | Axis CAN Node ID | 0 | Unsigned Int | 32 | 1 | 0 | Intel
 0x007 | Set Axis Requested State | Master | Axis Requested State | 0 | Unsigned Int | 32 | 1 | 0 | Intel
 0x008 | Set Axis Startup Config | Master | - Not yet implemented - | - | - | - | - | - | -
 0x009 | Get Encoder Estimates\* | Master | Encoder Pos Estimate<br>Encoder Vel Estimate | 0<br>4 | IEEE 754 Float<br>IEEE 754 Float | 32<br>32 | 1<br>1 | 0<br>0 | Intel<br>Intel
@@ -72,7 +72,7 @@ Configuration of the CAN parameters should be done via USB before putting the de
 
 To set the desired baud rate, use `<odrv>.can.set_baud_rate(<value>)`.  The baud rate can be done without rebooting the device.  If you'd like to keep the baud rate, simply call `<odrv>.save_configuration()` before rebooting.
 
-Each axis looks like a separate node on the bus.  Thus, they've inherited a new configuration property: `can_node_id`.  This ID can be from 0 to 63 (0x3F) inclusive.
+Each axis looks like a separate node on the bus. Thus, they both have the two properties `can_node_id` and `can_node_id_extended`. The node ID can be from 0 to 63 (0x3F) inclusive, or, if extended CAN IDs are used, from 0 to 16777215 (0xFFFFFF).
 
 ### Example Configuration
 
