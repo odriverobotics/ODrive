@@ -204,6 +204,7 @@ interfaces:
           MaxEndstopPressed:
           EstopRequested:
           HomingWithoutEndstop:
+            bit: 17
             doc: the min endstop was not enabled during homing
       step_dir_active: readonly bool
       current_state: readonly AxisState
