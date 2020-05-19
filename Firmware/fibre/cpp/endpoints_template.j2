@@ -13,6 +13,8 @@
 #ifndef __FIBRE_INTERFACES_HPP
 #define __FIBRE_INTERFACES_HPP
 
+#include <fibre/introspection.hpp>
+
 namespace fibre {
 
 const unsigned char embedded_json[] = [[embedded_endpoint_definitions | to_c_string]];
@@ -48,22 +50,25 @@ bool is_endpoint_ref_valid(endpoint_ref_t endpoint_ref) {
     }
 }
 
+Introspectable get_property(size_t idx) {
+    switch (idx) {
+[%- for endpoint in endpoints %]
+[%- if endpoint.function.name == 'exchange' and endpoint.in_bindings | list == ['obj'] %][#        //case [[endpoint.id]]: *(decltype([[endpoint.in_bindings['obj']]])*)buf = [[endpoint.in_bindings['obj']]]; break;#]
+        case [[endpoint.id]]: return FibrePropertyTypeInfo<[[endpoint.function.in['obj'].type.c_type]]>::make_introspectable([[endpoint.in_bindings['obj']]]);
+[%- endif %]
+[%- endfor %]
+        default: return {};
+    }
+}
+
 bool set_endpoint_from_float(endpoint_ref_t endpoint_ref, float value) {
     if (endpoint_ref.json_crc != json_crc_) {
         return false;
     }
 
-    return false;
-    // TODO: implement
-    /*cbufptr_t input_buffer{};
-    bufptr_t output_buffer{};
-
-    switch (idx) {
-[%- for endpoint in endpoints %]
-        case [[endpoint.id]]: return [[endpoint.function.fullname | to_snake_case]]([% for k, arg in endpoint.function.in.items() %][% if k in endpoint.in_bindings %]static_cast<[[arg.type.c_type]]>([[endpoint.in_bindings[k]]])[% else %]std::nullopt[% endif %], [% endfor %]&input_buffer, &output_buffer);
-[%- endfor %]
-        default: return false;
-    }*/
+    Introspectable property = get_property(endpoint_ref.endpoint_id);
+    const FloatSettableTypeInfo* type_info = dynamic_cast<const FloatSettableTypeInfo*>(property.get_type_info());
+    return type_info && type_info->set_float(property, value);
 }
 
 }

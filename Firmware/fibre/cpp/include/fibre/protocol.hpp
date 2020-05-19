@@ -397,6 +397,17 @@ struct Codec<T, std::enable_if_t<std::is_enum<T>::value>> {
     }
     static bool encode(T value, bufptr_t* buffer) { return SimpleSerializer<int32_t, false>::write(value, &(buffer->begin()), buffer->end()); }
 };
+template<> struct Codec<endpoint_ref_t> {
+    static std::optional<endpoint_ref_t> decode(cbufptr_t* buffer) {
+        std::optional<uint16_t> val0 = SimpleSerializer<uint16_t, false>::read(&(buffer->begin()), buffer->end());
+        std::optional<uint16_t> val1 = SimpleSerializer<uint16_t, false>::read(&(buffer->begin()), buffer->end());
+        return (val0.has_value() && val1.has_value()) ? std::make_optional(endpoint_ref_t{val1.value(), val0.value()}) : std::nullopt;
+    }
+    static bool encode(endpoint_ref_t value, bufptr_t* buffer) {
+        return SimpleSerializer<uint16_t, false>::write(value.endpoint_id, &(buffer->begin()), buffer->end())
+            && SimpleSerializer<uint16_t, false>::write(value.json_crc, &(buffer->begin()), buffer->end());
+    }
+};
 }
 
 

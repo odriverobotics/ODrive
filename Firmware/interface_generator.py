@@ -142,6 +142,7 @@ value_types = {
     'int16': {'builtin': True, 'fullname': 'int16', 'name': 'int16', 'c_type': 'int16_t'},
     'int32': {'builtin': True, 'fullname': 'int32', 'name': 'int32', 'c_type': 'int32_t'},
     'int64': {'builtin': True, 'fullname': 'int64', 'name': 'int64', 'c_type': 'int64_t'},
+    'endpoint_ref': {'builtin': True, 'fullname': 'endpoint_ref', 'name': 'endpoint_ref', 'c_type': 'endpoint_ref_t'},
 }
 
 enums = {}

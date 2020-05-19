@@ -140,12 +140,12 @@ interfaces:
             unit: A
             doc: Max current the power supply can sink. You most likely want a non-positive value here. Set to -INFINITY to disable.
 
-          #gpio1_pwm_mapping: Endpoint # TODO: disable for ODrive v3.2 and older
-          #gpio2_pwm_mapping: Endpoint # TODO: disable for ODrive v3.2 and older
-          #gpio3_pwm_mapping: Endpoint # TODO: disable for ODrive v3.2 and older
-          #gpio4_pwm_mapping: Endpoint
-          #gpio3_analog_mapping: Endpoint
-          #gpio4_analog_mapping: Endpoint
+          gpio1_pwm_mapping: {type: Endpoint, c_name: 'pwm_mappings[0]'} # TODO: disable for ODrive v3.2 and older
+          gpio2_pwm_mapping: {type: Endpoint, c_name: 'pwm_mappings[1]'} # TODO: disable for ODrive v3.2 and older
+          gpio3_pwm_mapping: {type: Endpoint, c_name: 'pwm_mappings[2]'} # TODO: disable for ODrive v3.2 and older
+          gpio4_pwm_mapping: {type: Endpoint, c_name: 'pwm_mappings[3]'}
+          gpio3_analog_mapping: {type: Endpoint, c_name: 'analog_mappings[0]'}
+          gpio4_analog_mapping: {type: Endpoint, c_name: 'analog_mappings[1]'}
       user_config_loaded: readonly bool
             
       axis0: {type: Axis, c_name: get_axis(0)}
@@ -175,6 +175,13 @@ interfaces:
           protocol: Protocol
     functions:
       set_baud_rate: {in: {baudRate: uint32}}
+
+  Endpoint:
+    c_is_class: False
+    attributes:
+      endpoint: endpoint_ref
+      min: float32
+      max: float32
 
   Axis:
     c_is_class: True

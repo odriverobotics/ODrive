@@ -62,6 +62,8 @@ private:
 class Introspectable {
     friend class TypeInfo;
 public:
+    Introspectable() {}
+
     /**
      * @brief Returns an Introspectable object for the attribute referenced by
      * the specified attribute name.
@@ -114,9 +116,11 @@ public:
         return type_info_ && type_info_->set_string(*this, buffer, length);
     }
 
-private:
-    Introspectable() {}
+    const TypeInfo* get_type_info() {
+        return type_info_;
+    }
 
+private:
     // We use this storage to hold generic small objects. Usually that's a pointer
     // but sometimes it's an on-demand constructed Property<...>.
     // Caution: only put objects in here which are trivially copyable, movable
@@ -151,6 +155,10 @@ template<typename T> using maybe_underlying_type_t = typename maybe_underlying_t
 
 
 
+struct FloatSettableTypeInfo {
+    virtual bool set_float(const Introspectable& obj, float val) const { return false; }
+};
+
 /* Built-in type infos ********************************************************/
 
 template<typename T>
@@ -175,10 +183,11 @@ const FibrePropertyTypeInfo<Property<const T>> FibrePropertyTypeInfo<Property<co
 
 // readwrite property
 template<typename T>
-struct FibrePropertyTypeInfo<Property<T>> : TypeInfo {
+struct FibrePropertyTypeInfo<Property<T>> : FloatSettableTypeInfo, TypeInfo {
     using TypeInfo::TypeInfo;
     static const PropertyInfo property_table[];
     static const FibrePropertyTypeInfo<Property<T>> singleton;
+    static const Introspectable make_introspectable(Property<T> obj) { return TypeInfo::make_introspectable(obj, &singleton); }
 
     bool get_string(const Introspectable& obj, char* buffer, size_t length) const override {
         return to_string(static_cast<maybe_underlying_type_t<T>>(as<const Property<T>>(obj).read()), buffer, length, 0);
@@ -187,6 +196,15 @@ struct FibrePropertyTypeInfo<Property<T>> : TypeInfo {
     bool set_string(const Introspectable& obj, char* buffer, size_t length) const override {
         maybe_underlying_type_t<T> value;
         if (!from_string(buffer, length, &value, 0)) {
+            return false;
+        }
+        as<const Property<T>>(obj).exchange(static_cast<T>(value));
+        return true;
+    }
+
+    bool set_float(const Introspectable& obj, float val) const override {
+        maybe_underlying_type_t<T> value;
+        if (!conversion::set_from_float(val, &value)) {
             return false;
         }
         as<const Property<T>>(obj).exchange(static_cast<T>(value));
