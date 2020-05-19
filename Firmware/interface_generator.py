@@ -252,19 +252,20 @@ def regularize_attribute(path, name, elem, c_is_class):
     elem['fullname'] = join_name(path, name)
     elem['typeargs'] = elem.get('typeargs', {})
     elem['c_name'] = elem.get('c_name', None) or (elem['name'] + ('_' if c_is_class else ''))
-    elem['c_getter'] = elem.get('c_getter', elem['c_name'])
-    elem['c_setter'] = elem.get('c_setter', elem['c_name'] + ' = ')
+    if ('c_getter' in elem) or ('c_setter' in elem):
+        elem['c_getter'] = elem.get('c_getter', elem['c_name'])
+        elem['c_setter'] = elem.get('c_setter', elem['c_name'] + ' = ')
 
     if isinstance(elem['type'], str) and elem['type'].startswith('readonly '):
         elem['typeargs']['fibre.Property.mode'] = 'readonly'
         elem['typeargs']['fibre.Property.type'] = elem['type'][len('readonly '):]
         elem['type'] = 'fibre.Property'
-        if elem['typeargs']['fibre.Property.mode'] == 'readonly': elem.pop('c_setter')
+        if elem['typeargs']['fibre.Property.mode'] == 'readonly' and 'c_setter' in elem: elem.pop('c_setter')
     elif ('flags' in elem['type']) or ('values' in elem['type']):
         elem['typeargs']['fibre.Property.mode'] = elem['typeargs'].get('fibre.Property.mode', None) or 'readwrite'
         elem['typeargs']['fibre.Property.type'] = regularize_valuetype(path, to_pascal_case(name), elem['type'])
         elem['type'] = 'fibre.Property'
-        if elem['typeargs']['fibre.Property.mode'] == 'readonly': elem.pop('c_setter')
+        if elem['typeargs']['fibre.Property.mode'] == 'readonly' and 'c_setter' in elem: elem.pop('c_setter')
     else:
         elem['type'] = regularize_interface(path, to_pascal_case(name), elem['type'])
     return elem

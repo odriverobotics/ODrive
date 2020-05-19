@@ -15,6 +15,9 @@
 
 #include <fibre/introspection.hpp>
 
+#pragma GCC push_options
+#pragma GCC optimize ("s")
+
 namespace fibre {
 
 const unsigned char embedded_json[] = [[embedded_endpoint_definitions | to_c_string]];
@@ -22,16 +25,36 @@ const size_t embedded_json_length = sizeof(embedded_json) - 1;
 const uint16_t json_crc_ = calc_crc16<CANONICAL_CRC16_POLYNOMIAL>(PROTOCOL_VERSION, embedded_json, embedded_json_length);
 const uint32_t json_version_id_ = (json_crc_ << 16) | calc_crc16<CANONICAL_CRC16_POLYNOMIAL>(json_crc_, embedded_json, embedded_json_length);
 
+Introspectable get_property(size_t idx) {
+    switch (idx) {
+[%- for endpoint in endpoints %]
+[%- if endpoint.function.name == 'exchange' and endpoint.in_bindings | list == ['obj'] %]
+        case [[endpoint.id]]: return FibrePropertyTypeInfo<[[endpoint.function.in['obj'].type.c_type]]>::make_introspectable([[endpoint.in_bindings['obj']]]);
+[%- endif %]
+[%- endfor %]
+        default: return {};
+    }
+}
+
+
 // Note: with -Og this function reserves a huge amount of stack space because it
 // reserves separate space for the stack frame of each of the inlined functions.
 // The minimum known set of flags to prevent this is `-O1 -fipa-sra`.
 // `-O2` is a superset of this so that's what we use here.
-bool endpoint_handler(int idx, cbufptr_t* input_buffer, bufptr_t* output_buffer) __attribute__ ((optimize(2)));
+//bool endpoint_handler(int idx, cbufptr_t* input_buffer, bufptr_t* output_buffer) __attribute__ ((optimize(2)));
 
 bool endpoint_handler(int idx, cbufptr_t* input_buffer, bufptr_t* output_buffer) {
+    //Introspectable property = get_property(idx);
+    //if property.is_valid()
+
     switch (idx) {
 [%- for endpoint in endpoints %]
+[%- if (endpoint.function.name == 'exchange' or endpoint.function.name == 'read') and endpoint.in_bindings | list == ['obj'] %]
+        //case [[endpoint.id]]: return FibrePropertyTypeInfo<[[endpoint.function.in['obj'].type.c_type]]>::make_introspectable([[endpoint.in_bindings['obj']]]);
         case [[endpoint.id]]: { return [[endpoint.function.fullname | to_snake_case]]([% for k, arg in endpoint.function.in.items() %][% if k in endpoint.in_bindings %]static_cast<[[arg.type.c_type]]>([[endpoint.in_bindings[k]]])[% else %]std::nullopt[% endif %], [% endfor %][% for k, arg in endpoint.function.out.items() %][% if k in endpoint.out_bindings %]static_cast<[[arg.type.c_type]]*>([[endpoint.out_bindings[k]]])[% else %]nullptr[% endif %], [% endfor %]input_buffer, output_buffer); } break;
+[%- else %]
+        case [[endpoint.id]]: { return [[endpoint.function.fullname | to_snake_case]]([% for k, arg in endpoint.function.in.items() %][% if k in endpoint.in_bindings %]static_cast<[[arg.type.c_type]]>([[endpoint.in_bindings[k]]])[% else %]std::nullopt[% endif %], [% endfor %][% for k, arg in endpoint.function.out.items() %][% if k in endpoint.out_bindings %]static_cast<[[arg.type.c_type]]*>([[endpoint.out_bindings[k]]])[% else %]nullptr[% endif %], [% endfor %]input_buffer, output_buffer); } break;
+[%- endif %]
 [%- endfor %]
         default: return false;
     }
@@ -50,17 +73,6 @@ bool is_endpoint_ref_valid(endpoint_ref_t endpoint_ref) {
     }
 }
 
-Introspectable get_property(size_t idx) {
-    switch (idx) {
-[%- for endpoint in endpoints %]
-[%- if endpoint.function.name == 'exchange' and endpoint.in_bindings | list == ['obj'] %][#        //case [[endpoint.id]]: *(decltype([[endpoint.in_bindings['obj']]])*)buf = [[endpoint.in_bindings['obj']]]; break;#]
-        case [[endpoint.id]]: return FibrePropertyTypeInfo<[[endpoint.function.in['obj'].type.c_type]]>::make_introspectable([[endpoint.in_bindings['obj']]]);
-[%- endif %]
-[%- endfor %]
-        default: return {};
-    }
-}
-
 bool set_endpoint_from_float(endpoint_ref_t endpoint_ref, float value) {
     if (endpoint_ref.json_crc != json_crc_) {
         return false;
@@ -72,5 +84,7 @@ bool set_endpoint_from_float(endpoint_ref_t endpoint_ref, float value) {
 }
 
 }
+
+#pragma GCC pop_options
 
 #endif // __FIBRE_INTERFACES_HPP

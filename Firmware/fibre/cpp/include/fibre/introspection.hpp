@@ -5,12 +5,15 @@
 #include <algorithm>
 #include <cstring>
 
+#pragma GCC push_options
+#pragma GCC optimize ("s")
+
 class TypeInfo;
 class Introspectable;
+using introspectable_storage_t = std::aligned_storage<16, 4>::type;
 
 struct PropertyInfo {
     const char * name;
-    void(*getter)(Introspectable&);
     const TypeInfo* type_info;
 };
 
@@ -29,24 +32,16 @@ public:
     TypeInfo(const PropertyInfo* property_table, size_t property_table_length)
         : property_table_(property_table), property_table_length_(property_table_length) {}
 
-    const PropertyInfo* get_property_info(const char * name, size_t length) const {
-        for (const PropertyInfo* prop = property_table_; prop < (property_table_ + property_table_length_); ++prop) {
-            if (!strncmp(name, prop->name, length)) {
-                return prop;
-            }
-        }
-        return nullptr;
-    }
+    virtual introspectable_storage_t get_child(introspectable_storage_t obj, size_t idx) const = 0;
+    Introspectable get_child(const Introspectable& obj, const char * name, size_t length) const;
 
 protected:
+
     template<typename T> static T& as(Introspectable& obj);
     template<typename T> static const T& as(const Introspectable& obj);
     template<typename T> static Introspectable make_introspectable(T obj, const TypeInfo* type_info);
 
 private:
-    virtual bool get_string(const Introspectable& obj, char* buffer, size_t length) const { return false; }
-    virtual bool set_string(const Introspectable& obj, char* buffer, size_t length) const { return false; }
-
     const PropertyInfo* property_table_;
     size_t property_table_length_;
 };
@@ -83,13 +78,7 @@ public:
 
         while ((begin < end) && current.type_info_) {
             const char * end_of_token = std::find(begin, end, '.');
-            const PropertyInfo* prop_info = current.type_info_->get_property_info(begin, end_of_token - begin);
-            if (prop_info) {
-                (*prop_info->getter)(current);
-                current.type_info_ = prop_info->type_info;
-            } else {
-                current.type_info_ = nullptr;
-            }
+            current = current.get_direct_child(begin, end_of_token - begin);
             begin = std::min(end, end_of_token + 1);
         }
 
@@ -100,44 +89,38 @@ public:
         return type_info_;
     }
 
-    /**
-     * @brief Returns the underlying value as a string. This will only succeed
-     * if this Introspectable contains a Property<...> object.
-     */
-    bool get_string(char* buffer, size_t length) {
-        return type_info_ && type_info_->get_string(*this, buffer, length);
-    }
-
-    /**
-     * @brief Sets the underlying value from a string. This will only succeed
-     * if this Introspectable contains a Property<...> object.
-     */
-    bool set_string(char* buffer, size_t length) {
-        return type_info_ && type_info_->set_string(*this, buffer, length);
-    }
-
     const TypeInfo* get_type_info() {
         return type_info_;
     }
 
 private:
+    Introspectable get_direct_child(const char * name, size_t length) const {
+        for (size_t i = 0; i < type_info_->property_table_length_; ++i) {
+            if (!strncmp(name, type_info_->property_table_[i].name, length)) {
+                Introspectable result;
+                result.storage_ = type_info_->get_child(storage_, i);
+                result.type_info_ = type_info_->property_table_[i].type_info;
+                return result;
+            }
+        }
+        return {};
+    }
+
     // We use this storage to hold generic small objects. Usually that's a pointer
     // but sometimes it's an on-demand constructed Property<...>.
     // Caution: only put objects in here which are trivially copyable, movable
     // and destructible as any custom operation wouldn't be called.
-    unsigned char storage_[12];
+    introspectable_storage_t storage_;
     const TypeInfo* type_info_ = nullptr;
 };
 
-
-
 template<typename T> T& TypeInfo::as(Introspectable& obj) {
     static_assert(sizeof(T) <= sizeof(obj.storage_));
-    return *(T*)obj.storage_;
+    return *(T*)&obj.storage_;
 }
 template<typename T> const T& TypeInfo::as(const Introspectable& obj) {
     static_assert(sizeof(T) <= sizeof(obj.storage_));
-    return *(const T*)obj.storage_;
+    return *(const T*)&obj.storage_;
 }
 template<typename T> Introspectable TypeInfo::make_introspectable(T obj, const TypeInfo* type_info) {
     Introspectable introspectable;
@@ -154,8 +137,13 @@ template<typename T> struct maybe_underlying_type<T, false> { typedef T type; };
 template<typename T> using maybe_underlying_type_t = typename maybe_underlying_type<T>::type;
 
 
+struct StringConvertibleTypeInfo {
+    virtual bool get_string(const Introspectable& obj, char* buffer, size_t length) const { return false; }
+    virtual bool set_string(const Introspectable& obj, char* buffer, size_t length) const { return false; }
+};
 
 struct FloatSettableTypeInfo {
+    //virtual bool get_float(const Introspectable& obj, float* val) const { return false; }
     virtual bool set_float(const Introspectable& obj, float val) const { return false; }
 };
 
@@ -166,10 +154,14 @@ struct FibrePropertyTypeInfo;
 
 // readonly property
 template<typename T>
-struct FibrePropertyTypeInfo<Property<const T>> : TypeInfo {
+struct FibrePropertyTypeInfo<Property<const T>> : StringConvertibleTypeInfo, TypeInfo {
     using TypeInfo::TypeInfo;
     static const PropertyInfo property_table[];
     static const FibrePropertyTypeInfo<Property<const T>> singleton;
+
+    introspectable_storage_t get_child(introspectable_storage_t obj, size_t idx) const override {
+        return {};
+    }
 
     bool get_string(const Introspectable& obj, char* buffer, size_t length) const override {
         return to_string(static_cast<maybe_underlying_type_t<T>>(as<const Property<const T>>(obj).read()), buffer, length, 0);
@@ -183,11 +175,15 @@ const FibrePropertyTypeInfo<Property<const T>> FibrePropertyTypeInfo<Property<co
 
 // readwrite property
 template<typename T>
-struct FibrePropertyTypeInfo<Property<T>> : FloatSettableTypeInfo, TypeInfo {
+struct FibrePropertyTypeInfo<Property<T>> : FloatSettableTypeInfo, StringConvertibleTypeInfo, TypeInfo {
     using TypeInfo::TypeInfo;
     static const PropertyInfo property_table[];
     static const FibrePropertyTypeInfo<Property<T>> singleton;
     static const Introspectable make_introspectable(Property<T> obj) { return TypeInfo::make_introspectable(obj, &singleton); }
+
+    introspectable_storage_t get_child(introspectable_storage_t obj, size_t idx) const override {
+        return {};
+    }
 
     bool get_string(const Introspectable& obj, char* buffer, size_t length) const override {
         return to_string(static_cast<maybe_underlying_type_t<T>>(as<const Property<T>>(obj).read()), buffer, length, 0);
@@ -216,5 +212,7 @@ template<typename T>
 const PropertyInfo FibrePropertyTypeInfo<Property<T>>::property_table[] = {};
 template<typename T>
 const FibrePropertyTypeInfo<Property<T>> FibrePropertyTypeInfo<Property<T>>::singleton{FibrePropertyTypeInfo<Property<T>>::property_table, sizeof(FibrePropertyTypeInfo<Property<T>>::property_table) / sizeof(FibrePropertyTypeInfo<Property<T>>::property_table[0])};
+
+#pragma GCC pop_options
 
 #endif // __FIBRE_INTROSPECTION_HPP

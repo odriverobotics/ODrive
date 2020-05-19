@@ -10,6 +10,9 @@
  *
  */
 
+#pragma GCC push_options
+#pragma GCC optimize ("s")
+
 [%- macro rettype(func) %]
 [%- if not func.out -%]
 void
@@ -36,13 +39,15 @@ public:
 
 [%- for property in intf.attributes.values() %]
 [%- if property.type.fullname.startswith("fibre.Property") %]
-[%- if not property.c_setter %]
-    template<typename T> static auto get_[[property.name]](T* obj) { return [[property.type.c_type]]{obj, [](void* ctx){ return ([[property.type.value_type.c_type]])((T*)ctx)->[[property.c_getter]]; }}; }
+[%- if not property.c_getter and not property.c_setter %]
+    template<typename T> static inline auto get_[[property.name]](T* obj) { return [[property.type.c_type]]{&obj->[[property.c_name]]}; }
+[%- elif not property.c_setter %]
+    template<typename T> static inline auto get_[[property.name]](T* obj) { return [[property.type.c_type]]{obj, [](void* ctx){ return ([[property.type.value_type.c_type]])((T*)ctx)->[[property.c_getter]]; }}; }
 [%- else %]
-    template<typename T> static auto get_[[property.name]](T* obj) { return [[property.type.c_type]]{obj, [](void* ctx){ return ([[property.type.value_type.c_type]])((T*)ctx)->[[property.c_getter]]; }, [](void* ctx, [[property.type.value_type.c_type]] value){ ((T*)ctx)->[[property.c_setter]](value); }}; }
+    template<typename T> static inline auto get_[[property.name]](T* obj) { return [[property.type.c_type]]{obj, [](void* ctx){ return ([[property.type.value_type.c_type]])((T*)ctx)->[[property.c_getter]]; }, [](void* ctx, [[property.type.value_type.c_type]] value){ ((T*)ctx)->[[property.c_setter]](value); }}; }
 [%- endif %]
 [%- else %]
-    template<typename T> static auto get_[[property.name]](T* obj) { return &obj->[[property.c_name]]; }
+    template<typename T> static inline auto get_[[property.name]](T* obj) { return &obj->[[property.c_name]]; }
 [%- endif %]
 [%- endfor %]
 
@@ -80,3 +85,5 @@ inline [[enum.c_type]] operator ~ ([[enum.c_type]] a) { return static_cast<[[enu
 [%- endfor %]
 
 
+
+#pragma GCC pop_options

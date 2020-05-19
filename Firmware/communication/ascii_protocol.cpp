@@ -234,11 +234,12 @@ void ASCII_protocol_process_line(const uint8_t* buffer, size_t len, StreamSink& 
             respond(response_channel, use_checksum, "invalid command format");
         } else {
             Introspectable property = root_obj.get_child(name, sizeof(name));
-            if (!property.is_valid()) {
+            const StringConvertibleTypeInfo* type_info = dynamic_cast<const StringConvertibleTypeInfo*>(property.get_type_info());
+            if (!type_info) {
                 respond(response_channel, use_checksum, "invalid property");
             } else {
                 char response[10];
-                bool success = property.get_string(response, sizeof(response));
+                bool success = type_info->get_string(property, response, sizeof(response));
                 if (!success)
                     respond(response_channel, use_checksum, "not implemented");
                 else
@@ -254,10 +255,11 @@ void ASCII_protocol_process_line(const uint8_t* buffer, size_t len, StreamSink& 
             respond(response_channel, use_checksum, "invalid command format");
         } else {
             Introspectable property = root_obj.get_child(name, sizeof(name));
-            if (!property.is_valid()) {
+            const StringConvertibleTypeInfo* type_info = dynamic_cast<const StringConvertibleTypeInfo*>(property.get_type_info());
+            if (!type_info) {
                 respond(response_channel, use_checksum, "invalid property");
             } else {
-                bool success = property.set_string(value, sizeof(value));
+                bool success = type_info->set_string(property, value, sizeof(value));
                 if (!success)
                     respond(response_channel, use_checksum, "not implemented");
             }
