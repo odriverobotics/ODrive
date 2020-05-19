@@ -82,9 +82,6 @@ public:
 #include <tuple>
 #include <functional>
 #include <unordered_map>
-//#include <cassert>
-#include <iostream>
-#include <iomanip>
 
 /* Backport features from C++14 and C++17 ------------------------------------*/
 
@@ -948,69 +945,6 @@ bool hex_string_to_int_arr(const char * str, size_t length, TInt (&output)[ICoun
 template<typename TInt, size_t ICount>
 bool hex_string_to_int_arr(const char * str, TInt (&output)[ICount]) {
     return hex_string_to_int_arr(str, hex_digits<TInt>() * ICount, output);
-}
-
-namespace fibre {
-
-// TODO: move to print_utils.hpp
-template<typename T>
-class HexPrinter {
-public:
-    HexPrinter(T val, bool prefix) : val_(val) /*, prefix_(prefix)*/ {
-        const char digits[] = "0123456789abcdef";
-        size_t prefix_length = prefix ? 2 : 0;
-        if (prefix) {
-            str[0] = '0';
-            str[1] = 'x';
-        }
-        str[prefix_length + hex_digits<T>()] = '\0';
-        
-        for (size_t i = 0; i < hex_digits<T>(); ++i) {
-            str[prefix_length + hex_digits<T>() - i - 1] = digits[val & 0xf];
-            val >>= 4;
-        }
-    }
-    std::string to_string() const { return str; }
-    void to_string(char* buf) const {
-        for (size_t i = 0; (i < sizeof(str)) && str[i]; ++i)
-            buf[i] = str[i];
-    }
-
-    T val_;
-    //bool prefix_;
-    char str[hex_digits<T>() + 3]; // 3 additional characters 0x and \0
-};
-
-template<typename T>
-std::ostream& operator<<(std::ostream& stream, const HexPrinter<T>& printer) {
-    // TODO: specialize for char
-    return stream << printer.to_string();
-}
-
-template<typename T>
-HexPrinter<T> as_hex(T val, bool prefix = true) { return HexPrinter<T>(val, prefix); }
-
-template<typename T>
-class HexArrayPrinter {
-public:
-    HexArrayPrinter(T* ptr, size_t length) : ptr_(ptr), length_(length) {}
-    T* ptr_;
-    size_t length_;
-};
-
-template<typename T>
-std::ostream& operator<<(std::ostream& stream, const HexArrayPrinter<T>& printer) {
-    for (size_t pos = 0; pos < printer.length_; ++pos) {
-        stream << " " << as_hex(printer.ptr_[pos]);
-        if (((pos + 1) % 16) == 0)
-            stream << std::endl;
-    }
-    return stream;
-}
-
-template<typename T, size_t ILength>
-HexArrayPrinter<T> as_hex(T (&val)[ILength]) { return HexArrayPrinter<T>(val, ILength); }
-
 }
 
 

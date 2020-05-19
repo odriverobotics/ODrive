@@ -57,11 +57,11 @@ public:
 [%- for func in intf.functions.values() %]
 [%- for k, arg in func.in.items() | skip_first %]
     [[arg.type.c_type]] [[func.name | to_snake_case]]_in_[[arg.name]]_; // for internal use by Fibre
-    template<typename T> static auto get_[[func.name | to_snake_case]]_in_[[arg.name]]_(T* obj) { return Property<[[arg.type.c_type]]>{obj, [](void* ctx){ return ([[arg.type.c_type]])((T*)ctx)->[[func.name | to_snake_case]]_in_[[arg.name]]_; }, [](void* ctx, [[arg.type.c_type]] value){ ((T*)ctx)->[[func.name | to_snake_case]]_in_[[arg.name]]_ = value; }}; }
+    template<typename T> static auto get_[[func.name | to_snake_case]]_in_[[arg.name]]_(T* obj) { return Property<[[arg.type.c_type]]>{&obj->[[func.name | to_snake_case]]_in_[[arg.name]]_}; }
 [%- endfor %]
 [%- for k, arg in func.out.items() %]
     [[arg.type.c_type]] [[func.name | to_snake_case]]_out_[[arg.name]]_; // for internal use by Fibre
-    template<typename T> static auto get_[[func.name | to_snake_case]]_out_[[arg.name]]_(T* obj) { return Property<const [[arg.type.c_type]]>{obj, [](void* ctx){ return ([[arg.type.c_type]])((T*)ctx)->[[func.name | to_snake_case]]_out_[[arg.name]]_; }}; }
+    template<typename T> static auto get_[[func.name | to_snake_case]]_out_[[arg.name]]_(T* obj) { return Property<const [[arg.type.c_type]]>{&obj->[[func.name | to_snake_case]]_out_[[arg.name]]_}; }
 [%- endfor %]
 [%- endfor %]
 };
