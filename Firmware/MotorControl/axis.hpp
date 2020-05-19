@@ -86,7 +86,8 @@ public:
         LockinConfig_t calibration_lockin = default_calibration();
         LockinConfig_t sensorless_ramp = default_sensorless();
         LockinConfig_t lockin;
-        uint8_t can_node_id = 0; // Both axes will have the same id to start
+        uint32_t can_node_id = 0; // Both axes will have the same id to start
+        bool can_node_id_extended = false;
         uint32_t can_heartbeat_rate_ms = 100;
     };
 
@@ -314,6 +315,7 @@ public:
                     make_protocol_property("finish_on_distance", &config_.lockin.finish_on_distance),
                     make_protocol_property("finish_on_enc_idx", &config_.lockin.finish_on_enc_idx)),
                 make_protocol_property("can_node_id", &config_.can_node_id),
+                make_protocol_property("can_node_id_extended", &config_.can_node_id_extended),
                 make_protocol_property("can_heartbeat_rate_ms", &config_.can_heartbeat_rate_ms)),
             make_protocol_object("motor", motor_.make_protocol_definitions()),
             make_protocol_object("controller", controller_.make_protocol_definitions()),
