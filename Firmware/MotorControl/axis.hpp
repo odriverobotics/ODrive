@@ -76,7 +76,7 @@ public:
 
         float counts_per_step = 2.0f;
 
-        float watchdog_timeout = 0.0f;  // [s] (0 disables watchdog)
+        float watchdog_timeout = 0.0f; // [s]
         bool enable_watchdog = false;
 
         // Defaults loaded from hw_config in load_configuration in main.cpp
