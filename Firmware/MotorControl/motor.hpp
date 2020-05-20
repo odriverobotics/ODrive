@@ -193,7 +193,7 @@ public:
     DRV8301_FaultType_e drv_fault_ = DRV8301_FaultType_NoFault;
     DRV_SPI_8301_Vars_t gate_driver_regs_; //Local view of DRV registers (initialized by DRV8301_setup)
     float thermal_current_lim_ = 10.0f;  //[A]
-    float inverter_temp_ = 20.0f;
+    float inverter_temp_ = NAN; // [°C] NaN while the ODrive is initializing.
 
     // Communication protocol definitions
     auto make_protocol_definitions() {
