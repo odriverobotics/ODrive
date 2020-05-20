@@ -293,7 +293,7 @@ bool Controller::update(float* current_setpoint_output) {
     // We get the current position and apply a current feed-forward
     // ensuring that we handle negative encoder positions properly (-1 == motor->encoder.encoder_cpr - 1)
     if (anticogging_valid_ && config_.anticogging.enable) {
-        Iq += config_.anticogging.cogging_map[std::clamp(mod(static_cast<int>(anticogging_pos), 3600), 0, 3600)];
+        Iq += config_.anticogging.cogging_map[std::clamp(mod((int)anticogging_pos, 3600), 0, 3600)];
     }
 
     float v_err = 0.0f;

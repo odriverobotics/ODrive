@@ -216,7 +216,7 @@ float Motor::phase_current_from_adcval(uint32_t ADCValue) {
 // TODO check Ibeta balance to verify good motor connection
 bool Motor::measure_phase_resistance(float test_current, float max_voltage) {
     static const float kI = 10.0f;                                 // [(V/s)/A]
-    static const int num_test_cycles = static_cast<int>(3.0f / CURRENT_MEAS_PERIOD); // Test runs for 3s
+    static const int num_test_cycles = (int)(3.0f / CURRENT_MEAS_PERIOD); // Test runs for 3s
     float test_voltage = 0.0f;
     
     size_t i = 0;
