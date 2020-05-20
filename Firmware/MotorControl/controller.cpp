@@ -165,8 +165,8 @@ bool Controller::update(float* current_setpoint_output) {
         } break;
         case INPUT_MODE_CURRENT_RAMP: {
             float max_step_size = std::abs(current_meas_period * config_.current_ramp_rate);
-            float full_step     = input_current_ - current_setpoint_;
-            float step          = std::clamp(full_step, -max_step_size, max_step_size);
+            float full_step = input_current_ - current_setpoint_;
+            float step = std::clamp(full_step, -max_step_size, max_step_size);
 
             current_setpoint_ += step;
         } break;

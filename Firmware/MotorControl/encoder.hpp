@@ -8,10 +8,10 @@
 class Encoder {
 public:
     enum Error_t {
-        ERROR_NONE                     = 0,
-        ERROR_UNSTABLE_GAIN            = 0x01,
-        ERROR_CPR_POLEPAIRS_MISMATCH   = 0x02,
-        ERROR_NO_RESPONSE              = 0x04,
+        ERROR_NONE = 0,
+        ERROR_UNSTABLE_GAIN = 0x01,
+        ERROR_CPR_POLEPAIRS_MISMATCH = 0x02,
+        ERROR_NO_RESPONSE = 0x04,
         ERROR_UNSUPPORTED_ENCODER_MODE = 0x08,
         ERROR_ILLEGAL_HALL_STATE = 0x10,
         ERROR_INDEX_NOT_FOUND_YET = 0x20,

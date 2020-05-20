@@ -109,8 +109,8 @@ void Encoder::set_linear_count(int32_t count) {
     uint32_t prim = cpu_enter_critical();
 
     // Update states
-    shadow_count_   = count;
-    pos_estimate_   = static_cast<float>(count);
+    shadow_count_ = count;
+    pos_estimate_ = static_cast<float>(count);
     tim_cnt_sample_ = count;
 
     //Write hardware last
@@ -132,7 +132,7 @@ void Encoder::set_circular_count(int32_t count, bool update_offset) {
 
     // Update states
     count_in_cpr_ = mod(count, config_.cpr);
-    pos_cpr_      = static_cast<float>(count_in_cpr_);
+    pos_cpr_ = static_cast<float>(count_in_cpr_);
 
     cpu_exit_critical(prim);
 }
@@ -182,7 +182,7 @@ bool Encoder::run_direction_find() {
 // TODO: Do the scan with current, not voltage!
 bool Encoder::run_offset_calibration() {
     static const float start_lock_duration = 1.0f;
-    static const int num_steps             = (int)(config_.calib_scan_distance / config_.calib_scan_omega * static_cast<float>(current_meas_hz));
+    static const int num_steps = (int)(config_.calib_scan_distance / config_.calib_scan_omega * static_cast<float>(current_meas_hz));
 
     // Require index found if enabled
     if (config_.use_index && !index_found_) {
@@ -219,7 +219,7 @@ bool Encoder::run_offset_calibration() {
     // scan forward
     i = 0;
     axis_->run_control_loop([&]() {
-        float phase   = wrap_pm_pi(config_.calib_scan_distance * static_cast<float>(i) / static_cast<float>(num_steps) - config_.calib_scan_distance / 2.0f);
+        float phase = wrap_pm_pi(config_.calib_scan_distance * static_cast<float>(i) / static_cast<float>(num_steps) - config_.calib_scan_distance / 2.0f);
         float v_alpha = voltage_magnitude * our_arm_cos_f32(phase);
         float v_beta = voltage_magnitude * our_arm_sin_f32(phase);
         if (!axis_->motor_.enqueue_voltage_timings(v_alpha, v_beta))
@@ -248,9 +248,9 @@ bool Encoder::run_offset_calibration() {
 
     //TODO avoid recomputing elec_rad_per_enc every time
     // Check CPR
-    float elec_rad_per_enc       = axis_->motor_.config_.pole_pairs * 2 * M_PI * (1.0f / static_cast<float>(config_.cpr));
+    float elec_rad_per_enc = axis_->motor_.config_.pole_pairs * 2 * M_PI * (1.0f / static_cast<float>(config_.cpr));
     float expected_encoder_delta = config_.calib_scan_distance / elec_rad_per_enc;
-    calib_scan_response_         = std::abs(shadow_count_ - init_enc_val);
+    calib_scan_response_ = std::abs(shadow_count_ - init_enc_val);
     if (std::abs(calib_scan_response_ - expected_encoder_delta) / expected_encoder_delta > config_.calib_range) {
         set_error(ERROR_CPR_POLEPAIRS_MISMATCH);
         return false;
@@ -259,7 +259,7 @@ bool Encoder::run_offset_calibration() {
     // scan backwards
     i = 0;
     axis_->run_control_loop([&]() {
-        float phase   = wrap_pm_pi(-config_.calib_scan_distance * static_cast<float>(i) / static_cast<float>(num_steps) + config_.calib_scan_distance / 2.0f);
+        float phase = wrap_pm_pi(-config_.calib_scan_distance * static_cast<float>(i) / static_cast<float>(num_steps) + config_.calib_scan_distance / 2.0f);
         float v_alpha = voltage_magnitude * our_arm_cos_f32(phase);
         float v_beta = voltage_magnitude * our_arm_sin_f32(phase);
         if (!axis_->motor_.enqueue_voltage_timings(v_alpha, v_beta))
@@ -273,8 +273,8 @@ bool Encoder::run_offset_calibration() {
     if (axis_->error_ != Axis::ERROR_NONE)
         return false;
 
-    config_.offset       = encvaluesum / (num_steps * 2);
-    int32_t residual     = encvaluesum - ((int64_t)config_.offset * (int64_t)(num_steps * 2));
+    config_.offset = encvaluesum / (num_steps * 2);
+    int32_t residual = encvaluesum - ((int64_t)config_.offset * (int64_t)(num_steps * 2));
     config_.offset_float = static_cast<float>(residual) / static_cast<float>(num_steps * 2) + 0.5f;  // add 0.5 to center-align state to phase
 
     is_ready_ = true;
@@ -334,12 +334,12 @@ bool Encoder::abs_spi_init(){
     spi->Init.CLKPhase = SPI_PHASE_2EDGE;
     spi->Init.NSS = SPI_NSS_SOFT;
     spi->Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_32;
-    spi->Init.FirstBit          = SPI_FIRSTBIT_MSB;
-    spi->Init.TIMode            = SPI_TIMODE_DISABLE;
-    spi->Init.CRCCalculation    = SPI_CRCCALCULATION_DISABLE;
-    spi->Init.CRCPolynomial     = 10;
+    spi->Init.FirstBit = SPI_FIRSTBIT_MSB;
+    spi->Init.TIMode = SPI_TIMODE_DISABLE;
+    spi->Init.CRCCalculation = SPI_CRCCALCULATION_DISABLE;
+    spi->Init.CRCPolynomial = 10;
     if (mode_ == MODE_SPI_ABS_AEAT) {
-        spi->Init.CLKPolarity   = SPI_POLARITY_HIGH;
+        spi->Init.CLKPolarity = SPI_POLARITY_HIGH;
     }
     HAL_SPI_DeInit(spi);
     HAL_SPI_Init(spi);
@@ -508,9 +508,9 @@ bool Encoder::update() {
     pos_estimate_ += current_meas_period * vel_estimate_;
     pos_cpr_      += current_meas_period * vel_estimate_;
     // discrete phase detector
-    float delta_pos     = static_cast<float>(shadow_count_) - static_cast<int32_t>(std::floor(pos_estimate_));
+    float delta_pos = static_cast<float>(shadow_count_) - static_cast<int32_t>(std::floor(pos_estimate_));
     float delta_pos_cpr = static_cast<float>(count_in_cpr_) - static_cast<int32_t>(std::floor(pos_cpr_));
-    delta_pos_cpr       = wrap_pm(delta_pos_cpr, 0.5f * static_cast<float>(config_.cpr));
+    delta_pos_cpr = wrap_pm(delta_pos_cpr, 0.5f * static_cast<float>(config_.cpr));
     // pll feedback
     pos_estimate_ += current_meas_period * pll_kp_ * delta_pos;
     pos_cpr_ += current_meas_period * pll_kp_ * delta_pos_cpr;
@@ -518,7 +518,7 @@ bool Encoder::update() {
     vel_estimate_ += current_meas_period * pll_ki_ * delta_pos_cpr;
     bool snap_to_zero_vel = false;
     if (std::abs(vel_estimate_) < 0.5f * current_meas_period * pll_ki_) {
-        vel_estimate_    = 0.0f;  //align delta-sigma on zero to prevent jitter
+        vel_estimate_ = 0.0f;  //align delta-sigma on zero to prevent jitter
         snap_to_zero_vel = true;
     }
 
@@ -544,7 +544,7 @@ bool Encoder::update() {
     //// compute electrical phase
     //TODO avoid recomputing elec_rad_per_enc every time
     float elec_rad_per_enc = axis_->motor_.config_.pole_pairs * 2 * M_PI * (1.0f / static_cast<float>(config_.cpr));
-    float ph               = elec_rad_per_enc * (interpolated_enc - config_.offset_float);
+    float ph = elec_rad_per_enc * (interpolated_enc - config_.offset_float);
     // ph = fmodf(ph, 2*M_PI);
     phase_ = wrap_pm_pi(ph);
 
