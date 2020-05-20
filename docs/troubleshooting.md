@@ -86,7 +86,9 @@ For gimbal motors, it is recommended to set the `motor.config.calibration_curren
 
 * `ERROR_CPR_POLEPAIRS_MISMATCH = 0x02`
 
-Confirm you have entered the correct count per rotation (CPR) for [your encoder](https://docs.odriverobotics.com/encoders). Note that the AMT encoders are configurable using the micro-switches on the encoder PCB and so you may need to check that these are in the right positions. If your encoder lists its pulse per rotation (PPR) multiply that number by four to get CPR.
+Confirm you have entered the correct count per rotation (CPR) for [your encoder](https://docs.odriverobotics.com/encoders). The ODrive uses your supplied value for the motor pole pairs to measure the CPR. So you should also double check this value.
+
+Note that the AMT encoders are configurable using the micro-switches on the encoder PCB and so you may need to check that these are in the right positions. If your encoder lists its pulse per rotation (PPR) multiply that number by four to get CPR.
 
 * `ERROR_NO_RESPONSE = 0x04`
 
@@ -111,7 +113,7 @@ You can also try increasing `<axis>.controller.config.vel_limit_tolerance`. The 
  * **Linux**: Type `lsusb` to list all USB devices. Verify that your ODrive is listed.
  * **Linux**: Make sure you [set up your udev rules](getting-started#downloading-and-installing-tools) correctly.
  * **Windows**: Right-click on the start menu and open "Device Manager". Verify that your ODrive is listed.
- * **Windows**: Use the [Zadig utility](http://zadig.akeo.ie/) to verify the driver is set to `libusb-win32`.
+ * **Windows**: Use the [Zadig utility](http://zadig.akeo.ie/) to verify the driver is set to `libusb-win32`. Note that there are two options listed in Zadig for Odrive: `ODrive 3.x Native Interface (Interface 2)` and `ODrive 3.x CDC Interface (Interface 0)`. Only the native interface should have `libusb-win32` while the CDC interface should use `WinUSB`.
  * Ensure that no other ODrive program is running
  * Run `odrivetools` with the `--verbose` option.
  * Run `PYUSB_DEBUG=debug odrivetools` to get even more log output.

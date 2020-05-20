@@ -23,12 +23,12 @@ Before doing the VSCode setup, make sure you've installed all of your [prerequis
 You should now be ready to compile and test the ODrive project.
 
 ## Building the Firmware
-* Tasks -> Run Build Task
+* Terminal -> Run Build Task (<kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>B</kbd>)
 
 A terminal window will open with your native shell.  VSCode is configured to run the command `make -j4` in this terminal.
 
 ## Flashing the Firmware
-* Tasks -> Run Task -> flash
+* Terminal -> Run Task -> flash
 
 A terminal window will open with your native shell.  VSCode is configured to run the command `make flash` in this terminal.
 
@@ -40,13 +40,15 @@ An extension called Cortex-Debug has recently been released which is designed sp
 Note: If developing on Windows, you should have `arm-none-eabi-gdb` and `openOCD` on your PATH.
 
   * Make sure you have the Firmware folder as your active folder
+  * Set `CONFIG_DEBUG=true` in the tup.config file
   * Flash the board with the newest code (starting debug session doesn't do this)
-  * Debug -> Start Debugging (or press F5)
+  * In the _Run_ tab (<kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>D</kbd>), select "Debug ODrive (Firmware)"
+  * Press _Start Debugging_ (or press <kbd>F5</kbd>)
   * The processor will reset and halt.
   * Set your breakpoints. Note: you can only set breakpoints when the processor is halted, if you set them during run mode, they won't get applied.
-  * Run (F5)
+  * _Continue_ (<kbd>F5</kbd>)
   * Stepping over/in/out, restarting, and changing breakpoints can be done by first pressing the "pause" (F6) button at the top the screen.
-  * When done debugging, simply stop (Shift+F5) the debugger.  It will kill your openOCD process too.
+  * When done debugging, simply stop (<kbd>Shift</kbd>+<kbd>F5</kbd>) the debugger.  It will kill your openOCD process too.
 
 ## Cleaning the Build
 This sometimes needs to be done if you change branches.

@@ -65,6 +65,7 @@ bool SensorlessEstimator::update() {
     // Check that we don't get problems with discrete time approximation
     if (!(current_meas_period * pll_kp < 1.0f)) {
         error_ |= ERROR_UNSTABLE_GAIN;
+        vel_estimate_valid_ = false;
         return false;
     }
 
@@ -77,5 +78,6 @@ bool SensorlessEstimator::update() {
     // update PLL velocity
     vel_estimate_ += current_meas_period * pll_ki * delta_phase;
 
+    vel_estimate_valid_ = true;
     return true;
 };

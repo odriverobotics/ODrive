@@ -85,7 +85,7 @@ function GCCToolchain(prefix, builddir, compiler_flags, linker_flags)
     end
     return {
         compile_c = function(src, flags, includes, outputs) gcc_generic_compiler(prefix..'gcc -std=c99', compiler_flags, calculate_stack_usage, src, flags, includes, outputs) end,
-        compile_cpp = function(src, flags, includes, outputs) gcc_generic_compiler(prefix..'g++ -std=c++14', compiler_flags, calculate_stack_usage, src, flags, includes, outputs) end,
+        compile_cpp = function(src, flags, includes, outputs) gcc_generic_compiler(prefix..'g++ -std=c++17 -Wno-register', compiler_flags, calculate_stack_usage, src, flags, includes, outputs) end,
         compile_asm = function(src, flags, includes, outputs) gcc_generic_compiler(prefix..'gcc -x assembler-with-cpp', compiler_flags, false, src, flags, includes, outputs) end,
         link = function(objects, output_name)
             output_name = builddir..'/'..output_name

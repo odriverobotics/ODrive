@@ -30,6 +30,26 @@
                 "interface/stlink-v2.cfg",
                 "target/stm32f4x_stlink.cfg",
             ],
+            "svdFile": "${workspaceRoot}/Board/v3/STM32F40x.svd",
+            "cwd": "${workspaceRoot}"
+        },
+        {
+            // For the Cortex-Debug extension
+            // ssh -t odrv -L3333:localhost:3333 bash -c "\"openocd '-f' 'interface/stlink-v2.cfg' '-f' 'target/stm32f4x_stlink.cfg'\""
+            "type": "cortex-debug",
+            "servertype": "external",
+            "gdbTarget": "localhost:3333",
+            "preLaunchCommands": [
+                "load"
+            ],
+            "request": "launch",
+            "name": "Debug ODrive via external server",
+            "executable": "${workspaceRoot}/build/ODriveFirmware.elf",
+            "configFiles": [
+                "interface/stlink-v2.cfg",
+                "target/stm32f4x_stlink.cfg",
+            ],
+            "svdFile": "${workspaceRoot}/Board/v3/STM32F40x.svd",
             "cwd": "${workspaceRoot}"
         },
     ]

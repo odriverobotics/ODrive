@@ -59,7 +59,7 @@ sudo apt-get install openocd
 sudo add-apt-repository ppa:jonathonf/tup && sudo apt-get update && sudo apt-get install tup
 ```
 
-#### Arch Linux
+#### Linux (Arch Linux)
 ```bash
 sudo pacman -S arm-none-eabi-gcc arm-none-eabi-binutils
 sudo pacman -S arm-none-eabi-gdb
@@ -85,7 +85,7 @@ Some instructions in this document may assume that you're using a bash command p
   * __Note 2__: 8-2018-q4-major seems to have a bug on Windows.  Please use 7-2018-q2-update.
 * [Tup](http://gittup.org/tup/index.html)
 * [GNU MCU Eclipse's Windows Build Tools](https://github.com/gnu-mcu-eclipse/windows-build-tools/releases)
-* [OpenOCD](http://gnuarmeclipse.github.io/openocd/install/). 
+* [OpenOCD](https://github.com/xpack-dev-tools/openocd-xpack/releases/). 
 * [ST-Link/V2 Drivers](http://www.st.com/web/en/catalog/tools/FM147/SC1887/PF260219)
 
 <br>
@@ -128,7 +128,7 @@ If the flashing worked, you can connect to the board using the [odrivetool](gett
 
 <br><br>
 ## Testing
-The script `tools/run_tests.py` runs a sequence of automated tests for several firmware features as well as high power burn-in tests. Some tests only need one ODrive and one motor/encoder pair while other tests need a back-to-back test rig such as [this one](https://cad.onshape.com/documents/026bda35ad5dff4d73c1d37f/w/ae302174f402737e1fdb3783/e/5ca143a6e5e24daf1fe8e434). In any case, to run the tests you need to provide a YAML file that lists the parameters of your test setup. An example can be found at [`tools/test-rig-parallel.yaml`](tools/test-rig-parallel.yaml`). The programmer serial number can be found by running `Firmware/find_programmer.sh` (make sure it has the latest formware from STM).
+The script `tools/run_tests.py` runs a sequence of automated tests for several firmware features as well as high power burn-in tests. Some tests only need one ODrive and one motor/encoder pair while other tests need a back-to-back test rig such as [this one](https://cad.onshape.com/documents/026bda35ad5dff4d73c1d37f/w/ae302174f402737e1fdb3783/e/5ca143a6e5e24daf1fe8e434). In any case, to run the tests you need to provide a YAML file that lists the parameters of your test setup. An example can be found at [`tools/test-rig-parallel.yaml`](tools/test-rig-parallel.yaml`). The programmer serial number can be found by running `Firmware/find_programmer.sh` (make sure it has the latest firmware from STM).
 
 <div class="alert" markdown="span">The test script commands the ODrive to high currents and high motor speeds so if your ODrive is connected to anything other than a stirdy test-rig (or free spinning motors), it will probably break your machine.</div>
 
@@ -166,7 +166,7 @@ How to use these is shown in the following example.
 * We do all changes to the STM32CubeMX config and regenerate the code on top of `STM32CubeMX-start`.
   * `git checkout STM32CubeMX-start`
 * Run stm32cubeMX and load the `Firmware/Board/v3/Odrive.ioc` project file.
-  * If the tool asks if you wish to migrate to a new version, choose to migrate.
+  * If the tool asks if you wish to migrate to a new version, choose to download the old firmware package (unless you want to use the latest libraries)
 * Without changing any settings, press `Project -> Generate code`.
 * You may need to let it download some drivers and such.
 * STM32CubeMX may now have a newer version of some of the libraries, so there may be changes to the generated code even though we didn't change any settings. We need to check that everything is still working, and hence check in the changes:
