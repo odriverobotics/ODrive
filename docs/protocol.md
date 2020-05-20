@@ -45,7 +45,7 @@ __Request__
       - The length of the payload is determined by the total packet size. The format of the payload depends on the endpoint type. The endpoint type can be obtained from the JSON definition.
   - __Bytes N-2, N-1__
       - For endpoint 0: Protocol version (currently 1). A server shall ignore packets with other values.
-      - For all other endpoints: The CRC16 calculated over the JSON definition. The CRC16 init value is the protocol version (currently 1). A server shall ignore packets that set this field incorrectly. See protocol.hpp for CRC details.
+      - For all other endpoints: The CRC16 calculated over the JSON definition using the algorithm described below, except that the initial value is set to the protocol version (currently 1). A server shall ignore packets that set this field incorrectly.
 
 __Response__
 
@@ -61,8 +61,26 @@ The stream based format is just a wrapper for the packet format.
   - __Byte 0__ Sync byte `0xAA`
   - __Byte 1__ Packet length
       - Currently both parties shall only emit and accept values of 0 through 127.
-  - __Byte 2__ CRC8 of bytes 0 and 1
-      - See protocol.hpp for CRC details.
+  - __Byte 2__ CRC8 of bytes 0 and 1 (see below for details)
   - __Bytes 3 to N-3__ Packet
-  - __Bytes N-2, N-1__ CRC16
-      - See protocol.hpp for CRC details.
+  - __Bytes N-2, N-1__ CRC16 (see below for details)
+
+## CRC algorithms ##
+
+__CRC8__
+ - Polynomial: `0x37`
+ - Initial value: `0x42`
+ - No input reflection, no result reflection, no final XOR operation
+ - Examples:
+   - `0x01, 0x02, 0x03, 0x04` => `0x61`
+   - `0x05, 0x04, 0x03, 0x02, 0x01` => `0x64`
+
+__CRC16__
+ - Polynomial: `0x3d65`
+ - Initial value: `0x1337` (or `0x0001` for the JSON CRC)
+ - No input reflection, no result reflection, no final XOR operation
+ - Examples:
+   - `0x01, 0x02, 0x03, 0x04` => `0x672E`
+   - `0x05, 0x04, 0x03, 0x02, 0x01` => `0xE251`
+
+You can use the online calculator at http://www.sunshine2k.de/coding/javascript/crc/crc_js.html to verify your implementation.
