@@ -87,7 +87,7 @@ static void run_state_machine_loop_wrapper(void* ctx) {
 // @brief Starts run_state_machine_loop in a new thread
 void Axis::start_thread() {
     osThreadDef(thread_def, run_state_machine_loop_wrapper, hw_config_.thread_priority, 0, stack_size_ / sizeof(StackType_t));
-    thread_id_       = osThreadCreate(osThread(thread_def), this);
+    thread_id_ = osThreadCreate(osThread(thread_def), this);
     thread_id_valid_ = true;
 }
 
@@ -202,9 +202,7 @@ void Axis::watchdog_feed() {
 
 // @brief Check the watchdog timer for expiration. Also sets the watchdog error bit if expired.
 bool Axis::watchdog_check() {
-    // reset value = 0 means watchdog disabled.
     if (!config_.enable_watchdog) return true;
-    if (get_watchdog_reset() == 0) return true;
 
     // explicit check here to ensure that we don't underflow back to UINT32_MAX
     if (watchdog_current_value_ > 0) {
@@ -379,7 +377,7 @@ bool Axis::run_homing() {
     controller_.vel_setpoint_ = 0.0f;  // Change directions without decelerating
 
     // Set our current position in encoder counts to make control more logical
-    encoder_.set_linear_count(static_cast<int32_t>(controller_.pos_setpoint_));
+    encoder_.set_linear_count((int32_t)controller_.pos_setpoint_);
 
     controller_.config_.control_mode = Controller::CONTROL_MODE_POSITION_CONTROL;
     controller_.config_.input_mode = Controller::INPUT_MODE_TRAP_TRAJ;

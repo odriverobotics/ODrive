@@ -41,7 +41,7 @@ public:
 
         float counts_per_step = 2.0f;
 
-        float watchdog_timeout = 0.0f;  // [s] (0 disables watchdog)
+        float watchdog_timeout = 0.0f; // [s]
         bool enable_watchdog = false;
 
         // Defaults loaded from hw_config in load_configuration in main.cpp
@@ -51,7 +51,8 @@ public:
         LockinConfig_t calibration_lockin = default_calibration();
         LockinConfig_t sensorless_ramp = default_sensorless();
         LockinConfig_t general_lockin;
-        uint8_t can_node_id = 0; // Both axes will have the same id to start
+        uint32_t can_node_id = 0; // Both axes will have the same id to start
+        bool can_node_id_extended = false;
         uint32_t can_heartbeat_rate_ms = 100;
 
         // custom setters
@@ -101,10 +102,10 @@ public:
     bool watchdog_check();
 
     void clear_errors() {
-        motor_.error_                = Motor::ERROR_NONE;
-        controller_.error_           = Controller::ERROR_NONE;
+        motor_.error_ = Motor::ERROR_NONE;
+        controller_.error_ = Controller::ERROR_NONE;
         sensorless_estimator_.error_ = SensorlessEstimator::ERROR_NONE;
-        encoder_.error_              = Encoder::ERROR_NONE;
+        encoder_.error_ = Encoder::ERROR_NONE;
 
         error_ = ERROR_NONE;
     }

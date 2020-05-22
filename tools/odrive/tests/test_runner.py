@@ -679,7 +679,7 @@ def select_params(param_options):
     # Select parameters from the resource list
     # (this could be arbitrarily complex to improve parallelization of the tests)
     for combination in get_combinations(param_options):
-        if all_unique(combination):
+        if all_unique([x for x in combination if isinstance(x, Component)]):
             return list(combination)
 
     return None
@@ -708,7 +708,7 @@ def run(tests):
         test_cases = list(test.get_test_cases(testrig))
 
         if len(test_cases) == 0:
-            logger.warn('no resources are available to conduct the test {}'.format(type(test).__name__))
+            logger.warn('no test cases are available to conduct the test {}'.format(type(test).__name__))
             continue
         
         for test_case in test_cases:

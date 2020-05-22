@@ -647,7 +647,7 @@ void update_brake_current() {
         return;
     }
     
-    int high_on = static_cast<int>(TIM_APB1_PERIOD_CLOCKS * (1.0f - brake_duty));
+    int high_on = (int)(TIM_APB1_PERIOD_CLOCKS * (1.0f - brake_duty));
     int low_off = high_on - TIM_APB1_DEADTIME_CLOCKS;
     if (low_off < 0) low_off = 0;
     safety_critical_apply_brake_resistor_timings(low_off, high_on);

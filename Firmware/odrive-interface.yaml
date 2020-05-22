@@ -275,8 +275,9 @@ interfaces:
           sensorless_ramp: LockinState
           general_lockin: LockinState
           can_node_id:
-            type: uint8
+            type: uint32
             doc: Both axes will have the same id to start
+          can_node_id_extended: bool
           can_heartbeat_rate_ms: uint32
       motor: Motor
       controller: Controller
@@ -353,7 +354,10 @@ interfaces:
       DC_calib_phC: {type: float32, c_name: DC_calib_.phC}
       phase_current_rev_gain: float32
       thermal_current_lim: readonly float32
-      inverter_temp: readonly float32
+      inverter_temp:
+        type: readonly float32
+        unit: °C
+        doc: NaN while the ODrive is initializing.
       current_control:
         c_is_class: False
         attributes:

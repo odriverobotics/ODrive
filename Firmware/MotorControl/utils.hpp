@@ -86,7 +86,6 @@ static inline float wrap_pm(float x, float pm_range) {
     return fmodf_pos(x + pm_range, 2.0f * pm_range) - pm_range;
 }
 
-//beware of inserting large angles!
 static inline float wrap_pm_pi(float theta) {
     return wrap_pm(theta, M_PI);
 }

@@ -216,7 +216,7 @@ float Motor::phase_current_from_adcval(uint32_t ADCValue) {
 // TODO check Ibeta balance to verify good motor connection
 bool Motor::measure_phase_resistance(float test_current, float max_voltage) {
     static const float kI = 10.0f;                                 // [(V/s)/A]
-    static const int num_test_cycles = static_cast<int>(3.0f / CURRENT_MEAS_PERIOD); // Test runs for 3s
+    static const int num_test_cycles = (int)(3.0f / CURRENT_MEAS_PERIOD); // Test runs for 3s
     float test_voltage = 0.0f;
     
     size_t i = 0;
@@ -329,7 +329,7 @@ bool Motor::FOC_voltage(float v_d, float v_q, float pwm_phase) {
     float c = our_arm_cos_f32(pwm_phase);
     float s = our_arm_sin_f32(pwm_phase);
     float v_alpha = c*v_d - s*v_q;
-    float v_beta  = c*v_q + s*v_d;
+    float v_beta = c*v_q + s*v_d;
     return enqueue_voltage_timings(v_alpha, v_beta);
 }
 
@@ -400,7 +400,7 @@ bool Motor::FOC_current(float Id_des, float Iq_des, float I_phase, float pwm_pha
     float c_p = our_arm_cos_f32(pwm_phase);
     float s_p = our_arm_sin_f32(pwm_phase);
     float mod_alpha = c_p * mod_d - s_p * mod_q;
-    float mod_beta  = c_p * mod_q + s_p * mod_d;
+    float mod_beta = c_p * mod_q + s_p * mod_d;
 
     // Report final applied voltage in stationary frame (for sensorles estimator)
     ictrl.final_v_alpha = mod_to_V * mod_alpha;
