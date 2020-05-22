@@ -207,8 +207,8 @@ class TestRegenProtection(TestClosedLoopControlBase):
             # ... and brake
             axis_ctx.handle.controller.input_vel = 0 # this should fail almost instantaneously
             time.sleep(0.1)
-            test_assert_eq(axis_ctx.handle.error, errors.axis.ERROR_MOTOR_DISARMED | errors.axis.ERROR_BRAKE_RESISTOR_DISARMED)
-            test_assert_eq(axis_ctx.handle.motor.error, errors.motor.ERROR_DC_BUS_OVER_REGEN_CURRENT)
+            test_assert_eq(axis_ctx.handle.error, AXIS_ERROR_MOTOR_DISARMED | AXIS_ERROR_BRAKE_RESISTOR_DISARMED)
+            test_assert_eq(axis_ctx.handle.motor.error, MOTOR_ERROR_DC_BUS_OVER_REGEN_CURRENT)
 
 
 class TestVelLimitInCurrentControl(TestClosedLoopControlBase):

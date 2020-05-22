@@ -45,7 +45,7 @@ for ax in axes:
 def wait_and_exit_on_error(ax):
     while ax.current_state != AXIS_STATE_IDLE:
         time.sleep(0.1)
-    if ax.error != errors.axis.ERROR_NONE:
+    if ax.error != AXIS_ERROR_NONE:
         dump_errors(odrv, True)
         exit()
 

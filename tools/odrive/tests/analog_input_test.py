@@ -6,7 +6,7 @@ import math
 import os
 import numpy as np
 
-from odrive.enums import errors
+from odrive.enums import *
 from test_runner import *
 
 

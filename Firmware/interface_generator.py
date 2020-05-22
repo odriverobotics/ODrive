@@ -541,7 +541,9 @@ for k, item in list(interfaces.items()):
         toplevel_interfaces.append(item)
     else:
         if k[:-1] != ['fibre']: # TODO: remove special handling
-            interfaces[join_name(*k[:-1])]['interfaces'].append(item)
+            parent = interfaces[join_name(*k[:-1])]
+            parent['interfaces'].append(item)
+            item['parent'] = parent
 toplevel_enums = []
 for k, item in list(enums.items()):
     k = split_name(k)
@@ -549,7 +551,9 @@ for k, item in list(enums.items()):
         toplevel_enums.append(item)
     else:
         if k[:-1] != ['fibre']: # TODO: remove special handling
-            interfaces[join_name(*k[:-1])]['enums'].append(item)
+            parent = interfaces[join_name(*k[:-1])]
+            parent['enums'].append(item)
+            item['parent'] = parent
 
 
 

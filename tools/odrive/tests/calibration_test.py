@@ -75,8 +75,8 @@ class TestDisconnectedMotorCalibration():
         request_state(axis_ctx, AXIS_STATE_MOTOR_CALIBRATION)
         time.sleep(6)
         test_assert_eq(axis_ctx.handle.current_state, AXIS_STATE_IDLE)
-        test_assert_eq(axis_ctx.handle.error, errors.axis.ERROR_MOTOR_FAILED)
-        test_assert_eq(axis_ctx.handle.motor.error, errors.motor.ERROR_PHASE_RESISTANCE_OUT_OF_RANGE)
+        test_assert_eq(axis_ctx.handle.error, AXIS_ERROR_MOTOR_FAILED)
+        test_assert_eq(axis_ctx.handle.motor.error, MOTOR_ERROR_PHASE_RESISTANCE_OUT_OF_RANGE)
 
 
 class TestEncoderDirFind():

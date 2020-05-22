@@ -5,6 +5,7 @@ tup.frule{inputs={'fibre/cpp/interfaces_template.j2'}, command='python3 interfac
 tup.frule{inputs={'fibre/cpp/function_stubs_template.j2'}, command='python3 interface_generator.py --definitions odrive-interface.yaml --template %f --output %o', outputs='autogen/function_stubs.hpp'}
 tup.frule{inputs={'fibre/cpp/endpoints_template.j2'}, command='python3 interface_generator.py --definitions odrive-interface.yaml --template %f --output %o', outputs='autogen/endpoints.hpp'}
 tup.frule{inputs={'fibre/cpp/type_info_template.j2'}, command='python3 interface_generator.py --definitions odrive-interface.yaml --template %f --output %o', outputs='autogen/type_info.hpp'}
+tup.frule{command='python3 interface_generator.py --definitions odrive-interface.yaml --template enums_template.j2 --output ../tools/odrive/enums.py'}
 
 tup.frule{
     command='python ../tools/odrive/version.py --output %o',

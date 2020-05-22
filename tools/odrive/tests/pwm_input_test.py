@@ -5,7 +5,7 @@ import time
 import math
 import os
 
-from odrive.enums import errors
+from odrive.enums import *
 from test_runner import *
 
 
