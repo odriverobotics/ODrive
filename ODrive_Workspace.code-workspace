@@ -8,10 +8,15 @@
 		},
 		{
 			"path": "docs"
+		},
+		{
+			"path": "analysis"
 		}
 	],
 	"settings": {
+		"c-cpp-flylint.cppcheck.standard": ["c99","c++14"],
 		"files.associations": {
+			"*.config": "yaml",
 			"memory": "cpp",
 			"utility": "cpp",
 			"deque": "cpp",
@@ -44,7 +49,20 @@
 			"algorithm": "cpp",
 			"chrono": "cpp",
 			"condition_variable": "cpp",
-			"future": "cpp"
+			"future": "cpp",
+			"arm_math.h": "c",
+			"iostream": "cpp",
+			"cmath": "cpp",
+			"csignal": "cpp",
+			"cstdarg": "cpp",
+			"cstddef": "cpp",
+			"ctime": "cpp",
+			"unordered_map": "cpp",
+			"fstream": "cpp",
+			"iomanip": "cpp",
+			"optional": "cpp",
+			"sstream": "cpp",
+			"utils.h": "c"
 		}
 	}
 }

@@ -1,4 +1,4 @@
-
+from __future__ import print_function
 import subprocess
 import shlex
 import math
@@ -17,31 +17,10 @@ print = functools.partial(print, flush=True)
 import abc
 ABC = abc.ABC
 
-class TestFailed(Exception):
-    def __init__(self, message):
-        Exception.__init__(self, message)
 
 class PreconditionsNotMet(Exception):
     pass
 
-class ODriveTestContext():
-    def __init__(self, name: str, yaml: dict):
-        self.handle = None
-        self.yaml = yaml
-        self.name = name
-        self.axes = []
-        for axis_idx, axis_yaml in enumerate(yaml['axes']):
-            axis_name = (name + "." + axis_yaml['name']) if 'name' in axis_yaml else '{}.axis{}'.format(name, axis_idx)
-            self.axes.append(AxisTestContext(axis_name, axis_yaml, self))
-
-    def rediscover(self):
-        """
-        Reconnects to the ODrive
-        """
-        self.handle = odrive.find_any(
-            path="usb", serial_number=self.yaml['serial-number'], timeout=15)#, printer=print)
-        for axis_idx, axis_ctx in enumerate(self.axes):
-            axis_ctx.handle = self.handle.__dict__['axis{}'.format(axis_idx)]
 
 class AxisTestContext():
     def __init__(self, name: str, yaml: dict, odrv_ctx: ODriveTestContext):
@@ -50,24 +29,6 @@ class AxisTestContext():
         self.name = name
         self.lock = threading.Lock()
         self.odrv_ctx = odrv_ctx
-
-def test_assert_eq(observed, expected, range=None, accuracy=None):
-    sign = lambda x: 1 if x >= 0 else -1
-
-    # Comparision with absolute range
-    if not range is None:
-        if (observed < expected - range) or (observed > expected + range):
-            raise TestFailed("value out of range: expected {}+-{} but observed {}".format(expected, range, observed))
-
-    # Comparision with relative range
-    elif not accuracy is None:
-        if sign(observed) != sign(expected) or (abs(observed) < abs(expected) * (1 - accuracy)) or (abs(observed) > abs(expected) * (1 + accuracy)):
-            raise TestFailed("value out of range: expected {}+-{}% but observed {}".format(expected, accuracy*100.0, observed))
-
-    # Exact comparision
-    else:
-        if observed != expected:
-            raise TestFailed("value mismatch: expected {} but observed {}".format(expected, observed))
 
 def get_errors(axis_ctx: AxisTestContext):
     errors = []
@@ -195,10 +156,10 @@ class AxisTest(ABC):
     def check_preconditions(self, axis_ctx: AxisTestContext, logger):
         test_assert_no_error(axis_ctx)
         test_assert_eq(axis_ctx.handle.current_state, AXIS_STATE_IDLE)
-        if (abs(axis_ctx.handle.encoder.pll_vel) > 100):
+        if (abs(axis_ctx.handle.encoder.vel_estimate) > 100):
             logger.warn("axis still in motion, delaying 2 sec...")
             time.sleep(2)
-        test_assert_eq(axis_ctx.handle.encoder.pll_vel, 0, range=500)
+        test_assert_eq(axis_ctx.handle.encoder.vel_estimate, 0, range=500)
         test_assert_eq(axis_ctx.odrv_ctx.handle.config.dc_bus_undervoltage_trip_level, axis_ctx.odrv_ctx.yaml['vbus-voltage'] * 0.85, accuracy=0.001)
         test_assert_eq(axis_ctx.odrv_ctx.handle.config.dc_bus_overvoltage_trip_level, axis_ctx.odrv_ctx.yaml['vbus-voltage'] * 1.08, accuracy=0.001)
         #test_assert_eq(axis_ctx.odrv_ctx.handle.config.dc_bus_undervoltage_trip_level, axis_ctx.odrv_ctx.yaml['vbus-voltage'] * 0.96, accuracy=0.001)
@@ -218,11 +179,11 @@ class DualAxisTest(ABC):
         test_assert_no_error(axis1_ctx)
         test_assert_eq(axis0_ctx.handle.current_state, AXIS_STATE_IDLE)
         test_assert_eq(axis1_ctx.handle.current_state, AXIS_STATE_IDLE)
-        if (abs(axis0_ctx.handle.encoder.pll_vel) > 100) or (abs(axis1_ctx.handle.encoder.pll_vel) > 100):
+        if (abs(axis0_ctx.handle.encoder.vel_estimate) > 100) or (abs(axis1_ctx.handle.encoder.vel_estimate) > 100):
             logger.warn("some axis still in motion, delaying 2 sec...")
             time.sleep(2)
-        test_assert_eq(axis0_ctx.handle.encoder.pll_vel, 0, range=500)
-        test_assert_eq(axis1_ctx.handle.encoder.pll_vel, 0, range=500)
+        test_assert_eq(axis0_ctx.handle.encoder.vel_estimate, 0, range=500)
+        test_assert_eq(axis1_ctx.handle.encoder.vel_estimate, 0, range=500)
 
     @abc.abstractmethod
     def run_test(self, axis0_ctx: AxisTestContext, axis1_ctx: AxisTestContext, logger):
@@ -390,36 +351,13 @@ class TestClosedLoopControl(AxisTest):
         axis_ctx.handle.controller.set_pos_setpoint(50000, 0, 0)
         axis_ctx.handle.controller.config.vel_limit = 40000
         time.sleep(0.3)
-        test_assert_eq(axis_ctx.handle.encoder.pll_vel, 40000, range=4000)
+        test_assert_eq(axis_ctx.handle.encoder.vel_estimate, 40000, range=4000)
         expected_sensorless_estimation = 40000 * 2 * math.pi / axis_ctx.yaml['encoder-cpr'] * axis_ctx.yaml['motor-pole-pairs']
-        test_assert_eq(axis_ctx.handle.sensorless_estimator.pll_vel, expected_sensorless_estimation, range=50)
+        test_assert_eq(axis_ctx.handle.sensorless_estimator.vel_estimate, expected_sensorless_estimation, range=50)
         time.sleep(3)
-        test_assert_eq(axis_ctx.handle.encoder.pll_vel, 0, range=1000)
+        test_assert_eq(axis_ctx.handle.encoder.vel_estimate, 0, range=1000)
         time.sleep(0.5)
         request_state(axis_ctx, AXIS_STATE_IDLE)
-
-class TestStoreAndReboot(ODriveTest):
-    """
-    Stores the current configuration to NVM and reboots.
-    """
-    def run_test(self, odrv_ctx: ODriveTestContext, logger):
-        logger.debug("storing configuration and rebooting...")
-        odrv_ctx.handle.save_configuration()
-        try:
-            odrv_ctx.handle.reboot()
-        except fibre.ChannelBrokenException:
-            pass # this is expected
-        time.sleep(2)
-
-        odrv_ctx.rediscover()
-
-        logger.debug("verifying configuration after reboot...")
-        test_assert_eq(odrv_ctx.handle.config.brake_resistance, odrv_ctx.yaml['brake-resistance'], accuracy=0.01)
-        for axis_ctx in odrv_ctx.axes:
-            test_assert_eq(axis_ctx.handle.encoder.config.cpr, axis_ctx.yaml['encoder-cpr'])
-            test_assert_eq(axis_ctx.handle.motor.config.phase_resistance, axis_ctx.yaml['motor-phase-resistance'], accuracy=0.2)
-            test_assert_eq(axis_ctx.handle.motor.config.phase_inductance, axis_ctx.yaml['motor-phase-inductance'], accuracy=0.5)
-
 
 class TestHighVelocity(AxisTest):
     """
@@ -494,7 +432,7 @@ class TestHighVelocity(AxisTest):
 
             # set and measure velocity
             axis_ctx.handle.controller.set_vel_setpoint(vel_setpoint, 0)
-            measured_vel = axis_ctx.handle.encoder.pll_vel
+            measured_vel = axis_ctx.handle.encoder.vel_estimate
             max_measured_vel = max(measured_vel, max_measured_vel)
             test_assert_eq(measured_vel, expected_velocity, range=vel_range)
             test_assert_no_error(axis_ctx)
@@ -512,10 +450,10 @@ class TestHighVelocity(AxisTest):
             axis_ctx.handle.controller.set_vel_setpoint(0, 0)
             time.sleep(0.5)
             # If the velocity integrator at work, it may now work against slowing down.
-            test_assert_eq(axis_ctx.handle.encoder.pll_vel, 0, range=rated_limit*0.3)
+            test_assert_eq(axis_ctx.handle.encoder.vel_estimate, 0, range=rated_limit*0.3)
             # TODO: this is not a good bound, but the encoder float resolution results in a bad velocity estimate after this many turns
             time.sleep(0.5)
-            test_assert_eq(axis_ctx.handle.encoder.pll_vel, 0, range=2000)
+            test_assert_eq(axis_ctx.handle.encoder.vel_estimate, 0, range=2000)
             request_state(axis_ctx, AXIS_STATE_IDLE)
         test_assert_no_error(axis_ctx)
 
@@ -775,6 +713,6 @@ class TestSensorlessControl(AxisTest):
         request_state(axis_ctx, AXIS_STATE_SENSORLESS_CONTROL)
         # wait for spinup
         time.sleep(2)
-        test_assert_eq(odrv0.axis0.encoder.pll_vel, target_vel, range=2000)
+        test_assert_eq(odrv0.axis0.encoder.vel_estimate, target_vel, range=2000)
 
         request_state(axis_ctx, AXIS_STATE_IDLE)

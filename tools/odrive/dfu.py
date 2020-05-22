@@ -3,6 +3,7 @@
 Tool for flashing .hex files to the ODrive via the STM built-in USB DFU mode.
 """
 
+from __future__ import print_function
 import argparse
 import sys
 import time
@@ -337,8 +338,8 @@ def update_device(device, firmware, logger, cancellation_token):
 
     # Back up configuration
     if dfudev is None:
-        did_backup_config = device.user_config_loaded if hasattr(device, 'user_config_loaded') else False
-        if did_backup_config:
+        do_backup_config = device.user_config_loaded if hasattr(device, 'user_config_loaded') else False
+        if do_backup_config:
             odrive.configuration.backup_config(device, None, logger)
     elif not odrive.utils.yes_no_prompt("The configuration cannot be backed up because the device is already in DFU mode. The configuration may be lost after updating. Do you want to continue anyway?", True):
         raise OperationAbortedException()
@@ -413,7 +414,7 @@ def update_device(device, firmware, logger, cancellation_token):
     device = odrive.find_any("usb", serial_number,
                     cancellation_token, cancellation_token, timeout=30)
 
-    if did_backup_config:
+    if do_backup_config:
         odrive.configuration.restore_config(device, None, logger)
         os.remove(odrive.configuration.get_temp_config_filename(device))
 
@@ -436,7 +437,10 @@ def launch_dfu(args, logger, cancellation_token):
     def find_device_in_dfu_mode_thread():
         devices[0] = find_device_in_dfu_mode(serial_number, find_odrive_cancellation_token)
         find_odrive_cancellation_token.set()
-    threading.Thread(target=find_device_in_dfu_mode_thread).start()
+    t = threading.Thread(target=find_device_in_dfu_mode_thread)
+    t.daemon = True
+    t.start()
+    
 
     # Scan for ODrives not in DFU mode
     # We only scan on USB because DFU is only implemented over USB

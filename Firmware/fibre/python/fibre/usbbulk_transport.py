@@ -8,6 +8,7 @@ import time
 import fibre.protocol
 import traceback
 import platform
+from fibre.utils import TimeoutError
 
 # Currently we identify fibre-enabled devices by VID,PID
 # TODO: identify by USB descriptors
@@ -186,7 +187,7 @@ def discover_channels(path, serial_number, callback, cancellation_token, channel
     return True
 
   while not cancellation_token.is_set():
-    logger.debug("USB discover loop")
+    # logger.debug("USB discover loop")
     devices = usb.core.find(find_all=True, custom_match=device_matcher)
     for usb_device in devices:
       try:

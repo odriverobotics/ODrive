@@ -1,3 +1,4 @@
+/* USER CODE BEGIN Header */
 /**
   ******************************************************************************
   * File Name          : freertos.c
@@ -45,45 +46,67 @@
   *
   ******************************************************************************
   */
+/* USER CODE END Header */
 
 /* Includes ------------------------------------------------------------------*/
 #include "FreeRTOS.h"
 #include "task.h"
+#include "main.h"
 #include "cmsis_os.h"
 
+/* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */     
 #include "freertos_vars.h"
 #include "usb_device.h"
 extern PCD_HandleTypeDef hpcd_USB_OTG_FS;
 int odrive_main(void);
+int load_configuration(void);
+int construct_objects(void);
 /* USER CODE END Includes */
 
-/* Variables -----------------------------------------------------------------*/
-osThreadId defaultTaskHandle;
+/* Private typedef -----------------------------------------------------------*/
+/* USER CODE BEGIN PTD */
 
+/* USER CODE END PTD */
+
+/* Private define ------------------------------------------------------------*/
+/* USER CODE BEGIN PD */
+
+/* USER CODE END PD */
+
+/* Private macro -------------------------------------------------------------*/
+/* USER CODE BEGIN PM */
+
+/* USER CODE END PM */
+
+/* Private variables ---------------------------------------------------------*/
 /* USER CODE BEGIN Variables */
 // List of semaphores
 osSemaphoreId sem_usb_irq;
 osSemaphoreId sem_uart_dma;
 osSemaphoreId sem_usb_rx;
 osSemaphoreId sem_usb_tx;
+osSemaphoreId sem_can;
 
 osThreadId usb_irq_thread;
+const uint32_t stack_size_usb_irq_thread = 2048; // Bytes
 
 // Place FreeRTOS heap in core coupled memory for better performance
 __attribute__((section(".ccmram")))
 uint8_t ucHeap[configTOTAL_HEAP_SIZE];
 /* USER CODE END Variables */
+osThreadId defaultTaskHandle;
+const uint32_t stack_size_default_task = 2048; // Bytes
 
-/* Function prototypes -------------------------------------------------------*/
+/* Private function prototypes -----------------------------------------------*/
+/* USER CODE BEGIN FunctionPrototypes */
+
+/* USER CODE END FunctionPrototypes */
+
 void StartDefaultTask(void * argument);
 
 extern void MX_USB_DEVICE_Init(void);
 void MX_FREERTOS_Init(void); /* (MISRA C 2004 rule 8.1) */
-
-/* USER CODE BEGIN FunctionPrototypes */
-
-/* USER CODE END FunctionPrototypes */
 
 /* Hook prototypes */
 void vApplicationIdleHook(void);
@@ -129,14 +152,17 @@ void usb_deferred_interrupt_thread(void * ctx) {
 
 void init_deferred_interrupts(void) {
     // Start USB interrupt handler thread
-    osThreadDef(task_usb_pump, usb_deferred_interrupt_thread, osPriorityAboveNormal, 0, 512);
+    osThreadDef(task_usb_pump, usb_deferred_interrupt_thread, osPriorityAboveNormal, 0, stack_size_usb_irq_thread / sizeof(StackType_t));
     usb_irq_thread = osThreadCreate(osThread(task_usb_pump), NULL);
 }
 
 /* USER CODE END 4 */
 
-/* Init FreeRTOS */
-
+/**
+  * @brief  FreeRTOS initialization
+  * @param  None
+  * @retval None
+  */
 void MX_FREERTOS_Init(void) {
   /* USER CODE BEGIN Init */
        
@@ -165,7 +191,15 @@ void MX_FREERTOS_Init(void) {
   osSemaphoreDef(sem_usb_tx);
   sem_usb_tx = osSemaphoreCreate(osSemaphore(sem_usb_tx), 1);
 
+  osSemaphoreDef(sem_can);
+  sem_can = osSemaphoreCreate(osSemaphore(sem_can), 1);
+  osSemaphoreWait(sem_can, 0);
+
   init_deferred_interrupts();
+
+  // Load persistent configuration (or defaults)
+  load_configuration();
+  construct_objects();
   /* USER CODE END RTOS_SEMAPHORES */
 
   /* USER CODE BEGIN RTOS_TIMERS */
@@ -174,7 +208,7 @@ void MX_FREERTOS_Init(void) {
 
   /* Create the thread(s) */
   /* definition and creation of defaultTask */
-  osThreadDef(defaultTask, StartDefaultTask, osPriorityNormal, 0, 256);
+  osThreadDef(defaultTask, StartDefaultTask, osPriorityNormal, 0, stack_size_default_task / sizeof(StackType_t));
   defaultTaskHandle = osThreadCreate(osThread(defaultTask), NULL);
 
   /* USER CODE BEGIN RTOS_THREADS */
@@ -186,7 +220,13 @@ void MX_FREERTOS_Init(void) {
   /* USER CODE END RTOS_QUEUES */
 }
 
-/* StartDefaultTask function */
+/* USER CODE BEGIN Header_StartDefaultTask */
+/**
+  * @brief  Function implementing the defaultTask thread.
+  * @param  argument: Not used 
+  * @retval None
+  */
+/* USER CODE END Header_StartDefaultTask */
 void StartDefaultTask(void * argument)
 {
   /* init code for USB_DEVICE */
@@ -202,6 +242,7 @@ void StartDefaultTask(void * argument)
   /* USER CODE END StartDefaultTask */
 }
 
+/* Private application code --------------------------------------------------*/
 /* USER CODE BEGIN Application */
 
 /* USER CODE END Application */

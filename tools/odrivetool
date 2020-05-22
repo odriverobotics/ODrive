@@ -7,6 +7,7 @@ from __future__ import print_function
 import sys
 import os
 import argparse
+import time
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(
                     os.path.realpath(__file__))),
@@ -70,7 +71,7 @@ code_generator_parser.add_argument("-o", "--output", type=argparse.FileType('w')
                     help="path of the generated output")
 code_generator_parser.set_defaults(template = os.path.join(script_path, 'odrive_header_template.h.in'))
 
-subparsers.add_parser('liveplotter', help="Upgrade the ODrive's Firmware")
+subparsers.add_parser('liveplotter', help="For plotting of odrive parameters (i.e. position) in real time")
 subparsers.add_parser('drv-status', help="Show status of the on-board DRV8301 chips (for debugging only)")
 subparsers.add_parser('rate-test', help="Estimate the average transmission bandwidth over USB")
 subparsers.add_parser('udev-setup', help="Linux only: Gives users on your system permission to access the ODrive by installing udev rules")
@@ -149,8 +150,14 @@ try:
 
         # If you want to plot different values, change them here.
         # You can plot any number of values concurrently.
-        start_liveplotter(lambda: [my_odrive.motor0.encoder.pos_estimate,
-                                my_odrive.motor1.encoder.pos_estimate])
+        cancellation_token = start_liveplotter(lambda: [
+            my_odrive.axis0.encoder.pos_estimate,
+            my_odrive.axis1.encoder.pos_estimate,
+        ])
+
+        print("Showing plot. Press Ctrl+C to exit.")
+        while not cancellation_token.is_set():
+            time.sleep(1)
 
     elif args.command == 'drv-status':
         from odrive.utils import print_drv_regs
@@ -170,7 +177,7 @@ try:
         rate_test(my_odrive)
 
     elif args.command == 'udev-setup':
-        from odrive.utils import setup_udev_rules
+        from odrive.version import setup_udev_rules
         setup_udev_rules(logger)
     
     elif args.command == 'generate-code':

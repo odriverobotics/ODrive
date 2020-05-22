@@ -5,10 +5,17 @@ import threading
 import fibre
 import odrive
 import odrive.enums
-from odrive.utils import start_liveplotter
+from odrive.utils import start_liveplotter, dump_errors, oscilloscope_dump
 #from odrive.enums import * # pylint: disable=W0614
 
 def print_banner():
+    print("Website: https://odriverobotics.com/")
+    print("Docs: https://docs.odriverobotics.com/")
+    print("Forums: https://discourse.odriverobotics.com/")
+    print("Discord: https://discord.gg/k3ZZ3mS")
+    print("Github: https://github.com/madcowswe/ODrive/")
+
+    print()
     print('Please connect your ODrive.')
     print('You can also type help() or quit().')
 
@@ -76,7 +83,9 @@ def launch_shell(args, logger, app_shutdown_token):
     """
 
     interactive_variables = {
-        'start_liveplotter': start_liveplotter
+        'start_liveplotter': start_liveplotter,
+        'dump_errors': dump_errors,
+        'oscilloscope_dump': oscilloscope_dump
     }
 
     # Expose all enums from odrive.enums

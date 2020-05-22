@@ -56,14 +56,14 @@ function GCCToolchain(prefix, builddir, compiler_flags, linker_flags)
         compiler_flags += '-fstack-usage'
     end
 
-    gcc_generic_compiler = function(compiler, compiler_flags, gen_su_file, src, flags, includes, outputs)
+    local gcc_generic_compiler = function(compiler, compiler_flags, gen_su_file, src, flags, includes, outputs)
         -- convert include list to flags
         inc_flags = {}
         for _,inc in pairs(includes) do
             inc_flags += "-I"..inc
         end
         -- todo: vary build directory
-        obj_file = builddir.."/"..src:gsub("/","_")..".o"
+        obj_file = builddir.."/obj/"..src:gsub("/","_")..".o"
         outputs.object_files += obj_file
         if gen_su_file then
             su_file = builddir.."/"..src:gsub("/","_")..".su"
@@ -85,7 +85,7 @@ function GCCToolchain(prefix, builddir, compiler_flags, linker_flags)
     end
     return {
         compile_c = function(src, flags, includes, outputs) gcc_generic_compiler(prefix..'gcc -std=c99', compiler_flags, calculate_stack_usage, src, flags, includes, outputs) end,
-        compile_cpp = function(src, flags, includes, outputs) gcc_generic_compiler(prefix..'g++ -std=c++14', compiler_flags, calculate_stack_usage, src, flags, includes, outputs) end,
+        compile_cpp = function(src, flags, includes, outputs) gcc_generic_compiler(prefix..'g++ -std=c++17 -Wno-register', compiler_flags, calculate_stack_usage, src, flags, includes, outputs) end,
         compile_asm = function(src, flags, includes, outputs) gcc_generic_compiler(prefix..'gcc -x assembler-with-cpp', compiler_flags, false, src, flags, includes, outputs) end,
         link = function(objects, output_name)
             output_name = builddir..'/'..output_name
@@ -99,6 +99,8 @@ function GCCToolchain(prefix, builddir, compiler_flags, linker_flags)
             }
             -- display the size
             tup.frule{inputs={output_name..'.elf'}, command=prefix..'size %f'}
+            -- generate disassembly
+            tup.frule{inputs={output_name..'.elf'}, command=prefix..'objdump %f -dSC > %o', outputs={output_name..'.asm'}}
             -- create *.hex and *.bin output formats
             tup.frule{inputs={output_name..'.elf'}, command=prefix..'objcopy -O ihex %f %o', outputs={output_name..'.hex'}}
             tup.frule{inputs={output_name..'.elf'}, command=prefix..'objcopy -O binary -S %f %o', outputs={output_name..'.bin'}}
@@ -160,7 +162,7 @@ function build(args)
 
         outputs.includes = {}
         for _,inc in pairs(args.includes) do
-            table.insert(outputs.includes, tup.nodevariable(inc))
+            table.insert(outputs.includes, inc)
         end
         if args.name != nil then
             all_packages[args.name] = outputs

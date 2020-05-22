@@ -205,8 +205,7 @@ size_t n_subscriptions = 0;
 // on a rising edge of the GPIO.
 // @param pull_up_down: one of GPIO_NOPULL, GPIO_PULLUP or GPIO_PULLDOWN
 bool GPIO_subscribe(GPIO_TypeDef* GPIO_port, uint16_t GPIO_pin,
-    uint32_t pull_up_down,
-    void (*callback)(void*), void* ctx) {
+    uint32_t pull_up_down, void (*callback)(void*), void* ctx) {
   
   // Register handler (or reuse existing registration)
   // TODO: make thread safe
@@ -236,6 +235,8 @@ bool GPIO_subscribe(GPIO_TypeDef* GPIO_port, uint16_t GPIO_pin,
   GPIO_InitStruct.Pull = pull_up_down;
   HAL_GPIO_Init(GPIO_port, &GPIO_InitStruct);
 
+  // Clear any previous triggers
+  __HAL_GPIO_EXTI_CLEAR_IT(GPIO_pin);
   // Enable interrupt
   HAL_NVIC_SetPriority(get_irq_number(GPIO_pin), 0, 0);
   HAL_NVIC_EnableIRQ(get_irq_number(GPIO_pin));
@@ -277,31 +278,7 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_pin) {
   }
 }
 
-GPIO_TypeDef* get_gpio_port_by_pin(uint16_t GPIO_pin){
-  switch(GPIO_pin){
-    case 1: return GPIO_1_GPIO_Port; break;
-    case 2: return GPIO_2_GPIO_Port; break;
-    case 3: return GPIO_3_GPIO_Port; break;
-    case 4: return GPIO_4_GPIO_Port; break;
-#ifdef GPIO_5_GPIO_Port
-    case 5: return GPIO_5_GPIO_Port; break;
-#endif
-    default: return GPIO_1_GPIO_Port;
-  }
-}
 
-uint16_t get_gpio_pin_by_pin(uint16_t GPIO_pin){
-  switch(GPIO_pin){
-    case 1: return GPIO_1_Pin; break;
-    case 2: return GPIO_2_Pin; break;
-    case 3: return GPIO_3_Pin; break;
-    case 4: return GPIO_4_Pin; break;
-#ifdef GPIO_5_Pin
-    case 5: return GPIO_5_Pin; break;
-#endif
-    default: return GPIO_1_Pin;
-  }
-}
 
 /* USER CODE END 2 */
 

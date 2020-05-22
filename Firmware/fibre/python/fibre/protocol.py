@@ -6,7 +6,7 @@ import sys
 import threading
 import traceback
 #import fibre.utils
-from fibre.utils import Event, wait_any
+from fibre.utils import Event, wait_any, TimeoutError
 
 import abc
 if sys.version_info >= (3, 4):
@@ -64,7 +64,6 @@ def calc_crc16(remainder, value):
 # Can be verified with http://www.sunshine2k.de/coding/javascript/crc/crc_js.html:
 #print(hex(calc_crc8(0x12, [1, 2, 3, 4, 5, 0x10, 0x13, 0x37])))
 #print(hex(calc_crc16(0xfeef, [1, 2, 3, 4, 5, 0x10, 0x13, 0x37])))
-
 
 class DeviceInitException(Exception):
     pass
@@ -256,7 +255,9 @@ class Channel(PacketSink):
                 self._logger.debug("receiver thread is exiting: " + traceback.format_exc())
             finally:
                 self._channel_broken.set()
-        threading.Thread(target=receiver_thread).start()
+        t = threading.Thread(target=receiver_thread)
+        t.daemon = True
+        t.start()
 
     def remote_endpoint_operation(self, endpoint_id, input, expect_ack, output_length):
         if input is None:
@@ -295,6 +296,9 @@ class Channel(PacketSink):
                     try:
                         self._output.process_packet(packet)
                     except ChannelDamagedException:
+                        attempt += 1
+                        continue # resend
+                    except TimeoutError:
                         attempt += 1
                         continue # resend
                     finally:

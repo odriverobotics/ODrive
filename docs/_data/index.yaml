@@ -15,6 +15,12 @@ sections:
         url: interfaces
       - title: Encoders
         url: encoders
+      - title: Homing & Endstops
+        url: endstops
+      - title: Control & Tuning
+        url: control
+      - title: Hoverboard Guide
+        url: hoverboard
       - title: Troubleshooting
         url: troubleshooting
   - title: For ODrive Developers
@@ -25,3 +31,9 @@ sections:
         url: configuring-vscode
       - title: Configuring Eclipse
         url: configuring-eclipse
+  - title: Component Guides
+    docs:
+      - title: Motor Guide
+        url: https://docs.google.com/spreadsheets/d/12vzz7XVEK6YNIOqH0jAz51F5VUpc-lJEs3mmkWP1H4Y
+      - title: Encoder Guide
+        url: https://docs.google.com/spreadsheets/d/1OBDwYrBb5zUPZLrhL98ezZbg94tUsZcdTuwiVNgVqpU

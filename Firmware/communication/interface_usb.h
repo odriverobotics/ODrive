@@ -12,6 +12,7 @@ extern "C" {
 #include <stdint.h>
 
 extern osThreadId usb_thread;
+extern const uint32_t stack_size_usb_thread;
 
 typedef struct {
     uint32_t rx_cnt;
@@ -21,7 +22,7 @@ typedef struct {
 
 extern USBStats_t usb_stats_;
 
-void usb_process_packet(uint8_t *buf, uint32_t len, uint8_t endpoint_pair);
+void usb_rx_process_packet(uint8_t *buf, uint32_t len, uint8_t endpoint_pair);
 void start_usb_server(void);
 
 #ifdef __cplusplus

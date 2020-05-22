@@ -1,26 +1,21 @@
 # Encoders
 
 ## Known and Supported Encoders
-Contributions to this table highly encouraged!
-
-Encoder|Manufacturer|Output|Index|Max CPR|Max RPM|Voltage|Supported|Price|Link|Datasheet
-:--|:--|:--|:-:|:-:|:-:|:-:|:--|:--|:--|:--
-AMT102|CUI|Quadrature|Yes|8192 (2048 * 4)|-|5V|Yes|-|-|-
-AMT203|CUI|Quadrature + Absolute|Yes|4096 (1024 * 4)|-|5V|Quadrature Only|-|-|-
-AS5047P|AMS|Quadrature + Absolute|Yes|4096 (1024 * 4)|28k|3.3V or 5V|Quadrature Only|-|-|-
-E6B2-CWZ6C|Omron|Quadrature|Yes|8000 (2000 * 4)|-|5-24V|Yes|-|-|[Datasheet](http://www.ia.omron.com/products/family/487/)
-J733|-|Quadrature|No|2400 (600 * 4)|-|5-24V|Yes|-|-|-
+Be sure to read the [ODrive Encoder Guide](https://docs.google.com/spreadsheets/d/1OBDwYrBb5zUPZLrhL98ezZbg94tUsZcdTuwiVNgVqpU).
 
 ## Encoder Calibration
-
-All encoder types that are currently supported require the ODrive to do some sort of encoder calibration at every startup before you can run the motor control. Take this into account when designing your application.
-
+Please take into account that all encoder types supported by ODrive require that you do some sort of encoder calibration. This requires the following:
+* Selecting an encoder and mounting it to your motor
+* Choosing an interface (e.g., AB, ABI or SPI)
+* Connecting the pins to the odrive
+* Loading the correct odrive firmware (the default will work in many cases)
+* Motor calibration
+* Saving the settings in the odrive for correct bootup
 
 ### Encoder without index signal
-
 During encoder offset calibration the rotor must be allowed to rotate without any biased load during startup. That means mass and weak friction loads are fine, but gravity or spring loads are not okay.
 
-In the `odrivetool`, type `<axis>.encoder.requested_state = AXIS_STATE_ENCODER_OFFSET_CALIBRATION` <kbd>Enter</kbd>.
+In the `odrivetool`, type `<axis>.requested_state = AXIS_STATE_ENCODER_OFFSET_CALIBRATION` <kbd>Enter</kbd>.
 
 To verify everything went well, check the following variables:
 
@@ -45,5 +40,128 @@ Below are the steps to do the one-time calibration and configuration. Note that 
 
 That's it, now on every reboot the motor will turn in one direction until it finds the encoder index.
 
-* If you wish to scan for the index pulse in the other direction (if for example your axis usually starts close to a hard-stop), you can set a negative value in `<axis>.encoder.config.idx_search_speed`.
 * If your motor has problems reaching the index location due to the mechanical load, you can increase `<axis>.motor.config.calibration_current`.
+
+### Reversing index search
+Sometimes you would like the index search to only happen in a particular direction (the reverse of the default), instead of swapping the motor leads, you can ensure the following three values are negative:
+* `<axis0>.config.calibration_lockin.vel`
+* `<axis0>.config.calibration_lockin.accel`
+* `<axis0>.config.calibration_lockin.ramp_distance`
+
+
+*IMPORTANT:* Your motor should find the same rotational position when the ODrive performs an index search if the index signal is working properly. This means that the motor should spin, and stop at the same position if you have set <axis>.config.startup_encoder_index_search so the search starts on reboot, or you if call the command:<axis>.requested_state = AXIS_STATE_ENCODER_INDEX_SEARCH after reboot. You can test this. Send the reboot() command, and while it's rebooting turn your motor, then make sure the motor returns back to the correct position each time when it comes out of reboot. Try this procedure a couple of times to be sure. 
+
+### Startup sequence notes
+The following are variables that MUST be set up for your encoder configuration. Your values will vary depending on your encoder:
+
+* `<axis>.encoder.config.cpr = 8192`
+* `<axis>.encoder.config.mode = ENCODER_MODE_INCREMENTAL`
+
+The following are examples of values that MAY impact the success of calibration. These are not all the varibles you have to set for startup. Only change these when you understand why they are needed; your values will vary depending on your setup:
+* `<axis>.motor.config.motor_type = MOTOR_TYPE_HIGH_CURRENT` select if you have a gimbal or high amp motor
+* `<axis>.encoder.config.calib_range = 0.05` helps to relax the accuracy of encoder counts during calibration 
+* `<axis>.motor.config.calibration_current = 10.0` _sometimes_ needed if this is a large motor
+* `<axis>.motor.config.resistance_calib_max_voltage = 12.0` _sometimes_ needed depending on motor
+* `<axis>.controller.config.vel_limit = 50000` low values result in the spinning motor stopping abruptly during calibration
+
+Lots of other values can get you. It's a process. Thankfully there is a lot of good people that will help you debug calibration problems. 
+
+If calibration works, congratulations.
+
+Now try: 
+* `<axis>.requested_state = AXIS_STATE_CLOSED_LOOP_CONTROL`
+* `<axis>.controller.input_vel = 3000`
+let it loop a few times and then set:
+* `<axis>.requested_state = AXIS_STATE_IDLE`
+
+Do you still have no errors? Awesome. Now save the calibration, you can set the below. Note that this only works if you are using an absolute encoder or the encoder index input (see "Encoder with index signal" above).
+* `<axis>.encoder.config.pre_calibrated = True`
+* `<axis>.motor.config.pre_calibrated  = True `
+
+And see if ODrive agrees that calibration worked by just running
+* `<axis>.encoder.config.pre_calibrated`
+
+(using no "= True" ). Make sure that 'pre_calibrated' is in fact True. 
+
+Also, if you have calibrated and encoder.pre_calibrated is equal to true, and you had no errors so far. Run this: 
+* `odrv0.save_configuration()`
+* `odrv0.reboot()`
+
+and now see if after a reboot you can run: 
+* `<axis>.requested_state = AXIS_STATE_ENCODER_INDEX_SEARCH`
+
+without getting errors. 
+
+## What happens if calibration fails
+There are subtle ways that encoder problems will impact your ODrive. For example, ODrive may not complete the calibrate sequence when you go to:
+* `<axis>.requested_state = AXIS_STATE_FULL_CALIBRATION_SEQUENCE`
+
+Or, ODrive may complete the calibrate sequence after:
+* `<axis>.requested_state = AXIS_STATE_FULL_CALIBRATION_SEQUENCE`
+
+but then it fails after you go to:
+* `<axis>.requested_state = AXIS_STATE_CLOSED_LOOP_CONTROL`
+
+Or ODrive may just vibrate in an entertaining way. See:
+https://www.youtube.com/watch?v=gaRUmwvSyAs
+
+## Encoder Testing
+There are things you can test to make sure your encoder is properly connected. 
+This run the command:
+* `<axis>.encoder.shadow_count `
+
+and look at your value. Then turn your motor by hand and see if that value changes. Also, notice that the command:
+* `<axis>.encoder.config.cpr = 4000`
+
+must reflect the number of counts odrive receives after one complete turn of the motor. So use shadow_count to test if that is working properly. 
+
+You will probably never be able to properly debug if you have problems unless you use an oscilloscope. If you have one, try the following:
+Connect to the AB pins, see if you get square waves as you turn the motor.
+Connect to the I pin, see if you get a pulse on a complete rotation. Sometimes this is hard to see.
+If you are using SPI, have a lot at the signal on the CLK, and CS pins. There are many examples on the net for how these should behave. 
+
+## Encoder Noise
+Noise is found in all circuits, life is just about figuring out if it is preventing your system from working. Lots of users have no problems with noise interfering with their ODrive operation, others will tell you "_I've been using the same encoder as you with no problems_". Power to 'em, that may be true, but it doesn't mean it will work for you. If you are concerned about noise, there are several possible sources:
+
+* Importantly, encoder wires may be too close to motor wires, avoid overlap as much as possible
+* Long wires between encoder and ODrive
+* Use of ribbon cable
+
+The following _might_ mitigate noise problems. Use shielded cable, or use twisted pairs, where one side of each twisted pair is tied to ground, the other side is tied to your signal. If you are using SPI, use a 20-50 ohm resistor in series on CLK, which is more susceptible noise.
+
+If you are using an encoder with an index signal, another problem that has been encountered is with noise on the Z input of ODrive. Symptoms for this problem include:
+* difficulty with requested_state = AXIS_STATE_FULL_CALIBRATION_SEQUENCE, where your calibration sequence may not complete
+* strange behavior after performing odrv0.save_configuration() and odrv0.reboot()
+* when performing an index_search, the motor does not return to the same position each time.
+One easy step that _might_ fix the noise on the Z input has been to solder a 22nF-47nF capacitor to the Z pin and the GND pin on the underside of the ODrive board. 
+
+
+## SPI Encoders
+
+Apart from (incremental) quadrature encoders, ODrive also supports absolute SPI encoders (since firmware v0.5). These are usually based on are Hall Effect/Magnetic sensors and measure an absolute angle. This means you don't need to repeat the encoder calibration after every ODrive reboot. Currently, the following modes are supported:
+
+ * **CUI protocol**: Compatible with the AMT23xx family (AMT232A, AMT232B, AMT233A, AMT233B).
+ * **AMS protocol**: Compatible with AS5047P and AS5048A/AS5048B.
+
+Some of these chips come with evaluation boards that can simplify mounting the chips to your motor. For our purposes if you are using an evaluation board you should select the settings for 3.3v.
+
+1. Connect the encoder to the ODrive's SPI interface:
+   
+    - The encoder's SCK, MISO (aka "DATA" on CUI encoders), GND and 3.3V should connect to the ODrive pins with the same label.
+    - The encoder's MOSI should be tied to 3.3V (AMS encoders only. CUI encoders don't have this pin.)
+    - The encoder's Chip Select (aka nCS/CSn) can be connected to any of the ODrive's GPIOs (caution: GPIOs 1 and 2 are usually used by UART).
+
+2. In `odrivetool`, run:
+
+       <axis>.encoder.config.abs_spi_cs_gpio_pin = 4  # or which ever GPIO pin you choose
+       <axis>.encoder.config.mode = ENCODER_MODE_SPI_ABS_CUI   # or ENCODER_MODE_SPI_ABS_AMS
+       <axis>.encoder.config.cpr = 2**14              # or 2**12 for AMT232A and AMT233A
+       <odrv>.save_configuration()
+       <odrv>.reboot()
+
+3. Run the [offset calibration](#encoder-without-index-signal) and then save the calibration with `<odrv>.save_configuration()`.
+   The next time you reboot, the encoder should be immediately ready.
+
+Sometimes the encoder takes longer than the ODrive to start, in which case you need to clear the errors after every restart.
+
+If you are having calibration problems - make sure your magnet is centered on the axis of rotation on the motor, some users report this has a significant impact on calibration. Also make sure your magnet height is within range of the spec sheet.

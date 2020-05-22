@@ -3,110 +3,48 @@
         {
             "name": "Win32",
             "includePath": [
-                "${workspaceRoot}",
-                "${workspaceRoot}/MotorControl",
-                "${workspaceRoot}/Drivers/DRV8301",
-                "${workspaceRoot}/Board/v3/Inc",
-                "${workspaceRoot}/Board/v3/Drivers/CMSIS/Include",
-                "${workspaceRoot}/Board/v3/Drivers/CMSIS/Device/ST/STM32F4xx/Include",
-                "${workspaceRoot}/Board/v3/Drivers/STM32F4xx_HAL_Driver/Inc",
-                "${workspaceRoot}/Board/v3/Drivers/STM32F4xx_HAL_Driver/Inc/Legacy",
-                "${workspaceRoot}/Board/v3/Middlewares/ST/STM32_USB_Device_Library/Core/Inc",
-                "${workspaceRoot}/Board/v3/Middlewares/ST/STM32_USB_Device_Library/Class/CDC/Inc",
-                "${workspaceRoot}/Board/v3/Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS",
-                "${workspaceRoot}/Board/v3/Middlewares/Third_Party/FreeRTOS/Source/include",
-                "${workspaceRoot}/Board/v3/Middlewares/Third_Party/FreeRTOS/Source/portable/GCC/ARM_CM4F",
-                "c:/program files (x86)/gnu tools arm embedded/6 2017-q1-update/arm-none-eabi/include/c++/6.3.1",
-                "c:/program files (x86)/gnu tools arm embedded/6 2017-q1-update/arm-none-eabi/include/c++/6.3.1/arm-none-eabi",
-                "c:/program files (x86)/gnu tools arm embedded/6 2017-q1-update/arm-none-eabi/include/c++/6.3.1/backward",
-                "c:/program files (x86)/gnu tools arm embedded/6 2017-q1-update/lib/gcc/arm-none-eabi/6.3.1/include",
-                "c:/program files (x86)/gnu tools arm embedded/6 2017-q1-update/lib/gcc/arm-none-eabi/6.3.1/include-fixed",
-                "c:/program files (x86)/gnu tools arm embedded/6 2017-q1-update/arm-none-eabi/include"
+                "${workspaceRoot}/**"
             ],
             "defines": [
                 "STM32F405xx",
                 "USE_HAL_DRIVER",
                 "HW_VERSION_MAJOR=3",
-                "HW_VERSION_MINOR=5",
-                "HW_VERSION_VOLTAGE=24",
+                "HW_VERSION_MINOR=6",
+                "HW_VERSION_VOLTAGE=56",
+                "USB_PROTOCOL_NATIVE",
                 "__weak=\"__attribute__((weak))\"",
                 "__packed=\"__attribute__((__packed__))\"",
                 "__GNUC__"
             ],
-            "intelliSenseMode": "clang-x64",
-            "browse": {
-                "path": [
-                    "${workspaceRoot}",
-                    "C:/Program Files (x86)/GNU Tools ARM Embedded"
-                ],
-                "limitSymbolsToIncludedHeaders": true
-            },
+            "intelliSenseMode": "gcc-x64",
+            "compilerPath": "\"${ARM_GCC_ROOT}/bin/arm-none-eabi-g++.exe\" -mthumb -mcpu=cortex-m4 -mfpu=fpv4-sp-d16 -mfloat-abi=hard -specs=nosys.specs -specs=nano.specs -u _printf_float -u _scanf_float",
             "cStandard": "c11",
-            "cppStandard": "c++14"
+            "cppStandard": "c++17"
         },
         {
             "name": "Linux",
             "includePath": [
-                "${workspaceRoot}",
-                "${workspaceRoot}/MotorControl",
-                "${workspaceRoot}/Drivers/DRV8301",
-                "${workspaceRoot}/Board/v3/Inc",
-                "${workspaceRoot}/Board/v3/Middlewares/Third_Party/FreeRTOS/Source/portable/GCC/ARM_CM4F",
-                "${workspaceRoot}/Board/v3/Middlewares/Third_Party/FreeRTOS/Source/include",
-                "${workspaceRoot}/Board/v3/Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS",
-                "${workspaceRoot}/Board/v3/Middlewares/ST/STM32_USB_Device_Library/Core/Inc",
-                "${workspaceRoot}/Board/v3/Middlewares/ST/STM32_USB_Device_Library/Class/CDC/Inc",
-                "${workspaceRoot}/Board/v3/Drivers/STM32F4xx_HAL_Driver/Inc",
-                "${workspaceRoot}/Board/v3/Drivers/STM32F4xx_HAL_Driver/Inc/Legacy",
-                "${workspaceRoot}/Board/v3/Drivers/CMSIS/Device/ST/STM32F4xx/Include",
-                "${workspaceRoot}/Board/v3/Drivers/CMSIS/Include",
-                "/usr/lib/gcc/arm-none-eabi/4.9.3/include",
-                "/usr/lib/arm-none-eabi/include"
+                "${workspaceRoot}/**"
             ],
             "defines": [
                 "STM32F405xx",
                 "USE_HAL_DRIVER",
                 "HW_VERSION_MAJOR=3",
-                "HW_VERSION_MINOR=4",
-                "HW_VERSION_VOLTAGE=24",
+                "HW_VERSION_MINOR=6",
+                "HW_VERSION_VOLTAGE=56",
                 "__weak=\"__attribute__((weak))\"",
                 "__packed=\"__attribute__((__packed__))\"",
                 "__GNUC__"
             ],
-            "intelliSenseMode": "clang-x64",
-            "browse": {
-                "path": [
-                    "${workspaceRoot}",
-                    "/usr/lib/gcc/arm-none-eabi/4.9.3/include",
-                    "/usr/lib/arm-none-eabi/include"
-                ],
-                "limitSymbolsToIncludedHeaders": true,
-                "databaseFilename": ""
-            },
-            "compilerPath": "arm-none-eabi-gcc -mthumb -mcpu=cortex-m4 -mfpu=fpv4-sp-d16 -mfloat-abi=hard -specs=nosys.specs -specs=nano.specs -u _printf_float -u _scanf_float",
+            "intelliSenseMode": "gcc-x64",
+            "compilerPath": "arm-none-eabi-g++ -mthumb -mcpu=cortex-m4 -mfpu=fpv4-sp-d16 -mfloat-abi=hard -specs=nosys.specs -specs=nano.specs -u _printf_float -u _scanf_float",
             "cStandard": "c11",
-            "cppStandard": "c++14"
+            "cppStandard": "c++17"
         },
         {
             "name": "Mac",
             "includePath": [
-                "${workspaceRoot}",
-                "${workspaceRoot}/MotorControl",
-                "${workspaceRoot}/Drivers/DRV8301",
-                "${workspaceRoot}/Board/v3/Inc",
-                "${workspaceRoot}/Board/v3/Middlewares/Third_Party/FreeRTOS/Source/portable/GCC/ARM_CM4F",
-                "${workspaceRoot}/Board/v3/Middlewares/Third_Party/FreeRTOS/Source/include",
-                "${workspaceRoot}/Board/v3/Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS",
-                "${workspaceRoot}/Board/v3/Middlewares/ST/STM32_USB_Device_Library/Core/Inc",
-                "${workspaceRoot}/Board/v3/Middlewares/ST/STM32_USB_Device_Library/Class/CDC/Inc",
-                "${workspaceRoot}/Board/v3/Drivers/STM32F4xx_HAL_Driver/Inc",
-                "${workspaceRoot}/Board/v3/Drivers/STM32F4xx_HAL_Driver/Inc/Legacy",
-                "${workspaceRoot}/Board/v3/Drivers/CMSIS/Device/ST/STM32F4xx/Include",
-                "${workspaceRoot}/Board/v3/Drivers/CMSIS/Include",
-                "/usr/local/Caskroom/gcc-arm-embedded/6-2017-q2-update/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include",
-                "/usr/local/Caskroom/gcc-arm-embedded/6-2017-q2-update/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/c++/6.3.1",
-                "/usr/local/Caskroom/gcc-arm-embedded/6-2017-q2-update/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/c++/6.3.1/arm-none-eabi",
-                "/usr/local/Caskroom/gcc-arm-embedded/6-2017-q2-update/gcc-arm-none-eabi-6-2017-q2-update/lib/gcc/arm-none-eabi/6.3.1/include"
+                "${workspaceRoot}/**"
             ],
             "defines": [
                 "STM32F405xx",
@@ -118,15 +56,7 @@
                 "__packed=\"__attribute__((__packed__))\"",
                 "__GNUC__"
             ],
-            "intelliSenseMode": "clang-x64",
-            "browse": {
-                "path": [
-                    "${workspaceRoot}",
-                    "/usr/local/Caskroom/gcc-arm-embedded/"
-                ],
-                "limitSymbolsToIncludedHeaders": true,
-                "databaseFilename": ""
-            },
+            "intelliSenseMode": "gcc-x64",
             "cStandard": "c11",
             "cppStandard": "c++17"
         }

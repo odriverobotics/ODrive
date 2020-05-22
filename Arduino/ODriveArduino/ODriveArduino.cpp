@@ -38,8 +38,21 @@ void ODriveArduino::SetVelocity(int motor_number, float velocity, float current_
     serial_ << "v " << motor_number  << " " << velocity << " " << current_feedforward << "\n";
 }
 
+void ODriveArduino::SetCurrent(int motor_number, float current) {
+    serial_ << "c " << motor_number << " " << current << "\n";
+}
+
+void ODriveArduino::TrapezoidalMove(int motor_number, float position){
+    serial_ << "t " << motor_number << " " << position << "\n";
+}
+
 float ODriveArduino::readFloat() {
     return readString().toFloat();
+}
+
+float ODriveArduino::GetVelocity(int motor_number){
+	serial_<< "r axis" << motor_number << ".encoder.vel_estimate\n";
+	return ODriveArduino::readFloat();
 }
 
 int32_t ODriveArduino::readInt() {
