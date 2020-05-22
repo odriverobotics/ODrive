@@ -41,10 +41,13 @@ public:
 [%- if property.type.fullname.startswith("fibre.Property") %]
 [%- if not property.c_getter and not property.c_setter %]
     template<typename T> static inline auto get_[[property.name]](T* obj) { return [[property.type.c_name]]{&obj->[[property.c_name]]}; }
+    template<typename T> static inline void get_[[property.name]](T* obj, void* ptr) { new (ptr) [[property.type.c_name]]{&obj->[[property.c_name]]}; }[# these are for the set_endpoint_from_float function. This is unmaintainable and should go away #]
 [%- elif not property.c_setter %]
     template<typename T> static inline auto get_[[property.name]](T* obj) { return [[property.type.c_name]]{obj, [](void* ctx){ return ([[property.type.value_type.c_name]])((T*)ctx)->[[property.c_getter]]; }}; }
+    template<typename T> static inline void get_[[property.name]](T* obj, void* ptr) { new (ptr) [[property.type.c_name]]{obj, [](void* ctx){ return ([[property.type.value_type.c_name]])((T*)ctx)->[[property.c_getter]]; }}; }
 [%- else %]
     template<typename T> static inline auto get_[[property.name]](T* obj) { return [[property.type.c_name]]{obj, [](void* ctx){ return ([[property.type.value_type.c_name]])((T*)ctx)->[[property.c_getter]]; }, [](void* ctx, [[property.type.value_type.c_name]] value){ ((T*)ctx)->[[property.c_setter]](value); }}; }
+    template<typename T> static inline void get_[[property.name]](T* obj, void* ptr) { new (ptr) [[property.type.c_name]]{obj, [](void* ctx){ return ([[property.type.value_type.c_name]])((T*)ctx)->[[property.c_getter]]; }, [](void* ctx, [[property.type.value_type.c_name]] value){ ((T*)ctx)->[[property.c_setter]](value); }}; }
 [%- endif %]
 [%- else %]
     template<typename T> static inline auto get_[[property.name]](T* obj) { return &obj->[[property.c_name]]; }
@@ -58,10 +61,12 @@ public:
 [%- for k, arg in func.in.items() | skip_first %]
     [[arg.type.c_name]] [[func.name | to_snake_case]]_in_[[arg.name]]_; // for internal use by Fibre
     template<typename T> static auto get_[[func.name | to_snake_case]]_in_[[arg.name]]_(T* obj) { return Property<[[arg.type.c_name]]>{&obj->[[func.name | to_snake_case]]_in_[[arg.name]]_}; }
+    template<typename T> static void get_[[func.name | to_snake_case]]_in_[[arg.name]]_(T* obj, void* ptr) { new (ptr) Property<[[arg.type.c_name]]>{&obj->[[func.name | to_snake_case]]_in_[[arg.name]]_}; }
 [%- endfor %]
 [%- for k, arg in func.out.items() %]
     [[arg.type.c_name]] [[func.name | to_snake_case]]_out_[[arg.name]]_; // for internal use by Fibre
     template<typename T> static auto get_[[func.name | to_snake_case]]_out_[[arg.name]]_(T* obj) { return Property<const [[arg.type.c_name]]>{&obj->[[func.name | to_snake_case]]_out_[[arg.name]]_}; }
+    template<typename T> static void get_[[func.name | to_snake_case]]_out_[[arg.name]]_(T* obj, void* ptr) { new (ptr) Property<const [[arg.type.c_name]]>{&obj->[[func.name | to_snake_case]]_out_[[arg.name]]_}; }
 [%- endfor %]
 [%- endfor %]
 };

@@ -15,6 +15,12 @@
 
 #include <fibre/introspection.hpp>
 
+// Note: with -Og the functions with large switch statements reserves a huge amount
+// of stack space because they reserves separate space for the stack frame of each
+// of the inlined functions.
+// The minimum known set of flags to prevent this is `-O1 -fipa-sra`.
+// `-O2`, `-O3` and `-Os` are supersets of this.
+
 #pragma GCC push_options
 #pragma GCC optimize ("s")
 
@@ -25,23 +31,17 @@ const size_t embedded_json_length = sizeof(embedded_json) - 1;
 const uint16_t json_crc_ = calc_crc16<CANONICAL_CRC16_POLYNOMIAL>(PROTOCOL_VERSION, embedded_json, embedded_json_length);
 const uint32_t json_version_id_ = (json_crc_ << 16) | calc_crc16<CANONICAL_CRC16_POLYNOMIAL>(json_crc_, embedded_json, embedded_json_length);
 
-Introspectable get_property(size_t idx) {
+static void get_property(Introspectable& result, size_t idx) {
     switch (idx) {
 [%- for endpoint in endpoints %]
 [%- if endpoint.function.name == 'exchange' and endpoint.in_bindings | list == ['obj'] %]
-        case [[endpoint.id]]: return FibrePropertyTypeInfo<[[endpoint.function.in['obj'].type.c_name]]>::make_introspectable([[endpoint.in_bindings['obj']]]);
+        case [[endpoint.id]]: { [[(endpoint.in_bindings['obj'] + '$') | replace(')$', ', &result.storage_)')]]; result.type_info_ = &FibrePropertyTypeInfo<[[endpoint.function.in['obj'].type.c_name]]>::singleton; } break;
 [%- endif %]
 [%- endfor %]
-        default: return {};
+        default: break;
     }
 }
 
-
-// Note: with -Og this function reserves a huge amount of stack space because it
-// reserves separate space for the stack frame of each of the inlined functions.
-// The minimum known set of flags to prevent this is `-O1 -fipa-sra`.
-// `-O2` is a superset of this so that's what we use here.
-//bool endpoint_handler(int idx, cbufptr_t* input_buffer, bufptr_t* output_buffer) __attribute__ ((optimize(2)));
 
 bool endpoint_handler(int idx, cbufptr_t* input_buffer, bufptr_t* output_buffer) {
     //Introspectable property = get_property(idx);
@@ -77,7 +77,8 @@ bool set_endpoint_from_float(endpoint_ref_t endpoint_ref, float value) {
         return false;
     }
 
-    Introspectable property = get_property(endpoint_ref.endpoint_id);
+    Introspectable property{};
+    get_property(property, endpoint_ref.endpoint_id);
     const FloatSettableTypeInfo* type_info = dynamic_cast<const FloatSettableTypeInfo*>(property.get_type_info());
     return type_info && type_info->set_float(property, value);
 }

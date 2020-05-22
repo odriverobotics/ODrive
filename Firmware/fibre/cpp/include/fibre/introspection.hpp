@@ -106,6 +106,7 @@ private:
         return {};
     }
 
+public: // these should technically be protected but are public for optimization reasons
     // We use this storage to hold generic small objects. Usually that's a pointer
     // but sometimes it's an on-demand constructed Property<...>.
     // Caution: only put objects in here which are trivially copyable, movable
