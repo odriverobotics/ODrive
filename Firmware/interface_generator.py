@@ -479,6 +479,8 @@ parser.add_argument("-t", "--template", type=argparse.FileType('r'),
                     help="the code template")
 parser.add_argument("-o", "--output", type=argparse.FileType('w'), default='-',
                     help="path of the generated output")
+parser.add_argument("--generate-endpoints", type=str, nargs='?',
+                    help="if specified, an endpoint table will be generated and passed to the template for the specified interface")
 args = parser.parse_args()
 
 if args.version:
@@ -556,10 +558,13 @@ for k, item in list(enums.items()):
             item['parent'] = parent
 
 
-
-endpoints, embedded_endpoint_definitions, _ = generate_endpoint_table(interfaces['Odrive'], '&odrv', 1) # TODO: make user-configurable
-embedded_endpoint_definitions = [{'name': '', 'id': 0, 'type': 'json', 'access': 'r'}] + embedded_endpoint_definitions
-endpoints = [{'id': 0, 'function': {'fullname': 'endpoint0_handler', 'in': {}, 'out': {}}, 'bindings': {}}] + endpoints
+if args.generate_endpoints:
+    endpoints, embedded_endpoint_definitions, _ = generate_endpoint_table(interfaces[args.generate_endpoints], '&ep_root', 1) # TODO: make user-configurable
+    embedded_endpoint_definitions = [{'name': '', 'id': 0, 'type': 'json', 'access': 'r'}] + embedded_endpoint_definitions
+    endpoints = [{'id': 0, 'function': {'fullname': 'endpoint0_handler', 'in': {}, 'out': {}}, 'bindings': {}}] + endpoints
+else:
+    embedded_endpoint_definitions = None
+    endpoints = None
 
 
 # Render template

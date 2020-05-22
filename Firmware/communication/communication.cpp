@@ -95,4 +95,6 @@ int _write(int file, const char* data, int len) {
 
 
 #include "../autogen/function_stubs.hpp"
+
+ODrive& ep_root = odrv;
 #include "../autogen/endpoints.hpp"
