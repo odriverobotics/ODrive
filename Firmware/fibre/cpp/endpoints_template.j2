@@ -29,7 +29,7 @@ Introspectable get_property(size_t idx) {
     switch (idx) {
 [%- for endpoint in endpoints %]
 [%- if endpoint.function.name == 'exchange' and endpoint.in_bindings | list == ['obj'] %]
-        case [[endpoint.id]]: return FibrePropertyTypeInfo<[[endpoint.function.in['obj'].type.c_type]]>::make_introspectable([[endpoint.in_bindings['obj']]]);
+        case [[endpoint.id]]: return FibrePropertyTypeInfo<[[endpoint.function.in['obj'].type.c_name]]>::make_introspectable([[endpoint.in_bindings['obj']]]);
 [%- endif %]
 [%- endfor %]
         default: return {};
@@ -50,9 +50,9 @@ bool endpoint_handler(int idx, cbufptr_t* input_buffer, bufptr_t* output_buffer)
     switch (idx) {
 [%- for endpoint in endpoints %]
 [%- if (endpoint.function.name == 'exchange' or endpoint.function.name == 'read') and endpoint.in_bindings | list == ['obj'] %]
-        case [[endpoint.id]]: { return [[endpoint.function.fullname | to_snake_case]]([% for k, arg in endpoint.function.in.items() %][% if k in endpoint.in_bindings %]static_cast<[[arg.type.c_type]]>([[endpoint.in_bindings[k]]])[% else %]std::nullopt[% endif %], [% endfor %][% for k, arg in endpoint.function.out.items() %][% if k in endpoint.out_bindings %]static_cast<[[arg.type.c_type]]*>([[endpoint.out_bindings[k]]])[% else %]nullptr[% endif %], [% endfor %]input_buffer, output_buffer); } break;
+        case [[endpoint.id]]: { return [[endpoint.function.fullname | to_snake_case]]([% for k, arg in endpoint.function.in.items() %][% if k in endpoint.in_bindings %]static_cast<[[arg.type.c_name]]>([[endpoint.in_bindings[k]]])[% else %]std::nullopt[% endif %], [% endfor %][% for k, arg in endpoint.function.out.items() %][% if k in endpoint.out_bindings %]static_cast<[[arg.type.c_name]]*>([[endpoint.out_bindings[k]]])[% else %]nullptr[% endif %], [% endfor %]input_buffer, output_buffer); } break;
 [%- else %]
-        case [[endpoint.id]]: { return [[endpoint.function.fullname | to_snake_case]]([% for k, arg in endpoint.function.in.items() %][% if k in endpoint.in_bindings %]static_cast<[[arg.type.c_type]]>([[endpoint.in_bindings[k]]])[% else %]std::nullopt[% endif %], [% endfor %][% for k, arg in endpoint.function.out.items() %][% if k in endpoint.out_bindings %]static_cast<[[arg.type.c_type]]*>([[endpoint.out_bindings[k]]])[% else %]nullptr[% endif %], [% endfor %]input_buffer, output_buffer); } break;
+        case [[endpoint.id]]: { return [[endpoint.function.fullname | to_snake_case]]([% for k, arg in endpoint.function.in.items() %][% if k in endpoint.in_bindings %]static_cast<[[arg.type.c_name]]>([[endpoint.in_bindings[k]]])[% else %]std::nullopt[% endif %], [% endfor %][% for k, arg in endpoint.function.out.items() %][% if k in endpoint.out_bindings %]static_cast<[[arg.type.c_name]]*>([[endpoint.out_bindings[k]]])[% else %]nullptr[% endif %], [% endfor %]input_buffer, output_buffer); } break;
 [%- endif %]
 [%- endfor %]
         default: return false;

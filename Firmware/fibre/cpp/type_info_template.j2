@@ -27,7 +27,7 @@ struct [[intf.fullname | to_pascal_case]]TypeInfo : TypeInfo {
         introspectable_storage_t res;
         switch (idx) {
 [%- for property in intf.attributes.values() %]
-            case [[loop.index0]]: *(decltype([[intf.c_type]]::get_[[property.name]](std::declval<T*>()))*)(&res) = [[intf.c_type]]::get_[[property.name]](ptr); break;
+            case [[loop.index0]]: *(decltype([[intf.c_name]]::get_[[property.name]](std::declval<T*>()))*)(&res) = [[intf.c_name]]::get_[[property.name]](ptr); break;
 [%- endfor %]
         }
         return res;
@@ -39,7 +39,7 @@ struct [[intf.fullname | to_pascal_case]]TypeInfo : TypeInfo {
 template<typename T>
 const PropertyInfo [[intf.fullname | to_pascal_case]]TypeInfo<T>::property_table[] = {
 [%- for property in intf.attributes.values() %]
-    {"[[property.name]]", &[[(property.type.purename or property.type.fullname) | to_pascal_case]]TypeInfo<std::remove_reference_t<decltype(*[[intf.c_type]]::get_[[property.name]](std::declval<T*>()))>>::singleton},
+    {"[[property.name]]", &[[(property.type.purename or property.type.fullname) | to_pascal_case]]TypeInfo<std::remove_reference_t<decltype(*[[intf.c_name]]::get_[[property.name]](std::declval<T*>()))>>::singleton},
 [%- endfor %]
 };
 template<typename T>

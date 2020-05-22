@@ -132,17 +132,17 @@ def to_snake_case(s): return '_'.join(get_words(s)).lower()
 def to_kebab_case(s): return '-'.join(get_words(s)).lower()
 
 value_types = {
-    'bool': {'builtin': True, 'fullname': 'bool', 'name': 'bool', 'c_type': 'bool'},
-    'float32': {'builtin': True, 'fullname': 'float32', 'name': 'float32', 'c_type': 'float'},
-    'uint8': {'builtin': True, 'fullname': 'uint8', 'name': 'uint8', 'c_type': 'uint8_t'},
-    'uint16': {'builtin': True, 'fullname': 'uint16', 'name': 'uint16', 'c_type': 'uint16_t'},
-    'uint32': {'builtin': True, 'fullname': 'uint32', 'name': 'uint32', 'c_type': 'uint32_t'},
-    'uint64': {'builtin': True, 'fullname': 'uint64', 'name': 'uint64', 'c_type': 'uint64_t'},
-    'int8': {'builtin': True, 'fullname': 'int8', 'name': 'int8', 'c_type': 'int8_t'},
-    'int16': {'builtin': True, 'fullname': 'int16', 'name': 'int16', 'c_type': 'int16_t'},
-    'int32': {'builtin': True, 'fullname': 'int32', 'name': 'int32', 'c_type': 'int32_t'},
-    'int64': {'builtin': True, 'fullname': 'int64', 'name': 'int64', 'c_type': 'int64_t'},
-    'endpoint_ref': {'builtin': True, 'fullname': 'endpoint_ref', 'name': 'endpoint_ref', 'c_type': 'endpoint_ref_t'},
+    'bool': {'builtin': True, 'fullname': 'bool', 'name': 'bool', 'c_name': 'bool'},
+    'float32': {'builtin': True, 'fullname': 'float32', 'name': 'float32', 'c_name': 'float'},
+    'uint8': {'builtin': True, 'fullname': 'uint8', 'name': 'uint8', 'c_name': 'uint8_t'},
+    'uint16': {'builtin': True, 'fullname': 'uint16', 'name': 'uint16', 'c_name': 'uint16_t'},
+    'uint32': {'builtin': True, 'fullname': 'uint32', 'name': 'uint32', 'c_name': 'uint32_t'},
+    'uint64': {'builtin': True, 'fullname': 'uint64', 'name': 'uint64', 'c_name': 'uint64_t'},
+    'int8': {'builtin': True, 'fullname': 'int8', 'name': 'int8', 'c_name': 'int8_t'},
+    'int16': {'builtin': True, 'fullname': 'int16', 'name': 'int16', 'c_name': 'int16_t'},
+    'int32': {'builtin': True, 'fullname': 'int32', 'name': 'int32', 'c_name': 'int32_t'},
+    'int64': {'builtin': True, 'fullname': 'int64', 'name': 'int64', 'c_name': 'int64_t'},
+    'endpoint_ref': {'builtin': True, 'fullname': 'endpoint_ref', 'name': 'endpoint_ref', 'c_name': 'endpoint_ref_t'},
 }
 
 enums = {}
@@ -157,12 +157,12 @@ def make_property_type(typeargs):
     if fullname in interfaces:
         return interfaces[fullname]
 
-    c_type = 'Property<' + ('const ' if mode == 'readonly' else '') + value_type['c_type'] + '>'
+    c_name = 'Property<' + ('const ' if mode == 'readonly' else '') + value_type['c_name'] + '>'
     prop_type = {
         'name': name,
         'fullname': fullname,
         'purename': 'fibre.Property',
-        'c_type': c_type,
+        'c_name': c_name,
         'value_type': value_type, # TODO: should be a metaarg
         'mode': mode, # TODO: should be a metaarg
         'builtin': True,
@@ -173,17 +173,17 @@ def make_property_type(typeargs):
         prop_type['functions']['exchange'] = {
             'name': 'exchange',
             'fullname': join_name(fullname, 'exchange'),
-            'in': {'obj': {'name': 'obj', 'type': {'c_type': c_type}}, 'value': {'name': 'value', 'type': value_type, 'optional': True}},
+            'in': {'obj': {'name': 'obj', 'type': {'c_name': c_name}}, 'value': {'name': 'value', 'type': value_type, 'optional': True}},
             'out': {'value': {'name': 'value', 'type': value_type}},
-            #'implementation': 'fibre_property_exchange<' + value_type['c_type'] + '>'
+            #'implementation': 'fibre_property_exchange<' + value_type['c_name'] + '>'
         }
     else:
         prop_type['functions']['read'] = {
             'name': 'read',
             'fullname': join_name(fullname, 'read'),
-            'in': {'obj': {'name': 'obj', 'type': {'c_type': c_type}}},
+            'in': {'obj': {'name': 'obj', 'type': {'c_name': c_name}}},
             'out': {'value': {'name': 'value', 'type': value_type}},
-            #'implementation': 'fibre_property_read<' + value_type['c_type'] + '>'
+            #'implementation': 'fibre_property_read<' + value_type['c_name'] + '>'
         }
 
     interfaces[fullname] = prop_type
@@ -204,7 +204,7 @@ def make_ref_type(interface):
         'builtin': True,
         'name': name,
         'fullname': fullname,
-        'c_type': interface['fullname'].replace('.', 'Intf::') + 'Intf*'
+        'c_name': interface['fullname'].replace('.', 'Intf::') + 'Intf*'
     }
     value_types[fullname] = ref_type
 
@@ -281,7 +281,7 @@ def regularize_interface(path, name, elem):
     #    path = 'AnonymousType' + str(max_anonymous_type + 1)
     elem['name'] = split_name(name)[-1]
     elem['fullname'] = path = join_name(path, name)
-    elem['c_type'] = elem.get('c_type', elem['fullname'].replace('.', 'Intf::')) + 'Intf'
+    elem['c_name'] = elem.get('c_name', elem['fullname'].replace('.', 'Intf::')) + 'Intf'
     interfaces[path] = elem
     elem['functions'] = {name: regularize_func(path, name, func, {'obj': {'type': make_ref_type(elem)}})
                          for name, func in get_dict(elem, 'functions').items()}
@@ -301,7 +301,7 @@ def regularize_valuetype(path, name, elem):
         return elem # will be resolved during type resolution
     elem['name'] = split_name(name)[-1]
     elem['fullname'] = path = join_name(path, name)
-    elem['c_type'] = elem.get('c_type', elem['fullname'].replace('.', 'Intf::'))
+    elem['c_name'] = elem.get('c_name', elem['fullname'].replace('.', 'Intf::'))
     value_types[path] = elem
 
     if 'flags' in elem: # treat as flags
@@ -413,7 +413,7 @@ def generate_endpoint_table(intf, bindto, idx):
     for k, prop in intf['attributes'].items():
         property_value_type = re.findall('^fibre\.Property<([^>]*), (readonly|readwrite)>$', prop['type']['fullname'])
         #attr_bindto = join_name(bindto, bindings_map.get(join_name(intf['fullname'], k), k + ('_' if len(intf['functions']) or (intf['fullname'] in treat_as_classes) else '')))
-        attr_bindto = intf['c_type'] + '::get_' + prop['name'] + '(' + bindto + ')'
+        attr_bindto = intf['c_name'] + '::get_' + prop['name'] + '(' + bindto + ')'
         if len(property_value_type):
             # Special handling for Property<...> attributes: they resolve to one single endpoint
             endpoint, endpoint_definition = generate_endpoint_for_property(prop, attr_bindto, idx + cnt)
@@ -443,14 +443,14 @@ def generate_endpoint_table(intf, bindto, idx):
             endpoint, endpoint_definition = generate_endpoint_for_property({
                 'name': arg['name'],
                 'type': make_property_type({'fibre.Property.type': arg['type'], 'fibre.Property.mode': 'readwrite'})
-            }, intf['c_type'] + '::get_' + func['name'] + '_in_' + k_arg + '_' + '(' + bindto + ')', idx + cnt + 1 + i)
+            }, intf['c_name'] + '::get_' + func['name'] + '_in_' + k_arg + '_' + '(' + bindto + ')', idx + cnt + 1 + i)
             endpoints.append(endpoint)
             in_def.append(endpoint_definition)
         for i, (k_arg, arg) in enumerate(func['out'].items()):
             endpoint, endpoint_definition = generate_endpoint_for_property({
                 'name': arg['name'],
                 'type': make_property_type({'fibre.Property.type': arg['type'], 'fibre.Property.mode': 'readonly'})
-            }, intf['c_type'] + '::get_' + func['name'] + '_out_' + k_arg + '_' + '(' + bindto + ')', idx + cnt + len(func['in']) + i)
+            }, intf['c_name'] + '::get_' + func['name'] + '_out_' + k_arg + '_' + '(' + bindto + ')', idx + cnt + len(func['in']) + i)
             endpoints.append(endpoint)
             out_def.append(endpoint_definition)
 

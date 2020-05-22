@@ -17,7 +17,7 @@
 [%- if not func.out -%]
 void
 [%- elif func.out | length == 1 -%]
-[[(func.out.values() | first).type.c_type]]
+[[(func.out.values() | first).type.c_name]]
 [%- else -%]
 [% for arg in func.out.values() %][[arg.type]][[', ' if not loop.last]][% endfor %]
 [%- endif -%]
@@ -40,11 +40,11 @@ public:
 [%- for property in intf.attributes.values() %]
 [%- if property.type.fullname.startswith("fibre.Property") %]
 [%- if not property.c_getter and not property.c_setter %]
-    template<typename T> static inline auto get_[[property.name]](T* obj) { return [[property.type.c_type]]{&obj->[[property.c_name]]}; }
+    template<typename T> static inline auto get_[[property.name]](T* obj) { return [[property.type.c_name]]{&obj->[[property.c_name]]}; }
 [%- elif not property.c_setter %]
-    template<typename T> static inline auto get_[[property.name]](T* obj) { return [[property.type.c_type]]{obj, [](void* ctx){ return ([[property.type.value_type.c_type]])((T*)ctx)->[[property.c_getter]]; }}; }
+    template<typename T> static inline auto get_[[property.name]](T* obj) { return [[property.type.c_name]]{obj, [](void* ctx){ return ([[property.type.value_type.c_name]])((T*)ctx)->[[property.c_getter]]; }}; }
 [%- else %]
-    template<typename T> static inline auto get_[[property.name]](T* obj) { return [[property.type.c_type]]{obj, [](void* ctx){ return ([[property.type.value_type.c_type]])((T*)ctx)->[[property.c_getter]]; }, [](void* ctx, [[property.type.value_type.c_type]] value){ ((T*)ctx)->[[property.c_setter]](value); }}; }
+    template<typename T> static inline auto get_[[property.name]](T* obj) { return [[property.type.c_name]]{obj, [](void* ctx){ return ([[property.type.value_type.c_name]])((T*)ctx)->[[property.c_getter]]; }, [](void* ctx, [[property.type.value_type.c_name]] value){ ((T*)ctx)->[[property.c_setter]](value); }}; }
 [%- endif %]
 [%- else %]
     template<typename T> static inline auto get_[[property.name]](T* obj) { return &obj->[[property.c_name]]; }
@@ -52,16 +52,16 @@ public:
 [%- endfor %]
 
 [%- for func in intf.functions.values() %]
-    virtual [[rettype(func)]] [[func.name | to_snake_case]]([% for in in func.in.values() %][% if loop.index0 %][[in.type.c_type]] [[in.name]][[', ' if not loop.last]][% endif %][% endfor %]) = 0;
+    virtual [[rettype(func)]] [[func.name | to_snake_case]]([% for in in func.in.values() %][% if loop.index0 %][[in.type.c_name]] [[in.name]][[', ' if not loop.last]][% endif %][% endfor %]) = 0;
 [%- endfor %]
 [%- for func in intf.functions.values() %]
 [%- for k, arg in func.in.items() | skip_first %]
-    [[arg.type.c_type]] [[func.name | to_snake_case]]_in_[[arg.name]]_; // for internal use by Fibre
-    template<typename T> static auto get_[[func.name | to_snake_case]]_in_[[arg.name]]_(T* obj) { return Property<[[arg.type.c_type]]>{&obj->[[func.name | to_snake_case]]_in_[[arg.name]]_}; }
+    [[arg.type.c_name]] [[func.name | to_snake_case]]_in_[[arg.name]]_; // for internal use by Fibre
+    template<typename T> static auto get_[[func.name | to_snake_case]]_in_[[arg.name]]_(T* obj) { return Property<[[arg.type.c_name]]>{&obj->[[func.name | to_snake_case]]_in_[[arg.name]]_}; }
 [%- endfor %]
 [%- for k, arg in func.out.items() %]
-    [[arg.type.c_type]] [[func.name | to_snake_case]]_out_[[arg.name]]_; // for internal use by Fibre
-    template<typename T> static auto get_[[func.name | to_snake_case]]_out_[[arg.name]]_(T* obj) { return Property<const [[arg.type.c_type]]>{&obj->[[func.name | to_snake_case]]_out_[[arg.name]]_}; }
+    [[arg.type.c_name]] [[func.name | to_snake_case]]_out_[[arg.name]]_; // for internal use by Fibre
+    template<typename T> static auto get_[[func.name | to_snake_case]]_out_[[arg.name]]_(T* obj) { return Property<const [[arg.type.c_name]]>{&obj->[[func.name | to_snake_case]]_out_[[arg.name]]_}; }
 [%- endfor %]
 [%- endfor %]
 };
@@ -74,13 +74,13 @@ public:
 [%- for _, enum in value_types.items() %]
 [%- if enum.is_flags %]
 // this is technically not thread-safe but practically it might be
-inline [[enum.c_type]] operator | ([[enum.c_type]] a, [[enum.c_type]] b) { return static_cast<[[enum.c_type]]>(static_cast<std::underlying_type_t<[[enum.c_type]]>>(a) | static_cast<std::underlying_type_t<[[enum.c_type]]>>(b)); }
-inline [[enum.c_type]] operator & ([[enum.c_type]] a, [[enum.c_type]] b) { return static_cast<[[enum.c_type]]>(static_cast<std::underlying_type_t<[[enum.c_type]]>>(a) & static_cast<std::underlying_type_t<[[enum.c_type]]>>(b)); }
-inline [[enum.c_type]] operator ^ ([[enum.c_type]] a, [[enum.c_type]] b) { return static_cast<[[enum.c_type]]>(static_cast<std::underlying_type_t<[[enum.c_type]]>>(a) ^ static_cast<std::underlying_type_t<[[enum.c_type]]>>(b)); }
-inline [[enum.c_type]]& operator |= ([[enum.c_type]] &a, [[enum.c_type]] b) { return reinterpret_cast<[[enum.c_type]]&>(reinterpret_cast<std::underlying_type_t<[[enum.c_type]]>&>(a) |= static_cast<std::underlying_type_t<[[enum.c_type]]>>(b)); }
-inline [[enum.c_type]]& operator &= ([[enum.c_type]] &a, [[enum.c_type]] b) { return reinterpret_cast<[[enum.c_type]]&>(reinterpret_cast<std::underlying_type_t<[[enum.c_type]]>&>(a) &= static_cast<std::underlying_type_t<[[enum.c_type]]>>(b)); }
-inline [[enum.c_type]]& operator ^= ([[enum.c_type]] &a, [[enum.c_type]] b) { return reinterpret_cast<[[enum.c_type]]&>(reinterpret_cast<std::underlying_type_t<[[enum.c_type]]>&>(a) ^= static_cast<std::underlying_type_t<[[enum.c_type]]>>(b)); }
-inline [[enum.c_type]] operator ~ ([[enum.c_type]] a) { return static_cast<[[enum.c_type]]>(~static_cast<std::underlying_type_t<[[enum.c_type]]>>(a)); }
+inline [[enum.c_name]] operator | ([[enum.c_name]] a, [[enum.c_name]] b) { return static_cast<[[enum.c_name]]>(static_cast<std::underlying_type_t<[[enum.c_name]]>>(a) | static_cast<std::underlying_type_t<[[enum.c_name]]>>(b)); }
+inline [[enum.c_name]] operator & ([[enum.c_name]] a, [[enum.c_name]] b) { return static_cast<[[enum.c_name]]>(static_cast<std::underlying_type_t<[[enum.c_name]]>>(a) & static_cast<std::underlying_type_t<[[enum.c_name]]>>(b)); }
+inline [[enum.c_name]] operator ^ ([[enum.c_name]] a, [[enum.c_name]] b) { return static_cast<[[enum.c_name]]>(static_cast<std::underlying_type_t<[[enum.c_name]]>>(a) ^ static_cast<std::underlying_type_t<[[enum.c_name]]>>(b)); }
+inline [[enum.c_name]]& operator |= ([[enum.c_name]] &a, [[enum.c_name]] b) { return reinterpret_cast<[[enum.c_name]]&>(reinterpret_cast<std::underlying_type_t<[[enum.c_name]]>&>(a) |= static_cast<std::underlying_type_t<[[enum.c_name]]>>(b)); }
+inline [[enum.c_name]]& operator &= ([[enum.c_name]] &a, [[enum.c_name]] b) { return reinterpret_cast<[[enum.c_name]]&>(reinterpret_cast<std::underlying_type_t<[[enum.c_name]]>&>(a) &= static_cast<std::underlying_type_t<[[enum.c_name]]>>(b)); }
+inline [[enum.c_name]]& operator ^= ([[enum.c_name]] &a, [[enum.c_name]] b) { return reinterpret_cast<[[enum.c_name]]&>(reinterpret_cast<std::underlying_type_t<[[enum.c_name]]>&>(a) ^= static_cast<std::underlying_type_t<[[enum.c_name]]>>(b)); }
+inline [[enum.c_name]] operator ~ ([[enum.c_name]] a) { return static_cast<[[enum.c_name]]>(~static_cast<std::underlying_type_t<[[enum.c_name]]>>(a)); }
 [%- endif %]
 [%- endfor %]
 
