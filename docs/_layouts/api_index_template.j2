@@ -1,0 +1,29 @@
+[%- macro dump_interfaces(interfaces) %]
+[%- for intf in interfaces %]
+[%- if intf.interfaces or intf.value_types %]
+<li>
+{% assign myvar = (page.title + '.') | split: "[[intf.fullname + '.']]" %}
+  <input id="chk-[[intf.fullname]]" type="checkbox" {% if myvar[0] == "" %}checked{% endif %} hidden />
+  <p class="navitem{% if page.title == "[[intf.fullname]]" %} currentitem{% endif %}"><label for="chk-[[intf.fullname]]" class="chevron"></label><a href="{{site.baseurl}}/api/[[intf.fullname | lower]]">[[intf.name]]</a></p>
+  <ul class="expandable-list">
+[[dump_interfaces(intf.interfaces) | indent(4)]]
+[[dump_value_types(intf.enums) | indent(4)]]
+  </ul>
+</li>
+[%- else %]
+<li>
+  <p style="padding-left: 27px;" class="navitem{% if page.title == "[[intf.fullname]]" %} currentitem{% endif %}"><a href="{{site.baseurl}}/api/[[intf.fullname | lower]]">[[intf.name]]</a></p>
+</li>
+[%- endif %]
+[%- endfor %]
+[%- endmacro %]
+
+[%- macro dump_value_types(value_types) %]
+[%- for enum in value_types %]
+<li>
+  <p style="padding-left: 27px;" class="navitem{% if page.title == "[[enum.fullname]]" %} currentitem{% endif %}"><a href="{{site.baseurl}}/api/[[enum.fullname | lower]]">[[enum.name]]</a></p>
+</li>
+[%- endfor %]
+[%- endmacro %]
+
+[[dump_interfaces(toplevel_interfaces)]]

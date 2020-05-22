@@ -258,9 +258,14 @@ To run the docs server locally:
 
 ```bash
 cd docs
-gem install bundler
-bundle install --path ruby-bundle
-bundle exec jekyll serve --host=0.0.0.0
+gem install bundler # The gem command typically comes with a Ruby installation
+#export PATH="$PATH:~/.gem/ruby/2.7.0/bin" # or similar (depends on OS)
+rm Gemfile.lock # only if below commands cause trouble
+bundle config path ruby-bundle
+bundle install
+mkdir -p _api _includes
+python ../Firmware/interface_generator_stub.py --definitions ../Firmware/odrive-interface.yaml --template _layouts/api_documentation_template.j2 --outputs _api/'#'.md && python ../Firmware/interface_generator_stub.py --definitions ../Firmware/odrive-interface.yaml --template _layouts/api_index_template.j2 --output _includes/apiindex.html
+bundle exec jekyll serve --incremental --host=0.0.0.0
 ```
 
 ## Releases
