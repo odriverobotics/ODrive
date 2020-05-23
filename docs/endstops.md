@@ -12,10 +12,11 @@ Each axis supports two endstops: `min_endstop` and `max_endstop`.  For each ends
 Name |  Type | Default
 --- | -- | -- 
 gpio_num | int | 0
-enabled | boolean | False
-offset | int | 0
-debounce_ms | float | 100.0
-is_active_high | boolean | False
+offset | float | 0.0
+debounce_ms | float | 50.0
+enabled | boolean | false
+is_active_high | boolean | false
+pullup | boolean | true
 
 ### gpio_num
 The GPIO pin number, according to the silkscreen labels on ODrive. Set with these commands:
@@ -52,6 +53,9 @@ The debouncing time for this endstop.  Most switches exhibit some sort of bounce
 This is how you configure the endstop to be either "NPN" or "PNP".  An "NPN" configuration would be `is_active_high = False` whereas a PNP configuration is `is_active_high = True`.  Refer to the following table for more information:
 
 3D printer endstops (like those that come with a RAMPS 1.4) are typically configuration **4**. Typically configuration **1** or **3** is preferred when using mechanical switches as the most common failure mode leaves the switch open.
+
+### pullup
+Match the pullup value to the configuration.  If `true`, it enables the GPIO pullup resistor.  If `false`, it enables the GPIO pull*down* resistor.
 
 ![Endstop configuration](Endstop_configuration.png)  
 

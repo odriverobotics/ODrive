@@ -54,7 +54,7 @@ void Controller::move_to_pos(float goal_point) {
                                  axis_->trap_.config_.vel_limit,
                                  axis_->trap_.config_.accel_limit,
                                  axis_->trap_.config_.decel_limit);
-    traj_start_loop_count_ = axis_->loop_counter_;
+    axis_->trap_.t_ = 0.0f;
     trajectory_done_ = false;
 }
 
@@ -110,7 +110,8 @@ bool Controller::anticogging_calibration(float pos_estimate, float vel_estimate)
 }
 
 void Controller::update_filter_gains() {
-    input_filter_ki_ = 2.0f * config_.input_filter_bandwidth;  // basic conversion to discrete time
+    float bandwidth = std::min(config_.input_filter_bandwidth, 0.25f * current_meas_hz);
+    input_filter_ki_ = 2.0f * bandwidth;  // basic conversion to discrete time
     input_filter_kp_ = 0.25f * (input_filter_ki_ * input_filter_ki_); // Critically damped
 }
 
@@ -160,12 +161,12 @@ bool Controller::update(float* current_setpoint_output) {
             float step = std::clamp(full_step, -max_step_size, max_step_size);
 
             vel_setpoint_ += step;
-            current_setpoint_ = step / current_meas_period * config_.inertia;
+            current_setpoint_ = (step / current_meas_period) * config_.inertia;
         } break;
         case INPUT_MODE_CURRENT_RAMP: {
             float max_step_size = std::abs(current_meas_period * config_.current_ramp_rate);
-            float full_step     = input_current_ - current_setpoint_;
-            float step          = std::clamp(full_step, -max_step_size, max_step_size);
+            float full_step = input_current_ - current_setpoint_;
+            float step = std::clamp(full_step, -max_step_size, max_step_size);
 
             current_setpoint_ += step;
         } break;
@@ -175,7 +176,7 @@ bool Controller::update(float* current_setpoint_output) {
             float delta_vel = input_vel_ - vel_setpoint_; // Vel error
             float accel = input_filter_kp_*delta_pos + input_filter_ki_*delta_vel; // Feedback
             current_setpoint_ = accel * config_.inertia; // Accel
-            vel_setpoint_ += std::clamp(current_meas_period * accel, 2.0f * std::abs(delta_vel), -2.0f * std::abs(delta_vel)); // delta vel
+            vel_setpoint_ += current_meas_period * accel; // delta vel
             pos_setpoint_ += current_meas_period * vel_setpoint_; // Delta pos
         } break;
         case INPUT_MODE_MIRROR: {
@@ -198,10 +199,8 @@ bool Controller::update(float* current_setpoint_output) {
             // Avoid updating uninitialized trajectory
             if (trajectory_done_)
                 break;
-            // Note: uint32_t loop count delta is OK across overflow
-            // Beware of negative deltas, as they will not be well behaved due to uint!
-            float t = (axis_->loop_counter_ - traj_start_loop_count_) * current_meas_period;
-            if (t > axis_->trap_.Tf_) {
+            
+            if (axis_->trap_.t_ > axis_->trap_.Tf_) {
                 // Drop into position control mode when done to avoid problems on loop counter delta overflow
                 config_.control_mode = CTRL_MODE_POSITION_CONTROL;
                 pos_setpoint_ = input_pos_;
@@ -209,10 +208,11 @@ bool Controller::update(float* current_setpoint_output) {
                 current_setpoint_ = 0.0f;
                 trajectory_done_ = true;
             } else {
-                TrapezoidalTrajectory::Step_t traj_step = axis_->trap_.eval(t);
+                TrapezoidalTrajectory::Step_t traj_step = axis_->trap_.eval(axis_->trap_.t_);
                 pos_setpoint_ = traj_step.Y;
                 vel_setpoint_ = traj_step.Yd;
                 current_setpoint_ = traj_step.Ydd * config_.inertia;
+                axis_->trap_.t_ += current_meas_period;
             }
             anticogging_pos = pos_setpoint_; // FF the position setpoint instead of the pos_estimate
         } break;
@@ -256,8 +256,7 @@ bool Controller::update(float* current_setpoint_output) {
     // Velocity limiting
     float vel_lim = config_.vel_limit;
     if (config_.enable_vel_limit) {
-        if (vel_des > vel_lim) vel_des = vel_lim;
-        if (vel_des < -vel_lim) vel_des = -vel_lim;
+        vel_des = std::clamp(vel_des, -vel_lim, vel_lim);
     }
 
     // Check for overspeed fault (done in this module (controller) for cohesion with vel_lim)
@@ -294,7 +293,7 @@ bool Controller::update(float* current_setpoint_output) {
     // We get the current position and apply a current feed-forward
     // ensuring that we handle negative encoder positions properly (-1 == motor->encoder.encoder_cpr - 1)
     if (anticogging_valid_ && config_.anticogging.enable) {
-        Iq += config_.anticogging.cogging_map[std::clamp(mod(static_cast<int>(anticogging_pos), 3600), 0, 3600)];
+        Iq += config_.anticogging.cogging_map[std::clamp(mod((int)anticogging_pos, 3600), 0, 3600)];
     }
 
     float v_err = 0.0f;

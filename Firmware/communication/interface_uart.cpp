@@ -62,13 +62,19 @@ static void uart_server_thread(void * ctx) {
     (void) ctx;
 
     for (;;) {
+        osDelay(1);
+
         // Check for UART errors and restart recieve DMA transfer if required
-        if (huart4.ErrorCode != HAL_UART_ERROR_NONE) {
+        if (huart4.RxState != HAL_UART_STATE_BUSY_RX) {
             HAL_UART_AbortReceive(&huart4);
             HAL_UART_Receive_DMA(&huart4, dma_rx_buffer, sizeof(dma_rx_buffer));
+            dma_last_rcv_idx = 0;
         }
         // Fetch the circular buffer "write pointer", where it would write next
         uint32_t new_rcv_idx = UART_RX_BUFFER_SIZE - huart4.hdmarx->Instance->NDTR;
+        if (new_rcv_idx > UART_RX_BUFFER_SIZE) { // defensive programming
+            continue;
+        }
 
         // deadline_ms = timeout_to_deadline(PROTOCOL_SERVER_TIMEOUT_MS);
         // Process bytes in one or two chunks (two in case there was a wrap)
@@ -86,8 +92,6 @@ static void uart_server_thread(void * ctx) {
                     new_rcv_idx - dma_last_rcv_idx, uart4_stream_output);
             dma_last_rcv_idx = new_rcv_idx;
         }
-
-        osDelay(1);
     };
 }
 
@@ -96,7 +100,7 @@ void start_uart_server() {
     // We dont use interrupts to fetch the data, instead we periodically read
     // data out of the circular buffer into a parse buffer, controlled by a state machine
     HAL_UART_Receive_DMA(&huart4, dma_rx_buffer, sizeof(dma_rx_buffer));
-    dma_last_rcv_idx = UART_RX_BUFFER_SIZE - huart4.hdmarx->Instance->NDTR;
+    dma_last_rcv_idx = 0;
 
     // Start UART communication thread
     osThreadDef(uart_server_thread_def, uart_server_thread, osPriorityNormal, 0, stack_size_uart_thread / sizeof(StackType_t) /* the ascii protocol needs considerable stack space */);

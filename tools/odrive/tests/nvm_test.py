@@ -7,17 +7,18 @@ import os
 
 import fibre
 from fibre.utils import Logger
-from test_runner import ODriveTestContext, test_assert_eq
+from test_runner import *
 
 class TestStoreAndReboot():
     """
     Stores the current configuration to NVM and reboots.
     """
 
-    def is_compatible(self, odrive: ODriveTestContext):
-        return True
+    def get_test_cases(self, testrig: TestRig):
+        for odrive in testrig.get_components(ODriveComponent):
+            yield (odrive,)
 
-    def run_with_values(self, values, odrive: ODriveTestContext, logger: Logger):
+    def run_with_values(self, odrive: ODriveComponent, values: list, logger: Logger):
         logger.debug("storing configuration and rebooting...")
 
         for value in values:
@@ -31,15 +32,15 @@ class TestStoreAndReboot():
         odrive.handle = None
         time.sleep(2)
 
-        odrive.make_available(logger)
+        odrive.prepare(logger)
 
         logger.debug("verifying configuration after reboot...")
         test_assert_eq(odrive.handle.config.brake_resistance, values[-1], accuracy=0.01)
 
-    def run_test(self, odrive: ODriveTestContext, logger: Logger):
-        self.run_with_values([0.5, 1.0, 1.5], odrive, logger)
-        self.run_with_values([2.5, 3.7], odrive, logger)
-        self.run_with_values([0.47], odrive, logger)
+    def run_test(self, odrive: ODriveComponent, logger: Logger):
+        self.run_with_values(odrive, [0.5, 1.0, 1.5], logger)
+        self.run_with_values(odrive, [2.5, 3.7], logger)
+        self.run_with_values(odrive, [0.47], logger)
 
 if __name__ == '__main__':
     test_runner.run(TestStoreAndReboot())

@@ -5,6 +5,7 @@ Please add a note of your changes below this heading if you make a Pull Request.
 * AC Induction Motor support.
   * Tracking of rotor flux through rotor time constant
   * Automatic d axis current for Maximum Torque Per Amp (MTPA)
+* ASCII "w" commands now execute write hooks.
 * Simplified control interface ("Input Filter" branch)
     * New input variables: `input_pos`, `input_vel`, and `input_current`
     * New setting `input_mode` to switch between different input behaviours
@@ -18,19 +19,29 @@ Please add a note of your changes below this heading if you make a Pull Request.
 * [CAN Communication with CANSimple stack](can-protocol.md)
 * Gain scheduling for anti-hunt when close to 0 position error
 * Velocity Limiting in Current Control mode according to `vel_limit` and `vel_gain`
-* Regen current limiting according to `max_regen_limit`, in Amps
-* DC Bus hard current limiting according to `power_supply_min_current` and `power_supply_max_current`
+* Regen current limiting according to `max_regen_current`, in Amps
+* DC Bus hard current limiting according to `dc_max_negative_current` and `dc_max_positive_current`
+* Brake resistor logic now attempts to clamp voltage according to `odrv.config.dc_bus_overvoltage_ramp_start` and `odrv.config.dc_bus_overvoltage_ramp_end`
 * Unit Testing with Doctest has been started for select algorithms, see [Firmware/Tests/test_runner.cpp](Firmware/Tests/test_runner.cpp)
 * Added support for Flylint VSCode Extension for static code analysis
 * Using an STM32F405 .svd file allows CortexDebug to view registers during debugging
+* Added scripts for building via docker.
+* Added ability to change uart baudrate via fibre
 
 ### Changed
 * Changed ratiometric `motor.config.current_lim_tolerance` to absolute `motor.config.current_lim_margin`
-* Moved `controller.vel_ramp_enable` into `controller.config`.
+* Moved `controller.vel_ramp_enable` to INPUT_MODE_VEL_RAMP.
 * Anticogging map is temporarily forced to 0.1 deg precision, but saves with the config
 * Some Encoder settings have been made read-only
 * Cleaned up VSCode C/C++ Configuration settings on Windows with recursive includePath
 * Now compiling with C++17
+* Fixed a firmware hang that could occur from unlikely but possible user input
+* Added JSON caching to Fibre. This drastically reduces the time odrivetool needs to connect to an ODrive (except for the first time or after firmware updates).
+* Fix IPython `RuntimeWarning` that would occur every time `odrivetool` was started.
+* Reboot on `erase_configuration()`. This avoids unexpected behavior of a subsequent `save_configuration()` call, since the configuration is only erased from NVM, not from RAM.
+* Change `motor.get_inverter_temp()` to use a property which was already being sampled at `motor.inverter_temp`
+* Fixed a numerical issue in the trajectory planner that could cause sudden jumps of the position setpoint
+
 # Releases
 ## [0.4.11] - 2019-07-25
 ### Added

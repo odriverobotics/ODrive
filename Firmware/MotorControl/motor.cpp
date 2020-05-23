@@ -150,8 +150,7 @@ float Motor::get_inverter_temp() {
     return horner_fma(normalized_voltage, thermistor_poly_coeffs, thermistor_num_coeffs);
 }
 
-bool Motor::update_thermal_limits() {
-    float fet_temp = get_inverter_temp();
+bool Motor::update_thermal_limits(float fet_temp) {
     float temp_margin = config_.inverter_temp_limit_upper - fet_temp;
     float derating_range = config_.inverter_temp_limit_upper - config_.inverter_temp_limit_lower;
     thermal_current_lim_ = config_.current_lim * (temp_margin / derating_range);
@@ -170,7 +169,8 @@ bool Motor::do_checks() {
         set_error(ERROR_DRV_FAULT);
         return false;
     }
-    if (!update_thermal_limits()) {
+    inverter_temp_ = get_inverter_temp();
+    if (!update_thermal_limits(inverter_temp_)) {
         //error already set in function
         return false;
     }
@@ -216,7 +216,7 @@ float Motor::phase_current_from_adcval(uint32_t ADCValue) {
 // TODO check Ibeta balance to verify good motor connection
 bool Motor::measure_phase_resistance(float test_current, float max_voltage) {
     static const float kI = 10.0f;                                 // [(V/s)/A]
-    static const int num_test_cycles = static_cast<int>(3.0f / CURRENT_MEAS_PERIOD); // Test runs for 3s
+    static const int num_test_cycles = (int)(3.0f / CURRENT_MEAS_PERIOD); // Test runs for 3s
     float test_voltage = 0.0f;
     
     size_t i = 0;
@@ -329,7 +329,7 @@ bool Motor::FOC_voltage(float v_d, float v_q, float pwm_phase) {
     float c = our_arm_cos_f32(pwm_phase);
     float s = our_arm_sin_f32(pwm_phase);
     float v_alpha = c*v_d - s*v_q;
-    float v_beta  = c*v_q + s*v_d;
+    float v_beta = c*v_q + s*v_d;
     return enqueue_voltage_timings(v_alpha, v_beta);
 }
 
@@ -400,7 +400,7 @@ bool Motor::FOC_current(float Id_des, float Iq_des, float I_phase, float pwm_pha
     float c_p = our_arm_cos_f32(pwm_phase);
     float s_p = our_arm_sin_f32(pwm_phase);
     float mod_alpha = c_p * mod_d - s_p * mod_q;
-    float mod_beta  = c_p * mod_q + s_p * mod_d;
+    float mod_beta = c_p * mod_q + s_p * mod_d;
 
     // Report final applied voltage in stationary frame (for sensorles estimator)
     ictrl.final_v_alpha = mod_to_V * mod_alpha;
@@ -447,9 +447,8 @@ bool Motor::update(float current_setpoint, float phase, float phase_vel) {
 
     // TODO: 2-norm vs independent clamping (current could be sqrt(2) bigger)
     float ilim = effective_current_lim();
-    // TODO: use std::clamp (C++17)
-    float id = MACRO_MIN(MACRO_MAX(current_control_.Id_setpoint, -ilim), ilim);
-    float iq = MACRO_MIN(MACRO_MAX(current_setpoint, -ilim), ilim);
+    float id = std::clamp(current_control_.Id_setpoint, -ilim, ilim);
+    float iq = std::clamp(current_setpoint, -ilim, ilim);
 
     if (config_.motor_type == MOTOR_TYPE_ACIM) {
         // Note that the effect of the current commands on the real currents is actually 1.5 PWM cycles later
@@ -460,7 +459,7 @@ bool Motor::update(float current_setpoint, float phase, float phase_vel) {
             float abs_iq = fabsf(iq);
             float gain = abs_iq > id ? config_.acim_autoflux_attack_gain : config_.acim_autoflux_decay_gain;
             id += gain * (abs_iq - id) * current_meas_period;
-            id = MACRO_MIN(MACRO_MAX(id, config_.acim_autoflux_min_Id), ilim);
+            id = std::clamp(id, config_.acim_autoflux_min_Id, ilim);
             current_control_.Id_setpoint = id;
         }
 
@@ -485,22 +484,11 @@ bool Motor::update(float current_setpoint, float phase, float phase_vel) {
     float pwm_phase = phase + 1.5f * current_meas_period * phase_vel;
 
     // Execute current command
-    // TODO: move this into the mot
-    if (config_.motor_type == MOTOR_TYPE_HIGH_CURRENT) {
-        if(!FOC_current(id, iq, phase, pwm_phase)){
-            return false;
-        }
-    } else if (config_.motor_type == MOTOR_TYPE_ACIM) {
-        if(!FOC_current(id, iq, phase, pwm_phase)){
-            return false;
-        }
-    } else if (config_.motor_type == MOTOR_TYPE_GIMBAL) {
-        //In gimbal motor mode, current is reinterptreted as voltage.
-        if(!FOC_voltage(id, iq, pwm_phase))
-            return false;
-    } else {
-        set_error(ERROR_NOT_IMPLEMENTED_MOTOR_TYPE);
-        return false;
+    switch(config_.motor_type){
+        case MOTOR_TYPE_HIGH_CURRENT: return FOC_current(id, iq, phase, pwm_phase); break;
+        case MOTOR_TYPE_ACIM: return FOC_current(id, iq, phase, pwm_phase); break;
+        case MOTOR_TYPE_GIMBAL: return FOC_voltage(id, iq, pwm_phase); break;
+        default: set_error(ERROR_NOT_IMPLEMENTED_MOTOR_TYPE); return false; break;
     }
     return true;
 }

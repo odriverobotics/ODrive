@@ -8,10 +8,10 @@
 class Encoder {
 public:
     enum Error_t {
-        ERROR_NONE                     = 0,
-        ERROR_UNSTABLE_GAIN            = 0x01,
-        ERROR_CPR_POLEPAIRS_MISMATCH   = 0x02,
-        ERROR_NO_RESPONSE              = 0x04,
+        ERROR_NONE = 0,
+        ERROR_UNSTABLE_GAIN = 0x01,
+        ERROR_CPR_POLEPAIRS_MISMATCH = 0x02,
+        ERROR_NO_RESPONSE = 0x04,
         ERROR_UNSUPPORTED_ENCODER_MODE = 0x08,
         ERROR_ILLEGAL_HALL_STATE = 0x10,
         ERROR_INDEX_NOT_FOUND_YET = 0x20,
@@ -24,9 +24,9 @@ public:
         MODE_INCREMENTAL,
         MODE_HALL,
         MODE_SINCOS,
-        MODE_SPI_ABS_CUI = 0x100,
-        MODE_SPI_ABS_AMS = 0x101,
-        MODE_SPI_ABS_AEAT = 0x102,
+        MODE_SPI_ABS_CUI = 0x100,   //!< compatible with CUI AMT23xx
+        MODE_SPI_ABS_AMS = 0x101,   //!< compatible with AMS AS5047P, AS5048A/AS5048B (no daisy chain support)
+        MODE_SPI_ABS_AEAT = 0x102,  //!< not yet implemented
     };
     const uint32_t MODE_FLAG_ABS = 0x100;
 
@@ -51,10 +51,12 @@ public:
         bool idx_search_unidirectional = false; // Only allow index search in known direction
         bool ignore_illegal_hall_state = false; // dont error on bad states like 000 or 111
         uint16_t abs_spi_cs_gpio_pin = 1;
+        uint16_t sincos_gpio_pin_sin = 3;
+        uint16_t sincos_gpio_pin_cos = 4;
     };
 
     Encoder(const EncoderHardwareConfig_t& hw_config,
-            Config_t& config, Motor::Config_t motor_config);
+            Config_t& config, const Motor::Config_t& motor_config);
     
     void setup();
     void set_error(Error_t error);
@@ -108,10 +110,9 @@ public:
     bool abs_spi_start_transaction();
     void abs_spi_cb();
     void abs_spi_cs_pin_init();
-    uint16_t abs_spi_dma_tx_[2] = {0xFFFF, 0x0000};
-    uint16_t abs_spi_dma_rx_[2];
+    uint16_t abs_spi_dma_tx_[1] = {0xFFFF};
+    uint16_t abs_spi_dma_rx_[1];
     bool abs_spi_pos_updated_ = false;
-    bool abs_spi_pos_init_once_ = false;
     Mode_t mode_ = MODE_INCREMENTAL;
     GPIO_TypeDef* abs_spi_cs_port_;
     uint16_t abs_spi_cs_pin_;
@@ -161,7 +162,9 @@ public:
                 make_protocol_property("calib_scan_distance", &config_.calib_scan_distance),
                 make_protocol_property("calib_scan_omega", &config_.calib_scan_omega),
                 make_protocol_property("idx_search_unidirectional", &config_.idx_search_unidirectional),
-                make_protocol_property("ignore_illegal_hall_state", &config_.ignore_illegal_hall_state)
+                make_protocol_property("ignore_illegal_hall_state", &config_.ignore_illegal_hall_state),
+                make_protocol_property("sincos_gpio_pin_sin", &config_.sincos_gpio_pin_sin),
+                make_protocol_property("sincos_gpio_pin_cos", &config_.sincos_gpio_pin_cos)
             ),
             make_protocol_function("set_linear_count", *this, &Encoder::set_linear_count, "count")
         );

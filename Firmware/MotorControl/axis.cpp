@@ -5,6 +5,7 @@
 
 #include "odrive_main.h"
 #include "utils.hpp"
+#include "gpio_utils.hpp"
 #include "communication/interface_can.hpp"
 
 Axis::Axis(int axis_num,
@@ -86,7 +87,7 @@ static void run_state_machine_loop_wrapper(void* ctx) {
 // @brief Starts run_state_machine_loop in a new thread
 void Axis::start_thread() {
     osThreadDef(thread_def, run_state_machine_loop_wrapper, hw_config_.thread_priority, 0, stack_size_ / sizeof(StackType_t));
-    thread_id_       = osThreadCreate(osThread(thread_def), this);
+    thread_id_ = osThreadCreate(osThread(thread_def), this);
     thread_id_valid_ = true;
 }
 
@@ -165,21 +166,6 @@ bool Axis::do_checks() {
     if (!(vbus_voltage <= board_config.dc_bus_overvoltage_trip_level))
         error_ |= ERROR_DC_BUS_OVER_VOLTAGE;
 
-    // This is the same math that's used in update_brake_current().  Should we calculate IBus globally?
-    float Ibus_sum = 0.0f;
-    for (size_t i = 0; i < AXIS_COUNT; ++i) {
-        if (axes[i]->motor_.armed_state_ == Motor::ARMED_STATE_ARMED) {
-            Ibus_sum += axes[i]->motor_.current_control_.Ibus;
-        }
-    }
-
-    if (Ibus_sum > board_config.power_supply_max_current) {
-        error_ |= ERROR_DC_BUS_OVER_CURRENT;
-    }
-    if (Ibus_sum < board_config.power_supply_min_current) {
-        error_ |= ERROR_DC_BUS_UNDER_CURRENT;
-    }
-
     // Sub-components should use set_error which will propegate to this error_
     motor_.do_checks();
     // encoder_.do_checks();
@@ -216,9 +202,7 @@ void Axis::watchdog_feed() {
 
 // @brief Check the watchdog timer for expiration. Also sets the watchdog error bit if expired.
 bool Axis::watchdog_check() {
-    // reset value = 0 means watchdog disabled.
     if (!config_.enable_watchdog) return true;
-    if (get_watchdog_reset() == 0) return true;
 
     // explicit check here to ensure that we don't underflow back to UINT32_MAX
     if (watchdog_current_value_ > 0) {
@@ -337,7 +321,7 @@ bool Axis::run_closed_loop_control_loop() {
 
         return true;
     });
-    set_step_dir_active(false);
+    set_step_dir_active(config_.enable_step_dir && config_.step_dir_always_on);
     return check_for_errors();
 }
 
@@ -393,7 +377,7 @@ bool Axis::run_homing() {
     controller_.vel_setpoint_ = 0.0f;  // Change directions without decelerating
 
     // Set our current position in encoder counts to make control more logical
-    encoder_.set_linear_count(static_cast<int32_t>(controller_.pos_setpoint_));
+    encoder_.set_linear_count((int32_t)controller_.pos_setpoint_);
 
     controller_.config_.control_mode = Controller::CTRL_MODE_POSITION_CONTROL;
     controller_.config_.input_mode = Controller::INPUT_MODE_TRAP_TRAJ;
@@ -427,6 +411,7 @@ bool Axis::run_idle_loop() {
     // run_control_loop ignores missed modulation timing updates
     // if and only if we're in AXIS_STATE_IDLE
     safety_critical_disarm_motor_pwm(motor_);
+    set_step_dir_active(config_.enable_step_dir && config_.step_dir_always_on);
     run_control_loop([this]() {
         return true;
     });
@@ -549,9 +534,12 @@ void Axis::run_state_machine_loop() {
         }
 
         // If the state failed, go to idle, else advance task chain
-        if (!status)
+        if (!status) {
+            std::fill(task_chain_.begin(), task_chain_.end(), AXIS_STATE_UNDEFINED);
             current_state_ = AXIS_STATE_IDLE;
-        else
-            memmove(task_chain_, task_chain_ + 1, sizeof(task_chain_) - sizeof(task_chain_[0]));
+        } else {
+            std::rotate(task_chain_.begin(), task_chain_.begin() + 1, task_chain_.end());
+            task_chain_.back() = AXIS_STATE_UNDEFINED;
+        }
     }
 }

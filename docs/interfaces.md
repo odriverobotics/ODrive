@@ -115,13 +115,13 @@ Some GPIO pins can be used for PWM input, if they are not allocated to other fun
 Any of the numerical parameters that are writable from the ODrive Tool can be hooked up to a PWM input.
 As an example, we'll configure GPIO4 to control the angle of axis 0. We want the axis to move within a range of -1500 to 1500 encoder counts.
 
-1. Make sure you're able control the axis 0 angle by writing to `odrv0.axis0.controller.pos_setpoint`. If you need help with this follow the [getting started guide](getting-started.md).
+1. Make sure you're able control the axis 0 angle by writing to `odrv0.axis0.controller.input_pos`. If you need help with this follow the [getting started guide](getting-started.md).
 2. If you want to control your ODrive with the PWM input without using anything else to activate the ODrive, you can configure the ODrive such that axis 0 automatically goes operational at startup. See [here](commands.md#startup-procedure) for more information.
 3. In ODrive Tool, configure the PWM input mapping
     ```
     In [1]: odrv0.config.gpio4_pwm_mapping.min = -1500
     In [2]: odrv0.config.gpio4_pwm_mapping.max = 1500
-    In [3]: odrv0.config.gpio4_pwm_mapping.endpoint = odrv0.axis0.controller._remote_attributes['pos_setpoint']
+    In [3]: odrv0.config.gpio4_pwm_mapping.endpoint = odrv0.axis0.controller._remote_attributes['input_pos']
     ```
    Note: you can disable the input by setting `odrv0.config.gpio4_pwm_mapping.endpoint = None`
 4. Save the configuration and reboot
@@ -164,7 +164,7 @@ The endpoint pairs `0x01, 0x81` and `0x03, 0x83` behave exactly identical, only 
 If you plan to access the USB endpoints directly it is recommended that you use interface 2. The other interfaces (the ones associated with the CDC device) are usually claimed by the CDC driver of the host OS, so their endpoints cannot be used without first detaching the CDC driver.
 
 ### UART
-Baud rate: 115200
+Baud rate: 115200 by default.  See `odrv0.config.uart_baudrate` to change value.  Requires a restart.
 Pinout:
 * GPIO 1: Tx (connect to Rx of other device)
 * GPIO 2: Rx (connect to Tx of other device)

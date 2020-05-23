@@ -3,6 +3,7 @@
 #include "odrive_main.h"
 #include "nvm_config.hpp"
 
+#include "usart.h"
 #include "freertos_vars.h"
 #include <communication/interface_usb.h>
 #include <communication/interface_uart.h>
@@ -23,7 +24,7 @@ bool user_config_loaded_;
 
 SystemStats_t system_stats_;
 
-Axis *axes[AXIS_COUNT];
+std::array<Axis*, AXIS_COUNT> axes;
 ODriveCAN *odCAN = nullptr;
 
 typedef Config<
@@ -95,6 +96,13 @@ extern "C" int load_configuration(void) {
 
 void erase_configuration(void) {
     NVM_erase();
+
+    // FIXME: this reboot is a workaround because we don't want the next save_configuration
+    // to write back the old configuration from RAM to NVM. The proper action would
+    // be to reset the values in RAM to default. However right now that's not
+    // practical because several startup actions depend on the config. The
+    // other problem is that the stack overflows if we reset to default here.
+    NVIC_SystemReset();
 }
 
 void enter_dfu_mode() {
@@ -116,7 +124,7 @@ void enter_dfu_mode() {
 }
 
 extern "C" int construct_objects(){
-    #if HW_VERSION_MAJOR == 3 && HW_VERSION_MINOR >= 3
+#if HW_VERSION_MAJOR == 3 && HW_VERSION_MINOR >= 3
     if (board_config.enable_i2c_instead_of_can) {
         // Set up the direction GPIO as input
         GPIO_InitTypeDef GPIO_InitStruct;
@@ -139,6 +147,10 @@ extern "C" int construct_objects(){
     } else
 #endif
         MX_CAN1_Init();
+
+    HAL_UART_DeInit(&huart4);
+    huart4.Init.BaudRate = board_config.uart_baudrate;
+    HAL_UART_Init(&huart4);
 
     // Init general user ADC on some GPIOs.
     GPIO_InitTypeDef GPIO_InitStruct;
@@ -235,7 +247,7 @@ int odrive_main(void) {
         axes[i]->setup();
     }
 
-    for(auto axis : axes){
+    for(auto& axis : axes){
         axis->encoder_.setup();
     }
 

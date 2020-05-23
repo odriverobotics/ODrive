@@ -5,10 +5,12 @@
 
  * **Via USB:**
     * **Windows:** Use the Zadig utility to set the ODrive's driver to "usbser". Windows will then make the device available as COM port. You can use [PuTTY](https://www.chiark.greenend.org.uk/~sgtatham/putty/) to manually send commands or  open the COM port using your favorite programming language 
-    * **Linux/macOS:** Run `/dev/tty*` to list all serial ports. The ODrive will show up as `/dev/ttyACM0` on Linux and `/dev/tty.usbmodem[...]` on macOS. Once you know the name, you can use `screen /dev/ttyACM0` (with the correct name) to send commands manually or open the device using your favorite programming language. Serial ports on Unix can be opened, written to and read from like a normal file.
+    * **Linux/macOS:** Run `/dev/tty*` to list all serial ports. The ODrive will show up as `/dev/ttyACM0` (or similar) on Linux and `/dev/tty.usbmodem[...]` on macOS. Once you know the name, you can use `screen /dev/ttyACM0` (with the correct name) to send commands manually or open the device using your favorite programming language. Serial ports on Unix can be opened, written to and read from like a normal file.
  * **Via UART:** Connect the ODrive's TX (GPIO1) to your host's RX. Connect your ODrive's RX (GPIO2) to your host's TX. The logic level of the ODrive is 3.3V.
     * **Arduino:** You can use the [ODrive Arduino library](https://github.com/madcowswe/ODrive/tree/master/Arduino/ODriveArduino) to talk to the ODrive.
     * **Windows/Linux/macOS:** You can use an FTDI USB-UART cable to connect to the ODrive.
+
+The ODrive does not echo commands. That means that when you type commands into a program like `screen`, the characters you type won't show up in the console.
 
 ## Command format
 
@@ -18,7 +20,7 @@ The ASCII protocol is human-readable and line-oriented, with each line having th
 command *42 ; comment [new line character]
 ```
 
- * `*42` stands for a GCode compatible checksum and can be omitted. If and only if a checksum is provided, the device will also include a checksum in the response, if any.
+ * `*42` stands for a GCode compatible checksum and can be omitted. If and only if a checksum is provided, the device will also include a checksum in the response, if any. The checksum is calculated as the bitwise xor of all characters before the asterisk (`*`). <br> Example of a valid checksum: `r vbus_voltage *93`.
  * comments are supported for GCode compatibility
  * the command is interpreted once the new-line character is encountered
 
@@ -131,7 +133,7 @@ Not all parameters can be accessed via the ASCII protocol but at least all param
     ```
    * `property` name of the property, as seen in ODrive Tool
    * `value` text representation of the value to be written
-   * Example: `w axis0.controller.pos_setpoint -123.456`
+   * Example: `w axis0.controller.input_pos -123.456`
 
 #### System commands:
 * `ss` - Save config

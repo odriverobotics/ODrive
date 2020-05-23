@@ -24,8 +24,6 @@ public:
         ERROR_MIN_ENDSTOP_PRESSED = 0x1000,
         ERROR_MAX_ENDSTOP_PRESSED = 0x2000,
         ERROR_ESTOP_REQUESTED = 0x4000,
-        ERROR_DC_BUS_UNDER_CURRENT = 0x8000, // too much current pushed into the power supply
-        ERROR_DC_BUS_OVER_CURRENT = 0x10000, // too much current pulled out of the power supply
         ERROR_HOMING_WITHOUT_ENDSTOP = 0x20000, // the min endstop was not enabled during homing
     };
 
@@ -68,11 +66,17 @@ public:
         bool startup_closed_loop_control = false; //<! enable closed loop control after calibration/startup
         bool startup_sensorless_control = false; //<! enable sensorless control after calibration/startup
         bool startup_homing = false; //<! enable homing after calibration/startup
+
         bool enable_step_dir = false; //<! enable step/dir input after calibration
                                     //   For M0 this has no effect if enable_uart is true
+        bool step_dir_always_on = false; //<! Keep step/dir enabled while the motor is disabled.
+                                         //<! This is ignored if enable_step_dir is false.
+                                         //<! This setting only takes effect on a state transition
+                                         //<! into idle or out of closed loop control.
+
         float counts_per_step = 2.0f;
 
-        float watchdog_timeout = 0.0f;  // [s] (0 disables watchdog)
+        float watchdog_timeout = 0.0f; // [s]
         bool enable_watchdog = false;
 
         // Defaults loaded from hw_config in load_configuration in main.cpp
@@ -82,7 +86,8 @@ public:
         LockinConfig_t calibration_lockin = default_calibration();
         LockinConfig_t sensorless_ramp = default_sensorless();
         LockinConfig_t lockin;
-        uint8_t can_node_id = 0; // Both axes will have the same id to start
+        uint32_t can_node_id = 0; // Both axes will have the same id to start
+        bool can_node_id_extended = false;
         uint32_t can_heartbeat_rate_ms = 100;
     };
 
@@ -120,7 +125,6 @@ public:
     void step_cb();
     void set_step_dir_active(bool enable);
     void decode_step_dir_pins();
-    void update_watchdog_settings();
 
     static void load_default_step_dir_pin_config(
         const AxisHardwareConfig_t& hw_config, Config_t* config);
@@ -135,10 +139,10 @@ public:
     bool watchdog_check();
 
     void clear_errors() {
-        motor_.error_                = Motor::ERROR_NONE;
-        controller_.error_           = Controller::ERROR_NONE;
+        motor_.error_ = Motor::ERROR_NONE;
+        controller_.error_ = Controller::ERROR_NONE;
         sensorless_estimator_.error_ = SensorlessEstimator::ERROR_NONE;
-        encoder_.error_              = Encoder::ERROR_NONE;
+        encoder_.error_ = Encoder::ERROR_NONE;
 
         error_ = Axis::ERROR_NONE;
     }
@@ -248,8 +252,8 @@ public:
     uint16_t dir_pin_;
 
     State_t requested_state_ = AXIS_STATE_STARTUP_SEQUENCE;
-    State_t task_chain_[10] = { AXIS_STATE_UNDEFINED };
-    State_t& current_state_ = task_chain_[0];
+    std::array<State_t, 10> task_chain_ = { AXIS_STATE_UNDEFINED };
+    State_t& current_state_ = task_chain_.front();
     uint32_t loop_counter_ = 0;
     LockinState_t lockin_state_ = LOCKIN_STATE_INACTIVE;
     Homing_t homing_;
@@ -276,6 +280,7 @@ public:
                 make_protocol_property("startup_sensorless_control", &config_.startup_sensorless_control),
                 make_protocol_property("startup_homing", &config_.startup_homing),
                 make_protocol_property("enable_step_dir", &config_.enable_step_dir),
+                make_protocol_property("step_dir_always_on", &config_.step_dir_always_on),
                 make_protocol_property("counts_per_step", &config_.counts_per_step),
                 make_protocol_property("watchdog_timeout", &config_.watchdog_timeout),
                 make_protocol_property("enable_watchdog", &config_.enable_watchdog),
@@ -310,6 +315,7 @@ public:
                     make_protocol_property("finish_on_distance", &config_.lockin.finish_on_distance),
                     make_protocol_property("finish_on_enc_idx", &config_.lockin.finish_on_enc_idx)),
                 make_protocol_property("can_node_id", &config_.can_node_id),
+                make_protocol_property("can_node_id_extended", &config_.can_node_id_extended),
                 make_protocol_property("can_heartbeat_rate_ms", &config_.can_heartbeat_rate_ms)),
             make_protocol_object("motor", motor_.make_protocol_definitions()),
             make_protocol_object("controller", controller_.make_protocol_definitions()),
