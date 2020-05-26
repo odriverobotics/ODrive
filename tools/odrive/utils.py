@@ -60,7 +60,7 @@ def dump_errors(odrv, clear=False):
             else:
                 print(prefix + _VT100Colors['green'] + "no error" + _VT100Colors['default'])
 
-data_rate = 10
+data_rate = 100
 plot_rate = 10
 num_samples = 1000
 def start_liveplotter(get_var_callback):
@@ -115,13 +115,93 @@ def start_liveplotter(get_var_callback):
     fetch_t.daemon = True
     fetch_t.start()
     
-    plot_t = threading.Thread(target=plot_data)
-    plot_t.daemon = True
-    plot_t.start()
-    
+    #plot_t = threading.Thread(target=plot_data)
+    #plot_t.daemon = True
+    #plot_t.start()
+    plot_data()
 
     return cancellation_token;
     #plot_data()
+
+def start_bulk_capture(get_var_callback,
+                       sleep_time=1.0/1000.0,
+                       samples=2000):
+    '''
+    Synchronous function to capture data and return as a pandas Dataframe
+    '''
+    import pandas as pd
+    vals = []
+    start_time = time.monotonic()
+    last_time = 0
+    too_slow_counter = 0
+    #total_samples = length_seconds * data_rate
+    for i in range(samples):
+        try:
+            data = get_var_callback()
+        except Exception as ex:
+            print(str(ex))
+            print("Waiting 1 second before next data point")
+            time.sleep(1)
+            continue
+        relative_time = time.monotonic() - start_time
+        vals.append([relative_time] + data)
+        time.sleep(sleep_time)
+        # delta_t = (relative_time - last_time)
+        # period = 1.0 / data_rate
+        # if delta_t < period:
+        #     time.sleep(period - delta_t)
+        # elif delta_t > period:
+        #     too_slow_counter += 1
+        # last_time = relative_time
+    # if too_slow_counter > 0:
+    #     print("Slower than requested data rate for {} samples out of {} total samples"
+    #           .format(too_slow_counter, total_samples))
+    return pd.DataFrame(vals)
+
+def start_bulk_capture2(get_var_callback,
+                       data_rate=1000.0,
+                       length_seconds=2):
+    '''
+    Synchronous function to capture data and return as a pandas Dataframe
+    '''
+    import pandas as pd
+    vals = []
+    start_time = time.monotonic()
+    last_time = 0
+    too_slow_counter = 0
+    total_samples = int(length_seconds * data_rate)
+    for i in range(total_samples):
+        try:
+            data = get_var_callback()
+        except Exception as ex:
+            print(str(ex))
+            print("Waiting 1 second before next data point")
+            time.sleep(1)
+            continue
+        relative_time = time.monotonic() - start_time
+        vals.append([relative_time] + data)
+
+        delta_t = (relative_time - last_time)
+        period = 1.0 / data_rate
+        if delta_t < period:
+            time.sleep(period - delta_t)
+        elif delta_t > period:
+            too_slow_counter += 1
+        last_time = relative_time
+    if too_slow_counter > 0:
+        print("Slower than requested data rate for {} samples out of {} total samples"
+              .format(too_slow_counter, total_samples))
+    return pd.DataFrame(vals)
+
+def capture_and_plot(get_var_callback,
+                     sleep_time=1.0/1000.0,
+                     samples=2000):
+    import matplotlib.pyplot as plt
+    data = start_bulk_capture(get_var_callback,
+                              sleep_time,
+                              samples)
+    plt.plot(data[0], data.drop(0, axis=1))
+    plt.show()
 
 def print_drv_regs(name, motor):
     """
@@ -157,14 +237,14 @@ def rate_test(device):
     # import matplotlib.pyplot as plt
     # plt.ion()
 
-    print("reading 10000 values...")
+    print("reading 10000 values... new value")
     numFrames = 10000
     vals = []
     for _ in range(numFrames):
         vals.append(device.axis0.loop_counter)
 
     loopsPerFrame = (vals[-1] - vals[0])/numFrames
-    loopsPerSec = (168000000/(2*10192))
+    loopsPerSec = (168000000/(6*3500))
     FramePerSec = loopsPerSec/loopsPerFrame
     print("Frames per second: " + str(FramePerSec))
 
