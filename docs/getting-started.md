@@ -9,16 +9,36 @@ permalink: /
 ### Table of contents
 <!-- TOC depthFrom:2 depthTo:2 -->
 
-- [Hardware Requirements](#hardware-requirements)
-- [Wiring up the ODrive](#wiring-up-the-odrive)
-- [Downloading and Installing Tools](#downloading-and-installing-tools)
-- [Firmware](#firmware)
-- [Start `odrivetool`](#start-odrivetool)
-- [Configure M0](#configure-m0)
-- [Position control of M0](#position-control-of-m0)
-- [Other control modes](#other-control-modes)
-- [Watchdog Timer](#watchdog-timer)
-- [What's next?](#whats-next)
+- [Getting Started](#getting-started)
+    - [Table of contents](#table-of-contents)
+  - [Hardware Requirements](#hardware-requirements)
+    - [You will need:](#you-will-need)
+  - [Wiring up the ODrive](#wiring-up-the-odrive)
+    - [Wiring up the motors](#wiring-up-the-motors)
+    - [Wiring up the encoders](#wiring-up-the-encoders)
+    - [Safety & Power UP](#safety--power-up)
+  - [Downloading and Installing Tools](#downloading-and-installing-tools)
+    - [Windows](#windows)
+    - [OSX](#osx)
+    - [Linux](#linux)
+  - [Firmware](#firmware)
+  - [Start `odrivetool`](#start-odrivetool)
+  - [Configure M0](#configure-m0)
+    - [1. Set the limits:](#1-set-the-limits)
+    - [2. Set other hardware parameters](#2-set-other-hardware-parameters)
+    - [3. Save configuration](#3-save-configuration)
+  - [Position control of M0](#position-control-of-m0)
+  - [Other control modes](#other-control-modes)
+    - [Filtered position control](#filtered-position-control)
+    - [Trajectory control](#trajectory-control)
+      - [Parameters](#parameters)
+      - [Usage](#usage)
+    - [Circular position control](#circular-position-control)
+    - [Velocity control](#velocity-control)
+    - [Ramped velocity control](#ramped-velocity-control)
+    - [Current control](#current-control)
+  - [Watchdog Timer](#watchdog-timer)
+  - [What's next?](#whats-next)
 
 <!-- /TOC -->
 
@@ -133,7 +153,7 @@ Try step 5 again
     sudo udevadm control --reload-rules
     sudo udevadm trigger
     ```
-3. (needed on Ubuntu, maybe other distros too) Add odrivetool into the path, by adding `~/.local/bin/` into `~/.bash_profile`, for example by running `nano ~/.bashrc`, scrolling to the bottom, pasting `PATH=$PATH:~/.local/bin/`, and then saving and closing, and close and reopen the terminal window.
+3. **Ubuntu**, **Raspbian**: If you can't invoke `odrivetool` at this point, try adding `~/.local/bin` to your `$PATH` ([see related bug](https://unix.stackexchange.com/a/392710/176715)). This is done for example by running `nano ~/.bashrc`, scrolling to the bottom, pasting `PATH=$PATH:~/.local/bin`, and then saving and closing, and close and reopen the terminal window.
 
 ## Firmware
 **ODrive v3.5 and later**<br>
