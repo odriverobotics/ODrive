@@ -48,3 +48,16 @@ An upcoming feature will enable automatic tuning. Until then, here is a rough tu
 The liveplotter tool can be immensely helpful in dialing in these values. To display a graph that plots the position setpoint vs the measured position value run the following in the ODrive tool:
 
 `start_liveplotter(lambda:[odrv0.axis0.encoder.pos_estimate, odrv0.axis0.controller.pos_setpoint])` 
+
+
+## Parallel PID controller mode
+
+In some areas of robotics it is more usual to see position and velocity control integrated into a single, parallel PID controller rather than a cascaded one (for example spring-damper models in legged robotics). If we leave the I-terms out, the parallel and the cascaded architectures are equivalent up to the gains.
+
+If you have Kp and Kd gains you wish to use for a parallel PD controller, you can configure the ODrive like this:
+
+```
+<axis>.controller.config.pos_gain = kp/kd
+<axis>.controller.config.vel_gain = kd
+<axis>.controller.config.vel_integrator_gain = 0
+```
