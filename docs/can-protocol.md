@@ -1,7 +1,7 @@
 # CAN Protocol
 
 ## Hardware Setup
-ODrive assumes the CAN PHY is a standard differential twisted pair in a linear bus configuration with 120 ohm termination resistance at each end.  ODrive uses 3.3v as the high output, but conforms to the CAN PHY requirement of achieving a differential voltage > 1.5V to represent a "0".  As such, it is compatible with standard 5V bus architectures.
+ODrive assumes the CAN PHY is a standard differential twisted pair in a linear bus configuration with 120 ohm termination resistance at each end. ODrive versions less than V3.5 include a soldered 120 ohm termination resistor, but ODrive versions greater than V3.5 implement a dip switch to toggle the termination.  ODrive uses 3.3v as the high output, but conforms to the CAN PHY requirement of achieving a differential voltage > 1.5V to represent a "0".  As such, it is compatible with standard 5V bus architectures.
 
 ODrive currently supports the following CAN baud rates:
 * 125 kbps
@@ -32,6 +32,7 @@ Receive PDO 0x200 + nodeID = 0x223, which does not conflict with the range [0x20
 Be careful that you don't assign too many nodeIDs per PDO group.  Four CAN Simple nodes (32*4) is all of the available address space of a single PDO.  If the bus is strictly ODrive CAN Simple nodes, a simple sequential Node ID assignment will work fine.
 
 ### Messages
+
 CMD ID | Name | Sender | Signals | Start byte | Signal Type | Bits | Factor | Offset | Byte Order
 --:    | :--  | :--  | :-- | :-- | :-- | :-- | :-- | :-- | :--
 0x000 | CANOpen NMT Message\*\* | Master | - | - | - | - | - | - | -
@@ -40,7 +41,7 @@ CMD ID | Name | Sender | Signals | Start byte | Signal Type | Bits | Factor | Of
 0x003 | Get Motor Error\* | Axis  | Motor Error | 0 | Unsigned Int | 32 | 1 | 0 | Intel
 0x004 | Get Encoder Error\*  | Axis | Encoder Error | 0 | Unsigned Int | 32 | 1 | 0 | Intel
 0x005 | Get Sensorless Error\* | Axis | Sensorless Error | 0 | Unsigned Int | 32 | 1 | 0 | Intel
-0x006 | Set Axis Node ID | Master | Axis CAN Node ID | 0 | Unsigned Int | 16 | 1 | 0 | Intel
+0x006 | Set Axis Node ID | Master | Axis CAN Node ID | 0 | Unsigned Int | 32 | 1 | 0 | Intel
 0x007 | Set Axis Requested State | Master | Axis Requested State | 0 | Unsigned Int | 32 | 1 | 0 | Intel
 0x008 | Set Axis Startup Config | Master | - Not yet implemented - | - | - | - | - | - | -
 0x009 | Get Encoder Estimates\* | Master | Encoder Pos Estimate<br>Encoder Vel Estimate | 0<br>4 | IEEE 754 Float<br>IEEE 754 Float | 32<br>32 | 1<br>1 | 0<br>0 | Intel<br>Intel
