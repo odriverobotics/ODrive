@@ -16,6 +16,8 @@ definitions:
     properties:
       c_is_class: {type: boolean}
       c_name: {type: string}
+      brief: {type: string}
+      doc: {type: string}
       functions:
         type: object
         additionalProperties: {"$ref": "#/definitions/function"}
@@ -64,6 +66,7 @@ definitions:
         properties:
           in: {type: object}
           out: {type: object}
+          brief: {type: string}
           doc: {type: string}
           __line__: {type: object}
           __column__: {type: object}
@@ -132,17 +135,17 @@ def to_snake_case(s): return '_'.join(get_words(s)).lower()
 def to_kebab_case(s): return '-'.join(get_words(s)).lower()
 
 value_types = {
-    'bool': {'builtin': True, 'fullname': 'bool', 'name': 'bool', 'c_name': 'bool'},
-    'float32': {'builtin': True, 'fullname': 'float32', 'name': 'float32', 'c_name': 'float'},
-    'uint8': {'builtin': True, 'fullname': 'uint8', 'name': 'uint8', 'c_name': 'uint8_t'},
-    'uint16': {'builtin': True, 'fullname': 'uint16', 'name': 'uint16', 'c_name': 'uint16_t'},
-    'uint32': {'builtin': True, 'fullname': 'uint32', 'name': 'uint32', 'c_name': 'uint32_t'},
-    'uint64': {'builtin': True, 'fullname': 'uint64', 'name': 'uint64', 'c_name': 'uint64_t'},
-    'int8': {'builtin': True, 'fullname': 'int8', 'name': 'int8', 'c_name': 'int8_t'},
-    'int16': {'builtin': True, 'fullname': 'int16', 'name': 'int16', 'c_name': 'int16_t'},
-    'int32': {'builtin': True, 'fullname': 'int32', 'name': 'int32', 'c_name': 'int32_t'},
-    'int64': {'builtin': True, 'fullname': 'int64', 'name': 'int64', 'c_name': 'int64_t'},
-    'endpoint_ref': {'builtin': True, 'fullname': 'endpoint_ref', 'name': 'endpoint_ref', 'c_name': 'endpoint_ref_t'},
+    'bool': {'builtin': True, 'fullname': 'bool', 'name': 'bool', 'c_name': 'bool', 'py_type': 'bool'},
+    'float32': {'builtin': True, 'fullname': 'float32', 'name': 'float32', 'c_name': 'float', 'py_type': 'float'},
+    'uint8': {'builtin': True, 'fullname': 'uint8', 'name': 'uint8', 'c_name': 'uint8_t', 'py_type': 'int'},
+    'uint16': {'builtin': True, 'fullname': 'uint16', 'name': 'uint16', 'c_name': 'uint16_t', 'py_type': 'int'},
+    'uint32': {'builtin': True, 'fullname': 'uint32', 'name': 'uint32', 'c_name': 'uint32_t', 'py_type': 'int'},
+    'uint64': {'builtin': True, 'fullname': 'uint64', 'name': 'uint64', 'c_name': 'uint64_t', 'py_type': 'int'},
+    'int8': {'builtin': True, 'fullname': 'int8', 'name': 'int8', 'c_name': 'int8_t', 'py_type': 'int'},
+    'int16': {'builtin': True, 'fullname': 'int16', 'name': 'int16', 'c_name': 'int16_t', 'py_type': 'int'},
+    'int32': {'builtin': True, 'fullname': 'int32', 'name': 'int32', 'c_name': 'int32_t', 'py_type': 'int'},
+    'int64': {'builtin': True, 'fullname': 'int64', 'name': 'int64', 'c_name': 'int64_t', 'py_type': 'int'},
+    'endpoint_ref': {'builtin': True, 'fullname': 'endpoint_ref', 'name': 'endpoint_ref', 'c_name': 'endpoint_ref_t', 'py_type': '[not implemented]'},
 }
 
 enums = {}
@@ -234,7 +237,7 @@ def regularize_func(path, name, elem, prepend_args):
                   for n, arg in get_dict(elem, 'out').items()}
     return elem
 
-def regularize_attribute(path, name, elem, c_is_class):
+def regularize_attribute(parent, name, elem, c_is_class):
     if elem is None:
         elem = {}
     if isinstance(elem, str):
@@ -249,7 +252,8 @@ def regularize_attribute(path, name, elem, c_is_class):
         if 'nullflag' in elem: elem['type']['nullflag'] = elem.pop('nullflag')
     
     elem['name'] = name
-    elem['fullname'] = join_name(path, name)
+    elem['fullname'] = join_name(parent['fullname'], name)
+    elem['parent'] = parent
     elem['typeargs'] = elem.get('typeargs', {})
     elem['c_name'] = elem.get('c_name', None) or (elem['name'] + ('_' if c_is_class else ''))
     if ('c_getter' in elem) or ('c_setter' in elem):
@@ -263,11 +267,11 @@ def regularize_attribute(path, name, elem, c_is_class):
         if elem['typeargs']['fibre.Property.mode'] == 'readonly' and 'c_setter' in elem: elem.pop('c_setter')
     elif ('flags' in elem['type']) or ('values' in elem['type']):
         elem['typeargs']['fibre.Property.mode'] = elem['typeargs'].get('fibre.Property.mode', None) or 'readwrite'
-        elem['typeargs']['fibre.Property.type'] = regularize_valuetype(path, to_pascal_case(name), elem['type'])
+        elem['typeargs']['fibre.Property.type'] = regularize_valuetype(parent['fullname'], to_pascal_case(name), elem['type'])
         elem['type'] = 'fibre.Property'
         if elem['typeargs']['fibre.Property.mode'] == 'readonly' and 'c_setter' in elem: elem.pop('c_setter')
     else:
-        elem['type'] = regularize_interface(path, to_pascal_case(name), elem['type'])
+        elem['type'] = regularize_interface(parent['fullname'], to_pascal_case(name), elem['type'])
     return elem
 
 
@@ -288,7 +292,7 @@ def regularize_interface(path, name, elem):
     if not 'c_is_class' in elem:
         raise Exception(elem)
     treat_as_class = elem['c_is_class'] # TODO: add command line arg to make this selectively optional
-    elem['attributes'] = {name: regularize_attribute(path, name, prop, treat_as_class)
+    elem['attributes'] = {name: regularize_attribute(elem, name, prop, treat_as_class)
                           for name, prop in get_dict(elem, 'attributes').items()}
     elem['interfaces'] = []
     elem['enums'] = []
@@ -308,6 +312,7 @@ def regularize_valuetype(path, name, elem):
         bit = 0
         for k, v in elem['flags'].items():
             elem['flags'][k] = elem['flags'][k] or {}
+            elem['flags'][k]['name'] = k
             current_bit = elem['flags'][k].get('bit', bit)
             elem['flags'][k]['bit'] = current_bit
             elem['flags'][k]['value'] = 0 if current_bit is None else (1 << current_bit)
@@ -323,6 +328,7 @@ def regularize_valuetype(path, name, elem):
         val = 0
         for k, v in elem['values'].items():
             elem['values'][k] = elem['values'][k] or {}
+            elem['values'][k]['name'] = k
             val = elem['values'][k].get('value', val)
             elem['values'][k]['value'] = val
             val += 1
@@ -477,8 +483,11 @@ parser.add_argument("-d", "--definitions", type=argparse.FileType('r'), nargs='+
                     help="the YAML interface definition file(s) used to generate the code")
 parser.add_argument("-t", "--template", type=argparse.FileType('r'),
                     help="the code template")
-parser.add_argument("-o", "--output", type=argparse.FileType('w'), default='-',
+group = parser.add_mutually_exclusive_group(required=True)
+group.add_argument("-o", "--output", type=argparse.FileType('w'),
                     help="path of the generated output")
+group.add_argument("--outputs", type=str,
+                    help="path pattern for the generated outputs. One output is generated for each interface. Use # as placeholder for the interface name.")
 parser.add_argument("--generate-endpoints", type=str, nargs='?',
                     help="if specified, an endpoint table will be generated and passed to the template for the specified interface")
 args = parser.parse_args()
@@ -490,7 +499,6 @@ if args.version:
 
 definition_files = args.definitions
 template_file = args.template
-output_file = args.output
 
 
 # Load definition files
@@ -524,6 +532,11 @@ for k, item in list(value_types.items()):
 if args.verbose:
     print('Known interfaces: ' + ''.join([('\n  ' + k) for k in interfaces.keys()]))
     print('Known value types: ' + ''.join([('\n  ' + k) for k in value_types.keys()]))
+
+clashing_names = list(set(value_types.keys()).intersection(set(interfaces.keys())))
+if len(clashing_names):
+    print(f"**Error**: Found both an interface and a value type with the name {clashing_names[0]}. This is not allowed, interfaces and value types (such as enums) share the same namespace.", file=sys.stderr)
+    sys.exit(1)
 
 # Resolve all types into references
 for _, item in list(interfaces.items()):
@@ -575,6 +588,46 @@ env = jinja2.Environment(
     variable_start_string='[[', variable_end_string=']]'
 )
 
+def tokenize(text, interface, interface_transform, value_type_transform, attribute_transform):
+    """
+    Looks for referencable tokens (interface names, value type names or
+    attribute names) in a documentation text and runs them through the provided
+    processing functions.
+    Tokens are detected by enclosing back-ticks (`).
+
+    interface: The interface type object that defines the scope in which the
+               tokens should be detected.
+    interface_transform: A function that takes an interface object as an argument
+                         and returns a string.
+    value_type_transform: A function that takes a value type object as an argument
+                          and returns a string.
+    attribute_transform: A function that takes the token strin and an attribute
+                         object as arguments and returns a string.
+    """
+    if text is None or isinstance(text, jinja2.runtime.Undefined):
+        return text
+
+    def token_transform(token):
+        token = token.groups()[0]
+        token_list = split_name(token)
+
+        # Check if this is an attribute reference
+        attr_intf = interface
+        for name in token_list:
+            if not name in attr_intf['attributes']:
+                attr = None
+                break
+            attr = attr_intf['attributes'][name]
+            attr_intf = attr['type']
+        
+        if not attr is None:
+            return attribute_transform(token, attr)
+
+        print(f'Warning: cannot resolve "{token}" in ' + interface['fullname'])
+        return "`" + token + "`"
+
+    return re.sub(r'`([A-Za-z\._]+)`', token_transform, text)
+
 env.filters['to_pascal_case'] = to_pascal_case
 env.filters['to_camel_case'] = to_camel_case
 env.filters['to_macro_case'] = to_macro_case
@@ -583,15 +636,34 @@ env.filters['to_kebab_case'] = to_kebab_case
 env.filters['first'] = lambda x: next(iter(x))
 env.filters['skip_first'] = lambda x: list(x)[1:]
 env.filters['to_c_string'] = lambda x: '\n'.join(('"' + line.replace('"', '\\"') + '"') for line in json.dumps(x, separators=(',', ':')).replace('{"name"', '\n{"name"').split('\n'))
+env.filters['tokenize'] = tokenize
 
 template = env.from_string(template_file.read())
 
-output = template.render(
-    interfaces = interfaces,
-    value_types = value_types,
-    toplevel_interfaces = toplevel_interfaces,
-    endpoints = endpoints,
-    embedded_endpoint_definitions = embedded_endpoint_definitions
-)
+template_args = {
+    'interfaces': interfaces,
+    'value_types': value_types,
+    'toplevel_interfaces': toplevel_interfaces,
+    'endpoints': endpoints,
+    'embedded_endpoint_definitions': embedded_endpoint_definitions
+}
 
-output_file.write(output)
+if not args.output is None:
+    output = template.render(**template_args)
+    args.output.write(output)
+else:
+    assert('#' in args.outputs)
+
+    for k, intf in interfaces.items():
+        if split_name(k)[0] == 'fibre':
+            continue # TODO: remove special case
+        output = template.render(interface = intf, **template_args)
+        with open(args.outputs.replace('#', k.lower()), 'w') as output_file:
+            output_file.write(output)
+
+    for k, enum in value_types.items():
+        if enum.get('builtin', False) or not enum.get('is_enum', False):
+            continue
+        output = template.render(enum = enum, **template_args)
+        with open(args.outputs.replace('#', k.lower()), 'w') as output_file:
+            output_file.write(output)
