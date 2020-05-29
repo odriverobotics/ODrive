@@ -29,7 +29,7 @@
 
 /* Private variables ---------------------------------------------------------*/
 
-static Introspectable root_obj = OdriveTypeInfo<ODrive>::make_introspectable(odrv);
+static Introspectable root_obj = ODriveTypeInfo<ODrive>::make_introspectable(odrv);
 
 /* Private function prototypes -----------------------------------------------*/
 /* Function implementations --------------------------------------------------*/

@@ -19,7 +19,7 @@ enum {
     CAN_BAUD_1M     = 1000000
 };
 
-class ODriveCAN : public OdriveIntf::CanIntf {
+class ODriveCAN : public ODriveIntf::CanIntf {
    public:
     struct Config_t {
         uint32_t baud_rate = CAN_BAUD_250K;

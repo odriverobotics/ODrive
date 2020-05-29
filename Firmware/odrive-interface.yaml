@@ -3,8 +3,10 @@ version:  0.0.1
 ns:       com.odriverobotics
 summary:  ODrive Interface Definitions
 
+dictionary: [ODrive] # Prevent the word 'ODrive' from being detected as two words 'O' and 'Drive'
+
 interfaces:
-  Odrive:
+  ODrive:
     c_is_class: True
     attributes:
       vbus_voltage: readonly float32
@@ -162,7 +164,7 @@ interfaces:
       reboot:
       enter_dfu_mode:
 
-  Odrive.Can:
+  ODrive.Can:
     c_is_class: True
     attributes:
       error:
@@ -625,7 +627,7 @@ interfaces:
 
 
 valuetypes:
-  Odrive.Can.Protocol:
+  ODrive.Can.Protocol:
     values: {Simple: }
 
   Axis.AxisState: # TODO: remove redundant "Axis" in name

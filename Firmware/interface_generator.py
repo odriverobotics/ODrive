@@ -78,6 +78,7 @@ properties:
   ns: {type: string}
   version: {type: string}
   summary: {type: string}
+  dictionary: {type: array, items: {type: string}}
   interfaces:
     type: object
     additionalProperties: { "$ref": "#/definitions/interface" }
@@ -105,13 +106,14 @@ class SafeLineLoader(yaml.SafeLoader):
 #        #mapping['__column__'] = node.start_mark.column + 1
 #        return mapping
 
-
+dictionary = []
 
 def get_words(string):
     """
     Splits a string in PascalCase into a list of lower case words
     """
-    return [w.lower() for w in re.findall('[a-z0-9]+|[A-Z][a-z0-9]*', string)]
+    regex = ''.join((re.escape(w) + '|') for w in dictionary) + '[a-z0-9]+|[A-Z][a-z0-9]*'
+    return [(w if w in dictionary else w.lower()) for w in re.findall(regex, string)]
 
 def join_name(*names, delimiter: str = '.'):
     """
@@ -128,7 +130,7 @@ def split_name(name, delimiter: str = '.'):
             yield c if (parenthesis_depth == 0) or (c != delimiter) else ':'
     return [part.replace(':', '.') for part in ''.join(replace_delimiter_in_parentheses()).split('.')]
 
-def to_pascal_case(s): return ''.join([w.title() for w in get_words(s)])
+def to_pascal_case(s): return ''.join([(w.title() if not w in dictionary else w) for w in get_words(s)])
 def to_camel_case(s): return ''.join([(c.lower() if i == 0 else c) for i, c in enumerate(''.join([w.title() for w in get_words(s)]))])
 def to_macro_case(s): return '_'.join(get_words(s)).upper()
 def to_snake_case(s): return '_'.join(get_words(s)).lower()
@@ -519,6 +521,7 @@ for definition_file in definition_files:
         raise Exception(err.message + '\nat ' + str(list(err.absolute_path)))
     interfaces = {**interfaces, **get_dict(file_content, 'interfaces')}
     value_types = {**value_types, **get_dict(file_content, 'valuetypes')}
+    dictionary += file_content.get('dictionary', None) or []
 
 
 # Preprocess definitions

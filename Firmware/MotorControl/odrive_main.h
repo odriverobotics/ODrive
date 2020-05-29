@@ -214,7 +214,7 @@ enum TimingLog_t {
 
 
 // general system functions defined in main.cpp
-class ODrive : public OdriveIntf {
+class ODrive : public ODriveIntf {
 public:
     void save_configuration() override;
     void erase_configuration() override;

@@ -1,7 +1,7 @@
 
 # TODO: This file is dangerous because the enums could potentially change between API versions. Should transmit as part of the JSON.
 
-# Odrive.Can.Protocol
+# ODrive.Can.Protocol
 PROTOCOL_SIMPLE                          = 0
 
 # Axis.AxisState
@@ -47,7 +47,7 @@ MOTOR_TYPE_HIGH_CURRENT                  = 0
 MOTOR_TYPE_GIMBAL                        = 2
 MOTOR_TYPE_ACIM                          = 3
 
-# Odrive.Can.Error
+# ODrive.Can.Error
 CAN_ERROR_NONE                           = 0x00000000
 CAN_ERROR_DUPLICATE_CAN_IDS              = 0x00000001
 
