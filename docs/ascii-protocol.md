@@ -20,7 +20,7 @@ The ASCII protocol is human-readable and line-oriented, with each line having th
 command *42 ; comment [new line character]
 ```
 
- * `*42` stands for a GCode compatible checksum and can be omitted. If and only if a checksum is provided, the device will also include a checksum in the response, if any. The checksum is calculated as the bitwise xor of all characters before the asterisk (`*`). <br> Example of a valid checksum: `r vbus_voltage *93`.
+ * `*42` stands for a GCode compatible checksum and can be omitted. If and only if a checksum is provided, the device will also include a checksum in the response, if any. If the checksum is provided but is not valid, the line is ignored. The checksum is calculated as the bitwise xor of all characters before the asterisk (`*`). <br> Example of a valid checksum: `r vbus_voltage *93`.
  * comments are supported for GCode compatibility
  * the command is interpreted once the new-line character is encountered
 
@@ -126,7 +126,7 @@ Not all parameters can be accessed via the ASCII protocol but at least all param
     ```
    * `property` name of the property, as seen in ODrive Tool
    * response: text representation of the requested value
-   * Example: `r vbus_voltage` => response: `24.087744` <new line>
+   * Example: `r vbus_voltage` => response: `24.087744` &lt;new line&gt;
  * Writing:
     ```
     w [property] [value]
