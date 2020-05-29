@@ -5,7 +5,7 @@
 #error "This file should not be included directly. Include odrive_main.h instead."
 #endif
 
-class Encoder : public EncoderIntf {
+class Encoder : public ODriveIntf::EncoderIntf {
 public:
     const uint32_t MODE_FLAG_ABS = 0x100;
 

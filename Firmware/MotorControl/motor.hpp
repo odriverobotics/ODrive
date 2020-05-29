@@ -7,7 +7,7 @@
 
 #include "drv8301.h"
 
-class Motor : public MotorIntf {
+class Motor : public ODriveIntf::MotorIntf {
 public:
     struct Iph_BC_t {
         float phB;

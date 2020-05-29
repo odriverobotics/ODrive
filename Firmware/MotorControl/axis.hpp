@@ -5,7 +5,7 @@
 #error "This file should not be included directly. Include odrive_main.h instead."
 #endif
 
-class Axis : public AxisIntf {
+class Axis : public ODriveIntf::AxisIntf {
 public:
     struct LockinConfig_t {
         float current = 10.0f;           // [A]

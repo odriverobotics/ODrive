@@ -178,14 +178,14 @@ interfaces:
     functions:
       set_baud_rate: {in: {baudRate: uint32}}
 
-  Endpoint:
+  ODrive.Endpoint:
     c_is_class: False
     attributes:
       endpoint: endpoint_ref
       min: float32
       max: float32
 
-  Axis:
+  ODrive.Axis:
     c_is_class: True
     attributes:
       error:
@@ -294,7 +294,7 @@ interfaces:
       clear_errors:
         doc: Check the watchdog timer for expiration. Also sets the watchdog error bit if expired.
 
-  Axis.LockinConfig:
+  ODrive.Axis.LockinConfig:
     c_is_class: False
     attributes:
       current:
@@ -320,7 +320,7 @@ interfaces:
       finish_on_enc_idx: bool
 
 
-  Motor:
+  ODrive.Motor:
     c_is_class: True
     attributes:
       error:
@@ -443,7 +443,7 @@ interfaces:
           acim_autoflux_decay_gain: float32
 
 
-  Controller:
+  ODrive.Controller:
     c_is_class: True
     attributes:
       error: 
@@ -527,7 +527,7 @@ interfaces:
       start_anticogging_calibration:
 
 
-  Encoder:
+  ODrive.Encoder:
     c_is_class: True
     attributes:
       error:
@@ -580,7 +580,7 @@ interfaces:
       set_linear_count: {in: {count: int32}}
 
 
-  SensorlessEstimator:
+  ODrive.SensorlessEstimator:
     c_is_class: True
     attributes:
       error:
@@ -600,7 +600,7 @@ interfaces:
           pm_flux_linkage: float32
 
 
-  TrapezoidalTrajectory:
+  ODrive.TrapezoidalTrajectory:
     c_is_class: True
     attributes:
       config:
@@ -611,7 +611,7 @@ interfaces:
           decel_limit: float32
 
 
-  Endstop:
+  ODrive.Endstop:
     c_is_class: True
     attributes:
       endstop_state: readonly bool
@@ -630,7 +630,7 @@ valuetypes:
   ODrive.Can.Protocol:
     values: {Simple: }
 
-  Axis.AxisState: # TODO: remove redundant "Axis" in name
+  ODrive.Axis.AxisState: # TODO: remove redundant "Axis" in name
     values:
       Undefined:
         doc: will fall through to idle
@@ -656,7 +656,7 @@ valuetypes:
       Homing:
         doc: run axis homing function
 
-  Encoder.Mode:
+  ODrive.Encoder.Mode:
     values:
       Incremental:
       Hall:
@@ -671,7 +671,7 @@ valuetypes:
         value: 0x102
         doc: not yet implemented
 
-  Controller.ControlMode:
+  ODrive.Controller.ControlMode:
     values:
       # Note: these should be sorted from lowest level of control to
       # highest level of control, to allow "<" style comparisons.
@@ -680,7 +680,7 @@ valuetypes:
       VelocityControl:
       PositionControl:
 
-  Controller.InputMode:
+  ODrive.Controller.InputMode:
     values:
       Inactive:
       Passthrough:
@@ -692,7 +692,7 @@ valuetypes:
       Mirror:
 
 
-  Motor.MotorType:
+  ODrive.Motor.MotorType:
     values:
       HighCurrent:
       #LowCurrent: # not implemented

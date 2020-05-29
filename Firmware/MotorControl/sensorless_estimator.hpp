@@ -1,7 +1,7 @@
 #ifndef __SENSORLESS_ESTIMATOR_HPP
 #define __SENSORLESS_ESTIMATOR_HPP
 
-class SensorlessEstimator : public SensorlessEstimatorIntf {
+class SensorlessEstimator : public ODriveIntf::SensorlessEstimatorIntf {
 public:
     struct Config_t {
         float observer_gain = 1000.0f; // [rad/s]

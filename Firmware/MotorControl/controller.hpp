@@ -5,7 +5,7 @@
 #error "This file should not be included directly. Include odrive_main.h instead."
 #endif
 
-class Controller : public ControllerIntf {
+class Controller : public ODriveIntf::ControllerIntf {
 public:
     typedef struct {
         uint32_t index = 0;
