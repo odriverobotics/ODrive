@@ -36,6 +36,13 @@ The current state of an axis is indicated by `<axis>.current_state`. The user ca
  8. `AXIS_STATE_CLOSED_LOOP_CONTROL` Run closed loop control.
     * The action depends on the [control mode](#control-mode).
     * Can only be entered if the motor is calibrated (`<axis>.motor.is_calibrated`) and the encoder is ready (`<axis>.encoder.is_ready`).
+ 9. `AXIS_STATE_LOCKIN_SPIN` Run lockin spin.
+    * Can only be entered if the motor is calibrated (`<axis>.motor.is_calibrated`) or the motor direction is unspecified (`<axis>.motor.config.direction == 1`)
+ 10. `AXIS_STATE_ENCODER_DIR_FIND` Run encoder direction search.
+    * Can only be entered if the motor is calibrated (`<axis>.motor.is_calibrated`).
+ 11. `AXIS_STATE_HOMING` Run axis homing function.
+    * Endstops must be enabled to use this feature.
+
 
 ### Startup Procedure
 
@@ -79,6 +86,19 @@ For more information, see [input_modes](input_modes.md).
 * `<axis>.controller.input_pos = <encoder_counts>`
 * `<axis>.controller.input_vel = <encoder_counts/s>`
 * `<axis>.controller.input_current = <current_in_A>`
+
+### Input Mode
+To modify the way the control command affects the motor, you can use the input mode. The default input mode is pass through.
+If you want a different mode, you can change `<axis>.controller.config.input_mode`.
+Possible values are:
+* `INPUT_MODE_INACTIVE`
+* `INPUT_MODE_PASSTHROUGH`
+* `INPUT_MODE_VEL_RAMP`
+* `INPUT_MODE_POS_FILTER`
+* `INPUT_MODE_MIX_CHANNELS`
+* `INPUT_MODE_TRAP_TRAJ`
+* `INPUT_MODE_CURRENT_RAMP`
+* `INPUT_MODE_MIRROR`
 
 ## System monitoring commands
 

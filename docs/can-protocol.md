@@ -1,7 +1,7 @@
 # CAN Protocol
 
 ## Hardware Setup
-ODrive assumes the CAN PHY is a standard differential twisted pair in a linear bus configuration with 120 ohm termination resistance at each end.  ODrive uses 3.3v as the high output, but conforms to the CAN PHY requirement of achieving a differential voltage > 1.5V to represent a "0".  As such, it is compatible with standard 5V bus architectures.
+ODrive assumes the CAN PHY is a standard differential twisted pair in a linear bus configuration with 120 ohm termination resistance at each end. ODrive versions less than V3.5 include a soldered 120 ohm termination resistor, but ODrive versions V3.5 and greater implement a dip switch to toggle the termination.  ODrive uses 3.3v as the high output, but conforms to the CAN PHY requirement of achieving a differential voltage > 1.5V to represent a "0".  As such, it is compatible with standard 5V bus architectures.
 
 ODrive currently supports the following CAN baud rates:
 * 125 kbps
@@ -32,6 +32,7 @@ Receive PDO 0x200 + nodeID = 0x223, which does not conflict with the range [0x20
 Be careful that you don't assign too many nodeIDs per PDO group.  Four CAN Simple nodes (32*4) is all of the available address space of a single PDO.  If the bus is strictly ODrive CAN Simple nodes, a simple sequential Node ID assignment will work fine.
 
 ### Messages
+
 CMD ID | Name | Sender | Signals | Start byte | Signal Type | Bits | Factor | Offset | Byte Order
 --:    | :--  | :--  | :-- | :-- | :-- | :-- | :-- | :-- | :--
 0x000 | CANOpen NMT Message\*\* | Master | - | - | - | - | - | - | -
@@ -60,7 +61,7 @@ CMD ID | Name | Sender | Signals | Start byte | Signal Type | Bits | Factor | Of
 0x017 | Get Vbus Voltage | Master\*\*\* | Vbus Voltage | 0 | IEEE 754 Float | 32 | 1 | 0 | Intel
 0x018 | Clear Errors | Master | - | - | - | - | - | - | -
 0x700 | CANOpen Heartbeat Message\*\* | Slave | - | -  | - | - | - | - | -
-|_______|___________________________|_________|____________________|_____|_____________|________|______|______|______
+-|-|-|----------------------------------|-|--------------------|-|-|-|_
 
 \* Note: These messages are call & response.  The Master node sends a message with the RTR bit set, and the axis responds with the same ID and specified payload.  
 \*\* Note:  These CANOpen messages are reserved to avoid bus collisions with CANOpen devices.  They are not used by CAN Simple.
