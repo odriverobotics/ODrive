@@ -35,7 +35,7 @@ The recommended tools for ODrive development are:
  * **ARM GNU Compiler**: For cross-compiling code
  * **ARM GDB**: For debugging the code and stepping through on the device
  * **OpenOCD**: For flashing the ODrive with the STLink/v2 programmer
- * **Python**: For running the Python tools
+ * **Python**: For running the Python tools (`odrivetool`). Also required for compiling firmware.
 
 See below for specific installation instructions for your OS.
 
@@ -92,6 +92,7 @@ Some instructions in this document may assume that you're using a bash command p
   * __Note 2__: 8-2018-q4-major seems to have a bug on Windows.  Please use 7-2018-q2-update.
 * [Tup](http://gittup.org/tup/index.html)
 * [GNU MCU Eclipse's Windows Build Tools](https://github.com/gnu-mcu-eclipse/windows-build-tools/releases)
+* [Python 3](https://www.python.org/downloads/)
 * [OpenOCD](https://github.com/xpack-dev-tools/openocd-xpack/releases/). 
 * [ST-Link/V2 Drivers](http://www.st.com/web/en/catalog/tools/FM147/SC1887/PF260219)
 

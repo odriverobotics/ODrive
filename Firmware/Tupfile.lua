@@ -1,6 +1,22 @@
 
 tup.include('build.lua')
 
+-- If we simply invoke python or python3 on a pristine Windows 10, it will try
+-- to open the Microsoft Store which will not work and hang tup instead. The
+-- command "python --version" does not open the Microsoft Store.
+-- On some systems this may return a python2 command if Python3 is not installed.
+function find_python3()
+    success, python_version = run_now("python3 --version")
+    if success then return "python3" end
+    io.stderr:write("This should go to stderr\n")
+    success, python_version = run_now("python --version")
+    if success then return "python" end
+    error("Python 3 not found.")
+end
+
+python_command = find_python3()
+print('Using python command "'..python_command..'"')
+
 -- Switch between board versions
 boardversion = tup.getconfig("BOARD_VERSION")
 if boardversion == "v3.1" then
@@ -146,7 +162,7 @@ build{
 }
 
 tup.frule{
-    command='python ../tools/odrive/version.py --output %o',
+    command=python_command..' ../tools/odrive/version.py --output %o',
     outputs={'build/version.h'}
 }
 
