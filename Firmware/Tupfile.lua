@@ -8,7 +8,6 @@ tup.include('build.lua')
 function find_python3()
     success, python_version = run_now("python3 --version")
     if success then return "python3" end
-    io.stderr:write("This should go to stderr\n")
     success, python_version = run_now("python --version")
     if success then return "python" end
     error("Python 3 not found.")
