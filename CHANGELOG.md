@@ -43,6 +43,10 @@ Please add a note of your changes below this heading if you make a Pull Request.
 * Fixed a numerical issue in the trajectory planner that could cause sudden jumps of the position setpoint
 
 # Releases
+## [0.4.12] - 2020-05-06
+### Fixed
+* Fixed a numerical issue in the trajectory planner that could cause sudden jumps of the position setpoint
+
 ## [0.4.11] - 2019-07-25
 ### Added
 * Separate lockin configs for sensorless, index search, and general.

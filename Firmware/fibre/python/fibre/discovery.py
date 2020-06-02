@@ -90,7 +90,7 @@ def find_all(path, serial_number,
                         fp.seek(0)
                         json_data = json.load(fp)
             except:
-                logger.debug(f"Failed load JSON cache file {cache_path}")
+                logger.debug("Failed load JSON cache file {}".format(cache_path))
 
             # Fallback to loading JSON from device
             if json_data is None:
@@ -108,11 +108,11 @@ def find_all(path, serial_number,
 
                 # Save JSON to cache
                 if not cache_path is None:
-                    logger.debug(f"Creating new JSON cache file {cache_path}")
+                    logger.debug("Creating new JSON cache file {}".format(cache_path))
                     os.makedirs(cache_dir, exist_ok=True)
                     with open(cache_path, 'w+') as json_cache:
                         json_cache.write(json_string)
-                    logger.debug(f"Saved JSON to cache file {cache_path}")
+                    logger.debug("Saved JSON to cache file {}".format(cache_path))
 
             channel._interface_definition_crc = json_crc16
 

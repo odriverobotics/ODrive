@@ -56,6 +56,20 @@
 /* Includes ------------------------------------------------------------------*/
 #include "stm32f4xx_hal.h"
 
+// taken from https://github.com/ARMmbed/mbed-os/blob/master/cmsis/TARGET_CORTEX_M/cmsis_compiler.h
+#ifndef   __PACKED_STRUCT
+  #define __PACKED_STRUCT                        struct __attribute__((packed))
+#endif
+#ifndef   __UNALIGNED_UINT32_WRITE
+  __PACKED_STRUCT T_UINT32_WRITE { uint32_t v; };
+  #define __UNALIGNED_UINT32_WRITE(addr, val)    (void)((((struct T_UINT32_WRITE *)(void *)(addr))->v) = (val))
+#endif
+#ifndef   __UNALIGNED_UINT32_READ
+  __PACKED_STRUCT T_UINT32_READ { uint32_t v; };
+  #define __UNALIGNED_UINT32_READ(addr)          (((const struct T_UINT32_READ *)(const void *)(addr))->v)
+#endif
+
+
 /** @addtogroup STM32F4xx_LL_USB_DRIVER
   * @{
   */
@@ -883,7 +897,7 @@ HAL_StatusTypeDef USB_WritePacket(USB_OTG_GlobalTypeDef *USBx, uint8_t *src, uin
     count32b =  (len + 3U) / 4U;
     for (i = 0U; i < count32b; i++, src += 4U)
     {
-      USBx_DFIFO(ch_ep_num) = *((__packed uint32_t *)src);
+      USBx_DFIFO(ch_ep_num) = __UNALIGNED_UINT32_READ(src);
     }
   }
   return HAL_OK;
@@ -909,7 +923,7 @@ void *USB_ReadPacket(USB_OTG_GlobalTypeDef *USBx, uint8_t *dest, uint16_t len)
   
   for ( i = 0U; i < count32b; i++, dest += 4U )
   {
-    *(__packed uint32_t *)dest = USBx_DFIFO(0U);
+    __UNALIGNED_UINT32_WRITE(dest, USBx_DFIFO(0U));
     
   }
   return ((void *)dest);

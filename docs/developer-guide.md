@@ -35,7 +35,7 @@ The recommended tools for ODrive development are:
  * **ARM GNU Compiler**: For cross-compiling code
  * **ARM GDB**: For debugging the code and stepping through on the device
  * **OpenOCD**: For flashing the ODrive with the STLink/v2 programmer
- * **Python**: For running the Python tools
+ * **Python**: For running the Python tools (`odrivetool`). Also required for compiling firmware.
 
 See below for specific installation instructions for your OS.
 
@@ -50,7 +50,7 @@ $ tup --version                 # should be 0.7.5 or later
 $ python --version              # should be 3.7 or later
 ```
 
-#### Linux (Ubuntu)
+#### Linux (Ubuntu < 20.04)
 ```bash
 sudo add-apt-repository ppa:team-gcc-arm-embedded/ppa
 sudo apt-get update
@@ -59,7 +59,14 @@ sudo apt-get install openocd
 sudo add-apt-repository ppa:jonathonf/tup && sudo apt-get update && sudo apt-get install tup
 ```
 
-#### Linux (Arch Linux)
+#### Linux (Ubuntu >= 20.04)
+```bash
+sudo apt install gcc-arm-embedded
+sudo apt install openocd
+sudo apt install tup
+```
+
+#### Arch Linux
 ```bash
 sudo pacman -S arm-none-eabi-gcc arm-none-eabi-binutils
 sudo pacman -S arm-none-eabi-gdb
@@ -85,6 +92,7 @@ Some instructions in this document may assume that you're using a bash command p
   * __Note 2__: 8-2018-q4-major seems to have a bug on Windows.  Please use 7-2018-q2-update.
 * [Tup](http://gittup.org/tup/index.html)
 * [GNU MCU Eclipse's Windows Build Tools](https://github.com/gnu-mcu-eclipse/windows-build-tools/releases)
+* [Python 3](https://www.python.org/downloads/)
 * [OpenOCD](https://github.com/xpack-dev-tools/openocd-xpack/releases/). 
 * [ST-Link/V2 Drivers](http://www.st.com/web/en/catalog/tools/FM147/SC1887/PF260219)
 
@@ -98,7 +106,7 @@ __CONFIG_BOARD_VERSION__: The board version you're using. Can be `v3.1`, `v3.2`,
 
 __CONFIG_USB_PROTOCOL__: Defines which protocol the ODrive should use on the USB interface.
  * `native`: The native ODrive protocol. Use this if you want to use the python tools in this repo. Can maybe work with macOS.
- * `native-stream`: Like the native ODrive protocol, but the ODrive will treat the USB connection exactly as if it was a UART connection. __ Maybe need to use this if you're on macOS__. This is necessary because macOS doesn't grant our python tools sufficient low-level access to treat the device as the USB device that it is.
+ * `native-stream`: Like the native ODrive protocol, but the ODrive will treat the USB connection exactly as if it was a UART connection. __You may need to use this if you're on macOS__. This is necessary because macOS doesn't grant our python tools sufficient low-level access to treat the device as the USB device that it is.
  * `none`: Disable USB. The device will still show up when plugged in but it will ignore any commands.
  
  **Note**: There is a second USB interface that is always a serial port.
@@ -108,6 +116,8 @@ __CONFIG_UART_PROTOCOL__: Defines which protocol the ODrive should use on the UA
  * `ascii`: The ASCII protocol. Use this option if you control the ODrive with an Arduino. The ODrive Arduino library is not yet updated to the native protocol.
  * `none`: Disable UART.
 
+__CONFIG_DEBUG__: Defines wether debugging will be enabled when compiling the firmware; specifically the `-g -gdwarf-2` flags. Note that printf debugging will only function if your tup.config specifies the `USB_PROTOCOL` or `UART_PROTOCOL` as stdout and `DEBUG_PRINT` is defined. See the IDE specific documentation for more information.
+
 You can also modify the compile-time defaults for all `.config` parameters. You will find them if you search for `AxisConfig`, `MotorConfig`, etc.
 
 <br><br>
@@ -116,6 +126,8 @@ You can also modify the compile-time defaults for all `.config` parameters. You 
 1. Run `make` in the `Firmware` directory.
 2. Connect the ODrive via USB and power it up.
 3. Flash the firmware using [odrivetool dfu](odrivetool#device-firmware-update).
+
+If you get `/bin/sh: 1: python: not found` while running `make`, change the tup file command to use `python3` 
 
 ### Flashing using an STLink/v2 programmer
 

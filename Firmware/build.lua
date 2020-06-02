@@ -12,6 +12,14 @@ function string:split(sep)
     return fields
 end
 
+function run_now(command)
+    local handle
+    handle = io.popen(command)
+    local output = handle:read("*a")
+    local rc = {handle:close()}
+    return rc[1], output
+end
+
 -- Very basic parser to retrieve variables from a Makefile
 function parse_makefile_vars(makefile)
     vars = {}

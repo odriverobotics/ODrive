@@ -1,14 +1,29 @@
 
 tup.include('build.lua')
 
-tup.frule{inputs={'fibre/cpp/interfaces_template.j2'}, command='python3 interface_generator.py --definitions odrive-interface.yaml --template %f --output %o', outputs='autogen/interfaces.hpp'}
-tup.frule{inputs={'fibre/cpp/function_stubs_template.j2'}, command='python3 interface_generator.py --definitions odrive-interface.yaml --template %f --output %o', outputs='autogen/function_stubs.hpp'}
-tup.frule{inputs={'fibre/cpp/endpoints_template.j2'}, command='python3 interface_generator.py --definitions odrive-interface.yaml --generate-endpoints ODrive --template %f --output %o', outputs='autogen/endpoints.hpp'}
-tup.frule{inputs={'fibre/cpp/type_info_template.j2'}, command='python3 interface_generator.py --definitions odrive-interface.yaml --template %f --output %o', outputs='autogen/type_info.hpp'}
-tup.frule{command='python3 interface_generator.py --definitions odrive-interface.yaml --template enums_template.j2 --output ../tools/odrive/enums.py'}
+-- If we simply invoke python or python3 on a pristine Windows 10, it will try
+-- to open the Microsoft Store which will not work and hang tup instead. The
+-- command "python --version" does not open the Microsoft Store.
+-- On some systems this may return a python2 command if Python3 is not installed.
+function find_python3()
+    success, python_version = run_now("python3 --version")
+    if success then return "python3" end
+    success, python_version = run_now("python --version")
+    if success then return "python" end
+    error("Python 3 not found.")
+end
+
+python_command = find_python3()
+print('Using python command "'..python_command..'"')
+
+tup.frule{inputs={'fibre/cpp/interfaces_template.j2'}, command=python_command..' interface_generator.py --definitions odrive-interface.yaml --template %f --output %o', outputs='autogen/interfaces.hpp'}
+tup.frule{inputs={'fibre/cpp/function_stubs_template.j2'}, command=python_command..' interface_generator.py --definitions odrive-interface.yaml --template %f --output %o', outputs='autogen/function_stubs.hpp'}
+tup.frule{inputs={'fibre/cpp/endpoints_template.j2'}, command=python_command..' interface_generator.py --definitions odrive-interface.yaml --generate-endpoints ODrive --template %f --output %o', outputs='autogen/endpoints.hpp'}
+tup.frule{inputs={'fibre/cpp/type_info_template.j2'}, command=python_command..' interface_generator.py --definitions odrive-interface.yaml --template %f --output %o', outputs='autogen/type_info.hpp'}
+tup.frule{command=python_command..' interface_generator.py --definitions odrive-interface.yaml --template enums_template.j2 --output ../tools/odrive/enums.py'}
 
 tup.frule{
-    command='python ../tools/odrive/version.py --output %o',
+    command=python_command..' ../tools/odrive/version.py --output %o',
     outputs={'autogen/version.h'}
 }
 

@@ -133,7 +133,7 @@ Try step 5 again
     sudo udevadm control --reload-rules
     sudo udevadm trigger
     ```
-3. (needed on Ubuntu, maybe other distros too) Add odrivetool into the path, by adding `~/.local/bin/` into `~/.bash_profile`, for example by running `nano ~/.bashrc`, scrolling to the bottom, pasting `PATH=$PATH:~/.local/bin/`, and then saving and closing, and close and reopen the terminal window.
+3. **Ubuntu**, **Raspbian**: If you can't invoke `odrivetool` at this point, try adding `~/.local/bin` to your `$PATH` ([see related bug](https://unix.stackexchange.com/a/392710/176715)). This is done for example by running `nano ~/.bashrc`, scrolling to the bottom, pasting `PATH=$PATH:~/.local/bin`, and then saving and closing, and close and reopen the terminal window.
 
 ## Firmware
 **ODrive v3.5 and later**<br>

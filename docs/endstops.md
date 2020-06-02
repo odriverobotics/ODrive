@@ -52,7 +52,7 @@ The debouncing time for this endstop.  Most switches exhibit some sort of bounce
 ### is_active_high
 This is how you configure the endstop to be either "NPN" or "PNP".  An "NPN" configuration would be `is_active_high = False` whereas a PNP configuration is `is_active_high = True`.  Refer to the following table for more information:
 
-3D printer endstops (like those that come with a RAMPS 1.4) are typically configuration **4**.
+Typically configuration **1** or **3** is preferred when using mechanical switches as the most common failure mode leaves the switch open.
 
 ### pullup
 Match the pullup value to the configuration.  If `true`, it enables the GPIO pullup resistor.  If `false`, it enables the GPIO pull*down* resistor.
@@ -62,11 +62,12 @@ Match the pullup value to the configuration.  If `true`, it enables the GPIO pul
 
 ### Example
 
-If we want to configure a 3D printer-style minimum endstop for homing on GPIO 5 and we want our motor to move away from the endstop about a quarter turn with a 8192 cpr encoder, we would set:
+If we want to configure a 3D printer-style (configuration 4) minimum endstop for homing on GPIO 5 and we want our motor to move away from the endstop about a quarter turn with a 8192 cpr encoder, we would set:
 
 ```
 <odrv>.<axis>.min_endstop.config.gpio_num = 5
 <odrv>.<axis>.min_endstop.config.is_active_high = False
+<odrv>.<axis>.min_endstop.config.offset = -1.0*(8912/4)
 <odrv>.<axis>.min_endstop.config.enabled = True
 ```
 
