@@ -365,7 +365,7 @@ def resolve_interface(scope, name, typeargs):
         elif probe_name in generics:
             return generics[probe_name](typeargs)
 
-    raise Exception(f'could not resolve type {name} in {join_name(*scope)}. Known interfaces are: {list(interfaces.keys())}. Known value types are: {list(value_types.keys())}')
+    raise Exception('could not resolve type {} in {}. Known interfaces are: {}. Known value types are: {}'.format(name, join_name(*scope), list(interfaces.keys()), list(value_types.keys())))
 
 def resolve_valuetype(scope, name):
     """
@@ -381,7 +381,7 @@ def resolve_valuetype(scope, name):
         if probe_name in value_types:
             return value_types[probe_name]
 
-    raise Exception(f'could not resolve type {name} in {join_name(*scope)}. Known value types are: {list(value_types.keys())}')
+    raise Exception('could not resolve type {} in {}. Known value types are: {}'.format(name, join_name(*scope), list(value_types.keys())))
 
 
 def map_to_fibre01_type(t):
@@ -538,7 +538,7 @@ if args.verbose:
 
 clashing_names = list(set(value_types.keys()).intersection(set(interfaces.keys())))
 if len(clashing_names):
-    print(f"**Error**: Found both an interface and a value type with the name {clashing_names[0]}. This is not allowed, interfaces and value types (such as enums) share the same namespace.", file=sys.stderr)
+    print("**Error**: Found both an interface and a value type with the name {}. This is not allowed, interfaces and value types (such as enums) share the same namespace.".format(clashing_names[0]), file=sys.stderr)
     sys.exit(1)
 
 # Resolve all types into references
@@ -626,7 +626,7 @@ def tokenize(text, interface, interface_transform, value_type_transform, attribu
         if not attr is None:
             return attribute_transform(token, attr)
 
-        print(f'Warning: cannot resolve "{token}" in ' + interface['fullname'])
+        print('Warning: cannot resolve "{}" in {}'.format(token, interface['fullname']))
         return "`" + token + "`"
 
     return re.sub(r'`([A-Za-z\._]+)`', token_transform, text)
