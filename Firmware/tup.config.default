@@ -4,6 +4,7 @@
 CONFIG_USB_PROTOCOL=native
 CONFIG_UART_PROTOCOL=ascii
 CONFIG_DEBUG=false
+CONFIG_DOCTEST=false
 
 # Uncomment this to error on compilation warnings
 #CONFIG_STRICT=true

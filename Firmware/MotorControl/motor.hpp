@@ -13,17 +13,20 @@ public:
         ERROR_NONE = 0,
         ERROR_PHASE_RESISTANCE_OUT_OF_RANGE = 0x0001,
         ERROR_PHASE_INDUCTANCE_OUT_OF_RANGE = 0x0002,
-        ERROR_ADC_FAILED = 0x0004,
-        ERROR_DRV_FAULT = 0x0008,
-        ERROR_CONTROL_DEADLINE_MISSED = 0x0010,
-        ERROR_NOT_IMPLEMENTED_MOTOR_TYPE = 0x0020,
-        ERROR_BRAKE_CURRENT_OUT_OF_RANGE = 0x0040,
-        ERROR_MODULATION_MAGNITUDE = 0x0080,
-        ERROR_BRAKE_DEADTIME_VIOLATION = 0x0100,
-        ERROR_UNEXPECTED_TIMER_CALLBACK = 0x0200,
-        ERROR_CURRENT_SENSE_SATURATION = 0x0400,
-        ERROR_INVERTER_OVER_TEMP = 0x0800,
-        ERROR_CURRENT_LIMIT_VIOLATION = 0x1000
+        ERROR_ADC_FAILED                    = 0x0004,
+        ERROR_DRV_FAULT                     = 0x0008,
+        ERROR_CONTROL_DEADLINE_MISSED       = 0x0010,
+        ERROR_NOT_IMPLEMENTED_MOTOR_TYPE    = 0x0020,
+        ERROR_BRAKE_CURRENT_OUT_OF_RANGE    = 0x0040,
+        ERROR_MODULATION_MAGNITUDE          = 0x0080,
+        ERROR_BRAKE_DEADTIME_VIOLATION      = 0x0100,
+        ERROR_UNEXPECTED_TIMER_CALLBACK     = 0x0200,
+        ERROR_CURRENT_SENSE_SATURATION      = 0x0400,
+        ERROR_INVERTER_OVER_TEMP            = 0x0800,
+        ERROR_CURRENT_LIMIT_VIOLATION       = 0x1000,
+        ERROR_BRAKE_DUTY_CYCLE_NAN          = 0x2000,
+        ERROR_DC_BUS_OVER_REGEN_CURRENT     = 0x4000, // too much current pushed into the power supply
+        ERROR_DC_BUS_OVER_CURRENT           = 0x8000, // too much current pulled out of the power supply
     };
 
     enum MotorType_t {
@@ -98,6 +101,9 @@ public:
         TIMING_LOG_IDX_SEARCH,
         TIMING_LOG_FOC_VOLTAGE,
         TIMING_LOG_FOC_CURRENT,
+        TIMING_LOG_SPI_START,
+        TIMING_LOG_SAMPLE_NOW,
+        TIMING_LOG_SPI_END,
         TIMING_LOG_NUM_SLOTS
     };
 
@@ -125,7 +131,7 @@ public:
     void set_error(Error_t error);
     bool do_checks();
     float get_inverter_temp();
-    bool update_thermal_limits();
+    bool update_thermal_limits(float fet_temp);
     float effective_current_lim();
     void log_timing(TimingLog_t log_idx);
     float phase_current_from_adcval(uint32_t ADCValue);
@@ -187,6 +193,7 @@ public:
     DRV8301_FaultType_e drv_fault_ = DRV8301_FaultType_NoFault;
     DRV_SPI_8301_Vars_t gate_driver_regs_; //Local view of DRV registers (initialized by DRV8301_setup)
     float thermal_current_lim_ = 10.0f;  //[A]
+    float inverter_temp_ = NAN; // [°C] NaN while the ODrive is initializing.
 
     // Communication protocol definitions
     auto make_protocol_definitions() {
@@ -200,7 +207,7 @@ public:
             make_protocol_property("DC_calib_phC", &DC_calib_.phC),
             make_protocol_property("phase_current_rev_gain", &phase_current_rev_gain_),
             make_protocol_ro_property("thermal_current_lim", &thermal_current_lim_),
-            make_protocol_function("get_inverter_temp", *this, &Motor::get_inverter_temp),
+            make_protocol_ro_property("inverter_temp", &inverter_temp_),
             make_protocol_object("current_control",
                 make_protocol_property("p_gain", &current_control_.p_gain),
                 make_protocol_property("i_gain", &current_control_.i_gain),
@@ -236,15 +243,22 @@ public:
                 make_protocol_ro_property("TIMING_LOG_ENC_CALIB", &timing_log_[TIMING_LOG_ENC_CALIB]),
                 make_protocol_ro_property("TIMING_LOG_IDX_SEARCH", &timing_log_[TIMING_LOG_IDX_SEARCH]),
                 make_protocol_ro_property("TIMING_LOG_FOC_VOLTAGE", &timing_log_[TIMING_LOG_FOC_VOLTAGE]),
-                make_protocol_ro_property("TIMING_LOG_FOC_CURRENT", &timing_log_[TIMING_LOG_FOC_CURRENT])
+                make_protocol_ro_property("TIMING_LOG_FOC_CURRENT", &timing_log_[TIMING_LOG_FOC_CURRENT]),
+                make_protocol_ro_property("TIMING_LOG_SPI_START", &timing_log_[TIMING_LOG_SPI_START]),
+                make_protocol_ro_property("TIMING_LOG_SAMPLE_NOW", &timing_log_[TIMING_LOG_SAMPLE_NOW]),
+                make_protocol_ro_property("TIMING_LOG_SPI_END", &timing_log_[TIMING_LOG_SPI_END])
             ),
             make_protocol_object("config",
-                make_protocol_property("pre_calibrated", &config_.pre_calibrated),
+                make_protocol_property("pre_calibrated", &config_.pre_calibrated,
+                    [](void* ctx) { static_cast<Motor*>(ctx)->is_calibrated_ =
+                        static_cast<Motor*>(ctx)->is_calibrated_ || static_cast<Motor*>(ctx)->config_.pre_calibrated; }, this),
                 make_protocol_property("pole_pairs", &config_.pole_pairs),
                 make_protocol_property("calibration_current", &config_.calibration_current),
                 make_protocol_property("resistance_calib_max_voltage", &config_.resistance_calib_max_voltage),
-                make_protocol_property("phase_inductance", &config_.phase_inductance),
-                make_protocol_property("phase_resistance", &config_.phase_resistance),
+                make_protocol_property("phase_inductance", &config_.phase_inductance,
+                    [](void* ctx) { static_cast<Motor*>(ctx)->update_current_controller_gains(); }, this),
+                make_protocol_property("phase_resistance", &config_.phase_resistance,
+                    [](void* ctx) { static_cast<Motor*>(ctx)->update_current_controller_gains(); }, this),
                 make_protocol_property("direction", &config_.direction),
                 make_protocol_property("motor_type", &config_.motor_type),
                 make_protocol_property("current_lim", &config_.current_lim),

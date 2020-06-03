@@ -88,7 +88,7 @@ To compile firmware from source, refer to the [developer guide](developer-guide)
 * On some machines you will need to unplug and plug back in the USB cable to make the PC understand that we switched from regular mode to bootloader mode.
 * If the DFU script can't find the device, try forcing it into DFU mode.
 
-  <details><summary markdown="span">How to force DFU mode (ODrive v3.5)</summary><div markdown="block">
+  <details><summary markdown="span">How to force DFU mode (ODrive v3.5 and newer)</summary><div markdown="block">
   Flick the DIP switch that "DFU, RUN" to "DFU" and power cycle the board. After you're done upgrading firmware, don't forget to put the switch back into the "RUN" position and power cycle the board again.
   </div></details>
 

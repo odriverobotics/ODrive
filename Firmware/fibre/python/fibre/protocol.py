@@ -28,6 +28,8 @@ CRC16_DEFAULT = 0x3d65 # this must match the polynomial in the C++ implementatio
 
 MAX_PACKET_SIZE = 128
 
+# For more information on the CRC algorithm refer to protocol.md
+
 def calc_crc(remainder, value, polynomial, bitwidth):
     topbit = (1 << (bitwidth - 1))
 
@@ -61,9 +63,6 @@ def calc_crc16(remainder, value):
         remainder = calc_crc(remainder, value, CRC16_DEFAULT, 16)
     return remainder
 
-# Can be verified with http://www.sunshine2k.de/coding/javascript/crc/crc_js.html:
-#print(hex(calc_crc8(0x12, [1, 2, 3, 4, 5, 0x10, 0x13, 0x37])))
-#print(hex(calc_crc16(0xfeef, [1, 2, 3, 4, 5, 0x10, 0x13, 0x37])))
 
 class DeviceInitException(Exception):
     pass

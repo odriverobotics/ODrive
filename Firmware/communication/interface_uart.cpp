@@ -2,7 +2,7 @@
 #include "interface_uart.h"
 #include "ascii_protocol.hpp"
 #include "CircularBuffer.hpp"
-#include <MotorControl/utils.h>
+#include <MotorControl/utils.hpp>
 #include <fibre/protocol.hpp>
 #include <usart.h>
 #include <cmsis_os.h>
@@ -23,6 +23,7 @@ CCBBuffer<uint8_t> CRXCircularBuffer(RXBuffer, sizeof(RXBuffer), false, false);
 // static thread_local uint32_t deadline_ms = 0;
 
 osThreadId uart_thread;
+const uint32_t stack_size_uart_thread = 4096;  // Bytes
 
 
 class UART4Sender 
@@ -100,14 +101,14 @@ void start_uart_server()
     // We dont use interrupts to fetch the data, instead we periodically read
     // data out of the circular buffer into a parse buffer, controlled by a state machine
     HAL_UART_Receive_DMA(&huart4, dma_rx_buffer, sizeof(dma_rx_buffer));
-    // dma_last_rcv_idx = UART_RX_BUFFER_SIZE - huart4.hdmarx->Instance->NDTR;
+    // dma_last_rcv_idx = 0;
 
     // Start UART communication thread
     osThreadDef(uart_server_thread_def,
                 uart_server_thread,
                 osPriorityNormal,
                 0,
-                1024 /* the ascii protocol needs considerable stack space */);
+                stack_size_uart_thread / sizeof(StackType_t) /* the ascii protocol needs considerable stack space */);
     uart_thread = osThreadCreate(osThread(uart_server_thread_def), NULL);
 }
 

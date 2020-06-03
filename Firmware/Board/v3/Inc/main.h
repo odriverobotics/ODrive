@@ -173,10 +173,8 @@
 
 #if HW_VERSION_VOLTAGE >= 48
 #define VBUS_S_DIVIDER_RATIO 19.0f
-#define VBUS_OVERVOLTAGE_LEVEL 52.0f
 #elif HW_VERSION_VOLTAGE == 24
 #define VBUS_S_DIVIDER_RATIO 11.0f
-#define VBUS_OVERVOLTAGE_LEVEL 26.0f
 #else
 #error "unknown board voltage"
 #endif
