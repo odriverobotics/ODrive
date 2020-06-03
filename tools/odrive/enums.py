@@ -1,5 +1,7 @@
 
 # TODO: This file is dangerous because the enums could potentially change between API versions. Should transmit as part of the JSON.
+# To regenerate this file, nagivate to the top level of the ODrive repository and run:
+#   python Firmware/interface_generator.py --definitions Firmware/odrive-interface.yaml --template tools/enums_template.j2 --output tools/odrive/enums.py
 
 # ODrive.Can.Protocol
 PROTOCOL_SIMPLE                          = 0
