@@ -9,7 +9,7 @@ import argparse
 import sys
 
 # This schema describes what we expect interface definition files to look like
-validator = jsonschema.Draft7Validator(yaml.safe_load("""
+validator = jsonschema.Draft4Validator(yaml.safe_load("""
 definitions:
   interface:
     type: object
