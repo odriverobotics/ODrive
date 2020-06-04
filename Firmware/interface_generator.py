@@ -7,6 +7,7 @@ import jsonschema
 import re
 import argparse
 import sys
+from collections import OrderedDict
 
 # This schema describes what we expect interface definition files to look like
 validator = jsonschema.Draft4Validator(yaml.safe_load("""
@@ -106,6 +107,13 @@ class SafeLineLoader(yaml.SafeLoader):
 #        #mapping['__column__'] = node.start_mark.column + 1
 #        return mapping
 
+# Ensure that dicts remain ordered, even in Python <3.6
+# source: https://stackoverflow.com/a/21912744/3621512
+def construct_mapping(loader, node):
+    loader.flatten_mapping(node)
+    return OrderedDict(loader.construct_pairs(node))
+SafeLineLoader.add_constructor(yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG, construct_mapping)
+
 dictionary = []
 
 def get_words(string):
@@ -136,7 +144,7 @@ def to_macro_case(s): return '_'.join(get_words(s)).upper()
 def to_snake_case(s): return '_'.join(get_words(s)).lower()
 def to_kebab_case(s): return '-'.join(get_words(s)).lower()
 
-value_types = {
+value_types = OrderedDict({
     'bool': {'builtin': True, 'fullname': 'bool', 'name': 'bool', 'c_name': 'bool', 'py_type': 'bool'},
     'float32': {'builtin': True, 'fullname': 'float32', 'name': 'float32', 'c_name': 'float', 'py_type': 'float'},
     'uint8': {'builtin': True, 'fullname': 'uint8', 'name': 'uint8', 'c_name': 'uint8_t', 'py_type': 'int'},
@@ -148,11 +156,11 @@ value_types = {
     'int32': {'builtin': True, 'fullname': 'int32', 'name': 'int32', 'c_name': 'int32_t', 'py_type': 'int'},
     'int64': {'builtin': True, 'fullname': 'int64', 'name': 'int64', 'c_name': 'int64_t', 'py_type': 'int'},
     'endpoint_ref': {'builtin': True, 'fullname': 'endpoint_ref', 'name': 'endpoint_ref', 'c_name': 'endpoint_ref_t', 'py_type': '[not implemented]'},
-}
+})
 
-enums = {}
+enums = OrderedDict()
 
-interfaces = {}
+interfaces = OrderedDict()
 
 def make_property_type(typeargs):
     value_type = resolve_valuetype('', typeargs['fibre.Property.type'])
@@ -171,23 +179,23 @@ def make_property_type(typeargs):
         'value_type': value_type, # TODO: should be a metaarg
         'mode': mode, # TODO: should be a metaarg
         'builtin': True,
-        'attributes': {},
-        'functions': {}
+        'attributes': OrderedDict(),
+        'functions': OrderedDict()
     }
     if mode != 'readonly':
         prop_type['functions']['exchange'] = {
             'name': 'exchange',
             'fullname': join_name(fullname, 'exchange'),
-            'in': {'obj': {'name': 'obj', 'type': {'c_name': c_name}}, 'value': {'name': 'value', 'type': value_type, 'optional': True}},
-            'out': {'value': {'name': 'value', 'type': value_type}},
+            'in': OrderedDict([('obj', {'name': 'obj', 'type': {'c_name': c_name}}), ('value', {'name': 'value', 'type': value_type, 'optional': True})]),
+            'out': OrderedDict([('value', {'name': 'value', 'type': value_type})]),
             #'implementation': 'fibre_property_exchange<' + value_type['c_name'] + '>'
         }
     else:
         prop_type['functions']['read'] = {
             'name': 'read',
             'fullname': join_name(fullname, 'read'),
-            'in': {'obj': {'name': 'obj', 'type': {'c_name': c_name}}},
-            'out': {'value': {'name': 'value', 'type': value_type}},
+            'in': OrderedDict([('obj', {'name': 'obj', 'type': {'c_name': c_name}})]),
+            'out': OrderedDict([('value', {'name': 'value', 'type': value_type})]),
             #'implementation': 'fibre_property_read<' + value_type['c_name'] + '>'
         }
 
@@ -216,7 +224,7 @@ def make_ref_type(interface):
     return ref_type
 
 def get_dict(elem, key):
-    return elem.get(key, None) or {}
+    return elem.get(key, None) or OrderedDict()
 
 def regularize_arg(path, name, elem):
     if elem is None:
@@ -233,10 +241,10 @@ def regularize_func(path, name, elem, prepend_args):
         elem = {}
     elem['name'] = name
     elem['fullname'] = path = join_name(path, name)
-    elem['in'] = {n: regularize_arg(path, n, arg)
-                  for n, arg in {**prepend_args, **get_dict(elem, 'in')}.items()}
-    elem['out'] = {n: regularize_arg(path, n, arg)
-                  for n, arg in get_dict(elem, 'out').items()}
+    elem['in'] = OrderedDict((n, regularize_arg(path, n, arg))
+                             for n, arg in (*prepend_args.items(), *get_dict(elem, 'in').items()))
+    elem['out'] = OrderedDict((n, regularize_arg(path, n, arg))
+                              for n, arg in get_dict(elem, 'out').items())
     return elem
 
 def regularize_attribute(parent, name, elem, c_is_class):
@@ -289,13 +297,13 @@ def regularize_interface(path, name, elem):
     elem['fullname'] = path = join_name(path, name)
     elem['c_name'] = elem.get('c_name', elem['fullname'].replace('.', 'Intf::')) + 'Intf'
     interfaces[path] = elem
-    elem['functions'] = {name: regularize_func(path, name, func, {'obj': {'type': make_ref_type(elem)}})
-                         for name, func in get_dict(elem, 'functions').items()}
+    elem['functions'] = OrderedDict((name, regularize_func(path, name, func, {'obj': {'type': make_ref_type(elem)}}))
+                                    for name, func in get_dict(elem, 'functions').items())
     if not 'c_is_class' in elem:
         raise Exception(elem)
     treat_as_class = elem['c_is_class'] # TODO: add command line arg to make this selectively optional
-    elem['attributes'] = {name: regularize_attribute(elem, name, prop, treat_as_class)
-                          for name, prop in get_dict(elem, 'attributes').items()}
+    elem['attributes'] = OrderedDict((name, regularize_attribute(elem, name, prop, treat_as_class))
+                                     for name, prop in get_dict(elem, 'attributes').items())
     elem['interfaces'] = []
     elem['enums'] = []
     return elem
@@ -313,14 +321,14 @@ def regularize_valuetype(path, name, elem):
     if 'flags' in elem: # treat as flags
         bit = 0
         for k, v in elem['flags'].items():
-            elem['flags'][k] = elem['flags'][k] or {}
+            elem['flags'][k] = elem['flags'][k] or OrderedDict()
             elem['flags'][k]['name'] = k
             current_bit = elem['flags'][k].get('bit', bit)
             elem['flags'][k]['bit'] = current_bit
             elem['flags'][k]['value'] = 0 if current_bit is None else (1 << current_bit)
             bit = bit if current_bit is None else current_bit + 1
         if 'nullflag' in elem:
-            elem['flags'] = {elem['nullflag']: {'value': 0, 'bit': None}, **elem['flags']}
+            elem['flags'] = OrderedDict([(elem['nullflag'], {'value': 0, 'bit': None}), *elem['flags'].items()])
         elem['values'] = elem['flags']
         elem['is_flags'] = True
         elem['is_enum'] = True
@@ -329,7 +337,7 @@ def regularize_valuetype(path, name, elem):
     elif 'values' in elem: # treat as enum
         val = 0
         for k, v in elem['values'].items():
-            elem['values'][k] = elem['values'][k] or {}
+            elem['values'][k] = elem['values'][k] or OrderedDict()
             elem['values'][k]['name'] = k
             val = elem['values'][k].get('value', val)
             elem['values'][k]['value'] = val
@@ -397,8 +405,8 @@ def generate_endpoint_for_property(prop, attr_bindto, idx):
     endpoint = {
         'id': idx,
         'function': prop_intf['functions']['read' if prop['type']['mode'] == 'readonly' else 'exchange'],
-        'in_bindings': {'obj': attr_bindto},
-        'out_bindings': []
+        'in_bindings': OrderedDict([('obj', attr_bindto)]),
+        'out_bindings': OrderedDict()
     }
     endpoint_definition = {
         'name': prop['name'],
@@ -442,8 +450,8 @@ def generate_endpoint_table(intf, bindto, idx):
         endpoints.append({
             'id': idx + cnt,
             'function': func,
-            'in_bindings': {**{'obj': bindto}, **{k_arg: '(' + bindto + ')->' + func['name'] + '_in_' + k_arg + '_' for k_arg in list(func['in'].keys())[1:]}},
-            'out_bindings': {k_arg: '&(' + bindto + ')->' + func['name'] + '_out_' + k_arg + '_' for k_arg in func['out'].keys()},
+            'in_bindings': OrderedDict([('obj', bindto), *[(k_arg, '(' + bindto + ')->' + func['name'] + '_in_' + k_arg + '_') for k_arg in list(func['in'].keys())[1:]]]),
+            'out_bindings': OrderedDict((k_arg, '&(' + bindto + ')->' + func['name'] + '_out_' + k_arg + '_') for k_arg in func['out'].keys()),
         })
         in_def = []
         out_def = []
@@ -481,12 +489,12 @@ parser.add_argument("--version", action="store_true",
                     help="print version information")
 parser.add_argument("-v", "--verbose", action="store_true",
                     help="print debug information (on stderr)")
-parser.add_argument("-d", "--definitions", type=argparse.FileType('r'), nargs='+',
+parser.add_argument("-d", "--definitions", type=argparse.FileType('r', encoding='utf-8'), nargs='+',
                     help="the YAML interface definition file(s) used to generate the code")
-parser.add_argument("-t", "--template", type=argparse.FileType('r'),
+parser.add_argument("-t", "--template", type=argparse.FileType('r', encoding='utf-8'),
                     help="the code template")
 group = parser.add_mutually_exclusive_group(required=True)
-group.add_argument("-o", "--output", type=argparse.FileType('w'),
+group.add_argument("-o", "--output", type=argparse.FileType('w', encoding='utf-8'),
                     help="path of the generated output")
 group.add_argument("--outputs", type=str,
                     help="path pattern for the generated outputs. One output is generated for each interface. Use # as placeholder for the interface name.")
@@ -519,8 +527,8 @@ for definition_file in definition_files:
         #instance = err.instance.get(re.findall("([^']*)' (?:was|were) unexpected\)", err.message)[0], err.instance)
         # TODO: print line number
         raise Exception(err.message + '\nat ' + str(list(err.absolute_path)))
-    interfaces = {**interfaces, **get_dict(file_content, 'interfaces')}
-    value_types = {**value_types, **get_dict(file_content, 'valuetypes')}
+    interfaces.update(get_dict(file_content, 'interfaces'))
+    value_types.update(get_dict(file_content, 'valuetypes'))
     dictionary += file_content.get('dictionary', None) or []
 
 
@@ -661,12 +669,12 @@ else:
         if split_name(k)[0] == 'fibre':
             continue # TODO: remove special case
         output = template.render(interface = intf, **template_args)
-        with open(args.outputs.replace('#', k.lower()), 'w') as output_file:
+        with open(args.outputs.replace('#', k.lower()), 'w', encoding='utf-8') as output_file:
             output_file.write(output)
 
     for k, enum in value_types.items():
         if enum.get('builtin', False) or not enum.get('is_enum', False):
             continue
         output = template.render(enum = enum, **template_args)
-        with open(args.outputs.replace('#', k.lower()), 'w') as output_file:
+        with open(args.outputs.replace('#', k.lower()), 'w', encoding='utf-8') as output_file:
             output_file.write(output)
