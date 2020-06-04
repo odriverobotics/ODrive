@@ -112,6 +112,7 @@ class TestSimpleCAN():
         odrive.unuse_gpios()
 
         axis = odrive.handle.axis0
+        axis.config.enable_watchdog = False
         axis.clear_errors()
         axis.config.can_node_id = node_id
         axis.config.can_node_id_extended = extended_id

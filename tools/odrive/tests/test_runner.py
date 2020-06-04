@@ -781,12 +781,12 @@ if args.setup_host:
         if not os.path.isdir("/sys/class/gpio/gpio{}".format(num)):
             with open("/sys/class/gpio/export", "w") as fp:
                 fp.write(str(num))
-        os.chmod("/sys/class/gpio/gpio{}/value".format(num), stat.S_IROTH | stat.S_IWOTH)
-        os.chmod("/sys/class/gpio/gpio{}/direction".format(num), stat.S_IROTH | stat.S_IWOTH)
+        os.chmod("/sys/class/gpio/gpio{}/value".format(num), stat.S_IRWXU | stat.S_IRWXG | stat.S_IRWXO)
+        os.chmod("/sys/class/gpio/gpio{}/direction".format(num), stat.S_IRWXU | stat.S_IRWXG | stat.S_IRWXO)
 
     for port in testrig.get_components(SerialPortComponent):
         logger.debug('changing permissions on ' + port.yaml['port'] + '...')
-        os.chmod(port.yaml['port'], stat.S_IROTH | stat.S_IWOTH)
+        os.chmod(port.yaml['port'], stat.S_IRWXU | stat.S_IRWXG | stat.S_IRWXO)
 
     if len(list(testrig.get_components(TeensyComponent))):
         # This breaks the annoying teensy loader that shows up on every compile
