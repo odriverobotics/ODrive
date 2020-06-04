@@ -386,7 +386,8 @@ template<> struct Codec<float> {
         return int_val.has_value() ? std::optional<float>(*reinterpret_cast<float*>(&int_val.value())) : std::nullopt;
     }
     static bool encode(float value, bufptr_t* buffer) {
-        return Codec<uint32_t>::encode(*reinterpret_cast<uint32_t*>(&value), buffer);
+        void* ptr = &value;
+        return Codec<uint32_t>::encode(*reinterpret_cast<uint32_t*>(ptr), buffer);
     }
 };
 template<typename T>
