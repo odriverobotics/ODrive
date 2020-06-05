@@ -4,9 +4,9 @@ on:
   pull_request:
     branches: [master, devel]
     tags: ['fw-v*']
-  push:
-    branches: [master, devel]
-    tags: ['fw-v*']
+  #push:
+  #  branches: [master, devel]
+  #  tags: ['fw-v*']
 
 jobs:
   compile:
@@ -71,20 +71,17 @@ jobs:
         if: startsWith(matrix.os, 'windows-')
         run: |
           Invoke-WebRequest -Uri "http://gittup.org/tup/win32/tup-latest.zip" -OutFile ".\tup-latest.zip"
-          dir
           Expand-Archive ".\tup-latest.zip" -DestinationPath ".\tup-latest" -Force
           echo "::add-path::$(Resolve-Path .)\tup-latest"
 
           choco install gcc-arm-embedded # downloads https://developer.arm.com/-/media/Files/downloads/gnu-rm/9-2019q4/gcc-arm-none-eabi-9-2019-q4-major-win32.zip
 
-      - name: Dump path
-        if: startsWith(matrix.os, 'windows-')
-        run: |
-          $Env:Path
-
       - name: Prepare Compilation
         run: |
-          arm-none-eabi-gcc --version   # for debugging
+          # for debugging
+          arm-none-eabi-gcc --version
+          python --version
+
           cd ${{ github.workspace }}/Firmware
           echo "CONFIG_BOARD_VERSION=${{ matrix.board_version }}" >> tup.config
           echo "CONFIG_STRICT=true" >> tup.config
