@@ -17,7 +17,7 @@
 #include <main.h>
 #include <spi.h>
 #include <tim.h>
-#include <utils.h>
+#include <utils.hpp>
 
 #include "odrive_main.h"
 
@@ -35,7 +35,9 @@ const float adc_ref_voltage = 3.3f;
 // This value is updated by the DC-bus reading ADC.
 // Arbitrary non-zero inital value to avoid division by zero if ADC reading is late
 float vbus_voltage = 12.0f;
+float ibus_ = 0.0f; // exposed for monitoring only
 bool brake_resistor_armed = false;
+bool brake_resistor_saturated = false;
 /* Private constant data -----------------------------------------------------*/
 static const GPIO_TypeDef* GPIOs_to_samp[] = { GPIOA, GPIOB, GPIOC };
 static const int num_GPIO = sizeof(GPIOs_to_samp) / sizeof(GPIOs_to_samp[0]); 
@@ -212,6 +214,7 @@ void start_adc_pwm() {
     // Ensure that debug halting of the core doesn't leave the motor PWM running
     __HAL_DBGMCU_FREEZE_TIM1();
     __HAL_DBGMCU_FREEZE_TIM8();
+    __HAL_DBGMCU_FREEZE_TIM13();
 
     start_pwm(&htim1);
     start_pwm(&htim8);
@@ -259,6 +262,20 @@ void start_pwm(TIM_HandleTypeDef* htim) {
     HAL_TIM_PWM_Start_IT(htim, TIM_CHANNEL_4);
 }
 
+/*
+ * Initial intention of this function:
+ * Synchronize TIM1, TIM8 and TIM13 such that:
+ *  1. The triangle waveform of TIM1 leads the triangle waveform of TIM8 by a
+ *     90° phase shift.
+ *  2. The timer update events of TIM1 and TIM8 are symmetrically interleaved.
+ *  3. Each TIM13 reload coincides with a TIM1 lower update event.
+ * 
+ * However right now this function only ensures point (1) and (3) but because
+ * TIM1 and TIM3 only trigger an update on every third reload, this does not
+ * imply (or even allow for) (2).
+ * 
+ * TODO: revisit the timing topic in general.
+ */
 void sync_timers(TIM_HandleTypeDef* htim_a, TIM_HandleTypeDef* htim_b,
                  uint16_t TIM_CLOCKSOURCE_ITRx, uint16_t count_offset,
                  TIM_HandleTypeDef* htim_refbase) {
@@ -426,11 +443,6 @@ void vbus_sense_adc_cb(ADC_HandleTypeDef* hadc, bool injected) {
     // Only one conversion in sequence, so only rank1
     uint32_t ADCValue = HAL_ADCEx_InjectedGetValue(hadc, ADC_INJECTED_RANK_1);
     vbus_voltage = ADCValue * voltage_scale;
-    if (axes[0] && !axes[0]->error_ && axes[1] && !axes[1]->error_) {
-        if (oscilloscope_pos >= OSCILLOSCOPE_SIZE)
-            oscilloscope_pos = 0;
-        oscilloscope[oscilloscope_pos++] = vbus_voltage;
-    }
 }
 
 static void decode_hall_samples(Encoder& enc, uint16_t GPIO_samples[num_GPIO]) {
@@ -496,6 +508,15 @@ void pwm_trig_adc_cb(ADC_HandleTypeDef* hadc, bool injected) {
             update_timings = true; // update timings of M0
         else if (&axis == axes[0] && !counting_down)
             update_timings = true; // update timings of M1
+
+        // TODO: this is out of place here. However when moving it somewhere
+        // else we have to consider the timing requirements to prevent the SPI
+        // transfers of axis0 and axis1 from conflicting.
+        // Also see comment on sync_timers.
+        if((current_meas_not_DC_CAL && !axis_num) ||
+                (axis_num && !current_meas_not_DC_CAL)){
+            axis.encoder_.abs_spi_start_transaction();
+        }
     }
 
     // Load next timings for the motor that we're not currently sampling
@@ -539,6 +560,7 @@ void pwm_trig_adc_cb(ADC_HandleTypeDef* hadc, bool injected) {
             axis.motor_.current_meas_.phC = current - axis.motor_.DC_calib_.phC;
         }
         // Prepare hall readings
+        // TODO move this to inside encoder update function
         decode_hall_samples(axis.encoder_, GPIO_port_samples[axis_num]);
         // Trigger axis thread
         axis.signal_current_meas();
@@ -553,18 +575,30 @@ void pwm_trig_adc_cb(ADC_HandleTypeDef* hadc, bool injected) {
 }
 
 void tim_update_cb(TIM_HandleTypeDef* htim) {
-    int portsamples_arr;
+    
+    // If the corresponding timer is counting up, we just sampled in SVM vector 0, i.e. real current
+    // If we are counting down, we just sampled in SVM vector 7, with zero current
+    bool counting_down = htim->Instance->CR1 & TIM_CR1_DIR;
+    if (counting_down)
+        return;
+    
+    int sample_ch;
+    Axis* axis;
     if (htim == &htim1) {
-        portsamples_arr = 0;
+        sample_ch = 0;
+        axis = axes[0];
     } else if (htim == &htim8) {
-        portsamples_arr = 1;
+        sample_ch = 1;
+        axis = axes[1];
     } else {
         low_level_fault(Motor::ERROR_UNEXPECTED_TIMER_CALLBACK);
         return;
     }
 
+    axis->encoder_.sample_now();
+
     for (int i = 0; i < num_GPIO; ++i) {
-        GPIO_port_samples[portsamples_arr][i] = GPIOs_to_samp[i]->IDR;
+        GPIO_port_samples[sample_ch][i] = GPIOs_to_samp[i]->IDR;
     }
 }
 
@@ -577,22 +611,46 @@ void update_brake_current() {
             Ibus_sum += axes[i]->motor_.current_control_.Ibus;
         }
     }
-    float brake_current = -Ibus_sum;
-    // Clip negative values to 0.0f
-    if (brake_current < 0.0f) brake_current = 0.0f;
+    
+    // Don't start braking until -Ibus > regen_current_allowed
+    float brake_current = -Ibus_sum - board_config.max_regen_current;
     float brake_duty = brake_current * board_config.brake_resistance / vbus_voltage;
-
-    // Duty limit at 90% to allow bootstrap caps to charge
-    // If brake_duty is NaN, this expression will also evaluate to false
-    if ((brake_duty >= 0.0f) && (brake_duty <= 0.9f)) {
-        int high_on = static_cast<int>(TIM_APB1_PERIOD_CLOCKS * (1.0f - brake_duty));
-        int low_off = high_on - TIM_APB1_DEADTIME_CLOCKS;
-        if (low_off < 0) low_off = 0;
-        safety_critical_apply_brake_resistor_timings(low_off, high_on);
-    } else {
-        //shuts off all motors AND brake resistor, sets error code on all motors.
-        low_level_fault(Motor::ERROR_BRAKE_CURRENT_OUT_OF_RANGE);
+    
+    if (board_config.enable_dc_bus_overvoltage_ramp && (board_config.brake_resistance > 0.0f) && (board_config.dc_bus_overvoltage_ramp_start < board_config.dc_bus_overvoltage_ramp_end)) {
+        brake_duty += std::fmax((vbus_voltage - board_config.dc_bus_overvoltage_ramp_start) / (board_config.dc_bus_overvoltage_ramp_end - board_config.dc_bus_overvoltage_ramp_start), 0.0f);
     }
+
+    if (std::isnan(brake_duty)) {
+        // Shuts off all motors AND brake resistor, sets error code on all motors.
+        low_level_fault(Motor::ERROR_BRAKE_DUTY_CYCLE_NAN);
+        return;
+    }
+
+    if (brake_duty >= 0.95f) {
+        brake_resistor_saturated = true;
+    }
+
+    // Duty limit at 95% to allow bootstrap caps to charge
+    brake_duty = std::clamp(brake_duty, 0.0f, 0.95f);
+
+    // Special handling to avoid the case 0.0/0.0 == NaN.
+    Ibus_sum += brake_duty ? (brake_duty * vbus_voltage / board_config.brake_resistance) : 0.0f;
+
+    ibus_ = Ibus_sum;
+
+    if (Ibus_sum > board_config.dc_max_positive_current) {
+        low_level_fault(Motor::ERROR_DC_BUS_OVER_CURRENT);
+        return;
+    }
+    if (Ibus_sum < board_config.dc_max_negative_current) {
+        low_level_fault(Motor::ERROR_DC_BUS_OVER_REGEN_CURRENT);
+        return;
+    }
+    
+    int high_on = (int)(TIM_APB1_PERIOD_CLOCKS * (1.0f - brake_duty));
+    int low_off = high_on - TIM_APB1_DEADTIME_CLOCKS;
+    if (low_off < 0) low_off = 0;
+    safety_critical_apply_brake_resistor_timings(low_off, high_on);
 }
 
 
@@ -619,8 +677,16 @@ static void analog_polling_thread(void *)
     }
 }
 
-void start_analog_thread()
-{
-    osThreadDef(thread_def, analog_polling_thread, osPriorityLow, 0, 4*512);
+void start_analog_thread() {
+    osThreadDef(thread_def, analog_polling_thread, osPriorityLow, 0, 512 / sizeof(StackType_t));
     osThreadCreate(osThread(thread_def), NULL);
+}
+
+
+void HAL_SPI_TxRxCpltCallback(SPI_HandleTypeDef *hspi)
+{
+    if(hspi->pRxBuffPtr == (uint8_t*)axes[0]->encoder_.abs_spi_dma_rx_)
+        axes[0]->encoder_.abs_spi_cb();
+    else if (hspi->pRxBuffPtr == (uint8_t*)axes[1]->encoder_.abs_spi_dma_rx_)
+        axes[1]->encoder_.abs_spi_cb();
 }

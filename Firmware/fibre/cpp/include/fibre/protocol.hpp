@@ -77,74 +77,18 @@ constexpr uint32_t PROTOCOL_SERVER_TIMEOUT_MS = 10;
 
 
 typedef struct {
-    uint16_t json_crc;
-    uint16_t node_id;
-    uint16_t endpoint_id;
+    uint16_t json_crc = 0;
+    uint16_t node_id = 0;
+    uint16_t endpoint_id = 0;
 } endpoint_ref_t;
 
+#include <cstring>
 
 template<typename T, typename = typename std::enable_if_t<!std::is_const<T>::value>>
-inline size_t write_le(T value, uint8_t* buffer);
-
-template<typename T>
-inline size_t read_le(T* value, const uint8_t* buffer);
-
-template<>
-inline size_t write_le<bool>(bool value, uint8_t* buffer) {
-    buffer[0] = value ? 1 : 0;
-    return 1;
-}
-
-template<>
-inline size_t write_le<uint8_t>(uint8_t value, uint8_t* buffer) {
-    buffer[0] = value;
-    return 1;
-}
-
-template<>
-inline size_t write_le<uint16_t>(uint16_t value, uint8_t* buffer) {
-    buffer[0] = (value >> 0) & 0xff;
-    buffer[1] = (value >> 8) & 0xff;
-    return 2;
-}
-
-template<>
-inline size_t write_le<uint32_t>(uint32_t value, uint8_t* buffer) {
-    buffer[0] = (value >> 0) & 0xff;
-    buffer[1] = (value >> 8) & 0xff;
-    buffer[2] = (value >> 16) & 0xff;
-    buffer[3] = (value >> 24) & 0xff;
-    return 4;
-}
-
-template<>
-inline size_t write_le<int32_t>(int32_t value, uint8_t* buffer) {
-    buffer[0] = (value >> 0) & 0xff;
-    buffer[1] = (value >> 8) & 0xff;
-    buffer[2] = (value >> 16) & 0xff;
-    buffer[3] = (value >> 24) & 0xff;
-    return 4;
-}
-
-template<>
-inline size_t write_le<uint64_t>(uint64_t value, uint8_t* buffer) {
-    buffer[0] = (value >> 0) & 0xff;
-    buffer[1] = (value >> 8) & 0xff;
-    buffer[2] = (value >> 16) & 0xff;
-    buffer[3] = (value >> 24) & 0xff;
-    buffer[4] = (value >> 32) & 0xff;
-    buffer[5] = (value >> 40) & 0xff;
-    buffer[6] = (value >> 48) & 0xff;
-    buffer[7] = (value >> 56) & 0xff;
-    return 8;
-}
-
-template<>
-inline size_t write_le<float>(float value, uint8_t* buffer) {
-    static_assert(CHAR_BIT * sizeof(float) == 32, "32 bit floating point expected");
-    static_assert(std::numeric_limits<float>::is_iec559, "IEEE 754 floating point expected");
-    const uint32_t * value_as_uint32 = reinterpret_cast<const uint32_t*>(&value);
-    return write_le<uint32_t>(*value_as_uint32, buffer);
+inline size_t write_le(T value, uint8_t* buffer){
+    //TODO: add static_assert that this is still a little endian machine
+    std::memcpy(&buffer[0], &value, sizeof(value));
+    return sizeof(value);
 }
 
 template<typename T>
@@ -154,53 +98,19 @@ write_le(T value, uint8_t* buffer) {
 }
 
 template<>
-inline size_t read_le<bool>(bool* value, const uint8_t* buffer) {
-    *value = buffer[0];
-    return 1;
+inline size_t write_le<float>(float value, uint8_t* buffer) {
+    static_assert(CHAR_BIT * sizeof(float) == 32, "32 bit floating point expected");
+    static_assert(std::numeric_limits<float>::is_iec559, "IEEE 754 floating point expected");
+    uint32_t value_as_uint32;
+    std::memcpy(&value_as_uint32, &value, sizeof(uint32_t));
+    return write_le<uint32_t>(value_as_uint32, buffer);
 }
 
-template<>
-inline size_t read_le<uint8_t>(uint8_t* value, const uint8_t* buffer) {
-    *value = buffer[0];
-    return 1;
-}
-
-template<>
-inline size_t read_le<uint16_t>(uint16_t* value, const uint8_t* buffer) {
-    *value = (static_cast<uint16_t>(buffer[0]) << 0) |
-             (static_cast<uint16_t>(buffer[1]) << 8);
-    return 2;
-}
-
-template<>
-inline size_t read_le<int32_t>(int32_t* value, const uint8_t* buffer) {
-    *value = (static_cast<int32_t>(buffer[0]) << 0) |
-             (static_cast<int32_t>(buffer[1]) << 8) |
-             (static_cast<int32_t>(buffer[2]) << 16) |
-             (static_cast<int32_t>(buffer[3]) << 24);
-    return 4;
-}
-
-template<>
-inline size_t read_le<uint32_t>(uint32_t* value, const uint8_t* buffer) {
-    *value = (static_cast<uint32_t>(buffer[0]) << 0) |
-             (static_cast<uint32_t>(buffer[1]) << 8) |
-             (static_cast<uint32_t>(buffer[2]) << 16) |
-             (static_cast<uint32_t>(buffer[3]) << 24);
-    return 4;
-}
-
-template<>
-inline size_t read_le<uint64_t>(uint64_t* value, const uint8_t* buffer) {
-    *value = (static_cast<uint64_t>(buffer[0]) << 0) |
-             (static_cast<uint64_t>(buffer[1]) << 8) |
-             (static_cast<uint64_t>(buffer[2]) << 16) |
-             (static_cast<uint64_t>(buffer[3]) << 24) |
-             (static_cast<uint64_t>(buffer[4]) << 32) |
-             (static_cast<uint64_t>(buffer[5]) << 40) |
-             (static_cast<uint64_t>(buffer[6]) << 48) |
-             (static_cast<uint64_t>(buffer[7]) << 56);
-    return 8;
+template<typename T>
+inline size_t read_le(T* value, const uint8_t* buffer){
+    // TODO: add static_assert that this is still a little endian machine
+    std::memcpy(value, buffer, sizeof(*value));
+    return sizeof(*value);
 }
 
 template<>
@@ -273,19 +183,19 @@ public:
 
 class StreamToPacketSegmenter : public StreamSink {
 public:
-    StreamToPacketSegmenter(PacketSink& output) :
+    explicit StreamToPacketSegmenter(PacketSink& output) :
         output_(output)
     {
     };
 
-    int process_bytes(const uint8_t *buffer, size_t length, size_t* processed_bytes);
+    int process_bytes(const uint8_t *buffer, size_t length, size_t* processed_bytes) override;
     
     size_t get_free_space() { return SIZE_MAX; }
 
 private:
-    uint8_t header_buffer_[3];
+    uint8_t header_buffer_[3] = {0};
     size_t header_index_ = 0;
-    uint8_t packet_buffer_[RX_BUF_SIZE];
+    uint8_t packet_buffer_[RX_BUF_SIZE] = {0};
     size_t packet_index_ = 0;
     size_t packet_length_ = 0;
     PacketSink& output_;
@@ -294,13 +204,13 @@ private:
 
 class StreamBasedPacketSink : public PacketSink {
 public:
-    StreamBasedPacketSink(StreamSink& output) :
+    explicit StreamBasedPacketSink(StreamSink& output) :
         output_(output)
     {
     };
     
     //size_t get_mtu() { return SIZE_MAX; }
-    int process_packet(const uint8_t *buffer, size_t length);
+    int process_packet(const uint8_t *buffer, size_t length) override;
 
 private:
     StreamSink& output_;
@@ -310,10 +220,10 @@ private:
 // A single call to process_bytes may result in multiple packets being sent.
 class PacketBasedStreamSink : public StreamSink {
 public:
-    PacketBasedStreamSink(PacketSink& packet_sink) : _packet_sink(packet_sink) {}
+    explicit PacketBasedStreamSink(PacketSink& packet_sink) : _packet_sink(packet_sink) {}
     ~PacketBasedStreamSink() {}
 
-    int process_bytes(const uint8_t* buffer, size_t length, size_t* processed_bytes) {
+    int process_bytes(const uint8_t* buffer, size_t length, size_t* processed_bytes) override {
         // Loop to ensure all bytes get sent
         while (length) {
             size_t chunk = length;
@@ -343,7 +253,7 @@ public:
         buffer_length_(length) {}
 
     // Returns 0 on success and -1 if the buffer could not accept everything because it became full
-    int process_bytes(const uint8_t* buffer, size_t length, size_t* processed_bytes) {
+    int process_bytes(const uint8_t* buffer, size_t length, size_t* processed_bytes) override {
         size_t chunk = length < buffer_length_ ? length : buffer_length_;
         memcpy(buffer_, buffer, chunk);
         buffer_ += chunk;
@@ -369,7 +279,7 @@ public:
         follow_up_stream_(follow_up_stream) {}
 
     // Returns 0 on success and -1 if the buffer could not accept everything because it became full
-    int process_bytes(const uint8_t* buffer, size_t length, size_t* processed_bytes) {
+    int process_bytes(const uint8_t* buffer, size_t length, size_t* processed_bytes) override {
         if (skip_ < length) {
             buffer += skip_;
             length -= skip_;
@@ -385,7 +295,7 @@ public:
         }
     }
 
-    size_t get_free_space() { return skip_ + follow_up_stream_.get_free_space(); }
+    size_t get_free_space() override { return skip_ + follow_up_stream_.get_free_space(); }
 
 private:
     size_t skip_;
@@ -398,17 +308,17 @@ private:
 // on the data that is sent to it.
 class CRC16Calculator : public StreamSink {
 public:
-    CRC16Calculator(uint16_t crc16_init) :
+    explicit CRC16Calculator(uint16_t crc16_init) :
         crc16_(crc16_init) {}
 
-    int process_bytes(const uint8_t* buffer, size_t length, size_t* processed_bytes) {
+    int process_bytes(const uint8_t* buffer, size_t length, size_t* processed_bytes) override{
         crc16_ = calc_crc16<CANONICAL_CRC16_POLYNOMIAL>(crc16_, buffer, length);
         if (processed_bytes)
             *processed_bytes += length;
         return 0;
     }
 
-    size_t get_free_space() { return SIZE_MAX; }
+    size_t get_free_space() override { return SIZE_MAX; }
 
     uint16_t get_crc16() { return crc16_; }
 private:
@@ -488,7 +398,7 @@ bool default_readwrite_endpoint_handler(endpoint_ref_t* value, const uint8_t* in
 }
 
 template<typename T>
-static inline const char* get_default_json_modifier();
+static constexpr inline const char* get_default_json_modifier();
 
 template<>
 inline constexpr const char* get_default_json_modifier<const float>() {
@@ -497,6 +407,14 @@ inline constexpr const char* get_default_json_modifier<const float>() {
 template<>
 inline constexpr const char* get_default_json_modifier<float>() {
     return "\"type\":\"float\",\"access\":\"rw\"";
+}
+template<>
+inline constexpr const char* get_default_json_modifier<const int64_t>() {
+    return "\"type\":\"int64\",\"access\":\"r\"";
+}
+template<>
+inline constexpr const char* get_default_json_modifier<int64_t>() {
+    return "\"type\":\"int64\",\"access\":\"rw\"";
 }
 template<>
 inline constexpr const char* get_default_json_modifier<const uint64_t>() {
@@ -521,6 +439,14 @@ inline constexpr const char* get_default_json_modifier<const uint32_t>() {
 template<>
 inline constexpr const char* get_default_json_modifier<uint32_t>() {
     return "\"type\":\"uint32\",\"access\":\"rw\"";
+}
+template<>
+inline constexpr const char* get_default_json_modifier<const unsigned int>() {
+    return "\"type\":\"uint32\",\"access\":\"r\""; // TODO: automatically detect size
+}
+template<>
+inline constexpr const char* get_default_json_modifier<unsigned int>() {
+    return "\"type\":\"uint32\",\"access\":\"rw\""; // TODO: automatically detect size
 }
 template<>
 inline constexpr const char* get_default_json_modifier<const uint16_t>() {
@@ -574,17 +500,17 @@ static inline int write_string(const char* str, StreamSink* output) {
 */
 class BidirectionalPacketBasedChannel : public PacketSink {
 public:
-    BidirectionalPacketBasedChannel(PacketSink& output) :
+    explicit BidirectionalPacketBasedChannel(PacketSink& output) :
         output_(output)
     { }
 
     //size_t get_mtu() {
     //    return SIZE_MAX;
     //}
-    int process_packet(const uint8_t* buffer, size_t length);
+    int process_packet(const uint8_t* buffer, size_t length) override;
 private:
     PacketSink& output_;
-    uint8_t tx_buf_[TX_BUF_SIZE];
+    uint8_t tx_buf_[TX_BUF_SIZE] = {0};
 };
 
 
@@ -618,6 +544,11 @@ template<> struct format_traits_t<int32_t> { using type = void;
 template<> struct format_traits_t<uint32_t> { using type = void;
     static constexpr const char * fmt = "%lu";
     static constexpr const char * fmtp = "%lu";
+};
+// TODO: change all overloads to fundamental int type space
+template<> struct format_traits_t<unsigned int> { using type = void;
+    static constexpr const char * fmt = "%ud";
+    static constexpr const char * fmtp = "%ud";
 };
 template<> struct format_traits_t<int16_t> { using type = void;
     static constexpr const char * fmt = "%hd";
@@ -894,7 +825,11 @@ public:
 
     // special-purpose function - to be moved
     bool set_string(char * buffer, size_t length) final {
-        return from_string(buffer, length, property_, 0);
+        bool wrote = from_string(buffer, length, property_, 0);
+        if (wrote && written_hook_ != nullptr) {
+            written_hook_(ctx_);
+        }
+        return wrote;
     }
 
     bool set_from_float(float value) final {
@@ -1058,17 +993,17 @@ public:
         output_properties_.register_endpoints(list, id + 1 + decltype(input_properties_)::endpoint_count, length);
     }
 
-    template<typename> std::enable_if_t<sizeof...(TOutputs) == 0>
+    template<size_t i = sizeof...(TOutputs)> std::enable_if_t<i == 0>
     handle_ex() {
         invoke_function_with_tuple(*obj_, func_ptr_, in_args_);
     }
 
-    template<typename> std::enable_if_t<sizeof...(TOutputs) == 1>
+    template<size_t i = sizeof...(TOutputs)> std::enable_if_t<i == 1>
     handle_ex() {
         std::get<0>(out_args_) = invoke_function_with_tuple(*obj_, func_ptr_, in_args_);
     }
     
-    template<typename> std::enable_if_t<sizeof...(TOutputs) >= 2>
+    template<size_t i = sizeof...(TOutputs)> std::enable_if_t<i >= 2>
     handle_ex() {
         out_args_ = invoke_function_with_tuple(*obj_, func_ptr_, in_args_);
     }
@@ -1079,7 +1014,7 @@ public:
         (void) output;
         LOG_FIBRE("tuple still at %x and of size %u\r\n", (uintptr_t)&in_args_, sizeof(in_args_));
         LOG_FIBRE("invoke function using %d and %.3f\r\n", std::get<0>(in_args_), std::get<1>(in_args_));
-        handle_ex<void>();
+        handle_ex();
     }
 
     const char * name_;
@@ -1167,6 +1102,7 @@ public:
 extern Endpoint** endpoint_list_;
 extern size_t n_endpoints_;
 extern uint16_t json_crc_;
+extern uint32_t json_version_id_; // exposed to hosts to facilitate cache lookup
 extern JSONDescriptorEndpoint json_file_endpoint_;
 extern EndpointProvider* application_endpoints_;
 
@@ -1193,9 +1129,15 @@ int fibre_publish(T& application_objects) {
     // Calculate the CRC16 of the JSON file.
     // The init value is the protocol version.
     CRC16Calculator crc16_calculator(PROTOCOL_VERSION);
+
     uint8_t offset[4] = { 0 };
     json_file_endpoint_.handle(offset, sizeof(offset), &crc16_calculator);
     json_crc_ = crc16_calculator.get_crc16();
+
+    // Add entropy for fibre cache
+    json_file_endpoint_.handle(offset, sizeof(offset), &crc16_calculator);
+    json_version_id_ = (uint32_t) crc16_calculator.get_crc16();
+    json_version_id_ += json_crc_ << 16;
 
     return 0;
 }

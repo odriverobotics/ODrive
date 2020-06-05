@@ -1,10 +1,6 @@
 {
-    "C_Cpp.clang_format_style": "{ BasedOnStyle: Google, IndentWidth: 4, ColumnLimit: 0 }",
     "C_Cpp.intelliSenseEngine": "Default",
     "C_Cpp.intelliSenseEngineFallback": "Disabled",
-    "files.exclude": {
-        "build": true
-    },
     "files.associations": {
         "memory": "cpp",
         "utility": "cpp",

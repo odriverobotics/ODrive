@@ -1,6 +1,21 @@
 
 tup.include('build.lua')
 
+-- If we simply invoke python or python3 on a pristine Windows 10, it will try
+-- to open the Microsoft Store which will not work and hang tup instead. The
+-- command "python --version" does not open the Microsoft Store.
+-- On some systems this may return a python2 command if Python3 is not installed.
+function find_python3()
+    success, python_version = run_now("python --version")
+    if success and string.match(python_version, "Python 3") then return "python" end
+    success, python_version = run_now("python3 --version")
+    if success and string.match(python_version, "Python 3") then return "python3" end
+    error("Python 3 not found.")
+end
+
+python_command = find_python3()
+print('Using python command "'..python_command..'"')
+
 -- Switch between board versions
 boardversion = tup.getconfig("BOARD_VERSION")
 if boardversion == "v3.1" then
@@ -31,6 +46,14 @@ elseif boardversion == "v3.5-48V" then
     boarddir = 'Board/v3'
     FLAGS += "-DHW_VERSION_MAJOR=3 -DHW_VERSION_MINOR=5"
     FLAGS += "-DHW_VERSION_VOLTAGE=48"
+elseif boardversion == "v3.6-24V" then
+    boarddir = 'Board/v3'
+    FLAGS += "-DHW_VERSION_MAJOR=3 -DHW_VERSION_MINOR=6"
+    FLAGS += "-DHW_VERSION_VOLTAGE=24"
+elseif boardversion == "v3.6-56V" then
+    boarddir = 'Board/v3'
+    FLAGS += "-DHW_VERSION_MAJOR=3 -DHW_VERSION_MINOR=6"
+    FLAGS += "-DHW_VERSION_VOLTAGE=56"
 elseif boardversion == "" then
     error("board version not specified - take a look at tup.config.default")
 else
@@ -91,10 +114,6 @@ FLAGS += '-mfpu=fpv4-sp-d16'
 FLAGS += '-mfloat-abi=hard'
 FLAGS += { '-Wall', '-Wdouble-promotion', '-Wfloat-conversion', '-fdata-sections', '-ffunction-sections'}
 
--- debug build
-FLAGS += '-g -gdwarf-2'
-
-
 -- linker flags
 LDFLAGS += '-T'..boarddir..'/STM32F405RGTx_FLASH.ld'
 LDFLAGS += '-L'..boarddir..'/Drivers/CMSIS/Lib' -- lib dir
@@ -102,10 +121,15 @@ LDFLAGS += '-lc -lm -lnosys -larm_cortexM4lf_math' -- libs
 LDFLAGS += '-mthumb -mcpu=cortex-m4 -mfpu=fpv4-sp-d16 -mfloat-abi=hard -specs=nosys.specs -specs=nano.specs -u _printf_float -u _scanf_float -Wl,--cref -Wl,--gc-sections'
 LDFLAGS += '-Wl,--undefined=uxTopUsedPriority'
 
+-- debug build
+if tup.getconfig("DEBUG") == "true" then
+    FLAGS += '-g -gdwarf-2'
+    OPT += '-Og'
+else
+    OPT += '-O2'
+end
 
 -- common flags for ASM, C and C++
-OPT += '-Og'
--- OPT += '-O0'
 OPT += '-ffast-math -fno-finite-math-only'
 tup.append_table(FLAGS, OPT)
 tup.append_table(LDFLAGS, OPT)
@@ -137,7 +161,7 @@ build{
 }
 
 tup.frule{
-    command='python ../tools/odrive/version.py --output %o',
+    command=python_command..' ../tools/odrive/version.py --output %o',
     outputs={'build/version.h'}
 }
 
@@ -148,7 +172,7 @@ build{
     packages={'stm_platform'},
     sources={
         'Drivers/DRV8301/drv8301.c',
-        'MotorControl/utils.c',
+        'MotorControl/utils.cpp',
         'MotorControl/arm_sin_f32.c',
         'MotorControl/arm_cos_f32.c',
         'MotorControl/low_level.cpp',
@@ -157,10 +181,12 @@ build{
         'MotorControl/axis.cpp',
         'MotorControl/motor.cpp',
         'MotorControl/encoder.cpp',
+        'MotorControl/endstop.cpp',
         'MotorControl/controller.cpp',
         'MotorControl/sensorless_estimator.cpp',
         'MotorControl/trapTraj.cpp',
         'MotorControl/main.cpp',
+        'communication/can_simple.cpp',
         'communication/communication.cpp',
         'communication/ascii_protocol.cpp',
         'communication/interface_uart.cpp',
@@ -174,6 +200,14 @@ build{
         'Drivers/DRV8301',
         'MotorControl',
         'fibre/cpp/include',
-        '.'
+        '.',
+        "doctest"
     }
 }
+
+if tup.getconfig('DOCTEST') == 'true' then
+    TEST_INCLUDES = '-I. -I./MotorControl -I./fibre/cpp/include -I./Drivers/DRV8301 -I./doctest'
+    tup.foreach_rule('Tests/*.cpp', 'g++ -O3 -std=c++17 '..TEST_INCLUDES..' -c %f -o %o', 'Tests/bin/%B.o')
+    tup.frule{inputs='Tests/bin/*.o', command='g++ %f -o %o', outputs='Tests/test_runner.exe'}
+    tup.frule{inputs='Tests/test_runner.exe', command='%f'}
+end

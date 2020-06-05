@@ -1,9 +1,11 @@
 #!/usr/bin/python2
 
 # run openocd (0.9.0) with :
-# $ openocd -f stlink-v2-1.cfg -f stm32f4x.cfg &> /dev/null"
+# $ openocd -f interface/stlink-v2.cfg -f target/stm32f4x.cfg &> /dev/null &
 # then run
 # $ python2 sampler.py path_to_myelf_with_symbols
+# ctrl-c to stop sampling.
+# To terminate the openocd session, enter command "fg" then do ctrl-c.
 
 import sys
 import time
@@ -111,10 +113,10 @@ if __name__ == '__main__':
 
             cur = time.time()
             if cur - start > 1.0:
-                tmp = sorted(countmap.items(), key=operator.itemgetter(1), reverse=True)
+                tmp = sorted(countmap.items(), key=operator.itemgetter(1)) #, reverse=True)
                 for k, v in tmp:
-                    # print('{:05.2f}% {}'.format((v * 100.) / total, k))
-                    print('{:06.2f} clocks : {}'.format((v * 8192) / total, k))
+                    print('{:05.2f}% {}'.format((v * 100.) / total, k))
+                    # print('{:06.2f} clocks : {}'.format((v * 10500) / total, k))
                 start = cur
                 print('{} Samples'.format(total))
                 print('')

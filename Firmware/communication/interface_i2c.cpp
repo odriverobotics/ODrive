@@ -8,7 +8,7 @@
 #define I2C_RX_BUFFER_PREAMBLE_SIZE   4
 #define I2C_TX_BUFFER_SIZE 128
 
-I2CStats_t i2c_stats_ = {0};
+I2CStats_t i2c_stats_;
 
 static uint8_t i2c_rx_buffer[I2C_RX_BUFFER_PREAMBLE_SIZE + I2C_RX_BUFFER_SIZE];
 static uint8_t i2c_tx_buffer[I2C_TX_BUFFER_SIZE];
