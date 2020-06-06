@@ -5,8 +5,7 @@ import threading
 import fibre
 import odrive
 import odrive.enums
-from odrive.utils import start_liveplotter, dump_errors
-#from odrive.enums import * # pylint: disable=W0614
+from odrive.utils import start_liveplotter, dump_errors, BulkCapture, step_and_plot
 
 def print_banner():
     print('Please connect your ODrive.')
@@ -77,7 +76,9 @@ def launch_shell(args, logger, app_shutdown_token):
 
     interactive_variables = {
         'start_liveplotter': start_liveplotter,
-        'dump_errors': dump_errors
+        'dump_errors': dump_errors,
+        'BulkCapture': BulkCapture,
+        'step_and_plot': step_and_plot
     }
 
     # Expose all enums from odrive.enums
