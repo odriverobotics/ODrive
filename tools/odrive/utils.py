@@ -125,6 +125,21 @@ def start_liveplotter(get_var_callback):
 
 
 class BulkCapture:
+    '''
+    Asynchronously captures a bulk set of data when instance is created.
+
+    get_var_callback: a function that returns the data you want to collect (see the example below)
+    data_rate: Rate in hz
+    length: Length of time to capture in seconds
+
+    Example Usage:
+        capture = BulkCapture(lambda :[odrv0.axis0.encoder.pos_estimate, odrv0.axis0.controller.pos_setpoint])
+        # Do stuff while capturing (like sending position commands)
+        capture.event.wait() # When you're done doing stuff, wait for the capture to be completed.
+        print(capture.data) # Do stuff with the data
+        capture.plot_data() # Helper method to plot the data
+    '''
+
     def __init__(self,
                  get_var_callback,
                  data_rate=500.0,
@@ -137,7 +152,7 @@ class BulkCapture:
             vals = []
             start_time = time.monotonic()
             total_samples = int(length * data_rate)
-            period = 1.0/data_rate
+            period = 1.0 / data_rate
             for i in range(total_samples):
                 try:
                     data = get_var_callback()
@@ -148,11 +163,11 @@ class BulkCapture:
                     continue
                 relative_time = time.monotonic() - start_time
                 vals.append([relative_time] + data)
-                time.sleep(period - (relative_time % period))
+                time.sleep(period - (relative_time % period)) # this ensures consistently timed samples
             self.data = pd.DataFrame(vals) # A lock is not really necessary due to the event
             print("Achieved average data rate: {}Hz".format(total_samples / self.data.iloc[-1, 0]))
             print("If this rate is significantly lower than what you specified, consider lowering it below the achieved value for more consistent sampling.")
-            self.event.set()
+            self.event.set() # tell the main thread that the bulk capture is complete
         Thread(target=loop, daemon=True).start()
     
     def plot_data(self):
@@ -160,7 +175,6 @@ class BulkCapture:
         plt.plot(self.data[0], self.data.drop(0, axis=1))
         plt.xlabel("Time (seconds)")
         plt.ylabel("Counts")
-        plt.legend()
         plt.show()
 
 
@@ -171,10 +185,10 @@ def step_and_plot(axis, step_size=100.0, settle_time=1.0, data_rate=500.0):
                           data_rate=data_rate,
                           length = settle_time + initial_settle_time)
     initial_setpoint = axis.encoder.pos_estimate
-    axis.controller.pos_setpoint = initial_setpoint # set initial loc as current loc
+    axis.controller.pos_setpoint = initial_setpoint # set current position as setpoint
     time.sleep(initial_settle_time)
-    axis.controller.pos_setpoint = initial_setpoint + step_size
-    capture.event.wait()
+    axis.controller.pos_setpoint = initial_setpoint + step_size # relative/incremental movement
+    capture.event.wait() # wait for Bulk Capture to be complete
     axis.requested_state = AXIS_STATE_IDLE
     capture.plot_data()
 
