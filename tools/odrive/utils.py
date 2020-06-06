@@ -115,10 +115,9 @@ def start_liveplotter(get_var_callback):
     fetch_t.daemon = True
     fetch_t.start()
     
-    #plot_t = threading.Thread(target=plot_data)
-    #plot_t.daemon = True
-    #plot_t.start()
-    plot_data()
+    plot_t = threading.Thread(target=plot_data)
+    plot_t.daemon = True
+    plot_t.start()
 
     return cancellation_token;
     #plot_data()
