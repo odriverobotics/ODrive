@@ -226,7 +226,7 @@ def rate_test(device):
     # import matplotlib.pyplot as plt
     # plt.ion()
 
-    print("reading 10000 values... new value")
+    print("reading 10000 values...")
     numFrames = 10000
     vals = []
     for _ in range(numFrames):
