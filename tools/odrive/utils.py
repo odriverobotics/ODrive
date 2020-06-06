@@ -177,18 +177,44 @@ class BulkCapture:
         plt.show()
 
 
-def step_and_plot(axis, step_size=100.0, settle_time=1.0, data_rate=500.0):
+def step_and_plot(  axis,
+                    step_size=100.0,
+                    settle_time=0.5,
+                    data_rate=500.0,
+                    ctrl_mode=CTRL_MODE_POSITION_CONTROL):
+    
+    if ctrl_mode is CTRL_MODE_POSITION_CONTROL:
+        get_var_callback = lambda :[axis.encoder.pos_estimate, axis.controller.pos_setpoint]
+        initial_setpoint = axis.encoder.pos_estimate
+        def set_setpoint(setpoint):
+            axis.controller.pos_setpoint = setpoint
+    elif ctrl_mode is CTRL_MODE_VELOCITY_CONTROL:
+        get_var_callback = lambda :[axis.encoder.vel_estimate, axis.controller.vel_setpoint]
+        initial_setpoint = 0
+        def set_setpoint(setpoint):
+            axis.controller.vel_setpoint = setpoint
+    else:
+        print("Invalid control mode")
+        return
+    
     initial_settle_time = 0.5
+    initial_control_mode = axis.controller.config.control_mode # Set it back afterwards
+    print(initial_control_mode)
+    axis.controller.config.control_mode = ctrl_mode
     axis.requested_state = AXIS_STATE_CLOSED_LOOP_CONTROL
-    capture = BulkCapture(lambda :[axis.encoder.pos_estimate, axis.controller.pos_setpoint],
+    
+    capture = BulkCapture(get_var_callback,
                           data_rate=data_rate,
-                          length = settle_time + initial_settle_time)
-    initial_setpoint = axis.encoder.pos_estimate
-    axis.controller.pos_setpoint = initial_setpoint # set current position as setpoint
+                          length = initial_settle_time + settle_time)
+
+    set_setpoint(initial_setpoint)
     time.sleep(initial_settle_time)
-    axis.controller.pos_setpoint = initial_setpoint + step_size # relative/incremental movement
+    set_setpoint(initial_setpoint + step_size) # relative/incremental movement
+
     capture.event.wait() # wait for Bulk Capture to be complete
+
     axis.requested_state = AXIS_STATE_IDLE
+    axis.controller.config.control_mode = initial_control_mode
     capture.plot_data()
 
 
