@@ -7,7 +7,7 @@ import platform
 import subprocess
 import os
 from fibre.utils import Event
-from odrive.enums import errors
+from odrive.enums import *
 
 try:
     if platform.system() == 'Windows':
@@ -123,85 +123,61 @@ def start_liveplotter(get_var_callback):
     return cancellation_token;
     #plot_data()
 
-def start_bulk_capture(get_var_callback,
-                       sleep_time=1.0/1000.0,
-                       samples=2000):
-    '''
-    Synchronous function to capture data and return as a pandas Dataframe
-    '''
-    import pandas as pd
-    vals = []
-    start_time = time.monotonic()
-    last_time = 0
-    too_slow_counter = 0
-    #total_samples = length_seconds * data_rate
-    for i in range(samples):
-        try:
-            data = get_var_callback()
-        except Exception as ex:
-            print(str(ex))
-            print("Waiting 1 second before next data point")
-            time.sleep(1)
-            continue
-        relative_time = time.monotonic() - start_time
-        vals.append([relative_time] + data)
-        time.sleep(sleep_time)
-        # delta_t = (relative_time - last_time)
-        # period = 1.0 / data_rate
-        # if delta_t < period:
-        #     time.sleep(period - delta_t)
-        # elif delta_t > period:
-        #     too_slow_counter += 1
-        # last_time = relative_time
-    # if too_slow_counter > 0:
-    #     print("Slower than requested data rate for {} samples out of {} total samples"
-    #           .format(too_slow_counter, total_samples))
-    return pd.DataFrame(vals)
 
-def start_bulk_capture2(get_var_callback,
-                       data_rate=1000.0,
-                       length_seconds=2):
-    '''
-    Synchronous function to capture data and return as a pandas Dataframe
-    '''
-    import pandas as pd
-    vals = []
-    start_time = time.monotonic()
-    last_time = 0
-    too_slow_counter = 0
-    total_samples = int(length_seconds * data_rate)
-    for i in range(total_samples):
-        try:
-            data = get_var_callback()
-        except Exception as ex:
-            print(str(ex))
-            print("Waiting 1 second before next data point")
-            time.sleep(1)
-            continue
-        relative_time = time.monotonic() - start_time
-        vals.append([relative_time] + data)
+class BulkCapture:
+    def __init__(self,
+                 get_var_callback,
+                 data_rate=500.0,
+                 length=2.0):
+        from threading import Event, Thread
+        import pandas as pd
 
-        delta_t = (relative_time - last_time)
-        period = 1.0 / data_rate
-        if delta_t < period:
-            time.sleep(period - delta_t)
-        elif delta_t > period:
-            too_slow_counter += 1
-        last_time = relative_time
-    if too_slow_counter > 0:
-        print("Slower than requested data rate for {} samples out of {} total samples"
-              .format(too_slow_counter, total_samples))
-    return pd.DataFrame(vals)
+        self.event = Event()
+        def loop():
+            vals = []
+            start_time = time.monotonic()
+            total_samples = int(length * data_rate)
+            period = 1.0/data_rate
+            for i in range(total_samples):
+                try:
+                    data = get_var_callback()
+                except Exception as ex:
+                    print(str(ex))
+                    print("Waiting 1 second before next data point")
+                    time.sleep(1)
+                    continue
+                relative_time = time.monotonic() - start_time
+                vals.append([relative_time] + data)
+                time.sleep(period - (relative_time % period))
+            self.data = pd.DataFrame(vals) # A lock is not really necessary due to the event
+            print("Achieved average data rate: {}Hz".format(total_samples / self.data.iloc[-1, 0]))
+            print("If this rate is significantly lower than what you specified, consider lowering it below the achieved value for more consistent sampling.")
+            self.event.set()
+        Thread(target=loop, daemon=True).start()
+    
+    def plot_data(self):
+        import matplotlib.pyplot as plt
+        plt.plot(self.data[0], self.data.drop(0, axis=1))
+        plt.xlabel("Time (seconds)")
+        plt.ylabel("Counts")
+        plt.legend()
+        plt.show()
 
-def capture_and_plot(get_var_callback,
-                     sleep_time=1.0/1000.0,
-                     samples=2000):
-    import matplotlib.pyplot as plt
-    data = start_bulk_capture(get_var_callback,
-                              sleep_time,
-                              samples)
-    plt.plot(data[0], data.drop(0, axis=1))
-    plt.show()
+
+def step_and_plot(axis, step_size=100.0, settle_time=1.0, data_rate=500.0):
+    initial_settle_time = 0.5
+    axis.requested_state = AXIS_STATE_CLOSED_LOOP_CONTROL
+    capture = BulkCapture(lambda :[axis.encoder.pos_estimate, axis.controller.pos_setpoint],
+                          data_rate=data_rate,
+                          length = settle_time + initial_settle_time)
+    initial_setpoint = axis.encoder.pos_estimate
+    axis.controller.pos_setpoint = initial_setpoint # set initial loc as current loc
+    time.sleep(initial_settle_time)
+    axis.controller.pos_setpoint = initial_setpoint + step_size
+    capture.event.wait()
+    axis.requested_state = AXIS_STATE_IDLE
+    capture.plot_data()
+
 
 def print_drv_regs(name, motor):
     """
