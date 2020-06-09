@@ -233,7 +233,7 @@ bool Motor::measure_phase_resistance(float test_current, float max_voltage) {
 
         return ++i < num_test_cycles;
     });
-    if (axis_->error_ != Axis::ERROR_NONE)
+    if (axis_->error_ != Axis::ERROR_NONE || axis_->requested_state_ != Axis::AXIS_STATE_UNDEFINED)
         return false;
 
     //// De-energize motor
@@ -262,7 +262,7 @@ bool Motor::measure_phase_inductance(float voltage_low, float voltage_high) {
 
         return ++t < (num_cycles << 1);
     });
-    if (axis_->error_ != Axis::ERROR_NONE)
+    if (axis_->error_ != Axis::ERROR_NONE || axis_->requested_state_ != Axis::AXIS_STATE_UNDEFINED)
         return false;
 
     //// De-energize motor

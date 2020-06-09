@@ -210,7 +210,7 @@ bool Encoder::run_offset_calibration() {
         axis_->motor_.log_timing(Motor::TIMING_LOG_ENC_CALIB);
         return ++i < start_lock_duration * current_meas_hz;
     });
-    if (axis_->error_ != Axis::ERROR_NONE)
+    if (axis_->error_ != Axis::ERROR_NONE || axis_->requested_state_ != Axis::AXIS_STATE_UNDEFINED)
         return false;
 
     int32_t init_enc_val = shadow_count_;
@@ -230,7 +230,7 @@ bool Encoder::run_offset_calibration() {
         
         return ++i < num_steps;
     });
-    if (axis_->error_ != Axis::ERROR_NONE)
+    if (axis_->error_ != Axis::ERROR_NONE || axis_->requested_state_ != Axis::AXIS_STATE_UNDEFINED)
         return false;
 
     // Check response and direction
@@ -270,7 +270,7 @@ bool Encoder::run_offset_calibration() {
         
         return ++i < num_steps;
     });
-    if (axis_->error_ != Axis::ERROR_NONE)
+    if (axis_->error_ != Axis::ERROR_NONE || axis_->requested_state_ != Axis::AXIS_STATE_UNDEFINED)
         return false;
 
     config_.offset = encvaluesum / (num_steps * 2);
