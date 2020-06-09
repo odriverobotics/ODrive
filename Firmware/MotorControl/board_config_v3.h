@@ -24,7 +24,6 @@ typedef struct {
     uint16_t step_gpio_pin;
     uint16_t dir_gpio_pin;
     uint16_t en_gpio_pin;
-    size_t thermistor_adc_ch;
     osPriority thread_priority;
 } AxisHardwareConfig_t;
 
@@ -38,11 +37,13 @@ typedef struct {
     uint16_t hallB_pin;
     GPIO_TypeDef* hallC_port;
     uint16_t hallC_pin;
+    SPI_HandleTypeDef* spi;
 } EncoderHardwareConfig_t;
 typedef struct {
     TIM_HandleTypeDef* timer;
     uint16_t control_deadline;
     float shunt_conductance;
+    size_t inverter_thermistor_adc_ch;
 } MotorHardwareConfig_t;
 typedef struct {
     SPI_HandleTypeDef* spi;
@@ -76,7 +77,6 @@ const BoardHardwareConfig_t hw_configs[2] = { {
         .step_gpio_pin = 1,
         .dir_gpio_pin = 2,
         .en_gpio_pin = 5,
-        .thermistor_adc_ch = 15,
         .thread_priority = (osPriority)(osPriorityHigh + (osPriority)1),
     },
     .encoder_config = {
@@ -89,11 +89,13 @@ const BoardHardwareConfig_t hw_configs[2] = { {
         .hallB_pin = M0_ENC_B_Pin,
         .hallC_port = M0_ENC_Z_GPIO_Port,
         .hallC_pin = M0_ENC_Z_Pin,
+        .spi = &hspi3,
     },
     .motor_config = {
         .timer = &htim1,
         .control_deadline = TIM_1_8_PERIOD_CLOCKS,
         .shunt_conductance = 1.0f / SHUNT_RESISTANCE,  //[S]
+        .inverter_thermistor_adc_ch = 15,
     },
     .gate_driver_config = {
         .spi = &hspi3,
@@ -117,11 +119,6 @@ const BoardHardwareConfig_t hw_configs[2] = { {
         .dir_gpio_pin = 4,
         .en_gpio_pin = 5,
 #endif
-#if HW_VERSION_MAJOR == 3 && HW_VERSION_MINOR >= 3
-        .thermistor_adc_ch = 4,
-#else
-        .thermistor_adc_ch = 1,
-#endif
         .thread_priority = osPriorityHigh,
     },
     .encoder_config = {
@@ -134,11 +131,17 @@ const BoardHardwareConfig_t hw_configs[2] = { {
         .hallB_pin = M1_ENC_B_Pin,
         .hallC_port = M1_ENC_Z_GPIO_Port,
         .hallC_pin = M1_ENC_Z_Pin,
+        .spi = &hspi3,
     },
     .motor_config = {
         .timer = &htim8,
         .control_deadline = (3 * TIM_1_8_PERIOD_CLOCKS) / 2,
         .shunt_conductance = 1.0f / SHUNT_RESISTANCE,  //[S]
+#if HW_VERSION_MAJOR == 3 && HW_VERSION_MINOR >= 3
+        .inverter_thermistor_adc_ch = 4,
+#else
+        .inverter_thermistor_adc_ch = 1,
+#endif
     },
     .gate_driver_config = {
         .spi = &hspi3,

@@ -15,6 +15,7 @@ export CONFIG_STRICT=true
 rm -rdf build
 mkdir -p build
 env | grep ^CONFIG > tup.config
+tup init
 tup generate ./tup_build.sh
 bash -xe ./tup_build.sh
 

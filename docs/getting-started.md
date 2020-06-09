@@ -17,6 +17,7 @@ permalink: /
 - [Configure M0](#configure-m0)
 - [Position control of M0](#position-control-of-m0)
 - [Other control modes](#other-control-modes)
+- [Watchdog Timer](#watchdog-timer)
 - [What's next?](#whats-next)
 
 <!-- /TOC -->
@@ -40,7 +41,7 @@ permalink: /
 
   </div></details>
 
-* A power supply (12V-24V for the 24V board variant, 12V-48V for the 48V board variant). A battery is also fine.
+* A power supply (12V-24V for the 24V board variant, 12V-48V for the 48V board variant). A battery is also fine. Some advice on choosing a power supply can be found [here](https://things-in-motion.blogspot.com/2018/12/how-to-select-right-power-source-for.html).
   <details><summary markdown="span">What voltage variant do I have?</summary><div markdown="block">
   On all ODrives shipped July 2018 or after have a silkscreen label clearly indicating the voltage variant.
 
@@ -56,13 +57,18 @@ All non-power I/O is 3.3V output and 5V tolerant on input, on ODrive v3.3 and ne
 
 ### Wiring up the motors
 * Connect the motor phases into the 3-phase screw terminals. It is not recommended to use a clip-on connector such as an alligator clip, as this can cause issues with the phase resistance/inductance measurements. 
-* Connect the power source to the DC terminals. Make sure to pay attention to the polarity.
-* Do not apply power just yet.
 
 ### Wiring up the encoders
 Connect the encoder(s) to J4. The A,B phases are required, and the Z (index pulse) is optional. The A,B and Z lines have 3.3k pull up resistors, for use with open-drain encoder outputs. For single ended push-pull signals with weak drive current (\<4mA), you may want to desolder the pull-ups.
 
 ![Image of ODrive all hooked up](https://docs.google.com/drawings/d/e/2PACX-1vTCD0P40Cd-wvD7Fl8UYEaxp3_UL81oI4qUVqrrCJPi6tkJeSs2rsffIXQRpdu6rNZs6-2mRKKYtILG/pub?w=1716&h=1281)
+
+### Safety & Power UP
+<div class="alert">
+ Always think safety before powering up the ODrive if motors are attached. Consider what might happen if the motor spins as soon as power is applied.
+</div>
+* Unlike some devices, the ODrive does not recieve power over the USB port so the 24/48 volt power input is required even just to communicate with it using USB. It is ok to power up the ODrive before or after connecting the USB cable.
+* To power up the ODrive, connect the power source to the DC terminals. Make sure to pay attention to the polarity. A small spark is normal. This is caused by the capacitors charging up.
 
 ## Downloading and Installing Tools
 Most instructions in this guide refer to a utility called `odrivetool`, so you should install that first.
@@ -119,21 +125,22 @@ Try step 5 again
 
 
 ### Linux
-1. [Install Python 3](https://www.python.org/downloads/).
-2. Install the ODrive tools by opening a terminal and typing `pip install odrive` <kbd>Enter</kbd>
-3. Set up USB permissions
-```bash
+1. [Install Python 3](https://www.python.org/downloads/). (for example, on Ubuntu, `sudo apt install python3 python3-pip`)
+2. Install the ODrive tools by opening a terminal and typing `sudo pip3 install odrive` <kbd>Enter</kbd>
+    * This should automatically add the udev rules. If this fails for some reason you can add them manually:
+    ```bash
     echo 'SUBSYSTEM=="usb", ATTR{idVendor}=="1209", ATTR{idProduct}=="0d[0-9][0-9]", MODE="0666"' | sudo tee /etc/udev/rules.d/91-odrive.rules
     sudo udevadm control --reload-rules
     sudo udevadm trigger
-```
+    ```
+3. **Ubuntu**, **Raspbian**: If you can't invoke `odrivetool` at this point, try adding `~/.local/bin` to your `$PATH` ([see related bug](https://unix.stackexchange.com/a/392710/176715)). This is done for example by running `nano ~/.bashrc`, scrolling to the bottom, pasting `export PATH=$PATH:~/.local/bin`, and then saving and closing, and close and reopen the terminal window.
 
 ## Firmware
 **ODrive v3.5 and later**<br>
 Your board should come preflashed with firmware. If you run into problems, follow the instructions [here](odrivetool.md#device-firmware-update) on the DFU procedure before you continue.
 
 **ODrive v3.4 and earlier**<br>
-Your board does **not** come preflashed with any firmware. Follow the instructions [here](odrivetool.md#device-firmware-update) on the STP Link procedure before you continue.
+Your board does **not** come preflashed with any firmware. Follow the instructions [here](odrivetool.md#device-firmware-update) on the ST Link procedure before you continue.
 
 ## Start `odrivetool`
 To launch the main interactive ODrive tool, type `odrivetool` <kbd>Enter</kbd>. Connect your ODrive and wait for the tool to find it. Now you can, for instance type `odrv0.vbus_voltage` <kbd>Enter</kbd> to inpect the boards main supply voltage.
@@ -187,8 +194,11 @@ You can change `odrv0.axis0.motor.config.calibration_current` [A] to the largest
 This is the resistance of the brake resistor. If you are not using it, you may set it to `0`. Note that there may be some extra resistance in your wiring and in the screw terminals, so if you are getting issues while braking you may want to increase this parameter by around 0.05 ohm.
  
 `odrv0.axis0.motor.config.pole_pairs`  
-This is the number of **magnet poles** in the rotor, **divided by two**. To find this, you can simply count the number of permanent magnets in the rotor, if you can see them. _Note: this is not the same as the number of coils in the stator._
-If you can't see them, try sliding a magnet around the rotor, and counting how many times it stops. This will be the number of **pole pairs**. If you use a magnetic piece of metal instead of a magnet, you will get the number of **magnet poles**.
+This is the number of **magnet poles** in the rotor, **divided by two**. To find this, you can simply count the number of permanent magnets in the rotor, if you can see them.
+**Note**: This is **not** the same as the number of coils in the stator.
+A good way to find the number of pole pairs is with a current limited power supply. Connect any two of the three phases to a power supply outputting around 2A, spin the motor by hand, and count the number of detents. This will be the number of pole pairs. If you can't distinguish the detents from the normal cogging present when the motor is disconnected, increase the current.
+Another way is sliding a loose magnet in your hand around the rotor, and counting how many times it stops. This will be the number of _pole pairs_. If you use a ferrous piece of metal instead of a magnet, you will get the number of _magnet poles_.
+
 `odrv0.axis0.motor.config.motor_type`  
 This is the type of motor being used. Currently two types of motors are supported: High-current motors (`MOTOR_TYPE_HIGH_CURRENT`) and gimbal motors (`MOTOR_TYPE_GIMBAL`).
 <details><summary markdown="span">Which <code>motor_type</code> to choose?</summary><div markdown="block">
@@ -216,8 +226,6 @@ This is 4x the Pulse Per Revolution (PPR) value. Usually this is indicated in th
 You can save all `.config` parameters to persistent memory so the ODrive remembers them between power cycles. 
 * `odrv0.save_configuration()` <kbd>Enter</kbd>. 
 
-Due to a [known issue](https://github.com/madcowswe/ODrive/issues/183) it is strongly recommended that you reboot following every save of your configuration using `odrv0.reboot()`.
-
 
 ## Position control of M0
 Let's get motor 0 up and running. The procedure for motor 1 is exactly the same, so feel free to substitute `axis0` wherever it says `axis0`.
@@ -234,19 +242,22 @@ Let's get motor 0 up and running. The procedure for motor 1 is exactly the same,
 
   <details><summary markdown="span">Help, something isn't working!</summary><div markdown="block">
   
-  Check the encoder wiring and that the encoder is firmly connected to the motor. Check the value of `hex(odrv0.axis0.error)` and then refer to the [error code documentation](troubleshooting.md#error-codes) for details.
+  Check the encoder wiring and that the encoder is firmly connected to the motor. Check the value of `dump_errors(odrv0)` and then refer to the [error code documentation](troubleshooting.md#error-codes) for details.
 
-  Once you understand the error and have fixed its cause, you may clear the error state with (`odrv0.axis0.error = 0` <kbd>Enter</kbd>) and retry. You may also need to clear the error state of other subcomponents (e.g. `odrv0.axis0.motor.error = 0`).
+  Once you understand the error and have fixed its cause, you may clear the error state with (`dump_errors(odrv0, True)` <kbd>Enter</kbd>) and retry.
   </div></details>
 
-2. Type `odrv0.axis0.requested_state = AXIS_STATE_CLOSED_LOOP_CONTROL` <kbd>Enter</kbd>. From now on the ODrive will try to hold the motor's position. If you try to turn it by hand, it will fight you gently. That is unless you bump up `odrv0.axis0.motor.config.current_lim`, in which case it will fight you more fiercely.
-3. Send the motor a new position setpoint. `odrv0.axis0.controller.pos_setpoint = 10000` <kbd>Enter</kbd>. The units are in encoder counts.
+2. Type `odrv0.axis0.requested_state = AXIS_STATE_CLOSED_LOOP_CONTROL` <kbd>Enter</kbd>. From now on the ODrive will try to hold the motor's position. If you try to turn it by hand, it will fight you gently. That is unless you bump up `odrv0.axis0.motor.config.current_lim`, in which case it will fight you more fiercely. If the motor begins to vibrate either immediately or after being disturbed you will need to [lower the controller gains](control.md).
+3. Send the motor a new position setpoint. `odrv0.axis0.controller.input_pos = 10000` <kbd>Enter</kbd>. The units are in encoder counts.
+4. At this point you will probably want to [Properly tune](control.md) the motor controller in order to maximize system performance.
 
 ## Other control modes
-The default control mode is unfiltered position control in the absolute encoder reference frame. You may wish to use a controlled trajectory instead. Or you may wish to control position in a circular frame to allow continous rotation forever without growing the numeric value of the setpoint too large.
+The default control mode is unfiltered position control in the absolute encoder reference frame. You may wish to use a controlled trajectory instead. Or you may wish to control position in a circular frame to allow continuous rotation forever without growing the numeric value of the setpoint too large.
+
 You may also wish to control velocity (directly or with a ramping filter).
 You can also directly control the current of the motor, which is proportional to torque.
 
+- [Filtered position control](#filtered-position-control)
 - [Trajectory control](#trajectory-control)
 - [Circular position control](#circular-position-control)
 - [Velocity control](#velocity-control)
@@ -254,7 +265,19 @@ You can also directly control the current of the motor, which is proportional to
 - [Current control](#current-control)
 
 
+### Filtered position control
+Asking the ODrive controller to go as hard as it can to raw setpoints may result in jerky movement. Even if you are using a planned trajectory generated from an external source, if that is sent at a modest frequency, the ODrive may chase each stair in the incoming staircase in a jerky way. In this case, a good starting point for tuning the filter bandwidth is to set it to one half of your setpoint command rate.
+
+You can use the second order position filter in these cases.
+Set the filter bandwidth: `axis.controller.config.input_filter_bandwidth = 2.0` [1/s]<br>
+Activate the setpoint filter: `axis.controller.config.input_mode = INPUT_MODE_POS_FILTER`.<br>
+You can now control the velocity with `axis.controller.input_pos = 1000` [counts].
+
+![secondOrderResponse](secondOrderResponse.PNG)<br>
+Step response of a 1000 to 0 position input with a filter bandwidth of 1.0 [/sec].
+
 ### Trajectory control
+See the **Usage** section for usage details.<br>
 This mode lets you smoothly accelerate, coast, and decelerate the axis from one position to another. With raw position control, the controller simply tries to go to the setpoint as quickly as possible. Using a trajectory lets you tune the feedback gains more aggressively to reject disturbance, while keeping smooth motion.
 
 ![Taptraj](TrapTrajPosVel.PNG)<br>
@@ -265,56 +288,85 @@ In the above image blue is position and orange is velocity.
 <odrv>.<axis>.trap_traj.config.vel_limit = <Float>
 <odrv>.<axis>.trap_traj.config.accel_limit = <Float>
 <odrv>.<axis>.trap_traj.config.decel_limit = <Float>
-<odrv>.<axis>.trap_traj.config.A_per_css = <Float>
+<odrv>.<axis>.controller.config.inertia = <Float>
 ```
 
 `vel_limit` is the maximum planned trajectory speed.  This sets your coasting speed.<br>
 `accel_limit` is the maximum acceleration in counts / sec^2<br>
 `decel_limit` is the maximum deceleration in counts / sec^2<br>
-`A_per_css` is a value which correlates acceleration (in counts / sec^2) and motor current. It is 0 by default. It is optional, but can improve response of your system if correctly tuned. Keep in mind this will need to change with the load / mass of your system.
+`controller.config.inertia` is a value which correlates acceleration (in counts / sec^2) and motor current. It is 0 by default. It is optional, but can improve response of your system if correctly tuned. Keep in mind this will need to change with the load / mass of your system.
 
 All values should be strictly positive (>= 0).
 
-Keep in mind that you must still set your safety limits as before.  I recommend you set these a little higher ( > 10%) than the planner values, to give the controller enough control authority.
+Keep in mind that you must still set your safety limits as before.  It is recommended you set these a little higher ( > 10%) than the planner values, to give the controller enough control authority.
 ```
 <odrv>.<axis>.motor.config.current_lim = <Float>
 <odrv>.<axis>.controller.config.vel_limit = <Float>
 ```
 
 #### Usage
-Use the `move_to_pos` function to move to an absolute position:
+Make sure you are in position control mode. To activate the trajectory module, set the input mode to trajectory:
 ```
-<odrv>.<axis>.controller.move_to_pos(<Float>)
+axis.controller.config.input_mode = INPUT_MODE_TRAP_TRAJ
 ```
+
+Simply send a position command to execute the move:
+```
+<odrv>.<axis>.controller.input_pos = <Float>
+```
+
+Use the `move_incremental` function to move to a relative position.
+To set the goal relative to the current actual position, use `from_goal_point = False`
+To set the goal relative to the previous destination, use `from_goal_point = True`
+```
+<odrv>.<axis>.controller.move_incremental(pos_increment, from_goal_point)
+```
+
+You can also execute a move with the [appropriate ascii command](ascii-protocol.md#motor-trajectory-command).
 
 ### Circular position control
-This mode is useful for continuos incremental position movement. For example a robot rolling indefinitely, or an extruder motor or conveyor belt moving with controlled increments indefinitely.
-In the regular position mode, the `pos_setpoint` would grow to a very large value and would lose precision due to floating point rounding.
 
-In this mode, the controller will try to track the position within only one turn of the motor. Specifically, `pos_setpoint` is expected in the range `[0, cpr-1]`, where `cpr` is the number of encoder counts in one revolution. If the `pos_setpoint` is incremented to outside this range (say via step/dir input), it is automatically wrapped around into the correct value.
+To enable Circular position control, set `axis.controller.config.setpoints_in_cpr = True`
+
+This mode is useful for continuos incremental position movement. For example a robot rolling indefinitely, or an extruder motor or conveyor belt moving with controlled increments indefinitely.
+In the regular position mode, the `input_pos` would grow to a very large value and would lose precision due to floating point rounding.
+
+In this mode, the controller will try to track the position within only one turn of the motor. Specifically, `input_pos` is expected in the range `[0, cpr-1]`, where `cpr` is the number of encoder counts in one revolution. If the `input_pos` is incremented to outside this range (say via step/dir input), it is automatically wrapped around into the correct value.
 Note that in this mode `encoder.pos_cpr` is used for feedback in stead of `encoder.pos_estimate`.
 
 If you try to increment the axis with a large step in one go that exceeds `cpr/2` steps, the motor will go to the same angle around the wrong way. This is also the case if there is a large disturbance. If you have an application where you would like to handle larger steps, you can use a virtual CPR that is an integer times larger than your encoder's actual CPR. Set `encoder.config.cpr = N * your_enc_cpr`, where N is some integer. Choose N to give you an appropriate circular space for your application.
 
 ### Velocity control
 Set `axis.controller.config.control_mode = CTRL_MODE_VELOCITY_CONTROL`.<br>
-You can now control the velocity with `axis.controller.vel_setpoint = 5000` [count/s].
+You can now control the velocity with `axis.controller.input_vel = 5000` [count/s].
 
 ### Ramped velocity control
 Set `axis.controller.config.control_mode = CTRL_MODE_VELOCITY_CONTROL`.<br>
 Set the velocity ramp rate (acceleration): `axis.controller.config.vel_ramp_rate = 2000` [counts/s^2]<br>
-Activate the ramped velocity mode: `axis.controller.vel_ramp_enable = True`.<br>
-You can now control the velocity with `axis.controller.vel_ramp_target = 5000` [count/s].
+Activate the ramped velocity mode: `axis.controller.config.input_mode = INPUT_MODE_VEL_RAMP`.<br>
+You can now control the velocity with `axis.controller.input_vel = 5000` [count/s].
 
 ### Current control
 Set `axis.controller.config.control_mode = CTRL_MODE_CURRENT_CONTROL`.<br>
-You can now control the current with `axis.controller.current_setpoint = 3` [A].
+You can now control the current with `axis.controller.input_current = 3` [A].
 
-*Note: There is no velocity limiting in current control mode. Make sure that you don't overrev the motor, or exceed the max speed for your encoder.*
+Note: If you exceed `vel_limit` in current control mode, the current is reduced. To disable this, set `axis.controller.enable_current_vel_limit = False`.
+
+## Watchdog Timer
+Each axis has a configurable watchdog timer that can stop the motors if the
+control connection to the ODrive is interrupted.
+
+Each axis has a configurable watchdog timeout: `axis.config.watchdog_timeout`,
+measured in seconds. A value of `0` disables the watchdog functionality. Any value
+`> 0` will stop the motors if the watchdog has not been fed in the configured
+time interval. 
+
+The watchdog is fed using the `axis.watchdog_feed()` method of each axis. 
 
 ## What's next?
 You can now:
-* See what other [commands and parameters](commands.md) are available, including setting tuning parameters for better performance.
+* [Properly tune](control.md) the motor controller to unlock the full potential of the ODrive.
+* See what other [commands and parameters](commands.md) are available, in order to better control the ODrive.
 * Control the ODrive from your own program or hook it up to an existing system through one of it's [interfaces](interfaces.md).
 * See how you can improve the behavior during the startup procedure, like [bypassing encoder calibration](encoders.md#encoder-with-index-signal).
 

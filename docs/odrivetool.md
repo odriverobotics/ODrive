@@ -88,8 +88,8 @@ To compile firmware from source, refer to the [developer guide](developer-guide)
 * On some machines you will need to unplug and plug back in the USB cable to make the PC understand that we switched from regular mode to bootloader mode.
 * If the DFU script can't find the device, try forcing it into DFU mode.
 
-  <details><summary markdown="span">How to force DFU mode (ODrive v3.5)</summary><div markdown="block">
-  Flick the DIP switch that "DFU, RUN" to "DFU" and power cycle the board. After you're done, put the switch back into the "RUN" position and power cycle the board again.
+  <details><summary markdown="span">How to force DFU mode (ODrive v3.5 and newer)</summary><div markdown="block">
+  Flick the DIP switch that "DFU, RUN" to "DFU" and power cycle the board. After you're done upgrading firmware, don't forget to put the switch back into the "RUN" position and power cycle the board again.
   </div></details>
 
   <details><summary markdown="span">How to force DFU mode (ODrive v3.1, v3.2)</summary><div markdown="block">
@@ -116,6 +116,7 @@ You can use the DfuSe app from ST.
 1. Force the ODrive into DFU mode, as per the instructions above "How to force DFU mode".
 1. In the top left it should now be connected to "STM Device in DFU Mode".
    1. If it doesn't appear, it may be because the driver is set to libusb by Zadig. We need to set it back to the original driver. Follow [these instructions](https://github.com/pbatard/libwdi/wiki/FAQ#Help_Zadig_replaced_the_driver_for_the_wrong_device_How_do_I_restore_it).
+   2. If, after doing the above step, the ODrive still installs itself as a libusb device in Device Manager, you can try to delete the libusb driver (this is OK, since we can use Zadig to install it again). You can simply delete the file `C:\Windows\System32\drivers\libusb0.sys`.
 1. In the bottom right section called "Upgrade or Verify Action" click the button "Choose...".
 1. Locate the `ODriveFirmware.dfu` we made before.
 1. Click button "Upgrade".
@@ -135,9 +136,40 @@ In the Firmware directory, after finishing building the firmware:
 sudo dfu-util -a 0 -s 0x08000000 -D build/ODriveFirmware.bin
 ```
 
-#### MacOS
-**This section needs more detail. Please consider adding detail if you got it to work.**
-You may be able to use [dfu-util](http://dfu-util.sourceforge.net/) to upgrade the firmware. The command should be similar to the Linux instructions.
+#### macOS
+
+First, you need to install the arm development tools to copy the binary into the appropriate format.
+
+```text
+$ brew cask install gcc-arm-embedded
+```
+
+Then convert the binary to .bin format
+
+```text
+$ arm-none-eabi-objcopy -O binary ODriveFirmware_v3.5-48V.elf ODriveFirmware_v3.5-48V.bin
+```
+
+Install `dfu-util`:
+
+```text
+$ sudo port install dfu-util   # via MacPorts; for HomeBrew use "brew install dfu-util"
+```
+
+Find the correct device serial number to use:
+
+```text
+$ dfu-util --list              # list the DFU capable devices
+[...]
+Found DFU: [0483:df11] ver=2200, devnum=5, cfg=1, intf=0, path="20-2", alt=0, 
+ name="@Internal Flash  /0x08000000/04*016Kg,01*064Kg,07*128Kg", serial="388237123123"
+```
+
+Finally, flash the firmware using the found serial number:
+
+```text
+$ sudo dfu-util -S 388237123123 -a 0 -s 0x08000000 -D ODriveFirmware_v3.5-48V.bin
+```
 
 ## Flashing with an STLink
 
@@ -166,7 +198,7 @@ If something doesn't work, make sure `openocd` is in your `PATH` variable, check
 
 ## Liveplotter
 
-Liveplotter is used for the graphical plotting of odrive parameters (i.e. position) in real time. To start liveplotter, close any other instances of liveplotter and run `odrivetool liveplotter` from a new anaconda prompt window. By defult two parameters are plotted on startup; the encoder positon of axis 1 and axis 2. In the below example the motors are running in `closed_loop_control` while they are being forced off position by hand.
+Liveplotter is used for the graphical plotting of odrive parameters (i.e. position) in real time. To start liveplotter, close any other instances of liveplotter and run `odrivetool liveplotter` from a new anaconda prompt window. By default two parameters are plotted on startup; the encoder position of axis 1 and axis 2. In the below example the motors are running in `closed_loop_control` while they are being forced off position by hand.
 
 ![Liveplotter position plot](figure_1.png)
 
@@ -200,7 +232,7 @@ plot_rate = 10
 num_samples = 1000
 ```
 
-For more examples on how to interact with the plotting functinality refer to the [Matplotlib examples.](https://matplotlib.org/examples)
+For more examples on how to interact with the plotting functionality refer to the [Matplotlib examples.](https://matplotlib.org/examples)
 
 ### Liveplotter from interactive odrivetool instance
 You can also run `start_liveplotter(...)` directly from the interactive odrivetool prompt. This is useful if you want to issue commands or otherwise keep interacting with the odrive while plotting.

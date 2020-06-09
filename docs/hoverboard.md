@@ -1,14 +1,15 @@
 
 # Hoverboard motor and remote control setup guide
 By popular request here follows a step-by-step guide on how to setup the ODrive to drive hoverboard motors using RC PWM input.
-Each step is acompanied by some explanation so hopefully you can carry over some of the steps to other setups and configurations.
+Each step is accompanied by some explanation so hopefully you can carry over some of the steps to other setups and configurations.
+
 
 [![IMAGE ALT TEXT HERE](https://img.youtube.com/vi/ponx_U4xhoM/0.jpg)](https://www.youtube.com/watch?v=ponx_U4xhoM) <br> Click above to play video.
 
 ### Hoverboard motor wiring
 Hoverboard motors come with three motor phases (usually colored yellow, blue, green) which are thicker, and a set of 5 thinner wires for the hall sensor feedback (usually colored red, yellow, blue, green, black).
 
-You may wire the motor phases in any order into a motor connector on the ODrive, as we will calibrate the phase alignment later anyway. Wire the hall feedback into the ODrive J4 conenctor (make sure that the motor channel number matches) as follows:
+You may wire the motor phases in any order into a motor connector on the ODrive, as we will calibrate the phase alignment later anyway. Wire the hall feedback into the ODrive J4 connector (make sure that the motor channel number matches) as follows:
 
 | Hall wire | J4 signal |
 |-----------|-----------|
@@ -17,6 +18,8 @@ You may wire the motor phases in any order into a motor connector on the ODrive,
 | Blue      | B         |
 | Green     | Z         |
 | Black     | GND       |
+
+Note: In order to ber compatible with encoder inputs, the ODrive doesn't have any filtering capacitors on the pins where the hall sensors connect. Therefore to get a reliable hall signal, it is recommended that you add some filter capacitors to these pins. You can see instructions [here](https://discourse.odriverobotics.com/t/encoder-error-error-illegal-hall-state/1047/7?u=madcowswe).
 
 
 ### Hoverboard motor configuration
@@ -52,7 +55,7 @@ odrv0.axis0.controller.config.vel_limit = 1000
 odrv0.axis0.controller.config.control_mode = CTRL_MODE_VELOCITY_CONTROL
 ```
 
-In the next step we are going to start powering the motor and so we want to make sure that some of the above settings that requrie a reboot are applied first.
+In the next step we are going to start powering the motor and so we want to make sure that some of the above settings that require a reboot are applied first.
 ```txt
 odrv0.save_configuration()
 odrv0.reboot()
@@ -75,7 +78,7 @@ Check to see that there is no error and that the phase resistance and inductance
   phase_resistance = 0.1793474406003952 (float)
 ```
 
-If all looks good then you can tell the ODrive that saving this calibration to presistent memory is OK:
+If all looks good then you can tell the ODrive that saving this calibration to persistent memory is OK:
 ```txt
 odrv0.axis0.motor.config.pre_calibrated = True
 ```
@@ -109,47 +112,47 @@ The ODrive starts in idle (we will look at changing this later) so we can enable
 odrv0.save_configuration()
 odrv0.reboot()
 odrv0.axis0.requested_state = AXIS_STATE_CLOSED_LOOP_CONTROL
-odrv0.axis0.controller.vel_setpoint = 120
+odrv0.axis0.controller.input_vel = 120
 # Your motor should spin here
-odrv0.axis0.controller.vel_setpoint = 0
+odrv0.axis0.controller.input_vel = 0
 odrv0.axis0.requested_state = AXIS_STATE_IDLE
 ```
 
 Hopefully you got your motor to spin! Feel free to repeat all of the above for the other axis if appropriate.
 
 ### PWM input
-If you want to drive your hoverboard wheels around with an RC remote contro you can use the [RC PWM input](interfaces.md#rc-pwm-input). There is more information in that link.
+If you want to drive your hoverboard wheels around with an RC remote control you can use the [RC PWM input](interfaces.md#rc-pwm-input). There is more information in that link.
 Lets use GPIO 3/4 for the velocity inputs so that we don't have to disable UART.
 Then let's map the full stick range of these inputs to some suitable velocity setpoint range.
 We also have to reboot to activate the PWM input.
 ```txt
 odrv0.config.gpio3_pwm_mapping.min = -200
 odrv0.config.gpio3_pwm_mapping.max = 200
-odrv0.config.gpio3_pwm_mapping.endpoint = odrv0.axis0.controller._remote_attributes['vel_setpoint']
+odrv0.config.gpio3_pwm_mapping.endpoint = odrv0.axis0.controller._remote_attributes['input_vel']
 
 odrv0.config.gpio4_pwm_mapping.min = -200
 odrv0.config.gpio4_pwm_mapping.max = 200
-odrv0.config.gpio4_pwm_mapping.endpoint = odrv0.axis1.controller._remote_attributes['vel_setpoint']
+odrv0.config.gpio4_pwm_mapping.endpoint = odrv0.axis1.controller._remote_attributes['input_vel']
 
 odrv0.save_configuration()
 odrv0.reboot()
 ```
 
-Now we can check that the sticks are writing to the velocity setpoint. Move the stick, print `vel_setpoint`, move to a different position, check again.
+Now we can check that the sticks are writing to the velocity setpoint. Move the stick, print `input_vel`, move to a different position, check again.
 ```txt
-In [1]: odrv0.axis1.controller.vel_setpoint
+In [1]: odrv0.axis1.controller.input_vel
 Out[1]: 0.1904754638671875
 
-In [2]: odrv0.axis1.controller.vel_setpoint
+In [2]: odrv0.axis1.controller.input_vel
 Out[2]: 0.1904754638671875
 
-In [3]: odrv0.axis1.controller.vel_setpoint
+In [3]: odrv0.axis1.controller.input_vel
 Out[3]: 28.152389526367188
 
-In [4]: odrv0.axis1.controller.vel_setpoint
+In [4]: odrv0.axis1.controller.input_vel
 Out[4]: 61.21905517578125
 
-In [5]: odrv0.axis1.controller.vel_setpoint
+In [5]: odrv0.axis1.controller.input_vel
 Out[5]: -52.990474700927734
 ```
 
@@ -158,6 +161,9 @@ Ok, now we should be able to turn on the drive and control the wheels!
 odrv0.axis0.requested_state = AXIS_STATE_CLOSED_LOOP_CONTROL
 odrv0.axis1.requested_state = AXIS_STATE_CLOSED_LOOP_CONTROL
 ```
+
+### Safety
+Be sure to setup the Failsafe feature on your RC Receiver so that if connection is lost between the remote and the receiver, the receiver outputs 0 and 0 for the velocity setpoint of both axes (or whatever is safest for your configuration). Also note that if the receiver turns off (loss of power, etc) or if the signal from the receiver to the ODrive is lost (wire comes unplugged, etc), the ODrive will continue the last commanded velocity setpoint. There is currently no timeout function in the ODrive for PWM inputs.
 
 ### Automatic startup
 Try to reboot and then activate AXIS_STATE_CLOSED_LOOP_CONTROL on both axis. Check that everything is operational and works as expected.

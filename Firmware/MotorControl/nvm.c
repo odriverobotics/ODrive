@@ -362,10 +362,12 @@ int NVM_commit(void) {
     read_sector_ = 1 - read_sector_;
 
     // invalidate the other sector
-    if (read_sector->index < read_sector->n_data)
+    if (read_sector->index < read_sector->n_data) {
         status = set_allocation_state(read_sector, read_sector->index, 1, INVALID);
-    else
+        read_sector->index += 1;
+    } else {
         status = erase(read_sector);
+    }
 
     return status;
 }

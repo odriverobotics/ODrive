@@ -20,6 +20,15 @@ flash: all
 		-c 'reset run' \
 		-c exit
 
+flashbmp: all
+	arm-none-eabi-gdb --ex 'target extended-remote $(BMP_PORT)' \
+		--ex 'monitor swdp_scan' \
+		--ex 'attach 1' \
+		--ex 'load' \
+		--ex 'detach' \
+		--ex 'quit' \
+		$(FIRMWARE)
+
 gdb: all
 	arm-none-eabi-gdb $(FIRMWARE) -x openocd.gdbinit
 
@@ -39,6 +48,10 @@ erase:
 # Erase all configuration from the ODrive
 erase_config:
 	$(OPENOCD) -c init -c reset\ halt -c flash\ erase_address\ 0x80C0000\ 0x40000 -c reset\ init -c reset\ run -c exit
+
+# Sometimes the STM32 will get it's protection bits set for unknown reasons. Unlock it with this command
+unlock:
+	$(OPENOCD) -c init -c reset\ halt -c stm32f2x\ unlock\ 0
 
 # The one-time programmable memory stores the board version
 # has the following format:
@@ -70,8 +83,8 @@ ifeq ($(OTP_CONFIRM),TRUE)
 		-c 'mwb 0x1fff7801 0x01' -c 'sleep 10' \
 		-c 'mwb 0x1fff7802 0x01' -c 'sleep 10' \
 		-c 'mwb 0x1fff7803 3' -c 'sleep 10' \
-		-c 'mwb 0x1fff7804 5' -c 'sleep 10' \
-		-c 'mwb 0x1fff7805 48' -c 'sleep 10' \
+		-c 'mwb 0x1fff7804 6' -c 'sleep 10' \
+		-c 'mwb 0x1fff7805 56' -c 'sleep 10' \
 		-c 'reset run' \
 		-c exit
 	@echo "OK"

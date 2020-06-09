@@ -5,7 +5,7 @@ function GCCToolchain(prefix, builddir, compiler_flags, linker_flags)
     -- add some default compiler flags
     compiler_flags += '-fstack-usage'
 
-    gcc_generic_compiler = function(compiler, compiler_flags, gen_su_file, src, flags, includes, outputs)
+    local gcc_generic_compiler = function(compiler, compiler_flags, gen_su_file, src, flags, includes, outputs)
         -- resolve source path
         src = tostring(src)
 

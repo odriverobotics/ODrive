@@ -2,14 +2,106 @@
 Please add a note of your changes below this heading if you make a Pull Request.
 
 ### Added
-* `dump_errors()` utility function in odrivetool to dump, decode and optionally clear errors.
+* AC Induction Motor support.
+  * Tracking of rotor flux through rotor time constant
+  * Automatic d axis current for Maximum Torque Per Amp (MTPA)
+* ASCII "w" commands now execute write hooks.
+* Simplified control interface ("Input Filter" branch)
+    * New input variables: `input_pos`, `input_vel`, and `input_current`
+    * New setting `input_mode` to switch between different input behaviours
+      * Passthrough
+      * Velocity Ramp
+      * 2nd Order Position Filter
+      * Trapezoidal Trajectory Planner
+    * Removed `set_xxx_setpoint()` functions and made `xxx_setpoint` variables read-only
+* [Preliminary support for Absolute Encoders](docs/encoders.md)
+* [Preliminary support for endstops and homing](docs/endstops.md)
+* [CAN Communication with CANSimple stack](can-protocol.md)
+* Gain scheduling for anti-hunt when close to 0 position error
+* Velocity Limiting in Current Control mode according to `vel_limit` and `vel_gain`
+* Regen current limiting according to `max_regen_current`, in Amps
+* DC Bus hard current limiting according to `dc_max_negative_current` and `dc_max_positive_current`
+* Brake resistor logic now attempts to clamp voltage according to `odrv.config.dc_bus_overvoltage_ramp_start` and `odrv.config.dc_bus_overvoltage_ramp_end`
+* Unit Testing with Doctest has been started for select algorithms, see [Firmware/Tests/test_runner.cpp](Firmware/Tests/test_runner.cpp)
+* Added support for Flylint VSCode Extension for static code analysis
+* Using an STM32F405 .svd file allows CortexDebug to view registers during debugging
+* Added scripts for building via docker.
+* Added ability to change uart baudrate via fibre
+
+### Changed
+* Changed ratiometric `motor.config.current_lim_tolerance` to absolute `motor.config.current_lim_margin`
+* Moved `controller.vel_ramp_enable` to INPUT_MODE_VEL_RAMP.
+* Anticogging map is temporarily forced to 0.1 deg precision, but saves with the config
+* Some Encoder settings have been made read-only
+* Cleaned up VSCode C/C++ Configuration settings on Windows with recursive includePath
+* Now compiling with C++17
+* Fixed a firmware hang that could occur from unlikely but possible user input
+* Added JSON caching to Fibre. This drastically reduces the time odrivetool needs to connect to an ODrive (except for the first time or after firmware updates).
+* Fix IPython `RuntimeWarning` that would occur every time `odrivetool` was started.
+* Reboot on `erase_configuration()`. This avoids unexpected behavior of a subsequent `save_configuration()` call, since the configuration is only erased from NVM, not from RAM.
+* Change `motor.get_inverter_temp()` to use a property which was already being sampled at `motor.inverter_temp`
+* Fixed a numerical issue in the trajectory planner that could cause sudden jumps of the position setpoint
 
 # Releases
+## [0.4.12] - 2020-05-06
+### Fixed
+* Fixed a numerical issue in the trajectory planner that could cause sudden jumps of the position setpoint
+
+## [0.4.11] - 2019-07-25
+### Added
+* Separate lockin configs for sensorless, index search, and general.
+* Check current limit violation: added `ERROR_CURRENT_UNSTABLE`, `motor.config.current_lim_tolerance`.
+
+### Changed
+* Ascii command for reboot changed from `sb` to `sr`.
+
+# Releases
+## [0.4.10] - 2019-04-24
+### Fixed
+* Index search would trigger in the wrong place.
+
+## [0.4.9] - 2019-04-23
+### Added
+* A release target for ODrive v3.6
+* Communication watchdog feature.
+* `encoder.set_linear_count(count)` function.
+* Configurable encoder offset calibration distance and speed:`calib_scan_distance` and `calib_scan_omega`
+* Encoder offset calibration debug variable `calib_scan_response`
+* Lock-in drive feature
+* Script to enable using a hall signal as index edge.
+
+### Changed
+* Moved `traptraj.A_per_css` to `controller.inertia`
+* Refactored velocity ramp mode into the new general input filtering structure
+* Encoder index search now based on the new lock-in drive feature
+
+### Fixed
+* Encoder index interrupts now disabled when not searching
+
+## [0.4.8] - 2019-02-25
+### Added
+* `dump_errors()` utility function in odrivetool to dump, decode and optionally clear errors.
+* `f` command to ascii protocol to get encoder position and velocity feedback.
+* `q` command to ascii protocol. It is like the old `p` command, but velocity and current mean limits, not feed-forward.
+* `ss`, `se`, `sr` commands to ascii protocol, for save config, erase config and reboot.
+* `move_incremental` function for relative trajectory moves.
+* `encoder.config.ignore_illegal_hall_state` option.
+* `encoder.config.enable_phase_interpolation` option. Setting to false may reduce jerky pulsations at low speed when using hall sensor feedback.
+* Analog input. Used the same way as the PWM input mappings.
+* Voltage limit soft clamping instead of ERROR_MODULATION_MAGNITUDE in gimbal motor closed loop.
+* Thermal current limit with linear derating.
+
+### Changed
+* Unified lockin drive modes. Current for index searching and encoder offset calibration now moved to axis.lockin.current.
+
+### Fixed
+* Added required 1.5 cycle phase shift between ADC and PWM, lack thereof caused unstable current controller at high eRPM.
+
 ## [0.4.7] - 2018-11-28
 ### Added
 * Overspeed fault
 * Current sense saturation fault.
-* Supress startup transients by sampling encoder estimate into position setpoint when entering closed loop control.
+* Suppress startup transients by sampling encoder estimate into position setpoint when entering closed loop control.
 * Make step dir gpio pins configurable.
 * Configuration variable `encoder.config.zero_count_on_find_idx`, true by default. Set to false to leave the initial encoder count to be where the axis was at boot.
 * Circular position setpoint mode: position setpoints wrapped [0, cpr). Useful for infinite incremental position control.
@@ -56,6 +148,8 @@ Please add a note of your changes below this heading if you make a Pull Request.
 
 ## [0.4.3] - 2018-08-30
 ### Added
+* `min_endstop` and `max_endstop` objects can be configured on GPIO
+* Axes can be homed if `min_endstop` is enabled
 * Encoder position count "homed" to zero when index is found.
 
 ### Changed

@@ -22,7 +22,9 @@ extern const float adc_full_scale;
 extern const float adc_ref_voltage;
 /* Exported variables --------------------------------------------------------*/
 extern float vbus_voltage;
+extern float ibus_;
 extern bool brake_resistor_armed;
+extern bool brake_resistor_saturated;
 extern uint16_t adc_measurements_[ADC_CHANNEL_COUNT];
 /* Exported macro ------------------------------------------------------------*/
 /* Exported functions --------------------------------------------------------*/
@@ -51,6 +53,7 @@ void sync_timers(TIM_HandleTypeDef* htim_a, TIM_HandleTypeDef* htim_b,
 void start_general_purpose_adc();
 float get_adc_voltage(GPIO_TypeDef* GPIO_port, uint16_t GPIO_pin);
 void pwm_in_init();
+void start_analog_thread();
 
 void update_brake_current();
 
