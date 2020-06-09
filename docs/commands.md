@@ -48,8 +48,6 @@ The current state of an axis is indicated by `<axis>.current_state`. The user ca
 By default the ODrive takes no action at startup and goes to idle immediately.
 You may execute a predefined sequence of actions at startup by configuring the following options.
 
-If you set `<axis>.config.startup_sequence_on_boot` to True, then the sequence will run as soon as power is applied. If it is set to False it will run when the Enable line is asserted, or when `<axis>.requested_state = AXIS_STATE_STARTUP_SEQUENCE`.
-
 In order to change what startup procedures are used, set the startup procedures you want to `True`.
 The ODrive will sequence all enabled startup actions selected in the order shown below.
 
@@ -58,6 +56,8 @@ The ODrive will sequence all enabled startup actions selected in the order shown
 * `<axis>.config.startup_encoder_offset_calibration`
 * `<axis>.config.startup_closed_loop_control`
 * `<axis>.config.startup_sensorless_control`
+
+If the enable pin is used (`<axis>.config.use_enable_pin = True`) the startup sequence will not run until the Enable line is asserted or `<axis>.requested_state = AXIS_STATE_STARTUP_SEQUENCE`. The enable pin should remain asserted for the duration of the startup sequence, otherwise it will be aborted.
 
 See [state machine](#state-machine) for a description of each state.
 

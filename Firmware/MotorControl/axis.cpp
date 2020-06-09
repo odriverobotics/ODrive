@@ -141,7 +141,7 @@ void Axis::set_step_dir_active(bool active) {
         HAL_GPIO_Init(dir_port_, &GPIO_InitStruct);
 
         // Subscribe to rising edges of the step GPIO
-        GPIO_subscribe(step_port_, step_pin_, GPIO_PULLDOWN,
+        GPIO_subscribe(step_port_, step_pin_, GPIO_PULLDOWN, true, false,
             [](void* ctx) { static_cast<Axis*>(ctx)->step_cb(); }, this);
 
         step_dir_active_ = true;
@@ -164,8 +164,8 @@ void Axis::use_enable_pin_update() {
             GPIO_InitStruct.Pull = GPIO_PULLDOWN;
         }
         HAL_GPIO_Init(en_port_, &GPIO_InitStruct);
-        GPIO_subscribe(en_port_, en_pin_, GPIO_InitStruct.Pull,
-            [](void* ctx) { static_cast<Axis*>(ctx)->step_cb(); }, this);
+        GPIO_subscribe(en_port_, en_pin_, GPIO_InitStruct.Pull, true, true,
+            [](void* ctx) { static_cast<Axis*>(ctx)->enable_pin_cb(); }, this);
     } else {
         GPIO_unsubscribe(en_port_, en_pin_);
     }
@@ -352,6 +352,10 @@ bool Axis::run_closed_loop_control_loop() {
         if (!motor_.update(current_setpoint, encoder_.phase_, phase_vel))
             return false; // set_error should update axis.error_
 
+        // Once this point is reached, asserting the enable pin (if used) will
+        // directly jump to closed loop control.
+        startup_sequence_done_ = true;
+
         return true;
     });
     set_step_dir_active(config_.enable_step_dir && config_.step_dir_always_on);
@@ -453,7 +457,7 @@ bool Axis::run_idle_loop() {
 
 // Infinite loop that does calibration and enters main control loop as appropriate
 void Axis::run_state_machine_loop() {
-    if (config_.startup_sequence_on_boot) {
+    if (!config_.use_enable_pin) {
         requested_state_ = AXIS_STATE_STARTUP_SEQUENCE;
     }
 
@@ -477,7 +481,6 @@ void Axis::run_state_machine_loop() {
                     task_chain_[pos++] = AXIS_STATE_CLOSED_LOOP_CONTROL;
                 else if (config_.startup_sensorless_control)
                     task_chain_[pos++] = AXIS_STATE_SENSORLESS_CONTROL;
-                task_chain_[pos++] = AXIS_STATE_STARTUP_SEQUENCE_DONE;
                 task_chain_[pos++] = AXIS_STATE_IDLE;
             } else if (requested_state_ == AXIS_STATE_FULL_CALIBRATION_SEQUENCE) {
                 task_chain_[pos++] = AXIS_STATE_MOTOR_CALIBRATION;
@@ -556,11 +559,6 @@ void Axis::run_state_machine_loop() {
                     goto invalid_state_label;
                 watchdog_feed();
                 status = run_closed_loop_control_loop();
-            } break;
-
-            case AXIS_STATE_STARTUP_SEQUENCE_DONE: {
-                startup_sequence_done_ = true;
-                status = true;
             } break;
 
             case AXIS_STATE_IDLE: {

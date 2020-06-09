@@ -40,7 +40,6 @@ public:
         AXIS_STATE_LOCKIN_SPIN = 9,       //<! run lockin spin
         AXIS_STATE_ENCODER_DIR_FIND = 10,
         AXIS_STATE_HOMING = 11,   //<! run axis homing function
-        AXIS_STATE_STARTUP_SEQUENCE_DONE = 12,
     };
 
     struct LockinConfig_t {
@@ -60,7 +59,6 @@ public:
     static LockinConfig_t default_lockin();
 
     struct Config_t {
-        bool startup_sequence_on_boot = false;   //<! run startup sequence on boot, run when asserting EN line otherwise
         bool startup_motor_calibration = false;   //<! run motor calibration at startup, skip otherwise
         bool startup_encoder_index_search = false; //<! run encoder index search after startup, skip otherwise
                                                 // this only has an effect if encoder.config.use_index is also true
@@ -283,7 +281,6 @@ public:
             make_protocol_ro_property("lockin_state", &lockin_state_),
             make_protocol_property("is_homed", &homing_.is_homed),
             make_protocol_object("config",
-                make_protocol_property("startup_sequence_on_boot", &config_.startup_sequence_on_boot),
                 make_protocol_property("startup_motor_calibration", &config_.startup_motor_calibration),
                 make_protocol_property("startup_encoder_index_search", &config_.startup_encoder_index_search),
                 make_protocol_property("startup_encoder_offset_calibration", &config_.startup_encoder_offset_calibration),
