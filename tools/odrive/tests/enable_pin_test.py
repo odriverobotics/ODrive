@@ -53,7 +53,11 @@ class TestEnablePin():
 
         time.sleep(1)
 
-        # TODO: prevent ODrive from entering closed loop control when requested_state is set and enable pin is disabled
+        logger.debug("trying to do motor calibration with enable pin disabled")
+        axis_ctx.handle.requested_state = AXIS_STATE_MOTOR_CALIBRATION
+        time.sleep(0.01)
+        test_assert_eq(axis_ctx.handle.current_state, AXIS_STATE_IDLE)
+        test_assert_no_error(axis_ctx)
 
         logger.debug("triggering startup sequence through enable line")
         test_assert_eq(axis_ctx.handle.current_state, AXIS_STATE_IDLE)

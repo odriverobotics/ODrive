@@ -164,23 +164,19 @@ void Axis::use_enable_pin_update() {
             GPIO_InitStruct.Pull = GPIO_PULLDOWN;
         }
         HAL_GPIO_Init(en_port_, &GPIO_InitStruct);
-        GPIO_subscribe(en_port_, en_pin_, GPIO_InitStruct.Pull, true, true,
-            [](void* ctx) { static_cast<Axis*>(ctx)->enable_pin_cb(); }, this);
-    } else {
-        GPIO_unsubscribe(en_port_, en_pin_);
     }
 }
 
-void Axis::enable_pin_cb() {
+void Axis::enable_pin_check() {
     if (config_.use_enable_pin) {
         bool enable = HAL_GPIO_ReadPin(en_port_, en_pin_) ^ config_.enable_pin_active_low;
-        if (enable) {
+        if (enable && (current_state_ == AXIS_STATE_IDLE)) {
             if (startup_sequence_done_) {
                 requested_state_ = AXIS_STATE_CLOSED_LOOP_CONTROL;   
             } else {
                 requested_state_ = AXIS_STATE_STARTUP_SEQUENCE;
             }
-        } else {
+        } else if (!enable && (current_state_ != AXIS_STATE_IDLE)) {
             requested_state_ = AXIS_STATE_IDLE;
         }
     }

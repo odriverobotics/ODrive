@@ -101,7 +101,7 @@ public:
 
     static void load_default_step_dir_pin_config(
         const AxisHardwareConfig_t& hw_config, Config_t* config);
-    void enable_pin_cb();
+    void enable_pin_check();
     void use_enable_pin_update();
     static void load_default_can_id(const int& id, Config_t& config);
 
@@ -149,7 +149,10 @@ public:
     // @tparam T Must be a callable type that takes no arguments and returns a bool
     template<typename T>
     void run_control_loop(const T& update_handler) {
+        enable_pin_check(); // This can override requested_state_ based on the enable pin state.
         while (requested_state_ == AXIS_STATE_UNDEFINED) {
+            enable_pin_check(); // This can override requested_state_ based on the enable pin state.
+
             // look for errors at axis level and also all subcomponents
             bool checks_ok = do_checks();
             // Update all estimators

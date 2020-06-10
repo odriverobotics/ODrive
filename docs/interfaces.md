@@ -109,14 +109,12 @@ The maximum step rate is pending tests, but it should handle at least 50kHz. If 
 The step/direction interface will count steps and move the motor whenever the drive is in closed loop control. It will not count steps otherwise: steps during idle are ignored.
 
 ### Enable pin
-You may optionally use an Enable pin; set `axis.config.use_enable_pin` to True. The polarity of the enable line may be set with `axis.config.enable_pin_active_low = True/False`.
+You may optionally use an Enable pin; set `<axis>.config.use_enable_pin` to True. The polarity of the enable line may be set with `<axis>.config.enable_pin_active_low = True/False`.
 
 When the Enable pin is asserted, the ODrive will go into closed loop control, and it will go to idle when de-asserted.
 The first time the line is asserted it will also execute the [startup procedure](commands.md#startup-procedure). Please see that section for more detail and how to configure it.
 
-<div class="alert">
-The enable pin must not be considered a safety feature. It can only trigger state changes but a deasserted enable pin does not prevent state changes from other sources (e.g. if the used sets `requested_state` manually).
-</div>
+Note that a deasserted enable pin overrides state requests from other sources. That means if you set `<axis>.requested_state = AXIS_STATE_CLOSED_LOOP_CONTROL` while the enable pin is deasserted and `<axis>.config.use_enable_pin = True` then the ODrive will remain in idle and not indicate any error.
 
 ## RC PWM input
 You can control the ODrive directly from an hobby RC receiver.
