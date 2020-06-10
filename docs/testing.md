@@ -16,6 +16,7 @@ The testing facility consists of the following components:
  - `calibration_test.py`: Motor calibration, encoder offset calibration, encoder direction find, encoder index search
  - `can_test.py`: Partial coverage of the commands described in [CAN Protocol](can-protocol)
  - `closed_loop_test.py`: Velocity control, position control (TODO: sensorless control), brake regen current hard limit, current control with velocity limiting
+ - `enable_pin_test.py`: Enable pin
  - `encoder_test.py`: Incremental encoder, hall effect encoder, sin/cos encoder, SPI encoders (AMS, CUI)
  - `fibre_test.py`: General USB protocol tests
  - `nvm_test.py`: Configuration storage
