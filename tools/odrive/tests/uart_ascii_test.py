@@ -89,6 +89,15 @@ class TestUartAscii():
             response = int(ser.readline().strip())
             test_assert_eq(response, 12345)
 
+            # Test custom setter (aka property write hook)
+            odrive.handle.axis0.motor.config.phase_resistance = 1
+            odrive.handle.axis0.motor.config.phase_inductance = 1
+            odrive.handle.axis0.motor.config.current_control_bandwidth = 1000
+            old_gain = odrive.handle.axis0.motor.current_control.p_gain
+            test_assert_eq(old_gain, 1000, accuracy=0.0001) # must be non-zero for subsequent check to work
+            ser.write('w axis0.motor.config.current_control_bandwidth {}\n'.format(odrive.handle.axis0.motor.config.current_control_bandwidth / 2).encode('ascii'))
+            test_assert_eq(ser.readline(), b'')
+            test_assert_eq(odrive.handle.axis0.motor.current_control.p_gain, old_gain / 2, accuracy=0.0001)
 
             # Test 'c', 'v', 'p', 'q' and 'f' commands
 
