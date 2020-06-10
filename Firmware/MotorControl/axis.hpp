@@ -74,7 +74,7 @@ public:
                                          //<! This setting only takes effect on a state transition
                                          //<! into idle or out of closed loop control.
         bool use_enable_pin = false;
-        bool enable_pin_active_low = true;
+        bool enable_pin_active_low = false;
 
         float counts_per_step = 2.0f;
 
