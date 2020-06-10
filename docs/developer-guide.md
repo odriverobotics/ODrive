@@ -83,7 +83,7 @@ First install [Homebrew](https://brew.sh/). Then you can run these commands in T
 brew install armmbed/formulae/arm-none-eabi-gcc
 brew cask install osxfuse && brew install tup
 brew install openocd
-pip install PyYAML Jinja2 jsonschema
+pip3 install PyYAML Jinja2 jsonschema
 ```
 
 #### Windows
