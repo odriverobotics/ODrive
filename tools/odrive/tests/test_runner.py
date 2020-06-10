@@ -194,7 +194,7 @@ def test_watchdog(axis, feed_func, logger: Logger):
         
     logger.debug('letting watchdog expire...')
     time.sleep(1.3) # let the watchdog expire
-    test_assert_eq(axis.error, errors.axis.ERROR_WATCHDOG_TIMER_EXPIRED)
+    test_assert_eq(axis.error, AXIS_ERROR_WATCHDOG_TIMER_EXPIRED)
 
 # Test Components -------------------------------------------------------------#
 

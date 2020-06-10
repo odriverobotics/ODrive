@@ -25,7 +25,7 @@ Axis::Axis(int axis_num,
       sensorless_estimator_(sensorless_estimator),
       controller_(controller),
       motor_(motor),
-      trap_(trap),
+      trap_traj_(trap),
       min_endstop_(min_endstop),
       max_endstop_(max_endstop)
 {
@@ -33,7 +33,7 @@ Axis::Axis(int axis_num,
     sensorless_estimator_.axis_ = this;
     controller_.axis_ = this;
     motor_.axis_ = this;
-    trap_.axis_ = this;
+    trap_traj_.axis_ = this;
     min_endstop_.axis_ = this;
     max_endstop_.axis_ = this;
     decode_step_dir_pins();
@@ -161,9 +161,9 @@ bool Axis::do_checks() {
     if ((current_state_ != AXIS_STATE_IDLE) && (motor_.armed_state_ == Motor::ARMED_STATE_DISARMED))
         // motor got disarmed in something other than the idle loop
         error_ |= ERROR_MOTOR_DISARMED;
-    if (!(vbus_voltage >= board_config.dc_bus_undervoltage_trip_level))
+    if (!(vbus_voltage >= odrv.config_.dc_bus_undervoltage_trip_level))
         error_ |= ERROR_DC_BUS_UNDER_VOLTAGE;
-    if (!(vbus_voltage <= board_config.dc_bus_overvoltage_trip_level))
+    if (!(vbus_voltage <= odrv.config_.dc_bus_overvoltage_trip_level))
         error_ |= ERROR_DC_BUS_OVER_VOLTAGE;
 
     // Sub-components should use set_error which will propegate to this error_
@@ -173,7 +173,7 @@ bool Axis::do_checks() {
     // controller_.do_checks();
 
     // Check for endstop presses
-    bool vel_dependent_stopping = (current_state_ == AXIS_STATE_HOMING) && (controller_.config_.control_mode >= Controller::CTRL_MODE_VELOCITY_CONTROL);
+    bool vel_dependent_stopping = (current_state_ == AXIS_STATE_HOMING) && (controller_.config_.control_mode >= Controller::CONTROL_MODE_VELOCITY_CONTROL);
     if (min_endstop_.config_.enabled && min_endstop_.get_state() && (!vel_dependent_stopping || controller_.vel_setpoint_ < 0.0f)) {
         error_ |= ERROR_MIN_ENDSTOP_PRESSED;
     } else if (max_endstop_.config_.enabled && max_endstop_.get_state() && (!vel_dependent_stopping || controller_.vel_setpoint_ > 0.0f)) {
@@ -329,8 +329,8 @@ bool Axis::run_closed_loop_control_loop() {
 // Slowly drive in the negative direction at homing_speed until the min endstop is pressed
 // When pressed, set the linear count to the offset (default 0), and then go to position 0
 bool Axis::run_homing() {
-    Controller::ControlMode_t stored_control_mode = controller_.config_.control_mode;
-    Controller::InputMode_t stored_input_mode = controller_.config_.input_mode;
+    Controller::ControlMode stored_control_mode = controller_.config_.control_mode;
+    Controller::InputMode stored_input_mode = controller_.config_.input_mode;
 
     // TODO: theoretically this check should be inside the update loop,
     // otherwise someone could disable the endstop while homing is in progress.
@@ -338,7 +338,7 @@ bool Axis::run_homing() {
         return error_ |= ERROR_HOMING_WITHOUT_ENDSTOP, false;
     }
 
-    controller_.config_.control_mode = Controller::CTRL_MODE_VELOCITY_CONTROL;
+    controller_.config_.control_mode = Controller::CONTROL_MODE_VELOCITY_CONTROL;
     controller_.config_.input_mode = Controller::INPUT_MODE_VEL_RAMP;
 
     controller_.input_pos_ = 0.0f;
@@ -379,7 +379,7 @@ bool Axis::run_homing() {
     // Set our current position in encoder counts to make control more logical
     encoder_.set_linear_count((int32_t)controller_.pos_setpoint_);
 
-    controller_.config_.control_mode = Controller::CTRL_MODE_POSITION_CONTROL;
+    controller_.config_.control_mode = Controller::CONTROL_MODE_POSITION_CONTROL;
     controller_.config_.input_mode = Controller::INPUT_MODE_TRAP_TRAJ;
 
     controller_.input_pos_ = 0.0f;
@@ -497,7 +497,7 @@ void Axis::run_state_machine_loop() {
             case AXIS_STATE_LOCKIN_SPIN: {
                 if (!motor_.is_calibrated_ || motor_.config_.direction==0)
                     goto invalid_state_label;
-                status = run_lockin_spin(config_.lockin);
+                status = run_lockin_spin(config_.general_lockin);
             } break;
 
             case AXIS_STATE_SENSORLESS_CONTROL: {

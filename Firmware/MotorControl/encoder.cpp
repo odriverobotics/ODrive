@@ -35,7 +35,7 @@ void Encoder::setup() {
     }
 }
 
-void Encoder::set_error(Error_t error) {
+void Encoder::set_error(Error error) {
     vel_estimate_valid_ = false;
     pos_estimate_valid_ = false;
     error_ |= error;
@@ -207,7 +207,7 @@ bool Encoder::run_offset_calibration() {
     axis_->run_control_loop([&](){
         if (!axis_->motor_.enqueue_voltage_timings(voltage_magnitude, 0.0f))
             return false; // error set inside enqueue_voltage_timings
-        axis_->motor_.log_timing(Motor::TIMING_LOG_ENC_CALIB);
+        axis_->motor_.log_timing(TIMING_LOG_ENC_CALIB);
         return ++i < start_lock_duration * current_meas_hz;
     });
     if (axis_->error_ != Axis::ERROR_NONE)
@@ -224,7 +224,7 @@ bool Encoder::run_offset_calibration() {
         float v_beta = voltage_magnitude * our_arm_sin_f32(phase);
         if (!axis_->motor_.enqueue_voltage_timings(v_alpha, v_beta))
             return false; // error set inside enqueue_voltage_timings
-        axis_->motor_.log_timing(Motor::TIMING_LOG_ENC_CALIB);
+        axis_->motor_.log_timing(TIMING_LOG_ENC_CALIB);
 
         encvaluesum += shadow_count_;
         
@@ -264,7 +264,7 @@ bool Encoder::run_offset_calibration() {
         float v_beta = voltage_magnitude * our_arm_sin_f32(phase);
         if (!axis_->motor_.enqueue_voltage_timings(v_alpha, v_beta))
             return false; // error set inside enqueue_voltage_timings
-        axis_->motor_.log_timing(Motor::TIMING_LOG_ENC_CALIB);
+        axis_->motor_.log_timing(TIMING_LOG_ENC_CALIB);
 
         encvaluesum += shadow_count_;
         
@@ -312,7 +312,7 @@ void Encoder::sample_now() {
         case MODE_SPI_ABS_CUI:
         case MODE_SPI_ABS_AEAT:
         {
-            axis_->motor_.log_timing(Motor::TIMING_LOG_SAMPLE_NOW);
+            axis_->motor_.log_timing(TIMING_LOG_SAMPLE_NOW);
             // Do nothing
         } break;
 
@@ -348,7 +348,7 @@ bool Encoder::abs_spi_init(){
 
 bool Encoder::abs_spi_start_transaction(){
     if (mode_ & MODE_FLAG_ABS){
-        axis_->motor_.log_timing(Motor::TIMING_LOG_SPI_START);
+        axis_->motor_.log_timing(TIMING_LOG_SPI_START);
         if(hw_config_.spi->State != HAL_SPI_STATE_READY){
             set_error(ERROR_ABS_SPI_NOT_READY);
             return false;
@@ -377,7 +377,7 @@ uint8_t cui_parity(uint16_t v) {
 void Encoder::abs_spi_cb(){
     HAL_GPIO_WritePin(abs_spi_cs_port_, abs_spi_cs_pin_, GPIO_PIN_SET);
 
-    axis_->motor_.log_timing(Motor::TIMING_LOG_SPI_END);
+    axis_->motor_.log_timing(TIMING_LOG_SPI_END);
 
     uint16_t pos;
 

@@ -31,7 +31,7 @@ jobs:
     steps:
       - uses: actions/checkout@v2
 
-      - name: Install ARM GCC and tup (Debian)
+      - name: Install prerequisites (Debian)
         if: startsWith(matrix.os, 'ubuntu-')
         run: |
           DEBIAN_VERSION="$(lsb_release --release --short)"
@@ -52,11 +52,15 @@ jobs:
 
           sudo apt-get install tup
 
-      - name: Install ARM GCC and tup (macOS)
+          sudo apt install python3 python3-yaml python3-jinja2 python3-jsonschema
+
+      - name: Install prerequisites (macOS)
         if: startsWith(matrix.os, 'macOS-')
         run: |
           brew install armmbed/formulae/arm-none-eabi-gcc
           brew cask install osxfuse && brew install tup
+          pip3 install PyYAML Jinja2 jsonschema
+
         
       - name: Cache chocolatey
         uses: actions/cache@v2
@@ -67,7 +71,7 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-gcc-arm-embedded
 
-      - name: Install ARM GCC and tup (Windows)
+      - name: Install prerequisites (Windows)
         if: startsWith(matrix.os, 'windows-')
         run: |
           Invoke-WebRequest -Uri "http://gittup.org/tup/win32/tup-latest.zip" -OutFile ".\tup-latest.zip"
@@ -75,6 +79,8 @@ jobs:
           echo "::add-path::$(Resolve-Path .)\tup-latest"
 
           choco install gcc-arm-embedded # downloads https://developer.arm.com/-/media/Files/downloads/gnu-rm/9-2019q4/gcc-arm-none-eabi-9-2019-q4-major-win32.zip
+          
+          pip install PyYAML Jinja2 jsonschema
 
       - name: Prepare Compilation
         run: |

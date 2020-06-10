@@ -127,7 +127,7 @@ static void usb_server_thread(void * ctx) {
             // CDC Interface
             if (CDC_interface.data_pending) {
                 CDC_interface.data_pending = false;
-                if (board_config.enable_ascii_protocol_on_usb) {
+                if (odrv.config_.enable_ascii_protocol_on_usb) {
                     ASCII_protocol_parse_stream(CDC_interface.rx_buf,
                             CDC_interface.rx_len, usb_stream_output);
                 } else {

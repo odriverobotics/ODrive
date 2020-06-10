@@ -5,7 +5,7 @@
 
 #include "communication/can_helpers.hpp"
 
-enum InputMode_t {
+enum InputMode {
     INPUT_MODE_INACTIVE,
     INPUT_MODE_PASSTHROUGH,
     INPUT_MODE_VEL_RAMP,
@@ -84,7 +84,7 @@ TEST_SUITE("CAN Functions") {
         can_Message_t rxmsg;
         rxmsg.buf[0] = INPUT_MODE_MIX_CHANNELS;
         rxmsg.buf[1] = INPUT_MODE_PASSTHROUGH;
-        CHECK(static_cast<InputMode_t>(can_getSignal<InputMode_t>(rxmsg, 0, 8, true, 1, 0)) == INPUT_MODE_MIX_CHANNELS);
-        CHECK(static_cast<InputMode_t>(can_getSignal<InputMode_t>(rxmsg, 8, 8, true, 1, 0)) == INPUT_MODE_PASSTHROUGH);
+        CHECK(static_cast<InputMode>(can_getSignal<InputMode>(rxmsg, 0, 8, true, 1, 0)) == INPUT_MODE_MIX_CHANNELS);
+        CHECK(static_cast<InputMode>(can_getSignal<InputMode>(rxmsg, 8, 8, true, 1, 0)) == INPUT_MODE_PASSTHROUGH);
     }
 }

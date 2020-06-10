@@ -7,7 +7,8 @@ import platform
 import subprocess
 import os
 from fibre.utils import Event
-from odrive.enums import errors
+import odrive.enums
+from odrive.enums import *
 
 try:
     if platform.system() == 'Windows':
@@ -40,19 +41,19 @@ def dump_errors(odrv, clear=False):
         # Flatten axis and submodules
         # (name, remote_obj, errorcode)
         module_decode_map = [
-            ('axis', axis, errors.axis),
-            ('motor', axis.motor, errors.motor),
-            ('encoder', axis.encoder, errors.encoder),
-            ('controller', axis.controller, errors.controller),
+            ('axis', axis, {k: v for k, v in odrive.enums.__dict__ .items() if k.startswith("AXIS_ERROR_")}),
+            ('motor', axis.motor, {k: v for k, v in odrive.enums.__dict__ .items() if k.startswith("MOTOR_ERROR_")}),
+            ('encoder', axis.encoder, {k: v for k, v in odrive.enums.__dict__ .items() if k.startswith("ENCODER_ERROR_")}),
+            ('controller', axis.controller, {k: v for k, v in odrive.enums.__dict__ .items() if k.startswith("CONTROLLER_ERROR_")}),
         ]
 
         # Module error decode
         for name, remote_obj, errorcodes in module_decode_map:
             prefix = ' '*2 + name + ": "
-            if (remote_obj.error != errorcodes.ERROR_NONE):
+            if (remote_obj.error != 0):
                 foundError = False
                 print(prefix + _VT100Colors['red'] + "Error(s):" + _VT100Colors['default'])
-                errorcodes_tup = [(name, val) for name, val in errorcodes.__dict__.items() if 'ERROR_' in name]
+                errorcodes_tup = [(name, val) for name, val in errorcodes.items() if 'ERROR_' in name]
                 for codename, codeval in errorcodes_tup:
                     if remote_obj.error & codeval != 0:
                         foundError = True
@@ -60,7 +61,7 @@ def dump_errors(odrv, clear=False):
                 if not foundError:
                     print("    " + 'UNKNOWN ERROR!')
                 if clear:
-                    remote_obj.error = errorcodes.ERROR_NONE
+                    remote_obj.error = 0
             else:
                 print(prefix + _VT100Colors['green'] + "no error" + _VT100Colors['default'])
 

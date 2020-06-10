@@ -16,9 +16,9 @@
 // std::unordered_map<CAN_HandleTypeDef *, ODriveCAN *> ctxMap;
 
 // Constructor is called by communication.cpp and the handle is assigned appropriately
-ODriveCAN::ODriveCAN(CAN_HandleTypeDef *handle, ODriveCAN::Config_t &config)
-    : handle_{handle},
-      config_{config} {
+ODriveCAN::ODriveCAN(ODriveCAN::Config_t &config, CAN_HandleTypeDef *handle)
+    : config_{config},
+      handle_{handle} {
     // ctxMap[handle_] = this;
 }
 
@@ -32,7 +32,7 @@ void ODriveCAN::can_server_thread() {
             while (available()) {
                 read(rxmsg);
                 switch (config_.protocol) {
-                    case CAN_PROTOCOL_SIMPLE:
+                    case PROTOCOL_SIMPLE:
                         CANSimple::handle_can_message(rxmsg);
                         break;
                 }
@@ -57,7 +57,7 @@ static void can_server_thread_wrapper(void *ctx) {
 bool ODriveCAN::start_can_server() {
     HAL_StatusTypeDef status;
 
-    set_baud_rate(config_.baud);
+    set_baud_rate(config_.baud_rate);
 
     status = HAL_CAN_Init(handle_);
 
@@ -136,25 +136,25 @@ void ODriveCAN::set_baud_rate(uint32_t baudRate) {
     switch (baudRate) {
         case CAN_BAUD_125K:
             handle_->Init.Prescaler = 16;  // 21 TQ's
-            config_.baud = baudRate;
+            config_.baud_rate = baudRate;
             reinit_can();
             break;
 
         case CAN_BAUD_250K:
             handle_->Init.Prescaler = 8;  // 21 TQ's
-            config_.baud = baudRate;
+            config_.baud_rate = baudRate;
             reinit_can();
             break;
 
         case CAN_BAUD_500K:
             handle_->Init.Prescaler = 4;  // 21 TQ's
-            config_.baud = baudRate;
+            config_.baud_rate = baudRate;
             reinit_can();
             break;
 
         case CAN_BAUD_1000K:
             handle_->Init.Prescaler = 2;  // 21 TQ's
-            config_.baud = baudRate;
+            config_.baud_rate = baudRate;
             reinit_can();
             break;
 
@@ -172,7 +172,7 @@ void ODriveCAN::reinit_can() {
         status = HAL_CAN_ActivateNotification(handle_, CAN_IT_RX_FIFO0_MSG_PENDING);
 }
 
-void ODriveCAN::set_error(Error_t error) {
+void ODriveCAN::set_error(Error error) {
     error_ |= error;
 }
 // This function is called by each axis.
@@ -183,7 +183,7 @@ void ODriveCAN::send_heartbeat(Axis *axis) {
         uint32_t now = osKernelSysTick();
         if ((now - axis->last_heartbeat_) >= axis->config_.can_heartbeat_rate_ms) {
             switch (config_.protocol) {
-                case CAN_PROTOCOL_SIMPLE:
+                case PROTOCOL_SIMPLE:
                     CANSimple::send_heartbeat(axis);
                     break;
             }

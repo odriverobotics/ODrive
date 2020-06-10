@@ -80,7 +80,7 @@ class TestClosedLoopControl(TestClosedLoopControlBase):
             nominal_vel = float(enc_ctx.yaml['cpr']) * nominal_rps
             logger.debug(f'Testing closed loop velocity control at {nominal_rps} rounds/s...')
 
-            axis_ctx.handle.controller.config.control_mode = CTRL_MODE_VELOCITY_CONTROL
+            axis_ctx.handle.controller.config.control_mode = CONTROL_MODE_VELOCITY_CONTROL
             axis_ctx.handle.controller.config.input_mode = INPUT_MODE_PASSTHROUGH
             axis_ctx.handle.controller.input_vel = 0
 
@@ -107,7 +107,7 @@ class TestClosedLoopControl(TestClosedLoopControlBase):
 
             logger.debug(f'Testing closed loop position control...')
             
-            axis_ctx.handle.controller.config.control_mode = CTRL_MODE_POSITION_CONTROL
+            axis_ctx.handle.controller.config.control_mode = CONTROL_MODE_POSITION_CONTROL
             axis_ctx.handle.controller.input_pos = 0
             axis_ctx.handle.controller.config.vel_limit = float(enc_ctx.yaml['cpr']) * 5.0 # max 5 rps
             axis_ctx.handle.encoder.set_linear_count(0)
@@ -181,7 +181,7 @@ class TestRegenProtection(TestClosedLoopControlBase):
             logger.debug(f'Brake control test from {nominal_rps} rounds/s...')
             
             axis_ctx.handle.controller.config.vel_limit = float(enc_ctx.yaml['cpr']) * 10.0 # max 10 rps
-            axis_ctx.handle.controller.config.control_mode = CTRL_MODE_VELOCITY_CONTROL
+            axis_ctx.handle.controller.config.control_mode = CONTROL_MODE_VELOCITY_CONTROL
             axis_ctx.handle.controller.config.input_mode = INPUT_MODE_PASSTHROUGH
 
             request_state(axis_ctx, AXIS_STATE_CLOSED_LOOP_CONTROL)
@@ -207,8 +207,8 @@ class TestRegenProtection(TestClosedLoopControlBase):
             # ... and brake
             axis_ctx.handle.controller.input_vel = 0 # this should fail almost instantaneously
             time.sleep(0.1)
-            test_assert_eq(axis_ctx.handle.error, errors.axis.ERROR_MOTOR_DISARMED | errors.axis.ERROR_BRAKE_RESISTOR_DISARMED)
-            test_assert_eq(axis_ctx.handle.motor.error, errors.motor.ERROR_DC_BUS_OVER_REGEN_CURRENT)
+            test_assert_eq(axis_ctx.handle.error, AXIS_ERROR_MOTOR_DISARMED | AXIS_ERROR_BRAKE_RESISTOR_DISARMED)
+            test_assert_eq(axis_ctx.handle.motor.error, MOTOR_ERROR_DC_BUS_OVER_REGEN_CURRENT)
 
 
 class TestVelLimitInCurrentControl(TestClosedLoopControlBase):
@@ -231,7 +231,7 @@ class TestVelLimitInCurrentControl(TestClosedLoopControlBase):
             axis_ctx.handle.controller.config.vel_limit = max_vel
             axis_ctx.handle.controller.config.vel_limit_tolerance = inf # disable hard limit on velocity
             axis_ctx.handle.motor.config.current_lim = max_current
-            axis_ctx.handle.controller.config.control_mode = CTRL_MODE_CURRENT_CONTROL
+            axis_ctx.handle.controller.config.control_mode = CONTROL_MODE_CURRENT_CONTROL
 
             # Returns the expected limited setpoint for a given velocity and current
             def get_expected_setpoint(input_setpoint, velocity):
