@@ -468,7 +468,7 @@ class TestSpiEncoder(TestEncoderBase):
         time.sleep(0.002)
         # This fails from time to time because the pull-up on the ODrive only manages
         # to pull MISO to 1.8V, leaving it in the undefined range.
-        test_assert_eq(enc.handle.error, errors.encoder.ERROR_ABS_SPI_COM_FAIL)
+        test_assert_eq(enc.handle.error, ENCODER_ERROR_ABS_SPI_COM_FAIL)
 
         # Enable encoder and expect error to go away
         reset_gpio.write(False)
@@ -485,7 +485,7 @@ class TestSpiEncoder(TestEncoderBase):
         test_assert_eq(enc.handle.error, 0)
         reset_gpio.write(True)
         time.sleep(0.002)
-        test_assert_eq(enc.handle.error, errors.encoder.ERROR_ABS_SPI_COM_FAIL)
+        test_assert_eq(enc.handle.error, ENCODER_ERROR_ABS_SPI_COM_FAIL)
         reset_gpio.write(False)
         release_time = time.monotonic()
         enc.handle.error = 0

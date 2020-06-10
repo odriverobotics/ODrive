@@ -17,6 +17,7 @@ The testing facility consists of the following components:
  - `can_test.py`: Partial coverage of the commands described in [CAN Protocol](can-protocol)
  - `closed_loop_test.py`: Velocity control, position control (TODO: sensorless control), brake regen current hard limit, current control with velocity limiting
  - `encoder_test.py`: Incremental encoder, hall effect encoder, sin/cos encoder, SPI encoders (AMS, CUI)
+ - `fibre_test.py`: General USB protocol tests
  - `nvm_test.py`: Configuration storage
  - `pwm_input_test.py`: PWM input
  - `step_dir_test.py`: Step/dir input

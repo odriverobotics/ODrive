@@ -1,5 +1,6 @@
 
 #build folder
+autogen/
 build/
 deploy/
 .dep/

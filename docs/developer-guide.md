@@ -35,7 +35,7 @@ The recommended tools for ODrive development are:
  * **ARM GNU Compiler**: For cross-compiling code
  * **ARM GDB**: For debugging the code and stepping through on the device
  * **OpenOCD**: For flashing the ODrive with the STLink/v2 programmer
- * **Python**: For running the Python tools (`odrivetool`). Also required for compiling firmware.
+ * **Python 3**, along with the packages `PyYAML`, `Jinja2` and `jsonschema`: For running the Python tools (`odrivetool`). Also required for compiling firmware.
 
 See below for specific installation instructions for your OS.
 
@@ -57,6 +57,7 @@ sudo apt-get update
 sudo apt-get install gcc-arm-embedded
 sudo apt-get install openocd
 sudo add-apt-repository ppa:jonathonf/tup && sudo apt-get update && sudo apt-get install tup
+sudo apt-get install python3 python3-yaml python3-jinja2 python3-jsonschema
 ```
 
 #### Linux (Ubuntu >= 20.04)
@@ -64,6 +65,7 @@ sudo add-apt-repository ppa:jonathonf/tup && sudo apt-get update && sudo apt-get
 sudo apt install gcc-arm-embedded
 sudo apt install openocd
 sudo apt install tup
+sudo apt install python3 python3-yaml python3-jinja2 python3-jsonschema
 ```
 
 #### Arch Linux
@@ -71,6 +73,7 @@ sudo apt install tup
 sudo pacman -S arm-none-eabi-gcc arm-none-eabi-binutils
 sudo pacman -S arm-none-eabi-gdb
 sudo pacman -S tup
+sudo pacman -S python python-yaml python-jinja python-jsonschema
 ```
 * [OpenOCD AUR package](https://aur.archlinux.org/packages/openocd/)
 
@@ -80,6 +83,7 @@ First install [Homebrew](https://brew.sh/). Then you can run these commands in T
 brew install armmbed/formulae/arm-none-eabi-gcc
 brew cask install osxfuse && brew install tup
 brew install openocd
+pip3 install PyYAML Jinja2 jsonschema
 ```
 
 #### Windows
@@ -93,6 +97,7 @@ Some instructions in this document may assume that you're using a bash command p
 * [Tup](http://gittup.org/tup/index.html)
 * [GNU MCU Eclipse's Windows Build Tools](https://github.com/gnu-mcu-eclipse/windows-build-tools/releases)
 * [Python 3](https://www.python.org/downloads/)
+  * Install Python packages: `pip install PyYAML Jinja2 jsonschema`
 * [OpenOCD](https://github.com/xpack-dev-tools/openocd-xpack/releases/). 
 * [ST-Link/V2 Drivers](http://www.st.com/web/en/catalog/tools/FM147/SC1887/PF260219)
 
@@ -126,8 +131,6 @@ You can also modify the compile-time defaults for all `.config` parameters. You 
 1. Run `make` in the `Firmware` directory.
 2. Connect the ODrive via USB and power it up.
 3. Flash the firmware using [odrivetool dfu](odrivetool#device-firmware-update).
-
-If you get `/bin/sh: 1: python: not found` while running `make`, change the tup file command to use `python3` 
 
 ### Flashing using an STLink/v2 programmer
 

@@ -30,10 +30,10 @@ Pass `input_xxx` through to `xxx_setpoint` directly.
 * `input_current`
 
 ### Valid Control modes:
-* `CTRL_MODE_VOLTAGE_CONTROL`
-* `CTRL_MODE_CURRENT_CONTROL`
-* `CTRL_MODE_VELOCITY_CONTROL`
-* `CTRL_MODE_POSITION_CONTROL`
+* `CONTROL_MODE_VOLTAGE_CONTROL`
+* `CONTROL_MODE_CURRENT_CONTROL`
+* `CONTROL_MODE_VELOCITY_CONTROL`
+* `CONTROL_MODE_POSITION_CONTROL`
 
 ## INPUT_MODE_VEL_RAMP
 Ramps a velocity command from the current value to the target value.
@@ -46,7 +46,7 @@ Ramps a velocity command from the current value to the target value.
 * `input_vel`
 
 ### Valid Control Modes:
-* `CTRL_MODE_VELOCITY_CONTROL`
+* `CONTROL_MODE_VELOCITY_CONTROL`
 
 ## INPUT_MODE_POS_FILTER
 Implements a 2nd order position tracking filter.  Inteded for use with step/dir interface, but can also be used with position-only commands.
@@ -62,7 +62,7 @@ Result of a step command from 1000 to 0
 * `input_pos`
 
 ### Valid Control modes:
-* `CTRL_MODE_POSITION_CONTROL`
+* `CONTROL_MODE_POSITION_CONTROL`
 
 ## INPUT_MODE_MIX_CHANNELS
 Not Implemented.
@@ -83,7 +83,7 @@ Implementes an online trapezoidal trajectory planner.
 * `input_pos`
 
 ### Valid Control Modes:
-* `CTRL_MODE_POSITION_CONTROL`
+* `CONTROL_MODE_POSITION_CONTROL`
 
 ## INPUT_MODE_CURRENT_RAMP
 Ramp a current command from the current value to the target value.
@@ -95,7 +95,7 @@ Ramp a current command from the current value to the target value.
 * `input_current`
 
 ### Valid Control Modes:
-* `CTRL_MODE_CURRENT_CONTROL`
+* `CONTROL_MODE_CURRENT_CONTROL`
 
 ## INPUT_MODE_MIRROR
 Implements "electronic mirroring".  This is like electronic camming, but you can only mirror exactly the movements of the other motor, according to a fixed ratio
@@ -110,4 +110,4 @@ Implements "electronic mirroring".  This is like electronic camming, but you can
 * None.  Inputs are taken directly from the other axis encoder estimates
 
 ### Valid Control modes
-* `CTRL_MODE_POSITION_CONTROL`
+* `CONTROL_MODE_POSITION_CONTROL`

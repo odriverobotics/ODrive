@@ -17,10 +17,6 @@ extern "C" {
 extern osThreadId comm_thread;
 extern const uint32_t stack_size_comm_thread;
 
-extern const uint8_t hw_version_major;
-extern const uint8_t hw_version_minor;
-extern const uint8_t hw_version_variant;
-
 void init_communication(void);
 void initTree();
 void communication_task(void * ctx);

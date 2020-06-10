@@ -13,19 +13,11 @@
 /* Global constant data ------------------------------------------------------*/
 /* Global variables ----------------------------------------------------------*/
 
-Endpoint** endpoint_list_ = nullptr;    // initialized by calling fibre_publish
-size_t n_endpoints_ = 0;                // initialized by calling fibre_publish
-uint16_t json_crc_;                     // initialized by calling fibre_publish
-uint32_t json_version_id_;              // initialized by calling fibre_publish
-JSONDescriptorEndpoint json_file_endpoint_ = JSONDescriptorEndpoint();
-EndpointProvider* application_endpoints_;
-
 /* Private constant data -----------------------------------------------------*/
 /* Private variables ---------------------------------------------------------*/
 /* Private function prototypes -----------------------------------------------*/
 
 static void hexdump(const uint8_t* buf, size_t len);
-static inline int write_string(const char* str, StreamSink* output);
 
 /* Function implementations --------------------------------------------------*/
 
@@ -116,45 +108,26 @@ int StreamBasedPacketSink::process_packet(const uint8_t *buffer, size_t length) 
 }
 
 
-
-void JSONDescriptorEndpoint::write_json(size_t id, StreamSink* output) {
-    write_string("{\"name\":\"\",", output);
-
-    // write endpoint ID
-    write_string("\"id\":", output);
-    char id_buf[10];
-    snprintf(id_buf, sizeof(id_buf), "%u", (unsigned)id); // TODO: get rid of printf
-    write_string(id_buf, output);
-
-    write_string(",\"type\":\"json\",\"access\":\"r\"}", output);
-}
-
-void JSONDescriptorEndpoint::register_endpoints(Endpoint** list, size_t id, size_t length) {
-    if (id < length)
-        list[id] = this;
-}
-
 // Returns part of the JSON interface definition.
-void JSONDescriptorEndpoint::handle(const uint8_t* input, size_t input_length, StreamSink* output) {
+bool fibre::endpoint0_handler(fibre::cbufptr_t* input_buffer, fibre::bufptr_t* output_buffer) {
     // The request must contain a 32 bit integer to specify an offset
-    if (input_length < 4)
-        return;
-    uint32_t offset = 0;
-    read_le<uint32_t>(&offset, input);
-
-    // If the offset is special value 0xFFFFFFFF, send back the JSON version ID instead
-    if (offset == 0xffffffff) {
-        default_readwrite_endpoint_handler(&json_version_id_, nullptr, 0, output);
+    std::optional<uint32_t> offset = read_le<uint32_t>(input_buffer);
+    
+    if (!offset.has_value()) {
+        // Didn't receive any offset
+        return false;
+    } else if (offset.value() == 0xffffffff) {
+        // If the offset is special value 0xFFFFFFFF, send back the JSON version ID instead
+        return write_le<uint32_t>(json_version_id_, output_buffer);
+    } else if (offset.value() >= embedded_json_length) {
+        // Attempt to read beyond the buffer end - return empty response
+        return true;
     } else {
-        NullStreamSink output_with_offset = NullStreamSink(offset, *output);
-
-        size_t id = 0;
-        write_string("[", &output_with_offset);
-        json_file_endpoint_.write_json(id, &output_with_offset);
-        id += decltype(json_file_endpoint_)::endpoint_count;
-        write_string(",", &output_with_offset);
-        application_endpoints_->write_json(id, &output_with_offset);
-        write_string("]", &output_with_offset);
+        // Return part of the json file
+        size_t n_copy = std::min(output_buffer->size(), embedded_json_length - (size_t)offset.value());
+        memcpy(output_buffer->begin(), embedded_json + offset.value(), n_copy);
+        *output_buffer = output_buffer->skip(n_copy);
+        return true;
     }
 }
 
@@ -176,19 +149,10 @@ int BidirectionalPacketBasedChannel::process_packet(const uint8_t* buffer, size_
         bool expect_response = endpoint_id & 0x8000;
         endpoint_id &= 0x7fff;
 
-        if (endpoint_id >= n_endpoints_)
-            return -1;
-
-        Endpoint* endpoint = endpoint_list_[endpoint_id];
-        if (!endpoint) {
-            LOG_FIBRE("critical: no endpoint at %d", endpoint_id);
-            return -1;
-        }
-
         // Verify packet trailer. The expected trailer value depends on the selected endpoint.
         // For endpoint 0 this is just the protocol version, for all other endpoints it's a
         // CRC over the entire JSON descriptor tree (this may change in future versions).
-        uint16_t expected_trailer = endpoint_id ? json_crc_ : PROTOCOL_VERSION;
+        uint16_t expected_trailer = endpoint_id ? fibre::json_crc_ : PROTOCOL_VERSION;
         uint16_t actual_trailer = buffer[length - 2] | (buffer[length - 1] << 8);
         if (expected_trailer != actual_trailer) {
             LOG_FIBRE("trailer mismatch for endpoint %d: expected %04x, got %04x\r\n", endpoint_id, expected_trailer, actual_trailer);
@@ -204,12 +168,13 @@ int BidirectionalPacketBasedChannel::process_packet(const uint8_t* buffer, size_
         if (expected_response_length > sizeof(tx_buf_) - 2)
             expected_response_length = sizeof(tx_buf_) - 2;
 
-        MemoryStreamSink output(tx_buf_ + 2, expected_response_length);
-        endpoint->handle(buffer, length - 2, &output);
+        fibre::cbufptr_t input_buffer{buffer, length - 2};
+        fibre::bufptr_t output_buffer{tx_buf_ + 2, expected_response_length};
+        fibre::endpoint_handler(endpoint_id, &input_buffer, &output_buffer);
 
         // Send response
         if (expect_response) {
-            size_t actual_response_length = expected_response_length - output.get_free_space() + 2;
+            size_t actual_response_length = expected_response_length - output_buffer.size() + 2;
             write_le<uint16_t>(seq_no | 0x8000, tx_buf_);
 
             LOG_FIBRE("send packet:\r\n");
@@ -219,16 +184,4 @@ int BidirectionalPacketBasedChannel::process_packet(const uint8_t* buffer, size_
     }
 
     return 0;
-}
-
-bool is_endpoint_ref_valid(endpoint_ref_t endpoint_ref) {
-    return (endpoint_ref.json_crc == json_crc_)
-        && (endpoint_ref.endpoint_id < n_endpoints_);
-}
-
-Endpoint* get_endpoint(endpoint_ref_t endpoint_ref) {
-    if (is_endpoint_ref_valid(endpoint_ref))
-        return endpoint_list_[endpoint_ref.endpoint_id];
-    else
-        return nullptr;
 }

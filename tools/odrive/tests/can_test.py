@@ -138,7 +138,7 @@ class TestSimpleCAN():
         my_cmd('estop') # should not be accepted
         extended_id = not extended_id
         fence()
-        test_assert_eq(axis.error, errors.axis.ERROR_NONE)
+        test_assert_eq(axis.error, AXIS_ERROR_NONE)
 
         axis.encoder.set_linear_count(123)
         test_assert_eq(my_req('get_encoder_estimates')['encoder_pos_estimate'], 123.0, accuracy=0.01)
@@ -150,12 +150,12 @@ class TestSimpleCAN():
 
         my_cmd('estop')
         fence()
-        test_assert_eq(axis.error, errors.axis.ERROR_ESTOP_REQUESTED)
+        test_assert_eq(axis.error, AXIS_ERROR_ESTOP_REQUESTED)
 
         my_cmd('set_requested_state', requested_state=42) # illegal state - should assert axis error
         fence()
         test_assert_eq(axis.current_state, 1) # idle
-        test_assert_eq(axis.error, errors.axis.ERROR_ESTOP_REQUESTED | errors.axis.ERROR_INVALID_STATE)
+        test_assert_eq(axis.error, AXIS_ERROR_ESTOP_REQUESTED | AXIS_ERROR_INVALID_STATE)
 
         my_cmd('clear_errors')
         fence()
@@ -181,13 +181,13 @@ class TestSimpleCAN():
         test_assert_eq(axis.controller.input_vel, 2.0, range=0.01)
         test_assert_eq(axis.controller.input_current, 3.0, range=0.001)
 
-        axis.controller.config.control_mode = CTRL_MODE_VELOCITY_CONTROL
+        axis.controller.config.control_mode = CONTROL_MODE_VELOCITY_CONTROL
         my_cmd('set_input_vel', input_vel=-10.0, cur_ff=30.1234)
         fence()
         test_assert_eq(axis.controller.input_vel, -10.0, range=0.01)
         test_assert_eq(axis.controller.input_current, 30.1234, range=0.01)
 
-        axis.controller.config.control_mode = CTRL_MODE_CURRENT_CONTROL
+        axis.controller.config.control_mode = CONTROL_MODE_CURRENT_CONTROL
         my_cmd('set_input_current', input_current=3.1415)
         fence()
         test_assert_eq(axis.controller.input_current, 3.1415, range=0.01)
@@ -218,7 +218,7 @@ class TestSimpleCAN():
         heartbeats = asyncio.run(get_all(record_messages(canbus.handle, node_id, extended_id, 'heartbeat', timeout = 1.0)))
         test_assert_eq(len(heartbeats), 5.8 / 0.1, accuracy=0.05)
         test_assert_eq([msg['error'] for msg in heartbeats[0:35]], [0] * 35) # before watchdog expiry
-        test_assert_eq([msg['error'] for msg in heartbeats[-10:]], [errors.axis.ERROR_WATCHDOG_TIMER_EXPIRED] * 10) # after watchdog expiry
+        test_assert_eq([msg['error'] for msg in heartbeats[-10:]], [AXIS_ERROR_WATCHDOG_TIMER_EXPIRED] * 10) # after watchdog expiry
         test_assert_eq([msg['current_state'] for msg in heartbeats], [1] * len(heartbeats))
 
         logger.debug('testing reboot...')

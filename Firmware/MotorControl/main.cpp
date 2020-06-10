@@ -10,7 +10,6 @@
 #include <communication/interface_i2c.h>
 #include <communication/interface_can.hpp>
 
-BoardConfig_t board_config;
 ODriveCAN::Config_t can_config;
 Encoder::Config_t encoder_configs[AXIS_COUNT];
 SensorlessEstimator::Config_t sensorless_configs[AXIS_COUNT];
@@ -20,12 +19,10 @@ Axis::Config_t axis_configs[AXIS_COUNT];
 TrapezoidalTrajectory::Config_t trap_configs[AXIS_COUNT];
 Endstop::Config_t min_endstop_configs[AXIS_COUNT];
 Endstop::Config_t max_endstop_configs[AXIS_COUNT];
-bool user_config_loaded_;
-
-SystemStats_t system_stats_;
 
 std::array<Axis*, AXIS_COUNT> axes;
 ODriveCAN *odCAN = nullptr;
+ODrive odrv{};
 
 typedef Config<
     BoardConfig_t,
@@ -39,9 +36,9 @@ typedef Config<
     Endstop::Config_t[AXIS_COUNT],
     Axis::Config_t[AXIS_COUNT]> ConfigFormat;
 
-void save_configuration(void) {
+void ODrive::save_configuration(void) {
     if (ConfigFormat::safe_store_config(
-            &board_config,
+            &odrv.config_,
             &can_config,
             &encoder_configs,
             &sensorless_configs,
@@ -53,7 +50,7 @@ void save_configuration(void) {
             &axis_configs)) {
         printf("saving configuration failed\r\n"); osDelay(5);
     } else {
-        user_config_loaded_ = true;
+        odrv.user_config_loaded_ = true;
     }
 }
 
@@ -61,7 +58,7 @@ extern "C" int load_configuration(void) {
     // Try to load configs
     if (NVM_init() ||
         ConfigFormat::safe_load_config(
-                &board_config,
+                &odrv.config_,
                 &can_config,
                 &encoder_configs,
                 &sensorless_configs,
@@ -72,7 +69,7 @@ extern "C" int load_configuration(void) {
                 &max_endstop_configs,
                 &axis_configs)) {
         //If loading failed, restore defaults
-        board_config = BoardConfig_t();
+        odrv.config_ = BoardConfig_t();
         can_config = ODriveCAN::Config_t();
         for (size_t i = 0; i < AXIS_COUNT; ++i) {
             encoder_configs[i] = Encoder::Config_t();
@@ -89,12 +86,12 @@ extern "C" int load_configuration(void) {
             controller_configs[i].load_encoder_axis = i;
         }
     } else {
-        user_config_loaded_ = true;
+        odrv.user_config_loaded_ = true;
     }
-    return user_config_loaded_;
+    return odrv.user_config_loaded_;
 }
 
-void erase_configuration(void) {
+void ODrive::erase_configuration(void) {
     NVM_erase();
 
     // FIXME: this reboot is a workaround because we don't want the next save_configuration
@@ -105,8 +102,8 @@ void erase_configuration(void) {
     NVIC_SystemReset();
 }
 
-void enter_dfu_mode() {
-    if ((hw_version_major == 3) && (hw_version_minor >= 5)) {
+void ODrive::enter_dfu_mode() {
+    if ((hw_version_major_ == 3) && (hw_version_minor_ >= 5)) {
         __asm volatile ("CPSID I\n\t":::"memory"); // disable interrupts
         _reboot_cookie = 0xDEADBEEF;
         NVIC_SystemReset();
@@ -125,7 +122,7 @@ void enter_dfu_mode() {
 
 extern "C" int construct_objects(){
 #if HW_VERSION_MAJOR == 3 && HW_VERSION_MINOR >= 3
-    if (board_config.enable_i2c_instead_of_can) {
+    if (odrv.config_.enable_i2c_instead_of_can) {
         // Set up the direction GPIO as input
         GPIO_InitTypeDef GPIO_InitStruct;
         GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
@@ -149,7 +146,7 @@ extern "C" int construct_objects(){
         MX_CAN1_Init();
 
     HAL_UART_DeInit(&huart4);
-    huart4.Init.BaudRate = board_config.uart_baudrate;
+    huart4.Init.BaudRate = odrv.config_.uart_baudrate;
     HAL_UART_Init(&huart4);
 
     // Init general user ADC on some GPIOs.
@@ -170,7 +167,7 @@ extern "C" int construct_objects(){
 #endif
 
     // Construct all objects.
-    odCAN = new ODriveCAN(&hcan1, can_config);
+    odCAN = new ODriveCAN(can_config, &hcan1);
     for (size_t i = 0; i < AXIS_COUNT; ++i) {
         Encoder *encoder = new Encoder(hw_configs[i].encoder_config,
                                        encoder_configs[i], motor_configs[i]);
@@ -184,8 +181,14 @@ extern "C" int construct_objects(){
         Endstop *max_endstop = new Endstop(max_endstop_configs[i]);
         axes[i] = new Axis(i, hw_configs[i].axis_config, axis_configs[i],
                 *encoder, *sensorless_estimator, *controller, *motor, *trap, *min_endstop, *max_endstop);
+
+        controller_configs[i].parent = controller;
+        encoder_configs[i].parent = encoder;
+        motor_configs[i].parent = motor;
+        min_endstop_configs[i].parent = min_endstop;
+        max_endstop_configs[i].parent = max_endstop;
+        axis_configs[i].parent = axes[i];
     }
-    initTree();
     return 0;
 }
 
@@ -199,27 +202,27 @@ void vApplicationStackOverflowHook(xTaskHandle *pxTask, signed portCHAR *pcTaskN
     for (;;); // TODO: safe action
 }
 void vApplicationIdleHook(void) {
-    if (system_stats_.fully_booted) {
-        system_stats_.uptime = xTaskGetTickCount();
-        system_stats_.min_heap_space = xPortGetMinimumEverFreeHeapSize();
-        system_stats_.min_stack_space_comms = uxTaskGetStackHighWaterMark(comm_thread) * sizeof(StackType_t);
-        system_stats_.min_stack_space_axis0 = uxTaskGetStackHighWaterMark(axes[0]->thread_id_) * sizeof(StackType_t);
-        system_stats_.min_stack_space_axis1 = uxTaskGetStackHighWaterMark(axes[1]->thread_id_) * sizeof(StackType_t);
-        system_stats_.min_stack_space_usb = uxTaskGetStackHighWaterMark(usb_thread) * sizeof(StackType_t);
-        system_stats_.min_stack_space_uart = uxTaskGetStackHighWaterMark(uart_thread) * sizeof(StackType_t);
-        system_stats_.min_stack_space_usb_irq = uxTaskGetStackHighWaterMark(usb_irq_thread) * sizeof(StackType_t);
-        system_stats_.min_stack_space_startup = uxTaskGetStackHighWaterMark(defaultTaskHandle) * sizeof(StackType_t);
-        system_stats_.min_stack_space_can = uxTaskGetStackHighWaterMark(odCAN->thread_id_) * sizeof(StackType_t);
+    if (odrv.system_stats_.fully_booted) {
+        odrv.system_stats_.uptime = xTaskGetTickCount();
+        odrv.system_stats_.min_heap_space = xPortGetMinimumEverFreeHeapSize();
+        odrv.system_stats_.min_stack_space_comms = uxTaskGetStackHighWaterMark(comm_thread) * sizeof(StackType_t);
+        odrv.system_stats_.min_stack_space_axis0 = uxTaskGetStackHighWaterMark(axes[0]->thread_id_) * sizeof(StackType_t);
+        odrv.system_stats_.min_stack_space_axis1 = uxTaskGetStackHighWaterMark(axes[1]->thread_id_) * sizeof(StackType_t);
+        odrv.system_stats_.min_stack_space_usb = uxTaskGetStackHighWaterMark(usb_thread) * sizeof(StackType_t);
+        odrv.system_stats_.min_stack_space_uart = uxTaskGetStackHighWaterMark(uart_thread) * sizeof(StackType_t);
+        odrv.system_stats_.min_stack_space_usb_irq = uxTaskGetStackHighWaterMark(usb_irq_thread) * sizeof(StackType_t);
+        odrv.system_stats_.min_stack_space_startup = uxTaskGetStackHighWaterMark(defaultTaskHandle) * sizeof(StackType_t);
+        odrv.system_stats_.min_stack_space_can = uxTaskGetStackHighWaterMark(odCAN->thread_id_) * sizeof(StackType_t);
 
         // Actual usage, in bytes, so we don't have to math
-        system_stats_.stack_usage_axis0 = axes[0]->stack_size_ - system_stats_.min_stack_space_axis0;
-        system_stats_.stack_usage_axis1 = axes[1]->stack_size_ - system_stats_.min_stack_space_axis1;
-        system_stats_.stack_usage_comms = stack_size_comm_thread - system_stats_.min_stack_space_comms;
-        system_stats_.stack_usage_usb = stack_size_usb_thread - system_stats_.min_stack_space_usb;
-        system_stats_.stack_usage_uart = stack_size_uart_thread - system_stats_.min_stack_space_uart;
-        system_stats_.stack_usage_usb_irq = stack_size_usb_irq_thread - system_stats_.min_stack_space_usb_irq;
-        system_stats_.stack_usage_startup = stack_size_default_task - system_stats_.min_stack_space_startup;
-        system_stats_.stack_usage_can = odCAN->stack_size_ - system_stats_.min_stack_space_can;
+        odrv.system_stats_.stack_usage_axis0 = axes[0]->stack_size_ - odrv.system_stats_.min_stack_space_axis0;
+        odrv.system_stats_.stack_usage_axis1 = axes[1]->stack_size_ - odrv.system_stats_.min_stack_space_axis1;
+        odrv.system_stats_.stack_usage_comms = stack_size_comm_thread - odrv.system_stats_.min_stack_space_comms;
+        odrv.system_stats_.stack_usage_usb = stack_size_usb_thread - odrv.system_stats_.min_stack_space_usb;
+        odrv.system_stats_.stack_usage_uart = stack_size_uart_thread - odrv.system_stats_.min_stack_space_uart;
+        odrv.system_stats_.stack_usage_usb_irq = stack_size_usb_irq_thread - odrv.system_stats_.min_stack_space_usb_irq;
+        odrv.system_stats_.stack_usage_startup = stack_size_default_task - odrv.system_stats_.min_stack_space_startup;
+        odrv.system_stats_.stack_usage_can = odCAN->stack_size_ - odrv.system_stats_.min_stack_space_can;
     }
 }
 }
@@ -230,7 +233,7 @@ int odrive_main(void) {
 
     // TODO: make dynamically reconfigurable
 #if HW_VERSION_MAJOR == 3 && HW_VERSION_MINOR >= 3
-    if (board_config.enable_uart) {
+    if (odrv.config_.enable_uart) {
         SetGPIO12toUART();
     }
 #endif
@@ -271,6 +274,6 @@ int odrive_main(void) {
 
     start_analog_thread();
 
-    system_stats_.fully_booted = true;
+    odrv.system_stats_.fully_booted = true;
     return 0;
 }

@@ -65,10 +65,10 @@ See [state machine](#state-machine) for a description of each state.
 The default control mode is position control.
 If you want a different mode, you can change `<axis>.controller.config.control_mode`.
 Possible values are:
-* `CTRL_MODE_POSITION_CONTROL`
-* `CTRL_MODE_VELOCITY_CONTROL`
-* `CTRL_MODE_CURRENT_CONTROL`
-* `CTRL_MODE_VOLTAGE_CONTROL` - this one is not normally used.
+* `CONTROL_MODE_POSITION_CONTROL`
+* `CONTROL_MODE_VELOCITY_CONTROL`
+* `CONTROL_MODE_CURRENT_CONTROL`
+* `CONTROL_MODE_VOLTAGE_CONTROL` - this one is not normally used.
 
 ### Input Mode
 The default input mode is `INPUT_MODE_PASSTHROUGH`.
