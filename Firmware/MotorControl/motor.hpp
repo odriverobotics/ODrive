@@ -22,7 +22,8 @@ public:
         ERROR_BRAKE_DEADTIME_VIOLATION = 0x0100,
         ERROR_UNEXPECTED_TIMER_CALLBACK = 0x0200,
         ERROR_CURRENT_SENSE_SATURATION = 0x0400,
-        ERROR_INVERTER_OVER_TEMP = 0x0800
+        ERROR_INVERTER_OVER_TEMP = 0x0800,
+        ERROR_ESTOP_ACTIVATED = 0x0F00
     };
 
     enum MotorType_t {
@@ -111,6 +112,7 @@ public:
     void update_current_controller_gains();
     void DRV8301_setup();
     bool check_DRV_fault();
+    bool check_estop_active();
     void set_error(Error_t error);
     bool do_checks();
     float get_inverter_temp();

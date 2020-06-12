@@ -146,6 +146,8 @@
 #define nFAULT_GPIO_Port GPIOD
 #define GPIO_8_Pin GPIO_PIN_3
 #define GPIO_8_GPIO_Port GPIOB
+#define nESTOP_Pin GPIO_8_Pin
+#define nESTOP_GPIO_Port GPIO_8_GPIO_Port
 #define M0_ENC_A_Pin GPIO_PIN_4
 #define M0_ENC_A_GPIO_Port GPIOB
 #define M0_ENC_B_Pin GPIO_PIN_5

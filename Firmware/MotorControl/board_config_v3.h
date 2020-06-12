@@ -42,6 +42,8 @@ typedef struct {
     uint16_t control_deadline;
     float shunt_conductance;
     size_t inverter_thermistor_adc_ch;
+    GPIO_TypeDef* nESTOP_port;
+    uint16_t nESTOP_pin;
 } MotorHardwareConfig_t;
 typedef struct {
     SPI_HandleTypeDef* spi;
@@ -92,6 +94,8 @@ const BoardHardwareConfig_t hw_configs[2] = { {
         .control_deadline = TIM_1_8_PERIOD_CLOCKS,
         .shunt_conductance = 1.0f / SHUNT_RESISTANCE,  //[S]
         .inverter_thermistor_adc_ch = 15,
+        .nESTOP_port = nESTOP_GPIO_Port, // the nESTOP pin is shared between both motors
+        .nESTOP_pin = nESTOP_Pin
     },
     .gate_driver_config = {
         .spi = &hspi3,
@@ -135,6 +139,8 @@ const BoardHardwareConfig_t hw_configs[2] = { {
 #else
         .inverter_thermistor_adc_ch = 1,
 #endif
+        .nESTOP_port = nESTOP_GPIO_Port, // the nESTOP pin is shared between both motors
+        .nESTOP_pin = nESTOP_Pin
     },
     .gate_driver_config = {
         .spi = &hspi3,

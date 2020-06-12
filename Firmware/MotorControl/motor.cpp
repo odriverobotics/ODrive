@@ -119,6 +119,16 @@ void Motor::DRV8301_setup() {
     DRV8301_readData(&gate_driver_, local_regs);
 }
 
+// @brief Checks if the emergency stop has been activated (low signal).
+// @returns: true if the estop is OK (), false otherwise
+bool Motor::check_estop_active() {
+    GPIO_PinState nESTOP_state = HAL_GPIO_ReadPin(hw_config_.nESTOP_port, hw_config_.nESTOP_pin);
+    if (nESTOP_state == GPIO_PIN_RESET) {
+        return false;
+    };
+    return true;
+}
+
 // @brief Checks if the gate driver is in operational state.
 // @returns: true if the gate driver is OK (no fault), false otherwise
 bool Motor::check_DRV_fault() {
@@ -165,6 +175,10 @@ bool Motor::update_thermal_limits() {
 }
 
 bool Motor::do_checks() {
+    if (!check_estop_active()) {
+        set_error(ERROR_NOT_IMPLEMENTED_MOTOR_TYPE);
+        return false;
+    }
     if (!check_DRV_fault()) {
         set_error(ERROR_DRV_FAULT);
         return false;
