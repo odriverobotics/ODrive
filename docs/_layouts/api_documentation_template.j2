@@ -12,10 +12,10 @@ download:
 [%- endmacro %]
 
 [%- macro value_type_ref(type) -%]
-[%- if type.builtin %]
-**<span title="C type: [[type.c_name]], Python type: [[type.py_type]]">[[type.name]]</span>**
-[%- else %]
-**[['[']]<span [% if type.brief %]title="[[type.brief]]"[% endif %]>[[type.name]]</span>[[']']]([[type.fullname | lower]])**
+[%- if type.builtin -%]
+<span title="C type: [[type.c_name]], Python type: [[type.py_type]]">[[type.name]]</span>
+[%- else -%]
+[['[']]<span [% if type.brief %]title="[[type.brief]]"[% endif %]>[[type.name]]</span>[[']']]([[type.fullname | lower]])
 [%- endif %]
 [%- endmacro %]
 
@@ -62,9 +62,9 @@ download:
 [% if interface.attributes %]
 [% for attr in interface.attributes.values() %]
 [%- if attr.type.purename == 'fibre.Property' %]
-<a name="[[attr.name]]"></a><span style="font-size: large;"><code markdown="span">[[attr.name]] - [[value_type_ref(attr.type.value_type)]]</code></span>&nbsp;&nbsp;&nbsp;&nbsp;<span style="font-size: small;">_([[attr.type.mode]] property)_</span>
+<a name="[[attr.name]]"></a><span style="font-size: medium;">**<code markdown="span">[[attr.name]]</code>**&nbsp;&nbsp;&mdash;&nbsp;&nbsp;<code markdown="span">[[value_type_ref(attr.type.value_type)]]</code></span>&nbsp;&nbsp;&nbsp;&nbsp;<span style="font-size: small;">_[[attr.type.mode]]_</span>
 [%- else %]
-<a name="[[attr.name]]"></a><span style="font-size: large;"><code markdown="span">[[attr.name]] - [[interface_ref(attr.type)]]</code></span>
+<a name="[[attr.name]]"></a><span style="font-size: medium;">**<code markdown="span">[[attr.name]]</code>**&nbsp;&nbsp;&mdash;&nbsp;&nbsp;<code markdown="span">[[interface_ref(attr.type)]]</code></span>
 [%- endif %]
 [[-status_badge(attr.status)]]
 
@@ -90,7 +90,7 @@ This interface has no attributes.
 
 [% if interface.functions %]
 [% for function in interface.functions.values() %]
-<a name="[[function.name]]"></a><span style="font-size: large;"><code markdown="span">[[function.name]]([% for arg in function.in.values() | skip_first %][[arg.name]]: [[value_type_ref(arg.type)]][[', ' if not loop.last]][% endfor %])[[' -> ' if function.out]][% for arg in function.out.values() %][[arg.name]]: [[value_type_ref(arg.type)]][[', ' if not loop.last]][% endfor %]</code></span>
+<a name="[[function.name]]"></a><span style="font-size: medium;"><code markdown="span">**[[function.name]]**([% for arg in function.in.values() | skip_first %][[arg.name]]: [[value_type_ref(arg.type)]][[', ' if not loop.last]][% endfor %])</code>[% if function.out %]&nbsp;&nbsp;&#x2794;&nbsp;&nbsp;<code markdown="span">[% for arg in function.out.values() %][[arg.name]]: [[value_type_ref(arg.type)]][[', ' if not loop.last]][% endfor %]</code>[% endif %]</span>
 
 <ul markdown="block">
 [% if function.doc or function.brief %]
@@ -131,7 +131,7 @@ This interface has no functions.
 ## [% if enum.is_flags %]Flags[% else %]Values[% endif %]
 
 [% for k, value in enum['values'].items() %]
-<a name="[[value.name]]"></a><span style="font-size: large;"><code markdown="span">[[(enum.name + value.name) | to_macro_case]]</code>&ensp;&ndash;&ensp;[% if enum.is_flags %]0x[['%08x' | format(value.value)]][% else %][[value.value]][% endif %]</span>
+<a name="[[value.name]]"></a><span style="font-size: medium;">**<code markdown="span">[[(enum.name + value.name) | to_macro_case]]</code>**&nbsp;&nbsp;&mdash;&nbsp;&nbsp;[% if enum.is_flags %]0x[['%08x' | format(value.value)]][% else %][[value.value]][% endif %]</span>
 [[-status_badge(value.status)]]
 
 <ul markdown="block">
