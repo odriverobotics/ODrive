@@ -13,7 +13,7 @@ Controller::Controller(Config_t& config) :
 void Controller::reset() {
     pos_setpoint_ = 0.0f;
     vel_setpoint_ = 0.0f;
-    vel_integrator_current_ = 0.0f;
+    vel_integrator_torque_ = 0.0f;
     torque_setpoint_ = 0.0f;
 }
 
@@ -87,13 +87,13 @@ bool Controller::anticogging_calibration(float pos_estimate, float vel_estimate)
     float pos_err = input_pos_ - pos_estimate;
     if (std::abs(pos_err) <= config_.anticogging.calib_pos_threshold &&
         std::abs(vel_estimate) < config_.anticogging.calib_vel_threshold) {
-        config_.anticogging.cogging_map[std::clamp<uint32_t>(config_.anticogging.index++, 0, 3600)] = vel_integrator_current_;
+        config_.anticogging.cogging_map[std::clamp<uint32_t>(config_.anticogging.index++, 0, 3600)] = vel_integrator_torque_;
     }
     if (config_.anticogging.index < 3600) {
         config_.control_mode = CONTROL_MODE_POSITION_CONTROL;
         input_pos_ = config_.anticogging.index * axis_->encoder_.getCoggingRatio();
         input_vel_ = 0.0f;
-        input_current_ = 0.0f;
+        input_torque_ = 0.0f;
         input_pos_updated();
         return false;
     } else {
@@ -101,7 +101,7 @@ bool Controller::anticogging_calibration(float pos_estimate, float vel_estimate)
         config_.control_mode = CONTROL_MODE_POSITION_CONTROL;
         input_pos_ = 0.0f;  // Send the motor home
         input_vel_ = 0.0f;
-        input_current_ = 0.0f;
+        input_torque_ = 0.0f;
         input_pos_updated();
         anticogging_valid_ = true;
         config_.anticogging.calib_anticogging = false;
@@ -292,9 +292,8 @@ bool Controller::update(float* torque_setpoint_output) {
     // Anti-cogging is enabled after calibration
     // We get the current position and apply a current feed-forward
     // ensuring that we handle negative encoder positions properly (-1 == motor->encoder.encoder_cpr - 1)
-    // anticogging currently in units of [A], multiply by Kt to get back to torque.
     if (anticogging_valid_ && config_.anticogging.anticogging_enabled) {
-        torque += config_.anticogging.cogging_map[std::clamp(mod((int)anticogging_pos, 3600), 0, 3600)] * axis_->motor_.config_.torque_constant;
+        torque += config_.anticogging.cogging_map[std::clamp(mod((int)anticogging_pos, 3600), 0, 3600)];
     }
 
     float v_err = 0.0f;
@@ -308,7 +307,7 @@ bool Controller::update(float* torque_setpoint_output) {
         torque += (vel_gain * gain_scheduling_multiplier) * v_err;
 
         // Velocity integral action before limiting
-        torque += vel_integrator_current_;
+        torque += vel_integrator_torque_;
     }
 
     // Velocity limiting in current mode
@@ -337,13 +336,13 @@ bool Controller::update(float* torque_setpoint_output) {
     // Velocity integrator (behaviour dependent on limiting)
     if (config_.control_mode < CONTROL_MODE_VELOCITY_CONTROL) {
         // reset integral if not in use
-        vel_integrator_current_ = 0.0f;
+        vel_integrator_torque_ = 0.0f;
     } else {
         if (limited) {
             // TODO make decayfactor configurable
-            vel_integrator_current_ *= 0.99f;
+            vel_integrator_torque_ *= 0.99f;
         } else {
-            vel_integrator_current_ += ((vel_integrator_gain * gain_scheduling_multiplier) * current_meas_period) * v_err;
+            vel_integrator_torque_ += ((vel_integrator_gain * gain_scheduling_multiplier) * current_meas_period) * v_err;
         }
     }
 

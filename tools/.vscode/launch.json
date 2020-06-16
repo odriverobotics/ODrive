@@ -9,7 +9,7 @@
             "type": "python",
             "request": "launch",
             "stopOnEntry": true,
-            "pythonPath": "${config:python.pythonPath}",
+            "pythonPath": "${config:python.interpreterPath}",
             "program": "${file}",
             "cwd": "${workspaceRoot}",
             "env": {},

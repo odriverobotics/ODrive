@@ -85,7 +85,7 @@ For more information, see [input_modes](input_modes.md).
 # Control Commands
 * `<axis>.controller.input_pos = <encoder_counts>`
 * `<axis>.controller.input_vel = <encoder_counts/s>`
-* `<axis>.controller.input_current = <current_in_A>`
+* `<axis>.controller.input_torque = <torque in Nm>`
 
 ### Input Mode
 To modify the way the control command affects the motor, you can use the input mode. The default input mode is pass through.

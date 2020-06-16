@@ -95,8 +95,8 @@ void ASCII_protocol_process_line(const uint8_t* buffer, size_t len, StreamSink& 
     // check incoming packet type
     if (cmd[0] == 'p') { // position control
         unsigned motor_number;
-        float pos_setpoint, vel_feed_forward, current_feed_forward;
-        int numscan = sscanf(cmd, "p %u %f %f %f", &motor_number, &pos_setpoint, &vel_feed_forward, &current_feed_forward);
+        float pos_setpoint, vel_feed_forward, torque_feed_forward;
+        int numscan = sscanf(cmd, "p %u %f %f %f", &motor_number, &pos_setpoint, &vel_feed_forward, &torque_feed_forward);
         if (numscan < 2) {
             respond(response_channel, use_checksum, "invalid command format");
         } else if (motor_number >= AXIS_COUNT) {
@@ -108,15 +108,15 @@ void ASCII_protocol_process_line(const uint8_t* buffer, size_t len, StreamSink& 
             if (numscan >= 3)
                 axis->controller_.input_vel_ = vel_feed_forward;
             if (numscan >= 4)
-                axis->controller_.input_current_ = current_feed_forward;
+                axis->controller_.input_torque_ = torque_feed_forward;
             axis->controller_.input_pos_updated();
             axis->watchdog_feed();
         }
 
     } else if (cmd[0] == 'q') { // position control with limits
         unsigned motor_number;
-        float pos_setpoint, vel_limit, current_lim;
-        int numscan = sscanf(cmd, "q %u %f %f %f", &motor_number, &pos_setpoint, &vel_limit, &current_lim);
+        float pos_setpoint, vel_limit, torque_lim;
+        int numscan = sscanf(cmd, "q %u %f %f %f", &motor_number, &pos_setpoint, &vel_limit, &torque_lim);
         if (numscan < 2) {
             respond(response_channel, use_checksum, "invalid command format");
         } else if (motor_number >= AXIS_COUNT) {
@@ -128,15 +128,15 @@ void ASCII_protocol_process_line(const uint8_t* buffer, size_t len, StreamSink& 
             if (numscan >= 3)
                 axis->controller_.config_.vel_limit = vel_limit;
             if (numscan >= 4)
-                axis->motor_.config_.current_lim = current_lim;
+                axis->motor_.config_.torque_lim = torque_lim;
             axis->controller_.input_pos_updated();
             axis->watchdog_feed();
         }
 
     } else if (cmd[0] == 'v') { // velocity control
         unsigned motor_number;
-        float vel_setpoint, current_feed_forward;
-        int numscan = sscanf(cmd, "v %u %f %f", &motor_number, &vel_setpoint, &current_feed_forward);
+        float vel_setpoint, torque_feed_forward;
+        int numscan = sscanf(cmd, "v %u %f %f", &motor_number, &vel_setpoint, &torque_feed_forward);
         if (numscan < 2) {
             respond(response_channel, use_checksum, "invalid command format");
         } else if (motor_number >= AXIS_COUNT) {
@@ -146,22 +146,22 @@ void ASCII_protocol_process_line(const uint8_t* buffer, size_t len, StreamSink& 
             axis->controller_.config_.control_mode = Controller::CONTROL_MODE_VELOCITY_CONTROL;
             axis->controller_.input_vel_ = vel_setpoint;
             if (numscan >= 3)
-                axis->controller_.input_current_ = current_feed_forward;
+                axis->controller_.input_torque_ = torque_feed_forward;
             axis->watchdog_feed();
         }
 
-    } else if (cmd[0] == 'c') { // current control
+    } else if (cmd[0] == 'c') { // torque control
         unsigned motor_number;
-        float current_setpoint;
-        int numscan = sscanf(cmd, "c %u %f", &motor_number, &current_setpoint);
+        float torque_setpoint;
+        int numscan = sscanf(cmd, "c %u %f", &motor_number, &torque_setpoint);
         if (numscan < 2) {
             respond(response_channel, use_checksum, "invalid command format");
         } else if (motor_number >= AXIS_COUNT) {
             respond(response_channel, use_checksum, "invalid motor %u", motor_number);
         } else {
             Axis* axis = axes[motor_number];
-            axis->controller_.config_.control_mode = Controller::CONTROL_MODE_CURRENT_CONTROL;
-            axis->controller_.input_current_ = current_setpoint;
+            axis->controller_.config_.control_mode = Controller::CONTROL_MODE_TORQUE_CONTROL;
+            axis->controller_.input_torque_ = torque_setpoint;
             axis->watchdog_feed();
         }
 
@@ -200,7 +200,7 @@ void ASCII_protocol_process_line(const uint8_t* buffer, size_t len, StreamSink& 
         respond(response_channel, use_checksum, "Position: q axis pos vel-lim I-lim");
         respond(response_channel, use_checksum, "Position: p axis pos vel-ff I-ff");
         respond(response_channel, use_checksum, "Velocity: v axis vel I-ff");
-        respond(response_channel, use_checksum, "Current: c axis I");
+        respond(response_channel, use_checksum, "Torque: c axis T");
         respond(response_channel, use_checksum, "");
         respond(response_channel, use_checksum, "Properties start at odrive root, such as axis0.requested_state");
         respond(response_channel, use_checksum, "Read: r property");

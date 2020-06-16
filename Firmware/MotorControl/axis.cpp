@@ -306,7 +306,7 @@ bool Axis::run_closed_loop_control_loop() {
     controller_.input_pos_ = *controller_.pos_estimate_src_;
 
     // Avoid integrator windup issues
-    controller_.vel_integrator_current_ = 0.0f;
+    controller_.vel_integrator_torque_ = 0.0f;
 
     set_step_dir_active(config_.enable_step_dir);
     run_control_loop([this](){
@@ -344,7 +344,7 @@ bool Axis::run_homing() {
     controller_.input_pos_ = 0.0f;
     controller_.input_pos_updated();
     controller_.input_vel_ = -controller_.config_.homing_speed;
-    controller_.input_current_ = 0.0f;
+    controller_.input_torque_ = 0.0f;
 
     homing_.is_homed = false;
 
@@ -356,7 +356,7 @@ bool Axis::run_homing() {
     controller_.pos_setpoint_ = *controller_.pos_estimate_src_;
 
     // Avoid integrator windup issues
-    controller_.vel_integrator_current_ = 0.0f;
+    controller_.vel_integrator_torque_ = 0.0f;
 
     run_control_loop([this](){
         // Note that all estimators are updated in the loop prefix in run_control_loop
@@ -385,7 +385,7 @@ bool Axis::run_homing() {
     controller_.input_pos_ = 0.0f;
     controller_.input_pos_updated();
     controller_.input_vel_ = 0.0f;
-    controller_.input_current_ = 0.0f;
+    controller_.input_torque_ = 0.0f;
 
     run_control_loop([this](){
         // Note that all estimators are updated in the loop prefix in run_control_loop

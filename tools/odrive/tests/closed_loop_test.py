@@ -246,19 +246,19 @@ class TestVelLimitInCurrentControl(TestClosedLoopControlBase):
                 # Abort immediately if the absolute limits are exceeded
                 test_assert_within(current_setpoint, -max_current, max_current)
                 test_assert_within(velocity, -absolute_max_vel, absolute_max_vel)
-                return input_current, velocity, current_setpoint, get_expected_setpoint(input_current, velocity)
+                return input_torque, velocity, current_setpoint, get_expected_setpoint(input_torque, velocity)
 
-            axis_ctx.handle.controller.input_current = input_current = 0.0
+            axis_ctx.handle.controller.input_torque = input_torque = 0.0
             request_state(axis_ctx, AXIS_STATE_CLOSED_LOOP_CONTROL)
 
             # Move the system around its operating envelope
-            axis_ctx.handle.controller.input_current = input_current = 2.0
+            axis_ctx.handle.controller.input_torque = input_torque = 2.0
             dataA = record_log(data_getter, duration=1.0)
-            axis_ctx.handle.controller.input_current = input_current = -2.0
+            axis_ctx.handle.controller.input_torque = input_torque = -2.0
             dataA = np.concatenate([dataA, record_log(data_getter, duration=1.0)])
-            axis_ctx.handle.controller.input_current = input_current = 4.0
+            axis_ctx.handle.controller.input_torque = input_torque = 4.0
             dataA = np.concatenate([dataA, record_log(data_getter, duration=1.0)])
-            axis_ctx.handle.controller.input_current = input_current = -4.0
+            axis_ctx.handle.controller.input_torque = input_torque = -4.0
             dataA = np.concatenate([dataA, record_log(data_getter, duration=1.0)])
 
             # Shrink the operating envelope while motor is moving faster than the envelope allows
@@ -267,22 +267,22 @@ class TestVelLimitInCurrentControl(TestClosedLoopControlBase):
             axis_ctx.handle.controller.config.vel_limit = max_vel
 
             # Move the system around its operating envelope
-            axis_ctx.handle.controller.input_current = input_current = 2.0
+            axis_ctx.handle.controller.input_torque = input_torque = 2.0
             dataB = record_log(data_getter, duration=1.0)
-            axis_ctx.handle.controller.input_current = input_current = -2.0
+            axis_ctx.handle.controller.input_torque = input_torque = -2.0
             dataB = np.concatenate([dataB, record_log(data_getter, duration=1.0)])
-            axis_ctx.handle.controller.input_current = input_current = 4.0
+            axis_ctx.handle.controller.input_torque = input_torque = 4.0
             dataB = np.concatenate([dataB, record_log(data_getter, duration=1.0)])
-            axis_ctx.handle.controller.input_current = input_current = -4.0
+            axis_ctx.handle.controller.input_torque = input_torque = -4.0
             dataB = np.concatenate([dataB, record_log(data_getter, duration=1.0)])
 
             # Try the shrink maneuver again at positive velocity
             axis_ctx.handle.controller.config.vel_limit = 20.0 * float(enc_ctx.yaml['cpr'])
-            axis_ctx.handle.controller.input_current = 4.0
+            axis_ctx.handle.controller.input_torque = 4.0
             time.sleep(0.5)
             axis_ctx.handle.controller.config.vel_limit = max_vel
 
-            axis_ctx.handle.controller.input_current = input_current = 2.0
+            axis_ctx.handle.controller.input_torque = input_torque = 2.0
             dataB = np.concatenate([dataB, record_log(data_getter, duration=1.0)])
 
             test_assert_no_error(axis_ctx)

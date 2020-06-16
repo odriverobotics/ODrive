@@ -4,7 +4,7 @@ As of version ###, ODrive now intercepts the incoming commands and can apply fil
 * `<axis>.controller.config.input_mode`
 * `<axis>.controller.input_pos`
 * `<axis>.controller.input_vel`
-* `<axis>.controller.input_current`
+* `<axis>.controller.input_torque`
 
 The Input Modes currently valid are:
 * `INPUT_MODE_INACTIVE`
@@ -27,7 +27,7 @@ Pass `input_xxx` through to `xxx_setpoint` directly.
 ### Valid Inputs:
 * `input_pos`
 * `input_vel`
-* `input_current`
+* `input_torque`
 
 ### Valid Control modes:
 * `CONTROL_MODE_VOLTAGE_CONTROL`
@@ -92,7 +92,7 @@ Ramp a current command from the current value to the target value.
 * `<axis>.controller.config.current_ramp_rate`
 
 ### Valid Inputs:
-* `input_current`
+* `input_torque`
 
 ### Valid Control Modes:
 * `CONTROL_MODE_CURRENT_CONTROL`

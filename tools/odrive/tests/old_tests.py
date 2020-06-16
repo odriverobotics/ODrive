@@ -581,7 +581,7 @@ class TestVelCtrlVsPosCtrl(DualAxisTest):
         # Set up viscous fluid load
         logger.debug("activating load on {}...".format(load_ctx.name))
         load_ctx.handle.controller.config.vel_integrator_gain = 0
-        load_ctx.handle.controller.vel_integrator_current = 0
+        load_ctx.handle.controller.vel_integrator_torque = 0
         set_limits(load_ctx, logger, vel_limit=100000, current_limit=50)
         load_ctx.handle.controller.set_vel_setpoint(0, 0)
         request_state(load_ctx, AXIS_STATE_CLOSED_LOOP_CONTROL)

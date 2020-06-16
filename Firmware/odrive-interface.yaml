@@ -461,13 +461,12 @@ interfaces:
           InvalidEstimate:
       input_pos: {type: float32, c_setter: set_input_pos}
       input_vel: float32
-      input_current: float32
       input_torque: float32
       pos_setpoint: readonly float32
       vel_setpoint: readonly float32
       torque_setpoint: readonly float32
       trajectory_done: readonly bool
-      vel_integrator_current: float32
+      vel_integrator_torque: float32
       anticogging_valid: bool
       config:
         c_is_class: False
@@ -681,7 +680,7 @@ valuetypes:
       # Note: these should be sorted from lowest level of control to
       # highest level of control, to allow "<" style comparisons.
       VoltageControl:
-      CurrentControl:
+      TorqueControl:
       VelocityControl:
       PositionControl:
 

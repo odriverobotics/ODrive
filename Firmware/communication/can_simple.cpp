@@ -82,8 +82,8 @@ void CANSimple::handle_can_message(can_Message_t& msg) {
             case MSG_SET_INPUT_VEL:
                 set_input_vel_callback(axis, msg);
                 break;
-            case MSG_SET_INPUT_CURRENT:
-                set_input_current_callback(axis, msg);
+            case MSG_SET_INPUT_TORQUE:
+                set_input_torque_callback(axis, msg);
                 break;
             case MSG_SET_CONTROLLER_MODES:
                 set_controller_modes_callback(axis, msg);
@@ -281,17 +281,17 @@ void CANSimple::get_encoder_count_callback(Axis* axis, can_Message_t& msg) {
 void CANSimple::set_input_pos_callback(Axis* axis, can_Message_t& msg) {
     axis->controller_.input_pos_ = can_getSignal<int32_t>(msg, 0, 32, true);
     axis->controller_.input_vel_ = can_getSignal<int16_t>(msg, 32, 16, true, 0.1f, 0);
-    axis->controller_.input_current_ = can_getSignal<int16_t>(msg, 48, 16, true, 0.01f, 0);
+    axis->controller_.input_torque_ = can_getSignal<int16_t>(msg, 48, 16, true, 0.01f, 0);
     axis->controller_.input_pos_updated();
 }
 
 void CANSimple::set_input_vel_callback(Axis* axis, can_Message_t& msg) {
     axis->controller_.input_vel_ = can_getSignal<int32_t>(msg, 0, 32, true, 0.01f, 0.0f);
-    axis->controller_.input_current_ = can_getSignal<int16_t>(msg, 32, 16, true, 0.01f, 0.0f);
+    axis->controller_.input_torque_ = can_getSignal<int16_t>(msg, 32, 16, true, 0.01f, 0.0f);
 }
 
-void CANSimple::set_input_current_callback(Axis* axis, can_Message_t& msg) {
-    axis->controller_.input_current_ = can_getSignal<int32_t>(msg, 0, 32, true, 0.01f, 0);
+void CANSimple::set_input_torque_callback(Axis* axis, can_Message_t& msg) {
+    axis->controller_.input_torque_ = can_getSignal<int32_t>(msg, 0, 32, true, 0.01f, 0);
 }
 
 void CANSimple::set_controller_modes_callback(Axis* axis, can_Message_t& msg) {
