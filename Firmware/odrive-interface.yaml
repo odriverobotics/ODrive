@@ -376,6 +376,7 @@ interfaces:
           Id_measured: float32
           I_measured_report_filter_k: float32
           max_allowed_current: readonly float32
+          max_allowed_torque: readonly float32
           overcurrent_trip_level: readonly float32
           acim_rotor_flux: float32
           async_phase_vel: readonly float32
@@ -427,10 +428,13 @@ interfaces:
           resistance_calib_max_voltage: float32
           phase_inductance: {type: float32, c_setter: set_phase_inductance}
           phase_resistance: {type: float32, c_setter: set_phase_resistance}
+          torque_constant: float32
           direction: int32
           motor_type: MotorType
           current_lim: float32
           current_lim_margin: float32
+          torque_lim: float32
+          torque_lim_margin: float32
           inverter_temp_limit_lower: float32
           inverter_temp_limit_upper: float32
           requested_current_range: float32
@@ -458,9 +462,10 @@ interfaces:
       input_pos: {type: float32, c_setter: set_input_pos}
       input_vel: float32
       input_current: float32
+      input_torque: float32
       pos_setpoint: readonly float32
       vel_setpoint: readonly float32
-      current_setpoint: readonly float32
+      torque_setpoint: readonly float32
       trajectory_done: readonly bool
       vel_integrator_current: float32
       anticogging_valid: bool

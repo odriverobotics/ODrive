@@ -177,19 +177,19 @@ bool Motor::do_checks() {
     return true;
 }
 
-float Motor::effective_current_lim() {
+float Motor::effective_torque_lim() {
     // Configured limit
-    float current_lim = config_.current_lim;
+    float torque_lim = config_.torque_lim;
     // Hardware limit
     if (axis_->motor_.config_.motor_type == Motor::MOTOR_TYPE_GIMBAL) {
-        current_lim = std::min(current_lim, 0.98f*one_by_sqrt3*vbus_voltage);
+        torque_lim = std::min(torque_lim, 0.98f*one_by_sqrt3*vbus_voltage); //gimbal motor is voltage control, not Nm or A
     } else {
-        current_lim = std::min(current_lim, axis_->motor_.current_control_.max_allowed_current);
+        torque_lim = std::min(torque_lim, axis_->motor_.current_control_.max_allowed_torque);
     }
     // Thermal limit
-    current_lim = std::min(current_lim, thermal_current_lim_);
+    torque_lim = std::min(torque_lim, thermal_torque_lim_);
 
-    return current_lim;
+    return torque_lim;
 }
 
 void Motor::log_timing(TimingLog_t log_idx) {
@@ -359,7 +359,7 @@ bool Motor::FOC_current(float Id_des, float Iq_des, float I_phase, float pwm_pha
     ictrl.Id_measured += ictrl.I_measured_report_filter_k * (Id - ictrl.Id_measured);
 
     // Check for violation of current limit
-    float I_trip = effective_current_lim() + config_.current_lim_margin;
+    float I_trip = (effective_torque_lim() + config_.torque_lim_margin) / config_.torque_constant;
     if (SQ(Id) + SQ(Iq) > SQ(I_trip)) {
         set_error(ERROR_CURRENT_LIMIT_VIOLATION);
         return false;
@@ -440,13 +440,14 @@ bool Motor::FOC_current(float Id_des, float Iq_des, float I_phase, float pwm_pha
 }
 
 
-bool Motor::update(float current_setpoint, float phase, float phase_vel) {
+bool Motor::update(float torque_setpoint, float phase, float phase_vel) {
+    float current_setpoint = torque_setpoint / config_.torque_constant;
     current_setpoint *= config_.direction;
     phase *= config_.direction;
     phase_vel *= config_.direction;
 
     // TODO: 2-norm vs independent clamping (current could be sqrt(2) bigger)
-    float ilim = effective_current_lim();
+    float ilim = effective_torque_lim() / config_.torque_constant;
     float id = std::clamp(current_control_.Id_setpoint, -ilim, ilim);
     float iq = std::clamp(current_setpoint, -ilim, ilim);
 

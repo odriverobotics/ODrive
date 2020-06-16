@@ -14,7 +14,7 @@ void Controller::reset() {
     pos_setpoint_ = 0.0f;
     vel_setpoint_ = 0.0f;
     vel_integrator_current_ = 0.0f;
-    current_setpoint_ = 0.0f;
+    torque_setpoint_ = 0.0f;
 }
 
 void Controller::set_error(Error error) {
@@ -115,13 +115,13 @@ void Controller::update_filter_gains() {
     input_filter_kp_ = 0.25f * (input_filter_ki_ * input_filter_ki_); // Critically damped
 }
 
-static float limitVel(const float vel_limit, const float vel_estimate, const float vel_gain, const float Iq) {
-    float Imax = (vel_limit - vel_estimate) * vel_gain;
-    float Imin = (-vel_limit - vel_estimate) * vel_gain;
-    return std::clamp(Iq, Imin, Imax);
+static float limitVel(const float vel_limit, const float vel_estimate, const float vel_gain, const float torque) {
+    float Tmax = (vel_limit - vel_estimate) * vel_gain;
+    float Tmin = (-vel_limit - vel_estimate) * vel_gain;
+    return std::clamp(torque, Tmin, Tmax);
 }
 
-bool Controller::update(float* current_setpoint_output) {
+bool Controller::update(float* torque_setpoint_output) {
     float* pos_estimate_src = (pos_estimate_valid_src_ && *pos_estimate_valid_src_)
             ? pos_estimate_src_ : nullptr;
     float* vel_estimate_src = (vel_estimate_valid_src_ && *vel_estimate_valid_src_)
@@ -153,7 +153,7 @@ bool Controller::update(float* current_setpoint_output) {
         case INPUT_MODE_PASSTHROUGH: {
             pos_setpoint_ = input_pos_;
             vel_setpoint_ = input_vel_;
-            current_setpoint_ = input_current_;
+            torque_setpoint_ = input_torque_; //
         } break;
         case INPUT_MODE_VEL_RAMP: {
             float max_step_size = std::abs(current_meas_period * config_.vel_ramp_rate);
@@ -161,21 +161,21 @@ bool Controller::update(float* current_setpoint_output) {
             float step = std::clamp(full_step, -max_step_size, max_step_size);
 
             vel_setpoint_ += step;
-            current_setpoint_ = (step / current_meas_period) * config_.inertia;
+            torque_setpoint_ = (step / current_meas_period) * config_.inertia;
         } break;
         case INPUT_MODE_CURRENT_RAMP: {
             float max_step_size = std::abs(current_meas_period * config_.current_ramp_rate);
-            float full_step = input_current_ - current_setpoint_;
+            float full_step = input_torque_ - torque_setpoint_;
             float step = std::clamp(full_step, -max_step_size, max_step_size);
 
-            current_setpoint_ += step;
+            torque_setpoint_ += step;
         } break;
         case INPUT_MODE_POS_FILTER: {
             // 2nd order pos tracking filter
             float delta_pos = input_pos_ - pos_setpoint_; // Pos error
             float delta_vel = input_vel_ - vel_setpoint_; // Vel error
             float accel = input_filter_kp_*delta_pos + input_filter_ki_*delta_vel; // Feedback
-            current_setpoint_ = accel * config_.inertia; // Accel
+            torque_setpoint_ = accel * config_.inertia; // Accel
             vel_setpoint_ += current_meas_period * accel; // delta vel
             pos_setpoint_ += current_meas_period * vel_setpoint_; // Delta pos
         } break;
@@ -205,13 +205,13 @@ bool Controller::update(float* current_setpoint_output) {
                 config_.control_mode = CONTROL_MODE_POSITION_CONTROL;
                 pos_setpoint_ = input_pos_;
                 vel_setpoint_ = 0.0f;
-                current_setpoint_ = 0.0f;
+                torque_setpoint_ = 0.0f;
                 trajectory_done_ = true;
             } else {
                 TrapezoidalTrajectory::Step_t traj_step = axis_->trap_traj_.eval(axis_->trap_traj_.t_);
                 pos_setpoint_ = traj_step.Y;
                 vel_setpoint_ = traj_step.Yd;
-                current_setpoint_ = traj_step.Ydd * config_.inertia;
+                torque_setpoint_ = traj_step.Ydd * config_.inertia;
                 axis_->trap_traj_.t_ += current_meas_period;
             }
             anticogging_pos = pos_setpoint_; // FF the position setpoint instead of the pos_estimate
@@ -287,13 +287,14 @@ bool Controller::update(float* current_setpoint_output) {
     }
 
     // Velocity control
-    float Iq = current_setpoint_;
+    float torque = torque_setpoint_;
 
     // Anti-cogging is enabled after calibration
     // We get the current position and apply a current feed-forward
     // ensuring that we handle negative encoder positions properly (-1 == motor->encoder.encoder_cpr - 1)
+    // anticogging currently in units of [A], multiply by Kt to get back to torque.
     if (anticogging_valid_ && config_.anticogging.anticogging_enabled) {
-        Iq += config_.anticogging.cogging_map[std::clamp(mod((int)anticogging_pos, 3600), 0, 3600)];
+        torque += config_.anticogging.cogging_map[std::clamp(mod((int)anticogging_pos, 3600), 0, 3600)] * axis_->motor_.config_.torque_constant;
     }
 
     float v_err = 0.0f;
@@ -304,10 +305,10 @@ bool Controller::update(float* current_setpoint_output) {
         }
 
         v_err = vel_des - *vel_estimate_src;
-        Iq += (vel_gain * gain_scheduling_multiplier) * v_err;
+        torque += (vel_gain * gain_scheduling_multiplier) * v_err;
 
         // Velocity integral action before limiting
-        Iq += vel_integrator_current_;
+        torque += vel_integrator_current_;
     }
 
     // Velocity limiting in current mode
@@ -316,21 +317,21 @@ bool Controller::update(float* current_setpoint_output) {
             set_error(ERROR_INVALID_ESTIMATE);
             return false;
         }
-        Iq = limitVel(config_.vel_limit, *vel_estimate_src, vel_gain, Iq);
+        torque = limitVel(config_.vel_limit, *vel_estimate_src, vel_gain, torque);
     }
 
     // Current limiting
     // TODO: Change to controller working in torque units
     // and get the torque limits from a function of the motor
     bool limited = false;
-    float Ilim = axis_->motor_.effective_current_lim();
-    if (Iq > Ilim) {
+    float Tlim = axis_->motor_.effective_torque_lim();
+    if (torque > Tlim) {
         limited = true;
-        Iq = Ilim;
+        torque = Tlim;
     }
-    if (Iq < -Ilim) {
+    if (torque < -Tlim) {
         limited = true;
-        Iq = -Ilim;
+        torque = -Tlim;
     }
 
     // Velocity integrator (behaviour dependent on limiting)
@@ -346,6 +347,6 @@ bool Controller::update(float* current_setpoint_output) {
         }
     }
 
-    if (current_setpoint_output) *current_setpoint_output = Iq;
+    if (torque_setpoint_output) *torque_setpoint_output = torque;
     return true;
 }
