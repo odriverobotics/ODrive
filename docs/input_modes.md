@@ -13,7 +13,7 @@ The Input Modes currently valid are:
 * `INPUT_MODE_POS_FILTER`
 * `INPUT_MODE_MIX_CHANNELS`
 * `INPUT_MODE_TRAP_TRAJ`
-* `INPUT_MODE_CURRENT_RAMP`
+* `INPUT_MODE_TORQUE_RAMP`
 * `INPUT_MODE_MIRROR`
 
 ---
@@ -85,11 +85,11 @@ Implementes an online trapezoidal trajectory planner.
 ### Valid Control Modes:
 * `CONTROL_MODE_POSITION_CONTROL`
 
-## INPUT_MODE_CURRENT_RAMP
-Ramp a current command from the current value to the target value.
+## INPUT_MODE_TORQUE_RAMP
+Ramp a torque command from the current value to the target value.
 
 ### Configuration Values:
-* `<axis>.controller.config.current_ramp_rate`
+* `<axis>.controller.config.torque_ramp_rate`
 
 ### Valid Inputs:
 * `input_torque`

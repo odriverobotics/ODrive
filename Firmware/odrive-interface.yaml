@@ -376,7 +376,6 @@ interfaces:
           Id_measured: float32
           I_measured_report_filter_k: float32
           max_allowed_current: readonly float32
-          max_allowed_torque: readonly float32
           overcurrent_trip_level: readonly float32
           acim_rotor_flux: float32
           async_phase_vel: readonly float32
@@ -497,9 +496,9 @@ interfaces:
             type: float32
             doc: Ratio to `vel_limit`. Infinity to disable.
           vel_ramp_rate: float32
-          current_ramp_rate:
+          torque_ramp_rate:
             type: float32
-            unit: A / sec
+            unit: Nm / sec
           homing_speed:
             type: float32
             unit: counts/s
@@ -692,7 +691,7 @@ valuetypes:
       PosFilter:
       MixChannels:
       TrapTraj:
-      CurrentRamp:
+      TorqueRamp:
       Mirror:
 
 

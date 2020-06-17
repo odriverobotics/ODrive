@@ -77,7 +77,7 @@ Possible values are:
 * `INPUT_MODE_POS_FILTER`
 * `INPUT_MODE_MIX_CHANNELS`
 * `INPUT_MODE_TRAP_TRAJ`
-* `INPUT_MODE_CURRENT_RAMP`
+* `INPUT_MODE_TORQUE_RAMP`
 * `INPUT_MODE_MIRROR`
 
 For more information, see [input_modes](input_modes.md).
@@ -97,7 +97,7 @@ Possible values are:
 * `INPUT_MODE_POS_FILTER`
 * `INPUT_MODE_MIX_CHANNELS`
 * `INPUT_MODE_TRAP_TRAJ`
-* `INPUT_MODE_CURRENT_RAMP`
+* `INPUT_MODE_TORQUE_RAMP`
 * `INPUT_MODE_MIRROR`
 
 ## System monitoring commands

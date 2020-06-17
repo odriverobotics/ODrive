@@ -163,8 +163,8 @@ bool Controller::update(float* torque_setpoint_output) {
             vel_setpoint_ += step;
             torque_setpoint_ = (step / current_meas_period) * config_.inertia;
         } break;
-        case INPUT_MODE_CURRENT_RAMP: {
-            float max_step_size = std::abs(current_meas_period * config_.current_ramp_rate);
+        case INPUT_MODE_TORQUE_RAMP: {
+            float max_step_size = std::abs(current_meas_period * config_.torque_ramp_rate);
             float full_step = input_torque_ - torque_setpoint_;
             float step = std::clamp(full_step, -max_step_size, max_step_size);
 
@@ -319,11 +319,10 @@ bool Controller::update(float* torque_setpoint_output) {
         torque = limitVel(config_.vel_limit, *vel_estimate_src, vel_gain, torque);
     }
 
-    // Current limiting
-    // TODO: Change to controller working in torque units
-    // and get the torque limits from a function of the motor
+    // Limit max torque to a user defined torque limit. This functions as an acceleration limit.
+    // The motor object handles current limiting
     bool limited = false;
-    float Tlim = axis_->motor_.effective_torque_lim();
+    float Tlim = axis_->motor_.config_.torque_lim;
     if (torque > Tlim) {
         limited = true;
         torque = Tlim;

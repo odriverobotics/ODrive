@@ -29,7 +29,6 @@ public:
         float Id_measured; // [A]
         float I_measured_report_filter_k;
         float max_allowed_current; // [A]
-        float max_allowed_torque; // [Nm]
         float overcurrent_trip_level; // [A]
         float acim_rotor_flux; // [A]
         float async_phase_vel; // [rad/s electrical]
@@ -96,7 +95,7 @@ public:
     bool do_checks();
     float get_inverter_temp();
     bool update_thermal_limits(float fet_temp);
-    float effective_torque_lim();
+    float effective_current_lim();
     void log_timing(TimingLog_t log_idx);
     float phase_current_from_adcval(uint32_t ADCValue);
     bool measure_phase_resistance(float test_current, float max_voltage);
@@ -153,7 +152,6 @@ public:
         .Id_measured = 0.0f,
         .I_measured_report_filter_k = 1.0f,
         .max_allowed_current = 0.0f,
-        .max_allowed_torque = 0.0f,
         .overcurrent_trip_level = 0.0f,
         .acim_rotor_flux = 0.0f,
         .async_phase_vel = 0.0f,
