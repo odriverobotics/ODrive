@@ -3,9 +3,10 @@
 #include <Drivers/STM32/stm32_system.h>
 
 
-Encoder::Encoder(const EncoderHardwareConfig_t& hw_config,
+Encoder::Encoder(const EncoderHardwareConfig_t& hw_config, Stm32SpiArbiter* spi_arbiter,
                 Config_t& config, const Motor::Config_t& motor_config) :
         hw_config_(hw_config),
+        spi_arbiter_(spi_arbiter),
         config_(config)
 {
     update_pll_gains();
@@ -27,9 +28,24 @@ void Encoder::setup() {
     set_idx_subscribe();
 
     mode_ = config_.mode;
+
+    spi_task_.config = {
+        .Mode = SPI_MODE_MASTER,
+        .Direction = SPI_DIRECTION_2LINES,
+        .DataSize = SPI_DATASIZE_16BIT,
+        .CLKPolarity = mode_ == MODE_SPI_ABS_AEAT ? SPI_POLARITY_HIGH : SPI_POLARITY_LOW,
+        .CLKPhase = SPI_PHASE_2EDGE,
+        .NSS = SPI_NSS_SOFT,
+        .BaudRatePrescaler = SPI_BAUDRATEPRESCALER_32,
+        .FirstBit = SPI_FIRSTBIT_MSB,
+        .TIMode = SPI_TIMODE_DISABLE,
+        .CRCCalculation = SPI_CRCCALCULATION_DISABLE,
+        .CRCPolynomial = 10,
+    };
+
     if(mode_ & MODE_FLAG_ABS){
         abs_spi_cs_pin_init();
-        abs_spi_init();
+
         if (axis_->controller_.config_.anticogging.pre_calibrated) {
             axis_->controller_.anticogging_valid_ = true;
         }
@@ -323,39 +339,27 @@ void Encoder::sample_now() {
     }
 }
 
-bool Encoder::abs_spi_init(){
-    if ((mode_ & MODE_FLAG_ABS) == 0x0)
-        return false;
-
-    SPI_HandleTypeDef * spi = hw_config_.spi;
-    spi->Init.Mode = SPI_MODE_MASTER;
-    spi->Init.Direction = SPI_DIRECTION_2LINES;
-    spi->Init.DataSize = SPI_DATASIZE_16BIT;
-    spi->Init.CLKPolarity = SPI_POLARITY_LOW;
-    spi->Init.CLKPhase = SPI_PHASE_2EDGE;
-    spi->Init.NSS = SPI_NSS_SOFT;
-    spi->Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_32;
-    spi->Init.FirstBit = SPI_FIRSTBIT_MSB;
-    spi->Init.TIMode = SPI_TIMODE_DISABLE;
-    spi->Init.CRCCalculation = SPI_CRCCALCULATION_DISABLE;
-    spi->Init.CRCPolynomial = 10;
-    if (mode_ == MODE_SPI_ABS_AEAT) {
-        spi->Init.CLKPolarity = SPI_POLARITY_HIGH;
-    }
-    HAL_SPI_DeInit(spi);
-    HAL_SPI_Init(spi);
-    return true;
-}
-
 bool Encoder::abs_spi_start_transaction(){
     if (mode_ & MODE_FLAG_ABS){
         axis_->motor_.log_timing(TIMING_LOG_SPI_START);
-        if(hw_config_.spi->State != HAL_SPI_STATE_READY){
-            set_error(ERROR_ABS_SPI_NOT_READY);
+
+        if (spi_busy_) {
             return false;
         }
-        HAL_GPIO_WritePin(abs_spi_cs_port_, abs_spi_cs_pin_, GPIO_PIN_RESET);
-        HAL_SPI_TransmitReceive_DMA(hw_config_.spi, (uint8_t*)abs_spi_dma_tx_, (uint8_t*)abs_spi_dma_rx_, 1);
+        
+        spi_task_.ncs_gpio = {abs_spi_cs_port_, abs_spi_cs_pin_};
+        spi_task_.tx_buf = (uint8_t*)abs_spi_dma_tx_;
+        spi_task_.rx_buf = (uint8_t*)abs_spi_dma_rx_;
+        spi_task_.length = 1;
+        spi_task_.on_complete = [](void* ctx, bool success) {
+            ((Encoder*)ctx)->spi_busy_ = false;
+            if (success)
+                ((Encoder*)ctx)->abs_spi_cb();
+        };
+        spi_task_.cb_ctx = this;
+        spi_task_.next = nullptr;
+        
+        spi_arbiter_->transfer_async(&spi_task_);
     }
     return true;
 }
@@ -375,9 +379,7 @@ uint8_t cui_parity(uint16_t v) {
     return ~v & 3;
 }
 
-void Encoder::abs_spi_cb(){
-    HAL_GPIO_WritePin(abs_spi_cs_port_, abs_spi_cs_pin_, GPIO_PIN_SET);
-
+void Encoder::abs_spi_cb() {
     axis_->motor_.log_timing(TIMING_LOG_SPI_END);
 
     uint16_t pos;

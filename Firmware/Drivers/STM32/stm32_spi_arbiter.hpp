@@ -13,12 +13,26 @@ public:
         const uint8_t* tx_buf;
         uint8_t* rx_buf;
         size_t length;
-        void (*on_complete)(void*);
+        void (*on_complete)(void*, bool);
         void* cb_ctx;
         struct SpiTask* next;
     };
 
     Stm32SpiArbiter(SPI_HandleTypeDef* hspi): hspi_(hspi) {}
+
+    /**
+     * @brief Enqueues a non-blocking transfer.
+     * 
+     * Once the transfer completes, fails or is aborted, the callback is invoked.
+     * 
+     * This function is thread-safe with respect to all other public functions
+     * of this class.
+     * 
+     * @param task: Contains all configuration data for this transfer.
+     *        The struct pointed to by this argument must remain valid and
+     *        unmodified until the completion callback is invoked.
+     */
+    void transfer_async(SpiTask* task);
 
     /**
      * @brief Executes a blocking transfer.
@@ -28,7 +42,8 @@ public:
      * 
      * Returns true on successful transfer or false otherwise.
      * 
-     * This function is thread-safe with respect to itself.
+     * This function is thread-safe with respect to all other public functions
+     * of this class.
      * 
      * @param config: The SPI configuration to apply for this transfer.
      * @param ncs_gpio: The active low GPIO to actuate during this transfer.

@@ -5,6 +5,7 @@
 #include <board.h>
 
 Stm32SpiArbiter spi3_arbiter{&hspi3};
+Stm32SpiArbiter& ext_spi_arbiter = spi3_arbiter;
 
 Drv8301 m0_gate_driver{
     &spi3_arbiter,

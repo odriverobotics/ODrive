@@ -1,6 +1,9 @@
 #ifndef __ENCODER_HPP
 #define __ENCODER_HPP
 
+#include <arm_math.h>
+
+#include <Drivers/STM32/stm32_spi_arbiter.hpp>
 #include "utils.hpp"
 
 class Encoder : public ODriveIntf::EncoderIntf {
@@ -40,7 +43,7 @@ public:
         void set_bandwidth(float value) { bandwidth = value; parent->update_pll_gains(); }
     };
 
-    Encoder(const EncoderHardwareConfig_t& hw_config,
+    Encoder(const EncoderHardwareConfig_t& hw_config, Stm32SpiArbiter* spi_arbiter,
             Config_t& config, const Motor::Config_t& motor_config);
     
     void setup();
@@ -63,6 +66,7 @@ public:
     bool update();
 
     const EncoderHardwareConfig_t& hw_config_;
+    Stm32SpiArbiter* spi_arbiter_;
     Config_t& config_;
     Axis* axis_ = nullptr; // set by Axis constructor
 
@@ -91,7 +95,6 @@ public:
     float sincos_sample_s_ = 0.0f;
     float sincos_sample_c_ = 0.0f;
 
-    bool abs_spi_init();
     bool abs_spi_start_transaction();
     void abs_spi_cb();
     void abs_spi_cs_pin_init();
@@ -103,6 +106,8 @@ public:
     uint16_t abs_spi_cs_pin_;
     uint32_t abs_spi_cr1;
     uint32_t abs_spi_cr2;
+    bool spi_busy_ = false;
+    Stm32SpiArbiter::SpiTask spi_task_;
 
     constexpr float getCoggingRatio(){
         return config_.cpr / 3600.0f;

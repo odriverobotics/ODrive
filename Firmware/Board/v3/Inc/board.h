@@ -37,6 +37,9 @@ extern Motor m0;
 extern Motor m1;
 extern OnboardThermistorCurrentLimiter m0_fet_thermistor;
 extern OnboardThermistorCurrentLimiter m1_fet_thermistor;
+
+#include <Drivers/STM32/stm32_spi_arbiter.hpp>
+extern Stm32SpiArbiter& ext_spi_arbiter;
 #endif
 
 // Period in [s]

@@ -186,7 +186,7 @@ extern "C" int construct_objects(){
     // Construct all objects.
     odCAN = new ODriveCAN(can_config, &hcan1);
     for (size_t i = 0; i < AXIS_COUNT; ++i) {
-        Encoder *encoder = new Encoder(hw_configs[i].encoder_config,
+        Encoder *encoder = new Encoder(hw_configs[i].encoder_config, &ext_spi_arbiter,
                                        encoder_configs[i], (i ? m1 : m0).config_);
         SensorlessEstimator *sensorless_estimator = new SensorlessEstimator(sensorless_configs[i]);
         Controller *controller = new Controller(controller_configs[i]);

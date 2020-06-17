@@ -5,6 +5,7 @@
 
 class Stm32Gpio {
 public:
+    Stm32Gpio() : port_(nullptr), pin_(0) {}
     Stm32Gpio(GPIO_TypeDef* port, uint16_t pin) : port_(port), pin_(pin) {}
 
     operator bool() const { return port_; }
