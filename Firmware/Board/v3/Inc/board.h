@@ -23,6 +23,9 @@
 #endif
 
 
+static const size_t AXIS_COUNT = 2;
+
+
 #ifdef __cplusplus
 #include <Drivers/STM32/stm32_gpio.hpp>
 #include <Drivers/DRV8301/drv8301.hpp>
@@ -37,6 +40,8 @@ extern Motor m0;
 extern Motor m1;
 extern OnboardThermistorCurrentLimiter m0_fet_thermistor;
 extern OnboardThermistorCurrentLimiter m1_fet_thermistor;
+extern Motor* motors[AXIS_COUNT];
+extern OnboardThermistorCurrentLimiter* fet_thermistors[AXIS_COUNT];
 
 #include <Drivers/STM32/stm32_spi_arbiter.hpp>
 extern Stm32SpiArbiter& ext_spi_arbiter;
@@ -138,5 +143,12 @@ const BoardHardwareConfig_t hw_configs[2] = { {
 #define I2C_A1_PIN GPIO_4_Pin
 #define I2C_A2_PORT GPIO_5_GPIO_Port
 #define I2C_A2_PIN GPIO_5_Pin
+
+// This board has no board-specific user configurations
+static inline bool board_pop_config() { return true; }
+static inline bool board_push_config() { return true; }
+static inline void board_clear_config() { }
+static inline bool board_apply_config() { return true; }
+
 
 #endif // __BOARD_CONFIG_H

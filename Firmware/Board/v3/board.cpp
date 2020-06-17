@@ -57,6 +57,9 @@ Motor m1{
     m1_gate_driver // opamp
 };
 
+Motor* motors[AXIS_COUNT] = {&m0, &m1};
+OnboardThermistorCurrentLimiter* fet_thermistors[AXIS_COUNT] = {&m0_fet_thermistor, &m1_fet_thermistor};
+
 
 void HAL_SPI_TxCpltCallback(SPI_HandleTypeDef *hspi) {
     HAL_SPI_TxRxCpltCallback(hspi);

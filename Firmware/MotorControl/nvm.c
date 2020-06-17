@@ -262,6 +262,7 @@ size_t NVM_get_max_write_length(void) {
 }
 
 // @brief Reads from the latest committed block in the non-volatile memory.
+// The function either succeeds or leaves the provided buffer unmodified.
 // @param offset: offset in bytes (0 meaning the beginning of the valid area)
 // @param data: buffer to write to
 // @param length: length in bytes (if (offset + length) is out of range, the function fails)

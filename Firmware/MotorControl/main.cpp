@@ -24,85 +24,103 @@ std::array<Axis*, AXIS_COUNT> axes;
 ODriveCAN *odCAN = nullptr;
 ODrive odrv{};
 
-typedef Config<
-    BoardConfig_t,
-    ODriveCAN::Config_t,
-    Encoder::Config_t[AXIS_COUNT],
-    SensorlessEstimator::Config_t[AXIS_COUNT],
-    Controller::Config_t[AXIS_COUNT],
-    Motor::Config_t, Motor::Config_t,
-    OnboardThermistorCurrentLimiter::Config_t, OnboardThermistorCurrentLimiter::Config_t,
-    OffboardThermistorCurrentLimiter::Config_t[AXIS_COUNT],
-    TrapezoidalTrajectory::Config_t[AXIS_COUNT],
-    Endstop::Config_t[AXIS_COUNT],
-    Endstop::Config_t[AXIS_COUNT],
-    Axis::Config_t[AXIS_COUNT]> ConfigFormat;
+
+ConfigManager config_manager;
+
+static bool config_pop_all() {
+    bool success = board_pop_config() &&
+           config_manager.pop(&odrv.config_) &&
+           config_manager.pop(&can_config);
+    for (size_t i = 0; (i < AXIS_COUNT) && success; ++i) {
+        success = config_manager.pop(&encoder_configs[i]) &&
+                  config_manager.pop(&sensorless_configs[i]) &&
+                  config_manager.pop(&controller_configs[i]) &&
+                  config_manager.pop(&trap_configs[i]) &&
+                  config_manager.pop(&min_endstop_configs[i]) &&
+                  config_manager.pop(&max_endstop_configs[i]) &&
+                  config_manager.pop(&motors[i]->config_) &&
+                  config_manager.pop(&fet_thermistors[i]->config_) &&
+                  config_manager.pop(&motor_thermistor_configs[i]) &&
+                  config_manager.pop(&axis_configs[i]);
+    }
+    return success;
+}
+
+static bool config_push_all() {
+    bool success = board_push_config() &&
+           config_manager.push(&odrv.config_) &&
+           config_manager.push(&can_config);
+    for (size_t i = 0; (i < AXIS_COUNT) && success; ++i) {
+        success = config_manager.push(&encoder_configs[i]) &&
+                  config_manager.push(&sensorless_configs[i]) &&
+                  config_manager.push(&controller_configs[i]) &&
+                  config_manager.push(&trap_configs[i]) &&
+                  config_manager.push(&min_endstop_configs[i]) &&
+                  config_manager.push(&max_endstop_configs[i]) &&
+                  config_manager.push(&motors[i]->config_) &&
+                  config_manager.push(&fet_thermistors[i]->config_) &&
+                  config_manager.push(&motor_thermistor_configs[i]) &&
+                  config_manager.push(&axis_configs[i]);
+    }
+    return success;
+}
+
+static void config_clear_all() {
+    odrv.config_ = {};
+    can_config = {};
+    for (size_t i = 0; i < AXIS_COUNT; ++i) {
+        encoder_configs[i] = {};
+        sensorless_configs[i] = {};
+        controller_configs[i] = {};
+        trap_configs[i] = {};
+        motors[i]->config_ = {};
+        fet_thermistors[i]->config_ = {};
+        axis_configs[i] = {};
+        // Default step/dir pins are different, so we need to explicitly load them
+        Axis::load_default_step_dir_pin_config(hw_configs[i].axis_config, &axis_configs[i]);
+        Axis::load_default_can_id(i, axis_configs[i]);
+        min_endstop_configs[i] = {};
+        max_endstop_configs[i] = {};
+        controller_configs[i].load_encoder_axis = i;
+    }
+}
+
+static bool config_apply_all() {
+    bool success = true;
+    for (size_t i = 0; (i < AXIS_COUNT) && success; ++i) {
+        success = motors[i]->apply_config();
+    }
+    return success;
+}
+
+
 
 void ODrive::save_configuration(void) {
-    if (ConfigFormat::safe_store_config(
-            &odrv.config_,
-            &can_config,
-            &encoder_configs,
-            &sensorless_configs,
-            &controller_configs,
-            &m0.config_,
-            &m1.config_,
-            &m0_fet_thermistor.config_,
-            &m1_fet_thermistor.config_,
-            &motor_thermistor_configs,
-            &trap_configs,
-            &min_endstop_configs,
-            &max_endstop_configs,
-            &axis_configs)) {
-        printf("saving configuration failed\r\n"); osDelay(5);
+    bool success = config_manager.prepare_store()
+                && config_push_all()
+                && config_manager.start_store()
+                && config_push_all()
+                && config_manager.finish_store();
+    if (success) {
+        user_config_loaded_ = true;
     } else {
-        odrv.user_config_loaded_ = true;
+        printf("saving configuration failed\r\n");
+        osDelay(5);
     }
 }
 
 extern "C" int load_configuration(void) {
-    // Try to load configs
-    if (NVM_init() ||
-        ConfigFormat::safe_load_config(
-                &odrv.config_,
-                &can_config,
-                &encoder_configs,
-                &sensorless_configs,
-                &controller_configs,
-                &m0.config_,
-                &m1.config_,
-                &m0_fet_thermistor.config_,
-                &m1_fet_thermistor.config_,
-                &motor_thermistor_configs,
-                &trap_configs,
-                &min_endstop_configs,
-                &max_endstop_configs,
-                &axis_configs)) {
-        //If loading failed, restore defaults
-        odrv.config_ = BoardConfig_t();
-        can_config = ODriveCAN::Config_t();
-        m0.config_ = Motor::Config_t();
-        m1.config_ = Motor::Config_t();
-        m0_fet_thermistor.config_ = OnboardThermistorCurrentLimiter::Config_t();
-        m1_fet_thermistor.config_ = OnboardThermistorCurrentLimiter::Config_t();
-        for (size_t i = 0; i < AXIS_COUNT; ++i) {
-            encoder_configs[i] = Encoder::Config_t();
-            sensorless_configs[i] = SensorlessEstimator::Config_t();
-            controller_configs[i] = Controller::Config_t();
-            motor_thermistor_configs[i] = OffboardThermistorCurrentLimiter::Config_t();
-            trap_configs[i] = TrapezoidalTrajectory::Config_t();
-            axis_configs[i] = Axis::Config_t();
-            // Default step/dir pins are different, so we need to explicitly load them
-            Axis::load_default_step_dir_pin_config(hw_configs[i].axis_config, &axis_configs[i]);
-            Axis::load_default_can_id(i, axis_configs[i]);
-            min_endstop_configs[i] = Endstop::Config_t();
-            max_endstop_configs[i] = Endstop::Config_t();
-            controller_configs[i].load_encoder_axis = i;
-        }
-    } else {
+    bool success = config_manager.start_load()
+                && config_pop_all()
+                && config_manager.finish_load()
+                && config_apply_all();
+    if (success) {
         odrv.user_config_loaded_ = true;
+    } else {
+        config_clear_all();
+        config_apply_all();
     }
-    return odrv.user_config_loaded_;
+    return success ? 0 : -1;
 }
 
 void ODrive::erase_configuration(void) {
@@ -179,9 +197,6 @@ extern "C" int construct_objects(){
     GPIO_InitStruct.Pin = GPIO_5_Pin;
     HAL_GPIO_Init(GPIO_5_GPIO_Port, &GPIO_InitStruct);
 #endif
-
-    m0.reload_config();
-    m1.reload_config();
 
     // Construct all objects.
     odCAN = new ODriveCAN(can_config, &hcan1);

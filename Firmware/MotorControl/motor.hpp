@@ -104,7 +104,7 @@ public:
 
     bool arm();
     void disarm();
-    void reload_config();
+    bool apply_config();
     bool setup();
     void reset_current_control();
 
