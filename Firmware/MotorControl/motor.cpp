@@ -192,17 +192,18 @@ float Motor::effective_current_lim() {
     return current_lim;
 }
 
+//return the maximum available torque for the motor.
+//Note - for ACIM motors, available torque is allowed to be 0.
 float Motor::max_available_torque() {
-    //return the maximum available torque for the motor.
-    //Note - for ACIM motors, available torque is allowed to be 0.
     if (config_.motor_type == Motor::MOTOR_TYPE_ACIM) {
         float max_torque = effective_current_lim() * config_.torque_constant * current_control_.acim_rotor_flux;
-        max_torque = fmin(max_torque, config_.torque_lim);
+        max_torque = std::clamp(max_torque, 0.0f, max_torque);
+        max_torque = std::min(max_torque, config_.torque_lim);
         return max_torque;
     }
     else {
         float max_torque = effective_current_lim() * config_.torque_constant;
-        max_torque = fmin(max_torque, config_.torque_lim);
+        max_torque = std::min(max_torque, config_.torque_lim);
         return max_torque;
     }
 }
