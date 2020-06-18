@@ -433,7 +433,6 @@ interfaces:
           current_lim: float32
           current_lim_margin: float32
           torque_lim: float32
-          torque_lim_margin: float32
           inverter_temp_limit_lower: float32
           inverter_temp_limit_upper: float32
           requested_current_range: float32
