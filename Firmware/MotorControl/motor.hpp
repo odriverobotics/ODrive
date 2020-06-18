@@ -6,9 +6,9 @@ class Motor;
 
 #include <board.h>
 
-#ifndef __TimingLog_t
-#define __TimingLog_t
-enum TimingLog_t { // TODO: remove
+#include <autogen/interfaces.hpp>
+
+enum TimingLog_t {
     TIMING_LOG_GENERAL,
     TIMING_LOG_ADC_CB_I,
     TIMING_LOG_ADC_CB_DC,
@@ -23,9 +23,6 @@ enum TimingLog_t { // TODO: remove
     TIMING_LOG_SPI_END,
     TIMING_LOG_NUM_SLOTS
 };
-#endif
-
-#include <autogen/interfaces.hpp>
 
 class Motor : public ODriveIntf::MotorIntf {
 public:
@@ -123,6 +120,7 @@ public:
     bool FOC_voltage(float v_d, float v_q, float pwm_phase);
     bool FOC_current(float Id_des, float Iq_des, float I_phase, float pwm_phase);
     bool update(float current_setpoint, float phase, float phase_vel);
+    void tim_update_cb();
 
     // hardware config
 

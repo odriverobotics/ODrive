@@ -11,7 +11,6 @@
 #include <communication/interface_can.hpp>
 
 ODriveCAN::Config_t can_config;
-Encoder::Config_t encoder_configs[AXIS_COUNT];
 SensorlessEstimator::Config_t sensorless_configs[AXIS_COUNT];
 Controller::Config_t controller_configs[AXIS_COUNT];
 OffboardThermistorCurrentLimiter::Config_t motor_thermistor_configs[AXIS_COUNT];
@@ -32,14 +31,14 @@ static bool config_pop_all() {
            config_manager.pop(&odrv.config_) &&
            config_manager.pop(&can_config);
     for (size_t i = 0; (i < AXIS_COUNT) && success; ++i) {
-        success = config_manager.pop(&encoder_configs[i]) &&
+        success = config_manager.pop(&encoders[i].config_) &&
                   config_manager.pop(&sensorless_configs[i]) &&
                   config_manager.pop(&controller_configs[i]) &&
                   config_manager.pop(&trap_configs[i]) &&
                   config_manager.pop(&min_endstop_configs[i]) &&
                   config_manager.pop(&max_endstop_configs[i]) &&
-                  config_manager.pop(&motors[i]->config_) &&
-                  config_manager.pop(&fet_thermistors[i]->config_) &&
+                  config_manager.pop(&motors[i].config_) &&
+                  config_manager.pop(&fet_thermistors[i].config_) &&
                   config_manager.pop(&motor_thermistor_configs[i]) &&
                   config_manager.pop(&axis_configs[i]);
     }
@@ -51,14 +50,14 @@ static bool config_push_all() {
            config_manager.push(&odrv.config_) &&
            config_manager.push(&can_config);
     for (size_t i = 0; (i < AXIS_COUNT) && success; ++i) {
-        success = config_manager.push(&encoder_configs[i]) &&
+        success = config_manager.push(&encoders[i].config_) &&
                   config_manager.push(&sensorless_configs[i]) &&
                   config_manager.push(&controller_configs[i]) &&
                   config_manager.push(&trap_configs[i]) &&
                   config_manager.push(&min_endstop_configs[i]) &&
                   config_manager.push(&max_endstop_configs[i]) &&
-                  config_manager.push(&motors[i]->config_) &&
-                  config_manager.push(&fet_thermistors[i]->config_) &&
+                  config_manager.push(&motors[i].config_) &&
+                  config_manager.push(&fet_thermistors[i].config_) &&
                   config_manager.push(&motor_thermistor_configs[i]) &&
                   config_manager.push(&axis_configs[i]);
     }
@@ -69,12 +68,12 @@ static void config_clear_all() {
     odrv.config_ = {};
     can_config = {};
     for (size_t i = 0; i < AXIS_COUNT; ++i) {
-        encoder_configs[i] = {};
+        encoders[i].config_ = {};
         sensorless_configs[i] = {};
         controller_configs[i] = {};
         trap_configs[i] = {};
-        motors[i]->config_ = {};
-        fet_thermistors[i]->config_ = {};
+        motors[i].config_ = {};
+        fet_thermistors[i].config_ = {};
         axis_configs[i] = {};
         // Default step/dir pins are different, so we need to explicitly load them
         Axis::load_default_step_dir_pin_config(hw_configs[i].axis_config, &axis_configs[i]);
@@ -88,7 +87,8 @@ static void config_clear_all() {
 static bool config_apply_all() {
     bool success = true;
     for (size_t i = 0; (i < AXIS_COUNT) && success; ++i) {
-        success = motors[i]->apply_config();
+        success = encoders[i].apply_config(motors[i].config_.motor_type)
+               && motors[i].apply_config();
     }
     return success;
 }
@@ -201,8 +201,6 @@ extern "C" int construct_objects(){
     // Construct all objects.
     odCAN = new ODriveCAN(can_config, &hcan1);
     for (size_t i = 0; i < AXIS_COUNT; ++i) {
-        Encoder *encoder = new Encoder(hw_configs[i].encoder_config, &ext_spi_arbiter,
-                                       encoder_configs[i], (i ? m1 : m0).config_);
         SensorlessEstimator *sensorless_estimator = new SensorlessEstimator(sensorless_configs[i]);
         Controller *controller = new Controller(controller_configs[i]);
         OffboardThermistorCurrentLimiter *motor_thermistor = new OffboardThermistorCurrentLimiter(motor_thermistor_configs[i]);
@@ -210,10 +208,9 @@ extern "C" int construct_objects(){
         Endstop *min_endstop = new Endstop(min_endstop_configs[i]);
         Endstop *max_endstop = new Endstop(max_endstop_configs[i]);
         axes[i] = new Axis(i, hw_configs[i].axis_config, axis_configs[i],
-                *encoder, *sensorless_estimator, *controller, i ? m1_fet_thermistor : m0_fet_thermistor, *motor_thermistor, i ? m1 : m0, *trap, *min_endstop, *max_endstop);
+                encoders[i], *sensorless_estimator, *controller, fet_thermistors[i], *motor_thermistor, motors[i], *trap, *min_endstop, *max_endstop);
 
         controller_configs[i].parent = controller;
-        encoder_configs[i].parent = encoder;
         motor_thermistor_configs[i].parent = motor_thermistor;
         min_endstop_configs[i].parent = min_endstop;
         max_endstop_configs[i].parent = max_endstop;
@@ -236,8 +233,9 @@ void vApplicationIdleHook(void) {
         odrv.system_stats_.uptime = xTaskGetTickCount();
         odrv.system_stats_.min_heap_space = xPortGetMinimumEverFreeHeapSize();
         odrv.system_stats_.min_stack_space_comms = uxTaskGetStackHighWaterMark(comm_thread) * sizeof(StackType_t);
-        odrv.system_stats_.min_stack_space_axis0 = uxTaskGetStackHighWaterMark(axes[0]->thread_id_) * sizeof(StackType_t);
-        odrv.system_stats_.min_stack_space_axis1 = uxTaskGetStackHighWaterMark(axes[1]->thread_id_) * sizeof(StackType_t);
+        uint32_t min_stack_space[AXIS_COUNT];
+        std::transform(axes.begin(), axes.end(), std::begin(min_stack_space), [](auto& axis) { return uxTaskGetStackHighWaterMark(axes[1]->thread_id_) * sizeof(StackType_t); });
+        odrv.system_stats_.min_stack_space_axis = *std::min_element(std::begin(min_stack_space), std::end(min_stack_space));
         odrv.system_stats_.min_stack_space_usb = uxTaskGetStackHighWaterMark(usb_thread) * sizeof(StackType_t);
         odrv.system_stats_.min_stack_space_uart = uxTaskGetStackHighWaterMark(uart_thread) * sizeof(StackType_t);
         odrv.system_stats_.min_stack_space_usb_irq = uxTaskGetStackHighWaterMark(usb_irq_thread) * sizeof(StackType_t);
@@ -245,8 +243,7 @@ void vApplicationIdleHook(void) {
         odrv.system_stats_.min_stack_space_can = uxTaskGetStackHighWaterMark(odCAN->thread_id_) * sizeof(StackType_t);
 
         // Actual usage, in bytes, so we don't have to math
-        odrv.system_stats_.stack_usage_axis0 = axes[0]->stack_size_ - odrv.system_stats_.min_stack_space_axis0;
-        odrv.system_stats_.stack_usage_axis1 = axes[1]->stack_size_ - odrv.system_stats_.min_stack_space_axis1;
+        odrv.system_stats_.stack_usage_axis = axes[0]->stack_size_ - odrv.system_stats_.min_stack_space_axis;
         odrv.system_stats_.stack_usage_comms = stack_size_comm_thread - odrv.system_stats_.min_stack_space_comms;
         odrv.system_stats_.stack_usage_usb = stack_size_usb_thread - odrv.system_stats_.min_stack_space_usb;
         odrv.system_stats_.stack_usage_uart = stack_size_uart_thread - odrv.system_stats_.min_stack_space_uart;
@@ -264,7 +261,25 @@ int odrive_main(void) {
     // TODO: make dynamically reconfigurable
 #if HW_VERSION_MAJOR == 3 && HW_VERSION_MINOR >= 3
     if (odrv.config_.enable_uart) {
-        SetGPIO12toUART();
+        GPIO_InitTypeDef GPIO_InitStruct;
+
+        // make sure nothing is hogging the GPIO's
+        Stm32Gpio{GPIO_1_GPIO_Port, GPIO_1_Pin}.unsubscribe();
+        Stm32Gpio{GPIO_2_GPIO_Port, GPIO_2_Pin}.unsubscribe();
+
+        GPIO_InitStruct.Pin = GPIO_1_Pin;
+        GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
+        GPIO_InitStruct.Pull = GPIO_PULLDOWN;
+        GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
+        GPIO_InitStruct.Alternate = GPIO_AF8_UART4;
+        HAL_GPIO_Init(GPIO_1_GPIO_Port, &GPIO_InitStruct);
+
+        GPIO_InitStruct.Pin = GPIO_2_Pin;
+        GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
+        GPIO_InitStruct.Pull = GPIO_NOPULL;
+        GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
+        GPIO_InitStruct.Alternate = GPIO_AF8_UART4;
+        HAL_GPIO_Init(GPIO_2_GPIO_Port, &GPIO_InitStruct);
     }
 #endif
     //osDelay(100);

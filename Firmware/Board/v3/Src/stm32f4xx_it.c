@@ -467,24 +467,6 @@ void decode_tim_capture(TIM_HandleTypeDef *htim, TIM_capture_callback_t callback
   }
 }
 
-/**
-* @brief This function handles TIM1 update interrupt and TIM10 global interrupt.
-*/
-void TIM1_UP_TIM10_IRQHandler(void)
-{
-  __HAL_TIM_CLEAR_IT(&htim1, TIM_IT_UPDATE);
-  tim_update_cb(&htim1);
-}
-
-/**
-* @brief This function handles TIM8 update interrupt and TIM13 global interrupt.
-*/
-void TIM8_UP_TIM13_IRQHandler(void)
-{
-  __HAL_TIM_CLEAR_IT(&htim8, TIM_IT_UPDATE);
-  tim_update_cb(&htim8);
-}
-
 
 /**
 * @brief This function handles I2C1 event interrupt.
@@ -500,65 +482,6 @@ void I2C1_EV_IRQHandler(void)
 void I2C1_ER_IRQHandler(void)
 {
   HAL_I2C_ER_IRQHandler(&hi2c1);
-}
-
-/**
-* @brief This function handles EXTI line0 interrupt.
-*/
-void EXTI0_IRQHandler(void)
-{
-  HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_0);
-}
-
-/**
-* @brief This function handles EXTI line2 interrupt.
-*/
-void EXTI2_IRQHandler(void)
-{
-  HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_2);
-}
-
-/**
-* @brief This function handles EXTI line3 interrupt.
-*/
-void EXTI3_IRQHandler(void)
-{
-  HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_3);
-}
-
-/**
-* @brief This function handles EXTI line4 interrupt.
-*/
-void EXTI4_IRQHandler(void)
-{
-  HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_4);
-}
-
-/**
-* @brief This function handles EXTI lines 5-9 interrupt.
-*/
-void EXTI9_5_IRQHandler(void)
-{
-  // The true source of the interrupt is checked inside HAL_GPIO_EXTI_IRQHandler() 
-  HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_5);
-  HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_6);
-  HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_7);
-  HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_8);
-  HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_9);
-}
-
-/**
-* @brief This function handles EXTI lines 10-15 interrupt.
-*/
-void EXTI15_10_IRQHandler(void)
-{
-  // The true source of the interrupt is checked inside HAL_GPIO_EXTI_IRQHandler() 
-  HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_10);
-  HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_11);
-  HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_12);
-  HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_13);
-  HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_14);
-  HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_15);
 }
 
 /* USER CODE END 1 */

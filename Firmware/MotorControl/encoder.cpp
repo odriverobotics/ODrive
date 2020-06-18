@@ -3,28 +3,36 @@
 #include <Drivers/STM32/stm32_system.h>
 
 
-Encoder::Encoder(const EncoderHardwareConfig_t& hw_config, Stm32SpiArbiter* spi_arbiter,
-                Config_t& config, const Motor::Config_t& motor_config) :
-        hw_config_(hw_config),
-        spi_arbiter_(spi_arbiter),
-        config_(config)
+Encoder::Encoder(TIM_HandleTypeDef* timer, Stm32Gpio index_gpio,
+                 Stm32Gpio hallA_gpio, Stm32Gpio hallB_gpio, Stm32Gpio hallC_gpio,
+                 Stm32SpiArbiter* spi_arbiter) :
+        timer_(timer), index_gpio_(index_gpio),
+        hallA_gpio_(hallA_gpio), hallB_gpio_(hallB_gpio), hallC_gpio_(hallC_gpio),
+        spi_arbiter_(spi_arbiter)
 {
-    update_pll_gains();
-
-    if (config.pre_calibrated) {
-        if (config.mode == Encoder::MODE_HALL || config.mode == Encoder::MODE_SINCOS)
-            is_ready_ = true;
-        if (motor_config.motor_type == Motor::MOTOR_TYPE_ACIM)
-            is_ready_ = true;
-    }
 }
 
 static void enc_index_cb_wrapper(void* ctx) {
     reinterpret_cast<Encoder*>(ctx)->enc_index_cb();
 }
 
+bool Encoder::apply_config(ODriveIntf::MotorIntf::MotorType motor_type) {
+    config_.parent = this;
+
+    update_pll_gains();
+
+    if (config_.pre_calibrated) {
+        if (config_.mode == Encoder::MODE_HALL || config_.mode == Encoder::MODE_SINCOS)
+            is_ready_ = true;
+        if (motor_type == Motor::MOTOR_TYPE_ACIM)
+            is_ready_ = true;
+    }
+
+    return true;
+}
+
 void Encoder::setup() {
-    HAL_TIM_Encoder_Start(hw_config_.timer, TIM_CHANNEL_ALL);
+    HAL_TIM_Encoder_Start(timer_, TIM_CHANNEL_ALL);
     set_idx_subscribe();
 
     mode_ = config_.mode;
@@ -90,15 +98,15 @@ void Encoder::enc_index_cb() {
     }
 
     // Disable interrupt
-    GPIO_unsubscribe(hw_config_.index_port, hw_config_.index_pin);
+    index_gpio_.unsubscribe();
 }
 
 void Encoder::set_idx_subscribe(bool override_enable) {
     if (config_.use_index && (override_enable || !config_.find_idx_on_lockin_only)) {
-        GPIO_subscribe(hw_config_.index_port, hw_config_.index_pin, GPIO_PULLDOWN,
-                enc_index_cb_wrapper, this);
+        index_gpio_.config(GPIO_MODE_INPUT, GPIO_PULLDOWN);
+        index_gpio_.subscribe(true, false, enc_index_cb_wrapper, this);
     } else if (!config_.use_index || config_.find_idx_on_lockin_only) {
-        GPIO_unsubscribe(hw_config_.index_port, hw_config_.index_pin);
+        index_gpio_.unsubscribe();
     }
 }
 
@@ -131,7 +139,7 @@ void Encoder::set_linear_count(int32_t count) {
     tim_cnt_sample_ = count;
 
     //Write hardware last
-    hw_config_.timer->Instance->CNT = count;
+    timer_->Instance->CNT = count;
 
     cpu_exit_critical(prim);
 }
@@ -313,7 +321,7 @@ static bool decode_hall(uint8_t hall_state, int32_t* hall_cnt) {
 void Encoder::sample_now() {
     switch (mode_) {
         case MODE_INCREMENTAL: {
-            tim_cnt_sample_ = (int16_t)hw_config_.timer->Instance->CNT;
+            tim_cnt_sample_ = (int16_t)timer_->Instance->CNT;
         } break;
 
         case MODE_HALL: {
@@ -337,6 +345,25 @@ void Encoder::sample_now() {
            set_error(ERROR_UNSUPPORTED_ENCODER_MODE);
         } break;
     }
+
+    for (size_t i = 0; i < sizeof(ports_to_sample) / sizeof(ports_to_sample[0]); ++i) {
+        port_samples_[i] = ports_to_sample[i]->IDR;
+    }
+}
+
+bool Encoder::read_sampled_gpio(Stm32Gpio gpio) {
+    for (size_t i = 0; i < sizeof(ports_to_sample) / sizeof(ports_to_sample[0]); ++i) {
+        if (ports_to_sample[i] == gpio.port_) {
+            return port_samples_[i] & gpio.pin_mask_;
+        }
+    }
+    return false;
+}
+
+void Encoder::decode_hall_samples() {
+    hall_state_ = (read_sampled_gpio(hallA_gpio_) ? 1 : 0)
+                | (read_sampled_gpio(hallB_gpio_) ? 2 : 0)
+                | (read_sampled_gpio(hallC_gpio_) ? 4 : 0);
 }
 
 bool Encoder::abs_spi_start_transaction(){

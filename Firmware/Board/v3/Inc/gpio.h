@@ -70,19 +70,6 @@ void MX_GPIO_Init(void);
 
 /* USER CODE BEGIN Prototypes */
 
-void SetGPIO12toUART();
-bool GPIO_subscribe(GPIO_TypeDef* GPIO_port, uint16_t GPIO_pin,
-    uint32_t pull_up_down, void (*callback)(void*), void* ctx);
-void GPIO_unsubscribe(GPIO_TypeDef* GPIO_port, uint16_t GPIO_pin);
-void GPIO_set_to_analog(GPIO_TypeDef* GPIO_port, uint16_t GPIO_pin);
-
-
-#if HW_VERSION_MAJOR == 3 && HW_VERSION_MINOR <= 4
-#define GPIO_COUNT  5
-#else
-#define GPIO_COUNT  8
-#endif
-
 /* USER CODE END Prototypes */
 
 #ifdef __cplusplus

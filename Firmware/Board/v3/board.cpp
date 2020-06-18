@@ -25,41 +25,63 @@ const float fet_thermistor_poly_coeffs[] =
     {363.93910201f, -462.15369634f, 307.55129571f, -27.72569531f};
 const size_t fet_thermistor_num_coeffs = sizeof(fet_thermistor_poly_coeffs)/sizeof(fet_thermistor_poly_coeffs[1]);
 
-OnboardThermistorCurrentLimiter m0_fet_thermistor{
-    15, // adc_channel
-    &fet_thermistor_poly_coeffs[0], // coefficients
-    fet_thermistor_num_coeffs // num_coeffs
-};
-
-OnboardThermistorCurrentLimiter m1_fet_thermistor{
+OnboardThermistorCurrentLimiter fet_thermistors[AXIS_COUNT] = {
+    {
+        15, // adc_channel
+        &fet_thermistor_poly_coeffs[0], // coefficients
+        fet_thermistor_num_coeffs // num_coeffs
+    }, {
 #if HW_VERSION_MAJOR == 3 && HW_VERSION_MINOR >= 3
-    4, // adc_channel
+        4, // adc_channel
 #else
-    1, // adc_channel
+        1, // adc_channel
 #endif
-    &fet_thermistor_poly_coeffs[0], // coefficients
-    fet_thermistor_num_coeffs // num_coeffs
+        &fet_thermistor_poly_coeffs[0], // coefficients
+        fet_thermistor_num_coeffs // num_coeffs
+    }
 };
 
-Motor m0{
-    &htim1, // timer
-    TIM_1_8_PERIOD_CLOCKS, // control_deadline
-    1.0f / SHUNT_RESISTANCE, // shunt_conductance [S]
-    m0_gate_driver, // gate_driver
-    m0_gate_driver // opamp
+Motor motors[AXIS_COUNT] = {
+    {
+        &htim1, // timer
+        TIM_1_8_PERIOD_CLOCKS, // control_deadline
+        1.0f / SHUNT_RESISTANCE, // shunt_conductance [S]
+        m0_gate_driver, // gate_driver
+        m0_gate_driver // opamp
+    },
+    {
+        &htim8, // timer
+        (3 * TIM_1_8_PERIOD_CLOCKS) / 2, // control_deadline
+        1.0f / SHUNT_RESISTANCE, // shunt_conductance [S]
+        m1_gate_driver, // gate_driver
+        m1_gate_driver // opamp
+    }
 };
 
-Motor m1{
-    &htim8, // timer
-    (3 * TIM_1_8_PERIOD_CLOCKS) / 2, // control_deadline
-    1.0f / SHUNT_RESISTANCE, // shunt_conductance [S]
-    m1_gate_driver, // gate_driver
-    m1_gate_driver // opamp
+Encoder encoders[AXIS_COUNT] = {
+    {
+        &htim3, // timer
+        {M0_ENC_Z_GPIO_Port, M0_ENC_Z_Pin}, // index_gpio
+        {M0_ENC_A_GPIO_Port, M0_ENC_A_Pin}, // hallA_gpio
+        {M0_ENC_B_GPIO_Port, M0_ENC_B_Pin}, // hallB_gpio
+        {M0_ENC_Z_GPIO_Port, M0_ENC_Z_Pin}, // hallC_gpio
+        &spi3_arbiter // spi_arbiter
+    },
+    {
+        &htim4, // timer
+        {M1_ENC_Z_GPIO_Port, M1_ENC_Z_Pin}, // index_gpio
+        {M1_ENC_A_GPIO_Port, M1_ENC_A_Pin}, // hallA_gpio
+        {M1_ENC_B_GPIO_Port, M1_ENC_B_Pin}, // hallB_gpio
+        {M1_ENC_Z_GPIO_Port, M1_ENC_Z_Pin}, // hallC_gpio
+        &spi3_arbiter // spi_arbiter
+    }
 };
 
-Motor* motors[AXIS_COUNT] = {&m0, &m1};
-OnboardThermistorCurrentLimiter* fet_thermistors[AXIS_COUNT] = {&m0_fet_thermistor, &m1_fet_thermistor};
 
+
+
+
+extern "C" {
 
 void HAL_SPI_TxCpltCallback(SPI_HandleTypeDef *hspi) {
     HAL_SPI_TxRxCpltCallback(hspi);
@@ -73,4 +95,18 @@ void HAL_SPI_TxRxCpltCallback(SPI_HandleTypeDef *hspi) {
     if (hspi == &hspi3) {
         spi3_arbiter.on_complete();
     }
+}
+
+
+
+void TIM1_UP_TIM10_IRQHandler(void) {
+    __HAL_TIM_CLEAR_IT(&htim1, TIM_IT_UPDATE);
+    motors[0].tim_update_cb();
+}
+
+void TIM8_UP_TIM13_IRQHandler(void) {
+    __HAL_TIM_CLEAR_IT(&htim8, TIM_IT_UPDATE);
+    motors[1].tim_update_cb();
+}
+
 }

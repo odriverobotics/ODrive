@@ -146,22 +146,21 @@ void Axis::decode_step_dir_pins() {
 // @brief (de)activates step/dir input
 void Axis::set_step_dir_active(bool active) {
     if (active) {
-        // Set up the direction GPIO as input
-        GPIO_InitTypeDef GPIO_InitStruct;
-        GPIO_InitStruct.Pin = dir_pin_;
-        GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
-        GPIO_InitStruct.Pull = GPIO_NOPULL;
-        HAL_GPIO_Init(dir_port_, &GPIO_InitStruct);
+        // Set up the step/direction GPIOs as input
+        Stm32Gpio{dir_port_, dir_pin_}.config(GPIO_MODE_INPUT, GPIO_NOPULL);
+        Stm32Gpio{step_port_, step_pin_}.config(GPIO_MODE_INPUT, GPIO_PULLDOWN);
 
         // Subscribe to rising edges of the step GPIO
-        GPIO_subscribe(step_port_, step_pin_, GPIO_PULLDOWN, step_cb_wrapper, this);
+        Stm32Gpio{step_port_, step_pin_}.subscribe(true, false, step_cb_wrapper, this);
 
         step_dir_active_ = true;
     } else {
         step_dir_active_ = false;
 
         // Unsubscribe from step GPIO
-        GPIO_unsubscribe(step_port_, step_pin_);
+        // TODO: if we change the GPIO while the subscription is active and then
+        // unsubscribe then the unsubscribe is for the wrong pin.
+        Stm32Gpio{step_port_, step_pin_}.unsubscribe();
     }
 }
 

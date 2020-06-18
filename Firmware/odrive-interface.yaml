@@ -51,16 +51,14 @@ interfaces:
         attributes:
           uptime: readonly uint32
           min_heap_space: readonly uint32
-          min_stack_space_axis0: readonly uint32
-          min_stack_space_axis1: readonly uint32
+          min_stack_space_axis: readonly uint32
           min_stack_space_comms: readonly uint32
           min_stack_space_usb: readonly uint32
           min_stack_space_uart: readonly uint32
           min_stack_space_can: readonly uint32
           min_stack_space_usb_irq: readonly uint32
           min_stack_space_startup: readonly uint32
-          stack_usage_axis0: readonly uint32
-          stack_usage_axis1: readonly uint32
+          stack_usage_axis: readonly uint32
           stack_usage_comms: readonly uint32
           stack_usage_usb: readonly uint32
           stack_usage_uart: readonly uint32
@@ -574,18 +572,18 @@ interfaces:
       timing_log:
         c_is_class: False
         attributes:
-          general: {type: readonly uint16, c_name: 'get(TIMING_LOG_GENERAL)'}
-          adc_cb_i: {type: readonly uint16, c_name: 'get(TIMING_LOG_ADC_CB_I)'}
-          adc_cb_dc: {type: readonly uint16, c_name: 'get(TIMING_LOG_ADC_CB_DC)'}
-          meas_r: {type: readonly uint16, c_name: 'get(TIMING_LOG_MEAS_R)'}
-          meas_l: {type: readonly uint16, c_name: 'get(TIMING_LOG_MEAS_L)'}
-          enc_calib: {type: readonly uint16, c_name: 'get(TIMING_LOG_ENC_CALIB)'}
-          idx_search: {type: readonly uint16, c_name: 'get(TIMING_LOG_IDX_SEARCH)'}
-          foc_voltage: {type: readonly uint16, c_name: 'get(TIMING_LOG_FOC_VOLTAGE)'}
-          foc_current: {type: readonly uint16, c_name: 'get(TIMING_LOG_FOC_CURRENT)'}
-          spi_start: {type: readonly uint16, c_name: 'get(TIMING_LOG_SPI_START)'}
-          sample_now: {type: readonly uint16, c_name: 'get(TIMING_LOG_SAMPLE_NOW)'}
-          spi_end: {type: readonly uint16, c_name: 'get(TIMING_LOG_SPI_END)'}
+          general: {type: readonly uint16, c_name: 'get(0)'}
+          adc_cb_i: {type: readonly uint16, c_name: 'get(1)'}
+          adc_cb_dc: {type: readonly uint16, c_name: 'get(2)'}
+          meas_r: {type: readonly uint16, c_name: 'get(3)'}
+          meas_l: {type: readonly uint16, c_name: 'get(4)'}
+          enc_calib: {type: readonly uint16, c_name: 'get(5)'}
+          idx_search: {type: readonly uint16, c_name: 'get(6)'}
+          foc_voltage: {type: readonly uint16, c_name: 'get(7)'}
+          foc_current: {type: readonly uint16, c_name: 'get(8)'}
+          spi_start: {type: readonly uint16, c_name: 'get(9)'}
+          sample_now: {type: readonly uint16, c_name: 'get(10)'}
+          spi_end: {type: readonly uint16, c_name: 'get(11)'}
       config:
         c_is_class: False
         attributes:

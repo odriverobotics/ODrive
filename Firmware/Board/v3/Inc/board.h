@@ -35,13 +35,11 @@ using TGateDriver = Drv8301;
 using TOpAmp = Drv8301;
 
 #include <MotorControl/motor.hpp>
+#include <MotorControl/encoder.hpp>
 
-extern Motor m0;
-extern Motor m1;
-extern OnboardThermistorCurrentLimiter m0_fet_thermistor;
-extern OnboardThermistorCurrentLimiter m1_fet_thermistor;
-extern Motor* motors[AXIS_COUNT];
-extern OnboardThermistorCurrentLimiter* fet_thermistors[AXIS_COUNT];
+extern Motor motors[AXIS_COUNT];
+extern OnboardThermistorCurrentLimiter fet_thermistors[AXIS_COUNT];
+extern Encoder encoders[AXIS_COUNT];
 
 #include <Drivers/STM32/stm32_spi_arbiter.hpp>
 extern Stm32SpiArbiter& ext_spi_arbiter;
@@ -61,18 +59,6 @@ typedef struct {
 } AxisHardwareConfig_t;
 
 typedef struct {
-    TIM_HandleTypeDef* timer;
-    GPIO_TypeDef* index_port;
-    uint16_t index_pin;
-    GPIO_TypeDef* hallA_port;
-    uint16_t hallA_pin;
-    GPIO_TypeDef* hallB_port;
-    uint16_t hallB_pin;
-    GPIO_TypeDef* hallC_port;
-    uint16_t hallC_pin;
-    SPI_HandleTypeDef* spi;
-} EncoderHardwareConfig_t;
-typedef struct {
     SPI_HandleTypeDef* spi;
     GPIO_TypeDef* enable_port;
     uint16_t enable_pin;
@@ -83,7 +69,6 @@ typedef struct {
 } GateDriverHardwareConfig_t;
 typedef struct {
     AxisHardwareConfig_t axis_config;
-    EncoderHardwareConfig_t encoder_config;
 } BoardHardwareConfig_t;
 
 extern const BoardHardwareConfig_t hw_configs[2];
@@ -98,18 +83,6 @@ const BoardHardwareConfig_t hw_configs[2] = { {
         .dir_gpio_pin = 2,
         .thread_priority = (osPriority)(osPriorityHigh + (osPriority)1),
     },
-    .encoder_config = {
-        .timer = &htim3,
-        .index_port = M0_ENC_Z_GPIO_Port,
-        .index_pin = M0_ENC_Z_Pin,
-        .hallA_port = M0_ENC_A_GPIO_Port,
-        .hallA_pin = M0_ENC_A_Pin,
-        .hallB_port = M0_ENC_B_GPIO_Port,
-        .hallB_pin = M0_ENC_B_Pin,
-        .hallC_port = M0_ENC_Z_GPIO_Port,
-        .hallC_pin = M0_ENC_Z_Pin,
-        .spi = &hspi3,
-    },
 },{
     //M1
     .axis_config = {
@@ -122,18 +95,6 @@ const BoardHardwareConfig_t hw_configs[2] = { {
 #endif
         .thread_priority = osPriorityHigh,
     },
-    .encoder_config = {
-        .timer = &htim4,
-        .index_port = M1_ENC_Z_GPIO_Port,
-        .index_pin = M1_ENC_Z_Pin,
-        .hallA_port = M1_ENC_A_GPIO_Port,
-        .hallA_pin = M1_ENC_A_Pin,
-        .hallB_port = M1_ENC_B_GPIO_Port,
-        .hallB_pin = M1_ENC_B_Pin,
-        .hallC_port = M1_ENC_Z_GPIO_Port,
-        .hallC_pin = M1_ENC_Z_Pin,
-        .spi = &hspi3,
-    },
 } };
 #endif
 
@@ -143,6 +104,12 @@ const BoardHardwareConfig_t hw_configs[2] = { {
 #define I2C_A1_PIN GPIO_4_Pin
 #define I2C_A2_PORT GPIO_5_GPIO_Port
 #define I2C_A2_PIN GPIO_5_Pin
+
+#if HW_VERSION_MAJOR == 3 && HW_VERSION_MINOR <= 4
+#define GPIO_COUNT  5
+#else
+#define GPIO_COUNT  8
+#endif
 
 // This board has no board-specific user configurations
 static inline bool board_pop_config() { return true; }

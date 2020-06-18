@@ -196,6 +196,7 @@ sources = {
     'MotorControl/sensorless_estimator.cpp',
     'MotorControl/trapTraj.cpp',
     'MotorControl/main.cpp',
+    'Drivers/STM32/stm32_gpio.cpp',
     'Drivers/STM32/stm32_spi_arbiter.cpp',
     'communication/can_simple.cpp',
     'communication/communication.cpp',

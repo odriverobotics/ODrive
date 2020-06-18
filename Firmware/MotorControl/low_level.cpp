@@ -39,12 +39,6 @@ float ibus_ = 0.0f; // exposed for monitoring only
 bool brake_resistor_armed = false;
 bool brake_resistor_saturated = false;
 /* Private constant data -----------------------------------------------------*/
-static const GPIO_TypeDef* GPIOs_to_samp[] = { GPIOA, GPIOB, GPIOC };
-static const int num_GPIO = sizeof(GPIOs_to_samp) / sizeof(GPIOs_to_samp[0]); 
-/* Private variables ---------------------------------------------------------*/
-
-// Two motors, sampling port A,B,C (coherent with current meas timing)
-static uint16_t GPIO_port_samples [2][num_GPIO];
 /* CPU critical section helpers ----------------------------------------------*/
 
 /* Safety critical functions -------------------------------------------------*/
@@ -374,8 +368,8 @@ void start_general_purpose_adc() {
 }
 
 // @brief Returns the ADC voltage associated with the specified pin.
-// GPIO_set_to_analog() must be called first to put the Pin into
-// analog mode.
+// This only works if the GPIO was not used for anything else since bootup, otherwise
+// it must be put to analog mode first.
 // Returns NaN if the pin has no associated ADC1 channel.
 //
 // On ODrive 3.3 and 3.4 the following pins can be used with this function:
@@ -458,35 +452,6 @@ void vbus_sense_adc_cb(ADC_HandleTypeDef* hadc, bool injected) {
     // Only one conversion in sequence, so only rank1
     uint32_t ADCValue = HAL_ADCEx_InjectedGetValue(hadc, ADC_INJECTED_RANK_1);
     vbus_voltage = ADCValue * voltage_scale;
-}
-
-static void decode_hall_samples(Encoder& enc, uint16_t GPIO_samples[num_GPIO]) {
-    GPIO_TypeDef* hall_ports[] = {
-        enc.hw_config_.hallC_port,
-        enc.hw_config_.hallB_port,
-        enc.hw_config_.hallA_port,
-    };
-    uint16_t hall_pins[] = {
-        enc.hw_config_.hallC_pin,
-        enc.hw_config_.hallB_pin,
-        enc.hw_config_.hallA_pin,
-    };
-
-    uint8_t hall_state = 0x0;
-    for (int i = 0; i < 3; ++i) {
-        int port_idx = 0;
-        for (;;) {
-            auto port = GPIOs_to_samp[port_idx];
-            if (port == hall_ports[i])
-                break;
-            ++port_idx;
-        }
-
-        hall_state <<= 1;
-        hall_state |= (GPIO_samples[port_idx] & hall_pins[i]) ? 1 : 0;
-    }
-
-    enc.hall_state_ = hall_state;
 }
 
 // This is the callback from the ADC that we expect after the PWM has triggered an ADC conversion.
@@ -576,7 +541,7 @@ void pwm_trig_adc_cb(ADC_HandleTypeDef* hadc, bool injected) {
         }
         // Prepare hall readings
         // TODO move this to inside encoder update function
-        decode_hall_samples(axis.encoder_, GPIO_port_samples[axis_num]);
+        axis.encoder_.decode_hall_samples();
         // Trigger axis thread
         axis.signal_current_meas();
     } else {
@@ -586,34 +551,6 @@ void pwm_trig_adc_cb(ADC_HandleTypeDef* hadc, bool injected) {
         } else {
             axis.motor_.DC_calib_.phC += (current - axis.motor_.DC_calib_.phC) * calib_filter_k;
         }
-    }
-}
-
-void tim_update_cb(TIM_HandleTypeDef* htim) {
-    
-    // If the corresponding timer is counting up, we just sampled in SVM vector 0, i.e. real current
-    // If we are counting down, we just sampled in SVM vector 7, with zero current
-    bool counting_down = htim->Instance->CR1 & TIM_CR1_DIR;
-    if (counting_down)
-        return;
-    
-    int sample_ch;
-    Axis* axis;
-    if (htim == &htim1) {
-        sample_ch = 0;
-        axis = axes[0];
-    } else if (htim == &htim8) {
-        sample_ch = 1;
-        axis = axes[1];
-    } else {
-        low_level_fault(Motor::ERROR_UNEXPECTED_TIMER_CALLBACK);
-        return;
-    }
-
-    axis->encoder_.sample_now();
-
-    for (int i = 0; i < num_GPIO; ++i) {
-        GPIO_port_samples[sample_ch][i] = GPIOs_to_samp[i]->IDR;
     }
 }
 
@@ -811,13 +748,3 @@ void start_analog_thread() {
     osThreadDef(thread_def, analog_polling_thread, osPriorityLow, 0, 512 / sizeof(StackType_t));
     osThreadCreate(osThread(thread_def), NULL);
 }
-
-/*
-void HAL_SPI_TxRxCpltCallback(SPI_HandleTypeDef *hspi)
-{
-    if(hspi->pRxBuffPtr == (uint8_t*)axes[0]->encoder_.abs_spi_dma_rx_)
-        axes[0]->encoder_.abs_spi_cb();
-    else if (hspi->pRxBuffPtr == (uint8_t*)axes[1]->encoder_.abs_spi_dma_rx_)
-        axes[1]->encoder_.abs_spi_cb();
-}
-*/

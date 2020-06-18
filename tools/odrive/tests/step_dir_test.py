@@ -43,6 +43,7 @@ class TestStepDir():
         dir_gpio.config(output=True)
         dir_gpio.write(True)
 
+        axis.parent.erase_config_and_reboot()
         if axis.num == 0:
             axis.parent.handle.config.enable_uart = False
         axis.handle.config.enable_step_dir = True
@@ -52,6 +53,7 @@ class TestStepDir():
         request_state(axis, AXIS_STATE_IDLE) # apply step_dir_always_on config
 
 
+        axis.handle.controller.input_pos = 0
         ref = axis.handle.controller.input_pos
         axis.handle.config.counts_per_step = counts_per_step = 10
 
@@ -59,6 +61,7 @@ class TestStepDir():
 
         for i in range(100):
             step_gpio.write(True)
+            test_assert_eq(axis.handle.controller.input_pos, ref + (i + 1) * counts_per_step, range = 0.4 * counts_per_step)
             step_gpio.write(False)
             test_assert_eq(axis.handle.controller.input_pos, ref + (i + 1) * counts_per_step, range = 0.4 * counts_per_step)
 
@@ -67,6 +70,7 @@ class TestStepDir():
 
         for i in range(100):
             step_gpio.write(True)
+            test_assert_eq(axis.handle.controller.input_pos, ref - (i + 1) * counts_per_step, range = 0.4 * counts_per_step)
             step_gpio.write(False)
             test_assert_eq(axis.handle.controller.input_pos, ref - (i + 1) * counts_per_step, range = 0.4 * counts_per_step)
 
@@ -76,6 +80,7 @@ class TestStepDir():
 
         for i in range(100):
             step_gpio.write(True)
+            test_assert_eq(axis.handle.controller.input_pos, ref + (i + 1) * counts_per_step, range = 0.4 * counts_per_step)
             step_gpio.write(False)
             test_assert_eq(axis.handle.controller.input_pos, ref + (i + 1) * counts_per_step, range = 0.4 * counts_per_step)
 
@@ -84,6 +89,7 @@ class TestStepDir():
 
         for i in range(100):
             step_gpio.write(True)
+            test_assert_eq(axis.handle.controller.input_pos, ref + (i + 1) * counts_per_step, range = 0.4 * abs(counts_per_step))
             step_gpio.write(False)
             test_assert_eq(axis.handle.controller.input_pos, ref + (i + 1) * counts_per_step, range = 0.4 * abs(counts_per_step))
 

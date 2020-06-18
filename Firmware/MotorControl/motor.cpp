@@ -454,3 +454,13 @@ bool Motor::update(float torque_setpoint, float phase, float phase_vel) {
     }
     return true;
 }
+
+void Motor::tim_update_cb() {
+    // If the corresponding timer is counting up, we just sampled in SVM vector 0, i.e. real current
+    // If we are counting down, we just sampled in SVM vector 7, with zero current
+    bool counting_down = timer_->Instance->CR1 & TIM_CR1_DIR;
+    if (counting_down)
+        return;
+
+    axis_->encoder_.sample_now();
+}
