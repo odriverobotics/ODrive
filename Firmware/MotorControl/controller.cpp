@@ -319,10 +319,9 @@ bool Controller::update(float* torque_setpoint_output) {
         torque = limitVel(config_.vel_limit, *vel_estimate_src, vel_gain, torque);
     }
 
-    // Limit max torque to a user defined torque limit. This functions as an acceleration limit.
-    // The motor object handles current limiting
+    // Torque limiting
     bool limited = false;
-    float Tlim = axis_->motor_.config_.torque_lim;
+    float Tlim = axis_->motor_.max_available_torque();
     if (torque > Tlim) {
         limited = true;
         torque = Tlim;

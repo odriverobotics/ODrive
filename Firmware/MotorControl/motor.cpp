@@ -192,6 +192,21 @@ float Motor::effective_current_lim() {
     return current_lim;
 }
 
+float Motor::max_available_torque() {
+    //return the maximum available torque for the motor.
+    //Note - for ACIM motors, available torque is allowed to be 0.
+    if (config_.motor_type == Motor::MOTOR_TYPE_ACIM) {
+        float max_torque = effective_current_lim() * config_.torque_constant * current_control_.acim_rotor_flux;
+        max_torque = fmin(max_torque, config_.torque_lim);
+        return max_torque;
+    }
+    else {
+        float max_torque = effective_current_lim() * config_.torque_constant;
+        max_torque = fmin(max_torque, config_.torque_lim);
+        return max_torque;
+    }
+}
+
 void Motor::log_timing(TimingLog_t log_idx) {
     static const uint16_t clocks_per_cnt = (uint16_t)((float)TIM_1_8_CLOCK_HZ / (float)TIM_APB1_CLOCK_HZ);
     uint16_t timing = clocks_per_cnt * htim13.Instance->CNT; // TODO: Use a hw_config
@@ -441,7 +456,7 @@ bool Motor::FOC_current(float Id_des, float Iq_des, float I_phase, float pwm_pha
 
 
 bool Motor::update(float torque_setpoint, float phase, float phase_vel) {
-    float current_setpoint;
+    float current_setpoint = 0.0f;
     phase *= config_.direction;
     phase_vel *= config_.direction;
 

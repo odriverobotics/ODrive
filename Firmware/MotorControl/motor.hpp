@@ -45,7 +45,7 @@ public:
         float resistance_calib_max_voltage = 2.0f; // [V] - You may need to increase this if this voltage isn't sufficient to drive calibration_current through the motor.
         float phase_inductance = 0.0f;        // to be set by measure_phase_inductance
         float phase_resistance = 0.0f;        // to be set by measure_phase_resistance
-        float torque_constant = 1.0f;         // to be set by user
+        float torque_constant = 1.0f;         // [Nm/A] for PM motors, [Nm/A^2] for induction motors. To be set by user
         int32_t direction = 0;                // 1 or -1 (0 = unspecified)
         MotorType motor_type = MOTOR_TYPE_HIGH_CURRENT;
         // Read out max_allowed_current to see max supported value for current_lim.
@@ -96,6 +96,7 @@ public:
     float get_inverter_temp();
     bool update_thermal_limits(float fet_temp);
     float effective_current_lim();
+    float max_available_torque();
     void log_timing(TimingLog_t log_idx);
     float phase_current_from_adcval(uint32_t ADCValue);
     bool measure_phase_resistance(float test_current, float max_voltage);
@@ -162,7 +163,6 @@ public:
     } gate_driver_exported_;
     DRV_SPI_8301_Vars_t gate_driver_regs_; //Local view of DRV registers (initialized by DRV8301_setup)
     float thermal_current_lim_ = 10.0f;  //[A]
-    float thermal_torque_lim_ = 10.0f; //[Nm]
     float inverter_temp_ = NAN; // [°C] NaN while the ODrive is initializing.
 };
 
