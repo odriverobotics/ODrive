@@ -308,7 +308,7 @@ header li {
 }
 
 #navbar ul {
-  background-color: #ffffffd9;
+  background-color: rgba(255, 255, 255, 0.87);
   margin: 0;
 }
 
@@ -326,7 +326,7 @@ header li {
   font-size:12px;
   font-weight: bold;
   color:#676767;
-  display:block;
+  display:flex;
   text-align:left;
   padding:0px 5px;
   margin:0px;
@@ -334,13 +334,17 @@ header li {
   line-height:37px;
 }
 
-.navitem a { display: block; }
+.navitem a {
+  display: block;
+  width: 100%;
+}
 
 .levelbar {
   float: inline-start;
   margin-left: 8px;
   margin-right: 5px;
-  border-left: 1px solid #0000004d;
+  border-left: 1px solid rgba(0, 0, 0, 0.3);
+  width: 1px !important;
 }
 
 .currentitem {
