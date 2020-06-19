@@ -78,7 +78,32 @@ Encoder encoders[AXIS_COUNT] = {
 };
 
 
+void board_init() {
+    // Ensure that debug halting of the core doesn't leave the motor PWM running
+    __HAL_DBGMCU_FREEZE_TIM1();
+    __HAL_DBGMCU_FREEZE_TIM8();
+    __HAL_DBGMCU_FREEZE_TIM13();
 
+    /*
+    * Initial intention of the synchronization:
+    * Synchronize TIM1, TIM8 and TIM13 such that:
+    *  1. The triangle waveform of TIM1 leads the triangle waveform of TIM8 by a
+    *     90° phase shift.
+    *  2. The timer update events of TIM1 and TIM8 are symmetrically interleaved.
+    *  3. Each TIM13 reload coincides with a TIM1 lower update event.
+    * 
+    * However right now this synchronization only ensures point (1) and (3) but because
+    * TIM1 and TIM3 only trigger an update on every third reload, this does not
+    * allow for (2).
+    * 
+    * TODO: revisit the timing topic in general.
+    * 
+    */
+    Stm32Timer::start_synchronously<3>(
+        {&htim1, &htim8, &htim13},
+        {TIM_1_8_PERIOD_CLOCKS / 2 - 1 * 128 /* TODO: explain why this offset */, 0, TIM_1_8_PERIOD_CLOCKS / 2 - 1 * 128}
+    );
+}
 
 
 extern "C" {

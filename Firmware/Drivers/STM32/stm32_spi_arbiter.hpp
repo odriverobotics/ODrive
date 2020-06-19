@@ -1,5 +1,5 @@
-#ifndef SPI_ARBITER_HPP__
-#define SPI_ARBITER_HPP__
+#ifndef __STM32_SPI_ARBITER_HPP
+#define __STM32_SPI_ARBITER_HPP
 
 #include "stm32_gpio.hpp"
 
@@ -68,4 +68,4 @@ private:
     SpiTask* current_task_ = nullptr;
 };
 
-#endif
+#endif // __STM32_SPI_ARBITER_HPP

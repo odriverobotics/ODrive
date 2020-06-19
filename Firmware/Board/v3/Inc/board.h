@@ -28,6 +28,7 @@ static const size_t AXIS_COUNT = 2;
 
 #ifdef __cplusplus
 #include <Drivers/STM32/stm32_gpio.hpp>
+#include <Drivers/STM32/stm32_timer.hpp>
 #include <Drivers/DRV8301/drv8301.hpp>
 #include <MotorControl/thermistor.hpp>
 
@@ -117,5 +118,6 @@ static inline bool board_push_config() { return true; }
 static inline void board_clear_config() { }
 static inline bool board_apply_config() { return true; }
 
+void board_init();
 
 #endif // __BOARD_CONFIG_H

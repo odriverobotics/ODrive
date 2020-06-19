@@ -255,6 +255,9 @@ void vApplicationIdleHook(void) {
 }
 
 int odrive_main(void) {
+    // Init timers
+    board_init();
+
     // Start ADC for temperature measurements and user measurements
     start_general_purpose_adc();
 

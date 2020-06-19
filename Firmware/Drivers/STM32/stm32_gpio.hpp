@@ -1,5 +1,5 @@
-#ifndef STM32_GPIO_HPP__
-#define STM32_GPIO_HPP__
+#ifndef __STM32_GPIO_HPP
+#define __STM32_GPIO_HPP
 
 #include <gpio.h>
 
@@ -77,4 +77,4 @@ public:
     uint16_t pin_mask_; // TODO: store pin_number_ instead of pin_mask_
 };
 
-#endif // STM32_GPIO_HPP__
+#endif // __STM32_GPIO_HPP

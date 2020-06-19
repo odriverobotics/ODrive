@@ -193,36 +193,54 @@ void safety_critical_apply_brake_resistor_timings(uint32_t low_off, uint32_t hig
 /* Function implementations --------------------------------------------------*/
 
 void start_adc_pwm() {
+    // Disarm motors
+    for (size_t i = 0; i < AXIS_COUNT; ++i) {
+        safety_critical_disarm_motor_pwm(axes[i]->motor_);
+    }
+
+    for (Motor& motor: motors) {
+        // Init PWM
+        int half_load = TIM_1_8_PERIOD_CLOCKS / 2;
+        motor.timer_->Instance->CCR1 = half_load;
+        motor.timer_->Instance->CCR2 = half_load;
+        motor.timer_->Instance->CCR3 = half_load;
+
+        // Enable PWM outputs (they are still masked by MOE though)
+        motor.timer_->Instance->CCER |= (TIM_CCx_ENABLE << TIM_CHANNEL_1);
+        motor.timer_->Instance->CCER |= (TIM_CCxN_ENABLE << TIM_CHANNEL_1);
+        motor.timer_->Instance->CCER |= (TIM_CCx_ENABLE << TIM_CHANNEL_2);
+        motor.timer_->Instance->CCER |= (TIM_CCxN_ENABLE << TIM_CHANNEL_2);
+        motor.timer_->Instance->CCER |= (TIM_CCx_ENABLE << TIM_CHANNEL_3);
+        motor.timer_->Instance->CCER |= (TIM_CCxN_ENABLE << TIM_CHANNEL_3);
+    }
+
     // Enable ADC and interrupts
     __HAL_ADC_ENABLE(&hadc1);
     __HAL_ADC_ENABLE(&hadc2);
     __HAL_ADC_ENABLE(&hadc3);
     // Warp field stabilize.
     osDelay(2);
+    __HAL_ADC_CLEAR_FLAG(&hadc1, ADC_FLAG_JEOC);
+    __HAL_ADC_CLEAR_FLAG(&hadc2, ADC_FLAG_JEOC);
+    __HAL_ADC_CLEAR_FLAG(&hadc3, ADC_FLAG_JEOC);
+    __HAL_ADC_CLEAR_FLAG(&hadc2, ADC_FLAG_EOC);
+    __HAL_ADC_CLEAR_FLAG(&hadc3, ADC_FLAG_EOC);
+    __HAL_ADC_CLEAR_FLAG(&hadc1, ADC_FLAG_OVR);
+    __HAL_ADC_CLEAR_FLAG(&hadc2, ADC_FLAG_OVR);
+    __HAL_ADC_CLEAR_FLAG(&hadc3, ADC_FLAG_OVR);
     __HAL_ADC_ENABLE_IT(&hadc1, ADC_IT_JEOC);
     __HAL_ADC_ENABLE_IT(&hadc2, ADC_IT_JEOC);
     __HAL_ADC_ENABLE_IT(&hadc3, ADC_IT_JEOC);
     __HAL_ADC_ENABLE_IT(&hadc2, ADC_IT_EOC);
     __HAL_ADC_ENABLE_IT(&hadc3, ADC_IT_EOC);
 
-    // Ensure that debug halting of the core doesn't leave the motor PWM running
-    __HAL_DBGMCU_FREEZE_TIM1();
-    __HAL_DBGMCU_FREEZE_TIM8();
-    __HAL_DBGMCU_FREEZE_TIM13();
 
-    start_pwm(&htim1);
-    start_pwm(&htim8);
-    // TODO: explain why this offset
-    sync_timers(&htim1, &htim8, TIM_CLOCKSOURCE_ITR0, TIM_1_8_PERIOD_CLOCKS / 2 - 1 * 128,
-            &htim13);
+    for (Motor& motor: motors) {
+        // Enable the update interrupt (used to coherently sample GPIO)
+        __HAL_TIM_CLEAR_IT(motor.timer_, TIM_IT_UPDATE);
+        __HAL_TIM_ENABLE_IT(motor.timer_, TIM_IT_UPDATE);
+    }
 
-    // Motor output starts in the disabled state
-    __HAL_TIM_MOE_DISABLE_UNCONDITIONALLY(&htim1);
-    __HAL_TIM_MOE_DISABLE_UNCONDITIONALLY(&htim8);
-
-    // Enable the update interrupt (used to coherently sample GPIO)
-    __HAL_TIM_ENABLE_IT(&htim1, TIM_IT_UPDATE);
-    __HAL_TIM_ENABLE_IT(&htim8, TIM_IT_UPDATE);
 
     // Start brake resistor PWM in floating output configuration
     htim2.Instance->CCR3 = 0;
@@ -230,96 +248,7 @@ void start_adc_pwm() {
     HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_3);
     HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_4);
 
-    // Disarm motors and arm brake resistor
-    for (size_t i = 0; i < AXIS_COUNT; ++i) {
-        safety_critical_disarm_motor_pwm(axes[i]->motor_);
-    }
     safety_critical_arm_brake_resistor();
-}
-
-void start_pwm(TIM_HandleTypeDef* htim) {
-    // Init PWM
-    int half_load = TIM_1_8_PERIOD_CLOCKS / 2;
-    htim->Instance->CCR1 = half_load;
-    htim->Instance->CCR2 = half_load;
-    htim->Instance->CCR3 = half_load;
-
-    // This hardware obfustication layer really is getting on my nerves
-    HAL_TIM_PWM_Start(htim, TIM_CHANNEL_1);
-    HAL_TIMEx_PWMN_Start(htim, TIM_CHANNEL_1);
-    HAL_TIM_PWM_Start(htim, TIM_CHANNEL_2);
-    HAL_TIMEx_PWMN_Start(htim, TIM_CHANNEL_2);
-    HAL_TIM_PWM_Start(htim, TIM_CHANNEL_3);
-    HAL_TIMEx_PWMN_Start(htim, TIM_CHANNEL_3);
-
-    htim->Instance->CCR4 = 1;
-    HAL_TIM_PWM_Start_IT(htim, TIM_CHANNEL_4);
-}
-
-/*
- * Initial intention of this function:
- * Synchronize TIM1, TIM8 and TIM13 such that:
- *  1. The triangle waveform of TIM1 leads the triangle waveform of TIM8 by a
- *     90° phase shift.
- *  2. The timer update events of TIM1 and TIM8 are symmetrically interleaved.
- *  3. Each TIM13 reload coincides with a TIM1 lower update event.
- * 
- * However right now this function only ensures point (1) and (3) but because
- * TIM1 and TIM3 only trigger an update on every third reload, this does not
- * imply (or even allow for) (2).
- * 
- * TODO: revisit the timing topic in general.
- */
-void sync_timers(TIM_HandleTypeDef* htim_a, TIM_HandleTypeDef* htim_b,
-                 uint16_t TIM_CLOCKSOURCE_ITRx, uint16_t count_offset,
-                 TIM_HandleTypeDef* htim_refbase) {
-    // Store intial timer configs
-    uint16_t MOE_store_a = htim_a->Instance->BDTR & (TIM_BDTR_MOE);
-    uint16_t MOE_store_b = htim_b->Instance->BDTR & (TIM_BDTR_MOE);
-    uint16_t CR2_store = htim_a->Instance->CR2;
-    uint16_t SMCR_store = htim_b->Instance->SMCR;
-    // Turn off output
-    htim_a->Instance->BDTR &= ~(TIM_BDTR_MOE);
-    htim_b->Instance->BDTR &= ~(TIM_BDTR_MOE);
-    // Disable both timer counters
-    htim_a->Instance->CR1 &= ~TIM_CR1_CEN;
-    htim_b->Instance->CR1 &= ~TIM_CR1_CEN;
-    // Set first timer to send TRGO on counter enable
-    htim_a->Instance->CR2 &= ~TIM_CR2_MMS;
-    htim_a->Instance->CR2 |= TIM_TRGO_ENABLE;
-    // Set Trigger Source of second timer to the TRGO of the first timer
-    htim_b->Instance->SMCR &= ~TIM_SMCR_TS;
-    htim_b->Instance->SMCR |= TIM_CLOCKSOURCE_ITRx;
-    // Set 2nd timer to start on trigger
-    htim_b->Instance->SMCR &= ~TIM_SMCR_SMS;
-    htim_b->Instance->SMCR |= TIM_SLAVEMODE_TRIGGER;
-    // Dir bit is read only in center aligned mode, so we clear the mode for now
-    uint16_t CMS_store_a = htim_a->Instance->CR1 & TIM_CR1_CMS;
-    uint16_t CMS_store_b = htim_b->Instance->CR1 & TIM_CR1_CMS;
-    htim_a->Instance->CR1 &= ~TIM_CR1_CMS;
-    htim_b->Instance->CR1 &= ~TIM_CR1_CMS;
-    // Set both timers to up-counting state
-    htim_a->Instance->CR1 &= ~TIM_CR1_DIR;
-    htim_b->Instance->CR1 &= ~TIM_CR1_DIR;
-    // Restore center aligned mode
-    htim_a->Instance->CR1 |= CMS_store_a;
-    htim_b->Instance->CR1 |= CMS_store_b;
-    // set counter offset
-    htim_a->Instance->CNT = count_offset;
-    htim_b->Instance->CNT = 0;
-    // Set and start reference timebase timer (if used)
-    if (htim_refbase) {
-        htim_refbase->Instance->CNT = count_offset;
-        htim_refbase->Instance->CR1 |= (TIM_CR1_CEN); // start
-    }
-    // Start Timer a
-    htim_a->Instance->CR1 |= (TIM_CR1_CEN);
-    // Restore timer configs
-    htim_a->Instance->CR2 = CR2_store;
-    htim_b->Instance->SMCR = SMCR_store;
-    // restore output
-    htim_a->Instance->BDTR |= MOE_store_a;
-    htim_b->Instance->BDTR |= MOE_store_b;
 }
 
 // @brief ADC1 measurements are written to this buffer by DMA
