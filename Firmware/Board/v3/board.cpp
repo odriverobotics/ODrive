@@ -4,6 +4,8 @@
 
 #include <board.h>
 
+#include <Drivers/STM32/stm32_timer.hpp>
+
 Stm32SpiArbiter spi3_arbiter{&hspi3};
 Stm32SpiArbiter& ext_spi_arbiter = spi3_arbiter;
 

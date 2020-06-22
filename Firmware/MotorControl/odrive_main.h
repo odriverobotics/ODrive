@@ -11,11 +11,6 @@
 extern "C" {
 #endif
 
-// STM specific includes
-#include <stm32f4xx_hal.h>  // Sets up the correct chip specifc defines required by arm_math
-#include <can.h>
-#include <i2c.h>
-
 // OS includes
 #include <cmsis_os.h>
 

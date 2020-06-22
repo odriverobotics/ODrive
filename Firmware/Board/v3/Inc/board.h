@@ -5,10 +5,14 @@
 #ifndef __BOARD_CONFIG_H
 #define __BOARD_CONFIG_H
 
+
 // STM specific includes
+#include <stm32f4xx_hal.h>
 #include <gpio.h>
 #include <spi.h>
 #include <tim.h>
+#include <can.h>
+#include <i2c.h>
 #include <main.h>
 #include "cmsis_os.h"
 
@@ -23,12 +27,11 @@
 #endif
 
 
-static const size_t AXIS_COUNT = 2;
+#define AXIS_COUNT (2)
 
 
 #ifdef __cplusplus
 #include <Drivers/STM32/stm32_gpio.hpp>
-#include <Drivers/STM32/stm32_timer.hpp>
 #include <Drivers/DRV8301/drv8301.hpp>
 #include <MotorControl/thermistor.hpp>
 
@@ -60,24 +63,15 @@ typedef struct {
 } AxisHardwareConfig_t;
 
 typedef struct {
-    SPI_HandleTypeDef* spi;
-    GPIO_TypeDef* enable_port;
-    uint16_t enable_pin;
-    GPIO_TypeDef* nCS_port;
-    uint16_t nCS_pin;
-    GPIO_TypeDef* nFAULT_port;
-    uint16_t nFAULT_pin;
-} GateDriverHardwareConfig_t;
-typedef struct {
     AxisHardwareConfig_t axis_config;
 } BoardHardwareConfig_t;
 
-extern const BoardHardwareConfig_t hw_configs[2];
+extern const BoardHardwareConfig_t hw_configs[AXIS_COUNT];
 
 //TODO stick this in a C file
 #ifdef __MAIN_CPP__
 
-const BoardHardwareConfig_t hw_configs[2] = { {
+const BoardHardwareConfig_t hw_configs[AXIS_COUNT] = { {
     //M0
     .axis_config = {
         .step_gpio_pin = 1,
