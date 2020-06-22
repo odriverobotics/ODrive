@@ -172,15 +172,17 @@ class TestRegenProtection(TestClosedLoopControlBase):
 
     def run_test(self, axis_ctx: ODriveAxisComponent, motor_ctx: MotorComponent, enc_ctx: EncoderComponent, logger: Logger):
         with self.prepare(axis_ctx, motor_ctx, enc_ctx, logger):
-            nominal_rps = 6.0
+            nominal_rps = 10.0
             nominal_vel = float(enc_ctx.yaml['cpr']) * nominal_rps
+            max_current = 15.0
         
             # Accept a bit of noise on Ibus
-            axis_ctx.parent.handle.config.dc_max_negative_current = -0.1
+            axis_ctx.parent.handle.config.dc_max_negative_current = -0.2
 
             logger.debug(f'Brake control test from {nominal_rps} rounds/s...')
             
-            axis_ctx.handle.controller.config.vel_limit = float(enc_ctx.yaml['cpr']) * 10.0 # max 10 rps
+            axis_ctx.handle.controller.config.vel_limit = float(enc_ctx.yaml['cpr']) * 15.0 # max 15 rps
+            axis_ctx.handle.motor.config.current_lim = max_current
             axis_ctx.handle.controller.config.control_mode = CONTROL_MODE_VELOCITY_CONTROL
             axis_ctx.handle.controller.config.input_mode = INPUT_MODE_PASSTHROUGH
 
