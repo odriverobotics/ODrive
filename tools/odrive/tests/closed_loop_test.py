@@ -176,7 +176,7 @@ class TestRegenProtection(TestClosedLoopControlBase):
             nominal_vel = float(enc_ctx.yaml['cpr']) * nominal_rps
         
             # Accept a bit of noise on Ibus
-            axis_ctx.parent.handle.config.dc_max_negative_current = -0.2
+            axis_ctx.parent.handle.config.dc_max_negative_current = -0.1
 
             logger.debug(f'Brake control test from {nominal_rps} rounds/s...')
             
@@ -185,7 +185,6 @@ class TestRegenProtection(TestClosedLoopControlBase):
             axis_ctx.handle.controller.config.input_mode = INPUT_MODE_PASSTHROUGH
 
             request_state(axis_ctx, AXIS_STATE_CLOSED_LOOP_CONTROL)
-
             # accelerate...
             axis_ctx.handle.controller.input_vel = nominal_vel
             time.sleep(1.0)
@@ -198,7 +197,6 @@ class TestRegenProtection(TestClosedLoopControlBase):
 
             # once more, but this time without brake resistor
             axis_ctx.parent.handle.config.brake_resistance = 0
-
             # accelerate...
             axis_ctx.handle.controller.input_vel = nominal_vel
             time.sleep(1.0)
@@ -222,7 +220,7 @@ class TestVelLimitInCurrentControl(TestClosedLoopControlBase):
             max_rps = 20.0
             max_vel = float(enc_ctx.yaml['cpr']) * max_rps
             absolute_max_vel = max_vel * 1.2
-            max_current = 3.0
+            max_current = 10.0
 
             axis_ctx.handle.controller.config.vel_gain /= 10 # reduce the slope to make it easier to see what's going on
             vel_gain = axis_ctx.handle.controller.config.vel_gain
