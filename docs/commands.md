@@ -64,7 +64,7 @@ If you want a different mode, you can change `<axis>.controller.config.control_m
 Possible values are:
 * `CONTROL_MODE_POSITION_CONTROL`
 * `CONTROL_MODE_VELOCITY_CONTROL`
-* `CONTROL_MODE_CURRENT_CONTROL`
+* `CONTROL_MODE_TORQUE_CONTROL`
 * `CONTROL_MODE_VOLTAGE_CONTROL` - this one is not normally used.
 
 ### Input Mode

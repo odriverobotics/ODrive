@@ -347,7 +347,7 @@ Activate the ramped velocity mode: `axis.controller.config.input_mode = INPUT_MO
 You can now control the velocity with `axis.controller.input_vel = 5000` [count/s].
 
 ### Torque control
-Set `axis.controller.config.control_mode = CONTROL_MODE_CURRENT_CONTROL`.<br>
+Set `axis.controller.config.control_mode = CONTROL_MODE_TORQUE_CONTROL`.<br>
 You can now control the torque with `axis.controller.input_torque = 0.1` [Nm].
 
 Note: If you exceed `vel_limit` in current control mode, the current is reduced. To disable this, set `axis.controller.enable_current_mode_vel_limit = False`.

@@ -31,7 +31,7 @@ Pass `input_xxx` through to `xxx_setpoint` directly.
 
 ### Valid Control modes:
 * `CONTROL_MODE_VOLTAGE_CONTROL`
-* `CONTROL_MODE_CURRENT_CONTROL`
+* `CONTROL_MODE_TORQUE_CONTROL`
 * `CONTROL_MODE_VELOCITY_CONTROL`
 * `CONTROL_MODE_POSITION_CONTROL`
 
@@ -95,7 +95,7 @@ Ramp a torque command from the current value to the target value.
 * `input_torque`
 
 ### Valid Control Modes:
-* `CONTROL_MODE_CURRENT_CONTROL`
+* `CONTROL_MODE_TORQUE_CONTROL`
 
 ## INPUT_MODE_MIRROR
 Implements "electronic mirroring".  This is like electronic camming, but you can only mirror exactly the movements of the other motor, according to a fixed ratio

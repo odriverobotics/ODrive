@@ -187,10 +187,10 @@ class TestSimpleCAN():
         test_assert_eq(axis.controller.input_vel, -10.0, range=0.01)
         test_assert_eq(axis.controller.input_torque, 30.1234, range=0.01)
 
-        axis.controller.config.control_mode = CONTROL_MODE_CURRENT_CONTROL
-        my_cmd('set_input_torque', input_torque=3.1415)
+        axis.controller.config.control_mode = CONTROL_MODE_TORQUE_CONTROL
+        my_cmd('set_input_torque', input_torque=0.1)
         fence()
-        test_assert_eq(axis.controller.input_torque, 3.1415, range=0.01)
+        test_assert_eq(axis.controller.input_torque, 0.1, range=0.01)
 
         my_cmd('set_velocity_limit', velocity_limit=23456.78)
         fence()
