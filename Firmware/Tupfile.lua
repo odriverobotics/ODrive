@@ -7,9 +7,9 @@ tup.include('build.lua')
 -- On some systems this may return a python2 command if Python3 is not installed.
 function find_python3()
     success, python_version = run_now("python --version")
-    if success and string.match(python_version, "Python 3") then return "python" end
+    if success and string.match(python_version, "Python 3") then return "python -B" end
     success, python_version = run_now("python3 --version")
-    if success and string.match(python_version, "Python 3") then return "python3" end
+    if success and string.match(python_version, "Python 3") then return "python3 -B" end
     error("Python 3 not found.")
 end
 
