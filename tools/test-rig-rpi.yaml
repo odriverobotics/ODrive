@@ -30,7 +30,7 @@ components:
   - type: odrive
     name: odrive
     board-version: v3.6-58V
-    serial-number: "20703595524B"
+    serial-number: "2061398A4D4D"
     brake-resistance: 0.47
     usb: auto
     can: main_canbus
@@ -78,11 +78,11 @@ connections:
   - ['teensy.gpio6', 'rpi.gpio20']
   - ['teensy.gpio7', 'rpi.gpio19']
   - ['teensy.gpio23', 'odrive.encoder0.z']
-  - ['teensy.gpio22', 'odrive.encoder0.a']
-  - ['teensy.gpio21', 'odrive.encoder0.b']
+  - ['teensy.gpio22', 'odrive.encoder0.b']
+  - ['teensy.gpio21', 'odrive.encoder0.a']
   - ['teensy.gpio20', 'odrive.encoder1.z']
-  - ['teensy.gpio19', 'odrive.encoder1.a']
-  - ['teensy.gpio18', 'odrive.encoder1.b']
+  - ['teensy.gpio19', 'odrive.encoder1.b']
+  - ['teensy.gpio18', 'odrive.encoder1.a']
   - ['teensy.gpio0', 'real_encoder.z']
   - ['teensy.gpio1', 'real_encoder.a']
   - ['teensy.gpio2', 'real_encoder.b']
