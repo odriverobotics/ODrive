@@ -623,13 +623,17 @@ def tokenize(text, interface, interface_transform, value_type_transform, attribu
         token_list = split_name(token)
 
         # Check if this is an attribute reference
-        attr_intf = interface
-        for name in token_list:
-            if not name in attr_intf['attributes']:
-                attr = None
-                break
-            attr = attr_intf['attributes'][name]
-            attr_intf = attr['type']
+        scope = interface
+        attr = None
+        while attr is None and not scope is None:
+            attr_intf = scope
+            for name in token_list:
+                if not name in attr_intf['attributes']:
+                    attr = None
+                    break
+                attr = attr_intf['attributes'][name]
+                attr_intf = attr['type']
+            scope = scope.get('parent', None)
         
         if not attr is None:
             return attribute_transform(token, attr)
@@ -648,6 +652,7 @@ env.filters['first'] = lambda x: next(iter(x))
 env.filters['skip_first'] = lambda x: list(x)[1:]
 env.filters['to_c_string'] = lambda x: '\n'.join(('"' + line.replace('"', '\\"') + '"') for line in json.dumps(x, separators=(',', ':')).replace('{"name"', '\n{"name"').split('\n'))
 env.filters['tokenize'] = tokenize
+env.filters['diagonalize'] = lambda lst: [lst[:i + 1] for i in range(len(lst))]
 
 template = env.from_string(template_file.read())
 

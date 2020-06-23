@@ -18,30 +18,7 @@ For the most part, both axes on the ODrive can be controlled independently.
 
 ### State Machine
 
-The current state of an axis is indicated by `<axis>.current_state`. The user can request a new state by assigning a new value to `<axis>.requested_state`. The default state after startup is `AXIS_STATE_IDLE`.
-
- 1. `AXIS_STATE_IDLE` Disable motor PWM and do nothing.
- 2. `AXIS_STATE_STARTUP_SEQUENCE` Run the [startup procedure](#startup-procedure).
- 3. `AXIS_STATE_FULL_CALIBRATION_SEQUENCE` Run motor calibration and then encoder offset calibration (or encoder index search if `<axis>.encoder.config.use_index` is `True`).
- 4. `AXIS_STATE_MOTOR_CALIBRATION` Measure phase resistance and phase inductance of the motor.
-    * To store the results set `<axis>.motor.config.pre_calibrated` to `True` and [save the configuration](#saving-the-configuration). After that you don't have to run the motor calibration on the next start up.
-    * This modifies the variables `<axis>.motor.config.phase_resistance` and `<axis>.motor.config.phase_inductance`.
- 5. `AXIS_STATE_SENSORLESS_CONTROL` Run sensorless control.
-    * The motor must be calibrated (`<axis>.motor.is_calibrated`)
-    * [`<axis>.controller.control_mode`](#control-mode) must be `True`.
- 6. `AXIS_STATE_ENCODER_INDEX_SEARCH` Turn the motor in one direction until the encoder index is traversed. This state can only be entered if `<axis>.encoder.config.use_index` is `True`.
- 7. `AXIS_STATE_ENCODER_OFFSET_CALIBRATION` Turn the motor in one direction for a few seconds and then back to measure the offset between the encoder position and the electrical phase.
-    * Can only be entered if the motor is calibrated (`<axis>.motor.is_calibrated`).
-    * A successful encoder calibration will make the `<axis>.encoder.is_ready` go to true.
- 8. `AXIS_STATE_CLOSED_LOOP_CONTROL` Run closed loop control.
-    * The action depends on the [control mode](#control-mode).
-    * Can only be entered if the motor is calibrated (`<axis>.motor.is_calibrated`) and the encoder is ready (`<axis>.encoder.is_ready`).
- 9. `AXIS_STATE_LOCKIN_SPIN` Run lockin spin.
-    * Can only be entered if the motor is calibrated (`<axis>.motor.is_calibrated`) or the motor direction is unspecified (`<axis>.motor.config.direction == 1`)
- 10. `AXIS_STATE_ENCODER_DIR_FIND` Run encoder direction search.
-    * Can only be entered if the motor is calibrated (`<axis>.motor.is_calibrated`).
- 11. `AXIS_STATE_HOMING` Run axis homing function.
-    * Endstops must be enabled to use this feature.
+The current state of an axis is indicated by [`<axis>.current_state`](api/odrive.axis#current_state). The user can request a new state by assigning a new value to [`<axis>.requested_state`](api/odrive.axis#current_state). The default state after startup is `AXIS_STATE_IDLE`. A description of all states can be found [here](api/odrive.axis.axisstate).
 
 
 ### Startup Procedure
@@ -56,11 +33,12 @@ The ODrive will sequence all enabled startup actions selected in the order shown
 * `<axis>.config.startup_closed_loop_control`
 * `<axis>.config.startup_sensorless_control`
 
-See [state machine](#state-machine) for a description of each state.
+See [here](api/odrive.axis.axisstate) for a description of each state.
 
 ### Control Mode
 The default control mode is position control.
 If you want a different mode, you can change `<axis>.controller.config.control_mode`.
+<<<<<<< HEAD
 Possible values are:
 * `CONTROL_MODE_POSITION_CONTROL`
 * `CONTROL_MODE_VELOCITY_CONTROL`
@@ -83,10 +61,19 @@ Possible values are:
 For more information, see [input_modes](input_modes.md).
 
 # Control Commands
+=======
+Possible values are listed [here](api/odrive.axis.controller.controlmode).
+
+### Input Mode
+
+As of version v0.5.0, ODrive now intercepts the incoming commands and can apply filters to them. The old protocol values `pos_setpoint`, `vel_setpoint`, and `current_setpoint` are still used internally by the closed-loop cascade control, but the user cannot write to them directly.  This allows us to condense the number of ways the ODrive accepts motion commands. The new commands are:
+
+>>>>>>> 99507d2ece83127ca556f8fd34994075d517111e
 * `<axis>.controller.input_pos = <encoder_counts>`
 * `<axis>.controller.input_vel = <encoder_counts/s>`
 * `<axis>.controller.input_torque = <torque in Nm>`
 
+<<<<<<< HEAD
 ### Input Mode
 To modify the way the control command affects the motor, you can use the input mode. The default input mode is pass through.
 If you want a different mode, you can change `<axis>.controller.config.input_mode`.
@@ -99,6 +86,11 @@ Possible values are:
 * `INPUT_MODE_TRAP_TRAJ`
 * `INPUT_MODE_TORQUE_RAMP`
 * `INPUT_MODE_MIRROR`
+=======
+Modes can be selected by changing `<axis>.controller.config.input_mode`.
+The default input mode is `INPUT_MODE_PASSTHROUGH`.
+Possible values are listed [here](api/odrive.axis.controller.inputmode).
+>>>>>>> 99507d2ece83127ca556f8fd34994075d517111e
 
 ## System monitoring commands
 

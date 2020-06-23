@@ -3,34 +3,37 @@
 # https://jekyllrb.com/tutorials/navigation/#scenario-8-retrieving-items-based-on-front-matter-properties
 
 sections:
-  - title: For Users
+  - title: General
     docs:
       - title: Getting Started
         url: /
       - title: ODrive Tool
-        url: odrivetool
+        url: /odrivetool
       - title: Parameters & Commands
-        url: commands
+        url: /commands
       - title: Interfaces
-        url: interfaces
+        url: /interfaces
       - title: Encoders
-        url: encoders
+        url: /encoders
       - title: Homing & Endstops
-        url: endstops
+        url: /endstops
       - title: Control & Tuning
-        url: control
-      - title: Hoverboard Guide
-        url: hoverboard
+        url: /control
       - title: Troubleshooting
-        url: troubleshooting
+        url: /troubleshooting
+  - title: Tutorials
+    docs:
+      - title: Hoverboard Guide
+        url: /hoverboard
+  - title: API Reference
   - title: For ODrive Developers
     docs:
       - title: Firmware Developer Guide
-        url: developer-guide
+        url: /developer-guide
       - title: Configuring Visual Studio Code
-        url: configuring-vscode
+        url: /configuring-vscode
       - title: Configuring Eclipse
-        url: configuring-eclipse
+        url: /configuring-eclipse
   - title: Component Guides
     docs:
       - title: Motor Guide
