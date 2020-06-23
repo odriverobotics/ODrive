@@ -868,7 +868,7 @@ valuetypes:
       # highest level of control, to allow "<" style comparisons.
       VoltageControl:
         doc: this one is not normally used
-      CurrentControl:
+      TorqueControl:
       VelocityControl:
       PositionControl:
 
