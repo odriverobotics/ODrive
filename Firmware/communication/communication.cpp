@@ -11,7 +11,6 @@
 #include "odrive_main.h"
 #include "freertos_vars.h"
 #include "utils.hpp"
-#include "gpio_utils.hpp"
 
 #include <cmsis_os.h>
 #include <memory>

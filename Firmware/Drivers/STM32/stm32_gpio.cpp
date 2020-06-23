@@ -9,6 +9,7 @@ struct subscription_t {
     void* ctx = nullptr;
 } subscriptions[N_EXTI];
 
+const Stm32Gpio Stm32Gpio::none{nullptr, 0};
 
 /**
  * @brief Returns the IRQ number associated with a certain pin.

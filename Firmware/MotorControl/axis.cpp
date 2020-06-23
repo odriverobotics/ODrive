@@ -5,7 +5,6 @@
 
 #include "odrive_main.h"
 #include "utils.hpp"
-#include "gpio_utils.hpp"
 #include "communication/interface_can.hpp"
 
 Axis::Axis(int axis_num,
@@ -119,8 +118,8 @@ bool Axis::wait_for_current_meas() {
 // step/direction interface
 void Axis::step_cb() {
     if (step_dir_active_) {
-        GPIO_PinState dir_pin = HAL_GPIO_ReadPin(dir_port_, dir_pin_);
-        float dir = (dir_pin == GPIO_PIN_SET) ? 1.0f : -1.0f;
+        bool dir_pin = dir_gpio_.read();
+        float dir = dir_pin ? 1.0f : -1.0f;
         controller_.input_pos_ += dir * config_.counts_per_step;
         controller_.input_pos_updated();
     }
@@ -137,21 +136,19 @@ void Axis::load_default_can_id(const int& id, Config_t& config){
 }
 
 void Axis::decode_step_dir_pins() {
-    step_port_ = get_gpio_port_by_pin(config_.step_gpio_pin);
-    step_pin_ = get_gpio_pin_by_pin(config_.step_gpio_pin);
-    dir_port_ = get_gpio_port_by_pin(config_.dir_gpio_pin);
-    dir_pin_ = get_gpio_pin_by_pin(config_.dir_gpio_pin);
+    step_gpio_ = get_gpio(config_.step_gpio_pin);
+    dir_gpio_ = get_gpio(config_.dir_gpio_pin);
 }
 
 // @brief (de)activates step/dir input
 void Axis::set_step_dir_active(bool active) {
     if (active) {
         // Set up the step/direction GPIOs as input
-        Stm32Gpio{dir_port_, dir_pin_}.config(GPIO_MODE_INPUT, GPIO_NOPULL);
-        Stm32Gpio{step_port_, step_pin_}.config(GPIO_MODE_INPUT, GPIO_PULLDOWN);
+        dir_gpio_.config(GPIO_MODE_INPUT, GPIO_NOPULL);
+        step_gpio_.config(GPIO_MODE_INPUT, GPIO_PULLDOWN);
 
         // Subscribe to rising edges of the step GPIO
-        Stm32Gpio{step_port_, step_pin_}.subscribe(true, false, step_cb_wrapper, this);
+        step_gpio_.subscribe(true, false, step_cb_wrapper, this);
 
         step_dir_active_ = true;
     } else {
@@ -160,7 +157,7 @@ void Axis::set_step_dir_active(bool active) {
         // Unsubscribe from step GPIO
         // TODO: if we change the GPIO while the subscription is active and then
         // unsubscribe then the unsubscribe is for the wrong pin.
-        Stm32Gpio{step_port_, step_pin_}.unsubscribe();
+        step_gpio_.unsubscribe();
     }
 }
 

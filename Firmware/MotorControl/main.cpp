@@ -185,18 +185,10 @@ extern "C" int construct_objects(){
     GPIO_InitTypeDef GPIO_InitStruct;
     GPIO_InitStruct.Mode = GPIO_MODE_ANALOG;
     GPIO_InitStruct.Pull = GPIO_NOPULL;
-    GPIO_InitStruct.Pin = GPIO_1_Pin;
-    HAL_GPIO_Init(GPIO_1_GPIO_Port, &GPIO_InitStruct);
-    GPIO_InitStruct.Pin = GPIO_2_Pin;
-    HAL_GPIO_Init(GPIO_2_GPIO_Port, &GPIO_InitStruct);
-    GPIO_InitStruct.Pin = GPIO_3_Pin;
-    HAL_GPIO_Init(GPIO_3_GPIO_Port, &GPIO_InitStruct);
-    GPIO_InitStruct.Pin = GPIO_4_Pin;
-    HAL_GPIO_Init(GPIO_4_GPIO_Port, &GPIO_InitStruct);
-#if HW_VERSION_MAJOR == 3 && HW_VERSION_MINOR >= 5
-    GPIO_InitStruct.Pin = GPIO_5_Pin;
-    HAL_GPIO_Init(GPIO_5_GPIO_Port, &GPIO_InitStruct);
-#endif
+    for (Stm32Gpio& gpio: gpios) {
+        GPIO_InitStruct.Pin = gpio.pin_mask_;
+        HAL_GPIO_Init(gpio.port_, &GPIO_InitStruct);
+    }
 
     // Construct all objects.
     odCAN = new ODriveCAN(can_config, &hcan1);

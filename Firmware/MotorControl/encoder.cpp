@@ -329,8 +329,8 @@ void Encoder::sample_now() {
         } break;
 
         case MODE_SINCOS: {
-            sincos_sample_s_ = (get_adc_voltage(get_gpio_port_by_pin(config_.sincos_gpio_pin_sin), get_gpio_pin_by_pin(config_.sincos_gpio_pin_sin)) / 3.3f) - 0.5f;
-            sincos_sample_c_ = (get_adc_voltage(get_gpio_port_by_pin(config_.sincos_gpio_pin_cos), get_gpio_pin_by_pin(config_.sincos_gpio_pin_cos)) / 3.3f) - 0.5f;
+            sincos_sample_s_ = (get_adc_voltage(get_gpio(config_.sincos_gpio_pin_sin)) / 3.3f) - 0.5f;
+            sincos_sample_c_ = (get_adc_voltage(get_gpio(config_.sincos_gpio_pin_cos)) / 3.3f) - 0.5f;
         } break;
 
         case MODE_SPI_ABS_AMS:
@@ -374,7 +374,7 @@ bool Encoder::abs_spi_start_transaction(){
             return false;
         }
         
-        spi_task_.ncs_gpio = {abs_spi_cs_port_, abs_spi_cs_pin_};
+        spi_task_.ncs_gpio = abs_spi_cs_gpio_;
         spi_task_.tx_buf = (uint8_t*)abs_spi_dma_tx_;
         spi_task_.rx_buf = (uint8_t*)abs_spi_dma_rx_;
         spi_task_.length = 1;
@@ -445,20 +445,20 @@ void Encoder::abs_spi_cb() {
 
 void Encoder::abs_spi_cs_pin_init(){
     // Decode cs pin
-    abs_spi_cs_port_ = get_gpio_port_by_pin(config_.abs_spi_cs_gpio_pin);
-    abs_spi_cs_pin_ = get_gpio_pin_by_pin(config_.abs_spi_cs_gpio_pin);
+    abs_spi_cs_gpio_ = get_gpio(config_.abs_spi_cs_gpio_pin);
 
     // Init cs pin
-    HAL_GPIO_DeInit(abs_spi_cs_port_, abs_spi_cs_pin_);
+    // TODO: absorb into Stm32Gpio class
+    HAL_GPIO_DeInit(abs_spi_cs_gpio_.port_, abs_spi_cs_gpio_.pin_mask_);
     GPIO_InitTypeDef GPIO_InitStruct;
-    GPIO_InitStruct.Pin = abs_spi_cs_pin_;
+    GPIO_InitStruct.Pin = abs_spi_cs_gpio_.pin_mask_;
     GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
     GPIO_InitStruct.Pull = GPIO_PULLUP;
     GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-    HAL_GPIO_Init(abs_spi_cs_port_, &GPIO_InitStruct);
+    HAL_GPIO_Init(abs_spi_cs_gpio_.port_, &GPIO_InitStruct);
 
     // Write pin high
-    HAL_GPIO_WritePin(abs_spi_cs_port_, abs_spi_cs_pin_, GPIO_PIN_SET);
+    abs_spi_cs_gpio_.write(true);
 }
 
 bool Encoder::update() {

@@ -29,6 +29,12 @@
 
 #define AXIS_COUNT (2)
 
+#if HW_VERSION_MAJOR == 3 && HW_VERSION_MINOR <= 4
+#define GPIO_COUNT  (5)
+#elif HW_VERSION_MAJOR == 3 && HW_VERSION_MINOR >= 5
+#define GPIO_COUNT  (8)
+#endif
+
 
 #ifdef __cplusplus
 #include <Drivers/STM32/stm32_gpio.hpp>
@@ -44,6 +50,8 @@ using TOpAmp = Drv8301;
 extern Motor motors[AXIS_COUNT];
 extern OnboardThermistorCurrentLimiter fet_thermistors[AXIS_COUNT];
 extern Encoder encoders[AXIS_COUNT];
+extern Stm32Gpio gpios[GPIO_COUNT];
+extern uint32_t pwm_in_gpios[4];
 
 #include <Drivers/STM32/stm32_spi_arbiter.hpp>
 extern Stm32SpiArbiter& ext_spi_arbiter;
@@ -99,12 +107,6 @@ const BoardHardwareConfig_t hw_configs[AXIS_COUNT] = { {
 #define I2C_A1_PIN GPIO_4_Pin
 #define I2C_A2_PORT GPIO_5_GPIO_Port
 #define I2C_A2_PIN GPIO_5_Pin
-
-#if HW_VERSION_MAJOR == 3 && HW_VERSION_MINOR <= 4
-#define GPIO_COUNT  5
-#else
-#define GPIO_COUNT  8
-#endif
 
 // This board has no board-specific user configurations
 static inline bool board_pop_config() { return true; }

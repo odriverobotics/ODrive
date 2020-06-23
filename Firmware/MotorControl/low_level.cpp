@@ -313,50 +313,49 @@ void start_general_purpose_adc() {
 //  21000kHz / (15+26) / 16 = 32kHz
 // The true frequency is slightly lower because of the injected vbus
 // measurements
-float get_adc_voltage(const GPIO_TypeDef* const GPIO_port, uint16_t GPIO_pin) {
-    const uint16_t channel = channel_from_gpio(GPIO_port, GPIO_pin);
+float get_adc_voltage(Stm32Gpio gpio) {
+    const uint16_t channel = channel_from_gpio(gpio);
     return get_adc_voltage_channel(channel);
 }
 
 // @brief Given a GPIO_port and pin return the associated adc_channel.
 // returns UINT16_MAX if there is no adc_channel;
-uint16_t channel_from_gpio(const GPIO_TypeDef* const GPIO_port, uint16_t GPIO_pin)
-{
-    uint16_t channel = UINT16_MAX;
-    if (GPIO_port == GPIOA) {
-        if (GPIO_pin == GPIO_PIN_0)
+uint16_t channel_from_gpio(Stm32Gpio gpio) {
+    uint32_t channel = UINT32_MAX;
+    if (gpio.port_ == GPIOA) {
+        if (gpio.pin_mask_ == GPIO_PIN_0)
             channel = 0;
-        else if (GPIO_pin == GPIO_PIN_1)
+        else if (gpio.pin_mask_ == GPIO_PIN_1)
             channel = 1;
-        else if (GPIO_pin == GPIO_PIN_2)
+        else if (gpio.pin_mask_ == GPIO_PIN_2)
             channel = 2;
-        else if (GPIO_pin == GPIO_PIN_3)
+        else if (gpio.pin_mask_ == GPIO_PIN_3)
             channel = 3;
-        else if (GPIO_pin == GPIO_PIN_4)
+        else if (gpio.pin_mask_ == GPIO_PIN_4)
             channel = 4;
-        else if (GPIO_pin == GPIO_PIN_5)
+        else if (gpio.pin_mask_ == GPIO_PIN_5)
             channel = 5;
-        else if (GPIO_pin == GPIO_PIN_6)
+        else if (gpio.pin_mask_ == GPIO_PIN_6)
             channel = 6;
-        else if (GPIO_pin == GPIO_PIN_7)
+        else if (gpio.pin_mask_ == GPIO_PIN_7)
             channel = 7;
-    } else if (GPIO_port == GPIOB) {
-        if (GPIO_pin == GPIO_PIN_0)
+    } else if (gpio.port_ == GPIOB) {
+        if (gpio.pin_mask_ == GPIO_PIN_0)
             channel = 8;
-        else if (GPIO_pin == GPIO_PIN_1)
+        else if (gpio.pin_mask_ == GPIO_PIN_1)
             channel = 9;
-    } else if (GPIO_port == GPIOC) {
-        if (GPIO_pin == GPIO_PIN_0)
+    } else if (gpio.port_ == GPIOC) {
+        if (gpio.pin_mask_ == GPIO_PIN_0)
             channel = 10;
-        else if (GPIO_pin == GPIO_PIN_1)
+        else if (gpio.pin_mask_ == GPIO_PIN_1)
             channel = 11;
-        else if (GPIO_pin == GPIO_PIN_2)
+        else if (gpio.pin_mask_ == GPIO_PIN_2)
             channel = 12;
-        else if (GPIO_pin == GPIO_PIN_3)
+        else if (gpio.pin_mask_ == GPIO_PIN_3)
             channel = 13;
-        else if (GPIO_pin == GPIO_PIN_4)
+        else if (gpio.pin_mask_ == GPIO_PIN_4)
             channel = 14;
-        else if (GPIO_pin == GPIO_PIN_5)
+        else if (gpio.pin_mask_ == GPIO_PIN_5)
             channel = 15;
     }
     return channel;
@@ -537,47 +536,6 @@ void update_brake_current() {
 
 /* RC PWM input --------------------------------------------------------------*/
 
-// @brief Returns the ODrive GPIO number for a given
-// TIM2 or TIM5 input capture channel number.
-int tim_2_5_channel_num_to_gpio_num(int channel) {
-#if HW_VERSION_MAJOR == 3 && HW_VERSION_MINOR >= 3
-    if (channel >= 1 && channel <= 4) {
-        // the channel numbers just happen to coincide with
-        // the GPIO numbers
-        return channel;
-    } else {
-        return -1;
-    }
-#else
-    // Only ch4 is available on v3.2
-    if (channel == 4) {
-        return 4;
-    } else {
-        return -1;
-    }
-#endif
-}
-// @brief Returns the TIM2 or TIM5 channel number
-// for a given GPIO number.
-uint32_t gpio_num_to_tim_2_5_channel(int gpio_num) {
-#if HW_VERSION_MAJOR == 3 && HW_VERSION_MINOR >= 3
-    switch (gpio_num) {
-        case 1: return TIM_CHANNEL_1;
-        case 2: return TIM_CHANNEL_2;
-        case 3: return TIM_CHANNEL_3;
-        case 4: return TIM_CHANNEL_4;
-        default: return 0;
-    }
-#else
-    // Only ch4 is available on v3.2
-    if (gpio_num == 4) {
-        return TIM_CHANNEL_4;
-    } else {
-        return 0;
-    }
-#endif
-}
-
 void pwm_in_init() {
     GPIO_InitTypeDef GPIO_InitStruct;
     GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
@@ -591,18 +549,21 @@ void pwm_in_init() {
     sConfigIC.ICPrescaler = TIM_ICPSC_DIV1;
     sConfigIC.ICFilter = 15;
 
-#if HW_VERSION_MAJOR == 3 && HW_VERSION_MINOR >= 3
-    for (int gpio_num = 1; gpio_num <= 4; ++gpio_num) {
-#else
-    int gpio_num = 4; {
-#endif
-        if (fibre::is_endpoint_ref_valid(odrv.config_.pwm_mappings[gpio_num - 1].endpoint)) {
-            GPIO_InitStruct.Pin = get_gpio_pin_by_pin(gpio_num);
-            HAL_GPIO_DeInit(get_gpio_port_by_pin(gpio_num), get_gpio_pin_by_pin(gpio_num));
-            HAL_GPIO_Init(get_gpio_port_by_pin(gpio_num), &GPIO_InitStruct);
-            HAL_TIM_IC_ConfigChannel(&htim5, &sConfigIC, gpio_num_to_tim_2_5_channel(gpio_num));
-            HAL_TIM_IC_Start_IT(&htim5, gpio_num_to_tim_2_5_channel(gpio_num));
-        }
+    uint32_t channels[] = {TIM_CHANNEL_1, TIM_CHANNEL_2, TIM_CHANNEL_3, TIM_CHANNEL_4};
+
+    for (size_t i = 0; i < 4; ++i) {
+        uint32_t gpio_num = pwm_in_gpios[i];
+        if (gpio_num < 1 || gpio_num > GPIO_COUNT)
+            continue;
+        if (!fibre::is_endpoint_ref_valid(odrv.config_.pwm_mappings[gpio_num - 1].endpoint))
+            continue;
+        
+        Stm32Gpio gpio = gpios[gpio_num];
+        GPIO_InitStruct.Pin = gpio.pin_mask_;
+        HAL_GPIO_DeInit(gpio.port_, gpio.pin_mask_);
+        HAL_GPIO_Init(gpio.port_, &GPIO_InitStruct);
+        HAL_TIM_IC_ConfigChannel(&htim5, &sConfigIC, channels[i]);
+        HAL_TIM_IC_Start_IT(&htim5, channels[i]);
     }
 }
 
@@ -634,10 +595,12 @@ void pwm_in_cb(int channel, uint32_t timestamp) {
     static bool last_pin_state[GPIO_COUNT] = { false };
     static bool last_sample_valid[GPIO_COUNT] = { false };
 
-    int gpio_num = tim_2_5_channel_num_to_gpio_num(channel);
+    if (channel >= 4)
+        return;
+    int gpio_num = pwm_in_gpios[channel];
     if (gpio_num < 1 || gpio_num > GPIO_COUNT)
         return;
-    bool current_pin_state = HAL_GPIO_ReadPin(get_gpio_port_by_pin(gpio_num), get_gpio_pin_by_pin(gpio_num)) != GPIO_PIN_RESET;
+    bool current_pin_state = get_gpio(gpio_num).read();
 
     if (last_sample_valid[gpio_num - 1]
         && (last_pin_state[gpio_num - 1] != PWM_INVERT_INPUT)
@@ -655,7 +618,7 @@ void pwm_in_cb(int channel, uint32_t timestamp) {
 
 static void update_analog_endpoint(const struct PWMMapping_t *map, int gpio)
 {
-    float fraction = get_adc_voltage(get_gpio_port_by_pin(gpio), get_gpio_pin_by_pin(gpio)) / 3.3f;
+    float fraction = get_adc_voltage(get_gpio(gpio)) / 3.3f;
     float value = map->min + (fraction * (map->max - map->min));
     fibre::set_endpoint_from_float(map->endpoint, value);
 }

@@ -72,8 +72,5 @@ OffboardThermistorCurrentLimiter::OffboardThermistorCurrentLimiter(Config_t& con
 }
 
 void OffboardThermistorCurrentLimiter::decode_pin() {
-    const GPIO_TypeDef* const port = get_gpio_port_by_pin(config_.gpio_pin);
-    const uint16_t pin = get_gpio_pin_by_pin(config_.gpio_pin);
-
-    adc_channel_ = channel_from_gpio(port, pin);
+    adc_channel_ = channel_from_gpio(get_gpio(config_.gpio_pin));
 }

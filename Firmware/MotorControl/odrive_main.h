@@ -156,7 +156,6 @@ inline ENUMTYPE operator ~ (ENUMTYPE a) { return static_cast<ENUMTYPE>(~static_c
 
 // ODrive specific includes
 #include <utils.hpp>
-#include <gpio_utils.hpp>
 #include <low_level.h>
 #include <encoder.hpp>
 #include <sensorless_estimator.hpp>
@@ -176,6 +175,9 @@ extern const unsigned char fw_version_revision_;
 extern const unsigned char fw_version_unreleased_;
 }
 
+static Stm32Gpio get_gpio(size_t gpio_num) {
+    return (gpio_num >= 1 && gpio_num <= GPIO_COUNT) ? gpios[gpio_num - 1] : GPIO_COUNT ? gpios[0] : Stm32Gpio::none;
+}
 
 // general system functions defined in main.cpp
 class ODrive : public ODriveIntf {
@@ -190,7 +192,7 @@ public:
     }
 
     float get_adc_voltage(uint32_t gpio) override {
-        return ::get_adc_voltage(get_gpio_port_by_pin(gpio), get_gpio_pin_by_pin(gpio));
+        return ::get_adc_voltage(get_gpio(gpio));
     }
 
     int32_t test_function(int32_t delta) override {

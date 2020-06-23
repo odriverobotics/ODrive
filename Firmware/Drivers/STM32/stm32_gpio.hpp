@@ -5,6 +5,8 @@
 
 class Stm32Gpio {
 public:
+    static const Stm32Gpio none;
+
     Stm32Gpio() : port_(nullptr), pin_mask_(0) {}
     Stm32Gpio(GPIO_TypeDef* port, uint16_t pin) : port_(port), pin_mask_(pin) {}
 
@@ -19,6 +21,8 @@ public:
      * TODO: avoid disabling interrupt if it is enabled
      */
     bool config(uint32_t mode, uint32_t pull) {
+        if (!port_)
+            return false;
         HAL_GPIO_DeInit(port_, pin_mask_);
         GPIO_InitTypeDef GPIO_InitStruct;
         GPIO_InitStruct.Pin = pin_mask_;
@@ -30,11 +34,13 @@ public:
     }
 
     void write(bool state) {
-        HAL_GPIO_WritePin(port_, pin_mask_, state ? GPIO_PIN_SET : GPIO_PIN_RESET);
+        if (port_) {
+            HAL_GPIO_WritePin(port_, pin_mask_, state ? GPIO_PIN_SET : GPIO_PIN_RESET);
+        }
     }
 
     bool read() {
-        return HAL_GPIO_ReadPin(port_, pin_mask_) != GPIO_PIN_RESET;
+        return port_ && (HAL_GPIO_ReadPin(port_, pin_mask_) != GPIO_PIN_RESET);
     }
 
     /**

@@ -80,6 +80,44 @@ Encoder encoders[AXIS_COUNT] = {
 };
 
 
+// Note that GPIO1 as labeled on the board corresponds to gpios[0] in code.
+#if (HW_VERSION_MINOR == 1) || (HW_VERSION_MINOR == 2)
+Stm32Gpio gpios[] = {
+    {GPIOB, GPIO_PIN_2},
+    {GPIOA, GPIO_PIN_5},
+    {GPIOA, GPIO_PIN_4},
+    {GPIOA, GPIO_PIN_3}
+};
+#elif (HW_VERSION_MINOR == 3) || (HW_VERSION_MINOR == 4)
+Stm32Gpio gpios[] = {
+    {GPIOA, GPIO_PIN_0},
+    {GPIOA, GPIO_PIN_1},
+    {GPIOA, GPIO_PIN_2},
+    {GPIOA, GPIO_PIN_3},
+    {GPIOB, GPIO_PIN_2}
+};
+#elif (HW_VERSION_MINOR == 5) || (HW_VERSION_MINOR == 6)
+Stm32Gpio gpios[] = {
+    {GPIOA, GPIO_PIN_0},
+    {GPIOA, GPIO_PIN_1},
+    {GPIOA, GPIO_PIN_2},
+    {GPIOA, GPIO_PIN_3},
+    {GPIOC, GPIO_PIN_4},
+    {GPIOB, GPIO_PIN_2},
+    {GPIOA, GPIO_PIN_15},
+    {GPIOB, GPIO_PIN_3}
+};
+#else
+#error "unknown GPIOs"
+#endif
+
+#if HW_VERSION_MINOR <= 2
+uint32_t pwm_in_gpios[4] = { 0, 0, 0, 4 }; // 0 means not in use
+#else
+uint32_t pwm_in_gpios[4] = { 1, 2, 3, 4 };
+#endif
+
+
 void board_init() {
     // Ensure that debug halting of the core doesn't leave the motor PWM running
     __HAL_DBGMCU_FREEZE_TIM1();

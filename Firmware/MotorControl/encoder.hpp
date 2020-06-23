@@ -113,8 +113,7 @@ public:
     uint16_t abs_spi_dma_rx_[1];
     bool abs_spi_pos_updated_ = false;
     Mode mode_ = MODE_INCREMENTAL;
-    GPIO_TypeDef* abs_spi_cs_port_;
-    uint16_t abs_spi_cs_pin_;
+    Stm32Gpio abs_spi_cs_gpio_;
     uint32_t abs_spi_cr1;
     uint32_t abs_spi_cr2;
     bool spi_busy_ = false;

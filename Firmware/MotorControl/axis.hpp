@@ -227,10 +227,8 @@ public:
     bool step_dir_active_ = false; // auto enabled after calibration, based on config.enable_step_dir
 
     // updated from config in constructor, and on protocol hook
-    GPIO_TypeDef* step_port_;
-    uint16_t step_pin_;
-    GPIO_TypeDef* dir_port_;
-    uint16_t dir_pin_;
+    Stm32Gpio step_gpio_;
+    Stm32Gpio dir_gpio_;
 
     AxisState requested_state_ = AXIS_STATE_STARTUP_SEQUENCE;
     std::array<AxisState, 10> task_chain_ = { AXIS_STATE_UNDEFINED };
