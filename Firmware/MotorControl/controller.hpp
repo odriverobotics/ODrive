@@ -22,13 +22,13 @@ public:
         ControlMode control_mode = CONTROL_MODE_POSITION_CONTROL;  //see: ControlMode_t
         InputMode input_mode = INPUT_MODE_PASSTHROUGH;  //see: InputMode_t
         float pos_gain = 20.0f;                         // [(counts/s) / counts]
-        float vel_gain = 5.0f / 10000.0f;               // [A/(counts/s)]
-        // float vel_gain = 5.0f / 200.0f,              // [A/(rad/s)] <sensorless example>
-        float vel_integrator_gain = 10.0f / 10000.0f;   // [A/(counts/s * s)]
+        float vel_gain = 0.2f / 10000.0f;               // [Nm/(counts/s)]
+        // float vel_gain = 0.2f / 200.0f,              // [Nm/(rad/s)] <sensorless example>
+        float vel_integrator_gain = 0.4f / 10000.0f;    // [Nm/(counts/s * s)]
         float vel_limit = 20000.0f;                     // [counts/s] Infinity to disable.
         float vel_limit_tolerance = 1.2f;               // ratio to vel_lim. Infinity to disable.
         float vel_ramp_rate = 10000.0f;                 // [(counts/s) / s]
-        float current_ramp_rate = 1.0f;                 // A / sec
+        float torque_ramp_rate = 0.01f;                 // Nm / sec
         bool setpoints_in_cpr = false;
         float inertia = 0.0f;                           // [A/(count/s^2)]
         float input_filter_bandwidth = 2.0f;            // [1/s]
@@ -64,7 +64,7 @@ public:
     bool anticogging_calibration(float pos_estimate, float vel_estimate);
 
     void update_filter_gains();
-    bool update(float* current_setpoint);
+    bool update(float* torque_setpoint);
 
     Config_t& config_;
     Axis* axis_ = nullptr; // set by Axis constructor
@@ -80,12 +80,12 @@ public:
     float pos_setpoint_ = 0.0f;
     float vel_setpoint_ = 0.0f;
     // float vel_setpoint = 800.0f; <sensorless example>
-    float vel_integrator_current_ = 0.0f;  // [A]
-    float current_setpoint_ = 0.0f;        // [A]
+    float vel_integrator_torque_ = 0.0f;    // [Nm]
+    float torque_setpoint_ = 0.0f;          // [Nm]
 
     float input_pos_ = 0.0f;
     float input_vel_ = 0.0f;
-    float input_current_ = 0.0f;
+    float input_torque_ = 0.0f;
     float input_filter_kp_ = 0.0f;
     float input_filter_ki_ = 0.0f;
 

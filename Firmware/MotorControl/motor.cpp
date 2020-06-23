@@ -182,7 +182,7 @@ float Motor::effective_current_lim() {
     float current_lim = config_.current_lim;
     // Hardware limit
     if (axis_->motor_.config_.motor_type == Motor::MOTOR_TYPE_GIMBAL) {
-        current_lim = std::min(current_lim, 0.98f*one_by_sqrt3*vbus_voltage);
+        current_lim = std::min(current_lim, 0.98f*one_by_sqrt3*vbus_voltage); //gimbal motor is voltage control
     } else {
         current_lim = std::min(current_lim, axis_->motor_.current_control_.max_allowed_current);
     }
@@ -190,6 +190,21 @@ float Motor::effective_current_lim() {
     current_lim = std::min(current_lim, thermal_current_lim_);
 
     return current_lim;
+}
+
+//return the maximum available torque for the motor.
+//Note - for ACIM motors, available torque is allowed to be 0.
+float Motor::max_available_torque() {
+    if (config_.motor_type == Motor::MOTOR_TYPE_ACIM) {
+        float max_torque = effective_current_lim() * config_.torque_constant * current_control_.acim_rotor_flux;
+        max_torque = std::clamp(max_torque, 0.0f, config_.torque_lim);
+        return max_torque;
+    }
+    else {
+        float max_torque = effective_current_lim() * config_.torque_constant;
+        max_torque = std::clamp(max_torque, 0.0f, config_.torque_lim);
+        return max_torque;
+    }
 }
 
 void Motor::log_timing(TimingLog_t log_idx) {
@@ -440,10 +455,18 @@ bool Motor::FOC_current(float Id_des, float Iq_des, float I_phase, float pwm_pha
 }
 
 
-bool Motor::update(float current_setpoint, float phase, float phase_vel) {
-    current_setpoint *= config_.direction;
+bool Motor::update(float torque_setpoint, float phase, float phase_vel) {
+    float current_setpoint = 0.0f;
     phase *= config_.direction;
     phase_vel *= config_.direction;
+
+    if (config_.motor_type == MOTOR_TYPE_ACIM) {
+        current_setpoint = torque_setpoint / (config_.torque_constant * fmax(current_control_.acim_rotor_flux, config_.acim_gain_min_flux));
+    }
+    else {
+        current_setpoint = torque_setpoint / config_.torque_constant;
+    }
+    current_setpoint *= config_.direction;
 
     // TODO: 2-norm vs independent clamping (current could be sqrt(2) bigger)
     float ilim = effective_current_lim();

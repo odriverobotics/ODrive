@@ -26,7 +26,7 @@ command_set = {
     'set_controller_modes': (0x00b, [('control_mode', 'i', 1), ('input_mode', 'i', 1)]), # tested
     'set_input_pos': (0x00c, [('input_pos', 'i', 1), ('vel_ff', 'h', 0.1), ('cur_ff', 'h', 0.01)]), # tested
     'set_input_vel': (0x00d, [('input_vel', 'i', 0.01), ('cur_ff', 'h', 0.01)]), # tested
-    'set_input_current': (0x00e, [('input_current', 'i', 0.01)]), # tested
+    'set_input_torque': (0x00e, [('input_torque', 'i', 0.01)]), # tested
     'set_velocity_limit': (0x00f, [('velocity_limit', 'f', 1)]), # tested
     'start_anticogging': (0x010, []), # untested
     'set_traj_vel_limit': (0x011, [('traj_vel_limit', 'f', 1)]), # tested
@@ -174,23 +174,23 @@ class TestSimpleCAN():
 
         axis.controller.input_pos = 1234
         axis.controller.input_vel = 1234
-        axis.controller.input_current = 1234
+        axis.controller.input_torque = 1234
         my_cmd('set_input_pos', input_pos=1, vel_ff=2, cur_ff=3)
         fence()
         test_assert_eq(axis.controller.input_pos, 1.0, range=0.1)
         test_assert_eq(axis.controller.input_vel, 2.0, range=0.01)
-        test_assert_eq(axis.controller.input_current, 3.0, range=0.001)
+        test_assert_eq(axis.controller.input_torque, 3.0, range=0.001)
 
         axis.controller.config.control_mode = CONTROL_MODE_VELOCITY_CONTROL
         my_cmd('set_input_vel', input_vel=-10.0, cur_ff=30.1234)
         fence()
         test_assert_eq(axis.controller.input_vel, -10.0, range=0.01)
-        test_assert_eq(axis.controller.input_current, 30.1234, range=0.01)
+        test_assert_eq(axis.controller.input_torque, 30.1234, range=0.01)
 
-        axis.controller.config.control_mode = CONTROL_MODE_CURRENT_CONTROL
-        my_cmd('set_input_current', input_current=3.1415)
+        axis.controller.config.control_mode = CONTROL_MODE_TORQUE_CONTROL
+        my_cmd('set_input_torque', input_torque=0.1)
         fence()
-        test_assert_eq(axis.controller.input_current, 3.1415, range=0.01)
+        test_assert_eq(axis.controller.input_torque, 0.1, range=0.01)
 
         my_cmd('set_velocity_limit', velocity_limit=23456.78)
         fence()
@@ -210,7 +210,7 @@ class TestSimpleCAN():
         test_assert_eq(axis.controller.config.inertia, 55.086, range=0.0001)
 
         # any CAN cmd will feed the watchdog
-        test_watchdog(axis, lambda: my_cmd('set_input_current', input_current=0.0), logger)
+        test_watchdog(axis, lambda: my_cmd('set_input_torque', input_torque=0.0), logger)
 
         logger.debug('testing heartbeat...')
         # note that this will include the heartbeats that were received during the

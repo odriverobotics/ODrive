@@ -551,10 +551,12 @@ interfaces:
           resistance_calib_max_voltage: float32
           phase_inductance: {type: float32, c_setter: set_phase_inductance}
           phase_resistance: {type: float32, c_setter: set_phase_resistance}
+          torque_constant: float32
           direction: int32
           motor_type: MotorType
           current_lim: float32
           current_lim_margin: float32
+          torque_lim: float32
           inverter_temp_limit_lower: float32
           inverter_temp_limit_upper: float32
           requested_current_range: float32
@@ -593,12 +595,12 @@ interfaces:
           InvalidEstimate:
       input_pos: {type: float32, c_setter: set_input_pos}
       input_vel: float32
-      input_current: float32
+      input_torque: float32
       pos_setpoint: readonly float32
       vel_setpoint: readonly float32
-      current_setpoint: readonly float32
+      torque_setpoint: readonly float32
       trajectory_done: readonly bool
-      vel_integrator_current: float32
+      vel_integrator_torque: float32
       anticogging_valid: bool
       config:
         c_is_class: False
@@ -629,9 +631,9 @@ interfaces:
             type: float32
             doc: Ratio to `vel_limit`. Infinity to disable.
           vel_ramp_rate: float32
-          current_ramp_rate:
+          torque_ramp_rate:
             type: float32
-            unit: A / sec
+            unit: Nm / sec
           homing_speed:
             type: float32
             unit: counts/s
@@ -866,7 +868,7 @@ valuetypes:
       # highest level of control, to allow "<" style comparisons.
       VoltageControl:
         doc: this one is not normally used
-      CurrentControl:
+      TorqueControl:
       VelocityControl:
       PositionControl:
 
@@ -884,7 +886,7 @@ valuetypes:
 
           ### Valid Control modes:
           * `CONTROL_MODE_VOLTAGE_CONTROL`
-          * `CONTROL_MODE_CURRENT_CONTROL`
+          * `CONTROL_MODE_TORQUE_CONTROL`
           * `CONTROL_MODE_VELOCITY_CONTROL`
           * `CONTROL_MODE_POSITION_CONTROL`
       VelRamp:
@@ -935,17 +937,17 @@ valuetypes:
 
           ### Valid Control Modes:
           * `CONTROL_MODE_POSITION_CONTROL`
-      CurrentRamp:
-        brief: Ramp a current command from the current value to the target value.
+      TorqueRamp:
+        brief: Ramp a torque command from the current value to the target value.
         doc: |
           ### Configuration Values:
-          * `config.current_ramp_rate`
+          * `config.torque_ramp_rate`
 
           ### Valid Inputs:
           * `input_current`
 
           ### Valid Control Modes:
-          * `CONTROL_MODE_CURRENT_CONTROL`
+          * `CONTROL_MODE_TORQUE_CONTROL`
       Mirror:
         brief: Implements "electronic mirroring".
         doc: |

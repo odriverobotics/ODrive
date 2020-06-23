@@ -46,7 +46,7 @@ As of version v0.5.0, ODrive now intercepts the incoming commands and can apply 
 
 * `<axis>.controller.input_pos = <encoder_counts>`
 * `<axis>.controller.input_vel = <encoder_counts/s>`
-* `<axis>.controller.input_current = <current_in_A>`
+* `<axis>.controller.input_torque = <torque in Nm>`
 
 Modes can be selected by changing `<axis>.controller.config.input_mode`.
 The default input mode is `INPUT_MODE_PASSTHROUGH`.

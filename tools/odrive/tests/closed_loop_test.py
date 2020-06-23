@@ -172,15 +172,17 @@ class TestRegenProtection(TestClosedLoopControlBase):
 
     def run_test(self, axis_ctx: ODriveAxisComponent, motor_ctx: MotorComponent, enc_ctx: EncoderComponent, logger: Logger):
         with self.prepare(axis_ctx, motor_ctx, enc_ctx, logger):
-            nominal_rps = 6.0
+            nominal_rps = 10.0
             nominal_vel = float(enc_ctx.yaml['cpr']) * nominal_rps
+            max_current = 15.0
         
             # Accept a bit of noise on Ibus
-            axis_ctx.parent.handle.config.dc_max_negative_current = -0.1
+            axis_ctx.parent.handle.config.dc_max_negative_current = -0.2
 
             logger.debug(f'Brake control test from {nominal_rps} rounds/s...')
             
-            axis_ctx.handle.controller.config.vel_limit = float(enc_ctx.yaml['cpr']) * 10.0 # max 10 rps
+            axis_ctx.handle.controller.config.vel_limit = float(enc_ctx.yaml['cpr']) * 15.0 # max 15 rps
+            axis_ctx.handle.motor.config.current_lim = max_current
             axis_ctx.handle.controller.config.control_mode = CONTROL_MODE_VELOCITY_CONTROL
             axis_ctx.handle.controller.config.input_mode = INPUT_MODE_PASSTHROUGH
 
@@ -209,9 +211,9 @@ class TestRegenProtection(TestClosedLoopControlBase):
             test_assert_eq(axis_ctx.handle.motor.error, MOTOR_ERROR_DC_BUS_OVER_REGEN_CURRENT)
 
 
-class TestVelLimitInCurrentControl(TestClosedLoopControlBase):
+class TestVelLimitInTorqueControl(TestClosedLoopControlBase):
     """
-    Ensures that the current setpoint in current control is always within the
+    Ensures that the current setpoint in torque control is always within the
     parallelogram that arises from -Ilim, +Ilim, vel_limit and vel_gain.
     """
 
@@ -220,7 +222,8 @@ class TestVelLimitInCurrentControl(TestClosedLoopControlBase):
             max_rps = 20.0
             max_vel = float(enc_ctx.yaml['cpr']) * max_rps
             absolute_max_vel = max_vel * 1.2
-            max_current = 10.0
+            max_current = 15.0
+            torque_constant = 0.0305 #correct for 5065 motor
 
             axis_ctx.handle.controller.config.vel_gain /= 10 # reduce the slope to make it easier to see what's going on
             vel_gain = axis_ctx.handle.controller.config.vel_gain
@@ -229,11 +232,12 @@ class TestVelLimitInCurrentControl(TestClosedLoopControlBase):
             axis_ctx.handle.controller.config.vel_limit = max_vel
             axis_ctx.handle.controller.config.vel_limit_tolerance = inf # disable hard limit on velocity
             axis_ctx.handle.motor.config.current_lim = max_current
-            axis_ctx.handle.controller.config.control_mode = CONTROL_MODE_CURRENT_CONTROL
+            axis_ctx.handle.motor.config.torque_constant = torque_constant
+            axis_ctx.handle.controller.config.control_mode = CONTROL_MODE_TORQUE_CONTROL
 
             # Returns the expected limited setpoint for a given velocity and current
             def get_expected_setpoint(input_setpoint, velocity):
-                return clamp(clamp(input_setpoint, (velocity + max_vel) * -vel_gain, (velocity - max_vel) * -vel_gain), -max_current, max_current)
+                return clamp(clamp(input_setpoint / torque_constant, (velocity + max_vel) * -vel_gain / torque_constant, (velocity - max_vel) * -vel_gain / torque_constant), -max_current, max_current)
 
             def data_getter():
                 # sample velocity twice to avoid systematic bias
@@ -244,19 +248,19 @@ class TestVelLimitInCurrentControl(TestClosedLoopControlBase):
                 # Abort immediately if the absolute limits are exceeded
                 test_assert_within(current_setpoint, -max_current, max_current)
                 test_assert_within(velocity, -absolute_max_vel, absolute_max_vel)
-                return input_current, velocity, current_setpoint, get_expected_setpoint(input_current, velocity)
+                return input_torque, velocity, current_setpoint, get_expected_setpoint(input_torque, velocity)
 
-            axis_ctx.handle.controller.input_current = input_current = 0.0
+            axis_ctx.handle.controller.input_torque = input_torque = 0.0
             request_state(axis_ctx, AXIS_STATE_CLOSED_LOOP_CONTROL)
 
             # Move the system around its operating envelope
-            axis_ctx.handle.controller.input_current = input_current = 2.0
+            axis_ctx.handle.controller.input_torque = input_torque = 2.0 * torque_constant
             dataA = record_log(data_getter, duration=1.0)
-            axis_ctx.handle.controller.input_current = input_current = -2.0
+            axis_ctx.handle.controller.input_torque = input_torque = -2.0 * torque_constant
             dataA = np.concatenate([dataA, record_log(data_getter, duration=1.0)])
-            axis_ctx.handle.controller.input_current = input_current = 4.0
+            axis_ctx.handle.controller.input_torque = input_torque = 4.0 * torque_constant
             dataA = np.concatenate([dataA, record_log(data_getter, duration=1.0)])
-            axis_ctx.handle.controller.input_current = input_current = -4.0
+            axis_ctx.handle.controller.input_torque = input_torque = -4.0 * torque_constant
             dataA = np.concatenate([dataA, record_log(data_getter, duration=1.0)])
 
             # Shrink the operating envelope while motor is moving faster than the envelope allows
@@ -265,22 +269,22 @@ class TestVelLimitInCurrentControl(TestClosedLoopControlBase):
             axis_ctx.handle.controller.config.vel_limit = max_vel
 
             # Move the system around its operating envelope
-            axis_ctx.handle.controller.input_current = input_current = 2.0
+            axis_ctx.handle.controller.input_torque = input_torque = 2.0 * torque_constant
             dataB = record_log(data_getter, duration=1.0)
-            axis_ctx.handle.controller.input_current = input_current = -2.0
+            axis_ctx.handle.controller.input_torque = input_torque = -2.0 * torque_constant
             dataB = np.concatenate([dataB, record_log(data_getter, duration=1.0)])
-            axis_ctx.handle.controller.input_current = input_current = 4.0
+            axis_ctx.handle.controller.input_torque = input_torque = 4.0 * torque_constant
             dataB = np.concatenate([dataB, record_log(data_getter, duration=1.0)])
-            axis_ctx.handle.controller.input_current = input_current = -4.0
+            axis_ctx.handle.controller.input_torque = input_torque = -4.0 * torque_constant
             dataB = np.concatenate([dataB, record_log(data_getter, duration=1.0)])
 
             # Try the shrink maneuver again at positive velocity
             axis_ctx.handle.controller.config.vel_limit = 20.0 * float(enc_ctx.yaml['cpr'])
-            axis_ctx.handle.controller.input_current = 4.0
+            axis_ctx.handle.controller.input_torque = 4.0 * torque_constant
             time.sleep(0.5)
             axis_ctx.handle.controller.config.vel_limit = max_vel
 
-            axis_ctx.handle.controller.input_current = input_current = 2.0
+            axis_ctx.handle.controller.input_torque = input_torque = 2.0 * torque_constant
             dataB = np.concatenate([dataB, record_log(data_getter, duration=1.0)])
 
             test_assert_no_error(axis_ctx)
@@ -290,11 +294,93 @@ class TestVelLimitInCurrentControl(TestClosedLoopControlBase):
             test_curve_fit(dataA[:,(0,3)], dataA[:,4], max_mean_err=0.02, inlier_range=0.05, max_outliers=len(dataA[:,0]*0.01))
             test_curve_fit(dataB[:,(0,3)], dataB[:,4], max_mean_err=0.1, inlier_range=0.2, max_outliers=len(dataB[:,0])*0.01)
 
+class TestTorqueLimit(TestClosedLoopControlBase):
+    """
+    Checks that the torque limit is respected in position, velocity, and torque control modes
+    """
+    def run_test(self, axis_ctx: ODriveAxisComponent, motor_ctx: MotorComponent, enc_ctx: EncoderComponent, logger: Logger):
+        with self.prepare(axis_ctx, motor_ctx, enc_ctx, logger):
+            max_rps = 15.0
+            max_vel = max_rps * float(enc_ctx.yaml['cpr'])
+            max_current = 30.0
+            max_torque = 0.1 # must be less than max_current * torque_constant.
+            torque_constant = axis_ctx.handle.motor.config.torque_constant
 
+            test_pos = 5 * float(enc_ctx.yaml['cpr'])
+            test_vel = 10 * float(enc_ctx.yaml['cpr'])
+            test_torque = 0.5
+
+            axis_ctx.handle.controller.config.vel_limit = max_vel
+            axis_ctx.handle.motor.config.current_lim = max_current
+            axis_ctx.handle.motor.config.torque_lim = inf #disable torque limit
+            axis_ctx.handle.controller.config.control_mode = CONTROL_MODE_VELOCITY_CONTROL
+
+            def data_getter():
+                current_setpoint = axis_ctx.handle.motor.current_control.Iq_setpoint
+                torque_setpoint = current_setpoint * torque_constant
+                torque_limit = axis_ctx.handle.motor.config.torque_lim
+                # Abort immediately if the absolute limits are exceeded
+                test_assert_within(current_setpoint, -max_current, max_current)
+                test_assert_within(torque_setpoint, -torque_limit, torque_limit)
+                return max_current, current_setpoint, torque_limit, torque_setpoint
+
+            # begin test
+            axis_ctx.handle.motor.config.torque_lim = max_torque
+            request_state(axis_ctx, AXIS_STATE_CLOSED_LOOP_CONTROL)
+
+            # step input positions
+            logger.debug('input_pos step test')
+            axis_ctx.handle.controller.config.control_mode = CONTROL_MODE_POSITION_CONTROL
+            axis_ctx.handle.controller.input_pos = test_pos
+            dataPos = record_log(data_getter, duration=1.0)
+            axis_ctx.handle.controller.input_pos = -test_pos
+            dataPos = np.concatenate([dataPos, record_log(data_getter, duration=1.0)])
+            axis_ctx.handle.controller.input_pos = test_pos
+            dataPos = np.concatenate([dataPos, record_log(data_getter, duration=1.0)])
+            axis_ctx.handle.controller.input_pos = -test_pos
+            dataPos = np.concatenate([dataPos, record_log(data_getter, duration=1.0)])
+            time.sleep(0.5)
+
+            test_assert_no_error(axis_ctx)
+
+            # step input velocities
+            logger.debug('input_vel step test')
+            axis_ctx.handle.controller.config.control_mode = CONTROL_MODE_VELOCITY_CONTROL
+            axis_ctx.handle.controller.input_vel = test_vel
+            dataVel = record_log(data_getter, duration=1.0)
+            axis_ctx.handle.controller.input_vel = -test_vel
+            dataVel = np.concatenate([dataVel, record_log(data_getter, duration=1.0)])
+            axis_ctx.handle.controller.input_vel = test_vel
+            dataVel = np.concatenate([dataVel, record_log(data_getter, duration=1.0)])
+            axis_ctx.handle.controller.input_vel = -test_vel
+            dataVel = np.concatenate([dataVel, record_log(data_getter, duration=1.0)])
+            axis_ctx.handle.controller.input_vel = 0
+            time.sleep(0.5)
+
+            # step input torques
+            logger.debug('input_torque step test')
+            axis_ctx.handle.controller.config.control_mode = CONTROL_MODE_TORQUE_CONTROL
+            axis_ctx.handle.controller.input_torque = test_torque
+            dataTq = record_log(data_getter, duration=1.0)
+            axis_ctx.handle.controller.input_torque = -test_torque
+            dataTq = np.concatenate([dataTq, record_log(data_getter, duration=1.0)])
+            axis_ctx.handle.controller.input_torque = test_torque
+            dataTq = np.concatenate([dataTq, record_log(data_getter, duration=1.0)])
+            axis_ctx.handle.controller.input_torque = -test_torque
+            dataTq = np.concatenate([dataTq, record_log(data_getter, duration=1.0)])
+            axis_ctx.handle.controller.input_torque = 0
+            time.sleep(0.5)
+
+            # did we pass?
+
+            test_assert_no_error(axis_ctx)
+
+            axis_ctx.handle.requested_state=1
 
 if __name__ == '__main__':
     test_runner.run([
         TestClosedLoopControl(),
         TestRegenProtection(),
-        TestVelLimitInCurrentControl()
+        TestVelLimitInTorqueControl(),
+        TestTorqueLimit()
     ])
