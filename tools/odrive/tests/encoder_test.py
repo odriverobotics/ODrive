@@ -504,9 +504,9 @@ class TestSpiEncoder(TestEncoderBase):
 
 if __name__ == '__main__':
     test_runner.run([
-        #TestIncrementalEncoder(),
-        #TestSinCosEncoder(),
-        #TestHallEffectEncoder(),
+        TestIncrementalEncoder(),
+        TestSinCosEncoder(),
+        TestHallEffectEncoder(),
         TestSpiEncoder(ENCODER_MODE_SPI_ABS_AMS),
         TestSpiEncoder(ENCODER_MODE_SPI_ABS_CUI),
     ])
