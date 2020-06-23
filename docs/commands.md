@@ -38,59 +38,19 @@ See [here](api/odrive.axis.axisstate) for a description of each state.
 ### Control Mode
 The default control mode is position control.
 If you want a different mode, you can change `<axis>.controller.config.control_mode`.
-<<<<<<< HEAD
-Possible values are:
-* `CONTROL_MODE_POSITION_CONTROL`
-* `CONTROL_MODE_VELOCITY_CONTROL`
-* `CONTROL_MODE_TORQUE_CONTROL`
-* `CONTROL_MODE_VOLTAGE_CONTROL` - this one is not normally used.
-
-### Input Mode
-The default input mode is `INPUT_MODE_PASSTHROUGH`.
-Modes can be selected by changing `<axis>.controller.config.input_mode`.
-Possible values are:
-* `INPUT_MODE_INACTIVE`
-* `INPUT_MODE_PASSTHROUGH`
-* `INPUT_MODE_VEL_RAMP`
-* `INPUT_MODE_POS_FILTER`
-* `INPUT_MODE_MIX_CHANNELS`
-* `INPUT_MODE_TRAP_TRAJ`
-* `INPUT_MODE_TORQUE_RAMP`
-* `INPUT_MODE_MIRROR`
-
-For more information, see [input_modes](input_modes.md).
-
-# Control Commands
-=======
 Possible values are listed [here](api/odrive.axis.controller.controlmode).
 
 ### Input Mode
 
 As of version v0.5.0, ODrive now intercepts the incoming commands and can apply filters to them. The old protocol values `pos_setpoint`, `vel_setpoint`, and `current_setpoint` are still used internally by the closed-loop cascade control, but the user cannot write to them directly.  This allows us to condense the number of ways the ODrive accepts motion commands. The new commands are:
 
->>>>>>> 99507d2ece83127ca556f8fd34994075d517111e
 * `<axis>.controller.input_pos = <encoder_counts>`
 * `<axis>.controller.input_vel = <encoder_counts/s>`
 * `<axis>.controller.input_torque = <torque in Nm>`
 
-<<<<<<< HEAD
-### Input Mode
-To modify the way the control command affects the motor, you can use the input mode. The default input mode is pass through.
-If you want a different mode, you can change `<axis>.controller.config.input_mode`.
-Possible values are:
-* `INPUT_MODE_INACTIVE`
-* `INPUT_MODE_PASSTHROUGH`
-* `INPUT_MODE_VEL_RAMP`
-* `INPUT_MODE_POS_FILTER`
-* `INPUT_MODE_MIX_CHANNELS`
-* `INPUT_MODE_TRAP_TRAJ`
-* `INPUT_MODE_TORQUE_RAMP`
-* `INPUT_MODE_MIRROR`
-=======
 Modes can be selected by changing `<axis>.controller.config.input_mode`.
 The default input mode is `INPUT_MODE_PASSTHROUGH`.
 Possible values are listed [here](api/odrive.axis.controller.inputmode).
->>>>>>> 99507d2ece83127ca556f8fd34994075d517111e
 
 ## System monitoring commands
 

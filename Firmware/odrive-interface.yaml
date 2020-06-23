@@ -867,12 +867,8 @@ valuetypes:
       # Note: these should be sorted from lowest level of control to
       # highest level of control, to allow "<" style comparisons.
       VoltageControl:
-<<<<<<< HEAD
-      TorqueControl:
-=======
         doc: this one is not normally used
       CurrentControl:
->>>>>>> 99507d2ece83127ca556f8fd34994075d517111e
       VelocityControl:
       PositionControl:
 
@@ -890,7 +886,7 @@ valuetypes:
 
           ### Valid Control modes:
           * `CONTROL_MODE_VOLTAGE_CONTROL`
-          * `CONTROL_MODE_CURRENT_CONTROL`
+          * `CONTROL_MODE_TORQUE_CONTROL`
           * `CONTROL_MODE_VELOCITY_CONTROL`
           * `CONTROL_MODE_POSITION_CONTROL`
       VelRamp:
@@ -926,9 +922,6 @@ valuetypes:
       MixChannels:
         brief: Not Implemented.
       TrapTraj:
-<<<<<<< HEAD
-      TorqueRamp:
-=======
         brief: Implementes an online trapezoidal trajectory planner.
         doc: |
           ![Trapezoidal Planner Response](../TrapTrajPosVel.PNG)
@@ -944,18 +937,17 @@ valuetypes:
 
           ### Valid Control Modes:
           * `CONTROL_MODE_POSITION_CONTROL`
-      CurrentRamp:
-        brief: Ramp a current command from the current value to the target value.
+      TorqueRamp:
+        brief: Ramp a torque command from the current value to the target value.
         doc: |
           ### Configuration Values:
-          * `config.current_ramp_rate`
+          * `config.torque_ramp_rate`
 
           ### Valid Inputs:
           * `input_current`
 
           ### Valid Control Modes:
-          * `CONTROL_MODE_CURRENT_CONTROL`
->>>>>>> 99507d2ece83127ca556f8fd34994075d517111e
+          * `CONTROL_MODE_TORQUE_CONTROL`
       Mirror:
         brief: Implements "electronic mirroring".
         doc: |
