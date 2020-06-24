@@ -22,10 +22,13 @@ public:
         ControlMode control_mode = CONTROL_MODE_POSITION_CONTROL;  //see: ControlMode_t
         InputMode input_mode = INPUT_MODE_PASSTHROUGH;  //see: InputMode_t
         float pos_gain = 20.0f;                         // [(counts/s) / counts]
-        float vel_gain = 0.2f / 10000.0f;               // [Nm/(counts/s)]
+        //float vel_gain = 0.2f / 10000.0f;               // [Nm/(counts/s)]
+        float vel_gain = 0.2f / 7.7f;               // [Nm/(counts/s)]
         // float vel_gain = 0.2f / 200.0f,              // [Nm/(rad/s)] <sensorless example>
-        float vel_integrator_gain = 0.4f / 10000.0f;    // [Nm/(counts/s * s)]
-        float vel_limit = 20000.0f;                     // [counts/s] Infinity to disable.
+        //float vel_integrator_gain = 0.4f / 10000.0f;    // [Nm/(counts/s * s)]
+        float vel_integrator_gain = 0.4f / 7.7f;    // [Nm/(counts/s * s)]
+        //float vel_limit = 20000.0f;                     // [counts/s] Infinity to disable.
+        float vel_limit = 20000.0f * 2.0f * M_PI / 8192.0f;                     // [counts/s] Infinity to disable.
         float vel_limit_tolerance = 1.2f;               // ratio to vel_lim. Infinity to disable.
         float vel_ramp_rate = 10000.0f;                 // [(counts/s) / s]
         float torque_ramp_rate = 0.01f;                 // Nm / sec

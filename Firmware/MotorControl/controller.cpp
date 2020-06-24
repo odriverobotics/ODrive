@@ -34,14 +34,14 @@ bool Controller::select_encoder(size_t encoder_num) {
     if (encoder_num < AXIS_COUNT) {
         Axis* ax = axes[encoder_num];
         if (config_.setpoints_in_cpr) {
-            pos_estimate_src_ = &ax->encoder_.pos_cpr_;
+            pos_estimate_src_ = &ax->encoder_.pos_cpr_rad_;
             pos_wrap_src_ = &ax->encoder_.config_.cpr;
         } else {
-            pos_estimate_src_ = &ax->encoder_.pos_estimate_;
+            pos_estimate_src_ = &ax->encoder_.pos_est_rad_;
             pos_wrap_src_ = nullptr;
         }
         pos_estimate_valid_src_ = &ax->encoder_.pos_estimate_valid_;
-        vel_estimate_src_ = &ax->encoder_.vel_estimate_;
+        vel_estimate_src_ = &ax->encoder_.vel_est_rad_;
         vel_estimate_valid_src_ = &ax->encoder_.vel_estimate_valid_;
         return true;
     } else {

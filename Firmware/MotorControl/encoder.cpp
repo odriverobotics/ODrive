@@ -522,6 +522,11 @@ bool Encoder::update() {
         snap_to_zero_vel = true;
     }
 
+    //new vars in radians
+    pos_est_rad_ = pos_estimate_ * 2.0f * M_PI / (float)config_.cpr;
+    vel_est_rad_ = vel_estimate_ * 2.0f * M_PI / (float)config_.cpr;
+    pos_cpr_rad_ = pos_cpr_ * 2.0f * M_PI / (float)config_.cpr;
+
     //// run encoder count interpolation
     int32_t corrected_enc = count_in_cpr_ - config_.offset;
     // if we are stopped, make sure we don't randomly drift

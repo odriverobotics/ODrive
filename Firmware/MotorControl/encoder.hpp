@@ -84,6 +84,10 @@ public:
     int32_t pos_abs_ = 0;
     float spi_error_rate_ = 0.0f;
 
+    float pos_est_rad_ = 0.0f;
+    float vel_est_rad_ = 0.0f;
+    float pos_cpr_rad_ = 0.0f;
+
     bool pos_estimate_valid_ = false;
     bool vel_estimate_valid_ = false;
 
