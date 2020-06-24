@@ -3,6 +3,16 @@
 # To regenerate this file, nagivate to the top level of the ODrive repository and run:
 #   python Firmware/interface_generator_stub.py --definitions Firmware/odrive-interface.yaml --template tools/enums_template.j2 --output tools/odrive/enums.py
 
+# ODrive.GpioMode
+GPIO_MODE_DIGITAL                        = 0
+GPIO_MODE_ANALOG_IN                      = 1
+GPIO_MODE_UART0                          = 2
+GPIO_MODE_PWM0                           = 3
+GPIO_MODE_CAN0                           = 4
+GPIO_MODE_I2C0                           = 5
+GPIO_MODE_ENC0                           = 6
+GPIO_MODE_ENC1                           = 7
+
 # ODrive.Can.Protocol
 PROTOCOL_SIMPLE                          = 0
 

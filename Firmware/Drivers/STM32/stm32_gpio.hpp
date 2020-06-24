@@ -17,21 +17,9 @@ public:
      * 
      * This can be done regardless of the current state of the GPIO.
      * 
-     * TODO: make glitch-free if the configuration is the same as before
-     * TODO: avoid disabling interrupt if it is enabled
+     * If any subscription is in place, it is not disabled by this function.
      */
-    bool config(uint32_t mode, uint32_t pull) {
-        if (!port_)
-            return false;
-        HAL_GPIO_DeInit(port_, pin_mask_);
-        GPIO_InitTypeDef GPIO_InitStruct;
-        GPIO_InitStruct.Pin = pin_mask_;
-        GPIO_InitStruct.Mode = mode;
-        GPIO_InitStruct.Pull = pull;
-        GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-        HAL_GPIO_Init(port_, &GPIO_InitStruct);
-        return true;
-    }
+    bool config(uint32_t mode, uint32_t pull, uint32_t speed = GPIO_SPEED_FREQ_LOW);
 
     void write(bool state) {
         if (port_) {

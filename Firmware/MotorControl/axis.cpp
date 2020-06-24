@@ -148,7 +148,9 @@ void Axis::set_step_dir_active(bool active) {
         step_gpio_.config(GPIO_MODE_INPUT, GPIO_PULLDOWN);
 
         // Subscribe to rising edges of the step GPIO
-        step_gpio_.subscribe(true, false, step_cb_wrapper, this);
+        if (!step_gpio_.subscribe(true, false, step_cb_wrapper, this)) {
+            odrv.misconfigured_ = true;
+        }
 
         step_dir_active_ = true;
     } else {

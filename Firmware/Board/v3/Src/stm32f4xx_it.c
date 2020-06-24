@@ -451,19 +451,19 @@ void ADC_IRQ_Dispatch(ADC_HandleTypeDef* hadc, ADC_handler_t callback) {
 void decode_tim_capture(TIM_HandleTypeDef *htim, TIM_capture_callback_t callback) {
   if(__HAL_TIM_GET_FLAG(htim, TIM_FLAG_CC1)) {
     __HAL_TIM_CLEAR_IT(htim, TIM_IT_CC1);
-    callback(1, htim->Instance->CCR1);
+    callback(0, htim->Instance->CCR1);
   }
   if(__HAL_TIM_GET_FLAG(htim, TIM_FLAG_CC2)) {
     __HAL_TIM_CLEAR_IT(htim, TIM_IT_CC2);
-    callback(2, htim->Instance->CCR2);
+    callback(1, htim->Instance->CCR2);
   }
   if(__HAL_TIM_GET_FLAG(htim, TIM_FLAG_CC3)) {
     __HAL_TIM_CLEAR_IT(htim, TIM_IT_CC3);
-    callback(3, htim->Instance->CCR3);
+    callback(2, htim->Instance->CCR3);
   }
   if(__HAL_TIM_GET_FLAG(htim, TIM_FLAG_CC4)) {
     __HAL_TIM_CLEAR_IT(htim, TIM_IT_CC4);
-    callback(4, htim->Instance->CCR4);
+    callback(3, htim->Instance->CCR4);
   }
 }
 

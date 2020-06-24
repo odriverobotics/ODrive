@@ -537,12 +537,6 @@ void update_brake_current() {
 /* RC PWM input --------------------------------------------------------------*/
 
 void pwm_in_init() {
-    GPIO_InitTypeDef GPIO_InitStruct;
-    GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
-    GPIO_InitStruct.Pull = GPIO_PULLDOWN;
-    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-    GPIO_InitStruct.Alternate = GPIO_AF2_TIM5;
-
     TIM_IC_InitTypeDef sConfigIC;
     sConfigIC.ICPolarity = TIM_INPUTCHANNELPOLARITY_BOTHEDGE;
     sConfigIC.ICSelection = TIM_ICSELECTION_DIRECTTI;
@@ -552,16 +546,8 @@ void pwm_in_init() {
     uint32_t channels[] = {TIM_CHANNEL_1, TIM_CHANNEL_2, TIM_CHANNEL_3, TIM_CHANNEL_4};
 
     for (size_t i = 0; i < 4; ++i) {
-        uint32_t gpio_num = pwm_in_gpios[i];
-        if (gpio_num < 1 || gpio_num > GPIO_COUNT)
+        if (!fibre::is_endpoint_ref_valid(odrv.config_.pwm_mappings[i].endpoint))
             continue;
-        if (!fibre::is_endpoint_ref_valid(odrv.config_.pwm_mappings[gpio_num - 1].endpoint))
-            continue;
-        
-        Stm32Gpio gpio = gpios[gpio_num];
-        GPIO_InitStruct.Pin = gpio.pin_mask_;
-        HAL_GPIO_DeInit(gpio.port_, gpio.pin_mask_);
-        HAL_GPIO_Init(gpio.port_, &GPIO_InitStruct);
         HAL_TIM_IC_ConfigChannel(&htim5, &sConfigIC, channels[i]);
         HAL_TIM_IC_Start_IT(&htim5, channels[i]);
     }
@@ -575,7 +561,10 @@ void pwm_in_init() {
 #define PWM_MAX_LEGAL_HIGH_TIME    ((TIM_2_5_CLOCK_HZ / 1000000UL) * 2500UL) // ignore high periods longer than 2.5ms
 #define PWM_INVERT_INPUT        false
 
-void handle_pulse(int gpio_num, uint32_t high_time) {
+/**
+ * @param channel: A channel number in [0, 3]
+ */
+void handle_pulse(int channel, uint32_t high_time) {
     if (high_time < PWM_MIN_LEGAL_HIGH_TIME || high_time > PWM_MAX_LEGAL_HIGH_TIME)
         return;
 
@@ -584,33 +573,36 @@ void handle_pulse(int gpio_num, uint32_t high_time) {
     if (high_time > PWM_MAX_HIGH_TIME)
         high_time = PWM_MAX_HIGH_TIME;
     float fraction = (float)(high_time - PWM_MIN_HIGH_TIME) / (float)(PWM_MAX_HIGH_TIME - PWM_MIN_HIGH_TIME);
-    float value = odrv.config_.pwm_mappings[gpio_num - 1].min +
-                  (fraction * (odrv.config_.pwm_mappings[gpio_num - 1].max - odrv.config_.pwm_mappings[gpio_num - 1].min));
+    float value = odrv.config_.pwm_mappings[channel].min +
+                  (fraction * (odrv.config_.pwm_mappings[channel].max - odrv.config_.pwm_mappings[channel].min));
 
-    fibre::set_endpoint_from_float(odrv.config_.pwm_mappings[gpio_num - 1].endpoint, value);
+    fibre::set_endpoint_from_float(odrv.config_.pwm_mappings[channel].endpoint, value);
 }
 
+/**
+ * @param channel: A channel number in [0, 3]
+ */
 void pwm_in_cb(int channel, uint32_t timestamp) {
-    static uint32_t last_timestamp[GPIO_COUNT] = { 0 };
-    static bool last_pin_state[GPIO_COUNT] = { false };
-    static bool last_sample_valid[GPIO_COUNT] = { false };
+    static uint32_t last_timestamp[4] = { 0 };
+    static bool last_pin_state[4] = { false };
+    static bool last_sample_valid[4] = { false };
 
     if (channel >= 4)
         return;
-    int gpio_num = pwm_in_gpios[channel];
-    if (gpio_num < 1 || gpio_num > GPIO_COUNT)
+    Stm32Gpio gpio = get_gpio(pwm_in_gpios[channel]);
+    if (!gpio)
         return;
-    bool current_pin_state = get_gpio(gpio_num).read();
+    bool current_pin_state = gpio.read();
 
-    if (last_sample_valid[gpio_num - 1]
-        && (last_pin_state[gpio_num - 1] != PWM_INVERT_INPUT)
+    if (last_sample_valid[channel]
+        && (last_pin_state[channel] != PWM_INVERT_INPUT)
         && (current_pin_state == PWM_INVERT_INPUT)) {
-        handle_pulse(gpio_num, timestamp - last_timestamp[gpio_num - 1]);
+        handle_pulse(channel, timestamp - last_timestamp[channel]);
     }
 
-    last_timestamp[gpio_num - 1] = timestamp;
-    last_pin_state[gpio_num - 1] = current_pin_state;
-    last_sample_valid[gpio_num - 1] = true;
+    last_timestamp[channel] = timestamp;
+    last_pin_state[channel] = current_pin_state;
+    last_sample_valid[channel] = true;
 }
 
 
@@ -630,7 +622,7 @@ static void analog_polling_thread(void *)
             struct PWMMapping_t *map = &odrv.config_.analog_mappings[i];
 
             if (fibre::is_endpoint_ref_valid(map->endpoint))
-                update_analog_endpoint(map, i + 1);
+                update_analog_endpoint(map, i);
         }
         osDelay(10);
     }

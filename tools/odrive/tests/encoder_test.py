@@ -185,7 +185,9 @@ class TestSinCosEncoder(TestEncoderBase):
         teensy.compile_and_program(code)
 
         if enc.handle.config.mode != ENCODER_MODE_SINCOS:
-            enc.parent.unuse_gpios()
+            enc.parent.disable_mappings()
+            enc.parent.handle.config.gpio3_mode = GPIO_MODE_ANALOG_IN
+            enc.parent.handle.config.gpio4_mode = GPIO_MODE_ANALOG_IN
             enc.handle.config.mode = ENCODER_MODE_SINCOS
             enc.parent.save_config_and_reboot()
         else:
@@ -255,6 +257,14 @@ class TestHallEffectEncoder(TestEncoderBase):
         teensy.compile_and_program(code)
 
         if enc.handle.config.mode != ENCODER_MODE_HALL:
+            if enc.num:
+              enc.parent.handle.config.gpio9_mode = GPIO_MODE_DIGITAL
+              enc.parent.handle.config.gpio10_mode = GPIO_MODE_DIGITAL
+              enc.parent.handle.config.gpio11_mode = GPIO_MODE_DIGITAL
+            else:
+              enc.parent.handle.config.gpio12_mode = GPIO_MODE_DIGITAL
+              enc.parent.handle.config.gpio13_mode = GPIO_MODE_DIGITAL
+              enc.parent.handle.config.gpio14_mode = GPIO_MODE_DIGITAL
             enc.handle.config.mode = ENCODER_MODE_HALL
             enc.parent.save_config_and_reboot()
         else:
@@ -450,6 +460,7 @@ class TestSpiEncoder(TestEncoderBase):
 
         logger.debug(f'Configuring absolute encoder in mode 0x{self.mode:x}...')
         enc.handle.config.mode = self.mode
+        setattr(enc.parent.handle.config, 'gpio' + str(odrive_ncs_gpio) + '_mode', GPIO_MODE_ANALOG_IN)
         enc.handle.config.abs_spi_cs_gpio_pin = odrive_ncs_gpio
         enc.handle.config.cpr = true_cpr
         # Also put the other encoder into SPI mode to make it more interesting

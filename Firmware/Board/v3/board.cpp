@@ -80,24 +80,54 @@ Encoder encoders[AXIS_COUNT] = {
 };
 
 
-// Note that GPIO1 as labeled on the board corresponds to gpios[0] in code.
 #if (HW_VERSION_MINOR == 1) || (HW_VERSION_MINOR == 2)
 Stm32Gpio gpios[] = {
+    {nullptr, 0}, // dummy GPIO0 so that PCB labels and software numbers match
+
     {GPIOB, GPIO_PIN_2},
     {GPIOA, GPIO_PIN_5},
     {GPIOA, GPIO_PIN_4},
-    {GPIOA, GPIO_PIN_3}
+    {GPIOA, GPIO_PIN_3},
+    {nullptr, 0},
+    {nullptr, 0},
+    {nullptr, 0},
+    {nullptr, 0},
+
+    {GPIOB, GPIO_PIN_4}, // ENC0_A
+    {GPIOB, GPIO_PIN_5}, // ENC0_B
+    {GPIOA, GPIO_PIN_15}, // ENC0_Z
+    {GPIOB, GPIO_PIN_6}, // ENC1_A
+    {GPIOB, GPIO_PIN_7}, // ENC1_B
+    {GPIOB, GPIO_PIN_3}, // ENC1_Z
+    {GPIOB, GPIO_PIN_8}, // CAN_R
+    {GPIOB, GPIO_PIN_9}, // CAN_D
 };
 #elif (HW_VERSION_MINOR == 3) || (HW_VERSION_MINOR == 4)
 Stm32Gpio gpios[] = {
+    {nullptr, 0}, // dummy GPIO0 so that PCB labels and software numbers match
+
     {GPIOA, GPIO_PIN_0},
     {GPIOA, GPIO_PIN_1},
     {GPIOA, GPIO_PIN_2},
     {GPIOA, GPIO_PIN_3},
-    {GPIOB, GPIO_PIN_2}
+    {GPIOB, GPIO_PIN_2},
+    {nullptr, 0},
+    {nullptr, 0},
+    {nullptr, 0},
+
+    {GPIOB, GPIO_PIN_4}, // ENC0_A
+    {GPIOB, GPIO_PIN_5}, // ENC0_B
+    {GPIOA, GPIO_PIN_15}, // ENC0_Z
+    {GPIOB, GPIO_PIN_6}, // ENC1_A
+    {GPIOB, GPIO_PIN_7}, // ENC1_B
+    {GPIOB, GPIO_PIN_3}, // ENC1_Z
+    {GPIOB, GPIO_PIN_8}, // CAN_R
+    {GPIOB, GPIO_PIN_9}, // CAN_D
 };
 #elif (HW_VERSION_MINOR == 5) || (HW_VERSION_MINOR == 6)
-Stm32Gpio gpios[] = {
+Stm32Gpio gpios[GPIO_COUNT] = {
+    {nullptr, 0}, // dummy GPIO0 so that PCB labels and software numbers match
+
     {GPIOA, GPIO_PIN_0},
     {GPIOA, GPIO_PIN_1},
     {GPIOA, GPIO_PIN_2},
@@ -105,11 +135,49 @@ Stm32Gpio gpios[] = {
     {GPIOC, GPIO_PIN_4},
     {GPIOB, GPIO_PIN_2},
     {GPIOA, GPIO_PIN_15},
-    {GPIOB, GPIO_PIN_3}
+    {GPIOB, GPIO_PIN_3},
+    
+    {GPIOB, GPIO_PIN_4}, // ENC0_A
+    {GPIOB, GPIO_PIN_5}, // ENC0_B
+    {GPIOC, GPIO_PIN_9}, // ENC0_Z
+    {GPIOB, GPIO_PIN_6}, // ENC1_A
+    {GPIOB, GPIO_PIN_7}, // ENC1_B
+    {GPIOC, GPIO_PIN_15}, // ENC1_Z
+    {GPIOB, GPIO_PIN_8}, // CAN_R
+    {GPIOB, GPIO_PIN_9}, // CAN_D
 };
 #else
 #error "unknown GPIOs"
 #endif
+
+#define GPIO_AF_NONE ((uint8_t)0xff)
+uint8_t alternate_functions[GPIO_COUNT][6] = {
+    {GPIO_AF_NONE, GPIO_AF_NONE, GPIO_AF_NONE, GPIO_AF_NONE, GPIO_AF_NONE, GPIO_AF_NONE},
+    
+#if HW_VERSION_MINOR >= 3
+    {GPIO_AF8_UART4, GPIO_AF2_TIM5, GPIO_AF_NONE, GPIO_AF_NONE, GPIO_AF_NONE, GPIO_AF_NONE},
+    {GPIO_AF8_UART4, GPIO_AF2_TIM5, GPIO_AF_NONE, GPIO_AF_NONE, GPIO_AF_NONE, GPIO_AF_NONE},
+    {GPIO_AF_NONE, GPIO_AF2_TIM5, GPIO_AF_NONE, GPIO_AF_NONE, GPIO_AF_NONE, GPIO_AF_NONE},
+#else
+    {GPIO_AF_NONE, GPIO_AF_NONE, GPIO_AF_NONE, GPIO_AF_NONE, GPIO_AF_NONE, GPIO_AF_NONE},
+    {GPIO_AF_NONE, GPIO_AF_NONE, GPIO_AF_NONE, GPIO_AF_NONE, GPIO_AF_NONE, GPIO_AF_NONE},
+    {GPIO_AF_NONE, GPIO_AF_NONE, GPIO_AF_NONE, GPIO_AF_NONE, GPIO_AF_NONE, GPIO_AF_NONE},
+#endif
+    {GPIO_AF_NONE, GPIO_AF2_TIM5, GPIO_AF_NONE, GPIO_AF_NONE, GPIO_AF_NONE, GPIO_AF_NONE},
+    {GPIO_AF_NONE, GPIO_AF_NONE, GPIO_AF_NONE, GPIO_AF_NONE, GPIO_AF_NONE, GPIO_AF_NONE},
+    {GPIO_AF_NONE, GPIO_AF_NONE, GPIO_AF_NONE, GPIO_AF_NONE, GPIO_AF_NONE, GPIO_AF_NONE},
+    {GPIO_AF_NONE, GPIO_AF_NONE, GPIO_AF_NONE, GPIO_AF_NONE, GPIO_AF_NONE, GPIO_AF_NONE},
+    {GPIO_AF_NONE, GPIO_AF_NONE, GPIO_AF_NONE, GPIO_AF_NONE, GPIO_AF_NONE, GPIO_AF_NONE},
+
+    {GPIO_AF_NONE, GPIO_AF_NONE, GPIO_AF_NONE, GPIO_AF_NONE, GPIO_AF2_TIM3, GPIO_AF_NONE},
+    {GPIO_AF_NONE, GPIO_AF_NONE, GPIO_AF_NONE, GPIO_AF_NONE, GPIO_AF2_TIM3, GPIO_AF_NONE},
+    {GPIO_AF_NONE, GPIO_AF_NONE, GPIO_AF_NONE, GPIO_AF_NONE, GPIO_AF_NONE, GPIO_AF_NONE},
+    {GPIO_AF_NONE, GPIO_AF_NONE, GPIO_AF_NONE, GPIO_AF4_I2C1, GPIO_AF_NONE, GPIO_AF2_TIM4},
+    {GPIO_AF_NONE, GPIO_AF_NONE, GPIO_AF_NONE, GPIO_AF4_I2C1, GPIO_AF_NONE, GPIO_AF2_TIM4},
+    {GPIO_AF_NONE, GPIO_AF_NONE, GPIO_AF_NONE, GPIO_AF_NONE, GPIO_AF_NONE, GPIO_AF_NONE},
+    {GPIO_AF_NONE, GPIO_AF_NONE, GPIO_AF9_CAN1, GPIO_AF4_I2C1, GPIO_AF_NONE, GPIO_AF_NONE},
+    {GPIO_AF_NONE, GPIO_AF_NONE, GPIO_AF9_CAN1, GPIO_AF4_I2C1, GPIO_AF_NONE, GPIO_AF_NONE},
+};
 
 #if HW_VERSION_MINOR <= 2
 uint32_t pwm_in_gpios[4] = { 0, 0, 0, 4 }; // 0 means not in use

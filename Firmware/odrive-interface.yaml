@@ -81,10 +81,28 @@ interfaces:
       config:
         c_is_class: False
         attributes:
-          enable_uart:
+          # TODO: add support for arrays
+          gpio1_mode: {type: GpioMode, doc: Mode of GPIO1 (changes take effect after reboot), c_name: 'gpio_modes[1]'}
+          gpio2_mode: {type: GpioMode, doc: Mode of GPIO2 (changes take effect after reboot), c_name: 'gpio_modes[2]'}
+          gpio3_mode: {type: GpioMode, doc: Mode of GPIO3 (changes take effect after reboot), c_name: 'gpio_modes[3]'}
+          gpio4_mode: {type: GpioMode, doc: Mode of GPIO4 (changes take effect after reboot), c_name: 'gpio_modes[4]'}
+          gpio5_mode: {type: GpioMode, doc: Mode of GPIO5 (changes take effect after reboot), c_name: 'gpio_modes[5]'}
+          gpio6_mode: {type: GpioMode, doc: Mode of GPIO6 (changes take effect after reboot), c_name: 'gpio_modes[6]'}
+          gpio7_mode: {type: GpioMode, doc: Mode of GPIO7 (changes take effect after reboot), c_name: 'gpio_modes[7]'}
+          gpio8_mode: {type: GpioMode, doc: Mode of GPIO8 (changes take effect after reboot), c_name: 'gpio_modes[8]'}
+          gpio9_mode: {type: GpioMode, doc: Mode of GPIO9 (changes take effect after reboot), c_name: 'gpio_modes[9]'}
+          gpio10_mode: {type: GpioMode, doc: Mode of GPIO10 (changes take effect after reboot), c_name: 'gpio_modes[10]'}
+          gpio11_mode: {type: GpioMode, doc: Mode of GPIO11 (changes take effect after reboot), c_name: 'gpio_modes[11]'}
+          gpio12_mode: {type: GpioMode, doc: Mode of GPIO12 (changes take effect after reboot), c_name: 'gpio_modes[12]'}
+          gpio13_mode: {type: GpioMode, doc: Mode of GPIO13 (changes take effect after reboot), c_name: 'gpio_modes[13]'}
+          gpio14_mode: {type: GpioMode, doc: Mode of GPIO14 (changes take effect after reboot), c_name: 'gpio_modes[14]'}
+          gpio15_mode: {type: GpioMode, doc: Mode of GPIO15 (changes take effect after reboot), c_name: 'gpio_modes[15]'}
+          gpio16_mode: {type: GpioMode, doc: Mode of GPIO16 (changes take effect after reboot), c_name: 'gpio_modes[16]'}
+
+          enable_uart0:
             type: bool
             doc: 'TODO: changing this currently requires a reboot - fix this'
-          uart_baudrate:
+          uart0_baudrate:
             type: uint32
             doc: |
               Defines the baudrate used on the UART interface.
@@ -109,9 +127,17 @@ interfaces:
 
               For more information refer to Section 30.3.4 and Table 142 (the column with f_PCLK = 42 MHz) in the
               [STM datasheet](https://www.st.com/content/ccc/resource/technical/document/reference_manual/3d/6d/5a/66/b4/99/40/d4/DM00031020.pdf/files/DM00031020.pdf/jcr:content/translations/en.DM00031020.pdf).
-          enable_i2c_instead_of_can:
+          enable_can0:
             type: bool
-            doc: Changing this requires a reboot.
+            doc: |
+              Enables CAN. Changing this setting requires a reboot.
+          enable_i2c0:
+            type: bool
+            doc: |
+              Enables I2C. The I2C pins on ODrive v3.x are in conflict with CAN.
+              This setting has no effect if `enable_can0` is also true.
+              This setting has no effect on ODrive v3.2 or earlier.
+              Changing this setting requires a reboot.
           enable_ascii_protocol_on_usb: bool
           max_regen_current: float32
           brake_resistance:
@@ -173,13 +199,26 @@ interfaces:
             brief: Max current the power supply can sink.
             doc: You most likely want a non-positive value here. Set to -INFINITY to disable.
 
-          gpio1_pwm_mapping: {type: Endpoint, c_name: 'pwm_mappings[0]'} # TODO: disable for ODrive v3.2 and older
-          gpio2_pwm_mapping: {type: Endpoint, c_name: 'pwm_mappings[1]'} # TODO: disable for ODrive v3.2 and older
-          gpio3_pwm_mapping: {type: Endpoint, c_name: 'pwm_mappings[2]'} # TODO: disable for ODrive v3.2 and older
-          gpio4_pwm_mapping: {type: Endpoint, c_name: 'pwm_mappings[3]'}
-          gpio3_analog_mapping: {type: Endpoint, c_name: 'analog_mappings[2]'}
-          gpio4_analog_mapping: {type: Endpoint, c_name: 'analog_mappings[3]'}
+          gpio1_pwm_mapping: {type: Endpoint, c_name: 'pwm_mappings[0]', doc: Make sure the corresponding GPIO is in `GPIO_MODE_PWM0`.}
+          gpio2_pwm_mapping: {type: Endpoint, c_name: 'pwm_mappings[1]', doc: Make sure the corresponding GPIO is in `GPIO_MODE_PWM0`.}
+          gpio3_pwm_mapping: {type: Endpoint, c_name: 'pwm_mappings[2]', doc: Make sure the corresponding GPIO is in `GPIO_MODE_PWM0`.}
+          gpio4_pwm_mapping: {type: Endpoint, c_name: 'pwm_mappings[3]', doc: Make sure the corresponding GPIO is in `GPIO_MODE_PWM0`.}
+          gpio3_analog_mapping: {type: Endpoint, c_name: 'analog_mappings[3]', doc: Make sure the corresponding GPIO is in `GPIO_MODE_ANALOG_IN`.}
+          gpio4_analog_mapping: {type: Endpoint, c_name: 'analog_mappings[4]', doc: Make sure the corresponding GPIO is in `GPIO_MODE_ANALOG_IN`.}
       user_config_loaded: readonly bool
+      misconfigured:
+        type: readonly bool
+        doc: |
+          If this property is true, something is bad in the configuration. The
+          ODrive can still be used in this state but the user should investigate
+          which setting is problematic. This variable does not cover all
+          misconfigurations.
+
+          Possible causes:
+           - A GPIO was set to a mode that it doesn't support
+           - A GPIO was set to a mode for which the corresponding feature was
+             not enabled. Example: `GPIO_MODE_UART0` was used without enabling
+             `config.enable_uart0`.
             
       axis0: {type: Axis, c_name: get_axis(0)}
       axis1: {type: Axis, c_name: get_axis(1)}
@@ -189,7 +228,7 @@ interfaces:
     functions:
       test_function: {in: {delta: int32}, out: {cnt: int32}}
       get_oscilloscope_val: {in: {index: uint32}, out: {val: float32}}
-      get_adc_voltage: {in: {gpio: uint32}, out: {voltage: float32}}
+      get_adc_voltage: {in: {gpio: uint32}, out: {voltage: float32}, doc: Reads the ADC voltage of the specified GPIO. The GPIO should be in `GPIO_MODE_ANALOG_IN`.}
       save_configuration:
       erase_configuration:
       reboot:
@@ -323,7 +362,7 @@ interfaces:
           enable_step_dir:
             type: bool
             doc: Enable step/dir input after calibration.
-              For M0 this has no effect if `config.enable_uart` is true.
+              Make sure to set the corresponding GPIO's mode to `GPIO_MODE_DIGITAL`.
           step_dir_always_on:
             type: bool
             doc: Keep step/dir enabled while the motor is disabled.
@@ -766,7 +805,7 @@ interfaces:
           mode: Mode
           use_index: {type: bool, c_setter: set_use_index}
           find_idx_on_lockin_only: {type: bool, c_setter: set_find_idx_on_lockin_only}
-          abs_spi_cs_gpio_pin: {type: uint16, c_setter: set_abs_spi_cs_gpio_pin}
+          abs_spi_cs_gpio_pin: {type: uint16, c_setter: set_abs_spi_cs_gpio_pin, doc: Make sure that the GPIO is in `GPIO_MODE_DIGITAL`.}
           zero_count_on_find_idx: bool
           cpr: int32
           offset: int32
@@ -779,8 +818,12 @@ interfaces:
           calib_scan_omega: float32
           idx_search_unidirectional: bool
           ignore_illegal_hall_state: bool
-          sincos_gpio_pin_sin: uint16
-          sincos_gpio_pin_cos: uint16
+          sincos_gpio_pin_sin:
+            type: uint16
+            doc: Analog sine signal of a sin/cos encoder. The corresponding GPIO must be in `GPIO_MODE_ANALOG_IN`.
+          sincos_gpio_pin_cos:
+            type: uint16
+            doc: Analog cosine signal of a sin/cos encoder. The corresponding GPIO must be in `GPIO_MODE_ANALOG_IN`.
     functions:
       set_linear_count: {in: {count: int32}}
 
@@ -823,7 +866,7 @@ interfaces:
       config:
         c_is_class: False
         attributes:
-          gpio_num: {type: uint16, c_setter: set_gpio_num}
+          gpio_num: {type: uint16, c_setter: set_gpio_num, doc: Make sure the corresponding GPIO is in `GPIO_MODE_DIGITAL`.}
           enabled: {type: bool, c_setter: set_enabled}
           offset: float32
           is_active_high: bool
@@ -832,6 +875,23 @@ interfaces:
 
 
 valuetypes:
+  ODrive.GpioMode:
+    values:
+      Digital:
+        doc: |
+          The pin can be used for one or more of these functions:
+          Step, dir, enable, encoder index, hall effect encoder, SPI encoder nCS (this one is exclusive).
+      AnalogIn:
+        doc: |
+          The pin can be used for one or more of these functions:
+          Sin/cos encoders, analog input, `get_adc_voltage`.
+      Uart0: {doc: See `config.enable_uart0`.}
+      Pwm0: {doc: See `config.gpio0_pwm_mapping`.}
+      Can0: {doc: See `config.enable_can0`.}
+      I2c0: {doc: See `config.enable_i2c0`.}
+      Enc0: {doc: The pin is used by quadrature encoder 0.}
+      Enc1: {doc: The pin is used by quadrature encoder 1.}
+
   ODrive.Can.Protocol:
     values: {Simple: }
 

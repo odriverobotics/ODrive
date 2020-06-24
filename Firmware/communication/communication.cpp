@@ -64,9 +64,10 @@ void communication_task(void * ctx) {
     
     start_uart_server();
     start_usb_server();
-    if (odrv.config_.enable_i2c_instead_of_can) {
+    if (odrv.config_.enable_i2c0) {
         start_i2c_server();
-    } else {
+    }
+    if (odrv.config_.enable_can0) {
         odCAN->start_can_server();
     }
 

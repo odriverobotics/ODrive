@@ -104,7 +104,9 @@ void Encoder::enc_index_cb() {
 void Encoder::set_idx_subscribe(bool override_enable) {
     if (config_.use_index && (override_enable || !config_.find_idx_on_lockin_only)) {
         index_gpio_.config(GPIO_MODE_INPUT, GPIO_PULLDOWN);
-        index_gpio_.subscribe(true, false, enc_index_cb_wrapper, this);
+        if (!index_gpio_.subscribe(true, false, enc_index_cb_wrapper, this)) {
+            odrv.misconfigured_ = true;
+        }
     } else if (!config_.use_index || config_.find_idx_on_lockin_only) {
         index_gpio_.unsubscribe();
     }
@@ -444,18 +446,9 @@ void Encoder::abs_spi_cb() {
 }
 
 void Encoder::abs_spi_cs_pin_init(){
-    // Decode cs pin
+    // Decode and init cs pin
     abs_spi_cs_gpio_ = get_gpio(config_.abs_spi_cs_gpio_pin);
-
-    // Init cs pin
-    // TODO: absorb into Stm32Gpio class
-    HAL_GPIO_DeInit(abs_spi_cs_gpio_.port_, abs_spi_cs_gpio_.pin_mask_);
-    GPIO_InitTypeDef GPIO_InitStruct;
-    GPIO_InitStruct.Pin = abs_spi_cs_gpio_.pin_mask_;
-    GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
-    GPIO_InitStruct.Pull = GPIO_PULLUP;
-    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-    HAL_GPIO_Init(abs_spi_cs_gpio_.port_, &GPIO_InitStruct);
+    abs_spi_cs_gpio_.config(GPIO_MODE_OUTPUT_PP, GPIO_PULLUP);
 
     // Write pin high
     abs_spi_cs_gpio_.write(true);

@@ -18,23 +18,26 @@
 
 #include <arm_math.h>
 
-#if HW_VERSION_MAJOR == 3
 #if HW_VERSION_MINOR <= 3
 #define SHUNT_RESISTANCE (675e-6f)
 #else
 #define SHUNT_RESISTANCE (500e-6f)
 #endif
-#endif
-
 
 #define AXIS_COUNT (2)
 
-#if HW_VERSION_MAJOR == 3 && HW_VERSION_MINOR <= 4
-#define GPIO_COUNT  (5)
-#elif HW_VERSION_MAJOR == 3 && HW_VERSION_MINOR >= 5
-#define GPIO_COUNT  (8)
+// Total count of GPIOs, including encoder pins, CAN pins and a dummy GPIO0.
+// ODrive v3.4 and earlier don't have GPIOs 6, 7 and 8 but to keep the numbering
+// consistent we just leave a gap in the counting scheme.
+#define GPIO_COUNT  (17)
+
+#if HW_VERSION_MINOR >= 5 && HW_VERSION_VOLTAGE >= 48
+#define DEFAULT_BRAKE_RESISTANCE (2.0f) // [ohm]
+#else
+#define DEFAULT_BRAKE_RESISTANCE (0.47f) // [ohm]
 #endif
 
+#define GPIO_AF_NONE ((uint8_t)0xff)
 
 #ifdef __cplusplus
 #include <Drivers/STM32/stm32_gpio.hpp>
@@ -51,6 +54,7 @@ extern Motor motors[AXIS_COUNT];
 extern OnboardThermistorCurrentLimiter fet_thermistors[AXIS_COUNT];
 extern Encoder encoders[AXIS_COUNT];
 extern Stm32Gpio gpios[GPIO_COUNT];
+extern uint8_t alternate_functions[GPIO_COUNT][6];
 extern uint32_t pwm_in_gpios[4];
 
 #include <Drivers/STM32/stm32_spi_arbiter.hpp>

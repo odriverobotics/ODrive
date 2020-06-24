@@ -154,41 +154,27 @@ void ODrive::enter_dfu_mode() {
 
 extern "C" int construct_objects(){
 #if HW_VERSION_MAJOR == 3 && HW_VERSION_MINOR >= 3
-    if (odrv.config_.enable_i2c_instead_of_can) {
+    if (odrv.config_.enable_i2c0) {
         // Set up the direction GPIO as input
-        GPIO_InitTypeDef GPIO_InitStruct;
-        GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
-        GPIO_InitStruct.Pull = GPIO_PULLUP;
+        get_gpio(3).config(GPIO_MODE_INPUT, GPIO_PULLUP);
+        get_gpio(4).config(GPIO_MODE_INPUT, GPIO_PULLUP);
+        get_gpio(5).config(GPIO_MODE_INPUT, GPIO_PULLUP);
 
-        GPIO_InitStruct.Pin = I2C_A0_PIN;
-        HAL_GPIO_Init(I2C_A0_PORT, &GPIO_InitStruct);
-        GPIO_InitStruct.Pin = I2C_A1_PIN;
-        HAL_GPIO_Init(I2C_A1_PORT, &GPIO_InitStruct);
-        GPIO_InitStruct.Pin = I2C_A2_PIN;
-        HAL_GPIO_Init(I2C_A2_PORT, &GPIO_InitStruct);
-
-        osDelay(1);
+        osDelay(1); // This has no effect but was here before.
         i2c_stats_.addr = (0xD << 3);
-        i2c_stats_.addr |= HAL_GPIO_ReadPin(I2C_A0_PORT, I2C_A0_PIN) != GPIO_PIN_RESET ? 0x1 : 0;
-        i2c_stats_.addr |= HAL_GPIO_ReadPin(I2C_A1_PORT, I2C_A1_PIN) != GPIO_PIN_RESET ? 0x2 : 0;
-        i2c_stats_.addr |= HAL_GPIO_ReadPin(I2C_A2_PORT, I2C_A2_PIN) != GPIO_PIN_RESET ? 0x4 : 0;
+        i2c_stats_.addr |= get_gpio(3).read() ? 0x1 : 0;
+        i2c_stats_.addr |= get_gpio(4).read() ? 0x2 : 0;
+        i2c_stats_.addr |= get_gpio(5).read() ? 0x4 : 0;
         MX_I2C1_Init(i2c_stats_.addr);
-    } else
+    }
+#elif HW_VERSION_MAJOR != 3
+    #error "unsupported hardware"
 #endif
-        MX_CAN1_Init();
+
 
     HAL_UART_DeInit(&huart4);
-    huart4.Init.BaudRate = odrv.config_.uart_baudrate;
+    huart4.Init.BaudRate = odrv.config_.uart0_baudrate;
     HAL_UART_Init(&huart4);
-
-    // Init general user ADC on some GPIOs.
-    GPIO_InitTypeDef GPIO_InitStruct;
-    GPIO_InitStruct.Mode = GPIO_MODE_ANALOG;
-    GPIO_InitStruct.Pull = GPIO_NOPULL;
-    for (Stm32Gpio& gpio: gpios) {
-        GPIO_InitStruct.Pin = gpio.pin_mask_;
-        HAL_GPIO_Init(gpio.port_, &GPIO_InitStruct);
-    }
 
     // Construct all objects.
     odCAN = new ODriveCAN(can_config, &hcan1);
@@ -250,33 +236,96 @@ int odrive_main(void) {
     // Init timers
     board_init();
 
+    // Init GPIOs according to their configured mode
+    for (size_t i = 0; i < GPIO_COUNT; ++i) {
+        // Skip unavailable GPIOs
+        if (!get_gpio(i)) {
+            continue;
+        }
+
+        ODriveIntf::GpioMode mode = odrv.config_.gpio_modes[i];
+
+        GPIO_InitTypeDef GPIO_InitStruct;
+        GPIO_InitStruct.Pin = get_gpio(i).pin_mask_;
+        GPIO_InitStruct.Alternate = 0;
+
+        switch (mode) {
+            case ODriveIntf::GPIO_MODE_DIGITAL: {
+                GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+                GPIO_InitStruct.Pull = GPIO_NOPULL;
+                GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+            } break;
+            case ODriveIntf::GPIO_MODE_ANALOG_IN: {
+                GPIO_InitStruct.Mode = GPIO_MODE_ANALOG;
+                GPIO_InitStruct.Pull = GPIO_NOPULL;
+            } break;
+            case ODriveIntf::GPIO_MODE_UART0: {
+                GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
+                GPIO_InitStruct.Pull = (i == 0) ? GPIO_PULLDOWN : GPIO_PULLUP; // this is probably swapped but imitates old behavior
+                GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
+                GPIO_InitStruct.Alternate = alternate_functions[i][0];
+                if (!odrv.config_.enable_uart0) {
+                    odrv.misconfigured_ = true;
+                }
+            } break;
+            case ODriveIntf::GPIO_MODE_PWM0: {
+                GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
+                GPIO_InitStruct.Pull = GPIO_PULLDOWN;
+                GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+                GPIO_InitStruct.Alternate = alternate_functions[i][1];
+            } break;
+            case ODriveIntf::GPIO_MODE_CAN0: {
+                GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
+                GPIO_InitStruct.Pull = GPIO_NOPULL;
+                GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
+                GPIO_InitStruct.Alternate = alternate_functions[i][2];
+                if (!odrv.config_.enable_can0) {
+                    odrv.misconfigured_ = true;
+                }
+            } break;
+            case ODriveIntf::GPIO_MODE_I2C0: {
+                GPIO_InitStruct.Mode = GPIO_MODE_AF_OD;
+                GPIO_InitStruct.Pull = GPIO_PULLUP;
+                GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
+                GPIO_InitStruct.Alternate = alternate_functions[i][3];
+                if (!odrv.config_.enable_i2c0) {
+                    odrv.misconfigured_ = true;
+                }
+            } break;
+            case ODriveIntf::GPIO_MODE_ENC0: {
+                GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
+                GPIO_InitStruct.Pull = GPIO_NOPULL;
+                GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+                GPIO_InitStruct.Alternate = alternate_functions[i][4];
+            } break;
+            case ODriveIntf::GPIO_MODE_ENC1: {
+                GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
+                GPIO_InitStruct.Pull = GPIO_NOPULL;
+                GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+                GPIO_InitStruct.Alternate = alternate_functions[i][5];
+            } break;
+            default: {
+                GPIO_InitStruct.Alternate = GPIO_AF_NONE;
+            }
+        }
+
+        // The selected mode is invalid for this GPIO. Leave GPIO uninitialized.
+        if (GPIO_InitStruct.Alternate == GPIO_AF_NONE) {
+            odrv.misconfigured_ = true;
+            continue;
+        }
+
+        HAL_GPIO_Init(get_gpio(i).port_, &GPIO_InitStruct);
+    }
+
+    // Some peripherals must be initialized after the GPIOs are set up.
+    if (odrv.config_.enable_can0) {
+        MX_CAN1_Init();
+    }
+
     // Start ADC for temperature measurements and user measurements
     start_general_purpose_adc();
 
-    // TODO: make dynamically reconfigurable
-#if HW_VERSION_MAJOR == 3 && HW_VERSION_MINOR >= 3
-    if (odrv.config_.enable_uart) {
-        GPIO_InitTypeDef GPIO_InitStruct;
-
-        // make sure nothing is hogging the GPIO's
-        Stm32Gpio{GPIO_1_GPIO_Port, GPIO_1_Pin}.unsubscribe();
-        Stm32Gpio{GPIO_2_GPIO_Port, GPIO_2_Pin}.unsubscribe();
-
-        GPIO_InitStruct.Pin = GPIO_1_Pin;
-        GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
-        GPIO_InitStruct.Pull = GPIO_PULLDOWN;
-        GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
-        GPIO_InitStruct.Alternate = GPIO_AF8_UART4;
-        HAL_GPIO_Init(GPIO_1_GPIO_Port, &GPIO_InitStruct);
-
-        GPIO_InitStruct.Pin = GPIO_2_Pin;
-        GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
-        GPIO_InitStruct.Pull = GPIO_NOPULL;
-        GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
-        GPIO_InitStruct.Alternate = GPIO_AF8_UART4;
-        HAL_GPIO_Init(GPIO_2_GPIO_Port, &GPIO_InitStruct);
-    }
-#endif
     //osDelay(100);
     // Init communications (this requires the axis objects to be constructed)
     init_communication();

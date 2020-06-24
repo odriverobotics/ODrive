@@ -1,6 +1,11 @@
 # Unreleased Features
 Please add a note of your changes below this heading if you make a Pull Request.
 
+### API Miration Notes
+
+* `enable_uart` and `uart_baudrate` were renamed to `enable_uart0` and `uart0_baudrate`.
+* `enable_i2c_instead_of_can` was replaced by the separate settings `enable_i2c0` and `enable_can0`.
+
 ### Added
 * AC Induction Motor support.
   * Tracking of rotor flux through rotor time constant
@@ -30,6 +35,7 @@ Please add a note of your changes below this heading if you make a Pull Request.
 * Added scripts for building via docker.
 * Added ability to change uart baudrate via fibre
 * Introduced `odrive-interface.yaml` as a root source for the ODrive's API. `odrivetool` connects much faster as a side effect.
+* Introduced GPIO modes. GPIOs now need to be explicitly set to the mode corresponding to the feature that they are used by. See `<odrv>.config.gpioX_mode`.
 
 ### Changed
 * Changed ratiometric `motor.config.current_lim_tolerance` to absolute `motor.config.current_lim_margin`

@@ -37,15 +37,16 @@ class TestStepDir():
             
             yield (odrive.axes[1], 7, gpio_conns[6], 8, gpio_conns[7])
 
-    def run_test(self, axis: ODriveAxisComponent,  step_gpio_num: int, step_gpio: LinuxGpioComponent, dir_gpio_num: int, dir_gpio: LinuxGpioComponent, logger: Logger):
+    def run_test(self, axis: ODriveAxisComponent, step_gpio_num: int, step_gpio: LinuxGpioComponent, dir_gpio_num: int, dir_gpio: LinuxGpioComponent, logger: Logger):
         step_gpio.config(output=True)
         step_gpio.write(False)
         dir_gpio.config(output=True)
         dir_gpio.write(True)
 
         axis.parent.erase_config_and_reboot()
-        if axis.num == 0:
-            axis.parent.handle.config.enable_uart = False
+        setattr(axis.parent.handle.config, 'gpio' + str(step_gpio_num) + '_mode', GPIO_MODE_DIGITAL)
+        setattr(axis.parent.handle.config, 'gpio' + str(dir_gpio_num) + '_mode', GPIO_MODE_DIGITAL)
+        axis.parent.save_config_and_reboot()
         axis.handle.config.enable_step_dir = True
         axis.handle.config.step_dir_always_on = True # needed for testing
         axis.handle.config.step_gpio_pin = step_gpio_num
