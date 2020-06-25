@@ -22,8 +22,8 @@ class TestStepDir():
             gpio_conns = [
                 list(testrig.get_connected_components((odrive.gpio1, False), LinuxGpioComponent)),
                 list(testrig.get_connected_components((odrive.gpio2, False), LinuxGpioComponent)),
-                list(testrig.get_connected_components((odrive.gpio3, False), LinuxGpioComponent)),
-                list(testrig.get_connected_components((odrive.gpio4, False), LinuxGpioComponent)),
+                #list(testrig.get_connected_components((odrive.gpio3, False), LinuxGpioComponent)), # connected to LPF on test rig
+                #list(testrig.get_connected_components((odrive.gpio4, False), LinuxGpioComponent)), # connected to LPF on test rig
                 list(testrig.get_connected_components((odrive.gpio5, False), LinuxGpioComponent)),
                 list(testrig.get_connected_components((odrive.gpio6, False), LinuxGpioComponent)),
                 list(testrig.get_connected_components((odrive.gpio7, False), LinuxGpioComponent)),
@@ -31,11 +31,11 @@ class TestStepDir():
             ]
 
             yield (odrive.axes[0], 1, gpio_conns[0], 2, gpio_conns[1])
-            yield (odrive.axes[0], 3, gpio_conns[2], 4, gpio_conns[3])
-            yield (odrive.axes[0], 5, gpio_conns[4], 6, gpio_conns[5]) # broken
-            yield (odrive.axes[0], 7, gpio_conns[6], 8, gpio_conns[7]) # broken
+            yield (odrive.axes[0], 5, gpio_conns[2], 6, gpio_conns[3])
+            yield (odrive.axes[0], 7, gpio_conns[4], 8, gpio_conns[5]) # broken
+           # yield (odrive.axes[0], 7, gpio_conns[6], 8, gpio_conns[7]) # broken
             
-            yield (odrive.axes[1], 7, gpio_conns[6], 8, gpio_conns[7])
+            yield (odrive.axes[1], 7, gpio_conns[4], 8, gpio_conns[5])
 
     def run_test(self, axis: ODriveAxisComponent,  step_gpio_num: int, step_gpio: LinuxGpioComponent, dir_gpio_num: int, dir_gpio: LinuxGpioComponent, logger: Logger):
         step_gpio.config(output=True)
