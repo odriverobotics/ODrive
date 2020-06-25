@@ -45,6 +45,8 @@ public:
         uint8_t axis_to_mirror = -1;
         float mirror_ratio = 1.0f;
         uint8_t load_encoder_axis = -1;                 // default depends on Axis number and is set in load_configuration()
+        float input_pos_multiplier = 1.0f;     // if input_pos is set by user, it is multiplied by this
+        float input_vel_multiplier = 1.0f;     // if input_vel is set by user, it is multiplied by this
 
         // custom setters
         Controller* parent;
@@ -99,7 +101,12 @@ public:
     bool anticogging_valid_ = false;
 
     // custom setters
-    void set_input_pos(float value) { input_pos_ = value; input_pos_updated(); }
+    void set_input_pos(float value) { input_pos_ = value * config_.input_pos_multiplier; input_pos_updated(); }
+    void set_input_vel(float value) { input_vel_ = value * config_.input_vel_multiplier;}
+
+    // custom getters
+    float get_input_pos(void) { return input_pos_ / (config_.input_pos_multiplier == 0.0f ? 1.0f : config_.input_pos_multiplier);}
+    float get_input_vel(void) { return input_vel_ / (config_.input_vel_multiplier == 0.0f ? 1.0f : config_.input_vel_multiplier);}
 };
 
 #endif // __CONTROLLER_HPP

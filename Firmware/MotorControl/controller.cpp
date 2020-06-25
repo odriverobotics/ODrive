@@ -85,8 +85,8 @@ void Controller::start_anticogging_calibration() {
  */
 bool Controller::anticogging_calibration(float pos_estimate, float vel_estimate) {
     float pos_err = input_pos_ - pos_estimate;
-    if (std::abs(pos_err) <= config_.anticogging.calib_pos_threshold &&
-        std::abs(vel_estimate) < config_.anticogging.calib_vel_threshold) {
+    if (std::abs(pos_err) <= config_.anticogging.calib_pos_threshold * (2.0f * M_PI) / (float)axis_->encoder_.config_.cpr &&
+        std::abs(vel_estimate) < config_.anticogging.calib_vel_threshold * (2.0f * M_PI) / (float)axis_->encoder_.config_.cpr) {
         config_.anticogging.cogging_map[std::clamp<uint32_t>(config_.anticogging.index++, 0, 3600)] = vel_integrator_torque_;
     }
     if (config_.anticogging.index < 3600) {
@@ -128,19 +128,19 @@ bool Controller::update(float* torque_setpoint_output) {
             ? vel_estimate_src_ : nullptr;
 
     // Calib_anticogging is only true when calibration is occurring, so we can't block anticogging_pos
-    float anticogging_pos = axis_->encoder_.pos_estimate_ / axis_->encoder_.getCoggingRatio();
+    float anticogging_pos = axis_->encoder_.pos_est_rad_ / axis_->encoder_.getCoggingRatio();
     if (config_.anticogging.calib_anticogging) {
         if (!axis_->encoder_.pos_estimate_valid_ || !axis_->encoder_.vel_estimate_valid_) {
             set_error(ERROR_INVALID_ESTIMATE);
             return false;
         }
         // non-blocking
-        anticogging_calibration(axis_->encoder_.pos_estimate_, axis_->encoder_.vel_estimate_);
+        anticogging_calibration(axis_->encoder_.pos_est_rad_, axis_->encoder_.vel_est_rad_);
     }
 
     // TODO also enable circular deltas for 2nd order filter, etc.
     if (pos_wrap_src_) {
-        float cpr = *pos_wrap_src_;
+        float cpr = *pos_wrap_src_ * 2.0f * M_PI / ((float)axis_->encoder_.config_.cpr);
         // Keep pos setpoint from drifting
         input_pos_ = fmodf_pos(input_pos_, cpr);
     }
@@ -153,7 +153,7 @@ bool Controller::update(float* torque_setpoint_output) {
         case INPUT_MODE_PASSTHROUGH: {
             pos_setpoint_ = input_pos_;
             vel_setpoint_ = input_vel_;
-            torque_setpoint_ = input_torque_; //
+            torque_setpoint_ = input_torque_; 
         } break;
         case INPUT_MODE_VEL_RAMP: {
             float max_step_size = std::abs(current_meas_period * config_.vel_ramp_rate);
@@ -181,8 +181,8 @@ bool Controller::update(float* torque_setpoint_output) {
         } break;
         case INPUT_MODE_MIRROR: {
             if (config_.axis_to_mirror < AXIS_COUNT) {
-                pos_setpoint_ = axes[config_.axis_to_mirror]->encoder_.pos_estimate_ * config_.mirror_ratio;
-                vel_setpoint_ = axes[config_.axis_to_mirror]->encoder_.vel_estimate_ * config_.mirror_ratio;
+                pos_setpoint_ = axes[config_.axis_to_mirror]->encoder_.pos_est_rad_ * config_.mirror_ratio;
+                vel_setpoint_ = axes[config_.axis_to_mirror]->encoder_.vel_est_rad_ * config_.mirror_ratio;
             } else {
                 set_error(ERROR_INVALID_MIRROR_AXIS);
                 return false;
@@ -235,7 +235,7 @@ bool Controller::update(float* torque_setpoint_output) {
         }
 
         if (pos_wrap_src_) {
-            float cpr = *pos_wrap_src_;
+            float cpr = *pos_wrap_src_ * 2.0f * M_PI / ((float)axis_->encoder_.config_.cpr);
             // Keep pos setpoint from drifting
             pos_setpoint_ = fmodf_pos(pos_setpoint_, cpr);
             // Circular delta

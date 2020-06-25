@@ -74,7 +74,7 @@ public:
     int32_t shadow_count_ = 0;
     int32_t count_in_cpr_ = 0;
     float interpolation_ = 0.0f;
-    float phase_ = 0.0f;    // [count]
+    float phase_ = 0.0f;        // [count]
     float pos_estimate_ = 0.0f;  // [count]
     float pos_cpr_ = 0.0f;  // [count]
     float vel_estimate_ = 0.0f;  // [count/s]
@@ -84,9 +84,9 @@ public:
     int32_t pos_abs_ = 0;
     float spi_error_rate_ = 0.0f;
 
-    float pos_est_rad_ = 0.0f;
-    float vel_est_rad_ = 0.0f;
-    float pos_cpr_rad_ = 0.0f;
+    float pos_est_rad_ = 0.0f;  // [rad]
+    float vel_est_rad_ = 0.0f;  // [rad]
+    float pos_cpr_rad_ = 0.0f;  // [rad]
 
     bool pos_estimate_valid_ = false;
     bool vel_estimate_valid_ = false;
@@ -111,7 +111,7 @@ public:
     uint32_t abs_spi_cr2;
 
     constexpr float getCoggingRatio(){
-        return config_.cpr / 3600.0f;
+        return 2.0f * M_PI / 3600.0f;
     }
 };
 

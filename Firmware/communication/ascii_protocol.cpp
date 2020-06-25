@@ -189,8 +189,8 @@ void ASCII_protocol_process_line(const uint8_t* buffer, size_t len, StreamSink& 
             respond(response_channel, use_checksum, "invalid motor %u", motor_number);
         } else {
             respond(response_channel, use_checksum, "%f %f",
-                    (double)axes[motor_number]->encoder_.pos_estimate_,
-                    (double)axes[motor_number]->encoder_.vel_estimate_);
+                    (double)axes[motor_number]->encoder_.pos_est_rad_,
+                    (double)axes[motor_number]->encoder_.vel_est_rad_);
         }
 
     } else if (cmd[0] == 'h') {  // Help

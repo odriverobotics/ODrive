@@ -593,8 +593,8 @@ interfaces:
           InvalidMirrorAxis:
           InvalidLoadEncoder:
           InvalidEstimate:
-      input_pos: {type: float32, c_setter: set_input_pos}
-      input_vel: float32
+      input_pos: {type: float32, c_setter: set_input_pos, c_getter: get_input_pos()}
+      input_vel: {type: float32, c_setter: set_input_vel, c_getter: get_input_vel()}
       input_torque: float32
       pos_setpoint: readonly float32
       vel_setpoint: readonly float32
@@ -660,6 +660,8 @@ interfaces:
               calib_vel_threshold: float32
               cogging_ratio: readonly float32
               anticogging_enabled: bool
+          input_pos_multiplier: float32
+          input_vel_multiplier: float32
     functions:
       move_incremental:
         doc: Moves the axes' goal point by a specified increment.
@@ -712,9 +714,12 @@ interfaces:
       interpolation: readonly float32
       phase: readonly float32
       pos_estimate: readonly float32
+      pos_est_rad: readonly float32
       pos_cpr: readonly float32
+      pos_cpr_rad: readonly float32
       hall_state: readonly uint8
       vel_estimate: readonly float32
+      vel_est_rad: readonly float32
       calib_scan_response: readonly float32
       pos_abs: int32
       spi_error_rate: readonly float32

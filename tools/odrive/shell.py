@@ -33,7 +33,7 @@ def print_help(args, have_devices):
     print('')
     print('For example: "odrv0.motor0.encoder.pos_estimate"')
     print('will print the current encoder position on motor 0')
-    print('and "odrv0.motor0.pos_setpoint = 10000"')
+    print('and "odrv0.motor0.input_pos = 10000"')
     print('will send motor0 to 10000')
     print('')
 

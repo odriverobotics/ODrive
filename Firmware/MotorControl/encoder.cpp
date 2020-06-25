@@ -522,7 +522,7 @@ bool Encoder::update() {
         snap_to_zero_vel = true;
     }
 
-    //new vars in radians
+    //expose pos/vel estimates in radians for Controller
     pos_est_rad_ = pos_estimate_ * 2.0f * M_PI / (float)config_.cpr;
     vel_est_rad_ = vel_estimate_ * 2.0f * M_PI / (float)config_.cpr;
     pos_cpr_rad_ = pos_cpr_ * 2.0f * M_PI / (float)config_.cpr;
