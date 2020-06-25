@@ -54,24 +54,6 @@
 
 /* USER CODE BEGIN 0 */
 
-// To trigger the ADC, we must use an output channel that is in PWM mode
-// However, CubeMX does not allow you to set up a channel as PWM without an output pin.
-// This will set OC4 to PWM mode. Also, triggering doesn't work if the compare register
-// (called pulse here) is 0, so we initialise it to 1.
-void OC4_PWM_Override(TIM_HandleTypeDef* htim) {
-
-    TIM_OC_InitTypeDef sConfigOC;
-    sConfigOC.OCMode = TIM_OCMODE_PWM2;
-    sConfigOC.Pulse = 1;
-    sConfigOC.OCPolarity = TIM_OCPOLARITY_HIGH;
-    sConfigOC.OCNPolarity = TIM_OCNPOLARITY_HIGH;
-    sConfigOC.OCFastMode = TIM_OCFAST_DISABLE;
-    sConfigOC.OCIdleState = TIM_OCIDLESTATE_RESET;
-    sConfigOC.OCNIdleState = TIM_OCNIDLESTATE_RESET;
-
-    HAL_TIM_OC_ConfigChannel(htim, &sConfigOC, TIM_CHANNEL_4);
-}
-
 /* USER CODE END 0 */
 
 TIM_HandleTypeDef htim1;

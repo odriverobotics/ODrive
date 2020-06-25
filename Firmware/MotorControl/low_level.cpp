@@ -582,7 +582,7 @@ void handle_pulse(int channel, uint32_t high_time) {
 /**
  * @param channel: A channel number in [0, 3]
  */
-void pwm_in_cb(int channel, uint32_t timestamp) {
+void pwm_in_cb_for_channel(int channel, uint32_t timestamp) {
     static uint32_t last_timestamp[4] = { 0 };
     static bool last_pin_state[4] = { false };
     static bool last_sample_valid[4] = { false };
@@ -603,6 +603,25 @@ void pwm_in_cb(int channel, uint32_t timestamp) {
     last_timestamp[channel] = timestamp;
     last_pin_state[channel] = current_pin_state;
     last_sample_valid[channel] = true;
+}
+
+void pwm_in_cb(TIM_HandleTypeDef *htim) {
+    if(__HAL_TIM_GET_FLAG(htim, TIM_FLAG_CC1)) {
+        __HAL_TIM_CLEAR_IT(htim, TIM_IT_CC1);
+        pwm_in_cb_for_channel(0, htim->Instance->CCR1);
+    }
+    if(__HAL_TIM_GET_FLAG(htim, TIM_FLAG_CC2)) {
+        __HAL_TIM_CLEAR_IT(htim, TIM_IT_CC2);
+        pwm_in_cb_for_channel(1, htim->Instance->CCR2);
+    }
+    if(__HAL_TIM_GET_FLAG(htim, TIM_FLAG_CC3)) {
+        __HAL_TIM_CLEAR_IT(htim, TIM_IT_CC3);
+        pwm_in_cb_for_channel(2, htim->Instance->CCR3);
+    }
+    if(__HAL_TIM_GET_FLAG(htim, TIM_FLAG_CC4)) {
+        __HAL_TIM_CLEAR_IT(htim, TIM_IT_CC4);
+        pwm_in_cb_for_channel(3, htim->Instance->CCR4);
+    }
 }
 
 

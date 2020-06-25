@@ -315,7 +315,6 @@ uint8_t CDC_Transmit_FS(uint8_t* Buf, uint16_t Len, uint8_t endpoint_pair)
 {
   uint8_t result = USBD_OK;
   /* USER CODE BEGIN 7 */
-  
   //Check length
   if (Len > USB_TX_DATA_SIZE)
     return USBD_FAIL;

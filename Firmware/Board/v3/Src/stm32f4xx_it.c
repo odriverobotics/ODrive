@@ -37,23 +37,6 @@
 #include "cmsis_os.h"
 
 /* USER CODE BEGIN 0 */
-#include "freertos_vars.h"
-#include <stdbool.h>
-
-typedef void (*ADC_handler_t)(ADC_HandleTypeDef* hadc, bool injected);
-void ADC_IRQ_Dispatch(ADC_HandleTypeDef* hadc, ADC_handler_t callback);
-
-typedef void (*TIM_capture_callback_t)(int channel, uint32_t timestamp);
-void decode_tim_capture(TIM_HandleTypeDef *htim, TIM_capture_callback_t callback);
-
-// TODO: move somewhere else
-void pwm_trig_adc_cb(ADC_HandleTypeDef* hadc, bool injected);
-void vbus_sense_adc_cb(ADC_HandleTypeDef* hadc, bool injected);
-void tim_update_cb(TIM_HandleTypeDef* htim);
-void pwm_in_cb(int channel, uint32_t timestamp);
-
-extern TIM_HandleTypeDef htim1;
-extern I2C_HandleTypeDef hi2c1;
 
 /* USER CODE END 0 */
 
@@ -102,7 +85,7 @@ void get_regs(void** stack_ptr) {
   void* volatile pc __attribute__((unused)) = stack_ptr[6];  // Program counter
   void* volatile psr __attribute__((unused)) = stack_ptr[7];  // Program status register
 
-  volatile bool stay_looping = true;
+  volatile int stay_looping = 1;
   while(stay_looping);
 }
 
@@ -266,32 +249,6 @@ void DMA1_Stream5_IRQHandler(void)
 }
 
 /**
-* @brief This function handles ADC1, ADC2 and ADC3 global interrupts.
-*/
-void ADC_IRQHandler(void)
-{
-  /* USER CODE BEGIN ADC_IRQn 0 */
-
-  // The HAL's ADC handling mechanism adds many clock cycles of overhead
-  // So we bypass it and handle the logic ourselves.
-  //@TODO add vbus measurement on adc1 here
-  ADC_IRQ_Dispatch(&hadc1, &vbus_sense_adc_cb);
-  ADC_IRQ_Dispatch(&hadc2, &pwm_trig_adc_cb);
-  ADC_IRQ_Dispatch(&hadc3, &pwm_trig_adc_cb);
-
-  // Bypass HAL
-  return;
-
-  /* USER CODE END ADC_IRQn 0 */
-  HAL_ADC_IRQHandler(&hadc1);
-  HAL_ADC_IRQHandler(&hadc2);
-  HAL_ADC_IRQHandler(&hadc3);
-  /* USER CODE BEGIN ADC_IRQn 1 */
-
-  /* USER CODE END ADC_IRQn 1 */
-}
-
-/**
 * @brief This function handles CAN1 TX interrupts.
 */
 void CAN1_TX_IRQHandler(void)
@@ -363,23 +320,6 @@ void TIM8_TRG_COM_TIM14_IRQHandler(void)
 }
 
 /**
-* @brief This function handles TIM5 global interrupt.
-*/
-void TIM5_IRQHandler(void)
-{
-  /* USER CODE BEGIN TIM5_IRQn 0 */
-
-  // We know we only use capture mode here, so bypass HAL
-  decode_tim_capture(&htim5, &pwm_in_cb);
-
-  /* USER CODE END TIM5_IRQn 0 */
-  HAL_TIM_IRQHandler(&htim5);
-  /* USER CODE BEGIN TIM5_IRQn 1 */
-
-  /* USER CODE END TIM5_IRQn 1 */
-}
-
-/**
 * @brief This function handles SPI3 global interrupt.
 */
 void SPI3_IRQHandler(void)
@@ -407,82 +347,7 @@ void UART4_IRQHandler(void)
   /* USER CODE END UART4_IRQn 1 */
 }
 
-/**
-* @brief This function handles USB On The Go FS global interrupt.
-*/
-void OTG_FS_IRQHandler(void)
-{
-  /* USER CODE BEGIN OTG_FS_IRQn 0 */
-
-  // Mask interrupt, and signal processing of interrupt by usb_cmd_thread
-  // The thread will re-enable the interrupt when all pending irqs are clear.
-  HAL_NVIC_DisableIRQ(OTG_FS_IRQn);
-  osSemaphoreRelease(sem_usb_irq);
-  // Bypass interrupt processing here
-  return;
-
-  /* USER CODE END OTG_FS_IRQn 0 */
-  HAL_PCD_IRQHandler(&hpcd_USB_OTG_FS);
-  /* USER CODE BEGIN OTG_FS_IRQn 1 */
-
-  /* USER CODE END OTG_FS_IRQn 1 */
-}
-
 /* USER CODE BEGIN 1 */
-
-void ADC_IRQ_Dispatch(ADC_HandleTypeDef* hadc, ADC_handler_t callback) {
-
-  // Injected measurements
-  uint32_t JEOC = __HAL_ADC_GET_FLAG(hadc, ADC_FLAG_JEOC);
-  uint32_t JEOC_IT_EN = __HAL_ADC_GET_IT_SOURCE(hadc, ADC_IT_JEOC);
-  if (JEOC && JEOC_IT_EN) {
-    callback(hadc, true);
-    __HAL_ADC_CLEAR_FLAG(hadc, (ADC_FLAG_JSTRT | ADC_FLAG_JEOC));
-  }
-  // Regular measurements
-  uint32_t EOC = __HAL_ADC_GET_FLAG(hadc, ADC_FLAG_EOC);
-  uint32_t EOC_IT_EN = __HAL_ADC_GET_IT_SOURCE(hadc, ADC_IT_EOC);
-  if (EOC && EOC_IT_EN) {
-    callback(hadc, false);
-    __HAL_ADC_CLEAR_FLAG(hadc, (ADC_FLAG_STRT | ADC_FLAG_EOC));
-  }
-}
-
-void decode_tim_capture(TIM_HandleTypeDef *htim, TIM_capture_callback_t callback) {
-  if(__HAL_TIM_GET_FLAG(htim, TIM_FLAG_CC1)) {
-    __HAL_TIM_CLEAR_IT(htim, TIM_IT_CC1);
-    callback(0, htim->Instance->CCR1);
-  }
-  if(__HAL_TIM_GET_FLAG(htim, TIM_FLAG_CC2)) {
-    __HAL_TIM_CLEAR_IT(htim, TIM_IT_CC2);
-    callback(1, htim->Instance->CCR2);
-  }
-  if(__HAL_TIM_GET_FLAG(htim, TIM_FLAG_CC3)) {
-    __HAL_TIM_CLEAR_IT(htim, TIM_IT_CC3);
-    callback(2, htim->Instance->CCR3);
-  }
-  if(__HAL_TIM_GET_FLAG(htim, TIM_FLAG_CC4)) {
-    __HAL_TIM_CLEAR_IT(htim, TIM_IT_CC4);
-    callback(3, htim->Instance->CCR4);
-  }
-}
-
-
-/**
-* @brief This function handles I2C1 event interrupt.
-*/
-void I2C1_EV_IRQHandler(void)
-{
-  HAL_I2C_EV_IRQHandler(&hi2c1);
-}
-
-/**
-* @brief This function handles I2C1 error interrupt.
-*/
-void I2C1_ER_IRQHandler(void)
-{
-  HAL_I2C_ER_IRQHandler(&hi2c1);
-}
 
 /* USER CODE END 1 */
 /************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/

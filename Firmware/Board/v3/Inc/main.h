@@ -164,21 +164,6 @@
 
 /* USER CODE BEGIN Private defines */
 #endif
-
-//TODO: make this come automatically out of CubeMX somehow
-#define TIM_TIME_BASE TIM14
-
-#define CURRENT_MEAS_PERIOD ( (float)2*TIM_1_8_PERIOD_CLOCKS*(TIM_1_8_RCR+1) / (float)TIM_1_8_CLOCK_HZ )
-#define CURRENT_MEAS_HZ ( (float)(TIM_1_8_CLOCK_HZ) / (float)(2*TIM_1_8_PERIOD_CLOCKS*(TIM_1_8_RCR+1)) )
-
-#if HW_VERSION_VOLTAGE >= 48
-#define VBUS_S_DIVIDER_RATIO 19.0f
-#elif HW_VERSION_VOLTAGE == 24
-#define VBUS_S_DIVIDER_RATIO 11.0f
-#else
-#error "unknown board voltage"
-#endif
-
 /* USER CODE END Private defines */
 
 #ifdef __cplusplus

@@ -5,10 +5,28 @@
 
 #include "usart.h"
 #include "freertos_vars.h"
+#include "usb_device.h"
 #include <communication/interface_usb.h>
 #include <communication/interface_uart.h>
 #include <communication/interface_i2c.h>
 #include <communication/interface_can.hpp>
+
+osSemaphoreId sem_usb_irq;
+osSemaphoreId sem_uart_dma;
+osSemaphoreId sem_usb_rx;
+osSemaphoreId sem_usb_tx;
+osSemaphoreId sem_can;
+
+osThreadId usb_irq_thread;
+const uint32_t stack_size_usb_irq_thread = 2048; // Bytes
+
+// Place FreeRTOS heap in core coupled memory for better performance
+__attribute__((section(".ccmram")))
+uint8_t ucHeap[configTOTAL_HEAP_SIZE];
+
+uint32_t _reboot_cookie __attribute__ ((section (".noinit")));
+extern char _estack; // provided by the linker script
+
 
 ODriveCAN::Config_t can_config;
 SensorlessEstimator::Config_t sensorless_configs[AXIS_COUNT];
@@ -93,8 +111,6 @@ static bool config_apply_all() {
     return success;
 }
 
-
-
 void ODrive::save_configuration(void) {
     bool success = config_manager.prepare_store()
                 && config_push_all()
@@ -107,20 +123,6 @@ void ODrive::save_configuration(void) {
         printf("saving configuration failed\r\n");
         osDelay(5);
     }
-}
-
-extern "C" int load_configuration(void) {
-    bool success = config_manager.start_load()
-                && config_pop_all()
-                && config_manager.finish_load()
-                && config_apply_all();
-    if (success) {
-        odrv.user_config_loaded_ = true;
-    } else {
-        config_clear_all();
-        config_apply_all();
-    }
-    return success ? 0 : -1;
 }
 
 void ODrive::erase_configuration(void) {
@@ -152,53 +154,23 @@ void ODrive::enter_dfu_mode() {
     }
 }
 
-extern "C" int construct_objects(){
-#if HW_VERSION_MAJOR == 3 && HW_VERSION_MINOR >= 3
-    if (odrv.config_.enable_i2c0) {
-        // Set up the direction GPIO as input
-        get_gpio(3).config(GPIO_MODE_INPUT, GPIO_PULLUP);
-        get_gpio(4).config(GPIO_MODE_INPUT, GPIO_PULLUP);
-        get_gpio(5).config(GPIO_MODE_INPUT, GPIO_PULLUP);
+static void usb_deferred_interrupt_thread(void * ctx) {
+    (void) ctx; // unused parameter
 
-        osDelay(1); // This has no effect but was here before.
-        i2c_stats_.addr = (0xD << 3);
-        i2c_stats_.addr |= get_gpio(3).read() ? 0x1 : 0;
-        i2c_stats_.addr |= get_gpio(4).read() ? 0x2 : 0;
-        i2c_stats_.addr |= get_gpio(5).read() ? 0x4 : 0;
-        MX_I2C1_Init(i2c_stats_.addr);
+    for (;;) {
+        // Wait for signalling from USB interrupt (OTG_FS_IRQHandler)
+        osStatus semaphore_status = osSemaphoreWait(sem_usb_irq, osWaitForever);
+        if (semaphore_status == osOK) {
+            // We have a new incoming USB transmission: handle it
+            HAL_PCD_IRQHandler(&usb_pcd_handle);
+            // Let the irq (OTG_FS_IRQHandler) fire again.
+            HAL_NVIC_EnableIRQ(OTG_FS_IRQn);
+        }
     }
-#elif HW_VERSION_MAJOR != 3
-    #error "unsupported hardware"
-#endif
-
-
-    HAL_UART_DeInit(&huart4);
-    huart4.Init.BaudRate = odrv.config_.uart0_baudrate;
-    HAL_UART_Init(&huart4);
-
-    // Construct all objects.
-    odCAN = new ODriveCAN(can_config, &hcan1);
-    for (size_t i = 0; i < AXIS_COUNT; ++i) {
-        SensorlessEstimator *sensorless_estimator = new SensorlessEstimator(sensorless_configs[i]);
-        Controller *controller = new Controller(controller_configs[i]);
-        OffboardThermistorCurrentLimiter *motor_thermistor = new OffboardThermistorCurrentLimiter(motor_thermistor_configs[i]);
-        TrapezoidalTrajectory *trap = new TrapezoidalTrajectory(trap_configs[i]);
-        Endstop *min_endstop = new Endstop(min_endstop_configs[i]);
-        Endstop *max_endstop = new Endstop(max_endstop_configs[i]);
-        axes[i] = new Axis(i, hw_configs[i].axis_config, axis_configs[i],
-                encoders[i], *sensorless_estimator, *controller, fet_thermistors[i], *motor_thermistor, motors[i], *trap, *min_endstop, *max_endstop);
-
-        controller_configs[i].parent = controller;
-        motor_thermistor_configs[i].parent = motor_thermistor;
-        min_endstop_configs[i].parent = min_endstop;
-        max_endstop_configs[i].parent = max_endstop;
-        axis_configs[i].parent = axes[i];
-    }
-    return 0;
 }
 
 extern "C" {
-int odrive_main(void);
+
 void vApplicationStackOverflowHook(xTaskHandle *pxTask, signed portCHAR *pcTaskName) {
     for(auto& axis : axes){
         safety_critical_disarm_motor_pwm(axis->motor_);
@@ -206,6 +178,7 @@ void vApplicationStackOverflowHook(xTaskHandle *pxTask, signed portCHAR *pcTaskN
         safety_critical_disarm_brake_resistor();
     for (;;); // TODO: safe action
 }
+
 void vApplicationIdleHook(void) {
     if (odrv.system_stats_.fully_booted) {
         odrv.system_stats_.uptime = xTaskGetTickCount();
@@ -230,10 +203,150 @@ void vApplicationIdleHook(void) {
         odrv.system_stats_.stack_usage_can = odCAN->stack_size_ - odrv.system_stats_.min_stack_space_can;
     }
 }
+
 }
 
-int odrive_main(void) {
-    // Init timers
+
+/**
+ * @brief Main thread started from main().
+ */
+static void rtos_main(void*) {
+    // Init USB device
+    MX_USB_DEVICE_Init();
+
+
+    // Start ADC for temperature measurements and user measurements
+    start_general_purpose_adc();
+
+    //osDelay(100);
+    // Init communications (this requires the axis objects to be constructed)
+    init_communication();
+
+    // Start pwm-in compare modules
+    // must happen after communication is initialized
+    pwm_in_init();
+
+    // Setup hardware for all components
+    for (size_t i = 0; i < AXIS_COUNT; ++i) {
+        if (!axes[i]->setup()) {
+            for (;;); // TODO: proper error handling
+        }
+    }
+
+    for(auto& axis : axes){
+        axis->encoder_.setup();
+    }
+
+    // Start PWM and enable adc interrupts/callbacks
+    start_adc_pwm();
+
+    // This delay serves two purposes:
+    //  - Let the current sense calibration converge (the current
+    //    sense interrupts are firing in background by now)
+    //  - Allow a user to interrupt the code, e.g. by flashing a new code,
+    //    before it does anything crazy
+    // TODO make timing a function of calibration filter tau
+    osDelay(1500);
+
+    // Start state machine threads. Each thread will go through various calibration
+    // procedures and then run the actual controller loops.
+    // TODO: generalize for AXIS_COUNT != 2
+    for (size_t i = 0; i < AXIS_COUNT; ++i) {
+        axes[i]->start_thread();
+    }
+
+    start_analog_thread();
+
+    odrv.system_stats_.fully_booted = true;
+
+    // Main thread finished starting everything and can delete itself now (yes this is legal).
+    vTaskDelete(defaultTaskHandle);
+}
+
+/**
+ * @brief Carries out early startup tasks that need to run before any static
+ * initializers.
+ * This function gets called from the startup assembly code.
+ */
+extern "C" void early_start_checks(void) {
+    if(_reboot_cookie == 0xDEADFE75) {
+        /* The STM DFU bootloader enables internal pull-up resistors on PB10 (AUX_H)
+        * and PB11 (AUX_L), thereby causing shoot-through on the brake resistor
+        * FETs and obliterating them unless external 3.3k pull-down resistors are
+        * present. Pull-downs are only present on ODrive 3.5 or newer.
+        * On older boards we disable DFU by default but if the user insists
+        * there's only one thing left that might save it: time.
+        * The brake resistor gate driver needs a certain 10V supply (GVDD) to
+        * make it work. This voltage is supplied by the motor gate drivers which get
+        * disabled at system reset. So over time GVDD voltage _should_ below
+        * dangerous levels. This is completely handwavy and should not be relied on
+        * so you are on your own on if you ignore this warning.
+        *
+        * This loop takes 5 cycles per iteration and at this point the system runs
+        * on the internal 16MHz RC oscillator so the delay is about 2 seconds.
+        */
+        for (size_t i = 0; i < (16000000UL / 5UL * 2UL); ++i) {
+            __NOP();
+        }
+        _reboot_cookie = 0xDEADBEEF;
+    }
+
+    /* We could jump to the bootloader directly on demand without rebooting
+    but that requires us to reset several peripherals and interrupts for it
+    to function correctly. Therefore it's easier to just reset the entire chip. */
+    if(_reboot_cookie == 0xDEADBEEF) {
+        _reboot_cookie = 0xCAFEFEED;  //Reset bootloader trigger
+        __set_MSP((uintptr_t)&_estack);
+        // http://www.st.com/content/ccc/resource/technical/document/application_note/6a/17/92/02/58/98/45/0c/CD00264379.pdf/files/CD00264379.pdf
+        void (*builtin_bootloader)(void) = (void (*)(void))(*((uint32_t *)0x1FFF0004));
+        builtin_bootloader();
+    }
+
+    /* The bootloader might fail to properly clean up after itself,
+    so if we're not sure that the system is in a clean state we
+    just reset it again */
+    if(_reboot_cookie != 42) {
+        _reboot_cookie = 42;
+        NVIC_SystemReset();
+    }
+}
+
+/**
+ * @brief Main entry point called from assembly startup code.
+ */
+extern "C" int main(void) {
+    // This procedure of building a USB serial number should be identical
+    // to the way the STM's built-in USB bootloader does it. This means
+    // that the device will have the same serial number in normal and DFU mode.
+    uint32_t uuid0 = *(uint32_t *)(UID_BASE + 0);
+    uint32_t uuid1 = *(uint32_t *)(UID_BASE + 4);
+    uint32_t uuid2 = *(uint32_t *)(UID_BASE + 8);
+    uint32_t uuid_mixed_part = uuid0 + uuid2;
+    serial_number = ((uint64_t)uuid_mixed_part << 16) | (uint64_t)(uuid1 >> 16);
+
+    uint64_t val = serial_number;
+    for (size_t i = 0; i < 12; ++i) {
+        serial_number_str[i] = "0123456789ABCDEF"[(val >> (48-4)) & 0xf];
+        val <<= 4;
+    }
+    serial_number_str[12] = 0;
+
+    // Init low level system functions (clocks, flash interface)
+    system_init();
+
+    // Load configuration from NVM. This needs to happen after system_init()
+    // since the flash interface must be initialized and before board_init()
+    // since board initialization can depend on the config.
+    odrv.user_config_loaded_ = config_manager.start_load()
+            && config_pop_all()
+            && config_manager.finish_load()
+            && config_apply_all();
+    if (!odrv.user_config_loaded_) {
+        config_clear_all();
+        config_apply_all();
+    }
+
+    // Init board-specific peripherals
     board_init();
 
     // Init GPIOs according to their configured mode
@@ -318,53 +431,58 @@ int odrive_main(void) {
         HAL_GPIO_Init(get_gpio(i).port_, &GPIO_InitStruct);
     }
 
-    // Some peripherals must be initialized after the GPIOs are set up.
-    if (odrv.config_.enable_can0) {
-        MX_CAN1_Init();
-    }
+    // Init usb irq binary semaphore, and start with no tokens by removing the starting one.
+    osSemaphoreDef(sem_usb_irq);
+    sem_usb_irq = osSemaphoreCreate(osSemaphore(sem_usb_irq), 1);
+    osSemaphoreWait(sem_usb_irq, 0);
 
-    // Start ADC for temperature measurements and user measurements
-    start_general_purpose_adc();
+    // Create a semaphore for UART DMA and remove a token
+    osSemaphoreDef(sem_uart_dma);
+    sem_uart_dma = osSemaphoreCreate(osSemaphore(sem_uart_dma), 1);
 
-    //osDelay(100);
-    // Init communications (this requires the axis objects to be constructed)
-    init_communication();
+    // Create a semaphore for USB RX
+    osSemaphoreDef(sem_usb_rx);
+    sem_usb_rx = osSemaphoreCreate(osSemaphore(sem_usb_rx), 1);
+    osSemaphoreWait(sem_usb_rx, 0);  // Remove a token.
 
-    // Start pwm-in compare modules
-    // must happen after communication is initialized
-    pwm_in_init();
+    // Create a semaphore for USB TX
+    osSemaphoreDef(sem_usb_tx);
+    sem_usb_tx = osSemaphoreCreate(osSemaphore(sem_usb_tx), 1);
 
-    // Setup hardware for all components
+    osSemaphoreDef(sem_can);
+    sem_can = osSemaphoreCreate(osSemaphore(sem_can), 1);
+    osSemaphoreWait(sem_can, 0);
+
+    // Start USB interrupt handler thread
+    osThreadDef(task_usb_pump, usb_deferred_interrupt_thread, osPriorityAboveNormal, 0, stack_size_usb_irq_thread / sizeof(StackType_t));
+    usb_irq_thread = osThreadCreate(osThread(task_usb_pump), NULL);
+
+
+    // Construct all objects.
+    odCAN = new ODriveCAN(can_config, &hcan1);
     for (size_t i = 0; i < AXIS_COUNT; ++i) {
-        if (!axes[i]->setup()) {
-            for (;;); // TODO: proper error handling
-        }
+        SensorlessEstimator *sensorless_estimator = new SensorlessEstimator(sensorless_configs[i]);
+        Controller *controller = new Controller(controller_configs[i]);
+        OffboardThermistorCurrentLimiter *motor_thermistor = new OffboardThermistorCurrentLimiter(motor_thermistor_configs[i]);
+        TrapezoidalTrajectory *trap = new TrapezoidalTrajectory(trap_configs[i]);
+        Endstop *min_endstop = new Endstop(min_endstop_configs[i]);
+        Endstop *max_endstop = new Endstop(max_endstop_configs[i]);
+        axes[i] = new Axis(i, hw_configs[i].axis_config, axis_configs[i],
+                encoders[i], *sensorless_estimator, *controller, fet_thermistors[i], *motor_thermistor, motors[i], *trap, *min_endstop, *max_endstop);
+
+        controller_configs[i].parent = controller;
+        motor_thermistor_configs[i].parent = motor_thermistor;
+        min_endstop_configs[i].parent = min_endstop;
+        max_endstop_configs[i].parent = max_endstop;
+        axis_configs[i].parent = axes[i];
     }
 
-    for(auto& axis : axes){
-        axis->encoder_.setup();
-    }
+    // Create main thread
+    osThreadDef(defaultTask, rtos_main, osPriorityNormal, 0, stack_size_default_task / sizeof(StackType_t));
+    defaultTaskHandle = osThreadCreate(osThread(defaultTask), NULL);
 
-    // Start PWM and enable adc interrupts/callbacks
-    start_adc_pwm();
-
-    // This delay serves two purposes:
-    //  - Let the current sense calibration converge (the current
-    //    sense interrupts are firing in background by now)
-    //  - Allow a user to interrupt the code, e.g. by flashing a new code,
-    //    before it does anything crazy
-    // TODO make timing a function of calibration filter tau
-    osDelay(1500);
-
-    // Start state machine threads. Each thread will go through various calibration
-    // procedures and then run the actual controller loops.
-    // TODO: generalize for AXIS_COUNT != 2
-    for (size_t i = 0; i < AXIS_COUNT; ++i) {
-        axes[i]->start_thread();
-    }
-
-    start_analog_thread();
-
-    odrv.system_stats_.fully_booted = true;
-    return 0;
+    // Start scheduler
+    osKernelStart();
+    
+    for (;;);
 }

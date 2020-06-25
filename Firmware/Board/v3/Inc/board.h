@@ -5,6 +5,7 @@
 #ifndef __BOARD_CONFIG_H
 #define __BOARD_CONFIG_H
 
+#include <stdbool.h>
 
 // STM specific includes
 #include <stm32f4xx_hal.h>
@@ -39,6 +40,8 @@
 
 #define GPIO_AF_NONE ((uint8_t)0xff)
 
+#define TIM_TIME_BASE TIM14
+
 #ifdef __cplusplus
 #include <Drivers/STM32/stm32_gpio.hpp>
 #include <Drivers/DRV8301/drv8301.hpp>
@@ -57,14 +60,18 @@ extern Stm32Gpio gpios[GPIO_COUNT];
 extern uint8_t alternate_functions[GPIO_COUNT][6];
 extern uint32_t pwm_in_gpios[4];
 
+extern PCD_HandleTypeDef& usb_pcd_handle;
+
 #include <Drivers/STM32/stm32_spi_arbiter.hpp>
 extern Stm32SpiArbiter& ext_spi_arbiter;
 #endif
 
 // Period in [s]
+#define CURRENT_MEAS_PERIOD ( (float)2*TIM_1_8_PERIOD_CLOCKS*(TIM_1_8_RCR+1) / (float)TIM_1_8_CLOCK_HZ )
 static const float current_meas_period = CURRENT_MEAS_PERIOD;
 
 // Frequency in [Hz]
+#define CURRENT_MEAS_HZ ( (float)(TIM_1_8_CLOCK_HZ) / (float)(2*TIM_1_8_PERIOD_CLOCKS*(TIM_1_8_RCR+1)) )
 static const int current_meas_hz = CURRENT_MEAS_HZ;
 
 
@@ -112,12 +119,22 @@ const BoardHardwareConfig_t hw_configs[AXIS_COUNT] = { {
 #define I2C_A2_PORT GPIO_5_GPIO_Port
 #define I2C_A2_PIN GPIO_5_Pin
 
+#if HW_VERSION_VOLTAGE >= 48
+#define VBUS_S_DIVIDER_RATIO 19.0f
+#elif HW_VERSION_VOLTAGE == 24
+#define VBUS_S_DIVIDER_RATIO 11.0f
+#else
+#error "unknown board voltage"
+#endif
+
+
 // This board has no board-specific user configurations
 static inline bool board_pop_config() { return true; }
 static inline bool board_push_config() { return true; }
 static inline void board_clear_config() { }
 static inline bool board_apply_config() { return true; }
 
+void system_init();
 void board_init();
 
 #endif // __BOARD_CONFIG_H
