@@ -95,6 +95,8 @@ public:
 
     bool anticogging_valid_ = false;
 
+    // custom setters
+    void set_input_pos(float value) { input_pos_ = value; input_pos_updated();}
 };
 
 #endif // __CONTROLLER_HPP

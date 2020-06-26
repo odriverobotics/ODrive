@@ -85,8 +85,8 @@ void Controller::start_anticogging_calibration() {
  */
 bool Controller::anticogging_calibration(float pos_estimate, float vel_estimate) {
     float pos_err = input_pos_ - pos_estimate;
-    if (std::abs(pos_err) <= config_.anticogging.calib_pos_threshold * (2.0f * M_PI) / (float)axis_->encoder_.config_.cpr &&
-        std::abs(vel_estimate) < config_.anticogging.calib_vel_threshold * (2.0f * M_PI) / (float)axis_->encoder_.config_.cpr) {
+    if (std::abs(pos_err) <= config_.anticogging.calib_pos_threshold * (2.0f * M_PI) / axis_->encoder_.config_.cpr &&
+        std::abs(vel_estimate) < config_.anticogging.calib_vel_threshold * (2.0f * M_PI) / axis_->encoder_.config_.cpr) {
         config_.anticogging.cogging_map[std::clamp<uint32_t>(config_.anticogging.index++, 0, 3600)] = vel_integrator_torque_;
     }
     if (config_.anticogging.index < 3600) {
@@ -140,7 +140,7 @@ bool Controller::update(float* torque_setpoint_output) {
 
     // TODO also enable circular deltas for 2nd order filter, etc.
     if (pos_wrap_src_) {
-        float cpr = *pos_wrap_src_ * 2.0f * M_PI / ((float)axis_->encoder_.config_.cpr);
+        float cpr = *pos_wrap_src_ * 2.0f * M_PI / axis_->encoder_.config_.cpr;
         // Keep pos setpoint from drifting
         input_pos_ = fmodf_pos(input_pos_, cpr);
     }
@@ -235,7 +235,7 @@ bool Controller::update(float* torque_setpoint_output) {
         }
 
         if (pos_wrap_src_) {
-            float cpr = *pos_wrap_src_ * 2.0f * M_PI / ((float)axis_->encoder_.config_.cpr);
+            float cpr = *pos_wrap_src_ * 2.0f * M_PI / axis_->encoder_.config_.cpr;
             // Keep pos setpoint from drifting
             pos_setpoint_ = fmodf_pos(pos_setpoint_, cpr);
             // Circular delta

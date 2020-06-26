@@ -596,6 +596,7 @@ interfaces:
       input_pos:
         type: float32
         unit: rad
+        c_setter: set_input_pos
       input_vel:
         type: float32
         unit: rad/s
