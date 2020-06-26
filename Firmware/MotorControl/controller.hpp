@@ -21,16 +21,14 @@ public:
     struct Config_t {
         ControlMode control_mode = CONTROL_MODE_POSITION_CONTROL;  //see: ControlMode_t
         InputMode input_mode = INPUT_MODE_PASSTHROUGH;  //see: InputMode_t
-        float pos_gain = 20.0f;                         // [(counts/s) / counts]
-        //float vel_gain = 0.2f / 10000.0f;               // [Nm/(counts/s)]
-        float vel_gain = 0.2f / 7.7f;               // [Nm/(counts/s)]
+        float pos_gain = 20.0f;                         // [(rad/s) / rad]
+        //float vel_gain = 0.2f / 10000.0f;             // [Nm/(rad/s)]
+        float vel_gain = 0.2f / 7.7f;                   // [Nm/(rad/s)]
         // float vel_gain = 0.2f / 200.0f,              // [Nm/(rad/s)] <sensorless example>
-        //float vel_integrator_gain = 0.4f / 10000.0f;    // [Nm/(counts/s * s)]
-        float vel_integrator_gain = 0.4f / 7.7f;    // [Nm/(counts/s * s)]
-        //float vel_limit = 20000.0f;                     // [counts/s] Infinity to disable.
-        float vel_limit = 20000.0f * 2.0f * M_PI / 8192.0f;                     // [counts/s] Infinity to disable.
+        float vel_integrator_gain = 0.4f / 7.7f;        // [Nm/(rad/s * s)]
+        float vel_limit = 4.0f * M_PI;                  // [rad/s] Infinity to disable.
         float vel_limit_tolerance = 1.2f;               // ratio to vel_lim. Infinity to disable.
-        float vel_ramp_rate = 10000.0f;                 // [(counts/s) / s]
+        float vel_ramp_rate = 2.0f * M_PI;              // [(rad/s) / s]
         float torque_ramp_rate = 0.01f;                 // Nm / sec
         bool setpoints_in_cpr = false;
         float inertia = 0.0f;                           // [A/(count/s^2)]
@@ -41,12 +39,10 @@ public:
         bool enable_gain_scheduling = false;
         bool enable_vel_limit = true;
         bool enable_overspeed_error = true;
-        bool enable_current_mode_vel_limit = true;           // enable velocity limit in current control mode (requires a valid velocity estimator)
+        bool enable_current_mode_vel_limit = true;      // enable velocity limit in current control mode (requires a valid velocity estimator)
         uint8_t axis_to_mirror = -1;
         float mirror_ratio = 1.0f;
-        uint8_t load_encoder_axis = -1;                 // default depends on Axis number and is set in load_configuration()
-        float input_pos_multiplier = 1.0f;     // if input_pos is set by user, it is multiplied by this
-        float input_vel_multiplier = 1.0f;     // if input_vel is set by user, it is multiplied by this
+        uint8_t load_encoder_axis = -1;                     // default depends on Axis number and is set in load_configuration()
 
         // custom setters
         Controller* parent;
@@ -82,15 +78,15 @@ public:
     bool* vel_estimate_valid_src_ = nullptr;
     int32_t* pos_wrap_src_ = nullptr; // enables circular position setpoints if not null. The value pointed to is the maximum position value.
 
-    float pos_setpoint_ = 0.0f;
-    float vel_setpoint_ = 0.0f;
+    float pos_setpoint_ = 0.0f;         // [radians]
+    float vel_setpoint_ = 0.0f;         // [rad/s]
     // float vel_setpoint = 800.0f; <sensorless example>
     float vel_integrator_torque_ = 0.0f;    // [Nm]
     float torque_setpoint_ = 0.0f;          // [Nm]
 
-    float input_pos_ = 0.0f;
-    float input_vel_ = 0.0f;
-    float input_torque_ = 0.0f;
+    float input_pos_ = 0.0f;            // [radians]
+    float input_vel_ = 0.0f;            // [rad/s]
+    float input_torque_ = 0.0f;         // [Nm]
     float input_filter_kp_ = 0.0f;
     float input_filter_ki_ = 0.0f;
 
@@ -100,13 +96,6 @@ public:
 
     bool anticogging_valid_ = false;
 
-    // custom setters
-    void set_input_pos(float value) { input_pos_ = value * config_.input_pos_multiplier; input_pos_updated(); }
-    void set_input_vel(float value) { input_vel_ = value * config_.input_vel_multiplier;}
-
-    // custom getters
-    float get_input_pos(void) { return input_pos_ / (config_.input_pos_multiplier == 0.0f ? 1.0f : config_.input_pos_multiplier);}
-    float get_input_vel(void) { return input_vel_ / (config_.input_vel_multiplier == 0.0f ? 1.0f : config_.input_vel_multiplier);}
 };
 
 #endif // __CONTROLLER_HPP

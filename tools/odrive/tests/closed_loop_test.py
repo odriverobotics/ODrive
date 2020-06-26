@@ -180,7 +180,7 @@ class TestRegenProtection(TestClosedLoopControlBase):
             # Accept a bit of noise on Ibus
             axis_ctx.parent.handle.config.dc_max_negative_current = -0.2
 
-            logger.debug(f'Brake control test from {nominal_rps} rounds/s...')
+            logger.debug(f'Brake control test from {nominal_rps} rounds/s...'
             
             axis_ctx.handle.controller.config.vel_limit = 2.0 * pi * 15.0 # max 15 rps
             axis_ctx.handle.motor.config.current_lim = max_current

@@ -593,8 +593,12 @@ interfaces:
           InvalidMirrorAxis:
           InvalidLoadEncoder:
           InvalidEstimate:
-      input_pos: {type: float32, c_setter: set_input_pos, c_getter: get_input_pos()}
-      input_vel: {type: float32, c_setter: set_input_vel, c_getter: get_input_vel()}
+      input_pos:
+        type: float32
+        unit: rad
+      input_vel:
+        type: float32
+        unit: rad/s
       input_torque: float32
       pos_setpoint: readonly float32
       vel_setpoint: readonly float32
@@ -616,16 +620,16 @@ interfaces:
           input_mode: InputMode
           pos_gain:
             type: float32
-            unit: (counts/s) / counts
+            unit: (rad/s) / rad
           vel_gain:
             type: float32
-            unit: 'A/(counts/s) (or A/(rad/s) in sensorless mode'
+            unit: 'Nm/(rad/s)'
           vel_integrator_gain:
             type: float32
-            unit: A/(counts/s * s)
+            unit: Nm/(rad/s * s)
           vel_limit:
             type: float32
-            unit: counts/s
+            unit: rad/s
             doc: Infinity to disable.
           vel_limit_tolerance:
             type: float32
@@ -660,8 +664,6 @@ interfaces:
               calib_vel_threshold: float32
               cogging_ratio: readonly float32
               anticogging_enabled: bool
-          input_pos_multiplier: float32
-          input_vel_multiplier: float32
     functions:
       move_incremental:
         doc: Moves the axes' goal point by a specified increment.
