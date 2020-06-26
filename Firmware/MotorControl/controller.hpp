@@ -22,7 +22,6 @@ public:
         ControlMode control_mode = CONTROL_MODE_POSITION_CONTROL;  //see: ControlMode_t
         InputMode input_mode = INPUT_MODE_PASSTHROUGH;  //see: InputMode_t
         float pos_gain = 20.0f;                         // [(rad/s) / rad]
-        //float vel_gain = 0.2f / 10000.0f;             // [Nm/(rad/s)]
         float vel_gain = 0.2f / 7.7f;                   // [Nm/(rad/s)]
         // float vel_gain = 0.2f / 200.0f,              // [Nm/(rad/s)] <sensorless example>
         float vel_integrator_gain = 0.4f / 7.7f;        // [Nm/(rad/s * s)]
