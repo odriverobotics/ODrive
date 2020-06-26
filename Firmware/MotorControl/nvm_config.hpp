@@ -9,9 +9,8 @@
 
 #include <stdint.h>
 #include <stdlib.h>
-#include <stm32f405xx.h>
 
-#include "nvm.h"
+#include <Drivers/STM32/stm32_nvm.h>
 #include <fibre/crc.hpp>
 
 

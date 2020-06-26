@@ -14,12 +14,7 @@ extern "C" {
 
 #include <cmsis_os.h>
 
-extern osThreadId comm_thread;
-extern const uint32_t stack_size_comm_thread;
-
 void init_communication(void);
-void initTree();
-void communication_task(void * ctx);
 
 #ifdef __cplusplus
 }

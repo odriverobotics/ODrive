@@ -52,14 +52,12 @@ interfaces:
           uptime: readonly uint32
           min_heap_space: readonly uint32
           min_stack_space_axis: readonly uint32
-          min_stack_space_comms: readonly uint32
           min_stack_space_usb: readonly uint32
           min_stack_space_uart: readonly uint32
           min_stack_space_can: readonly uint32
           min_stack_space_usb_irq: readonly uint32
           min_stack_space_startup: readonly uint32
           stack_usage_axis: readonly uint32
-          stack_usage_comms: readonly uint32
           stack_usage_usb: readonly uint32
           stack_usage_uart: readonly uint32
           stack_usage_usb_irq: readonly uint32
@@ -101,7 +99,9 @@ interfaces:
 
           enable_uart0:
             type: bool
-            doc: 'TODO: changing this currently requires a reboot - fix this'
+            doc: Enables/disables UART0. You also need to set the corresponding GPIOs to GPIO_MODE_UART0. Changing this requires a reboot.
+          enable_uart1: {type: bool, doc: Not supported on ODrive v3.x.}
+          enable_uart2: {type: bool, doc: Not supported on ODrive v3.x.}
           uart0_baudrate:
             type: uint32
             doc: |
@@ -127,6 +127,8 @@ interfaces:
 
               For more information refer to Section 30.3.4 and Table 142 (the column with f_PCLK = 42 MHz) in the
               [STM datasheet](https://www.st.com/content/ccc/resource/technical/document/reference_manual/3d/6d/5a/66/b4/99/40/d4/DM00031020.pdf/files/DM00031020.pdf/jcr:content/translations/en.DM00031020.pdf).
+          uart1_baudrate: {type: uint32, doc: Not supported on ODrive v3.x.}
+          uart2_baudrate: {type: uint32, doc: Not supported on ODrive v3.x.}
           enable_can0:
             type: bool
             doc: |
@@ -219,6 +221,12 @@ interfaces:
            - A GPIO was set to a mode for which the corresponding feature was
              not enabled. Example: `GPIO_MODE_UART0` was used without enabling
              `config.enable_uart0`.
+           - A feature was enabled which is not supported on this hardware.
+             Example: `config.enable_uart2` set to true on ODrive v3.x.
+           - A GPIO was used as an interrupt input for two internal components
+             or two GPIOs that are mutually exclusive in their interrupt
+             capability were both used as interrupt input.
+             Example: `step_gpio_pin` of both axes were set to the same GPIO.
             
       axis0: {type: Axis, c_name: get_axis(0)}
       axis1: {type: Axis, c_name: get_axis(1)}
@@ -886,11 +894,17 @@ valuetypes:
           The pin can be used for one or more of these functions:
           Sin/cos encoders, analog input, `get_adc_voltage`.
       Uart0: {doc: See `config.enable_uart0`.}
-      Pwm0: {doc: See `config.gpio0_pwm_mapping`.}
+      Uart1: {doc: This mode is not supported on ODrive v3.x.}
+      Uart2: {doc: This mode is not supported on ODrive v3.x.}
       Can0: {doc: See `config.enable_can0`.}
       I2c0: {doc: See `config.enable_i2c0`.}
+      Spi0: {doc: Note that the SPI pins on ODrive v3.x are hardwired so they
+        cannot be configured through software. Consequently, even though SPI0
+        is exposed, this mode is of no use on ODrive v3.x.}
+      Pwm0: {doc: See `config.gpio0_pwm_mapping`.}
       Enc0: {doc: The pin is used by quadrature encoder 0.}
       Enc1: {doc: The pin is used by quadrature encoder 1.}
+      Enc2: {doc: This mode is not supported on ODrive v3.x.}
 
   ODrive.Can.Protocol:
     values: {Simple: }

@@ -20,8 +20,10 @@ osSemaphoreId sem_can;
 osThreadId usb_irq_thread;
 const uint32_t stack_size_usb_irq_thread = 2048; // Bytes
 
+#if defined(STM32F405xx)
 // Place FreeRTOS heap in core coupled memory for better performance
 __attribute__((section(".ccmram")))
+#endif
 uint8_t ucHeap[configTOTAL_HEAP_SIZE];
 
 uint32_t _reboot_cookie __attribute__ ((section (".noinit")));
@@ -164,7 +166,7 @@ static void usb_deferred_interrupt_thread(void * ctx) {
             // We have a new incoming USB transmission: handle it
             HAL_PCD_IRQHandler(&usb_pcd_handle);
             // Let the irq (OTG_FS_IRQHandler) fire again.
-            HAL_NVIC_EnableIRQ(OTG_FS_IRQn);
+            HAL_NVIC_EnableIRQ((usb_pcd_handle.Instance == USB_OTG_FS) ? OTG_FS_IRQn : OTG_HS_IRQn);
         }
     }
 }
@@ -183,7 +185,6 @@ void vApplicationIdleHook(void) {
     if (odrv.system_stats_.fully_booted) {
         odrv.system_stats_.uptime = xTaskGetTickCount();
         odrv.system_stats_.min_heap_space = xPortGetMinimumEverFreeHeapSize();
-        odrv.system_stats_.min_stack_space_comms = uxTaskGetStackHighWaterMark(comm_thread) * sizeof(StackType_t);
         uint32_t min_stack_space[AXIS_COUNT];
         std::transform(axes.begin(), axes.end(), std::begin(min_stack_space), [](auto& axis) { return uxTaskGetStackHighWaterMark(axes[1]->thread_id_) * sizeof(StackType_t); });
         odrv.system_stats_.min_stack_space_axis = *std::min_element(std::begin(min_stack_space), std::end(min_stack_space));
@@ -195,7 +196,6 @@ void vApplicationIdleHook(void) {
 
         // Actual usage, in bytes, so we don't have to math
         odrv.system_stats_.stack_usage_axis = axes[0]->stack_size_ - odrv.system_stats_.min_stack_space_axis;
-        odrv.system_stats_.stack_usage_comms = stack_size_comm_thread - odrv.system_stats_.min_stack_space_comms;
         odrv.system_stats_.stack_usage_usb = stack_size_usb_thread - odrv.system_stats_.min_stack_space_usb;
         odrv.system_stats_.stack_usage_uart = stack_size_uart_thread - odrv.system_stats_.min_stack_space_uart;
         odrv.system_stats_.stack_usage_usb_irq = stack_size_usb_irq_thread - odrv.system_stats_.min_stack_space_usb_irq;
@@ -224,7 +224,7 @@ static void rtos_main(void*) {
 
     // Start pwm-in compare modules
     // must happen after communication is initialized
-    pwm_in_init();
+    pwm0_input.init();
 
     // Setup hardware for all components
     for (size_t i = 0; i < AXIS_COUNT; ++i) {
@@ -346,6 +346,11 @@ extern "C" int main(void) {
         config_apply_all();
     }
 
+    odrv.misconfigured_ = odrv.misconfigured_
+            || (odrv.config_.enable_uart0 && !uart0)
+            || (odrv.config_.enable_uart1 && !uart1)
+            || (odrv.config_.enable_uart2 && !uart2);
+
     // Init board-specific peripherals
     board_init();
 
@@ -381,17 +386,29 @@ extern "C" int main(void) {
                     odrv.misconfigured_ = true;
                 }
             } break;
-            case ODriveIntf::GPIO_MODE_PWM0: {
+            case ODriveIntf::GPIO_MODE_UART1: {
                 GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
-                GPIO_InitStruct.Pull = GPIO_PULLDOWN;
-                GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+                GPIO_InitStruct.Pull = (i == 0) ? GPIO_PULLDOWN : GPIO_PULLUP; // this is probably swapped but imitates old behavior
+                GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
                 GPIO_InitStruct.Alternate = alternate_functions[i][1];
+                if (!odrv.config_.enable_uart1) {
+                    odrv.misconfigured_ = true;
+                }
+            } break;
+            case ODriveIntf::GPIO_MODE_UART2: {
+                GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
+                GPIO_InitStruct.Pull = (i == 0) ? GPIO_PULLDOWN : GPIO_PULLUP; // this is probably swapped but imitates old behavior
+                GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
+                GPIO_InitStruct.Alternate = alternate_functions[i][2];
+                if (!odrv.config_.enable_uart2) {
+                    odrv.misconfigured_ = true;
+                }
             } break;
             case ODriveIntf::GPIO_MODE_CAN0: {
                 GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
                 GPIO_InitStruct.Pull = GPIO_NOPULL;
                 GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
-                GPIO_InitStruct.Alternate = alternate_functions[i][2];
+                GPIO_InitStruct.Alternate = alternate_functions[i][3];
                 if (!odrv.config_.enable_can0) {
                     odrv.misconfigured_ = true;
                 }
@@ -400,22 +417,37 @@ extern "C" int main(void) {
                 GPIO_InitStruct.Mode = GPIO_MODE_AF_OD;
                 GPIO_InitStruct.Pull = GPIO_PULLUP;
                 GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
-                GPIO_InitStruct.Alternate = alternate_functions[i][3];
+                GPIO_InitStruct.Alternate = alternate_functions[i][4];
                 if (!odrv.config_.enable_i2c0) {
                     odrv.misconfigured_ = true;
                 }
+            } break;
+            case ODriveIntf::GPIO_MODE_SPI0: {
+                GPIO_InitStruct.Alternate = GPIO_AF_NONE; // TODO
+            } break;
+            case ODriveIntf::GPIO_MODE_PWM0: {
+                GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
+                GPIO_InitStruct.Pull = GPIO_PULLDOWN;
+                GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+                GPIO_InitStruct.Alternate = alternate_functions[i][6];
             } break;
             case ODriveIntf::GPIO_MODE_ENC0: {
                 GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
                 GPIO_InitStruct.Pull = GPIO_NOPULL;
                 GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-                GPIO_InitStruct.Alternate = alternate_functions[i][4];
+                GPIO_InitStruct.Alternate = alternate_functions[i][7];
             } break;
             case ODriveIntf::GPIO_MODE_ENC1: {
                 GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
                 GPIO_InitStruct.Pull = GPIO_NOPULL;
                 GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-                GPIO_InitStruct.Alternate = alternate_functions[i][5];
+                GPIO_InitStruct.Alternate = alternate_functions[i][8];
+            } break;
+            case ODriveIntf::GPIO_MODE_ENC2: {
+                GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
+                GPIO_InitStruct.Pull = GPIO_NOPULL;
+                GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+                GPIO_InitStruct.Alternate = alternate_functions[i][9];
             } break;
             default: {
                 GPIO_InitStruct.Alternate = GPIO_AF_NONE;

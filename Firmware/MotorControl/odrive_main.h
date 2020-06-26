@@ -31,7 +31,6 @@ typedef struct {
     uint32_t uptime; // [ms]
     uint32_t min_heap_space; // FreeRTOS heap [Bytes]
     uint32_t min_stack_space_axis; // minimum remaining space since startup [Bytes]
-    uint32_t min_stack_space_comms;
     uint32_t min_stack_space_usb;
     uint32_t min_stack_space_uart;
     uint32_t min_stack_space_usb_irq;
@@ -39,7 +38,6 @@ typedef struct {
     uint32_t min_stack_space_can;
 
     uint32_t stack_usage_axis;
-    uint32_t stack_usage_comms;
     uint32_t stack_usage_usb;
     uint32_t stack_usage_uart;
     uint32_t stack_usage_usb_irq;
@@ -59,27 +57,15 @@ struct PWMMapping_t {
 // @brief general user configurable board configuration
 struct BoardConfig_t {
     ODriveIntf::GpioMode gpio_modes[GPIO_COUNT] = {
-        ODriveIntf::GPIO_MODE_DIGITAL,
-        ODriveIntf::GPIO_MODE_UART0,
-        ODriveIntf::GPIO_MODE_UART0,
-        ODriveIntf::GPIO_MODE_ANALOG_IN,
-        ODriveIntf::GPIO_MODE_ANALOG_IN,
-        ODriveIntf::GPIO_MODE_ANALOG_IN,
-        ODriveIntf::GPIO_MODE_DIGITAL,
-        ODriveIntf::GPIO_MODE_DIGITAL,
-        ODriveIntf::GPIO_MODE_DIGITAL,
-        ODriveIntf::GPIO_MODE_ENC0,
-        ODriveIntf::GPIO_MODE_ENC0,
-        ODriveIntf::GPIO_MODE_DIGITAL,
-        ODriveIntf::GPIO_MODE_ENC1,
-        ODriveIntf::GPIO_MODE_ENC1,
-        ODriveIntf::GPIO_MODE_DIGITAL,
-        ODriveIntf::GPIO_MODE_CAN0,
-        ODriveIntf::GPIO_MODE_CAN0,
+        DEFAULT_GPIO_MODES
     };
 
     bool enable_uart0 = true;
+    bool enable_uart1 = false;
+    bool enable_uart2 = false;
     uint32_t uart0_baudrate = 115200;
+    uint32_t uart1_baudrate = 115200;
+    uint32_t uart2_baudrate = 115200;
     bool enable_can0 = true;
     bool enable_i2c0 = false;
     bool enable_ascii_protocol_on_usb = true;
@@ -201,7 +187,7 @@ public:
 
     const uint64_t& serial_number_ = ::serial_number;
 
-#if HW_VERSION_MAJOR == 3
+#if defined(STM32F405xx)
     // Determine start address of the OTP struct:
     // The OTP is organized into 16-byte blocks.
     // If the first block starts with "0xfe" we use the first block.

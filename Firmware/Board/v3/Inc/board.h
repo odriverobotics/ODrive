@@ -14,10 +14,13 @@
 #include <tim.h>
 #include <can.h>
 #include <i2c.h>
+#include <usb_device.h>
 #include <main.h>
 #include "cmsis_os.h"
 
 #include <arm_math.h>
+
+#include <Drivers/STM32/stm32_system.h>
 
 #if HW_VERSION_MINOR <= 3
 #define SHUNT_RESISTANCE (675e-6f)
@@ -38,13 +41,34 @@
 #define DEFAULT_BRAKE_RESISTANCE (0.47f) // [ohm]
 #endif
 
+#define DEFAULT_GPIO_MODES \
+    ODriveIntf::GPIO_MODE_DIGITAL, \
+    ODriveIntf::GPIO_MODE_UART0, \
+    ODriveIntf::GPIO_MODE_UART0, \
+    ODriveIntf::GPIO_MODE_ANALOG_IN, \
+    ODriveIntf::GPIO_MODE_ANALOG_IN, \
+    ODriveIntf::GPIO_MODE_ANALOG_IN, \
+    ODriveIntf::GPIO_MODE_DIGITAL, \
+    ODriveIntf::GPIO_MODE_DIGITAL, \
+    ODriveIntf::GPIO_MODE_DIGITAL, \
+    ODriveIntf::GPIO_MODE_ENC0, \
+    ODriveIntf::GPIO_MODE_ENC0, \
+    ODriveIntf::GPIO_MODE_DIGITAL, \
+    ODriveIntf::GPIO_MODE_ENC1, \
+    ODriveIntf::GPIO_MODE_ENC1, \
+    ODriveIntf::GPIO_MODE_DIGITAL, \
+    ODriveIntf::GPIO_MODE_CAN0, \
+    ODriveIntf::GPIO_MODE_CAN0,
+
 #define GPIO_AF_NONE ((uint8_t)0xff)
 
 #define TIM_TIME_BASE TIM14
 
 #ifdef __cplusplus
-#include <Drivers/STM32/stm32_gpio.hpp>
 #include <Drivers/DRV8301/drv8301.hpp>
+#include <Drivers/STM32/stm32_gpio.hpp>
+#include <Drivers/STM32/stm32_spi_arbiter.hpp>
+#include <MotorControl/pwm_input.hpp>
 #include <MotorControl/thermistor.hpp>
 
 using TGateDriver = Drv8301;
@@ -57,13 +81,18 @@ extern Motor motors[AXIS_COUNT];
 extern OnboardThermistorCurrentLimiter fet_thermistors[AXIS_COUNT];
 extern Encoder encoders[AXIS_COUNT];
 extern Stm32Gpio gpios[GPIO_COUNT];
-extern uint8_t alternate_functions[GPIO_COUNT][6];
-extern uint32_t pwm_in_gpios[4];
+extern uint8_t alternate_functions[GPIO_COUNT][10];
 
 extern PCD_HandleTypeDef& usb_pcd_handle;
+extern USBD_HandleTypeDef& usb_dev_handle;
 
-#include <Drivers/STM32/stm32_spi_arbiter.hpp>
 extern Stm32SpiArbiter& ext_spi_arbiter;
+
+extern UART_HandleTypeDef* uart0;
+extern UART_HandleTypeDef* uart1;
+extern UART_HandleTypeDef* uart2;
+
+extern PwmInput pwm0_input;
 #endif
 
 // Period in [s]
@@ -111,13 +140,6 @@ const BoardHardwareConfig_t hw_configs[AXIS_COUNT] = { {
     },
 } };
 #endif
-
-#define I2C_A0_PORT GPIO_3_GPIO_Port
-#define I2C_A0_PIN GPIO_3_Pin
-#define I2C_A1_PORT GPIO_4_GPIO_Port
-#define I2C_A1_PIN GPIO_4_Pin
-#define I2C_A2_PORT GPIO_5_GPIO_Port
-#define I2C_A2_PIN GPIO_5_Pin
 
 #if HW_VERSION_VOLTAGE >= 48
 #define VBUS_S_DIVIDER_RATIO 19.0f

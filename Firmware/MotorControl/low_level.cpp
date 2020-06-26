@@ -1,11 +1,6 @@
 /* Includes ------------------------------------------------------------------*/
 
-// Because of broken cmsis_os.h, we need to include arm_math first,
-// otherwise chip specific defines are ommited
-#include <stm32f405xx.h>
-#include <stm32f4xx_hal.h>  // Sets up the correct chip specifc defines required by arm_math
-#include <Drivers/STM32/stm32_system.h>
-#include <arm_math.h>
+#include <board.h>
 
 #include <cmsis_os.h>
 #include <math.h>
@@ -279,9 +274,9 @@ void start_general_purpose_adc() {
     hadc1.Init.NbrOfConversion = ADC_CHANNEL_COUNT;
     hadc1.Init.DMAContinuousRequests = ENABLE;
     hadc1.Init.EOCSelection = ADC_EOC_SINGLE_CONV;
-    if (HAL_ADC_Init(&hadc1) != HAL_OK)
-    {
-        _Error_Handler((char*)__FILE__, __LINE__);
+    if (HAL_ADC_Init(&hadc1) != HAL_OK) {
+        odrv.misconfigured_ = true; // TODO: this is a bit of an abuse of this flag
+        return;
     }
 
     // Set up sampling sequence (channel 0 ... channel 15)
@@ -289,8 +284,10 @@ void start_general_purpose_adc() {
     for (uint32_t channel = 0; channel < ADC_CHANNEL_COUNT; ++channel) {
         sConfig.Channel = channel << ADC_CR1_AWDCH_Pos;
         sConfig.Rank = channel + 1; // rank numbering starts at 1
-        if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
-            _Error_Handler((char*)__FILE__, __LINE__);
+        if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK) {
+            odrv.misconfigured_ = true; // TODO: this is a bit of an abuse of this flag
+            return;
+        }
     }
 
     HAL_ADC_Start_DMA(&hadc1, reinterpret_cast<uint32_t*>(adc_measurements_), ADC_CHANNEL_COUNT);
@@ -531,97 +528,6 @@ void update_brake_current() {
     int low_off = high_on - TIM_APB1_DEADTIME_CLOCKS;
     if (low_off < 0) low_off = 0;
     safety_critical_apply_brake_resistor_timings(low_off, high_on);
-}
-
-
-/* RC PWM input --------------------------------------------------------------*/
-
-void pwm_in_init() {
-    TIM_IC_InitTypeDef sConfigIC;
-    sConfigIC.ICPolarity = TIM_INPUTCHANNELPOLARITY_BOTHEDGE;
-    sConfigIC.ICSelection = TIM_ICSELECTION_DIRECTTI;
-    sConfigIC.ICPrescaler = TIM_ICPSC_DIV1;
-    sConfigIC.ICFilter = 15;
-
-    uint32_t channels[] = {TIM_CHANNEL_1, TIM_CHANNEL_2, TIM_CHANNEL_3, TIM_CHANNEL_4};
-
-    for (size_t i = 0; i < 4; ++i) {
-        if (!fibre::is_endpoint_ref_valid(odrv.config_.pwm_mappings[i].endpoint))
-            continue;
-        HAL_TIM_IC_ConfigChannel(&htim5, &sConfigIC, channels[i]);
-        HAL_TIM_IC_Start_IT(&htim5, channels[i]);
-    }
-}
-
-//TODO: These expressions have integer division by 1MHz, so it will be incorrect for clock speeds of not-integer MHz
-#define TIM_2_5_CLOCK_HZ        TIM_APB1_CLOCK_HZ
-#define PWM_MIN_HIGH_TIME          ((TIM_2_5_CLOCK_HZ / 1000000UL) * 1000UL) // 1ms high is considered full reverse
-#define PWM_MAX_HIGH_TIME          ((TIM_2_5_CLOCK_HZ / 1000000UL) * 2000UL) // 2ms high is considered full forward
-#define PWM_MIN_LEGAL_HIGH_TIME    ((TIM_2_5_CLOCK_HZ / 1000000UL) * 500UL) // ignore high periods shorter than 0.5ms
-#define PWM_MAX_LEGAL_HIGH_TIME    ((TIM_2_5_CLOCK_HZ / 1000000UL) * 2500UL) // ignore high periods longer than 2.5ms
-#define PWM_INVERT_INPUT        false
-
-/**
- * @param channel: A channel number in [0, 3]
- */
-void handle_pulse(int channel, uint32_t high_time) {
-    if (high_time < PWM_MIN_LEGAL_HIGH_TIME || high_time > PWM_MAX_LEGAL_HIGH_TIME)
-        return;
-
-    if (high_time < PWM_MIN_HIGH_TIME)
-        high_time = PWM_MIN_HIGH_TIME;
-    if (high_time > PWM_MAX_HIGH_TIME)
-        high_time = PWM_MAX_HIGH_TIME;
-    float fraction = (float)(high_time - PWM_MIN_HIGH_TIME) / (float)(PWM_MAX_HIGH_TIME - PWM_MIN_HIGH_TIME);
-    float value = odrv.config_.pwm_mappings[channel].min +
-                  (fraction * (odrv.config_.pwm_mappings[channel].max - odrv.config_.pwm_mappings[channel].min));
-
-    fibre::set_endpoint_from_float(odrv.config_.pwm_mappings[channel].endpoint, value);
-}
-
-/**
- * @param channel: A channel number in [0, 3]
- */
-void pwm_in_cb_for_channel(int channel, uint32_t timestamp) {
-    static uint32_t last_timestamp[4] = { 0 };
-    static bool last_pin_state[4] = { false };
-    static bool last_sample_valid[4] = { false };
-
-    if (channel >= 4)
-        return;
-    Stm32Gpio gpio = get_gpio(pwm_in_gpios[channel]);
-    if (!gpio)
-        return;
-    bool current_pin_state = gpio.read();
-
-    if (last_sample_valid[channel]
-        && (last_pin_state[channel] != PWM_INVERT_INPUT)
-        && (current_pin_state == PWM_INVERT_INPUT)) {
-        handle_pulse(channel, timestamp - last_timestamp[channel]);
-    }
-
-    last_timestamp[channel] = timestamp;
-    last_pin_state[channel] = current_pin_state;
-    last_sample_valid[channel] = true;
-}
-
-void pwm_in_cb(TIM_HandleTypeDef *htim) {
-    if(__HAL_TIM_GET_FLAG(htim, TIM_FLAG_CC1)) {
-        __HAL_TIM_CLEAR_IT(htim, TIM_IT_CC1);
-        pwm_in_cb_for_channel(0, htim->Instance->CCR1);
-    }
-    if(__HAL_TIM_GET_FLAG(htim, TIM_FLAG_CC2)) {
-        __HAL_TIM_CLEAR_IT(htim, TIM_IT_CC2);
-        pwm_in_cb_for_channel(1, htim->Instance->CCR2);
-    }
-    if(__HAL_TIM_GET_FLAG(htim, TIM_FLAG_CC3)) {
-        __HAL_TIM_CLEAR_IT(htim, TIM_IT_CC3);
-        pwm_in_cb_for_channel(2, htim->Instance->CCR3);
-    }
-    if(__HAL_TIM_GET_FLAG(htim, TIM_FLAG_CC4)) {
-        __HAL_TIM_CLEAR_IT(htim, TIM_IT_CC4);
-        pwm_in_cb_for_channel(3, htim->Instance->CCR4);
-    }
 }
 
 

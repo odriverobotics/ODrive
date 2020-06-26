@@ -7,11 +7,15 @@
 GPIO_MODE_DIGITAL                        = 0
 GPIO_MODE_ANALOG_IN                      = 1
 GPIO_MODE_UART0                          = 2
-GPIO_MODE_PWM0                           = 3
-GPIO_MODE_CAN0                           = 4
-GPIO_MODE_I2C0                           = 5
-GPIO_MODE_ENC0                           = 6
-GPIO_MODE_ENC1                           = 7
+GPIO_MODE_UART1                          = 3
+GPIO_MODE_UART2                          = 4
+GPIO_MODE_CAN0                           = 5
+GPIO_MODE_I2C0                           = 6
+GPIO_MODE_SPI0                           = 7
+GPIO_MODE_PWM0                           = 8
+GPIO_MODE_ENC0                           = 9
+GPIO_MODE_ENC1                           = 10
+GPIO_MODE_ENC2                           = 11
 
 # ODrive.Can.Protocol
 PROTOCOL_SIMPLE                          = 0
