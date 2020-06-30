@@ -59,14 +59,13 @@ OnboardThermistorCurrentLimiter::OnboardThermistorCurrentLimiter(uint16_t adc_ch
 {
 }
 
-OffboardThermistorCurrentLimiter::OffboardThermistorCurrentLimiter(Config_t& config) :
+OffboardThermistorCurrentLimiter::OffboardThermistorCurrentLimiter() :
     ThermistorCurrentLimiter(UINT16_MAX,
-                             &config.thermistor_poly_coeffs[0],
+                             &config_.thermistor_poly_coeffs[0],
                              num_coeffs_,
-                             config.temp_limit_lower,
-                             config.temp_limit_upper,
-                             config.enabled),
-    config_(config)
+                             config_.temp_limit_lower,
+                             config_.temp_limit_upper,
+                             config_.enabled)
 {
     decode_pin();
 }

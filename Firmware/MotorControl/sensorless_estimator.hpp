@@ -9,12 +9,10 @@ public:
         float pm_flux_linkage = 1.58e-3f; // [V / (rad/s)]  { 5.51328895422 / (<pole pairs> * <rpm/v>) }
     };
 
-    explicit SensorlessEstimator(Config_t& config);
-
     bool update();
 
     Axis* axis_ = nullptr; // set by Axis constructor
-    Config_t& config_;
+    Config_t config_;
 
     // TODO: expose on protocol
     Error error_ = ERROR_NONE;

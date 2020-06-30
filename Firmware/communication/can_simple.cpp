@@ -26,8 +26,8 @@ void CANSimple::handle_can_message(can_Message_t& msg) {
 
     bool validAxis = false;
     for (uint8_t i = 0; i < AXIS_COUNT; i++) {
-        if ((axes[i]->config_.can_node_id == nodeID) && (axes[i]->config_.can_node_id_extended == msg.isExt)) {
-            axis = axes[i];
+        if ((axes[i].config_.can_node_id == nodeID) && (axes[i].config_.can_node_id_extended == msg.isExt)) {
+            axis = &axes[i];
             if (!validAxis) {
                 validAxis = true;
             } else {

@@ -64,9 +64,9 @@ public:
     };
 
     virtual ~OffboardThermistorCurrentLimiter() = default;
-    OffboardThermistorCurrentLimiter(Config_t& config);
+    OffboardThermistorCurrentLimiter();
 
-    Config_t& config_;
+    Config_t config_;
 
 private:
     void decode_pin();

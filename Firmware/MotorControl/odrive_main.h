@@ -109,7 +109,6 @@ class Axis;
 class Motor;
 class ODriveCAN;
 
-extern std::array<Axis*, AXIS_COUNT> axes;
 extern ODriveCAN *odCAN;
 
 // if you use the oscilloscope feature you can bump up this value
@@ -178,7 +177,7 @@ public:
         return cnt += delta;
     }
 
-    Axis& get_axis(int num) { return *axes[num]; }
+    Axis& get_axis(int num) { return axes[num]; }
     ODriveCAN& get_can() { return *odCAN; }
 
     float& vbus_voltage_ = ::vbus_voltage; // TODO: make this the actual variable

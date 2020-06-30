@@ -44,7 +44,10 @@ public:
         void set_input_filter_bandwidth(float value) { input_filter_bandwidth = value; parent->update_filter_gains(); }
     };
 
-    explicit Controller(Config_t& config);
+    Controller() {}
+    
+    bool apply_config();
+
     void reset();
     void set_error(Error error);
 
@@ -62,7 +65,7 @@ public:
     void update_filter_gains();
     bool update(float* torque_setpoint);
 
-    Config_t& config_;
+    Config_t config_;
     Axis* axis_ = nullptr; // set by Axis constructor
 
     Error error_ = ERROR_NONE;

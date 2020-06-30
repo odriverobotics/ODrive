@@ -76,8 +76,8 @@ bool brake_resistor_saturated = false;
 void low_level_fault(Motor::Error error) {
     // Disable all motors NOW!
     for (size_t i = 0; i < AXIS_COUNT; ++i) {
-        safety_critical_disarm_motor_pwm(axes[i]->motor_);
-        axes[i]->motor_.error_ |= error;
+        safety_critical_disarm_motor_pwm(axes[i].motor_);
+        axes[i].motor_.error_ |= error;
     }
 
     safety_critical_disarm_brake_resistor();
@@ -162,7 +162,7 @@ void safety_critical_disarm_brake_resistor() {
     htim2.Instance->CCR3 = 0;
     htim2.Instance->CCR4 = TIM_APB1_PERIOD_CLOCKS + 1;
     for (size_t i = 0; i < AXIS_COUNT; ++i) {
-        safety_critical_disarm_motor_pwm(axes[i]->motor_);
+        safety_critical_disarm_motor_pwm(axes[i].motor_);
     }
     cpu_exit_critical(mask);
 }
@@ -190,7 +190,7 @@ void safety_critical_apply_brake_resistor_timings(uint32_t low_off, uint32_t hig
 void start_adc_pwm() {
     // Disarm motors
     for (size_t i = 0; i < AXIS_COUNT; ++i) {
-        safety_critical_disarm_motor_pwm(axes[i]->motor_);
+        safety_critical_disarm_motor_pwm(axes[i].motor_);
     }
 
     for (Motor& motor: motors) {
@@ -395,9 +395,9 @@ void pwm_trig_adc_cb(ADC_HandleTypeDef* hadc, bool injected) {
     // Motor 1 is on Timer 8, which triggers ADC 2 and 3 on a regular conversion
     // If the corresponding timer is counting up, we just sampled in SVM vector 0, i.e. real current
     // If we are counting down, we just sampled in SVM vector 7, with zero current
-    Axis& axis = injected ? *axes[0] : *axes[1];
+    Axis& axis = injected ? axes[0] : axes[1];
     int axis_num = injected ? 0 : 1;
-    Axis& other_axis = injected ? *axes[1] : *axes[0];
+    Axis& other_axis = injected ? axes[1] : axes[0];
     bool counting_down = axis.motor_.timer_->Instance->CR1 & TIM_CR1_DIR;
     bool current_meas_not_DC_CAL = !counting_down;
 
@@ -409,9 +409,9 @@ void pwm_trig_adc_cb(ADC_HandleTypeDef* hadc, bool injected) {
 
     bool update_timings = false;
     if (hadc == &hadc2) {
-        if (&axis == axes[1] && counting_down)
+        if (&axis == &axes[1] && counting_down)
             update_timings = true; // update timings of M0
-        else if (&axis == axes[0] && !counting_down)
+        else if (&axis == &axes[0] && !counting_down)
             update_timings = true; // update timings of M1
 
         // TODO: this is out of place here. However when moving it somewhere
@@ -484,8 +484,8 @@ void pwm_trig_adc_cb(ADC_HandleTypeDef* hadc, bool injected) {
 void update_brake_current() {
     float Ibus_sum = 0.0f;
     for (size_t i = 0; i < AXIS_COUNT; ++i) {
-        if (axes[i]->motor_.armed_state_ == Motor::ARMED_STATE_ARMED) {
-            Ibus_sum += axes[i]->motor_.current_control_.Ibus;
+        if (axes[i].motor_.armed_state_ == Motor::ARMED_STATE_ARMED) {
+            Ibus_sum += axes[i].motor_.current_control_.Ibus;
         }
     }
     

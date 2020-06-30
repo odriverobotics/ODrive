@@ -94,6 +94,51 @@ Encoder encoders[AXIS_COUNT] = {
     }
 };
 
+// TODO: this has no hardware dependency and should be allocated depending on config
+Endstop endstops[2 * AXIS_COUNT];
+
+SensorlessEstimator sensorless_estimators[AXIS_COUNT];
+Controller controllers[AXIS_COUNT];
+TrapezoidalTrajectory trap[AXIS_COUNT];
+OffboardThermistorCurrentLimiter motor_thermistors[AXIS_COUNT];
+
+std::array<Axis, AXIS_COUNT> axes{{
+    {
+        0, // axis_num
+        1, // step_gpio_pin
+        2, // dir_gpio_pin
+        (osPriority)(osPriorityHigh + (osPriority)1), // thread_priority
+        encoders[0], // encoder
+        sensorless_estimators[0], // sensorless_estimator
+        controllers[0], // controller
+        fet_thermistors[0], // fet_thermistor
+        motor_thermistors[0], // motor_thermistor
+        motors[0], // motor
+        trap[0], // trap
+        endstops[0], endstops[1], // min_endstop, max_endstop
+    },
+    {
+        1, // axis_num
+#if HW_VERSION_MAJOR == 3 && HW_VERSION_MINOR >= 5
+        7, // step_gpio_pin
+        8, // dir_gpio_pin
+#else
+        3, // step_gpio_pin
+        4, // dir_gpio_pin
+#endif
+        osPriorityHigh, // thread_priority
+        encoders[1], // encoder
+        sensorless_estimators[1], // sensorless_estimator
+        controllers[1], // controller
+        fet_thermistors[1], // fet_thermistor
+        motor_thermistors[1], // motor_thermistor
+        motors[1], // motor
+        trap[1], // trap
+        endstops[2], endstops[3], // min_endstop, max_endstop
+    },
+}};
+
+
 
 #if (HW_VERSION_MINOR == 1) || (HW_VERSION_MINOR == 2)
 Stm32Gpio gpios[] = {

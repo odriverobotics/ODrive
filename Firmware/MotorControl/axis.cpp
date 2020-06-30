@@ -8,8 +8,9 @@
 #include "communication/interface_can.hpp"
 
 Axis::Axis(int axis_num,
-           const AxisHardwareConfig_t& hw_config,
-           Config_t& config,
+           uint16_t default_step_gpio_pin,
+           uint16_t default_dir_gpio_pin,
+           osPriority thread_priority,
            Encoder& encoder,
            SensorlessEstimator& sensorless_estimator,
            Controller& controller,
@@ -20,8 +21,9 @@ Axis::Axis(int axis_num,
            Endstop& min_endstop,
            Endstop& max_endstop)
     : axis_num_(axis_num),
-      hw_config_(hw_config),
-      config_(config),
+      default_step_gpio_pin_(default_step_gpio_pin),
+      default_dir_gpio_pin_(default_dir_gpio_pin),
+      thread_priority_(thread_priority),
       encoder_(encoder),
       sensorless_estimator_(sensorless_estimator),
       controller_(controller),
@@ -47,8 +49,6 @@ Axis::Axis(int axis_num,
     trap_traj_.axis_ = this;
     min_endstop_.axis_ = this;
     max_endstop_.axis_ = this;
-    decode_step_dir_pins();
-    watchdog_feed();
 }
 
 Axis::LockinConfig_t Axis::default_calibration() {
@@ -83,6 +83,19 @@ static void step_cb_wrapper(void* ctx) {
     reinterpret_cast<Axis*>(ctx)->step_cb();
 }
 
+bool Axis::apply_config() {
+    config_.parent = this;
+    decode_step_dir_pins();
+    watchdog_feed();
+    return true;
+}
+
+void Axis::clear_config() {
+    config_ = {};
+    config_.step_gpio_pin = default_step_gpio_pin_;
+    config_.dir_gpio_pin = default_dir_gpio_pin_;
+    config_.can_node_id = axis_num_;
+}
 
 // @brief Sets up all components of the axis,
 // such as gate driver and encoder hardware.
@@ -97,7 +110,7 @@ static void run_state_machine_loop_wrapper(void* ctx) {
 
 // @brief Starts run_state_machine_loop in a new thread
 void Axis::start_thread() {
-    osThreadDef(thread_def, run_state_machine_loop_wrapper, hw_config_.thread_priority, 0, stack_size_ / sizeof(StackType_t));
+    osThreadDef(thread_def, run_state_machine_loop_wrapper, thread_priority_, 0, stack_size_ / sizeof(StackType_t));
     thread_id_ = osThreadCreate(osThread(thread_def), this);
     thread_id_valid_ = true;
 }
@@ -123,16 +136,6 @@ void Axis::step_cb() {
         controller_.input_pos_ += dir * config_.counts_per_step;
         controller_.input_pos_updated();
     }
-};
-
-void Axis::load_default_step_dir_pin_config(
-        const AxisHardwareConfig_t& hw_config, Config_t* config) {
-    config->step_gpio_pin = hw_config.step_gpio_pin;
-    config->dir_gpio_pin = hw_config.dir_gpio_pin;
-}
-
-void Axis::load_default_can_id(const int& id, Config_t& config){
-    config.can_node_id = id;
 }
 
 void Axis::decode_step_dir_pins() {

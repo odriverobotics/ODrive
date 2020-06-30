@@ -123,7 +123,6 @@ public:
     void tim_update_cb();
 
     // hardware config
-
     TIM_HandleTypeDef* const timer_;
     const uint16_t control_deadline_;
     const float shunt_conductance_;

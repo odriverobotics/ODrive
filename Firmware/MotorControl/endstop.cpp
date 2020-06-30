@@ -1,11 +1,5 @@
 #include <odrive_main.h>
 
-Endstop::Endstop(Endstop::Config_t& config)
-    : config_(config) {
-    update_config();
-    debounceTimer_.setIncrement(current_meas_period);
-}
-
 
 void Endstop::update() {
     debounceTimer_.update();
@@ -29,9 +23,10 @@ bool Endstop::get_state() {
     return endstop_state_;
 }
 
-void Endstop::update_config() {
+bool Endstop::apply_config() {
     set_enabled(config_.enabled);
     debounceTimer_.setIncrement(config_.debounce_ms * 0.001f);
+    return true;
 }
 
 void Endstop::set_enabled(bool enable) {
