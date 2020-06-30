@@ -142,17 +142,17 @@ class BulkCapture:
     def __init__(self,
                  get_var_callback,
                  data_rate=500.0,
-                 length=2.0):
+                 duration=2.0):
         from threading import Event, Thread
-        import pandas as pd
+        import numpy as np
 
+        self.get_var_callback = get_var_callback
         self.event = Event()
         def loop():
             vals = []
             start_time = time.monotonic()
-            total_samples = int(length * data_rate)
             period = 1.0 / data_rate
-            for i in range(total_samples):
+            while time.monotonic() - start_time < duration:
                 try:
                     data = get_var_callback()
                 except Exception as ex:
@@ -163,17 +163,26 @@ class BulkCapture:
                 relative_time = time.monotonic() - start_time
                 vals.append([relative_time] + data)
                 time.sleep(period - (relative_time % period)) # this ensures consistently timed samples
-            self.data = pd.DataFrame(vals) # A lock is not really necessary due to the event
-            print("Achieved average data rate: {}Hz".format(total_samples / self.data.iloc[-1, 0]))
-            print("If this rate is significantly lower than what you specified, consider lowering it below the achieved value for more consistent sampling.")
+            self.data = np.array(vals) # A lock is not really necessary due to the event
+            print("Capture complete")
+            achieved_data_rate = len(self.data) / self.data[-1, 0]
+            if achieved_data_rate < (data_rate * 0.9):
+                print("Achieved average data rate: {}Hz".format(achieved_data_rate))
+                print("If this rate is significantly lower than what you specified, consider lowering it below the achieved value for more consistent sampling.")
             self.event.set() # tell the main thread that the bulk capture is complete
         Thread(target=loop, daemon=True).start()
     
-    def plot_data(self):
+    def plot(self):
         import matplotlib.pyplot as plt
-        plt.plot(self.data[0], self.data.drop(0, axis=1))
+        import inspect
+        from textwrap import wrap
+        plt.plot(self.data[:,0], self.data[:,1:])
         plt.xlabel("Time (seconds)")
-        plt.ylabel("Counts")
+        title = (str(inspect.getsource(self.get_var_callback))
+                .strip("['\\n']")
+                .split(" = ")[1])
+        plt.title("\n".join(wrap(title, 60)))
+        plt.legend(range(self.data.shape[1]-1))
         plt.show()
 
 
@@ -205,7 +214,7 @@ def step_and_plot(  axis,
     
     capture = BulkCapture(get_var_callback,
                           data_rate=data_rate,
-                          length = initial_settle_time + settle_time)
+                          duration=initial_settle_time + settle_time)
 
     set_setpoint(initial_setpoint)
     time.sleep(initial_settle_time)
