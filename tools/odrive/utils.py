@@ -224,7 +224,7 @@ def step_and_plot(  axis,
 
     axis.requested_state = AXIS_STATE_IDLE
     axis.controller.config.control_mode = initial_control_mode
-    capture.plot_data()
+    capture.plot()
 
 
 def print_drv_regs(name, motor):
