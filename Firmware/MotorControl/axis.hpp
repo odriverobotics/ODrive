@@ -143,6 +143,7 @@ public:
         controller_.error_ = Controller::ERROR_NONE;
         sensorless_estimator_.error_ = SensorlessEstimator::ERROR_NONE;
         encoder_.error_ = Encoder::ERROR_NONE;
+        encoder_.spi_error_rate_ = 0.0f;
 
         error_ = Axis::ERROR_NONE;
     }
