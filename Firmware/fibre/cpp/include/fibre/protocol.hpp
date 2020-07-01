@@ -591,7 +591,17 @@ static bool to_string(const T& value, char * buffer, size_t length, ...) {
 
 template<typename T, typename = typename format_traits_t<T>::type>
 static bool from_string(const char * buffer, size_t length, T* property, int) {
-    return sscanf(buffer, format_traits_t<T>::fmt, property) == 1;
+    // Note for T == uint8_t: Even though we supposedly use the correct format
+    // string sscanf treats our pointer as pointer-to-int instead of
+    // pointer-to-uint8_t. To avoid an unexpected memory access we first read
+    // into a union.
+    union { T t; int i; } val;
+    if (sscanf(buffer, format_traits_t<T>::fmt, &val.t) == 1) {
+        *property = val.t;
+        return true;
+    } else {
+        return false;
+    }
 }
 // Special case for float because printf promotes float to double, and we get warnings
 template<typename T = float>
