@@ -173,10 +173,9 @@ bool Axis::do_checks() {
     // controller_.do_checks();
 
     // Check for endstop presses
-    bool vel_dependent_stopping = (current_state_ == AXIS_STATE_HOMING) && (controller_.config_.control_mode >= Controller::CTRL_MODE_VELOCITY_CONTROL);
-    if (min_endstop_.config_.enabled && min_endstop_.get_state() && (!vel_dependent_stopping || controller_.vel_setpoint_ < 0.0f)) {
+    if (min_endstop_.config_.enabled && min_endstop_.get_state() && !(current_state_ == AXIS_STATE_HOMING)) {
         error_ |= ERROR_MIN_ENDSTOP_PRESSED;
-    } else if (max_endstop_.config_.enabled && max_endstop_.get_state() && (!vel_dependent_stopping || controller_.vel_setpoint_ > 0.0f)) {
+    } else if (max_endstop_.config_.enabled && max_endstop_.get_state() && !(current_state_ == AXIS_STATE_HOMING)) {
         error_ |= ERROR_MAX_ENDSTOP_PRESSED;
     }
 
