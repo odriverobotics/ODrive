@@ -56,3 +56,5 @@ ODrive\.files
 ODrive\.includes
 
 Firmware/Tests/bin/
+/Install
+*.zip
