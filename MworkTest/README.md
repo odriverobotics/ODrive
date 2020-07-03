@@ -116,9 +116,45 @@ odrv0.axis0.requested_state = AXIS_STATE_IDLE
 
 # PID
 
+
+
 ```
 odrv0.axis0.controller.config.pos_gain = 2000.0 
 odrv0.axis0.controller.config.vel_gain = 0.000001
 odrv0.axis0.controller.config.vel_integrator_gain = 
 ```
 odrv0.axis0.controller.input_pos = 10000
+
+
+odrv0.axis0.controller.config.input_mode = INPUT_MODE_POS_FILTER
+    enum InputMode_t{
+        INPUT_MODE_INACTIVE,
+        INPUT_MODE_PASSTHROUGH,
+        INPUT_MODE_VEL_RAMP,
+        INPUT_MODE_POS_FILTER,
+        INPUT_MODE_MIX_CHANNELS,
+        INPUT_MODE_TRAP_TRAJ,
+        INPUT_MODE_CURRENT_RAMP,
+        INPUT_MODE_MIRROR,
+    };
+
+		float pos_gain = 20.0f;                         // [(counts/s) / counts]
+        float vel_gain = 5.0f / 10000.0f;               // [A/(counts/s)]
+        float vel_integrator_gain = 10.0f / 10000.0f;   // [A/(counts/s * s)]
+        float vel_limit = 20000.0f;                     // [counts/s] Infinity to disable.
+        float vel_limit_tolerance = 1.2f;               // ratio to vel_lim. Infinity to disable.
+        float vel_ramp_rate = 10000.0f;                 // [(counts/s) / s]
+        float current_ramp_rate = 1.0f;                 // A / sec
+        bool setpoints_in_cpr = false;
+        float inertia = 0.0f;                           // [A/(count/s^2)]
+        float input_filter_bandwidth = 2.0f;            // [1/s]
+        float homing_speed = 2000.0f;                   // [counts/s]
+        Anticogging_t anticogging;
+        float gain_scheduling_width = 10.0f;
+        bool enable_gain_scheduling = false;
+        bool enable_vel_limit = true;
+        bool enable_overspeed_error = true;
+        bool enable_current_vel_limit = true;           // enable velocity limit in current control mode (requires a valid velocity estimator)
+        uint8_t axis_to_mirror = -1;
+        float mirror_ratio = 1.0f;
+        uint8_t load_encoder_axis = -1;     
