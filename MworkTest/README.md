@@ -55,7 +55,7 @@ odrv0.reboot()
 
 1. Connect Encoder
 -----------
-Connect by 7414 
+![Connect by 7414](odrive.png)
 ```
 The encoder's SCK, MISO (aka "DATA" on CUI encoders), GND and 3.3V should connect to the ODrive pins with the same label.
 The encoder's MOSI should be tied to 3.3V (AMS encoders only. CUI encoders don't have this pin.)
@@ -67,24 +67,23 @@ The encoder's Chip Select (aka nCS/CSn) can be connected to any of the ODrive's 
 
 ```
 odrv0.axis0.encoder.config.abs_spi_cs_gpio_pin = 6  # or which ever GPIO pin you choose
-odrv0.axis0.encoder.config.mode = 257
- # or ENCODER_MODE_SPI_ABS_AMS là x101 = 257
+odrv0.axis0.encoder.config.mode = 257               # or ENCODER_MODE_SPI_ABS_AMS là x101 = 257
 odrv0.axis0.encoder.config.cpr = 2**14              # or 2**12 for AMT232A and AMT233A
 odrv0.save_configuration()
 odrv0.reboot()
 ```
 
-3. Setting Encoder.
+3. Setting Encoder Calib.
 -----------
 
 
 ```
- odrv0.axis0.motor.config.motor_type = MOTOR_TYPE_HIGH_CURRENT select if you have a gimbal or high amp motor
- odrv0.axis0.motor.config.motor_type = MOTOR_TYPE_GIMBAL là 2
- odrv0.axis0.encoder.config.calib_range = 0.05 helps to relax the accuracy of encoder counts during calibration
- odrv0.axis0.motor.config.calibration_current = 10.0 sometimes needed if this is a large motor
- odrv0.axis0.motor.config.resistance_calib_max_voltage = 12.0 sometimes needed depending on motor
- odrv0.axis0.controller.config.vel_limit = 500000 low values result in the spinning motor stopping abruptly during calibration
+ odrv0.axis0.motor.config.motor_type = MOTOR_TYPE_HIGH_CURRENT   # select if you have a gimbal or high amp motor
+ odrv0.axis0.motor.config.motor_type = MOTOR_TYPE_GIMBAL         # là 2
+ odrv0.axis0.encoder.config.calib_range = 0.05                   # helps to relax the accuracy of encoder counts during calibration
+ odrv0.axis0.motor.config.calibration_current = 2.0             #sometimes needed if this is a large motor
+ odrv0.axis0.motor.config.resistance_calib_max_voltage = 12.0    # sometimes needed depending on motor
+ odrv0.axis0.controller.config.vel_limit = 500000                #low values result in the spinning motor stopping abruptly during calibration
 ```
 
 4. Calib
