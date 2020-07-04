@@ -1,17 +1,16 @@
 odrv0.axis0.current_state
 
 
-1. Dòng Điện ```odrv0.axis0.motor.config.current_lim = 10``` limit 10A
-2. Vận Tốc ```odrv0.axis0.controller.config.vel_limit = 20000``` la 20000[counts/s].
+1. Dòng Điện ```odrv0.axis0.motor.config.current_lim = 3``` limit 10A
+2. Vận Tốc ```odrv0.axis0.controller.config.vel_limit = 500000``` la 20000[counts/s].
 3. Calibration current
 4. Điện trở xả ```odrv0.config.brake_resistance = 0.5``` Điện trở xả 
-5. Poles ```odrv0.axis0.motor.config.pole_pairs = 24 ``` Poles pair
+5. Poles ```odrv0.axis0.motor.config.pole_pairs = 21 ``` Poles pair
 6. Motor Type ```odrv0.axis0.motor.config.motor_type = MOTOR_TYPE_HIGH_CURRENT```
 
 - MOTOR_TYPE_HIGH_CURRENT
 - MOTOR_TYPE_GIMBAL
 
-7. Encoder ```odrv0.axis0.encoder.config.cpr =  ```  Encoder Count Per Revolution [CPR]
 8. Save Config ```odrv0.save_configuration() ```
 9. Reboot ```odrv0.reboot()```
 
@@ -20,11 +19,11 @@ odrv0.axis0.current_state
 
 Kv (rpm/V)
 
-odrv0.axis0.controller.config.control_mode = 1
+odrv0.axis0.controller.config.control_mode = 3
 ```
-CTRL_MODE_POSITION_CONTROL  1
+CTRL_MODE_POSITION_CONTROL  3
 CTRL_MODE_VELOCITY_CONTROL  2
-CTRL_MODE_CURRENT_CONTROL   3
+CTRL_MODE_CURRENT_CONTROL   1
 CTRL_MODE_VOLTAGE_CONTROL 
 ```
 
@@ -37,14 +36,15 @@ CTRL_MODE_VOLTAGE_CONTROL
 
 
 # calib motor 
+
 ```
 odrv0.axis0.requested_stateư=AXIS_STATE_MOTOR_CALIBRATION 
 
 odrv0.axis0.motor.config.pre_calibrated =True de luu thong so calib motor ( R và L)
 
 Hoặc cài tay
-odrv0.axis0.motor.config.phase_resistance 
-odrv0.axis0.motor.config.phase_inductance
+odrv0.axis0.motor.config.phase_resistance = 0.13
+odrv0.axis0.motor.config.phase_inductance = 0.00002
 ```
 ```
 odrv0.save_configuration()
@@ -53,16 +53,16 @@ odrv0.reboot()
 
 # SPI : encoder
 
-1. Connect
+1. Connect Encoder
 -----------
-
+Connect by 7414 
 ```
 The encoder's SCK, MISO (aka "DATA" on CUI encoders), GND and 3.3V should connect to the ODrive pins with the same label.
 The encoder's MOSI should be tied to 3.3V (AMS encoders only. CUI encoders don't have this pin.)
 The encoder's Chip Select (aka nCS/CSn) can be connected to any of the ODrive's GPIOs (caution: GPIOs 1 and 2 are usually used by UART).
 ```
 
-2. Setting.
+2. Setting Encoder.
 ---------
 
 ```
