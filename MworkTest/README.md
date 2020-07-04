@@ -9,11 +9,8 @@
 - [x] ```odrv0.axis0.motor.config.calibration_current = 2.0```
 - [x] ```odrv0.config.brake_resistance = 0.5``` Điện trở xả 
 - [x] ```odrv0.axis0.motor.config.pole_pairs = 21 ``` Poles pair
-- [x] ```odrv0.axis0.motor.config.motor_type = MOTOR_TYPE_HIGH_CURRENT```
-
-- MOTOR_TYPE_HIGH_CURRENT
-- MOTOR_TYPE_GIMBAL
-
+- [ ] ```odrv0.axis0.motor.config.motor_type = MOTOR_TYPE_HIGH_CURRENT```   # select if you have a gimbal or high amp motor
+- [x] ```odrv0.axis0.motor.config.motor_type = MOTOR_TYPE_GIMBAL```         # là 2
 - [x] ```odrv0.save_configuration() ```
 - [x] ```odrv0.reboot()```
 
@@ -65,21 +62,19 @@ odrv0.reboot()
 3. Setting Encoder Calib.
 -----------
 
-
-
- - [ ] odrv0.axis0.motor.config.motor_type = MOTOR_TYPE_HIGH_CURRENT   # select if you have a gimbal or high amp motor
- - [x] odrv0.axis0.motor.config.motor_type = MOTOR_TYPE_GIMBAL         # là 2
  - [x] odrv0.axis0.encoder.config.calib_range = 0.05                   # helps to relax the accuracy of encoder counts during calibration
- - [x] odrv0.axis0.motor.config.calibration_current = 2.0             #sometimes needed if this is a large motor
  - [x] odrv0.axis0.motor.config.resistance_calib_max_voltage = 12.0    # sometimes needed depending on motor
- - [x] odrv0.axis0.controller.config.vel_limit = 500000                #low values result in the spinning motor stopping abruptly during calibration
-
+ 
+ Đôi khi cần chỉnh các thông số motor lại:
+ 
+ - [x] ```odrv0.axis0.controller.config.vel_limit = 500000``` la 20000[counts/s].
+ - [x] ```odrv0.axis0.motor.config.calibration_current = 2.0```
 
 4. Calib
 -----------------
 
 - [x] CHuyển Fre Calib to False ```odrv0.axis0.encoder.config.pre_calibrated = False```
-- [x]  Chuyển mode calib         ```odrv0.axis0.requested_state = AXIS_STATE_ENCODER_OFFSET_CALIBRATION```
+- [x] Chuyển mode calib         ```odrv0.axis0.requested_state = AXIS_STATE_ENCODER_OFFSET_CALIBRATION```
 - [x] CHuyển Fre Calib to True  ```odrv0.axis0.encoder.config.pre_calibrated = True ```
 
 5. Save Calib
