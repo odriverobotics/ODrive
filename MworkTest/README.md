@@ -67,7 +67,7 @@ odrv0.reboot()
 
 
 
- - [] odrv0.axis0.motor.config.motor_type = MOTOR_TYPE_HIGH_CURRENT   # select if you have a gimbal or high amp motor
+ - [ ] odrv0.axis0.motor.config.motor_type = MOTOR_TYPE_HIGH_CURRENT   # select if you have a gimbal or high amp motor
  - [x] odrv0.axis0.motor.config.motor_type = MOTOR_TYPE_GIMBAL         # là 2
  - [x] odrv0.axis0.encoder.config.calib_range = 0.05                   # helps to relax the accuracy of encoder counts during calibration
  - [x] odrv0.axis0.motor.config.calibration_current = 2.0             #sometimes needed if this is a large motor
@@ -87,13 +87,12 @@ odrv0.reboot()
 
 Test
 
-```
-odrv0.axis0.requested_state = AXIS_STATE_CLOSED_LOOP_CONTROL    # Convert mode to close loop
-odrv0.axis0.controller.input_pos = 10000	 		# Di chuyển motor
-odrv0.axis0.requested_state = AXIS_STATE_IDLE			# Convert to free mode
-odrv0.save_configuration()
-odrv0.reboot()
-```
+- [x] odrv0.axis0.requested_state = AXIS_STATE_CLOSED_LOOP_CONTROL    # Convert mode to close loop
+- [x] odrv0.axis0.controller.input_pos = 10000	 		# Di chuyển motor
+- [x] odrv0.axis0.requested_state = AXIS_STATE_IDLE			# Convert to free mode
+- [x] odrv0.save_configuration()
+- [x] odrv0.reboot()
+
 
 # Step/Dir/Enbale
 
