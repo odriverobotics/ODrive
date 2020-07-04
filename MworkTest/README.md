@@ -1,6 +1,6 @@
 # Get State machine của Device
 
-``` odrv0.axis0.current_state ```
+- [x] ``` odrv0.axis0.current_state ```
 
 # Cài đặt thông số motor
 
@@ -18,26 +18,6 @@
 - [x] ```odrv0.reboot()```
 
 
-
-
-Kv (rpm/V)
-
-odrv0.axis0.controller.config.control_mode = 3
-```
-CTRL_MODE_POSITION_CONTROL  3
-CTRL_MODE_VELOCITY_CONTROL  2
-CTRL_MODE_CURRENT_CONTROL   1
-CTRL_MODE_VOLTAGE_CONTROL 
-```
-
-#define R_PHASE 0.13f           //Ohms
-#define L_D 0.00002f            //Henries
-#define L_Q 0.00002f            //Henries
-#define KT .08f                 //N-m per peak phase amp, = WB*NPP*3/2
-#define NPP 21                  //Number of pole pairs
-
-
-
 # calib motor 
 
 ```
@@ -52,7 +32,7 @@ odrv0.axis0.motor.config.phase_inductance = 0.00002
 
 ```
 Save và reboot 
-
+------------
 ```
 odrv0.save_configuration()
 odrv0.reboot()
@@ -75,25 +55,25 @@ odrv0.reboot()
 ---------
 
 ```
-- [x] odrv0.axis0.encoder.config.abs_spi_cs_gpio_pin = 6  # or which ever GPIO pin you choose
-- [x] odrv0.axis0.encoder.config.mode = 257               # or ENCODER_MODE_SPI_ABS_AMS là x101 = 257
-- [x] odrv0.axis0.encoder.config.cpr = 2**14              # or 2**12 for AMT232A and AMT233A
-- [x] odrv0.save_configuration()
-- [x] odrv0.reboot()
+- odrv0.axis0.encoder.config.abs_spi_cs_gpio_pin = 6  # or which ever GPIO pin you choose
+- odrv0.axis0.encoder.config.mode = 257               # or ENCODER_MODE_SPI_ABS_AMS là x101 = 257
+- odrv0.axis0.encoder.config.cpr = 2**14              # or 2**12 for AMT232A and AMT233A
+- odrv0.save_configuration()
+- odrv0.reboot()
 ```
 
 3. Setting Encoder Calib.
 -----------
 
 
-```
+
  - [] odrv0.axis0.motor.config.motor_type = MOTOR_TYPE_HIGH_CURRENT   # select if you have a gimbal or high amp motor
  - [x] odrv0.axis0.motor.config.motor_type = MOTOR_TYPE_GIMBAL         # là 2
  - [x] odrv0.axis0.encoder.config.calib_range = 0.05                   # helps to relax the accuracy of encoder counts during calibration
  - [x] odrv0.axis0.motor.config.calibration_current = 2.0             #sometimes needed if this is a large motor
  - [x] odrv0.axis0.motor.config.resistance_calib_max_voltage = 12.0    # sometimes needed depending on motor
  - [x] odrv0.axis0.controller.config.vel_limit = 500000                #low values result in the spinning motor stopping abruptly during calibration
-```
+
 
 4. Calib
 -----------------
@@ -118,6 +98,7 @@ odrv0.reboot()
 # Step/Dir/Enbale
 
 1. Cài Pin
+----------
 
 ```
 odrv0.axis0.config.step_gpio_pin = 1
@@ -125,24 +106,27 @@ odrv0.axis0.config.dir_gpio_pin =  2
 odrv0.axis0.config.en_gpio_pin =  5
 ```
 2. Enbale status 
+------------
 
 ```
 odrv0.axis0.config.enable_step_dir = True
 odrv0.axis0.config.use_enable_pin =  True
 ```
 3. Cài trạng thái của chân enable
+-----------
 
 ```
 odrv0.axis0.config.enable_pin_active_low = False
 ```
 4. Thông số khác
+-----------
 
 ```
 odrv0.axis0.config.step_dir_always_on = False
 odrv0.axis0.config.counts_per_step =  2.0
 ```
 5. Save và reboot
-
+-----------------
 ```
 odrv0.save_configuration()
 odrv0.reboot()
