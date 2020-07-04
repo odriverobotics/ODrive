@@ -1,4 +1,6 @@
-odrv0.axis0.current_state
+# Get State machine của Device
+
+```odrv0.axis0.current_state````
 
 # Cài đặt thông số motor
 
