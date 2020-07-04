@@ -87,13 +87,14 @@ odrv0.reboot()
 ```
 
 4. Calib
+-----------------
 
- odrv0.axis0.encoder.config.pre_calibrated = False
+- ```odrv0.axis0.encoder.config.pre_calibrated = False```
 - Chuyển mode calib ```odrv0.axis0.requested_state = AXIS_STATE_ENCODER_OFFSET_CALIBRATION```
-
- odrv0.axis0.encoder.config.pre_calibrated = True 
+- ```odrv0.axis0.encoder.config.pre_calibrated = True ```
 
 5. Save Calib
+--------------
 
 Test
 
