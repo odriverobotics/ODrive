@@ -1,12 +1,13 @@
 odrv0.axis0.current_state
 
+# Cài đặt thông số motor
 
-1. Dòng Điện ```odrv0.axis0.motor.config.current_lim = 3``` limit 10A
-2. Vận Tốc ```odrv0.axis0.controller.config.vel_limit = 500000``` la 20000[counts/s].
-3. Calibration current
-4. Điện trở xả ```odrv0.config.brake_resistance = 0.5``` Điện trở xả 
-5. Poles ```odrv0.axis0.motor.config.pole_pairs = 21 ``` Poles pair
-6. Motor Type ```odrv0.axis0.motor.config.motor_type = MOTOR_TYPE_HIGH_CURRENT```
+- Dòng Điện ```odrv0.axis0.motor.config.current_lim = 3``` limit 10A
+- Vận Tốc ```odrv0.axis0.controller.config.vel_limit = 500000``` la 20000[counts/s].
+- Calibration current ```odrv0.axis0.motor.config.calibration_current = 2.0```
+- Điện trở xả ```odrv0.config.brake_resistance = 0.5``` Điện trở xả 
+- Poles ```odrv0.axis0.motor.config.pole_pairs = 21 ``` Poles pair
+- Motor Type ```odrv0.axis0.motor.config.motor_type = MOTOR_TYPE_HIGH_CURRENT```
 
 - MOTOR_TYPE_HIGH_CURRENT
 - MOTOR_TYPE_GIMBAL
@@ -46,6 +47,8 @@ Hoặc cài tay
 odrv0.axis0.motor.config.phase_resistance = 0.13
 odrv0.axis0.motor.config.phase_inductance = 0.00002
 ```
+Save và reboot 
+
 ```
 odrv0.save_configuration()
 odrv0.reboot()
@@ -89,9 +92,9 @@ odrv0.reboot()
 4. Calib
 -----------------
 
-- ```odrv0.axis0.encoder.config.pre_calibrated = False```
-- Chuyển mode calib ```odrv0.axis0.requested_state = AXIS_STATE_ENCODER_OFFSET_CALIBRATION```
-- ```odrv0.axis0.encoder.config.pre_calibrated = True ```
+- CHuyển Fre Calib to False ```odrv0.axis0.encoder.config.pre_calibrated = False```
+- Chuyển mode calib         ```odrv0.axis0.requested_state = AXIS_STATE_ENCODER_OFFSET_CALIBRATION```
+- CHuyển Fre Calib to True  ```odrv0.axis0.encoder.config.pre_calibrated = True ```
 
 5. Save Calib
 --------------
@@ -99,23 +102,46 @@ odrv0.reboot()
 Test
 
 ```
-odrv0.axis0.requested_state = AXIS_STATE_CLOSED_LOOP_CONTROL
-odrv0.axis0.controller.input_vel = 3000 let it loop a few times and then set:
-odrv0.axis0.requested_state = AXIS_STATE_IDLE
+odrv0.axis0.requested_state = AXIS_STATE_CLOSED_LOOP_CONTROL    # Convert mode to close loop
+odrv0.axis0.controller.input_pos = 10000	 		# Di chuyển motor
+odrv0.axis0.requested_state = AXIS_STATE_IDLE			# Convert to free mode
+odrv0.save_configuration()
+odrv0.reboot()
 ```
 
+# Step/Dir/Enbale
 
+1. Cài Pin
 
-odrv0.axis0.motor.config.current_lim = 3
-odrv0.axis0.motor.config.calibration_current = 2
-odrv0.axis0.encoder.config.pre_calibrated=False
-odrv0.axis0.requested_state = AXIS_STATE_ENCODER_OFFSET_CALIBRATION
-odrv0.axis0.encoder.config.pre_calibrated=true
-odrv0.axis0.requested_state = AXIS_STATE_CLOSED_LOOP_CONTROL 
-odrv0.axis0.requested_state = AXIS_STATE_IDLE 
+```
+odrv0.axis0.config.step_gpio_pin = 1
+odrv0.axis0.config.dir_gpio_pin =  2
+odrv0.axis0.config.en_gpio_pin =  5
+```
+2. Enbale status 
 
+```
+odrv0.axis0.config.enable_step_dir = True
+odrv0.axis0.config.use_enable_pin =  True
+```
+3. Cài trạng thái của chân enable
+
+```
+odrv0.axis0.config.enable_pin_active_low = False
+```
+4. Thông số khác
+
+```
+odrv0.axis0.config.step_dir_always_on = False
+odrv0.axis0.config.counts_per_step =  2.0
+```
+5. Save và reboot
+
+```
+odrv0.save_configuration()
+odrv0.reboot()
+```
 # PID
-
 
 
 ```
@@ -123,10 +149,9 @@ odrv0.axis0.controller.config.pos_gain = 2000.0
 odrv0.axis0.controller.config.vel_gain = 0.000001
 odrv0.axis0.controller.config.vel_integrator_gain = 
 ```
-odrv0.axis0.controller.input_pos = 10000
-
-
-odrv0.axis0.controller.config.input_mode = INPUT_MODE_POS_FILTER
+- Test Move ```odrv0.axis0.controller.input_pos = 10000```
+- Input Mode ```odrv0.axis0.controller.config.input_mode = 3```
+```
     enum InputMode_t{
         INPUT_MODE_INACTIVE,
         INPUT_MODE_PASSTHROUGH,
@@ -137,8 +162,8 @@ odrv0.axis0.controller.config.input_mode = INPUT_MODE_POS_FILTER
         INPUT_MODE_CURRENT_RAMP,
         INPUT_MODE_MIRROR,
     };
-
-		float pos_gain = 20.0f;                         // [(counts/s) / counts]
+```
+	float pos_gain = 20.0f;                         // [(counts/s) / counts]
         float vel_gain = 5.0f / 10000.0f;               // [A/(counts/s)]
         float vel_integrator_gain = 10.0f / 10000.0f;   // [A/(counts/s * s)]
         float vel_limit = 20000.0f;                     // [counts/s] Infinity to disable.
