@@ -178,7 +178,7 @@ class TestRegenProtection(TestClosedLoopControlBase):
             max_current = 15.0
         
             # Accept a bit of noise on Ibus
-            axis_ctx.parent.handle.config.dc_max_negative_current = -0.2
+            axis_ctx.parent.handle.config.dc_max_negative_current = -0.5
 
             logger.debug(f'Brake control test from {nominal_rps} rounds/s...')
             
@@ -228,6 +228,7 @@ class TestVelLimitInTorqueControl(TestClosedLoopControlBase):
 
             axis_ctx.handle.controller.config.vel_gain /= 10 # reduce the slope to make it easier to see what's going on
             vel_gain = axis_ctx.handle.controller.config.vel_gain
+            direction = axis_ctx.handle.motor.config.direction
             logger.debug(f'vel gain is {vel_gain}')
 
             axis_ctx.handle.controller.config.vel_limit = max_vel
@@ -238,7 +239,7 @@ class TestVelLimitInTorqueControl(TestClosedLoopControlBase):
 
             # Returns the expected limited setpoint for a given velocity and current
             def get_expected_setpoint(input_setpoint, velocity):
-                return clamp(clamp(input_setpoint / torque_constant, (velocity + max_vel) * -vel_gain / torque_constant, (velocity - max_vel) * -vel_gain / torque_constant), -max_current, max_current)
+                return clamp(clamp(input_setpoint / torque_constant, (velocity + max_vel) * -vel_gain / torque_constant, (velocity - max_vel) * -vel_gain / torque_constant), -max_current, max_current) * direction
 
             def data_getter():
                 # sample velocity twice to avoid systematic bias
