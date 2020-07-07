@@ -220,7 +220,7 @@ public:
     SystemStats_t system_stats_;
 
     BoardConfig_t config_;
-    bool user_config_loaded_;
+    uint32_t user_config_loaded_ = 0;
     bool misconfigured_ = false;
 
     uint32_t test_property_ = 0;

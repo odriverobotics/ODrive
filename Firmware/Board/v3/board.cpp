@@ -261,7 +261,7 @@ void system_init() {
     SystemClock_Config();
 }
 
-void board_init() {
+bool board_init() {
     // Initialize all configured peripherals
     MX_GPIO_Init();
     MX_DMA_Init();
@@ -331,6 +331,8 @@ void board_init() {
         {&htim1, &htim8, &htim13},
         {TIM_1_8_PERIOD_CLOCKS / 2 - 1 * 128 /* TODO: explain why this offset */, 0, TIM_1_8_PERIOD_CLOCKS / 2 - 1 * 128}
     );
+
+    return true;
 }
 
 

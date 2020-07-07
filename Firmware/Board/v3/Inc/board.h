@@ -120,6 +120,6 @@ static inline void board_clear_config() { }
 static inline bool board_apply_config() { return true; }
 
 void system_init();
-void board_init();
+bool board_init();
 
 #endif // __BOARD_CONFIG_H

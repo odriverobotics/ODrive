@@ -205,9 +205,16 @@ public:
         : spi_arbiter_(spi_arbiter), ncs_gpio_(ncs_gpio),
           enable_gpio_(enable_gpio), nfault_gpio_(nfault_gpio) {}
     
+    /**
+     * @brief Initializes the gate driver to a hardcoded default configuration.
+     * Returns true on success or false otherwise (e.g. if the gate driver is
+     * not connected).
+     */
+    bool init();
+    
     bool set_gain(float requested_gain, float* actual_gain) final;
     bool check_fault() final;
-    bool set_enabled(bool enabled) final;
+    bool set_enabled(bool enabled) final { return true; }
     FaultType_e get_error();
 
     float get_midpoint() final {
@@ -380,9 +387,6 @@ private:
                                                     const uint16_t data) {
         return ctrlMode | regName | (data & DRV8301_DATA_MASK);
     } // end of DRV8301_buildCtrlWord() function
-
-    //! \brief     Enables the DRV8301
-    void enable();
 
     //! \brief     Reads data from the DRV8301 register
     //! \param[in] regName  The register name

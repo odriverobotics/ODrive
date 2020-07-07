@@ -89,7 +89,11 @@ public:
      * If this function returns false, it is possible that previous pop()
      * operations actually returned garbage.
      */
-    bool finish_load() {
+    bool finish_load(size_t* occupied_size) {
+        if (occupied_size) {
+            *occupied_size = load_offset + 2;
+        }
+
         uint16_t crc16_calculated = load_crc16;
         uint16_t crc16_loaded;
         if (!pop(&crc16_loaded)) {
@@ -131,7 +135,11 @@ public:
     /**
      * @brief Finishes the prepare pass and starts the actual store pass.
      */
-    bool start_store() {
+    bool start_store(size_t* occupied_size) {
+        if (occupied_size) {
+            *occupied_size = store_offset + 2;
+        }
+
         if (store_state != kStoreStatePreparing) {
             return (store_state = kStoreStateFailed), false;
         }

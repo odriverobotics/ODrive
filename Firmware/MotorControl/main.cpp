@@ -108,13 +108,14 @@ static bool config_apply_all() {
 }
 
 void ODrive::save_configuration(void) {
+    size_t config_size = 0;
     bool success = config_manager.prepare_store()
                 && config_push_all()
-                && config_manager.start_store()
+                && config_manager.start_store(&config_size)
                 && config_push_all()
                 && config_manager.finish_store();
     if (success) {
-        user_config_loaded_ = true;
+        user_config_loaded_ = config_size;
     } else {
         printf("saving configuration failed\r\n");
         osDelay(5);
@@ -220,10 +221,12 @@ static void rtos_main(void*) {
     // must happen after communication is initialized
     pwm0_input.init();
 
-    // Setup hardware for all components
+    // Set up hardware for all components
     for (size_t i = 0; i < AXIS_COUNT; ++i) {
         if (!axes[i].setup()) {
-            for (;;); // TODO: proper error handling
+            for (;;) {
+                osDelay(10); // TODO: proper error handling
+            }
         }
     }
 
@@ -331,11 +334,14 @@ extern "C" int main(void) {
     // Load configuration from NVM. This needs to happen after system_init()
     // since the flash interface must be initialized and before board_init()
     // since board initialization can depend on the config.
-    odrv.user_config_loaded_ = config_manager.start_load()
+    size_t config_size = 0;
+    bool success = config_manager.start_load()
             && config_pop_all()
-            && config_manager.finish_load()
+            && config_manager.finish_load(&config_size)
             && config_apply_all();
-    if (!odrv.user_config_loaded_) {
+    if (success) {
+        odrv.user_config_loaded_ = config_size;
+    } else {
         config_clear_all();
         config_apply_all();
     }
@@ -346,7 +352,9 @@ extern "C" int main(void) {
             || (odrv.config_.enable_uart2 && !uart2);
 
     // Init board-specific peripherals
-    board_init();
+    if (!board_init()) {
+        for (;;); // TODO: handle properly
+    }
 
     // Init GPIOs according to their configured mode
     for (size_t i = 0; i < GPIO_COUNT; ++i) {

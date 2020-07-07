@@ -2,6 +2,7 @@
 #include "stm32_spi_arbiter.hpp"
 #include "stm32_system.h"
 #include "utils.hpp"
+#include <cmsis_os.h>
 
 bool equals(const SPI_InitTypeDef& lhs, const SPI_InitTypeDef& rhs) {
   return (lhs.Mode == rhs.Mode)
@@ -47,15 +48,15 @@ bool Stm32SpiArbiter::start() {
 }
 
 void Stm32SpiArbiter::transfer_async(SpiTask* task) {
+    task->next = nullptr;
+    
     // Append new task to task list.
     // We could try to do this lock free but we could also use our time for useful things.
     SpiTask** ptr = &task_list_;
-    {
-        uint32_t prim = cpu_enter_critical();
+    CRITICAL_SECTION() {
         while (*ptr)
             ptr = &(*ptr)->next;
         *ptr = task;
-        cpu_exit_critical(prim);
     }
 
     // If the list was empty before, kick off the SPI arbiter now
@@ -68,8 +69,9 @@ void Stm32SpiArbiter::transfer_async(SpiTask* task) {
     }
 }
 
+// TODO: this currently only works when called in a CMSIS thread.
 bool Stm32SpiArbiter::transfer(SPI_InitTypeDef config, Stm32Gpio ncs_gpio, const uint8_t* tx_buf, uint8_t* rx_buf, size_t length, uint32_t timeout_ms) {
-    uint8_t result = 0xff;
+    volatile uint8_t result = 0xff;
 
     SpiTask task = {
         .config = config,
@@ -77,8 +79,8 @@ bool Stm32SpiArbiter::transfer(SPI_InitTypeDef config, Stm32Gpio ncs_gpio, const
         .tx_buf = tx_buf,
         .rx_buf = rx_buf,
         .length = length,
-        .on_complete = [](void* ctx, bool success) { *(uint8_t*)ctx = success ? 1 : 0; },
-        .cb_ctx = &result,
+        .on_complete = [](void* ctx, bool success) { *(volatile uint8_t*)ctx = success ? 1 : 0; },
+        .cb_ctx = (void*)&result,
         .next = nullptr
     };
 
@@ -103,8 +105,10 @@ void Stm32SpiArbiter::on_complete() {
     }
 
     // Start next task if any
-    SpiTask* next = task_list_->next;
-    task_list_ = next;
+    SpiTask* next = nullptr;
+    CRITICAL_SECTION() {
+        next = task_list_ = task_list_->next;
+    }
     if (next) {
         start();
     }

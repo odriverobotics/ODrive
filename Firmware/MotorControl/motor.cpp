@@ -70,7 +70,9 @@ bool Motor::apply_config() {
 
 // @brief Set up the gate drivers
 bool Motor::setup() {
-    gate_driver_.set_enabled(true);
+    if (!gate_driver_.init()) {
+        return false;
+    }
     
     // Solve for exact gain, then snap down to have equal or larger range as requested
     // or largest possible range otherwise

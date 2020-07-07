@@ -59,6 +59,23 @@ const SPI_InitTypeDef Drv8301::spi_config_ = {
     .CRCPolynomial = 10,
 };
 
+bool Drv8301::init() {
+    enable_gpio_.write(true);
+    
+    // Wait for driver to come online
+    osDelay(10);
+
+    // Make sure the Fault bit is not set during startup
+    uint16_t reg;
+    while (!read_spi(RegName_Status_1, &reg) || (reg & DRV8301_STATUS1_FAULT_BITS))
+        ; // TODO: don't spin
+
+    // Wait for the DRV8301 registers to update
+    osDelay(1);
+
+    return true;
+}
+
 Drv8301::FaultType_e Drv8301::get_error() {
     uint16_t readWord;
     FaultType_e faultType = FaultType_NoFault;
@@ -140,25 +157,6 @@ bool Drv8301::check_fault() {
     } else {
         return true;
     }
-}
-
-bool Drv8301::set_enabled(bool enabled) {
-    enable_gpio_.write(enabled);
-    
-    if (enabled) {
-        // Wait for driver to come online
-        osDelay(10);
-
-        // Make sure the Fault bit is not set during startup
-        uint16_t reg;
-        while (!read_spi(RegName_Status_1, &reg) || (reg & DRV8301_STATUS1_FAULT_BITS))
-            ; // TODO: don't spin
-
-        // Wait for the DRV8301 registers to update
-        osDelay(1);
-    }
-
-    return true;
 }
 
 bool Drv8301::read_spi(const RegName_e regName, uint16_t* data) {
