@@ -19,8 +19,8 @@
 # calib motor 
 
 ```
-odrv0.axis0.requested_stateư=AXIS_STATE_MOTOR_CALIBRATION 
-odrv0.axis01.requested_stateư=AXIS_STATE_MOTOR_CALIBRATION 
+odrv0.axis0.requested_state=AXIS_STATE_MOTOR_CALIBRATION 
+odrv0.axis1.requested_state=AXIS_STATE_MOTOR_CALIBRATION 
 odrv0.axis0.motor.config.pre_calibrated =True de luu thong so calib motor ( R và L)
 odrv0.axis1.motor.config.pre_calibrated =True
 Hoặc cài tay
