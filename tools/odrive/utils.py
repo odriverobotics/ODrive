@@ -129,10 +129,114 @@ def start_liveplotter(get_var_callback):
     plot_t = threading.Thread(target=plot_data)
     plot_t.daemon = True
     plot_t.start()
-    
 
     return cancellation_token;
     #plot_data()
+
+
+class BulkCapture:
+    '''
+    Asynchronously captures a bulk set of data when instance is created.
+
+    get_var_callback: a function that returns the data you want to collect (see the example below)
+    data_rate: Rate in hz
+    length: Length of time to capture in seconds
+
+    Example Usage:
+        capture = BulkCapture(lambda :[odrv0.axis0.encoder.pos_estimate, odrv0.axis0.controller.pos_setpoint])
+        # Do stuff while capturing (like sending position commands)
+        capture.event.wait() # When you're done doing stuff, wait for the capture to be completed.
+        print(capture.data) # Do stuff with the data
+        capture.plot_data() # Helper method to plot the data
+    '''
+
+    def __init__(self,
+                 get_var_callback,
+                 data_rate=500.0,
+                 duration=2.0):
+        from threading import Event, Thread
+        import numpy as np
+
+        self.get_var_callback = get_var_callback
+        self.event = Event()
+        def loop():
+            vals = []
+            start_time = time.monotonic()
+            period = 1.0 / data_rate
+            while time.monotonic() - start_time < duration:
+                try:
+                    data = get_var_callback()
+                except Exception as ex:
+                    print(str(ex))
+                    print("Waiting 1 second before next data point")
+                    time.sleep(1)
+                    continue
+                relative_time = time.monotonic() - start_time
+                vals.append([relative_time] + data)
+                time.sleep(period - (relative_time % period)) # this ensures consistently timed samples
+            self.data = np.array(vals) # A lock is not really necessary due to the event
+            print("Capture complete")
+            achieved_data_rate = len(self.data) / self.data[-1, 0]
+            if achieved_data_rate < (data_rate * 0.9):
+                print("Achieved average data rate: {}Hz".format(achieved_data_rate))
+                print("If this rate is significantly lower than what you specified, consider lowering it below the achieved value for more consistent sampling.")
+            self.event.set() # tell the main thread that the bulk capture is complete
+        Thread(target=loop, daemon=True).start()
+    
+    def plot(self):
+        import matplotlib.pyplot as plt
+        import inspect
+        from textwrap import wrap
+        plt.plot(self.data[:,0], self.data[:,1:])
+        plt.xlabel("Time (seconds)")
+        title = (str(inspect.getsource(self.get_var_callback))
+                .strip("['\\n']")
+                .split(" = ")[1])
+        plt.title("\n".join(wrap(title, 60)))
+        plt.legend(range(self.data.shape[1]-1))
+        plt.show()
+
+
+def step_and_plot(  axis,
+                    step_size=100.0,
+                    settle_time=0.5,
+                    data_rate=500.0,
+                    ctrl_mode=CTRL_MODE_POSITION_CONTROL):
+    
+    if ctrl_mode is CTRL_MODE_POSITION_CONTROL:
+        get_var_callback = lambda :[axis.encoder.pos_estimate, axis.controller.pos_setpoint]
+        initial_setpoint = axis.encoder.pos_estimate
+        def set_setpoint(setpoint):
+            axis.controller.pos_setpoint = setpoint
+    elif ctrl_mode is CTRL_MODE_VELOCITY_CONTROL:
+        get_var_callback = lambda :[axis.encoder.vel_estimate, axis.controller.vel_setpoint]
+        initial_setpoint = 0
+        def set_setpoint(setpoint):
+            axis.controller.vel_setpoint = setpoint
+    else:
+        print("Invalid control mode")
+        return
+    
+    initial_settle_time = 0.5
+    initial_control_mode = axis.controller.config.control_mode # Set it back afterwards
+    print(initial_control_mode)
+    axis.controller.config.control_mode = ctrl_mode
+    axis.requested_state = AXIS_STATE_CLOSED_LOOP_CONTROL
+    
+    capture = BulkCapture(get_var_callback,
+                          data_rate=data_rate,
+                          duration=initial_settle_time + settle_time)
+
+    set_setpoint(initial_setpoint)
+    time.sleep(initial_settle_time)
+    set_setpoint(initial_setpoint + step_size) # relative/incremental movement
+
+    capture.event.wait() # wait for Bulk Capture to be complete
+
+    axis.requested_state = AXIS_STATE_IDLE
+    axis.controller.config.control_mode = initial_control_mode
+    capture.plot()
+
 
 def print_drv_regs(name, motor):
     """
@@ -175,7 +279,7 @@ def rate_test(device):
         vals.append(device.axis0.loop_counter)
 
     loopsPerFrame = (vals[-1] - vals[0])/numFrames
-    loopsPerSec = (168000000/(2*10192))
+    loopsPerSec = (168000000/(6*3500))
     FramePerSec = loopsPerSec/loopsPerFrame
     print("Frames per second: " + str(FramePerSec))
 
