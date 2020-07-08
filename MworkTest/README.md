@@ -5,6 +5,7 @@
 # Cài đặt thông số motor
 
 - [x] ```odrv0.axis0.motor.config.current_lim = 3``` limit 10A
+- [ ] ```odrv0.axis1.motor.config.current_lim = 3``` 
 - [x] ```odrv0.axis0.controller.config.vel_limit = 500000``` la 20000[counts/s].
 - [x] ```odrv0.axis0.motor.config.calibration_current = 2.0```
 - [x] ```odrv0.config.brake_resistance = 0.5``` Điện trở xả 
@@ -19,14 +20,14 @@
 
 ```
 odrv0.axis0.requested_stateư=AXIS_STATE_MOTOR_CALIBRATION 
-
+odrv0.axis01.requested_stateư=AXIS_STATE_MOTOR_CALIBRATION 
 odrv0.axis0.motor.config.pre_calibrated =True de luu thong so calib motor ( R và L)
-
+odrv0.axis1.motor.config.pre_calibrated =True
 Hoặc cài tay
 odrv0.axis0.motor.config.phase_resistance = 0.13
-
+odrv0.axis1.motor.config.phase_resistance = 0.13
 odrv0.axis0.motor.config.phase_inductance = 0.00002
-
+odrv0.axis1.motor.config.phase_inductance = 0.00002
 ```
 Save và reboot 
 ------------
