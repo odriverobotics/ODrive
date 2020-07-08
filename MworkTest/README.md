@@ -12,7 +12,8 @@
 - [x] ```odrv0.axis0.motor.config.pole_pairs = 21 ``` Poles pair
 - [ ] ```odrv0.axis0.motor.config.motor_type = MOTOR_TYPE_HIGH_CURRENT```   # select if you have a gimbal or high amp motor
 - [x] ```odrv0.axis0.motor.config.motor_type = MOTOR_TYPE_GIMBAL```         # là 2
-- [x] odrv0.axis0.motor.config.resistance_calib_max_voltage = 12.0
+- [x] ```odrv0.axis0.motor.config.resistance_calib_max_voltage = 12.0```
+- [ ] ```odrv0.axis1.motor.config.resistance_calib_max_voltage = 12.0```
 - [x] ```odrv0.save_configuration() ```
 - [x] ```odrv0.reboot()```
 
