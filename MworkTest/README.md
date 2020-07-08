@@ -171,3 +171,7 @@ odrv0.axis0.controller.config.vel_integrator_gain =
         uint8_t axis_to_mirror = -1;
         float mirror_ratio = 1.0f;
         uint8_t load_encoder_axis = -1;     
+
+
+resistance_calib_max_voltage > calibration_current * phase_resistance = 3*0.0550.165
+resistance_calib_max_voltage < 0.5 * vbus_voltage
