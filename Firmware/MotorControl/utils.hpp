@@ -58,7 +58,7 @@ extern "C" {
 #ifdef M_PI
 #undef M_PI
 #endif
-#define M_PI 3.14159265358979323846f
+#define M_PI (3.14159265358979323846f)
 
 #define MACRO_MAX(x, y) (((x) > (y)) ? (x) : (y))
 #define MACRO_MIN(x, y) (((x) < (y)) ? (x) : (y))
@@ -69,24 +69,25 @@ static const float one_by_sqrt3 = 0.57735026919f;
 static const float two_by_sqrt3 = 1.15470053838f;
 static const float sqrt3_by_2 = 0.86602540378f;
 
-//beware of inserting large values!
-static inline float wrap_pm(float x, float pm_range) {
-    while (x >= pm_range) x -= (2.0f * pm_range);
-    while (x < -pm_range) x += (2.0f * pm_range);
-    return x;
-}
-
-//beware of inserting large angles!
-static inline float wrap_pm_pi(float theta) {
-    return wrap_pm(theta, M_PI);
-}
-
 // like fmodf, but always positive
 static inline float fmodf_pos(float x, float y) {
     float out = fmodf(x, y);
     if (out < 0.0f)
         out += y;
     return out;
+}
+
+/**
+ * @brief Similar to modulo operator, except that the output range is centered
+ * around zero.
+ * The returned value is always in the range [-pm_range, pm_range).
+ */
+static inline float wrap_pm(float x, float pm_range) {
+    return fmodf_pos(x + pm_range, 2.0f * pm_range) - pm_range;
+}
+
+static inline float wrap_pm_pi(float theta) {
+    return wrap_pm(theta, M_PI);
 }
 
 // Compute rising edge timings (0.0 - 1.0) as a function of alpha-beta

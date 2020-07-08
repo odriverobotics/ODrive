@@ -8,20 +8,15 @@
 		},
 		{
 			"path": "docs"
+		},
+		{
+			"path": "analysis"
 		}
 	],
 	"settings": {
-
-		"c-cpp-flylint.cppcheck.includePaths": [
-			"${workspaceRoot}",
-			"${workspaceRoot}/fibre/cpp/include/fibre",
-			"${workspaceRoot}/communication",
-			"${workspaceRoot}/MotorControl",
-		],
-		"c-cpp-flylint.cppcheck.platform": "avr8",
 		"c-cpp-flylint.cppcheck.standard": ["c99","c++14"],
-
 		"files.associations": {
+			"*.config": "yaml",
 			"memory": "cpp",
 			"utility": "cpp",
 			"deque": "cpp",
@@ -55,7 +50,19 @@
 			"chrono": "cpp",
 			"condition_variable": "cpp",
 			"future": "cpp",
-			"arm_math.h": "c"
+			"arm_math.h": "c",
+			"iostream": "cpp",
+			"cmath": "cpp",
+			"csignal": "cpp",
+			"cstdarg": "cpp",
+			"cstddef": "cpp",
+			"ctime": "cpp",
+			"unordered_map": "cpp",
+			"fstream": "cpp",
+			"iomanip": "cpp",
+			"optional": "cpp",
+			"sstream": "cpp",
+			"utils.h": "c"
 		}
 	}
 }

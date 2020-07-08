@@ -35,7 +35,7 @@ The recommended tools for ODrive development are:
  * **ARM GNU Compiler**: For cross-compiling code
  * **ARM GDB**: For debugging the code and stepping through on the device
  * **OpenOCD**: For flashing the ODrive with the STLink/v2 programmer
- * **Python**: For running the Python tools
+ * **Python 3**, along with the packages `PyYAML`, `Jinja2` and `jsonschema`: For running the Python tools (`odrivetool`). Also required for compiling firmware.
 
 See below for specific installation instructions for your OS.
 
@@ -50,13 +50,22 @@ $ tup --version                 # should be 0.7.5 or later
 $ python --version              # should be 3.7 or later
 ```
 
-#### Linux (Ubuntu)
+#### Linux (Ubuntu < 20.04)
 ```bash
 sudo add-apt-repository ppa:team-gcc-arm-embedded/ppa
 sudo apt-get update
 sudo apt-get install gcc-arm-embedded
 sudo apt-get install openocd
 sudo add-apt-repository ppa:jonathonf/tup && sudo apt-get update && sudo apt-get install tup
+sudo apt-get install python3 python3-yaml python3-jinja2 python3-jsonschema
+```
+
+#### Linux (Ubuntu >= 20.04)
+```bash
+sudo apt install gcc-arm-embedded
+sudo apt install openocd
+sudo apt install tup
+sudo apt install python3 python3-yaml python3-jinja2 python3-jsonschema
 ```
 
 #### Arch Linux
@@ -64,6 +73,7 @@ sudo add-apt-repository ppa:jonathonf/tup && sudo apt-get update && sudo apt-get
 sudo pacman -S arm-none-eabi-gcc arm-none-eabi-binutils
 sudo pacman -S arm-none-eabi-gdb
 sudo pacman -S tup
+sudo pacman -S python python-yaml python-jinja python-jsonschema
 ```
 * [OpenOCD AUR package](https://aur.archlinux.org/packages/openocd/)
 
@@ -73,6 +83,7 @@ First install [Homebrew](https://brew.sh/). Then you can run these commands in T
 brew install armmbed/formulae/arm-none-eabi-gcc
 brew cask install osxfuse && brew install tup
 brew install openocd
+pip3 install PyYAML Jinja2 jsonschema
 ```
 
 #### Windows
@@ -85,6 +96,8 @@ Some instructions in this document may assume that you're using a bash command p
   * __Note 2__: 8-2018-q4-major seems to have a bug on Windows.  Please use 7-2018-q2-update.
 * [Tup](http://gittup.org/tup/index.html)
 * [GNU MCU Eclipse's Windows Build Tools](https://github.com/gnu-mcu-eclipse/windows-build-tools/releases)
+* [Python 3](https://www.python.org/downloads/)
+  * Install Python packages: `pip install PyYAML Jinja2 jsonschema`
 * [OpenOCD](https://github.com/xpack-dev-tools/openocd-xpack/releases/). 
 * [ST-Link/V2 Drivers](http://www.st.com/web/en/catalog/tools/FM147/SC1887/PF260219)
 
@@ -98,7 +111,7 @@ __CONFIG_BOARD_VERSION__: The board version you're using. Can be `v3.1`, `v3.2`,
 
 __CONFIG_USB_PROTOCOL__: Defines which protocol the ODrive should use on the USB interface.
  * `native`: The native ODrive protocol. Use this if you want to use the python tools in this repo. Can maybe work with macOS.
- * `native-stream`: Like the native ODrive protocol, but the ODrive will treat the USB connection exactly as if it was a UART connection. __ Maybe need to use this if you're on macOS__. This is necessary because macOS doesn't grant our python tools sufficient low-level access to treat the device as the USB device that it is.
+ * `native-stream`: Like the native ODrive protocol, but the ODrive will treat the USB connection exactly as if it was a UART connection. __You may need to use this if you're on macOS__. This is necessary because macOS doesn't grant our python tools sufficient low-level access to treat the device as the USB device that it is.
  * `none`: Disable USB. The device will still show up when plugged in but it will ignore any commands.
  
  **Note**: There is a second USB interface that is always a serial port.
@@ -107,6 +120,8 @@ __CONFIG_UART_PROTOCOL__: Defines which protocol the ODrive should use on the UA
  * `native`: The native ODrive protocol. Use this if you're connecting the ODrive to a PC using UART and want to use the python tools to control and setup the ODrive.
  * `ascii`: The ASCII protocol. Use this option if you control the ODrive with an Arduino. The ODrive Arduino library is not yet updated to the native protocol.
  * `none`: Disable UART.
+
+__CONFIG_DEBUG__: Defines wether debugging will be enabled when compiling the firmware; specifically the `-g -gdwarf-2` flags. Note that printf debugging will only function if your tup.config specifies the `USB_PROTOCOL` or `UART_PROTOCOL` as stdout and `DEBUG_PRINT` is defined. See the IDE specific documentation for more information.
 
 You can also modify the compile-time defaults for all `.config` parameters. You will find them if you search for `AxisConfig`, `MotorConfig`, etc.
 
@@ -128,7 +143,7 @@ If the flashing worked, you can connect to the board using the [odrivetool](gett
 
 <br><br>
 ## Testing
-The script `tools/run_tests.py` runs a sequence of automated tests for several firmware features as well as high power burn-in tests. Some tests only need one ODrive and one motor/encoder pair while other tests need a back-to-back test rig such as [this one](https://cad.onshape.com/documents/026bda35ad5dff4d73c1d37f/w/ae302174f402737e1fdb3783/e/5ca143a6e5e24daf1fe8e434). In any case, to run the tests you need to provide a YAML file that lists the parameters of your test setup. An example can be found at [`tools/test-rig-parallel.yaml`](tools/test-rig-parallel.yaml`). The programmer serial number can be found by running `Firmware/find_programmer.sh` (make sure it has the latest formware from STM).
+The script `tools/run_tests.py` runs a sequence of automated tests for several firmware features as well as high power burn-in tests. Some tests only need one ODrive and one motor/encoder pair while other tests need a back-to-back test rig such as [this one](https://cad.onshape.com/documents/026bda35ad5dff4d73c1d37f/w/ae302174f402737e1fdb3783/e/5ca143a6e5e24daf1fe8e434). In any case, to run the tests you need to provide a YAML file that lists the parameters of your test setup. An example can be found at [`tools/test-rig-parallel.yaml`](tools/test-rig-parallel.yaml`). The programmer serial number can be found by running `Firmware/find_programmer.sh` (make sure it has the latest firmware from STM).
 
 <div class="alert" markdown="span">The test script commands the ODrive to high currents and high motor speeds so if your ODrive is connected to anything other than a stirdy test-rig (or free spinning motors), it will probably break your machine.</div>
 
@@ -243,9 +258,14 @@ To run the docs server locally:
 
 ```bash
 cd docs
-gem install bundler
-bundle install --path ruby-bundle
-bundle exec jekyll serve --host=0.0.0.0
+gem install bundler # The gem command typically comes with a Ruby installation
+#export PATH="$PATH:~/.gem/ruby/2.7.0/bin" # or similar (depends on OS)
+rm Gemfile.lock # only if below commands cause trouble
+bundle config path ruby-bundle
+bundle install
+mkdir -p _api _includes
+python ../Firmware/interface_generator_stub.py --definitions ../Firmware/odrive-interface.yaml --template _layouts/api_documentation_template.j2 --outputs _api/'#'.md && python ../Firmware/interface_generator_stub.py --definitions ../Firmware/odrive-interface.yaml --template _layouts/api_index_template.j2 --output _includes/apiindex.html
+bundle exec jekyll serve --incremental --host=0.0.0.0
 ```
 
 ## Releases

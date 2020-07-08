@@ -1,6 +1,48 @@
 # Unreleased Features
 Please add a note of your changes below this heading if you make a Pull Request.
 
+### Added
+* AC Induction Motor support.
+  * Tracking of rotor flux through rotor time constant
+  * Automatic d axis current for Maximum Torque Per Amp (MTPA)
+* ASCII "w" commands now execute write hooks.
+* Simplified control interface ("Input Filter" branch)
+    * New input variables: `input_pos`, `input_vel`, and `input_current`
+    * New setting `input_mode` to switch between different input behaviours
+      * Passthrough
+      * Velocity Ramp
+      * 2nd Order Position Filter
+      * Trapezoidal Trajectory Planner
+    * Removed `set_xxx_setpoint()` functions and made `xxx_setpoint` variables read-only
+* [Preliminary support for Absolute Encoders](docs/encoders.md)
+* [Preliminary support for endstops and homing](docs/endstops.md)
+* [CAN Communication with CANSimple stack](can-protocol.md)
+* Gain scheduling for anti-hunt when close to 0 position error
+* Velocity Limiting in Current Control mode according to `vel_limit` and `vel_gain`
+* Regen current limiting according to `max_regen_current`, in Amps
+* DC Bus hard current limiting according to `dc_max_negative_current` and `dc_max_positive_current`
+* Brake resistor logic now attempts to clamp voltage according to `odrv.config.dc_bus_overvoltage_ramp_start` and `odrv.config.dc_bus_overvoltage_ramp_end`
+* Unit Testing with Doctest has been started for select algorithms, see [Firmware/Tests/test_runner.cpp](Firmware/Tests/test_runner.cpp)
+* Added support for Flylint VSCode Extension for static code analysis
+* Using an STM32F405 .svd file allows CortexDebug to view registers during debugging
+* Added scripts for building via docker.
+* Added ability to change uart baudrate via fibre
+* Introduced `odrive-interface.yaml` as a root source for the ODrive's API. `odrivetool` connects much faster as a side effect.
+
+### Changed
+* Changed ratiometric `motor.config.current_lim_tolerance` to absolute `motor.config.current_lim_margin`
+* Moved `controller.vel_ramp_enable` to INPUT_MODE_VEL_RAMP.
+* Anticogging map is temporarily forced to 0.1 deg precision, but saves with the config
+* Some Encoder settings have been made read-only
+* Cleaned up VSCode C/C++ Configuration settings on Windows with recursive includePath
+* Now compiling with C++17
+* Fixed a firmware hang that could occur from unlikely but possible user input
+* Added JSON caching to Fibre. This drastically reduces the time odrivetool needs to connect to an ODrive (except for the first time or after firmware updates).
+* Fix IPython `RuntimeWarning` that would occur every time `odrivetool` was started.
+* Reboot on `erase_configuration()`. This avoids unexpected behavior of a subsequent `save_configuration()` call, since the configuration is only erased from NVM, not from RAM.
+* Change `motor.get_inverter_temp()` to use a property which was already being sampled at `motor.inverter_temp`
+* Fixed a numerical issue in the trajectory planner that could cause sudden jumps of the position setpoint
+
 # Releases
 ## [0.4.12] - 2020-05-06
 ### Fixed
@@ -30,6 +72,8 @@ Please add a note of your changes below this heading if you make a Pull Request.
 * Script to enable using a hall signal as index edge.
 
 ### Changed
+* Moved `traptraj.A_per_css` to `controller.inertia`
+* Refactored velocity ramp mode into the new general input filtering structure
 * Encoder index search now based on the new lock-in drive feature
 
 ### Fixed
@@ -105,6 +149,8 @@ Please add a note of your changes below this heading if you make a Pull Request.
 
 ## [0.4.3] - 2018-08-30
 ### Added
+* `min_endstop` and `max_endstop` objects can be configured on GPIO
+* Axes can be homed if `min_endstop` is enabled
 * Encoder position count "homed" to zero when index is found.
 
 ### Changed

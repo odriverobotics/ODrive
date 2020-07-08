@@ -82,12 +82,12 @@ if __name__ == '__main__':
 
 def setup_udev_rules(logger):
   if platform.system() != 'Linux':
-      logger.error("This command only makes sense on Linux")
+      if logger: logger.error("This command only makes sense on Linux")
       return
   if os.getuid() != 0:
-      logger.warn("you should run this as root, otherwise it will probably not work")
+      if logger: logger.warn("you should run this as root, otherwise it will probably not work")
   with open('/etc/udev/rules.d/91-odrive.rules', 'w') as file:
       file.write('SUBSYSTEM=="usb", ATTR{idVendor}=="1209", ATTR{idProduct}=="0d3[0-9]", MODE="0666", ENV{ID_MM_DEVICE_IGNORE}="1"\n')
   subprocess.check_call(["udevadm", "control", "--reload-rules"])
   subprocess.check_call(["udevadm", "trigger"])
-  logger.info('udev rules configured successfully')
+  if logger: logger.info('udev rules configured successfully')
