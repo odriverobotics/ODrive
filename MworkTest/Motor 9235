@@ -1,0 +1,12 @@
+odrv0.axis0.motor.config.resistance_calib_max_voltage
+Out[75]: 4.0
+odrv0.axis0.motor.config.requested_current_range
+Out[76]: 25.0
+odrv0.axis0.motor.config.current_control_bandwidth
+Out[77]: 100.0
+odrv0.axis0.encoder.config.mode
+Out[78]: 1
+odrv0.axis0.encoder.config.cpr
+Out[79]: 90
+odrv0.axis0.encoder.config.bandwidth
+Out[80]: 100.0
