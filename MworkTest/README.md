@@ -1,7 +1,7 @@
 # Get State machine của Device
 
 - [x] ``` odrv0.axis0.current_state ```
-
+- [x] ``` dump_errors(odrv0, True) ```
 # Cài đặt thông số motor
 
 - [x] ```odrv0.axis0.motor.config.current_lim = 3``` limit 10A
