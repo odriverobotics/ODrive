@@ -1,8 +1,7 @@
 
 >>> my_odrive.motor0.config.phase_resistance
 0.04817485064268112
->>> my_odrive.motor0.config.phase_inductance
-1.829648135753814e-05
+>>> my_odrive.motor0.config.phase_inductance=0.000018
 
 odrv0.axis0.motor.config.resistance_calib_max_voltage
 Out[75]: 4.0
