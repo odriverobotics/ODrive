@@ -4,34 +4,46 @@
 - [x] ``` dump_errors(odrv0, True) ```
 # Cài đặt thông số motor
 
+- [x] ```odrv0.config.brake_resistance = 0.5``` Điện trở xả 
+
 - [x] ```odrv0.axis0.motor.config.current_lim = 3``` limit 10A
-- [ ] ```odrv0.axis1.motor.config.current_lim = 3``` 
 - [x] ```odrv0.axis0.controller.config.vel_limit = 500000``` la 20000[counts/s].
 - [x] ```odrv0.axis0.motor.config.calibration_current = 2.0```
-- [x] ```odrv0.config.brake_resistance = 0.5``` Điện trở xả 
 - [x] ```odrv0.axis0.motor.config.pole_pairs = 21 ``` Poles pair
 - [ ] ```odrv0.axis0.motor.config.motor_type = MOTOR_TYPE_HIGH_CURRENT```   # select if you have a gimbal or high amp motor
 - [x] ```odrv0.axis0.motor.config.motor_type = MOTOR_TYPE_GIMBAL```         # là 2
 - [x] ```odrv0.axis0.motor.config.resistance_calib_max_voltage = 12.0```
+
+
+- [ ] ```odrv0.axis1.motor.config.current_lim = 3``` 
+- [ ] ```odrv0.axis1.controller.config.vel_limit = 500000``` la 20000[counts/s].
+- [ ] ```odrv0.axis1.motor.config.calibration_current = 2.0```
+- [ ] ```odrv0.axis1.motor.config.pole_pairs = 20 ``` Poles pair
+- [ ] ```odrv0.axis1.motor.config.motor_type = MOTOR_TYPE_HIGH_CURRENT``` 
 - [ ] ```odrv0.axis1.motor.config.resistance_calib_max_voltage = 12.0```
+
 - [x] ```odrv0.save_configuration() ```
 - [x] ```odrv0.reboot()```
 
 
 # calib motor 
 
-```
-odrv0.axis0.requested_state=AXIS_STATE_MOTOR_CALIBRATION 
-odrv0.axis1.requested_state=AXIS_STATE_MOTOR_CALIBRATION 
-odrv0.axis0.motor.config.pre_calibrated =True de luu thong so calib motor ( R và L)
-odrv0.axis1.motor.config.pre_calibrated =True
-Hoặc cài tay
-odrv0.axis0.motor.config.phase_resistance = 0.13
-odrv0.axis1.motor.config.phase_resistance = 0.13
-odrv0.axis0.motor.config.phase_inductance = 0.00002
-odrv0.axis1.motor.config.phase_inductance = 0.00002
+Motor 1
+- [x] odrv0.axis0.motor.config.pre_calibrated = False
+- [x] odrv0.axis0.requested_state=AXIS_STATE_MOTOR_CALIBRATION 
+- [x] odrv0.axis0.motor.config.pre_calibrated =True de luu thong so calib motor ( R và L)
+- [x] odrv0.axis0.motor.config.phase_resistance = 0.13
+- [x] odrv0.axis0.motor.config.phase_inductance = 0.00002
 
-```
+
+Motor 2
+- [x] odrv0.axis1.motor.config.pre_calibrated =False
+- [x] odrv0.axis1.requested_state=AXIS_STATE_MOTOR_CALIBRATION 
+- [x] odrv0.axis1.motor.config.pre_calibrated =True
+- [x] odrv0.axis1.motor.config.phase_resistance = 0.048
+- [x] odrv0.axis1.motor.config.phase_inductance = 0.000018
+
+
 Save và reboot 
 ------------
 ```
