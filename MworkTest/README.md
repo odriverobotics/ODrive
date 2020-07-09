@@ -3,7 +3,7 @@
 - [x] ``` odrv0.axis0.current_state ```
 - [x] ``` dump_errors(odrv0, True) ```
 # Cài đặt thông số motor
-
+**Motor 1**
 - [x] ```odrv0.config.brake_resistance = 0.5``` Điện trở xả 
 
 - [x] ```odrv0.axis0.motor.config.current_lim = 3``` limit 10A
@@ -14,7 +14,7 @@
 - [x] ```odrv0.axis0.motor.config.motor_type = MOTOR_TYPE_GIMBAL```         # là 2
 - [x] ```odrv0.axis0.motor.config.resistance_calib_max_voltage = 12.0```
 
-
+**Motor 2**
 - [ ] ```odrv0.axis1.motor.config.current_lim = 3``` 
 - [ ] ```odrv0.axis1.controller.config.vel_limit = 500000``` la 20000[counts/s].
 - [ ] ```odrv0.axis1.motor.config.calibration_current = 2.0```
@@ -28,7 +28,7 @@
 
 # calib motor 
 
-Motor 1
+**Motor 1**
 - [x] odrv0.axis0.motor.config.pre_calibrated = False
 - [x] odrv0.axis0.requested_state=AXIS_STATE_MOTOR_CALIBRATION 
 - [x] odrv0.axis0.motor.config.pre_calibrated =True de luu thong so calib motor ( R và L)
@@ -36,7 +36,7 @@ Motor 1
 - [x] odrv0.axis0.motor.config.phase_inductance = 0.00002
 
 
-Motor 2
+**Motor 2**
 - [x] odrv0.axis1.motor.config.pre_calibrated =False
 - [x] odrv0.axis1.requested_state=AXIS_STATE_MOTOR_CALIBRATION 
 - [x] odrv0.axis1.motor.config.pre_calibrated =True
