@@ -91,6 +91,7 @@ odrv0.axis0.motor.config.current_lim = 20
 odrv0.axis0.motor.config.requested_current_range = 20
 1
 配置电机电流采样范围，注意：此值设置后需要重新启动才能生效
+Định cấu hình phạm vi lấy mẫu hiện tại của động cơ Lưu ý: Sau khi giá trị này được đặt, nó cần được khởi động lại để có hiệu lực 94
 
 3.3 编码器配置
 odrv0.axis0.encoder.config.mode = ENCODER_MODE_INCREMENTAL
@@ -123,18 +124,20 @@ odrv0.axis0.config.calibration_lockin.vel = 40
 
 current 开环运行时的电流，单位为 [A]，根据负载调整，以电机能够正常转动为准
 ramp_time 电流爬升时间，表示电流从零爬升到设定的 current 值所需要的时间
-ramp_distance 电流爬升时电角度转动距离，单位为 [rad]，配合 ramp_time 参数来缓慢锁定转子相位，可以通过调整 ramp_time、ramp_distance 使编码器索引校准启动的更平顺
-accel 转速爬升的加速度，单位为 [rad/s^2]
-vel 编码器索引校准的运行速度，单位为 [rad/s]
-3.4 控制器配置
+ramp_distance 电流爬升时电角度转动距离，单位为 [rad]，
+配合 ramp_time 参数来缓慢锁定转子相位，可以通过调整 
+ramp_time、ramp_distance 使编码器索引校准启动的更平顺
+accel 转速爬升的加速度，单位为 [rad/s^2] Tăng tốc độ leo, đơn vị là
+vel 编码器索引校准的运行速度，单位为 [rad/s] Tốc độ chạy của hiệu chuẩn chỉ số mã hóa, đơn vị là
+3.4 控制器配置 Cấu hình bộ điều khiển
 odrv0.axis0.controller.config.control_mode = CTRL_MODE_TRAJECTORY_CONTROL
 1
 配置电机控制模式，此处我们设置为轨迹位置模式
-
+Định cấu hình chế độ điều khiển động cơ, ở đây chúng tôi đặt thành chế độ theo dõi vị trí
 odrv0.axis0.controller.config.vel_limit = 16384*40
 1
 配置电机最大转速，以编码器计数值为单位 [count/s]，例如我们的编码器 cpr = 16384，我们将 vel_limit 设置为 cpr * 40 即最大转速为 40 转/秒 2400 转/分
-
+Định cấu hình tốc độ tối đa của động cơ, với số lượng bộ mã hóa là đơn vị [đếm / s], ví dụ: bộ mã hóa của chúng tôi cpr = 16384, chúng tôi đặt vel_limit thành cpr * 40, nghĩa là tốc độ tối đa là 40 vòng / phút 2400 vòng / phút
 odrv0.axis0.controller.config.pos_gain = 2
 odrv0.axis0.controller.config.vel_gain = 0.0003
 odrv0.axis0.controller.config.vel_integrator_gain = 0.005
@@ -142,8 +145,8 @@ odrv0.axis0.controller.config.vel_integrator_gain = 0.005
 2
 3
 配置控制器控制增益，pos_gain 为位置环增益，vel_gain 和 vel_integrator_gain 为速度环增益
-
-3.5 梯形加减速配置
+Định cấu hình bộ điều khiển để điều khiển mức tăng, pos_gain là mức tăng vòng lặp vị trí, vel_gain và vel_integrator_gain là mức tăng vòng lặp tốc độ 147
+3.5 梯形加减速配置 Cấu hình gia tốc và giảm tốc hình thang
 odrv0.axis0.trap_traj.config.vel_limit = 16384*20
 1
 配置梯形轨迹模式下电机匀速时的转速，以编码器计数值为单位 [count/s]，例如我们的编码器 cpr = 16384，我们将 vel_limit 设置为 cpr * 20 即最大转速为 20 转/秒 1200 转/分
