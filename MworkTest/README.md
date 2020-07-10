@@ -71,6 +71,11 @@ odrv0.reboot()
 - odrv0.axis0.encoder.config.abs_spi_cs_gpio_pin = 6  # or which ever GPIO pin you choose
 - odrv0.axis0.encoder.config.mode = 257               # or ENCODER_MODE_SPI_ABS_AMS là x101 = 257
 - odrv0.axis0.encoder.config.cpr = 2**14              # or 2**12 for AMT232A and AMT233A
+
+- odrv0.axis1.encoder.config.abs_spi_cs_gpio_pin = 4  # or which ever GPIO pin you choose
+- odrv0.axis1.encoder.config.mode = 257               # or ENCODER_MODE_SPI_ABS_AMS là x101 = 257
+- odrv0.axis1.encoder.config.cpr = 2**14              # or 2**12 for AMT232A and AMT233A
+
 - odrv0.save_configuration()
 - odrv0.reboot()
 ```
