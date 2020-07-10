@@ -156,6 +156,7 @@ odrv0.axis0.controller.config.vel_integrator_gain =
 ```
 - Test Move ```odrv0.axis0.controller.input_pos = 10000```
 - Input Mode ```odrv0.axis0.controller.config.input_mode = 3```
+- odrv0.axis0.controller.config.input_filter_bandwidth = 3.0 // thời gian tăng tốc giảm tốc cho input mode pos filller efault: 2.0
 ```
     enum InputMode_t{
         INPUT_MODE_INACTIVE,
@@ -191,4 +192,5 @@ odrv0.axis0.controller.config.vel_integrator_gain =
 
 
 resistance_calib_max_voltage > calibration_current * phase_resistance = 3*0.0550.165
+
 resistance_calib_max_voltage < 0.5 * vbus_voltage
