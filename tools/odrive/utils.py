@@ -201,14 +201,14 @@ def step_and_plot(  axis,
                     step_size=100.0,
                     settle_time=0.5,
                     data_rate=500.0,
-                    ctrl_mode=CTRL_MODE_POSITION_CONTROL):
+                    ctrl_mode=CONTROL_MODE_POSITION_CONTROL):
     
-    if ctrl_mode is CTRL_MODE_POSITION_CONTROL:
+    if ctrl_mode is CONTROL_MODE_POSITION_CONTROL:
         get_var_callback = lambda :[axis.encoder.pos_estimate, axis.controller.pos_setpoint]
         initial_setpoint = axis.encoder.pos_estimate
         def set_setpoint(setpoint):
             axis.controller.pos_setpoint = setpoint
-    elif ctrl_mode is CTRL_MODE_VELOCITY_CONTROL:
+    elif ctrl_mode is CONTROL_MODE_VELOCITY_CONTROL:
         get_var_callback = lambda :[axis.encoder.vel_estimate, axis.controller.vel_setpoint]
         initial_setpoint = 0
         def set_setpoint(setpoint):
