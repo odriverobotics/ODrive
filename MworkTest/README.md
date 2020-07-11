@@ -207,7 +207,17 @@ odrv0.axis0.controller.config.inertia = 2e-7
         uint8_t load_encoder_axis = -1;     
 
 
+
+
 resistance_calib_max_voltage > calibration_current * phase_resistance = 3*0.0550.165
 
+# OdriveTool
+
+Export và Import Config
+--------------------
+odrivetool backup-config and odrivetool restore-config.
+
+View Current
+--------
 
 start_liveplotter(lambda: [odrv0.axis0.motor.current_control.Ibus])
