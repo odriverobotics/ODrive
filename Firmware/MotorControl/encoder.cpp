@@ -510,7 +510,7 @@ bool Encoder::update() {
     // discrete phase detector
     float delta_pos = (float)(shadow_count_ - (int32_t)std::floor(pos_estimate_));
     float delta_pos_cpr = (float)(count_in_cpr_ - (int32_t)std::floor(pos_cpr_));
-    delta_pos_cpr = wrap_pm(delta_pos_cpr, 0.5f * config_.cpr);
+    delta_pos_cpr = wrap_pm(delta_pos_cpr, 0.5f * (float)(config_.cpr));
     // pll feedback
     pos_estimate_ += current_meas_period * pll_kp_ * delta_pos;
     pos_cpr_ += current_meas_period * pll_kp_ * delta_pos_cpr;
@@ -523,9 +523,9 @@ bool Encoder::update() {
     }
 
     //expose pos/vel estimates in radians for Controller
-    pos_est_rad_ = pos_estimate_ * 2.0f * M_PI / config_.cpr;
-    vel_est_rad_ = vel_estimate_ * 2.0f * M_PI / config_.cpr;
-    pos_cpr_rad_ = pos_cpr_ * 2.0f * M_PI / config_.cpr;
+    pos_est_rad_ = pos_estimate_ * 2.0f * M_PI / (float)config_.cpr;
+    vel_est_rad_ = vel_estimate_ * 2.0f * M_PI / (float)config_.cpr;
+    pos_cpr_rad_ = pos_cpr_ * 2.0f * M_PI / (float)config_.cpr;
 
     //// run encoder count interpolation
     int32_t corrected_enc = count_in_cpr_ - config_.offset;
