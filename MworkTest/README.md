@@ -25,16 +25,16 @@
 - [x] ```odrv0.save_configuration() ```
 - [x] ```odrv0.reboot()```
 
-odrv0.axis0.config.calibration_lockin.current = 2
-odrv0.axis0.config.calibration_lockin.ramp_time = 0.1
-odrv0.axis0.config.calibration_lockin.ramp_distance = 3.1415927410125732
-odrv0.axis0.config.calibration_lockin.accel = 2
-odrv0.axis0.config.calibration_lockin.vel = 4
+- [0] odrv0.axis0.config.calibration_lockin.current = 2
+- [0] odrv0.axis0.config.calibration_lockin.ramp_time = 0.1
+- [0] odrv0.axis0.config.calibration_lockin.ramp_distance = 3.1415927410125732
+- [0] odrv0.axis0.config.calibration_lockin.accel = 2
+- [0] odrv0.axis0.config.calibration_lockin.vel = 4
 
-odrv0.axis1.config.calibration_lockin.current = 2
-odrv0.axis1.config.calibration_lockin.ramp_time = 0.1
-odrv0.axis1.config.calibration_lockin.ramp_distance = 3.1415927410125732
-odrv0.axis1.config.calibration_lockin.accel = 2
+- [1] odrv0.axis1.config.calibration_lockin.current = 2
+- [1] odrv0.axis1.config.calibration_lockin.ramp_time = 0.1
+- [1] odrv0.axis1.config.calibration_lockin.ramp_distance = 3.1415927410125732
+- [1] odrv0.axis1.config.calibration_lockin.accel = 2
 - [1] odrv0.axis1.config.calibration_lockin.vel = 4
 ————————————————
 
