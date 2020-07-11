@@ -170,7 +170,9 @@ void ASCII_protocol_process_line(const uint8_t* buffer, size_t len, StreamSink& 
         } else {
             Axis* axis = axes[motor_number];
             axis->controller_.config_.input_mode = Controller::INPUT_MODE_TRAP_TRAJ;
-            axis->controller_.move_to_pos(goal_point);
+            axis->controller_.config_.control_mode = Controller::CTRL_MODE_POSITION_CONTROL;
+            axis->controller_.input_pos_ = goal_point;
+            axis->controller_.input_pos_updated();
             axis->watchdog_feed();
         }
 
