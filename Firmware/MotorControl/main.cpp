@@ -245,13 +245,13 @@ int odrive_main(void) {
     // must happen after communication is initialized
     pwm_in_init();
 
+    for(auto& axis : axes){
+        axis->encoder_.setup();
+    }
+
     // Setup hardware for all components
     for (size_t i = 0; i < AXIS_COUNT; ++i) {
         axes[i]->setup();
-    }
-
-    for(auto& axis : axes){
-        axis->encoder_.setup();
     }
 
     // Start PWM and enable adc interrupts/callbacks
