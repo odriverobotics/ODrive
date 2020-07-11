@@ -35,7 +35,7 @@ odrv0.axis1.config.calibration_lockin.current = 2
 odrv0.axis1.config.calibration_lockin.ramp_time = 0.1
 odrv0.axis1.config.calibration_lockin.ramp_distance = 3.1415927410125732
 odrv0.axis1.config.calibration_lockin.accel = 2
-odrv0.axis1.config.calibration_lockin.vel = 4
+- [1] odrv0.axis1.config.calibration_lockin.vel = 4
 ————————————————
 
 版权声明：本文为CSDN博主「codenocold」的原创文章，遵循CC 4.0 BY-SA版权协议，转载请附上原文出处链接及本声明。
