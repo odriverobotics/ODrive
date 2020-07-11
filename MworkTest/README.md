@@ -209,4 +209,5 @@ odrv0.axis0.controller.config.inertia = 2e-7
 
 resistance_calib_max_voltage > calibration_current * phase_resistance = 3*0.0550.165
 
-resistance_calib_max_voltage < 0.5 * vbus_voltage
+
+start_liveplotter(lambda: [odrv0.axis0.motor.current_control.Ibus])
