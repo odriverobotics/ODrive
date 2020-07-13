@@ -11,6 +11,7 @@
 - [x] ```odrv0.axis0.controller.config.vel_limit = 655360``` la 20000[counts/s].
 - (2**14) * 40 = 655360  # 40 vong 
 odrv0.axis0.motor.config.current_control_bandwidth = 1500
+odrv0.axis0.controller.config.inertia=0.0023
 - [x] ```odrv0.axis0.motor.config.calibration_current = 2.0```
 - [x] ```odrv0.axis0.motor.config.pole_pairs = 21 ``` Poles pair
 - [ ] ```odrv0.axis0.motor.config.motor_type = MOTOR_TYPE_HIGH_CURRENT```   # select if you have a gimbal or high amp motor
