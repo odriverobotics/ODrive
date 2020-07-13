@@ -636,7 +636,7 @@ void update_brake_current() {
     // Special handling to avoid the case 0.0/0.0 == NaN.
     Ibus_sum += brake_duty ? (brake_duty * vbus_voltage / odrv.config_.brake_resistance) : 0.0f;
 
-    ibus_ = Ibus_sum;
+    ibus_ += odrv.ibus_report_filter_k_ * (Ibus_sum - ibus_);
 
     if (Ibus_sum > odrv.config_.dc_max_positive_current) {
         low_level_fault(Motor::ERROR_DC_BUS_OVER_CURRENT);
