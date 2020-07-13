@@ -1,6 +1,7 @@
 # Get State machine của Device
 
 - [x] ``` odrv0.axis0.current_state ```
+odrv0.erase_configuration()
 - [x] ``` dump_errors(odrv0, True) ```
 # Cài đặt thông số motor
 **Motor 1**
