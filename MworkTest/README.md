@@ -6,6 +6,10 @@
 
 # Tính Motor con chó
 
+
+Torque (N.m) = 8.27 x (A/ kv)
+
+Vel =
 ```
 max 10A
 2000RPM -> 209 rad/s
