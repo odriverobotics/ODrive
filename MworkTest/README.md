@@ -8,6 +8,7 @@
 
 ```
 max 10A
+2000RPM -> 209 rad/s
 - (2**14) * 40 = 655360  # 40 vong 
 odrv0.axis0.motor.config.current_control_bandwidth = 1500
 odrv0.axis0.controller.config.inertia=0.0023
