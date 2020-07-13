@@ -239,6 +239,7 @@ public:
 
     float& vbus_voltage_ = ::vbus_voltage; // TODO: make this the actual variable
     float& ibus_ = ::ibus_; // TODO: make this the actual variable
+    float ibus_report_filter_k_ = 1.0f;
 
     const uint64_t& serial_number_ = ::serial_number;
 

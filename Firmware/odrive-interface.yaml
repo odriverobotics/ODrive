@@ -28,6 +28,12 @@ interfaces:
           This value is equal to the sum of the motor currents and the brake resistor currents.
           The motor currents are measured, the brake resistor current is calculated based on
           `config.brake_resistance`.
+      ibus_report_filter_k:
+          type: float32
+          doc: |
+            Filter gain for the reported `ibus`. Set to a value below 1.0 to get a smoother
+            line when plotting `ibus`. Set to 1.0 to disable. This filter is only applied to
+            the reported value and not for internal calculations.
       serial_number: readonly uint64
       hw_version_major: readonly uint8
       hw_version_minor: readonly uint8
