@@ -34,14 +34,14 @@ bool Controller::select_encoder(size_t encoder_num) {
     if (encoder_num < AXIS_COUNT) {
         Axis* ax = axes[encoder_num];
         if (config_.setpoints_in_cpr) {
-            pos_estimate_src_ = &ax->encoder_.pos_cpr_rad_;
+            pos_estimate_src_ = &ax->encoder_.pos_cpr_;
             pos_wrap_src_ = &ax->encoder_.config_.cpr;
         } else {
-            pos_estimate_src_ = &ax->encoder_.pos_est_rad_;
+            pos_estimate_src_ = &ax->encoder_.pos_estimate_;
             pos_wrap_src_ = nullptr;
         }
         pos_estimate_valid_src_ = &ax->encoder_.pos_estimate_valid_;
-        vel_estimate_src_ = &ax->encoder_.vel_est_rad_;
+        vel_estimate_src_ = &ax->encoder_.vel_estimate_;
         vel_estimate_valid_src_ = &ax->encoder_.vel_estimate_valid_;
         return true;
     } else {
@@ -128,14 +128,14 @@ bool Controller::update(float* torque_setpoint_output) {
             ? vel_estimate_src_ : nullptr;
 
     // Calib_anticogging is only true when calibration is occurring, so we can't block anticogging_pos
-    float anticogging_pos = axis_->encoder_.pos_est_rad_ / axis_->encoder_.getCoggingRatio();
+    float anticogging_pos = axis_->encoder_.pos_estimate_ / axis_->encoder_.getCoggingRatio();
     if (config_.anticogging.calib_anticogging) {
         if (!axis_->encoder_.pos_estimate_valid_ || !axis_->encoder_.vel_estimate_valid_) {
             set_error(ERROR_INVALID_ESTIMATE);
             return false;
         }
         // non-blocking
-        anticogging_calibration(axis_->encoder_.pos_est_rad_, axis_->encoder_.vel_est_rad_);
+        anticogging_calibration(axis_->encoder_.pos_estimate_, axis_->encoder_.vel_estimate_);
     }
 
     // TODO also enable circular deltas for 2nd order filter, etc.
@@ -181,8 +181,8 @@ bool Controller::update(float* torque_setpoint_output) {
         } break;
         case INPUT_MODE_MIRROR: {
             if (config_.axis_to_mirror < AXIS_COUNT) {
-                pos_setpoint_ = axes[config_.axis_to_mirror]->encoder_.pos_est_rad_ * config_.mirror_ratio;
-                vel_setpoint_ = axes[config_.axis_to_mirror]->encoder_.vel_est_rad_ * config_.mirror_ratio;
+                pos_setpoint_ = axes[config_.axis_to_mirror]->encoder_.pos_estimate_ * config_.mirror_ratio;
+                vel_setpoint_ = axes[config_.axis_to_mirror]->encoder_.vel_estimate_ * config_.mirror_ratio;
             } else {
                 set_error(ERROR_INVALID_MIRROR_AXIS);
                 return false;

@@ -332,7 +332,7 @@ This mode is useful for continuous incremental position movement. For example a 
 In the regular position mode, the `input_pos` would grow to a very large value and would lose precision due to floating point rounding.
 
 In this mode, the controller will try to track the position within only one turn of the motor. Specifically, `input_pos` is expected in the range `[0, 2*Pi]`. If the `input_pos` is incremented to outside this range (say via step/dir input), it is automatically wrapped around into the correct value.
-Note that in this mode `encoder.pos_cpr_rad` is used for feedback in stead of `encoder.pos_est_rad`.
+Note that in this mode `encoder.pos_cpr_` is used for feedback instead of `encoder.pos_estimate`.
 
 If you try to increment the axis with a large step in one go that exceeds `Pi` steps, the motor will go to the same angle around the wrong way. This is also the case if there is a large disturbance. If you have an application where you would like to handle larger steps, you can use a virtual CPR for your encoder that is an integer times larger than your encoder's actual CPR. Set `encoder.config.cpr = N * your_enc_cpr`, where N is some integer. Choose N to give you an appropriate circular space for your application. `encoder.config.cpr` is automatically converted to radians internally.
 

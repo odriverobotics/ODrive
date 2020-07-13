@@ -723,12 +723,12 @@ interfaces:
       interpolation: readonly float32
       phase: readonly float32
       pos_estimate: readonly float32
-      pos_est_rad: readonly float32
+      pos_estimate_counts: readonly float32
       pos_cpr: readonly float32
-      pos_cpr_rad: readonly float32
+      pos_cpr_counts: readonly float32
       hall_state: readonly uint8
       vel_estimate: readonly float32
-      vel_est_rad: readonly float32
+      vel_estimate_counts: readonly float32
       calib_scan_response: readonly float32
       pos_abs: int32
       spi_error_rate: readonly float32

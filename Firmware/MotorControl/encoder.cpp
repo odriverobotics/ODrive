@@ -110,7 +110,7 @@ void Encoder::set_linear_count(int32_t count) {
 
     // Update states
     shadow_count_ = count;
-    pos_estimate_ = (float)count;
+    pos_estimate_counts_ = (float)count;
     tim_cnt_sample_ = count;
 
     //Write hardware last
@@ -132,7 +132,7 @@ void Encoder::set_circular_count(int32_t count, bool update_offset) {
 
     // Update states
     count_in_cpr_ = mod(count, config_.cpr);
-    pos_cpr_ = (float)count_in_cpr_;
+    pos_cpr_counts_ = (float)count_in_cpr_;
 
     cpu_exit_critical(prim);
 }
@@ -505,27 +505,27 @@ bool Encoder::update() {
 
     //// run pll (for now pll is in units of encoder counts)
     // Predict current pos
-    pos_estimate_ += current_meas_period * vel_estimate_;
-    pos_cpr_      += current_meas_period * vel_estimate_;
+    pos_estimate_counts_ += current_meas_period * vel_estimate_counts_;
+    pos_cpr_counts_      += current_meas_period * vel_estimate_counts_;
     // discrete phase detector
-    float delta_pos = (float)(shadow_count_ - (int32_t)std::floor(pos_estimate_));
-    float delta_pos_cpr = (float)(count_in_cpr_ - (int32_t)std::floor(pos_cpr_));
+    float delta_pos = (float)(shadow_count_ - (int32_t)std::floor(pos_estimate_counts_));
+    float delta_pos_cpr = (float)(count_in_cpr_ - (int32_t)std::floor(pos_cpr_counts_));
     delta_pos_cpr = wrap_pm(delta_pos_cpr, 0.5f * config_.cpr);
     // pll feedback
-    pos_estimate_ += current_meas_period * pll_kp_ * delta_pos;
-    pos_cpr_ += current_meas_period * pll_kp_ * delta_pos_cpr;
-    pos_cpr_ = fmodf_pos(pos_cpr_, (float)(config_.cpr));
-    vel_estimate_ += current_meas_period * pll_ki_ * delta_pos_cpr;
+    pos_estimate_counts_ += current_meas_period * pll_kp_ * delta_pos;
+    pos_cpr_counts_ += current_meas_period * pll_kp_ * delta_pos_cpr;
+    pos_cpr_counts_ = fmodf_pos(pos_cpr_counts_, (float)(config_.cpr));
+    vel_estimate_counts_ += current_meas_period * pll_ki_ * delta_pos_cpr;
     bool snap_to_zero_vel = false;
-    if (std::abs(vel_estimate_) < 0.5f * current_meas_period * pll_ki_) {
-        vel_estimate_ = 0.0f;  //align delta-sigma on zero to prevent jitter
+    if (std::abs(vel_estimate_counts_) < 0.5f * current_meas_period * pll_ki_) {
+        vel_estimate_counts_ = 0.0f;  //align delta-sigma on zero to prevent jitter
         snap_to_zero_vel = true;
     }
 
-    //expose pos/vel estimates in radians for Controller
-    pos_est_rad_ = pos_estimate_ * 2.0f * M_PI / config_.cpr;
-    vel_est_rad_ = vel_estimate_ * 2.0f * M_PI / config_.cpr;
-    pos_cpr_rad_ = pos_cpr_ * 2.0f * M_PI / config_.cpr;
+    //outputs from encoder for controller
+    pos_estimate_ = pos_estimate_counts_ * 2.0f * M_PI / config_.cpr;
+    vel_estimate_ = vel_estimate_counts_ * 2.0f * M_PI / config_.cpr;
+    pos_cpr_= pos_cpr_counts_ * 2.0f * M_PI / config_.cpr;
 
     //// run encoder count interpolation
     int32_t corrected_enc = count_in_cpr_ - config_.offset;
@@ -539,7 +539,7 @@ bool Encoder::update() {
         interpolation_ = 1.0f;
     } else {
         // Interpolate (predict) between encoder counts using vel_estimate,
-        interpolation_ += current_meas_period * vel_estimate_;
+        interpolation_ += current_meas_period * vel_estimate_counts_;
         // don't allow interpolation indicated position outside of [enc, enc+1)
         if (interpolation_ > 1.0f) interpolation_ = 1.0f;
         if (interpolation_ < 0.0f) interpolation_ = 0.0f;

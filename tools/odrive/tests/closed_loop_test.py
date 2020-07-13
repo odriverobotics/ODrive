@@ -87,7 +87,7 @@ class TestClosedLoopControl(TestClosedLoopControlBase):
             request_state(axis_ctx, AXIS_STATE_CLOSED_LOOP_CONTROL)
             axis_ctx.handle.controller.input_vel = nominal_vel
 
-            data = record_log(lambda: [axis_ctx.handle.encoder.vel_est_rad, axis_ctx.handle.encoder.pos_est_rad], duration=5.0)
+            data = record_log(lambda: [axis_ctx.handle.encoder.vel_estimate, axis_ctx.handle.encoder.pos_estimate], duration=5.0)
 
             test_assert_eq(axis_ctx.handle.current_state, AXIS_STATE_CLOSED_LOOP_CONTROL)
             test_assert_no_error(axis_ctx)
@@ -119,11 +119,11 @@ class TestClosedLoopControl(TestClosedLoopControlBase):
             axis_ctx.handle.controller.input_pos = test_pos
             time.sleep(0.3)
             test_assert_no_error(axis_ctx)
-            test_assert_eq(axis_ctx.handle.encoder.pos_est_rad, test_pos, range=0.4*test_pos) # large range needed because of cogging torque
+            test_assert_eq(axis_ctx.handle.encoder.pos_estimate, test_pos, range=0.4*test_pos) # large range needed because of cogging torque
             axis_ctx.handle.controller.input_pos = -1 * test_pos
             time.sleep(0.3)
             test_assert_no_error(axis_ctx)
-            test_assert_eq(axis_ctx.handle.encoder.pos_est_rad, -1 * test_pos, range=0.4*test_pos)
+            test_assert_eq(axis_ctx.handle.encoder.pos_estimate, -1 * test_pos, range=0.4*test_pos)
             
             axis_ctx.handle.controller.input_pos = 0
             time.sleep(0.3)
@@ -132,7 +132,7 @@ class TestClosedLoopControl(TestClosedLoopControlBase):
             axis_ctx.handle.controller.input_pos = nominal_vel * 2.0 # 10 turns (takes 2 seconds)
             
             # Test large position change with bounded velocity
-            data = record_log(lambda: [axis_ctx.handle.encoder.vel_est_rad, axis_ctx.handle.encoder.pos_est_rad], duration=4.0)
+            data = record_log(lambda: [axis_ctx.handle.encoder.vel_estimate, axis_ctx.handle.encoder.pos_estimate], duration=4.0)
             
             test_assert_eq(axis_ctx.handle.current_state, AXIS_STATE_CLOSED_LOOP_CONTROL)
             test_assert_no_error(axis_ctx)
@@ -141,24 +141,24 @@ class TestClosedLoopControl(TestClosedLoopControlBase):
             data_motion = data[data[:,0] < 1.9]
             data_still = data[data[:,0] > 2.1]
 
-            # encoder.vel_est_rad
+            # encoder.vel_estimate
             slope, offset, fitted_curve = fit_line(data_motion[:,(0,1)])
             test_assert_eq(slope, 0.0, range = nominal_vel * 0.05)
             test_assert_eq(offset, nominal_vel, accuracy = 0.05)
             test_curve_fit(data_motion[:,(0,1)], fitted_curve, max_mean_err = nominal_vel * 0.05, inlier_range = nominal_vel * 0.1, max_outliers = len(data[:,0]) * 0.01)
 
-            # encoder.pos_est_rad
+            # encoder.pos_estimate
             slope, offset, fitted_curve = fit_line(data_motion[:,(0,2)])
             test_assert_eq(slope, nominal_vel, accuracy = 0.01)
             test_curve_fit(data_motion[:,(0,2)], fitted_curve, max_mean_err = nominal_vel * 0.01, inlier_range = nominal_vel * 0.1, max_outliers = len(data[:,0]) * 0.01)
 
-            # encoder.vel_est_rad
+            # encoder.vel_estimate
             slope, offset, fitted_curve = fit_line(data_still[:,(0,1)])
             test_assert_eq(slope, 0.0, range = nominal_vel * 0.05)
             test_assert_eq(offset, 0.0, range = nominal_vel * 0.05)
             test_curve_fit(data_still[:,(0,1)], fitted_curve, max_mean_err = nominal_vel * 0.05, inlier_range = nominal_vel * 0.1, max_outliers = len(data[:,0]) * 0.01)
 
-            # encoder.pos_est_rad
+            # encoder.pos_estimate
             slope, offset, fitted_curve = fit_line(data_still[:,(0,2)])
             test_assert_eq(slope, 0.0, range = nominal_vel * 0.05)
             test_assert_eq(offset, nominal_vel*2, range = nominal_vel * 0.02)
@@ -173,7 +173,7 @@ class TestRegenProtection(TestClosedLoopControlBase):
 
     def run_test(self, axis_ctx: ODriveAxisComponent, motor_ctx: MotorComponent, enc_ctx: EncoderComponent, logger: Logger):
         with self.prepare(axis_ctx, motor_ctx, enc_ctx, logger):
-            nominal_rps = 10.0
+            nominal_rps = 15.0
             nominal_vel = 2.0 * pi * nominal_rps
             max_current = 15.0
         
@@ -182,7 +182,7 @@ class TestRegenProtection(TestClosedLoopControlBase):
 
             logger.debug(f'Brake control test from {nominal_rps} rounds/s...')
             
-            axis_ctx.handle.controller.config.vel_limit = 2.0 * pi * 15.0 # max 15 rps
+            axis_ctx.handle.controller.config.vel_limit = 2.0 * pi * 25.0 # max 15 rps
             axis_ctx.handle.motor.config.current_lim = max_current
             axis_ctx.handle.controller.config.control_mode = CONTROL_MODE_VELOCITY_CONTROL
             axis_ctx.handle.controller.config.input_mode = INPUT_MODE_PASSTHROUGH
@@ -223,7 +223,7 @@ class TestVelLimitInTorqueControl(TestClosedLoopControlBase):
             max_rps = 20.0
             max_vel = 2.0 * pi * max_rps
             absolute_max_vel = max_vel * 1.2
-            max_current = 15.0
+            max_current = 30.0
             torque_constant = 0.0305 #correct for 5065 motor
 
             axis_ctx.handle.controller.config.vel_gain /= 10 # reduce the slope to make it easier to see what's going on
@@ -243,9 +243,9 @@ class TestVelLimitInTorqueControl(TestClosedLoopControlBase):
 
             def data_getter():
                 # sample velocity twice to avoid systematic bias
-                velocity0 = axis_ctx.handle.encoder.vel_est_rad
+                velocity0 = axis_ctx.handle.encoder.vel_estimate
                 current_setpoint = axis_ctx.handle.motor.current_control.Iq_setpoint
-                velocity1 = axis_ctx.handle.encoder.vel_est_rad
+                velocity1 = axis_ctx.handle.encoder.vel_estimate
                 velocity = ((velocity0 + velocity1) / 2)
                 # Abort immediately if the absolute limits are exceeded
                 test_assert_within(current_setpoint, -max_current, max_current)

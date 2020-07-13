@@ -152,8 +152,8 @@ try:
         # If you want to plot different values, change them here.
         # You can plot any number of values concurrently.
         cancellation_token = start_liveplotter(lambda: [
-            my_odrive.axis0.encoder.pos_est_rad,
-            my_odrive.axis1.encoder.pos_est_rad,
+            my_odrive.axis0.encoder.pos_estimate,
+            my_odrive.axis1.encoder.pos_estimate,
         ])
 
         print("Showing plot. Press Ctrl+C to exit.")

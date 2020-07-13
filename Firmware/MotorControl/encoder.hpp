@@ -75,18 +75,18 @@ public:
     int32_t count_in_cpr_ = 0;
     float interpolation_ = 0.0f;
     float phase_ = 0.0f;        // [count]
-    float pos_estimate_ = 0.0f;  // [count]
-    float pos_cpr_ = 0.0f;  // [count]
-    float vel_estimate_ = 0.0f;  // [count/s]
+    float pos_estimate_counts_ = 0.0f;  // [count]
+    float pos_cpr_counts_ = 0.0f;  // [count]
+    float vel_estimate_counts_ = 0.0f;  // [count/s]
     float pll_kp_ = 0.0f;   // [count/s / count]
     float pll_ki_ = 0.0f;   // [(count/s^2) / count]
     float calib_scan_response_ = 0.0f; // debug report from offset calib
     int32_t pos_abs_ = 0;
     float spi_error_rate_ = 0.0f;
 
-    float pos_est_rad_ = 0.0f;  // [rad]
-    float vel_est_rad_ = 0.0f;  // [rad]
-    float pos_cpr_rad_ = 0.0f;  // [rad]
+    float pos_estimate_ = 0.0f;  // [rad]
+    float vel_estimate_ = 0.0f;  // [rad]
+    float pos_cpr_ = 0.0f;  // [rad]
 
     bool pos_estimate_valid_ = false;
     bool vel_estimate_valid_ = false;
