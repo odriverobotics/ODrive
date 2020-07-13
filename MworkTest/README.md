@@ -8,7 +8,8 @@ odrv0.erase_configuration()
 - [x] ```odrv0.config.brake_resistance = 0.5``` Điện trở xả 
 
 - [x] ```odrv0.axis0.motor.config.current_lim = 3``` limit 10A
-- [x] ```odrv0.axis0.controller.config.vel_limit = 500000``` la 20000[counts/s].
+- [x] ```odrv0.axis0.controller.config.vel_limit = 655360``` la 20000[counts/s].
+- (2**14) * 40 = 655360  # 40 vong 
 - [x] ```odrv0.axis0.motor.config.calibration_current = 2.0```
 - [x] ```odrv0.axis0.motor.config.pole_pairs = 21 ``` Poles pair
 - [ ] ```odrv0.axis0.motor.config.motor_type = MOTOR_TYPE_HIGH_CURRENT```   # select if you have a gimbal or high amp motor
