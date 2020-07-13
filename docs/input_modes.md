@@ -51,7 +51,7 @@ Ramps a velocity command from the current value to the target value.
 ## INPUT_MODE_POS_FILTER
 Implements a 2nd order position tracking filter.  Inteded for use with step/dir interface, but can also be used with position-only commands.
 
-![POS Filter Response](secondOrderResponse.png)
+![POS Filter Response](secondOrderResponse.PNG)
 Result of a step command from 1000 to 0
 
 ### Configuration Values:
@@ -71,7 +71,7 @@ Not Implemented.
 ## INPUT_MODE_TRAP_TRAJ
 Implementes an online trapezoidal trajectory planner.
 
-![Trapezoidal Planner Response](TrapTrajPosVel.png)
+![Trapezoidal Planner Response](TrapTrajPosVel.PNG)
 
 ### Configuration Values:
 * `<axis>.trap_traj.config.vel_limit`
