@@ -175,7 +175,7 @@ class TestRegenProtection(TestClosedLoopControlBase):
         with self.prepare(axis_ctx, motor_ctx, enc_ctx, logger):
             nominal_rps = 15.0
             nominal_vel = 2.0 * pi * nominal_rps
-            max_current = 15.0
+            max_current = 30.0
         
             # Accept a bit of noise on Ibus
             axis_ctx.parent.handle.config.dc_max_negative_current = -0.5

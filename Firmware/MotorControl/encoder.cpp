@@ -522,17 +522,10 @@ bool Encoder::update() {
         snap_to_zero_vel = true;
     }
 
-<<<<<<< HEAD
     //outputs from encoder for controller
-    pos_estimate_ = pos_estimate_counts_ * 2.0f * M_PI / config_.cpr;
-    vel_estimate_ = vel_estimate_counts_ * 2.0f * M_PI / config_.cpr;
-    pos_cpr_= pos_cpr_counts_ * 2.0f * M_PI / config_.cpr;
-=======
-    //expose pos/vel estimates in radians for Controller
-    pos_est_rad_ = pos_estimate_ * 2.0f * M_PI / (float)config_.cpr;
-    vel_est_rad_ = vel_estimate_ * 2.0f * M_PI / (float)config_.cpr;
-    pos_cpr_rad_ = pos_cpr_ * 2.0f * M_PI / (float)config_.cpr;
->>>>>>> 4d920849a09d1e3368216f7786e9c1c9b9cb2ce3
+    pos_estimate_ = pos_estimate_counts_ * 2.0f * M_PI / (float)config_.cpr;
+    vel_estimate_ = vel_estimate_counts_ * 2.0f * M_PI / (float)config_.cpr;
+    pos_cpr_= pos_cpr_counts_ * 2.0f * M_PI / (float)config_.cpr;
 
     //// run encoder count interpolation
     int32_t corrected_enc = count_in_cpr_ - config_.offset;

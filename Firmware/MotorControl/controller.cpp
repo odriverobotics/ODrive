@@ -35,7 +35,7 @@ bool Controller::select_encoder(size_t encoder_num) {
         Axis* ax = axes[encoder_num];
         if (config_.setpoints_in_cpr) {
             pos_estimate_src_ = &ax->encoder_.pos_cpr_;
-            pos_wrap_src_ = &ax->encoder_.config_.cpr;
+            pos_wrap_src_ = &config_.circular_setpoint_range;
         } else {
             pos_estimate_src_ = &ax->encoder_.pos_estimate_;
             pos_wrap_src_ = nullptr;
@@ -139,10 +139,9 @@ bool Controller::update(float* torque_setpoint_output) {
     }
 
     // TODO also enable circular deltas for 2nd order filter, etc.
-    if (pos_wrap_src_) {
-        float cpr = *pos_wrap_src_ * 2.0f * M_PI / ((float)axis_->encoder_.config_.cpr);
+    if (config_.setpoints_in_cpr) {
         // Keep pos setpoint from drifting
-        input_pos_ = fmodf_pos(input_pos_, cpr);
+        input_pos_ = fmodf_pos(input_pos_, config_.circular_setpoint_range);
     }
 
     // Update inputs
@@ -234,13 +233,12 @@ bool Controller::update(float* torque_setpoint_output) {
             return false;
         }
 
-        if (pos_wrap_src_) {
-            float cpr = *pos_wrap_src_ * 2.0f * M_PI / ((float)axis_->encoder_.config_.cpr);
+        if (config_.setpoints_in_cpr) {
             // Keep pos setpoint from drifting
-            pos_setpoint_ = fmodf_pos(pos_setpoint_, cpr);
+            pos_setpoint_ = fmodf_pos(pos_setpoint_, config_.circular_setpoint_range);
             // Circular delta
             pos_err = pos_setpoint_ - *pos_estimate_src;
-            pos_err = wrap_pm(pos_err, 0.5f * cpr);
+            pos_err = wrap_pm(pos_err, 0.5f * config_.circular_setpoint_range);
         } else {
             pos_err = pos_setpoint_ - *pos_estimate_src;
         }

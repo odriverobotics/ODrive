@@ -30,6 +30,7 @@ public:
         float vel_ramp_rate = 2.0f * M_PI;              // [(rad/s) / s]
         float torque_ramp_rate = 0.01f;                 // Nm / sec
         bool setpoints_in_cpr = false;
+        float circular_setpoint_range = 2.0f * M_PI;    //circular space if setpoints_in_cpr is used for controller
         float inertia = 0.0f;                           // [A/(count/s^2)]
         float input_filter_bandwidth = 2.0f;            // [1/s]
         float homing_speed = 2000.0f;                   // [counts/s]
@@ -75,7 +76,7 @@ public:
     bool* pos_estimate_valid_src_ = nullptr;
     float* vel_estimate_src_ = nullptr;
     bool* vel_estimate_valid_src_ = nullptr;
-    int32_t* pos_wrap_src_ = nullptr; // enables circular position setpoints if not null. The value pointed to is the maximum position value.
+    float* pos_wrap_src_ = nullptr; // enables circular position setpoints if not null. The value pointed to is the maximum position value.
 
     float pos_setpoint_ = 0.0f; // [radians]
     float vel_setpoint_ = 0.0f; // [rad/s]
@@ -94,6 +95,9 @@ public:
     bool trajectory_done_ = true;
 
     bool anticogging_valid_ = false;
+
+    // custom setters
+    void set_input_pos(float value) { input_pos_ = value; input_pos_updated();}
 
 };
 
