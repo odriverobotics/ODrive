@@ -1,3 +1,6 @@
+odrv0.axis1.controller.config.vel_gain=0.000003
+
+
 # Get State machine của Device
 
 - [x] ``` odrv0.axis0.current_state ```
