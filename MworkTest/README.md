@@ -1,5 +1,7 @@
 odrv0.axis1.controller.config.vel_gain=0.000003
+In [46]: odrv0.axis1.controller.config.vel_gain=0.000001
 
+In [47]: odrv0.axis1.controller.config.pos_gain=800
 
 # Get State machine của Device
 
