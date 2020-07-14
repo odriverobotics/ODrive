@@ -169,6 +169,9 @@ class TestRegenProtection(TestClosedLoopControlBase):
     """
     Tries to brake with a disabled brake resistor.
     This should result in a low level error disabling all power outputs.
+
+    Note: If this test fails then try to run it at a DC voltage of 24V.
+    Ibus seems to be more noisy/sensitive at lower DC voltages.
     """
 
     def run_test(self, axis_ctx: ODriveAxisComponent, motor_ctx: MotorComponent, enc_ctx: EncoderComponent, logger: Logger):
@@ -178,7 +181,7 @@ class TestRegenProtection(TestClosedLoopControlBase):
             max_current = 30.0
         
             # Accept a bit of noise on Ibus
-            axis_ctx.parent.handle.config.dc_max_negative_current = -0.5
+            axis_ctx.parent.handle.config.dc_max_negative_current = -0.2
 
             logger.debug(f'Brake control test from {nominal_rps} rounds/s...')
             
