@@ -33,13 +33,9 @@ void Controller::input_pos_updated() {
 bool Controller::select_encoder(size_t encoder_num) {
     if (encoder_num < AXIS_COUNT) {
         Axis* ax = axes[encoder_num];
-        if (config_.setpoints_in_cpr) {
-            pos_estimate_src_ = &ax->encoder_.pos_cpr_;
-            pos_wrap_src_ = &config_.circular_setpoint_range;
-        } else {
-            pos_estimate_src_ = &ax->encoder_.pos_estimate_;
-            pos_wrap_src_ = nullptr;
-        }
+        pos_estimate_circular_ = &ax->encoder_.pos_circular_;
+        pos_wrap_src_ = &config_.circular_setpoint_range;
+        pos_estimate_linear_ = &ax->encoder_.pos_estimate_;
         pos_estimate_valid_src_ = &ax->encoder_.pos_estimate_valid_;
         vel_estimate_src_ = &ax->encoder_.vel_estimate_;
         vel_estimate_valid_src_ = &ax->encoder_.vel_estimate_valid_;
@@ -122,8 +118,10 @@ static float limitVel(const float vel_limit, const float vel_estimate, const flo
 }
 
 bool Controller::update(float* torque_setpoint_output) {
-    float* pos_estimate_src = (pos_estimate_valid_src_ && *pos_estimate_valid_src_)
-            ? pos_estimate_src_ : nullptr;
+    float* pos_estimate_linear = (pos_estimate_valid_src_ && *pos_estimate_valid_src_)
+            ? pos_estimate_linear_ : nullptr;
+    float* pos_estimate_circular = (pos_estimate_valid_src_ && *pos_estimate_valid_src_)
+            ? pos_estimate_circular_ : nullptr;
     float* vel_estimate_src = (vel_estimate_valid_src_ && *vel_estimate_valid_src_)
             ? vel_estimate_src_ : nullptr;
 
@@ -139,7 +137,7 @@ bool Controller::update(float* torque_setpoint_output) {
     }
 
     // TODO also enable circular deltas for 2nd order filter, etc.
-    if (config_.setpoints_in_cpr) {
+    if (config_.circular_setpoints && pos_estimate_circular) {
         // Keep pos setpoint from drifting
         input_pos_ = fmodf_pos(input_pos_, config_.circular_setpoint_range);
     }
@@ -228,19 +226,19 @@ bool Controller::update(float* torque_setpoint_output) {
     float vel_des = vel_setpoint_;
     if (config_.control_mode >= CONTROL_MODE_POSITION_CONTROL) {
         float pos_err;
-        if (!pos_estimate_src) {
+        if (!pos_estimate_linear || !pos_estimate_circular) {
             set_error(ERROR_INVALID_ESTIMATE);
             return false;
         }
 
-        if (config_.setpoints_in_cpr) {
+        if (config_.circular_setpoints && pos_estimate_circular) {
             // Keep pos setpoint from drifting
-            pos_setpoint_ = fmodf_pos(pos_setpoint_, config_.circular_setpoint_range);
+            pos_setpoint_ = fmodf_pos(pos_setpoint_, *pos_wrap_src_);
             // Circular delta
-            pos_err = pos_setpoint_ - *pos_estimate_src;
-            pos_err = wrap_pm(pos_err, 0.5f * config_.circular_setpoint_range);
+            pos_err = pos_setpoint_ - *pos_estimate_circular;
+            pos_err = wrap_pm(pos_err, 0.5f * *pos_wrap_src_);
         } else {
-            pos_err = pos_setpoint_ - *pos_estimate_src;
+            pos_err = pos_setpoint_ - *pos_estimate_linear;
         }
 
         vel_des += config_.pos_gain * pos_err;

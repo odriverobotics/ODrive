@@ -20,29 +20,29 @@ public:
 
     struct Config_t {
         ControlMode control_mode = CONTROL_MODE_POSITION_CONTROL;  //see: ControlMode_t
-        InputMode input_mode = INPUT_MODE_PASSTHROUGH;  //see: InputMode_t
-        float pos_gain = 20.0f;                         // [(rad/s) / rad]
-        float vel_gain = 0.2f / 7.7f;                   // [Nm/(rad/s)]
+        InputMode input_mode = INPUT_MODE_PASSTHROUGH;             //see: InputMode_t
+        float pos_gain = 20.0f;                                    // [(rad/s) / rad]
+        float vel_gain = 0.2f / 7.7f;                              // [Nm/(rad/s)]
         // float vel_gain = 0.2f / 200.0f,              // [Nm/(rad/s)] <sensorless example>
-        float vel_integrator_gain = 0.4f / 7.7f;        // [Nm/(rad/s * s)]
-        float vel_limit = 4.0f * M_PI;                  // [rad/s] Infinity to disable.
-        float vel_limit_tolerance = 1.2f;               // ratio to vel_lim. Infinity to disable.
-        float vel_ramp_rate = 2.0f * M_PI;              // [(rad/s) / s]
-        float torque_ramp_rate = 0.01f;                 // Nm / sec
-        bool setpoints_in_cpr = false;
-        float circular_setpoint_range = 2.0f * M_PI;    //circular space if setpoints_in_cpr is used for controller
-        float inertia = 0.0f;                           // [A/(count/s^2)]
-        float input_filter_bandwidth = 2.0f;            // [1/s]
-        float homing_speed = 2000.0f;                   // [counts/s]
+        float vel_integrator_gain = 0.4f / 7.7f;  // [Nm/(rad/s * s)]
+        float vel_limit = 4.0f * M_PI;            // [rad/s] Infinity to disable.
+        float vel_limit_tolerance = 1.2f;         // ratio to vel_lim. Infinity to disable.
+        float vel_ramp_rate = 2.0f * M_PI;        // [(rad/s) / s]
+        float torque_ramp_rate = 0.01f;           // Nm / sec
+        bool circular_setpoints = false;
+        float circular_setpoint_range = 2.0f * M_PI;  // Circular range when circular_setpoints is true. [rad]
+        float inertia = 0.0f;                         // [A/(count/s^2)]
+        float input_filter_bandwidth = 2.0f;          // [1/s]
+        float homing_speed = 2000.0f;                 // [counts/s]
         Anticogging_t anticogging;
         float gain_scheduling_width = 10.0f;
         bool enable_gain_scheduling = false;
         bool enable_vel_limit = true;
         bool enable_overspeed_error = true;
-        bool enable_current_mode_vel_limit = true;      // enable velocity limit in current control mode (requires a valid velocity estimator)
+        bool enable_current_mode_vel_limit = true;  // enable velocity limit in current control mode (requires a valid velocity estimator)
         uint8_t axis_to_mirror = -1;
         float mirror_ratio = 1.0f;
-        uint8_t load_encoder_axis = -1;                     // default depends on Axis number and is set in load_configuration()
+        uint8_t load_encoder_axis = -1;  // default depends on Axis number and is set in load_configuration()
 
         // custom setters
         Controller* parent;
@@ -72,11 +72,13 @@ public:
 
     Error error_ = ERROR_NONE;
 
-    float* pos_estimate_src_ = nullptr;
+    float* pos_estimate_linear_ = nullptr;
+    float* pos_estimate_circular_ = nullptr;
     bool* pos_estimate_valid_src_ = nullptr;
     float* vel_estimate_src_ = nullptr;
     bool* vel_estimate_valid_src_ = nullptr;
-    float* pos_wrap_src_ = nullptr; // enables circular position setpoints if not null. The value pointed to is the maximum position value.
+    float* pos_wrap_src_ = nullptr; 
+
 
     float pos_setpoint_ = 0.0f; // [radians]
     float vel_setpoint_ = 0.0f; // [rad/s]
@@ -84,9 +86,9 @@ public:
     float vel_integrator_torque_ = 0.0f;    // [Nm]
     float torque_setpoint_ = 0.0f;  // [Nm]
 
-    float input_pos_ = 0.0f;    // [radians]
-    float input_vel_ = 0.0f;    // [rad/s]
-    float input_torque_ = 0.0f; // [Nm]
+    float input_pos_ = 0.0f;     // [radians]
+    float input_vel_ = 0.0f;     // [rad/s]
+    float input_torque_ = 0.0f;  // [Nm]
     float input_filter_kp_ = 0.0f;
     float input_filter_ki_ = 0.0f;
 
@@ -97,7 +99,7 @@ public:
     bool anticogging_valid_ = false;
 
     // custom setters
-    void set_input_pos(float value) { input_pos_ = value; input_pos_updated();}
+    void set_input_pos(float value) { input_pos_ = value; input_pos_updated(); }
 
 };
 

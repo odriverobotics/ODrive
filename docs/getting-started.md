@@ -326,15 +326,15 @@ You can also execute a move with the [appropriate ascii command](ascii-protocol.
 
 ### Circular position control
 
-To enable Circular position control, set `axis.controller.config.setpoints_in_cpr = True`
+To enable Circular position control, set `axis.controller.config.circular_setpoints = True`
 
 This mode is useful for continuous incremental position movement. For example a robot rolling indefinitely, or an extruder motor or conveyor belt moving with controlled increments indefinitely.
 In the regular position mode, the `input_pos` would grow to a very large value and would lose precision due to floating point rounding.
 
 In this mode, the controller will try to track the position within only one turn of the motor. Specifically, `input_pos` is expected in the range `[0, 2*Pi]`. If the `input_pos` is incremented to outside this range (say via step/dir input), it is automatically wrapped around into the correct value.
-Note that in this mode `encoder.pos_cpr_` is used for feedback instead of `encoder.pos_estimate`.
+Note that in this mode `encoder.pos_circular` is used for feedback instead of `encoder.pos_estimate`.
 
-If you try to increment the axis with a large step in one go that exceeds `Pi` steps, the motor will go to the same angle around the wrong way. This is also the case if there is a large disturbance. If you have an application where you would like to handle larger steps, you can use a virtual CPR for your encoder that is an integer times larger than your encoder's actual CPR. Set `encoder.config.cpr = N * 2.0 * Pi`, where N is some integer. Choose N to give you an appropriate circular space for your application.
+If you try to increment the axis with a large step in one go that exceeds `Pi` steps, the motor will go to the same angle around the wrong way. This is also the case if there is a large disturbance. If you have an application where you would like to handle larger steps, you can use a larger circular range that is an integer multiple of `2*Pi`. Set `controller.config.circular_setpoints_range = N * 2.0 * Pi`, where N is some integer. Choose N to give you an appropriate circular space for your application.
 
 ### Velocity control
 Set `axis.controller.config.control_mode = CONTROL_MODE_VELOCITY_CONTROL`.<br>

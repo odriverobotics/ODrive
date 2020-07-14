@@ -645,6 +645,11 @@ interfaces:
           torque_ramp_rate:
             type: float32
             unit: Nm / sec
+          circular_setpoints:
+            type: bool
+          circular_setpoint_range:
+            type: float32
+            doc: circular range in [rad] for position setpoints when circular_setpoints is True
           homing_speed:
             type: float32
             unit: counts/s
@@ -726,6 +731,7 @@ interfaces:
       pos_estimate_counts: readonly float32
       pos_cpr: readonly float32
       pos_cpr_counts: readonly float32
+      pos_circular: readonly float32
       hall_state: readonly uint8
       vel_estimate: readonly float32
       vel_estimate_counts: readonly float32

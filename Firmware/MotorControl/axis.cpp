@@ -278,7 +278,8 @@ bool Axis::run_lockin_spin(const LockinConfig_t &lockin_config) {
 
 // Note run_sensorless_control_loop and run_closed_loop_control_loop are very similar and differ only in where we get the estimate from.
 bool Axis::run_sensorless_control_loop() {
-    controller_.pos_estimate_src_ = nullptr;
+    controller_.pos_estimate_linear_ = nullptr;
+    controller_.pos_estimate_circular_ = nullptr;
     controller_.pos_estimate_valid_src_ = nullptr;
     controller_.vel_estimate_src_ = &sensorless_estimator_.vel_estimate_;
     controller_.vel_estimate_valid_src_ = &sensorless_estimator_.vel_estimate_valid_;
@@ -301,8 +302,8 @@ bool Axis::run_closed_loop_control_loop() {
     }
 
     // To avoid any transient on startup, we intialize the setpoint to be the current position
-    controller_.pos_setpoint_ = *controller_.pos_estimate_src_;
-    controller_.input_pos_ = *controller_.pos_estimate_src_;
+    controller_.pos_setpoint_ = *controller_.pos_estimate_linear_;
+    controller_.input_pos_ = *controller_.pos_estimate_linear_;
 
     // Avoid integrator windup issues
     controller_.vel_integrator_torque_ = 0.0f;
@@ -352,7 +353,7 @@ bool Axis::run_homing() {
     }
     
     // To avoid any transient on startup, we intialize the setpoint to be the current position
-    controller_.pos_setpoint_ = *controller_.pos_estimate_src_;
+    controller_.pos_setpoint_ = *controller_.pos_estimate_linear_;
 
     // Avoid integrator windup issues
     controller_.vel_integrator_torque_ = 0.0f;
