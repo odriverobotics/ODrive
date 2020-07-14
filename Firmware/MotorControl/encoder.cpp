@@ -434,7 +434,6 @@ void Encoder::abs_spi_cs_pin_init(){
 bool Encoder::update() {
     // update internal encoder state.
     int32_t delta_enc = 0;
-    float delta_pos_cpr = 0;
 
     switch (mode_) {
         case MODE_INCREMENTAL: {
@@ -524,11 +523,11 @@ bool Encoder::update() {
     }
 
     // Outputs from Encoder for Controller
-    delta_pos_cpr = pos_cpr_;
+    float pos_cpr_last = pos_cpr_;
     pos_estimate_ = pos_estimate_counts_ * 2.0f * M_PI / (float)config_.cpr;
     vel_estimate_ = vel_estimate_counts_ * 2.0f * M_PI / (float)config_.cpr;
     pos_cpr_= pos_cpr_counts_ * 2.0f * M_PI / (float)config_.cpr;
-    delta_pos_cpr = wrap_pm(pos_cpr_ - delta_pos_cpr, M_PI);
+    float delta_pos_cpr = wrap_pm(pos_cpr_ - pos_cpr_last, M_PI);
     pos_circular_ += delta_pos_cpr;
     pos_circular_ = fmodf_pos(pos_circular_, axis_->controller_.config_.circular_setpoint_range);
 
