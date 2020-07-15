@@ -1,16 +1,15 @@
-odrv0.axis1.controller.config.vel_gain=0.000003
-In [46]: odrv0.axis1.controller.config.vel_gain=0.000001
-
-In [47]: odrv0.axis1.controller.config.pos_gain=800
-
 # Get State machine của Device
 
 - [x] ``` odrv0.axis0.current_state ```
 - odrv0.erase_configuration()
 - [x] ``` dump_errors(odrv0, True) ```
 
-# Tính Motor con chó
+# Tính Motor SteadyWin
 
+
+- [x] odrv0.axis0.controller.config.pos_gain = 80.0 (float)
+- [x] odrv0.axis0.controller.config.vel_gain = 4.999999873689376e-06 (float)
+- [x] odrv0.axis0.controller.config.vel_integrator_gain = 0.004000000189989805 (float)
 
 Torque (N.m) = 8.27 x (A/ kv)
 
@@ -20,7 +19,6 @@ max 10A
 2000RPM -> 209 rad/s
 - (2**14) * 40 = 655360  # 40 vong 
 odrv0.axis0.motor.config.current_control_bandwidth = 1500
-odrv0.axis0.controller.config.inertia=0.0023
 odrv0.axis0.controller.config.vel_gain= 10 / 655360 = 0.000015
 
 ```
