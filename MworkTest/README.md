@@ -7,9 +7,13 @@
 # Tính Motor SteadyWin
 
 
-- [x] odrv0.axis0.controller.config.pos_gain = 80.0 (float)
-- [x] odrv0.axis0.controller.config.vel_gain = 4.999999873689376e-06 (float)
-- [x] odrv0.axis0.controller.config.vel_integrator_gain = 0.004000000189989805 (float)
+- [x] odrv0.axis1.controller.config.pos_gain = 80.0 
+- [x] odrv0.axis1.controller.config.vel_gain = 4.999999873689376e-06 
+- [x] odrv0.axis1.controller.config.vel_integrator_gain = 0.004000000189989805
+- [x] odrv0.axis1.controller.config.inertia=0.00008
+- [x] odrv0.axis1.controller.config.input_filter_bandwidth=10
+- [x] odrv0.axis1.controller.config.input_mode  = 3
+- [x] odrv0.axis0.controller.config.vel_limit = 491000
 
 Torque (N.m) = 8.27 x (A/ kv)
 
