@@ -184,8 +184,9 @@ extern "C" int construct_objects(){
         Endstop *max_endstop = new Endstop(max_endstop_configs[i]);
         axes[i] = new Axis(i, hw_configs[i].axis_config, axis_configs[i],
                 *encoder, *sensorless_estimator, *controller, *motor, *trap, *min_endstop, *max_endstop);
+        axis_configs[i].parent = axes[i];
     }
-    initTree();
+    initTree();      
     return 0;
 }
 
@@ -260,7 +261,7 @@ int odrive_main(void) {
     //  - Allow a user to interrupt the code, e.g. by flashing a new code,
     //    before it does anything crazy
     // TODO make timing a function of calibration filter tau
-    osDelay(2500);
+    osDelay(1500);
 
     // Start state machine threads. Each thread will go through various calibration
     // procedures and then run the actual controller loops.
