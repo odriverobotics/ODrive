@@ -140,6 +140,7 @@ void Axis::set_step_dir_active(bool active) {
         GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
         GPIO_InitStruct.Pull = GPIO_NOPULL;
         HAL_GPIO_Init(dir_port_, &GPIO_InitStruct);
+        if (!HAL_GPIO_ReadPin(enable_port_, enable_pin_)) this.requested_state_ = AXIS_STATE_IDLE; //if the enable pin isn't set we stop the control loop*
 
         // Subscribe to rising edges of the step GPIO
         GPIO_subscribe(step_port_, step_pin_, GPIO_PULLDOWN, step_cb_wrapper, this);
@@ -309,6 +310,8 @@ bool Axis::run_closed_loop_control_loop() {
 
     set_step_dir_active(config_.enable_step_dir);
     run_control_loop([this](){
+        //check enable pin
+        if (!debounce_button(enable_port_, enable_pin_) && config_.enable_step_dir) requested_state_ = AXIS_STATE_IDLE;
         // Note that all estimators are updated in the loop prefix in run_control_loop
         float current_setpoint;
         if (!controller_.update(&current_setpoint))
@@ -412,6 +415,7 @@ bool Axis::run_idle_loop() {
     safety_critical_disarm_motor_pwm(motor_);
     set_step_dir_active(config_.enable_step_dir && config_.step_dir_always_on);
     run_control_loop([this]() {
+        if (debounce_button(enable_port_, enable_pin_) && config_.enable_step_dir) requested_state_ = AXIS_STATE_CLOSED_LOOP_CONTROL;
         return true;
     });
     return check_for_errors();

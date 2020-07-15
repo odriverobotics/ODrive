@@ -23,6 +23,7 @@
 typedef struct {
     uint16_t step_gpio_pin;
     uint16_t dir_gpio_pin;
+    uint16_t enable_gpio_pin;
     osPriority thread_priority;
 } AxisHardwareConfig_t;
 
@@ -75,6 +76,7 @@ const BoardHardwareConfig_t hw_configs[2] = { {
     .axis_config = {
         .step_gpio_pin = 1,
         .dir_gpio_pin = 2,
+        .enable_gpio_pin = 3,
         .thread_priority = (osPriority)(osPriorityHigh + (osPriority)1),
     },
     .encoder_config = {
@@ -111,6 +113,7 @@ const BoardHardwareConfig_t hw_configs[2] = { {
 #if HW_VERSION_MAJOR == 3 && HW_VERSION_MINOR >= 5
         .step_gpio_pin = 7,
         .dir_gpio_pin = 8,
+        .enable_gpio_pin = 5,
 #else
         .step_gpio_pin = 3,
         .dir_gpio_pin = 4,
