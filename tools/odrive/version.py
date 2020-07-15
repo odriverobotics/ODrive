@@ -35,7 +35,7 @@ def get_version_from_git():
 
     except Exception as ex:
         print(ex)
-        return "[unknown version]", 0, 0, 0, 1
+        return "[unknown version]", 0, 5, 0, 1
 
 def get_version_str(git_only=False, is_post_release=False, bump_rev=False, release_override=False):
     """

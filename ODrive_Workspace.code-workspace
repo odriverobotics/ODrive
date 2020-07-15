@@ -62,7 +62,18 @@
 			"iomanip": "cpp",
 			"optional": "cpp",
 			"sstream": "cpp",
-			"utils.h": "c"
+			"utils.h": "c",
+			"atomic": "cpp",
+			"iterator": "cpp",
+			"map": "cpp",
+			"memory_resource": "cpp",
+			"numeric": "cpp",
+			"random": "cpp",
+			"ratio": "cpp",
+			"set": "cpp",
+			"string": "cpp",
+			"mutex": "cpp",
+			"thread": "cpp"
 		}
 	}
 }

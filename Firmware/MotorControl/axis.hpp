@@ -239,7 +239,8 @@ public:
     Endstop& max_endstop_;
 
     osThreadId thread_id_;
-    const uint32_t stack_size_ = 2048; // Bytes
+    const uint32_t stack_size_ = 4096; // Bytes
+    //30722048
     volatile bool thread_id_valid_ = false;
 
     // variables exposed on protocol
@@ -253,7 +254,8 @@ public:
     uint16_t dir_pin_;
 
     State_t requested_state_ = AXIS_STATE_STARTUP_SEQUENCE;
-    std::array<State_t, 10> task_chain_ = { AXIS_STATE_UNDEFINED };
+    //State_t requested_state_ = AXIS_STATE_IDLE;
+    std::array<State_t, 10> task_chain_ = { AXIS_STATE_UNDEFINED }; //AXIS_STATE_UNDEFINED
     State_t& current_state_ = task_chain_.front();
     uint32_t loop_counter_ = 0;
     LockinState_t lockin_state_ = LOCKIN_STATE_INACTIVE;
