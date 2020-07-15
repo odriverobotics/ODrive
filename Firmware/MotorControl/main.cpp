@@ -184,7 +184,7 @@ extern "C" int construct_objects(){
         Endstop *max_endstop = new Endstop(max_endstop_configs[i]);
         axes[i] = new Axis(i, hw_configs[i].axis_config, axis_configs[i],
                 *encoder, *sensorless_estimator, *controller, *motor, *trap, *min_endstop, *max_endstop);
-        axis_configs[i].parent = axes[i];
+
     }
     initTree();      
     return 0;
