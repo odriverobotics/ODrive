@@ -21,19 +21,19 @@ public:
     struct Config_t {
         ControlMode control_mode = CONTROL_MODE_POSITION_CONTROL;  //see: ControlMode_t
         InputMode input_mode = INPUT_MODE_PASSTHROUGH;             //see: InputMode_t
-        float pos_gain = 20.0f;                                    // [(rad/s) / rad]
-        float vel_gain = 0.2f / 7.7f;                              // [Nm/(rad/s)]
+        float pos_gain = 20.0f;                                    // [(turn/s) / turn]
+        float vel_gain = 1.0f / 6.0f;                              // [Nm/(turn/s)]
         // float vel_gain = 0.2f / 200.0f,              // [Nm/(rad/s)] <sensorless example>
-        float vel_integrator_gain = 0.4f / 7.7f;  // [Nm/(rad/s * s)]
-        float vel_limit = 4.0f * M_PI;            // [rad/s] Infinity to disable.
-        float vel_limit_tolerance = 1.2f;         // ratio to vel_lim. Infinity to disable.
-        float vel_ramp_rate = 2.0f * M_PI;        // [(rad/s) / s]
+        float vel_integrator_gain = 2.0f / 6.0f;    // [Nm/(turn/s * s)]
+        float vel_limit = 2.0f;                     // [turn/s] Infinity to disable.
+        float vel_limit_tolerance = 1.2f;           // ratio to vel_lim. Infinity to disable.
+        float vel_ramp_rate = 1.0f;                 // [(turn/s) / s]
         float torque_ramp_rate = 0.01f;           // Nm / sec
         bool circular_setpoints = false;
-        float circular_setpoint_range = 2.0f * M_PI;  // Circular range when circular_setpoints is true. [rad]
+        float circular_setpoint_range = 1.0f;  // Circular range when circular_setpoints is true. [turn]
         float inertia = 0.0f;                         // [A/(count/s^2)]
         float input_filter_bandwidth = 2.0f;          // [1/s]
-        float homing_speed = 2000.0f;                 // [counts/s]
+        float homing_speed = 0.25f;                 // [turn/s]
         Anticogging_t anticogging;
         float gain_scheduling_width = 10.0f;
         bool enable_gain_scheduling = false;
@@ -80,14 +80,14 @@ public:
     float* pos_wrap_src_ = nullptr; 
 
 
-    float pos_setpoint_ = 0.0f; // [radians]
-    float vel_setpoint_ = 0.0f; // [rad/s]
+    float pos_setpoint_ = 0.0f; // [turns]
+    float vel_setpoint_ = 0.0f; // [turn/s]
     // float vel_setpoint = 800.0f; <sensorless example>
     float vel_integrator_torque_ = 0.0f;    // [Nm]
     float torque_setpoint_ = 0.0f;  // [Nm]
 
-    float input_pos_ = 0.0f;     // [radians]
-    float input_vel_ = 0.0f;     // [rad/s]
+    float input_pos_ = 0.0f;     // [turns]
+    float input_vel_ = 0.0f;     // [turn/s]
     float input_torque_ = 0.0f;  // [Nm]
     float input_filter_kp_ = 0.0f;
     float input_filter_ki_ = 0.0f;

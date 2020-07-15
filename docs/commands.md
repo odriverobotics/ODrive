@@ -55,8 +55,8 @@ Possible values are listed [here](api/odrive.axis.controller.inputmode).
 ## System monitoring commands
 
 ### Encoder position and velocity
-* View encoder position with `<axis>.encoder.pos_estimate` [rad] or `<axis>.encoder.pos_est_counts` [counts]
-* View rotational velocity with `<axis>.encoder.vel_estimate` [rad/s] or `<axis>.encoder.vel_est_counts` [count/s]
+* View encoder position with `<axis>.encoder.pos_estimate` [turns] or `<axis>.encoder.pos_est_counts` [counts]
+* View rotational velocity with `<axis>.encoder.vel_estimate` [turn/s] or `<axis>.encoder.vel_est_counts` [count/s]
 
 ### Motor current and torque estimation
 * View the commanded motor current with `<axis>.motor.current_control.Iq_setpoint` [A] 

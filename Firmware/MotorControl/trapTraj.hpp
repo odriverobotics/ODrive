@@ -4,9 +4,9 @@
 class TrapezoidalTrajectory {
 public:
     struct Config_t {
-        float vel_limit = 4.0f * M_PI;  // [rad/s]
-        float accel_limit = M_PI;       // [rad/s^2]
-        float decel_limit = M_PI;       // [rad/s^2]
+        float vel_limit = 2.0f;  // [turn/s]
+        float accel_limit = 0.5f;       // [turn/s^2]
+        float decel_limit = 0.5f;       // [turn/s^2]
     };
     
     struct Step_t {

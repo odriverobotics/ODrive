@@ -330,7 +330,7 @@ interfaces:
               This is ignored if enable_step_dir is false.
               This setting only takes effect on a state transition
               into idle or out of closed loop control.
-          counts_per_step: float32
+          turns_per_step: float32
           watchdog_timeout:
             type: float32
             unit: s
@@ -601,11 +601,11 @@ interfaces:
           InvalidEstimate:
       input_pos:
         type: float32
-        unit: rad
+        unit: turn
         c_setter: set_input_pos
       input_vel:
         type: float32
-        unit: rad/s
+        unit: turn/s
       input_torque: float32
       pos_setpoint: readonly float32
       vel_setpoint: readonly float32
@@ -627,16 +627,16 @@ interfaces:
           input_mode: InputMode
           pos_gain:
             type: float32
-            unit: (rad/s) / rad
+            unit: (turn/s) / turn
           vel_gain:
             type: float32
-            unit: 'Nm/(rad/s)'
+            unit: 'Nm/(turn/s)'
           vel_integrator_gain:
             type: float32
-            unit: Nm/(rad/s * s)
+            unit: Nm/(turn/s * s)
           vel_limit:
             type: float32
-            unit: rad/s
+            unit: turn/s
             doc: Infinity to disable.
           vel_limit_tolerance:
             type: float32

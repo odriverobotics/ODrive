@@ -40,9 +40,9 @@ The feedforward terms available when using the position or velocity control mode
 
 ## Tuning
 Tuning the motor controller is an essential step to unlock the full potential of the ODrive. Tuning allows for the controller to quickly respond to disturbances or changes in the system (such as an external force being applied or a change in the setpoint) without becoming unstable. Correctly setting the three tuning parameters (called gains) ensures that ODrive can control your motors in the most effective way possible. The three values are:
-* `<axis>.controller.config.pos_gain = 20.0` [(rad/s) / rad]
-* `<axis>.controller.config.vel_gain = 0.025 ` [Nm/(rad/s)]
-* `<axis>.controller.config.vel_integrator_gain = 0.05` [Nm/((rad/s) * s)]
+* `<axis>.controller.config.pos_gain = 20.0` [(turn/s) / turn]
+* `<axis>.controller.config.vel_gain = 0.16 ` [Nm/(turn/s)]
+* `<axis>.controller.config.vel_integrator_gain = 0.32` [Nm/((turn/s) * s)]
 
 An upcoming feature will enable automatic tuning. Until then, here is a rough tuning procedure:
 * Set vel_integrator_gain gain to 0

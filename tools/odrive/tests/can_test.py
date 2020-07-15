@@ -142,7 +142,7 @@ class TestSimpleCAN():
         test_assert_eq(axis.error, AXIS_ERROR_NONE)
 
         axis.encoder.set_linear_count(123)
-        test_assert_eq(my_req('get_encoder_estimates')['encoder_pos_estimate'], 123.0 * 2.0 * math.pi / axis.encoder.config.cpr, accuracy=0.01)
+        test_assert_eq(my_req('get_encoder_estimates')['encoder_pos_estimate'], 123.0 / axis.encoder.config.cpr, accuracy=0.01)
         test_assert_eq(my_req('get_encoder_count')['encoder_shadow_count'], 123.0, accuracy=0.01)
 
         my_cmd('clear_errors')

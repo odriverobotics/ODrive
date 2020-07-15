@@ -62,7 +62,7 @@ The following are examples of values that MAY impact the success of calibration.
 * `<axis>.encoder.config.calib_range = 0.05` helps to relax the accuracy of encoder counts during calibration 
 * `<axis>.motor.config.calibration_current = 10.0` _sometimes_ needed if this is a large motor
 * `<axis>.motor.config.resistance_calib_max_voltage = 12.0` _sometimes_ needed depending on motor
-* `<axis>.controller.config.vel_limit = 30` [rad/s] low values result in the spinning motor stopping abruptly during calibration
+* `<axis>.controller.config.vel_limit = 5` [turn/s] low values result in the spinning motor stopping abruptly during calibration
 
 Lots of other values can get you. It's a process. Thankfully there are a lot of good people that will help you debug calibration problems. 
 

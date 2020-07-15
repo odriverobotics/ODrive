@@ -524,10 +524,10 @@ bool Encoder::update() {
 
     // Outputs from Encoder for Controller
     float pos_cpr_last = pos_cpr_;
-    pos_estimate_ = pos_estimate_counts_ * 2.0f * M_PI / (float)config_.cpr;
-    vel_estimate_ = vel_estimate_counts_ * 2.0f * M_PI / (float)config_.cpr;
-    pos_cpr_= pos_cpr_counts_ * 2.0f * M_PI / (float)config_.cpr;
-    float delta_pos_cpr = wrap_pm(pos_cpr_ - pos_cpr_last, M_PI);
+    pos_estimate_ = pos_estimate_counts_ / (float)config_.cpr;
+    vel_estimate_ = vel_estimate_counts_ / (float)config_.cpr;
+    pos_cpr_= pos_cpr_counts_ / (float)config_.cpr;
+    float delta_pos_cpr = wrap_pm(pos_cpr_ - pos_cpr_last, 0.5f);
     pos_circular_ += delta_pos_cpr;
     pos_circular_ = fmodf_pos(pos_circular_, axis_->controller_.config_.circular_setpoint_range);
 

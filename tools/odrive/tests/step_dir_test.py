@@ -53,14 +53,14 @@ class TestStepDir():
 
 
         ref = axis.handle.controller.input_pos
-        axis.handle.config.counts_per_step = counts_per_step = 10
+        axis.handle.config.turns_per_step = turns_per_step = 10
 
         # On the RPi 4 a ~5kHz GPIO signal can be generated from Python
 
         for i in range(100):
             step_gpio.write(True)
             step_gpio.write(False)
-            test_assert_eq(axis.handle.controller.input_pos, ref + (i + 1) * counts_per_step, range = 0.4 * counts_per_step)
+            test_assert_eq(axis.handle.controller.input_pos, ref + (i + 1) * turns_per_step, range = 0.4 * turns_per_step)
 
         ref = axis.handle.controller.input_pos
         dir_gpio.write(False)
@@ -68,24 +68,24 @@ class TestStepDir():
         for i in range(100):
             step_gpio.write(True)
             step_gpio.write(False)
-            test_assert_eq(axis.handle.controller.input_pos, ref - (i + 1) * counts_per_step, range = 0.4 * counts_per_step)
+            test_assert_eq(axis.handle.controller.input_pos, ref - (i + 1) * turns_per_step, range = 0.4 * turns_per_step)
 
         ref = axis.handle.controller.input_pos
         dir_gpio.write(True)
-        axis.handle.config.counts_per_step = counts_per_step = 1
+        axis.handle.config.turns_per_step = turns_per_step = 1
 
         for i in range(100):
             step_gpio.write(True)
             step_gpio.write(False)
-            test_assert_eq(axis.handle.controller.input_pos, ref + (i + 1) * counts_per_step, range = 0.4 * counts_per_step)
+            test_assert_eq(axis.handle.controller.input_pos, ref + (i + 1) * turns_per_step, range = 0.4 * turns_per_step)
 
         ref = axis.handle.controller.input_pos
-        axis.handle.config.counts_per_step = counts_per_step = -1
+        axis.handle.config.turns_per_step = turns_per_step = -1
 
         for i in range(100):
             step_gpio.write(True)
             step_gpio.write(False)
-            test_assert_eq(axis.handle.controller.input_pos, ref + (i + 1) * counts_per_step, range = 0.4 * abs(counts_per_step))
+            test_assert_eq(axis.handle.controller.input_pos, ref + (i + 1) * turns_per_step, range = 0.4 * abs(turns_per_step))
 
 
 if __name__ == '__main__':

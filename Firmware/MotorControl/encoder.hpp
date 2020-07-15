@@ -84,10 +84,10 @@ public:
     int32_t pos_abs_ = 0;
     float spi_error_rate_ = 0.0f;
 
-    float pos_estimate_ = 0.0f;  // [rad]
-    float vel_estimate_ = 0.0f;  // [rad]
-    float pos_cpr_ = 0.0f;  // [rad]
-    float pos_circular_ = 0.0f; // [rad]
+    float pos_estimate_ = 0.0f; // [turn]
+    float vel_estimate_ = 0.0f; // [turn/s]
+    float pos_cpr_ = 0.0f;      // [turn]
+    float pos_circular_ = 0.0f; // [turn]
 
     bool pos_estimate_valid_ = false;
     bool vel_estimate_valid_ = false;
@@ -112,7 +112,7 @@ public:
     uint32_t abs_spi_cr2;
 
     constexpr float getCoggingRatio(){
-        return 2.0f * M_PI / 3600.0f;
+        return 1.0f / 3600.0f;
     }
 };
 

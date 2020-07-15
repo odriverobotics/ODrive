@@ -183,7 +183,7 @@ The largest effect on modulation magnitude is speed. There are other smaller fac
 </div></details>
 
 **Velocity limit**<br>
-`odrv0.axis0.controller.config.vel_limit` [rad/s].  
+`odrv0.axis0.controller.config.vel_limit` [turn/s].  
 The motor will be limited to this speed. Again the default value is quite slow.
 
 **Calibration current**<br>
@@ -331,20 +331,20 @@ To enable Circular position control, set `axis.controller.config.circular_setpoi
 This mode is useful for continuous incremental position movement. For example a robot rolling indefinitely, or an extruder motor or conveyor belt moving with controlled increments indefinitely.
 In the regular position mode, the `input_pos` would grow to a very large value and would lose precision due to floating point rounding.
 
-In this mode, the controller will try to track the position within only one turn of the motor. Specifically, `input_pos` is expected in the range `[0, 2*Pi]`. If the `input_pos` is incremented to outside this range (say via step/dir input), it is automatically wrapped around into the correct value.
+In this mode, the controller will try to track the position within only one turn of the motor. Specifically, `input_pos` is expected in the range `[0, 1]`. If the `input_pos` is incremented to outside this range (say via step/dir input), it is automatically wrapped around into the correct value.
 Note that in this mode `encoder.pos_circular` is used for feedback instead of `encoder.pos_estimate`.
 
-If you try to increment the axis with a large step in one go that exceeds `Pi` steps, the motor will go to the same angle around the wrong way. This is also the case if there is a large disturbance. If you have an application where you would like to handle larger steps, you can use a larger circular range that is an integer multiple of `2*Pi`. Set `controller.config.circular_setpoints_range = N * 2.0 * Pi`, where N is some integer. Choose N to give you an appropriate circular space for your application.
+If you try to increment the axis with a large step in one go that exceeds `1` turn, the motor will go to the same angle around the wrong way. This is also the case if there is a large disturbance. If you have an application where you would like to handle larger steps, you can use a larger circular range. Set `controller.config.circular_setpoints_range = N`. Choose N to give you an appropriate circular space for your application.
 
 ### Velocity control
 Set `axis.controller.config.control_mode = CONTROL_MODE_VELOCITY_CONTROL`.<br>
-You can now control the velocity with `axis.controller.input_vel = 3` [rad/s].
+You can now control the velocity with `axis.controller.input_vel = 1` [turn/s].
 
 ### Ramped velocity control
 Set `axis.controller.config.control_mode = CONTROL_MODE_VELOCITY_CONTROL`.<br>
-Set the velocity ramp rate (acceleration): `axis.controller.config.vel_ramp_rate = 1.5` [rad/s^2]<br>
+Set the velocity ramp rate (acceleration): `axis.controller.config.vel_ramp_rate = 0.5` [turn/s^2]<br>
 Activate the ramped velocity mode: `axis.controller.config.input_mode = INPUT_MODE_VEL_RAMP`.<br>
-You can now control the velocity with `axis.controller.input_vel = 3` [rad/s].
+You can now control the velocity with `axis.controller.input_vel = 1` [turn/s].
 
 ### Torque control
 Set `axis.controller.config.control_mode = CONTROL_MODE_TORQUE_CONTROL`.<br>
