@@ -1,10 +1,6 @@
 #ifndef __CONTROLLER_HPP
 #define __CONTROLLER_HPP
 
-#ifndef __ODRIVE_MAIN_H
-#error "This file should not be included directly. Include odrive_main.h instead."
-#endif
-
 class Controller : public ODriveIntf::ControllerIntf {
 public:
     typedef struct {

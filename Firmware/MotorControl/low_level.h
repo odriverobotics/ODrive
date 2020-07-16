@@ -2,10 +2,6 @@
 #ifndef __LOW_LEVEL_H
 #define __LOW_LEVEL_H
 
-#ifndef __ODRIVE_MAIN_H
-#error "This file should not be included directly. Include odrive_main.h instead."
-#endif
-
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -58,16 +54,6 @@ void pwm_in_init();
 void start_analog_thread();
 
 void update_brake_current();
-
-inline uint32_t cpu_enter_critical() {
-    uint32_t primask = __get_PRIMASK();
-    __disable_irq();
-    return primask;
-}
-
-inline void cpu_exit_critical(uint32_t priority_mask) {
-    __set_PRIMASK(priority_mask);
-}
 
 #ifdef __cplusplus
 }

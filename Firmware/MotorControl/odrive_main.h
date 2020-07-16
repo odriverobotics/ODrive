@@ -1,12 +1,8 @@
 #ifndef __ODRIVE_MAIN_H
 #define __ODRIVE_MAIN_H
 
-// Note on central include scheme by Samuel:
-// there are circular dependencies between some of the header files,
-// e.g. the Motor header needs a forward declaration of Axis and vice versa
-// so I figured I'd make one main header that takes care of
-// the forward declarations and right ordering
-// btw this pattern is not so uncommon, for instance IIRC the stdlib uses it too
+// Hardware configuration
+#include <board.h>
 
 #ifdef __cplusplus
 #include <fibre/protocol.hpp>
@@ -19,27 +15,12 @@ extern "C" {
 #include <stm32f4xx_hal.h>  // Sets up the correct chip specifc defines required by arm_math
 #include <can.h>
 #include <i2c.h>
-#define ARM_MATH_CM4 // TODO: might change in future board versions
-#include <arm_math.h>
 
 // OS includes
 #include <cmsis_os.h>
 
-// Hardware configuration
-#if HW_VERSION_MAJOR == 3
-#include "board_config_v3.h"
-#else
-#error "unknown board version"
-#endif
-
 //default timeout waiting for phase measurement signals
 #define PH_CURRENT_MEAS_TIMEOUT 2 // [ms]
-
-// Period in [s]
-static const float current_meas_period = CURRENT_MEAS_PERIOD;
-
-// Frequency in [Hz]
-static const int current_meas_hz = CURRENT_MEAS_HZ;
 
 // extern const float elec_rad_per_enc;
 extern uint32_t _reboot_cookie;
@@ -178,22 +159,6 @@ inline ENUMTYPE &operator ^= (ENUMTYPE &a, ENUMTYPE b) { return reinterpret_cast
 inline ENUMTYPE operator ~ (ENUMTYPE a) { return static_cast<ENUMTYPE>(~static_cast<std::underlying_type_t<ENUMTYPE>>(a)); }
 
 
-enum TimingLog_t {
-    TIMING_LOG_GENERAL,
-    TIMING_LOG_ADC_CB_I,
-    TIMING_LOG_ADC_CB_DC,
-    TIMING_LOG_MEAS_R,
-    TIMING_LOG_MEAS_L,
-    TIMING_LOG_ENC_CALIB,
-    TIMING_LOG_IDX_SEARCH,
-    TIMING_LOG_FOC_VOLTAGE,
-    TIMING_LOG_FOC_CURRENT,
-    TIMING_LOG_SPI_START,
-    TIMING_LOG_SAMPLE_NOW,
-    TIMING_LOG_SPI_END,
-    TIMING_LOG_NUM_SLOTS
-};
-
 
 #include "autogen/interfaces.hpp"
 
@@ -201,7 +166,6 @@ enum TimingLog_t {
 #include <utils.hpp>
 #include <gpio_utils.hpp>
 #include <low_level.h>
-#include <motor.hpp>
 #include <encoder.hpp>
 #include <sensorless_estimator.hpp>
 #include <controller.hpp>

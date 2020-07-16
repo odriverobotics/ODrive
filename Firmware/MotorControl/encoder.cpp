@@ -1,5 +1,6 @@
 
 #include "odrive_main.h"
+#include <Drivers/STM32/stm32_system.h>
 
 
 Encoder::Encoder(const EncoderHardwareConfig_t& hw_config,

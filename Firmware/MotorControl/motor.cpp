@@ -1,24 +1,22 @@
 
-#include <algorithm>
-
-#include "drv8301.h"
+#include "motor.hpp"
+#include "axis.hpp"
+#include "low_level.h"
 #include "odrive_main.h"
 
+#include <algorithm>
 
-Motor::Motor(const MotorHardwareConfig_t& hw_config,
-             const GateDriverHardwareConfig_t& gate_driver_config,
-             Config_t& config) :
-        hw_config_(hw_config),
-        gate_driver_config_(gate_driver_config),
-        config_(config),
-        gate_driver_({
-            .spiHandle = gate_driver_config_.spi,
-            .EngpioHandle = gate_driver_config_.enable_port,
-            .EngpioNumber = gate_driver_config_.enable_pin,
-            .nCSgpioHandle = gate_driver_config_.nCS_port,
-            .nCSgpioNumber = gate_driver_config_.nCS_pin,
-        }) {
-    update_current_controller_gains();
+Motor::Motor(TIM_HandleTypeDef* timer,
+             uint16_t control_deadline,
+             float shunt_conductance,
+             TGateDriver& gate_driver,
+             TOpAmp& opamp) :
+        timer_(timer),
+        control_deadline_(control_deadline),
+        shunt_conductance_(shunt_conductance),
+        gate_driver_(gate_driver),
+        opamp_(opamp) {
+    reload_config();
 }
 
 // @brief Arms the PWM outputs that belong to this motor.
@@ -63,77 +61,36 @@ void Motor::update_current_controller_gains() {
     current_control_.i_gain = plant_pole * current_control_.p_gain;
 }
 
-// @brief Set up the gate drivers
-void Motor::DRV8301_setup() {
-    // for reference:
-    // 20V/V on 500uOhm gives a range of +/- 150A
-    // 40V/V on 500uOhm gives a range of +/- 75A
-    // 20V/V on 666uOhm gives a range of +/- 110A
-    // 40V/V on 666uOhm gives a range of +/- 55A
+void Motor::reload_config() {
+    config_.parent = this;
+    is_calibrated_ = config_.pre_calibrated;
+    update_current_controller_gains();
+}
 
+// @brief Set up the gate drivers
+bool Motor::setup() {
+    gate_driver_.set_enabled(true);
+    
     // Solve for exact gain, then snap down to have equal or larger range as requested
     // or largest possible range otherwise
     static const float kMargin = 0.90f;
     static const float kTripMargin = 1.0f; // Trip level is at edge of linear range of amplifer
     static const float max_output_swing = 1.35f; // [V] out of amplifier
-    float max_unity_gain_current = kMargin * max_output_swing * hw_config_.shunt_conductance; // [A]
+    float max_unity_gain_current = kMargin * max_output_swing * shunt_conductance_; // [A]
     float requested_gain = max_unity_gain_current / config_.requested_current_range; // [V/V]
-
-    // Decoding array for snapping gain
-    std::array<std::pair<float, DRV8301_ShuntAmpGain_e>, 4> gain_choices = { 
-        std::make_pair(10.0f, DRV8301_ShuntAmpGain_10VpV),
-        std::make_pair(20.0f, DRV8301_ShuntAmpGain_20VpV),
-        std::make_pair(40.0f, DRV8301_ShuntAmpGain_40VpV),
-        std::make_pair(80.0f, DRV8301_ShuntAmpGain_80VpV)
-    };
-
-    // We use lower_bound in reverse because it snaps up by default, we want to snap down.
-    auto gain_snap_down = std::lower_bound(gain_choices.crbegin(), gain_choices.crend(), requested_gain, 
-    [](std::pair<float, DRV8301_ShuntAmpGain_e> pair, float val){
-        return pair.first > val;
-    });
-
-    // If we snap to outside the array, clip to smallest val
-    if(gain_snap_down == gain_choices.crend())
-       --gain_snap_down;
+    
+    float actual_gain = NAN;
+    bool success = opamp_.set_gain(requested_gain, &actual_gain);
+    if (!success)
+        return false;
 
     // Values for current controller
-    phase_current_rev_gain_ = 1.0f / gain_snap_down->first;
+    phase_current_rev_gain_ = 1.0f / actual_gain;
     // Clip all current control to actual usable range
     current_control_.max_allowed_current = max_unity_gain_current * phase_current_rev_gain_;
     // Set trip level
     current_control_.overcurrent_trip_level = (kTripMargin / kMargin) * current_control_.max_allowed_current;
 
-    // We now have the gain settings we want to use, lets set up DRV chip
-    DRV_SPI_8301_Vars_t* local_regs = &gate_driver_regs_;
-    DRV8301_enable(&gate_driver_);
-    DRV8301_setupSpi(&gate_driver_, local_regs);
-
-    local_regs->Ctrl_Reg_1.OC_MODE = DRV8301_OcMode_LatchShutDown;
-    // Overcurrent set to approximately 150A at 100degC. This may need tweaking.
-    local_regs->Ctrl_Reg_1.OC_ADJ_SET = DRV8301_VdsLevel_0p730_V;
-    local_regs->Ctrl_Reg_2.GAIN = gain_snap_down->second;
-
-    local_regs->SndCmd = true;
-    DRV8301_writeData(&gate_driver_, local_regs);
-    local_regs->RcvCmd = true;
-    DRV8301_readData(&gate_driver_, local_regs);
-}
-
-// @brief Checks if the gate driver is in operational state.
-// @returns: true if the gate driver is OK (no fault), false otherwise
-bool Motor::check_DRV_fault() {
-    //TODO: make this pin configurable per motor ch
-    GPIO_PinState nFAULT_state = HAL_GPIO_ReadPin(gate_driver_config_.nFAULT_port, gate_driver_config_.nFAULT_pin);
-    if (nFAULT_state == GPIO_PIN_RESET) {
-        // Update DRV Fault Code
-        gate_driver_exported_.drv_fault = (GateDriverIntf::DrvFault)DRV8301_getFaultType(&gate_driver_);
-        // Update/Cache all SPI device registers
-        // DRV_SPI_8301_Vars_t* local_regs = &gate_driver_regs_;
-        // local_regs->RcvCmd = true;
-        // DRV8301_readData(&gate_driver_, local_regs);
-        return false;
-    };
     return true;
 }
 
@@ -145,7 +102,7 @@ void Motor::set_error(Motor::Error error){
 }
 
 bool Motor::do_checks() {
-    if (!check_DRV_fault()) {
+    if (!gate_driver_.check_fault()) {
         set_error(ERROR_DRV_FAULT);
         return false;
     }
@@ -201,7 +158,7 @@ float Motor::phase_current_from_adcval(uint32_t ADCValue) {
     int adcval_bal = (int)ADCValue - (1 << 11);
     float amp_out_volt = (3.3f / (float)(1 << 12)) * (float)adcval_bal;
     float shunt_volt = amp_out_volt * phase_current_rev_gain_;
-    float current = shunt_volt * hw_config_.shunt_conductance;
+    float current = shunt_volt * shunt_conductance_;
     return current;
 }
 

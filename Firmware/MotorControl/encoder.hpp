@@ -1,9 +1,7 @@
 #ifndef __ENCODER_HPP
 #define __ENCODER_HPP
 
-#ifndef __ODRIVE_MAIN_H
-#error "This file should not be included directly. Include odrive_main.h instead."
-#endif
+#include "utils.hpp"
 
 class Encoder : public ODriveIntf::EncoderIntf {
 public:

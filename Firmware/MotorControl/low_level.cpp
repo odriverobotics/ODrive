@@ -4,7 +4,7 @@
 // otherwise chip specific defines are ommited
 #include <stm32f405xx.h>
 #include <stm32f4xx_hal.h>  // Sets up the correct chip specifc defines required by arm_math
-#define ARM_MATH_CM4
+#include <Drivers/STM32/stm32_system.h>
 #include <arm_math.h>
 
 #include <cmsis_os.h>
@@ -114,7 +114,7 @@ bool safety_critical_disarm_motor_pwm(Motor& motor) {
     uint32_t mask = cpu_enter_critical();
     bool was_armed = motor.armed_state_ != Motor::ARMED_STATE_DISARMED;
     motor.armed_state_ = Motor::ARMED_STATE_DISARMED;
-    __HAL_TIM_MOE_DISABLE_UNCONDITIONALLY(motor.hw_config_.timer);
+    __HAL_TIM_MOE_DISABLE_UNCONDITIONALLY(motor.timer_);
     cpu_exit_critical(mask);
     return was_armed;
 }
@@ -130,9 +130,9 @@ void safety_critical_apply_motor_pwm_timings(Motor& motor, uint16_t timings[3]) 
         motor.armed_state_ = Motor::ARMED_STATE_DISARMED;
     }
 
-    motor.hw_config_.timer->Instance->CCR1 = timings[0];
-    motor.hw_config_.timer->Instance->CCR2 = timings[1];
-    motor.hw_config_.timer->Instance->CCR3 = timings[2];
+    motor.timer_->Instance->CCR1 = timings[0];
+    motor.timer_->Instance->CCR2 = timings[1];
+    motor.timer_->Instance->CCR3 = timings[2];
 
     if (motor.armed_state_ == Motor::ARMED_STATE_WAITING_FOR_TIMINGS) {
         // timings were just loaded into the timer registers
@@ -144,7 +144,7 @@ void safety_critical_apply_motor_pwm_timings(Motor& motor, uint16_t timings[3]) 
         // now we waited long enough. Enter armed state and
         // enable the actual PWM outputs.
         motor.armed_state_ = Motor::ARMED_STATE_ARMED;
-        __HAL_TIM_MOE_ENABLE(motor.hw_config_.timer);  // enable pwm outputs
+        __HAL_TIM_MOE_ENABLE(motor.timer_);  // enable pwm outputs
     } else if (motor.armed_state_ == Motor::ARMED_STATE_ARMED) {
         // nothing to do, PWM is running, all good
     } else {
@@ -508,7 +508,7 @@ void pwm_trig_adc_cb(ADC_HandleTypeDef* hadc, bool injected) {
     Axis& axis = injected ? *axes[0] : *axes[1];
     int axis_num = injected ? 0 : 1;
     Axis& other_axis = injected ? *axes[1] : *axes[0];
-    bool counting_down = axis.motor_.hw_config_.timer->Instance->CR1 & TIM_CR1_DIR;
+    bool counting_down = axis.motor_.timer_->Instance->CR1 & TIM_CR1_DIR;
     bool current_meas_not_DC_CAL = !counting_down;
 
     // Check the timing of the sequencing
@@ -812,7 +812,7 @@ void start_analog_thread() {
     osThreadCreate(osThread(thread_def), NULL);
 }
 
-
+/*
 void HAL_SPI_TxRxCpltCallback(SPI_HandleTypeDef *hspi)
 {
     if(hspi->pRxBuffPtr == (uint8_t*)axes[0]->encoder_.abs_spi_dma_rx_)
@@ -820,3 +820,4 @@ void HAL_SPI_TxRxCpltCallback(SPI_HandleTypeDef *hspi)
     else if (hspi->pRxBuffPtr == (uint8_t*)axes[1]->encoder_.abs_spi_dma_rx_)
         axes[1]->encoder_.abs_spi_cb();
 }
+*/
