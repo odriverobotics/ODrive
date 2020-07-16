@@ -436,9 +436,8 @@ void Axis::run_state_machine_loop() {
                     task_chain_[pos++] = AXIS_STATE_ENCODER_OFFSET_CALIBRATION;
                 if (config_.startup_homing)
                     task_chain_[pos++] = AXIS_STATE_HOMING;
-                if (config_.startup_closed_loop_control){
+                if (config_.startup_closed_loop_control)
                     task_chain_[pos++] = AXIS_STATE_CLOSED_LOOP_CONTROL;
-                }
                 else if (config_.startup_sensorless_control)
                     task_chain_[pos++] = AXIS_STATE_SENSORLESS_CONTROL;
                 task_chain_[pos++] = AXIS_STATE_IDLE;
