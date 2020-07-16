@@ -31,7 +31,7 @@ tup.frule{inputs={'fibre/cpp/type_info_template.j2'}, command=python_command..' 
 
 tup.frule{
     command=python_command..' ../tools/odrive/version.py --output %o',
-    outputs={'autogen/version.h'}
+    outputs={'autogen/version.c'}
 }
 
 
@@ -207,7 +207,8 @@ build{
         'communication/interface_can.cpp',
         'communication/interface_i2c.cpp',
         'fibre/cpp/protocol.cpp',
-        'FreeRTOS-openocd.c'
+        'FreeRTOS-openocd.c',
+        'autogen/version.c'
     },
     includes={
         'Drivers/DRV8301',
