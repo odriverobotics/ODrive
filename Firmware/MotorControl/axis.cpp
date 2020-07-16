@@ -299,9 +299,20 @@ bool Axis::run_closed_loop_control_loop() {
     if (!controller_.select_encoder(controller_.config_.load_encoder_axis)) {
         return error_ |= ERROR_CONTROLLER_FAILED, false;
     }
+    
+    /*while (encoder_.mWorkFirstTime_) {
+                    // look for errors at axis level and also all subcomponents
+            bool checks_ok = do_checks();
+            // Update all estimators
+            // Note: updates run even if checks fail
+            bool updates_ok = do_updates(); 
 
+            // make sure the watchdog is being fed. 
+            bool watchdog_ok = watchdog_check();
+    }*/
     // To avoid any transient on startup, we intialize the setpoint to be the current position
     controller_.pos_setpoint_ = *controller_.pos_estimate_src_;
+
     controller_.input_pos_ = *controller_.pos_estimate_src_;
 
     // Avoid integrator windup issues
@@ -517,7 +528,7 @@ void Axis::run_state_machine_loop() {
                 if (!encoder_.is_ready_)
                     goto invalid_state_label;
                 watchdog_feed();
-                status = run_closed_loop_control_loop();
+                status = run_closed_loop_control_loop();  
             } break;
 
             case AXIS_STATE_IDLE: {

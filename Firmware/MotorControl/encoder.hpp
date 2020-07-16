@@ -118,7 +118,7 @@ public:
     uint16_t abs_spi_cs_pin_;
     uint32_t abs_spi_cr1;
     uint32_t abs_spi_cr2;
-
+    bool mWorkFirstTime_ = true;
     constexpr float getCoggingRatio(){
         return config_.cpr / 3600.0f;
     }
@@ -126,6 +126,7 @@ public:
     // Communication protocol definitions
     auto make_protocol_definitions() {
         return make_protocol_member_list(
+            make_protocol_property("mWorkFirstTime", &mWorkFirstTime_),
             make_protocol_property("error", &error_),
             make_protocol_ro_property("is_ready", &is_ready_),
             make_protocol_ro_property("index_found", const_cast<bool*>(&index_found_)),

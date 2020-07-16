@@ -261,21 +261,24 @@ bool Controller::update(float* current_setpoint_output) {
     }
 
     // Check for overspeed fault (done in this module (controller) for cohesion with vel_lim)
-    static bool mWorkFirstRun = true ;
+    /*static bool mWorkFirstRun = true ;
     if ( axis_->loop_counter_ > 10000){ 
         mWorkFirstRun = false;
-    }
-    if (config_.enable_overspeed_error) {  // 0.0f to disable
-        if (!vel_estimate_src) {
-            set_error(ERROR_INVALID_ESTIMATE);
-            return false;
-        }
-        if (std::abs(*vel_estimate_src) > config_.vel_limit_tolerance * vel_lim) {
-            if (!mWorkFirstRun){
-                mWorkFirstRun = false;
-                set_error(ERROR_OVERSPEED);
+    }*/
+
+    if (!axis_->encoder_.mWorkFirstTime_) {
+        if (config_.enable_overspeed_error) {  // 0.0f to disable
+            if (!vel_estimate_src) {
+                set_error(ERROR_INVALID_ESTIMATE);
                 return false;
-            }   
+            }
+            if (std::abs(*vel_estimate_src) > config_.vel_limit_tolerance * vel_lim) {
+              if (!axis_->encoder_.mWorkFirstTime_){                
+            //     mWorkFirstRun = false;
+                    set_error(ERROR_OVERSPEED);
+                    return false;
+              }   
+            }
         }
     }
 
