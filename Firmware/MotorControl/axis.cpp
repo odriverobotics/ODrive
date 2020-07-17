@@ -128,10 +128,10 @@ void Axis::step_cb() {
     }
 };
 
-void Axis::load_default_step_dir_pin_config(
-        const AxisHardwareConfig_t& hw_config, Config_t* config) {
-    config->step_gpio_pin = hw_config.step_gpio_pin;
-    config->dir_gpio_pin = hw_config.dir_gpio_pin;
+void Axis::load_default_step_dir_pin_config(const AxisHardwareConfig_t& hw_config, Config_t* config) {
+        config->step_gpio_pin = hw_config.step_gpio_pin;
+        config->dir_gpio_pin = hw_config.dir_gpio_pin;
+        config->en_gpio_pin = hw_config.en_gpio_pin;
 }
 
 void Axis::load_default_can_id(const int& id, Config_t& config){
@@ -311,19 +311,15 @@ bool Axis::run_sensorless_control_loop() {
 }
 void Axis::enable_pin_check() {
     if (!encoder_.config_.pre_calibrated){return;}     // No work until encoder pre_calibrated set True
+    if (error_ != ERROR_NONE ) return;
     if (config_.use_enable_pin) {
         bool enable = HAL_GPIO_ReadPin(en_port_, en_pin_) ^ config_.enable_pin_active_low;
         switch(current_state_){
-            case AXIS_STATE_UNDEFINED: 
-                requested_state_ = enable ? AXIS_STATE_CLOSED_LOOP_CONTROL : AXIS_STATE_IDLE ;
-                break;
             case AXIS_STATE_IDLE: 
                 if (enable) requested_state_ = AXIS_STATE_CLOSED_LOOP_CONTROL ;
                 break;
             case AXIS_STATE_CLOSED_LOOP_CONTROL:
                 if(!enable) requested_state_ = AXIS_STATE_IDLE ;
-                break;
-            case AXIS_STATE_ENCODER_OFFSET_CALIBRATION:
                 break;
             default :
                 break;
