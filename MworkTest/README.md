@@ -14,6 +14,10 @@
 - [x] odrv0.axis1.controller.config.input_filter_bandwidth=10
 - [x] odrv0.axis1.controller.config.input_mode  = 3
 - [x] odrv0.axis0.controller.config.vel_limit = 491000
+- [x] odrv0.axis1.motor.config.current_control_bandwidth=1500
+
+
+In [373]: odrv0.axis1.controller.config.inertia=
 
 Torque (N.m) = 8.27 x (A/ kv)
 
