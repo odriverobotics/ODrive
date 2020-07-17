@@ -25,6 +25,7 @@ public:
         ERROR_MAX_ENDSTOP_PRESSED = 0x2000,
         ERROR_ESTOP_REQUESTED = 0x4000,
         ERROR_HOMING_WITHOUT_ENDSTOP = 0x20000, // the min endstop was not enabled during homing
+        ERROR_ENCODER_OK = 0xEFF, // Go to encoder.hpp for information, check odrvX.axisX.encoder.error for error value
     };
 
     enum State_t {
