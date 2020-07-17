@@ -390,8 +390,16 @@ void start_general_purpose_adc() {
 //  21000kHz / (15+26) / 16 = 32kHz
 // The true frequency is slightly lower because of the injected vbus
 // measurements
-float get_adc_voltage(GPIO_TypeDef* GPIO_port, uint16_t GPIO_pin) {
-    uint32_t channel = UINT32_MAX;
+float get_adc_voltage(const GPIO_TypeDef* const GPIO_port, uint16_t GPIO_pin) {
+    const uint16_t channel = channel_from_gpio(GPIO_port, GPIO_pin);
+    return get_adc_voltage_channel(channel);
+}
+
+// @brief Given a GPIO_port and pin return the associated adc_channel.
+// returns UINT16_MAX if there is no adc_channel;
+uint16_t channel_from_gpio(const GPIO_TypeDef* const GPIO_port, uint16_t GPIO_pin)
+{
+    uint16_t channel = UINT16_MAX;
     if (GPIO_port == GPIOA) {
         if (GPIO_pin == GPIO_PIN_0)
             channel = 0;
@@ -428,6 +436,13 @@ float get_adc_voltage(GPIO_TypeDef* GPIO_port, uint16_t GPIO_pin) {
         else if (GPIO_pin == GPIO_PIN_5)
             channel = 15;
     }
+    return channel;
+}
+
+// @brief Given an adc channel return the measured voltage.
+// returns NaN if the channel is not valid.
+float get_adc_voltage_channel(uint16_t channel)
+{
     if (channel < ADC_CHANNEL_COUNT)
         return ((float)adc_measurements_[channel]) * (adc_ref_voltage / adc_full_scale);
     else

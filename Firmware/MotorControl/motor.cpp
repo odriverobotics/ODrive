@@ -144,36 +144,12 @@ void Motor::set_error(Motor::Error error){
     update_brake_current();
 }
 
-float Motor::get_inverter_temp() {
-    float adc = adc_measurements_[hw_config_.inverter_thermistor_adc_ch];
-    float normalized_voltage = adc / adc_full_scale;
-    return horner_fma(normalized_voltage, thermistor_poly_coeffs, thermistor_num_coeffs);
-}
-
-bool Motor::update_thermal_limits(float fet_temp) {
-    float temp_margin = config_.inverter_temp_limit_upper - fet_temp;
-    float derating_range = config_.inverter_temp_limit_upper - config_.inverter_temp_limit_lower;
-    thermal_current_lim_ = config_.current_lim * (temp_margin / derating_range);
-    if (!(thermal_current_lim_ >= 0.0f)) { //Funny polarity to also catch NaN
-        thermal_current_lim_ = 0.0f;
-    }
-    if (fet_temp > config_.inverter_temp_limit_upper + 5) {
-        set_error(ERROR_INVERTER_OVER_TEMP);
-        return false;
-    }
-    return true;
-}
-
 bool Motor::do_checks() {
     if (!check_DRV_fault()) {
         set_error(ERROR_DRV_FAULT);
         return false;
     }
-    inverter_temp_ = get_inverter_temp();
-    if (!update_thermal_limits(inverter_temp_)) {
-        //error already set in function
-        return false;
-    }
+
     return true;
 }
 
@@ -186,10 +162,15 @@ float Motor::effective_current_lim() {
     } else {
         current_lim = std::min(current_lim, axis_->motor_.current_control_.max_allowed_current);
     }
-    // Thermal limit
-    current_lim = std::min(current_lim, thermal_current_lim_);
 
-    return current_lim;
+    // Apply axis current limiters
+    for (const CurrentLimiter* const limiter : axis_->current_limiters_) {
+        current_lim = std::min(current_lim, limiter->get_current_limit(config_.current_lim));
+    }
+
+    effective_current_lim_ = current_lim;
+
+    return effective_current_lim_;
 }
 
 //return the maximum available torque for the motor.

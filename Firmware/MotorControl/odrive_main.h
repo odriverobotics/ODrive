@@ -205,6 +205,8 @@ enum TimingLog_t {
 #include <encoder.hpp>
 #include <sensorless_estimator.hpp>
 #include <controller.hpp>
+#include <current_limiter.hpp>
+#include <thermistor.hpp>
 #include <trapTraj.hpp>
 #include <endstop.hpp>
 #include <axis.hpp>

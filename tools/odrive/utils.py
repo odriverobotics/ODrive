@@ -6,6 +6,8 @@ import threading
 import platform
 import subprocess
 import os
+import numpy as np
+import matplotlib.pyplot as plt
 from fibre.utils import Event
 import odrive.enums
 from odrive.enums import *
@@ -29,8 +31,40 @@ _VT100Colors = {
     'default': '\x1b[0m'
 }
 
+def calculate_thermistor_coeffs(degree, Rload, R_25, Beta, Tmin, Tmax, plot = False):
+    T_25 = 25 + 273.15 #Kelvin
+    temps = np.linspace(Tmin, Tmax, 1000)
+    tempsK = temps + 273.15
+
+    # https://en.wikipedia.org/wiki/Thermistor#B_or_%CE%B2_parameter_equation
+    r_inf = R_25 * np.exp(-Beta/T_25)
+    R_temps = r_inf * np.exp(Beta/tempsK)
+    V = Rload / (Rload + R_temps)
+
+    fit = np.polyfit(V, temps, degree)
+    p1 = np.poly1d(fit)
+    fit_temps = p1(V)
+
+    if plot:
+        print(fit)
+        plt.plot(V, temps, label='actual')
+        plt.plot(V, fit_temps, label='fit')
+        plt.xlabel('normalized voltage')
+        plt.ylabel('Temp [C]')
+        plt.legend(loc=0)
+        plt.show()
+
+    return p1
+
 class OperationAbortedException(Exception):
     pass
+
+def set_motor_thermistor_coeffs(axis, Rload, R_25, Beta, Tmin, TMax):
+    coeffs = calculate_thermistor_coeffs(3, Rload, R_25, Beta, Tmin, TMax)
+    axis.motor_thermistor.config.poly_coefficient_0 = float(coeffs[3])
+    axis.motor_thermistor.config.poly_coefficient_1 = float(coeffs[2])
+    axis.motor_thermistor.config.poly_coefficient_2 = float(coeffs[1])
+    axis.motor_thermistor.config.poly_coefficient_3 = float(coeffs[0])
 
 def dump_errors(odrv, clear=False):
     axes = [(name, axis) for name, axis in odrv._remote_attributes.items() if 'axis' in name]
@@ -43,6 +77,8 @@ def dump_errors(odrv, clear=False):
         module_decode_map = [
             ('axis', axis, {k: v for k, v in odrive.enums.__dict__ .items() if k.startswith("AXIS_ERROR_")}),
             ('motor', axis.motor, {k: v for k, v in odrive.enums.__dict__ .items() if k.startswith("MOTOR_ERROR_")}),
+            ('fet_thermistor', axis.fet_thermistor, {k: v for k, v in odrive.enums.__dict__ .items() if k.startswith("THERMISTOR_CURRENT_LIMITER_ERROR")}),
+            ('motor_thermistor', axis.motor_thermistor, {k: v for k, v in odrive.enums.__dict__ .items() if k.startswith("THERMISTOR_CURRENT_LIMITER_ERROR")}),
             ('encoder', axis.encoder, {k: v for k, v in odrive.enums.__dict__ .items() if k.startswith("ENCODER_ERROR_")}),
             ('controller', axis.controller, {k: v for k, v in odrive.enums.__dict__ .items() if k.startswith("CONTROLLER_ERROR_")}),
         ]
