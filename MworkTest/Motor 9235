@@ -1,0 +1,334 @@
+https://blog.csdn.net/abf1234444/article/details/103365219
+
+
+1 硬件介绍
+ODrive
+
+硬件版本：ODrive v3.6 56v电压版本
+固件版本：v3.6-56V fw-v0.4.11
+购买链接：淘宝链接
+
+无刷电机
+
+恒力源 9235-100KV 外转子无刷电机
+
+KV(RPM/V): 100
+
+LiPo Cells: 8~12s
+
+Max Power: 2800W
+
+Max Amps: 57A
+
+No Load Current: 1.0A @ 10v
+
+Internal Resistance: 0.055ohm
+
+Dimensions(Dia.xL): 92 x 39mm
+
+Motor Shaft: 3mm
+
+Prop Shaft: 33mm hole to hole for bolt through style props
+
+Weight: 674g (each)
+
+购买链接：HobbyKing
+
+编码器
+
+编码器采用英飞凌 TLE5012B-E1000 磁编码器(ABI接口) + 6mm径向磁铁
+
+购买链接：淘宝链接
+
+2 硬件连接
+电机 U V W 三根线接入 ODrive M0 电机接口，线序无要求，如果电机调试完毕后想要反转电机旋转方向可以通过任意对调其中两根线即可。注意：对调后需要重新校准编码器，并保存参数
+
+将编码器插入 ODrive M0 编码器接口，板上丝印 J4 排母处
+
+将制动电阻接入 ODrive AUX 接口，线序无要求。提示：制动电阻也可不接
+
+3 配置参数
+3.1 基本配置
+odrv0.config.brake_resistance = 2.0
+1
+配置制动电阻阻值，我们使用的的制动电阻阻值为 2 Ohm，如果不接制动电阻或不想使用制动电阻功能将此属性配置为 0 即可
+
+odrv0.config.dc_bus_undervoltage_trip_level = 8
+1
+配置电源电压低压保护阈值，当电源电压低于 8v 时将停止电机并报错，注意：8v 为极限值建议根据自己所使用的供电更精确的配置以更好地保护 ODrive 主板
+
+odrv0.config.dc_bus_overvoltage_trip_level = 56
+1
+配置电源电压过压保护阈值，当电源电压高于 56v 时将停止电机并报错，注意：56v 为极限值建议根据自己所使用的供电更精确的配置以更好地保护 ODrive 主板
+
+3.2 电机配置
+odrv0.axis0.motor.config.pole_pairs = 20
+1
+配置电机极对数，我们所使用的电机极对数为 20
+
+可以通过以下方式获取电机极对数：
+
+查找电机数据手册，一般会有说明
+数一数电机永磁体个数，然后除以 2 就是电机极对数
+在两个电机线之间连接直流电源，电源电压设定为额定直流母线电压的5％ (您也可以将电源设置为电机的额定电流）
+用手旋转电机，应该稍微有一点阻力，否则：
+如果无法旋转电机，请降低施加的电压或电流
+如果电机产生的阻力过小，请逐渐增加施加的电压或电流
+用手转动转子一圈，其中稳定位置的数量代表该电机的极对数
+odrv0.axis0.motor.config.calibration_current = 3
+1
+配置校准时的电流，此电流值在进行电机参数校准和编码器偏移校准时使用，如果设置的过小在进行编码器偏移校准时电机将没有足够的力量旋转
+
+odrv0.axis0.motor.config.resistance_calib_max_voltage = 2
+1
+配置电机参数校准中自动测量电机相电阻时使用的电压，当电机的相电阻越高此值应该越高，但是如果此值过高会造成电流过大，产生过流保护错误
+
+odrv0.axis0.motor.config.motor_type = MOTOR_TYPE_HIGH_CURRENT
+1
+配置所使用的电机类型，电机类型只有大电流电机(MOTOR_TYPE_HIGH_CURRENT)，云台电机(MOTOR_TYPE_GIMBAL)
+
+odrv0.axis0.motor.config.current_lim = 20
+1
+配置电机运行的最大电流限制
+
+odrv0.axis0.motor.config.requested_current_range = 20
+1
+配置电机电流采样范围，注意：此值设置后需要重新启动才能生效
+Định cấu hình phạm vi lấy mẫu hiện tại của động cơ Lưu ý: Sau khi giá trị này được đặt, nó cần được khởi động lại để có hiệu lực 94
+
+3.3 编码器配置
+odrv0.axis0.encoder.config.mode = ENCODER_MODE_INCREMENTAL
+1
+配置电机编码器类型为增量式编码器
+
+odrv0.axis0.encoder.config.use_index = True
+1
+我们使用的编码有索引信号，所以配置为启用索引信号输入
+
+odrv0.axis0.encoder.config.cpr = 16384
+1
+配置编码器分辨率，即电机转动一圈多少个计数值，一般编码器手册中会给出一圈多少步，例如我们使用的TLE5012编码器手册中给出的 (4096 steps per full rotation)，我们只需要将4096 * 4 就是我们这里需要的每圈计数值
+
+odrv0.axis0.encoder.config.bandwidth = 3000
+1
+设置编码器 PLL 带宽，一般对于高分辨率编码器 (> 4000个计数/转) 此值应该越高，这样有助于减少电机振动
+
+odrv0.axis0.config.calibration_lockin.current = 5
+odrv0.axis0.config.calibration_lockin.ramp_time = 0.4
+odrv0.axis0.config.calibration_lockin.ramp_distance = 3.1415927410125732
+odrv0.axis0.config.calibration_lockin.accel = 20
+odrv0.axis0.config.calibration_lockin.vel = 40
+1
+2
+3
+4
+5
+配置电机进行编码器索引校准时电机开环转动的相关参数
+
+current 开环运行时的电流，单位为 [A]，根据负载调整，以电机能够正常转动为准
+ramp_time 电流爬升时间，表示电流从零爬升到设定的 current 值所需要的时间
+ramp_distance 电流爬升时电角度转动距离，单位为 [rad]，
+配合 ramp_time 参数来缓慢锁定转子相位，可以通过调整 
+ramp_time、ramp_distance 使编码器索引校准启动的更平顺
+accel 转速爬升的加速度，单位为 [rad/s^2] Tăng tốc độ leo, đơn vị là
+vel 编码器索引校准的运行速度，单位为 [rad/s] Tốc độ chạy của hiệu chuẩn chỉ số mã hóa, đơn vị là
+3.4 控制器配置 Cấu hình bộ điều khiển
+odrv0.axis0.controller.config.control_mode = CTRL_MODE_TRAJECTORY_CONTROL
+1
+配置电机控制模式，此处我们设置为轨迹位置模式
+Định cấu hình chế độ điều khiển động cơ, ở đây chúng tôi đặt thành chế độ theo dõi vị trí
+odrv0.axis0.controller.config.vel_limit = 16384*40
+1
+配置电机最大转速，以编码器计数值为单位 [count/s]，例如我们的编码器 cpr = 16384，我们将 vel_limit 设置为 cpr * 40 即最大转速为 40 转/秒 2400 转/分
+Định cấu hình tốc độ tối đa của động cơ, với số lượng bộ mã hóa là đơn vị [đếm / s], ví dụ: bộ mã hóa của chúng tôi cpr = 16384, chúng tôi đặt vel_limit thành cpr * 40, nghĩa là tốc độ tối đa là 40 vòng / phút 2400 vòng / phút
+odrv0.axis0.controller.config.pos_gain = 2
+odrv0.axis0.controller.config.vel_gain = 0.0003
+odrv0.axis0.controller.config.vel_integrator_gain = 0.005
+1
+2
+3
+配置控制器控制增益，pos_gain 为位置环增益，vel_gain 和 vel_integrator_gain 为速度环增益
+Định cấu hình bộ điều khiển để điều khiển mức tăng, pos_gain là mức tăng vòng lặp vị trí, vel_gain và vel_integrator_gain là mức tăng vòng lặp tốc độ 147
+3.5 梯形加减速配置 Cấu hình gia tốc và giảm tốc hình thang
+odrv0.axis0.trap_traj.config.vel_limit = 16384*20
+1
+配置梯形轨迹模式下电机匀速时的转速，以编码器计数值为单位 [count/s]，例如我们的编码器 cpr = 16384，我们将 vel_limit 设置为 cpr * 20 即最大转速为 20 转/秒 1200 转/分
+
+odrv0.axis0.trap_traj.config.accel_limit = 16384*10
+1
+配置梯形轨迹模式下电机加速时的加速度，以编码器计数值为单位 [count/s^2]，例如我们的编码器 cpr = 16384，我们将 accel_limit 设置为 cpr * 10 即表示电机从静止加速到 10 转/秒 需要一秒钟的时间
+
+odrv0.axis0.trap_traj.config.decel_limit = 16384*10
+1
+配置梯形轨迹模式下电机减速时的加速度，以编码器计数值为单位 [count/s^2]，例如我们的编码器 cpr = 16384，我们将 decel_limit 设置为 cpr * 10 即表示电机从 10 转/秒 减速到静止需要一秒钟的时间
+
+3.6 保存配置
+odrv0.save_configuration()
+odrv0.reboot()
+1
+2
+保存配置参数并重启 ODrive 已使某些配置参数生效
+
+等待 ODrive 重新连接到 odrivetool
+
+4 校准工作
+4.1 校准电机
+odrv0.axis0.requested_state = AXIS_STATE_MOTOR_CALIBRATION
+1
+进行电机参数校准，校准过程将测量电机相电阻、电机相电感，并根据相电阻相电感自动生成电流环 PI 增益，当听到电机发出 ‘哔’ 声后表示电机参数测量操作已完成
+
+输入：
+dump_errors(odrv0)
+
+返回：
+axis0
+  axis: no error
+  motor: no error
+  encoder: no error
+  controller: no error
+axis1
+  axis: no error
+  motor: no error
+  encoder: no error
+  controller: no error
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+列出错误状态信息，当得到上述返回则表明电机校准OK可以继续进行下面步骤，如果出现错误则要根据错误代码分析原因，直到错误消失
+
+odrv0.axis0.motor.config.pre_calibrated = True
+1
+将电机 pre_calibrated 设置为 True，表示电机已校准下次重新启动后可以直接使用本次校准的结果
+
+4.2 编码器校准
+odrv0.axis0.requested_state = AXIS_STATE_ENCODER_INDEX_SEARCH
+1
+进行电机编码器索引校准，启动后电机将朝着一个方向开环旋转直到检测到索引信号脉冲时停止，如果想要指定编码器索引校准时电机的转动方向可以通过改变以下三个参数的正负号来实现：
+
+odrv0.axis0.config.calibration_lockin.ramp_distance = -3.1415927410125732
+odrv0.axis0.config.calibration_lockin.accel = -20
+odrv0.axis0.config.calibration_lockin.vel = -40
+参考 [3.3 编码器配置](#3.3 编码器配置)
+
+注意：以上三个参数正负号应保持一致
+
+输入：
+dump_errors(odrv0)
+
+返回：
+axis0
+  axis: no error
+  motor: no error
+  encoder: no error
+  controller: no error
+axis1
+  axis: no error
+  motor: no error
+  encoder: no error
+  controller: no error
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+列出错误状态信息，当得到上述返回则表明校准OK可以继续进行下面步骤，如果出现错误则要根据错误代码分析原因，直到错误消失
+
+odrv0.axis0.requested_state = AXIS_STATE_ENCODER_OFFSET_CALIBRATION
+1
+进行电机编码器偏移校准，启动后电机将朝着一个方向开环旋转然后反方向旋转然后停止，开环旋转时的电流大小为 odrv0.axis0.motor.config.calibration_current 参考 [3.2 电机配置](#3.2 电机配置)
+
+输入：
+dump_errors(odrv0)
+
+返回：
+axis0
+  axis: no error
+  motor: no error
+  encoder: no error
+  controller: no error
+axis1
+  axis: no error
+  motor: no error
+  encoder: no error
+  controller: no error
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+列出错误状态信息，当得到上述返回则表明校准OK可以继续进行下面步骤，如果出现错误则要根据错误代码分析原因，直到错误消失
+
+odrv0.axis0.encoder.config.pre_calibrated = True
+1
+将编码器 pre_calibrated 设置为 True，表示编码器已校准下次重新启动后可以直接使用本次校准的结果，注意：由于我们使用的并非绝对值编码器而是增量编码器，所以每次重新启动后需要进行编码器索引校准，如果您使用的编码器没有索引信号 (只有 AB) 则每次重新启动后需要进行编码器偏移校准
+
+4.3 保存校准结果
+odrv0.save_configuration()
+odrv0.reboot()
+1
+2
+将电机校准、编码器校准和进行的新的配置保存并重启
+
+等待 ODrive 重新连接到 odrivetool
+
+5 控制电机运行
+odrv0.axis0.requested_state = AXIS_STATE_ENCODER_INDEX_SEARCH
+1
+重新启动后进行编码器索引校准。注意：由于我们使用的并非绝对值编码器而是增量编码器，所以每次重新启动后需要进行编码器索引校准，如果您使用的编码器没有索引信号 (只有 AB) 则每次重新启动后需要进行编码器偏移校准
+
+odrv0.axis0.requested_state = AXIS_STATE_CLOSED_LOOP_CONTROL
+1
+进入闭环运行模式，此时电机将维持在当前位置，如果电机产生震动则说明控制增益设置的不合适需要适当调低，当尝试用手转动电机轴时如果电机反应很迟钝反作用力很弱则说明需要适当调高控制增益，参考 [3.4控制器配置](#3.4 控制器配置)
+
+odrv0.axis0.controller.move_to_pos(16384*10)
+1
+控制电机运行到 16384*10 位置，当电机启动后进入闭环位置运行后电机当前位置为 0，我们的编码器 cpr = 16384 即一圈 16384 个计数，此命令命令电机运行到 16384 * 10 的位置即表示电机转动到 10 圈位置。此过程电机会经历加速、匀速、减速三个过程，参考[3.5 梯形加减速配置](#3.5 梯形加减速配置)，最终停在我们命令它移动到的位置。如果想反方向转动，位置值改为负数即可。
+
+odrv0.axis0.requested_state = AXIS_STATE_IDLE
+1
+如果想释放电机发送此命令即可让电机自由转动
+
+6 如何避免每次重新启动后手动校准编码器、进入闭环控制
+每次重新启动后必须要进行编码器索引校准，然后切入闭环控制后才能向电机发送运行指令，这两个步骤可以通过配置让 ODrive 自动替我们完成
+
+odrv0.axis0.config.startup_encoder_index_search = True
+odrv0.axis0.config.startup_closed_loop_control = True
+odrv0.save_configuration()
+1
+2
+3
+配置 ODrive 启动后自动执行的操作，编码器索引校准、进入闭环控制模式，然后保存配置。
+
+7 运行效果演示
+————————————————
+版权声明：本文为CSDN博主「codenocold」的原创文章，遵循CC 4.0 BY-SA版权协议，转载请附上原文出处链接及本声明。
+原文链接：https://blog.csdn.net/abf1234444/java/article/details/104967023
