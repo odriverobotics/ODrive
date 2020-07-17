@@ -519,6 +519,7 @@ bool Encoder::update() {
     bool snap_to_zero_vel = false;
     if (std::abs(vel_estimate_) < 0.5f * current_meas_period * pll_ki_) {
         vel_estimate_ = 0.0f;  //align delta-sigma on zero to prevent jitter
+        if (mWorkFirstTime_) mWorkFirstTime_ = false;
         snap_to_zero_vel = true;
     }
 
@@ -550,5 +551,6 @@ bool Encoder::update() {
 
     vel_estimate_valid_ = true;
     pos_estimate_valid_ = true;
+   
     return true;
 }
