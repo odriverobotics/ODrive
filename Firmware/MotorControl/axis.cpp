@@ -341,16 +341,6 @@ bool Axis::run_closed_loop_control_loop() {
         return error_ |= ERROR_CONTROLLER_FAILED, false;
     }
     
-    /*while (encoder_.mWorkFirstTime_) {
-                    // look for errors at axis level and also all subcomponents
-            bool checks_ok = do_checks();
-            // Update all estimators
-            // Note: updates run even if checks fail
-            bool updates_ok = do_updates(); 
-
-            // make sure the watchdog is being fed. 
-            bool watchdog_ok = watchdog_check();
-    }*/
     // To avoid any transient on startup, we intialize the setpoint to be the current position
     controller_.pos_setpoint_ = *controller_.pos_estimate_src_;
 
