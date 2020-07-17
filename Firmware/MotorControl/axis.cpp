@@ -17,8 +17,8 @@ Axis::Axis(int axis_num,
            Motor& motor,
            TrapezoidalTrajectory& trap,
            Endstop& min_endstop,
-           Endstop& max_endstop)
-    : axis_num_(axis_num),
+           Endstop& max_endstop): 
+      axis_num_(axis_num),
       hw_config_(hw_config),
       config_(config),
       encoder_(encoder),
@@ -310,17 +310,30 @@ bool Axis::run_sensorless_control_loop() {
     return check_for_errors();
 }
 void Axis::enable_pin_check() {
+    if (!encoder_.config_.pre_calibrated){return;}     // No work until encoder pre_calibrated set True
     if (config_.use_enable_pin) {
         bool enable = HAL_GPIO_ReadPin(en_port_, en_pin_) ^ config_.enable_pin_active_low;
-        if (enable && (current_state_ == AXIS_STATE_IDLE)) {
-            if (startup_sequence_done_) {
-                requested_state_ = AXIS_STATE_CLOSED_LOOP_CONTROL;   
-            } else {
-                requested_state_ = AXIS_STATE_STARTUP_SEQUENCE;
-            }
+        switch(current_state_){
+            case AXIS_STATE_UNDEFINED: 
+                requested_state_ = enable ? AXIS_STATE_CLOSED_LOOP_CONTROL : AXIS_STATE_IDLE ;
+                break;
+            case AXIS_STATE_IDLE: 
+                if (enable) requested_state_ = AXIS_STATE_CLOSED_LOOP_CONTROL ;
+                break;
+            case AXIS_STATE_CLOSED_LOOP_CONTROL:
+                if(!enable) requested_state_ = AXIS_STATE_IDLE ;
+                break;
+            case AXIS_STATE_ENCODER_OFFSET_CALIBRATION:
+                break;
+            default :
+                break;
+        }
+       
+       /* if (enable && (current_state_ == AXIS_STATE_IDLE)) {
+            requested_state_ = AXIS_STATE_CLOSED_LOOP_CONTROL;   
         } else if (!enable && (current_state_ != AXIS_STATE_IDLE)) {
             requested_state_ = AXIS_STATE_IDLE;
-        }
+        }*/
     }
 }
 bool Axis::run_closed_loop_control_loop() {
