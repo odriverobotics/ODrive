@@ -366,7 +366,21 @@ uint8_t ams_parity(uint16_t v) {
     v ^= v >> 1;
     return v & 1;
 }
-
+/**
+ * Parity check AS5047
+ * @param n: uint16_t to check
+ * @return: false if ok
+ */
+bool CheckParity(uint16_t n)
+{   const int kNumSensorBits = 14;
+    const int kParity  = 1;
+    uint16_t parity = n;
+    for(int i=1; i <= kNumSensorBits+1; ++i) {
+        n >>= 1;
+        parity ^= n;
+    }
+    return (parity & kParity) != 0;
+}
 uint8_t cui_parity(uint16_t v) {
     v ^= v >> 8;
     v ^= v >> 4;
@@ -385,9 +399,13 @@ void Encoder::abs_spi_cb(){
         case MODE_SPI_ABS_AMS: {
             uint16_t rawVal = abs_spi_dma_rx_[0];
             // check if parity is correct (even) and error flag clear
-            if (ams_parity(rawVal) || ((rawVal >> 14) & 1)) {
+            //if (ams_parity(rawVal) || ((rawVal >> 14) & 1)) {
+            if (CheckParity(rawVal)){
                 return;
             }
+           /* if ((rawVal >> 14) & 1) {
+                return;
+            }*/
             pos = rawVal & 0x3fff;
         } break;
 
