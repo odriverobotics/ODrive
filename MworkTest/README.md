@@ -4,6 +4,9 @@
 - odrv0.erase_configuration()
 - [x] ``` dump_errors(odrv0, True) ```
 - [x]  start_liveplotter(lambda: [odrv0.axis0.encoder.spi_error_rate,odrv0.axis1.encoder.spi_error_rate,odrv0.axis1.encoder.shadow_count,odrv0.axis0.encoder.shadow_count])
+
+- [x]  start_liveplotter(lambda: [odrv0.axis0.encoder.spi_error_rate,odrv0.axis1.encoder.spi_error_rate,odrv0.axis0.encoder.mWorkErrorSPI,odrv0.axis1.encoder.mWorkErrorSPI])
+
 # Tính Motor SteadyWin
 
 
