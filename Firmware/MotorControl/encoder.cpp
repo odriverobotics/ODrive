@@ -403,6 +403,7 @@ void Encoder::abs_spi_cb(){
             if (CheckParity(rawVal)){
                 return;
             }
+            mWorkErrorSPI_ = ((rawVal >> 14) & 1);
            /* if ((rawVal >> 14) & 1) {
                 return;
             }*/

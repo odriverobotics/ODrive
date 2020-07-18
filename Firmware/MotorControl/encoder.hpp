@@ -80,7 +80,8 @@ public:
     const EncoderHardwareConfig_t& hw_config_;
     Config_t& config_;
     Axis* axis_ = nullptr; // set by Axis constructor
-
+    
+    bool mWorkErrorSPI_ = false;
     Error_t error_ = ERROR_NONE;
     bool index_found_ = false;
     bool is_ready_ = false;
@@ -141,7 +142,7 @@ public:
             make_protocol_ro_property("calib_scan_response", &calib_scan_response_),
             make_protocol_property("pos_abs", &pos_abs_),
             make_protocol_ro_property("spi_error_rate", &spi_error_rate_),
-
+            make_protocol_ro_property("mWorkErrorSPI", &mWorkErrorSPI_),
             make_protocol_object("config",
                 make_protocol_property("mode", &config_.mode),
                 make_protocol_property("use_index", &config_.use_index,
