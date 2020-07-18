@@ -193,6 +193,7 @@ build{
         'MotorControl/nvm.c',
         'MotorControl/axis.cpp',
         'MotorControl/motor.cpp',
+        'MotorControl/thermistor.cpp',
         'MotorControl/encoder.cpp',
         'MotorControl/endstop.cpp',
         'MotorControl/controller.cpp',
