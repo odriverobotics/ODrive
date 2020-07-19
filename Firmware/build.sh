@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # Builds the firmware with the configuration specified by
 # environment variables named CONFIG_...
 # If DEPLOY is set, the deliverables are copied to Firmware/deploy/*
