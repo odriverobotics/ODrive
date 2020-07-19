@@ -529,6 +529,7 @@ bool Encoder::update() {
     if (snap_to_zero_vel || !config_.enable_phase_interpolation) {
         interpolation_ = 0.5f;
     // reset interpolation if encoder edge comes
+    // TODO: This isn't correct. At high velocities the first phase in this count may very well not be at the edge.
     } else if (delta_enc > 0) {
         interpolation_ = 0.0f;
     } else if (delta_enc < 0) {
