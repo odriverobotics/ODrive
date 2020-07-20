@@ -241,6 +241,17 @@ interfaces:
       erase_configuration:
       reboot:
       enter_dfu_mode:
+      get_interrupt_status:
+        in: {irqn: {type: int32, doc: '-12...-1: processor interrupts, 0...239: NVIC interrupts'}}
+        out:
+          status:
+            type: uint32
+            doc: |
+              bit 31:     enabled (1) or disabled (0)
+              bits 30:8:  number of times the interrupt fired (modulo 0x800000)
+              bits 7:0:   priority (0 is highest priority)
+              0xffffffff if the specified number is not a valid interrupt number.
+        doc: Returns information about the specified interrupt number.
 
   ODrive.Can:
     c_is_class: True

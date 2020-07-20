@@ -37,7 +37,7 @@
 #include "cmsis_os.h"
 
 /* USER CODE BEGIN 0 */
-
+#include <Drivers/STM32/stm32_system.h>
 /* USER CODE END 0 */
 
 /* External variables --------------------------------------------------------*/
@@ -67,7 +67,7 @@ extern TIM_HandleTypeDef htim14;
 void NMI_Handler(void)
 {
   /* USER CODE BEGIN NonMaskableInt_IRQn 0 */
-
+  COUNT_IRQ(NonMaskableInt_IRQn);
   /* USER CODE END NonMaskableInt_IRQn 0 */
   /* USER CODE BEGIN NonMaskableInt_IRQn 1 */
 
@@ -110,7 +110,7 @@ void HardFault_Handler(void)
 void MemManage_Handler(void)
 {
   /* USER CODE BEGIN MemoryManagement_IRQn 0 */
-
+  COUNT_IRQ(MemoryManagement_IRQn);
   /* USER CODE END MemoryManagement_IRQn 0 */
   while (1)
   {
@@ -128,7 +128,7 @@ void MemManage_Handler(void)
 void BusFault_Handler(void)
 {
   /* USER CODE BEGIN BusFault_IRQn 0 */
-
+  COUNT_IRQ(BusFault_IRQn);
   /* USER CODE END BusFault_IRQn 0 */
   while (1)
   {
@@ -146,7 +146,7 @@ void BusFault_Handler(void)
 void UsageFault_Handler(void)
 {
   /* USER CODE BEGIN UsageFault_IRQn 0 */
-
+  COUNT_IRQ(UsageFault_IRQn);
   /* USER CODE END UsageFault_IRQn 0 */
   while (1)
   {
@@ -164,7 +164,7 @@ void UsageFault_Handler(void)
 void DebugMon_Handler(void)
 {
   /* USER CODE BEGIN DebugMonitor_IRQn 0 */
-
+  COUNT_IRQ(DebugMonitor_IRQn);
   /* USER CODE END DebugMonitor_IRQn 0 */
   /* USER CODE BEGIN DebugMonitor_IRQn 1 */
 
@@ -177,7 +177,7 @@ void DebugMon_Handler(void)
 void SysTick_Handler(void)
 {
   /* USER CODE BEGIN SysTick_IRQn 0 */
-
+  COUNT_IRQ(SysTick_IRQn);
   /* USER CODE END SysTick_IRQn 0 */
   osSystickHandler();
   /* USER CODE BEGIN SysTick_IRQn 1 */
@@ -198,7 +198,7 @@ void SysTick_Handler(void)
 void DMA1_Stream0_IRQHandler(void)
 {
   /* USER CODE BEGIN DMA1_Stream0_IRQn 0 */
-
+  COUNT_IRQ(DMA1_Stream0_IRQn);
   /* USER CODE END DMA1_Stream0_IRQn 0 */
   HAL_DMA_IRQHandler(&hdma_spi3_rx);
   /* USER CODE BEGIN DMA1_Stream0_IRQn 1 */
@@ -212,7 +212,7 @@ void DMA1_Stream0_IRQHandler(void)
 void DMA1_Stream2_IRQHandler(void)
 {
   /* USER CODE BEGIN DMA1_Stream2_IRQn 0 */
-
+  COUNT_IRQ(DMA1_Stream2_IRQn);
   /* USER CODE END DMA1_Stream2_IRQn 0 */
   HAL_DMA_IRQHandler(&hdma_uart4_rx);
   /* USER CODE BEGIN DMA1_Stream2_IRQn 1 */
@@ -226,7 +226,7 @@ void DMA1_Stream2_IRQHandler(void)
 void DMA1_Stream4_IRQHandler(void)
 {
   /* USER CODE BEGIN DMA1_Stream4_IRQn 0 */
-
+  COUNT_IRQ(DMA1_Stream4_IRQn);
   /* USER CODE END DMA1_Stream4_IRQn 0 */
   HAL_DMA_IRQHandler(&hdma_uart4_tx);
   /* USER CODE BEGIN DMA1_Stream4_IRQn 1 */
@@ -240,7 +240,7 @@ void DMA1_Stream4_IRQHandler(void)
 void DMA1_Stream5_IRQHandler(void)
 {
   /* USER CODE BEGIN DMA1_Stream5_IRQn 0 */
-
+  COUNT_IRQ(DMA1_Stream5_IRQn);
   /* USER CODE END DMA1_Stream5_IRQn 0 */
   HAL_DMA_IRQHandler(&hdma_spi3_tx);
   /* USER CODE BEGIN DMA1_Stream5_IRQn 1 */
@@ -254,7 +254,7 @@ void DMA1_Stream5_IRQHandler(void)
 void CAN1_TX_IRQHandler(void)
 {
   /* USER CODE BEGIN CAN1_TX_IRQn 0 */
-
+  COUNT_IRQ(CAN1_TX_IRQn);
   /* USER CODE END CAN1_TX_IRQn 0 */
   HAL_CAN_IRQHandler(&hcan1);
   /* USER CODE BEGIN CAN1_TX_IRQn 1 */
@@ -268,7 +268,7 @@ void CAN1_TX_IRQHandler(void)
 void CAN1_RX0_IRQHandler(void)
 {
   /* USER CODE BEGIN CAN1_RX0_IRQn 0 */
-
+  COUNT_IRQ(CAN1_RX0_IRQn);
   /* USER CODE END CAN1_RX0_IRQn 0 */
   HAL_CAN_IRQHandler(&hcan1);
   /* USER CODE BEGIN CAN1_RX0_IRQn 1 */
@@ -282,7 +282,7 @@ void CAN1_RX0_IRQHandler(void)
 void CAN1_RX1_IRQHandler(void)
 {
   /* USER CODE BEGIN CAN1_RX1_IRQn 0 */
-
+  COUNT_IRQ(CAN1_RX1_IRQn);
   /* USER CODE END CAN1_RX1_IRQn 0 */
   HAL_CAN_IRQHandler(&hcan1);
   /* USER CODE BEGIN CAN1_RX1_IRQn 1 */
@@ -296,7 +296,7 @@ void CAN1_RX1_IRQHandler(void)
 void CAN1_SCE_IRQHandler(void)
 {
   /* USER CODE BEGIN CAN1_SCE_IRQn 0 */
-
+  COUNT_IRQ(CAN1_SCE_IRQn);
   /* USER CODE END CAN1_SCE_IRQn 0 */
   HAL_CAN_IRQHandler(&hcan1);
   /* USER CODE BEGIN CAN1_SCE_IRQn 1 */
@@ -310,7 +310,7 @@ void CAN1_SCE_IRQHandler(void)
 void TIM8_TRG_COM_TIM14_IRQHandler(void)
 {
   /* USER CODE BEGIN TIM8_TRG_COM_TIM14_IRQn 0 */
-
+  COUNT_IRQ(TIM8_TRG_COM_TIM14_IRQn);
   /* USER CODE END TIM8_TRG_COM_TIM14_IRQn 0 */
   HAL_TIM_IRQHandler(&htim8);
   HAL_TIM_IRQHandler(&htim14);
@@ -325,7 +325,7 @@ void TIM8_TRG_COM_TIM14_IRQHandler(void)
 void SPI3_IRQHandler(void)
 {
   /* USER CODE BEGIN SPI3_IRQn 0 */
-
+  COUNT_IRQ(SPI3_IRQn);
   /* USER CODE END SPI3_IRQn 0 */
   HAL_SPI_IRQHandler(&hspi3);
   /* USER CODE BEGIN SPI3_IRQn 1 */
@@ -339,7 +339,7 @@ void SPI3_IRQHandler(void)
 void UART4_IRQHandler(void)
 {
   /* USER CODE BEGIN UART4_IRQn 0 */
-
+  COUNT_IRQ(UART4_IRQn);
   /* USER CODE END UART4_IRQn 0 */
   HAL_UART_IRQHandler(&huart4);
   /* USER CODE BEGIN UART4_IRQn 1 */

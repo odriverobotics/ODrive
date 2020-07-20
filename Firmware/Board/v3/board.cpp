@@ -355,16 +355,19 @@ void HAL_SPI_TxRxCpltCallback(SPI_HandleTypeDef *hspi) {
 
 
 void TIM1_UP_TIM10_IRQHandler(void) {
+    COUNT_IRQ(TIM1_UP_TIM10_IRQn);
     __HAL_TIM_CLEAR_IT(&htim1, TIM_IT_UPDATE);
     motors[0].tim_update_cb();
 }
 
 void TIM8_UP_TIM13_IRQHandler(void) {
+    COUNT_IRQ(TIM8_UP_TIM13_IRQn);
     __HAL_TIM_CLEAR_IT(&htim8, TIM_IT_UPDATE);
     motors[1].tim_update_cb();
 }
 
 void TIM5_IRQHandler(void) {
+    COUNT_IRQ(TIM5_IRQn);
     pwm0_input.on_capture();
 }
 
@@ -386,6 +389,8 @@ void ADC_IRQ_Dispatch(ADC_HandleTypeDef* hadc, void(*callback)(ADC_HandleTypeDef
 }
 
 void ADC_IRQHandler(void) {
+    COUNT_IRQ(ADC_IRQn);
+    
     // The HAL's ADC handling mechanism adds many clock cycles of overhead
     // So we bypass it and handle the logic ourselves.
     //@TODO add vbus measurement on adc1 here
@@ -395,14 +400,17 @@ void ADC_IRQHandler(void) {
 }
 
 void I2C1_EV_IRQHandler(void) {
-  HAL_I2C_EV_IRQHandler(&hi2c1);
+    COUNT_IRQ(I2C1_EV_IRQn);
+    HAL_I2C_EV_IRQHandler(&hi2c1);
 }
 
 void I2C1_ER_IRQHandler(void) {
-  HAL_I2C_ER_IRQHandler(&hi2c1);
+    COUNT_IRQ(I2C1_ER_IRQn);
+    HAL_I2C_ER_IRQHandler(&hi2c1);
 }
 
 void OTG_FS_IRQHandler(void) {
+    COUNT_IRQ(OTG_FS_IRQn);
     // Mask interrupt, and signal processing of interrupt by usb_cmd_thread
     // The thread will re-enable the interrupt when all pending irqs are clear.
     HAL_NVIC_DisableIRQ(OTG_FS_IRQn);

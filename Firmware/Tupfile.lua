@@ -196,6 +196,7 @@ sources = {
     'MotorControl/trapTraj.cpp',
     'MotorControl/pwm_input.cpp',
     'MotorControl/main.cpp',
+    'Drivers/STM32/stm32_system.cpp',
     'Drivers/STM32/stm32_gpio.cpp',
     'Drivers/STM32/stm32_nvm.c',
     'Drivers/STM32/stm32_spi_arbiter.cpp',
