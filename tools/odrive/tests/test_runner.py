@@ -794,7 +794,7 @@ if args.setup_host:
         if not os.path.isfile('/usr/share/arduino/hardware/tools/teensy_post_compile_old'):
             os.rename('/usr/share/arduino/hardware/tools/teensy_post_compile', '/usr/share/arduino/hardware/tools/teensy_post_compile_old')
         with open('/usr/share/arduino/hardware/tools/teensy_post_compile', 'w') as scr:
-            scr.write('#!/bin/bash\n')
+            scr.write('#!/usr/bin/env bash\n')
             scr.write('if [ "$ARDUINO_COMPILE_DESTINATION" != "" ]; then\n')
             scr.write('  cp -r ${2#-path=}/*.ino.hex ${ARDUINO_COMPILE_DESTINATION}\n')
             scr.write('fi\n')
