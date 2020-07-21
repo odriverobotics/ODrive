@@ -434,6 +434,7 @@ void Encoder::abs_spi_cs_pin_init(){
 bool Encoder::update() {
     // update internal encoder state.
     int32_t delta_enc = 0;
+    int32_t pos_abs_latched = pos_abs_; //LATCH
 
     switch (mode_) {
         case MODE_INCREMENTAL: {
@@ -483,7 +484,7 @@ bool Encoder::update() {
             }
 
             abs_spi_pos_updated_ = false;
-            delta_enc = pos_abs_ - count_in_cpr_;
+            delta_enc = pos_abs_latched - count_in_cpr_; //LATCH
             delta_enc = mod(delta_enc, config_.cpr);
             if (delta_enc > config_.cpr/2) {
                 delta_enc -= config_.cpr;
@@ -501,7 +502,7 @@ bool Encoder::update() {
     count_in_cpr_ = mod(count_in_cpr_, config_.cpr);
 
     if(mode_ & MODE_FLAG_ABS)
-        count_in_cpr_ = pos_abs_;
+        count_in_cpr_ = pos_abs_latched;
 
     //// run pll (for now pll is in units of encoder counts)
     // Predict current pos
