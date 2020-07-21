@@ -96,7 +96,7 @@ public:
 private:
     Introspectable get_direct_child(const char * name, size_t length) const {
         for (size_t i = 0; i < type_info_->property_table_length_; ++i) {
-            if (!strncmp(name, type_info_->property_table_[i].name, length)) {
+            if (!strncmp(name, type_info_->property_table_[i].name, length) && (length == strlen(type_info_->property_table_[i].name))) {
                 Introspectable result;
                 result.storage_ = type_info_->get_child(storage_, i);
                 result.type_info_ = type_info_->property_table_[i].type_info;

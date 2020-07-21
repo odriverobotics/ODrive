@@ -36,14 +36,16 @@ static Introspectable root_obj = ODriveTypeInfo<ODrive>::make_introspectable(odr
 // @brief Sends a line on the specified output.
 template<typename ... TArgs>
 void respond(StreamSink& output, bool include_checksum, const char * fmt, TArgs&& ... args) {
-    char response[64];
+    char response[64]; // Hardcoded max buffer size. We silently truncate the output if it's too long for the buffer.
     size_t len = snprintf(response, sizeof(response), fmt, std::forward<TArgs>(args)...);
+    len = std::min(len, sizeof(response));
     output.process_bytes((uint8_t*)response, len, nullptr); // TODO: use process_all instead
     if (include_checksum) {
         uint8_t checksum = 0;
         for (size_t i = 0; i < len; ++i)
             checksum ^= response[i];
         len = snprintf(response, sizeof(response), "*%u", checksum);
+        len = std::min(len, sizeof(response));
         output.process_bytes((uint8_t*)response, len, nullptr);
     }
     output.process_bytes((const uint8_t*)"\r\n", 2, nullptr);
