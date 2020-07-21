@@ -508,7 +508,6 @@ bool Encoder::update() {
 
             abs_spi_pos_updated_ = false;
             delta_enc = pos_abs_latched - count_in_cpr_; //LATCH
-            //delta_enc = pos_abs_ - count_in_cpr_;
             delta_enc = mod(delta_enc, config_.cpr);
             if (delta_enc > config_.cpr/2) {
                 delta_enc -= config_.cpr;
@@ -527,7 +526,6 @@ bool Encoder::update() {
 
     if(mode_ & MODE_FLAG_ABS)
         count_in_cpr_ = pos_abs_latched;
-        //count_in_cpr_ = pos_abs_;
 
     //// run pll (for now pll is in units of encoder counts)
     // Predict current pos
