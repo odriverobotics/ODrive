@@ -27,7 +27,7 @@ void Encoder::setup() {
 
     mode_ = config_.mode;
     if(mode_ & MODE_FLAG_ABS){
-        abs_spi_cs_pin_init();
+        //abs_spi_cs_pin_init();
         abs_spi_init();
         if (axis_->controller_.config_.anticogging.pre_calibrated) {
             axis_->controller_.anticogging_valid_ = true;
@@ -433,7 +433,13 @@ void Encoder::abs_spi_cb(){
         is_ready_ = true;
     }
 }
+void Encoder::mWork_abs_spi_cs_pin_init(){
+    mode_ = config_.mode;
+    if(mode_ & MODE_FLAG_ABS){
+        abs_spi_cs_pin_init();
+    }
 
+}
 void Encoder::abs_spi_cs_pin_init(){
     // Decode cs pin
     abs_spi_cs_port_ = get_gpio_port_by_pin(config_.abs_spi_cs_gpio_pin);
@@ -526,7 +532,7 @@ bool Encoder::update() {
 
     if(mode_ & MODE_FLAG_ABS)
         count_in_cpr_ = pos_abs_latched;
-
+        
     //// run pll (for now pll is in units of encoder counts)
     // Predict current pos
     pos_estimate_ += current_meas_period * vel_estimate_;

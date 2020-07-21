@@ -227,6 +227,9 @@ void vApplicationIdleHook(void) {
 
 int odrive_main(void) {
     // Start ADC for temperature measurements and user measurements
+    for(auto& axis : axes){
+        axis->encoder_.mWork_abs_spi_cs_pin_init();
+    }
     start_general_purpose_adc();
 
     // TODO: make dynamically reconfigurable
@@ -235,7 +238,7 @@ int odrive_main(void) {
         SetGPIO12toUART();
     }
 #endif
-    //osDelay(100);
+    osDelay(100);
     // Init communications (this requires the axis objects to be constructed)
     init_communication();
 
@@ -261,7 +264,7 @@ int odrive_main(void) {
     //  - Allow a user to interrupt the code, e.g. by flashing a new code,
     //    before it does anything crazy
     // TODO make timing a function of calibration filter tau
-    osDelay(3000);
+    osDelay(1500);
 
     // Start state machine threads. Each thread will go through various calibration
     // procedures and then run the actual controller loops.
