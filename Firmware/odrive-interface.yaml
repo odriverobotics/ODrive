@@ -252,6 +252,17 @@ interfaces:
               bits 7:0:   priority (0 is highest priority)
               0xffffffff if the specified number is not a valid interrupt number.
         doc: Returns information about the specified interrupt number.
+      get_dma_status:
+        in: {stream_num: {type: uint8, doc: '0...7: DMA1 streams, 8...15: DMA2 streams'}}
+        out:
+          status:
+            type: uint32
+            doc: |
+              bit 31:     zero if the stream's configuration is equal to the reset state
+              bits 4:2:   channel
+              bits 1:0:   priority (3 is highest priority)
+              0xffffffff if the specified number is not a valid DMA stream number.
+        doc: Returns information about the specified DMA stream.
 
   ODrive.Can:
     c_is_class: True

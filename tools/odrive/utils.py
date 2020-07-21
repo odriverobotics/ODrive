@@ -466,8 +466,56 @@ def dump_interrupts(odrv):
         (103, "SDMMC2_IRQn")
     ]
 
-    print("  #  Name                     En Prio    Count")
+    print("|   # | Name                    | Prio | En |   Count |")
+    print("|-----|-------------------------|------|----|---------|")
     for irqn, irq_name in interrupts:
         status = odrv.get_interrupt_status(irqn)
         if (status != 0):
-            print(str(irqn).rjust(3) + "  " + irq_name.ljust(23) + "  " + str("*" if (status & 0x80000000) else " ") + "  " + str(status & 0xff).rjust(4) + "  " + str((status >> 8) & 0x7fffff).rjust(7))
+            print("| {} | {} | {} | {} | {} |".format(
+                    str(irqn).rjust(3),
+                    irq_name.ljust(23),
+                    str(status & 0xff).rjust(4),
+                    " *" if (status & 0x80000000) else "  ",
+                    str((status >> 8) & 0x7fffff).rjust(7)))
+
+
+def dump_dma(odrv):
+    if odrv.hw_version_major == 3:
+        dma_functions = [[
+            # https://www.st.com/content/ccc/resource/technical/document/reference_manual/3d/6d/5a/66/b4/99/40/d4/DM00031020.pdf/files/DM00031020.pdf/jcr:content/translations/en.DM00031020.pdf Table 42
+            ["SPI3_RX",          "-",                  "SPI3_RX",           "SPI2_RX",            "SPI2_TX",            "SPI3_TX",     "-",                  "SPI3_TX"],
+            ["I2C1_RX",          "-",                  "TIM7_UP",           "-",                  "TIM7_UP",            "I2C1_RX",     "I2C1_TX",            "I2C1_TX"],
+            ["TIM4_CH1",         "-",                  "I2S3_EXT_RX",       "TIM4_CH2",           "I2S2_EXT_TX",        "I2S3_EXT_TX", "TIM4_UP",            "TIM4_CH3"],
+            ["I2S3_EXT_RX",      "TIM2_UP/TIM2_CH3",   "I2C3_RX",           "I2S2_EXT_RX",        "I2C3_TX",            "TIM2_CH1",    "TIM2_CH2/TIM2_CH4",  "TIM2_UP/TIM2_CH4"],
+            ["UART5_RX",         "USART3_RX",          "UART4_RX",          "USART3_TX",          "UART4_TX",           "USART2_RX",   "USART2_TX",          "UART5_TX"],
+            ["UART8_TX",         "UART7_TX",           "TIM3_CH4/TIM3_UP",  "UART7_RX",           "TIM3_CH1/TIM3_TRIG", "TIM3_CH2",    "UART8_RX",           "TIM3_CH3"],
+            ["TIM5_CH3/TIM5_UP", "TIM5_CH4/TIM5_TRIG", "TIM5_CH1",          "TIM5_CH4/TIM5_TRIG", "TIM5_CH2",           "-",           "TIM5_UP",            "-"],
+            ["-",                "TIM6_UP",            "I2C2_RX",           "I2C2_RX",            "USART3_TX",          "DAC1",        "DAC2",               "I2C2_TX"],
+        ], [
+            # https://www.st.com/content/ccc/resource/technical/document/reference_manual/3d/6d/5a/66/b4/99/40/d4/DM00031020.pdf/files/DM00031020.pdf/jcr:content/translations/en.DM00031020.pdf Table 43
+            ["ADC1",      "SAI1_A",      "TIM8_CH1/TIM8_CH2/TIM8_CH3",    "SAI1_A",      "ADC1",                          "SAI1_B",      "TIM1_CH1/TIM1_CH2/TIM1_CH3",    "-"],
+            ["-",         "DCMI",        "ADC2",                          "ADC2",        "SAI1_B",                        "SPI6_TX",     "SPI6_RX",                       "DCMI"],
+            ["ADC3",      "ADC3",        "-",                             "SPI5_RX",     "SPI5_TX",                       "CRYP_OUT",    "CRYP_IN",                       "HASH_IN"],
+            ["SPI1_RX",   "-",           "SPI1_RX",                       "SPI1_TX",     "-",                             "SPI1_TX",     "-",                             "-"],
+            ["SPI4_RX",   "SPI4_TX",     "USART1_RX",                     "SDIO",        "-",                             "USART1_RX",   "SDIO",                          "USART1_TX"],
+            ["-",         "USART6_RX",   "USART6_RX",                     "SPI4_RX",     "SPI4_TX",                       "-",           "USART6_TX",                     "USART6_TX"],
+            ["TIM1_TRIG", "TIM1_CH1",    "TIM1_CH2",                      "TIM1_CH1",    "TIM1_CH4/TIM1_TRIG/TIM1_COM",   "TIM1_UP",     "TIM1_CH3",                      "-"],
+            ["-",         "TIM8_UP",     "TIM8_CH1",                      "TIM8_CH2",    "TIM8_CH3",                      "SPI5_RX",     "SPI5_TX",                       "TIM8_CH4/TIM8_TRIG/TIM8_COM"],
+        ]]
+
+    print("| Name         | Prio | Channel                          | Configured |")
+    print("|--------------|------|----------------------------------|------------|")
+    for stream_num in range(16):
+        status = odrv.get_dma_status(stream_num)
+        if (status != 0):
+            channel = (status >> 2) & 0x7
+            ch_name = dma_functions[stream_num >> 3][channel][stream_num & 0x7]
+            print("| DMA{}_Stream{} |    {} | {} {} |          {} |".format(
+                     (stream_num >> 3) + 1,
+                     (stream_num & 0x7),
+                     (status & 0x3),
+                     channel,
+                     ("(" + ch_name + ")").ljust(30),
+                     "*" if (status & 0x80000000) else " "))
+
+

@@ -180,21 +180,8 @@ public:
     Axis& get_axis(int num) { return axes[num]; }
     ODriveCAN& get_can() { return *odCAN; }
 
-    uint32_t get_interrupt_status(int32_t irqn) {
-        if ((irqn < -14) || (irqn >= 240)) {
-            return 0xffffffff;
-        }
-
-        uint8_t priority = (irqn < -12)
-            ? 0 // hard fault and NMI always have maximum priority
-            : NVIC_GetPriority((IRQn_Type)irqn);
-        uint32_t counter = GET_IRQ_COUNTER((IRQn_Type)irqn);
-        bool is_enabled = (irqn < 0)
-            ? true // processor interrupt vectors are always enabled
-            : NVIC->ISER[(((uint32_t)(int32_t)irqn) >> 5UL)] & (uint32_t)(1UL << (((uint32_t)(int32_t)irqn) & 0x1FUL));
-        
-        return priority | ((counter & 0x7ffffff) << 8) | (is_enabled ? 0x80000000 : 0);
-    }
+    uint32_t get_interrupt_status(int32_t irqn);
+    uint32_t get_dma_status(uint8_t stream_num);
 
     float& vbus_voltage_ = ::vbus_voltage; // TODO: make this the actual variable
     float& ibus_ = ::ibus_; // TODO: make this the actual variable

@@ -202,6 +202,45 @@ void vApplicationIdleHook(void) {
 }
 
 
+/** @brief For diagnostics only */
+uint32_t ODrive::get_interrupt_status(int32_t irqn) {
+    if ((irqn < -14) || (irqn >= 240)) {
+        return 0xffffffff;
+    }
+
+    uint8_t priority = (irqn < -12)
+        ? 0 // hard fault and NMI always have maximum priority
+        : NVIC_GetPriority((IRQn_Type)irqn);
+    uint32_t counter = GET_IRQ_COUNTER((IRQn_Type)irqn);
+    bool is_enabled = (irqn < 0)
+        ? true // processor interrupt vectors are always enabled
+        : NVIC->ISER[(((uint32_t)(int32_t)irqn) >> 5UL)] & (uint32_t)(1UL << (((uint32_t)(int32_t)irqn) & 0x1FUL));
+    
+    return priority | ((counter & 0x7ffffff) << 8) | (is_enabled ? 0x80000000 : 0);
+}
+
+/** @brief For diagnostics only */
+uint32_t ODrive::get_dma_status(uint8_t stream_num) {
+    DMA_Stream_TypeDef* streams[] = {
+        DMA1_Stream0, DMA1_Stream1, DMA1_Stream2, DMA1_Stream3, DMA1_Stream4, DMA1_Stream5, DMA1_Stream6, DMA1_Stream7,
+        DMA2_Stream0, DMA2_Stream1, DMA2_Stream2, DMA2_Stream3, DMA2_Stream4, DMA2_Stream5, DMA2_Stream6, DMA2_Stream7
+    };
+    if (stream_num >= 16) {
+        return 0xffffffff;
+    }
+    DMA_Stream_TypeDef* stream = streams[stream_num];
+    bool is_reset = (stream->CR == 0x00000000)
+                 && (stream->NDTR == 0x00000000)
+                 && (stream->PAR == 0x00000000)
+                 && (stream->M0AR == 0x00000000)
+                 && (stream->M1AR == 0x00000000)
+                 && (stream->FCR == 0x00000021);
+    uint8_t channel = ((stream->CR & DMA_SxCR_CHSEL_Msk) >> DMA_SxCR_CHSEL_Pos);
+    uint8_t priority = ((stream->CR & DMA_SxCR_PL_Msk) >> DMA_SxCR_PL_Pos);
+    return (is_reset ? 0 : 0x80000000) | ((channel & 0x7) << 2) | (priority & 0x3);
+}
+
+
 /**
  * @brief Main thread started from main().
  */
