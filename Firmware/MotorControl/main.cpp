@@ -227,9 +227,11 @@ void vApplicationIdleHook(void) {
 
 int odrive_main(void) {
     // Start ADC for temperature measurements and user measurements
-    for(auto& axis : axes){
+  /* 
+  for(auto& axis : axes){
         axis->encoder_.abs_spi_cs_pin_init();
     }
+    */
     start_general_purpose_adc();
 
     // TODO: make dynamically reconfigurable
@@ -238,7 +240,7 @@ int odrive_main(void) {
         SetGPIO12toUART();
     }
 #endif
-    osDelay(100);
+    //osDelay(100);
     // Init communications (this requires the axis objects to be constructed)
     init_communication();
 
