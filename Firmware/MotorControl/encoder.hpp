@@ -18,6 +18,7 @@ public:
         ERROR_ABS_SPI_TIMEOUT = 0x40,
         ERROR_ABS_SPI_COM_FAIL = 0x80,
         ERROR_ABS_SPI_NOT_READY = 0x100,
+        ERROR_ABS_SPI_ERROR_BIT = 0x120,
     };
 
     enum Mode_t {

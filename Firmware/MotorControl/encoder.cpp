@@ -371,7 +371,7 @@ uint8_t ams_parity(uint16_t v) {
  * @param n: uint16_t to check
  * @return: false if ok
  */
-bool CheckParity(uint16_t n)
+/*bool CheckParity(uint16_t n)
 {   const int kNumSensorBits = 14;
     const int kParity  = 1;
     uint16_t parity = n;
@@ -380,7 +380,7 @@ bool CheckParity(uint16_t n)
         parity ^= n;
     }
     return (parity & kParity) != 0;
-}
+}*/
 uint8_t cui_parity(uint16_t v) {
     v ^= v >> 8;
     v ^= v >> 4;
@@ -400,13 +400,15 @@ void Encoder::abs_spi_cb(){
             uint16_t rawVal = abs_spi_dma_rx_[0];
             // check if parity is correct (even) and error flag clear
             //if (ams_parity(rawVal) || ((rawVal >> 14) & 1)) {
-            if (CheckParity(rawVal)){
+            mWorkErrorSPI_ = ((rawVal >> 14) & 1)!=0;
+            if (ams_parity(rawVal)){
                 return;
             }
-            mWorkErrorSPI_ = ((rawVal >> 14) & 1)==0;
-           /* if ((rawVal >> 14) & 1) {
+            
+            if ((rawVal >> 14) & 1) {
+                set_error(ERROR_ABS_SPI_ERROR_BIT);
                 return;
-            }*/
+            }
             pos = rawVal & 0x3fff;
         } break;
 
@@ -501,7 +503,7 @@ bool Encoder::update() {
                 if ((spi_error_rate_ < 0.00005f) & (error_==ERROR_ABS_SPI_COM_FAIL)) {
                     error_=ERROR_NONE;
                     axis_->error_ &= Axis::ERROR_ENCODER_OK;//Axis::ERROR_ENCODER_FAILED= 0x100 000100000000 ->xóa and 111011111111 EFF
-                    }
+                }
             }
 
             abs_spi_pos_updated_ = false;
