@@ -239,7 +239,7 @@ int odrive_main(void) {
         SetGPIO12toUART();
     }
 #endif
-    //osDelay(100);
+    osDelay(100);
     // Init communications (this requires the axis objects to be constructed)
     init_communication();
 
