@@ -226,10 +226,6 @@ void vApplicationIdleHook(void) {
 
 int odrive_main(void) {
 
-    //init CS Pi first
-    for(auto& axis : axes){
-        axis->encoder_.abs_spi_cs_pin_init();
-    }  
     // Start ADC for temperature measurements and user measurements
     start_general_purpose_adc();
 
@@ -239,7 +235,7 @@ int odrive_main(void) {
         SetGPIO12toUART();
     }
 #endif
-    osDelay(100);
+    //osDelay(100);
     // Init communications (this requires the axis objects to be constructed)
     init_communication();
 

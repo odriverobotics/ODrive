@@ -27,7 +27,7 @@ void Encoder::setup() {
 
     mode_ = config_.mode;
     if(mode_ & MODE_FLAG_ABS){
-        //abs_spi_cs_pin_init();
+        abs_spi_cs_pin_init();
         abs_spi_init();
         if (axis_->controller_.config_.anticogging.pre_calibrated) {
             axis_->controller_.anticogging_valid_ = true;
@@ -414,12 +414,10 @@ void Encoder::abs_spi_cb(){
 }
 
 void Encoder::abs_spi_cs_pin_init(){
-    mode_ = config_.mode;
-    if(mode_ & MODE_FLAG_ABS){
     // Decode cs pin
     abs_spi_cs_port_ = get_gpio_port_by_pin(config_.abs_spi_cs_gpio_pin);
     abs_spi_cs_pin_ = get_gpio_pin_by_pin(config_.abs_spi_cs_gpio_pin);
-
+    HAL_GPIO_WritePin(abs_spi_cs_port_, abs_spi_cs_pin_, GPIO_PIN_SET); // at for cs pin not pull down when the cs pin init
     // Init cs pin
     HAL_GPIO_DeInit(abs_spi_cs_port_, abs_spi_cs_pin_);
     GPIO_InitTypeDef GPIO_InitStruct;
@@ -431,7 +429,7 @@ void Encoder::abs_spi_cs_pin_init(){
 
     // Write pin high
     HAL_GPIO_WritePin(abs_spi_cs_port_, abs_spi_cs_pin_, GPIO_PIN_SET);
-    }
+    
 }
 
 bool Encoder::update() {
