@@ -228,7 +228,7 @@ void vApplicationIdleHook(void) {
 int odrive_main(void) {
     // Start ADC for temperature measurements and user measurements
     for(auto& axis : axes){
-        axis->encoder_.mWork_abs_spi_cs_pin_init();
+        axis->encoder_.abs_spi_cs_pin_init();
     }
     start_general_purpose_adc();
 

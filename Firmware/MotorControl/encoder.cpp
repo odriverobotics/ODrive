@@ -433,29 +433,26 @@ void Encoder::abs_spi_cb(){
         is_ready_ = true;
     }
 }
-void Encoder::mWork_abs_spi_cs_pin_init(){
+
+void Encoder::abs_spi_cs_pin_init(){
     mode_ = config_.mode;
     if(mode_ & MODE_FLAG_ABS){
-        abs_spi_cs_pin_init();
-    }
-
-}
-void Encoder::abs_spi_cs_pin_init(){
     // Decode cs pin
-    abs_spi_cs_port_ = get_gpio_port_by_pin(config_.abs_spi_cs_gpio_pin);
-    abs_spi_cs_pin_ = get_gpio_pin_by_pin(config_.abs_spi_cs_gpio_pin);
+        abs_spi_cs_port_ = get_gpio_port_by_pin(config_.abs_spi_cs_gpio_pin);
+        abs_spi_cs_pin_ = get_gpio_pin_by_pin(config_.abs_spi_cs_gpio_pin);
 
-    // Init cs pin
-    HAL_GPIO_DeInit(abs_spi_cs_port_, abs_spi_cs_pin_);
-    GPIO_InitTypeDef GPIO_InitStruct;
-    GPIO_InitStruct.Pin = abs_spi_cs_pin_;
-    GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
-    GPIO_InitStruct.Pull = GPIO_PULLUP;
-    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-    HAL_GPIO_Init(abs_spi_cs_port_, &GPIO_InitStruct);
+        // Init cs pin
+        HAL_GPIO_DeInit(abs_spi_cs_port_, abs_spi_cs_pin_);
+        GPIO_InitTypeDef GPIO_InitStruct;
+        GPIO_InitStruct.Pin = abs_spi_cs_pin_;
+        GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+        GPIO_InitStruct.Pull = GPIO_PULLUP;
+        GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+        HAL_GPIO_Init(abs_spi_cs_port_, &GPIO_InitStruct);
 
-    // Write pin high
-    HAL_GPIO_WritePin(abs_spi_cs_port_, abs_spi_cs_pin_, GPIO_PIN_SET);
+        // Write pin high
+        HAL_GPIO_WritePin(abs_spi_cs_port_, abs_spi_cs_pin_, GPIO_PIN_SET);
+    }
 }
 
 bool Encoder::update() {
