@@ -89,8 +89,8 @@ class TestClosedLoopControl(TestClosedLoopControlBase):
 
             data = record_log(lambda: [axis_ctx.handle.encoder.vel_estimate, axis_ctx.handle.encoder.pos_estimate], duration=5.0)
 
-            test_assert_eq(axis_ctx.handle.current_state, AXIS_STATE_CLOSED_LOOP_CONTROL)
             test_assert_no_error(axis_ctx)
+            test_assert_eq(axis_ctx.handle.current_state, AXIS_STATE_CLOSED_LOOP_CONTROL)
             request_state(axis_ctx, AXIS_STATE_IDLE)
 
             # encoder.vel_estimate
