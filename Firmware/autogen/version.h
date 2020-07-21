@@ -1,5 +1,7 @@
+
 #define FW_VERSION "fw-v0.5.12-584-gf8ded1ce"
 #define FW_VERSION_MAJOR 0
 #define FW_VERSION_MINOR 5
+
 #define FW_VERSION_REVISION 12
 #define FW_VERSION_UNRELEASED 1

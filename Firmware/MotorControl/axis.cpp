@@ -337,6 +337,7 @@ bool Axis::run_closed_loop_control_loop() {
         return error_ |= ERROR_CONTROLLER_FAILED, false;
     }
     
+
     // To avoid any transient on startup, we intialize the setpoint to be the current position
     controller_.pos_setpoint_ = *controller_.pos_estimate_src_;
 

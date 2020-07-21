@@ -448,6 +448,7 @@ struct ODriveAxisConfigTypeInfo : TypeInfo {
             case 19: *(decltype(ODriveIntf::AxisIntf::ConfigIntf::get_can_node_id(std::declval<T*>()))*)(&res) = ODriveIntf::AxisIntf::ConfigIntf::get_can_node_id(ptr); break;
             case 20: *(decltype(ODriveIntf::AxisIntf::ConfigIntf::get_can_node_id_extended(std::declval<T*>()))*)(&res) = ODriveIntf::AxisIntf::ConfigIntf::get_can_node_id_extended(ptr); break;
             case 21: *(decltype(ODriveIntf::AxisIntf::ConfigIntf::get_can_heartbeat_rate_ms(std::declval<T*>()))*)(&res) = ODriveIntf::AxisIntf::ConfigIntf::get_can_heartbeat_rate_ms(ptr); break;
+
         }
         return res;
     }

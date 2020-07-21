@@ -115,7 +115,6 @@ void HAL_SPI_MspInit(SPI_HandleTypeDef* spiHandle)
     hdma_spi3_tx.Init.Direction = DMA_MEMORY_TO_PERIPH;
     hdma_spi3_tx.Init.PeriphInc = DMA_PINC_DISABLE;
     hdma_spi3_tx.Init.MemInc = DMA_MINC_ENABLE;
-
     if(spiHandle->Init.DataSize == SPI_DATASIZE_8BIT){
       hdma_spi3_tx.Init.PeriphDataAlignment = DMA_PDATAALIGN_BYTE;
       hdma_spi3_tx.Init.MemDataAlignment = DMA_MDATAALIGN_BYTE;
@@ -123,7 +122,6 @@ void HAL_SPI_MspInit(SPI_HandleTypeDef* spiHandle)
       hdma_spi3_tx.Init.PeriphDataAlignment = DMA_PDATAALIGN_HALFWORD;
       hdma_spi3_tx.Init.MemDataAlignment = DMA_MDATAALIGN_HALFWORD;      
     }
-    
     hdma_spi3_tx.Init.Mode = DMA_NORMAL;
     hdma_spi3_tx.Init.Priority = DMA_PRIORITY_MEDIUM;
     hdma_spi3_tx.Init.FIFOMode = DMA_FIFOMODE_DISABLE;

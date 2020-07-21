@@ -264,7 +264,7 @@ int odrive_main(void) {
     //  - Allow a user to interrupt the code, e.g. by flashing a new code,
     //    before it does anything crazy
     // TODO make timing a function of calibration filter tau
-    osDelay(1500);
+    osDelay(3000);
 
     // Start state machine threads. Each thread will go through various calibration
     // procedures and then run the actual controller loops.
