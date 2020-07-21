@@ -137,12 +137,12 @@ float Motor::effective_current_lim() {
 //Note - for ACIM motors, available torque is allowed to be 0.
 float Motor::max_available_torque() {
     if (config_.motor_type == Motor::MOTOR_TYPE_ACIM) {
-        float max_torque = effective_current_lim() * config_.torque_constant * current_control_.acim_rotor_flux;
+        float max_torque = effective_current_lim_ * config_.torque_constant * current_control_.acim_rotor_flux;
         max_torque = std::clamp(max_torque, 0.0f, config_.torque_lim);
         return max_torque;
     }
     else {
-        float max_torque = effective_current_lim() * config_.torque_constant;
+        float max_torque = effective_current_lim_ * config_.torque_constant;
         max_torque = std::clamp(max_torque, 0.0f, config_.torque_lim);
         return max_torque;
     }
@@ -315,7 +315,7 @@ bool Motor::FOC_current(float Id_des, float Iq_des, float I_phase, float pwm_pha
     ictrl.Id_measured += ictrl.I_measured_report_filter_k * (Id - ictrl.Id_measured);
 
     // Check for violation of current limit
-    float I_trip = effective_current_lim() + config_.current_lim_margin;
+    float I_trip = effective_current_lim_ + config_.current_lim_margin;
     if (SQ(Id) + SQ(Iq) > SQ(I_trip)) {
         set_error(ERROR_CURRENT_LIMIT_VIOLATION);
         return false;
@@ -410,7 +410,7 @@ bool Motor::update(float torque_setpoint, float phase, float phase_vel) {
     current_setpoint *= config_.direction;
 
     // TODO: 2-norm vs independent clamping (current could be sqrt(2) bigger)
-    float ilim = effective_current_lim();
+    float ilim = effective_current_lim_;
     float id = std::clamp(current_control_.Id_setpoint, -ilim, ilim);
     float iq = std::clamp(current_setpoint, -ilim, ilim);
 

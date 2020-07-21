@@ -180,6 +180,7 @@ bool Axis::do_checks() {
         error_ |= ERROR_DC_BUS_OVER_VOLTAGE;
 
     // Sub-components should use set_error which will propegate to this error_
+    motor_.effective_current_lim();
     for (ThermistorCurrentLimiter* thermistor : thermistors_) {
         thermistor->do_checks();
     }
