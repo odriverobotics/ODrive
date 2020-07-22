@@ -124,7 +124,6 @@ public:
     void abs_spi_cb();
     void abs_spi_cs_pin_init();
     uint16_t abs_spi_dma_tx_[1] = {AS_CMD_ANGLE}; //read and reset error code AS_CMD_ERROR
-    uint16_t abs_Readspi_dma_tx_[1] = {AS_CMD_ANGLE};
     uint16_t abs_spi_dma_rx_[1];
     bool abs_spi_pos_updated_ = false;
     Mode_t mode_ = MODE_INCREMENTAL;
@@ -142,7 +141,6 @@ public:
     // Communication protocol definitions
     auto make_protocol_definitions() {
         return make_protocol_member_list(
-            make_protocol_property("mWorkFirstTime", &mWorkFirstTime_),
             make_protocol_property("error", &error_),
             make_protocol_ro_property("is_ready", &is_ready_),
             make_protocol_ro_property("index_found", const_cast<bool*>(&index_found_)),
@@ -158,6 +156,8 @@ public:
             make_protocol_property("pos_abs", &pos_abs_),
             make_protocol_ro_property("spi_error_rate", &spi_error_rate_),
             make_protocol_ro_property("mWorkErrorSPI", &mWorkErrorSPI_),
+            make_protocol_property("mWorkFirstTime", &mWorkFirstTime_),
+            make_protocol_property("errorCodeFromAS", &errorCodeFromAS_),
             make_protocol_object("config",
                 make_protocol_property("mode", &config_.mode),
                 make_protocol_property("use_index", &config_.use_index,
@@ -181,7 +181,6 @@ public:
                 make_protocol_property("idx_search_unidirectional", &config_.idx_search_unidirectional),
                 make_protocol_property("ignore_illegal_hall_state", &config_.ignore_illegal_hall_state),
                 make_protocol_property("sincos_gpio_pin_sin", &config_.sincos_gpio_pin_sin),
-                make_protocol_property("errorCodeFromAS", &errorCodeFromAS_),
                 make_protocol_property("sincos_gpio_pin_cos", &config_.sincos_gpio_pin_cos)
             ),
             make_protocol_function("set_linear_count", *this, &Encoder::set_linear_count, "count")
