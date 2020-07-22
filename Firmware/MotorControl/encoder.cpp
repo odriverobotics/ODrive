@@ -329,11 +329,22 @@ bool Encoder::abs_spi_init(){
     SPI_HandleTypeDef * spi = hw_config_.spi;
     spi->Init.Mode = SPI_MODE_MASTER;
     spi->Init.Direction = SPI_DIRECTION_2LINES;
+    //SPI_DIRECTION_1LINE;
     spi->Init.DataSize = SPI_DATASIZE_16BIT;
     spi->Init.CLKPolarity = SPI_POLARITY_LOW;
     spi->Init.CLKPhase = SPI_PHASE_2EDGE;
     spi->Init.NSS = SPI_NSS_SOFT;
     spi->Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_32;
+    /*
+    #define SPI_BAUDRATEPRESCALER_2         0x00000000U
+    #define SPI_BAUDRATEPRESCALER_4         0x00000008U
+    #define SPI_BAUDRATEPRESCALER_8         0x00000010U
+    #define SPI_BAUDRATEPRESCALER_16        0x00000018U
+    #define SPI_BAUDRATEPRESCALER_32        0x00000020U
+    #define SPI_BAUDRATEPRESCALER_64        0x00000028U
+    #define SPI_BAUDRATEPRESCALER_128       0x00000030U
+    #define SPI_BAUDRATEPRESCALER_256       0x00000038U
+*/
     spi->Init.FirstBit = SPI_FIRSTBIT_MSB;
     spi->Init.TIMode = SPI_TIMODE_DISABLE;
     spi->Init.CRCCalculation = SPI_CRCCALCULATION_DISABLE;
@@ -354,7 +365,14 @@ bool Encoder::abs_spi_start_transaction(){
             return false;
         }
         HAL_GPIO_WritePin(abs_spi_cs_port_, abs_spi_cs_pin_, GPIO_PIN_RESET);
-        HAL_SPI_TransmitReceive_DMA(hw_config_.spi, (uint8_t*)abs_spi_dma_tx_, (uint8_t*)abs_spi_dma_rx_, 1);
+        if (mWorkErrorSPI_){ //if the error flag set ON, check error
+            HAL_SPI_TransmitReceive_DMA(hw_config_.spi, (uint8_t*)abs_spi_dma_tx_, (uint8_t*)abs_spi_dma_rx_, 1);
+        }
+        else {
+            //HAL_SPI_Receive_DMA(hw_config_.spi,  (uint8_t*)abs_spi_dma_rx_, 1);
+            HAL_SPI_TransmitReceive_DMA(hw_config_.spi, (uint8_t*)abs_Readspi_dma_tx_, (uint8_t*)abs_spi_dma_rx_, 1);
+        }
+        
     }
     return true;
 }
@@ -404,9 +422,8 @@ void Encoder::abs_spi_cb(){
             if (ams_parity(rawVal)){
                 return;
             }
-            
+            if (mWorkErrorSPI_){ errorCodeFromAS_ = rawVal;}
             if ((rawVal >> 14) & 1) {
-                set_error(ERROR_ABS_SPI_ERROR_BIT);
                 return;
             }
             pos = rawVal & 0x3fff;
