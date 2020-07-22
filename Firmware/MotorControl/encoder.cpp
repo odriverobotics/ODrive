@@ -409,21 +409,31 @@ void Encoder::abs_spi_cb(){
     switch (mode_) {
         case MODE_SPI_ABS_AMS: {
             uint16_t rawVal = abs_spi_dma_rx_[0];
-            // check if parity is correct (even) and error flag clear
-            //if (ams_parity(rawVal) || ((rawVal >> 14) & 1)) {
+            
+            /**
+             * Parity check AS5047
+             * @param n: uint16_t to check
+             *   Name       BIT   Description
+             *   PARERR      2    Parity error
+             *   INVCOMM     1    Invalid command error: set to 1 by reading or writing an invalid register address
+             *   FRERR       0    Framing error: is set to 1 when a non-compliant SPIframe is detected
+             */
             if (mWorkErrorSPI_ == 2){
                 errorCodeFromAS_ = rawVal & 0x3fff;
                 mWorkErrorSPI_ = 0;
                 return;
             }
+            // Set data to GET ANGLE after clean Error Bit
             if (abs_spi_dma_tx_[0] == AS_CMD_ERROR){
                 abs_spi_dma_tx_[0] =AS_CMD_ANGLE;
                 mWorkErrorSPI_ = 2;
                 return;
             }
+            // check if parity is correct (even) 
             if (ams_parity(rawVal)){
                 return;
             }
+            // check error flag clear
             if ((rawVal >> 14) & 1) {
                 abs_spi_dma_tx_[0] = AS_CMD_ERROR ;
                 mWorkErrorSPI_ = 1;
