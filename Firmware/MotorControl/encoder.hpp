@@ -7,6 +7,17 @@
 
 class Encoder {
 public:
+    typedef enum {
+        AS_FLAG_PARITY          = 0x8000,
+        AS_FLAG_READ            = 0x4000,
+    } As5047Flag;
+    typedef enum {
+        AS_CMD_NOP              = 0x0000,
+        AS_CMD_ERROR            = 0x0001 | AS_FLAG_READ,   // Reads error register of sensor and clear error flags
+        AS_CMD_DIAGNOSTICS      = 0x3FFD | AS_FLAG_READ,   // Reads automatic gain control and diagnostics info
+        AS_CMD_MAGNITUDE        = 0x3FFE | AS_FLAG_READ,
+        AS_CMD_ANGLE            = 0x3FFF | AS_FLAG_PARITY | AS_FLAG_READ,
+    } As5047Command;
     enum Error_t {
         ERROR_NONE = 0,
         ERROR_UNSTABLE_GAIN = 0x01,
@@ -112,8 +123,8 @@ public:
     bool abs_spi_start_transaction();
     void abs_spi_cb();
     void abs_spi_cs_pin_init();
-    uint16_t abs_spi_dma_tx_[1] = {0x4001}; //read and reset error code
-    uint16_t abs_Readspi_dma_tx_[1] = {0xFFFF};
+    uint16_t abs_spi_dma_tx_[1] = {AS_CMD_ANGLE}; //read and reset error code AS_CMD_ERROR
+    uint16_t abs_Readspi_dma_tx_[1] = {AS_CMD_ANGLE};
     uint16_t abs_spi_dma_rx_[1];
     bool abs_spi_pos_updated_ = false;
     Mode_t mode_ = MODE_INCREMENTAL;
@@ -122,9 +133,7 @@ public:
     uint32_t abs_spi_cr1;
     uint32_t abs_spi_cr2;
     bool mWorkFirstTime_ = true;
-    bool mWorkErrorSPI_ = false;
-    volatile uint8_t readErrorSPI = 0;
-    uint8_t readErrorSPI_ = 0;
+    uint8_t mWorkErrorSPI_ = 0;
     uint16_t errorCodeFromAS_ = 0x0000;
     constexpr float getCoggingRatio(){
         return config_.cpr / 3600.0f;
@@ -173,7 +182,6 @@ public:
                 make_protocol_property("ignore_illegal_hall_state", &config_.ignore_illegal_hall_state),
                 make_protocol_property("sincos_gpio_pin_sin", &config_.sincos_gpio_pin_sin),
                 make_protocol_property("errorCodeFromAS", &errorCodeFromAS_),
-                make_protocol_property("readErrorSPI", &readErrorSPI_),
                 make_protocol_property("sincos_gpio_pin_cos", &config_.sincos_gpio_pin_cos)
             ),
             make_protocol_function("set_linear_count", *this, &Encoder::set_linear_count, "count")
