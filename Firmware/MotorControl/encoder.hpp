@@ -112,8 +112,8 @@ public:
     bool abs_spi_start_transaction();
     void abs_spi_cb();
     void abs_spi_cs_pin_init();
-    uint16_t abs_spi_dma_tx_[1] = {0x0001};
-    uint16_t abs_Readspi_dma_tx_[1] = {0x3FFF};
+    uint16_t abs_spi_dma_tx_[1] = {0x4001}; //read and reset error code
+    uint16_t abs_Readspi_dma_tx_[1] = {0xFFFF};
     uint16_t abs_spi_dma_rx_[1];
     bool abs_spi_pos_updated_ = false;
     Mode_t mode_ = MODE_INCREMENTAL;
@@ -123,6 +123,8 @@ public:
     uint32_t abs_spi_cr2;
     bool mWorkFirstTime_ = true;
     bool mWorkErrorSPI_ = false;
+    volatile uint8_t readErrorSPI = 0;
+    uint8_t readErrorSPI_ = 0;
     uint16_t errorCodeFromAS_ = 0x0000;
     constexpr float getCoggingRatio(){
         return config_.cpr / 3600.0f;
@@ -171,6 +173,7 @@ public:
                 make_protocol_property("ignore_illegal_hall_state", &config_.ignore_illegal_hall_state),
                 make_protocol_property("sincos_gpio_pin_sin", &config_.sincos_gpio_pin_sin),
                 make_protocol_property("errorCodeFromAS", &errorCodeFromAS_),
+                make_protocol_property("readErrorSPI", &readErrorSPI_),
                 make_protocol_property("sincos_gpio_pin_cos", &config_.sincos_gpio_pin_cos)
             ),
             make_protocol_function("set_linear_count", *this, &Encoder::set_linear_count, "count")

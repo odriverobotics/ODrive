@@ -365,12 +365,14 @@ bool Encoder::abs_spi_start_transaction(){
             return false;
         }
         HAL_GPIO_WritePin(abs_spi_cs_port_, abs_spi_cs_pin_, GPIO_PIN_RESET);
-        if (mWorkErrorSPI_){ //if the error flag set ON, check error
-            HAL_SPI_TransmitReceive_DMA(hw_config_.spi, (uint8_t*)abs_spi_dma_tx_, (uint8_t*)abs_spi_dma_rx_, 1);
-        }
-        else {
+        if ((!mWorkErrorSPI_)|| (readErrorSPI > 2)){
             //HAL_SPI_Receive_DMA(hw_config_.spi,  (uint8_t*)abs_spi_dma_rx_, 1);
             HAL_SPI_TransmitReceive_DMA(hw_config_.spi, (uint8_t*)abs_Readspi_dma_tx_, (uint8_t*)abs_spi_dma_rx_, 1);
+            readErrorSPI = 0;
+        }
+        else{ //if the error flag set ON, check error
+            HAL_SPI_TransmitReceive_DMA(hw_config_.spi, (uint8_t*)abs_spi_dma_tx_, (uint8_t*)abs_spi_dma_rx_, 1);
+            readErrorSPI =readErrorSPI + 1;
         }
         
     }
@@ -418,12 +420,18 @@ void Encoder::abs_spi_cb(){
             uint16_t rawVal = abs_spi_dma_rx_[0];
             // check if parity is correct (even) and error flag clear
             //if (ams_parity(rawVal) || ((rawVal >> 14) & 1)) {
-            mWorkErrorSPI_ = ((rawVal >> 14) & 1)!=0;
-            if (ams_parity(rawVal)){
+            if (readErrorSPI == 1){
                 return;
             }
-            if (mWorkErrorSPI_){ errorCodeFromAS_ = rawVal;}
+            else if (readErrorSPI == 2){ errorCodeFromAS_ = rawVal;return;}
+            else if (readErrorSPI > 2){ mWorkErrorSPI_ = false;return;}
+            if (ams_parity(rawVal)){
+
+                return;
+            }
+            readErrorSPI_ = readErrorSPI;
             if ((rawVal >> 14) & 1) {
+                mWorkErrorSPI_ = true;
                 return;
             }
             pos = rawVal & 0x3fff;
