@@ -2,10 +2,6 @@
 #ifndef __UTILS_H
 #define __UTILS_H
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #include <stdint.h>
 #include <math.h>
 
@@ -64,6 +60,25 @@ extern "C" {
 #define MACRO_MIN(x, y) (((x) < (y)) ? (x) : (y))
 
 #define SQ(x) ((x) * (x))
+
+#ifdef __cplusplus
+
+#include <array>
+
+/**
+ * @brief Small helper to make array with known size
+ * in contrast to initializer lists the number of arguments
+ * has to match exactly. Whereas initializer lists allow
+ * less arguments.
+ */
+template<class T, class... Tail>
+std::array<T, 1 + sizeof...(Tail)> make_array(T head, Tail... tail)
+{
+    return std::array<T, 1 + sizeof...(Tail)>({ head, tail ... });
+}
+
+extern "C" {
+#endif
 
 static const float one_by_sqrt3 = 0.57735026919f;
 static const float two_by_sqrt3 = 1.15470053838f;

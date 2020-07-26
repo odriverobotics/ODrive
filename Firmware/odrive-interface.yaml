@@ -287,6 +287,8 @@ interfaces:
           HomingWithoutEndstop:
             bit: 17
             doc: the min endstop was not enabled during homing
+          OverTemp:
+            doc: Check `fet_thermistor.error` and `motor_thermistor.error` for more information.
       step_dir_active: readonly bool
       current_state: readonly AxisState
       requested_state: AxisState
@@ -353,6 +355,8 @@ interfaces:
             doc: Both axes will have the same id to start
           can_node_id_extended: bool
           can_heartbeat_rate_ms: uint32
+      fet_thermistor: OnboardThermistorCurrentLimiter
+      motor_thermistor: OffboardThermistorCurrentLimiter
       motor: Motor
       controller: Controller
       encoder: Encoder
@@ -391,6 +395,45 @@ interfaces:
       finish_on_distance: bool
       finish_on_enc_idx: bool
 
+  ODrive.ThermistorCurrentLimiter:
+    c_is_class: False
+
+  ODrive.OnboardThermistorCurrentLimiter:
+    c_is_class: True
+    attributes:
+      error: ThermistorCurrentLimiter.Error
+      temperature: readonly float32
+      config:
+        c_is_class: False
+        attributes:
+          temp_limit_lower: 
+            type: float32
+            doc: The lower limit when the controller starts limiting current.
+          temp_limit_upper: 
+            type: float32
+            doc: The upper limit when current limit reaches 0 Amps and an over temperature error is triggered.
+          enabled: {type: bool, doc: Whether this thermistor is enabled. }
+
+  ODrive.OffboardThermistorCurrentLimiter:
+    c_is_class: True
+    attributes:
+      error: ThermistorCurrentLimiter.Error
+      temperature: readonly float32
+      config:
+        c_is_class: False
+        attributes:
+          gpio_pin: {type: uint16, c_setter: set_gpio_pin}
+          poly_coefficient_0: {type: float32, c_name: 'thermistor_poly_coeffs[0]'}
+          poly_coefficient_1: {type: float32, c_name: 'thermistor_poly_coeffs[1]'}
+          poly_coefficient_2: {type: float32, c_name: 'thermistor_poly_coeffs[2]'}
+          poly_coefficient_3: {type: float32, c_name: 'thermistor_poly_coeffs[3]'}
+          temp_limit_lower: 
+            type: float32
+            doc: The lower limit when the controller starts limiting current.
+          temp_limit_upper: 
+            type: float32
+            doc: The upper limit when current limit reaches 0 Amps and an over temperature error is triggered.
+          enabled: {type: bool, doc: Whether this thermistor is enabled. }
 
   ODrive.Motor:
     c_is_class: True
@@ -467,8 +510,7 @@ interfaces:
           BrakeDeadtimeViolation:
           UnexpectedTimerCallback:
           CurrentSenseSaturation:
-          InverterOverTemp:
-          CurrentLimitViolation:
+          CurrentLimitViolation: {bit: 12}
           BrakeDutyCycleNan:
           DcBusOverRegenCurrent: {doc: too much current pushed into the power supply}
           DcBusOverCurrent: {doc: too much current pulled out of the power supply}
@@ -485,11 +527,7 @@ interfaces:
       DC_calib_phB: {type: float32, c_name: DC_calib_.phB}
       DC_calib_phC: {type: float32, c_name: DC_calib_.phC}
       phase_current_rev_gain: float32
-      thermal_current_lim: readonly float32
-      inverter_temp:
-        type: readonly float32
-        unit: °C
-        doc: NaN while the ODrive is initializing.
+      effective_current_lim: readonly float32
       current_control:
         c_is_class: False
         attributes:
@@ -866,6 +904,12 @@ valuetypes:
         brief: Run axis homing function.
         doc:
           Endstops must be enabled to use this feature.
+
+  ODrive.ThermistorCurrentLimiter.Error:
+    nullflag: None
+    flags:
+      OverTemp:
+        doc: The thermistor temperature upper limit was exceeded. 
 
   ODrive.Encoder.Mode:
     values:

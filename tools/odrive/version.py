@@ -74,11 +74,11 @@ if __name__ == '__main__':
     print('Firmware version {}.{}.{}{} ({})'.format(
         major, minor, revision, '-dev' if unreleased else '',
         git_name))
-    args.output.write('#define FW_VERSION "{}"\n'.format(git_name))
-    args.output.write('#define FW_VERSION_MAJOR {}\n'.format(major))
-    args.output.write('#define FW_VERSION_MINOR {}\n'.format(minor))
-    args.output.write('#define FW_VERSION_REVISION {}\n'.format(revision))
-    args.output.write('#define FW_VERSION_UNRELEASED {}\n'.format(1 if unreleased else 0))
+    #args.output.write('const unsigned char fw_version = "{}"\n'.format(git_name))
+    args.output.write('const unsigned char fw_version_major_ = {};\n'.format(major))
+    args.output.write('const unsigned char fw_version_minor_ = {};\n'.format(minor))
+    args.output.write('const unsigned char fw_version_revision_ = {};\n'.format(revision))
+    args.output.write('const unsigned char fw_version_unreleased_ = {};\n'.format(1 if unreleased else 0))
 
 def setup_udev_rules(logger):
   if platform.system() != 'Linux':

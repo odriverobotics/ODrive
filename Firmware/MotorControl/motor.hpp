@@ -92,8 +92,6 @@ public:
     bool check_DRV_fault();
     void set_error(Error error);
     bool do_checks();
-    float get_inverter_temp();
-    bool update_thermal_limits(float fet_temp);
     float effective_current_lim();
     float max_available_torque();
     void log_timing(TimingLog_t log_idx);
@@ -161,8 +159,7 @@ public:
         DrvFault drv_fault = DRV_FAULT_NO_FAULT;
     } gate_driver_exported_;
     DRV_SPI_8301_Vars_t gate_driver_regs_; //Local view of DRV registers (initialized by DRV8301_setup)
-    float thermal_current_lim_ = 10.0f;  //[A]
-    float inverter_temp_ = NAN; // [°C] NaN while the ODrive is initializing.
+    float effective_current_lim_ = 10.0f;
 };
 
 #endif // __MOTOR_HPP

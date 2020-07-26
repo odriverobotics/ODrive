@@ -221,6 +221,8 @@ This is 4x the Pulse Per Revolution (PPR) value. Usually this is indicated in th
 * If you wish to run in sensorless mode, please see [Setting up sensorless](commands.md#setting-up-sensorless).
 * If you are using hall sensor feedback, please see the [hoverboard motor example](hoverboard.md).
 
+**If using motor thermistor**<br>
+Please see the [Thermistors](thermistors.md) page for setup.
 
 ### 3. Save configuration
 You can save all `.config` parameters to persistent memory so the ODrive remembers them between power cycles. 

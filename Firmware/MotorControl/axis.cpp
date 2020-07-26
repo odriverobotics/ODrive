@@ -14,6 +14,8 @@ Axis::Axis(int axis_num,
            Encoder& encoder,
            SensorlessEstimator& sensorless_estimator,
            Controller& controller,
+           OnboardThermistorCurrentLimiter& fet_thermistor,
+           OffboardThermistorCurrentLimiter& motor_thermistor,
            Motor& motor,
            TrapezoidalTrajectory& trap,
            Endstop& min_endstop,
@@ -24,14 +26,24 @@ Axis::Axis(int axis_num,
       encoder_(encoder),
       sensorless_estimator_(sensorless_estimator),
       controller_(controller),
+      fet_thermistor_(fet_thermistor),
+      motor_thermistor_(motor_thermistor),
       motor_(motor),
       trap_traj_(trap),
       min_endstop_(min_endstop),
-      max_endstop_(max_endstop)
+      max_endstop_(max_endstop),
+      current_limiters_(make_array(
+          static_cast<CurrentLimiter*>(&fet_thermistor),
+          static_cast<CurrentLimiter*>(&motor_thermistor))),
+      thermistors_(make_array(
+          static_cast<ThermistorCurrentLimiter*>(&fet_thermistor),
+          static_cast<ThermistorCurrentLimiter*>(&motor_thermistor)))
 {
     encoder_.axis_ = this;
     sensorless_estimator_.axis_ = this;
     controller_.axis_ = this;
+    fet_thermistor_.axis_ = this;
+    motor_thermistor.axis_ = this;
     motor_.axis_ = this;
     trap_traj_.axis_ = this;
     min_endstop_.axis_ = this;
@@ -167,6 +179,9 @@ bool Axis::do_checks() {
         error_ |= ERROR_DC_BUS_OVER_VOLTAGE;
 
     // Sub-components should use set_error which will propegate to this error_
+    for (ThermistorCurrentLimiter* thermistor : thermistors_) {
+        thermistor->do_checks();
+    }
     motor_.do_checks();
     // encoder_.do_checks();
     // sensorless_estimator_.do_checks();
@@ -185,6 +200,9 @@ bool Axis::do_checks() {
 // @brief Update all esitmators
 bool Axis::do_updates() {
     // Sub-components should use set_error which will propegate to this error_
+    for (ThermistorCurrentLimiter* thermistor : thermistors_) {
+        thermistor->update();
+    }
     encoder_.update();
     sensorless_estimator_.update();
     min_endstop_.update();
