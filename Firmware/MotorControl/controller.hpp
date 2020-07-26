@@ -72,8 +72,8 @@ public:
 
     Error error_ = ERROR_NONE;
 
-    float* pos_estimate_linear_ = nullptr;
-    float* pos_estimate_circular_ = nullptr;
+    float* pos_estimate_linear_src_ = nullptr;
+    float* pos_estimate_circular_src_ = nullptr;
     bool* pos_estimate_valid_src_ = nullptr;
     float* vel_estimate_src_ = nullptr;
     bool* vel_estimate_valid_src_ = nullptr;
