@@ -33,9 +33,9 @@ void Controller::input_pos_updated() {
 bool Controller::select_encoder(size_t encoder_num) {
     if (encoder_num < AXIS_COUNT) {
         Axis* ax = axes[encoder_num];
-        pos_estimate_circular_ = &ax->encoder_.pos_circular_;
+        pos_estimate_circular_src_ = &ax->encoder_.pos_circular_;
         pos_wrap_src_ = &config_.circular_setpoint_range;
-        pos_estimate_linear_ = &ax->encoder_.pos_estimate_;
+        pos_estimate_linear_src_ = &ax->encoder_.pos_estimate_;
         pos_estimate_valid_src_ = &ax->encoder_.pos_estimate_valid_;
         vel_estimate_src_ = &ax->encoder_.vel_estimate_;
         vel_estimate_valid_src_ = &ax->encoder_.vel_estimate_valid_;
@@ -119,9 +119,9 @@ static float limitVel(const float vel_limit, const float vel_estimate, const flo
 
 bool Controller::update(float* torque_setpoint_output) {
     float* pos_estimate_linear = (pos_estimate_valid_src_ && *pos_estimate_valid_src_)
-            ? pos_estimate_linear_ : nullptr;
+            ? pos_estimate_linear_src_ : nullptr;
     float* pos_estimate_circular = (pos_estimate_valid_src_ && *pos_estimate_valid_src_)
-            ? pos_estimate_circular_ : nullptr;
+            ? pos_estimate_circular_src_ : nullptr;
     float* vel_estimate_src = (vel_estimate_valid_src_ && *vel_estimate_valid_src_)
             ? vel_estimate_src_ : nullptr;
 
