@@ -21,19 +21,19 @@ public:
     struct Config_t {
         ControlMode control_mode = CONTROL_MODE_POSITION_CONTROL;  //see: ControlMode_t
         InputMode input_mode = INPUT_MODE_PASSTHROUGH;             //see: InputMode_t
-        float pos_gain = 20.0f;                                    // [(turn/s) / turn]
-        float vel_gain = 1.0f / 6.0f;                              // [Nm/(turn/s)]
-        // float vel_gain = 0.2f / 200.0f,              // [Nm/(rad/s)] <sensorless example>
-        float vel_integrator_gain = 2.0f / 6.0f;    // [Nm/(turn/s * s)]
-        float vel_limit = 2.0f;                     // [turn/s] Infinity to disable.
-        float vel_limit_tolerance = 1.2f;           // ratio to vel_lim. Infinity to disable.
-        float vel_ramp_rate = 1.0f;                 // [(turn/s) / s]
-        float torque_ramp_rate = 0.01f;           // Nm / sec
+        float pos_gain = 20.0f;                  // [(turn/s) / turn]
+        float vel_gain = 1.0f / 6.0f;            // [Nm/(turn/s)]
+        // float vel_gain = 0.2f / 200.0f,       // [Nm/(rad/s)] <sensorless example>
+        float vel_integrator_gain = 2.0f / 6.0f; // [Nm/(turn/s * s)]
+        float vel_limit = 2.0f;                  // [turn/s] Infinity to disable.
+        float vel_limit_tolerance = 1.2f;        // ratio to vel_lim. Infinity to disable.
+        float vel_ramp_rate = 1.0f;              // [(turn/s) / s]
+        float torque_ramp_rate = 0.01f;          // Nm / sec
         bool circular_setpoints = false;
-        float circular_setpoint_range = 1.0f;  // Circular range when circular_setpoints is true. [turn]
-        float inertia = 0.0f;                         // [A/(count/s^2)]
-        float input_filter_bandwidth = 2.0f;          // [1/s]
-        float homing_speed = 0.25f;                 // [turn/s]
+        float circular_setpoint_range = 1.0f; // Circular range when circular_setpoints is true. [turn]
+        float inertia = 0.0f;                 // [A/(count/s^2)]
+        float input_filter_bandwidth = 2.0f;  // [1/s]
+        float homing_speed = 0.25f;           // [turn/s]
         Anticogging_t anticogging;
         float gain_scheduling_width = 10.0f;
         bool enable_gain_scheduling = false;
