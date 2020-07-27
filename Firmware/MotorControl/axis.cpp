@@ -118,8 +118,8 @@ bool Axis::wait_for_current_meas() {
 
 // step/direction interface
 void Axis::step_cb() {
-    const GPIO_PinState dir_pin = (GPIO_PinState)(dir_port_->IDR & dir_pin_);
-    const int32_t dir = (1 - 2 * (int32_t)dir_pin) * step_dir_active_;
+    const bool dir_pin = dir_port_->IDR & dir_pin_;
+    const int32_t dir = (-1 + 2 * dir_pin) * step_dir_active_;
     controller_.input_pos_ += dir * config_.counts_per_step;
     controller_.input_pos_updated();
 };
