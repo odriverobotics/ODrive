@@ -181,8 +181,8 @@ bool Encoder::run_direction_find() {
 // and the encoder state 0.
 // TODO: Do the scan with current, not voltage!
 bool Encoder::run_offset_calibration() {
-    static const float start_lock_duration = 1.0f;
-    static const int num_steps = (int)(config_.calib_scan_distance / config_.calib_scan_omega * (float)current_meas_hz);
+    const float start_lock_duration = 1.0f;
+    const int num_steps = (int)(config_.calib_scan_distance / config_.calib_scan_omega * (float)current_meas_hz);
 
     // Require index found if enabled
     if (config_.use_index && !index_found_) {
@@ -440,6 +440,7 @@ void Encoder::abs_spi_cs_pin_init(){
 bool Encoder::update() {
     // update internal encoder state.
     int32_t delta_enc = 0;
+    int32_t pos_abs_latched = pos_abs_; //LATCH
 
     switch (mode_) {
         case MODE_INCREMENTAL: {
@@ -490,7 +491,7 @@ bool Encoder::update() {
             }
 
             abs_spi_pos_updated_ = false;
-            delta_enc = pos_abs_ - count_in_cpr_;
+            delta_enc = pos_abs_latched - count_in_cpr_; //LATCH
             delta_enc = mod(delta_enc, config_.cpr);
             if (delta_enc > config_.cpr/2) {
                 delta_enc -= config_.cpr;
@@ -508,7 +509,7 @@ bool Encoder::update() {
     count_in_cpr_ = mod(count_in_cpr_, config_.cpr);
 
     if(mode_ & MODE_FLAG_ABS)
-        count_in_cpr_ = pos_abs_;
+        count_in_cpr_ = pos_abs_latched;
 
     //// run pll (for now pll is in units of encoder counts)
     // Predict current pos
