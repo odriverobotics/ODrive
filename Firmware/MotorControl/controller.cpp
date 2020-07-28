@@ -26,9 +26,6 @@ void Controller::set_error(Error error) {
 // Command Handling
 //--------------------------------
 
-void Controller::input_pos_updated() {
-    input_pos_updated_ = true;
-}
 
 bool Controller::select_encoder(size_t encoder_num) {
     if (encoder_num < AXIS_COUNT) {

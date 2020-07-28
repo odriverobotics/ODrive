@@ -61,7 +61,7 @@ public:
         // Loop to ensure all bytes get sent
         while (length) {
             size_t chunk = length < USB_TX_DATA_SIZE ? length : USB_TX_DATA_SIZE;
-            if (output_.process_packet(buffer, length) != 0)
+            if (output_.process_packet(buffer, chunk) != 0)
                 return -1;
             buffer += chunk;
             length -= chunk;

@@ -53,7 +53,10 @@ public:
     void reset();
     void set_error(Error error);
 
-    void input_pos_updated();
+    constexpr void input_pos_updated() {
+        input_pos_updated_ = true;
+    }
+
     bool select_encoder(size_t encoder_num);
 
     // Trajectory-Planned control
