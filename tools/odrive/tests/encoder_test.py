@@ -23,7 +23,7 @@ class TestEncoderBase():
     or a constant.
     """
 
-    def run_generic_encoder_test(self, encoder, true_cpr, true_rps):
+    def run_generic_encoder_test(self, encoder, true_cpr, true_rps, noise=1):
         encoder.config.cpr = true_cpr
         true_cps = true_cpr * true_rps
 
@@ -69,7 +69,7 @@ class TestEncoderBase():
         slope, offset, fitted_curve = fit_line(data[:,(0,6)])
         test_assert_eq(slope, 0.0, range = true_cpr * abs(true_rps) * 0.01)
         test_assert_eq(offset, true_cpr * true_rps, accuracy = 0.02)
-        test_curve_fit(data[:,(0,6)], fitted_curve, max_mean_err = true_cpr * 0.05, inlier_range = true_cpr * 0.05, max_outliers = len(data[:,0]) * 0.05)
+        test_curve_fit(data[:,(0,6)], fitted_curve, max_mean_err = true_cpr * 0.05, inlier_range = true_cpr * 0.05 * noise, max_outliers = len(data[:,0]) * 0.05)
 
 
 
@@ -193,7 +193,7 @@ class TestSinCosEncoder(TestEncoderBase):
 
         enc.handle.config.bandwidth = 100
 
-        self.run_generic_encoder_test(enc.handle, 6283, 1.0)
+        self.run_generic_encoder_test(enc.handle, 6283, 1.0, 2.0)
 
 
 
