@@ -30,10 +30,10 @@ def print_help(args, have_devices):
         print('Type "odrv0." and press <tab>')
     print('This will present you with all the properties that you can reference')
     print('')
-    print('For example: "odrv0.motor0.encoder.pos_estimate"')
-    print('will print the current encoder position on motor 0')
-    print('and "odrv0.motor0.input_pos = 10000"')
-    print('will send motor0 to 10000')
+    print('For example: "odrv0.axis0.encoder.pos_estimate"')
+    print('will print the current encoder position on axis 0')
+    print('and "odrv0.axis0.controller.input_pos = 0.5"')
+    print('will send axis 0 to 0.5 turns')
     print('')
 
 

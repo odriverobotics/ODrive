@@ -137,7 +137,7 @@ bool Controller::update(float* torque_setpoint_output) {
     }
 
     // TODO also enable circular deltas for 2nd order filter, etc.
-    if (config_.circular_setpoints && pos_estimate_circular) {
+    if (config_.circular_setpoints) {
         // Keep pos setpoint from drifting
         input_pos_ = fmodf_pos(input_pos_, config_.circular_setpoint_range);
     }
@@ -226,18 +226,22 @@ bool Controller::update(float* torque_setpoint_output) {
     float vel_des = vel_setpoint_;
     if (config_.control_mode >= CONTROL_MODE_POSITION_CONTROL) {
         float pos_err;
-        if (!pos_estimate_linear || !pos_estimate_circular) {
-            set_error(ERROR_INVALID_ESTIMATE);
-            return false;
-        }
 
-        if (config_.circular_setpoints && pos_estimate_circular) {
+        if (config_.circular_setpoints) {
+            if(!pos_estimate_circular) {
+                set_error(ERROR_INVALID_ESTIMATE);
+                return false;
+            }
             // Keep pos setpoint from drifting
             pos_setpoint_ = fmodf_pos(pos_setpoint_, *pos_wrap_src_);
             // Circular delta
             pos_err = pos_setpoint_ - *pos_estimate_circular;
             pos_err = wrap_pm(pos_err, 0.5f * *pos_wrap_src_);
         } else {
+            if(!pos_estimate_linear) {
+                set_error(ERROR_INVALID_ESTIMATE);
+                return false;
+            }
             pos_err = pos_setpoint_ - *pos_estimate_linear;
         }
 

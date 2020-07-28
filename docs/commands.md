@@ -44,8 +44,8 @@ Possible values are listed [here](api/odrive.axis.controller.controlmode).
 
 As of version v0.5.0, ODrive now intercepts the incoming commands and can apply filters to them. The old protocol values `pos_setpoint`, `vel_setpoint`, and `current_setpoint` are still used internally by the closed-loop cascade control, but the user cannot write to them directly.  This allows us to condense the number of ways the ODrive accepts motion commands. The new commands are:
 
-* `<axis>.controller.input_pos = <radians>`
-* `<axis>.controller.input_vel = <radians/s>`
+* `<axis>.controller.input_pos = <turn>`
+* `<axis>.controller.input_vel = <turn/s>`
 * `<axis>.controller.input_torque = <torque in Nm>`
 
 Modes can be selected by changing `<axis>.controller.config.input_mode`.

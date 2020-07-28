@@ -113,7 +113,7 @@ You can control the ODrive directly from an hobby RC receiver.
 Some GPIO pins can be used for PWM input, if they are not allocated to other functions. For example, you must disable the UART to use GPIO 1,2. See the [pin function priorities](#pin-function-priorities) for more detail.
 
 Any of the numerical parameters that are writable from the ODrive Tool can be hooked up to a PWM input.
-As an example, we'll configure GPIO4 to control the angle of axis 0. We want the axis to move within a range of -2 to 2 radians.
+As an example, we'll configure GPIO4 to control the angle of axis 0. We want the axis to move within a range of -2 to 2 turns.
 
 1. Make sure you're able control the axis 0 angle by writing to `odrv0.axis0.controller.input_pos`. If you need help with this follow the [getting started guide](getting-started.md).
 2. If you want to control your ODrive with the PWM input without using anything else to activate the ODrive, you can configure the ODrive such that axis 0 automatically goes operational at startup. See [here](commands.md#startup-procedure) for more information.

@@ -250,7 +250,7 @@ Let's get motor 0 up and running. The procedure for motor 1 is exactly the same,
   </div></details>
 
 2. Type `odrv0.axis0.requested_state = AXIS_STATE_CLOSED_LOOP_CONTROL` <kbd>Enter</kbd>. From now on the ODrive will try to hold the motor's position. If you try to turn it by hand, it will fight you gently. That is unless you bump up `odrv0.axis0.motor.config.current_lim`, in which case it will fight you more fiercely. If the motor begins to vibrate either immediately or after being disturbed you will need to [lower the controller gains](control.md).
-3. Send the motor a new position setpoint. `odrv0.axis0.controller.input_pos = 10` <kbd>Enter</kbd>. The units are in radians.
+3. Send the motor a new position setpoint. `odrv0.axis0.controller.input_pos = 1` <kbd>Enter</kbd>. The units are in turns.
 4. At this point you will probably want to [Properly tune](control.md) the motor controller in order to maximize system performance.
 
 ## Other control modes
@@ -273,7 +273,7 @@ Asking the ODrive controller to go as hard as it can to raw setpoints may result
 You can use the second order position filter in these cases.
 Set the filter bandwidth: `axis.controller.config.input_filter_bandwidth = 2.0` [1/s]<br>
 Activate the setpoint filter: `axis.controller.config.input_mode = INPUT_MODE_POS_FILTER`.<br>
-You can now control the velocity with `axis.controller.input_pos = 10` [radians].
+You can now control the velocity with `axis.controller.input_pos = 1` [turns].
 
 ![secondOrderResponse](secondOrderResponse.PNG)<br>
 Step response of a 1000 to 0 position input with a filter bandwidth of 1.0 [/sec].
@@ -294,9 +294,9 @@ In the above image blue is position and orange is velocity.
 ```
 
 `vel_limit` is the maximum planned trajectory speed.  This sets your coasting speed.<br>
-`accel_limit` is the maximum acceleration in radians / sec^2<br>
-`decel_limit` is the maximum deceleration in radians / sec^2<br>
-`controller.config.inertia` is a value which correlates acceleration (in counts / sec^2) and motor current. It is 0 by default. It is optional, but can improve response of your system if correctly tuned. Keep in mind this will need to change with the load / mass of your system.
+`accel_limit` is the maximum acceleration in turns / sec^2<br>
+`decel_limit` is the maximum deceleration in turns / sec^2<br>
+`controller.config.inertia` is a value which correlates acceleration (in turns / sec^2) and motor current. It is 0 by default. It is optional, but can improve response of your system if correctly tuned. Keep in mind this will need to change with the load / mass of your system.
 
 All values should be strictly positive (>= 0).
 
@@ -333,7 +333,7 @@ To enable Circular position control, set `axis.controller.config.circular_setpoi
 This mode is useful for continuous incremental position movement. For example a robot rolling indefinitely, or an extruder motor or conveyor belt moving with controlled increments indefinitely.
 In the regular position mode, the `input_pos` would grow to a very large value and would lose precision due to floating point rounding.
 
-In this mode, the controller will try to track the position within only one turn of the motor. Specifically, `input_pos` is expected in the range `[0, 1]`. If the `input_pos` is incremented to outside this range (say via step/dir input), it is automatically wrapped around into the correct value.
+In this mode, the controller will try to track the position within only one turn of the motor. Specifically, `input_pos` is expected in the range `[0, 1)`. If the `input_pos` is incremented to outside this range (say via step/dir input), it is automatically wrapped around into the correct value.
 Note that in this mode `encoder.pos_circular` is used for feedback instead of `encoder.pos_estimate`.
 
 If you try to increment the axis with a large step in one go that exceeds `1` turn, the motor will go to the same angle around the wrong way. This is also the case if there is a large disturbance. If you have an application where you would like to handle larger steps, you can use a larger circular range. Set `controller.config.circular_setpoints_range = N`. Choose N to give you an appropriate circular space for your application.

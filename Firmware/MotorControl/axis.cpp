@@ -320,9 +320,14 @@ bool Axis::run_closed_loop_control_loop() {
     }
 
     // To avoid any transient on startup, we intialize the setpoint to be the current position
-    // TODO: use circular src if in circular mode.
-    controller_.pos_setpoint_ = *controller_.pos_estimate_linear_src_;
-    controller_.input_pos_ = *controller_.pos_estimate_linear_src_;
+    if(controller_.config_.circular_setpoints == true) {
+        controller_.pos_setpoint_ = *controller_.pos_estimate_circular_src_;
+        controller_.input_pos_ = *controller_.pos_estimate_circular_src_;
+    }
+    else {
+        controller_.pos_setpoint_ = *controller_.pos_estimate_linear_src_;
+        controller_.input_pos_ = *controller_.pos_estimate_linear_src_;
+    }
 
     // Avoid integrator windup issues
     controller_.vel_integrator_torque_ = 0.0f;
@@ -372,8 +377,13 @@ bool Axis::run_homing() {
     }
     
     // To avoid any transient on startup, we intialize the setpoint to be the current position
-    controller_.pos_setpoint_ = *controller_.pos_estimate_linear_src_;
-
+    // note - input_pos_ is not set here. It is set to 0 earlier in this method and velocity control is used.
+    if(controller_.config_.circular_setpoints == true) {
+        controller_.pos_setpoint_ = *controller_.pos_estimate_circular_src_;
+    }
+    else {
+        controller_.pos_setpoint_ = *controller_.pos_estimate_linear_src_;
+    }
     // Avoid integrator windup issues
     controller_.vel_integrator_torque_ = 0.0f;
 

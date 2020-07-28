@@ -216,7 +216,7 @@ For example, to plot the approximate motor torque [N.cm] and the velocity [RPM] 
         # If you want to plot different values, change them here.
         # You can plot any number of values concurrently.
         cancellation_token = start_liveplotter(lambda: [
-            ((my_odrive.axis0.encoder.vel_estimate*60/(6.2832)), # radians to rpm
+            ((my_odrive.axis0.encoder.vel_estimate*60), # turns/s to rpm
             ((my_odrive.axis0.motor.current_control.Iq_setpoint * my_odrive.axis0.motor.config.torque_constant), # Torque [Nm]
         ])
 ```
