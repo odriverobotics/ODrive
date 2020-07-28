@@ -89,13 +89,10 @@ def dump_errors(odrv, clear=False):
             if (remote_obj.error != 0):
                 foundError = False
                 print(prefix + _VT100Colors['red'] + "Error(s):" + _VT100Colors['default'])
-                errorcodes_tup = [(name, val) for name, val in errorcodes.items() if 'ERROR_' in name]
-                for codename, codeval in errorcodes_tup:
-                    if remote_obj.error & codeval != 0:
-                        foundError = True
-                        print("    " + codename)
-                if not foundError:
-                    print("    " + 'UNKNOWN ERROR!')
+                errorcodes_dict = {val: name for name, val in errorcodes.items() if 'ERROR_' in name}
+                for bit in range(64):
+                    if remote_obj.error & (1 << bit) != 0:
+                        print("    " + errorcodes_dict.get((1 << bit), 'UNKNOWN ERROR: 0x{:08X}'.format(1 << bit)))
                 if clear:
                     remote_obj.error = 0
             else:
