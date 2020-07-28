@@ -120,7 +120,7 @@ bool Axis::wait_for_current_meas() {
 void Axis::step_cb() {
     const bool dir_pin = dir_port_->IDR & dir_pin_;
     const int32_t dir = (-1 + 2 * dir_pin) * step_dir_active_;
-    controller_.input_pos_ += dir * config_.counts_per_step;
+    controller_.input_pos_ += dir * config_.turns_per_step;
     controller_.input_pos_updated();
 };
 
