@@ -692,7 +692,7 @@ interfaces:
             unit: turns/s
           inertia:
             type: float32
-            unit: A/(turn/s^2)
+            unit: Nm/(turn/s^2)
           axis_to_mirror: uint8
           mirror_ratio: float32
           load_encoder_axis:
@@ -957,7 +957,7 @@ valuetypes:
         doc: |
           ### Configuration Values:
           * `config.vel_ramp_rate` [turn/sec]
-          * `config.inertia` [A/(turn/s^2))]
+          * `config.inertia` [Nm/(turn/s^2))]
 
           ### Valid inputs:
           * `input_vel`
