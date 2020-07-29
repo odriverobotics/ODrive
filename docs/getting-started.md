@@ -296,7 +296,7 @@ In the above image blue is position and orange is velocity.
 `vel_limit` is the maximum planned trajectory speed.  This sets your coasting speed.<br>
 `accel_limit` is the maximum acceleration in turns / sec^2<br>
 `decel_limit` is the maximum deceleration in turns / sec^2<br>
-`controller.config.inertia` is a value which correlates acceleration (in turns / sec^2) and motor current. It is 0 by default. It is optional, but can improve response of your system if correctly tuned. Keep in mind this will need to change with the load / mass of your system.
+`controller.config.inertia` is a value which correlates acceleration (in turns / sec^2) and motor torque. It is 0 by default. It is optional, but can improve response of your system if correctly tuned. Keep in mind this will need to change with the load / mass of your system.
 
 All values should be strictly positive (>= 0).
 

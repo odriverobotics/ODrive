@@ -94,8 +94,8 @@ void CANSimple::handle_can_message(can_Message_t& msg) {
             case MSG_START_ANTICOGGING:
                 start_anticogging_callback(axis, msg);
                 break;
-            case MSG_SET_TRAJ_A_PER_CSS:
-                set_traj_A_per_css_callback(axis, msg);
+            case MSG_SET_TRAJ_INERTIA:
+                set_traj_inertia_callback(axis, msg);
                 break;
             case MSG_SET_TRAJ_ACCEL_LIMITS:
                 set_traj_accel_limits_callback(axis, msg);
@@ -316,7 +316,7 @@ void CANSimple::set_traj_accel_limits_callback(Axis* axis, can_Message_t& msg) {
     axis->trap_traj_.config_.decel_limit = can_getSignal<float>(msg, 32, 32, true);
 }
 
-void CANSimple::set_traj_A_per_css_callback(Axis* axis, can_Message_t& msg) {
+void CANSimple::set_traj_inertia_callback(Axis* axis, can_Message_t& msg) {
     axis->controller_.config_.inertia = can_getSignal<float>(msg, 0, 32, true);
 }
 

@@ -211,7 +211,7 @@ To change what parameters are plotted open odrivetool (located in Anaconda3\Scri
             my_odrive.axis1.encoder.pos_estimate,
         ])
 ```
-For example, to plot the approximate motor torque [N.cm] and the velocity [RPM] of axis1 with a 150KV motor and an 8192 count per rotation econder you would modify the function to read:
+For example, to plot the approximate motor torque [Nm] and the velocity [RPM] of axis0, you would modify the function to read:
 ```
         # If you want to plot different values, change them here.
         # You can plot any number of values concurrently.

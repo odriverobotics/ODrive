@@ -31,7 +31,7 @@ public:
         float torque_ramp_rate = 0.01f;          // Nm / sec
         bool circular_setpoints = false;
         float circular_setpoint_range = 1.0f; // Circular range when circular_setpoints is true. [turn]
-        float inertia = 0.0f;                 // [A/(count/s^2)]
+        float inertia = 0.0f;                 // [Nm/(turn/s^2)]
         float input_filter_bandwidth = 2.0f;  // [1/s]
         float homing_speed = 0.25f;           // [turn/s]
         Anticogging_t anticogging;

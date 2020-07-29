@@ -32,7 +32,7 @@ command_set = {
     'start_anticogging': (0x010, []), # untested
     'set_traj_vel_limit': (0x011, [('traj_vel_limit', 'f', 1)]), # tested
     'set_traj_accel_limits': (0x012, [('traj_accel_limit', 'f', 1), ('traj_decel_limit', 'f', 1)]), # tested
-    'set_traj_a_per_css': (0x013, [('a_per_css', 'f', 1)]), # tested
+    'set_traj_inertia': (0x013, [('inertia', 'f', 1)]), # tested
     'get_iq': (0x014, [('iq_setpoint', 'f', 1), ('iq_measured', 'f', 1)]), # untested
     'get_sensorless_estimates': (0x015, [('sensorless_pos_estimate', 'f', 1), ('sensorless_vel_estimate', 'f', 1)]), # untested
     'reboot': (0x016, []), # tested
@@ -206,7 +206,7 @@ class TestSimpleCAN():
         test_assert_eq(axis.trap_traj.config.accel_limit, 98.231, range=0.0001)
         test_assert_eq(axis.trap_traj.config.decel_limit, -12.234, range=0.0001)
 
-        my_cmd('set_traj_a_per_css', a_per_css=55.086)
+        my_cmd('set_traj_inertia', inertia=55.086)
         fence()
         test_assert_eq(axis.controller.config.inertia, 55.086, range=0.0001)
 

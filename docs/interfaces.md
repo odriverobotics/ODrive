@@ -102,7 +102,7 @@ Pinout:
 To enable step/dir mode for the GPIO, set `<axis>.config.enable_step_dir` to true for each axis that you wish to use this on.
 Axis 0 step/dir pins conflicts with UART, and the UART takes priority. So to be able to use step/dir on Axis 0, you must also set `odrv0.config.enable_uart = False`. See the [pin function priorities](#pin-function-priorities) for more detail. Don't forget to save configuration and reboot.
 
-There is also a config variable called `<axis>.config.turns_per_step`, which specifies how many encoder counts a "step" corresponds to. It can be any floating point value.
+There is also a config variable called `<axis>.config.turns_per_step`, which specifies how many turns a "step" corresponds to. The default value is 1.0f/1024.0f. It can be any floating point value.
 The maximum step rate is pending tests, but it should handle at least 50kHz. If you want to test it, please be aware that the failure mode on too high step rates is expected to be that the motors shuts down and coasts.
 
 Please be aware that there is no enable line right now, and the step/direction interface is enabled by default, and remains active as long as the ODrive is in position control mode. To get the ODrive to go into position control mode at bootup, see how to configure the [startup procedure](commands.md#startup-procedure).
