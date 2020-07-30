@@ -60,8 +60,6 @@
     ODriveIntf::GPIO_MODE_CAN0, \
     ODriveIntf::GPIO_MODE_CAN0,
 
-#define GPIO_AF_NONE ((uint8_t)0xff)
-
 #define TIM_TIME_BASE TIM14
 
 #ifdef __cplusplus
@@ -82,7 +80,9 @@ extern Motor motors[AXIS_COUNT];
 extern OnboardThermistorCurrentLimiter fet_thermistors[AXIS_COUNT];
 extern Encoder encoders[AXIS_COUNT];
 extern Stm32Gpio gpios[GPIO_COUNT];
-extern uint8_t alternate_functions[GPIO_COUNT][10];
+
+struct GpioFunction { int mode = 0; uint8_t alternate_function = 0xff; };
+extern std::array<GpioFunction, 3> alternate_functions[GPIO_COUNT];
 
 extern PCD_HandleTypeDef& usb_pcd_handle;
 extern USBD_HandleTypeDef& usb_dev_handle;

@@ -406,7 +406,21 @@ extern "C" int main(void) {
 
         GPIO_InitTypeDef GPIO_InitStruct;
         GPIO_InitStruct.Pin = get_gpio(i).pin_mask_;
-        GPIO_InitStruct.Alternate = 0;
+
+        // Set Alternate Function setting for this GPIO mode
+        if (mode == ODriveIntf::GPIO_MODE_DIGITAL || mode == ODriveIntf::GPIO_MODE_ANALOG_IN) {
+            GPIO_InitStruct.Alternate = 0;
+        } else {
+            auto it = std::find_if(
+                    alternate_functions[i].begin(), alternate_functions[i].end(),
+                    [mode](auto a) { return a.mode == mode; });
+
+            if (it == alternate_functions[i].end()) {
+                odrv.misconfigured_ = true; // this GPIO doesn't support the selected mode
+                continue;
+            }
+            GPIO_InitStruct.Alternate = it->alternate_function;
+        }
 
         switch (mode) {
             case ODriveIntf::GPIO_MODE_DIGITAL: {
@@ -422,7 +436,6 @@ extern "C" int main(void) {
                 GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
                 GPIO_InitStruct.Pull = (i == 0) ? GPIO_PULLDOWN : GPIO_PULLUP; // this is probably swapped but imitates old behavior
                 GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
-                GPIO_InitStruct.Alternate = alternate_functions[i][0];
                 if (!odrv.config_.enable_uart0) {
                     odrv.misconfigured_ = true;
                 }
@@ -431,7 +444,6 @@ extern "C" int main(void) {
                 GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
                 GPIO_InitStruct.Pull = (i == 0) ? GPIO_PULLDOWN : GPIO_PULLUP; // this is probably swapped but imitates old behavior
                 GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
-                GPIO_InitStruct.Alternate = alternate_functions[i][1];
                 if (!odrv.config_.enable_uart1) {
                     odrv.misconfigured_ = true;
                 }
@@ -440,7 +452,6 @@ extern "C" int main(void) {
                 GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
                 GPIO_InitStruct.Pull = (i == 0) ? GPIO_PULLDOWN : GPIO_PULLUP; // this is probably swapped but imitates old behavior
                 GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
-                GPIO_InitStruct.Alternate = alternate_functions[i][2];
                 if (!odrv.config_.enable_uart2) {
                     odrv.misconfigured_ = true;
                 }
@@ -449,7 +460,6 @@ extern "C" int main(void) {
                 GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
                 GPIO_InitStruct.Pull = GPIO_NOPULL;
                 GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
-                GPIO_InitStruct.Alternate = alternate_functions[i][3];
                 if (!odrv.config_.enable_can0) {
                     odrv.misconfigured_ = true;
                 }
@@ -458,47 +468,36 @@ extern "C" int main(void) {
                 GPIO_InitStruct.Mode = GPIO_MODE_AF_OD;
                 GPIO_InitStruct.Pull = GPIO_PULLUP;
                 GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
-                GPIO_InitStruct.Alternate = alternate_functions[i][4];
                 if (!odrv.config_.enable_i2c0) {
                     odrv.misconfigured_ = true;
                 }
             } break;
-            case ODriveIntf::GPIO_MODE_SPI0: {
-                GPIO_InitStruct.Alternate = GPIO_AF_NONE; // TODO
-            } break;
+            //case ODriveIntf::GPIO_MODE_SPI0: { // TODO
+            //} break;
             case ODriveIntf::GPIO_MODE_PWM0: {
                 GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
                 GPIO_InitStruct.Pull = GPIO_PULLDOWN;
                 GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-                GPIO_InitStruct.Alternate = alternate_functions[i][6];
             } break;
             case ODriveIntf::GPIO_MODE_ENC0: {
                 GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
                 GPIO_InitStruct.Pull = GPIO_NOPULL;
                 GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-                GPIO_InitStruct.Alternate = alternate_functions[i][7];
             } break;
             case ODriveIntf::GPIO_MODE_ENC1: {
                 GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
                 GPIO_InitStruct.Pull = GPIO_NOPULL;
                 GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-                GPIO_InitStruct.Alternate = alternate_functions[i][8];
             } break;
             case ODriveIntf::GPIO_MODE_ENC2: {
                 GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
                 GPIO_InitStruct.Pull = GPIO_NOPULL;
                 GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-                GPIO_InitStruct.Alternate = alternate_functions[i][9];
             } break;
             default: {
-                GPIO_InitStruct.Alternate = GPIO_AF_NONE;
+                odrv.misconfigured_ = true;
+                continue;
             }
-        }
-
-        // The selected mode is invalid for this GPIO. Leave GPIO uninitialized.
-        if (GPIO_InitStruct.Alternate == GPIO_AF_NONE) {
-            odrv.misconfigured_ = true;
-            continue;
         }
 
         HAL_GPIO_Init(get_gpio(i).port_, &GPIO_InitStruct);
