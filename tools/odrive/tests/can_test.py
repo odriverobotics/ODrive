@@ -25,9 +25,9 @@ command_set = {
     'get_encoder_estimates': (0x009, [('encoder_pos_estimate', 'f', 1), ('encoder_vel_estimate', 'f', 1)]), # partially tested
     'get_encoder_count': (0x00a, [('encoder_shadow_count', 'i', 1), ('encoder_count', 'i', 1)]), # partially tested
     'set_controller_modes': (0x00b, [('control_mode', 'i', 1), ('input_mode', 'i', 1)]), # tested
-    'set_input_pos': (0x00c, [('input_pos', 'i', 1), ('vel_ff', 'h', 0.1), ('cur_ff', 'h', 0.01)]), # tested
-    'set_input_vel': (0x00d, [('input_vel', 'i', 0.01), ('cur_ff', 'h', 0.01)]), # tested
-    'set_input_torque': (0x00e, [('input_torque', 'i', 0.01)]), # tested
+    'set_input_pos': (0x00c, [('input_pos', 'f', 1), ('vel_ff', 'h', 0.001), ('torque_ff', 'h', 0.001)]), # tested
+    'set_input_vel': (0x00d, [('input_vel', 'f', 1), ('torque_ff', 'f', 1)]), # tested
+    'set_input_torque': (0x00e, [('input_torque', 'f', 1)]), # tested
     'set_velocity_limit': (0x00f, [('velocity_limit', 'f', 1)]), # tested
     'start_anticogging': (0x010, []), # untested
     'set_traj_vel_limit': (0x011, [('traj_vel_limit', 'f', 1)]), # tested
@@ -176,26 +176,26 @@ class TestSimpleCAN():
         axis.controller.input_pos = 1234
         axis.controller.input_vel = 1234
         axis.controller.input_torque = 1234
-        my_cmd('set_input_pos', input_pos=1, vel_ff=2, cur_ff=3)
+        my_cmd('set_input_pos', input_pos=1.23, vel_ff=1.2, torque_ff=3.4)
         fence()
-        test_assert_eq(axis.controller.input_pos, 1.0, range=0.1)
-        test_assert_eq(axis.controller.input_vel, 2.0, range=0.01)
-        test_assert_eq(axis.controller.input_torque, 3.0, range=0.001)
+        test_assert_eq(axis.controller.input_pos, 1.23, range=0.1)
+        test_assert_eq(axis.controller.input_vel, 1.2, range=0.01)
+        test_assert_eq(axis.controller.input_torque, 3.4, range=0.001)
 
         axis.controller.config.control_mode = CONTROL_MODE_VELOCITY_CONTROL
-        my_cmd('set_input_vel', input_vel=-10.0, cur_ff=30.1234)
+        my_cmd('set_input_vel', input_vel=-10.5, torque_ff=0.1234)
         fence()
-        test_assert_eq(axis.controller.input_vel, -10.0, range=0.01)
-        test_assert_eq(axis.controller.input_torque, 30.1234, range=0.01)
+        test_assert_eq(axis.controller.input_vel, -10.5, range=0.01)
+        test_assert_eq(axis.controller.input_torque, 0.1234, range=0.01)
 
         axis.controller.config.control_mode = CONTROL_MODE_TORQUE_CONTROL
         my_cmd('set_input_torque', input_torque=0.1)
         fence()
         test_assert_eq(axis.controller.input_torque, 0.1, range=0.01)
 
-        my_cmd('set_velocity_limit', velocity_limit=23456.78)
+        my_cmd('set_velocity_limit', velocity_limit=2.345678)
         fence()
-        test_assert_eq(axis.controller.config.vel_limit, 23456.78, range=0.001)
+        test_assert_eq(axis.controller.config.vel_limit, 2.345678, range=0.001)
 
         my_cmd('set_traj_vel_limit', traj_vel_limit=123.456)
         fence()
