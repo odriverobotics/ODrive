@@ -18,6 +18,14 @@ bool equals(const SPI_InitTypeDef& lhs, const SPI_InitTypeDef& rhs) {
       && (lhs.CRCPolynomial == rhs.CRCPolynomial);
 }
 
+bool Stm32SpiArbiter::acquire_task(SpiTask* task) {
+    return !__atomic_exchange_n(&task->is_in_use, true, __ATOMIC_SEQ_CST);
+}
+
+void Stm32SpiArbiter::release_task(SpiTask* task) {
+    task->is_in_use = false;
+}
+
 bool Stm32SpiArbiter::start() {
     if (!task_list_) {
         return false;
@@ -63,7 +71,7 @@ void Stm32SpiArbiter::transfer_async(SpiTask* task) {
     if (ptr == &task_list_) {
         if (!start()) {
             if (task->on_complete) {
-                (*task->on_complete)(task->cb_ctx, false);
+                (*task->on_complete)(task->on_complete_ctx, false);
             }
         }
     }
@@ -80,7 +88,7 @@ bool Stm32SpiArbiter::transfer(SPI_InitTypeDef config, Stm32Gpio ncs_gpio, const
         .rx_buf = rx_buf,
         .length = length,
         .on_complete = [](void* ctx, bool success) { *(volatile uint8_t*)ctx = success ? 1 : 0; },
-        .cb_ctx = (void*)&result,
+        .on_complete_ctx = (void*)&result,
         .next = nullptr
     };
 
@@ -101,7 +109,7 @@ void Stm32SpiArbiter::on_complete() {
     // Wrap up transfer
     task_list_->ncs_gpio.write(true);
     if (task_list_->on_complete) {
-        (*task_list_->on_complete)(task_list_->cb_ctx, true);
+        (*task_list_->on_complete)(task_list_->on_complete_ctx, true);
     }
 
     // Start next task if any

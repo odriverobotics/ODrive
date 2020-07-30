@@ -371,24 +371,20 @@ void Encoder::decode_hall_samples() {
 bool Encoder::abs_spi_start_transaction(){
     if (mode_ & MODE_FLAG_ABS){
         axis_->motor_.log_timing(TIMING_LOG_SPI_START);
-
-        if (spi_busy_) {
+        
+        if (Stm32SpiArbiter::acquire_task(&spi_task_)) {
+            spi_task_.ncs_gpio = abs_spi_cs_gpio_;
+            spi_task_.tx_buf = (uint8_t*)abs_spi_dma_tx_;
+            spi_task_.rx_buf = (uint8_t*)abs_spi_dma_rx_;
+            spi_task_.length = 1;
+            spi_task_.on_complete = [](void* ctx, bool success) { ((Encoder*)ctx)->abs_spi_cb(success); };
+            spi_task_.on_complete_ctx = this;
+            spi_task_.next = nullptr;
+            
+            spi_arbiter_->transfer_async(&spi_task_);
+        } else {
             return false;
         }
-        
-        spi_task_.ncs_gpio = abs_spi_cs_gpio_;
-        spi_task_.tx_buf = (uint8_t*)abs_spi_dma_tx_;
-        spi_task_.rx_buf = (uint8_t*)abs_spi_dma_rx_;
-        spi_task_.length = 1;
-        spi_task_.on_complete = [](void* ctx, bool success) {
-            ((Encoder*)ctx)->spi_busy_ = false;
-            if (success)
-                ((Encoder*)ctx)->abs_spi_cb();
-        };
-        spi_task_.cb_ctx = this;
-        spi_task_.next = nullptr;
-        
-        spi_arbiter_->transfer_async(&spi_task_);
     }
     return true;
 }
@@ -408,17 +404,21 @@ uint8_t cui_parity(uint16_t v) {
     return ~v & 3;
 }
 
-void Encoder::abs_spi_cb() {
-    axis_->motor_.log_timing(TIMING_LOG_SPI_END);
-
+void Encoder::abs_spi_cb(bool success) {
     uint16_t pos;
+
+    if (!success) {
+        goto done;
+    }
+
+    axis_->motor_.log_timing(TIMING_LOG_SPI_END);
 
     switch (mode_) {
         case MODE_SPI_ABS_AMS: {
             uint16_t rawVal = abs_spi_dma_rx_[0];
             // check if parity is correct (even) and error flag clear
             if (ams_parity(rawVal) || ((rawVal >> 14) & 1)) {
-                return;
+                goto done;
             }
             pos = rawVal & 0x3fff;
         } break;
@@ -427,14 +427,14 @@ void Encoder::abs_spi_cb() {
             uint16_t rawVal = abs_spi_dma_rx_[0];
             // check if parity is correct
             if (cui_parity(rawVal)) {
-                return;
+                goto done;
             }
             pos = rawVal & 0x3fff;
         } break;
 
         default: {
            set_error(ERROR_UNSUPPORTED_ENCODER_MODE);
-           return;
+           goto done;
         } break;
     }
 
@@ -443,6 +443,9 @@ void Encoder::abs_spi_cb() {
     if (config_.pre_calibrated) {
         is_ready_ = true;
     }
+
+done:
+    Stm32SpiArbiter::release_task(&spi_task_);
 }
 
 void Encoder::abs_spi_cs_pin_init(){

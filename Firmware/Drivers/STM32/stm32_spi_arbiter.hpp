@@ -14,11 +14,35 @@ public:
         uint8_t* rx_buf;
         size_t length;
         void (*on_complete)(void*, bool);
-        void* cb_ctx;
+        void* on_complete_ctx;
+        bool is_in_use = false;
         struct SpiTask* next;
     };
 
     Stm32SpiArbiter(SPI_HandleTypeDef* hspi): hspi_(hspi) {}
+
+    /**
+     * Reserves the task for the caller if it's not in use currently.
+     *
+     * This can be used by the caller to ensure that the task structure is not
+     * overwritten while it's in use in a preceding transfer.
+     *
+     * Example:
+     *
+     *     if (acquire_task(&task)) {
+     *         transfer_async(&task)
+     *     }
+     *
+     * A call to release_task() makes the task available for use again.
+     */
+    static bool acquire_task(SpiTask* task);
+
+    /**
+     * Releases the task so that the next call to `acquire_task()` returns true.
+     * This should usually be called inside the on_complete() callback after
+     * the rx buffer has been processed.
+     */
+    static void release_task(SpiTask* task);
 
     /**
      * @brief Enqueues a non-blocking transfer.
