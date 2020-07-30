@@ -231,6 +231,130 @@ class TestSimpleCAN():
         time.sleep(2.0)
         odrive.prepare(logger)
 
+class TestSimpleCANClosedLoop():
+    def prepare(self, odrive: ODriveComponent, canbus: CanInterfaceComponent, axis_ctx: ODriveAxisComponent, motor_ctx: MotorComponent, enc_ctx: EncoderComponent, node_id: int, extended_id: bool, logger: Logger):
+        # Make sure there are no funny configurations active
+        logger.debug('Setting up clean configuration...')
+        axis_ctx.parent.erase_config_and_reboot()
+
+        # run calibration
+        axis_ctx.handle.requested_state = AXIS_STATE_FULL_CALIBRATION_SEQUENCE
+        while axis_ctx.handle.current_state != AXIS_STATE_IDLE:
+            time.sleep(1)
+        test_assert_eq(axis_ctx.handle.current_state, AXIS_STATE_IDLE)
+        test_assert_no_error(axis_ctx)
+
+        # Return a context that can be used in a with-statement.
+        class safe_terminator():
+            def __enter__(self):
+                pass
+            def __exit__(self, exc_type, exc_val, exc_tb):
+                logger.debug('clearing config...')
+                axis_ctx.handle.requested_state = AXIS_STATE_IDLE
+                time.sleep(0.005)
+                axis_ctx.parent.erase_config_and_reboot()
+        return safe_terminator()
+
+
+    def get_test_cases(self, testrig: TestRig):
+        for odrive in testrig.get_components(ODriveComponent):
+            can_interfaces = list(testrig.get_connected_components(odrive.can, CanInterfaceComponent))
+            for num in range(2):
+                encoders = testrig.get_connected_components({
+                    'a': (odrive.encoders[num].a, False),
+                    'b': (odrive.encoders[num].b, False)
+                }, EncoderComponent)
+                motors = testrig.get_connected_components(odrive.axes[num], MotorComponent)
+                for motor, encoder in itertools.product(motors, encoders):
+                    if encoder.impl in testrig.get_connected_components(motor):
+                        yield (odrive, can_interfaces, odrive.axes[num], motor, encoder, 0, False)
+
+    def run_test(self, odrive: ODriveComponent, canbus: CanInterfaceComponent, axis_ctx: ODriveAxisComponent, motor_ctx: MotorComponent, enc_ctx: EncoderComponent, node_id: int, extended_id: bool, logger: Logger):
+        # this test is a sanity check to make sure that closed loop operation works
+        # actual testing of closed loop functionality should be tested using closed_loop_test.py
+
+        with self.prepare(odrive, canbus, axis_ctx, motor_ctx, enc_ctx, node_id, extended_id, logger):
+            def my_cmd(cmd_name, **kwargs): command(canbus.handle, node_id, extended_id, cmd_name, **kwargs)
+            def my_req(cmd_name, **kwargs): return asyncio.run(request(canbus.handle, node_id, extended_id, cmd_name, **kwargs))
+            def fence(): my_req('get_vbus_voltage') # fence to ensure the CAN command was sent
+            
+            # make sure no gpio input is overwriting our values
+            odrive.unuse_gpios()
+
+            axis_ctx.handle.config.enable_watchdog = False
+            axis_ctx.handle.clear_errors()
+            axis_ctx.handle.config.can_node_id = node_id
+            axis_ctx.handle.config.can_node_id_extended = extended_id
+            time.sleep(0.1)
+
+            my_cmd('set_node_id', node_id=node_id+20)
+            asyncio.run(request(canbus.handle, node_id+20, extended_id, 'get_vbus_voltage'))
+            test_assert_eq(axis_ctx.handle.config.can_node_id, node_id+20)
+
+            # Reset node ID to default value
+            command(canbus.handle, node_id+20, extended_id, 'set_node_id', node_id=node_id)
+            fence()
+            test_assert_eq(axis_ctx.handle.config.can_node_id, node_id)
+
+            vel_limit = 15.0
+            nominal_vel = 10.0
+            axis_ctx.handle.controller.config.vel_limit = vel_limit
+            axis_ctx.handle.motor.config.current_lim = 30.0
+
+            my_cmd('set_requested_state', requested_state = AXIS_STATE_CLOSED_LOOP_CONTROL)
+            fence()
+            test_assert_eq(axis_ctx.handle.current_state, AXIS_STATE_CLOSED_LOOP_CONTROL)
+            test_assert_no_error(axis_ctx)
+
+            start_pos = axis_ctx.handle.encoder.pos_estimate
+
+            # position test
+            logger.debug('Position control test')
+            my_cmd('set_controller_modes', control_mode=CONTROL_MODE_POSITION_CONTROL, input_mode=INPUT_MODE_PASSTHROUGH) # position control, passthrough
+            fence()
+            my_cmd('set_input_pos', input_pos=1.0, vel_ff=0, torque_ff=0)
+            fence()
+            test_assert_eq(axis_ctx.handle.controller.input_pos, 1.0, range=0.1)
+            time.sleep(2)
+            test_assert_eq(axis_ctx.handle.encoder.pos_estimate, start_pos + 1.0, range=0.1)
+            my_cmd('set_input_pos', input_pos=0, vel_ff=0, torque_ff=0)
+            fence()
+            time.sleep(2)
+
+            test_assert_no_error(axis_ctx)
+
+            # velocity test
+            logger.debug('Velocity control test')
+            my_cmd('set_controller_modes', control_mode=CONTROL_MODE_VELOCITY_CONTROL, input_mode=INPUT_MODE_PASSTHROUGH) # velocity control, passthrough
+            fence()
+            my_cmd('set_input_vel', input_vel = nominal_vel, torque_ff=0)
+            fence()
+            time.sleep(5)
+            test_assert_eq(axis_ctx.handle.encoder.vel_estimate, nominal_vel, range=nominal_vel * 0.05) # big range here due to cogging and other issues
+            my_cmd('set_input_vel', input_vel = 0, torque_ff=0)
+            fence()
+            time.sleep(2)
+
+            test_assert_no_error(axis_ctx)
+
+            # torque test
+            logger.debug('Torque control test')
+            my_cmd('set_controller_modes', control_mode=CONTROL_MODE_TORQUE_CONTROL, input_mode=INPUT_MODE_PASSTHROUGH) # torque control, passthrough
+            fence()
+            my_cmd('set_input_torque', input_torque=0.5)
+            fence()
+            time.sleep(5)
+            test_assert_eq(axis_ctx.handle.controller.input_torque, 0.5, range=0.1)
+            my_cmd('set_input_torque', input_torque = 0)
+            fence()
+            time.sleep(2)
+
+            test_assert_no_error(axis_ctx)
+
+            # go back to idle
+            my_cmd('set_requested_state', requested_state = AXIS_STATE_IDLE)
+            fence()
+            test_assert_eq(axis_ctx.handle.current_state, AXIS_STATE_IDLE)
 
 if __name__ == '__main__':
-    test_runner.run(TestSimpleCAN())
+    test_runner.run([TestSimpleCAN(), TestSimpleCANClosedLoop()])

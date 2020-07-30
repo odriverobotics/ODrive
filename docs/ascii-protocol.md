@@ -56,13 +56,13 @@ q motor position velocity_lim torque_lim
 Example: `q 0 -2 1 0.1`
 
 ```
-p motor position velocity_ff current_ff
+p motor position velocity_ff torque_ff
 ```
 * `p` for position
 * `motor` is the motor number, `0` or `1`.
 * `position` is the desired position, in [turns].
 * `velocity_ff` is the velocity feed-forward term, in [turns/s] (optional).
-* `torque_ff` is the current feed-forward term, in [Nm] (optional).
+* `torque_ff` is the torque feed-forward term, in [Nm] (optional).
 
 Example: `p 0 -2 0 0`
 
@@ -89,9 +89,9 @@ This command updates the watchdog timer for the motor.
 ```
 c motor torque
 ```
-* `c` for current
+* `c` for torque
 * `motor` is the motor number, `0` or `1`.
-* `torque` is the desired current in [Nm].
+* `torque` is the desired torque in [Nm].
 
 This command updates the watchdog timer for the motor. 
 
