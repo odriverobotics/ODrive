@@ -37,40 +37,40 @@ ODrive odrv{};
 
 ConfigManager config_manager;
 
-static bool config_pop_all() {
-    bool success = board_pop_config() &&
-           config_manager.pop(&odrv.config_) &&
-           config_manager.pop(&can_config);
+static bool config_read_all() {
+    bool success = board_read_config() &&
+           config_manager.read(&odrv.config_) &&
+           config_manager.read(&can_config);
     for (size_t i = 0; (i < AXIS_COUNT) && success; ++i) {
-        success = config_manager.pop(&encoders[i].config_) &&
-                  config_manager.pop(&axes[i].sensorless_estimator_.config_) &&
-                  config_manager.pop(&axes[i].controller_.config_) &&
-                  config_manager.pop(&axes[i].trap_traj_.config_) &&
-                  config_manager.pop(&axes[i].min_endstop_.config_) &&
-                  config_manager.pop(&axes[i].max_endstop_.config_) &&
-                  config_manager.pop(&motors[i].config_) &&
-                  config_manager.pop(&fet_thermistors[i].config_) &&
-                  config_manager.pop(&axes[i].motor_thermistor_.config_) &&
-                  config_manager.pop(&axes[i].config_);
+        success = config_manager.read(&encoders[i].config_) &&
+                  config_manager.read(&axes[i].sensorless_estimator_.config_) &&
+                  config_manager.read(&axes[i].controller_.config_) &&
+                  config_manager.read(&axes[i].trap_traj_.config_) &&
+                  config_manager.read(&axes[i].min_endstop_.config_) &&
+                  config_manager.read(&axes[i].max_endstop_.config_) &&
+                  config_manager.read(&motors[i].config_) &&
+                  config_manager.read(&fet_thermistors[i].config_) &&
+                  config_manager.read(&axes[i].motor_thermistor_.config_) &&
+                  config_manager.read(&axes[i].config_);
     }
     return success;
 }
 
-static bool config_push_all() {
-    bool success = board_push_config() &&
-           config_manager.push(&odrv.config_) &&
-           config_manager.push(&can_config);
+static bool config_write_all() {
+    bool success = board_write_config() &&
+           config_manager.write(&odrv.config_) &&
+           config_manager.write(&can_config);
     for (size_t i = 0; (i < AXIS_COUNT) && success; ++i) {
-        success = config_manager.push(&encoders[i].config_) &&
-                  config_manager.push(&axes[i].sensorless_estimator_.config_) &&
-                  config_manager.push(&axes[i].controller_.config_) &&
-                  config_manager.push(&axes[i].trap_traj_.config_) &&
-                  config_manager.push(&axes[i].min_endstop_.config_) &&
-                  config_manager.push(&axes[i].max_endstop_.config_) &&
-                  config_manager.push(&motors[i].config_) &&
-                  config_manager.push(&fet_thermistors[i].config_) &&
-                  config_manager.push(&axes[i].motor_thermistor_.config_) &&
-                  config_manager.push(&axes[i].config_);
+        success = config_manager.write(&encoders[i].config_) &&
+                  config_manager.write(&axes[i].sensorless_estimator_.config_) &&
+                  config_manager.write(&axes[i].controller_.config_) &&
+                  config_manager.write(&axes[i].trap_traj_.config_) &&
+                  config_manager.write(&axes[i].min_endstop_.config_) &&
+                  config_manager.write(&axes[i].max_endstop_.config_) &&
+                  config_manager.write(&motors[i].config_) &&
+                  config_manager.write(&fet_thermistors[i].config_) &&
+                  config_manager.write(&axes[i].motor_thermistor_.config_) &&
+                  config_manager.write(&axes[i].config_);
     }
     return success;
 }
@@ -82,11 +82,10 @@ static void config_clear_all() {
         encoders[i].config_ = {};
         axes[i].sensorless_estimator_.config_ = {};
         axes[i].controller_.config_ = {};
+        axes[i].controller_.config_.load_encoder_axis = i;
         axes[i].trap_traj_.config_ = {};
         axes[i].min_endstop_.config_ = {};
         axes[i].max_endstop_.config_ = {};
-        axes[i].controller_.config_ = {};
-        axes[i].controller_.config_.load_encoder_axis = i;
         motors[i].config_ = {};
         fet_thermistors[i].config_ = {};
         axes[i].motor_thermistor_.config_ = {};
@@ -98,10 +97,10 @@ static bool config_apply_all() {
     bool success = true;
     for (size_t i = 0; (i < AXIS_COUNT) && success; ++i) {
         success = encoders[i].apply_config(motors[i].config_.motor_type)
-               && motors[i].apply_config()
                && axes[i].controller_.apply_config()
                && axes[i].min_endstop_.apply_config()
                && axes[i].max_endstop_.apply_config()
+               && motors[i].apply_config()
                && axes[i].apply_config();
     }
     return success;
@@ -110,9 +109,9 @@ static bool config_apply_all() {
 void ODrive::save_configuration(void) {
     size_t config_size = 0;
     bool success = config_manager.prepare_store()
-                && config_push_all()
+                && config_write_all()
                 && config_manager.start_store(&config_size)
-                && config_push_all()
+                && config_write_all()
                 && config_manager.finish_store();
     if (success) {
         user_config_loaded_ = config_size;
@@ -375,7 +374,7 @@ extern "C" int main(void) {
     // since board initialization can depend on the config.
     size_t config_size = 0;
     bool success = config_manager.start_load()
-            && config_pop_all()
+            && config_read_all()
             && config_manager.finish_load(&config_size)
             && config_apply_all();
     if (success) {

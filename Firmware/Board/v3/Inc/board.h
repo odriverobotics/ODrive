@@ -114,8 +114,8 @@ static const int current_meas_hz = CURRENT_MEAS_HZ;
 
 
 // This board has no board-specific user configurations
-static inline bool board_pop_config() { return true; }
-static inline bool board_push_config() { return true; }
+static inline bool board_read_config() { return true; }
+static inline bool board_write_config() { return true; }
 static inline void board_clear_config() { }
 static inline bool board_apply_config() { return true; }
 

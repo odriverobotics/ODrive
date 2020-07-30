@@ -37,13 +37,13 @@ static constexpr uint16_t config_version = 0x0001;
  * 
  * Usage:
  *  1. start_load()
- *  2. pop() (as often needed)
- *  3. finish_load() (to see if all pops were successful and the CRC in the end is valid)
+ *  2. read() (as often needed)
+ *  3. finish_load() (to see if all reads were successful and the CRC in the end is valid)
  * 
  *  1. prepare_store()
- *  2. push() (as often as needed)
+ *  2. write() (as often as needed)
  *  3. start_store()
- *  4. push() (same sequence as before)
+ *  4. write() (same sequence as before)
  *  5. finish_store()
  * 
  * The two store passes are required in order to measure the size on the first
@@ -72,7 +72,7 @@ public:
      * will know the final verdict by the return value of finish_load().
      */
     template<typename T>
-    bool pop(T* val) {
+    bool read(T* val) {
         if (load_state != 1) {
             return (load_state = kLoadStateFailed), false;
         }
@@ -86,7 +86,7 @@ public:
 
     /**
      * @brief Checks the final state of the load operation.
-     * If this function returns false, it is possible that previous pop()
+     * If this function returns false, it is possible that previous read()
      * operations actually returned garbage.
      */
     bool finish_load(size_t* occupied_size) {
@@ -96,7 +96,7 @@ public:
 
         uint16_t crc16_calculated = load_crc16;
         uint16_t crc16_loaded;
-        if (!pop(&crc16_loaded)) {
+        if (!read(&crc16_loaded)) {
             return (load_state = kLoadStateFailed), false;
         }
         bool result = (load_state == 1) && (crc16_loaded == crc16_calculated);
@@ -119,7 +119,7 @@ public:
     }
 
     template<typename T>
-    bool push(T* val) {
+    bool write(T* val) {
         if (store_state == kStoreStateInProgress) {
             if (NVM_write(store_offset, (uint8_t*)val, sizeof(T)) != 0) {
                 return (store_state = kStoreStateFailed), false;
@@ -163,7 +163,7 @@ public:
      */
     bool finish_store() {
         uint16_t crc16 = store_crc16;
-        if (!push(&crc16)) {
+        if (!write(&crc16)) {
             return (store_state = kStoreStateFailed), false;
         }
         if (NVM_commit() != 0) {
