@@ -319,21 +319,21 @@ bool Axis::run_closed_loop_control_loop() {
 
     // To avoid any transient on startup, we intialize the setpoint to be the current position
     if (controller_.config_.circular_setpoints) {
-        if (*controller_.pos_estimate_circular_src_) {
+        if (!controller_.pos_estimate_circular_src_) {
+            return error_ |= ERROR_CONTROLLER_FAILED, false;
+        }
+        else {
             controller_.pos_setpoint_ = *controller_.pos_estimate_circular_src_;
             controller_.input_pos_ = *controller_.pos_estimate_circular_src_;
         }
-        else {
-            return error_ |= ERROR_CONTROLLER_FAILED, false;
-        }
     }
     else {
-        if (*controller_.pos_estimate_linear_src_) {
-            controller_.pos_setpoint_ = *controller_.pos_estimate_linear_src_;
-            controller_.input_pos_ = *controller_.pos_estimate_linear_src_;
+        if (!controller_.pos_estimate_linear_src_) {
+            return error_ |= ERROR_CONTROLLER_FAILED, false;
         }
         else {
-            return error_ |= ERROR_CONTROLLER_FAILED, false;
+            controller_.pos_setpoint_ = *controller_.pos_estimate_linear_src_;
+            controller_.input_pos_ = *controller_.pos_estimate_linear_src_;
         }
     }
 
@@ -387,19 +387,19 @@ bool Axis::run_homing() {
     // To avoid any transient on startup, we intialize the setpoint to be the current position
     // note - input_pos_ is not set here. It is set to 0 earlier in this method and velocity control is used.
     if (controller_.config_.circular_setpoints) {
-        if (*controller_.pos_estimate_circular_src_) {
-            controller_.pos_setpoint_ = *controller_.pos_estimate_circular_src_;
+        if (!controller_.pos_estimate_circular_src_) {
+            return error_ |= ERROR_CONTROLLER_FAILED, false;
         }
         else {
-            return error_ |= ERROR_CONTROLLER_FAILED, false;
+            controller_.pos_setpoint_ = *controller_.pos_estimate_circular_src_;
         }
     }
     else {
-        if (*controller_.pos_estimate_linear_src_) {
-            controller_.pos_setpoint_ = *controller_.pos_estimate_linear_src_;
+        if (!controller_.pos_estimate_linear_src_) {
+            return error_ |= ERROR_CONTROLLER_FAILED, false;
         }
         else {
-            return error_ |= ERROR_CONTROLLER_FAILED, false;
+            controller_.pos_setpoint_ = *controller_.pos_estimate_linear_src_;
         }
     }
 
