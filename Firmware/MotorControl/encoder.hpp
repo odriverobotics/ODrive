@@ -74,15 +74,20 @@ public:
     int32_t shadow_count_ = 0;
     int32_t count_in_cpr_ = 0;
     float interpolation_ = 0.0f;
-    float phase_ = 0.0f;    // [count]
-    float pos_estimate_ = 0.0f;  // [count]
-    float pos_cpr_ = 0.0f;  // [count]
-    float vel_estimate_ = 0.0f;  // [count/s]
+    float phase_ = 0.0f;        // [count]
+    float pos_estimate_counts_ = 0.0f;  // [count]
+    float pos_cpr_counts_ = 0.0f;  // [count]
+    float vel_estimate_counts_ = 0.0f;  // [count/s]
     float pll_kp_ = 0.0f;   // [count/s / count]
     float pll_ki_ = 0.0f;   // [(count/s^2) / count]
     float calib_scan_response_ = 0.0f; // debug report from offset calib
     int32_t pos_abs_ = 0;
     float spi_error_rate_ = 0.0f;
+
+    float pos_estimate_ = 0.0f; // [turn]
+    float vel_estimate_ = 0.0f; // [turn/s]
+    float pos_cpr_ = 0.0f;      // [turn]
+    float pos_circular_ = 0.0f; // [turn]
 
     bool pos_estimate_valid_ = false;
     bool vel_estimate_valid_ = false;
@@ -107,7 +112,7 @@ public:
     uint32_t abs_spi_cr2;
 
     constexpr float getCoggingRatio(){
-        return config_.cpr / 3600.0f;
+        return 1.0f / 3600.0f;
     }
 };
 

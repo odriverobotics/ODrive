@@ -32,9 +32,9 @@ class TestEncoderBase():
             encoder.shadow_count,
             encoder.count_in_cpr,
             encoder.phase,
-            encoder.pos_estimate,
-            encoder.pos_cpr,
-            encoder.vel_estimate,
+            encoder.pos_estimate_counts,
+            encoder.pos_cpr_counts,
+            encoder.vel_estimate_counts,
         ], duration=5.0)
 
         short_period = (abs(1 / true_rps) < 5.0)

@@ -44,8 +44,8 @@ Possible values are listed [here](api/odrive.axis.controller.controlmode).
 
 As of version v0.5.0, ODrive now intercepts the incoming commands and can apply filters to them. The old protocol values `pos_setpoint`, `vel_setpoint`, and `current_setpoint` are still used internally by the closed-loop cascade control, but the user cannot write to them directly.  This allows us to condense the number of ways the ODrive accepts motion commands. The new commands are:
 
-* `<axis>.controller.input_pos = <encoder_counts>`
-* `<axis>.controller.input_vel = <encoder_counts/s>`
+* `<axis>.controller.input_pos = <turn>`
+* `<axis>.controller.input_vel = <turn/s>`
 * `<axis>.controller.input_torque = <torque in Nm>`
 
 Modes can be selected by changing `<axis>.controller.config.input_mode`.
@@ -55,8 +55,8 @@ Possible values are listed [here](api/odrive.axis.controller.inputmode).
 ## System monitoring commands
 
 ### Encoder position and velocity
-* View encoder position with `<axis>.encoder.pos_estimate` [counts]
-* View rotational velocity with `<axis>.encoder.vel_estimate` [counts/s]
+* View encoder position with `<axis>.encoder.pos_estimate` [turns] or `<axis>.encoder.pos_est_counts` [counts]
+* View rotational velocity with `<axis>.encoder.vel_estimate` [turn/s] or `<axis>.encoder.vel_est_counts` [count/s]
 
 ### Motor current and torque estimation
 * View the commanded motor current with `<axis>.motor.current_control.Iq_setpoint` [A] 
@@ -81,7 +81,6 @@ All variables that are part of a `[...].config` object can be saved to non-volat
 
 ## Setting up sensorless
 The ODrive can run without encoder/hall feedback, but there is a minimum speed, usually around a few hunderd RPM.
-However the units of this mode is different from when using an encoder. Velocities are not measured in counts/s, instead it is electrical rad/s. This also applies to the gains. For example, `vel_gain` is in units of `A / (rad/s)` instead of `A / (count/s)`.
 
 To give an example, suppose you have a motor with 7 pole pairs, and you want to spin it at 3000 RPM. Then you would set the `input_vel` to `3000 * 2*pi/60 * 7 = 2199 rad/s electrical`.
 

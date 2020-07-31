@@ -211,13 +211,13 @@ To change what parameters are plotted open odrivetool (located in Anaconda3\Scri
             my_odrive.axis1.encoder.pos_estimate,
         ])
 ```
-For example, to plot the approximate motor torque [N.cm] and the velocity [RPM] of axis1 with a 150KV motor and an 8192 count per rotation econder you would modify the function to read:
+For example, to plot the approximate motor torque [Nm] and the velocity [RPM] of axis0, you would modify the function to read:
 ```
         # If you want to plot different values, change them here.
         # You can plot any number of values concurrently.
         cancellation_token = start_liveplotter(lambda: [
-            (((my_odrive.axis0.encoder.pll_vel)/8192)*60), # 8192 CPR encoder
-            ((8.27*my_odrive.axis0.motor.current_control.Iq_setpoint/150) * 100), # Torque [N.cm] = (8.27 * Current [A] / KV) * 100
+            ((my_odrive.axis0.encoder.vel_estimate*60), # turns/s to rpm
+            ((my_odrive.axis0.motor.current_control.Iq_setpoint * my_odrive.axis0.motor.config.torque_constant), # Torque [Nm]
         ])
 ```
 In the example below the motor is forced off axis by hand and held there. In response the motor controller increases the torque (orange line) to counteract this disturbance up to a peak of 500 N.cm at which point the motor current limit is reached. When the motor is released it returns back to its commanded position very quickly as can be seen by the spike in the motor velocity (blue line).

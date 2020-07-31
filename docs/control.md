@@ -1,6 +1,6 @@
 # Control
 
-The motor controller is a cascaded style position, velocity and current control loop, as per the diagram below. When the control mode is set to position control, the whole loop runs. When running in velocity control mode, the position control part is removed and the velocity command is fed directly in to the second stage input. In current control mode, only the current controller is used.
+The motor controller is a cascaded style position, velocity and current control loop, as per the diagram below. When the control mode is set to position control, the whole loop runs. When running in velocity control mode, the position control part is removed and the velocity command is fed directly in to the second stage input. In torque control mode, only the current controller is used.
 
 ![Cascaded pos vel I loops](controller_with_ff.png)
 
@@ -34,15 +34,15 @@ For more detail refer to [controller.cpp](https://github.com/madcowswe/ODrive/bl
 ### Controller Details:
 The ultimate output of the controller is the voltage applied to the gate of each FET to deliver current through each coil of the motor. The current through the motor linearly relates to the torque output of the motor. This means that the inputs to the cascaded controller are theoretically the position (angle), velocity (angle/time), and acceleration (angle/time/time) of the motor. Note that when thinking about the controller from the perpective of the physics of the motor you would expect to see the time in the Velocity and Current loops, but it is absent because the time difference between iterations is always 125 microseconds (8kHz). Because the time difference between controller loops is a constant and can simply be wrapped into the controller gains. 
 
-The output of each stage of the controller is clamped before being fed into the next stage. So after the `vel_cmd` is calculated from the position controller, the `vel_cmd` is clamped to the velocity limit. The `current_cmd` output of the velocity controller is then clamped and fed to the current controller. Oddly enough the controller class does not contain the current controller, but instead the current controller is housed in the motor class due to the complexity of the motor driver schema.
+The output of each stage of the controller is clamped before being fed into the next stage. So after the `vel_cmd` is calculated from the position controller, the `vel_cmd` is clamped to the velocity limit. The `torque_cmd` output of the velocity controller is then clamped and fed to the current controller. Oddly enough the controller class does not contain the current controller, but instead the current controller is housed in the motor class due to the complexity of the motor driver schema.
 
-The feedforward terms available when using the position or velocity control mode are meant to enable better performance when the dynamics of a system are known and the host controller can predict the motion based on the load. A perfect example of this is the use of the trajectory controller that sets the position, velocity, and current based on the desired position, velocity, and acceleration. If you take a trapezoidal velocity profile for example, you can imagine on the ramp upward the velocity will be increasing over time, while the current is a non-zero constant. At the flat portion of the profile the velocity will be a non-zero constant, but the acceleration will be zero. This trajectory controller use case uses the cascaded controller with multiple inputs to achieve the desired motion with the best performance.  
+The feedforward terms available when using the position or velocity control mode are meant to enable better performance when the dynamics of a system are known and the host controller can predict the motion based on the load. A perfect example of this is the use of the trajectory controller that sets the position, velocity, and torque based on the desired position, velocity, and acceleration. If you take a trapezoidal velocity profile for example, you can imagine on the ramp upward the velocity will be increasing over time, while the torque is a non-zero constant. At the flat portion of the profile the velocity will be a non-zero constant, but the acceleration will be zero. This trajectory controller use case uses the cascaded controller with multiple inputs to achieve the desired motion with the best performance.  
 
 ## Tuning
 Tuning the motor controller is an essential step to unlock the full potential of the ODrive. Tuning allows for the controller to quickly respond to disturbances or changes in the system (such as an external force being applied or a change in the setpoint) without becoming unstable. Correctly setting the three tuning parameters (called gains) ensures that ODrive can control your motors in the most effective way possible. The three values are:
-* `<axis>.controller.config.pos_gain = 20.0` [(counts/s) / counts]
-* `<axis>.controller.config.vel_gain = 5.0 / 10000.0` [A/(counts/s)]
-* `<axis>.controller.config.vel_integrator_gain = 10.0 / 10000.0` [A/((counts/s) * s)]
+* `<axis>.controller.config.pos_gain = 20.0` [(turn/s) / turn]
+* `<axis>.controller.config.vel_gain = 0.16 ` [Nm/(turn/s)]
+* `<axis>.controller.config.vel_integrator_gain = 0.32` [Nm/((turn/s) * s)]
 
 An upcoming feature will enable automatic tuning. Until then, here is a rough tuning procedure:
 * Set vel_integrator_gain gain to 0

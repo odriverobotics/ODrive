@@ -435,7 +435,9 @@ bool Motor::FOC_current(float Id_des, float Iq_des, float I_phase, float pwm_pha
     return true;
 }
 
-
+// torque_setpoint [Nm]
+// phase [rad electrical]
+// phase_vel [rad/s electrical]
 bool Motor::update(float torque_setpoint, float phase, float phase_vel) {
     float current_setpoint = 0.0f;
     phase *= config_.direction;

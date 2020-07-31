@@ -77,7 +77,7 @@ class TestClosedLoopControl(TestClosedLoopControlBase):
     def run_test(self, axis_ctx: ODriveAxisComponent, motor_ctx: MotorComponent, enc_ctx: EncoderComponent, logger: Logger):
         with self.prepare(axis_ctx, motor_ctx, enc_ctx, logger):
             nominal_rps = 1.0
-            nominal_vel = float(enc_ctx.yaml['cpr']) * nominal_rps
+            nominal_vel = nominal_rps
             logger.debug(f'Testing closed loop velocity control at {nominal_rps} rounds/s...')
 
             axis_ctx.handle.controller.config.control_mode = CONTROL_MODE_VELOCITY_CONTROL
@@ -109,25 +109,26 @@ class TestClosedLoopControl(TestClosedLoopControlBase):
             
             axis_ctx.handle.controller.config.control_mode = CONTROL_MODE_POSITION_CONTROL
             axis_ctx.handle.controller.input_pos = 0
-            axis_ctx.handle.controller.config.vel_limit = float(enc_ctx.yaml['cpr']) * 5.0 # max 5 rps
+            axis_ctx.handle.controller.config.vel_limit = 5.0 # max 5 rps
             axis_ctx.handle.encoder.set_linear_count(0)
 
             request_state(axis_ctx, AXIS_STATE_CLOSED_LOOP_CONTROL)
 
             # Test small position changes
-            axis_ctx.handle.controller.input_pos = 5000
+            test_pos = 5000 / float(enc_ctx.yaml['cpr'])
+            axis_ctx.handle.controller.input_pos = test_pos
             time.sleep(0.3)
             test_assert_no_error(axis_ctx)
-            test_assert_eq(axis_ctx.handle.encoder.pos_estimate, 5000, range=2000) # large range needed because of cogging torque
-            axis_ctx.handle.controller.input_pos = -5000
+            test_assert_eq(axis_ctx.handle.encoder.pos_estimate, test_pos, range=0.4*test_pos) # large range needed because of cogging torque
+            axis_ctx.handle.controller.input_pos = -1 * test_pos
             time.sleep(0.3)
             test_assert_no_error(axis_ctx)
-            test_assert_eq(axis_ctx.handle.encoder.pos_estimate, -5000, range=2000)
+            test_assert_eq(axis_ctx.handle.encoder.pos_estimate, -1 * test_pos, range=0.4*test_pos)
             
             axis_ctx.handle.controller.input_pos = 0
             time.sleep(0.3)
 
-            nominal_vel = float(enc_ctx.yaml['cpr']) * 5.0
+            nominal_vel = 5.0
             axis_ctx.handle.controller.input_pos = nominal_vel * 2.0 # 10 turns (takes 2 seconds)
             
             # Test large position change with bounded velocity
@@ -175,16 +176,16 @@ class TestRegenProtection(TestClosedLoopControlBase):
 
     def run_test(self, axis_ctx: ODriveAxisComponent, motor_ctx: MotorComponent, enc_ctx: EncoderComponent, logger: Logger):
         with self.prepare(axis_ctx, motor_ctx, enc_ctx, logger):
-            nominal_rps = 10.0
-            nominal_vel = float(enc_ctx.yaml['cpr']) * nominal_rps
-            max_current = 15.0
+            nominal_rps = 15.0
+            nominal_vel = nominal_rps
+            max_current = 30.0
         
             # Accept a bit of noise on Ibus
             axis_ctx.parent.handle.config.dc_max_negative_current = -0.2
 
             logger.debug(f'Brake control test from {nominal_rps} rounds/s...')
             
-            axis_ctx.handle.controller.config.vel_limit = float(enc_ctx.yaml['cpr']) * 15.0 # max 15 rps
+            axis_ctx.handle.controller.config.vel_limit = 25.0 # max 15 rps
             axis_ctx.handle.motor.config.current_lim = max_current
             axis_ctx.handle.controller.config.control_mode = CONTROL_MODE_VELOCITY_CONTROL
             axis_ctx.handle.controller.config.input_mode = INPUT_MODE_PASSTHROUGH
@@ -223,9 +224,9 @@ class TestVelLimitInTorqueControl(TestClosedLoopControlBase):
     def run_test(self, axis_ctx: ODriveAxisComponent, motor_ctx: MotorComponent, enc_ctx: EncoderComponent, logger: Logger):
         with self.prepare(axis_ctx, motor_ctx, enc_ctx, logger):
             max_rps = 20.0
-            max_vel = float(enc_ctx.yaml['cpr']) * max_rps
+            max_vel = max_rps
             absolute_max_vel = max_vel * 1.2
-            max_current = 15.0
+            max_current = 30.0
             torque_constant = 0.0305 #correct for 5065 motor
 
             axis_ctx.handle.controller.config.vel_gain /= 10 # reduce the slope to make it easier to see what's going on
@@ -269,7 +270,7 @@ class TestVelLimitInTorqueControl(TestClosedLoopControlBase):
 
             # Shrink the operating envelope while motor is moving faster than the envelope allows
             max_rps = 5.0
-            max_vel = float(enc_ctx.yaml['cpr']) * max_rps
+            max_vel = max_rps
             axis_ctx.handle.controller.config.vel_limit = max_vel
 
             # Move the system around its operating envelope
@@ -283,7 +284,7 @@ class TestVelLimitInTorqueControl(TestClosedLoopControlBase):
             dataB = np.concatenate([dataB, record_log(data_getter, duration=1.0)])
 
             # Try the shrink maneuver again at positive velocity
-            axis_ctx.handle.controller.config.vel_limit = 20.0 * float(enc_ctx.yaml['cpr'])
+            axis_ctx.handle.controller.config.vel_limit = 20.0
             axis_ctx.handle.controller.input_torque = 4.0 * torque_constant
             time.sleep(0.5)
             axis_ctx.handle.controller.config.vel_limit = max_vel
@@ -305,13 +306,13 @@ class TestTorqueLimit(TestClosedLoopControlBase):
     def run_test(self, axis_ctx: ODriveAxisComponent, motor_ctx: MotorComponent, enc_ctx: EncoderComponent, logger: Logger):
         with self.prepare(axis_ctx, motor_ctx, enc_ctx, logger):
             max_rps = 15.0
-            max_vel = max_rps * float(enc_ctx.yaml['cpr'])
+            max_vel = max_rps
             max_current = 30.0
             max_torque = 0.1 # must be less than max_current * torque_constant.
             torque_constant = axis_ctx.handle.motor.config.torque_constant
 
-            test_pos = 5 * float(enc_ctx.yaml['cpr'])
-            test_vel = 10 * float(enc_ctx.yaml['cpr'])
+            test_pos = 5
+            test_vel = 10
             test_torque = 0.5
 
             axis_ctx.handle.controller.config.vel_limit = max_vel
