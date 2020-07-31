@@ -27,6 +27,7 @@ public:
         MODE_SPI_ABS_CUI = 0x100,   //!< compatible with CUI AMT23xx
         MODE_SPI_ABS_AMS = 0x101,   //!< compatible with AMS AS5047P, AS5048A/AS5048B (no daisy chain support)
         MODE_SPI_ABS_AEAT = 0x102,  //!< not yet implemented
+        MODE_SPI_ABS_RLS = 0x103,
     };
     const uint32_t MODE_FLAG_ABS = 0x100;
 
