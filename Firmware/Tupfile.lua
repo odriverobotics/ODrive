@@ -6,17 +6,15 @@ tup.include('build.lua')
 -- command "python --version" does not open the Microsoft Store.
 -- On some systems this may return a python2 command if Python3 is not installed.
 function find_python3()
-    success, python_version = run_now("python --version")
+    success, python_version = run_now("python --version 2>&1")
     if success and string.match(python_version, "Python 3") then return "python -B" end
-    success, python_version = run_now("python3 --version")
+    success, python_version = run_now("python3 --version 2>&1")
     if success and string.match(python_version, "Python 3") then return "python3 -B" end
     error("Python 3 not found.")
 end
 
 python_command = find_python3()
 print('Using python command "'..python_command..'"')
-
-run_now("")
 
 tup.frule{inputs={'fibre/cpp/interfaces_template.j2'}, command=python_command..' interface_generator_stub.py --definitions odrive-interface.yaml --template %f --output %o', outputs='autogen/interfaces.hpp'}
 tup.frule{inputs={'fibre/cpp/function_stubs_template.j2'}, command=python_command..' interface_generator_stub.py --definitions odrive-interface.yaml --template %f --output %o', outputs='autogen/function_stubs.hpp'}
