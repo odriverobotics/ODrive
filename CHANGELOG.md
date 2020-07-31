@@ -30,6 +30,7 @@ Please add a note of your changes below this heading if you make a Pull Request.
 * Added scripts for building via docker.
 * Added ability to change uart baudrate via fibre
 * Introduced `odrive-interface.yaml` as a root source for the ODrive's API. `odrivetool` connects much faster as a side effect.
+* Added torque_constant and torque_lim to motor config
 
 ### Changed
 * Changed ratiometric `motor.config.current_lim_tolerance` to absolute `motor.config.current_lim_margin`
@@ -45,6 +46,7 @@ Please add a note of your changes below this heading if you make a Pull Request.
 * `axis.motor.thermal_current_lim` has been removed. Instead a new property is available `axis.motor.effective_current_lim` which contains the effective current limit including any thermal limits.
 * `axis.motor.get_inverter_temp()`, `axis.motor.inverter_temp_limit_lower` and `axis.motor.inverter_temp_limit_upper` have been moved to seperate fet thermistor object under `axis.fet_thermistor`. `get_inverter_temp()` function has been renamed to `temp` and is now a read-only property.
 * Fixed a numerical issue in the trajectory planner that could cause sudden jumps of the position setpoint
+* `input_pos`, `input_vel`, `pos_estimate_linear`, `pos_estimate_circular`, are now in units of [turns] or [turns/s] instead of [counts] or [counts/s]
 
 # Releases
 ## [0.4.12] - 2020-05-06
