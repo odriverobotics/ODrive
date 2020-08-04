@@ -924,6 +924,9 @@ valuetypes:
       SpiAbsAeat:
         value: 0x102
         doc: not yet implemented
+      SpiAbsRls:
+        value: 0x103
+        doc: RLS Encoders
 
   ODrive.Controller.ControlMode:
     values:

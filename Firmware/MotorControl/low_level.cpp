@@ -28,8 +28,8 @@
 /* Private macros ------------------------------------------------------------*/
 /* Private typedef -----------------------------------------------------------*/
 /* Global constant data ------------------------------------------------------*/
-const float adc_full_scale = (float)(1 << 12);
-const float adc_ref_voltage = 3.3f;
+constexpr float adc_full_scale = static_cast<float>(1UL << 12UL);
+constexpr float adc_ref_voltage = 3.3f;
 /* Global variables ----------------------------------------------------------*/
 
 // This value is updated by the DC-bus reading ADC.
@@ -454,7 +454,7 @@ float get_adc_voltage_channel(uint16_t channel)
 //--------------------------------
 
 void vbus_sense_adc_cb(ADC_HandleTypeDef* hadc, bool injected) {
-    static const float voltage_scale = adc_ref_voltage * VBUS_S_DIVIDER_RATIO / adc_full_scale;
+    constexpr float voltage_scale = adc_ref_voltage * VBUS_S_DIVIDER_RATIO / adc_full_scale;
     // Only one conversion in sequence, so only rank1
     uint32_t ADCValue = HAL_ADCEx_InjectedGetValue(hadc, ADC_INJECTED_RANK_1);
     vbus_voltage = ADCValue * voltage_scale;
@@ -493,7 +493,7 @@ static void decode_hall_samples(Encoder& enc, uint16_t GPIO_samples[num_GPIO]) {
 // TODO: Document how the phasing is done, link to timing diagram
 void pwm_trig_adc_cb(ADC_HandleTypeDef* hadc, bool injected) {
 #define calib_tau 0.2f  //@TOTO make more easily configurable
-    static const float calib_filter_k = CURRENT_MEAS_PERIOD / calib_tau;
+    constexpr float calib_filter_k = CURRENT_MEAS_PERIOD / calib_tau;
 
     // Ensure ADCs are expected ones to simplify the logic below
     if (!(hadc == &hadc2 || hadc == &hadc3)) {

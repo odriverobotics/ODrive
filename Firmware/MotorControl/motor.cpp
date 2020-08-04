@@ -73,9 +73,9 @@ void Motor::DRV8301_setup() {
 
     // Solve for exact gain, then snap down to have equal or larger range as requested
     // or largest possible range otherwise
-    static const float kMargin = 0.90f;
-    static const float kTripMargin = 1.0f; // Trip level is at edge of linear range of amplifer
-    static const float max_output_swing = 1.35f; // [V] out of amplifier
+    constexpr float kMargin = 0.90f;
+    constexpr float kTripMargin = 1.0f; // Trip level is at edge of linear range of amplifer
+    constexpr float max_output_swing = 1.35f; // [V] out of amplifier
     float max_unity_gain_current = kMargin * max_output_swing * hw_config_.shunt_conductance; // [A]
     float requested_gain = max_unity_gain_current / config_.requested_current_range; // [V/V]
 

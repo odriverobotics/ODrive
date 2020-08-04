@@ -4,7 +4,7 @@
 
 #include <cstring>
 
-static const uint8_t NUM_NODE_ID_BITS = 6;
+static constexpr uint8_t NUM_NODE_ID_BITS = 6;
 static constexpr uint8_t NUM_CMD_ID_BITS = 11 - NUM_NODE_ID_BITS;
 
 void CANSimple::handle_can_message(can_Message_t& msg) {

@@ -181,8 +181,8 @@ bool Encoder::run_direction_find() {
 // and the encoder state 0.
 // TODO: Do the scan with current, not voltage!
 bool Encoder::run_offset_calibration() {
-    static const float start_lock_duration = 1.0f;
-    static const int num_steps = (int)(config_.calib_scan_distance / config_.calib_scan_omega * (float)current_meas_hz);
+    const float start_lock_duration = 1.0f;
+    const int num_steps = (int)(config_.calib_scan_distance / config_.calib_scan_omega * (float)current_meas_hz);
 
     // Require index found if enabled
     if (config_.use_index && !index_found_) {
@@ -311,6 +311,7 @@ void Encoder::sample_now() {
         case MODE_SPI_ABS_AMS:
         case MODE_SPI_ABS_CUI:
         case MODE_SPI_ABS_AEAT:
+        case MODE_SPI_ABS_RLS:
         {
             axis_->motor_.log_timing(TIMING_LOG_SAMPLE_NOW);
             // Do nothing
@@ -400,6 +401,11 @@ void Encoder::abs_spi_cb(){
             pos = rawVal & 0x3fff;
         } break;
 
+        case MODE_SPI_ABS_RLS: {
+            uint16_t rawVal = abs_spi_dma_rx_[0];
+            pos = (rawVal >> 2) & 0x3fff;
+        } break;
+
         default: {
            set_error(ERROR_UNSUPPORTED_ENCODER_MODE);
            return;
@@ -470,6 +476,7 @@ bool Encoder::update() {
                 delta_enc -= 6283;
         } break;
         
+        case MODE_SPI_ABS_RLS:
         case MODE_SPI_ABS_AMS:
         case MODE_SPI_ABS_CUI: 
         case MODE_SPI_ABS_AEAT: {

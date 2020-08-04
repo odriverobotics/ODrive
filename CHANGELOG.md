@@ -1,6 +1,8 @@
 # Unreleased Features
 Please add a note of your changes below this heading if you make a Pull Request.
 
+# Releases
+## [0.5.0] - 2020-08-03
 ### Added
 * AC Induction Motor support.
   * Tracking of rotor flux through rotor time constant
@@ -48,7 +50,6 @@ Please add a note of your changes below this heading if you make a Pull Request.
 * Fixed a numerical issue in the trajectory planner that could cause sudden jumps of the position setpoint
 * `input_pos`, `input_vel`, `pos_estimate_linear`, `pos_estimate_circular`, are now in units of [turns] or [turns/s] instead of [counts] or [counts/s]
 
-# Releases
 ## [0.4.12] - 2020-05-06
 ### Fixed
 * Fixed a numerical issue in the trajectory planner that could cause sudden jumps of the position setpoint
