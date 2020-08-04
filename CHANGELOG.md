@@ -1,6 +1,21 @@
 # Unreleased Features
 Please add a note of your changes below this heading if you make a Pull Request.
 
+# Release Candidate
+## [0.5.1] - Date TBD
+### Added
+* Added motor `torque_constant`: units of torque are now [Nm] instead of just motor current.
+* [Motor thermistors support](docs/thermistors.md)
+* Enable/disable of thermistor thermal limits according `setting axis.<thermistor>.enabled`.
+* Introduced `odrive-interface.yaml` as a root source for the ODrive's API. `odrivetool` connects much faster as a side effect.
+* Added torque_constant and torque_lim to motor config
+
+### Changed
+* **`input_pos`, `input_vel`, `pos_estimate_linear`, `pos_estimate_circular`, are now in units of [turns] or [turns/s] instead of [counts] or [counts/s]**
+* `axis.motor.thermal_current_lim` has been removed. Instead a new property is available `axis.motor.effective_current_lim` which contains the effective current limit including any thermal limits.
+* `axis.motor.get_inverter_temp()`, `axis.motor.inverter_temp_limit_lower` and `axis.motor.inverter_temp_limit_upper` have been moved to seperate fet thermistor object under `axis.fet_thermistor`. `get_inverter_temp()` function has been renamed to `temp` and is now a read-only property.
+
+
 # Releases
 ## [0.5.0] - 2020-08-03
 ### Added
@@ -19,8 +34,6 @@ Please add a note of your changes below this heading if you make a Pull Request.
 * [Preliminary support for Absolute Encoders](docs/encoders.md)
 * [Preliminary support for endstops and homing](docs/endstops.md)
 * [CAN Communication with CANSimple stack](can-protocol.md)
-* [Motor thermistors support](docs/thermistors.md)
-* Enable/disable of thermistor thermal limits according `setting axis.<thermistor>.enabled`.
 * Gain scheduling for anti-hunt when close to 0 position error
 * Velocity Limiting in Current Control mode according to `vel_limit` and `vel_gain`
 * Regen current limiting according to `max_regen_current`, in Amps
@@ -31,8 +44,6 @@ Please add a note of your changes below this heading if you make a Pull Request.
 * Using an STM32F405 .svd file allows CortexDebug to view registers during debugging
 * Added scripts for building via docker.
 * Added ability to change uart baudrate via fibre
-* Introduced `odrive-interface.yaml` as a root source for the ODrive's API. `odrivetool` connects much faster as a side effect.
-* Added torque_constant and torque_lim to motor config
 
 ### Changed
 * Changed ratiometric `motor.config.current_lim_tolerance` to absolute `motor.config.current_lim_margin`
@@ -45,10 +56,8 @@ Please add a note of your changes below this heading if you make a Pull Request.
 * Added JSON caching to Fibre. This drastically reduces the time odrivetool needs to connect to an ODrive (except for the first time or after firmware updates).
 * Fix IPython `RuntimeWarning` that would occur every time `odrivetool` was started.
 * Reboot on `erase_configuration()`. This avoids unexpected behavior of a subsequent `save_configuration()` call, since the configuration is only erased from NVM, not from RAM.
-* `axis.motor.thermal_current_lim` has been removed. Instead a new property is available `axis.motor.effective_current_lim` which contains the effective current limit including any thermal limits.
-* `axis.motor.get_inverter_temp()`, `axis.motor.inverter_temp_limit_lower` and `axis.motor.inverter_temp_limit_upper` have been moved to seperate fet thermistor object under `axis.fet_thermistor`. `get_inverter_temp()` function has been renamed to `temp` and is now a read-only property.
+* Change `motor.get_inverter_temp()` to use a property which was already being sampled at `motor.inverter_temp`
 * Fixed a numerical issue in the trajectory planner that could cause sudden jumps of the position setpoint
-* `input_pos`, `input_vel`, `pos_estimate_linear`, `pos_estimate_circular`, are now in units of [turns] or [turns/s] instead of [counts] or [counts/s]
 
 ## [0.4.12] - 2020-05-06
 ### Fixed
