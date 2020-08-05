@@ -28,7 +28,7 @@ public:
     }
 
     bool read() {
-        return port_ && (HAL_GPIO_ReadPin(port_, pin_mask_) != GPIO_PIN_RESET);
+        return port_ && (port_->IDR & pin_mask_);
     }
 
     /**
