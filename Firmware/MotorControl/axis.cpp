@@ -118,10 +118,12 @@ bool Axis::wait_for_current_meas() {
 
 // step/direction interface
 void Axis::step_cb() {
-    const bool dir_pin = dir_port_->IDR & dir_pin_;
-    const int32_t dir = (-1 + 2 * dir_pin) * step_dir_active_;
-    controller_.input_pos_ += dir * config_.turns_per_step;
-    controller_.input_pos_updated();
+    if (step_dir_active_) {
+        const bool dir_pin = (dir_port_->IDR & dir_pin_);
+        const float dir = dir_pin ? 1.0f : -1.0f;
+        controller_.input_pos_ += dir * config_.turns_per_step;
+        controller_.input_pos_updated();
+    }
 };
 
 void Axis::load_default_step_dir_pin_config(
