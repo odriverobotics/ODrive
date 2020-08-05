@@ -130,12 +130,10 @@ bool Axis::wait_for_current_meas() {
 
 // step/direction interface
 void Axis::step_cb() {
-    if (step_dir_active_) {
-        bool dir_pin = dir_gpio_.read();
-        float dir = dir_pin ? 1.0f : -1.0f;
-        controller_.input_pos_ += dir * config_.counts_per_step;
-        controller_.input_pos_updated();
-    }
+    const bool dir_pin = dir_gpio_.read();
+    const int32_t dir = (-1 + 2 * dir_pin) * step_dir_active_;
+    controller_.input_pos_ += dir * config_.turns_per_step;
+    controller_.input_pos_updated();
 }
 
 void Axis::decode_step_dir_pins() {
@@ -298,7 +296,8 @@ bool Axis::run_lockin_spin(const LockinConfig_t &lockin_config) {
 
 // Note run_sensorless_control_loop and run_closed_loop_control_loop are very similar and differ only in where we get the estimate from.
 bool Axis::run_sensorless_control_loop() {
-    controller_.pos_estimate_src_ = nullptr;
+    controller_.pos_estimate_linear_src_ = nullptr;
+    controller_.pos_estimate_circular_src_ = nullptr;
     controller_.pos_estimate_valid_src_ = nullptr;
     controller_.vel_estimate_src_ = &sensorless_estimator_.vel_estimate_;
     controller_.vel_estimate_valid_src_ = &sensorless_estimator_.vel_estimate_valid_;
@@ -321,9 +320,25 @@ bool Axis::run_closed_loop_control_loop() {
     }
 
     // To avoid any transient on startup, we intialize the setpoint to be the current position
-    // TODO: Also do this for circular position mode
-    controller_.pos_setpoint_ = *controller_.pos_estimate_src_;
-    controller_.input_pos_ = *controller_.pos_estimate_src_;
+    if (controller_.config_.circular_setpoints) {
+        if (!controller_.pos_estimate_circular_src_) {
+            return error_ |= ERROR_CONTROLLER_FAILED, false;
+        }
+        else {
+            controller_.pos_setpoint_ = *controller_.pos_estimate_circular_src_;
+            controller_.input_pos_ = *controller_.pos_estimate_circular_src_;
+        }
+    }
+    else {
+        if (!controller_.pos_estimate_linear_src_) {
+            return error_ |= ERROR_CONTROLLER_FAILED, false;
+        }
+        else {
+            controller_.pos_setpoint_ = *controller_.pos_estimate_linear_src_;
+            controller_.input_pos_ = *controller_.pos_estimate_linear_src_;
+        }
+    }
+    controller_.input_pos_updated();
 
     // Avoid integrator windup issues
     controller_.vel_integrator_torque_ = 0.0f;
@@ -335,7 +350,7 @@ bool Axis::run_closed_loop_control_loop() {
         if (!controller_.update(&torque_setpoint))
             return error_ |= ERROR_CONTROLLER_FAILED, false;
 
-        float phase_vel = 2 * M_PI * encoder_.vel_estimate_ / (float)encoder_.config_.cpr * motor_.config_.pole_pairs;
+        float phase_vel = (2*M_PI) * encoder_.vel_estimate_ * motor_.config_.pole_pairs;
         if (!motor_.update(torque_setpoint, encoder_.phase_, phase_vel))
             return false; // set_error should update axis.error_
 
@@ -373,7 +388,23 @@ bool Axis::run_homing() {
     }
     
     // To avoid any transient on startup, we intialize the setpoint to be the current position
-    controller_.pos_setpoint_ = *controller_.pos_estimate_src_;
+    // note - input_pos_ is not set here. It is set to 0 earlier in this method and velocity control is used.
+    if (controller_.config_.circular_setpoints) {
+        if (!controller_.pos_estimate_circular_src_) {
+            return error_ |= ERROR_CONTROLLER_FAILED, false;
+        }
+        else {
+            controller_.pos_setpoint_ = *controller_.pos_estimate_circular_src_;
+        }
+    }
+    else {
+        if (!controller_.pos_estimate_linear_src_) {
+            return error_ |= ERROR_CONTROLLER_FAILED, false;
+        }
+        else {
+            controller_.pos_setpoint_ = *controller_.pos_estimate_linear_src_;
+        }
+    }
 
     // Avoid integrator windup issues
     controller_.vel_integrator_torque_ = 0.0f;
@@ -384,7 +415,7 @@ bool Axis::run_homing() {
         if (!controller_.update(&torque_setpoint))
             return error_ |= ERROR_CONTROLLER_FAILED, false;
 
-        float phase_vel = 2 * M_PI * encoder_.vel_estimate_ / (float)encoder_.config_.cpr * motor_.config_.pole_pairs;
+        float phase_vel = (2*M_PI) * encoder_.vel_estimate_ * motor_.config_.pole_pairs;
         if (!motor_.update(torque_setpoint, encoder_.phase_, phase_vel))
             return false; // set_error should update axis.error_
 
@@ -413,7 +444,7 @@ bool Axis::run_homing() {
         if (!controller_.update(&torque_setpoint))
             return error_ |= ERROR_CONTROLLER_FAILED, false;
 
-        float phase_vel = 2 * M_PI * encoder_.vel_estimate_ / (float)encoder_.config_.cpr * motor_.config_.pole_pairs;
+        float phase_vel = (2*M_PI) * encoder_.vel_estimate_ * motor_.config_.pole_pairs;
         if (!motor_.update(torque_setpoint, encoder_.phase_, phase_vel))
             return false; // set_error should update axis.error_
 

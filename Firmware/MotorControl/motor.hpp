@@ -53,7 +53,7 @@ public:
     };
 
     // NOTE: for gimbal motors, all units of Nm are instead V.
-    // example: vel_gain is [V/(count/s)] instead of [Nm/(count/s)]
+    // example: vel_gain is [V/(turn/s)] instead of [Nm/(turn/s)]
     // example: current_lim and calibration_current will instead determine the maximum voltage applied to the motor.
     struct Config_t {
         bool pre_calibrated = false; // can be set to true to indicate that all values here are valid

@@ -399,7 +399,7 @@ interfaces:
               This is ignored if enable_step_dir is false.
               This setting only takes effect on a state transition
               into idle or out of closed loop control.
-          counts_per_step: float32
+          turns_per_step: float32
           watchdog_timeout:
             type: float32
             unit: s
@@ -688,9 +688,8 @@ interfaces:
         flags:
           Overspeed:
             doc: |
-              Try increasing `config.vel_limit`. The default of 20,000 encoder
-              counts per second gives a motor speed of only ~146 RPM with the
-              common CUI-AMT102 8192 count per rotation encoder. Note: Even if
+              Try increasing `config.vel_limit`. The default of 2 turns per second 
+              gives a motor speed of only 120 RPM. Note: Even if
               you do not commanded your motor to exceed `config.vel_limit`
               sudden changes in the load placed on a motor may cause this speed
               to be temporarily exceeded, resulting in this error.
@@ -704,8 +703,13 @@ interfaces:
           InvalidMirrorAxis:
           InvalidLoadEncoder:
           InvalidEstimate:
-      input_pos: {type: float32, c_setter: set_input_pos}
-      input_vel: float32
+      input_pos:
+        type: float32
+        unit: turn
+        c_setter: set_input_pos
+      input_vel:
+        type: float32
+        unit: turn/s
       input_torque: float32
       pos_setpoint: readonly float32
       vel_setpoint: readonly float32
@@ -727,16 +731,16 @@ interfaces:
           input_mode: InputMode
           pos_gain:
             type: float32
-            unit: (counts/s) / counts
+            unit: (turn/s) / turn
           vel_gain:
             type: float32
-            unit: 'A/(counts/s) (or A/(rad/s) in sensorless mode'
+            unit: 'Nm/(turn/s)'
           vel_integrator_gain:
             type: float32
-            unit: A/(counts/s * s)
+            unit: Nm/(turn/s * s)
           vel_limit:
             type: float32
-            unit: counts/s
+            unit: turn/s
             doc: Infinity to disable.
           vel_limit_tolerance:
             type: float32
@@ -745,12 +749,17 @@ interfaces:
           torque_ramp_rate:
             type: float32
             unit: Nm / sec
+          circular_setpoints:
+            type: bool
+          circular_setpoint_range:
+            type: float32
+            doc: circular range in [turns] for position setpoints when circular_setpoints is True
           homing_speed:
             type: float32
-            unit: counts/s
+            unit: turns/s
           inertia:
             type: float32
-            unit: A/(count/s^2)
+            unit: Nm/(turn/s^2)
           axis_to_mirror: uint8
           mirror_ratio: float32
           load_encoder_axis:
@@ -823,9 +832,13 @@ interfaces:
       interpolation: readonly float32
       phase: readonly float32
       pos_estimate: readonly float32
+      pos_estimate_counts: readonly float32
       pos_cpr: readonly float32
+      pos_cpr_counts: readonly float32
+      pos_circular: readonly float32
       hall_state: readonly uint8
       vel_estimate: readonly float32
+      vel_estimate_counts: readonly float32
       calib_scan_response: readonly float32
       pos_abs: int32
       spi_error_rate: readonly float32
@@ -1005,6 +1018,9 @@ valuetypes:
       SpiAbsAeat:
         value: 0x102
         doc: not yet implemented
+      SpiAbsRls:
+        value: 0x103
+        doc: RLS Encoders
 
   ODrive.Controller.ControlMode:
     values:
@@ -1037,8 +1053,8 @@ valuetypes:
         brief: Ramps a velocity command from the current value to the target value.
         doc: |
           ### Configuration Values:
-          * `config.vel_ramp_rate` [cpr/sec]
-          * `config.inertia` [A/(count/s^2))]
+          * `config.vel_ramp_rate` [turn/sec]
+          * `config.inertia` [Nm/(turn/s^2))]
 
           ### Valid inputs:
           * `input_vel`

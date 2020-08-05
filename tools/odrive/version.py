@@ -11,8 +11,13 @@ def version_str_to_tuple(version_string):
     (major, minor, revision, prerelease)
 
     Example: "fw-v0.3.6-23" => (0, 3, 6, True)
+
+    If version_string does not match the pattern above, this function throws an
+    Exception.
     """
-    regex=r'.*v([0-9a-zA-Z]+).([0-9a-zA-Z]+).([0-9a-zA-Z]+)(.*)'
+    regex=r'.*v([0-9]+)\.([0-9]+)\.([0-9]+)(.*)'
+    if not re.match(regex, version_string):
+        raise Exception()
     return (int(re.sub(regex, r"\1", version_string)),
             int(re.sub(regex, r"\2", version_string)),
             int(re.sub(regex, r"\3", version_string)),

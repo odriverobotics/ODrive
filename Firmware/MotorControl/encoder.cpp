@@ -137,7 +137,7 @@ void Encoder::set_linear_count(int32_t count) {
 
     // Update states
     shadow_count_ = count;
-    pos_estimate_ = (float)count;
+    pos_estimate_counts_ = (float)count;
     tim_cnt_sample_ = count;
 
     //Write hardware last
@@ -159,7 +159,7 @@ void Encoder::set_circular_count(int32_t count, bool update_offset) {
 
     // Update states
     count_in_cpr_ = mod(count, config_.cpr);
-    pos_cpr_ = (float)count_in_cpr_;
+    pos_cpr_counts_ = (float)count_in_cpr_;
 
     cpu_exit_critical(prim);
 }
@@ -208,8 +208,8 @@ bool Encoder::run_direction_find() {
 // and the encoder state 0.
 // TODO: Do the scan with current, not voltage!
 bool Encoder::run_offset_calibration() {
-    static const float start_lock_duration = 1.0f;
-    static const int num_steps = (int)(config_.calib_scan_distance / config_.calib_scan_omega * (float)current_meas_hz);
+    const float start_lock_duration = 1.0f;
+    const int num_steps = (int)(config_.calib_scan_distance / config_.calib_scan_omega * (float)current_meas_hz);
 
     // Require index found if enabled
     if (config_.use_index && !index_found_) {
@@ -338,6 +338,7 @@ void Encoder::sample_now() {
         case MODE_SPI_ABS_AMS:
         case MODE_SPI_ABS_CUI:
         case MODE_SPI_ABS_AEAT:
+        case MODE_SPI_ABS_RLS:
         {
             axis_->motor_.log_timing(TIMING_LOG_SAMPLE_NOW);
             // Do nothing
@@ -432,6 +433,11 @@ void Encoder::abs_spi_cb(bool success) {
             pos = rawVal & 0x3fff;
         } break;
 
+        case MODE_SPI_ABS_RLS: {
+            uint16_t rawVal = abs_spi_dma_rx_[0];
+            pos = (rawVal >> 2) & 0x3fff;
+        } break;
+
         default: {
            set_error(ERROR_UNSUPPORTED_ENCODER_MODE);
            goto done;
@@ -496,6 +502,7 @@ bool Encoder::update() {
                 delta_enc -= 6283;
         } break;
         
+        case MODE_SPI_ABS_RLS:
         case MODE_SPI_ABS_AMS:
         case MODE_SPI_ABS_CUI: 
         case MODE_SPI_ABS_AEAT: {
@@ -532,22 +539,31 @@ bool Encoder::update() {
 
     //// run pll (for now pll is in units of encoder counts)
     // Predict current pos
-    pos_estimate_ += current_meas_period * vel_estimate_;
-    pos_cpr_      += current_meas_period * vel_estimate_;
+    pos_estimate_counts_ += current_meas_period * vel_estimate_counts_;
+    pos_cpr_counts_      += current_meas_period * vel_estimate_counts_;
     // discrete phase detector
-    float delta_pos = (float)(shadow_count_ - (int32_t)std::floor(pos_estimate_));
-    float delta_pos_cpr = (float)(count_in_cpr_ - (int32_t)std::floor(pos_cpr_));
-    delta_pos_cpr = wrap_pm(delta_pos_cpr, 0.5f * (float)(config_.cpr));
+    float delta_pos_counts = (float)(shadow_count_ - (int32_t)std::floor(pos_estimate_counts_));
+    float delta_pos_cpr_counts = (float)(count_in_cpr_ - (int32_t)std::floor(pos_cpr_counts_));
+    delta_pos_cpr_counts = wrap_pm(delta_pos_cpr_counts, 0.5f * (float)(config_.cpr));
     // pll feedback
-    pos_estimate_ += current_meas_period * pll_kp_ * delta_pos;
-    pos_cpr_ += current_meas_period * pll_kp_ * delta_pos_cpr;
-    pos_cpr_ = fmodf_pos(pos_cpr_, (float)(config_.cpr));
-    vel_estimate_ += current_meas_period * pll_ki_ * delta_pos_cpr;
+    pos_estimate_counts_ += current_meas_period * pll_kp_ * delta_pos_counts;
+    pos_cpr_counts_ += current_meas_period * pll_kp_ * delta_pos_cpr_counts;
+    pos_cpr_counts_ = fmodf_pos(pos_cpr_counts_, (float)(config_.cpr));
+    vel_estimate_counts_ += current_meas_period * pll_ki_ * delta_pos_cpr_counts;
     bool snap_to_zero_vel = false;
-    if (std::abs(vel_estimate_) < 0.5f * current_meas_period * pll_ki_) {
-        vel_estimate_ = 0.0f;  //align delta-sigma on zero to prevent jitter
+    if (std::abs(vel_estimate_counts_) < 0.5f * current_meas_period * pll_ki_) {
+        vel_estimate_counts_ = 0.0f;  //align delta-sigma on zero to prevent jitter
         snap_to_zero_vel = true;
     }
+
+    // Outputs from Encoder for Controller
+    float pos_cpr_last = pos_cpr_;
+    pos_estimate_ = pos_estimate_counts_ / (float)config_.cpr;
+    vel_estimate_ = vel_estimate_counts_ / (float)config_.cpr;
+    pos_cpr_= pos_cpr_counts_ / (float)config_.cpr;
+    float delta_pos_cpr = wrap_pm(pos_cpr_ - pos_cpr_last, 0.5f);
+    pos_circular_ += delta_pos_cpr;
+    pos_circular_ = fmodf_pos(pos_circular_, axis_->controller_.config_.circular_setpoint_range);
 
     //// run encoder count interpolation
     int32_t corrected_enc = count_in_cpr_ - config_.offset;
@@ -562,7 +578,7 @@ bool Encoder::update() {
         interpolation_ = 1.0f;
     } else {
         // Interpolate (predict) between encoder counts using vel_estimate,
-        interpolation_ += current_meas_period * vel_estimate_;
+        interpolation_ += current_meas_period * vel_estimate_counts_;
         // don't allow interpolation indicated position outside of [enc, enc+1)
         if (interpolation_ > 1.0f) interpolation_ = 1.0f;
         if (interpolation_ < 0.0f) interpolation_ = 0.0f;

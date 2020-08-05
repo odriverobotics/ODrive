@@ -5,6 +5,7 @@ import struct
 import can
 import asyncio
 import time
+import math
 
 from fibre.utils import Logger
 from odrive.enums import *
@@ -24,14 +25,14 @@ command_set = {
     'get_encoder_estimates': (0x009, [('encoder_pos_estimate', 'f', 1), ('encoder_vel_estimate', 'f', 1)]), # partially tested
     'get_encoder_count': (0x00a, [('encoder_shadow_count', 'i', 1), ('encoder_count', 'i', 1)]), # partially tested
     'set_controller_modes': (0x00b, [('control_mode', 'i', 1), ('input_mode', 'i', 1)]), # tested
-    'set_input_pos': (0x00c, [('input_pos', 'i', 1), ('vel_ff', 'h', 0.1), ('cur_ff', 'h', 0.01)]), # tested
-    'set_input_vel': (0x00d, [('input_vel', 'i', 0.01), ('cur_ff', 'h', 0.01)]), # tested
-    'set_input_torque': (0x00e, [('input_torque', 'i', 0.01)]), # tested
+    'set_input_pos': (0x00c, [('input_pos', 'f', 1), ('vel_ff', 'h', 0.001), ('torque_ff', 'h', 0.001)]), # tested
+    'set_input_vel': (0x00d, [('input_vel', 'f', 1), ('torque_ff', 'f', 1)]), # tested
+    'set_input_torque': (0x00e, [('input_torque', 'f', 1)]), # tested
     'set_velocity_limit': (0x00f, [('velocity_limit', 'f', 1)]), # tested
     'start_anticogging': (0x010, []), # untested
     'set_traj_vel_limit': (0x011, [('traj_vel_limit', 'f', 1)]), # tested
     'set_traj_accel_limits': (0x012, [('traj_accel_limit', 'f', 1), ('traj_decel_limit', 'f', 1)]), # tested
-    'set_traj_a_per_css': (0x013, [('a_per_css', 'f', 1)]), # tested
+    'set_traj_inertia': (0x013, [('inertia', 'f', 1)]), # tested
     'get_iq': (0x014, [('iq_setpoint', 'f', 1), ('iq_measured', 'f', 1)]), # untested
     'get_sensorless_estimates': (0x015, [('sensorless_pos_estimate', 'f', 1), ('sensorless_vel_estimate', 'f', 1)]), # untested
     'reboot': (0x016, []), # tested
@@ -143,7 +144,7 @@ class TestSimpleCAN():
         test_assert_eq(axis.error, AXIS_ERROR_NONE)
 
         axis.encoder.set_linear_count(123)
-        test_assert_eq(my_req('get_encoder_estimates')['encoder_pos_estimate'], 123.0, accuracy=0.01)
+        test_assert_eq(my_req('get_encoder_estimates')['encoder_pos_estimate'], 123.0 / axis.encoder.config.cpr, accuracy=0.01)
         test_assert_eq(my_req('get_encoder_count')['encoder_shadow_count'], 123.0, accuracy=0.01)
 
         my_cmd('clear_errors')
@@ -177,26 +178,26 @@ class TestSimpleCAN():
         axis.controller.input_pos = 1234
         axis.controller.input_vel = 1234
         axis.controller.input_torque = 1234
-        my_cmd('set_input_pos', input_pos=1, vel_ff=2, cur_ff=3)
+        my_cmd('set_input_pos', input_pos=1.23, vel_ff=1.2, torque_ff=3.4)
         fence()
-        test_assert_eq(axis.controller.input_pos, 1.0, range=0.1)
-        test_assert_eq(axis.controller.input_vel, 2.0, range=0.01)
-        test_assert_eq(axis.controller.input_torque, 3.0, range=0.001)
+        test_assert_eq(axis.controller.input_pos, 1.23, range=0.1)
+        test_assert_eq(axis.controller.input_vel, 1.2, range=0.01)
+        test_assert_eq(axis.controller.input_torque, 3.4, range=0.001)
 
         axis.controller.config.control_mode = CONTROL_MODE_VELOCITY_CONTROL
-        my_cmd('set_input_vel', input_vel=-10.0, cur_ff=30.1234)
+        my_cmd('set_input_vel', input_vel=-10.5, torque_ff=0.1234)
         fence()
-        test_assert_eq(axis.controller.input_vel, -10.0, range=0.01)
-        test_assert_eq(axis.controller.input_torque, 30.1234, range=0.01)
+        test_assert_eq(axis.controller.input_vel, -10.5, range=0.01)
+        test_assert_eq(axis.controller.input_torque, 0.1234, range=0.01)
 
         axis.controller.config.control_mode = CONTROL_MODE_TORQUE_CONTROL
         my_cmd('set_input_torque', input_torque=0.1)
         fence()
         test_assert_eq(axis.controller.input_torque, 0.1, range=0.01)
 
-        my_cmd('set_velocity_limit', velocity_limit=23456.78)
+        my_cmd('set_velocity_limit', velocity_limit=2.345678)
         fence()
-        test_assert_eq(axis.controller.config.vel_limit, 23456.78, range=0.001)
+        test_assert_eq(axis.controller.config.vel_limit, 2.345678, range=0.001)
 
         my_cmd('set_traj_vel_limit', traj_vel_limit=123.456)
         fence()
@@ -207,7 +208,7 @@ class TestSimpleCAN():
         test_assert_eq(axis.trap_traj.config.accel_limit, 98.231, range=0.0001)
         test_assert_eq(axis.trap_traj.config.decel_limit, -12.234, range=0.0001)
 
-        my_cmd('set_traj_a_per_css', a_per_css=55.086)
+        my_cmd('set_traj_inertia', inertia=55.086)
         fence()
         test_assert_eq(axis.controller.config.inertia, 55.086, range=0.0001)
 
@@ -231,7 +232,6 @@ class TestSimpleCAN():
         odrive.handle = None
         time.sleep(2.0)
         odrive.prepare(logger)
-
 
 if __name__ == '__main__':
     test_runner.run(TestSimpleCAN())

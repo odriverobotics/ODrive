@@ -47,7 +47,7 @@ public:
                                          //<! This setting only takes effect on a state transition
                                          //<! into idle or out of closed loop control.
 
-        float counts_per_step = 2.0f;
+        float turns_per_step = 1.0f / 1024.0f;
 
         float watchdog_timeout = 0.0f; // [s]
         bool enable_watchdog = false;

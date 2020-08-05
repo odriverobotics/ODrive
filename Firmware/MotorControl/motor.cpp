@@ -76,9 +76,9 @@ bool Motor::setup() {
     
     // Solve for exact gain, then snap down to have equal or larger range as requested
     // or largest possible range otherwise
-    static const float kMargin = 0.90f;
-    static const float kTripMargin = 1.0f; // Trip level is at edge of linear range of amplifer
-    static const float max_output_swing = 1.35f; // [V] out of amplifier
+    constexpr float kMargin = 0.90f;
+    constexpr float kTripMargin = 1.0f; // Trip level is at edge of linear range of amplifer
+    constexpr float max_output_swing = 1.35f; // [V] out of amplifier
     float max_unity_gain_current = kMargin * max_output_swing * shunt_conductance_; // [A]
     float requested_gain = max_unity_gain_current / config_.requested_current_range; // [V/V]
     
@@ -395,7 +395,9 @@ bool Motor::FOC_current(float Id_des, float Iq_des, float I_phase, float pwm_pha
     return true;
 }
 
-
+// torque_setpoint [Nm]
+// phase [rad electrical]
+// phase_vel [rad/s electrical]
 bool Motor::update(float torque_setpoint, float phase, float phase_vel) {
     float current_setpoint = 0.0f;
     phase *= config_.direction;

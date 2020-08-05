@@ -94,9 +94,9 @@ There is one additional configuration parameter specifically for the homing proc
 
 Name |  Type | Default
 --- | -- | -- 
-homing_speed | float | 2000.0f
+homing_speed | float | 0.25f
 
-`homing_speed` is the axis travel speed during homing, in counts/second.  If you are using SPI based encoders and the axis is homing in the wrong direction, you can enter a negative value for the homing speed and a negative value for the minimum endstop offset. 
+`homing_speed` is the axis travel speed during homing, in [turns/second].  If you are using SPI based encoders and the axis is homing in the wrong direction, you can enter a negative value for the homing speed and a negative value for the minimum endstop offset. 
 
 
 ### Performing the Homing Sequence

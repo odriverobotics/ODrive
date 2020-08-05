@@ -32,9 +32,9 @@ t motor destination
 ```
 * `t` for trajectory
 * `motor` is the motor number, `0` or `1`.
-* `destination` is the goal position, in encoder counts.
+* `destination` is the goal position, in [turns].
 
-Example: `t 0 -20000`
+Example: `t 0 -2`
 
 For general moving around of the axis, this is the recommended command.
 
@@ -45,26 +45,26 @@ For basic use where you send one setpoint at at a time, use the `q` command.
 If you have a realtime controller that is streaming setpoints and tracking a trajectory, use the `p` command.
 
 ```
-q motor position velocity_lim current_lim
+q motor position velocity_lim torque_lim
 ```
 * `q` for position
 * `motor` is the motor number, `0` or `1`.
-* `position` is the desired position, in encoder counts.
-* `velocity_lim` is the velocity limit, in counts/s (optional).
-* `current_lim` is the current limit, in A (optional).
+* `position` is the desired position, in [turns].
+* `velocity_lim` is the velocity limit, in [turns/s] (optional).
+* `torque_lim` is the torque limit, in [Nm] (optional).
 
-Example: `q 0 -20000 10000 10`
+Example: `q 0 -2 1 0.1`
 
 ```
-p motor position velocity_ff current_ff
+p motor position velocity_ff torque_ff
 ```
 * `p` for position
 * `motor` is the motor number, `0` or `1`.
-* `position` is the desired position, in encoder counts.
-* `velocity_ff` is the velocity feed-forward term, in counts/s (optional).
-* `current_ff` is the current feed-forward term, in A (optional).
+* `position` is the desired position, in [turns].
+* `velocity_ff` is the velocity feed-forward term, in [turns/s] (optional).
+* `torque_ff` is the torque feed-forward term, in [Nm] (optional).
 
-Example: `p 0 -20000 0 0`
+Example: `p 0 -2 0 0`
 
 Note that if you don't know what feed-forward is or what it's used for, simply omit it.
 
@@ -72,14 +72,14 @@ This command updates the watchdog timer for the motor.
 
 #### Motor Velocity command
 ```
-v motor velocity current_ff
+v motor velocity torque_ff
 ```
 * `v` for velocity
 * `motor` is the motor number, `0` or `1`.
-* `velocity` is the desired velocity in counts/s.
-* `current_ff` is the current feed-forward term, in A (optional).
+* `velocity` is the desired velocity in [turns/s].
+* `torque_ff` is the torque feed-forward term, in [Nm] (optional).
 
-Example: `v 0 1000 0`
+Example: `v 0 1 0`
 
 Note that if you don't know what feed-forward is or what it's used for, simply omit it.
 
@@ -87,11 +87,11 @@ This command updates the watchdog timer for the motor.
 
 #### Motor Current command
 ```
-c motor current
+c motor torque
 ```
-* `c` for current
+* `c` for torque
 * `motor` is the motor number, `0` or `1`.
-* `current` is the desired current in A.
+* `torque` is the desired torque in [Nm].
 
 This command updates the watchdog timer for the motor. 
 
@@ -103,8 +103,8 @@ response:
 pos vel
 ```
 * `f` for feedback
-* `pos` is the encoder position in counts (float)
-* `vel` is the encoder velocity in counts/s (float)
+* `pos` is the encoder position in [turns] (float)
+* `vel` is the encoder velocity in [turns/s] (float)
 
 #### Update motor watchdog
 ```
