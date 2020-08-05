@@ -1,0 +1,117 @@
+name: Tests
+
+on:
+  pull_request:
+    branches: [master, devel]
+    tags: ['fw-v*']
+  push:
+    branches: [master, devel]
+    tags: ['fw-v*']
+
+jobs:
+  compile:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-16.04, ubuntu-latest, windows-latest, macOS-latest]
+        board_version: [v3.6-56V]
+        debug: [true]
+
+        include:
+          - {os: ubuntu-latest, board_version: v3.2, debug: false}
+          - {os: ubuntu-latest, board_version: v3.3, debug: false}
+          - {os: ubuntu-latest, board_version: v3.4-24V, debug: false}
+          - {os: ubuntu-latest, board_version: v3.4-48V, debug: false}
+          - {os: ubuntu-latest, board_version: v3.5-24V, debug: false}
+          - {os: ubuntu-latest, board_version: v3.5-48V, debug: false}
+          - {os: ubuntu-latest, board_version: v3.6-24V, debug: false}
+          - {os: ubuntu-latest, board_version: v3.6-56V, debug: false}
+
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Install prerequisites (Debian)
+        if: startsWith(matrix.os, 'ubuntu-')
+        run: |
+          DEBIAN_VERSION="$(lsb_release --release --short)"
+          echo Debian version: $DEBIAN_VERSION
+          if [ "$DEBIAN_VERSION" -gt 9 ]; then
+            sudo apt-get install gcc-arm-none-eabi
+          else
+            # Ubuntu 16.04 (Debian 9) is on ARM GCC 4.9 which is too old for us
+            sudo add-apt-repository ppa:team-gcc-arm-embedded/ppa
+            sudo apt-get update
+            sudo apt-get install gcc-arm-embedded
+          fi
+
+          if ! (apt-cache search tup | grep "^tup - "); then
+            sudo add-apt-repository ppa:jonathonf/tup
+            sudo apt-get update
+          fi
+
+          sudo apt-get install tup
+
+          sudo apt install python3 python3-yaml python3-jinja2 python3-jsonschema
+
+      - name: Install prerequisites (macOS)
+        if: startsWith(matrix.os, 'macOS-')
+        run: |
+          brew install armmbed/formulae/arm-none-eabi-gcc
+          brew cask install osxfuse && brew install tup
+          pip3 install PyYAML Jinja2 jsonschema
+
+        
+      - name: Cache chocolatey
+        uses: actions/cache@v2
+        if: startsWith(matrix.os, 'windows-')
+        with:
+          path: C:\Users\runneradmin\AppData\Local\Temp\chocolatey\gcc-arm-embedded
+          key: ${{ runner.os }}-gcc-arm-embedded
+          restore-keys: |
+            ${{ runner.os }}-gcc-arm-embedded
+
+      - name: Install prerequisites (Windows)
+        if: startsWith(matrix.os, 'windows-')
+        run: |
+          Invoke-WebRequest -Uri "http://gittup.org/tup/win32/tup-latest.zip" -OutFile ".\tup-latest.zip"
+          Expand-Archive ".\tup-latest.zip" -DestinationPath ".\tup-latest" -Force
+          echo "::add-path::$(Resolve-Path .)\tup-latest"
+
+          choco install gcc-arm-embedded # downloads https://developer.arm.com/-/media/Files/downloads/gnu-rm/9-2019q4/gcc-arm-none-eabi-9-2019-q4-major-win32.zip
+          
+          pip install PyYAML Jinja2 jsonschema
+
+      - name: Prepare Compilation
+        run: |
+          # for debugging
+          arm-none-eabi-gcc --version
+          python --version
+
+          cd ${{ github.workspace }}/Firmware
+          echo "CONFIG_BOARD_VERSION=${{ matrix.board_version }}" >> tup.config
+          echo "CONFIG_STRICT=true" >> tup.config
+          echo "CONFIG_DEBUG=${{ matrix.release }}" >> tup.config
+          tup init
+          tup generate ./tup_build.sh
+      
+      - name: Compile (Unix)
+        if: "!startsWith(matrix.os, 'windows-')"
+        run: |
+          cd ${{ github.workspace }}/Firmware
+          bash -xe ./tup_build.sh
+
+      - name: Compile (Windows)
+        if: startsWith(matrix.os, 'windows-')
+        run: |
+          cd ${{ github.workspace }}/Firmware
+          mv tup_build.sh tup_build.bat # in reality this is a .bat script on windows
+          .\tup_build.bat
+
+  #code-checks:
+  #  runs-on: ubuntu-latest
+  #  steps:
+  #    TODO:
+  #     - check if enums.py is consistent with yaml
+  #     - clang-format check
+  #     - check if interface_generator outputs the same thing with Python 3.5 and Python 3.8

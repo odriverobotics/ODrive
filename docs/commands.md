@@ -18,24 +18,8 @@ For the most part, both axes on the ODrive can be controlled independently.
 
 ### State Machine
 
-The current state of an axis is indicated by `<axis>.current_state`. The user can request a new state by assigning a new value to `<axis>.requested_state`. The default state after startup is `AXIS_STATE_IDLE`.
+The current state of an axis is indicated by [`<axis>.current_state`](api/odrive.axis#current_state). The user can request a new state by assigning a new value to [`<axis>.requested_state`](api/odrive.axis#current_state). The default state after startup is `AXIS_STATE_IDLE`. A description of all states can be found [here](api/odrive.axis.axisstate).
 
- 1. `AXIS_STATE_IDLE` Disable motor PWM and do nothing.
- 2. `AXIS_STATE_STARTUP_SEQUENCE` Run the [startup procedure](#startup-procedure).
- 3. `AXIS_STATE_FULL_CALIBRATION_SEQUENCE` Run motor calibration and then encoder offset calibration (or encoder index search if `<axis>.encoder.config.use_index` is `True`).
- 4. `AXIS_STATE_MOTOR_CALIBRATION` Measure phase resistance and phase inductance of the motor.
-    * To store the results set `<axis>.motor.config.pre_calibrated` to `True` and [save the configuration](#saving-the-configuration). After that you don't have to run the motor calibration on the next start up.
-    * This modifies the variables `<axis>.motor.config.phase_resistance` and `<axis>.motor.config.phase_inductance`.
- 5. `AXIS_STATE_SENSORLESS_CONTROL` Run sensorless control.
-    * The motor must be calibrated (`<axis>.motor.is_calibrated`)
-    * [`<axis>.controller.control_mode`](#control-mode) must be `True`.
- 6. `AXIS_STATE_ENCODER_INDEX_SEARCH` Turn the motor in one direction until the encoder index is traversed. This state can only be entered if `<axis>.encoder.config.use_index` is `True`.
- 7. `AXIS_STATE_ENCODER_OFFSET_CALIBRATION` Turn the motor in one direction for a few seconds and then back to measure the offset between the encoder position and the electrical phase.
-    * Can only be entered if the motor is calibrated (`<axis>.motor.is_calibrated`).
-    * A successful encoder calibration will make the `<axis>.encoder.is_ready` go to true.
- 8. `AXIS_STATE_CLOSED_LOOP_CONTROL` Run closed loop control.
-    * The action depends on the [control mode](#control-mode).
-    * Can only be entered if the motor is calibrated (`<axis>.motor.is_calibrated`) and the encoder is ready (`<axis>.encoder.is_ready`).
 
 ### Startup Procedure
 
@@ -49,27 +33,30 @@ The ODrive will sequence all enabled startup actions selected in the order shown
 * `<axis>.config.startup_closed_loop_control`
 * `<axis>.config.startup_sensorless_control`
 
-See [state machine](#state-machine) for a description of each state.
+See [here](api/odrive.axis.axisstate) for a description of each state.
 
 ### Control Mode
 The default control mode is position control.
 If you want a different mode, you can change `<axis>.controller.config.control_mode`.
-Possible values are:
-* `CTRL_MODE_POSITION_CONTROL`
-* `CTRL_MODE_VELOCITY_CONTROL`
-* `CTRL_MODE_CURRENT_CONTROL`
-* `CTRL_MODE_VOLTAGE_CONTROL` - this one is not normally used.
+Possible values are listed [here](api/odrive.axis.controller.controlmode).
 
-# Control Commands
-* `<axis>.controller.pos_setpoint = <encoder_counts>`
-* `<axis>.controller.vel_setpoint = <encoder_counts/s>`
-* `<axis>.controller.current_setpoint = <current_in_A>`
+### Input Mode
+
+As of version v0.5.0, ODrive now intercepts the incoming commands and can apply filters to them. The old protocol values `pos_setpoint`, `vel_setpoint`, and `current_setpoint` are still used internally by the closed-loop cascade control, but the user cannot write to them directly.  This allows us to condense the number of ways the ODrive accepts motion commands. The new commands are:
+
+* `<axis>.controller.input_pos = <turn>`
+* `<axis>.controller.input_vel = <turn/s>`
+* `<axis>.controller.input_torque = <torque in Nm>`
+
+Modes can be selected by changing `<axis>.controller.config.input_mode`.
+The default input mode is `INPUT_MODE_PASSTHROUGH`.
+Possible values are listed [here](api/odrive.axis.controller.inputmode).
 
 ## System monitoring commands
 
 ### Encoder position and velocity
-* View encoder position with `<axis>.encoder.pos_estimate` [counts]
-* View rotational velocity with `<axis>.encoder.vel_estimate` [counts/s]
+* View encoder position with `<axis>.encoder.pos_estimate` [turns] or `<axis>.encoder.pos_est_counts` [counts]
+* View rotational velocity with `<axis>.encoder.vel_estimate` [turn/s] or `<axis>.encoder.vel_est_counts` [count/s]
 
 ### Motor current and torque estimation
 * View the commanded motor current with `<axis>.motor.current_control.Iq_setpoint` [A] 
@@ -84,7 +71,7 @@ Using the motor current and the known KV of your motor you can estimate the moto
 All variables that are part of a `[...].config` object can be saved to non-volatile memory on the ODrive so they persist after you remove power. The relevant commands are:
 
  * `<odrv>.save_configuration()`: Stores the configuration to persistent memory on the ODrive.
- * `<odrv>.erase_configuration()`: Resets the configuration variables to their factory defaults. This only has an effect after a reboot. A side effect of this command is that motor control stops (in case it was running) and the USB communication breaks out temporarily. This is because erasing flash pages hangs the microcontroller for several seconds.
+ * `<odrv>.erase_configuration()`: Resets the configuration variables to their factory defaults. This also reboots the device.
 
 ### Diagnostics
 
@@ -94,9 +81,8 @@ All variables that are part of a `[...].config` object can be saved to non-volat
 
 ## Setting up sensorless
 The ODrive can run without encoder/hall feedback, but there is a minimum speed, usually around a few hunderd RPM.
-However the units of this mode is different from when using an encoder. Velocities are not measured in counts/s, instead it is electrical rad/s. This also applies to the gains. For example, `vel_gain` is in units of `A / (rad/s)` instead of `A / (count/s)`.
 
-To give an example, suppose you have a motor with 7 pole pairs, and you want to spin it at 3000 RPM. Then you would set the `vel_setpoint` to `3000 * 2*pi/60 * 7 = 2199 rad/s electrical`.
+To give an example, suppose you have a motor with 7 pole pairs, and you want to spin it at 3000 RPM. Then you would set the `input_vel` to `3000 * 2*pi/60 * 7 = 2199 rad/s electrical`.
 
 Below are some suggested starting parameters that you can use. Note that you _must_ set the `pm_flux_linkage` correctly for sensorless mode to work.
 
@@ -104,7 +90,7 @@ Below are some suggested starting parameters that you can use. Note that you _mu
 odrv0.axis0.controller.config.vel_gain = 0.01
 odrv0.axis0.controller.config.vel_integrator_gain = 0.05
 odrv0.axis0.controller.config.control_mode = 2
-odrv0.axis0.controller.vel_setpoint = 400
+odrv0.axis0.controller.input_vel = 400
 odrv0.axis0.motor.config.direction = 1
 odrv0.axis0.sensorless_estimator.config.pm_flux_linkage = 5.51328895422 / (<pole pairs> * <motor kv>)
 ```

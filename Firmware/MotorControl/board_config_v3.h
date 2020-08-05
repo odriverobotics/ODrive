@@ -36,13 +36,18 @@ typedef struct {
     uint16_t hallB_pin;
     GPIO_TypeDef* hallC_port;
     uint16_t hallC_pin;
+    SPI_HandleTypeDef* spi;
 } EncoderHardwareConfig_t;
 typedef struct {
     TIM_HandleTypeDef* timer;
     uint16_t control_deadline;
     float shunt_conductance;
-    size_t inverter_thermistor_adc_ch;
 } MotorHardwareConfig_t;
+typedef struct {
+    const float* const coeffs;
+    size_t num_coeffs;
+    size_t adc_ch;
+} ThermistorHardwareConfig_t;
 typedef struct {
     SPI_HandleTypeDef* spi;
     GPIO_TypeDef* enable_port;
@@ -56,18 +61,17 @@ typedef struct {
     AxisHardwareConfig_t axis_config;
     EncoderHardwareConfig_t encoder_config;
     MotorHardwareConfig_t motor_config;
+    ThermistorHardwareConfig_t thermistor_config;
     GateDriverHardwareConfig_t gate_driver_config;
 } BoardHardwareConfig_t;
 
 extern const BoardHardwareConfig_t hw_configs[2];
-extern const float thermistor_poly_coeffs[];
-extern const size_t thermistor_num_coeffs;
 
 //TODO stick this in a C file
 #ifdef __MAIN_CPP__
-const float thermistor_poly_coeffs[] =
+const float fet_thermistor_poly_coeffs[] =
     {363.93910201f, -462.15369634f, 307.55129571f, -27.72569531f};
-const size_t thermistor_num_coeffs = sizeof(thermistor_poly_coeffs)/sizeof(thermistor_poly_coeffs[1]);
+const size_t fet_thermistor_num_coeffs = sizeof(fet_thermistor_poly_coeffs)/sizeof(fet_thermistor_poly_coeffs[1]);
 
 const BoardHardwareConfig_t hw_configs[2] = { {
     //M0
@@ -86,12 +90,17 @@ const BoardHardwareConfig_t hw_configs[2] = { {
         .hallB_pin = M0_ENC_B_Pin,
         .hallC_port = M0_ENC_Z_GPIO_Port,
         .hallC_pin = M0_ENC_Z_Pin,
+        .spi = &hspi3,
     },
     .motor_config = {
         .timer = &htim1,
         .control_deadline = TIM_1_8_PERIOD_CLOCKS,
         .shunt_conductance = 1.0f / SHUNT_RESISTANCE,  //[S]
-        .inverter_thermistor_adc_ch = 15,
+    },
+    .thermistor_config = {
+        .coeffs = &fet_thermistor_poly_coeffs[0],
+        .num_coeffs = fet_thermistor_num_coeffs,
+        .adc_ch = 15,
     },
     .gate_driver_config = {
         .spi = &hspi3,
@@ -125,15 +134,20 @@ const BoardHardwareConfig_t hw_configs[2] = { {
         .hallB_pin = M1_ENC_B_Pin,
         .hallC_port = M1_ENC_Z_GPIO_Port,
         .hallC_pin = M1_ENC_Z_Pin,
+        .spi = &hspi3,
     },
     .motor_config = {
         .timer = &htim8,
         .control_deadline = (3 * TIM_1_8_PERIOD_CLOCKS) / 2,
         .shunt_conductance = 1.0f / SHUNT_RESISTANCE,  //[S]
+    },
+    .thermistor_config = {
+        .coeffs = &fet_thermistor_poly_coeffs[0],
+        .num_coeffs = fet_thermistor_num_coeffs,
 #if HW_VERSION_MAJOR == 3 && HW_VERSION_MINOR >= 3
-        .inverter_thermistor_adc_ch = 4,
+        .adc_ch = 4,
 #else
-        .inverter_thermistor_adc_ch = 1,
+        .adc_ch = 1,
 #endif
     },
     .gate_driver_config = {

@@ -6,8 +6,11 @@ import threading
 import platform
 import subprocess
 import os
+import numpy as np
+import matplotlib.pyplot as plt
 from fibre.utils import Event
-from odrive.enums import errors
+import odrive.enums
+from odrive.enums import *
 
 try:
     if platform.system() == 'Windows':
@@ -28,8 +31,40 @@ _VT100Colors = {
     'default': '\x1b[0m'
 }
 
+def calculate_thermistor_coeffs(degree, Rload, R_25, Beta, Tmin, Tmax, plot = False):
+    T_25 = 25 + 273.15 #Kelvin
+    temps = np.linspace(Tmin, Tmax, 1000)
+    tempsK = temps + 273.15
+
+    # https://en.wikipedia.org/wiki/Thermistor#B_or_%CE%B2_parameter_equation
+    r_inf = R_25 * np.exp(-Beta/T_25)
+    R_temps = r_inf * np.exp(Beta/tempsK)
+    V = Rload / (Rload + R_temps)
+
+    fit = np.polyfit(V, temps, degree)
+    p1 = np.poly1d(fit)
+    fit_temps = p1(V)
+
+    if plot:
+        print(fit)
+        plt.plot(V, temps, label='actual')
+        plt.plot(V, fit_temps, label='fit')
+        plt.xlabel('normalized voltage')
+        plt.ylabel('Temp [C]')
+        plt.legend(loc=0)
+        plt.show()
+
+    return p1
+
 class OperationAbortedException(Exception):
     pass
+
+def set_motor_thermistor_coeffs(axis, Rload, R_25, Beta, Tmin, TMax):
+    coeffs = calculate_thermistor_coeffs(3, Rload, R_25, Beta, Tmin, TMax)
+    axis.motor_thermistor.config.poly_coefficient_0 = float(coeffs[3])
+    axis.motor_thermistor.config.poly_coefficient_1 = float(coeffs[2])
+    axis.motor_thermistor.config.poly_coefficient_2 = float(coeffs[1])
+    axis.motor_thermistor.config.poly_coefficient_3 = float(coeffs[0])
 
 def dump_errors(odrv, clear=False):
     axes = [(name, axis) for name, axis in odrv._remote_attributes.items() if 'axis' in name]
@@ -40,27 +75,36 @@ def dump_errors(odrv, clear=False):
         # Flatten axis and submodules
         # (name, remote_obj, errorcode)
         module_decode_map = [
-            ('axis', axis, errors.axis),
-            ('motor', axis.motor, errors.motor),
-            ('encoder', axis.encoder, errors.encoder),
-            ('controller', axis.controller, errors.controller),
+            ('axis', axis, {k: v for k, v in odrive.enums.__dict__ .items() if k.startswith("AXIS_ERROR_")}),
+            ('motor', axis.motor, {k: v for k, v in odrive.enums.__dict__ .items() if k.startswith("MOTOR_ERROR_")}),
+            ('fet_thermistor', axis.fet_thermistor, {k: v for k, v in odrive.enums.__dict__ .items() if k.startswith("THERMISTOR_CURRENT_LIMITER_ERROR")}),
+            ('motor_thermistor', axis.motor_thermistor, {k: v for k, v in odrive.enums.__dict__ .items() if k.startswith("THERMISTOR_CURRENT_LIMITER_ERROR")}),
+            ('encoder', axis.encoder, {k: v for k, v in odrive.enums.__dict__ .items() if k.startswith("ENCODER_ERROR_")}),
+            ('controller', axis.controller, {k: v for k, v in odrive.enums.__dict__ .items() if k.startswith("CONTROLLER_ERROR_")}),
         ]
 
         # Module error decode
         for name, remote_obj, errorcodes in module_decode_map:
             prefix = ' '*2 + name + ": "
-            if (remote_obj.error != errorcodes.ERROR_NONE):
+            if (remote_obj.error != 0):
+                foundError = False
                 print(prefix + _VT100Colors['red'] + "Error(s):" + _VT100Colors['default'])
-                errorcodes_tup = [(name, val) for name, val in errorcodes.__dict__.items() if 'ERROR_' in name]
-                for codename, codeval in errorcodes_tup:
-                    if remote_obj.error & codeval != 0:
-                        print("    " + codename)
+                errorcodes_dict = {val: name for name, val in errorcodes.items() if 'ERROR_' in name}
+                for bit in range(64):
+                    if remote_obj.error & (1 << bit) != 0:
+                        print("    " + errorcodes_dict.get((1 << bit), 'UNKNOWN ERROR: 0x{:08X}'.format(1 << bit)))
                 if clear:
-                    remote_obj.error = errorcodes.ERROR_NONE
+                    remote_obj.error = 0
             else:
                 print(prefix + _VT100Colors['green'] + "no error" + _VT100Colors['default'])
 
-data_rate = 10
+def oscilloscope_dump(odrv, num_vals, filename='oscilloscope.csv'):
+    with open(filename, 'w') as f:
+        for x in range(num_vals):
+            f.write(str(odrv.get_oscilloscope_val(x)))
+            f.write('\n')
+
+data_rate = 100
 plot_rate = 10
 num_samples = 1000
 def start_liveplotter(get_var_callback):
@@ -118,10 +162,114 @@ def start_liveplotter(get_var_callback):
     plot_t = threading.Thread(target=plot_data)
     plot_t.daemon = True
     plot_t.start()
-    
 
     return cancellation_token;
     #plot_data()
+
+
+class BulkCapture:
+    '''
+    Asynchronously captures a bulk set of data when instance is created.
+
+    get_var_callback: a function that returns the data you want to collect (see the example below)
+    data_rate: Rate in hz
+    length: Length of time to capture in seconds
+
+    Example Usage:
+        capture = BulkCapture(lambda :[odrv0.axis0.encoder.pos_estimate, odrv0.axis0.controller.pos_setpoint])
+        # Do stuff while capturing (like sending position commands)
+        capture.event.wait() # When you're done doing stuff, wait for the capture to be completed.
+        print(capture.data) # Do stuff with the data
+        capture.plot_data() # Helper method to plot the data
+    '''
+
+    def __init__(self,
+                 get_var_callback,
+                 data_rate=500.0,
+                 duration=2.0):
+        from threading import Event, Thread
+        import numpy as np
+
+        self.get_var_callback = get_var_callback
+        self.event = Event()
+        def loop():
+            vals = []
+            start_time = time.monotonic()
+            period = 1.0 / data_rate
+            while time.monotonic() - start_time < duration:
+                try:
+                    data = get_var_callback()
+                except Exception as ex:
+                    print(str(ex))
+                    print("Waiting 1 second before next data point")
+                    time.sleep(1)
+                    continue
+                relative_time = time.monotonic() - start_time
+                vals.append([relative_time] + data)
+                time.sleep(period - (relative_time % period)) # this ensures consistently timed samples
+            self.data = np.array(vals) # A lock is not really necessary due to the event
+            print("Capture complete")
+            achieved_data_rate = len(self.data) / self.data[-1, 0]
+            if achieved_data_rate < (data_rate * 0.9):
+                print("Achieved average data rate: {}Hz".format(achieved_data_rate))
+                print("If this rate is significantly lower than what you specified, consider lowering it below the achieved value for more consistent sampling.")
+            self.event.set() # tell the main thread that the bulk capture is complete
+        Thread(target=loop, daemon=True).start()
+    
+    def plot(self):
+        import matplotlib.pyplot as plt
+        import inspect
+        from textwrap import wrap
+        plt.plot(self.data[:,0], self.data[:,1:])
+        plt.xlabel("Time (seconds)")
+        title = (str(inspect.getsource(self.get_var_callback))
+                .strip("['\\n']")
+                .split(" = ")[1])
+        plt.title("\n".join(wrap(title, 60)))
+        plt.legend(range(self.data.shape[1]-1))
+        plt.show()
+
+
+def step_and_plot(  axis,
+                    step_size=100.0,
+                    settle_time=0.5,
+                    data_rate=500.0,
+                    ctrl_mode=CONTROL_MODE_POSITION_CONTROL):
+    
+    if ctrl_mode is CONTROL_MODE_POSITION_CONTROL:
+        get_var_callback = lambda :[axis.encoder.pos_estimate, axis.controller.pos_setpoint]
+        initial_setpoint = axis.encoder.pos_estimate
+        def set_setpoint(setpoint):
+            axis.controller.pos_setpoint = setpoint
+    elif ctrl_mode is CONTROL_MODE_VELOCITY_CONTROL:
+        get_var_callback = lambda :[axis.encoder.vel_estimate, axis.controller.vel_setpoint]
+        initial_setpoint = 0
+        def set_setpoint(setpoint):
+            axis.controller.vel_setpoint = setpoint
+    else:
+        print("Invalid control mode")
+        return
+    
+    initial_settle_time = 0.5
+    initial_control_mode = axis.controller.config.control_mode # Set it back afterwards
+    print(initial_control_mode)
+    axis.controller.config.control_mode = ctrl_mode
+    axis.requested_state = AXIS_STATE_CLOSED_LOOP_CONTROL
+    
+    capture = BulkCapture(get_var_callback,
+                          data_rate=data_rate,
+                          duration=initial_settle_time + settle_time)
+
+    set_setpoint(initial_setpoint)
+    time.sleep(initial_settle_time)
+    set_setpoint(initial_setpoint + step_size) # relative/incremental movement
+
+    capture.event.wait() # wait for Bulk Capture to be complete
+
+    axis.requested_state = AXIS_STATE_IDLE
+    axis.controller.config.control_mode = initial_control_mode
+    capture.plot()
+
 
 def print_drv_regs(name, motor):
     """
@@ -164,7 +312,7 @@ def rate_test(device):
         vals.append(device.axis0.loop_counter)
 
     loopsPerFrame = (vals[-1] - vals[0])/numFrames
-    loopsPerSec = (168000000/(2*10192))
+    loopsPerSec = (168000000/(6*3500))
     FramePerSec = loopsPerSec/loopsPerFrame
     print("Frames per second: " + str(FramePerSec))
 

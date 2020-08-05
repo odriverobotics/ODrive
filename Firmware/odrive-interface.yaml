@@ -1,0 +1,1040 @@
+---
+version:  0.0.1
+ns:       com.odriverobotics
+summary:  ODrive Interface Definitions
+
+dictionary: [ODrive] # Prevent the word 'ODrive' from being detected as two words 'O' and 'Drive'
+
+interfaces:
+  ODrive:
+    c_is_class: True
+    brief: Toplevel interface of your ODrive.
+    doc: |
+      The odrv0, odrv1, ... objects that appear in odrivetool implement this
+      toplevel interface.
+    attributes:
+      vbus_voltage:
+        type: readonly float32
+        unit: V
+        brief: Voltage on the DC bus as measured by the ODrive.
+      ibus:
+        type: readonly float32
+        unit: A
+        brief: Current on the DC bus as calculated by the ODrive.
+        doc: |
+          A positive value means that the ODrive is consuming power from the power supply,
+          a negative value means that the ODrive is sourcing power to the power supply.
+
+          This value is equal to the sum of the motor currents and the brake resistor currents.
+          The motor currents are measured, the brake resistor current is calculated based on
+          `config.brake_resistance`.
+      ibus_report_filter_k:
+          type: float32
+          doc: |
+            Filter gain for the reported `ibus`. Set to a value below 1.0 to get a smoother
+            line when plotting `ibus`. Set to 1.0 to disable. This filter is only applied to
+            the reported value and not for internal calculations.
+      serial_number: readonly uint64
+      hw_version_major: readonly uint8
+      hw_version_minor: readonly uint8
+      hw_version_variant: readonly uint8
+      fw_version_major: readonly uint8
+      fw_version_minor: readonly uint8
+      fw_version_revision: readonly uint8
+      fw_version_unreleased:
+        type: readonly uint8
+        doc: 0 for official releases, 1 otherwise
+      brake_resistor_armed: readonly bool
+      brake_resistor_saturated: bool
+      system_stats:
+        c_is_class: False
+        attributes:
+          uptime: readonly uint32
+          min_heap_space: readonly uint32
+          min_stack_space_axis0: readonly uint32
+          min_stack_space_axis1: readonly uint32
+          min_stack_space_comms: readonly uint32
+          min_stack_space_usb: readonly uint32
+          min_stack_space_uart: readonly uint32
+          min_stack_space_can: readonly uint32
+          min_stack_space_usb_irq: readonly uint32
+          min_stack_space_startup: readonly uint32
+          stack_usage_axis0: readonly uint32
+          stack_usage_axis1: readonly uint32
+          stack_usage_comms: readonly uint32
+          stack_usage_usb: readonly uint32
+          stack_usage_uart: readonly uint32
+          stack_usage_usb_irq: readonly uint32
+          stack_usage_startup: readonly uint32
+          stack_usage_can: readonly uint32
+          usb:
+            c_is_class: False
+            attributes:
+              rx_cnt: readonly uint32
+              tx_cnt: readonly uint32
+              tx_overrun_cnt: readonly uint32
+          i2c:
+            c_is_class: False
+            attributes:
+              addr: readonly uint8
+              addr_match_cnt: readonly uint32
+              rx_cnt: readonly uint32
+              error_cnt: readonly uint32
+      config:
+        c_is_class: False
+        attributes:
+          enable_uart:
+            type: bool
+            doc: 'TODO: changing this currently requires a reboot - fix this'
+          uart_baudrate:
+            type: uint32
+            doc: |
+              Defines the baudrate used on the UART interface.
+              Some baudrates will have a small timing error due to hardware limitations.
+
+              Here's an (incomplete) list of baudrates for ODrive v3.x:
+              
+                Configured  | Actual        | Error [%]
+               -------------|---------------|-----------
+                1.2 KBps    | 1.2 KBps      | 0
+                2.4 KBps    | 2.4 KBps      | 0
+                9.6 KBps    | 9.6 KBps      | 0
+                19.2 KBps   | 19.195 KBps   | 0.02
+                38.4 KBps   | 38.391 KBps   | 0.02
+                57.6 KBps   | 57.613 KBps   | 0.02
+                115.2 KBps  | 115.068 KBps  | 0.11
+                230.4 KBps  | 230.769 KBps  | 0.16
+                460.8 KBps  | 461.538 KBps  | 0.16
+                921.6 KBps  | 913.043 KBps  | 0.93
+                1.792 MBps  | 1.826 MBps    | 1.9
+                1.8432 MBps | 1.826 MBps    | 0.93
+
+              For more information refer to Section 30.3.4 and Table 142 (the column with f_PCLK = 42 MHz) in the
+              [STM datasheet](https://www.st.com/content/ccc/resource/technical/document/reference_manual/3d/6d/5a/66/b4/99/40/d4/DM00031020.pdf/files/DM00031020.pdf/jcr:content/translations/en.DM00031020.pdf).
+          enable_i2c_instead_of_can:
+            type: bool
+            doc: Changing this requires a reboot.
+          enable_ascii_protocol_on_usb: bool
+          max_regen_current: float32
+          brake_resistance:
+            type: float32
+            unit: Ohm
+            brief: Value of the brake resistor connected to the ODrive.
+            doc: Set to 0 to disable.
+
+          dc_bus_undervoltage_trip_level:
+            type: float32
+            unit: V
+            brief: Minimum voltage below which the motor stops operating.
+          dc_bus_overvoltage_trip_level:
+            type: float32
+            unit: V
+            brief: Maximum voltage above which the motor stops operating.
+            doc: |
+              This protects against cases in which the power supply fails to dissipate
+              the brake power if the brake resistor is disabled.
+              The default is 26V for the 24V board version and 52V for the 48V board version.
+
+          enable_dc_bus_overvoltage_ramp:
+            type: bool
+            status: experimental
+            brief: Enables the DC bus overvoltage ramp feature.
+            doc: |
+              If enabled, if the measured DC voltage exceeds `dc_bus_overvoltage_ramp_start`,
+              the ODrive will sink more power than usual into the the brake resistor
+              in an attempt to bring the voltage down again.
+              
+              The brake duty cycle is increased by the following amount:
+
+               * `vbus_voltage` == `dc_bus_overvoltage_ramp_start`  =>  brake_duty_cycle += 0%
+               * `vbus_voltage` == `dc_bus_overvoltage_ramp_end`  =>  brake_duty_cycle += 100%
+              
+              Remarks:
+               - This feature is active even when all motors are disarmed.
+               - This feature is disabled if `brake_resistance` is non-positive.
+          dc_bus_overvoltage_ramp_start:
+            type: float32
+            status: experimental
+            brief: See `enable_dc_bus_overvoltage_ramp`.
+            doc: Do not set this lower than your usual `vbus_voltage`,
+              unless you like fried brake resistors.
+          dc_bus_overvoltage_ramp_end:
+            type: float32
+            status: experimental
+            brief: See `enable_dc_bus_overvoltage_ramp`.
+            doc: Must be larger than `dc_bus_overvoltage_ramp_start`,
+              otherwise the ramp feature is disabled.
+
+          dc_max_positive_current:
+            type: float32
+            unit: A
+            brief: Max current the power supply can source.
+          dc_max_negative_current:
+            type: float32
+            unit: A
+            brief: Max current the power supply can sink.
+            doc: You most likely want a non-positive value here. Set to -INFINITY to disable.
+
+          gpio1_pwm_mapping: {type: Endpoint, c_name: 'pwm_mappings[0]'} # TODO: disable for ODrive v3.2 and older
+          gpio2_pwm_mapping: {type: Endpoint, c_name: 'pwm_mappings[1]'} # TODO: disable for ODrive v3.2 and older
+          gpio3_pwm_mapping: {type: Endpoint, c_name: 'pwm_mappings[2]'} # TODO: disable for ODrive v3.2 and older
+          gpio4_pwm_mapping: {type: Endpoint, c_name: 'pwm_mappings[3]'}
+          gpio3_analog_mapping: {type: Endpoint, c_name: 'analog_mappings[2]'}
+          gpio4_analog_mapping: {type: Endpoint, c_name: 'analog_mappings[3]'}
+      user_config_loaded: readonly bool
+            
+      axis0: {type: Axis, c_name: get_axis(0)}
+      axis1: {type: Axis, c_name: get_axis(1)}
+      can: {type: Can, c_name: get_can()}
+      test_property: uint32
+        
+    functions:
+      test_function: {in: {delta: int32}, out: {cnt: int32}}
+      get_oscilloscope_val: {in: {index: uint32}, out: {val: float32}}
+      get_adc_voltage: {in: {gpio: uint32}, out: {voltage: float32}}
+      save_configuration:
+      erase_configuration:
+      reboot:
+      enter_dfu_mode:
+
+  ODrive.Can:
+    c_is_class: True
+    attributes:
+      error:
+        nullflag: None
+        flags: {DuplicateCanIds: }
+      config:
+        c_is_class: False
+        attributes:
+          baud_rate: readonly uint32
+          protocol: Protocol
+    functions:
+      set_baud_rate: {in: {baudRate: uint32}}
+
+  ODrive.Endpoint:
+    c_is_class: False
+    attributes:
+      endpoint: endpoint_ref
+      min: float32
+      max: float32
+
+  ODrive.Axis:
+    c_is_class: True
+    attributes:
+      error:
+        nullflag: 'None'
+        flags:
+          InvalidState:
+            brief: An invalid state was requested.
+            doc: |
+              You tried to run a state before you are allowed to. Typically you
+              tried to run encoder calibration or closed loop control before the
+              motor was calibrated, or you tried to run closed loop control
+              before the encoder was calibrated.
+          DcBusUnderVoltage:
+            brief: The DC voltage fell below the limit configured in `config.dc_bus_undervoltage_trip_level`.
+            doc: |
+              Confirm that your power leads are connected securely. For initial
+              testing a 12V PSU which can supply a couple of amps should be
+              sufficient while the use of low current ‘wall wart’ plug packs may
+              lead to inconsistent behaviour and is not recommended.
+
+              You can monitor your PSU voltage using liveplotter in odrivetool
+              by entering `start_liveplotter(lambda: [odrv0.vbus_voltage])`. If
+              you see your votlage drop below `config.dc_bus_undervoltage_trip_level`
+              (default: ~ 8V) then you will trip this error. Even a relatively
+              small motor can draw multiple kW momentary and so unless you have
+              a very large PSU or are running of a battery you may encounter
+              this error when executing high speed movements with a high current
+              limit. To limit your PSU power draw you can limit your motor
+              current and/or velocity limit `controller.config.vel_limit` and
+              `motor.config.current_lim`.
+          DcBusOverVoltage:
+            brief: The DC voltage exceeded the limit configured in `config.dc_bus_overvoltage_trip_level`.
+            doc: |
+              Confirm that you have a brake resistor of the correct value
+              connected securely and that `config.brake_resistance` is set to
+              the value of your brake resistor.
+
+              You can monitor your PSU voltage using liveplotter in odrivetool
+              by entering `start_liveplotter(lambda: [odrv0.vbus_voltage])`. If
+              during a move you see the voltage rise above your PSU’s nominal
+              set voltage then you have your brake resistance set too low. This
+              may happen if you are using long wires or small gauge wires to
+              connect your brake resistor to your odrive which will added extra
+              resistance. This extra resistance needs to be accounted for to
+              prevent this voltage spike. If you have checked all your
+              connections you can also try increasing your brake resistance by
+              ~ 0.01 Ohm at a time to a maximum of 0.05 greater than your brake
+              resistor value.
+          CurrentMeasurementTimeout:
+          BrakeResistorDisarmed:
+            doc: The brake resistor was unexpectedly disarmed.
+          MotorDisarmed:
+            doc: The motor was unexpectedly disarmed.
+          MotorFailed:
+            doc: Check `motor.error` for more information.
+          SensorlessEstimatorFailed:
+          EncoderFailed:
+            doc: Check `encoder.error` for more information.
+          ControllerFailed:
+          PosCtrlDuringSensorless:
+            status: deprecated
+          WatchdogTimerExpired:
+          MinEndstopPressed:
+          MaxEndstopPressed:
+          EstopRequested:
+          HomingWithoutEndstop:
+            bit: 17
+            doc: the min endstop was not enabled during homing
+          OverTemp:
+            doc: Check `fet_thermistor.error` and `motor_thermistor.error` for more information.
+      step_dir_active: readonly bool
+      current_state: readonly AxisState
+      requested_state: AxisState
+      loop_counter: readonly uint32
+      lockin_state:
+        typeargs: {fibre.Property.mode: readonly}
+        values:
+          Inactive:
+          Ramp:
+          Accelerate:
+          ConstVel:
+      is_homed: {type: bool, c_name: homing_.is_homed}
+      config:
+        c_is_class: False
+        attributes:
+          startup_motor_calibration:
+            type: bool
+            doc: run motor calibration at startup, skip otherwise
+          startup_encoder_index_search:
+            type: bool
+            doc: run encoder index search after startup, skip otherwise this only has an effect if encoder.config.use_index is also true
+          startup_encoder_offset_calibration:
+            type: bool
+            doc: run encoder offset calibration after startup, skip otherwise
+          startup_closed_loop_control:
+            type: bool
+            doc: enable closed loop control after calibration/startup
+          startup_sensorless_control:
+            type: bool
+            doc: enable sensorless control after calibration/startup
+          startup_homing:
+            type: bool
+            doc: enable homing after calibration/startup
+          enable_step_dir:
+            type: bool
+            doc: Enable step/dir input after calibration.
+              For M0 this has no effect if `config.enable_uart` is true.
+          step_dir_always_on:
+            type: bool
+            doc: Keep step/dir enabled while the motor is disabled.
+              This is ignored if enable_step_dir is false.
+              This setting only takes effect on a state transition
+              into idle or out of closed loop control.
+          turns_per_step: float32
+          watchdog_timeout:
+            type: float32
+            unit: s
+            doc: 0 disables watchdog
+          enable_watchdog: bool
+          step_gpio_pin: {type: uint16, c_setter: 'set_step_gpio_pin'}
+          dir_gpio_pin: {type: uint16, c_setter: 'set_dir_gpio_pin'}
+          calibration_lockin: # TODO: this is a subset of lockin state
+            c_is_class: False
+            attributes:
+              current: float32
+              ramp_time: float32
+              ramp_distance: float32
+              accel: float32
+              vel: float32
+          sensorless_ramp: LockinConfig
+          general_lockin: LockinConfig
+          can_node_id:
+            type: uint32
+            doc: Both axes will have the same id to start
+          can_node_id_extended: bool
+          can_heartbeat_rate_ms: uint32
+      fet_thermistor: OnboardThermistorCurrentLimiter
+      motor_thermistor: OffboardThermistorCurrentLimiter
+      motor: Motor
+      controller: Controller
+      encoder: Encoder
+      sensorless_estimator: SensorlessEstimator
+      trap_traj: TrapezoidalTrajectory
+      min_endstop: Endstop
+      max_endstop: Endstop
+    functions:
+      watchdog_feed:
+        doc: Feed the watchdog to prevent watchdog timeouts.
+      clear_errors:
+        doc: Check the watchdog timer for expiration. Also sets the watchdog error bit if expired.
+
+  ODrive.Axis.LockinConfig:
+    c_is_class: False
+    attributes:
+      current:
+        type: float32
+        unit: A
+      ramp_time:
+        type: float32
+        unit: s
+      ramp_distance:
+        type: float32
+        unit: rad
+      accel:
+        type: float32
+        unit: rad/s^2
+      vel:
+        type: float32
+        unit: rad/s
+      finish_distance:
+        type: float32
+        unit: rad
+      finish_on_vel: bool
+      finish_on_distance: bool
+      finish_on_enc_idx: bool
+
+  ODrive.ThermistorCurrentLimiter:
+    c_is_class: False
+
+  ODrive.OnboardThermistorCurrentLimiter:
+    c_is_class: True
+    attributes:
+      error: ThermistorCurrentLimiter.Error
+      temperature: readonly float32
+      config:
+        c_is_class: False
+        attributes:
+          temp_limit_lower: 
+            type: float32
+            doc: The lower limit when the controller starts limiting current.
+          temp_limit_upper: 
+            type: float32
+            doc: The upper limit when current limit reaches 0 Amps and an over temperature error is triggered.
+          enabled: {type: bool, doc: Whether this thermistor is enabled. }
+
+  ODrive.OffboardThermistorCurrentLimiter:
+    c_is_class: True
+    attributes:
+      error: ThermistorCurrentLimiter.Error
+      temperature: readonly float32
+      config:
+        c_is_class: False
+        attributes:
+          gpio_pin: {type: uint16, c_setter: set_gpio_pin}
+          poly_coefficient_0: {type: float32, c_name: 'thermistor_poly_coeffs[0]'}
+          poly_coefficient_1: {type: float32, c_name: 'thermistor_poly_coeffs[1]'}
+          poly_coefficient_2: {type: float32, c_name: 'thermistor_poly_coeffs[2]'}
+          poly_coefficient_3: {type: float32, c_name: 'thermistor_poly_coeffs[3]'}
+          temp_limit_lower: 
+            type: float32
+            doc: The lower limit when the controller starts limiting current.
+          temp_limit_upper: 
+            type: float32
+            doc: The upper limit when current limit reaches 0 Amps and an over temperature error is triggered.
+          enabled: {type: bool, doc: Whether this thermistor is enabled. }
+
+  ODrive.Motor:
+    c_is_class: True
+    attributes:
+      error:
+        nullflag: None
+        flags:
+          PhaseResistanceOutOfRange:
+            brief: The measured motor phase resistance is outside of the plausible range.
+            doc: |
+              During calibration the motor resistance and
+              [inductance](https://en.wikipedia.org/wiki/Inductance) is measured.
+              If the measured motor resistance or inductance falls outside a set
+              range this error will be returned. Check that all motor leads are
+              connected securely.
+
+              The measured values can be viewed using odrivetool as is shown below:
+              ```
+              In [2]: odrv0.axis0.motor.config.phase_inductance
+              Out[2]: 1.408751450071577e-05
+
+              In [3]: odrv0.axis0.motor.config.phase_resistance
+              Out[3]: 0.029788672924041748
+              ```
+              Some motors will have a considerably different phase resistance
+              and inductance than this. For example, gimbal motors, some small
+              motors (e.g. < 10A peak current). If you think this applies to you
+              try increasing `config.resistance_calib_max_voltage` from
+              its default value of 1 using odrivetool and repeat the motor
+              calibration process. If your motor has a small peak current draw
+              (e.g. < 20A) you can also try decreasing
+              `config.calibration_current` from its default value of 10A.
+
+              In general, you need
+              ```text
+              resistance_calib_max_voltage > calibration_current * phase_resistance
+              resistance_calib_max_voltage < 0.5 * vbus_voltage
+              ```
+          PhaseInductanceOutOfRange:
+            brief: The measured motor phase inductance is outside of the plausible range.
+            doc: |
+              See `PhaseResistanceOutOfRange` for details.
+          AdcFailed:
+          DrvFault:
+            brief: The gate driver chip reported an error.
+            doc: |
+              The ODrive v3.4 is known to have a hardware issue whereby the
+              motors would stop operating when applying high currents to M0. The
+              reported error of both motors in this case is `ERROR_DRV_FAULT`.
+
+              The conjecture is that the high switching current creates large
+              ripples in the power supply of the DRV8301 gate driver chips, thus
+              tripping its under-voltage fault detection.
+
+              To resolve this issue you can limit the M0 current to 40A. The
+              lowest current at which the DRV fault was observed is 45A on one
+              test motor and 50A on another test motor. Refer to
+              [this post](https://discourse.odriverobotics.com/t/drv-fault-on-odrive-v3-4/558)
+              for instructions for a hardware fix.
+          ControlDeadlineMissed:
+          NotImplementedMotorType:
+          BrakeCurrentOutOfRange:
+          ModulationMagnitude:
+            doc: |
+              The bus voltage was insufficent to push the requested current
+              through the motor.
+              If you are getting this during motor calibration, make sure that
+              `config.resistance_calib_max_voltage` is no more than half
+              your bus voltage.
+
+              For gimbal motors, it is recommended to set the
+              `config.calibration_current` and `config.current_lim`
+              to half your bus voltage, or less.
+          BrakeDeadtimeViolation:
+          UnexpectedTimerCallback:
+          CurrentSenseSaturation:
+          CurrentLimitViolation: {bit: 12}
+          BrakeDutyCycleNan:
+          DcBusOverRegenCurrent: {doc: too much current pushed into the power supply}
+          DcBusOverCurrent: {doc: too much current pulled out of the power supply}
+      armed_state:
+        typeargs: {fibre.Property.mode: readonly}
+        values:
+          Disarmed:
+          WaitingForTimings:
+          WaitingForUpdate:
+          Armed:
+      is_calibrated: readonly bool
+      current_meas_phB: {type: readonly float32, c_name: current_meas_.phB}
+      current_meas_phC: {type: readonly float32, c_name: current_meas_.phC}
+      DC_calib_phB: {type: float32, c_name: DC_calib_.phB}
+      DC_calib_phC: {type: float32, c_name: DC_calib_.phC}
+      phase_current_rev_gain: float32
+      effective_current_lim: readonly float32
+      current_control:
+        c_is_class: False
+        attributes:
+          p_gain: float32
+          i_gain: float32
+          v_current_control_integral_d: float32
+          v_current_control_integral_q: float32
+          Ibus: float32
+          final_v_alpha: float32
+          final_v_beta: float32
+          Id_setpoint: float32
+          Iq_setpoint: readonly float32
+          Iq_measured: float32
+          Id_measured: float32
+          I_measured_report_filter_k: float32
+          max_allowed_current: readonly float32
+          overcurrent_trip_level: readonly float32
+          acim_rotor_flux: float32
+          async_phase_vel: readonly float32
+          async_phase_offset: float32
+      gate_driver:
+        c_name: gate_driver_exported_
+        c_is_class: False
+        attributes:
+          drv_fault:
+            typeargs: {fibre.Property.mode: readonly}
+            nullflag: NoFault
+            flags:
+              FetLowCOvercurrent: {bit: 0, doc: FET Low side, Phase C Over Current fault}
+              FetHighCOvercurrent: {bit: 1, doc: FET High side, Phase C Over Current fault}
+              FetLowBOvercurrent: {bit: 2, doc: FET Low side, Phase B Over Current fault}
+              FetHighBOvercurrent: {bit: 3, doc: FET High side, Phase B Over Current fault}
+              FetLowAOvercurrent: {bit: 4, doc: FET Low side, Phase A Over Current fault}
+              FetHighAOvercurrent: {bit: 5, doc: FET High side, Phase A Over Current fault}
+              OvertemperatureWarning: {bit: 6, doc: Over Temperature Warning fault}
+              OvertemperatureShutdown: {bit: 7, doc: Over Temperature Shut Down fault}
+              PVddUndervoltage: {bit: 8, doc: Power supply Vdd Under Voltage fault}
+              GVddUndervoltage: {bit: 9, doc: DRV8301 Vdd Under Voltage fault}
+              GVddOvervoltage: {bit: 10, doc: DRV8301 Vdd Over Voltage fault}
+          # status_reg_1: readonly uint32
+          # status_reg_2: readonly uint32
+          # ctrl_reg_1: readonly uint32
+          # ctrl_reg_2: readonly uint32
+      timing_log:
+        c_is_class: False
+        attributes:
+          general: {type: readonly uint16, c_name: 'get(TIMING_LOG_GENERAL)'}
+          adc_cb_i: {type: readonly uint16, c_name: 'get(TIMING_LOG_ADC_CB_I)'}
+          adc_cb_dc: {type: readonly uint16, c_name: 'get(TIMING_LOG_ADC_CB_DC)'}
+          meas_r: {type: readonly uint16, c_name: 'get(TIMING_LOG_MEAS_R)'}
+          meas_l: {type: readonly uint16, c_name: 'get(TIMING_LOG_MEAS_L)'}
+          enc_calib: {type: readonly uint16, c_name: 'get(TIMING_LOG_ENC_CALIB)'}
+          idx_search: {type: readonly uint16, c_name: 'get(TIMING_LOG_IDX_SEARCH)'}
+          foc_voltage: {type: readonly uint16, c_name: 'get(TIMING_LOG_FOC_VOLTAGE)'}
+          foc_current: {type: readonly uint16, c_name: 'get(TIMING_LOG_FOC_CURRENT)'}
+          spi_start: {type: readonly uint16, c_name: 'get(TIMING_LOG_SPI_START)'}
+          sample_now: {type: readonly uint16, c_name: 'get(TIMING_LOG_SAMPLE_NOW)'}
+          spi_end: {type: readonly uint16, c_name: 'get(TIMING_LOG_SPI_END)'}
+      config:
+        c_is_class: False
+        attributes:
+          pre_calibrated: {type: bool, c_setter: set_pre_calibrated}
+          pole_pairs: int32
+          calibration_current: float32
+          resistance_calib_max_voltage: float32
+          phase_inductance: {type: float32, c_setter: set_phase_inductance}
+          phase_resistance: {type: float32, c_setter: set_phase_resistance}
+          torque_constant: float32
+          direction: int32
+          motor_type: MotorType
+          current_lim: float32
+          current_lim_margin: float32
+          torque_lim: float32
+          inverter_temp_limit_lower: float32
+          inverter_temp_limit_upper: float32
+          requested_current_range: float32
+          current_control_bandwidth: {type: float32, c_setter: set_current_control_bandwidth}
+          acim_slip_velocity: float32
+          acim_gain_min_flux: float32
+          acim_autoflux_min_Id: float32
+          acim_autoflux_enable: bool
+          acim_autoflux_attack_gain: float32
+          acim_autoflux_decay_gain: float32
+
+
+  ODrive.Controller:
+    c_is_class: True
+    attributes:
+      error: 
+        nullflag: None
+        flags:
+          Overspeed:
+            doc: |
+              Try increasing `config.vel_limit`. The default of 2 turns per second 
+              gives a motor speed of only 120 RPM. Note: Even if
+              you do not commanded your motor to exceed `config.vel_limit`
+              sudden changes in the load placed on a motor may cause this speed
+              to be temporarily exceeded, resulting in this error.
+
+              You can also try increasing `config.vel_limit_tolerance`. The
+              default value of 1.2 means it will only allow a 20% violation of
+              the speed limit. You can set the `config.vel_limit_tolerance` to 0
+              to disable the check altogether.
+          InvalidInputMode:
+          UnstableGain:
+          InvalidMirrorAxis:
+          InvalidLoadEncoder:
+          InvalidEstimate:
+      input_pos:
+        type: float32
+        unit: turn
+        c_setter: set_input_pos
+      input_vel:
+        type: float32
+        unit: turn/s
+      input_torque: float32
+      pos_setpoint: readonly float32
+      vel_setpoint: readonly float32
+      torque_setpoint: readonly float32
+      trajectory_done: readonly bool
+      vel_integrator_torque: float32
+      anticogging_valid: bool
+      config:
+        c_is_class: False
+        attributes:
+          gain_scheduling_width: float32
+          enable_vel_limit: bool
+          enable_current_mode_vel_limit:
+            type: bool
+            doc: Enable velocity limit in current control mode (requires a valid velocity estimator).
+          enable_gain_scheduling: bool
+          enable_overspeed_error: bool
+          control_mode: ControlMode
+          input_mode: InputMode
+          pos_gain:
+            type: float32
+            unit: (turn/s) / turn
+          vel_gain:
+            type: float32
+            unit: 'Nm/(turn/s)'
+          vel_integrator_gain:
+            type: float32
+            unit: Nm/(turn/s * s)
+          vel_limit:
+            type: float32
+            unit: turn/s
+            doc: Infinity to disable.
+          vel_limit_tolerance:
+            type: float32
+            doc: Ratio to `vel_limit`. Infinity to disable.
+          vel_ramp_rate: float32
+          torque_ramp_rate:
+            type: float32
+            unit: Nm / sec
+          circular_setpoints:
+            type: bool
+          circular_setpoint_range:
+            type: float32
+            doc: circular range in [turns] for position setpoints when circular_setpoints is True
+          homing_speed:
+            type: float32
+            unit: turns/s
+          inertia:
+            type: float32
+            unit: Nm/(turn/s^2)
+          axis_to_mirror: uint8
+          mirror_ratio: float32
+          load_encoder_axis:
+            type: uint8
+            # TODO: this is meaningless for a user. Should there be a separate developer note?
+            doc: Default depends on Axis number and is set in load_configuration()
+          input_filter_bandwidth:
+            type: float32
+            unit: 1/s
+            c_setter: set_input_filter_bandwidth
+          anticogging:
+            c_is_class: False
+            attributes:
+              index: readonly uint32
+              pre_calibrated: bool
+              calib_anticogging: readonly bool
+              calib_pos_threshold: float32
+              calib_vel_threshold: float32
+              cogging_ratio: readonly float32
+              anticogging_enabled: bool
+    functions:
+      move_incremental:
+        doc: Moves the axes' goal point by a specified increment.
+        in:
+          displacement: {type: float32, doc: The desired position change.}
+          from_input_pos: {type: bool, doc:
+            'If true, the increment is applied relative to `input_pos`.
+            If false, the increment is applied relative to `pos_setpoint`, which
+            usually corresponds roughly to the current position of the axis.'
+          }
+      start_anticogging_calibration:
+
+
+  ODrive.Encoder:
+    c_is_class: True
+    attributes:
+      error:
+        nullflag: None
+        flags:
+          UnstableGain:
+          CprPolepairsMismatch:
+            doc: |
+              Confirm you have entered the correct count per rotation (CPR) for
+              [your encoder](https://docs.odriverobotics.com/encoders). The
+              ODrive uses your supplied value for the motor pole pairs to
+              measure the CPR. So you should also double check this value.
+
+              Note that the AMT encoders are configurable using the micro-
+              switches on the encoder PCB and so you may need to check that
+              these are in the right positions. If your encoder lists its pulse
+              per rotation (PPR) multiply that number by four to get CPR.
+          NoResponse:
+            doc: |
+              Confirm that your encoder is plugged into the right pins on the
+              ODrive board.
+          UnsupportedEncoderMode:
+          IllegalHallState:
+          IndexNotFoundYet:
+            doc: |
+              Check that your encoder is a model that has an index pulse. If
+              your encoder does not have a wire connected to pin Z on your
+              ODrive then it does not output an index pulse.
+          AbsSpiTimeout:
+          AbsSpiComFail:
+          AbsSpiNotReady:
+      is_ready: readonly bool
+      index_found: readonly bool
+      shadow_count: readonly int32
+      count_in_cpr: readonly int32
+      interpolation: readonly float32
+      phase: readonly float32
+      pos_estimate: readonly float32
+      pos_estimate_counts: readonly float32
+      pos_cpr: readonly float32
+      pos_cpr_counts: readonly float32
+      pos_circular: readonly float32
+      hall_state: readonly uint8
+      vel_estimate: readonly float32
+      vel_estimate_counts: readonly float32
+      calib_scan_response: readonly float32
+      pos_abs: int32
+      spi_error_rate: readonly float32
+      config:
+        c_is_class: False
+        attributes:
+          mode: Mode
+          use_index: {type: bool, c_setter: set_use_index}
+          find_idx_on_lockin_only: {type: bool, c_setter: set_find_idx_on_lockin_only}
+          abs_spi_cs_gpio_pin: {type: uint16, c_setter: set_abs_spi_cs_gpio_pin}
+          zero_count_on_find_idx: bool
+          cpr: int32
+          offset: int32
+          pre_calibrated: {type: bool, c_setter: set_pre_calibrated}
+          offset_float: float32
+          enable_phase_interpolation: bool
+          bandwidth: {type: float32, c_setter: set_bandwidth}
+          calib_range: float32
+          calib_scan_distance: float32
+          calib_scan_omega: float32
+          idx_search_unidirectional: bool
+          ignore_illegal_hall_state: bool
+          sincos_gpio_pin_sin: uint16
+          sincos_gpio_pin_cos: uint16
+    functions:
+      set_linear_count: {in: {count: int32}}
+
+
+  ODrive.SensorlessEstimator:
+    c_is_class: True
+    attributes:
+      error:
+        nullflag: None
+        flags:
+          UnstableGain:
+      phase: float32
+      pll_pos: float32
+      vel_estimate: float32
+      # pll_kp: float32
+      # pll_ki: float32
+      config:
+        c_is_class: False
+        attributes:
+          observer_gain: float32
+          pll_bandwidth: float32
+          pm_flux_linkage: float32
+
+
+  ODrive.TrapezoidalTrajectory:
+    c_is_class: True
+    attributes:
+      config:
+        c_is_class: False
+        attributes:
+          vel_limit: float32
+          accel_limit: float32
+          decel_limit: float32
+
+
+  ODrive.Endstop:
+    c_is_class: True
+    attributes:
+      endstop_state: readonly bool
+      config:
+        c_is_class: False
+        attributes:
+          gpio_num: {type: uint16, c_setter: set_gpio_num}
+          enabled: {type: bool, c_setter: set_enabled}
+          offset: float32
+          is_active_high: bool
+          pullup: bool
+          debounce_ms: {type: uint32, c_setter: set_debounce_ms}
+
+
+valuetypes:
+  ODrive.Can.Protocol:
+    values: {Simple: }
+
+  ODrive.Axis.AxisState: # TODO: remove redundant "Axis" in name
+    values:
+      Undefined:
+        doc: will fall through to idle
+      Idle:
+        brief: Disable motor PWM and do nothing.
+      StartupSequence:
+        brief: Run the startup procedure.
+        doc: the actual sequence is defined by the `config`.startup... flags
+      FullCalibrationSequence:
+        doc: Run motor calibration and then encoder offset calibration (or encoder
+          index search if `<axis>.encoder.config.use_index` is `True`).
+      MotorCalibration:
+        brief: Measure phase resistance and phase inductance of the motor.
+        doc: |
+           * To store the results set `motor.config.pre_calibrated` to `True`
+           and save the configuration (`save_configuration()`). After that you
+           don't have to run the motor calibration on the next start up.
+           * This modifies the variables `motor.config.phase_resistance` and
+           `motor.config.phase_inductance`.
+      SensorlessControl:
+        brief: Run sensorless control.
+        doc: |
+           * The motor must be calibrated (`motor.is_calibrated`)
+           * `controller.config.control_mode` must be `True`.
+      EncoderIndexSearch:
+        brief: Turn the motor in one direction until the encoder index is traversed.
+        doc: This state can only be entered if `encoder.config.use_index` is `True`.
+      EncoderOffsetCalibration:
+        brief: Turn the motor in one direction for a few seconds and then back to measure the offset between the encoder position and the electrical phase.
+        doc: |
+           * Can only be entered if the motor is calibrated (`motor.is_calibrated`).
+           * A successful encoder calibration will make the `encoder.is_ready`
+           go to true.
+      ClosedLoopControl:
+        brief: Run closed loop control.
+        doc: |
+           * The action depends on the `controller.config.control_mode`.
+           * Can only be entered if the motor is calibrated
+           (`motor.is_calibrated`) and the encoder is ready (`encoder.is_ready`).
+      LockinSpin:
+        brief: Run lockin spin.
+        doc: |
+          Can only be entered if the motor is calibrated (`motor.is_calibrated`)
+          or the motor direction is unspecified (`motor.config.direction` == 1)
+      EncoderDirFind:
+        brief: Run encoder direction search.
+        doc: |
+          Can only be entered if the motor is calibrated (`motor.is_calibrated`).
+      Homing:
+        brief: Run axis homing function.
+        doc:
+          Endstops must be enabled to use this feature.
+
+  ODrive.ThermistorCurrentLimiter.Error:
+    nullflag: None
+    flags:
+      OverTemp:
+        doc: The thermistor temperature upper limit was exceeded. 
+
+  ODrive.Encoder.Mode:
+    values:
+      Incremental:
+      Hall:
+      Sincos:
+      SpiAbsCui:
+        value: 0x100
+        doc: compatible with CUI AMT23xx
+      SpiAbsAms:
+        value: 0x101
+        doc: compatible with AMS AS5047P, AS5048A/AS5048B (no daisy chain support)
+      SpiAbsAeat:
+        value: 0x102
+        doc: not yet implemented
+      SpiAbsRls:
+        value: 0x103
+        doc: RLS Encoders
+
+  ODrive.Controller.ControlMode:
+    values:
+      # Note: these should be sorted from lowest level of control to
+      # highest level of control, to allow "<" style comparisons.
+      VoltageControl:
+        doc: this one is not normally used
+      TorqueControl:
+      VelocityControl:
+      PositionControl:
+
+  ODrive.Controller.InputMode:
+    values:
+      Inactive:
+        brief: Disable inputs. Setpoints retain their last value.
+      Passthrough:
+        brief: Pass `input_xxx` through to `xxx_setpoint` directly.
+        doc: |
+          ### Valid Inputs:
+          * `input_pos`
+          * `input_vel`
+          * `input_current`
+
+          ### Valid Control modes:
+          * `CONTROL_MODE_VOLTAGE_CONTROL`
+          * `CONTROL_MODE_TORQUE_CONTROL`
+          * `CONTROL_MODE_VELOCITY_CONTROL`
+          * `CONTROL_MODE_POSITION_CONTROL`
+      VelRamp:
+        brief: Ramps a velocity command from the current value to the target value.
+        doc: |
+          ### Configuration Values:
+          * `config.vel_ramp_rate` [turn/sec]
+          * `config.inertia` [Nm/(turn/s^2))]
+
+          ### Valid inputs:
+          * `input_vel`
+
+          ### Valid Control Modes:
+          * `CONTROL_MODE_VELOCITY_CONTROL`
+      PosFilter:
+        brief: Implements a 2nd order position tracking filter.
+        doc: |
+          Intended for use with step/dir interface, but can also be used with
+          position-only commands.
+
+          ![POS Filter Response](../secondOrderResponse.PNG)
+          Result of a step command from 1000 to 0
+
+          ### Configuration Values:
+          * `config.input_filter_bandwidth`
+          * `config.inertia`
+
+          ### Valid inputs:
+          * `input_pos`
+
+          ### Valid Control modes:
+          * `CONTROL_MODE_POSITION_CONTROL`
+      MixChannels:
+        brief: Not Implemented.
+      TrapTraj:
+        brief: Implementes an online trapezoidal trajectory planner.
+        doc: |
+          ![Trapezoidal Planner Response](../TrapTrajPosVel.PNG)
+
+          ### Configuration Values:
+          * `trap_traj.config.vel_limit`
+          * `trap_traj.config.accel_limit`
+          * `trap_traj.config.decel_limit`
+          * `config.inertia`
+
+          ### Valid Inputs:
+          * `input_pos`
+
+          ### Valid Control Modes:
+          * `CONTROL_MODE_POSITION_CONTROL`
+      TorqueRamp:
+        brief: Ramp a torque command from the current value to the target value.
+        doc: |
+          ### Configuration Values:
+          * `config.torque_ramp_rate`
+
+          ### Valid Inputs:
+          * `input_current`
+
+          ### Valid Control Modes:
+          * `CONTROL_MODE_TORQUE_CONTROL`
+      Mirror:
+        brief: Implements "electronic mirroring".
+        doc: |
+          This is like electronic camming, but you can only mirror exactly the
+          movements of the other motor, according to a fixed ratio.
+
+          [![](http://img.youtube.com/vi/D4_vBtyVVzM/0.jpg)](http://www.youtube.com/watch?v=D4_vBtyVVzM "Example Mirroring Video")
+
+          ### Configuration Values
+          * `config.axis_to_mirror`
+          * `config.mirror_ratio`
+
+          ### Valid Inputs
+          * None.  Inputs are taken directly from the other axis encoder estimates
+
+          ### Valid Control modes
+          * `CONTROL_MODE_POSITION_CONTROL`
+
+  ODrive.Motor.MotorType:
+    values:
+      HighCurrent:
+      #LowCurrent: # not implemented
+      Gimbal: {value: 2}
+      Acim:

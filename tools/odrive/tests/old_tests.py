@@ -17,31 +17,10 @@ print = functools.partial(print, flush=True)
 import abc
 ABC = abc.ABC
 
-class TestFailed(Exception):
-    def __init__(self, message):
-        Exception.__init__(self, message)
 
 class PreconditionsNotMet(Exception):
     pass
 
-class ODriveTestContext():
-    def __init__(self, name: str, yaml: dict):
-        self.handle = None
-        self.yaml = yaml
-        self.name = name
-        self.axes = []
-        for axis_idx, axis_yaml in enumerate(yaml['axes']):
-            axis_name = (name + "." + axis_yaml['name']) if 'name' in axis_yaml else '{}.axis{}'.format(name, axis_idx)
-            self.axes.append(AxisTestContext(axis_name, axis_yaml, self))
-
-    def rediscover(self):
-        """
-        Reconnects to the ODrive
-        """
-        self.handle = odrive.find_any(
-            path="usb", serial_number=self.yaml['serial-number'], timeout=15)#, printer=print)
-        for axis_idx, axis_ctx in enumerate(self.axes):
-            axis_ctx.handle = self.handle.__dict__['axis{}'.format(axis_idx)]
 
 class AxisTestContext():
     def __init__(self, name: str, yaml: dict, odrv_ctx: ODriveTestContext):
@@ -50,24 +29,6 @@ class AxisTestContext():
         self.name = name
         self.lock = threading.Lock()
         self.odrv_ctx = odrv_ctx
-
-def test_assert_eq(observed, expected, range=None, accuracy=None):
-    sign = lambda x: 1 if x >= 0 else -1
-
-    # Comparision with absolute range
-    if not range is None:
-        if (observed < expected - range) or (observed > expected + range):
-            raise TestFailed("value out of range: expected {}+-{} but observed {}".format(expected, range, observed))
-
-    # Comparision with relative range
-    elif not accuracy is None:
-        if sign(observed) != sign(expected) or (abs(observed) < abs(expected) * (1 - accuracy)) or (abs(observed) > abs(expected) * (1 + accuracy)):
-            raise TestFailed("value out of range: expected {}+-{}% but observed {}".format(expected, accuracy*100.0, observed))
-
-    # Exact comparision
-    else:
-        if observed != expected:
-            raise TestFailed("value mismatch: expected {} but observed {}".format(expected, observed))
 
 def get_errors(axis_ctx: AxisTestContext):
     errors = []
@@ -398,29 +359,6 @@ class TestClosedLoopControl(AxisTest):
         time.sleep(0.5)
         request_state(axis_ctx, AXIS_STATE_IDLE)
 
-class TestStoreAndReboot(ODriveTest):
-    """
-    Stores the current configuration to NVM and reboots.
-    """
-    def run_test(self, odrv_ctx: ODriveTestContext, logger):
-        logger.debug("storing configuration and rebooting...")
-        odrv_ctx.handle.save_configuration()
-        try:
-            odrv_ctx.handle.reboot()
-        except fibre.ChannelBrokenException:
-            pass # this is expected
-        time.sleep(2)
-
-        odrv_ctx.rediscover()
-
-        logger.debug("verifying configuration after reboot...")
-        test_assert_eq(odrv_ctx.handle.config.brake_resistance, odrv_ctx.yaml['brake-resistance'], accuracy=0.01)
-        for axis_ctx in odrv_ctx.axes:
-            test_assert_eq(axis_ctx.handle.encoder.config.cpr, axis_ctx.yaml['encoder-cpr'])
-            test_assert_eq(axis_ctx.handle.motor.config.phase_resistance, axis_ctx.yaml['motor-phase-resistance'], accuracy=0.2)
-            test_assert_eq(axis_ctx.handle.motor.config.phase_inductance, axis_ctx.yaml['motor-phase-inductance'], accuracy=0.5)
-
-
 class TestHighVelocity(AxisTest):
     """
     Spins the motor up to it's max speed during a period of 10s.
@@ -643,7 +581,7 @@ class TestVelCtrlVsPosCtrl(DualAxisTest):
         # Set up viscous fluid load
         logger.debug("activating load on {}...".format(load_ctx.name))
         load_ctx.handle.controller.config.vel_integrator_gain = 0
-        load_ctx.handle.controller.vel_integrator_current = 0
+        load_ctx.handle.controller.vel_integrator_torque = 0
         set_limits(load_ctx, logger, vel_limit=100000, current_limit=50)
         load_ctx.handle.controller.set_vel_setpoint(0, 0)
         request_state(load_ctx, AXIS_STATE_CLOSED_LOOP_CONTROL)
