@@ -27,19 +27,19 @@
 /* Private variables ---------------------------------------------------------*/
 /* Private function prototypes -----------------------------------------------*/
 
-void setPosition(char * pStr, StreamSink& response_channel, bool use_checksum);
-void setPositionWL(char * pStr, StreamSink& response_channel, bool use_checksum);
-void setVelocity(char * pStr, StreamSink& response_channel, bool use_checksum);
-void setCurrent(char * pStr, StreamSink& response_channel, bool use_checksum);
-void setTrapezoidTrajectory(char * pStr, StreamSink& response_channel, bool use_checksum);
-void getFeedback(char * pStr, StreamSink& response_channel, bool use_checksum);
-void help(char * pStr, StreamSink& response_channel, bool use_checksum);
-void infoDump(char * pStr, StreamSink& response_channel, bool use_checksum);
-void systemCTRL(char * pStr, StreamSink& response_channel, bool use_checksum);
-void readProperty(char * pStr, StreamSink& response_channel, bool use_checksum);
-void writeProperty(char * pStr, StreamSink& response_channel, bool use_checksum);
-void updateAxisWDG(char * pStr, StreamSink& response_channel, bool use_checksum);
-void unknownCMD(char * pStr, StreamSink& response_channel, bool use_checksum);
+void cmd_set_position(char * pStr, StreamSink& response_channel, bool use_checksum);
+void cmd_set_position_wl(char * pStr, StreamSink& response_channel, bool use_checksum);
+void cmd_set_velocity(char * pStr, StreamSink& response_channel, bool use_checksum);
+void cmd_set_current(char * pStr, StreamSink& response_channel, bool use_checksum);
+void cmd_set_trapezoid_trajectory(char * pStr, StreamSink& response_channel, bool use_checksum);
+void cmd_get_feedback(char * pStr, StreamSink& response_channel, bool use_checksum);
+void cmd_help(char * pStr, StreamSink& response_channel, bool use_checksum);
+void cmd_info_dump(char * pStr, StreamSink& response_channel, bool use_checksum);
+void cmd_system_ctrl(char * pStr, StreamSink& response_channel, bool use_checksum);
+void cmd_read_property(char * pStr, StreamSink& response_channel, bool use_checksum);
+void cmd_write_property(char * pStr, StreamSink& response_channel, bool use_checksum);
+void cmd_update_axis_wdg(char * pStr, StreamSink& response_channel, bool use_checksum);
+void cmd_unknown(char * pStr, StreamSink& response_channel, bool use_checksum);
 
 /* Function implementations --------------------------------------------------*/
 
@@ -50,12 +50,12 @@ void respond(StreamSink& output, bool include_checksum, const char * fmt, TArgs&
 
     size_t len = snprintf(response, sizeof(response), fmt, std::forward<TArgs>(args)...);
     output.process_bytes((uint8_t*)response, len, nullptr); // TODO: use process_all instead
-    if (include_checksum)
-    {
+    if (include_checksum) {
         uint8_t checksum = 0;
         for (size_t i = 0; i < len; ++i)
             checksum ^= response[i];
-        output.process_bytes((uint8_t*)response, snprintf(response, sizeof(response), "*%u", checksum), nullptr);
+        len = snprintf(response, sizeof(response), "*%u", checksum);
+        output.process_bytes((uint8_t*)response, len, nullptr);
     }
     output.process_bytes((const uint8_t*)"\r\n", 2, nullptr);
 }
@@ -75,8 +75,7 @@ void ASCII_protocol_process_line(const uint8_t* buffer, size_t len, StreamSink& 
             len = i;
             break;
         }
-        if (checksum_start > i)
-        {
+        if (checksum_start > i) {
             if (buffer[i] == '*') {
                 checksum_start = i + 1;
             } else {
@@ -104,21 +103,20 @@ void ASCII_protocol_process_line(const uint8_t* buffer, size_t len, StreamSink& 
 
 
     // check incoming packet type
-    switch(cmd[0])
-    {
-        case 'p': setPosition(cmd, response_channel, use_checksum);             break;  // position control
-        case 'q': setPositionWL(cmd, response_channel, use_checksum);           break;  // position control with limits
-        case 'v': setVelocity(cmd, response_channel, use_checksum);             break;  // velocity control
-        case 'c': setCurrent(cmd, response_channel, use_checksum);              break;  // current control
-        case 't': setTrapezoidTrajectory(cmd, response_channel, use_checksum);  break;  // trapezoidal trajectory
-        case 'f': getFeedback(cmd, response_channel, use_checksum);             break;  // feedback
-        case 'h': help(cmd, response_channel, use_checksum);                    break;  // Help
-        case 'i': infoDump(cmd, response_channel, use_checksum);                break;  // Dump device info
-        case 's': systemCTRL(cmd, response_channel, use_checksum);              break;  // System
-        case 'r': readProperty(cmd, response_channel,  use_checksum);           break;  // read property
-        case 'w': writeProperty(cmd, response_channel, use_checksum);           break;  // write property
-        case 'u': updateAxisWDG(cmd, response_channel, use_checksum);           break;  // Update axis watchdog. 
-        default : unknownCMD(nullptr, response_channel, use_checksum);          break;
+    switch(cmd[0]) {
+        case 'p': cmd_set_position(cmd, response_channel, use_checksum);                break;  // position control
+        case 'q': cmd_set_position_wl(cmd, response_channel, use_checksum);             break;  // position control with limits
+        case 'v': cmd_set_velocity(cmd, response_channel, use_checksum);                break;  // velocity control
+        case 'c': cmd_set_current(cmd, response_channel, use_checksum);                 break;  // current control
+        case 't': cmd_set_trapezoid_trajectory(cmd, response_channel, use_checksum);    break;  // trapezoidal trajectory
+        case 'f': cmd_get_feedback(cmd, response_channel, use_checksum);                break;  // feedback
+        case 'h': cmd_help(cmd, response_channel, use_checksum);                        break;  // Help
+        case 'i': cmd_info_dump(cmd, response_channel, use_checksum);                   break;  // Dump device info
+        case 's': cmd_system_ctrl(cmd, response_channel, use_checksum);                 break;  // System
+        case 'r': cmd_read_property(cmd, response_channel,  use_checksum);              break;  // read property
+        case 'w': cmd_write_property(cmd, response_channel, use_checksum);              break;  // write property
+        case 'u': cmd_update_axis_wdg(cmd, response_channel, use_checksum);             break;  // Update axis watchdog. 
+        default : cmd_unknown(nullptr, response_channel, use_checksum);                 break;
     }
 }
 
@@ -126,8 +124,7 @@ void ASCII_protocol_process_line(const uint8_t* buffer, size_t len, StreamSink& 
 // @param pStr buffer of ASCII encoded values
 // @param response_channel reference to the stream to respond on
 // @param use_checksum bool to indicate whether a checksum is required on response
-void setPosition(char * pStr, StreamSink& response_channel, bool use_checksum)
-{
+void cmd_set_position(char * pStr, StreamSink& response_channel, bool use_checksum) {
     unsigned motor_number;
     float pos_setpoint, vel_feed_forward, current_feed_forward;
 
@@ -153,8 +150,7 @@ void setPosition(char * pStr, StreamSink& response_channel, bool use_checksum)
 // @param pStr buffer of ASCII encoded values
 // @param response_channel reference to the stream to respond on
 // @param use_checksum bool to indicate whether a checksum is required on response
-void setPositionWL(char * pStr, StreamSink& response_channel, bool use_checksum)
-{
+void cmd_set_position_wl(char * pStr, StreamSink& response_channel, bool use_checksum) {
     unsigned motor_number;
     float pos_setpoint, vel_limit, current_lim;
 
@@ -180,8 +176,7 @@ void setPositionWL(char * pStr, StreamSink& response_channel, bool use_checksum)
 // @param pStr buffer of ASCII encoded values
 // @param response_channel reference to the stream to respond on
 // @param use_checksum bool to indicate whether a checksum is required on response
-void setVelocity(char * pStr, StreamSink& response_channel, bool use_checksum)
-{
+void cmd_set_velocity(char * pStr, StreamSink& response_channel, bool use_checksum) {
     unsigned motor_number;
     float vel_setpoint, current_feed_forward;
     int numscan = sscanf(pStr, "v %u %f %f", &motor_number, &vel_setpoint, &current_feed_forward);
@@ -203,8 +198,7 @@ void setVelocity(char * pStr, StreamSink& response_channel, bool use_checksum)
 // @param pStr buffer of ASCII encoded values
 // @param response_channel reference to the stream to respond on
 // @param use_checksum bool to indicate whether a checksum is required on response
-void setCurrent(char * pStr, StreamSink& response_channel, bool use_checksum)
-{
+void cmd_set_current(char * pStr, StreamSink& response_channel, bool use_checksum) {
     unsigned motor_number;
     float current_setpoint;
 
@@ -224,8 +218,7 @@ void setCurrent(char * pStr, StreamSink& response_channel, bool use_checksum)
 // @param pStr buffer of ASCII encoded values
 // @param response_channel reference to the stream to respond on
 // @param use_checksum bool to indicate whether a checksum is required on response
-void setTrapezoidTrajectory(char * pStr, StreamSink& response_channel, bool use_checksum)
-{
+void cmd_set_trapezoid_trajectory(char * pStr, StreamSink& response_channel, bool use_checksum) {
     unsigned motor_number;
     float goal_point;
 
@@ -245,8 +238,7 @@ void setTrapezoidTrajectory(char * pStr, StreamSink& response_channel, bool use_
 // @param pStr buffer of ASCII encoded values
 // @param response_channel reference to the stream to respond on
 // @param use_checksum bool to indicate whether a checksum is required on response
-void getFeedback(char * pStr, StreamSink& response_channel, bool use_checksum)
-{
+void cmd_get_feedback(char * pStr, StreamSink& response_channel, bool use_checksum) {
     unsigned motor_number;
 
     if (sscanf(pStr, "f %u", &motor_number) < 1) {
@@ -265,8 +257,7 @@ void getFeedback(char * pStr, StreamSink& response_channel, bool use_checksum)
 // @param pStr buffer of ASCII encoded values
 // @param response_channel reference to the stream to respond on
 // @param use_checksum bool to indicate whether a checksum is required on response
-void help(char * pStr, StreamSink& response_channel, bool use_checksum)
-{
+void cmd_help(char * pStr, StreamSink& response_channel, bool use_checksum) {
     (void)pStr;
     respond(response_channel, use_checksum, "Please see documentation for more details");
     respond(response_channel, use_checksum, "");
@@ -289,8 +280,7 @@ void help(char * pStr, StreamSink& response_channel, bool use_checksum)
 // @param pStr buffer of ASCII encoded values
 // @param response_channel reference to the stream to respond on
 // @param use_checksum bool to indicate whether a checksum is required on response
-void infoDump(char * pStr, StreamSink& response_channel, bool use_checksum)
-{
+void cmd_info_dump(char * pStr, StreamSink& response_channel, bool use_checksum) {
     // respond(response_channel, use_checksum, "Signature: %#x", STM_ID_GetSignature());
     // respond(response_channel, use_checksum, "Revision: %#x", STM_ID_GetRevision());
     // respond(response_channel, use_checksum, "Flash Size: %#x KiB", STM_ID_GetFlashSize());
@@ -303,8 +293,7 @@ void infoDump(char * pStr, StreamSink& response_channel, bool use_checksum)
 // @param pStr buffer of ASCII encoded values
 // @param response_channel reference to the stream to respond on
 // @param use_checksum bool to indicate whether a checksum is required on response
-void systemCTRL(char * pStr, StreamSink& response_channel, bool use_checksum)
-{
+void cmd_system_ctrl(char * pStr, StreamSink& response_channel, bool use_checksum) {
     switch (pStr[1])
     {
         case 's':   save_configuration();   break;  // Save config
@@ -318,8 +307,7 @@ void systemCTRL(char * pStr, StreamSink& response_channel, bool use_checksum)
 // @param pStr buffer of ASCII encoded values
 // @param response_channel reference to the stream to respond on
 // @param use_checksum bool to indicate whether a checksum is required on response
-void readProperty(char * pStr, StreamSink& response_channel, bool use_checksum)
-{
+void cmd_read_property(char * pStr, StreamSink& response_channel, bool use_checksum) {
     char name[MAX_LINE_LENGTH];
 
     if (sscanf(pStr, "r %255s", name) < 1) {
@@ -339,8 +327,7 @@ void readProperty(char * pStr, StreamSink& response_channel, bool use_checksum)
 // @param pStr buffer of ASCII encoded values
 // @param response_channel reference to the stream to respond on
 // @param use_checksum bool to indicate whether a checksum is required on response
-void writeProperty(char * pStr, StreamSink& response_channel, bool use_checksum)
-{
+void cmd_write_property(char * pStr, StreamSink& response_channel, bool use_checksum) {
     char name[MAX_LINE_LENGTH];
     char value[MAX_LINE_LENGTH];
 
@@ -362,8 +349,7 @@ void writeProperty(char * pStr, StreamSink& response_channel, bool use_checksum)
 // @param pStr buffer of ASCII encoded values
 // @param response_channel reference to the stream to respond on
 // @param use_checksum bool to indicate whether a checksum is required on response
-void updateAxisWDG(char * pStr, StreamSink& response_channel, bool use_checksum)
-{
+void cmd_update_axis_wdg(char * pStr, StreamSink& response_channel, bool use_checksum) {
     unsigned motor_number;
 
     if(sscanf(pStr, "u %u", &motor_number) < 1) {
@@ -379,8 +365,7 @@ void updateAxisWDG(char * pStr, StreamSink& response_channel, bool use_checksum)
 // @param pStr buffer of ASCII encoded values
 // @param response_channel reference to the stream to respond on
 // @param use_checksum bool to indicate whether a checksum is required on response
-void unknownCMD(char * pStr, StreamSink& response_channel, bool use_checksum)
-{
+void cmd_unknown(char * pStr, StreamSink& response_channel, bool use_checksum) {
     (void)pStr;
     respond(response_channel, use_checksum, "unknown command");
 }
