@@ -62,9 +62,7 @@ static void uart_server_thread(void * ctx) {
     (void) ctx;
 
     for (;;) {
-        osDelay(1);
-
-        // Check for UART errors and restart recieve DMA transfer if required
+        // Check for UART errors and restart receive DMA transfer if required
         if (huart4.RxState != HAL_UART_STATE_BUSY_RX) {
             HAL_UART_AbortReceive(&huart4);
             HAL_UART_Receive_DMA(&huart4, dma_rx_buffer, sizeof(dma_rx_buffer));
@@ -92,11 +90,17 @@ static void uart_server_thread(void * ctx) {
                     new_rcv_idx - dma_last_rcv_idx, uart4_stream_output);
             dma_last_rcv_idx = new_rcv_idx;
         }
-    };
+
+        // The thread is woken up by the control loop at 8kHz. This should be
+        // enough for most applications.
+        // At 1Mbaud/s that corresponds to at most 12.5 bytes which can arrive
+        // during the sleep period.
+        osThreadSuspend(nullptr);
+    }
 }
 
 void start_uart_server() {
-    // DMA is set up to recieve in a circular buffer forever.
+    // DMA is set up to receive in a circular buffer forever.
     // We dont use interrupts to fetch the data, instead we periodically read
     // data out of the circular buffer into a parse buffer, controlled by a state machine
     HAL_UART_Receive_DMA(&huart4, dma_rx_buffer, sizeof(dma_rx_buffer));
@@ -105,6 +109,10 @@ void start_uart_server() {
     // Start UART communication thread
     osThreadDef(uart_server_thread_def, uart_server_thread, osPriorityNormal, 0, stack_size_uart_thread / sizeof(StackType_t) /* the ascii protocol needs considerable stack space */);
     uart_thread = osThreadCreate(osThread(uart_server_thread_def), NULL);
+}
+
+void uart_poll() {
+    osThreadResume(uart_thread);
 }
 
 void HAL_UART_TxCpltCallback(UART_HandleTypeDef* huart) {
