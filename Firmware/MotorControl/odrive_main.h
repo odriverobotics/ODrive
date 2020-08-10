@@ -12,6 +12,7 @@
 #include <fibre/protocol.hpp>
 #include <communication/interface_usb.h>
 #include <communication/interface_i2c.h>
+#include <communication/interface_uart.h>
 extern "C" {
 #endif
 
