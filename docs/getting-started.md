@@ -230,7 +230,7 @@ Due to a [known issue](https://github.com/madcowswe/ODrive/issues/183) it is str
 
 
 ## Position control of M0
-Let's get motor 0 up and running. The procedure for motor 1 is exactly the same, so feel free to substitute `axis0` wherever it says `axis0`.
+Let's get motor 0 up and running. The procedure for motor 1 is exactly the same, so feel free to substitute `axis1` wherever it says `axis0`.
 
 1. Type `odrv0.axis0.requested_state = AXIS_STATE_FULL_CALIBRATION_SEQUENCE` <kbd>Enter</kbd>. After about 2 seconds should hear a beep. Then the motor will turn slowly in one direction for a few seconds, then back in the other direction.
 
