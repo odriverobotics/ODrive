@@ -176,7 +176,7 @@ class TestRegenProtection(TestClosedLoopControlBase):
 
     def run_test(self, axis_ctx: ODriveAxisComponent, motor_ctx: MotorComponent, enc_ctx: EncoderComponent, logger: Logger):
         with self.prepare(axis_ctx, motor_ctx, enc_ctx, logger):
-            nominal_rps = 15.0
+            nominal_rps = 10.0
             nominal_vel = nominal_rps
             max_current = 30.0
         
