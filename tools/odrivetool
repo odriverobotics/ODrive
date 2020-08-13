@@ -5,6 +5,15 @@ ODrive command line utility
 
 from __future__ import print_function
 import sys
+
+# We require Python 3.5 for the "async def" syntax.
+if sys.version_info <= (3, 5):
+    print("Your Python version (Python {}.{}) is too old. Please install Python 3.5 or newer.".format(
+        sys.version_info.major, sys.version_info.minor
+    ))
+    exit(1)
+
+import sys
 import os
 import argparse
 import time
@@ -13,7 +22,6 @@ import math
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(
                     os.path.realpath(__file__))),
                     "Firmware", "fibre", "python"))
-import fibre.discovery
 from fibre import Logger, Event
 import odrive
 from odrive.utils import OperationAbortedException
@@ -105,7 +113,7 @@ parser.add_argument("-v", "--verbose", action="store_true",
 parser.add_argument("--version", action="store_true",
                     help="print version information and exit")
 
-parser.set_defaults(path="usb")
+parser.set_defaults(path="usb:idVendor=0x1209,idProduct=0x0D32,bInterfaceClass=0,bInterfaceSubClass=1,bInterfaceProtocol=0")
 args = parser.parse_args()
 
 # Default command

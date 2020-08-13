@@ -93,5 +93,5 @@ if save_and_reboot:
     odrv.save_configuration()
     try:
         odrv.reboot()
-    except odrive.fibre.ChannelBrokenException:
+    except odrive.fibre.ObjectLostError:
         pass

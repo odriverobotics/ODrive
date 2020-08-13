@@ -140,7 +140,18 @@ interfaces:
               This setting has no effect if `enable_can0` is also true.
               This setting has no effect on ODrive v3.2 or earlier.
               Changing this setting requires a reboot.
-          enable_ascii_protocol_on_usb: bool
+          usb_cdc_protocol:
+            type: StreamProtocolType
+            doc: |
+              The protocol that's being run on the device's virtual COM port on
+              USB.
+              Note that the ODrive has two independent interfaces on USB: One
+              is the virtual COM port (affected by this option) and the other
+              one is a vendor specific interface which always runs Fibre.
+              So changing this option does not affect the working of odrivetool.
+          uart0_protocol: StreamProtocolType
+          uart1_protocol: StreamProtocolType
+          uart2_protocol: StreamProtocolType
           max_regen_current: float32
           brake_resistance:
             type: float32
@@ -960,6 +971,23 @@ valuetypes:
       Enc1: {doc: The pin is used by quadrature encoder 1.}
       Enc2: {doc: This mode is not supported on ODrive v3.x.}
       MechBrake: {doc: This is to support external mechanical brakes.}
+
+  ODrive.StreamProtocolType:
+    values:
+      Fibre:
+        doc: |
+          Machine-to-machine protocol which gives access to all features of the
+          ODrive. This protocol is used by the official odrivetool and GUI.
+          Developers who wish to interact with this protocol are advised to do
+          so through libfibre.
+      Ascii:
+        doc: |
+          Human readable protocol designed for easy implementation for cases
+          where the use of libfibre is not desired or feasible.
+          Refer to [this page](ascii-protocol.md) for details.
+      Stdout: {doc: Output of printf(). Only intended for developers who modify
+          ODrive firmware.}
+      AsciiAndStdout: {doc: Combination of `Ascii` and `Stdout`.}
 
   ODrive.Can.Protocol:
     values: {Simple: }

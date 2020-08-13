@@ -4,7 +4,7 @@ import platform
 import threading
 import fibre
 
-def did_discover_device(device,
+async def did_discover_device(device,
                         interactive_variables, discovered_devices,
                         branding_short, branding_long,
                         logger, app_shutdown_token):
@@ -13,7 +13,7 @@ def did_discover_device(device,
     message and making the device available to the interactive
     console
     """
-    serial_number = '{:012X}'.format(device.serial_number) if hasattr(device, 'serial_number') else "[unknown serial number]"
+    serial_number = '{:012X}'.format(await device.serial_number) if hasattr(device, 'serial_number') else "[unknown serial number]"
     if serial_number in discovered_devices:
         verb = "Reconnected"
         index = discovered_devices.index(serial_number)
@@ -29,7 +29,7 @@ def did_discover_device(device,
     logger.notify("{} to {} {} as {}".format(verb, branding_long, serial_number, interactive_name))
 
     # Subscribe to disappearance of the device
-    device.__channel__._channel_broken.subscribe(lambda: did_lose_device(interactive_name, logger, app_shutdown_token))
+    device._on_lost.add_done_callback(lambda x: did_lose_device(interactive_name, logger, app_shutdown_token))
 
 def did_lose_device(interactive_name, logger, app_shutdown_token):
     """
@@ -38,6 +38,24 @@ def did_lose_device(interactive_name, logger, app_shutdown_token):
     """
     if not app_shutdown_token.is_set():
         logger.warn("Oh no {} disappeared".format(interactive_name))
+
+
+def get_user_name(interactive_variables, obj):
+    queue = [(k, v) for k, v in interactive_variables.items() if isinstance(v, fibre.libfibre.RemoteObject)]
+
+    if not isinstance(obj, fibre.libfibre.RemoteObject):
+        return None
+
+    while len(queue):
+        k, v = queue.pop(0)
+        if v == obj:
+            return k
+        for key in dir(v.__class__):
+            class_member = getattr(v.__class__, key)
+            if not key.startswith('_') and isinstance(class_member, fibre.libfibre.RemoteAttribute):
+                queue.append((k + "." + (key if not class_member._magic_getter else "_" + key + "_property"), class_member._get_obj(v)))
+
+    return "anonymous_remote_object_" + str(self._obj_handle)
 
 def launch_shell(args,
                 interactive_variables,
@@ -54,6 +72,8 @@ def launch_shell(args,
 
     discovered_devices = []
     globals().update(interactive_variables)
+
+    fibre.libfibre.get_user_name = lambda obj: get_user_name(interactive_variables, obj)
 
     # Connect to device
     logger.debug("Waiting for {}...".format(branding_long))
@@ -90,10 +110,10 @@ def launch_shell(args,
         console.runcode = console.run_cell 
         interact = console
 
-        # Catch ChannelBrokenException (since disconnect is not always an error)
+        # Catch ObjectLostError (since disconnect is not always an error)
         default_exception_hook = console._showtraceback
         def filtered_exception_hook(ex_class, ex, trace):
-            if(ex_class.__module__+'.'+ex_class.__name__ != 'fibre.protocol.ChannelBrokenException'):
+            if(ex_class.__module__+'.'+ex_class.__name__ != 'fibre.libfibre.ObjectLostError'):
                 default_exception_hook(ex_class,ex,trace)
             
         console._showtraceback = filtered_exception_hook
@@ -112,11 +132,11 @@ def launch_shell(args,
         console = code.InteractiveConsole(locals=interactive_variables)
         interact = lambda: console.interact(banner='')
 
-        # Catch ChannelBrokenException (since disconnect is not alway an error)
+        # Catch ObjectLostError (since disconnect is not alway an error)
         console.runcode("import sys")
         console.runcode("default_exception_hook = sys.excepthook")
         console.runcode("def filtered_exception_hook(ex_class, ex, trace):\n"
-                        "  if ex_class.__module__ + '.' + ex_class.__name__ != 'fibre.protocol.ChannelBrokenException':\n"
+                        "  if ex_class.__module__ + '.' + ex_class.__name__ != 'fibre.libfibre.ObjectLostError':\n"
                         "    default_exception_hook(ex_class,ex,trace)")
         console.runcode("sys.excepthook=filtered_exception_hook")
 

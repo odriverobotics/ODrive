@@ -41,37 +41,17 @@ interactive_variables = {}
 
 discovered_devices = []
 
-def did_discover_device(odrive, logger, app_shutdown_token):
-    """
-    Handles the discovery of new devices by displaying a
-    message and making the device available to the interactive
-    console
-    """
-    serial_number = odrive.serial_number if hasattr(odrive, 'serial_number') else "[unknown serial number]"
-    if serial_number in discovered_devices:
-        verb = "Reconnected"
-        index = discovered_devices.index(serial_number)
-    else:
-        verb = "Connected"
-        discovered_devices.append(serial_number)
-        index = len(discovered_devices) - 1
-    interactive_name = "odrv" + str(index)
+def benchmark(odrv):
+    import asyncio
+    import time
 
-    # Publish new ODrive to interactive console
-    interactive_variables[interactive_name] = odrive
-    globals()[interactive_name] = odrive # Add to globals so tab complete works
-    logger.notify("{} to ODrive {:012X} as {}".format(verb, serial_number, interactive_name))
+    async def measure_async():
+        start = time.monotonic()
+        futures = [odrv.vbus_voltage for i in range(1000)]
+#        data = [await f for f in futures]
+#        print("took " + str(time.monotonic() - start) + " seconds. Average is " + str(sum(data) / len(data)))
 
-    # Subscribe to disappearance of the device
-    odrive.__channel__._channel_broken.subscribe(lambda: did_lose_device(interactive_name, logger, app_shutdown_token))
-
-def did_lose_device(interactive_name, logger, app_shutdown_token):
-    """
-    Handles the disappearance of a device by displaying
-    a message.
-    """
-    if not app_shutdown_token.is_set():
-        logger.warn("Oh no {} disappeared".format(interactive_name))
+    fibre.libfibre.libfibre.loop.call_soon_threadsafe(lambda: asyncio.ensure_future(measure_async()))
 
 def launch_shell(args, logger, app_shutdown_token):
     """
@@ -84,6 +64,7 @@ def launch_shell(args, logger, app_shutdown_token):
     interactive_variables = {
         'start_liveplotter': start_liveplotter,
         'dump_errors': dump_errors,
+        'benchmark': benchmark,
         'oscilloscope_dump': oscilloscope_dump,
         'dump_interrupts': dump_interrupts,
         'dump_dma': dump_dma,

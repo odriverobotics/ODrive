@@ -9,6 +9,8 @@
 #define I2C_TX_BUFFER_SIZE 128
 
 I2CStats_t i2c_stats_;
+/*
+TODO: add support back
 
 static uint8_t i2c_rx_buffer[I2C_RX_BUFFER_PREAMBLE_SIZE + I2C_RX_BUFFER_SIZE];
 static uint8_t i2c_tx_buffer[I2C_TX_BUFFER_SIZE];
@@ -23,13 +25,13 @@ public:
     size_t get_free_space() { return SIZE_MAX; }
 } i2c1_packet_output;
 BidirectionalPacketBasedChannel i2c1_channel(i2c1_packet_output);
-
+*/
 void start_i2c_server() {
     // CAN H = SDA
     // CAN L = SCL
-    HAL_I2C_EnableListen_IT(&hi2c1);
+    //HAL_I2C_EnableListen_IT(&hi2c1);
 }
-
+/*
 void i2c_handle_packet(I2C_HandleTypeDef *hi2c) {
     size_t received = sizeof(i2c_rx_buffer) - hi2c->XferCount;
     if (received > I2C_RX_BUFFER_PREAMBLE_SIZE) {
@@ -84,3 +86,4 @@ void HAL_I2C_ErrorCallback(I2C_HandleTypeDef *hi2c) {
     // Continue listening
     HAL_I2C_EnableListen_IT(hi2c);
 }
+*/

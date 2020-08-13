@@ -110,13 +110,11 @@ try:
     keywords = ['odrive', 'motor', 'motor control'],
     install_requires = [
       'ipython',  # Used to do the interactive parts of the odrivetool
-      'PyUSB',    # Required to access USB devices from Python through libusb
-      'PySerial', # Required to access serial devices from Python
+      'PyUSB',    # Only required for DFU. Normal communication happens through libfibre.
       'requests', # Used to by DFU to load firmware files
       'IntelHex', # Used to by DFU to download firmware from github
       'matplotlib', # Required to run the liveplotter
       'monotonic', # For compatibility with older python versions
-      'appdirs',  # Used to find caching directory
       'pywin32 >= 222; platform_system == "Windows"' # Required for fancy terminal features on Windows
     ],
     package_data={'': ['version.txt']},

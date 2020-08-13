@@ -1,4 +1,5 @@
 __pycache__
 .Trash*
+/cpp/third_party
 /build
 /.tup

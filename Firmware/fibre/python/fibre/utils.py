@@ -66,13 +66,14 @@ class Event():
         Invokes the specified handler exactly once as soon as the
         specified event is set. If the event is already set, the
         handler is invoked immediately.
+        The subscribers are called in the reverse order in which they subscribed.
         Returns a function that can be invoked to unsubscribe.
         """
         if handler is None:
             raise TypeError
         self._mutex.acquire()
         try:
-            self._subscribers.append(handler)
+            self._subscribers.insert(0, handler)
             if self._evt.is_set():
                 handler()
         finally:

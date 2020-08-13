@@ -50,7 +50,7 @@ typedef struct {
 } SystemStats_t;
 
 struct PWMMapping_t {
-    endpoint_ref_t endpoint;
+    endpoint_ref_t endpoint = {0, 0};
     float min = 0;
     float max = 0;
 };
@@ -69,7 +69,10 @@ struct BoardConfig_t {
     uint32_t uart2_baudrate = 115200;
     bool enable_can0 = true;
     bool enable_i2c0 = false;
-    bool enable_ascii_protocol_on_usb = true;
+    ODriveIntf::StreamProtocolType uart0_protocol = ODriveIntf::STREAM_PROTOCOL_TYPE_ASCII_AND_STDOUT;
+    ODriveIntf::StreamProtocolType uart1_protocol = ODriveIntf::STREAM_PROTOCOL_TYPE_ASCII_AND_STDOUT;
+    ODriveIntf::StreamProtocolType uart2_protocol = ODriveIntf::STREAM_PROTOCOL_TYPE_ASCII_AND_STDOUT;
+    ODriveIntf::StreamProtocolType usb_cdc_protocol = ODriveIntf::STREAM_PROTOCOL_TYPE_ASCII_AND_STDOUT;
     float max_regen_current = 0.0f;
     float brake_resistance = DEFAULT_BRAKE_RESISTANCE;
     float dc_bus_undervoltage_trip_level = 8.0f;                        //<! [V] minimum voltage below which the motor stops operating

@@ -1,6 +1,9 @@
 #ifndef __FIBRE_BUFPTR_HPP
 #define __FIBRE_BUFPTR_HPP
 
+#include <stdlib.h>
+#include <vector>
+
 namespace fibre {
 
 static inline bool soft_assert(bool expr) { return expr; } // TODO: implement
@@ -24,10 +27,13 @@ struct generic_bufptr_t {
     template<size_t I>
     generic_bufptr_t(T (&begin)[I]) : generic_bufptr_t(begin, I) {}
 
-    generic_bufptr_t(const std::vector<std::remove_const_t<T>>& vector)
+    generic_bufptr_t(std::vector<typename std::remove_const<T>::type>& vector)
         : generic_bufptr_t(vector.data(), vector.size()) {}
 
-    generic_bufptr_t(const generic_bufptr_t<std::remove_const_t<T>>& other)
+    generic_bufptr_t(const std::vector<typename std::remove_const<T>::type>& vector)
+        : generic_bufptr_t(vector.data(), vector.size()) {}
+
+    generic_bufptr_t(const generic_bufptr_t<typename std::remove_const<T>::type>& other)
         : generic_bufptr_t(other.begin_, other.end_) {}
 
     generic_bufptr_t& operator+=(size_t num) {
@@ -81,6 +87,7 @@ struct generic_bufptr_t {
     T& back() const { return *(end() - 1); }
     T& operator[](size_t idx) { return *(begin() + idx); }
 
+private:
     T* begin_;
     T* end_;
 };

@@ -39,7 +39,7 @@ size_t oscilloscope_pos = 0;
 /* Function implementations --------------------------------------------------*/
 
 void init_communication(void) {
-    printf("hi!\r\n");
+    //printf("hi!\r\n");
 
     if (odrv.config_.enable_uart0 && uart0) {
         start_uart_server();
@@ -56,19 +56,36 @@ void init_communication(void) {
     }
 }
 
+#include <fibre/../../async_stream.hpp>
+
+
 extern "C" {
 int _write(int file, const char* data, int len);
 }
 
 // @brief This is what printf calls internally
 int _write(int file, const char* data, int len) {
-#ifdef USB_PROTOCOL_STDOUT
-    usb_stream_output_ptr->process_bytes((const uint8_t *)data, len, nullptr);
-#endif
-#ifdef UART_PROTOCOL_STDOUT
-    uart_stream_output_ptr->process_bytes((const uint8_t *)data, len, nullptr);
-#endif
-    return len;
+    fibre::cbufptr_t buf{(const uint8_t*)data, (const uint8_t*)data + len};
+
+    if (odrv.config_.uart0_protocol == ODrive::STREAM_PROTOCOL_TYPE_STDOUT ||
+        odrv.config_.uart0_protocol == ODrive::STREAM_PROTOCOL_TYPE_ASCII_AND_STDOUT) {
+        uart0_stdout_sink.write(buf);
+        if (!uart0_stdout_pending) {
+            uart0_stdout_pending = true;
+            osMessagePut(uart_event_queue, 3, 0);
+        }
+    }
+
+    if (odrv.config_.usb_cdc_protocol == ODrive::STREAM_PROTOCOL_TYPE_STDOUT ||
+        odrv.config_.usb_cdc_protocol == ODrive::STREAM_PROTOCOL_TYPE_ASCII_AND_STDOUT) {
+        usb_cdc_stdout_sink.write(buf);
+        if (!usb_cdc_stdout_pending) {
+            usb_cdc_stdout_pending = true;
+            osMessagePut(usb_event_queue, 7, 0);
+        }
+    }
+
+    return len; // Always pretend that we processed everything
 }
 
 

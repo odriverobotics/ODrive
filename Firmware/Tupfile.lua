@@ -84,30 +84,15 @@ else
 end
 buildsuffix = boardversion
 
--- USB I/O settings
-if tup.getconfig("USB_PROTOCOL") == "native" or tup.getconfig("USB_PROTOCOL") == "" then
-    FLAGS += "-DUSB_PROTOCOL_NATIVE"
-elseif tup.getconfig("USB_PROTOCOL") == "native-stream" then
-    FLAGS += "-DUSB_PROTOCOL_NATIVE_STREAM_BASED"
-elseif tup.getconfig("USB_PROTOCOL") == "stdout" then
-    FLAGS += "-DUSB_PROTOCOL_STDOUT"
-elseif tup.getconfig("USB_PROTOCOL") == "none" then
-    FLAGS += "-DUSB_PROTOCOL_NONE"
-else
-    error("unknown USB protocol")
+-- --not 
+-- TODO: remove this setting
+if tup.getconfig("USB_PROTOCOL") ~= "native" and tup.getconfig("USB_PROTOCOL") ~= "" then
+    error("CONFIG_USB_PROTOCOL is deprecated")
 end
 
 -- UART I/O settings
-if tup.getconfig("UART_PROTOCOL") == "native" then
-    FLAGS += "-DUART_PROTOCOL_NATIVE"
-elseif tup.getconfig("UART_PROTOCOL") == "ascii" or tup.getconfig("UART_PROTOCOL") == "" then
-    FLAGS += "-DUART_PROTOCOL_ASCII"
-elseif tup.getconfig("UART_PROTOCOL") == "stdout" then
-    FLAGS += "-DUART_PROTOCOL_STDOUT"
-elseif tup.getconfig("UART_PROTOCOL") == "none" then
-    FLAGS += "-DUART_PROTOCOL_NONE"
-else
-    error("unknown UART protocol "..tup.getconfig("UART_PROTOCOL"))
+if tup.getconfig("UART_PROTOCOL") ~= "ascii" and tup.getconfig("UART_PROTOCOL") ~= "" then
+    error("CONFIG_UART_PROTOCOL is deprecated")
 end
 
 -- GPIO settings
@@ -133,6 +118,7 @@ FLAGS += '-DUSE_HAL_DRIVER'
 FLAGS += '-mthumb'
 FLAGS += '-mfloat-abi=hard'
 FLAGS += { '-Wall', '-Wdouble-promotion', '-Wfloat-conversion', '-fdata-sections', '-ffunction-sections'}
+FLAGS += '-DFIBRE_ENABLE_SERVER'
 
 -- linker flags
 LDFLAGS += board.ldflags
@@ -206,7 +192,7 @@ sources = {
     'communication/interface_usb.cpp',
     'communication/interface_can.cpp',
     'communication/interface_i2c.cpp',
-    'fibre/cpp/protocol.cpp',
+    'fibre/cpp/legacy_protocol.cpp',
     'FreeRTOS-openocd.c',
     'autogen/version.c'
 }

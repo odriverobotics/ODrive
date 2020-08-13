@@ -27,7 +27,7 @@ class TestStoreAndReboot():
         odrive.handle.save_configuration()
         try:
             odrive.handle.reboot()
-        except fibre.ChannelBrokenException:
+        except fibre.ObjectLostError:
             pass # this is expected
         odrive.handle = None
         time.sleep(2)

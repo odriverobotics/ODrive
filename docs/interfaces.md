@@ -7,12 +7,21 @@ The ODrive can be controlled over various ports and protocols. If you're comfort
 ### Table of contents
 <!-- TOC depthFrom:2 depthTo:2 -->
 
-- [Pinout](#pinout)
-- [Native Protocol](#native-protocol)
-- [ASCII protocol](#ascii-protocol)
-- [Step/direction](#stepdirection)
-- [RC PWM input](#rc-pwm-input)
-- [Ports](#ports)
+- [Interfaces](#interfaces)
+    - [Table of contents](#table-of-contents)
+  - [Pinout](#pinout)
+  - [Native Protocol](#native-protocol)
+    - [Python](#python)
+    - [Other languages](#other-languages)
+  - [ASCII protocol](#ascii-protocol)
+    - [Arduino](#arduino)
+  - [Step/direction](#stepdirection)
+  - [RC PWM input](#rc-pwm-input)
+  - [Analog input](#analog-input)
+  - [Ports](#ports)
+    - [USB](#usb)
+    - [UART](#uart)
+  - [CAN Simple Protocol](#can-simple-protocol)
 
 <!-- /TOC -->
 
@@ -118,7 +127,7 @@ Any of the numerical parameters that are writable from the ODrive Tool can be ho
     odrv0.config.gpio4_mode = GPIO_MODE_PWM0
     odrv0.config.gpio4_pwm_mapping.min = -2
     odrv0.config.gpio4_pwm_mapping.max = 2
-    odrv0.config.gpio4_pwm_mapping.endpoint = odrv0.axis0.controller._remote_attributes['input_pos']
+    odrv0.config.gpio4_pwm_mapping.endpoint = odrv0.axis0.controller._input_pos_property
     ```
    Note: you can disable the input by setting `odrv0.config.gpio4_pwm_mapping.endpoint = None`
 4. Save the configuration and reboot

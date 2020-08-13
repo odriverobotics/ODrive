@@ -6,8 +6,6 @@ import threading
 import platform
 import subprocess
 import os
-import numpy as np
-import matplotlib.pyplot as plt
 from fibre.utils import Event
 import odrive.enums
 from odrive.enums import *
@@ -35,6 +33,9 @@ _VT100Colors = {
 }
 
 def calculate_thermistor_coeffs(degree, Rload, R_25, Beta, Tmin, Tmax, plot = False):
+    import numpy as np
+    import matplotlib.pyplot as plt
+
     T_25 = 25 + 273.15 #Kelvin
     temps = np.linspace(Tmin, Tmax, 1000)
     tempsK = temps + 273.15
@@ -70,7 +71,7 @@ def set_motor_thermistor_coeffs(axis, Rload, R_25, Beta, Tmin, TMax):
     axis.motor_thermistor.config.poly_coefficient_3 = float(coeffs[0])
 
 def dump_errors(odrv, clear=False):
-    axes = [(name, axis) for name, axis in odrv._remote_attributes.items() if 'axis' in name]
+    axes = [(name, getattr(odrv, name)) for name in dir(odrv) if name.startswith('axis')]
     axes.sort()
     for name, axis in axes:
         print(name)

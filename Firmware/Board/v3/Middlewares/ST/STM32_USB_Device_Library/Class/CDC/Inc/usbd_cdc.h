@@ -111,7 +111,6 @@ typedef struct _USBD_CDC_Itf
 
 typedef struct
 {
-  uint8_t* Buffer;
   uint32_t Length;
   volatile uint8_t State;
 }
@@ -165,9 +164,9 @@ uint8_t  USBD_CDC_SetTxBuffer        (USBD_HandleTypeDef   *pdev,
 uint8_t  USBD_CDC_SetRxBuffer        (USBD_HandleTypeDef   *pdev,
                                       uint8_t  *pbuff, uint8_t endpoint_pair);
   
-uint8_t  USBD_CDC_ReceivePacket      (USBD_HandleTypeDef *pdev, uint8_t endpoint_pair);
+uint8_t  USBD_CDC_ReceivePacket      (USBD_HandleTypeDef *pdev, uint8_t* buf, uint16_t len, uint8_t endpoint_num);
 
-uint8_t  USBD_CDC_TransmitPacket     (USBD_HandleTypeDef *pdev, uint8_t endpoint_pair);
+uint8_t  USBD_CDC_TransmitPacket     (USBD_HandleTypeDef *pdev, uint8_t* buf, size_t len, uint8_t endpoint_num);
 /**
   * @}
   */ 

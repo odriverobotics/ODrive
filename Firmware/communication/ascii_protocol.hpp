@@ -1,22 +1,48 @@
-#ifndef __ASCII_PROTOCOL_H
-#define __ASCII_PROTOCOL_H
+#ifndef __ASCII_PROTOCOL_HPP
+#define __ASCII_PROTOCOL_HPP
 
+#include <fibre/../../async_stream.hpp>
 
-/* Includes ------------------------------------------------------------------*/
-#include <fibre/protocol.hpp>
+#define MAX_LINE_LENGTH ((size_t)256)
 
-#include <stdlib.h>
-#include <stdint.h>
-#include <stdbool.h>
+class AsciiProtocol : fibre::ReadCompleter, fibre::WriteCompleter {
+public:
+    AsciiProtocol(fibre::AsyncStreamSource* rx_channel, fibre::AsyncStreamSink* tx_channel)
+        : rx_channel_(rx_channel), tx_channel_(tx_channel) {}
 
-/* Exported types ------------------------------------------------------------*/
-/* Exported constants --------------------------------------------------------*/
-/* Exported variables --------------------------------------------------------*/
-/* Exported macro ------------------------------------------------------------*/
-/* Exported functions --------------------------------------------------------*/
+    void start();
 
-/* Exported functions --------------------------------------------------------*/
-void ASCII_protocol_parse_stream(const uint8_t* buffer, size_t len, StreamSink& response_channel);
+private:
+    void cmd_set_position(char * pStr, bool use_checksum);
+    void cmd_set_position_wl(char * pStr, bool use_checksum);
+    void cmd_set_velocity(char * pStr, bool use_checksum);
+    void cmd_set_torque(char * pStr, bool use_checksum);
+    void cmd_set_trapezoid_trajectory(char * pStr, bool use_checksum);
+    void cmd_get_feedback(char * pStr, bool use_checksum);
+    void cmd_help(char * pStr, bool use_checksum);
+    void cmd_info_dump(char * pStr, bool use_checksum);
+    void cmd_system_ctrl(char * pStr, bool use_checksum);
+    void cmd_read_property(char * pStr, bool use_checksum);
+    void cmd_write_property(char * pStr, bool use_checksum);
+    void cmd_update_axis_wdg(char * pStr, bool use_checksum);
+    void cmd_unknown(char * pStr, bool use_checksum);
 
+    template<typename ... TArgs> void respond(bool include_checksum, const char * fmt, TArgs&& ... args);
+    void process_line(fibre::cbufptr_t buffer);
+    void on_write_finished(fibre::WriteResult result);
+    void on_read_finished(fibre::ReadResult result);
 
-#endif /* __ASCII_PROTOCOL_H */
+    fibre::AsyncStreamSource* rx_channel_ = nullptr;
+    fibre::AsyncStreamSink* tx_channel_ = nullptr;
+
+    fibre::TransferHandle tx_handle_ = 0; // non-zero while a TX operation is in progress
+    uint8_t* rx_end_ = nullptr; // non-zero if an RX operation has finished but wasn't handled yet because the TX channel was busy
+    const uint8_t* tx_end_ = nullptr;
+
+    uint8_t rx_buf_[MAX_LINE_LENGTH];
+    bool read_active_ = true;
+
+    char tx_buf_[64];
+};
+
+#endif // __ASCII_PROTOCOL_HPP

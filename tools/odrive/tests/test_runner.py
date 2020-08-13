@@ -259,7 +259,7 @@ class ODriveComponent(Component):
         self.handle.save_configuration()
         try:
             self.handle.reboot()
-        except fibre.ChannelBrokenException:
+        except fibre.ObjectLostError:
             pass # this is expected
         self.handle = None
         time.sleep(2)
@@ -268,7 +268,7 @@ class ODriveComponent(Component):
     def erase_config_and_reboot(self):
         try:
             self.handle.erase_configuration()
-        except fibre.ChannelBrokenException:
+        except fibre.ObjectLostError:
             pass # this is expected
         self.handle = None
         time.sleep(2)

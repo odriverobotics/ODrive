@@ -74,7 +74,7 @@ class ChannelDamagedException(Exception):
     """
     pass
 
-class ChannelBrokenException(Exception):
+class ObjectLostError(Exception):
     """
     Raised when the channel is permanently broken
     """
@@ -305,13 +305,13 @@ class Channel(PacketSink):
                     # Wait for ACK until the resend timeout is exceeded
                     try:
                         if wait_any(self._resend_timeout, ack_event, self._channel_broken) != 0:
-                            raise ChannelBrokenException()
+                            raise ObjectLostError()
                     except TimeoutError:
                         attempt += 1
                         continue # resend
                     return self._responses.pop(seq_no)
                     # TODO: record channel statistics
-                raise ChannelBrokenException() # Too many resend attempts
+                raise ObjectLostError() # Too many resend attempts
             finally:
                 self._expected_acks.pop(seq_no)
                 self._responses.pop(seq_no, None)
