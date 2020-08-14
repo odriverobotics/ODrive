@@ -29,7 +29,7 @@ voltage_integral += current_error * current_integrator_gain
 voltage_cmd = current_error * current_gain + voltage_integral (+ voltage_feedforward when we have motor model)
 ```
 
-`current_gain` and `current_integrator_gain` are automatically set according to the `motor.config.current_control_bandwidth` and the measured `phase_resistance` and `phase_inductance` to produce (theoretically) a critically-damped controller at the given bandwidth (in rad/s).
+Note: `current_gain` and `current_integrator_gain` are automatically set according to `motor.config.current_control_bandwidth`
 
 For more detail refer to [controller.cpp](https://github.com/madcowswe/ODrive/blob/master/Firmware/MotorControl/controller.cpp#L86).
 ## Tuning
