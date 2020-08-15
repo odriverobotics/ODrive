@@ -40,6 +40,7 @@ odrv0.axis0.motor.config.pre_calibrated = True
 
 odrv0.axis0.controller.config.control_mode = CONTROL_MODE_POSITION_CONTROL
 odrv0.axis0.controller.config.input_mode = INPUT_MODE_PASSTHROUGH
+odrv0.axis0.requested_state = AXIS_STATE_CLOSED_LOOP_CONTROL
 
 odrv0.axis0.controller.start_anticogging_calibration()
 
