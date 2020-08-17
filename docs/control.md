@@ -29,6 +29,8 @@ voltage_integral += current_error * current_integrator_gain
 voltage_cmd = current_error * current_gain + voltage_integral (+ voltage_feedforward when we have motor model)
 ```
 
+Note: `current_gain` and `current_integrator_gain` are automatically set according to `motor.config.current_control_bandwidth`
+
 For more detail refer to [controller.cpp](https://github.com/madcowswe/ODrive/blob/master/Firmware/MotorControl/controller.cpp#L86).
 ## Tuning
 Tuning the motor controller is an essential step to unlock the full potential of the ODrive. Tuning allows for the controller to quickly respond to disturbances or changes in the system (such as an external force being applied or a change in the setpoint) without becoming unstable. Correctly setting the three tuning parameters (called gains) ensures that ODrive can control your motors in the most effective way possible. The three values are:
