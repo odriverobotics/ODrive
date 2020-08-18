@@ -5,6 +5,7 @@ import scipy as sp
 import scipy.signal as signal
 import scipy.integrate
 import matplotlib.pyplot as plt
+import time
 
 def sign(num):
     if num > 0:
@@ -13,6 +14,73 @@ def sign(num):
         return -1
     else:
         return 0
+
+C = np.array([0, 1/5, 3/10, 4/5, 8/9, 1])
+A = np.array([
+    [0, 0, 0, 0, 0],
+    [1/5, 0, 0, 0, 0],
+    [3/40, 9/40, 0, 0, 0],
+    [44/45, -56/15, 32/9, 0, 0],
+    [19372/6561, -25360/2187, 64448/6561, -212/729, 0],
+    [9017/3168, -355/33, 46732/5247, 49/176, -5103/18656]
+])
+B = np.array([35/384, 0, 500/1113, 125/192, -2187/6784, 11/84])
+
+# rk_step from scipy.integrate rk.py
+def rk_step(fun, t, y, f, h, A, B, C, K):
+    """Perform a single Runge-Kutta step.
+    This function computes a prediction of an explicit Runge-Kutta method and
+    also estimates the error of a less accurate method.
+    Notation for Butcher tableau is as in [1]_.
+    Parameters
+    ----------
+    fun : callable
+        Right-hand side of the system.
+    t : float
+        Current time.
+    y : ndarray, shape (n,)
+        Current state.
+    f : ndarray, shape (n,)
+        Current value of the derivative, i.e., ``fun(x, y)``.
+    h : float
+        Step to use.
+    A : ndarray, shape (n_stages, n_stages)
+        Coefficients for combining previous RK stages to compute the next
+        stage. For explicit methods the coefficients at and above the main
+        diagonal are zeros.
+    B : ndarray, shape (n_stages,)
+        Coefficients for combining RK stages for computing the final
+        prediction.
+    C : ndarray, shape (n_stages,)
+        Coefficients for incrementing time for consecutive RK stages.
+        The value for the first stage is always zero.
+    K : ndarray, shape (n_stages + 1, n)
+        Storage array for putting RK stages here. Stages are stored in rows.
+        The last row is a linear combination of the previous rows with
+        coefficients
+    Returns
+    -------
+    y_new : ndarray, shape (n,)
+        Solution at t + h computed with a higher accuracy.
+    f_new : ndarray, shape (n,)
+        Derivative ``fun(t + h, y_new)``.
+    References
+    ----------
+    .. [1] E. Hairer, S. P. Norsett G. Wanner, "Solving Ordinary Differential
+           Equations I: Nonstiff Problems", Sec. II.4.
+    """
+    K[0] = f
+    for s, (a, c) in enumerate(zip(A[1:], C[1:]), start=1):
+        dy = np.dot(K[:s].T, a[:s]) * h
+        K[s] = fun(t + c * h, y + dy)
+
+    y_new = y + h * np.dot(K[:-1].T, B)
+    f_new = fun(t + h, y_new)
+
+    K[-1] = f_new
+
+    return y_new, f_new
+
 
 # example params for d5065 motor
 # phase_R = 0.039 Ohms
@@ -90,7 +158,7 @@ class motor_pmsm_combined:
         self.R = R
         self.pole_pairs = pole_pairs
 
-    def diff_eqs(self, t, y, V_d, V_q):
+    def diff_eqs(self, t, y, V_d, V_q, T_load):
         # inputs are V_d, V_q
         # state is y, y = [theta, theta_dot, I_d, I_q]
 
@@ -116,6 +184,7 @@ class motor:
     def __init__(self, J, b_coulomb, b_viscous, R, L_q, L_d, KV, pole_pairs, dT):
         self.dT = dT
         self.b_coulomb = b_coulomb
+        self.b_viscous = b_viscous
         self.KV = KV
         self.pole_pairs = pole_pairs
         kt = 8.27/KV
@@ -136,10 +205,15 @@ class motor:
         self.C_e = np.array([[1,0],[0,1]])
         self.D_e = np.array([[0,0],[0,0]])
 
+        # state variables for motor
         self.theta = 0      # mechanical!
         self.theta_dot = 0  # mechanical!
         self.I_d = 0
         self.I_q = 0
+
+        # K matrix. For integrator?
+        # np.empty((self.n_stages + 1, self.n_stages), dtype=self.y.dtype)
+        self.K = np.empty((7, 4))
 
     def simulate(self, t, u, x0):
         # t is timesteps [t0, t1, ...]
@@ -152,11 +226,7 @@ class motor:
         I_d = []
         I_q = []
         for i in range(len(t)):
-            out = self.singleStep(u[1],u[2],u[0])
-            self.theta = out[0]
-            self.theta_dot = out[1]
-            self.I_d = out[2]
-            self.I_q = out[3]
+            self.single_step_rk(u[2],u[1],u[0])
             time.append(i*self.dT)
             pos.append(self.theta)
             vel.append(self.theta_dot)
@@ -165,44 +235,34 @@ class motor:
 
         return [time,pos,vel,I_d,I_q]
 
-    def singleStep(self, V_d, V_q, T_load):
-        # create the discretized SS electrical and mechanical models, valid for this time instance
-        theta_e = self.theta * self.pole_pairs
-        theta_dot_e = self.theta_dot * self.pole_pairs
+    def inputs(self, V_q, V_d, T_load):
+        self.V_q = V_q
+        self.V_d = V_d
+        self.T_load = T_load
 
-        V_q_effective = V_q - theta_dot_e * self.lambda_m
+    def diff_eqs(self, t, y):
+        # inputs are self.V_q, self.V_d, self.T_load
+        # state is y, y = [theta, theta_dot, I_d, I_q]
+        # set_inputs must be called before this if the inputs have changed.
+        theta = y[0]
+        theta_dot = y[1]
+        I_d = y[2]
+        I_q = y[3]
 
-        # make new A electrical matrix with the weird coupled theta_dot terms
-        A_e = np.add(self.A_e, np.array([[0, theta_dot_e * self.L_q / self.L_d],[-1*theta_dot_e * self.L_d / self.L_q, 0]]))
+        torque = 3*self.pole_pairs/2 * (self.lambda_m * I_q + (self.L_d - self.L_q)*I_d*I_q) - self.T_load
 
-        # SS_e is a discretized version of the electrical model, only valid for this time step (theta_dot will change)
-        SS_e = signal.cont2discrete((A_e, self.B_e, self.C_e, self.D_e), self.dT)
-        Ad_e = SS_e[0] # discretized A matrix for electrical system
-        Bd_e = SS_e[1]
-        Cd_e = SS_e[2]
-        Dd_e = SS_e[3]
+        # theta_dot = theta_dot, no ode here
+        theta_ddot = (1/self.J) * (torque - self.b_viscous * theta_dot - self.b_coulomb * sign(theta_dot))
+        I_d_dot = self.V_d / self.L_d - self.R / self.L_d * I_d + theta_dot*self.pole_pairs * self.L_q / self.L_d * I_q
+        I_q_dot = self.V_q / self.L_q - self.R / self.L_q * I_q - theta_dot*self.pole_pairs * self.L_d / self.L_q * I_d - theta_dot*self.pole_pairs * self.lambda_m / self.L_q
 
-        # do the same thing for the mechanical model
-        Torque = 3*self.pole_pairs/2 * (self.lambda_m * self.I_q + (self.L_d - self.L_q)*self.I_d*self.I_q) - T_load
+        return np.array([theta_dot, theta_ddot, I_d_dot, I_q_dot])
 
-        if self.theta_dot == 0 and (-1*self.b_coulomb < Torque < self.b_coulomb):
-            Torque = 0
-
-        A_m = np.add(self.A_m, np.array([[0,0], [0, -1*self.b_coulomb/self.J*sign(self.theta_dot)]]))
-
-        SS_m = signal.cont2discrete((A_m, self.B_m, self.C_m, self.D_m),self.dT)
-        Ad_m = SS_m[0] # discretized A matrix for mechanical system
-        Bd_m = SS_m[1]
-        Cd_m = SS_m[2]
-        Dd_m = SS_m[3]
-
-        # we now have SS models for the electrical and mechanical systems, valid at this specific time step
-        # update states, return as output
-        input_e = np.array([[V_d],[V_q_effective]])
-        (I_d, I_q) = np.add(np.matmul(Ad_e, np.array([[self.I_d],[self.I_q]])), np.matmul(Bd_e, input_e))
-        (theta, theta_dot) = np.add(np.matmul(Ad_m, np.array([[self.theta],[self.theta_dot]])), np.matmul(Bd_m, np.array([[Torque]])))
-
-        return (theta[0], theta_dot[0], I_d[0], I_q[0])
+    def single_step_rk(self, V_q, V_d, T_load):
+        # given inputs
+        self.inputs(V_q, V_d, T_load)
+        x = (d5065.theta, d5065.theta_dot, d5065.I_d, d5065.I_q)
+        ((d5065.theta, d5065.theta_dot, d5065.I_d, d5065.I_q), _) = rk_step(d5065.diff_eqs, 0, x, d5065.diff_eqs(0, x), d5065.dT, A, B, C, d5065.K)
 
 if __name__ == "__main__":
     d5065 = motor(J = 1e-4, b_coulomb = 0, b_viscous = 0.01, R = 0.039, L_q = 1.57e-5, L_d = 1.57e-5, KV = 270, pole_pairs = 7, dT = 1/48000)
@@ -211,38 +271,63 @@ if __name__ == "__main__":
     u = [0,0,1]     # input for simulation as [T_load, V_d, V_q]
     t = [i*1/48000 for i in range(12000)] # half second of runtime at Fs=48kHz
 
+    #start = time.time()
     data = d5065.simulate(t=t, u=u, x0=x0)
-    sol = scipy.integrate.solve_ivp(d5065_2.diff_eqs, (0,0.25), t_eval=t, args=(0,1), y0=(0,0,0,0))
+    #end = time.time()
+    #start_ivp = time.time()
+    #sol = scipy.integrate.solve_ivp(d5065_2.diff_eqs, (0,0.25), t_eval=t, args=(0,1,0), y0=(0,0,0,0))
+    #end_ivp = time.time()
+    dT = 1/48000
+    states = []
+    pos = []
+    vel = []
+    I_d = []
+    I_q = []
+    #d5065.inputs(V_d = 0, V_q = 1, T_load = 0)
+    #start = time.time()
+    #for i in range(12000):
+    #    d5065.single_step_rk(V_d = 0, V_q = 1, T_load = 0)
+    #    pos.append(d5065.theta)
+    #    vel.append(d5065.theta_dot)
+    #    I_d.append(d5065.I_d)
+    #    I_q.append(d5065.I_q)
+    #end = time.time()
+    #states = [pos, vel, I_d, I_q]
+    #print("rk_step time")
+    #print(start-end)
+    #print("solve_ivp time")
+    #print(start_ivp-end_ivp)
+    #print("error percentage: " + str((sol.y[0][-1] - pos[-2])/ pos[-2] * 100))
 
-    pos = data[1]
-    vel = data[2]
-    I_d = data[3]
-    I_q = data[4]
+    #pos = data[1]
+    #vel = data[2]
+    #I_d = data[3]
+    #I_q = data[4]
 
-    pos_ivp = sol.y[0]
-    vel_ivp = sol.y[1]
-    I_d_ivp = sol.y[2]
-    I_q_ivp = sol.y[3]
+    #pos_ivp = sol.y[0]
+    #vel_ivp = sol.y[1]
+    #I_d_ivp = sol.y[2]
+    #I_q_ivp = sol.y[3]
 
-    fig, axs = plt.subplots(4)
+#    fig, axs = plt.subplots(4)
 
-    axs[0].plot(t, pos, linestyle=':', label='homebrew')
-    axs[0].plot(t, pos_ivp, linestyle=':', label='solve_ivp')
-    axs[0].set_title('pos')
-    axs[0].set_ylabel('Theta (eRad)')
-    axs[0].legend()
-    axs[1].plot(t, vel, linestyle=':')
-    axs[1].plot(t, vel_ivp, linestyle=':')
-    axs[1].set_title('vel')
-    axs[1].set_ylabel('Omega (eRad/s)')
-    axs[2].plot(t,I_d, linestyle=':')
-    axs[2].plot(t,I_d_ivp, linestyle=':')
-    axs[2].set_title('I_d')
-    axs[2].set_ylabel('Current (A)')
-    axs[3].plot(t,I_q, linestyle=':')
-    axs[3].plot(t,I_q_ivp, linestyle=':')
-    axs[3].set_title('I_q')
-    axs[3].set_ylabel('Current (A)')
-    axs[3].set_xlabel('time (s)')
+#    axs[0].plot(t, pos, linestyle=':', label='homebrew')
+#    axs[0].plot(t, pos_ivp, linestyle=':', label='solve_ivp')
+#    axs[0].set_title('pos')
+#    axs[0].set_ylabel('Theta (eRad)')
+#    axs[0].legend()
+#    axs[1].plot(t, vel, linestyle=':')
+#    axs[1].plot(t, vel_ivp, linestyle=':')
+#    axs[1].set_title('vel')
+#    axs[1].set_ylabel('Omega (eRad/s)')
+#    axs[2].plot(t,I_d, linestyle=':')
+#    axs[2].plot(t,I_d_ivp, linestyle=':')
+#    axs[2].set_title('I_d')
+#    axs[2].set_ylabel('Current (A)')
+#    axs[3].plot(t,I_q, linestyle=':')
+#    axs[3].plot(t,I_q_ivp, linestyle=':')
+#    axs[3].set_title('I_q')
+#    axs[3].set_ylabel('Current (A)')
+#    axs[3].set_xlabel('time (s)')
 
-    plt.show()
+#    plt.show()
