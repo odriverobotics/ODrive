@@ -8,6 +8,7 @@ class Axis;
 #include "controller.hpp"
 #include "trapTraj.hpp"
 #include "endstop.hpp"
+#include "mechanical_brake.hpp"
 #include "low_level.h"
 #include "utils.hpp"
 #include "communication/interface_uart.h" // TODO: remove once uart_poll() is gone
