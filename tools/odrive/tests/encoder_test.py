@@ -514,6 +514,7 @@ class TestSpiEncoder(TestEncoderBase):
 
 teensy_uart_encoder_emulation_code = """
 const float rps = 2.0;
+const int cpr = 16384;
 const int update_rate = 4000;
 const int baudrate = 921600;
 
@@ -532,7 +533,7 @@ void loop() {
   //  => 781us @ 115200bps
   //  =>  98us @ 921600bps
   Serial2.print("{cmd} ");
-  Serial2.print(pos, 4);
+  Serial2.print((unsigned int)(pos * cpr), DEC);
   Serial2.print("\\n");
 
   //delayMicroseconds(1000000.0f / (float)update_rate - 1000000.0f / (float)baudrate * 90.0f);
@@ -562,6 +563,9 @@ class TestUartEncoder(TestEncoderBase):
 
 
     def run_test(self, enc: ODriveEncoderComponent, teensy: TeensyComponent, cmd: str, logger: Logger):
+        true_cpr = 16384
+        true_rps = 1.9716 # in the Teensy code we have 2.0 but the timing is not 100% accurate
+
         code = teensy_uart_encoder_emulation_code.replace('{cmd}', cmd)
         teensy.compile_and_program(code)
 
@@ -576,17 +580,16 @@ class TestUartEncoder(TestEncoderBase):
             time.sleep(1.0) # wait for PLLs to stabilize
 
         enc.handle.config.bandwidth = 100
-
-        true_rps = 1.9716 # in the Teensy code we have 2.0 but the timing is not 100% accurate
-        self.run_generic_encoder_test(enc.handle, 6283, true_rps, 3.0)
+        
+        self.run_generic_encoder_test(enc.handle, true_cpr, true_rps, 2.0)
 
 
 if __name__ == '__main__':
     test_runner.run([
-        TestIncrementalEncoder(),
-        TestSinCosEncoder(),
-        TestHallEffectEncoder(),
-        TestSpiEncoder(ENCODER_MODE_SPI_ABS_AMS),
-        TestSpiEncoder(ENCODER_MODE_SPI_ABS_CUI),
+        #TestIncrementalEncoder(),
+        #TestSinCosEncoder(),
+        #TestHallEffectEncoder(),
+        #TestSpiEncoder(ENCODER_MODE_SPI_ABS_AMS),
+        #TestSpiEncoder(ENCODER_MODE_SPI_ABS_CUI),
         TestUartEncoder(),
     ])

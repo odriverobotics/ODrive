@@ -383,8 +383,8 @@ void cmd_update_axis_wdg(char * pStr, StreamSink& response_channel, bool use_che
 void cmd_set_user_val(char * pStr, size_t idx, StreamSink& response_channel, bool use_checksum) {
     (void)pStr;
 
-    float val;
-    if (sscanf(pStr + 1, " %f", &val) < 1) {
+    unsigned val;
+    if (sscanf(pStr + 1, " %u", &val) < 1) {
         respond(response_channel, use_checksum, "invalid command format");
     } else if (idx < sizeof(ASCII_user_values) / sizeof(ASCII_user_values[0])) {
         UserValue user_value = {

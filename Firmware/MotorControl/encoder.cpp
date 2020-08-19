@@ -513,13 +513,7 @@ bool Encoder::update() {
                 user_value = ASCII_user_values[axis_->axis_num_];
             }
             run_pll = uart_value_timestamp_ != user_value.timestamp;
-            int fake_count = (int)(1000.0f * user_value.val * 2.0f * M_PI);
-            //CPR = 6283 = 2pi * 1k
-
-            delta_enc = fake_count - count_in_cpr_;
-            delta_enc = mod(delta_enc, 6283);
-            if (delta_enc > 6283/2)
-                delta_enc -= 6283;
+            delta_enc = (int32_t)user_value.val - (int32_t)count_in_cpr_;
         } break;
         
         case MODE_SPI_ABS_RLS:

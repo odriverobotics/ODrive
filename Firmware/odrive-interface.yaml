@@ -1015,11 +1015,9 @@ valuetypes:
         doc: |
           A user supplied value is used as encoder position. The value should be
           supplied through the ASCII protocol commands 'a' (for encoder 0) and
-          'b' (for encoder 1). The value should be in [0, 1) and maps to an
-          angle in [0°, 360°) where 0° need not denote the same physical angle
-          across reboots.
-          
-          `config.cpr` must be set to 6283 when using this mode.
+          'b' (for encoder 1). The value should be in [0, `config.cpr`),
+          corresponding a physical angle in [0°, 360°) where 0° need not denote
+          the same physical angle across reboots.
 
           Beware of instability that might occur due to the delay introduced
           from the UART communication.
