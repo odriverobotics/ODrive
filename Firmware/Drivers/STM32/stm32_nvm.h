@@ -1,5 +1,5 @@
 /* Define to prevent recursive inclusion -------------------------------------*/
-#ifndef __NVML_H
+#ifndef __NVM_H
 #define __NVM_H
 
 #ifdef __cplusplus

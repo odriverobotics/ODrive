@@ -30,22 +30,24 @@
 * fields as "valid" (in the direction of increasing address).
 */
 
-#include "nvm.h"
+#include "stm32_nvm.h"
 
-#include <stm32f405xx.h>
-#include <stm32f4xx_hal.h>
 #include <string.h>
 
 #if defined(STM32F405xx)
 
+#include <stm32f405xx.h>
+#include <stm32f4xx_hal.h>
+
 // refer to page 75 of datasheet:
 // http://www.st.com/content/ccc/resource/technical/document/reference_manual/3d/6d/5a/66/b4/99/40/d4/DM00031020.pdf/files/DM00031020.pdf/jcr:content/translations/en.DM00031020.pdf
-#define FLASH_SECTOR_10_BASE (const volatile uint8_t*)0x80C0000UL
-#define FLASH_SECTOR_10_SIZE 0x20000UL
-#define FLASH_SECTOR_11_BASE (const volatile uint8_t*)0x80E0000UL
-#define FLASH_SECTOR_11_SIZE 0x20000UL
+#define FLASH_SECTOR_A FLASH_SECTOR_10
+#define FLASH_SECTOR_A_BASE (const volatile uint8_t*)0x80C0000UL
+#define FLASH_SECTOR_A_SIZE 0x20000UL
+#define FLASH_SECTOR_B FLASH_SECTOR_11
+#define FLASH_SECTOR_B_BASE (const volatile uint8_t*)0x80E0000UL
+#define FLASH_SECTOR_B_SIZE 0x20000UL
 
-#define HAL_FLASH_ClearError() __HAL_FLASH_CLEAR_FLAG(FLASH_FLAG_EOP | FLASH_FLAG_OPERR | FLASH_FLAG_WRPERR | FLASH_FLAG_PGAERR | FLASH_FLAG_PGSERR | FLASH_FLAG_PGPERR)
 #else
 #error "unknown flash sector size"
 #endif
@@ -66,22 +68,48 @@ typedef struct {
 } sector_t;
 
 sector_t sectors[] = { {
-    .sector_id = FLASH_SECTOR_10,
-    .n_data = FLASH_SECTOR_10_SIZE >> 3,
-    .n_reserved = (FLASH_SECTOR_10_SIZE >> 3) >> 5,
-    .alloc_table = FLASH_SECTOR_10_BASE,
-    .data = (uint64_t *)FLASH_SECTOR_10_BASE
+    .sector_id = FLASH_SECTOR_A,
+    .n_data = FLASH_SECTOR_A_SIZE >> 3,
+    .n_reserved = (FLASH_SECTOR_A_SIZE >> 3) >> 5,
+    .alloc_table = FLASH_SECTOR_A_BASE,
+    .data = (uint64_t *)FLASH_SECTOR_A_BASE
 }, {
-    .sector_id = FLASH_SECTOR_11,
-    .n_data = FLASH_SECTOR_11_SIZE >> 3,
-    .n_reserved = (FLASH_SECTOR_11_SIZE >> 3) >> 5,
-    .alloc_table = FLASH_SECTOR_11_BASE,
-    .data = (uint64_t *)FLASH_SECTOR_11_BASE
+    .sector_id = FLASH_SECTOR_B,
+    .n_data = FLASH_SECTOR_B_SIZE >> 3,
+    .n_reserved = (FLASH_SECTOR_B_SIZE >> 3) >> 5,
+    .alloc_table = FLASH_SECTOR_B_BASE,
+    .data = (uint64_t *)FLASH_SECTOR_B_BASE
 }};
 
 uint8_t read_sector_; // 0 or 1 to indicate which sector to read from and which to write to
 size_t n_staging_area_; // number of 64-bit values that were reserved using NVM_start_write
 size_t n_valid_; // number of 64-bit fields that can be read
+
+static const uint32_t FLASH_ERR_FLAGS =
+#if defined(FLASH_FLAG_EOP)
+        FLASH_FLAG_EOP |
+#endif
+#if defined(FLASH_FLAG_OPERR)
+        FLASH_FLAG_OPERR |
+#endif
+#if defined(FLASH_FLAG_WRPERR)
+        FLASH_FLAG_WRPERR |
+#endif
+#if defined(FLASH_FLAG_PGAERR)
+        FLASH_FLAG_PGAERR |
+#endif
+#if defined(FLASH_FLAG_PGSERR)
+        FLASH_FLAG_PGSERR |
+#endif
+#if defined(FLASH_FLAG_PGPERR)
+        FLASH_FLAG_PGPERR |
+#endif
+        0;
+
+static void HAL_FLASH_ClearError() {
+    __HAL_FLASH_CLEAR_FLAG(FLASH_ERR_FLAGS);
+}
+
 
 // @brief Erases a flash sector. This sets all bits in the sector to 1.
 // The sector's current index is reset to the minimum value (n_reserved).
@@ -89,7 +117,9 @@ size_t n_valid_; // number of 64-bit fields that can be read
 int erase(sector_t *sector) {
     FLASH_EraseInitTypeDef erase_struct = {
         .TypeErase = FLASH_TYPEERASE_SECTORS,
+#if defined(FLASH_OPTCR_nDBANK)
         .Banks = 0, // only used for mass erase
+#endif
         .Sector = sector->sector_id,
         .NbSectors = 1,
         .VoltageRange = FLASH_VOLTAGE_RANGE_3
@@ -262,6 +292,7 @@ size_t NVM_get_max_write_length(void) {
 }
 
 // @brief Reads from the latest committed block in the non-volatile memory.
+// The function either succeeds or leaves the provided buffer unmodified.
 // @param offset: offset in bytes (0 meaning the beginning of the valid area)
 // @param data: buffer to write to
 // @param length: length in bytes (if (offset + length) is out of range, the function fails)
@@ -374,6 +405,7 @@ int NVM_commit(void) {
 
 
 #include <cmsis_os.h>
+#include <stdio.h>
 /** @brief Call this at startup to test/demo the NVM driver
 
  Expected output when starting with a fully erased NVM

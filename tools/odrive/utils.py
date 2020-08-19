@@ -358,3 +358,161 @@ def yes_no_prompt(question, default=None):
             return False
         elif choice == '' and default is not None:
             return default
+
+def dump_interrupts(odrv):
+    interrupts = [
+        (-12, "MemoryManagement_IRQn"),
+        (-11, "BusFault_IRQn"),
+        (-10, "UsageFault_IRQn"),
+        (-5, "SVCall_IRQn"),
+        (-4, "DebugMonitor_IRQn"),
+        (-2, "PendSV_IRQn"),
+        (-1, "SysTick_IRQn"),
+        (0, "WWDG_IRQn"),
+        (1, "PVD_IRQn"),
+        (2, "TAMP_STAMP_IRQn"),
+        (3, "RTC_WKUP_IRQn"),
+        (4, "FLASH_IRQn"),
+        (5, "RCC_IRQn"),
+        (6, "EXTI0_IRQn"),
+        (7, "EXTI1_IRQn"),
+        (8, "EXTI2_IRQn"),
+        (9, "EXTI3_IRQn"),
+        (10, "EXTI4_IRQn"),
+        (11, "DMA1_Stream0_IRQn"),
+        (12, "DMA1_Stream1_IRQn"),
+        (13, "DMA1_Stream2_IRQn"),
+        (14, "DMA1_Stream3_IRQn"),
+        (15, "DMA1_Stream4_IRQn"),
+        (16, "DMA1_Stream5_IRQn"),
+        (17, "DMA1_Stream6_IRQn"),
+        (18, "ADC_IRQn"),
+        (19, "CAN1_TX_IRQn"),
+        (20, "CAN1_RX0_IRQn"),
+        (21, "CAN1_RX1_IRQn"),
+        (22, "CAN1_SCE_IRQn"),
+        (23, "EXTI9_5_IRQn"),
+        (24, "TIM1_BRK_TIM9_IRQn"),
+        (25, "TIM1_UP_TIM10_IRQn"),
+        (26, "TIM1_TRG_COM_TIM11_IRQn"),
+        (27, "TIM1_CC_IRQn"),
+        (28, "TIM2_IRQn"),
+        (29, "TIM3_IRQn"),
+        (30, "TIM4_IRQn"),
+        (31, "I2C1_EV_IRQn"),
+        (32, "I2C1_ER_IRQn"),
+        (33, "I2C2_EV_IRQn"),
+        (34, "I2C2_ER_IRQn"),
+        (35, "SPI1_IRQn"),
+        (36, "SPI2_IRQn"),
+        (37, "USART1_IRQn"),
+        (38, "USART2_IRQn"),
+        (39, "USART3_IRQn"),
+        (40, "EXTI15_10_IRQn"),
+        (41, "RTC_Alarm_IRQn"),
+        (42, "OTG_FS_WKUP_IRQn"),
+        (43, "TIM8_BRK_TIM12_IRQn"),
+        (44, "TIM8_UP_TIM13_IRQn"),
+        (45, "TIM8_TRG_COM_TIM14_IRQn"),
+        (46, "TIM8_CC_IRQn"),
+        (47, "DMA1_Stream7_IRQn"),
+        (48, "FMC_IRQn"),
+        (49, "SDMMC1_IRQn"),
+        (50, "TIM5_IRQn"),
+        (51, "SPI3_IRQn"),
+        (52, "UART4_IRQn"),
+        (53, "UART5_IRQn"),
+        (54, "TIM6_DAC_IRQn"),
+        (55, "TIM7_IRQn"),
+        (56, "DMA2_Stream0_IRQn"),
+        (57, "DMA2_Stream1_IRQn"),
+        (58, "DMA2_Stream2_IRQn"),
+        (59, "DMA2_Stream3_IRQn"),
+        (60, "DMA2_Stream4_IRQn"),
+        (61, "ETH_IRQn"),
+        (62, "ETH_WKUP_IRQn"),
+        (63, "CAN2_TX_IRQn"),
+        (64, "CAN2_RX0_IRQn"),
+        (65, "CAN2_RX1_IRQn"),
+        (66, "CAN2_SCE_IRQn"),
+        (67, "OTG_FS_IRQn"),
+        (68, "DMA2_Stream5_IRQn"),
+        (69, "DMA2_Stream6_IRQn"),
+        (70, "DMA2_Stream7_IRQn"),
+        (71, "USART6_IRQn"),
+        (72, "I2C3_EV_IRQn"),
+        (73, "I2C3_ER_IRQn"),
+        (74, "OTG_HS_EP1_OUT_IRQn"),
+        (75, "OTG_HS_EP1_IN_IRQn"),
+        (76, "OTG_HS_WKUP_IRQn"),
+        (77, "OTG_HS_IRQn"),
+        # gap
+        (80, "RNG_IRQn"),
+        (81, "FPU_IRQn"),
+        (82, "UART7_IRQn"),
+        (83, "UART8_IRQn"),
+        (84, "SPI4_IRQn"),
+        (85, "SPI5_IRQn"),
+        # gap
+        (87, "SAI1_IRQn"),
+        # gap
+        (91, "SAI2_IRQn"),
+        (92, "QUADSPI_IRQn"),
+        (93, "LPTIM1_IRQn"),
+        # gap
+        (103, "SDMMC2_IRQn")
+    ]
+
+    print("|   # | Name                    | Prio | En |   Count |")
+    print("|-----|-------------------------|------|----|---------|")
+    for irqn, irq_name in interrupts:
+        status = odrv.get_interrupt_status(irqn)
+        if (status != 0):
+            print("| {} | {} | {} | {} | {} |".format(
+                    str(irqn).rjust(3),
+                    irq_name.ljust(23),
+                    str(status & 0xff).rjust(4),
+                    " *" if (status & 0x80000000) else "  ",
+                    str((status >> 8) & 0x7fffff).rjust(7)))
+
+
+def dump_dma(odrv):
+    if odrv.hw_version_major == 3:
+        dma_functions = [[
+            # https://www.st.com/content/ccc/resource/technical/document/reference_manual/3d/6d/5a/66/b4/99/40/d4/DM00031020.pdf/files/DM00031020.pdf/jcr:content/translations/en.DM00031020.pdf Table 42
+            ["SPI3_RX",          "-",                  "SPI3_RX",           "SPI2_RX",            "SPI2_TX",            "SPI3_TX",     "-",                  "SPI3_TX"],
+            ["I2C1_RX",          "-",                  "TIM7_UP",           "-",                  "TIM7_UP",            "I2C1_RX",     "I2C1_TX",            "I2C1_TX"],
+            ["TIM4_CH1",         "-",                  "I2S3_EXT_RX",       "TIM4_CH2",           "I2S2_EXT_TX",        "I2S3_EXT_TX", "TIM4_UP",            "TIM4_CH3"],
+            ["I2S3_EXT_RX",      "TIM2_UP/TIM2_CH3",   "I2C3_RX",           "I2S2_EXT_RX",        "I2C3_TX",            "TIM2_CH1",    "TIM2_CH2/TIM2_CH4",  "TIM2_UP/TIM2_CH4"],
+            ["UART5_RX",         "USART3_RX",          "UART4_RX",          "USART3_TX",          "UART4_TX",           "USART2_RX",   "USART2_TX",          "UART5_TX"],
+            ["UART8_TX",         "UART7_TX",           "TIM3_CH4/TIM3_UP",  "UART7_RX",           "TIM3_CH1/TIM3_TRIG", "TIM3_CH2",    "UART8_RX",           "TIM3_CH3"],
+            ["TIM5_CH3/TIM5_UP", "TIM5_CH4/TIM5_TRIG", "TIM5_CH1",          "TIM5_CH4/TIM5_TRIG", "TIM5_CH2",           "-",           "TIM5_UP",            "-"],
+            ["-",                "TIM6_UP",            "I2C2_RX",           "I2C2_RX",            "USART3_TX",          "DAC1",        "DAC2",               "I2C2_TX"],
+        ], [
+            # https://www.st.com/content/ccc/resource/technical/document/reference_manual/3d/6d/5a/66/b4/99/40/d4/DM00031020.pdf/files/DM00031020.pdf/jcr:content/translations/en.DM00031020.pdf Table 43
+            ["ADC1",      "SAI1_A",      "TIM8_CH1/TIM8_CH2/TIM8_CH3",    "SAI1_A",      "ADC1",                          "SAI1_B",      "TIM1_CH1/TIM1_CH2/TIM1_CH3",    "-"],
+            ["-",         "DCMI",        "ADC2",                          "ADC2",        "SAI1_B",                        "SPI6_TX",     "SPI6_RX",                       "DCMI"],
+            ["ADC3",      "ADC3",        "-",                             "SPI5_RX",     "SPI5_TX",                       "CRYP_OUT",    "CRYP_IN",                       "HASH_IN"],
+            ["SPI1_RX",   "-",           "SPI1_RX",                       "SPI1_TX",     "-",                             "SPI1_TX",     "-",                             "-"],
+            ["SPI4_RX",   "SPI4_TX",     "USART1_RX",                     "SDIO",        "-",                             "USART1_RX",   "SDIO",                          "USART1_TX"],
+            ["-",         "USART6_RX",   "USART6_RX",                     "SPI4_RX",     "SPI4_TX",                       "-",           "USART6_TX",                     "USART6_TX"],
+            ["TIM1_TRIG", "TIM1_CH1",    "TIM1_CH2",                      "TIM1_CH1",    "TIM1_CH4/TIM1_TRIG/TIM1_COM",   "TIM1_UP",     "TIM1_CH3",                      "-"],
+            ["-",         "TIM8_UP",     "TIM8_CH1",                      "TIM8_CH2",    "TIM8_CH3",                      "SPI5_RX",     "SPI5_TX",                       "TIM8_CH4/TIM8_TRIG/TIM8_COM"],
+        ]]
+
+    print("| Name         | Prio | Channel                          | Configured |")
+    print("|--------------|------|----------------------------------|------------|")
+    for stream_num in range(16):
+        status = odrv.get_dma_status(stream_num)
+        if (status != 0):
+            channel = (status >> 2) & 0x7
+            ch_name = dma_functions[stream_num >> 3][channel][stream_num & 0x7]
+            print("| DMA{}_Stream{} |    {} | {} {} |          {} |".format(
+                     (stream_num >> 3) + 1,
+                     (stream_num & 0x7),
+                     (status & 0x3),
+                     channel,
+                     ("(" + ch_name + ")").ljust(30),
+                     "*" if (status & 0x80000000) else " "))
+
+

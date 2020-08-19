@@ -3,6 +3,12 @@ Please add a note of your changes below this heading if you make a Pull Request.
 ### Added
 * [Mechanical brake support](docs/mechanical-brakes.md)
 
+### API Miration Notes
+
+* `enable_uart` and `uart_baudrate` were renamed to `enable_uart0` and `uart0_baudrate`.
+* `enable_i2c_instead_of_can` was replaced by the separate settings `enable_i2c0` and `enable_can0`.
+
+
 # Release Candidate
 ## [0.5.1] - Date TBD
 ### Added
@@ -46,6 +52,7 @@ Please add a note of your changes below this heading if you make a Pull Request.
 * Using an STM32F405 .svd file allows CortexDebug to view registers during debugging
 * Added scripts for building via docker.
 * Added ability to change uart baudrate via fibre
+* Introduced GPIO modes. GPIOs now need to be explicitly set to the mode corresponding to the feature that they are used by. See `<odrv>.config.gpioX_mode`.
 
 ### Changed
 * Changed ratiometric `motor.config.current_lim_tolerance` to absolute `motor.config.current_lim_margin`
@@ -60,6 +67,9 @@ Please add a note of your changes below this heading if you make a Pull Request.
 * Reboot on `erase_configuration()`. This avoids unexpected behavior of a subsequent `save_configuration()` call, since the configuration is only erased from NVM, not from RAM.
 * Change `motor.get_inverter_temp()` to use a property which was already being sampled at `motor.inverter_temp`
 * Fixed a numerical issue in the trajectory planner that could cause sudden jumps of the position setpoint
+* Use DMA for DRV8301 setup
+* Make NVM configuration code more dynamic so that the layout doesn't have to be known at compile time
+* Refactor GPIO code. Note that if two components use the same interrupt pin (e.g. step input for axis0 and axis1) then previously the one that was configured later would override the other one. Now this is no longer the case (the old component remains the owner of the pin).
 
 ## [0.4.12] - 2020-05-06
 ### Fixed

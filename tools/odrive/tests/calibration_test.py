@@ -161,7 +161,7 @@ class TestEncoderOffsetCalibration():
         # run test
         request_state(axis_ctx, AXIS_STATE_ENCODER_OFFSET_CALIBRATION)
 
-        time.sleep(9) # actual calibration takes 8 seconds
+        time.sleep(9.1) # actual calibration takes 9.0 seconds
         
         test_assert_eq(axis_ctx.handle.current_state, AXIS_STATE_IDLE)
         test_assert_no_error(axis_ctx)

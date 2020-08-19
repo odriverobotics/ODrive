@@ -143,14 +143,18 @@ class TestSimpleCANClosedLoop():
         # this test is a sanity check to make sure that closed loop operation works
         # actual testing of closed loop functionality should be tested using closed_loop_test.py
 
+        # make sure no gpio input is overwriting our values
+        odrive.disable_mappings()
+        odrive.handle.config.gpio15_mode = GPIO_MODE_CAN0
+        odrive.handle.config.gpio16_mode = GPIO_MODE_CAN0
+        odrive.handle.config.enable_can0 = True
+        odrive.save_config_and_reboot()
+
         with self.prepare(odrive, canbus, axis_ctx, motor_ctx, enc_ctx, node_id, extended_id, logger):
             def my_cmd(cmd_name, **kwargs): command(canbus.handle, node_id, extended_id, cmd_name, **kwargs)
             def my_req(cmd_name, **kwargs): return asyncio.run(request(canbus.handle, node_id, extended_id, cmd_name, **kwargs))
             def fence(): my_req('get_vbus_voltage') # fence to ensure the CAN command was sent
             
-            # make sure no gpio input is overwriting our values
-            odrive.unuse_gpios()
-
             axis_ctx.handle.config.enable_watchdog = False
             axis_ctx.handle.clear_errors()
             axis_ctx.handle.config.can_node_id = node_id
