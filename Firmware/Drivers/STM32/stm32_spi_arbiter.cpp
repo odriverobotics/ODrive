@@ -89,6 +89,7 @@ bool Stm32SpiArbiter::transfer(SPI_InitTypeDef config, Stm32Gpio ncs_gpio, const
         .length = length,
         .on_complete = [](void* ctx, bool success) { *(volatile uint8_t*)ctx = success ? 1 : 0; },
         .on_complete_ctx = (void*)&result,
+        .is_in_use = false,
         .next = nullptr
     };
 
