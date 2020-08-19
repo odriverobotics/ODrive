@@ -1,12 +1,8 @@
 #ifndef __ODRIVE_MAIN_H
 #define __ODRIVE_MAIN_H
 
-// Note on central include scheme by Samuel:
-// there are circular dependencies between some of the header files,
-// e.g. the Motor header needs a forward declaration of Axis and vice versa
-// so I figured I'd make one main header that takes care of
-// the forward declarations and right ordering
-// btw this pattern is not so uncommon, for instance IIRC the stdlib uses it too
+// Hardware configuration
+#include <board.h>
 
 #ifdef __cplusplus
 #include <fibre/protocol.hpp>
@@ -16,31 +12,11 @@
 extern "C" {
 #endif
 
-// STM specific includes
-#include <stm32f4xx_hal.h>  // Sets up the correct chip specifc defines required by arm_math
-#include <can.h>
-#include <i2c.h>
-#define ARM_MATH_CM4 // TODO: might change in future board versions
-#include <arm_math.h>
-
 // OS includes
 #include <cmsis_os.h>
 
-// Hardware configuration
-#if HW_VERSION_MAJOR == 3
-#include "board_config_v3.h"
-#else
-#error "unknown board version"
-#endif
-
 //default timeout waiting for phase measurement signals
 #define PH_CURRENT_MEAS_TIMEOUT 2 // [ms]
-
-// Period in [s]
-static const float current_meas_period = CURRENT_MEAS_PERIOD;
-
-// Frequency in [Hz]
-static const int current_meas_hz = CURRENT_MEAS_HZ;
 
 // extern const float elec_rad_per_enc;
 extern uint32_t _reboot_cookie;
@@ -55,18 +31,14 @@ typedef struct {
     bool fully_booted;
     uint32_t uptime; // [ms]
     uint32_t min_heap_space; // FreeRTOS heap [Bytes]
-    uint32_t min_stack_space_axis0; // minimum remaining space since startup [Bytes]
-    uint32_t min_stack_space_axis1;
-    uint32_t min_stack_space_comms;
+    uint32_t min_stack_space_axis; // minimum remaining space since startup [Bytes]
     uint32_t min_stack_space_usb;
     uint32_t min_stack_space_uart;
     uint32_t min_stack_space_usb_irq;
     uint32_t min_stack_space_startup;
     uint32_t min_stack_space_can;
 
-    uint32_t stack_usage_axis0;
-    uint32_t stack_usage_axis1;
-    uint32_t stack_usage_comms;
+    uint32_t stack_usage_axis;
     uint32_t stack_usage_usb;
     uint32_t stack_usage_uart;
     uint32_t stack_usage_usb_irq;
@@ -85,15 +57,21 @@ struct PWMMapping_t {
 
 // @brief general user configurable board configuration
 struct BoardConfig_t {
-    bool enable_uart = true;
-    bool enable_i2c_instead_of_can = false;
+    ODriveIntf::GpioMode gpio_modes[GPIO_COUNT] = {
+        DEFAULT_GPIO_MODES
+    };
+
+    bool enable_uart0 = true;
+    bool enable_uart1 = false;
+    bool enable_uart2 = false;
+    uint32_t uart0_baudrate = 115200;
+    uint32_t uart1_baudrate = 115200;
+    uint32_t uart2_baudrate = 115200;
+    bool enable_can0 = true;
+    bool enable_i2c0 = false;
     bool enable_ascii_protocol_on_usb = true;
     float max_regen_current = 0.0f;
-#if HW_VERSION_MAJOR == 3 && HW_VERSION_MINOR >= 5 && HW_VERSION_VOLTAGE >= 48
-    float brake_resistance = 2.0f;     // [ohm]
-#else
-    float brake_resistance = 0.47f;     // [ohm]
-#endif
+    float brake_resistance = DEFAULT_BRAKE_RESISTANCE;
     float dc_bus_undervoltage_trip_level = 8.0f;                        //<! [V] minimum voltage below which the motor stops operating
     float dc_bus_overvoltage_trip_level = 1.07f * HW_VERSION_VOLTAGE;   //<! [V] maximum voltage above which the motor stops operating.
                                                                         //<! This protects against cases in which the power supply fails to dissipate
@@ -123,34 +101,8 @@ struct BoardConfig_t {
 
     float dc_max_positive_current = INFINITY; // Max current [A] the power supply can source
     float dc_max_negative_current = -0.000001f; // Max current [A] the power supply can sink. You most likely want a non-positive value here. Set to -INFINITY to disable.
-    PWMMapping_t pwm_mappings[GPIO_COUNT];
+    PWMMapping_t pwm_mappings[4];
     PWMMapping_t analog_mappings[GPIO_COUNT];
-
-    /**
-     * Defines the baudrate used on the UART interface.
-     * Some baudrates will have a small timing error due to hardware limitations.
-     * 
-     * Here's an (incomplete) list of baudrates for ODrive v3.x:
-     * 
-     *   Configured  | Actual        | Error [%]
-     *  -------------|---------------|-----------
-     *   1.2 KBps    | 1.2 KBps      | 0
-     *   2.4 KBps    | 2.4 KBps      | 0
-     *   9.6 KBps    | 9.6 KBps      | 0
-     *   19.2 KBps   | 19.195 KBps   | 0.02
-     *   38.4 KBps   | 38.391 KBps   | 0.02
-     *   57.6 KBps   | 57.613 KBps   | 0.02
-     *   115.2 KBps  | 115.068 KBps  | 0.11
-     *   230.4 KBps  | 230.769 KBps  | 0.16
-     *   460.8 KBps  | 461.538 KBps  | 0.16
-     *   921.6 KBps  | 913.043 KBps  | 0.93
-     *   1.792 MBps  | 1.826 MBps    | 1.9
-     *   1.8432 MBps | 1.826 MBps    | 0.93
-     * 
-     * For more information refer to Section 30.3.4 and Table 142 (the column with f_PCLK = 42 MHz) in the STM datasheet:
-     * https://www.st.com/content/ccc/resource/technical/document/reference_manual/3d/6d/5a/66/b4/99/40/d4/DM00031020.pdf/files/DM00031020.pdf/jcr:content/translations/en.DM00031020.pdf
-     */
-    uint32_t uart_baudrate = 115200;
 };
 
 // Forward Declarations
@@ -158,8 +110,6 @@ class Axis;
 class Motor;
 class ODriveCAN;
 
-constexpr size_t AXIS_COUNT = 2;
-extern std::array<Axis*, AXIS_COUNT> axes;
 extern ODriveCAN *odCAN;
 
 // if you use the oscilloscope feature you can bump up this value
@@ -179,30 +129,12 @@ inline ENUMTYPE &operator ^= (ENUMTYPE &a, ENUMTYPE b) { return reinterpret_cast
 inline ENUMTYPE operator ~ (ENUMTYPE a) { return static_cast<ENUMTYPE>(~static_cast<std::underlying_type_t<ENUMTYPE>>(a)); }
 
 
-enum TimingLog_t {
-    TIMING_LOG_GENERAL,
-    TIMING_LOG_ADC_CB_I,
-    TIMING_LOG_ADC_CB_DC,
-    TIMING_LOG_MEAS_R,
-    TIMING_LOG_MEAS_L,
-    TIMING_LOG_ENC_CALIB,
-    TIMING_LOG_IDX_SEARCH,
-    TIMING_LOG_FOC_VOLTAGE,
-    TIMING_LOG_FOC_CURRENT,
-    TIMING_LOG_SPI_START,
-    TIMING_LOG_SAMPLE_NOW,
-    TIMING_LOG_SPI_END,
-    TIMING_LOG_NUM_SLOTS
-};
-
 
 #include "autogen/interfaces.hpp"
 
 // ODrive specific includes
 #include <utils.hpp>
-#include <gpio_utils.hpp>
 #include <low_level.h>
-#include <motor.hpp>
 #include <encoder.hpp>
 #include <sensorless_estimator.hpp>
 #include <controller.hpp>
@@ -221,6 +153,9 @@ extern const unsigned char fw_version_revision_;
 extern const unsigned char fw_version_unreleased_;
 }
 
+static Stm32Gpio get_gpio(size_t gpio_num) {
+    return (gpio_num < GPIO_COUNT) ? gpios[gpio_num] : GPIO_COUNT ? gpios[0] : Stm32Gpio::none;
+}
 
 // general system functions defined in main.cpp
 class ODrive : public ODriveIntf {
@@ -235,7 +170,7 @@ public:
     }
 
     float get_adc_voltage(uint32_t gpio) override {
-        return ::get_adc_voltage(get_gpio_port_by_pin(gpio), get_gpio_pin_by_pin(gpio));
+        return ::get_adc_voltage(get_gpio(gpio));
     }
 
     int32_t test_function(int32_t delta) override {
@@ -243,8 +178,11 @@ public:
         return cnt += delta;
     }
 
-    Axis& get_axis(int num) { return *axes[num]; }
+    Axis& get_axis(int num) { return axes[num]; }
     ODriveCAN& get_can() { return *odCAN; }
+
+    uint32_t get_interrupt_status(int32_t irqn);
+    uint32_t get_dma_status(uint8_t stream_num);
 
     float& vbus_voltage_ = ::vbus_voltage; // TODO: make this the actual variable
     float& ibus_ = ::ibus_; // TODO: make this the actual variable
@@ -252,7 +190,7 @@ public:
 
     const uint64_t& serial_number_ = ::serial_number;
 
-#if HW_VERSION_MAJOR == 3
+#if defined(STM32F405xx)
     // Determine start address of the OTP struct:
     // The OTP is organized into 16-byte blocks.
     // If the first block starts with "0xfe" we use the first block.
@@ -286,7 +224,8 @@ public:
     SystemStats_t system_stats_;
 
     BoardConfig_t config_;
-    bool user_config_loaded_;
+    uint32_t user_config_loaded_ = 0;
+    bool misconfigured_ = false;
 
     uint32_t test_property_ = 0;
 };

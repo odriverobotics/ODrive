@@ -49,32 +49,27 @@ float ThermistorCurrentLimiter::get_current_limit(float base_current_lim) const 
     return std::min(thermal_current_lim, base_current_lim);
 }
 
-OnboardThermistorCurrentLimiter::OnboardThermistorCurrentLimiter(const ThermistorHardwareConfig_t& hw_config, Config_t& config) :
-    ThermistorCurrentLimiter(hw_config.adc_ch,
-                             hw_config.coeffs,
-                             hw_config.num_coeffs,
-                             config.temp_limit_lower,
-                             config.temp_limit_upper,
-                             config.enabled),
-    config_(config)
+OnboardThermistorCurrentLimiter::OnboardThermistorCurrentLimiter(uint16_t adc_channel, const float* const coefficients, size_t num_coeffs) :
+    ThermistorCurrentLimiter(adc_channel,
+                             coefficients,
+                             num_coeffs,
+                             config_.temp_limit_lower,
+                             config_.temp_limit_upper,
+                             config_.enabled)
 {
 }
 
-OffboardThermistorCurrentLimiter::OffboardThermistorCurrentLimiter(Config_t& config) :
+OffboardThermistorCurrentLimiter::OffboardThermistorCurrentLimiter() :
     ThermistorCurrentLimiter(UINT16_MAX,
-                             &config.thermistor_poly_coeffs[0],
+                             &config_.thermistor_poly_coeffs[0],
                              num_coeffs_,
-                             config.temp_limit_lower,
-                             config.temp_limit_upper,
-                             config.enabled),
-    config_(config)
+                             config_.temp_limit_lower,
+                             config_.temp_limit_upper,
+                             config_.enabled)
 {
     decode_pin();
 }
 
 void OffboardThermistorCurrentLimiter::decode_pin() {
-    const GPIO_TypeDef* const port = get_gpio_port_by_pin(config_.gpio_pin);
-    const uint16_t pin = get_gpio_pin_by_pin(config_.gpio_pin);
-
-    adc_channel_ = channel_from_gpio(port, pin);
+    adc_channel_ = channel_from_gpio(get_gpio(config_.gpio_pin));
 }

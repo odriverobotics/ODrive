@@ -3,7 +3,7 @@
 
 #ifdef __cplusplus
 #include "fibre/protocol.hpp"
-extern StreamSink* uart4_stream_output_ptr;
+extern StreamSink* uart_stream_output_ptr;
 
 extern "C" {
 #endif

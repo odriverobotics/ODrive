@@ -25,10 +25,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include <stm32f4xx_hal.h>  // Sets up the correct chip specifc defines required by arm_math
-#define ARM_MATH_CM4 // TODO: might change in future board versions
+
+#include <board.h>
 #include "arm_math.h"
 #include "arm_common_tables.h"
+
 /**
  * @ingroup groupFastMath
  */

@@ -54,24 +54,6 @@
 
 /* USER CODE BEGIN 0 */
 
-// To trigger the ADC, we must use an output channel that is in PWM mode
-// However, CubeMX does not allow you to set up a channel as PWM without an output pin.
-// This will set OC4 to PWM mode. Also, triggering doesn't work if the compare register
-// (called pulse here) is 0, so we initialise it to 1.
-void OC4_PWM_Override(TIM_HandleTypeDef* htim) {
-
-    TIM_OC_InitTypeDef sConfigOC;
-    sConfigOC.OCMode = TIM_OCMODE_PWM2;
-    sConfigOC.Pulse = 1;
-    sConfigOC.OCPolarity = TIM_OCPOLARITY_HIGH;
-    sConfigOC.OCNPolarity = TIM_OCNPOLARITY_HIGH;
-    sConfigOC.OCFastMode = TIM_OCFAST_DISABLE;
-    sConfigOC.OCIdleState = TIM_OCIDLESTATE_RESET;
-    sConfigOC.OCNIdleState = TIM_OCNIDLESTATE_RESET;
-
-    HAL_TIM_OC_ConfigChannel(htim, &sConfigOC, TIM_CHANNEL_4);
-}
-
 /* USER CODE END 0 */
 
 TIM_HandleTypeDef htim1;
@@ -462,7 +444,6 @@ void HAL_TIM_PWM_MspInit(TIM_HandleTypeDef* tim_pwmHandle)
 void HAL_TIM_Encoder_MspInit(TIM_HandleTypeDef* tim_encoderHandle)
 {
 
-  GPIO_InitTypeDef GPIO_InitStruct;
   if(tim_encoderHandle->Instance==TIM3)
   {
   /* USER CODE BEGIN TIM3_MspInit 0 */
@@ -470,17 +451,6 @@ void HAL_TIM_Encoder_MspInit(TIM_HandleTypeDef* tim_encoderHandle)
   /* USER CODE END TIM3_MspInit 0 */
     /* TIM3 clock enable */
     __HAL_RCC_TIM3_CLK_ENABLE();
-  
-    /**TIM3 GPIO Configuration    
-    PB4     ------> TIM3_CH1
-    PB5     ------> TIM3_CH2 
-    */
-    GPIO_InitStruct.Pin = M0_ENC_A_Pin|M0_ENC_B_Pin;
-    GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
-    GPIO_InitStruct.Pull = GPIO_NOPULL;
-    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-    GPIO_InitStruct.Alternate = GPIO_AF2_TIM3;
-    HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
   /* USER CODE BEGIN TIM3_MspInit 1 */
 
@@ -493,17 +463,6 @@ void HAL_TIM_Encoder_MspInit(TIM_HandleTypeDef* tim_encoderHandle)
   /* USER CODE END TIM4_MspInit 0 */
     /* TIM4 clock enable */
     __HAL_RCC_TIM4_CLK_ENABLE();
-  
-    /**TIM4 GPIO Configuration    
-    PB6     ------> TIM4_CH1
-    PB7     ------> TIM4_CH2 
-    */
-    GPIO_InitStruct.Pin = M1_ENC_A_Pin|M1_ENC_B_Pin;
-    GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
-    GPIO_InitStruct.Pull = GPIO_NOPULL;
-    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-    GPIO_InitStruct.Alternate = GPIO_AF2_TIM4;
-    HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
   /* USER CODE BEGIN TIM4_MspInit 1 */
 
@@ -514,7 +473,6 @@ void HAL_TIM_Encoder_MspInit(TIM_HandleTypeDef* tim_encoderHandle)
 void HAL_TIM_IC_MspInit(TIM_HandleTypeDef* tim_icHandle)
 {
 
-  GPIO_InitTypeDef GPIO_InitStruct;
   if(tim_icHandle->Instance==TIM5)
   {
   /* USER CODE BEGIN TIM5_MspInit 0 */
@@ -522,17 +480,6 @@ void HAL_TIM_IC_MspInit(TIM_HandleTypeDef* tim_icHandle)
   /* USER CODE END TIM5_MspInit 0 */
     /* TIM5 clock enable */
     __HAL_RCC_TIM5_CLK_ENABLE();
-  
-    /**TIM5 GPIO Configuration    
-    PA2     ------> TIM5_CH3
-    PA3     ------> TIM5_CH4 
-    */
-    GPIO_InitStruct.Pin = GPIO_3_Pin|GPIO_4_Pin;
-    GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
-    GPIO_InitStruct.Pull = GPIO_NOPULL;
-    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-    GPIO_InitStruct.Alternate = GPIO_AF2_TIM5;
-    HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
     /* TIM5 interrupt Init */
     HAL_NVIC_SetPriority(TIM5_IRQn, 5, 0);

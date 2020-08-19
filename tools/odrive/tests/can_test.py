@@ -108,9 +108,11 @@ class TestSimpleCAN():
             yield (odrive, can_interfaces, 0xfedcba, True) # extended ID
 
     def run_test(self, odrive: ODriveComponent, canbus: CanInterfaceComponent, node_id: int, extended_id: bool, logger: Logger):
-
-        # make sure no gpio input is overwriting our values
-        odrive.unuse_gpios()
+        odrive.disable_mappings()
+        odrive.handle.config.gpio15_mode = GPIO_MODE_CAN0
+        odrive.handle.config.gpio16_mode = GPIO_MODE_CAN0
+        odrive.handle.config.enable_can0 = True
+        odrive.save_config_and_reboot()
 
         axis = odrive.handle.axis0
         axis.config.enable_watchdog = False

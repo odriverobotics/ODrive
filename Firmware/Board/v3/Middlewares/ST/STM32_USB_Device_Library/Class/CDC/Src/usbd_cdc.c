@@ -327,7 +327,7 @@ __ALIGN_BEGIN uint8_t USBD_CDC_CfgDesc[USB_CDC_CONFIG_DESC_SIZ] __ALIGN_END =
   LOBYTE(CDC_DATA_HS_MAX_PACKET_SIZE),  /* wMaxPacketSize: */
   HIBYTE(CDC_DATA_HS_MAX_PACKET_SIZE),
   0x00,                              /* bInterval: ignore for Bulk transfer */
-} ;
+};
 
 
 /**
@@ -414,10 +414,10 @@ static uint8_t  USBD_CDC_Init (USBD_HandleTypeDef *pdev,
     ((USBD_CDC_ItfTypeDef *)pdev->pUserData)->Init();
     
     /* Init Xfer states */
-    hcdc->CDC_Tx.State =0;
-    hcdc->CDC_Rx.State =0;
-    hcdc->ODRIVE_Tx.State =0;
-    hcdc->ODRIVE_Rx.State =0;
+    hcdc->CDC_Tx.State = 0;
+    hcdc->CDC_Rx.State = 0;
+    hcdc->ODRIVE_Tx.State = 0;
+    hcdc->ODRIVE_Rx.State = 0;
        
     if(pdev->dev_speed == USBD_SPEED_HIGH  ) 
     {      
@@ -440,7 +440,7 @@ static uint8_t  USBD_CDC_Init (USBD_HandleTypeDef *pdev,
     USBD_LL_PrepareReceive(pdev,
                            ODRIVE_OUT_EP,
                            hcdc->ODRIVE_Rx.Buffer,
-                           CDC_DATA_FS_OUT_PACKET_SIZE);
+                           pdev->dev_speed == USBD_SPEED_HIGH ? CDC_DATA_HS_OUT_PACKET_SIZE : CDC_DATA_FS_OUT_PACKET_SIZE);
   }
   return ret;
 }

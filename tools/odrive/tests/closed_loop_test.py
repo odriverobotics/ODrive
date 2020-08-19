@@ -89,8 +89,8 @@ class TestClosedLoopControl(TestClosedLoopControlBase):
 
             data = record_log(lambda: [axis_ctx.handle.encoder.vel_estimate, axis_ctx.handle.encoder.pos_estimate], duration=5.0)
 
-            test_assert_eq(axis_ctx.handle.current_state, AXIS_STATE_CLOSED_LOOP_CONTROL)
             test_assert_no_error(axis_ctx)
+            test_assert_eq(axis_ctx.handle.current_state, AXIS_STATE_CLOSED_LOOP_CONTROL)
             request_state(axis_ctx, AXIS_STATE_IDLE)
 
             # encoder.vel_estimate
@@ -176,23 +176,22 @@ class TestRegenProtection(TestClosedLoopControlBase):
 
     def run_test(self, axis_ctx: ODriveAxisComponent, motor_ctx: MotorComponent, enc_ctx: EncoderComponent, logger: Logger):
         with self.prepare(axis_ctx, motor_ctx, enc_ctx, logger):
-            nominal_rps = 10.0
-            nominal_vel = nominal_rps
+            nominal_rps = 15.0
             max_current = 30.0
         
             # Accept a bit of noise on Ibus
-            axis_ctx.parent.handle.config.dc_max_negative_current = -0.2
+            axis_ctx.parent.handle.config.dc_max_negative_current = -0.5
 
             logger.debug(f'Brake control test from {nominal_rps} rounds/s...')
             
-            axis_ctx.handle.controller.config.vel_limit = 25.0 # max 15 rps
+            axis_ctx.handle.controller.config.vel_limit = 25.0
             axis_ctx.handle.motor.config.current_lim = max_current
             axis_ctx.handle.controller.config.control_mode = CONTROL_MODE_VELOCITY_CONTROL
             axis_ctx.handle.controller.config.input_mode = INPUT_MODE_PASSTHROUGH
 
             request_state(axis_ctx, AXIS_STATE_CLOSED_LOOP_CONTROL)
             # accelerate...
-            axis_ctx.handle.controller.input_vel = nominal_vel
+            axis_ctx.handle.controller.input_vel = nominal_rps
             time.sleep(1.0)
             test_assert_no_error(axis_ctx)
 
@@ -204,11 +203,12 @@ class TestRegenProtection(TestClosedLoopControlBase):
             # once more, but this time without brake resistor
             axis_ctx.parent.handle.config.brake_resistance = 0
             # accelerate...
-            axis_ctx.handle.controller.input_vel = nominal_vel
+            axis_ctx.handle.controller.input_vel = nominal_rps
             time.sleep(1.0)
             test_assert_no_error(axis_ctx)
 
             # ... and brake
+            axis_ctx.parent.handle.config.dc_max_negative_current = -0.2
             axis_ctx.handle.controller.input_vel = 0 # this should fail almost instantaneously
             time.sleep(0.1)
             test_assert_eq(axis_ctx.handle.error, AXIS_ERROR_MOTOR_DISARMED | AXIS_ERROR_BRAKE_RESISTOR_DISARMED)

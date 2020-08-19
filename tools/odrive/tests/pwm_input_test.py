@@ -61,7 +61,7 @@ class TestPwmInput():
         teensy.compile_and_program(code)
 
         logger.debug("Set up PWM input...")
-        odrive.unuse_gpios()
+        odrive.disable_mappings()
 
         pwm_mapping = [
             odrive.handle.config.gpio1_pwm_mapping,
@@ -70,6 +70,7 @@ class TestPwmInput():
             odrive.handle.config.gpio4_pwm_mapping
         ][odrive_gpio_num - 1]
 
+        setattr(odrive.handle.config, 'gpio' + str(odrive_gpio_num) + '_mode', GPIO_MODE_PWM0)
         pwm_mapping.endpoint = odrive.handle.axis0.controller._remote_attributes['input_pos']
         pwm_mapping.min = min_val
         pwm_mapping.max = max_val

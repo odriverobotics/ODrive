@@ -60,9 +60,6 @@
 #include "gpio.h"
 
 /* USER CODE BEGIN Includes */
-#include <MotorControl/odrive_main.h>
-#include "freertos_vars.h"
-#include "i2c.h"
 /* USER CODE END Includes */
 
 /* Private variables ---------------------------------------------------------*/
@@ -83,79 +80,18 @@ void MX_FREERTOS_Init(void);
 
 /* USER CODE BEGIN 0 */
 
-uint32_t _reboot_cookie __attribute__ ((section (".noinit")));
-extern char _estack; // provided by the linker script
-
-// Gets called from the startup assembly code
-void early_start_checks(void) {
-  if(_reboot_cookie == 0xDEADFE75) {
-    /* The STM DFU bootloader enables internal pull-up resistors on PB10 (AUX_H)
-    * and PB11 (AUX_L), thereby causing shoot-through on the brake resistor
-    * FETs and obliterating them unless external 3.3k pull-down resistors are
-    * present. Pull-downs are only present on ODrive 3.5 or newer.
-    * On older boards we disable DFU by default but if the user insists
-    * there's only one thing left that might save it: time.
-    * The brake resistor gate driver needs a certain 10V supply (GVDD) to
-    * make it work. This voltage is supplied by the motor gate drivers which get
-    * disabled at system reset. So over time GVDD voltage _should_ below
-    * dangerous levels. This is completely handwavy and should not be relied on
-    * so you are on your own on if you ignore this warning.
-    *
-    * This loop takes 5 cycles per iteration and at this point the system runs
-    * on the internal 16MHz RC oscillator so the delay is about 2 seconds.
-    */
-    for (size_t i = 0; i < (16000000UL / 5UL * 2UL); ++i) {
-      __NOP();
-    }
-    _reboot_cookie = 0xDEADBEEF;
-  }
-
-  /* We could jump to the bootloader directly on demand without rebooting
-  but that requires us to reset several peripherals and interrupts for it
-  to function correctly. Therefore it's easier to just reset the entire chip. */
-  if(_reboot_cookie == 0xDEADBEEF) {
-    _reboot_cookie = 0xCAFEFEED;  //Reset bootloader trigger
-    __set_MSP((uintptr_t)&_estack);
-    // http://www.st.com/content/ccc/resource/technical/document/application_note/6a/17/92/02/58/98/45/0c/CD00264379.pdf/files/CD00264379.pdf
-    void (*builtin_bootloader)(void) = (void (*)(void))(*((uint32_t *)0x1FFF0004));
-    builtin_bootloader();
-  }
-
-  /* The bootloader might fail to properly clean up after itself,
-  so if we're not sure that the system is in a clean state we
-  just reset it again */
-  if(_reboot_cookie != 42) {
-    _reboot_cookie = 42;
-    NVIC_SystemReset();
-  }
-}
-
 /* USER CODE END 0 */
 
 /**
   * @brief  The application entry point.
+  *         => Nope. We provide our own.
   *
   * @retval None
   */
-int main(void)
-{
+//int main(void)
+//{
+#if 0
   /* USER CODE BEGIN 1 */
-
-  // This procedure of building a USB serial number should be identical
-  // to the way the STM's built-in USB bootloader does it. This means
-  // that the device will have the same serial number in normal and DFU mode.
-  uint32_t uuid0 = *(uint32_t *)(UID_BASE + 0);
-  uint32_t uuid1 = *(uint32_t *)(UID_BASE + 4);
-  uint32_t uuid2 = *(uint32_t *)(UID_BASE + 8);
-  uint32_t uuid_mixed_part = uuid0 + uuid2;
-  serial_number = ((uint64_t)uuid_mixed_part << 16) | (uint64_t)(uuid1 >> 16);
-
-  uint64_t val = serial_number;
-  for (size_t i = 0; i < 12; ++i) {
-    serial_number_str[i] = "0123456789ABCDEF"[(val >> (48-4)) & 0xf];
-    val <<= 4;
-  }
-  serial_number_str[12] = 0;
 
   /* USER CODE END 1 */
 
@@ -193,10 +129,6 @@ int main(void)
   MX_TIM13_Init();
   /* USER CODE BEGIN 2 */
 
-  //Required to use OC4 for ADC triggering.
-  OC4_PWM_Override(&htim1);
-  OC4_PWM_Override(&htim8);
-
   /* USER CODE END 2 */
 
   /* Call init function for freertos objects (in freertos.c) */
@@ -219,6 +151,7 @@ int main(void)
   /* USER CODE END 3 */
 
 }
+#endif
 
 /**
   * @brief System Clock Configuration
@@ -313,7 +246,7 @@ void _Error_Handler(char *file, int line)
 {
   /* USER CODE BEGIN Error_Handler_Debug */
   /* User can add his own implementation to report the HAL error return state */
-  while(1) 
+  while(1) // TODO: do something more useful
   {
   }
   /* USER CODE END Error_Handler_Debug */

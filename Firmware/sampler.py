@@ -120,6 +120,9 @@ if __name__ == '__main__':
                 start = cur
                 print('{} Samples'.format(total))
                 print('')
+                total = 0
+                countmap = { }
+                pcmap = { }
 
     except KeyboardInterrupt:
         pcmap = sorted(pcmap.items(), key=operator.itemgetter(1), reverse=True)

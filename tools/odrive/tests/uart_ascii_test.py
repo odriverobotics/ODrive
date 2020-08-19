@@ -48,7 +48,9 @@ class TestUartAscii():
         # GPIOs might be in use by something other than UART and some components
         # might be configured so that they would fail in the later test.
         odrive.erase_config_and_reboot()
-        odrive.handle.config.enable_uart = True
+        odrive.handle.config.enable_uart0 = True
+        odrive.handle.config.gpio1_mode = GPIO_MODE_UART0
+        odrive.handle.config.gpio2_mode = GPIO_MODE_UART0
 
         with port.open(115200) as ser:
             # reset port to known state
@@ -161,10 +163,11 @@ class TestUartBaudrate():
             yield (odrive, ports)
 
     def run_test(self, odrive: ODriveComponent, port: SerialPortComponent, logger: Logger):
-        odrive.handle.axis0.config.enable_step_dir = False
-        odrive.handle.config.enable_uart = True
+        odrive.handle.config.enable_uart0 = True
+        odrive.handle.config.gpio1_mode = GPIO_MODE_UART0
+        odrive.handle.config.gpio2_mode = GPIO_MODE_UART0
 
-        odrive.handle.config.uart_baudrate = 9600
+        odrive.handle.config.uart0_baudrate = 9600
         odrive.save_config_and_reboot()
 
         # Control test: talk to the ODrive with the wrong baudrate
@@ -184,7 +187,7 @@ class TestUartBaudrate():
             response = float(ser.readline().strip())
             test_assert_eq(response, odrive.handle.vbus_voltage, accuracy=0.1)
 
-        odrive.handle.config.uart_baudrate = 115200
+        odrive.handle.config.uart0_baudrate = 115200
         odrive.save_config_and_reboot()
 
 
@@ -202,8 +205,9 @@ class TestUartBurnIn():
             yield (odrive, ports)
 
     def run_test(self, odrive: ODriveComponent, port: SerialPortComponent, logger: Logger):
-        odrive.handle.axis0.config.enable_step_dir = False
-        odrive.handle.config.enable_uart = True
+        odrive.handle.config.enable_uart0 = True
+        odrive.handle.config.gpio1_mode = GPIO_MODE_UART0
+        odrive.handle.config.gpio2_mode = GPIO_MODE_UART0
 
         with port.open(115200) as ser:
             with open('/dev/random', 'rb') as rand:
@@ -258,8 +262,9 @@ class TestUartNoise():
         noise_enable.write(False)
         time.sleep(0.1)
 
-        odrive.handle.axis0.config.enable_step_dir = False
-        odrive.handle.config.enable_uart = True
+        odrive.handle.config.enable_uart0 = True
+        odrive.handle.config.gpio1_mode = GPIO_MODE_UART0
+        odrive.handle.config.gpio2_mode = GPIO_MODE_UART0
 
         with port.open(115200) as ser:
             # reset port to known state

@@ -15,13 +15,12 @@ public:
         float Ydd;
     };
 
-    explicit TrapezoidalTrajectory(Config_t& config);
     bool planTrapezoidal(float Xf, float Xi, float Vi,
                          float Vmax, float Amax, float Dmax);
     Step_t eval(float t);
 
     Axis* axis_ = nullptr;  // set by Axis constructor
-    Config_t& config_;
+    Config_t config_;
 
     float Xi_;
     float Xf_;

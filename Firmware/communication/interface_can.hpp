@@ -2,7 +2,6 @@
 #define __INTERFACE_CAN_HPP
 
 #include <cmsis_os.h>
-#include <stm32f4xx_hal.h>
 #include "fibre/protocol.hpp"
 #include "odrive_main.h"
 #include "can_helpers.hpp"
