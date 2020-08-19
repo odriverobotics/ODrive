@@ -144,14 +144,14 @@ std::array<Axis, AXIS_COUNT> axes{{
 Stm32Gpio gpios[] = {
     {nullptr, 0}, // dummy GPIO0 so that PCB labels and software numbers match
 
-    {GPIOB, GPIO_PIN_2},
-    {GPIOA, GPIO_PIN_5},
-    {GPIOA, GPIO_PIN_4},
-    {GPIOA, GPIO_PIN_3},
-    {nullptr, 0},
-    {nullptr, 0},
-    {nullptr, 0},
-    {nullptr, 0},
+    {GPIOB, GPIO_PIN_2}, // GPIO1
+    {GPIOA, GPIO_PIN_5}, // GPIO2
+    {GPIOA, GPIO_PIN_4}, // GPIO3
+    {GPIOA, GPIO_PIN_3}, // GPIO4
+    {nullptr, 0}, // GPIO5 (doesn't exist on this board)
+    {nullptr, 0}, // GPIO6 (doesn't exist on this board)
+    {nullptr, 0}, // GPIO7 (doesn't exist on this board)
+    {nullptr, 0}, // GPIO8 (doesn't exist on this board)
 
     {GPIOB, GPIO_PIN_4}, // ENC0_A
     {GPIOB, GPIO_PIN_5}, // ENC0_B
@@ -166,14 +166,14 @@ Stm32Gpio gpios[] = {
 Stm32Gpio gpios[] = {
     {nullptr, 0}, // dummy GPIO0 so that PCB labels and software numbers match
 
-    {GPIOA, GPIO_PIN_0},
-    {GPIOA, GPIO_PIN_1},
-    {GPIOA, GPIO_PIN_2},
-    {GPIOA, GPIO_PIN_3},
-    {GPIOB, GPIO_PIN_2},
-    {nullptr, 0},
-    {nullptr, 0},
-    {nullptr, 0},
+    {GPIOA, GPIO_PIN_0}, // GPIO1
+    {GPIOA, GPIO_PIN_1}, // GPIO2
+    {GPIOA, GPIO_PIN_2}, // GPIO3
+    {GPIOA, GPIO_PIN_3}, // GPIO4
+    {GPIOB, GPIO_PIN_2}, // GPIO5
+    {nullptr, 0}, // GPIO6 (doesn't exist on this board)
+    {nullptr, 0}, // GPIO7 (doesn't exist on this board)
+    {nullptr, 0}, // GPIO8 (doesn't exist on this board)
 
     {GPIOB, GPIO_PIN_4}, // ENC0_A
     {GPIOB, GPIO_PIN_5}, // ENC0_B
@@ -188,14 +188,14 @@ Stm32Gpio gpios[] = {
 Stm32Gpio gpios[GPIO_COUNT] = {
     {nullptr, 0}, // dummy GPIO0 so that PCB labels and software numbers match
 
-    {GPIOA, GPIO_PIN_0},
-    {GPIOA, GPIO_PIN_1},
-    {GPIOA, GPIO_PIN_2},
-    {GPIOA, GPIO_PIN_3},
-    {GPIOC, GPIO_PIN_4},
-    {GPIOB, GPIO_PIN_2},
-    {GPIOA, GPIO_PIN_15},
-    {GPIOB, GPIO_PIN_3},
+    {GPIOA, GPIO_PIN_0}, // GPIO1
+    {GPIOA, GPIO_PIN_1}, // GPIO2
+    {GPIOA, GPIO_PIN_2}, // GPIO3
+    {GPIOA, GPIO_PIN_3}, // GPIO4
+    {GPIOC, GPIO_PIN_4}, // GPIO5
+    {GPIOB, GPIO_PIN_2}, // GPIO6
+    {GPIOA, GPIO_PIN_15}, // GPIO7
+    {GPIOB, GPIO_PIN_3}, // GPIO8
     
     {GPIOB, GPIO_PIN_4}, // ENC0_A
     {GPIOB, GPIO_PIN_5}, // ENC0_B
