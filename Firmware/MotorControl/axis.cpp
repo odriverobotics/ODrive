@@ -19,7 +19,8 @@ Axis::Axis(int axis_num,
            Motor& motor,
            TrapezoidalTrajectory& trap,
            Endstop& min_endstop,
-           Endstop& max_endstop)
+           Endstop& max_endstop,
+           MechanicalBrake& mechanical_brake)
     : axis_num_(axis_num),
       hw_config_(hw_config),
       config_(config),
@@ -32,6 +33,7 @@ Axis::Axis(int axis_num,
       trap_traj_(trap),
       min_endstop_(min_endstop),
       max_endstop_(max_endstop),
+      mechanical_brake_(mechanical_brake),
       current_limiters_(make_array(
           static_cast<CurrentLimiter*>(&fet_thermistor),
           static_cast<CurrentLimiter*>(&motor_thermistor))),
@@ -48,6 +50,7 @@ Axis::Axis(int axis_num,
     trap_traj_.axis_ = this;
     min_endstop_.axis_ = this;
     max_endstop_.axis_ = this;
+    mechanical_brake_.axis_ = this;
     decode_step_dir_pins();
     watchdog_feed();
 }
@@ -462,6 +465,7 @@ bool Axis::run_idle_loop() {
     // run_control_loop ignores missed modulation timing updates
     // if and only if we're in AXIS_STATE_IDLE
     safety_critical_disarm_motor_pwm(motor_);
+    mechanical_brake_.engage();
     set_step_dir_active(config_.enable_step_dir && config_.step_dir_always_on);
     run_control_loop([this]() {
         return true;
@@ -474,6 +478,7 @@ void Axis::run_state_machine_loop() {
 
     // arm!
     motor_.arm();
+    mechanical_brake_.release();
 
     for (;;) {
         // Load the task chain if a specific request is pending
@@ -575,6 +580,7 @@ void Axis::run_state_machine_loop() {
             case AXIS_STATE_IDLE: {
                 run_idle_loop();
                 status = motor_.arm(); // done with idling - try to arm the motor
+                mechanical_brake_.release();
             } break;
 
             default:

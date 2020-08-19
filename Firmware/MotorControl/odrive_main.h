@@ -210,6 +210,7 @@ enum TimingLog_t {
 #include <thermistor.hpp>
 #include <trapTraj.hpp>
 #include <endstop.hpp>
+#include <mechanical_brake.hpp>
 #include <axis.hpp>
 #include <communication/communication.h>
 

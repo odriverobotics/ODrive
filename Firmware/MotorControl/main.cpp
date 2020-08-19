@@ -21,6 +21,7 @@ Axis::Config_t axis_configs[AXIS_COUNT];
 TrapezoidalTrajectory::Config_t trap_configs[AXIS_COUNT];
 Endstop::Config_t min_endstop_configs[AXIS_COUNT];
 Endstop::Config_t max_endstop_configs[AXIS_COUNT];
+MechanicalBrake::Config_t mechanical_brake_configs[AXIS_COUNT];
 
 std::array<Axis*, AXIS_COUNT> axes;
 ODriveCAN *odCAN = nullptr;
@@ -38,6 +39,7 @@ typedef Config<
     TrapezoidalTrajectory::Config_t[AXIS_COUNT],
     Endstop::Config_t[AXIS_COUNT],
     Endstop::Config_t[AXIS_COUNT],
+    MechanicalBrake::Config_t[AXIS_COUNT],
     Axis::Config_t[AXIS_COUNT]> ConfigFormat;
 
 void ODrive::save_configuration(void) {
@@ -53,6 +55,7 @@ void ODrive::save_configuration(void) {
             &trap_configs,
             &min_endstop_configs,
             &max_endstop_configs,
+            &mechanical_brake_configs,
             &axis_configs)) {
         printf("saving configuration failed\r\n"); osDelay(5);
     } else {
@@ -75,6 +78,7 @@ extern "C" int load_configuration(void) {
                 &trap_configs,
                 &min_endstop_configs,
                 &max_endstop_configs,
+                &mechanical_brake_configs,
                 &axis_configs)) {
         //If loading failed, restore defaults
         odrv.config_ = BoardConfig_t();
@@ -93,6 +97,7 @@ extern "C" int load_configuration(void) {
             Axis::load_default_can_id(i, axis_configs[i]);
             min_endstop_configs[i] = Endstop::Config_t();
             max_endstop_configs[i] = Endstop::Config_t();
+            mechanical_brake_configs[i] = MechanicalBrake::Config_t();
             controller_configs[i].load_encoder_axis = i;
         }
     } else {
@@ -194,9 +199,10 @@ extern "C" int construct_objects(){
         TrapezoidalTrajectory *trap = new TrapezoidalTrajectory(trap_configs[i]);
         Endstop *min_endstop = new Endstop(min_endstop_configs[i]);
         Endstop *max_endstop = new Endstop(max_endstop_configs[i]);
+        MechanicalBrake *mechanical_brake = new MechanicalBrake(mechanical_brake_configs[i]);
         axes[i] = new Axis(i, hw_configs[i].axis_config, axis_configs[i],
                 *encoder, *sensorless_estimator, *controller, *fet_thermistor,
-                *motor_thermistor, *motor, *trap, *min_endstop, *max_endstop);
+                *motor_thermistor, *motor, *trap, *min_endstop, *max_endstop, *mechanical_brake);
 
         controller_configs[i].parent = controller;
         encoder_configs[i].parent = encoder;
@@ -204,6 +210,7 @@ extern "C" int construct_objects(){
         motor_configs[i].parent = motor;
         min_endstop_configs[i].parent = min_endstop;
         max_endstop_configs[i].parent = max_endstop;
+        mechanical_brake_configs[i].parent = mechanical_brake;
         axis_configs[i].parent = axes[i];
     }
     return 0;

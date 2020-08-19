@@ -364,6 +364,7 @@ interfaces:
       trap_traj: TrapezoidalTrajectory
       min_endstop: Endstop
       max_endstop: Endstop
+      mechanical_brake: MechanicalBrake
     functions:
       watchdog_feed:
         doc: Feed the watchdog to prevent watchdog timeouts.
@@ -830,7 +831,6 @@ interfaces:
           accel_limit: float32
           decel_limit: float32
 
-
   ODrive.Endstop:
     c_is_class: True
     attributes:
@@ -845,6 +845,16 @@ interfaces:
           pullup: bool
           debounce_ms: {type: uint32, c_setter: set_debounce_ms}
 
+  ODrive.MechanicalBrake:
+    c_is_class: True
+    attributes:
+      config:
+        c_is_class: False
+        attributes:
+          gpio_num: {type: uint16, c_setter: set_gpio_num}
+          enabled: {type: bool, c_setter: set_enabled}
+          is_active_low: bool
+          pulldown: bool
 
 valuetypes:
   ODrive.Can.Protocol:

@@ -82,7 +82,8 @@ public:
             Motor& motor,
             TrapezoidalTrajectory& trap,
             Endstop& min_endstop,
-            Endstop& max_endstop);
+            Endstop& max_endstop,
+            MechanicalBrake& mechanical_brake);
 
     void setup();
     void start_thread();
@@ -210,6 +211,7 @@ public:
     TrapezoidalTrajectory& trap_traj_;
     Endstop& min_endstop_;
     Endstop& max_endstop_;
+    MechanicalBrake& mechanical_brake_;
 
     // List of current_limiters and thermistors to
     // provide easy iteration.
