@@ -62,7 +62,7 @@ class TestStepDir():
 
         for i in range(100):
             step_gpio.write(True)
-            test_assert_eq(axis.handle.controller.input_pos, ref + (i + 1) * counts_per_step, range = 0.4 * counts_per_step)
+            test_assert_eq(axis.handle.controller.input_pos, ref + (i + 1) * turns_per_step, range = 0.4 * turns_per_step)
             step_gpio.write(False)
             test_assert_eq(axis.handle.controller.input_pos, ref + (i + 1) * turns_per_step, range = 0.4 * turns_per_step)
 
@@ -71,7 +71,7 @@ class TestStepDir():
 
         for i in range(100):
             step_gpio.write(True)
-            test_assert_eq(axis.handle.controller.input_pos, ref - (i + 1) * counts_per_step, range = 0.4 * counts_per_step)
+            test_assert_eq(axis.handle.controller.input_pos, ref - (i + 1) * turns_per_step, range = 0.4 * turns_per_step)
             step_gpio.write(False)
             test_assert_eq(axis.handle.controller.input_pos, ref - (i + 1) * turns_per_step, range = 0.4 * turns_per_step)
 
@@ -81,7 +81,7 @@ class TestStepDir():
 
         for i in range(100):
             step_gpio.write(True)
-            test_assert_eq(axis.handle.controller.input_pos, ref + (i + 1) * counts_per_step, range = 0.4 * counts_per_step)
+            test_assert_eq(axis.handle.controller.input_pos, ref + (i + 1) * turns_per_step, range = 0.4 * turns_per_step)
             step_gpio.write(False)
             test_assert_eq(axis.handle.controller.input_pos, ref + (i + 1) * turns_per_step, range = 0.4 * turns_per_step)
 
@@ -90,7 +90,7 @@ class TestStepDir():
 
         for i in range(100):
             step_gpio.write(True)
-            test_assert_eq(axis.handle.controller.input_pos, ref + (i + 1) * counts_per_step, range = 0.4 * abs(counts_per_step))
+            test_assert_eq(axis.handle.controller.input_pos, ref + (i + 1) * turns_per_step, range = 0.4 * abs(turns_per_step))
             step_gpio.write(False)
             test_assert_eq(axis.handle.controller.input_pos, ref + (i + 1) * turns_per_step, range = 0.4 * abs(turns_per_step))
 
