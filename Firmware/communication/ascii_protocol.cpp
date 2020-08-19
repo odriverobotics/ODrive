@@ -20,6 +20,9 @@
 /* Private typedef -----------------------------------------------------------*/
 /* Global constant data ------------------------------------------------------*/
 /* Global variables ----------------------------------------------------------*/
+
+UserValue ASCII_user_values[NUM_ASCII_USER_VALUES];
+
 /* Private constant data -----------------------------------------------------*/
 
 #define MAX_LINE_LENGTH 256
@@ -44,6 +47,7 @@ void cmd_system_ctrl(char * pStr, StreamSink& response_channel, bool use_checksu
 void cmd_read_property(char * pStr, StreamSink& response_channel, bool use_checksum);
 void cmd_write_property(char * pStr, StreamSink& response_channel, bool use_checksum);
 void cmd_update_axis_wdg(char * pStr, StreamSink& response_channel, bool use_checksum);
+void cmd_set_user_val(char * pStr, size_t idx, StreamSink& response_channel, bool use_checksum);
 void cmd_unknown(char * pStr, StreamSink& response_channel, bool use_checksum);
 
 /* Function implementations --------------------------------------------------*/
@@ -122,6 +126,8 @@ void ASCII_protocol_process_line(const uint8_t* buffer, size_t len, StreamSink& 
         case 'r': cmd_read_property(cmd, response_channel,  use_checksum);              break;  // read property
         case 'w': cmd_write_property(cmd, response_channel, use_checksum);              break;  // write property
         case 'u': cmd_update_axis_wdg(cmd, response_channel, use_checksum);             break;  // Update axis watchdog. 
+        case 'a': cmd_set_user_val(cmd, 0, response_channel, use_checksum);             break;  // Update generic user value 0
+        case 'b': cmd_set_user_val(cmd, 1, response_channel, use_checksum);             break;  // Update generic user value 1
         default : cmd_unknown(nullptr, response_channel, use_checksum);                 break;
     }
 }
@@ -370,6 +376,25 @@ void cmd_update_axis_wdg(char * pStr, StreamSink& response_channel, bool use_che
         respond(response_channel, use_checksum, "invalid motor %u", motor_number);
     } else {
         axes[motor_number].watchdog_feed();
+    }
+}
+
+// @brief Updates one of the user values in the user value array.
+void cmd_set_user_val(char * pStr, size_t idx, StreamSink& response_channel, bool use_checksum) {
+    (void)pStr;
+
+    float val;
+    if (sscanf(pStr + 1, " %f", &val) < 1) {
+        respond(response_channel, use_checksum, "invalid command format");
+    } else if (idx < sizeof(ASCII_user_values) / sizeof(ASCII_user_values[0])) {
+        UserValue user_value = {
+            .val = val,
+            .timestamp = micros()
+        };
+
+        CRITICAL_SECTION() {
+            ASCII_user_values[idx] = user_value;
+        }
     }
 }
 

@@ -1,7 +1,7 @@
 
 #include "odrive_main.h"
 #include <Drivers/STM32/stm32_system.h>
-
+#include "communication/ascii_protocol.hpp"
 
 Encoder::Encoder(TIM_HandleTypeDef* timer, Stm32Gpio index_gpio,
                  Stm32Gpio hallA_gpio, Stm32Gpio hallB_gpio, Stm32Gpio hallC_gpio,
@@ -22,7 +22,7 @@ bool Encoder::apply_config(ODriveIntf::MotorIntf::MotorType motor_type) {
     update_pll_gains();
 
     if (config_.pre_calibrated) {
-        if (config_.mode == Encoder::MODE_HALL || config_.mode == Encoder::MODE_SINCOS)
+        if (config_.mode == Encoder::MODE_HALL || config_.mode == Encoder::MODE_SINCOS || config_.mode == Encoder::MODE_UART_ABS)
             is_ready_ = true;
         if (motor_type == Motor::MOTOR_TYPE_ACIM)
             is_ready_ = true;
@@ -335,6 +335,9 @@ void Encoder::sample_now() {
             sincos_sample_c_ = (get_adc_voltage(get_gpio(config_.sincos_gpio_pin_cos)) / 3.3f) - 0.5f;
         } break;
 
+        case MODE_UART: break;
+        case MODE_UART_ABS: break;
+
         case MODE_SPI_ABS_AMS:
         case MODE_SPI_ABS_CUI:
         case MODE_SPI_ABS_AEAT:
@@ -467,6 +470,7 @@ bool Encoder::update() {
     // update internal encoder state.
     int32_t delta_enc = 0;
     int32_t pos_abs_latched = pos_abs_; //LATCH
+    bool run_pll = true;
 
     switch (mode_) {
         case MODE_INCREMENTAL: {
@@ -494,6 +498,22 @@ bool Encoder::update() {
         case MODE_SINCOS: {
             float phase = fast_atan2(sincos_sample_s_, sincos_sample_c_);
             int fake_count = (int)(1000.0f * phase);
+            //CPR = 6283 = 2pi * 1k
+
+            delta_enc = fake_count - count_in_cpr_;
+            delta_enc = mod(delta_enc, 6283);
+            if (delta_enc > 6283/2)
+                delta_enc -= 6283;
+        } break;
+
+        case MODE_UART: // fall-through
+        case MODE_UART_ABS: {
+            UserValue user_value;
+            CRITICAL_SECTION() {
+                user_value = ASCII_user_values[axis_->axis_num_];
+            }
+            run_pll = uart_value_timestamp_ != user_value.timestamp;
+            int fake_count = (int)(1000.0f * user_value.val * 2.0f * M_PI);
             //CPR = 6283 = 2pi * 1k
 
             delta_enc = fake_count - count_in_cpr_;
@@ -541,15 +561,19 @@ bool Encoder::update() {
     // Predict current pos
     pos_estimate_counts_ += current_meas_period * vel_estimate_counts_;
     pos_cpr_counts_      += current_meas_period * vel_estimate_counts_;
-    // discrete phase detector
-    float delta_pos_counts = (float)(shadow_count_ - (int32_t)std::floor(pos_estimate_counts_));
-    float delta_pos_cpr_counts = (float)(count_in_cpr_ - (int32_t)std::floor(pos_cpr_counts_));
-    delta_pos_cpr_counts = wrap_pm(delta_pos_cpr_counts, 0.5f * (float)(config_.cpr));
-    // pll feedback
-    pos_estimate_counts_ += current_meas_period * pll_kp_ * delta_pos_counts;
-    pos_cpr_counts_ += current_meas_period * pll_kp_ * delta_pos_cpr_counts;
-    pos_cpr_counts_ = fmodf_pos(pos_cpr_counts_, (float)(config_.cpr));
-    vel_estimate_counts_ += current_meas_period * pll_ki_ * delta_pos_cpr_counts;
+
+    if (run_pll) {
+        // discrete phase detector
+        float delta_pos_counts = (float)(shadow_count_ - (int32_t)std::floor(pos_estimate_counts_));
+        float delta_pos_cpr_counts = (float)(count_in_cpr_ - (int32_t)std::floor(pos_cpr_counts_));
+        delta_pos_cpr_counts = wrap_pm(delta_pos_cpr_counts, 0.5f * (float)(config_.cpr));
+        // pll feedback
+        pos_estimate_counts_ += current_meas_period * pll_kp_ * delta_pos_counts;
+        pos_cpr_counts_ += current_meas_period * pll_kp_ * delta_pos_cpr_counts;
+        pos_cpr_counts_ = fmodf_pos(pos_cpr_counts_, (float)(config_.cpr));
+        vel_estimate_counts_ += current_meas_period * pll_ki_ * delta_pos_cpr_counts;
+    }
+
     bool snap_to_zero_vel = false;
     if (std::abs(vel_estimate_counts_) < 0.5f * current_meas_period * pll_ki_) {
         vel_estimate_counts_ = 0.0f;  //align delta-sigma on zero to prevent jitter

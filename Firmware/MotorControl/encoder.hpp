@@ -111,6 +111,8 @@ public:
     float sincos_sample_s_ = 0.0f;
     float sincos_sample_c_ = 0.0f;
 
+    uint32_t uart_value_timestamp_ = 0;
+
     bool abs_spi_start_transaction();
     void abs_spi_cb(bool success);
     void abs_spi_cs_pin_init();

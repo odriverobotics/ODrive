@@ -1009,6 +1009,38 @@ valuetypes:
       Incremental:
       Hall:
       Sincos:
+        doc: '`config.cpr` must be set to 6283 when using this mode.'
+      Uart:
+        status: experimental
+        doc: |
+          A user supplied value is used as encoder position. The value should be
+          supplied through the ASCII protocol commands 'a' (for encoder 0) and
+          'b' (for encoder 1). The value should be in [0, 1) and maps to an
+          angle in [0°, 360°) where 0° need not denote the same physical angle
+          across reboots.
+          
+          `config.cpr` must be set to 6283 when using this mode.
+
+          Beware of instability that might occur due to the delay introduced
+          from the UART communication.
+          
+          If you don't send measurements for a while then `pos_estimate` can
+          skip turns.
+
+          In this mode the encoder bandwith will be off by a factor of
+          `user_value_frequency / 8kHz`.
+          That means if you supply new encoder positions at a rate of 4kHz and
+          want an encoder PLL bandwidth of 1000 then you need to set
+          `config.bandwidth` to 2000 instead of 1000.
+          
+          Do not send the same measurement twice.
+      UartAbs:
+        status: experimental
+        doc: |
+          Same as `Uart` with the only difference that the ODrive assumes that
+          any given user value always corresponds to the same physical angle,
+          even between reboots of the system. Breaking this promise leads to
+          undefined behavior.
       SpiAbsCui:
         value: 0x100
         doc: compatible with CUI AMT23xx

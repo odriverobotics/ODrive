@@ -58,7 +58,7 @@ class TestEncoderBase():
         # encoder.pos_estimate
         slope, offset, fitted_curve = fit_line(data[:,(0,4)])
         test_assert_eq(slope, true_cps, accuracy=0.005)
-        test_curve_fit(data[:,(0,4)], fitted_curve, max_mean_err = true_cpr * 0.02, inlier_range = true_cpr * 0.02, max_outliers = len(data[:,0]) * 0.02)
+        test_curve_fit(data[:,(0,4)], fitted_curve, max_mean_err = true_cpr * 0.02, inlier_range = true_cpr * 0.03, max_outliers = len(data[:,0]) * 0.03)
         
         # encoder.pos_cpr
         slope, offset, fitted_curve = fit_sawtooth(data[:,(0,5)], true_cpr if reverse else 0, 0 if reverse else true_cpr)
@@ -69,7 +69,7 @@ class TestEncoderBase():
         slope, offset, fitted_curve = fit_line(data[:,(0,6)])
         test_assert_eq(slope, 0.0, range = true_cpr * abs(true_rps) * 0.01)
         test_assert_eq(offset, true_cpr * true_rps, accuracy = 0.02)
-        test_curve_fit(data[:,(0,6)], fitted_curve, max_mean_err = true_cpr * 0.05, inlier_range = true_cpr * 0.05 * noise, max_outliers = len(data[:,0]) * 0.05)
+        test_curve_fit(data[:,(0,6)], fitted_curve, max_mean_err = true_cpr * 0.05 * noise, inlier_range = true_cpr * 0.05 * noise, max_outliers = len(data[:,0]) * 0.05 * noise)
 
 
 
@@ -512,6 +512,74 @@ class TestSpiEncoder(TestEncoderBase):
         enc.handle.config.cpr = 8192
 
 
+teensy_uart_encoder_emulation_code = """
+const float rps = 2.0;
+const int update_rate = 4000;
+const int baudrate = 921600;
+
+float pos = 0.0f;
+
+void setup() {
+  Serial2.begin(baudrate);
+}
+
+void loop() {
+  pos += rps / (float)update_rate;
+  if (pos >= 1.0f)
+    pos -= 1.0f;
+
+  // Total length: 9 bytes
+  //  => 781us @ 115200bps
+  //  =>  98us @ 921600bps
+  Serial2.print("{cmd} ");
+  Serial2.print(pos, 4);
+  Serial2.print("\\n");
+
+  //delayMicroseconds(1000000.0f / (float)update_rate - 1000000.0f / (float)baudrate * 90.0f);
+  delayMicroseconds(1000000.0f / (float)update_rate);
+}
+"""
+
+class TestUartEncoder(TestEncoderBase):
+    def get_test_cases(self, testrig: TestRig):
+        for odrive in testrig.get_components(ODriveComponent):
+            for encoder in odrive.encoders:
+                # Find the Teensy that is connected to the encoder pins and the corresponding Teensy UART GPIOs
+
+                gpio_conns = [
+                    testrig.get_directly_connected_components(odrive.gpio1),
+                    testrig.get_directly_connected_components(odrive.gpio2),
+                ]
+
+                valid_combinations = [
+                    (combination[0].parent,)
+                    for combination in itertools.product(*gpio_conns)
+                    if ((len(set(c.parent for c in combination)) == 1) and isinstance(combination[0].parent, TeensyComponent)
+                        and combination[0].num == 7 and combination[1].num == 8) # Must be RX2 and TX2
+                ]
+
+                yield (encoder, valid_combinations, 'a' if encoder.num == 0 else 'b')
+
+
+    def run_test(self, enc: ODriveEncoderComponent, teensy: TeensyComponent, cmd: str, logger: Logger):
+        code = teensy_uart_encoder_emulation_code.replace('{cmd}', cmd)
+        teensy.compile_and_program(code)
+
+        if enc.handle.config.mode != ENCODER_MODE_UART:
+            enc.parent.disable_mappings()
+            enc.parent.handle.config.gpio1_mode = GPIO_MODE_UART0
+            enc.parent.handle.config.gpio2_mode = GPIO_MODE_UART0
+            enc.parent.handle.config.uart0_baudrate = 921600
+            enc.handle.config.mode = ENCODER_MODE_UART
+            enc.parent.save_config_and_reboot()
+        else:
+            time.sleep(1.0) # wait for PLLs to stabilize
+
+        enc.handle.config.bandwidth = 100
+
+        true_rps = 1.9716 # in the Teensy code we have 2.0 but the timing is not 100% accurate
+        self.run_generic_encoder_test(enc.handle, 6283, true_rps, 3.0)
+
 
 if __name__ == '__main__':
     test_runner.run([
@@ -520,4 +588,5 @@ if __name__ == '__main__':
         TestHallEffectEncoder(),
         TestSpiEncoder(ENCODER_MODE_SPI_ABS_AMS),
         TestSpiEncoder(ENCODER_MODE_SPI_ABS_CUI),
+        TestUartEncoder(),
     ])

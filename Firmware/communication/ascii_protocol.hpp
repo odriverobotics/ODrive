@@ -18,5 +18,13 @@
 /* Exported functions --------------------------------------------------------*/
 void ASCII_protocol_parse_stream(const uint8_t* buffer, size_t len, StreamSink& response_channel);
 
+#define NUM_ASCII_USER_VALUES 2
+
+struct UserValue {
+    float val = 0;
+    uint32_t timestamp = 0;
+};
+
+extern UserValue ASCII_user_values[NUM_ASCII_USER_VALUES];
 
 #endif /* __ASCII_PROTOCOL_H */
