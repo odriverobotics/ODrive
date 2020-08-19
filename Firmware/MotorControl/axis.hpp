@@ -10,6 +10,7 @@ class Axis;
 #include "endstop.hpp"
 #include "low_level.h"
 #include "utils.hpp"
+#include "communication/interface_uart.h" // TODO: remove once uart_poll() is gone
 
 #include <array>
 
@@ -168,6 +169,10 @@ public:
             // Run main loop function, defer quitting for after wait
             // TODO: change arming logic to arm after waiting
             bool main_continue = update_handler();
+
+            if (axis_num_ == 0) {
+                uart_poll(); // TODO: move to board-level control loop once it exists
+            }
 
             // Check we meet deadlines after queueing
             ++loop_counter_;
