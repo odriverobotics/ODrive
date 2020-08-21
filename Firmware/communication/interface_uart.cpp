@@ -21,7 +21,7 @@ static uint32_t dma_last_rcv_idx;
 // FIXME: the stdlib doesn't know about CMSIS threads, so this is just a global variable
 // static thread_local uint32_t deadline_ms = 0;
 
-osThreadId uart_thread;
+osThreadId uart_thread = 0;
 extern UART_HandleTypeDef* uart0;
 static UART_HandleTypeDef* huart_ = uart0; // defined in board.cpp.
 const uint32_t stack_size_uart_thread = 4096;  // Bytes
@@ -115,7 +115,9 @@ void start_uart_server() {
 }
 
 void uart_poll() {
-    osThreadResume(uart_thread);
+    if (uart_thread) { // the thread is only started if UART is enabled
+        osThreadResume(uart_thread);
+    }
 }
 
 void HAL_UART_TxCpltCallback(UART_HandleTypeDef* huart) {
