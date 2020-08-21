@@ -81,6 +81,8 @@ public:
         bool acim_autoflux_enable = false;
         float acim_autoflux_attack_gain = 10.0f;
         float acim_autoflux_decay_gain = 1.0f;
+        bool R_wL_FF_enable = false; // Enable feedforwards for R*I and w*L*I terms
+        bool bEMF_FF_enable = false; // Enable feedforward for bEMF
 
         // custom property setters
         Motor* parent = nullptr;
@@ -118,7 +120,7 @@ public:
     bool enqueue_modulation_timings(float mod_alpha, float mod_beta);
     bool enqueue_voltage_timings(float v_alpha, float v_beta);
     bool FOC_voltage(float v_d, float v_q, float pwm_phase);
-    bool FOC_current(float Id_des, float Iq_des, float I_phase, float pwm_phase);
+    bool FOC_current(float Id_des, float Iq_des, float I_phase, float pwm_phase, float phase_vel);
     bool update(float current_setpoint, float phase, float phase_vel);
     void tim_update_cb();
 

@@ -289,7 +289,7 @@ bool Motor::FOC_voltage(float v_d, float v_q, float pwm_phase) {
     return enqueue_voltage_timings(v_alpha, v_beta);
 }
 
-bool Motor::FOC_current(float Id_des, float Iq_des, float I_phase, float pwm_phase) {
+bool Motor::FOC_current(float Id_des, float Iq_des, float I_phase, float pwm_phase, float phase_vel) {
     // Syntactic sugar
     CurrentControl_t& ictrl = current_control_;
 
@@ -325,10 +325,20 @@ bool Motor::FOC_current(float Id_des, float Iq_des, float I_phase, float pwm_pha
     float Ierr_d = Id_des - Id;
     float Ierr_q = Iq_des - Iq;
 
-    // TODO look into feed forward terms (esp omega, since PI pole maps to RL tau)
     // Apply PI control
     float Vd = ictrl.v_current_control_integral_d + Ierr_d * ictrl.p_gain;
     float Vq = ictrl.v_current_control_integral_q + Ierr_q * ictrl.p_gain;
+
+    if (config_.R_wL_FF_enable) {
+        Vd -= phase_vel * config_.phase_inductance * Iq_des;
+        Vq += phase_vel * config_.phase_inductance * Id_des;
+        Vd += config_.phase_resistance * Id_des;
+        Vq += config_.phase_resistance * Iq_des;
+    }
+
+    if (config_.bEMF_FF_enable) {
+        Vq += phase_vel * (2.0f/3.0f) * (config_.torque_constant / config_.pole_pairs);
+    }
 
     float mod_to_V = (2.0f / 3.0f) * vbus_voltage;
     float V_to_mod = 1.0f / mod_to_V;
@@ -451,8 +461,8 @@ bool Motor::update(float torque_setpoint, float phase, float phase_vel) {
 
     // Execute current command
     switch(config_.motor_type){
-        case MOTOR_TYPE_HIGH_CURRENT: return FOC_current(id, iq, phase, pwm_phase); break;
-        case MOTOR_TYPE_ACIM: return FOC_current(id, iq, phase, pwm_phase); break;
+        case MOTOR_TYPE_HIGH_CURRENT: return FOC_current(id, iq, phase, pwm_phase, phase_vel); break;
+        case MOTOR_TYPE_ACIM: return FOC_current(id, iq, phase, pwm_phase, phase_vel); break;
         case MOTOR_TYPE_GIMBAL: return FOC_voltage(id, iq, pwm_phase); break;
         default: set_error(ERROR_NOT_IMPLEMENTED_MOTOR_TYPE); return false; break;
     }

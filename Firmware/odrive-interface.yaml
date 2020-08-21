@@ -678,7 +678,8 @@ interfaces:
           acim_autoflux_enable: bool
           acim_autoflux_attack_gain: float32
           acim_autoflux_decay_gain: float32
-
+          R_wL_FF_enable: bool
+          bEMF_FF_enable: bool
 
   ODrive.Controller:
     c_is_class: True
