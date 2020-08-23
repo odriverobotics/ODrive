@@ -260,6 +260,8 @@ bool Motor::run_calibration() {
 }
 
 bool Motor::enqueue_modulation_timings(float mod_alpha, float mod_beta) {
+    if (std::isnan(mod_alpha) || std::isnan(mod_alpha))
+        return set_error(ERROR_MODULATION_IS_NAN), false;
     float tA, tB, tC;
     if (SVM(mod_alpha, mod_beta, &tA, &tB, &tC) != 0)
         return set_error(ERROR_MODULATION_MAGNITUDE), false;
