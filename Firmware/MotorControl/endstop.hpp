@@ -25,7 +25,6 @@ class Endstop {
     Axis* axis_ = nullptr;
 
     bool apply_config();
-    void set_enabled(bool enabled);
 
     void update();
     bool get_state();
