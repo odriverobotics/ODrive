@@ -364,11 +364,30 @@ interfaces:
       trap_traj: TrapezoidalTrajectory
       min_endstop: Endstop
       max_endstop: Endstop
+      task_times: TaskTime
     functions:
       watchdog_feed:
         doc: Feed the watchdog to prevent watchdog timeouts.
       clear_errors:
         doc: Check the watchdog timer for expiration. Also sets the watchdog error bit if expired.
+
+  ODrive.Axis.TaskTime:
+    c_is_class: False
+    attributes:
+      thermistor_update: uint16
+      encoder_update: uint16
+      sensorless_update: uint16
+      min_endstop_update: uint16
+      max_endstop_update: uint16
+      axis_update: uint16
+      axis_error_check: uint16
+      controller_update: uint16
+      motor_update: uint16
+      control_loop: uint16
+      update_handler: uint16
+      brake_update: uint16
+      adc_cb: uint16
+      total: uint32
 
   ODrive.Axis.LockinConfig:
     c_is_class: False

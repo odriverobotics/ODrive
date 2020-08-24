@@ -201,11 +201,23 @@ bool Axis::do_updates() {
     for (ThermistorCurrentLimiter* thermistor : thermistors_) {
         thermistor->update();
     }
+    task_times_.thermistor_update = sample_TIM13();
+
     encoder_.update();
+    task_times_.encoder_update = sample_TIM13();
+
     sensorless_estimator_.update();
+    task_times_.sensorless_update = sample_TIM13();
+
     min_endstop_.update();
+    task_times_.min_endstop_update = sample_TIM13();
+
     max_endstop_.update();
+    task_times_.max_endstop_update = sample_TIM13();
+
     bool ret = check_for_errors();
+    task_times_.axis_error_check = sample_TIM13();
+
     odCAN->send_heartbeat(this);
     return ret;
 }
@@ -347,10 +359,12 @@ bool Axis::run_closed_loop_control_loop() {
         float torque_setpoint;
         if (!controller_.update(&torque_setpoint))
             return error_ |= ERROR_CONTROLLER_FAILED, false;
+        task_times_.controller_update = sample_TIM13();
 
         float phase_vel = (2*M_PI) * encoder_.vel_estimate_ * motor_.config_.pole_pairs;
         if (!motor_.update(torque_setpoint, encoder_.phase_, phase_vel))
             return false; // set_error should update axis.error_
+        task_times_.motor_update = sample_TIM13();
 
         return true;
     });

@@ -492,6 +492,7 @@ static void decode_hall_samples(Encoder& enc, uint16_t GPIO_samples[num_GPIO]) {
 // This is the callback from the ADC that we expect after the PWM has triggered an ADC conversion.
 // TODO: Document how the phasing is done, link to timing diagram
 void pwm_trig_adc_cb(ADC_HandleTypeDef* hadc, bool injected) {
+    auto start = sample_TIM13();
 #define calib_tau 0.2f  //@TOTO make more easily configurable
     constexpr float calib_filter_k = CURRENT_MEAS_PERIOD / calib_tau;
 
@@ -587,6 +588,9 @@ void pwm_trig_adc_cb(ADC_HandleTypeDef* hadc, bool injected) {
             axis.motor_.DC_calib_.phC += (current - axis.motor_.DC_calib_.phC) * calib_filter_k;
         }
     }
+    auto end = (sample_TIM13() - start);
+    axes[0]->task_times_.adc_cb = end;
+    axes[1]->task_times_.adc_cb = end;
 }
 
 void tim_update_cb(TIM_HandleTypeDef* htim) {
@@ -620,6 +624,7 @@ void tim_update_cb(TIM_HandleTypeDef* htim) {
 // @brief Sums up the Ibus contribution of each motor and updates the
 // brake resistor PWM accordingly.
 void update_brake_current() {
+    auto start = sample_TIM13();
     float Ibus_sum = 0.0f;
     for (size_t i = 0; i < AXIS_COUNT; ++i) {
         if (axes[i]->motor_.armed_state_ == Motor::ARMED_STATE_ARMED) {
@@ -666,6 +671,9 @@ void update_brake_current() {
     int low_off = high_on - TIM_APB1_DEADTIME_CLOCKS;
     if (low_off < 0) low_off = 0;
     safety_critical_apply_brake_resistor_timings(low_off, high_on);
+    
+    auto end = sample_TIM13() - start;
+    axes[0]->task_times_.brake_update = end;
 }
 
 
