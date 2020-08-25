@@ -28,6 +28,25 @@ public:
         bool finish_on_enc_idx = false;
     };
 
+    struct TaskTimes_t {
+        uint16_t thermistor_update = 0;
+        uint16_t encoder_update = 0;
+        uint16_t sensorless_update = 0;
+        uint16_t min_endstop_update = 0;
+        uint16_t max_endstop_update = 0;
+        uint16_t axis_update = 0;
+        uint16_t axis_error_check = 0;
+
+        uint16_t controller_update = 0;
+        uint16_t motor_update = 0;
+        uint16_t update_handler = 0;
+
+        uint16_t brake_update = 0;
+        uint16_t adc_cb = 0;
+        uint16_t control_loop = 0;
+        uint32_t total = 0;
+    };
+
     static LockinConfig_t default_calibration();
     static LockinConfig_t default_sensorless();
     static LockinConfig_t default_lockin();
@@ -147,14 +166,18 @@ public:
     // go to zero.
     //
     // @tparam T Must be a callable type that takes no arguments and returns a bool
+    uint16_t start = 0;
     template<typename T>
     void run_control_loop(const T& update_handler) {
         while (requested_state_ == AXIS_STATE_UNDEFINED) {
+            start = sample_TIM13();
             // look for errors at axis level and also all subcomponents
             bool checks_ok = do_checks();
+
             // Update all estimators
             // Note: updates run even if checks fail
-            bool updates_ok = do_updates(); 
+            bool updates_ok = do_updates();
+            task_times_.axis_update = sample_TIM13();
 
             // make sure the watchdog is being fed. 
             bool watchdog_ok = watchdog_check();
@@ -169,6 +192,7 @@ public:
             // Run main loop function, defer quitting for after wait
             // TODO: change arming logic to arm after waiting
             bool main_continue = update_handler();
+            task_times_.update_handler = sample_TIM13();
 
             if (axis_num_ == 0) {
                 uart_poll(); // TODO: move to board-level control loop once it exists
@@ -176,6 +200,20 @@ public:
 
             // Check we meet deadlines after queueing
             ++loop_counter_;
+
+            task_times_.control_loop = sample_TIM13() - task_times_.update_handler;
+            task_times_.update_handler -= task_times_.axis_update;
+            task_times_.axis_update -= start;
+            task_times_.motor_update -= task_times_.controller_update;
+            task_times_.controller_update -= task_times_.axis_error_check;
+            task_times_.axis_error_check -= task_times_.max_endstop_update;
+            task_times_.max_endstop_update -= task_times_.min_endstop_update;
+            task_times_.min_endstop_update -= task_times_.sensorless_update;
+            task_times_.sensorless_update -= task_times_.encoder_update;
+            task_times_.encoder_update -= task_times_.thermistor_update;
+            task_times_.thermistor_update -= start;
+            task_times_.total = sample_TIM13() - start;
+
 
             // Wait until the current measurement interrupt fires
             if (!wait_for_current_meas()) {
@@ -220,6 +258,7 @@ public:
     TrapezoidalTrajectory& trap_traj_;
     Endstop& min_endstop_;
     Endstop& max_endstop_;
+    TaskTimes_t task_times_;
 
     // List of current_limiters and thermistors to
     // provide easy iteration.

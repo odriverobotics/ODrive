@@ -121,6 +121,7 @@ int is_in_the_future(uint32_t time_ms);
 
 uint32_t micros(void);
 void delay_us(uint32_t us);
+uint16_t sample_TIM13();
 
 float our_arm_sin_f32(float x);
 float our_arm_cos_f32(float x);

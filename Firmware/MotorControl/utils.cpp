@@ -5,6 +5,9 @@
 #include <cmsis_os.h>
 #include <board.h>
 
+#include <tim.h>
+
+
 int SVM(float alpha, float beta, float* tA, float* tB, float* tC) {
     int Sextant;
 
@@ -201,4 +204,9 @@ void delay_us(uint32_t us)
     while (micros() - start < (uint32_t) us) {
         __ASM("nop");
     }
+}
+
+uint16_t sample_TIM13(){
+    constexpr uint16_t clocks_per_cnt = (uint16_t)((float)TIM_1_8_CLOCK_HZ / (float)TIM_APB1_CLOCK_HZ);
+    return clocks_per_cnt * htim13.Instance->CNT; // TODO: Use a hw_config
 }
