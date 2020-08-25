@@ -41,6 +41,9 @@ The hall feedback has 6 states for every pole pair in the motor. Since we have 1
 ```txt
 odrv0.axis0.encoder.config.mode = ENCODER_MODE_HALL
 odrv0.axis0.encoder.config.cpr = 90
+odrv0.config.gpio9_mode = GPIO_MODE_DIGITAL
+odrv0.config.gpio10_mode = GPIO_MODE_DIGITAL
+odrv0.config.gpio11_mode = GPIO_MODE_DIGITAL
 ```
 
 Since the hall feedback only has 90 counts per revolution, we want to reduce the velocity tracking bandwidth to get smoother velocity estimates.

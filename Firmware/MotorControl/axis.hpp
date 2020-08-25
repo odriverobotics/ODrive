@@ -1,9 +1,16 @@
 #ifndef __AXIS_HPP
 #define __AXIS_HPP
 
-#ifndef __ODRIVE_MAIN_H
-#error "This file should not be included directly. Include odrive_main.h instead."
-#endif
+class Axis;
+
+#include "encoder.hpp"
+#include "sensorless_estimator.hpp"
+#include "controller.hpp"
+#include "trapTraj.hpp"
+#include "endstop.hpp"
+#include "low_level.h"
+#include "utils.hpp"
+#include "communication/interface_uart.h" // TODO: remove once uart_poll() is gone
 
 #include <array>
 
@@ -91,8 +98,9 @@ public:
     };
 
     Axis(int axis_num,
-            const AxisHardwareConfig_t& hw_config,
-            Config_t& config,
+            uint16_t default_step_gpio_pin,
+            uint16_t default_dir_gpio_pin,
+            osPriority thread_priority,
             Encoder& encoder,
             SensorlessEstimator& sensorless_estimator,
             Controller& controller,
@@ -103,7 +111,10 @@ public:
             Endstop& min_endstop,
             Endstop& max_endstop);
 
-    void setup();
+    bool apply_config();
+    void clear_config();
+
+    bool setup();
     void start_thread();
     void signal_current_meas();
     bool wait_for_current_meas();
@@ -111,10 +122,6 @@ public:
     void step_cb();
     void set_step_dir_active(bool enable);
     void decode_step_dir_pins();
-
-    static void load_default_step_dir_pin_config(
-        const AxisHardwareConfig_t& hw_config, Config_t* config);
-    static void load_default_can_id(const int& id, Config_t& config);
 
     bool check_DRV_fault();
     bool check_PSU_brownout();
@@ -186,6 +193,11 @@ public:
             // TODO: change arming logic to arm after waiting
             bool main_continue = update_handler();
             task_times_.update_handler = sample_TIM13();
+
+            if (axis_num_ == 0) {
+                uart_poll(); // TODO: move to board-level control loop once it exists
+            }
+
             // Check we meet deadlines after queueing
             ++loop_counter_;
 
@@ -230,9 +242,12 @@ public:
 
     void run_state_machine_loop();
 
+    // hardware config
     int axis_num_;
-    const AxisHardwareConfig_t& hw_config_;
-    Config_t& config_;
+    uint16_t default_step_gpio_pin_;
+    uint16_t default_dir_gpio_pin_;
+    osPriority thread_priority_;
+    Config_t config_;
 
     Encoder& encoder_;
     SensorlessEstimator& sensorless_estimator_;
@@ -259,10 +274,8 @@ public:
     bool step_dir_active_ = false; // auto enabled after calibration, based on config.enable_step_dir
 
     // updated from config in constructor, and on protocol hook
-    GPIO_TypeDef* step_port_;
-    uint16_t step_pin_;
-    GPIO_TypeDef* dir_port_;
-    uint16_t dir_pin_;
+    Stm32Gpio step_gpio_;
+    Stm32Gpio dir_gpio_;
 
     AxisState requested_state_ = AXIS_STATE_STARTUP_SEQUENCE;
     std::array<AxisState, 10> task_chain_ = { AXIS_STATE_UNDEFINED };

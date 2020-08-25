@@ -4,10 +4,10 @@
 
 #include <algorithm>
 
-Controller::Controller(Config_t& config) :
-    config_(config)
-{
+bool Controller::apply_config() {
+    config_.parent = this;
     update_filter_gains();
+    return true;
 }
 
 void Controller::reset() {
@@ -29,7 +29,7 @@ void Controller::set_error(Error error) {
 
 bool Controller::select_encoder(size_t encoder_num) {
     if (encoder_num < AXIS_COUNT) {
-        Axis* ax = axes[encoder_num];
+        Axis* ax = &axes[encoder_num];
         pos_estimate_circular_src_ = &ax->encoder_.pos_circular_;
         pos_wrap_src_ = &config_.circular_setpoint_range;
         pos_estimate_linear_src_ = &ax->encoder_.pos_estimate_;
@@ -175,8 +175,8 @@ bool Controller::update(float* torque_setpoint_output) {
         } break;
         case INPUT_MODE_MIRROR: {
             if (config_.axis_to_mirror < AXIS_COUNT) {
-                pos_setpoint_ = axes[config_.axis_to_mirror]->encoder_.pos_estimate_ * config_.mirror_ratio;
-                vel_setpoint_ = axes[config_.axis_to_mirror]->encoder_.vel_estimate_ * config_.mirror_ratio;
+                pos_setpoint_ = axes[config_.axis_to_mirror].encoder_.pos_estimate_ * config_.mirror_ratio;
+                vel_setpoint_ = axes[config_.axis_to_mirror].encoder_.vel_estimate_ * config_.mirror_ratio;
             } else {
                 set_error(ERROR_INVALID_MIRROR_AXIS);
                 return false;

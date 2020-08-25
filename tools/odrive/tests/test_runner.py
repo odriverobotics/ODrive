@@ -247,11 +247,8 @@ class ODriveComponent(Component):
         for axis_idx, axis_ctx in enumerate(self.axes):
             axis_ctx.handle = self.handle.__dict__['axis{}'.format(axis_idx)]
 
-    def unuse_gpios(self):
-        self.handle.config.enable_uart = False
-        self.handle.axis0.config.enable_step_dir = False
-        self.handle.axis1.config.enable_step_dir = False
-        self.handle.config.gpio1_pwm_mapping.endpoint = None
+    def disable_mappings(self):
+        self.handle.config.gpio1_pwm_mapping.endpoint = None # here
         self.handle.config.gpio2_pwm_mapping.endpoint = None
         self.handle.config.gpio3_pwm_mapping.endpoint = None
         self.handle.config.gpio4_pwm_mapping.endpoint = None

@@ -1,6 +1,20 @@
 # Unreleased Features
 Please add a note of your changes below this heading if you make a Pull Request.
 
+### Changed
+
+* Use DMA for DRV8301 setup
+* Make NVM configuration code more dynamic so that the layout doesn't have to be known at compile time.
+* GPIO initialization logic was changed. GPIOs now need to be explicitly set to the mode corresponding to the feature that they are used by. See `<odrv>.config.gpioX_mode`.
+* Previously, if two components used the same interrupt pin (e.g. step input for axis0 and axis1) then the one that was configured later would override the other one. Now this is no longer the case (the old component remains the owner of the pin).
+
+### API Miration Notes
+
+* `enable_uart` and `uart_baudrate` were renamed to `enable_uart0` and `uart0_baudrate`.
+* `enable_i2c_instead_of_can` was replaced by the separate settings `enable_i2c0` and `enable_can0`.
+* `<axis>.motor.gate_driver` was moved to `<axis>.gate_driver`.
+* `<axis>.min_endstop.pullup` and `<axis>.max_endstop.pullup` were removed. Use `<odrv>.config.gpioX_mode = GPIO_MODE_DIGITAL / GPIO_MODE_DIGITAL_PULL_UP / GPIO_MODE_DIGITAL_PULL_DOWN` instead.
+
 # Release Candidate
 ## [0.5.1] - Date TBD
 ### Added

@@ -6,7 +6,6 @@
 
 #include <can.h>
 #include <cmsis_os.h>
-#include <stm32f4xx_hal.h>
 
 // Specific CAN Protocols
 #include "can_simple.hpp"

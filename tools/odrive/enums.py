@@ -3,6 +3,22 @@
 # To regenerate this file, nagivate to the top level of the ODrive repository and run:
 #   python Firmware/interface_generator_stub.py --definitions Firmware/odrive-interface.yaml --template tools/enums_template.j2 --output tools/odrive/enums.py
 
+# ODrive.GpioMode
+GPIO_MODE_DIGITAL                        = 0
+GPIO_MODE_DIGITAL_PULL_UP                = 1
+GPIO_MODE_DIGITAL_PULL_DOWN              = 2
+GPIO_MODE_ANALOG_IN                      = 3
+GPIO_MODE_UART0                          = 4
+GPIO_MODE_UART1                          = 5
+GPIO_MODE_UART2                          = 6
+GPIO_MODE_CAN0                           = 7
+GPIO_MODE_I2C0                           = 8
+GPIO_MODE_SPI0                           = 9
+GPIO_MODE_PWM0                           = 10
+GPIO_MODE_ENC0                           = 11
+GPIO_MODE_ENC1                           = 12
+GPIO_MODE_ENC2                           = 13
+
 # ODrive.Can.Protocol
 PROTOCOL_SIMPLE                          = 0
 
@@ -31,6 +47,7 @@ ENCODER_MODE_SINCOS                      = 2
 ENCODER_MODE_SPI_ABS_CUI                 = 256
 ENCODER_MODE_SPI_ABS_AMS                 = 257
 ENCODER_MODE_SPI_ABS_AEAT                = 258
+ENCODER_MODE_SPI_ABS_RLS                 = 259
 
 # ODrive.Controller.ControlMode
 CONTROL_MODE_VOLTAGE_CONTROL             = 0
@@ -100,26 +117,13 @@ MOTOR_ERROR_CURRENT_LIMIT_VIOLATION      = 0x00001000
 MOTOR_ERROR_BRAKE_DUTY_CYCLE_NAN         = 0x00002000
 MOTOR_ERROR_DC_BUS_OVER_REGEN_CURRENT    = 0x00004000
 MOTOR_ERROR_DC_BUS_OVER_CURRENT          = 0x00008000
+MOTOR_ERROR_MODULATION_IS_NAN            = 0x00010000
 
 # ODrive.Motor.ArmedState
 ARMED_STATE_DISARMED                     = 0
 ARMED_STATE_WAITING_FOR_TIMINGS          = 1
 ARMED_STATE_WAITING_FOR_UPDATE           = 2
 ARMED_STATE_ARMED                        = 3
-
-# ODrive.Motor.GateDriver.DrvFault
-DRV_FAULT_NO_FAULT                       = 0x00000000
-DRV_FAULT_FET_LOW_C_OVERCURRENT          = 0x00000001
-DRV_FAULT_FET_HIGH_C_OVERCURRENT         = 0x00000002
-DRV_FAULT_FET_LOW_B_OVERCURRENT          = 0x00000004
-DRV_FAULT_FET_HIGH_B_OVERCURRENT         = 0x00000008
-DRV_FAULT_FET_LOW_A_OVERCURRENT          = 0x00000010
-DRV_FAULT_FET_HIGH_A_OVERCURRENT         = 0x00000020
-DRV_FAULT_OVERTEMPERATURE_WARNING        = 0x00000040
-DRV_FAULT_OVERTEMPERATURE_SHUTDOWN       = 0x00000080
-DRV_FAULT_P_VDD_UNDERVOLTAGE             = 0x00000100
-DRV_FAULT_G_VDD_UNDERVOLTAGE             = 0x00000200
-DRV_FAULT_G_VDD_OVERVOLTAGE              = 0x00000400
 
 # ODrive.Controller.Error
 CONTROLLER_ERROR_NONE                    = 0x00000000

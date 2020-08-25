@@ -5,7 +5,7 @@ import threading
 import fibre
 import odrive
 import odrive.enums
-from odrive.utils import calculate_thermistor_coeffs, set_motor_thermistor_coeffs, start_liveplotter, dump_errors, oscilloscope_dump, BulkCapture, step_and_plot
+from odrive.utils import *
 
 def print_banner():
     print("Website: https://odriverobotics.com/")
@@ -85,6 +85,8 @@ def launch_shell(args, logger, app_shutdown_token):
         'start_liveplotter': start_liveplotter,
         'dump_errors': dump_errors,
         'oscilloscope_dump': oscilloscope_dump,
+        'dump_interrupts': dump_interrupts,
+        'dump_dma': dump_dma,
         'BulkCapture': BulkCapture,
         'step_and_plot': step_and_plot,
         'calculate_thermistor_coeffs': calculate_thermistor_coeffs,

@@ -9,6 +9,10 @@
  * interfaces.
  *
  */
+#ifndef __FIBRE_INTERFACES_HPP
+#define __FIBRE_INTERFACES_HPP
+
+#include <fibre/protocol.hpp>
 
 #pragma GCC push_options
 #pragma GCC optimize ("s")
@@ -92,3 +96,5 @@ inline [[enum.c_name]] operator ~ ([[enum.c_name]] a) { return static_cast<[[enu
 
 
 #pragma GCC pop_options
+
+#endif // __FIBRE_INTERFACES_HPP

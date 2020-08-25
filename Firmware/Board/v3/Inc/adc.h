@@ -77,8 +77,6 @@ void MX_ADC3_Init(void);
 
 /* USER CODE BEGIN Prototypes */
 
-float read_ADC_volts(ADC_HandleTypeDef* hadc, uint8_t injected_rank);
-
 /* USER CODE END Prototypes */
 
 #ifdef __cplusplus

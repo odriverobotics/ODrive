@@ -83,7 +83,6 @@ void MX_UART4_Init(void)
 void HAL_UART_MspInit(UART_HandleTypeDef* uartHandle)
 {
 
-  GPIO_InitTypeDef GPIO_InitStruct;
   if(uartHandle->Instance==UART4)
   {
   /* USER CODE BEGIN UART4_MspInit 0 */
@@ -91,24 +90,6 @@ void HAL_UART_MspInit(UART_HandleTypeDef* uartHandle)
   /* USER CODE END UART4_MspInit 0 */
     /* UART4 clock enable */
     __HAL_RCC_UART4_CLK_ENABLE();
-  
-    /**UART4 GPIO Configuration    
-    PA0-WKUP     ------> UART4_TX
-    PA1     ------> UART4_RX 
-    */
-    GPIO_InitStruct.Pin = GPIO_1_Pin;
-    GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
-    GPIO_InitStruct.Pull = GPIO_PULLDOWN;
-    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
-    GPIO_InitStruct.Alternate = GPIO_AF8_UART4;
-    HAL_GPIO_Init(GPIO_1_GPIO_Port, &GPIO_InitStruct);
-
-    GPIO_InitStruct.Pin = GPIO_2_Pin;
-    GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
-    GPIO_InitStruct.Pull = GPIO_NOPULL;
-    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
-    GPIO_InitStruct.Alternate = GPIO_AF8_UART4;
-    HAL_GPIO_Init(GPIO_2_GPIO_Port, &GPIO_InitStruct);
 
     /* UART4 DMA Init */
     /* UART4_RX Init */

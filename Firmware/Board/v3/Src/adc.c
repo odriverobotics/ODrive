@@ -461,16 +461,6 @@ void HAL_ADC_MspDeInit(ADC_HandleTypeDef* adcHandle)
 /* USER CODE BEGIN 1 */
 #endif  // END ADC Include
 
-float read_ADC_volts(ADC_HandleTypeDef* hadc, uint8_t injected_rank) {
-    uint32_t ADCValue;
-    if(injected_rank) {
-        ADCValue = HAL_ADCEx_InjectedGetValue(hadc, injected_rank);
-    } else {
-        ADCValue = HAL_ADC_GetValue(hadc);
-    }
-    return (3.3f/((float)(1<<12))) * ADCValue;
-}
-
 /* USER CODE END 1 */
 
 /**

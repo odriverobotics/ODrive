@@ -1,9 +1,10 @@
 #ifndef __ENCODER_HPP
 #define __ENCODER_HPP
 
-#ifndef __ODRIVE_MAIN_H
-#error "This file should not be included directly. Include odrive_main.h instead."
-#endif
+#include <arm_math.h>
+#include <Drivers/STM32/stm32_spi_arbiter.hpp>
+#include "utils.hpp"
+#include <autogen/interfaces.hpp>
 
 class Encoder : public ODriveIntf::EncoderIntf {
 public:
@@ -42,9 +43,11 @@ public:
         void set_bandwidth(float value) { bandwidth = value; parent->update_pll_gains(); }
     };
 
-    Encoder(const EncoderHardwareConfig_t& hw_config,
-            Config_t& config, const Motor::Config_t& motor_config);
+    Encoder(TIM_HandleTypeDef* timer, Stm32Gpio index_gpio,
+            Stm32Gpio hallA_gpio, Stm32Gpio hallB_gpio, Stm32Gpio hallC_gpio,
+            Stm32SpiArbiter* spi_arbiter);
     
+    bool apply_config(ODriveIntf::MotorIntf::MotorType motor_type);
     void setup();
     void set_error(Error error);
     bool do_checks();
@@ -62,11 +65,19 @@ public:
     bool run_direction_find();
     bool run_offset_calibration();
     void sample_now();
+    bool read_sampled_gpio(Stm32Gpio gpio);
+    void decode_hall_samples();
     bool update();
 
-    const EncoderHardwareConfig_t& hw_config_;
-    Config_t& config_;
+    TIM_HandleTypeDef* timer_;
+    Stm32Gpio index_gpio_;
+    Stm32Gpio hallA_gpio_;
+    Stm32Gpio hallB_gpio_;
+    Stm32Gpio hallC_gpio_;
+    Stm32SpiArbiter* spi_arbiter_;
     Axis* axis_ = nullptr; // set by Axis constructor
+
+    Config_t config_;
 
     Error error_ = ERROR_NONE;
     bool index_found_ = false;
@@ -93,27 +104,29 @@ public:
     bool vel_estimate_valid_ = false;
 
     int16_t tim_cnt_sample_ = 0; // 
+    static const constexpr GPIO_TypeDef* ports_to_sample[] = { GPIOA, GPIOB, GPIOC };
+    uint16_t port_samples_[sizeof(ports_to_sample) / sizeof(ports_to_sample[0])];
     // Updated by low_level pwm_adc_cb
     uint8_t hall_state_ = 0x0; // bit[0] = HallA, .., bit[2] = HallC
     float sincos_sample_s_ = 0.0f;
     float sincos_sample_c_ = 0.0f;
 
-    bool abs_spi_init();
     bool abs_spi_start_transaction();
-    void abs_spi_cb();
+    void abs_spi_cb(bool success);
     void abs_spi_cs_pin_init();
-    uint16_t abs_spi_dma_tx_[1] = {0xFFFF};
-    uint16_t abs_spi_dma_rx_[1];
     bool abs_spi_pos_updated_ = false;
     Mode mode_ = MODE_INCREMENTAL;
-    GPIO_TypeDef* abs_spi_cs_port_;
-    uint16_t abs_spi_cs_pin_;
+    Stm32Gpio abs_spi_cs_gpio_;
     uint32_t abs_spi_cr1;
     uint32_t abs_spi_cr2;
+    uint16_t abs_spi_dma_tx_[1] = {0xFFFF};
+    uint16_t abs_spi_dma_rx_[1];
+    Stm32SpiArbiter::SpiTask spi_task_;
 
     constexpr float getCoggingRatio(){
         return 1.0f / 3600.0f;
     }
+
 };
 
 #endif // __ENCODER_HPP

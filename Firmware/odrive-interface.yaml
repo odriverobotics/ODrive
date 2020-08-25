@@ -51,17 +51,13 @@ interfaces:
         attributes:
           uptime: readonly uint32
           min_heap_space: readonly uint32
-          min_stack_space_axis0: readonly uint32
-          min_stack_space_axis1: readonly uint32
-          min_stack_space_comms: readonly uint32
+          min_stack_space_axis: readonly uint32
           min_stack_space_usb: readonly uint32
           min_stack_space_uart: readonly uint32
           min_stack_space_can: readonly uint32
           min_stack_space_usb_irq: readonly uint32
           min_stack_space_startup: readonly uint32
-          stack_usage_axis0: readonly uint32
-          stack_usage_axis1: readonly uint32
-          stack_usage_comms: readonly uint32
+          stack_usage_axis: readonly uint32
           stack_usage_usb: readonly uint32
           stack_usage_uart: readonly uint32
           stack_usage_usb_irq: readonly uint32
@@ -83,10 +79,30 @@ interfaces:
       config:
         c_is_class: False
         attributes:
-          enable_uart:
+          # TODO: add support for arrays
+          gpio1_mode: {type: GpioMode, doc: Mode of GPIO1 (changes take effect after reboot), c_name: 'gpio_modes[1]'}
+          gpio2_mode: {type: GpioMode, doc: Mode of GPIO2 (changes take effect after reboot), c_name: 'gpio_modes[2]'}
+          gpio3_mode: {type: GpioMode, doc: Mode of GPIO3 (changes take effect after reboot), c_name: 'gpio_modes[3]'}
+          gpio4_mode: {type: GpioMode, doc: Mode of GPIO4 (changes take effect after reboot), c_name: 'gpio_modes[4]'}
+          gpio5_mode: {type: GpioMode, doc: Mode of GPIO5 (changes take effect after reboot), c_name: 'gpio_modes[5]'}
+          gpio6_mode: {type: GpioMode, doc: Mode of GPIO6 (changes take effect after reboot), c_name: 'gpio_modes[6]'}
+          gpio7_mode: {type: GpioMode, doc: Mode of GPIO7 (changes take effect after reboot), c_name: 'gpio_modes[7]'}
+          gpio8_mode: {type: GpioMode, doc: Mode of GPIO8 (changes take effect after reboot), c_name: 'gpio_modes[8]'}
+          gpio9_mode: {type: GpioMode, doc: Mode of GPIO9 (changes take effect after reboot), c_name: 'gpio_modes[9]'}
+          gpio10_mode: {type: GpioMode, doc: Mode of GPIO10 (changes take effect after reboot), c_name: 'gpio_modes[10]'}
+          gpio11_mode: {type: GpioMode, doc: Mode of GPIO11 (changes take effect after reboot), c_name: 'gpio_modes[11]'}
+          gpio12_mode: {type: GpioMode, doc: Mode of GPIO12 (changes take effect after reboot), c_name: 'gpio_modes[12]'}
+          gpio13_mode: {type: GpioMode, doc: Mode of GPIO13 (changes take effect after reboot), c_name: 'gpio_modes[13]'}
+          gpio14_mode: {type: GpioMode, doc: Mode of GPIO14 (changes take effect after reboot), c_name: 'gpio_modes[14]'}
+          gpio15_mode: {type: GpioMode, doc: Mode of GPIO15 (changes take effect after reboot), c_name: 'gpio_modes[15]'}
+          gpio16_mode: {type: GpioMode, doc: Mode of GPIO16 (changes take effect after reboot), c_name: 'gpio_modes[16]'}
+
+          enable_uart0:
             type: bool
-            doc: 'TODO: changing this currently requires a reboot - fix this'
-          uart_baudrate:
+            doc: Enables/disables UART0. You also need to set the corresponding GPIOs to GPIO_MODE_UART0. Changing this requires a reboot.
+          enable_uart1: {type: bool, doc: Not supported on ODrive v3.x.}
+          enable_uart2: {type: bool, doc: Not supported on ODrive v3.x.}
+          uart0_baudrate:
             type: uint32
             doc: |
               Defines the baudrate used on the UART interface.
@@ -111,9 +127,19 @@ interfaces:
 
               For more information refer to Section 30.3.4 and Table 142 (the column with f_PCLK = 42 MHz) in the
               [STM datasheet](https://www.st.com/content/ccc/resource/technical/document/reference_manual/3d/6d/5a/66/b4/99/40/d4/DM00031020.pdf/files/DM00031020.pdf/jcr:content/translations/en.DM00031020.pdf).
-          enable_i2c_instead_of_can:
+          uart1_baudrate: {type: uint32, doc: Not supported on ODrive v3.x.}
+          uart2_baudrate: {type: uint32, doc: Not supported on ODrive v3.x.}
+          enable_can0:
             type: bool
-            doc: Changing this requires a reboot.
+            doc: |
+              Enables CAN. Changing this setting requires a reboot.
+          enable_i2c0:
+            type: bool
+            doc: |
+              Enables I2C. The I2C pins on ODrive v3.x are in conflict with CAN.
+              This setting has no effect if `enable_can0` is also true.
+              This setting has no effect on ODrive v3.2 or earlier.
+              Changing this setting requires a reboot.
           enable_ascii_protocol_on_usb: bool
           max_regen_current: float32
           brake_resistance:
@@ -175,13 +201,32 @@ interfaces:
             brief: Max current the power supply can sink.
             doc: You most likely want a non-positive value here. Set to -INFINITY to disable.
 
-          gpio1_pwm_mapping: {type: Endpoint, c_name: 'pwm_mappings[0]'} # TODO: disable for ODrive v3.2 and older
-          gpio2_pwm_mapping: {type: Endpoint, c_name: 'pwm_mappings[1]'} # TODO: disable for ODrive v3.2 and older
-          gpio3_pwm_mapping: {type: Endpoint, c_name: 'pwm_mappings[2]'} # TODO: disable for ODrive v3.2 and older
-          gpio4_pwm_mapping: {type: Endpoint, c_name: 'pwm_mappings[3]'}
-          gpio3_analog_mapping: {type: Endpoint, c_name: 'analog_mappings[2]'}
-          gpio4_analog_mapping: {type: Endpoint, c_name: 'analog_mappings[3]'}
-      user_config_loaded: readonly bool
+          gpio1_pwm_mapping: {type: Endpoint, c_name: 'pwm_mappings[0]', doc: Make sure the corresponding GPIO is in `GPIO_MODE_PWM0`.}
+          gpio2_pwm_mapping: {type: Endpoint, c_name: 'pwm_mappings[1]', doc: Make sure the corresponding GPIO is in `GPIO_MODE_PWM0`.}
+          gpio3_pwm_mapping: {type: Endpoint, c_name: 'pwm_mappings[2]', doc: Make sure the corresponding GPIO is in `GPIO_MODE_PWM0`.}
+          gpio4_pwm_mapping: {type: Endpoint, c_name: 'pwm_mappings[3]', doc: Make sure the corresponding GPIO is in `GPIO_MODE_PWM0`.}
+          gpio3_analog_mapping: {type: Endpoint, c_name: 'analog_mappings[3]', doc: Make sure the corresponding GPIO is in `GPIO_MODE_ANALOG_IN`.}
+          gpio4_analog_mapping: {type: Endpoint, c_name: 'analog_mappings[4]', doc: Make sure the corresponding GPIO is in `GPIO_MODE_ANALOG_IN`.}
+      user_config_loaded: readonly uint32
+      misconfigured:
+        type: readonly bool
+        doc: |
+          If this property is true, something is bad in the configuration. The
+          ODrive can still be used in this state but the user should investigate
+          which setting is problematic. This variable does not cover all
+          misconfigurations.
+
+          Possible causes:
+           - A GPIO was set to a mode that it doesn't support
+           - A GPIO was set to a mode for which the corresponding feature was
+             not enabled. Example: `GPIO_MODE_UART0` was used without enabling
+             `config.enable_uart0`.
+           - A feature was enabled which is not supported on this hardware.
+             Example: `config.enable_uart2` set to true on ODrive v3.x.
+           - A GPIO was used as an interrupt input for two internal components
+             or two GPIOs that are mutually exclusive in their interrupt
+             capability were both used as interrupt input.
+             Example: `step_gpio_pin` of both axes were set to the same GPIO.
             
       axis0: {type: Axis, c_name: get_axis(0)}
       axis1: {type: Axis, c_name: get_axis(1)}
@@ -191,11 +236,33 @@ interfaces:
     functions:
       test_function: {in: {delta: int32}, out: {cnt: int32}}
       get_oscilloscope_val: {in: {index: uint32}, out: {val: float32}}
-      get_adc_voltage: {in: {gpio: uint32}, out: {voltage: float32}}
+      get_adc_voltage: {in: {gpio: uint32}, out: {voltage: float32}, doc: Reads the ADC voltage of the specified GPIO. The GPIO should be in `GPIO_MODE_ANALOG_IN`.}
       save_configuration:
       erase_configuration:
       reboot:
       enter_dfu_mode:
+      get_interrupt_status:
+        in: {irqn: {type: int32, doc: '-12...-1: processor interrupts, 0...239: NVIC interrupts'}}
+        out:
+          status:
+            type: uint32
+            doc: |
+              bit 31:     enabled (1) or disabled (0)
+              bits 30:8:  number of times the interrupt fired (modulo 0x800000)
+              bits 7:0:   priority (0 is highest priority)
+              0xffffffff if the specified number is not a valid interrupt number.
+        doc: Returns information about the specified interrupt number.
+      get_dma_status:
+        in: {stream_num: {type: uint8, doc: '0...7: DMA1 streams, 8...15: DMA2 streams'}}
+        out:
+          status:
+            type: uint32
+            doc: |
+              bit 31:     zero if the stream's configuration is equal to the reset state
+              bits 4:2:   channel
+              bits 1:0:   priority (3 is highest priority)
+              0xffffffff if the specified number is not a valid DMA stream number.
+        doc: Returns information about the specified DMA stream.
 
   ODrive.Can:
     c_is_class: True
@@ -325,7 +392,7 @@ interfaces:
           enable_step_dir:
             type: bool
             doc: Enable step/dir input after calibration.
-              For M0 this has no effect if `config.enable_uart` is true.
+              Make sure to set the corresponding GPIO's mode to `GPIO_MODE_DIGITAL`.
           step_dir_always_on:
             type: bool
             doc: Keep step/dir enabled while the motor is disabled.
@@ -355,6 +422,29 @@ interfaces:
             doc: Both axes will have the same id to start
           can_node_id_extended: bool
           can_heartbeat_rate_ms: uint32
+        gate_driver:
+          c_name: gate_driver_exported_
+          c_is_class: False
+          attributes:
+            drv_fault:
+              typeargs: {fibre.Property.mode: readonly}
+              nullflag: NoFault
+              flags:
+                FetLowCOvercurrent: {bit: 0, doc: FET Low side, Phase C Over Current fault}
+                FetHighCOvercurrent: {bit: 1, doc: FET High side, Phase C Over Current fault}
+                FetLowBOvercurrent: {bit: 2, doc: FET Low side, Phase B Over Current fault}
+                FetHighBOvercurrent: {bit: 3, doc: FET High side, Phase B Over Current fault}
+                FetLowAOvercurrent: {bit: 4, doc: FET Low side, Phase A Over Current fault}
+                FetHighAOvercurrent: {bit: 5, doc: FET High side, Phase A Over Current fault}
+                OvertemperatureWarning: {bit: 6, doc: Over Temperature Warning fault}
+                OvertemperatureShutdown: {bit: 7, doc: Over Temperature Shut Down fault}
+                PVddUndervoltage: {bit: 8, doc: Power supply Vdd Under Voltage fault}
+                GVddUndervoltage: {bit: 9, doc: DRV8301 Vdd Under Voltage fault}
+                GVddOvervoltage: {bit: 10, doc: DRV8301 Vdd Over Voltage fault}
+            # status_reg_1: readonly uint32
+            # status_reg_2: readonly uint32
+            # ctrl_reg_1: readonly uint32
+            # ctrl_reg_2: readonly uint32
       fet_thermistor: OnboardThermistorCurrentLimiter
       motor_thermistor: OffboardThermistorCurrentLimiter
       motor: Motor
@@ -533,6 +623,7 @@ interfaces:
           BrakeDutyCycleNan:
           DcBusOverRegenCurrent: {doc: too much current pushed into the power supply}
           DcBusOverCurrent: {doc: too much current pulled out of the power supply}
+          ModulationIsNan:
       armed_state:
         typeargs: {fibre.Property.mode: readonly}
         values:
@@ -567,44 +658,21 @@ interfaces:
           acim_rotor_flux: float32
           async_phase_vel: readonly float32
           async_phase_offset: float32
-      gate_driver:
-        c_name: gate_driver_exported_
-        c_is_class: False
-        attributes:
-          drv_fault:
-            typeargs: {fibre.Property.mode: readonly}
-            nullflag: NoFault
-            flags:
-              FetLowCOvercurrent: {bit: 0, doc: FET Low side, Phase C Over Current fault}
-              FetHighCOvercurrent: {bit: 1, doc: FET High side, Phase C Over Current fault}
-              FetLowBOvercurrent: {bit: 2, doc: FET Low side, Phase B Over Current fault}
-              FetHighBOvercurrent: {bit: 3, doc: FET High side, Phase B Over Current fault}
-              FetLowAOvercurrent: {bit: 4, doc: FET Low side, Phase A Over Current fault}
-              FetHighAOvercurrent: {bit: 5, doc: FET High side, Phase A Over Current fault}
-              OvertemperatureWarning: {bit: 6, doc: Over Temperature Warning fault}
-              OvertemperatureShutdown: {bit: 7, doc: Over Temperature Shut Down fault}
-              PVddUndervoltage: {bit: 8, doc: Power supply Vdd Under Voltage fault}
-              GVddUndervoltage: {bit: 9, doc: DRV8301 Vdd Under Voltage fault}
-              GVddOvervoltage: {bit: 10, doc: DRV8301 Vdd Over Voltage fault}
-          # status_reg_1: readonly uint32
-          # status_reg_2: readonly uint32
-          # ctrl_reg_1: readonly uint32
-          # ctrl_reg_2: readonly uint32
       timing_log:
         c_is_class: False
         attributes:
-          general: {type: readonly uint16, c_name: 'get(TIMING_LOG_GENERAL)'}
-          adc_cb_i: {type: readonly uint16, c_name: 'get(TIMING_LOG_ADC_CB_I)'}
-          adc_cb_dc: {type: readonly uint16, c_name: 'get(TIMING_LOG_ADC_CB_DC)'}
-          meas_r: {type: readonly uint16, c_name: 'get(TIMING_LOG_MEAS_R)'}
-          meas_l: {type: readonly uint16, c_name: 'get(TIMING_LOG_MEAS_L)'}
-          enc_calib: {type: readonly uint16, c_name: 'get(TIMING_LOG_ENC_CALIB)'}
-          idx_search: {type: readonly uint16, c_name: 'get(TIMING_LOG_IDX_SEARCH)'}
-          foc_voltage: {type: readonly uint16, c_name: 'get(TIMING_LOG_FOC_VOLTAGE)'}
-          foc_current: {type: readonly uint16, c_name: 'get(TIMING_LOG_FOC_CURRENT)'}
-          spi_start: {type: readonly uint16, c_name: 'get(TIMING_LOG_SPI_START)'}
-          sample_now: {type: readonly uint16, c_name: 'get(TIMING_LOG_SAMPLE_NOW)'}
-          spi_end: {type: readonly uint16, c_name: 'get(TIMING_LOG_SPI_END)'}
+          general: {type: readonly uint16, c_name: 'get(0)'}
+          adc_cb_i: {type: readonly uint16, c_name: 'get(1)'}
+          adc_cb_dc: {type: readonly uint16, c_name: 'get(2)'}
+          meas_r: {type: readonly uint16, c_name: 'get(3)'}
+          meas_l: {type: readonly uint16, c_name: 'get(4)'}
+          enc_calib: {type: readonly uint16, c_name: 'get(5)'}
+          idx_search: {type: readonly uint16, c_name: 'get(6)'}
+          foc_voltage: {type: readonly uint16, c_name: 'get(7)'}
+          foc_current: {type: readonly uint16, c_name: 'get(8)'}
+          spi_start: {type: readonly uint16, c_name: 'get(9)'}
+          sample_now: {type: readonly uint16, c_name: 'get(10)'}
+          spi_end: {type: readonly uint16, c_name: 'get(11)'}
       config:
         c_is_class: False
         attributes:
@@ -630,7 +698,8 @@ interfaces:
           acim_autoflux_enable: bool
           acim_autoflux_attack_gain: float32
           acim_autoflux_decay_gain: float32
-
+          R_wL_FF_enable: bool
+          bEMF_FF_enable: bool
 
   ODrive.Controller:
     c_is_class: True
@@ -800,7 +869,7 @@ interfaces:
           mode: Mode
           use_index: {type: bool, c_setter: set_use_index}
           find_idx_on_lockin_only: {type: bool, c_setter: set_find_idx_on_lockin_only}
-          abs_spi_cs_gpio_pin: {type: uint16, c_setter: set_abs_spi_cs_gpio_pin}
+          abs_spi_cs_gpio_pin: {type: uint16, c_setter: set_abs_spi_cs_gpio_pin, doc: Make sure that the GPIO is in `GPIO_MODE_DIGITAL`.}
           zero_count_on_find_idx: bool
           cpr: int32
           offset: int32
@@ -813,8 +882,12 @@ interfaces:
           calib_scan_omega: float32
           idx_search_unidirectional: bool
           ignore_illegal_hall_state: bool
-          sincos_gpio_pin_sin: uint16
-          sincos_gpio_pin_cos: uint16
+          sincos_gpio_pin_sin:
+            type: uint16
+            doc: Analog sine signal of a sin/cos encoder. The corresponding GPIO must be in `GPIO_MODE_ANALOG_IN`.
+          sincos_gpio_pin_cos:
+            type: uint16
+            doc: Analog cosine signal of a sin/cos encoder. The corresponding GPIO must be in `GPIO_MODE_ANALOG_IN`.
     functions:
       set_linear_count: {in: {count: int32}}
 
@@ -857,15 +930,41 @@ interfaces:
       config:
         c_is_class: False
         attributes:
-          gpio_num: {type: uint16, c_setter: set_gpio_num}
+          gpio_num: {type: uint16, c_setter: set_gpio_num, doc: Make sure the corresponding GPIO is in `GPIO_MODE_DIGITAL`.}
           enabled: {type: bool, c_setter: set_enabled}
           offset: float32
           is_active_high: bool
-          pullup: bool
           debounce_ms: {type: uint32, c_setter: set_debounce_ms}
 
 
 valuetypes:
+  ODrive.GpioMode:
+    values:
+      Digital:
+        doc: |
+          The pin can be used for one or more of these functions:
+          Step, dir, enable, encoder index, hall effect encoder, SPI encoder nCS (this one is exclusive).
+      DigitalPullUp:
+        doc: Same as `Digital` but with the internal pull-up resistor enabled.
+      DigitalPullDown:
+        doc: Same as `Digital` but with the internal pull-down resistor enabled.
+      AnalogIn:
+        doc: |
+          The pin can be used for one or more of these functions:
+          Sin/cos encoders, analog input, `get_adc_voltage`.
+      Uart0: {doc: See `config.enable_uart0`.}
+      Uart1: {doc: This mode is not supported on ODrive v3.x.}
+      Uart2: {doc: This mode is not supported on ODrive v3.x.}
+      Can0: {doc: See `config.enable_can0`.}
+      I2c0: {doc: See `config.enable_i2c0`.}
+      Spi0: {doc: Note that the SPI pins on ODrive v3.x are hardwired so they
+        cannot be configured through software. Consequently, even though SPI0
+        is exposed, this mode is of no use on ODrive v3.x.}
+      Pwm0: {doc: See `config.gpio0_pwm_mapping`.}
+      Enc0: {doc: The pin is used by quadrature encoder 0.}
+      Enc1: {doc: The pin is used by quadrature encoder 1.}
+      Enc2: {doc: This mode is not supported on ODrive v3.x.}
+
   ODrive.Can.Protocol:
     values: {Simple: }
 
