@@ -24,19 +24,12 @@ bool Endstop::get_state() {
 }
 
 bool Endstop::apply_config() {
-    set_enabled(config_.enabled);
+    debounceTimer_.reset();
+    if (config_.enabled) {
+        debounceTimer_.start();
+    } else {
+        debounceTimer_.stop();
+    }
     debounceTimer_.setIncrement(config_.debounce_ms * 0.001f);
     return true;
-}
-
-void Endstop::set_enabled(bool enable) {
-    debounceTimer_.reset();
-    if (config_.gpio_num != 0) {
-        if (enable) {
-            Stm32Gpio gpio = get_gpio(config_.gpio_num);
-            gpio.config(GPIO_MODE_INPUT, config_.pullup ? GPIO_PULLUP : GPIO_PULLDOWN);
-            debounceTimer_.start();
-        } else
-            debounceTimer_.stop();
-    }
 }

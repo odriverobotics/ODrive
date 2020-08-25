@@ -10,7 +10,6 @@ class Endstop {
         uint16_t gpio_num = 0;
         bool enabled = false;
         bool is_active_high = false;
-        bool pullup = true;
 
         // custom setters
         Endstop* parent = nullptr;
@@ -25,7 +24,6 @@ class Endstop {
     Axis* axis_ = nullptr;
 
     bool apply_config();
-    void set_enabled(bool enabled);
 
     void update();
     bool get_state();

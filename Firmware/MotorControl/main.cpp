@@ -407,7 +407,10 @@ extern "C" int main(void) {
         GPIO_InitStruct.Pin = get_gpio(i).pin_mask_;
 
         // Set Alternate Function setting for this GPIO mode
-        if (mode == ODriveIntf::GPIO_MODE_DIGITAL || mode == ODriveIntf::GPIO_MODE_ANALOG_IN) {
+        if (mode == ODriveIntf::GPIO_MODE_DIGITAL ||
+            mode == ODriveIntf::GPIO_MODE_DIGITAL_PULL_UP ||
+            mode == ODriveIntf::GPIO_MODE_DIGITAL_PULL_DOWN ||
+            mode == ODriveIntf::GPIO_MODE_ANALOG_IN) {
             GPIO_InitStruct.Alternate = 0;
         } else {
             auto it = std::find_if(
@@ -425,6 +428,16 @@ extern "C" int main(void) {
             case ODriveIntf::GPIO_MODE_DIGITAL: {
                 GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
                 GPIO_InitStruct.Pull = GPIO_NOPULL;
+                GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+            } break;
+            case ODriveIntf::GPIO_MODE_DIGITAL_PULL_UP: {
+                GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+                GPIO_InitStruct.Pull = GPIO_PULLUP;
+                GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+            } break;
+            case ODriveIntf::GPIO_MODE_DIGITAL_PULL_DOWN: {
+                GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+                GPIO_InitStruct.Pull = GPIO_PULLDOWN;
                 GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
             } break;
             case ODriveIntf::GPIO_MODE_ANALOG_IN: {

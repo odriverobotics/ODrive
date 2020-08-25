@@ -915,7 +915,6 @@ interfaces:
           enabled: {type: bool, c_setter: set_enabled}
           offset: float32
           is_active_high: bool
-          pullup: bool
           debounce_ms: {type: uint32, c_setter: set_debounce_ms}
 
 
@@ -926,6 +925,10 @@ valuetypes:
         doc: |
           The pin can be used for one or more of these functions:
           Step, dir, enable, encoder index, hall effect encoder, SPI encoder nCS (this one is exclusive).
+      DigitalPullUp:
+        doc: Same as `Digital` but with the internal pull-up resistor enabled.
+      DigitalPullDown:
+        doc: Same as `Digital` but with the internal pull-down resistor enabled.
       AnalogIn:
         doc: |
           The pin can be used for one or more of these functions:

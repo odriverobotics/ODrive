@@ -103,7 +103,6 @@ void Encoder::enc_index_cb() {
 
 void Encoder::set_idx_subscribe(bool override_enable) {
     if (config_.use_index && (override_enable || !config_.find_idx_on_lockin_only)) {
-        index_gpio_.config(GPIO_MODE_INPUT, GPIO_PULLDOWN);
         if (!index_gpio_.subscribe(true, false, enc_index_cb_wrapper, this)) {
             odrv.misconfigured_ = true;
         }
