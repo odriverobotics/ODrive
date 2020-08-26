@@ -31,6 +31,7 @@ constexpr float adc_ref_voltage = 3.3f;
 // Arbitrary non-zero inital value to avoid division by zero if ADC reading is late
 float vbus_voltage = 12.0f;
 float ibus_ = 0.0f; // exposed for monitoring only
+bool task_timers_armed = false;
 bool brake_resistor_armed = false;
 bool brake_resistor_saturated = false;
 /* Private constant data -----------------------------------------------------*/
@@ -382,8 +383,8 @@ void vbus_sense_adc_cb(ADC_HandleTypeDef* hadc, bool injected) {
 // This is the callback from the ADC that we expect after the PWM has triggered an ADC conversion.
 // TODO: Document how the phasing is done, link to timing diagram
 void pwm_trig_adc_cb(ADC_HandleTypeDef* hadc, bool injected) {
-    axes[0].task_times_.adc_cb.beginTimer();
-    axes[1].task_times_.adc_cb.beginTimer();
+
+    adc_timestamp = sample_TIM13();
 #define calib_tau 0.2f  //@TOTO make more easily configurable
     constexpr float calib_filter_k = CURRENT_MEAS_PERIOD / calib_tau;
 
@@ -404,10 +405,12 @@ void pwm_trig_adc_cb(ADC_HandleTypeDef* hadc, bool injected) {
     bool current_meas_not_DC_CAL = !counting_down;
 
     // Check the timing of the sequencing
-    if (current_meas_not_DC_CAL)
+    if (current_meas_not_DC_CAL) {
         axis.motor_.log_timing(TIMING_LOG_ADC_CB_I);
-    else
+    }
+    else {
         axis.motor_.log_timing(TIMING_LOG_ADC_CB_DC);
+    }
 
     bool update_timings = false;
     if (hadc == &hadc2) {
@@ -452,6 +455,19 @@ void pwm_trig_adc_cb(ADC_HandleTypeDef* hadc, bool injected) {
     }
     float current = axis.motor_.phase_current_from_adcval(ADCValue);
 
+
+    if(current_meas_not_DC_CAL && axis_num == 0 && hadc == &hadc2){
+        if (task_timers_armed) {
+            TaskTimer::sample_next = true;
+            task_timers_armed = false;
+            axes[0].task_times_.adc_cb.startTime = adc_timestamp; // Start of ADC2
+        }
+    }
+
+    if(current_meas_not_DC_CAL && axis_num == 0 && hadc == &hadc3){
+        axes[0].task_times_.adc_cb.stopTimer(); // End of ADC3
+    }
+
     if (current_meas_not_DC_CAL) {
         // ADC2 and ADC3 record the phB and phC currents concurrently,
         // and their interrupts should arrive on the same clock cycle.
@@ -479,8 +495,6 @@ void pwm_trig_adc_cb(ADC_HandleTypeDef* hadc, bool injected) {
             axis.motor_.DC_calib_.phC += (current - axis.motor_.DC_calib_.phC) * calib_filter_k;
         }
     }
-    axes[0].task_times_.adc_cb.stopTimer();
-    axes[1].task_times_.adc_cb.stopTimer();
 }
 
 // @brief Sums up the Ibus contribution of each motor and updates the

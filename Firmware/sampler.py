@@ -88,6 +88,7 @@ if __name__ == '__main__':
     total = 0
     countmap = { }
     pcmap = { }
+    funcmap = { }
     start = time.time()
 
     try:
@@ -101,6 +102,9 @@ if __name__ == '__main__':
 
             func, addr = sampler.func(pc)
 
+            if(func == 'ADC_IRQ_Dispatch'):
+                funcmap[pc] = 1
+
             if not addr:
                 continue
 
@@ -112,7 +116,12 @@ if __name__ == '__main__':
                 total += 1
 
             cur = time.time()
-            if cur - start > 1.0:
+            if cur - start > 5.0:
+
+                # tmp = sorted(funcmap)
+                # for k in tmp:
+                #     print(hex(k))
+
                 tmp = sorted(countmap.items(), key=operator.itemgetter(1)) #, reverse=True)
                 for k, v in tmp:
                     print('{:05.2f}% {}'.format((v * 100.) / total, k))

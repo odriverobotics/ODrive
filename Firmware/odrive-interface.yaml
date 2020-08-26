@@ -13,6 +13,7 @@ interfaces:
       The odrv0, odrv1, ... objects that appear in odrivetool implement this
       toplevel interface.
     attributes:
+      task_timers_armed: bool
       vbus_voltage:
         type: readonly float32
         unit: V

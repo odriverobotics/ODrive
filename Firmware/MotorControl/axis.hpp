@@ -212,6 +212,8 @@ public:
 
             task_times_.control_loop.stopTimer();
             task_times_.total.stopTimer();
+            if(axis_num_ == 1)
+                TaskTimer::sample_next = false;
 
             // Wait until the current measurement interrupt fires
             if (!wait_for_current_meas()) {
@@ -222,7 +224,6 @@ public:
                 error_ |= ERROR_CURRENT_MEASUREMENT_TIMEOUT;
                 break;
             }
-
             task_times_.total.beginTimer();
 
             if (!main_continue)
