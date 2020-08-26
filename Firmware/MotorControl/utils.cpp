@@ -206,7 +206,3 @@ void delay_us(uint32_t us)
     }
 }
 
-uint16_t sample_TIM13(){
-    constexpr uint16_t clocks_per_cnt = (uint16_t)((float)TIM_1_8_CLOCK_HZ / (float)TIM_APB1_CLOCK_HZ);
-    return clocks_per_cnt * htim13.Instance->CNT; // TODO: Use a hw_config
-}

@@ -198,25 +198,29 @@ bool Axis::do_checks() {
 // @brief Update all esitmators
 bool Axis::do_updates() {
     // Sub-components should use set_error which will propegate to this error_
+    task_times_.thermistor_update.beginTimer();
     for (ThermistorCurrentLimiter* thermistor : thermistors_) {
         thermistor->update();
     }
-    task_times_.thermistor_update = sample_TIM13();
+    task_times_.thermistor_update.stopTimer();
 
+    task_times_.encoder_update.beginTimer();
     encoder_.update();
-    task_times_.encoder_update = sample_TIM13();
+    task_times_.encoder_update.stopTimer();
 
+    task_times_.sensorless_update.beginTimer();
     sensorless_estimator_.update();
-    task_times_.sensorless_update = sample_TIM13();
+    task_times_.sensorless_update.stopTimer();
 
+    task_times_.min_endstop_update.beginTimer();
     min_endstop_.update();
-    task_times_.min_endstop_update = sample_TIM13();
+    task_times_.min_endstop_update.stopTimer();
 
+    task_times_.max_endstop_update.beginTimer();
     max_endstop_.update();
-    task_times_.max_endstop_update = sample_TIM13();
+    task_times_.max_endstop_update.stopTimer();
 
     bool ret = check_for_errors();
-    task_times_.axis_error_check = sample_TIM13();
 
     odCAN->send_heartbeat(this);
     return ret;
@@ -356,15 +360,18 @@ bool Axis::run_closed_loop_control_loop() {
     set_step_dir_active(config_.enable_step_dir);
     run_control_loop([this](){
         // Note that all estimators are updated in the loop prefix in run_control_loop
+        
+        task_times_.controller_update.beginTimer();
         float torque_setpoint;
         if (!controller_.update(&torque_setpoint))
             return error_ |= ERROR_CONTROLLER_FAILED, false;
-        task_times_.controller_update = sample_TIM13();
+        task_times_.controller_update.stopTimer();
 
+        task_times_.motor_update.beginTimer();
         float phase_vel = (2*M_PI) * encoder_.vel_estimate_ * motor_.config_.pole_pairs;
         if (!motor_.update(torque_setpoint, encoder_.phase_, phase_vel))
             return false; // set_error should update axis.error_
-        task_times_.motor_update = sample_TIM13();
+        task_times_.motor_update.stopTimer();
 
         return true;
     });
