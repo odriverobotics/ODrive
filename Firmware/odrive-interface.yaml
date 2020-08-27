@@ -479,6 +479,7 @@ interfaces:
       brake_update: TaskTimer
       adc_cb: TaskTimer
       total: TaskTimer
+      FOC_Current: TaskTimer
 
   ODrive.TaskTimer:
     c_is_class: False

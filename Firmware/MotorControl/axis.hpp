@@ -48,6 +48,7 @@ public:
         TaskTimer total;
 
         TaskTimer uart_poll;
+        TaskTimer FOC_Current;
     };
 
     static LockinConfig_t default_calibration();
