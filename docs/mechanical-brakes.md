@@ -16,7 +16,6 @@ Name |  Type | Default
 gpio_num | int | 0
 enabled | boolean | false
 is_active_low | boolean | true
-pulldown | boolean | true
 
 ### gpio_num
 The GPIO pin number, according to the silkscreen labels on ODrive. Set with these commands:
@@ -32,9 +31,6 @@ Enables/disables the operation of the mechanical brake.
 
 ### is_active_low
 Most safety braking systems are active low, e.g. when the power is off, the brake is on. If the system uses brake drive electronics which use active high logic, flip this bit then reconsider the safety implications of your design...
-
-### pulldown
-If `true`, it enables the GPIO pulldown resistor.  If `false`, it enables the GPIO pullup resistor.
 
 ### Example
 

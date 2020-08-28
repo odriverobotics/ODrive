@@ -925,7 +925,13 @@ interfaces:
           gpio_num: {type: uint16, c_setter: set_gpio_num}
           enabled: {type: bool, c_setter: set_enabled}
           is_active_low: bool
-          pulldown: bool
+    functions:
+      engage:
+        doc: |
+          This function engages the mechanical brake if one is present and enabled.
+      release:
+        doc: |
+          This function releases the mecahncal brake if one is present and enabled.
 
 valuetypes:
   ODrive.GpioMode:
@@ -950,6 +956,7 @@ valuetypes:
       Enc0: {doc: The pin is used by quadrature encoder 0.}
       Enc1: {doc: The pin is used by quadrature encoder 1.}
       Enc2: {doc: This mode is not supported on ODrive v3.x.}
+      MechBrake: {doc: This is to support external mechanical brakes.}
 
   ODrive.Can.Protocol:
     values: {Simple: }

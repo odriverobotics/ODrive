@@ -1,13 +1,14 @@
 #ifndef __MECHANICAL_BRAKE_HPP
 #define __MECHANICAL_BRAKE_HPP
 
-class MechanicalBrake {
+#include <autogen/interfaces.hpp>
+
+class MechanicalBrake : public ODriveIntf::MechanicalBrakeIntf  {
    public:
     struct Config_t {
         uint16_t gpio_num = 0;
         bool enabled = false;
         bool is_active_low = true;
-        bool pulldown = true;
 
         // custom setters
         MechanicalBrake* parent = nullptr;
