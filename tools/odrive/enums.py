@@ -5,18 +5,20 @@
 
 # ODrive.GpioMode
 GPIO_MODE_DIGITAL                        = 0
-GPIO_MODE_ANALOG_IN                      = 1
-GPIO_MODE_UART0                          = 2
-GPIO_MODE_UART1                          = 3
-GPIO_MODE_UART2                          = 4
-GPIO_MODE_CAN0                           = 5
-GPIO_MODE_I2C0                           = 6
-GPIO_MODE_SPI0                           = 7
-GPIO_MODE_PWM0                           = 8
-GPIO_MODE_ENC0                           = 9
-GPIO_MODE_ENC1                           = 10
-GPIO_MODE_ENC2                           = 11
-GPIO_MODE_MECH_BRAKE                     = 12
+GPIO_MODE_DIGITAL_PULL_UP                = 1
+GPIO_MODE_DIGITAL_PULL_DOWN              = 2
+GPIO_MODE_ANALOG_IN                      = 3
+GPIO_MODE_UART0                          = 4
+GPIO_MODE_UART1                          = 5
+GPIO_MODE_UART2                          = 6
+GPIO_MODE_CAN0                           = 7
+GPIO_MODE_I2C0                           = 8
+GPIO_MODE_SPI0                           = 9
+GPIO_MODE_PWM0                           = 10
+GPIO_MODE_ENC0                           = 11
+GPIO_MODE_ENC1                           = 12
+GPIO_MODE_ENC2                           = 13
+GPIO_MODE_MECH_BRAKE                     = 14
 
 # ODrive.Can.Protocol
 PROTOCOL_SIMPLE                          = 0
@@ -116,6 +118,7 @@ MOTOR_ERROR_CURRENT_LIMIT_VIOLATION      = 0x00001000
 MOTOR_ERROR_BRAKE_DUTY_CYCLE_NAN         = 0x00002000
 MOTOR_ERROR_DC_BUS_OVER_REGEN_CURRENT    = 0x00004000
 MOTOR_ERROR_DC_BUS_OVER_CURRENT          = 0x00008000
+MOTOR_ERROR_MODULATION_IS_NAN            = 0x00010000
 
 # ODrive.Motor.ArmedState
 ARMED_STATE_DISARMED                     = 0

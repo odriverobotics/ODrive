@@ -605,6 +605,7 @@ interfaces:
           BrakeDutyCycleNan:
           DcBusOverRegenCurrent: {doc: too much current pushed into the power supply}
           DcBusOverCurrent: {doc: too much current pulled out of the power supply}
+          ModulationIsNan:
       armed_state:
         typeargs: {fibre.Property.mode: readonly}
         values:
@@ -679,7 +680,8 @@ interfaces:
           acim_autoflux_enable: bool
           acim_autoflux_attack_gain: float32
           acim_autoflux_decay_gain: float32
-
+          R_wL_FF_enable: bool
+          bEMF_FF_enable: bool
 
   ODrive.Controller:
     c_is_class: True
@@ -913,7 +915,6 @@ interfaces:
           enabled: {type: bool, c_setter: set_enabled}
           offset: float32
           is_active_high: bool
-          pullup: bool
           debounce_ms: {type: uint32, c_setter: set_debounce_ms}
 
   ODrive.MechanicalBrake:
@@ -940,6 +941,10 @@ valuetypes:
         doc: |
           The pin can be used for one or more of these functions:
           Step, dir, enable, encoder index, hall effect encoder, SPI encoder nCS (this one is exclusive).
+      DigitalPullUp:
+        doc: Same as `Digital` but with the internal pull-up resistor enabled.
+      DigitalPullDown:
+        doc: Same as `Digital` but with the internal pull-down resistor enabled.
       AnalogIn:
         doc: |
           The pin can be used for one or more of these functions:

@@ -75,26 +75,28 @@ def dump_errors(odrv, clear=False):
         # Flatten axis and submodules
         # (name, remote_obj, errorcode)
         module_decode_map = [
-            ('axis', axis, {k: v for k, v in odrive.enums.__dict__ .items() if k.startswith("AXIS_ERROR_")}),
-            ('motor', axis.motor, {k: v for k, v in odrive.enums.__dict__ .items() if k.startswith("MOTOR_ERROR_")}),
-            ('fet_thermistor', axis.fet_thermistor, {k: v for k, v in odrive.enums.__dict__ .items() if k.startswith("THERMISTOR_CURRENT_LIMITER_ERROR")}),
-            ('motor_thermistor', axis.motor_thermistor, {k: v for k, v in odrive.enums.__dict__ .items() if k.startswith("THERMISTOR_CURRENT_LIMITER_ERROR")}),
-            ('encoder', axis.encoder, {k: v for k, v in odrive.enums.__dict__ .items() if k.startswith("ENCODER_ERROR_")}),
-            ('controller', axis.controller, {k: v for k, v in odrive.enums.__dict__ .items() if k.startswith("CONTROLLER_ERROR_")}),
+            (name, odrv, {k: v for k, v in odrive.enums.__dict__ .items() if k.startswith("AXIS_ERROR_")}),
+            ('motor', axis, {k: v for k, v in odrive.enums.__dict__ .items() if k.startswith("MOTOR_ERROR_")}),
+            ('fet_thermistor', axis, {k: v for k, v in odrive.enums.__dict__ .items() if k.startswith("THERMISTOR_CURRENT_LIMITER_ERROR")}),
+            ('motor_thermistor', axis, {k: v for k, v in odrive.enums.__dict__ .items() if k.startswith("THERMISTOR_CURRENT_LIMITER_ERROR")}),
+            ('encoder', axis, {k: v for k, v in odrive.enums.__dict__ .items() if k.startswith("ENCODER_ERROR_")}),
+            ('controller', axis, {k: v for k, v in odrive.enums.__dict__ .items() if k.startswith("CONTROLLER_ERROR_")}),
         ]
 
         # Module error decode
         for name, remote_obj, errorcodes in module_decode_map:
-            prefix = ' '*2 + name + ": "
-            if (remote_obj.error != 0):
+            prefix = ' '*2 + name.strip('0123456789') + ": "
+            if not hasattr(remote_obj, name):
+                print(prefix + _VT100Colors['yellow'] + "not found" + _VT100Colors['default'])
+            elif getattr(remote_obj, name).error != 0:
                 foundError = False
                 print(prefix + _VT100Colors['red'] + "Error(s):" + _VT100Colors['default'])
                 errorcodes_dict = {val: name for name, val in errorcodes.items() if 'ERROR_' in name}
                 for bit in range(64):
-                    if remote_obj.error & (1 << bit) != 0:
+                    if getattr(remote_obj, name).error & (1 << bit) != 0:
                         print("    " + errorcodes_dict.get((1 << bit), 'UNKNOWN ERROR: 0x{:08X}'.format(1 << bit)))
                 if clear:
-                    remote_obj.error = 0
+                    getattr(remote_obj, name).error = 0
             else:
                 print(prefix + _VT100Colors['green'] + "no error" + _VT100Colors['default'])
 

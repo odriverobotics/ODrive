@@ -149,10 +149,6 @@ void Axis::decode_step_dir_pins() {
 // @brief (de)activates step/dir input
 void Axis::set_step_dir_active(bool active) {
     if (active) {
-        // Set up the step/direction GPIOs as input
-        dir_gpio_.config(GPIO_MODE_INPUT, GPIO_NOPULL);
-        step_gpio_.config(GPIO_MODE_INPUT, GPIO_PULLDOWN);
-
         // Subscribe to rising edges of the step GPIO
         if (!step_gpio_.subscribe(true, false, step_cb_wrapper, this)) {
             odrv.misconfigured_ = true;
@@ -433,7 +429,7 @@ bool Axis::run_homing() {
     controller_.vel_setpoint_ = 0.0f;  // Change directions without decelerating
 
     // Set our current position in encoder counts to make control more logical
-    encoder_.set_linear_count((int32_t)controller_.pos_setpoint_);
+    encoder_.set_linear_count((int32_t)(controller_.pos_setpoint_ * encoder_.config_.cpr));
 
     controller_.config_.control_mode = Controller::CONTROL_MODE_POSITION_CONTROL;
     controller_.config_.input_mode = Controller::INPUT_MODE_TRAP_TRAJ;
