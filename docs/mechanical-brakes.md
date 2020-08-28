@@ -22,12 +22,14 @@ The GPIO pin number, according to the silkscreen labels on ODrive. Set with thes
 ```
 <odrv>.<axis>.mechanical_brake.config.gpio_num = <1, 2, 3, 4, 5, 6, 7, 8>
 ```
+After GPIO pin number is changed, you'll need to run `<odrv>.save_configuration()` and `<odrv>.reboot()` for changes to take effect.
 
 ### enabled
 Enables/disables the operation of the mechanical brake.
 ```
 <odrv>.<axis>.mechanical_brake.config.enabled = <True, False>
 ```
+After mechanical brake is enabled or disabled, you'll need to run `<odrv>.save_configuration()` and `<odrv>.reboot()` for changes to take effect.
 
 ### is_active_low
 Most safety braking systems are active low, e.g. when the power is off, the brake is on. If the system uses brake drive electronics which use active high logic, flip this bit then reconsider the safety implications of your design...
