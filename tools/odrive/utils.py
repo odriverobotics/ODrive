@@ -23,6 +23,9 @@ except ImportError:
     sys.stdout.flush()
     pass
 
+if sys.version_info < (3, 0):
+    input = raw_input
+
 _VT100Colors = {
     'green': '\x1b[92;1m',
     'cyan': '\x1b[96;1m',
