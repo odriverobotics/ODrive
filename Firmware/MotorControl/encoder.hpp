@@ -97,7 +97,6 @@ public:
 
     float pos_estimate_ = 0.0f; // [turn]
     float vel_estimate_ = 0.0f; // [turn/s]
-    float pos_cpr_ = 0.0f;      // [turn]
     float pos_circular_ = 0.0f; // [turn]
 
     bool pos_estimate_valid_ = false;

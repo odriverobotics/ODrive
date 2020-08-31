@@ -227,7 +227,7 @@ class TestEncoderIndexSearch():
         test_assert_eq(axis_ctx.handle.encoder.shadow_count, 0.0, range=50)
         test_assert_eq(modpm(axis_ctx.handle.encoder.count_in_cpr, cpr), 0.0, range=50)
         test_assert_eq(axis_ctx.handle.encoder.pos_estimate, 0.0, range=50)
-        test_assert_eq(modpm(axis_ctx.handle.encoder.pos_cpr, cpr), 0.0, range=50)
+        test_assert_eq(modpm(axis_ctx.handle.encoder.pos_cpr_counts, cpr), 0.0, range=50)
         test_assert_eq(axis_ctx.handle.encoder.pos_abs, 0.0, range=50)
 
 

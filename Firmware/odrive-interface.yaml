@@ -835,7 +835,6 @@ interfaces:
       phase: readonly float32
       pos_estimate: readonly float32
       pos_estimate_counts: readonly float32
-      pos_cpr: readonly float32
       pos_cpr_counts: readonly float32
       pos_circular: readonly float32
       hall_state: readonly uint8
