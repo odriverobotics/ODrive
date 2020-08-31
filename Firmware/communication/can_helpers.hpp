@@ -24,9 +24,9 @@ struct can_Signal_t {
 
 #include <iterator>
 template <typename T>
-T can_getSignal(can_Message_t msg, const uint8_t startBit, const uint8_t length, const bool isIntel) {
+constexpr T can_getSignal(can_Message_t msg, const uint8_t startBit, const uint8_t length, const bool isIntel) {
     uint64_t tempVal = 0;
-    uint64_t mask = (1ULL << length) - 1;
+    uint64_t mask = length < 64 ? (1ULL << length) - 1ULL : -1ULL;
 
     if (isIntel) {
         std::memcpy(&tempVal, msg.buf, sizeof(tempVal));
@@ -43,11 +43,11 @@ T can_getSignal(can_Message_t msg, const uint8_t startBit, const uint8_t length,
 }
 
 template <typename T>
-void can_setSignal(can_Message_t& msg, const T& val, const uint8_t startBit, const uint8_t length, const bool isIntel) {
+constexpr void can_setSignal(can_Message_t& msg, const T& val, const uint8_t startBit, const uint8_t length, const bool isIntel) {
     uint64_t valAsBits = 0;
     std::memcpy(&valAsBits, &val, sizeof(val));
 
-    uint64_t mask = (1ULL << length) - 1;
+    uint64_t mask = length < 64 ? (1ULL << length) - 1ULL : -1ULL;
 
     if (isIntel) {
         uint64_t data = 0;
