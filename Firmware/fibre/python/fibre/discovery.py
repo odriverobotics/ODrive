@@ -176,4 +176,4 @@ def find_any(path="usb", serial_number=None,
     if find_multiple:
         return result
     else:
-        return result[0]
+        return result[0] if len(result) > 0 else None
