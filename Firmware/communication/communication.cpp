@@ -30,9 +30,6 @@
 uint64_t serial_number;
 char serial_number_str[13]; // 12 digits + null termination
 
-float oscilloscope[OSCILLOSCOPE_SIZE] = {0};
-size_t oscilloscope_pos = 0;
-
 /* Private constant data -----------------------------------------------------*/
 /* Private variables ---------------------------------------------------------*/
 /* Private function prototypes -----------------------------------------------*/

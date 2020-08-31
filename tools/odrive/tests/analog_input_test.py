@@ -106,7 +106,7 @@ class TestAnalogInput():
         full_range = abs(max_val - min_val)
         slope, offset, fitted_curve = fit_sawtooth(data, min_val, max_val, sigma=30)
         test_assert_eq(slope, (max_val - min_val) / period, accuracy=0.005) 
-        test_curve_fit(data, fitted_curve, max_mean_err = full_range * 0.02, inlier_range = full_range * 0.05, max_outliers = len(data[:,0]) * 0.02)
+        test_curve_fit(data, fitted_curve, max_mean_err = full_range * 0.03, inlier_range = full_range * 0.05, max_outliers = len(data[:,0]) * 0.02)
 
 
 

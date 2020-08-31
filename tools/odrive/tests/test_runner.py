@@ -7,6 +7,7 @@ sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..'))
 import stat
 import odrive
 from odrive.enums import *
+import odrive.utils
 import fibre
 from fibre import Logger, Event
 import argparse
@@ -617,24 +618,16 @@ def request_state(axis_ctx: ODriveAxisComponent, state, expect_success=True):
         test_assert_eq(axis_ctx.handle.error, AXIS_ERROR_INVALID_STATE)
         axis_ctx.handle.error = AXIS_ERROR_NONE # reset error
 
-def get_errors(axis_ctx: ODriveAxisComponent):
-    errors = []
-    if axis_ctx.handle.motor.error != 0:
-        errors.append("motor failed with error 0x{:04X}".format(axis_ctx.handle.motor.error))
-    if axis_ctx.handle.encoder.error != 0:
-        errors.append("encoder failed with error 0x{:04X}".format(axis_ctx.handle.encoder.error))
-    if axis_ctx.handle.sensorless_estimator.error != 0:
-        errors.append("sensorless_estimator failed with error 0x{:04X}".format(axis_ctx.handle.sensorless_estimator.error))
-    if axis_ctx.handle.error != 0:
-        errors.append("axis failed with error 0x{:04X}".format(axis_ctx.handle.error))
-    elif len(errors) > 0:
-        errors.append("and by the way: axis reports no error even though there is one")
-    return errors
-
 def test_assert_no_error(axis_ctx: ODriveAxisComponent):
-    errors = get_errors(axis_ctx)
-    if len(errors) > 0:
-        raise TestFailed("\n".join(errors))
+    any_error = (axis_ctx.handle.motor.error |
+                 axis_ctx.handle.encoder.error |
+                 axis_ctx.handle.sensorless_estimator.error |
+                 axis_ctx.handle.error) != 0
+
+    if any_error:
+        lines = []
+        odrive.utils.dump_errors(axis_ctx.parent.handle, printfunc = lines.append)
+        raise TestFailed("\n".join(lines))
 
 def run_shell(command_line, logger, env=None, timeout=None):
     """

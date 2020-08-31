@@ -85,6 +85,10 @@ void get_regs(void** stack_ptr) {
   void* volatile pc __attribute__((unused)) = stack_ptr[6];  // Program counter
   void* volatile psr __attribute__((unused)) = stack_ptr[7];  // Program status register
 
+  void* volatile cfsr __attribute__((unused)) = (void*)SCB->CFSR; // Configurable fault status register
+  void* volatile cpacr __attribute__((unused)) = (void*)SCB->CPACR;
+  void* volatile fpccr __attribute__((unused)) = (void*)FPU->FPCCR;
+
   volatile int stay_looping = 1;
   while(stay_looping);
 }

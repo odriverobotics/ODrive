@@ -87,6 +87,7 @@ def launch_shell(args, logger, app_shutdown_token):
         'oscilloscope_dump': oscilloscope_dump,
         'dump_interrupts': dump_interrupts,
         'dump_dma': dump_dma,
+        'dump_timing': dump_timing,
         'BulkCapture': BulkCapture,
         'step_and_plot': step_and_plot,
         'calculate_thermistor_coeffs': calculate_thermistor_coeffs,

@@ -9,14 +9,12 @@
 #include <communication/interface_usb.h>
 #include <communication/interface_i2c.h>
 #include <communication/interface_uart.h>
+#include <task_timer.hpp>
 extern "C" {
 #endif
 
 // OS includes
 #include <cmsis_os.h>
-
-//default timeout waiting for phase measurement signals
-#define PH_CURRENT_MEAS_TIMEOUT 2 // [ms]
 
 // extern const float elec_rad_per_enc;
 extern uint32_t _reboot_cookie;
@@ -34,14 +32,12 @@ typedef struct {
     uint32_t min_stack_space_axis; // minimum remaining space since startup [Bytes]
     uint32_t min_stack_space_usb;
     uint32_t min_stack_space_uart;
-    uint32_t min_stack_space_usb_irq;
     uint32_t min_stack_space_startup;
     uint32_t min_stack_space_can;
 
     uint32_t stack_usage_axis;
     uint32_t stack_usage_usb;
     uint32_t stack_usage_uart;
-    uint32_t stack_usage_usb_irq;
     uint32_t stack_usage_startup;
     uint32_t stack_usage_can;
 
@@ -105,17 +101,19 @@ struct BoardConfig_t {
     PWMMapping_t analog_mappings[GPIO_COUNT];
 };
 
+struct TaskTimes {
+    TaskTimer sampling;
+    TaskTimer control_loop_misc;
+    TaskTimer control_loop_checks;
+};
+
+
 // Forward Declarations
 class Axis;
 class Motor;
 class ODriveCAN;
 
 extern ODriveCAN *odCAN;
-
-// if you use the oscilloscope feature you can bump up this value
-#define OSCILLOSCOPE_SIZE 4096
-extern float oscilloscope[OSCILLOSCOPE_SIZE];
-extern size_t oscilloscope_pos;
 
 // TODO: move
 // this is technically not thread-safe but practically it might be
@@ -143,6 +141,7 @@ inline ENUMTYPE operator ~ (ENUMTYPE a) { return static_cast<ENUMTYPE>(~static_c
 #include <trapTraj.hpp>
 #include <endstop.hpp>
 #include <axis.hpp>
+#include <oscilloscope.hpp>
 #include <communication/communication.h>
 
 // Defined in autogen/version.c based on git-derived version numbers
@@ -164,10 +163,7 @@ public:
     void erase_configuration() override;
     void reboot() override { NVIC_SystemReset(); }
     void enter_dfu_mode() override;
-
-    float get_oscilloscope_val(uint32_t index) override {
-        return oscilloscope[index];
-    }
+    void clear_errors() override;
 
     float get_adc_voltage(uint32_t gpio) override {
         return ::get_adc_voltage(get_gpio(gpio));
@@ -178,12 +174,18 @@ public:
         return cnt += delta;
     }
 
+    void do_fast_checks();
+    void sampling_cb();
+    void control_loop_cb(uint32_t timestamp);
+
     Axis& get_axis(int num) { return axes[num]; }
     ODriveCAN& get_can() { return *odCAN; }
 
     uint32_t get_interrupt_status(int32_t irqn);
     uint32_t get_dma_status(uint8_t stream_num);
+    void disarm_with_error(Error error);
 
+    Error error_ = ERROR_NONE;
     float& vbus_voltage_ = ::vbus_voltage; // TODO: make this the actual variable
     float& ibus_ = ::ibus_; // TODO: make this the actual variable
     float ibus_report_filter_k_ = 1.0f;
@@ -222,12 +224,23 @@ public:
     bool& brake_resistor_saturated_ = ::brake_resistor_saturated; // TODO: make this the actual variable
 
     SystemStats_t system_stats_;
+    Oscilloscope oscilloscope_{
+        &axes[0].motor_.current_control_.v_current_control_integral_d_, // trigger_src
+        0.5f, // trigger_threshold
+        &axes[0].motor_.current_control_.Ialpha_measured_ // data_src
+    };
 
     BoardConfig_t config_;
     uint32_t user_config_loaded_ = 0;
     bool misconfigured_ = false;
 
     uint32_t test_property_ = 0;
+
+    uint32_t last_update_timestamp_ = 0;
+    uint32_t n_evt_sampling_ = 0;
+    uint32_t n_evt_control_loop_ = 0;
+    bool task_timers_armed_ = false;
+    TaskTimes task_times_;
 };
 
 extern ODrive odrv; // defined in main.cpp

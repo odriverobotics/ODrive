@@ -116,7 +116,7 @@ class TestSimpleCAN():
 
         axis = odrive.handle.axis0
         axis.config.enable_watchdog = False
-        axis.clear_errors()
+        odrive.handle.clear_errors()
         axis.config.can_node_id = node_id
         axis.config.can_node_id_extended = extended_id
         time.sleep(0.1)
@@ -125,6 +125,7 @@ class TestSimpleCAN():
         def my_req(cmd_name, **kwargs): return asyncio.run(request(canbus.handle, node_id, extended_id, cmd_name, **kwargs))
         def fence(): my_req('get_vbus_voltage') # fence to ensure the CAN command was sent
 
+        logger.debug('sending request...')
         test_assert_eq(my_req('get_vbus_voltage')['vbus_voltage'], odrive.handle.vbus_voltage, accuracy=0.01)
 
         my_cmd('set_node_id', node_id=node_id+20)

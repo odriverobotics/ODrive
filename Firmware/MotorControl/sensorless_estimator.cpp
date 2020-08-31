@@ -10,13 +10,20 @@ bool SensorlessEstimator::update() {
     // is the one computed two cycles ago. To get the correct measurement, it was stored twice:
     // once by final_v_alpha/final_v_beta in the current control reporting, and once by V_alpha_beta_memory.
 
+    if (std::isnan(flux_state_[0]) || std::isnan(flux_state_[1]) || std::isnan(pll_pos_)) {
+        // Automatically reset state if it becomes NAN. The state becomes NAN
+        // when invalid current measurements are processed (e.g. because of the
+        // opamp being uninitialized).
+        flux_state_[0] = 0.0f;
+        flux_state_[1] = 0.0f;
+        pll_pos_ = 0.0f;
+        phase_vel_ = 0.0f;
+    }
+
     // Clarke transform
     float I_alpha_beta[2] = {
         -axis_->motor_.current_meas_.phB - axis_->motor_.current_meas_.phC,
         one_by_sqrt3 * (axis_->motor_.current_meas_.phB - axis_->motor_.current_meas_.phC)};
-
-    // Swap sign of I_beta if motor is reversed
-    I_alpha_beta[1] *= axis_->motor_.config_.direction;
 
     // alpha-beta vector operations
     float eta[2];
@@ -49,8 +56,8 @@ bool SensorlessEstimator::update() {
     }
 
     // Flux state estimation done, store V_alpha_beta for next timestep
-    V_alpha_beta_memory_[0] = axis_->motor_.current_control_.final_v_alpha;
-    V_alpha_beta_memory_[1] = axis_->motor_.current_control_.final_v_beta * axis_->motor_.config_.direction;
+    V_alpha_beta_memory_[0] = axis_->motor_.current_control_.final_v_alpha_;
+    V_alpha_beta_memory_[1] = axis_->motor_.current_control_.final_v_beta_;
 
     // PLL
     // TODO: the PLL part has some code duplication with the encoder PLL
@@ -61,19 +68,22 @@ bool SensorlessEstimator::update() {
     // Check that we don't get problems with discrete time approximation
     if (!(current_meas_period * pll_kp < 1.0f)) {
         error_ |= ERROR_UNSTABLE_GAIN;
-        vel_estimate_valid_ = false;
+        pll_pos_ = NAN;
+        phase_ = NAN;
+        vel_estimate_ = NAN;
         return false;
     }
 
     // predict PLL phase with velocity
-    pll_pos_ = wrap_pm_pi(pll_pos_ + current_meas_period * vel_estimate_);
+    pll_pos_ = wrap_pm_pi(pll_pos_ + current_meas_period * phase_vel_);
     // update PLL phase with observer permanent magnet phase
     phase_ = fast_atan2(eta[1], eta[0]);
     float delta_phase = wrap_pm_pi(phase_ - pll_pos_);
     pll_pos_ = wrap_pm_pi(pll_pos_ + current_meas_period * pll_kp * delta_phase);
     // update PLL velocity
-    vel_estimate_ += current_meas_period * pll_ki * delta_phase;
+    phase_vel_ += current_meas_period * pll_ki * delta_phase;
 
-    vel_estimate_valid_ = true;
+    vel_estimate_ = phase_vel_ / (2 * M_PI);
+
     return true;
 };

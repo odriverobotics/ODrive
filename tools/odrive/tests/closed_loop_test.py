@@ -39,14 +39,14 @@ class TestClosedLoopControlBase():
         axis_ctx.handle.motor.config.pre_calibrated = True
 
         # Set calibration settings
-        axis_ctx.handle.motor.config.direction = 0
+        axis_ctx.handle.encoder.config.direction = 0
         axis_ctx.handle.encoder.config.use_index = False
         axis_ctx.handle.encoder.config.calib_scan_omega = 12.566 # 2 electrical revolutions per second
         axis_ctx.handle.encoder.config.calib_scan_distance = 50.265 # 8 revolutions
         axis_ctx.handle.encoder.config.bandwidth = 1000
 
 
-        axis_ctx.handle.clear_errors()
+        axis_ctx.parent.handle.clear_errors()
 
         logger.debug('Calibrating encoder offset...')
         request_state(axis_ctx, AXIS_STATE_ENCODER_OFFSET_CALIBRATION)
@@ -76,7 +76,7 @@ class TestClosedLoopControl(TestClosedLoopControlBase):
 
     def run_test(self, axis_ctx: ODriveAxisComponent, motor_ctx: MotorComponent, enc_ctx: EncoderComponent, logger: Logger):
         with self.prepare(axis_ctx, motor_ctx, enc_ctx, logger):
-            nominal_rps = 1.0
+            nominal_rps = 3.0
             nominal_vel = nominal_rps
             logger.debug(f'Testing closed loop velocity control at {nominal_rps} rounds/s...')
 
@@ -85,6 +85,8 @@ class TestClosedLoopControl(TestClosedLoopControlBase):
             axis_ctx.handle.controller.input_vel = 0
 
             request_state(axis_ctx, AXIS_STATE_CLOSED_LOOP_CONTROL)
+            axis_ctx.handle.controller.config.vel_limit = nominal_vel
+            axis_ctx.handle.controller.config.vel_limit_tolerance = 2
             axis_ctx.handle.controller.input_vel = nominal_vel
 
             data = record_log(lambda: [axis_ctx.handle.encoder.vel_estimate, axis_ctx.handle.encoder.pos_estimate], duration=5.0)
@@ -109,6 +111,7 @@ class TestClosedLoopControl(TestClosedLoopControlBase):
             
             axis_ctx.handle.controller.config.control_mode = CONTROL_MODE_POSITION_CONTROL
             axis_ctx.handle.controller.input_pos = 0
+            axis_ctx.handle.controller.input_vel = 0 # turn off velocity feed-forward
             axis_ctx.handle.controller.config.vel_limit = 5.0 # max 5 rps
             axis_ctx.handle.encoder.set_linear_count(0)
 
@@ -177,7 +180,7 @@ class TestRegenProtection(TestClosedLoopControlBase):
     def run_test(self, axis_ctx: ODriveAxisComponent, motor_ctx: MotorComponent, enc_ctx: EncoderComponent, logger: Logger):
         with self.prepare(axis_ctx, motor_ctx, enc_ctx, logger):
             nominal_rps = 15.0
-            max_current = 30.0
+            max_current = 20.0
         
             # Accept a bit of noise on Ibus
             axis_ctx.parent.handle.config.dc_max_negative_current = -0.5
@@ -209,10 +212,11 @@ class TestRegenProtection(TestClosedLoopControlBase):
 
             # ... and brake
             axis_ctx.parent.handle.config.dc_max_negative_current = -0.2
-            axis_ctx.handle.controller.input_vel = 0 # this should fail almost instantaneously
+            axis_ctx.handle.controller.input_vel = 10 # this should fail almost instantaneously
             time.sleep(0.1)
-            test_assert_eq(axis_ctx.handle.error, AXIS_ERROR_MOTOR_DISARMED | AXIS_ERROR_BRAKE_RESISTOR_DISARMED)
-            test_assert_eq(axis_ctx.handle.motor.error, MOTOR_ERROR_DC_BUS_OVER_REGEN_CURRENT)
+            test_assert_eq(axis_ctx.parent.handle.error, ODRIVE_ERROR_DC_BUS_OVER_REGEN_CURRENT)
+            test_assert_eq(axis_ctx.handle.motor.error & MOTOR_ERROR_SYSTEM_LEVEL, MOTOR_ERROR_SYSTEM_LEVEL)
+            test_assert_eq(axis_ctx.handle.error, 0)
 
 
 class TestVelLimitInTorqueControl(TestClosedLoopControlBase):
@@ -231,7 +235,7 @@ class TestVelLimitInTorqueControl(TestClosedLoopControlBase):
 
             axis_ctx.handle.controller.config.vel_gain /= 10 # reduce the slope to make it easier to see what's going on
             vel_gain = axis_ctx.handle.controller.config.vel_gain
-            direction = axis_ctx.handle.motor.config.direction
+            direction = axis_ctx.handle.encoder.config.direction
             logger.debug(f'vel gain is {vel_gain}')
 
             axis_ctx.handle.controller.config.vel_limit = max_vel

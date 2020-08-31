@@ -19,28 +19,12 @@ void Controller::reset() {
 
 void Controller::set_error(Error error) {
     error_ |= error;
-    axis_->error_ |= Axis::ERROR_CONTROLLER_FAILED;
 }
 
 //--------------------------------
 // Command Handling
 //--------------------------------
 
-
-bool Controller::select_encoder(size_t encoder_num) {
-    if (encoder_num < AXIS_COUNT) {
-        Axis* ax = &axes[encoder_num];
-        pos_estimate_circular_src_ = &ax->encoder_.pos_circular_;
-        pos_wrap_src_ = &config_.circular_setpoint_range;
-        pos_estimate_linear_src_ = &ax->encoder_.pos_estimate_;
-        pos_estimate_valid_src_ = &ax->encoder_.pos_estimate_valid_;
-        vel_estimate_src_ = &ax->encoder_.vel_estimate_;
-        vel_estimate_valid_src_ = &ax->encoder_.vel_estimate_valid_;
-        return true;
-    } else {
-        return set_error(Controller::ERROR_INVALID_LOAD_ENCODER), false;
-    }
-}
 
 void Controller::move_to_pos(float goal_point) {
     axis_->trap_traj_.planTrapezoidal(goal_point, pos_setpoint_, vel_setpoint_,
@@ -114,18 +98,19 @@ static float limitVel(const float vel_limit, const float vel_estimate, const flo
     return std::clamp(torque, Tmin, Tmax);
 }
 
-bool Controller::update(float* torque_setpoint_output) {
-    float* pos_estimate_linear = (pos_estimate_valid_src_ && *pos_estimate_valid_src_)
-            ? pos_estimate_linear_src_ : nullptr;
-    float* pos_estimate_circular = (pos_estimate_valid_src_ && *pos_estimate_valid_src_)
-            ? pos_estimate_circular_src_ : nullptr;
-    float* vel_estimate_src = (vel_estimate_valid_src_ && *vel_estimate_valid_src_)
-            ? vel_estimate_src_ : nullptr;
+bool Controller::update() {
+    float pos_estimate_linear = pos_estimate_linear_src_ ? *pos_estimate_linear_src_ : NAN;
+    float pos_estimate_circular = pos_estimate_circular_src_ ? *pos_estimate_circular_src_ : NAN;
+    float pos_wrap = pos_wrap_src_ ? *pos_wrap_src_ : NAN;
+    float vel_estimate = vel_estimate_src_ ? *vel_estimate_src_ : NAN;
+
+    // Reset output just in case the controller fails for any reason
+    torque_output_ = NAN;
 
     // Calib_anticogging is only true when calibration is occurring, so we can't block anticogging_pos
     float anticogging_pos = axis_->encoder_.pos_estimate_ / axis_->encoder_.getCoggingRatio();
     if (config_.anticogging.calib_anticogging) {
-        if (!axis_->encoder_.pos_estimate_valid_ || !axis_->encoder_.vel_estimate_valid_) {
+        if (std::isnan(axis_->encoder_.pos_estimate_) || std::isnan(axis_->encoder_.vel_estimate_)) {
             set_error(ERROR_INVALID_ESTIMATE);
             return false;
         }
@@ -225,21 +210,21 @@ bool Controller::update(float* torque_setpoint_output) {
         float pos_err;
 
         if (config_.circular_setpoints) {
-            if(!pos_estimate_circular) {
+            if (std::isnan(pos_estimate_circular) || std::isnan(pos_wrap)) {
                 set_error(ERROR_INVALID_ESTIMATE);
                 return false;
             }
             // Keep pos setpoint from drifting
             pos_setpoint_ = fmodf_pos(pos_setpoint_, *pos_wrap_src_);
             // Circular delta
-            pos_err = pos_setpoint_ - *pos_estimate_circular;
-            pos_err = wrap_pm(pos_err, 0.5f * *pos_wrap_src_);
+            pos_err = pos_setpoint_ - pos_estimate_circular;
+            pos_err = wrap_pm(pos_err, 0.5f * pos_wrap);
         } else {
-            if(!pos_estimate_linear) {
+            if (std::isnan(pos_estimate_linear)) {
                 set_error(ERROR_INVALID_ESTIMATE);
                 return false;
             }
-            pos_err = pos_setpoint_ - *pos_estimate_linear;
+            pos_err = pos_setpoint_ - pos_estimate_linear;
         }
 
         vel_des += config_.pos_gain * pos_err;
@@ -258,11 +243,11 @@ bool Controller::update(float* torque_setpoint_output) {
 
     // Check for overspeed fault (done in this module (controller) for cohesion with vel_lim)
     if (config_.enable_overspeed_error) {  // 0.0f to disable
-        if (!vel_estimate_src) {
+        if (std::isnan(vel_estimate)) {
             set_error(ERROR_INVALID_ESTIMATE);
             return false;
         }
-        if (std::abs(*vel_estimate_src) > config_.vel_limit_tolerance * vel_lim) {
+        if (std::abs(vel_estimate) > config_.vel_limit_tolerance * vel_lim) {
             set_error(ERROR_OVERSPEED);
             return false;
         }
@@ -273,7 +258,7 @@ bool Controller::update(float* torque_setpoint_output) {
     float vel_gain = config_.vel_gain;
     float vel_integrator_gain = config_.vel_integrator_gain;
     if (axis_->motor_.config_.motor_type == Motor::MOTOR_TYPE_ACIM) {
-        float effective_flux = axis_->motor_.current_control_.acim_rotor_flux;
+        float effective_flux = axis_->async_estimator_.rotor_flux_;
         float minflux = axis_->motor_.config_.acim_gain_min_flux;
         if (fabsf(effective_flux) < minflux)
             effective_flux = std::copysignf(minflux, effective_flux);
@@ -295,12 +280,12 @@ bool Controller::update(float* torque_setpoint_output) {
 
     float v_err = 0.0f;
     if (config_.control_mode >= CONTROL_MODE_VELOCITY_CONTROL) {
-        if (!vel_estimate_src) {
+        if (std::isnan(vel_estimate)) {
             set_error(ERROR_INVALID_ESTIMATE);
             return false;
         }
 
-        v_err = vel_des - *vel_estimate_src;
+        v_err = vel_des - vel_estimate;
         torque += (vel_gain * gain_scheduling_multiplier) * v_err;
 
         // Velocity integral action before limiting
@@ -309,11 +294,11 @@ bool Controller::update(float* torque_setpoint_output) {
 
     // Velocity limiting in current mode
     if (config_.control_mode < CONTROL_MODE_VELOCITY_CONTROL && config_.enable_current_mode_vel_limit) {
-        if (!vel_estimate_src) {
+        if (std::isnan(vel_estimate)) {
             set_error(ERROR_INVALID_ESTIMATE);
             return false;
         }
-        torque = limitVel(config_.vel_limit, *vel_estimate_src, vel_gain, torque);
+        torque = limitVel(config_.vel_limit, vel_estimate, vel_gain, torque);
     }
 
     // Torque limiting
@@ -341,6 +326,12 @@ bool Controller::update(float* torque_setpoint_output) {
         }
     }
 
-    if (torque_setpoint_output) *torque_setpoint_output = torque;
+    torque_output_ = torque;
+
+    // TODO: this is inconsistent with the other errors which are sticky.
+    // However if we make ERROR_INVALID_ESTIMATE sticky then it will be
+    // confusing that a normal sequence of motor calibration + encoder
+    // calibration would leave the controller in an error state.
+    error_ &= ~ERROR_INVALID_ESTIMATE;
     return true;
 }

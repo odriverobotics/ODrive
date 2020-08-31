@@ -179,7 +179,7 @@ void ODriveCAN::set_error(Error error) {
 void ODriveCAN::send_heartbeat(Axis *axis) {
     // Handle heartbeat message
     if (axis->config_.can_heartbeat_rate_ms > 0) {
-        uint32_t now = osKernelSysTick();
+        uint32_t now = HAL_GetTick();
         if ((now - axis->last_heartbeat_) >= axis->config_.can_heartbeat_rate_ms) {
             switch (config_.protocol) {
                 case PROTOCOL_SIMPLE:

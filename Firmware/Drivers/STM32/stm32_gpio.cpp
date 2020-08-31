@@ -92,13 +92,10 @@ bool Stm32Gpio::subscribe(bool rising_edge, bool falling_edge, void (*callback)(
 
     struct subscription_t& subscription = subscriptions[pin_number];
 
-    void (*no_port)(void*) = nullptr;
+    GPIO_TypeDef* no_port = nullptr;
     if (!__atomic_compare_exchange_n(&subscription.port, &no_port, port_, false, __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST)) {
         return false; // already in use
     }
-
-    subscription.ctx = ctx;
-    subscription.callback = callback;
 
     // The following code is mostly taken from HAL_GPIO_Init
     __HAL_RCC_SYSCFG_CLK_ENABLE();
@@ -126,10 +123,9 @@ bool Stm32Gpio::subscribe(bool rising_edge, bool falling_edge, void (*callback)(
 
     // Clear any previous triggers
     __HAL_GPIO_EXTI_CLEAR_IT(pin_mask_);
-    // Enable interrupt
-    // TODO: use configurable priority
-    HAL_NVIC_SetPriority(get_irq_number(pin_number), 0, 0);
-    HAL_NVIC_EnableIRQ(get_irq_number(pin_number));
+    
+    subscription.ctx = ctx;
+    subscription.callback = callback;
     return true;
 }
 
@@ -141,8 +137,12 @@ void Stm32Gpio::unsubscribe() {
 
     struct subscription_t& subscription = subscriptions[pin_number];
 
-    HAL_NVIC_DisableIRQ(get_irq_number(pin_number));
+    if (subscription.port != port_) {
+        return; // the subscription was not for this GPIO
+    }
+
     EXTI->IMR |= (uint32_t)pin_mask_;
+    __HAL_GPIO_EXTI_CLEAR_IT(pin_mask_);
 
     // At this point no more interrupts will be triggered for this GPIO
 

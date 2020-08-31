@@ -35,7 +35,7 @@ class TestMotorCalibration():
         axis_ctx.handle.motor.config.pre_calibrated = False
         axis_ctx.handle.config.enable_watchdog = False
 
-        axis_ctx.handle.clear_errors()
+        axis_ctx.parent.handle.clear_errors()
 
         # run calibration
         request_state(axis_ctx, AXIS_STATE_MOTOR_CALIBRATION)
@@ -69,13 +69,12 @@ class TestDisconnectedMotorCalibration():
         axis_ctx.handle.motor.config.phase_inductance = 0.0
         axis_ctx.handle.motor.config.pre_calibrated = False
 
-        axis_ctx.handle.clear_errors()
+        axis_ctx.parent.handle.clear_errors()
 
         # run test
         request_state(axis_ctx, AXIS_STATE_MOTOR_CALIBRATION)
         time.sleep(6)
         test_assert_eq(axis_ctx.handle.current_state, AXIS_STATE_IDLE)
-        test_assert_eq(axis_ctx.handle.error, AXIS_ERROR_MOTOR_FAILED)
         test_assert_eq(axis_ctx.handle.motor.error, MOTOR_ERROR_PHASE_RESISTANCE_OUT_OF_RANGE)
 
 
@@ -107,10 +106,10 @@ class TestEncoderDirFind():
         axis_ctx.handle.motor.config.pre_calibrated = True
 
         # Set calibration settings
-        axis_ctx.handle.motor.config.direction = 0
+        axis_ctx.handle.encoder.config.direction = 0
         axis_ctx.handle.config.calibration_lockin.vel = 12.566 # 2 electrical revolutions per second
 
-        axis_ctx.handle.clear_errors()
+        axis_ctx.parent.handle.clear_errors()
 
         # run test
         request_state(axis_ctx, AXIS_STATE_ENCODER_DIR_FIND)
@@ -120,7 +119,7 @@ class TestEncoderDirFind():
         test_assert_eq(axis_ctx.handle.current_state, AXIS_STATE_IDLE)
         test_assert_no_error(axis_ctx)
 
-        test_assert_eq(axis_ctx.handle.motor.config.direction in [-1, 1], True)
+        test_assert_eq(axis_ctx.handle.encoder.config.direction in [-1, 1], True)
 
 
 class TestEncoderOffsetCalibration():
@@ -151,12 +150,12 @@ class TestEncoderOffsetCalibration():
         axis_ctx.handle.motor.config.pre_calibrated = True
 
         # Set calibration settings
-        axis_ctx.handle.motor.config.direction = 0
+        axis_ctx.handle.encoder.config.direction = 0
         axis_ctx.handle.encoder.config.use_index = False
         axis_ctx.handle.encoder.config.calib_scan_omega = 12.566 # 2 electrical revolutions per second
         axis_ctx.handle.encoder.config.calib_scan_distance = 50.265 # 8 revolutions
 
-        axis_ctx.handle.clear_errors()
+        axis_ctx.parent.handle.clear_errors()
 
         # run test
         request_state(axis_ctx, AXIS_STATE_ENCODER_OFFSET_CALIBRATION)
@@ -167,7 +166,7 @@ class TestEncoderOffsetCalibration():
         test_assert_no_error(axis_ctx)
 
         test_assert_eq(axis_ctx.handle.encoder.is_ready, True)
-        test_assert_eq(axis_ctx.handle.motor.config.direction in [-1, 1], True)
+        test_assert_eq(axis_ctx.handle.encoder.config.direction in [-1, 1], True)
 
 
 class TestEncoderIndexSearch():
@@ -208,7 +207,7 @@ class TestEncoderIndexSearch():
         # Set calibration settings
         axis_ctx.handle.config.calibration_lockin.vel = 12.566 # 2 electrical revolutions per second
 
-        axis_ctx.handle.clear_errors()
+        axis_ctx.parent.handle.clear_errors()
 
         # run test
         request_state(axis_ctx, AXIS_STATE_ENCODER_INDEX_SEARCH)

@@ -69,44 +69,52 @@ def set_motor_thermistor_coeffs(axis, Rload, R_25, Beta, Tmin, TMax):
     axis.motor_thermistor.config.poly_coefficient_2 = float(coeffs[1])
     axis.motor_thermistor.config.poly_coefficient_3 = float(coeffs[0])
 
-def dump_errors(odrv, clear=False):
+def dump_errors(odrv, clear=False, printfunc = print):
     axes = [(name, axis) for name, axis in odrv._remote_attributes.items() if 'axis' in name]
     axes.sort()
+
+    def dump_errors_for_module(indent, name, obj, path, errorcodes):
+        prefix = indent + name.strip('0123456789') + ": "
+        for elem in path.split('.'):
+            if not hasattr(obj, elem):
+                printfunc(prefix + _VT100Colors['yellow'] + "not found" + _VT100Colors['default'])
+                return
+            parent = obj
+            obj = getattr(obj, elem)
+        if obj != 0:
+            printfunc(indent + name + ": " + _VT100Colors['red'] + "Error(s):" + _VT100Colors['default'])
+            for bit in range(64):
+                if obj & (1 << bit) != 0:
+                    printfunc(indent + "  " + errorcodes.get((1 << bit), 'UNKNOWN ERROR: 0x{:08X}'.format(1 << bit)))
+            if clear:
+                setattr(parent, elem, 0)
+        else:
+            printfunc(indent + name + ": " + _VT100Colors['green'] + "no error" + _VT100Colors['default'])
+
+    system_error_codes = {v: k for k, v in odrive.enums.__dict__ .items() if k.startswith("ODRIVE_ERROR_")}
+    dump_errors_for_module("", "system", odrv, 'error', system_error_codes)
+
     for name, axis in axes:
-        print(name)
+        printfunc(name)
 
         # Flatten axis and submodules
-        # (name, remote_obj, errorcode)
+        # (name, obj, path, errorcode)
         module_decode_map = [
-            (name, odrv, {k: v for k, v in odrive.enums.__dict__ .items() if k.startswith("AXIS_ERROR_")}),
-            ('motor', axis, {k: v for k, v in odrive.enums.__dict__ .items() if k.startswith("MOTOR_ERROR_")}),
-            ('fet_thermistor', axis, {k: v for k, v in odrive.enums.__dict__ .items() if k.startswith("THERMISTOR_CURRENT_LIMITER_ERROR")}),
-            ('motor_thermistor', axis, {k: v for k, v in odrive.enums.__dict__ .items() if k.startswith("THERMISTOR_CURRENT_LIMITER_ERROR")}),
-            ('encoder', axis, {k: v for k, v in odrive.enums.__dict__ .items() if k.startswith("ENCODER_ERROR_")}),
-            ('controller', axis, {k: v for k, v in odrive.enums.__dict__ .items() if k.startswith("CONTROLLER_ERROR_")}),
+            ('axis', axis, 'error', {v: k for k, v in odrive.enums.__dict__ .items() if k.startswith("AXIS_ERROR_")}),
+            ('motor', axis, 'motor.error', {v: k for k, v in odrive.enums.__dict__ .items() if k.startswith("MOTOR_ERROR_")}),
+            ('fet_thermistor', axis, 'fet_thermistor.error', {v: k for k, v in odrive.enums.__dict__ .items() if k.startswith("THERMISTOR_CURRENT_LIMITER_ERROR")}),
+            ('motor_thermistor', axis, 'motor_thermistor.error', {v: k for k, v in odrive.enums.__dict__ .items() if k.startswith("THERMISTOR_CURRENT_LIMITER_ERROR")}),
+            ('encoder', axis, 'encoder.error', {v: k for k, v in odrive.enums.__dict__ .items() if k.startswith("ENCODER_ERROR_")}),
+            ('controller', axis, 'controller.error', {v: k for k, v in odrive.enums.__dict__ .items() if k.startswith("CONTROLLER_ERROR_")}),
         ]
 
-        # Module error decode
-        for name, remote_obj, errorcodes in module_decode_map:
-            prefix = ' '*2 + name.strip('0123456789') + ": "
-            if not hasattr(remote_obj, name):
-                print(prefix + _VT100Colors['yellow'] + "not found" + _VT100Colors['default'])
-            elif getattr(remote_obj, name).error != 0:
-                foundError = False
-                print(prefix + _VT100Colors['red'] + "Error(s):" + _VT100Colors['default'])
-                errorcodes_dict = {val: name for name, val in errorcodes.items() if 'ERROR_' in name}
-                for bit in range(64):
-                    if getattr(remote_obj, name).error & (1 << bit) != 0:
-                        print("    " + errorcodes_dict.get((1 << bit), 'UNKNOWN ERROR: 0x{:08X}'.format(1 << bit)))
-                if clear:
-                    getattr(remote_obj, name).error = 0
-            else:
-                print(prefix + _VT100Colors['green'] + "no error" + _VT100Colors['default'])
+        for name, obj, path, errorcodes in module_decode_map:
+            dump_errors_for_module("  ", name, obj, path, errorcodes)
 
 def oscilloscope_dump(odrv, num_vals, filename='oscilloscope.csv'):
     with open(filename, 'w') as f:
         for x in range(num_vals):
-            f.write(str(odrv.get_oscilloscope_val(x)))
+            f.write(str(odrv.oscilloscope.get_val(x)))
             f.write('\n')
 
 data_rate = 100
@@ -296,7 +304,7 @@ def show_oscilloscope(odrv):
     size = 18000
     values = []
     for i in range(size):
-        values.append(odrv.get_oscilloscope_val(i))
+        values.append(odrv.oscilloscope.get_val(i))
 
     import matplotlib.pyplot as plt
     plt.plot(values)
@@ -520,4 +528,43 @@ def dump_dma(odrv):
                      ("(" + ch_name + ")").ljust(30),
                      "*" if (status & 0x80000000) else " "))
 
+def dump_timing(odrv, n_samples=100, path='/tmp/timings.png'):
+    timings = []
+    
+    for attr in dir(odrv.task_times):
+        if not attr.startswith('_'):
+            timings.append((attr, getattr(odrv.task_times, attr), [], [])) # (name, obj, start_times, lengths)
+    for attr in dir(odrv.axis0.task_times):
+        if not attr.startswith('_'):
+            timings.append(('axis0.' + attr, getattr(odrv.axis0.task_times, attr), [], [])) # (name, obj, start_times, lengths)
+    for attr in dir(odrv.axis1.task_times):
+        if not attr.startswith('_'):
+            timings.append(('axis1.' + attr, getattr(odrv.axis1.task_times, attr), [], [])) # (name, obj, start_times, lengths)
 
+    # Take a couple of samples
+    print("sampling...")
+    for i in range(n_samples):
+        odrv.task_timers_armed = True # Trigger sample and wait for it to finish
+        while odrv.task_timers_armed: pass
+        for name, obj, start_times, lengths in timings:
+            start_times.append(obj.start_time)
+            lengths.append(obj.length)
+    print("done")
+
+    # sort by start time
+    timings = sorted(timings, key = lambda x: np.mean(x[2]))
+
+    plt.rcParams['figure.figsize'] = 21, 9
+    plt.figure()
+    plt.grid('both')
+    plt.barh(
+        [-i for i in range(len(timings))], # y positions
+        [np.mean(lengths) for name, obj, start_times, lengths in timings], # lengths
+        left = [np.mean(start_times) for name, obj, start_times, lengths in timings], # starts
+        xerr = (
+            [np.std(lengths) for name, obj, start_times, lengths in timings], # error bars to the left side
+            [(min(obj.max_length, 20100) - np.mean(lengths)) for name, obj, start_times, lengths in timings], # error bars to the right side  - TODO: remove artificial min()
+        ),
+        tick_label = [name for name, obj, start_times, lengths in timings], # labels
+    )
+    plt.savefig(path, bbox_inches='tight')

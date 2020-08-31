@@ -25,17 +25,13 @@ extern uint16_t adc_measurements_[ADC_CHANNEL_COUNT];
 /* Exported macro ------------------------------------------------------------*/
 /* Exported functions --------------------------------------------------------*/
 
-void safety_critical_arm_motor_pwm(Motor& motor);
-bool safety_critical_disarm_motor_pwm(Motor& motor);
-void safety_critical_apply_motor_pwm_timings(Motor& motor, uint16_t timings[3]);
 void safety_critical_arm_brake_resistor();
 void safety_critical_disarm_brake_resistor();
 void safety_critical_apply_brake_resistor_timings(uint32_t low_off, uint32_t high_on);
 
 // called from STM platform code
 extern "C" {
-void pwm_trig_adc_cb(ADC_HandleTypeDef* hadc, bool injected);
-void vbus_sense_adc_cb(ADC_HandleTypeDef* hadc, bool injected);
+void vbus_sense_adc_cb(uint32_t adc_value);
 void pwm_in_cb(TIM_HandleTypeDef *htim);
 }
 

@@ -329,16 +329,16 @@ void CANSimple::get_iq_callback(Axis* axis, can_Message_t& msg) {
         txmsg.len = 8;
 
         uint32_t floatBytes;
-        static_assert(sizeof axis->motor_.current_control_.Iq_setpoint == sizeof floatBytes);
-        std::memcpy(&floatBytes, &axis->motor_.current_control_.Iq_setpoint, sizeof floatBytes);
+        static_assert(sizeof axis->motor_.current_control_.Iq_setpoint_ == sizeof floatBytes);
+        std::memcpy(&floatBytes, &axis->motor_.current_control_.Iq_setpoint_, sizeof floatBytes);
 
         txmsg.buf[0] = floatBytes;
         txmsg.buf[1] = floatBytes >> 8;
         txmsg.buf[2] = floatBytes >> 16;
         txmsg.buf[3] = floatBytes >> 24;
 
-        static_assert(sizeof floatBytes == sizeof axis->motor_.current_control_.Iq_measured);
-        std::memcpy(&floatBytes, &axis->motor_.current_control_.Iq_measured, sizeof floatBytes);
+        static_assert(sizeof floatBytes == sizeof axis->motor_.current_control_.Iq_measured_);
+        std::memcpy(&floatBytes, &axis->motor_.current_control_.Iq_measured_, sizeof floatBytes);
         txmsg.buf[4] = floatBytes;
         txmsg.buf[5] = floatBytes >> 8;
         txmsg.buf[6] = floatBytes >> 16;
@@ -379,7 +379,7 @@ void CANSimple::get_vbus_voltage_callback(Axis* axis, can_Message_t& msg) {
 }
 
 void CANSimple::clear_errors_callback(Axis* axis, can_Message_t& msg) {
-    axis->clear_errors();
+    odrv.clear_errors(); // TODO: might want to clear axis errors only
 }
 
 void CANSimple::send_heartbeat(Axis* axis) {
