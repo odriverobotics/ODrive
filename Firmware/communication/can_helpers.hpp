@@ -42,17 +42,10 @@ T can_getSignal(can_Message_t msg, const uint8_t startBit, const uint8_t length,
     return retVal;
 }
 
-template<typename T>
-float can_getSignal(can_Message_t msg, const uint8_t startBit, const uint8_t length, const bool isIntel, const float factor, const float offset) {
-    T retVal = can_getSignal<T>(msg, startBit, length, isIntel);
-    return (retVal * factor) + offset;
-}
-
 template <typename T>
-void can_setSignal(can_Message_t& msg, const T& val, const uint8_t startBit, const uint8_t length, const bool isIntel, const float factor, const float offset) {
-    T scaledVal = (val - offset) / factor;
+void can_setSignal(can_Message_t& msg, const T& val, const uint8_t startBit, const uint8_t length, const bool isIntel) {
     uint64_t valAsBits = 0;
-    std::memcpy(&valAsBits, &scaledVal, sizeof(scaledVal));
+    std::memcpy(&valAsBits, &val, sizeof(val));
 
     uint64_t mask = (1ULL << length) - 1;
 
@@ -75,6 +68,18 @@ void can_setSignal(can_Message_t& msg, const T& val, const uint8_t startBit, con
         std::memcpy(msg.buf, &data, sizeof(data));
         std::reverse(std::begin(msg.buf), std::end(msg.buf));
     }
+}
+
+template<typename T>
+void can_setSignal(can_Message_t& msg, const T& val, const uint8_t startBit, const uint8_t length, const bool isIntel, const float factor, const float offset) {
+    T scaledVal = static_cast<T>((val - offset) / factor);
+    can_setSignal<T>(msg, scaledVal, startBit, length, isIntel);
+}
+
+template<typename T>
+float can_getSignal(can_Message_t msg, const uint8_t startBit, const uint8_t length, const bool isIntel, const float factor, const float offset) {
+    T retVal = can_getSignal<T>(msg, startBit, length, isIntel);
+    return (retVal * factor) + offset;
 }
 
 template <typename T>
