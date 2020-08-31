@@ -20,6 +20,13 @@ import odrive
 from odrive.utils import Event, OperationAbortedException
 from odrive.dfuse import *
 
+if sys.version_info < (3, 0):
+    _print = print
+    def print(*vals, **kwargs):
+        _print(*vals)
+        if kwargs.get('flush', False):
+            sys.stdout.flush()
+
 try:
     from intelhex import IntelHex
 except:
@@ -142,8 +149,8 @@ class FirmwareFromGithub(Firmware):
 
         hw_version_regex = r'.*v([0-9]+).([0-9]+)(-(?P<voltage>[0-9]+)V)?.hex'
         hw_version_match = re.search(hw_version_regex, asset_json['name'])
-        self.hw_version = (int(hw_version_match[1]),
-                          int(hw_version_match[2]),
+        self.hw_version = (int(hw_version_match.group(1)),
+                          int(hw_version_match.group(2)),
                           int(hw_version_match.groupdict().get('voltage') or 0))
         self.github_asset_id = asset_json['id']
         self.hex = None
@@ -337,6 +344,7 @@ def update_device(device, firmware, logger, cancellation_token):
         logger.debug(" {:08X} to {:08X}".format(start, end - 1))
 
     # Back up configuration
+    do_backup_config = False
     if dfudev is None:
         do_backup_config = device.user_config_loaded if hasattr(device, 'user_config_loaded') else False
         if do_backup_config:
