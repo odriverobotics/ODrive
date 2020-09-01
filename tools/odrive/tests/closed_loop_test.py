@@ -414,9 +414,9 @@ class TestSpinoutDetection(TestClosedLoopControlBase):
 
 if __name__ == '__main__':
     test_runner.run([
-        #TestClosedLoopControl(),
-        TestRegenProtection()
-        #TestVelLimitInTorqueControl(),
-        #TestTorqueLimit(),
-        #TestSpinoutDetection()
+        TestClosedLoopControl(),
+        TestRegenProtection(),
+        TestVelLimitInTorqueControl(),
+        TestTorqueLimit(),
+        TestSpinoutDetection()
     ])

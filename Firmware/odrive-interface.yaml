@@ -722,7 +722,8 @@ interfaces:
       trajectory_done: readonly bool
       vel_integrator_torque: float32
       anticogging_valid: bool
-      mechanical_power: float32
+      mechanical_power:
+        type: float32
         doc: "A filtered measure of torque * speed. Bandwidth is set by
               controller.config.spinout_mech_bandwidth"
       config:
@@ -788,7 +789,7 @@ interfaces:
               calib_vel_threshold: float32
               cogging_ratio: readonly float32
               anticogging_enabled: bool
-          spinout_mech_bandwidth:
+          mech_pwr_bandwidth:
             type: float32
             doc: "Bandwidth for mechanical power filter for spinout detection"
     functions:

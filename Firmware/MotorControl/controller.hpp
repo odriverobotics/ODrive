@@ -39,7 +39,7 @@ public:
         uint8_t axis_to_mirror = -1;
         float mirror_ratio = 1.0f;
         uint8_t load_encoder_axis = -1;  // default depends on Axis number and is set in load_configuration()
-        float spinout_mech_bandwidth = 100.0f; // [rad/s] filter on mechanical power for spinout detection
+        float mech_pwr_bandwidth = 100.0f; // [rad/s] filter on mechanical power for spinout detection
 
         // custom setters
         Controller* parent;

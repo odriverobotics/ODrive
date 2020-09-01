@@ -341,7 +341,7 @@ bool Controller::update(float* torque_setpoint_output) {
         }
     }
 
-    mechanical_power_ += config_.spinout_mech_bandwidth * current_meas_period * (torque * *vel_estimate_src - mechanical_power_);
+    mechanical_power_ += config_.mech_pwr_bandwidth * current_meas_period * (torque * *vel_estimate_src - mechanical_power_);
 
     // Spinout check
     // If mechanical power is negative (braking) and measured power is positive, something is wrong.
