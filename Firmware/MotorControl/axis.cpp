@@ -196,7 +196,7 @@ bool Axis::watchdog_check() {
     }
 }
 
-bool Axis::run_lockin_spin(const LockinConfig_t &lockin_config) {
+bool Axis::run_lockin_spin(const LockinConfig_t &lockin_config, bool remain_armed) {
     CRITICAL_SECTION() {
         // Reset state variables
         open_loop_controller_.Id_setpoint_ = NAN;
@@ -258,7 +258,9 @@ bool Axis::run_lockin_spin(const LockinConfig_t &lockin_config) {
         osDelay(1);
     }
 
-    motor_.disarm();
+    if (!success || !remain_armed) {
+        motor_.disarm();
+    }
 
     return success;
 }
@@ -269,7 +271,7 @@ bool Axis::start_closed_loop_control() {
 
     if (sensorless_mode) {
         // TODO: restart if desired
-        if (!run_lockin_spin(config_.sensorless_ramp)) {
+        if (!run_lockin_spin(config_.sensorless_ramp, true)) {
             return false;
         }
     }
@@ -329,16 +331,19 @@ bool Axis::start_closed_loop_control() {
         motor_.current_control_.phase_vel_src_ =
         async_estimator_.rotor_phase_vel_src_ =
            sensorless_mode ? &sensorless_estimator_.phase_vel_ : &encoder_.phase_vel_;
+        
+        if (sensorless_mode) {
+            // Make the final velocity of the loĉk-in spin the setpoint of the
+            // closed loop controller to allow for smooth transition.
+            controller_.input_vel_ = config_.sensorless_ramp.vel / (2 * M_PI);
+            controller_.vel_setpoint_ = config_.sensorless_ramp.vel / (2 * M_PI);
+        }
     }
-    wait_for_control_iteration();
 
-    motor_.arm(&motor_.current_control_);
-
-    if (sensorless_mode) {
-        // call to controller.reset() that happend when arming means that vel_setpoint
-        // is zeroed. So we make the setpoint the spinup target for smooth transition.
-        controller_.input_vel_ = config_.sensorless_ramp.vel / (2 * M_PI);
-        controller_.vel_setpoint_ = config_.sensorless_ramp.vel / (2 * M_PI);
+    // In sensorless mode the motor is already armed.
+    if (!motor_.is_armed_) {
+        wait_for_control_iteration();
+        motor_.arm(&motor_.current_control_);
     }
 
     return true;
@@ -520,7 +525,7 @@ void Axis::run_state_machine_loop() {
             case AXIS_STATE_LOCKIN_SPIN: {
                 if (!motor_.is_calibrated_ || encoder_.config_.direction==0)
                     goto invalid_state_label;
-                status = run_lockin_spin(config_.general_lockin);
+                status = run_lockin_spin(config_.general_lockin, false);
             } break;
 
             case AXIS_STATE_CLOSED_LOOP_CONTROL: {

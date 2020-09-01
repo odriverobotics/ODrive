@@ -167,7 +167,7 @@ bool Encoder::run_index_search() {
     index_found_ = false;
     set_idx_subscribe();
 
-    bool status = axis_->run_lockin_spin(axis_->config_.calibration_lockin);
+    bool status = axis_->run_lockin_spin(axis_->config_.calibration_lockin, false);
     return status;
 }
 
@@ -179,7 +179,7 @@ bool Encoder::run_direction_find() {
     lockin_config.finish_on_distance = true;
     lockin_config.finish_on_enc_idx = false;
     lockin_config.finish_on_vel = false;
-    bool status = axis_->run_lockin_spin(lockin_config);
+    bool status = axis_->run_lockin_spin(lockin_config, false);
 
     if (status) {
         // Check response and direction
