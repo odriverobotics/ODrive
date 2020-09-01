@@ -94,7 +94,7 @@ void Axis::clear_config() {
     config_ = {};
     config_.step_gpio_pin = default_step_gpio_pin_;
     config_.dir_gpio_pin = default_dir_gpio_pin_;
-    config_.can_node_id = axis_num_;
+    config_.can.node_id = axis_num_;
 }
 
 // @brief Sets up all components of the axis,
@@ -206,7 +206,7 @@ bool Axis::do_updates() {
     min_endstop_.update();
     max_endstop_.update();
     bool ret = check_for_errors();
-    odCAN->send_heartbeat(*this);
+    odCAN->send_cyclic(*this);
     return ret;
 }
 

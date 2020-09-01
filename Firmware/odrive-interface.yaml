@@ -417,11 +417,7 @@ interfaces:
               vel: float32
           sensorless_ramp: LockinConfig
           general_lockin: LockinConfig
-          can_node_id:
-            type: uint32
-            doc: Both axes will have the same id to start
-          can_node_id_extended: bool
-          can_heartbeat_rate_ms: uint32
+          can: CANConfig
         gate_driver:
           c_name: gate_driver_exported_
           c_is_class: False
@@ -484,6 +480,14 @@ interfaces:
       finish_on_vel: bool
       finish_on_distance: bool
       finish_on_enc_idx: bool
+
+  ODrive.Axis.CANConfig:
+    c_is_class: False
+    attributes:
+      node_id: uint32
+      is_extended: bool
+      heartbeat_rate_ms: uint32
+      encoder_rate_ms: uint32
 
   ODrive.ThermistorCurrentLimiter:
     c_is_class: False

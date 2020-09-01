@@ -174,20 +174,15 @@ void ODriveCAN::reinit_can() {
 void ODriveCAN::set_error(Error error) {
     error_ |= error;
 }
+
 // This function is called by each axis.
 // It provides an abstraction from the specific CAN protocol in use
-void ODriveCAN::send_heartbeat(Axis& axis) {
+void ODriveCAN::send_cyclic(Axis &axis) {
     // Handle heartbeat message
-    if (axis.config_.can_heartbeat_rate_ms > 0) {
-        uint32_t now = osKernelSysTick();
-        if ((now - axis.last_heartbeat_) >= axis.config_.can_heartbeat_rate_ms) {
-            switch (config_.protocol) {
-                case PROTOCOL_SIMPLE:
-                    CANSimple::send_heartbeat(axis);
-                    break;
-            }
-            axis.last_heartbeat_ = now;
-        }
+    switch (config_.protocol) {
+        case PROTOCOL_SIMPLE:
+            CANSimple::send_cyclic(axis);
+            break;
     }
 }
 

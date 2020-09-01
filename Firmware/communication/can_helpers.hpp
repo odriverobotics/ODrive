@@ -21,6 +21,10 @@ struct can_Signal_t {
     const float offset;
 };
 
+struct can_Cyclic_t {
+    uint32_t cycleTime_ms;
+    uint32_t lastTime_ms;
+};
 
 #include <iterator>
 template <typename T>
