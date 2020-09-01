@@ -83,6 +83,8 @@ public:
         float acim_autoflux_decay_gain = 1.0f;
         bool R_wL_FF_enable = false; // Enable feedforwards for R*I and w*L*I terms
         bool bEMF_FF_enable = false; // Enable feedforward for bEMF
+        float spinout_power_margin = 5.0f; // [W] Margin for spinout detection
+        float spinout_power_filter_k = 0.01f; // Filter constant for spinout detection
 
         // custom property setters
         Motor* parent = nullptr;
@@ -179,6 +181,7 @@ public:
         .async_phase_offset = 0.0f,
     };
     float effective_current_lim_ = 10.0f; // [A]
+    float power_estimate_ = 0.0f; // [W]
 };
 
 #endif // __MOTOR_HPP

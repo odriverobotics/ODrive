@@ -341,6 +341,13 @@ bool Controller::update(float* torque_setpoint_output) {
         }
     }
 
+    // Spinout check
+    if (torque * *vel_estimate_src < 0 && axis_->motor_.power_estimate_ > axis_->motor_.config_.spinout_power_margin) {
+        axis_->encoder_.error_ |= Encoder::ERROR_INCORRECT_ESTIMATE;
+        set_error(ERROR_NONE);
+        return false;
+    }
+
     if (torque_setpoint_output) *torque_setpoint_output = torque;
     return true;
 }

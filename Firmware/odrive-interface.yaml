@@ -619,6 +619,7 @@ interfaces:
       DC_calib_phC: {type: float32, c_name: DC_calib_.phC}
       phase_current_rev_gain: float32
       effective_current_lim: readonly float32
+      power_estimate: readonly float32
       current_control:
         c_is_class: False
         attributes:
@@ -681,6 +682,8 @@ interfaces:
           acim_autoflux_decay_gain: float32
           R_wL_FF_enable: bool
           bEMF_FF_enable: bool
+          spinout_power_margin: float32
+          spinout_power_filter_k: float32
 
   ODrive.Controller:
     c_is_class: True
@@ -827,6 +830,14 @@ interfaces:
           AbsSpiTimeout:
           AbsSpiComFail:
           AbsSpiNotReady:
+          IncorrectOffset:
+            brief: Motor power was positive while we wanted to be braking or vice versa
+            doc: |
+              This is caused by an incorrect encoder offset. Check your encoder for 
+              slipping. This can also be tuned by adjusting `motor.config.spinout_power_margin`
+              and `motor.config.spinout_power_filter`. A higher margin will reduce sensitivity
+              to this error. A higher filter constant (in the range (0, 1)) will make this error
+              react more quickly to the fault.
       is_ready: readonly bool
       index_found: readonly bool
       shadow_count: readonly int32
