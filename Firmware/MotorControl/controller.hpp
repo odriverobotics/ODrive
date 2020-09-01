@@ -39,7 +39,7 @@ public:
         uint8_t axis_to_mirror = -1;
         float mirror_ratio = 1.0f;
         uint8_t load_encoder_axis = -1;  // default depends on Axis number and is set in load_configuration()
-        float spinout_mech_pwr_margin = -2.0f; // [W] mechanical power margin for spinout detection
+        float spinout_mech_bandwidth = 100.0f; // [rad/s] filter on mechanical power for spinout detection
 
         // custom setters
         Controller* parent;
@@ -100,6 +100,8 @@ public:
     bool trajectory_done_ = true;
 
     bool anticogging_valid_ = false;
+
+    float mechanical_power_ = 0.0f; // [W]
 
     // custom setters
     void set_input_pos(float value) { input_pos_ = value; input_pos_updated(); }

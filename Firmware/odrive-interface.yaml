@@ -722,6 +722,9 @@ interfaces:
       trajectory_done: readonly bool
       vel_integrator_torque: float32
       anticogging_valid: bool
+      mechanical_power: float32
+        doc: "A filtered measure of torque * speed. Bandwidth is set by
+              controller.config.spinout_mech_bandwidth"
       config:
         c_is_class: False
         attributes:
@@ -785,11 +788,9 @@ interfaces:
               calib_vel_threshold: float32
               cogging_ratio: readonly float32
               anticogging_enabled: bool
-          spinout_mech_pwr_margin:
+          spinout_mech_bandwidth:
             type: float32
-            doc: "For spinout detection. If torque * speed is less than this value 
-                   and we are applying positive electrical power to the motor, 
-                   spinout has occured."
+            doc: "Bandwidth for mechanical power filter for spinout detection"
     functions:
       move_incremental:
         doc: Moves the axes' goal point by a specified increment.
