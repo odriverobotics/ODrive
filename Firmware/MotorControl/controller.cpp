@@ -342,8 +342,9 @@ bool Controller::update(float* torque_setpoint_output) {
     }
 
     // Spinout check
-    if (torque * *vel_estimate_src < 0 && axis_->motor_.power_estimate_ > axis_->motor_.config_.spinout_power_margin) {
-        axis_->encoder_.error_ |= Encoder::ERROR_INCORRECT_ESTIMATE;
+    // If mechanical power is negative (braking) and measured power is positive, something is wrong.
+    if (torque * *vel_estimate_src < config_.spinout_mech_pwr_margin && axis_->motor_.power_estimate_ > axis_->motor_.config_.spinout_power_margin) {
+        axis_->encoder_.error_ |= Encoder::ERROR_INCORRECT_OFFSET;
         set_error(ERROR_NONE);
         return false;
     }

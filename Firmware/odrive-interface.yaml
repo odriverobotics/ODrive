@@ -683,7 +683,7 @@ interfaces:
           R_wL_FF_enable: bool
           bEMF_FF_enable: bool
           spinout_power_margin: float32
-          spinout_power_filter_k: float32
+          spinout_filter_bandwidth: float32
 
   ODrive.Controller:
     c_is_class: True
@@ -785,6 +785,11 @@ interfaces:
               calib_vel_threshold: float32
               cogging_ratio: readonly float32
               anticogging_enabled: bool
+          spinout_mech_pwr_margin:
+            type: float32
+            doc: "For spinout detection. If torque * speed is less than this value 
+                   and we are applying positive electrical power to the motor, 
+                   spinout has occured."
     functions:
       move_incremental:
         doc: Moves the axes' goal point by a specified increment.

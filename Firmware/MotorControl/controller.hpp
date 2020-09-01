@@ -39,6 +39,7 @@ public:
         uint8_t axis_to_mirror = -1;
         float mirror_ratio = 1.0f;
         uint8_t load_encoder_axis = -1;  // default depends on Axis number and is set in load_configuration()
+        float spinout_mech_pwr_margin = -2.0f; // [W] mechanical power margin for spinout detection
 
         // custom setters
         Controller* parent;

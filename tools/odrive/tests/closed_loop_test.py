@@ -382,10 +382,41 @@ class TestTorqueLimit(TestClosedLoopControlBase):
 
             axis_ctx.handle.requested_state=1
 
+class TestSpinoutDetection(TestClosedLoopControlBase):
+    """
+    Checks that the spinout detection is working
+    """
+    def run_test(self, axis_ctx: ODriveAxisComponent, motor_ctx: MotorComponent, enc_ctx: EncoderComponent, logger: Logger):
+        with self.prepare(axis_ctx, motor_ctx, enc_ctx, logger):
+
+            vel_limit = 10      # to avoid triggering a controller overspeed error instead of incorrect offset
+            current_lim = 25    # to avoid triggering overcurrent instead of incorrect offset
+
+            axis_ctx.handle.controller.config.vel_limit = vel_limit
+            axis_ctx.handle.motor.config.current_lim = current_lim
+
+            # should have no error here
+            logger.debug('Closed loop with correct offset')
+            axis_ctx.handle.requested_state = AXIS_STATE_CLOSED_LOOP_CONTROL
+            time.sleep(5)
+            test_assert_no_error(axis_ctx)
+
+            axis_ctx.handle.requested_state = AXIS_STATE_IDLE
+            time.sleep(0.5)
+            test_assert_no_error(axis_ctx)
+
+            # should have error here
+            logger.debug('Closed loop with worst-case offset')
+            axis_ctx.handle.encoder.config.offset += axis_ctx.handle.encoder.config.cpr / (2.0 * axis_ctx.handle.motor.config.pole_pairs)
+            axis_ctx.handle.requested_state = AXIS_STATE_CLOSED_LOOP_CONTROL
+            time.sleep(5)
+            test_assert_eq(axis_ctx.handle.encoder.error, ENCODER_ERROR_INCORRECT_OFFSET)
+
 if __name__ == '__main__':
     test_runner.run([
-        TestClosedLoopControl(),
-        TestRegenProtection(),
-        TestVelLimitInTorqueControl(),
-        TestTorqueLimit()
+        #TestClosedLoopControl(),
+        TestRegenProtection()
+        #TestVelLimitInTorqueControl(),
+        #TestTorqueLimit(),
+        #TestSpinoutDetection()
     ])

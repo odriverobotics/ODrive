@@ -348,7 +348,7 @@ bool Motor::FOC_current(float Id_des, float Iq_des, float I_phase, float pwm_pha
     float mod_q = V_to_mod * Vq;
 
     float power = Vd * Id + Vq * Iq;
-    power_estimate_ += config_.spinout_power_filter_k * (power - power_estimate_);
+    power_estimate_ += config_.spinout_filter_bandwidth * current_meas_period * (power - power_estimate_);
 
     // Vector modulation saturation, lock integrator if saturated
     // TODO make maximum modulation configurable

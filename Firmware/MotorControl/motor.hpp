@@ -84,7 +84,7 @@ public:
         bool R_wL_FF_enable = false; // Enable feedforwards for R*I and w*L*I terms
         bool bEMF_FF_enable = false; // Enable feedforward for bEMF
         float spinout_power_margin = 5.0f; // [W] Margin for spinout detection
-        float spinout_power_filter_k = 0.01f; // Filter constant for spinout detection
+        float spinout_filter_bandwidth = 100; // [rad/s] Bandwidth for spinout detection
 
         // custom property setters
         Motor* parent = nullptr;
