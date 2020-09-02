@@ -118,7 +118,7 @@ void CANSimple::estop_callback(Axis& axis, const can_Message_t& msg) {
     axis.error_ |= Axis::ERROR_ESTOP_REQUESTED;
 }
 
-void CANSimple::get_motor_error_callback(const Axis& axis) {
+uint32_t CANSimple::get_motor_error_callback(const Axis& axis) {
     can_Message_t txmsg;
     txmsg.id = axis.config_.can.node_id << NUM_CMD_ID_BITS;
     txmsg.id += MSG_GET_MOTOR_ERROR;  // heartbeat ID
@@ -127,10 +127,10 @@ void CANSimple::get_motor_error_callback(const Axis& axis) {
 
     can_setSignal(txmsg, axis.motor_.error_, 0, 32, true);
 
-    odCAN->write(txmsg);
+    return odCAN->write(txmsg);
 }
 
-void CANSimple::get_encoder_error_callback(const Axis& axis) {
+uint32_t CANSimple::get_encoder_error_callback(const Axis& axis) {
     can_Message_t txmsg;
     txmsg.id = axis.config_.can.node_id << NUM_CMD_ID_BITS;
     txmsg.id += MSG_GET_ENCODER_ERROR;  // heartbeat ID
@@ -139,10 +139,10 @@ void CANSimple::get_encoder_error_callback(const Axis& axis) {
 
     can_setSignal(txmsg, axis.encoder_.error_, 0, 32, true);
 
-    odCAN->write(txmsg);
+    return odCAN->write(txmsg);
 }
 
-void CANSimple::get_sensorless_error_callback(const Axis& axis) {
+uint32_t CANSimple::get_sensorless_error_callback(const Axis& axis) {
     can_Message_t txmsg;
     txmsg.id = axis.config_.can.node_id << NUM_CMD_ID_BITS;
     txmsg.id += MSG_GET_SENSORLESS_ERROR;  // heartbeat ID
@@ -151,7 +151,7 @@ void CANSimple::get_sensorless_error_callback(const Axis& axis) {
 
     can_setSignal(txmsg, axis.sensorless_estimator_.error_, 0, 32, true);
 
-    odCAN->write(txmsg);
+    return odCAN->write(txmsg);
 }
 
 void CANSimple::set_axis_nodeid_callback(Axis& axis, const can_Message_t& msg) {
@@ -166,7 +166,7 @@ void CANSimple::set_axis_startup_config_callback(Axis& axis, const can_Message_t
     // Not Implemented
 }
 
-void CANSimple::get_encoder_estimates_callback(const Axis& axis) {
+uint32_t CANSimple::get_encoder_estimates_callback(const Axis& axis) {
     can_Message_t txmsg;
     txmsg.id = axis.config_.can.node_id << NUM_CMD_ID_BITS;
     txmsg.id += MSG_GET_ENCODER_ESTIMATES;  // heartbeat ID
@@ -179,10 +179,10 @@ void CANSimple::get_encoder_estimates_callback(const Axis& axis) {
     can_setSignal<float>(txmsg, axis.encoder_.pos_estimate_, 0, 32, true);
     can_setSignal<float>(txmsg, axis.encoder_.vel_estimate_, 32, 32, true);
 
-    odCAN->write(txmsg);
+    return odCAN->write(txmsg);
 }
 
-void CANSimple::get_sensorless_estimates_callback(const Axis& axis) {
+uint32_t CANSimple::get_sensorless_estimates_callback(const Axis& axis) {
     can_Message_t txmsg;
     txmsg.id = axis.config_.can.node_id << NUM_CMD_ID_BITS;
     txmsg.id += MSG_GET_SENSORLESS_ESTIMATES;  // heartbeat ID
@@ -195,10 +195,10 @@ void CANSimple::get_sensorless_estimates_callback(const Axis& axis) {
     can_setSignal<float>(txmsg, axis.sensorless_estimator_.pll_pos_, 0, 32, true);
     can_setSignal<float>(txmsg, axis.sensorless_estimator_.vel_estimate_, 32, 32, true);
 
-    odCAN->write(txmsg);
+    return odCAN->write(txmsg);
 }
 
-void CANSimple::get_encoder_count_callback(const Axis& axis) {
+uint32_t CANSimple::get_encoder_count_callback(const Axis& axis) {
     can_Message_t txmsg;
     txmsg.id = axis.config_.can.node_id << NUM_CMD_ID_BITS;
     txmsg.id += MSG_GET_ENCODER_COUNT;
@@ -207,7 +207,7 @@ void CANSimple::get_encoder_count_callback(const Axis& axis) {
 
     can_setSignal<int32_t>(txmsg, axis.encoder_.shadow_count_, 0, 32, true);
     can_setSignal<int32_t>(txmsg, axis.encoder_.count_in_cpr_, 32, 32, true);
-    odCAN->write(txmsg);
+    return odCAN->write(txmsg);
 }
 
 void CANSimple::set_input_pos_callback(Axis& axis, const can_Message_t& msg) {
@@ -252,7 +252,7 @@ void CANSimple::set_traj_inertia_callback(Axis& axis, const can_Message_t& msg) 
     axis.controller_.config_.inertia = can_getSignal<float>(msg, 0, 32, true);
 }
 
-void CANSimple::get_iq_callback(const Axis& axis) {
+uint32_t CANSimple::get_iq_callback(const Axis& axis) {
     can_Message_t txmsg;
     txmsg.id = axis.config_.can.node_id << NUM_CMD_ID_BITS;
     txmsg.id += MSG_GET_IQ;
@@ -264,10 +264,10 @@ void CANSimple::get_iq_callback(const Axis& axis) {
     can_setSignal<float>(txmsg, axis.motor_.current_control_.Iq_setpoint, 0, 32, true);
     can_setSignal<float>(txmsg, axis.motor_.current_control_.Iq_measured, 32, 32, true);
 
-    odCAN->write(txmsg);
+    return odCAN->write(txmsg);
 }
 
-void CANSimple::get_vbus_voltage_callback(const Axis& axis) {
+uint32_t CANSimple::get_vbus_voltage_callback(const Axis& axis) {
     can_Message_t txmsg;
 
     txmsg.id = axis.config_.can.node_id << NUM_CMD_ID_BITS;
@@ -279,14 +279,14 @@ void CANSimple::get_vbus_voltage_callback(const Axis& axis) {
     static_assert(sizeof(vbus_voltage) == sizeof(floatBytes));
     can_setSignal<float>(txmsg, vbus_voltage, 0, 32, true);
 
-    odCAN->write(txmsg);
+    return odCAN->write(txmsg);
 }
 
 void CANSimple::clear_errors_callback(Axis& axis, const can_Message_t& msg) {
     axis.clear_errors();
 }
 
-void CANSimple::send_heartbeat(const Axis& axis) {
+uint32_t CANSimple::send_heartbeat(const Axis& axis) {
     can_Message_t txmsg;
     txmsg.id = axis.config_.can.node_id << NUM_CMD_ID_BITS;
     txmsg.id += MSG_ODRIVE_HEARTBEAT;  // heartbeat ID
@@ -296,7 +296,7 @@ void CANSimple::send_heartbeat(const Axis& axis) {
     can_setSignal(txmsg, axis.error_, 0, 32, true);
     can_setSignal(txmsg, axis.current_state_, 32, 32, true);
 
-    odCAN->write(txmsg);
+    return odCAN->write(txmsg);
 }
 
 void CANSimple::send_cyclic(Axis& axis) {
@@ -304,15 +304,15 @@ void CANSimple::send_cyclic(Axis& axis) {
 
     if (axis.config_.can.heartbeat_rate_ms > 0) {
         if ((now - axis.can_.last_heartbeat) >= axis.config_.can.heartbeat_rate_ms) {
-            send_heartbeat(axis);
-            axis.can_.last_heartbeat = now;
+            if(send_heartbeat(axis) >= 0)
+                axis.can_.last_heartbeat = now;
         }
     }
 
     if (axis.config_.can.encoder_rate_ms > 0) {
         if ((now - axis.can_.last_encoder) >= axis.config_.can.encoder_rate_ms) {
-            get_encoder_estimates_callback(axis);
-            axis.can_.last_encoder = now;
+            if(get_encoder_estimates_callback(axis) >= 0)
+                axis.can_.last_encoder = now;
         }
     }
 }
