@@ -284,5 +284,22 @@ find: `([-+]?[0-9]+\.[0-9]+(?:[eE][-+]?[0-9]+)?)([^f0-9e])`
 replace: `\1f\2`
 
 <br><br>
+
 ## Notes for Contributors
-In general the project uses the [Google C++ Style Guide](https://google.github.io/styleguide/cppguide.html), except that the default indendtation is 4 spaces, and that the 80 character limit is not very strictly enforced, merely encouraged.
+In general the project uses the [Google C++ Style Guide](https://google.github.io/styleguide/cppguide.html), with a few exceptions:
+
+ - The default indentation is 4 spaces.
+ - The 80 character limit is not very strictly enforced, merely encouraged.
+ - The file extensions *.cpp and *.hpp are used instead of *.cc and *.h.
+
+Your help is welcome! However before you start working on a feature/change that will take you a non-negligible amount of time and that you plan to upstream please discuss your plans with us on GitHub or Discord. This will ensure that your implementation is in line with the direction that ODrive is going.
+
+When filing a PR please go through this checklist:
+
+ - Make sure you adhere to the same coding style that we use (see note above).
+ - Update CHANGELOG.md.
+ - If you removed/moved/renamed things in `odrive-interface.yaml` make sure to add corresponding bullet points tp the "API migration notes" section in the changelog. Use git to compare against the `devel` branch.
+ - Also, for each removed/moved/renamed API item use your IDE's search feature to search for occurrences of this name. Update the places you found (this will usually be documentation and test scripts).
+ - If you added things to `odrive-interface.yaml` make sure the new things have decent documentation in the YAML file. We don't expect 100% coverage but use good sense of what to document.
+ - Make sure your PR doesn't contain spurious changes that unnecessarily add or remove whitespace. These add noise and make the reviewer's lifes harder.
+ - If you changed any enums in `odrive-interface.yaml`, make sure you update [enums.py](../tools/odrive/enums.py). The file includes instructions on how to do this. Check the diff to verify that none of the existing enumerators changed their value.

@@ -536,6 +536,9 @@ bool Encoder::update() {
     if(mode_ & MODE_FLAG_ABS)
         count_in_cpr_ = pos_abs_latched;
 
+    // Memory for pos_circular
+    float pos_cpr_counts_last = pos_cpr_counts_;
+
     //// run pll (for now pll is in units of encoder counts)
     // Predict current pos
     pos_estimate_counts_ += current_meas_period * vel_estimate_counts_;
@@ -556,12 +559,9 @@ bool Encoder::update() {
     }
 
     // Outputs from Encoder for Controller
-    float pos_cpr_last = pos_cpr_;
     pos_estimate_ = pos_estimate_counts_ / (float)config_.cpr;
     vel_estimate_ = vel_estimate_counts_ / (float)config_.cpr;
-    pos_cpr_= pos_cpr_counts_ / (float)config_.cpr;
-    float delta_pos_cpr = wrap_pm(pos_cpr_ - pos_cpr_last, 0.5f);
-    pos_circular_ += delta_pos_cpr;
+    pos_circular_ +=  wrap_pm((pos_cpr_counts_ - pos_cpr_counts_last) / (float)config_.cpr, 0.5f);
     pos_circular_ = fmodf_pos(pos_circular_, axis_->controller_.config_.circular_setpoint_range);
 
     //// run encoder count interpolation

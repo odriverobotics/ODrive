@@ -6,9 +6,10 @@
 #include "utils.hpp"
 #include <autogen/interfaces.hpp>
 
+
 class Encoder : public ODriveIntf::EncoderIntf {
 public:
-    const uint32_t MODE_FLAG_ABS = 0x100;
+    static constexpr uint32_t MODE_FLAG_ABS = 0x100;
 
     struct Config_t {
         Mode mode = MODE_INCREMENTAL;
@@ -97,7 +98,6 @@ public:
 
     float pos_estimate_ = 0.0f; // [turn]
     float vel_estimate_ = 0.0f; // [turn/s]
-    float pos_cpr_ = 0.0f;      // [turn]
     float pos_circular_ = 0.0f; // [turn]
 
     bool pos_estimate_valid_ = false;
