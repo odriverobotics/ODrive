@@ -97,10 +97,10 @@ void Axis::clear_config() {
     config_.can_node_id = axis_num_;
 }
 
-// @brief Sets up all components of the axis,
-// such as gate driver and encoder hardware.
+// @brief Does Nothing
 bool Axis::setup() {
-    return motor_.setup();
+    // Does nothing - Motor and encoder setup called separately.
+    return true;
 }
 
 static void run_state_machine_loop_wrapper(void* ctx) {
