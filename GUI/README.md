@@ -1,5 +1,4 @@
 # odrive_gui
-This is the repo for the ODrive GUI
 
 Flask (python 3) backend with Vue.js frontend, packaged with Electron. Windows and Linux binaries can be found under the [Releases](https://github.com/PAJohnson/odrive_gui/releases) page.
 
