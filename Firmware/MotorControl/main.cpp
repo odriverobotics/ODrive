@@ -262,13 +262,26 @@ int odrive_main(void) {
     // must happen after communication is initialized
     pwm_in_init();
 
-    // Setup hardware for all components
-    for (size_t i = 0; i < AXIS_COUNT; ++i) {
-        axes[i]->setup();
+    // Set up the CS pins for absolute encoders
+    for(auto& axis : axes){
+        if(axis->encoder_.config_.mode & Encoder::MODE_FLAG_ABS){
+            axis->encoder_.abs_spi_cs_pin_init();
+        }
     }
 
+    // Setup motors (DRV8301 SPI transactions here)
+    for(auto& axis : axes){
+        axis->motor_.setup();
+    }
+
+    // Setup encoders (Starts encoder SPI transactions)
     for(auto& axis : axes){
         axis->encoder_.setup();
+    }
+
+    // Setup anything remaining in each axis
+    for(auto& axis : axes){
+        axis->setup();
     }
 
     // Start PWM and enable adc interrupts/callbacks

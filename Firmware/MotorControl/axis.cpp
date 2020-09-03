@@ -85,10 +85,9 @@ static void step_cb_wrapper(void* ctx) {
 }
 
 
-// @brief Sets up all components of the axis,
-// such as gate driver and encoder hardware.
+// @brief Does Nothing
 void Axis::setup() {
-    motor_.setup();
+    // Does nothing - Motor and encoder setup called separately.
 }
 
 static void run_state_machine_loop_wrapper(void* ctx) {
