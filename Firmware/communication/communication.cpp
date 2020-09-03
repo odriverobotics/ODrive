@@ -57,7 +57,7 @@ void init_communication(void) {
 }
 
 extern "C" {
-int _write(int file, const char* data, int len);
+int _write(int file, const char* data, int len) __attribute__((used));
 }
 
 // @brief This is what printf calls internally
