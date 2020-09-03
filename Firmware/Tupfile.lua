@@ -138,14 +138,19 @@ FLAGS += { '-Wall', '-Wdouble-promotion', '-Wfloat-conversion', '-fdata-sections
 LDFLAGS += board.ldflags
 LDFLAGS += '-flto -lc -lm -lnosys' -- libs
 LDFLAGS += '-mthumb -mfloat-abi=hard -specs=nosys.specs -specs=nano.specs -u _printf_float -u _scanf_float -Wl,--cref -Wl,--gc-sections'
-LDFLAGS += '-Wl,--undefined=uxTopUsedPriority '
+LDFLAGS += '-Wl,--undefined=uxTopUsedPriority'
 
 -- debug build
 if tup.getconfig("DEBUG") == "true" then
     FLAGS += '-g -gdwarf-2'
     OPT += '-Og'
 else
-    OPT += '-O2 -flto'
+    OPT += '-O2'
+end
+
+if tup.getconfig("USE_LTO") == "true" then
+    OPT += '-flto'
+    LDFLAGS += '-flto'
 end
 
 -- common flags for ASM, C and C++
