@@ -10,7 +10,7 @@ see protocol.md for the protocol specification
 
 #include <functional>
 #include <limits>
-#include <cmath>
+#include <math.h>
 //#include <stdint.h>
 #include <stdio.h>
 #include <string.h>

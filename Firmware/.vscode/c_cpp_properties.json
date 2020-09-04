@@ -8,6 +8,7 @@
             "defines": [
                 "__arm__",
                 "STM32F405xx",
+                "FPU_FPV4",
                 "USE_HAL_DRIVER",
                 "HW_VERSION_MAJOR=3",
                 "HW_VERSION_MINOR=6",
@@ -29,6 +30,7 @@
             "defines": [
                 "__arm__",
                 "STM32F405xx",
+                "FPU_FPV4",
                 "USE_HAL_DRIVER",
                 "HW_VERSION_MAJOR=3",
                 "HW_VERSION_MINOR=6",
@@ -50,6 +52,7 @@
             "defines": [
                 "__arm__",
                 "STM32F405xx",
+                "FPU_FPV4",
                 "USE_HAL_DRIVER",
                 "HW_VERSION_MAJOR=3",
                 "HW_VERSION_MINOR=4",

@@ -92,7 +92,7 @@ static inline int round_int(float x) {
     asm("vcvtr.s32.f32   %[res], %[x]" : [res] "=X" (res) : [x] "w" (x));
     return res;
 #else
-    return (int)rint(x);
+    return (int)nearbyint(x);
 #endif
 }
 
@@ -100,8 +100,12 @@ static inline int round_int(float x) {
 // With default rounding mode (round to nearest),
 // the result will be in range -y/2 to y/2
 static inline float wrap_pm(float x, float y) {
-    int intval = round_int(x/y);
-    return x - (float)intval * y;
+#ifdef FPU_FPV4
+    float intval = (float)round_int(x/y);
+#else
+    float intval = nearbyint(x/y);
+#endif
+    return x - intval * y;
 }
 
 // Same as fmodf but result is positive and y must be positive

@@ -1,7 +1,7 @@
 
 #include <doctest.h>
 #include <limits.h>
-#include <cmath>
+#include <math.h>
 #include <iostream>
 #include <random>
 

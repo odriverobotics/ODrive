@@ -35,7 +35,7 @@ tup.frule{
 board_v3 = {
     dir = 'Board/v3',
     sources = {'Drivers/DRV8301/drv8301.cpp', 'Board/v3/board.cpp'},
-    flags = {'-DSTM32F405xx', '-DARM_MATH_CM4', '-mcpu=cortex-m4', '-mfpu=fpv4-sp-d16'},
+    flags = {'-DSTM32F405xx', '-DARM_MATH_CM4', '-mcpu=cortex-m4', '-mfpu=fpv4-sp-d16', '-DFPU_FPV4'},
     ldflags = {'-TBoard/v3/STM32F405RGTx_FLASH.ld', '-LBoard/v3/Drivers/CMSIS/Lib', '-larm_cortexM4lf_math', '-mcpu=cortex-m4', '-mfpu=fpv4-sp-d16'}
 }
 
