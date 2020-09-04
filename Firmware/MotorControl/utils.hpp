@@ -84,12 +84,24 @@ static const float one_by_sqrt3 = 0.57735026919f;
 static const float two_by_sqrt3 = 1.15470053838f;
 static const float sqrt3_by_2 = 0.86602540378f;
 
-// Result depends on rounding mode
-// With default rounding (round to nearest),
+// Round to integer
+// Default rounding mode: round to nearest
+static inline int round_int(float x) {
+#ifdef __arm__
+    int res;
+    asm("vcvtr.s32.f32   %[res], %[x]" : [res] "=X" (res) : [x] "w" (x));
+    return res;
+#else
+    return (int)rint(x);
+#endif
+}
+
+// Wrap value to range.
+// With default rounding mode (round to nearest),
 // the result will be in range -y/2 to y/2
 static inline float wrap_pm(float x, float y) {
-    int q = (int)(x/y);
-    return x - (float)q * y;
+    int intval = round_int(x/y);
+    return x - (float)intval * y;
 }
 
 // Same as fmodf but result is positive and y must be positive
