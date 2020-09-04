@@ -1,13 +1,15 @@
 <template>
-  <div class="wizardLimits card">What are your limits?</div>
+  <div class="card wizard-limits">
+
+  </div>
 </template>
 
 <script>
 export default {
-    name: "wizardLimits",
+
 }
 </script>
 
-<style scoped>
+<style>
 
 </style>

@@ -1,7 +1,5 @@
 # odrive_gui
 
-Flask (python 3) backend with Vue.js frontend, packaged with Electron. Windows and Linux binaries can be found under the [Releases](https://github.com/PAJohnson/odrive_gui/releases) page.
-
 Python requirements: `pip install flask flask-socketio flask-cors odrive`
 
 If the default odrive python package is not desired, the path to the modules can be passed as command line arguments.
