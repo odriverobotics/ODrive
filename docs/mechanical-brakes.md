@@ -14,7 +14,6 @@ Each axis supports one mechanical brake. The following properties are accessible
 Name |  Type | Default
 --- | -- | -- 
 gpio_num | int | 0
-enabled | boolean | false
 is_active_low | boolean | true
 
 ### gpio_num
@@ -24,26 +23,24 @@ The GPIO pin number, according to the silkscreen labels on ODrive. Set with thes
 ```
 After GPIO pin number is changed, you'll need to run `<odrv>.save_configuration()` and `<odrv>.reboot()` for changes to take effect.
 
-### enabled
-Enables/disables the operation of the mechanical brake.
-```
-<odrv>.<axis>.mechanical_brake.config.enabled = <True, False>
-```
-After mechanical brake is enabled or disabled, you'll need to run `<odrv>.save_configuration()` and `<odrv>.reboot()` for changes to take effect.
-
 ### is_active_low
 Most safety braking systems are active low, e.g. when the power is off, the brake is on. If the system uses brake drive electronics which use active high logic, flip this bit then reconsider the safety implications of your design...
+
+### Enabling
+The configuration of the mechanical brake will enable the brake functionality. There's no need to specifically 'enable' this feature.
+
 
 ### Example
 
 Let's say we're hacking away on an old ABB robotic arm. We've wired a 24V brake drive circuit triggered by GPIO5. When GPIO5 is driven, it will release the brakes on the axis we're moving.
 
+We need to notify the axis of the GPIO number we've attached our brake to, and configure the ODrive pin mode to `GPIO_MODE_MECH_BRAKE`:
 ```
 <odrv>.<axis>.mechanical_brake.config.gpio_num = 5
-<odrv>.<axis>.mechanical_brake.config.enabled = True
+<odrv>.config.gpio5_mode = GPIO_MODE_MECH_BRAKE
 ```
 
-Don't forget to save and reboot:
+Pin configurations only take effect after a save/reboot so don't forget to run:
 ```
 <odrv>.save_configuration()
 <odrv>.reboot()
@@ -55,7 +52,7 @@ Depending on your system this could be a dangerous experiment. Ensure that you h
 ```
 <odrv>.<axis>.mechanical_brake.release()
 ```
-Note: If a brake is enabled, it will be engaged/disengaged during the next state machine step. 
+Note: If a brake is configured, it will be automatically engaged/disengaged during the next state machine step.
 
 After you're satisfied with the testing, you can re-enable the brake using the command
 

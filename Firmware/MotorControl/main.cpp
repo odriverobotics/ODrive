@@ -103,7 +103,6 @@ static bool config_apply_all() {
                && axes[i].controller_.apply_config()
                && axes[i].min_endstop_.apply_config()
                && axes[i].max_endstop_.apply_config()
-               && axes[i].mechanical_brake_.apply_config()
                && motors[i].apply_config()
                && axes[i].apply_config();
     }

@@ -924,7 +924,6 @@ interfaces:
         c_is_class: False
         attributes:
           gpio_num: {type: uint16, c_setter: set_gpio_num}
-          enabled: {type: bool, c_setter: set_enabled}
           is_active_low: bool
     functions:
       engage:
