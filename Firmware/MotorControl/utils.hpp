@@ -84,25 +84,23 @@ static const float one_by_sqrt3 = 0.57735026919f;
 static const float two_by_sqrt3 = 1.15470053838f;
 static const float sqrt3_by_2 = 0.86602540378f;
 
-// like fmodf, but always positive
+// Result depends on rounding mode
+// With default rounding (round to nearest),
+// the result will be in range -y/2 to y/2
+static inline float wrap_pm(float x, float y) {
+    int q = (int)(x/y);
+    return x - (float)q * y;
+}
+
+// Same as fmodf but result is positive and y must be positive
 static inline float fmodf_pos(float x, float y) {
-    float out = fmodf(x, y);
-    if (out < 0.0f)
-        out += y;
-    return out;
+    float res = wrap_pm(x, y);
+    if (res < 0) res += y;
+    return res;
 }
 
-/**
- * @brief Similar to modulo operator, except that the output range is centered
- * around zero.
- * The returned value is always in the range [-pm_range, pm_range).
- */
-static inline float wrap_pm(float x, float pm_range) {
-    return fmodf_pos(x + pm_range, 2.0f * pm_range) - pm_range;
-}
-
-static inline float wrap_pm_pi(float theta) {
-    return wrap_pm(theta, M_PI);
+static inline float wrap_pm_pi(float x) {
+    return wrap_pm(x, 2*M_PI);
 }
 
 // Compute rising edge timings (0.0 - 1.0) as a function of alpha-beta

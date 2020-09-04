@@ -233,7 +233,7 @@ bool Controller::update(float* torque_setpoint_output) {
             pos_setpoint_ = fmodf_pos(pos_setpoint_, *pos_wrap_src_);
             // Circular delta
             pos_err = pos_setpoint_ - *pos_estimate_circular;
-            pos_err = wrap_pm(pos_err, 0.5f * *pos_wrap_src_);
+            pos_err = wrap_pm(pos_err, *pos_wrap_src_);
         } else {
             if(!pos_estimate_linear) {
                 set_error(ERROR_INVALID_ESTIMATE);
