@@ -55,8 +55,7 @@
 #endif
 #define M_PI (3.14159265358979323846f)
 
-#define MACRO_MAX(x, y) (((x) > (y)) ? (x) : (y))
-#define MACRO_MIN(x, y) (((x) < (y)) ? (x) : (y))
+#include <array>
 
 #define SQ(x) ((x) * (x))
 
