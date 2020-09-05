@@ -54,7 +54,12 @@
 #ifdef M_PI
 #undef M_PI
 #endif
-#define M_PI (3.14159265358979323846f)
+
+// Math Constants
+constexpr float M_PI = 3.14159265358979323846f;
+constexpr float one_by_sqrt3 = 0.57735026919f;
+constexpr float two_by_sqrt3 = 1.15470053838f;
+constexpr float sqrt3_by_2 = 0.86602540378f;
 
 template<typename T>
 constexpr T SQ(const T& x){
@@ -76,12 +81,7 @@ std::array<T, 1 + sizeof...(Tail)> make_array(T head, Tail... tail) {
 // that bypasses the "ignore nan" flag
 __attribute__((optimize("-fno-finite-math-only"))) static inline bool is_nan(float x) {
     return __builtin_isnan(x);
-    ;
 }
-
-static const float one_by_sqrt3 = 0.57735026919f;
-static const float two_by_sqrt3 = 1.15470053838f;
-static const float sqrt3_by_2 = 0.86602540378f;
 
 // Round to integer
 // Default rounding mode: round to nearest
