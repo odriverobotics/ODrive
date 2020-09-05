@@ -349,7 +349,7 @@ bool Motor::FOC_current(float Id_des, float Iq_des, float I_phase, float pwm_pha
 
     // Vector modulation saturation, lock integrator if saturated
     // TODO make maximum modulation configurable
-    float mod_scalefactor = 0.80f * sqrt3_by_2 * 1.0f / sqrtf(mod_d * mod_d + mod_q * mod_q);
+    float mod_scalefactor = 0.80f * sqrt3_by_2 * 1.0f / std::sqrt(mod_d * mod_d + mod_q * mod_q);
     if (mod_scalefactor < 1.0f) {
         mod_d *= mod_scalefactor;
         mod_q *= mod_scalefactor;
