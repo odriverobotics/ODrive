@@ -311,8 +311,12 @@ void start_general_purpose_adc() {
 // The true frequency is slightly lower because of the injected vbus
 // measurements
 float get_adc_voltage(Stm32Gpio gpio) {
+    return get_adc_relative_voltage(gpio) * adc_ref_voltage;
+}
+
+float get_adc_relative_voltage(Stm32Gpio gpio) {
     const uint16_t channel = channel_from_gpio(gpio);
-    return get_adc_voltage_channel(channel);
+    return get_adc_relative_voltage_ch(channel);
 }
 
 // @brief Given a GPIO_port and pin return the associated adc_channel.
@@ -358,12 +362,11 @@ uint16_t channel_from_gpio(Stm32Gpio gpio) {
     return channel;
 }
 
-// @brief Given an adc channel return the measured voltage.
+// @brief Given an adc channel return the voltage as a ratio of adc_ref_voltage
 // returns -1.0f if the channel is not valid.
-float get_adc_voltage_channel(uint16_t channel)
-{
+float get_adc_relative_voltage_ch(uint16_t channel) {
     if (channel < ADC_CHANNEL_COUNT)
-        return ((float)adc_measurements_[channel]) * (adc_ref_voltage / adc_full_scale);
+        return (float)adc_measurements_[channel] / adc_full_scale;
     else
         return -1.0f;
 }
