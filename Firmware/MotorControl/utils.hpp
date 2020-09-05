@@ -4,6 +4,7 @@
 #include <limits>
 #include <algorithm>
 #include <array>
+#include <tuple>
 
 /**
  * @brief Flash size register address
@@ -124,7 +125,8 @@ inline float wrap_pm_pi(float x) {
 // as per the magnitude invariant clarke transform
 // The magnitude of the alpha-beta vector may not be larger than sqrt(3)/2
 // Returns true on success, and false if the input was out of range
-inline bool SVM(float alpha, float beta, float* tA, float* tB, float* tC) {
+inline auto SVM(float alpha, float beta) {
+    float tA, tB, tC;
     int Sextant;
 
     if (beta >= 0.0f) {
@@ -166,9 +168,9 @@ inline bool SVM(float alpha, float beta, float* tA, float* tB, float* tC) {
             float t2 = two_by_sqrt3 * beta;
 
             // PWM timings
-            *tA = (1.0f - t1 - t2) * 0.5f;
-            *tB = *tA + t1;
-            *tC = *tB + t2;
+            tA = (1.0f - t1 - t2) * 0.5f;
+            tB = tA + t1;
+            tC = tB + t2;
         } break;
 
         // sextant v2-v3
@@ -178,9 +180,9 @@ inline bool SVM(float alpha, float beta, float* tA, float* tB, float* tC) {
             float t3 = -alpha + one_by_sqrt3 * beta;
 
             // PWM timings
-            *tB = (1.0f - t2 - t3) * 0.5f;
-            *tA = *tB + t3;
-            *tC = *tA + t2;
+            tB = (1.0f - t2 - t3) * 0.5f;
+            tA = tB + t3;
+            tC = tA + t2;
         } break;
 
         // sextant v3-v4
@@ -190,9 +192,9 @@ inline bool SVM(float alpha, float beta, float* tA, float* tB, float* tC) {
             float t4 = -alpha - one_by_sqrt3 * beta;
 
             // PWM timings
-            *tB = (1.0f - t3 - t4) * 0.5f;
-            *tC = *tB + t3;
-            *tA = *tC + t4;
+            tB = (1.0f - t3 - t4) * 0.5f;
+            tC = tB + t3;
+            tA = tC + t4;
         } break;
 
         // sextant v4-v5
@@ -202,9 +204,9 @@ inline bool SVM(float alpha, float beta, float* tA, float* tB, float* tC) {
             float t5 = -two_by_sqrt3 * beta;
 
             // PWM timings
-            *tC = (1.0f - t4 - t5) * 0.5f;
-            *tB = *tC + t5;
-            *tA = *tB + t4;
+            tC = (1.0f - t4 - t5) * 0.5f;
+            tB = tC + t5;
+            tA = tB + t4;
         } break;
 
         // sextant v5-v6
@@ -214,9 +216,9 @@ inline bool SVM(float alpha, float beta, float* tA, float* tB, float* tC) {
             float t6 = alpha - one_by_sqrt3 * beta;
 
             // PWM timings
-            *tC = (1.0f - t5 - t6) * 0.5f;
-            *tA = *tC + t5;
-            *tB = *tA + t6;
+            tC = (1.0f - t5 - t6) * 0.5f;
+            tA = tC + t5;
+            tB = tA + t6;
         } break;
 
         // sextant v6-v1
@@ -226,17 +228,17 @@ inline bool SVM(float alpha, float beta, float* tA, float* tB, float* tC) {
             float t1 = alpha + one_by_sqrt3 * beta;
 
             // PWM timings
-            *tA = (1.0f - t6 - t1) * 0.5f;
-            *tC = *tA + t1;
-            *tB = *tC + t6;
+            tA = (1.0f - t6 - t1) * 0.5f;
+            tC = tA + t1;
+            tB = tC + t6;
         } break;
     }
 
     int result_valid =
-            *tA >= 0.0f && *tA <= 1.0f
-         && *tB >= 0.0f && *tB <= 1.0f
-         && *tC >= 0.0f && *tC <= 1.0f;
-    return result_valid;
+            tA >= 0.0f && tA <= 1.0f
+         && tB >= 0.0f && tB <= 1.0f
+         && tC >= 0.0f && tC <= 1.0f;
+    return std::make_tuple(tA, tB, tC, result_valid);
 }
 
 

@@ -262,8 +262,8 @@ bool Motor::run_calibration() {
 bool Motor::enqueue_modulation_timings(float mod_alpha, float mod_beta) {
     if (is_nan(mod_alpha) || is_nan(mod_beta))
         return set_error(ERROR_MODULATION_IS_NAN), false;
-    float tA, tB, tC;
-    if (!SVM(mod_alpha, mod_beta, &tA, &tB, &tC))
+    auto [tA, tB, tC, success] = SVM(mod_alpha, mod_beta);
+    if(!success)
         return set_error(ERROR_MODULATION_MAGNITUDE), false;
     next_timings_[0] = (uint16_t)(tA * (float)TIM_1_8_PERIOD_CLOCKS);
     next_timings_[1] = (uint16_t)(tB * (float)TIM_1_8_PERIOD_CLOCKS);
