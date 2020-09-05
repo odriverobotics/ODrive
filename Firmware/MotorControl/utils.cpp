@@ -18,7 +18,6 @@ std::tuple<float, float, float, bool> SVM(float alpha, float beta) {
                 Sextant = 2; //sextant v2-v3
             else
                 Sextant = 1; //sextant v1-v2
-
         } else {
             //quadrant II
             if (-one_by_sqrt3 * beta > alpha)
@@ -116,7 +115,7 @@ std::tuple<float, float, float, bool> SVM(float alpha, float beta) {
         } break;
     }
 
-    int result_valid =
+    bool result_valid =
             tA >= 0.0f && tA <= 1.0f
          && tB >= 0.0f && tB <= 1.0f
          && tC >= 0.0f && tC <= 1.0f;
