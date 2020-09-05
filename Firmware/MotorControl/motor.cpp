@@ -434,7 +434,7 @@ bool Motor::update(float torque_setpoint, float phase, float phase_vel) {
         // So we elect to write it as if the effect is immediate, to have cleaner code
 
         if (config_.acim_autoflux_enable) {
-            float abs_iq = fabsf(iq);
+            float abs_iq = std::abs(iq);
             float gain = abs_iq > id ? config_.acim_autoflux_attack_gain : config_.acim_autoflux_decay_gain;
             id += gain * (abs_iq - id) * current_meas_period;
             id = std::clamp(id, config_.acim_autoflux_min_Id, ilim);
@@ -446,7 +446,7 @@ bool Motor::update(float torque_setpoint, float phase, float phase_vel) {
         current_control_.acim_rotor_flux += dflux_by_dt * current_meas_period;
         float slip_velocity = config_.acim_slip_velocity * (iq / current_control_.acim_rotor_flux);
         // Check for issues with small denominator. Polarity of check to catch NaN too
-        bool acceptable_vel = fabsf(slip_velocity) <= 0.1f * (float)current_meas_hz;
+        bool acceptable_vel = std::abs(slip_velocity) <= 0.1f * (float)current_meas_hz;
         if (!acceptable_vel)
             slip_velocity = 0.0f;
         phase_vel += slip_velocity;

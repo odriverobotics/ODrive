@@ -124,8 +124,8 @@ int SVM(float alpha, float beta, float* tA, float* tB, float* tC) {
 // based on https://math.stackexchange.com/a/1105038/81278
 float fast_atan2(float y, float x) {
     // a := min (|x|, |y|) / max (|x|, |y|)
-    float abs_y = fabsf(y);
-    float abs_x = fabsf(x);
+    float abs_y = std::abs(y);
+    float abs_x = std::abs(x);
     // inject FLT_MIN in denominator to avoid division by zero
     float a = MACRO_MIN(abs_x, abs_y) / (MACRO_MAX(abs_x, abs_y) + FLT_MIN);
     // s := a * a

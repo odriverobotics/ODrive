@@ -275,7 +275,7 @@ bool Controller::update(float* torque_setpoint_output) {
     if (axis_->motor_.config_.motor_type == Motor::MOTOR_TYPE_ACIM) {
         float effective_flux = axis_->motor_.current_control_.acim_rotor_flux;
         float minflux = axis_->motor_.config_.acim_gain_min_flux;
-        if (fabsf(effective_flux) < minflux)
+        if (std::abs(effective_flux) < minflux)
             effective_flux = std::copysignf(minflux, effective_flux);
         vel_gain /= effective_flux;
         vel_integrator_gain /= effective_flux;
