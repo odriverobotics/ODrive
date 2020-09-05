@@ -228,7 +228,7 @@ build{
 
 if tup.getconfig('DOCTEST') == 'true' then
     TEST_INCLUDES = '-I. -I./MotorControl -I./fibre/cpp/include -I./Drivers/DRV8301 -I./doctest'
-    tup.foreach_rule('Tests/*.cpp', 'g++ -O3 -std=c++17 '..TEST_INCLUDES..' -c %f -o %o', 'Tests/bin/%B.o')
+    tup.foreach_rule('Tests/*.cpp', 'g++ -O2 -ffast-math -std=c++17 '..TEST_INCLUDES..' -c %f -o %o', 'Tests/bin/%B.o')
     tup.frule{inputs='Tests/bin/*.o', command='g++ %f -o %o', outputs='Tests/test_runner.exe'}
     tup.frule{inputs='Tests/test_runner.exe', command='%f'}
 end
