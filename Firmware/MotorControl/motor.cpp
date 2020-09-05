@@ -416,7 +416,7 @@ bool Motor::update(float torque_setpoint, float phase, float phase_vel) {
     phase_vel *= config_.direction;
 
     if (config_.motor_type == MOTOR_TYPE_ACIM) {
-        current_setpoint = torque_setpoint / (config_.torque_constant * fmax(current_control_.acim_rotor_flux, config_.acim_gain_min_flux));
+        current_setpoint = torque_setpoint / (config_.torque_constant * std::max(current_control_.acim_rotor_flux, config_.acim_gain_min_flux));
     }
     else {
         current_setpoint = torque_setpoint / config_.torque_constant;
