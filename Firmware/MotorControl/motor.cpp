@@ -260,10 +260,10 @@ bool Motor::run_calibration() {
 }
 
 bool Motor::enqueue_modulation_timings(float mod_alpha, float mod_beta) {
-    if (std::isnan(mod_alpha) || std::isnan(mod_alpha))
+    if (is_nan(mod_alpha) || is_nan(mod_beta))
         return set_error(ERROR_MODULATION_IS_NAN), false;
     float tA, tB, tC;
-    if (SVM(mod_alpha, mod_beta, &tA, &tB, &tC) != 0)
+    if (!SVM(mod_alpha, mod_beta, &tA, &tB, &tC))
         return set_error(ERROR_MODULATION_MAGNITUDE), false;
     next_timings_[0] = (uint16_t)(tA * (float)TIM_1_8_PERIOD_CLOCKS);
     next_timings_[1] = (uint16_t)(tB * (float)TIM_1_8_PERIOD_CLOCKS);
@@ -445,9 +445,8 @@ bool Motor::update(float torque_setpoint, float phase, float phase_vel) {
         float dflux_by_dt = config_.acim_slip_velocity * (id - current_control_.acim_rotor_flux);
         current_control_.acim_rotor_flux += dflux_by_dt * current_meas_period;
         float slip_velocity = config_.acim_slip_velocity * (iq / current_control_.acim_rotor_flux);
-        // Check for issues with small denominator. Polarity of check to catch NaN too
-        bool acceptable_vel = std::abs(slip_velocity) <= 0.1f * (float)current_meas_hz;
-        if (!acceptable_vel)
+        // Check for issues with small denominator.
+        if (is_nan(slip_velocity) || std::abs(slip_velocity) > 0.1f * (float)current_meas_hz)
             slip_velocity = 0.0f;
         phase_vel += slip_velocity;
         // reporting only:

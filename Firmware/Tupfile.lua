@@ -149,7 +149,7 @@ else
 end
 
 -- common flags for ASM, C and C++
-OPT += '-ffast-math -fno-finite-math-only'
+OPT += '-ffast-math'
 tup.append_table(FLAGS, OPT)
 tup.append_table(LDFLAGS, OPT)
 

@@ -296,7 +296,7 @@ void start_general_purpose_adc() {
 // @brief Returns the ADC voltage associated with the specified pin.
 // This only works if the GPIO was not used for anything else since bootup, otherwise
 // it must be put to analog mode first.
-// Returns NaN if the pin has no associated ADC1 channel.
+// Returns -1.0f if the pin has no associated ADC1 channel.
 //
 // On ODrive 3.3 and 3.4 the following pins can be used with this function:
 //  GPIO_1, GPIO_2, GPIO_3, GPIO_4 and some pins that are connected to
@@ -359,13 +359,13 @@ uint16_t channel_from_gpio(Stm32Gpio gpio) {
 }
 
 // @brief Given an adc channel return the measured voltage.
-// returns NaN if the channel is not valid.
+// returns -1.0f if the channel is not valid.
 float get_adc_voltage_channel(uint16_t channel)
 {
     if (channel < ADC_CHANNEL_COUNT)
         return ((float)adc_measurements_[channel]) * (adc_ref_voltage / adc_full_scale);
     else
-        return 0.0f / 0.0f; // NaN
+        return -1.0f;
 }
 
 //--------------------------------
@@ -497,7 +497,7 @@ void update_brake_current() {
         brake_duty += std::max((vbus_voltage - odrv.config_.dc_bus_overvoltage_ramp_start) / (odrv.config_.dc_bus_overvoltage_ramp_end - odrv.config_.dc_bus_overvoltage_ramp_start), 0.0f);
     }
 
-    if (std::isnan(brake_duty)) {
+    if (is_nan(brake_duty)) {
         // Shuts off all motors AND brake resistor, sets error code on all motors.
         low_level_fault(Motor::ERROR_BRAKE_DUTY_CYCLE_NAN);
         return;
@@ -510,8 +510,10 @@ void update_brake_current() {
     // Duty limit at 95% to allow bootstrap caps to charge
     brake_duty = std::clamp(brake_duty, 0.0f, 0.95f);
 
-    // Special handling to avoid the case 0.0/0.0 == NaN.
-    Ibus_sum += brake_duty ? (brake_duty * vbus_voltage / odrv.config_.brake_resistance) : 0.0f;
+    // Special handling to avoid the case 0.0/0.0 == NaN, or divide by 0.
+    if (odrv.config_.brake_resistance > 0.0f) {
+        Ibus_sum += brake_duty * vbus_voltage / odrv.config_.brake_resistance;
+    }
 
     ibus_ += odrv.ibus_report_filter_k_ * (Ibus_sum - ibus_);
 

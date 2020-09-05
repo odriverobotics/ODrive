@@ -5,7 +5,7 @@
 #include <cmsis_os.h>
 #include <board.h>
 
-int SVM(float alpha, float beta, float* tA, float* tB, float* tC) {
+bool SVM(float alpha, float beta, float* tA, float* tB, float* tC) {
     int Sextant;
 
     if (beta >= 0.0f) {
@@ -113,12 +113,11 @@ int SVM(float alpha, float beta, float* tA, float* tB, float* tC) {
         } break;
     }
 
-    // if any of the results becomes NaN, result_valid will evaluate to false
     int result_valid =
             *tA >= 0.0f && *tA <= 1.0f
          && *tB >= 0.0f && *tB <= 1.0f
          && *tC >= 0.0f && *tC <= 1.0f;
-    return result_valid ? 0 : -1;
+    return result_valid;
 }
 
 // based on https://math.stackexchange.com/a/1105038/81278

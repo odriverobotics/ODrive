@@ -77,6 +77,13 @@ std::array<T, 1 + sizeof...(Tail)> make_array(T head, Tail... tail)
     return std::array<T, 1 + sizeof...(Tail)>({ head, tail ... });
 }
 
+// To allow use of -ffast-math we need to have a special check for nan
+// that bypasses the "ignore nan" flag
+__attribute__((optimize("-fno-finite-math-only")))
+static inline bool is_nan(float x) {
+    return __builtin_isnan(x);;
+}
+
 extern "C" {
 #endif
 
@@ -122,8 +129,8 @@ static inline float wrap_pm_pi(float x) {
 // Compute rising edge timings (0.0 - 1.0) as a function of alpha-beta
 // as per the magnitude invariant clarke transform
 // The magnitude of the alpha-beta vector may not be larger than sqrt(3)/2
-// Returns 0 on success, and -1 if the input was out of range
-int SVM(float alpha, float beta, float* tA, float* tB, float* tC);
+// Returns true on success, and false if the input was out of range
+bool SVM(float alpha, float beta, float* tA, float* tB, float* tC);
 
 float fast_atan2(float y, float x);
 float horner_fma(float x, const float *coeffs, size_t count);

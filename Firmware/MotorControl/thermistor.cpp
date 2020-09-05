@@ -42,7 +42,7 @@ float ThermistorCurrentLimiter::get_current_limit(float base_current_lim) const 
     const float temp_margin = temp_limit_upper_ - temperature_;
     const float derating_range = temp_limit_upper_ - temp_limit_lower_;
     float thermal_current_lim = base_current_lim * (temp_margin / derating_range);
-    if (!(thermal_current_lim >= 0.0f)) { // Funny polarity to also catch NaN
+    if (thermal_current_lim < 0.0f || is_nan(thermal_current_lim)) {
         thermal_current_lim = 0.0f;
     }
 
