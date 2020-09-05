@@ -151,7 +151,7 @@ float fast_atan2(float y, float x) {
 float horner_fma(float x, const float *coeffs, size_t count) {
     float result = 0.0f;
     for (size_t idx = 0; idx < count; ++idx)
-        result = fmaf(result, x, coeffs[idx]);
+        result = (result * x) + coeffs[idx];
     return result;
 }
 
