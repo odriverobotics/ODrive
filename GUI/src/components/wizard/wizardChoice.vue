@@ -1,7 +1,7 @@
 <template>
   <!-- single choice for a wizard page -->
   <div class="wizard-choice card">
-    <img v-bind:alt="name" :src="imageUrl" />
+    <img v-bind:alt="text" :src="imageUrl" />
     {{ text }}
   </div>
 </template>
@@ -11,7 +11,6 @@ export default {
   name: "wizardChoice",
   props: {
     imageUrl: String,
-    name: String,
     text: String,
   },
 };

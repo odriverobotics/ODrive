@@ -1,24 +1,205 @@
 <template>
   <div class="card wizard-motor-custom wizard-choice">
-      <span>KV = ?</span>
-      <span>pole pairs = ?</span>
-      <span>phase resistance = ? (measure)</span>
-      <span>phase inductance = ? (measure)</span>
+    <div class="left">
+      <span>KV =</span>
+      <input type="number" v-on:change="setKV" placeholder="Change Me!" />
+    </div>
+    <div class="left">
+      <span>Pole Pairs =</span>
+      <input type="number" v-on:change="setPP" placeholder="Change Me!" />
+    </div>
+    <div class="left">
+      <span>Phase Resistance =</span>
+      <span>{{" " + resistance}}</span>
+    </div>
+    <div class="left">
+      <span>Phase Inductace =</span>
+      <span>{{" " + inductance}}</span>
+    </div>
+    <button class="measure-button card" @click="measure">Measure Resistance and Inductance</button>
+    <span class="name">Other Motor</span>
   </div>
 </template>
 
 <script>
+const axios = require("axios");
+import odriveEnums from "../../assets/odriveEnums.json";
+
 export default {
-    name: "wizardMotorCustom"
-}
+  name: "wizardMotorCustom",
+  props: {
+    axis: String,
+  },
+  data: function () {
+    return {
+      kv_set: false,
+      pp_set: false,
+      r_set: false,
+      l_set: false,
+      pole_pairs: undefined,
+      phase_resistance: undefined,
+      phase_inductance: undefined,
+      torque_constant: undefined,
+    };
+  },
+  computed: {
+    resistance: function () {
+      let keys = ["odrive0", this.axis, "motor", "config", "phase_resistance"];
+      let odriveObj = this.$store.state.odrives;
+      for (const key of keys) {
+        odriveObj = odriveObj[key];
+      }
+      return parseFloat(odriveObj["val"]).toExponential(3);
+    },
+    inductance: function () {
+      let keys = ["odrive0", this.axis, "motor", "config", "phase_inductance"];
+      let odriveObj = this.$store.state.odrives;
+      for (const key of keys) {
+        odriveObj = odriveObj[key];
+      }
+      return parseFloat(odriveObj["val"]).toExponential(3);
+    },
+  },
+  watch: {
+    resistance: function (newVal) {
+      console.log("from resistance watcher: " + newVal);
+      let keys = ["odrive0", this.axis, "motor", "config", "phase_resistance"];
+      let odriveObj = this.$store.state.odrives;
+      for (const key of keys) {
+        odriveObj = odriveObj[key];
+      }
+      this.phase_resistance = parseFloat(odriveObj["val"]);
+    },
+    inductance: function (newVal) {
+      console.log("from inductance watcher: " + newVal);
+      let keys = ["odrive0", this.axis, "motor", "config", "phase_inductance"];
+      let odriveObj = this.$store.state.odrives;
+      for (const key of keys) {
+        odriveObj = odriveObj[key];
+      }
+      this.phase_inductance = parseFloat(odriveObj["val"]);
+    },
+    pp_set: function () {
+      console.log("pp_set: " + this.pp_set);
+      this.sendConfig();
+    },
+    kv_set: function () {
+      console.log("kv_set: " + this.kv_set);
+      this.sendConfig();
+    },
+    r_set: function () {
+      console.log("r_set: " + this.r_set);
+      this.sendConfig();
+    },
+    l_set: function () {
+      console.log("l_set: " + this.l_set);
+      this.sendConfig();
+    },
+  },
+  methods: {
+    sendConfig() {
+      // if all of the set flags are true, emit an event
+      if (this.phase_resistance != 0) {
+        this.r_set = true;
+      } else {
+        this.r_set = false;
+      }
+      if (this.phase_inductance != 0) {
+        this.l_set = true;
+      } else {
+        this.l_set = false;
+      }
+      if (
+        this.r_set == true &&
+        this.l_set == true &&
+        this.pp_set == true &&
+        this.kv_set == true
+      ) {
+        console.log("emitting choice event from other motor");
+        this.$emit("choice", {
+          choice: "Other motor",
+          config: {
+            pole_pairs: this.pole_pairs,
+            torque_constant: this.torque_constant,
+            phase_resistance: this.phase_resistance,
+            phase_inductance: this.phase_inductance,
+            type: odriveEnums.MOTOR_TYPE_HIGH_CURRENT,
+          },
+        });
+      }
+    },
+    measure() {
+      // ask ODrive to measure resistance and inductance
+      var params = new URLSearchParams();
+      let keys = ["odrive0", this.axis, "requested_state"];
+      for (const key of keys) {
+        params.append("key", key);
+      }
+      params.append("val", odriveEnums.AXIS_STATE_MOTOR_CALIBRATION);
+      params.append("type", "numeric");
+      console.log(params.toString());
+      let request = {
+        params: params,
+      };
+      console.log(request);
+      axios.put(
+        this.$store.state.odriveServerAddress + "/api/property",
+        null,
+        request
+      );
+    },
+    setKV(e) {
+      this.torque_constant = 8.27 / parseFloat(e.target.value);
+      this.kv_set = true;
+      console.log(this.torque_constant);
+    },
+    setPP(e) {
+      this.pole_pairs = parseFloat(e.target.value);
+      this.pp_set = true;
+      console.log(this.pole_pairs);
+    },
+  },
+};
 </script>
 
 <style scoped>
 .wizard-choice {
-  text-align: center;
   display: flex;
   flex-direction: column;
   margin: 2rem;
 }
+.left {
+  margin-left: auto;
+}
 
+input {
+  width: 5rem;
+  font-family: inherit;
+  border-style: none;
+  border-bottom: 1px solid grey;
+  text-align: center;
+}
+
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button {
+  /* display: none; <- Crashes Chrome on hover */
+  -webkit-appearance: none;
+  margin: 0; /* <-- Apparently some margin are still there even though it's hidden */
+}
+
+input[type="number"] {
+  -moz-appearance: textfield; /* Firefox */
+}
+
+.measure-button {
+  margin-top: 2rem;
+}
+
+.measure-button:active {
+  background-color: var(--bg-color);
+}
+
+.name {
+  text-align: center;
+}
 </style>

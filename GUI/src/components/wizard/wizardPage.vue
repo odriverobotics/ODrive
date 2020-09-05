@@ -9,11 +9,18 @@
         :key="choice.id"
         :imageUrl="choice.imageURL"
         :text="choice.text"
-        v-on:click.native="selectedChoice=choice.text;$emit('choice', {title: title, choice: choice.text})"
+        v-on:click.native="selectedChoice=choice.text;$emit('choice', {title: title, choice: choice.text, config: choice.config})"
       />
       <template v-for="customComponent in customComponents">
-          <component v-bind:is="customComponent.compName" :key="customComponent.id" />
-      </template>    
+        <component
+          v-bind:class="{chosen: selectedChoice == customComponent.compName, unchosen: selectedChoice != customComponent.compName}"
+          v-bind:is="customComponent.compName"
+          v-bind:axis="axis"
+          :key="customComponent.id"
+          v-on:click.native="selectedChoice=customComponent.compName"
+          v-on:choice="handleCustomChoice"
+        />
+      </template>
     </div>
   </div>
 </template>
@@ -29,6 +36,7 @@ export default {
     choices: Array,
     title: String,
     customComponents: Array,
+    axis: String,
   },
   components: {
     wizardChoice,
@@ -40,7 +48,12 @@ export default {
       selectedChoice: undefined,
     };
   },
-  methods: {},
+  methods: {
+    handleCustomChoice(e) {
+      console.log(e);
+      this.$emit('choice', e);
+    }
+  },
 };
 </script>
 
@@ -62,5 +75,9 @@ export default {
 
 .unchosen {
   border: 2px solid transparent;
+}
+
+.wizard-title {
+  font-weight: bold;
 }
 </style>

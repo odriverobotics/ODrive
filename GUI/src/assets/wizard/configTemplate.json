@@ -1,0 +1,51 @@
+{
+    "brake_resistance" : null,
+    "axis0" : {
+      "motor" : {
+        "config" : {
+          "pole_pairs" : null,
+          "phase_resistance" : null,
+          "phase_inductance": null,
+          "motor_type": null,
+          "current_lim": null
+            }
+        },
+      "encoder" : {
+        "config" : {
+          "mode": null,
+          "use_index": null,
+          "cpr": null
+            }
+        },
+      "controller" : {
+        "config" : {
+          "control_mode" : null,
+          "vel_limit" : null
+            }
+        }
+    },
+    "axis1" : {
+      "motor" : {
+        "config" : {
+          "pole_pairs" : null,
+          "phase_resistance": null,
+          "phase_inductance": null,
+          "motor_type": null,
+          "current_lim": null
+            }
+        },
+      "encoder" : {
+        "config" : {
+          "mode": null,
+          "use_index" : null,
+          "cpr": null
+            }
+        },
+      "controller" : {
+        "config" : {
+          "control_mode" : null,
+          "vel_limit" : null
+            }
+        }
+    }
+}
