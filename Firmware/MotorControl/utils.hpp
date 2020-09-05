@@ -3,7 +3,7 @@
 #define __UTILS_H
 
 #include <stdint.h>
-#include <math.h>
+#include <cmath>
 
 /**
  * @brief Flash size register address

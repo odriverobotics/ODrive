@@ -3,7 +3,7 @@
 #include <board.h>
 
 #include <cmsis_os.h>
-#include <math.h>
+#include <cmath>
 #include <stdint.h>
 #include <stdlib.h>
 

@@ -1,6 +1,6 @@
 
 #include <utils.hpp>
-#include <math.h>
+#include <cmath>
 #include <float.h>
 #include <cmsis_os.h>
 #include <board.h>

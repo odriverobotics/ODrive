@@ -1,4 +1,4 @@
-#include <math.h>
+#include <cmath>
 #include "odrive_main.h"
 #include "utils.hpp"
 
