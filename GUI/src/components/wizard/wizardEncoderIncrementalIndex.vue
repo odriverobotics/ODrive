@@ -1,0 +1,65 @@
+<template>
+  <div class="card wizard-choice">
+    <div class="left">
+      <span>counts per revolution = </span>
+      <input type="number" v-on:change="setCPR" placeholder="Change Me!" />
+    </div>
+    <span class="name">Incremental Encoder with Index</span>
+  </div>
+</template>
+
+<script>
+import odriveEnums from "../../assets/odriveEnums.json";
+export default {
+  name: "wizardEncoderIncremental",
+  data: function () {
+    return {
+      cpr_set: false,
+      cpr: undefined,
+    };
+  },
+  methods: {
+    setCPR(e) {
+      this.cpr = parseInt(e.target.value);
+      this.$emit("choice", {
+        choice: "IncrementalIndex",
+        config: {
+          cpr: this.cpr,
+          use_index: true,
+          type: odriveEnums.ENCODER_MODE_INCREMENTAL,
+        },
+      });
+    },
+  },
+};
+</script>
+
+<style scoped>
+.wizard-choice {
+  display: flex;
+  flex-direction: column;
+  margin: 2rem;
+}
+.left {
+  margin-left: auto;
+}
+
+input {
+  width: 5rem;
+  font-family: inherit;
+  border-style: none;
+  border-bottom: 1px solid grey;
+  text-align: center;
+}
+
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button {
+  /* display: none; <- Crashes Chrome on hover */
+  -webkit-appearance: none;
+  margin: 0; /* <-- Apparently some margin are still there even though it's hidden */
+}
+
+input[type="number"] {
+  -moz-appearance: textfield; /* Firefox */
+}
+</style>

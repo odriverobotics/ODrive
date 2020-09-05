@@ -1,6 +1,6 @@
 <template>
-  <div class="card wizard-limits">
-
+  <div class="card">
+      You're done!!!
   </div>
 </template>
 

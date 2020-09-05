@@ -16,6 +16,7 @@
           v-bind:class="{chosen: selectedChoice == customComponent.compName, unchosen: selectedChoice != customComponent.compName}"
           v-bind:is="customComponent.compName"
           v-bind:axis="axis"
+          v-bind:config="config"
           :key="customComponent.id"
           v-on:click.native="selectedChoice=customComponent.compName"
           v-on:choice="handleCustomChoice"
@@ -27,8 +28,11 @@
 
 <script>
 import wizardChoice from "./wizardChoice.vue";
-import wizardLimits from "./wizardLimits.vue";
-import wizardMotorCustom from "./wizardMotorCustom.vue";
+import wizardMisc from "./wizardMisc.vue";
+import wizardMotor from "./wizardMotor.vue";
+import wizardEncoderIncremental from "./wizardEncoderIncremental.vue";
+import wizardEncoderIncrementalIndex from "./wizardEncoderIncrementalIndex.vue";
+import wizardEnd from "./wizardEnd.vue";
 
 export default {
   name: "wizardPage",
@@ -37,11 +41,15 @@ export default {
     title: String,
     customComponents: Array,
     axis: String,
+    config: Object,
   },
   components: {
     wizardChoice,
-    wizardLimits,
-    wizardMotorCustom,
+    wizardMisc,
+    wizardMotor,
+    wizardEncoderIncremental,
+    wizardEncoderIncrementalIndex,
+    wizardEnd,
   },
   data: function () {
     return {

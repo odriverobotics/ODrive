@@ -26,7 +26,7 @@ const axios = require("axios");
 import odriveEnums from "../../assets/odriveEnums.json";
 
 export default {
-  name: "wizardMotorCustom",
+  name: "wizardMotor",
   props: {
     axis: String,
   },

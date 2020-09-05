@@ -7,6 +7,7 @@
           :customComponents="currentStep.options.customComponents"
           :title="currentStep.title"
           :axis="currentAxis"
+          :config="wizardConfig"
           v-on:choice="choiceHandler"
         />
         <div class="wizard-controls">
@@ -37,6 +38,15 @@ import configTemplate from "../assets/wizard/configTemplate.json";
 import wizardPage from "../components/wizard/wizardPage.vue";
 import odriveEnums from "../assets/odriveEnums.json";
 
+// the choices arrays contain all relevant info for a choice
+// for example - a picture of a D5065 motor and it's corresponding
+// config parameters.
+// customComponents is an array that points to a Vue component to
+// use instead of a predefined wizardChoice component.
+// these components take user input. When all necessary user input
+// has been received, they emit a 'choice' event with the corresponding
+// config object.
+
 let motorChoices = {
   choices: [
     {
@@ -44,9 +54,9 @@ let motorChoices = {
       text: "ODrive D5065",
       config: {
         pole_pairs: 7,
+        torque_constant: 8.27 / 270,
         phase_resistance: 0.039, // from test rig
         phase_inductance: 1.57e-5,
-        current_lim: 70,
         type: odriveEnums.MOTOR_TYPE_HIGH_CURRENT, // MOTOR_TYPE_HIGH_CURRENT
       },
     },
@@ -55,16 +65,16 @@ let motorChoices = {
       text: "ODrive D6374",
       config: {
         pole_pairs: 7,
+        torque_constant: 8.27 / 150,
         phase_resistance: 0.041, // measurement from PJ
         phase_inductance: 2.23e-5,
-        current_lim: 71,
         type: odriveEnums.MOTOR_TYPE_HIGH_CURRENT, // MOTOR_TYPE_HIGH_CURRENT,
       },
     },
   ],
   customComponents: [
     {
-      compName: "wizardMotorCustom",
+      compName: "wizardMotor",
       id: 0,
     },
   ],
@@ -81,49 +91,33 @@ let encoderChoices = {
         mode: odriveEnums.ENCODER_MODE_INCREMENTAL, // ENCODER_MODE_INCREMENTAL
       },
     },
+    {
+      imageURL: "",
+      text: "Hall Effect",
+      config: {
+        cpr: 0,
+        use_index: false,
+        mode: odriveEnums.ENCODER_MODE_HALL,
+      },
+    },
   ],
   customComponents: [
-    /*{
+    {
       compName: "wizardEncoderIncremental",
       id: 0,
-      config: {
-        cpr: null,
-        use_index: false,
-        mode: odriveEnums.ENCODER_MODE_INCREMENTAL
-      }
     },
     {
       compName: "wizardEncoderIncrementalIndex",
       id: 1,
-      config: {
-        cpr: null,
-        use_index: true,
-        mode: odriveEnums.ENCODER_MODE_INCREMENTAL
-      }
     },
-    {
-      compName: "wizardEncoderHallEffect",
-      id: 2,
-      config: {
-        cpr: null,
-        use_index: null,
-        mode: odriveEnums.ENCODER_MODE_HALL
-      }
-    },*/
   ],
 };
 
 let limitChoices = {
-  choices: [
-    {
-      imageURL: "",
-      text: "limits stand-in",
-      config: {},
-    },
-  ],
+  choices: [],
   customComponents: [
     {
-      compName: "wizardLimits",
+      compName: "wizardMisc",
       id: 0,
     },
   ],
@@ -160,6 +154,18 @@ let axisChoices = {
   ],
   customComponents: [],
 };
+
+let endChoices = {
+  choices: [],
+  customComponents: [
+    {
+      compName: "wizardEnd",
+      id: 0,
+    }
+  ]
+}
+
+// These are the states for the config wizard state machine
 
 let states = {
   PICK_ODRIVE: {
@@ -198,19 +204,24 @@ let states = {
     title: "What encoder are you using for M1?",
     options: encoderChoices,
   },
-  LIMITS_0: {
+  MISC_0: {
     val: 6,
-    page: "wizardLimits",
-    title: "Set your limits for M0",
-    // this page should really be bespoke...
+    page: "wizardMisc",
+    title: "Finishing touches for M0",
     options: limitChoices,
   },
-  LIMITS_1: {
+  MISC_1: {
     val: 7,
-    title: "Set your limits for M1",
-    page: "wizardLimits",
+    title: "Finishing touches for M1",
+    page: "wizardMisc",
     options: limitChoices,
   },
+  END: {
+    val: 8,
+    title: "You're Done!",
+    page: "wizardEnd",
+    options : endChoices
+  }
 };
 
 export default {
@@ -221,9 +232,10 @@ export default {
   props: [],
   data: function () {
     return {
-      currentStep: states.PICK_ODRIVE,
-      currentChoice: undefined,
-      nextRequest: false,
+      currentStep: states.PICK_ODRIVE, // which state are we in?
+      currentChoice: undefined, // choice object from wizardChoice or custom component
+      nextRequest: false, // next, apply, and back buttons are handled by the
+      // state machine. They are either allowed or disallowed
       applyRequest: false,
       backRequest: false,
       backAllowed: false,
@@ -231,8 +243,9 @@ export default {
       nextAllowed: false,
       statePath: undefined,
       wizardConfig: configTemplate,
-      axis: undefined,
-      currentAxis: undefined,
+      axis: undefined, // state transitions depend on whether we are handling
+      // axis0, axis1, or both axes
+      currentAxis: undefined, // which axis are we currently configuring?
     };
   },
   computed: {
@@ -251,8 +264,6 @@ export default {
       this.nextRequest = false;
     },
     apply() {
-      console.log("attempting to apply config...");
-      console.log(JSON.parse(JSON.stringify(this.wizardConfig)));
       this.applyRequest = true;
       this.nextState();
       this.applyRequest = false;
@@ -268,6 +279,11 @@ export default {
       this.currentChoice = e;
       this.nextState();
     },
+    applyConfig(){
+      // send config parameters that aren't null to the connected odrive!
+      console.log("attempting to apply config...");
+      console.log(JSON.parse(JSON.stringify(this.wizardConfig)));
+    },
     nextState() {
       // given current choice and page, control which actions are allowed and
       // change pages as necessary
@@ -275,15 +291,13 @@ export default {
         case states.PICK_ODRIVE:
           if (this.currentChoice == undefined) {
             this.currentChoice = undefined; //do nothing
-          }
-          else if (
+          } else if (
             this.currentChoice.choice ==
             states.PICK_ODRIVE.options.choices[0].text
           ) {
             this.wizardConfig.brake_resistance = 0.5;
             this.nextAllowed = true;
-          }
-          else if (
+          } else if (
             this.currentChoice.choice ==
             states.PICK_ODRIVE.options.choices[1].text
           ) {
@@ -335,6 +349,12 @@ export default {
             this.backAllowed = true;
           }
           if (this.backRequest == true) {
+            this.wizardConfig.axis0.motor.config = {
+              pole_pairs: null,
+              torque_constant: null,
+              phase_resistance: null,
+              phase_inductance: null,
+            }
             this.currentStep = states.PICK_AXIS;
             this.currentChoice = undefined;
             this.nextAllowed = false;
@@ -343,38 +363,62 @@ export default {
           break;
         case states.ENCODER_0:
           if (this.currentChoice != undefined) {
-            this.wizardConfig.axis0.encoder.config = this.currentChoice.config;
+            if (this.currentChoice.choice == "Hall Effect"){
+              this.wizardConfig.axis0.encoder.config = {
+                cpr: 6 * this.wizardConfig.axis0.motor.config.pole_pairs,
+                use_index: false,
+                mode: odriveEnums.ENCODER_MODE_HALL,
+              }
+            }
+            else {
+              this.wizardConfig.axis0.encoder.config = this.currentChoice.config;
+            }
             this.nextAllowed = true;
           }
           if (this.nextAllowed == true && this.nextRequest == true) {
-            this.currentStep = states.LIMITS_0;
+            this.currentStep = states.MISC_0;
             this.currentChoice = undefined;
             this.nextAllowed = false;
             this.applyAllowed = false;
             this.backAllowed = true;
           }
           if (this.backRequest == true) {
+            this.wizardConfig.axis0.encoder.config = {
+              cpr: null,
+              use_index: null,
+              mode: null,
+            }
             this.currentStep = states.MOTOR_0;
             this.currentChoice = undefined;
             this.nextAllowed = false;
             this.backAllowed = true;
           }
           break;
-        case states.LIMITS_0:
+        case states.MISC_0:
           if (this.axis == "M0") {
-            // this is the last page
-            this.nextAllowed = false;
-            this.applyAllowed = true;
+            if (this.currentChoice != undefined) {
+              this.wizardConfig.axis0.controller.config.vel_limit = this.currentChoice.config.vel_limit;
+              this.wizardConfig.axis0.motor.config.current_lim = this.currentChoice.config.current_lim;
+              this.nextAllowed = true;
+            }
+            if (this.nextAllowed == true && this.nextRequest == true){
+              this.currentStep = states.END;
+              this.applyAllowed = true;
+              this.backAllowed = true;
+              this.nextAllowed = false;
+            }
           }
           if (this.axis == "M0 and M1") {
             // not the last page! go to MOTOR_1
             if (this.currentChoice != undefined) {
               this.nextAllowed = true;
+              this.wizardConfig.axis0.controller.config.vel_limit = this.currentChoice.config.vel_limit;
+              this.wizardConfig.axis0.motor.config.current_lim = this.currentChoice.config.current_lim;
             }
             this.applyAllowed = false;
             if (this.nextAllowed == true && this.nextRequest == true) {
               this.currentStep = states.MOTOR_1;
-              this.currentAxis = "axis1"
+              this.currentAxis = "axis1";
               this.currentChoice = undefined;
               this.nextAllowed = false;
               this.applyAllowed = false;
@@ -405,8 +449,14 @@ export default {
             if (this.axis == "M1") {
               this.currentStep = states.PICK_AXIS;
             } else if (this.axis == "M0 and M1") {
-              this.currentStep = states.LIMITS_0;
+              this.currentStep = states.MISC_0;
               this.currentAxis = "axis0";
+            }
+            this.wizardConfig.axis1.motor.config = {
+              pole_pairs: null,
+              torque_constant: null,
+              phase_resistance: null,
+              phase_inductance: null,
             }
             this.currentChoice = undefined;
             this.nextAllowed = false;
@@ -416,28 +466,50 @@ export default {
           break;
         case states.ENCODER_1:
           if (this.currentChoice != undefined) {
-            this.wizardConfig.axis1.encoder.config = this.currentChoice.config;
+            if (this.currentChoice.choice == "Hall Effect"){
+              this.wizardConfig.axis1.encoder.config = {
+                cpr: 6 * this.wizardConfig.axis1.motor.config.pole_pairs,
+                use_index: false,
+                mode: odriveEnums.ENCODER_MODE_HALL,
+              }
+            }
+            else {
+              this.wizardConfig.axis1.encoder.config = this.currentChoice.config;
+            }
             this.nextAllowed = true;
           }
           if (this.nextAllowed == true && this.nextRequest == true) {
-            this.currentStep = states.LIMITS_1;
+            this.currentStep = states.MISC_1;
             this.currentChoice = undefined;
             this.nextAllowed = false;
             this.applyAllowed = false;
             this.backAllowed = true;
           }
           if (this.backRequest == true) {
+            this.wizardConfig.axis1.encoder.config = {
+              cpr: null,
+              use_index: null,
+              mode: null,
+            }
             this.currentStep = states.MOTOR_1;
             this.currentChoice = undefined;
             this.nextAllowed = false;
             this.backAllowed = true;
           }
           break;
-        case states.LIMITS_1:
+        case states.MISC_1:
           if (this.currentChoice != undefined) {
             // this page is always an endpoint
             // apply limits for axis 1 config
+            this.nextAllowed = true;
+            this.wizardConfig.axis1.controller.config.vel_limit = this.currentChoice.config.vel_limit;
+            this.wizardConfig.axis1.motor.config.current_lim = this.currentChoice.config.current_lim;
+          }
+          if (this.nextRequest == true && this.nextAllowed == true) {
+            this.currentStep = states.END;
             this.applyAllowed = true;
+            this.backAllowed = true;
+            this.nextAllowed = false;
           }
           if (this.backRequest == true) {
             this.currentStep = states.ENCODER_1;
@@ -447,6 +519,11 @@ export default {
             this.backAllowed = true;
           }
           break;
+        case states.END:
+          if (this.applyRequest == true && this.applyAllowed == true) {
+            this.applyConfig();
+          }
+
       }
     },
   },
