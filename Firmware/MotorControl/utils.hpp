@@ -3,6 +3,7 @@
 #include <stdint.h>
 #include <limits>
 #include <algorithm>
+#include <array>
 
 /**
  * @brief Flash size register address
@@ -55,11 +56,10 @@
 #endif
 #define M_PI (3.14159265358979323846f)
 
-#include <array>
-
-#define SQ(x) ((x) * (x))
-
-#include <array>
+template<typename T>
+constexpr T SQ(const T& x){
+    return x * x;
+}
 
 /**
  * @brief Small helper to make array with known size
