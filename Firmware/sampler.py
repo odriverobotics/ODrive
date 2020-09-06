@@ -52,7 +52,7 @@ class OpenOCDCMSampler(object):
 
             try:
                 # For using nm -CS
-                if field[2] in ('t', 'T', 'w', 'W'):
+                if field[2] in (b't', b'T', b'w', b'W'):
                     addr = int(field[0], 16)
                     func = field[3]
                     size = int(field[1], 16)
