@@ -129,7 +129,7 @@ if __name__ == '__main__':
 
                 tmp = sorted(countmap.items(), key=operator.itemgetter(1)) #, reverse=True)
                 for k, v in tmp:
-                    print('{:05.2f}% {}'.format((v * 100.) / total, k))
+                    print('{:05.2f}% {}'.format((v * 100.) / total, k.decode('UTF-8')))
                     # print('{:06.2f} clocks : {}'.format((v * 10500) / total, k))
                 start = cur
                 print('{} Samples'.format(total))
