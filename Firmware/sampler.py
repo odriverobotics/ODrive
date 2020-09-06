@@ -45,17 +45,22 @@ class OpenOCDCMSampler(object):
         return 0
 
 
-    def initSymbols(self, elf, readelf='arm-none-eabi-readelf'):
-        proc = subprocess.Popen([readelf, '-s', elf], stdout=subprocess.PIPE)
+    def initSymbols(self, elf, symbol_dump_cmd='arm-none-eabi-nm'):
+        proc = subprocess.Popen([symbol_dump_cmd, '-CS', elf], stdout=subprocess.PIPE)
         for line in proc.stdout.readlines():
             field = line.split()
-            # for i,txt in enumerate(field):
-            #     print("{}, {}".format(i, txt))
+
             try:
-                if field[3] == b'FUNC':
-                    addr = int(field[1], 16) - 1 # For some reason readelf dumps the func addr off by 1
-                    func = field[7]
-                    size = int(field[2])
+                # For using nm -CS
+                if field[2] in ('t', 'T', 'w', 'W'):
+                    addr = int(field[0], 16)
+                    func = field[3]
+                    size = int(field[1], 16)
+                # # For using readelf -s
+                # if field[3] == b'FUNC':
+                #     addr = int(field[1], 16) - 1 # For some reason readelf dumps the func addr off by 1
+                #     func = field[7]
+                #     size = int(field[2])
                     if addr not in self.indexes:
                         self.table.append((addr, func, size))
                         self.indexes.add(addr)
