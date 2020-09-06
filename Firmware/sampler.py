@@ -54,7 +54,7 @@ class OpenOCDCMSampler(object):
                 # For using nm -CS
                 if field[2] in (b't', b'T', b'w', b'W'):
                     addr = int(field[0], 16)
-                    func = ' '.join(field[3:-1])
+                    func = b' '.join(field[3:])
                     size = int(field[1], 16)
                 # # For using readelf -s
                 # if field[3] == b'FUNC':
