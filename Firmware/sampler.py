@@ -46,7 +46,7 @@ class OpenOCDCMSampler(object):
 
 
     def initSymbols(self, elf, symbol_dump_cmd='arm-none-eabi-nm'):
-        proc = subprocess.Popen([symbol_dump_cmd, '-CS', elf], stdout=subprocess.PIPE)
+        proc = subprocess.Popen([symbol_dump_cmd, '-CS', '--size-sort', elf], stdout=subprocess.PIPE)
         for line in proc.stdout.readlines():
             field = line.split()
 
