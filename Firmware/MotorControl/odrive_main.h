@@ -142,6 +142,7 @@ inline ENUMTYPE operator ~ (ENUMTYPE a) { return static_cast<ENUMTYPE>(~static_c
 #include <thermistor.hpp>
 #include <trapTraj.hpp>
 #include <endstop.hpp>
+#include <mechanical_brake.hpp>
 #include <axis.hpp>
 #include <communication/communication.h>
 

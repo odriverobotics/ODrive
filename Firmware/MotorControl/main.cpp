@@ -48,6 +48,7 @@ static bool config_read_all() {
                   config_manager.read(&axes[i].trap_traj_.config_) &&
                   config_manager.read(&axes[i].min_endstop_.config_) &&
                   config_manager.read(&axes[i].max_endstop_.config_) &&
+                  config_manager.read(&axes[i].mechanical_brake_.config_) &&
                   config_manager.read(&motors[i].config_) &&
                   config_manager.read(&fet_thermistors[i].config_) &&
                   config_manager.read(&axes[i].motor_thermistor_.config_) &&
@@ -67,6 +68,7 @@ static bool config_write_all() {
                   config_manager.write(&axes[i].trap_traj_.config_) &&
                   config_manager.write(&axes[i].min_endstop_.config_) &&
                   config_manager.write(&axes[i].max_endstop_.config_) &&
+                  config_manager.write(&axes[i].mechanical_brake_.config_) &&
                   config_manager.write(&motors[i].config_) &&
                   config_manager.write(&fet_thermistors[i].config_) &&
                   config_manager.write(&axes[i].motor_thermistor_.config_) &&
@@ -86,6 +88,7 @@ static void config_clear_all() {
         axes[i].trap_traj_.config_ = {};
         axes[i].min_endstop_.config_ = {};
         axes[i].max_endstop_.config_ = {};
+        axes[i].mechanical_brake_.config_ = {};
         motors[i].config_ = {};
         fet_thermistors[i].config_ = {};
         axes[i].motor_thermistor_.config_ = {};
@@ -152,7 +155,7 @@ void ODrive::enter_dfu_mode() {
 
 static void usb_deferred_interrupt_thread(void * ctx) {
     (void) ctx; // unused parameter
-
+  
     for (;;) {
         // Wait for signalling from USB interrupt (OTG_FS_IRQHandler)
         osStatus semaphore_status = osSemaphoreWait(sem_usb_irq, osWaitForever);
@@ -419,6 +422,7 @@ extern "C" int main(void) {
         if (mode == ODriveIntf::GPIO_MODE_DIGITAL ||
             mode == ODriveIntf::GPIO_MODE_DIGITAL_PULL_UP ||
             mode == ODriveIntf::GPIO_MODE_DIGITAL_PULL_DOWN ||
+            mode == ODriveIntf::GPIO_MODE_MECH_BRAKE ||
             mode == ODriveIntf::GPIO_MODE_ANALOG_IN) {
             GPIO_InitStruct.Alternate = 0;
         } else {
@@ -512,6 +516,11 @@ extern "C" int main(void) {
             } break;
             case ODriveIntf::GPIO_MODE_ENC2: {
                 GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
+                GPIO_InitStruct.Pull = GPIO_NOPULL;
+                GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+            } break;
+            case ODriveIntf::GPIO_MODE_MECH_BRAKE: {
+                GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
                 GPIO_InitStruct.Pull = GPIO_NOPULL;
                 GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
             } break;

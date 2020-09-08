@@ -189,6 +189,7 @@ sources = {
     'MotorControl/thermistor.cpp',
     'MotorControl/encoder.cpp',
     'MotorControl/endstop.cpp',
+    'MotorControl/mechanical_brake.cpp',
     'MotorControl/controller.cpp',
     'MotorControl/sensorless_estimator.cpp',
     'MotorControl/trapTraj.cpp',
