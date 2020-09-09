@@ -57,7 +57,7 @@ let motorChoices = {
         torque_constant: 8.27 / 270,
         phase_resistance: 0.039, // from test rig
         phase_inductance: 1.57e-5,
-        type: odriveEnums.MOTOR_TYPE_HIGH_CURRENT, // MOTOR_TYPE_HIGH_CURRENT
+        motor_type: odriveEnums.MOTOR_TYPE_HIGH_CURRENT, // MOTOR_TYPE_HIGH_CURRENT
       },
     },
     {
@@ -68,7 +68,7 @@ let motorChoices = {
         torque_constant: 8.27 / 150,
         phase_resistance: 0.041, // measurement from PJ
         phase_inductance: 2.23e-5,
-        type: odriveEnums.MOTOR_TYPE_HIGH_CURRENT, // MOTOR_TYPE_HIGH_CURRENT,
+        motor_type: odriveEnums.MOTOR_TYPE_HIGH_CURRENT, // MOTOR_TYPE_HIGH_CURRENT,
       },
     },
   ],
@@ -92,7 +92,7 @@ let encoderChoices = {
       },
     },
     {
-      imageURL: "",
+      imageURL: require("../assets/images/hall_effect_300x300.png"),
       text: "Hall Effect",
       config: {
         cpr: 0,
@@ -295,13 +295,13 @@ export default {
             this.currentChoice.choice ==
             states.PICK_ODRIVE.options.choices[0].text
           ) {
-            this.wizardConfig.brake_resistance = 0.5;
+            this.wizardConfig.config.brake_resistance = 0.5;
             this.nextAllowed = true;
           } else if (
             this.currentChoice.choice ==
             states.PICK_ODRIVE.options.choices[1].text
           ) {
-            this.wizardConfig.brake_resistance = 2.0;
+            this.wizardConfig.config.brake_resistance = 2.0;
             this.nextAllowed = true;
           }
           if (this.nextAllowed == true && this.nextRequest == true) {

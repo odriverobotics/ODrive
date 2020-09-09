@@ -1,5 +1,7 @@
 {
-    "brake_resistance" : null,
+    "config": {
+      "brake_resistance" : null
+    },
     "axis0" : {
       "motor" : {
         "config" : {
