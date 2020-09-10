@@ -234,9 +234,9 @@ bool Axis::run_lockin_spin(const LockinConfig_t &lockin_config) {
     float x = 0.0f;
     run_control_loop([&]() {
         float phase = wrap_pm_pi(lockin_config.ramp_distance * x);
-        float I_mag = lockin_config.current * x;
+        float torque = lockin_config.current * motor_.config_.torque_constant * x;
         x += current_meas_period / lockin_config.ramp_time;
-        if (!motor_.update(I_mag, phase, 0.0f))
+        if (!motor_.update(torque, phase, 0.0f))
             return false;
         return x < 1.0f;
     });
@@ -265,7 +265,7 @@ bool Axis::run_lockin_spin(const LockinConfig_t &lockin_config) {
         distance += vel * current_meas_period;
         phase = wrap_pm_pi(phase + vel * current_meas_period);
 
-        if (!motor_.update(lockin_config.current, phase, vel))
+        if (!motor_.update(lockin_config.current * motor_.config_.torque_constant, phase, vel))
             return false;
         return !spin_done(true); //vel_override to go to next phase
     });
@@ -281,7 +281,7 @@ bool Axis::run_lockin_spin(const LockinConfig_t &lockin_config) {
             distance += vel * current_meas_period;
             phase = wrap_pm_pi(phase + vel * current_meas_period);
 
-            if (!motor_.update(lockin_config.current, phase, vel))
+            if (!motor_.update(lockin_config.current * motor_.config_.torque_constant, phase, vel))
                 return false;
             return !spin_done();
         });
