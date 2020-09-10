@@ -297,7 +297,7 @@ bool board_init() {
     HAL_NVIC_SetPriority(EXTI15_10_IRQn, 1, 0);
     HAL_NVIC_EnableIRQ(EXTI15_10_IRQn);
 
-    HAL_NVIC_SetPriority(ControlLoop_IRQn, 5, 0); // must be on the same level as ADC interrupt
+    HAL_NVIC_SetPriority(ControlLoop_IRQn, 5, 0);
     HAL_NVIC_EnableIRQ(ControlLoop_IRQn);
 
     HAL_NVIC_SetPriority(TIM8_UP_TIM13_IRQn, 0, 0);
@@ -364,19 +364,10 @@ void start_timers() {
         hadc3.Instance->CR2 &= ~(ADC_CR2_EXTEN | ADC_CR2_JEXTEN);
 
         /*
-        * Initial intention of the synchronization:
         * Synchronize TIM1, TIM8 and TIM13 such that:
         *  1. The triangle waveform of TIM1 leads the triangle waveform of TIM8 by a
         *     90° phase shift.
-        *  2. The timer update events of TIM1 and TIM8 are symmetrically interleaved.
-        *  3. Each TIM13 reload coincides with a TIM1 lower update event.
-        * 
-        * However right now this synchronization only ensures point (1) and (3) but because
-        * TIM1 and TIM3 only trigger an update on every third reload, this does not
-        * allow for (2).
-        * 
-        * TODO: revisit the timing topic in general.
-        * 
+        *  2. Each TIM13 reload coincides with a TIM1 lower update event.
         */
         Stm32Timer::start_synchronously<3>(
             {&htim1, &htim8, &htim13},
@@ -396,12 +387,8 @@ void start_timers() {
         __HAL_ADC_CLEAR_FLAG(&hadc1, ADC_FLAG_OVR);
         __HAL_ADC_CLEAR_FLAG(&hadc2, ADC_FLAG_OVR);
         __HAL_ADC_CLEAR_FLAG(&hadc3, ADC_FLAG_OVR);
+        
         __HAL_TIM_CLEAR_IT(&htim8, TIM_IT_UPDATE);
-
-        // it's sufficient to enable interrupts for one ADC only because they all trigger simultaneously
-        //__HAL_ADC_ENABLE_IT(&hadc3, ADC_IT_JEOC);
-        //__HAL_ADC_ENABLE_IT(&hadc3, ADC_IT_EOC);
-
         __HAL_TIM_ENABLE_IT(&htim8, TIM_IT_UPDATE);
     }
 }
@@ -466,6 +453,8 @@ volatile uint32_t timestamp_ = 0;
 volatile bool counting_down_ = false;
 
 void TIM8_UP_TIM13_IRQHandler(void) {
+    COUNT_IRQ(TIM8_UP_TIM13_IRQn);
+    
     // Entry into this function happens at 21-23 clock cycles after the timer
     // update event.
     __HAL_TIM_CLEAR_IT(&htim8, TIM_IT_UPDATE);

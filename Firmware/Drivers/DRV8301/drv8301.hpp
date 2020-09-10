@@ -42,7 +42,7 @@ public:
      * If the gate driver was in ready state and the new configuration is
      * different from the old one then the gate driver will exit ready state.
      *
-     * In any case cnahges to the configuration only take effect with a call to
+     * In any case changes to the configuration only take effect with a call to
      * init().
      */
     bool config(float requested_gain, float* actual_gain);
