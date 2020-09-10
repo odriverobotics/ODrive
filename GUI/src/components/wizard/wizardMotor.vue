@@ -28,7 +28,7 @@ import odriveEnums from "../../assets/odriveEnums.json";
 export default {
   name: "wizardMotor",
   props: {
-    axis: String,
+    data: Object,
   },
   data: function () {
     return {
@@ -44,7 +44,7 @@ export default {
   },
   computed: {
     resistance: function () {
-      let keys = ["odrive0", this.axis, "motor", "config", "phase_resistance"];
+      let keys = ["odrive0", this.data.axis, "motor", "config", "phase_resistance"];
       let odriveObj = this.$store.state.odrives;
       for (const key of keys) {
         odriveObj = odriveObj[key];
@@ -52,7 +52,7 @@ export default {
       return parseFloat(odriveObj["val"]).toExponential(3);
     },
     inductance: function () {
-      let keys = ["odrive0", this.axis, "motor", "config", "phase_inductance"];
+      let keys = ["odrive0", this.data.axis, "motor", "config", "phase_inductance"];
       let odriveObj = this.$store.state.odrives;
       for (const key of keys) {
         odriveObj = odriveObj[key];
@@ -63,7 +63,7 @@ export default {
   watch: {
     resistance: function (newVal) {
       console.log("from resistance watcher: " + newVal);
-      let keys = ["odrive0", this.axis, "motor", "config", "phase_resistance"];
+      let keys = ["odrive0", this.data.axis, "motor", "config", "phase_resistance"];
       let odriveObj = this.$store.state.odrives;
       for (const key of keys) {
         odriveObj = odriveObj[key];
@@ -72,7 +72,7 @@ export default {
     },
     inductance: function (newVal) {
       console.log("from inductance watcher: " + newVal);
-      let keys = ["odrive0", this.axis, "motor", "config", "phase_inductance"];
+      let keys = ["odrive0", this.data.axis, "motor", "config", "phase_inductance"];
       let odriveObj = this.$store.state.odrives;
       for (const key of keys) {
         odriveObj = odriveObj[key];
@@ -131,7 +131,7 @@ export default {
     measure() {
       // ask ODrive to measure resistance and inductance
       var params = new URLSearchParams();
-      let keys = ["odrive0", this.axis, "requested_state"];
+      let keys = ["odrive0", this.data.axis, "requested_state"];
       for (const key of keys) {
         params.append("key", key);
       }

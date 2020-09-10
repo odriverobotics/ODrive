@@ -15,7 +15,7 @@
 export default {
   name: "wizardMisc",
   props: {
-    axis: String,
+    data: Object
   },
   data: function () {
     return {
@@ -27,7 +27,7 @@ export default {
   },
   computed: {
     velocityLimit: function () {
-      let keys = ["odrive0", this.axis, "controller", "config", "vel_limit"];
+      let keys = ["odrive0", this.data.axis, "controller", "config", "vel_limit"];
       let odriveObj = this.$store.state.odrives;
       for (const key of keys) {
         odriveObj = odriveObj[key];
@@ -35,7 +35,7 @@ export default {
       return parseFloat(odriveObj["val"]);
     },
     currentLimit: function () {
-      let keys = ["odrive0", this.axis, "motor", "config", "current_lim"];
+      let keys = ["odrive0", this.data.axis, "motor", "config", "current_lim"];
       let odriveObj = this.$store.state.odrives;
       for (const key of keys) {
         odriveObj = odriveObj[key];
@@ -48,7 +48,7 @@ export default {
       if ((this.vel_set == true && this.current_set == true)) {
         console.log("emitting choice event from limits page");
         this.$emit("choice", {
-          choice: "Limits " + this.axis,
+          choice: "Limits " + this.data.axis,
           config: {
             vel_limit: this.vel_limit,
             current_lim: this.current_lim,

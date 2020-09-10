@@ -9,13 +9,13 @@
         :key="choice.id"
         :imageUrl="choice.imageURL"
         :text="choice.text"
-        v-on:click.native="selectedChoice=choice.text;$emit('choice', {title: title, choice: choice.text, config: choice.config})"
+        v-on:click.native="selectedChoice=choice.text;$emit('choice', {title: title, choice: choice.text, configStub: choice.configStub})"
       />
       <template v-for="customComponent in customComponents">
         <component
           v-bind:class="{chosen: selectedChoice == customComponent.compName, unchosen: selectedChoice != customComponent.compName}"
-          v-bind:is="customComponent.compName"
-          v-bind:axis="axis"
+          v-bind:is="customComponent.component"
+          v-bind:data="customComponent.data"
           v-bind:config="config"
           :key="customComponent.id"
           v-on:click.native="selectedChoice=customComponent.compName"
