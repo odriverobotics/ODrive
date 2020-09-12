@@ -6,6 +6,7 @@ export let pages = {
     ODrive: {
         number: 0,
         title: "Which ODrive do you have?",
+        link: "ODrive Version",
         component: "wizardPage",
         next: "Motor_0",
         back: "ODrive",
@@ -25,6 +26,7 @@ export let pages = {
     Motor_0: {
         number: 1,
         title: "Which motor are you using on Axis 0?",
+        link: "Motor 0",
         component: "wizardPage",
         next: "Encoder_0",
         back: "ODrive",
@@ -78,6 +80,7 @@ export let pages = {
     Encoder_0: {
         number: 2,
         title: "Which encoder are you using for Axis 0?",
+        link: "Encoder 0",
         component: "wizardPage",
         next: "Misc_0",
         back: "Motor_0",
@@ -134,6 +137,7 @@ export let pages = {
     Misc_0: {
         number: 3,
         title: "Finishing touches for Axis 0",
+        link: "Misc 0",
         component: "wizardPage",
         next: "Motor_1",
         back: "Encoder_0",
@@ -152,6 +156,7 @@ export let pages = {
     Motor_1: {
         number: 4,
         title: "Which motor are you using for Axis 1?",
+        link: "Motor 1",
         component: "wizardPage",
         next: "Encoder_1",
         back: "Misc_0",
@@ -205,6 +210,7 @@ export let pages = {
     Encoder_1: {
         number: 5,
         title: "Which encoder are you using for Axis 1?",
+        link: "Encoder 1",
         component: "wizardPage",
         next: "Misc_1",
         back: "Motor_1",
@@ -261,6 +267,7 @@ export let pages = {
     Misc_1: {
         number: 6,
         title: "Finishing touches for Axis 1",
+        link: "Misc 1",
         component: "wizardPage",
         next: "End",
         back: "Encoder_1",
@@ -279,6 +286,7 @@ export let pages = {
     End: {
         number: 7,
         title: "Review choices",
+        link: "Review and Apply",
         component: "wizardPage",
         next: "End",
         back: "Misc_1",

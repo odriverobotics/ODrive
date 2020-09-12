@@ -1,6 +1,16 @@
 <template>
   <div class="wizard">
     <div class="wizard-container">
+      <div class="wizard-nav card">
+        <span class="wizard-nav-title">Wizard Pages</span>
+        <span
+          v-for="page in wizardPages"
+          :key="page.number"
+          class="wizard-link"
+          v-bind:class="{'active-link': currentStep == page}"
+          @click="currentStep=page"
+        >{{page.link}}</span>
+      </div>
       <div class="wizard-page">
         <wizardPage
           :choices="currentStep.choices"
@@ -39,6 +49,11 @@ export default {
       currentStep: pages.ODrive,
       wizardConfig: configTemplate,
     };
+  },
+  computed: {
+    wizardPages() {
+      return pages;
+    },
   },
   methods: {
     choiceHandler(e) {
@@ -83,9 +98,30 @@ export default {
   padding-bottom: var(--bottom-height);
 }
 
-.wizard-container {
+.wizard-nav {
   display: flex;
   flex-direction: column;
+  height: fit-content;
+}
+
+.wizard-nav-title {
+  text-align: center;
+  font-weight: bold;
+  margin-bottom: 0.4rem;
+}
+
+.wizard-link {
+  margin: 0.2rem;
+  cursor: pointer;
+}
+
+.active-link {
+  text-decoration: underline;
+}
+
+.wizard-container {
+  display: flex;
+  flex-direction: row;
   height: 95vh;
 }
 

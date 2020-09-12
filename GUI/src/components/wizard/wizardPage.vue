@@ -13,12 +13,13 @@
       />
       <template v-for="customComponent in customComponents">
         <component
-          v-bind:class="{chosen: selectedChoice == customComponent.compName, unchosen: selectedChoice != customComponent.compName}"
+          v-bind:class="{chosen: selectedChoice == customComponent.component, unchosen: selectedChoice != customComponent.component}"
           v-bind:is="customComponent.component"
           v-bind:data="customComponent.data"
           v-bind:config="config"
+          v-bind:axis="axis"
           :key="customComponent.id"
-          v-on:click.native="selectedChoice=customComponent.compName"
+          v-on:click.native="selectedChoice=customComponent.component"
           v-on:choice="handleCustomChoice"
         />
       </template>
@@ -75,6 +76,7 @@ export default {
 .wizard-choices {
   display: flex;
   flex-direction: row;
+  flex-wrap: wrap;
 }
 
 .chosen {

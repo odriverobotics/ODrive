@@ -12,6 +12,9 @@
 import odriveEnums from "../../assets/odriveEnums.json";
 export default {
   name: "wizardEncoderIncremental",
+  props: {
+    data: Object,
+  },
   data: function () {
     return {
       cpr_set: false,
@@ -21,13 +24,36 @@ export default {
   methods: {
     setCPR(e) {
       this.cpr = parseInt(e.target.value);
+      let configStub = undefined;
+      if (this.data.axis == "axis0") {
+        configStub = {
+          axis0: {
+            encoder: {
+              config: {
+                cpr: this.cpr,
+                use_index: true,
+                type: odriveEnums.ENCODER_MODE_INCREMENTAL,
+              }
+            }
+          }
+        }
+      }
+      else if (this.data.axis == "axis1") {
+        configStub = {
+          axis: {
+            encoder: {
+              config: {
+                cpr: this.cpr,
+                use_index: true,
+                type: odriveEnums.ENCODER_MODE_INCREMENTAL,
+              }
+            }
+          }
+        }
+      }
       this.$emit("choice", {
         choice: "IncrementalIndex",
-        config: {
-          cpr: this.cpr,
-          use_index: true,
-          type: odriveEnums.ENCODER_MODE_INCREMENTAL,
-        },
+        configStub: configStub,
       });
     },
   },

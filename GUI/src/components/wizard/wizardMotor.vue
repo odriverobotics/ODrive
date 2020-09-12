@@ -29,6 +29,7 @@ export default {
   name: "wizardMotor",
   props: {
     data: Object,
+    axis: String,
   },
   data: function () {
     return {
@@ -44,7 +45,13 @@ export default {
   },
   computed: {
     resistance: function () {
-      let keys = ["odrive0", this.data.axis, "motor", "config", "phase_resistance"];
+      let keys = [
+        "odrive0",
+        this.data.axis,
+        "motor",
+        "config",
+        "phase_resistance",
+      ];
       let odriveObj = this.$store.state.odrives;
       for (const key of keys) {
         odriveObj = odriveObj[key];
@@ -52,7 +59,13 @@ export default {
       return parseFloat(odriveObj["val"]).toExponential(3);
     },
     inductance: function () {
-      let keys = ["odrive0", this.data.axis, "motor", "config", "phase_inductance"];
+      let keys = [
+        "odrive0",
+        this.data.axis,
+        "motor",
+        "config",
+        "phase_inductance",
+      ];
       let odriveObj = this.$store.state.odrives;
       for (const key of keys) {
         odriveObj = odriveObj[key];
@@ -63,7 +76,13 @@ export default {
   watch: {
     resistance: function (newVal) {
       console.log("from resistance watcher: " + newVal);
-      let keys = ["odrive0", this.data.axis, "motor", "config", "phase_resistance"];
+      let keys = [
+        "odrive0",
+        this.data.axis,
+        "motor",
+        "config",
+        "phase_resistance",
+      ];
       let odriveObj = this.$store.state.odrives;
       for (const key of keys) {
         odriveObj = odriveObj[key];
@@ -72,7 +91,13 @@ export default {
     },
     inductance: function (newVal) {
       console.log("from inductance watcher: " + newVal);
-      let keys = ["odrive0", this.data.axis, "motor", "config", "phase_inductance"];
+      let keys = [
+        "odrive0",
+        this.data.axis,
+        "motor",
+        "config",
+        "phase_inductance",
+      ];
       let odriveObj = this.$store.state.odrives;
       for (const key of keys) {
         odriveObj = odriveObj[key];
@@ -116,15 +141,39 @@ export default {
         this.kv_set == true
       ) {
         console.log("emitting choice event from other motor");
+        let configStub = undefined;
+        if (this.axis == "axis0") {
+          configStub = {
+            axis0: {
+              motor: {
+                config: {
+                  pole_pairs: this.pole_pairs,
+                  torque_constant: this.torque_constant,
+                  phase_resistance: this.phase_resistance,
+                  phase_inductance: this.phase_inductance,
+                  type: odriveEnums.MOTOR_TYPE_HIGH_CURRENT,
+                },
+              },
+            },
+          };
+        } else if (this.axis == "axis1") {
+          configStub = {
+            axis1: {
+              motor: {
+                config: {
+                  pole_pairs: this.pole_pairs,
+                  torque_constant: this.torque_constant,
+                  phase_resistance: this.phase_resistance,
+                  phase_inductance: this.phase_inductance,
+                  type: odriveEnums.MOTOR_TYPE_HIGH_CURRENT,
+                },
+              },
+            },
+          };
+        }
         this.$emit("choice", {
           choice: "Other motor",
-          config: {
-            pole_pairs: this.pole_pairs,
-            torque_constant: this.torque_constant,
-            phase_resistance: this.phase_resistance,
-            phase_inductance: this.phase_inductance,
-            type: odriveEnums.MOTOR_TYPE_HIGH_CURRENT,
-          },
+          configStub: configStub,
         });
       }
     },
@@ -136,7 +185,7 @@ export default {
         params.append("key", key);
       }
       params.append("val", odriveEnums.AXIS_STATE_MOTOR_CALIBRATION);
-      params.append("type", "numeric");
+      params.append("type", "number");
       console.log(params.toString());
       let request = {
         params: params,
