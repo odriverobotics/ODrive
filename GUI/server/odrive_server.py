@@ -133,7 +133,7 @@ def postVal(odrives, keyList, value, argType):
     RO = odrives[index]
     for key in keyList:
         RO = RO._remote_attributes[key]
-    if argType == "numeric":
+    if argType == "number":
         RO.set_value(float(value))
     elif argType == "boolean":
         RO.set_value(value == "true")

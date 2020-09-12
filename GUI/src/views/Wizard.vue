@@ -11,18 +11,9 @@
         />
         <div class="wizard-controls">
           <!-- show breadcrumbs, back, apply, next buttons -->
-          <button
-            class="wizard-button card"
-            @click="back"
-          >Back</button>
-          <button
-            class="wizard-button card"
-            @click="finish"
-          >Finish</button>
-          <button
-            class="wizard-button card"
-            @click="next"
-          >Next</button>
+          <button class="wizard-button card" @click="back">Back</button>
+          <button class="wizard-button card" @click="finish">Finish</button>
+          <button class="wizard-button card" @click="next">Next</button>
         </div>
       </div>
     </div>
@@ -33,7 +24,7 @@
 import configTemplate from "../assets/wizard/configTemplate.json";
 import wizardPage from "../components/wizard/wizardPage.vue";
 // import odriveEnums from "../assets/odriveEnums.json";
-import {pages} from "../assets/wizard/wizard.js";
+import { pages } from "../assets/wizard/wizard.js";
 
 // see wizard.js for what wizard pages exist and what they contain
 
@@ -50,29 +41,34 @@ export default {
     };
   },
   methods: {
-    applyConfig() {
-      // send config parameters that aren't null to the connected odrive!
-      console.log("attempting to apply config...");
+    choiceHandler(e) {
+      this.updateConfig(this.wizardConfig, e.configStub);
       console.log(JSON.parse(JSON.stringify(this.wizardConfig)));
     },
-    choiceHandler(e){
-      this.wizardConfig = this.updateConfig(this.wizardConfig, e);
+    updateConfig(config, configStub) {
+      // iterate over keys in configStub
+      if (configStub != null) {
+        Object.keys(configStub).forEach((key) => {
+          if (typeof configStub[key] == "object") {
+            this.updateConfig(config[key], configStub[key]);
+          } else {
+            config[key] = configStub[key];
+          }
+        });
+      }
     },
-    updateConfig(oldConfig, choice){
-      // merge choice.configStub into wizardConfig
-    },
-    next(){
+    next() {
       console.log("next");
       this.currentStep = pages[this.currentStep.next];
     },
-    finish(){
+    finish() {
       console.log("finish");
       this.currentStep = pages.End;
     },
-    back(){
+    back() {
       console.log("back");
       this.currentStep = pages[this.currentStep.back];
-    }
+    },
   },
 };
 </script>

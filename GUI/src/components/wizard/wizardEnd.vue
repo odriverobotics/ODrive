@@ -6,10 +6,13 @@
         <span class="diff-seperator"> ⮕ </span>
         <span class="diff-new">{{diff.newVal}}</span>
       </div>
+      <button class="wizard-button card" @click="applyConfig">Apply</button>
   </div>
 </template>
 
 <script>
+const axios = require("axios");
+
 export default {
   name: "wizardEnd",
   props: {
@@ -38,9 +41,8 @@ export default {
         configObj = configObj[key];
       }
       if (configObj != null){
-              this.configDiffs.push({path: path, oldVal: parseFloat(odrvObj["val"]), newVal: configObj});
+        this.configDiffs.push({path: path, oldVal: parseFloat(odrvObj["val"]), newVal: configObj});
       }
-
     }
   },
   methods: {
@@ -56,7 +58,35 @@ export default {
         }
         this.path.pop();
       }
-    }
+    },
+    applyConfig(){
+      // flatpaths will already be populated at this point
+      for (const diff of this.configDiffs) {
+        this.putVal(diff.path, diff.newVal);
+        console.log("applying " + diff.newVal + " to " + diff.path);
+      }
+    },
+    putVal(path, val) {
+      var params = new URLSearchParams();
+      params.append("key", "odrive0");
+      let keys = path.split(".");
+      for (const key of keys) {
+        params.append("key", key);
+      }
+      params.append("val", val);
+      params.append("type", typeof val);
+      console.log(path + " = " + " type = " + typeof val);
+      //console.log(params.toString());
+      let request = {
+        params: params,
+      };
+      console.log(request);
+      axios.put(
+        this.$store.state.odriveServerAddress + "/api/property",
+        null,
+        request
+      );
+    },
   }
 }
 </script>
@@ -79,4 +109,7 @@ export default {
   color: green;
 }
 
+.wizard-button:active {
+  background-color: var(--bg-color);
+}
 </style>

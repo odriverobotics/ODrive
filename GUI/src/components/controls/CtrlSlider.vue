@@ -71,7 +71,7 @@ export default {
         params.append("key", key);
       }
       params.append("val", value);
-      params.append("type", "numeric");
+      params.append("type", "number");
       console.log(params.toString());
       let request = {
         params: params,

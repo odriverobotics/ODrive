@@ -107,7 +107,7 @@ export let pages = {
                             config: {
                                 cpr: 8192,
                                 use_index: false,
-                                mode: odriveEnums.ENCODER_MODE_INCREMENTAL, // ENCODER_MODE_INCREMENTAL
+                                mode: odriveEnums.ENCODER_MODE_HALL,
                             }
                         }
                     }
@@ -234,7 +234,7 @@ export let pages = {
                             config: {
                                 cpr: 8192,
                                 use_index: false,
-                                mode: odriveEnums.ENCODER_MODE_INCREMENTAL, // ENCODER_MODE_INCREMENTAL
+                                mode: odriveEnums.ENCODER_MODE_HALL, // ENCODER_MODE_INCREMENTAL
                             }
                         }
                     }
