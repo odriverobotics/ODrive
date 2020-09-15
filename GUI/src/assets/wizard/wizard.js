@@ -21,11 +21,13 @@ export let pages = {
                 imageURL: require("../images/24v_300x300.png"),
                 text: "ODrive v3.6 24V",
                 hooks: [],
+                tooltip: null,
             },
             {
                 imageURL: require("../images/56v_300x300.png"),
                 text: "ODrive v3.6 56V",
                 hooks: [],
+                tooltip: null,
             },
         ],
         customComponents: [],
@@ -44,6 +46,8 @@ export let pages = {
                 component: "wizardBrake",
                 id: 0,
                 data: {},
+                tooltip: "When you slow down a motor, the energy has to go somewhere.\n\r \
+                            It either goes to the brake resistor or back to your power supply."
             }
         ],
     },
@@ -73,6 +77,7 @@ export let pages = {
                         },
                     },
                 },
+                tooltip: null,
             },
             {
                 imageURL: require("../images/D6374_300x300.png"),
@@ -92,6 +97,7 @@ export let pages = {
                         },
                     },
                 },
+                tooltip: null,
             },
         ],
         customComponents: [
@@ -100,7 +106,8 @@ export let pages = {
                 id: 0,
                 data: {
                     axis: "axis0",
-                }
+                },
+                tooltip: null,
             },
         ],
         pageComponents: [
@@ -143,6 +150,7 @@ export let pages = {
                         }
                     }
                 },
+                tooltip: null,
             },
             {
                 imageURL: require("../images/hall_effect_300x300.png"),
@@ -165,6 +173,7 @@ export let pages = {
                         }
                     }
                 },
+                tooltip: null,
             },
         ],
         customComponents: [
@@ -173,14 +182,16 @@ export let pages = {
                 id: 0,
                 data: {
                     axis: "axis0",
-                }
+                },
+                tooltip: null,
             },
             {
                 component: "wizardEncoderIncrementalIndex",
                 id: 1,
                 data: {
                     axis: "axis0",
-                }
+                },
+                tooltip: null,
             },
         ],
         pageComponents: [
@@ -212,7 +223,7 @@ export let pages = {
         requirements: [],
         choices: [
             {
-                imageURL: "",
+                imageURL: require("../images/temp.png"),
                 text: "Position Control",
                 hooks: [],
                 configStub: {
@@ -224,9 +235,10 @@ export let pages = {
                         },
                     },
                 },
+                tooltip: "Use this mode to control the position of the motor"
             },
             {
-                imageURL: "",
+                imageURL: require("../images/temp.png"),
                 text: "Velocity Control",
                 hooks: [],
                 configStub: {
@@ -238,9 +250,10 @@ export let pages = {
                         },
                     },
                 },
+                tooltip: "Use this mode to control the velocity of the motor"
             },
             {
-                imageURL: "",
+                imageURL: require("../images/temp.png"),
                 text: "Torque Control",
                 hooks: [],
                 configStub: {
@@ -252,9 +265,10 @@ export let pages = {
                         },
                     },
                 },
+                tooltip: "Use this mode to control the torque output of the motor"
             },
             {
-                imageURL: "",
+                imageURL: require("../images/temp.png"),
                 text: "Voltage Control",
                 hooks: [],
                 configStub: {
@@ -266,6 +280,7 @@ export let pages = {
                         },
                     },
                 },
+                tooltip: "This mode is used for gimbal motors"
             },
         ],
         customComponents: [],
@@ -285,7 +300,8 @@ export let pages = {
                 id: 0,
                 data: {
                     axis: "axis0",
-                }
+                },
+                tooltip: null,
             },
         ],
         pageComponents: [],
@@ -315,6 +331,7 @@ export let pages = {
                         },
                     },
                 },
+                tooltip: null,
             },
             {
                 imageURL: require("../images/D6374_300x300.png"),
@@ -333,6 +350,7 @@ export let pages = {
                         },
                     },
                 },
+                tooltip: null,
             },
         ],
         customComponents: [
@@ -341,7 +359,8 @@ export let pages = {
                 id: 0,
                 data: {
                     axis: "axis1",
-                }
+                },
+                tooltip: null,
             },
         ],
         pageComponents: [
@@ -384,6 +403,7 @@ export let pages = {
                         }
                     }
                 },
+                tooltip: null,
             },
             {
                 imageURL: require("../images/hall_effect_300x300.png"),
@@ -406,6 +426,7 @@ export let pages = {
                         }
                     }
                 },
+                tooltip: null,
             },
         ],
         customComponents: [
@@ -414,14 +435,16 @@ export let pages = {
                 id: 0,
                 data: {
                     axis: "axis1",
-                }
+                },
+                tooltip: null,
             },
             {
                 component: "wizardEncoderIncrementalIndex",
                 id: 1,
                 data: {
                     axis: "axis1",
-                }
+                },
+                tooltip: null,
             },
         ],
         pageComponents: [
@@ -452,11 +475,11 @@ export let pages = {
         requirements: [],
         choices: [
             {
-                imageURL: "",
+                imageURL: require("../images/temp.png"),
                 text: "Position Control",
                 hooks: [],
                 configStub: {
-                    axis0: {
+                    axis1: {
                         controller: {
                             config: {
                                 control_mode: odriveEnums.CONTROL_MODE_POSITION_CONTROL,
@@ -464,13 +487,14 @@ export let pages = {
                         },
                     },
                 },
+                tooltip: "Use this mode to control the position of the motor"
             },
             {
-                imageURL: "",
+                imageURL: require("../images/temp.png"),
                 text: "Velocity Control",
                 hooks: [],
                 configStub: {
-                    axis0: {
+                    axis1: {
                         controller: {
                             config: {
                                 control_mode: odriveEnums.CONTROL_MODE_VELOCITY_CONTROL,
@@ -478,13 +502,14 @@ export let pages = {
                         },
                     },
                 },
+                tooltip: "Use this mode to control the velocity of the motor"
             },
             {
-                imageURL: "",
+                imageURL: require("../images/temp.png"),
                 text: "Torque Control",
                 hooks: [],
                 configStub: {
-                    axis0: {
+                    axis1: {
                         controller: {
                             config: {
                                 control_mode: odriveEnums.CONTROL_MODE_TORQUE_CONTROL,
@@ -492,13 +517,14 @@ export let pages = {
                         },
                     },
                 },
+                tooltip: "Use this mode to control the torque output of the motor"
             },
             {
-                imageURL: "",
+                imageURL: require("../images/temp.png"),
                 text: "Voltage Control",
                 hooks: [],
                 configStub: {
-                    axis0: {
+                    axis1: {
                         controller: {
                             config: {
                                 control_mode: odriveEnums.CONTROL_MODE_VOLTAGE_CONTROL,
@@ -506,6 +532,7 @@ export let pages = {
                         },
                     },
                 },
+                tooltip: "This mode is used for gimbal motors"
             },
         ],
         customComponents: [],
@@ -525,7 +552,8 @@ export let pages = {
                 id: 0,
                 data: {
                     axis: "axis1",
-                }
+                },
+                tooltip: null,
             },
         ],
         pageComponents: [],
@@ -542,6 +570,7 @@ export let pages = {
             {
                 component: "wizardEnd",
                 id: 0,
+                tooltip: null,
             }
         ],
         pageComponents: [],

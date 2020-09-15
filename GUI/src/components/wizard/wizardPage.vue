@@ -38,6 +38,7 @@
 </template>
 
 <script>
+import Tooltip from "vue-directive-tooltip";
 import wizardChoice from "./choices/wizardChoice.vue";
 import wizardMisc from "./choices/wizardMisc.vue";
 import wizardMotor from "./choices/wizardMotor.vue";
@@ -70,6 +71,7 @@ export default {
     wizardMotorMeasure,
     wizardEncoderCal,
     wizardBrake,
+    Tooltip,
   },
   data: function () {
     return {
@@ -82,8 +84,8 @@ export default {
       this.$emit("choice", e);
     },
     pageCompEvent(e) {
-      this.$emit('page-comp-event',e);
-    }
+      this.$emit("page-comp-event", e);
+    },
   },
 };
 </script>
