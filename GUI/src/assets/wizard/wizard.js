@@ -2,6 +2,12 @@ import odriveEnums from "../odriveEnums.json";
 
 // wizard is an object of pages.
 // each page has a number, title, vue component name, next destination, back destination, and array of choices
+// certain choices require a hook - for example, hall effect encoder cpr is 6 * motor.config.pole_pairs
+// each hook takes a config object, modifies it, and returns it after running appropriate calculations.
+// see choiceHandler() in Wizard.vue for how this happens
+
+// Pages can also have custom components displayed below the choice tiles
+// Example - on motor pages, there are buttons to run motor calibration and clear errors.
 export let pages = {
     ODrive: {
         number: 0,
@@ -15,13 +21,16 @@ export let pages = {
             {
                 imageURL: require("../images/24v_300x300.png"),
                 text: "ODrive v3.6 24V",
+                hooks: [],
             },
             {
                 imageURL: require("../images/56v_300x300.png"),
                 text: "ODrive v3.6 56V",
+                hooks: [],
             },
         ],
         customComponents: [],
+        pageComponents: [],
     },
     Motor_0: {
         number: 1,
@@ -35,14 +44,16 @@ export let pages = {
             {
                 imageURL: require("../images/D5065_300x300.png"),
                 text: "ODrive D5065",
+                hooks: [],
                 configStub: {
                     axis0: {
                         motor: {
                             config: {
                                 pole_pairs: 7,
                                 torque_constant: 8.27 / 270,
-                                phase_resistance: 0.039, // from test rig
-                                phase_inductance: 1.57e-5,
+                                // R and L come from "Calibrate Motor" button on page
+                                //phase_resistance: 0.039, // from test rig
+                                //phase_inductance: 1.57e-5,
                                 motor_type: odriveEnums.MOTOR_TYPE_HIGH_CURRENT, // MOTOR_TYPE_HIGH_CURRENT
                             },
                         },
@@ -52,14 +63,16 @@ export let pages = {
             {
                 imageURL: require("../images/D6374_300x300.png"),
                 text: "ODrive D6374",
+                hooks: [],
                 configStub: {
                     axis0: {
                         motor: {
                             config: {
                                 pole_pairs: 7,
                                 torque_constant: 8.27 / 150,
-                                phase_resistance: 0.041, // measurement from PJ
-                                phase_inductance: 2.23e-5,
+                                // R and L come from "Calibrate Motor" button on page
+                                //phase_resistance: 0.041, // measurement from PJ
+                                //phase_inductance: 2.23e-5,
                                 motor_type: odriveEnums.MOTOR_TYPE_HIGH_CURRENT, // MOTOR_TYPE_HIGH_CURRENT,
                             },
                         },
@@ -76,6 +89,22 @@ export let pages = {
                 }
             },
         ],
+        pageComponents: [
+            {
+                component: "wizardMotorMeasure",
+                id: 0,
+                data: {
+                    axis: "axis0",
+                }
+            },
+            {
+                component: "wizardClearErrors",
+                id: 1,
+                data: {
+                    axis: "axis0"
+                }
+            }
+        ]
     },
     Encoder_0: {
         number: 2,
@@ -89,6 +118,7 @@ export let pages = {
             {
                 imageURL: require("../images/amt102-v_300x300.png"),
                 text: "CUI AMT102V",
+                hooks: [],
                 configStub: {
                     axis0: {
                         encoder: {
@@ -104,11 +134,18 @@ export let pages = {
             {
                 imageURL: require("../images/hall_effect_300x300.png"),
                 text: "Hall Effect",
+                hooks: [
+                    // hook takes a config object (normally this.wizardConfig in Wizard.vue), creates and returns a copy
+                    (configObj) => {
+                        let newConfig = configObj;
+                        newConfig.axis0.encoder.config.cpr = 6 * newConfig.axis0.motor.config.pole_pairs;
+                        return newConfig;
+                    },
+                ],
                 configStub: {
                     axis0: {
                         encoder: {
                             config: {
-                                cpr: 8192,
                                 use_index: false,
                                 mode: odriveEnums.ENCODER_MODE_HALL,
                             }
@@ -133,6 +170,7 @@ export let pages = {
                 }
             },
         ],
+        pageComponents: [],
     },
     Misc_0: {
         number: 3,
@@ -152,6 +190,7 @@ export let pages = {
                 }
             },
         ],
+        pageComponents: [],
     },
     Motor_1: {
         number: 4,
@@ -165,6 +204,7 @@ export let pages = {
             {
                 imageURL: require("../images/D5065_300x300.png"),
                 text: "ODrive D5065",
+                hooks: [],
                 configStub: {
                     axis1: {
                         motor: {
@@ -182,6 +222,7 @@ export let pages = {
             {
                 imageURL: require("../images/D6374_300x300.png"),
                 text: "ODrive D6374",
+                hooks: [],
                 configStub: {
                     axis1: {
                         motor: {
@@ -206,6 +247,7 @@ export let pages = {
                 }
             },
         ],
+        pageComponents: [],
     },
     Encoder_1: {
         number: 5,
@@ -219,6 +261,7 @@ export let pages = {
             {
                 imageURL: require("../images/amt102-v_300x300.png"),
                 text: "CUI AMT102V",
+                hooks: [],
                 configStub: {
                     axis0: {
                         encoder: {
@@ -234,11 +277,18 @@ export let pages = {
             {
                 imageURL: require("../images/hall_effect_300x300.png"),
                 text: "Hall Effect",
+                hooks: [
+                    // hook takes a config object, creates and returns a copy
+                    (configObj) => {
+                        let newConfig = configObj;
+                        newConfig.axis1.encoder.config.cpr = 6 * newConfig.axis1.motor.config.pole_pairs;
+                        return newConfig;
+                    },
+                ],
                 configStub: {
                     axis0: {
                         encoder: {
                             config: {
-                                cpr: 8192,
                                 use_index: false,
                                 mode: odriveEnums.ENCODER_MODE_HALL, // ENCODER_MODE_INCREMENTAL
                             }
@@ -263,6 +313,7 @@ export let pages = {
                 }
             },
         ],
+        pageComponents: [],
     },
     Misc_1: {
         number: 6,
@@ -282,6 +333,7 @@ export let pages = {
                 }
             },
         ],
+        pageComponents: [],
     },
     End: {
         number: 7,
@@ -297,6 +349,7 @@ export let pages = {
                 component: "wizardEnd",
                 id: 0,
             }
-        ]
+        ],
+        pageComponents: [],
     }
 }

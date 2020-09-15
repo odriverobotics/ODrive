@@ -8,22 +8,28 @@
           :key="page.number"
           class="wizard-link"
           v-bind:class="{'active-link': currentStep == page}"
-          @click="currentStep=page"
+          @click="currentStep = page; choiceMade = false"
         >{{page.link}}</span>
       </div>
       <div class="wizard-page">
         <wizardPage
           :choices="currentStep.choices"
           :customComponents="currentStep.customComponents"
+          :pageComponents="currentStep.pageComponents"
           :title="currentStep.title"
           :config="wizardConfig"
           v-on:choice="choiceHandler"
+          v-on:page-comp-event="pageEventHandler"
         />
         <div class="wizard-controls">
           <!-- show breadcrumbs, back, apply, next buttons -->
           <button class="wizard-button card" @click="back">Back</button>
           <button class="wizard-button card" @click="finish">Finish</button>
-          <button class="wizard-button card" @click="next">Next</button>
+          <button
+            class="wizard-button card"
+            v-bind:class="{'next-green': choiceMade}"
+            @click="next"
+          >Next</button>
         </div>
       </div>
     </div>
@@ -48,6 +54,7 @@ export default {
     return {
       currentStep: pages.ODrive,
       wizardConfig: configTemplate,
+      choiceMade: false,
     };
   },
   computed: {
@@ -56,8 +63,83 @@ export default {
     },
   },
   methods: {
+    pageEventHandler(e) {
+      this.choiceMade = false;
+      if (e.data == "motor calibration") {
+        // set a timeout to grab axis resistance and inductance values
+        setTimeout(() => {
+          let configStub = undefined;
+          let inductance;
+          let resistance;
+          let keys_L = [
+            "odrive0",
+            e.axis,
+            "motor",
+            "config",
+            "phase_inductance",
+          ];
+          let keys_R = [
+            "odrive0",
+            e.axis,
+            "motor",
+            "config",
+            "phase_resistance",
+          ];
+          let odriveObj = this.$store.state.odrives;
+          for (const key of keys_L) {
+            odriveObj = odriveObj[key];
+          }
+          inductance = parseFloat(odriveObj["val"]);
+
+          odriveObj = this.$store.state.odrives;
+          for (const key of keys_R) {
+            odriveObj = odriveObj[key];
+          }
+          resistance = parseFloat(odriveObj["val"]);
+          if (e.axis == "axis0") {
+            configStub = {
+              axis0: {
+                motor: {
+                  config: {
+                    phase_resistance: resistance,
+                    phase_inductance: inductance,
+                  },
+                },
+              },
+            };
+          } else if (e.axis == "axis1") {
+            configStub = {
+              axis1: {
+                motor: {
+                  config: {
+                    phase_resistance: resistance,
+                    phase_inductance: inductance,
+                  },
+                },
+              },
+            };
+          }
+          this.choiceHandler({
+            choice: "Motor Calibration",
+            configStub: configStub,
+            hooks: [],
+          })
+        }, 6000);
+      }
+    },
     choiceHandler(e) {
+      // apply static configStub
       this.updateConfig(this.wizardConfig, e.configStub);
+
+      // run hooks
+      for (const fn of e.hooks) {
+        this.wizardConfig = fn(this.wizardConfig);
+      }
+
+      // ugly, but a special case.
+      if (e.choice != "ODrive D5065" && e.choice != "ODrive D6374" && e.choice != "Other motor"){
+        this.choiceMade = true;
+      }
       console.log(JSON.parse(JSON.stringify(this.wizardConfig)));
     },
     updateConfig(config, configStub) {
@@ -75,6 +157,7 @@ export default {
     next() {
       console.log("next");
       this.currentStep = pages[this.currentStep.next];
+      this.choiceMade = false;
     },
     finish() {
       console.log("finish");
@@ -83,6 +166,7 @@ export default {
     back() {
       console.log("back");
       this.currentStep = pages[this.currentStep.back];
+      this.choiceMade = false;
     },
   },
 };
@@ -146,5 +230,10 @@ export default {
 
 .wizard-button:active {
   background-color: var(--bg-color);
+}
+
+.next-green {
+  color: green;
+  font-weight: bold;
 }
 </style>

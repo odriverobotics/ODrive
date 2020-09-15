@@ -15,7 +15,7 @@
 export default {
   name: "wizardMisc",
   props: {
-    data: Object
+    data: Object,
   },
   data: function () {
     return {
@@ -27,7 +27,13 @@ export default {
   },
   computed: {
     velocityLimit: function () {
-      let keys = ["odrive0", this.data.axis, "controller", "config", "vel_limit"];
+      let keys = [
+        "odrive0",
+        this.data.axis,
+        "controller",
+        "config",
+        "vel_limit",
+      ];
       let odriveObj = this.$store.state.odrives;
       for (const key of keys) {
         odriveObj = odriveObj[key];
@@ -45,7 +51,7 @@ export default {
   },
   methods: {
     sendConfig() {
-      if ((this.vel_set == true && this.current_set == true)) {
+      if (this.vel_set == true && this.current_set == true) {
         console.log("emitting choice event from limits page");
         this.$emit("choice", {
           choice: "Limits " + this.data.axis,
@@ -53,6 +59,44 @@ export default {
             vel_limit: this.vel_limit,
             current_lim: this.current_lim,
           },
+          hooks: [],
+        });
+        let configStub = undefined;
+        if (this.data.axis == "axis0") {
+          configStub = {
+            axis0: {
+              controller: {
+                config: {
+                  vel_limit: this.vel_limit,
+                }
+              },
+              motor: {
+                config: {
+                  current_lim: this.current_lim,
+                }
+              }
+            },
+          };
+        } else if (this.data.axis == "axis1") {
+          configStub = {
+            axis1: {
+              controller: {
+                config: {
+                  vel_limit: this.vel_limit,
+                }
+              },
+              motor: {
+                config: {
+                  current_lim: this.current_lim,
+                }
+              }
+            },
+          };
+        }
+        this.$emit("choice", {
+          choice: "Misc " + this.data.axis,
+          configStub: configStub,
+          hooks: [],
         });
       }
     },

@@ -54,6 +54,7 @@ export default {
       this.$emit("choice", {
         choice: "Incremental",
         configStub: configStub,
+        hooks: [],
       });
     },
   },

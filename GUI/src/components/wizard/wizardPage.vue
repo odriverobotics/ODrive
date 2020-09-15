@@ -9,7 +9,7 @@
         :key="choice.id"
         :imageUrl="choice.imageURL"
         :text="choice.text"
-        v-on:click.native="selectedChoice=choice.text;$emit('choice', {title: title, choice: choice.text, configStub: choice.configStub})"
+        v-on:click.native="selectedChoice=choice.text;$emit('choice', {title: title, choice: choice.text, configStub: choice.configStub, hooks: choice.hooks})"
       />
       <template v-for="customComponent in customComponents">
         <component
@@ -24,6 +24,16 @@
         />
       </template>
     </div>
+    <div class="page-components">
+      <template v-for="pageComponent in pageComponents">
+        <component
+          v-bind:is="pageComponent.component"
+          v-bind:data="pageComponent.data"
+          v-bind:key="pageComponent.id"
+          v-on:page-comp-event="pageCompEvent"
+        />
+      </template>
+    </div>
   </div>
 </template>
 
@@ -34,6 +44,8 @@ import wizardMotor from "./wizardMotor.vue";
 import wizardEncoderIncremental from "./wizardEncoderIncremental.vue";
 import wizardEncoderIncrementalIndex from "./wizardEncoderIncrementalIndex.vue";
 import wizardEnd from "./wizardEnd.vue";
+import wizardClearErrors from "./wizardClearErrors.vue";
+import wizardMotorMeasure from "./wizardMotorMeasure.vue";
 
 export default {
   name: "wizardPage",
@@ -43,6 +55,7 @@ export default {
     customComponents: Array,
     axis: String,
     config: Object,
+    pageComponents: Array,
   },
   components: {
     wizardChoice,
@@ -51,6 +64,8 @@ export default {
     wizardEncoderIncremental,
     wizardEncoderIncrementalIndex,
     wizardEnd,
+    wizardClearErrors,
+    wizardMotorMeasure,
   },
   data: function () {
     return {
@@ -60,7 +75,10 @@ export default {
   methods: {
     handleCustomChoice(e) {
       console.log(e);
-      this.$emit('choice', e);
+      this.$emit("choice", e);
+    },
+    pageCompEvent(e) {
+      this.$emit('page-comp-event',e);
     }
   },
 };
@@ -77,6 +95,12 @@ export default {
   display: flex;
   flex-direction: row;
   flex-wrap: wrap;
+}
+
+.page-components {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
 }
 
 .chosen {

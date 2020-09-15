@@ -10,13 +10,12 @@
     </div>
     <div class="left">
       <span>Phase Resistance =</span>
-      <span>{{" " + resistance}}</span>
+      <span>{{" " + resistance}} R</span>
     </div>
     <div class="left">
       <span>Phase Inductace =</span>
-      <span>{{" " + inductance}}</span>
+      <span>{{" " + inductance}} H</span>
     </div>
-    <button class="measure-button card" @click="measure">Measure Resistance and Inductance</button>
     <span class="name">Other Motor</span>
   </div>
 </template>
@@ -174,6 +173,7 @@ export default {
         this.$emit("choice", {
           choice: "Other motor",
           configStub: configStub,
+          hooks: [],
         });
       }
     },
