@@ -15,8 +15,13 @@ using namespace fibre;
 DEFINE_LOG_TOPIC(USB);
 USE_LOG_TOPIC(USB);
 
+// This probably has no noteworthy effect since we automatically restart
+// timed out operations anyway.
 constexpr unsigned int kBulkTimeoutMs = 2000;
 
+// Only relevant for platforms don't support hotplug detection and thus
+// need polling.
+constexpr unsigned int kPollingIntervalMs = 1000;
 
 /* LibusbDiscoverer ----------------------------------------------------------*/
 
@@ -352,15 +357,15 @@ int LibusbDiscoverer::on_hotplug(struct libusb_device *dev,
     if (LIBUSB_HOTPLUG_EVENT_DEVICE_ARRIVED == event) {
         FIBRE_LOG(D) << "device arrived: bus " << (int)bus_number << ", " << (int)dev_number;
 
-        for (auto& subscription: subscriptions_) {
-            consider_device(dev, subscription);
-        }
-
         // add empty placeholder to the list of known devices
         known_devices_[bus_number << 8 | dev_number] = {
             .dev = libusb_ref_device(dev),
             .handle = nullptr
         };
+
+        for (auto& subscription: subscriptions_) {
+            consider_device(dev, subscription);
+        }
 
     } else if (LIBUSB_HOTPLUG_EVENT_DEVICE_LEFT == event) {
         FIBRE_LOG(D) << "device left: bus " << (int)bus_number << ", " << (int)dev_number;
@@ -412,6 +417,17 @@ void LibusbDiscoverer::poll_devices_now() {
         for (auto& dev: current_devices) {
             if (known_devices_.find(dev.first) == known_devices_.end()) {
                 on_hotplug(dev.second, LIBUSB_HOTPLUG_EVENT_DEVICE_ARRIVED);
+
+                // Immediately forget about the devices that weren't opened on plugin.
+                // The reason is this: On Windows the device address and even the
+                // device pointer can remain equal across device reset. Since we don't
+                // poll at infinite frequency This means we could miss a device reset.
+                // To avoid this, we reinspect the all unopened devices on
+                // every polling iteration.
+                auto it = known_devices_.find(dev.first);
+                if (it->second.handle == nullptr) {
+                    known_devices_.erase(it);
+                }
             }
         }
 
@@ -434,7 +450,7 @@ void LibusbDiscoverer::poll_devices_now() {
 
     // It's possible that the discoverer was deinited during this function.
     if (event_loop_) {
-        device_polling_timer_ = event_loop_->call_later(1.0, [](void* ctx) {
+        device_polling_timer_ = event_loop_->call_later(kPollingIntervalMs * 0.001f, [](void* ctx) {
             ((LibusbDiscoverer*)ctx)->poll_devices_now();
         }, this);
     }
@@ -516,10 +532,8 @@ void LibusbDiscoverer::consider_device(struct libusb_device *device, ChannelDisc
                     continue;
                 }
 
-                EventLoop* event_loop = using_sparate_libusb_thread_ ? event_loop_ : nullptr;
-
                 LibusbBulkInEndpoint* ep_in = new LibusbBulkInEndpoint();
-                if (libusb_ep_in && ep_in->init(event_loop, my_dev.handle, libusb_ep_in->bEndpointAddress)) {
+                if (libusb_ep_in && ep_in->init(this, my_dev.handle, libusb_ep_in->bEndpointAddress)) {
                     my_dev.ep_in.push_back(ep_in);
                 } else {
                     delete ep_in;
@@ -527,7 +541,7 @@ void LibusbDiscoverer::consider_device(struct libusb_device *device, ChannelDisc
                 }
 
                 LibusbBulkOutEndpoint* ep_out = new LibusbBulkOutEndpoint();
-                if (libusb_ep_out && ep_out->init(event_loop, my_dev.handle, libusb_ep_out->bEndpointAddress)) {
+                if (libusb_ep_out && ep_out->init(this, my_dev.handle, libusb_ep_out->bEndpointAddress)) {
                     my_dev.ep_out.push_back(ep_out);
                 } else {
                     delete ep_out;
@@ -549,8 +563,8 @@ void LibusbDiscoverer::consider_device(struct libusb_device *device, ChannelDisc
 /* LibusbBulkEndpoint --------------------------------------------------------*/
 
 template<typename TRes>
-bool LibusbBulkEndpoint<TRes>::init(EventLoop* event_loop, libusb_device_handle* handle, uint8_t endpoint_id) {
-    event_loop_ = event_loop;
+bool LibusbBulkEndpoint<TRes>::init(LibusbDiscoverer* parent, libusb_device_handle* handle, uint8_t endpoint_id) {
+    parent_ = parent;
     handle_ = handle;
     transfer_ = libusb_alloc_transfer(0);
     endpoint_id_ = endpoint_id;
@@ -560,7 +574,7 @@ bool LibusbBulkEndpoint<TRes>::init(EventLoop* event_loop, libusb_device_handle*
 template<typename TRes>
 bool LibusbBulkEndpoint<TRes>::deinit() {
     if (completer_) {
-        FIBRE_LOG(E) << "Transfer still in progress. This is gonna be messy.";
+        FIBRE_LOG(E) << "Transfer on EP " << as_hex(endpoint_id_) << " still in progress. This is gonna be messy.";
     }
 
     libusb_free_transfer(transfer_);
@@ -593,7 +607,7 @@ void LibusbBulkEndpoint<TRes>::start_transfer(bufptr_t buffer, TransferHandle* h
     // This callback is used if we start our own libusb thread
     // separate from the application's event loop thread
     auto indirect_callback = [](struct libusb_transfer* transfer){
-        ((LibusbBulkEndpoint<TRes>*)transfer->user_data)->event_loop_->post(
+        ((LibusbBulkEndpoint<TRes>*)transfer->user_data)->parent_->event_loop_->post(
             [](void* ctx) {
                 ((LibusbBulkEndpoint<TRes>*)ctx)->on_transfer_finished();
             }, transfer->user_data
@@ -603,7 +617,7 @@ void LibusbBulkEndpoint<TRes>::start_transfer(bufptr_t buffer, TransferHandle* h
     //FIBRE_LOG(D) << "transfer of size " << buffer.size();
     libusb_fill_bulk_transfer(transfer_, handle_, endpoint_id_,
         buffer.begin(), buffer.size(),
-        event_loop_ ? indirect_callback : direct_callback,
+        parent_->using_sparate_libusb_thread_ ? indirect_callback : direct_callback,
         this, kBulkTimeoutMs);
     
     completer_ = &completer;
@@ -643,18 +657,59 @@ void LibusbBulkEndpoint<TRes>::on_transfer_finished() {
         submit_transfer();
         return;
     }
+    
+    libusb_device* dev = libusb_get_device(handle_);
 
-    // On linux we get LIBUSB_TRANSFER_STALL on the RX pipe when the cable is plugged out
-    StreamStatus status = LIBUSB_TRANSFER_COMPLETED == transfer_->status ? kStreamOk :
-                          LIBUSB_TRANSFER_CANCELLED == transfer_->status ? kStreamCancelled :
-                          LIBUSB_TRANSFER_STALL == transfer_->status ? kStreamClosed :
-                          LIBUSB_TRANSFER_NO_DEVICE == transfer_->status ? kStreamClosed :
-                          kStreamError;
+    StreamStatus status;
+
+    if (transfer_->status == LIBUSB_TRANSFER_COMPLETED) {
+        status = kStreamOk;
+    } else if (transfer_->status == LIBUSB_TRANSFER_CANCELLED) {
+        status = kStreamCancelled;
+    } else {
+        // The error that we get on device removal tends to be inaccurate.
+        // Sometimes it's LIBUSB_TRANSFER_STALL, sometimes
+        // LIBUSB_TRANSFER_ERROR. Therefore we just check if the device
+        // is still present to determine which error code to return.
+
+        bool found = false;
+
+        libusb_device** list;
+        ssize_t n_devices = libusb_get_device_list(parent_->libusb_ctx_, &list);
+
+        if (n_devices >= 0) {
+            for (size_t i = 0; i < n_devices; ++i) {
+                if (list[i] == dev) {
+                    break;
+                }
+            }
+            libusb_free_device_list(list, 1);
+        }
+
+        if (found) {
+            status = kStreamError;
+        } else {
+            FIBRE_LOG(D) << "device removed during transfer";
+            status = kStreamClosed;
+        }
+    }
 
     (status == kStreamError ? FIBRE_LOG(W) : FIBRE_LOG(T))
         << "USB transfer on EP " << as_hex(endpoint_id_) << " finished with " << libusb_error_name(transfer_->status);
 
-    uint8_t* end = std::max(transfer_->buffer + transfer_->actual_length, transfer_->buffer);
+    if (status == kStreamClosed) {
+        handle_ = nullptr; // Ensure that no new transfer is started
+    }
 
+    uint8_t* end = std::max(transfer_->buffer + transfer_->actual_length, transfer_->buffer);
     safe_complete(completer_, {status, end});
+    
+    // If libusb does hotplug detection itself then we don't need to handle
+    // device removal here. Libusb will call the corresponding hotplug callback.
+    if (status == kStreamClosed && !parent_->hotplug_callback_handle_) {
+        if (!parent_->using_sparate_libusb_thread_) {
+            FIBRE_LOG(E) << "It's not a good idea to unref the device from within this callback. This will probably hang.";
+        }
+        parent_->on_hotplug(dev, LIBUSB_HOTPLUG_EVENT_DEVICE_LEFT);
+    }
 }

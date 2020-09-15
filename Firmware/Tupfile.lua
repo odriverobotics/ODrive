@@ -16,10 +16,10 @@ end
 python_command = find_python3()
 print('Using python command "'..python_command..'"')
 
-tup.frule{inputs={'fibre/cpp/interfaces_template.j2'}, command=python_command..' interface_generator_stub.py --definitions odrive-interface.yaml --template %f --output %o', outputs='autogen/interfaces.hpp'}
-tup.frule{inputs={'fibre/cpp/function_stubs_template.j2'}, command=python_command..' interface_generator_stub.py --definitions odrive-interface.yaml --template %f --output %o', outputs='autogen/function_stubs.hpp'}
-tup.frule{inputs={'fibre/cpp/endpoints_template.j2'}, command=python_command..' interface_generator_stub.py --definitions odrive-interface.yaml --generate-endpoints ODrive --template %f --output %o', outputs='autogen/endpoints.hpp'}
-tup.frule{inputs={'fibre/cpp/type_info_template.j2'}, command=python_command..' interface_generator_stub.py --definitions odrive-interface.yaml --template %f --output %o', outputs='autogen/type_info.hpp'}
+tup.frule{inputs={'fibre-cpp/interfaces_template.j2'}, command=python_command..' interface_generator_stub.py --definitions odrive-interface.yaml --template %f --output %o', outputs='autogen/interfaces.hpp'}
+tup.frule{inputs={'fibre-cpp/function_stubs_template.j2'}, command=python_command..' interface_generator_stub.py --definitions odrive-interface.yaml --template %f --output %o', outputs='autogen/function_stubs.hpp'}
+tup.frule{inputs={'fibre-cpp/endpoints_template.j2'}, command=python_command..' interface_generator_stub.py --definitions odrive-interface.yaml --generate-endpoints ODrive --template %f --output %o', outputs='autogen/endpoints.hpp'}
+tup.frule{inputs={'fibre-cpp/type_info_template.j2'}, command=python_command..' interface_generator_stub.py --definitions odrive-interface.yaml --template %f --output %o', outputs='autogen/type_info.hpp'}
 
 -- Note: we currently check this file into source control for two reasons:
 --  - Don't require tup to run in order to use odrivetool from the repo
@@ -192,7 +192,7 @@ sources = {
     'communication/interface_usb.cpp',
     'communication/interface_can.cpp',
     'communication/interface_i2c.cpp',
-    'fibre/cpp/legacy_protocol.cpp',
+    'fibre-cpp/legacy_protocol.cpp',
     'FreeRTOS-openocd.c',
     'autogen/version.c'
 }
@@ -207,14 +207,14 @@ build{
     includes={
         'Drivers/DRV8301',
         'MotorControl',
-        'fibre/cpp/include',
+        'fibre-cpp/include',
         '.',
         "doctest"
     }
 }
 
 if tup.getconfig('DOCTEST') == 'true' then
-    TEST_INCLUDES = '-I. -I./MotorControl -I./fibre/cpp/include -I./Drivers/DRV8301 -I./doctest'
+    TEST_INCLUDES = '-I. -I./MotorControl -I./fibre-cpp/include -I./Drivers/DRV8301 -I./doctest'
     tup.foreach_rule('Tests/*.cpp', 'g++ -O3 -std=c++17 '..TEST_INCLUDES..' -c %f -o %o', 'Tests/bin/%B.o')
     tup.frule{inputs='Tests/bin/*.o', command='g++ %f -o %o', outputs='Tests/test_runner.exe'}
     tup.frule{inputs='Tests/test_runner.exe', command='%f'}

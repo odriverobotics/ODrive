@@ -21,6 +21,8 @@ struct ChannelDiscoveryResult {
     AsyncStreamSink* tx_channel;
 };
 
+template<typename TRes> class FIBRE_PRIVATE LibusbBulkEndpoint;
+
 class FIBRE_PRIVATE LibusbDiscoverer {
 public:
 
@@ -45,6 +47,9 @@ public:
     int stop_channel_discovery(ChannelDiscoveryContext* handle);
 
 private:
+    friend class LibusbBulkEndpoint<ReadResult>;
+    friend class LibusbBulkEndpoint<WriteResult>;
+
     struct Device {
         struct libusb_device* dev;
         struct libusb_device_handle* handle;
@@ -76,7 +81,7 @@ private:
 template<typename TRes>
 class FIBRE_PRIVATE LibusbBulkEndpoint {
 public:
-    bool init(EventLoop* event_loop, struct libusb_device_handle* handle, uint8_t endpoint_id);
+    bool init(LibusbDiscoverer* parent, struct libusb_device_handle* handle, uint8_t endpoint_id);
     bool deinit();
 
 protected:
@@ -87,7 +92,7 @@ private:
     void submit_transfer();
     void on_transfer_finished();
 
-    EventLoop* event_loop_ = nullptr; // only non-null on Windows where we use a separate libusb thread
+    LibusbDiscoverer* parent_ = nullptr;
     struct libusb_device_handle* handle_ = nullptr;
     uint8_t endpoint_id_ = 0;
     struct libusb_transfer* transfer_ = nullptr;

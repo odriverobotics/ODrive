@@ -425,9 +425,8 @@ struct FIBRE_PRIVATE LibFibreCallContext : fibre::Completer<fibre::LegacyObjectC
         transcode(obj->client, rx_vec, func->outputs, false);
 
         size_t len = std::min(rx_vec.size(), rx_buf.size());
-        FIBRE_LOG(D) << "copying " << rx_vec.size() << " or " << rx_buf.size() << " bytes to output";
         std::copy(rx_vec.begin(), rx_vec.begin() + len, rx_buf.begin());
-        FIBRE_LOG(D) << "result is " << as_hex(rx_buf);
+        FIBRE_LOG(D) << "result is [" << as_hex(rx_buf) << "]";
 
         if (on_completed) {
             (*on_completed)(ctx, output.status, rx_buf.begin() + len);

@@ -263,8 +263,9 @@ We use GitHub Releases to provide firmware releases.
 1. Cut off the changelog to reflect the new release
 2. Merge the release candidate into master.
 3. Push a (lightweight) tag to the master branch. Follow the existing naming convention.
-4. Push the python tools to PyPI.
-5. Edit the release on GitHub to add a title and description (copy&paste from changelog).
+4. If you changed something in libfibre, regenerate the binaries using `Firmware/fibre-cpp/compile_for_all_platforms.sh` and then copy all resulting `*.so`, `*.dll` and `*.dylib` files to `tools/odrive/pyfibre/fibre/`.
+5. Push the python tools to PyPI (see setup.py for details).
+6. Edit the release on GitHub to add a title and description (copy&paste from changelog).
 
 ## Other code maintenance notes
 The cortex M4F processor has hardware single precision float unit. However double precision operations are not accelerated, and hence should be avoided. The following regex is helpful for cleaning out double constants:

@@ -73,19 +73,6 @@ if creating_package:
   version_file_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'odrive', 'version.txt')
   with open(version_file_path, mode='w') as version_file:
     version_file.write(version)
-  
-  # Temporarily link fibre into the python tools directory
-  # TODO: distribute a fibre package separately
-  fibre_src = os.path.join(os.path.dirname(os.path.dirname(
-                    os.path.realpath(__file__))),
-                    "Firmware", "fibre", "python", "fibre")
-  fibre_link = os.path.join(os.path.dirname(
-                    os.path.realpath(__file__)), "fibre")
-  if not os.path.exists(fibre_link):
-    if sys.version_info > (3, 3):
-      os.symlink(fibre_src, fibre_link, target_is_directory=True)
-    else:
-      os.symlink(fibre_src, fibre_link)
 
 # TODO: find a better place for this
 if not creating_package:
@@ -99,7 +86,7 @@ if not creating_package:
 try:
   setup(
     name = 'odrive',
-    packages = ['odrive', 'odrive.dfuse', 'fibre'],
+    packages = ['odrive', 'odrive.dfuse', 'odrive.pyfibre.fibre'],
     scripts = ['odrivetool', 'odrivetool.bat', 'odrive_demo.py'],
     version = version,
     description = 'Control utilities for the ODrive high performance motor controller',
@@ -117,7 +104,12 @@ try:
       'monotonic', # For compatibility with older python versions
       'pywin32 >= 222; platform_system == "Windows"' # Required for fancy terminal features on Windows
     ],
-    package_data={'': ['version.txt']},
+    package_data={'': [
+      'version.txt',
+      'pyfibre/fibre/*.so',
+      'pyfibre/fibre/*.dll',
+      'pyfibre/fibre/*.dylib'
+    ]},
     classifiers = [],
   )
 
@@ -127,4 +119,3 @@ finally:
   # clean up
   if creating_package:
     os.remove(version_file_path)
-    os.remove(fibre_link)

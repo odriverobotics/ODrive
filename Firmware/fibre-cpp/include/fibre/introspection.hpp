@@ -191,7 +191,7 @@ struct FibrePropertyTypeInfo<Property<T>> : FloatSettableTypeInfo, StringConvert
     }
 
     bool set_string(const Introspectable& obj, char* buffer, size_t length) const override {
-        maybe_underlying_type_t<T> value;
+        maybe_underlying_type_t<T> value{};
         if (!from_string(buffer, length, &value, 0)) {
             return false;
         }
@@ -200,7 +200,7 @@ struct FibrePropertyTypeInfo<Property<T>> : FloatSettableTypeInfo, StringConvert
     }
 
     bool set_float(const Introspectable& obj, float val) const override {
-        maybe_underlying_type_t<T> value;
+        maybe_underlying_type_t<T> value{};
         if (!conversion::set_from_float(val, &value)) {
             return false;
         }
