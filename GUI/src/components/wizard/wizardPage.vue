@@ -38,14 +38,16 @@
 </template>
 
 <script>
-import wizardChoice from "./wizardChoice.vue";
-import wizardMisc from "./wizardMisc.vue";
-import wizardMotor from "./wizardMotor.vue";
-import wizardEncoderIncremental from "./wizardEncoderIncremental.vue";
-import wizardEncoderIncrementalIndex from "./wizardEncoderIncrementalIndex.vue";
-import wizardEnd from "./wizardEnd.vue";
-import wizardClearErrors from "./wizardClearErrors.vue";
-import wizardMotorMeasure from "./wizardMotorMeasure.vue";
+import wizardChoice from "./choices/wizardChoice.vue";
+import wizardMisc from "./choices/wizardMisc.vue";
+import wizardMotor from "./choices/wizardMotor.vue";
+import wizardEncoderIncremental from "./choices/wizardEncoderIncremental.vue";
+import wizardEncoderIncrementalIndex from "./choices/wizardEncoderIncrementalIndex.vue";
+import wizardEnd from "./choices/wizardEnd.vue";
+import wizardClearErrors from "./page_components/wizardClearErrors.vue";
+import wizardMotorMeasure from "./page_components/wizardMotorMeasure.vue";
+import wizardEncoderCal from "./page_components/wizardEncoderCal.vue";
+import wizardBrake from "./choices/wizardBrake.vue";
 
 export default {
   name: "wizardPage",
@@ -66,6 +68,8 @@ export default {
     wizardEnd,
     wizardClearErrors,
     wizardMotorMeasure,
+    wizardEncoderCal,
+    wizardBrake,
   },
   data: function () {
     return {

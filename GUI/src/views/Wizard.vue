@@ -5,7 +5,7 @@
         <span class="wizard-nav-title">Wizard Pages</span>
         <span
           v-for="page in wizardPages"
-          :key="page.number"
+          :key="page.title"
           class="wizard-link"
           v-bind:class="{'active-link': currentStep == page}"
           @click="currentStep = page; choiceMade = false"
@@ -68,62 +68,68 @@ export default {
       if (e.data == "motor calibration") {
         // set a timeout to grab axis resistance and inductance values
         setTimeout(() => {
-          let configStub = undefined;
-          let inductance;
-          let resistance;
-          let keys_L = [
-            "odrive0",
-            e.axis,
-            "motor",
-            "config",
-            "phase_inductance",
-          ];
-          let keys_R = [
-            "odrive0",
-            e.axis,
-            "motor",
-            "config",
-            "phase_resistance",
-          ];
-          let odriveObj = this.$store.state.odrives;
-          for (const key of keys_L) {
-            odriveObj = odriveObj[key];
-          }
-          inductance = parseFloat(odriveObj["val"]);
+          // check for error during calibration
+          if (
+            this.$store.state.odrives.odrive0.axis0.error.val == "0" &&
+            this.$store.state.odrives.odrive0.axis1.error.val == "0"
+          ) {
+            let configStub = undefined;
+            let inductance;
+            let resistance;
+            let keys_L = [
+              "odrive0",
+              e.axis,
+              "motor",
+              "config",
+              "phase_inductance",
+            ];
+            let keys_R = [
+              "odrive0",
+              e.axis,
+              "motor",
+              "config",
+              "phase_resistance",
+            ];
+            let odriveObj = this.$store.state.odrives;
+            for (const key of keys_L) {
+              odriveObj = odriveObj[key];
+            }
+            inductance = parseFloat(odriveObj["val"]);
 
-          odriveObj = this.$store.state.odrives;
-          for (const key of keys_R) {
-            odriveObj = odriveObj[key];
-          }
-          resistance = parseFloat(odriveObj["val"]);
-          if (e.axis == "axis0") {
-            configStub = {
-              axis0: {
-                motor: {
-                  config: {
-                    phase_resistance: resistance,
-                    phase_inductance: inductance,
+            odriveObj = this.$store.state.odrives;
+            for (const key of keys_R) {
+              odriveObj = odriveObj[key];
+            }
+            resistance = parseFloat(odriveObj["val"]);
+            if (e.axis == "axis0") {
+              configStub = {
+                axis0: {
+                  motor: {
+                    config: {
+                      phase_resistance: resistance,
+                      phase_inductance: inductance,
+                    },
                   },
                 },
-              },
-            };
-          } else if (e.axis == "axis1") {
-            configStub = {
-              axis1: {
-                motor: {
-                  config: {
-                    phase_resistance: resistance,
-                    phase_inductance: inductance,
+              };
+            } else if (e.axis == "axis1") {
+              configStub = {
+                axis1: {
+                  motor: {
+                    config: {
+                      phase_resistance: resistance,
+                      phase_inductance: inductance,
+                    },
                   },
                 },
-              },
-            };
+              };
+            }
+            this.choiceHandler({
+              choice: "Motor Calibration",
+              configStub: configStub,
+              hooks: [],
+            });
           }
-          this.choiceHandler({
-            choice: "Motor Calibration",
-            configStub: configStub,
-            hooks: [],
-          })
         }, 6000);
       }
     },
@@ -137,7 +143,12 @@ export default {
       }
 
       // ugly, but a special case.
-      if (e.choice != "ODrive D5065" && e.choice != "ODrive D6374" && e.choice != "Other motor"){
+      // for motors, wait for calibration to finish before giving the green light
+      if (
+        e.choice != "ODrive D5065" &&
+        e.choice != "ODrive D6374" &&
+        e.choice != "Other motor"
+      ) {
         this.choiceMade = true;
       }
       console.log(JSON.parse(JSON.stringify(this.wizardConfig)));
@@ -156,8 +167,10 @@ export default {
     },
     next() {
       console.log("next");
-      this.currentStep = pages[this.currentStep.next];
-      this.choiceMade = false;
+      if (this.choiceMade == true) {
+        this.currentStep = pages[this.currentStep.next];
+        this.choiceMade = false;
+      }
     },
     finish() {
       console.log("finish");

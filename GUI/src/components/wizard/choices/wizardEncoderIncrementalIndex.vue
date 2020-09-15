@@ -4,12 +4,12 @@
       <span>counts per revolution = </span>
       <input type="number" v-on:change="setCPR" placeholder="Change Me!" />
     </div>
-    <span class="name">Incremental Encoder without Index</span>
+    <span class="name">Incremental Encoder with Index</span>
   </div>
 </template>
 
 <script>
-import odriveEnums from "../../assets/odriveEnums.json";
+import odriveEnums from "../../../assets/odriveEnums.json";
 export default {
   name: "wizardEncoderIncremental",
   props: {
@@ -31,7 +31,7 @@ export default {
             encoder: {
               config: {
                 cpr: this.cpr,
-                use_index: false,
+                use_index: true,
                 type: odriveEnums.ENCODER_MODE_INCREMENTAL,
               }
             }
@@ -44,7 +44,7 @@ export default {
             encoder: {
               config: {
                 cpr: this.cpr,
-                use_index: false,
+                use_index: true,
                 type: odriveEnums.ENCODER_MODE_INCREMENTAL,
               }
             }
@@ -52,7 +52,7 @@ export default {
         }
       }
       this.$emit("choice", {
-        choice: "Incremental",
+        choice: "IncrementalIndex",
         configStub: configStub,
         hooks: [],
       });

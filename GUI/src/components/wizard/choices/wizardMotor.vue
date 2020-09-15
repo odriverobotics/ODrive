@@ -22,7 +22,7 @@
 
 <script>
 const axios = require("axios");
-import odriveEnums from "../../assets/odriveEnums.json";
+import odriveEnums from "../../../assets/odriveEnums.json";
 
 export default {
   name: "wizardMotor",

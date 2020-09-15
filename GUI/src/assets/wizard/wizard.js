@@ -10,11 +10,10 @@ import odriveEnums from "../odriveEnums.json";
 // Example - on motor pages, there are buttons to run motor calibration and clear errors.
 export let pages = {
     ODrive: {
-        number: 0,
         title: "Which ODrive do you have?",
         link: "ODrive Version",
         component: "wizardPage",
-        next: "Motor_0",
+        next: "Brake",
         back: "ODrive",
         requirements: [],
         choices: [
@@ -32,13 +31,28 @@ export let pages = {
         customComponents: [],
         pageComponents: [],
     },
+    Brake: {
+        title: "Brake Resistor",
+        link: "Brake Resistor",
+        component: "wizardPage",
+        next: "Motor_0",
+        back: "ODrive",
+        requirements: [],
+        choices: [],
+        customComponents: [
+            {
+                component: "wizardBrake",
+                id: 0,
+                data: {},
+            }
+        ],
+    },
     Motor_0: {
-        number: 1,
         title: "Which motor are you using on Axis 0?",
         link: "Motor 0",
         component: "wizardPage",
         next: "Encoder_0",
-        back: "ODrive",
+        back: "Brake",
         requirements: [],
         choices: [
             {
@@ -107,11 +121,10 @@ export let pages = {
         ]
     },
     Encoder_0: {
-        number: 2,
         title: "Which encoder are you using for Axis 0?",
         link: "Encoder 0",
         component: "wizardPage",
-        next: "Misc_0",
+        next: "Control_0",
         back: "Motor_0",
         requirements: [],
         choices: [
@@ -170,10 +183,95 @@ export let pages = {
                 }
             },
         ],
+        pageComponents: [
+            /* This needs some thought - encoder cpr must be applied to ODrive before encoder calibration can be performed
+            What is desired is a "sanity check" to make sure that cpr is set correctly before proceeding
+            {
+                component: "wizardEncoderCal",
+                id: 0,
+                data: {
+                    axis: "axis0",
+                }
+            },
+            {
+                component: "wizardClearErrors",
+                id: 1,
+                data: {
+                    axis: "axis0"
+                }
+            }
+            */
+        ]
+    },
+    Control_0: {
+        title: "Control mode for Axis 0",
+        link: "Control 0",
+        component: "wizardPage",
+        next: "Misc_0",
+        back: "Encoder_0",
+        requirements: [],
+        choices: [
+            {
+                imageURL: "",
+                text: "Position Control",
+                hooks: [],
+                configStub: {
+                    axis0: {
+                        controller: {
+                            config: {
+                                control_mode: odriveEnums.CONTROL_MODE_POSITION_CONTROL,
+                            },
+                        },
+                    },
+                },
+            },
+            {
+                imageURL: "",
+                text: "Velocity Control",
+                hooks: [],
+                configStub: {
+                    axis0: {
+                        controller: {
+                            config: {
+                                control_mode: odriveEnums.CONTROL_MODE_VELOCITY_CONTROL,
+                            },
+                        },
+                    },
+                },
+            },
+            {
+                imageURL: "",
+                text: "Torque Control",
+                hooks: [],
+                configStub: {
+                    axis0: {
+                        controller: {
+                            config: {
+                                control_mode: odriveEnums.CONTROL_MODE_TORQUE_CONTROL,
+                            },
+                        },
+                    },
+                },
+            },
+            {
+                imageURL: "",
+                text: "Voltage Control",
+                hooks: [],
+                configStub: {
+                    axis0: {
+                        controller: {
+                            config: {
+                                control_mode: odriveEnums.CONTROL_MODE_VOLTAGE_CONTROL,
+                            },
+                        },
+                    },
+                },
+            },
+        ],
+        customComponents: [],
         pageComponents: [],
     },
     Misc_0: {
-        number: 3,
         title: "Finishing touches for Axis 0",
         link: "Misc 0",
         component: "wizardPage",
@@ -193,7 +291,6 @@ export let pages = {
         pageComponents: [],
     },
     Motor_1: {
-        number: 4,
         title: "Which motor are you using for Axis 1?",
         link: "Motor 1",
         component: "wizardPage",
@@ -247,14 +344,28 @@ export let pages = {
                 }
             },
         ],
-        pageComponents: [],
+        pageComponents: [
+            {
+                component: "wizardMotorMeasure",
+                id: 0,
+                data: {
+                    axis: "axis1",
+                }
+            },
+            {
+                component: "wizardClearErrors",
+                id: 1,
+                data: {
+                    axis: "axis1"
+                }
+            }
+        ]
     },
     Encoder_1: {
-        number: 5,
         title: "Which encoder are you using for Axis 1?",
         link: "Encoder 1",
         component: "wizardPage",
-        next: "Misc_1",
+        next: "Control_1",
         back: "Motor_1",
         requirements: [],
         choices: [
@@ -313,10 +424,94 @@ export let pages = {
                 }
             },
         ],
+        pageComponents: [
+            /*
+            {
+                component: "wizardEncoderCal",
+                id: 0,
+                data: {
+                    axis: "axis1",
+                }
+            },
+            {
+                component: "wizardClearErrors",
+                id: 1,
+                data: {
+                    axis: "axis1"
+                }
+            }
+            */
+        ]
+    },
+    Control_1: {
+        title: "Control mode for Axis 1",
+        link: "Control 1",
+        component: "wizardPage",
+        next: "Misc_1",
+        back: "Encoder_1",
+        requirements: [],
+        choices: [
+            {
+                imageURL: "",
+                text: "Position Control",
+                hooks: [],
+                configStub: {
+                    axis0: {
+                        controller: {
+                            config: {
+                                control_mode: odriveEnums.CONTROL_MODE_POSITION_CONTROL,
+                            },
+                        },
+                    },
+                },
+            },
+            {
+                imageURL: "",
+                text: "Velocity Control",
+                hooks: [],
+                configStub: {
+                    axis0: {
+                        controller: {
+                            config: {
+                                control_mode: odriveEnums.CONTROL_MODE_VELOCITY_CONTROL,
+                            },
+                        },
+                    },
+                },
+            },
+            {
+                imageURL: "",
+                text: "Torque Control",
+                hooks: [],
+                configStub: {
+                    axis0: {
+                        controller: {
+                            config: {
+                                control_mode: odriveEnums.CONTROL_MODE_TORQUE_CONTROL,
+                            },
+                        },
+                    },
+                },
+            },
+            {
+                imageURL: "",
+                text: "Voltage Control",
+                hooks: [],
+                configStub: {
+                    axis0: {
+                        controller: {
+                            config: {
+                                control_mode: odriveEnums.CONTROL_MODE_VOLTAGE_CONTROL,
+                            },
+                        },
+                    },
+                },
+            },
+        ],
+        customComponents: [],
         pageComponents: [],
     },
     Misc_1: {
-        number: 6,
         title: "Finishing touches for Axis 1",
         link: "Misc 1",
         component: "wizardPage",
@@ -336,7 +531,6 @@ export let pages = {
         pageComponents: [],
     },
     End: {
-        number: 7,
         title: "Review choices",
         link: "Review and Apply",
         component: "wizardPage",

@@ -1,15 +1,15 @@
 <template>
   <div>
-    <button class="measure-button card" @click="calibrate">Calibrate Motor</button>
+    <button class="measure-button card" @click="calibrate">Calibrate Encoder</button>
   </div>
 </template>
 
 <script>
 const axios = require("axios");
-import odriveEnums from "../../assets/odriveEnums.json";
+import odriveEnums from "../../../assets/odriveEnums.json";
 
 export default {
-  name: "wizardMotorMeasure",
+  name: "wizardEncoderCal",
   props: {
     data: Object,
   },
@@ -21,7 +21,7 @@ export default {
       for (const key of keys) {
         params.append("key", key);
       }
-      params.append("val", odriveEnums.AXIS_STATE_MOTOR_CALIBRATION);
+      params.append("val", odriveEnums.AXIS_STATE_ENCODER_OFFSET_CALIBRATION);
       params.append("type", "number");
       console.log(params.toString());
       let request = {
@@ -33,7 +33,7 @@ export default {
         null,
         request
       );
-      this.$emit('page-comp-event', {data: "motor calibration", axis: this.data.axis});
+      //this.$emit('page-comp-event', {data: "motor calibration", axis: this.data.axis});
     },
   },
 };
