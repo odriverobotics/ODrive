@@ -38,7 +38,6 @@
 </template>
 
 <script>
-import Tooltip from "vue-directive-tooltip";
 import wizardChoice from "./choices/wizardChoice.vue";
 import wizardMisc from "./choices/wizardMisc.vue";
 import wizardMotor from "./choices/wizardMotor.vue";
@@ -49,6 +48,9 @@ import wizardClearErrors from "./page_components/wizardClearErrors.vue";
 import wizardMotorMeasure from "./page_components/wizardMotorMeasure.vue";
 import wizardEncoderCal from "./page_components/wizardEncoderCal.vue";
 import wizardBrake from "./choices/wizardBrake.vue";
+import wizardInputFiltered from "./choices/wizardInputFiltered.vue";
+import wizardInputVelRamp from "./choices/wizardInputVelRamp.vue";
+import wizardInputTrajectory from "./choices/wizardInputTrajectory.vue";
 
 export default {
   name: "wizardPage",
@@ -71,7 +73,9 @@ export default {
     wizardMotorMeasure,
     wizardEncoderCal,
     wizardBrake,
-    Tooltip,
+    wizardInputFiltered,
+    wizardInputVelRamp,
+    wizardInputTrajectory,
   },
   data: function () {
     return {

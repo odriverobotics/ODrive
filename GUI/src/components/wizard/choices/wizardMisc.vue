@@ -53,14 +53,6 @@ export default {
     sendConfig() {
       if (this.vel_set == true && this.current_set == true) {
         console.log("emitting choice event from limits page");
-        this.$emit("choice", {
-          choice: "Limits " + this.data.axis,
-          config: {
-            vel_limit: this.vel_limit,
-            current_lim: this.current_lim,
-          },
-          hooks: [],
-        });
         let configStub = undefined;
         if (this.data.axis == "axis0") {
           configStub = {

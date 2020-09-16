@@ -23,7 +23,15 @@
     "controller": {
       "config": {
         "control_mode": null,
-        "vel_limit": null
+        "vel_limit": null,
+        "inertia": null
+      }
+    },
+    "trap_traj": {
+      "config": {
+        "vel_limit": null,
+        "accel_limit": null,
+        "decel_limit": null
       }
     }
   },
@@ -48,7 +56,15 @@
     "controller": {
       "config": {
         "control_mode": null,
-        "vel_limit": null
+        "vel_limit": null,
+        "inertia": null
+      }
+    },
+    "trap_traj": {
+      "config": {
+        "vel_limit": null,
+        "accel_limit": null,
+        "decel_limit": null
       }
     }
   }

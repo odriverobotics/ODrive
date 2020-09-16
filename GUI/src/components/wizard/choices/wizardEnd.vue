@@ -41,6 +41,7 @@ export default {
         configObj = configObj[key];
       }
       if (configObj != null){
+        console.log("oldVal is " + parseFloat(odrvObj["val"]) + " path is " + path);
         this.configDiffs.push({path: path, oldVal: parseFloat(odrvObj["val"]), newVal: configObj});
       }
     }

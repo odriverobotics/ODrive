@@ -32,7 +32,7 @@ export default {
               config: {
                 cpr: this.cpr,
                 use_index: true,
-                type: odriveEnums.ENCODER_MODE_INCREMENTAL,
+                mode: odriveEnums.ENCODER_MODE_INCREMENTAL,
               }
             }
           }
@@ -40,12 +40,12 @@ export default {
       }
       else if (this.data.axis == "axis1") {
         configStub = {
-          axis: {
+          axis1: {
             encoder: {
               config: {
                 cpr: this.cpr,
                 use_index: true,
-                type: odriveEnums.ENCODER_MODE_INCREMENTAL,
+                mode: odriveEnums.ENCODER_MODE_INCREMENTAL,
               }
             }
           }

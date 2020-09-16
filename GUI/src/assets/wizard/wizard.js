@@ -77,7 +77,7 @@ export let pages = {
                         },
                     },
                 },
-                tooltip: null,
+                tooltip: "D5065 motor from the ODrive shop",
             },
             {
                 imageURL: require("../images/D6374_300x300.png"),
@@ -97,7 +97,7 @@ export let pages = {
                         },
                     },
                 },
-                tooltip: null,
+                tooltip: "D6374 motor from the ODrive shop",
             },
         ],
         customComponents: [
@@ -107,7 +107,7 @@ export let pages = {
                 data: {
                     axis: "axis0",
                 },
-                tooltip: null,
+                tooltip: "Bring your own motor!",
             },
         ],
         pageComponents: [
@@ -150,7 +150,7 @@ export let pages = {
                         }
                     }
                 },
-                tooltip: null,
+                tooltip: "Incremental 8192cpr encoder from the ODrive shop",
             },
             {
                 imageURL: require("../images/hall_effect_300x300.png"),
@@ -173,7 +173,7 @@ export let pages = {
                         }
                     }
                 },
-                tooltip: null,
+                tooltip: "If your motor is 'sensored' and you don't have another encoder, select this option",
             },
         ],
         customComponents: [
@@ -183,7 +183,7 @@ export let pages = {
                 data: {
                     axis: "axis0",
                 },
-                tooltip: null,
+                tooltip: "Generic incremental encoder without index. Set cpr to 4 * PPR (pulses per revolution).",
             },
             {
                 component: "wizardEncoderIncrementalIndex",
@@ -191,7 +191,7 @@ export let pages = {
                 data: {
                     axis: "axis0",
                 },
-                tooltip: null,
+                tooltip: "Generic incremental encoder without index. Set cpr to 4 * PPR (pulses per revolution).",
             },
         ],
         pageComponents: [
@@ -216,7 +216,7 @@ export let pages = {
     },
     Control_0: {
         title: "Control mode for Axis 0",
-        link: "Control 0",
+        link: "Control Modes 0",
         component: "wizardPage",
         next: "Misc_0",
         back: "Encoder_0",
@@ -286,6 +286,62 @@ export let pages = {
         customComponents: [],
         pageComponents: [],
     },
+    Input_0: {
+        title: "Input mode selection for Axis 0",
+        link: "Input Modes 0",
+        component: "wizardPage",
+        next: "Misc_0",
+        back: "Control_0",
+        requirements: [],
+        choices: [
+            {
+                imageURL: require("../images/temp.png"),
+                text: "Input Passthrough",
+                hooks: [],
+                configStub: {
+                    axis0: {
+                        controller: {
+                            config: {
+                                input_mode: odriveEnums.INPUT_MODE_PASSTHROUGH,
+                            },
+                        },
+                    },
+                },
+                tooltip: "This is the default input mode. Input commands are passed to the controller without modification."
+            },
+        ],
+        customComponents: [
+            {
+                component: "wizardInputFiltered",
+                id: 0,
+                data: {
+                    axis: "axis0",
+                },
+                tooltip: "Filtered position mode. This provides smoother motion than the passthrough mode. \
+                            Input position commands are sent through a 2nd order filter. A higher bandwidth will cause quicker position changes.",
+            },
+            {
+                component: "wizardInputVelRamp",
+                id: 1,
+                data: {
+                    axis: "axis0",
+                },
+                tooltip: "For velocity control mode, you can choose to have the input velocities ramped between values. vel_ramp_rate is the \
+                            acceleration between velocities."
+            },
+            {
+                component: "wizardInputTrajectory",
+                id: 2,
+                data: {
+                    axis: "axis0",
+                },
+                tooltip: "This mode lets you smoothly accelerate, coast, and decelerate from one position to another. vel_limit is your coasting speed, \
+                            accel_limit is the maximum acceleration in turns/s^2, decel_limit is the maximum decelaration in turns/s^2 and inertia is an \
+                            optional value to correlate acceleration with motor torque."
+            }
+        ],
+        pageComponents: [],
+    },
     Misc_0: {
         title: "Finishing touches for Axis 0",
         link: "Misc 0",
@@ -301,7 +357,7 @@ export let pages = {
                 data: {
                     axis: "axis0",
                 },
-                tooltip: null,
+                tooltip: "These config options don't fit anywhere else",
             },
         ],
         pageComponents: [],
@@ -331,7 +387,7 @@ export let pages = {
                         },
                     },
                 },
-                tooltip: null,
+                tooltip: "D5065 motor from the ODrive shop",
             },
             {
                 imageURL: require("../images/D6374_300x300.png"),
@@ -350,7 +406,7 @@ export let pages = {
                         },
                     },
                 },
-                tooltip: null,
+                tooltip: "D6374 motor from the ODrive shop",
             },
         ],
         customComponents: [
@@ -360,7 +416,7 @@ export let pages = {
                 data: {
                     axis: "axis1",
                 },
-                tooltip: null,
+                tooltip: "Bring your own motor!",
             },
         ],
         pageComponents: [
@@ -403,7 +459,7 @@ export let pages = {
                         }
                     }
                 },
-                tooltip: null,
+                tooltip: "Incremental 8192cpr encoder from the ODrive shop",
             },
             {
                 imageURL: require("../images/hall_effect_300x300.png"),
@@ -426,7 +482,7 @@ export let pages = {
                         }
                     }
                 },
-                tooltip: null,
+                tooltip: "If your motor is 'sensored' and you don't have another encoder, select this option",
             },
         ],
         customComponents: [
@@ -436,7 +492,7 @@ export let pages = {
                 data: {
                     axis: "axis1",
                 },
-                tooltip: null,
+                tooltip: "Generic incremental encoder without index. Set cpr to 4 * PPR (pulses per revolution).",
             },
             {
                 component: "wizardEncoderIncrementalIndex",
@@ -444,7 +500,7 @@ export let pages = {
                 data: {
                     axis: "axis1",
                 },
-                tooltip: null,
+                tooltip: "Generic incremental encoder without index. Set cpr to 4 * PPR (pulses per revolution).",
             },
         ],
         pageComponents: [
@@ -468,9 +524,9 @@ export let pages = {
     },
     Control_1: {
         title: "Control mode for Axis 1",
-        link: "Control 1",
+        link: "Control Modes 1",
         component: "wizardPage",
-        next: "Misc_1",
+        next: "Input_1",
         back: "Encoder_1",
         requirements: [],
         choices: [
@@ -538,12 +594,68 @@ export let pages = {
         customComponents: [],
         pageComponents: [],
     },
+    Input_1: {
+        title: "Input mode selection for Axis 1",
+        link: "Input Modes 1",
+        component: "wizardPage",
+        next: "Misc_1",
+        back: "Control_1",
+        requirements: [],
+        choices: [
+            {
+                imageURL: require("../images/temp.png"),
+                text: "Input Passthrough",
+                hooks: [],
+                configStub: {
+                    axis0: {
+                        controller: {
+                            config: {
+                                input_mode: odriveEnums.INPUT_MODE_PASSTHROUGH,
+                            },
+                        },
+                    },
+                },
+                tooltip: "This is the default input mode. Input commands are passed to the controller without modification."
+            },
+        ],
+        customComponents: [
+            {
+                component: "wizardInputFiltered",
+                id: 0,
+                data: {
+                    axis: "axis1",
+                },
+                tooltip: "Filtered position mode. This provides smoother motion than the passthrough mode. \
+                            Input position commands are sent through a 2nd order filter. A higher bandwidth will cause quicker position changes.",
+            },
+            {
+                component: "wizardInputVelRamp",
+                id: 1,
+                data: {
+                    axis: "axis1",
+                },
+                tooltip: "For velocity control mode, you can choose to have the input velocities ramped between values. vel_ramp_rate is the \
+                            acceleration between velocities."
+            },
+            {
+                component: "wizardInputTrajectory",
+                id: 2,
+                data: {
+                    axis: "axis1",
+                },
+                tooltip: "This mode lets you smoothly accelerate, coast, and decelerate from one position to another. vel_limit is your coasting speed, \
+                            accel_limit is the maximum acceleration in turns/s^2, decel_limit is the maximum decelaration in turns/s^2 and inertia is an \
+                            optional value to correlate acceleration with motor torque."
+            }
+        ],
+        pageComponents: [],
+    },
     Misc_1: {
         title: "Finishing touches for Axis 1",
         link: "Misc 1",
         component: "wizardPage",
         next: "End",
-        back: "Encoder_1",
+        back: "Input_1",
         requirements: [],
         choices: [],
         customComponents: [
@@ -570,7 +682,7 @@ export let pages = {
             {
                 component: "wizardEnd",
                 id: 0,
-                tooltip: null,
+                tooltip: "Old config values are on the left, new config values are on the right",
             }
         ],
         pageComponents: [],
