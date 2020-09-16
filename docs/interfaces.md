@@ -7,21 +7,12 @@ The ODrive can be controlled over various ports and protocols. If you're comfort
 ### Table of contents
 <!-- TOC depthFrom:2 depthTo:2 -->
 
-- [Interfaces](#interfaces)
-    - [Table of contents](#table-of-contents)
-  - [Pinout](#pinout)
-  - [Native Protocol](#native-protocol)
-    - [Python](#python)
-    - [Other languages](#other-languages)
-  - [ASCII protocol](#ascii-protocol)
-    - [Arduino](#arduino)
-  - [Step/direction](#stepdirection)
-  - [RC PWM input](#rc-pwm-input)
-  - [Analog input](#analog-input)
-  - [Ports](#ports)
-    - [USB](#usb)
-    - [UART](#uart)
-  - [CAN Simple Protocol](#can-simple-protocol)
+- [Pinout](#pinout)
+- [Native Protocol](#native-protocol)
+- [ASCII protocol](#ascii-protocol)
+- [Step/direction](#stepdirection)
+- [RC PWM input](#rc-pwm-input)
+- [Ports](#ports)
 
 <!-- /TOC -->
 
