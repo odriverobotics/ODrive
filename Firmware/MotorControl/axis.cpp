@@ -555,7 +555,7 @@ void Axis::run_state_machine_loop() {
                 if (status) {
                     // call to controller.reset() that happend when arming means that vel_setpoint
                     // is zeroed. So we make the setpoint the spinup target for smooth transition.
-                    controller_.vel_setpoint_ = config_.sensorless_ramp.vel;
+                    controller_.vel_setpoint_ = config_.sensorless_ramp.vel / (2.0f * M_PI * motor_.config_.pole_pairs);
                     status = run_sensorless_control_loop();
                 }
             } break;
