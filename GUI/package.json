@@ -25,6 +25,7 @@
     "vue": "^2.6.11",
     "vue-chartjs": "^3.5.0",
     "vue-context": "^5.2.0",
+    "vue-directive-tooltip": "^1.6.3",
     "vue-json-component": "^0.4.1",
     "vue-slider-component": "^3.2.2",
     "vue-socket.io": "^3.0.9",

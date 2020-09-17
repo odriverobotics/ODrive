@@ -6,6 +6,12 @@
       <wizardChoice
         v-for="choice in choices"
         v-bind:class="{chosen: selectedChoice == choice.text, unchosen: selectedChoice != choice.text}"
+        v-tooltip.top="{
+          content: choice.tooltip,
+          class: 'tooltip-custom tooltip-other-custom fade-in',
+          delay: 0,
+          visible: choice.tooltip!=null,
+        }"
         :key="choice.id"
         :imageUrl="choice.imageURL"
         :text="choice.text"
@@ -18,6 +24,12 @@
           v-bind:data="customComponent.data"
           v-bind:config="config"
           v-bind:axis="axis"
+          v-tooltip.top="{
+            content: customComponent.tooltip,
+            class: 'tooltip-custom tooltip-other-custom fade-in',
+            delay: 0,
+            visible: choice.tooltip!=null,
+          }"
           :key="customComponent.id"
           v-on:click.native="selectedChoice=customComponent.component"
           v-on:choice="handleCustomChoice"
@@ -94,7 +106,7 @@ export default {
 };
 </script>
 
-<style scoped>
+<style>
 .wizard-page {
   display: flex;
   flex-direction: column;
@@ -123,5 +135,28 @@ export default {
 
 .wizard-title {
   font-weight: bold;
+}
+
+.vue-tooltip.tooltip-custom {
+  background-color:  lightyellow;/* var(--fg-color); */
+  border-radius: 0px;
+  box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.4);
+  font-family: "Roboto", sans-serif;
+  color: black;
+}
+
+.vue-tooltip.tooltip-custom .tooltip-arrow {
+  display: none;
+}
+
+.vue-tooltip.fade-in {
+  opacity: 0;
+  animation: fadeIn ease 0.25s;
+  animation-fill-mode: both;
+}
+
+@keyframes fadeIn {
+  from {opacity: 0}
+  to {opacity: 1}
 }
 </style>

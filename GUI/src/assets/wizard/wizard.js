@@ -191,7 +191,7 @@ export let pages = {
                 data: {
                     axis: "axis0",
                 },
-                tooltip: "Generic incremental encoder without index. Set cpr to 4 * PPR (pulses per revolution).",
+                tooltip: "Generic incremental encoder with index. Set cpr to 4 * PPR (pulses per revolution).",
             },
         ],
         pageComponents: [
@@ -218,7 +218,7 @@ export let pages = {
         title: "Control mode for Axis 0",
         link: "Control Modes 0",
         component: "wizardPage",
-        next: "Misc_0",
+        next: "Input_0",
         back: "Encoder_0",
         requirements: [],
         choices: [
