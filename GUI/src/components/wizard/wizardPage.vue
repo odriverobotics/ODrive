@@ -28,6 +28,7 @@
           :key="choice.title"
           v-on:click.native="choiceHandler(choice)"
           v-on:choice="handleCustomChoice"
+          v-on:undo-choice="undoChoice"
         />
       </template>
     </div>
@@ -96,6 +97,9 @@ export default {
       console.log(e);
       this.$emit("choice", e);
     },
+    undoChoice(e) {
+      this.$emit("undo-choice",e);
+    },
     pageCompEvent(e) {
       this.$emit("page-comp-event", e);
     },
@@ -107,7 +111,12 @@ export default {
       return reqsMet;
     },
     choiceHandler(choice) {
-      if (this.requirementsMet(choice.requirements, this.config)){
+      console.log(choice.title);
+      if (this.selectedChoice == choice.title) {
+        // undo selection
+        this.selectedChoice = undefined;
+      }
+      else if (this.requirementsMet(choice.requirements, this.config)){
         this.selectedChoice = choice.title;
       }
     }
@@ -151,7 +160,7 @@ export default {
 }
 
 .vue-tooltip.tooltip-custom {
-  background-color:  lightyellow;/* var(--fg-color); */
+  background-color: lightyellow; /* var(--fg-color); */
   border-radius: 0px;
   box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.4);
   font-family: "Roboto", sans-serif;
@@ -169,7 +178,11 @@ export default {
 }
 
 @keyframes fadeIn {
-  from {opacity: 0}
-  to {opacity: 1}
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 </style>

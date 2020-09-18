@@ -16,12 +16,22 @@ export default {
     hooks: Array,
     allowed: Boolean,
   },
+  data() {
+    return {
+      oldSelected: undefined,
+    }
+  },
   watch: {
     selected(newVal) {
       if (newVal == true) {
         // emit choice event
         this.$emit('choice', {choice: this.title, configStub: this.data.configStub, hooks: this.hooks});
       }
+      if (this.oldSelected == true && newVal == false){
+        console.log("emitting undo-choice");
+        this.$emit('undo-choice', {choice: this.title, configStub: this.data.configStub, hooks: this.hooks})
+      }
+      this.oldSelected = newVal;
     }
   }
 };

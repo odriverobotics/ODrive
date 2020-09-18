@@ -20,6 +20,7 @@
           :config="wizardConfig"
           :calibrating="calibrating"
           v-on:choice="choiceHandler"
+          v-on:undo-choice="undoChoice"
           v-on:page-comp-event="pageEventHandler"
         />
         <div class="wizard-controls">
@@ -202,6 +203,11 @@ export default {
       }
       console.log(JSON.parse(JSON.stringify(this.wizardConfig)));
     },
+    undoChoice(e){
+      this.choiceMade = false;
+      this.nullConfig(this.wizardConfig, e.configStub);
+      console.log(JSON.parse(JSON.stringify(this.wizardConfig)));
+    },
     updateConfig(config, configStub) {
       // iterate over keys in configStub
       if (configStub != null) {
@@ -210,6 +216,20 @@ export default {
             this.updateConfig(config[key], configStub[key]);
           } else {
             config[key] = configStub[key];
+          }
+        });
+      }
+    },
+    nullConfig(config, configStub){
+      // iterate over keys in configStub
+      if (configStub != null) {
+        console.log("NullConfig");
+        Object.keys(configStub).forEach((key) => {
+          console.log(key);
+          if (typeof configStub[key] == "object") {
+            this.nullConfig(config[key], configStub[key]);
+          } else {
+            config[key] = null;
           }
         });
       }
