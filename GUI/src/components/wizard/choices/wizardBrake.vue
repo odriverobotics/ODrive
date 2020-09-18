@@ -1,5 +1,5 @@
 <template>
-  <div class="card wizard-choice">
+  <div class="card wizard-choice" v-bind:class="{'choice-inactive': !allowed}">
     <div class="left">
       <span>Brake resistor value =</span>
       <input type="number" v-on:change="setBR" placeholder="Change Me!" />
@@ -13,6 +13,7 @@ export default {
   name: "wizardBrake",
   props: {
     data: Object,
+    allowed: Boolean,
   },
   data: function () {
     return {

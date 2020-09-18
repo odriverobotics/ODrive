@@ -1,5 +1,5 @@
 <template>
-  <div class="card wizard-motor-custom wizard-choice">
+  <div class="card wizard-motor-custom wizard-choice" v-bind:class="{'choice-inactive': !allowed}">
     <div class="left">
       <span>Velocity limit =</span>
       <input type="number" v-on:change="setVelLimit" :placeholder="vel_limit" />
@@ -28,6 +28,7 @@ export default {
   name: "wizardInputTrajectory",
   props: {
     data: Object,
+    allowed: Boolean,
   },
   data: function () {
     return {
@@ -150,12 +151,17 @@ export default {
   margin-left: auto;
 }
 
+.name {
+  margin-top: auto;
+}
+
 input {
   width: 5rem;
   font-family: inherit;
   border-style: none;
   border-bottom: 1px solid grey;
   text-align: center;
+  background-color: transparent;
 }
 
 input::-webkit-outer-spin-button,

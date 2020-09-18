@@ -16,3 +16,8 @@
 .close-button:active {
     background-color: var(--bg-color);
 }
+
+.choice-inactive {
+    background-color: var(--bg-color);
+    color: grey;
+}

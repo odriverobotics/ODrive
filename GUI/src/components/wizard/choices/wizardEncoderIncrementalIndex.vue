@@ -1,5 +1,5 @@
 <template>
-  <div class="card wizard-choice">
+  <div class="card wizard-choice" v-bind:class="{'choice-inactive': !allowed}">
     <div class="left">
       <span>counts per revolution = </span>
       <input type="number" v-on:change="setCPR" placeholder="Change Me!" />
@@ -14,6 +14,7 @@ export default {
   name: "wizardEncoderIncremental",
   props: {
     data: Object,
+    allowed: Boolean,
   },
   data: function () {
     return {
@@ -69,6 +70,10 @@ export default {
 }
 .left {
   margin-left: auto;
+}
+
+.name {
+  margin-top: auto;
 }
 
 input {

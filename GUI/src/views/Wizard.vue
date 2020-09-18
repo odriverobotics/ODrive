@@ -18,6 +18,7 @@
           :pageComponents="currentStep.pageComponents"
           :title="currentStep.title"
           :config="wizardConfig"
+          :calibrating="calibrating"
           v-on:choice="choiceHandler"
           v-on:page-comp-event="pageEventHandler"
         />
@@ -56,6 +57,7 @@ export default {
       currentStep: pages.ODrive,
       wizardConfig: configTemplate,
       choiceMade: false,
+      calibrating: false, // for indicating that calibration is in progress
     };
   },
   computed: {
@@ -64,6 +66,8 @@ export default {
     },
   },
   methods: {
+    // certain actions, like starting motor or encoder calibration,
+    // require special handling. This function is used for those events
     pageEventHandler(e) {
       this.choiceMade = false;
       if (e.data == "motor calibration") {
@@ -136,10 +140,12 @@ export default {
           if(parseInt(this.$store.state.odrives.odrive0[e.axis].current_state.val) == odriveEnums.AXIS_STATE_MOTOR_CALIBRATION){
             // still calibrating
             setTimeout(()=>this.wait(),100);
+            this.calibrating = true;
           }
           else {
             // calibration is over
             apply();
+            this.calibrating = false;
           }
         }
         // wait for at least a second for comms to update state of ODrive
@@ -160,11 +166,13 @@ export default {
           if(parseInt(this.$store.state.odrives.odrive0[e.axis].current_state.val) == odriveEnums.AXIS_STATE_ENCODER_OFFSET_CALIBRATION){
             setTimeout(()=>this.wait(),100);
             console.log("waiting for encoder cal to finish...")
+            this.calibrating = true;
           }
           else {
             this.putVal(("odrive0."+e.axis+".encoder.config.cpr"), oldCPR);
             console.log("applying old CPR")
             this.choiceMade = true;
+            this.calibrating = false;
           }
         }
         setTimeout(()=>this.wait(), 1000);
@@ -223,26 +231,26 @@ export default {
       this.choiceMade = false;
     },
     putVal(path, value) {
-    // path to value in odrive parameter tree for server
-    // for example, odrive0.axis0.config.requested_state
-    var params = new URLSearchParams();
-    // params.append("key", "odrive0");
-    let keys = path.split(".");
-    for (const key of keys) {
-        params.append("key", key);
-    }
-    params.append("val", value);
-    params.append("type", typeof value);
-    let request = {
-        params: params,
-    };
-    console.log(request);
-    axios.put(
-        this.$store.state.odriveServerAddress + "/api/property",
-        null,
-        request
-    );
-}
+      // path to value in odrive parameter tree for server
+      // for example, odrive0.axis0.config.requested_state
+      var params = new URLSearchParams();
+      // params.append("key", "odrive0");
+      let keys = path.split(".");
+      for (const key of keys) {
+          params.append("key", key);
+      }
+      params.append("val", value);
+      params.append("type", typeof value);
+      let request = {
+          params: params,
+      };
+      console.log(request);
+      axios.put(
+          this.$store.state.odriveServerAddress + "/api/property",
+          null,
+          request
+      );
+    },
   },
 };
 </script>

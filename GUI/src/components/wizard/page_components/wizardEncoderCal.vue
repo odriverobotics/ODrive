@@ -1,6 +1,6 @@
 <template>
   <div>
-    <button class="measure-button card" @click="calibrate">Calibrate Encoder</button>
+    <button class="measure-button card" @click="calibrate">{{text}}</button>
   </div>
 </template>
 
@@ -10,6 +10,12 @@ export default {
   name: "wizardEncoderCal",
   props: {
     data: Object,
+    calibrating: Boolean,
+  },
+  computed: {
+    text() {
+      return this.calibrating ? "Calibrating..." : "Calibrate Encoder";
+    }
   },
   methods: {
     calibrate() {

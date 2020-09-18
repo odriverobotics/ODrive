@@ -1,6 +1,6 @@
 <template>
   <div>
-    <button class="measure-button card" @click="calibrate">Calibrate Motor</button>
+    <button class="measure-button card" @click="calibrate">{{text}}</button>
   </div>
 </template>
 
@@ -12,6 +12,12 @@ export default {
   name: "wizardMotorMeasure",
   props: {
     data: Object,
+    calibrating: Boolean,
+  },
+  computed: {
+    text() {
+      return this.calibrating ? "Calibrating..." : "Calibrate Motor";
+    }
   },
   methods: {
     calibrate() {

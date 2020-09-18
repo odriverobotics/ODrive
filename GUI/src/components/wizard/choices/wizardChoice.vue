@@ -1,6 +1,6 @@
 <template>
   <!-- single choice for a wizard page -->
-  <div class="wizard-choice card">
+  <div class="wizard-choice card" v-bind:class="{'choice-inactive': !allowed}">
     <img v-bind:alt="title" :src="data.imageURL" />
     {{ title }}
   </div>
@@ -14,6 +14,7 @@ export default {
     selected: Boolean,
     title: String,
     hooks: Array,
+    allowed: Boolean,
   },
   watch: {
     selected(newVal) {
@@ -32,6 +33,10 @@ export default {
   display: flex;
   flex-direction: column;
   margin: 2rem;
+}
+
+.inactive {
+  background-color: var(--bg-color);
 }
 
 img {

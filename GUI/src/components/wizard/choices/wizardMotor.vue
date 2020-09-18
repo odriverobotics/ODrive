@@ -1,5 +1,5 @@
 <template>
-  <div class="card wizard-motor-custom wizard-choice">
+  <div class="card wizard-motor-custom wizard-choice" v-bind:class="{'choice-inactive': !allowed}">
     <div class="left">
       <span>KV =</span>
       <input type="number" v-on:change="setKV" placeholder="Change Me!" />
@@ -29,6 +29,7 @@ export default {
   props: {
     data: Object,
     axis: String,
+    allowed: Boolean,
   },
   data: function () {
     return {
@@ -221,12 +222,17 @@ export default {
   margin-left: auto;
 }
 
+.name {
+  margin-top: auto;
+}
+
 input {
   width: 5rem;
   font-family: inherit;
   border-style: none;
   border-bottom: 1px solid grey;
   text-align: center;
+  background-color: transparent;
 }
 
 input::-webkit-outer-spin-button,

@@ -10,7 +10,7 @@
       -->
       <template v-for="choice in choices">
         <component
-          v-bind:class="{chosen: selectedChoice == choice.title, unchosen: selectedChoice != choice.title}"
+          v-bind:class="{chosen: selectedChoice == choice.title, unchosen: selectedChoice != choice.title, inactive: !requirementsMet(choice.requirements, config)}"
           v-bind:is="choice.component"
           v-bind:data="choice.data"
           v-bind:config="config"
@@ -18,14 +18,15 @@
           v-bind:title="choice.title"
           v-bind:selected="selectedChoice == choice.title"
           v-bind:hooks="choice.hooks"
+          v-bind:allowed="requirementsMet(choice.requirements, config)"
           v-tooltip.top="{
-            content: choice.tooltip,
+            content: requirementsMet(choice.requirements, config) ? choice.tooltip : choice.altTooltip,
             class: 'tooltip-custom tooltip-other-custom fade-in',
             delay: 0,
             visible: choice.tooltip!=null,
           }"
           :key="choice.title"
-          v-on:click.native="selectedChoice=choice.title"
+          v-on:click.native="choiceHandler(choice)"
           v-on:choice="handleCustomChoice"
         />
       </template>
@@ -36,6 +37,7 @@
           v-bind:is="pageComponent.component"
           v-bind:data="pageComponent.data"
           v-bind:key="pageComponent.id"
+          v-bind:calibrating="calibrating"
           v-on:page-comp-event="pageCompEvent"
         />
       </template>
@@ -67,6 +69,7 @@ export default {
     axis: String,
     config: Object,
     pageComponents: Array,
+    calibrating: Boolean,
   },
   components: {
     wizardChoice,
@@ -96,6 +99,18 @@ export default {
     pageCompEvent(e) {
       this.$emit("page-comp-event", e);
     },
+    requirementsMet(reqs, wizardConfig){
+      let reqsMet = true;
+      for (const fn of reqs) {
+        reqsMet = reqsMet && fn(wizardConfig);
+      }
+      return reqsMet;
+    },
+    choiceHandler(choice) {
+      if (this.requirementsMet(choice.requirements, this.config)){
+        this.selectedChoice = choice.title;
+      }
+    }
   },
 };
 </script>
@@ -125,6 +140,10 @@ export default {
 
 .unchosen {
   border: 2px solid transparent;
+}
+
+.inactive {
+  background-color: var(--bg-color);
 }
 
 .wizard-title {

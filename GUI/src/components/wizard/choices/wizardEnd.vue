@@ -1,5 +1,5 @@
 <template>
-  <div class="card">
+  <div class="card" v-bind:class="{'choice-inactive': !allowed}">
     <div class="diff" v-for="diff in configDiffs" :key="diff.path">
       <span class="diff-path">{{diff.path}}: </span>
       <span class="diff-old">{{diff.oldVal}}</span>
@@ -19,6 +19,7 @@ export default {
   props: {
     config: Object,
     axis: String,
+    allowed: Boolean,
     // actual odrive config is in this.$store (Vuex store)
   },
   data: function() {

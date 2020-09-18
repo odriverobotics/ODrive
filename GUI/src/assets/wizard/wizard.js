@@ -23,8 +23,10 @@ export let pages = {
                     imageURL: require("../images/24v_300x300.png"),
                 },
                 title: "ODrive v3.6 24V",
+                requirements: [],
                 hooks: [],
                 tooltip: null,
+                altTooltip: null,
             },
             {
                 component: "wizardChoice",
@@ -32,8 +34,10 @@ export let pages = {
                     imageURL: require("../images/56v_300x300.png"),
                 },
                 title: "ODrive v3.6 56V",
+                requirements: [],
                 hooks: [],
                 tooltip: null,
+                altTooltip: null,
             },
         ],
         customComponents: [],
@@ -51,9 +55,11 @@ export let pages = {
                 component: "wizardBrake",
                 data: {},
                 title: "Brake Resistor",
+                requirements: [],
                 hooks: [],
                 tooltip: "When you slow down a motor, the energy has to go somewhere.\n\r \
-                            It either goes to the brake resistor or back to your power supply."
+                            It either goes to the brake resistor or back to your power supply.",
+                altTooltip: null,
             }
         ],
     },
@@ -85,8 +91,10 @@ export let pages = {
                     },
                 },
                 title: "ODrive D5065",
+                requirements: [],
                 hooks: [],
                 tooltip: "D5065 motor from the ODrive shop",
+                altTooltip: null,
             },
             {
                 component: "wizardChoice",
@@ -108,8 +116,10 @@ export let pages = {
                     },
                 },
                 title: "ODrive D6374",
+                requirements: [],
                 hooks: [],
                 tooltip: "D6374 motor from the ODrive shop",
+                altTooltip: null,
             },
             {
                 component: "wizardMotor",
@@ -117,8 +127,10 @@ export let pages = {
                     axis: "axis0",
                 },
                 title: "Other Motor",
+                requirements: [],
                 hooks: [],
                 tooltip: "Bring your own motor!",
+                altTooltip: null,
             },
         ],
         pageComponents: [
@@ -163,8 +175,10 @@ export let pages = {
                     },
                 },
                 title: "CUI AMT102V",
+                requirements: [],
                 hooks: [],
                 tooltip: "Incremental 8192cpr encoder from the ODrive shop",
+                altTooltip: null,
             },
             {
                 component: "wizardChoice",
@@ -182,6 +196,7 @@ export let pages = {
                     },
                 },
                 title: "Hall Effect",
+                requirements: [],
                 hooks: [
                     // hook takes a config object (normally this.wizardConfig in Wizard.vue), creates and returns a copy
                     (configObj) => {
@@ -191,6 +206,7 @@ export let pages = {
                     },
                 ],
                 tooltip: "If your motor is 'sensored' and you don't have another encoder, select this option",
+                altTooltip: null,
             },
             {
                 component: "wizardEncoderIncremental",
@@ -198,8 +214,10 @@ export let pages = {
                     axis: "axis0",
                 },
                 title: "Incremental Without Index",
+                requirements: [],
                 hooks: [],
                 tooltip: "Generic incremental encoder without index. Set cpr to 4 * PPR (pulses per revolution).",
+                altTooltip: null,
             },
             {
                 component: "wizardEncoderIncrementalIndex",
@@ -207,8 +225,10 @@ export let pages = {
                     axis: "axis0",
                 },
                 title: "Incremental With Index",
+                requirements: [],
                 hooks: [],
                 tooltip: "Generic incremental encoder with index. Set cpr to 4 * PPR (pulses per revolution).",
+                altTooltip: null,
             },
         ],
         pageComponents: [
@@ -251,8 +271,10 @@ export let pages = {
                     },
                 },
                 title: "Position Control",
+                requirements: [],
                 hooks: [],
-                tooltip: "Use this mode to control the position of the motor"
+                tooltip: "Use this mode to control the position of the motor",
+                altTooltip: null,
             },
             {
                 component: "wizardChoice",
@@ -269,8 +291,10 @@ export let pages = {
                     },
                 },
                 title: "Velocity Control",
+                requirements: [],
                 hooks: [],
-                tooltip: "Use this mode to control the velocity of the motor"
+                tooltip: "Use this mode to control the velocity of the motor",
+                altTooltip: null,
             },
             {
                 component: "wizardChoice",
@@ -287,8 +311,10 @@ export let pages = {
                     },
                 },
                 title: "Torque Control",
+                requirements: [],
                 hooks: [],
-                tooltip: "Use this mode to control the torque output of the motor"
+                tooltip: "Use this mode to control the torque output of the motor",
+                altTooltip: null,
             },
             {
                 component: "wizardChoice",
@@ -305,8 +331,10 @@ export let pages = {
                     },
                 },
                 title: "Voltage Control",
+                requirements: [],
                 hooks: [],
-                tooltip: "This mode is used for gimbal motors"
+                tooltip: "This mode is used for gimbal motors",
+                altTooltip: null,
             },
         ],
         customComponents: [],
@@ -335,8 +363,10 @@ export let pages = {
                     },
                 },
                 title: "Input Passthrough",
+                requirements: [],
                 hooks: [],
-                tooltip: "This is the default input mode. Input commands are passed to the controller without modification."
+                tooltip: "This is the default input mode. Input commands are passed to the controller without modification.",
+                altTooltip: null,
             },
             {
                 component: "wizardInputFiltered",
@@ -344,9 +374,15 @@ export let pages = {
                     axis: "axis0",
                 },
                 title: "Position Input Filtering",
+                requirements: [
+                    (configObj) => {
+                        return configObj.axis0.controller.config.control_mode == odriveEnums.CONTROL_MODE_POSITION_CONTROL;
+                    },
+                ],
                 hooks: [],
                 tooltip: "Filtered position mode. This provides smoother motion than the passthrough mode. \
                             Input position commands are sent through a 2nd order filter. A higher bandwidth will cause quicker position changes.",
+                altTooltip: "Control mode must be Position Control for this input mode",
             },
             {
                 component: "wizardInputVelRamp",
@@ -354,9 +390,15 @@ export let pages = {
                     axis: "axis0",
                 },
                 title: "Velocity Input Ramping",
+                requirements: [
+                    (configObj) => {
+                        return configObj.axis0.controller.config.control_mode == odriveEnums.CONTROL_MODE_VELOCITY_CONTROL;
+                    },
+                ],
                 hooks: [],
                 tooltip: "For velocity control mode, you can choose to have the input velocities ramped between values. vel_ramp_rate is the \
-                            acceleration between velocities."
+                            acceleration between velocities.",
+                altTooltip: "Control mode must be Velocity Control for this input mode",
             },
             {
                 component: "wizardInputTrajectory",
@@ -364,10 +406,16 @@ export let pages = {
                     axis: "axis0",
                 },
                 title: "Trajectory Planning",
+                requirements: [
+                    (configObj) => {
+                        return configObj.axis0.controller.config.control_mode == odriveEnums.CONTROL_MODE_POSITION_CONTROL;
+                    },
+                ],
                 hooks: [],
                 tooltip: "This mode lets you smoothly accelerate, coast, and decelerate from one position to another. vel_limit is your coasting speed, \
                             accel_limit is the maximum acceleration in turns/s^2, decel_limit is the maximum decelaration in turns/s^2 and inertia is an \
-                            optional value to correlate acceleration with motor torque."
+                            optional value to correlate acceleration with motor torque.",
+                altTooltip: "Control mode must be Position Control for this input mode",
             }
         ],
         pageComponents: [],
@@ -386,8 +434,10 @@ export let pages = {
                     axis: "axis0",
                 },
                 title: "Miscellaneous Parameters",
+                requirements: [],
                 hooks: [],
                 tooltip: null,
+                altTooltip: null,
             },
         ],
         pageComponents: [],
@@ -420,8 +470,10 @@ export let pages = {
                     },
                 },
                 title: "ODrive D5065",
+                requirements: [],
                 hooks: [],
                 tooltip: "D5065 motor from the ODrive shop",
+                altTooltip: null,
             },
             {
                 component: "wizardChoice",
@@ -443,8 +495,10 @@ export let pages = {
                     },
                 },
                 title: "ODrive D6374",
+                requirements: [],
                 hooks: [],
                 tooltip: "D6374 motor from the ODrive shop",
+                altTooltip: null,
             },
             {
                 component: "wizardMotor",
@@ -452,8 +506,10 @@ export let pages = {
                     axis: "axis1",
                 },
                 title: "Other Motor",
+                requirements: [],
                 hooks: [],
                 tooltip: "Bring your own motor!",
+                altTooltip: null,
             },
         ],
         pageComponents: [
@@ -498,8 +554,10 @@ export let pages = {
                     },
                 },
                 title: "CUI AMT102V",
+                requirements: [],
                 hooks: [],
                 tooltip: "Incremental 8192cpr encoder from the ODrive shop",
+                altTooltip: null,
             },
             {
                 component: "wizardChoice",
@@ -517,6 +575,7 @@ export let pages = {
                     },
                 },
                 title: "Hall Effect",
+                requirements: [],
                 hooks: [
                     // hook takes a config object (normally this.wizardConfig in Wizard.vue), creates and returns a copy
                     (configObj) => {
@@ -526,6 +585,7 @@ export let pages = {
                     },
                 ],
                 tooltip: "If your motor is 'sensored' and you don't have another encoder, select this option",
+                altTooltip: null,
             },
             {
                 component: "wizardEncoderIncremental",
@@ -533,8 +593,10 @@ export let pages = {
                     axis: "axis1",
                 },
                 title: "Incremental Without Index",
+                requirements: [],
                 hooks: [],
                 tooltip: "Generic incremental encoder without index. Set cpr to 4 * PPR (pulses per revolution).",
+                altTooltip: null,
             },
             {
                 component: "wizardEncoderIncrementalIndex",
@@ -542,8 +604,10 @@ export let pages = {
                     axis: "axis1",
                 },
                 title: "Incremental With Index",
+                requirements: [],
                 hooks: [],
                 tooltip: "Generic incremental encoder with index. Set cpr to 4 * PPR (pulses per revolution).",
+                altTooltip: null,
             },
         ],
         pageComponents: [
@@ -586,8 +650,10 @@ export let pages = {
                     },
                 },
                 title: "Position Control",
+                requirements: [],
                 hooks: [],
-                tooltip: "Use this mode to control the position of the motor"
+                tooltip: "Use this mode to control the position of the motor",
+                altTooltip: null,
             },
             {
                 component: "wizardChoice",
@@ -604,8 +670,10 @@ export let pages = {
                     },
                 },
                 title: "Velocity Control",
+                requirements: [],
                 hooks: [],
-                tooltip: "Use this mode to control the velocity of the motor"
+                tooltip: "Use this mode to control the velocity of the motor",
+                altTooltip: null,
             },
             {
                 component: "wizardChoice",
@@ -622,8 +690,10 @@ export let pages = {
                     },
                 },
                 title: "Torque Control",
+                requirements: [],
                 hooks: [],
-                tooltip: "Use this mode to control the torque output of the motor"
+                tooltip: "Use this mode to control the torque output of the motor",
+                altTooltip: null,
             },
             {
                 component: "wizardChoice",
@@ -640,8 +710,10 @@ export let pages = {
                     },
                 },
                 title: "Voltage Control",
+                requirements: [],
                 hooks: [],
-                tooltip: "This mode is used for gimbal motors"
+                tooltip: "This mode is used for gimbal motors",
+                altTooltip: null,
             },
         ],
         customComponents: [],
@@ -670,8 +742,10 @@ export let pages = {
                     },
                 },
                 title: "Input Passthrough",
+                requirements: [],
                 hooks: [],
-                tooltip: "This is the default input mode. Input commands are passed to the controller without modification."
+                tooltip: "This is the default input mode. Input commands are passed to the controller without modification.",
+                altTooltip: null,
             },
             {
                 component: "wizardInputFiltered",
@@ -679,9 +753,15 @@ export let pages = {
                     axis: "axis1",
                 },
                 title: "Position Input Filtering",
+                requirements: [
+                    (configObj) => {
+                        return configObj.axis1.controller.config.control_mode == odriveEnums.CONTROL_MODE_POSITION_CONTROL;
+                    },
+                ],
                 hooks: [],
                 tooltip: "Filtered position mode. This provides smoother motion than the passthrough mode. \
                             Input position commands are sent through a 2nd order filter. A higher bandwidth will cause quicker position changes.",
+                altTooltip: "Control mode must be Position Control for this input mode",
             },
             {
                 component: "wizardInputVelRamp",
@@ -689,9 +769,15 @@ export let pages = {
                     axis: "axis1",
                 },
                 title: "Velocity Input Ramping",
+                requirements: [
+                    (configObj) => {
+                        return configObj.axis1.controller.config.control_mode == odriveEnums.CONTROL_MODE_VELOCITY_CONTROL;
+                    },
+                ],
                 hooks: [],
                 tooltip: "For velocity control mode, you can choose to have the input velocities ramped between values. vel_ramp_rate is the \
-                            acceleration between velocities."
+                            acceleration between velocities.",
+                altTooltip: "Control mode must be Velocity Control for this input mode",
             },
             {
                 component: "wizardInputTrajectory",
@@ -699,10 +785,16 @@ export let pages = {
                     axis: "axis1",
                 },
                 title: "Trajectory Planning",
+                requirements: [
+                    (configObj) => {
+                        return configObj.axis1.controller.config.control_mode == odriveEnums.CONTROL_MODE_POSITION_CONTROL;
+                    },
+                ],
                 hooks: [],
                 tooltip: "This mode lets you smoothly accelerate, coast, and decelerate from one position to another. vel_limit is your coasting speed, \
                             accel_limit is the maximum acceleration in turns/s^2, decel_limit is the maximum decelaration in turns/s^2 and inertia is an \
-                            optional value to correlate acceleration with motor torque."
+                            optional value to correlate acceleration with motor torque.",
+                altTooltip: "Control most must be Position Control for this input mode",
             }
         ],
         pageComponents: [],
@@ -721,8 +813,10 @@ export let pages = {
                     axis: "axis1",
                 },
                 title: "Miscellaneous Parameters",
+                requirements: [],
                 hooks: [],
                 tooltip: null,
+                altTooltip: null,
             },
         ],
         pageComponents: [],
@@ -739,8 +833,10 @@ export let pages = {
                 component: "wizardEnd",
                 data: {},
                 title: null,
+                requirements: [],
                 hooks: [],
                 tooltip: "Old config values are on the left, new config values are on the right",
+                altTooltip: null,
             }
         ],
         pageComponents: [],
