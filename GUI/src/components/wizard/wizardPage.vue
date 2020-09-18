@@ -28,7 +28,7 @@
             content: customComponent.tooltip,
             class: 'tooltip-custom tooltip-other-custom fade-in',
             delay: 0,
-            visible: choice.tooltip!=null,
+            visible: customComponent.tooltip!=null,
           }"
           :key="customComponent.id"
           v-on:click.native="selectedChoice=customComponent.component"

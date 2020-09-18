@@ -22,6 +22,7 @@
     },
     "controller": {
       "config": {
+        "input_mode": null,
         "control_mode": null,
         "vel_limit": null,
         "inertia": null
@@ -55,6 +56,7 @@
     },
     "controller": {
       "config": {
+        "input_mode": null,
         "control_mode": null,
         "vel_limit": null,
         "inertia": null

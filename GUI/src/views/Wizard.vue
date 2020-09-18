@@ -39,8 +39,9 @@
 <script>
 import configTemplate from "../assets/wizard/configTemplate.json";
 import wizardPage from "../components/wizard/wizardPage.vue";
-// import odriveEnums from "../assets/odriveEnums.json";
+import odriveEnums from "../assets/odriveEnums.json";
 import { pages } from "../assets/wizard/wizard.js";
+const axios = require("axios");
 
 // see wizard.js for what wizard pages exist and what they contain
 
@@ -67,8 +68,7 @@ export default {
       this.choiceMade = false;
       if (e.data == "motor calibration") {
         // set a timeout to grab axis resistance and inductance values
-        setTimeout(() => {
-          // check for error during calibration
+        let apply = () => {
           if (
             this.$store.state.odrives.odrive0.axis0.error.val == "0" &&
             this.$store.state.odrives.odrive0.axis1.error.val == "0"
@@ -129,8 +129,45 @@ export default {
               configStub: configStub,
               hooks: [],
             });
+            this.choiceMade = true;
           }
-        }, 6000);
+        };
+        this.wait = function(){
+          if(parseInt(this.$store.state.odrives.odrive0[e.axis].current_state.val) == odriveEnums.AXIS_STATE_MOTOR_CALIBRATION){
+            // still calibrating
+            setTimeout(()=>this.wait(),100);
+          }
+          else {
+            // calibration is over
+            apply();
+          }
+        }
+        // wait for at least a second for comms to update state of ODrive
+        setTimeout(()=>this.wait(), 1000);
+      }
+      else if(e.data == "encoder calibration") {
+        // get old CPR
+        // apply CPR from this.wizardConfig
+        // start calibration
+        // wait for cal to finish
+        // set odrive cpr back to oldVal
+        let oldCPR = parseInt(this.$store.state.odrives.odrive0[e.axis].encoder.config.cpr.val);
+        console.log("oldCPR = " + oldCPR);
+        this.putVal(("odrive0."+e.axis+".encoder.config.cpr"), this.wizardConfig[e.axis].encoder.config.cpr);
+        this.putVal(("odrive0."+e.axis+".requested_state"),odriveEnums.AXIS_STATE_ENCODER_OFFSET_CALIBRATION);
+
+        this.wait = function(){
+          if(parseInt(this.$store.state.odrives.odrive0[e.axis].current_state.val) == odriveEnums.AXIS_STATE_ENCODER_OFFSET_CALIBRATION){
+            setTimeout(()=>this.wait(),100);
+            console.log("waiting for encoder cal to finish...")
+          }
+          else {
+            this.putVal(("odrive0."+e.axis+".encoder.config.cpr"), oldCPR);
+            console.log("applying old CPR")
+            this.choiceMade = true;
+          }
+        }
+        setTimeout(()=>this.wait(), 1000);
       }
     },
     choiceHandler(e) {
@@ -147,7 +184,11 @@ export default {
       if (
         e.choice != "ODrive D5065" &&
         e.choice != "ODrive D6374" &&
-        e.choice != "Other motor"
+        e.choice != "Other motor" &&
+        e.choice != "CUI AMT102V" &&
+        e.choice != "Hall Effect" &&
+        e.choice != "Incremental" &&
+        e.choice != "IncrementalIndex"
       ) {
         this.choiceMade = true;
       }
@@ -181,6 +222,27 @@ export default {
       this.currentStep = pages[this.currentStep.back];
       this.choiceMade = false;
     },
+    putVal(path, value) {
+    // path to value in odrive parameter tree for server
+    // for example, odrive0.axis0.config.requested_state
+    var params = new URLSearchParams();
+    // params.append("key", "odrive0");
+    let keys = path.split(".");
+    for (const key of keys) {
+        params.append("key", key);
+    }
+    params.append("val", value);
+    params.append("type", typeof value);
+    let request = {
+        params: params,
+    };
+    console.log(request);
+    axios.put(
+        this.$store.state.odriveServerAddress + "/api/property",
+        null,
+        request
+    );
+}
   },
 };
 </script>

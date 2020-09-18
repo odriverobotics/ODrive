@@ -5,8 +5,6 @@
 </template>
 
 <script>
-const axios = require("axios");
-import odriveEnums from "../../../assets/odriveEnums.json";
 
 export default {
   name: "wizardEncoderCal",
@@ -16,24 +14,7 @@ export default {
   methods: {
     calibrate() {
       // ask ODrive to measure resistance and inductance
-      var params = new URLSearchParams();
-      let keys = ["odrive0", this.data.axis, "requested_state"];
-      for (const key of keys) {
-        params.append("key", key);
-      }
-      params.append("val", odriveEnums.AXIS_STATE_ENCODER_OFFSET_CALIBRATION);
-      params.append("type", "number");
-      console.log(params.toString());
-      let request = {
-        params: params,
-      };
-      console.log(request);
-      axios.put(
-        this.$store.state.odriveServerAddress + "/api/property",
-        null,
-        request
-      );
-      //this.$emit('page-comp-event', {data: "motor calibration", axis: this.data.axis});
+      this.$emit('page-comp-event', {data: "encoder calibration", axis: this.data.axis});
     },
   },
 };

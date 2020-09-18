@@ -1,16 +1,17 @@
 <template>
   <div class="card">
-      <div class="diff" v-for="diff in configDiffs" :key="diff.path">
-        <span class="diff-path">{{diff.path}} : </span>
-        <span class="diff-old">{{diff.oldVal}}</span>
-        <span class="diff-seperator"> ⮕ </span>
-        <span class="diff-new">{{diff.newVal}}</span>
-      </div>
-      <button class="wizard-button card" @click="applyConfig">Apply</button>
+    <div class="diff" v-for="diff in configDiffs" :key="diff.path">
+      <span class="diff-path">{{diff.path}}: </span>
+      <span class="diff-old">{{diff.oldVal}}</span>
+      <span class="diff-seperator"> ⮕ </span>
+      <span class="diff-new">{{diff.newVal}}</span>
+    </div>
+    <button class="wizard-button card" @click="applyConfig">Apply</button>
   </div>
 </template>
 
 <script>
+import { enumVars } from "../../../assets/wizard/wizard.js";
 const axios = require("axios");
 
 export default {
@@ -40,9 +41,23 @@ export default {
         odrvObj = odrvObj[key];
         configObj = configObj[key];
       }
-      if (configObj != null){
-        console.log("oldVal is " + parseFloat(odrvObj["val"]) + " path is " + path);
-        this.configDiffs.push({path: path, oldVal: parseFloat(odrvObj["val"]), newVal: configObj});
+      if (configObj != null) {
+        let keys = path.split('.');
+        if (Object.keys(enumVars).includes(keys[keys.length - 1])){
+          // print old enum and new enum strings
+          console.log(enumVars[keys[keys.length-1]]);
+          this.configDiffs.push({path: path, oldVal: enumVars[keys[keys.length-1]][odrvObj["val"]], newVal: enumVars[keys[keys.length-1]][configObj]})
+        }
+        else {
+          // display numeric or boolean value
+          console.log("oldVal is " + parseFloat(odrvObj["val"]) + " path is " + path);
+          if (Number.isInteger(parseFloat(odrvObj["val"]))){
+            this.configDiffs.push({path: path, oldVal: parseFloat(odrvObj["val"]), newVal: configObj});
+          }
+          else {
+            this.configDiffs.push({path: path, oldVal: parseFloat(odrvObj["val"]).toExponential(3), newVal: configObj.toExponential(3)});
+          }
+        }
       }
     }
   },
@@ -98,7 +113,7 @@ export default {
 }
 
 .diff-path {
-    font-family: "Roboto Mono", monospace;
+  font-family: "Roboto Mono", monospace;
 }
 
 .diff-old {

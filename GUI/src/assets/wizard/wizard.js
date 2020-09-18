@@ -195,8 +195,6 @@ export let pages = {
             },
         ],
         pageComponents: [
-            /* This needs some thought - encoder cpr must be applied to ODrive before encoder calibration can be performed
-            What is desired is a "sanity check" to make sure that cpr is set correctly before proceeding
             {
                 component: "wizardEncoderCal",
                 id: 0,
@@ -211,7 +209,6 @@ export let pages = {
                     axis: "axis0"
                 }
             }
-            */
         ]
     },
     Control_0: {
@@ -504,22 +501,20 @@ export let pages = {
             },
         ],
         pageComponents: [
-            /*
             {
                 component: "wizardEncoderCal",
                 id: 0,
                 data: {
-                    axis: "axis1",
+                    axis: "axis0",
                 }
             },
             {
                 component: "wizardClearErrors",
                 id: 1,
                 data: {
-                    axis: "axis1"
+                    axis: "axis0"
                 }
             }
-            */
         ]
     },
     Control_1: {
@@ -687,4 +682,38 @@ export let pages = {
         ],
         pageComponents: [],
     }
+}
+
+export let enumVars = {
+    // for wizardEnd.vue
+    motor_type: {
+        0: "MOTOR_TYPE_HIGH_CURRENT",
+        2: "MOTOR_TYPE_GIMBAL",
+        3: "MOTOR_TYPE_ACIM",
+    },
+    mode: {
+        0: "ENCODER_MODE_INCREMENTAL",
+        1: "ENCODER_MODE_HALL",
+        2: "ENCODER_MODE_SINCOS",
+        256: "ENCODER_MODE_SPI_ABS_CUI",
+        257: "ENCODER_MODE_SPI_ABS_AMS",
+        258: "ENCODER_MODE_SPI_ABS_AEAT",
+        259: "ENCODER_MODE_SPI_ABS_RLS",
+    },
+    input_mode: {
+        0: "INPUT_MODE_INACTIVE",
+        1: "INPUT_MODE_PASSTHROUGH",
+        2: "INPUT_MODE_VEL_RAMP",
+        3: "INPUT_MODE_POS_FILTER",
+        4: "INPUT_MODE_MIX_CHANNELS",
+        5: "INPUT_MODE_TRAP_TRAJ",
+        6: "INPUT_MODE_TORQUE_RAMP",
+        7: "INPUT_MODE_MIRROR",
+    },
+    control_mode: {
+        0: "CONTROL_MODE_VOLTAGE_CONTROL",
+        1: "CONTROL_MODE_TORQUE_CONTROL",
+        2: "CONTROL_MODE_VELOCITY_CONTROL",
+        3: "CONTROL_MODE_POSITION_CONTROL",
+    },
 }
