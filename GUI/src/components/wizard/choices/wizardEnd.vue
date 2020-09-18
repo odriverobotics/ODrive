@@ -54,6 +54,9 @@ export default {
           if (Number.isInteger(parseFloat(odrvObj["val"]))){
             this.configDiffs.push({path: path, oldVal: parseFloat(odrvObj["val"]), newVal: configObj});
           }
+          else if (typeof configObj == 'boolean'){
+            this.configDiffs.push({path: path, oldVal: odrvObj["val"] == true, newVal: configObj == true});
+          }
           else {
             this.configDiffs.push({path: path, oldVal: parseFloat(odrvObj["val"]).toExponential(3), newVal: configObj.toExponential(3)});
           }

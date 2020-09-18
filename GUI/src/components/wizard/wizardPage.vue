@@ -3,35 +3,29 @@
   <div class="wizard-page card">
     <div class="wizard-title">{{title}}</div>
     <div class="wizard-choices">
+      <!--
       <wizardChoice
-        v-for="choice in choices"
-        v-bind:class="{chosen: selectedChoice == choice.text, unchosen: selectedChoice != choice.text}"
-        v-tooltip.top="{
-          content: choice.tooltip,
-          class: 'tooltip-custom tooltip-other-custom fade-in',
-          delay: 0,
-          visible: choice.tooltip!=null,
-        }"
-        :key="choice.id"
-        :imageUrl="choice.imageURL"
-        :text="choice.text"
         v-on:click.native="selectedChoice=choice.text;$emit('choice', {title: title, choice: choice.text, configStub: choice.configStub, hooks: choice.hooks})"
       />
-      <template v-for="customComponent in customComponents">
+      -->
+      <template v-for="choice in choices">
         <component
-          v-bind:class="{chosen: selectedChoice == customComponent.component, unchosen: selectedChoice != customComponent.component}"
-          v-bind:is="customComponent.component"
-          v-bind:data="customComponent.data"
+          v-bind:class="{chosen: selectedChoice == choice.title, unchosen: selectedChoice != choice.title}"
+          v-bind:is="choice.component"
+          v-bind:data="choice.data"
           v-bind:config="config"
           v-bind:axis="axis"
+          v-bind:title="choice.title"
+          v-bind:selected="selectedChoice == choice.title"
+          v-bind:hooks="choice.hooks"
           v-tooltip.top="{
-            content: customComponent.tooltip,
+            content: choice.tooltip,
             class: 'tooltip-custom tooltip-other-custom fade-in',
             delay: 0,
-            visible: customComponent.tooltip!=null,
+            visible: choice.tooltip!=null,
           }"
-          :key="customComponent.id"
-          v-on:click.native="selectedChoice=customComponent.component"
+          :key="choice.title"
+          v-on:click.native="selectedChoice=choice.title"
           v-on:choice="handleCustomChoice"
         />
       </template>

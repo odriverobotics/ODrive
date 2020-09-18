@@ -1,8 +1,8 @@
 <template>
   <!-- single choice for a wizard page -->
   <div class="wizard-choice card">
-    <img v-bind:alt="text" :src="imageUrl" />
-    {{ text }}
+    <img v-bind:alt="title" :src="data.imageURL" />
+    {{ title }}
   </div>
 </template>
 
@@ -10,9 +10,19 @@
 export default {
   name: "wizardChoice",
   props: {
-    imageUrl: String,
-    text: String,
+    data: Object,
+    selected: Boolean,
+    title: String,
+    hooks: Array,
   },
+  watch: {
+    selected(newVal) {
+      if (newVal == true) {
+        // emit choice event
+        this.$emit('choice', {choice: this.title, configStub: this.data.configStub, hooks: this.hooks});
+      }
+    }
+  }
 };
 </script>
 
