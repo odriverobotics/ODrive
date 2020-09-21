@@ -41,7 +41,7 @@ permalink: /
 
   </div></details>
 
-* A power supply (12V-24V for the 24V board variant, 12V-48V for the 48V board variant). A battery is also fine. Some advice on choosing a power supply can be found [here](https://things-in-motion.blogspot.com/2018/12/how-to-select-right-power-source-for.html).
+* A power supply (12V-24V for the 24V board variant, 12V-56V for the 56V board variant). A battery is also fine. Some advice on choosing a power supply can be found [here](https://things-in-motion.blogspot.com/2018/12/how-to-select-right-power-source-for.html).
   <details><summary markdown="span">What voltage variant do I have?</summary><div markdown="block">
   On all ODrives shipped July 2018 or after have a silkscreen label clearly indicating the voltage variant.
 
@@ -61,13 +61,13 @@ All non-power I/O is 3.3V output and 5V tolerant on input, on ODrive v3.3 and ne
 ### Wiring up the encoders
 Connect the encoder(s) to J4. The A,B phases are required, and the Z (index pulse) is optional. The A,B and Z lines have 3.3k pull up resistors, for use with open-drain encoder outputs. For single ended push-pull signals with weak drive current (\<4mA), you may want to desolder the pull-ups.
 
-![Image of ODrive all hooked up](https://docs.google.com/drawings/d/e/2PACX-1vTCD0P40Cd-wvD7Fl8UYEaxp3_UL81oI4qUVqrrCJPi6tkJeSs2rsffIXQRpdu6rNZs6-2mRKKYtILG/pub?w=1716&h=1281)
+![Image of ODrive all hooked up](https://docs.google.com/drawings/d/e/2PACX-1vTpJziAisrkvV1kTL4vckAJkmJ-BAvTwN1GeZZNCNwpTHv47Cf8bpz-gJqK2Z3un6FCHT4E-rcuUg6c/pub?w=1716&h=1281)
 
 ### Safety & Power UP
 <div class="alert">
  Always think safety before powering up the ODrive if motors are attached. Consider what might happen if the motor spins as soon as power is applied.
 </div>
-* Unlike some devices, the ODrive does not recieve power over the USB port so the 24/48 volt power input is required even just to communicate with it using USB. It is ok to power up the ODrive before or after connecting the USB cable.
+* Unlike some devices, the ODrive does not recieve power over the USB port so the 24/56 volt power input is required even just to communicate with it using USB. It is ok to power up the ODrive before or after connecting the USB cable.
 * To power up the ODrive, connect the power source to the DC terminals. Make sure to pay attention to the polarity. A small spark is normal. This is caused by the capacitors charging up.
 
 ## Downloading and Installing Tools
