@@ -615,14 +615,14 @@ export let pages = {
                 component: "wizardEncoderCal",
                 id: 0,
                 data: {
-                    axis: "axis0",
+                    axis: "axis1",
                 }
             },
             {
                 component: "wizardClearErrors",
                 id: 1,
                 data: {
-                    axis: "axis0"
+                    axis: "axis1"
                 }
             }
         ]

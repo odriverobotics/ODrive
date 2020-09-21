@@ -137,46 +137,74 @@ export default {
             this.choiceMade = true;
           }
         };
-        this.wait = function(){
-          if(parseInt(this.$store.state.odrives.odrive0[e.axis].current_state.val) == odriveEnums.AXIS_STATE_MOTOR_CALIBRATION){
+        this.wait = function () {
+          if (
+            parseInt(
+              this.$store.state.odrives.odrive0[e.axis].current_state.val
+            ) == odriveEnums.AXIS_STATE_MOTOR_CALIBRATION
+          ) {
             // still calibrating
-            setTimeout(()=>this.wait(),100);
+            setTimeout(() => this.wait(), 100);
             this.calibrating = true;
-          }
-          else {
+          } else if (
+            this.$store.state.odrives.odrive0.axis0.error.val != "0" ||
+            this.$store.state.odrives.odrive0.axis1.error.val != "0"
+          ) {
+            console.log("motor cal error");
+            this.calibrating = false;
+            this.choiceMade = false;
+          } else {
             // calibration is over
             apply();
             this.calibrating = false;
           }
-        }
+        };
         // wait for at least a second for comms to update state of ODrive
-        setTimeout(()=>this.wait(), 1000);
-      }
-      else if(e.data == "encoder calibration") {
+        setTimeout(() => this.wait(), 1000);
+      } else if (e.data == "encoder calibration") {
         // get old CPR
         // apply CPR from this.wizardConfig
         // start calibration
         // wait for cal to finish
         // set odrive cpr back to oldVal
-        let oldCPR = parseInt(this.$store.state.odrives.odrive0[e.axis].encoder.config.cpr.val);
+        let oldCPR = parseInt(
+          this.$store.state.odrives.odrive0[e.axis].encoder.config.cpr.val
+        );
         console.log("oldCPR = " + oldCPR);
-        this.putVal(("odrive0."+e.axis+".encoder.config.cpr"), this.wizardConfig[e.axis].encoder.config.cpr);
-        this.putVal(("odrive0."+e.axis+".requested_state"),odriveEnums.AXIS_STATE_ENCODER_OFFSET_CALIBRATION);
+        console.log("axis = " + e.axis);
+        this.putVal(
+          "odrive0." + e.axis + ".encoder.config.cpr",
+          this.wizardConfig[e.axis].encoder.config.cpr
+        );
+        this.putVal(
+          "odrive0." + e.axis + ".requested_state",
+          odriveEnums.AXIS_STATE_ENCODER_OFFSET_CALIBRATION
+        );
 
-        this.wait = function(){
-          if(parseInt(this.$store.state.odrives.odrive0[e.axis].current_state.val) == odriveEnums.AXIS_STATE_ENCODER_OFFSET_CALIBRATION){
-            setTimeout(()=>this.wait(),100);
-            console.log("waiting for encoder cal to finish...")
+        this.wait = function () {
+          if (
+            parseInt(
+              this.$store.state.odrives.odrive0[e.axis].current_state.val
+            ) == odriveEnums.AXIS_STATE_ENCODER_OFFSET_CALIBRATION
+          ) {
+            setTimeout(() => this.wait(), 100);
+            console.log("waiting for encoder cal to finish...");
             this.calibrating = true;
-          }
-          else {
-            this.putVal(("odrive0."+e.axis+".encoder.config.cpr"), oldCPR);
-            console.log("applying old CPR")
+          } else if (
+            this.$store.state.odrives.odrive0.axis0.error.val != "0" ||
+            this.$store.state.odrives.odrive0.axis1.error.val != "0"
+          ) {
+            this.putVal("odrive0." + e.axis + ".encoder.config.cpr", oldCPR);
+            console.log("applying old CPR, error detected");
+            this.calibrating = false;
+          } else {
+            this.putVal("odrive0." + e.axis + ".encoder.config.cpr", oldCPR);
+            console.log("applying old CPR");
             this.choiceMade = true;
             this.calibrating = false;
           }
-        }
-        setTimeout(()=>this.wait(), 1000);
+        };
+        setTimeout(() => this.wait(), 1000);
       }
     },
     choiceHandler(e) {
@@ -203,7 +231,7 @@ export default {
       }
       console.log(JSON.parse(JSON.stringify(this.wizardConfig)));
     },
-    undoChoice(e){
+    undoChoice(e) {
       this.choiceMade = false;
       this.nullConfig(this.wizardConfig, e.configStub);
       console.log(JSON.parse(JSON.stringify(this.wizardConfig)));
@@ -220,7 +248,7 @@ export default {
         });
       }
     },
-    nullConfig(config, configStub){
+    nullConfig(config, configStub) {
       // iterate over keys in configStub
       if (configStub != null) {
         console.log("NullConfig");
@@ -257,18 +285,18 @@ export default {
       // params.append("key", "odrive0");
       let keys = path.split(".");
       for (const key of keys) {
-          params.append("key", key);
+        params.append("key", key);
       }
       params.append("val", value);
       params.append("type", typeof value);
       let request = {
-          params: params,
+        params: params,
       };
       console.log(request);
       axios.put(
-          this.$store.state.odriveServerAddress + "/api/property",
-          null,
-          request
+        this.$store.state.odriveServerAddress + "/api/property",
+        null,
+        request
       );
     },
   },
