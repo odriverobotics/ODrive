@@ -15,7 +15,7 @@ export let pages = {
         component: "wizardPage",
         next: "Brake",
         back: "ODrive",
-        requirements: [],
+        nextTooltip: "Make a choice!",
         choices: [
             {
                 component: "wizardChoice",
@@ -49,7 +49,7 @@ export let pages = {
         component: "wizardPage",
         next: "Motor_0",
         back: "ODrive",
-        requirements: [],
+        nextTooltip: "Make a choice!",
         choices: [
             {
                 component: "wizardBrake",
@@ -60,6 +60,21 @@ export let pages = {
                 tooltip: "When you slow down a motor, the energy has to go somewhere.\n\r \
                             It either goes to the brake resistor or back to your power supply.",
                 altTooltip: null,
+            },
+            {
+                component: "wizardChoice",
+                data: {
+                    imageURL: null,
+                    configStub: {
+                        config: {
+                            brake_resistance: 0,
+                        }
+                    },
+                },
+                title: "I don't have a brake resistor",
+                hooks: [],
+                requirements: [],
+                tooltip: "Only operate without a brake resistor if your power source can handle reverse current, like a battery."
             }
         ],
     },
@@ -69,7 +84,9 @@ export let pages = {
         component: "wizardPage",
         next: "Encoder_0",
         back: "Brake",
-        requirements: [],
+        nextTooltip: "ODrive needs to know the inductance and resistance of your motor in order to control it.\
+                        Click the Calibrate Motor button to start the measurement process. The motor will beep\
+                        during calibration.",
         choices: [
             {
                 component: "wizardChoice",
@@ -156,7 +173,9 @@ export let pages = {
         component: "wizardPage",
         next: "Control_0",
         back: "Motor_0",
-        requirements: [],
+        nextTooltip: "ODrive needs to know the relation between the encoder position and motor position in order to function. \
+                        Click the Calibrate Encoder button to start the measurement process. The motor will slowly rotate back \
+                        and forth during calibration.",
         choices: [
             {
                 component: "wizardChoice",
@@ -254,7 +273,7 @@ export let pages = {
         component: "wizardPage",
         next: "Input_0",
         back: "Encoder_0",
-        requirements: [],
+        nextTooltip: "Make a choice!",
         choices: [
             {
                 component: "wizardChoice",
@@ -346,7 +365,7 @@ export let pages = {
         component: "wizardPage",
         next: "Misc_0",
         back: "Control_0",
-        requirements: [],
+        nextTooltip: "Make a choice!",
         choices: [
             {
                 component: "wizardChoice",
@@ -426,7 +445,7 @@ export let pages = {
         component: "wizardPage",
         next: "Motor_1",
         back: "Encoder_0",
-        requirements: [],
+        nextTooltip: "Make a choice!",
         choices: [
             {
                 component: "wizardMisc",
@@ -448,7 +467,9 @@ export let pages = {
         component: "wizardPage",
         next: "Encoder_1",
         back: "Misc_0",
-        requirements: [],
+        nextTooltip: "ODrive needs to know the inductance and resistance of your motor in order to control it.\
+                        Click the Calibrate Motor button to start the measurement process. The motor will beep\
+                        during calibration.",
         choices: [
             {
                 component: "wizardChoice",
@@ -535,7 +556,9 @@ export let pages = {
         component: "wizardPage",
         next: "Control_1",
         back: "Motor_1",
-        requirements: [],
+        nextTooltip: "ODrive needs to know the relation between the encoder position and motor position in order to function. \
+                        Click the Calibrate Encoder button to start the measurement process. The motor will slowly rotate back \
+                        and forth during calibration.",
         choices: [
             {
                 component: "wizardChoice",
@@ -633,7 +656,7 @@ export let pages = {
         component: "wizardPage",
         next: "Input_1",
         back: "Encoder_1",
-        requirements: [],
+        nextTooltip: "Make a choice!",
         choices: [
             {
                 component: "wizardChoice",
@@ -725,7 +748,7 @@ export let pages = {
         component: "wizardPage",
         next: "Misc_1",
         back: "Control_1",
-        requirements: [],
+        nextTooltip: "Make a choice!",
         choices: [
             {
                 component: "wizardChoice",
@@ -805,7 +828,7 @@ export let pages = {
         component: "wizardPage",
         next: "End",
         back: "Input_1",
-        requirements: [],
+        nextTooltip: "Make a choice!",
         choices: [
             {
                 component: "wizardMisc",
@@ -827,7 +850,6 @@ export let pages = {
         component: "wizardPage",
         next: "End",
         back: "Misc_1",
-        requirements: [],
         choices: [
             {
                 component: "wizardEnd",

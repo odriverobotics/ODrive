@@ -30,6 +30,12 @@
           <button
             class="wizard-button card"
             v-bind:class="{'next-green': choiceMade}"
+            v-tooltip.right="{
+              content: currentStep.nextTooltip,
+              class: 'tooltip-custom tooltip-other-custom fade-in',
+              delay: 0,
+              visible: !choiceMade&&currentStep.nextTooltip!=null,
+            }"
             @click="next"
           >Next</button>
         </div>
@@ -366,5 +372,32 @@ export default {
 .next-green {
   color: green;
   font-weight: bold;
+}
+
+.vue-tooltip.tooltip-custom {
+  background-color: lightyellow; /* var(--fg-color); */
+  border-radius: 0px;
+  box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.4);
+  font-family: "Roboto", sans-serif;
+  color: black;
+}
+
+.vue-tooltip.tooltip-custom .tooltip-arrow {
+  display: none;
+}
+
+.vue-tooltip.fade-in {
+  opacity: 0;
+  animation: fadeIn ease 0.25s;
+  animation-fill-mode: both;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 </style>

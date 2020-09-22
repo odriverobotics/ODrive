@@ -1,7 +1,7 @@
 <template>
   <!-- single choice for a wizard page -->
   <div class="wizard-choice card" v-bind:class="{'choice-inactive': !allowed}">
-    <img v-bind:alt="title" :src="data.imageURL" />
+    <img v-if="data.imageURL != null" v-bind:alt="title" :src="data.imageURL" />
     {{ title }}
   </div>
 </template>
