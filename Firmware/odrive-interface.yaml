@@ -468,6 +468,7 @@ interfaces:
       trap_traj: TrapezoidalTrajectory
       min_endstop: Endstop
       max_endstop: Endstop
+      mechanical_brake: MechanicalBrake
       task_times:
         c_is_class: False
         attributes:
@@ -990,7 +991,6 @@ interfaces:
           accel_limit: float32
           decel_limit: float32
 
-
   ODrive.Endstop:
     c_is_class: True
     attributes:
@@ -1003,6 +1003,22 @@ interfaces:
           offset: float32
           is_active_high: bool
           debounce_ms: {type: uint32, c_setter: set_debounce_ms}
+
+  ODrive.MechanicalBrake:
+    c_is_class: True
+    attributes:
+      config:
+        c_is_class: False
+        attributes:
+          gpio_num: {type: uint16, c_setter: set_gpio_num}
+          is_active_low: bool
+    functions:
+      engage:
+        doc: |
+          This function engages the mechanical brake if one is present and enabled.
+      release:
+        doc: |
+          This function releases the mecahncal brake if one is present and enabled.
 
   ODrive.TaskTimer:
     c_is_class: True
@@ -1039,6 +1055,7 @@ valuetypes:
       Enc0: {doc: The pin is used by quadrature encoder 0.}
       Enc1: {doc: The pin is used by quadrature encoder 1.}
       Enc2: {doc: This mode is not supported on ODrive v3.x.}
+      MechBrake: {doc: This is to support external mechanical brakes.}
 
   ODrive.Can.Protocol:
     values: {Simple: }

@@ -168,6 +168,8 @@ Motor::Motor(TIM_HandleTypeDef* timer,
  * @returns: True on success, false otherwise
  */
 bool Motor::arm(PhaseControlLaw<3>* control_law) {
+    axis_->mechanical_brake_.release();
+
     CRITICAL_SECTION() {
         control_law_ = control_law;
 

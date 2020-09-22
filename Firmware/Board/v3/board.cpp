@@ -102,6 +102,7 @@ Encoder encoders[AXIS_COUNT] = {
 
 // TODO: this has no hardware dependency and should be allocated depending on config
 Endstop endstops[2 * AXIS_COUNT];
+MechanicalBrake mechanical_brakes[AXIS_COUNT];
 
 SensorlessEstimator sensorless_estimators[AXIS_COUNT];
 Controller controllers[AXIS_COUNT];
@@ -122,6 +123,7 @@ std::array<Axis, AXIS_COUNT> axes{{
         motors[0], // motor
         trap[0], // trap
         endstops[0], endstops[1], // min_endstop, max_endstop
+        mechanical_brakes[0], // mechanical brake
     },
     {
         1, // axis_num
@@ -141,6 +143,7 @@ std::array<Axis, AXIS_COUNT> axes{{
         motors[1], // motor
         trap[1], // trap
         endstops[2], endstops[3], // min_endstop, max_endstop
+        mechanical_brakes[1], // mechanical brake
     },
 }};
 

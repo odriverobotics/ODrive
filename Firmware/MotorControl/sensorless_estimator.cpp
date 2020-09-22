@@ -82,8 +82,8 @@ bool SensorlessEstimator::update() {
     pll_pos_ = wrap_pm_pi(pll_pos_ + current_meas_period * pll_kp * delta_phase);
     // update PLL velocity
     phase_vel_ += current_meas_period * pll_ki * delta_phase;
-
-    vel_estimate_ = phase_vel_ / (2 * M_PI);
+    // convert to mechanical turns/s for controller usage.
+    vel_estimate_ = phase_vel_ / (std::max((float)axis_->motor_.config_.pole_pairs, 1.0f) * 2.0f * M_PI);
 
     return true;
 };

@@ -19,7 +19,8 @@ Axis::Axis(int axis_num,
            Motor& motor,
            TrapezoidalTrajectory& trap,
            Endstop& min_endstop,
-           Endstop& max_endstop)
+           Endstop& max_endstop,
+           MechanicalBrake& mechanical_brake)
     : axis_num_(axis_num),
       default_step_gpio_pin_(default_step_gpio_pin),
       default_dir_gpio_pin_(default_dir_gpio_pin),
@@ -33,6 +34,7 @@ Axis::Axis(int axis_num,
       trap_traj_(trap),
       min_endstop_(min_endstop),
       max_endstop_(max_endstop),
+      mechanical_brake_(mechanical_brake),
       current_limiters_(make_array(
           static_cast<CurrentLimiter*>(&fet_thermistor),
           static_cast<CurrentLimiter*>(&motor_thermistor))),
@@ -49,6 +51,7 @@ Axis::Axis(int axis_num,
     trap_traj_.axis_ = this;
     min_endstop_.axis_ = this;
     max_endstop_.axis_ = this;
+    mechanical_brake_.axis_ = this;
 }
 
 Axis::LockinConfig_t Axis::default_calibration() {
@@ -432,6 +435,7 @@ bool Axis::run_homing() {
 }
 
 bool Axis::run_idle_loop() {
+    mechanical_brake_.engage();
     set_step_dir_active(config_.enable_step_dir && config_.step_dir_always_on);
     while (requested_state_ == AXIS_STATE_UNDEFINED) {
         motor_.setup();

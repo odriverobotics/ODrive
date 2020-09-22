@@ -10,6 +10,7 @@ class Axis;
 #include "open_loop_controller.hpp"
 #include "trapTraj.hpp"
 #include "endstop.hpp"
+#include "mechanical_brake.hpp"
 #include "low_level.h"
 #include "utils.hpp"
 #include "task_timer.hpp"
@@ -105,7 +106,8 @@ public:
             Motor& motor,
             TrapezoidalTrajectory& trap,
             Endstop& min_endstop,
-            Endstop& max_endstop);
+            Endstop& max_endstop,
+            MechanicalBrake& mechanical_brake);
 
     bool apply_config();
     void clear_config();
@@ -160,6 +162,7 @@ public:
     TrapezoidalTrajectory& trap_traj_;
     Endstop& min_endstop_;
     Endstop& max_endstop_;
+    MechanicalBrake& mechanical_brake_;
     TaskTimes task_times_;
 
     // List of current_limiters and thermistors to
