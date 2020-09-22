@@ -24,7 +24,7 @@
         v-for="dash in dashboards"
         v-bind:key="dash.id"
         v-bind:class="['dash-button', { active: currentDash === dash.name}]"
-        v-on:click.self="currentDash = dash.name"
+        v-on:click.self="changeDash(dash.name)"
         v-on:dblclick="changeDashName(dash.id)"
       >
         <button
@@ -74,7 +74,7 @@ export default {
   },
   data: function () {
     return {
-      currentDash: "Start",
+      //currentDash: "Start",
     };
   },
   computed: {
@@ -82,7 +82,7 @@ export default {
       //get the appropriate component name from the currentDash variable
       let comp = {};
       for (const dash of this.dashboards) {
-        if (dash.name === this.currentDash) {
+        if (dash.name === this.$store.state.currentDash) {
           comp = dash.component;
         }
       }
@@ -91,7 +91,7 @@ export default {
     dash: function () {
       let comp = {};
       for (const dash of this.dashboards) {
-        if (dash.name === this.currentDash) {
+        if (dash.name === this.$store.state.currentDash) {
           comp = dash;
         }
       }
@@ -100,7 +100,7 @@ export default {
     currentCtrlList: function () {
       let comp = {};
       for (const dash of this.dashboards) {
-        if (dash.name === this.currentDash) {
+        if (dash.name === this.$store.state.currentDash) {
           comp = dash.controls;
         }
       }
@@ -118,8 +118,15 @@ export default {
     sampling: function () {
       return this.$store.state.sampling;
     },
+    currentDash: function () {
+      return this.$store.state.currentDash;
+    }
   },
   methods: {
+    changeDash(dashName){
+      console.log(dashName);
+      this.$store.commit("setDash", dashName);
+    },
     updateOdrives() {
       if (this.$store.state.serverConnected == true) {
         //} && this.sampling == false) {
@@ -143,7 +150,7 @@ export default {
       });
     },
     deleteDash(dashID) {
-      this.currentDash = "Start";
+      this.$store.commit("setDash", "Start");
       console.log("Deleting dash " + dashID);
       for (const dash of this.dashboards) {
         if (dashID === dash.id) {

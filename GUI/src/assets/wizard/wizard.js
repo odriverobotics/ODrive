@@ -158,13 +158,6 @@ export let pages = {
                     axis: "axis0",
                 }
             },
-            {
-                component: "wizardClearErrors",
-                id: 1,
-                data: {
-                    axis: "axis0"
-                }
-            }
         ]
     },
     Encoder_0: {
@@ -258,13 +251,6 @@ export let pages = {
                     axis: "axis0",
                 }
             },
-            {
-                component: "wizardClearErrors",
-                id: 1,
-                data: {
-                    axis: "axis0"
-                }
-            }
         ]
     },
     Control_0: {
@@ -541,13 +527,6 @@ export let pages = {
                     axis: "axis1",
                 }
             },
-            {
-                component: "wizardClearErrors",
-                id: 1,
-                data: {
-                    axis: "axis1"
-                }
-            }
         ]
     },
     Encoder_1: {
@@ -641,13 +620,6 @@ export let pages = {
                     axis: "axis1",
                 }
             },
-            {
-                component: "wizardClearErrors",
-                id: 1,
-                data: {
-                    axis: "axis1"
-                }
-            }
         ]
     },
     Control_1: {

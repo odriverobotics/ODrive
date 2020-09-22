@@ -30,9 +30,13 @@ export default new Vuex.Store({
         propSamples: { time: [] }, // {time: [time values], ...path: [path var values]}
         newData: false,
         sampling: false,
+        currentDash: "Start",
     },
     // mutations are functions that change the data
     mutations: {
+        setDash(state, dashName) {
+            state.currentDash = dashName;
+        },
         setOdrives(state, odrives) {
             state.odrives = odrives;
         },

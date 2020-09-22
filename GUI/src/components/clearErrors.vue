@@ -7,7 +7,7 @@
 <script>
 const axios = require("axios");
 export default {
-  name: "wizardClearErrors.vue",
+  name: "clearErrors.vue",
   props: {
     data: Object,
   },

@@ -1,11 +1,12 @@
 <template>
   <div
     class="axis"
-    @click="showError = !showError;"
-    v-bind:class="{ noError: !axisError, error: axisError}"
+    @click.self="showError = !showError;"
+    v-bind:class="{ noError: !error, error: error}"
   >
     {{ axis.name }}
-    <div v-show="showError" class="error-popup card">
+    <div v-show="showError" class="error-popup card" @click.self="showError = !showError">
+      <clear-errors/>
       axis:
       <span v-bind:class="{ noError: !axisError, error: axisError}">{{axisErrorMsg}}</span>
       <br />motor:
@@ -23,6 +24,9 @@
 </template>
 
 <script>
+import odriveEnums from "../assets/odriveEnums.json";
+import clearErrors from "./clearErrors.vue";
+
 const axisErrors = {
   0x00000000: "AXIS_ERROR_NONE",
   0x00000001: "AXIS_ERROR_INVALID_STATE",
@@ -91,6 +95,9 @@ let controllerErrors = {
 
 export default {
   name: "Axis",
+  components: {
+    clearErrors,
+  },
   props: ["axis", "odrives"],
   data() {
     return {
@@ -102,8 +109,14 @@ export default {
       let retMsg = "none";
       let errCode = parseInt(this.axis.ref.error.val);
 
+      if (this.$store.state.currentDash == "Wizard") {
+        errCode &= ~odriveEnums.AXIS_ERROR_MOTOR_FAILED;
+        errCode &= ~odriveEnums.AXIS_ERROR_ENCODER_FAILED;
+      }
+
       if (errCode != 0) {
         // we got an error!
+        // mask errors depending on which page is active
         let errs = [];
         for (const errKey of Object.keys(axisErrors)) {
           if (errCode & errKey) {
@@ -121,6 +134,11 @@ export default {
     motorErrorMsg() {
       let retMsg = "none";
       let errCode = parseInt(this.axis.ref.motor.error.val);
+
+      if (this.$store.state.currentDash == "Wizard") {
+        errCode &= ~odriveEnums.MOTOR_ERROR_PHASE_RESISTANCE_OUT_OF_RANGE;
+        errCode &= ~odriveEnums.MOTOR_ERROR_PHASE_INDUCTANCE_OUT_OF_RANGE;
+      }
 
       if (errCode != 0) {
         // we got an error!
@@ -141,6 +159,11 @@ export default {
     encoderErrorMsg() {
       let retMsg = "none";
       let errCode = parseInt(this.axis.ref.encoder.error.val);
+
+      if (this.$store.state.currentDash == "Wizard") {
+        errCode &= ~odriveEnums.ENCODER_ERROR_CPR_POLEPAIRS_MISMATCH;
+        errCode &= ~odriveEnums.ENCODER_ERROR_NO_RESPONSE;
+      }
 
       if (errCode != 0) {
         // we got an error!
@@ -179,16 +202,35 @@ export default {
       return retMsg;
     },
     axisError() {
-      return this.axis.ref.error.val !== "0";
+      let errCode = parseInt(this.axis.ref.error.val)
+      if (this.$store.state.currentDash == "Wizard") {
+        errCode &= ~odriveEnums.AXIS_ERROR_MOTOR_FAILED;
+        errCode &= ~odriveEnums.AXIS_ERROR_ENCODER_FAILED;
+      }
+      return errCode != 0;
     },
     motorError() {
-      return this.axis.ref.motor.error.val !== "0";
+      let errCode = parseInt(this.axis.ref.motor.error.val);
+      if (this.$store.state.currentDash == "Wizard") {
+        errCode &= ~odriveEnums.MOTOR_ERROR_PHASE_RESISTANCE_OUT_OF_RANGE;
+        errCode &= ~odriveEnums.MOTOR_ERROR_PHASE_INDUCTANCE_OUT_OF_RANGE;
+      }
+      return errCode != 0;
     },
     encoderError() {
-      return this.axis.ref.encoder.error.val !== "0";
+      let errCode = parseInt(this.axis.ref.encoder.error.val);
+      if (this.$store.state.currentDash == "Wizard") {
+        errCode &= ~odriveEnums.ENCODER_ERROR_CPR_POLEPAIRS_MISMATCH;
+        errCode &= ~odriveEnums.ENCODER_ERROR_NO_RESPONSE;
+      }
+      return errCode != 0;
     },
     controllerError() {
-      return this.axis.ref.controller.error.val !== "0";
+      let errCode = parseInt(this.axis.ref.controller.error.val);
+      return errCode != 0;
+    },
+    error() {
+      return this.axisError || this.motorError || this.encoderError || this.controllerError;
     },
   },
 };
