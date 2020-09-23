@@ -4,7 +4,7 @@
       <span class="diff-path">{{diff.path}}: </span>
       <span class="diff-old">{{diff.oldVal}}</span>
       <span class="diff-seperator"> ⮕ </span>
-      <span class="diff-new">{{diff.newVal}}</span>
+      <span v-bind:class="{'diff-new': diff.oldVal != diff.newVal, 'diff-same': diff.oldVal == diff.newVal}">{{diff.newVal}}</span>
     </div>
     <button class="wizard-button card" @click="applyConfig">Apply</button>
   </div>
@@ -127,6 +127,11 @@ export default {
 .diff-new {
   font-weight: bold;
   color: green;
+}
+
+.diff-same {
+  font-weight: bold;
+  color: blue;
 }
 
 .wizard-button:active {
