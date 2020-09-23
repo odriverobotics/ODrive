@@ -38,20 +38,20 @@ class CANSimple {
     static void doCommand(Axis& axis, const can_Message_t& cmd);
 
     // Cyclic Senders
-    static uint32_t send_heartbeat(const Axis& axis);
+    static int32_t send_heartbeat(const Axis& axis);
     static void send_cyclic(Axis& axis);
 
    private:
     // Get functions (msg.rtr bit must be set)
-    static uint32_t get_motor_error_callback(const Axis& axis);
-    static uint32_t get_encoder_error_callback(const Axis& axis);
-    static uint32_t get_controller_error_callback(const Axis& axis);
-    static uint32_t get_sensorless_error_callback(const Axis& axis);
-    static uint32_t get_encoder_estimates_callback(const Axis& axis);
-    static uint32_t get_encoder_count_callback(const Axis& axis);
-    static uint32_t get_iq_callback(const Axis& axis);
-    static uint32_t get_sensorless_estimates_callback(const Axis& axis);
-    static uint32_t get_vbus_voltage_callback(const Axis& axis);
+    static int32_t get_motor_error_callback(const Axis& axis);
+    static int32_t get_encoder_error_callback(const Axis& axis);
+    static int32_t get_controller_error_callback(const Axis& axis);
+    static int32_t get_sensorless_error_callback(const Axis& axis);
+    static int32_t get_encoder_estimates_callback(const Axis& axis);
+    static int32_t get_encoder_count_callback(const Axis& axis);
+    static int32_t get_iq_callback(const Axis& axis);
+    static int32_t get_sensorless_estimates_callback(const Axis& axis);
+    static int32_t get_vbus_voltage_callback(const Axis& axis);
 
     // Set functions
     static void set_axis_nodeid_callback(Axis& axis, const can_Message_t& msg);

@@ -42,7 +42,7 @@ class ODriveCAN : public ODriveIntf::CanIntf {
 
     // I/O Functions
     uint32_t available();
-    uint32_t write(can_Message_t &txmsg);
+    int32_t write(can_Message_t &txmsg);
     bool read(can_Message_t &rxmsg);
 
     ODriveCAN::Config_t &config_;
