@@ -8,6 +8,9 @@ void OpenLoopController::update(uint32_t timestamp) {
     float phase = phase_.get_previous().value_or(0.0f);
     float phase_vel = phase_vel_.get_previous().value_or(0.0f);
 
+    (void)prev_Iq; // unused
+    (void)prev_Vq; // unused
+
     float dt = (float)(timestamp - timestamp_) / (float)TIM_1_8_CLOCK_HZ;
     
     Idq_setpoint_ = {
