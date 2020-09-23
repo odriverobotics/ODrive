@@ -12,6 +12,8 @@
 </template>
 
 <script>
+import { getVal } from "../../../odrive_utils.js"
+
 export default {
   name: "wizardMisc",
   props: {
@@ -28,26 +30,12 @@ export default {
   },
   computed: {
     velocityLimit: function () {
-      let keys = [
-        "odrive0",
-        this.data.axis,
-        "controller",
-        "config",
-        "vel_limit",
-      ];
-      let odriveObj = this.$store.state.odrives;
-      for (const key of keys) {
-        odriveObj = odriveObj[key];
-      }
-      return parseFloat(odriveObj["val"]);
+      let path = "odrive0." + this.data.axis + ".controller.config.vel_limit";
+      return parseFloat(getVal(path));
     },
     currentLimit: function () {
-      let keys = ["odrive0", this.data.axis, "motor", "config", "current_lim"];
-      let odriveObj = this.$store.state.odrives;
-      for (const key of keys) {
-        odriveObj = odriveObj[key];
-      }
-      return parseFloat(odriveObj["val"]);
+      let path = "odrive0." + this.data.axis + ".motor.config.current_lim";
+      return parseFloat(getVal(path));
     },
   },
   methods: {

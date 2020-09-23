@@ -11,6 +11,7 @@
 
 <script>
 import odriveEnums from "../../../assets/odriveEnums.json";
+import { getVal } from "../../../odrive_utils.js"
 
 export default {
   name: "wizardInputVelRamp",
@@ -24,18 +25,8 @@ export default {
     };
   },
   created() {
-    let keys = [
-      "odrive0",
-      this.data.axis,
-      "controller",
-      "config",
-      "vel_ramp_rate",
-    ];
-    let odriveObj = this.$store.state.odrives;
-    for (const key of keys) {
-      odriveObj = odriveObj[key];
-    }
-    this.vel_ramp_rate = parseFloat(odriveObj["val"]);
+    let path = "odrive0." + this.data.axis + ".controller.config.vel_ramp_rate";
+    this.vel_ramp_rate = parseFloat(getVal(path));
   },
   methods: {
     sendConfig() {

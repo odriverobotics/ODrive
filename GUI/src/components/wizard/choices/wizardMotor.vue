@@ -21,8 +21,8 @@
 </template>
 
 <script>
-const axios = require("axios");
 import odriveEnums from "../../../assets/odriveEnums.json";
+import { getVal } from "../../../odrive_utils.js"
 
 export default {
   name: "wizardMotor",
@@ -45,64 +45,24 @@ export default {
   },
   computed: {
     resistance: function () {
-      let keys = [
-        "odrive0",
-        this.data.axis,
-        "motor",
-        "config",
-        "phase_resistance",
-      ];
-      let odriveObj = this.$store.state.odrives;
-      for (const key of keys) {
-        odriveObj = odriveObj[key];
-      }
-      return parseFloat(odriveObj["val"]).toExponential(3);
+      let path = "odrive0." + this.data.axis + ".motor.config.phase_resistance";
+      return parseFloat(getVal(path)).toExponential(3);
     },
     inductance: function () {
-      let keys = [
-        "odrive0",
-        this.data.axis,
-        "motor",
-        "config",
-        "phase_inductance",
-      ];
-      let odriveObj = this.$store.state.odrives;
-      for (const key of keys) {
-        odriveObj = odriveObj[key];
-      }
-      return parseFloat(odriveObj["val"]).toExponential(3);
+      let path = "odrive0." + this.data.axis + ".motor.config.phase_inductance";
+      return parseFloat(getVal(path)).toExponential(3);
     },
   },
   watch: {
     resistance: function (newVal) {
       console.log("from resistance watcher: " + newVal);
-      let keys = [
-        "odrive0",
-        this.data.axis,
-        "motor",
-        "config",
-        "phase_resistance",
-      ];
-      let odriveObj = this.$store.state.odrives;
-      for (const key of keys) {
-        odriveObj = odriveObj[key];
-      }
-      this.phase_resistance = parseFloat(odriveObj["val"]);
+      let path = "odrive0." + this.data.axis + ".motor.config.phase_resistance";
+      this.phase_resistance = parseFloat(getVal(path));
     },
     inductance: function (newVal) {
       console.log("from inductance watcher: " + newVal);
-      let keys = [
-        "odrive0",
-        this.data.axis,
-        "motor",
-        "config",
-        "phase_inductance",
-      ];
-      let odriveObj = this.$store.state.odrives;
-      for (const key of keys) {
-        odriveObj = odriveObj[key];
-      }
-      this.phase_inductance = parseFloat(odriveObj["val"]);
+      let path = "odrive0." + this.data.axis + ".motor.config.phase_inductance";
+      this.phase_inductance = parseFloat(getVal(path));
     },
     pp_set: function () {
       console.log("pp_set: " + this.pp_set);
@@ -178,26 +138,6 @@ export default {
         });
       }
     },
-    measure() {
-      // ask ODrive to measure resistance and inductance
-      var params = new URLSearchParams();
-      let keys = ["odrive0", this.data.axis, "requested_state"];
-      for (const key of keys) {
-        params.append("key", key);
-      }
-      params.append("val", odriveEnums.AXIS_STATE_MOTOR_CALIBRATION);
-      params.append("type", "number");
-      console.log(params.toString());
-      let request = {
-        params: params,
-      };
-      console.log(request);
-      axios.put(
-        this.$store.state.odriveServerAddress + "/api/property",
-        null,
-        request
-      );
-    },
     setKV(e) {
       this.torque_constant = 8.27 / parseFloat(e.target.value);
       this.kv_set = true;
@@ -244,14 +184,6 @@ input::-webkit-inner-spin-button {
 
 input[type="number"] {
   -moz-appearance: textfield; /* Firefox */
-}
-
-.measure-button {
-  margin-top: 2rem;
-}
-
-.measure-button:active {
-  background-color: var(--bg-color);
 }
 
 .name {

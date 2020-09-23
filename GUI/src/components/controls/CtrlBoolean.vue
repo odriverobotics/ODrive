@@ -16,7 +16,7 @@
 </template>
 
 <script>
-const axios = require("axios");
+import { getVal, getReadonly, putVal } from "../../odrive_utils.js";
 
 export default {
   name: "CtrlBoolean",
@@ -30,11 +30,7 @@ export default {
     value: function () {
       let keys = this.path.split(".");
       keys.shift(); // don't need first key here
-      let odriveObj = this.odrives;
-      for (const key of keys) {
-        odriveObj = odriveObj[key];
-      }
-      return odriveObj["val"];
+      return getVal(keys.join('.'));
     },
     name: function () {
       let keys = this.path.split(".");
@@ -44,33 +40,14 @@ export default {
     writeAccess: function () {
       let keys = this.path.split(".");
       keys.shift(); // don't need first key here
-      let odriveObj = this.odrives;
-      for (const key of keys) {
-        odriveObj = odriveObj[key];
-      }
-      return odriveObj["readonly"] == false;
+      return getReadonly(keys.join('.')) == false;
     },
   },
   methods: {
     putVal: function (e) {
-      console.log(e.target.checked);
-      var params = new URLSearchParams();
-      let keys = this.path.split(".");
+      let keys = this.path.split('.');
       keys.shift();
-      for (const key of keys) {
-        params.append("key", key);
-      }
-      params.append("val", e.target.checked);
-      params.append("type", "boolean");
-      console.log(params.toString());
-      let request = {
-        params: params,
-      };
-      axios.put(
-        this.$store.state.odriveServerAddress + "/api/property",
-        null,
-        request
-      );
+      putVal(keys.join('.'), e.target.checked);
     },
     deleteCtrl: function() {
       // commit a mutation in the store with the relevant information

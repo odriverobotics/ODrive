@@ -50,7 +50,7 @@ import configTemplate from "../assets/wizard/configTemplate.json";
 import wizardPage from "../components/wizard/wizardPage.vue";
 import odriveEnums from "../assets/odriveEnums.json";
 import { pages } from "../assets/wizard/wizard.js";
-const axios = require("axios");
+import { getVal, putVal } from "../odrive_utils.js"
 
 // see wizard.js for what wizard pages exist and what they contain
 
@@ -87,33 +87,10 @@ export default {
             this.$store.state.odrives.odrive0.axis1.error.val == "0"
           ) {
             let configStub = undefined;
-            let inductance;
-            let resistance;
-            let keys_L = [
-              "odrive0",
-              e.axis,
-              "motor",
-              "config",
-              "phase_inductance",
-            ];
-            let keys_R = [
-              "odrive0",
-              e.axis,
-              "motor",
-              "config",
-              "phase_resistance",
-            ];
-            let odriveObj = this.$store.state.odrives;
-            for (const key of keys_L) {
-              odriveObj = odriveObj[key];
-            }
-            inductance = parseFloat(odriveObj["val"]);
-
-            odriveObj = this.$store.state.odrives;
-            for (const key of keys_R) {
-              odriveObj = odriveObj[key];
-            }
-            resistance = parseFloat(odriveObj["val"]);
+            let path_inductance = "odrive0." + e.axis + ".motor.config.phase_inductance";
+            let path_resistance = "odrive0." + e.axis + ".motor.config.phase_resistance";
+            let inductance = parseFloat(getVal(path_inductance));
+            let resistance = parseFloat(getVal(path_resistance));
             if (e.axis == "axis0") {
               configStub = {
                 axis0: {
@@ -153,21 +130,7 @@ export default {
             "odrive0." + e.axis + ".controller.error",
           ];
           for (const path of paths) {
-            var params = new URLSearchParams();
-            let keys = path.split(".");
-            for (const key of keys) {
-              params.append("key", key);
-            }
-            params.append("val", 0);
-            params.append("type", "number");
-            let request = {
-              params: params,
-            };
-            axios.put(
-              this.$store.state.odriveServerAddress + "/api/property",
-              null,
-              request
-            );
+            putVal(path, 0);
           }
           console.log("clearing error for " + e.axis);
         };
@@ -219,11 +182,11 @@ export default {
         );
         console.log("oldCPR = " + oldCPR);
         console.log("axis = " + e.axis);
-        this.putVal(
+        putVal(
           "odrive0." + e.axis + ".encoder.config.cpr",
           this.wizardConfig[e.axis].encoder.config.cpr
         );
-        this.putVal(
+        putVal(
           "odrive0." + e.axis + ".requested_state",
           odriveEnums.AXIS_STATE_ENCODER_OFFSET_CALIBRATION
         );
@@ -240,12 +203,12 @@ export default {
           } else if (
             this.$store.state.odrives.odrive0[e.axis].error.val != "0"
           ) {
-            this.putVal("odrive0." + e.axis + ".encoder.config.cpr", oldCPR);
+            putVal("odrive0." + e.axis + ".encoder.config.cpr", oldCPR);
             console.log("applying old CPR, error detected");
             this.calibrating = false;
             this.calStatus = false;
           } else {
-            this.putVal("odrive0." + e.axis + ".encoder.config.cpr", oldCPR);
+            putVal("odrive0." + e.axis + ".encoder.config.cpr", oldCPR);
             console.log("applying old CPR");
             this.choiceMade = true;
             this.calibrating = false;
@@ -326,27 +289,6 @@ export default {
       console.log("back");
       this.currentStep = pages[this.currentStep.back];
       this.choiceMade = false;
-    },
-    putVal(path, value) {
-      // path to value in odrive parameter tree for server
-      // for example, odrive0.axis0.config.requested_state
-      var params = new URLSearchParams();
-      // params.append("key", "odrive0");
-      let keys = path.split(".");
-      for (const key of keys) {
-        params.append("key", key);
-      }
-      params.append("val", value);
-      params.append("type", typeof value);
-      let request = {
-        params: params,
-      };
-      console.log(request);
-      axios.put(
-        this.$store.state.odriveServerAddress + "/api/property",
-        null,
-        request
-      );
     },
   },
 };

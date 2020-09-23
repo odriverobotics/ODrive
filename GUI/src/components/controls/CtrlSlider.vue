@@ -16,7 +16,7 @@
 <script>
 import VueSlider from "vue-slider-component";
 import "vue-slider-component/theme/default.css";
-const axios = require("axios");
+import { getVal, putVal } from "../../odrive_utils.js";
 
 export default {
   name: "CtrlSlider",
@@ -43,15 +43,6 @@ export default {
       keys.shift();
       return keys.join(".");
     },
-    writeAccess: function () {
-      let keys = this.path.split(".");
-      keys.shift(); // don't need first key here
-      let odriveObj = this.odrives;
-      for (const key of keys) {
-        odriveObj = odriveObj[key];
-      }
-      return odriveObj["readonly"] === false;
-    },
     interval: function () {
       return (this.max - this.min) / 100;
     },
@@ -61,27 +52,11 @@ export default {
     }
   },
   methods: {
-    putVal: function (value, index) {
+    putVal: function (value) {
       console.log(value);
-      console.log(index);
-      var params = new URLSearchParams();
       let keys = this.path.split(".");
       keys.shift();
-      for (const key of keys) {
-        params.append("key", key);
-      }
-      params.append("val", value);
-      params.append("type", "number");
-      console.log(params.toString());
-      let request = {
-        params: params,
-      };
-      console.log(request);
-      axios.put(
-        this.$store.state.odriveServerAddress + "/api/property",
-        null,
-        request
-      );
+      putVal(keys.join('.'), value);
     },
     setMin: function (e) {
       this.min = parseFloat(e.target.value);
@@ -100,11 +75,7 @@ export default {
     let initVal = () => {
       let keys = this.path.split(".");
       keys.shift(); // don't need first key here
-      let odriveObj = this.$store.state.odrives;
-      for (const key of keys) {
-        odriveObj = odriveObj[key];
-      }
-      return parseFloat(odriveObj["val"]);
+      return parseFloat(getVal(keys.join('.'))).toFixed(3);
     };
     this.value = initVal();
     this.max = this.value * 4;

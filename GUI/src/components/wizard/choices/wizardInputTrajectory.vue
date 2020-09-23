@@ -24,6 +24,8 @@
 </template>
 
 <script>
+import { getVal } from "../../../odrive_utils.js"
+
 export default {
   name: "wizardInputTrajectory",
   props: {
@@ -40,43 +42,12 @@ export default {
   },
   created() {
     // get pre-existing values for trap_traj vel limit, accel, devel, and config.inertia
-    if (this.data.axis == "axis0") {
-      this.vel_limit = this.getODriveVal(
-        "odrive0.axis0.trap_traj.config.vel_limit"
-      );
-      this.accel_limit = this.getODriveVal(
-        "odrive0.axis0.trap_traj.config.accel_limit"
-      );
-      this.decel_limit = this.getODriveVal(
-        "odrive0.axis0.trap_traj.config.decel_limit"
-      );
-      this.inertia = this.getODriveVal(
-        "odrive0.axis0.controller.config.inertia"
-      );
-    } else if (this.data.axis == "axis1") {
-      this.vel_limit = this.getODriveVal(
-        "odrive0.axis1.trap_traj.config.vel_limit"
-      );
-      this.accel_limit = this.getODriveVal(
-        "odrive0.axis1.trap_traj.config.accel_limit"
-      );
-      this.decel_limit = this.getODriveVal(
-        "odrive0.axis1.trap_traj.config.decel_limit"
-      );
-      this.inertia = this.getODriveVal(
-        "odrive0.axis1.controller.config.inertia"
-      );
-    }
+    this.vel_limit = getVal("odrive0." + this.data.axis + ".trap_traj.config.vel_limit");
+    this.accel_limit = getVal("odrive0." + this.data.axis + ".trap_traj.config.accel_limit");
+    this.decel_limit = getVal("odrive0." + this.data.axis + ".trap_traj.config.decel_limit");
+    this.inertia = getVal("odrive0." + this.data.axis + ".controller.config.inertia");
   },
   methods: {
-    getODriveVal(path) {
-      let odriveObj = this.$store.state.odrives;
-      console.log("get val " + path);
-      for (const key of path.split(".")) {
-        odriveObj = odriveObj[key];
-      }
-      return parseFloat(odriveObj["val"]);
-    },
     sendConfig() {
       console.log("emitting choice event from limits page");
       let configStub = undefined;

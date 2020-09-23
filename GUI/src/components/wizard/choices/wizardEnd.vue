@@ -12,7 +12,7 @@
 
 <script>
 import { enumVars } from "../../../assets/wizard/wizard.js";
-const axios = require("axios");
+import { putVal } from "../../../odrive_utils.js"
 
 export default {
   name: "wizardEnd",
@@ -82,30 +82,9 @@ export default {
     applyConfig(){
       // flatpaths will already be populated at this point
       for (const diff of this.configDiffs) {
-        this.putVal(diff.path, diff.newVal);
+        putVal("odrive0." + diff.path, diff.newVal);
         console.log("applying " + diff.newVal + " to " + diff.path);
       }
-    },
-    putVal(path, val) {
-      var params = new URLSearchParams();
-      params.append("key", "odrive0");
-      let keys = path.split(".");
-      for (const key of keys) {
-        params.append("key", key);
-      }
-      params.append("val", val);
-      params.append("type", typeof val);
-      console.log(path + " = " + " type = " + typeof val);
-      //console.log(params.toString());
-      let request = {
-        params: params,
-      };
-      console.log(request);
-      axios.put(
-        this.$store.state.odriveServerAddress + "/api/property",
-        null,
-        request
-      );
     },
   }
 }

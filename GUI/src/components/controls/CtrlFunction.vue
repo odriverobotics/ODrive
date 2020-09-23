@@ -6,7 +6,7 @@
 </template>
 
 <script>
-const axios = require("axios");
+import { callFcn } from "../../odrive_utils.js";
 
 export default {
   name: "CtrlFunction",
@@ -24,43 +24,11 @@ export default {
     }
   },
   methods: {
-    putVal: function(e) {
-      var params = new URLSearchParams();
-      let keys = this.path.split(".");
-      keys.shift();
-      for (const key of keys) {
-        params.append("key", key);
-      }
-      params.append("val", e.target.value);
-      console.log(params.toString());
-      let request = {
-        params: params
-      };
-      console.log(request);
-      axios.put(
-        this.$store.state.odriveServerAddress + "/api/property",
-        null,
-        request
-      );
-    },
-    executeFunction: function(e) {
+    executeFunction: function() {
       //execute this function on the odrive
-      console.log(e);
-      var params = new URLSearchParams();
       let keys = this.path.split(".");
       keys.shift();
-      for (const key of keys) {
-        params.append("key", key);
-      }
-      console.log(params.toString());
-      let request = {
-        params: params
-      };
-      axios.put(
-        this.$store.state.odriveServerAddress + "/api/function",
-        null,
-        request
-      );
+      callFcn(keys.join('.'));
     },
     deleteCtrl: function() {
       // commit a mutation in the store with the relevant information

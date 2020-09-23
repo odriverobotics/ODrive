@@ -10,7 +10,7 @@
 </template>
 
 <script>
-const axios = require("axios");
+import { putVal } from "../../odrive_utils.js";
 
 export default {
   name: "Action",
@@ -40,24 +40,9 @@ export default {
       this.$store.commit("setActionVal", {dashID: this.dashID, actionID: this.id, val: this.value});
     },
     putVal: function () {
-      var params = new URLSearchParams();
       let keys = this.path.split(".");
       keys.shift();
-      for (const key of keys) {
-        params.append("key", key);
-      }
-      params.append("val", this.value);
-      params.append("type", "number");
-      console.log(params.toString());
-      let request = {
-        params: params,
-      };
-      console.log(request);
-      axios.put(
-        this.$store.state.odriveServerAddress + "/api/property",
-        null,
-        request
-      );
+      putVal(keys.join('.'), this.value);
     },
     deleteAction: function() {
       // commit a mutation to remove this action from the dashboard

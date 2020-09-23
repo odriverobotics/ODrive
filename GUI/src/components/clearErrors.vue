@@ -5,7 +5,8 @@
 </template>
 
 <script>
-const axios = require("axios");
+import { putVal } from "../odrive_utils.js";
+
 export default {
   name: "clearErrors.vue",
   props: {
@@ -23,23 +24,7 @@ export default {
         "odrive0." + this.data.axis + ".controller.error",
       ];
       for (const path of paths) {
-        var params = new URLSearchParams();
-        let keys = path.split(".");
-        for (const key of keys) {
-          params.append("key", key);
-        }
-        params.append("val", 0);
-        params.append("type", "number");
-        console.log(params.toString());
-        let request = {
-          params: params,
-        };
-        console.log(request);
-        axios.put(
-          this.$store.state.odriveServerAddress + "/api/property",
-          null,
-          request
-        );
+        putVal(path, 0);
       }
     },
   },

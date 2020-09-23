@@ -10,7 +10,7 @@
 </template>
 
 <script>
-const axios = require("axios");
+import { getVal, getReadonly, putVal } from "../../odrive_utils.js";
 
 export default {
   name: "CtrlNumeric",
@@ -22,13 +22,9 @@ export default {
   },
   computed: {
     value: function () {
-      let keys = this.path.split(".");
-      keys.shift(); // don't need first key here
-      let odriveObj = this.$store.state.odrives;
-      for (const key of keys) {
-        odriveObj = odriveObj[key];
-      }
-      return parseFloat(odriveObj["val"]).toFixed(3);
+      let keys = this.path.split('.');
+      keys.shift();
+      return parseFloat(getVal(keys.join('.'))).toFixed(3);
     },
     name: function () {
       let keys = this.path.split(".");
@@ -38,33 +34,14 @@ export default {
     writeAccess: function () {
       let keys = this.path.split(".");
       keys.shift(); // don't need first key here
-      let odriveObj = this.odrives;
-      for (const key of keys) {
-        odriveObj = odriveObj[key];
-      }
-      return odriveObj["readonly"] === false;
+      return getReadonly(keys.join('.')) === false;
     },
   },
   methods: {
     putVal: function (e) {
-      var params = new URLSearchParams();
-      let keys = this.path.split(".");
+      let keys = this.path.split('.');
       keys.shift();
-      for (const key of keys) {
-        params.append("key", key);
-      }
-      params.append("val", e.target.value);
-      params.append("type", "number");
-      console.log(params.toString());
-      let request = {
-        params: params,
-      };
-      console.log(request);
-      axios.put(
-        this.$store.state.odriveServerAddress + "/api/property",
-        null,
-        request
-      );
+      putVal(keys.join('.'), parseFloat(e.target.value));
     },
     deleteCtrl: function() {
       // commit a mutation in the store with the relevant information
