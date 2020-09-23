@@ -158,6 +158,16 @@ export let pages = {
                     axis: "axis0",
                 }
             },
+            {
+                component: "wizardCalStatus",
+                id: 1,
+                data: {
+                    success: "Calibration succeeded!",
+                    failure: "Calibration failed",
+                    tooltip: "Double check your motor connections. If the connections are good, it is \
+                                possible that your motor has a higher resistance or lower inductance than ODrive expects."
+                }
+            }
         ]
     },
     Encoder_0: {
@@ -251,6 +261,16 @@ export let pages = {
                     axis: "axis0",
                 }
             },
+            {
+                component: "wizardCalStatus",
+                id: 1,
+                data: {
+                    success: "Calibration succeeded!",
+                    failure: "Calibration failed",
+                    tooltip: "Double check your encoder connections. If the connections are good, you \
+                                have a wrong setting for motor pole pairs or encoder cpr."
+                }
+            }
         ]
     },
     Control_0: {
@@ -527,6 +547,16 @@ export let pages = {
                     axis: "axis1",
                 }
             },
+            {
+                component: "wizardCalStatus",
+                id: 1,
+                data: {
+                    success: "Calibration succeeded!",
+                    failure: "Calibration failed",
+                    tooltip: "Double check your motor connections. If the connections are good, it is \
+                                possible that your motor has a higher resistance or lower inductance than ODrive expects."
+                }
+            }
         ]
     },
     Encoder_1: {
@@ -620,6 +650,16 @@ export let pages = {
                     axis: "axis1",
                 }
             },
+            {
+                component: "wizardCalStatus",
+                id: 1,
+                data: {
+                    success: "Calibration succeeded!",
+                    failure: "Calibration failed",
+                    tooltip: "Double check your encoder connections. If the connections are good, you either \
+                                have a wrong setting for motor pole pairs or encoder cpr."
+                }
+            }
         ]
     },
     Control_1: {

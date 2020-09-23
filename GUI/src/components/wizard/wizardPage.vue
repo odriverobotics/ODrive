@@ -39,6 +39,7 @@
           v-bind:data="pageComponent.data"
           v-bind:key="pageComponent.id"
           v-bind:calibrating="calibrating"
+          v-bind:calStatus="calStatus"
           v-on:page-comp-event="pageCompEvent"
         />
       </template>
@@ -55,6 +56,7 @@ import wizardEncoderIncrementalIndex from "./choices/wizardEncoderIncrementalInd
 import wizardEnd from "./choices/wizardEnd.vue";
 import wizardMotorMeasure from "./page_components/wizardMotorMeasure.vue";
 import wizardEncoderCal from "./page_components/wizardEncoderCal.vue";
+import wizardCalStatus from "./page_components/wizardCalStatus.vue";
 import wizardBrake from "./choices/wizardBrake.vue";
 import wizardInputFiltered from "./choices/wizardInputFiltered.vue";
 import wizardInputVelRamp from "./choices/wizardInputVelRamp.vue";
@@ -70,6 +72,7 @@ export default {
     config: Object,
     pageComponents: Array,
     calibrating: Boolean,
+    calStatus: Boolean,
   },
   components: {
     wizardChoice,
@@ -80,6 +83,7 @@ export default {
     wizardEnd,
     wizardMotorMeasure,
     wizardEncoderCal,
+    wizardCalStatus,
     wizardBrake,
     wizardInputFiltered,
     wizardInputVelRamp,

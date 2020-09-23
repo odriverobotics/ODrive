@@ -15,15 +15,12 @@ export default {
     clear() {
       // clear odrive errors
       // set them to 0?
+      console.log(this.data);
       let paths = [
-        "odrive0.axis0.error",
-        "odrive0.axis0.motor.error",
-        "odrive0.axis0.encoder.error",
-        "odrive0.axis0.controller.error",
-        "odrive0.axis1.error",
-        "odrive0.axis1.motor.error",
-        "odrive0.axis1.encoder.error",
-        "odrive0.axis1.controller.error",
+        "odrive0." + this.data.axis + ".error",
+        "odrive0." + this.data.axis + ".motor.error",
+        "odrive0." + this.data.axis + ".encoder.error",
+        "odrive0." + this.data.axis + ".controller.error",
       ];
       for (const path of paths) {
         var params = new URLSearchParams();

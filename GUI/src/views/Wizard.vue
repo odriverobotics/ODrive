@@ -8,7 +8,7 @@
           :key="page.title"
           class="wizard-link"
           v-bind:class="{'active-link': currentStep == page}"
-          @click="currentStep = page; choiceMade = false"
+          @click="currentStep = page; choiceMade = false; calStatus = undefined;"
         >{{page.link}}</span>
       </div>
       <div class="wizard-page">
@@ -19,6 +19,7 @@
           :title="currentStep.title"
           :config="wizardConfig"
           :calibrating="calibrating"
+          :calStatus="calStatus"
           v-on:choice="choiceHandler"
           v-on:undo-choice="undoChoice"
           v-on:page-comp-event="pageEventHandler"
@@ -65,6 +66,7 @@ export default {
       wizardConfig: configTemplate,
       choiceMade: false,
       calibrating: false, // for indicating that calibration is in progress
+      calStatus: undefined, // for indicating the status of a calibration attempt
     };
   },
   computed: {
@@ -143,6 +145,42 @@ export default {
             this.choiceMade = true;
           }
         };
+        let clear = () => {
+          let paths = [
+            "odrive0." + e.axis + ".error",
+            "odrive0." + e.axis + ".motor.error",
+            "odrive0." + e.axis + ".encoder.error",
+            "odrive0." + e.axis + ".controller.error",
+          ];
+          for (const path of paths) {
+            var params = new URLSearchParams();
+            let keys = path.split(".");
+            for (const key of keys) {
+              params.append("key", key);
+            }
+            params.append("val", 0);
+            params.append("type", "number");
+            let request = {
+              params: params,
+            };
+            axios.put(
+              this.$store.state.odriveServerAddress + "/api/property",
+              null,
+              request
+            );
+          }
+          console.log("clearing error for " + e.axis);
+        };
+        let updateCalInfo = () => {
+          // parse error code, update calibration information
+          let motorError = parseInt(this.$store.state.odrives.odrive0[e.axis].motor.error.val);
+          if (motorError == odriveEnums.MOTOR_ERROR_PHASE_RESISTANCE_OUT_OF_RANGE || 
+              motorError == odriveEnums.MOTOR_ERROR_PHASE_INDUCTANCE_OUT_OF_RANGE) {
+                //we got the expected calibration error
+                console.log("Calibration failed.");
+                this.calStatus = false;
+              }
+        };
         this.wait = function () {
           if (
             parseInt(
@@ -153,16 +191,19 @@ export default {
             setTimeout(() => this.wait(), 100);
             this.calibrating = true;
           } else if (
-            this.$store.state.odrives.odrive0.axis0.error.val != "0" ||
-            this.$store.state.odrives.odrive0.axis1.error.val != "0"
+            this.$store.state.odrives.odrive0[e.axis].error.val != "0"
           ) {
             console.log("motor cal error");
             this.calibrating = false;
             this.choiceMade = false;
+            // clear errors, display info.
+            updateCalInfo();
+            clear();
           } else {
             // calibration is over
             apply();
             this.calibrating = false;
+            this.calStatus = true;
           }
         };
         // wait for at least a second for comms to update state of ODrive
@@ -197,17 +238,18 @@ export default {
             console.log("waiting for encoder cal to finish...");
             this.calibrating = true;
           } else if (
-            this.$store.state.odrives.odrive0.axis0.error.val != "0" ||
-            this.$store.state.odrives.odrive0.axis1.error.val != "0"
+            this.$store.state.odrives.odrive0[e.axis].error.val != "0"
           ) {
             this.putVal("odrive0." + e.axis + ".encoder.config.cpr", oldCPR);
             console.log("applying old CPR, error detected");
             this.calibrating = false;
+            this.calStatus = false;
           } else {
             this.putVal("odrive0." + e.axis + ".encoder.config.cpr", oldCPR);
             console.log("applying old CPR");
             this.choiceMade = true;
             this.calibrating = false;
+            this.calStatus = true;
           }
         };
         setTimeout(() => this.wait(), 1000);
@@ -274,6 +316,7 @@ export default {
         this.currentStep = pages[this.currentStep.next];
         this.choiceMade = false;
       }
+      this.calStatus = undefined;
     },
     finish() {
       console.log("finish");
