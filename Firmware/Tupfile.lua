@@ -132,6 +132,7 @@ FLAGS += '-DUSE_HAL_DRIVER'
 
 FLAGS += '-mthumb'
 FLAGS += '-mfloat-abi=hard'
+FLAGS += '-Wno-psabi' -- suppress unimportant note about ABI compatibility in GCC 10
 FLAGS += { '-Wall', '-Wdouble-promotion', '-Wfloat-conversion', '-fdata-sections', '-ffunction-sections'}
 
 -- linker flags
@@ -145,6 +146,7 @@ if tup.getconfig("DEBUG") == "true" then
     FLAGS += '-g -gdwarf-2'
     OPT += '-Og'
 else
+    FLAGS += '-g'
     OPT += '-O2'
 end
 

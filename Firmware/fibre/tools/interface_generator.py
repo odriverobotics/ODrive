@@ -86,6 +86,8 @@ properties:
   valuetypes:
     type: object
     additionalProperties: { "$ref": "#/definitions/valuetype" }
+  userdata:
+    type: object
   __line__: {type: object}
   __column__: {type: object}
 additionalProperties: false
@@ -159,8 +161,8 @@ value_types = OrderedDict({
 })
 
 enums = OrderedDict()
-
 interfaces = OrderedDict()
+userdata = OrderedDict() # Arbitrary data passed from the definition file to the template
 
 def make_property_type(typeargs):
     value_type = resolve_valuetype('', typeargs['fibre.Property.type'])
@@ -529,6 +531,7 @@ for definition_file in definition_files:
         raise Exception(err.message + '\nat ' + str(list(err.absolute_path)))
     interfaces.update(get_dict(file_content, 'interfaces'))
     value_types.update(get_dict(file_content, 'valuetypes'))
+    userdata.update(get_dict(file_content, 'userdata'))
     dictionary += file_content.get('dictionary', None) or []
 
 
@@ -660,6 +663,7 @@ template_args = {
     'interfaces': interfaces,
     'value_types': value_types,
     'toplevel_interfaces': toplevel_interfaces,
+    'userdata': userdata,
     'endpoints': endpoints,
     'embedded_endpoint_definitions': embedded_endpoint_definitions
 }

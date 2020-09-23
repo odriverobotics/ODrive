@@ -50,6 +50,7 @@ Please add a note of your changes below this heading if you make a Pull Request.
 * `<axis>.motor.config.acim_slip_velocity` was moved to `<axis>.async_estimator.config.slip_velocity`.
 * `<axis>.encoder.config.idx_search_unidirectional` was removed. Offset calibration direction is fully defined by the sign of `<axis>.encoder.config.calib_scan_omega` and how the motor is wired up.
 * The unit of `<axis>.sensorless_estimator.vel_estimate` was changed from `rad/s` to `turns/s`.
+* Several properties were changed to readonly.
 
 # Release Candidate
 ## [0.5.1] - Date TBD

@@ -5,6 +5,7 @@
 #include <Drivers/STM32/stm32_spi_arbiter.hpp>
 #include "utils.hpp"
 #include <autogen/interfaces.hpp>
+#include "component.hpp"
 
 
 class Encoder : public ODriveIntf::EncoderIntf {
@@ -86,8 +87,8 @@ public:
     int32_t shadow_count_ = 0;
     int32_t count_in_cpr_ = 0;
     float interpolation_ = 0.0f;
-    float phase_ = 0.0f;        // [rad]
-    float phase_vel_ = 0.0f;    // [rad/s]
+    OutputPort<float> phase_ = 0.0f;     // [rad]
+    OutputPort<float> phase_vel_ = 0.0f; // [rad/s]
     float pos_estimate_counts_ = 0.0f;  // [count]
     float pos_cpr_counts_ = 0.0f;  // [count]
     float vel_estimate_counts_ = 0.0f;  // [count/s]
@@ -97,9 +98,9 @@ public:
     int32_t pos_abs_ = 0;
     float spi_error_rate_ = 0.0f;
 
-    float pos_estimate_ = 0.0f; // [turn]
-    float vel_estimate_ = 0.0f; // [turn/s]
-    float pos_circular_ = 0.0f; // [turn]
+    OutputPort<float> pos_estimate_ = 0.0f; // [turn]
+    OutputPort<float> vel_estimate_ = 0.0f; // [turn/s]
+    OutputPort<float> pos_circular_ = 0.0f; // [turn]
 
     bool pos_estimate_valid_ = false;
     bool vel_estimate_valid_ = false;

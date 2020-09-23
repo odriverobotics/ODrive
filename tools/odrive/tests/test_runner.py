@@ -622,7 +622,7 @@ def test_assert_no_error(axis_ctx: ODriveAxisComponent):
     any_error = (axis_ctx.handle.motor.error |
                  axis_ctx.handle.encoder.error |
                  axis_ctx.handle.sensorless_estimator.error |
-                 axis_ctx.handle.error) != 0
+                 axis_ctx.handle.error) != 0 # TODO: this is not the complete list of components
 
     if any_error:
         lines = []

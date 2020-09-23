@@ -400,22 +400,33 @@ void start_timers() {
     }
 }
 
-static bool fetch_and_reset_adcs(float* current0_phB, float* current0_phC, float* current1_phB, float* current1_phC) {
+static bool fetch_and_reset_adcs(
+        std::optional<Iph_ABC_t>* current0,
+        std::optional<Iph_ABC_t>* current1) {
     bool all_adcs_done = (ADC1->SR & ADC_SR_JEOC) == ADC_SR_JEOC
         && (ADC2->SR & (ADC_SR_EOC | ADC_SR_JEOC)) == (ADC_SR_EOC | ADC_SR_JEOC)
         && (ADC3->SR & (ADC_SR_EOC | ADC_SR_JEOC)) == (ADC_SR_EOC | ADC_SR_JEOC);
     if (!all_adcs_done) {
         return false;
     }
-    
-    bool m0_current_valid = m0_gate_driver.is_ready();
-    bool m1_current_valid = m1_gate_driver.is_ready();
 
     vbus_sense_adc_cb(ADC1->JDR1);
-    *current0_phB = m0_current_valid ? motors[0].phase_current_from_adcval(ADC2->JDR1) : NAN;
-    *current0_phC = m0_current_valid ? motors[0].phase_current_from_adcval(ADC3->JDR1) : NAN;
-    *current1_phB = m1_current_valid ? motors[1].phase_current_from_adcval(ADC2->DR) : NAN;
-    *current1_phC = m1_current_valid ? motors[1].phase_current_from_adcval(ADC3->DR) : NAN;
+
+    if (m0_gate_driver.is_ready()) {
+        std::optional<float> phB = motors[0].phase_current_from_adcval(ADC2->JDR1);
+        std::optional<float> phC = motors[0].phase_current_from_adcval(ADC3->JDR1);
+        if (phB.has_value() && phC.has_value()) {
+            *current0 = {-*phB - *phC, *phB, *phC};
+        }
+    }
+
+    if (m1_gate_driver.is_ready()) {
+        std::optional<float> phB = motors[1].phase_current_from_adcval(ADC2->DR);
+        std::optional<float> phC = motors[1].phase_current_from_adcval(ADC3->DR);
+        if (phB.has_value() && phC.has_value()) {
+            *current1 = {-*phB - *phC, *phB, *phC};
+        }
+    }
     
     ADC1->SR = ~(ADC_SR_JEOC);
     ADC2->SR = ~(ADC_SR_EOC | ADC_SR_JEOC | ADC_SR_OVR);
@@ -492,18 +503,16 @@ void ControlLoop_IRQHandler(void) {
     uint32_t timestamp = timestamp_;
 
     // Ensure that all the ADCs are done
-    float current0_phB;
-    float current0_phC;
-    float current1_phB;
-    float current1_phC;
+    std::optional<Iph_ABC_t> current0;
+    std::optional<Iph_ABC_t> current1;
 
-    if (!fetch_and_reset_adcs(&current0_phB, &current0_phC, &current1_phB, &current1_phC)) {
+    if (!fetch_and_reset_adcs(&current0, &current1)) {
         motors[0].disarm_with_error(Motor::ERROR_BAD_TIMING);
         motors[1].disarm_with_error(Motor::ERROR_BAD_TIMING);
     }
 
-    motors[0].current_meas_cb(timestamp - TIM1_INIT_COUNT, {-current0_phB - current0_phC, current0_phB, current0_phC});
-    motors[1].current_meas_cb(timestamp, {-current1_phB - current1_phC, current1_phB, current1_phC});
+    motors[0].current_meas_cb(timestamp - TIM1_INIT_COUNT, current0);
+    motors[1].current_meas_cb(timestamp, current1);
 
     odrv.control_loop_cb(timestamp);
 
@@ -511,13 +520,13 @@ void ControlLoop_IRQHandler(void) {
     // let's wait for them just to be sure.
     while (!(ADC2->SR & ADC_SR_EOC));
 
-    if (!fetch_and_reset_adcs(&current0_phB, &current0_phC, &current1_phB, &current1_phC)) {
+    if (!fetch_and_reset_adcs(&current0, &current1)) {
         motors[0].disarm_with_error(Motor::ERROR_BAD_TIMING);
         motors[1].disarm_with_error(Motor::ERROR_BAD_TIMING);
     }
 
-    motors[0].dc_calib_cb(timestamp + TIM_1_8_PERIOD_CLOCKS * (TIM_1_8_RCR + 1) - TIM1_INIT_COUNT, {-current0_phB - current0_phC, current0_phB, current0_phC});
-    motors[1].dc_calib_cb(timestamp + TIM_1_8_PERIOD_CLOCKS * (TIM_1_8_RCR + 1), {-current1_phB - current1_phC, current1_phB, current1_phC});
+    motors[0].dc_calib_cb(timestamp + TIM_1_8_PERIOD_CLOCKS * (TIM_1_8_RCR + 1) - TIM1_INIT_COUNT, current0);
+    motors[1].dc_calib_cb(timestamp + TIM_1_8_PERIOD_CLOCKS * (TIM_1_8_RCR + 1), current1);
 
     motors[0].pwm_update_cb(timestamp + 3 * TIM_1_8_PERIOD_CLOCKS * (TIM_1_8_RCR + 1) - TIM1_INIT_COUNT);
     motors[1].pwm_update_cb(timestamp + 3 * TIM_1_8_PERIOD_CLOCKS * (TIM_1_8_RCR + 1));

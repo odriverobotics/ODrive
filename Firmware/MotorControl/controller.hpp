@@ -75,10 +75,10 @@ public:
     Error error_ = ERROR_NONE;
 
     // Inputs
-    float* pos_estimate_linear_src_ = nullptr;
-    float* pos_estimate_circular_src_ = nullptr;
-    float* vel_estimate_src_ = nullptr;
-    float* pos_wrap_src_ = nullptr; 
+    InputPort<float> pos_estimate_linear_src_;
+    InputPort<float> pos_estimate_circular_src_;
+    InputPort<float> vel_estimate_src_;
+    InputPort<float> pos_wrap_src_; 
 
     float pos_setpoint_ = 0.0f; // [turns]
     float vel_setpoint_ = 0.0f; // [turn/s]
@@ -99,11 +99,10 @@ public:
     bool anticogging_valid_ = false;
 
     // Outputs
-    float torque_output_ = NAN;
+    OutputPort<float> torque_output_ = 0.0f;
 
     // custom setters
     void set_input_pos(float value) { input_pos_ = value; input_pos_updated(); }
-
 };
 
 #endif // __CONTROLLER_HPP

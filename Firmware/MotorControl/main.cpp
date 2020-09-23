@@ -272,6 +272,34 @@ void ODrive::control_loop_cb(uint32_t timestamp) {
     // TODO: use a configurable component list for most of the following things
 
     MEASURE_TIME(task_times_.control_loop_misc) {
+        // Reset all output ports so that we are certain about the freshness of
+        // all values that we use.
+        // If we forget to reset a value here the worst that can happen is that
+        // this safety check doesn't work.
+        // TODO: maybe we should add a check to output ports that prevents
+        // double-setting the value.
+        for (auto& axis: axes) {
+            axis.async_estimator_.slip_vel_.reset();
+            axis.async_estimator_.stator_phase_vel_.reset();
+            axis.async_estimator_.stator_phase_.reset();
+            axis.controller_.torque_output_.reset();
+            axis.encoder_.phase_.reset();
+            axis.encoder_.phase_vel_.reset();
+            axis.encoder_.pos_estimate_.reset();
+            axis.encoder_.vel_estimate_.reset();
+            axis.encoder_.pos_circular_.reset();
+            axis.motor_.Vdq_setpoint_.reset();
+            axis.motor_.Idq_setpoint_.reset();
+            axis.open_loop_controller_.Idq_setpoint_.reset();
+            axis.open_loop_controller_.Vdq_setpoint_.reset();
+            axis.open_loop_controller_.phase_.reset();
+            axis.open_loop_controller_.phase_vel_.reset();
+            axis.open_loop_controller_.total_distance_.reset();
+            axis.sensorless_estimator_.phase_.reset();
+            axis.sensorless_estimator_.phase_vel_.reset();
+            axis.sensorless_estimator_.vel_estimate_.reset();
+        }
+
         uart_poll();
         odrv.oscilloscope_.update();
     }
@@ -300,7 +328,12 @@ void ODrive::control_loop_cb(uint32_t timestamp) {
 
         MEASURE_TIME(axis.task_times_.encoder_update)
             axis.encoder_.update();
+    }
 
+    // Controller of either axis might use the encoder estimate of the other
+    // axis so we process both encoders before we continue.
+
+    for (auto& axis: axes) {
         MEASURE_TIME(axis.task_times_.sensorless_estimator_update)
             axis.sensorless_estimator_.update();
 
@@ -318,11 +351,8 @@ void ODrive::control_loop_cb(uint32_t timestamp) {
         MEASURE_TIME(axis.task_times_.open_loop_controller_update)
             axis.open_loop_controller_.update(timestamp);
 
-        MEASURE_TIME(axis.task_times_.async_estimator_update)
-            axis.async_estimator_.update(timestamp);
-
         MEASURE_TIME(axis.task_times_.motor_update)
-            axis.motor_.update(); // uses torque from controller and phase_vel from encoder
+            axis.motor_.update(timestamp); // uses torque from controller and phase_vel from encoder
 
         MEASURE_TIME(axis.task_times_.current_controller_update)
             axis.motor_.current_control_.update(timestamp); // uses the output of controller_ or open_loop_contoller_ and encoder_ or sensorless_estimator_ or async_estimator_
@@ -404,6 +434,10 @@ static void rtos_main(void*) {
 
     for(auto& axis: axes){
         axis.encoder_.setup();
+    }
+
+    for(auto& axis: axes){
+        axis.async_estimator_.idq_src_.connect_to(&axis.motor_.Idq_setpoint_);
     }
 
     // Start PWM and enable adc interrupts/callbacks

@@ -10,11 +10,6 @@ class Motor;
 
 class Motor : public ODriveIntf::MotorIntf {
 public:
-    struct Iph_ABC_t {
-        float phA;
-        float phB;
-        float phC;
-    };
 
     // NOTE: for gimbal motors, all units of Nm are instead V.
     // example: vel_gain is [V/(turn/s)] instead of [Nm/(turn/s)]
@@ -82,15 +77,15 @@ public:
     bool do_checks(uint32_t timestamp);
     float effective_current_lim();
     float max_available_torque();
-    float phase_current_from_adcval(uint32_t ADCValue);
+    std::optional<float> phase_current_from_adcval(uint32_t ADCValue);
     bool measure_phase_resistance(float test_current, float max_voltage);
     bool measure_phase_inductance(float test_voltage);
     bool run_calibration();
-    void update();
+    void update(uint32_t timestamp);
 
     // These functions are called as appropriate from the board.cpp file.
-    void current_meas_cb(uint32_t timestamp, Iph_ABC_t current);
-    void dc_calib_cb(uint32_t timestamp, Iph_ABC_t current);
+    void current_meas_cb(uint32_t timestamp, std::optional<Iph_ABC_t> current);
+    void dc_calib_cb(uint32_t timestamp, std::optional<Iph_ABC_t> current);
     void pwm_update_cb(uint32_t output_timestamp);
 
     // hardware config
@@ -113,26 +108,23 @@ public:
     // Do not write to this variable directly!
     // It is for exclusive use by the safety_critical_... functions.
     bool is_armed_ = false;
-    bool is_calibrated_ = config_.pre_calibrated;
-    Iph_ABC_t current_meas_ = {NAN, NAN, NAN};
+    bool is_calibrated_ = false; // Set in apply_config()
+    std::optional<Iph_ABC_t> current_meas_;
     Iph_ABC_t DC_calib_ = {0.0f, 0.0f, 0.0f};
     float dc_calib_running_since_ = 0.0f; // current sensor calibration needs some time to settle
-    float I_leak_ = NAN; // close to zero if only two current sensors are available
     float I_bus_ = 0.0f; // this motors contribution to the bus current
-    bool current_meas_valid_ = false; // if false, the measured current values must not be used for control
     float phase_current_rev_gain_ = 0.0f; // Reverse gain for ADC to Amps (to be set by DRV8301_setup)
     FieldOrientedController current_control_;
     float effective_current_lim_ = 10.0f; // [A]
     float max_allowed_current_ = 0.0f; // [A] set in setup()
     float max_dc_calib_ = 0.0f; // [A] set in setup()
 
-    float* torque_setpoint_src_ = nullptr; // Usually points to the Controller object's output
-    float* phase_vel_src_ = nullptr; // Usually points to the Encoder object's output
+    InputPort<float> torque_setpoint_src_; // Usually points to the Controller object's output
+    InputPort<float> phase_vel_src_; // Usually points to the Encoder object's output
+
     float direction_ = 0.0f; // if -1 then positive torque is converted to negative Iq
-    float Vd_setpoint_ = NAN; // fed to the FOC
-    float Vq_setpoint_ = NAN; // fed to the FOC
-    float Id_setpoint_ = 0.0f; // fed to the FOC
-    float Iq_setpoint_ = NAN; // fed to the FOC
+    OutputPort<float2D> Vdq_setpoint_ = {{0.0f, 0.0f}}; // fed to the FOC
+    OutputPort<float2D> Idq_setpoint_ = {{0.0f, 0.0f}}; // fed to the FOC
     
     PhaseControlLaw<3>* control_law_;
 };

@@ -5,6 +5,12 @@ summary:  ODrive Interface Definitions
 
 dictionary: [ODrive] # Prevent the word 'ODrive' from being detected as two words 'O' and 'Drive'
 
+userdata:
+  c_preamble: |
+    #include <tuple>
+    using float2D = std::pair<float, float>;
+    struct Iph_ABC_t { float phA; float phB; float phC; };
+
 interfaces:
   ODrive:
     c_is_class: True
@@ -637,7 +643,6 @@ interfaces:
           TimerUpdateMissed: {doc: A timer update event was missed. Perhaps the previous timer update took too much time. This is not expected in official release firmware.}
           CurrentMeasurementUnavailable: {doc: The phase current measurement is not available. The ADC failed to sample the current sensor in time. This is not expected in official release firmware.}
           ControllerFailed: {doc: The motor was disarmed because the underlying controller failed. Usually this is the FOC controller.}
-          ILeakOutOfRange: {doc: '`i_leak` exceeded `config.max_leak_current`. This can happen if there is a short from a motor phase to DC- or DC+.'}
           IBusOutOfRange:
             doc: |
               The DC current sourced/sunk by this motor exceeded the configured
@@ -649,19 +654,23 @@ interfaces:
               The motor had to be disarmed because of a system level error.
               See `ODrive.Error` for more details.
           BadTiming: {doc: The main control loop got out of sync with the motor control loop. This could indicate that the main control loop got stuck.}
-          UnknownPhase: {doc: The current controller did not get a valid angle input. Maybe you didn't calibrate the encoder.}
-          UnknownCurrent: {doc: The current controller did not get a valid current measurement or setpoint. Maybe you didn't configure the controller correctly or there is a low level system issue.}
+          UnknownPhaseEstimate: {doc: The current controller did not get a valid angle input. Maybe you didn't calibrate the encoder.}
+          UnknownPhaseVel: {doc: The motor controller did not get a valid phase velocity input.}
+          UnknownTorque: {doc: The motor controller did not get a valid torque input.}
+          UnknownCurrentCommand: {doc: The current controller did not get a valid current setpoint. Maybe you didn't configure the controller correctly.}
+          UnknownCurrentMeasurement: {doc: The current controller did not get a valid current measurement.}
           UnknownVbusVoltage: {doc: The current controller did not get a valid `vbus_voltage` measurement.}
+          UnknownVoltageCommand: {doc: The current controller did not get a valid feedforward voltage setpoint.}
+          UnknownGains: {doc: The current controller gains were not configured. Run motor calibration or set `config.phase_resistance` and `config.phase_inductance` manually.}
           ControllerInitializing: {doc: Internal value used while the controller is not yet ready to generate PWM timings.}
       is_armed: readonly bool
       is_calibrated: readonly bool
-      current_meas_phA: {type: readonly float32, c_name: current_meas_.phA}
-      current_meas_phB: {type: readonly float32, c_name: current_meas_.phB}
-      current_meas_phC: {type: readonly float32, c_name: current_meas_.phC}
+      current_meas_phA: {type: readonly float32, c_getter: 'current_meas_.value_or(Iph_ABC_t{0.0f, 0.0f, 0.0f}).phA'}
+      current_meas_phB: {type: readonly float32, c_getter: 'current_meas_.value_or(Iph_ABC_t{0.0f, 0.0f, 0.0f}).phB'}
+      current_meas_phC: {type: readonly float32, c_getter: 'current_meas_.value_or(Iph_ABC_t{0.0f, 0.0f, 0.0f}).phC'}
       DC_calib_phA: {type: float32, c_name: DC_calib_.phA}
       DC_calib_phB: {type: float32, c_name: DC_calib_.phB}
       DC_calib_phC: {type: float32, c_name: DC_calib_.phC}
-      I_leak: {type: readonly float32, unit: A}
       I_bus: {type: readonly float32, unit: A}
       phase_current_rev_gain: float32
       effective_current_lim: readonly float32
@@ -676,17 +685,17 @@ interfaces:
       current_control:
         c_is_class: True
         attributes:
-          p_gain: float32
-          i_gain: float32
+          p_gain: {type: readonly float32, c_getter: 'pi_gains_.value_or(float2D{0.0f, 0.0f}).first'}
+          i_gain: {type: readonly float32, c_getter: 'pi_gains_.value_or(float2D{0.0f, 0.0f}).second'}
           I_measured_report_filter_k: float32
-          Id_setpoint: readonly float32
-          Iq_setpoint: readonly float32
-          Vd_setpoint: readonly float32
-          Vq_setpoint: readonly float32
-          phase: readonly float32
-          phase_vel: readonly float32
-          Ialpha_measured: readonly float32
-          Ibeta_measured: readonly float32
+          Id_setpoint: {type: readonly float32, c_getter: 'Idq_setpoint_.value_or(float2D{0.0f, 0.0f}).first'}
+          Iq_setpoint: {type: readonly float32, c_getter: 'Idq_setpoint_.value_or(float2D{0.0f, 0.0f}).second'}
+          Vd_setpoint: {type: readonly float32, c_getter: 'Vdq_setpoint_.value_or(float2D{0.0f, 0.0f}).first'}
+          Vq_setpoint: {type: readonly float32, c_getter: 'Vdq_setpoint_.value_or(float2D{0.0f, 0.0f}).second'}
+          phase: {type: readonly float32, c_getter: 'phase_.value_or(0.0f)'}
+          phase_vel: {type: readonly float32, c_getter: 'phase_vel_.value_or(0.0f)'}
+          Ialpha_measured: {type: readonly float32, c_getter: 'Ialpha_beta_measured_.value_or(float2D{0.0f, 0.0f}).first'}
+          Ibeta_measured: {type: readonly float32, c_getter: 'Ialpha_beta_measured_.value_or(float2D{0.0f, 0.0f}).second'}
           Id_measured: readonly float32
           Iq_measured: readonly float32
           v_current_control_integral_d: float32
@@ -761,10 +770,25 @@ interfaces:
     c_is_class: True
     attributes:
       rotor_flux: {type: readonly float32, unit: A, doc: estimated magnitude of the rotor flux}
-      slip_vel: {type: readonly float32, unit: rad/s, doc: estimated slip between physical and electrical angular velocity}
-      phase_offset: {type: readonly float32, unit: rad, doc: estimate offset between physical and electrical angular position}
-      stator_phase_vel: {type: readonly float32, unit: rad/s, doc: calculated setpoint for the electrical velocity}
-      stator_phase: {type: readonly float32, unit: rad, doc: calculated setpoint for the electrical phase}
+      slip_vel:
+        type: readonly float32
+        unit: rad/s
+        doc: estimated slip between physical and electrical angular velocity}
+        c_getter: slip_vel_.get_any().value_or(0.0f)
+      phase_offset:
+        type: readonly float32
+        unit: rad
+        doc: estimate offset between physical and electrical angular position}
+      stator_phase_vel:
+        type: readonly float32
+        unit: rad/s
+        doc: calculated setpoint for the electrical velocity}
+        c_getter: stator_phase_vel_.get_any().value_or(0.0f)
+      stator_phase:
+        type: readonly float32
+        unit: rad
+        doc: calculated setpoint for the electrical phase}
+        c_getter: stator_phase_.get_any().value_or(0.0f)
       config:
         c_is_class: False
         attributes:
@@ -920,13 +944,13 @@ interfaces:
       shadow_count: readonly int32
       count_in_cpr: readonly int32
       interpolation: readonly float32
-      phase: readonly float32
-      pos_estimate: readonly float32
+      phase: {type: readonly float32, c_getter: phase_.get_any().value_or(0.0f)}
+      pos_estimate: {type: readonly float32, c_getter: pos_estimate_.get_any().value_or(0.0f)}
       pos_estimate_counts: readonly float32
       pos_cpr_counts: readonly float32
-      pos_circular: readonly float32
+      pos_circular: {type: readonly float32, c_getter: pos_circular_.get_any().value_or(0.0f)}
       hall_state: readonly uint8
-      vel_estimate: readonly float32
+      vel_estimate: {type: readonly float32, c_getter: vel_estimate_.get_any().value_or(0.0f)}
       vel_estimate_counts: readonly float32
       calib_scan_response: readonly float32
       pos_abs: int32
@@ -967,10 +991,11 @@ interfaces:
         nullflag: None
         flags:
           UnstableGain:
-      phase: {type: float32, unit: rad}
-      pll_pos: {type: float32, unit: rad}
-      phase_vel: {type: float32, unit: rad/s}
-      vel_estimate: {type: float32, unit: turns/s}
+          UnknownCurrentMeasurement:
+      phase: {type: readonly float32, unit: rad, c_getter: phase_.get_any().value_or(0.0f)}
+      pll_pos: {type: readonly float32, unit: rad}
+      phase_vel: {type: readonly float32, unit: rad/s, c_getter: phase_vel_.get_any().value_or(0.0f)}
+      vel_estimate: {type: readonly float32, unit: turns/s, c_getter: vel_estimate_.get_any().value_or(0.0f)}
       # pll_kp: float32
       # pll_ki: float32
       config:

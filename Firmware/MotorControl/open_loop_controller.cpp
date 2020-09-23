@@ -3,25 +3,25 @@
 #include <board.h>
 
 void OpenLoopController::update(uint32_t timestamp) {
-    if (std::isnan(Id_setpoint_) || std::isnan(Id_setpoint_) || std::isnan(phase_) || std::isnan(phase_vel_)) {
-        Id_setpoint_ = 0.0f;
-        Iq_setpoint_ = 0.0f;
-        Vd_setpoint_ = 0.0f;
-        Vq_setpoint_ = 0.0f;
-        phase_ = 0.0f;
-        phase_vel_ = 0.0f;
-        timestamp_ = timestamp;
-    }
+    auto [prev_Id, prev_Iq] = Idq_setpoint_.get_previous().value_or(float2D{0.0f, 0.0f});
+    auto [prev_Vd, prev_Vq] = Vdq_setpoint_.get_previous().value_or(float2D{0.0f, 0.0f});
+    float phase = phase_.get_previous().value_or(0.0f);
+    float phase_vel = phase_vel_.get_previous().value_or(0.0f);
 
     float dt = (float)(timestamp - timestamp_) / (float)TIM_1_8_CLOCK_HZ;
     
-    Id_setpoint_ = std::clamp(target_current_, Id_setpoint_ - max_current_ramp_ * dt, Id_setpoint_ + max_current_ramp_ * dt);
-    Iq_setpoint_ = 0.0f;
-    Vd_setpoint_ = std::clamp(target_voltage_, Vd_setpoint_ - max_voltage_ramp_ * dt, Vd_setpoint_ + max_voltage_ramp_ * dt);
-    Vq_setpoint_ = 0.0f;
-
-    phase_vel_ = std::clamp(target_vel_, phase_vel_ - max_phase_vel_ramp_ * dt, phase_vel_ + max_phase_vel_ramp_ * dt);
-    phase_ = wrap_pm_pi(phase_ + phase_vel_ * dt);
-    total_distance_ += phase_vel_ * dt;
+    Idq_setpoint_ = {
+        std::clamp(target_current_, prev_Id - max_current_ramp_ * dt, prev_Id + max_current_ramp_ * dt),
+        0.0f
+    };
+    Vdq_setpoint_ = {
+        std::clamp(target_voltage_, prev_Vd - max_voltage_ramp_ * dt, prev_Vd + max_voltage_ramp_ * dt),
+        0.0f
+    };
+    
+    phase_vel = std::clamp(target_vel_, phase_vel - max_phase_vel_ramp_ * dt, phase_vel + max_phase_vel_ramp_ * dt);
+    phase_vel_ = phase_vel;
+    phase_ = wrap_pm_pi(phase + phase_vel * dt);
+    total_distance_ = total_distance_.get_previous().value_or(0.0f) + phase_vel * dt;
     timestamp_ = timestamp;
 }

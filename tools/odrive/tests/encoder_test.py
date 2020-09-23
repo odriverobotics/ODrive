@@ -48,7 +48,7 @@ class TestEncoderBase():
         # encoder.count_in_cpr
         slope, offset, fitted_curve = fit_sawtooth(data[:,(0,2)], true_cpr if reverse else 0, 0 if reverse else true_cpr)
         test_assert_eq(slope, true_cps, accuracy=0.005)
-        test_curve_fit(data[:,(0,2)], fitted_curve, max_mean_err = true_cpr * 0.02, inlier_range = true_cpr * 0.02, max_outliers = len(data[:,0]) * 0.02)
+        test_curve_fit(data[:,(0,2)], fitted_curve, max_mean_err = true_cpr * 0.02, inlier_range = true_cpr * 0.02, max_outliers = len(data[:,0]) * 0.02 * noise)
 
         # encoder.pos_estimate
         slope, offset, fitted_curve = fit_line(data[:,(0,4)])

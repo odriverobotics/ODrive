@@ -228,7 +228,7 @@ public:
     Oscilloscope oscilloscope_{
         &axes[0].motor_.current_control_.v_current_control_integral_d_, // trigger_src
         0.5f, // trigger_threshold
-        &axes[0].motor_.current_control_.Ialpha_measured_ // data_src
+        nullptr // &axes[0].motor_.current_control_.Ialpha_measured_ // data_src TODO: change data type
     };
 
     BoardConfig_t config_;

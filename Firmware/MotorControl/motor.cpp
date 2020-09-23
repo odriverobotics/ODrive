@@ -18,35 +18,43 @@
 struct ResistanceMeasurementControlLaw : AlphaBetaFrameController {
     void reset() final {
         test_voltage_ = 0.0f;
-        test_mod_ = NAN;
+        test_mod_ = std::nullopt;
     }
 
     ODriveIntf::MotorIntf::Error on_measurement(
-        float vbus_voltage, float Ialpha, float Ibeta,
-        uint32_t input_timestamp) final
-    {
-        actual_current_ = Ialpha;
-        test_voltage_ += (kI * current_meas_period) * (target_current_ - actual_current_);
+            std::optional<float> vbus_voltage,
+            std::optional<float2D> Ialpha_beta,
+            uint32_t input_timestamp) final {
+
+        if (Ialpha_beta.has_value()) {
+            actual_current_ = Ialpha_beta->first;
+            test_voltage_ += (kI * current_meas_period) * (target_current_ - actual_current_);
+        } else {
+            actual_current_ = 0.0f;
+            test_voltage_ = 0.0f;
+        }
     
         if (std::abs(test_voltage_) > max_voltage_) {
             test_voltage_ = NAN;
             return Motor::ERROR_PHASE_RESISTANCE_OUT_OF_RANGE;
-        } else if (std::isnan(vbus_voltage)) {
+        } else if (!vbus_voltage.has_value()) {
             return Motor::ERROR_UNKNOWN_VBUS_VOLTAGE;
         } else {
-            float vfactor = 1.0f / ((2.0f / 3.0f) * vbus_voltage);
+            float vfactor = 1.0f / ((2.0f / 3.0f) * *vbus_voltage);
             test_mod_ = test_voltage_ * vfactor;
             return Motor::ERROR_NONE;
         }
     }
 
-    ODriveIntf::MotorIntf::Error get_alpha_beta_output(uint32_t output_timestamp, float* mod_alpha, float* mod_beta, float* ibus) {
-        if (std::isnan(test_mod_)) {
+    ODriveIntf::MotorIntf::Error get_alpha_beta_output(
+            uint32_t output_timestamp,
+            std::optional<float2D>* mod_alpha_beta,
+            std::optional<float>* ibus) final {
+        if (!test_mod_.has_value()) {
             return Motor::ERROR_CONTROLLER_INITIALIZING;
         } else {
-            *mod_alpha = test_mod_;
-            *mod_beta = 0.0f;
-            *ibus = test_mod_ * actual_current_;
+            *mod_alpha_beta = {*test_mod_, 0.0f};
+            *ibus = *test_mod_ * actual_current_;
             return Motor::ERROR_NONE;
         }
     }
@@ -60,7 +68,7 @@ struct ResistanceMeasurementControlLaw : AlphaBetaFrameController {
     float actual_current_ = 0.0f;
     float target_current_ = 0.0f;
     float test_voltage_ = 0.0f;
-    float test_mod_ = NAN;
+    std::optional<float> test_mod_ = NAN;
 };
 
 /**
@@ -75,12 +83,16 @@ struct InductanceMeasurementControlLaw : AlphaBetaFrameController {
         attached_ = false;
     }
 
-    ODriveIntf::MotorIntf::Error on_measurement(float vbus_voltage,
-        float Ialpha, float Ibeta, uint32_t input_timestamp) final
+    ODriveIntf::MotorIntf::Error on_measurement(
+            std::optional<float> vbus_voltage,
+            std::optional<float2D> Ialpha_beta,
+            uint32_t input_timestamp) final
     {
-        if (std::isnan(Ialpha) || std::isnan(vbus_voltage)) {
-            return {Motor::ERROR_UNKNOWN_VBUS_VOLTAGE};
+        if (!Ialpha_beta.has_value()) {
+            return {Motor::ERROR_UNKNOWN_CURRENT_MEASUREMENT};
         }
+
+        float Ialpha = Ialpha_beta->first;
 
         if (attached_) {
             float sign = test_voltage_ >= 0.0f ? 1.0f : -1.0f;
@@ -97,12 +109,12 @@ struct InductanceMeasurementControlLaw : AlphaBetaFrameController {
     }
 
     ODriveIntf::MotorIntf::Error get_alpha_beta_output(
-        uint32_t output_timestamp, float* mod_alpha, float* mod_beta, float* ibus) final
+            uint32_t output_timestamp, std::optional<float2D>* mod_alpha_beta,
+            std::optional<float>* ibus) final
     {
         test_voltage_ *= -1.0f;
         float vfactor = 1.0f / ((2.0f / 3.0f) * vbus_voltage);
-        *mod_alpha = test_voltage_ * vfactor;
-        *mod_beta = 0.0f;
+        *mod_alpha_beta = {test_voltage_ * vfactor, 0.0f};
         *ibus = 0.0f;
         return Motor::ERROR_NONE;
     }
@@ -263,9 +275,9 @@ bool Motor::disarm(bool* was_armed) {
 // TODO: allow update on user-request or update automatically via hooks
 void Motor::update_current_controller_gains() {
     // Calculate current control gains
-    current_control_.p_gain_ = config_.current_control_bandwidth * config_.phase_inductance;
+    float p_gain = config_.current_control_bandwidth * config_.phase_inductance;
     float plant_pole = config_.phase_resistance / config_.phase_inductance;
-    current_control_.i_gain_ = plant_pole * current_control_.p_gain_;
+    current_control_.pi_gains_ = {p_gain, plant_pole * p_gain};
 }
 
 bool Motor::apply_config() {
@@ -352,10 +364,11 @@ float Motor::max_available_torque() {
     }
 }
 
-float Motor::phase_current_from_adcval(uint32_t ADCValue) {
+std::optional<float> Motor::phase_current_from_adcval(uint32_t ADCValue) {
     // Make sure the measurements don't come too close to the current sensor's hardware limitations
     if (ADCValue < CURRENT_ADC_LOWER_BOUND || ADCValue > CURRENT_ADC_UPPER_BOUND) {
-        disarm_with_error(ERROR_CURRENT_SENSE_SATURATION);
+        error_ |= ERROR_CURRENT_SENSE_SATURATION;
+        return std::nullopt;
     }
 
     int adcval_bal = (int)ADCValue - (1 << 11);
@@ -461,24 +474,22 @@ bool Motor::run_calibration() {
     return true;
 }
 
-void Motor::update() {
-    float torque = torque_setpoint_src_ ? *torque_setpoint_src_ : NAN;
-    float phase_vel = phase_vel_src_ ? *phase_vel_src_ : NAN;
+void Motor::update(uint32_t timestamp) {
+    std::optional<float> torque = torque_setpoint_src_.get_current();
 
-    // Reset output just in case the controller fails for any reason
-    Iq_setpoint_ = NAN;
-    // Id_setpoint_ = NAN; // this doubles as a state variable so we can't reset it
+    if (!torque.has_value()) {
+        error_ |= ERROR_UNKNOWN_TORQUE;
+        return;
+    }
 
-    float vd = 0.0f;
-    float vq = 0.0f;
-    float id = Id_setpoint_;
-    float iq;
+    auto [id, iq] = Idq_setpoint_.get_previous()
+                     .value_or(float2D{0.0f, 0.0f}); // Id doubles as a state variable
 
     // Convert torque to current
     if (axis_->motor_.config_.motor_type == Motor::MOTOR_TYPE_ACIM) {
-        iq = torque / (axis_->motor_.config_.torque_constant * fmax(axis_->async_estimator_.rotor_flux_, config_.acim_gain_min_flux));
+        iq = *torque / (axis_->motor_.config_.torque_constant * fmax(axis_->async_estimator_.rotor_flux_, config_.acim_gain_min_flux));
     } else {
-        iq = torque / axis_->motor_.config_.torque_constant;
+        iq = *torque / axis_->motor_.config_.torque_constant;
     }
 
     iq *= direction_;
@@ -495,43 +506,60 @@ void Motor::update() {
         id = std::clamp(id, config_.acim_autoflux_min_Id, ilim);
     }
 
+    if (axis_->motor_.config_.motor_type != Motor::MOTOR_TYPE_GIMBAL) {
+        Idq_setpoint_ = {id, iq};
+    }
+
+    // This update call is in bit a weird position because it depends on the
+    // Id,q setpoint but outputs the phase velocity that we depend on later
+    // in this function.
+    // A cleaner fix would be to take the feedforward calculation out of here
+    // and turn it into a separate component.
+    MEASURE_TIME(axis_->task_times_.async_estimator_update)
+        axis_->async_estimator_.update(timestamp);
+
+    float vd = 0.0f;
+    float vq = 0.0f;
+
+    std::optional<float> phase_vel = phase_vel_src_.get_current();
+
     if (config_.R_wL_FF_enable) {
-        vd -= phase_vel * config_.phase_inductance * iq;
-        vq += phase_vel * config_.phase_inductance * id;
+        if (!phase_vel.has_value()) {
+            error_ |= ERROR_UNKNOWN_PHASE_VEL;
+            return;
+        }
+
+        vd -= *phase_vel * config_.phase_inductance * iq;
+        vq += *phase_vel * config_.phase_inductance * id;
         vd += config_.phase_resistance * id;
         vq += config_.phase_resistance * iq;
     }
 
     if (config_.bEMF_FF_enable) {
-        vq += phase_vel * (2.0f/3.0f) * (config_.torque_constant / config_.pole_pairs);
-    }
+        if (!phase_vel.has_value()) {
+            error_ |= ERROR_UNKNOWN_PHASE_VEL;
+            return;
+        }
 
+        vq += *phase_vel * (2.0f/3.0f) * (config_.torque_constant / config_.pole_pairs);
+    }
+    
     if (axis_->motor_.config_.motor_type == Motor::MOTOR_TYPE_GIMBAL) {
         // reinterpret current as voltage
-        vd += id;
-        vq += iq;
-        id = NAN;
-        iq = NAN;
+        Vdq_setpoint_ = {vd + id, vq + iq};
+    } else {
+        Vdq_setpoint_ = {vd, vq};
     }
-
-    Vd_setpoint_ = vd;
-    Vq_setpoint_ = vq;
-    Id_setpoint_ = id;
-    Iq_setpoint_ = iq;
 }
 
 
 /**
  * @brief Called when the underlying hardware timer triggers an update event.
  */
-void Motor::current_meas_cb(uint32_t timestamp, Iph_ABC_t current) {
+void Motor::current_meas_cb(uint32_t timestamp, std::optional<Iph_ABC_t> current) {
     // TODO: this is platform specific
     //const float current_meas_period = static_cast<float>(2 * TIM_1_8_PERIOD_CLOCKS * (TIM_1_8_RCR + 1)) / TIM_1_8_CLOCK_HZ;
     TaskTimerContext tmr{axis_->task_times_.current_sense};
-
-    bool current_valid = !std::isnan(current.phA)
-                      && !std::isnan(current.phB)
-                      && !std::isnan(current.phC);
 
     n_evt_current_measurement_++;
 
@@ -540,23 +568,14 @@ void Motor::current_meas_cb(uint32_t timestamp, Iph_ABC_t current) {
                        && (abs(DC_calib_.phB) < max_dc_calib_)
                        && (abs(DC_calib_.phC) < max_dc_calib_);
 
-    if (current_valid && dc_calib_valid) {
-        current.phA -= DC_calib_.phA;
-        current.phB -= DC_calib_.phB;
-        current.phC -= DC_calib_.phC;
-        I_leak_ = current.phA + current.phB + current.phC; // sum should be close to 0
-        current_meas_.phA = current.phA - I_leak_ / 3.0f;
-        current_meas_.phB = current.phB - I_leak_ / 3.0f;
-        current_meas_.phC = current.phC - I_leak_ / 3.0f;
+    if (current.has_value() && dc_calib_valid) {
+        current_meas_ = {
+            current->phA - DC_calib_.phA,
+            current->phB - DC_calib_.phB,
+            current->phC - DC_calib_.phC
+        };
     } else {
-        I_leak_ = NAN;
-        current_meas_.phA = NAN;
-        current_meas_.phB = NAN;
-        current_meas_.phC = NAN;
-    }
-
-    if (abs(I_leak_) > config_.I_leak_max) {
-        disarm_with_error(ERROR_I_LEAK_OUT_OF_RANGE);
+        current_meas_ = std::nullopt;
     }
 
     // Run system-level checks (e.g. overvoltage/undervoltage condition)
@@ -565,17 +584,29 @@ void Motor::current_meas_cb(uint32_t timestamp, Iph_ABC_t current) {
     // effect on the PWM.
     odrv.do_fast_checks();
 
-    // Check for violation of current limit
-    // If Ia + Ib + Ic == 0 holds then we have:
-    // Inorm^2 = Id^2 + Iq^2 = Ialpha^2 + Ibeta^2 = 2/3 * (Ia^2 + Ib^2 + Ic^2)
-    float Itrip = effective_current_lim_ + config_.current_lim_margin;
-    if (2.0f / 3.0f * (SQ(current_meas_.phA) + SQ(current_meas_.phB) + SQ(current_meas_.phC)) > SQ(Itrip)) {
-        disarm_with_error(ERROR_CURRENT_LIMIT_VIOLATION);
+    if (current_meas_.has_value()) {
+        // Check for violation of current limit
+        // If Ia + Ib + Ic == 0 holds then we have:
+        // Inorm^2 = Id^2 + Iq^2 = Ialpha^2 + Ibeta^2 = 2/3 * (Ia^2 + Ib^2 + Ic^2)
+        float Itrip = effective_current_lim_ + config_.current_lim_margin;
+        float Inorm_sq = 2.0f / 3.0f * (SQ(current_meas_->phA)
+                                      + SQ(current_meas_->phB)
+                                      + SQ(current_meas_->phC));
+        if (Inorm_sq > SQ(Itrip)) {
+            disarm_with_error(ERROR_CURRENT_LIMIT_VIOLATION);
+        }
+    } else if (is_armed_) {
+        // Since we can't check current limits, be safe for now and disarm.
+        // Theoretically we could continue to operate if there is no active
+        // current limit.
+        disarm_with_error(ERROR_UNKNOWN_CURRENT_MEASUREMENT);
     }
 
     if (control_law_) {
         Error err = control_law_->on_measurement(vbus_voltage,
-                            {current_meas_.phA, current_meas_.phB, current_meas_.phC},
+                            current_meas_.has_value() ?
+                                std::make_optional(std::array<float, 3>{current_meas_->phA, current_meas_->phB, current_meas_->phC})
+                                : std::nullopt,
                             timestamp);
         if (err != ERROR_NONE) {
             disarm_with_error(err);
@@ -586,19 +617,15 @@ void Motor::current_meas_cb(uint32_t timestamp, Iph_ABC_t current) {
 /**
  * @brief Called when the underlying hardware timer triggers an update event.
  */
-void Motor::dc_calib_cb(uint32_t timestamp, Iph_ABC_t current) {
+void Motor::dc_calib_cb(uint32_t timestamp, std::optional<Iph_ABC_t> current) {
     const float dc_calib_period = static_cast<float>(2 * TIM_1_8_PERIOD_CLOCKS * (TIM_1_8_RCR + 1)) / TIM_1_8_CLOCK_HZ;
     TaskTimerContext tmr{axis_->task_times_.dc_calib};
 
-    bool current_valid = !std::isnan(current.phA)
-                      && !std::isnan(current.phB)
-                      && !std::isnan(current.phC);
-
-    if (current_valid) {
+    if (current.has_value()) {
         const float calib_filter_k = std::min(dc_calib_period / config_.dc_calib_tau, 1.0f);
-        DC_calib_.phA += (current.phA - DC_calib_.phA) * calib_filter_k;
-        DC_calib_.phB += (current.phB - DC_calib_.phB) * calib_filter_k;
-        DC_calib_.phC += (current.phC - DC_calib_.phC) * calib_filter_k;
+        DC_calib_.phA += (current->phA - DC_calib_.phA) * calib_filter_k;
+        DC_calib_.phB += (current->phB - DC_calib_.phB) * calib_filter_k;
+        DC_calib_.phC += (current->phC - DC_calib_.phC) * calib_filter_k;
         dc_calib_running_since_ += dc_calib_period;
     } else {
         DC_calib_.phA = 0.0f;
@@ -615,7 +642,7 @@ void Motor::pwm_update_cb(uint32_t output_timestamp) {
 
     Error control_law_status = ERROR_CONTROLLER_FAILED;
     float pwm_timings[3] = {NAN, NAN, NAN};
-    float i_bus = 0.0f;
+    std::optional<float> i_bus;
 
     if (control_law_) {
         control_law_status = control_law_->get_output(
@@ -632,23 +659,27 @@ void Motor::pwm_update_cb(uint32_t output_timestamp) {
 
         apply_pwm_timings(next_timings, false);
     } else if (is_armed_) {
-        i_bus = 0.0f;
         if (!(timer_->Instance->BDTR & TIM_BDTR_MOE) && (control_law_status == ERROR_CONTROLLER_INITIALIZING)) {
             // If the PWM output is armed in software but not yet in
             // hardware we tolerate the "initializing" error.
+            i_bus = 0.0f;
         } else {
             disarm_with_error(control_law_status);
         }
     }
 
-    // If something above failed, reset I_bus to 0A.
     if (!is_armed_) {
+        // If something above failed, reset I_bus to 0A.
+        i_bus = 0.0f;
+    } else if (is_armed_ && !i_bus.has_value()) {
+        // If the motor is armed then i_bus must be known
+        disarm_with_error(ERROR_UNKNOWN_CURRENT_MEASUREMENT);
         i_bus = 0.0f;
     }
 
-    I_bus_ = i_bus;
+    I_bus_ = *i_bus;
 
-    if (i_bus < config_.I_bus_hard_min || i_bus > config_.I_bus_hard_max) {
+    if (*i_bus < config_.I_bus_hard_min || *i_bus > config_.I_bus_hard_max) {
         disarm_with_error(ERROR_I_BUS_OUT_OF_RANGE);
     }
 

@@ -1,6 +1,15 @@
 
 #include "odrive_main.h"
 
+void SensorlessEstimator::reset() {
+    pll_pos_ = 0.0f;
+    vel_estimate_ = 0.0f;
+    V_alpha_beta_memory_[0] = 0.0f;
+    V_alpha_beta_memory_[1] = 0.0f;
+    flux_state_[0] = 0.0f;
+    flux_state_[1] = 0.0f;
+}
+
 bool SensorlessEstimator::update() {
     // Algorithm based on paper: Sensorless Control of Surface-Mount Permanent-Magnet Synchronous Motors Based on a Nonlinear Observer
     // http://cas.ensmp.fr/~praly/Telechargement/Journaux/2010-IEEE_TPEL-Lee-Hong-Nam-Ortega-Praly-Astolfi.pdf
@@ -10,20 +19,33 @@ bool SensorlessEstimator::update() {
     // is the one computed two cycles ago. To get the correct measurement, it was stored twice:
     // once by final_v_alpha/final_v_beta in the current control reporting, and once by V_alpha_beta_memory.
 
-    if (std::isnan(flux_state_[0]) || std::isnan(flux_state_[1]) || std::isnan(pll_pos_)) {
-        // Automatically reset state if it becomes NAN. The state becomes NAN
-        // when invalid current measurements are processed (e.g. because of the
-        // opamp being uninitialized).
-        flux_state_[0] = 0.0f;
-        flux_state_[1] = 0.0f;
-        pll_pos_ = 0.0f;
-        phase_vel_ = 0.0f;
+    // PLL
+    // TODO: the PLL part has some code duplication with the encoder PLL
+    // Pll gains as a function of bandwidth
+    float pll_kp = 2.0f * config_.pll_bandwidth;
+    // Critically damped
+    float pll_ki = 0.25f * (pll_kp * pll_kp);
+
+    // Check that we don't get problems with discrete time approximation
+    if (!(current_meas_period * pll_kp < 1.0f)) {
+        error_ |= ERROR_UNSTABLE_GAIN;
+        reset(); // Reset state for when the next valid current measurement comes in.
+        return false;
+    }
+
+    // TODO: we read values here which are modified by a higher priority interrupt.
+    // This is not thread-safe.    
+    auto current_meas = axis_->motor_.current_meas_;
+    if (!current_meas.has_value()) {
+        error_ |= ERROR_UNKNOWN_CURRENT_MEASUREMENT;
+        reset(); // Reset state for when the next valid current measurement comes in.
+        return false;
     }
 
     // Clarke transform
     float I_alpha_beta[2] = {
-        -axis_->motor_.current_meas_.phB - axis_->motor_.current_meas_.phC,
-        one_by_sqrt3 * (axis_->motor_.current_meas_.phB - axis_->motor_.current_meas_.phC)};
+        current_meas->phA,
+        one_by_sqrt3 * (current_meas->phB - current_meas->phC)};
 
     // alpha-beta vector operations
     float eta[2];
@@ -59,31 +81,21 @@ bool SensorlessEstimator::update() {
     V_alpha_beta_memory_[0] = axis_->motor_.current_control_.final_v_alpha_;
     V_alpha_beta_memory_[1] = axis_->motor_.current_control_.final_v_beta_;
 
-    // PLL
-    // TODO: the PLL part has some code duplication with the encoder PLL
-    // Pll gains as a function of bandwidth
-    float pll_kp = 2.0f * config_.pll_bandwidth;
-    // Critically damped
-    float pll_ki = 0.25f * (pll_kp * pll_kp);
-    // Check that we don't get problems with discrete time approximation
-    if (!(current_meas_period * pll_kp < 1.0f)) {
-        error_ |= ERROR_UNSTABLE_GAIN;
-        pll_pos_ = NAN;
-        phase_ = NAN;
-        vel_estimate_ = NAN;
-        return false;
-    }
+    float phase_vel = phase_vel_.get_previous().value_or(0.0f);
 
     // predict PLL phase with velocity
-    pll_pos_ = wrap_pm_pi(pll_pos_ + current_meas_period * phase_vel_);
+    pll_pos_ = wrap_pm_pi(pll_pos_ + current_meas_period * phase_vel);
     // update PLL phase with observer permanent magnet phase
-    phase_ = fast_atan2(eta[1], eta[0]);
-    float delta_phase = wrap_pm_pi(phase_ - pll_pos_);
+    float phase = fast_atan2(eta[1], eta[0]);
+    float delta_phase = wrap_pm_pi(phase - pll_pos_);
     pll_pos_ = wrap_pm_pi(pll_pos_ + current_meas_period * pll_kp * delta_phase);
     // update PLL velocity
-    phase_vel_ += current_meas_period * pll_ki * delta_phase;
-    // convert to mechanical turns/s for controller usage.
-    vel_estimate_ = phase_vel_ / (std::max((float)axis_->motor_.config_.pole_pairs, 1.0f) * 2.0f * M_PI);
+    phase_vel += current_meas_period * pll_ki * delta_phase;
+
+    // set outputs
+    phase_ = phase;
+    phase_vel_ = phase_vel;
+    vel_estimate_ = phase_vel / (std::max((float)axis_->motor_.config_.pole_pairs, 1.0f) * 2.0f * M_PI);
 
     return true;
 };

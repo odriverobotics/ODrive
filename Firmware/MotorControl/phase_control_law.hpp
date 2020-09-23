@@ -20,16 +20,20 @@ public:
      *
      * Beware that all inputs can be NAN.
      *
-     * @param vbus_voltage: The most recently measured DC link voltage. NAN if
-     *        the measurement is not available or valid for some reason.
+     * @param vbus_voltage: The most recently measured DC link voltage. Can be
+     *        std::nullopt if the measurement is not available or valid for any
+     *        reason.
      * @param currents: The most recently measured (or inferred) phase currents
-     *        in Amps. Any of the values can be NAN if the measurement is not
-     *        available or valid for some reason.
+     *        in Amps. Can be std::nullopt if no valid measurements are available
+     *        (e.g. because the opamp isn't started or because the sensors were
+     *        saturated).
      * @param input_timestamp: The timestamp (in HCLK ticks) corresponding to
      *        the vbus_voltage and current measurement.
      */
-    virtual ODriveIntf::MotorIntf::Error on_measurement(float vbus_voltage,
-        std::array<float, N_PHASES> currents, uint32_t input_timestamp) = 0;
+    virtual ODriveIntf::MotorIntf::Error on_measurement(
+            std::optional<float> vbus_voltage,
+            std::optional<std::array<float, N_PHASES>> currents,
+            uint32_t input_timestamp) = 0;
 
     /**
      * @brief Shall calculate the PWM timings for the specified target time.
@@ -60,28 +64,34 @@ public:
      *           triggering a motor disarm. In this phase the PWMs will not yet
      *           be truly active.
      */
-    virtual ODriveIntf::MotorIntf::Error get_output(uint32_t output_timestamp,
-                              float (&pwm_timings)[N_PHASES],
-                              float* ibus) = 0;
+    virtual ODriveIntf::MotorIntf::Error get_output(
+            uint32_t output_timestamp,
+            float (&pwm_timings)[N_PHASES],
+            std::optional<float>* ibus) = 0;
 };
 
 class AlphaBetaFrameController : public PhaseControlLaw<3> {
 private:
-    ODriveIntf::MotorIntf::Error on_measurement(float vbus_voltage,
-        std::array<float, 3> currents, uint32_t input_timestamp) final;
+    ODriveIntf::MotorIntf::Error on_measurement(
+            std::optional<float> vbus_voltage,
+            std::optional<std::array<float, 3>> currents,
+            uint32_t input_timestamp) final;
 
-    ODriveIntf::MotorIntf::Error get_output(uint32_t output_timestamp,
-                      float (&pwm_timings)[3],
-                      float* ibus) final;
+    ODriveIntf::MotorIntf::Error get_output(
+            uint32_t output_timestamp,
+            float (&pwm_timings)[3],
+            std::optional<float>* ibus) final;
 
 protected:
     virtual ODriveIntf::MotorIntf::Error on_measurement(
-            float vbus_voltage, float Ialpha, float Ibeta, uint32_t input_timestamp) = 0;
+            std::optional<float> vbus_voltage,
+            std::optional<float2D> Ialpha_beta,
+            uint32_t input_timestamp) = 0;
 
     virtual ODriveIntf::MotorIntf::Error get_alpha_beta_output(
             uint32_t output_timestamp,
-            float* mod_alpha, float* mod_beta,
-            float* ibus) = 0;
+            std::optional<float2D>* mod_alpha_beta,
+            std::optional<float>* ibus) = 0;
 };
 
 #endif // __PHASE_CONTROL_LAW_HPP

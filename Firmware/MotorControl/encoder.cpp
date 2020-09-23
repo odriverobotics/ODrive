@@ -215,10 +215,8 @@ bool Encoder::run_offset_calibration() {
 
     CRITICAL_SECTION() {
         // Reset state variables
-        axis_->open_loop_controller_.Id_setpoint_ = NAN;
-        axis_->open_loop_controller_.Iq_setpoint_ = NAN;
-        axis_->open_loop_controller_.Vd_setpoint_ = NAN;
-        axis_->open_loop_controller_.Vq_setpoint_ = NAN;
+        axis_->open_loop_controller_.Idq_setpoint_ = {0.0f, 0.0f};
+        axis_->open_loop_controller_.Vdq_setpoint_ = {0.0f, 0.0f};
         axis_->open_loop_controller_.phase_ = 0.0f;
         axis_->open_loop_controller_.phase_vel_ = NAN;
 
@@ -232,17 +230,15 @@ bool Encoder::run_offset_calibration() {
         axis_->open_loop_controller_.total_distance_ = 0.0f;
 
         axis_->motor_.current_control_.enable_current_control_src_ = (axis_->motor_.config_.motor_type != Motor::MOTOR_TYPE_GIMBAL);
-        axis_->motor_.current_control_.Id_setpoint_src_ = &axis_->open_loop_controller_.Id_setpoint_;
-        axis_->motor_.current_control_.Iq_setpoint_src_ = &axis_->open_loop_controller_.Iq_setpoint_;
-        axis_->motor_.current_control_.Vd_setpoint_src_ = &axis_->open_loop_controller_.Vd_setpoint_;
-        axis_->motor_.current_control_.Vq_setpoint_src_ = &axis_->open_loop_controller_.Vq_setpoint_;
-        axis_->motor_.current_control_.phase_src_ =
-        axis_->async_estimator_.rotor_phase_src_ =
-            &axis_->open_loop_controller_.phase_;
-        axis_->motor_.phase_vel_src_ =
-        axis_->motor_.current_control_.phase_vel_src_ =
-        axis_->async_estimator_.rotor_phase_vel_src_ =
-            &axis_->open_loop_controller_.phase_vel_;
+        axis_->motor_.current_control_.Idq_setpoint_src_.connect_to(&axis_->open_loop_controller_.Idq_setpoint_);
+        axis_->motor_.current_control_.Vdq_setpoint_src_.connect_to(&axis_->open_loop_controller_.Vdq_setpoint_);
+        
+        axis_->motor_.current_control_.phase_src_.connect_to(&axis_->open_loop_controller_.phase_);
+        axis_->async_estimator_.rotor_phase_src_.connect_to(&axis_->open_loop_controller_.phase_);
+
+        axis_->motor_.phase_vel_src_.connect_to(&axis_->open_loop_controller_.phase_vel_);
+        axis_->motor_.current_control_.phase_vel_src_.connect_to(&axis_->open_loop_controller_.phase_vel_);
+        axis_->async_estimator_.rotor_phase_vel_src_.connect_to(&axis_->open_loop_controller_.phase_vel_);
     }
     axis_->wait_for_control_iteration();
 
@@ -272,7 +268,7 @@ bool Encoder::run_offset_calibration() {
 
     // scan forward
     while ((axis_->requested_state_ == Axis::AXIS_STATE_UNDEFINED) && axis_->motor_.is_armed_) {
-        bool reached_target_dist = axis_->open_loop_controller_.total_distance_ >= config_.calib_scan_distance;
+        bool reached_target_dist = axis_->open_loop_controller_.total_distance_.get_any().value_or(-INFINITY) >= config_.calib_scan_distance;
         if (reached_target_dist) {
             break;
         }
@@ -312,7 +308,7 @@ bool Encoder::run_offset_calibration() {
 
     // scan backwards
     while ((axis_->requested_state_ == Axis::AXIS_STATE_UNDEFINED) && axis_->motor_.is_armed_) {
-        bool reached_target_dist = axis_->open_loop_controller_.total_distance_ <= 0.0f;
+        bool reached_target_dist = axis_->open_loop_controller_.total_distance_.get_any().value_or(INFINITY) <= 0.0f;
         if (reached_target_dist) {
             break;
         }
@@ -511,10 +507,6 @@ bool Encoder::update() {
             } else {
                 if (!config_.ignore_illegal_hall_state) {
                     set_error(ERROR_ILLEGAL_HALL_STATE);
-                    pos_estimate_ = NAN;
-                    vel_estimate_ = NAN;
-                    phase_ = NAN;
-                    phase_vel_ = NAN;
                     return false;
                 }
             }
@@ -540,10 +532,6 @@ bool Encoder::update() {
                 spi_error_rate_ += current_meas_period * (1.0f - spi_error_rate_);
                 if (spi_error_rate_ > 0.005f) {
                     set_error(ERROR_ABS_SPI_COM_FAIL);
-                    pos_estimate_ = NAN;
-                    vel_estimate_ = NAN;
-                    phase_ = NAN;
-                    phase_vel_ = NAN;
                     return false;
                 }
             } else {
@@ -561,11 +549,7 @@ bool Encoder::update() {
         }break;
         default: {
             set_error(ERROR_UNSUPPORTED_ENCODER_MODE);
-            pos_estimate_ = NAN;
-            vel_estimate_ = NAN;
-            phase_ = NAN;
-            phase_vel_ = NAN;
-           return false;
+            return false;
         } break;
     }
 
@@ -601,8 +585,14 @@ bool Encoder::update() {
     // Outputs from Encoder for Controller
     pos_estimate_ = pos_estimate_counts_ / (float)config_.cpr;
     vel_estimate_ = vel_estimate_counts_ / (float)config_.cpr;
-    pos_circular_ +=  wrap_pm((pos_cpr_counts_ - pos_cpr_counts_last) / (float)config_.cpr, 0.5f);
-    pos_circular_ = fmodf_pos(pos_circular_, axis_->controller_.config_.circular_setpoint_range);
+    
+    // TODO: we should strictly require that this value is from the previous iteration
+    // to avoid spinout scenarios. However that requires a proper way to reset
+    // the encoder from error states.
+    float pos_circular = pos_circular_.get_any().value_or(0.0f);
+    pos_circular +=  wrap_pm((pos_cpr_counts_ - pos_cpr_counts_last) / (float)config_.cpr, 0.5f);
+    pos_circular = fmodf_pos(pos_circular, axis_->controller_.config_.circular_setpoint_range);
+    pos_circular_ = pos_circular;
 
     //// run encoder count interpolation
     int32_t corrected_enc = count_in_cpr_ - config_.offset;
@@ -628,13 +618,10 @@ bool Encoder::update() {
     //TODO avoid recomputing elec_rad_per_enc every time
     float elec_rad_per_enc = axis_->motor_.config_.pole_pairs * 2 * M_PI * (1.0f / (float)(config_.cpr));
     float ph = elec_rad_per_enc * (interpolated_enc - config_.offset_float);
-    // ph = fmodf(ph, 2*M_PI);
+    
     if (is_ready_) {
         phase_ = wrap_pm_pi(ph) * config_.direction;
-        phase_vel_ = (2*M_PI) * vel_estimate_ * axis_->motor_.config_.pole_pairs * config_.direction;
-    } else {
-        phase_ = NAN;
-        phase_vel_ = NAN;
+        phase_vel_ = (2*M_PI) * *vel_estimate_.get_current() * axis_->motor_.config_.pole_pairs * config_.direction;
     }
 
     return true;
