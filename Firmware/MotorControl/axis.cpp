@@ -19,7 +19,8 @@ Axis::Axis(int axis_num,
            Motor& motor,
            TrapezoidalTrajectory& trap,
            Endstop& min_endstop,
-           Endstop& max_endstop)
+           Endstop& max_endstop,
+           MechanicalBrake& mechanical_brake)
     : axis_num_(axis_num),
       default_step_gpio_pin_(default_step_gpio_pin),
       default_dir_gpio_pin_(default_dir_gpio_pin),
@@ -33,6 +34,7 @@ Axis::Axis(int axis_num,
       trap_traj_(trap),
       min_endstop_(min_endstop),
       max_endstop_(max_endstop),
+      mechanical_brake_(mechanical_brake),
       current_limiters_(make_array(
           static_cast<CurrentLimiter*>(&fet_thermistor),
           static_cast<CurrentLimiter*>(&motor_thermistor))),
@@ -49,6 +51,7 @@ Axis::Axis(int axis_num,
     trap_traj_.axis_ = this;
     min_endstop_.axis_ = this;
     max_endstop_.axis_ = this;
+    mechanical_brake_.axis_ = this;
 }
 
 Axis::LockinConfig_t Axis::default_calibration() {
@@ -97,10 +100,10 @@ void Axis::clear_config() {
     config_.can.node_id = axis_num_;
 }
 
-// @brief Sets up all components of the axis,
-// such as gate driver and encoder hardware.
+// @brief Does Nothing
 bool Axis::setup() {
-    return motor_.setup();
+    // Does nothing - Motor and encoder setup called separately.
+    return true;
 }
 
 static void run_state_machine_loop_wrapper(void* ctx) {
@@ -235,9 +238,9 @@ bool Axis::run_lockin_spin(const LockinConfig_t &lockin_config) {
     float x = 0.0f;
     run_control_loop([&]() {
         float phase = wrap_pm_pi(lockin_config.ramp_distance * x);
-        float I_mag = lockin_config.current * x;
+        float torque = lockin_config.current * motor_.config_.torque_constant * x;
         x += current_meas_period / lockin_config.ramp_time;
-        if (!motor_.update(I_mag, phase, 0.0f))
+        if (!motor_.update(torque, phase, 0.0f))
             return false;
         return x < 1.0f;
     });
@@ -266,7 +269,7 @@ bool Axis::run_lockin_spin(const LockinConfig_t &lockin_config) {
         distance += vel * current_meas_period;
         phase = wrap_pm_pi(phase + vel * current_meas_period);
 
-        if (!motor_.update(lockin_config.current, phase, vel))
+        if (!motor_.update(lockin_config.current * motor_.config_.torque_constant, phase, vel))
             return false;
         return !spin_done(true); //vel_override to go to next phase
     });
@@ -282,7 +285,7 @@ bool Axis::run_lockin_spin(const LockinConfig_t &lockin_config) {
             distance += vel * current_meas_period;
             phase = wrap_pm_pi(phase + vel * current_meas_period);
 
-            if (!motor_.update(lockin_config.current, phase, vel))
+            if (!motor_.update(lockin_config.current * motor_.config_.torque_constant, phase, vel))
                 return false;
             return !spin_done();
         });
@@ -460,6 +463,7 @@ bool Axis::run_idle_loop() {
     // run_control_loop ignores missed modulation timing updates
     // if and only if we're in AXIS_STATE_IDLE
     safety_critical_disarm_motor_pwm(motor_);
+    mechanical_brake_.engage();
     set_step_dir_active(config_.enable_step_dir && config_.step_dir_always_on);
     run_control_loop([this]() {
         return true;
@@ -472,6 +476,7 @@ void Axis::run_state_machine_loop() {
 
     // arm!
     motor_.arm();
+    mechanical_brake_.release();
 
     for (;;) {
         // Load the task chain if a specific request is pending
@@ -556,7 +561,7 @@ void Axis::run_state_machine_loop() {
                 if (status) {
                     // call to controller.reset() that happend when arming means that vel_setpoint
                     // is zeroed. So we make the setpoint the spinup target for smooth transition.
-                    controller_.vel_setpoint_ = config_.sensorless_ramp.vel;
+                    controller_.vel_setpoint_ = config_.sensorless_ramp.vel / (2.0f * M_PI * motor_.config_.pole_pairs);
                     status = run_sensorless_control_loop();
                 }
             } break;
@@ -573,6 +578,7 @@ void Axis::run_state_machine_loop() {
             case AXIS_STATE_IDLE: {
                 run_idle_loop();
                 status = motor_.arm(); // done with idling - try to arm the motor
+                mechanical_brake_.release();
             } break;
 
             default:

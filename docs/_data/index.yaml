@@ -17,6 +17,8 @@ sections:
         url: /encoders
       - title: Homing & Endstops
         url: /endstops
+      - title: Mechanical Brakes
+        url: /mechanical-brakes
       - title: Thermistors
         url: /thermistors
       - title: Control & Tuning

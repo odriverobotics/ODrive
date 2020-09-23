@@ -18,25 +18,25 @@ The ODrive can be controlled over various ports and protocols. If you're comfort
 
 ## Pinout
 
-| #  | Label         | `GPIO_MODE_DIGITAL`    | `GPIO_MODE_ANALOG_IN` | `GPIO_MODE_UART0` | `GPIO_MODE_PWM0` | `GPIO_MODE_CAN0` | `GPIO_MODE_I2C0` | `GPIO_MODE_ENC0` | `GPIO_MODE_ENC1` |
-|----|---------------|------------------------|-----------------------|-------------------|------------------|------------------|------------------|------------------|------------------|
-|  0 | _not a pin_   |                        |                       |                   |                  |                  |                  |                  |                  |
-|  1 | GPIO1 (+)     | general purpose        | analog input          | **UART0.TX**      | PWM0.0           |                  |                  |                  |                  |
-|  2 | GPIO2 (+)     | general purpose        | analog input          | **UART0.RX**      | PWM0.1           |                  |                  |                  |                  |
-|  3 | GPIO3         | general purpose        | **analog input**      |                   | PWM0.2           |                  |                  |                  |                  |
-|  4 | GPIO4         | general purpose        | **analog input**      |                   | PWM0.3           |                  |                  |                  |                  |
-|  5 | GPIO5         | general purpose        | **analog input** (*)  |                   |                  |                  |                  |                  |                  |
-|  6 | GPIO6 (*) (+) | **general purpose**    |                       |                   |                  |                  |                  |                  |                  |
-|  7 | GPIO7 (*) (+) | **general purpose**    |                       |                   |                  |                  |                  |                  |                  |
-|  8 | GPIO8 (*) (+) | **general purpose**    |                       |                   |                  |                  |                  |                  |                  |
-|  9 | M0.A          | general purpose        |                       |                   |                  |                  |                  | **ENC0.A**       |                  |
-| 10 | M0.B          | general purpose        |                       |                   |                  |                  |                  | **ENC0.B**       |                  |
-| 11 | M0.Z          | **general purpose**    |                       |                   |                  |                  |                  |                  |                  |
-| 12 | M1.A          | general purpose        |                       |                   |                  |                  | I2C.SCL          |                  | **ENC1.A**       |
-| 13 | M1.B          | general purpose        |                       |                   |                  |                  | I2C.SDA          |                  | **ENC1.B**       |
-| 14 | M1.Z          | **general purpose**    |                       |                   |                  |                  |                  |                  |                  |
-| 15 | _not exposed_ | general purpose        |                       |                   |                  | **CAN0.RX**      | I2C.SCL          |                  |                  |
-| 16 | _not exposed_ | general purpose        |                       |                   |                  | **CAN0.TX**      | I2C.SDA          |                  |                  |
+| #  | Label         | `GPIO_MODE_DIGITAL`    | `GPIO_MODE_ANALOG_IN` | `GPIO_MODE_UART0` | `GPIO_MODE_PWM0` | `GPIO_MODE_CAN0` | `GPIO_MODE_I2C0` | `GPIO_MODE_ENC0` | `GPIO_MODE_ENC1` | `GPIO_MODE_MECH_BRAKE` |
+|----|---------------|------------------------|-----------------------|-------------------|------------------|------------------|------------------|------------------|------------------|------------------------|
+|  0 | _not a pin_   |                        |                       |                   |                  |                  |                  |                  |                  |                        |
+|  1 | GPIO1 (+)     | general purpose        | analog input          | **UART0.TX**      | PWM0.0           |                  |                  |                  |                  | mechanical brake       |
+|  2 | GPIO2 (+)     | general purpose        | analog input          | **UART0.RX**      | PWM0.1           |                  |                  |                  |                  | mechanical brake       |
+|  3 | GPIO3         | general purpose        | **analog input**      |                   | PWM0.2           |                  |                  |                  |                  | mechanical brake       |
+|  4 | GPIO4         | general purpose        | **analog input**      |                   | PWM0.3           |                  |                  |                  |                  | mechanical brake       |
+|  5 | GPIO5         | general purpose        | **analog input** (*)  |                   |                  |                  |                  |                  |                  | mechanical brake       |
+|  6 | GPIO6 (*) (+) | **general purpose**    |                       |                   |                  |                  |                  |                  |                  | mechanical brake       |
+|  7 | GPIO7 (*) (+) | **general purpose**    |                       |                   |                  |                  |                  |                  |                  | mechanical brake       |
+|  8 | GPIO8 (*) (+) | **general purpose**    |                       |                   |                  |                  |                  |                  |                  | mechanical brake       |
+|  9 | M0.A          | general purpose        |                       |                   |                  |                  |                  | **ENC0.A**       |                  |                        |
+| 10 | M0.B          | general purpose        |                       |                   |                  |                  |                  | **ENC0.B**       |                  |                        |
+| 11 | M0.Z          | **general purpose**    |                       |                   |                  |                  |                  |                  |                  |                        |
+| 12 | M1.A          | general purpose        |                       |                   |                  |                  | I2C.SCL          |                  | **ENC1.A**       |                        |
+| 13 | M1.B          | general purpose        |                       |                   |                  |                  | I2C.SDA          |                  | **ENC1.B**       |                        |
+| 14 | M1.Z          | **general purpose**    |                       |                   |                  |                  |                  |                  |                  |                        |
+| 15 | _not exposed_ | general purpose        |                       |                   |                  | **CAN0.RX**      | I2C.SCL          |                  |                  |                        |
+| 16 | _not exposed_ | general purpose        |                       |                   |                  | **CAN0.TX**      | I2C.SDA          |                  |                  |                        |
 
 
 (*) ODrive v3.5 and later <br>
