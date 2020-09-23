@@ -170,6 +170,8 @@ Apart from (incremental) quadrature encoders, ODrive also supports absolute SPI 
 
 Some of these chips come with evaluation boards that can simplify mounting the chips to your motor. For our purposes if you are using an evaluation board you should select the settings for 3.3v.
 
+**Note:** The AMT23x family has a hardware bug that causes them to not properly tristate the MISO line. To use them with ODrive, there are two workarounds. One is to sequence power to the encoder a second or two after the ODrive recieves power. This allows 1 encoder to be used without issue. Another solution is to add a tristate buffer, such as the 74AHC1G125SE, on the MISO line between the ODrive and each AMT23x encoder. Tie the enable pin on the buffer to the CS line for the respective encoder. This allows for more than one AMT23x encoder, or one AMT23x and another SPI encoder, to be used at the same time.
+
 1. Connect the encoder to the ODrive's SPI interface:
    
     - The encoder's SCK, MISO (aka "DATA" on CUI encoders), GND and 3.3V should connect to the ODrive pins with the same label.
