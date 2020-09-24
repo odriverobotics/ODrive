@@ -23,15 +23,18 @@ app.config.update(
 )
 CORS(app, support_credentials=True)
 socketio = SocketIO(app, cors_allowed_origins="*")
-odrives = []
 odriveDict = {}
 configDict = {}
 
 def get_all_odrives():
-    odrives = []
-    odrives.append(odrive.find_any()) #, find_multiple=100)
-    #odrives.append(odrive.find_any())
-    return odrives
+    globals()['odrives'].append(odrive.find_any())
+
+def handle_disconnect():
+    print("lost odrive, attempting to reconnect")
+    globals()['odrives'] = []
+    while len(globals()['odrives']) == 0:
+        get_all_odrives()
+    print("reconnected!")
 
 @socketio.on('enableSampling')
 def enableSampling(message):
@@ -68,7 +71,7 @@ def home():
 
 @app.route('/api/odrives', methods=["GET"])
 def api_odrives():
-    for (index, odrv) in enumerate(odrives):
+    for (index, odrv) in enumerate(globals()['odrives']):
         odriveDict["odrive" + str(index)] = dictFromRO(odrv)
     response = jsonify(odriveDict)
     response.headers.add('Access-Control-Allow-Origin', '*')
@@ -81,13 +84,13 @@ def api_property():
     # ?key=odrive0&key=axis0&key=config...
     if request.method == 'PUT':
         reqDict = request.args.to_dict(flat=False)
-        postVal(odrives, reqDict["key"], reqDict["val"][0], reqDict["type"][0])
+        postVal(globals()['odrives'], reqDict["key"], reqDict["val"][0], reqDict["type"][0])
         response = make_response(jsonify({"message": "success"}), 200)
         return response
     else:
         print("request: " + str(request))
         reqDict = request.args.to_dict(flat=False)
-        response = jsonify(getVal(odrives, reqDict["key"]))
+        response = jsonify(getVal(globals()['odrives'], reqDict["key"]))
         response.headers.add('Access-Control-Allow-Origin', '*')
         return response
 
@@ -96,7 +99,7 @@ def api_property():
 def api_function():
     # execute a function from the odrive config dict?
     reqDict = request.args.to_dict(flat=False)
-    callFunc(odrives, reqDict["key"])
+    callFunc(globals()['odrives'], reqDict["key"])
     response = make_response(jsonify({"message": "success"}), 200)
     return response
 
@@ -168,7 +171,7 @@ def getSampledData(vars):
 
 def callFunc(odrives, keyList):
     index = int(''.join([char for char in keyList.pop(0) if char.isnumeric()]))
-    RO = odrives[index]
+    RO = globals()['odrives'][index]
     for key in keyList:
         RO = RO._remote_attributes[key]
     if isinstance(RO, fibre.remote_object.RemoteFunction):
@@ -187,14 +190,17 @@ if __name__ == "__main__":
     import odrive.utils # for dump_errors()
     import fibre
 
+    globals()['odrives'] = []
 
     # busy wait for connection
-    while len(odrives) == 0:
+    while len(globals()['odrives']) == 0:
         print("looking for odrives...")
-        odrives = get_all_odrives()
+        get_all_odrives()
+    for odrv in odrives: 
+        odrv.__channel__._channel_broken.subscribe(lambda: handle_disconnect())
 
     print("found odrives!")
 
-    for (index, odrv) in enumerate(odrives):
+    for (index, odrv) in enumerate(globals()['odrives']):
         odriveDict["odrive" + str(index)] = dictFromRO(odrv)
     socketio.run(app, host='0.0.0.0', port=5000)

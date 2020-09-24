@@ -299,6 +299,11 @@ export default {
       this.choiceMade = false;
     },
   },
+  beforeDestroy() {
+    for (const page of Object.keys(pages)) {
+      pages[page].choiceMade = false;
+    }
+  },
 };
 </script>
 
