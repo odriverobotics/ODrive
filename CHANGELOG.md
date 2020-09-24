@@ -2,6 +2,7 @@
 Please add a note of your changes below this heading if you make a Pull Request.
 ### Added
 * [Mechanical brake support](docs/mechanical-brakes.md)
+* Support for UART1 on GPIO3 and GPIO4. UART0 (on GPIO1/2) and UART1 can currently not be enabled at the same time.
 
 ### Changed
 

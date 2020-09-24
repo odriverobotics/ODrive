@@ -99,13 +99,24 @@ interfaces:
 
           enable_uart0:
             type: bool
-            doc: Enables/disables UART0. You also need to set the corresponding GPIOs to GPIO_MODE_UART0. Changing this requires a reboot.
-          enable_uart1: {type: bool, doc: Not supported on ODrive v3.x.}
+            brief: Enables/disables UART0.
+            doc: |
+              You also need to set the corresponding GPIOs to GPIO_MODE_UART0.
+              Refer to [interfaces](interfaces.md) to see which pins support UART0.
+              Changing this requires a reboot.
+          enable_uart0:
+            type: bool
+            brief: Enables/disables UART1.
+            doc: |
+              You also need to set the corresponding GPIOs to GPIO_MODE_UART1.
+              Refer to [interfaces](interfaces.md) to see which pins support UART1.
+              Changing this requires a reboot.
           enable_uart2: {type: bool, doc: Not supported on ODrive v3.x.}
           uart0_baudrate:
             type: uint32
+            unit: baud/s
+            brief: Defines the baudrate used on the UART interface.
             doc: |
-              Defines the baudrate used on the UART interface.
               Some baudrates will have a small timing error due to hardware limitations.
 
               Here's an (incomplete) list of baudrates for ODrive v3.x:
@@ -127,7 +138,11 @@ interfaces:
 
               For more information refer to Section 30.3.4 and Table 142 (the column with f_PCLK = 42 MHz) in the
               [STM datasheet](https://www.st.com/content/ccc/resource/technical/document/reference_manual/3d/6d/5a/66/b4/99/40/d4/DM00031020.pdf/files/DM00031020.pdf/jcr:content/translations/en.DM00031020.pdf).
-          uart1_baudrate: {type: uint32, doc: Not supported on ODrive v3.x.}
+          uart1_baudrate:
+            type: uint32
+            unit: baud/s
+            brief: Defines the baudrate used on the UART interface.
+            doc: See `uart0_baudrate` for details.
           uart2_baudrate: {type: uint32, doc: Not supported on ODrive v3.x.}
           enable_can0:
             type: bool

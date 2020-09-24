@@ -41,8 +41,15 @@ size_t oscilloscope_pos = 0;
 void init_communication(void) {
     printf("hi!\r\n");
 
+    // Dual UART operation not supported yet
+    if (odrv.config_.enable_uart0 && odrv.config_.enable_uart1) {
+        odrv.misconfigured_ = true;
+    }
+
     if (odrv.config_.enable_uart0 && uart0) {
-        start_uart_server();
+        start_uart_server(uart0);
+    } else if (odrv.config_.enable_uart1 && uart1) {
+        start_uart_server(uart1);
     }
 
     start_usb_server();

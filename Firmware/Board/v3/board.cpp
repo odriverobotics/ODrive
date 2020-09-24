@@ -21,7 +21,7 @@ Stm32SpiArbiter spi3_arbiter{&hspi3};
 Stm32SpiArbiter& ext_spi_arbiter = spi3_arbiter;
 
 UART_HandleTypeDef* uart0 = &huart4;
-UART_HandleTypeDef* uart1 = nullptr; // TODO: this could be supported in ODrive v3.6 (or similar) using STM32's USART2
+UART_HandleTypeDef* uart1 = &huart2; // TODO: this could be supported in ODrive v3.6 (or similar) using STM32's USART2
 UART_HandleTypeDef* uart2 = nullptr;
 
 Drv8301 m0_gate_driver{
@@ -219,14 +219,14 @@ std::array<GpioFunction, 3> alternate_functions[GPIO_COUNT] = {
 #if HW_VERSION_MINOR >= 3
     /* GPIO1: */ {{{ODrive::GPIO_MODE_UART0, GPIO_AF8_UART4}, {ODrive::GPIO_MODE_PWM0, GPIO_AF2_TIM5}}},
     /* GPIO2: */ {{{ODrive::GPIO_MODE_UART0, GPIO_AF8_UART4}, {ODrive::GPIO_MODE_PWM0, GPIO_AF2_TIM5}}},
-    /* GPIO3: */ {{{ODrive::GPIO_MODE_PWM0, GPIO_AF2_TIM5}}},
+    /* GPIO3: */ {{{ODrive::GPIO_MODE_UART1, GPIO_AF7_USART2}, {ODrive::GPIO_MODE_PWM0, GPIO_AF2_TIM5}}},
 #else
     /* GPIO1: */ {{}},
     /* GPIO2: */ {{}},
     /* GPIO3: */ {{}},
 #endif
 
-    /* GPIO4: */ {{{ODrive::GPIO_MODE_PWM0, GPIO_AF2_TIM5}}},
+    /* GPIO4: */ {{{ODrive::GPIO_MODE_UART1, GPIO_AF7_USART2}, {ODrive::GPIO_MODE_PWM0, GPIO_AF2_TIM5}}},
     /* GPIO5: */ {{}},
     /* GPIO6: */ {{}},
     /* GPIO7: */ {{}},
@@ -273,13 +273,18 @@ bool board_init() {
     MX_SPI3_Init();
     MX_ADC3_Init();
     MX_TIM2_Init();
-    MX_UART4_Init();
     MX_TIM5_Init();
     MX_TIM13_Init();
 
-    HAL_UART_DeInit(uart0);
-    uart0->Init.BaudRate = odrv.config_.uart0_baudrate;
-    HAL_UART_Init(uart0);
+    if (odrv.config_.enable_uart0) {
+        uart0->Init.BaudRate = odrv.config_.uart0_baudrate;
+        MX_UART4_Init();
+    }
+
+    if (odrv.config_.enable_uart1) {
+        uart1->Init.BaudRate = odrv.config_.uart1_baudrate;
+        MX_USART2_UART_Init();
+    }
 
     if (odrv.config_.enable_i2c0) {
         // Set up the direction GPIO as input
