@@ -1,0 +1,97 @@
+{
+  "name": "Config",
+  "component": "Dashboard",
+  "id": "deadb33f",
+  "controls": [
+    {
+      "controlType": "CtrlNumeric",
+      "path": "odrives.odrive0.axis0.motor.config.current_lim"
+    },
+    {
+      "controlType": "CtrlNumeric",
+      "path": "odrives.odrive0.axis0.controller.config.vel_limit"
+    },
+    {
+      "controlType": "CtrlNumeric",
+      "path": "odrives.odrive0.config.brake_resistance"
+    },
+    {
+      "controlType": "CtrlNumeric",
+      "path": "odrives.odrive0.axis0.motor.config.pole_pairs"
+    },
+    {
+      "controlType": "CtrlNumeric",
+      "path": "odrives.odrive0.axis0.encoder.config.cpr"
+    },
+    {
+      "controlType": "CtrlSlider",
+      "path": "odrives.odrive0.axis0.controller.config.pos_gain"
+    },
+    {
+      "controlType": "CtrlSlider",
+      "path": "odrives.odrive0.axis0.controller.config.vel_gain"
+    },
+    {
+      "controlType": "CtrlSlider",
+      "path": "odrives.odrive0.axis0.controller.config.vel_integrator_gain"
+    },
+    {
+      "controlType": "CtrlFunction",
+      "path": "odrives.odrive0.axis0.clear_errors"
+    },
+    {
+      "controlType": "CtrlFunction",
+      "path": "odrives.odrive0.save_configuration"
+    }
+  ],
+  "actions": [
+    {
+      "id": "407aea0a-2b16-4d77-8043-2c43b27e4810",
+      "path": "odrives.odrive0.axis0.requested_state",
+      "val": 3
+    },
+    {
+      "id": "91b2c1b3-f1bb-4473-9e7a-dd89615cecc9",
+      "path": "odrives.odrive0.axis0.requested_state",
+      "val": 8
+    },
+    {
+      "id": "ad0ebe2a-a495-4e33-9cb8-b2ab17dc3a83",
+      "path": "odrives.odrive0.axis0.controller.input_pos",
+      "val": 0
+    },
+    {
+      "id": "d7abba09-b0aa-438a-8220-6126e467004e",
+      "path": "odrives.odrive0.axis0.controller.input_pos",
+      "val": 50000
+    }
+  ],
+  "plots": [
+    {
+      "name": "65a2768d-e61e-4dd5-bf80-dba153838f74",
+      "vars": [
+        {
+          "path": "odrives.odrive0.axis0.controller.input_pos",
+          "color": "#195bd7"
+        },
+        {
+          "path": "odrives.odrive0.axis0.encoder.pos_estimate",
+          "color": "#d6941a"
+        }
+      ]
+    },
+    {
+      "name": "d9ee2474-3e53-408f-9eab-1656342eb531",
+      "vars": [
+        {
+          "path": "odrives.odrive0.axis0.controller.vel_setpoint",
+          "color": "#195bd7"
+        },
+        {
+          "path": "odrives.odrive0.axis0.encoder.vel_estimate",
+          "color": "#d6941a"
+        }
+      ]
+    }
+  ]
+}

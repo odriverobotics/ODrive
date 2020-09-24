@@ -1,5 +1,7 @@
 import Vue from 'vue';
 import Vuex from 'vuex';
+import ConfigDashOld from "./assets/dashboards/Config_0_4_12.json";
+import ConfigDashNew from "./assets/dashboards/Config_0_5_1.json";
 const axios = require('axios');
 import * as socketio from "./comms/socketio";
 //import { v4 as uuidv4 } from "uuid";
@@ -19,10 +21,6 @@ export default new Vuex.Store({
                 name: "Start",
                 component: "Start",
             },
-            {
-                name: "Wizard",
-                component: "Wizard",
-            },
             //{ name: "Config", id: uuidv4(), component: "Dashboard", controls: [], actions: [], plots: [] }
         ],
         timeSampleStart: 0,
@@ -31,6 +29,7 @@ export default new Vuex.Store({
         newData: false,
         sampling: false,
         currentDash: "Start",
+        firstConn: false,
     },
     // mutations are functions that change the data
     mutations: {
@@ -39,6 +38,50 @@ export default new Vuex.Store({
         },
         setOdrives(state, odrives) {
             state.odrives = odrives;
+            if (state.firstConn == false) {
+                // first time we're getting odrive data, add correct config page
+                let ConfigDash;
+                if (state.odrives.odrive0.fw_version_minor.val == "5") {
+                    ConfigDash = ConfigDashNew;
+                }
+                else if (state.odrives.odrive0.fw_version_minor.val == "4") {
+                    ConfigDash = ConfigDashOld;
+                }
+                else {
+                    ConfigDash = ConfigDashNew;
+                }
+                state.dashboards.push({
+                    name: "Wizard",
+                    component: "Wizard",
+                });
+                state.dashboards.push(ConfigDash);
+                // plots will have variables associated, add them to sampled variables list
+                for (const plot of ConfigDash.plots) {
+                    console.log(plot);
+                    for (const plotVar of plot.vars) {
+                        console.log(plotVar);
+                        //addsampledprop(path);
+                        let path = plotVar.path;
+                        if (!(path in state.sampledProperties)) {
+                            let newPath = path.split('.');
+                            newPath.splice(0, 1);
+                            state.sampledProperties.push(newPath.join('.'));
+                            state.propSamples[newPath.join('.')] = [];
+                            console.log(state.propSamples);
+                        }
+                        for (const path of state.sampledProperties) {
+                            console.log(path);
+                        }
+                        socketio.sendEvent({
+                            type: 'sampledVarNames',
+                            data: {
+                                paths: state.sampledProperties
+                            }
+                        });
+                    }
+                }
+            }
+            state.firstConn = true;
         },
         setOdriveConfigs(state, odriveConfigs) {
             state.odriveConfigs = odriveConfigs;

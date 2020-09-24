@@ -59,7 +59,6 @@ import Axis from "./components/Axis.vue";
 import Wizard from "./views/Wizard.vue"
 import * as socketio from "./comms/socketio";
 import { saveAs } from "file-saver";
-import ConfigDash from "./assets/dashboards/Config.json";
 import { v4 as uuidv4 } from "uuid";
 
 //let propSamplePeriod = 100; //sampling period for properties in ms
@@ -135,7 +134,6 @@ export default {
       setTimeout(() => {
         this.updateOdrives();
       }, 1000);
-
       //console.log("updating data...");
     },
     addDash() {
@@ -231,16 +229,6 @@ export default {
     this.$store.dispatch("setServerAddress", "http://127.0.0.1:5000");
     // connect to socketio on server for sampled data
     this.updateOdrives();
-    this.dashboards.push(ConfigDash);
-    // plots will have variables associated, add them to sampled variables list
-    for (const plot of ConfigDash.plots) {
-      console.log(plot);
-      for (const plotVar of plot.vars) {
-        console.log(plotVar);
-        //addsampledprop(path);
-        this.$store.commit("addSampledProperty", plotVar.path);
-      }
-    }
   },
 };
 </script>
