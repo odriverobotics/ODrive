@@ -23,17 +23,22 @@ app.config.update(
 )
 CORS(app, support_credentials=True)
 socketio = SocketIO(app, cors_allowed_origins="*")
-odriveDict = {}
 configDict = {}
 
 def get_all_odrives():
+    globals()['odrives'] = []
     globals()['odrives'].append(odrive.find_any())
+    globals()['odrives'][0].__channel__._channel_broken.subscribe(lambda: handle_disconnect())
 
 def handle_disconnect():
     print("lost odrive, attempting to reconnect")
+    # synchronizing flag for connect/disconnect
+    globals()['inUse'] = True
     globals()['odrives'] = []
     while len(globals()['odrives']) == 0:
         get_all_odrives()
+        time.sleep(0.1)
+    globals()['inUse'] = False
     print("reconnected!")
 
 @socketio.on('enableSampling')
@@ -71,10 +76,19 @@ def home():
 
 @app.route('/api/odrives', methods=["GET"])
 def api_odrives():
+    print(len(globals()['odrives']))
+    print("inUse = " + str(globals()['inUse']))
+    # spinlock
+    while globals()['inUse']:
+        time.sleep(0.1)
+
+    globals()['inUse'] = True
+    odriveDict = {}
     for (index, odrv) in enumerate(globals()['odrives']):
         odriveDict["odrive" + str(index)] = dictFromRO(odrv)
     response = jsonify(odriveDict)
     response.headers.add('Access-Control-Allow-Origin', '*')
+    globals()['inUse'] = False
     return response
 
 
@@ -82,25 +96,38 @@ def api_odrives():
 def api_property():
     # here, reqDict["key"] is a list of keys from the query
     # ?key=odrive0&key=axis0&key=config...
+    print("inUse = " + str(globals()['inUse']))
+    while globals()['inUse']:
+        time.sleep(0.1)
+
+    globals()['inUse'] = True
     if request.method == 'PUT':
         reqDict = request.args.to_dict(flat=False)
         postVal(globals()['odrives'], reqDict["key"], reqDict["val"][0], reqDict["type"][0])
         response = make_response(jsonify({"message": "success"}), 200)
+        globals()['inUse'] = False
         return response
     else:
         print("request: " + str(request))
         reqDict = request.args.to_dict(flat=False)
         response = jsonify(getVal(globals()['odrives'], reqDict["key"]))
         response.headers.add('Access-Control-Allow-Origin', '*')
+        globals()['inUse'] = False
         return response
 
 
 @app.route('/api/function', methods=["PUT"])
 def api_function():
     # execute a function from the odrive config dict?
+    print("inUse = " + str(globals()['inUse']))
+    while globals()['inUse']:
+        time.sleep(0.1)
+
+    globals()['inUse'] = True
     reqDict = request.args.to_dict(flat=False)
     callFunc(globals()['odrives'], reqDict["key"])
     response = make_response(jsonify({"message": "success"}), 200)
+    globals()['inUse'] = False
     return response
 
 
@@ -171,11 +198,14 @@ def getSampledData(vars):
 
 def callFunc(odrives, keyList):
     index = int(''.join([char for char in keyList.pop(0) if char.isnumeric()]))
-    RO = globals()['odrives'][index]
+    RO = odrives[index]
     for key in keyList:
         RO = RO._remote_attributes[key]
     if isinstance(RO, fibre.remote_object.RemoteFunction):
-        RO.__call__()
+        try:
+            RO.__call__()
+        except:
+            print("fcn call failed")
 
 if __name__ == "__main__":
     print("args from python:")
@@ -191,16 +221,15 @@ if __name__ == "__main__":
     import fibre
 
     globals()['odrives'] = []
+    # spinlock
+    globals()['inUse'] = False
 
     # busy wait for connection
     while len(globals()['odrives']) == 0:
         print("looking for odrives...")
         get_all_odrives()
-    for odrv in odrives: 
-        odrv.__channel__._channel_broken.subscribe(lambda: handle_disconnect())
 
     print("found odrives!")
+    globals()['connected'] = True
 
-    for (index, odrv) in enumerate(globals()['odrives']):
-        odriveDict["odrive" + str(index)] = dictFromRO(odrv)
     socketio.run(app, host='0.0.0.0', port=5000)
