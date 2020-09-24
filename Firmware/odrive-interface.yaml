@@ -417,7 +417,7 @@ interfaces:
               vel: float32
           sensorless_ramp: LockinConfig
           general_lockin: LockinConfig
-          can: CANConfig
+          can: CanConfig
         gate_driver:
           c_name: gate_driver_exported_
           c_is_class: False
@@ -482,7 +482,7 @@ interfaces:
       finish_on_distance: bool
       finish_on_enc_idx: bool
 
-  ODrive.Axis.CANConfig:
+  ODrive.Axis.CanConfig:
     c_is_class: False
     attributes:
       node_id: uint32
