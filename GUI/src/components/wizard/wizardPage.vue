@@ -54,7 +54,7 @@ import wizardMotor from "./choices/wizardMotor.vue";
 import wizardEncoderIncremental from "./choices/wizardEncoderIncremental.vue";
 import wizardEncoderIncrementalIndex from "./choices/wizardEncoderIncrementalIndex.vue";
 import wizardEnd from "./choices/wizardEnd.vue";
-import wizardMotorMeasure from "./page_components/wizardMotorMeasure.vue";
+import wizardMotorCal from "./page_components/wizardMotorCal.vue";
 import wizardEncoderCal from "./page_components/wizardEncoderCal.vue";
 import wizardCalStatus from "./page_components/wizardCalStatus.vue";
 import wizardBrake from "./choices/wizardBrake.vue";
@@ -81,7 +81,7 @@ export default {
     wizardEncoderIncremental,
     wizardEncoderIncrementalIndex,
     wizardEnd,
-    wizardMotorMeasure,
+    wizardMotorCal,
     wizardEncoderCal,
     wizardCalStatus,
     wizardBrake,

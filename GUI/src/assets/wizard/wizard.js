@@ -152,7 +152,7 @@ export let pages = {
         ],
         pageComponents: [
             {
-                component: "wizardMotorMeasure",
+                component: "wizardMotorCal",
                 id: 0,
                 data: {
                     axis: "axis0",
@@ -541,7 +541,7 @@ export let pages = {
         ],
         pageComponents: [
             {
-                component: "wizardMotorMeasure",
+                component: "wizardMotorCal",
                 id: 0,
                 data: {
                     axis: "axis1",

@@ -9,7 +9,7 @@ import odriveEnums from "../../../assets/odriveEnums.json";
 import { putVal } from "../../../odrive_utils.js"
 
 export default {
-  name: "wizardMotorMeasure",
+  name: "wizardMotorCal",
   props: {
     data: Object,
     calibrating: Boolean,

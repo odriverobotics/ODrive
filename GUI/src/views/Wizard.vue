@@ -228,17 +228,24 @@ export default {
       }
 
       // ugly, but a special case.
-      // for motors, wait for calibration to finish before giving the green light
-      if (
-        e.choice != "ODrive D5065" &&
-        e.choice != "ODrive D6374" &&
-        e.choice != "Other motor" &&
-        e.choice != "CUI AMT102V" &&
-        e.choice != "Hall Effect" &&
-        e.choice != "Incremental" &&
-        e.choice != "IncrementalIndex"
-      ) {
-        this.choiceMade = true;
+      // for motors, wait for calibration to finish before giving the green light unless motor.is_calibrated == true
+      // for encoders, wait for calibration to finish unless encoder.is_ready == true
+      this.choiceMade = true;
+      if (e.choice == "ODrive D5065" || e.choice == "ODrive D6374" || e.choice == "Other motor") {
+        let axis;
+        if (this.currentStep == pages.Motor_0) axis = "axis0";
+        if (this.currentStep == pages.Motor_1) axis = "axis1";
+        if (getVal("odrive0." + axis + ".motor.is_calibrated") == "False") {
+          this.choiceMade = false;
+        }
+      }
+      if (e.choice == "CUI AMT102V" || e.choice == "Hall Effect" || e.choice == "Incremental" || e.choice == "IncrementalIndex") {
+        let axis;
+        if (this.currentStep == pages.Encoder_0) axis = "axis0";
+        if (this.currentStep == pages.Encoder_1) axis = "axis1";
+        if (getVal("odrive0." + axis + ".encoder.is_ready") == "False") {
+          this.choiceMade = false;
+        }
       }
       console.log(JSON.parse(JSON.stringify(this.wizardConfig)));
     },
