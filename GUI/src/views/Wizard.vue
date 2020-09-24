@@ -7,8 +7,7 @@
           v-for="page in wizardPages"
           :key="page.title"
           class="wizard-link"
-          v-bind:class="{'active-link': currentStep == page}"
-          @click="currentStep = page; choiceMade = false; calStatus = undefined;"
+          v-bind:class="{'active-link': currentStep == page, 'finished-page': page.choiceMade}"
         >{{page.link}}</span>
       </div>
       <div class="wizard-page">
@@ -247,10 +246,12 @@ export default {
           this.choiceMade = false;
         }
       }
+      this.currentStep.choiceMade = this.choiceMade;
       console.log(JSON.parse(JSON.stringify(this.wizardConfig)));
     },
     undoChoice(e) {
       this.choiceMade = false;
+      this.currentStep.choiceMade = this.choiceMade;
       this.nullConfig(this.wizardConfig, e.configStub);
       console.log(JSON.parse(JSON.stringify(this.wizardConfig)));
     },
@@ -325,7 +326,6 @@ export default {
 
 .wizard-link {
   margin: 0.2rem;
-  cursor: pointer;
 }
 
 .active-link {
@@ -391,5 +391,9 @@ export default {
   to {
     opacity: 1;
   }
+}
+
+.finished-page {
+  color: green;
 }
 </style>

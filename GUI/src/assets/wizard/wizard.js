@@ -16,6 +16,7 @@ export let pages = {
         next: "Brake",
         back: "ODrive",
         nextTooltip: "Make a choice!",
+        choiceMade: false,
         choices: [
             {
                 component: "wizardChoice",
@@ -50,6 +51,7 @@ export let pages = {
         next: "Motor_0",
         back: "ODrive",
         nextTooltip: "Make a choice!",
+        choiceMade: false,
         choices: [
             {
                 component: "wizardBrake",
@@ -87,6 +89,7 @@ export let pages = {
         nextTooltip: "ODrive needs to know the inductance and resistance of your motor in order to control it.\
                         Click the Calibrate Motor button to start the measurement process. The motor will beep\
                         during calibration.",
+        choiceMade: false,
         choices: [
             {
                 component: "wizardChoice",
@@ -179,6 +182,7 @@ export let pages = {
         nextTooltip: "ODrive needs to know the relation between the encoder position and motor position in order to function. \
                         Click the Calibrate Encoder button to start the measurement process. The motor will slowly rotate back \
                         and forth during calibration.",
+        choiceMade: false,
         choices: [
             {
                 component: "wizardChoice",
@@ -277,9 +281,10 @@ export let pages = {
         title: "Control mode for Axis 0",
         link: "Control Modes 0",
         component: "wizardPage",
-        next: "Input_0",
+        next: "Misc_0",
         back: "Encoder_0",
         nextTooltip: "Make a choice!",
+        choiceMade: false,
         choices: [
             {
                 component: "wizardChoice",
@@ -365,6 +370,7 @@ export let pages = {
         customComponents: [],
         pageComponents: [],
     },
+    /*
     Input_0: {
         title: "Input mode selection for Axis 0",
         link: "Input Modes 0",
@@ -372,6 +378,7 @@ export let pages = {
         next: "Misc_0",
         back: "Control_0",
         nextTooltip: "Make a choice!",
+        choiceMade: false,
         choices: [
             {
                 component: "wizardChoice",
@@ -445,13 +452,15 @@ export let pages = {
         ],
         pageComponents: [],
     },
+    */
     Misc_0: {
         title: "Finishing touches for Axis 0",
         link: "Misc 0",
         component: "wizardPage",
         next: "Motor_1",
-        back: "Encoder_0",
+        back: "Control_0",
         nextTooltip: "Make a choice!",
+        choiceMade: false,
         choices: [
             {
                 component: "wizardMisc",
@@ -476,6 +485,7 @@ export let pages = {
         nextTooltip: "ODrive needs to know the inductance and resistance of your motor in order to control it.\
                         Click the Calibrate Motor button to start the measurement process. The motor will beep\
                         during calibration.",
+        choiceMade: false,
         choices: [
             {
                 component: "wizardChoice",
@@ -568,6 +578,7 @@ export let pages = {
         nextTooltip: "ODrive needs to know the relation between the encoder position and motor position in order to function. \
                         Click the Calibrate Encoder button to start the measurement process. The motor will slowly rotate back \
                         and forth during calibration.",
+        choiceMade: false,
         choices: [
             {
                 component: "wizardChoice",
@@ -666,9 +677,10 @@ export let pages = {
         title: "Control mode for Axis 1",
         link: "Control Modes 1",
         component: "wizardPage",
-        next: "Input_1",
+        next: "Misc_1",
         back: "Encoder_1",
         nextTooltip: "Make a choice!",
+        choiceMade: false,
         choices: [
             {
                 component: "wizardChoice",
@@ -754,6 +766,7 @@ export let pages = {
         customComponents: [],
         pageComponents: [],
     },
+    /*
     Input_1: {
         title: "Input mode selection for Axis 1",
         link: "Input Modes 1",
@@ -761,6 +774,7 @@ export let pages = {
         next: "Misc_1",
         back: "Control_1",
         nextTooltip: "Make a choice!",
+        choiceMade: false,
         choices: [
             {
                 component: "wizardChoice",
@@ -834,13 +848,15 @@ export let pages = {
         ],
         pageComponents: [],
     },
+    */
     Misc_1: {
         title: "Finishing touches for Axis 1",
         link: "Misc 1",
         component: "wizardPage",
         next: "End",
-        back: "Input_1",
+        back: "Control_1",
         nextTooltip: "Make a choice!",
+        choiceMade: false,
         choices: [
             {
                 component: "wizardMisc",
@@ -862,6 +878,7 @@ export let pages = {
         component: "wizardPage",
         next: "End",
         back: "Misc_1",
+        choiceMade: false,
         choices: [
             {
                 component: "wizardEnd",
@@ -869,7 +886,7 @@ export let pages = {
                 title: null,
                 requirements: [],
                 hooks: [],
-                tooltip: "Old config values are on the left, new config values are on the right",
+                tooltip: "Old config values are on the left, new config values are on the right in green",
                 altTooltip: null,
             }
         ],
