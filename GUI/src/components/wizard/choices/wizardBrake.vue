@@ -1,5 +1,5 @@
 <template>
-  <div class="card wizard-choice" v-bind:class="{'choice-inactive': !allowed}">
+  <div class="card wizard-choice" :class="{'choice-inactive': !allowed}">
     <div class="left">
       <span>Brake resistor value =</span>
       <input type="number" v-on:change="setBR" placeholder="Change Me!" />

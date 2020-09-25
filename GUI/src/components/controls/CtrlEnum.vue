@@ -5,7 +5,7 @@
     <div class="right">
       <!-- <input v-if="writeAccess" type="number" v-on:change="putVal" /> -->
       <select class="ctrl-enum" v-model="selected" @change="putVal">
-          <option v-for="option in options" v-bind:key="option.value" v-bind:value="option.value">
+          <option v-for="option in options" :key="option.value" :value="option.value">
               {{ option.text }}
           </option>
       </select>
@@ -98,5 +98,6 @@ input {
     border: none;
     border-bottom: 1px solid grey;
     background-color: var(--fg-color);
+    text-align-last: right;
 }
 </style>

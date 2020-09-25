@@ -7,7 +7,7 @@
           v-for="page in wizardPages"
           :key="page.title"
           class="wizard-link"
-          v-bind:class="{'active-link': currentStep == page, 'finished-page': page.choiceMade}"
+          :class="{'active-link': currentStep == page, 'finished-page': page.choiceMade}"
         >{{page.link}}</span>
       </div>
       <div class="wizard-page">
@@ -29,7 +29,7 @@
           <button class="wizard-button card" @click="finish">Finish</button>
           <button
             class="wizard-button card"
-            v-bind:class="{'next-green': choiceMade}"
+            :class="{'next-green': choiceMade}"
             v-tooltip.right="{
               content: currentStep.nextTooltip,
               class: 'tooltip-custom tooltip-other-custom fade-in',

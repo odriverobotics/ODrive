@@ -1,5 +1,5 @@
 <template>
-  <div class="card wizard-choice" v-bind:class="{'choice-inactive': !allowed}">
+  <div class="card wizard-choice" :class="{'choice-inactive': !allowed}">
     <div class="left">
       <span>counts per revolution = </span>
       <input type="number" v-on:change="setCPR" placeholder="Change Me!" />

@@ -10,15 +10,15 @@
       -->
       <template v-for="choice in choices">
         <component
-          v-bind:class="{chosen: selectedChoice == choice.title, unchosen: selectedChoice != choice.title, inactive: !requirementsMet(choice.requirements, config)}"
-          v-bind:is="choice.component"
-          v-bind:data="choice.data"
-          v-bind:config="config"
-          v-bind:axis="axis"
-          v-bind:title="choice.title"
-          v-bind:selected="selectedChoice == choice.title"
-          v-bind:hooks="choice.hooks"
-          v-bind:allowed="requirementsMet(choice.requirements, config)"
+          :class="{chosen: selectedChoice == choice.title, unchosen: selectedChoice != choice.title, inactive: !requirementsMet(choice.requirements, config)}"
+          :is="choice.component"
+          :data="choice.data"
+          :config="config"
+          :axis="axis"
+          :title="choice.title"
+          :selected="selectedChoice == choice.title"
+          :hooks="choice.hooks"
+          :allowed="requirementsMet(choice.requirements, config)"
           v-tooltip.top="{
             content: requirementsMet(choice.requirements, config) ? choice.tooltip : choice.altTooltip,
             class: 'tooltip-custom tooltip-other-custom fade-in',
@@ -35,11 +35,11 @@
     <div class="page-components">
       <template v-for="pageComponent in pageComponents">
         <component
-          v-bind:is="pageComponent.component"
-          v-bind:data="pageComponent.data"
-          v-bind:key="pageComponent.id"
-          v-bind:calibrating="calibrating"
-          v-bind:calStatus="calStatus"
+          :is="pageComponent.component"
+          :data="pageComponent.data"
+          :key="pageComponent.id"
+          :calibrating="calibrating"
+          :calStatus="calStatus"
           v-on:page-comp-event="pageCompEvent"
         />
       </template>

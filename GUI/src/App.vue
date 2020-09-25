@@ -5,7 +5,7 @@
       <button
         class="dash-button"
         @click="startsample"
-        v-bind:class="[{active: sampling === true}]"
+        :class="[{active: sampling === true}]"
       >start sampling</button>
       <button class="dash-button" @click="stopsample">stop sampling</button>
       <button class="dash-button" @click="exportDash">export dash</button>
@@ -22,8 +22,8 @@
       </button>
       <button
         v-for="dash in dashboards"
-        v-bind:key="dash.id"
-        v-bind:class="['dash-button', { active: currentDash === dash.name}]"
+        :key="dash.id"
+        :class="['dash-button', { active: currentDash === dash.name}]"
         v-on:click.self="changeDash(dash.name)"
         v-on:dblclick="changeDashName(dash.id)"
       >
@@ -40,14 +40,14 @@
 
     <!-- PAGE CONTENT -->
     <component
-      v-bind:is="currentDashName"
-      v-bind:odrives="odrives"
-      v-bind:dash="dash"
+      :is="currentDashName"
+      :odrives="odrives"
+      :dash="dash"
     ></component>
 
     <!-- FOOTER -->
     <div class="footer">
-      <Axis v-for="axis in axes" v-bind:key="axis.name" v-bind:axis="axis" v-bind:odrives="odrives"></Axis>
+      <Axis v-for="axis in axes" :key="axis.name" :axis="axis" :odrives="odrives"></Axis>
     </div>
   </div>
 </template>

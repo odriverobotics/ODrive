@@ -1,10 +1,10 @@
 <template>
-  <div class="card" v-bind:class="{'choice-inactive': !allowed}">
+  <div class="card" :class="{'choice-inactive': !allowed}">
     <div class="diff" v-for="diff in configDiffs" :key="diff.path">
       <span class="diff-path">{{diff.path}}: </span>
       <span class="diff-old">{{diff.oldVal}}</span>
       <span class="diff-seperator"> ⮕ </span>
-      <span v-bind:class="{'diff-new': diff.oldVal != diff.newVal, 'diff-same': diff.oldVal == diff.newVal}">{{diff.newVal}}</span>
+      <span :class="{'diff-new': diff.oldVal != diff.newVal, 'diff-same': diff.oldVal == diff.newVal}">{{diff.newVal}}</span>
     </div>
     <button class="wizard-button card" @click="applyConfig">Apply</button>
   </div>

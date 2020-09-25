@@ -7,7 +7,7 @@
       To set up your ODrive, connect it and power it up.
     </div>
     <div class="connected-container">
-      <input type="text" v-bind:class="{ notConnected: notConnected, connected: connected}" v-on:change="setUrl" :value="serverAddress">
+      <input type="text" :class="{ notConnected: notConnected, connected: connected}" v-on:change="setUrl" :value="serverAddress">
     </div>
   </div>
 </template>

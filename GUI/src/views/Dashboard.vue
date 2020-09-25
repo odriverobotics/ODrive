@@ -9,8 +9,8 @@
         </div>
         <div class="param-tree">
         <json-view
-          v-bind:data="odriveConfigs"
-          v-bind:rootKey="'odrives'"
+          :data="odriveConfigs"
+          :rootKey="'odrives'"
           v-on:selected="addVarToElement"
         />
         </div>
@@ -88,166 +88,166 @@ let odriveEnums = {
   // axis requested state
   requested_state: [
     {
-      text: "AXIS_STATE_UNDEFINED",
+      text: "Undefined",
       value: 0,
     },
     {
-      text: "AXIS_STATE_IDLE",
+      text: "Idle",
       value: 1,
     },
     {
-      text: "AXIS_STATE_STARTUP_SEQUENCE",
+      text: "Starup Sequence",
       value: 2,
     },
     {
-      text: "AXIS_STATE_FULL_CALIBRATION_SEQUENCE",
+      text: "Full Calibration Sequence",
       value: 3,
     },
     {
-      text: "AXIS_STATE_MOTOR_CALIBRATION",
+      text: "Motor Calibration",
       value: 4,
     },
     {
-      text: "AXIS_STATE_SENSORLESS_CONTROL",
+      text: "Sensorless Control",
       value: 5,
     },
     {
-      text: "AXIS_STATE_ENCODER_INDEX_SEARCH",
+      text: "Encoder Index Search",
       value: 6,
     },
     {
-      text: "AXIS_STATE_ENCODER_OFFSET_CALIBRATION",
+      text: "Encoder Offset Calibration",
       value: 7,
     },
     {
-      text: "AXIS_STATE_CLOSED_LOOP_CONTROL",
+      text: "Closed Loop Control",
       value: 8,
     },
     {
-      text: "AXIS_STATE_LOCKIN_SPIN",
+      text: "Lockin Spin",
       value: 9,
     },
     {
-      text: "AXIS_STATE_ENCODER_DIR_FIND",
+      text: "Encoder Direction Find",
       value: 10,
     },
     {
-      text: "AXIS_STATE_HOMING",
+      text: "Homing",
       value: 11,
     }
   ],
   current_state: [
     {
-      text: "AXIS_STATE_UNDEFINED",
+      text: "Undefined",
       value: 0,
     },
     {
-      text: "AXIS_STATE_IDLE",
+      text: "Idle",
       value: 1,
     },
     {
-      text: "AXIS_STATE_STARTUP_SEQUENCE",
+      text: "Starup Sequence",
       value: 2,
     },
     {
-      text: "AXIS_STATE_FULL_CALIBRATION_SEQUENCE",
+      text: "Full Calibration Sequence",
       value: 3,
     },
     {
-      text: "AXIS_STATE_MOTOR_CALIBRATION",
+      text: "Motor Calibration",
       value: 4,
     },
     {
-      text: "AXIS_STATE_SENSORLESS_CONTROL",
+      text: "Sensorless Control",
       value: 5,
     },
     {
-      text: "AXIS_STATE_ENCODER_INDEX_SEARCH",
+      text: "Encoder Index Search",
       value: 6,
     },
     {
-      text: "AXIS_STATE_ENCODER_OFFSET_CALIBRATION",
+      text: "Encoder Offset Calibration",
       value: 7,
     },
     {
-      text: "AXIS_STATE_CLOSED_LOOP_CONTROL",
+      text: "Closed Loop Control",
       value: 8,
     },
     {
-      text: "AXIS_STATE_LOCKIN_SPIN",
+      text: "Lockin Spin",
       value: 9,
     },
     {
-      text: "AXIS_STATE_ENCODER_DIR_FIND",
+      text: "Encoder Direction Find",
       value: 10,
     },
     {
-      text: "AXIS_STATE_HOMING",
+      text: "Homing",
       value: 11,
     }
   ],
   // encoder mode
   mode: [
     {
-      text: "ENCODER_MODE_INCREMENTAL",
+      text: "Incremental",
       value: 0,
     },
     {
-      text: "ENCODER_MODE_HALL",
+      text: "Hall Effect",
       value: 1,
     },
     {
-      text: "ENCODER_MODE_SINCOS",
+      text: "Sine Cosine",
       value:  2,
     },
     {
-      text: "ENCODER_MODE_SPI_ABS_CUI",
+      text: "CUI Absolute",
       value: 256,
     },
     {
-      text: "ENCODER_MODE_SPI_ABS_AMS",
+      text: "AMS Absolute",
       value: 257,
     },
     {
-      text: "ENCODER_MODE_SPI_ABS_AEAT",
+      text: "AEAT Absolute",
       value: 258,
     },
     {
-      text: "ENCODER_MODE_SPI_ABS_RLS",
+      text: "RLS Absolute",
       value: 259,
     },
   ],
   // motor type
   motor_type: [
     {
-      text: "MOTOR_TYPE_HIGH_CURRENT",
+      text: "High Current",
       value: 0,
     },
     {
-      text: "MOTOR_TYPE_GIMBAL",
+      text: "Gimbal",
       value: 2,
     },
     {
-      text: "MOTOR_TYPE_ACIM",
+      text: "Induction",
       value: 3,
     },
   ],
   // controller control mode
   control_mode: [
     {
-      text: "CONTROL_MODE_VOLTAGE_CONTROL",
+      text: "Voltage Control",
       value: 0,
     },
     {
-      text: "CONTROL_MODE_TORQUE_CONTROL",
+      text: "Torque Control",
       value: 1,
     },
     {
-      text: "CONTROL_MODE_VELOCITY_CONTROL",
+      text: "Velocity Control",
       value: 2,
     },
     {
-      text: "CONTROL_MODE_POSITION_CONTROL",
+      text: "Position Control",
       value: 3,
     },
   ]

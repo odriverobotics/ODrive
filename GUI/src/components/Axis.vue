@@ -2,22 +2,22 @@
   <div
     class="axis"
     @click.self="showError = !showError;"
-    v-bind:class="{ noError: !error, error: error}"
+    :class="{ noError: !error, error: error}"
   >
     {{ axis.name }}
     <div v-show="showError" class="error-popup card" @click.self="showError = !showError">
       <clear-errors :data="{axis: axis.name.split('.')[1]}"/>
       axis:
-      <span v-bind:class="{ noError: !axisError, error: axisError}">{{axisErrorMsg}}</span>
+      <span :class="{ noError: !axisError, error: axisError}">{{axisErrorMsg}}</span>
       <br />motor:
-      <span v-bind:class="{ noError: !motorError, error: motorError}">{{motorErrorMsg}}</span>
+      <span :class="{ noError: !motorError, error: motorError}">{{motorErrorMsg}}</span>
       <br />encoder:
       <span
-        v-bind:class="{ noError: !encoderError, error: encoderError}"
+        :class="{ noError: !encoderError, error: encoderError}"
       >{{encoderErrorMsg}}</span>
       <br />controller:
       <span
-        v-bind:class="{ noError: !controllerError, error: controllerError}"
+        :class="{ noError: !controllerError, error: controllerError}"
       >{{controllerErrorMsg}}</span>
     </div>
   </div>

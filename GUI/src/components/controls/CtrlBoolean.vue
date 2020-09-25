@@ -8,7 +8,7 @@
         class="ctrlInput"
         v-if="writeAccess"
         type="checkbox"
-        v-bind:value="value"
+        :value="value"
         @click="putVal"
       />
     </div>

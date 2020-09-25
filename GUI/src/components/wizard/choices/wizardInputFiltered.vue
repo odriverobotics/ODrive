@@ -1,5 +1,5 @@
 <template>
-  <div class="card wizard-motor-custom wizard-choice" v-bind:class="{'choice-inactive': !allowed}">
+  <div class="card wizard-motor-custom wizard-choice" :class="{'choice-inactive': !allowed}">
     <div class="left">
       <span>Input filter bandwidth =</span>
       <input type="number" v-on:change="setBandwidth" :placeholder="bandwidth" />
