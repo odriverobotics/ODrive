@@ -7,11 +7,13 @@
           <button class="close-button" @click="hideTree">X</button>
           Parameters
         </div>
+        <div class="param-tree">
         <json-view
           v-bind:data="odriveConfigs"
           v-bind:rootKey="'odrives'"
           v-on:selected="addVarToElement"
         />
+        </div>
       </div>
     </div>
     <div class="dashboard_container">
@@ -262,15 +264,17 @@ export default {
 
 .dropdown {
   position: absolute;
-  padding: var(--top-height) 0;
+  padding: 0 0;
   display: inline-block;
 }
 
 .dropdown-content {
   position: absolute;
   z-index: 1;
-  padding: var(--top-height) 0;
-  max-height: 90vh;
+}
+
+.param-tree {
   overflow-y: scroll;
+  max-height: 85vh;
 }
 </style>
