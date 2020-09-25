@@ -234,7 +234,6 @@ export default {
 </script>
 
 <style>
-@import url("https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;700&family=Roboto:wght@400;700&display=swap");
 @import "./assets/styles/vars.css";
 @import "./assets/styles/style.css";
 
