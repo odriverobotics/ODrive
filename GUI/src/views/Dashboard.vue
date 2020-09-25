@@ -24,6 +24,7 @@
             :key="index + '-control'"
             :path="control.path"
             :name="control.name"
+            :options="control.options"
             :odrives="odrives"
             :dashID="dash.id"
           />
@@ -69,6 +70,7 @@ import CtrlBoolean from "../components/controls/CtrlBoolean.vue";
 import CtrlNumeric from "../components/controls/CtrlNumeric.vue";
 import CtrlFunction from "../components/controls/CtrlFunction.vue";
 import CtrlSlider from "../components/controls/CtrlSlider.vue";
+import CtrlEnum from "../components/controls/CtrlEnum.vue";
 import Plot from "../components/plots/Plot.vue";
 import Action from "../components/actions/Action.vue";
 import { JSONView } from "vue-json-component";
@@ -82,6 +84,175 @@ let plotColors = [
   "#d5241a", // red
 ];
 
+let odriveEnums = {
+  // axis requested state
+  requested_state: [
+    {
+      text: "AXIS_STATE_UNDEFINED",
+      value: 0,
+    },
+    {
+      text: "AXIS_STATE_IDLE",
+      value: 1,
+    },
+    {
+      text: "AXIS_STATE_STARTUP_SEQUENCE",
+      value: 2,
+    },
+    {
+      text: "AXIS_STATE_FULL_CALIBRATION_SEQUENCE",
+      value: 3,
+    },
+    {
+      text: "AXIS_STATE_MOTOR_CALIBRATION",
+      value: 4,
+    },
+    {
+      text: "AXIS_STATE_SENSORLESS_CONTROL",
+      value: 5,
+    },
+    {
+      text: "AXIS_STATE_ENCODER_INDEX_SEARCH",
+      value: 6,
+    },
+    {
+      text: "AXIS_STATE_ENCODER_OFFSET_CALIBRATION",
+      value: 7,
+    },
+    {
+      text: "AXIS_STATE_CLOSED_LOOP_CONTROL",
+      value: 8,
+    },
+    {
+      text: "AXIS_STATE_LOCKIN_SPIN",
+      value: 9,
+    },
+    {
+      text: "AXIS_STATE_ENCODER_DIR_FIND",
+      value: 10,
+    },
+    {
+      text: "AXIS_STATE_HOMING",
+      value: 11,
+    }
+  ],
+  current_state: [
+    {
+      text: "AXIS_STATE_UNDEFINED",
+      value: 0,
+    },
+    {
+      text: "AXIS_STATE_IDLE",
+      value: 1,
+    },
+    {
+      text: "AXIS_STATE_STARTUP_SEQUENCE",
+      value: 2,
+    },
+    {
+      text: "AXIS_STATE_FULL_CALIBRATION_SEQUENCE",
+      value: 3,
+    },
+    {
+      text: "AXIS_STATE_MOTOR_CALIBRATION",
+      value: 4,
+    },
+    {
+      text: "AXIS_STATE_SENSORLESS_CONTROL",
+      value: 5,
+    },
+    {
+      text: "AXIS_STATE_ENCODER_INDEX_SEARCH",
+      value: 6,
+    },
+    {
+      text: "AXIS_STATE_ENCODER_OFFSET_CALIBRATION",
+      value: 7,
+    },
+    {
+      text: "AXIS_STATE_CLOSED_LOOP_CONTROL",
+      value: 8,
+    },
+    {
+      text: "AXIS_STATE_LOCKIN_SPIN",
+      value: 9,
+    },
+    {
+      text: "AXIS_STATE_ENCODER_DIR_FIND",
+      value: 10,
+    },
+    {
+      text: "AXIS_STATE_HOMING",
+      value: 11,
+    }
+  ],
+  // encoder mode
+  mode: [
+    {
+      text: "ENCODER_MODE_INCREMENTAL",
+      value: 0,
+    },
+    {
+      text: "ENCODER_MODE_HALL",
+      value: 1,
+    },
+    {
+      text: "ENCODER_MODE_SINCOS",
+      value:  2,
+    },
+    {
+      text: "ENCODER_MODE_SPI_ABS_CUI",
+      value: 256,
+    },
+    {
+      text: "ENCODER_MODE_SPI_ABS_AMS",
+      value: 257,
+    },
+    {
+      text: "ENCODER_MODE_SPI_ABS_AEAT",
+      value: 258,
+    },
+    {
+      text: "ENCODER_MODE_SPI_ABS_RLS",
+      value: 259,
+    },
+  ],
+  // motor type
+  motor_type: [
+    {
+      text: "MOTOR_TYPE_HIGH_CURRENT",
+      value: 0,
+    },
+    {
+      text: "MOTOR_TYPE_GIMBAL",
+      value: 2,
+    },
+    {
+      text: "MOTOR_TYPE_ACIM",
+      value: 3,
+    },
+  ],
+  // controller control mode
+  control_mode: [
+    {
+      text: "CONTROL_MODE_VOLTAGE_CONTROL",
+      value: 0,
+    },
+    {
+      text: "CONTROL_MODE_TORQUE_CONTROL",
+      value: 1,
+    },
+    {
+      text: "CONTROL_MODE_VELOCITY_CONTROL",
+      value: 2,
+    },
+    {
+      text: "CONTROL_MODE_POSITION_CONTROL",
+      value: 3,
+    },
+  ]
+}
+
 export default {
   name: "Dashboard",
   components: {
@@ -89,6 +260,7 @@ export default {
     CtrlNumeric,
     CtrlFunction,
     CtrlSlider,
+    CtrlEnum,
     Plot,
     Action,
     "json-view": JSONView,
@@ -133,6 +305,7 @@ export default {
       //when the parameter tree is open and a parameter is clicked,
       //add the clicked parameter to the list of controls for the
       //current dashboard
+              console.log(e);
       switch (this.addCompType) {
         case "control":
           switch (typeof e.value) {
@@ -144,10 +317,19 @@ export default {
               //this.$store.commit("addSampledProperty", e.path);
               break;
             case "number":
-              this.dash.controls.push({
-                controlType: "CtrlNumeric",
-                path: e.path,
-              });
+              if (Object.keys(odriveEnums).includes(e.key)){
+                this.dash.controls.push({
+                  controlType: "CtrlEnum",
+                  path: e.path,
+                  options: odriveEnums[e.key],
+                })
+              }
+              else {
+                this.dash.controls.push({
+                  controlType: "CtrlNumeric",
+                  path: e.path,
+                });
+              }
               //this.$store.commit("addSampledProperty", e.path);
               break;
             case "string":
