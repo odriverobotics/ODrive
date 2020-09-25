@@ -3,6 +3,8 @@
 module.exports = {
     pluginOptions: {
         electronBuilder: {
+            //preload: 'src/preload.js',
+            nodeIntegration: true,
             builderOptions: {
                 "productName": "ODriveGUI",
                 "asar": false,

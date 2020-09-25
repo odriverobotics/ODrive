@@ -9,6 +9,10 @@
     <div class="connected-container">
       <input type="text" :class="{ notConnected: notConnected, connected: connected}" v-on:change="setUrl" :value="serverAddress">
     </div>
+    <button class="show-msg-button" @click="showServerMessages = !showServerMessages;">Having Trouble? Click here for debug output</button>
+    <div class="server-msgs" v-if="showServerMessages">
+      <div class="server-msg" v-for="(msg, index) in serverMessages" :key="msg + index">{{msg}}</div>
+    </div>
   </div>
 </template>
 
@@ -17,6 +21,11 @@
 export default {
   name: 'Home',
   components: {
+  },
+  data() {
+    return {
+      showServerMessages: false,
+    }
   },
   computed: {
     connected() {
@@ -27,6 +36,15 @@ export default {
     },
     serverAddress() {
       return this.$store.state.odriveServerAddress;
+    },
+    serverMessages() {
+      if (this.$store.state.serverOutput.length >= 10) {
+        let len = this.$store.state.serverOutput.length;
+        return this.$store.state.serverOutput.slice(len-10,len);
+      }
+      else {
+        return this.$store.state.serverOutput;
+      }
     }
   },
   methods: {
@@ -85,5 +103,19 @@ input:focus {
 
 .notConnected {
   border-bottom: 1px solid red;
+}
+
+.show-msg-button {
+  border: none;
+  background-color: var(--bg-color);
+  margin-top: 0.5rem;
+}
+
+.server-msgs {
+  margin-top: 2rem;
+}
+
+.server-msg {
+  font-family: "Roboto Mono", monospace;
 }
 </style>

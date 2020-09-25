@@ -1,6 +1,6 @@
 'use strict'
 
-import { app, protocol, BrowserWindow } from 'electron'
+import { app, protocol, BrowserWindow, ipcMain } from 'electron'
 import { createProtocol } from 'vue-cli-plugin-electron-builder/lib'
 import installExtension, { VUEJS_DEVTOOLS } from 'electron-devtools-installer'
 const isDevelopment = process.env.NODE_ENV !== 'production'
@@ -38,28 +38,7 @@ function getPyCmd() {
 }
 
 function createWindow() {
-  // Spawn the python server
-  let scriptFilename = path.join(app.getAppPath(), '../server', 'odrive_server.py');
-  const args = process.argv;
-  let effectiveCommand = [];
-  effectiveCommand.push(scriptFilename);
-  if (app.isPackaged === true) {
-    for (const arg of args.slice(1)) {
-      effectiveCommand.push(arg);
-    }
-  }
-  else {
-    for (const arg of args.slice(2)) {
-      effectiveCommand.push(arg);
-    }
-  }
-  var python = spawn(getPyCmd(), effectiveCommand);
-  python.stdout.on('data',function(data) {
-    console.log(data.toString('utf8'));
-  });
-  python.stderr.on('data',function(data) {
-    console.log(data.toString('utf8'));
-  });
+  
   // Create the browser window.
   win = new BrowserWindow({
     width: 800,
@@ -67,7 +46,8 @@ function createWindow() {
     webPreferences: {
       // Use pluginOptions.nodeIntegration, leave this alone
       // See nklayman.github.io/vue-cli-plugin-electron-builder/guide/security.html#node-integration for more info
-      nodeIntegration: process.env.ELECTRON_NODE_INTEGRATION
+      nodeIntegration: process.env.ELECTRON_NODE_INTEGRATION,
+      //preload: path.join(__dirname, 'preload.js')
     },
     icon: path.join(__static, 'icon.png')
   })
@@ -124,6 +104,30 @@ app.on('ready', async () => {
     }
   }
   createWindow()
+  // Spawn the python server
+  let scriptFilename = path.join(app.getAppPath(), '../server', 'odrive_server.py');
+  const args = process.argv;
+  let effectiveCommand = [];
+  effectiveCommand.push(scriptFilename);
+  if (app.isPackaged === true) {
+    for (const arg of args.slice(1)) {
+      effectiveCommand.push(arg);
+    }
+  }
+  else {
+    for (const arg of args.slice(2)) {
+      effectiveCommand.push(arg);
+    }
+  }
+  var python = spawn(getPyCmd(), effectiveCommand);
+  python.stdout.on('data',function(data) {
+    console.log(data.toString('utf8'));
+    win.webContents.send('server-stdout', String(data.toString('utf8')));
+  });
+  python.stderr.on('data',function(data) {
+    console.log(data.toString('utf8'));
+    win.webContents.send('server-stderr', String(data.toString('utf8')));
+  });
 })
 
 // Exit cleanly on request from parent process in development mode.

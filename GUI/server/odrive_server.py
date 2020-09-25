@@ -76,8 +76,6 @@ def home():
 
 @app.route('/api/odrives', methods=["GET"])
 def api_odrives():
-    print(len(globals()['odrives']))
-    print("inUse = " + str(globals()['inUse']))
     # spinlock
     while globals()['inUse']:
         time.sleep(0.1)
@@ -189,7 +187,7 @@ def getSampledData(vars):
     samples = {}
     for path in vars["paths"]:
         keys = path.split('.')
-        samples[path] = getVal(odrives, keys)
+        samples[path] = getVal(globals()['odrives'], keys)
 
     return samples
 
@@ -208,8 +206,10 @@ def callFunc(odrives, keyList):
             print("fcn call failed")
 
 if __name__ == "__main__":
-    print("args from python:")
-    print(sys.argv[1:])
+    # sleep to allow time for background.js to register event callbacks for stdout,stderr
+    time.sleep(3)
+    print("args from python: " + str(sys.argv[1:0]))
+    #print(sys.argv[1:])
     # try to import based on command line arguments or config file
 
     for optPath in sys.argv[1:]:

@@ -6,6 +6,9 @@ const axios = require('axios');
 import * as socketio from "./comms/socketio";
 //import { v4 as uuidv4 } from "uuid";
 
+
+
+
 Vue.use(Vuex);
 
 export default new Vuex.Store({
@@ -16,6 +19,7 @@ export default new Vuex.Store({
         axes: Array,
         odriveServerAddress: String,
         serverConnected: Boolean,
+        serverOutput: [],
         dashboards: [
             {
                 name: "Start",
@@ -146,6 +150,14 @@ export default new Vuex.Store({
                 state.propSamples["time"].splice(0, 1);
             }
             state.newData = true;
+        },
+        logServerMessage(state, payload) {
+            // payload is string
+            state.serverOutput.push(payload);
+            // cut off to 1000 lines
+            if (state.serverOutput.length > 1000) {
+                state.serverOutput.splice(0,1);
+            }
         },
         setServerStatus(state, val) {
             state.serverConnected = val;

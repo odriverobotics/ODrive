@@ -5,8 +5,10 @@
       <button
         class="dash-button"
         @click="startsample"
-        :class="[{active: sampling === true}]"
-      >start sampling</button>
+        :class="[{ active: sampling === true }]"
+      >
+        start sampling
+      </button>
       <button class="dash-button" @click="stopsample">stop sampling</button>
       <button class="dash-button" @click="exportDash">export dash</button>
       <button class="dash-button" @click="importDashWrapper">
@@ -15,23 +17,32 @@
           type="file"
           id="inputDash"
           ref="fileInput"
-          @change="importDashFile($event.target.files);$refs.fileInput.value=null"
+          @change="
+            importDashFile($event.target.files);
+            $refs.fileInput.value = null;
+          "
           value
-          style="display:none"
+          style="display: none"
         />
       </button>
       <button
         v-for="dash in dashboards"
         :key="dash.id"
-        :class="['dash-button', { active: currentDash === dash.name}]"
+        :class="['dash-button', { active: currentDash === dash.name }]"
         v-on:click.self="changeDash(dash.name)"
         v-on:dblclick="changeDashName(dash.id)"
       >
         <button
-          v-if="dash.name !== 'Start' && dash.name !== 'Config' && dash.name !== 'Wizard'"
+          v-if="
+            dash.name !== 'Start' &&
+            dash.name !== 'Config' &&
+            dash.name !== 'Wizard'
+          "
           class="close-button"
           v-on:click="deleteDash(dash.id)"
-        >X</button>
+        >
+          X
+        </button>
         {{ dash.name }}
       </button>
       <button class="dash-button dash-add" @click="addDash">+</button>
@@ -47,7 +58,12 @@
 
     <!-- FOOTER -->
     <div class="footer">
-      <Axis v-for="axis in axes" :key="axis.name" :axis="axis" :odrives="odrives"></Axis>
+      <Axis
+        v-for="axis in axes"
+        :key="axis.name"
+        :axis="axis"
+        :odrives="odrives"
+      ></Axis>
     </div>
   </div>
 </template>
@@ -56,12 +72,11 @@
 import Start from "./views/Start.vue";
 import Dashboard from "./views/Dashboard.vue";
 import Axis from "./components/Axis.vue";
-import Wizard from "./views/Wizard.vue"
+import Wizard from "./views/Wizard.vue";
 import * as socketio from "./comms/socketio";
 import { saveAs } from "file-saver";
 import { v4 as uuidv4 } from "uuid";
-
-//let propSamplePeriod = 100; //sampling period for properties in ms
+import { ipcRenderer } from "electron";
 
 export default {
   name: "App",
@@ -119,10 +134,10 @@ export default {
     },
     currentDash: function () {
       return this.$store.state.currentDash;
-    }
+    },
   },
   methods: {
-    changeDash(dashName){
+    changeDash(dashName) {
       console.log(dashName);
       this.$store.commit("setDash", dashName);
     },
@@ -229,6 +244,15 @@ export default {
     this.$store.dispatch("setServerAddress", "http://127.0.0.1:5000");
     // connect to socketio on server for sampled data
     this.updateOdrives();
+        // setup callbacks for ipcRenderer
+    ipcRenderer.on('server-stdout', (event, arg) => {
+      //console.log("SERVER STDOUT: " + arg); // prints "pong"
+      this.$store.commit('logServerMessage', arg);
+    });
+      ipcRenderer.on('server-stderr', (event, arg) => {
+      //console.log("SERVER STDERR: " + arg); // prints "pong"
+      this.$store.commit('logServerMessage', arg);
+    });
   },
 };
 </script>
