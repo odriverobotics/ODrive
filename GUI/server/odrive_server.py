@@ -1,29 +1,17 @@
 import sys
-import flask
 import os
-from flask import make_response, request, jsonify, session
-from flask_socketio import SocketIO, send, emit
-from flask_cors import CORS
 import json
 import time
 import argparse
-
+import socketio as sio
+import eventlet
 
 # interface for odrive GUI to get data from odrivetool
 
-#better handling of websockets
-# eventlet.monkey_patch()
-
-app = flask.Flask(__name__)
-app.config['SECRET_KEY'] = 'secret'
-app.config.update(
-    SESSION_COOKIE_SECURE=True,
-    SESSION_COOKIE_HTTPONLY=True,
-    SESSION_COOKIE_SAMESITE='None'
-)
-CORS(app, support_credentials=True)
-socketio = SocketIO(app, cors_allowed_origins="*")
-configDict = {}
+socketio = sio.Server(cors_allowed_origins='*')
+app = sio.WSGIApp(socketio, static_files={
+    '/': {'content_type': 'text/html', 'filename': 'index.html'}
+})
 
 def get_all_odrives():
     globals()['odrives'] = []
@@ -42,40 +30,35 @@ def handle_disconnect():
     print("reconnected!")
 
 @socketio.on('enableSampling')
-def enableSampling(message):
+def enableSampling(sid, message):
     print("sampling enabled")
-    session['samplingEnabled'] = True
-    emit('samplingEnabled')
+    globals()['samplingEnabled'] = True
+    socketio.emit('samplingEnabled')
 
 @socketio.on('stopSampling')
-def stopSampling(message):
-    session['samplingEnabled'] = False
-    emit('samplingDisabled')
+def stopSampling(sid, message):
+    globals()['samplingEnabled'] = False
+    socketio.emit('samplingDisabled')
 
 @socketio.on('sampledVarNames')
-def sampledVarNames(message):
-    session['sampledVars'] = message
-    print(session['sampledVars'])
+def sampledVarNames(sid, message):
+    globals()['sampledVars'] = message
+    print(globals()['sampledVars'])
 
 @socketio.on('startSampling')
-def sendSamples(message):
-    print(session['samplingEnabled'])
-    while session['samplingEnabled']:
-        emit('sampledData', json.dumps(getSampledData(session['sampledVars'])))
+def sendSamples(sid, message):
+    print(globals()['samplingEnabled'])
+    while globals()['samplingEnabled']:
+        socketio.emit('sampledData', json.dumps(getSampledData(globals()['sampledVars'])))
         time.sleep(0.02)
 
 @socketio.on('message')
-def handle_message(message):
+def handle_message(sid, message):
     print(message)
-    emit('response', 'hello from server!')
+    socketio.emit('response', 'hello from server!')
 
-@app.route('/', methods=['GET'])
-def home():
-    return "<h1>ODrive GUI Server</h1>"
-
-
-@app.route('/api/odrives', methods=["GET"])
-def api_odrives():
+@socketio.on('getODrives')
+def get_odrives(sid, data):
     # spinlock
     while globals()['inUse']:
         time.sleep(0.1)
@@ -84,50 +67,39 @@ def api_odrives():
     odriveDict = {}
     for (index, odrv) in enumerate(globals()['odrives']):
         odriveDict["odrive" + str(index)] = dictFromRO(odrv)
-    response = jsonify(odriveDict)
-    response.headers.add('Access-Control-Allow-Origin', '*')
     globals()['inUse'] = False
-    return response
+    socketio.emit('odrives', json.dumps(odriveDict))
 
-
-@app.route('/api/property', methods=["GET", "PUT"])
-def api_property():
-    # here, reqDict["key"] is a list of keys from the query
-    # ?key=odrive0&key=axis0&key=config...
-    print("inUse = " + str(globals()['inUse']))
+@socketio.on('getProperty')
+def get_property(sid, message):
+    # message is dict natively
+    # will be {"path": "odriveX.axisY.blah.blah"}
     while globals()['inUse']:
         time.sleep(0.1)
-
     globals()['inUse'] = True
-    if request.method == 'PUT':
-        reqDict = request.args.to_dict(flat=False)
-        postVal(globals()['odrives'], reqDict["key"], reqDict["val"][0], reqDict["type"][0])
-        response = make_response(jsonify({"message": "success"}), 200)
-        globals()['inUse'] = False
-        return response
-    else:
-        print("request: " + str(request))
-        reqDict = request.args.to_dict(flat=False)
-        response = jsonify(getVal(globals()['odrives'], reqDict["key"]))
-        response.headers.add('Access-Control-Allow-Origin', '*')
-        globals()['inUse'] = False
-        return response
+    val = getVal(globals()['odrives'], message["path"].split('.'))
+    socketio.emit('ODriveProperty', json.dumps({"path": message["path"], "val": val}))
+    globals()['inUse'] = False
 
-
-@app.route('/api/function', methods=["PUT"])
-def api_function():
-    # execute a function from the odrive config dict?
-    print("inUse = " + str(globals()['inUse']))
+@socketio.on('setProperty')
+def set_property(sid, message):
+    # message is {"path":, "val":, "type":}
     while globals()['inUse']:
         time.sleep(0.1)
-
     globals()['inUse'] = True
-    reqDict = request.args.to_dict(flat=False)
-    callFunc(globals()['odrives'], reqDict["key"])
-    response = make_response(jsonify({"message": "success"}), 200)
+    print("From setProperty event handler: " + str(message))
+    postVal(globals()['odrives'], message["path"].split('.'), message["val"], message["type"])
     globals()['inUse'] = False
-    return response
 
+@socketio.on('callFunction')
+def call_function(sid, message):
+    # message is {"path"}, no args yet (do we know which functions accept arguments from the odrive tree directly?)
+    while globals()['inUse']:
+        time.sleep(0.1)
+    globals()['inUse'] = True
+    print("From callFunction event handler: " + str(message))
+    callFunc(globals()['odrives'], message["path"].split('.'))
+    globals()['inUse'] = False
 
 def dictFromRO(RO):
     # create dict from an odrive RemoteObject that's suitable for sending as JSON
@@ -148,9 +120,6 @@ def dictFromRO(RO):
         else:
             returnDict[key] = RO._remote_attributes[key]
     return returnDict
-
-# set a value from a POST http request
-
 
 def postVal(odrives, keyList, value, argType):
     # expect a list of keys in the form of ["key1", "key2", "keyN"]
@@ -232,4 +201,5 @@ if __name__ == "__main__":
     print("found odrives!")
     globals()['connected'] = True
 
-    socketio.run(app, host='0.0.0.0', port=5000)
+    #socketio.run(app, host='0.0.0.0', port=5000)
+    eventlet.wsgi.server(eventlet.listen(('', 5000)), app)

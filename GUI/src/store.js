@@ -2,7 +2,6 @@ import Vue from 'vue';
 import Vuex from 'vuex';
 import ConfigDashOld from "./assets/dashboards/Config_0_4_12.json";
 import ConfigDashNew from "./assets/dashboards/Config_0_5_1.json";
-const axios = require('axios');
 import * as socketio from "./comms/socketio";
 //import { v4 as uuidv4 } from "uuid";
 
@@ -101,6 +100,7 @@ export default new Vuex.Store({
             // payload is {path, value}
             // 
             const createNestedObject = (odrive, path) => {
+                console.log("from createNestedObject " + path);
                 let ref = odrive;
                 let keys = path.split('.');
                 for (const key of keys) {
@@ -108,7 +108,7 @@ export default new Vuex.Store({
                 }
                 return ref;
             };
-            Vue.set(createNestedObject(state.odrives, payload.path), "val", payload.value);
+            Vue.set(createNestedObject(state.odrives, payload.path), "val", payload.val);
 
         },
         addSampledProperty(state, path) {
@@ -222,12 +222,9 @@ export default new Vuex.Store({
     },
     // actions trigger mutations
     actions: {
-        getOdrives(context) {
-            // grab ODrive JSON from odrive_server
-            axios.get(context.state.odriveServerAddress + '/api/odrives').then((response) => {
-                context.commit('setOdrives', JSON.parse(JSON.stringify(response.data)));
-                context.dispatch('getOdriveConfigs');
-                context.dispatch('getAxes');
+        getOdrives() {
+            socketio.sendEvent({
+                type: 'getODrives',
             });
         },
         getOdriveConfigs(context) {
@@ -295,6 +292,7 @@ export default new Vuex.Store({
                 callback: () => {
                     context.commit("setServerStatus", true);
                     console.log('connected to server');
+                    context.dispatch("getOdrives");
                 }
             });
             socketio.addEventListener({
@@ -318,6 +316,23 @@ export default new Vuex.Store({
                     socketio.sendEvent({
                         type: "startSampling"
                     });
+                }
+            });
+            socketio.addEventListener({
+                type: "odrives",
+                callback: odrives => {
+                    console.log("response from odrive socketio" + JSON.parse(odrives))
+                    context.commit('setOdrives', JSON.parse(odrives));
+                    context.dispatch('getOdriveConfigs');
+                    context.dispatch('getAxes');
+                }
+            });
+            // getVal event gets sent to server, server emits ODriveProperty event with path and val of property
+            socketio.addEventListener({
+                type: "ODriveProperty",
+                callback: retmsg => {
+                    // retmsg is {path, val}
+                    context.commit('updateOdriveProp', JSON.parse(retmsg));
                 }
             });
         }

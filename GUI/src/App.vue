@@ -76,7 +76,6 @@ import Wizard from "./views/Wizard.vue";
 import * as socketio from "./comms/socketio";
 import { saveAs } from "file-saver";
 import { v4 as uuidv4 } from "uuid";
-import { ipcRenderer } from "electron";
 
 export default {
   name: "App",
@@ -141,16 +140,16 @@ export default {
       console.log(dashName);
       this.$store.commit("setDash", dashName);
     },
-    updateOdrives() {
-      if (this.$store.state.serverConnected == true) {
+    //updateOdrives() {
+    //  if (this.$store.state.serverConnected == true) {
         //} && this.sampling == false) {
-        this.$store.dispatch("getOdrives");
-      }
-      setTimeout(() => {
-        this.updateOdrives();
-      }, 1000);
+    //    this.$store.dispatch("getOdrives");
+    //  }
+      //setTimeout(() => {
+      //  this.updateOdrives();
+      //}, 1000);
       //console.log("updating data...");
-    },
+    //},
     addDash() {
       let dashname = "Dashboard " + (this.dashboards.length - 2);
       this.dashboards.push({
@@ -243,16 +242,21 @@ export default {
 
     this.$store.dispatch("setServerAddress", "http://127.0.0.1:5000");
     // connect to socketio on server for sampled data
-    this.updateOdrives();
-        // setup callbacks for ipcRenderer
-    ipcRenderer.on('server-stdout', (event, arg) => {
-      //console.log("SERVER STDOUT: " + arg); // prints "pong"
-      this.$store.commit('logServerMessage', arg);
-    });
-      ipcRenderer.on('server-stderr', (event, arg) => {
-      //console.log("SERVER STDERR: " + arg); // prints "pong"
-      this.$store.commit('logServerMessage', arg);
-    });
+    //this.updateOdrives();
+
+    // to allow running as web app
+    import('electron').then((electron) => {
+      electron.ipcRenderer.on('server-stdout', (event, arg) => {
+        //console.log("SERVER STDOUT: " + arg); // prints "pong"
+        this.$store.commit('logServerMessage', arg);
+      });
+        electron.ipcRenderer.on('server-stderr', (event, arg) => {
+        //console.log("SERVER STDERR: " + arg); // prints "pong"
+        this.$store.commit('logServerMessage', arg);
+      });
+    }).catch((error) => {
+      console.log(error);
+    })
   },
 };
 </script>

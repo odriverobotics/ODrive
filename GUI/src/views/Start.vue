@@ -13,10 +13,13 @@
     <div class="server-msgs" v-if="showServerMessages">
       <div class="server-msg" v-for="(msg, index) in serverMessages" :key="msg + index">{{msg}}</div>
     </div>
+    <button @click="getParamTest">Get parameter</button>
+    <button @click="setParamTest">Set parameter</button>
   </div>
 </template>
 
 <script>
+import * as socketio from "../comms/socketio.js";
 
 export default {
   name: 'Home',
@@ -51,6 +54,19 @@ export default {
     setUrl(e) {
       console.log(e.target.value);
       this.$store.dispatch("setServerAddress", e.target.value);
+    },
+    getParamTest() {
+      // send getparam event, figure out what it looks like on the server side
+      socketio.sendEvent({
+        type: "getProperty",
+        data: {path: "odrive0.axis0.current_state"},
+      });
+    },
+    setParamTest() {
+      socketio.sendEvent({
+        type: "setProperty",
+        data: {path: "odrive0.axis0.requested_state", val: "8", type: "number"}
+      })
     }
   }
 }

@@ -1,5 +1,5 @@
 import store from "./store.js";
-const axios = require("axios");
+import * as socketio from "./comms/socketio.js";
 
 // helper functions and utilities for getting ODrive values
 
@@ -23,47 +23,19 @@ export function getReadonly(path) {
     return getParam(path + '.readonly');
 }
 
-// using axios, send an http request to change an ODrive value
 export function putVal(path, value) {
-    var params = new URLSearchParams();
-    let keys = path.split(".");
-    for (const key of keys) {
-        params.append("key", key);
-    }
-    params.append("val", value);
-    params.append("type", typeof value);
-    let request = {
-        params: params,
-    };
-    console.log(request);
-    axios.put(
-        store.state.odriveServerAddress + "/api/property",
-        null,
-        request
-    );
+    socketio.sendEvent({
+        type: "setProperty",
+        data: {path: path, val: value, type: typeof value}
+    })
 }
 
 // path is path to function, args is list of parameters
-export function callFcn(path, args) {
-    var params = new URLSearchParams();
-    let keys = path.split(".");
-    for (const key of keys) {
-        params.append("key", key);
-    }
-    if (args) {
-        for (const arg of args) {
-            params.append("arg", arg);
-        }
-    }
-    console.log(params.toString());
-    let request = {
-        params: params
-    };
-    axios.put(
-        store.state.odriveServerAddress + "/api/function",
-        null,
-        request
-    );
+export function callFcn(path, args = []) {
+    socketio.sendEvent({
+        type: "callFunction",
+        data: {path: path, args: args}
+    });
 }
 
 export function odriveMinorVersion(odrive) {

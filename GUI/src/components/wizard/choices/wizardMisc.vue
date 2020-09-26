@@ -145,6 +145,5 @@ input[type="number"] {
 
 .unit {
   font-family: "Roboto Mono", monospace;
-
 }
 </style>
