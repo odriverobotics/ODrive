@@ -63,7 +63,7 @@
     {
       "id": "d7abba09-b0aa-438a-8220-6126e467004e",
       "path": "odrives.odrive0.axis0.controller.input_pos",
-      "val": 50000
+      "val": 10
     }
   ],
   "plots": [

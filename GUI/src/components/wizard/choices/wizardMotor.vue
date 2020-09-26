@@ -10,11 +10,13 @@
     </div>
     <div class="left">
       <span>Phase Resistance =</span>
-      <span>{{" " + resistance}} R</span>
+      <span>{{" " + resistance}}</span>
+      <span class="unit">[Ohms]</span>
     </div>
     <div class="left">
       <span>Phase Inductace =</span>
-      <span>{{" " + inductance}} H</span>
+      <span>{{" " + inductance}}</span>
+      <span class="unit">[Henries]</span>
     </div>
     <span class="name">Other Motor</span>
   </div>
@@ -159,7 +161,7 @@ export default {
   margin: 2rem;
 }
 .left {
-  margin-left: auto;
+  margin-right: auto;
 }
 
 .name {
@@ -188,5 +190,9 @@ input[type="number"] {
 
 .name {
   text-align: center;
+}
+
+.unit {
+  font-family: "Roboto Mono", monospace;
 }
 </style>

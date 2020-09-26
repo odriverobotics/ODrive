@@ -3,12 +3,14 @@
     <div class="left">
       <span>Brake resistor value =</span>
       <input type="number" v-on:change="setBR" placeholder="Change Me!" />
-      <span> Ohms</span>
+      <span class="unit"> [{{unit}}] </span>
     </div>
   </div>
 </template>
 
 <script>
+import { getUnit } from '../../../odrive_utils.js';
+
 export default {
   name: "wizardBrake",
   props: {
@@ -19,6 +21,13 @@ export default {
     return {
       brake_resistance: undefined,
     };
+  },
+  computed: {
+    unit() {
+      // goal is to return "Ohms" from odriveUnits
+      let path = "odrive0.config.brake_resistance";
+      return getUnit(this.$store.state.odrives.odrive0,path);
+    },
   },
   methods: {
     setBR(e) {
@@ -67,5 +76,9 @@ input::-webkit-inner-spin-button {
 
 input[type="number"] {
   -moz-appearance: textfield; /* Firefox */
+}
+
+.unit {
+  font-family: "Roboto Mono", monospace;
 }
 </style>

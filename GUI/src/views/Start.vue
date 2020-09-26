@@ -9,7 +9,7 @@
     <div class="connected-container">
       <input type="text" :class="{ notConnected: notConnected, connected: connected}" v-on:change="setUrl" :value="serverAddress">
     </div>
-    <button class="show-msg-button" @click="showServerMessages = !showServerMessages;">Having Trouble? Click here for debug output</button>
+    <button class="show-msg-button" @click="showServerMessages = !showServerMessages;">Having trouble? Click here for debug output</button>
     <div class="server-msgs" v-if="showServerMessages">
       <div class="server-msg" v-for="(msg, index) in serverMessages" :key="msg + index">{{msg}}</div>
     </div>
@@ -109,10 +109,7 @@ input:focus {
   border: none;
   background-color: var(--bg-color);
   margin-top: 0.5rem;
-}
-
-.server-msgs {
-  margin-top: 2rem;
+  cursor: pointer;
 }
 
 .server-msg {

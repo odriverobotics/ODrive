@@ -413,6 +413,7 @@ export default {
 .controls {
   flex-grow: 1;
   border-right: 1px solid lightgrey;
+  overflow-y: scroll;
 }
 
 .add-button {

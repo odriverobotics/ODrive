@@ -3,16 +3,18 @@
     <div class="left">
       <span>Motor Velocity Limit =</span>
       <input type="number" v-on:change="setVelocityLimit" :placeholder="velocityLimit" />
+      <span class="unit">[{{velUnit}}]</span>
     </div>
     <div class="left">
       <span>Motor Current Limit =</span>
       <input type="number" v-on:change="setCurrentLimit" :placeholder="currentLimit" />
+      <span class="unit">[Amps]</span>
     </div>
   </div>
 </template>
 
 <script>
-import { getVal } from "../../../odrive_utils.js"
+import { getVal, getUnit } from "../../../odrive_utils.js"
 
 export default {
   name: "wizardMisc",
@@ -36,6 +38,10 @@ export default {
     currentLimit: function () {
       let path = "odrive0." + this.data.axis + ".motor.config.current_lim";
       return parseFloat(getVal(path));
+    },
+    velUnit() {
+      let path = "odrive0." + this.data.axis + ".controller.config.vel_limit";
+      return getUnit(this.$store.state.odrives.odrive0,path)
     },
   },
   methods: {
@@ -102,7 +108,7 @@ export default {
   margin: 2rem;
 }
 .left {
-  margin-left: auto;
+  margin-right: auto;
 }
 
 input {
@@ -135,5 +141,10 @@ input[type="number"] {
 
 .name {
   text-align: center;
+}
+
+.unit {
+  font-family: "Roboto Mono", monospace;
+
 }
 </style>
