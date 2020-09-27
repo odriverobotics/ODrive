@@ -56,3 +56,8 @@ ODrive\.files
 ODrive\.includes
 
 Firmware/Tests/bin/
+
+# GUI
+GUI/dist_electron
+GUI/node_modules
+GUI/build
