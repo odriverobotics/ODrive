@@ -1,8 +1,8 @@
 # Unreleased Features
 Please add a note of your changes below this heading if you make a Pull Request.
 
-# Release Candidate
-## [0.5.1] - Date TBD
+# Releases
+## [0.5.1] - 2020-09-27
 ### Added
 * Added motor `torque_constant`: units of torque are now [Nm] instead of just motor current.
 * [Motor thermistors support](docs/thermistors.md)
@@ -16,11 +16,11 @@ Please add a note of your changes below this heading if you make a Pull Request.
 * `axis.motor.get_inverter_temp()`, `axis.motor.inverter_temp_limit_lower` and `axis.motor.inverter_temp_limit_upper` have been moved to seperate fet thermistor object under `axis.fet_thermistor`. `get_inverter_temp()` function has been renamed to `temp` and is now a read-only property.
 * `axis.config.counts_per_step` is now `axis.config.turns_per_step`
 * Outputs of `axis.sensorless_estimator` are now in turns/s instead of electrical rad/s
+
+### Fixed
 * Fixed bug of high current during lockin-ramp caused by `motor::update()` expecting a torque command instead of current
 * Fixed bug where commanded velocity was extremely high just after sensorless ramp when using `input_mode` INPUT_MODE_VEL_RAMP caused by `vel_setpoint` and `axis.config.sensorless_ramp.vel` being in different units
 
-
-# Releases
 ## [0.5.0] - 2020-08-03
 ### Added
 * AC Induction Motor support.
