@@ -272,13 +272,11 @@ export default new Vuex.Store({
                 if ('axis0' in context.state.odrives[odrive]) {
                     axes.push({
                         name: `${odrive}.axis0`,
-                        ref: context.state.odrives[odrive]['axis0']
                     });
                 }
                 if ('axis1' in context.state.odrives[odrive]) {
                     axes.push({
                         name: `${odrive}.axis1`,
-                        ref: context.state.odrives[odrive]['axis1']
                     });
                 }
             }

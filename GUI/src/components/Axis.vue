@@ -4,9 +4,9 @@
     @click.self="showError = !showError;"
     :class="{ noError: !error, error: error}"
   >
-    {{ axis.name }}
+    {{ axis }}
     <div v-show="showError" class="error-popup card" @click.self="showError = !showError">
-      <clear-errors :data="{axis: axis.name.split('.')[1]}"/>
+      <clear-errors :data="{axis: axis.split('.')[1]}"/>
       axis:
       <span :class="{ noError: !axisError, error: axisError}">{{axisErrorMsg}}</span>
       <br />motor:
@@ -26,6 +26,7 @@
 <script>
 import odriveEnums from "../assets/odriveEnums.json";
 import clearErrors from "./clearErrors.vue";
+import { getVal } from "../odrive_utils.js";
 
 const axisErrors = {
   0x00000000: "AXIS_ERROR_NONE",
@@ -102,12 +103,16 @@ export default {
   data() {
     return {
       showError: false,
+      axisErr: undefined,
+      motorErr: undefined,
+      controllerErr: undefined,
+      encoderErr: undefined,
     };
   },
   computed: {
     axisErrorMsg() {
       let retMsg = "none";
-      let errCode = parseInt(this.axis.ref.error.val);
+      let errCode = this.axisErr;
 
       if (this.$store.state.currentDash == "Wizard") {
         errCode &= ~odriveEnums.AXIS_ERROR_MOTOR_FAILED;
@@ -133,7 +138,7 @@ export default {
     },
     motorErrorMsg() {
       let retMsg = "none";
-      let errCode = parseInt(this.axis.ref.motor.error.val);
+      let errCode = this.motorErr;
 
       if (this.$store.state.currentDash == "Wizard") {
         errCode &= ~odriveEnums.MOTOR_ERROR_PHASE_RESISTANCE_OUT_OF_RANGE;
@@ -158,7 +163,7 @@ export default {
     },
     encoderErrorMsg() {
       let retMsg = "none";
-      let errCode = parseInt(this.axis.ref.encoder.error.val);
+      let errCode = this.encoderErr;
 
       if (this.$store.state.currentDash == "Wizard") {
         errCode &= ~odriveEnums.ENCODER_ERROR_CPR_POLEPAIRS_MISMATCH;
@@ -183,7 +188,7 @@ export default {
     },
     controllerErrorMsg() {
       let retMsg = "none";
-      let errCode = parseInt(this.axis.ref.controller.error.val);
+      let errCode = this.controllerErr;
 
       if (errCode != 0) {
         // we got an error!
@@ -202,7 +207,7 @@ export default {
       return retMsg;
     },
     axisError() {
-      let errCode = parseInt(this.axis.ref.error.val)
+      let errCode = this.axisErr;
       if (this.$store.state.currentDash == "Wizard") {
         errCode &= ~odriveEnums.AXIS_ERROR_MOTOR_FAILED;
         errCode &= ~odriveEnums.AXIS_ERROR_ENCODER_FAILED;
@@ -210,7 +215,7 @@ export default {
       return errCode != 0;
     },
     motorError() {
-      let errCode = parseInt(this.axis.ref.motor.error.val);
+      let errCode = this.motorErr;
       if (this.$store.state.currentDash == "Wizard") {
         errCode &= ~odriveEnums.MOTOR_ERROR_PHASE_RESISTANCE_OUT_OF_RANGE;
         errCode &= ~odriveEnums.MOTOR_ERROR_PHASE_INDUCTANCE_OUT_OF_RANGE;
@@ -218,7 +223,7 @@ export default {
       return errCode != 0;
     },
     encoderError() {
-      let errCode = parseInt(this.axis.ref.encoder.error.val);
+      let errCode = this.encoderErr;
       if (this.$store.state.currentDash == "Wizard") {
         errCode &= ~odriveEnums.ENCODER_ERROR_CPR_POLEPAIRS_MISMATCH;
         errCode &= ~odriveEnums.ENCODER_ERROR_NO_RESPONSE;
@@ -226,13 +231,27 @@ export default {
       return errCode != 0;
     },
     controllerError() {
-      let errCode = parseInt(this.axis.ref.controller.error.val);
+      let errCode = this.controllerErr;
       return errCode != 0;
     },
     error() {
       return this.axisError || this.motorError || this.encoderError || this.controllerError;
     },
   },
+  created() {
+    // set up timeout loop for grabbing axis error values
+    let update = () => {
+      this.axisErr = getVal(this.axis + '.error');
+      this.motorErr = getVal(this.axis + '.motor.error');
+      this.controllerErr = getVal(this.axis + '.controller.error');
+      this.encoderErr = getVal(this.axis + '.encoder.error');
+      setTimeout(update, 1000);
+    }
+    update();
+    console.log(this.axis);
+    console.log(this.axisErr);
+    console.log(this.motorErr);
+  }
 };
 </script>
 

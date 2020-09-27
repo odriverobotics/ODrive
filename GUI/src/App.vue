@@ -61,7 +61,7 @@
       <Axis
         v-for="axis in axes"
         :key="axis.name"
-        :axis="axis"
+        :axis="axis.name"
         :odrives="odrives"
       ></Axis>
     </div>

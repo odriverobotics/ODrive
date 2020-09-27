@@ -20,7 +20,7 @@ app.config.update(
     SESSION_COOKIE_SAMESITE='None'
 )
 CORS(app, support_credentials=True)
-socketio = SocketIO(app, cors_allowed_origins="*")
+socketio = SocketIO(app, cors_allowed_origins="*", async_mode = "threading")
 
 def get_all_odrives():
     globals()['odrives'] = []
@@ -98,6 +98,8 @@ def set_property(message):
     globals()['inUse'] = True
     print("From setProperty event handler: " + str(message))
     postVal(globals()['odrives'], message["path"].split('.'), message["val"], message["type"])
+    val = getVal(globals()['odrives'], message["path"].split('.'))
+    emit('ODriveProperty', json.dumps({"path": message["path"], "val": val}))
     globals()['inUse'] = False
 
 @socketio.on('callFunction')

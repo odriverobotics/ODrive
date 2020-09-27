@@ -1,6 +1,6 @@
 # odrive_gui
 
-Python requirements: `pip install python-socketio eventlet odrive`
+Python requirements: `pip install flask flask_socketio flask_cors odrive`
 
 If the default odrive python package is not desired, the path to the modules can be passed as command line arguments.
 
