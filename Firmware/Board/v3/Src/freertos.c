@@ -61,6 +61,7 @@
 extern PCD_HandleTypeDef hpcd_USB_OTG_FS;
 int odrive_main(void);
 int load_configuration(void);
+int construct_objects(void);
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -85,14 +86,17 @@ osSemaphoreId sem_usb_irq;
 osSemaphoreId sem_uart_dma;
 osSemaphoreId sem_usb_rx;
 osSemaphoreId sem_usb_tx;
+osSemaphoreId sem_can;
 
 osThreadId usb_irq_thread;
+const uint32_t stack_size_usb_irq_thread = 2048; // Bytes
 
 // Place FreeRTOS heap in core coupled memory for better performance
 __attribute__((section(".ccmram")))
 uint8_t ucHeap[configTOTAL_HEAP_SIZE];
 /* USER CODE END Variables */
 osThreadId defaultTaskHandle;
+const uint32_t stack_size_default_task = 2048; // Bytes
 
 /* Private function prototypes -----------------------------------------------*/
 /* USER CODE BEGIN FunctionPrototypes */
@@ -148,7 +152,7 @@ void usb_deferred_interrupt_thread(void * ctx) {
 
 void init_deferred_interrupts(void) {
     // Start USB interrupt handler thread
-    osThreadDef(task_usb_pump, usb_deferred_interrupt_thread, osPriorityAboveNormal, 0, 512);
+    osThreadDef(task_usb_pump, usb_deferred_interrupt_thread, osPriorityAboveNormal, 0, stack_size_usb_irq_thread / sizeof(StackType_t));
     usb_irq_thread = osThreadCreate(osThread(task_usb_pump), NULL);
 }
 
@@ -187,10 +191,15 @@ void MX_FREERTOS_Init(void) {
   osSemaphoreDef(sem_usb_tx);
   sem_usb_tx = osSemaphoreCreate(osSemaphore(sem_usb_tx), 1);
 
+  osSemaphoreDef(sem_can);
+  sem_can = osSemaphoreCreate(osSemaphore(sem_can), 1);
+  osSemaphoreWait(sem_can, 0);
+
   init_deferred_interrupts();
 
   // Load persistent configuration (or defaults)
   load_configuration();
+  construct_objects();
   /* USER CODE END RTOS_SEMAPHORES */
 
   /* USER CODE BEGIN RTOS_TIMERS */
@@ -199,7 +208,7 @@ void MX_FREERTOS_Init(void) {
 
   /* Create the thread(s) */
   /* definition and creation of defaultTask */
-  osThreadDef(defaultTask, StartDefaultTask, osPriorityNormal, 0, 256);
+  osThreadDef(defaultTask, StartDefaultTask, osPriorityNormal, 0, stack_size_default_task / sizeof(StackType_t));
   defaultTaskHandle = osThreadCreate(osThread(defaultTask), NULL);
 
   /* USER CODE BEGIN RTOS_THREADS */

@@ -187,7 +187,7 @@ def discover_channels(path, serial_number, callback, cancellation_token, channel
     return True
 
   while not cancellation_token.is_set():
-    logger.debug("USB discover loop")
+    # logger.debug("USB discover loop")
     devices = usb.core.find(find_all=True, custom_match=device_matcher)
     for usb_device in devices:
       try:
@@ -200,14 +200,15 @@ def discover_channels(path, serial_number, callback, cancellation_token, channel
         channel.usb_device = usb_device # for debugging only
       except usb.core.USBError as ex:
         if ex.errno == 13:
-          logger.debug("USB device access denied. Did you set up your udev rules correctly?")
-          continue
+          # TODO: this is an ODrive specific message and should live outside of the fibre library
+          logger.warn("I found a USB device that looks like an ODrive (bus {}, device {}) but I can't access it. Try running `sudo odrivetool udev-setup`, then unplug and replug the device.".format(usb_device.bus, usb_device.address))
+          known_devices.append((usb_device.bus, usb_device.address))
         elif ex.errno == 16:
           logger.debug("USB device busy. I'll reset it and try again.")
           usb_device.reset()
           continue
         else:
-          logger.debug("USB device init failed. Ignoring this device. More info: " + traceback.format_exc())
+          logger.warn("USB device init failed (bus {}, device {}). Ignoring this device. More info: ".format(usb_device.bus, usb_device.address) + traceback.format_exc())
           known_devices.append((usb_device.bus, usb_device.address))
       else:
         known_devices.append((usb_device.bus, usb_device.address))

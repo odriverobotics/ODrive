@@ -1,55 +1,57 @@
 #ifndef __INTERFACE_CAN_HPP
 #define __INTERFACE_CAN_HPP
 
-#include "fibre/protocol.hpp"
-#include <stm32f4xx_hal.h>
 #include <cmsis_os.h>
+#include <stm32f4xx_hal.h>
+#include "fibre/protocol.hpp"
+#include "odrive_main.h"
+#include "can_helpers.hpp"
 
-struct CAN_context {
-    CAN_HandleTypeDef *handle = nullptr;
-    uint8_t node_id = 0;
-    uint64_t serial_number = 0;
+#define CAN_CLK_HZ (42000000)
+#define CAN_CLK_MHZ (42)
 
-    uint32_t node_ids_in_use_0[4]; // 128 bits (indicate if a node ID was in use up to 1 second ago)
-    uint32_t node_ids_in_use_1[4]; // 128 bits (indicats if a node ID was in use 1-2 seconds ago)
-
-    uint32_t last_heartbeat_mailbox = 0;
-    uint32_t tx_msg_cnt = 0;
-    uint32_t node_id_expiry = 0;
-    
-    uint8_t node_id_rng_state = 0;
-
-    osSemaphoreId sem_send_heartbeat;
-
-    // count occurrence various callbacks
-    uint32_t TxMailboxCompleteCallbackCnt = 0;
-    uint32_t TxMailboxAbortCallbackCnt = 0;
-    int RxFifo0MsgPendingCallbackCnt = 0;
-    int RxFifo0FullCallbackCnt = 0;
-    int RxFifo1MsgPendingCallbackCnt = 0;
-    int RxFifo1FullCallbackCnt = 0;
-    int SleepCallbackCnt = 0;
-    int WakeUpFromRxMsgCallbackCnt = 0;
-    int ErrorCallbackCnt = 0;
-
-    uint32_t received_msg_cnt = 0;
-    uint32_t received_ack = 0;
-    uint32_t unexpected_errors = 0;
-    uint32_t unhandled_messages = 0;
-
-    auto make_protocol_definitions() {
-        return make_protocol_member_list(
-            make_protocol_ro_property("node_id", &node_id),
-            make_protocol_ro_property("TxMailboxCompleteCallbackCnt", &TxMailboxCompleteCallbackCnt),
-            make_protocol_ro_property("TxMailboxAbortCallbackCnt", &TxMailboxAbortCallbackCnt),
-            make_protocol_ro_property("received_msg_cnt", &received_msg_cnt),
-            make_protocol_ro_property("received_ack", &received_ack),
-            make_protocol_ro_property("unexpected_errors", &unexpected_errors),
-            make_protocol_ro_property("unhandled_messages", &unhandled_messages)
-        );
-    }
+// Anonymous enum for defining the most common CAN baud rates
+enum {
+    CAN_BAUD_125K   = 125000,
+    CAN_BAUD_250K   = 250000,
+    CAN_BAUD_500K   = 500000,
+    CAN_BAUD_1000K  = 1000000,
+    CAN_BAUD_1M     = 1000000
 };
 
-bool start_can_server(CAN_context& ctx, CAN_TypeDef *hcan, uint64_t serial_number);
+class ODriveCAN : public ODriveIntf::CanIntf {
+   public:
+    struct Config_t {
+        uint32_t baud_rate = CAN_BAUD_250K;
+        Protocol protocol = PROTOCOL_SIMPLE;
+    };
 
-#endif // __INTERFACE_CAN_HPP
+    ODriveCAN(ODriveCAN::Config_t &config, CAN_HandleTypeDef *handle);
+
+    // Thread Relevant Data
+    osThreadId thread_id_;
+    const uint32_t stack_size_ = 1024; // Bytes
+    Error error_ = ERROR_NONE;
+
+    volatile bool thread_id_valid_ = false;
+    bool start_can_server();
+    void can_server_thread();
+    void send_heartbeat(Axis *axis);
+    void reinit_can();
+
+    void set_error(Error error);
+
+    // I/O Functions
+    uint32_t available();
+    uint32_t write(can_Message_t &txmsg);
+    bool read(can_Message_t &rxmsg);
+
+    ODriveCAN::Config_t &config_;
+
+private:
+    CAN_HandleTypeDef *handle_ = nullptr;
+
+    void set_baud_rate(uint32_t baudRate);
+};
+
+#endif  // __INTERFACE_CAN_HPP

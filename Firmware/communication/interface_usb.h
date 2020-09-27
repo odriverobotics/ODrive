@@ -12,6 +12,7 @@ extern "C" {
 #include <stdint.h>
 
 extern osThreadId usb_thread;
+extern const uint32_t stack_size_usb_thread;
 
 typedef struct {
     uint32_t rx_cnt;

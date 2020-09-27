@@ -103,7 +103,7 @@ void HAL_SPI_MspInit(SPI_HandleTypeDef* spiHandle)
     */
     GPIO_InitStruct.Pin = GPIO_PIN_10|GPIO_PIN_11|GPIO_PIN_12;
     GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
-    GPIO_InitStruct.Pull = GPIO_NOPULL;
+    GPIO_InitStruct.Pull = GPIO_PULLUP; // required for disconnect detection on SPI encoders
     GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
     GPIO_InitStruct.Alternate = GPIO_AF6_SPI3;
     HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
@@ -115,8 +115,15 @@ void HAL_SPI_MspInit(SPI_HandleTypeDef* spiHandle)
     hdma_spi3_tx.Init.Direction = DMA_MEMORY_TO_PERIPH;
     hdma_spi3_tx.Init.PeriphInc = DMA_PINC_DISABLE;
     hdma_spi3_tx.Init.MemInc = DMA_MINC_ENABLE;
-    hdma_spi3_tx.Init.PeriphDataAlignment = DMA_PDATAALIGN_HALFWORD;
-    hdma_spi3_tx.Init.MemDataAlignment = DMA_MDATAALIGN_HALFWORD;
+
+    if(spiHandle->Init.DataSize == SPI_DATASIZE_8BIT){
+      hdma_spi3_tx.Init.PeriphDataAlignment = DMA_PDATAALIGN_BYTE;
+      hdma_spi3_tx.Init.MemDataAlignment = DMA_MDATAALIGN_BYTE;
+    } else {
+      hdma_spi3_tx.Init.PeriphDataAlignment = DMA_PDATAALIGN_HALFWORD;
+      hdma_spi3_tx.Init.MemDataAlignment = DMA_MDATAALIGN_HALFWORD;      
+    }
+    
     hdma_spi3_tx.Init.Mode = DMA_NORMAL;
     hdma_spi3_tx.Init.Priority = DMA_PRIORITY_MEDIUM;
     hdma_spi3_tx.Init.FIFOMode = DMA_FIFOMODE_DISABLE;
@@ -133,8 +140,13 @@ void HAL_SPI_MspInit(SPI_HandleTypeDef* spiHandle)
     hdma_spi3_rx.Init.Direction = DMA_PERIPH_TO_MEMORY;
     hdma_spi3_rx.Init.PeriphInc = DMA_PINC_DISABLE;
     hdma_spi3_rx.Init.MemInc = DMA_MINC_ENABLE;
-    hdma_spi3_rx.Init.PeriphDataAlignment = DMA_PDATAALIGN_HALFWORD;
-    hdma_spi3_rx.Init.MemDataAlignment = DMA_MDATAALIGN_HALFWORD;
+    if (spiHandle->Init.DataSize == SPI_DATASIZE_8BIT) {
+        hdma_spi3_rx.Init.PeriphDataAlignment = DMA_PDATAALIGN_BYTE;
+        hdma_spi3_rx.Init.MemDataAlignment = DMA_MDATAALIGN_BYTE;
+    } else {
+        hdma_spi3_rx.Init.PeriphDataAlignment = DMA_PDATAALIGN_HALFWORD;
+        hdma_spi3_rx.Init.MemDataAlignment = DMA_MDATAALIGN_HALFWORD;
+    }
     hdma_spi3_rx.Init.Mode = DMA_NORMAL;
     hdma_spi3_rx.Init.Priority = DMA_PRIORITY_MEDIUM;
     hdma_spi3_rx.Init.FIFOMode = DMA_FIFOMODE_DISABLE;

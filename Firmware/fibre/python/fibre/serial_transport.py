@@ -17,7 +17,8 @@ DEFAULT_BAUDRATE = 115200
 
 class SerialStreamTransport(fibre.protocol.StreamSource, fibre.protocol.StreamSink):
     def __init__(self, port, baud):
-        self._dev = serial.Serial(port, baud, timeout=1)
+        self._timeout = 1
+        self._dev = serial.Serial(port, baud, timeout=self._timeout)
 
     def process_bytes(self, bytes):
         self._dev.write(bytes)
@@ -29,10 +30,16 @@ class SerialStreamTransport(fibre.protocol.StreamSource, fibre.protocol.StreamSi
         function blocks forever. A deadline before the current time corresponds
         to non-blocking mode.
         """
-        if deadline is None:
+        # Only set new timeout value if it is reasonably different from the old one (e.g. 20% as below)
+        # Otherwise it adds significant overhead (at least under Win10) as the port is reset with every reconfiguration
+        if deadline is None and self._timeout is not None:
+            self._timeout = None
             self._dev.timeout = None
-        else:
-            self._dev.timeout = max(deadline - time.monotonic(), 0)
+        elif deadline is not None:
+            new_timeout = max(deadline - time.monotonic(), 0)
+            if abs(new_timeout - self._timeout) > self._timeout * 0.2:
+                self._timeout = new_timeout
+                self._dev.timeout = new_timeout
         return self._dev.read(n_bytes)
 
     def get_bytes_or_fail(self, n_bytes, deadline):

@@ -1,6 +1,6 @@
 #include <math.h>
 #include "odrive_main.h"
-#include "utils.h"
+#include "utils.hpp"
 
 // A sign function where input 0 has positive sign (not 0)
 float sign_hard(float val) {

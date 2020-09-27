@@ -76,7 +76,9 @@ setup(
   license='MIT',
   url = 'https://github.com/samuelsadok/fibre',
   keywords = ['communication', 'transport-layer', 'rpc'],
-  install_requires = [],
+  install_requires = [
+    'appdirs',  # Used to find caching directory
+  ],
   #package_data={'': ['version.txt']},
   classifiers = [],
 )

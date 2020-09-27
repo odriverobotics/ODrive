@@ -66,7 +66,7 @@ bool ODriveArduino::run_state(int axis, int requested_state, bool wait) {
         do {
             delay(100);
             serial_ << "r axis" << axis << ".current_state\n";
-        } while (readInt() != AXIS_STATE_IDLE && --timeout_ctr > 0);
+        } while (readInt() != requested_state && --timeout_ctr > 0);
     }
 
     return timeout_ctr > 0;

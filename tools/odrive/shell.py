@@ -5,10 +5,16 @@ import threading
 import fibre
 import odrive
 import odrive.enums
-from odrive.utils import start_liveplotter, dump_errors
-#from odrive.enums import * # pylint: disable=W0614
+from odrive.utils import calculate_thermistor_coeffs, set_motor_thermistor_coeffs, start_liveplotter, dump_errors, oscilloscope_dump, BulkCapture, step_and_plot
 
 def print_banner():
+    print("Website: https://odriverobotics.com/")
+    print("Docs: https://docs.odriverobotics.com/")
+    print("Forums: https://discourse.odriverobotics.com/")
+    print("Discord: https://discord.gg/k3ZZ3mS")
+    print("Github: https://github.com/madcowswe/ODrive/")
+
+    print()
     print('Please connect your ODrive.')
     print('You can also type help() or quit().')
 
@@ -24,10 +30,10 @@ def print_help(args, have_devices):
         print('Type "odrv0." and press <tab>')
     print('This will present you with all the properties that you can reference')
     print('')
-    print('For example: "odrv0.motor0.encoder.pos_estimate"')
-    print('will print the current encoder position on motor 0')
-    print('and "odrv0.motor0.pos_setpoint = 10000"')
-    print('will send motor0 to 10000')
+    print('For example: "odrv0.axis0.encoder.pos_estimate"')
+    print('will print the current encoder position on axis 0')
+    print('and "odrv0.axis0.controller.input_pos = 0.5"')
+    print('will send axis 0 to 0.5 turns')
     print('')
 
 
@@ -77,7 +83,12 @@ def launch_shell(args, logger, app_shutdown_token):
 
     interactive_variables = {
         'start_liveplotter': start_liveplotter,
-        'dump_errors': dump_errors
+        'dump_errors': dump_errors,
+        'oscilloscope_dump': oscilloscope_dump,
+        'BulkCapture': BulkCapture,
+        'step_and_plot': step_and_plot,
+        'calculate_thermistor_coeffs': calculate_thermistor_coeffs,
+        'set_motor_thermistor_coeffs': set_motor_thermistor_coeffs
     }
 
     # Expose all enums from odrive.enums

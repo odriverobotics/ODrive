@@ -17,7 +17,7 @@
 #include <main.h>
 #include <spi.h>
 #include <tim.h>
-#include <utils.h>
+#include <utils.hpp>
 
 #include "odrive_main.h"
 
@@ -28,14 +28,16 @@
 /* Private macros ------------------------------------------------------------*/
 /* Private typedef -----------------------------------------------------------*/
 /* Global constant data ------------------------------------------------------*/
-const float adc_full_scale = (float)(1 << 12);
-const float adc_ref_voltage = 3.3f;
+constexpr float adc_full_scale = static_cast<float>(1UL << 12UL);
+constexpr float adc_ref_voltage = 3.3f;
 /* Global variables ----------------------------------------------------------*/
 
 // This value is updated by the DC-bus reading ADC.
 // Arbitrary non-zero inital value to avoid division by zero if ADC reading is late
 float vbus_voltage = 12.0f;
+float ibus_ = 0.0f; // exposed for monitoring only
 bool brake_resistor_armed = false;
+bool brake_resistor_saturated = false;
 /* Private constant data -----------------------------------------------------*/
 static const GPIO_TypeDef* GPIOs_to_samp[] = { GPIOA, GPIOB, GPIOC };
 static const int num_GPIO = sizeof(GPIOs_to_samp) / sizeof(GPIOs_to_samp[0]); 
@@ -82,7 +84,7 @@ static uint16_t GPIO_port_samples [2][num_GPIO];
 */
 
 // @brief Floats ALL phases immediately and disarms both motors and the brake resistor.
-void low_level_fault(Motor::Error_t error) {
+void low_level_fault(Motor::Error error) {
     // Disable all motors NOW!
     for (size_t i = 0; i < AXIS_COUNT; ++i) {
         safety_critical_disarm_motor_pwm(axes[i]->motor_);
@@ -212,6 +214,7 @@ void start_adc_pwm() {
     // Ensure that debug halting of the core doesn't leave the motor PWM running
     __HAL_DBGMCU_FREEZE_TIM1();
     __HAL_DBGMCU_FREEZE_TIM8();
+    __HAL_DBGMCU_FREEZE_TIM13();
 
     start_pwm(&htim1);
     start_pwm(&htim8);
@@ -259,6 +262,20 @@ void start_pwm(TIM_HandleTypeDef* htim) {
     HAL_TIM_PWM_Start_IT(htim, TIM_CHANNEL_4);
 }
 
+/*
+ * Initial intention of this function:
+ * Synchronize TIM1, TIM8 and TIM13 such that:
+ *  1. The triangle waveform of TIM1 leads the triangle waveform of TIM8 by a
+ *     90° phase shift.
+ *  2. The timer update events of TIM1 and TIM8 are symmetrically interleaved.
+ *  3. Each TIM13 reload coincides with a TIM1 lower update event.
+ * 
+ * However right now this function only ensures point (1) and (3) but because
+ * TIM1 and TIM3 only trigger an update on every third reload, this does not
+ * imply (or even allow for) (2).
+ * 
+ * TODO: revisit the timing topic in general.
+ */
 void sync_timers(TIM_HandleTypeDef* htim_a, TIM_HandleTypeDef* htim_b,
                  uint16_t TIM_CLOCKSOURCE_ITRx, uint16_t count_offset,
                  TIM_HandleTypeDef* htim_refbase) {
@@ -373,8 +390,16 @@ void start_general_purpose_adc() {
 //  21000kHz / (15+26) / 16 = 32kHz
 // The true frequency is slightly lower because of the injected vbus
 // measurements
-float get_adc_voltage(GPIO_TypeDef* GPIO_port, uint16_t GPIO_pin) {
-    uint32_t channel = UINT32_MAX;
+float get_adc_voltage(const GPIO_TypeDef* const GPIO_port, uint16_t GPIO_pin) {
+    const uint16_t channel = channel_from_gpio(GPIO_port, GPIO_pin);
+    return get_adc_voltage_channel(channel);
+}
+
+// @brief Given a GPIO_port and pin return the associated adc_channel.
+// returns UINT16_MAX if there is no adc_channel;
+uint16_t channel_from_gpio(const GPIO_TypeDef* const GPIO_port, uint16_t GPIO_pin)
+{
+    uint16_t channel = UINT16_MAX;
     if (GPIO_port == GPIOA) {
         if (GPIO_pin == GPIO_PIN_0)
             channel = 0;
@@ -411,6 +436,13 @@ float get_adc_voltage(GPIO_TypeDef* GPIO_port, uint16_t GPIO_pin) {
         else if (GPIO_pin == GPIO_PIN_5)
             channel = 15;
     }
+    return channel;
+}
+
+// @brief Given an adc channel return the measured voltage.
+// returns NaN if the channel is not valid.
+float get_adc_voltage_channel(uint16_t channel)
+{
     if (channel < ADC_CHANNEL_COUNT)
         return ((float)adc_measurements_[channel]) * (adc_ref_voltage / adc_full_scale);
     else
@@ -422,15 +454,10 @@ float get_adc_voltage(GPIO_TypeDef* GPIO_port, uint16_t GPIO_pin) {
 //--------------------------------
 
 void vbus_sense_adc_cb(ADC_HandleTypeDef* hadc, bool injected) {
-    static const float voltage_scale = adc_ref_voltage * VBUS_S_DIVIDER_RATIO / adc_full_scale;
+    constexpr float voltage_scale = adc_ref_voltage * VBUS_S_DIVIDER_RATIO / adc_full_scale;
     // Only one conversion in sequence, so only rank1
     uint32_t ADCValue = HAL_ADCEx_InjectedGetValue(hadc, ADC_INJECTED_RANK_1);
     vbus_voltage = ADCValue * voltage_scale;
-    if (axes[0] && !axes[0]->error_ && axes[1] && !axes[1]->error_) {
-        if (oscilloscope_pos >= OSCILLOSCOPE_SIZE)
-            oscilloscope_pos = 0;
-        oscilloscope[oscilloscope_pos++] = vbus_voltage;
-    }
 }
 
 static void decode_hall_samples(Encoder& enc, uint16_t GPIO_samples[num_GPIO]) {
@@ -466,7 +493,7 @@ static void decode_hall_samples(Encoder& enc, uint16_t GPIO_samples[num_GPIO]) {
 // Timing diagram: Firmware/timing_diagram_v3.png
 void pwm_trig_adc_cb(ADC_HandleTypeDef* hadc, bool injected) {
 #define calib_tau 0.2f  //@TOTO make more easily configurable
-    static const float calib_filter_k = CURRENT_MEAS_PERIOD / calib_tau;
+    constexpr float calib_filter_k = CURRENT_MEAS_PERIOD / calib_tau;
 
     // Ensure ADCs are expected ones to simplify the logic below
     if (!(hadc == &hadc2 || hadc == &hadc3)) {
@@ -486,9 +513,9 @@ void pwm_trig_adc_cb(ADC_HandleTypeDef* hadc, bool injected) {
 
     // Check the timing of the sequencing
     if (current_meas_not_DC_CAL)
-        axis.motor_.log_timing(Motor::TIMING_LOG_ADC_CB_I);
+        axis.motor_.log_timing(TIMING_LOG_ADC_CB_I);
     else
-        axis.motor_.log_timing(Motor::TIMING_LOG_ADC_CB_DC);
+        axis.motor_.log_timing(TIMING_LOG_ADC_CB_DC);
 
     bool update_timings = false;
     if (hadc == &hadc2) {
@@ -496,6 +523,15 @@ void pwm_trig_adc_cb(ADC_HandleTypeDef* hadc, bool injected) {
             update_timings = true; // update timings of M0
         else if (&axis == axes[0] && !counting_down)
             update_timings = true; // update timings of M1
+
+        // TODO: this is out of place here. However when moving it somewhere
+        // else we have to consider the timing requirements to prevent the SPI
+        // transfers of axis0 and axis1 from conflicting.
+        // Also see comment on sync_timers.
+        if((current_meas_not_DC_CAL && !axis_num) ||
+                (axis_num && !current_meas_not_DC_CAL)){
+            axis.encoder_.abs_spi_start_transaction();
+        }
     }
 
     // Load next timings for the motor that we're not currently sampling
@@ -590,22 +626,46 @@ void update_brake_current() {
             Ibus_sum += axes[i]->motor_.current_control_.Ibus;
         }
     }
-    float brake_current = -Ibus_sum;
-    // Clip negative values to 0.0f
-    if (brake_current < 0.0f) brake_current = 0.0f;
-    float brake_duty = brake_current * board_config.brake_resistance / vbus_voltage;
-
-    // Duty limit at 90% to allow bootstrap caps to charge
-    // If brake_duty is NaN, this expression will also evaluate to false
-    if ((brake_duty >= 0.0f) && (brake_duty <= 0.9f)) {
-        int high_on = static_cast<int>(TIM_APB1_PERIOD_CLOCKS * (1.0f - brake_duty));
-        int low_off = high_on - TIM_APB1_DEADTIME_CLOCKS;
-        if (low_off < 0) low_off = 0;
-        safety_critical_apply_brake_resistor_timings(low_off, high_on);
-    } else {
-        //shuts off all motors AND brake resistor, sets error code on all motors.
-        low_level_fault(Motor::ERROR_BRAKE_CURRENT_OUT_OF_RANGE);
+    
+    // Don't start braking until -Ibus > regen_current_allowed
+    float brake_current = -Ibus_sum - odrv.config_.max_regen_current;
+    float brake_duty = brake_current * odrv.config_.brake_resistance / vbus_voltage;
+    
+    if (odrv.config_.enable_dc_bus_overvoltage_ramp && (odrv.config_.brake_resistance > 0.0f) && (odrv.config_.dc_bus_overvoltage_ramp_start < odrv.config_.dc_bus_overvoltage_ramp_end)) {
+        brake_duty += std::fmax((vbus_voltage - odrv.config_.dc_bus_overvoltage_ramp_start) / (odrv.config_.dc_bus_overvoltage_ramp_end - odrv.config_.dc_bus_overvoltage_ramp_start), 0.0f);
     }
+
+    if (std::isnan(brake_duty)) {
+        // Shuts off all motors AND brake resistor, sets error code on all motors.
+        low_level_fault(Motor::ERROR_BRAKE_DUTY_CYCLE_NAN);
+        return;
+    }
+
+    if (brake_duty >= 0.95f) {
+        brake_resistor_saturated = true;
+    }
+
+    // Duty limit at 95% to allow bootstrap caps to charge
+    brake_duty = std::clamp(brake_duty, 0.0f, 0.95f);
+
+    // Special handling to avoid the case 0.0/0.0 == NaN.
+    Ibus_sum += brake_duty ? (brake_duty * vbus_voltage / odrv.config_.brake_resistance) : 0.0f;
+
+    ibus_ += odrv.ibus_report_filter_k_ * (Ibus_sum - ibus_);
+
+    if (Ibus_sum > odrv.config_.dc_max_positive_current) {
+        low_level_fault(Motor::ERROR_DC_BUS_OVER_CURRENT);
+        return;
+    }
+    if (Ibus_sum < odrv.config_.dc_max_negative_current) {
+        low_level_fault(Motor::ERROR_DC_BUS_OVER_REGEN_CURRENT);
+        return;
+    }
+    
+    int high_on = (int)(TIM_APB1_PERIOD_CLOCKS * (1.0f - brake_duty));
+    int low_off = high_on - TIM_APB1_DEADTIME_CLOCKS;
+    if (low_off < 0) low_off = 0;
+    safety_critical_apply_brake_resistor_timings(low_off, high_on);
 }
 
 
@@ -670,7 +730,7 @@ void pwm_in_init() {
 #else
     int gpio_num = 4; {
 #endif
-        if (is_endpoint_ref_valid(board_config.pwm_mappings[gpio_num - 1].endpoint)) {
+        if (fibre::is_endpoint_ref_valid(odrv.config_.pwm_mappings[gpio_num - 1].endpoint)) {
             GPIO_InitStruct.Pin = get_gpio_pin_by_pin(gpio_num);
             HAL_GPIO_DeInit(get_gpio_port_by_pin(gpio_num), get_gpio_pin_by_pin(gpio_num));
             HAL_GPIO_Init(get_gpio_port_by_pin(gpio_num), &GPIO_InitStruct);
@@ -697,14 +757,10 @@ void handle_pulse(int gpio_num, uint32_t high_time) {
     if (high_time > PWM_MAX_HIGH_TIME)
         high_time = PWM_MAX_HIGH_TIME;
     float fraction = (float)(high_time - PWM_MIN_HIGH_TIME) / (float)(PWM_MAX_HIGH_TIME - PWM_MIN_HIGH_TIME);
-    float value = board_config.pwm_mappings[gpio_num - 1].min +
-                  (fraction * (board_config.pwm_mappings[gpio_num - 1].max - board_config.pwm_mappings[gpio_num - 1].min));
+    float value = odrv.config_.pwm_mappings[gpio_num - 1].min +
+                  (fraction * (odrv.config_.pwm_mappings[gpio_num - 1].max - odrv.config_.pwm_mappings[gpio_num - 1].min));
 
-    Endpoint* endpoint = get_endpoint(board_config.pwm_mappings[gpio_num - 1].endpoint);
-    if (!endpoint)
-        return;
-
-    endpoint->set_from_float(value);
+    fibre::set_endpoint_from_float(odrv.config_.pwm_mappings[gpio_num - 1].endpoint, value);
 }
 
 void pwm_in_cb(int channel, uint32_t timestamp) {
@@ -735,24 +791,32 @@ static void update_analog_endpoint(const struct PWMMapping_t *map, int gpio)
 {
     float fraction = get_adc_voltage(get_gpio_port_by_pin(gpio), get_gpio_pin_by_pin(gpio)) / 3.3f;
     float value = map->min + (fraction * (map->max - map->min));
-    get_endpoint(map->endpoint)->set_from_float(value);
+    fibre::set_endpoint_from_float(map->endpoint, value);
 }
 
 static void analog_polling_thread(void *)
 {
     while (true) {
         for (int i = 0; i < GPIO_COUNT; i++) {
-            struct PWMMapping_t *map = &board_config.analog_mappings[i];
+            struct PWMMapping_t *map = &odrv.config_.analog_mappings[i];
 
-            if (is_endpoint_ref_valid(map->endpoint))
+            if (fibre::is_endpoint_ref_valid(map->endpoint))
                 update_analog_endpoint(map, i + 1);
         }
         osDelay(10);
     }
 }
 
-void start_analog_thread()
-{
-    osThreadDef(thread_def, analog_polling_thread, osPriorityLow, 0, 4*512);
+void start_analog_thread() {
+    osThreadDef(thread_def, analog_polling_thread, osPriorityLow, 0, 512 / sizeof(StackType_t));
     osThreadCreate(osThread(thread_def), NULL);
+}
+
+
+void HAL_SPI_TxRxCpltCallback(SPI_HandleTypeDef *hspi)
+{
+    if(hspi->pRxBuffPtr == (uint8_t*)axes[0]->encoder_.abs_spi_dma_rx_)
+        axes[0]->encoder_.abs_spi_cb();
+    else if (hspi->pRxBuffPtr == (uint8_t*)axes[1]->encoder_.abs_spi_dma_rx_)
+        axes[1]->encoder_.abs_spi_cb();
 }
