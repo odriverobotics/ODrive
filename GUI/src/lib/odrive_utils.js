@@ -1,5 +1,5 @@
-import store from "./store.js";
-import * as socketio from "./comms/socketio.js";
+import store from "../store.js";
+import * as socketio from "../comms/socketio.js";
 
 // helper functions and utilities for getting ODrive values
 

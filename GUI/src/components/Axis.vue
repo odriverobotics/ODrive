@@ -26,7 +26,7 @@
 <script>
 import odriveEnums from "../assets/odriveEnums.json";
 import clearErrors from "./clearErrors.vue";
-import { getVal } from "../odrive_utils.js";
+import { getVal } from "../lib/odrive_utils";
 
 const axisErrors = {
   0x00000000: "AXIS_ERROR_NONE",
@@ -248,9 +248,6 @@ export default {
       setTimeout(update, 1000);
     }
     update();
-    console.log(this.axis);
-    console.log(this.axisErr);
-    console.log(this.motorErr);
   }
 };
 </script>

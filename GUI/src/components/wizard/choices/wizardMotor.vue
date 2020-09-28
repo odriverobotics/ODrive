@@ -24,7 +24,7 @@
 
 <script>
 import odriveEnums from "../../../assets/odriveEnums.json";
-import { getVal } from "../../../odrive_utils.js"
+import { getVal } from "../../../lib/odrive_utils.js"
 
 export default {
   name: "wizardMotor",

@@ -24,7 +24,7 @@
 </template>
 
 <script>
-import { getVal } from "../../../odrive_utils.js"
+import { getVal } from "../../../lib/odrive_utils.js"
 
 export default {
   name: "wizardInputTrajectory",

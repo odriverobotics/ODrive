@@ -3,6 +3,7 @@ import Vuex from 'vuex';
 import ConfigDashOld from "./assets/dashboards/Config_0_4_12.json";
 import ConfigDashNew from "./assets/dashboards/Config_0_5_1.json";
 import * as socketio from "./comms/socketio";
+import {filterBy, deleteBy } from "./lib/utils.js";
 //import { v4 as uuidv4 } from "uuid";
 
 
@@ -15,6 +16,8 @@ export default new Vuex.Store({
     state: {
         odrives: Object,
         odriveConfigs: Object,
+        odriveParameters: Object,
+        odriveFunctions: Object,
         axes: Array,
         odriveServerAddress: String,
         serverConnected: Boolean,
@@ -60,9 +63,7 @@ export default new Vuex.Store({
                 state.dashboards.push(ConfigDash);
                 // plots will have variables associated, add them to sampled variables list
                 for (const plot of ConfigDash.plots) {
-                    console.log(plot);
                     for (const plotVar of plot.vars) {
-                        console.log(plotVar);
                         //addsampledprop(path);
                         let path = plotVar.path;
                         if (!(path in state.sampledProperties)) {
@@ -70,10 +71,6 @@ export default new Vuex.Store({
                             newPath.splice(0, 1);
                             state.sampledProperties.push(newPath.join('.'));
                             state.propSamples[newPath.join('.')] = [];
-                            console.log(state.propSamples);
-                        }
-                        for (const path of state.sampledProperties) {
-                            console.log(path);
                         }
                         socketio.sendEvent({
                             type: 'sampledVarNames',
@@ -86,8 +83,12 @@ export default new Vuex.Store({
             }
             state.firstConn = true;
         },
-        setOdriveConfigs(state, odriveConfigs) {
-            state.odriveConfigs = odriveConfigs;
+        setOdriveConfigs(state, payload) {
+            state.odriveConfigs['full'] = payload.full;
+            state.odriveConfigs['functions'] = payload.functions;
+            state.odriveConfigs['params'] = payload.params;
+            state.odriveConfigs['writeAble'] = payload.writeAble;
+            state.odriveConfigs['writeAbleNumeric'] = payload.writeAbleNumeric;
         },
         setAxes(state, axes) {
             state.axes = axes;
@@ -100,7 +101,6 @@ export default new Vuex.Store({
             // payload is {path, value}
             // 
             const createNestedObject = (odrive, path) => {
-                console.log("from createNestedObject " + path);
                 let ref = odrive;
                 let keys = path.split('.');
                 for (const key of keys) {
@@ -117,10 +117,6 @@ export default new Vuex.Store({
                 newPath.splice(0, 1);
                 state.sampledProperties.push(newPath.join('.'));
                 state.propSamples[newPath.join('.')] = [];
-                console.log(state.propSamples);
-            }
-            for (const path of state.sampledProperties) {
-                console.log(path);
             }
             socketio.sendEvent({
                 type: 'sampledVarNames',
@@ -211,7 +207,6 @@ export default new Vuex.Store({
                     for (const action of dash.actions) {
                         if (obj.actionID == action.id) {
                             action.val = obj.val;
-                            console.log("Setting action val to " + obj.val);
                             break;
                         }
                     }
@@ -263,7 +258,29 @@ export default new Vuex.Store({
                 }
                 return retObj;
             }
-            context.commit('setOdriveConfigs', treeParse(context.state.odrives));
+            // full parameter tree
+            // create object containing only ODrive functions
+            let fullTree = treeParse(context.state.odrives);
+            let fcns = filterBy(fullTree, ((o) => o == "function"));
+            deleteBy(fcns, ((o) => o.constructor == Object && Object.keys(o).length == 0));
+
+            // create object containing only ODrive parameters
+            let params = filterBy(fullTree, ((o) => o != "function" && typeof o != "object"));
+            deleteBy(params, ((o) => o.constructor == Object && Object.keys(o).length == 0))
+
+            // create object containing only ODrive parameters with write access
+            let writeAble = filterBy(context.state.odrives, ((o) => o['readonly'] == false));
+            deleteBy(writeAble, ((o) => o.constructor == Object && Object.keys(o).length == 0))
+
+            // create object of only ODrive parameters that are writeable and numeric
+            let writeAbleNumeric = filterBy(context.state.odrives, ((o) => o['readonly'] == false && ['float', 'int', 'bool'].includes(o['type'])));
+            deleteBy(writeAbleNumeric, ((o) => o.constructor == Object && Object.keys(o).length == 0))
+            
+            context.commit('setOdriveConfigs', {full: fullTree, 
+                                                functions: fcns, 
+                                                params: params, 
+                                                writeAble: treeParse(writeAble),
+                                                writeAbleNumeric: treeParse(writeAbleNumeric)});
         },
         getAxes(context) {
             let axes = [];
@@ -319,7 +336,6 @@ export default new Vuex.Store({
             socketio.addEventListener({
                 type: "odrives",
                 callback: odrives => {
-                    console.log("response from odrive socketio" + JSON.parse(odrives))
                     context.commit('setOdrives', JSON.parse(odrives));
                     context.dispatch('getOdriveConfigs');
                     context.dispatch('getAxes');

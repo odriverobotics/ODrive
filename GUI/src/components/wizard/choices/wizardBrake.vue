@@ -9,7 +9,7 @@
 </template>
 
 <script>
-import { getUnit } from '../../../odrive_utils.js';
+import { getUnit } from '../../../lib/odrive_utils.js';
 
 export default {
   name: "wizardBrake",

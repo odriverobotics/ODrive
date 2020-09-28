@@ -12,7 +12,7 @@
 
 <script>
 import { enumVars } from "../../../assets/wizard/wizard.js";
-import { putVal } from "../../../odrive_utils.js"
+import { putVal } from "../../../lib/odrive_utils.js"
 
 export default {
   name: "wizardEnd",

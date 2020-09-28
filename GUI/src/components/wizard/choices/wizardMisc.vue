@@ -14,7 +14,7 @@
 </template>
 
 <script>
-import { getVal, getUnit } from "../../../odrive_utils.js"
+import { getVal, getUnit } from "../../../lib/odrive_utils.js"
 
 export default {
   name: "wizardMisc",

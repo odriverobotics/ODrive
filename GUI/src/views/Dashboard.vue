@@ -9,7 +9,7 @@
         </div>
         <div class="param-tree">
         <json-view
-          :data="odriveConfigs"
+          :data="treeParams"
           :rootKey="'odrives'"
           v-on:selected="addVarToElement"
         />
@@ -32,6 +32,7 @@
         <div class="control-buttons">
           <div class="add-button card" @click="addComponent('control')">Add Control</div>
           <div class="add-button card" @click="addComponent('slider')">Add Slider</div>
+          <div class="add-button card" @click="addComponent('function')">Add Function</div>
         </div>
         <template v-for="(action, index) in dash.actions">
           <action
@@ -271,12 +272,8 @@ export default {
       paramsVisible: false,
       addCompType: undefined,
       currentPlot: undefined,
+      treeParams: undefined,
     };
-  },
-  computed: {
-    odriveConfigs: function () {
-      return this.$store.state.odriveConfigs;
-    },
   },
   methods: {
     deleteAction(e) {
@@ -299,13 +296,32 @@ export default {
     },
     addComponent(componentType) {
       this.addCompType = componentType;
+      switch (this.addCompType) {
+        case "control":
+          this.treeParams = this.$store.state.odriveConfigs['params'];
+          break;
+        case "plot":
+          this.treeParams = this.$store.state.odriveConfigs['params'];
+          break;
+        case "slider":
+          this.treeParams = this.$store.state.odriveConfigs['writeAbleNumeric'];
+          break;
+        case "action":
+          this.treeParams = this.$store.state.odriveConfigs['writeAble'];
+          break;
+        case "function":
+          this.treeParams = this.$store.state.odriveConfigs['functions'];
+          break;
+        default:
+          break;
+      }
       this.paramsVisible = true;
     },
     addVarToElement(e) {
       //when the parameter tree is open and a parameter is clicked,
       //add the clicked parameter to the list of controls for the
       //current dashboard
-              console.log(e);
+      console.log(e);
       switch (this.addCompType) {
         case "control":
           switch (typeof e.value) {
@@ -341,6 +357,12 @@ export default {
             default:
               break;
           }
+          break;
+        case "function":
+          this.dash.controls.push({
+            controlType: "CtrlFunction",
+            path: e.path,
+          });
           break;
         case "plot":
           // add the selected element to the plot var list

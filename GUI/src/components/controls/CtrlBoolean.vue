@@ -16,7 +16,7 @@
 </template>
 
 <script>
-import { getVal, getReadonly, putVal } from "../../odrive_utils.js";
+import { getVal, getReadonly, putVal } from "../../lib/odrive_utils.js";
 
 export default {
   name: "CtrlBoolean",

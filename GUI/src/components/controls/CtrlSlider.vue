@@ -16,7 +16,7 @@
 <script>
 import VueSlider from "vue-slider-component";
 import "vue-slider-component/theme/default.css";
-import { getVal, putVal } from "../../odrive_utils.js";
+import { getVal, putVal } from "../../lib/odrive_utils.js";
 
 export default {
   name: "CtrlSlider",

@@ -49,7 +49,7 @@ import configTemplate from "../assets/wizard/configTemplate.json";
 import wizardPage from "../components/wizard/wizardPage.vue";
 import odriveEnums from "../assets/odriveEnums.json";
 import { pages } from "../assets/wizard/wizard.js";
-import { getVal, putVal } from "../odrive_utils.js"
+import { getVal, putVal } from "../lib/odrive_utils.js"
 
 // see wizard.js for what wizard pages exist and what they contain
 

@@ -6,7 +6,7 @@
 </template>
 
 <script>
-import { callFcn } from "../../odrive_utils.js";
+import { callFcn } from "../../lib/odrive_utils.js";
 
 export default {
   name: "CtrlFunction",

@@ -6,7 +6,7 @@
 
 <script>
 import odriveEnums from "../../../assets/odriveEnums.json";
-import { putVal } from "../../../odrive_utils.js"
+import { putVal } from "../../../lib/odrive_utils.js"
 
 export default {
   name: "wizardMotorCal",
