@@ -32,6 +32,12 @@ _VT100Colors = {
     'default': '\x1b[0m'
 }
 
+async def get_serial_number_str(device):
+    if hasattr(device, 'serial_number'):
+        return format(await device.serial_number, 'x').upper()
+    else:
+        return "[unknown serial number]"
+
 def calculate_thermistor_coeffs(degree, Rload, R_25, Beta, Tmin, Tmax, plot = False):
     import numpy as np
     import matplotlib.pyplot as plt

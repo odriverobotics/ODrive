@@ -23,12 +23,6 @@ if sys.version_info < (3, 3):
 else:
     TimeoutError = TimeoutError
 
-def get_serial_number_str(device):
-    if hasattr(device, 'serial_number'):
-        return format(device.serial_number, 'x').upper()
-    else:
-        return "[unknown serial number]"
-
 ## Threading utils ##
 class Event():
     """

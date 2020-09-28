@@ -52,7 +52,7 @@ def set_dict(obj, path, config_dict):
     return errors
 
 def get_temp_config_filename(device):
-    serial_number = fibre.utils.get_serial_number_str(device)
+    serial_number = odrive.get_serial_number_str(device)
     safe_serial_number = ''.join(filter(str.isalnum, serial_number))
     return os.path.join(tempfile.gettempdir(), 'odrive-config-{}.json'.format(safe_serial_number))
 

@@ -630,7 +630,7 @@ def decrement_lib_refcount():
             libfibre_thread = None
 
 
-def find_all(path, serial_number,
+def start_discovery(path, obj_filter,
          on_object_discovered,
          search_cancellation_token,
          channel_termination_token,
@@ -644,11 +644,14 @@ def find_all(path, serial_number,
 
     async def on_object_discovered_filter(obj):
         increment_libfibre_refcount()
-        channel_termination_token.subscribe(lambda: decrement_lib_refcount())
-        if serial_number is None or (await fibre.utils.get_serial_number_str(obj)) == serial_number:
+        if not channel_termination_token is None:
+            channel_termination_token.subscribe(lambda: decrement_lib_refcount())
+        if await obj_filter(obj):
             result = on_object_discovered(obj)
             if not result is None:
                 await result
+        elif not channel_termination_token is None:
+            channel_termination_token.set()
     
     increment_libfibre_refcount()
     search_cancellation_token.subscribe(lambda: decrement_lib_refcount())
@@ -657,37 +660,6 @@ def find_all(path, serial_number,
         path,
         on_object_discovered_filter,
         search_cancellation_token))
-
-def find_any(path="usb", serial_number=None,
-        search_cancellation_token=None, channel_termination_token=None,
-        timeout=None, logger=Logger(verbose=False), find_multiple=False):
-    """
-    Blocks until the first matching Fibre object is connected and then returns that object
-    """
-    result = []
-    done_signal = Event(search_cancellation_token)
-    def did_discover_object(obj):
-        result.append(obj)
-        if find_multiple:
-            if len(result) >= int(find_multiple):
-               done_signal.set()
-        else:
-            done_signal.set()
-
-    find_all(path, serial_number, did_discover_object, done_signal, channel_termination_token, logger)
-
-    try:
-        done_signal.wait(timeout=timeout)
-    except TimeoutError:
-        if not find_multiple:
-            return None
-    finally:
-        done_signal.set() # terminate find_all
-
-    if find_multiple:
-        return result
-    else:
-        return result[0] if len(result) > 0 else None
 
 
 def get_user_name(obj):

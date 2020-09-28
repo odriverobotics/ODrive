@@ -77,7 +77,11 @@ def launch_shell(args, logger, app_shutdown_token):
     # Expose all enums from odrive.enums
     interactive_variables.update({k: v for (k, v) in odrive.enums.__dict__.items() if not k.startswith("_")})
 
-    fibre.launch_shell(args,
+    async def obj_filter(obj):
+        return (args.serial_number is None or
+                (await odrive.utils.get_serial_number_str(obj)) == args.serial_number)
+
+    fibre.launch_shell(args, obj_filter,
                        interactive_variables,
                        print_banner, print_help,
                        logger, app_shutdown_token,
