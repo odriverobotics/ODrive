@@ -140,22 +140,25 @@ def postVal(odrives, keyList, value, argType):
     # expect a list of keys in the form of ["key1", "key2", "keyN"]
     # "key1" will be "odriveN"
     # like this: postVal(odrives, ["odrive0","axis0","config","calibration_lockin","accel"], 17.0)
-    index = int(''.join([char for char in keyList.pop(0) if char.isnumeric()]))
+    try:
+        index = int(''.join([char for char in keyList.pop(0) if char.isnumeric()]))
 
-    RO = odrives[index]
-    for key in keyList:
-        RO = RO._remote_attributes[key]
-    if argType == "number":
-        RO.set_value(float(value))
-    elif argType == "boolean":
-        RO.set_value(value == "true")
-    else:
-        pass # dont support that type yet
+        RO = odrives[index]
+        for key in keyList:
+            RO = RO._remote_attributes[key]
+        if argType == "number":
+            RO.set_value(float(value))
+        elif argType == "boolean":
+            RO.set_value(value == "true")
+        else:
+            pass # dont support that type yet
+    except:
+        print("exception in postVal")
 
 def getVal(odrives, keyList):
-    index = int(''.join([char for char in keyList.pop(0) if char.isnumeric()]))
-    RO = odrives[index]
     try:
+        index = int(''.join([char for char in keyList.pop(0) if char.isnumeric()]))
+        RO = odrives[index]
         for key in keyList:
             RO = RO._remote_attributes[key]
         if isinstance(RO, fibre.remote_object.RemoteObject):
@@ -163,6 +166,7 @@ def getVal(odrives, keyList):
         else:
             return RO.get_value()
     except:
+        print("exception in getVal")
         return 0
 
 def getSampledData(vars):
@@ -176,15 +180,15 @@ def getSampledData(vars):
     return samples
 
 def callFunc(odrives, keyList):
-    index = int(''.join([char for char in keyList.pop(0) if char.isnumeric()]))
-    RO = odrives[index]
-    for key in keyList:
-        RO = RO._remote_attributes[key]
-    if isinstance(RO, fibre.remote_object.RemoteFunction):
-        try:
+    try:
+        index = int(''.join([char for char in keyList.pop(0) if char.isnumeric()]))
+        RO = odrives[index]
+        for key in keyList:
+            RO = RO._remote_attributes[key]
+        if isinstance(RO, fibre.remote_object.RemoteFunction):
             RO.__call__()
-        except:
-            print("fcn call failed")
+    except:
+        print("fcn call failed")
 
 if __name__ == "__main__":
     # sleep to allow time for background.js to register event callbacks for stdout,stderr

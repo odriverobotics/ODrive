@@ -3,7 +3,7 @@
     <button class="close-button" @click=deleteAction>X</button>
     <span class="ctrlName">{{path}}:</span>
     <div class="right">
-      <input type="number" v-on:change="newVal" :placeholder="initVal"/>
+      <input v-on:change="newVal" :placeholder="initVal"/>
       <button class="action-button close-button" @click="putVal">Go</button>
     </div>
   </div>
@@ -32,16 +32,24 @@ export default {
   },
   methods: {
     newVal: function (e) {
-      this.value = parseFloat(e.target.value);
-      // emit a signal - signal needs to float all the way up to Dash
-      // set value of dash.actions.id.val to this.value
-      // this way, action values will be kept when dashes are imported or exported
-      //this.$emit('set-action-val', {id: this.id, val: this.value});
+      let input = e.target.value;
+      let allowedChars = "0123456789eE/*-+.()";
+      let send = true;
+      for (const c of input) {
+        if (!allowedChars.includes(c)) {
+          send = false;
+        }
+      }
+      if (send) {
+        this.value = eval(input);
+        console.log("input = " + input + ", val = " + this.value);
+      }
       this.$store.commit("setActionVal", {dashID: this.dashID, actionID: this.id, val: this.value});
     },
     putVal: function () {
       let keys = this.path.split(".");
       keys.shift();
+      console.log('path = ' + keys.join('.') + ", val = " + this.value);
       putVal(keys.join('.'), this.value);
     },
     deleteAction: function() {

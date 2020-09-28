@@ -23,6 +23,13 @@ export function getReadonly(path) {
     return getParam(path + '.readonly');
 }
 
+export function fetchParam(path) {
+    socketio.sendEvent({
+        type: "getProperty",
+        data: {path: path},
+    });
+}
+
 export function putVal(path, value) {
     socketio.sendEvent({
         type: "setProperty",

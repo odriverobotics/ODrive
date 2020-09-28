@@ -26,7 +26,7 @@
 <script>
 import odriveEnums from "../assets/odriveEnums.json";
 import clearErrors from "./clearErrors.vue";
-import { getVal } from "../lib/odrive_utils";
+import { getVal, fetchParam } from "../lib/odrive_utils";
 
 const axisErrors = {
   0x00000000: "AXIS_ERROR_NONE",
@@ -82,16 +82,13 @@ let encoderErrors = {
 };
 
 let controllerErrors = {
-  0x00000000: "ENCODER_ERROR_NONE",
-  0x00000001: "ENCODER_ERROR_UNSTABLE_GAIN",
-  0x00000002: "ENCODER_ERROR_CPR_POLEPAIRS_MISMATCH",
-  0x00000004: "ENCODER_ERROR_NO_RESPONSE",
-  0x00000008: "ENCODER_ERROR_UNSUPPORTED_ENCODER_MODE",
-  0x00000010: "ENCODER_ERROR_ILLEGAL_HALL_STATE",
-  0x00000020: "ENCODER_ERROR_INDEX_NOT_FOUND_YET",
-  0x00000040: "ENCODER_ERROR_ABS_SPI_TIMEOUT",
-  0x00000080: "ENCODER_ERROR_ABS_SPI_COM_FAIL",
-  0x00000100: "ENCODER_ERROR_ABS_SPI_NOT_READY",
+  0x00000000: "CONTROLLER_ERROR_NONE",
+  0x00000001: "CONTROLLER_ERROR_OVERSPEED",
+  0x00000002: "CONTROLLER_ERROR_INVALID_INPUT_MODE",
+  0x00000004: "CONTROLLER_ERROR_UNSTABLE_GAIN",
+  0x00000008: "CONTROLLER_ERROR_INVALID_MIRROR_AXIS",
+  0x00000010: "CONTROLLER_ERROR_INVALID_LOAD_ENCODER",
+  0x00000020: "CONTROLLER_ERROR_INVALID_ESTIMATE",
 };
 
 export default {
@@ -241,6 +238,10 @@ export default {
   created() {
     // set up timeout loop for grabbing axis error values
     let update = () => {
+      fetchParam(this.axis + ".error");
+      fetchParam(this.axis + '.motor.error');
+      fetchParam(this.axis + '.controller.error');
+      fetchParam(this.axis + '.encoder.error');
       this.axisErr = getVal(this.axis + '.error');
       this.motorErr = getVal(this.axis + '.motor.error');
       this.controllerErr = getVal(this.axis + '.controller.error');

@@ -4,7 +4,7 @@
     <span class="ctrlName">{{name}}:</span>
     <div class="right">
       <span class="ctrlVal">{{value}}</span>
-      <input v-if="writeAccess" type="number" v-on:change="putVal" />
+      <input v-if="writeAccess" v-on:change="putVal" />
     </div>
   </div>
 </template>
@@ -41,7 +41,17 @@ export default {
     putVal: function (e) {
       let keys = this.path.split('.');
       keys.shift();
-      putVal(keys.join('.'), parseFloat(e.target.value));
+      let input = e.target.value;
+      let allowedChars = "0123456789eE/*-+.()";
+      let send = true;
+      for (const c of input) {
+        if (!allowedChars.includes(c)) {
+          send = false;
+        }
+      }
+      if (send) {
+        putVal(keys.join('.'), eval(input));
+      }
     },
     deleteCtrl: function() {
       // commit a mutation in the store with the relevant information
