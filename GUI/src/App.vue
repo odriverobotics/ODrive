@@ -3,7 +3,28 @@
     <!-- HEADER -->
     <div class="header">
       <button
-        class="dash-button"
+        v-for="dash in dashboards"
+        :key="dash.id"
+        :class="['dash-button', { active: currentDash === dash.name }]"
+        v-on:click.self="changeDash(dash.name)"
+        v-on:dblclick="changeDashName(dash.id)"
+      >
+        <button
+          v-if="
+            dash.name !== 'Start' &&
+            dash.name !== 'Tuning' &&
+            dash.name !== 'Wizard'
+          "
+          class="close-button"
+          v-on:click="deleteDash(dash.id)"
+        >
+          X
+        </button>
+        {{ dash.name }}
+      </button>
+      <button class="dash-button dash-add" @click="addDash">+</button>
+      <button
+        class="dash-button sample"
         @click="startsample"
         :class="[{ active: sampling === true }]"
       >
@@ -25,28 +46,6 @@
           style="display: none"
         />
       </button>
-      <button
-        v-for="dash in dashboards"
-        :key="dash.id"
-        :class="['dash-button', { active: currentDash === dash.name }]"
-        v-on:click.self="changeDash(dash.name)"
-        v-on:dblclick="changeDashName(dash.id)"
-      >
-        <button
-          v-if="
-            dash.name !== 'Start' &&
-            dash.name !== 'Tuning' &&
-            dash.name !== 'Wizard'
-          "
-          class="close-button"
-          v-on:click="deleteDash(dash.id)"
-        >
-          X
-        </button>
-        {{ dash.name }}
-      </button>
-      <button class="dash-button dash-add" @click="addDash">+</button>
-      <button class="emergency-stop" @click="estop">STOP</button>
     </div>
 
     <!-- PAGE CONTENT -->
@@ -290,8 +289,20 @@ export default {
 }
 
 button {
+  cursor: pointer;
   font-size: 1rem;
-  color: #2c3e50;
+  color: black;
+  text-decoration: none;
+  padding: 10px;
+  background-color: var(--fg-color);
+  border-style: none;
+  outline: none;
+}
+
+.dash-button {
+  cursor: pointer;
+  font-size: 1rem;
+  color: black;
   text-decoration: none;
   padding: 10px;
   background-color: var(--fg-color);
@@ -300,6 +311,10 @@ button {
 }
 
 .dash-button:active {
+  background-color: var(--bg-color);
+}
+
+.dash-button:hover {
   background-color: var(--bg-color);
 }
 
@@ -319,15 +334,6 @@ button {
   z-index: 1;
 }
 
-.footer .left,
-.right {
-  /* flex-grow: 1; */
-  display: flex;
-  background-color: var(--fg-color);
-  font-family: "Roboto Mono", monospace;
-  margin: auto 5px;
-}
-
 .odrvSer,
 .errorState {
   font-weight: bold;
@@ -344,10 +350,6 @@ button {
   font-weight: bold;
 }
 
-.parameter-button {
-  border-right: 1px solid lightgrey;
-}
-
 .emergency-stop {
   margin-left: auto;
   padding-left: 2rem;
@@ -358,7 +360,8 @@ button {
   display: none;
 }
 
-json-view {
-  z-index: 2;
+.sample {
+  margin-left: auto;
 }
+
 </style>

@@ -64,10 +64,10 @@ export function getUnit(odrive, path) {
 // TODO - convert between odrive api units and user-defined units like degrees and rpm
 export let odriveUnits = {
     "4": {
-        "config.brake_resistance": "ohms",
+        "config.brake_resistance": "Ohms",
         "controller.pos_setpoint": "counts",
         "controller.vel_setpoint": "counts/s",
-        "controller.current_setpoint": "amps",
+        "controller.current_setpoint": "Amps",
         "controller.config.vel_limit": "counts/s",
         "controller.config.vel_ramp_rate": "counts/s^2",
         "encoder.pos_estimate": "counts",
@@ -75,14 +75,17 @@ export let odriveUnits = {
         "trap_traj.config.vel_limit": "counts/s",
         "trap_traj.config.accel_limit": "counts/s^2",
         "trap_traj.config.decel_limit": "counts/s^2",
-        "motor.config.phase_resistance": "ohms",
-        "motor.config.phase_inductance": "henries",
+        "motor.config.phase_resistance": "Ohms",
+        "motor.config.phase_inductance": "Henries",
+        "motor.config.current_lim": "Amps",
+        "vbus_voltage": "Volts",
     },
     "5": {
-        "config.brake_resistance": "ohms",
+        "config.brake_resistance": "Ohms",
         "controller.input_pos": "turns",
         "controller.input_vel": "turns/s",
-        "controller.current_setpoint": "amps",
+        "controller.torque_setpoint": "Amps",
+        "controller.input_torque": "N/m",
         "controller.config.vel_limit": "turns/s",
         "controller.config.vel_ramp_rate": "turns/s^2",
         "encoder.pos_estimate": "turns",
@@ -90,7 +93,10 @@ export let odriveUnits = {
         "trap_traj.config.vel_limit": "turns/s",
         "trap_traj.config.accel_limit": "turns/s^2",
         "trap_traj.config.decel_limit": "turns/s^2",
-        "motor.config.phase_resistance": "ohms",
-        "motor.config.phase_inductance": "henries",
+        "motor.config.phase_resistance": "Ohms",
+        "motor.config.phase_inductance": "Henries",
+        "motor.config.current_lim": "Amps",
+        "motor.config.torque_lim": "N/m",
+        "vbus_voltage": "Volts",
     }
 }

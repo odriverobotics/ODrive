@@ -5,12 +5,13 @@
     <div class="right">
       <span v-if="!writeAccess" class="ctrlVal">{{value}}</span>
       <input v-if="writeAccess" :placeholder="value" v-on:change="putVal" />
+      <!-- <span class="unit">[{{unit}}]</span> -->
     </div>
   </div>
 </template>
 
 <script>
-import { getVal, getReadonly, putVal, fetchParam } from "../../lib/odrive_utils.js";
+import { getVal, getReadonly, putVal, fetchParam, getUnit } from "../../lib/odrive_utils.js";
 
 export default {
   name: "CtrlNumeric",
@@ -35,6 +36,11 @@ export default {
       let keys = this.path.split(".");
       keys.shift(); // don't need first key here
       return getReadonly(keys.join('.')) === false;
+    },
+    unit() {
+      let keys = this.path.split(".");
+      keys.shift();
+      return getUnit(this.$store.state.odrives.odrive0,keys.join('.'));
     },
   },
   methods: {
@@ -99,5 +105,9 @@ input::-webkit-inner-spin-button {
 
 input[type=number] {
     -moz-appearance:textfield; /* Firefox */
+}
+
+.unit {
+  font-family: "Roboto Mono", monospace;
 }
 </style>
