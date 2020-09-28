@@ -75,11 +75,11 @@ export default {
     let initVal = () => {
       let keys = this.path.split(".");
       keys.shift(); // don't need first key here
-      return parseFloat(getVal(keys.join('.'))).toFixed(3);
+      return getVal(keys.join('.'));
     };
     this.value = initVal();
-    this.max = this.value * 4;
-    this.min = this.value / 4;
+    this.max = parseFloat((this.value * 4).toFixed(3));
+    this.min = parseFloat((this.value / 4).toFixed(3));
     this.data = Array.from(Array(101), (_, i) => this.min + (this.max-this.min) / 100 * i);
   },
 };

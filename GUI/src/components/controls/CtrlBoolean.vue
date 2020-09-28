@@ -3,7 +3,8 @@
     <button class="close-button" @click=deleteCtrl>X</button>
     <span class="ctrlName">{{name}}:</span>
     <div class="right">
-      <span class="ctrlVal">{{value}}</span>
+      <span class="ctrlVal" v-if="!writeAccess">{{value}}</span>
+      <span class="ctrlVal" v-if="writeAccess">{{fakeValue}}</span>
       <input
         class="ctrlInput"
         v-if="writeAccess"
@@ -16,7 +17,7 @@
 </template>
 
 <script>
-import { getVal, getReadonly, putVal } from "../../lib/odrive_utils.js";
+import { getVal, getReadonly, putVal, fetchParam } from "../../lib/odrive_utils.js";
 
 export default {
   name: "CtrlBoolean",
@@ -25,6 +26,11 @@ export default {
     path: String,
     odrives: Object,
     dashID: String,
+  },
+  data() {
+    return {
+      fakeValue: undefined,
+    }
   },
   computed: {
     value: function () {
@@ -48,12 +54,21 @@ export default {
       let keys = this.path.split('.');
       keys.shift();
       putVal(keys.join('.'), e.target.checked);
+      fetchParam(keys.join('.'));
+      this.fakeValue = e.target.checked;
     },
     deleteCtrl: function() {
       // commit a mutation in the store with the relevant information
       this.$store.commit("removeCtrlFromDash", {dashID: this.dashID, path: this.path});
     }
   },
+  created() {
+    // update parameter value on component creation
+    let keys = this.path.split('.');
+    keys.shift();
+    fetchParam(keys.join('.'));
+    this.fakeValue = getVal(keys.join('.'));
+  }
 };
 </script>
 

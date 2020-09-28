@@ -1,7 +1,7 @@
 import Vue from 'vue';
 import Vuex from 'vuex';
-import ConfigDashOld from "./assets/dashboards/Config_0_4_12.json";
-import ConfigDashNew from "./assets/dashboards/Config_0_5_1.json";
+import TuningDashOld from "./assets/dashboards/Tuning_0_4_12.json";
+import TuningDashNew from "./assets/dashboards/Tuning_0_5_1.json";
 import * as socketio from "./comms/socketio";
 import {filterBy, deleteBy } from "./lib/utils.js";
 //import { v4 as uuidv4 } from "uuid";
@@ -27,7 +27,6 @@ export default new Vuex.Store({
                 name: "Start",
                 component: "Start",
             },
-            //{ name: "Config", id: uuidv4(), component: "Dashboard", controls: [], actions: [], plots: [] }
         ],
         timeSampleStart: 0,
         sampledProperties: [], // make this an object where the full path is a key and the value is the sampled var
@@ -46,23 +45,23 @@ export default new Vuex.Store({
             state.odrives = odrives;
             if (state.firstConn == false) {
                 // first time we're getting odrive data, add correct config page
-                let ConfigDash;
+                let TuningDash;
                 if (state.odrives.odrive0.fw_version_minor.val == "5") {
-                    ConfigDash = ConfigDashNew;
+                    TuningDash = TuningDashNew;
                 }
                 else if (state.odrives.odrive0.fw_version_minor.val == "4") {
-                    ConfigDash = ConfigDashOld;
+                    TuningDash = TuningDashOld;
                 }
                 else {
-                    ConfigDash = ConfigDashNew;
+                    TuningDash = TuningDashNew;
                 }
                 state.dashboards.push({
                     name: "Wizard",
                     component: "Wizard",
                 });
-                state.dashboards.push(ConfigDash);
+                state.dashboards.push(TuningDash);
                 // plots will have variables associated, add them to sampled variables list
-                for (const plot of ConfigDash.plots) {
+                for (const plot of TuningDash.plots) {
                     for (const plotVar of plot.vars) {
                         //addsampledprop(path);
                         let path = plotVar.path;
@@ -275,7 +274,7 @@ export default new Vuex.Store({
             // create object of only ODrive parameters that are writeable and numeric
             let writeAbleNumeric = filterBy(context.state.odrives, ((o) => o['readonly'] == false && ['float', 'int', 'bool'].includes(o['type'])));
             deleteBy(writeAbleNumeric, ((o) => o.constructor == Object && Object.keys(o).length == 0))
-            
+
             context.commit('setOdriveConfigs', {full: fullTree, 
                                                 functions: fcns, 
                                                 params: params, 

@@ -3,7 +3,6 @@
     <button class="close-button" @click=deleteCtrl>X</button>
     <span class="ctrlName">{{name}}:</span>
     <div class="right">
-      <!-- <input v-if="writeAccess" type="number" v-on:change="putVal" /> -->
       <select class="ctrl-enum" v-model="selected" @change="putVal">
           <option v-for="option in options" :key="option.value" :value="option.value">
               {{ option.text }}
@@ -14,7 +13,7 @@
 </template>
 
 <script>
-import { getVal, getReadonly, putVal } from "../../lib/odrive_utils.js";
+import { getVal, getReadonly, putVal, fetchParam } from "../../lib/odrive_utils.js";
 
 export default {
   name: "CtrlNumeric",
@@ -65,6 +64,11 @@ export default {
     },
   },
   created() {
+      // update parameter value on component creation
+      let keys = this.path.split('.');
+      keys.shift();
+      fetchParam(keys.join('.'));
+  
       this.selected = this.value;
       console.log(this.value);
   }

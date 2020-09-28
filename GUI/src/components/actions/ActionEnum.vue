@@ -3,7 +3,11 @@
     <button class="close-button" @click=deleteAction>X</button>
     <span class="ctrlName">{{shortPath}}:</span>
     <div class="right">
-      <input v-on:change="newVal" :placeholder="initVal"/>
+      <select class="action-enum" v-model="value" @change="newVal">
+          <option v-for="option in options" :key="option.value" :value="option.value">
+              {{ option.text }}
+          </option>
+      </select>
       <button class="action-button close-button" @click="putVal">Send</button>
     </div>
   </div>
@@ -13,19 +17,20 @@
 import { putVal } from "../../lib/odrive_utils.js";
 
 export default {
-  name: "Action",
+  name: "ActionEnum",
   props: {
     id: String,
     path: String,
     initVal: Number,
-    dashID: String
+    dashID: String,
+    options: Array,
   },
   data: function () {
     return {
       value: 0,
     };
   },
-  mounted() {
+  created() {
     if (this.initVal !== undefined) {
       this.value = this.initVal;
     }
@@ -39,18 +44,8 @@ export default {
   },
   methods: {
     newVal: function (e) {
-      let input = e.target.value;
-      let allowedChars = "0123456789eE/*-+.()";
-      let send = true;
-      for (const c of input) {
-        if (!allowedChars.includes(c)) {
-          send = false;
-        }
-      }
-      if (send) {
-        this.value = eval(input);
-        console.log("input = " + input + ", val = " + this.value);
-      }
+        console.log(this.selected);
+      this.value = parseFloat(e.target.value);
       this.$store.commit("setActionVal", {dashID: this.dashID, actionID: this.id, val: this.value});
     },
     putVal: function () {
@@ -91,14 +86,10 @@ input {
     margin-left: auto;
 }
 
-input::-webkit-outer-spin-button,
-input::-webkit-inner-spin-button {
-    /* display: none; <- Crashes Chrome on hover */
-    -webkit-appearance: none;
-    margin: 0; /* <-- Apparently some margin are still there even though it's hidden */
-}
-
-input[type=number] {
-    -moz-appearance:textfield; /* Firefox */
+.action-enum {
+    border: none;
+    border-bottom: 1px solid grey;
+    background-color: var(--fg-color);
+    text-align-last: right;
 }
 </style>

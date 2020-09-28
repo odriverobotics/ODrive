@@ -4,6 +4,7 @@ import os
 from flask import make_response, request, jsonify, session
 from flask_socketio import SocketIO, send, emit
 from flask_cors import CORS
+from engineio.payload import Payload
 import json
 import time
 import argparse
@@ -20,6 +21,7 @@ app.config.update(
     SESSION_COOKIE_SAMESITE='None'
 )
 CORS(app, support_credentials=True)
+Payload.max_decode_packets = 100
 socketio = SocketIO(app, cors_allowed_origins="*", async_mode = "threading")
 
 def get_all_odrives():

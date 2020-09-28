@@ -35,7 +35,7 @@
         <button
           v-if="
             dash.name !== 'Start' &&
-            dash.name !== 'Config' &&
+            dash.name !== 'Tuning' &&
             dash.name !== 'Wizard'
           "
           class="close-button"

@@ -35,13 +35,15 @@
           <div class="add-button card" @click="addComponent('function')">Add Function</div>
         </div>
         <template v-for="(action, index) in dash.actions">
-          <action
+          <component
+            :is="action.actionType"
             :id="action.id"
             :key="index + '-action'"
             :path="action.path"
             :odrives="odrives"
             :initVal="action.val"
             :dashID="dash.id"
+            :options="action.options"
           />
         </template>
         <div class="add-button card" @click="addComponent('action')">Add Action</div>
@@ -74,6 +76,7 @@ import CtrlSlider from "../components/controls/CtrlSlider.vue";
 import CtrlEnum from "../components/controls/CtrlEnum.vue";
 import Plot from "../components/plots/Plot.vue";
 import Action from "../components/actions/Action.vue";
+import ActionEnum from "../components/actions/ActionEnum.vue"
 import { JSONView } from "vue-json-component";
 import { v4 as uuidv4 } from "uuid";
 
@@ -264,6 +267,7 @@ export default {
     CtrlEnum,
     Plot,
     Action,
+    ActionEnum,
     "json-view": JSONView,
   },
   props: ["dash", "odrives"],
@@ -385,11 +389,23 @@ export default {
           {
             // add an action to the current dash
             let id = uuidv4();
-            this.dash.actions.push({
-              id: id,
-              path: e.path,
-              val: undefined,
-            });
+            console.log("action, key = " + e.key);
+            if (Object.keys(odriveEnums).includes(e.key)){
+              this.dash.actions.push({
+                actionType: "ActionEnum",
+                id: id,
+                path: e.path,
+                options: odriveEnums[e.key],
+              })
+            }
+            else {
+              this.dash.actions.push({
+                actionType: "Action",
+                id: id,
+                path: e.path,
+                val: undefined,
+              });
+            }
           }
           break;
         case "slider":

@@ -3,14 +3,14 @@
     <button class="close-button" @click=deleteCtrl>X</button>
     <span class="ctrlName">{{name}}:</span>
     <div class="right">
-      <span class="ctrlVal">{{value}}</span>
-      <input v-if="writeAccess" v-on:change="putVal" />
+      <span v-if="!writeAccess" class="ctrlVal">{{value}}</span>
+      <input v-if="writeAccess" :placeholder="value" v-on:change="putVal" />
     </div>
   </div>
 </template>
 
 <script>
-import { getVal, getReadonly, putVal } from "../../lib/odrive_utils.js";
+import { getVal, getReadonly, putVal, fetchParam } from "../../lib/odrive_utils.js";
 
 export default {
   name: "CtrlNumeric",
@@ -57,6 +57,12 @@ export default {
       // commit a mutation in the store with the relevant information
       this.$store.commit("removeCtrlFromDash", {dashID: this.dashID, path: this.path});
     }
+  },
+  created() {
+    // update parameter value on component creation
+    let keys = this.path.split('.');
+    keys.shift();
+    fetchParam(keys.join('.'));
   },
 };
 </script>
