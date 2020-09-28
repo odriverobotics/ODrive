@@ -247,11 +247,11 @@ void Motor::apply_pwm_timings(uint16_t timings[3], bool tentative) {
  * motor phases are floating and will not be enabled again until
  * arm() is called.
  */
-bool Motor::disarm(bool* was_armed) {
-    bool dummy;
-    was_armed = was_armed ? was_armed : &dummy;
+bool Motor::disarm(bool* p_was_armed) {
+    bool was_armed;
+    
     CRITICAL_SECTION() {
-        *was_armed = is_armed_;
+        was_armed = is_armed_;
         if (is_armed_) {
             gate_driver_.set_enabled(false);
         }
@@ -265,6 +265,10 @@ bool Motor::disarm(bool* was_armed) {
     // Check necessary to prevent infinite recursion
     if (was_armed) {
         update_brake_current();
+    }
+
+    if (p_was_armed) {
+        *p_was_armed = was_armed;
     }
 
     return true;
@@ -316,7 +320,6 @@ bool Motor::setup() {
 void Motor::disarm_with_error(Motor::Error error){
     error_ |= error;
     disarm();
-    update_brake_current();
 }
 
 bool Motor::do_checks(uint32_t timestamp) {
