@@ -2,7 +2,7 @@ name: Build and publish HTML documentation website
 
 on:
   push:
-    branches: [ feature/doc_autogen ]
+    branches: [ master ]
 
 jobs:
   jekyll:
