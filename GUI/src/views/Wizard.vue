@@ -7,8 +7,12 @@
           v-for="page in wizardPages"
           :key="page.title"
           class="wizard-link"
-          :class="{'active-link': currentStep == page, 'finished-page': page.choiceMade}"
-        >{{page.link}}</span>
+          :class="{
+            'active-link': currentStep == page,
+            'finished-page': page.choiceMade,
+          }"
+          >{{ page.link }}</span
+        >
       </div>
       <div class="wizard-page">
         <wizardPage
@@ -29,15 +33,17 @@
           <button class="wizard-button card" @click="finish">Finish</button>
           <button
             class="wizard-button card"
-            :class="{'next-green': choiceMade}"
+            :class="{ 'next-green': choiceMade }"
             v-tooltip.right="{
               content: currentStep.nextTooltip,
               class: 'tooltip-custom tooltip-other-custom fade-in',
               delay: 0,
-              visible: !choiceMade&&currentStep.nextTooltip!=null,
+              visible: !choiceMade && currentStep.nextTooltip != null,
             }"
             @click="next"
-          >Next</button>
+          >
+            Next
+          </button>
         </div>
       </div>
     </div>
@@ -49,9 +55,7 @@ import configTemplate from "../assets/wizard/configTemplate.json";
 import wizardPage from "../components/wizard/wizardPage.vue";
 import odriveEnums from "../assets/odriveEnums.json";
 import { pages } from "../assets/wizard/wizard.js";
-import { getVal, putVal } from "../lib/odrive_utils.js"
-
-// see wizard.js for what wizard pages exist and what they contain
+import { getVal, putVal, fetchParam } from "../lib/odrive_utils.js";
 
 export default {
   name: "Wizard",
@@ -80,16 +84,16 @@ export default {
       this.choiceMade = false;
       if (e.data == "motor calibration") {
         // set a timeout to grab axis resistance and inductance values
+        fetchParam("odrive0." + e.axis + ".error");
         let apply = () => {
-          if (
-            this.$store.state.odrives.odrive0.axis0.error.val == "0" &&
-            this.$store.state.odrives.odrive0.axis1.error.val == "0"
-          ) {
+          if (getVal("odrive0." + e.axis + ".error") == 0) {
             let configStub = undefined;
-            let path_inductance = "odrive0." + e.axis + ".motor.config.phase_inductance";
-            let path_resistance = "odrive0." + e.axis + ".motor.config.phase_resistance";
-            let inductance = parseFloat(getVal(path_inductance));
-            let resistance = parseFloat(getVal(path_resistance));
+            let inductance = getVal(
+              "odrive0." + e.axis + ".motor.config.phase_inductance"
+            );
+            let resistance = getVal(
+              "odrive0." + e.axis + ".motor.config.phase_resistance"
+            );
             if (e.axis == "axis0") {
               configStub = {
                 axis0: {
@@ -135,26 +139,30 @@ export default {
         };
         let updateCalInfo = () => {
           // parse error code, update calibration information
-          let motorError = parseInt(this.$store.state.odrives.odrive0[e.axis].motor.error.val);
-          if (motorError == odriveEnums.MOTOR_ERROR_PHASE_RESISTANCE_OUT_OF_RANGE || 
-              motorError == odriveEnums.MOTOR_ERROR_PHASE_INDUCTANCE_OUT_OF_RANGE) {
-                //we got the expected calibration error
-                console.log("Calibration failed.");
-                this.calStatus = false;
-              }
+          let motorError = getVal("odrive0." + e.axis + ".motor.error");
+          if (
+            motorError ==
+              odriveEnums.MOTOR_ERROR_PHASE_RESISTANCE_OUT_OF_RANGE ||
+            motorError == odriveEnums.MOTOR_ERROR_PHASE_INDUCTANCE_OUT_OF_RANGE
+          ) {
+            //we got the expected calibration error
+            console.log("Calibration failed.");
+            this.calStatus = false;
+          }
         };
         this.wait = function () {
+          fetchParam("odrive0." + e.axis + ".current_state");
+          fetchParam("odrive0." + e.axis + ".motor.config.phase_resistance");
+          fetchParam("odrive0." + e.axis + ".motor.config.phase_inductance");
+          console.log();
           if (
-            parseInt(
-              this.$store.state.odrives.odrive0[e.axis].current_state.val
-            ) == odriveEnums.AXIS_STATE_MOTOR_CALIBRATION
+            getVal("odrive0." + e.axis + ".current_state") ==
+            odriveEnums.AXIS_STATE_MOTOR_CALIBRATION
           ) {
             // still calibrating
             setTimeout(() => this.wait(), 100);
             this.calibrating = true;
-          } else if (
-            this.$store.state.odrives.odrive0[e.axis].error.val != "0"
-          ) {
+          } else if (getVal("odrive0." + e.axis + ".error") != 0) {
             console.log("motor cal error");
             this.calibrating = false;
             this.choiceMade = false;
@@ -168,6 +176,9 @@ export default {
             this.calStatus = true;
           }
         };
+        fetchParam("odrive0." + e.axis + ".current_state");
+        fetchParam("odrive0." + e.axis + ".motor.config.phase_resistance");
+        fetchParam("odrive0." + e.axis + ".motor.config.phase_inductance");
         // wait for at least a second for comms to update state of ODrive
         setTimeout(() => this.wait(), 1000);
       } else if (e.data == "encoder calibration") {
@@ -176,9 +187,7 @@ export default {
         // start calibration
         // wait for cal to finish
         // set odrive cpr back to oldVal
-        let oldCPR = parseInt(
-          this.$store.state.odrives.odrive0[e.axis].encoder.config.cpr.val
-        );
+        let oldCPR = getVal("odrive0." + e.axis + ".encoder.config.cpr");
         console.log("oldCPR = " + oldCPR);
         console.log("axis = " + e.axis);
         putVal(
@@ -191,17 +200,15 @@ export default {
         );
 
         this.wait = function () {
+          fetchParam("odrive0." + e.axis + ".current_state");
           if (
-            parseInt(
-              this.$store.state.odrives.odrive0[e.axis].current_state.val
-            ) == odriveEnums.AXIS_STATE_ENCODER_OFFSET_CALIBRATION
+            getVal("odrive0." + e.axis + ".current_state") ==
+            odriveEnums.AXIS_STATE_ENCODER_OFFSET_CALIBRATION
           ) {
             setTimeout(() => this.wait(), 100);
             console.log("waiting for encoder cal to finish...");
             this.calibrating = true;
-          } else if (
-            this.$store.state.odrives.odrive0[e.axis].error.val != "0"
-          ) {
+          } else if (getVal("odrive0." + e.axis + ".error") != 0) {
             putVal("odrive0." + e.axis + ".encoder.config.cpr", oldCPR);
             console.log("applying old CPR, error detected");
             this.calibrating = false;
@@ -210,10 +217,12 @@ export default {
             putVal("odrive0." + e.axis + ".encoder.config.cpr", oldCPR);
             console.log("applying old CPR");
             this.choiceMade = true;
+            this.currentStep.choiceMade = true;
             this.calibrating = false;
             this.calStatus = true;
           }
         };
+        fetchParam("odrive0." + e.axis + ".current_state");
         setTimeout(() => this.wait(), 1000);
       }
     },
@@ -230,7 +239,11 @@ export default {
       // for motors, wait for calibration to finish before giving the green light unless motor.is_calibrated == true
       // for encoders, wait for calibration to finish unless encoder.is_ready == true
       this.choiceMade = true;
-      if (e.choice == "ODrive D5065" || e.choice == "ODrive D6374" || e.choice == "Other motor") {
+      if (
+        e.choice == "ODrive D5065" ||
+        e.choice == "ODrive D6374" ||
+        e.choice == "Other motor"
+      ) {
         let axis;
         if (this.currentStep == pages.Motor_0) axis = "axis0";
         if (this.currentStep == pages.Motor_1) axis = "axis1";
@@ -238,7 +251,12 @@ export default {
           this.choiceMade = false;
         }
       }
-      if (e.choice == "CUI AMT102V" || e.choice == "Hall Effect" || e.choice == "Incremental" || e.choice == "IncrementalIndex") {
+      if (
+        e.choice == "CUI AMT102V" ||
+        e.choice == "Hall Effect" ||
+        e.choice == "Incremental" ||
+        e.choice == "IncrementalIndex"
+      ) {
         let axis;
         if (this.currentStep == pages.Encoder_0) axis = "axis0";
         if (this.currentStep == pages.Encoder_1) axis = "axis1";
@@ -303,6 +321,17 @@ export default {
     for (const page of Object.keys(pages)) {
       pages[page].choiceMade = false;
     }
+    let erase = (obj) => {
+      Object.keys(obj).forEach((key) => {
+        if (typeof obj[key] == 'object' && obj[key] != null) {
+          erase(obj[key]);
+        }
+        else {
+          obj[key] = null;
+        }
+      });
+    }
+    erase(this.wizardConfig);
   },
 };
 </script>
