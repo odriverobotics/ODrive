@@ -54,14 +54,16 @@ jobs:
           bundle install && \
           JEKYLL_ENV=production bundle exec jekyll build
         "
+        mv docs/_site _site
+        rm -rdf docs
+        mv _site docs
         touch docs/.nojekyll
 
     - name: Push to documentation branch
       run: |
         git config user.name "${GITHUB_ACTOR}"
         git config user.email "${GITHUB_ACTOR}@users.noreply.github.com"
-        git add -f docs/_site
-        git add -f docs/.nojekyll
+        git add -f docs
         git commit -m "jekyll build from Action ${GITHUB_SHA}"
         git push --force origin HEAD:${REMOTE_BRANCH}
       env:
