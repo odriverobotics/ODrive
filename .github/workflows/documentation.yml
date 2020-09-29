@@ -52,12 +52,16 @@ jobs:
           cd /srv/jekyll/docs && \
           bundle config path vendor/bundle && \
           bundle install && \
-          JEKYLL_ENV=production bundle exec jekyll build
+          bundle exec jekyll build --baseurl \"\"
+          cd ..
+          mv docs/_site _site
+          rm -rdf docs
+          mv _site docs
+          touch docs/.nojekyll
         "
-        mv docs/_site _site
-        rm -rdf docs
-        mv _site docs
-        touch docs/.nojekyll
+        # Extra checks to reduce likelihood of defect build
+        test -f docs/CNAME
+        test -f docs/index.html
 
     - name: Push to documentation branch
       run: |
