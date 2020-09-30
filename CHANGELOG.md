@@ -35,8 +35,10 @@ Please add a note of your changes below this heading if you make a Pull Request.
 * Fixed bug of high current during lockin-ramp caused by `motor::update()` expecting a torque command instead of current
 * Fixed bug where commanded velocity was extremely high just after sensorless ramp when using `input_mode` INPUT_MODE_VEL_RAMP caused by `vel_setpoint` and `axis.config.sensorless_ramp.vel` being in different units
 
+### Fixed
+* Fixed bug of high current during lockin-ramp caused by `motor::update()` expecting a torque command instead of current
+* Fixed bug where commanded velocity was extremely high just after sensorless ramp when using `input_mode` INPUT_MODE_VEL_RAMP caused by `vel_setpoint` and `axis.config.sensorless_ramp.vel` being in different units
 
-# Releases
 ## [0.5.0] - 2020-08-03
 ### Added
 * AC Induction Motor support.
