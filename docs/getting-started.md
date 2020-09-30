@@ -19,6 +19,7 @@ permalink: /
 - [Other control modes](#other-control-modes)
 - [Watchdog Timer](#watchdog-timer)
 - [What's next?](#whats-next)
+- [Upgrading from 0.4.12](#upgrading-from-0412)
 
 <!-- /TOC -->
 
@@ -107,13 +108,13 @@ brew install libusb
 ```
 5. Now that you have Python 3 and all the package managers, run:
 ```bash
-pip3 install odrive
+pip3 install --upgrade odrive
 ```
 
 __Troubleshooting__
 1. Permission Errors: Just run the previous command in sudo
 ```bash
-sudo pip3 install odrive
+sudo pip3 install --upgrade odrive
 ```
 
 2. Dependency Errors: If the installer doesn't complete and you get a dependency
@@ -126,7 +127,7 @@ Try step 5 again
 
 ### Linux
 1. [Install Python 3](https://www.python.org/downloads/). (for example, on Ubuntu, `sudo apt install python3 python3-pip`)
-2. Install the ODrive tools by opening a terminal and typing `sudo pip3 install odrive` <kbd>Enter</kbd>
+2. Install the ODrive tools by opening a terminal and typing `sudo pip3 install --upgrade odrive` <kbd>Enter</kbd>
     * This should automatically add the udev rules. If this fails for some reason you can add them manually:
     ```bash
     echo 'SUBSYSTEM=="usb", ATTR{idVendor}=="1209", ATTR{idProduct}=="0d[0-9][0-9]", MODE="0666"' | sudo tee /etc/udev/rules.d/91-odrive.rules
@@ -373,3 +374,7 @@ You can now:
 * See how you can improve the behavior during the startup procedure, like [bypassing encoder calibration](encoders.md#encoder-with-index-signal).
 
 If you have any issues or any questions please get in touch. The [ODrive Community](https://discourse.odriverobotics.com/) warmly welcomes you.
+
+
+## Upgrading from 0.4.12
+A new version (0.5.1) of ODrive firmware has released, complete with a new odrivetool.  Follow the installation instructions, making sure to add the `--upgrade` flag to pip commands, and check out the [Changelog](../CHANGELOG.md) for changes!
