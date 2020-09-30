@@ -17,8 +17,8 @@ Please add a note of your changes below this heading if you make a Pull Request.
 * `<axis>.motor.gate_driver` was moved to `<axis>.gate_driver`.
 * `<axis>.min_endstop.pullup` and `<axis>.max_endstop.pullup` were removed. Use `<odrv>.config.gpioX_mode = GPIO_MODE_DIGITAL / GPIO_MODE_DIGITAL_PULL_UP / GPIO_MODE_DIGITAL_PULL_DOWN` instead.
 
-# Release Candidate
-## [0.5.1] - Date TBD
+# Releases
+## [0.5.1] - 2020-09-27
 ### Added
 * Added motor `torque_constant`: units of torque are now [Nm] instead of just motor current.
 * [Motor thermistors support](docs/thermistors.md)
