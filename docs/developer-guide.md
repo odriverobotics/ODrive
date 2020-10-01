@@ -274,9 +274,17 @@ We use GitHub Releases to provide firmware releases.
 
 1. Cut off the changelog to reflect the new release
 2. Merge the release candidate into master.
-3. Push a (lightweight) tag to the master branch. Follow the existing naming convention.
-4. Push the python tools to PyPI.
-5. Edit the release on GitHub to add a title and description (copy&paste from changelog).
+3. Push a (lightweight) tag to the master branch.
+   - Releases should be named like `fw-v0.1.23`
+   - Prereleases should be named like `fw-v0.1.23-rc` or `fw-v0.1.23-rc4`
+4. Go to the GitHub Releases page and review the draft that will have been created by a GitHub Action by now. If you're satisfied, go ahead and publish it by pressing Edit > **Publish Release**.
+5. Download `python-odrive-*.tar.gz` from the Releases page. The following step assumes that the version is `0.1.2`
+6. Run 
+   ```
+   mv {python-,}odrive-0.1.23.tar.gz
+   pip3 install twine
+   python3 -m twine upload odrive-0.1.23.tar.gz  # Only works once per version!
+   ```
 
 ## Other code maintenance notes
 The cortex M4F processor has hardware single precision float unit. However double precision operations are not accelerated, and hence should be avoided. The following regex is helpful for cleaning out double constants:

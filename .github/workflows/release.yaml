@@ -1,0 +1,109 @@
+name: Create Release Draft
+
+on:
+  push:
+    tags: ['fw-v*']
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: true
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Parse Release Specs
+        id: release_specs
+        run: |
+          echo "github.ref = ${{ github.ref }}"
+
+          function get_version() { sed -E -n "s|.*([0-9]+\.[0-9]+\.[0-9]+).*|\1|p"; }
+
+          #LAST_VERSION="$(curl -s https://api.github.com/repos/madcowswe/ODrive/releases/latest | jq '.name' | get_version)"
+          #echo "previous version = $LAST_VERSION"
+
+          NEW_VERSION="$(echo "${{ github.ref }}" | get_version)"
+          echo "version = $NEW_VERSION"
+
+          ALL_TITLES="$(grep -E -n "^## .*[0-9]+\.[0-9]+\.[0-9]+" CHANGELOG.md)"
+
+          echo "I found the following version headers in the changelog:"
+          echo "$ALL_TITLES"
+
+          START_LINE="$(head -1 <<< "$ALL_TITLES" | cut -f 1 -d ':')"
+          END_LINE="$(head -2 <<< "$ALL_TITLES" | tail -1 | cut -f 1 -d ':')"
+
+          BODY="$(head -$(("$END_LINE" - 1)) CHANGELOG.md | tail +$(("$START_LINE" + 1)))"
+
+          IS_PRERELEASE="$(grep -F "$NEW_VERSION"-rc <<< "${{ github.ref }}" >/dev/null && echo true || echo false)"
+          echo "Is prerelease: $IS_PRERELEASE"
+
+          # The git tag is later read when packaging the python tools and
+          # compiling the firmware. We set it explicitly here in case the
+          # workflow was triggered by something other than a git tag.
+          git tag "${{ github.ref }}"
+          
+          # Escape BODY string to set it as GitHub Actions output
+          BODY="${BODY//'%'/'%25'}"
+          BODY="${BODY//$'\n'/'%0A'}"
+          BODY="${BODY//$'\r'/'%0D'}"
+
+          echo "::set-output name=body::$BODY"
+          echo "::set-output name=version::$NEW_VERSION"
+          echo "::set-output name=is_prerelease::$IS_PRERELEASE"
+
+      - name: Create Release Draft
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref }}
+          release_name: Firmware version ${{ steps.release_specs.outputs.version }}
+          body: ${{ steps.release_specs.outputs.body }}
+          draft: true # Only do a draft so we have a change to manually review
+                      # the release before it goes live.
+          prerelease: ${{ steps.release_specs.outputs.is_prerelease }}
+
+      - name: Install Prerequisites
+        run: |
+          sudo add-apt-repository ppa:team-gcc-arm-embedded/ppa
+          sudo add-apt-repository ppa:jonathonf/tup
+          sudo apt-get update
+          sudo apt-get install gcc-arm-embedded
+          sudo apt-get install tup
+          sudo apt install python3 python3-yaml python3-jinja2 python3-jsonschema
+
+      - name: Build Python Tools
+        run: |
+          cd ${{ github.workspace }}/tools
+          python setup.py sdist
+
+          cd dist
+          PKG_NAME="$(ls)"
+          if [ "$(wc -l <<< "$PKG_NAME")" != 1 ]; then
+            echo "Expected exactly one output file but got:"
+            ls
+            exit 1
+          fi
+
+          urls=( ${{ steps.create_release.outputs.upload_url }} )
+          URL="${urls[0]}=python-${PKG_NAME}"
+          echo "uploading to $URL"
+          
+          curl --silent --show-error --fail \
+            -H "Content-Type: application/octet-stream" \
+            -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+            --data-binary @"${PKG_NAME}" \
+            "$URL"
+
+      # Run the action under .github/actions/release-firmware for every board version
+      #- {uses: ./.github/actions/release-firmware, with: {board-version: v3.2, url: '${{ steps.create_release.outputs.upload_url }}', token: '${{ secrets.GITHUB_TOKEN }}' }}
+      #- {uses: ./.github/actions/release-firmware, with: {board-version: v3.3, url: '${{ steps.create_release.outputs.upload_url }}', token: '${{ secrets.GITHUB_TOKEN }}' }}
+      #- {uses: ./.github/actions/release-firmware, with: {board-version: v3.4-24V, url: '${{ steps.create_release.outputs.upload_url }}', token: '${{ secrets.GITHUB_TOKEN }}' }}
+      #- {uses: ./.github/actions/release-firmware, with: {board-version: v3.4-48V, url: '${{ steps.create_release.outputs.upload_url }}', token: '${{ secrets.GITHUB_TOKEN }}' }}
+      - {uses: ./.github/actions/release-firmware, with: {board_version: v3.5-24V, url: '${{ steps.create_release.outputs.upload_url }}', token: '${{ secrets.GITHUB_TOKEN }}' }}
+      - {uses: ./.github/actions/release-firmware, with: {board_version: v3.5-48V, url: '${{ steps.create_release.outputs.upload_url }}', token: '${{ secrets.GITHUB_TOKEN }}' }}
+      - {uses: ./.github/actions/release-firmware, with: {board_version: v3.6-24V, url: '${{ steps.create_release.outputs.upload_url }}', token: '${{ secrets.GITHUB_TOKEN }}' }}
+      - {uses: ./.github/actions/release-firmware, with: {board_version: v3.6-56V, url: '${{ steps.create_release.outputs.upload_url }}', token: '${{ secrets.GITHUB_TOKEN }}' }}
