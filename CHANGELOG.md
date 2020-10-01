@@ -5,6 +5,7 @@ Please add a note of your changes below this heading if you make a Pull Request.
 ## [0.5.1] - 2020-09-27
 ### Added
 * Added motor `torque_constant`: units of torque are now [Nm] instead of just motor current.
+* Added `motor.config.torque_lim`: limit for motor torque in [Nm] units instead.
 * [Motor thermistors support](docs/thermistors.md)
 * Enable/disable of thermistor thermal limits according `setting axis.<thermistor>.enabled`.
 * Introduced `odrive-interface.yaml` as a root source for the ODrive's API. `odrivetool` connects much faster as a side effect.
