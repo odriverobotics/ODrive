@@ -99,6 +99,9 @@ public:
 
     TransferHandle tx_handle_ = 0; // non-zero while a TX operation is in progress
     uint8_t* rx_end_ = nullptr; // non-zero if an RX operation has finished but wasn't handled yet because the TX channel was busy
+    StreamStatus rx_status_ = kStreamOk; // non-ok if the RX process was terminated permanently.
+                                         // This signals to the TX process that it should close
+                                         // the protocol instance at the next possible instant.
     
     Completer<LegacyProtocolPacketBased*, StreamStatus>* on_stopped_ = nullptr;
 
@@ -136,7 +139,8 @@ private:
 
     void on_write_finished(WriteResult result);
     void on_read_finished(ReadResult result);
-    void on_closed(StreamStatus status);
+    void on_rx_closed(StreamStatus status);
+    void on_rx_tx_closed(StreamStatus status);
 };
 
 

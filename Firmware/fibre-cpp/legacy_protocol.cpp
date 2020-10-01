@@ -329,6 +329,11 @@ bool fibre::endpoint0_handler(fibre::cbufptr_t* input_buffer, fibre::bufptr_t* o
 void LegacyProtocolPacketBased::on_write_finished(WriteResult result) {
     tx_handle_ = 0;
 
+    if (rx_status_ != kStreamOk) {
+        on_rx_tx_closed(rx_status_);
+        return;
+    }
+
 #if FIBRE_ENABLE_CLIENT
     if (transmitting_op_) {
         uint16_t seqno = transmitting_op_ & 0xffff;
@@ -376,18 +381,18 @@ void LegacyProtocolPacketBased::on_read_finished(ReadResult result) {
 
     if (result.status == kStreamClosed) {
         FIBRE_LOG(D) << "RX stream closed.";
-        on_closed(kStreamClosed);
+        on_rx_closed(kStreamClosed);
         return;
     } else if (result.status == kStreamCancelled) {
         FIBRE_LOG(W) << "RX operation cancelled.";
-        // TODO: close stream
+        on_rx_closed(kStreamCancelled);
         return;
     } else if (result.status != kStreamOk) {
         FIBRE_LOG(W) << "RX error. Not restarting.";
         // TODO: we should distinguish between permanent and temporary errors.
         // If we try to restart after a permanent error we might end up in a
         // busy loop.
-        on_closed(kStreamError);
+        on_rx_closed(kStreamError);
         return;
     }
 
@@ -484,13 +489,32 @@ void LegacyProtocolPacketBased::on_read_finished(ReadResult result) {
     rx_channel_->start_read(rx_buf_, &dummy, *static_cast<ReadCompleter*>(this));
 }
 
-void LegacyProtocolPacketBased::on_closed(StreamStatus status) {
+void LegacyProtocolPacketBased::on_rx_closed(StreamStatus status) {
+    if (tx_handle_) {
+        // TX operation still in progress - cancel TX operation and defer closing
+        // the protocol instance until the TX operation has finished.
+        rx_status_ = status;
+        tx_channel_->cancel_write(tx_handle_);
+    } else {
+        // No TX operation in progress - close protocol instance immediately.
+        on_rx_tx_closed(status);
+    }
+}
+
+void LegacyProtocolPacketBased::on_rx_tx_closed(StreamStatus status) {
 
 #ifdef FIBRE_ENABLE_CLIENT
+    // Cancel pending endpoint operation
+    if (pending_operation_.completer) {
+        pending_operation_.completer->complete({status, pending_operation_.rx_buf.begin()});
+        pending_operation_ = {};
+    }
+
     // Cancel all ongoing endpoint operations
     for (auto& item: expected_acks_) {
-        if (item.second.completer)
+        if (item.second.completer) {
             (*item.second.completer).complete({status, item.second.rx_buf.begin()});
+        }
     }
     expected_acks_.clear();
 
