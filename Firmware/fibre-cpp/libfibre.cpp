@@ -80,7 +80,11 @@ struct FIBRE_PRIVATE LibFibreDiscoveryCtx :
     on_found_object_cb_t on_found_object;
     void* cb_ctx;
     LibFibreCtx* ctx;
-    std::vector<fibre::LegacyProtocolPacketBased*> protocol_instances;
+
+    // A LibFibreDiscoveryCtx is created when the application starts discovery
+    // and is deleted when the application stopped discovery _and_ all protocol
+    // instances that arose from this discovery instance were also stopped.
+    size_t use_count = 1;
 };
 
 
@@ -101,9 +105,10 @@ void LibFibreDiscoveryCtx::complete(fibre::ChannelDiscoveryResult result) {
 
     const size_t mtu = 64; // TODO: get MTU from channel specific data
 
+    use_count++;
+
     auto protocol = new fibre::LegacyProtocolPacketBased(result.rx_channel, result.tx_channel, mtu);
     protocol->client_.user_data_ = ctx;
-    protocol_instances.push_back(protocol);
     protocol->start(*this, *this, *this);
 }
 
@@ -151,6 +156,11 @@ void LibFibreDiscoveryCtx::complete(fibre::LegacyObjectClient* obj_client) {
 // on_stopped callback for LegacyProtocolPacketBased::start()
 void LibFibreDiscoveryCtx::complete(fibre::LegacyProtocolPacketBased* protocol, fibre::StreamStatus status) {
     delete protocol;
+
+    if (--use_count == 0) {
+        FIBRE_LOG(D) << "deleting discovery context";
+        delete this;
+    }
 }
 
 const struct LibFibreVersion* libfibre_get_version() {
@@ -253,7 +263,10 @@ void libfibre_stop_discovery(LibFibreCtx* ctx, LibFibreDiscoveryCtx* discovery_c
         ctx->libusb_discoverer.stop_channel_discovery(discovery_ctx->libusb_discovery_ctx);
     }
 
-    delete discovery_ctx;
+    if (--discovery_ctx->use_count == 0) {
+        FIBRE_LOG(D) << "deleting discovery context";
+        delete discovery_ctx;
+    }
 }
 
 const char* transform_codec(std::string& codec) {
