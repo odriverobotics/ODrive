@@ -27,6 +27,7 @@ export default {
         animation: {
           duration: 0, // general animation time
         },
+        events: [],
         hover: {
           animationDuration: 0, // duration of animations when hovering an item
         },

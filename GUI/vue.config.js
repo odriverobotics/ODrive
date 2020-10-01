@@ -3,13 +3,13 @@
 module.exports = {
     pluginOptions: {
         electronBuilder: {
-            //preload: 'src/preload.js',
-            nodeIntegration: true,
+            preload: 'src/preload.js',
+            //nodeIntegration: true,
             builderOptions: {
                 "productName": "ODriveGUI",
                 "asar": false,
                 "extraResources": "server",
-                "artifactName": "${name}_${os}.${ext}",
+                "artifactName": "${name}.${ext}",
                 "win" : {
                     "target" : [
                         {

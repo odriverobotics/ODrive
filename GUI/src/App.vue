@@ -236,26 +236,18 @@ export default {
     },
   },
   created() {
-    //grab full JSON
-    //this.getOdrives();
-
+    // on app creation, set the address to the default
     this.$store.dispatch("setServerAddress", "http://127.0.0.1:5000");
-    // connect to socketio on server for sampled data
-    //this.updateOdrives();
 
     // to allow running as web app
-    import('electron').then((electron) => {
-      electron.ipcRenderer.on('server-stdout', (event, arg) => {
-        //console.log("SERVER STDOUT: " + arg); // prints "pong"
+    if (window.ipcRenderer != undefined) {
+      window.ipcRenderer.on('server-stdout', (event, arg) => {
         this.$store.commit('logServerMessage', arg);
       });
-        electron.ipcRenderer.on('server-stderr', (event, arg) => {
-        //console.log("SERVER STDERR: " + arg); // prints "pong"
+        window.ipcRenderer.on('server-stderr', (event, arg) => {
         this.$store.commit('logServerMessage', arg);
       });
-    }).catch((error) => {
-      console.log(error);
-    })
+    }
   },
 };
 </script>
