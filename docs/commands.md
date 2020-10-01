@@ -38,7 +38,7 @@ See [here](api/odrive.axis.axisstate) for a description of each state.
 ### Control Mode
 The default control mode is position control.
 If you want a different mode, you can change `<axis>.controller.config.control_mode`.
-Possible values are listed [here](api/odrive.axis.controller.controlmode).
+Possible values are listed [here](api/odrive.controller.controlmode).
 
 ### Input Mode
 
@@ -51,7 +51,7 @@ As of version v0.5.0, ODrive now intercepts the incoming commands and can apply 
 
 Modes can be selected by changing `<axis>.controller.config.input_mode`.
 The default input mode is `INPUT_MODE_PASSTHROUGH`.
-Possible values are listed [here](api/odrive.axis.controller.inputmode).
+Possible values are listed [here](api/odrive.controller.inputmode).
 
 ## System monitoring commands
 
