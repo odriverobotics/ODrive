@@ -43,4 +43,4 @@ windows:
 		-static-libgcc -Wl,-Bstatic -lstdc++ ./third_party/libusb-windows/libusb-1.0.23/MinGW64/static/libusb-1.0.a -Wl,-Bdynamic
 
 # To check exported symbols run:
-#   nm -D libfibre.so | grep T
+#   nm -D libfibre.so | grep ' T '

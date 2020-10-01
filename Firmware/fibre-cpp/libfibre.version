@@ -1,0 +1,4 @@
+LIBFIBREABI_0.1.0 {
+    global: libfibre_*;
+    local: *;
+};
