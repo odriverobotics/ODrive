@@ -46,8 +46,6 @@
           style="display: none"
         />
       </button>
-      <button @click="killServer">kill server</button>
-      <button @click="startServer">start server</button>
     </div>
 
     <!-- PAGE CONTENT -->
@@ -261,13 +259,6 @@ export default {
         data: {},
       });
     },
-    killServer() {
-      window.ipcRenderer.send('kill-server');
-    },
-    startServer() {
-      window.ipcRenderer.send('start-server');
-      this.$store.dispatch("setServerAddress", "http://127.0.0.1:5000");
-    }
   },
   created() {
     // on app creation, set the address to the default

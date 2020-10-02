@@ -154,6 +154,8 @@ def postVal(odrives, keyList, value, argType):
             RO.set_value(value == "true")
         else:
             pass # dont support that type yet
+    except fibre.protocol.ChannelBrokenException:
+        handle_disconnect()
     except:
         print("exception in postVal")
 
@@ -167,6 +169,8 @@ def getVal(odrives, keyList):
             return dictFromRO(RO)
         else:
             return RO.get_value()
+    except fibre.protocol.ChannelBrokenException:
+        handle_disconnect()
     except:
         print("exception in getVal")
         return 0
@@ -189,6 +193,8 @@ def callFunc(odrives, keyList):
             RO = RO._remote_attributes[key]
         if isinstance(RO, fibre.remote_object.RemoteFunction):
             RO.__call__()
+    except fibre.protocol.ChannelBrokenException:
+        handle_disconnect()
     except:
         print("fcn call failed")
 

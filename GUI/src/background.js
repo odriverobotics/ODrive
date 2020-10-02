@@ -11,7 +11,10 @@ const path = require('path');
 
 // Keep a global reference of the window object, if you don't, the window will
 // be closed automatically when the JavaScript object is garbage collected.
-let win
+let win;
+
+// var for python server
+let server;
 
 // Scheme must be registered before the app is ready
 protocol.registerSchemesAsPrivileged([
@@ -119,21 +122,28 @@ app.on('ready', async () => {
       effectiveCommand.push(arg);
     }
   }
-  var python;
   // launch python server on event from renderer process (gui) and pipe stdout/stderr to it
   ipcMain.on('start-server', () => {
-    python = spawn(getPyCmd(), effectiveCommand);
-    python.stdout.on('data',function(data) {
+    server = spawn(getPyCmd(), effectiveCommand);
+    server.stdout.on('data',function(data) {
       console.log(data.toString('utf8'));
-      win.webContents.send('server-stdout', String(data.toString('utf8')));
+      try {
+        win.webContents.send('server-stdout', String(data.toString('utf8')));
+      } catch (error) {
+        console.log(error);
+      }
     });
-    python.stderr.on('data',function(data) {
+    server.stderr.on('data',function(data) {
       console.log(data.toString('utf8'));
-      win.webContents.send('server-stderr', String(data.toString('utf8')));
+      try {
+        win.webContents.send('server-stderr', String(data.toString('utf8')));
+      } catch (error) {
+        console.log(error);
+      }
     });
   })
   ipcMain.on('kill-server', () => {
-    python.kill('SIGINT');
+    server.kill('SIGINT');
   })
 })
 
@@ -142,11 +152,13 @@ if (isDevelopment) {
   if (process.platform === 'win32') {
     process.on('message', (data) => {
       if (data === 'graceful-exit') {
+        server.kill('SIGINT');
         app.quit()
       }
     })
   } else {
     process.on('SIGTERM', () => {
+      server.kill('SIGINT');
       app.quit()
     })
   }
