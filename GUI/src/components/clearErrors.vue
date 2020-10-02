@@ -18,10 +18,10 @@ export default {
       // set them to 0?
       console.log(this.data);
       let paths = [
-        "odrive0." + this.data.axis + ".error",
-        "odrive0." + this.data.axis + ".motor.error",
-        "odrive0." + this.data.axis + ".encoder.error",
-        "odrive0." + this.data.axis + ".controller.error",
+        this.data.axis + ".error",
+        this.data.axis + ".motor.error",
+        this.data.axis + ".encoder.error",
+        this.data.axis + ".controller.error",
       ];
       for (const path of paths) {
         putVal(path, 0);

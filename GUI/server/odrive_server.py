@@ -24,21 +24,46 @@ CORS(app, support_credentials=True)
 Payload.max_decode_packets = 100
 socketio = SocketIO(app, cors_allowed_origins="*", async_mode = "threading")
 
-def get_odrive():
-    globals()['odrives'] = []
-    globals()['odrives'].append(odrive.find_any())
-    globals()['odrives'][0].__channel__._channel_broken.subscribe(lambda: handle_disconnect())
-    print("odrives found")
+#def get_odrive():
+#    globals()['odrives'] = []
+#    globals()['odrives'].append(odrive.find_any())
+#    globals()['odrives'][0].__channel__._channel_broken.subscribe(lambda: handle_disconnect())
+#    print("odrives found")
+#    socketio.emit('odrive-found')
+
+def discovered_device(device):
+    # when device is discovered, add it to list of serial numbers and global odrive list
+    # shamelessly lifted from odrive python package
+    serial_number = '{:012X}'.format(device.serial_number) if hasattr(device, 'serial_number') else "[unknown serial number]"
+    if serial_number in globals()['discovered_devices']:
+        index = globals()['discovered_devices'].index(serial_number)
+    else:
+        globals()['discovered_devices'].append(serial_number)
+        index = len(globals()['discovered_devices']) - 1
+    odrive_name = "odrive" + str(index)
+
+    # add to list of odrives
+    while globals()['inUse']:
+        time.sleep(0.1)
+    globals()['odrives'][odrive_name] = device
+    print("Found " + str(serial_number))
+    print("odrive list: " + str([key for key in globals()['odrives'].keys()]))
     socketio.emit('odrive-found')
 
+def start_discovery():
+    print("starting disco loop...")
+    log = fibre.Logger(verbose = False)
+    shutdown = fibre.Event()
+    fibre.find_all("usb", None, discovered_device, shutdown, shutdown, log)
+
 def handle_disconnect():
-    print("lost odrive, emitting disconnect event to client")
-    socketio.emit('odrive-disconnected')
+    print("lost odrive")
+    #socketio.emit('odrive-disconnected')
 
 @socketio.on('findODrives')
 def getODrives(message):
     print("looking for odrive")
-    get_odrive()
+    start_discovery()
 
 @socketio.on('enableSampling')
 def enableSampling(message):
@@ -76,8 +101,10 @@ def get_odrives(data):
 
     globals()['inUse'] = True
     odriveDict = {}
-    for (index, odrv) in enumerate(globals()['odrives']):
-        odriveDict["odrive" + str(index)] = dictFromRO(odrv)
+    #for (index, odrv) in enumerate(globals()['odrives']):
+    #    odriveDict["odrive" + str(index)] = dictFromRO(odrv)
+    for key in globals()['odrives'].keys():
+        odriveDict[key] = dictFromRO(globals()['odrives'][key])
     globals()['inUse'] = False
     emit('odrives', json.dumps(odriveDict))
 
@@ -143,9 +170,9 @@ def postVal(odrives, keyList, value, argType):
     # "key1" will be "odriveN"
     # like this: postVal(odrives, ["odrive0","axis0","config","calibration_lockin","accel"], 17.0)
     try:
-        index = int(''.join([char for char in keyList.pop(0) if char.isnumeric()]))
-
-        RO = odrives[index]
+        #index = int(''.join([char for char in keyList.pop(0) if char.isnumeric()]))
+        odrv = keyList.pop(0)
+        RO = odrives[odrv]
         for key in keyList:
             RO = RO._remote_attributes[key]
         if argType == "number":
@@ -161,8 +188,9 @@ def postVal(odrives, keyList, value, argType):
 
 def getVal(odrives, keyList):
     try:
-        index = int(''.join([char for char in keyList.pop(0) if char.isnumeric()]))
-        RO = odrives[index]
+        #index = int(''.join([char for char in keyList.pop(0) if char.isnumeric()]))
+        odrv = keyList.pop(0)
+        RO = odrives[odrv]
         for key in keyList:
             RO = RO._remote_attributes[key]
         if isinstance(RO, fibre.remote_object.RemoteObject):
@@ -187,8 +215,9 @@ def getSampledData(vars):
 
 def callFunc(odrives, keyList):
     try:
-        index = int(''.join([char for char in keyList.pop(0) if char.isnumeric()]))
-        RO = odrives[index]
+        #index = int(''.join([char for char in keyList.pop(0) if char.isnumeric()]))
+        odrv = keyList.pop(0)
+        RO = odrives[odrv]
         for key in keyList:
             RO = RO._remote_attributes[key]
         if isinstance(RO, fibre.remote_object.RemoteFunction):
@@ -211,16 +240,12 @@ if __name__ == "__main__":
     import odrive.utils # for dump_errors()
     import fibre
 
-    globals()['odrives'] = []
+    globals()['odrives'] = {}
+    globals()['discovered_devices'] = []
     # spinlock
     globals()['inUse'] = False
 
-    # busy wait for connection
-    #while len(globals()['odrives']) == 0:
-    #    print("looking for odrives...")
-    #    get_odrive()
-
-    #print("found odrives!")
-    #globals()['connected'] = True
+    log = fibre.Logger(verbose=False)
+    shutdown = fibre.Event()
 
     socketio.run(app, host='0.0.0.0', port=5000)

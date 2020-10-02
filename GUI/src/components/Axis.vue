@@ -6,7 +6,7 @@
   >
     {{ axis }}
     <div v-show="showError" class="error-popup card" @click.self="showError = !showError">
-      <clear-errors :data="{axis: axis.split('.')[1]}"/>
+      <clear-errors :data="{axis: axis}"/>
       axis:
       <span :class="{ noError: !axisError, error: axisError}">{{axisErrorMsg}}</span>
       <br />motor:
