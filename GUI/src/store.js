@@ -21,6 +21,7 @@ export default new Vuex.Store({
         axes: Array,
         odriveServerAddress: String,
         serverConnected: Boolean,
+        ODriveConnected: false,
         serverOutput: [],
         dashboards: [
             {
@@ -156,6 +157,9 @@ export default new Vuex.Store({
         },
         setServerStatus(state, val) {
             state.serverConnected = val;
+        },
+        setODriveConnected(state, val) {
+            state.ODriveConnected = val;
         },
         removeCtrlFromDash(state, obj) {
             // obj is {dash: dashID, path: control path}
@@ -306,9 +310,20 @@ export default new Vuex.Store({
                 callback: () => {
                     context.commit("setServerStatus", true);
                     console.log('connected to server');
-                    context.dispatch("getOdrives");
+                    //context.dispatch("getOdrives");
+                    socketio.sendEvent({
+                        type: "findODrives",
+                    });
                 }
             });
+            socketio.addEventListener({
+                type: "odrive-found",
+                callback: () => {
+                    console.log("odrive-found recieved from server");
+                    context.commit("setODriveConnected", true);
+                    context.dispatch("getOdrives");
+                }
+            })
             socketio.addEventListener({
                 type: "disconnect",
                 callback: () => {
@@ -348,6 +363,17 @@ export default new Vuex.Store({
                     context.commit('updateOdriveProp', JSON.parse(retmsg));
                 }
             });
+            socketio.addEventListener({
+                type: "odrive-disconnected",
+                callback: () => {
+                    console.log("odrive disconnected");
+                    context.commit("setODriveConnected", false);
+                    console.log("restarting server...");
+                    window.ipcRenderer.send('kill-server');
+                    window.ipcRenderer.send('start-server');
+                    context.dispatch('setServerAddress', context.state.odriveServerAddress);
+                }
+            })
         }
     }
 })

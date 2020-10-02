@@ -24,10 +24,12 @@ export function getReadonly(path) {
 }
 
 export function fetchParam(path) {
-    socketio.sendEvent({
-        type: "getProperty",
-        data: {path: path},
-    });
+    if (store.state.serverConnected){
+        socketio.sendEvent({
+            type: "getProperty",
+            data: {path: path},
+        });
+    }
 }
 
 export function putVal(path, value) {

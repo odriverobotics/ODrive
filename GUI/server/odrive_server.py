@@ -24,21 +24,21 @@ CORS(app, support_credentials=True)
 Payload.max_decode_packets = 100
 socketio = SocketIO(app, cors_allowed_origins="*", async_mode = "threading")
 
-def get_all_odrives():
+def get_odrive():
     globals()['odrives'] = []
     globals()['odrives'].append(odrive.find_any())
     globals()['odrives'][0].__channel__._channel_broken.subscribe(lambda: handle_disconnect())
+    print("odrives found")
+    socketio.emit('odrive-found')
 
 def handle_disconnect():
-    print("lost odrive, attempting to reconnect")
-    # synchronizing flag for connect/disconnect
-    globals()['inUse'] = True
-    globals()['odrives'] = []
-    while len(globals()['odrives']) == 0:
-        get_all_odrives()
-        time.sleep(0.1)
-    globals()['inUse'] = False
-    print("reconnected!")
+    print("lost odrive, emitting disconnect event to client")
+    socketio.emit('odrive-disconnected')
+
+@socketio.on('findODrives')
+def getODrives(message):
+    print("looking for odrive")
+    get_odrive()
 
 @socketio.on('enableSampling')
 def enableSampling(message):
@@ -193,8 +193,6 @@ def callFunc(odrives, keyList):
         print("fcn call failed")
 
 if __name__ == "__main__":
-    # sleep to allow time for background.js to register event callbacks for stdout,stderr
-    time.sleep(3)
     print("args from python: " + str(sys.argv[1:0]))
     #print(sys.argv[1:])
     # try to import based on command line arguments or config file
@@ -212,11 +210,11 @@ if __name__ == "__main__":
     globals()['inUse'] = False
 
     # busy wait for connection
-    while len(globals()['odrives']) == 0:
-        print("looking for odrives...")
-        get_all_odrives()
+    #while len(globals()['odrives']) == 0:
+    #    print("looking for odrives...")
+    #    get_odrive()
 
-    print("found odrives!")
-    globals()['connected'] = True
+    #print("found odrives!")
+    #globals()['connected'] = True
 
     socketio.run(app, host='0.0.0.0', port=5000)

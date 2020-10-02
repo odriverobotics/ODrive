@@ -46,6 +46,8 @@
           style="display: none"
         />
       </button>
+      <button @click="killServer">kill server</button>
+      <button @click="startServer">start server</button>
     </div>
 
     <!-- PAGE CONTENT -->
@@ -63,6 +65,9 @@
         :axis="axis.name"
         :odrives="odrives"
       ></Axis>
+      <div class="odrive-status">
+        ODrive:{{ODriveConnected}}
+      </div>
     </div>
   </div>
 </template>
@@ -133,6 +138,22 @@ export default {
     currentDash: function () {
       return this.$store.state.currentDash;
     },
+    ODriveConnected: function () {
+      // if server and odrive disconnected, disconnected
+      // if server connected and odrive disco, connecting
+      // if server and odrive connected, connected
+      let ret;
+      if (this.$store.state.serverConnected && this.$store.state.ODriveConnected) {
+        ret = "connected";
+      }
+      else if (this.$store.state.serverConnected && !this.$store.state.ODriveConnected) {
+        ret = "connecting...";
+      }
+      else {
+        ret = "disconnected";
+      }
+      return ret;
+    }
   },
   methods: {
     changeDash(dashName) {
@@ -234,6 +255,19 @@ export default {
       // send stop command to odrives
       // behavior on reset?
     },
+    emitFindODrives() {
+      socketio.sendEvent({
+        type: "findODrives",
+        data: {},
+      });
+    },
+    killServer() {
+      window.ipcRenderer.send('kill-server');
+    },
+    startServer() {
+      window.ipcRenderer.send('start-server');
+      this.$store.dispatch("setServerAddress", "http://127.0.0.1:5000");
+    }
   },
   created() {
     // on app creation, set the address to the default
@@ -247,6 +281,7 @@ export default {
         window.ipcRenderer.on('server-stderr', (event, arg) => {
         this.$store.commit('logServerMessage', arg);
       });
+      window.ipcRenderer.send('start-server');
     }
   },
 };
@@ -354,6 +389,12 @@ button {
 
 .sample {
   margin-left: auto;
+}
+
+.odrive-status {
+  margin-left: auto;
+  font-family: "Roboto Mono", monospace;
+  padding: 5px 10px;
 }
 
 </style>
