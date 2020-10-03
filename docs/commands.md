@@ -44,6 +44,7 @@ Possible values are listed [here](api/odrive.axis.controller.controlmode).
 
 As of version v0.5.0, ODrive now intercepts the incoming commands and can apply filters to them. The old protocol values `pos_setpoint`, `vel_setpoint`, and `current_setpoint` are still used internally by the closed-loop cascade control, but the user cannot write to them directly.  This allows us to condense the number of ways the ODrive accepts motion commands. The new commands are:
 
+### Control Commands
 * `<axis>.controller.input_pos = <turn>`
 * `<axis>.controller.input_vel = <turn/s>`
 * `<axis>.controller.input_torque = <torque in Nm>`
@@ -82,15 +83,15 @@ All variables that are part of a `[...].config` object can be saved to non-volat
 ## Setting up sensorless
 The ODrive can run without encoder/hall feedback, but there is a minimum speed, usually around a few hunderd RPM.
 
-To give an example, suppose you have a motor with 7 pole pairs, and you want to spin it at 3000 RPM. Then you would set the `input_vel` to `3000 * 2*pi/60 * 7 = 2199 rad/s electrical`.
-
-Below are some suggested starting parameters that you can use. Note that you _must_ set the `pm_flux_linkage` correctly for sensorless mode to work.
+Below are some suggested starting parameters that you can use. Note that you _must_ set the `pm_flux_linkage` correctly for sensorless mode to work. Motor calibration and setup must also be completed before sensorless mode will work.
 
 ```
 odrv0.axis0.controller.config.vel_gain = 0.01
 odrv0.axis0.controller.config.vel_integrator_gain = 0.05
 odrv0.axis0.controller.config.control_mode = 2
-odrv0.axis0.controller.input_vel = 400
+odrv0.axis0.controller.input_vel = 10
+odrv0.axis0.controller.config.vel_limit = <a value greater than input_vel>
+odrv0.axis0.motor.config.current_lim = 2 * odrv0.axis0.config.sensorless_ramp.current
 odrv0.axis0.motor.config.direction = 1
 odrv0.axis0.sensorless_estimator.config.pm_flux_linkage = 5.51328895422 / (<pole pairs> * <motor kv>)
 ```

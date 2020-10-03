@@ -62,8 +62,7 @@ ODrive\.includes
 
 Firmware/Tests/bin/
 
-# Electron-builder output
+# GUI
 GUI/dist_electron
-
-# Node Modules
 GUI/node_modules
+GUI/build

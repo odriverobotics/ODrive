@@ -49,6 +49,7 @@ void Motor::reset_current_control() {
     current_control_.v_current_control_integral_d = 0.0f;
     current_control_.v_current_control_integral_q = 0.0f;
     current_control_.acim_rotor_flux = 0.0f;
+    current_control_.Ibus = 0.0f;
 }
 
 // @brief Tune the current controller based on phase resistance and inductance

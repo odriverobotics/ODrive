@@ -43,7 +43,7 @@ That's it, now on every reboot the motor will turn in one direction until it fin
 * If your motor has problems reaching the index location due to the mechanical load, you can increase `<axis>.motor.config.calibration_current`.
 
 ### Reversing index search
-Sometimes you would like the index search to only happen in a particular direction (the reverse of the default), instead of swapping the motor leads, you can ensure the following three values are negative:
+Sometimes you would like the index search to only happen in a particular direction (the reverse of the default). Instead of swapping the motor leads, you can ensure that the following three values are negative:
 * `<axis0>.config.calibration_lockin.vel`
 * `<axis0>.config.calibration_lockin.accel`
 * `<axis0>.config.calibration_lockin.ramp_distance`
@@ -78,7 +78,7 @@ Do you still have no errors? Awesome. Now, setup the motor and encoder to use kn
 * `<axis>.encoder.config.pre_calibrated = True`
 * `<axis>.motor.config.pre_calibrated  = True `
 
-And see if ODrive agrees that calibration worked by just running
+And see if ODrive agrees that the calibration worked by just running
 * `<axis>.encoder.config.pre_calibrated`
 
 (using no "= True" ). Make sure that 'pre_calibrated' is in fact True. 
@@ -121,6 +121,7 @@ Connect to the I pin, see if you get a pulse on a complete rotation. Sometimes t
 
 If you are using SPI, use a logic analyzer and connect to the CLK, MISO, and CS pins. Set a trigger for the CS pin and ensure that the encoder position is being sent and is increasing/decreasing as you spin the motor. There is extremely cheap hardware that is supported by [Sigrok](https://sigrok.org/) for protocol analysis. 
 
+
 ## Encoder Noise
 Noise is found in all circuits, life is just about figuring out if it is preventing your system from working. Lots of users have no problems with noise interfering with their ODrive operation, others will tell you "_I've been using the same encoder as you with no problems_". Power to 'em, that may be true, but it doesn't mean it will work for you. If you are concerned about noise, there are several possible sources:
 
@@ -128,13 +129,13 @@ Noise is found in all circuits, life is just about figuring out if it is prevent
 * Long wires between encoder and ODrive
 * Use of ribbon cable
 
-The following _might_ mitigate noise problems. Use shielded cable, or use twisted pairs, where one side of each twisted pair is tied to ground, the other side is tied to your signal. If you are using SPI, use a 20-50 ohm resistor in series on CLK, which is more susceptible noise.
+The following _might_ mitigate noise problems. Use shielded cable, or use twisted pairs, where one side of each twisted pair is tied to ground and the other side is tied to your signal. If you are using SPI, use a 20-50 ohm resistor in series on CLK, which is more susceptible noise.
 
-If you are using an encoder with an index signal, another problem that has been encountered is with noise on the Z input of ODrive. Symptoms for this problem include:
+If you are using an encoder with an index signal, another problem that has been encountered is noise on the Z input of ODrive. Symptoms for this problem include:
 * difficulty with requested_state = AXIS_STATE_FULL_CALIBRATION_SEQUENCE, where your calibration sequence may not complete
 * strange behavior after performing odrv0.save_configuration() and odrv0.reboot()
 * when performing an index_search, the motor does not return to the same position each time.
-One easy step that _might_ fix the noise on the Z input has been to solder a 22nF-47nF capacitor to the Z pin and the GND pin on the underside of the ODrive board. 
+One easy step that _might_ fix the noise on the Z input is to solder a 22nF-47nF capacitor to the Z pin and the GND pin on the underside of the ODrive board. 
 
 ## Hall feedback pinout
 If position accuracy is not a concern, you can use A/B/C hall effect encoders for position feedback.
@@ -170,11 +171,15 @@ Apart from (incremental) quadrature encoders, ODrive also supports absolute SPI 
 
 Some of these chips come with evaluation boards that can simplify mounting the chips to your motor. For our purposes if you are using an evaluation board you should select the settings for 3.3v.
 
+**Note:** The AMT23x family has a hardware bug that causes them to not properly tristate the MISO line. To use them with ODrive, there are two workarounds. One is to sequence power to the encoder a second or two after the ODrive recieves power. This allows 1 encoder to be used without issue. Another solution is to add a tristate buffer, such as the 74AHC1G125SE, on the MISO line between the ODrive and each AMT23x encoder. Tie the enable pin on the buffer to the CS line for the respective encoder. This allows for more than one AMT23x encoder, or one AMT23x and another SPI encoder, to be used at the same time.
+
 1. Connect the encoder to the ODrive's SPI interface:
    
     - The encoder's SCK, MISO (aka "DATA" on CUI encoders), GND and 3.3V should connect to the ODrive pins with the same label.
     - The encoder's MOSI should be tied to 3.3V (AMS encoders only. CUI encoders don't have this pin.)
     - The encoder's Chip Select (aka nCS/CSn) can be connected to any of the ODrive's GPIOs (caution: GPIOs 1 and 2 are usually used by UART).
+
+If you are having calibration problems, make sure that your magnet is centered on the axis of rotation on the motor. Some users report that this has a significant impact on calibration. Also make sure that your magnet height is within range of the spec sheet. 
 
 2. In `odrivetool`, run:
 

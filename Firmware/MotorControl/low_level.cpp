@@ -380,7 +380,7 @@ void vbus_sense_adc_cb(ADC_HandleTypeDef* hadc, bool injected) {
 }
 
 // This is the callback from the ADC that we expect after the PWM has triggered an ADC conversion.
-// TODO: Document how the phasing is done, link to timing diagram
+// Timing diagram: Firmware/timing_diagram_v3.png
 void pwm_trig_adc_cb(ADC_HandleTypeDef* hadc, bool injected) {
 #define calib_tau 0.2f  //@TOTO make more easily configurable
     constexpr float calib_filter_k = CURRENT_MEAS_PERIOD / calib_tau;

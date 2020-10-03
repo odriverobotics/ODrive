@@ -1,5 +1,7 @@
 # Unreleased Features
 Please add a note of your changes below this heading if you make a Pull Request.
+### Added
+* [Mechanical brake support](docs/mechanical-brakes.md)
 
 ### Changed
 
@@ -15,8 +17,8 @@ Please add a note of your changes below this heading if you make a Pull Request.
 * `<axis>.motor.gate_driver` was moved to `<axis>.gate_driver`.
 * `<axis>.min_endstop.pullup` and `<axis>.max_endstop.pullup` were removed. Use `<odrv>.config.gpioX_mode = GPIO_MODE_DIGITAL / GPIO_MODE_DIGITAL_PULL_UP / GPIO_MODE_DIGITAL_PULL_DOWN` instead.
 
-# Release Candidate
-## [0.5.1] - Date TBD
+# Releases
+## [0.5.1] - 2020-09-27
 ### Added
 * Added motor `torque_constant`: units of torque are now [Nm] instead of just motor current.
 * [Motor thermistors support](docs/thermistors.md)
@@ -29,9 +31,14 @@ Please add a note of your changes below this heading if you make a Pull Request.
 * `axis.motor.thermal_current_lim` has been removed. Instead a new property is available `axis.motor.effective_current_lim` which contains the effective current limit including any thermal limits.
 * `axis.motor.get_inverter_temp()`, `axis.motor.inverter_temp_limit_lower` and `axis.motor.inverter_temp_limit_upper` have been moved to seperate fet thermistor object under `axis.fet_thermistor`. `get_inverter_temp()` function has been renamed to `temp` and is now a read-only property.
 * `axis.config.counts_per_step` is now `axis.config.turns_per_step`
+* Outputs of `axis.sensorless_estimator` are now in turns/s instead of electrical rad/s
+* Fixed bug of high current during lockin-ramp caused by `motor::update()` expecting a torque command instead of current
+* Fixed bug where commanded velocity was extremely high just after sensorless ramp when using `input_mode` INPUT_MODE_VEL_RAMP caused by `vel_setpoint` and `axis.config.sensorless_ramp.vel` being in different units
 
+### Fixed
+* Fixed bug of high current during lockin-ramp caused by `motor::update()` expecting a torque command instead of current
+* Fixed bug where commanded velocity was extremely high just after sensorless ramp when using `input_mode` INPUT_MODE_VEL_RAMP caused by `vel_setpoint` and `axis.config.sensorless_ramp.vel` being in different units
 
-# Releases
 ## [0.5.0] - 2020-08-03
 ### Added
 * AC Induction Motor support.
