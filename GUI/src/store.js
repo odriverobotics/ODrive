@@ -36,9 +36,14 @@ export default new Vuex.Store({
         sampling: false,
         currentDash: "Start",
         firstConn: false,
+        wizardMotor: "odrive0",
     },
     // mutations are functions that change the data
     mutations: {
+        setWizardMotor(state, odrive) {
+            // odrive is string, "odrive0" or "odriveN"
+            state.wizardMotor = odrive;
+        },
         setDash(state, dashName) {
             state.currentDash = dashName;
         },

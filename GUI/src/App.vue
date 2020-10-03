@@ -23,14 +23,7 @@
         {{ dash.name }}
       </button>
       <button class="dash-button dash-add" @click="addDash">+</button>
-      <button
-        class="dash-button sample"
-        @click="startsample"
-        :class="[{ active: sampling === true }]"
-      >
-        start sampling
-      </button>
-      <button class="dash-button" @click="stopsample">stop sampling</button>
+      <button class="dash-button sample-button" :class="[{ active: sampling === true }]" @click="sampleButton">{{samplingText}}</button>
       <button class="dash-button" @click="exportDash">export dash</button>
       <button class="dash-button" @click="importDashWrapper">
         import dash
@@ -63,9 +56,9 @@
         :axis="axis.name"
         :odrives="odrives"
       ></Axis>
-      <div class="odrive-status">
+      <!--<div class="odrive-status">
         ODrive:{{ODriveConnected}}
-      </div>
+      </div>-->
     </div>
   </div>
 </template>
@@ -151,6 +144,16 @@ export default {
         ret = "disconnected";
       }
       return ret;
+    },
+    samplingText: function () {
+      let ret;
+      if (this.$store.state.sampling) {
+        ret = "stop sampling"
+      }
+      else {
+        ret = "start sampling"
+      }
+      return ret;
     }
   },
   methods: {
@@ -229,6 +232,29 @@ export default {
     changeDashName(e) {
       console.log(e);
       console.log("double clicked dashboard name");
+    },
+    sampleButton() {
+      if (this.$store.state.sampling) {
+        // sampling acttive, stop
+          socketio.sendEvent({
+          type: "stopSampling",
+        });
+        this.$store.state.sampling = false;
+      }
+      else {
+        // sampling inactive, start sampling
+        socketio.sendEvent({
+          type: "sampledVarNames",
+          data: {
+            paths: this.$store.state.sampledProperties,
+          },
+        });
+        socketio.sendEvent({
+          type: "enableSampling",
+        });
+        this.$store.state.timeSampleStart = Date.now();
+        this.$store.state.sampling = true;
+      }
     },
     startsample() {
       socketio.sendEvent({
@@ -378,7 +404,7 @@ button {
   display: none;
 }
 
-.sample {
+.sample-button {
   margin-left: auto;
 }
 
