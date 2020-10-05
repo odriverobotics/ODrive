@@ -104,7 +104,7 @@ interfaces:
               You also need to set the corresponding GPIOs to GPIO_MODE_UART0.
               Refer to [interfaces](interfaces.md) to see which pins support UART0.
               Changing this requires a reboot.
-          enable_uart0:
+          enable_uart1:
             type: bool
             brief: Enables/disables UART1.
             doc: |

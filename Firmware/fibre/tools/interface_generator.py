@@ -91,6 +91,8 @@ properties:
 additionalProperties: false
 """))
 
+# TODO: detect duplicate keys in yaml dictionaries
+
 # Source: https://stackoverflow.com/a/53647080/3621512
 class SafeLineLoader(yaml.SafeLoader):
     pass
