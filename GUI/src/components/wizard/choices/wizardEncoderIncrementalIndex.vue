@@ -1,8 +1,8 @@
 <template>
-  <div class="card wizard-choice" :class="{'choice-inactive': !allowed}">
+  <div class="card wizard-choice" :class="{ 'choice-inactive': !allowed }">
     <div class="left">
       <span>counts per revolution = </span>
-      <input type="number" v-on:change="setCPR" placeholder="Change Me!" />
+      <input v-on:change="setCPR" placeholder="Change Me!" :value="cpr" />
     </div>
     <span class="name">Incremental Encoder with Index</span>
   </div>
@@ -10,6 +10,8 @@
 
 <script>
 import odriveEnums from "../../../assets/odriveEnums.json";
+import { parseMath } from "../../../lib/odrive_utils.js";
+
 export default {
   name: "wizardEncoderIncremental",
   props: {
@@ -24,39 +26,41 @@ export default {
   },
   methods: {
     setCPR(e) {
-      this.cpr = parseInt(e.target.value);
-      let configStub = undefined;
-      if (this.data.axis == "axis0") {
-        configStub = {
-          axis0: {
-            encoder: {
-              config: {
-                cpr: this.cpr,
-                use_index: true,
-                mode: odriveEnums.ENCODER_MODE_INCREMENTAL,
-              }
-            }
-          }
+      let val = parseMath(e.target.value);
+      if (val != false) {
+        this.cpr = val;
+        let configStub = undefined;
+        if (this.data.axis == "axis0") {
+          configStub = {
+            axis0: {
+              encoder: {
+                config: {
+                  cpr: this.cpr,
+                  use_index: true,
+                  mode: odriveEnums.ENCODER_MODE_INCREMENTAL,
+                },
+              },
+            },
+          };
+        } else if (this.data.axis == "axis1") {
+          configStub = {
+            axis1: {
+              encoder: {
+                config: {
+                  cpr: this.cpr,
+                  use_index: true,
+                  mode: odriveEnums.ENCODER_MODE_INCREMENTAL,
+                },
+              },
+            },
+          };
         }
+        this.$emit("choice", {
+          choice: "IncrementalIndex",
+          configStub: configStub,
+          hooks: [],
+        });
       }
-      else if (this.data.axis == "axis1") {
-        configStub = {
-          axis1: {
-            encoder: {
-              config: {
-                cpr: this.cpr,
-                use_index: true,
-                mode: odriveEnums.ENCODER_MODE_INCREMENTAL,
-              }
-            }
-          }
-        }
-      }
-      this.$emit("choice", {
-        choice: "IncrementalIndex",
-        configStub: configStub,
-        hooks: [],
-      });
     },
   },
 };

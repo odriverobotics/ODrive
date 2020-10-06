@@ -3,14 +3,14 @@
     <button class="close-button" @click=deleteAction>X</button>
     <span class="ctrlName">{{shortPath}}:</span>
     <div class="right">
-      <input v-on:change="newVal" :placeholder="initVal"/>
+      <input v-on:change="newVal" :placeholder="initVal" :value="this.value"/>
       <button class="action-button close-button" @click="putVal">Send</button>
     </div>
   </div>
 </template>
 
 <script>
-import { putVal } from "../../lib/odrive_utils.js";
+import { putVal, parseMath } from "../../lib/odrive_utils.js";
 
 export default {
   name: "Action",
@@ -39,19 +39,12 @@ export default {
   },
   methods: {
     newVal: function (e) {
-      let input = e.target.value;
-      let allowedChars = "0123456789eE/*-+.()";
-      let send = true;
-      for (const c of input) {
-        if (!allowedChars.includes(c)) {
-          send = false;
-        }
+      let val = parseMath(e.target.value);
+      if (val != false) {
+        this.value = val;
+        console.log("input = " + e.target.value + ", val = " + this.value);
+        this.$store.commit("setActionVal", {dashID: this.dashID, actionID: this.id, val: this.value});
       }
-      if (send) {
-        this.value = eval(input);
-        console.log("input = " + input + ", val = " + this.value);
-      }
-      this.$store.commit("setActionVal", {dashID: this.dashID, actionID: this.id, val: this.value});
     },
     putVal: function () {
       let keys = this.path.split(".");

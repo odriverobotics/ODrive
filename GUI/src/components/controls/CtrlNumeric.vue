@@ -4,14 +4,14 @@
     <span class="ctrlName">{{name}}:</span>
     <div class="right">
       <span v-if="!writeAccess" class="ctrlVal">{{value}}</span>
-      <input v-if="writeAccess" :placeholder="value" v-on:change="putVal" />
+      <input v-if="writeAccess" :placeholder="value" v-on:change="putVal" :value="value"/>
       <!-- <span class="unit">[{{unit}}]</span> -->
     </div>
   </div>
 </template>
 
 <script>
-import { getVal, getReadonly, putVal, fetchParam, getUnit } from "../../lib/odrive_utils.js";
+import { getVal, getReadonly, putVal, fetchParam, getUnit, parseMath } from "../../lib/odrive_utils.js";
 
 export default {
   name: "CtrlNumeric",
@@ -47,16 +47,9 @@ export default {
     putVal: function (e) {
       let keys = this.path.split('.');
       keys.shift();
-      let input = e.target.value;
-      let allowedChars = "0123456789eE/*-+.()";
-      let send = true;
-      for (const c of input) {
-        if (!allowedChars.includes(c)) {
-          send = false;
-        }
-      }
-      if (send) {
-        putVal(keys.join('.'), eval(input));
+      let val = parseMath(e.target.value);
+      if (val != false) {
+        putVal(keys.join('.'), val);
       }
     },
     deleteCtrl: function() {

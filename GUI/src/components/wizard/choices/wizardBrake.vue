@@ -1,15 +1,15 @@
 <template>
-  <div class="card wizard-choice" :class="{'choice-inactive': !allowed}">
+  <div class="card wizard-choice" :class="{ 'choice-inactive': !allowed }">
     <div class="left">
-      <span>Brake resistor value =</span>
-      <input type="number" v-on:change="setBR" placeholder="Change Me!" />
-      <span class="unit"> [{{unit}}] </span>
+      <span>Brake resistor value = </span>
+      <input v-on:change="setBR" placeholder="Change Me!" :value="brake_resistance"/>
+      <span class="unit"> [{{ unit }}] </span>
     </div>
   </div>
 </template>
 
 <script>
-import { getUnit } from '../../../lib/odrive_utils.js';
+import { getUnit, parseMath, getVal } from "../../../lib/odrive_utils.js";
 
 export default {
   name: "wizardBrake",
@@ -26,24 +26,31 @@ export default {
     unit() {
       // goal is to return "Ohms" from odriveUnits
       let path = "odrive0.config.brake_resistance";
-      return getUnit(this.$store.state.odrives.odrive0,path);
+      return getUnit(this.$store.state.odrives.odrive0, path);
     },
+    value() {
+      let path = "odrive0.config.brake_resistance";
+      return getVal(path);
+    }
   },
   methods: {
     setBR(e) {
       console.log("from setBR " + e.target.value);
-      this.brake_resistance = parseFloat(e.target.value);
-      let configStub = undefined;
-      configStub = {
-        config: {
-          brake_resistance: this.brake_resistance,
-        },
-      };
-      this.$emit("choice", {
-        choice: "Brake Resistor",
-        configStub: configStub,
-        hooks: [],
-      });
+      let val = parseMath(e.target.value);
+      if (val != false) {
+        this.brake_resistance = val;
+        let configStub = undefined;
+        configStub = {
+          config: {
+            brake_resistance: this.brake_resistance,
+          },
+        };
+        this.$emit("choice", {
+          choice: "Brake Resistor",
+          configStub: configStub,
+          hooks: [],
+        });
+      }
     },
   },
 };

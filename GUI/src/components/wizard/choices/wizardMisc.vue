@@ -1,20 +1,31 @@
 <template>
-  <div class="card wizard-motor-custom wizard-choice" :class="{'choice-inactive': !allowed}">
+  <div
+    class="card wizard-motor-custom wizard-choice"
+    :class="{ 'choice-inactive': !allowed }"
+  >
     <div class="left">
       <span>Motor Velocity Limit =</span>
-      <input type="number" v-on:change="setVelocityLimit" :placeholder="velocityLimit" />
-      <span class="unit">[{{velUnit}}]</span>
+      <input
+        v-on:change="setVelocityLimit"
+        :placeholder="velocityLimit"
+        :value="vel_limit"
+      />
+      <span class="unit">[{{ velUnit }}]</span>
     </div>
     <div class="left">
       <span>Motor Current Limit =</span>
-      <input type="number" v-on:change="setCurrentLimit" :placeholder="currentLimit" />
+      <input
+        v-on:change="setCurrentLimit"
+        :placeholder="currentLimit"
+        :value="current_lim"
+      />
       <span class="unit">[Amps]</span>
     </div>
   </div>
 </template>
 
 <script>
-import { getVal, getUnit } from "../../../lib/odrive_utils.js"
+import { getVal, getUnit, parseMath } from "../../../lib/odrive_utils.js";
 
 export default {
   name: "wizardMisc",
@@ -41,7 +52,7 @@ export default {
     },
     velUnit() {
       let path = "odrive0." + this.data.axis + ".controller.config.vel_limit";
-      return getUnit(this.$store.state.odrives.odrive0,path)
+      return getUnit(this.$store.state.odrives.odrive0, path);
     },
   },
   methods: {
@@ -55,13 +66,13 @@ export default {
               controller: {
                 config: {
                   vel_limit: this.vel_limit,
-                }
+                },
               },
               motor: {
                 config: {
                   current_lim: this.current_lim,
-                }
-              }
+                },
+              },
             },
           };
         } else if (this.data.axis == "axis1") {
@@ -70,13 +81,13 @@ export default {
               controller: {
                 config: {
                   vel_limit: this.vel_limit,
-                }
+                },
               },
               motor: {
                 config: {
                   current_lim: this.current_lim,
-                }
-              }
+                },
+              },
             },
           };
         }
@@ -88,14 +99,20 @@ export default {
       }
     },
     setVelocityLimit(e) {
-      this.vel_limit = parseFloat(e.target.value);
-      this.vel_set = true;
-      this.sendConfig();
+      let val = parseMath(e.target.value);
+      if (val != false) {
+        this.vel_limit = parseFloat(e.target.value);
+        this.vel_set = true;
+        this.sendConfig();
+      }
     },
     setCurrentLimit(e) {
-      this.current_lim = parseFloat(e.target.value);
-      this.current_set = true;
-      this.sendConfig();
+      let val = parseMath(e.target.value);
+      if (val != false) {
+        this.current_lim = parseFloat(e.target.value);
+        this.current_set = true;
+        this.sendConfig();
+      }
     },
   },
 };

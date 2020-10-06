@@ -32,6 +32,23 @@ export function fetchParam(path) {
     }
 }
 
+export function parseMath(inString) {
+    // given an input string that is valid arithmetic, use eval() to evaluate it
+    let allowedChars = "0123456789eE/*-+.()";
+    let send = true;
+    for (const c of inString) {
+        if (!allowedChars.includes(c)) {
+            send = false;
+        }
+    }
+    if (send) {
+        return eval(inString);
+    }
+    else {
+        return false;
+    }
+}
+
 export function putVal(path, value) {
     console.log("path: " + path + ", val: " + value + ", type: " + typeof value);
     socketio.sendEvent({

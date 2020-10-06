@@ -14,7 +14,7 @@
       <span class="unit">[Ohms]</span>
     </div>
     <div class="left">
-      <span>Phase Inductace =</span>
+      <span>Phase Inductance =</span>
       <span>{{" " + inductance}}</span>
       <span class="unit">[Henries]</span>
     </div>
