@@ -12,7 +12,7 @@
 
 <script>
 import { enumVars } from "../../../assets/wizard/wizard.js";
-import { putVal } from "../../../lib/odrive_utils.js"
+import { putVal, fetchParam } from "../../../lib/odrive_utils.js"
 
 export default {
   name: "wizardEnd",
@@ -48,7 +48,7 @@ export default {
           this.configDiffs.push({path: path, oldVal: parseFloat(odrvObj["val"]), newVal: configObj});
         }
         else if (typeof configObj == 'boolean'){
-          this.configDiffs.push({path: path, oldVal: odrvObj["val"] == "True", newVal: configObj});
+          this.configDiffs.push({path: path, oldVal: odrvObj["val"] == "True" || odrvObj["val"] == true, newVal: configObj});
         }
         else {
           this.configDiffs.push({path: path, oldVal: parseFloat(odrvObj["val"]), newVal: configObj});
@@ -74,6 +74,7 @@ export default {
       // flatpaths will already be populated at this point
       for (const diff of this.configDiffs) {
         putVal("odrive0." + diff.path, diff.newVal);
+        fetchParam("odrive0." + diff.path);
         console.log("applying " + diff.newVal + " to " + diff.path);
       }
     },
