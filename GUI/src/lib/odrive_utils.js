@@ -33,6 +33,7 @@ export function fetchParam(path) {
 }
 
 export function putVal(path, value) {
+    console.log("path: " + path + ", val: " + value + ", type: " + typeof value);
     socketio.sendEvent({
         type: "setProperty",
         data: {path: path, val: value, type: typeof value}

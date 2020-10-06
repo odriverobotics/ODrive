@@ -10,8 +10,16 @@ import time
 import argparse
 
 # interface for odrive GUI to get data from odrivetool
-#better handling of websockets
-# eventlet.monkey_patch()
+
+# Flush stdout by default
+# Source:
+# https://stackoverflow.com/questions/230751/how-to-flush-output-of-python-print
+old_print = print
+def print(*args, **kwargs):
+    kwargs.pop('flush', False)
+    old_print(*args, **kwargs)
+    file = kwargs.get('file', sys.stdout)
+    file.flush() if file is not None else sys.stdout.flush()
 
 app = flask.Flask(__name__)
 app.config['SECRET_KEY'] = 'secret'
@@ -178,7 +186,7 @@ def postVal(odrives, keyList, value, argType):
         if argType == "number":
             RO.set_value(float(value))
         elif argType == "boolean":
-            RO.set_value(value == "true")
+            RO.set_value(value)
         else:
             pass # dont support that type yet
     except fibre.protocol.ChannelBrokenException:

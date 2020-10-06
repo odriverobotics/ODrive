@@ -3,13 +3,13 @@
     <button class="close-button" @click=deleteCtrl>X</button>
     <span class="ctrlName">{{name}}:</span>
     <div class="right">
-      <span class="ctrlVal" v-if="!writeAccess">{{value}}</span>
-      <span class="ctrlVal" v-if="writeAccess">{{fakeValue}}</span>
+      <span class="ctrlVal">{{value}}</span>
       <input
         class="ctrlInput"
         v-if="writeAccess"
         type="checkbox"
         :value="value"
+        :checked="value"
         @click="putVal"
       />
     </div>
@@ -29,7 +29,6 @@ export default {
   },
   data() {
     return {
-      fakeValue: undefined,
     }
   },
   computed: {
@@ -55,7 +54,6 @@ export default {
       keys.shift();
       putVal(keys.join('.'), e.target.checked);
       fetchParam(keys.join('.'));
-      this.fakeValue = e.target.checked;
     },
     deleteCtrl: function() {
       // commit a mutation in the store with the relevant information
@@ -67,7 +65,6 @@ export default {
     let keys = this.path.split('.');
     keys.shift();
     fetchParam(keys.join('.'));
-    this.fakeValue = getVal(keys.join('.'));
   }
 };
 </script>

@@ -2,9 +2,9 @@
   <div class="card" :class="{'choice-inactive': !allowed}">
     <div class="diff" v-for="diff in configDiffs" :key="diff.path">
       <span class="diff-path">{{diff.path}}: </span>
-      <span class="diff-old">{{diff.oldVal}}</span>
+      <span class="diff-old">{{diffRepresentation(diff.path,diff.oldVal)}}</span>
       <span class="diff-seperator"> ⮕ </span>
-      <span :class="{'diff-new': diff.oldVal != diff.newVal, 'diff-same': diff.oldVal == diff.newVal}">{{diff.newVal}}</span>
+      <span :class="{'diff-new': diff.oldVal != diff.newVal, 'diff-same': diff.oldVal == diff.newVal}">{{diffRepresentation(diff.path,diff.newVal)}}</span>
     </div>
     <button class="wizard-button card" @click="applyConfig">Apply</button>
   </div>
@@ -32,9 +32,9 @@ export default {
   created() {
     // flatten config tree into array of full variable paths
     this.pathFromTree(this.config);
-    for (const path of this.flatpaths){
-      console.log(path);
-    }
+    //for (const path of this.flatpaths){
+    //  console.log(path);
+    //}
     for (const path of this.flatpaths) {
       let odrvObj = this.$store.state.odrives.odrive0;
       let configObj = this.config;
@@ -43,24 +43,15 @@ export default {
         configObj = configObj[key];
       }
       if (configObj != null) {
-        let keys = path.split('.');
-        if (Object.keys(enumVars).includes(keys[keys.length - 1])){
-          // print old enum and new enum strings
-          console.log(enumVars[keys[keys.length-1]]);
-          this.configDiffs.push({path: path, oldVal: enumVars[keys[keys.length-1]][odrvObj["val"]], newVal: enumVars[keys[keys.length-1]][configObj]})
+        console.log("oldVal is " + odrvObj["val"] + " path is " + path);
+        if (Number.isInteger(parseFloat(odrvObj["val"]))){
+          this.configDiffs.push({path: path, oldVal: parseFloat(odrvObj["val"]), newVal: configObj});
+        }
+        else if (typeof configObj == 'boolean'){
+          this.configDiffs.push({path: path, oldVal: odrvObj["val"] == "True", newVal: configObj});
         }
         else {
-          // display numeric or boolean value
-          console.log("oldVal is " + parseFloat(odrvObj["val"]) + " path is " + path);
-          if (Number.isInteger(parseFloat(odrvObj["val"]))){
-            this.configDiffs.push({path: path, oldVal: parseFloat(odrvObj["val"]), newVal: configObj});
-          }
-          else if (typeof configObj == 'boolean'){
-            this.configDiffs.push({path: path, oldVal: odrvObj["val"] == true, newVal: configObj == true});
-          }
-          else {
-            this.configDiffs.push({path: path, oldVal: parseFloat(odrvObj["val"]).toExponential(3), newVal: configObj.toExponential(3)});
-          }
+          this.configDiffs.push({path: path, oldVal: parseFloat(odrvObj["val"]), newVal: configObj});
         }
       }
     }
@@ -86,6 +77,22 @@ export default {
         console.log("applying " + diff.newVal + " to " + diff.path);
       }
     },
+    diffRepresentation(path, val) {
+      // for the diff view, check if the path indicates that a value is an Enum and return enum string
+      // otherwise, just the numeric value
+      let keys = path.split('.');
+      let retval;
+      if (Object.keys(enumVars).includes(keys[keys.length - 1])) {
+        retval = enumVars[keys[keys.length-1]][val];
+      }
+      else if (!Number.isInteger(val) && typeof val != 'boolean') {
+        retval = parseFloat(val).toExponential(3);
+      }
+      else {
+        retval = val;
+      }
+      return retval;
+    }
   }
 }
 </script>
