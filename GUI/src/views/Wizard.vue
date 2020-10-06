@@ -171,13 +171,17 @@ export default {
             // clear errors, display info.
             updateCalInfo();
             clear();
-          } else if (getVal("odrive0." + e.axis + ".motor.is_calibrated") == true){
+          } else if (
+            getVal("odrive0." + e.axis + ".motor.is_calibrated") == true &&
+            getVal("odrive0." + e.axis + ".motor.config.phase_resistance") !=
+              0 &&
+            getVal("odrive0." + e.axis + ".motor.config.phase_inductance") != 0
+          ) {
             // calibration is over
             apply();
             this.calibrating = false;
             this.calStatus = true;
-          }
-          else {
+          } else {
             setTimeout(() => this.wait(), 100);
             console.log("waiting for motor cal to finish");
           }
@@ -223,15 +227,16 @@ export default {
             clear();
             this.calibrating = false;
             this.calStatus = false;
-          } else if (getVal("odrive0." + e.axis + ".encoder.is_ready") == true){
+          } else if (
+            getVal("odrive0." + e.axis + ".encoder.is_ready") == true
+          ) {
             putVal("odrive0." + e.axis + ".encoder.config.cpr", oldCPR);
             console.log("applying old CPR");
             this.choiceMade = true;
             this.currentStep.choiceMade = true;
             this.calibrating = false;
             this.calStatus = true;
-          }
-          else {
+          } else {
             console.log("waiting for encoder cal to finish...");
             setTimeout(() => this.wait(), 100);
           }
@@ -256,7 +261,8 @@ export default {
       // for encoders, wait for calibration to finish unless encoder.is_ready == true
       this.choiceMade = true;
       if (
-        this.currentStep == pages.Motor_0 || this.currentStep == pages.Motor_1
+        this.currentStep == pages.Motor_0 ||
+        this.currentStep == pages.Motor_1
       ) {
         let axis;
         if (this.currentStep == pages.Motor_0) axis = "axis0";
@@ -266,7 +272,8 @@ export default {
         }
       }
       if (
-        this.currentStep == pages.Encoder_0 || this.currentStep == pages.Encoder_1
+        this.currentStep == pages.Encoder_0 ||
+        this.currentStep == pages.Encoder_1
       ) {
         let axis;
         if (this.currentStep == pages.Encoder_0) axis = "axis0";
