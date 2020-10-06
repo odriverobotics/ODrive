@@ -42,6 +42,7 @@ export function putVal(path, value) {
 
 // path is path to function, args is list of parameters
 export function callFcn(path, args = []) {
+    console.log("calling function: " + path);
     socketio.sendEvent({
         type: "callFunction",
         data: {path: path, args: args}

@@ -8,6 +8,7 @@ from engineio.payload import Payload
 import json
 import time
 import argparse
+import logging
 
 # interface for odrive GUI to get data from odrivetool
 
@@ -22,6 +23,9 @@ def print(*args, **kwargs):
     file.flush() if file is not None else sys.stdout.flush()
 
 app = flask.Flask(__name__)
+# disable logging, very noisy!
+log = logging.getLogger('werkzeug')
+log.disabled = True
 app.config['SECRET_KEY'] = 'secret'
 app.config.update(
     SESSION_COOKIE_SECURE=True,
@@ -124,8 +128,8 @@ def get_property(message):
         time.sleep(0.1)
     globals()['inUse'] = True
     val = getVal(globals()['odrives'], message["path"].split('.'))
-    emit('ODriveProperty', json.dumps({"path": message["path"], "val": val}))
     globals()['inUse'] = False
+    emit('ODriveProperty', json.dumps({"path": message["path"], "val": val}))
 
 @socketio.on('setProperty')
 def set_property(message):
@@ -136,16 +140,16 @@ def set_property(message):
     print("From setProperty event handler: " + str(message))
     postVal(globals()['odrives'], message["path"].split('.'), message["val"], message["type"])
     val = getVal(globals()['odrives'], message["path"].split('.'))
-    emit('ODriveProperty', json.dumps({"path": message["path"], "val": val}))
     globals()['inUse'] = False
+    emit('ODriveProperty', json.dumps({"path": message["path"], "val": val}))
 
 @socketio.on('callFunction')
 def call_function(message):
     # message is {"path"}, no args yet (do we know which functions accept arguments from the odrive tree directly?)
     while globals()['inUse']:
         time.sleep(0.1)
-    globals()['inUse'] = True
     print("From callFunction event handler: " + str(message))
+    globals()['inUse'] = True
     callFunc(globals()['odrives'], message["path"].split('.'))
     globals()['inUse'] = False
 

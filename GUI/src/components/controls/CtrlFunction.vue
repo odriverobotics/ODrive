@@ -1,7 +1,7 @@
 <template>
   <div class="card" @click.self="executeFunction">
     <button class="close-button" @click=deleteCtrl>X</button>
-    <button class="execute">{{name}}()</button>
+    <button class="execute" @click="executeFunction">{{name}}()</button>
   </div>
 </template>
 
