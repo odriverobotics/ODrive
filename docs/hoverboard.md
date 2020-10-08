@@ -19,7 +19,7 @@ You may wire the motor phases in any order into a motor connector on the ODrive,
 | Green     | Z         |
 | Black     | GND       |
 
-Note: In order to ber compatible with encoder inputs, the ODrive doesn't have any filtering capacitors on the pins where the hall sensors connect. Therefore to get a reliable hall signal, it is recommended that you add some filter capacitors to these pins. You can see instructions [here](https://discourse.odriverobotics.com/t/encoder-error-error-illegal-hall-state/1047/7?u=madcowswe).
+Note: In order to be compatible with encoder inputs, the ODrive doesn't have any filtering capacitors on the pins where the hall sensors connect. Therefore to get a reliable hall signal, it is recommended that you add some filter capacitors to these pins. You can see instructions [here](https://discourse.odriverobotics.com/t/encoder-error-error-illegal-hall-state/1047/7?u=madcowswe).
 
 
 ### Hoverboard motor configuration
@@ -36,7 +36,7 @@ odrv0.axis0.motor.config.requested_current_range = 25 #Requires config save and 
 odrv0.axis0.motor.config.current_control_bandwidth = 100
 ```
 
-Set the encoder to hall mode (instead of incremental). See the [pinout](interfaces.md#hall-feedback-pinout) for instructions on how to plug in the hall feedback.
+Set the encoder to hall mode (instead of incremental). See the [pinout](encoders.md#hall-effect-encoders) for instructions on how to plug in the hall feedback.
 The hall feedback has 6 states for every pole pair in the motor. Since we have 15 pole pairs, we set the cpr to 15*6 = 90.
 ```txt
 odrv0.axis0.encoder.config.mode = ENCODER_MODE_HALL
@@ -121,7 +121,7 @@ odrv0.axis0.requested_state = AXIS_STATE_IDLE
 Hopefully you got your motor to spin! Feel free to repeat all of the above for the other axis if appropriate.
 
 ### PWM input
-If you want to drive your hoverboard wheels around with an RC remote control you can use the [RC PWM input](interfaces.md#rc-pwm-input). There is more information in that link.
+If you want to drive your hoverboard wheels around with an RC remote control you can use the [RC PWM input](rc-pwm.md). There is more information in that link.
 Lets use GPIO 3/4 for the velocity inputs so that we don't have to disable UART.
 Then let's map the full stick range of these inputs to some suitable velocity setpoint range.
 We also have to reboot to activate the PWM input.
