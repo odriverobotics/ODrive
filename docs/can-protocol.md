@@ -60,6 +60,7 @@ CMD ID | Name | Sender | Signals | Start byte | Signal Type | Bits | Factor | Of
 0x016 | Reboot ODrive | Master\*\*\* | - | - | - | - | - | - | -
 0x017 | Get Vbus Voltage | Master\*\*\* | Vbus Voltage | 0 | IEEE 754 Float | 32 | 1 | 0 | Intel
 0x018 | Clear Errors | Master | - | - | - | - | - | - | -
+0x019 | Set Linear Count | Master | Position | 0 | Signed Int | 32 | 1 | 0 | Intel
 0x700 | CANOpen Heartbeat Message\*\* | Slave | - | -  | - | - | - | - | -
 -|-|-|----------------------------------|-|--------------------|-|-|-|_
 

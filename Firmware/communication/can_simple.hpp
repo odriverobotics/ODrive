@@ -62,6 +62,7 @@ class CANSimple {
     static void get_sensorless_estimates_callback(Axis* axis, can_Message_t& msg);
     static void get_vbus_voltage_callback(Axis* axis, can_Message_t& msg);
     static void clear_errors_callback(Axis* axis, can_Message_t& msg);
+    static void set_linear_count_callback(Axis* axis, can_Message_t& msg);
 
     // Utility functions
     static uint32_t get_node_id(uint32_t msgID);

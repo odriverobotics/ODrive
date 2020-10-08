@@ -45,6 +45,7 @@ void cmd_read_property(char * pStr, StreamSink& response_channel, bool use_check
 void cmd_write_property(char * pStr, StreamSink& response_channel, bool use_checksum);
 void cmd_update_axis_wdg(char * pStr, StreamSink& response_channel, bool use_checksum);
 void cmd_unknown(char * pStr, StreamSink& response_channel, bool use_checksum);
+void cmd_encoder(char * pStr, StreamSink& response_channel, bool use_checksum);
 
 /* Function implementations --------------------------------------------------*/
 
@@ -122,6 +123,7 @@ void ASCII_protocol_process_line(const uint8_t* buffer, size_t len, StreamSink& 
         case 'r': cmd_read_property(cmd, response_channel,  use_checksum);              break;  // read property
         case 'w': cmd_write_property(cmd, response_channel, use_checksum);              break;  // write property
         case 'u': cmd_update_axis_wdg(cmd, response_channel, use_checksum);             break;  // Update axis watchdog. 
+        case 'e': cmd_encoder(cmd, response_channel, use_checksum);                     break;  // Encoder commands
         default : cmd_unknown(nullptr, response_channel, use_checksum);                 break;
     }
 }
@@ -220,11 +222,39 @@ void cmd_set_torque(char * pStr, StreamSink& response_channel, bool use_checksum
     }
 }
 
+// @brief Sets the encoder linear count
+// @param pStr buffer of ASCII encoded values
+// @param response_channel reference to the stream to respond on
+// @param use_checksum bool to indicate whether a checksum is required on response
+void cmd_encoder(char * pStr, StreamSink& response_channel, bool use_checksum) {
+    char firstChar = pStr[1];
+
+    if (firstChar == 's') {
+        memmove(pStr, pStr + 2, strlen(pStr + 2)+1); // Substring two characters to the right
+
+        unsigned motor_number;
+        int encoder_count;
+
+        if (sscanf(pStr, "l %u %i", &motor_number, &encoder_count) < 2) {
+            respond(response_channel, use_checksum, "invalid command format");
+        } else if (motor_number >= AXIS_COUNT) {
+            respond(response_channel, use_checksum, "invalid motor %u", motor_number);
+        } else {
+            Axis& axis = axes[motor_number];
+            axis.encoder_.set_linear_count(encoder_count);
+            axis.watchdog_feed();
+            respond(response_channel, use_checksum, "encoder set to %u", encoder_count);
+        }
+    } else {
+        respond(response_channel, use_checksum, "invalid command format");
+    }
+}
+
 // @brief Executes the set trapezoid trajectory command
 // @param pStr buffer of ASCII encoded values
 // @param response_channel reference to the stream to respond on
 // @param use_checksum bool to indicate whether a checksum is required on response
-void cmd_set_trapezoid_trajectory(char * pStr, StreamSink& response_channel, bool use_checksum) {
+void cmd_set_trapezoid_trajectory(char* pStr, StreamSink& response_channel, bool use_checksum) {
     unsigned motor_number;
     float goal_point;
 

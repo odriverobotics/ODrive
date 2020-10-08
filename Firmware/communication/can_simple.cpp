@@ -382,6 +382,10 @@ void CANSimple::clear_errors_callback(Axis* axis, can_Message_t& msg) {
     axis->clear_errors();
 }
 
+void CANSimple::set_linear_count_callback(Axis* axis, can_Message_t& msg){
+    axis->encoder_.set_linear_count(can_getSignal<int32_t>(msg, 0, 32, true));
+}
+
 void CANSimple::send_heartbeat(Axis* axis) {
     can_Message_t txmsg;
     txmsg.id = axis->config_.can_node_id << NUM_CMD_ID_BITS;
