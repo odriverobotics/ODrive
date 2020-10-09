@@ -23,3 +23,6 @@ pnpm-debug.log*
 
 #Electron-builder output
 /dist_electron
+
+#Electron icon generator output
+/build
