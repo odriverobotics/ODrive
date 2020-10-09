@@ -230,7 +230,7 @@ void cmd_encoder(char * pStr, StreamSink& response_channel, bool use_checksum) {
     char firstChar = pStr[1];
 
     if (firstChar == 's') {
-        memmove(pStr, pStr + 2, strlen(pStr + 2)+1); // Substring two characters to the right
+        pStr += 2; // Substring two characters to the right
 
         unsigned motor_number;
         int encoder_count;
