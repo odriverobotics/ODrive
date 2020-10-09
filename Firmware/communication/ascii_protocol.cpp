@@ -227,10 +227,8 @@ void cmd_set_torque(char * pStr, StreamSink& response_channel, bool use_checksum
 // @param response_channel reference to the stream to respond on
 // @param use_checksum bool to indicate whether a checksum is required on response
 void cmd_encoder(char * pStr, StreamSink& response_channel, bool use_checksum) {
-    char firstChar = pStr[1];
-
-    if (firstChar == 's') {
-        pStr += 2; // Substring two characters to the right
+    if (pStr[1] == 's') {
+        pStr += 2; // Substring two characters to the right (ok because we have guaranteed null termination after all chars)
 
         unsigned motor_number;
         int encoder_count;
