@@ -735,12 +735,15 @@ interfaces:
           pos_gain:
             type: float32
             unit: (turn/s) / turn
+            doc: units = (turn/s) / turn, default = 20
           vel_gain:
             type: float32
             unit: 'Nm/(turn/s)'
+            doc: units = 'Nm/(turn/s), default = 0.16
           vel_integrator_gain:
             type: float32
             unit: Nm/(turn/s * s)
+            doc: units = Nm/(turn/s * s), default = 0.32
           vel_limit:
             type: float32
             unit: turn/s

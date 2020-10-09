@@ -21,6 +21,7 @@ Please add a note of your changes below this heading if you make a Pull Request.
 ## [0.5.1] - 2020-09-27
 ### Added
 * Added motor `torque_constant`: units of torque are now [Nm] instead of just motor current.
+* Added `motor.config.torque_lim`: limit for motor torque in [Nm].
 * [Motor thermistors support](docs/thermistors.md)
 * Enable/disable of thermistor thermal limits according `setting axis.<thermistor>.enabled`.
 * Introduced `odrive-interface.yaml` as a root source for the ODrive's API. `odrivetool` connects much faster as a side effect.
@@ -28,6 +29,7 @@ Please add a note of your changes below this heading if you make a Pull Request.
 
 ### Changed
 * **`input_pos`, `input_vel`, `pos_estimate_linear`, `pos_estimate_circular`, are now in units of [turns] or [turns/s] instead of [counts] or [counts/s]**
+* **`pos_gain`, `vel_gain`, `vel_integrator_gain`, are now in units of [(turns/s) / turns], [Nm/(turns/s)], [Nm/(turns/s * s)] instead of [(counts/s) / counts], [A/(counts/s)], [A/((counts/s) * s)].** `pos_gain` is not affected. Old values of `vel_gain` and `vel_integrator_gain` should be multiplied by `torque_constant * encoder cpr` to convert from the old units to the new units. `torque_constant` is approximately equal to 8.27 / (motor KV).
 * `axis.motor.thermal_current_lim` has been removed. Instead a new property is available `axis.motor.effective_current_lim` which contains the effective current limit including any thermal limits.
 * `axis.motor.get_inverter_temp()`, `axis.motor.inverter_temp_limit_lower` and `axis.motor.inverter_temp_limit_upper` have been moved to seperate fet thermistor object under `axis.fet_thermistor`. `get_inverter_temp()` function has been renamed to `temp` and is now a read-only property.
 * `axis.config.counts_per_step` is now `axis.config.turns_per_step`
