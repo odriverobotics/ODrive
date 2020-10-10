@@ -12,6 +12,9 @@
 
 The ODrive does not echo commands. That means that when you type commands into a program like `screen`, the characters you type won't show up in the console.
 
+### Arduino
+There is an Arduino library that gives some examples on how to use the ASCII protocol to communicate with the ODrive. Check it out [here](../Arduino/ODriveArduino).
+
 ## Command format
 
 The ASCII protocol is human-readable and line-oriented, with each line having the following format:

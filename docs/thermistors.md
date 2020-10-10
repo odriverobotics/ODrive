@@ -11,7 +11,7 @@ The temperature of the onboard FET thermistors can be read out by using the `odr
 To use your own thermistors with the ODrive a few things have to be clarified first. The use of your own thermistor requires one analog input pin. Under `<axis>.motor_thermistor.config` the configuration of your own thermistor is available with the following fields:
 
 * `gpio_pin`: The GPIO input in used for this thermistor.
-* `poly_coefficient_0` to `poly_coefficient_3`: Coefficient that needs to be set for your specific setup more on that in [Thermistor coefficients](#Thermistor coefficients).
+* `poly_coefficient_0` to `poly_coefficient_3`: Coefficient that needs to be set for your specific setup more on that in [Thermistor coefficients](#thermistor-coefficients).
 * `temp_limit_lower` and `temp_limit_upper`: Same principle as the FET temperature limits.
 * `enabled`: Whether this thermistor is enabled or not.
 
