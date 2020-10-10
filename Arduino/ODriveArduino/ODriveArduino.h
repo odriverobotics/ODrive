@@ -35,7 +35,7 @@ public:
     int32_t readInt();
 
     // State helper
-    bool run_state(int axis, int requested_state, bool wait);
+    bool run_state(int axis, int requested_state, bool wait_for_idle, float timeout = 10.0f);
 private:
     String readString();
 

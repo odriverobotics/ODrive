@@ -52,23 +52,23 @@ void loop() {
 
       requested_state = ODriveArduino::AXIS_STATE_MOTOR_CALIBRATION;
       Serial << "Axis" << c << ": Requesting state " << requested_state << '\n';
-      odrive.run_state(motornum, requested_state, true);
+      if(!odrive.run_state(motornum, requested_state, true)) return;
 
       requested_state = ODriveArduino::AXIS_STATE_ENCODER_OFFSET_CALIBRATION;
       Serial << "Axis" << c << ": Requesting state " << requested_state << '\n';
-      odrive.run_state(motornum, requested_state, true);
+      if(!odrive.run_state(motornum, requested_state, true, 25.0f)) return;
 
       requested_state = ODriveArduino::AXIS_STATE_CLOSED_LOOP_CONTROL;
       Serial << "Axis" << c << ": Requesting state " << requested_state << '\n';
-      odrive.run_state(motornum, requested_state, false); // don't wait
+      if(!odrive.run_state(motornum, requested_state, false /*don't wait*/)) return;
     }
 
     // Sinusoidal test move
     if (c == 's') {
       Serial.println("Executing test move");
       for (float ph = 0.0f; ph < 6.28318530718f; ph += 0.01f) {
-        float pos_m0 = 20000.0f * cos(ph);
-        float pos_m1 = 20000.0f * sin(ph);
+        float pos_m0 = 2.0f * cos(ph);
+        float pos_m1 = 2.0f * sin(ph);
         odrive.SetPosition(0, pos_m0);
         odrive.SetPosition(1, pos_m1);
         delay(5);
