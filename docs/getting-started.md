@@ -148,7 +148,7 @@ To launch the main interactive ODrive tool, type `odrivetool` <kbd>Enter</kbd>. 
 It should look something like this:
 
 ```text
-ODrive control utility v0.4.0
+ODrive control utility v0.5.1
 Please connect your ODrive.
 Type help() for help.
 
@@ -199,6 +199,9 @@ This is the number of **magnet poles** in the rotor, **divided by two**. To find
 **Note**: This is **not** the same as the number of coils in the stator.
 A good way to find the number of pole pairs is with a current limited power supply. Connect any two of the three phases to a power supply outputting around 2A, spin the motor by hand, and count the number of detents. This will be the number of pole pairs. If you can't distinguish the detents from the normal cogging present when the motor is disconnected, increase the current.
 Another way is sliding a loose magnet in your hand around the rotor, and counting how many times it stops. This will be the number of _pole pairs_. If you use a ferrous piece of metal instead of a magnet, you will get the number of _magnet poles_.
+
+`odrv0.axis0.motor.config.torque_constant`  
+This is the ratio of torque produced by the motor per Amp of current delivered to the motor. This should be set to **8.27 / (motor KV)**.
 
 `odrv0.axis0.motor.config.motor_type`  
 This is the type of motor being used. Currently two types of motors are supported: High-current motors (`MOTOR_TYPE_HIGH_CURRENT`) and gimbal motors (`MOTOR_TYPE_GIMBAL`).
@@ -370,7 +373,7 @@ The watchdog is fed using the `axis.watchdog_feed()` method of each axis.
 You can now:
 * [Properly tune](control.md) the motor controller to unlock the full potential of the ODrive.
 * See what other [commands and parameters](commands.md) are available, in order to better control the ODrive.
-* Control the ODrive from your own program or hook it up to an existing system through one of it's [interfaces](interfaces.md).
+* Control the ODrive from your own program or hook it up to an existing system through one of it's [interfaces](pinout.md).
 * See how you can improve the behavior during the startup procedure, like [bypassing encoder calibration](encoders.md#encoder-with-index-signal).
 
 If you have any issues or any questions please get in touch. The [ODrive Community](https://discourse.odriverobotics.com/) warmly welcomes you.

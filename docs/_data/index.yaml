@@ -11,22 +11,38 @@ sections:
         url: /odrivetool
       - title: Parameters & Commands
         url: /commands
-      - title: Interfaces
-        url: /interfaces
       - title: Encoders
         url: /encoders
-      - title: Homing & Endstops
-        url: /endstops
-      - title: Thermistors
-        url: /thermistors
       - title: Control & Tuning
         url: /control
       - title: Troubleshooting
         url: /troubleshooting
+      - title: Specifications
+        url: /specifications
   - title: Tutorials
     docs:
       - title: Hoverboard Guide
         url: /hoverboard
+      - title: Migration Guide
+        url: /migration
+  - title: Interfaces
+    docs:
+      - title: Pinout
+        url: /pinout
+      - title: Native Protocol
+        url: /native-protocol
+      - title: CAN Protocol
+        url: /can-protocol
+      - title: ASCII Protocol
+        url: /ascii-protocol
+      - title: Step & Direction
+        url: /step-direction
+      - title: RC PWM
+        url: /rc-pwm
+      - title: Homing & Endstops
+        url: /endstops
+      - title: Thermistors
+        url: /thermistors
   - title: API Reference
   - title: For ODrive Developers
     docs:

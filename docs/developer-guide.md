@@ -268,6 +268,8 @@ python ../Firmware/interface_generator_stub.py --definitions ../Firmware/odrive-
 bundle exec jekyll serve --incremental --host=0.0.0.0
 ```
 
+On Ubuntu 18.04, prerequisites are: `ruby ruby-dev zlib1g-dev`.
+
 ## Releases
 
 We use GitHub Releases to provide firmware releases.
