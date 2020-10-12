@@ -1,9 +1,9 @@
 #ifndef __CAN_SIMPLE_HPP_
 #define __CAN_SIMPLE_HPP_
 
-#include "interface_can.hpp"
+#include "odrive_can.hpp"
 
-class CANSimple {
+class CANSimple : public ODriveCAN {
    public:
     enum {
         MSG_CO_NMT_CTRL = 0x000,  // CANOpen NMT Message REC
@@ -34,14 +34,19 @@ class CANSimple {
         MSG_CO_HEARTBEAT_CMD = 0x700,  // CANOpen NMT Heartbeat  SEND
     };
 
-    static void handle_can_message(const can_Message_t& msg);
-    static void doCommand(Axis& axis, const can_Message_t& cmd);
+    using ODriveCAN::ODriveCAN;
+
 
     // Cyclic Senders
     static int32_t send_heartbeat(const Axis& axis);
     static void send_cyclic(Axis& axis);
 
    private:
+    uint32_t service_stack() final;
+    void handle_can_message(const can_Message_t& msg) final;
+
+    static void doCommand(Axis& axis, const can_Message_t& cmd);
+    
     // Get functions (msg.rtr bit must be set)
     static int32_t get_motor_error_callback(const Axis& axis);
     static int32_t get_encoder_error_callback(const Axis& axis);

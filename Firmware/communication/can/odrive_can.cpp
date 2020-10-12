@@ -1,14 +1,11 @@
-#include "interface_can.hpp"
-
-#include "fibre/crc.hpp"
-#include "freertos_vars.h"
-#include "utils.hpp"
+#include "odrive_can.hpp"
 
 #include <can.h>
 #include <cmsis_os.h>
 
-// Specific CAN Protocols
-#include "can_simple.hpp"
+#include "fibre/crc.hpp"
+#include "freertos_vars.h"
+#include "utils.hpp"
 
 // Safer context handling via maps instead of arrays
 // #include <unordered_map>
@@ -25,18 +22,16 @@ void ODriveCAN::can_server_thread() {
     for (;;) {
         uint32_t status = HAL_CAN_GetError(handle_);
         if (status == HAL_CAN_ERROR_NONE) {
-            can_Message_t rxmsg;
+            uint32_t nextServiceTime = service_stack();
 
-            osSemaphoreWait(sem_can, 10);  // Poll every 10ms regardless of sempahore status
-            while (available()) {
+            uint32_t rxNum = available();
+            for (uint32_t i = 0; i < rxNum; i++) {
+                can_Message_t rxmsg;
                 read(rxmsg);
-                switch (config_.protocol) {
-                    case PROTOCOL_SIMPLE:
-                        CANSimple::handle_can_message(rxmsg);
-                        break;
-                }
+                handle_can_message(rxmsg);
             }
             HAL_CAN_ActivateNotification(handle_, CAN_IT_RX_FIFO0_MSG_PENDING | CAN_IT_TX_MAILBOX_EMPTY);
+            osSemaphoreWait(sem_can, nextServiceTime);
         } else {
             if (status == HAL_CAN_ERROR_TIMEOUT) {
                 HAL_CAN_ResetError(handle_);
@@ -174,17 +169,6 @@ void ODriveCAN::reinit_can() {
 
 void ODriveCAN::set_error(Error error) {
     error_ |= error;
-}
-
-// This function is called by each axis.
-// It provides an abstraction from the specific CAN protocol in use
-void ODriveCAN::send_cyclic(Axis &axis) {
-    // Handle heartbeat message
-    switch (config_.protocol) {
-        case PROTOCOL_SIMPLE:
-            CANSimple::send_cyclic(axis);
-            break;
-    }
 }
 
 void HAL_CAN_TxMailbox0CompleteCallback(CAN_HandleTypeDef *hcan) {

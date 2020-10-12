@@ -291,6 +291,37 @@ void CANSimple::clear_errors_callback(Axis& axis, const can_Message_t& msg) {
     odrv.clear_errors(); // TODO: might want to clear axis errors only
 }
 
+uint32_t CANSimple::service_stack() {
+    uint32_t nextServiceTime = UINT32_MAX;
+    uint32_t now = HAL_GetTick();
+
+    for (auto& a: axes) {
+        MEASURE_TIME(a.task_times_.can_heartbeat) {
+            if (a.config_.can.heartbeat_rate_ms > 0) {
+                if ((now - a.can_.last_heartbeat) >= a.config_.can.heartbeat_rate_ms) {
+                    if (send_heartbeat(a) >= 0)
+                        a.can_.last_heartbeat = now;
+                }
+
+                int nextAxisService = a.can_.last_heartbeat + a.config_.can.heartbeat_rate_ms - now;
+                nextServiceTime = std::min(nextServiceTime, static_cast<uint32_t>(std::max(0, nextAxisService)));
+            }
+
+            if (a.config_.can.encoder_rate_ms > 0) {
+                if ((now - a.can_.last_encoder) >= a.config_.can.encoder_rate_ms) {
+                    if (get_encoder_estimates_callback(a) >= 0)
+                        a.can_.last_encoder = now;
+                }
+
+                int nextAxisService = a.can_.last_encoder + a.config_.can.encoder_rate_ms - now;
+                nextServiceTime = std::min(nextServiceTime, static_cast<uint32_t>(std::max(0, nextAxisService)));
+            }
+        }
+    }
+
+    return nextServiceTime;
+}
+
 int32_t CANSimple::send_heartbeat(const Axis& axis) {
     can_Message_t txmsg;
     txmsg.id = axis.config_.can.node_id << NUM_CMD_ID_BITS;

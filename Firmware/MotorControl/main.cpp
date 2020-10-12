@@ -266,24 +266,23 @@ void vApplicationIdleHook(void) {
         odrv.system_stats_.max_stack_usage_usb = stack_size_usb_thread - uxTaskGetStackHighWaterMark(usb_thread) * sizeof(StackType_t);
         odrv.system_stats_.max_stack_usage_uart = stack_size_uart_thread - uxTaskGetStackHighWaterMark(uart_thread) * sizeof(StackType_t);
         odrv.system_stats_.max_stack_usage_startup = stack_size_default_task - uxTaskGetStackHighWaterMark(defaultTaskHandle) * sizeof(StackType_t);
-        odrv.system_stats_.max_stack_usage_can = odCAN->stack_size_ - uxTaskGetStackHighWaterMark(odCAN->thread_id_) * sizeof(StackType_t);
+        odrv.system_stats_.max_stack_usage_can = odCAN ? (odCAN->stack_size_ - uxTaskGetStackHighWaterMark(odCAN->thread_id_) * sizeof(StackType_t)) : 0;
 
         odrv.system_stats_.stack_size_axis = axes[0].stack_size_;
         odrv.system_stats_.stack_size_usb = stack_size_usb_thread;
         odrv.system_stats_.stack_size_uart = stack_size_uart_thread;
         odrv.system_stats_.stack_size_startup = stack_size_default_task;
-        odrv.system_stats_.stack_size_can = odCAN->stack_size_;
+        odrv.system_stats_.stack_size_can = odCAN ? odCAN->stack_size_ : 0;
 
         odrv.system_stats_.prio_axis = osThreadGetPriority(axes[0].thread_id_);
         odrv.system_stats_.prio_usb = osThreadGetPriority(usb_thread);
         odrv.system_stats_.prio_uart = osThreadGetPriority(uart_thread);
         odrv.system_stats_.prio_startup = osThreadGetPriority(defaultTaskHandle);
-        odrv.system_stats_.prio_can = osThreadGetPriority(odCAN->thread_id_);
+        odrv.system_stats_.prio_can = odCAN ? osThreadGetPriority(odCAN->thread_id_) : 0;
 
         status_led_controller.update();
     }
 }
-
 }
 
 /**
@@ -431,9 +430,6 @@ void ODrive::control_loop_cb(uint32_t timestamp) {
             axis.min_endstop_.update();
             axis.max_endstop_.update();
         }
-
-        MEASURE_TIME(axis.task_times_.can_heartbeat)
-            odCAN->send_cyclic(axis);
 
         MEASURE_TIME(axis.task_times_.controller_update)
             axis.controller_.update(); // uses position and velocity from encoder
@@ -834,7 +830,15 @@ extern "C" int main(void) {
     osSemaphoreWait(sem_can, 0);
 
     // Construct all objects.
-    odCAN = new ODriveCAN(can_config, &hcan1);
+    if (odrv.config_.enable_can_a) {
+        switch (can_config.protocol) {
+            case ODriveIntf::CanIntf::Protocol::PROTOCOL_SIMPLE:
+                odCAN = new CANSimple(can_config, &hcan1);
+                break;
+            default:
+                break;
+        }
+    }
 
     // Create main thread
     osThreadDef(defaultTask, rtos_main, osPriorityNormal, 0, stack_size_default_task / sizeof(StackType_t));
