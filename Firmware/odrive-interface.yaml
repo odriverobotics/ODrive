@@ -336,7 +336,6 @@ interfaces:
           watchdog_timeout:
             type: float32
             unit: s
-            doc: 0 disables watchdog
           enable_watchdog: bool
           step_gpio_pin: {type: uint16, c_setter: 'set_step_gpio_pin'}
           dir_gpio_pin: {type: uint16, c_setter: 'set_dir_gpio_pin'}

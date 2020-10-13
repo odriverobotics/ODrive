@@ -363,11 +363,9 @@ Each axis has a configurable watchdog timer that can stop the motors if the
 control connection to the ODrive is interrupted.
 
 Each axis has a configurable watchdog timeout: `axis.config.watchdog_timeout`,
-measured in seconds. A value of `0` disables the watchdog functionality. Any value
-`> 0` will stop the motors if the watchdog has not been fed in the configured
-time interval. 
+measured in seconds. Set `axis.config.enable_watchdog = True` to turn on this feature.
 
-The watchdog is fed using the `axis.watchdog_feed()` method of each axis. 
+The watchdog is fed using the `axis.watchdog_feed()` method of each axis. Some [ascii commands](ascii-protocol.md#command-reference) feed the watchdog automatically.
 
 ## What's next?
 You can now:
