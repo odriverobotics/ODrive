@@ -51,6 +51,17 @@ Sometimes you would like the index search to only happen in a particular directi
 
 *IMPORTANT:* Your motor should find the same rotational position when the ODrive performs an index search if the index signal is working properly. This means that the motor should spin, and stop at the same position if you have set <axis>.config.startup_encoder_index_search so the search starts on reboot, or you if call the command:<axis>.requested_state = AXIS_STATE_ENCODER_INDEX_SEARCH after reboot. You can test this. Send the reboot() command, and while it's rebooting turn your motor, then make sure the motor returns back to the correct position each time when it comes out of reboot. Try this procedure a couple of times to be sure. 
 
+### Hall Effect Encoders  
+Hall effect encoders can also be used with ODrive. The encoder CPR should be set to `6 * <# of motor pole pairs>`. Due to the low resolution of hall effect encoders compared to other types of encoders, low speed performance will be worse than other encoder types.
+
+When the encoder mode is set to hall feedback, the pinout on the encoder port is as follows:
+
+| Label on ODrive | Hall feedback |
+|-----------------|---------------|
+| A               | Hall A        |
+| B               | Hall B        |
+| Z               | Hall C        |
+
 ### Startup sequence notes
 The following are variables that MUST be set up for your encoder configuration. Your values will vary depending on your encoder:
 
