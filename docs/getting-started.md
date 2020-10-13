@@ -202,6 +202,7 @@ Another way is sliding a loose magnet in your hand around the rotor, and countin
 
 `odrv0.axis0.motor.config.torque_constant`  
 This is the ratio of torque produced by the motor per Amp of current delivered to the motor. This should be set to **8.27 / (motor KV)**.
+If you decide that you would rather command torque in units of Amps, you could simply set the torque constant to 1.
 
 `odrv0.axis0.motor.config.motor_type`  
 This is the type of motor being used. Currently two types of motors are supported: High-current motors (`MOTOR_TYPE_HIGH_CURRENT`) and gimbal motors (`MOTOR_TYPE_GIMBAL`).

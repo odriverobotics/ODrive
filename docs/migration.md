@@ -5,6 +5,8 @@ Certain changes occurred between firmware versions v0.4.12 and v0.5.1 that will 
 ## Unit Changes
 ODrive now uses units of [turns], [turns/s], and [turns/s^2] instead of [counts], [counts/s], and [counts/s^2]. In addition, the motor controller class now has an input command of torque in [Nm] instead of current in [Amps]. In general, every user-facing parameter that has to do with position or velocity is affected by the unit change.
 
+**Note:** For the torque to be in correct in [Nm] you need to configure the `motor.config.torque_constant`. See the updated [getting started](getting-started.md/#configure-m0) for more details.
+
 ## Control Parameter Names
 ODrive now uses `input_pos`, `input_vel`, and `input_torque` as commands instead of `pos_setpoint`, `vel_setpoint`, and `current_setpoint`
 
