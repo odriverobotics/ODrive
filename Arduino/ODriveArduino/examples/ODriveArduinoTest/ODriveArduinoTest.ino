@@ -1,4 +1,5 @@
 // includes
+#include <HardwareSerial.h>
 #include <SoftwareSerial.h>
 #include <ODriveArduino.h>
 // Printing with stream operator helper functions
@@ -19,13 +20,13 @@ template<>        inline Print& operator <<(Print &obj, float arg) { obj.print(a
 // pin 0: RX - connect to ODrive TX
 // pin 1: TX - connect to ODrive RX
 // See https://www.pjrc.com/teensy/td_uart.html for other options on Teensy
-Stream& odrive_serial = Serial1;
+HardwareSerial& odrive_serial = Serial1;
 
 // Arduino Mega or Due - Serial1
 // pin 19: RX - connect to ODrive TX
 // pin 18: TX - connect to ODrive RX
 // See https://www.arduino.cc/reference/en/language/functions/communication/serial/ for other options
-// Stream& odrive_serial = Serial1;
+// HardwareSerial& odrive_serial = Serial1;
 
 // Arduino without spare serial ports (such as Arduino UNO) have to use software serial.
 // Note that this is implemented poorly and can lead to wrong data sent or read.
