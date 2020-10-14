@@ -37,19 +37,28 @@ class TestUartAscii():
 
     def get_test_cases(self, testrig: TestRig):
         for odrive in testrig.get_components(ODriveComponent):
-            ports = list(testrig.get_connected_components({
-                'rx': (odrive.gpio1, True),
-                'tx': (odrive.gpio2, False)
-            }, SerialPortComponent))
-            yield (odrive, 0, ports)
+            if odrive.yaml['board-version'].startswith('v3.'):
+                ports = list(testrig.get_connected_components({
+                    'rx': (odrive.gpio1, True),
+                    'tx': (odrive.gpio2, False)
+                }, SerialPortComponent))
+                yield (odrive, 0, 1, 2, ports)
 
-            # Enable the line below to manually test UART_B. For this you need
-            # to manually move to the wires go to GPIO1/2 to GPIO3/4. The ones
-            # that normally go to GPIO3/4 have a low pass filter.
-            #yield (odrive, 1, ports)
+                # Enable the line below to manually test UART_B. For this you need
+                # to manually move to the wires go to GPIO1/2 to GPIO3/4. The ones
+                # that normally go to GPIO3/4 have a low pass filter.
+                #yield (odrive, 1, 3, 4, ports)
+            elif odrive.yaml['board-version'].startswith('v4.'):
+                ports = list(testrig.get_connected_components({
+                    'rx': (odrive.gpio15, True),
+                    'tx': (odrive.gpio14, False)
+                }, SerialPortComponent))
+                yield (odrive, 0, 15, 14, ports)
+            else:
+                raise TestFailed("unknown board version")
 
-    def run_test(self, odrive: ODriveComponent, uart_num: int, port: SerialPortComponent, logger: Logger):
-        logger.debug('Enabling UART {}...'.format(uart_num))
+    def run_test(self, odrive: ODriveComponent, uart_num: int, tx_gpio: list, rx_gpio: list, port: SerialPortComponent, logger: Logger):
+        logger.debug('Enabling UART {}...'.format(chr(ord('A') + uart_num)))
         
         # GPIOs might be in use by something other than UART and some components
         # might be configured so that they would fail in the later test.
@@ -63,16 +72,17 @@ class TestUartAscii():
 
         if uart_num == 0:
             odrive.handle.config.enable_uart_a = True
-            odrive.handle.config.gpio1_mode = GPIO_MODE_UART_A
-            odrive.handle.config.gpio2_mode = GPIO_MODE_UART_A
-            odrive.handle.config.gpio3_mode = GPIO_MODE_ANALOG_IN
-            odrive.handle.config.gpio4_mode = GPIO_MODE_ANALOG_IN
-        else:
+            mode = GPIO_MODE_UART_A
+        elif uart_num == 1:
             odrive.handle.config.enable_uart_b = True
-            odrive.handle.config.gpio1_mode = GPIO_MODE_ANALOG_IN
-            odrive.handle.config.gpio2_mode = GPIO_MODE_ANALOG_IN
-            odrive.handle.config.gpio3_mode = GPIO_MODE_UART_B
-            odrive.handle.config.gpio4_mode = GPIO_MODE_UART_B
+            mode = GPIO_MODE_UART_B
+        elif uart_num == 2:
+            odrive.handle.config.enable_uart_c = True
+            mode = GPIO_MODE_UART_C
+        else:
+            raise TestFailed(f"unknown UART: {uart_num}")
+        setattr(odrive.handle.config, f'gpio{tx_gpio}_mode', mode)
+        setattr(odrive.handle.config, f'gpio{rx_gpio}_mode', mode)
 
         odrive.save_config_and_reboot()
 

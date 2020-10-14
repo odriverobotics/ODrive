@@ -49,11 +49,20 @@ class TestPwmInput():
 
     def get_test_cases(self, testrig: TestRig):
         for odrive in testrig.get_components(ODriveComponent):
-            # Run a separate test for each PWM-capable GPIO. Use different min/max settings for each test.
-            yield (odrive, 1, -50, 200, list(testrig.get_connected_components(odrive.gpio1, TeensyGpio)))
-            yield (odrive, 2, 20, 400, list(testrig.get_connected_components(odrive.gpio2, TeensyGpio)))
-            yield (odrive, 3, -1000, 0, list(testrig.get_connected_components(odrive.gpio3, TeensyGpio)))
-            yield (odrive, 4, -20000, 20000, list(testrig.get_connected_components(odrive.gpio4, TeensyGpio)))
+            if odrive.yaml['board-version'].startswith('v3.'):
+                # Run a separate test for each PWM-capable GPIO. Use different min/max settings for each test.
+                yield (odrive, 1, -50, 200, list(testrig.get_connected_components(odrive.gpio1, TeensyGpio)))
+                yield (odrive, 2, 20, 400, list(testrig.get_connected_components(odrive.gpio2, TeensyGpio)))
+                yield (odrive, 3, -1000, 0, list(testrig.get_connected_components(odrive.gpio3, TeensyGpio)))
+                yield (odrive, 4, -20000, 20000, list(testrig.get_connected_components(odrive.gpio4, TeensyGpio)))
+            elif odrive.yaml['board-version'].startswith('v4.'):
+                # Run a separate test for each PWM-capable GPIO. Use different min/max settings for each test.
+                yield (odrive, 14, -50, 200, list(testrig.get_connected_components(odrive.gpio14, TeensyGpio)))
+                yield (odrive, 19, 20, 400, list(testrig.get_connected_components(odrive.gpio19, TeensyGpio)))
+                yield (odrive, 20, -20000, 20000, list(testrig.get_connected_components(odrive.gpio20, TeensyGpio)))
+                yield (odrive, 21, -1000, 0, list(testrig.get_connected_components(odrive.gpio21, TeensyGpio)))
+            else:
+                raise Exception(f"unknown board version {odrive.yaml['board-version']}")
 
     def run_test(self, odrive: ODriveComponent, odrive_gpio_num: int, min_val: float, max_val: float, teensy_gpio: Component, logger: Logger):
         teensy = teensy_gpio.parent
@@ -63,14 +72,8 @@ class TestPwmInput():
         logger.debug("Set up PWM input...")
         odrive.disable_mappings()
 
-        pwm_mapping = [
-            odrive.handle.config.gpio1_pwm_mapping,
-            odrive.handle.config.gpio2_pwm_mapping,
-            odrive.handle.config.gpio3_pwm_mapping,
-            odrive.handle.config.gpio4_pwm_mapping
-        ][odrive_gpio_num - 1]
-
-        setattr(odrive.handle.config, 'gpio' + str(odrive_gpio_num) + '_mode', GPIO_MODE_PWM)
+        setattr(odrive.handle.config, f'gpio{odrive_gpio_num}_mode', GPIO_MODE_PWM)
+        pwm_mapping = getattr(odrive.handle.config, f'gpio{odrive_gpio_num}_pwm_mapping')
         pwm_mapping.endpoint = odrive.handle.axis0.controller._remote_attributes['input_pos']
         pwm_mapping.min = min_val
         pwm_mapping.max = max_val

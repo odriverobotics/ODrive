@@ -17,7 +17,7 @@ class TestClosedLoopControlBase():
 
     def get_test_cases(self, testrig: TestRig):
         for odrive in testrig.get_components(ODriveComponent):
-            for num in range(2):
+            for num in range(len(odrive.axes)):
                 encoders = testrig.get_connected_components({
                     'a': (odrive.encoders[num].a, False),
                     'b': (odrive.encoders[num].b, False)
