@@ -120,6 +120,10 @@ if tup.getconfig("STRICT") == "true" then
     FLAGS += '-Werror'
 end
 
+if tup.getconfig("NO_DRM") == "true" then
+    FLAGS += '-DNO_DRM'
+end
+
 -- C-specific flags
 FLAGS += board.flags
 FLAGS += '-D__weak="__attribute__((weak))"'
