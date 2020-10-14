@@ -53,7 +53,7 @@ void setup() {
   // You can of course set them different if you want.
   // See the documentation or play around in odrivetool to see the available parameters
   for (int axis = 0; axis < 2; ++axis) {
-    odrive_serial << "w axis" << axis << ".controller.config.vel_limit " << 22000.0f << '\n';
+    odrive_serial << "w axis" << axis << ".controller.config.vel_limit " << 10.0f << '\n';
     odrive_serial << "w axis" << axis << ".motor.config.current_lim " << 11.0f << '\n';
     // This ends up writing something like "w axis0.motor.config.current_lim 10.0\n"
   }
