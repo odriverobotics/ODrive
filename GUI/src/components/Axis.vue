@@ -66,6 +66,9 @@ const motorErrors = {
   0x00002000: "MOTOR_ERROR_BRAKE_DUTY_CYCLE_NAN",
   0x00004000: "MOTOR_ERROR_DC_BUS_OVER_REGEN_CURRENT",
   0x00008000: "MOTOR_ERROR_DC_BUS_OVER_CURRENT",
+  0x00010000: "MOTOR_ERROR_MODULATION_IS_NAN", 
+  0x00020000: "MOTOR_ERROR_MOTOR_THERMISTOR_OVER_TEMP", 
+  0x00040000: "MOTOR_ERROR_FET_THERMISTOR_OVER_TEMP", 
 };
 
 let encoderErrors = {
@@ -125,10 +128,7 @@ export default {
             errs.push(axisErrors[errKey]);
           }
         }
-        retMsg = "";
-        for (const err of errs) {
-          retMsg = retMsg + " " + err;
-        }
+        retMsg = errs.join(', ');
       }
 
       return retMsg;
@@ -150,10 +150,7 @@ export default {
             errs.push(motorErrors[errKey]);
           }
         }
-        retMsg = "";
-        for (const err of errs) {
-          retMsg = retMsg + " " + err;
-        }
+        retMsg = errs.join(', ');
       }
 
       return retMsg;
@@ -175,10 +172,7 @@ export default {
             errs.push(encoderErrors[errKey]);
           }
         }
-        retMsg = "";
-        for (const err of errs) {
-          retMsg = retMsg + " " + err;
-        }
+        retMsg = errs.join(', ');
       }
 
       return retMsg;
@@ -195,10 +189,7 @@ export default {
             errs.push(controllerErrors[errKey]);
           }
         }
-        retMsg = "";
-        for (const err of errs) {
-          retMsg = retMsg + " " + err;
-        }
+        retMsg = errs.join(', ');
       }
 
       return retMsg;

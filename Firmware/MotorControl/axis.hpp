@@ -86,8 +86,6 @@ public:
             Encoder& encoder,
             SensorlessEstimator& sensorless_estimator,
             Controller& controller,
-            OnboardThermistorCurrentLimiter& fet_thermistor,
-            OffboardThermistorCurrentLimiter& motor_thermistor,
             Motor& motor,
             TrapezoidalTrajectory& trap,
             Endstop& min_endstop,
@@ -216,18 +214,11 @@ public:
     Encoder& encoder_;
     SensorlessEstimator& sensorless_estimator_;
     Controller& controller_;
-    OnboardThermistorCurrentLimiter& fet_thermistor_;
-    OffboardThermistorCurrentLimiter& motor_thermistor_;
     Motor& motor_;
     TrapezoidalTrajectory& trap_traj_;
     Endstop& min_endstop_;
     Endstop& max_endstop_;
     MechanicalBrake& mechanical_brake_;
-
-    // List of current_limiters and thermistors to
-    // provide easy iteration.
-    std::array<CurrentLimiter*, 2> current_limiters_;
-    std::array<ThermistorCurrentLimiter*, 2> thermistors_;
 
     osThreadId thread_id_;
     const uint32_t stack_size_ = 2048; // Bytes
