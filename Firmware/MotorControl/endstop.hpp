@@ -26,11 +26,22 @@ class Endstop {
     bool apply_config();
 
     void update();
-    bool get_state();
+    constexpr bool get_state(){
+        return endstop_state_;
+    }
+
+    constexpr bool rose(){
+        return (endstop_state_ != last_state_) && endstop_state_;
+    }
+
+    constexpr bool fell(){
+        return (endstop_state_ != last_state_) && !endstop_state_;
+    }
 
     bool endstop_state_ = false;
 
    private:
+    bool last_state_ = false;
     bool pin_state_ = false;
     float pos_when_pressed_ = 0.0f;
     Timer<float> debounceTimer_;
