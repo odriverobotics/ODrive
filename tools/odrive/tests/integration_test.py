@@ -145,9 +145,9 @@ class TestSimpleCANClosedLoop():
 
         # make sure no gpio input is overwriting our values
         odrive.disable_mappings()
-        odrive.handle.config.gpio15_mode = GPIO_MODE_CAN0
-        odrive.handle.config.gpio16_mode = GPIO_MODE_CAN0
-        odrive.handle.config.enable_can0 = True
+        odrive.handle.config.gpio15_mode = GPIO_MODE_CAN_A
+        odrive.handle.config.gpio16_mode = GPIO_MODE_CAN_A
+        odrive.handle.config.enable_can_a = True
         odrive.save_config_and_reboot()
 
         with self.prepare(odrive, canbus, axis_ctx, motor_ctx, enc_ctx, node_id, extended_id, logger):

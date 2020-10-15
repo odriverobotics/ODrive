@@ -44,11 +44,11 @@ Most information in this file can be reproduced by running `dump_interrupts(odrv
 
 | Name         | Prio | Channel                          | High Level Func |
 |--------------|------|----------------------------------|-----------------|
-| DMA1_Stream0 |    1 | 0 (SPI3_RX)                      | SPI             |
-| DMA1_Stream2 |    0 | 4 (UART4_RX)                     | UART0           |
-| DMA1_Stream4 |    0 | 4 (UART4_TX)                     | UART0           |
-| DMA1_Stream5 |    0 | 4 (USART2_RX)                    | UART1           |
-| DMA1_Stream6 |    0 | 4 (USART2_TX)                    | UART1           |
-| DMA1_Stream7 |    1 | 0 (SPI3_TX)                      | SPI             |
+| DMA1_Stream0 |    1 | 0 (SPI3_RX)                      | SPI_A           |
+| DMA1_Stream2 |    0 | 4 (UART4_RX)                     | UART_A          |
+| DMA1_Stream4 |    0 | 4 (UART4_TX)                     | UART_A          |
+| DMA1_Stream5 |    0 | 4 (USART2_RX)                    | UART_B          |
+| DMA1_Stream6 |    0 | 4 (USART2_TX)                    | UART_B          |
+| DMA1_Stream7 |    1 | 0 (SPI3_TX)                      | SPI_A           |
 | DMA2_Stream0 |    0 | 0 (ADC1)                         | freerunning ADC |
 

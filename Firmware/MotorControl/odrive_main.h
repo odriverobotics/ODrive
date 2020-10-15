@@ -61,14 +61,14 @@ struct BoardConfig_t {
         DEFAULT_GPIO_MODES
     };
 
-    bool enable_uart0 = true;
-    bool enable_uart1 = false;
-    bool enable_uart2 = false;
-    uint32_t uart0_baudrate = 115200;
-    uint32_t uart1_baudrate = 115200;
-    uint32_t uart2_baudrate = 115200;
-    bool enable_can0 = true;
-    bool enable_i2c0 = false;
+    bool enable_uart_a = true;
+    bool enable_uart_b = false;
+    bool enable_uart_c = false;
+    uint32_t uart_a_baudrate = 115200;
+    uint32_t uart_b_baudrate = 115200;
+    uint32_t uart_c_baudrate = 115200;
+    bool enable_can_a = true;
+    bool enable_i2c_a = false;
     bool enable_ascii_protocol_on_usb = true;
     float max_regen_current = 0.0f;
     float brake_resistance = DEFAULT_BRAKE_RESISTANCE;

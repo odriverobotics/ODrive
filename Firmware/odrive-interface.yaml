@@ -97,22 +97,22 @@ interfaces:
           gpio15_mode: {type: GpioMode, doc: Mode of GPIO15 (changes take effect after reboot), c_name: 'gpio_modes[15]'}
           gpio16_mode: {type: GpioMode, doc: Mode of GPIO16 (changes take effect after reboot), c_name: 'gpio_modes[16]'}
 
-          enable_uart0:
+          enable_uart_a:
             type: bool
-            brief: Enables/disables UART0.
+            brief: Enables/disables UART_A.
             doc: |
-              You also need to set the corresponding GPIOs to GPIO_MODE_UART0.
-              Refer to [interfaces](interfaces.md) to see which pins support UART0.
+              You also need to set the corresponding GPIOs to GPIO_MODE_UART_A.
+              Refer to [interfaces](interfaces.md) to see which pins support UART_A.
               Changing this requires a reboot.
-          enable_uart1:
+          enable_uart_b:
             type: bool
-            brief: Enables/disables UART1.
+            brief: Enables/disables UART_B.
             doc: |
-              You also need to set the corresponding GPIOs to GPIO_MODE_UART1.
-              Refer to [interfaces](interfaces.md) to see which pins support UART1.
+              You also need to set the corresponding GPIOs to GPIO_MODE_UART_B.
+              Refer to [interfaces](interfaces.md) to see which pins support UART_B.
               Changing this requires a reboot.
-          enable_uart2: {type: bool, doc: Not supported on ODrive v3.x.}
-          uart0_baudrate:
+          enable_uart_c: {type: bool, doc: Not supported on ODrive v3.x.}
+          uart_a_baudrate:
             type: uint32
             unit: baud/s
             brief: Defines the baudrate used on the UART interface.
@@ -138,21 +138,21 @@ interfaces:
 
               For more information refer to Section 30.3.4 and Table 142 (the column with f_PCLK = 42 MHz) in the
               [STM datasheet](https://www.st.com/content/ccc/resource/technical/document/reference_manual/3d/6d/5a/66/b4/99/40/d4/DM00031020.pdf/files/DM00031020.pdf/jcr:content/translations/en.DM00031020.pdf).
-          uart1_baudrate:
+          uart_b_baudrate:
             type: uint32
             unit: baud/s
             brief: Defines the baudrate used on the UART interface.
-            doc: See `uart0_baudrate` for details.
-          uart2_baudrate: {type: uint32, doc: Not supported on ODrive v3.x.}
-          enable_can0:
+            doc: See `uart_a_baudrate` for details.
+          uart_c_baudrate: {type: uint32, doc: Not supported on ODrive v3.x.}
+          enable_can_a:
             type: bool
             doc: |
               Enables CAN. Changing this setting requires a reboot.
-          enable_i2c0:
+          enable_i2c_a:
             type: bool
             doc: |
               Enables I2C. The I2C pins on ODrive v3.x are in conflict with CAN.
-              This setting has no effect if `enable_can0` is also true.
+              This setting has no effect if `enable_can_a` is also true.
               This setting has no effect on ODrive v3.2 or earlier.
               Changing this setting requires a reboot.
           enable_ascii_protocol_on_usb: bool
@@ -216,10 +216,10 @@ interfaces:
             brief: Max current the power supply can sink.
             doc: You most likely want a non-positive value here. Set to -INFINITY to disable.
 
-          gpio1_pwm_mapping: {type: Endpoint, c_name: 'pwm_mappings[0]', doc: Make sure the corresponding GPIO is in `GPIO_MODE_PWM0`.}
-          gpio2_pwm_mapping: {type: Endpoint, c_name: 'pwm_mappings[1]', doc: Make sure the corresponding GPIO is in `GPIO_MODE_PWM0`.}
-          gpio3_pwm_mapping: {type: Endpoint, c_name: 'pwm_mappings[2]', doc: Make sure the corresponding GPIO is in `GPIO_MODE_PWM0`.}
-          gpio4_pwm_mapping: {type: Endpoint, c_name: 'pwm_mappings[3]', doc: Make sure the corresponding GPIO is in `GPIO_MODE_PWM0`.}
+          gpio1_pwm_mapping: {type: Endpoint, c_name: 'pwm_mappings[0]', doc: Make sure the corresponding GPIO is in `GPIO_MODE_PWM`.}
+          gpio2_pwm_mapping: {type: Endpoint, c_name: 'pwm_mappings[1]', doc: Make sure the corresponding GPIO is in `GPIO_MODE_PWM`.}
+          gpio3_pwm_mapping: {type: Endpoint, c_name: 'pwm_mappings[2]', doc: Make sure the corresponding GPIO is in `GPIO_MODE_PWM`.}
+          gpio4_pwm_mapping: {type: Endpoint, c_name: 'pwm_mappings[3]', doc: Make sure the corresponding GPIO is in `GPIO_MODE_PWM`.}
           gpio3_analog_mapping: {type: Endpoint, c_name: 'analog_mappings[3]', doc: Make sure the corresponding GPIO is in `GPIO_MODE_ANALOG_IN`.}
           gpio4_analog_mapping: {type: Endpoint, c_name: 'analog_mappings[4]', doc: Make sure the corresponding GPIO is in `GPIO_MODE_ANALOG_IN`.}
       user_config_loaded: readonly uint32
@@ -234,10 +234,10 @@ interfaces:
           Possible causes:
            - A GPIO was set to a mode that it doesn't support
            - A GPIO was set to a mode for which the corresponding feature was
-             not enabled. Example: `GPIO_MODE_UART0` was used without enabling
-             `config.enable_uart0`.
+             not enabled. Example: `GPIO_MODE_UART_A` was used without enabling
+             `config.enable_uart_a`.
            - A feature was enabled which is not supported on this hardware.
-             Example: `config.enable_uart2` set to true on ODrive v3.x.
+             Example: `config.enable_uart_c` set to true on ODrive v3.x.
            - A GPIO was used as an interrupt input for two internal components
              or two GPIOs that are mutually exclusive in their interrupt
              capability were both used as interrupt input.
@@ -962,15 +962,15 @@ valuetypes:
         doc: |
           The pin can be used for one or more of these functions:
           Sin/cos encoders, analog input, `get_adc_voltage`.
-      Uart0: {doc: See `config.enable_uart0`.}
-      Uart1: {doc: This mode is not supported on ODrive v3.x.}
-      Uart2: {doc: This mode is not supported on ODrive v3.x.}
-      Can0: {doc: See `config.enable_can0`.}
-      I2c0: {doc: See `config.enable_i2c0`.}
-      Spi0: {doc: Note that the SPI pins on ODrive v3.x are hardwired so they
-        cannot be configured through software. Consequently, even though SPI0
+      UartA: {doc: See `config.enable_uart_a`.}
+      UartB: {doc: This mode is not supported on ODrive v3.x.}
+      UartC: {doc: This mode is not supported on ODrive v3.x.}
+      CanA: {doc: See `config.enable_can_a`.}
+      I2cA: {doc: See `config.enable_i2c_a`.}
+      SpiA: {doc: Note that the SPI pins on ODrive v3.x are hardwired so they
+        cannot be configured through software. Consequently, even though SPI_A
         is exposed, this mode is of no use on ODrive v3.x.}
-      Pwm0: {doc: See `config.gpio0_pwm_mapping`.}
+      Pwm: {doc: See `config.gpio0_pwm_mapping`.}
       Enc0: {doc: The pin is used by quadrature encoder 0.}
       Enc1: {doc: The pin is used by quadrature encoder 1.}
       Enc2: {doc: This mode is not supported on ODrive v3.x.}
