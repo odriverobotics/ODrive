@@ -22,6 +22,7 @@ With this information you can look up the API documentation for your error(s):
 
 ### What if `dump_errors()` gives me python errors? 
 If you get output like this:
+  <details><summary markdown="span">Show code:</summary><div markdown="block">
 ```py
 In [1]: dump_errors(odrv0)
 axis0
@@ -46,6 +47,7 @@ AttributeError                            Traceback (most recent call last)
 
 AttributeError: 'RemoteObject' object has no attribute 'fet_thermistor'
 ```
+  </div></details>
 when you call `dump_errors()`, you have a version mismatch between odrivetool and the firmware on your ODrive. To get the newest version of odrivetool, you can run `pip install odrive --upgrade`. To get the newest ODrive firmware, run `odrivetool dfu`. See the [odrivetool](odrivetool.md#device-firmware-update) page for more details.
 
 ## USB Connectivity Issues
