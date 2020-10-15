@@ -16,15 +16,10 @@ end
 python_command = find_python3()
 print('Using python command "'..python_command..'"')
 
-tup.frule{inputs={'fibre/cpp/interfaces_template.j2'}, command=python_command..' interface_generator_stub.py --definitions odrive-interface.yaml --template %f --output %o', outputs='autogen/interfaces.hpp'}
-tup.frule{inputs={'fibre/cpp/function_stubs_template.j2'}, command=python_command..' interface_generator_stub.py --definitions odrive-interface.yaml --template %f --output %o', outputs='autogen/function_stubs.hpp'}
-tup.frule{inputs={'fibre/cpp/endpoints_template.j2'}, command=python_command..' interface_generator_stub.py --definitions odrive-interface.yaml --generate-endpoints ODrive --template %f --output %o', outputs='autogen/endpoints.hpp'}
-tup.frule{inputs={'fibre/cpp/type_info_template.j2'}, command=python_command..' interface_generator_stub.py --definitions odrive-interface.yaml --template %f --output %o', outputs='autogen/type_info.hpp'}
-
+-- TODO: use CI to verify that on PRs the enums.py file is consistent with the YAML.
 -- Note: we currently check this file into source control for two reasons:
 --  - Don't require tup to run in order to use odrivetool from the repo
 --  - On Windows, tup is unhappy with writing outside of the tup directory
--- TODO: use CI to verify that on PRs the enums.py file is consistent with the YAML.
 --tup.frule{command=python_command..' interface_generator_stub.py --definitions odrive-interface.yaml --template enums_template.j2 --output ../tools/odrive/enums.py'}
 
 tup.frule{
@@ -34,6 +29,7 @@ tup.frule{
 
 board_v3 = {
     dir = 'Board/v3',
+    root_interface = 'ODrive3',
     sources = {'Drivers/DRV8301/drv8301.cpp', 'Board/v3/board.cpp'},
     flags = {'-DSTM32F405xx', '-DARM_MATH_CM4', '-mcpu=cortex-m4', '-mfpu=fpv4-sp-d16', '-DFPU_FPV4'},
     ldflags = {'-TBoard/v3/STM32F405RGTx_FLASH.ld', '-LBoard/v3/Drivers/CMSIS/Lib', '-larm_cortexM4lf_math', '-mcpu=cortex-m4', '-mfpu=fpv4-sp-d16'}
@@ -176,6 +172,12 @@ end
 for src in string.gmatch(vars['C_INCLUDES'] or '', "%S+") do
     stm_includes += board.dir..'/'..string.sub(src, 3, -1) -- remove "-I" from each include path
 end
+
+-- Autogen files from YAML interface definitions
+tup.frule{inputs={'fibre/cpp/interfaces_template.j2'}, command=python_command..' interface_generator_stub.py --definitions odrive-interface.yaml --template %f --output %o', outputs='autogen/interfaces.hpp'}
+tup.frule{inputs={'fibre/cpp/function_stubs_template.j2'}, command=python_command..' interface_generator_stub.py --definitions odrive-interface.yaml --template %f --output %o', outputs='autogen/function_stubs.hpp'}
+tup.frule{inputs={'fibre/cpp/endpoints_template.j2'}, command=python_command..' interface_generator_stub.py --definitions odrive-interface.yaml --generate-endpoints '..board.root_interface..' --template %f --output %o', outputs='autogen/endpoints.hpp'}
+tup.frule{inputs={'fibre/cpp/type_info_template.j2'}, command=python_command..' interface_generator_stub.py --definitions odrive-interface.yaml --template %f --output %o', outputs='autogen/type_info.hpp'}
 
 -- TODO: cleaner separation of the platform code and the rest
 stm_includes += '.'

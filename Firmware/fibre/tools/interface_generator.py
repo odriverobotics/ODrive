@@ -19,6 +19,10 @@ definitions:
       c_name: {type: string}
       brief: {type: string}
       doc: {type: string}
+      implements:
+        anyOf:
+          - {"$ref": "#/definitions/intf_type_ref"}
+          - {type: array, items: {"$ref": "#/definitions/intf_type_ref"}}
       functions:
         type: object
         additionalProperties: {"$ref": "#/definitions/function"}
@@ -41,6 +45,11 @@ definitions:
       __line__: {type: object}
       __column__: {type: object}
     additionalProperties: false
+
+  intf_type_ref:
+    anyOf:
+      - {"type": "string"}
+      - {"$ref": "#/definitions/interface"}
 
   intf_or_val_type:
     anyOf:
@@ -166,53 +175,8 @@ enums = OrderedDict()
 interfaces = OrderedDict()
 userdata = OrderedDict() # Arbitrary data passed from the definition file to the template
 
-def make_property_type(typeargs):
-    value_type = resolve_valuetype('', typeargs['fibre.Property.type'])
-    mode = typeargs.get('fibre.Property.mode', 'readwrite')
-    name = 'Property<' + value_type['fullname'] + ', ' + mode + '>'
-    fullname = join_name('fibre', name)
-    if fullname in interfaces:
-        return interfaces[fullname]
-
-    c_name = 'Property<' + ('const ' if mode == 'readonly' else '') + value_type['c_name'] + '>'
-    prop_type = {
-        'name': name,
-        'fullname': fullname,
-        'purename': 'fibre.Property',
-        'c_name': c_name,
-        'value_type': value_type, # TODO: should be a metaarg
-        'mode': mode, # TODO: should be a metaarg
-        'builtin': True,
-        'attributes': OrderedDict(),
-        'functions': OrderedDict()
-    }
-    if mode != 'readonly':
-        prop_type['functions']['exchange'] = {
-            'name': 'exchange',
-            'fullname': join_name(fullname, 'exchange'),
-            'in': OrderedDict([('obj', {'name': 'obj', 'type': {'c_name': c_name}}), ('value', {'name': 'value', 'type': value_type, 'optional': True})]),
-            'out': OrderedDict([('value', {'name': 'value', 'type': value_type})]),
-            #'implementation': 'fibre_property_exchange<' + value_type['c_name'] + '>'
-        }
-    else:
-        prop_type['functions']['read'] = {
-            'name': 'read',
-            'fullname': join_name(fullname, 'read'),
-            'in': OrderedDict([('obj', {'name': 'obj', 'type': {'c_name': c_name}})]),
-            'out': OrderedDict([('value', {'name': 'value', 'type': value_type})]),
-            #'implementation': 'fibre_property_read<' + value_type['c_name'] + '>'
-        }
-
-    interfaces[fullname] = prop_type
-    return prop_type
-
-generics = {
-    'fibre.Property': make_property_type # TODO: improve generic support
-}
-
-
 def make_ref_type(interface):
-    name = 'Ref<' + interface['fullname'] + '>'
+    name = 'Ref<' + interface.fullname + '>'
     fullname = join_name('fibre', name)
     if fullname in interfaces:
         return interfaces[fullname]
@@ -221,7 +185,7 @@ def make_ref_type(interface):
         'builtin': True,
         'name': name,
         'fullname': fullname,
-        'c_name': interface['fullname'].replace('.', 'Intf::') + 'Intf*'
+        'c_name': interface.fullname.replace('.', 'Intf::') + 'Intf*'
     }
     value_types[fullname] = ref_type
 
@@ -260,13 +224,14 @@ def regularize_attribute(parent, name, elem, c_is_class):
         elem['type'] = {}
         if 'attributes' in elem: elem['type']['attributes'] = elem.pop('attributes')
         if 'functions' in elem: elem['type']['functions'] = elem.pop('functions')
+        if 'implements' in elem: elem['type']['implements'] = elem.pop('implements')
         if 'c_is_class' in elem: elem['type']['c_is_class'] = elem.pop('c_is_class')
         if 'values' in elem: elem['type']['values'] = elem.pop('values')
         if 'flags' in elem: elem['type']['flags'] = elem.pop('flags')
         if 'nullflag' in elem: elem['type']['nullflag'] = elem.pop('nullflag')
     
     elem['name'] = name
-    elem['fullname'] = join_name(parent['fullname'], name)
+    elem['fullname'] = join_name(parent.fullname, name)
     elem['parent'] = parent
     elem['typeargs'] = elem.get('typeargs', {})
     elem['c_name'] = elem.get('c_name', None) or (elem['name'] + ('_' if c_is_class else ''))
@@ -277,40 +242,145 @@ def regularize_attribute(parent, name, elem, c_is_class):
     if isinstance(elem['type'], str) and elem['type'].startswith('readonly '):
         elem['typeargs']['fibre.Property.mode'] = 'readonly'
         elem['typeargs']['fibre.Property.type'] = elem['type'][len('readonly '):]
-        elem['type'] = 'fibre.Property'
+        elem['type'] = InterfaceRefElement(parent.fullname, None, 'fibre.Property', elem['typeargs'])
         if elem['typeargs']['fibre.Property.mode'] == 'readonly' and 'c_setter' in elem: elem.pop('c_setter')
     elif ('flags' in elem['type']) or ('values' in elem['type']):
         elem['typeargs']['fibre.Property.mode'] = elem['typeargs'].get('fibre.Property.mode', None) or 'readwrite'
-        elem['typeargs']['fibre.Property.type'] = regularize_valuetype(parent['fullname'], to_pascal_case(name), elem['type'])
-        elem['type'] = 'fibre.Property'
+        elem['typeargs']['fibre.Property.type'] = regularize_valuetype(parent.fullname, to_pascal_case(name), elem['type'])
+        elem['type'] = InterfaceRefElement(parent.fullname, None, 'fibre.Property', elem['typeargs'])
         if elem['typeargs']['fibre.Property.mode'] == 'readonly' and 'c_setter' in elem: elem.pop('c_setter')
     else:
-        elem['type'] = regularize_interface(parent['fullname'], to_pascal_case(name), elem['type'])
+        elem['type'] = InterfaceRefElement(parent.fullname, to_pascal_case(name), elem['type'], elem['typeargs'])
     return elem
 
+class InterfaceRefElement():
+    def __init__(self, scope, name, elem, typeargs):
+        if isinstance(elem, str):
+            self._intf = None
+            self._scope = scope
+            self._name = elem
+        else:
+            self._intf = InterfaceElement(scope, name, elem)
+            self._scope = None
+            self._name = None
+        self._typeargs = typeargs
 
-def regularize_interface(path, name, elem):
-    if elem is None:
-        elem = {}
-    if isinstance(elem, str):
-        return elem # will be resolved during type resolution
-    #if path is None:
-    #    max_anonymous_type = max([int((re.findall('^' + join_name(path, 'AnonymousType') + '([1-9]+)$', x) + ['0'])[0]) for x in interfaces.keys()])
-    #    path = 'AnonymousType' + str(max_anonymous_type + 1)
-    elem['name'] = split_name(name)[-1]
-    elem['fullname'] = path = join_name(path, name)
-    elem['c_name'] = elem.get('c_name', elem['fullname'].replace('.', 'Intf::')) + 'Intf'
-    interfaces[path] = elem
-    elem['functions'] = OrderedDict((name, regularize_func(path, name, func, {'obj': {'type': make_ref_type(elem)}}))
-                                    for name, func in get_dict(elem, 'functions').items())
-    if not 'c_is_class' in elem:
-        raise Exception(elem)
-    treat_as_class = elem['c_is_class'] # TODO: add command line arg to make this selectively optional
-    elem['attributes'] = OrderedDict((name, regularize_attribute(elem, name, prop, treat_as_class))
-                                     for name, prop in get_dict(elem, 'attributes').items())
-    elem['interfaces'] = []
-    elem['enums'] = []
-    return elem
+    def resolve(self):
+        """
+        Resolves this interface reference to an actual InterfaceElement instance.
+        The innermost scope is searched first.
+        At every scope level, if no matching interface is found, it is checked if a
+        matching value type exists. If so, the interface type fibre.Property<value_type>
+        is returned.
+        """
+        if not self._intf is None:
+            return self._intf
+
+        typeargs = self._typeargs
+        if 'fibre.Property.type' in typeargs:
+            typeargs['fibre.Property.type'] = resolve_valuetype(self._scope, typeargs['fibre.Property.type'])
+
+        scope = self._scope.split('.')
+        for probe_scope in [join_name(*scope[:(len(scope)-i)]) for i in range(len(scope)+1)]:
+            probe_name = join_name(probe_scope, self._name)
+            #print('probing ' + probe_name)
+            if probe_name in interfaces:
+                return interfaces[probe_name]
+            elif probe_name in value_types:
+                typeargs['fibre.Property.type'] = value_types[probe_name]
+                return make_property_type(typeargs)
+            elif probe_name in generics:
+                return generics[probe_name](typeargs)
+
+        raise Exception('could not resolve type {} in {}. Known interfaces are: {}. Known value types are: {}'.format(self._name, self._scope, list(interfaces.keys()), list(value_types.keys())))
+
+class InterfaceElement():
+    def __init__(self, path, name, elem):
+        if elem is None:
+            elem = {}
+        assert(isinstance(elem, dict))
+        
+        path = join_name(path, name)
+        interfaces[path] = self
+
+        self.name = split_name(name)[-1]
+        self.fullname = path
+        self.c_name = elem.get('c_name', self.fullname.replace('.', 'Intf::')) + 'Intf'
+        
+        if not 'implements' in elem:
+            elem['implements'] = []
+        elif isinstance(elem['implements'], str):
+            elem['implements'] = [elem['implements']]
+        self.implements = [InterfaceRefElement(path, None, elem, {}) for elem in elem['implements']]
+        self.functions = OrderedDict((name, regularize_func(path, name, func, {'obj': {'type': make_ref_type(self)}}))
+                                        for name, func in get_dict(elem, 'functions').items())
+        if not 'c_is_class' in elem:
+            raise Exception(elem)
+        treat_as_class = elem['c_is_class'] # TODO: add command line arg to make this selectively optional
+        self.attributes = OrderedDict((name, regularize_attribute(self, name, prop, treat_as_class))
+                                        for name, prop in get_dict(elem, 'attributes').items())
+        self.interfaces = []
+        self.enums = []
+
+    def get_all_attributes(self, stack=[]):
+        result = OrderedDict()
+        for intf in self.implements:
+            assert(not self in stack)
+            result.update(intf.get_all_attributes(stack + [self]))
+        result.update(self.attributes)
+        return result
+
+    def get_all_functions(self, stack=[]):
+        result = OrderedDict()
+        for intf in self.implements:
+            assert(not self in stack)
+            result.update(intf.get_all_functions(stack + [self]))
+        result.update(self.functions)
+        return result
+
+class PropertyInterfaceElement(InterfaceElement):
+    def __init__(self, name, fullname, mode, value_type):
+        self.name = name
+        self.fullname = fullname
+        self.purename = 'fibre.Property'
+        self.c_name = 'Property<' + ('const ' if mode == 'readonly' else '') + value_type['c_name'] + '>'
+        self.value_type = value_type # TODO: should be a metaarg
+        self.mode = mode # TODO: should be a metaarg
+        self.builtin = True
+        self.attributes = OrderedDict()
+        self.functions = OrderedDict()
+        if mode != 'readonly':
+            self.functions['exchange'] = {
+                'name': 'exchange',
+                'fullname': join_name(fullname, 'exchange'),
+                'in': OrderedDict([('obj', {'name': 'obj', 'type': {'c_name': self.c_name}}), ('value', {'name': 'value', 'type': value_type, 'optional': True})]),
+                'out': OrderedDict([('value', {'name': 'value', 'type': value_type})]),
+                #'implementation': 'fibre_property_exchange<' + value_type['c_name'] + '>'
+            }
+        else:
+            self.functions['read'] = {
+                'name': 'read',
+                'fullname': join_name(fullname, 'read'),
+                'in': OrderedDict([('obj', {'name': 'obj', 'type': {'c_name': self.c_name}})]),
+                'out': OrderedDict([('value', {'name': 'value', 'type': value_type})]),
+                #'implementation': 'fibre_property_read<' + value_type['c_name'] + '>'
+            }
+
+        interfaces[fullname] = self # TODO: not good to write to a global here
+
+def make_property_type(typeargs):
+    value_type = resolve_valuetype('', typeargs['fibre.Property.type'])
+    mode = typeargs.get('fibre.Property.mode', 'readwrite')
+    name = 'Property<' + value_type['fullname'] + ', ' + mode + '>'
+    fullname = join_name('fibre', name)
+    if fullname in interfaces:
+        return interfaces[fullname]
+    else:
+        return PropertyInterfaceElement(name, fullname, mode, value_type)
+
+generics = {
+    'fibre.Property': make_property_type # TODO: improve generic support
+}
 
 def regularize_valuetype(path, name, elem):
     if elem is None:
@@ -351,34 +421,6 @@ def regularize_valuetype(path, name, elem):
     
     return elem
 
-def resolve_interface(scope, name, typeargs):
-    """
-    Resolves a type name (i.e. interface name or value type name) given as a
-    string to an interface object. The innermost scope is searched first.
-    At every scope level, if no matching interface is found, it is checked if a
-    matching value type exists. If so, the interface type fibre.Property<value_type>
-    is returned.
-    """
-    if not isinstance(name, str):
-        return name
-    
-    if 'fibre.Property.type' in typeargs:
-        typeargs['fibre.Property.type'] = resolve_valuetype(scope, typeargs['fibre.Property.type'])
-
-    scope = scope.split('.')
-    for probe_scope in [join_name(*scope[:(len(scope)-i)]) for i in range(len(scope)+1)]:
-        probe_name = join_name(probe_scope, name)
-        #print('probing ' + probe_name)
-        if probe_name in interfaces:
-            return interfaces[probe_name]
-        elif probe_name in value_types:
-            typeargs['fibre.Property.type'] = value_types[probe_name]
-            return make_property_type(typeargs)
-        elif probe_name in generics:
-            return generics[probe_name](typeargs)
-
-    raise Exception('could not resolve type {} in {}. Known interfaces are: {}. Known value types are: {}'.format(name, join_name(*scope), list(interfaces.keys()), list(value_types.keys())))
-
 def resolve_valuetype(scope, name):
     """
     Resolves a type name given as a string to the type object.
@@ -404,19 +446,19 @@ def map_to_fibre01_type(t):
     return t['fullname']
 
 def generate_endpoint_for_property(prop, attr_bindto, idx):
-    prop_intf = interfaces[prop['type']['fullname']]
+    prop_intf = interfaces[prop['type'].fullname]
 
     endpoint = {
         'id': idx,
-        'function': prop_intf['functions']['read' if prop['type']['mode'] == 'readonly' else 'exchange'],
+        'function': prop_intf.functions['read' if prop['type'].mode == 'readonly' else 'exchange'],
         'in_bindings': OrderedDict([('obj', attr_bindto)]),
         'out_bindings': OrderedDict()
     }
     endpoint_definition = {
         'name': prop['name'],
         'id': idx,
-        'type': map_to_fibre01_type(prop['type']['value_type']),
-        'access': 'r' if prop['type']['mode'] == 'readonly' else 'rw',
+        'type': map_to_fibre01_type(prop['type'].value_type),
+        'access': 'r' if prop['type'].mode == 'readonly' else 'rw',
     }
     return endpoint, endpoint_definition
 
@@ -430,10 +472,10 @@ def generate_endpoint_table(intf, bindto, idx):
     endpoint_definitions = []
     cnt = 0
 
-    for k, prop in intf['attributes'].items():
-        property_value_type = re.findall('^fibre\.Property<([^>]*), (readonly|readwrite)>$', prop['type']['fullname'])
+    for k, prop in intf.get_all_attributes().items():
+        property_value_type = re.findall('^fibre\.Property<([^>]*), (readonly|readwrite)>$', prop['type'].fullname)
         #attr_bindto = join_name(bindto, bindings_map.get(join_name(intf['fullname'], k), k + ('_' if len(intf['functions']) or (intf['fullname'] in treat_as_classes) else '')))
-        attr_bindto = intf['c_name'] + '::get_' + prop['name'] + '(' + bindto + ')'
+        attr_bindto = intf.c_name + '::get_' + prop['name'] + '(' + bindto + ')'
         if len(property_value_type):
             # Special handling for Property<...> attributes: they resolve to one single endpoint
             endpoint, endpoint_definition = generate_endpoint_for_property(prop, attr_bindto, idx + cnt)
@@ -450,7 +492,7 @@ def generate_endpoint_table(intf, bindto, idx):
             })
             cnt += inner_cnt
 
-    for k, func in intf['functions'].items():
+    for k, func in intf.get_all_functions().items():
         endpoints.append({
             'id': idx + cnt,
             'function': func,
@@ -463,14 +505,14 @@ def generate_endpoint_table(intf, bindto, idx):
             endpoint, endpoint_definition = generate_endpoint_for_property({
                 'name': arg['name'],
                 'type': make_property_type({'fibre.Property.type': arg['type'], 'fibre.Property.mode': 'readwrite'})
-            }, intf['c_name'] + '::get_' + func['name'] + '_in_' + k_arg + '_' + '(' + bindto + ')', idx + cnt + 1 + i)
+            }, intf.c_name + '::get_' + func['name'] + '_in_' + k_arg + '_' + '(' + bindto + ')', idx + cnt + 1 + i)
             endpoints.append(endpoint)
             in_def.append(endpoint_definition)
         for i, (k_arg, arg) in enumerate(func['out'].items()):
             endpoint, endpoint_definition = generate_endpoint_for_property({
                 'name': arg['name'],
                 'type': make_property_type({'fibre.Property.type': arg['type'], 'fibre.Property.mode': 'readonly'})
-            }, intf['c_name'] + '::get_' + func['name'] + '_out_' + k_arg + '_' + '(' + bindto + ')', idx + cnt + len(func['in']) + i)
+            }, intf.c_name + '::get_' + func['name'] + '_out_' + k_arg + '_' + '(' + bindto + ')', idx + cnt + len(func['in']) + i)
             endpoints.append(endpoint)
             out_def.append(endpoint_definition)
 
@@ -541,7 +583,7 @@ for definition_file in definition_files:
 
 # Regularize everything into a wellknown form
 for k, item in list(interfaces.items()):
-    regularize_interface('', k, item)
+    InterfaceElement('', k, item)
 for k, item in list(value_types.items()):
     regularize_valuetype('', k, item)
 
@@ -554,15 +596,16 @@ if len(clashing_names):
     print("**Error**: Found both an interface and a value type with the name {}. This is not allowed, interfaces and value types (such as enums) share the same namespace.".format(clashing_names[0]), file=sys.stderr)
     sys.exit(1)
 
-# Resolve all types into references
+# Resolve all types to references
 for _, item in list(interfaces.items()):
-    for _, prop in item['attributes'].items():
-        prop['type'] = resolve_interface(item['fullname'], prop['type'], prop['typeargs'])
-    for _, func in item['functions'].items():
+    item.implements = [ref.resolve() for ref in item.implements]
+    for _, prop in item.attributes.items():
+        prop['type'] = prop['type'].resolve()
+    for _, func in item.functions.items():
         for _, arg in func['in'].items():
-            arg['type'] = resolve_valuetype(item['fullname'], arg['type'])
+            arg['type'] = resolve_valuetype(item.fullname, arg['type'])
         for _, arg in func['out'].items():
-            arg['type'] = resolve_valuetype(item['fullname'], arg['type'])
+            arg['type'] = resolve_valuetype(item.fullname, arg['type'])
 
 # Attach interfaces to their parents
 toplevel_interfaces = []
@@ -573,8 +616,8 @@ for k, item in list(interfaces.items()):
     else:
         if k[:-1] != ['fibre']: # TODO: remove special handling
             parent = interfaces[join_name(*k[:-1])]
-            parent['interfaces'].append(item)
-            item['parent'] = parent
+            parent.interfaces.append(item)
+            item.parent = parent
 toplevel_enums = []
 for k, item in list(enums.items()):
     k = split_name(k)
@@ -583,7 +626,7 @@ for k, item in list(enums.items()):
     else:
         if k[:-1] != ['fibre']: # TODO: remove special handling
             parent = interfaces[join_name(*k[:-1])]
-            parent['enums'].append(item)
+            parent.enums.append(item)
             item['parent'] = parent
 
 
@@ -643,7 +686,7 @@ def tokenize(text, interface, interface_transform, value_type_transform, attribu
         if not attr is None:
             return attribute_transform(token, attr)
 
-        print('Warning: cannot resolve "{}" in {}'.format(token, interface['fullname']))
+        print('Warning: cannot resolve "{}" in {}'.format(token, interface.fullname))
         return "`" + token + "`"
 
     return re.sub(r'`([A-Za-z\._]+)`', token_transform, text)
