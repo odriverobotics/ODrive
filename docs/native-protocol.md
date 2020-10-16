@@ -1,6 +1,6 @@
 # Native Protocol
 
-This protocol is what the ODrive Tool uses to talk to the ODrive. If you have a choice, this is the recommended protocol for all applications. The native protocol runs on USB and can also be configured to run on UART.
+This protocol is what the ODrive Tool uses to talk to the ODrive. If you have a choice, this is the recommended protocol for all applications. The native protocol runs on [USB](usb) and on [UART](uart).
 
 #### Python
 

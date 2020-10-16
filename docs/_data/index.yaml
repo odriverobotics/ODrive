@@ -25,16 +25,20 @@ sections:
         url: /hoverboard
       - title: Migration Guide
         url: /migration
-  - title: Interfaces
+  - title: Interfaces & Protocols
     docs:
       - title: Pinout
         url: /pinout
+      - title: USB
+        url: /usb
+      - title: UART
+        url: /uart
       - title: Native Protocol
         url: /native-protocol
-      - title: CAN Protocol
-        url: /can-protocol
       - title: ASCII Protocol
         url: /ascii-protocol
+      - title: CAN Protocol
+        url: /can-protocol
       - title: Step & Direction
         url: /step-direction
       - title: RC PWM
