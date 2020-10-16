@@ -252,6 +252,10 @@ void CANSimple::set_traj_inertia_callback(Axis& axis, const can_Message_t& msg) 
     axis.controller_.config_.inertia = can_getSignal<float>(msg, 0, 32, true);
 }
 
+void CANSimple::set_linear_count_callback(Axis& axis, const can_Message_t& msg){
+    axis.encoder_.set_linear_count(can_getSignal<int32_t>(msg, 0, 32, true));
+}
+
 int32_t CANSimple::get_iq_callback(const Axis& axis) {
     can_Message_t txmsg;
     txmsg.id = axis.config_.can.node_id << NUM_CMD_ID_BITS;
@@ -284,10 +288,6 @@ int32_t CANSimple::get_vbus_voltage_callback(const Axis& axis) {
 
 void CANSimple::clear_errors_callback(Axis& axis, const can_Message_t& msg) {
     axis.clear_errors();
-}
-
-void CANSimple::set_linear_count_callback(Axis& axis, can_Message_t& msg){
-    axis->encoder_.set_linear_count(can_getSignal<int32_t>(msg, 0, 32, true));
 }
 
 int32_t CANSimple::send_heartbeat(const Axis& axis) {
