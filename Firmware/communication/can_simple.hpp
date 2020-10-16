@@ -65,6 +65,7 @@ class CANSimple {
     static void set_traj_vel_limit_callback(Axis& axis, const can_Message_t& msg);
     static void set_traj_accel_limits_callback(Axis& axis, const can_Message_t& msg);
     static void set_traj_inertia_callback(Axis& axis, const can_Message_t& msg);
+    static void set_linear_count_callback(Axis& axis, const can_Message_t& msg);
 
     // Other functions
     static void nmt_callback(const Axis& axis, const can_Message_t& msg);

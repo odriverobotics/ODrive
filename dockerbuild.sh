@@ -1,6 +1,6 @@
 function cleanup {
     echo "Removing previous build artifacts"
-    rm -rf build
+    rm -rf build/ Firmware/autogen Firmware/build Firmware/.tup
     docker rm odrive-build-cont
 }
 
@@ -13,14 +13,11 @@ function gc {
 function build {
     cleanup
 
-    echo "Building the firmware"
+    echo "Building the build-environment image"
     docker build -t odrive-build-img .
 
-    echo "Create container"
-    docker create --name odrive-build-cont odrive-build-img:latest
-
-    echo "Extract build artifacts"
-    docker cp odrive-build-cont:ODrive/Firmware/build .
+    echo "Build in container"
+    docker run -v $(pwd):/ODrive --name odrive-build-cont odrive-build-img:latest
 }
 
 function usage {

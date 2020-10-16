@@ -328,7 +328,7 @@ def regularize_valuetype(path, name, elem):
             elem['flags'][k]['value'] = 0 if current_bit is None else (1 << current_bit)
             bit = bit if current_bit is None else current_bit + 1
         if 'nullflag' in elem:
-            elem['flags'] = OrderedDict([(elem['nullflag'], {'value': 0, 'bit': None}), *elem['flags'].items()])
+            elem['flags'] = OrderedDict([(elem['nullflag'], OrderedDict({'name': elem['nullflag'], 'value': 0, 'bit': None})), *elem['flags'].items()])
         elem['values'] = elem['flags']
         elem['is_flags'] = True
         elem['is_enum'] = True
@@ -653,6 +653,7 @@ env.filters['skip_first'] = lambda x: list(x)[1:]
 env.filters['to_c_string'] = lambda x: '\n'.join(('"' + line.replace('"', '\\"') + '"') for line in json.dumps(x, separators=(',', ':')).replace('{"name"', '\n{"name"').split('\n'))
 env.filters['tokenize'] = tokenize
 env.filters['diagonalize'] = lambda lst: [lst[:i + 1] for i in range(len(lst))]
+env.filters['debug'] = lambda x: print(x)
 
 template = env.from_string(template_file.read())
 

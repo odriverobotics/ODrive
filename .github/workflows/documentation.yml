@@ -2,7 +2,7 @@ name: Build and publish HTML documentation website
 
 on:
   push:
-    branches: [ feature/doc_autogen ]
+    branches: [ master ]
 
 jobs:
   jekyll:
@@ -52,15 +52,22 @@ jobs:
           cd /srv/jekyll/docs && \
           bundle config path vendor/bundle && \
           bundle install && \
-          JEKYLL_ENV=production bundle exec jekyll build
+          bundle exec jekyll build --baseurl \"\"
+          cd ..
+          mv docs/_site _site
+          rm -rdf docs
+          mv _site docs
+          touch docs/.nojekyll
         "
-        touch .nojekyll
+        # Extra checks to reduce likelihood of defect build
+        test -f docs/CNAME
+        test -f docs/index.html
 
     - name: Push to documentation branch
       run: |
         git config user.name "${GITHUB_ACTOR}"
         git config user.email "${GITHUB_ACTOR}@users.noreply.github.com"
-        git add -f docs/_site
+        git add -f docs
         git commit -m "jekyll build from Action ${GITHUB_SHA}"
         git push --force origin HEAD:${REMOTE_BRANCH}
       env:

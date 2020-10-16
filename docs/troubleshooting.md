@@ -20,6 +20,38 @@ With this information you can look up the API documentation for your error(s):
 * Controller error flags documented [here](api/odrive.controller.error).
 * Sensorless estimator error flags documented [here](odrive.sensorlessestimator.error).
 
+### What if `dump_errors()` gives me python errors? 
+If you get output like this:
+  <details><summary markdown="span">Show code:</summary><div markdown="block">
+
+```py
+In [1]: dump_errors(odrv0)
+axis0
+---------------------------------------------------------------------------
+AttributeError                            Traceback (most recent call last)
+~/.local/lib/python3.6/site-packages/fibre/shell.py in <module>
+----> 1 dump_errors(odrv0)
+
+~/.local/lib/python3.6/site-packages/odrive/utils.py in dump_errors(odrv, clear)
+     78             ('axis', axis, {k: v for k, v in odrive.enums.__dict__ .items() if k.startswith("AXIS_ERROR_")}),
+     79             ('motor', axis.motor, {k: v for k, v in odrive.enums.__dict__ .items() if k.startswith("MOTOR_ERROR_")}),
+---> 80             ('fet_thermistor', axis.fet_thermistor, {k: v for k, v in odrive.enums.__dict__ .items() if k.startswith("THERMISTOR_CURRENT_LIMITER_ERROR")}),
+     81             ('motor_thermistor', axis.motor_thermistor, {k: v for k, v in odrive.enums.__dict__ .items() if k.startswith("THERMISTOR_CURRENT_LIMITER_ERROR")}),
+     82             ('encoder', axis.encoder, {k: v for k, v in odrive.enums.__dict__ .items() if k.startswith("ENCODER_ERROR_")}),
+
+~/.local/lib/python3.6/site-packages/fibre/remote_object.py in __getattribute__(self, name)
+    243             return attr
+    244         else:
+--> 245             return object.__getattribute__(self, name)
+    246             #raise AttributeError("Attribute {} not found".format(name))
+    247 
+
+AttributeError: 'RemoteObject' object has no attribute 'fet_thermistor'
+```
+
+  </div></details>
+when you call `dump_errors()`, you have a version mismatch between odrivetool and the firmware on your ODrive. To get the newest version of odrivetool, you can run `pip install odrive --upgrade`. To get the newest ODrive firmware, run `odrivetool dfu`. See the [odrivetool](odrivetool.md#device-firmware-update) page for more details.
+
 ## USB Connectivity Issues
 
  * Try turning it off and on again (the ODrive, the script, the PC)
