@@ -1,0 +1,23 @@
+.card {
+    padding: 10px;
+    margin: 10px;
+    background-color: #fff;
+    box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.4);
+}
+
+.close-button {
+    font-weight: bold;
+    cursor: pointer;
+    padding: 0 5px;
+    margin-right: 10px;
+    border: 1px solid black;
+}
+  
+.close-button:active {
+    background-color: var(--bg-color);
+}
+
+.choice-inactive {
+    background-color: var(--bg-color);
+    color: grey;
+}

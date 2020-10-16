@@ -223,9 +223,12 @@ def put_into_dfu_mode(device, cancellation_token):
     Puts the specified device into DFU mode
     """
     if not hasattr(device, "enter_dfu_mode"):
-        print("The firmware on device {} does not support DFU. You need to \n"
-              "flash the firmware once using STLink (`make flash`), after that \n"
-              "DFU with this script should work fine."
+        print("The firmware on device {} cannot soft enter DFU mode.\n"
+              "Please remove power, put the DFU switch into DFU mode,\n"
+              "then apply power again. Then try again.\n"
+              "If it still doesn't work, you can try to use the DeFuse app or \n"
+              "dfu-util, see the odrive documentation.\n"
+              "You can also flash the firmware using STLink (`make flash`)"
               .format(device.__channel__.usb_device.serial_number))
         return
         

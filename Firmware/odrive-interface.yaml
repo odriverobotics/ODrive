@@ -418,7 +418,6 @@ interfaces:
           watchdog_timeout:
             type: float32
             unit: s
-            doc: 0 disables watchdog
           enable_watchdog: bool
           step_gpio_pin: {type: uint16, c_setter: 'set_step_gpio_pin'}
           dir_gpio_pin: {type: uint16, c_setter: 'set_dir_gpio_pin'}
@@ -474,7 +473,7 @@ interfaces:
       watchdog_feed:
         doc: Feed the watchdog to prevent watchdog timeouts.
       clear_errors:
-        doc: Check the watchdog timer for expiration. Also sets the watchdog error bit if expired.
+        doc: Clear all the errors of this axis including all contained submodules.
 
   ODrive.Axis.LockinConfig:
     c_is_class: False
@@ -750,12 +749,15 @@ interfaces:
           pos_gain:
             type: float32
             unit: (turn/s) / turn
+            doc: units = (turn/s) / turn, default = 20
           vel_gain:
             type: float32
             unit: 'Nm/(turn/s)'
+            doc: units = 'Nm/(turn/s), default = 0.16
           vel_integrator_gain:
             type: float32
             unit: Nm/(turn/s * s)
+            doc: units = Nm/(turn/s * s), default = 0.32
           vel_limit:
             type: float32
             unit: turn/s
