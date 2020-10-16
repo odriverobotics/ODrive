@@ -1,12 +1,23 @@
 # Step/direction
 This is the simplest possible way of controlling the ODrive. It is also the most primitive and fragile one. So don't use it unless you must interoperate with other hardware that you don't control.
 
-Pinout:
-* Step/dir signals: see [Pinout](pinout.md). Note in that section how to reassign the pins.
+### Pinout
+* Step/dir signals: Any GPIOs can be used. Also see [Pinout](pinout.md) for more info.
 * GND: you must connect the grounds of the devices together. Use any GND pin on J3 of the ODrive.
 
-To enable step/dir mode for the GPIO, set `<axis>.config.enable_step_dir` to true for each axis that you wish to use this on.
-Axis 0 step/dir pins conflicts with UART, and the UART takes priority. So to be able to use step/dir on Axis 0, you must also set `odrv0.config.enable_uart = False`. See the [pin function priorities](pinout.md#pin-function-priorities) for more detail. Don't forget to save configuration and reboot.
+### How to configure
+
+ 1. Choose any two of the unused GPIOs for step/dir input. Let's say you chose GPIO7 for the step signal and GPIO8 for the dir signal.
+ 2. Configure the GPIO modes:
+
+        <odrv>.config.gpio7_mode = GPIO_MODE_DIGITAL_PULL_DOWN
+        <odrv>.config.gpio8_mode = GPIO_MODE_DIGITAL
+
+ 3. Configure the axis:
+
+        <axis>.config.step_gpio_pin = 7
+        <axis>.config.dir_gpio_pin = 8
+        <axis>.config.enable_step_dir = True
 
 There is also a config variable called `<axis>.config.turns_per_step`, which specifies how many turns a "step" corresponds to. The default value is 1.0f/1024.0f. It can be any floating point value.
 The maximum step rate is pending tests, but it should handle at least 50kHz. If you want to test it, please be aware that the failure mode on too high step rates is expected to be that the motors shuts down and coasts.

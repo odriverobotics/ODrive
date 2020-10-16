@@ -186,8 +186,7 @@ Some of these chips come with evaluation boards that can simplify mounting the c
 
 1. Connect the encoder to the ODrive's SPI interface:
    
-    - The encoder's SCK, MISO (aka "DATA" on CUI encoders), GND and 3.3V should connect to the ODrive pins with the same label.
-    - The encoder's MOSI should be tied to 3.3V (AMS encoders only. CUI encoders don't have this pin.)
+    - The encoder's SCK, MISO (aka "DATA" on CUI encoders), MOSI (if present on the encoder), GND and 3.3V should connect to the ODrive pins with the same label. If you want to save a wire with AMS encoders, you can also connect the encoder's MOSI to the encoder's VDD instead.
     - The encoder's Chip Select (aka nCS/CSn) can be connected to any of the ODrive's GPIOs (caution: GPIOs 1 and 2 are usually used by UART).
 
 If you are having calibration problems, make sure that your magnet is centered on the axis of rotation on the motor. Some users report that this has a significant impact on calibration. Also make sure that your magnet height is within range of the spec sheet. 
