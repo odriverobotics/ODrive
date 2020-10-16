@@ -1,6 +1,6 @@
 # USB
 
-This page documents the low level USB configuration. If you're looking for a higher level protocol documentation see [Native Protocol](native-protocol) and [ASCII Protocol](ascii-protocol). And if just you use [odrivetool](odrivetool) or the Python package to configure/control your ODrive you don't need to care about any of this.
+This page documents the low level USB configuration. If you're looking for a higher level protocol documentation see [Native Protocol](native-protocol) and [ASCII Protocol](ascii-protocol).
 
 This page assumes that you are familiar with the general USB architecture, in particular with terms like "configuration", "interface" and "endpoint".
 
