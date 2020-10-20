@@ -2,6 +2,7 @@
 Please add a note of your changes below this heading if you make a Pull Request.
 ### Added
 * [Mechanical brake support](docs/mechanical-brakes.md)
+* Added periodic sending of encoder position on CAN
 
 ### Changed
 
@@ -16,6 +17,9 @@ Please add a note of your changes below this heading if you make a Pull Request.
 * `enable_i2c_instead_of_can` was replaced by the separate settings `enable_i2c0` and `enable_can0`.
 * `<axis>.motor.gate_driver` was moved to `<axis>.gate_driver`.
 * `<axis>.min_endstop.pullup` and `<axis>.max_endstop.pullup` were removed. Use `<odrv>.config.gpioX_mode = GPIO_MODE_DIGITAL / GPIO_MODE_DIGITAL_PULL_UP / GPIO_MODE_DIGITAL_PULL_DOWN` instead.
+* `<axis>.config.can_node_id` was moved to `<axis>.config.can.node_id`
+* `<axis>.config.can_node_id_extended` was moved to `<axis>.config.can.is_extended`
+* `<axis>.config.can_heartbeat_rate_ms` was moved to `<axis>.config.can.heartbeat_rate_ms`
 
 # Releases
 ## [0.5.1] - 2020-09-27
