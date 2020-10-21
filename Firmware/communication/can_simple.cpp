@@ -304,19 +304,19 @@ int32_t CANSimple::send_heartbeat(const Axis& axis) {
 }
 
 void CANSimple::send_cyclic(Axis& axis) {
-    const uint32_t now = osKernelSysTick();
+    const uint32_t now_ms = (uint32_t)((1000ull * (uint64_t)osKernelSysTick()) / osKernelSysTickFrequency);
 
     if (axis.config_.can.heartbeat_rate_ms > 0) {
-        if ((now - axis.can_.last_heartbeat) >= axis.config_.can.heartbeat_rate_ms) {
+        if ((now_ms - axis.can_.last_heartbeat) >= axis.config_.can.heartbeat_rate_ms) {
             if(send_heartbeat(axis) >= 0)
-                axis.can_.last_heartbeat = now;
+                axis.can_.last_heartbeat = now_ms;
         }
     }
 
     if (axis.config_.can.encoder_rate_ms > 0) {
-        if ((now - axis.can_.last_encoder) >= axis.config_.can.encoder_rate_ms) {
+        if ((now_ms - axis.can_.last_encoder) >= axis.config_.can.encoder_rate_ms) {
             if(get_encoder_estimates_callback(axis) >= 0)
-                axis.can_.last_encoder = now;
+                axis.can_.last_encoder = now_ms;
         }
     }
 }
