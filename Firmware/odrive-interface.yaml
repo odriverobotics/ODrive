@@ -355,6 +355,7 @@ interfaces:
             bit: 17
             doc: the min endstop was not enabled during homing
           OverTemp:
+            # unused
             doc: Check `motor.error` for more details.
       step_dir_active: readonly bool
       current_state: readonly AxisState

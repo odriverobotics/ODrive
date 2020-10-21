@@ -21,6 +21,8 @@ Motor::Motor(TIM_HandleTypeDef* timer,
         fet_thermistor_(fet_thermistor),
         motor_thermistor_(motor_thermistor) {
     apply_config();
+    fet_thermistor_.motor_ = this;
+    motor_thermistor_.motor_ = this;
 }
 
 // @brief Arms the PWM outputs that belong to this motor.
@@ -70,9 +72,6 @@ bool Motor::apply_config() {
     config_.parent = this;
     is_calibrated_ = config_.pre_calibrated;
     update_current_controller_gains();
-    fet_thermistor_.motor_ = this;
-    motor_thermistor_.motor_ = this;
-    motor_thermistor_.apply_config();
     return true;
 }
 
@@ -118,12 +117,12 @@ bool Motor::do_checks() {
         return false;
     }
     if (!motor_thermistor_.do_checks()) {
-        axis_->error_ |= Axis::ERROR_OVER_TEMP;
+        axis_->error_ |= Axis::ERROR_MOTOR_FAILED;
         set_error(ERROR_MOTOR_THERMISTOR_OVER_TEMP);
         return false;
     }
     if (!fet_thermistor_.do_checks()) {
-        axis_->error_ |= Axis::ERROR_OVER_TEMP;
+        axis_->error_ |= Axis::ERROR_MOTOR_FAILED;
         set_error(ERROR_FET_THERMISTOR_OVER_TEMP);
         return false;
     }

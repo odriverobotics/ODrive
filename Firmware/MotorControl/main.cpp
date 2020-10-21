@@ -104,6 +104,7 @@ static bool config_apply_all() {
                && axes[i].min_endstop_.apply_config()
                && axes[i].max_endstop_.apply_config()
                && motors[i].apply_config()
+               && motors[i].motor_thermistor_.apply_config()
                && axes[i].apply_config();
     }
     return success;

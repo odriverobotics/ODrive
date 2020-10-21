@@ -13,6 +13,7 @@ Please add a note of your changes below this heading if you make a Pull Request.
 
 ### API Migration Notes
 
+* `odrive.axis.fet_thermistor`, `odrive.axis.motor_thermistor` moved to `odrive.axis.motor` object
 * `enable_uart` and `uart_baudrate` were renamed to `enable_uart0` and `uart0_baudrate`.
 * `enable_i2c_instead_of_can` was replaced by the separate settings `enable_i2c0` and `enable_can0`.
 * `<axis>.motor.gate_driver` was moved to `<axis>.gate_driver`.
