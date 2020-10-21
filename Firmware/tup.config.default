@@ -5,6 +5,7 @@ CONFIG_USB_PROTOCOL=native
 CONFIG_UART_PROTOCOL=ascii
 CONFIG_DEBUG=false
 CONFIG_DOCTEST=false
+CONFIG_USE_LTO=true
 
 # Uncomment this to error on compilation warnings
 #CONFIG_STRICT=true

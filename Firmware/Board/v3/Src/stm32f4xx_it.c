@@ -75,6 +75,7 @@ void NMI_Handler(void)
   /* USER CODE END NonMaskableInt_IRQn 1 */
 }
 
+__attribute__((used)) 
 void get_regs(void** stack_ptr) {
   void* volatile r0 __attribute__((unused)) = stack_ptr[0];
   void* volatile r1 __attribute__((unused)) = stack_ptr[1];
