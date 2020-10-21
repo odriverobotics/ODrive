@@ -41,7 +41,7 @@
 #include "utils.hpp"
 
 #include "cmsis_os.h"
-#include <math.h>
+#include <cmath>
 #include <array>
 #include <algorithm>
 
