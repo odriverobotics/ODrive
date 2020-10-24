@@ -6,11 +6,17 @@ import * as socketio from "../comms/socketio.js";
 // given a path like "odrive0.axis0.config.blah", return the value
 export function getParam(path) {
     let keys = path.split('.');
-    let odriveObj = store.state.odrives;
-    for (const key of keys) {
-        odriveObj = odriveObj[key];
+    if (store.state.ODrivesConnected[keys[0]]) {
+        let odriveObj = store.state.odrives;
+        for (const key of keys) {
+            odriveObj = odriveObj[key];
+        }
+        return odriveObj;
     }
-    return odriveObj;
+    else {
+        console.log("getParam for " + path + " is for disconnected ODrive");
+        return undefined;
+    }
 }
 
 // wrapper for val field
@@ -51,10 +57,15 @@ export function parseMath(inString) {
 
 export function putVal(path, value) {
     console.log("path: " + path + ", val: " + value + ", type: " + typeof value);
-    socketio.sendEvent({
-        type: "setProperty",
-        data: {path: path, val: value, type: typeof value}
-    })
+    if (store.state.ODrivesConnected[path.split('.')[0]]) {
+        socketio.sendEvent({
+            type: "setProperty",
+            data: {path: path, val: value, type: typeof value}
+        });
+    }
+    else {
+        console.log("requesting " + path + " from disconnected odrive")
+    }
 }
 
 // path is path to function, args is list of parameters

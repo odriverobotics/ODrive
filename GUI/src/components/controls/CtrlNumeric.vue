@@ -47,8 +47,9 @@ export default {
     putVal: function (e) {
       let keys = this.path.split('.');
       keys.shift();
+      console.log("input recieved: " + e.target.value);
       let val = parseMath(e.target.value);
-      if (val != false) {
+      if (val !== false) {
         putVal(keys.join('.'), val);
       }
     },

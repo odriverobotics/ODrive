@@ -37,7 +37,7 @@ export default {
     setBR(e) {
       console.log("from setBR " + e.target.value);
       let val = parseMath(e.target.value);
-      if (val != false) {
+      if (val !== false) {
         this.brake_resistance = val;
         let configStub = undefined;
         configStub = {

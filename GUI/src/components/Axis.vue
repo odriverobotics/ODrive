@@ -2,7 +2,7 @@
   <div
     class="axis"
     @click.self="showError = !showError;"
-    :class="{ noError: !error, error: error}"
+    :class="{inactive: !connected, noError: !error, error: error}"
   >
     {{ axis }}
     <div v-show="showError" class="error-popup card" @click.self="showError = !showError">
@@ -110,6 +110,9 @@ export default {
     };
   },
   computed: {
+    connected() {
+      return this.$store.state.ODrivesConnected[this.axis.split('.')[0]];
+    },
     axisErrorMsg() {
       let retMsg = "none";
       let errCode = this.axisErr;
@@ -229,14 +232,18 @@ export default {
   created() {
     // set up timeout loop for grabbing axis error values
     let update = () => {
-      fetchParam(this.axis + ".error");
-      fetchParam(this.axis + '.motor.error');
-      fetchParam(this.axis + '.controller.error');
-      fetchParam(this.axis + '.encoder.error');
-      this.axisErr = getVal(this.axis + '.error');
-      this.motorErr = getVal(this.axis + '.motor.error');
-      this.controllerErr = getVal(this.axis + '.controller.error');
-      this.encoderErr = getVal(this.axis + '.encoder.error');
+      // Do we have an active connection to the ODrive that contains this axis?
+      if (this.$store.state.ODrivesConnected[this.axis.split('.')[0]]) {
+        fetchParam(this.axis + ".error");
+        fetchParam(this.axis + '.motor.error');
+        fetchParam(this.axis + '.controller.error');
+        fetchParam(this.axis + '.encoder.error');
+        this.axisErr = getVal(this.axis + '.error');
+        this.motorErr = getVal(this.axis + '.motor.error');
+        this.controllerErr = getVal(this.axis + '.controller.error');
+        this.encoderErr = getVal(this.axis + '.encoder.error');
+      }
+      // ODrive not connected
       setTimeout(update, 1000);
     }
     update();
@@ -269,5 +276,9 @@ export default {
   bottom: 2rem;
   color: black;
   margin-left: 0px;
+}
+
+.inactive {
+  color: grey;
 }
 </style>

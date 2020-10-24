@@ -26,7 +26,7 @@ export default {
   methods: {
     setCPR(e) {
       let val = parseMath(e.target.value);
-      if (val != false) {
+      if (val !== false) {
         this.cpr = val;
         let configStub = undefined;
         if (this.data.axis == "axis0") {

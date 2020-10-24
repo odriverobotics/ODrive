@@ -100,7 +100,7 @@ export default {
     },
     setVelocityLimit(e) {
       let val = parseMath(e.target.value);
-      if (val != false) {
+      if (val !== false) {
         this.vel_limit = parseFloat(e.target.value);
         this.vel_set = true;
         this.sendConfig();
@@ -108,7 +108,7 @@ export default {
     },
     setCurrentLimit(e) {
       let val = parseMath(e.target.value);
-      if (val != false) {
+      if (val !== false) {
         this.current_lim = parseFloat(e.target.value);
         this.current_set = true;
         this.sendConfig();
