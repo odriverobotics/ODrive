@@ -19,6 +19,8 @@ sections:
         url: /troubleshooting
       - title: Specifications
         url: /specifications
+      - title: Ground Loops
+        url: /ground-loops
   - title: Tutorials
     docs:
       - title: Hoverboard Guide
