@@ -77,7 +77,7 @@ Most instructions in this guide refer to a utility called `odrivetool`, so you s
 ### Windows
 1. Install Python 3. We recommend the Anaconda distribution because it packs a lot of useful scientific tools, however you can also install the standalone python.
   * __Anaconda__: Download the installer from [here](https://www.anaconda.com/download/#windows). Execute the downloaded file and follow the instructions.
-  * __Standalone Python__: Download the installer from [here](https://www.python.org/downloads/). Execute the downloaded file and follow the instructions.
+  * __Standalone Python__: Download the installer for 3.8.6 from [here](https://www.python.org/downloads/release/python-386/). Execute the downloaded file and follow the instructions.  As of Oct 2020, Matplotlib (required by odrivetool) had not been updated to work with 3.9, so please use 3.8.6.
   * If you have Python 2 installed alongside Python 3, replace `pip` by `C:\Users\YOUR_USERNAME\AppData\Local\Programs\Python\Python36-32\Scripts\pip`. If you have trouble with this step then refer to [this walkthrough](https://www.youtube.com/watch?v=jnpC_Ib_lbc).
 2. Launch the command prompt.
   * __Anaconda__: In the start menu, type `Anaconda Prompt` <kbd>Enter</kbd>
