@@ -1,6 +1,9 @@
 # Unreleased Features
 Please add a note of your changes below this heading if you make a Pull Request.
 
+### Changed
+Fixed the encoder offset calibration to work correctly when calib_scan_distance is not a multiple of 4pi
+
 # Releases
 ## [0.5.1] - 2020-09-27
 ### Added
