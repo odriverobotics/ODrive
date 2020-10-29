@@ -27,6 +27,7 @@ function getPyCmd() {
   let spawnRet = spawnSync('python', ['-V']);
   let success = spawnRet.status != null;
   let outputString;
+  let cmd = '';
   if (success) {
     if (spawnRet.stdout.toString().length > 1) {
       outputString = spawnRet.stdout.toString();
@@ -35,10 +36,10 @@ function getPyCmd() {
       outputString = spawnRet.stderr.toString();
     }
     if (outputString.includes("Python 3")) {
-      return 'python';
+      cmd = 'python';
     }
   }
-  else {
+  if (cmd == '') {
     spawnRet = spawnSync('python3', ['-V']);
     success = spawnRet.status != null;
     if (success) {
@@ -49,13 +50,11 @@ function getPyCmd() {
         outputString = spawnRet.stderr.toString();
       }
       if (outputString.includes("Python 3")) {
-        return 'python3';
+        cmd = 'python3';
       }
     }
-    else {
-      return '';
-    }
   }
+  return cmd;
 }
 
 function createWindow() {
@@ -144,7 +143,11 @@ app.on('ready', async () => {
   ipcMain.on('start-server', () => {
     server = spawn(getPyCmd(), effectiveCommand);
     server.stdout.on('data', function (data) {
-      console.log(data.toString('utf8'));
+      try {
+        console.log(data.toString('utf8'));
+      } catch (error) {
+        console.log(error);
+      }
       try {
         win.webContents.send('server-stdout', String(data.toString('utf8')));
       } catch (error) {
