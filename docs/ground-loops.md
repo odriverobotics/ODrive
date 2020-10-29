@@ -26,10 +26,10 @@ By isolating the data connection (whether it is GPIO, USB, or UART), the ground 
 
 Here are some examples of USB isolators: [Isolator 1](https://www.aliexpress.com/item/33016336073.html?spm=a2g0s.9042311.0.0.57ec4c4dDADzZo), [Isolator 2](https://www.aliexpress.com/item/4000060726013.html?spm=a2g0s.9042311.0.0.57ec4c4dDADzZo). These are generic devices. If Aliexpress is not an option for you, you can probably find them available in your area from a different vendor. In the US, these types of isolators are available from Amazon and Ebay.
 
-For GPIO connections, like UART, Step/dir, PWM, etc, you can use signal isolators like the ADUM1200 from Analog Devices. Keep in mind that isolators have a speed limit. Devices like optocouplers might be too slow for UART connections or Step/direction. Check the datasheet!
+For GPIO connections, like UART, Step/dir, PWM, etc, you can use signal isolators like the ISO7762F from Texas Instruments. Keep in mind that isolators have a speed limit. Devices like optocouplers might be too slow for UART connections or Step/direction. Check the datasheet!
 
 ### Current Limiting
 
-If isolators are not an option, you can use series resistors to limit the injection current to a safe level. Place a resistor on the recieving side of all connections to or from the ODrive GPIO pins. 4.7kOhms is a safe value, but anything from 3.3kOhms to 10kOhms should work. Series resistors offer some protection for the ODrive, but the ground loop problem can still cause the GPIOs to be pulled high or low for short periods of time. The ODrive and your other device will be safe but communications might be interrupted.
+If isolators are not an option, you can use series resistors to limit the injection current to a safe level. Place a resistor on the recieving side of all connections to or from the ODrive GPIO pins. 4.7kOhms is a good value, but anything from 3.3kOhms to 10kOhms should work. Series resistors offer some protection for the ODrive, but the ground loop problem can still cause the GPIOs to be pulled high or low for short periods of time. The ODrive and your other device will most likely be safe but communications might be interrupted.
 
 As an example, for UART, you would place a resistor close to the RX pin of the ODrive and another one close to the RX pin of the other device (like an Arduino). This allows the driving side, the TX pins, to adequately drive the bus capacitance.
