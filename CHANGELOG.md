@@ -5,7 +5,7 @@ Please add a note of your changes below this heading if you make a Pull Request.
 * Added periodic sending of encoder position on CAN
 
 ### Changed
-
+* Modified encoder offset calibration to work correctly when calib_scan_distance is not a multiple of 4pi
 * Moved thermistors from being a top level object to belonging to Motor objects. Also changed errors: thermistor errors rolled into motor errors
 * Use DMA for DRV8301 setup
 * Make NVM configuration code more dynamic so that the layout doesn't have to be known at compile time.
