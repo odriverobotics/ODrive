@@ -3,6 +3,7 @@
 
 #include <string>
 #include <ostream>
+#include <fibre/bufptr.hpp>
 
 namespace fibre {
 

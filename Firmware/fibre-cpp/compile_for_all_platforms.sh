@@ -9,11 +9,6 @@ set -euo pipefail
 #  p7zip
 #  apple-darwin-osxcross
 
-# TODO: support C++11
-
-CROSS_PLATFORM_CFLAGS='-O3 -fPIC -std=c++11 -DFIBRE_COMPILE -DFIBRE_ENABLE_CLIENT'
-CROSS_PLATFORM_GCC_FLAGS='-flto -Wl,--version-script=libfibre.version -Wl,--gc-sections'
-
 mkdir -p third_party
 
 # Usage: download_deb_pkg destination-dir url
@@ -63,27 +58,6 @@ function compile_libusb() {
     popd > /dev/null
 }
 
-FILES=('libfibre.cpp'
-	   'platform_support/libusb_transport.cpp'
-	   'legacy_protocol.cpp'
-	   'legacy_object_client.cpp'
-	   'logging.cpp')
-
-function build_for_linux() {
-    arch_name="$1"
-    "${CXX}" -shared -o libfibre-"$arch_name".so -I./include \
-            ${CFLAGS} \
-            ${CROSS_PLATFORM_CFLAGS} \
-            ${CROSS_PLATFORM_GCC_FLAGS} \
-    		"${FILES[@]}" \
-            ${LIBS} \
-            -lpthread \
-            -Wl,--unresolved-symbols=ignore-in-shared-libs -static-libstdc++
-    
-    # Could reduce binary size by 35% by using something like
-    #arm-none-eabi-strip --strip-all --discard-all libfibre-linux-armhf.so
-}
-
 
 ### Download/compile prerequisites
 
@@ -106,42 +80,7 @@ fi
 popd > /dev/null
 
 
-
-### Compile libfibre
-
-echo "building libfibre for Linux (AMD64)..."
-CFLAGS="-I./third_party/libusb-dev-amd64/usr/include/libusb-1.0" \
-LIBS="third_party/libusb-amd64/lib/x86_64-linux-gnu/libusb-1.0.so.0.2.0" \
-CXX="x86_64-pc-linux-gnu-g++" \
-    build_for_linux 'linux-amd64'
-
-echo "building libfibre for Linux (ARM)..."
-CFLAGS="-I./third_party/libusb-dev-armhf/usr/include/libusb-1.0 -L./third_party/libstdc++-linux-armhf/usr/lib/gcc-cross/arm-linux-gnueabihf/10" \
-LIBS="third_party/libusb-armhf/lib/arm-linux-gnueabihf/libusb-1.0.so.0.2.0" \
-CXX="arm-linux-gnueabihf-g++" \
-    build_for_linux 'linux-armhf'
-
-
-### Windows
-
-echo "building libfibre for Windows (AMD64)..."
-x86_64-w64-mingw32-g++ -shared -o libfibre-windows-amd64.dll -I./include \
-        -I./third_party/libusb-windows/libusb-1.0.23/include/libusb-1.0 \
-        ${CROSS_PLATFORM_CFLAGS} \
-        ${CROSS_PLATFORM_GCC_FLAGS} \
-        "${FILES[@]}" \
-        -static-libgcc \
-        -Wl,-Bstatic \
-        -lstdc++ \
-        ./third_party/libusb-windows/libusb-1.0.23/MinGW64/static/libusb-1.0.a \
-        -Wl,-Bdynamic
-cp /usr/x86_64-w64-mingw32/bin/libwinpthread-1.dll .
-
-# The windows compiler keeps a ton of debug symbols for some reason. Stripping
-# the DLL reduces its size by a factor of 10.
-x86_64-w64-mingw32-strip --strip-all --discard-all libfibre-windows-amd64.dll
-
-### macOS
+### compile libusb for macOS
 
 # Link are broken:
 # …ions/Current/Headers $ ls -l IOReturn.h 
@@ -159,20 +98,85 @@ while IFS= read -r link; do
     fi
 done <<< "$(find /opt/osxcross/SDK/MacOSX10.13.sdk/System/Library/Frameworks/IOKit.framework -xtype l)"
 
-export PATH="/opt/osxcross/bin:$PATH"
-export LD_LIBRARY_PATH="/opt/osxcross/lib"
-export CFLAGS='-I/opt/osxcross/SDK/MacOSX10.13.sdk/usr/include -arch i386 -arch x86_64'
-export MACOSX_DEPLOYMENT_TARGET='10.9'
-CC='o64-clang' \
+echo "building libusb for macOS..."
+
+CC='/opt/osxcross/bin/o64-clang' \
+LD_LIBRARY_PATH="/opt/osxcross/lib" \
+CFLAGS='-I/opt/osxcross/SDK/MacOSX10.13.sdk/usr/include -arch i386 -arch x86_64' \
+MACOSX_DEPLOYMENT_TARGET='10.9' \
     compile_libusb 'macos-amd64' 'x86_64-apple-darwin17'
 
-echo "building libfibre for macOS (x86)"
 
-o64-clang++ -shared -o libfibre-macos-x86.dylib -I./include \
-        -I./third_party/libusb-windows/libusb-1.0.23/include/libusb-1.0 \
-        -arch x86_64 -arch i386 \
-        ${CROSS_PLATFORM_CFLAGS} \
-        "${FILES[@]}" \
-        -static-libstdc++ \
-        ./third_party/libusb-1.0.23/build-macos-amd64/libusb/.libs/libusb-1.0.a \
-        -framework CoreFoundation -framework IOKit
+
+
+### Prepare tup.config files
+
+mkdir -p build-linux-amd64
+cat <<EOF > build-linux-amd64/tup.config
+CONFIG_DEBUG=false
+CONFIG_CC="clang++"
+CONFIG_CFLAGS="-I./third_party/libusb-dev-armhf/usr/include/libusb-1.0"
+CONFIG_LDFLAGS="-L./third_party/libusb-amd64/lib/x86_64-linux-gnu/libusb-1.0.so.0.2.0"
+CONFIG_USE_PKGCONF=false
+EOF
+
+mkdir -p build-linux-armhf
+cat <<EOF > build-linux-armhf/tup.config
+CONFIG_DEBUG=false
+CONFIG_CC="arm-linux-gnueabihf-g++"
+CONFIG_CFLAGS="-I./third_party/libusb-dev-armhf/usr/include/libusb-1.0"
+CONFIG_LDFLAGS="-L./third_party/libstdc++-linux-armhf/usr/lib/gcc-cross/arm-linux-gnueabihf/10 third_party/libusb-armhf/lib/arm-linux-gnueabihf/libusb-1.0.so.0.2.0"
+CONFIG_USE_PKGCONF=false
+EOF
+
+mkdir -p build-windows-amd64
+cat <<EOF > build-windows-amd64/tup.config
+CONFIG_DEBUG=false
+CONFIG_CC="x86_64-w64-mingw32-g++"
+CONFIG_CFLAGS="-I./third_party/libusb-windows/libusb-1.0.23/include/libusb-1.0"
+CONFIG_LDFLAGS="-static-libgcc ./third_party/libusb-windows/libusb-1.0.23/MinGW64/static/libusb-1.0.a"
+CONFIG_USE_PKGCONF=false
+EOF
+
+mkdir -p build-macos-x86
+cat <<EOF > build-macos-x86/tup.config
+CONFIG_DEBUG=false
+CONFIG_CC="LD_LIBRARY_PATH=/opt/osxcross/lib MACOSX_DEPLOYMENT_TARGET=10.9 /opt/osxcross/bin/o64-clang++"
+CONFIG_CFLAGS="-I./third_party/libusb-1.0.23/libusb -arch i386 -arch x86_64"
+CONFIG_LDFLAGS="./third_party/libusb-1.0.23/build-macos-amd64/libusb/.libs/libusb-1.0.a -framework CoreFoundation -framework IOKit"
+CONFIG_USE_PKGCONF=false
+EOF
+
+# Uncomment this to generate the WebAssembly build target. If you do this you
+# have to finish a compile without tup before tup works. This is because
+# emscripten generates some cache files which tup is unhappy about.
+#mkdir -p build-wasm
+#cat <<EOF > build-wasm/tup.config
+#CONFIG_DEBUG=true
+#CONFIG_CC=/usr/lib/emscripten/em++
+#CONFIG_CFLAGS="-include emscripten.h -DFIBRE_PUBLIC=EMSCRIPTEN_KEEPALIVE"
+#CONFIG_USE_PKGCONF=false
+#CONFIG_ENABLE_LIBUSB=false
+#EOF
+
+mkdir -p build-local
+echo "" > build-local/tup.config
+
+
+### Invoke tup for all configs
+
+tup --no-environ-check
+
+
+### Copy to other locations
+
+function copy_to() {
+    cp build-linux-amd64/libfibre-linux-amd64.so "$1/"
+    cp build-linux-armhf/libfibre-linux-armhf.so "$1/"
+    cp build-windows-amd64/libfibre-windows-amd64.dll "$1/"
+    cp /usr/x86_64-w64-mingw32/bin/libwinpthread-1.dll "$1/"
+    cp build-macos-x86/libfibre-macos-x86.dylib "$1/"
+}
+
+copy_to ../python/fibre/
+cp build-wasm/libfibre-* ../js/

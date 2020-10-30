@@ -201,16 +201,6 @@ void PacketUnwrapper::complete(ReadResult result) {
  *        completer.
  */
 void LegacyProtocolPacketBased::start_endpoint_operation(uint16_t endpoint_id, cbufptr_t tx_buf, bufptr_t rx_buf, EndpointOperationHandle* handle, Completer<EndpointOperationResult>& completer) {
-    if (tx_buf.size() + 8 >= tx_mtu_) {
-        FIBRE_LOG(E) << "packet too large";
-        completer.complete({kStreamError, rx_buf.begin()});
-    }
-
-    if (rx_buf.size() > 0xffff) {
-        FIBRE_LOG(E) << "receive size larger than 65535 currently not supported";
-        completer.complete({kStreamError, rx_buf.begin()});
-    }
-
     outbound_seq_no_ = ((outbound_seq_no_ + 1) & 0x7fff);
 
     EndpointOperation op = {
@@ -233,7 +223,7 @@ void LegacyProtocolPacketBased::start_endpoint_operation(uint16_t endpoint_id, c
             // Previous endpoint operation was not yet sent. We don't support
             // enqueuing multiple endpoint operations while the first didn't send yet.
             FIBRE_LOG(E) << "previous endpoint operation still not sent";
-            completer.complete({kStreamError, rx_buf.begin()});
+            completer.complete({kStreamError, tx_buf.begin(), rx_buf.begin()});
         } else {
             // Control is returned to start_endpoint_operation once TX completes
             pending_operation_ = op;
@@ -249,16 +239,19 @@ void LegacyProtocolPacketBased::start_endpoint_operation(EndpointOperation op) {
     write_le<uint16_t>(op.endpoint_id | 0x8000, tx_buf_ + 2);
     write_le<uint16_t>(op.rx_buf.size(), tx_buf_ + 4);
 
-    memcpy(tx_buf_ + 6, op.tx_buf.begin(), op.tx_buf.size());
+    size_t mtu = std::min(sizeof(tx_buf_), tx_mtu_);
+    size_t n_payload = std::min(std::max(mtu, (size_t)8) - 8, op.tx_buf.size());
+
+    memcpy(tx_buf_ + 6, op.tx_buf.begin(), n_payload);
 
     uint16_t trailer = (op.endpoint_id & 0x7fff) == 0 ?
                        PROTOCOL_VERSION : client_.json_crc_;
 
-    write_le<uint16_t>(trailer, tx_buf_ + 6 + op.tx_buf.size());
+    write_le<uint16_t>(trailer, tx_buf_ + 6 + n_payload);
 
     expected_acks_[op.seqno] = op;
     transmitting_op_ = op.seqno | 0xffff0000;
-    tx_channel_->start_write(cbufptr_t{tx_buf_}.take(8 + op.tx_buf.size()), &tx_handle_, *static_cast<WriteCompleter*>(this));
+    tx_channel_->start_write(cbufptr_t{tx_buf_}.take(8 + n_payload), &tx_handle_, *static_cast<WriteCompleter*>(this));
 }
 
 
@@ -270,10 +263,12 @@ void LegacyProtocolPacketBased::cancel_endpoint_operation(EndpointOperationHandl
     uint16_t seqno = static_cast<uint16_t>(handle & 0xffff);
 
     Completer<EndpointOperationResult>* completer;
+    const uint8_t* tx_end = nullptr;
     uint8_t* rx_end = nullptr;
 
     if (pending_operation_.seqno == seqno) {
         completer = pending_operation_.completer;
+        tx_end = pending_operation_.tx_buf.begin();
         rx_end = pending_operation_.rx_buf.begin();
         pending_operation_ = {};
     }
@@ -282,6 +277,7 @@ void LegacyProtocolPacketBased::cancel_endpoint_operation(EndpointOperationHandl
 
     if (it != expected_acks_.end()) {
         completer = it->second.completer;
+        tx_end = it->second.tx_buf.begin();
         rx_end = it->second.rx_buf.begin();
         expected_acks_.erase(it);
     }
@@ -293,7 +289,7 @@ void LegacyProtocolPacketBased::cancel_endpoint_operation(EndpointOperationHandl
     } else {
         // Either we're waiting for an ack on this operation or it has not yet
         // been sent. In both cases we can just complete immediately.
-        safe_complete(completer, {kStreamCancelled, rx_end});
+        safe_complete(completer, {kStreamCancelled, tx_end, rx_end});
     }
 }
 
@@ -339,14 +335,18 @@ void LegacyProtocolPacketBased::on_write_finished(WriteResult result) {
         uint16_t seqno = transmitting_op_ & 0xffff;
         transmitting_op_ = 0;
 
+        auto it = expected_acks_.find(seqno);
+        size_t n_sent = std::max((size_t)(result.end - tx_buf_), (size_t)8) - 8;
+        it->second.tx_buf = it->second.tx_buf.skip(n_sent);
+
         // If the TX task was a remote endpoint operation but didn't succeed
         // we terminate that operation
         if (result.status != kStreamOk) {
-            auto it = expected_acks_.find(seqno);
             auto completer = it->second.completer;
+            auto tx_end = it->second.tx_buf.begin();
             auto rx_end = it->second.rx_buf.begin();
             expected_acks_.erase(it);
-            safe_complete(completer, {result.status, rx_end});
+            safe_complete(completer, {result.status, result.end, rx_end});
         }
     }
 #endif
@@ -415,10 +415,11 @@ void LegacyProtocolPacketBased::on_read_finished(ReadResult result) {
         } else {
             size_t n_copy = std::min((size_t)(result.end - rx_buf.begin()), it->second.rx_buf.size());
             memcpy(it->second.rx_buf.begin(), rx_buf.begin(), n_copy);
+            const uint8_t* tx_end = it->second.tx_buf.begin();
             uint8_t* rx_end = it->second.rx_buf.begin() + n_copy;
             auto completer = it->second.completer;
             expected_acks_.erase(it);
-            safe_complete(completer, {kStreamOk, rx_end});
+            safe_complete(completer, {kStreamOk, tx_end, rx_end});
         }
 
 #else
@@ -506,14 +507,14 @@ void LegacyProtocolPacketBased::on_rx_tx_closed(StreamStatus status) {
 #ifdef FIBRE_ENABLE_CLIENT
     // Cancel pending endpoint operation
     if (pending_operation_.completer) {
-        pending_operation_.completer->complete({status, pending_operation_.rx_buf.begin()});
+        pending_operation_.completer->complete({status, pending_operation_.tx_buf.begin(), pending_operation_.rx_buf.begin()});
         pending_operation_ = {};
     }
 
     // Cancel all ongoing endpoint operations
     for (auto& item: expected_acks_) {
         if (item.second.completer) {
-            (*item.second.completer).complete({status, item.second.rx_buf.begin()});
+            (*item.second.completer).complete({status, item.second.tx_buf.begin(), item.second.rx_buf.begin()});
         }
     }
     expected_acks_.clear();

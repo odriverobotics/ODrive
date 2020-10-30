@@ -1,8 +1,12 @@
 
-tup.include('../tupfiles/build.lua')
-
-fibre_package = define_package{
-    sources={'protocol.cpp', 'posix_tcp.cpp', 'posix_udp.cpp'},
-    libs={'pthread'},
-    headers={'include'}
+fibre_package = {
+    core_files = {
+        'libfibre.cpp',
+        'legacy_protocol.cpp',
+        'legacy_object_client.cpp',
+    },
+    features = {
+        LIBUSB={'platform_support/libusb_transport.cpp'},
+        LOGGING={'logging.cpp'},
+    }
 }

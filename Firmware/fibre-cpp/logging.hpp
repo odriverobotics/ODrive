@@ -56,7 +56,7 @@
 #define __FIBRE_LOGGING_HPP
 
 // TODO: support lite-version of logging on embedded systems
-#if defined(_WIN32) || defined(_WIN64) || defined(__linux__) || defined(__APPLE__)
+#if defined(_WIN32) || defined(_WIN64) || defined(__linux__) || defined(__APPLE__) || defined(EMSCRIPTEN)
 
 #include <fibre/cpp_utils.hpp>
 
@@ -67,7 +67,7 @@
 #include "windows.h"
 #endif
 
-#if defined(_WIN32) || defined(_WIN64) || defined(__linux__) || defined(__APPLE__)
+#if defined(_WIN32) || defined(_WIN64) || defined(__linux__) || defined(__APPLE__) || defined(EMSCRIPTEN)
 #include <iostream>
 #include <iomanip>
 #else

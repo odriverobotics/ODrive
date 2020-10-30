@@ -12,6 +12,10 @@ import time
 import platform
 from .utils import Logger, Event
 
+# Enable this for better tracebacks in some cases
+#import tracemalloc
+#tracemalloc.start(10)
+
 lib_names = {
     ('Linux', 'x86_64'): 'libfibre-linux-amd64.so',
     ('Linux', 'armv7l'): 'libfibre-linux-armhf.so',
@@ -77,7 +81,9 @@ OnAttributeRemovedSignature = CFUNCTYPE(None, c_void_p, c_void_p)
 OnFunctionAddedSignature = CFUNCTYPE(None, c_void_p, c_void_p, c_void_p, c_size_t, POINTER(c_char_p), POINTER(c_char_p), POINTER(c_char_p), POINTER(c_char_p))
 OnFunctionRemovedSignature = CFUNCTYPE(None, c_void_p, c_void_p)
 
-OnCallCompletedSignature = CFUNCTYPE(None, c_void_p, c_int, c_char_p)
+OnCallCompletedSignature = CFUNCTYPE(None, c_void_p, c_int)
+OnTxCompletedSignature = CFUNCTYPE(None, c_void_p, c_void_p, c_int, c_void_p)
+OnRxCompletedSignature = CFUNCTYPE(None, c_void_p, c_void_p, c_int, c_void_p)
 
 kFibreOk = 0
 kFibreCancelled = 1
@@ -100,7 +106,7 @@ libfibre_get_version.argtypes = []
 libfibre_get_version.restype = POINTER(LibFibreVersion)
 
 version = libfibre_get_version().contents
-if version.major != 0:
+if (version.major, version.minor) != (0, 1):
     raise Exception("Incompatible libfibre version: {}".format(version))
 
 libfibre_open = lib.libfibre_open
@@ -128,12 +134,28 @@ libfibre_get_attribute.argtypes = [c_void_p, c_void_p, POINTER(c_void_p)]
 libfibre_get_attribute.restype = c_int
 
 libfibre_start_call = lib.libfibre_start_call
-libfibre_start_call.argtypes = [c_void_p, c_void_p, c_char_p, c_size_t, c_char_p, c_size_t, c_void_p, OnCallCompletedSignature, c_void_p]
+libfibre_start_call.argtypes = [c_void_p, c_void_p, POINTER(c_void_p), POINTER(c_void_p), POINTER(c_void_p), OnCallCompletedSignature, c_void_p]
 libfibre_start_call.restype = None
 
-libfibre_cancel_call = lib.libfibre_cancel_call
-libfibre_cancel_call.argtypes = [c_void_p]
-libfibre_cancel_call.restype = None
+libfibre_end_call = lib.libfibre_end_call
+libfibre_end_call.argtypes = [c_void_p]
+libfibre_end_call.restype = None
+
+libfibre_start_tx = lib.libfibre_start_tx
+libfibre_start_tx.argtypes = [c_void_p, c_char_p, c_size_t, OnTxCompletedSignature, c_void_p]
+libfibre_start_tx.restype = None
+
+libfibre_cancel_tx = lib.libfibre_cancel_tx
+libfibre_cancel_tx.argtypes = [c_void_p]
+libfibre_cancel_tx.restype = None
+
+libfibre_start_rx = lib.libfibre_start_rx
+libfibre_start_rx.argtypes = [c_void_p, c_char_p, c_size_t, OnRxCompletedSignature, c_void_p]
+libfibre_start_rx.restype = None
+
+libfibre_cancel_rx = lib.libfibre_cancel_rx
+libfibre_cancel_rx.argtypes = [c_void_p]
+libfibre_cancel_rx.restype = None
 
 
 # libfibre wrapper ------------------------------------------------------------#
@@ -148,7 +170,7 @@ def _get_exception(status):
     elif status == kFibreCancelled:
         return asyncio.CancelledError()
     elif status == kFibreClosed:
-        return ObjectLostError()
+        return EOFError()
     elif status == kFibreInvalidArgument:
         return ArgumentError()
     elif status == kFibreInternalError:
@@ -234,6 +256,158 @@ def run_coroutine_threadsafe(loop, func):
     loop.call_soon_threadsafe(asyncio.ensure_future, func_async())
     return future.result()
 
+class TxStream():
+    """Python wrapper for libfibre's LibFibreTxStream interface"""
+
+    def __init__(self, libfibre, tx_stream_handle):
+        self._libfibre = libfibre
+        self._tx_stream_handle = tx_stream_handle
+        self._future = None
+        self._tx_buf = None
+        self._c_on_tx_completed = OnTxCompletedSignature(self._on_tx_completed)
+        self.is_closed = False
+
+    def _on_tx_completed(self, ctx, tx_stream, status, tx_end):
+        tx_start = cast(self._tx_buf, c_void_p).value
+
+        n_written = tx_end - tx_start
+        assert(n_written <= len(self._tx_buf))
+        future = self._future
+        self._future = None
+        self._tx_buf = None
+        
+        if status == kFibreClosed:
+            self.is_closed = True
+        
+        if status == kFibreOk or status == kFibreClosed:
+            future.set_result(n_written)
+        else:
+            future.set_exception(_get_exception(status))
+
+    def write(self, data):
+        """
+        Writes the provided data to the stream. Not all bytes are guaranteed to
+        be written. The caller should check the return value to determine the
+        actual number of bytes written.
+
+        If a non-empty buffer is provided, this function will either write at
+        least one byte to the output, set is_closed to True or throw an
+        Exception (through the future).
+
+        Currently only one write call may be active at a time (this may change
+        in the future).
+
+        Returns: A future that completes with the number of bytes actually
+        written or an Exception.
+        """
+        assert(self._future is None)
+        self._future = future = self._libfibre.loop.create_future()
+        self._tx_buf = data # Retain a reference to the buffer to prevent it from being garbage collected
+
+        libfibre_start_tx(self._tx_stream_handle,
+            cast(self._tx_buf, c_char_p), len(self._tx_buf),
+            self._c_on_tx_completed, None)
+
+        return future
+        
+    async def write_all(self, data):
+        """
+        Writes all of the provided data to the stream or completes with an
+        Exception.
+
+        If an empty buffer is provided, the underlying stream's write function
+        is still called at least once.
+
+        Returns: A future that either completes with an empty result or with
+        an Exception.
+        """
+
+        while True:
+            n_written = await self.write(data)
+            data = data[n_written:]
+            if len(data) == 0:
+                break
+            elif self.is_closed:
+                raise EOFError("the TX stream was closed but there are still {} bytes left to send".format(len(data)))
+            assert(n_written > 0) # Ensure progress
+
+class RxStream():
+    """Python wrapper for libfibre's LibFibreRxStream interface"""
+
+    def __init__(self, libfibre, rx_stream_handle):
+        self._libfibre = libfibre
+        self._rx_stream_handle = rx_stream_handle
+        self._future = None
+        self._rx_buf = None
+        self._c_on_rx_completed = OnRxCompletedSignature(self._on_rx_completed)
+        self.is_closed = False
+
+    def _on_rx_completed(self, ctx, rx_stream, status, rx_end):
+        rx_start = cast(self._rx_buf, c_void_p).value
+
+        n_read = rx_end - rx_start
+        assert(n_read <= len(self._rx_buf))
+        data = self._rx_buf[:n_read]
+        future = self._future
+        self._future = None
+        self._rx_buf = None
+        
+        if status == kFibreClosed:
+            self.is_closed = True
+        
+        if status == kFibreOk or status == kFibreClosed:
+            future.set_result(data)
+        else:
+            future.set_exception(_get_exception(status))
+
+    def read(self, n_read):
+        """
+        Reads up to the specified number of bytes from the stream.
+
+        If more than zero bytes are requested, this function will either read at
+        least one byte, set is_closed to True or throw an Exception (through the
+        future).
+
+        Currently only one write call may be active at a time (this may change
+        in the future).
+
+        Returns: A future that either completes with a buffer containing the
+        bytes that were read or completes with an Exception.
+        """
+        assert(self._future is None)
+        self._future = future = self._libfibre.loop.create_future()
+        self._rx_buf = bytes(n_read)
+
+        libfibre_start_rx(self._rx_stream_handle,
+            cast(self._rx_buf, c_char_p), len(self._rx_buf),
+            self._c_on_rx_completed, None)
+
+        return future
+        
+    async def read_all(self, n_read):
+        """
+        Reads the specified number of bytes from the stream or throws an
+        Exception.
+
+        If zero bytes are requested, the underlying stream's read function
+        is still called at least once.
+
+        Returns: A future that either completes with a buffer of size n_read or
+        an Exception.
+        """
+
+        data = bytes()
+        while True:
+            chunk = await self.read(n_read - len(data))
+            data += chunk
+            if n_read == len(data):
+                break
+            elif self.is_closed:
+                raise EOFError()
+            assert(len(chunk) > 0) # Ensure progress
+        return data
+
+
 class RemoteFunction(object):
     """
     Represents a callable function that maps to a function call on a remote object.
@@ -245,30 +419,83 @@ class RemoteFunction(object):
         self._outputs = outputs
         self._rx_size = sum(codec.get_length() for _, _, codec in self._outputs)
         self._calls = {}
-        self._c_on_completed = OnCallCompletedSignature(self._on_completed)
+        self._c_on_call_completed = OnCallCompletedSignature(self._on_completed)
 
-    def _on_completed(self, ctx, status, end_ptr):
+    def _on_completed(self, ctx, status):
         call = self._calls.pop(ctx)
 
         if status != kFibreOk:
-            call['future'].set_exception(_get_exception(status))
+            call.set_exception(_get_exception(status))
         else:
-            pos = 0
-            outputs = []
+            call.set_result(None)
 
-            for arg in self._outputs:
-                arg_length = arg[2].get_length()
-                outputs.append(arg[2].deserialize(self._libfibre, call['rx_buf'][pos:(pos + arg_length)]))
-                pos += arg_length
+    def start_call(self, instance, cancellation_token):
+        """
+        Starts invoking the function on the remote object.
+        Must be called from the Fibre thread.
 
-            if len(outputs) == 0:
-                call['future'].set_result(None)
-            elif len(outputs) == 1:
-                call['future'].set_result(outputs[0])
-            else:
-                call['future'].set_result(tuple(outputs))
+        cancellation_token: A future that starts cancellation of the function
+                            call when completed.
+        Returns: A tuple (tx_stream, rx_stream, future). The tx_stream can be
+                 used to send input arguments to the function. The rx_stream can
+                 be used to receive output arguments from the function. The
+                 future is completed once the function call is fully terminated.
+        """
+        assert(asyncio.get_event_loop() == instance._libfibre.loop)
 
-    def __call__(self, instance, *args):
+        future = instance._libfibre.loop.create_future()
+        call_id = insert_with_new_id(self._calls, future)
+
+        call_handle = c_void_p(0)
+        tx_stream_handle = c_void_p(0)
+        rx_stream_handle = c_void_p(0)
+
+        libfibre_start_call(instance._obj_handle, self._func_handle,
+            byref(call_handle), byref(tx_stream_handle), byref(rx_stream_handle),
+            self._c_on_call_completed, call_id)
+
+        if not cancellation_token is None:
+            on_cancel = lambda: libfibre_end_call(call_handle)
+            cancellation_token.add_done_callback(on_cancel)
+            future.add_done_callback(cancellation_token.remove_done_callback(on_cancel))
+
+        return TxStream(self._libfibre, tx_stream_handle), RxStream(self._libfibre, rx_stream_handle), future
+
+    async def async_call(self, instance, args, cancellation_token):
+        tx_stream, rx_stream, call_future = self.start_call(instance, cancellation_token)
+
+        tx_buf = bytes()
+        for i, arg in enumerate(self._inputs):
+            tx_buf += arg[2].serialize(self._libfibre, args[i])
+
+        rx_length = sum(arg[2].get_length() for arg in self._outputs)
+
+        # Create task which will start the TX operation soon. This allows us to
+        # start an RX operation before the TX operation is actually started.
+        tx_future = asyncio.create_task(tx_stream.write_all(tx_buf))
+        
+        try:
+            try:
+                rx_buf = await rx_stream.read_all(rx_length)
+            finally:
+                await tx_future
+        finally:
+            await call_future
+        
+        outputs = []
+        for arg in self._outputs:
+            arg_length = arg[2].get_length()
+            outputs.append(arg[2].deserialize(self._libfibre, rx_buf[:arg_length]))
+            rx_buf = rx_buf[arg_length:]
+
+        if len(outputs) == 0:
+            return
+        elif len(outputs) == 1:
+            return outputs[0]
+        else:
+            return tuple(outputs)
+
+    def __call__(self, instance, *args, cancellation_token = None):
         """
         Starts invoking the function on the remote object.
         If this function is called from the Fibre thread then it is nonblocking
@@ -283,23 +510,8 @@ class RemoteFunction(object):
         if (len(self._inputs) != len(args)):
             raise TypeError("expected {} arguments but have {}".format(len(self._inputs), len(args)))
 
-        # All of these variables need to be protected from the garbage collector
-        # for the duration of the call.
-        call = {
-            'handle': c_size_t(0),
-            'tx_buf': b''.join(self._inputs[i][2].serialize(self._libfibre, args[i])
-                               for i in range(len(self._inputs))), # Assemble TX buffer
-            'rx_buf': b'\0' * self._rx_size, # Allocate RX buffer
-            'future': instance._libfibre.loop.create_future(),
-        }
-        call_id = insert_with_new_id(self._calls, call)
-
-        libfibre_start_call(instance._obj_handle, self._func_handle,
-            cast(call['tx_buf'], c_char_p), len(call['tx_buf']),
-            cast(call['rx_buf'], c_char_p), len(call['rx_buf']),
-            byref(call['handle']), self._c_on_completed, call_id)
-        
-        return call['future']
+        coro = self.async_call(instance, args, cancellation_token)
+        return asyncio.ensure_future(coro, loop=instance._libfibre.loop)
 
     def __get__(self, instance, owner):
         return MethodType(self, instance) if instance else self
@@ -537,7 +749,7 @@ class LibFibre():
             setattr(intf, "_" + name + "_property", RemoteAttribute(self, attr, subintf, subintf_name, False, False))
 
     def _on_attribute_removed(self, ctx, attr):
-        print("attribute removed")
+        print("attribute removed") # TODO
 
     def _on_function_added(self, ctx, func, name, name_length, input_names, input_codecs, output_names, output_codecs):
         name = string_at(name, name_length).decode('utf-8')
@@ -547,7 +759,7 @@ class LibFibre():
         setattr(intf, name, RemoteFunction(self, func, inputs, outputs))
 
     def _on_function_removed(self, ctx, func):
-        print("function removed")
+        print("function removed") # TODO
 
     def start_discovery(self, path, on_obj_discovered, cancellation_token):
         buf = path.encode('ascii')

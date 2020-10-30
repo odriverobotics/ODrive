@@ -40,7 +40,9 @@
 #endif
 
 #ifdef FIBRE_COMPILE
-#   define FIBRE_PUBLIC DLL_EXPORT
+#   ifndef FIBRE_PUBLIC
+#       define FIBRE_PUBLIC DLL_EXPORT
+#   endif
 #   define FIBRE_PRIVATE DLL_LOCAL
 #else
 #   define FIBRE_PUBLIC DLL_IMPORT
@@ -54,12 +56,15 @@ extern "C" {
 #endif
 
 struct LibFibreCtx;
+struct LibFibreChannelDiscoveryCtx;
 struct LibFibreDiscoveryCtx;
 struct LibFibreCallContext;
 struct LibFibreObject;
 struct LibFibreInterface;
 struct LibFibreFunction;
 struct LibFibreAttribute;
+struct LibFibreTxStream;
+struct LibFibreRxStream;
 
 enum FibreStatus {
     kFibreOk,
@@ -94,38 +99,98 @@ typedef int (*cancel_timer_cb_t)(struct EventLoopTimer* timer);
  *        previous object.
  *        The interface handle is valid until the last object that implements it
  *        is destroyed.
- * @param intf_name: The ASCII-encoded name of the interface. Can be NULL be for
+ * @param intf_name: The ASCII-encoded name of the interface. Can be NULL for
  *        anonymous interfaces. If not NULL, it is only valid for the duration
  *        of the callback and must not be freed by the application.
  */
 typedef void (*construct_object_cb_t)(void* ctx, LibFibreObject* obj, LibFibreInterface* intf, const char* intf_name, size_t intf_name_length);
-
 typedef void (*destroy_object_cb_t)(void* ctx, LibFibreObject* obj);
-typedef void (*on_found_object_cb_t)(void*, LibFibreObject*);
-typedef void (*on_stopped_cb_t)(void*, FibreStatus);
-typedef void (*on_attribute_added_cb_t)(void*, LibFibreAttribute*, const char* name, size_t name_length, LibFibreInterface*, const char* intf_name, size_t intf_name_length);
-typedef void (*on_attribute_removed_cb_t)(void*, LibFibreAttribute*);
-typedef void (*on_function_added_cb_t)(void*, LibFibreFunction*, const char* name, size_t name_length, const char** input_names, const char** input_codecs, const char** output_names, const char** output_codecs);
-typedef void (*on_function_removed_cb_t)(void*, LibFibreFunction*);
 
 /**
- * @brief Completion callback type for libfibre_start_call().
+ * @brief on_start_discovery callback type for libfibre_register_discoverer().
  * 
- * @param ctx: The user data that was passed to libfibre_start_call().
- * @param status: The status of the function call.
- *        kFibreOk indicates successful completion of the function call. All
- *        other error codes make no guarantee whether the call was executed or
- *        not.
- *        kFibreClosed indicates that the underlying object was lost during the
- *        function call. The call may or may not have succeeded.
- * @param rx_end: Points to the address after the last byte written to the
- *        output buffer. This pointer always points to a valid position in the
- *        buffer (or the end of the buffer), even if the call failed. However if
- *        the status is not kFibreOk then the pointer may not precisely indicate
- *        the received data range.
+ * For every channel pair that the application finds that matches the filter of
+ * this discoverer the application should call libfibre_add_channels().
+ * 
+ * @param discovery_handle: An opaque handle that libfibre will pass to the
+ *        corresponding on_stop_discovery callback to stop the discovery.
+ * @param specs, specs_length: The specs string that specifies discoverer-specific
+ *        filter parameters.
  */
-typedef void (*on_call_completed_cb_t)(void* ctx, FibreStatus status, uint8_t* rx_end);
+typedef void (*on_start_discovery_cb_t)(void* ctx, LibFibreChannelDiscoveryCtx* discovery_ctx, const char* specs, size_t specs_length);
+typedef void (*on_stop_discovery_cb_t)(void* ctx, LibFibreChannelDiscoveryCtx* discovery_ctx);
 
+typedef void (*on_found_object_cb_t)(void*, LibFibreObject*);
+typedef void (*on_stopped_cb_t)(void*, FibreStatus);
+
+typedef void (*on_attribute_added_cb_t)(void*, LibFibreAttribute*, const char* name, size_t name_length, LibFibreInterface*, const char* intf_name, size_t intf_name_length);
+typedef void (*on_attribute_removed_cb_t)(void*, LibFibreAttribute*);
+
+/**
+ * @brief on_function_added callback type for libfibre_subscribe_to_interface().
+ * 
+ * @param ctx: The user data that was passed to libfibre_subscribe_to_interface().
+ * @param func: A handle for the function. Remains valid until the corresponding
+ *        call to on_function_removed().
+ * @param name: The ASCII-encoded name of the function.
+ * @param name_length: Length in bytes of the name.
+ * @param input_names: A null-terminated list of null-terminated ASCII-encoded
+ *        strings. Each string corresponds to the name of one input argument.
+ *        The list and the string buffers are only valid for the duration of the
+ *        callback. They must not be freed by the application.
+ * @param input_codecs: A null-terminated list of null-terminated ASCII-encoded
+ *        strings. Each string names the codec of one input argument.
+ *        The list and the string buffers are only valid for the duration of the
+ *        callback. They must not be freed by the application.
+ * @param output_names: Analogous to input_names.
+ * @param output_codecs: Analogous to output names.
+ */
+typedef void (*on_function_added_cb_t)(void* ctx, LibFibreFunction* func, const char* name, size_t name_length, const char** input_names, const char** input_codecs, const char** output_names, const char** output_codecs);
+
+typedef void (*on_function_removed_cb_t)(void*, LibFibreFunction*);
+typedef void (*on_call_completed_cb_t)(void*, FibreStatus);
+
+/**
+ * @brief TX completion callback type for libfibre_start_tx().
+ * 
+ * @param ctx: The user data that was passed to libfibre_start_tx().
+ * @param tx_stream: The TX stream on which the TX operation completed.
+ * @param status: The status of the last TX operation.
+ *         - kFibreOk: The indicated range of the TX buffer was successfully
+ *           transmitted and the stream might accept more data.
+ *         - kFibreClosed: The indicated range of the TX buffer was successfully
+ *           transmitted and the stream will no longer accept any data.
+ *         - Any other status: Successful transmission of the data cannot be
+ *           guaranteed and no more data can be sent on this stream.
+ * @param tx_end: Points to the address after the last byte read from the
+ *        TX buffer. This pointer always points to a valid position in the
+ *        buffer (or the end of the buffer), even if the transmission failed.
+ *        However if the status is something other than kFibreOk and
+ *        kFibreClosed then the pointer may not precisely indicate the
+ *        transmitted data range.
+ */
+typedef void (*on_tx_completed_cb_t)(void* ctx, LibFibreTxStream* tx_stream, FibreStatus status, const uint8_t* tx_end);
+
+/**
+ * @brief RX completion callback type for libfibre_start_rx().
+ * 
+ * @param ctx: The user data that was passed to libfibre_start_rx().
+ * @param rx_stream: The RX stream on which the RX operation completed.
+ * @param status: The status of the last RX operation.
+ *         - kFibreOk: The indicated range of the RX buffer was successfully
+ *           filled with received data and the stream might emit more data.
+ *         - kFibreClosed: The indicated range of the RX buffer was successfully
+ *           filled with received data and the stream will emit no more data.
+ *         - Any other status: Successful transmission of the data cannot be
+ *           guaranteed and no more data can be sent on this stream.
+ * @param rx_end: Points to the address after the last byte written to the
+ *        RX buffer. This pointer always points to a valid position in the
+ *        buffer (or the end of the buffer), even if the reception failed.
+ *        However if the status is something other than kFibreOk and
+ *        kFibreClosed then the pointer may not precisely indicate the
+ *        received data range.
+ */
+typedef void (*on_rx_completed_cb_t)(void* ctx, LibFibreRxStream* rx_stream, FibreStatus status, uint8_t* rx_end);
 
 /**
  * @brief Returns the version of the libfibre library.
@@ -139,7 +204,7 @@ typedef void (*on_call_completed_cb_t)(void* ctx, FibreStatus status, uint8_t* r
  * Even if breaking changes are introduced, we promise to keep this function
  * backwards compatible.
  */
-const struct LibFibreVersion* libfibre_get_version();
+FIBRE_PUBLIC const struct LibFibreVersion* libfibre_get_version();
 
 /**
  * @brief Opens and initializes a Fibre context.
@@ -193,6 +258,24 @@ FIBRE_PUBLIC struct LibFibreCtx* libfibre_open(
 FIBRE_PUBLIC void libfibre_close(struct LibFibreCtx* ctx);
 
 /**
+ * @brief Registers an external channel discovery provider.
+ * 
+ * Libfibre starts and stops the discoverer on demand as a result of calls
+ * to libfibre_start_discovery() and libfibre_stop_discovery().
+ * This can be used by applications to implement transport providers which are
+ * not supported natively in libfibre.
+ */
+FIBRE_PUBLIC void libfibre_register_discoverer(LibFibreCtx* ctx, const char* name, size_t name_length, on_start_discovery_cb_t on_start_discovery, on_stop_discovery_cb_t on_stop_discovery, void* cb_ctx);
+
+/**
+ * @brief Registers new TX and RX channels as part of an ongoing discovery
+ * operation.
+ * 
+ * The channels can be closed with libfibre_close_tx() and libfibre_close_rx().
+ */
+FIBRE_PUBLIC void libfibre_add_channels(LibFibreCtx* ctx, LibFibreChannelDiscoveryCtx* discovery_ctx, LibFibreRxStream** tx_channel, LibFibreTxStream** rx_channel, size_t mtu);
+
+/**
  * @brief Starts looking for Fibre objects that match the specifications.
  *
  * TODO: specify if specs needs to remain valid for the duration of discovery.
@@ -221,7 +304,8 @@ FIBRE_PUBLIC void libfibre_close(struct LibFibreCtx* ctx);
  * @param cb_ctx: Arbitrary user data passed to the callbacks.
  * @returns: An opaque handle which should be passed to libfibre_stop_discovery().
  */
-FIBRE_PUBLIC void libfibre_start_discovery(LibFibreCtx* ctx, const char* specs, size_t specs_len, struct LibFibreDiscoveryCtx** handle,
+FIBRE_PUBLIC void libfibre_start_discovery(LibFibreCtx* ctx,
+    const char* specs, size_t specs_len, LibFibreDiscoveryCtx** handle,
     on_found_object_cb_t on_found_object,
     on_stopped_cb_t on_stopped, void* cb_ctx);
 
@@ -245,10 +329,7 @@ FIBRE_PUBLIC void libfibre_stop_discovery(LibFibreCtx* ctx, LibFibreDiscoveryCtx
  * @param interface: An interface handle that was obtained in the callback of
  *        libfibre_start_discovery().
  * @param on_attribute_added: Invoked when an attribute is added to the
- *        interface. The name and intf_name buffers are only valid for the
- *        duration of the callback and must not be freed by the application.
- *        The attribute handle remains valid until the corresponding call to
- *        on_attribute_removed().
+ *        interface.
  * @param on_attribute_removed: Invoked when an attribute is removed from the
  *        interface, including when the interface is being torn down. This is
  *        called exactly once for every call to on_attribute_added().
@@ -299,47 +380,143 @@ FIBRE_PUBLIC void libfibre_subscribe_to_interface(LibFibreInterface* interface,
 FIBRE_PUBLIC FibreStatus libfibre_get_attribute(LibFibreObject* parent_obj, LibFibreAttribute* attr, LibFibreObject** child_obj_ptr);
 
 /**
- * @brief Starts the invokation of a function call.
+ * @brief Starts a remote procedure call.
  * 
- * Once the call has completed (whether successful, failed or cancelled), the
- * provided callback will be invoked.
- * Until then, the ongoing call can be aborted with libfibre_cancel_call().
+ * This function returns a TX/RX pair of streams that can be used by the
+ * application to send inputs to the remote procedure and receive outputs from
+ * it.
+ * 
+ * libfibre is not required to send anything on the underlying transport
+ * layer(s) until a TX operation is started on the call's tx_stream. This means
+ * that for functions with no input the application must start a zero-length
+ * operation for the call to be started.
+ * 
+ * The operation must be considered in progress until on_completed is invoked.
+ * This usually happens directly after both the tx_stream and rx_stream are
+ * closed (or failed), either by the server or due to a call to
+ * libfibre_cancel_call().
  * 
  * @param obj: An object handle that was obtained in the callback of
  *        libfibre_start_discovery() or from a call to libfibre_get_attribute().
  * @param func: A function handle that was obtained in the on_function_added()
  *        callback of libfibre_subscribe_to_interface().
- * @param input: The buffer that contains the input arguments. Must remain valid
- *        until on_completed() is called.
- * @param output: The buffer where the output arguments will be written. Must
- *        remain valid until on_completed() is called.
  * @param handle: The variable being pointed to by this argument is set to a
  *        handle that can be passed to libfibre_cancel_call() to cancel the
  *        started call. If on_complete() is invoked directly during
  *        libfibre_start_call() then the handle variable is not updated later
- *        than this invokation.
- * @param on_completed: Called when the operation completes, whether successful
- *        or not.
+ *        than that invokation.
+ * @param tx_stream: The variable being pointed to by this argument is set to
+ *        a TX stream handle that can be used to send data on this call.
+ *        This handle remains valid until the application calls
+ *        libfibre_end_call().
+ * @param rx_stream: The variable being pointed to by this argument is set to
+ *        an RX stream handle that can be used to receive data on this call.
+ *        This handle remains valid until the application calls
+ *        libfibre_end_call().
+ * @param on_completed: Called when the call completes, whether successful or
+ *        not.
+ * @param cb_ctx: An opaque handle which will be passed to on_completed().
  */
-FIBRE_PUBLIC void libfibre_start_call(LibFibreObject* obj, LibFibreFunction* func, const uint8_t *input, size_t input_length, uint8_t *output, size_t output_length, LibFibreCallContext** handle, on_call_completed_cb_t on_completed, void* ctx);
+FIBRE_PUBLIC void libfibre_start_call(LibFibreObject* obj, LibFibreFunction* func, LibFibreCallContext** handle, LibFibreTxStream** tx_stream, LibFibreRxStream** rx_stream, on_call_completed_cb_t on_completed, void* cb_ctx);
 
 /**
- * @brief Cancels an ongoing function call.
+ * @brief Ends an ongoing function call.
  * 
- * This must not be called twice for the same call and must not be called once
- * the completion callback of the function call is invoked.
+ * Note that this does not request semantic cancellation (or reversal) of
+ * actions triggered by this call.
  * 
- * The completion callback associated with this call will still be invoked after
- * the call is cancelled. Until then, the call must still be considered in
- * progress.
- * 
- * After calling this function, the function call that was cancelled may or may
- * not still go into effect.
+ * The application must still wait for the on_complete callback to be called
+ * before the call can be considered finished.
+ * In the meantime if the TX and/or RX stream of this call is still open then
+ * it is closed.
+ * libfibre_end_call must not be called twice for the same call.
+ * The completion callback may be called with kFibreCancelled or any other
+ * status.
  * 
  * @param handle: The function call handle that was obtained by a call to
- *        libfibre_cancel_call().
+ *        libfibre_start_call().
  */
-FIBRE_PUBLIC void libfibre_cancel_call(LibFibreCallContext* handle);
+FIBRE_PUBLIC void libfibre_end_call(LibFibreCallContext* handle);
+
+/**
+ * @brief Starts sending data on the specified TX stream.
+ * 
+ * The TX operation must be considered in progress until the on_completed
+ * callback is called. Until then the application must not start another TX
+ * operation on the same stream. In the meantime the application can call
+ * libfibre_cancel_tx() at any time to abort the operation.
+ * 
+ * @param tx_stream: The stream on which to send data.
+ * @param tx_buf: The buffer to transmit. Must remain valid until the operation
+ *        completes.
+ * @param tx_len: Length of tx_buf.
+ * @param on_completed: Called when the operation completes, whether successful
+ *        or not.
+ * @param ctx: Arbitrary user data passed to the on_completed callback.
+ */
+FIBRE_PUBLIC void libfibre_start_tx(LibFibreTxStream* tx_stream, const uint8_t* tx_buf, size_t tx_len, on_tx_completed_cb_t on_completed, void* ctx);
+
+/**
+ * @brief Cancels an ongoing TX operation.
+ * 
+ * Must only be called if there is actually a TX operation in progress for which
+ * cancellation has not yet been requested.
+ * The application must still wait for the on_complete callback to be called
+ * before the operation can be considered finished. The completion callback may
+ * be called with kFibreCancelled or any other status.
+ * 
+ * TODO: specify if streams can be restarted (current doc of on_tx_completed_cb_t implies no)
+ * 
+ * @param tx_stream: The TX stream on which to cancel the ongoing TX operation.
+ */
+FIBRE_PUBLIC void libfibre_cancel_tx(LibFibreTxStream* tx_stream);
+
+/**
+ * @brief Permanently close TX stream.
+ * 
+ * Must not be called while a transfer is ongoing.
+ */
+FIBRE_PUBLIC void libfibre_close_tx(LibFibreTxStream* tx_stream, FibreStatus status);
+
+/**
+ * @brief Starts receiving data on the specified RX stream.
+ * 
+ * The RX operation must be considered in progress until the on_completed
+ * callback is called. Until then the application must not start another RX
+ * operation on the same stream. In the meantime the application can call
+ * libfibre_cancel_rx() at any time to abort the operation.
+ * 
+ * @param rx_stream: The stream on which to receive data.
+ * @param rx_buf: The buffer to receive to. Must remain valid until the
+ *        operation completes.
+ * @param rx_len: Length of rx_buf.
+ * @param on_completed: Called when the operation completes, whether successful
+ *        or not.
+ * @param ctx: Arbitrary user data passed to the on_completed callback.
+ */
+FIBRE_PUBLIC void libfibre_start_rx(LibFibreRxStream* rx_stream, uint8_t* rx_buf, size_t rx_len, on_rx_completed_cb_t on_completed, void* ctx);
+
+/**
+ * @brief Cancels an ongoing RX operation.
+ * 
+ * Must only be called if there is actually a RX operation in progress for which
+ * cancellation has not yet been requested.
+ * The application must still wait for the on_complete callback to be called
+ * before the operation can be considered finished. The completion callback may
+ * be called with kFibreCancelled or any other status.
+ * 
+ * TODO: specify if streams can be restarted (current doc of on_rx_completed_cb_t implies no)
+ * 
+ * @param rx_stream: The RX stream on which to cancel the ongoing RX operation.
+ */
+FIBRE_PUBLIC void libfibre_cancel_rx(LibFibreRxStream* rx_stream);
+
+/**
+ * @brief Permanently close RX stream.
+ * 
+ * Must not be called while a transfer is ongoing.
+ */
+FIBRE_PUBLIC void libfibre_close_rx(LibFibreRxStream* rx_stream, FibreStatus status);
 
 #ifdef __cplusplus
 }

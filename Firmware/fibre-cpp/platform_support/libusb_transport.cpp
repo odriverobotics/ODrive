@@ -252,14 +252,16 @@ void LibusbDiscoverer::start_channel_discovery(const char* specs, size_t specs_l
 
         if (!success) {
             FIBRE_LOG(E) << "could not interpret channel discovery specs";
-            on_found_channels.complete({kFibreInvalidArgument, nullptr, nullptr});
+            on_found_channels.complete({kFibreInvalidArgument, nullptr, nullptr, 0});
             return;
         }
 
         prev_delim = std::min(next_delim + 1, specs + specs_len);
     }
 
-    ChannelDiscoveryContext* subscription = new ChannelDiscoveryContext{interface_specs, &on_found_channels};
+    MyChannelDiscoveryContext* subscription = new MyChannelDiscoveryContext{};
+    subscription->interface_specs = interface_specs;
+    subscription->on_found_channels = &on_found_channels;
     subscriptions_.push_back(subscription);
 
     for (auto& dev: known_devices_) {
@@ -456,7 +458,7 @@ void LibusbDiscoverer::poll_devices_now() {
     }
 }
 
-void LibusbDiscoverer::consider_device(struct libusb_device *device, ChannelDiscoveryContext* subscription) {
+void LibusbDiscoverer::consider_device(struct libusb_device *device, MyChannelDiscoveryContext* subscription) {
     uint8_t bus_number = libusb_get_bus_number(device);
     uint8_t dev_number = libusb_get_device_address(device);
 
@@ -532,9 +534,12 @@ void LibusbDiscoverer::consider_device(struct libusb_device *device, ChannelDisc
                     continue;
                 }
 
+                size_t mtu = SIZE_MAX;
+
                 LibusbBulkInEndpoint* ep_in = new LibusbBulkInEndpoint();
                 if (libusb_ep_in && ep_in->init(this, my_dev.handle, libusb_ep_in->bEndpointAddress)) {
                     my_dev.ep_in.push_back(ep_in);
+                    mtu = std::min(mtu, (size_t)libusb_ep_in->wMaxPacketSize);
                 } else {
                     delete ep_in;
                     ep_in = nullptr;
@@ -543,13 +548,14 @@ void LibusbDiscoverer::consider_device(struct libusb_device *device, ChannelDisc
                 LibusbBulkOutEndpoint* ep_out = new LibusbBulkOutEndpoint();
                 if (libusb_ep_out && ep_out->init(this, my_dev.handle, libusb_ep_out->bEndpointAddress)) {
                     my_dev.ep_out.push_back(ep_out);
+                    mtu = std::min(mtu, (size_t)libusb_ep_out->wMaxPacketSize);
                 } else {
                     delete ep_out;
                     ep_out = nullptr;
                 }
 
                 if (subscription->on_found_channels) {
-                    subscription->on_found_channels->complete({kFibreOk, ep_in, ep_out});
+                    subscription->on_found_channels->complete({kFibreOk, ep_in, ep_out, mtu});
                 }
             }
         }

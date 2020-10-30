@@ -15,6 +15,7 @@ namespace fibre {
 
 struct EndpointOperationResult {
     StreamStatus status;
+    const uint8_t* tx_end;
     uint8_t* rx_end;
 };
 
@@ -58,24 +59,32 @@ struct LegacyObject {
 
 class LegacyObjectClient : Completer<EndpointOperationResult> {
 public:
-    struct CallResult {
-        FibreStatus status;
-        uint8_t* end;
-    };
-    struct CallContext {
+    struct CallContext : AsyncStreamSink, AsyncStreamSource, Completer<EndpointOperationResult> {
         size_t progress = 0;
-        size_t ep_num;
-        cbufptr_t tx_buf;
-        bufptr_t rx_buf;
-        LegacyFibreFunction* func;
-        Completer<CallResult>* completer;
+        size_t ep_num = 0;
+        bufptr_t rx_buf_ = {};
+        LegacyFibreFunction* func = nullptr;
+        Completer<WriteResult>* tx_completer_ = nullptr;
+        Completer<ReadResult>* rx_completer_ = nullptr;
+        Completer<FibreStatus>* completer_ = nullptr;
+        EndpointOperationHandle op_handle_ = 0;
+        LegacyProtocolPacketBased* protocol_ = nullptr;
+        bool cancelling_ = false;
+
+        void start_write(cbufptr_t buffer, TransferHandle* handle, Completer<WriteResult>& completer) final;
+        void cancel_write(TransferHandle transfer_handle) final;
+        void start_read(bufptr_t buffer, TransferHandle* handle, Completer<ReadResult>& completer) final;
+        void cancel_read(TransferHandle transfer_handle) final;
+
+        void complete(EndpointOperationResult result);
+        void complete_call(FibreStatus result);
     };
 
     LegacyObjectClient(LegacyProtocolPacketBased* protocol) : protocol_(protocol) {}
 
     void start(Completer<LegacyObjectClient*, std::shared_ptr<LegacyObject>>& on_found_root_object, Completer<LegacyObjectClient*>& on_lost_root_object);
 
-    void start_call(size_t ep_num, LegacyFibreFunction* func, cbufptr_t input, bufptr_t output, CallContext** handle, Completer<CallResult>& completer);
+    void start_call(size_t ep_num, LegacyFibreFunction* func, CallContext** handle, Completer<FibreStatus>& completer);
     void cancel_call(CallContext* handle);
 
     // For direct access by LegacyProtocolPacketBased and libfibre.cpp
@@ -96,7 +105,6 @@ private:
     uint8_t tx_buf_[4] = {0xff, 0xff, 0xff, 0xff};
     EndpointOperationHandle op_handle_ = 0;
     std::vector<uint8_t> json_;
-    CallContext* call_ = nullptr; // active call
     std::vector<CallContext*> pending_calls_;
     std::unordered_map<std::string, std::shared_ptr<FibreInterface>> rw_property_interfaces;
     std::unordered_map<std::string, std::shared_ptr<FibreInterface>> ro_property_interfaces;

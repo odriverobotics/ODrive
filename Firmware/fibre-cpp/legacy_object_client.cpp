@@ -177,8 +177,8 @@ std::unordered_map<std::string, size_t> codecs = {
     {"uint16", 2},
     {"int32", 4},
     {"uint32", 4},
-    {"int64", 6},
-    {"uint64", 6},
+    {"int64", 8},
+    {"uint64", 8},
     {"float", 4},
     {"endpoint_ref", 4}
 };
@@ -226,37 +226,24 @@ void LegacyObjectClient::start(Completer<LegacyObjectClient*, std::shared_ptr<Le
     receive_more_json();
 }
 
-void LegacyObjectClient::start_call(size_t ep_num, LegacyFibreFunction* func, cbufptr_t input, bufptr_t output, CallContext** handle, Completer<CallResult>& completer) {
+void LegacyObjectClient::start_call(size_t ep_num, LegacyFibreFunction* func, CallContext** handle, Completer<FibreStatus>& completer) {
     CallContext* call = new CallContext();
     call->ep_num = ep_num;
-    call->tx_buf = input;
-    call->rx_buf = output;
     call->func = func;
-    call->completer = &completer;
-
-    if (op_handle_) {
-        FIBRE_LOG(D) << "Call in progress. Enqueuing this call.";
-        // An operation is already in progress. Enqueue this one.
-        pending_calls_.push_back(call);
-    } else {
-        // No endpoint operation is in progress. Start this call immediately
-        FIBRE_LOG(D) << "No call in progress. Starting call now.";
-        call_ = call;
-        complete({kStreamOk, nullptr});
+    call->protocol_ = protocol_;
+    call->completer_ = &completer;
+    
+    if (handle) {
+        *handle = call;
     }
 }
 
 void LegacyObjectClient::cancel_call(CallContext* handle) {
-    if (call_ == handle) {
-        protocol_->cancel_endpoint_operation(op_handle_);
+    if (handle->op_handle_) {
+        handle->protocol_->cancel_endpoint_operation(op_handle_);
+        handle->cancelling_ = true;
     } else {
-        auto it = std::find(pending_calls_.begin(), pending_calls_.end(), handle);
-        if (it != pending_calls_.end()) {
-            CallContext* call = *it;
-            pending_calls_.erase(it);
-            safe_complete(call->completer, {kFibreCancelled, call->rx_buf.end()});
-            delete call;
-        }
+        handle->complete_call(kFibreCancelled);
     }
 }
 
@@ -366,118 +353,197 @@ void LegacyObjectClient::receive_more_json() {
 }
 
 void LegacyObjectClient::complete(EndpointOperationResult result) {
+    // The JSON read operation completed
+
     op_handle_ = 0;
 
     if (result.status == kStreamCancelled) {
-        if (call_) {
-            auto call = call_;
-            call_ = nullptr;
-            safe_complete(call->completer, {kFibreCancelled, call->rx_buf.end()});
-            delete call;
-        }
         return;
     } else if (result.status == kStreamClosed) {
-        if (call_) {
-            auto call = call_;
-            call_ = nullptr;
-            safe_complete(call->completer, {kFibreClosed, call->rx_buf.end()});
-            delete call;
-        }
         return;
     } else if (result.status != kStreamOk) {
-        FIBRE_LOG(W) << "endpoint operation failed"; // TODO: add retry logic
-        if (call_) {
-            auto call = call_;
-            call_ = nullptr;
-            safe_complete(call->completer, {kFibreInternalError, call->rx_buf.end()});
-            delete call;
-        }
+        FIBRE_LOG(W) << "JSON read operation failed"; // TODO: add retry logic
         return;
     }
 
-    if (call_) {
-        // The endpoint operation that completed belongs to the active call
+    size_t n_received = result.rx_end - json_.data() - json_.size() + 1024;
+    json_.resize(json_.size() - 1024 + n_received);
 
-        LegacyFibreFunction* func = call_->func;
+    if (n_received) {
+        receive_more_json();
 
-        if (call_->ep_num && !call_->progress) {
-            // Read/write/exchange property
-            FIBRE_LOG(D) << "starting property transaction on " << call_->ep_num << " with tx buf len " << call_->tx_buf.size() << " and rx len " << call_->rx_buf.size();
-            call_->progress++;
-            protocol_->start_endpoint_operation(call_->ep_num, call_->tx_buf, call_->rx_buf, &op_handle_, *this);
+    } else {
 
-        } else if (!call_->ep_num && call_->progress < func->inputs.size()) {
-            // Write input arg
-            size_t argnum = call_->progress;
-            call_->progress++;
-            cbufptr_t current_buf = call_->tx_buf.take(func->inputs[argnum].size);
-            call_->tx_buf = call_->tx_buf.skip(func->inputs[argnum].size);
-            protocol_->start_endpoint_operation(func->inputs[argnum].ep_num, current_buf, call_->rx_buf.take(0), &op_handle_, *this);
+        FIBRE_LOG(D) << "received JSON of length " << json_.size();
+        //FIBRE_LOG(D) << "JSON: " << str{json_.data(), json_.data() + json_.size()};
 
-        } else if (!call_->ep_num && call_->progress == func->inputs.size()) {
-            // Trigger
-            // call_->tx_buf should be empty by now
-            call_->progress++;
-            protocol_->start_endpoint_operation(func->ep_num, call_->tx_buf, call_->rx_buf.take(0), &op_handle_, *this);
+        const char *begin = reinterpret_cast<const char*>(json_.data());
+        auto val = json_parse(&begin, begin + json_.size());
 
-        } else if (!call_->ep_num && call_->progress < func->inputs.size() + 1 + func->outputs.size()) {
-            // Read output arg
-            size_t argnum = call_->progress - func->inputs.size() - 1;
-            call_->progress++;
-            bufptr_t current_buf = call_->rx_buf.take(func->outputs[argnum].size);
-            call_->rx_buf = call_->rx_buf.skip(func->outputs[argnum].size);
-            protocol_->start_endpoint_operation(func->outputs[argnum].ep_num, call_->tx_buf, current_buf, &op_handle_, *this);
+        if (json_is_err(val)) {
+            size_t pos = json_as_err(val).ptr - reinterpret_cast<const char*>(json_.data());
+            FIBRE_LOG(E) << "JSON parsing error: " << json_as_err(val).str << " at position " << pos;
+            return;
+        } else if (!json_is_list(val)) {
+            FIBRE_LOG(E) << "JSON data must be a list";
+            return;
+        }
 
+        FIBRE_LOG(D) << "sucessfully parsed JSON";
+        root_obj_ = load_object(val);
+        json_crc_ = calc_crc16<CANONICAL_CRC16_POLYNOMIAL>(PROTOCOL_VERSION, json_.data(), json_.size());
+        if (root_obj_) {
+            safe_complete(on_found_root_object_, this, root_obj_);
+        }
+    }
+}
+
+void LegacyObjectClient::CallContext::start_write(cbufptr_t buffer, TransferHandle* handle, Completer<WriteResult>& completer) {
+    if (tx_completer_) {
+        FIBRE_LOG(W) << "TX operation already in progress";
+        completer.complete({kStreamError, buffer.begin()});
+        return;
+    }
+
+    tx_completer_ = &completer;
+
+    if (handle) {
+        *handle = reinterpret_cast<uintptr_t>(this);
+    }
+
+    if (ep_num) {
+        // Single-endpoint function
+        if (progress == 0) {
+            protocol_->start_endpoint_operation(ep_num, buffer, rx_buf_, &op_handle_, *this);
         } else {
-            CallContext* call = call_;
-            call_ = nullptr;
-            FIBRE_LOG(D) << "call completed!";
-            safe_complete(call->completer, {kFibreOk, call->rx_buf.end()});
-            delete call;
+            safe_complete(tx_completer_, {kStreamClosed, buffer.begin()});
         }
 
     } else {
-        // The endpoint operation that completed belongs to the JSON fetch process
-
-        size_t n_received = result.rx_end - json_.data() - json_.size() + 1024;
-        json_.resize(json_.size() - 1024 + n_received);
-
-        if (n_received) {
-            receive_more_json();
-            return;
-
+        // Multi-endpoint function (deprecated)
+        if (progress < func->inputs.size()) {
+            // Write input arg
+            size_t argnum = progress;
+            if (buffer.size() < func->inputs[argnum].size) {
+                FIBRE_LOG(W) << "TX granularity too small";
+                safe_complete(tx_completer_, {kStreamError, buffer.begin()});
+            } else {
+                protocol_->start_endpoint_operation(func->inputs[argnum].ep_num,
+                    buffer.take(func->inputs[argnum].size), {}, &op_handle_, *this);
+            }
+        } else if (progress == func->inputs.size()) {
+            // Trigger function
+            protocol_->start_endpoint_operation(func->ep_num, buffer.take(0), {}, &op_handle_, *this);
         } else {
-
-            FIBRE_LOG(D) << "received JSON of length " << json_.size();
-            //FIBRE_LOG(D) << "JSON: " << str{json_.data(), json_.data() + json_.size()};
-
-            const char *begin = reinterpret_cast<const char*>(json_.data());
-            auto val = json_parse(&begin, begin + json_.size());
-
-            if (json_is_err(val)) {
-                size_t pos = json_as_err(val).ptr - reinterpret_cast<const char*>(json_.data());
-                FIBRE_LOG(E) << "JSON parsing error: " << json_as_err(val).str << " at position " << pos;
-                return;
-            } else if (!json_is_list(val)) {
-                FIBRE_LOG(E) << "JSON data must be a list";
-                return;
-            }
-
-            FIBRE_LOG(D) << "sucessfully parsed JSON";
-            root_obj_ = load_object(val);
-            json_crc_ = calc_crc16<CANONICAL_CRC16_POLYNOMIAL>(PROTOCOL_VERSION, json_.data(), json_.size());
-            if (root_obj_) {
-                safe_complete(on_found_root_object_, this, root_obj_);
-            }
+            safe_complete(tx_completer_, {kStreamClosed, buffer.begin()});
         }
     }
+}
 
-    // Start next call in the queue if any
-    // It's possible that the next function call was already started on one of
-    // the callbacks above.
-    if (!call_ && pending_calls_.size()) {
-        call_ = pending_calls_[0];
-        pending_calls_.erase(pending_calls_.begin());
-        complete({kStreamOk, nullptr});
+void LegacyObjectClient::CallContext::cancel_write(TransferHandle transfer_handle) {
+    // not implemented
+}
+
+void LegacyObjectClient::CallContext::start_read(bufptr_t buffer, TransferHandle* handle, Completer<ReadResult>& completer) {
+    if (rx_completer_) {
+        FIBRE_LOG(W) << "RX operation already in progress";
+        completer.complete({kStreamError, buffer.begin()});
+        return;
     }
+
+    rx_completer_ = &completer;
+
+    if (handle) {
+        *handle = reinterpret_cast<uintptr_t>(this);
+    }
+
+    if (ep_num) {
+        // Single-endpoint function
+        if (progress == 0 && !op_handle_) {
+            // Transfer has not yet started. Prepare RX buffer for when it starts.
+            rx_buf_ = buffer;
+        } else {
+            // Transfer has already started or completed. Cannot start RX anymore.
+            safe_complete(rx_completer_, {kStreamClosed, buffer.begin()});
+        }
+
+    } else {
+        // Multi-endpoint function (deprecated)
+        if (progress <= func->inputs.size()) {
+            // Not yet in the receive phase. Store the RX pointer for later use.
+            rx_buf_ = buffer;
+        } else if (progress < func->inputs.size() + 1 + func->outputs.size()) {
+            // Read output arg
+            size_t argnum = progress - func->inputs.size() - 1;
+            if (buffer.size() < func->outputs[argnum].size) {
+                FIBRE_LOG(W) << "RX granularity too small";
+                safe_complete(rx_completer_, {kStreamError, buffer.begin()});
+            } else {
+                protocol_->start_endpoint_operation(func->inputs[argnum].ep_num,
+                    {}, buffer.take(func->outputs[argnum].size), &op_handle_, *this);
+            }
+        } else {
+            safe_complete(rx_completer_, {kStreamClosed, buffer.begin()});
+        }
+    }
+}
+
+void LegacyObjectClient::CallContext::cancel_read(TransferHandle transfer_handle) {
+    // not implemented
+}
+
+void LegacyObjectClient::CallContext::complete(EndpointOperationResult result) {
+    if (result.status == kStreamCancelled || (result.status == kStreamOk && cancelling_)) {
+        safe_complete(tx_completer_, {kStreamCancelled, result.tx_end});
+        safe_complete(rx_completer_, {kStreamCancelled, result.rx_end});
+        complete_call(kFibreCancelled);
+        return;
+    } else if (result.status == kStreamClosed) {
+        safe_complete(tx_completer_, {kStreamClosed, result.tx_end});
+        safe_complete(rx_completer_, {kStreamClosed, result.rx_end});
+        complete_call(kFibreClosed);
+        return;
+    } else if (result.status != kStreamOk) {
+        FIBRE_LOG(W) << "endpoint operation failed"; // TODO: add retry logic
+        safe_complete(tx_completer_, {kStreamError, result.tx_end});
+        safe_complete(rx_completer_, {kStreamError, result.rx_end});
+        complete_call(kFibreInternalError);
+        return;
+    }
+
+    progress++;
+
+    if (ep_num) {
+        // Single-endpoint function
+        if (progress == 1) {
+            safe_complete(tx_completer_, {kStreamClosed, result.tx_end});
+            safe_complete(rx_completer_, {kStreamClosed, result.rx_end});
+            complete_call(kFibreOk);
+        }
+
+    } else {
+        // Multi-endpoint function (deprecated)
+
+        if (progress < func->inputs.size() + 1) {
+            safe_complete(tx_completer_, {kStreamOk, result.tx_end});
+        } else if (progress == func->inputs.size() + 1) {
+            safe_complete(tx_completer_, {kStreamClosed, result.tx_end});
+            // If the application already prepared an RX operation complete this
+            // operation with length 0 to make the application restart this
+            // operation.
+            safe_complete(rx_completer_, {kStreamOk, rx_buf_.begin()});
+        } else if (progress < func->inputs.size() + 1 + func->outputs.size()) {
+            safe_complete(rx_completer_, {kStreamOk, result.rx_end});
+        } else if (progress == func->inputs.size() + 1 + func->outputs.size()) {
+            safe_complete(rx_completer_, {kStreamClosed, result.rx_end});
+            complete_call(kFibreOk);
+        } else {
+            FIBRE_LOG(W) << "progress is further than expected";
+        }
+    }
+}
+
+void LegacyObjectClient::CallContext::complete_call(FibreStatus result) {
+    safe_complete(completer_, result);
+    delete this;
 }

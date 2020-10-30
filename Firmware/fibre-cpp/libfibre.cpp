@@ -1,14 +1,18 @@
 
 #include <fibre/libfibre.h>
-#include "platform_support/libusb_transport.hpp"
 #include "logging.hpp"
 #include "print_utils.hpp"
 #include "legacy_protocol.hpp"
 #include "legacy_object_client.hpp"
-#include "stdio.h" // TODO: remove
+#include "event_loop.hpp"
+#include "channel_discoverer.hpp"
 #include "string.h"
 #include <algorithm>
 #include "fibre/simple_serdes.hpp"
+
+#ifdef FIBRE_ENABLE_LIBUSB
+#include "platform_support/libusb_transport.hpp"
+#endif
 
 DEFINE_LOG_TOPIC(LIBFIBRE);
 USE_LOG_TOPIC(LIBFIBRE);
@@ -56,13 +60,95 @@ private:
     cancel_timer_cb_t cancel_timer_;
 };
 
+namespace fibre {
+
+class AsyncStreamLink : public AsyncStreamSink, public AsyncStreamSource {
+public:
+    void start_write(cbufptr_t buffer, TransferHandle* handle, Completer<WriteResult>& completer) final;
+    void cancel_write(TransferHandle transfer_handle) final;
+    void start_read(bufptr_t buffer, TransferHandle* handle, Completer<ReadResult>& completer) final;
+    void cancel_read(TransferHandle transfer_handle) final;
+    void close(StreamStatus status);
+
+    Completer<ReadResult>* read_completer_ = nullptr;
+    bufptr_t read_buf_;
+    Completer<WriteResult>* write_completer_ = nullptr;
+    cbufptr_t write_buf_;
+};
+
+void AsyncStreamLink::start_write(cbufptr_t buffer, TransferHandle* handle, Completer<WriteResult>& completer) {
+    if (read_completer_) {
+        size_t n_copy = std::min(read_buf_.size(), buffer.size());
+        memcpy(read_buf_.begin(), buffer.begin(), n_copy);
+        safe_complete(read_completer_, {kStreamOk, read_buf_.begin() + n_copy});
+        completer.complete({kStreamOk, buffer.begin() + n_copy});
+    } else {
+        if (handle) {
+            *handle = reinterpret_cast<uintptr_t>(this);
+        }
+        write_buf_ = buffer;
+        write_completer_ = &completer;
+    }
+}
+
+void AsyncStreamLink::cancel_write(TransferHandle transfer_handle) {
+    safe_complete(write_completer_, {kStreamCancelled, write_buf_.begin()});
+}
+
+void AsyncStreamLink::start_read(bufptr_t buffer, TransferHandle* handle, Completer<ReadResult>& completer) {
+    if (write_completer_) {
+        FIBRE_LOG(W) << "start_read: completing writer";
+        size_t n_copy = std::min(buffer.size(), write_buf_.size());
+        memcpy(buffer.begin(), write_buf_.begin(), n_copy);
+        safe_complete(write_completer_, {kStreamOk, write_buf_.begin() + n_copy});
+        completer.complete({kStreamOk, buffer.begin() + n_copy});
+    } else {
+        //FIBRE_LOG(W) << "start_read: waiting for writer";
+        if (handle) {
+            *handle = reinterpret_cast<uintptr_t>(this);
+        }
+        read_buf_ = buffer;
+        read_completer_ = &completer;
+    }
+}
+
+void AsyncStreamLink::cancel_read(TransferHandle transfer_handle) {
+    safe_complete(read_completer_, {kStreamCancelled, read_buf_.begin()});
+}
+
+void AsyncStreamLink::close(StreamStatus status) {
+    safe_complete(write_completer_, {status, write_buf_.begin()});
+    safe_complete(read_completer_, {status, read_buf_.begin()});
+}
+
+}
+
+FibreStatus convert_status(fibre::StreamStatus status) {
+    switch (status) {
+        case fibre::kStreamOk: return kFibreOk;
+        case fibre::kStreamCancelled: return kFibreCancelled;
+        case fibre::kStreamClosed: return kFibreClosed;
+        default: return kFibreInternalError; // TODO: this may not always be appropriate
+    }
+}
+
+fibre::StreamStatus convert_status(FibreStatus status) {
+    switch (status) {
+        case kFibreOk: return fibre::kStreamOk;
+        case kFibreCancelled: return fibre::kStreamCancelled;
+        case kFibreClosed: return fibre::kStreamClosed;
+        default: return fibre::kStreamError; // TODO: this may not always be appropriate
+    }
+}
+
 struct FIBRE_PRIVATE LibFibreCtx {
     ExternalEventLoop* event_loop;
     construct_object_cb_t on_construct_object;
     destroy_object_cb_t on_destroy_object;
     void* cb_ctx;
-    fibre::LibusbDiscoverer libusb_discoverer;
     size_t n_discoveries = 0;
+
+    std::unordered_map<std::string, std::shared_ptr<fibre::ChannelDiscoverer>> discoverers;
 };
 
 struct FIBRE_PRIVATE LibFibreDiscoveryCtx :
@@ -76,7 +162,8 @@ struct FIBRE_PRIVATE LibFibreDiscoveryCtx :
     void complete(fibre::LegacyObjectClient* obj_client) final;
     void complete(fibre::LegacyProtocolPacketBased* protocol, fibre::StreamStatus status) final;
 
-    fibre::LibusbDiscoverer::ChannelDiscoveryContext* libusb_discovery_ctx = nullptr;
+    std::unordered_map<std::string, fibre::ChannelDiscoveryContext*> context_handles;
+
     on_found_object_cb_t on_found_object;
     void* cb_ctx;
     LibFibreCtx* ctx;
@@ -87,6 +174,35 @@ struct FIBRE_PRIVATE LibFibreDiscoveryCtx :
     size_t use_count = 1;
 };
 
+struct LibFibreTxStream : fibre::Completer<fibre::WriteResult> {
+    void complete(fibre::WriteResult result) {
+        if (on_completed) {
+            (*on_completed)(ctx, this, convert_status(result.status), result.end);
+        }
+    }
+
+    fibre::AsyncStreamSink* sink;
+    fibre::TransferHandle handle;
+    on_tx_completed_cb_t on_completed;
+    void* ctx;
+    void (*on_closed)(LibFibreTxStream*, void*, fibre::StreamStatus);
+    void* on_closed_ctx;
+};
+
+struct LibFibreRxStream : fibre::Completer<fibre::ReadResult> {
+    void complete(fibre::ReadResult result) {
+        if (on_completed) {
+            (*on_completed)(ctx, this, convert_status(result.status), result.end);
+        }
+    }
+
+    fibre::AsyncStreamSource* source;
+    fibre::TransferHandle handle;
+    on_rx_completed_cb_t on_completed;
+    void* ctx;
+    void (*on_closed)(LibFibreRxStream*, void*, fibre::StreamStatus);
+    void* on_closed_ctx;
+};
 
 
 // Callback for start_channel_discovery()
@@ -103,11 +219,9 @@ void LibFibreDiscoveryCtx::complete(fibre::ChannelDiscoveryResult result) {
         return;
     }
 
-    const size_t mtu = 64; // TODO: get MTU from channel specific data
-
     use_count++;
 
-    auto protocol = new fibre::LegacyProtocolPacketBased(result.rx_channel, result.tx_channel, mtu);
+    auto protocol = new fibre::LegacyProtocolPacketBased(result.rx_channel, result.tx_channel, result.mtu);
     protocol->client_.user_data_ = ctx;
     protocol->start(*this, *this, *this);
 }
@@ -177,22 +291,26 @@ LibFibreCtx* libfibre_open(
         destroy_object_cb_t destroy_object,
         void* cb_ctx)
 {
-    if (!register_event || !deregister_event) {
-        FIBRE_LOG(E) << "invalid argument";
-        return nullptr;
-    }
-    
+    //if (!register_event || !deregister_event) {
+    //    FIBRE_LOG(E) << "invalid argument";
+    //    return nullptr;
+    //}
+    FIBRE_LOG(D) << "object constructor: " << reinterpret_cast<uintptr_t>(construct_object);
     LibFibreCtx* ctx = new LibFibreCtx();
     ctx->event_loop = new ExternalEventLoop(post, register_event, deregister_event, call_later, cancel_timer);
     ctx->on_construct_object = construct_object;
     ctx->on_destroy_object = destroy_object;
     ctx->cb_ctx = cb_ctx;
 
-    if (ctx->libusb_discoverer.init(ctx->event_loop) != 0) {
+#ifdef FIBRE_ENABLE_LIBUSB
+    auto libusb_discoverer = std::make_shared<fibre::LibusbDiscoverer>();
+    if (libusb_discoverer->init(ctx->event_loop) != 0) {
         delete ctx;
         FIBRE_LOG(E) << "failed to init libusb transport layer";
         return nullptr;
     }
+    ctx->discoverers["usb"] = libusb_discoverer;
+#endif
 
     FIBRE_LOG(D) << "opened (" << fibre::as_hex((uintptr_t)ctx) << ")";
     return ctx;
@@ -203,11 +321,97 @@ void libfibre_close(LibFibreCtx* ctx) {
         FIBRE_LOG(W) << "there are still discovery processes ongoing";
     }
 
-    ctx->libusb_discoverer.deinit();
+    ctx->discoverers.clear();
+
     delete ctx->event_loop;
     delete ctx;
 
     FIBRE_LOG(D) << "closed (" << fibre::as_hex((uintptr_t)ctx) << ")";
+}
+
+struct LibFibreChannelDiscoveryCtx : fibre::ChannelDiscoveryContext {
+    fibre::Completer<fibre::ChannelDiscoveryResult>* completer;
+};
+
+class ExternalDiscoverer : public fibre::ChannelDiscoverer {
+    void start_channel_discovery(
+        const char* specs, size_t specs_len,
+        fibre::ChannelDiscoveryContext** handle,
+        fibre::Completer<fibre::ChannelDiscoveryResult>& on_found_channels) final;
+    int stop_channel_discovery(fibre::ChannelDiscoveryContext* handle) final;
+public:
+    on_start_discovery_cb_t on_start_discovery;
+    on_stop_discovery_cb_t on_stop_discovery;
+    void* cb_ctx;
+};
+
+void ExternalDiscoverer::start_channel_discovery(const char* specs, size_t specs_len, fibre::ChannelDiscoveryContext** handle, fibre::Completer<fibre::ChannelDiscoveryResult>& on_found_channels) {
+    LibFibreChannelDiscoveryCtx* ctx = new LibFibreChannelDiscoveryCtx{};
+    ctx->completer = &on_found_channels;
+    if (handle) {
+        *handle = ctx;
+    }
+    if (on_start_discovery) {
+        (*on_start_discovery)(cb_ctx, ctx, specs, specs_len);
+    }
+}
+
+int ExternalDiscoverer::stop_channel_discovery(fibre::ChannelDiscoveryContext* handle) {
+    LibFibreChannelDiscoveryCtx* ctx = static_cast<LibFibreChannelDiscoveryCtx*>(handle);
+    if (on_stop_discovery) {
+        (*on_stop_discovery)(cb_ctx, ctx);
+    }
+    delete ctx;
+    return 0;
+}
+
+void libfibre_register_discoverer(LibFibreCtx* ctx, const char* name, size_t name_length, on_start_discovery_cb_t on_start_discovery, on_stop_discovery_cb_t on_stop_discovery, void* cb_ctx) {
+    std::string name_str = {name, name + name_length};
+    if (ctx->discoverers.find(name_str) != ctx->discoverers.end()) {
+        FIBRE_LOG(W) << "Discoverer " << name_str << " already registered";
+        return; // TODO: report status
+    }
+
+    auto disc = std::make_shared<ExternalDiscoverer>();
+    disc->on_start_discovery = on_start_discovery;
+    disc->on_stop_discovery = on_stop_discovery;
+    disc->cb_ctx = cb_ctx;
+    ctx->discoverers[name_str] = disc;
+}
+
+void libfibre_add_channels(LibFibreCtx* ctx, LibFibreChannelDiscoveryCtx* discovery_ctx, LibFibreRxStream** tx_channel, LibFibreTxStream** rx_channel, size_t mtu) {
+    fibre::AsyncStreamLink* tx_link = new fibre::AsyncStreamLink();
+    fibre::AsyncStreamLink* rx_link = new fibre::AsyncStreamLink();
+    LibFibreRxStream* tx = new LibFibreRxStream();
+    LibFibreTxStream* rx = new LibFibreTxStream();
+    tx->source = tx_link;
+    rx->sink = rx_link;
+
+    tx->on_closed = [](LibFibreRxStream* stream, void* ctx, fibre::StreamStatus status) {
+        auto link = reinterpret_cast<fibre::AsyncStreamLink*>(ctx);
+        link->close(status);
+        delete link;
+        delete stream;
+    };
+    tx->on_closed_ctx = tx_link;
+    rx->on_closed = [](LibFibreTxStream* stream, void* ctx, fibre::StreamStatus status) {
+        auto link = reinterpret_cast<fibre::AsyncStreamLink*>(ctx);
+        link->close(status);
+        delete link;
+        delete stream;
+    };
+    rx->on_closed_ctx = rx_link;
+
+    if (tx_channel) {
+        *tx_channel = tx;
+    }
+
+    if (rx_channel) {
+        *rx_channel = rx;
+    }
+
+    fibre::ChannelDiscoveryResult result = {kFibreOk, rx_link, tx_link, mtu};
+    discovery_ctx->completer->complete(result);
 }
 
 void libfibre_start_discovery(LibFibreCtx* ctx, const char* specs, size_t specs_len, struct LibFibreDiscoveryCtx** handle,
@@ -237,12 +441,16 @@ void libfibre_start_discovery(LibFibreCtx* ctx, const char* specs, size_t specs_
         const char* next_delim = std::find(prev_delim, specs + specs_len, ';');
         const char* colon = std::find(prev_delim, next_delim, ':');
         const char* colon_end = std::min(colon + 1, next_delim);
-        
-        if ((colon - prev_delim) == strlen("usb") && std::equal(prev_delim, colon, "usb")) {
-            ctx->libusb_discoverer.start_channel_discovery(colon_end, next_delim - colon_end,
-                    &discovery_ctx->libusb_discovery_ctx, *discovery_ctx);
+
+        std::string name{prev_delim, colon};
+        auto it = ctx->discoverers.find(name);
+
+        if (it == ctx->discoverers.end()) {
+            FIBRE_LOG(W) << "transport layer \"" << name << "\" not implemented";
         } else {
-            FIBRE_LOG(W) << "transport layer \"" << std::string(prev_delim, colon - prev_delim) << "\" not implemented";
+            discovery_ctx->context_handles[name] = nullptr;
+            it->second->start_channel_discovery(colon_end, next_delim - colon_end,
+                    &discovery_ctx->context_handles[name], *discovery_ctx);
         }
 
         prev_delim = std::min(next_delim + 1, specs + specs_len);
@@ -258,10 +466,10 @@ void libfibre_stop_discovery(LibFibreCtx* ctx, LibFibreDiscoveryCtx* discovery_c
         ctx->n_discoveries--;
     }
 
-    if (discovery_ctx->libusb_discovery_ctx) {
-        // TODO: implement "stopped" callback
-        ctx->libusb_discoverer.stop_channel_discovery(discovery_ctx->libusb_discovery_ctx);
+    for (auto& it: discovery_ctx->context_handles) {
+        ctx->discoverers[it.first]->stop_channel_discovery(it.second);
     }
+    discovery_ctx->context_handles.clear();
 
     if (--discovery_ctx->use_count == 0) {
         FIBRE_LOG(D) << "deleting discovery context";
@@ -379,93 +587,62 @@ void resize_at(std::vector<uint8_t>& vec, size_t pos, ssize_t delta) {
     }
 }
 
-void transcode(fibre::LegacyObjectClient* client, std::vector<uint8_t>& buffer, const std::vector<fibre::LegacyFibreArg>& args, bool to) {
-    size_t offset = 0;
+class ArgEncoder : public fibre::AsyncStreamSink, fibre::Completer<fibre::WriteResult> {
+    void start_write(fibre::cbufptr_t buffer, fibre::TransferHandle* handle, Completer<fibre::WriteResult>& completer) final;
+    void cancel_write(fibre::TransferHandle transfer_handle) final;
+    void complete(fibre::WriteResult result) final;
 
-    for (auto& arg: args) {
-        if (to && arg.codec == "endpoint_ref") {
-            fibre::cbufptr_t orig_range = fibre::cbufptr_t{buffer}.skip(offset).take(sizeof(uintptr_t));
+public:
+    LibFibreCallContext* call_ = nullptr;
+    fibre::AsyncStreamSink* encoded_stream_ = nullptr;
+    fibre::cbufptr_t decoded_buf_; // application-owned buffer
+    std::vector<uint8_t> encoded_buf_; // libfibre-owned buffer used after transcoding from application buffer
+    size_t encoded_offset_ = 0; // offset in the TX stream after transcoding from application-facing format
+    fibre::TransferHandle transfer_handle_ = 0;
+    fibre::Completer<fibre::WriteResult>* completer_ = nullptr;
+};
 
-            uintptr_t val = *reinterpret_cast<const uintptr_t*>(orig_range.begin());
+class ArgDecoder : public fibre::AsyncStreamSource, fibre::Completer<fibre::ReadResult> {
+    void start_read(fibre::bufptr_t buffer, fibre::TransferHandle* handle, Completer<fibre::ReadResult>& completer) final;
+    void cancel_read(fibre::TransferHandle transfer_handle) final;
+    void complete(fibre::ReadResult result) final;
 
-            resize_at(buffer, offset, (ssize_t)4 - (ssize_t)sizeof(uintptr_t));
-            fibre::bufptr_t transcoded_range = fibre::bufptr_t{buffer}.skip(offset).take(4);
+public:
+    LibFibreCallContext* call_ = nullptr;
+    fibre::AsyncStreamSource* encoded_stream_ = nullptr;
+    fibre::bufptr_t decoded_buf_; // application-owned buffer
+    std::vector<uint8_t> encoded_buf_; // libfibre-owned buffer used before transcoding to application buffer
+    size_t encoded_offset_ = 0; // offset in the RX stream before transcoding to application-facing format
+    fibre::TransferHandle transfer_handle_ = 0;
+    fibre::Completer<fibre::ReadResult>* completer_ = nullptr;
+};
 
-            auto obj = reinterpret_cast<fibre::LegacyObject*>(val);
-            write_le<uint16_t>(obj ? obj->ep_num : 0, &transcoded_range);
-            write_le<uint16_t>(obj ? obj->client->json_crc_ : 0, &transcoded_range);
+struct FIBRE_PRIVATE LibFibreCallContext : fibre::Completer<FibreStatus> {
+    void complete(FibreStatus status) final;
 
-            offset += 4;
+    template<typename Func>
+    bool iterate_over_args_at(size_t encoded_offset, size_t max_encoded_length, size_t max_decoded_length, Func visitor);
 
-        } else if (!to && arg.codec == "endpoint_ref") {
-            fibre::cbufptr_t orig_range = fibre::cbufptr_t{buffer}.skip(offset).take(4);
-
-            uint16_t ep_num = *read_le<uint16_t>(&orig_range);
-            uint16_t json_crc = *read_le<uint16_t>(&orig_range);
-
-            resize_at(buffer, offset, (ssize_t)sizeof(uintptr_t) - (ssize_t)4);
-            fibre::bufptr_t transcoded_range = fibre::bufptr_t{buffer}.skip(offset).take(sizeof(uintptr_t));
-
-            fibre::LegacyObject* obj_ptr = nullptr;
-
-            if (ep_num && json_crc == client->json_crc_) {
-                for (auto& known_obj: client->objects_) {
-                    if (known_obj->ep_num == ep_num) {
-                        obj_ptr = known_obj.get();
-                    }
-                }
-            }
-
-            FIBRE_LOG(D) << "placing transcoded ptr " << reinterpret_cast<uintptr_t>(obj_ptr);
-            *reinterpret_cast<uintptr_t*>(transcoded_range.begin()) = reinterpret_cast<uintptr_t>(obj_ptr);
-
-            offset += sizeof(uintptr_t);
-
-        } else {
-            offset += arg.size;
-        }
-    }
-}
-
-struct FIBRE_PRIVATE LibFibreCallContext : fibre::Completer<fibre::LegacyObjectClient::CallResult> {
-    void complete(fibre::LegacyObjectClient::CallResult output) final {
-
-        FIBRE_LOG(D) << "received " << (output.end - rx_vec.data()) << " bytes ";
-
-        // Prune vector to the end of valid data
-        rx_vec.erase(rx_vec.begin() + (output.end - rx_vec.data()), rx_vec.end());
-
-        transcode(obj->client, rx_vec, func->outputs, false);
-
-        size_t len = std::min(rx_vec.size(), rx_buf.size());
-        std::copy(rx_vec.begin(), rx_vec.begin() + len, rx_buf.begin());
-        FIBRE_LOG(D) << "result is [" << as_hex(rx_buf) << "]";
-
-        if (on_completed) {
-            (*on_completed)(ctx, output.status, rx_buf.begin() + len);
-        }
-        delete this;
-    }
-
+    uint8_t n_active_transfers = 0;
     fibre::LegacyObject* obj = nullptr;
     fibre::LegacyFibreFunction* func = nullptr;
-    void (*on_completed)(void*, FibreStatus, uint8_t*);
-    void* ctx;
-    fibre::cbufptr_t tx_buf; // application-owned buffer
-    fibre::bufptr_t rx_buf; // application-owned buffer
-    std::vector<uint8_t> tx_vec; // libfibre-owned buffer used after transcoding from application buffer
-    std::vector<uint8_t> rx_vec; // libfibre-owned buffer used before transcoding to application buffer
-    fibre::LegacyObjectClient::CallContext* handle;
+    on_call_completed_cb_t on_call_completed_ = nullptr;
+    void* call_cb_ctx_ = nullptr;
+    fibre::LegacyObjectClient::CallContext* handle_ = nullptr;
+    LibFibreTxStream tx_stream_;
+    LibFibreRxStream rx_stream_;
+    ArgDecoder decoder_;
+    ArgEncoder encoder_;
 };
 
 void libfibre_start_call(LibFibreObject* obj, LibFibreFunction* func,
-                         const uint8_t *input, size_t input_length,
-                         uint8_t *output, size_t output_length,
                          LibFibreCallContext** handle,
+                         LibFibreTxStream** tx_stream,
+                         LibFibreRxStream** rx_stream,
                          on_call_completed_cb_t on_completed, void* cb_ctx) {
-    if (!obj || !func || !input || !output) {
+    if (!obj || !func) {
         if (on_completed) {
-            (*on_completed)(cb_ctx, kFibreInvalidArgument, output);
+            (*on_completed)(cb_ctx, kFibreInvalidArgument);
         }
         return;
     }
@@ -481,43 +658,316 @@ void libfibre_start_call(LibFibreObject* obj, LibFibreFunction* func,
     if (!is_member) {
         FIBRE_LOG(W) << "attempt to invoke function on an object that does not implement it";
         if (on_completed) {
-            (*on_completed)(cb_ctx, kFibreInvalidArgument, output);
+            (*on_completed)(cb_ctx, kFibreInvalidArgument);
         }
         return;
     }
-
-    std::vector<uint8_t> tx_vec;
-    tx_vec.insert(tx_vec.begin(), input, input + input_length);
 
 
     auto completer = new LibFibreCallContext();
     completer->obj = obj_cast;
     completer->func = func_cast;
-    completer->on_completed = on_completed;
-    completer->ctx = cb_ctx;
-    completer->tx_buf = fibre::cbufptr_t{input, input + input_length};
-    completer->rx_buf = fibre::bufptr_t{output, output + output_length};
-
-    completer->tx_vec.insert(completer->tx_vec.begin(), completer->tx_buf.begin(), completer->tx_buf.end());
-    transcode(obj_cast->client, completer->tx_vec, func_cast->inputs, true);
-
-    size_t output_size = 0;
-    for (auto& arg: func_cast->outputs)
-        output_size += arg.size;
-    FIBRE_LOG(D) << "sizing output to " << output_size;
-    completer->rx_vec.resize(output_size);
+    completer->on_call_completed_ = on_completed;
+    completer->call_cb_ctx_ = cb_ctx;
+    completer->encoder_.call_ = completer;
+    completer->decoder_.call_ = completer;
+    completer->tx_stream_.sink = &completer->encoder_;
+    completer->rx_stream_.source = &completer->decoder_;
 
     if (handle) {
         *handle = completer;
     }
+    if (tx_stream) {
+        *tx_stream = &completer->tx_stream_;
+    }
+    if (rx_stream) {
+        *rx_stream = &completer->rx_stream_;
+    }
 
     obj_cast->client->start_call(obj_cast->ep_num, func_cast,
-        fibre::cbufptr_t{completer->tx_vec}, fibre::bufptr_t{completer->rx_vec},
-        &completer->handle, *completer);
+        &completer->handle_, *completer);
+        
+    completer->encoder_.encoded_stream_ = completer->handle_;
+    completer->decoder_.encoded_stream_ = completer->handle_;
 }
 
-void libfibre_cancel_call(LibFibreCallContext* handle) {
-    if (handle && handle->on_completed) {
-        handle->obj->client->cancel_call(handle->handle);
+void libfibre_end_call(LibFibreCallContext* handle) {
+    if (handle) {
+        handle->obj->client->cancel_call(handle->handle_);
     }
+}
+
+void LibFibreCallContext::complete(FibreStatus status) {
+    if (on_call_completed_) {
+        (*on_call_completed_)(call_cb_ctx_, status);
+    }
+    delete this;
+}
+
+bool encode_for_transport(fibre::LegacyObjectClient* client, fibre::cbufptr_t src, fibre::bufptr_t dst, const fibre::LegacyFibreArg& arg) {
+    if (arg.codec == "endpoint_ref") {
+        if (src.size() < sizeof(uintptr_t) || dst.size() < 4) {
+            return false;
+        }
+
+        uintptr_t val = *reinterpret_cast<const uintptr_t*>(src.begin());
+        auto obj = reinterpret_cast<fibre::LegacyObject*>(val);
+        write_le<uint16_t>(obj ? obj->ep_num : 0, &dst);
+        write_le<uint16_t>(obj ? obj->client->json_crc_ : 0, &dst);
+    } else {
+        if (src.size() < arg.size || dst.size() < arg.size) {
+            return false;
+        }
+
+        memcpy(dst.begin(), src.begin(), arg.size);
+    }
+
+    return true;
+}
+
+bool decode_from_transport(fibre::LegacyObjectClient* client, fibre::cbufptr_t src, fibre::bufptr_t dst, const fibre::LegacyFibreArg& arg) {
+    if (arg.codec == "endpoint_ref") {
+        if (src.size() < 4 || dst.size() < sizeof(uintptr_t)) {
+            return false;
+        }
+
+        uint16_t ep_num = *read_le<uint16_t>(&src);
+        uint16_t json_crc = *read_le<uint16_t>(&src);
+
+        fibre::LegacyObject* obj_ptr = nullptr;
+
+        if (ep_num && json_crc == client->json_crc_) {
+            for (auto& known_obj: client->objects_) {
+                if (known_obj->ep_num == ep_num) {
+                    obj_ptr = known_obj.get();
+                }
+            }
+        }
+
+        FIBRE_LOG(D) << "placing transcoded ptr " << reinterpret_cast<uintptr_t>(obj_ptr);
+        *reinterpret_cast<uintptr_t*>(dst.begin()) = reinterpret_cast<uintptr_t>(obj_ptr);
+
+    } else {
+        if (src.size() < arg.size || dst.size() < arg.size) {
+            return false;
+        }
+
+        memcpy(dst.begin(), src.begin(), arg.size);
+    }
+
+    return true;
+}
+
+/**
+ * @brief func: A functor that takes these arguments:
+ *              - size_t rel_encoded_offset (relative to the starting pos described by encoded_offset)
+ *              - size_t rel_decoded_offset (relative to the starting pos described by encoded_offset)
+ *              - size_t encoded_length
+ *              - size_t decoded_length
+ */
+template<typename Func>
+bool LibFibreCallContext::iterate_over_args_at(size_t encoded_offset, size_t max_encoded_length, size_t max_decoded_length, Func visitor) {
+    ssize_t arg_offset = 0;
+    ssize_t len_diff = 0;
+
+    for (auto& arg: func->outputs) {
+        if (arg.size >= SIZE_MAX || arg_offset + arg.size > encoded_offset) {
+            ssize_t rel_encoded_offset = arg_offset - (ssize_t)encoded_offset;
+            ssize_t rel_decoded_offset = arg_offset - (ssize_t)encoded_offset - len_diff;
+
+            if (rel_decoded_offset >= max_decoded_length || rel_encoded_offset >= max_encoded_length) {
+                break;
+            }
+
+            size_t encoded_arg_size = arg.size;
+            size_t decoded_arg_size = arg.codec == "endpoint_ref" ? sizeof(uintptr_t) : arg.size;
+            len_diff += encoded_arg_size - decoded_arg_size;
+
+            if (rel_encoded_offset < 0) {
+                encoded_arg_size += rel_encoded_offset;
+            }
+
+            if (rel_decoded_offset < 0) {
+                decoded_arg_size += rel_decoded_offset;
+            }
+
+            if (encoded_arg_size < SIZE_MAX && rel_encoded_offset + encoded_arg_size > max_encoded_length) {
+                encoded_arg_size -= rel_encoded_offset + encoded_arg_size - max_encoded_length;
+            }
+
+            if (decoded_arg_size < SIZE_MAX && rel_decoded_offset + decoded_arg_size > max_decoded_length) {
+                decoded_arg_size -= rel_decoded_offset + decoded_arg_size - max_decoded_length;
+            }
+
+            if (!visitor(arg, rel_encoded_offset, rel_decoded_offset, encoded_arg_size, decoded_arg_size)) {
+                return false;
+            }
+        }
+
+        arg_offset += arg.size;
+    }
+
+    return true;
+}
+
+void libfibre_start_tx(LibFibreTxStream* tx_stream,
+        const uint8_t* tx_buf, size_t tx_len, on_tx_completed_cb_t on_completed,
+        void* ctx) {
+    tx_stream->on_completed = on_completed;
+    tx_stream->ctx = ctx;
+    tx_stream->sink->start_write({tx_buf, tx_len}, &tx_stream->handle, *tx_stream);
+}
+
+void libfibre_cancel_tx(LibFibreTxStream* tx_stream) {
+    tx_stream->sink->cancel_write(tx_stream->handle);
+}
+
+void libfibre_close_tx(LibFibreTxStream* tx_stream, FibreStatus status) {
+    if (tx_stream->on_closed) {
+        (tx_stream->on_closed)(tx_stream, tx_stream->on_closed_ctx, convert_status(status));
+    }
+}
+
+void libfibre_start_rx(LibFibreRxStream* rx_stream,
+        uint8_t* rx_buf, size_t rx_len, on_rx_completed_cb_t on_completed,
+        void* ctx) {
+    rx_stream->on_completed = on_completed;
+    rx_stream->ctx = ctx;
+    rx_stream->source->start_read({rx_buf, rx_len}, &rx_stream->handle, *rx_stream);
+}
+
+void libfibre_cancel_rx(LibFibreRxStream* rx_stream) {
+    rx_stream->source->cancel_read(rx_stream->handle);
+}
+
+void libfibre_close_rx(LibFibreRxStream* rx_stream, FibreStatus status) {
+    if (rx_stream->on_closed) {
+        (rx_stream->on_closed)(rx_stream, rx_stream->on_closed_ctx, convert_status(status));
+    }
+}
+
+void ArgEncoder::start_write(fibre::cbufptr_t buffer, fibre::TransferHandle* handle, Completer<fibre::WriteResult>& completer) {
+    // Allocate libfibre-internal TX buffer into which the application buffer
+    // will be encoded. The size can still change during transcoding.
+    encoded_buf_ = std::vector<uint8_t>{};
+    encoded_buf_.reserve(buffer.size());
+    
+    // Transcode application buffer to stream buffer
+    bool ok = call_->iterate_over_args_at(encoded_offset_, SIZE_MAX, buffer.size(), [&](
+            const fibre::LegacyFibreArg& arg,
+            ssize_t rel_encoded_offset, ssize_t rel_decoded_offset,
+            size_t encoded_arg_size, size_t decoded_arg_size) {
+        encoded_buf_.resize(rel_encoded_offset + encoded_arg_size);
+        fibre::bufptr_t encoded_buf = {encoded_buf_.data() + rel_encoded_offset, encoded_arg_size};
+        fibre::cbufptr_t decoded_buf = {buffer.begin() + rel_decoded_offset, decoded_arg_size};
+        return encode_for_transport(call_->obj->client, decoded_buf, encoded_buf, arg);
+    });
+
+    if (!ok) {
+        FIBRE_LOG(W) << "Transcoding before TX failed. Note that partial transcoding of arguments is not supported.";
+        completer.complete({fibre::kStreamError, buffer.begin()});
+        return;
+    }
+
+    decoded_buf_ = buffer;
+    call_->n_active_transfers++;
+    completer_ = &completer;
+    
+    encoded_stream_->start_write(encoded_buf_, &transfer_handle_, *this);
+}
+
+void ArgEncoder::cancel_write(fibre::TransferHandle transfer_handle) {
+    encoded_stream_->cancel_write(transfer_handle_);
+}
+
+void ArgEncoder::complete(fibre::WriteResult result) {
+    size_t n_sent = (result.end - encoded_buf_.data());
+    FIBRE_LOG(D) << "sent " << n_sent << " bytes ";
+
+    if (n_sent > encoded_buf_.size()) {
+        FIBRE_LOG(E) << "internal error: sent more bytes than expected";
+    }
+
+    ssize_t len_diff = encoded_buf_.size() - decoded_buf_.size();
+    const uint8_t* tx_end = decoded_buf_.begin() + n_sent - len_diff;
+
+    decoded_buf_ = {};
+    encoded_buf_ = {};
+    encoded_offset_ += n_sent;
+    call_->n_active_transfers--;
+
+    safe_complete(completer_, {result.status, tx_end});
+}
+
+void ArgDecoder::start_read(fibre::bufptr_t buffer, fibre::TransferHandle* handle, Completer<fibre::ReadResult>& completer) {
+    size_t encoded_size = 0;
+
+    bool ok = call_->iterate_over_args_at(encoded_offset_, SIZE_MAX, buffer.size(), [&](
+            const fibre::LegacyFibreArg& arg,
+            ssize_t rel_encoded_offset, ssize_t rel_decoded_offset,
+            size_t encoded_arg_size, size_t decoded_arg_size) {
+        encoded_size += encoded_arg_size;
+        return true;
+    });
+
+    if (!ok) {
+        FIBRE_LOG(W) << "Transcoding preparation before RX failed. Note that partial transcoding of arguments is not supported.";
+        completer.complete({fibre::kStreamError, buffer.begin()});
+        return;
+    }
+    
+    encoded_buf_ = {};
+    encoded_buf_.resize(encoded_size);
+    decoded_buf_ = buffer;
+    completer_ = &completer;
+    call_->n_active_transfers++;
+
+    encoded_stream_->start_read(encoded_buf_, &transfer_handle_, *this);
+}
+
+void ArgDecoder::cancel_read(fibre::TransferHandle transfer_handle) {
+    encoded_stream_->cancel_read(transfer_handle_);
+}
+
+void ArgDecoder::complete(fibre::ReadResult result) {
+    transfer_handle_ = 0;
+
+    size_t n_recv = result.end - encoded_buf_.data();
+    FIBRE_LOG(D) << "received " << n_recv << " bytes ";
+
+    if (n_recv > encoded_buf_.size()) {
+        FIBRE_LOG(E) << "internal error: received more bytes than expected";
+    }
+
+    ssize_t len_diff = encoded_buf_.size() - decoded_buf_.size();
+    uint8_t* rx_end = decoded_buf_.begin() + n_recv - len_diff;
+
+    size_t arg_offset = 0;
+
+    // Transcode stream buffer to application buffer
+    bool ok = call_->iterate_over_args_at(encoded_offset_, n_recv, decoded_buf_.size(), [&](
+            const fibre::LegacyFibreArg& arg,
+            ssize_t rel_encoded_offset, ssize_t rel_decoded_offset,
+            size_t encoded_arg_size, size_t decoded_arg_size) {
+        fibre::cbufptr_t encoded_buf = {encoded_buf_.data() + rel_encoded_offset, encoded_arg_size};
+        fibre::bufptr_t decoded_buf = {decoded_buf_.begin() + rel_decoded_offset, decoded_arg_size};
+        return decode_from_transport(call_->obj->client, encoded_buf, decoded_buf, arg);
+    });
+
+    if (!ok) {
+        FIBRE_LOG(W) << "Transcoding after RX failed. Partial transcoding of arguments is not supported.";
+        rx_end = decoded_buf_.begin();
+        result.status = fibre::kStreamError;
+    } else if (rx_end > decoded_buf_.end()) {
+        FIBRE_LOG(E) << "miscalculated pointer: beyond buffer end";
+        rx_end = decoded_buf_.end();
+        result.status = fibre::kStreamError;
+    }
+
+    decoded_buf_ = {};
+    encoded_buf_ = {};
+    encoded_offset_ += n_recv;
+    call_->n_active_transfers--;
+
+    safe_complete(completer_, {result.status, rx_end});
 }
