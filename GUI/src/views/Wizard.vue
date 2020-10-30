@@ -63,6 +63,7 @@ import {
   motorCalibration, 
   encoderCalibration
 } from "../lib/odrive_utils.js";
+import {wait} from "../lib/utils.js"
 
 export default {
   name: "Wizard",
@@ -125,8 +126,10 @@ export default {
         this.calibrating = true;
         let result = await motorCalibration(this.odrive, e.axis);
         this.calibrating = false;
+        fetchParam(this.odrive + e.axis + '.motor.is_calibrated');
         // no error, we're good!
         if (result == 0) {
+          wait(250);
           apply();
           this.calStatus = true;
         } else {
@@ -146,15 +149,25 @@ export default {
         let oldCPR = getVal(this.odrive + e.axis + ".encoder.config.cpr");
         console.log("oldCPR = " + oldCPR);
         console.log("axis = " + e.axis);
+
+        // set up the calib_scan_distance to a value that will work
+        let pp = this.wizardConfig[e.axis].motor.config.pole_pairs;
+
+        // smallest multiple of 4pi that is bigger than pole_pairs * 2pi
+        let scan_distance = pp % 0 ? pp * 2 * Math.PI : (pp + 1) * 2 * Math.PI;
+        putVal(this.odrive + e.axis + ".encoder.config.calib_scan_distance", scan_distance);
         putVal(
           this.odrive + e.axis + ".encoder.config.cpr",
           this.wizardConfig[e.axis].encoder.config.cpr
         );
 
+        await wait(250);
+
         this.calibrating = true;
         let result = await encoderCalibration(this.odrive, e.axis);
         this.calibrating = false;
         putVal(this.odrive + e.axis + ".encoder.config.cpr", oldCPR);
+        fetchParam(this.odrive + e.axis + '.encoder.is_ready');
         if (result == 0){
           // no encoder error, we're good
           this.choiceMade = true;
@@ -167,7 +180,7 @@ export default {
         }
       }
     },
-    choiceHandler(e) {
+    async choiceHandler(e) {
       // apply static configStub
       this.updateConfig(this.wizardConfig, e.configStub);
 
@@ -179,7 +192,6 @@ export default {
       // ugly, but a special case.
       // for motors, wait for calibration to finish before giving the green light unless motor.is_calibrated == true
       // for encoders, wait for calibration to finish unless encoder.is_ready == true
-      this.choiceMade = true;
       if (
         this.currentStep == pages.Motor_0 ||
         this.currentStep == pages.Motor_1
@@ -187,20 +199,33 @@ export default {
         let axis;
         if (this.currentStep == pages.Motor_0) axis = "axis0";
         if (this.currentStep == pages.Motor_1) axis = "axis1";
+        fetchParam(this.odrive + axis + ".motor.is_calibrated");
+        await wait(100);
         if (getVal(this.odrive + axis + ".motor.is_calibrated") == false) {
           this.choiceMade = false;
         }
+        else {
+          this.choiceMade = true;
+        }
       }
-      if (
+      else if (
         this.currentStep == pages.Encoder_0 ||
         this.currentStep == pages.Encoder_1
       ) {
         let axis;
         if (this.currentStep == pages.Encoder_0) axis = "axis0";
         if (this.currentStep == pages.Encoder_1) axis = "axis1";
+        fetchParam(this.odrive + axis + ".encoder.is_ready");
+        await wait(100);
         if (getVal(this.odrive + axis + ".encoder.is_ready") == false) {
           this.choiceMade = false;
         }
+        else {
+          this.choiceMade = true;
+        }
+      }
+      else {
+        this.choiceMade = true;
       }
       this.currentStep.choiceMade = this.choiceMade;
       console.log(JSON.parse(JSON.stringify(this.wizardConfig)));
@@ -254,17 +279,6 @@ export default {
       this.currentStep = pages[this.currentStep.back];
       this.choiceMade = false;
     },
-  },
-  created() {
-    // when wizard is active, we want to poll for certain values
-    let update = () => {
-      fetchParam("odrive0.axis0.motor.is_calibrated");
-      fetchParam("odrive0.axis1.motor.is_calibrated");
-      fetchParam("odrive0.axis0.encoder.is_ready");
-      fetchParam("odrive0.axis1.encoder.is_ready");
-      setTimeout(() => update(), 1000);
-    };
-    update();
   },
   beforeDestroy() {
     for (const page of Object.keys(pages)) {
