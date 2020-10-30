@@ -35,6 +35,7 @@
 #include "stm32f4xx.h"
 #include "stm32f4xx_it.h"
 #include "cmsis_os.h"
+#include <stdbool.h>
 
 /* USER CODE BEGIN 0 */
 #include <Drivers/STM32/stm32_system.h>
@@ -84,6 +85,13 @@ void get_regs(void** stack_ptr) {
   void* volatile lr __attribute__((unused)) = stack_ptr[5];  // Link register
   void* volatile pc __attribute__((unused)) = stack_ptr[6];  // Program counter
   void* volatile psr __attribute__((unused)) = stack_ptr[7];  // Program status register
+
+  void* volatile cfsr __attribute__((unused)) = (void*)SCB->CFSR; // Configurable fault status register
+  void* volatile cpacr __attribute__((unused)) = (void*)SCB->CPACR;
+  void* volatile fpccr __attribute__((unused)) = (void*)FPU->FPCCR;
+
+  volatile bool preciserr __attribute__((unused)) = (uint32_t)cfsr & 0x200;
+  volatile bool ibuserr __attribute__((unused)) = (uint32_t)cfsr & 0x100;
 
   volatile int stay_looping = 1;
   while(stay_looping);

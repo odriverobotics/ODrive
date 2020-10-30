@@ -49,8 +49,8 @@ static bool config_read_all() {
                   config_manager.read(&axes[i].max_endstop_.config_) &&
                   config_manager.read(&axes[i].mechanical_brake_.config_) &&
                   config_manager.read(&motors[i].config_) &&
-                  config_manager.read(&fet_thermistors[i].config_) &&
-                  config_manager.read(&axes[i].motor_thermistor_.config_) &&
+                  config_manager.read(&motors[i].fet_thermistor_.config_) &&
+                  config_manager.read(&motors[i].motor_thermistor_.config_) &&
                   config_manager.read(&axes[i].config_);
     }
     return success;
@@ -69,8 +69,8 @@ static bool config_write_all() {
                   config_manager.write(&axes[i].max_endstop_.config_) &&
                   config_manager.write(&axes[i].mechanical_brake_.config_) &&
                   config_manager.write(&motors[i].config_) &&
-                  config_manager.write(&fet_thermistors[i].config_) &&
-                  config_manager.write(&axes[i].motor_thermistor_.config_) &&
+                  config_manager.write(&motors[i].fet_thermistor_.config_) &&
+                  config_manager.write(&motors[i].motor_thermistor_.config_) &&
                   config_manager.write(&axes[i].config_);
     }
     return success;
@@ -89,8 +89,8 @@ static void config_clear_all() {
         axes[i].max_endstop_.config_ = {};
         axes[i].mechanical_brake_.config_ = {};
         motors[i].config_ = {};
-        fet_thermistors[i].config_ = {};
-        axes[i].motor_thermistor_.config_ = {};
+        motors[i].fet_thermistor_.config_ = {};
+        motors[i].motor_thermistor_.config_ = {};
         axes[i].clear_config();
     }
 }
@@ -103,6 +103,7 @@ static bool config_apply_all() {
                && axes[i].min_endstop_.apply_config()
                && axes[i].max_endstop_.apply_config()
                && motors[i].apply_config()
+               && motors[i].motor_thermistor_.apply_config()
                && axes[i].apply_config();
     }
     return success;

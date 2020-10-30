@@ -14,8 +14,7 @@ ThermistorCurrentLimiter::ThermistorCurrentLimiter(uint16_t adc_channel,
     temperature_(NAN),
     temp_limit_lower_(temp_limit_lower),
     temp_limit_upper_(temp_limit_upper),
-    enabled_(enabled),
-    error_(ERROR_NONE)
+    enabled_(enabled)
 {
 }
 
@@ -27,8 +26,6 @@ void ThermistorCurrentLimiter::update() {
 
 bool ThermistorCurrentLimiter::do_checks() {
     if (enabled_ && temperature_ >= temp_limit_upper_ + 5) {
-        error_ = ERROR_OVER_TEMP;
-        axis_->error_ |= Axis::ERROR_OVER_TEMP;
         return false;
     }
     return true;
@@ -68,6 +65,12 @@ OffboardThermistorCurrentLimiter::OffboardThermistorCurrentLimiter() :
                              config_.enabled)
 {
     decode_pin();
+}
+
+bool OffboardThermistorCurrentLimiter::apply_config() {
+    config_.parent = this;
+    decode_pin();
+    return true;
 }
 
 void OffboardThermistorCurrentLimiter::decode_pin() {

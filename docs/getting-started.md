@@ -41,7 +41,7 @@ permalink: /
 
   </div></details>
 
-* A power supply (12V-24V for the 24V board variant, 12V-48V for the 48V board variant). A battery is also fine. Some advice on choosing a power supply can be found [here](https://things-in-motion.blogspot.com/2018/12/how-to-select-right-power-source-for.html).
+* A power supply (12V-24V for the 24V board variant, 12V-56V for the 56V board variant). A battery is also fine. Some advice on choosing a power supply can be found [here](https://things-in-motion.blogspot.com/2018/12/how-to-select-right-power-source-for.html).
   <details><summary markdown="span">What voltage variant do I have?</summary><div markdown="block">
   On all ODrives shipped July 2018 or after have a silkscreen label clearly indicating the voltage variant.
 
@@ -61,14 +61,14 @@ All non-power I/O is 3.3V output and 5V tolerant on input, on ODrive v3.3 and ne
 ### Wiring up the encoders
 Connect the encoder(s) to J4. The A,B phases are required, and the Z (index pulse) is optional. The A,B and Z lines have 3.3k pull up resistors, for use with open-drain encoder outputs. For single ended push-pull signals with weak drive current (\<4mA), you may want to desolder the pull-ups.
 
-![Image of ODrive all hooked up](https://docs.google.com/drawings/d/e/2PACX-1vTCD0P40Cd-wvD7Fl8UYEaxp3_UL81oI4qUVqrrCJPi6tkJeSs2rsffIXQRpdu6rNZs6-2mRKKYtILG/pub?w=1716&h=1281)
+![Image of ODrive all hooked up](https://docs.google.com/drawings/d/e/2PACX-1vTpJziAisrkvV1kTL4vckAJkmJ-BAvTwN1GeZZNCNwpTHv47Cf8bpz-gJqK2Z3un6FCHT4E-rcuUg6c/pub?w=1716&h=1281)
 
 ### Safety & Power UP
 <div class="alert">
  Always think safety before powering up the ODrive if motors are attached. Consider what might happen if the motor spins as soon as power is applied.
 </div>
-* Unlike some devices, the ODrive does not recieve power over the USB port so the 24/48 volt power input is required even just to communicate with it using USB. It is ok to power up the ODrive before or after connecting the USB cable.
-* To power up the ODrive, connect the power source to the DC terminals. Make sure to pay attention to the polarity. A small spark is normal. This is caused by the capacitors charging up.
+* Unlike some devices, the ODrive does not recieve power over the USB port so the 24/56 volt power input is required even just to communicate with it using USB. It is ok to power up the ODrive before or after connecting the USB cable.
+* To power up the ODrive, connect the power source to the DC terminals. Make sure to pay attention to the polarity. Try to connect the power source first and then turn it on to avoid inrush current. If this can't be avoided then a small spark is normal. This is caused by the capacitors charging up.
 
 ## Downloading and Installing Tools
 Most instructions in this guide refer to a utility called `odrivetool`, so you should install that first.
@@ -81,7 +81,7 @@ Most instructions in this guide refer to a utility called `odrivetool`, so you s
 2. Launch the command prompt.
   * __Anaconda__: In the start menu, type `Anaconda Prompt` <kbd>Enter</kbd>
   * __Standalone Python__: In the start menu, type `cmd` <kbd>Enter</kbd>
-3. Install the ODrive tools by typing `pip install odrive` <kbd>Enter</kbd>
+3. Install the ODrive tools by typing `pip install --upgrade odrive` <kbd>Enter</kbd>
 
 
 ### OSX
@@ -104,13 +104,13 @@ brew install libusb
 ```
 5. Now that you have Python 3 and all the package managers, run:
 ```bash
-pip3 install odrive
+pip3 install --upgrade odrive
 ```
 
 __Troubleshooting__
 1. Permission Errors: Just run the previous command in sudo
    ```bash
-   sudo pip3 install odrive
+   sudo pip3 install --upgrade odrive
    ```
 
 2. Dependency Errors: If the installer doesn't complete and you get a dependency
@@ -129,7 +129,7 @@ error (Ex. "No module..." or "module_name not found")
 
 ### Linux
 1. [Install Python 3](https://www.python.org/downloads/). (for example, on Ubuntu, `sudo apt install python3 python3-pip`)
-2. Install the ODrive tools by opening a terminal and typing `sudo pip3 install odrive` <kbd>Enter</kbd>
+2. Install the ODrive tools by opening a terminal and typing `sudo pip3 install --upgrade odrive` <kbd>Enter</kbd>
     * This should automatically add the udev rules. If this fails for some reason you can add them manually:
     ```bash
     echo 'SUBSYSTEM=="usb", ATTR{idVendor}=="1209", ATTR{idProduct}=="0d[0-9][0-9]", MODE="0666"' | sudo tee /etc/udev/rules.d/91-odrive.rules
@@ -150,7 +150,7 @@ To launch the main interactive ODrive tool, type `odrivetool` <kbd>Enter</kbd>. 
 It should look something like this:
 
 ```text
-ODrive control utility v0.4.0
+ODrive control utility v0.5.1
 Please connect your ODrive.
 Type help() for help.
 
@@ -202,6 +202,10 @@ This is the number of **magnet poles** in the rotor, **divided by two**. To find
 A good way to find the number of pole pairs is with a current limited power supply. Connect any two of the three phases to a power supply outputting around 2A, spin the motor by hand, and count the number of detents. This will be the number of pole pairs. If you can't distinguish the detents from the normal cogging present when the motor is disconnected, increase the current.
 Another way is sliding a loose magnet in your hand around the rotor, and counting how many times it stops. This will be the number of _pole pairs_. If you use a ferrous piece of metal instead of a magnet, you will get the number of _magnet poles_.
 
+`odrv0.axis0.motor.config.torque_constant`  
+This is the ratio of torque produced by the motor per Amp of current delivered to the motor. This should be set to **8.27 / (motor KV)**.
+If you decide that you would rather command torque in units of Amps, you could simply set the torque constant to 1.
+
 `odrv0.axis0.motor.config.motor_type`  
 This is the type of motor being used. Currently two types of motors are supported: High-current motors (`MOTOR_TYPE_HIGH_CURRENT`) and gimbal motors (`MOTOR_TYPE_GIMBAL`).
 <details><summary markdown="span">Which <code>motor_type</code> to choose?</summary><div markdown="block">
@@ -233,7 +237,7 @@ You can save all `.config` parameters to persistent memory so the ODrive remembe
 
 
 ## Position control of M0
-Let's get motor 0 up and running. The procedure for motor 1 is exactly the same, so feel free to substitute `axis0` wherever it says `axis0`.
+Let's get motor 0 up and running. The procedure for motor 1 is exactly the same, so feel free to substitute `axis1` wherever it says `axis0`.
 
 1. Type `odrv0.axis0.requested_state = AXIS_STATE_FULL_CALIBRATION_SEQUENCE` <kbd>Enter</kbd>. After about 2 seconds should hear a beep. Then the motor will turn slowly in one direction for a few seconds, then back in the other direction.
 
@@ -362,17 +366,21 @@ Each axis has a configurable watchdog timer that can stop the motors if the
 control connection to the ODrive is interrupted.
 
 Each axis has a configurable watchdog timeout: `axis.config.watchdog_timeout`,
-measured in seconds. A value of `0` disables the watchdog functionality. Any value
-`> 0` will stop the motors if the watchdog has not been fed in the configured
-time interval. 
+measured in seconds. Set `axis.config.enable_watchdog = True` to turn on this feature.
 
-The watchdog is fed using the `axis.watchdog_feed()` method of each axis. 
+The watchdog is fed using the `axis.watchdog_feed()` method of each axis. Some [ascii commands](ascii-protocol.md#command-reference) feed the watchdog automatically.
 
 ## What's next?
 You can now:
 * [Properly tune](control.md) the motor controller to unlock the full potential of the ODrive.
 * See what other [commands and parameters](commands.md) are available, in order to better control the ODrive.
-* Control the ODrive from your own program or hook it up to an existing system through one of it's [interfaces](interfaces.md).
+* Control the ODrive from your own program or hook it up to an existing system through one of it's [interfaces](pinout.md).
 * See how you can improve the behavior during the startup procedure, like [bypassing encoder calibration](encoders.md#encoder-with-index-signal).
 
 If you have any issues or any questions please get in touch. The [ODrive Community](https://discourse.odriverobotics.com/) warmly welcomes you.
+
+
+## Upgrading from 0.4.12
+A new version (0.5.1) of ODrive firmware has released, complete with a new odrivetool.  Follow the installation instructions, making sure to add the `--upgrade` flag to pip commands, and check out the [Changelog](../CHANGELOG.md) for changes!
+
+The odrivetool will stage and restore your configuration.  This probably isn't wise for the 0.4.12 -> 0.5.1 upgrade, so we suggest using `odrv0.erase_configuration()` immediately after connecting the first time.

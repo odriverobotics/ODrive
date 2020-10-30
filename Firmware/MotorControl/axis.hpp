@@ -33,6 +33,13 @@ public:
     static LockinConfig_t default_sensorless();
     static LockinConfig_t default_lockin();
 
+    struct CANConfig_t {
+        uint32_t node_id = 0;
+        bool is_extended = false;
+        uint32_t heartbeat_rate_ms = 100;
+        uint32_t encoder_rate_ms = 10;
+    };
+
     struct Config_t {
         bool startup_motor_calibration = false;   //<! run motor calibration at startup, skip otherwise
         bool startup_encoder_index_search = false; //<! run encoder index search after startup, skip otherwise
@@ -61,9 +68,8 @@ public:
         LockinConfig_t calibration_lockin = default_calibration();
         LockinConfig_t sensorless_ramp = default_sensorless();
         LockinConfig_t general_lockin;
-        uint32_t can_node_id = 0; // Both axes will have the same id to start
-        bool can_node_id_extended = false;
-        uint32_t can_heartbeat_rate_ms = 100;
+
+        CANConfig_t can;
 
         // custom setters
         Axis* parent = nullptr;
@@ -73,6 +79,11 @@ public:
 
     struct Homing_t {
         bool is_homed = false;
+    };
+
+    struct CAN_t {
+        uint32_t last_heartbeat = 0;
+        uint32_t last_encoder = 0;
     };
 
     enum thread_signals {
@@ -86,8 +97,6 @@ public:
             Encoder& encoder,
             SensorlessEstimator& sensorless_estimator,
             Controller& controller,
-            OnboardThermistorCurrentLimiter& fet_thermistor,
-            OffboardThermistorCurrentLimiter& motor_thermistor,
             Motor& motor,
             TrapezoidalTrajectory& trap,
             Endstop& min_endstop,
@@ -216,18 +225,11 @@ public:
     Encoder& encoder_;
     SensorlessEstimator& sensorless_estimator_;
     Controller& controller_;
-    OnboardThermistorCurrentLimiter& fet_thermistor_;
-    OffboardThermistorCurrentLimiter& motor_thermistor_;
     Motor& motor_;
     TrapezoidalTrajectory& trap_traj_;
     Endstop& min_endstop_;
     Endstop& max_endstop_;
     MechanicalBrake& mechanical_brake_;
-
-    // List of current_limiters and thermistors to
-    // provide easy iteration.
-    std::array<CurrentLimiter*, 2> current_limiters_;
-    std::array<ThermistorCurrentLimiter*, 2> thermistors_;
 
     osThreadId thread_id_;
     const uint32_t stack_size_ = 2048; // Bytes
@@ -246,8 +248,9 @@ public:
     AxisState& current_state_ = task_chain_.front();
     uint32_t loop_counter_ = 0;
     LockinState lockin_state_ = LOCKIN_STATE_INACTIVE;
-    Homing_t homing_;
-    uint32_t last_heartbeat_ = 0;
+    Homing_t homing_;    
+    CAN_t can_;
+
 
     // watchdog
     uint32_t watchdog_current_value_= 0;

@@ -118,6 +118,7 @@ FLAGS += '-DUSE_HAL_DRIVER'
 FLAGS += '-mthumb'
 FLAGS += '-mfloat-abi=hard'
 FLAGS += { '-Wall', '-Wdouble-promotion', '-Wfloat-conversion', '-fdata-sections', '-ffunction-sections'}
+FLAGS += '-g'
 FLAGS += '-DFIBRE_ENABLE_SERVER'
 
 -- linker flags
@@ -128,7 +129,7 @@ LDFLAGS += '-Wl,--undefined=uxTopUsedPriority'
 
 -- debug build
 if tup.getconfig("DEBUG") == "true" then
-    FLAGS += '-g -gdwarf-2'
+    FLAGS += '-gdwarf-2'
     OPT += '-Og'
 else
     OPT += '-O2'

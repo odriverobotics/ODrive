@@ -6,11 +6,14 @@
  * **Via USB:**
     * **Windows:** Use [PuTTY](https://www.chiark.greenend.org.uk/~sgtatham/putty/) to manually send commands or open the COM port using your favorite programming language 
     * **Linux/macOS:** Run `/dev/tty*` to list all serial ports. The ODrive will show up as `/dev/ttyACM0` (or similar) on Linux and `/dev/tty.usbmodem[...]` on macOS. Once you know the name, you can use `screen /dev/ttyACM0` (with the correct name) to send commands manually or open the device using your favorite programming language. Serial ports on Unix can be opened, written to and read from like a normal file.
- * **Via UART:** Connect the ODrive's TX (GPIO1) to your host's RX. Connect your ODrive's RX (GPIO2) to your host's TX. The logic level of the ODrive is 3.3V.
+ * **Via UART:** Connect the ODrive's TX (GPIO1) to your host's RX. Connect your ODrive's RX (GPIO2) to your host's TX. See [UART](uart) for more info.
     * **Arduino:** You can use the [ODrive Arduino library](https://github.com/madcowswe/ODrive/tree/master/Arduino/ODriveArduino) to talk to the ODrive.
     * **Windows/Linux/macOS:** You can use an FTDI USB-UART cable to connect to the ODrive.
 
 The ODrive does not echo commands. That means that when you type commands into a program like `screen`, the characters you type won't show up in the console.
+
+### Arduino
+There is an Arduino library that gives some examples on how to use the ASCII protocol to communicate with the ODrive. Check it out [here](../Arduino/ODriveArduino).
 
 ## Command format
 

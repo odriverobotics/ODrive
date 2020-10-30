@@ -11,6 +11,9 @@
 		},
 		{
 			"path": "analysis"
+		},
+		{
+			"path": "GUI"
 		}
 	],
 	"settings": {

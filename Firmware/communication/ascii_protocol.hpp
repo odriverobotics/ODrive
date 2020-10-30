@@ -26,6 +26,7 @@ private:
     void cmd_write_property(char * pStr, bool use_checksum);
     void cmd_update_axis_wdg(char * pStr, bool use_checksum);
     void cmd_unknown(char * pStr, bool use_checksum);
+    void cmd_encoder(char * pStr, bool use_checksum);
 
     template<typename ... TArgs> void respond(bool include_checksum, const char * fmt, TArgs&& ... args);
     void process_line(fibre::cbufptr_t buffer);

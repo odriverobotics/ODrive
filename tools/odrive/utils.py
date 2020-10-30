@@ -71,10 +71,10 @@ class OperationAbortedException(Exception):
 
 def set_motor_thermistor_coeffs(axis, Rload, R_25, Beta, Tmin, TMax):
     coeffs = calculate_thermistor_coeffs(3, Rload, R_25, Beta, Tmin, TMax)
-    axis.motor_thermistor.config.poly_coefficient_0 = float(coeffs[3])
-    axis.motor_thermistor.config.poly_coefficient_1 = float(coeffs[2])
-    axis.motor_thermistor.config.poly_coefficient_2 = float(coeffs[1])
-    axis.motor_thermistor.config.poly_coefficient_3 = float(coeffs[0])
+    axis.motor.motor_thermistor.config.poly_coefficient_0 = float(coeffs[3])
+    axis.motor.motor_thermistor.config.poly_coefficient_1 = float(coeffs[2])
+    axis.motor.motor_thermistor.config.poly_coefficient_2 = float(coeffs[1])
+    axis.motor.motor_thermistor.config.poly_coefficient_3 = float(coeffs[0])
 
 def dump_errors(odrv, clear=False):
     axes = [(name, getattr(odrv, name)) for name in dir(odrv) if name.startswith('axis')]
@@ -87,8 +87,6 @@ def dump_errors(odrv, clear=False):
         module_decode_map = [
             (name, odrv, {k: v for k, v in odrive.enums.__dict__ .items() if k.startswith("AXIS_ERROR_")}),
             ('motor', axis, {k: v for k, v in odrive.enums.__dict__ .items() if k.startswith("MOTOR_ERROR_")}),
-            ('fet_thermistor', axis, {k: v for k, v in odrive.enums.__dict__ .items() if k.startswith("THERMISTOR_CURRENT_LIMITER_ERROR")}),
-            ('motor_thermistor', axis, {k: v for k, v in odrive.enums.__dict__ .items() if k.startswith("THERMISTOR_CURRENT_LIMITER_ERROR")}),
             ('encoder', axis, {k: v for k, v in odrive.enums.__dict__ .items() if k.startswith("ENCODER_ERROR_")}),
             ('controller', axis, {k: v for k, v in odrive.enums.__dict__ .items() if k.startswith("CONTROLLER_ERROR_")}),
         ]

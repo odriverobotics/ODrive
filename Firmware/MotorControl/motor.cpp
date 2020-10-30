@@ -10,13 +10,19 @@ Motor::Motor(TIM_HandleTypeDef* timer,
              uint16_t control_deadline,
              float shunt_conductance,
              TGateDriver& gate_driver,
-             TOpAmp& opamp) :
+             TOpAmp& opamp,
+             OnboardThermistorCurrentLimiter& fet_thermistor,
+             OffboardThermistorCurrentLimiter& motor_thermistor) :
         timer_(timer),
         control_deadline_(control_deadline),
         shunt_conductance_(shunt_conductance),
         gate_driver_(gate_driver),
-        opamp_(opamp) {
+        opamp_(opamp),
+        fet_thermistor_(fet_thermistor),
+        motor_thermistor_(motor_thermistor) {
     apply_config();
+    fet_thermistor_.motor_ = this;
+    motor_thermistor_.motor_ = this;
 }
 
 // @brief Arms the PWM outputs that belong to this motor.
@@ -49,6 +55,7 @@ void Motor::reset_current_control() {
     current_control_.v_current_control_integral_d = 0.0f;
     current_control_.v_current_control_integral_q = 0.0f;
     current_control_.acim_rotor_flux = 0.0f;
+    current_control_.Ibus = 0.0f;
 }
 
 // @brief Tune the current controller based on phase resistance and inductance
@@ -109,7 +116,16 @@ bool Motor::do_checks() {
         set_error(ERROR_DRV_FAULT);
         return false;
     }
-
+    if (!motor_thermistor_.do_checks()) {
+        axis_->error_ |= Axis::ERROR_MOTOR_FAILED;
+        set_error(ERROR_MOTOR_THERMISTOR_OVER_TEMP);
+        return false;
+    }
+    if (!fet_thermistor_.do_checks()) {
+        axis_->error_ |= Axis::ERROR_MOTOR_FAILED;
+        set_error(ERROR_FET_THERMISTOR_OVER_TEMP);
+        return false;
+    }
     return true;
 }
 
@@ -123,11 +139,9 @@ float Motor::effective_current_lim() {
         current_lim = std::min(current_lim, axis_->motor_.current_control_.max_allowed_current);
     }
 
-    // Apply axis current limiters
-    for (const CurrentLimiter* const limiter : axis_->current_limiters_) {
-        current_lim = std::min(current_lim, limiter->get_current_limit(config_.current_lim));
-    }
-
+    // Apply thermistor current limiters
+    current_lim = std::min(current_lim, motor_thermistor_.get_current_limit(config_.current_lim));
+    current_lim = std::min(current_lim, fet_thermistor_.get_current_limit(config_.current_lim));
     effective_current_lim_ = current_lim;
 
     return effective_current_lim_;

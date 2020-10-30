@@ -115,6 +115,7 @@ void AsciiProtocol::process_line(cbufptr_t buffer) {
         case 'r': cmd_read_property(cmd,  use_checksum);              break;  // read property
         case 'w': cmd_write_property(cmd, use_checksum);              break;  // write property
         case 'u': cmd_update_axis_wdg(cmd, use_checksum);             break;  // Update axis watchdog. 
+        case 'e': cmd_encoder(cmd, use_checksum);                     break;  // Encoder commands
         default : cmd_unknown(nullptr, use_checksum);                 break;
     }
 }
@@ -213,11 +214,37 @@ void AsciiProtocol::cmd_set_torque(char * pStr, bool use_checksum) {
     }
 }
 
+// @brief Sets the encoder linear count
+// @param pStr buffer of ASCII encoded values
+// @param response_channel reference to the stream to respond on
+// @param use_checksum bool to indicate whether a checksum is required on response
+void cmd_encoder(char * pStr, StreamSink& response_channel, bool use_checksum) {
+    if (pStr[1] == 's') {
+        pStr += 2; // Substring two characters to the right (ok because we have guaranteed null termination after all chars)
+
+        unsigned motor_number;
+        int encoder_count;
+
+        if (sscanf(pStr, "l %u %i", &motor_number, &encoder_count) < 2) {
+            respond(response_channel, use_checksum, "invalid command format");
+        } else if (motor_number >= AXIS_COUNT) {
+            respond(response_channel, use_checksum, "invalid motor %u", motor_number);
+        } else {
+            Axis& axis = axes[motor_number];
+            axis.encoder_.set_linear_count(encoder_count);
+            axis.watchdog_feed();
+            respond(response_channel, use_checksum, "encoder set to %u", encoder_count);
+        }
+    } else {
+        respond(response_channel, use_checksum, "invalid command format");
+    }
+}
+
 // @brief Executes the set trapezoid trajectory command
 // @param pStr buffer of ASCII encoded values
 // @param response_channel reference to the stream to respond on
 // @param use_checksum bool to indicate whether a checksum is required on response
-void AsciiProtocol::cmd_set_trapezoid_trajectory(char * pStr, bool use_checksum) {
+void AsciiProtocol::cmd_set_trapezoid_trajectory(char* pStr, bool use_checksum) {
     unsigned motor_number;
     float goal_point;
 

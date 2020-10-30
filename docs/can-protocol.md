@@ -60,6 +60,7 @@ CMD ID | Name | Sender | Signals | Start byte | Signal Type | Bits | Factor | Of
 0x016 | Reboot ODrive | Master\*\*\* | - | - | - | - | - | - | -
 0x017 | Get Vbus Voltage | Master\*\*\* | Vbus Voltage | 0 | IEEE 754 Float | 32 | 1 | 0 | Intel
 0x018 | Clear Errors | Master | - | - | - | - | - | - | -
+0x019 | Set Linear Count | Master | Position | 0 | Signed Int | 32 | 1 | 0 | Intel
 0x700 | CANOpen Heartbeat Message\*\* | Slave | - | -  | - | - | - | - | -
 -|-|-|----------------------------------|-|--------------------|-|-|-|_
 
@@ -73,7 +74,7 @@ Configuration of the CAN parameters should be done via USB before putting the de
 
 To set the desired baud rate, use `<odrv>.can.set_baud_rate(<value>)`.  The baud rate can be done without rebooting the device.  If you'd like to keep the baud rate, simply call `<odrv>.save_configuration()` before rebooting.
 
-Each axis looks like a separate node on the bus. Thus, they both have the two properties `can_node_id` and `can_node_id_extended`. The node ID can be from 0 to 63 (0x3F) inclusive, or, if extended CAN IDs are used, from 0 to 16777215 (0xFFFFFF).
+Each axis looks like a separate node on the bus. Thus, they both have the two properties `can_node_id` and `can_node_id_extended`. The node ID can be from 0 to 63 (0x3F) inclusive, or, if extended CAN IDs are used, from 0 to 16777215 (0xFFFFFF). If you want to connect more than one ODrive on a CAN bus, you must set different node IDs for the second ODrive or they will conflict and crash the bus.
 
 ### Example Configuration
 

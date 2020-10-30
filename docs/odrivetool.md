@@ -85,11 +85,12 @@ To compile firmware from source, refer to the [developer guide](developer-guide)
 ### Troubleshooting
 
 * __Windows__: During the update, a new device called "STM32 BOOTLOADER" will appear. Open the [Zadig utility](http://zadig.akeo.ie/) and set the driver for "STM32 BOOTLOADER" to libusb-win32. After that the firmware update will continue.
+* __Linux__: Try running `sudo odrivetool dfu` instead of `odrivetool dfu`.
 * On some machines you will need to unplug and plug back in the USB cable to make the PC understand that we switched from regular mode to bootloader mode.
 * If the DFU script can't find the device, try forcing it into DFU mode.
 
   <details><summary markdown="span">How to force DFU mode (ODrive v3.5 and newer)</summary><div markdown="block">
-  Flick the DIP switch that "DFU, RUN" to "DFU" and power cycle the board. After you're done upgrading firmware, don't forget to put the switch back into the "RUN" position and power cycle the board again.
+  Flick the DIP switch that says "DFU, RUN" to "DFU" and power cycle the board. If that alone doesn't work, also connect the pin "GPIO6" to "GND". After you're done upgrading firmware, don't forget to put the switch back into the "RUN" position and power cycle the board again.
   </div></details>
 
   <details><summary markdown="span">How to force DFU mode (ODrive v3.1, v3.2)</summary><div markdown="block">
