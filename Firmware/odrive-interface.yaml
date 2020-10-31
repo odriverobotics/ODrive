@@ -13,6 +13,7 @@ interfaces:
       The odrv0, odrv1, ... objects that appear in odrivetool implement this
       toplevel interface.
     attributes:
+      task_timers_armed: bool
       vbus_voltage:
         type: readonly float32
         unit: V
@@ -449,11 +450,39 @@ interfaces:
       min_endstop: Endstop
       max_endstop: Endstop
       mechanical_brake: MechanicalBrake
+      task_times: TaskTimes
     functions:
       watchdog_feed:
         doc: Feed the watchdog to prevent watchdog timeouts.
       clear_errors:
         doc: Clear all the errors of this axis including all contained submodules.
+
+  ODrive.Axis.TaskTimes:
+    c_is_class: False
+    attributes:
+      thermistor_update: TaskTimer
+      encoder_update: TaskTimer
+      sensorless_update: TaskTimer
+      min_endstop_update: TaskTimer
+      max_endstop_update: TaskTimer
+      axis_update: TaskTimer
+      axis_error_check: TaskTimer
+      controller_update: TaskTimer
+      motor_update: TaskTimer
+      control_loop: TaskTimer
+      update_handler: TaskTimer
+      brake_update: TaskTimer
+      adc_cb: TaskTimer
+      total: TaskTimer
+      FOC_Current: TaskTimer
+
+  ODrive.TaskTimer:
+    c_is_class: False
+    attributes:
+      startTime: readonly uint32
+      endTime: readonly uint32
+      length: readonly uint32
+      maxLength: readonly uint32
 
   ODrive.Axis.LockinConfig:
     c_is_class: False

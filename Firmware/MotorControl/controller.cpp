@@ -2,8 +2,6 @@
 #include "odrive_main.h"
 #include <algorithm>
 
-#include <algorithm>
-
 bool Controller::apply_config() {
     config_.parent = this;
     update_filter_gains();
