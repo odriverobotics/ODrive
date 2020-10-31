@@ -30,11 +30,16 @@ odrv0.axis0.motor.config.pole_pairs = 15
 
 Hoverboard hub motors are quite high resistance compared to the hobby aircraft motors, so we want to use a bit higher voltage for the motor calibration, and set up the current sense gain to be more sensitive. 
 The motors are also fairly high inductance, so we need to reduce the bandwidth of the current controller from the default to keep it stable.
+The KV rating of the motor also should be known. It can be measured using the "drill test", detailed [here](https://discourse.odriverobotics.com/t/project-hoverarm/441/2?u=madcowswe). If you can't perform this test, a typical value is 16.
+
 ```txt
 odrv0.axis0.motor.config.resistance_calib_max_voltage = 4
 odrv0.axis0.motor.config.requested_current_range = 25 #Requires config save and reboot
 odrv0.axis0.motor.config.current_control_bandwidth = 100
+odrv0.axis0.motor.config.torque_constant = 8.27 / <measured KV>
 ```
+
+If you
 
 Set the encoder to hall mode (instead of incremental). See the [pinout](encoders.md#hall-effect-encoders) for instructions on how to plug in the hall feedback.
 The hall feedback has 6 states for every pole pair in the motor. Since we have 15 pole pairs, we set the cpr to 15*6 = 90.
@@ -49,9 +54,9 @@ Lets also start in velocity control mode since that is probably what you want fo
 ```txt
 odrv0.axis0.encoder.config.bandwidth = 100
 odrv0.axis0.controller.config.pos_gain = 1
-odrv0.axis0.controller.config.vel_gain = 0.02
-odrv0.axis0.controller.config.vel_integrator_gain = 0.1
-odrv0.axis0.controller.config.vel_limit = 1000
+odrv0.axis0.controller.config.vel_gain = 0.02 * odrv0.axis0.motor.config.torque_constant * odrv0.axis0.motor.config.pole_pairs
+odrv0.axis0.controller.config.vel_integrator_gain = 0.1 * odrv0.axis0.motor.config.torque_constant * odrv0.axis0.motor.config.pole_pairs
+odrv0.axis0.controller.config.vel_limit = 100
 odrv0.axis0.controller.config.control_mode = CONTROL_MODE_VELOCITY_CONTROL
 ```
 
@@ -112,7 +117,7 @@ The ODrive starts in idle (we will look at changing this later) so we can enable
 odrv0.save_configuration()
 odrv0.reboot()
 odrv0.axis0.requested_state = AXIS_STATE_CLOSED_LOOP_CONTROL
-odrv0.axis0.controller.input_vel = 120
+odrv0.axis0.controller.input_vel = 2
 # Your motor should spin here
 odrv0.axis0.controller.input_vel = 0
 odrv0.axis0.requested_state = AXIS_STATE_IDLE
@@ -126,12 +131,12 @@ Lets use GPIO 3/4 for the velocity inputs so that we don't have to disable UART.
 Then let's map the full stick range of these inputs to some suitable velocity setpoint range.
 We also have to reboot to activate the PWM input.
 ```txt
-odrv0.config.gpio3_pwm_mapping.min = -200
-odrv0.config.gpio3_pwm_mapping.max = 200
+odrv0.config.gpio3_pwm_mapping.min = -2
+odrv0.config.gpio3_pwm_mapping.max = 2
 odrv0.config.gpio3_pwm_mapping.endpoint = odrv0.axis0.controller._remote_attributes['input_vel']
 
-odrv0.config.gpio4_pwm_mapping.min = -200
-odrv0.config.gpio4_pwm_mapping.max = 200
+odrv0.config.gpio4_pwm_mapping.min = -2
+odrv0.config.gpio4_pwm_mapping.max = 2
 odrv0.config.gpio4_pwm_mapping.endpoint = odrv0.axis1.controller._remote_attributes['input_vel']
 
 odrv0.save_configuration()
@@ -141,19 +146,19 @@ odrv0.reboot()
 Now we can check that the sticks are writing to the velocity setpoint. Move the stick, print `input_vel`, move to a different position, check again.
 ```txt
 In [1]: odrv0.axis1.controller.input_vel
-Out[1]: 0.1904754638671875
+Out[1]: 0.01904754638671875
 
 In [2]: odrv0.axis1.controller.input_vel
-Out[2]: 0.1904754638671875
+Out[2]: 0.01904754638671875
 
 In [3]: odrv0.axis1.controller.input_vel
-Out[3]: 28.152389526367188
+Out[3]: 1.152389526367188
 
 In [4]: odrv0.axis1.controller.input_vel
-Out[4]: 61.21905517578125
+Out[4]: 1.81905517578125
 
 In [5]: odrv0.axis1.controller.input_vel
-Out[5]: -52.990474700927734
+Out[5]: -0.990474700927734
 ```
 
 Ok, now we should be able to turn on the drive and control the wheels!
