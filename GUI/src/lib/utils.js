@@ -31,3 +31,28 @@ export let deleteBy = (obj, test) => {
         }
     })
 }
+
+// sets up a timeout to wait for fun() to evaluate to true;
+// fun must return {done: boolean, data: <whatever>}
+export let waitFor = (fun) => {
+    return new Promise(resolve => {
+        let check = () => {
+            let res = fun();
+            if (res.done) {
+                resolve(res.data);
+            }
+            else {
+                setTimeout(check,100);
+            }
+        }
+        check();
+    });
+}
+
+// utility function to allow time for things to happen
+// async wait
+export let wait = (time) => {
+    return new Promise(resolve => {
+        setTimeout(() => resolve(), time);
+    });
+}

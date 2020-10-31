@@ -1,16 +1,24 @@
 import store from "../store.js";
 import * as socketio from "../comms/socketio.js";
+import {wait, waitFor} from "./utils.js";
+import odriveEnums from "../assets/odriveEnums.json"
 
 // helper functions and utilities for getting ODrive values
 
 // given a path like "odrive0.axis0.config.blah", return the value
 export function getParam(path) {
     let keys = path.split('.');
-    let odriveObj = store.state.odrives;
-    for (const key of keys) {
-        odriveObj = odriveObj[key];
+    if (store.state.ODrivesConnected[keys[0]]) {
+        let odriveObj = store.state.odrives;
+        for (const key of keys) {
+            odriveObj = odriveObj[key];
+        }
+        return odriveObj;
     }
-    return odriveObj;
+    else {
+        console.log("getParam for " + path + " is for disconnected ODrive");
+        return undefined;
+    }
 }
 
 // wrapper for val field
@@ -51,10 +59,15 @@ export function parseMath(inString) {
 
 export function putVal(path, value) {
     console.log("path: " + path + ", val: " + value + ", type: " + typeof value);
-    socketio.sendEvent({
-        type: "setProperty",
-        data: {path: path, val: value, type: typeof value}
-    })
+    if (store.state.ODrivesConnected[path.split('.')[0]]) {
+        socketio.sendEvent({
+            type: "setProperty",
+            data: {path: path, val: value, type: typeof value}
+        });
+    }
+    else {
+        console.log("requesting " + path + " from disconnected odrive")
+    }
 }
 
 // path is path to function, args is list of parameters
@@ -79,6 +92,114 @@ export function getUnit(odrive, path) {
         }
     }
     return unit;
+}
+
+export function clearErrors(odrive, axis) {
+    // odrive is odrive path like 'odrive0'
+    // axis is 'axis0', etc
+    let paths = [];
+    [".error", ".motor.error", ".encoder.error", ".controller.error"].forEach((path) => {
+        paths.push(odrive + axis + path);
+    });
+    paths.forEach((path) => {
+        putVal(path, 0);
+    })
+}
+
+export async function motorCalibration(odrive, axis) {
+    // set up our continuous fetch
+    let state;
+    let motorError;
+
+    let updateVals = () => {
+        fetchParam(odrive + axis + ".current_state");
+        fetchParam(odrive + axis + ".motor.config.phase_resistance");
+        fetchParam(odrive + axis + ".motor.config.phase_inductance");
+        fetchParam(odrive + axis + ".motor.is_calibrated");
+        fetchParam(odrive + axis + ".motor.error")
+
+        state = getVal(odrive + axis + ".current_state");
+        motorError = getVal(odrive + axis + ".motor.error");
+        if (run) {
+            setTimeout(updateVals, 100);
+        }
+    }
+
+    // set up our state watch function
+    let end = () => {
+        // return {done: boolean, data <whatever>}
+        if (state != odriveEnums.AXIS_STATE_MOTOR_CALIBRATION) {
+            return {done: true, data: motorError}            
+        }
+        else {
+            return {done: false}
+        }
+    }
+
+    // start getting live updates
+    let run = true;
+    updateVals();
+
+    // send motor calibration command to correct odrive and axis
+    putVal(odrive + axis + ".requested_state", odriveEnums.AXIS_STATE_MOTOR_CALIBRATION);
+
+    // give it some time to start
+    await wait(500);
+
+    // only two things can happen now, either we successfully calibrate or we error out for some reason
+    const result = await waitFor(end);
+
+    // stop our parameter updates
+    run = false;
+
+    return result;
+}
+
+export async function encoderCalibration(odrive,axis) {
+    // set up our continuous fetch
+    let state;
+    let encoderError;
+
+    let updateVals = () => {
+        fetchParam(odrive + axis + ".current_state");
+        fetchParam(odrive + axis + ".encoder.is_ready");
+        fetchParam(odrive + axis + ".encoder.error")
+
+        state = getVal(odrive + axis + ".current_state");
+        encoderError = getVal(odrive + axis + ".encoder.error");
+        if (run) {
+            setTimeout(updateVals, 100);
+        }
+    }
+
+    // set up our state watch function
+    let end = () => {
+        // return {done: boolean, data <whatever>}
+        if (state != odriveEnums.AXIS_STATE_ENCODER_OFFSET_CALIBRATION) {
+            return {done: true, data: encoderError}            
+        }
+        else {
+            return {done: false}
+        }
+    }
+
+    // start getting live updates
+    let run = true;
+    updateVals();
+
+    // start encoder offset cal
+    putVal(odrive + axis + ".requested_state", odriveEnums.AXIS_STATE_ENCODER_OFFSET_CALIBRATION);
+
+    // give it some time to start
+    await wait(500);
+
+    // only two things can happen now, either we successfully calibrate or we error out for some reason
+    const result = await waitFor(end);
+
+    // stop our parameter updates
+    run = false;
+
+    return result;
 }
 
 // standins for wizard and gui unit displays

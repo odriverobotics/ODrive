@@ -58,8 +58,12 @@ def discovered_device(device):
     while globals()['inUse']:
         time.sleep(0.1)
     globals()['odrives'][odrive_name] = device
+    globals()['odrives_status'][odrive_name] = True
     print("Found " + str(serial_number))
     print("odrive list: " + str([key for key in globals()['odrives'].keys()]))
+    # tell GUI the status of known ODrives (previously connected and then disconnected ODrives will be "False")
+    socketio.emit('odrives-status', json.dumps(globals()['odrives_status']))
+    # triggers a getODrives socketio message
     socketio.emit('odrive-found')
 
 def start_discovery():
@@ -68,9 +72,12 @@ def start_discovery():
     shutdown = fibre.Event()
     fibre.find_all("usb", None, discovered_device, shutdown, shutdown, log)
 
-def handle_disconnect():
+def handle_disconnect(odrive_name):
     print("lost odrive")
-    #socketio.emit('odrive-disconnected')
+    globals()['odrives_status'][odrive_name] = False
+    # emit the whole list of odrive statuses
+    # in the GUI, mark and use status as ODrive state.
+    socketio.emit('odrives-status', json.dumps(globals()['odrives_status']))
 
 @socketio.on('findODrives')
 def getODrives(message):
@@ -115,8 +122,9 @@ def get_odrives(data):
     odriveDict = {}
     #for (index, odrv) in enumerate(globals()['odrives']):
     #    odriveDict["odrive" + str(index)] = dictFromRO(odrv)
-    for key in globals()['odrives'].keys():
-        odriveDict[key] = dictFromRO(globals()['odrives'][key])
+    for key in globals()['odrives_status'].keys():
+        if globals()['odrives_status'][key] == True:
+            odriveDict[key] = dictFromRO(globals()['odrives'][key])
     globals()['inUse'] = False
     emit('odrives', json.dumps(odriveDict))
 
@@ -126,10 +134,11 @@ def get_property(message):
     # will be {"path": "odriveX.axisY.blah.blah"}
     while globals()['inUse']:
         time.sleep(0.1)
-    globals()['inUse'] = True
-    val = getVal(globals()['odrives'], message["path"].split('.'))
-    globals()['inUse'] = False
-    emit('ODriveProperty', json.dumps({"path": message["path"], "val": val}))
+    if globals()['odrives_status'][message["path"].split('.')[0]]:
+        globals()['inUse'] = True
+        val = getVal(globals()['odrives'], message["path"].split('.'))
+        globals()['inUse'] = False
+        emit('ODriveProperty', json.dumps({"path": message["path"], "val": val}))
 
 @socketio.on('setProperty')
 def set_property(message):
@@ -194,7 +203,7 @@ def postVal(odrives, keyList, value, argType):
         else:
             pass # dont support that type yet
     except fibre.protocol.ChannelBrokenException:
-        handle_disconnect()
+        handle_disconnect(odrv)
     except:
         print("exception in postVal")
 
@@ -210,7 +219,7 @@ def getVal(odrives, keyList):
         else:
             return RO.get_value()
     except fibre.protocol.ChannelBrokenException:
-        handle_disconnect()
+        handle_disconnect(odrv)
     except:
         print("exception in getVal")
         return 0
@@ -235,7 +244,7 @@ def callFunc(odrives, keyList):
         if isinstance(RO, fibre.remote_object.RemoteFunction):
             RO.__call__()
     except fibre.protocol.ChannelBrokenException:
-        handle_disconnect()
+        handle_disconnect(odrv)
     except:
         print("fcn call failed")
 
@@ -252,7 +261,11 @@ if __name__ == "__main__":
     import odrive.utils # for dump_errors()
     import fibre
 
+    # global for holding references to all connected odrives
     globals()['odrives'] = {}
+    # global dict {'odriveX': True/False} where True/False reflects status of connection
+    # on handle_disconnect, set it to False. On connection, set it to True
+    globals()['odrives_status'] = {}
     globals()['discovered_devices'] = []
     # spinlock
     globals()['inUse'] = False

@@ -5,14 +5,16 @@ Please add a note of your changes below this heading if you make a Pull Request.
 * Added periodic sending of encoder position on CAN
 
 ### Changed
-
+* Modified encoder offset calibration to work correctly when calib_scan_distance is not a multiple of 4pi
+* Moved thermistors from being a top level object to belonging to Motor objects. Also changed errors: thermistor errors rolled into motor errors
 * Use DMA for DRV8301 setup
 * Make NVM configuration code more dynamic so that the layout doesn't have to be known at compile time.
 * GPIO initialization logic was changed. GPIOs now need to be explicitly set to the mode corresponding to the feature that they are used by. See `<odrv>.config.gpioX_mode`.
 * Previously, if two components used the same interrupt pin (e.g. step input for axis0 and axis1) then the one that was configured later would override the other one. Now this is no longer the case (the old component remains the owner of the pin).
 
-### API Miration Notes
+### API Migration Notes
 
+* `odrive.axis.fet_thermistor`, `odrive.axis.motor_thermistor` moved to `odrive.axis.motor` object
 * `enable_uart` and `uart_baudrate` were renamed to `enable_uart0` and `uart0_baudrate`.
 * `enable_i2c_instead_of_can` was replaced by the separate settings `enable_i2c0` and `enable_can0`.
 * `<axis>.motor.gate_driver` was moved to `<axis>.gate_driver`.

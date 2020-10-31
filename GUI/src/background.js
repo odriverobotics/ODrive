@@ -23,25 +23,42 @@ protocol.registerSchemesAsPrivileged([
 
 // function to get determine correct command for python
 function getPyCmd() {
-  let spawnRet = spawnSync('python',['-V']);
-  let vString;
-  if (spawnRet.stdout.toString().length > 1){
-      vString = spawnRet.stdout.toString();
+  // call both 'python' and 'python3' to figure out the correct command
+  let spawnRet = spawnSync('python', ['-V']);
+  let success = spawnRet.status != null;
+  let outputString;
+  let cmd = '';
+  if (success) {
+    if (spawnRet.stdout.toString().length > 1) {
+      outputString = spawnRet.stdout.toString();
+    }
+    else {
+      outputString = spawnRet.stderr.toString();
+    }
+    if (outputString.includes("Python 3")) {
+      cmd = 'python';
+    }
   }
-  else {
-      vString = spawnRet.stderr.toString();
+  if (cmd == '') {
+    spawnRet = spawnSync('python3', ['-V']);
+    success = spawnRet.status != null;
+    if (success) {
+      if (spawnRet.stdout.toString().length > 1) {
+        outputString = spawnRet.stdout.toString();
+      }
+      else {
+        outputString = spawnRet.stderr.toString();
+      }
+      if (outputString.includes("Python 3")) {
+        cmd = 'python3';
+      }
+    }
   }
-
-  if (vString.split(' ')[1].split('.')[0] == '2') {
-      return 'python3';
-  }
-  else {
-      return 'python';
-  }
+  return cmd;
 }
 
 function createWindow() {
-  
+
   // Create the browser window.
   win = new BrowserWindow({
     width: 800,
@@ -125,15 +142,19 @@ app.on('ready', async () => {
   // launch python server on event from renderer process (gui) and pipe stdout/stderr to it
   ipcMain.on('start-server', () => {
     server = spawn(getPyCmd(), effectiveCommand);
-    server.stdout.on('data',function(data) {
-      console.log(data.toString('utf8'));
+    server.stdout.on('data', function (data) {
+      try {
+        console.log(data.toString('utf8'));
+      } catch (error) {
+        console.log(error);
+      }
       try {
         win.webContents.send('server-stdout', String(data.toString('utf8')));
       } catch (error) {
         console.log(error);
       }
     });
-    server.stderr.on('data',function(data) {
+    server.stderr.on('data', function (data) {
       console.log(data.toString('utf8'));
       try {
         win.webContents.send('server-stderr', String(data.toString('utf8')));

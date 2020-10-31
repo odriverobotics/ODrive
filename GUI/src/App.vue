@@ -56,9 +56,6 @@
         :axis="axis.name"
         :odrives="odrives"
       ></Axis>
-      <!--<div class="odrive-status">
-        ODrive:{{ODriveConnected}}
-      </div>-->
     </div>
   </div>
 </template>
@@ -128,22 +125,6 @@ export default {
     },
     currentDash: function () {
       return this.$store.state.currentDash;
-    },
-    ODriveConnected: function () {
-      // if server and odrive disconnected, disconnected
-      // if server connected and odrive disco, connecting
-      // if server and odrive connected, connected
-      let ret;
-      if (this.$store.state.serverConnected && this.$store.state.ODriveConnected) {
-        ret = "connected";
-      }
-      else if (this.$store.state.serverConnected && !this.$store.state.ODriveConnected) {
-        ret = "connecting...";
-      }
-      else {
-        ret = "disconnected";
-      }
-      return ret;
     },
     samplingText: function () {
       let ret;

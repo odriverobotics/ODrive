@@ -1,7 +1,7 @@
 #ifndef __THERMISTOR_HPP
 #define __THERMISTOR_HPP
 
-class Axis; // declared in axis.hpp
+class Motor; // declared in motor.hpp
 
 #include "current_limiter.hpp"
 #include <autogen/interfaces.hpp>
@@ -28,8 +28,7 @@ public:
     const float& temp_limit_lower_;
     const float& temp_limit_upper_;
     const bool& enabled_;
-    Error error_;
-    Axis* axis_ = nullptr; // set by Axis constructor
+    Motor* motor_ = nullptr; // set by Motor::apply_config()
 };
 
 class OnboardThermistorCurrentLimiter : public ThermistorCurrentLimiter, public ODriveIntf::OnboardThermistorCurrentLimiterIntf {
@@ -67,6 +66,8 @@ public:
     OffboardThermistorCurrentLimiter();
 
     Config_t config_;
+
+    bool apply_config();
 
 private:
     void decode_pin();

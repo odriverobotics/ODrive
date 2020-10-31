@@ -40,7 +40,7 @@ export default {
   methods: {
     newVal: function (e) {
       let val = parseMath(e.target.value);
-      if (val != false) {
+      if (val !== false) {
         this.value = val;
         console.log("input = " + e.target.value + ", val = " + this.value);
         this.$store.commit("setActionVal", {dashID: this.dashID, actionID: this.id, val: this.value});

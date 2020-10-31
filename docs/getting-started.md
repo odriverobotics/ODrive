@@ -69,7 +69,7 @@ Connect the encoder(s) to J4. The A,B phases are required, and the Z (index puls
  Always think safety before powering up the ODrive if motors are attached. Consider what might happen if the motor spins as soon as power is applied.
 </div>
 * Unlike some devices, the ODrive does not recieve power over the USB port so the 24/56 volt power input is required even just to communicate with it using USB. It is ok to power up the ODrive before or after connecting the USB cable.
-* To power up the ODrive, connect the power source to the DC terminals. Make sure to pay attention to the polarity. A small spark is normal. This is caused by the capacitors charging up.
+* To power up the ODrive, connect the power source to the DC terminals. Make sure to pay attention to the polarity. Try to connect the power source first and then turn it on to avoid inrush current. If this can't be avoided then a small spark is normal. This is caused by the capacitors charging up.
 
 ## Downloading and Installing Tools
 Most instructions in this guide refer to a utility called `odrivetool`, so you should install that first.
