@@ -186,11 +186,7 @@ bool Axis::do_checks() {
 // @brief Update all esitmators
 bool Axis::do_updates() {
     // Sub-components should use set_error which will propegate to this error_
-    task_times_.thermistor_update.beginTimer();
-    for (ThermistorCurrentLimiter* thermistor : thermistors_) {
-        thermistor->update();
-    }
-    task_times_.thermistor_update.stopTimer();
+
 
     task_times_.encoder_update.beginTimer();
     encoder_.update();
@@ -200,9 +196,12 @@ bool Axis::do_updates() {
     sensorless_estimator_.update();
     task_times_.sensorless_update.stopTimer();
 
-    task_times_.min_endstop_update.beginTimer();
+    task_times_.thermistor_update.beginTimer();
     motor_.fet_thermistor_.update();
     motor_.motor_thermistor_.update();
+    task_times_.thermistor_update.stopTimer();
+
+    task_times_.min_endstop_update.beginTimer();
     min_endstop_.update();
     task_times_.min_endstop_update.stopTimer();
 
