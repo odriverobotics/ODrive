@@ -18,9 +18,6 @@
 static uint8_t dma_rx_buffer[UART_RX_BUFFER_SIZE];
 static uint32_t dma_last_rcv_idx;
 
-// FIXME: the stdlib doesn't know about CMSIS threads, so this is just a global variable
-// static thread_local uint32_t deadline_ms = 0;
-
 osThreadId uart_thread = 0;
 extern UART_HandleTypeDef* uart0;
 static UART_HandleTypeDef* huart_ = uart0; // defined in board.cpp.
@@ -35,7 +32,6 @@ public:
             size_t chunk = length < UART_TX_BUFFER_SIZE ? length : UART_TX_BUFFER_SIZE;
             // wait for USB interface to become ready
             // TODO: implement ring buffer to get a more continuous stream of data
-            // if (osSemaphoreWait(sem_uart_dma, deadline_to_timeout(deadline_ms)) != osOK)
             if (osSemaphoreWait(sem_uart_dma, PROTOCOL_SERVER_TIMEOUT_MS) != osOK)
                 return -1;
             // transmit chunk
@@ -76,7 +72,6 @@ static void uart_server_thread(void * ctx) {
             continue;
         }
 
-        // deadline_ms = timeout_to_deadline(PROTOCOL_SERVER_TIMEOUT_MS);
         // Process bytes in one or two chunks (two in case there was a wrap)
         if (new_rcv_idx < dma_last_rcv_idx) {
             uart_stream_input.process_bytes(dma_rx_buffer + dma_last_rcv_idx,
