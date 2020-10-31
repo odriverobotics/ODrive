@@ -5,6 +5,9 @@
 #include <cmsis_os.h>
 #include <board.h>
 
+#include <tim.h>
+
+
 int SVM(float alpha, float beta, float* tA, float* tB, float* tC) {
     int Sextant;
 
@@ -202,3 +205,4 @@ void delay_us(uint32_t us)
         __ASM("nop");
     }
 }
+

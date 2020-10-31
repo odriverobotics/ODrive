@@ -12,6 +12,7 @@ class Axis;
 #include "low_level.h"
 #include "utils.hpp"
 #include "communication/interface_uart.h" // TODO: remove once uart_poll() is gone
+#include "taskTimer.hpp"
 
 #include <array>
 
@@ -27,6 +28,28 @@ public:
         bool finish_on_vel = false;
         bool finish_on_distance = false;
         bool finish_on_enc_idx = false;
+    };
+
+    struct TaskTimes_t {
+        TaskTimer thermistor_update;
+        TaskTimer encoder_update;
+        TaskTimer sensorless_update;
+        TaskTimer min_endstop_update;
+        TaskTimer max_endstop_update;
+        TaskTimer axis_update;
+        TaskTimer axis_error_check;
+
+        TaskTimer controller_update;
+        TaskTimer motor_update;
+        TaskTimer update_handler;
+
+        TaskTimer brake_update;
+        TaskTimer adc_cb;
+        TaskTimer control_loop;
+        TaskTimer total;
+
+        TaskTimer uart_poll;
+        TaskTimer FOC_Current;
     };
 
     static LockinConfig_t default_calibration();
@@ -161,11 +184,18 @@ public:
     template<typename T>
     void run_control_loop(const T& update_handler) {
         while (requested_state_ == AXIS_STATE_UNDEFINED) {
+            task_times_.control_loop.beginTimer();
+
             // look for errors at axis level and also all subcomponents
+            task_times_.axis_error_check.beginTimer();
             bool checks_ok = do_checks();
+            task_times_.axis_error_check.stopTimer();
+
             // Update all estimators
             // Note: updates run even if checks fail
-            bool updates_ok = do_updates(); 
+            task_times_.axis_update.beginTimer();
+            bool updates_ok = do_updates();
+            task_times_.axis_update.stopTimer();
 
             // make sure the watchdog is being fed. 
             bool watchdog_ok = watchdog_check();
@@ -179,14 +209,23 @@ public:
 
             // Run main loop function, defer quitting for after wait
             // TODO: change arming logic to arm after waiting
+            task_times_.update_handler.beginTimer();
             bool main_continue = update_handler();
+            task_times_.update_handler.stopTimer();
 
             if (axis_num_ == 0) {
+                task_times_.uart_poll.beginTimer();
                 uart_poll(); // TODO: move to board-level control loop once it exists
+                task_times_.uart_poll.stopTimer();
             }
 
             // Check we meet deadlines after queueing
             ++loop_counter_;
+
+            task_times_.control_loop.stopTimer();
+            task_times_.total.stopTimer();
+            if(axis_num_ == 1)
+                TaskTimer::sample_next = false;
 
             // Wait until the current measurement interrupt fires
             if (!wait_for_current_meas()) {
@@ -197,6 +236,7 @@ public:
                 error_ |= ERROR_CURRENT_MEASUREMENT_TIMEOUT;
                 break;
             }
+            task_times_.total.beginTimer();
 
             if (!main_continue)
                 break;
@@ -230,6 +270,7 @@ public:
     Endstop& min_endstop_;
     Endstop& max_endstop_;
     MechanicalBrake& mechanical_brake_;
+    TaskTimes_t task_times_;
 
     osThreadId thread_id_;
     const uint32_t stack_size_ = 2048; // Bytes

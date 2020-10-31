@@ -128,9 +128,8 @@ inline ENUMTYPE &operator &= (ENUMTYPE &a, ENUMTYPE b) { return reinterpret_cast
 inline ENUMTYPE &operator ^= (ENUMTYPE &a, ENUMTYPE b) { return reinterpret_cast<ENUMTYPE&>(reinterpret_cast<std::underlying_type_t<ENUMTYPE>&>(a) ^= static_cast<std::underlying_type_t<ENUMTYPE>>(b)); } \
 inline ENUMTYPE operator ~ (ENUMTYPE a) { return static_cast<ENUMTYPE>(~static_cast<std::underlying_type_t<ENUMTYPE>>(a)); }
 
-
-
 #include "autogen/interfaces.hpp"
+#include <taskTimer.hpp>
 
 // ODrive specific includes
 #include <utils.hpp>
@@ -219,6 +218,7 @@ public:
     const uint8_t fw_version_revision_ = ::fw_version_revision_;
     const uint8_t fw_version_unreleased_ = ::fw_version_unreleased_; // 0 for official releases, 1 otherwise
 
+    bool& task_timers_armed_ = ::task_timers_armed;
     bool& brake_resistor_armed_ = ::brake_resistor_armed; // TODO: make this the actual variable
     bool& brake_resistor_saturated_ = ::brake_resistor_saturated; // TODO: make this the actual variable
 

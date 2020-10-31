@@ -306,6 +306,7 @@ bool Motor::FOC_voltage(float v_d, float v_q, float pwm_phase) {
 }
 
 bool Motor::FOC_current(float Id_des, float Iq_des, float I_phase, float pwm_phase, float phase_vel) {
+    axis_->task_times_.FOC_Current.beginTimer();
     // Syntactic sugar
     CurrentControl_t& ictrl = current_control_;
 
@@ -418,6 +419,7 @@ bool Motor::FOC_current(float Id_des, float Iq_des, float I_phase, float pwm_pha
         }
     }
 
+    axis_->task_times_.FOC_Current.stopTimer();
     return true;
 }
 

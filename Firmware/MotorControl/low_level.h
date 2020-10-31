@@ -19,6 +19,7 @@ extern const float adc_ref_voltage;
 /* Exported variables --------------------------------------------------------*/
 extern float vbus_voltage;
 extern float ibus_;
+extern bool task_timers_armed;
 extern bool brake_resistor_armed;
 extern bool brake_resistor_saturated;
 extern uint16_t adc_measurements_[ADC_CHANNEL_COUNT];
