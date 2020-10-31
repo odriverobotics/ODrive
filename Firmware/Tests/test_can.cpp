@@ -39,6 +39,9 @@ TEST_SUITE("CAN Functions") {
         val = can_getSignal<uint16_t>(rxmsg, 0, 16, true, 1, 0);
         CHECK(val == 0x1234);
 
+        val = can_getSignal<uint16_t>(rxmsg, 0, 16, true);
+        CHECK(val == 0x1234);
+
         val = can_getSignal<uint16_t>(rxmsg, 0, 16, false, 1, 0);
         CHECK(val == 0x3412);
 

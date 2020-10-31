@@ -99,7 +99,9 @@ public:
          uint16_t control_deadline,
          float shunt_conductance,
          TGateDriver& gate_driver,
-         TOpAmp& opamp);
+         TOpAmp& opamp,
+         OnboardThermistorCurrentLimiter& fet_thermistor,
+         OffboardThermistorCurrentLimiter& motor_thermistor);
 
     bool arm();
     void disarm();
@@ -130,6 +132,8 @@ public:
     const float shunt_conductance_;
     TGateDriver& gate_driver_;
     TOpAmp& opamp_;
+    OnboardThermistorCurrentLimiter& fet_thermistor_;
+    OffboardThermistorCurrentLimiter& motor_thermistor_;
 
     Config_t config_;
     Axis* axis_ = nullptr; // set by Axis constructor

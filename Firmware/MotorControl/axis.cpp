@@ -14,8 +14,6 @@ Axis::Axis(int axis_num,
            Encoder& encoder,
            SensorlessEstimator& sensorless_estimator,
            Controller& controller,
-           OnboardThermistorCurrentLimiter& fet_thermistor,
-           OffboardThermistorCurrentLimiter& motor_thermistor,
            Motor& motor,
            TrapezoidalTrajectory& trap,
            Endstop& min_endstop,
@@ -28,25 +26,15 @@ Axis::Axis(int axis_num,
       encoder_(encoder),
       sensorless_estimator_(sensorless_estimator),
       controller_(controller),
-      fet_thermistor_(fet_thermistor),
-      motor_thermistor_(motor_thermistor),
       motor_(motor),
       trap_traj_(trap),
       min_endstop_(min_endstop),
       max_endstop_(max_endstop),
-      mechanical_brake_(mechanical_brake),
-      current_limiters_(make_array(
-          static_cast<CurrentLimiter*>(&fet_thermistor),
-          static_cast<CurrentLimiter*>(&motor_thermistor))),
-      thermistors_(make_array(
-          static_cast<ThermistorCurrentLimiter*>(&fet_thermistor),
-          static_cast<ThermistorCurrentLimiter*>(&motor_thermistor)))
+      mechanical_brake_(mechanical_brake)
 {
     encoder_.axis_ = this;
     sensorless_estimator_.axis_ = this;
     controller_.axis_ = this;
-    fet_thermistor_.axis_ = this;
-    motor_thermistor.axis_ = this;
     motor_.axis_ = this;
     trap_traj_.axis_ = this;
     min_endstop_.axis_ = this;
@@ -97,7 +85,7 @@ void Axis::clear_config() {
     config_ = {};
     config_.step_gpio_pin = default_step_gpio_pin_;
     config_.dir_gpio_pin = default_dir_gpio_pin_;
-    config_.can_node_id = axis_num_;
+    config_.can.node_id = axis_num_;
 }
 
 // @brief Does Nothing
@@ -180,9 +168,6 @@ bool Axis::do_checks() {
 
     // Sub-components should use set_error which will propegate to this error_
     motor_.effective_current_lim();
-    for (ThermistorCurrentLimiter* thermistor : thermistors_) {
-        thermistor->do_checks();
-    }
     motor_.do_checks();
     // encoder_.do_checks();
     // sensorless_estimator_.do_checks();
@@ -201,15 +186,14 @@ bool Axis::do_checks() {
 // @brief Update all esitmators
 bool Axis::do_updates() {
     // Sub-components should use set_error which will propegate to this error_
-    for (ThermistorCurrentLimiter* thermistor : thermistors_) {
-        thermistor->update();
-    }
     encoder_.update();
     sensorless_estimator_.update();
+    motor_.fet_thermistor_.update();
+    motor_.motor_thermistor_.update();
     min_endstop_.update();
     max_endstop_.update();
     bool ret = check_for_errors();
-    odCAN->send_heartbeat(this);
+    odCAN->send_cyclic(*this);
     return ret;
 }
 

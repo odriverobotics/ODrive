@@ -2,6 +2,7 @@ import usb.util
 import time
 import fractions
 import array
+import time
 from odrive.dfuse.DfuState import DfuState
 
 DFU_REQUEST_SEND = 0x21
@@ -64,7 +65,20 @@ class DfuDevice:
         self.control_msg(DFU_REQUEST_SEND, DFU_CLRSTATUS, 0, None)
 
     def get_state(self):
-        return self.control_msg(DFU_REQUEST_RECEIVE, DFU_GETSTATE, 0, 1)[0]
+        msg = self.control_msg(DFU_REQUEST_RECEIVE, DFU_GETSTATE, 0, 1)
+
+        # Second chance after giving the device some time to breathe.
+        if len(msg) == 0:
+            time.sleep(0.5)
+            msg = self.control_msg(DFU_REQUEST_RECEIVE, DFU_GETSTATE, 0, 1)
+
+        if len(msg) == 0:
+            raise Exception("Could not get device state. Firmware upgrade will abort. "
+                            "Please try again. If odrivetool can't find the device "
+                            "anymore after this, follow the instructions in "
+                            "https://docs.odriverobotics.com/odrivetool#device-firmware-update "
+                            "(\"How to force DFU mode\").")
+        return msg[0]
 
     def abort(self):
         self.control_msg(DFU_REQUEST_RECEIVE, DFU_ABORT, 0, 0)

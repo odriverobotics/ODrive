@@ -21,7 +21,7 @@ export default new Vuex.Store({
         axes: Array,
         odriveServerAddress: String,
         serverConnected: Boolean,
-        ODriveConnected: false,
+        ODrivesConnected: Object,
         serverOutput: [],
         dashboards: [
             {
@@ -95,6 +95,13 @@ export default new Vuex.Store({
             state.odriveConfigs['writeAble'] = payload.writeAble;
             state.odriveConfigs['writeAbleNumeric'] = payload.writeAbleNumeric;
         },
+        setODrivesStatus(state, obj) {
+            // obj is {"odriveX": true/false}
+            for (const odrive of Object.keys(obj)){
+                state.ODrivesConnected[odrive] = obj[odrive];
+                console.log(state.ODrivesConnected);
+            }
+        },
         setAxes(state, axes) {
             state.axes = axes;
         },
@@ -162,9 +169,6 @@ export default new Vuex.Store({
         },
         setServerStatus(state, val) {
             state.serverConnected = val;
-        },
-        setODriveConnected(state, val) {
-            state.ODriveConnected = val;
         },
         removeCtrlFromDash(state, obj) {
             // obj is {dash: dashID, path: control path}
@@ -325,7 +329,6 @@ export default new Vuex.Store({
                 type: "odrive-found",
                 callback: () => {
                     console.log("odrive-found recieved from server");
-                    context.commit("setODriveConnected", true);
                     context.dispatch("getOdrives");
                 }
             })
@@ -370,15 +373,21 @@ export default new Vuex.Store({
             });
             socketio.addEventListener({
                 type: "odrive-disconnected",
-                callback: () => {
-                    console.log("odrive disconnected");
-                    context.commit("setODriveConnected", false);
-                    console.log("restarting server...");
-                    window.ipcRenderer.send('kill-server');
-                    window.ipcRenderer.send('start-server');
-                    context.dispatch('setServerAddress', context.state.odriveServerAddress);
+                callback: (odrive_name) => {
+                    console.log(odrive_name + " disconnected");
+                    //console.log("restarting server...");
+                    //window.ipcRenderer.send('kill-server');
+                    //window.ipcRenderer.send('start-server');
+                    //context.dispatch('setServerAddress', context.state.odriveServerAddress);
                 }
-            })
+            });
+            socketio.addEventListener({
+                type: "odrives-status",
+                callback: (odrives_status) => {
+                    console.log("From odrives-status msg " + odrives_status);
+                    context.commit('setODrivesStatus', JSON.parse(odrives_status));
+                }
+            });
         }
     }
 })

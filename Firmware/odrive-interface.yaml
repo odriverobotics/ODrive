@@ -370,7 +370,8 @@ interfaces:
             bit: 17
             doc: the min endstop was not enabled during homing
           OverTemp:
-            doc: Check `fet_thermistor.error` and `motor_thermistor.error` for more information.
+            # unused
+            doc: Check `motor.error` for more details.
       step_dir_active: readonly bool
       current_state: readonly AxisState
       requested_state: AxisState
@@ -431,11 +432,7 @@ interfaces:
               vel: float32
           sensorless_ramp: LockinConfig
           general_lockin: LockinConfig
-          can_node_id:
-            type: uint32
-            doc: Both axes will have the same id to start
-          can_node_id_extended: bool
-          can_heartbeat_rate_ms: uint32
+          can: CanConfig
         gate_driver:
           c_name: gate_driver_exported_
           c_is_class: False
@@ -459,8 +456,6 @@ interfaces:
             # status_reg_2: readonly uint32
             # ctrl_reg_1: readonly uint32
             # ctrl_reg_2: readonly uint32
-      fet_thermistor: OnboardThermistorCurrentLimiter
-      motor_thermistor: OffboardThermistorCurrentLimiter
       motor: Motor
       controller: Controller
       encoder: Encoder
@@ -500,13 +495,20 @@ interfaces:
       finish_on_distance: bool
       finish_on_enc_idx: bool
 
+  ODrive.Axis.CanConfig:
+    c_is_class: False
+    attributes:
+      node_id: uint32
+      is_extended: bool
+      heartbeat_rate_ms: uint32
+      encoder_rate_ms: uint32
+
   ODrive.ThermistorCurrentLimiter:
     c_is_class: False
 
   ODrive.OnboardThermistorCurrentLimiter:
     c_is_class: True
     attributes:
-      error: ThermistorCurrentLimiter.Error
       temperature: readonly float32
       config:
         c_is_class: False
@@ -522,7 +524,6 @@ interfaces:
   ODrive.OffboardThermistorCurrentLimiter:
     c_is_class: True
     attributes:
-      error: ThermistorCurrentLimiter.Error
       temperature: readonly float32
       config:
         c_is_class: False
@@ -620,6 +621,8 @@ interfaces:
           DcBusOverRegenCurrent: {doc: too much current pushed into the power supply}
           DcBusOverCurrent: {doc: too much current pulled out of the power supply}
           ModulationIsNan:
+          MotorThermistorOverTemp: {doc: The motor thermistor measured a temperature above motor.motor_thermistor.config.temp_limit_upper}
+          FetThermistorOverTemp: {doc: The inverter thermistor measured a temperature above motor.fet_thermistor.config.temp_limit_upper}
       armed_state:
         typeargs: {fibre.Property.mode: readonly}
         values:
@@ -634,6 +637,8 @@ interfaces:
       DC_calib_phC: {type: float32, c_name: DC_calib_.phC}
       phase_current_rev_gain: float32
       effective_current_lim: readonly float32
+      fet_thermistor: OnboardThermistorCurrentLimiter
+      motor_thermistor: OffboardThermistorCurrentLimiter
       current_control:
         c_is_class: False
         attributes:
@@ -1034,12 +1039,6 @@ valuetypes:
         brief: Run axis homing function.
         doc:
           Endstops must be enabled to use this feature.
-
-  ODrive.ThermistorCurrentLimiter.Error:
-    nullflag: None
-    flags:
-      OverTemp:
-        doc: The thermistor temperature upper limit was exceeded. 
 
   ODrive.Encoder.Mode:
     values:
