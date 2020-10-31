@@ -19,6 +19,7 @@ extern const float adc_ref_voltage;
 /* Exported variables --------------------------------------------------------*/
 extern float vbus_voltage;
 extern float ibus_;
+extern bool task_timers_armed;
 extern bool brake_resistor_armed;
 extern bool brake_resistor_saturated;
 extern uint16_t adc_measurements_[ADC_CHANNEL_COUNT];
@@ -46,11 +47,14 @@ void sync_timers(TIM_HandleTypeDef* htim_a, TIM_HandleTypeDef* htim_b,
                  uint16_t TIM_CLOCKSOURCE_ITRx, uint16_t count_offset,
                  TIM_HandleTypeDef* htim_refbase = nullptr);
 void start_general_purpose_adc();
-float get_adc_voltage(Stm32Gpio gpio);
-uint16_t channel_from_gpio(Stm32Gpio gpio);
-float get_adc_voltage_channel(uint16_t channel);
 void pwm_in_init();
 void start_analog_thread();
+
+// ADC getters
+uint16_t channel_from_gpio(Stm32Gpio gpio);
+float get_adc_voltage(Stm32Gpio gpio);
+float get_adc_relative_voltage(Stm32Gpio gpio);
+float get_adc_relative_voltage_ch(uint16_t channel);
 
 void update_brake_current();
 

@@ -2,8 +2,6 @@
 #include "odrive_main.h"
 #include <algorithm>
 
-#include <algorithm>
-
 bool Controller::apply_config() {
     config_.parent = this;
     update_filter_gains();
@@ -233,7 +231,7 @@ bool Controller::update(float* torque_setpoint_output) {
             pos_setpoint_ = fmodf_pos(pos_setpoint_, *pos_wrap_src_);
             // Circular delta
             pos_err = pos_setpoint_ - *pos_estimate_circular;
-            pos_err = wrap_pm(pos_err, 0.5f * *pos_wrap_src_);
+            pos_err = wrap_pm(pos_err, *pos_wrap_src_);
         } else {
             if(!pos_estimate_linear) {
                 set_error(ERROR_INVALID_ESTIMATE);
@@ -275,7 +273,7 @@ bool Controller::update(float* torque_setpoint_output) {
     if (axis_->motor_.config_.motor_type == Motor::MOTOR_TYPE_ACIM) {
         float effective_flux = axis_->motor_.current_control_.acim_rotor_flux;
         float minflux = axis_->motor_.config_.acim_gain_min_flux;
-        if (fabsf(effective_flux) < minflux)
+        if (std::abs(effective_flux) < minflux)
             effective_flux = std::copysignf(minflux, effective_flux);
         vel_gain /= effective_flux;
         vel_integrator_gain /= effective_flux;
