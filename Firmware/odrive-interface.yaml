@@ -112,6 +112,12 @@ interfaces:
               Refer to [interfaces](interfaces.md) to see which pins support UART_B.
               Changing this requires a reboot.
           enable_uart_c: {type: bool, doc: Not supported on ODrive v3.x.}
+          enable_amt:
+            type: bool
+            brief: Enables/disables AMT21 encoder support.
+            doc: |
+              You also need to set the corresponding GPIO12 and GPIO13 to GPIO_MODE_AMT.
+              Changing this requires a reboot.
           uart_a_baudrate:
             type: uint32
             unit: baud/s
@@ -982,6 +988,7 @@ valuetypes:
       Enc1: {doc: The pin is used by quadrature encoder 1.}
       Enc2: {doc: This mode is not supported on ODrive v3.x.}
       MechBrake: {doc: This is to support external mechanical brakes.}
+      Amt: {doc: This is to support Amt21 encoders.}
 
   ODrive.Can.Protocol:
     values: {Simple: }

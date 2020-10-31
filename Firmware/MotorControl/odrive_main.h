@@ -64,6 +64,7 @@ struct BoardConfig_t {
     bool enable_uart_a = true;
     bool enable_uart_b = false;
     bool enable_uart_c = false;
+    bool enable_amt = false;
     uint32_t uart_a_baudrate = 115200;
     uint32_t uart_b_baudrate = 115200;
     uint32_t uart_c_baudrate = 115200;

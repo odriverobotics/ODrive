@@ -19,6 +19,7 @@ GPIO_MODE_ENC0                           = 11
 GPIO_MODE_ENC1                           = 12
 GPIO_MODE_ENC2                           = 13
 GPIO_MODE_MECH_BRAKE                     = 14
+GPIO_MODE_AMT                            = 15
 
 # ODrive.Can.Protocol
 PROTOCOL_SIMPLE                          = 0

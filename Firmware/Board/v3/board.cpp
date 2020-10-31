@@ -235,8 +235,8 @@ std::array<GpioFunction, 3> alternate_functions[GPIO_COUNT] = {
     /* ENC0_A: */ {{{ODrive::GPIO_MODE_ENC0, GPIO_AF2_TIM3}}},
     /* ENC0_B: */ {{{ODrive::GPIO_MODE_ENC0, GPIO_AF2_TIM3}}},
     /* ENC0_Z: */ {{}},
-    /* ENC1_A: */ {{{ODrive::GPIO_MODE_I2C_A, GPIO_AF4_I2C1}, {ODrive::GPIO_MODE_ENC1, GPIO_AF2_TIM4}}},
-    /* ENC1_B: */ {{{ODrive::GPIO_MODE_I2C_A, GPIO_AF4_I2C1}, {ODrive::GPIO_MODE_ENC1, GPIO_AF2_TIM4}}},
+    /* ENC1_A: */ {{{ODrive::GPIO_MODE_AMT, GPIO_AF7_USART1}, {ODrive::GPIO_MODE_I2C_A, GPIO_AF4_I2C1}, {ODrive::GPIO_MODE_ENC1, GPIO_AF2_TIM4}}},
+    /* ENC1_B: */ {{{ODrive::GPIO_MODE_AMT, GPIO_AF7_USART1}, {ODrive::GPIO_MODE_I2C_A, GPIO_AF4_I2C1}, {ODrive::GPIO_MODE_ENC1, GPIO_AF2_TIM4}}},
     /* ENC1_Z: */ {{}},
     /* CAN_R: */ {{{ODrive::GPIO_MODE_CAN_A, GPIO_AF9_CAN1}, {ODrive::GPIO_MODE_I2C_A, GPIO_AF4_I2C1}}},
     /* CAN_D: */ {{{ODrive::GPIO_MODE_CAN_A, GPIO_AF9_CAN1}, {ODrive::GPIO_MODE_I2C_A, GPIO_AF4_I2C1}}},
@@ -285,6 +285,13 @@ bool board_init() {
     if (odrv.config_.enable_uart_b) {
         uart_b->Init.BaudRate = odrv.config_.uart_b_baudrate;
         MX_USART2_UART_Init();
+    }
+
+    if (odrv.config_.enable_amt) {
+//        HAL_GPIO_WritePin(M1_ENC_Z_GPIO_Port, M1_ENC_Z_Pin, GPIO_PIN_RESET);
+        get_gpio(14).config(GPIO_MODE_OUTPUT_PP, GPIO_NOPULL);
+        get_gpio(14).write(false);
+        MX_USART1_UART_Init();
     }
 
     if (odrv.config_.enable_i2c_a) {

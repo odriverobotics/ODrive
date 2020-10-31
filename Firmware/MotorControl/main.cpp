@@ -474,6 +474,14 @@ extern "C" int main(void) {
                     odrv.misconfigured_ = true;
                 }
             } break;
+            case ODriveIntf::GPIO_MODE_AMT: {
+                GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
+                GPIO_InitStruct.Pull = (i == 0) ? GPIO_PULLDOWN : GPIO_PULLUP; // this is probably swapped but imitates old behavior
+                GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
+                if (!odrv.config_.enable_amt) {
+                    odrv.misconfigured_ = true;
+                }
+            } break;
             case ODriveIntf::GPIO_MODE_UART_C: {
                 GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
                 GPIO_InitStruct.Pull = (i == 0) ? GPIO_PULLDOWN : GPIO_PULLUP; // this is probably swapped but imitates old behavior
