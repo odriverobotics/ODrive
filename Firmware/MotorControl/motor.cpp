@@ -78,6 +78,7 @@ bool Motor::apply_config() {
 // @brief Set up the gate drivers
 bool Motor::setup() {
     if (!gate_driver_.init()) {
+        set_error(ERROR_DRV_FAULT);
         return false;
     }
     

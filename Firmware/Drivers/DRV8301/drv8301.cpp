@@ -67,8 +67,14 @@ bool Drv8301::init() {
 
     // Make sure the Fault bit is not set during startup
     uint16_t reg;
+    uint32_t count = 0;
     while (!read_spi(RegName_Status_1, &reg) || (reg & DRV8301_STATUS1_FAULT_BITS))
-        ; // TODO: don't spin
+    {
+        osDelay(1);
+        if(count++ > 10){
+            return false;
+        }
+    }
 
     // Wait for the DRV8301 registers to update
     osDelay(1);
