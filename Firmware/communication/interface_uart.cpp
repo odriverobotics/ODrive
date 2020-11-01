@@ -122,9 +122,5 @@ void uart_poll() {
 }
 
 void HAL_UART_TxCpltCallback(UART_HandleTypeDef* huart) {
-    // Add this back for interrupt DE/nRE switching
-//    if (huart->Instance == USART1) {
-//        HAL_GPIO_WritePin(M1_ENC_Z_GPIO_Port, M1_ENC_Z_Pin, GPIO_PIN_RESET);
-//    }
     osSemaphoreRelease(sem_uart_dma);
 }

@@ -403,12 +403,9 @@ bool Encoder::abs_spi_start_transaction(){
 
 bool Encoder::abs_rs485_start_transaction(){
     if (mode_ == MODE_RS485_ABS_CUI){
-        // Does not use interrupts to transmit as DE/nRE doesn't switch fast enough on callback
-        // Blocks for now :(
-        HAL_UART_Receive_DMA(&huart1, abs_rs485_dma_rx_, 2);
         HAL_GPIO_WritePin(M1_ENC_Z_GPIO_Port, M1_ENC_Z_Pin, GPIO_PIN_SET);
-        HAL_UART_Transmit(&huart1, &abs_rs485_tx_, 1,1);
-        HAL_GPIO_WritePin(M1_ENC_Z_GPIO_Port, M1_ENC_Z_Pin, GPIO_PIN_RESET);
+        HAL_UART_Transmit_IT(&huart1, &abs_rs485_tx_, 1);
+        HAL_UART_Receive_DMA(&huart1, abs_rs485_dma_rx_, 2);
     }
     return true;
 }

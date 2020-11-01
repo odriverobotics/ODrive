@@ -388,6 +388,39 @@ void USART2_IRQHandler(void)
   /* USER CODE END USART2_IRQn 1 */
 }
 
+// Modified HAL_UART_IRQHandler for AMT21 encoder (allows priority 4)
+static void Modified_HAL_UART_IRQHandler(UART_HandleTypeDef *huart) {
+  uint32_t isrflags = READ_REG(huart->Instance->SR);
+  uint32_t cr1its   = READ_REG(huart->Instance->CR1);
+
+  /* UART in mode Transmitter ------------------------------------------------*/
+  if(((isrflags & USART_SR_TXE) != RESET) && ((cr1its & USART_CR1_TXEIE) != RESET)) {
+    // Inlined a modified version of UART_Transmit_IT
+    /* Check that a Tx process is ongoing */
+    if(huart->gState == HAL_UART_STATE_BUSY_TX) {
+      huart->Instance->DR = (uint8_t)(*huart->pTxBuffPtr++ & (uint8_t)0x00FF);
+      if(--huart->TxXferCount == 0U){
+        /* Disable the UART Transmit Complete Interrupt */
+        CLEAR_BIT(huart->Instance->CR1, USART_CR1_TXEIE);
+        /* Enable the UART Transmit Complete Interrupt */    
+        SET_BIT(huart->Instance->CR1, USART_CR1_TCIE);
+      }
+    }
+    return;
+  }
+  
+  /* UART in mode Transmitter end --------------------------------------------*/
+  if(((isrflags & USART_SR_TC) != RESET) && ((cr1its & USART_CR1_TCIE) != RESET)) {
+    // Inlined a modified version of UART_EndTransmit_IT
+    /* Disable the UART Transmit Complete Interrupt */    
+    CLEAR_BIT(huart->Instance->CR1, USART_CR1_TCIE);
+    /* Tx process is ended, restore huart->gState to Ready */
+    huart->gState = HAL_UART_STATE_READY;
+    HAL_GPIO_WritePin(M1_ENC_Z_GPIO_Port, M1_ENC_Z_Pin, GPIO_PIN_RESET);
+    return;
+  }
+}
+
 /**
   * @brief This function handles USART1 global interrupt.
   */
@@ -395,8 +428,9 @@ void USART1_IRQHandler(void)
 {
   /* USER CODE BEGIN USART1_IRQn 0 */
   // COUNT_IRQ(USART1_IRQn);
+  Modified_HAL_UART_IRQHandler(&huart1);
   /* USER CODE END USART1_IRQn 0 */
-  HAL_UART_IRQHandler(&huart1);
+  // HAL_UART_IRQHandler(&huart1);
   /* USER CODE BEGIN USART1_IRQn 1 */
 
   /* USER CODE END USART1_IRQn 1 */
