@@ -12,6 +12,7 @@ OPENOCD := openocd -f interface/stlink-v2.cfg \
 
 all:
 	@tup --quiet --no-environ-check
+	@python interface_generator_stub.py --definitions odrive-interface.yaml --template ../tools/enums_template.j2 --output ../tools/odrive/enums.py
 
 flash: all
 	$(OPENOCD) -c init \

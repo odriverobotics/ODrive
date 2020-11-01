@@ -265,7 +265,9 @@ static void rtos_main(void*) {
 
     // Set up the CS pins for absolute encoders
     for(auto& axis : axes){
-        if(axis.encoder_.config_.mode & Encoder::MODE_FLAG_ABS){
+        if(axis.encoder_.config_.mode == Encoder::MODE_RS485_ABS_CUI){
+            axis.encoder_.abs_rs485_en_pin_init();
+        } else if(axis.encoder_.config_.mode & Encoder::MODE_FLAG_ABS){
             axis.encoder_.abs_spi_cs_pin_init();
         }
     }

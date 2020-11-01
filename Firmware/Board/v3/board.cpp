@@ -288,9 +288,6 @@ bool board_init() {
     }
 
     if (odrv.config_.enable_amt) {
-//        HAL_GPIO_WritePin(M1_ENC_Z_GPIO_Port, M1_ENC_Z_Pin, GPIO_PIN_RESET);
-        get_gpio(14).config(GPIO_MODE_OUTPUT_PP, GPIO_NOPULL);
-        get_gpio(14).write(false);
         MX_USART1_UART_Init();
     }
 

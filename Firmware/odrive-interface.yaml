@@ -1064,6 +1064,9 @@ valuetypes:
       SpiAbsRls:
         value: 0x103
         doc: RLS Encoders
+      Rs485AbsCui:
+        value: 0x104
+        doc: compatible with CUI AMT21xx
 
   ODrive.Controller.ControlMode:
     values:

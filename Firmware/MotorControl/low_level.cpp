@@ -421,6 +421,7 @@ void pwm_trig_adc_cb(ADC_HandleTypeDef* hadc, bool injected) {
         if((current_meas_not_DC_CAL && !axis_num) ||
                 (axis_num && !current_meas_not_DC_CAL)){
             axis.encoder_.abs_spi_start_transaction();
+            axis.encoder_.abs_rs485_start_transaction();
         }
     }
 
@@ -556,4 +557,11 @@ static void analog_polling_thread(void *)
 void start_analog_thread() {
     osThreadDef(thread_def, analog_polling_thread, osPriorityLow, 0, 512 / sizeof(StackType_t));
     osThreadCreate(osThread(thread_def), NULL);
+}
+
+// Only works on axis 1 right now
+void HAL_UART_RxCpltCallback(UART_HandleTypeDef* huart) {
+    if (huart->Instance == USART1) {
+        axes[1].encoder_.abs_rs485_cb();
+    }
 }

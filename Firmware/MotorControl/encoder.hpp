@@ -123,6 +123,14 @@ public:
     uint16_t abs_spi_dma_rx_[1];
     Stm32SpiArbiter::SpiTask spi_task_;
 
+    bool abs_rs485_start_transaction();
+    void abs_rs485_cb();
+    void abs_rs485_en_pin_init();
+    bool abs_rs485_pos_updated_ = false;
+    Stm32Gpio abs_rs485_en_gpio_;
+    uint8_t abs_rs485_tx_ = 0x54;
+    uint8_t abs_rs485_dma_rx_[2];
+
     constexpr float getCoggingRatio(){
         return 1.0f / 3600.0f;
     }
