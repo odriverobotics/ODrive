@@ -254,6 +254,40 @@ let odriveEnums = {
       text: "Position Control",
       value: 3,
     },
+  ],
+  input_mode: [
+    {
+      text: "Inactive",
+      value: 0
+    },
+    {
+      text: "Passthrough",
+      value: 1
+    },
+    {
+      text: "Velocity Ramp",
+      value: 2
+    },
+    {
+      text: "Position Filter",
+      value: 3
+    },
+    {
+      text: "Mix Channels",
+      value: 4
+    },
+    {
+      text: "Trapezoidal Trajectory",
+      value: 5
+    },
+    {
+      text: "Torque Ramp",
+      value: 6
+    },
+    {
+      text: "Mirror",
+      value: 7
+    }
   ]
 }
 
