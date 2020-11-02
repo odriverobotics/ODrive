@@ -122,5 +122,9 @@ void uart_poll() {
 }
 
 void HAL_UART_TxCpltCallback(UART_HandleTypeDef* huart) {
-    osSemaphoreRelease(sem_uart_dma);
+    if(huart->Instance == USART1) {
+        HAL_GPIO_WritePin(M1_ENC_Z_GPIO_Port, M1_ENC_Z_Pin, GPIO_PIN_RESET);
+    } else {
+        osSemaphoreRelease(sem_uart_dma);
+    }
 }
