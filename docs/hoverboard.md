@@ -49,6 +49,8 @@ odrv0.axis0.encoder.config.cpr = 90
 Since the hall feedback only has 90 counts per revolution, we want to reduce the velocity tracking bandwidth to get smoother velocity estimates.
 We can also set these fairly modest gains that will be a bit sloppy but shouldn't shake your rig apart if it's built poorly. Make sure to tune the gains up when you have everything else working to a stiffness that is applicable to your application.
 Lets also start in velocity control mode since that is probably what you want for a wheeled robot. Note that in velocity mode `pos_gain` isn't used but I have given you a recommended value anyway in case you wanted to run position control mode.
+
+* Note: The gains used here are dependent on the `torque_constant` and `cpr` config settings. The values for hoverboard motors are *very different* from the stock settings. Do not skip the above steps and go straight to these settings!
 ```txt
 odrv0.axis0.encoder.config.bandwidth = 100
 odrv0.axis0.controller.config.pos_gain = 1
