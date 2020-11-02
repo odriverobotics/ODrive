@@ -3,7 +3,7 @@
 # run openocd (0.9.0) with :
 # $ openocd -f interface/stlink-v2.cfg -f target/stm32f4x.cfg &> /dev/null &
 # then run
-# $ python2 sampler.py path_to_myelf_with_symbols
+# $ python sampler.py path_to_myelf_with_symbols
 # ctrl-c to stop sampling.
 # To terminate the openocd session, enter command "fg" then do ctrl-c.
 
