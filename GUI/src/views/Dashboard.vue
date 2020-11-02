@@ -31,6 +31,7 @@
         </template>
         <div class="control-buttons">
           <div class="add-button card" @click="addComponent('control')">Add Control</div>
+          <div class="add-button card" @click="addComponent('watch')">Add Watch</div>
           <div class="add-button card" @click="addComponent('slider')">Add Slider</div>
           <div class="add-button card" @click="addComponent('function')">Add Function</div>
         </div>
@@ -74,6 +75,9 @@ import CtrlNumeric from "../components/controls/CtrlNumeric.vue";
 import CtrlFunction from "../components/controls/CtrlFunction.vue";
 import CtrlSlider from "../components/controls/CtrlSlider.vue";
 import CtrlEnum from "../components/controls/CtrlEnum.vue";
+import WatchEnum from "../components/watches/WatchEnum.vue";
+import WatchNumeric from "../components/watches/WatchNumeric.vue";
+import WatchBoolean from "../components/watches/WatchBoolean.vue";
 import Plot from "../components/plots/Plot.vue";
 import Action from "../components/actions/Action.vue";
 import ActionEnum from "../components/actions/ActionEnum.vue"
@@ -265,6 +269,9 @@ export default {
     CtrlFunction,
     CtrlSlider,
     CtrlEnum,
+    WatchEnum,
+    WatchNumeric,
+    WatchBoolean,
     Plot,
     Action,
     ActionEnum,
@@ -302,6 +309,9 @@ export default {
       this.addCompType = componentType;
       switch (this.addCompType) {
         case "control":
+          this.treeParams = this.$store.state.odriveConfigs['params'];
+          break;
+        case "watch":
           this.treeParams = this.$store.state.odriveConfigs['params'];
           break;
         case "plot":
@@ -357,6 +367,35 @@ export default {
                 controlType: "CtrlFunction",
                 path: e.path,
               });
+              break;
+            default:
+              break;
+          }
+          break;
+        case "watch":
+          switch (typeof e.value) {
+            case "boolean":
+              this.dash.controls.push({
+                controlType: "WatchBoolean",
+                path: e.path,
+              });
+              break;
+            case "number":
+              if (Object.keys(odriveEnums).includes(e.key)){
+                this.dash.controls.push({
+                  controlType: "WatchEnum",
+                  path: e.path,
+                  options: odriveEnums[e.key],
+                })
+              }
+              else {
+                this.dash.controls.push({
+                  controlType: "WatchNumeric",
+                  path: e.path,
+                });
+              }
+              break;
+            case "string":
               break;
             default:
               break;
