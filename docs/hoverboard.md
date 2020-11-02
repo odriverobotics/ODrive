@@ -39,9 +39,7 @@ odrv0.axis0.motor.config.current_control_bandwidth = 100
 odrv0.axis0.motor.config.torque_constant = 8.27 / <measured KV>
 ```
 
-If you
-
-Set the encoder to hall mode (instead of incremental). See the [pinout](encoders.md#hall-effect-encoders) for instructions on how to plug in the hall feedback.
+If you set the encoder to hall mode (instead of incremental). See the [pinout](encoders.md#hall-effect-encoders) for instructions on how to plug in the hall feedback.
 The hall feedback has 6 states for every pole pair in the motor. Since we have 15 pole pairs, we set the cpr to 15*6 = 90.
 ```txt
 odrv0.axis0.encoder.config.mode = ENCODER_MODE_HALL
@@ -54,9 +52,9 @@ Lets also start in velocity control mode since that is probably what you want fo
 ```txt
 odrv0.axis0.encoder.config.bandwidth = 100
 odrv0.axis0.controller.config.pos_gain = 1
-odrv0.axis0.controller.config.vel_gain = 0.02 * odrv0.axis0.motor.config.torque_constant * odrv0.axis0.motor.config.pole_pairs
-odrv0.axis0.controller.config.vel_integrator_gain = 0.1 * odrv0.axis0.motor.config.torque_constant * odrv0.axis0.motor.config.pole_pairs
-odrv0.axis0.controller.config.vel_limit = 100
+odrv0.axis0.controller.config.vel_gain = 0.02 * odrv0.axis0.motor.config.torque_constant * odrv0.axis0.encoder.config.cpr
+odrv0.axis0.controller.config.vel_integrator_gain = 0.1 * odrv0.axis0.motor.config.torque_constant * odrv0.axis0.encoder.config.cpr
+odrv0.axis0.controller.config.vel_limit = 10
 odrv0.axis0.controller.config.control_mode = CONTROL_MODE_VELOCITY_CONTROL
 ```
 
