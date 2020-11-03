@@ -199,6 +199,12 @@ bool Controller::update() {
             }
             anticogging_pos_estimate = pos_setpoint_; // FF the position setpoint instead of the pos_estimate
         } break;
+        case INPUT_MODE_TUNING: {
+            const auto time = axis_->loop_counter_ * current_meas_period;
+            pos_setpoint_ = autotuning_.pos_amplitude * our_arm_sin_f32((2.0f * M_PI * autotuning_.pos_frequency) * time + autotuning_.pos_phase);
+            vel_setpoint_ = autotuning_.vel_amplitude * our_arm_sin_f32((2.0f * M_PI * autotuning_.vel_frequency) * time + autotuning_.vel_phase);
+            torque_setpoint_ = autotuning_.torque_amplitude * our_arm_sin_f32((2.0f * M_PI * autotuning_.torque_frequency) * time + autotuning_.torque_phase);
+        } break;
         default: {
             set_error(ERROR_INVALID_INPUT_MODE);
             return false;

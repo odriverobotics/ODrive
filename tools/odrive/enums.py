@@ -64,6 +64,7 @@ INPUT_MODE_MIX_CHANNELS                  = 4
 INPUT_MODE_TRAP_TRAJ                     = 5
 INPUT_MODE_TORQUE_RAMP                   = 6
 INPUT_MODE_MIRROR                        = 7
+INPUT_MODE_TUNING                        = 8
 
 # ODrive.Motor.MotorType
 MOTOR_TYPE_HIGH_CURRENT                  = 0
