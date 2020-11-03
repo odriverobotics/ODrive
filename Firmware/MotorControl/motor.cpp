@@ -82,6 +82,9 @@ bool Motor::setup() {
         return false;
     }
     
+    fet_thermistor_.update();
+    motor_thermistor_.update();
+
     // Solve for exact gain, then snap down to have equal or larger range as requested
     // or largest possible range otherwise
     constexpr float kMargin = 0.90f;

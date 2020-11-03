@@ -169,9 +169,6 @@ bool Axis::do_checks() {
     // Sub-components should use set_error which will propegate to this error_
     motor_.effective_current_lim();
     motor_.do_checks();
-    // encoder_.do_checks();
-    // sensorless_estimator_.do_checks();
-    // controller_.do_checks();
 
     // Check for endstop presses
     if (min_endstop_.config_.enabled && min_endstop_.rose() && !(current_state_ == AXIS_STATE_HOMING)) {
