@@ -68,7 +68,6 @@ export default {
   },
   methods: {
     putVal: function () {
-      console.log(this.parentControl.sliderValue);
       putVal(this.name, this.parentControl.sliderValue);
     },
     updateSliderValue: function(value) {
@@ -87,7 +86,9 @@ export default {
       this.$store.commit("removeCtrlFromDash", {dashID: this.dashID, path: this.path});
     },
     updateSliderInterval: function() {
-      this.sliderInterval = (this.parentControl.max - this.parentControl.min) / 100.0;
+      var step = (this.parentControl.max - this.parentControl.min) / 100.0;
+      this.sliderInterval =  Math.round(step * 10000) / 10000;
+      console.log(this.sliderInterval + ", " + typeof this.sliderInterval);
     }
   },
   beforeMount() {
@@ -96,6 +97,7 @@ export default {
     if (this.parentControl.min === undefined || this.parentControl.max === undefined || this.parentControl.sliderValue === undefined) {
       this.parentControl.max = parseFloat((this.value * 4).toFixed(1));
       this.parentControl.min = parseFloat((this.value / 4).toFixed(1));
+      this.updateSliderInterval();
       this.parentControl.sliderValue = parseFloat(this.value);
     }
     this.updateSliderInterval();
