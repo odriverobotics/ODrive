@@ -27,6 +27,7 @@
             :options="control.options"
             :odrives="odrives"
             :dashID="dash.id"
+            :parentControl="control"
           />
         </template>
         <div class="control-buttons">

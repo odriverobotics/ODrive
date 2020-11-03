@@ -4,14 +4,20 @@
       <button class="close-button" @click=deleteCtrl>X</button>
       <span class="ctrlName">{{name}}</span>
     </div>
-    <div class="slider-container">
-      <input type="number" :value="min" v-on:change="setMin"/>
-      <!-- <vue-slider v-model="value" :min="min" :max="max" :interval="interval" /> -->
-      <vue-slider v-model="value" :data="data" @change="putVal"/>
-      <input type="number" :value="max" v-on:change="setMax" />
+    <div style="text-align:center; position:relative; right:0px;">
+      <span>{{ parentControl.sliderValue | applyPrecision }}</span>
+      <button v-if="writeAccess" v-on:click="putVal" style="padding:1; margin-right:10px; margin-left:10px;" tooltip="Write down" >
+        <img src="../../assets/images/saveIcon.png"  />
+      </button>
+      <span class="ctrlVal">{{ value }}</span>
     </div>
-    <div style="text-align:center;">
-      <span>{{ onlineValue }}</span>
+    <div class="slider-container">
+      <input type="number" :value="parentControl.min" v-on:change="setMin"/>
+      <vue-slider 
+        v-model="parentControl.sliderValue" :min="parentControl.min" :max="parentControl.max" :interval="sliderInterval" :silent="true"
+        @change="putVal" @drag-end="putVal" @dragging="updateSliderValue" 
+        tooltip="none" tooltipPlacement="bottom" :lazy="true"/>
+      <input type="number" :value="parentControl.max" v-on:change="setMax" />
     </div>
   </div>
 </template>
@@ -19,7 +25,7 @@
 <script>
 import VueSlider from "vue-slider-component";
 import "vue-slider-component/theme/default.css";
-import { getVal, putVal, fetchParam } from "../../lib/odrive_utils.js";
+import { getVal, putVal, fetchParam, getReadonly } from "../../lib/odrive_utils.js";
 
 export default {
   name: "CtrlSlider",
@@ -31,57 +37,71 @@ export default {
     path: String,
     odrives: Object,
     dashID: String,
+    parentControl: Object
   },
   data: function () {
     return {
-      value: 0,
-      min: 0,
-      max: 1,
-      data: [],
-      onlineValue:0,
+      sliderInterval:0,
       intervalId:undefined
     };
   },
+  filters: {
+    applyPrecision: function (value) {
+      if (typeof value === "string") {
+        value = parseFloat(value);
+      }
+      return value.toFixed(3);
+    }
+  },
   computed: {
+    value: function () {
+      return parseFloat(getVal(this.name)).toFixed(3);
+    },
     name: function () {
       let keys = this.path.split(".");
       keys.shift();
       return keys.join(".");
     },
-    interval: function () {
-      return (this.max - this.min) / 100;
-    }
+    writeAccess: function () {
+      return getReadonly(this.name) === false;
+    },
   },
   methods: {
-    putVal: function (value) {
-      console.log(value);
-      putVal(this.name, value);
+    putVal: function () {
+      console.log(this.parentControl.sliderValue);
+      putVal(this.name, this.parentControl.sliderValue);
+    },
+    updateSliderValue: function(value) {
+      this.parentControl.sliderValue = value;
     },
     setMin: function (e) {
-      this.min = parseFloat(e.target.value);
-      this.updateDataArray();
+      this.parentControl.min = parseFloat(e.target.value);
+      this.updateSliderInterval();
     },
     setMax: function (e) {
-      this.max = parseFloat(e.target.value);
-      this.updateDataArray();
+      this.parentControl.max = parseFloat(e.target.value);
+      this.updateSliderInterval();
     },
     deleteCtrl: function() {
       // commit a mutation in the store with the relevant information
       this.$store.commit("removeCtrlFromDash", {dashID: this.dashID, path: this.path});
     },
-    updateDataArray: function() {
-      this.data = Array.from(Array(101), (_, i) => this.min + (this.max-this.min) / 100 * i);
+    updateSliderInterval: function() {
+      this.sliderInterval = (this.parentControl.max - this.parentControl.min) / 100.0;
     }
   },
-  mounted() {
-    this.value = getVal(this.name);
-    this.max = parseFloat((this.value * 4).toFixed(3));
-    this.min = parseFloat((this.value / 4).toFixed(3));
-    this.updateDataArray();
+  beforeMount() {
+    fetchParam(this.name);
+
+    if (this.parentControl.min === undefined || this.parentControl.max === undefined || this.parentControl.sliderValue === undefined) {
+      this.parentControl.max = parseFloat((this.value * 4).toFixed(1));
+      this.parentControl.min = parseFloat((this.value / 4).toFixed(1));
+      this.parentControl.sliderValue = parseFloat(this.value);
+    }
+    this.updateSliderInterval();
 
     let update = () => {
       fetchParam(this.name);
-      this.onlineValue = getVal(this.name);
     }
 
     this.intervalId = setInterval(update, 1000);
@@ -89,7 +109,7 @@ export default {
     update();
   },
   beforeDestroy() {
-      clearInterval(this.intervalId);
+    clearInterval(this.intervalId);
   }
 };
 </script>
