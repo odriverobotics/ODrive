@@ -6,8 +6,9 @@
     <div class="home_text">
       To set up your ODrive, connect it and power it up.
     </div>
-    <div class="connected-container">
-      <input type="text" :class="{ notConnected: notConnected, connected: connected}" v-on:change="setUrl" :value="serverAddress">
+    <button class="connect-usb-button" @click="showUsbConnectDialog()">Connect to USB device...</button>
+    <div id="hackyOutput">
+      not connected
     </div>
     <button class="show-msg-button" @click="showServerMessages = !showServerMessages;">Having trouble? Click here for debug output</button>
     <div class="server-msgs" v-if="showServerMessages">
@@ -17,6 +18,63 @@
 </template>
 
 <script>
+
+//Object.getPrototypeOf(process).version = {
+//  npm: '6.14.7',
+//  ares: '1.16.1',
+//  brotli: '1.0.9',
+//  cldr: '37.0',
+//  icu: '67.1',
+//  llhttp: '2.1.3',
+//  modules: '83',
+//  napi: '7',
+//  nghttp2: '1.41.0',
+//  node: '14.14.0',
+//  openssl: '1.1.1h',
+//  tz: '2019c',
+//  unicode: '13.0',
+//  uv: '1.40.0',
+//  v8: '8.4.371.19-node.17',
+//  zlib: '1.2.11'
+//};
+
+//process.version.modules = 'v9.40';
+//var process = require('process');
+//console.log(process);
+//console.log(process.version);
+//console.log(process.versions);
+//const mfs = require("fs");
+//const mp = require("path");
+//const m3 = require("file-uri-to-path");
+//console.log("fs", mfs);
+//console.log("path", mp);
+//console.log("m3", m3);
+const bi = require("bindings");
+console.log(bi);
+const usb = require('electron').remote.require('./usb_bindings.node')
+//const usb = require("usb");
+console.log(usb);
+
+import { fibreOpen } from './../../fibre-js/fibre.js';
+
+var theFibre = {};
+fibreOpen().then(async (libfibre) => {
+  theFibre = libfibre;
+  const filter = 'usb:idVendor=0x1209,idProduct=0x0D32,bInterfaceClass=0,bInterfaceSubClass=1,bInterfaceProtocol=0';
+  console.log("opened libfibre: ", libfibre);
+  console.log(await navigator.usb.getDevices());
+  let onFoundObject = async (obj) => {
+    console.log("found an object!", obj);
+    let isConnected = true;
+    obj._onLost.then(() => isConnected = false);
+    while (isConnected) {
+       document.getElementById("hackyOutput").innerHTML = "vbus_voltage: " + (await obj.vbus_voltage.read());
+       await new Promise((resolve) => setTimeout(resolve, 100));
+    }
+    document.getElementById("hackyOutput").innerHTML = "not connected";
+ }
+ libfibre.startDiscovery(filter, onFoundObject);
+});
 
 export default {
   name: 'Home',
@@ -52,6 +110,9 @@ export default {
       console.log(e.target.value);
       this.$store.dispatch("setServerAddress", e.target.value);
     },
+    showUsbConnectDialog() {
+      theFibre.usbDiscoverer.showDialog();
+    }
   }
 }
 </script>
@@ -79,6 +140,12 @@ img {
 .home_text {
   font-size: 1.5rem;
   padding: 20px;
+}
+
+#hackyOutput {
+  font-size: 1.5rem;
+  padding: 20px;
+  color: blue;
 }
 
 .connected, .notConnected {
