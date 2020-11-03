@@ -147,21 +147,24 @@ class TestSimpleCANClosedLoop():
             def my_cmd(cmd_name, **kwargs): command(canbus.handle, node_id, extended_id, cmd_name, **kwargs)
             def my_req(cmd_name, **kwargs): return asyncio.run(request(canbus.handle, node_id, extended_id, cmd_name, **kwargs))
             def fence(): my_req('get_vbus_voltage') # fence to ensure the CAN command was sent
+            def flush_rx():
+                while not canbus.handle.recv(timeout = 0) is None: pass
             
             axis_ctx.handle.config.enable_watchdog = False
             odrive.handle.clear_errors()
-            axis_ctx.handle.config.can_node_id = node_id
-            axis_ctx.handle.config.can_node_id_extended = extended_id
+            axis_ctx.handle.config.can.node_id = node_id
+            axis_ctx.handle.config.can.is_extended = extended_id
             time.sleep(0.1)
 
             my_cmd('set_node_id', node_id=node_id+20)
+            flush_rx()
             asyncio.run(request(canbus.handle, node_id+20, extended_id, 'get_vbus_voltage'))
-            test_assert_eq(axis_ctx.handle.config.can_node_id, node_id+20)
+            test_assert_eq(axis_ctx.handle.config.can.node_id, node_id+20)
 
             # Reset node ID to default value
-            command(canbus.handle, node_id+20, extended_id, 'set_node_id', node_id=node_id)
+            asyncio.run(command(canbus.handle, node_id+20, extended_id, 'set_node_id', node_id=node_id))
             fence()
-            test_assert_eq(axis_ctx.handle.config.can_node_id, node_id)
+            test_assert_eq(axis_ctx.handle.config.can.node_id, node_id)
 
             vel_limit = 15.0
             nominal_vel = 10.0

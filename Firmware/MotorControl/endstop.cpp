@@ -3,6 +3,7 @@
 
 void Endstop::update() {
     debounceTimer_.update();
+    last_state_ = endstop_state_;
     if (config_.enabled) {
         bool last_pin_state = pin_state_;
 
@@ -17,10 +18,6 @@ void Endstop::update() {
     } else {
         endstop_state_ = false;
     }
-}
-
-bool Endstop::get_state() {
-    return endstop_state_;
 }
 
 bool Endstop::apply_config() {

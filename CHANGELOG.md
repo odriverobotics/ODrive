@@ -2,9 +2,11 @@
 Please add a note of your changes below this heading if you make a Pull Request.
 ### Added
 * [Mechanical brake support](docs/mechanical-brakes.md)
+* Added periodic sending of encoder position on CAN
 
 ### Changed
-
+* Modified encoder offset calibration to work correctly when calib_scan_distance is not a multiple of 4pi
+* Moved thermistors from being a top level object to belonging to Motor objects. Also changed errors: thermistor errors rolled into motor errors
 * Use DMA for DRV8301 setup
 * Make NVM configuration code more dynamic so that the layout doesn't have to be known at compile time.
 * GPIO initialization logic was changed. GPIOs now need to be explicitly set to the mode corresponding to the feature that they are used by. See `<odrv>.config.gpioX_mode`.
@@ -24,12 +26,16 @@ Please add a note of your changes below this heading if you make a Pull Request.
 * More informative profiling instrumentation was added.
 * A system-level error property was introduced.
 
-### API Miration Notes
+### API Migration Notes
 
+* `odrive.axis.fet_thermistor`, `odrive.axis.motor_thermistor` moved to `odrive.axis.motor` object
 * `enable_uart` and `uart_baudrate` were renamed to `enable_uart0` and `uart0_baudrate`.
 * `enable_i2c_instead_of_can` was replaced by the separate settings `enable_i2c0` and `enable_can0`.
 * `<axis>.motor.gate_driver` was moved to `<axis>.gate_driver`.
 * `<axis>.min_endstop.pullup` and `<axis>.max_endstop.pullup` were removed. Use `<odrv>.config.gpioX_mode = GPIO_MODE_DIGITAL / GPIO_MODE_DIGITAL_PULL_UP / GPIO_MODE_DIGITAL_PULL_DOWN` instead.
+* `<axis>.config.can_node_id` was moved to `<axis>.config.can.node_id`
+* `<axis>.config.can_node_id_extended` was moved to `<axis>.config.can.is_extended`
+* `<axis>.config.can_heartbeat_rate_ms` was moved to `<axis>.config.can.heartbeat_rate_ms`
 * `<odrv>.get_oscilloscope_val()` was moved to `<odrv>.oscilloscope.get_val()`.
 * Several error flags from `<odrv>.<axis>.error` were removed. Some were moved to `<odrv>.error` and some are no longer relevant because implementation details changed.
 * Several error flags from `<odrv>.<axis>.motor.error` were removed. Some were moved to `<odrv>.error` and some are no longer relevant because implementation details changed.
@@ -48,14 +54,15 @@ Please add a note of your changes below this heading if you make a Pull Request.
 * `<axis>.motor.timing_log` was removed in favor of `<odrv>.task_times` and `<odrv>.<axis>.task_times`.
 * `<axis>.motor.config.direction` was moved to `<axis>.encoder.config.direction`.
 * `<axis>.motor.config.acim_slip_velocity` was moved to `<axis>.async_estimator.config.slip_velocity`.
-* `<axis>.encoder.config.idx_search_unidirectional` was removed. Offset calibration direction is fully defined by the sign of `<axis>.encoder.config.calib_scan_omega` and how the motor is wired up.
-* The unit of `<axis>.sensorless_estimator.vel_estimate` was changed from `rad/s` to `turns/s`.
 * Several properties were changed to readonly.
+* `<axis>.encoder.config.offset` was renamed to ``<axis>.encoder.config.phase_offset`
+* `<axis>.encoder.config.offset_float` was renamed to ``<axis>.encoder.config.phase_offset_float`
 
-# Release Candidate
-## [0.5.1] - Date TBD
+# Releases
+## [0.5.1] - 2020-09-27
 ### Added
 * Added motor `torque_constant`: units of torque are now [Nm] instead of just motor current.
+* Added `motor.config.torque_lim`: limit for motor torque in [Nm].
 * [Motor thermistors support](docs/thermistors.md)
 * Enable/disable of thermistor thermal limits according `setting axis.<thermistor>.enabled`.
 * Introduced `odrive-interface.yaml` as a root source for the ODrive's API. `odrivetool` connects much faster as a side effect.
@@ -63,6 +70,7 @@ Please add a note of your changes below this heading if you make a Pull Request.
 
 ### Changed
 * **`input_pos`, `input_vel`, `pos_estimate_linear`, `pos_estimate_circular`, are now in units of [turns] or [turns/s] instead of [counts] or [counts/s]**
+* **`pos_gain`, `vel_gain`, `vel_integrator_gain`, are now in units of [(turns/s) / turns], [Nm/(turns/s)], [Nm/(turns/s * s)] instead of [(counts/s) / counts], [A/(counts/s)], [A/((counts/s) * s)].** `pos_gain` is not affected. Old values of `vel_gain` and `vel_integrator_gain` should be multiplied by `torque_constant * encoder cpr` to convert from the old units to the new units. `torque_constant` is approximately equal to 8.27 / (motor KV).
 * `axis.motor.thermal_current_lim` has been removed. Instead a new property is available `axis.motor.effective_current_lim` which contains the effective current limit including any thermal limits.
 * `axis.motor.get_inverter_temp()`, `axis.motor.inverter_temp_limit_lower` and `axis.motor.inverter_temp_limit_upper` have been moved to seperate fet thermistor object under `axis.fet_thermistor`. `get_inverter_temp()` function has been renamed to `temp` and is now a read-only property.
 * `axis.config.counts_per_step` is now `axis.config.turns_per_step`
@@ -70,8 +78,10 @@ Please add a note of your changes below this heading if you make a Pull Request.
 * Fixed bug of high current during lockin-ramp caused by `motor::update()` expecting a torque command instead of current
 * Fixed bug where commanded velocity was extremely high just after sensorless ramp when using `input_mode` INPUT_MODE_VEL_RAMP caused by `vel_setpoint` and `axis.config.sensorless_ramp.vel` being in different units
 
+### Fixed
+* Fixed bug of high current during lockin-ramp caused by `motor::update()` expecting a torque command instead of current
+* Fixed bug where commanded velocity was extremely high just after sensorless ramp when using `input_mode` INPUT_MODE_VEL_RAMP caused by `vel_setpoint` and `axis.config.sensorless_ramp.vel` being in different units
 
-# Releases
 ## [0.5.0] - 2020-08-03
 ### Added
 * AC Induction Motor support.

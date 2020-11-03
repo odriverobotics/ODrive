@@ -64,10 +64,10 @@ class OperationAbortedException(Exception):
 
 def set_motor_thermistor_coeffs(axis, Rload, R_25, Beta, Tmin, TMax):
     coeffs = calculate_thermistor_coeffs(3, Rload, R_25, Beta, Tmin, TMax)
-    axis.motor_thermistor.config.poly_coefficient_0 = float(coeffs[3])
-    axis.motor_thermistor.config.poly_coefficient_1 = float(coeffs[2])
-    axis.motor_thermistor.config.poly_coefficient_2 = float(coeffs[1])
-    axis.motor_thermistor.config.poly_coefficient_3 = float(coeffs[0])
+    axis.motor.motor_thermistor.config.poly_coefficient_0 = float(coeffs[3])
+    axis.motor.motor_thermistor.config.poly_coefficient_1 = float(coeffs[2])
+    axis.motor.motor_thermistor.config.poly_coefficient_2 = float(coeffs[1])
+    axis.motor.motor_thermistor.config.poly_coefficient_3 = float(coeffs[0])
 
 def dump_errors(odrv, clear=False, printfunc = print):
     axes = [(name, axis) for name, axis in odrv._remote_attributes.items() if 'axis' in name]
@@ -102,8 +102,6 @@ def dump_errors(odrv, clear=False, printfunc = print):
         module_decode_map = [
             ('axis', axis, 'error', {v: k for k, v in odrive.enums.__dict__ .items() if k.startswith("AXIS_ERROR_")}),
             ('motor', axis, 'motor.error', {v: k for k, v in odrive.enums.__dict__ .items() if k.startswith("MOTOR_ERROR_")}),
-            ('fet_thermistor', axis, 'fet_thermistor.error', {v: k for k, v in odrive.enums.__dict__ .items() if k.startswith("THERMISTOR_CURRENT_LIMITER_ERROR")}),
-            ('motor_thermistor', axis, 'motor_thermistor.error', {v: k for k, v in odrive.enums.__dict__ .items() if k.startswith("THERMISTOR_CURRENT_LIMITER_ERROR")}),
             ('sensorless_estimator', axis, 'sensorless_estimator.error', {v: k for k, v in odrive.enums.__dict__ .items() if k.startswith("SENSORLESS_ESTIMATOR_ERROR")}),
             ('encoder', axis, 'encoder.error', {v: k for k, v in odrive.enums.__dict__ .items() if k.startswith("ENCODER_ERROR_")}),
             ('controller', axis, 'controller.error', {v: k for k, v in odrive.enums.__dict__ .items() if k.startswith("CONTROLLER_ERROR_")}),

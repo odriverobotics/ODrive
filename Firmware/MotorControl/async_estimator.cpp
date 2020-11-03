@@ -33,10 +33,10 @@ void AsyncEstimator::update(uint32_t timestamp)  {
     float dflux_by_dt = config_.slip_velocity * (id - rotor_flux_);
     rotor_flux_ += dflux_by_dt * dt;
     float slip_velocity = config_.slip_velocity * (iq / rotor_flux_);
-    // Check for issues with small denominator. Polarity of check to catch NaN too
-    bool acceptable_vel = fabsf(slip_velocity) <= 0.1f / dt;
-    if (!acceptable_vel)
+    // Check for issues with small denominator.
+    if (is_nan(slip_velocity) || (std::abs(slip_velocity) > 0.1f / dt)) {
         slip_velocity = 0.0f;
+    }
     slip_vel_ = slip_velocity; // reporting only
 
     stator_phase_vel_ = *rotor_phase_vel + slip_velocity;

@@ -339,7 +339,7 @@ interfaces:
               0xffffffff if the specified number is not a valid DMA stream number.
         doc: Returns information about the specified DMA stream.
       clear_errors:
-        doc: Check the watchdog timer for expiration. Also sets the watchdog error bit if expired.
+        doc: Clear all the errors of this device including all contained submodules.
 
   ODrive.Can:
     c_is_class: True
@@ -383,7 +383,8 @@ interfaces:
             bit: 17
             doc: the min endstop was not enabled during homing
           OverTemp:
-            doc: Check `fet_thermistor.error` and `motor_thermistor.error` for more information.
+            # unused
+            doc: Check `motor.error` for more details.
       step_dir_active: readonly bool
       current_state: readonly AxisState
       requested_state: AxisState
@@ -422,7 +423,6 @@ interfaces:
           watchdog_timeout:
             type: float32
             unit: s
-            doc: 0 disables watchdog
           enable_watchdog: bool
           step_gpio_pin: {type: uint16, c_setter: 'set_step_gpio_pin'}
           dir_gpio_pin: {type: uint16, c_setter: 'set_dir_gpio_pin'}
@@ -436,11 +436,7 @@ interfaces:
               vel: float32
           sensorless_ramp: LockinConfig
           general_lockin: LockinConfig
-          can_node_id:
-            type: uint32
-            doc: Both axes will have the same id to start
-          can_node_id_extended: bool
-          can_heartbeat_rate_ms: uint32
+          can: CanConfig
         gate_driver:
           c_name: gate_driver_exported_
           c_is_class: False
@@ -464,8 +460,6 @@ interfaces:
             # status_reg_2: readonly uint32
             # ctrl_reg_1: readonly uint32
             # ctrl_reg_2: readonly uint32
-      fet_thermistor: OnboardThermistorCurrentLimiter
-      motor_thermistor: OffboardThermistorCurrentLimiter
       motor: Motor
       controller: Controller
       encoder: Encoder
@@ -520,17 +514,23 @@ interfaces:
       finish_on_distance: bool
       finish_on_enc_idx: bool
 
+  ODrive.Axis.CanConfig:
+    c_is_class: False
+    attributes:
+      node_id: uint32
+      is_extended: bool
+      heartbeat_rate_ms: uint32
+      encoder_rate_ms: uint32
+
   ODrive.ThermistorCurrentLimiter:
     c_is_class: False
 
   ODrive.OnboardThermistorCurrentLimiter:
     c_is_class: True
     attributes:
-      error: ThermistorCurrentLimiter.Error
       temperature:
         type: readonly float32
         unit: °C
-        doc: NaN while the ODrive is initializing.
       config:
         c_is_class: False
         attributes:
@@ -545,11 +545,9 @@ interfaces:
   ODrive.OffboardThermistorCurrentLimiter:
     c_is_class: True
     attributes:
-      error: ThermistorCurrentLimiter.Error
       temperature:
         type: readonly float32
         unit: °C
-        doc: NaN while the ODrive is initializing.
       config:
         c_is_class: False
         attributes:
@@ -640,6 +638,8 @@ interfaces:
           CurrentSenseSaturation: {bit: 10}
           CurrentLimitViolation: {bit: 12}
           ModulationIsNan: {bit: 16}
+          MotorThermistorOverTemp: {doc: The motor thermistor measured a temperature above motor.motor_thermistor.config.temp_limit_upper}
+          FetThermistorOverTemp: {doc: The inverter thermistor measured a temperature above motor.fet_thermistor.config.temp_limit_upper}
           TimerUpdateMissed: {doc: A timer update event was missed. Perhaps the previous timer update took too much time. This is not expected in official release firmware.}
           CurrentMeasurementUnavailable: {doc: The phase current measurement is not available. The ADC failed to sample the current sensor in time. This is not expected in official release firmware.}
           ControllerFailed: {doc: The motor was disarmed because the underlying controller failed. Usually this is the FOC controller.}
@@ -682,6 +682,8 @@ interfaces:
           sensors in the current hardware configuration. This value depends on
           `config.requested_current_range`.
       max_dc_calib: {type: readonly float32, unit: A}
+      fet_thermistor: OnboardThermistorCurrentLimiter
+      motor_thermistor: OffboardThermistorCurrentLimiter
       current_control:
         c_is_class: True
         attributes:
@@ -846,12 +848,15 @@ interfaces:
           pos_gain:
             type: float32
             unit: (turn/s) / turn
+            doc: units = (turn/s) / turn, default = 20
           vel_gain:
             type: float32
             unit: 'Nm/(turn/s)'
+            doc: units = 'Nm/(turn/s), default = 0.16
           vel_integrator_gain:
             type: float32
             unit: Nm/(turn/s * s)
+            doc: units = Nm/(turn/s * s), default = 0.32
           vel_limit:
             type: float32
             unit: turn/s
@@ -964,10 +969,10 @@ interfaces:
           abs_spi_cs_gpio_pin: {type: uint16, c_setter: set_abs_spi_cs_gpio_pin, doc: Make sure that the GPIO is in `GPIO_MODE_DIGITAL`.}
           zero_count_on_find_idx: bool
           cpr: int32
-          offset: int32
-          pre_calibrated: {type: bool, c_setter: set_pre_calibrated}
-          offset_float: float32
+          phase_offset: int32
+          phase_offset_float: float32
           direction: int32
+          pre_calibrated: {type: bool, c_setter: set_pre_calibrated}
           enable_phase_interpolation: bool
           bandwidth: {type: float32, c_setter: set_bandwidth}
           calib_range: float32
@@ -1134,12 +1139,6 @@ valuetypes:
         brief: Run axis homing function.
         doc:
           Endstops must be enabled to use this feature.
-
-  ODrive.ThermistorCurrentLimiter.Error:
-    nullflag: None
-    flags:
-      OverTemp:
-        doc: The thermistor temperature upper limit was exceeded. 
 
   ODrive.Encoder.Mode:
     values:

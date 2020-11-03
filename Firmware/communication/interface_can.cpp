@@ -36,13 +36,13 @@ void ODriveCAN::can_server_thread() {
                         break;
                 }
             }
-            HAL_CAN_ActivateNotification(handle_, CAN_IT_RX_FIFO0_MSG_PENDING);
+            HAL_CAN_ActivateNotification(handle_, CAN_IT_RX_FIFO0_MSG_PENDING | CAN_IT_TX_MAILBOX_EMPTY);
         } else {
             if (status == HAL_CAN_ERROR_TIMEOUT) {
                 HAL_CAN_ResetError(handle_);
                 status = HAL_CAN_Start(handle_);
                 if (status == HAL_OK)
-                    status = HAL_CAN_ActivateNotification(handle_, CAN_IT_RX_FIFO0_MSG_PENDING);
+                    status = HAL_CAN_ActivateNotification(handle_, CAN_IT_RX_FIFO0_MSG_PENDING | CAN_IT_TX_MAILBOX_EMPTY);
             }
         }
     }
@@ -75,7 +75,7 @@ bool ODriveCAN::start_can_server() {
 
     status = HAL_CAN_Start(handle_);
     if (status == HAL_OK)
-        status = HAL_CAN_ActivateNotification(handle_, CAN_IT_RX_FIFO0_MSG_PENDING);
+        status = HAL_CAN_ActivateNotification(handle_, CAN_IT_RX_FIFO0_MSG_PENDING | CAN_IT_TX_MAILBOX_EMPTY);
 
     osThreadDef(can_server_thread_def, can_server_thread_wrapper, osPriorityNormal, 0, stack_size_ / sizeof(StackType_t));
     thread_id_ = osThreadCreate(osThread(can_server_thread_def), this);
@@ -85,7 +85,7 @@ bool ODriveCAN::start_can_server() {
 }
 
 // Send a CAN message on the bus
-uint32_t ODriveCAN::write(can_Message_t &txmsg) {
+int32_t ODriveCAN::write(can_Message_t &txmsg) {
     if (HAL_CAN_GetError(handle_) == HAL_CAN_ERROR_NONE) {
         CAN_TxHeaderTypeDef header;
         header.StdId = txmsg.id;
@@ -98,8 +98,9 @@ uint32_t ODriveCAN::write(can_Message_t &txmsg) {
         uint32_t retTxMailbox = 0;
         if (HAL_CAN_GetTxMailboxesFreeLevel(handle_) > 0)
             HAL_CAN_AddTxMessage(handle_, &header, txmsg.buf, &retTxMailbox);
-
-        return retTxMailbox;
+        else
+            return -1;
+        return (int32_t)retTxMailbox;
     } else {
         return -1;
     }
@@ -168,32 +169,36 @@ void ODriveCAN::reinit_can() {
     HAL_CAN_Init(handle_);
     auto status = HAL_CAN_Start(handle_);
     if (status == HAL_OK)
-        status = HAL_CAN_ActivateNotification(handle_, CAN_IT_RX_FIFO0_MSG_PENDING);
+        status = HAL_CAN_ActivateNotification(handle_, CAN_IT_RX_FIFO0_MSG_PENDING | CAN_IT_TX_MAILBOX_EMPTY);
 }
 
 void ODriveCAN::set_error(Error error) {
     error_ |= error;
 }
+
 // This function is called by each axis.
 // It provides an abstraction from the specific CAN protocol in use
-void ODriveCAN::send_heartbeat(Axis *axis) {
+void ODriveCAN::send_cyclic(Axis &axis) {
     // Handle heartbeat message
-    if (axis->config_.can_heartbeat_rate_ms > 0) {
-        uint32_t now = HAL_GetTick();
-        if ((now - axis->last_heartbeat_) >= axis->config_.can_heartbeat_rate_ms) {
-            switch (config_.protocol) {
-                case PROTOCOL_SIMPLE:
-                    CANSimple::send_heartbeat(axis);
-                    break;
-            }
-            axis->last_heartbeat_ = now;
-        }
+    switch (config_.protocol) {
+        case PROTOCOL_SIMPLE:
+            CANSimple::send_cyclic(axis);
+            break;
     }
 }
 
-void HAL_CAN_TxMailbox0CompleteCallback(CAN_HandleTypeDef *hcan) {}
-void HAL_CAN_TxMailbox1CompleteCallback(CAN_HandleTypeDef *hcan) {}
-void HAL_CAN_TxMailbox2CompleteCallback(CAN_HandleTypeDef *hcan) {}
+void HAL_CAN_TxMailbox0CompleteCallback(CAN_HandleTypeDef *hcan) {
+    HAL_CAN_DeactivateNotification(hcan, CAN_IT_TX_MAILBOX_EMPTY);
+    osSemaphoreRelease(sem_can);
+}
+void HAL_CAN_TxMailbox1CompleteCallback(CAN_HandleTypeDef *hcan) {
+    HAL_CAN_DeactivateNotification(hcan, CAN_IT_TX_MAILBOX_EMPTY);
+    osSemaphoreRelease(sem_can);
+}
+void HAL_CAN_TxMailbox2CompleteCallback(CAN_HandleTypeDef *hcan) {
+    HAL_CAN_DeactivateNotification(hcan, CAN_IT_TX_MAILBOX_EMPTY);
+    osSemaphoreRelease(sem_can);
+}
 void HAL_CAN_TxMailbox0AbortCallback(CAN_HandleTypeDef *hcan) {}
 void HAL_CAN_TxMailbox1AbortCallback(CAN_HandleTypeDef *hcan) {}
 void HAL_CAN_TxMailbox2AbortCallback(CAN_HandleTypeDef *hcan) {}

@@ -109,10 +109,13 @@ def find_all(path, serial_number,
                 # Save JSON to cache
                 if not cache_path is None:
                     logger.debug("Creating new JSON cache file {}".format(cache_path))
-                    os.makedirs(cache_dir, exist_ok=True)
-                    with open(cache_path, 'w+') as json_cache:
-                        json_cache.write(json_string)
-                    logger.debug("Saved JSON to cache file {}".format(cache_path))
+                    try:
+                        os.makedirs(cache_dir, exist_ok=True)
+                        with open(cache_path, 'w+') as json_cache:
+                            json_cache.write(json_string)
+                        logger.debug("Saved JSON to cache file {}".format(cache_path))
+                    except Exception as ex:
+                        logger.warn("Failed to cache JSON: {}".format(ex))
 
             channel._interface_definition_crc = json_crc16
 

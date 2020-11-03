@@ -28,11 +28,18 @@ Motor::Error AlphaBetaFrameController::get_output(
     
     if (status != Motor::ERROR_NONE) {
         return status;
-    } else if (!mod_alpha_beta.has_value() || std::isnan(mod_alpha_beta->first) || std::isnan(mod_alpha_beta->second)) {
+    } else if (!mod_alpha_beta.has_value() || is_nan(mod_alpha_beta->first) || is_nan(mod_alpha_beta->second)) {
         return Motor::ERROR_MODULATION_IS_NAN;
-    } else if (SVM(mod_alpha_beta->first, mod_alpha_beta->second, &pwm_timings[0], &pwm_timings[1], &pwm_timings[2]) != 0) {
+    }
+
+    auto [tA, tB, tC, success] = SVM(mod_alpha_beta->first, mod_alpha_beta->second);
+    if (!success) {
         return Motor::ERROR_MODULATION_MAGNITUDE;
     }
+
+    pwm_timings[0] = tA;
+    pwm_timings[1] = tB;
+    pwm_timings[2] = tC;
 
     return Motor::ERROR_NONE;
 }
@@ -133,7 +140,7 @@ ODriveIntf::MotorIntf::Error FieldOrientedController::get_alpha_beta_output(
 
         // Vector modulation saturation, lock integrator if saturated
         // TODO make maximum modulation configurable
-        float mod_scalefactor = 0.80f * sqrt3_by_2 * 1.0f / sqrtf(mod_d * mod_d + mod_q * mod_q);
+        float mod_scalefactor = 0.80f * sqrt3_by_2 * 1.0f / std::sqrt(mod_d * mod_d + mod_q * mod_q);
         if (mod_scalefactor < 1.0f) {
             mod_d *= mod_scalefactor;
             mod_q *= mod_scalefactor;

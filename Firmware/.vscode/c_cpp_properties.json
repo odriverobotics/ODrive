@@ -6,18 +6,29 @@
                 "${workspaceFolder}/**"
             ],
             "defines": [
+                "__arm__",
                 "STM32F405xx",
+                "FPU_FPV4",
                 "USE_HAL_DRIVER",
                 "HW_VERSION_MAJOR=3",
                 "HW_VERSION_MINOR=6",
                 "HW_VERSION_VOLTAGE=56",
-                "USB_PROTOCOL_NATIVE",
                 "__weak=\"__attribute__((weak))\"",
                 "__packed=\"__attribute__((__packed__))\"",
                 "__GNUC__"
             ],
-            "intelliSenseMode": "gcc-x64",
-            "compilerPath": "\"${ARM_GCC_ROOT}/bin/arm-none-eabi-g++.exe\" -mthumb -mcpu=cortex-m4 -mfpu=fpv4-sp-d16 -mfloat-abi=hard -specs=nosys.specs -specs=nano.specs -u _printf_float -u _scanf_float",
+            "intelliSenseMode": "gcc-arm",
+            "compilerPath": "arm-none-eabi-g++.exe",
+            "compilerArgs": [
+                "-mthumb",
+                "-mcpu=cortex-m4",
+                "-mfpu=fpv4-sp-d16",
+                "-mfloat-abi=hard",
+                "-specs=nosys.specs",
+                "-specs=nano.specs",
+                "-u _printf_float",
+                "-u _scanf_float"
+            ],
             "cStandard": "c11",
             "cppStandard": "c++17"
         },
@@ -27,7 +38,9 @@
                 "${workspaceFolder}/**"
             ],
             "defines": [
+                "__arm__",
                 "STM32F405xx",
+                "FPU_FPV4",
                 "USE_HAL_DRIVER",
                 "HW_VERSION_MAJOR=3",
                 "HW_VERSION_MINOR=6",
@@ -36,7 +49,7 @@
                 "__packed=\"__attribute__((__packed__))\"",
                 "__GNUC__"
             ],
-            "intelliSenseMode": "gcc-x64",
+            "intelliSenseMode": "gcc-arm",
             "compilerPath": "arm-none-eabi-g++ -mthumb -mcpu=cortex-m4 -mfpu=fpv4-sp-d16 -mfloat-abi=hard -specs=nosys.specs -specs=nano.specs -u _printf_float -u _scanf_float",
             "cStandard": "c11",
             "cppStandard": "c++17"
@@ -47,16 +60,18 @@
                 "${workspaceFolder}/**"
             ],
             "defines": [
+                "__arm__",
                 "STM32F405xx",
+                "FPU_FPV4",
                 "USE_HAL_DRIVER",
                 "HW_VERSION_MAJOR=3",
                 "HW_VERSION_MINOR=4",
-                "HW_VERSION_VOLTAGE=24",
+                "HW_VERSION_VOLTAGE=56",
                 "__weak=\"__attribute__((weak))\"",
                 "__packed=\"__attribute__((__packed__))\"",
                 "__GNUC__"
             ],
-            "intelliSenseMode": "gcc-x64",
+            "intelliSenseMode": "gcc-arm",
             "cStandard": "c11",
             "cppStandard": "c++17"
         }

@@ -14,8 +14,6 @@ Axis::Axis(int axis_num,
            Encoder& encoder,
            SensorlessEstimator& sensorless_estimator,
            Controller& controller,
-           OnboardThermistorCurrentLimiter& fet_thermistor,
-           OffboardThermistorCurrentLimiter& motor_thermistor,
            Motor& motor,
            TrapezoidalTrajectory& trap,
            Endstop& min_endstop,
@@ -28,25 +26,15 @@ Axis::Axis(int axis_num,
       encoder_(encoder),
       sensorless_estimator_(sensorless_estimator),
       controller_(controller),
-      fet_thermistor_(fet_thermistor),
-      motor_thermistor_(motor_thermistor),
       motor_(motor),
       trap_traj_(trap),
       min_endstop_(min_endstop),
       max_endstop_(max_endstop),
-      mechanical_brake_(mechanical_brake),
-      current_limiters_(make_array(
-          static_cast<CurrentLimiter*>(&fet_thermistor),
-          static_cast<CurrentLimiter*>(&motor_thermistor))),
-      thermistors_(make_array(
-          static_cast<ThermistorCurrentLimiter*>(&fet_thermistor),
-          static_cast<ThermistorCurrentLimiter*>(&motor_thermistor)))
+      mechanical_brake_(mechanical_brake)
 {
     encoder_.axis_ = this;
     sensorless_estimator_.axis_ = this;
     controller_.axis_ = this;
-    fet_thermistor_.axis_ = this;
-    motor_thermistor.axis_ = this;
     motor_.axis_ = this;
     trap_traj_.axis_ = this;
     min_endstop_.axis_ = this;
@@ -97,7 +85,7 @@ void Axis::clear_config() {
     config_ = {};
     config_.step_gpio_pin = default_step_gpio_pin_;
     config_.dir_gpio_pin = default_dir_gpio_pin_;
-    config_.can_node_id = axis_num_;
+    config_.can.node_id = axis_num_;
 }
 
 static void run_state_machine_loop_wrapper(void* ctx) {
@@ -162,18 +150,12 @@ void Axis::set_step_dir_active(bool active) {
 bool Axis::do_checks(uint32_t timestamp) {
     // Sub-components should use set_error which will propegate to this error_
     motor_.effective_current_lim();
-    for (ThermistorCurrentLimiter* thermistor : thermistors_) {
-        thermistor->do_checks();
-    }
     motor_.do_checks(timestamp);
-    // encoder_.do_checks();
-    // sensorless_estimator_.do_checks();
-    // controller_.do_checks();
 
     // Check for endstop presses
-    if (min_endstop_.config_.enabled && min_endstop_.get_state() && !(current_state_ == AXIS_STATE_HOMING)) {
+    if (min_endstop_.config_.enabled && min_endstop_.rose() && !(current_state_ == AXIS_STATE_HOMING)) {
         error_ |= ERROR_MIN_ENDSTOP_PRESSED;
-    } else if (max_endstop_.config_.enabled && max_endstop_.get_state() && !(current_state_ == AXIS_STATE_HOMING)) {
+    } else if (max_endstop_.config_.enabled && max_endstop_.rose() && !(current_state_ == AXIS_STATE_HOMING)) {
         error_ |= ERROR_MAX_ENDSTOP_PRESSED;
     }
 
@@ -205,7 +187,7 @@ bool Axis::run_lockin_spin(const LockinConfig_t &lockin_config, bool remain_arme
         open_loop_controller_.Idq_setpoint_ = {0.0f, 0.0f};
         open_loop_controller_.Vdq_setpoint_ = {0.0f, 0.0f};
         open_loop_controller_.phase_ = 0.0f;
-        open_loop_controller_.phase_vel_ = NAN;
+        open_loop_controller_.phase_vel_ = 0.0f;
 
         open_loop_controller_.max_current_ramp_ = lockin_config.current / lockin_config.ramp_time;
         open_loop_controller_.max_voltage_ramp_ = lockin_config.current / lockin_config.ramp_time;
@@ -393,6 +375,7 @@ bool Axis::run_homing() {
 
     start_closed_loop_control();
 
+    // Driving toward the endstop
     while ((requested_state_ == AXIS_STATE_UNDEFINED) && motor_.is_armed_ && !min_endstop_.get_state()) {
         osDelay(1);
     }

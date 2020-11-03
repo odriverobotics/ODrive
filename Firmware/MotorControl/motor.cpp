@@ -145,13 +145,19 @@ Motor::Motor(TIM_HandleTypeDef* timer,
              uint8_t current_sensor_mask,
              float shunt_conductance,
              TGateDriver& gate_driver,
-             TOpAmp& opamp) :
+             TOpAmp& opamp,
+             OnboardThermistorCurrentLimiter& fet_thermistor,
+             OffboardThermistorCurrentLimiter& motor_thermistor) :
         timer_(timer),
         current_sensor_mask_(current_sensor_mask),
         shunt_conductance_(shunt_conductance),
         gate_driver_(gate_driver),
-        opamp_(opamp) {
+        opamp_(opamp),
+        fet_thermistor_(fet_thermistor),
+        motor_thermistor_(motor_thermistor) {
     apply_config();
+    fet_thermistor_.motor_ = this;
+    motor_thermistor_.motor_ = this;
 }
 
 /**
@@ -293,6 +299,9 @@ bool Motor::apply_config() {
 
 // @brief Set up the gate drivers
 bool Motor::setup() {
+    fet_thermistor_.update();
+    motor_thermistor_.update();
+
     // Solve for exact gain, then snap down to have equal or larger range as requested
     // or largest possible range otherwise
     constexpr float kMargin = 0.90f;
@@ -300,7 +309,7 @@ bool Motor::setup() {
     float max_unity_gain_current = kMargin * max_output_swing * shunt_conductance_; // [A]
     float requested_gain = max_unity_gain_current / config_.requested_current_range; // [V/V]
     
-    float actual_gain = NAN;
+    float actual_gain;
     if (!gate_driver_.config(requested_gain, &actual_gain))
         return false;
 
@@ -329,7 +338,14 @@ bool Motor::do_checks(uint32_t timestamp) {
         disarm_with_error(ERROR_DRV_FAULT);
         return false;
     }
-
+    if (!motor_thermistor_.do_checks()) {
+        disarm_with_error(ERROR_MOTOR_THERMISTOR_OVER_TEMP);
+        return false;
+    }
+    if (!fet_thermistor_.do_checks()) {
+        disarm_with_error(ERROR_FET_THERMISTOR_OVER_TEMP);
+        return false;
+    }
     return true;
 }
 
@@ -343,11 +359,9 @@ float Motor::effective_current_lim() {
         current_lim = std::min(current_lim, axis_->motor_.max_allowed_current_);
     }
 
-    // Apply axis current limiters
-    for (const CurrentLimiter* const limiter : axis_->current_limiters_) {
-        current_lim = std::min(current_lim, limiter->get_current_limit(config_.current_lim));
-    }
-
+    // Apply thermistor current limiters
+    current_lim = std::min(current_lim, motor_thermistor_.get_current_limit(config_.current_lim));
+    current_lim = std::min(current_lim, fet_thermistor_.get_current_limit(config_.current_lim));
     effective_current_lim_ = current_lim;
 
     return effective_current_lim_;
@@ -490,7 +504,7 @@ void Motor::update(uint32_t timestamp) {
 
     // Convert torque to current
     if (axis_->motor_.config_.motor_type == Motor::MOTOR_TYPE_ACIM) {
-        iq = *torque / (axis_->motor_.config_.torque_constant * fmax(axis_->async_estimator_.rotor_flux_, config_.acim_gain_min_flux));
+        iq = *torque / (axis_->motor_.config_.torque_constant * std::max(axis_->async_estimator_.rotor_flux_, config_.acim_gain_min_flux));
     } else {
         iq = *torque / axis_->motor_.config_.torque_constant;
     }
@@ -503,7 +517,7 @@ void Motor::update(uint32_t timestamp) {
     iq = std::clamp(iq, -ilim, ilim);
 
     if ((axis_->motor_.config_.motor_type == Motor::MOTOR_TYPE_ACIM) && config_.acim_autoflux_enable) {
-        float abs_iq = fabsf(iq);
+        float abs_iq = std::abs(iq);
         float gain = abs_iq > id ? config_.acim_autoflux_attack_gain : config_.acim_autoflux_decay_gain;
         id += gain * (abs_iq - id) * current_meas_period;
         id = std::clamp(id, config_.acim_autoflux_min_Id, ilim);

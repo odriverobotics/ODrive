@@ -1,11 +1,14 @@
 
 #include <utils.hpp>
-#include <math.h>
-#include <float.h>
-#include <cmsis_os.h>
 #include <board.h>
 
-int SVM(float alpha, float beta, float* tA, float* tB, float* tC) {
+
+// Compute rising edge timings (0.0 - 1.0) as a function of alpha-beta
+// as per the magnitude invariant clarke transform
+// The magnitude of the alpha-beta vector may not be larger than sqrt(3)/2
+// Returns true on success, and false if the input was out of range
+std::tuple<float, float, float, bool> SVM(float alpha, float beta) {
+    float tA, tB, tC;
     int Sextant;
 
     if (beta >= 0.0f) {
@@ -15,7 +18,6 @@ int SVM(float alpha, float beta, float* tA, float* tB, float* tC) {
                 Sextant = 2; //sextant v2-v3
             else
                 Sextant = 1; //sextant v1-v2
-
         } else {
             //quadrant II
             if (-one_by_sqrt3 * beta > alpha)
@@ -47,9 +49,9 @@ int SVM(float alpha, float beta, float* tA, float* tB, float* tC) {
             float t2 = two_by_sqrt3 * beta;
 
             // PWM timings
-            *tA = (1.0f - t1 - t2) * 0.5f;
-            *tB = *tA + t1;
-            *tC = *tB + t2;
+            tA = (1.0f - t1 - t2) * 0.5f;
+            tB = tA + t1;
+            tC = tB + t2;
         } break;
 
         // sextant v2-v3
@@ -59,9 +61,9 @@ int SVM(float alpha, float beta, float* tA, float* tB, float* tC) {
             float t3 = -alpha + one_by_sqrt3 * beta;
 
             // PWM timings
-            *tB = (1.0f - t2 - t3) * 0.5f;
-            *tA = *tB + t3;
-            *tC = *tA + t2;
+            tB = (1.0f - t2 - t3) * 0.5f;
+            tA = tB + t3;
+            tC = tA + t2;
         } break;
 
         // sextant v3-v4
@@ -71,9 +73,9 @@ int SVM(float alpha, float beta, float* tA, float* tB, float* tC) {
             float t4 = -alpha - one_by_sqrt3 * beta;
 
             // PWM timings
-            *tB = (1.0f - t3 - t4) * 0.5f;
-            *tC = *tB + t3;
-            *tA = *tC + t4;
+            tB = (1.0f - t3 - t4) * 0.5f;
+            tC = tB + t3;
+            tA = tC + t4;
         } break;
 
         // sextant v4-v5
@@ -83,9 +85,9 @@ int SVM(float alpha, float beta, float* tA, float* tB, float* tC) {
             float t5 = -two_by_sqrt3 * beta;
 
             // PWM timings
-            *tC = (1.0f - t4 - t5) * 0.5f;
-            *tB = *tC + t5;
-            *tA = *tB + t4;
+            tC = (1.0f - t4 - t5) * 0.5f;
+            tB = tC + t5;
+            tA = tB + t4;
         } break;
 
         // sextant v5-v6
@@ -95,9 +97,9 @@ int SVM(float alpha, float beta, float* tA, float* tB, float* tC) {
             float t6 = alpha - one_by_sqrt3 * beta;
 
             // PWM timings
-            *tC = (1.0f - t5 - t6) * 0.5f;
-            *tA = *tC + t5;
-            *tB = *tA + t6;
+            tC = (1.0f - t5 - t6) * 0.5f;
+            tA = tC + t5;
+            tB = tA + t6;
         } break;
 
         // sextant v6-v1
@@ -107,27 +109,26 @@ int SVM(float alpha, float beta, float* tA, float* tB, float* tC) {
             float t1 = alpha + one_by_sqrt3 * beta;
 
             // PWM timings
-            *tA = (1.0f - t6 - t1) * 0.5f;
-            *tC = *tA + t1;
-            *tB = *tC + t6;
+            tA = (1.0f - t6 - t1) * 0.5f;
+            tC = tA + t1;
+            tB = tC + t6;
         } break;
     }
 
-    // if any of the results becomes NaN, result_valid will evaluate to false
-    int result_valid =
-            *tA >= 0.0f && *tA <= 1.0f
-         && *tB >= 0.0f && *tB <= 1.0f
-         && *tC >= 0.0f && *tC <= 1.0f;
-    return result_valid ? 0 : -1;
+    bool result_valid =
+            tA >= 0.0f && tA <= 1.0f
+         && tB >= 0.0f && tB <= 1.0f
+         && tC >= 0.0f && tC <= 1.0f;
+    return {tA, tB, tC, result_valid};
 }
 
 // based on https://math.stackexchange.com/a/1105038/81278
 float fast_atan2(float y, float x) {
     // a := min (|x|, |y|) / max (|x|, |y|)
-    float abs_y = fabsf(y);
-    float abs_x = fabsf(x);
+    float abs_y = std::abs(y);
+    float abs_x = std::abs(x);
     // inject FLT_MIN in denominator to avoid division by zero
-    float a = MACRO_MIN(abs_x, abs_y) / (MACRO_MAX(abs_x, abs_y) + FLT_MIN);
+    float a = std::min(abs_x, abs_y) / (std::max(abs_x, abs_y) + std::numeric_limits<float>::min());
     // s := a * a
     float s = a * a;
     // r := ((-0.0464964749 * s + 0.15931422) * s - 0.327622764) * s * a + a
@@ -143,22 +144,6 @@ float fast_atan2(float y, float x) {
         r = -r;
 
     return r;
-}
-
-// Evaluate polynomials using Fused Multiply Add intrisic instruction.
-// coeffs[0] is highest order, as per numpy.polyfit
-// p(x) = coeffs[0] * x^deg + ... + coeffs[deg], for some degree "deg"
-float horner_fma(float x, const float *coeffs, size_t count) {
-    float result = 0.0f;
-    for (size_t idx = 0; idx < count; ++idx)
-        result = fmaf(result, x, coeffs[idx]);
-    return result;
-}
-
-// Modulo (as opposed to remainder), per https://stackoverflow.com/a/19288271
-int mod(int dividend, int divisor){
-    int r = dividend % divisor;
-    return (r < 0) ? (r + divisor) : r;
 }
 
 // @brief: Returns how much time is left until the deadline is reached.
@@ -199,6 +184,7 @@ void delay_us(uint32_t us)
 {
     uint32_t start = micros();
     while (micros() - start < (uint32_t) us) {
-        __ASM("nop");
+        asm volatile ("nop");
     }
 }
+

@@ -64,7 +64,9 @@ public:
          uint8_t current_sensor_mask,
          float shunt_conductance,
          TGateDriver& gate_driver,
-         TOpAmp& opamp);
+         TOpAmp& opamp,
+         OnboardThermistorCurrentLimiter& fet_thermistor,
+         OffboardThermistorCurrentLimiter& motor_thermistor);
 
     bool arm(PhaseControlLaw<3>* control_law);
     void apply_pwm_timings(uint16_t timings[3], bool tentative);
@@ -94,6 +96,8 @@ public:
     const float shunt_conductance_;
     TGateDriver& gate_driver_;
     TOpAmp& opamp_;
+    OnboardThermistorCurrentLimiter& fet_thermistor_;
+    OffboardThermistorCurrentLimiter& motor_thermistor_;
 
     Config_t config_;
     Axis* axis_ = nullptr; // set by Axis constructor

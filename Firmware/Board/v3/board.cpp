@@ -64,20 +64,26 @@ OnboardThermistorCurrentLimiter fet_thermistors[AXIS_COUNT] = {
     }
 };
 
+OffboardThermistorCurrentLimiter motor_thermistors[AXIS_COUNT];
+
 Motor motors[AXIS_COUNT] = {
     {
         &htim1, // timer
         0b110, // current_sensor_mask
         1.0f / SHUNT_RESISTANCE, // shunt_conductance [S]
         m0_gate_driver, // gate_driver
-        m0_gate_driver // opamp
+        m0_gate_driver, // opamp
+        fet_thermistors[0],
+        motor_thermistors[0]
     },
     {
         &htim8, // timer
         0b110, // current_sensor_mask
         1.0f / SHUNT_RESISTANCE, // shunt_conductance [S]
         m1_gate_driver, // gate_driver
-        m1_gate_driver // opamp
+        m1_gate_driver, // opamp
+        fet_thermistors[1],
+        motor_thermistors[1]
     }
 };
 
@@ -107,7 +113,6 @@ MechanicalBrake mechanical_brakes[AXIS_COUNT];
 SensorlessEstimator sensorless_estimators[AXIS_COUNT];
 Controller controllers[AXIS_COUNT];
 TrapezoidalTrajectory trap[AXIS_COUNT];
-OffboardThermistorCurrentLimiter motor_thermistors[AXIS_COUNT];
 
 std::array<Axis, AXIS_COUNT> axes{{
     {
@@ -118,8 +123,6 @@ std::array<Axis, AXIS_COUNT> axes{{
         encoders[0], // encoder
         sensorless_estimators[0], // sensorless_estimator
         controllers[0], // controller
-        fet_thermistors[0], // fet_thermistor
-        motor_thermistors[0], // motor_thermistor
         motors[0], // motor
         trap[0], // trap
         endstops[0], endstops[1], // min_endstop, max_endstop
@@ -138,8 +141,6 @@ std::array<Axis, AXIS_COUNT> axes{{
         encoders[1], // encoder
         sensorless_estimators[1], // sensorless_estimator
         controllers[1], // controller
-        fet_thermistors[1], // fet_thermistor
-        motor_thermistors[1], // motor_thermistor
         motors[1], // motor
         trap[1], // trap
         endstops[2], endstops[3], // min_endstop, max_endstop
