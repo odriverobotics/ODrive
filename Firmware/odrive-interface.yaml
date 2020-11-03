@@ -126,16 +126,21 @@ interfaces:
         attributes:
           uptime: readonly uint32
           min_heap_space: readonly uint32
-          min_stack_space_axis: readonly uint32
-          min_stack_space_usb: readonly uint32
-          min_stack_space_uart: readonly uint32
-          min_stack_space_can: readonly uint32
-          min_stack_space_startup: readonly uint32
-          stack_usage_axis: readonly uint32
-          stack_usage_usb: readonly uint32
-          stack_usage_uart: readonly uint32
-          stack_usage_startup: readonly uint32
-          stack_usage_can: readonly uint32
+          max_stack_usage_axis: readonly uint32
+          max_stack_usage_usb: readonly uint32
+          max_stack_usage_uart: readonly uint32
+          max_stack_usage_can: readonly uint32
+          max_stack_usage_startup: readonly uint32
+          stack_size_axis: readonly uint32
+          stack_size_usb: readonly uint32
+          stack_size_uart: readonly uint32
+          stack_size_startup: readonly uint32
+          stack_size_can: readonly uint32
+          prio_axis: readonly int32
+          prio_usb: readonly int32
+          prio_uart: readonly int32
+          prio_startup: readonly int32
+          prio_can: readonly int32
           usb:
             c_is_class: False
             attributes:

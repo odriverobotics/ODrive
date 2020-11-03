@@ -487,6 +487,25 @@ def dump_interrupts(odrv):
                     " *" if (status & 0x80000000) else "  ",
                     str((status >> 8) & 0x7fffff).rjust(7)))
 
+def dump_threads(odrv):
+    prefixes = ["max_stack_usage_", "stack_size_", "prio_"]
+    keys = [k[len(prefix):] for k in dir(odrv.system_stats) for prefix in prefixes if k.startswith(prefix)]
+    good_keys = set([k for k in set(keys) if keys.count(k) == len(prefixes)])
+    if len(good_keys) > len(set(keys)):
+        print("Warning: incomplete thread information for threads {}".format(set(keys) - good_keys))
+
+    print("| Name    | Stack Size [B] | Max Ever Stack Usage [B] | Prio |")
+    print("|---------|----------------|--------------------------|------|")
+    for k in sorted(good_keys):
+        sz = getattr(odrv.system_stats, "stack_size_" + k)
+        use = getattr(odrv.system_stats, "max_stack_usage_" + k)
+        print("| {} | {} | {} | {} |".format(
+            k.ljust(7),
+            str(sz).rjust(14),
+            "{} ({:.1f}%)".format(use, use / sz * 100).rjust(24),
+            str(getattr(odrv.system_stats, "prio_" + k)).rjust(4)
+        ))
+
 
 def dump_dma(odrv):
     if odrv.hw_version_major == 3:

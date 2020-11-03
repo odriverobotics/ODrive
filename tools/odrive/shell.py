@@ -86,6 +86,7 @@ def launch_shell(args, logger, app_shutdown_token):
         'dump_errors': dump_errors,
         'oscilloscope_dump': oscilloscope_dump,
         'dump_interrupts': dump_interrupts,
+        'dump_threads': dump_threads,
         'dump_dma': dump_dma,
         'dump_timing': dump_timing,
         'BulkCapture': BulkCapture,

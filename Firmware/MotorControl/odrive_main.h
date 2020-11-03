@@ -29,17 +29,23 @@ typedef struct {
     bool fully_booted;
     uint32_t uptime; // [ms]
     uint32_t min_heap_space; // FreeRTOS heap [Bytes]
-    uint32_t min_stack_space_axis; // minimum remaining space since startup [Bytes]
-    uint32_t min_stack_space_usb;
-    uint32_t min_stack_space_uart;
-    uint32_t min_stack_space_startup;
-    uint32_t min_stack_space_can;
+    uint32_t max_stack_usage_axis; // minimum remaining space since startup [Bytes]
+    uint32_t max_stack_usage_usb;
+    uint32_t max_stack_usage_uart;
+    uint32_t max_stack_usage_startup;
+    uint32_t max_stack_usage_can;
 
-    uint32_t stack_usage_axis;
-    uint32_t stack_usage_usb;
-    uint32_t stack_usage_uart;
-    uint32_t stack_usage_startup;
-    uint32_t stack_usage_can;
+    uint32_t stack_size_axis;
+    uint32_t stack_size_usb;
+    uint32_t stack_size_uart;
+    uint32_t stack_size_startup;
+    uint32_t stack_size_can;
+
+    int32_t prio_axis;
+    int32_t prio_usb;
+    int32_t prio_uart;
+    int32_t prio_startup;
+    int32_t prio_can;
 
     USBStats_t& usb = usb_stats_;
     I2CStats_t& i2c = i2c_stats_;

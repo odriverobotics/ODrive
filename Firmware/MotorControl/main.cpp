@@ -177,20 +177,26 @@ void vApplicationIdleHook(void) {
     if (odrv.system_stats_.fully_booted) {
         odrv.system_stats_.uptime = xTaskGetTickCount();
         odrv.system_stats_.min_heap_space = xPortGetMinimumEverFreeHeapSize();
+
         uint32_t min_stack_space[AXIS_COUNT];
         std::transform(axes.begin(), axes.end(), std::begin(min_stack_space), [](auto& axis) { return uxTaskGetStackHighWaterMark(axis.thread_id_) * sizeof(StackType_t); });
-        odrv.system_stats_.min_stack_space_axis = *std::min_element(std::begin(min_stack_space), std::end(min_stack_space));
-        odrv.system_stats_.min_stack_space_usb = uxTaskGetStackHighWaterMark(usb_thread) * sizeof(StackType_t);
-        odrv.system_stats_.min_stack_space_uart = uxTaskGetStackHighWaterMark(uart_thread) * sizeof(StackType_t);
-        odrv.system_stats_.min_stack_space_startup = uxTaskGetStackHighWaterMark(defaultTaskHandle) * sizeof(StackType_t);
-        odrv.system_stats_.min_stack_space_can = uxTaskGetStackHighWaterMark(odCAN->thread_id_) * sizeof(StackType_t);
+        odrv.system_stats_.max_stack_usage_axis = axes[0].stack_size_ - *std::min_element(std::begin(min_stack_space), std::end(min_stack_space));
+        odrv.system_stats_.max_stack_usage_usb = stack_size_usb_thread - uxTaskGetStackHighWaterMark(usb_thread) * sizeof(StackType_t);
+        odrv.system_stats_.max_stack_usage_uart = stack_size_uart_thread - uxTaskGetStackHighWaterMark(uart_thread) * sizeof(StackType_t);
+        odrv.system_stats_.max_stack_usage_startup = stack_size_default_task - uxTaskGetStackHighWaterMark(defaultTaskHandle) * sizeof(StackType_t);
+        odrv.system_stats_.max_stack_usage_can = odCAN->stack_size_ - uxTaskGetStackHighWaterMark(odCAN->thread_id_) * sizeof(StackType_t);
 
-        // Actual usage, in bytes, so we don't have to math
-        odrv.system_stats_.stack_usage_axis = axes[0].stack_size_ - odrv.system_stats_.min_stack_space_axis;
-        odrv.system_stats_.stack_usage_usb = stack_size_usb_thread - odrv.system_stats_.min_stack_space_usb;
-        odrv.system_stats_.stack_usage_uart = stack_size_uart_thread - odrv.system_stats_.min_stack_space_uart;
-        odrv.system_stats_.stack_usage_startup = stack_size_default_task - odrv.system_stats_.min_stack_space_startup;
-        odrv.system_stats_.stack_usage_can = odCAN->stack_size_ - odrv.system_stats_.min_stack_space_can;
+        odrv.system_stats_.stack_size_axis = axes[0].stack_size_;
+        odrv.system_stats_.stack_size_usb = stack_size_usb_thread;
+        odrv.system_stats_.stack_size_uart = stack_size_uart_thread;
+        odrv.system_stats_.stack_size_startup = stack_size_default_task;
+        odrv.system_stats_.stack_size_can = odCAN->stack_size_;
+
+        odrv.system_stats_.prio_axis = osThreadGetPriority(axes[0].thread_id_);
+        odrv.system_stats_.prio_usb = osThreadGetPriority(usb_thread);
+        odrv.system_stats_.prio_uart = osThreadGetPriority(uart_thread);
+        odrv.system_stats_.prio_startup = osThreadGetPriority(defaultTaskHandle);
+        odrv.system_stats_.prio_can = osThreadGetPriority(odCAN->thread_id_);
     }
 }
 

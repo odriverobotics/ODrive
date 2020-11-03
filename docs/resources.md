@@ -1,5 +1,5 @@
 
-Most information in this file can be reproduced by running `dump_interrupts(odrv0)` and `dump_dma(odrv0)` in `odrivetool`.
+Most information in this file can be reproduced by running `dump_interrupts(odrv0)`, `dump_dma(odrv0)` and `dump_threads(odrv0)` in `odrivetool` (minor manual postprocessing was applied to the output of those functions).
 
 Take this info with a grain of salt as we might forget to update it from time to time. When in doubt check the file history.
 
@@ -54,4 +54,19 @@ Take this info with a grain of salt as we might forget to update it from time to
 | DMA1_Stream4 |    0 | 4 (UART4_TX)                     | UART0           |
 | DMA1_Stream5 |    2 | 0 (SPI3_TX)                      | SPI             |
 | DMA2_Stream0 |    0 | 0 (ADC1)                         | freerunning ADC |
+
+
+## Threads
+
+ - lowest priority: -3
+ - highest priority: 3
+
+| Name    | Stack Size [B] | Prio |
+|---------|----------------|------|
+| axis0   |           2048 |    3 |
+| axis1   |           2048 |    2 |
+| can     |           1024 |    0 |
+| startup |           2048 |    0 |
+| uart    |           4096 |    0 |
+| usb     |           4096 |    0 |
 
