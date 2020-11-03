@@ -509,7 +509,21 @@ interfaces:
           BrakeDeadtimeViolation:
           UnexpectedTimerCallback:
           CurrentSenseSaturation:
-          CurrentLimitViolation: {bit: 12}
+            brief: The phase current was outside the measurable range.
+            doc: |
+              There is a default 10% margin between the max allowed current and the measurable current range.
+              This is usually sufficent, but in some situations you may need some more margin. You can simply
+              decrease the `current_lim` a bit, or you can increase the `requested_current_range`. If you
+              still have issues after `requested_current_range` is 30% higher than `current_lim` then
+              you may have instability issues in the current controller.
+          CurrentLimitViolation:
+            bit: 12
+            brief: Motor current magnitude exceeded the limit and margin.
+            doc: |
+              There is a default of 8A margin between the `current_lim` and this error. In some
+              situations the current controller may overshoot a bit more than this, so you can try to
+              turn this up a bit. If you still have issues after the margin is more than 30% of your
+              `current_lim` you may have stability issues in the current controller.
           BrakeDutyCycleNan:
           DcBusOverRegenCurrent: {doc: too much current pushed into the power supply}
           DcBusOverCurrent: {doc: too much current pulled out of the power supply}
