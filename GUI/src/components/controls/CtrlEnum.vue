@@ -8,6 +8,12 @@
               {{ option.text }}
           </option>
       </select>
+      
+      <button v-if="writeAccess" v-on:click="putVal" style="padding:0; margin-right:10px; margin-left:10px;" tooltip="Write down">
+        <img src="../../assets/images/saveIcon.png"  />
+      </button>
+
+      <span class="ctrlVal" >{{ value | toReadable(options) }}</span>
     </div>
   </div>
 </template>
@@ -23,17 +29,16 @@ export default {
     odrives: Object,
     dashID: String,
     options: Array,
+    parentControl: Object
   },
   data() {
       return {
-          selected: undefined,
+          selected: undefined
       }
   },
   computed: {
     value: function () {
-      let keys = this.path.split('.');
-      keys.shift();
-      return parseFloat(getVal(keys.join('.')));
+      return parseFloat(getVal(this.name));
     },
     name: function () {
       let keys = this.path.split(".");
@@ -41,22 +46,24 @@ export default {
       return keys.join(".");
     },
     writeAccess: function () {
-      let keys = this.path.split(".");
-      keys.shift(); // don't need first key here
-      return getReadonly(keys.join('.')) === false;
+      return getReadonly(this.name) === false;
     },
   },
+  filters: {
+    toReadable: function(val, options) {
+      return options[val].text;
+    }
+  },
   watch: {
-      value: function(newVal) {
-          this.selected = newVal;
+      selected: function(newVal) {
+        this.parentControl.selectedValue = newVal;
       }
   },
   methods: {
-    putVal: function (e) {
-      let keys = this.path.split('.');
-      keys.shift();
-      console.log("Calling putVal from CtrlEnum");
-      putVal(keys.join('.'), parseFloat(e.target.value));
+    putVal: function () {
+      console.log("Calling putVal from CtrlEnum " + this.selected);
+      putVal(this.name, parseFloat(this.selected));
+      fetchParam(this.name);
     },
     deleteCtrl: function() {
       // commit a mutation in the store with the relevant information
@@ -65,11 +72,13 @@ export default {
   },
   created() {
       // update parameter value on component creation
-      let keys = this.path.split('.');
-      keys.shift();
-      fetchParam(keys.join('.'));
+      fetchParam(this.name);
   
-      this.selected = this.value;
+      if (this.parentControl.selectedValue !== undefined) {
+        this.selected = this.parentControl.selectedValue;
+      } else {
+        this.selected = this.value;
+      }
       console.log(this.value);
   }
 };
@@ -78,6 +87,8 @@ export default {
 <style scoped>
 .ctrlVal {
   font-weight: bold;
+  min-width:180px;
+  text-align: right;
 }
 
 input {
