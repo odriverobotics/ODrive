@@ -40,7 +40,8 @@ export default {
   data() {
     return {
       id: uuidv4(),
-      checkboxValue:false
+      checkboxValue:false,
+      intervalId:undefined
     }
   },
   filters: {
@@ -52,9 +53,7 @@ export default {
   },
   computed: {
     value: function () {
-      let keys = this.path.split(".");
-      keys.shift(); // don't need first key here
-      return getVal(keys.join('.'));
+      return getVal(this.name);
     },
     name: function () {
       let keys = this.path.split(".");
@@ -62,9 +61,7 @@ export default {
       return keys.join(".");
     },
     writeAccess: function () {
-      let keys = this.path.split(".");
-      keys.shift(); // don't need first key here
-      return getReadonly(keys.join('.')) == false;
+      return getReadonly(this.name) == false;
     },
   },
   methods: {
@@ -86,15 +83,21 @@ export default {
   },
   created() {
     // update parameter value on component creation
-    let keys = this.path.split('.');
-    keys.shift();
-    fetchParam(keys.join('.'));
+    fetchParam(this.name);
   
     if (this.parentControl.checkboxValue !== undefined) {
       this.checkboxValue = this.parentControl.checkboxValue;
     } else {
       this.checkboxValue = this.value;
     }
+
+    let update = () => {
+      fetchParam(this.name);
+    }
+    this.intervalId = setInterval(update, 1000);
+  },
+  beforeDestroy() {
+      clearInterval(this.intervalId);
   }
 };
 </script>
