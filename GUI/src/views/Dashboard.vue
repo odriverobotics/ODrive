@@ -105,7 +105,7 @@ let odriveEnums = {
       value: 1,
     },
     {
-      text: "Starup Sequence",
+      text: "Startup Sequence",
       value: 2,
     },
     {
@@ -155,7 +155,7 @@ let odriveEnums = {
       value: 1,
     },
     {
-      text: "Starup Sequence",
+      text: "Startup Sequence",
       value: 2,
     },
     {
