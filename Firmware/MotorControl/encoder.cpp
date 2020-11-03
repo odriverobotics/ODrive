@@ -152,8 +152,8 @@ void Encoder::set_circular_count(int32_t count, bool update_offset) {
     uint32_t prim = cpu_enter_critical();
 
     if (update_offset) {
-        config_.offset += count - count_in_cpr_;
-        config_.offset = mod(config_.offset, config_.cpr);
+        config_.phase_offset += count - count_in_cpr_;
+        config_.phase_offset = mod(config_.phase_offset, config_.cpr);
     }
 
     // Update states
@@ -302,9 +302,9 @@ bool Encoder::run_offset_calibration() {
     if (axis_->error_ != Axis::ERROR_NONE)
         return false;
 
-    config_.offset = encvaluesum / (num_steps * 2);
-    int32_t residual = encvaluesum - ((int64_t)config_.offset * (int64_t)(num_steps * 2));
-    config_.offset_float = (float)residual / (float)(num_steps * 2) + 0.5f;  // add 0.5 to center-align state to phase
+    config_.phase_offset = encvaluesum / (num_steps * 2);
+    int32_t residual = encvaluesum - ((int64_t)config_.phase_offset * (int64_t)(num_steps * 2));
+    config_.phase_offset_float = (float)residual / (float)(num_steps * 2) + 0.5f;  // add 0.5 to center-align state to phase
 
     is_ready_ = true;
     return true;
@@ -568,7 +568,7 @@ bool Encoder::update() {
     pos_circular_ = fmodf_pos(pos_circular_, axis_->controller_.config_.circular_setpoint_range);
 
     //// run encoder count interpolation
-    int32_t corrected_enc = count_in_cpr_ - config_.offset;
+    int32_t corrected_enc = count_in_cpr_ - config_.phase_offset;
     // if we are stopped, make sure we don't randomly drift
     if (snap_to_zero_vel || !config_.enable_phase_interpolation) {
         interpolation_ = 0.5f;
@@ -590,7 +590,7 @@ bool Encoder::update() {
     //// compute electrical phase
     //TODO avoid recomputing elec_rad_per_enc every time
     float elec_rad_per_enc = axis_->motor_.config_.pole_pairs * 2 * M_PI * (1.0f / (float)(config_.cpr));
-    float ph = elec_rad_per_enc * (interpolated_enc - config_.offset_float);
+    float ph = elec_rad_per_enc * (interpolated_enc - config_.phase_offset_float);
     // ph = fmodf(ph, 2*M_PI);
     phase_ = wrap_pm_pi(ph);
 

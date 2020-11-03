@@ -21,8 +21,8 @@ public:
                                     // state as soon as the index is found.
         bool zero_count_on_find_idx = true;
         int32_t cpr = (2048 * 4);   // Default resolution of CUI-AMT102 encoder,
-        int32_t offset = 0;        // Offset between encoder count and rotor electrical phase
-        float offset_float = 0.0f; // Sub-count phase alignment offset
+        int32_t phase_offset = 0;        // Offset between encoder count and rotor electrical phase
+        float phase_offset_float = 0.0f; // Sub-count phase alignment offset
         bool enable_phase_interpolation = true; // Use velocity to interpolate inside the count state
         float calib_range = 0.02f; // Accuracy required to pass encoder cpr check
         float calib_scan_distance = 16.0f * M_PI; // rad electrical
