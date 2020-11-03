@@ -423,7 +423,7 @@ bool Motor::measure_phase_resistance(float test_current, float max_voltage) {
     disarm();
 
     config_.phase_resistance = control_law.get_resistance();
-    if (std::isnan(config_.phase_resistance)) {
+    if (is_nan(config_.phase_resistance)) {
         // TODO: the motor is already disarmed at this stage. This is an error
         // that only pretains to the measurement and its result so it should
         // just be a return value of this function.
