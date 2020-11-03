@@ -3,7 +3,7 @@
     <button class="close-button" @click=deleteCtrl>X</button>
     <span class="ctrlName">{{name}}:</span>
     <div class="right">
-      <select class="ctrl-enum" v-model="selected" @change="putVal">
+      <select v-if="writeAccess" class="ctrl-enum" v-model="selected" @change="putVal">
           <option v-for="option in options" :key="option.value" :value="option.value">
               {{ option.text }}
           </option>
@@ -33,7 +33,8 @@ export default {
   },
   data() {
       return {
-          selected: undefined
+          selected: undefined,
+          intervalId: undefined
       }
   },
   computed: {
@@ -71,15 +72,23 @@ export default {
     },
   },
   created() {
-      // update parameter value on component creation
-      fetchParam(this.name);
+    // update parameter value on component creation
+    fetchParam(this.name);
   
-      if (this.parentControl.selectedValue !== undefined) {
-        this.selected = this.parentControl.selectedValue;
-      } else {
-        this.selected = this.value;
-      }
-      console.log(this.value);
+    if (this.parentControl.selectedValue !== undefined) {
+      this.selected = this.parentControl.selectedValue;
+    } else {
+      this.selected = this.value;
+    }
+    console.log(this.value);
+
+    let update = () => {
+      fetchParam(this.name);
+    }
+    this.intervalId = setInterval(update, 1000);
+  },
+  beforeDestroy() {
+      clearInterval(this.intervalId);
   }
 };
 </script>
