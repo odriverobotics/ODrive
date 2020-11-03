@@ -1,11 +1,16 @@
 <template>
   <div class="card">
     <button class="close-button" @click=deleteCtrl>X</button>
-    <span class="ctrlName">{{name}}:</span>
-    <div class="right">
-      <span v-if="!writeAccess" class="ctrlVal">{{value}}</span>
-      <input v-if="writeAccess" :placeholder="value" v-on:change="putVal" :value="value"/>
-      <!-- <span class="unit">[{{unit}}]</span> -->
+    <div class="lineDiv">
+      <span class="ctrlName">{{name}}:</span>
+    </div>
+    <div class="lineDiv right">
+      <input v-if="writeAccess" v-on:change="putVal" v-model="setValue" />
+      <button v-if="writeAccess" v-on:click="putVal" style="padding:0; margin-right:10px; margin-left:10px;" tooltip="Write down">
+        <img src="../../assets/images/saveIcon.png"  />
+      </button>
+      <span class="ctrlVal" >{{value}}</span>
+      <span class="unit" v-if="unit !== undefined">[{{unit}}]</span>
     </div>
   </div>
 </template>
@@ -20,6 +25,12 @@ export default {
     path: String,
     odrives: Object,
     dashID: String
+  },
+  data: function(){
+    return {
+      setValue:"0",
+      intervalId:undefined
+    }
   },
   computed: {
     value: function () {
@@ -44,11 +55,11 @@ export default {
     },
   },
   methods: {
-    putVal: function (e) {
+    putVal: function () {
       let keys = this.path.split('.');
       keys.shift();
-      console.log("input recieved: " + e.target.value);
-      let val = parseMath(e.target.value);
+      console.log("input recieved: " + this.setValue);
+      let val = parseMath(this.setValue);
       if (val !== false) {
         putVal(keys.join('.'), val);
       }
@@ -60,14 +71,30 @@ export default {
   },
   created() {
     // update parameter value on component creation
-    let keys = this.path.split('.');
-    keys.shift();
-    fetchParam(keys.join('.'));
+    fetchParam(this.name);
+    this.setValue = this.value;
+
+    let update = () => {
+      fetchParam(this.name);
+    }
+
+    this.intervalId = setInterval(update, 1000);
+
+    update();
   },
+  beforeDestroy() {
+      clearInterval(this.intervalId);
+  }
 };
 </script>
 
 <style scoped>
+
+.lineDiv {
+  height: 25px; 
+  line-height: 25px;
+}
+
 .ctrlVal {
   font-weight: bold;
 }

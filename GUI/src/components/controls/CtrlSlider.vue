@@ -10,13 +10,16 @@
       <vue-slider v-model="value" :data="data" @change="putVal"/>
       <input type="number" :value="max" v-on:change="setMax" />
     </div>
+    <div style="text-align:center;">
+      <span>{{ onlineValue }}</span>
+    </div>
   </div>
 </template>
 
 <script>
 import VueSlider from "vue-slider-component";
 import "vue-slider-component/theme/default.css";
-import { getVal, putVal } from "../../lib/odrive_utils.js";
+import { getVal, putVal, fetchParam } from "../../lib/odrive_utils.js";
 
 export default {
   name: "CtrlSlider",
@@ -34,7 +37,9 @@ export default {
       value: 0,
       min: 0,
       max: 1,
-      data: []
+      data: [],
+      onlineValue:0,
+      intervalId:undefined
     };
   },
   computed: {
@@ -45,43 +50,47 @@ export default {
     },
     interval: function () {
       return (this.max - this.min) / 100;
-    },
-    sliderData: function () {
-      let interval = (this.max - this.min) / 100;
-      return Array.from(Array(101), (_, i) => this.min + interval * i);
     }
   },
   methods: {
     putVal: function (value) {
       console.log(value);
-      let keys = this.path.split(".");
-      keys.shift();
-      putVal(keys.join('.'), value);
+      putVal(this.name, value);
     },
     setMin: function (e) {
       this.min = parseFloat(e.target.value);
-      this.data = Array.from(Array(101), (_, i) => this.min + (this.max-this.min) / 100 * i);
+      this.updateDataArray();
     },
     setMax: function (e) {
       this.max = parseFloat(e.target.value);
-      this.data = Array.from(Array(101), (_, i) => this.min + (this.max-this.min) / 100 * i);
+      this.updateDataArray();
     },
     deleteCtrl: function() {
       // commit a mutation in the store with the relevant information
       this.$store.commit("removeCtrlFromDash", {dashID: this.dashID, path: this.path});
+    },
+    updateDataArray: function() {
+      this.data = Array.from(Array(101), (_, i) => this.min + (this.max-this.min) / 100 * i);
     }
   },
   mounted() {
-    let initVal = () => {
-      let keys = this.path.split(".");
-      keys.shift(); // don't need first key here
-      return getVal(keys.join('.'));
-    };
-    this.value = initVal();
+    this.value = getVal(this.name);
     this.max = parseFloat((this.value * 4).toFixed(3));
     this.min = parseFloat((this.value / 4).toFixed(3));
-    this.data = Array.from(Array(101), (_, i) => this.min + (this.max-this.min) / 100 * i);
+    this.updateDataArray();
+
+    let update = () => {
+      fetchParam(this.name);
+      this.onlineValue = getVal(this.name);
+    }
+
+    this.intervalId = setInterval(update, 1000);
+
+    update();
   },
+  beforeDestroy() {
+      clearInterval(this.intervalId);
+  }
 };
 </script>
 
