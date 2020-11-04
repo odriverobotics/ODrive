@@ -34,6 +34,8 @@ class TestMotorCalibration():
         axis_ctx.handle.motor.config.phase_inductance = 0.0
         axis_ctx.handle.motor.config.pre_calibrated = False
         axis_ctx.handle.config.enable_watchdog = False
+        axis_ctx.parent.handle.config.brake_resistance = float(axis_ctx.parent.yaml['brake-resistance'])
+        axis_ctx.parent.handle.config.enable_brake_resistor = True
 
         axis_ctx.parent.handle.clear_errors()
 

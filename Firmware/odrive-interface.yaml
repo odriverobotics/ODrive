@@ -69,6 +69,7 @@ interfaces:
           DcBusOverCurrent: {doc: too much current pulled out of the power supply}
           BrakeDeadtimeViolation:
           BrakeDutyCycleNan:
+          InvalidBrakeResistance: {doc: '`config.brake_resistance` is non-positive or NaN.'}
 #          BrakeResistorDisarmed:
 #            doc: The brake resistor was unexpectedly disarmed.
         
@@ -240,7 +241,22 @@ interfaces:
             type: float32
             unit: Ohm
             brief: Value of the brake resistor connected to the ODrive.
-            doc: Set to 0 to disable.
+            doc: |
+              If you set this to a lower value than the true brake resistance
+              then the ODrive will not meed the `max_regen_current` constraint
+              during braking, that is it will sink more than `max_regen_current`
+              into the power supply. Some power supplies don't like this.
+
+              If you set this to a higher value than the true brake resistance
+              then the ODrive will unnecessarily burn more power than required
+              during braking.
+          enable_brake_resistor:
+            type: bool
+            brief: Enable/disable the use of a brake resistor.
+            doc: |
+              Setting this to False even though a brake resistor is connected is
+              harmless. Setting this to True even though no brake resistor is
+              connected can break the power supply.
 
           dc_bus_undervoltage_trip_level:
             type: float32

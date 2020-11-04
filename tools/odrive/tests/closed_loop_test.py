@@ -38,6 +38,10 @@ class TestClosedLoopControlBase():
         axis_ctx.handle.motor.config.phase_inductance = float(motor_ctx.yaml['phase-inductance'])
         axis_ctx.handle.motor.config.pre_calibrated = True
 
+        # Set brake resistor settings
+        axis_ctx.parent.handle.config.brake_resistance = float(axis_ctx.parent.yaml['brake-resistance'])
+        axis_ctx.parent.handle.config.enable_brake_resistor = True
+
         # Set calibration settings
         axis_ctx.handle.encoder.config.direction = 0
         axis_ctx.handle.encoder.config.use_index = False
@@ -204,7 +208,7 @@ class TestRegenProtection(TestClosedLoopControlBase):
             test_assert_no_error(axis_ctx)
 
             # once more, but this time without brake resistor
-            axis_ctx.parent.handle.config.brake_resistance = 0
+            axis_ctx.parent.handle.config.enable_brake_resistor = False
             # accelerate...
             axis_ctx.handle.controller.input_vel = nominal_rps
             time.sleep(1.0)
