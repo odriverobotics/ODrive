@@ -35,7 +35,13 @@ public:
             usb_stats_.tx_overrun_cnt++;
         }
         // transmit packet
+#if HW_VERSION_MAJOR == 3 // TODO: remove preprocessor switch
         uint8_t status = CDC_Transmit_FS(
+#elif HW_VERSION_MAJOR == 4
+        uint8_t status = CDC_Transmit_HS(
+#else
+#error "not supported"
+#endif
                 const_cast<uint8_t*>(buffer) /* casting this const away is safe because...
                 well... it's not actually. Stupid STM. */, length, endpoint_pair_);
         if (status != USBD_OK) {

@@ -241,6 +241,34 @@ This happens from time to time.
 4. Power on the ODrive
 5. Run `make flash` again
 
+### `Warn : Cannot identify target as a STM32 family.` when flashing using openocd
+
+**Problem:** When I try to flash ODrive v4.1 with `make flash` then I get:
+```
+[...]
+** Programming Started **
+auto erase enabled
+Info : device id = 0x10006452
+Warn : Cannot identify target as a STM32 family.
+Error: auto_probe failed
+embedded:startup.tcl:487: Error: ** Programming Failed **
+in procedure 'program' 
+in procedure 'program_error' called at file "embedded:startup.tcl", line 543
+at file "embedded:startup.tcl", line 487
+```
+
+**Solution:**
+Compile and install a recent version of openocd from source. The latest official release (0.10.0 as of Nov 2020) doesn't support the STM32F722 yet.
+```
+sudo apt-get install libtool libusb-1.0
+git clone https://git.code.sf.net/p/openocd/code openocd
+cd openocd/
+./bootstrap
+./configure --enable-stlink
+make
+sudo make install
+```
+
 ## Documentation
 
 All *.md files in the `docs/` directory of the master branch are served up by GitHub Pages on [this domain](https://docs.odriverobotics.com).

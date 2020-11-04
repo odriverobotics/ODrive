@@ -207,9 +207,16 @@ class ODriveComponent(Component):
     def __init__(self, yaml: dict):
         self.handle = None
         self.yaml = yaml
-        #self.axes = [ODriveAxisComponent(None), ODriveAxisComponent(None)]
-        self.encoders = [ODriveEncoderComponent(self, 0, yaml['encoder0']), ODriveEncoderComponent(self, 1, yaml['encoder1'])]
-        self.axes = [ODriveAxisComponent(self, 0, yaml['motor0']), ODriveAxisComponent(self, 1, yaml['motor1'])]
+
+        if yaml['board-version'].startswith("v3."):
+            self.encoders = [ODriveEncoderComponent(self, 0, yaml['encoder0']), ODriveEncoderComponent(self, 1, yaml['encoder1'])]
+            self.axes = [ODriveAxisComponent(self, 0, yaml['motor0']), ODriveAxisComponent(self, 1, yaml['motor1'])]
+        elif yaml['board-version'].startswith("v4.0-"):
+            self.encoders = [ODriveEncoderComponent(self, 0, yaml['encoder0'])]
+            self.axes = [ODriveAxisComponent(self, 0, yaml['motor0'])]
+        else:
+            raise Exception("unknown board version {}".format(yaml['board-version']))
+
         for i in range(1,9):
             self.__setattr__('gpio' + str(i), Component(self))
         self.can = Component(self)
@@ -249,12 +256,15 @@ class ODriveComponent(Component):
             axis_ctx.handle = self.handle.__dict__['axis{}'.format(axis_idx)]
 
     def disable_mappings(self):
-        self.handle.config.gpio1_pwm_mapping.endpoint = None # here
-        self.handle.config.gpio2_pwm_mapping.endpoint = None
-        self.handle.config.gpio3_pwm_mapping.endpoint = None
-        self.handle.config.gpio4_pwm_mapping.endpoint = None
-        self.handle.config.gpio3_analog_mapping.endpoint = None
-        self.handle.config.gpio4_analog_mapping.endpoint = None
+        if yaml['board-version'].startswith("v3."):
+            self.handle.config.gpio1_pwm_mapping.endpoint = None
+            self.handle.config.gpio2_pwm_mapping.endpoint = None
+            self.handle.config.gpio3_pwm_mapping.endpoint = None
+            self.handle.config.gpio4_pwm_mapping.endpoint = None
+            self.handle.config.gpio3_analog_mapping.endpoint = None
+            self.handle.config.gpio4_analog_mapping.endpoint = None
+        else:
+            raise Exception("unknown board version {}".format(yaml['board-version']))
 
     def save_config_and_reboot(self):
         self.handle.save_configuration()

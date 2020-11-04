@@ -35,6 +35,14 @@ board_v3 = {
     ldflags = {'-TBoard/v3/STM32F405RGTx_FLASH.ld', '-LBoard/v3/Drivers/CMSIS/Lib', '-larm_cortexM4lf_math', '-mcpu=cortex-m4', '-mfpu=fpv4-sp-d16'}
 }
 
+board_v4 = {
+    dir = 'Board/v4',
+    root_interface = 'ODrive4',
+    sources = {'Drivers/DRV8353/drv8353.cpp', 'Drivers/status_led.cpp', 'Board/v4/board.cpp', 'lockdown/rsa_embedded/rsa.c', 'lockdown/sha-2/sha-256.c',},
+    flags = {'-DSTM32F722xx', '-DARM_MATH_CM7', '-mcpu=cortex-m7', '-mfpu=fpv5-sp-d16'},
+    ldflags = {'-TBoard/v4/STM32F722RETx_FLASH.ld', '-LBoard/v4/Drivers/CMSIS/Lib/GCC', '-larm_cortexM7lfsp_math', '-mcpu=cortex-m7', '-mfpu=fpv5-sp-d16'}
+}
+
 -- Switch between board versions
 boardversion = tup.getconfig("BOARD_VERSION")
 if boardversion == "v3.1" then
@@ -72,6 +80,10 @@ elseif boardversion == "v3.6-24V" then
 elseif boardversion == "v3.6-56V" then
     board = board_v3
     board.flags += "-DHW_VERSION_MAJOR=3 -DHW_VERSION_MINOR=6"
+    board.flags += "-DHW_VERSION_VOLTAGE=56"
+elseif boardversion == "v4.0-56V" then
+    board = board_v4
+    board.flags += "-DHW_VERSION_MAJOR=4 -DHW_VERSION_MINOR=0"
     board.flags += "-DHW_VERSION_VOLTAGE=56"
 elseif boardversion == "" then
     error("board version not specified - take a look at tup.config.default")

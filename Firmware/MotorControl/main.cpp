@@ -34,6 +34,55 @@ ODrive odrv{};
 
 ConfigManager config_manager;
 
+class StatusLedController {
+public:
+    void update();
+};
+
+StatusLedController status_led_controller;
+
+void StatusLedController::update() {
+#if HW_VERSION_MAJOR == 4
+    uint32_t t = HAL_GetTick();
+
+    bool is_booting = std::any_of(axes.begin(), axes.end(), [](Axis& axis){
+        return axis.current_state_ == Axis::AXIS_STATE_UNDEFINED;
+    });
+
+    if (is_booting) {
+        return;
+    }
+
+    bool is_armed = std::any_of(axes.begin(), axes.end(), [](Axis& axis){
+        return axis.motor_.is_armed_;
+    });
+    bool any_error = odrv.any_error();
+
+    if (is_armed) {
+        // Fast blue pulsating
+        const uint32_t period_ms = 256;
+        const uint8_t min_brightness = 0;
+        const uint8_t max_brightness = 255;
+        const uint32_t brightness = std::abs((int32_t)(t % period_ms) - (int32_t)(period_ms / 2)) * (max_brightness - min_brightness) / (period_ms / 2) + min_brightness;
+        status_led.set_color(rgb_t{(uint8_t)(any_error ? brightness / 2 : 0), 0, (uint8_t)brightness});
+    } else if (any_error) {
+        // Red pulsating
+        const uint32_t period_ms = 1024;
+        const uint8_t min_brightness = 0;
+        const uint8_t max_brightness = 255;
+        const uint32_t brightness = std::abs((int32_t)(t % period_ms) - (int32_t)(period_ms / 2)) * (max_brightness - min_brightness) / (period_ms / 2) + min_brightness;
+        status_led.set_color(rgb_t{(uint8_t)brightness, 0, 0});
+    } else {
+        // Slow green pulsating
+        const uint32_t period_ms = 2048;
+        const uint8_t min_brightness = 16;
+        const uint8_t max_brightness = 128;
+        const uint32_t brightness = std::abs((int32_t)(t % period_ms) - (int32_t)(period_ms / 2)) * (max_brightness - min_brightness) / (period_ms / 2) + min_brightness;
+        status_led.set_color(rgb_t{0, (uint8_t)brightness, 0});
+    }
+#endif
+}
+
 static bool config_read_all() {
     bool success = board_read_config() &&
            config_manager.read(&odrv.config_) &&
@@ -217,6 +266,8 @@ void vApplicationIdleHook(void) {
         odrv.system_stats_.prio_uart = osThreadGetPriority(uart_thread);
         odrv.system_stats_.prio_startup = osThreadGetPriority(defaultTaskHandle);
         odrv.system_stats_.prio_can = osThreadGetPriority(odCAN->thread_id_);
+
+        status_led_controller.update();
     }
 }
 
