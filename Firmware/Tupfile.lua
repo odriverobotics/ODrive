@@ -85,6 +85,10 @@ elseif boardversion == "v4.0-56V" then
     board = board_v4
     board.flags += "-DHW_VERSION_MAJOR=4 -DHW_VERSION_MINOR=0"
     board.flags += "-DHW_VERSION_VOLTAGE=56"
+elseif boardversion == "v4.1-58V" then
+    board = board_v4
+    board.flags += "-DHW_VERSION_MAJOR=4 -DHW_VERSION_MINOR=1"
+    board.flags += "-DHW_VERSION_VOLTAGE=58"
 elseif boardversion == "" then
     error("board version not specified - take a look at tup.config.default")
 else
