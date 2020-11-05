@@ -398,9 +398,9 @@ extern "C" int main(void) {
     }
 
     odrv.misconfigured_ = odrv.misconfigured_
-            || (odrv.config_.enable_uart0 && !uart0)
-            || (odrv.config_.enable_uart1 && !uart1)
-            || (odrv.config_.enable_uart2 && !uart2);
+            || (odrv.config_.enable_uart_a && !uart_a)
+            || (odrv.config_.enable_uart_b && !uart_b)
+            || (odrv.config_.enable_uart_c && !uart_c);
 
     // Init board-specific peripherals
     if (!board_init()) {
@@ -458,49 +458,49 @@ extern "C" int main(void) {
                 GPIO_InitStruct.Mode = GPIO_MODE_ANALOG;
                 GPIO_InitStruct.Pull = GPIO_NOPULL;
             } break;
-            case ODriveIntf::GPIO_MODE_UART0: {
+            case ODriveIntf::GPIO_MODE_UART_A: {
                 GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
                 GPIO_InitStruct.Pull = (i == 0) ? GPIO_PULLDOWN : GPIO_PULLUP; // this is probably swapped but imitates old behavior
                 GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
-                if (!odrv.config_.enable_uart0) {
+                if (!odrv.config_.enable_uart_a) {
                     odrv.misconfigured_ = true;
                 }
             } break;
-            case ODriveIntf::GPIO_MODE_UART1: {
+            case ODriveIntf::GPIO_MODE_UART_B: {
                 GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
                 GPIO_InitStruct.Pull = (i == 0) ? GPIO_PULLDOWN : GPIO_PULLUP; // this is probably swapped but imitates old behavior
                 GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
-                if (!odrv.config_.enable_uart1) {
+                if (!odrv.config_.enable_uart_b) {
                     odrv.misconfigured_ = true;
                 }
             } break;
-            case ODriveIntf::GPIO_MODE_UART2: {
+            case ODriveIntf::GPIO_MODE_UART_C: {
                 GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
                 GPIO_InitStruct.Pull = (i == 0) ? GPIO_PULLDOWN : GPIO_PULLUP; // this is probably swapped but imitates old behavior
                 GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
-                if (!odrv.config_.enable_uart2) {
+                if (!odrv.config_.enable_uart_c) {
                     odrv.misconfigured_ = true;
                 }
             } break;
-            case ODriveIntf::GPIO_MODE_CAN0: {
+            case ODriveIntf::GPIO_MODE_CAN_A: {
                 GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
                 GPIO_InitStruct.Pull = GPIO_NOPULL;
                 GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
-                if (!odrv.config_.enable_can0) {
+                if (!odrv.config_.enable_can_a) {
                     odrv.misconfigured_ = true;
                 }
             } break;
-            case ODriveIntf::GPIO_MODE_I2C0: {
+            case ODriveIntf::GPIO_MODE_I2C_A: {
                 GPIO_InitStruct.Mode = GPIO_MODE_AF_OD;
                 GPIO_InitStruct.Pull = GPIO_PULLUP;
                 GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
-                if (!odrv.config_.enable_i2c0) {
+                if (!odrv.config_.enable_i2c_a) {
                     odrv.misconfigured_ = true;
                 }
             } break;
-            //case ODriveIntf::GPIO_MODE_SPI0: { // TODO
+            //case ODriveIntf::GPIO_MODE_SPI_A: { // TODO
             //} break;
-            case ODriveIntf::GPIO_MODE_PWM0: {
+            case ODriveIntf::GPIO_MODE_PWM: {
                 GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
                 GPIO_InitStruct.Pull = GPIO_PULLDOWN;
                 GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;

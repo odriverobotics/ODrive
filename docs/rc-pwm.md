@@ -7,7 +7,7 @@ Any of the numerical parameters that are writable from the ODrive Tool can be ho
 2. If you want to control your ODrive with the PWM input without using anything else to activate the ODrive, you can configure the ODrive such that axis 0 automatically goes operational at startup. See [here](commands.md#startup-procedure) for more information.
 3. In ODrive Tool, configure the PWM input mapping
     ```
-    odrv0.config.gpio4_mode = GPIO_MODE_PWM0
+    odrv0.config.gpio4_mode = GPIO_MODE_PWM
     odrv0.config.gpio4_pwm_mapping.min = -2
     odrv0.config.gpio4_pwm_mapping.max = 2
     odrv0.config.gpio4_pwm_mapping.endpoint = odrv0.axis0.controller._remote_attributes['input_pos']

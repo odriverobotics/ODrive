@@ -70,7 +70,7 @@ class TestPwmInput():
             odrive.handle.config.gpio4_pwm_mapping
         ][odrive_gpio_num - 1]
 
-        setattr(odrive.handle.config, 'gpio' + str(odrive_gpio_num) + '_mode', GPIO_MODE_PWM0)
+        setattr(odrive.handle.config, 'gpio' + str(odrive_gpio_num) + '_mode', GPIO_MODE_PWM)
         pwm_mapping.endpoint = odrive.handle.axis0.controller._remote_attributes['input_pos']
         pwm_mapping.min = min_val
         pwm_mapping.max = max_val
