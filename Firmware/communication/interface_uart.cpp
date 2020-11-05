@@ -19,8 +19,7 @@ static uint8_t dma_rx_buffer[UART_RX_BUFFER_SIZE];
 static uint32_t dma_last_rcv_idx;
 
 osThreadId uart_thread = 0;
-extern UART_HandleTypeDef* uart0;
-static UART_HandleTypeDef* huart_ = uart0; // defined in board.cpp.
+static UART_HandleTypeDef* huart_ = nullptr;
 const uint32_t stack_size_uart_thread = 4096;  // Bytes
 
 
@@ -97,7 +96,9 @@ static void uart_server_thread(void * ctx) {
 }
 
 // TODO: allow multiple UART server instances
-void start_uart_server() {
+void start_uart_server(UART_HandleTypeDef* huart) {
+    huart_ = huart;
+
     // DMA is set up to receive in a circular buffer forever.
     // We dont use interrupts to fetch the data, instead we periodically read
     // data out of the circular buffer into a parse buffer, controlled by a state machine

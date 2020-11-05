@@ -27,7 +27,8 @@ Take this info with a grain of salt as we might forget to update it from time to
 |  11 | DMA1_Stream0_IRQn       |    4 |
 |  13 | DMA1_Stream2_IRQn       |   10 |
 |  15 | DMA1_Stream4_IRQn       |   10 |
-|  16 | DMA1_Stream5_IRQn       |    3 |
+|  16 | DMA1_Stream5_IRQn       |   10 |
+|  17 | DMA1_Stream6_IRQn       |   10 |
 |  19 | CAN1_TX_IRQn            |    9 |
 |  20 | CAN1_RX0_IRQn           |    9 |
 |  21 | CAN1_RX1_IRQn           |    9 |
@@ -36,6 +37,7 @@ Take this info with a grain of salt as we might forget to update it from time to
 |  40 | EXTI15_10_IRQn          |    1 |
 |  44 | TIM8_UP_TIM13_IRQn      |    0 |
 |  45 | TIM8_TRG_COM_TIM14_IRQn |    6 |
+|  47 | DMA1_Stream7_IRQn       |    3 |
 |  50 | TIM5_IRQn               |    1 |
 |  52 | UART4_IRQn              |   10 |
 |  67 | OTG_FS_IRQn             |    6 |
@@ -49,10 +51,12 @@ Take this info with a grain of salt as we might forget to update it from time to
 
 | Name         | Prio | Channel                          | High Level Func |
 |--------------|------|----------------------------------|-----------------|
-| DMA1_Stream0 |    1 | 0 (SPI3_RX)                      | SPI             |
-| DMA1_Stream2 |    0 | 4 (UART4_RX)                     | UART0           |
-| DMA1_Stream4 |    0 | 4 (UART4_TX)                     | UART0           |
-| DMA1_Stream5 |    2 | 0 (SPI3_TX)                      | SPI             |
+| DMA1_Stream0 |    1 | 0 (SPI3_RX)                      | SPI_A           |
+| DMA1_Stream2 |    0 | 4 (UART4_RX)                     | UART_A          |
+| DMA1_Stream4 |    0 | 4 (UART4_TX)                     | UART_A          |
+| DMA1_Stream5 |    0 | 4 (USART2_RX)                    | UART_B          |
+| DMA1_Stream6 |    0 | 4 (USART2_TX)                    | UART_B          |
+| DMA1_Stream7 |    2 | 0 (SPI3_TX)                      | SPI_A           |
 | DMA2_Stream0 |    0 | 0 (ADC1)                         | freerunning ADC |
 
 

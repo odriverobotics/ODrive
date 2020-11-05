@@ -3,6 +3,7 @@ Please add a note of your changes below this heading if you make a Pull Request.
 ### Added
 * [Mechanical brake support](docs/mechanical-brakes.md)
 * Added periodic sending of encoder position on CAN
+* Support for UART1 on GPIO3 and GPIO4. UART0 (on GPIO1/2) and UART1 can currently not be enabled at the same time.
 
 ### Changed
 * Modified encoder offset calibration to work correctly when calib_scan_distance is not a multiple of 4pi

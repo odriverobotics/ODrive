@@ -43,8 +43,8 @@
 
 #define DEFAULT_GPIO_MODES \
     ODriveIntf::GPIO_MODE_DIGITAL, \
-    ODriveIntf::GPIO_MODE_UART0, \
-    ODriveIntf::GPIO_MODE_UART0, \
+    ODriveIntf::GPIO_MODE_UART_A, \
+    ODriveIntf::GPIO_MODE_UART_A, \
     ODriveIntf::GPIO_MODE_ANALOG_IN, \
     ODriveIntf::GPIO_MODE_ANALOG_IN, \
     ODriveIntf::GPIO_MODE_ANALOG_IN, \
@@ -57,8 +57,8 @@
     ODriveIntf::GPIO_MODE_ENC1, \
     ODriveIntf::GPIO_MODE_ENC1, \
     ODriveIntf::GPIO_MODE_DIGITAL_PULL_DOWN, \
-    ODriveIntf::GPIO_MODE_CAN0, \
-    ODriveIntf::GPIO_MODE_CAN0,
+    ODriveIntf::GPIO_MODE_CAN_A, \
+    ODriveIntf::GPIO_MODE_CAN_A,
 
 #define TIM_TIME_BASE TIM14
 
@@ -97,9 +97,9 @@ extern USBD_HandleTypeDef& usb_dev_handle;
 
 extern Stm32SpiArbiter& ext_spi_arbiter;
 
-extern UART_HandleTypeDef* uart0;
-extern UART_HandleTypeDef* uart1;
-extern UART_HandleTypeDef* uart2;
+extern UART_HandleTypeDef* uart_a;
+extern UART_HandleTypeDef* uart_b;
+extern UART_HandleTypeDef* uart_c;
 
 extern PwmInput pwm0_input;
 #endif

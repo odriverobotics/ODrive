@@ -41,16 +41,40 @@ class TestUartAscii():
                 'rx': (odrive.gpio1, True),
                 'tx': (odrive.gpio2, False)
             }, SerialPortComponent))
-            yield (odrive, ports)
+            yield (odrive, 0, ports)
 
-    def run_test(self, odrive: ODriveComponent, port: SerialPortComponent, logger: Logger):
-        logger.debug('Enabling UART...')
+            # Enable the line below to manually test UART_B. For this you need
+            # to manually move to the wires go to GPIO1/2 to GPIO3/4. The ones
+            # that normally go to GPIO3/4 have a low pass filter.
+            #yield (odrive, 1, ports)
+
+    def run_test(self, odrive: ODriveComponent, uart_num: int, port: SerialPortComponent, logger: Logger):
+        logger.debug('Enabling UART {}...'.format(uart_num))
+        
         # GPIOs might be in use by something other than UART and some components
         # might be configured so that they would fail in the later test.
-        odrive.erase_config_and_reboot()
-        odrive.handle.config.enable_uart0 = True
-        odrive.handle.config.gpio1_mode = GPIO_MODE_UART0
-        odrive.handle.config.gpio2_mode = GPIO_MODE_UART0
+        odrive.disable_mappings()
+        odrive.handle.config.enable_uart_a = False
+        odrive.handle.config.uart_a_baudrate = 115200
+        odrive.handle.config.enable_uart_b = False
+        odrive.handle.config.uart_b_baudrate = 115200
+        odrive.handle.config.enable_uart_c = False
+        odrive.handle.config.uart_c_baudrate = 115200
+
+        if uart_num == 0:
+            odrive.handle.config.enable_uart_a = True
+            odrive.handle.config.gpio1_mode = GPIO_MODE_UART_A
+            odrive.handle.config.gpio2_mode = GPIO_MODE_UART_A
+            odrive.handle.config.gpio3_mode = GPIO_MODE_ANALOG_IN
+            odrive.handle.config.gpio4_mode = GPIO_MODE_ANALOG_IN
+        else:
+            odrive.handle.config.enable_uart_b = True
+            odrive.handle.config.gpio1_mode = GPIO_MODE_ANALOG_IN
+            odrive.handle.config.gpio2_mode = GPIO_MODE_ANALOG_IN
+            odrive.handle.config.gpio3_mode = GPIO_MODE_UART_B
+            odrive.handle.config.gpio4_mode = GPIO_MODE_UART_B
+
+        odrive.save_config_and_reboot()
 
         with port.open(115200) as ser:
             # reset port to known state
@@ -163,11 +187,11 @@ class TestUartBaudrate():
             yield (odrive, ports)
 
     def run_test(self, odrive: ODriveComponent, port: SerialPortComponent, logger: Logger):
-        odrive.handle.config.enable_uart0 = True
-        odrive.handle.config.gpio1_mode = GPIO_MODE_UART0
-        odrive.handle.config.gpio2_mode = GPIO_MODE_UART0
+        odrive.handle.config.enable_uart_a = True
+        odrive.handle.config.gpio1_mode = GPIO_MODE_UART_A
+        odrive.handle.config.gpio2_mode = GPIO_MODE_UART_A
 
-        odrive.handle.config.uart0_baudrate = 9600
+        odrive.handle.config.uart_a_baudrate = 9600
         odrive.save_config_and_reboot()
 
         # Control test: talk to the ODrive with the wrong baudrate
@@ -187,7 +211,7 @@ class TestUartBaudrate():
             response = float(ser.readline().strip())
             test_assert_eq(response, odrive.handle.vbus_voltage, accuracy=0.1)
 
-        odrive.handle.config.uart0_baudrate = 115200
+        odrive.handle.config.uart_a_baudrate = 115200
         odrive.save_config_and_reboot()
 
 
@@ -205,9 +229,9 @@ class TestUartBurnIn():
             yield (odrive, ports)
 
     def run_test(self, odrive: ODriveComponent, port: SerialPortComponent, logger: Logger):
-        odrive.handle.config.enable_uart0 = True
-        odrive.handle.config.gpio1_mode = GPIO_MODE_UART0
-        odrive.handle.config.gpio2_mode = GPIO_MODE_UART0
+        odrive.handle.config.enable_uart_a = True
+        odrive.handle.config.gpio1_mode = GPIO_MODE_UART_A
+        odrive.handle.config.gpio2_mode = GPIO_MODE_UART_A
 
         with port.open(115200) as ser:
             with open('/dev/random', 'rb') as rand:
@@ -262,9 +286,9 @@ class TestUartNoise():
         noise_enable.write(False)
         time.sleep(0.1)
 
-        odrive.handle.config.enable_uart0 = True
-        odrive.handle.config.gpio1_mode = GPIO_MODE_UART0
-        odrive.handle.config.gpio2_mode = GPIO_MODE_UART0
+        odrive.handle.config.enable_uart_a = True
+        odrive.handle.config.gpio1_mode = GPIO_MODE_UART_A
+        odrive.handle.config.gpio2_mode = GPIO_MODE_UART_A
 
         with port.open(115200) as ser:
             # reset port to known state
