@@ -70,14 +70,14 @@ def test_assert_within(observed, lower_bound, upper_bound, accuracy=0.0):
 def disjoint_sets(list_of_sets: list):
     while len(list_of_sets):
         current_set, list_of_sets = list_of_sets[0], list_of_sets[1:]
-        did_update = True
-        while did_update:
-            did_update = False
+        updated = True
+        while updated:
+            updated = False
             for i, s in enumerate(list_of_sets):
                 if len(current_set.intersection(s)):
                     current_set = current_set.union(s)
                     list_of_sets = list_of_sets[:i] + list_of_sets[(i+1):]
-                    did_update = True
+                    updated = True
         yield current_set
 
 def is_list_like(arg):

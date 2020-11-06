@@ -212,7 +212,7 @@ bool Axis::run_lockin_spin(const LockinConfig_t &lockin_config, bool remain_arme
 
     motor_.arm(&motor_.current_control_);
 
-    bool did_subscribe_to_idx = false;
+    bool subscribed_to_idx = false;
     bool success = false;
     float dir = lockin_config.vel >= 0.0f ? 1.0f : -1.0f;
 
@@ -231,9 +231,9 @@ bool Axis::run_lockin_spin(const LockinConfig_t &lockin_config, bool remain_arme
 
         // Activate index pin as soon as target velocity was reached. This is
         // to avoid hitting the index from the wrong direction.
-        if (reached_target_vel && !encoder_.index_found_ && !did_subscribe_to_idx) {
+        if (reached_target_vel && !encoder_.index_found_ && !subscribed_to_idx) {
             encoder_.set_idx_subscribe(true);
-            did_subscribe_to_idx = true;
+            subscribed_to_idx = true;
         }
 
         osDelay(1);

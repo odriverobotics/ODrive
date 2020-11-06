@@ -155,10 +155,10 @@ def start_liveplotter(get_var_callback):
         plt.ion()
 
         # Make sure the script terminates when the user closes the plotter
-        def did_close(evt):
+        def closed(evt):
             cancellation_token.set()
         fig = plt.figure()
-        fig.canvas.mpl_connect('close_event', did_close)
+        fig.canvas.mpl_connect('close_event', closed)
 
         while not cancellation_token.is_set():
             plt.clf()

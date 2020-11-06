@@ -48,7 +48,7 @@ def noprint(text):
     pass
 
 def find_all(path, serial_number,
-         did_discover_object_callback,
+         discovered_object_callback,
          search_cancellation_token,
          channel_termination_token,
          logger):
@@ -58,9 +58,9 @@ def find_all(path, serial_number,
     This function is non-blocking.
     """
 
-    def did_discover_channel(channel):
+    def discovered_channel(channel):
         """
-        Inits an object from a given channel and then calls did_discover_object_callback
+        Inits an object from a given channel and then calls discovered_object_callback
         with the created object
         This queries the endpoint 0 on that channel to gain information
         about the interface, which is then used to init the corresponding object.
@@ -132,7 +132,7 @@ def find_all(path, serial_number,
                 logger.debug("Ignoring device with serial number {}".format(device_serial_number))
                 return
             
-            did_discover_object_callback(obj)
+            discovered_object_callback(obj)
 
 
         except Exception:
@@ -144,7 +144,7 @@ def find_all(path, serial_number,
         the_rest = ':'.join(search_spec.split(':')[1:])
         if prefix in channel_types:
             t = threading.Thread(target=channel_types[prefix],
-                             args=(the_rest, serial_number, did_discover_channel, search_cancellation_token, channel_termination_token, logger))
+                             args=(the_rest, serial_number, discovered_channel, search_cancellation_token, channel_termination_token, logger))
             t.daemon = True
             t.start()
         else:
@@ -159,7 +159,7 @@ def find_any(path="usb", serial_number=None,
     """
     result = []
     done_signal = Event(search_cancellation_token)
-    def did_discover_object(obj):
+    def discovered_object(obj):
         result.append(obj)
         if find_multiple:
             if len(result) >= int(find_multiple):
@@ -167,7 +167,7 @@ def find_any(path="usb", serial_number=None,
         else:
             done_signal.set()
 
-    find_all(path, serial_number, did_discover_object, done_signal, channel_termination_token, logger)
+    find_all(path, serial_number, discovered_object, done_signal, channel_termination_token, logger)
     try:
         done_signal.wait(timeout=timeout)
     except TimeoutError:
