@@ -167,8 +167,8 @@ bool Encoder::run_index_search() {
     index_found_ = false;
     set_idx_subscribe();
 
-    bool status = axis_->run_lockin_spin(axis_->config_.calibration_lockin, false);
-    return status;
+    bool success = axis_->run_lockin_spin(axis_->config_.calibration_lockin, false);
+    return success;
 }
 
 bool Encoder::run_direction_find() {
@@ -179,9 +179,9 @@ bool Encoder::run_direction_find() {
     lockin_config.finish_on_distance = true;
     lockin_config.finish_on_enc_idx = false;
     lockin_config.finish_on_vel = false;
-    bool status = axis_->run_lockin_spin(lockin_config, false);
+    bool success = axis_->run_lockin_spin(lockin_config, false);
 
-    if (status) {
+    if (success) {
         // Check response and direction
         if (shadow_count_ > init_enc_val + 8) {
             // motor same dir as encoder
@@ -194,7 +194,7 @@ bool Encoder::run_direction_find() {
         }
     }
 
-    return status;
+    return success;
 }
 
 // @brief Turns the motor in one direction for a bit and then in the other
@@ -292,7 +292,6 @@ bool Encoder::run_offset_calibration() {
         return false;
     }
 
-    //TODO avoid recomputing elec_rad_per_enc every time
     // Check CPR
     float elec_rad_per_enc = axis_->motor_.config_.pole_pairs * 2 * M_PI * (1.0f / (float)(config_.cpr));
     float expected_encoder_delta = config_.calib_scan_distance / elec_rad_per_enc;
@@ -374,6 +373,7 @@ void Encoder::sample_now() {
         } break;
     }
 
+    // Sample all GPIO digital input data registers, used for HALL sensors for example.
     for (size_t i = 0; i < sizeof(ports_to_sample) / sizeof(ports_to_sample[0]); ++i) {
         port_samples_[i] = ports_to_sample[i]->IDR;
     }
