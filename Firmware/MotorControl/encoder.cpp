@@ -231,7 +231,7 @@ bool Encoder::run_hall_calibration() {
         uint8_t states = state_seen.to_ulong();
         uint8_t hall_polarity = 0;
         auto flip_detect = [](uint8_t states, unsigned int idx)->bool {
-            return ~states == (1<<(0+idx) | 1<<(7-idx));
+            return (0xFF & ~states) == (1<<(0+idx) | 1<<(7-idx));
         };
         if (flip_detect(states, 0)) {
             hall_polarity = 0b000;
