@@ -1,7 +1,7 @@
 
 #include "odrive_main.h"
 #include <Drivers/STM32/stm32_system.h>
-
+#include <bitset>
 
 Encoder::Encoder(TIM_HandleTypeDef* timer, Stm32Gpio index_gpio,
                  Stm32Gpio hallA_gpio, Stm32Gpio hallB_gpio, Stm32Gpio hallC_gpio,
@@ -192,6 +192,60 @@ bool Encoder::run_direction_find() {
         } else {
             config_.direction = 0;
         }
+    }
+
+    return success;
+}
+
+
+bool Encoder::run_hall_calibration() {
+
+    // This will run every cycle when the lockin has reached the constant speed part
+    int states_seen_count[8] = {0};
+    auto constant_speed_cb = [this, &states_seen_count]() {
+        states_seen_count[hall_state_]++;
+    };
+
+    Axis::LockinConfig_t lockin_config = axis_->config_.calibration_lockin;
+    lockin_config.finish_distance = lockin_config.vel * 3.0f; // run for 3 seconds
+    lockin_config.finish_on_distance = true;
+    lockin_config.finish_on_enc_idx = false;
+    lockin_config.finish_on_vel = false;
+
+    bool success = axis_->run_lockin_spin(lockin_config, false, constant_speed_cb);
+
+    if (success) {
+        std::bitset<8> state_seen;
+        std::bitset<8> state_confirmed;
+        for (int i = 0; i < 8; i++) {
+            if (states_seen_count[i] > 0)
+                state_seen[i] = true;
+            if (states_seen_count[i] > 50)
+                state_confirmed[i] = true;
+        }
+        if (!(state_seen == state_confirmed)) {
+            set_error(ERROR_ILLEGAL_HALL_STATE);
+            return false;
+        }
+
+        uint8_t states = state_seen.to_ulong();
+        uint8_t hall_polarity = 0;
+        auto flip_detect = [](uint8_t states, unsigned int idx)->bool {
+            return ~states == (1<<(0+idx) | 1<<(7-idx));
+        };
+        if (flip_detect(states, 0)) {
+            hall_polarity = 0b000;
+        } else if (flip_detect(states, 1)) {
+            hall_polarity = 0b001;
+        } else if (flip_detect(states, 2)) {
+            hall_polarity = 0b010;
+        } else if (flip_detect(states, 3)) {
+            hall_polarity = 0b100;
+        } else {
+            set_error(ERROR_ILLEGAL_HALL_STATE);
+            return false;
+        }
+        hall_polarity_ = hall_polarity;
     }
 
     return success;

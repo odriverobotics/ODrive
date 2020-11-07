@@ -1159,6 +1159,10 @@ valuetypes:
         brief: Run axis homing function.
         doc:
           Endstops must be enabled to use this feature.
+      EncoderHallCalibration:
+        brief: Rotate the motor in lockin and calibrate hall states
+        doc:
+          The phase offset is not calibrated at this time, so the map is only relative
 
   ODrive.Encoder.Mode:
     values:

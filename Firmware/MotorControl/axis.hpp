@@ -142,7 +142,8 @@ public:
 
     bool start_closed_loop_control();
     bool stop_closed_loop_control();
-    bool run_lockin_spin(const LockinConfig_t &lockin_config, bool remain_armed);
+    bool run_lockin_spin(const LockinConfig_t &lockin_config, bool remain_armed,
+                std::function<void()> const_vel_cb = {});
     bool run_closed_loop_control_loop();
     bool run_homing();
     bool run_idle_loop();

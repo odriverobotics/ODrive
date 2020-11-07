@@ -65,6 +65,7 @@ public:
 
     bool run_index_search();
     bool run_direction_find();
+    bool run_hall_calibration();
     bool run_offset_calibration();
     void sample_now();
     bool read_sampled_gpio(Stm32Gpio gpio);
@@ -110,6 +111,8 @@ public:
     uint16_t port_samples_[sizeof(ports_to_sample) / sizeof(ports_to_sample[0])];
     // Updated by low_level pwm_adc_cb
     uint8_t hall_state_ = 0x0; // bit[0] = HallA, .., bit[2] = HallC
+    bool hall_calibration_running_ = false;
+
     float sincos_sample_s_ = 0.0f;
     float sincos_sample_c_ = 0.0f;
 

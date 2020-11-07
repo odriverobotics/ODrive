@@ -181,7 +181,8 @@ bool Axis::watchdog_check() {
     }
 }
 
-bool Axis::run_lockin_spin(const LockinConfig_t &lockin_config, bool remain_armed) {
+bool Axis::run_lockin_spin(const LockinConfig_t &lockin_config, bool remain_armed,
+        std::function<void()> const_vel_cb) {
     CRITICAL_SECTION() {
         // Reset state variables
         open_loop_controller_.Idq_setpoint_ = {0.0f, 0.0f};
@@ -212,7 +213,7 @@ bool Axis::run_lockin_spin(const LockinConfig_t &lockin_config, bool remain_arme
 
     motor_.arm(&motor_.current_control_);
 
-    bool subscribed_to_idx = false;
+    bool subscribed_to_idx_once = false;
     bool success = false;
     float dir = lockin_config.vel >= 0.0f ? 1.0f : -1.0f;
 
@@ -231,10 +232,13 @@ bool Axis::run_lockin_spin(const LockinConfig_t &lockin_config, bool remain_arme
 
         // Activate index pin as soon as target velocity was reached. This is
         // to avoid hitting the index from the wrong direction.
-        if (reached_target_vel && !encoder_.index_found_ && !subscribed_to_idx) {
+        if (reached_target_vel && !encoder_.index_found_ && !subscribed_to_idx_once) {
             encoder_.set_idx_subscribe(true);
-            subscribed_to_idx = true;
+            subscribed_to_idx_once = true;
         }
+
+        if (reached_target_vel && const_vel_cb)
+            const_vel_cb();
 
         osDelay(1);
     }
@@ -494,6 +498,13 @@ void Axis::run_state_machine_loop() {
                     goto invalid_state_label;
 
                 status = encoder_.run_direction_find();
+            } break;
+
+            case AXIS_STATE_ENCODER_HALL_CALIBRATION: {
+                if (!motor_.is_calibrated_)
+                    goto invalid_state_label;
+
+                status = encoder_.run_hall_calibration();
             } break;
 
             case AXIS_STATE_HOMING: {
