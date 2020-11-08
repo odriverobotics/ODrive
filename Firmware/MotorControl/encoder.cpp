@@ -22,7 +22,7 @@ bool Encoder::apply_config(ODriveIntf::MotorIntf::MotorType motor_type) {
     update_pll_gains();
 
     if (config_.pre_calibrated) {
-        if (config_.mode == Encoder::MODE_HALL && config_.hall_calibrated)
+        if (config_.mode == Encoder::MODE_HALL && config_.hall_polarity_calibrated)
             is_ready_ = true;
         if (config_.mode == Encoder::MODE_SINCOS)
             is_ready_ = true;
@@ -200,7 +200,7 @@ bool Encoder::run_direction_find() {
 }
 
 
-bool Encoder::run_hall_calibration() {
+bool Encoder::run_hall_polarity_calibration() {
     Axis::LockinConfig_t lockin_config = axis_->config_.calibration_lockin;
     lockin_config.finish_distance = lockin_config.vel * 3.0f; // run for 3 seconds
     lockin_config.finish_on_distance = true;
@@ -214,8 +214,8 @@ bool Encoder::run_hall_calibration() {
         return true;
     };
 
+    config_.hall_polarity_calibrated = false;
     states_seen_count_.fill(0);
-    config_.hall_calibrated = false;
     bool success = axis_->run_lockin_spin(lockin_config, false, loop_cb);
     sample_hall_states_ = false;
 
@@ -236,7 +236,7 @@ bool Encoder::run_hall_calibration() {
         uint8_t states = state_seen.to_ulong();
         uint8_t hall_polarity = 0;
         auto flip_detect = [](uint8_t states, unsigned int idx)->bool {
-            return (0xFF & ~states) == (1<<(0+idx) | 1<<(7-idx));
+            return (~states & 0xFF) == (1<<(0+idx) | 1<<(7-idx));
         };
         if (flip_detect(states, 0)) {
             hall_polarity = 0b000;
@@ -256,6 +256,39 @@ bool Encoder::run_hall_calibration() {
     return success;
 }
 
+bool Encoder::run_hall_phase_calibration() {
+    Axis::LockinConfig_t lockin_config = axis_->config_.calibration_lockin;
+    lockin_config.finish_distance = lockin_config.vel * 10.0f; // run for 10 seconds
+    lockin_config.finish_on_distance = true;
+    lockin_config.finish_on_enc_idx = false;
+    lockin_config.finish_on_vel = false;
+
+    auto loop_cb = [this](bool const_vel) {
+        if (const_vel)
+            sample_hall_phase_ = true;
+        // No need to cancel early
+        return true;
+    };
+
+    // TODO: There is a race condition here with the execution in Encoder::update.
+    // We should evaluate making thread execution synchronous with the control loops
+    // at least optionally.
+    // Perhaps the new loop_sync feature will give a loose timing guarantee that may be sufficient
+    calibrate_hall_phase_ = true;
+    config_.hall_edge_phase.fill(0);
+    bool success = axis_->run_lockin_spin(lockin_config, false, loop_cb);
+
+    if (success) {
+        for (int i = 0; i < 6; i++)
+            config_.hall_edge_phase[i] /= (float)hall_phase_calib_seen_count_[i];
+    } else {
+        config_.hall_edge_phase = hall_edge_phase_defaults;
+    }
+
+    calibrate_hall_phase_ = false;
+    return success;
+}
+
 // @brief Turns the motor in one direction for a bit and then in the other
 // direction in order to find the offset between the electrical phase 0
 // and the encoder state 0.
@@ -268,7 +301,7 @@ bool Encoder::run_offset_calibration() {
         return false;
     }
 
-    if (config_.mode == MODE_HALL && !config_.hall_calibrated) {
+    if (config_.mode == MODE_HALL && !config_.hall_polarity_calibrated) {
         set_error(ERROR_HALL_NOT_CALIBRATED_YET);
         return false;
     }
@@ -566,9 +599,35 @@ bool Encoder::update() {
             if (sample_hall_states_) {
                 states_seen_count_[hall_state_]++;
             }
-            if (config_.hall_calibrated) {
+            if (config_.hall_polarity_calibrated) {
                 int32_t hall_cnt;
                 if (decode_hall((hall_state_ ^ config_.hall_polarity), &hall_cnt)) {
+                    if (calibrate_hall_phase_) {
+                        if (sample_hall_phase_ && last_hall_cnt_.has_value()) {
+                            int mod_hall_cnt = (hall_cnt - last_hall_cnt_.value()) % 6;
+                            size_t edge_idx;
+                            if (mod_hall_cnt == 0) { goto skip; } // no count - do nothing
+                            else if (mod_hall_cnt == 1) { // counted up
+                                edge_idx = hall_cnt;
+                            } else if (mod_hall_cnt == 5) { // counted down
+                                edge_idx = last_hall_cnt_.value();
+                            } else {
+                                set_error(ERROR_ILLEGAL_HALL_STATE);
+                                return false;
+                            }
+
+                            auto maybe_phase = axis_->open_loop_controller_.phase_.get_any();
+                            if (maybe_phase) {
+                                config_.hall_edge_phase[edge_idx] += maybe_phase.value();
+                                hall_phase_calib_seen_count_[edge_idx]++;
+                            }
+                        }
+                    skip:
+                        last_hall_cnt_ = hall_cnt;
+
+                        return true; // Skip all velocity and phase estimation
+                    }
+
                     delta_enc = hall_cnt - count_in_cpr_;
                     delta_enc = mod(delta_enc, 6);
                     if (delta_enc > 3)

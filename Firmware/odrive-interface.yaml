@@ -964,6 +964,7 @@ interfaces:
           AbsSpiTimeout:
           AbsSpiComFail:
           AbsSpiNotReady:
+          HallNotCalibratedYet:
       is_ready: readonly bool
       index_found: readonly bool
       shadow_count: readonly int32
@@ -1000,7 +1001,7 @@ interfaces:
           calib_scan_omega: float32
           ignore_illegal_hall_state: bool
           hall_polarity: uint8
-          hall_calibrated: bool
+          hall_polarity_calibrated: bool
           sincos_gpio_pin_sin:
             type: uint16
             doc: Analog sine signal of a sin/cos encoder. The corresponding GPIO must be in `GPIO_MODE_ANALOG_IN`.

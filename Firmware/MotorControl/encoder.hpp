@@ -11,6 +11,8 @@
 class Encoder : public ODriveIntf::EncoderIntf {
 public:
     static constexpr uint32_t MODE_FLAG_ABS = 0x100;
+    static constexpr std::array<float, 6> hall_edge_phase_defaults = 
+        {0*1.0471975512f, 1*1.0471975512f, 2*1.0471975512f, 3*1.0471975512f, 4*1.0471975512f, 5*1.0471975512f};
 
     struct Config_t {
         Mode mode = MODE_INCREMENTAL;
@@ -33,7 +35,8 @@ public:
         bool find_idx_on_lockin_only = false; // Only be sensitive during lockin scan constant vel state
         bool ignore_illegal_hall_state = false; // dont error on bad states like 000 or 111
         uint8_t hall_polarity = 0;
-        bool hall_calibrated = false;
+        bool hall_polarity_calibrated = false;
+        std::array<float, 6> hall_edge_phase = hall_edge_phase_defaults;
         uint16_t abs_spi_cs_gpio_pin = 1;
         uint16_t sincos_gpio_pin_sin = 3;
         uint16_t sincos_gpio_pin_cos = 4;
@@ -67,7 +70,8 @@ public:
 
     bool run_index_search();
     bool run_direction_find();
-    bool run_hall_calibration();
+    bool run_hall_polarity_calibration();
+    bool run_hall_phase_calibration();
     bool run_offset_calibration();
     void sample_now();
     bool read_sampled_gpio(Stm32Gpio gpio);
@@ -113,8 +117,12 @@ public:
     uint16_t port_samples_[sizeof(ports_to_sample) / sizeof(ports_to_sample[0])];
     // Updated by low_level pwm_adc_cb
     uint8_t hall_state_ = 0x0; // bit[0] = HallA, .., bit[2] = HallC
+    std::optional<uint8_t> last_hall_cnt_ = std::nullopt; // Used to find hall edges for calibration
+    bool calibrate_hall_phase_ = false;
     bool sample_hall_states_ = false;
+    bool sample_hall_phase_ = false;
     std::array<int, 8> states_seen_count_; // for hall polarity calibration
+    std::array<int, 6> hall_phase_calib_seen_count_;
 
     float sincos_sample_s_ = 0.0f;
     float sincos_sample_c_ = 0.0f;

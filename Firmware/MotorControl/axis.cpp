@@ -507,7 +507,9 @@ void Axis::run_state_machine_loop() {
                 if (!motor_.is_calibrated_)
                     goto invalid_state_label;
 
-                status = encoder_.run_hall_calibration();
+                status = encoder_.run_hall_polarity_calibration();
+                if (status)
+                    status = encoder_.run_hall_phase_calibration();
             } break;
 
             case AXIS_STATE_HOMING: {
