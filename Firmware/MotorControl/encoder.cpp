@@ -22,7 +22,9 @@ bool Encoder::apply_config(ODriveIntf::MotorIntf::MotorType motor_type) {
     update_pll_gains();
 
     if (config_.pre_calibrated) {
-        if (config_.mode == Encoder::MODE_HALL || config_.mode == Encoder::MODE_SINCOS)
+        if (config_.mode == Encoder::MODE_HALL && config_.hall_calibrated)
+            is_ready_ = true;
+        if (config_.mode == Encoder::MODE_SINCOS)
             is_ready_ = true;
         if (motor_type == Motor::MOTOR_TYPE_ACIM)
             is_ready_ = true;
@@ -213,7 +215,7 @@ bool Encoder::run_hall_calibration() {
     };
 
     states_seen_count_.fill(0);
-    hall_calibrated_ = false;
+    config_.hall_calibrated = false;
     bool success = axis_->run_lockin_spin(lockin_config, false, loop_cb);
     sample_hall_states_ = false;
 
@@ -263,6 +265,11 @@ bool Encoder::run_offset_calibration() {
     // Require index found if enabled
     if (config_.use_index && !index_found_) {
         set_error(ERROR_INDEX_NOT_FOUND_YET);
+        return false;
+    }
+
+    if (config_.mode == MODE_HALL && !config_.hall_calibrated) {
+        set_error(ERROR_HALL_NOT_CALIBRATED_YET);
         return false;
     }
 
@@ -559,7 +566,7 @@ bool Encoder::update() {
             if (sample_hall_states_) {
                 states_seen_count_[hall_state_]++;
             }
-            if (hall_calibrated_) {
+            if (config_.hall_calibrated) {
                 int32_t hall_cnt;
                 if (decode_hall((hall_state_ ^ config_.hall_polarity), &hall_cnt)) {
                     delta_enc = hall_cnt - count_in_cpr_;

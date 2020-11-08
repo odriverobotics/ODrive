@@ -32,7 +32,8 @@ public:
         float bandwidth = 1000.0f;
         bool find_idx_on_lockin_only = false; // Only be sensitive during lockin scan constant vel state
         bool ignore_illegal_hall_state = false; // dont error on bad states like 000 or 111
-        uint8_t hall_polarity;
+        uint8_t hall_polarity = 0;
+        bool hall_calibrated = false;
         uint16_t abs_spi_cs_gpio_pin = 1;
         uint16_t sincos_gpio_pin_sin = 3;
         uint16_t sincos_gpio_pin_cos = 4;
@@ -113,7 +114,6 @@ public:
     // Updated by low_level pwm_adc_cb
     uint8_t hall_state_ = 0x0; // bit[0] = HallA, .., bit[2] = HallC
     bool sample_hall_states_ = false;
-    bool hall_calibrated_ = false;
     std::array<int, 8> states_seen_count_; // for hall polarity calibration
 
     float sincos_sample_s_ = 0.0f;

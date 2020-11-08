@@ -980,7 +980,6 @@ interfaces:
       calib_scan_response: readonly float32
       pos_abs: int32
       spi_error_rate: readonly float32
-      hall_calibrated: readonly bool
       config:
         c_is_class: False
         attributes:
@@ -1000,6 +999,8 @@ interfaces:
           calib_scan_distance: float32
           calib_scan_omega: float32
           ignore_illegal_hall_state: bool
+          hall_polarity: uint8
+          hall_calibrated: bool
           sincos_gpio_pin_sin:
             type: uint16
             doc: Analog sine signal of a sin/cos encoder. The corresponding GPIO must be in `GPIO_MODE_ANALOG_IN`.
