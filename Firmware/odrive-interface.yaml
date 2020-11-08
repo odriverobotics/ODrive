@@ -980,6 +980,7 @@ interfaces:
       calib_scan_response: readonly float32
       pos_abs: int32
       spi_error_rate: readonly float32
+      hall_calibrated: readonly bool
       config:
         c_is_class: False
         attributes:

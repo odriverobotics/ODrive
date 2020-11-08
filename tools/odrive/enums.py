@@ -35,6 +35,7 @@ AXIS_STATE_CLOSED_LOOP_CONTROL           = 8
 AXIS_STATE_LOCKIN_SPIN                   = 9
 AXIS_STATE_ENCODER_DIR_FIND              = 10
 AXIS_STATE_HOMING                        = 11
+AXIS_STATE_ENCODER_HALL_CALIBRATION      = 12
 
 # ODrive.Encoder.Mode
 ENCODER_MODE_INCREMENTAL                 = 0

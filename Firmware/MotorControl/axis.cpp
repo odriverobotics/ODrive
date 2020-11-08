@@ -182,7 +182,7 @@ bool Axis::watchdog_check() {
 }
 
 bool Axis::run_lockin_spin(const LockinConfig_t &lockin_config, bool remain_armed,
-        std::function<void()> const_vel_cb) {
+        std::function<bool(bool)> loop_cb) {
     CRITICAL_SECTION() {
         // Reset state variables
         open_loop_controller_.Idq_setpoint_ = {0.0f, 0.0f};
@@ -237,9 +237,12 @@ bool Axis::run_lockin_spin(const LockinConfig_t &lockin_config, bool remain_arme
             subscribed_to_idx_once = true;
         }
 
-        if (reached_target_vel && const_vel_cb)
-            const_vel_cb();
+        if (loop_cb)
+            if (!loop_cb(reached_target_vel))
+                break;
 
+        // TODO: use new sync function instead
+        asm volatile ("" ::: "memory");
         osDelay(1);
     }
 

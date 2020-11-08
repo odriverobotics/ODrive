@@ -199,28 +199,31 @@ bool Encoder::run_direction_find() {
 
 
 bool Encoder::run_hall_calibration() {
-
-    // This will run every cycle when the lockin has reached the constant speed part
-    int states_seen_count[8] = {0};
-    auto constant_speed_cb = [this, &states_seen_count]() {
-        states_seen_count[hall_state_]++;
-    };
-
     Axis::LockinConfig_t lockin_config = axis_->config_.calibration_lockin;
     lockin_config.finish_distance = lockin_config.vel * 3.0f; // run for 3 seconds
     lockin_config.finish_on_distance = true;
     lockin_config.finish_on_enc_idx = false;
     lockin_config.finish_on_vel = false;
 
-    bool success = axis_->run_lockin_spin(lockin_config, false, constant_speed_cb);
+    auto loop_cb = [this](bool const_vel) {
+        if (const_vel)
+            sample_hall_states_ = true;
+        // No need to cancel early
+        return true;
+    };
+
+    states_seen_count_.fill(0);
+    hall_calibrated_ = false;
+    bool success = axis_->run_lockin_spin(lockin_config, false, loop_cb);
+    sample_hall_states_ = false;
 
     if (success) {
         std::bitset<8> state_seen;
         std::bitset<8> state_confirmed;
         for (int i = 0; i < 8; i++) {
-            if (states_seen_count[i] > 0)
+            if (states_seen_count_[i] > 0)
                 state_seen[i] = true;
-            if (states_seen_count[i] > 50)
+            if (states_seen_count_[i] > 50)
                 state_confirmed[i] = true;
         }
         if (!(state_seen == state_confirmed)) {
@@ -245,7 +248,7 @@ bool Encoder::run_hall_calibration() {
             set_error(ERROR_ILLEGAL_HALL_STATE);
             return false;
         }
-        hall_polarity_ = hall_polarity;
+        config_.hall_polarity = hall_polarity;
     }
 
     return success;
@@ -553,16 +556,21 @@ bool Encoder::update() {
 
         case MODE_HALL: {
             decode_hall_samples();
-            int32_t hall_cnt;
-            if (decode_hall(hall_state_, &hall_cnt)) {
-                delta_enc = hall_cnt - count_in_cpr_;
-                delta_enc = mod(delta_enc, 6);
-                if (delta_enc > 3)
-                    delta_enc -= 6;
-            } else {
-                if (!config_.ignore_illegal_hall_state) {
-                    set_error(ERROR_ILLEGAL_HALL_STATE);
-                    return false;
+            if (sample_hall_states_) {
+                states_seen_count_[hall_state_]++;
+            }
+            if (hall_calibrated_) {
+                int32_t hall_cnt;
+                if (decode_hall((hall_state_ ^ config_.hall_polarity), &hall_cnt)) {
+                    delta_enc = hall_cnt - count_in_cpr_;
+                    delta_enc = mod(delta_enc, 6);
+                    if (delta_enc > 3)
+                        delta_enc -= 6;
+                } else {
+                    if (!config_.ignore_illegal_hall_state) {
+                        set_error(ERROR_ILLEGAL_HALL_STATE);
+                        return false;
+                    }
                 }
             }
         } break;
