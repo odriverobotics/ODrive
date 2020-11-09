@@ -251,6 +251,7 @@ bool Encoder::run_hall_polarity_calibration() {
             return false;
         }
         config_.hall_polarity = hall_polarity;
+        config_.hall_polarity_calibrated = true;
     }
 
     return success;
@@ -275,12 +276,27 @@ bool Encoder::run_hall_phase_calibration() {
     // at least optionally.
     // Perhaps the new loop_sync feature will give a loose timing guarantee that may be sufficient
     calibrate_hall_phase_ = true;
-    config_.hall_edge_phase.fill(0);
+    config_.hall_edge_phase.fill(0.0f);
+    hall_phase_calib_seen_count_.fill(0);
     bool success = axis_->run_lockin_spin(lockin_config, false, loop_cb);
+    if (error_ & ERROR_ILLEGAL_HALL_STATE)
+        success = false;
 
     if (success) {
-        for (int i = 0; i < 6; i++)
-            config_.hall_edge_phase[i] /= (float)hall_phase_calib_seen_count_[i];
+        // Check deltas to dicern rotation direction
+        float delta_phase = 0.0f;
+        for (int i = 0; i < 6; i++) {
+            int next_i = (i == 6) ? 0 : i+1;
+            delta_phase += wrap_pm_pi(config_.hall_edge_phase[next_i] - config_.hall_edge_phase[i]);
+        }
+        // Correct reverse rotation
+        if (delta_phase < 0.0f)
+            for (int i = 0; i < 6; i++)
+                config_.hall_edge_phase[i] = wrap_pm_pi(-config_.hall_edge_phase[i]);
+        // Normalize edge timing to 1st edge in sequence
+        float offset = config_.hall_edge_phase[0];
+        for (int i = 0; i < 6; i++) 
+            config_.hall_edge_phase[i] = wrap_pm_pi(config_.hall_edge_phase[i] - offset);
     } else {
         config_.hall_edge_phase = hall_edge_phase_defaults;
     }
@@ -604,7 +620,7 @@ bool Encoder::update() {
                 if (decode_hall((hall_state_ ^ config_.hall_polarity), &hall_cnt)) {
                     if (calibrate_hall_phase_) {
                         if (sample_hall_phase_ && last_hall_cnt_.has_value()) {
-                            int mod_hall_cnt = (hall_cnt - last_hall_cnt_.value()) % 6;
+                            int mod_hall_cnt = mod(hall_cnt - last_hall_cnt_.value(), 6);
                             size_t edge_idx;
                             if (mod_hall_cnt == 0) { goto skip; } // no count - do nothing
                             else if (mod_hall_cnt == 1) { // counted up
@@ -618,8 +634,17 @@ bool Encoder::update() {
 
                             auto maybe_phase = axis_->open_loop_controller_.phase_.get_any();
                             if (maybe_phase) {
-                                config_.hall_edge_phase[edge_idx] += maybe_phase.value();
+                                float phase = maybe_phase.value();
+                                // Early increment to get the right divisor in recursive average
                                 hall_phase_calib_seen_count_[edge_idx]++;
+                                float& edge_phase = config_.hall_edge_phase[edge_idx];
+                                if (hall_phase_calib_seen_count_[edge_idx] == 1)
+                                    edge_phase = phase;
+                                else {
+                                    // circularly wrapped recursive average
+                                    edge_phase += (phase - edge_phase) / hall_phase_calib_seen_count_[edge_idx];
+                                    edge_phase = wrap_pm_pi(edge_phase);
+                                }
                             }
                         }
                     skip:
