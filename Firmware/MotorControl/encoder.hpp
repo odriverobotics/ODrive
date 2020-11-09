@@ -11,8 +11,8 @@
 class Encoder : public ODriveIntf::EncoderIntf {
 public:
     static constexpr uint32_t MODE_FLAG_ABS = 0x100;
-    static constexpr std::array<float, 6> hall_edge_phase_defaults = 
-        {0*1.0471975512f, 1*1.0471975512f, 2*1.0471975512f, 3*1.0471975512f, 4*1.0471975512f, 5*1.0471975512f};
+    static constexpr std::array<float, 6> hall_edge_defaults = 
+        {0.0f, 1.0f, 2.0f, 3.0f, 4.0f, 5.0f};
 
     struct Config_t {
         Mode mode = MODE_INCREMENTAL;
@@ -36,7 +36,7 @@ public:
         bool ignore_illegal_hall_state = false; // dont error on bad states like 000 or 111
         uint8_t hall_polarity = 0;
         bool hall_polarity_calibrated = false;
-        std::array<float, 6> hall_edge_phase = hall_edge_phase_defaults;
+        std::array<float, 6> hall_edge_phcnt = hall_edge_defaults;
         uint16_t abs_spi_cs_gpio_pin = 1;
         uint16_t sincos_gpio_pin_sin = 3;
         uint16_t sincos_gpio_pin_cos = 4;
@@ -76,6 +76,7 @@ public:
     void sample_now();
     bool read_sampled_gpio(Stm32Gpio gpio);
     void decode_hall_samples();
+    int32_t hall_model(float internal_pos);
     bool update();
 
     TIM_HandleTypeDef* timer_;
