@@ -290,9 +290,13 @@ bool Encoder::run_hall_phase_calibration() {
             delta_phase += wrap_pm_pi(config_.hall_edge_phase[next_i] - config_.hall_edge_phase[i]);
         }
         // Correct reverse rotation
-        if (delta_phase < 0.0f)
+        if (delta_phase < 0.0f) {
+            config_.direction = -1;
             for (int i = 0; i < 6; i++)
                 config_.hall_edge_phase[i] = wrap_pm_pi(-config_.hall_edge_phase[i]);
+        } else {
+            config_.direction = 1;
+        }
         // Normalize edge timing to 1st edge in sequence
         float offset = config_.hall_edge_phase[0];
         for (int i = 0; i < 6; i++) 
@@ -721,6 +725,8 @@ bool Encoder::update() {
     // Predict current pos
     pos_estimate_counts_ += current_meas_period * vel_estimate_counts_;
     pos_cpr_counts_      += current_meas_period * vel_estimate_counts_;
+    // Encoder model
+    
     // discrete phase detector
     float delta_pos_counts = (float)(shadow_count_ - (int32_t)std::floor(pos_estimate_counts_));
     float delta_pos_cpr_counts = (float)(count_in_cpr_ - (int32_t)std::floor(pos_cpr_counts_));
