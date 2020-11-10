@@ -82,7 +82,7 @@ def handle_disconnect(odrive_name):
 @socketio.on('findODrives')
 def getODrives(message):
     print("looking for odrive")
-    start_discovery()
+    #start_discovery()
 
 @socketio.on('enableSampling')
 def enableSampling(message):

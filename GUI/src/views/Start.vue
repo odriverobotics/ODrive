@@ -8,7 +8,7 @@
     </div>
     <button class="connect-usb-button" @click="showUsbConnectDialog()">Connect to USB device...</button>
     <div id="hackyOutput">
-      not connected
+      {{fibreConn}}
     </div>
     <button class="show-msg-button" @click="showServerMessages = !showServerMessages;">Having trouble? Click here for debug output</button>
     <div class="server-msgs" v-if="showServerMessages">
@@ -49,32 +49,13 @@
 //console.log("fs", mfs);
 //console.log("path", mp);
 //console.log("m3", m3);
-const bi = require("bindings");
-console.log(bi);
+//const bi = require("bindings");
+//console.log(bi);
 const usb = require('electron').remote.require('./usb_bindings.node')
 //const usb = require("usb");
 console.log(usb);
 
 import { fibreOpen } from './../../fibre-js/fibre.js';
-
-var theFibre = {};
-fibreOpen().then(async (libfibre) => {
-  theFibre = libfibre;
-  const filter = 'usb:idVendor=0x1209,idProduct=0x0D32,bInterfaceClass=0,bInterfaceSubClass=1,bInterfaceProtocol=0';
-  console.log("opened libfibre: ", libfibre);
-  console.log(await navigator.usb.getDevices());
-  let onFoundObject = async (obj) => {
-    console.log("found an object!", obj);
-    let isConnected = true;
-    obj._onLost.then(() => isConnected = false);
-    while (isConnected) {
-       document.getElementById("hackyOutput").innerHTML = "vbus_voltage: " + (await obj.vbus_voltage.read());
-       await new Promise((resolve) => setTimeout(resolve, 100));
-    }
-    document.getElementById("hackyOutput").innerHTML = "not connected";
- }
- libfibre.startDiscovery(filter, onFoundObject);
-});
 
 export default {
   name: 'Home',
@@ -83,6 +64,8 @@ export default {
   data() {
     return {
       showServerMessages: false,
+      theFibre: {},
+      fibreConn: "not connected",
     }
   },
   computed: {
@@ -111,8 +94,31 @@ export default {
       this.$store.dispatch("setServerAddress", e.target.value);
     },
     showUsbConnectDialog() {
-      theFibre.usbDiscoverer.showDialog();
+      console.log("calling showDialog");
+      this.theFibre.usbDiscoverer.showDialog();
     }
+  },
+  created() {
+    fibreOpen().then(async (libfibre) => {
+      this.theFibre = libfibre;
+      const filter = 'usb:idVendor=0x1209,idProduct=0x0D32,bInterfaceClass=0,bInterfaceSubClass=1,bInterfaceProtocol=0';
+      console.log("opened libfibre: ", libfibre);
+      console.log(await navigator.usb.getDevices());
+      let onFoundObject = async (obj) => {
+        console.log("found an object!", obj);
+        let isConnected = true;
+        obj._onLost.then(() => isConnected = false);
+        while (isConnected) {
+          //document.getElementById("hackyOutput").innerHTML = "vbus_voltage: " + (await obj.vbus_voltage.read());
+          let volt = await obj.vbus_voltage.read()
+          this.fibreConn = "vbus_voltage: " + volt;
+          console.log(volt);
+          await new Promise((resolve) => setTimeout(resolve, 100));
+        }
+        this.fibreConn = "not connected";
+    }
+    libfibre.startDiscovery(filter, onFoundObject);
+    });
   }
 }
 </script>
