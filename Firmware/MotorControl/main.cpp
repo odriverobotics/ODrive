@@ -161,6 +161,9 @@ void ODrive::clear_errors() {
         axis.error_ = Axis::ERROR_NONE;
     }
     error_ = ERROR_NONE;
+    if (odrv.config_.enable_brake_resistor) {
+        safety_critical_arm_brake_resistor();
+    }
 }
 
 extern "C" {

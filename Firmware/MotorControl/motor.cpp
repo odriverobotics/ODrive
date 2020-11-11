@@ -198,8 +198,10 @@ bool Motor::arm(PhaseControlLaw<3>* control_law) {
             control_law_->reset();
         }
 
-        if (brake_resistor_armed) {
+        if (!odrv.config_.enable_brake_resistor || brake_resistor_armed) {
             is_armed_ = true;
+        } else {
+            error_ |= Motor::ERROR_BRAKE_RESISTOR_DISARMED;
         }
     }
 
@@ -217,7 +219,7 @@ bool Motor::arm(PhaseControlLaw<3>* control_law) {
  */
 void Motor::apply_pwm_timings(uint16_t timings[3], bool tentative) {
     CRITICAL_SECTION() {
-        if (!brake_resistor_armed) {
+        if (odrv.config_.enable_brake_resistor && !brake_resistor_armed) {
             disarm_with_error(ERROR_BRAKE_RESISTOR_DISARMED);
         }
 
@@ -609,7 +611,10 @@ void Motor::current_meas_cb(uint32_t timestamp, std::optional<Iph_ABC_t> current
         float Inorm_sq = 2.0f / 3.0f * (SQ(current_meas_->phA)
                                       + SQ(current_meas_->phB)
                                       + SQ(current_meas_->phC));
-        if (Inorm_sq > SQ(Itrip)) {
+
+        // Hack: we disable the current check during motor calibration because
+        // it tends to briefly overshoot when the motor moves to align flux with I_alpha
+        if (Inorm_sq > SQ(Itrip) && (axis_->current_state_ != Axis::AXIS_STATE_MOTOR_CALIBRATION)) {
             disarm_with_error(ERROR_CURRENT_LIMIT_VIOLATION);
         }
     } else if (is_armed_) {

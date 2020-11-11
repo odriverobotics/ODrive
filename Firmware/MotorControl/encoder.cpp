@@ -228,7 +228,7 @@ bool Encoder::run_offset_calibration() {
         axis_->open_loop_controller_.target_voltage_ = axis_->motor_.config_.motor_type != Motor::MOTOR_TYPE_GIMBAL ? 0.0f : axis_->motor_.config_.calibration_current;
         axis_->open_loop_controller_.target_vel_ = 0.0f;
         axis_->open_loop_controller_.total_distance_ = 0.0f;
-        axis_->open_loop_controller_.phase_ = wrap_pm_pi(0 - config_.calib_scan_distance / 2.0f);
+        axis_->open_loop_controller_.phase_ = axis_->open_loop_controller_.initial_phase_ = wrap_pm_pi(0 - config_.calib_scan_distance / 2.0f);
 
         axis_->motor_.current_control_.enable_current_control_src_ = (axis_->motor_.config_.motor_type != Motor::MOTOR_TYPE_GIMBAL);
         axis_->motor_.current_control_.Idq_setpoint_src_.connect_to(&axis_->open_loop_controller_.Idq_setpoint_);
@@ -324,9 +324,9 @@ bool Encoder::run_offset_calibration() {
 
     axis_->motor_.disarm();
 
-    config_.phase_offset = encvaluesum / (num_steps * 2);
-    int32_t residual = encvaluesum - ((int64_t)config_.phase_offset * (int64_t)(num_steps * 2));
-    config_.phase_offset_float = (float)residual / (float)(num_steps * 2) + 0.5f;  // add 0.5 to center-align state to phase
+    config_.phase_offset = encvaluesum / num_steps;
+    int32_t residual = encvaluesum - ((int64_t)config_.phase_offset * (int64_t)num_steps);
+    config_.phase_offset_float = (float)residual / (float)num_steps + 0.5f;  // add 0.5 to center-align state to phase
 
     is_ready_ = true;
     return true;

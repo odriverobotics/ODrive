@@ -76,6 +76,9 @@ bool brake_resistor_saturated = false;
 // @brief Arms the brake resistor
 void safety_critical_arm_brake_resistor() {
     CRITICAL_SECTION() {
+        for (size_t i = 0; i < AXIS_COUNT; ++i) {
+            axes[i].motor_.I_bus_ = 0.0f;
+        }
         brake_resistor_armed = true;
         htim2.Instance->CCR3 = 0;
         htim2.Instance->CCR4 = TIM_APB1_PERIOD_CLOCKS + 1;
@@ -164,7 +167,9 @@ void start_adc_pwm() {
     HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_3);
     HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_4);
 
-    safety_critical_arm_brake_resistor();
+    if (odrv.config_.enable_brake_resistor) {
+        safety_critical_arm_brake_resistor();
+    }
 }
 
 // @brief ADC1 measurements are written to this buffer by DMA

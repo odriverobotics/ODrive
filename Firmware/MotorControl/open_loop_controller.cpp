@@ -5,7 +5,7 @@
 void OpenLoopController::update(uint32_t timestamp) {
     auto [prev_Id, prev_Iq] = Idq_setpoint_.get_previous().value_or(float2D{0.0f, 0.0f});
     auto [prev_Vd, prev_Vq] = Vdq_setpoint_.get_previous().value_or(float2D{0.0f, 0.0f});
-    float phase = phase_.get_previous().value_or(0.0f);
+    float phase = phase_.get_previous().value_or(initial_phase_);
     float phase_vel = phase_vel_.get_previous().value_or(0.0f);
 
     (void)prev_Iq; // unused
