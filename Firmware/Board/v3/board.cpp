@@ -513,7 +513,9 @@ void ControlLoop_IRQHandler(void) {
 
     // By this time the ADCs for both M0 and M1 should have fired again. But
     // let's wait for them just to be sure.
-    while (!(ADC2->SR & ADC_SR_EOC));
+    MEASURE_TIME(odrv.task_times_.dc_calib_wait) {
+        while (!(ADC2->SR & ADC_SR_EOC));
+    }
 
     if (!fetch_and_reset_adcs(&current0, &current1)) {
         motors[0].disarm_with_error(Motor::ERROR_BAD_TIMING);

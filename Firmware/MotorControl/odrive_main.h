@@ -104,6 +104,7 @@ struct BoardConfig_t {
 
     float dc_max_positive_current = INFINITY; // Max current [A] the power supply can source
     float dc_max_negative_current = -0.000001f; // Max current [A] the power supply can sink. You most likely want a non-positive value here. Set to -INFINITY to disable.
+    uint32_t error_gpio_pin = DEFAULT_ERROR_PIN;
     PWMMapping_t pwm_mappings[4];
     PWMMapping_t analog_mappings[GPIO_COUNT];
 };
@@ -112,6 +113,7 @@ struct TaskTimes {
     TaskTimer sampling;
     TaskTimer control_loop_misc;
     TaskTimer control_loop_checks;
+    TaskTimer dc_calib_wait;
 };
 
 
@@ -169,6 +171,7 @@ public:
     void erase_configuration() override;
     void reboot() override { NVIC_SystemReset(); }
     void enter_dfu_mode() override;
+    bool any_error();
     void clear_errors() override;
 
     float get_adc_voltage(uint32_t gpio) override {
@@ -189,6 +192,7 @@ public:
 
     uint32_t get_interrupt_status(int32_t irqn);
     uint32_t get_dma_status(uint8_t stream_num);
+    uint32_t get_gpio_states();
     void disarm_with_error(Error error);
 
     Error error_ = ERROR_NONE;
@@ -230,10 +234,12 @@ public:
     bool& brake_resistor_saturated_ = ::brake_resistor_saturated; // TODO: make this the actual variable
 
     SystemStats_t system_stats_;
+
+    // Edit these to suit your capture needs
     Oscilloscope oscilloscope_{
-        &axes[0].motor_.current_control_.v_current_control_integral_d_, // trigger_src
+        nullptr, // trigger_src
         0.5f, // trigger_threshold
-        nullptr // &axes[0].motor_.current_control_.Ialpha_measured_ // data_src TODO: change data type
+        nullptr // data_src TODO: change data type
     };
 
     BoardConfig_t config_;

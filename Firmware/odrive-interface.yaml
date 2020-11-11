@@ -122,6 +122,7 @@ interfaces:
           sampling: TaskTimer
           control_loop_misc: TaskTimer
           control_loop_checks: TaskTimer
+          dc_calib_wait: TaskTimer
       system_stats:
         c_is_class: False
         attributes:
@@ -311,10 +312,12 @@ interfaces:
             brief: Max current the power supply can sink.
             doc: You most likely want a non-positive value here. Set to -INFINITY to disable.
 
-          gpio1_pwm_mapping: {type: Endpoint, c_name: 'pwm_mappings[0]', doc: Make sure the corresponding GPIO is in `GPIO_MODE_PWM`.}
-          gpio2_pwm_mapping: {type: Endpoint, c_name: 'pwm_mappings[1]', doc: Make sure the corresponding GPIO is in `GPIO_MODE_PWM`.}
-          gpio3_pwm_mapping: {type: Endpoint, c_name: 'pwm_mappings[2]', doc: Make sure the corresponding GPIO is in `GPIO_MODE_PWM`.}
-          gpio4_pwm_mapping: {type: Endpoint, c_name: 'pwm_mappings[3]', doc: Make sure the corresponding GPIO is in `GPIO_MODE_PWM`.}
+          error_gpio_pin: {type: uint32}
+
+          gpio1_pwm_mapping: {type: Endpoint, c_name: 'pwm_mappings[0]', doc: Make sure the corresponding GPIO is in `GPIO_MODE_PWM0`.}
+          gpio2_pwm_mapping: {type: Endpoint, c_name: 'pwm_mappings[1]', doc: Make sure the corresponding GPIO is in `GPIO_MODE_PWM0`.}
+          gpio3_pwm_mapping: {type: Endpoint, c_name: 'pwm_mappings[2]', doc: Make sure the corresponding GPIO is in `GPIO_MODE_PWM0`.}
+          gpio4_pwm_mapping: {type: Endpoint, c_name: 'pwm_mappings[3]', doc: Make sure the corresponding GPIO is in `GPIO_MODE_PWM0`.}
           gpio3_analog_mapping: {type: Endpoint, c_name: 'analog_mappings[3]', doc: Make sure the corresponding GPIO is in `GPIO_MODE_ANALOG_IN`.}
           gpio4_analog_mapping: {type: Endpoint, c_name: 'analog_mappings[4]', doc: Make sure the corresponding GPIO is in `GPIO_MODE_ANALOG_IN`.}
       user_config_loaded: readonly uint32
@@ -374,6 +377,9 @@ interfaces:
               bits 1:0:   priority (3 is highest priority)
               0xffffffff if the specified number is not a valid DMA stream number.
         doc: Returns information about the specified DMA stream.
+      get_gpio_states:
+        out: {status: {type: uint32}}
+        doc: Returns the logic states of all GPIOs. Bit i represents the state of GPIOi.
       clear_errors:
         doc: Clear all the errors of this device including all contained submodules.
 
@@ -1122,6 +1128,7 @@ valuetypes:
       Enc1: {doc: The pin is used by quadrature encoder 1.}
       Enc2: {doc: This mode is not supported on ODrive v3.x.}
       MechBrake: {doc: This is to support external mechanical brakes.}
+      Status: {doc: The pin is used for status output (see `config.error_gpio_pin`)}
 
   ODrive.Can.Protocol:
     values: {Simple: }

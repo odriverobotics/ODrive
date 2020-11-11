@@ -151,6 +151,17 @@ void ODrive::enter_dfu_mode() {
     }
 }
 
+bool ODrive::any_error() {
+    return error_ != ODrive::ERROR_NONE
+        || std::any_of(axes.begin(), axes.end(), [](Axis& axis){
+            return axis.error_ != Axis::ERROR_NONE
+                || axis.motor_.error_ != Motor::ERROR_NONE
+                || axis.sensorless_estimator_.error_ != SensorlessEstimator::ERROR_NONE
+                || axis.encoder_.error_ != Encoder::ERROR_NONE
+                || axis.controller_.error_ != Controller::ERROR_NONE;
+        });
+}
+
 void ODrive::clear_errors() {
     for (auto& axis: axes) {
         axis.motor_.error_ = Motor::ERROR_NONE;
@@ -366,6 +377,8 @@ void ODrive::control_loop_cb(uint32_t timestamp) {
         MEASURE_TIME(axis.task_times_.current_controller_update)
             axis.motor_.current_control_.update(timestamp); // uses the output of controller_ or open_loop_contoller_ and encoder_ or sensorless_estimator_ or async_estimator_
     }
+
+    get_gpio(odrv.config_.error_gpio_pin).write(odrv.any_error());
 }
 
 
@@ -407,6 +420,14 @@ uint32_t ODrive::get_dma_status(uint8_t stream_num) {
     return (is_reset ? 0 : 0x80000000) | ((channel & 0x7) << 2) | (priority & 0x3);
 }
 
+uint32_t ODrive::get_gpio_states() {
+    // TODO: get values that were sampled synchronously with the control loop
+    uint32_t val = 0;
+    for (size_t i = 0; i < GPIO_COUNT; ++i) {
+        val |= ((gpios[i].read() ? 1UL : 0UL) << i);
+    }
+    return val;
+}
 
 /**
  * @brief Main thread started from main().
@@ -580,6 +601,7 @@ extern "C" int main(void) {
             mode == ODriveIntf::GPIO_MODE_DIGITAL_PULL_UP ||
             mode == ODriveIntf::GPIO_MODE_DIGITAL_PULL_DOWN ||
             mode == ODriveIntf::GPIO_MODE_MECH_BRAKE ||
+            mode == ODriveIntf::GPIO_MODE_STATUS ||
             mode == ODriveIntf::GPIO_MODE_ANALOG_IN) {
             GPIO_InitStruct.Alternate = 0;
         } else {
@@ -677,6 +699,11 @@ extern "C" int main(void) {
                 GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
             } break;
             case ODriveIntf::GPIO_MODE_MECH_BRAKE: {
+                GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+                GPIO_InitStruct.Pull = GPIO_NOPULL;
+                GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+            } break;
+            case ODriveIntf::GPIO_MODE_STATUS: {
                 GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
                 GPIO_InitStruct.Pull = GPIO_NOPULL;
                 GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;

@@ -41,6 +41,8 @@
 #define DEFAULT_BRAKE_RESISTANCE (0.47f) // [ohm]
 #endif
 
+#define DEFAULT_ERROR_PIN 0
+
 #define DEFAULT_GPIO_MODES \
     ODriveIntf::GPIO_MODE_DIGITAL, \
     ODriveIntf::GPIO_MODE_UART_A, \
