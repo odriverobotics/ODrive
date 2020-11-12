@@ -41,7 +41,7 @@ void Encoder::setup() {
         .Mode = SPI_MODE_MASTER,
         .Direction = SPI_DIRECTION_2LINES,
         .DataSize = SPI_DATASIZE_16BIT,
-        .CLKPolarity = mode_ == MODE_SPI_ABS_AEAT ? SPI_POLARITY_HIGH : SPI_POLARITY_LOW,
+        .CLKPolarity = (mode_ == MODE_SPI_ABS_AEAT || mode_ == MODE_SPI_ABS_MA732) ? SPI_POLARITY_HIGH : SPI_POLARITY_LOW,
         .CLKPhase = SPI_PHASE_2EDGE,
         .NSS = SPI_NSS_SOFT,
         .BaudRatePrescaler = SPI_BAUDRATEPRESCALER_32,
@@ -50,6 +50,10 @@ void Encoder::setup() {
         .CRCCalculation = SPI_CRCCALCULATION_DISABLE,
         .CRCPolynomial = 10,
     };
+
+    if (mode_ == MODE_SPI_ABS_MA732) {
+        abs_spi_dma_tx_[0] = 0x0000;
+    }
 
     if(mode_ & MODE_FLAG_ABS){
         abs_spi_cs_pin_init();
@@ -363,6 +367,7 @@ void Encoder::sample_now() {
         case MODE_SPI_ABS_CUI:
         case MODE_SPI_ABS_AEAT:
         case MODE_SPI_ABS_RLS:
+        case MODE_SPI_ABS_MA732:
         {
             abs_spi_start_transaction();
             // Do nothing
@@ -459,6 +464,11 @@ void Encoder::abs_spi_cb(bool success) {
             pos = (rawVal >> 2) & 0x3fff;
         } break;
 
+        case MODE_SPI_ABS_MA732: {
+            uint16_t rawVal = abs_spi_dma_rx_[0];
+            pos = (rawVal >> 2) & 0x3fff;
+        } break;
+
         default: {
            set_error(ERROR_UNSUPPORTED_ENCODER_MODE);
            goto done;
@@ -477,7 +487,13 @@ done:
 
 void Encoder::abs_spi_cs_pin_init(){
     // Decode and init cs pin
+#if HW_VERSION_MAJOR == 4
+    if (mode_ == MODE_SPI_ABS_MA732)
+        abs_spi_cs_gpio_ = {GPIOA, GPIO_PIN_15};
+    else
+#else
     abs_spi_cs_gpio_ = get_gpio(config_.abs_spi_cs_gpio_pin);
+#endif
     abs_spi_cs_gpio_.config(GPIO_MODE_OUTPUT_PP, GPIO_PULLUP);
 
     // Write pin high
@@ -527,7 +543,8 @@ bool Encoder::update() {
         case MODE_SPI_ABS_RLS:
         case MODE_SPI_ABS_AMS:
         case MODE_SPI_ABS_CUI: 
-        case MODE_SPI_ABS_AEAT: {
+        case MODE_SPI_ABS_AEAT:
+        case MODE_SPI_ABS_MA732: {
             if (abs_spi_pos_updated_ == false) {
                 // Low pass filter the error
                 spi_error_rate_ += current_meas_period * (1.0f - spi_error_rate_);

@@ -1248,6 +1248,9 @@ valuetypes:
       SpiAbsRls:
         value: 0x103
         doc: RLS Encoders
+      SpiAbsMa732:
+        value: 0x104
+        doc: MagAlpha MA732 magnetic encoder
 
   ODrive.Controller.ControlMode:
     values:
