@@ -99,6 +99,7 @@ public:
     OutputPort<float> phase_vel_ = 0.0f; // [rad/s]
     float pos_estimate_counts_ = 0.0f;  // [count]
     float pos_cpr_counts_ = 0.0f;  // [count]
+    float delta_pos_cpr_counts_ = 0.0f;  // [count] phase detector result for debug
     float vel_estimate_counts_ = 0.0f;  // [count/s]
     float pll_kp_ = 0.0f;   // [count/s / count]
     float pll_ki_ = 0.0f;   // [(count/s^2) / count]

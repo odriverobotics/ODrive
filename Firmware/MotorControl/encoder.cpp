@@ -259,7 +259,7 @@ bool Encoder::run_hall_polarity_calibration() {
 
 bool Encoder::run_hall_phase_calibration() {
     Axis::LockinConfig_t lockin_config = axis_->config_.calibration_lockin;
-    lockin_config.finish_distance = lockin_config.vel * 10.0f; // run for 10 seconds
+    lockin_config.finish_distance = lockin_config.vel * 30.0f; // run for 30 seconds
     lockin_config.finish_on_distance = true;
     lockin_config.finish_on_enc_idx = false;
     lockin_config.finish_on_vel = false;
@@ -760,6 +760,7 @@ bool Encoder::update() {
     float delta_pos_counts = (float)(shadow_count_ - encoder_model(pos_estimate_counts_));
     float delta_pos_cpr_counts = (float)(count_in_cpr_ - encoder_model(pos_cpr_counts_));
     delta_pos_cpr_counts = wrap_pm(delta_pos_cpr_counts, (float)(config_.cpr));
+    delta_pos_cpr_counts_ += 0.1f * (delta_pos_cpr_counts - delta_pos_cpr_counts_); // for debug
     // pll feedback
     pos_estimate_counts_ += current_meas_period * pll_kp_ * delta_pos_counts;
     pos_cpr_counts_ += current_meas_period * pll_kp_ * delta_pos_cpr_counts;
