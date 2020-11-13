@@ -104,10 +104,12 @@ void Axis::start_thread() {
  * @brief Blocks until at least one complete control loop has been executed.
  */
 bool Axis::wait_for_control_iteration() {
-    uint16_t control_iteration_num = odrv.n_evt_control_loop_;
-    while (odrv.n_evt_control_loop_ == control_iteration_num) {
-        osDelay(1);
-    }
+    osSignalWait(0x0001, osWaitForever); // this might return instantly
+    osSignalWait(0x0001, osWaitForever); // this might be triggered at the
+                                         // end of a control loop iteration
+                                         // which was started before we entered
+                                         // this function
+    osSignalWait(0x0001, osWaitForever);
     return true;
 }
 

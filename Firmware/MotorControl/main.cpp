@@ -378,6 +378,13 @@ void ODrive::control_loop_cb(uint32_t timestamp) {
             axis.motor_.current_control_.update(timestamp); // uses the output of controller_ or open_loop_contoller_ and encoder_ or sensorless_estimator_ or async_estimator_
     }
 
+    // Tell the axis threads that the control loop has finished
+    for (auto& axis: axes) {
+        if (axis.thread_id_) {
+            osSignalSet(axis.thread_id_, 0x0001);
+        }
+    }
+
     get_gpio(odrv.config_.error_gpio_pin).write(odrv.any_error());
 }
 
