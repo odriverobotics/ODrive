@@ -42,6 +42,7 @@
 #endif
 
 #define DEFAULT_ERROR_PIN 0
+#define DEFAULT_MIN_DC_VOLTAGE 8.0f
 
 #define DEFAULT_GPIO_MODES \
     ODriveIntf::GPIO_MODE_DIGITAL, \
