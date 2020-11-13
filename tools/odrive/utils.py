@@ -7,7 +7,6 @@ import platform
 import subprocess
 import os
 import numpy as np
-import matplotlib.pyplot as plt
 from fibre.utils import Event
 import odrive.enums
 from odrive.enums import *
@@ -49,6 +48,7 @@ def calculate_thermistor_coeffs(degree, Rload, R_25, Beta, Tmin, Tmax, plot = Fa
     fit_temps = p1(V)
 
     if plot:
+        import matplotlib.pyplot as plt
         print(fit)
         plt.plot(V, temps, label='actual')
         plt.plot(V, fit_temps, label='fit')
@@ -547,6 +547,8 @@ def dump_dma(odrv):
                      "*" if (status & 0x80000000) else " "))
 
 def dump_timing(odrv, n_samples=100, path='/tmp/timings.png'):
+    import matplotlib.pyplot as plt
+    
     timings = []
     
     for attr in dir(odrv.task_times):
@@ -574,7 +576,7 @@ def dump_timing(odrv, n_samples=100, path='/tmp/timings.png'):
 
     plt.rcParams['figure.figsize'] = 21, 9
     plt.figure()
-    plt.grid('both')
+    plt.grid(True)
     plt.barh(
         [-i for i in range(len(timings))], # y positions
         [np.mean(lengths) for name, obj, start_times, lengths in timings], # lengths
