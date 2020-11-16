@@ -258,6 +258,7 @@ interfaces:
               Setting this to False even though a brake resistor is connected is
               harmless. Setting this to True even though no brake resistor is
               connected can break the power supply.
+              Changes to this value require a reboot to take effect.
 
           dc_bus_undervoltage_trip_level:
             type: float32

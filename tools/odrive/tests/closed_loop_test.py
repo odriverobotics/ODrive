@@ -40,6 +40,9 @@ class TestClosedLoopControlBase():
 
         # Set brake resistor settings
         axis_ctx.parent.handle.config.brake_resistance = float(axis_ctx.parent.yaml['brake-resistance'])
+        # The docs say this requires a reboot but here's a small secret:
+        # Since the brake resistor is also started in clear_errors() this
+        # circumvents the need for a reboot.
         axis_ctx.parent.handle.config.enable_brake_resistor = True
 
         # Set calibration settings
