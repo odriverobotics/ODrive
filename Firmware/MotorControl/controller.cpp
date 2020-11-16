@@ -97,13 +97,13 @@ static float limitVel(const float vel_limit, const float vel_estimate, const flo
 }
 
 bool Controller::update() {
-    std::optional<float> pos_estimate_linear = pos_estimate_linear_src_.get_current();
-    std::optional<float> pos_estimate_circular = pos_estimate_circular_src_.get_current();
-    std::optional<float> pos_wrap = pos_wrap_src_.get_current();
-    std::optional<float> vel_estimate = vel_estimate_src_.get_current();
+    std::optional<float> pos_estimate_linear = pos_estimate_linear_src_.present();
+    std::optional<float> pos_estimate_circular = pos_estimate_circular_src_.present();
+    std::optional<float> pos_wrap = pos_wrap_src_.present();
+    std::optional<float> vel_estimate = vel_estimate_src_.present();
 
-    std::optional<float> anticogging_pos_estimate = axis_->encoder_.pos_estimate_.get_current();
-    std::optional<float> anticogging_vel_estimate = axis_->encoder_.vel_estimate_.get_current();
+    std::optional<float> anticogging_pos_estimate = axis_->encoder_.pos_estimate_.present();
+    std::optional<float> anticogging_vel_estimate = axis_->encoder_.vel_estimate_.present();
 
     if (config_.anticogging.calib_anticogging) {
         if (!anticogging_pos_estimate.has_value() || !anticogging_vel_estimate.has_value()) {
@@ -156,8 +156,8 @@ bool Controller::update() {
         } break;
         case INPUT_MODE_MIRROR: {
             if (config_.axis_to_mirror < AXIS_COUNT) {
-                std::optional<float> other_pos = axes[config_.axis_to_mirror].encoder_.pos_estimate_.get_current();
-                std::optional<float> other_vel = axes[config_.axis_to_mirror].encoder_.vel_estimate_.get_current();
+                std::optional<float> other_pos = axes[config_.axis_to_mirror].encoder_.pos_estimate_.present();
+                std::optional<float> other_vel = axes[config_.axis_to_mirror].encoder_.vel_estimate_.present();
 
                 if (!other_pos.has_value() || !other_vel.has_value()) {
                     set_error(ERROR_INVALID_ESTIMATE);
@@ -262,7 +262,7 @@ bool Controller::update() {
     float vel_gain = config_.vel_gain;
     float vel_integrator_gain = config_.vel_integrator_gain;
     if (axis_->motor_.config_.motor_type == Motor::MOTOR_TYPE_ACIM) {
-        float effective_flux = axis_->async_estimator_.rotor_flux_;
+        float effective_flux = axis_->acim_estimator_.rotor_flux_;
         float minflux = axis_->motor_.config_.acim_gain_min_flux;
         if (std::abs(effective_flux) < minflux)
             effective_flux = std::copysignf(minflux, effective_flux);

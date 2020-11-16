@@ -306,9 +306,9 @@ void ODrive::control_loop_cb(uint32_t timestamp) {
         // TODO: maybe we should add a check to output ports that prevents
         // double-setting the value.
         for (auto& axis: axes) {
-            axis.async_estimator_.slip_vel_.reset();
-            axis.async_estimator_.stator_phase_vel_.reset();
-            axis.async_estimator_.stator_phase_.reset();
+            axis.acim_estimator_.slip_vel_.reset();
+            axis.acim_estimator_.stator_phase_vel_.reset();
+            axis.acim_estimator_.stator_phase_.reset();
             axis.controller_.torque_output_.reset();
             axis.encoder_.phase_.reset();
             axis.encoder_.phase_vel_.reset();
@@ -381,7 +381,7 @@ void ODrive::control_loop_cb(uint32_t timestamp) {
             axis.motor_.update(timestamp); // uses torque from controller and phase_vel from encoder
 
         MEASURE_TIME(axis.task_times_.current_controller_update)
-            axis.motor_.current_control_.update(timestamp); // uses the output of controller_ or open_loop_contoller_ and encoder_ or sensorless_estimator_ or async_estimator_
+            axis.motor_.current_control_.update(timestamp); // uses the output of controller_ or open_loop_contoller_ and encoder_ or sensorless_estimator_ or acim_estimator_
     }
 
     // Tell the axis threads that the control loop has finished
@@ -480,7 +480,7 @@ static void rtos_main(void*) {
     }
 
     for(auto& axis: axes){
-        axis.async_estimator_.idq_src_.connect_to(&axis.motor_.Idq_setpoint_);
+        axis.acim_estimator_.idq_src_.connect_to(&axis.motor_.Idq_setpoint_);
     }
 
     // Start PWM and enable adc interrupts/callbacks

@@ -173,8 +173,8 @@ int32_t CANSimple::get_encoder_estimates_callback(const Axis& axis) {
     txmsg.isExt = axis.config_.can.is_extended;
     txmsg.len = 8;
 
-    can_setSignal<float>(txmsg, axis.encoder_.pos_estimate_.get_any().value_or(0.0f), 0, 32, true);
-    can_setSignal<float>(txmsg, axis.encoder_.vel_estimate_.get_any().value_or(0.0f), 32, 32, true);
+    can_setSignal<float>(txmsg, axis.encoder_.pos_estimate_.any().value_or(0.0f), 0, 32, true);
+    can_setSignal<float>(txmsg, axis.encoder_.vel_estimate_.any().value_or(0.0f), 32, 32, true);
 
     return odCAN->write(txmsg);
 }
@@ -189,7 +189,7 @@ int32_t CANSimple::get_sensorless_estimates_callback(const Axis& axis) {
     static_assert(sizeof(float) == sizeof(axis.sensorless_estimator_.pll_pos_));
 
     can_setSignal<float>(txmsg, axis.sensorless_estimator_.pll_pos_, 0, 32, true);
-    can_setSignal<float>(txmsg, axis.sensorless_estimator_.vel_estimate_.get_any().value_or(0.0f), 32, 32, true);
+    can_setSignal<float>(txmsg, axis.sensorless_estimator_.vel_estimate_.any().value_or(0.0f), 32, 32, true);
 
     return odCAN->write(txmsg);
 }

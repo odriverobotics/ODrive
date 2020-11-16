@@ -200,7 +200,7 @@ sources = {
     'MotorControl/thermistor.cpp',
     'MotorControl/encoder.cpp',
     'MotorControl/endstop.cpp',
-    'MotorControl/async_estimator.cpp',
+    'MotorControl/acim_estimator.cpp',
     'MotorControl/mechanical_brake.cpp',
     'MotorControl/controller.cpp',
     'MotorControl/foc.cpp',

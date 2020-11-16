@@ -81,7 +81,7 @@ bool SensorlessEstimator::update() {
     V_alpha_beta_memory_[0] = axis_->motor_.current_control_.final_v_alpha_;
     V_alpha_beta_memory_[1] = axis_->motor_.current_control_.final_v_beta_;
 
-    float phase_vel = phase_vel_.get_previous().value_or(0.0f);
+    float phase_vel = phase_vel_.previous().value_or(0.0f);
 
     // predict PLL phase with velocity
     pll_pos_ = wrap_pm_pi(pll_pos_ + current_meas_period * phase_vel);

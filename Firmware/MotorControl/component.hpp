@@ -40,8 +40,8 @@ public:
     /**
      * @brief Initializes the output port with the specified value.
      * 
-     * An initialization value is required for get_any() to work properly.
-     * get_current() and get_previous() cannot be used to fetch the
+     * An initialization value is required for any() to work properly.
+     * present() and previous() cannot be used to fetch the
      * initialization value.
      */
     OutputPort(T val) : content_(val) {}
@@ -60,7 +60,7 @@ public:
      * of this class.
      */
     void reset() {
-        // This will eventually overflow to 0 so get_current() could
+        // This will eventually overflow to 0 so present() could
         // theoretically return a very old value however it is very likely that
         // the motor will be long disarmed by then.
         age_++;
@@ -70,7 +70,7 @@ public:
      * @brief Returns the value from this control loop iteration or std::nullopt
      * if the value was not yet set during this control loop iteration.
      */
-    std::optional<T> get_current() {
+    std::optional<T> present() {
         if (age_ == 0) {
             return content_;
         } else {
@@ -85,7 +85,7 @@ public:
      * overwritten during this control loop iteration then this function returns
      * std::nullopt.
      */
-    std::optional<T> get_previous() {
+    std::optional<T> previous() {
         if (age_ == 1) {
             return content_;
         } else {
@@ -99,7 +99,7 @@ public:
      * 
      * This function is thread-safe if load/store operations of T are atomic.
      */
-    std::optional<T> get_any() {
+    std::optional<T> any() {
         return content_;
     }
     
@@ -134,10 +134,10 @@ public:
         content_ = (OutputPort<T>*)nullptr;
     }
 
-    std::optional<T> get_current() {
+    std::optional<T> present() {
         if (content_.index() == 2) {
             OutputPort<T>* ptr = std::get<2>(content_);
-            return ptr ? ptr->get_current() : std::nullopt;
+            return ptr ? ptr->present() : std::nullopt;
         } else if (content_.index() == 1) {
             T* ptr = std::get<1>(content_);
             return ptr ? std::make_optional(*ptr) : std::nullopt;
@@ -150,10 +150,10 @@ public:
     // ok for this input port to fetch the value from the last iteration.
     // This would provide a general way to resolve same-iteration data path cycles.
 
-    //std::optional<T> get_previous() {
+    //std::optional<T> previous() {
     //    if (content_.index() == 2) {
     //        OutputPort<T>* ptr = std::get<2>(content_);
-    //        return ptr ? ptr->get_previous() : std::nullopt;
+    //        return ptr ? ptr->previous() : std::nullopt;
     //    } else if (content_.index() == 1) {
     //        T* ptr = std::get<1>(content_);
     //        return ptr ? std::make_optional(*ptr) : std::nullopt;
@@ -162,10 +162,10 @@ public:
     //    }
     //}
 
-    std::optional<T> get_any() {
+    std::optional<T> any() {
         if (content_.index() == 2) {
             OutputPort<T>* ptr = std::get<2>(content_);
-            return ptr ? ptr->get_any() : std::nullopt;
+            return ptr ? ptr->any() : std::nullopt;
         } else if (content_.index() == 1) {
             T* ptr = std::get<1>(content_);
             return ptr ? std::make_optional(*ptr) : std::nullopt;

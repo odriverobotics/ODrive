@@ -506,7 +506,7 @@ interfaces:
       motor: Motor
       controller: Controller
       encoder: Encoder
-      async_estimator: AsyncEstimator
+      acim_estimator: AcimEstimator
       sensorless_estimator: SensorlessEstimator
       trap_traj: TrapezoidalTrajectory
       min_endstop: Endstop
@@ -522,7 +522,7 @@ interfaces:
           can_heartbeat: TaskTimer
           controller_update: TaskTimer
           open_loop_controller_update: TaskTimer
-          async_estimator_update: TaskTimer
+          acim_estimator_update: TaskTimer
           motor_update: TaskTimer
           current_controller_update: TaskTimer
           dc_calib: TaskTimer
@@ -811,7 +811,7 @@ interfaces:
     functions:
       get_val: {in: {index: uint32}, out: {val: float32}}
   
-  ODrive.AsyncEstimator:
+  ODrive.AcimEstimator:
     c_is_class: True
     attributes:
       rotor_flux: {type: readonly float32, unit: A, doc: estimated magnitude of the rotor flux}
@@ -819,7 +819,7 @@ interfaces:
         type: readonly float32
         unit: rad/s
         doc: estimated slip between physical and electrical angular velocity}
-        c_getter: slip_vel_.get_any().value_or(0.0f)
+        c_getter: slip_vel_.any().value_or(0.0f)
       phase_offset:
         type: readonly float32
         unit: rad
@@ -828,12 +828,12 @@ interfaces:
         type: readonly float32
         unit: rad/s
         doc: calculated setpoint for the electrical velocity}
-        c_getter: stator_phase_vel_.get_any().value_or(0.0f)
+        c_getter: stator_phase_vel_.any().value_or(0.0f)
       stator_phase:
         type: readonly float32
         unit: rad
         doc: calculated setpoint for the electrical phase}
-        c_getter: stator_phase_.get_any().value_or(0.0f)
+        c_getter: stator_phase_.any().value_or(0.0f)
       config:
         c_is_class: False
         attributes:
@@ -992,13 +992,13 @@ interfaces:
       shadow_count: readonly int32
       count_in_cpr: readonly int32
       interpolation: readonly float32
-      phase: {type: readonly float32, c_getter: phase_.get_any().value_or(0.0f)}
-      pos_estimate: {type: readonly float32, c_getter: pos_estimate_.get_any().value_or(0.0f)}
+      phase: {type: readonly float32, c_getter: phase_.any().value_or(0.0f)}
+      pos_estimate: {type: readonly float32, c_getter: pos_estimate_.any().value_or(0.0f)}
       pos_estimate_counts: readonly float32
       pos_cpr_counts: readonly float32
-      pos_circular: {type: readonly float32, c_getter: pos_circular_.get_any().value_or(0.0f)}
+      pos_circular: {type: readonly float32, c_getter: pos_circular_.any().value_or(0.0f)}
       hall_state: readonly uint8
-      vel_estimate: {type: readonly float32, c_getter: vel_estimate_.get_any().value_or(0.0f)}
+      vel_estimate: {type: readonly float32, c_getter: vel_estimate_.any().value_or(0.0f)}
       vel_estimate_counts: readonly float32
       calib_scan_response: readonly float32
       pos_abs: int32
@@ -1040,10 +1040,10 @@ interfaces:
         flags:
           UnstableGain:
           UnknownCurrentMeasurement:
-      phase: {type: readonly float32, unit: rad, c_getter: phase_.get_any().value_or(0.0f)}
+      phase: {type: readonly float32, unit: rad, c_getter: phase_.any().value_or(0.0f)}
       pll_pos: {type: readonly float32, unit: rad}
-      phase_vel: {type: readonly float32, unit: rad/s, c_getter: phase_vel_.get_any().value_or(0.0f)}
-      vel_estimate: {type: readonly float32, unit: turns/s, c_getter: vel_estimate_.get_any().value_or(0.0f)}
+      phase_vel: {type: readonly float32, unit: rad/s, c_getter: phase_vel_.any().value_or(0.0f)}
+      vel_estimate: {type: readonly float32, unit: turns/s, c_getter: vel_estimate_.any().value_or(0.0f)}
       # pll_kp: float32
       # pll_ki: float32
       config:

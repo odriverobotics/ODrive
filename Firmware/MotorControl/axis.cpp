@@ -204,11 +204,11 @@ bool Axis::run_lockin_spin(const LockinConfig_t &lockin_config, bool remain_arme
         motor_.current_control_.Vdq_setpoint_src_.connect_to(&open_loop_controller_.Vdq_setpoint_);
 
         motor_.current_control_.phase_src_.connect_to(&open_loop_controller_.phase_);
-        async_estimator_.rotor_phase_src_.connect_to(&open_loop_controller_.phase_);
+        acim_estimator_.rotor_phase_src_.connect_to(&open_loop_controller_.phase_);
         
         motor_.phase_vel_src_.connect_to(&open_loop_controller_.phase_vel_);
         motor_.current_control_.phase_vel_src_.connect_to(&open_loop_controller_.phase_vel_);
-        async_estimator_.rotor_phase_vel_src_.connect_to(&open_loop_controller_.phase_vel_);
+        acim_estimator_.rotor_phase_vel_src_.connect_to(&open_loop_controller_.phase_vel_);
     }
     wait_for_control_iteration();
 
@@ -219,8 +219,8 @@ bool Axis::run_lockin_spin(const LockinConfig_t &lockin_config, bool remain_arme
     float dir = lockin_config.vel >= 0.0f ? 1.0f : -1.0f;
 
     while ((requested_state_ == AXIS_STATE_UNDEFINED) && motor_.is_armed_) {
-        bool reached_target_vel = std::abs(open_loop_controller_.phase_vel_.get_any().value_or(0.0f) - lockin_config.vel) <= std::numeric_limits<float>::epsilon();
-        bool reached_target_dist = open_loop_controller_.total_distance_.get_any().value_or(0.0f) * dir >= lockin_config.finish_distance * dir;
+        bool reached_target_vel = std::abs(open_loop_controller_.phase_vel_.any().value_or(0.0f) - lockin_config.vel) <= std::numeric_limits<float>::epsilon();
+        bool reached_target_dist = open_loop_controller_.total_distance_.any().value_or(0.0f) * dir >= lockin_config.finish_distance * dir;
 
         // Check if terminal condition is reached
         bool terminal_condition = (reached_target_vel && lockin_config.finish_on_vel)
@@ -286,7 +286,7 @@ bool Axis::start_closed_loop_control() {
         if (controller_.config_.control_mode >= Controller::CONTROL_MODE_POSITION_CONTROL) {
             std::optional<float> pos_init = (controller_.config_.circular_setpoints ?
                                     controller_.pos_estimate_circular_src_ :
-                                    controller_.pos_estimate_linear_src_).get_any();
+                                    controller_.pos_estimate_linear_src_).any();
             if (!pos_init.has_value()) {
                 return false;
             } else {
@@ -308,12 +308,12 @@ bool Axis::start_closed_loop_control() {
 
         OutputPort<float>* phase_src = sensorless_mode ? &sensorless_estimator_.phase_ : &encoder_.phase_;
         motor_.current_control_.phase_src_.connect_to(phase_src);
-        async_estimator_.rotor_phase_src_.connect_to(phase_src);
+        acim_estimator_.rotor_phase_src_.connect_to(phase_src);
         
         OutputPort<float>* phase_vel_src = sensorless_mode ? &sensorless_estimator_.phase_vel_ : &encoder_.phase_vel_;
         motor_.phase_vel_src_.connect_to(phase_vel_src);
         motor_.current_control_.phase_vel_src_.connect_to(phase_vel_src);
-        async_estimator_.rotor_phase_vel_src_.connect_to(phase_vel_src);
+        acim_estimator_.rotor_phase_vel_src_.connect_to(phase_vel_src);
         
         if (sensorless_mode) {
             // Make the final velocity of the loĉk-in spin the setpoint of the
