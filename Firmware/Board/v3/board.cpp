@@ -506,6 +506,18 @@ void ControlLoop_IRQHandler(void) {
         motors[1].disarm_with_error(Motor::ERROR_BAD_TIMING);
     }
 
+    // If the motor FETs are not switching then we can't measure the current
+    // because for this we need the low side FET to conduct.
+    // So for now we guess the current to be 0 (this is not correct shortly after
+    // disarming and when the motor spins fast in idle). Passing an invalid
+    // current reading would create problems with starting FOC.
+    if (!(TIM1->BDTR & TIM_BDTR_MOE_Msk)) {
+        current0 = {0.0f, 0.0f};
+    }
+    if (!(TIM8->BDTR & TIM_BDTR_MOE_Msk)) {
+        current1 = {0.0f, 0.0f};
+    }
+
     motors[0].current_meas_cb(timestamp - TIM1_INIT_COUNT, current0);
     motors[1].current_meas_cb(timestamp, current1);
 
