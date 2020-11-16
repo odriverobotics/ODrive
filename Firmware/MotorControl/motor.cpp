@@ -256,7 +256,7 @@ void Motor::apply_pwm_timings(uint16_t timings[3], bool tentative) {
  * arm() is called.
  */
 bool Motor::disarm(bool* p_was_armed) {
-    bool was_armed = false;
+    bool was_armed;
     
     CRITICAL_SECTION() {
         was_armed = is_armed_;

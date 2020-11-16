@@ -108,7 +108,7 @@ static bool config_apply_all() {
 }
 
 bool ODrive::save_configuration(void) {
-    bool success = false;
+    bool success;
 
     CRITICAL_SECTION() {
         bool any_armed = std::any_of(axes.begin(), axes.end(),
