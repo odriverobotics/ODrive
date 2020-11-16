@@ -63,7 +63,7 @@ struct ResistanceMeasurementControlLaw : AlphaBetaFrameController {
         return test_voltage_ / target_current_;
     }
 
-    const float kI = 10.0f; // [(V/s)/A]
+    const float kI = 1.0f; // [(V/s)/A]
     float max_voltage_ = 0.0f;
     float actual_current_ = 0.0f;
     float target_current_ = 0.0f;
@@ -614,7 +614,7 @@ void Motor::current_meas_cb(uint32_t timestamp, std::optional<Iph_ABC_t> current
 
         // Hack: we disable the current check during motor calibration because
         // it tends to briefly overshoot when the motor moves to align flux with I_alpha
-        if (Inorm_sq > SQ(Itrip) && (axis_->current_state_ != Axis::AXIS_STATE_MOTOR_CALIBRATION)) {
+        if (Inorm_sq > SQ(Itrip)) {
             disarm_with_error(ERROR_CURRENT_LIMIT_VIOLATION);
         }
     } else if (is_armed_) {
