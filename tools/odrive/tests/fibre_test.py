@@ -23,7 +23,7 @@ class FibreFunctionalTest():
         test_assert_eq(odrive.handle.test_property, 0xffffffff)
 
         # Test function call
-        val = odrive.handle.get_adc_voltage(0)
+        val = odrive.handle.get_adc_voltage(1)
         test_assert_within(val, 0.01, 3.29)
 
         # Test custom setter (aka property write hook)

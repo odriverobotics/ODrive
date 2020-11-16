@@ -81,7 +81,7 @@ def discover_channels(path, serial_number, callback, cancellation_token, channel
             return False
         return bool(re.match(regex, port_name))
 
-    def did_disconnect(port_name, device):
+    def disconnected(port_name, device):
         device.close()
         # TODO: yes there is a race condition here in case you wonder.
         known_devices.pop(known_devices.index(port_name))
@@ -103,6 +103,6 @@ def discover_channels(path, serial_number, callback, cancellation_token, channel
                 known_devices.append(port_name)
             else:
                 known_devices.append(port_name)
-                channel._channel_broken.subscribe(lambda: did_disconnect(port_name, serial_device))
+                channel._channel_broken.subscribe(lambda: disconnected(port_name, serial_device))
                 callback(channel)
         time.sleep(1)

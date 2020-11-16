@@ -89,7 +89,6 @@ private:
     
     SPI_HandleTypeDef* hspi_;
     SpiTask* task_list_ = nullptr;
-    SpiTask* current_task_ = nullptr;
 };
 
 #endif // __STM32_SPI_ARBITER_HPP

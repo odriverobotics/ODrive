@@ -41,7 +41,7 @@ interactive_variables = {}
 
 discovered_devices = []
 
-def did_discover_device(odrive, logger, app_shutdown_token):
+def discovered_device(odrive, logger, app_shutdown_token):
     """
     Handles the discovery of new devices by displaying a
     message and making the device available to the interactive
@@ -63,9 +63,9 @@ def did_discover_device(odrive, logger, app_shutdown_token):
     logger.notify("{} to ODrive {:012X} as {}".format(verb, serial_number, interactive_name))
 
     # Subscribe to disappearance of the device
-    odrive.__channel__._channel_broken.subscribe(lambda: did_lose_device(interactive_name, logger, app_shutdown_token))
+    odrive.__channel__._channel_broken.subscribe(lambda: lost_device(interactive_name, logger, app_shutdown_token))
 
-def did_lose_device(interactive_name, logger, app_shutdown_token):
+def lost_device(interactive_name, logger, app_shutdown_token):
     """
     Handles the disappearance of a device by displaying
     a message.
@@ -86,7 +86,9 @@ def launch_shell(args, logger, app_shutdown_token):
         'dump_errors': dump_errors,
         'oscilloscope_dump': oscilloscope_dump,
         'dump_interrupts': dump_interrupts,
+        'dump_threads': dump_threads,
         'dump_dma': dump_dma,
+        'dump_timing': dump_timing,
         'BulkCapture': BulkCapture,
         'step_and_plot': step_and_plot,
         'calculate_thermistor_coeffs': calculate_thermistor_coeffs,

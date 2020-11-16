@@ -4,15 +4,16 @@
 class Axis;
 
 #include "encoder.hpp"
+#include "async_estimator.hpp"
 #include "sensorless_estimator.hpp"
 #include "controller.hpp"
+#include "open_loop_controller.hpp"
 #include "trapTraj.hpp"
 #include "endstop.hpp"
 #include "mechanical_brake.hpp"
 #include "low_level.h"
 #include "utils.hpp"
-#include "communication/interface_uart.h" // TODO: remove once uart_poll() is gone
-#include "taskTimer.hpp"
+#include "task_timer.hpp"
 
 #include <array>
 
@@ -30,26 +31,20 @@ public:
         bool finish_on_enc_idx = false;
     };
 
-    struct TaskTimes_t {
+    struct TaskTimes {
         TaskTimer thermistor_update;
         TaskTimer encoder_update;
-        TaskTimer sensorless_update;
-        TaskTimer min_endstop_update;
-        TaskTimer max_endstop_update;
-        TaskTimer axis_update;
-        TaskTimer axis_error_check;
-
+        TaskTimer sensorless_estimator_update;
+        TaskTimer endstop_update;
+        TaskTimer can_heartbeat;
         TaskTimer controller_update;
+        TaskTimer open_loop_controller_update;
+        TaskTimer async_estimator_update;
         TaskTimer motor_update;
-        TaskTimer update_handler;
-
-        TaskTimer brake_update;
-        TaskTimer adc_cb;
-        TaskTimer control_loop;
-        TaskTimer total;
-
-        TaskTimer uart_poll;
-        TaskTimer FOC_Current;
+        TaskTimer current_controller_update;
+        TaskTimer dc_calib;
+        TaskTimer current_sense;
+        TaskTimer pwm_update;
     };
 
     static LockinConfig_t default_calibration();
@@ -69,7 +64,6 @@ public:
                                                 // this only has an effect if encoder.config.use_index is also true
         bool startup_encoder_offset_calibration = false; //<! run encoder offset calibration after startup, skip otherwise
         bool startup_closed_loop_control = false; //<! enable closed loop control after calibration/startup
-        bool startup_sensorless_control = false; //<! enable sensorless control after calibration/startup
         bool startup_homing = false; //<! enable homing after calibration/startup
 
         bool enable_step_dir = false; //<! enable step/dir input after calibration
@@ -78,6 +72,8 @@ public:
                                          //<! This is ignored if enable_step_dir is false.
                                          //<! This setting only takes effect on a state transition
                                          //<! into idle or out of closed loop control.
+
+        bool enable_sensorless_mode = false;
 
         float turns_per_step = 1.0f / 1024.0f;
 
@@ -109,10 +105,6 @@ public:
         uint32_t last_encoder = 0;
     };
 
-    enum thread_signals {
-        M_SIGNAL_PH_CURRENT_MEAS = 1u << 0
-    };
-
     Axis(int axis_num,
             uint16_t default_step_gpio_pin,
             uint16_t default_dir_gpio_pin,
@@ -129,10 +121,8 @@ public:
     bool apply_config();
     void clear_config();
 
-    bool setup();
     void start_thread();
-    void signal_current_meas();
-    bool wait_for_current_meas();
+    bool wait_for_control_iteration();
 
     void step_cb();
     void set_step_dir_active(bool enable);
@@ -140,111 +130,19 @@ public:
 
     bool check_DRV_fault();
     bool check_PSU_brownout();
-    bool do_checks();
-    bool do_updates();
+    bool do_checks(uint32_t timestamp);
 
     void watchdog_feed();
     bool watchdog_check();
-
-    void clear_errors() {
-        motor_.error_ = Motor::ERROR_NONE;
-        controller_.error_ = Controller::ERROR_NONE;
-        sensorless_estimator_.error_ = SensorlessEstimator::ERROR_NONE;
-        encoder_.error_ = Encoder::ERROR_NONE;
-        encoder_.spi_error_rate_ = 0.0f;
-
-        error_ = ERROR_NONE;
-    }
 
     // True if there are no errors
     bool inline check_for_errors() {
         return error_ == ERROR_NONE;
     }
 
-    // @brief Runs the specified update handler at the frequency of the current measurements.
-    //
-    // The loop runs until one of the following conditions:
-    //  - update_handler returns false
-    //  - the current measurement times out
-    //  - the health checks fail (brownout, driver fault line)
-    //  - update_handler doesn't update the modulation timings in time
-    //    This criterion is ignored if current_state is AXIS_STATE_IDLE
-    //
-    // If update_handler is going to update the motor timings, you must call motor.arm()
-    // shortly before this function.
-    //
-    // If the function returns, it is guaranteed that error is non-zero, except if the cause
-    // for the exit was a negative return value of update_handler or an external
-    // state change request (requested_state != AXIS_STATE_DONT_CARE).
-    // Under all exit conditions the motor is disarmed and the brake current set to zero.
-    // Furthermore, if the update_handler does not set the phase voltages in time, they will
-    // go to zero.
-    //
-    // @tparam T Must be a callable type that takes no arguments and returns a bool
-    template<typename T>
-    void run_control_loop(const T& update_handler) {
-        while (requested_state_ == AXIS_STATE_UNDEFINED) {
-            task_times_.control_loop.beginTimer();
-
-            // look for errors at axis level and also all subcomponents
-            task_times_.axis_error_check.beginTimer();
-            bool checks_ok = do_checks();
-            task_times_.axis_error_check.stopTimer();
-
-            // Update all estimators
-            // Note: updates run even if checks fail
-            task_times_.axis_update.beginTimer();
-            bool updates_ok = do_updates();
-            task_times_.axis_update.stopTimer();
-
-            // make sure the watchdog is being fed. 
-            bool watchdog_ok = watchdog_check();
-            
-            if (!checks_ok || !updates_ok || !watchdog_ok) {
-                // It's not useful to quit idle since that is the safe action
-                // Also leaving idle would rearm the motors
-                if (current_state_ != AXIS_STATE_IDLE)
-                    break;
-            }
-
-            // Run main loop function, defer quitting for after wait
-            // TODO: change arming logic to arm after waiting
-            task_times_.update_handler.beginTimer();
-            bool main_continue = update_handler();
-            task_times_.update_handler.stopTimer();
-
-            if (axis_num_ == 0) {
-                task_times_.uart_poll.beginTimer();
-                uart_poll(); // TODO: move to board-level control loop once it exists
-                task_times_.uart_poll.stopTimer();
-            }
-
-            // Check we meet deadlines after queueing
-            ++loop_counter_;
-
-            task_times_.control_loop.stopTimer();
-            task_times_.total.stopTimer();
-            if(axis_num_ == 1)
-                TaskTimer::sample_next = false;
-
-            // Wait until the current measurement interrupt fires
-            if (!wait_for_current_meas()) {
-                // maybe the interrupt handler is dead, let's be
-                // safe and float the phases
-                safety_critical_disarm_motor_pwm(motor_);
-                update_brake_current();
-                error_ |= ERROR_CURRENT_MEASUREMENT_TIMEOUT;
-                break;
-            }
-            task_times_.total.beginTimer();
-
-            if (!main_continue)
-                break;
-        }
-    }
-
-    bool run_lockin_spin(const LockinConfig_t &lockin_config);
-    bool run_sensorless_control_loop();
+    bool start_closed_loop_control();
+    bool stop_closed_loop_control();
+    bool run_lockin_spin(const LockinConfig_t &lockin_config, bool remain_armed);
     bool run_closed_loop_control_loop();
     bool run_homing();
     bool run_idle_loop();
@@ -263,16 +161,18 @@ public:
     Config_t config_;
 
     Encoder& encoder_;
+    AsyncEstimator async_estimator_;
     SensorlessEstimator& sensorless_estimator_;
     Controller& controller_;
+    OpenLoopController open_loop_controller_;
     Motor& motor_;
     TrapezoidalTrajectory& trap_traj_;
     Endstop& min_endstop_;
     Endstop& max_endstop_;
     MechanicalBrake& mechanical_brake_;
-    TaskTimes_t task_times_;
+    TaskTimes task_times_;
 
-    osThreadId thread_id_;
+    osThreadId thread_id_ = 0;
     const uint32_t stack_size_ = 2048; // Bytes
     volatile bool thread_id_valid_ = false;
 
@@ -288,8 +188,7 @@ public:
     std::array<AxisState, 10> task_chain_ = { AXIS_STATE_UNDEFINED };
     AxisState& current_state_ = task_chain_.front();
     uint32_t loop_counter_ = 0;
-    LockinState lockin_state_ = LOCKIN_STATE_INACTIVE;
-    Homing_t homing_;    
+    Homing_t homing_;
     CAN_t can_;
 
 

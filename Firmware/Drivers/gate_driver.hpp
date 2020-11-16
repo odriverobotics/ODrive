@@ -13,17 +13,20 @@ struct GateDriverBase {
     virtual bool set_enabled(bool enabled) = 0;
 
     /**
-     * @brief Checks for a fault condition. Returns false if the driver is in a
-     * fault state and true if it is in a nominal state.
+     * @brief Returns false if the gate driver is in a state where the output
+     * drive stages are disarmed or not properly configured (e.g. because they
+     * are not initialized or there was a fault condition).
      */
-    virtual bool check_fault() = 0;
+    virtual bool is_ready() = 0;
 };
 
 struct OpAmpBase {
     /**
-     * @brief Tries to set the OpAmp gain to the specified value or lower.
+     * @brief Returns false if the opamp is in a state where it's not operating
+     * with the latest configured gain (e.g. because it was not initialized or
+     * there was a fault condition).
      */
-    virtual bool set_gain(float requested_gain, float* actual_gain) = 0;
+    virtual bool is_ready() = 0;
 
     /**
      * @brief Returns the neutral voltage of the OpAmp in Volts

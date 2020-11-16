@@ -173,11 +173,8 @@ int32_t CANSimple::get_encoder_estimates_callback(const Axis& axis) {
     txmsg.isExt = axis.config_.can.is_extended;
     txmsg.len = 8;
 
-    static_assert(sizeof(float) == sizeof(axis.encoder_.pos_estimate_));
-    static_assert(sizeof(float) == sizeof(axis.encoder_.vel_estimate_));
-
-    can_setSignal<float>(txmsg, axis.encoder_.pos_estimate_, 0, 32, true);
-    can_setSignal<float>(txmsg, axis.encoder_.vel_estimate_, 32, 32, true);
+    can_setSignal<float>(txmsg, axis.encoder_.pos_estimate_.get_any().value_or(0.0f), 0, 32, true);
+    can_setSignal<float>(txmsg, axis.encoder_.vel_estimate_.get_any().value_or(0.0f), 32, 32, true);
 
     return odCAN->write(txmsg);
 }
@@ -190,10 +187,9 @@ int32_t CANSimple::get_sensorless_estimates_callback(const Axis& axis) {
     txmsg.len = 8;
 
     static_assert(sizeof(float) == sizeof(axis.sensorless_estimator_.pll_pos_));
-    static_assert(sizeof(float) == sizeof(axis.sensorless_estimator_.vel_estimate_));
 
     can_setSignal<float>(txmsg, axis.sensorless_estimator_.pll_pos_, 0, 32, true);
-    can_setSignal<float>(txmsg, axis.sensorless_estimator_.vel_estimate_, 32, 32, true);
+    can_setSignal<float>(txmsg, axis.sensorless_estimator_.vel_estimate_.get_any().value_or(0.0f), 32, 32, true);
 
     return odCAN->write(txmsg);
 }
@@ -263,10 +259,15 @@ int32_t CANSimple::get_iq_callback(const Axis& axis) {
     txmsg.isExt = axis.config_.can.is_extended;
     txmsg.len = 8;
 
-    static_assert(sizeof(float) == sizeof(axis.motor_.current_control_.Iq_setpoint));
-    static_assert(sizeof(float) == sizeof(axis.motor_.current_control_.Iq_measured));
-    can_setSignal<float>(txmsg, axis.motor_.current_control_.Iq_setpoint, 0, 32, true);
-    can_setSignal<float>(txmsg, axis.motor_.current_control_.Iq_measured, 32, 32, true);
+    std::optional<float2D> Idq_setpoint = axis.motor_.current_control_.Idq_setpoint_;
+    if (!Idq_setpoint.has_value()) {
+        Idq_setpoint = {0.0f, 0.0f};
+    }
+    
+    static_assert(sizeof(float) == sizeof(Idq_setpoint->first));
+    static_assert(sizeof(float) == sizeof(Idq_setpoint->second));
+    can_setSignal<float>(txmsg, Idq_setpoint->first, 0, 32, true);
+    can_setSignal<float>(txmsg, Idq_setpoint->second, 32, 32, true);
 
     return odCAN->write(txmsg);
 }
@@ -287,7 +288,7 @@ int32_t CANSimple::get_vbus_voltage_callback(const Axis& axis) {
 }
 
 void CANSimple::clear_errors_callback(Axis& axis, const can_Message_t& msg) {
-    axis.clear_errors();
+    odrv.clear_errors(); // TODO: might want to clear axis errors only
 }
 
 int32_t CANSimple::send_heartbeat(const Axis& axis) {
@@ -304,7 +305,7 @@ int32_t CANSimple::send_heartbeat(const Axis& axis) {
 }
 
 void CANSimple::send_cyclic(Axis& axis) {
-    const uint32_t now = osKernelSysTick();
+    const uint32_t now = HAL_GetTick();
 
     if (axis.config_.can.heartbeat_rate_ms > 0) {
         if ((now - axis.can_.last_heartbeat) >= axis.config_.can.heartbeat_rate_ms) {

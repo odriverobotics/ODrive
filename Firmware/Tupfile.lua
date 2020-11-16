@@ -132,6 +132,7 @@ FLAGS += '-DUSE_HAL_DRIVER'
 
 FLAGS += '-mthumb'
 FLAGS += '-mfloat-abi=hard'
+FLAGS += '-Wno-psabi' -- suppress unimportant note about ABI compatibility in GCC 10
 FLAGS += { '-Wall', '-Wdouble-promotion', '-Wfloat-conversion', '-fdata-sections', '-ffunction-sections'}
 FLAGS += '-g'
 
@@ -146,6 +147,7 @@ if tup.getconfig("DEBUG") == "true" then
     FLAGS += '-gdwarf-2'
     OPT += '-Og'
 else
+    FLAGS += '-g'
     OPT += '-O2'
 end
 
@@ -198,13 +200,16 @@ sources = {
     'MotorControl/thermistor.cpp',
     'MotorControl/encoder.cpp',
     'MotorControl/endstop.cpp',
+    'MotorControl/async_estimator.cpp',
     'MotorControl/mechanical_brake.cpp',
     'MotorControl/controller.cpp',
+    'MotorControl/foc.cpp',
+    'MotorControl/open_loop_controller.cpp',
+    'MotorControl/oscilloscope.cpp',
     'MotorControl/sensorless_estimator.cpp',
     'MotorControl/trapTraj.cpp',
     'MotorControl/pwm_input.cpp',
     'MotorControl/main.cpp',
-    'MotorControl/taskTimer.cpp',
     'Drivers/STM32/stm32_system.cpp',
     'Drivers/STM32/stm32_gpio.cpp',
     'Drivers/STM32/stm32_nvm.c',

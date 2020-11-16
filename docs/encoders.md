@@ -21,7 +21,7 @@ To verify everything went well, check the following variables:
 
  * `<axis>.error` should be 0.
  * `<axis>.encoder.config.offset` - This should print a number, like -326 or 1364.
- * `<axis>.motor.config.direction` - This should print 1 or -1.
+ * `<axis>.encoder.config.direction` - This should print 1 or -1.
 
 ### Encoder with index signal
 If you have an encoder with an index (Z) signal, you can avoid doing the offset calibration on every startup, and instead use the index signal to re-sync the encoder to a stored calibration.

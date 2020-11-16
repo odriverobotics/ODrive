@@ -12,6 +12,20 @@ Please add a note of your changes below this heading if you make a Pull Request.
 * Make NVM configuration code more dynamic so that the layout doesn't have to be known at compile time.
 * GPIO initialization logic was changed. GPIOs now need to be explicitly set to the mode corresponding to the feature that they are used by. See `<odrv>.config.gpioX_mode`.
 * Previously, if two components used the same interrupt pin (e.g. step input for axis0 and axis1) then the one that was configured later would override the other one. Now this is no longer the case (the old component remains the owner of the pin).
+* New control loop architecture:
+  1. TIM8 update interrupt handler (CNT = 0) runs at a high priority and invokes the system level function `sample_cb()` to sample all timing critical inputs (currently only encoder state).
+  2. TIM8 update interrupt handler (CNT = 0) raises an NVIC flag to kick off a lower priority interrupt.
+  3. The control loop interrupt handler checks if all ADC measurements are ready and informs both motor objects about the current measurements.
+  4. The control loop interrupt handler invokes the system level function `control_loop_cb()` which updates all components (encoders, estimators, torque controllers, etc). The data paths between the components are configured by the Axis threads based on the requested state. This replaces the previous architecture where the components were updated inside the Axis threads in `Axis::run_control_loop()`.
+  5. Meanwhile the TIM1 and TIM8 updates for CNT = 3500 will have fired. The control loop interrupt handler thus reads the new ADC measurements and informs both motor objects that a DC calibration event has happened.
+  6. Finally, the control loop interrupt invokes `pwm_update_cb` on both motors to make them update their PWM timing registers.
+* Components that need low level control over PWM timings are implemented by inheriting from the `PhaseControlLaw` interface. Three components currently inherit this interface: `FieldOrientedController`, `ResistanceMeasurementControlLaw` and `InductanceMeasurementControlLaw`.
+* The FOC algorithm is now found in foc.cpp and and is presumably capable of running at a different frequency than the main control tasks (not relevant for ODrive v3).
+* Async estimator was consolidated into a separate component `<odrv>.async_estimator`.
+* The Automatic Output Enable (AOE) flag of TIM1/TIM8 is used to achieve glitch-free motor arming.
+* Sensorless mode was merged into closed loop control mode. Use `<axis>.enable_sensorless_mode` to disable the use of an encoder.
+* More informative profiling instrumentation was added.
+* A system-level error property was introduced.
 
 ### API Migration Notes
 
@@ -23,6 +37,28 @@ Please add a note of your changes below this heading if you make a Pull Request.
 * `<axis>.config.can_node_id` was moved to `<axis>.config.can.node_id`
 * `<axis>.config.can_node_id_extended` was moved to `<axis>.config.can.is_extended`
 * `<axis>.config.can_heartbeat_rate_ms` was moved to `<axis>.config.can.heartbeat_rate_ms`
+* `<odrv>.get_oscilloscope_val()` was moved to `<odrv>.oscilloscope.get_val()`.
+* Several error flags from `<odrv>.<axis>.error` were removed. Some were moved to `<odrv>.error` and some are no longer relevant because implementation details changed.
+* Several error flags from `<odrv>.<axis>.motor.error` were removed. Some were moved to `<odrv>.error` and some are no longer relevant because implementation details changed.
+* `<axis>.lockin_state` was removed as the lockin implementation was replaced by a more general open loop control block (currently not exposed on the API).
+* `AXIS_STATE_SENSORLESS_CONTROL` was removed. Use `AXIS_STATE_CLOSED_LOOP_CONTROL` instead with `<odrv>.enable_sensorless_mode = True`.
+* `<axis>.config.startup_sensorless_control` was removed. Use `<axis>.config.startup_closed_loop_control` instead with `<odrv>.enable_sensorless_mode = True`.
+* `<axis>.clear_errors()` was replaced by the system-wide function `<odrv>.clear_errors()`.
+* `<axis>.armed_state` was replaced by `<axis>.is_armed`.
+* Several properties in `<axis>.motor.current_control` were changed to read-only.
+* `<axis>.motor.current_control.Ibus` was moved to `<axis>.motor.I_bus`.
+* `<axis>.motor.current_control.max_allowed_current` was moved to `<axis>.motor.max_allowed_current`.
+* `<axis>.motor.current_control.overcurrent_trip_level` was removed.
+* `<axis>.motor.current_control.acim_rotor_flux` was moved to `<axis>.async_estimator.rotor_flux`.
+* `<axis>.motor.current_control.async_phase_vel` was moved to `<axis>.async_estimator.stator_phase_vel`.
+* `<axis>.motor.current_control.async_phase_offset` was moved to `<axis>.async_estimator.phase`.
+* `<axis>.motor.timing_log` was removed in favor of `<odrv>.task_times` and `<odrv>.<axis>.task_times`.
+* `<axis>.motor.config.direction` was moved to `<axis>.encoder.config.direction`.
+* `<axis>.motor.config.acim_slip_velocity` was moved to `<axis>.async_estimator.config.slip_velocity`.
+* Several properties were changed to readonly.
+* `<axis>.encoder.config.offset` was renamed to ``<axis>.encoder.config.phase_offset`
+* `<axis>.encoder.config.offset_float` was renamed to ``<axis>.encoder.config.phase_offset_float`
+* `<odrv>.config.brake_resistance == 0.0` is no longer a valid way to disable the brake resistor. Use `<odrv>.config.enable_brake_resistor` instead.
 
 # Releases
 ## [0.5.1] - 2020-09-27

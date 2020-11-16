@@ -116,7 +116,7 @@ class TestSimpleCAN():
 
         axis = odrive.handle.axis0
         axis.config.enable_watchdog = False
-        axis.clear_errors()
+        odrive.handle.clear_errors()
         axis.config.can.node_id = node_id
         axis.config.can.is_extended = extended_id
         time.sleep(0.1)
@@ -127,6 +127,7 @@ class TestSimpleCAN():
         def flush_rx():
             while not canbus.handle.recv(timeout = 0) is None: pass
 
+        logger.debug('sending request...')
         test_assert_eq(my_req('get_vbus_voltage')['vbus_voltage'], odrive.handle.vbus_voltage, accuracy=0.01)
 
         my_cmd('set_node_id', node_id=node_id+20)

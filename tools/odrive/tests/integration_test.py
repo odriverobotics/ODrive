@@ -106,10 +106,12 @@ class TestSimpleCANClosedLoop():
         # Make sure there are no funny configurations active
         logger.debug('Setting up clean configuration...')
         axis_ctx.parent.erase_config_and_reboot()
+        axis_ctx.parent.handle.config.enable_brake_resistor = True
+        axis_ctx.parent.save_config_and_reboot()
 
         # run calibration
         axis_ctx.handle.requested_state = AXIS_STATE_FULL_CALIBRATION_SEQUENCE
-        while axis_ctx.handle.current_state != AXIS_STATE_IDLE:
+        while axis_ctx.handle.requested_state != AXIS_STATE_UNDEFINED or axis_ctx.handle.current_state != AXIS_STATE_IDLE:
             time.sleep(1)
         test_assert_eq(axis_ctx.handle.current_state, AXIS_STATE_IDLE)
         test_assert_no_error(axis_ctx)
@@ -143,37 +145,33 @@ class TestSimpleCANClosedLoop():
         # this test is a sanity check to make sure that closed loop operation works
         # actual testing of closed loop functionality should be tested using closed_loop_test.py
 
-        # make sure no gpio input is overwriting our values
-        odrive.disable_mappings()
-        odrive.handle.config.gpio15_mode = GPIO_MODE_CAN_A
-        odrive.handle.config.gpio16_mode = GPIO_MODE_CAN_A
-        odrive.handle.config.enable_can_a = True
-        odrive.save_config_and_reboot()
-
         with self.prepare(odrive, canbus, axis_ctx, motor_ctx, enc_ctx, node_id, extended_id, logger):
             def my_cmd(cmd_name, **kwargs): command(canbus.handle, node_id, extended_id, cmd_name, **kwargs)
             def my_req(cmd_name, **kwargs): return asyncio.run(request(canbus.handle, node_id, extended_id, cmd_name, **kwargs))
             def fence(): my_req('get_vbus_voltage') # fence to ensure the CAN command was sent
+            def flush_rx():
+                while not canbus.handle.recv(timeout = 0) is None: pass
             
             axis_ctx.handle.config.enable_watchdog = False
-            axis_ctx.handle.clear_errors()
-            axis_ctx.handle.config.can_node_id = node_id
-            axis_ctx.handle.config.can_node_id_extended = extended_id
+            odrive.handle.clear_errors()
+            axis_ctx.handle.config.can.node_id = node_id
+            axis_ctx.handle.config.can.is_extended = extended_id
             time.sleep(0.1)
 
             my_cmd('set_node_id', node_id=node_id+20)
+            flush_rx()
             asyncio.run(request(canbus.handle, node_id+20, extended_id, 'get_vbus_voltage'))
-            test_assert_eq(axis_ctx.handle.config.can_node_id, node_id+20)
+            test_assert_eq(axis_ctx.handle.config.can.node_id, node_id+20)
 
             # Reset node ID to default value
             command(canbus.handle, node_id+20, extended_id, 'set_node_id', node_id=node_id)
             fence()
-            test_assert_eq(axis_ctx.handle.config.can_node_id, node_id)
+            test_assert_eq(axis_ctx.handle.config.can.node_id, node_id)
 
             vel_limit = 15.0
             nominal_vel = 10.0
             axis_ctx.handle.controller.config.vel_limit = vel_limit
-            axis_ctx.handle.motor.config.current_lim = 30.0
+            axis_ctx.handle.motor.config.current_lim = 20.0
 
             my_cmd('set_requested_state', requested_state = AXIS_STATE_CLOSED_LOOP_CONTROL)
             fence()

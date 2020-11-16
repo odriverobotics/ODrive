@@ -31,7 +31,6 @@ The ODrive will sequence all enabled startup actions selected in the order shown
 * `<axis>.config.startup_encoder_index_search`
 * `<axis>.config.startup_encoder_offset_calibration`
 * `<axis>.config.startup_closed_loop_control`
-* `<axis>.config.startup_sensorless_control`
 
 See [here](api/odrive.axis.axisstate) for a description of each state.
 
@@ -92,11 +91,11 @@ odrv0.axis0.controller.config.control_mode = 2
 odrv0.axis0.controller.input_vel = 10
 odrv0.axis0.controller.config.vel_limit = <a value greater than input_vel>
 odrv0.axis0.motor.config.current_lim = 2 * odrv0.axis0.config.sensorless_ramp.current
-odrv0.axis0.motor.config.direction = 1
 odrv0.axis0.sensorless_estimator.config.pm_flux_linkage = 5.51328895422 / (<pole pairs> * <motor kv>)
+odrv0.axis0.config.enable_sensorless_mode = True
 ```
 
 To start the motor:
 ```
-<axis>.requested_state = AXIS_STATE_SENSORLESS_CONTROL
+<axis>.requested_state = AXIS_STATE_CLOSED_LOOP_CONTROL
 ```

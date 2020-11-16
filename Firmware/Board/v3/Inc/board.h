@@ -41,6 +41,9 @@
 #define DEFAULT_BRAKE_RESISTANCE (0.47f) // [ohm]
 #endif
 
+#define DEFAULT_ERROR_PIN 0
+#define DEFAULT_MIN_DC_VOLTAGE 8.0f
+
 #define DEFAULT_GPIO_MODES \
     ODriveIntf::GPIO_MODE_DIGITAL, \
     ODriveIntf::GPIO_MODE_UART_A, \
@@ -61,6 +64,15 @@
     ODriveIntf::GPIO_MODE_CAN_A,
 
 #define TIM_TIME_BASE TIM14
+
+// Run control loop at the same frequency as the current measurements.
+#define CONTROL_TIMER_PERIOD_TICKS  (2 * TIM_1_8_PERIOD_CLOCKS * (TIM_1_8_RCR + 1))
+
+#define TIM1_INIT_COUNT (TIM_1_8_PERIOD_CLOCKS / 2 - 1 * 128) // TODO: explain why this offset
+
+// The delta from the control loop timestamp to the current sense timestamp is
+// exactly 0 for M0 and TIM1_INIT_COUNT for M1.
+#define MAX_CONTROL_LOOP_UPDATE_TO_CURRENT_UPDATE_DELTA (TIM_1_8_PERIOD_CLOCKS / 2 + 1 * 128)
 
 #ifdef __cplusplus
 #include <Drivers/DRV8301/drv8301.hpp>
@@ -84,7 +96,6 @@ extern Stm32Gpio gpios[GPIO_COUNT];
 struct GpioFunction { int mode = 0; uint8_t alternate_function = 0xff; };
 extern std::array<GpioFunction, 3> alternate_functions[GPIO_COUNT];
 
-extern PCD_HandleTypeDef& usb_pcd_handle;
 extern USBD_HandleTypeDef& usb_dev_handle;
 
 extern Stm32SpiArbiter& ext_spi_arbiter;
@@ -112,6 +123,10 @@ static const int current_meas_hz = CURRENT_MEAS_HZ;
 #error "unknown board voltage"
 #endif
 
+// Linear range of the DRV8301 opamp output: 0.3V...5.7V. We set the upper limit
+// to 3.0V so that it's symmetric around the center point of 1.65V.
+#define CURRENT_SENSE_MIN_VOLT  0.3f
+#define CURRENT_SENSE_MAX_VOLT  3.0f
 
 // This board has no board-specific user configurations
 static inline bool board_read_config() { return true; }
@@ -121,5 +136,6 @@ static inline bool board_apply_config() { return true; }
 
 void system_init();
 bool board_init();
+void start_timers();
 
 #endif // __BOARD_CONFIG_H

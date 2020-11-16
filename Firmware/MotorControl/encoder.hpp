@@ -5,6 +5,7 @@
 #include <Drivers/STM32/stm32_spi_arbiter.hpp>
 #include "utils.hpp"
 #include <autogen/interfaces.hpp>
+#include "component.hpp"
 
 
 class Encoder : public ODriveIntf::EncoderIntf {
@@ -23,13 +24,13 @@ public:
         int32_t cpr = (2048 * 4);   // Default resolution of CUI-AMT102 encoder,
         int32_t phase_offset = 0;        // Offset between encoder count and rotor electrical phase
         float phase_offset_float = 0.0f; // Sub-count phase alignment offset
+        int32_t direction = 0.0f; // direction with respect to motor
         bool enable_phase_interpolation = true; // Use velocity to interpolate inside the count state
         float calib_range = 0.02f; // Accuracy required to pass encoder cpr check
         float calib_scan_distance = 16.0f * M_PI; // rad electrical
         float calib_scan_omega = 4.0f * M_PI; // rad/s electrical
         float bandwidth = 1000.0f;
         bool find_idx_on_lockin_only = false; // Only be sensitive during lockin scan constant vel state
-        bool idx_search_unidirectional = false; // Only allow index search in known direction
         bool ignore_illegal_hall_state = false; // dont error on bad states like 000 or 111
         uint16_t abs_spi_cs_gpio_pin = 1;
         uint16_t sincos_gpio_pin_sin = 3;
@@ -86,7 +87,8 @@ public:
     int32_t shadow_count_ = 0;
     int32_t count_in_cpr_ = 0;
     float interpolation_ = 0.0f;
-    float phase_ = 0.0f;        // [count]
+    OutputPort<float> phase_ = 0.0f;     // [rad]
+    OutputPort<float> phase_vel_ = 0.0f; // [rad/s]
     float pos_estimate_counts_ = 0.0f;  // [count]
     float pos_cpr_counts_ = 0.0f;  // [count]
     float vel_estimate_counts_ = 0.0f;  // [count/s]
@@ -96,9 +98,9 @@ public:
     int32_t pos_abs_ = 0;
     float spi_error_rate_ = 0.0f;
 
-    float pos_estimate_ = 0.0f; // [turn]
-    float vel_estimate_ = 0.0f; // [turn/s]
-    float pos_circular_ = 0.0f; // [turn]
+    OutputPort<float> pos_estimate_ = 0.0f; // [turn]
+    OutputPort<float> vel_estimate_ = 0.0f; // [turn/s]
+    OutputPort<float> pos_circular_ = 0.0f; // [turn]
 
     bool pos_estimate_valid_ = false;
     bool vel_estimate_valid_ = false;

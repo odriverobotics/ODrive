@@ -284,8 +284,8 @@ void cmd_get_feedback(char * pStr, StreamSink& response_channel, bool use_checks
     } else {
         Axis& axis = axes[motor_number];
         respond(response_channel, use_checksum, "%f %f",
-                (double)axis.encoder_.pos_estimate_,
-                (double)axis.encoder_.vel_estimate_);
+                (double)axis.encoder_.pos_estimate_.get_any().value_or(0.0f),
+                (double)axis.encoder_.vel_estimate_.get_any().value_or(0.0f));
     }
 }
 

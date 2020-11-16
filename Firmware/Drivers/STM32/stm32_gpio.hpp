@@ -37,6 +37,8 @@ public:
      * Before calling this function the gpio should most likely be configured as
      * input (however this is not mandatory, the interrupt works in output mode
      * too).
+     * Also you need to enable the EXTIx_IRQn interrupt vectors in the NVIC,
+     * otherwise the subscription won't have any effect.
      * 
      * Only one subscription is allowed per pin number. I.e. it is not possible
      * to set up a subscription for both PA0 and PB0 at the same time.
@@ -51,9 +53,15 @@ public:
     /**
      * @brief Unsubscribes from external interrupt on the specified GPIO.
      * 
+     * If no subscription was active for this GPIO, calling this function has no
+     * effect.
+     *
      * This function is thread-safe with respect to all other public functions
      * of this class, however it must not be called from an interrupt routine
      * running at a higher priority than the interrupt that is being unsubscribed.
+     *
+     * After this function returns the callback given to subscribe() will no
+     * longer be invoked.
      */
     void unsubscribe();
 
