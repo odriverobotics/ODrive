@@ -107,19 +107,25 @@ static bool config_apply_all() {
     return success;
 }
 
-void ODrive::save_configuration(void) {
-    size_t config_size = 0;
-    bool success = config_manager.prepare_store()
-                && config_write_all()
-                && config_manager.start_store(&config_size)
-                && config_write_all()
-                && config_manager.finish_store();
-    if (success) {
-        user_config_loaded_ = config_size;
-    } else {
-        printf("saving configuration failed\r\n");
-        osDelay(5);
+bool ODrive::save_configuration(void) {
+    bool success = false;
+
+    CRITICAL_SECTION() {
+        bool any_armed = std::any_of(axes.begin(), axes.end(),
+            [](auto& axis){ return axis.motor_.is_armed_; });
+        if (any_armed) {
+            return false;
+        }
+
+        size_t config_size = 0;
+        success = config_manager.prepare_store()
+               && config_write_all()
+               && config_manager.start_store(&config_size)
+               && config_write_all()
+               && config_manager.finish_store();
     }
+
+    return success;
 }
 
 void ODrive::erase_configuration(void) {

@@ -167,7 +167,7 @@ static Stm32Gpio get_gpio(size_t gpio_num) {
 // general system functions defined in main.cpp
 class ODrive : public ODriveIntf {
 public:
-    void save_configuration() override;
+    bool save_configuration() override;
     void erase_configuration() override;
     void reboot() override { NVIC_SystemReset(); }
     void enter_dfu_mode() override;
