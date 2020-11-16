@@ -32,31 +32,46 @@ bool Encoder::apply_config(ODriveIntf::MotorIntf::MotorType motor_type) {
 }
 
 void Encoder::setup() {
-    HAL_TIM_Encoder_Start(timer_, TIM_CHANNEL_ALL);
-    set_idx_subscribe();
-
     mode_ = config_.mode;
 
-    spi_task_.config = {
-        .Mode = SPI_MODE_MASTER,
-        .Direction = SPI_DIRECTION_2LINES,
-        .DataSize = SPI_DATASIZE_16BIT,
-        .CLKPolarity = mode_ == MODE_SPI_ABS_AEAT ? SPI_POLARITY_HIGH : SPI_POLARITY_LOW,
-        .CLKPhase = SPI_PHASE_2EDGE,
-        .NSS = SPI_NSS_SOFT,
-        .BaudRatePrescaler = SPI_BAUDRATEPRESCALER_32,
-        .FirstBit = SPI_FIRSTBIT_MSB,
-        .TIMode = SPI_TIMODE_DISABLE,
-        .CRCCalculation = SPI_CRCCALCULATION_DISABLE,
-        .CRCPolynomial = 10,
-    };
-
-    if(mode_ & MODE_FLAG_ABS){
+    if(mode_ & MODE_FLAG_ABS) {
         abs_spi_cs_pin_init();
-
         if (axis_->controller_.config_.anticogging.pre_calibrated) {
             axis_->controller_.anticogging_valid_ = true;
         }
+    } else {
+        HAL_TIM_Encoder_Start(timer_, TIM_CHANNEL_ALL);
+        set_idx_subscribe();
+    }
+    
+    if(mode_ == MODE_SPI_ABS_TLE) {
+        spi_task_.config = {
+            .Mode = SPI_MODE_MASTER,
+            .Direction = SPI_DIRECTION_1LINE,
+            .DataSize = SPI_DATASIZE_16BIT,
+            .CLKPolarity = SPI_POLARITY_LOW,
+            .CLKPhase = SPI_PHASE_2EDGE,
+            .NSS = SPI_NSS_SOFT,
+            .BaudRatePrescaler = SPI_BAUDRATEPRESCALER_8,
+            .FirstBit = SPI_FIRSTBIT_MSB,
+            .TIMode = SPI_TIMODE_DISABLE,
+            .CRCCalculation = SPI_CRCCALCULATION_DISABLE,
+            .CRCPolynomial = 10,
+        };
+    } else {
+        spi_task_.config = {
+            .Mode = SPI_MODE_MASTER,
+            .Direction = SPI_DIRECTION_2LINES,
+            .DataSize = SPI_DATASIZE_16BIT,
+            .CLKPolarity = mode_ == MODE_SPI_ABS_AEAT ? SPI_POLARITY_HIGH : SPI_POLARITY_LOW,
+            .CLKPhase = SPI_PHASE_2EDGE,
+            .NSS = SPI_NSS_SOFT,
+            .BaudRatePrescaler = SPI_BAUDRATEPRESCALER_32,
+            .FirstBit = SPI_FIRSTBIT_MSB,
+            .TIMode = SPI_TIMODE_DISABLE,
+            .CRCCalculation = SPI_CRCCALCULATION_DISABLE,
+            .CRCPolynomial = 10,
+        };
     }
 }
 
@@ -334,6 +349,7 @@ void Encoder::sample_now() {
             sincos_sample_c_ = (get_adc_voltage(get_gpio(config_.sincos_gpio_pin_cos)) / 3.3f) - 0.5f;
         } break;
 
+        case MODE_SPI_ABS_TLE:
         case MODE_SPI_ABS_AMS:
         case MODE_SPI_ABS_CUI:
         case MODE_SPI_ABS_AEAT:
@@ -374,13 +390,18 @@ bool Encoder::abs_spi_start_transaction(){
         
         if (Stm32SpiArbiter::acquire_task(&spi_task_)) {
             spi_task_.ncs_gpio = abs_spi_cs_gpio_;
-            spi_task_.tx_buf = (uint8_t*)abs_spi_dma_tx_;
+            spi_task_.tx_buf = (uint8_t*)(mode_ == MODE_SPI_ABS_TLE ? abs_spi_tle_dma_tx_ : abs_spi_dma_tx_);
             spi_task_.rx_buf = (uint8_t*)abs_spi_dma_rx_;
             spi_task_.length = 1;
             spi_task_.on_complete = [](void* ctx, bool success) { ((Encoder*)ctx)->abs_spi_cb(success); };
             spi_task_.on_complete_ctx = this;
             spi_task_.next = nullptr;
             
+            if(mode_ == MODE_SPI_ABS_TLE) {
+                spi_task_.split_tx_rx = true;
+                spi_task_.done_tx = false;
+            }
+
             spi_arbiter_->transfer_async(&spi_task_);
         } else {
             return false;
@@ -435,6 +456,11 @@ void Encoder::abs_spi_cb(bool success) {
         case MODE_SPI_ABS_RLS: {
             uint16_t rawVal = abs_spi_dma_rx_[0];
             pos = (rawVal >> 2) & 0x3fff;
+        } break;
+
+        case MODE_SPI_ABS_TLE: {
+            uint16_t rawVal = abs_spi_dma_rx_[0];
+            pos = rawVal & 0x7fff;
         } break;
 
         default: {
@@ -501,6 +527,7 @@ bool Encoder::update() {
                 delta_enc -= 6283;
         } break;
         
+        case MODE_SPI_ABS_TLE:
         case MODE_SPI_ABS_RLS:
         case MODE_SPI_ABS_AMS:
         case MODE_SPI_ABS_CUI: 

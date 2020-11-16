@@ -1047,6 +1047,9 @@ valuetypes:
       SpiAbsRls:
         value: 0x103
         doc: RLS Encoders
+      SpiAbsTle:
+        value: 0x104
+        doc: compatible with Infineon TLE5012b E1000
 
   ODrive.Controller.ControlMode:
     values:

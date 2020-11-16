@@ -16,6 +16,8 @@ public:
         void (*on_complete)(void*, bool);
         void* on_complete_ctx;
         bool is_in_use = false;
+        bool split_tx_rx = false;
+        bool done_tx = false;
         struct SpiTask* next;
     };
 

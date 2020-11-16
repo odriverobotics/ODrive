@@ -35,17 +35,39 @@ bool Stm32SpiArbiter::start() {
     if (!equals(task.config, hspi_->Init)) {
         HAL_SPI_DeInit(hspi_);
         hspi_->Init = task.config;
-        HAL_SPI_Init(hspi_);
+        HAL_SPI_Init(hspi_);  
     }
+
+    
     task.ncs_gpio.write(false);
     
     HAL_StatusTypeDef status = HAL_ERROR;
-    if (task.tx_buf && task.rx_buf) {
-        status = HAL_SPI_TransmitReceive_DMA(hspi_, (uint8_t*)task.tx_buf, task.rx_buf, task.length);
-    } else if (task.tx_buf) {
-        status = HAL_SPI_Transmit_DMA(hspi_, (uint8_t*)task.tx_buf, task.length);
-    } else if (task.rx_buf) {
-        status = HAL_SPI_Receive_DMA(hspi_, task.rx_buf, task.length);
+    if(!task.split_tx_rx) {
+        if (task.tx_buf && task.rx_buf) {
+            status = HAL_SPI_TransmitReceive_DMA(hspi_, (uint8_t*)task.tx_buf, task.rx_buf, task.length);
+        } else if (task.tx_buf) {
+            status = HAL_SPI_Transmit_DMA(hspi_, (uint8_t*)task.tx_buf, task.length);
+        } else if (task.rx_buf) {
+            status = HAL_SPI_Receive_DMA(hspi_, task.rx_buf, task.length);
+        }
+    } else {
+        if(!task.done_tx) {
+            status = HAL_SPI_Transmit_DMA(hspi_, (uint8_t*)task.tx_buf, task.length);
+        } else {
+
+            // status = HAL_SPI_Receive(hspi_, (uint8_t*)task.rx_buf, task.length, 1000);
+            // task_list_->ncs_gpio.write(true);
+            // if (task_list_->on_complete) {
+            //     (*task_list_->on_complete)(task_list_->on_complete_ctx, true);
+            // }
+            // CRITICAL_SECTION() {
+            //     task_list_ = task_list_->next;
+            // }
+
+            status = HAL_SPI_Receive_DMA(hspi_, (uint8_t*)task.rx_buf, task.length);
+            __HAL_SPI_DISABLE(hspi_);
+
+        }
     }
 
     if (status != HAL_OK) {
@@ -90,6 +112,8 @@ bool Stm32SpiArbiter::transfer(SPI_InitTypeDef config, Stm32Gpio ncs_gpio, const
         .on_complete = [](void* ctx, bool success) { *(volatile uint8_t*)ctx = success ? 1 : 0; },
         .on_complete_ctx = (void*)&result,
         .is_in_use = false,
+        .split_tx_rx = false,
+        .done_tx = false,
         .next = nullptr
     };
 
@@ -106,19 +130,46 @@ void Stm32SpiArbiter::on_complete() {
     if (!task_list_) {
         return; // this should not happen
     }
+    if(!task_list_->split_tx_rx) {
+        // Wrap up transfer
+        task_list_->ncs_gpio.write(true);
+        if (task_list_->on_complete) {
+            (*task_list_->on_complete)(task_list_->on_complete_ctx, true);
+        }
+        // Start next task if any
+        SpiTask* next = nullptr;
+        CRITICAL_SECTION() {
+            next = task_list_ = task_list_->next;
+        }
+        if (next) {
+            start();
+        }
+    } else {
+        // task_list_->ncs_gpio.write(true);
+        // task_list_->ncs_gpio.write(false);
+        SpiTask* next = nullptr;
+        if(!task_list_->done_tx) {
+            CRITICAL_SECTION() {
+                task_list_->done_tx = true;
+                next = task_list_;
+            }
+        } else {
+            task_list_->ncs_gpio.write(true);
+            // task_list_->ncs_gpio.write(false);
+            // task_list_->ncs_gpio.write(true);
+            if (task_list_->on_complete) {
+                (*task_list_->on_complete)(task_list_->on_complete_ctx, true);
+            }
 
-    // Wrap up transfer
-    task_list_->ncs_gpio.write(true);
-    if (task_list_->on_complete) {
-        (*task_list_->on_complete)(task_list_->on_complete_ctx, true);
+            // Start next task if any
+            CRITICAL_SECTION() {
+                task_list_->done_tx = false;
+                next = task_list_ = task_list_->next;
+            }
+        }
+        if (next) {
+            start();
+        }
     }
-
-    // Start next task if any
-    SpiTask* next = nullptr;
-    CRITICAL_SECTION() {
-        next = task_list_ = task_list_->next;
-    }
-    if (next) {
-        start();
-    }
+    
 }
