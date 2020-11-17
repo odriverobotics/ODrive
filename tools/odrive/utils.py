@@ -548,18 +548,18 @@ def dump_dma(odrv):
 
 def dump_timing(odrv, n_samples=100, path='/tmp/timings.png'):
     import matplotlib.pyplot as plt
+    import re
     
     timings = []
     
     for attr in dir(odrv.task_times):
         if not attr.startswith('_'):
             timings.append((attr, getattr(odrv.task_times, attr), [], [])) # (name, obj, start_times, lengths)
-    for attr in dir(odrv.axis0.task_times):
-        if not attr.startswith('_'):
-            timings.append(('axis0.' + attr, getattr(odrv.axis0.task_times, attr), [], [])) # (name, obj, start_times, lengths)
-    for attr in dir(odrv.axis1.task_times):
-        if not attr.startswith('_'):
-            timings.append(('axis1.' + attr, getattr(odrv.axis1.task_times, attr), [], [])) # (name, obj, start_times, lengths)
+    for k in dir(odrv):
+        if re.match(r'axis[0-9]+', k):
+            for attr in dir(getattr(odrv, k).task_times):
+                if not attr.startswith('_'):
+                    timings.append((k + '.' + attr, getattr(getattr(odrv, k).task_times, attr), [], [])) # (name, obj, start_times, lengths)
 
     # Take a couple of samples
     print("sampling...")
