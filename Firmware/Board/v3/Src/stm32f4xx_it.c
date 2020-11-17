@@ -80,6 +80,9 @@ void NMI_Handler(void)
 
 __attribute__((used)) 
 void get_regs(void** stack_ptr) {
+  TIM1->BDTR &= ~(TIM_BDTR_AOE_Msk | TIM_BDTR_MOE_Msk); // disable M0 PWM
+  TIM8->BDTR &= ~(TIM_BDTR_AOE_Msk | TIM_BDTR_MOE_Msk); // disable M1 PWM
+
   void* volatile r0 __attribute__((unused)) = stack_ptr[0];
   void* volatile r1 __attribute__((unused)) = stack_ptr[1];
   void* volatile r2 __attribute__((unused)) = stack_ptr[2];
@@ -127,6 +130,8 @@ void MemManage_Handler(void)
   while (1)
   {
     /* USER CODE BEGIN W1_MemoryManagement_IRQn 0 */
+    TIM1->BDTR &= ~(TIM_BDTR_AOE_Msk | TIM_BDTR_MOE_Msk); // disable M0 PWM
+    TIM8->BDTR &= ~(TIM_BDTR_AOE_Msk | TIM_BDTR_MOE_Msk); // disable M1 PWM
     /* USER CODE END W1_MemoryManagement_IRQn 0 */
   }
   /* USER CODE BEGIN MemoryManagement_IRQn 1 */
@@ -145,6 +150,8 @@ void BusFault_Handler(void)
   while (1)
   {
     /* USER CODE BEGIN W1_BusFault_IRQn 0 */
+    TIM1->BDTR &= ~(TIM_BDTR_AOE_Msk | TIM_BDTR_MOE_Msk); // disable M0 PWM
+    TIM8->BDTR &= ~(TIM_BDTR_AOE_Msk | TIM_BDTR_MOE_Msk); // disable M1 PWM
     /* USER CODE END W1_BusFault_IRQn 0 */
   }
   /* USER CODE BEGIN BusFault_IRQn 1 */
@@ -163,6 +170,8 @@ void UsageFault_Handler(void)
   while (1)
   {
     /* USER CODE BEGIN W1_UsageFault_IRQn 0 */
+    TIM1->BDTR &= ~(TIM_BDTR_AOE_Msk | TIM_BDTR_MOE_Msk); // disable M0 PWM
+    TIM8->BDTR &= ~(TIM_BDTR_AOE_Msk | TIM_BDTR_MOE_Msk); // disable M1 PWM
     /* USER CODE END W1_UsageFault_IRQn 0 */
   }
   /* USER CODE BEGIN UsageFault_IRQn 1 */
