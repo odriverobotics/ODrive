@@ -28,7 +28,9 @@
 
 /* Private variables ---------------------------------------------------------*/
 
-static Introspectable root_obj = ODriveTypeInfo<ODrive>::make_introspectable(odrv);
+#if HW_VERSION_MAJOR == 3
+static Introspectable root_obj = ODrive3TypeInfo<ODrive>::make_introspectable(odrv);
+#endif
 
 /* Private function prototypes -----------------------------------------------*/
 
