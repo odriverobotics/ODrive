@@ -54,17 +54,11 @@ bool Stm32SpiArbiter::start() {
         if(!task.done_tx) {
             status = HAL_SPI_Transmit_DMA(hspi_, (uint8_t*)task.tx_buf, task.length);
         } else {
-
-            // status = HAL_SPI_Receive(hspi_, (uint8_t*)task.rx_buf, task.length, 1000);
-            // task_list_->ncs_gpio.write(true);
-            // if (task_list_->on_complete) {
-            //     (*task_list_->on_complete)(task_list_->on_complete_ctx, true);
-            // }
-            // CRITICAL_SECTION() {
-            //     task_list_ = task_list_->next;
-            // }
-
             status = HAL_SPI_Receive_DMA(hspi_, (uint8_t*)task.rx_buf, task.length);
+            
+            // need to stop the clock pulses so no Overrun error occurs...
+            // I'm not sure how to do this properly if you wanted to receive multiple 16bit blocks
+            // in one DMA request, but disabling SPI right after starting the receive seems to work.
             __HAL_SPI_DISABLE(hspi_);
 
         }
@@ -145,18 +139,16 @@ void Stm32SpiArbiter::on_complete() {
             start();
         }
     } else {
-        // task_list_->ncs_gpio.write(true);
-        // task_list_->ncs_gpio.write(false);
         SpiTask* next = nullptr;
         if(!task_list_->done_tx) {
+            // run the same task again, this time will be receiving
             CRITICAL_SECTION() {
                 task_list_->done_tx = true;
                 next = task_list_;
             }
         } else {
+            // receive complete, pull CS high, run completion callback
             task_list_->ncs_gpio.write(true);
-            // task_list_->ncs_gpio.write(false);
-            // task_list_->ncs_gpio.write(true);
             if (task_list_->on_complete) {
                 (*task_list_->on_complete)(task_list_->on_complete_ctx, true);
             }
