@@ -264,7 +264,7 @@ board_v3 = {
 board_v4 = {
     root = 'Private/v4',
     root_interface = 'ODrive4',
-    include = {stm32f7xx_hal_pkg},
+    include = {stm32f7xx_hal_pkg, crypto_pkg},
     include_dirs = {
         '..',
         'Inc',
@@ -435,7 +435,6 @@ tup.frule{inputs={'fibre/cpp/type_info_template.j2'}, command=python_command..' 
 add_pkg(freertos_pkg)
 add_pkg(cmsis_pkg)
 add_pkg(stm32_usb_device_library_pkg)
-add_pkg(crypto_pkg)
 add_pkg(board)
 add_pkg(odrive_firmware_pkg)
 
