@@ -485,6 +485,25 @@ static void rtos_main(void*) {
 
     // Start PWM and enable adc interrupts/callbacks
     start_adc_pwm();
+    start_analog_thread();
+
+    // Wait for up to 2s for motor to become ready to allow for error-free
+    // startup. This delay gives the current sensor calibration time to
+    // converge. If the DRV chip is unpowered, the motor will not become ready
+    // but we still enter idle state.
+    for (size_t i = 0; i < 2000; ++i) {
+        bool motors_ready = std::all_of(axes.begin(), axes.end(), [](auto& axis) {
+            return axis.motor_.current_meas_.has_value();
+        });
+        if (motors_ready) {
+            break;
+        }
+        osDelay(1);
+    }
+
+    for (auto& axis: axes) {
+        axis.sensorless_estimator_.error_ &= ~SensorlessEstimator::ERROR_UNKNOWN_CURRENT_MEASUREMENT;
+    }
 
     // Start state machine threads. Each thread will go through various calibration
     // procedures and then run the actual controller loops.
@@ -492,8 +511,6 @@ static void rtos_main(void*) {
     for (size_t i = 0; i < AXIS_COUNT; ++i) {
         axes[i].start_thread();
     }
-
-    start_analog_thread();
 
     odrv.system_stats_.fully_booted = true;
 

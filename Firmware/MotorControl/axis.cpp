@@ -428,20 +428,6 @@ bool Axis::run_idle_loop() {
 
 // Infinite loop that does calibration and enters main control loop as appropriate
 void Axis::run_state_machine_loop() {
-
-    // Wait for up to 2s for motor to become ready to allow for error-free
-    // startup. This delay gives the current sensor calibration time to
-    // converge. If the DRV chip is unpowered, the motor will not become ready
-    // but we still enter idle state.
-    for (size_t i = 0; i < 2000; ++i) {
-        if (motor_.current_meas_.has_value()) {
-            break;
-        }
-        osDelay(1);
-    }
-
-    sensorless_estimator_.error_ &= ~SensorlessEstimator::ERROR_UNKNOWN_CURRENT_MEASUREMENT;
-
     for (;;) {
         // Load the task chain if a specific request is pending
         if (requested_state_ != AXIS_STATE_UNDEFINED) {
