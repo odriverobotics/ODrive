@@ -157,6 +157,7 @@ Install `dfu-util`:
 $ sudo port install dfu-util   # via MacPorts; for HomeBrew use "brew install dfu-util"
 ```
 
+Put the ODrive into DFU mode using the DIP switch, then turn it on and plug in the USB.
 Find the correct device serial number to use:
 
 ```text
