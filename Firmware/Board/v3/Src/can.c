@@ -56,31 +56,46 @@
 
 /* USER CODE END 0 */
 
-CAN_HandleTypeDef hcan1;
+CAN_HandleTypeDef hcan1 = {
+  .Instance = CAN1,
+  .Init = {
+    .Prescaler = 8,
+    .Mode = CAN_MODE_NORMAL,
+    .SyncJumpWidth = CAN_SJW_4TQ,
+    .TimeSeg1 = CAN_BS1_16TQ,
+    .TimeSeg2 = CAN_BS2_4TQ,
+    .TimeTriggeredMode = DISABLE,
+    .AutoBusOff = ENABLE,
+    .AutoWakeUp = ENABLE,
+    .AutoRetransmission = ENABLE,
+    .ReceiveFifoLocked = DISABLE,
+    .TransmitFifoPriority = DISABLE,
+  }
+};
 
 /* CAN1 init function */
-void MX_CAN1_Init(void)
-{
-
-  hcan1.Instance = CAN1;
-  hcan1.Init.Prescaler = 8;
-  hcan1.Init.Mode = CAN_MODE_NORMAL;
-  hcan1.Init.SyncJumpWidth = CAN_SJW_4TQ;
-  hcan1.Init.TimeSeg1 = CAN_BS1_16TQ;
-  hcan1.Init.TimeSeg2 = CAN_BS2_4TQ;
-  hcan1.Init.TimeTriggeredMode = DISABLE;
-  hcan1.Init.AutoBusOff = ENABLE;
-  hcan1.Init.AutoWakeUp = ENABLE;
-  hcan1.Init.AutoRetransmission = ENABLE;
-  hcan1.Init.ReceiveFifoLocked = DISABLE;
-  hcan1.Init.TransmitFifoPriority = DISABLE;
-  if (HAL_CAN_Init(&hcan1) != HAL_OK)
-  {
-    _Error_Handler(__FILE__, __LINE__);
-  }
-
-}
-
+//void MX_CAN1_Init(void)
+//{
+//
+//  hcan1.Instance = CAN1;
+//  hcan1.Init.Prescaler = 8;
+//  hcan1.Init.Mode = CAN_MODE_NORMAL;
+//  hcan1.Init.SyncJumpWidth = CAN_SJW_4TQ;
+//  hcan1.Init.TimeSeg1 = CAN_BS1_16TQ;
+//  hcan1.Init.TimeSeg2 = CAN_BS2_4TQ;
+//  hcan1.Init.TimeTriggeredMode = DISABLE;
+//  hcan1.Init.AutoBusOff = ENABLE;
+//  hcan1.Init.AutoWakeUp = ENABLE;
+//  hcan1.Init.AutoRetransmission = ENABLE;
+//  hcan1.Init.ReceiveFifoLocked = DISABLE;
+//  hcan1.Init.TransmitFifoPriority = DISABLE;
+//  if (HAL_CAN_Init(&hcan1) != HAL_OK)
+//  {
+//    _Error_Handler(__FILE__, __LINE__);
+//  }
+//
+//}
+//
 void HAL_CAN_MspInit(CAN_HandleTypeDef* canHandle)
 {
 

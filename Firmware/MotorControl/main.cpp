@@ -28,7 +28,7 @@ extern char _estack; // provided by the linker script
 
 
 ODriveCAN::Config_t can_config;
-ODriveCAN *odCAN = nullptr;
+CANSimple *can_simple = nullptr;
 ODrive odrv{};
 
 
@@ -146,7 +146,7 @@ static void config_clear_all() {
 }
 
 static bool config_apply_all() {
-    bool success = true;
+    bool success = odrv.can_.apply_config();
     for (size_t i = 0; (i < AXIS_COUNT) && success; ++i) {
         success = encoders[i].apply_config(motors[i].config_.motor_type)
                && axes[i].controller_.apply_config()
@@ -266,19 +266,19 @@ void vApplicationIdleHook(void) {
         odrv.system_stats_.max_stack_usage_usb = stack_size_usb_thread - uxTaskGetStackHighWaterMark(usb_thread) * sizeof(StackType_t);
         odrv.system_stats_.max_stack_usage_uart = stack_size_uart_thread - uxTaskGetStackHighWaterMark(uart_thread) * sizeof(StackType_t);
         odrv.system_stats_.max_stack_usage_startup = stack_size_default_task - uxTaskGetStackHighWaterMark(defaultTaskHandle) * sizeof(StackType_t);
-        odrv.system_stats_.max_stack_usage_can = odCAN ? (odCAN->stack_size_ - uxTaskGetStackHighWaterMark(odCAN->thread_id_) * sizeof(StackType_t)) : 0;
+        odrv.system_stats_.max_stack_usage_can = odrv.can_.stack_size_ - uxTaskGetStackHighWaterMark(odrv.can_.thread_id_) * sizeof(StackType_t);
 
         odrv.system_stats_.stack_size_axis = axes[0].stack_size_;
         odrv.system_stats_.stack_size_usb = stack_size_usb_thread;
         odrv.system_stats_.stack_size_uart = stack_size_uart_thread;
         odrv.system_stats_.stack_size_startup = stack_size_default_task;
-        odrv.system_stats_.stack_size_can = odCAN ? odCAN->stack_size_ : 0;
+        odrv.system_stats_.stack_size_can = odrv.can_.stack_size_;
 
         odrv.system_stats_.prio_axis = osThreadGetPriority(axes[0].thread_id_);
         odrv.system_stats_.prio_usb = osThreadGetPriority(usb_thread);
         odrv.system_stats_.prio_uart = osThreadGetPriority(uart_thread);
         odrv.system_stats_.prio_startup = osThreadGetPriority(defaultTaskHandle);
-        odrv.system_stats_.prio_can = odCAN ? osThreadGetPriority(odCAN->thread_id_) : 0;
+        odrv.system_stats_.prio_can = osThreadGetPriority(odrv.can_.thread_id_);
 
         status_led_controller.update();
     }
@@ -828,17 +828,6 @@ extern "C" int main(void) {
     osSemaphoreDef(sem_can);
     sem_can = osSemaphoreCreate(osSemaphore(sem_can), 1);
     osSemaphoreWait(sem_can, 0);
-
-    // Construct all objects.
-    if (odrv.config_.enable_can_a) {
-        switch (can_config.protocol) {
-            case ODriveIntf::CanIntf::Protocol::PROTOCOL_SIMPLE:
-                odCAN = new CANSimple(can_config, &hcan1);
-                break;
-            default:
-                break;
-        }
-    }
 
     // Create main thread
     osThreadDef(defaultTask, rtos_main, osPriorityNormal, 0, stack_size_default_task / sizeof(StackType_t));

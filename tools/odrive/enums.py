@@ -22,7 +22,7 @@ GPIO_MODE_MECH_BRAKE                     = 14
 GPIO_MODE_STATUS                         = 15
 
 # ODrive.Can.Protocol
-PROTOCOL_SIMPLE                          = 0
+PROTOCOL_SIMPLE                          = 0x00000001
 
 # ODrive.Axis.AxisState
 AXIS_STATE_UNDEFINED                     = 0

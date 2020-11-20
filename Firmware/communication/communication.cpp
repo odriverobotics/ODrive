@@ -55,8 +55,8 @@ void init_communication(void) {
         start_i2c_server();
     }
 
-    if (odCAN && odrv.config_.enable_can_a) {
-        odCAN->start_can_server();
+    if (odrv.config_.enable_can_a) {
+        odrv.can_.start_server(&hcan1);
     }
 }
 

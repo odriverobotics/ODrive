@@ -136,6 +136,7 @@ class TestSimpleCAN():
         test_assert_eq(my_req('get_vbus_voltage')['vbus_voltage'], odrive.handle.vbus_voltage, accuracy=0.01)
 
         my_cmd('set_node_id', node_id=node_id+20)
+        time.sleep(0.1) # TODO: remove this hack (see note in firmware)
         asyncio.run(request(canbus.handle, node_id+20, extended_id, 'get_vbus_voltage'))
         test_assert_eq(axis.config.can.node_id, node_id+20)
 
