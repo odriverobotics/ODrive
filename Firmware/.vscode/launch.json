@@ -32,7 +32,7 @@
             "openOCDLaunchCommands": [
                 "reset_config none separate"
             ],
-            "svdFile": "${workspaceRoot}/Board/v4/STM32F7x.svd",
+            "svdFile": "${workspaceRoot}/Private/v4/STM32F722.svd",
             "cwd": "${workspaceRoot}"
         },
         {
@@ -85,7 +85,7 @@
                 "interface/stlink.cfg",
                 "target/stm32f7x.cfg",
             ],
-            "svdFile": "${workspaceRoot}/Board/v4/STM32F722.svd",
+            "svdFile": "${workspaceRoot}/Private/v4/STM32F722.svd",
             "cwd": "${workspaceRoot}"
         },
         {
