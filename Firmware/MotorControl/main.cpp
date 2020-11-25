@@ -59,26 +59,29 @@ void StatusLedController::update() {
     bool any_error = odrv.any_error();
 
     if (is_armed) {
-        // Fast blue pulsating
+        // Fast green pulsating
         const uint32_t period_ms = 256;
         const uint8_t min_brightness = 0;
         const uint8_t max_brightness = 255;
-        const uint32_t brightness = std::abs((int32_t)(t % period_ms) - (int32_t)(period_ms / 2)) * (max_brightness - min_brightness) / (period_ms / 2) + min_brightness;
-        status_led.set_color(rgb_t{(uint8_t)(any_error ? brightness / 2 : 0), 0, (uint8_t)brightness});
+        uint32_t brightness = std::abs((int32_t)(t % period_ms) - (int32_t)(period_ms / 2)) * (max_brightness - min_brightness) / (period_ms / 2) + min_brightness;
+        brightness = (brightness * brightness) >> 8; // eye response very roughly sqrt
+        status_led.set_color(rgb_t{(uint8_t)(any_error ? brightness / 2 : 0), (uint8_t)brightness, 0});
     } else if (any_error) {
         // Red pulsating
         const uint32_t period_ms = 1024;
         const uint8_t min_brightness = 0;
         const uint8_t max_brightness = 255;
-        const uint32_t brightness = std::abs((int32_t)(t % period_ms) - (int32_t)(period_ms / 2)) * (max_brightness - min_brightness) / (period_ms / 2) + min_brightness;
+        uint32_t brightness = std::abs((int32_t)(t % period_ms) - (int32_t)(period_ms / 2)) * (max_brightness - min_brightness) / (period_ms / 2) + min_brightness;
+        brightness = (brightness * brightness) >> 8; // eye response very roughly sqrt
         status_led.set_color(rgb_t{(uint8_t)brightness, 0, 0});
     } else {
-        // Slow green pulsating
-        const uint32_t period_ms = 2048;
-        const uint8_t min_brightness = 16;
-        const uint8_t max_brightness = 128;
-        const uint32_t brightness = std::abs((int32_t)(t % period_ms) - (int32_t)(period_ms / 2)) * (max_brightness - min_brightness) / (period_ms / 2) + min_brightness;
-        status_led.set_color(rgb_t{0, (uint8_t)brightness, 0});
+        // Slow blue pulsating
+        const uint32_t period_ms = 4096;
+        const uint8_t min_brightness = 64;
+        const uint8_t max_brightness = 180;
+        uint32_t brightness = std::abs((int32_t)(t % period_ms) - (int32_t)(period_ms / 2)) * (max_brightness - min_brightness) / (period_ms / 2) + min_brightness;
+        brightness = (brightness * brightness) >> 8; // eye response very roughly sqrt
+        status_led.set_color(rgb_t{0, 0, (uint8_t)brightness});
     }
 #endif
 }
