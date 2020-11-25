@@ -220,6 +220,16 @@ bool ODrive::any_error() {
         });
 }
 
+uint64_t ODrive::get_drv_fault() {
+#if AXIS_COUNT == 1
+    return motors[0].gate_driver_.get_error();
+#elif AXIS_COUNT == 2
+    return (uint64_t)motors[0].gate_driver_.get_error() | ((uint64_t)motors[1].gate_driver_.get_error() << 32ULL);
+#else
+    #error "not supported"
+#endif
+}
+
 void ODrive::clear_errors() {
     for (auto& axis: axes) {
         axis.motor_.error_ = Motor::ERROR_NONE;

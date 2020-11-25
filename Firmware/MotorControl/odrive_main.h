@@ -193,6 +193,7 @@ public:
     uint32_t get_interrupt_status(int32_t irqn);
     uint32_t get_dma_status(uint8_t stream_num);
     uint32_t get_gpio_states();
+    uint64_t get_drv_fault();
     void disarm_with_error(Error error);
 
     Error error_ = ERROR_NONE;

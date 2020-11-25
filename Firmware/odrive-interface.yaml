@@ -214,6 +214,7 @@ interfaces:
       get_gpio_states:
         out: {status: {type: uint32}}
         doc: Returns the logic states of all GPIOs. Bit i represents the state of GPIOi.
+      get_drv_fault: {out: {drv_fault: uint64}}
       clear_errors:
         doc: Clear all the errors of this device including all contained submodules.
 
@@ -456,29 +457,6 @@ interfaces:
           sensorless_ramp: LockinConfig
           general_lockin: LockinConfig
           can: CanConfig
-        gate_driver:
-          c_name: gate_driver_exported_
-          c_is_class: False
-          attributes:
-            drv_fault:
-              typeargs: {fibre.Property.mode: readonly}
-              nullflag: NoFault
-              flags:
-                FetLowCOvercurrent: {bit: 0, doc: FET Low side, Phase C Over Current fault}
-                FetHighCOvercurrent: {bit: 1, doc: FET High side, Phase C Over Current fault}
-                FetLowBOvercurrent: {bit: 2, doc: FET Low side, Phase B Over Current fault}
-                FetHighBOvercurrent: {bit: 3, doc: FET High side, Phase B Over Current fault}
-                FetLowAOvercurrent: {bit: 4, doc: FET Low side, Phase A Over Current fault}
-                FetHighAOvercurrent: {bit: 5, doc: FET High side, Phase A Over Current fault}
-                OvertemperatureWarning: {bit: 6, doc: Over Temperature Warning fault}
-                OvertemperatureShutdown: {bit: 7, doc: Over Temperature Shut Down fault}
-                PVddUndervoltage: {bit: 8, doc: Power supply Vdd Under Voltage fault}
-                GVddUndervoltage: {bit: 9, doc: DRV8301 Vdd Under Voltage fault}
-                GVddOvervoltage: {bit: 10, doc: DRV8301 Vdd Over Voltage fault}
-            # status_reg_1: readonly uint32
-            # status_reg_2: readonly uint32
-            # ctrl_reg_1: readonly uint32
-            # ctrl_reg_2: readonly uint32
       motor: Motor
       controller: Controller
       encoder: Encoder
