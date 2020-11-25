@@ -199,6 +199,7 @@ bool Motor::arm(PhaseControlLaw<3>* control_law) {
         }
 
         if (!odrv.config_.enable_brake_resistor || brake_resistor_armed) {
+            armed_state_ = 1;
             is_armed_ = true;
         } else {
             error_ |= Motor::ERROR_BRAKE_RESISTOR_DISARMED;
@@ -264,6 +265,7 @@ bool Motor::disarm(bool* p_was_armed) {
             gate_driver_.set_enabled(false);
         }
         is_armed_ = false;
+        armed_state_ = 0;
         TIM_HandleTypeDef* timer = timer_;
         timer->Instance->BDTR &= ~TIM_BDTR_AOE; // prevent the PWMs from automatically enabling at the next update
         __HAL_TIM_MOE_DISABLE_UNCONDITIONALLY(timer);
@@ -587,7 +589,10 @@ void Motor::current_meas_cb(uint32_t timestamp, std::optional<Iph_ABC_t> current
                        && (abs(DC_calib_.phB) < max_dc_calib_)
                        && (abs(DC_calib_.phC) < max_dc_calib_);
 
-    if (current.has_value() && dc_calib_valid) {
+    if (armed_state_ == 1 || armed_state_ == 2) {
+        current_meas_ = {0.0f, 0.0f, 0.0f};
+        armed_state_ += 1;
+    } else if (current.has_value() && dc_calib_valid) {
         current_meas_ = {
             current->phA - DC_calib_.phA,
             current->phB - DC_calib_.phB,
@@ -678,7 +683,6 @@ void Motor::pwm_update_cb(uint32_t output_timestamp) {
             (uint16_t)(pwm_timings[1] * (float)TIM_1_8_PERIOD_CLOCKS),
             (uint16_t)(pwm_timings[2] * (float)TIM_1_8_PERIOD_CLOCKS)
         };
-
         apply_pwm_timings(next_timings, false);
     } else if (is_armed_) {
         if (!(timer_->Instance->BDTR & TIM_BDTR_MOE) && (control_law_status == ERROR_CONTROLLER_INITIALIZING)) {

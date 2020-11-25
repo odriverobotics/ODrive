@@ -128,8 +128,6 @@ public:
     void set_step_dir_active(bool enable);
     void decode_step_dir_pins();
 
-    bool check_DRV_fault();
-    bool check_PSU_brownout();
     bool do_checks(uint32_t timestamp);
 
     void watchdog_feed();

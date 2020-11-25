@@ -112,6 +112,7 @@ public:
     // Do not write to this variable directly!
     // It is for exclusive use by the safety_critical_... functions.
     bool is_armed_ = false;
+    uint8_t armed_state_ = 0;
     bool is_calibrated_ = false; // Set in apply_config()
     std::optional<Iph_ABC_t> current_meas_;
     Iph_ABC_t DC_calib_ = {0.0f, 0.0f, 0.0f};
