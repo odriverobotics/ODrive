@@ -417,6 +417,7 @@ bool Axis::run_homing() {
 }
 
 bool Axis::run_idle_loop() {
+    last_drv_fault_ = motor_.gate_driver_.get_error();
     mechanical_brake_.engage();
     set_step_dir_active(config_.enable_step_dir && config_.step_dir_always_on);
     while (requested_state_ == AXIS_STATE_UNDEFINED) {

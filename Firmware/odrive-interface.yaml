@@ -406,6 +406,7 @@ interfaces:
             # unused
             doc: Check `motor.error` for more details.
       step_dir_active: readonly bool
+      last_drv_fault: readonly uint32
       current_state: readonly AxisState
       requested_state: AxisState
       loop_counter: readonly uint32
