@@ -1,9 +1,9 @@
 import os
 import glob
 
-header = """MIT License
+header = """/* MIT License
 
-Copyright (c) 2016-2018 ODrive Robotics
+Copyright (c) 2016-2021 ODrive Robotics, Inc
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -21,11 +21,24 @@ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
 AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.' """
+SOFTWARE. */
+"""
 
-for f in glob.glob('../Firmware/MotorControl/*.cpp'):
-    with open(f, 'r') as orig:
-        data = orig.read()
-    
-    with open(f, 'w') as dest:
-        dest.write(header + '\n' + data)
+folders = ['communication', 'MotorControl', 'Tests', 'Drivers', 'Drivers/STM32', 'Drivers/DRV8301']
+
+for dir in folders:
+    for f in glob.glob(os.path.join('../Firmware', dir, '*.c*')):
+        with open(f, 'r') as orig:
+            data = orig.read()
+        
+        if not (data.startswith('MIT License')):
+            with open(f, 'w') as dest:
+                dest.write(header + '\n' + data)
+
+    for f in glob.glob(os.path.join('../Firmware', dir, '*.h*')):
+        with open(f, 'r') as orig:
+            data = orig.read()
+        
+        if not (data.startswith('MIT License')):
+            with open(f, 'w') as dest:
+                dest.write(header + '\n' + data)
