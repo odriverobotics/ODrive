@@ -14,75 +14,17 @@ class TestClosedLoopControlBase():
     """
     Base class for close loop control tests.
     """
-
-    def get_test_cases(self, testrig: TestRig):
-        for odrive in testrig.get_components(ODriveComponent):
-            for num in range(len(odrive.axes)):
-                encoders = testrig.get_connected_components({
-                    'a': (odrive.encoders[num].a, False),
-                    'b': (odrive.encoders[num].b, False)
-                }, EncoderComponent)
-                motors = testrig.get_connected_components(odrive.axes[num], MotorComponent)
-
-                for motor, encoder in itertools.product(motors, encoders):
-                    if encoder.impl in testrig.get_connected_components(motor):
-                        yield (odrive.axes[num], motor, encoder)
-
-    def prepare(self, axis_ctx: ODriveAxisComponent, motor_ctx: MotorComponent, enc_ctx: EncoderComponent, logger: Logger):
-        # Make sure there are no funny configurations active
-        logger.debug('Setting up clean configuration...')
-        axis_ctx.parent.erase_config_and_reboot()
-
-        # Set motor calibration values
-        axis_ctx.handle.motor.config.phase_resistance = float(motor_ctx.yaml['phase-resistance'])
-        axis_ctx.handle.motor.config.phase_inductance = float(motor_ctx.yaml['phase-inductance'])
-        axis_ctx.handle.motor.config.pre_calibrated = True
-
-        # Set brake resistor settings
-        axis_ctx.parent.handle.config.brake_resistance = float(axis_ctx.parent.yaml['brake-resistance'])
-        # The docs say this requires a reboot but here's a small secret:
-        # Since the brake resistor is also started in clear_errors() this
-        # circumvents the need for a reboot.
-        axis_ctx.parent.handle.config.enable_brake_resistor = True
-
-        # Set calibration settings
-        axis_ctx.handle.encoder.config.direction = 0
-        axis_ctx.handle.encoder.config.use_index = False
-        axis_ctx.handle.encoder.config.calib_scan_omega = 12.566 # 2 electrical revolutions per second
-        axis_ctx.handle.encoder.config.calib_scan_distance = 50.265 # 8 revolutions
-        axis_ctx.handle.encoder.config.bandwidth = 1000
-
-
-        axis_ctx.parent.handle.clear_errors()
-
-        logger.debug('Calibrating encoder offset...')
-        request_state(axis_ctx, AXIS_STATE_ENCODER_OFFSET_CALIBRATION)
-
-        time.sleep(9) # actual calibration takes 8 seconds
-
-        test_assert_eq(axis_ctx.handle.current_state, AXIS_STATE_IDLE)
-        test_assert_no_error(axis_ctx)
-
-
-        # Return a context that can be used in a with-statement.
-        class safe_terminator():
-            def __enter__(self):
-                pass
-            def __exit__(self, exc_type, exc_val, exc_tb):
-                logger.debug('clearing config...')
-                axis_ctx.handle.requested_state = AXIS_STATE_IDLE
-                time.sleep(0.005)
-                axis_ctx.parent.erase_config_and_reboot()
-        return safe_terminator()
-
+    pass
 
 class TestClosedLoopControl(TestClosedLoopControlBase):
     """
     Tests position and velocity control
     """
+    def get_test_cases(self, testrig: TestRig):
+        return testrig.get_closed_loop_combos()
 
     def run_test(self, axis_ctx: ODriveAxisComponent, motor_ctx: MotorComponent, enc_ctx: EncoderComponent, logger: Logger):
-        with self.prepare(axis_ctx, motor_ctx, enc_ctx, logger):
+        with SafeTerminator(logger, axis_ctx):
             nominal_rps = 3.0
             nominal_vel = nominal_rps
             logger.debug(f'Testing closed loop velocity control at {nominal_rps} rounds/s...')
@@ -183,9 +125,11 @@ class TestRegenProtection(TestClosedLoopControlBase):
     Note: If this test fails then try to run it at a DC voltage of 24V.
     Ibus seems to be more noisy/sensitive at lower DC voltages.
     """
+    def get_test_cases(self, testrig: TestRig):
+        return testrig.get_closed_loop_combos()
 
     def run_test(self, axis_ctx: ODriveAxisComponent, motor_ctx: MotorComponent, enc_ctx: EncoderComponent, logger: Logger):
-        with self.prepare(axis_ctx, motor_ctx, enc_ctx, logger):
+        with SafeTerminator(logger, axis_ctx):
             nominal_rps = 15.0
             max_current = 20.0
         
@@ -256,9 +200,11 @@ class TestVelLimitInTorqueControl(TestClosedLoopControlBase):
     Ensures that the current setpoint in torque control is always within the
     parallelogram that arises from -Ilim, +Ilim, vel_limit and vel_gain.
     """
+    def get_test_cases(self, testrig: TestRig):
+        return testrig.get_closed_loop_combos()
 
     def run_test(self, axis_ctx: ODriveAxisComponent, motor_ctx: MotorComponent, enc_ctx: EncoderComponent, logger: Logger):
-        with self.prepare(axis_ctx, motor_ctx, enc_ctx, logger):
+        with SafeTerminator(logger, axis_ctx):
             max_rps = 20.0
             max_vel = max_rps
             absolute_max_vel = max_vel * 1.2
@@ -339,8 +285,11 @@ class TestTorqueLimit(TestClosedLoopControlBase):
     """
     Checks that the torque limit is respected in position, velocity, and torque control modes
     """
+    def get_test_cases(self, testrig: TestRig):
+        return testrig.get_closed_loop_combos()
+
     def run_test(self, axis_ctx: ODriveAxisComponent, motor_ctx: MotorComponent, enc_ctx: EncoderComponent, logger: Logger):
-        with self.prepare(axis_ctx, motor_ctx, enc_ctx, logger):
+        with SafeTerminator(logger, axis_ctx):
             max_rps = 15.0
             max_vel = max_rps
             max_current = 30.0

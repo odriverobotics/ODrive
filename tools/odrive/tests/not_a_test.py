@@ -16,13 +16,10 @@ class EncoderPassthrough():
                 'b': (odrive.encoders[0].b, False),
                 'z': (odrive.encoders[0].z, False)
             }, EncoderComponent)
-            motors = testrig.get_connected_components(odrive.axes[0], MotorComponent)
 
-            for motor, encoder in itertools.product(motors, encoders):
-                if encoder.impl in testrig.get_connected_components(motor):
-                    yield (odrive.axes[0], motor, encoder)
+            yield AnyTestCase(*[(odrive.axes[0], test_fixture) for encoder, test_fixture in encoders])
 
-    def run_test(self, axis_ctx: ODriveAxisComponent, motor_ctx: MotorComponent, enc_ctx: EncoderComponent, logger: Logger):
+    def run_test(self, axis_ctx: ODriveAxisComponent, logger: Logger):
         logger.debug(f'Encoder {axis_ctx.num} was passed through')
 
 if __name__ == '__main__':
