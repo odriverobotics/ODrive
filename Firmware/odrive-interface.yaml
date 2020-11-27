@@ -984,9 +984,10 @@ interfaces:
         attributes:
           mode: Mode
           use_index: {type: bool, c_setter: set_use_index}
+          index_offset: float32
+          use_index_offset: bool
           find_idx_on_lockin_only: {type: bool, c_setter: set_find_idx_on_lockin_only}
           abs_spi_cs_gpio_pin: {type: uint16, c_setter: set_abs_spi_cs_gpio_pin, doc: Make sure that the GPIO is in `GPIO_MODE_DIGITAL`.}
-          zero_count_on_find_idx: bool
           cpr: int32
           phase_offset: int32
           phase_offset_float: float32

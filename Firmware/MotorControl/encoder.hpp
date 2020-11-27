@@ -14,27 +14,29 @@ public:
 
     struct Config_t {
         Mode mode = MODE_INCREMENTAL;
+        float calib_range = 0.02f; // Accuracy required to pass encoder cpr check
+        float calib_scan_distance = 16.0f * M_PI; // rad electrical
+        float calib_scan_omega = 4.0f * M_PI; // rad/s electrical
+        float bandwidth = 1000.0f;
+        int32_t phase_offset = 0;        // Offset between encoder count and rotor electrical phase
+        float phase_offset_float = 0.0f; // Sub-count phase alignment offset
+        int32_t cpr = (2048 * 4);   // Default resolution of CUI-AMT102 encoder,
+        float index_offset = 0.0f;
+        uint16_t abs_spi_cs_gpio_pin = 1;
+        uint16_t sincos_gpio_pin_sin = 3;
+        uint16_t sincos_gpio_pin_cos = 4;
         bool use_index = false;
         bool pre_calibrated = false; // If true, this means the offset stored in
                                     // configuration is valid and does not need
                                     // be determined by run_offset_calibration.
                                     // In this case the encoder will enter ready
                                     // state as soon as the index is found.
-        bool zero_count_on_find_idx = true;
-        int32_t cpr = (2048 * 4);   // Default resolution of CUI-AMT102 encoder,
-        int32_t phase_offset = 0;        // Offset between encoder count and rotor electrical phase
-        float phase_offset_float = 0.0f; // Sub-count phase alignment offset
-        int32_t direction = 0.0f; // direction with respect to motor
+        int32_t direction = 0; // direction with respect to motor
+        bool use_index_offset = true;
         bool enable_phase_interpolation = true; // Use velocity to interpolate inside the count state
-        float calib_range = 0.02f; // Accuracy required to pass encoder cpr check
-        float calib_scan_distance = 16.0f * M_PI; // rad electrical
-        float calib_scan_omega = 4.0f * M_PI; // rad/s electrical
-        float bandwidth = 1000.0f;
         bool find_idx_on_lockin_only = false; // Only be sensitive during lockin scan constant vel state
         bool ignore_illegal_hall_state = false; // dont error on bad states like 000 or 111
-        uint16_t abs_spi_cs_gpio_pin = 1;
-        uint16_t sincos_gpio_pin_sin = 3;
-        uint16_t sincos_gpio_pin_cos = 4;
+
 
         // custom setters
         Encoder* parent = nullptr;
