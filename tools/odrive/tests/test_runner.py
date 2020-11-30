@@ -393,10 +393,12 @@ class SerialPortComponent(Component):
     def __init__(self, parent: Component, yaml: dict):
         Component.__init__(self, parent)
         self.yaml = yaml
+        self.tx = Component(self)
+        self.rx = Component(self)
 
     def get_subcomponents(self):
-        yield 'tx', Component(self)
-        yield 'rx', Component(self)
+        yield 'tx', self.tx
+        yield 'rx', self.rx
 
     def open(self, baudrate: int):
         import serial
@@ -571,9 +573,15 @@ class TeensyForwardingFixture(TestFixture):
     def prepare(self, logger: Logger):
         self.teensy.add_route(self.high_z, self.low_z, self.noise_enable)
 
+    def get_resources(self):
+        return [(self.teensy, False), (self.high_z, True), (self.low_z, True), (self.noise_enable, True)]
+
 class ClosedLoopControlFixture(TestFixture):
     def __init__(self, axis_ctx: ODriveAxisComponent, motor_ctx: MotorComponent, enc_ctx: EncoderComponent):
         self.axis_ctx, self.motor_ctx, self.enc_ctx = (axis_ctx, motor_ctx, enc_ctx)
+
+    def get_resources(self):
+        return []
 
     def prepare(self, logger: Logger):
         # Make sure no funny configuration is active
@@ -667,7 +675,7 @@ class TestRig():
             for port in s:
                 self.net_by_component[port] = s
 
-    def get_closed_loop_combos(self):
+    def get_closed_loop_combos(self, init: bool = True):
         """
         Fetches all connected (odrive axis, motor, encoder) combos in the test rig.
 
@@ -678,23 +686,19 @@ class TestRig():
         all_motors = self.get_components(MotorComponent)
         all_encoders = self.get_components(EncoderComponent)
         for axis, motor, encoder in itertools.product(all_axes, all_motors, all_encoders):
-            is_connected, test_fixture1 = self.check_connection(axis, motor.phases)
+            is_connected, tf1 = self.check_connections([
+                (axis, motor.phases),
+                (motor.shaft, encoder.shaft),
+                (encoder.a, axis.parent.encoders[axis.num].a),
+                (encoder.b, axis.parent.encoders[axis.num].b)
+            ])
             if not is_connected:
                 continue
-            is_connected, test_fixture2 = self.check_connection(motor.shaft, encoder.shaft)
-            if not is_connected:
-                continue
-            is_connected, test_fixture3 = self.check_connection(encoder.a, axis.parent.encoders[axis.num].a)
-            if not is_connected:
-                continue
-            is_connected, test_fixture4 = self.check_connection(encoder.b, axis.parent.encoders[axis.num].b)
-            if not is_connected:
-                continue
-            test_fixture = TestFixture.all_of(test_fixture1, test_fixture2,
-                test_fixture3, test_fixture4, ClosedLoopControlFixture(axis, motor, encoder))
+            tf2 = ClosedLoopControlFixture(axis, motor, encoder) if init else None
+            test_fixture = TestFixture.all_of(tf1, tf2)
             yield axis, motor, encoder, test_fixture
     
-    def check_connection(self, component1: Component, component2: Component):
+    def check_connection(self, component1: Component, component2: Component, mode: str = 'indirect'):
         """
         Checks if the specified components are connected or connectable through
         a test fixture.
@@ -706,9 +710,14 @@ class TestRig():
                  connectable is True then the test_fixture, if not None, must
                  be prepared before the components are actually connected.
         """
+        assert(mode in ['direct', 'indirect'])
+
         net1 = self.net_by_component.get(component1, set([component1]))
         if component2 in net1:
-            return True, None
+            return True, None # The components are directly connected
+        if mode == 'direct':
+            return False, None
+        
         net2 = self.net_by_component.get(component2, set([component2]))
 
         possible_test_fixtures = []
@@ -721,6 +730,15 @@ class TestRig():
             return False, None # no forwarding is possible between the two components
         else:
             return True, TestFixture.any_of(*possible_test_fixtures)
+
+    def check_connections(self, components: list, mode: str = 'indirect'):
+        tfs = []
+        for component1, component2 in components:
+            is_connected, tf = self.check_connection(component1, component2, mode)
+            if not is_connected:
+                return False, None
+            tfs.append(tf)
+        return True, TestFixture.all_of(*tfs)
 
 
     def get_components(self, t: type):
@@ -761,21 +779,24 @@ class TestRig():
         A type can be specified to filter the connected components.
         """
 
-        if isinstance(src, dict):
-            candidates = self.get_components(comp_type)
+        candidates = self.get_components(comp_type)
 
+        if isinstance(src, dict):
             for candidate in candidates:
                 subcomponents = dict(candidate.get_subcomponents())
+
                 if len(set(src.keys()) - set(subcomponents.keys())):
                     continue # candidate doesn't have all of the requested ports
 
                 test_fixtures = []
-                for name, (srcport, direction) in src.items():
+                for name, subsrc in src.items():
+                    srcport, direction = subsrc if isinstance(subsrc, tuple) else (subsrc, False)
                     is_connected, test_fixture = (self.check_connection(srcport, subcomponents[name]) if direction else
                                                   self.check_connection(subcomponents[name], srcport))
                     if not is_connected:
                         break
                     test_fixtures.append(test_fixture)
+
 
                 if len(test_fixtures) < len(src.items()):
                     continue # not all of the ports are connected to the candidate's ports
@@ -783,7 +804,13 @@ class TestRig():
                 yield candidate, TestFixture.all_of(*test_fixtures)
 
         else:
-            raise Exception("not supported")
+            src, direction = src if isinstance(src, tuple) else (src, False)
+            assert(isinstance(src, Component))
+            for candidate in candidates:
+                is_connected, test_fixture = (self.check_connection(src, candidate) if direction else
+                                              self.check_connection(candidate, src))
+                if is_connected:
+                    yield candidate, test_fixture
 
 # Helper functions ------------------------------------------------------------#
 
@@ -853,8 +880,27 @@ def select_params(param_options):
 
     return None
 
-def is_feasible(params):
-    return True # TODO
+def is_feasible(params, test_fixtures):
+    """
+    Checks if the specified parameter and test fixture combination is feasible.
+    A combination is feasible if none of the test fixture resources appear in 
+    the parameters and if all of the exclusive-use test fixture resources are
+    only used by one test fixture.
+    """
+    exclusive_tf_resources = []
+    shared_tf_resources = set()
+    for r, ex in [(r, ex) for tf in test_fixtures if not tf is None for r, ex in tf.get_resources() if not r is None]:
+        if ex:
+            exclusive_tf_resources.append(r)
+        else:
+            shared_tf_resources.add(r)
+    if len(exclusive_tf_resources + list(shared_tf_resources)) > len(set(exclusive_tf_resources).union(shared_tf_resources)):
+        return False # At least one exclusive-use resource is used twice in the test fixtures
+    if len(set(exclusive_tf_resources).union(shared_tf_resources).intersection(params)):
+        return False # At least one test fixture resource appears in the params too
+    if len(shared_tf_resources.intersection(params)):
+        return False # At least one test fixture resource appears in the params too
+    return True
 
 def run(tests):
     if not isinstance(tests, list):
@@ -874,6 +920,7 @@ def run(tests):
         # test case no alternative is feasible (e.g. because there are component
         # conflicts).
 
+        logger.debug("loading...")
         test_cases = list(test.get_test_cases(testrig))
 
         if len(test_cases) == 0:
@@ -889,17 +936,17 @@ def run(tests):
                 if isinstance(test_fixture, CompositeTestFixture):
                     candidates += [tuple(candidate[:-1]) + (tf,) for tf in test_fixture._subfixtures]
                 else:
-                    candidates.append(candidate)
+                    candidates.append(tuple(candidate[:-1]) + (([] if test_fixture is None else [test_fixture]),))
 
             # Select the first candidate that is feasible
             params, test_fixture = (None, None)
             for candidate in candidates:
-                if is_feasible(candidate):
+                if is_feasible(candidate[:-1], candidate[-1]):
                     params, test_fixture = (candidate[:-1], candidate[-1])
                     break
 
             if params is None:
-                logger.warn(f'I found a {type(test).__name__} test case with {len(candidate)} possible parameter combination candidates but none of them is feasible.')
+                logger.warn(f'I found a {type(test).__name__} test case with {len(candidates)} possible parameter combination candidates but none of them is feasible.')
                 continue
 
             logger.notify('* preparing {} with {}...'.format(type(test).__name__,
@@ -948,13 +995,23 @@ parser = argparse.ArgumentParser(description='ODrive automated test tool\n')
 parser.add_argument("--ignore", metavar='DEVICE', action='store', nargs='+',
                     help="Ignore (disable) one or more components of the test rig")
                     # TODO: implement
-parser.add_argument("--test-rig-yaml", type=argparse.FileType('r'), required=True,
-                    help="test rig YAML file")
+parser.add_argument("--test-rig-yaml", type=argparse.FileType('r'),
+                    help="Test rig YAML file. Can be omitted if the environment variable ODRIVE_TEST_RIG_NAME is set.")
 parser.add_argument("--setup-host", action='store_true', default=False,
                     help="configure operating system functions such as GPIOs (requires root)")
 parser.set_defaults(ignore=[])
 
 args = parser.parse_args()
+
+if args.test_rig_yaml is None:
+    test_rig_name = os.environ.get('ODRIVE_TEST_RIG_NAME', '')
+    if test_rig_name == '':
+        print("You must either provide a --test-rig-yaml argument or set the environment variable ODRIVE_TEST_RIG_NAME.")
+        sys.exit(1)
+    path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.realpath(__file__)))), test_rig_name + '.yaml')
+    args.test_rig_yaml = open(path, 'r')
+    
+
 
 # Load objects
 test_rig_yaml = yaml.load(args.test_rig_yaml, Loader=yaml.BaseLoader)

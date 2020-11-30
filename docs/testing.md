@@ -63,15 +63,17 @@ If your test rig differs, you may be able to run some but not all of the tests.
  4. Remove the following arguments from `/boot/cmdline.txt`:
     - `console=serial0,115200`
 
- 5. Reboot.
+ 5. Append `ODRIVE_TEST_RIG_NAME=[test-rig-name]` to `/etc/environment`. The HWIL tests use this to look up the the file `[test-rig-name].yaml` which is supposed to describe your test rig.
 
- 6. Install the prerequisites:
+ 6. Reboot.
+
+ 7. Install the prerequisites:
 
         sudo apt-get install ipython3 python3-appdirs python3-yaml python3-usb python3-serial python3-can python3-scipy python3-matplotlib python3-ipdb git openocd
         # Optionally, to be able to compile the firmware:
         sudo apt-get install gcc-arm-none-eabi
 
- 7. Install Teensyduino and teensy-loader-cli:
+ 8. Install Teensyduino and teensy-loader-cli:
 
         sudo apt-get install libfontconfig libxft2 libusb-dev
 
@@ -91,20 +93,20 @@ If your test rig differs, you may be able to run some but not all of the tests.
         popd
         curl https://www.pjrc.com/teensy/49-teensy.rules | sudo tee /etc/udev/rules.d/49-teensy.rules
 
- 8. Add the following lines to `/etc/udev/rules.d/49-stlinkv2.rules`:
+ 9. Add the following lines to `/etc/udev/rules.d/49-stlinkv2.rules`:
 
         SUBSYSTEMS=="usb", ATTRS{idVendor}=="0483", ATTRS{idProduct}=="374b", MODE:="0666"
         SUBSYSTEMS=="usb", ATTRS{idVendor}=="0483", ATTRS{idProduct}=="3748", MODE:="0666"
 
- 9.  `sudo mkdir /opt/odrivetest && sudo chown $USER /opt/odrivetest`
+ 10. `sudo mkdir /opt/odrivetest && sudo chown $USER /opt/odrivetest`
 
- 10. At this point you need the ODrive repository. See next section to sync it from your main PC. We assume now that you navigated to `tools/odrive/tests/`.
+ 11. At this point you need the ODrive repository. See next section to sync it from your main PC. We assume now that you navigated to `tools/odrive/tests/`.
 
- 11. `sudo ../../odrivetool udev-setup`
+ 12. `sudo ../../odrivetool udev-setup`
 
- 12. `sudo udevadm trigger`
+ 13. `sudo udevadm trigger`
 
- 13. Run once after every reboot: `sudo ipython3 --pdb test_runner.py -- --setup-host --test-rig-yaml ../../test-rig-rpi.yaml`
+ 14. Run once after every reboot: `sudo -E ipython3 --pdb test_runner.py -- --setup-host`
 
 ## SSH testing flow
 
@@ -125,5 +127,5 @@ To run a test:
 
     ssh odrv
     > cd /opt/odrivetest/tools/odrive/tests/
-    > ipython3 --pdb uart_ascii_test.py -- --test-rig-yaml ../../test-rig-rpi.yaml
+    > ipython3 --pdb uart_ascii_test.py
 

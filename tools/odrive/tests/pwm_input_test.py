@@ -51,18 +51,21 @@ class TestPwmInput():
         for odrive in testrig.get_components(ODriveComponent):
             if odrive.yaml['board-version'].startswith('v3.'):
                 # Run a separate test for each PWM-capable GPIO. Use different min/max settings for each test.
-                yield (odrive, 1, -50, 200, list(testrig.get_connected_components(odrive.gpio1, TeensyGpio)))
-                yield (odrive, 2, 20, 400, list(testrig.get_connected_components(odrive.gpio2, TeensyGpio)))
-                yield (odrive, 3, -1000, 0, list(testrig.get_connected_components(odrive.gpio3, TeensyGpio)))
-                yield (odrive, 4, -20000, 20000, list(testrig.get_connected_components(odrive.gpio4, TeensyGpio)))
+                test_cases = [(1, -50, 200, odrive.gpio1),
+                              (2, 20, 400, odrive.gpio2),
+                              (3, -1000, 0, odrive.gpio3),
+                              (4, -20000, 20000, odrive.gpio4)]
             elif odrive.yaml['board-version'].startswith('v4.'):
                 # Run a separate test for each PWM-capable GPIO. Use different min/max settings for each test.
-                yield (odrive, 14, -50, 200, list(testrig.get_connected_components(odrive.gpio14, TeensyGpio)))
-                yield (odrive, 19, 20, 400, list(testrig.get_connected_components(odrive.gpio19, TeensyGpio)))
-                yield (odrive, 20, -20000, 20000, list(testrig.get_connected_components(odrive.gpio20, TeensyGpio)))
-                yield (odrive, 21, -1000, 0, list(testrig.get_connected_components(odrive.gpio21, TeensyGpio)))
+                test_cases = [(14, -50, 200, odrive.gpio14),
+                              (19, 20, 400, odrive.gpio19),
+                              (20, -20000, 20000, odrive.gpio20),
+                              (21, -1000, 0, odrive.gpio21)]
             else:
                 raise Exception(f"unknown board version {odrive.yaml['board-version']}")
+
+            for test_case in test_cases:
+                yield AnyTestCase(*[(odrive,) + tuple(test_case[:-1]) + (teensy_gpio,tf,) for teensy_gpio, tf in testrig.get_connected_components(test_case[-1], TeensyGpio)])
 
     def run_test(self, odrive: ODriveComponent, odrive_gpio_num: int, min_val: float, max_val: float, teensy_gpio: Component, logger: Logger):
         teensy = teensy_gpio.parent

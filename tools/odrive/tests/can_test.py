@@ -104,8 +104,8 @@ class TestSimpleCAN():
     def get_test_cases(self, testrig: TestRig):
         for odrive in testrig.get_components(ODriveComponent):
             can_interfaces = list(testrig.get_connected_components(odrive.can, CanInterfaceComponent))
-            yield (odrive, can_interfaces, 0, False) # standard ID
-            yield (odrive, can_interfaces, 0xfedcba, True) # extended ID
+            yield AnyTestCase(*[(odrive, intf, 0, False, tf) for intf, tf in can_interfaces]) # standard ID
+            yield AnyTestCase(*[(odrive, intf, 0xfedcba, True, tf) for intf, tf in can_interfaces]) # extended ID
 
     def run_test(self, odrive: ODriveComponent, canbus: CanInterfaceComponent, node_id: int, extended_id: bool, logger: Logger):
         odrive.disable_mappings()

@@ -13,7 +13,7 @@ class FibreFunctionalTest():
     """
 
     def get_test_cases(self, testrig: TestRig):
-        return testrig.get_components(ODriveComponent)
+        return [(odrv, None) for odrv in testrig.get_components(ODriveComponent)]
 
     def run_test(self, odrive: ODriveComponent, logger: Logger):
         # Test property read/write
@@ -41,7 +41,7 @@ class FibreBurnInTest():
     """
 
     def get_test_cases(self, testrig: TestRig):
-        return testrig.get_components(ODriveComponent)
+        return [(odrv, None) for odrv in testrig.get_components(ODriveComponent)]
 
     def run_test(self, odrive: ODriveComponent, logger: Logger):
         data = record_log(lambda: [odrive.handle.vbus_voltage], duration=10.0)

@@ -16,7 +16,7 @@ class TestStoreAndReboot():
 
     def get_test_cases(self, testrig: TestRig):
         for odrive in testrig.get_components(ODriveComponent):
-            yield (odrive,)
+            yield (odrive, None)
 
     def run_with_values(self, odrive: ODriveComponent, values: list, logger: Logger):
         logger.debug("storing configuration and rebooting...")

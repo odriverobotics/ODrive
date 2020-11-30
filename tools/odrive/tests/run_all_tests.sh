@@ -16,7 +16,7 @@ declare -a tests=('analog_input_test.py'
 summary=""
 
 for test in "${tests[@]}"; do
-    (ipython3 "$test" -- --test-rig-yaml ../../test-rig-rpi.yaml || true) | tee /tmp/odrivetest.log
+    (ipython3 "$test" || true) | tee /tmp/odrivetest.log
     if grep "All tests passed!" /tmp/odrivetest.log; then
         summary="$summary - $test: passed"$'\n'
     else
