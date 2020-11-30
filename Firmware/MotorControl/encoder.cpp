@@ -80,8 +80,8 @@ bool Encoder::do_checks(){
 void Encoder::enc_index_cb() {
     if (config_.use_index) {
         set_circular_count(0, false);
-        if (config_.zero_count_on_find_idx)
-            set_linear_count(0); // Avoid position control transient after search
+        if (config_.use_index_offset)
+            set_linear_count((int32_t)(config_.index_offset * config_.cpr));
         if (config_.pre_calibrated) {
             is_ready_ = true;
             if(axis_->controller_.config_.anticogging.pre_calibrated){
