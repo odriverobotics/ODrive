@@ -25,7 +25,7 @@ components:
   - type: odrive
     name: odrive-v4_0
     board-version: v4.0-58V
-    serial-number: "367B356A3438"
+    serial-number: "206730834E53" # smart motor
     encoder0: virtual_encoder1
     motor0: D6374_150KV_1
 

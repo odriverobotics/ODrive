@@ -366,11 +366,12 @@ class TestTorqueLimit(TestClosedLoopControlBase):
             test_assert_no_error(axis_ctx)
 
             axis_ctx.handle.requested_state=1
+tests = [
+    TestClosedLoopControl(),
+    TestRegenProtection(),
+    TestVelLimitInTorqueControl(),
+    TestTorqueLimit()
+]
 
 if __name__ == '__main__':
-    test_runner.run([
-        TestClosedLoopControl(),
-        TestRegenProtection(),
-        TestVelLimitInTorqueControl(),
-        TestTorqueLimit()
-    ])
+    test_runner.run(tests)

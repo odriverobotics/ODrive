@@ -22,5 +22,7 @@ class EncoderPassthrough():
     def run_test(self, axis_ctx: ODriveAxisComponent, logger: Logger):
         logger.debug(f'Encoder {axis_ctx.num} was passed through')
 
+tests = [EncoderPassthrough()]
+
 if __name__ == '__main__':
-    test_runner.run(EncoderPassthrough())
+    test_runner.run(tests)

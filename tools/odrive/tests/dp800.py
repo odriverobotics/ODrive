@@ -20,6 +20,14 @@ class Dp800(object):
         #import usb.core
         #dev = usb.core.find(idVendor=0x1ab1, idProduct=0x0e11, **device_filter)
         #dev.reset()
+        #cfg = dev.get_active_configuration()
+        #intf = cfg.interfaces()[0]
+        #usb.util.claim_interface(dev, intf)
+        #ep_in = intf.endpoints()[0]
+        #ep_in = intf.endpoints()[1]
+        #ep_out = intf.endpoints()[2]
+        ##ep_out.write(b"*IDN?\n")
+        #import ipdb; ipdb.set_trace()
         
         import usbtmc
         self._dev = usbtmc.Instrument(0x1ab1, 0x0e11)

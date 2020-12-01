@@ -201,12 +201,13 @@ class TestEncoderIndexSearch():
         test_assert_eq(modpm(axis_ctx.handle.encoder.pos_cpr_counts, cpr), 0.0, range=50)
         test_assert_eq(axis_ctx.handle.encoder.pos_abs, 0.0, range=50)
 
+tests = [
+    TestMotorCalibration(),
+    TestDisconnectedMotorCalibration(),
+    TestEncoderDirFind(),
+    TestEncoderOffsetCalibration(),
+    TestEncoderIndexSearch()
+]
 
 if __name__ == '__main__':
-    test_runner.run([
-        TestMotorCalibration(),
-        TestDisconnectedMotorCalibration(),
-        TestEncoderDirFind(),
-        TestEncoderOffsetCalibration(),
-        TestEncoderIndexSearch()
-    ])
+    test_runner.run(tests)

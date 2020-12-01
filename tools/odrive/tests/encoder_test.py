@@ -502,13 +502,13 @@ class TestSpiEncoder(TestEncoderBase):
         self.run_generic_encoder_test(enc.handle, true_cpr, true_rps)
         enc.handle.config.cpr = 8192
 
-
+tests = [
+    TestIncrementalEncoder(),
+    TestSinCosEncoder(),
+    TestHallEffectEncoder(),
+    TestSpiEncoder(ENCODER_MODE_SPI_ABS_AMS),
+    TestSpiEncoder(ENCODER_MODE_SPI_ABS_CUI),
+]
 
 if __name__ == '__main__':
-    test_runner.run([
-        TestIncrementalEncoder(),
-        TestSinCosEncoder(),
-        TestHallEffectEncoder(),
-        TestSpiEncoder(ENCODER_MODE_SPI_ABS_AMS),
-        TestSpiEncoder(ENCODER_MODE_SPI_ABS_CUI),
-    ])
+    test_runner.run(tests)

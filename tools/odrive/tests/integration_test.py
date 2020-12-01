@@ -222,5 +222,7 @@ class TestSimpleCANClosedLoop():
             fence()
             test_assert_eq(axis_ctx.handle.current_state, AXIS_STATE_IDLE)
 
+tests = [TestSimpleCANClosedLoop()]
+
 if __name__ == '__main__':
-    test_runner.run(TestSimpleCANClosedLoop())
+    test_runner.run(tests)

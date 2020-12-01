@@ -321,11 +321,7 @@ class TestUartNoise():
             response = float(ser.readline().strip())
             test_assert_eq(response, odrive.handle.vbus_voltage, accuracy=0.1)
 
+tests = [TestUartAscii(), TestUartBaudrate(), TestUartBurnIn(), TestUartNoise()]
 
 if __name__ == '__main__':
-    test_runner.run([
-        TestUartAscii(),
-        TestUartBaudrate(),
-        TestUartBurnIn(),
-        TestUartNoise(),
-    ])
+    test_runner.run(tests)

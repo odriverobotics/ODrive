@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 # Provides utilities for standalone test scripts.
 # This script is not intended to be run directly.
 
@@ -18,6 +20,8 @@ import time
 import tempfile
 import io
 import re
+import jinja2
+import datetime
 from typing import Union, Tuple
 
 # needed for curve fitting
@@ -855,30 +859,19 @@ def run_shell(command_line, logger, env=None, timeout=None):
         raise TestFailed("command {} failed".format(command_line))
 
 
-def get_combinations(param_options):
-    if isinstance(param_options, tuple):
-        if len(param_options) > 0:
-            for part1, part2 in itertools.product(
-                    get_combinations(param_options[0]),
-                    get_combinations(param_options[1:]) if (len(param_options) > 1) else [()]):
-                assert(isinstance(part1, tuple))
-                assert(isinstance(part2, tuple))
-                yield part1 + part2
-    elif is_list_like(param_options):
-        for item in param_options:
-            for c in get_combinations(item):
-                yield c
-    else:
-        yield (param_options,)
-
-def select_params(param_options):
-    # Select parameters from the resource list
-    # (this could be arbitrarily complex to improve parallelization of the tests)
-    for combination in get_combinations(param_options):
-        if all_unique([x for x in combination if isinstance(x, Component)]):
-            return list(combination)
-
-    return None
+def render_html_summary(status, test_results, output_file):
+    with open(os.path.join(os.path.dirname(__file__), "results.html.j2")) as fp:
+        env = jinja2.Environment()
+        env.filters['passes'] = lambda x: [res for res in x if res == True]
+        env.filters['fails'] = lambda x: [res for res in x if res != True]
+        template = env.from_string(fp.read())
+    html = template.render(
+        status=status,
+        date=datetime.datetime.utcnow(),
+        test_results=test_results
+    )
+    with open(output_file, 'w') as fp:
+        fp.write(html)
 
 def is_feasible(params, test_fixtures):
     """
@@ -903,6 +896,8 @@ def is_feasible(params, test_fixtures):
     return True
 
 def run(tests):
+    test_results = []
+
     if not isinstance(tests, list):
         tests = [tests]
 
@@ -922,9 +917,12 @@ def run(tests):
 
         logger.debug("loading...")
         test_cases = list(test.get_test_cases(testrig))
+        test_name = type(test).__name__
+        test_case_results = []
+        test_results.append((test_name, test_case_results))
 
         if len(test_cases) == 0:
-            logger.warn('no test cases are available to conduct the test {}'.format(type(test).__name__))
+            logger.warn(f'no test cases are available to conduct the test {test_name}')
             continue
         
         for test_case in test_cases:
@@ -982,11 +980,26 @@ def run(tests):
             logger.notify('* running {} on {}...'.format(type(test).__name__,
                     [(testrig.get_component_name(p) if isinstance(p, Component) else str(p)) for p in params]))
 
-            test.run_test(*params, logger)
+            try:
+                test.run_test(*params, logger)
+                test_case_results.append(True)
+            except Exception as ex:
+                test_case_results.append(ex)
 
+            if args.html:
+                render_html_summary('running...', test_results, args.html)
 
-    logger.success('All tests passed!')
+    if args.html:
+        render_html_summary('finished', test_results, args.html)
 
+    passes = [res for t in test_results for res in t[1] if res == True]
+    fails = [res for t in test_results for res in t[1] if res != True]
+    if len(fails):
+        logger.error(f'{len(fails)} out of {len(fails) + len(passes)} test cases failed.')
+    else:
+        logger.success('All tests passed!')
+
+    return test_results
 
 # Load test engine ------------------------------------------------------------#
 
@@ -999,6 +1012,10 @@ parser.add_argument("--test-rig-yaml", type=argparse.FileType('r'),
                     help="Test rig YAML file. Can be omitted if the environment variable ODRIVE_TEST_RIG_NAME is set.")
 parser.add_argument("--setup-host", action='store_true', default=False,
                     help="configure operating system functions such as GPIOs (requires root)")
+parser.add_argument("--all", action='store_true', default=False,
+                    help="Run all tests in the test runner's directory")
+parser.add_argument("--html", type=str,
+                    help="If provided, the an HTML summary is written to the specified file.")
 parser.set_defaults(ignore=[])
 
 args = parser.parse_args()
@@ -1058,4 +1075,25 @@ if args.setup_host:
             run_shell('ip link set dev {} type can bitrate 250000'.format(name), logger)
             run_shell('ip link set dev {} type can loopback off'.format(name), logger)
         run_shell('ip link set dev {} up'.format(name), logger)
+
+
+if __name__ == '__main__':
+    test_scripts = []
+    tests = []
+
+    if args.all:
+        test_scripts = [file for file in os.listdir(os.path.dirname(__file__))
+                        if file.lower().endswith("_test.py")]
+
+    for script in test_scripts:
+        import importlib.util
+        spec = importlib.util.spec_from_file_location("test_module", script)
+        test_module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(test_module)
+        if not hasattr(test_module, 'tests') or not isinstance(test_module.tests, list):
+            logger.error(f"{script} does not have a list named `tests`")
+        tests += test_module.tests
+    
+    logger.notify(f"found {len(tests)} tests in {len(test_scripts)} modules")
+    test_results = test_module.test_runner.run(tests)
 

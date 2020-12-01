@@ -18,7 +18,7 @@ class FightingTest():
             is_connected, test_fixture2 = testrig.check_connection(motor0.shaft, motor1.shaft)
             if not is_connected:
                 continue # These two motors are not on the same physical axis
-            test_fixture = TestFixture.combine(test_fixture0, test_fixture1, test_fixture2)
+            test_fixture = TestFixture.all_of(test_fixture0, test_fixture1, test_fixture2)
             yield axis0, motor0, encoder0, axis1, motor1, encoder1, test_fixture
 
     def run_test(self, axis0_ctx: ODriveAxisComponent, motor0_ctx: MotorComponent, enc0_ctx: EncoderComponent,
@@ -61,8 +61,9 @@ class FightingTest():
             test_assert_eq(slope, nominal_vel, accuracy = 0.01)
             test_curve_fit(data[:,(0,3)], fitted_curve, max_mean_err = nominal_vel * 0.01, inlier_range = nominal_vel * 0.1, max_outliers = len(data[:,0]) * 0.01)
 
+tests = [
+    FightingTest()
+]
 
 if __name__ == '__main__':
-    test_runner.run([
-        FightingTest()
-    ])
+    test_runner.run(tests)

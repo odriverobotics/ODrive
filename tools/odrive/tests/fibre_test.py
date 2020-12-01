@@ -48,9 +48,10 @@ class FibreBurnInTest():
         expected_data = np.mean(data[:,1]) * np.ones(data[:,1].size)
         test_curve_fit(data, expected_data, max_mean_err = 0.1, inlier_range = 0.5, max_outliers = 0)
 
+tests = [
+    FibreFunctionalTest(),
+    FibreBurnInTest(),
+]
 
 if __name__ == '__main__':
-    test_runner.run([
-        FibreFunctionalTest(),
-        FibreBurnInTest(),
-    ])
+    test_runner.run(tests)

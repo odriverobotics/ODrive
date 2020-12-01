@@ -90,7 +90,7 @@ class TestPwmInput():
         test_assert_eq(slope, full_scale / 1.0, accuracy=0.001)
         test_curve_fit(data, fitted_curve, max_mean_err = full_scale * 0.05, inlier_range = full_scale * 0.05, max_outliers = len(data[:,0]) * 0.01)
 
-
+tests = [TestPwmInput()]
 
 if __name__ == '__main__':
-    test_runner.run(TestPwmInput())
+    test_runner.run(tests)

@@ -91,6 +91,7 @@ class TestStepDir():
             step_gpio.write(False)
             test_assert_eq(axis.handle.controller.input_pos, ref + (i + 1) * turns_per_step, range = 0.4 * abs(turns_per_step))
 
+tests = [TestStepDir()]
 
 if __name__ == '__main__':
-    test_runner.run(TestStepDir())
+    test_runner.run(tests)

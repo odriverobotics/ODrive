@@ -240,5 +240,7 @@ class TestSimpleCAN():
         time.sleep(2.0)
         odrive.prepare(logger)
 
+tests = [TestSimpleCAN()]
+
 if __name__ == '__main__':
-    test_runner.run(TestSimpleCAN())
+    test_runner.run(tests)

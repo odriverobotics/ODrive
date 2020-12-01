@@ -107,7 +107,7 @@ class TestAnalogInput():
         test_assert_eq(slope, (max_val - min_val) / period, accuracy=0.005) 
         test_curve_fit(data, fitted_curve, max_mean_err = full_range * 0.03, inlier_range = full_range * 0.05, max_outliers = len(data[:,0]) * 0.02)
 
-
+tests = [TestAnalogInput()]
 
 if __name__ == '__main__':
-    test_runner.run(TestAnalogInput())
+    test_runner.run(tests)
