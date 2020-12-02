@@ -974,7 +974,7 @@ interfaces:
       pos_estimate_counts: readonly float32
       pos_cpr_counts: readonly float32
       delta_pos_cpr_counts: readonly float32
-      pos_circular: {type: readonly float32, c_getter: pos_circular_.get_any().value_or(0.0f)}
+      pos_circular: {type: readonly float32, c_getter: pos_circular_.any().value_or(0.0f)}
       hall_state: readonly uint8
       vel_estimate: {type: readonly float32, c_getter: vel_estimate_.any().value_or(0.0f)}
       vel_estimate_counts: readonly float32

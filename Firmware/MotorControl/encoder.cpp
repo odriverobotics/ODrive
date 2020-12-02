@@ -664,7 +664,7 @@ bool Encoder::update() {
                                 return false;
                             }
 
-                            auto maybe_phase = axis_->open_loop_controller_.phase_.get_any();
+                            auto maybe_phase = axis_->open_loop_controller_.phase_.any();
                             if (maybe_phase) {
                                 float phase = maybe_phase.value();
                                 // Early increment to get the right divisor in recursive average

@@ -24,9 +24,6 @@ public:
         float phase_offset_float = 0.0f; // Sub-count phase alignment offset
         int32_t cpr = (2048 * 4);   // Default resolution of CUI-AMT102 encoder,
         float index_offset = 0.0f;
-        uint16_t abs_spi_cs_gpio_pin = 1;
-        uint16_t sincos_gpio_pin_sin = 3;
-        uint16_t sincos_gpio_pin_cos = 4;
         bool use_index = false;
         bool pre_calibrated = false; // If true, this means the offset stored in
                                     // configuration is valid and does not need
