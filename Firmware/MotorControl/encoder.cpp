@@ -233,6 +233,10 @@ bool Encoder::run_hall_polarity_calibration() {
             return false;
         }
 
+        // Hall effect sensors can be arranged at 60 or 120 electrical degrees.
+        // Out of 8 possible states, 120 and 60 deg arrangements each miss 2 states.
+        // ODrive assumes 120 deg separation - if a 60 deg setup is used, it can
+        // be converted to 120 deg states by flipping the polarity of one sensor.
         uint8_t states = state_seen.to_ulong();
         uint8_t hall_polarity = 0;
         auto flip_detect = [](uint8_t states, unsigned int idx)->bool {
