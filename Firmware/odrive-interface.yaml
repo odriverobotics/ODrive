@@ -1168,7 +1168,7 @@ valuetypes:
         doc:
           ODrive assumes 120 degree electrical hall spacing. This routine determines if that
           is the case and sets the polarity if the halls are on 60 degree electrical spacing
-      EncoderHallOffsetCalibration:
+      EncoderHallPhaseCalibration:
         brief: Rotate the motor for 30s to calibrate hall sensor edge offsets
         doc:
           The phase offset is not calibrated at this time, so the map is only relative
