@@ -1163,8 +1163,13 @@ valuetypes:
         brief: Run axis homing function.
         doc:
           Endstops must be enabled to use this feature.
-      EncoderHallCalibration:
-        brief: Rotate the motor in lockin and calibrate hall states
+      EncoderHallPolarityCalibration:
+        brief: Rotate the motor in lockin and calibrate hall polarity
+        doc:
+          ODrive assumes 120 degree electrical hall spacing. This routine determines if that
+          is the case and sets the polarity if the halls are on 60 degree electrical spacing
+      EncoderHallOffsetCalibration:
+        brief: Rotate the motor for 30s to calibrate hall sensor edge offsets
         doc:
           The phase offset is not calibrated at this time, so the map is only relative
 

@@ -465,6 +465,8 @@ void Axis::run_state_machine_loop() {
                 task_chain_[pos++] = AXIS_STATE_IDLE;
             } else if (requested_state_ == AXIS_STATE_FULL_CALIBRATION_SEQUENCE) {
                 task_chain_[pos++] = AXIS_STATE_MOTOR_CALIBRATION;
+                if (encoder_.config_.mode == ODriveIntf::EncoderIntf::MODE_HALL)
+                    task_chain_[pos++] = AXIS_STATE_ENCODER_HALL_POLARITY_CALIBRATION;
                 if (encoder_.config_.use_index)
                     task_chain_[pos++] = AXIS_STATE_ENCODER_INDEX_SEARCH;
                 task_chain_[pos++] = AXIS_STATE_ENCODER_OFFSET_CALIBRATION;
@@ -503,13 +505,23 @@ void Axis::run_state_machine_loop() {
                 status = encoder_.run_direction_find();
             } break;
 
-            case AXIS_STATE_ENCODER_HALL_CALIBRATION: {
+            case AXIS_STATE_ENCODER_HALL_POLARITY_CALIBRATION: {
                 if (!motor_.is_calibrated_)
                     goto invalid_state_label;
 
                 status = encoder_.run_hall_polarity_calibration();
-                if (status)
-                    status = encoder_.run_hall_phase_calibration();
+            } break;
+
+            case AXIS_STATE_ENCODER_HALL_OFFSET_CALIBRATION: {
+                if (!motor_.is_calibrated_)
+                    goto invalid_state_label;
+
+                if (!encoder_.config_.hall_polarity_calibrated) {
+                    encoder_.set_error(ODriveIntf::EncoderIntf::ERROR_HALL_NOT_CALIBRATED_YET);
+                    goto invalid_state_label;
+                }
+
+                status = encoder_.run_hall_phase_calibration();
             } break;
 
             case AXIS_STATE_HOMING: {
