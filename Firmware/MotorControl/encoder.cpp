@@ -82,8 +82,8 @@ bool Encoder::do_checks(){
 void Encoder::enc_index_cb() {
     if (config_.use_index) {
         set_circular_count(0, false);
-        if (config_.zero_count_on_find_idx)
-            set_linear_count(0); // Avoid position control transient after search
+        if (config_.use_index_offset)
+            set_linear_count((int32_t)(config_.index_offset * config_.cpr));
         if (config_.pre_calibrated) {
             is_ready_ = true;
             if(axis_->controller_.config_.anticogging.pre_calibrated){
@@ -351,18 +351,18 @@ bool Encoder::run_offset_calibration() {
         axis_->open_loop_controller_.target_voltage_ = axis_->motor_.config_.motor_type != Motor::MOTOR_TYPE_GIMBAL ? 0.0f : axis_->motor_.config_.calibration_current;
         axis_->open_loop_controller_.target_vel_ = 0.0f;
         axis_->open_loop_controller_.total_distance_ = 0.0f;
-        axis_->open_loop_controller_.phase_ = wrap_pm_pi(0 - config_.calib_scan_distance / 2.0f);
+        axis_->open_loop_controller_.phase_ = axis_->open_loop_controller_.initial_phase_ = wrap_pm_pi(0 - config_.calib_scan_distance / 2.0f);
 
         axis_->motor_.current_control_.enable_current_control_src_ = (axis_->motor_.config_.motor_type != Motor::MOTOR_TYPE_GIMBAL);
         axis_->motor_.current_control_.Idq_setpoint_src_.connect_to(&axis_->open_loop_controller_.Idq_setpoint_);
         axis_->motor_.current_control_.Vdq_setpoint_src_.connect_to(&axis_->open_loop_controller_.Vdq_setpoint_);
         
         axis_->motor_.current_control_.phase_src_.connect_to(&axis_->open_loop_controller_.phase_);
-        axis_->async_estimator_.rotor_phase_src_.connect_to(&axis_->open_loop_controller_.phase_);
+        axis_->acim_estimator_.rotor_phase_src_.connect_to(&axis_->open_loop_controller_.phase_);
 
         axis_->motor_.phase_vel_src_.connect_to(&axis_->open_loop_controller_.phase_vel_);
         axis_->motor_.current_control_.phase_vel_src_.connect_to(&axis_->open_loop_controller_.phase_vel_);
-        axis_->async_estimator_.rotor_phase_vel_src_.connect_to(&axis_->open_loop_controller_.phase_vel_);
+        axis_->acim_estimator_.rotor_phase_vel_src_.connect_to(&axis_->open_loop_controller_.phase_vel_);
     }
     axis_->wait_for_control_iteration();
 
@@ -392,7 +392,7 @@ bool Encoder::run_offset_calibration() {
 
     // scan forward
     while ((axis_->requested_state_ == Axis::AXIS_STATE_UNDEFINED) && axis_->motor_.is_armed_) {
-        bool reached_target_dist = axis_->open_loop_controller_.total_distance_.get_any().value_or(-INFINITY) >= config_.calib_scan_distance;
+        bool reached_target_dist = axis_->open_loop_controller_.total_distance_.any().value_or(-INFINITY) >= config_.calib_scan_distance;
         if (reached_target_dist) {
             break;
         }
@@ -431,7 +431,7 @@ bool Encoder::run_offset_calibration() {
 
     // scan backwards
     while ((axis_->requested_state_ == Axis::AXIS_STATE_UNDEFINED) && axis_->motor_.is_armed_) {
-        bool reached_target_dist = axis_->open_loop_controller_.total_distance_.get_any().value_or(INFINITY) <= 0.0f;
+        bool reached_target_dist = axis_->open_loop_controller_.total_distance_.any().value_or(INFINITY) <= 0.0f;
         if (reached_target_dist) {
             break;
         }
@@ -447,9 +447,9 @@ bool Encoder::run_offset_calibration() {
 
     axis_->motor_.disarm();
 
-    config_.phase_offset = encvaluesum / (num_steps * 2);
-    int32_t residual = encvaluesum - ((int64_t)config_.phase_offset * (int64_t)(num_steps * 2));
-    config_.phase_offset_float = (float)residual / (float)(num_steps * 2) + 0.5f;  // add 0.5 to center-align state to phase
+    config_.phase_offset = encvaluesum / num_steps;
+    int32_t residual = encvaluesum - ((int64_t)config_.phase_offset * (int64_t)num_steps);
+    config_.phase_offset_float = (float)residual / (float)num_steps + 0.5f;  // add 0.5 to center-align state to phase
 
     is_ready_ = true;
     return true;
@@ -783,7 +783,7 @@ bool Encoder::update() {
     // TODO: we should strictly require that this value is from the previous iteration
     // to avoid spinout scenarios. However that requires a proper way to reset
     // the encoder from error states.
-    float pos_circular = pos_circular_.get_any().value_or(0.0f);
+    float pos_circular = pos_circular_.any().value_or(0.0f);
     pos_circular +=  wrap_pm((pos_cpr_counts_ - pos_cpr_counts_last) / (float)config_.cpr, 1.0f);
     pos_circular = fmodf_pos(pos_circular, axis_->controller_.config_.circular_setpoint_range);
     pos_circular_ = pos_circular;
@@ -815,7 +815,7 @@ bool Encoder::update() {
     
     if (is_ready_) {
         phase_ = wrap_pm_pi(ph) * config_.direction;
-        phase_vel_ = (2*M_PI) * *vel_estimate_.get_current() * axis_->motor_.config_.pole_pairs * config_.direction;
+        phase_vel_ = (2*M_PI) * *vel_estimate_.present() * axis_->motor_.config_.pole_pairs * config_.direction;
     }
 
     return true;

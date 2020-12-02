@@ -183,9 +183,9 @@ void FieldOrientedController::update(uint32_t timestamp) {
     CRITICAL_SECTION() {
         ctrl_timestamp_ = timestamp;
         enable_current_control_ = enable_current_control_src_;
-        Idq_setpoint_ = Idq_setpoint_src_.get_current();
-        Vdq_setpoint_ = Vdq_setpoint_src_.get_current();
-        phase_ = phase_src_.get_current();
-        phase_vel_ = phase_vel_src_.get_current();
+        Idq_setpoint_ = Idq_setpoint_src_.present();
+        Vdq_setpoint_ = Vdq_setpoint_src_.present();
+        phase_ = phase_src_.present();
+        phase_vel_ = phase_vel_src_.present();
     }
 }

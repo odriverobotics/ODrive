@@ -3,10 +3,10 @@
 #include <board.h>
 
 void OpenLoopController::update(uint32_t timestamp) {
-    auto [prev_Id, prev_Iq] = Idq_setpoint_.get_previous().value_or(float2D{0.0f, 0.0f});
-    auto [prev_Vd, prev_Vq] = Vdq_setpoint_.get_previous().value_or(float2D{0.0f, 0.0f});
-    float phase = phase_.get_previous().value_or(0.0f);
-    float phase_vel = phase_vel_.get_previous().value_or(0.0f);
+    auto [prev_Id, prev_Iq] = Idq_setpoint_.previous().value_or(float2D{0.0f, 0.0f});
+    auto [prev_Vd, prev_Vq] = Vdq_setpoint_.previous().value_or(float2D{0.0f, 0.0f});
+    float phase = phase_.previous().value_or(initial_phase_);
+    float phase_vel = phase_vel_.previous().value_or(0.0f);
 
     (void)prev_Iq; // unused
     (void)prev_Vq; // unused
@@ -25,6 +25,6 @@ void OpenLoopController::update(uint32_t timestamp) {
     phase_vel = std::clamp(target_vel_, phase_vel - max_phase_vel_ramp_ * dt, phase_vel + max_phase_vel_ramp_ * dt);
     phase_vel_ = phase_vel;
     phase_ = wrap_pm_pi(phase + phase_vel * dt);
-    total_distance_ = total_distance_.get_previous().value_or(0.0f) + phase_vel * dt;
+    total_distance_ = total_distance_.previous().value_or(0.0f) + phase_vel * dt;
     timestamp_ = timestamp;
 }

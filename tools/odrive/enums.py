@@ -19,6 +19,7 @@ GPIO_MODE_ENC0                           = 11
 GPIO_MODE_ENC1                           = 12
 GPIO_MODE_ENC2                           = 13
 GPIO_MODE_MECH_BRAKE                     = 14
+GPIO_MODE_STATUS                         = 15
 
 # ODrive.Can.Protocol
 PROTOCOL_SIMPLE                          = 0
@@ -77,6 +78,7 @@ ODRIVE_ERROR_DC_BUS_OVER_REGEN_CURRENT   = 0x00000008
 ODRIVE_ERROR_DC_BUS_OVER_CURRENT         = 0x00000010
 ODRIVE_ERROR_BRAKE_DEADTIME_VIOLATION    = 0x00000020
 ODRIVE_ERROR_BRAKE_DUTY_CYCLE_NAN        = 0x00000040
+ODRIVE_ERROR_INVALID_BRAKE_RESISTANCE    = 0x00000080
 
 # ODrive.Can.Error
 CAN_ERROR_NONE                           = 0x00000000

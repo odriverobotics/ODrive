@@ -38,6 +38,13 @@ class TestClosedLoopControlBase():
         axis_ctx.handle.motor.config.phase_inductance = float(motor_ctx.yaml['phase-inductance'])
         axis_ctx.handle.motor.config.pre_calibrated = True
 
+        # Set brake resistor settings
+        axis_ctx.parent.handle.config.brake_resistance = float(axis_ctx.parent.yaml['brake-resistance'])
+        # The docs say this requires a reboot but here's a small secret:
+        # Since the brake resistor is also started in clear_errors() this
+        # circumvents the need for a reboot.
+        axis_ctx.parent.handle.config.enable_brake_resistor = True
+
         # Set calibration settings
         axis_ctx.handle.encoder.config.direction = 0
         axis_ctx.handle.encoder.config.use_index = False
@@ -203,8 +210,10 @@ class TestRegenProtection(TestClosedLoopControlBase):
             time.sleep(1.0)
             test_assert_no_error(axis_ctx)
 
+
+            logger.debug(f'Brake control test with brake resistor disabled')
             # once more, but this time without brake resistor
-            axis_ctx.parent.handle.config.brake_resistance = 0
+            axis_ctx.parent.handle.config.enable_brake_resistor = False
             # accelerate...
             axis_ctx.handle.controller.input_vel = nominal_rps
             time.sleep(1.0)
@@ -217,6 +226,29 @@ class TestRegenProtection(TestClosedLoopControlBase):
             test_assert_eq(axis_ctx.parent.handle.error, ODRIVE_ERROR_DC_BUS_OVER_REGEN_CURRENT)
             test_assert_eq(axis_ctx.handle.motor.error & MOTOR_ERROR_SYSTEM_LEVEL, MOTOR_ERROR_SYSTEM_LEVEL)
             test_assert_eq(axis_ctx.handle.error, 0)
+
+            # Do test again with wrong brake resistance setting
+            logger.debug(f'Brake control test with brake resistor = 100')
+            axis_ctx.parent.handle.clear_errors()
+            time.sleep(1.0)
+            axis_ctx.parent.handle.config.brake_resistance = 100
+            axis_ctx.parent.handle.config.dc_max_negative_current = -0.5
+            request_state(axis_ctx, AXIS_STATE_CLOSED_LOOP_CONTROL)
+
+            # accelerate...
+            axis_ctx.handle.controller.input_vel = nominal_rps
+            time.sleep(1.0)
+            test_assert_no_error(axis_ctx)
+
+            # ... and brake
+            axis_ctx.handle.controller.input_vel = 0
+            time.sleep(1.0) # expect DC_BUS_OVER_REGEN_CURRENT
+            time.sleep(0.1)
+            test_assert_eq(axis_ctx.parent.handle.error, ODRIVE_ERROR_DC_BUS_OVER_REGEN_CURRENT)
+            test_assert_eq(axis_ctx.handle.motor.error & MOTOR_ERROR_SYSTEM_LEVEL, MOTOR_ERROR_SYSTEM_LEVEL)
+            test_assert_eq(axis_ctx.handle.error, 0)
+
+
 
 
 class TestVelLimitInTorqueControl(TestClosedLoopControlBase):

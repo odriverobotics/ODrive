@@ -50,13 +50,18 @@ struct CriticalSectionContext {
     CriticalSectionContext(const CriticalSectionContext&&) = delete;
     void operator=(const CriticalSectionContext&) = delete;
     void operator=(const CriticalSectionContext&&) = delete;
+    operator bool() { return true; };
     CriticalSectionContext() : mask_(cpu_enter_critical()) {}
     ~CriticalSectionContext() { cpu_exit_critical(mask_); }
     uint32_t mask_;
     bool exit_ = false;
 };
 
+#ifdef __clang__
 #define CRITICAL_SECTION() for (CriticalSectionContext __critical_section_context; !__critical_section_context.exit_; __critical_section_context.exit_ = true)
+#else
+#define CRITICAL_SECTION() if (CriticalSectionContext __critical_section_context{})
+#endif
 
 #endif
 

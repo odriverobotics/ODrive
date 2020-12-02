@@ -63,7 +63,7 @@ struct ResistanceMeasurementControlLaw : AlphaBetaFrameController {
         return test_voltage_ / target_current_;
     }
 
-    const float kI = 10.0f; // [(V/s)/A]
+    const float kI = 1.0f; // [(V/s)/A]
     float max_voltage_ = 0.0f;
     float actual_current_ = 0.0f;
     float target_current_ = 0.0f;
@@ -193,13 +193,15 @@ bool Motor::arm(PhaseControlLaw<3>* control_law) {
 
         // Reset controller states, integrators, setpoints, etc.
         axis_->controller_.reset();
-        axis_->async_estimator_.rotor_flux_ = 0.0f;
+        axis_->acim_estimator_.rotor_flux_ = 0.0f;
         if (control_law_) {
             control_law_->reset();
         }
 
-        if (brake_resistor_armed) {
+        if (!odrv.config_.enable_brake_resistor || brake_resistor_armed) {
             is_armed_ = true;
+        } else {
+            error_ |= Motor::ERROR_BRAKE_RESISTOR_DISARMED;
         }
     }
 
@@ -217,7 +219,7 @@ bool Motor::arm(PhaseControlLaw<3>* control_law) {
  */
 void Motor::apply_pwm_timings(uint16_t timings[3], bool tentative) {
     CRITICAL_SECTION() {
-        if (!brake_resistor_armed) {
+        if (odrv.config_.enable_brake_resistor && !brake_resistor_armed) {
             disarm_with_error(ERROR_BRAKE_RESISTOR_DISARMED);
         }
 
@@ -371,7 +373,7 @@ float Motor::effective_current_lim() {
 //Note - for ACIM motors, available torque is allowed to be 0.
 float Motor::max_available_torque() {
     if (config_.motor_type == Motor::MOTOR_TYPE_ACIM) {
-        float max_torque = effective_current_lim_ * config_.torque_constant * axis_->async_estimator_.rotor_flux_;
+        float max_torque = effective_current_lim_ * config_.torque_constant * axis_->acim_estimator_.rotor_flux_;
         max_torque = std::clamp(max_torque, 0.0f, config_.torque_lim);
         return max_torque;
     } else {
@@ -492,19 +494,19 @@ bool Motor::run_calibration() {
 }
 
 void Motor::update(uint32_t timestamp) {
-    std::optional<float> torque = torque_setpoint_src_.get_current();
+    std::optional<float> torque = torque_setpoint_src_.present();
 
     if (!torque.has_value()) {
         error_ |= ERROR_UNKNOWN_TORQUE;
         return;
     }
 
-    auto [id, iq] = Idq_setpoint_.get_previous()
+    auto [id, iq] = Idq_setpoint_.previous()
                      .value_or(float2D{0.0f, 0.0f}); // Id doubles as a state variable
 
     // Convert torque to current
     if (axis_->motor_.config_.motor_type == Motor::MOTOR_TYPE_ACIM) {
-        iq = *torque / (axis_->motor_.config_.torque_constant * std::max(axis_->async_estimator_.rotor_flux_, config_.acim_gain_min_flux));
+        iq = *torque / (axis_->motor_.config_.torque_constant * std::max(axis_->acim_estimator_.rotor_flux_, config_.acim_gain_min_flux));
     } else {
         iq = *torque / axis_->motor_.config_.torque_constant;
     }
@@ -532,13 +534,13 @@ void Motor::update(uint32_t timestamp) {
     // in this function.
     // A cleaner fix would be to take the feedforward calculation out of here
     // and turn it into a separate component.
-    MEASURE_TIME(axis_->task_times_.async_estimator_update)
-        axis_->async_estimator_.update(timestamp);
+    MEASURE_TIME(axis_->task_times_.acim_estimator_update)
+        axis_->acim_estimator_.update(timestamp);
 
     float vd = 0.0f;
     float vq = 0.0f;
 
-    std::optional<float> phase_vel = phase_vel_src_.get_current();
+    std::optional<float> phase_vel = phase_vel_src_.present();
 
     if (config_.R_wL_FF_enable) {
         if (!phase_vel.has_value()) {
@@ -609,6 +611,9 @@ void Motor::current_meas_cb(uint32_t timestamp, std::optional<Iph_ABC_t> current
         float Inorm_sq = 2.0f / 3.0f * (SQ(current_meas_->phA)
                                       + SQ(current_meas_->phB)
                                       + SQ(current_meas_->phC));
+
+        // Hack: we disable the current check during motor calibration because
+        // it tends to briefly overshoot when the motor moves to align flux with I_alpha
         if (Inorm_sq > SQ(Itrip)) {
             disarm_with_error(ERROR_CURRENT_LIMIT_VIOLATION);
         }

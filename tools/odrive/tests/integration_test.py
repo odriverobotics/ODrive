@@ -106,6 +106,8 @@ class TestSimpleCANClosedLoop():
         # Make sure there are no funny configurations active
         logger.debug('Setting up clean configuration...')
         axis_ctx.parent.erase_config_and_reboot()
+        axis_ctx.parent.handle.config.enable_brake_resistor = True
+        axis_ctx.parent.save_config_and_reboot()
 
         # run calibration
         axis_ctx.handle.requested_state = AXIS_STATE_FULL_CALIBRATION_SEQUENCE
@@ -162,7 +164,7 @@ class TestSimpleCANClosedLoop():
             test_assert_eq(axis_ctx.handle.config.can.node_id, node_id+20)
 
             # Reset node ID to default value
-            asyncio.run(command(canbus.handle, node_id+20, extended_id, 'set_node_id', node_id=node_id))
+            command(canbus.handle, node_id+20, extended_id, 'set_node_id', node_id=node_id)
             fence()
             test_assert_eq(axis_ctx.handle.config.can.node_id, node_id)
 

@@ -4,7 +4,7 @@
 class Axis;
 
 #include "encoder.hpp"
-#include "async_estimator.hpp"
+#include "acim_estimator.hpp"
 #include "sensorless_estimator.hpp"
 #include "controller.hpp"
 #include "open_loop_controller.hpp"
@@ -39,7 +39,7 @@ public:
         TaskTimer can_heartbeat;
         TaskTimer controller_update;
         TaskTimer open_loop_controller_update;
-        TaskTimer async_estimator_update;
+        TaskTimer acim_estimator_update;
         TaskTimer motor_update;
         TaskTimer current_controller_update;
         TaskTimer dc_calib;
@@ -162,7 +162,7 @@ public:
     Config_t config_;
 
     Encoder& encoder_;
-    AsyncEstimator async_estimator_;
+    AcimEstimator acim_estimator_;
     SensorlessEstimator& sensorless_estimator_;
     Controller& controller_;
     OpenLoopController open_loop_controller_;
@@ -173,7 +173,7 @@ public:
     MechanicalBrake& mechanical_brake_;
     TaskTimes task_times_;
 
-    osThreadId thread_id_;
+    osThreadId thread_id_ = 0;
     const uint32_t stack_size_ = 2048; // Bytes
     volatile bool thread_id_valid_ = false;
 

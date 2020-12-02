@@ -1,11 +1,11 @@
-#ifndef __ASYNC_ESTIMATOR_HPP
-#define __ASYNC_ESTIMATOR_HPP
+#ifndef __ACIM_ESTIMATOR_HPP
+#define __ACIM_ESTIMATOR_HPP
 
 #include <component.hpp>
 #include <cmath>
 #include <autogen/interfaces.hpp>
 
-class AsyncEstimator : public ComponentBase {
+class AcimEstimator : public ComponentBase {
 public:
     struct Config_t {
         float slip_velocity = 14.706f; // [rad/s electrical] = 1/rotor_tau
@@ -33,4 +33,4 @@ public:
     OutputPort<float> stator_phase_ = 0.0f; // [rad] rotor flux phase angle estimate
 };
 
-#endif // __ASYNC_ESTIMATOR_HPP
+#endif // __ACIM_ESTIMATOR_HPP

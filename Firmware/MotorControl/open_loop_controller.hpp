@@ -18,6 +18,7 @@ public:
     float target_vel_ = 0.0f;
     float target_current_ = 0.0f;
     float target_voltage_ = 0.0f;
+    float initial_phase_ = 0.0f;
 
     // State/Outputs
     uint32_t timestamp_ = 0;

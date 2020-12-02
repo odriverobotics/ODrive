@@ -69,6 +69,7 @@ interfaces:
           DcBusOverCurrent: {doc: too much current pulled out of the power supply}
           BrakeDeadtimeViolation:
           BrakeDutyCycleNan:
+          InvalidBrakeResistance: {doc: '`config.brake_resistance` is non-positive or NaN.'}
 #          BrakeResistorDisarmed:
 #            doc: The brake resistor was unexpectedly disarmed.
         
@@ -121,6 +122,7 @@ interfaces:
           sampling: TaskTimer
           control_loop_misc: TaskTimer
           control_loop_checks: TaskTimer
+          dc_calib_wait: TaskTimer
       system_stats:
         c_is_class: False
         attributes:
@@ -154,153 +156,6 @@ interfaces:
               addr_match_cnt: readonly uint32
               rx_cnt: readonly uint32
               error_cnt: readonly uint32
-
-      config:
-        c_is_class: False
-        attributes:
-          # TODO: add support for arrays
-          gpio1_mode: {type: GpioMode, doc: Mode of GPIO1 (changes take effect after reboot), c_name: 'gpio_modes[1]'}
-          gpio2_mode: {type: GpioMode, doc: Mode of GPIO2 (changes take effect after reboot), c_name: 'gpio_modes[2]'}
-          gpio3_mode: {type: GpioMode, doc: Mode of GPIO3 (changes take effect after reboot), c_name: 'gpio_modes[3]'}
-          gpio4_mode: {type: GpioMode, doc: Mode of GPIO4 (changes take effect after reboot), c_name: 'gpio_modes[4]'}
-          gpio5_mode: {type: GpioMode, doc: Mode of GPIO5 (changes take effect after reboot), c_name: 'gpio_modes[5]'}
-          gpio6_mode: {type: GpioMode, doc: Mode of GPIO6 (changes take effect after reboot), c_name: 'gpio_modes[6]'}
-          gpio7_mode: {type: GpioMode, doc: Mode of GPIO7 (changes take effect after reboot), c_name: 'gpio_modes[7]'}
-          gpio8_mode: {type: GpioMode, doc: Mode of GPIO8 (changes take effect after reboot), c_name: 'gpio_modes[8]'}
-          gpio9_mode: {type: GpioMode, doc: Mode of GPIO9 (changes take effect after reboot), c_name: 'gpio_modes[9]'}
-          gpio10_mode: {type: GpioMode, doc: Mode of GPIO10 (changes take effect after reboot), c_name: 'gpio_modes[10]'}
-          gpio11_mode: {type: GpioMode, doc: Mode of GPIO11 (changes take effect after reboot), c_name: 'gpio_modes[11]'}
-          gpio12_mode: {type: GpioMode, doc: Mode of GPIO12 (changes take effect after reboot), c_name: 'gpio_modes[12]'}
-          gpio13_mode: {type: GpioMode, doc: Mode of GPIO13 (changes take effect after reboot), c_name: 'gpio_modes[13]'}
-          gpio14_mode: {type: GpioMode, doc: Mode of GPIO14 (changes take effect after reboot), c_name: 'gpio_modes[14]'}
-          gpio15_mode: {type: GpioMode, doc: Mode of GPIO15 (changes take effect after reboot), c_name: 'gpio_modes[15]'}
-          gpio16_mode: {type: GpioMode, doc: Mode of GPIO16 (changes take effect after reboot), c_name: 'gpio_modes[16]'}
-
-          enable_uart_a:
-            type: bool
-            brief: Enables/disables UART_A.
-            doc: |
-              You also need to set the corresponding GPIOs to GPIO_MODE_UART_A.
-              Refer to [interfaces](interfaces.md) to see which pins support UART_A.
-              Changing this requires a reboot.
-          enable_uart_b:
-            type: bool
-            brief: Enables/disables UART_B.
-            doc: |
-              You also need to set the corresponding GPIOs to GPIO_MODE_UART_B.
-              Refer to [interfaces](interfaces.md) to see which pins support UART_B.
-              Changing this requires a reboot.
-          enable_uart_c: {type: bool, doc: Not supported on ODrive v3.x.}
-          uart_a_baudrate:
-            type: uint32
-            unit: baud/s
-            brief: Defines the baudrate used on the UART interface.
-            doc: |
-              Some baudrates will have a small timing error due to hardware limitations.
-
-              Here's an (incomplete) list of baudrates for ODrive v3.x:
-              
-                Configured  | Actual        | Error [%]
-               -------------|---------------|-----------
-                1.2 KBps    | 1.2 KBps      | 0
-                2.4 KBps    | 2.4 KBps      | 0
-                9.6 KBps    | 9.6 KBps      | 0
-                19.2 KBps   | 19.195 KBps   | 0.02
-                38.4 KBps   | 38.391 KBps   | 0.02
-                57.6 KBps   | 57.613 KBps   | 0.02
-                115.2 KBps  | 115.068 KBps  | 0.11
-                230.4 KBps  | 230.769 KBps  | 0.16
-                460.8 KBps  | 461.538 KBps  | 0.16
-                921.6 KBps  | 913.043 KBps  | 0.93
-                1.792 MBps  | 1.826 MBps    | 1.9
-                1.8432 MBps | 1.826 MBps    | 0.93
-
-              For more information refer to Section 30.3.4 and Table 142 (the column with f_PCLK = 42 MHz) in the
-              [STM datasheet](https://www.st.com/content/ccc/resource/technical/document/reference_manual/3d/6d/5a/66/b4/99/40/d4/DM00031020.pdf/files/DM00031020.pdf/jcr:content/translations/en.DM00031020.pdf).
-          uart_b_baudrate:
-            type: uint32
-            unit: baud/s
-            brief: Defines the baudrate used on the UART interface.
-            doc: See `uart_a_baudrate` for details.
-          uart_c_baudrate: {type: uint32, doc: Not supported on ODrive v3.x.}
-          enable_can_a:
-            type: bool
-            doc: |
-              Enables CAN. Changing this setting requires a reboot.
-          enable_i2c_a:
-            type: bool
-            doc: |
-              Enables I2C. The I2C pins on ODrive v3.x are in conflict with CAN.
-              This setting has no effect if `enable_can_a` is also true.
-              This setting has no effect on ODrive v3.2 or earlier.
-              Changing this setting requires a reboot.
-          enable_ascii_protocol_on_usb: bool
-          max_regen_current: float32
-          brake_resistance:
-            type: float32
-            unit: Ohm
-            brief: Value of the brake resistor connected to the ODrive.
-            doc: Set to 0 to disable.
-
-          dc_bus_undervoltage_trip_level:
-            type: float32
-            unit: V
-            brief: Minimum voltage below which the motor stops operating.
-          dc_bus_overvoltage_trip_level:
-            type: float32
-            unit: V
-            brief: Maximum voltage above which the motor stops operating.
-            doc: |
-              This protects against cases in which the power supply fails to dissipate
-              the brake power if the brake resistor is disabled.
-              The default is 26V for the 24V board version and 52V for the 48V board version.
-
-          enable_dc_bus_overvoltage_ramp:
-            type: bool
-            status: experimental
-            brief: Enables the DC bus overvoltage ramp feature.
-            doc: |
-              If enabled, if the measured DC voltage exceeds `dc_bus_overvoltage_ramp_start`,
-              the ODrive will sink more power than usual into the the brake resistor
-              in an attempt to bring the voltage down again.
-              
-              The brake duty cycle is increased by the following amount:
-
-               * `vbus_voltage` == `dc_bus_overvoltage_ramp_start`  =>  brake_duty_cycle += 0%
-               * `vbus_voltage` == `dc_bus_overvoltage_ramp_end`  =>  brake_duty_cycle += 100%
-              
-              Remarks:
-               - This feature is active even when all motors are disarmed.
-               - This feature is disabled if `brake_resistance` is non-positive.
-          dc_bus_overvoltage_ramp_start:
-            type: float32
-            status: experimental
-            brief: See `enable_dc_bus_overvoltage_ramp`.
-            doc: Do not set this lower than your usual `vbus_voltage`,
-              unless you like fried brake resistors.
-          dc_bus_overvoltage_ramp_end:
-            type: float32
-            status: experimental
-            brief: See `enable_dc_bus_overvoltage_ramp`.
-            doc: Must be larger than `dc_bus_overvoltage_ramp_start`,
-              otherwise the ramp feature is disabled.
-
-          dc_max_positive_current:
-            type: float32
-            unit: A
-            brief: Max current the power supply can source.
-          dc_max_negative_current:
-            type: float32
-            unit: A
-            brief: Max current the power supply can sink.
-            doc: You most likely want a non-positive value here. Set to -INFINITY to disable.
-
-          gpio1_pwm_mapping: {type: Endpoint, c_name: 'pwm_mappings[0]', doc: Make sure the corresponding GPIO is in `GPIO_MODE_PWM`.}
-          gpio2_pwm_mapping: {type: Endpoint, c_name: 'pwm_mappings[1]', doc: Make sure the corresponding GPIO is in `GPIO_MODE_PWM`.}
-          gpio3_pwm_mapping: {type: Endpoint, c_name: 'pwm_mappings[2]', doc: Make sure the corresponding GPIO is in `GPIO_MODE_PWM`.}
-          gpio4_pwm_mapping: {type: Endpoint, c_name: 'pwm_mappings[3]', doc: Make sure the corresponding GPIO is in `GPIO_MODE_PWM`.}
-          gpio3_analog_mapping: {type: Endpoint, c_name: 'analog_mappings[3]', doc: Make sure the corresponding GPIO is in `GPIO_MODE_ANALOG_IN`.}
-          gpio4_analog_mapping: {type: Endpoint, c_name: 'analog_mappings[4]', doc: Make sure the corresponding GPIO is in `GPIO_MODE_ANALOG_IN`.}
       user_config_loaded: readonly uint32
       misconfigured:
         # TODO: make this a system error
@@ -323,8 +178,6 @@ interfaces:
              capability were both used as interrupt input.
              Example: `step_gpio_pin` of both axes were set to the same GPIO.
             
-      axis0: {type: Axis, c_name: get_axis(0)}
-      axis1: {type: Axis, c_name: get_axis(1)}
       oscilloscope: {type: Oscilloscope}
       can: {type: Can, c_name: get_can()}
       test_property: uint32
@@ -332,7 +185,7 @@ interfaces:
     functions:
       test_function: {in: {delta: int32}, out: {cnt: int32}}
       get_adc_voltage: {in: {gpio: uint32}, out: {voltage: float32}, doc: Reads the ADC voltage of the specified GPIO. The GPIO should be in `GPIO_MODE_ANALOG_IN`.}
-      save_configuration:
+      save_configuration: {out: {success: bool}}
       erase_configuration:
       reboot:
       enter_dfu_mode:
@@ -358,8 +211,154 @@ interfaces:
               bits 1:0:   priority (3 is highest priority)
               0xffffffff if the specified number is not a valid DMA stream number.
         doc: Returns information about the specified DMA stream.
+      get_gpio_states:
+        out: {status: {type: uint32}}
+        doc: Returns the logic states of all GPIOs. Bit i represents the state of GPIOi.
       clear_errors:
         doc: Clear all the errors of this device including all contained submodules.
+
+  ODrive.Config:
+    c_is_class: False
+    attributes:
+      enable_uart_a:
+        type: bool
+        brief: Enables/disables UART_A.
+        doc: |
+          You also need to set the corresponding GPIOs to GPIO_MODE_UART_A.
+          Refer to [interfaces](interfaces.md) to see which pins support UART_A.
+          Changing this requires a reboot.
+      enable_uart_b:
+        type: bool
+        brief: Enables/disables UART_B.
+        doc: |
+          You also need to set the corresponding GPIOs to GPIO_MODE_UART_B.
+          Refer to [interfaces](interfaces.md) to see which pins support UART_B.
+          Changing this requires a reboot.
+      enable_uart_c: {type: bool, doc: Not supported on ODrive v3.x.}
+      uart_a_baudrate:
+        type: uint32
+        unit: baud/s
+        brief: Defines the baudrate used on the UART interface.
+        doc: |
+          Some baudrates will have a small timing error due to hardware limitations.
+
+          Here's an (incomplete) list of baudrates for ODrive v3.x:
+          
+            Configured  | Actual        | Error [%]
+           -------------|---------------|-----------
+            1.2 KBps    | 1.2 KBps      | 0
+            2.4 KBps    | 2.4 KBps      | 0
+            9.6 KBps    | 9.6 KBps      | 0
+            19.2 KBps   | 19.195 KBps   | 0.02
+            38.4 KBps   | 38.391 KBps   | 0.02
+            57.6 KBps   | 57.613 KBps   | 0.02
+            115.2 KBps  | 115.068 KBps  | 0.11
+            230.4 KBps  | 230.769 KBps  | 0.16
+            460.8 KBps  | 461.538 KBps  | 0.16
+            921.6 KBps  | 913.043 KBps  | 0.93
+            1.792 MBps  | 1.826 MBps    | 1.9
+            1.8432 MBps | 1.826 MBps    | 0.93
+
+          For more information refer to Section 30.3.4 and Table 142 (the column with f_PCLK = 42 MHz) in the
+          [STM datasheet](https://www.st.com/content/ccc/resource/technical/document/reference_manual/3d/6d/5a/66/b4/99/40/d4/DM00031020.pdf/files/DM00031020.pdf/jcr:content/translations/en.DM00031020.pdf).
+      uart_b_baudrate:
+        type: uint32
+        unit: baud/s
+        brief: Defines the baudrate used on the UART interface.
+        doc: See `uart_a_baudrate` for details.
+      uart_c_baudrate: {type: uint32, doc: Not supported on ODrive v3.x.}
+      enable_can_a:
+        type: bool
+        doc: |
+          Enables CAN. Changing this setting requires a reboot.
+      enable_i2c_a:
+        type: bool
+        doc: |
+          Enables I2C. The I2C pins on ODrive v3.x are in conflict with CAN.
+          This setting has no effect if `enable_can_a` is also true.
+          This setting has no effect on ODrive v3.2 or earlier.
+          Changing this setting requires a reboot.
+      enable_ascii_protocol_on_usb: bool
+      max_regen_current: float32
+      brake_resistance:
+        type: float32
+        unit: Ohm
+        brief: Value of the brake resistor connected to the ODrive.
+        doc: |
+          If you set this to a lower value than the true brake resistance
+          then the ODrive will not meed the `max_regen_current` constraint
+          during braking, that is it will sink more than `max_regen_current`
+          into the power supply. Some power supplies don't like this.
+
+          If you set this to a higher value than the true brake resistance
+          then the ODrive will unnecessarily burn more power than required
+          during braking.
+      enable_brake_resistor:
+        type: bool
+        brief: Enable/disable the use of a brake resistor.
+        doc: |
+          Setting this to False even though a brake resistor is connected is
+          harmless. Setting this to True even though no brake resistor is
+          connected can break the power supply.
+          Changes to this value require a reboot to take effect.
+
+      dc_bus_undervoltage_trip_level:
+        type: float32
+        unit: V
+        brief: Minimum voltage below which the motor stops operating.
+      dc_bus_overvoltage_trip_level:
+        type: float32
+        unit: V
+        brief: Maximum voltage above which the motor stops operating.
+        doc: |
+          This protects against cases in which the power supply fails to dissipate
+          the brake power if the brake resistor is disabled.
+          The default is 26V for the 24V board version and 52V for the 48V board version.
+
+      enable_dc_bus_overvoltage_ramp:
+        type: bool
+        status: experimental
+        brief: Enables the DC bus overvoltage ramp feature.
+        doc: |
+          If enabled, if the measured DC voltage exceeds `dc_bus_overvoltage_ramp_start`,
+          the ODrive will sink more power than usual into the the brake resistor
+          in an attempt to bring the voltage down again.
+          
+          The brake duty cycle is increased by the following amount:
+
+           * `vbus_voltage` == `dc_bus_overvoltage_ramp_start`  =>  brake_duty_cycle += 0%
+           * `vbus_voltage` == `dc_bus_overvoltage_ramp_end`  =>  brake_duty_cycle += 100%
+          
+          Remarks:
+           - This feature is active even when all motors are disarmed.
+           - This feature is disabled if `brake_resistance` is non-positive.
+      dc_bus_overvoltage_ramp_start:
+        type: float32
+        status: experimental
+        brief: See `enable_dc_bus_overvoltage_ramp`.
+        doc: Do not set this lower than your usual `vbus_voltage`,
+          unless you like fried brake resistors.
+      dc_bus_overvoltage_ramp_end:
+        type: float32
+        status: experimental
+        brief: See `enable_dc_bus_overvoltage_ramp`.
+        doc: Must be larger than `dc_bus_overvoltage_ramp_start`,
+          otherwise the ramp feature is disabled.
+
+      dc_max_positive_current:
+        type: float32
+        unit: A
+        brief: Max current the power supply can source.
+      dc_max_negative_current:
+        type: float32
+        unit: A
+        brief: Max current the power supply can sink.
+        doc: You most likely want a non-positive value here. Set to -INFINITY to disable.
+
+      error_gpio_pin: {type: uint32}
+
+      gpio3_analog_mapping: {type: Endpoint, c_name: 'analog_mappings[3]', doc: Make sure the corresponding GPIO is in `GPIO_MODE_ANALOG_IN`.}
+      gpio4_analog_mapping: {type: Endpoint, c_name: 'analog_mappings[4]', doc: Make sure the corresponding GPIO is in `GPIO_MODE_ANALOG_IN`.}
 
   ODrive.Can:
     c_is_class: True
@@ -483,7 +482,7 @@ interfaces:
       motor: Motor
       controller: Controller
       encoder: Encoder
-      async_estimator: AsyncEstimator
+      acim_estimator: AcimEstimator
       sensorless_estimator: SensorlessEstimator
       trap_traj: TrapezoidalTrajectory
       min_endstop: Endstop
@@ -499,7 +498,7 @@ interfaces:
           can_heartbeat: TaskTimer
           controller_update: TaskTimer
           open_loop_controller_update: TaskTimer
-          async_estimator_update: TaskTimer
+          acim_estimator_update: TaskTimer
           motor_update: TaskTimer
           current_controller_update: TaskTimer
           dc_calib: TaskTimer
@@ -788,7 +787,7 @@ interfaces:
     functions:
       get_val: {in: {index: uint32}, out: {val: float32}}
   
-  ODrive.AsyncEstimator:
+  ODrive.AcimEstimator:
     c_is_class: True
     attributes:
       rotor_flux: {type: readonly float32, unit: A, doc: estimated magnitude of the rotor flux}
@@ -796,7 +795,7 @@ interfaces:
         type: readonly float32
         unit: rad/s
         doc: estimated slip between physical and electrical angular velocity}
-        c_getter: slip_vel_.get_any().value_or(0.0f)
+        c_getter: slip_vel_.any().value_or(0.0f)
       phase_offset:
         type: readonly float32
         unit: rad
@@ -805,12 +804,12 @@ interfaces:
         type: readonly float32
         unit: rad/s
         doc: calculated setpoint for the electrical velocity}
-        c_getter: stator_phase_vel_.get_any().value_or(0.0f)
+        c_getter: stator_phase_vel_.any().value_or(0.0f)
       stator_phase:
         type: readonly float32
         unit: rad
         doc: calculated setpoint for the electrical phase}
-        c_getter: stator_phase_.get_any().value_or(0.0f)
+        c_getter: stator_phase_.any().value_or(0.0f)
       config:
         c_is_class: False
         attributes:
@@ -970,14 +969,14 @@ interfaces:
       shadow_count: readonly int32
       count_in_cpr: readonly int32
       interpolation: readonly float32
-      phase: {type: readonly float32, c_getter: phase_.get_any().value_or(0.0f)}
-      pos_estimate: {type: readonly float32, c_getter: pos_estimate_.get_any().value_or(0.0f)}
+      phase: {type: readonly float32, c_getter: phase_.any().value_or(0.0f)}
+      pos_estimate: {type: readonly float32, c_getter: pos_estimate_.any().value_or(0.0f)}
       pos_estimate_counts: readonly float32
       pos_cpr_counts: readonly float32
       delta_pos_cpr_counts: readonly float32
       pos_circular: {type: readonly float32, c_getter: pos_circular_.get_any().value_or(0.0f)}
       hall_state: readonly uint8
-      vel_estimate: {type: readonly float32, c_getter: vel_estimate_.get_any().value_or(0.0f)}
+      vel_estimate: {type: readonly float32, c_getter: vel_estimate_.any().value_or(0.0f)}
       vel_estimate_counts: readonly float32
       calib_scan_response: readonly float32
       pos_abs: int32
@@ -987,9 +986,10 @@ interfaces:
         attributes:
           mode: Mode
           use_index: {type: bool, c_setter: set_use_index}
+          index_offset: float32
+          use_index_offset: bool
           find_idx_on_lockin_only: {type: bool, c_setter: set_find_idx_on_lockin_only}
           abs_spi_cs_gpio_pin: {type: uint16, c_setter: set_abs_spi_cs_gpio_pin, doc: Make sure that the GPIO is in `GPIO_MODE_DIGITAL`.}
-          zero_count_on_find_idx: bool
           cpr: int32
           phase_offset: int32
           phase_offset_float: float32
@@ -1021,10 +1021,10 @@ interfaces:
         flags:
           UnstableGain:
           UnknownCurrentMeasurement:
-      phase: {type: readonly float32, unit: rad, c_getter: phase_.get_any().value_or(0.0f)}
+      phase: {type: readonly float32, unit: rad, c_getter: phase_.any().value_or(0.0f)}
       pll_pos: {type: readonly float32, unit: rad}
-      phase_vel: {type: readonly float32, unit: rad/s, c_getter: phase_vel_.get_any().value_or(0.0f)}
-      vel_estimate: {type: readonly float32, unit: turns/s, c_getter: vel_estimate_.get_any().value_or(0.0f)}
+      phase_vel: {type: readonly float32, unit: rad/s, c_getter: phase_vel_.any().value_or(0.0f)}
+      vel_estimate: {type: readonly float32, unit: turns/s, c_getter: vel_estimate_.any().value_or(0.0f)}
       # pll_kp: float32
       # pll_ki: float32
       config:
@@ -1082,6 +1082,39 @@ interfaces:
       length: readonly uint32
       max_length: uint32
 
+  ODrive3:
+    c_is_class: True
+    implements: ODrive
+    attributes:
+      config:
+        c_is_class: False
+        implements: ODrive.Config
+        attributes:
+          # TODO: add support for arrays
+          gpio1_mode: {type: ODrive.GpioMode, doc: Mode of GPIO1 (changes take effect after reboot), c_name: 'gpio_modes[1]'}
+          gpio2_mode: {type: ODrive.GpioMode, doc: Mode of GPIO2 (changes take effect after reboot), c_name: 'gpio_modes[2]'}
+          gpio3_mode: {type: ODrive.GpioMode, doc: Mode of GPIO3 (changes take effect after reboot), c_name: 'gpio_modes[3]'}
+          gpio4_mode: {type: ODrive.GpioMode, doc: Mode of GPIO4 (changes take effect after reboot), c_name: 'gpio_modes[4]'}
+          gpio5_mode: {type: ODrive.GpioMode, doc: Mode of GPIO5 (changes take effect after reboot), c_name: 'gpio_modes[5]'}
+          gpio6_mode: {type: ODrive.GpioMode, doc: Mode of GPIO6 (changes take effect after reboot), c_name: 'gpio_modes[6]'}
+          gpio7_mode: {type: ODrive.GpioMode, doc: Mode of GPIO7 (changes take effect after reboot), c_name: 'gpio_modes[7]'}
+          gpio8_mode: {type: ODrive.GpioMode, doc: Mode of GPIO8 (changes take effect after reboot), c_name: 'gpio_modes[8]'}
+          gpio9_mode: {type: ODrive.GpioMode, doc: Mode of GPIO9 (changes take effect after reboot), c_name: 'gpio_modes[9]'}
+          gpio10_mode: {type: ODrive.GpioMode, doc: Mode of GPIO10 (changes take effect after reboot), c_name: 'gpio_modes[10]'}
+          gpio11_mode: {type: ODrive.GpioMode, doc: Mode of GPIO11 (changes take effect after reboot), c_name: 'gpio_modes[11]'}
+          gpio12_mode: {type: ODrive.GpioMode, doc: Mode of GPIO12 (changes take effect after reboot), c_name: 'gpio_modes[12]'}
+          gpio13_mode: {type: ODrive.GpioMode, doc: Mode of GPIO13 (changes take effect after reboot), c_name: 'gpio_modes[13]'}
+          gpio14_mode: {type: ODrive.GpioMode, doc: Mode of GPIO14 (changes take effect after reboot), c_name: 'gpio_modes[14]'}
+          gpio15_mode: {type: ODrive.GpioMode, doc: Mode of GPIO15 (changes take effect after reboot), c_name: 'gpio_modes[15]'}
+          gpio16_mode: {type: ODrive.GpioMode, doc: Mode of GPIO16 (changes take effect after reboot), c_name: 'gpio_modes[16]'}
+
+          gpio1_pwm_mapping: {type: ODrive.Endpoint, c_name: 'pwm_mappings[0]', doc: Make sure the corresponding GPIO is in `GPIO_MODE_PWM`.}
+          gpio2_pwm_mapping: {type: ODrive.Endpoint, c_name: 'pwm_mappings[1]', doc: Make sure the corresponding GPIO is in `GPIO_MODE_PWM`.}
+          gpio3_pwm_mapping: {type: ODrive.Endpoint, c_name: 'pwm_mappings[2]', doc: Make sure the corresponding GPIO is in `GPIO_MODE_PWM`.}
+          gpio4_pwm_mapping: {type: ODrive.Endpoint, c_name: 'pwm_mappings[3]', doc: Make sure the corresponding GPIO is in `GPIO_MODE_PWM`.}
+      axis0: {type: ODrive.Axis, c_name: get_axis(0)}
+      axis1: {type: ODrive.Axis, c_name: get_axis(1)}
+
 valuetypes:
   ODrive.GpioMode:
     values:
@@ -1110,6 +1143,7 @@ valuetypes:
       Enc1: {doc: The pin is used by quadrature encoder 1.}
       Enc2: {doc: This mode is not supported on ODrive v3.x.}
       MechBrake: {doc: This is to support external mechanical brakes.}
+      Status: {doc: The pin is used for status output (see `config.error_gpio_pin`)}
 
   ODrive.Can.Protocol:
     values: {Simple: }

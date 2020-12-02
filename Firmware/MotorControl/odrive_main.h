@@ -74,7 +74,8 @@ struct BoardConfig_t {
     bool enable_ascii_protocol_on_usb = true;
     float max_regen_current = 0.0f;
     float brake_resistance = DEFAULT_BRAKE_RESISTANCE;
-    float dc_bus_undervoltage_trip_level = 8.0f;                        //<! [V] minimum voltage below which the motor stops operating
+    bool enable_brake_resistor = false;
+    float dc_bus_undervoltage_trip_level = DEFAULT_MIN_DC_VOLTAGE;      //<! [V] minimum voltage below which the motor stops operating
     float dc_bus_overvoltage_trip_level = 1.07f * HW_VERSION_VOLTAGE;   //<! [V] maximum voltage above which the motor stops operating.
                                                                         //<! This protects against cases in which the power supply fails to dissipate
                                                                         //<! the brake power if the brake resistor is disabled.
@@ -103,6 +104,7 @@ struct BoardConfig_t {
 
     float dc_max_positive_current = INFINITY; // Max current [A] the power supply can source
     float dc_max_negative_current = -0.000001f; // Max current [A] the power supply can sink. You most likely want a non-positive value here. Set to -INFINITY to disable.
+    uint32_t error_gpio_pin = DEFAULT_ERROR_PIN;
     PWMMapping_t pwm_mappings[4];
     PWMMapping_t analog_mappings[GPIO_COUNT];
 };
@@ -111,6 +113,7 @@ struct TaskTimes {
     TaskTimer sampling;
     TaskTimer control_loop_misc;
     TaskTimer control_loop_checks;
+    TaskTimer dc_calib_wait;
 };
 
 
@@ -164,10 +167,11 @@ static Stm32Gpio get_gpio(size_t gpio_num) {
 // general system functions defined in main.cpp
 class ODrive : public ODriveIntf {
 public:
-    void save_configuration() override;
+    bool save_configuration() override;
     void erase_configuration() override;
     void reboot() override { NVIC_SystemReset(); }
     void enter_dfu_mode() override;
+    bool any_error();
     void clear_errors() override;
 
     float get_adc_voltage(uint32_t gpio) override {
@@ -188,6 +192,7 @@ public:
 
     uint32_t get_interrupt_status(int32_t irqn);
     uint32_t get_dma_status(uint8_t stream_num);
+    uint32_t get_gpio_states();
     void disarm_with_error(Error error);
 
     Error error_ = ERROR_NONE;
@@ -229,10 +234,12 @@ public:
     bool& brake_resistor_saturated_ = ::brake_resistor_saturated; // TODO: make this the actual variable
 
     SystemStats_t system_stats_;
+
+    // Edit these to suit your capture needs
     Oscilloscope oscilloscope_{
-        &axes[0].motor_.current_control_.v_current_control_integral_d_, // trigger_src
+        nullptr, // trigger_src
         0.5f, // trigger_threshold
-        nullptr // &axes[0].motor_.current_control_.Ialpha_measured_ // data_src TODO: change data type
+        nullptr // data_src TODO: change data type
     };
 
     BoardConfig_t config_;

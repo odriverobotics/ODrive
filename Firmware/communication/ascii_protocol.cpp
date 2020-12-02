@@ -28,7 +28,9 @@
 
 /* Private variables ---------------------------------------------------------*/
 
-static Introspectable root_obj = ODriveTypeInfo<ODrive>::make_introspectable(odrv);
+#if HW_VERSION_MAJOR == 3
+static Introspectable root_obj = ODrive3TypeInfo<ODrive>::make_introspectable(odrv);
+#endif
 
 /* Private function prototypes -----------------------------------------------*/
 
@@ -284,8 +286,8 @@ void cmd_get_feedback(char * pStr, StreamSink& response_channel, bool use_checks
     } else {
         Axis& axis = axes[motor_number];
         respond(response_channel, use_checksum, "%f %f",
-                (double)axis.encoder_.pos_estimate_.get_any().value_or(0.0f),
-                (double)axis.encoder_.vel_estimate_.get_any().value_or(0.0f));
+                (double)axis.encoder_.pos_estimate_.any().value_or(0.0f),
+                (double)axis.encoder_.vel_estimate_.any().value_or(0.0f));
     }
 }
 

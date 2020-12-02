@@ -107,19 +107,25 @@ static bool config_apply_all() {
     return success;
 }
 
-void ODrive::save_configuration(void) {
-    size_t config_size = 0;
-    bool success = config_manager.prepare_store()
-                && config_write_all()
-                && config_manager.start_store(&config_size)
-                && config_write_all()
-                && config_manager.finish_store();
-    if (success) {
-        user_config_loaded_ = config_size;
-    } else {
-        printf("saving configuration failed\r\n");
-        osDelay(5);
+bool ODrive::save_configuration(void) {
+    bool success;
+
+    CRITICAL_SECTION() {
+        bool any_armed = std::any_of(axes.begin(), axes.end(),
+            [](auto& axis){ return axis.motor_.is_armed_; });
+        if (any_armed) {
+            return false;
+        }
+
+        size_t config_size = 0;
+        success = config_manager.prepare_store()
+               && config_write_all()
+               && config_manager.start_store(&config_size)
+               && config_write_all()
+               && config_manager.finish_store();
     }
+
+    return success;
 }
 
 void ODrive::erase_configuration(void) {
@@ -151,6 +157,17 @@ void ODrive::enter_dfu_mode() {
     }
 }
 
+bool ODrive::any_error() {
+    return error_ != ODrive::ERROR_NONE
+        || std::any_of(axes.begin(), axes.end(), [](Axis& axis){
+            return axis.error_ != Axis::ERROR_NONE
+                || axis.motor_.error_ != Motor::ERROR_NONE
+                || axis.sensorless_estimator_.error_ != SensorlessEstimator::ERROR_NONE
+                || axis.encoder_.error_ != Encoder::ERROR_NONE
+                || axis.controller_.error_ != Controller::ERROR_NONE;
+        });
+}
+
 void ODrive::clear_errors() {
     for (auto& axis: axes) {
         axis.motor_.error_ = Motor::ERROR_NONE;
@@ -161,6 +178,9 @@ void ODrive::clear_errors() {
         axis.error_ = Axis::ERROR_NONE;
     }
     error_ = ERROR_NONE;
+    if (odrv.config_.enable_brake_resistor) {
+        safety_critical_arm_brake_resistor();
+    }
 }
 
 extern "C" {
@@ -286,9 +306,9 @@ void ODrive::control_loop_cb(uint32_t timestamp) {
         // TODO: maybe we should add a check to output ports that prevents
         // double-setting the value.
         for (auto& axis: axes) {
-            axis.async_estimator_.slip_vel_.reset();
-            axis.async_estimator_.stator_phase_vel_.reset();
-            axis.async_estimator_.stator_phase_.reset();
+            axis.acim_estimator_.slip_vel_.reset();
+            axis.acim_estimator_.stator_phase_vel_.reset();
+            axis.acim_estimator_.stator_phase_.reset();
             axis.controller_.torque_output_.reset();
             axis.encoder_.phase_.reset();
             axis.encoder_.phase_vel_.reset();
@@ -361,8 +381,17 @@ void ODrive::control_loop_cb(uint32_t timestamp) {
             axis.motor_.update(timestamp); // uses torque from controller and phase_vel from encoder
 
         MEASURE_TIME(axis.task_times_.current_controller_update)
-            axis.motor_.current_control_.update(timestamp); // uses the output of controller_ or open_loop_contoller_ and encoder_ or sensorless_estimator_ or async_estimator_
+            axis.motor_.current_control_.update(timestamp); // uses the output of controller_ or open_loop_contoller_ and encoder_ or sensorless_estimator_ or acim_estimator_
     }
+
+    // Tell the axis threads that the control loop has finished
+    for (auto& axis: axes) {
+        if (axis.thread_id_) {
+            osSignalSet(axis.thread_id_, 0x0001);
+        }
+    }
+
+    get_gpio(odrv.config_.error_gpio_pin).write(odrv.any_error());
 }
 
 
@@ -404,6 +433,14 @@ uint32_t ODrive::get_dma_status(uint8_t stream_num) {
     return (is_reset ? 0 : 0x80000000) | ((channel & 0x7) << 2) | (priority & 0x3);
 }
 
+uint32_t ODrive::get_gpio_states() {
+    // TODO: get values that were sampled synchronously with the control loop
+    uint32_t val = 0;
+    for (size_t i = 0; i < GPIO_COUNT; ++i) {
+        val |= ((gpios[i].read() ? 1UL : 0UL) << i);
+    }
+    return val;
+}
 
 /**
  * @brief Main thread started from main().
@@ -443,11 +480,30 @@ static void rtos_main(void*) {
     }
 
     for(auto& axis: axes){
-        axis.async_estimator_.idq_src_.connect_to(&axis.motor_.Idq_setpoint_);
+        axis.acim_estimator_.idq_src_.connect_to(&axis.motor_.Idq_setpoint_);
     }
 
     // Start PWM and enable adc interrupts/callbacks
     start_adc_pwm();
+    start_analog_thread();
+
+    // Wait for up to 2s for motor to become ready to allow for error-free
+    // startup. This delay gives the current sensor calibration time to
+    // converge. If the DRV chip is unpowered, the motor will not become ready
+    // but we still enter idle state.
+    for (size_t i = 0; i < 2000; ++i) {
+        bool motors_ready = std::all_of(axes.begin(), axes.end(), [](auto& axis) {
+            return axis.motor_.current_meas_.has_value();
+        });
+        if (motors_ready) {
+            break;
+        }
+        osDelay(1);
+    }
+
+    for (auto& axis: axes) {
+        axis.sensorless_estimator_.error_ &= ~SensorlessEstimator::ERROR_UNKNOWN_CURRENT_MEASUREMENT;
+    }
 
     // Start state machine threads. Each thread will go through various calibration
     // procedures and then run the actual controller loops.
@@ -455,8 +511,6 @@ static void rtos_main(void*) {
     for (size_t i = 0; i < AXIS_COUNT; ++i) {
         axes[i].start_thread();
     }
-
-    start_analog_thread();
 
     odrv.system_stats_.fully_booted = true;
 
@@ -577,6 +631,7 @@ extern "C" int main(void) {
             mode == ODriveIntf::GPIO_MODE_DIGITAL_PULL_UP ||
             mode == ODriveIntf::GPIO_MODE_DIGITAL_PULL_DOWN ||
             mode == ODriveIntf::GPIO_MODE_MECH_BRAKE ||
+            mode == ODriveIntf::GPIO_MODE_STATUS ||
             mode == ODriveIntf::GPIO_MODE_ANALOG_IN) {
             GPIO_InitStruct.Alternate = 0;
         } else {
@@ -674,6 +729,11 @@ extern "C" int main(void) {
                 GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
             } break;
             case ODriveIntf::GPIO_MODE_MECH_BRAKE: {
+                GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+                GPIO_InitStruct.Pull = GPIO_NOPULL;
+                GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+            } break;
+            case ODriveIntf::GPIO_MODE_STATUS: {
                 GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
                 GPIO_InitStruct.Pull = GPIO_NOPULL;
                 GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;

@@ -30,7 +30,7 @@ void
 [%- endmacro %]
 
 [%- macro render_interface(intf) %]
-class [[intf.name | to_pascal_case]]Intf {
+class [[intf.name | to_pascal_case]]Intf[% if intf.implements %] :[%- for base_intf in intf.implements %] public [[base_intf.c_name]][% endfor %][% endif %] {
 public:
 [%- for intf in intf.interfaces -%]
 [[render_interface(intf) | indent(4)]]

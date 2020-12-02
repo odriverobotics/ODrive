@@ -1,11 +1,11 @@
 
-#include "async_estimator.hpp"
+#include "acim_estimator.hpp"
 #include <board.h>
 
-void AsyncEstimator::update(uint32_t timestamp)  {
-    std::optional<float> rotor_phase = rotor_phase_src_.get_current();
-    std::optional<float> rotor_phase_vel = rotor_phase_vel_src_.get_current();
-    std::optional<float2D> idq = idq_src_.get_current();
+void AcimEstimator::update(uint32_t timestamp)  {
+    std::optional<float> rotor_phase = rotor_phase_src_.present();
+    std::optional<float> rotor_phase_vel = rotor_phase_vel_src_.present();
+    std::optional<float2D> idq = idq_src_.present();
 
     if (!rotor_phase.has_value() || !rotor_phase_vel.has_value() || !idq.has_value()) {
         active_ = false;
