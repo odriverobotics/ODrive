@@ -183,7 +183,8 @@ bool Axis::watchdog_check() {
     }
 }
 
-bool Axis::run_lockin_spin(const LockinConfig_t &lockin_config, bool remain_armed) {
+bool Axis::run_lockin_spin(const LockinConfig_t &lockin_config, bool remain_armed,
+        std::function<bool(bool)> loop_cb) {
     CRITICAL_SECTION() {
         // Reset state variables
         open_loop_controller_.Idq_setpoint_ = {0.0f, 0.0f};
@@ -214,7 +215,7 @@ bool Axis::run_lockin_spin(const LockinConfig_t &lockin_config, bool remain_arme
 
     motor_.arm(&motor_.current_control_);
 
-    bool subscribed_to_idx = false;
+    bool subscribed_to_idx_once = false;
     bool success = false;
     float dir = lockin_config.vel >= 0.0f ? 1.0f : -1.0f;
 
@@ -233,11 +234,17 @@ bool Axis::run_lockin_spin(const LockinConfig_t &lockin_config, bool remain_arme
 
         // Activate index pin as soon as target velocity was reached. This is
         // to avoid hitting the index from the wrong direction.
-        if (reached_target_vel && !encoder_.index_found_ && !subscribed_to_idx) {
+        if (reached_target_vel && !encoder_.index_found_ && !subscribed_to_idx_once) {
             encoder_.set_idx_subscribe(true);
-            subscribed_to_idx = true;
+            subscribed_to_idx_once = true;
         }
 
+        if (loop_cb)
+            if (!loop_cb(reached_target_vel))
+                break;
+
+        // TODO: use new sync function instead
+        asm volatile ("" ::: "memory");
         osDelay(1);
     }
 
@@ -446,6 +453,8 @@ void Axis::run_state_machine_loop() {
                 task_chain_[pos++] = AXIS_STATE_IDLE;
             } else if (requested_state_ == AXIS_STATE_FULL_CALIBRATION_SEQUENCE) {
                 task_chain_[pos++] = AXIS_STATE_MOTOR_CALIBRATION;
+                if (encoder_.config_.mode == ODriveIntf::EncoderIntf::MODE_HALL)
+                    task_chain_[pos++] = AXIS_STATE_ENCODER_HALL_POLARITY_CALIBRATION;
                 if (encoder_.config_.use_index)
                     task_chain_[pos++] = AXIS_STATE_ENCODER_INDEX_SEARCH;
                 task_chain_[pos++] = AXIS_STATE_ENCODER_OFFSET_CALIBRATION;
@@ -492,6 +501,25 @@ void Axis::run_state_machine_loop() {
                     goto invalid_state_label;
 
                 status = encoder_.run_direction_find();
+            } break;
+
+            case AXIS_STATE_ENCODER_HALL_POLARITY_CALIBRATION: {
+                if (!motor_.is_calibrated_)
+                    goto invalid_state_label;
+
+                status = encoder_.run_hall_polarity_calibration();
+            } break;
+
+            case AXIS_STATE_ENCODER_HALL_PHASE_CALIBRATION: {
+                if (!motor_.is_calibrated_)
+                    goto invalid_state_label;
+
+                if (!encoder_.config_.hall_polarity_calibrated) {
+                    encoder_.set_error(ODriveIntf::EncoderIntf::ERROR_HALL_NOT_CALIBRATED_YET);
+                    goto invalid_state_label;
+                }
+
+                status = encoder_.run_hall_phase_calibration();
             } break;
 
             case AXIS_STATE_HOMING: {

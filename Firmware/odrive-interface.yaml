@@ -963,6 +963,7 @@ interfaces:
           AbsSpiTimeout:
           AbsSpiComFail:
           AbsSpiNotReady:
+          HallNotCalibratedYet:
       is_ready: readonly bool
       index_found: readonly bool
       shadow_count: readonly int32
@@ -972,6 +973,7 @@ interfaces:
       pos_estimate: {type: readonly float32, c_getter: pos_estimate_.any().value_or(0.0f)}
       pos_estimate_counts: readonly float32
       pos_cpr_counts: readonly float32
+      delta_pos_cpr_counts: readonly float32
       pos_circular: {type: readonly float32, c_getter: pos_circular_.any().value_or(0.0f)}
       hall_state: readonly uint8
       vel_estimate: {type: readonly float32, c_getter: vel_estimate_.any().value_or(0.0f)}
@@ -999,6 +1001,8 @@ interfaces:
           calib_scan_distance: float32
           calib_scan_omega: float32
           ignore_illegal_hall_state: bool
+          hall_polarity: uint8
+          hall_polarity_calibrated: bool
           sincos_gpio_pin_sin:
             type: uint16
             doc: Analog sine signal of a sin/cos encoder. The corresponding GPIO must be in `GPIO_MODE_ANALOG_IN`.
@@ -1193,6 +1197,15 @@ valuetypes:
         brief: Run axis homing function.
         doc:
           Endstops must be enabled to use this feature.
+      EncoderHallPolarityCalibration:
+        brief: Rotate the motor in lockin and calibrate hall polarity
+        doc:
+          ODrive assumes 120 degree electrical hall spacing. This routine determines if that
+          is the case and sets the polarity if the halls are on 60 degree electrical spacing
+      EncoderHallPhaseCalibration:
+        brief: Rotate the motor for 30s to calibrate hall sensor edge offsets
+        doc:
+          The phase offset is not calibrated at this time, so the map is only relative
 
   ODrive.Encoder.Mode:
     values:
