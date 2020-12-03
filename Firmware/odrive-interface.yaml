@@ -661,6 +661,7 @@ interfaces:
           UNKNOWN_VOLTAGE_COMMAND: {doc: The current controller did not get a valid feedforward voltage setpoint.}
           UNKNOWN_GAINS: {doc: The current controller gains were not configured. Run motor calibration or set `config.phase_resistance` and `config.phase_inductance` manually.}
           CONTROLLER_INITIALIZING: {doc: Internal value used while the controller is not yet ready to generate PWM timings.}
+          UNBALANCED_PHASES: {doc: The motor pahses are not balanced.}
       is_armed: readonly bool
       is_calibrated: readonly bool
       current_meas_phA: {type: readonly float32, c_getter: 'current_meas_.value_or(Iph_ABC_t{0.0f, 0.0f, 0.0f}).phA'}
