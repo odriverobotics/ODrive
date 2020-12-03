@@ -424,6 +424,7 @@ bool Axis::run_homing() {
 }
 
 bool Axis::run_idle_loop() {
+    last_drv_fault_ = motor_.gate_driver_.get_error();
     mechanical_brake_.engage();
     set_step_dir_active(config_.enable_step_dir && config_.step_dir_always_on);
     while (requested_state_ == AXIS_STATE_UNDEFINED) {
@@ -480,14 +481,14 @@ void Axis::run_state_machine_loop() {
                 // when an error is raised. TODO: remove this when we overhaul
                 // the error architecture
                 // (https://github.com/madcowswe/ODrive/issues/526).
-                if (odrv.any_error())
-                    goto invalid_state_label;
+                //if (odrv.any_error())
+                //    goto invalid_state_label;
                 status = motor_.run_calibration();
             } break;
 
             case AXIS_STATE_ENCODER_INDEX_SEARCH: {
-                if (odrv.any_error())
-                    goto invalid_state_label;
+                //if (odrv.any_error())
+                //    goto invalid_state_label;
                 if (!motor_.is_calibrated_)
                     goto invalid_state_label;
 
@@ -495,8 +496,8 @@ void Axis::run_state_machine_loop() {
             } break;
 
             case AXIS_STATE_ENCODER_DIR_FIND: {
-                if (odrv.any_error())
-                    goto invalid_state_label;
+                //if (odrv.any_error())
+                //    goto invalid_state_label;
                 if (!motor_.is_calibrated_)
                     goto invalid_state_label;
 
@@ -523,30 +524,30 @@ void Axis::run_state_machine_loop() {
             } break;
 
             case AXIS_STATE_HOMING: {
-                if (odrv.any_error())
-                    goto invalid_state_label;
+                //if (odrv.any_error())
+                //    goto invalid_state_label;
                 status = run_homing();
             } break;
 
             case AXIS_STATE_ENCODER_OFFSET_CALIBRATION: {
-                if (odrv.any_error())
-                    goto invalid_state_label;
+                //if (odrv.any_error())
+                //    goto invalid_state_label;
                 if (!motor_.is_calibrated_)
                     goto invalid_state_label;
                 status = encoder_.run_offset_calibration();
             } break;
 
             case AXIS_STATE_LOCKIN_SPIN: {
-                if (odrv.any_error())
-                    goto invalid_state_label;
+                //if (odrv.any_error())
+                //    goto invalid_state_label;
                 if (!motor_.is_calibrated_ || encoder_.config_.direction==0)
                     goto invalid_state_label;
                 status = run_lockin_spin(config_.general_lockin, false);
             } break;
 
             case AXIS_STATE_CLOSED_LOOP_CONTROL: {
-                if (odrv.any_error())
-                    goto invalid_state_label;
+                //if (odrv.any_error())
+                //    goto invalid_state_label;
                 if (!motor_.is_calibrated_ || (encoder_.config_.direction==0 && !config_.enable_sensorless_mode))
                     goto invalid_state_label;
                 watchdog_feed();

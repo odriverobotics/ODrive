@@ -128,8 +128,6 @@ public:
     void set_step_dir_active(bool enable);
     void decode_step_dir_pins();
 
-    bool check_DRV_fault();
-    bool check_PSU_brownout();
     bool do_checks(uint32_t timestamp);
 
     void watchdog_feed();
@@ -180,6 +178,7 @@ public:
     // variables exposed on protocol
     Error error_ = ERROR_NONE;
     bool step_dir_active_ = false; // auto enabled after calibration, based on config.enable_step_dir
+    uint32_t last_drv_fault_ = 0;
 
     // updated from config in constructor, and on protocol hook
     Stm32Gpio step_gpio_;

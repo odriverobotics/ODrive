@@ -214,6 +214,7 @@ interfaces:
       get_gpio_states:
         out: {status: {type: uint32}}
         doc: Returns the logic states of all GPIOs. Bit i represents the state of GPIOi.
+      get_drv_fault: {out: {drv_fault: uint64}}
       clear_errors:
         doc: Clear all the errors of this device including all contained submodules.
 
@@ -405,6 +406,7 @@ interfaces:
             # unused
             doc: Check `motor.error` for more details.
       step_dir_active: readonly bool
+      last_drv_fault: readonly uint32
       current_state: readonly AxisState
       requested_state: AxisState
       loop_counter: readonly uint32
@@ -456,29 +458,6 @@ interfaces:
           sensorless_ramp: LockinConfig
           general_lockin: LockinConfig
           can: CanConfig
-        gate_driver:
-          c_name: gate_driver_exported_
-          c_is_class: False
-          attributes:
-            drv_fault:
-              typeargs: {fibre.Property.mode: readonly}
-              nullflag: NoFault
-              flags:
-                FetLowCOvercurrent: {bit: 0, doc: FET Low side, Phase C Over Current fault}
-                FetHighCOvercurrent: {bit: 1, doc: FET High side, Phase C Over Current fault}
-                FetLowBOvercurrent: {bit: 2, doc: FET Low side, Phase B Over Current fault}
-                FetHighBOvercurrent: {bit: 3, doc: FET High side, Phase B Over Current fault}
-                FetLowAOvercurrent: {bit: 4, doc: FET Low side, Phase A Over Current fault}
-                FetHighAOvercurrent: {bit: 5, doc: FET High side, Phase A Over Current fault}
-                OvertemperatureWarning: {bit: 6, doc: Over Temperature Warning fault}
-                OvertemperatureShutdown: {bit: 7, doc: Over Temperature Shut Down fault}
-                PVddUndervoltage: {bit: 8, doc: Power supply Vdd Under Voltage fault}
-                GVddUndervoltage: {bit: 9, doc: DRV8301 Vdd Under Voltage fault}
-                GVddOvervoltage: {bit: 10, doc: DRV8301 Vdd Over Voltage fault}
-            # status_reg_1: readonly uint32
-            # status_reg_2: readonly uint32
-            # ctrl_reg_1: readonly uint32
-            # ctrl_reg_2: readonly uint32
       motor: Motor
       controller: Controller
       encoder: Encoder
@@ -777,7 +756,7 @@ interfaces:
               value, the motor gets disarmed immediately.
 
               Note that this feature is only works on devices with three current
-              sensors.
+              sensors (e.g. ODrive v4).
           dc_calib_tau: float32
 
   ODrive.Oscilloscope:
@@ -1115,6 +1094,44 @@ interfaces:
       axis0: {type: ODrive.Axis, c_name: get_axis(0)}
       axis1: {type: ODrive.Axis, c_name: get_axis(1)}
 
+  ODrive4:
+    c_is_class: True
+    implements: ODrive
+    attributes:
+      config:
+        c_is_class: False
+        implements: ODrive.Config
+        attributes:
+          # TODO: add support for arrays
+          gpio1_mode: {type: ODrive.GpioMode, doc: Mode of GPIO1 (changes take effect after reboot), c_name: 'gpio_modes[1]'}
+          gpio2_mode: {type: ODrive.GpioMode, doc: Mode of GPIO2 (changes take effect after reboot), c_name: 'gpio_modes[2]'}
+          gpio3_mode: {type: ODrive.GpioMode, doc: Mode of GPIO3 (changes take effect after reboot), c_name: 'gpio_modes[3]'}
+          gpio4_mode: {type: ODrive.GpioMode, doc: Mode of GPIO4 (changes take effect after reboot), c_name: 'gpio_modes[4]'}
+          gpio5_mode: {type: ODrive.GpioMode, doc: Mode of GPIO5 (changes take effect after reboot), c_name: 'gpio_modes[5]'}
+          gpio6_mode: {type: ODrive.GpioMode, doc: Mode of GPIO6 (changes take effect after reboot), c_name: 'gpio_modes[6]'}
+          gpio7_mode: {type: ODrive.GpioMode, doc: Mode of GPIO7 (changes take effect after reboot), c_name: 'gpio_modes[7]'}
+          gpio8_mode: {type: ODrive.GpioMode, doc: Mode of GPIO8 (changes take effect after reboot), c_name: 'gpio_modes[8]'}
+          gpio9_mode: {type: ODrive.GpioMode, doc: Mode of GPIO9 (changes take effect after reboot), c_name: 'gpio_modes[9]'}
+          gpio10_mode: {type: ODrive.GpioMode, doc: Mode of GPIO10 (changes take effect after reboot), c_name: 'gpio_modes[10]'}
+          gpio11_mode: {type: ODrive.GpioMode, doc: Mode of GPIO11 (changes take effect after reboot), c_name: 'gpio_modes[11]'}
+          gpio12_mode: {type: ODrive.GpioMode, doc: Mode of GPIO12 (changes take effect after reboot), c_name: 'gpio_modes[12]'}
+          gpio13_mode: {type: ODrive.GpioMode, doc: Mode of GPIO13 (changes take effect after reboot), c_name: 'gpio_modes[13]'}
+          gpio14_mode: {type: ODrive.GpioMode, doc: Mode of GPIO14 (changes take effect after reboot), c_name: 'gpio_modes[14]'}
+          gpio15_mode: {type: ODrive.GpioMode, doc: Mode of GPIO15 (changes take effect after reboot), c_name: 'gpio_modes[15]'}
+          gpio16_mode: {type: ODrive.GpioMode, doc: Mode of GPIO16 (changes take effect after reboot), c_name: 'gpio_modes[16]'}
+          gpio17_mode: {type: ODrive.GpioMode, doc: Mode of GPIO17 (changes take effect after reboot), c_name: 'gpio_modes[17]'}
+          gpio18_mode: {type: ODrive.GpioMode, doc: Mode of GPIO18 (changes take effect after reboot), c_name: 'gpio_modes[18]'}
+          gpio19_mode: {type: ODrive.GpioMode, doc: Mode of GPIO19 (changes take effect after reboot), c_name: 'gpio_modes[19]'}
+          gpio20_mode: {type: ODrive.GpioMode, doc: Mode of GPIO20 (changes take effect after reboot), c_name: 'gpio_modes[20]'}
+          gpio21_mode: {type: ODrive.GpioMode, doc: Mode of GPIO21 (changes take effect after reboot), c_name: 'gpio_modes[21]'}
+          gpio22_mode: {type: ODrive.GpioMode, doc: Mode of GPIO22 (changes take effect after reboot), c_name: 'gpio_modes[22]'}
+
+          gpio14_pwm_mapping: {type: ODrive.Endpoint, c_name: 'pwm_mappings[3]', doc: Make sure the corresponding GPIO is in `GPIO_MODE_PWM`.}
+          gpio19_pwm_mapping: {type: ODrive.Endpoint, c_name: 'pwm_mappings[2]', doc: Make sure the corresponding GPIO is in `GPIO_MODE_PWM`.}
+          gpio20_pwm_mapping: {type: ODrive.Endpoint, c_name: 'pwm_mappings[0]', doc: Make sure the corresponding GPIO is in `GPIO_MODE_PWM`.}
+          gpio21_pwm_mapping: {type: ODrive.Endpoint, c_name: 'pwm_mappings[1]', doc: Make sure the corresponding GPIO is in `GPIO_MODE_PWM`.}
+      axis0: {type: ODrive.Axis, c_name: get_axis(0)}
+
 valuetypes:
   ODrive.GpioMode:
     values:
@@ -1224,6 +1241,9 @@ valuetypes:
       SpiAbsRls:
         value: 0x103
         doc: RLS Encoders
+      SpiAbsMa732:
+        value: 0x104
+        doc: MagAlpha MA732 magnetic encoder
 
   ODrive.Controller.ControlMode:
     values:

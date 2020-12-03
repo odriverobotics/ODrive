@@ -80,8 +80,10 @@ void safety_critical_arm_brake_resistor() {
             axes[i].motor_.I_bus_ = 0.0f;
         }
         brake_resistor_armed = true;
+#if HW_VERSION_MAJOR == 3
         htim2.Instance->CCR3 = 0;
         htim2.Instance->CCR4 = TIM_APB1_PERIOD_CLOCKS + 1;
+#endif
     }
 }
 
@@ -94,8 +96,10 @@ void safety_critical_disarm_brake_resistor() {
 
     CRITICAL_SECTION() {
         brake_resistor_armed = false;
+#if HW_VERSION_MAJOR == 3
         htim2.Instance->CCR3 = 0;
         htim2.Instance->CCR4 = TIM_APB1_PERIOD_CLOCKS + 1;
+#endif
     }
 
     // Check necessary to prevent infinite recursion
@@ -115,6 +119,7 @@ void safety_critical_apply_brake_resistor_timings(uint32_t low_off, uint32_t hig
 
     CRITICAL_SECTION() {
         if (brake_resistor_armed) {
+#if HW_VERSION_MAJOR == 3
             // Safe update of low and high side timings
             // To avoid race condition, first reset timings to safe state
             // ch3 is low side, ch4 is high side
@@ -122,6 +127,7 @@ void safety_critical_apply_brake_resistor_timings(uint32_t low_off, uint32_t hig
             htim2.Instance->CCR4 = TIM_APB1_PERIOD_CLOCKS + 1;
             htim2.Instance->CCR3 = low_off;
             htim2.Instance->CCR4 = high_on;
+#endif
         }
     }
 }
@@ -162,10 +168,12 @@ void start_adc_pwm() {
 
 
     // Start brake resistor PWM in floating output configuration
+#if HW_VERSION_MAJOR == 3
     htim2.Instance->CCR3 = 0;
     htim2.Instance->CCR4 = TIM_APB1_PERIOD_CLOCKS + 1;
     HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_3);
     HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_4);
+#endif
 
     if (odrv.config_.enable_brake_resistor) {
         safety_critical_arm_brake_resistor();

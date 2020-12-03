@@ -109,8 +109,13 @@ class TestSimpleCAN():
 
     def run_test(self, odrive: ODriveComponent, canbus: CanInterfaceComponent, node_id: int, extended_id: bool, logger: Logger):
         odrive.disable_mappings()
-        odrive.handle.config.gpio15_mode = GPIO_MODE_CAN_A
-        odrive.handle.config.gpio16_mode = GPIO_MODE_CAN_A
+        if odrive.yaml['board-version'].startswith("v3."):
+            odrive.handle.config.gpio15_mode = GPIO_MODE_CAN_A
+            odrive.handle.config.gpio16_mode = GPIO_MODE_CAN_A
+        elif odrive.yaml['board-version'].startswith("v4."):
+            pass # CAN pin configuration is hardcoded
+        else:
+            raise Exception("unknown board version {}".format(odrive.yaml['board-version']))
         odrive.handle.config.enable_can_a = True
         odrive.save_config_and_reboot()
 

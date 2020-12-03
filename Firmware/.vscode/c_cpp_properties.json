@@ -3,16 +3,17 @@
         {
             "name": "Win32",
             "includePath": [
+                "${workspaceFolder}/Private/**",
                 "${workspaceFolder}/**"
             ],
             "defines": [
                 "__arm__",
-                "STM32F405xx",
-                "FPU_FPV4",
+                "STM32F722xx",
+                "FPU_FPV5",
                 "USE_HAL_DRIVER",
-                "HW_VERSION_MAJOR=3",
-                "HW_VERSION_MINOR=6",
-                "HW_VERSION_VOLTAGE=56",
+                "HW_VERSION_MAJOR=4",
+                "HW_VERSION_MINOR=1",
+                "HW_VERSION_VOLTAGE=58",
                 "__weak=\"__attribute__((weak))\"",
                 "__packed=\"__attribute__((__packed__))\"",
                 "__GNUC__"
@@ -21,8 +22,8 @@
             "compilerPath": "arm-none-eabi-g++.exe",
             "compilerArgs": [
                 "-mthumb",
-                "-mcpu=cortex-m4",
-                "-mfpu=fpv4-sp-d16",
+                "-mcpu=cortex-m7",
+                "-mfpu=fpv5-sp-d16",
                 "-mfloat-abi=hard",
                 "-specs=nosys.specs",
                 "-specs=nano.specs",
@@ -42,9 +43,9 @@
                 "STM32F405xx",
                 "FPU_FPV4",
                 "USE_HAL_DRIVER",
-                "HW_VERSION_MAJOR=3",
-                "HW_VERSION_MINOR=6",
-                "HW_VERSION_VOLTAGE=56",
+                "HW_VERSION_MAJOR=4",
+                "HW_VERSION_MINOR=1",
+                "HW_VERSION_VOLTAGE=58",
                 "__weak=\"__attribute__((weak))\"",
                 "__packed=\"__attribute__((__packed__))\"",
                 "__GNUC__"
@@ -64,9 +65,9 @@
                 "STM32F405xx",
                 "FPU_FPV4",
                 "USE_HAL_DRIVER",
-                "HW_VERSION_MAJOR=3",
-                "HW_VERSION_MINOR=4",
-                "HW_VERSION_VOLTAGE=56",
+                "HW_VERSION_MAJOR=4",
+                "HW_VERSION_MINOR=1",
+                "HW_VERSION_VOLTAGE=58",
                 "__weak=\"__attribute__((weak))\"",
                 "__packed=\"__attribute__((__packed__))\"",
                 "__GNUC__"

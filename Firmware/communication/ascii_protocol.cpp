@@ -30,6 +30,8 @@
 
 #if HW_VERSION_MAJOR == 3
 static Introspectable root_obj = ODrive3TypeInfo<ODrive>::make_introspectable(odrv);
+#elif HW_VERSION_MAJOR == 4
+static Introspectable root_obj = ODrive4TypeInfo<ODrive>::make_introspectable(odrv);
 #endif
 
 /* Private function prototypes -----------------------------------------------*/

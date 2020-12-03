@@ -1,0 +1,4 @@
+[submodule "Firmware/Private"]
+	path = Firmware/Private
+	url = git@github.com:madcowswe/ODrivePrivate.git
+	branch = submodule
