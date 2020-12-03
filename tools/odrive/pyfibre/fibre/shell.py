@@ -13,7 +13,7 @@ async def discovered_device(device,
     message and making the device available to the interactive
     console
     """
-    serial_number = '{:012X}'.format(await device.serial_number) if hasattr(device, 'serial_number') else "[unknown serial number]"
+    serial_number = '{:012X}'.format(await device._serial_number_property.read()) if hasattr(device, '_serial_number_property') else "[unknown serial number]"
     if serial_number in discovered_devices:
         verb = "Reconnected"
         index = discovered_devices.index(serial_number)

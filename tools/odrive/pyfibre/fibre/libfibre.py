@@ -470,17 +470,14 @@ class RemoteFunction(object):
 
         rx_length = sum(arg[2].get_length() for arg in self._outputs)
 
-        # Create task which will start the TX operation soon. This allows us to
-        # start an RX operation before the TX operation is actually started.
-        tx_future = asyncio.create_task(tx_stream.write_all(tx_buf))
-        
-        try:
-            try:
-                rx_buf = await rx_stream.read_all(rx_length)
-            finally:
-                await tx_future
-        finally:
-            await call_future
+        # The order here is important: The read_all coroutine must get a chance
+        # to run before the write_all coroutine. Otherwise it's possible that
+        # RX data is lost.
+        rx_buf, _, _ = await asyncio.gather(
+            rx_stream.read_all(rx_length),
+            tx_stream.write_all(tx_buf),
+            call_future,
+        )
         
         outputs = []
         for arg in self._outputs:
@@ -510,8 +507,7 @@ class RemoteFunction(object):
         if (len(self._inputs) != len(args)):
             raise TypeError("expected {} arguments but have {}".format(len(self._inputs), len(args)))
 
-        coro = self.async_call(instance, args, cancellation_token)
-        return asyncio.ensure_future(coro, loop=instance._libfibre.loop)
+        return self.async_call(instance, args, cancellation_token)
 
     def __get__(self, instance, owner):
         return MethodType(self, instance) if instance else self
@@ -548,13 +544,20 @@ class RemoteAttribute(object):
             return self
 
         if self._magic_getter:
+            if threading.current_thread() == libfibre_thread:
+                # read() behaves asynchronously when run on the fibre thread
+                # which means it returns an awaitable which _must_ be awaited
+                # (otherwise it's a bug). However hasattr(...) internally calls
+                # __get__ and does not await the result. Thus the safest thing
+                # is to just disallow __get__ from run as an async method.
+                raise Exception("Cannot use magic getter on Fibre thread. Use _[prop_name]_propery.read() instead.")
             return self._get_obj(instance).read()
         else:
             return self._get_obj(instance)
 
     def __set__(self, instance, val):
         if self._magic_setter:
-            self._get_obj(instance).exchange(val)
+            return self._get_obj(instance).exchange(val)
         else:
             raise Exception("this attribute cannot be written to")
 
@@ -731,7 +734,7 @@ class LibFibre():
     def _on_found_object(self, ctx, obj):
         py_obj = self._objects[obj]
         # notify the subscriber
-        asyncio.ensure_future(self.discovery_processes[ctx]['callback'](py_obj))
+        self.discovery_processes[ctx]['callback'](py_obj)
     
     def _on_discovery_stopped(self, ctx, result):
         print("discovery stopped")
@@ -788,6 +791,7 @@ def run_event_loop():
     libfibre = LibFibre()
 
     libfibre.loop.run_until_complete(terminate_libfibre)
+    libfibre.loop.set_debug(True)
 
     libfibre_close(libfibre.ctx)
 
@@ -870,7 +874,7 @@ def start_discovery(path, obj_filter,
 
     libfibre.loop.call_soon_threadsafe(lambda: libfibre.start_discovery(
         path,
-        on_object_discovered_filter,
+        lambda x: asyncio.ensure_future(on_object_discovered_filter(x), loop=libfibre.loop),
         search_cancellation_token))
 
 
