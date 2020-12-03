@@ -118,8 +118,8 @@ To flash and start remote debugging:
 
  1. Start OpenOCD remotely, along with a tunnel to localhost: `ssh -t odrv -L3333:localhost:3333 bash -c "\"openocd '-f' 'interface/stlink-v2.cfg' '-f' 'target/stm32f4x_stlink.cfg'\""`
     You can keep this open for multiple debug sessions. Press <kbd>Ctrl</kbd>+<kbd>C</kbd> to quit.
- 2. Compile the firmware
- 3. In VSCode, select the run configuration "Debug ODrive via external server" and press Run. In contrast to the other configurations, this will flash the new firmware before dropping you into the debugger.
+ 2. Compile the firmware.
+ 3. In VSCode, select the run configuration "Debug ODrive v3.x/v4.x - Remote" and press Run. This will flash the new firmware before dropping you into the debugger.
 
 To run a test:
 
