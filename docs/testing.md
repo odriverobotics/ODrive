@@ -44,7 +44,7 @@ If your test rig differs, you may be able to run some but not all of the tests.
 
 ## How to set up a Raspberry Pi as testing host
 
- 1. Install Raspbian Lite on a Raspberry Pi 4.0. I used the NOOBS installer for this.
+ 1. Install Raspbian Lite on a Raspberry Pi 4.0. This is easiest if you have a keyboard, mouse and screen (micro-HDMI!). I used the [NOOBS Lite installer](https://www.raspberrypi.org/downloads/noobs/) for this. Paste the ZIP-file's contents onto a FAT32 formatted SD card (fs type `0b` in `fdisk`) and boot it. Then follow the on-screen instructions.
  2. Prepare the installation:
  
         sudo systemctl enable ssh
@@ -52,6 +52,7 @@ If your test rig differs, you may be able to run some but not all of the tests.
         # Transfer your public key for passwordless SSH. All subsequent steps can be done via SSH.
         sudo apt-get update
         sudo apt-get upgrade
+        # Change /etc/hostname to something meaningful
 
  3. Add the following lines to `/boot/config.txt`:
     - `enable_uart=1`
@@ -66,7 +67,7 @@ If your test rig differs, you may be able to run some but not all of the tests.
 
  6. Install the prerequisites:
 
-        sudo apt-get install ipython3 python3-appdirs python3-yaml python3-usb python3-serial python3-can python3-scipy git openocd
+        sudo apt-get install ipython3 python3-appdirs python3-yaml python3-usb python3-serial python3-can python3-scipy python3-matplotlib python3-ipdb git openocd
         # Optionally, to be able to compile the firmware:
         sudo apt-get install gcc-arm-none-eabi
 
@@ -74,30 +75,36 @@ If your test rig differs, you may be able to run some but not all of the tests.
 
         sudo apt-get install libfontconfig libxft2 libusb-dev
 
-        wget https://downloads.arduino.cc/arduino-1.8.12-linuxarm.tar.xz
-        tar -xf arduino-1.8.12-linuxarm.tar.xz
-        wget https://www.pjrc.com/teensy/td_151/TeensyduinoInstall.linuxarm
+        wget https://downloads.arduino.cc/arduino-1.8.13-linuxarm.tar.xz
+        tar -xf arduino-1.8.13-linuxarm.tar.xz
+        wget https://www.pjrc.com/teensy/td_153/TeensyduinoInstall.linuxarm
         chmod +x TeensyduinoInstall.linuxarm
-        ./TeensyduinoInstall.linuxarm --dir=arduino-1.8.12
-        sudo cp -R arduino-1.8.12 /usr/share/arduino
+        ./TeensyduinoInstall.linuxarm --dir=arduino-1.8.13
+        sudo cp -R arduino-1.8.13 /usr/share/arduino
         sudo ln -s /usr/share/arduino/arduino /usr/bin/arduino
         
         git clone https://github.com/PaulStoffregen/teensy_loader_cli
         pushd teensy_loader_cli
+        make
         sudo cp teensy_loader_cli /usr/bin/
         sudo ln -s /usr/bin/teensy_loader_cli /usr/bin/teensy-loader-cli
         popd
+        curl https://www.pjrc.com/teensy/49-teensy.rules | sudo tee /etc/udev/rules.d/49-teensy.rules
 
- 8. Add the following lines to `/etc/udev/rules.d/49-stlinkv2`:
+ 8. Add the following lines to `/etc/udev/rules.d/49-stlinkv2.rules`:
 
         SUBSYSTEMS=="usb", ATTRS{idVendor}=="0483", ATTRS{idProduct}=="374b", MODE:="0666"
         SUBSYSTEMS=="usb", ATTRS{idVendor}=="0483", ATTRS{idProduct}=="3748", MODE:="0666"
 
- 9. `sudo ../../odrivetool udev-setup`
+ 9.  `sudo mkdir /opt/odrivetest && sudo chown $USER /opt/odrivetest`
 
- 10. `sudo udevadm trigger`
+ 10. At this point you need the ODrive repository. See next section to sync it from your main PC. We assume now that you navigated to `tools/odrive/tests/`.
 
- 11. Run once after every reboot: `sudo ipython3 --pdb test_runner.py -- --setup-host --test-rig-yaml ../../test-rig-rpi.yaml`
+ 11. `sudo ../../odrivetool udev-setup`
+
+ 12. `sudo udevadm trigger`
+
+ 13. Run once after every reboot: `sudo ipython3 --pdb test_runner.py -- --setup-host --test-rig-yaml ../../test-rig-rpi.yaml`
 
 ## SSH testing flow
 

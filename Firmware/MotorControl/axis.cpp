@@ -88,12 +88,6 @@ void Axis::clear_config() {
     config_.can.node_id = axis_num_;
 }
 
-// @brief Does Nothing
-bool Axis::setup() {
-    // Does nothing - Motor and encoder setup called separately.
-    return true;
-}
-
 static void run_state_machine_loop_wrapper(void* ctx) {
     reinterpret_cast<Axis*>(ctx)->run_state_machine_loop();
     reinterpret_cast<Axis*>(ctx)->thread_id_valid_ = false;
@@ -106,17 +100,17 @@ void Axis::start_thread() {
     thread_id_valid_ = true;
 }
 
-// @brief Unblocks the control loop thread.
-// This is called from the current sense interrupt handler.
-void Axis::signal_current_meas() {
-    if (thread_id_valid_)
-        osSignalSet(thread_id_, M_SIGNAL_PH_CURRENT_MEAS);
-}
-
-// @brief Blocks until a current measurement is completed
-// @returns True on success, false otherwise
-bool Axis::wait_for_current_meas() {
-    return osSignalWait(M_SIGNAL_PH_CURRENT_MEAS, PH_CURRENT_MEAS_TIMEOUT).status == osEventSignal;
+/**
+ * @brief Blocks until at least one complete control loop has been executed.
+ */
+bool Axis::wait_for_control_iteration() {
+    osSignalWait(0x0001, osWaitForever); // this might return instantly
+    osSignalWait(0x0001, osWaitForever); // this might be triggered at the
+                                         // end of a control loop iteration
+                                         // which was started before we entered
+                                         // this function
+    osSignalWait(0x0001, osWaitForever);
+    return true;
 }
 
 // step/direction interface
@@ -155,23 +149,10 @@ void Axis::set_step_dir_active(bool active) {
 
 // @brief Do axis level checks and call subcomponent do_checks
 // Returns true if everything is ok.
-bool Axis::do_checks() {
-    if (!brake_resistor_armed)
-        error_ |= ERROR_BRAKE_RESISTOR_DISARMED;
-    if ((current_state_ != AXIS_STATE_IDLE) && (motor_.armed_state_ == Motor::ARMED_STATE_DISARMED))
-        // motor got disarmed in something other than the idle loop
-        error_ |= ERROR_MOTOR_DISARMED;
-    if (!(vbus_voltage >= odrv.config_.dc_bus_undervoltage_trip_level))
-        error_ |= ERROR_DC_BUS_UNDER_VOLTAGE;
-    if (!(vbus_voltage <= odrv.config_.dc_bus_overvoltage_trip_level))
-        error_ |= ERROR_DC_BUS_OVER_VOLTAGE;
-
+bool Axis::do_checks(uint32_t timestamp) {
     // Sub-components should use set_error which will propegate to this error_
     motor_.effective_current_lim();
-    motor_.do_checks();
-    // encoder_.do_checks();
-    // sensorless_estimator_.do_checks();
-    // controller_.do_checks();
+    motor_.do_checks(timestamp);
 
     // Check for endstop presses
     if (min_endstop_.config_.enabled && min_endstop_.rose() && !(current_state_ == AXIS_STATE_HOMING)) {
@@ -181,20 +162,6 @@ bool Axis::do_checks() {
     }
 
     return check_for_errors();
-}
-
-// @brief Update all esitmators
-bool Axis::do_updates() {
-    // Sub-components should use set_error which will propegate to this error_
-    encoder_.update();
-    sensorless_estimator_.update();
-    motor_.fet_thermistor_.update();
-    motor_.motor_thermistor_.update();
-    min_endstop_.update();
-    max_endstop_.update();
-    bool ret = check_for_errors();
-    odCAN->send_cyclic(*this);
-    return ret;
 }
 
 // @brief Feed the watchdog to prevent watchdog timeouts.
@@ -216,132 +183,179 @@ bool Axis::watchdog_check() {
     }
 }
 
-bool Axis::run_lockin_spin(const LockinConfig_t &lockin_config) {
-    // Spiral up current for softer rotor lock-in
-    lockin_state_ = LOCKIN_STATE_RAMP;
-    float x = 0.0f;
-    run_control_loop([&]() {
-        float phase = wrap_pm_pi(lockin_config.ramp_distance * x);
-        float torque = lockin_config.current * motor_.config_.torque_constant * x;
-        x += current_meas_period / lockin_config.ramp_time;
-        if (!motor_.update(torque, phase, 0.0f))
-            return false;
-        return x < 1.0f;
-    });
-    
-    // Spin states
-    float distance = lockin_config.ramp_distance;
-    float phase = wrap_pm_pi(distance);
-    float vel = distance / lockin_config.ramp_time;
+bool Axis::run_lockin_spin(const LockinConfig_t &lockin_config, bool remain_armed,
+        std::function<bool(bool)> loop_cb) {
+    CRITICAL_SECTION() {
+        // Reset state variables
+        open_loop_controller_.Idq_setpoint_ = {0.0f, 0.0f};
+        open_loop_controller_.Vdq_setpoint_ = {0.0f, 0.0f};
+        open_loop_controller_.phase_ = 0.0f;
+        open_loop_controller_.phase_vel_ = 0.0f;
 
-    // Function of states to check if we are done
-    auto spin_done = [&](bool vel_override = false) -> bool {
-        bool done = false;
-        if (lockin_config.finish_on_vel || vel_override)
-            done = done || std::abs(vel) >= std::abs(lockin_config.vel);
-        if (lockin_config.finish_on_distance)
-            done = done || std::abs(distance) >= std::abs(lockin_config.finish_distance);
-        if (lockin_config.finish_on_enc_idx)
-            done = done || encoder_.index_found_;
-        return done;
-    };
+        open_loop_controller_.max_current_ramp_ = lockin_config.current / lockin_config.ramp_time;
+        open_loop_controller_.max_voltage_ramp_ = lockin_config.current / lockin_config.ramp_time;
+        open_loop_controller_.max_phase_vel_ramp_ = lockin_config.accel;
+        open_loop_controller_.target_current_ = motor_.config_.motor_type != Motor::MOTOR_TYPE_GIMBAL ? lockin_config.current : 0.0f;
+        open_loop_controller_.target_voltage_ = motor_.config_.motor_type != Motor::MOTOR_TYPE_GIMBAL ? 0.0f : lockin_config.current;
+        open_loop_controller_.target_vel_ = lockin_config.vel;
+        open_loop_controller_.total_distance_ = 0.0f;
 
-    // Accelerate
-    lockin_state_ = LOCKIN_STATE_ACCELERATE;
-    run_control_loop([&]() {
-        vel += lockin_config.accel * current_meas_period;
-        distance += vel * current_meas_period;
-        phase = wrap_pm_pi(phase + vel * current_meas_period);
+        motor_.current_control_.enable_current_control_src_ = motor_.config_.motor_type != Motor::MOTOR_TYPE_GIMBAL;
+        motor_.current_control_.Idq_setpoint_src_.connect_to(&open_loop_controller_.Idq_setpoint_);
+        motor_.current_control_.Vdq_setpoint_src_.connect_to(&open_loop_controller_.Vdq_setpoint_);
 
-        if (!motor_.update(lockin_config.current * motor_.config_.torque_constant, phase, vel))
-            return false;
-        return !spin_done(true); //vel_override to go to next phase
-    });
+        motor_.current_control_.phase_src_.connect_to(&open_loop_controller_.phase_);
+        acim_estimator_.rotor_phase_src_.connect_to(&open_loop_controller_.phase_);
+        
+        motor_.phase_vel_src_.connect_to(&open_loop_controller_.phase_vel_);
+        motor_.current_control_.phase_vel_src_.connect_to(&open_loop_controller_.phase_vel_);
+        acim_estimator_.rotor_phase_vel_src_.connect_to(&open_loop_controller_.phase_vel_);
+    }
+    wait_for_control_iteration();
 
-    if (!encoder_.index_found_)
-        encoder_.set_idx_subscribe(true);
+    motor_.arm(&motor_.current_control_);
 
-    // Constant speed
-    if (!spin_done()) {
-        lockin_state_ = LOCKIN_STATE_CONST_VEL;
-        vel = lockin_config.vel; // reset to actual specified vel to avoid small integration error
-        run_control_loop([&]() {
-            distance += vel * current_meas_period;
-            phase = wrap_pm_pi(phase + vel * current_meas_period);
+    bool subscribed_to_idx_once = false;
+    bool success = false;
+    float dir = lockin_config.vel >= 0.0f ? 1.0f : -1.0f;
 
-            if (!motor_.update(lockin_config.current * motor_.config_.torque_constant, phase, vel))
-                return false;
-            return !spin_done();
-        });
+    while ((requested_state_ == AXIS_STATE_UNDEFINED) && motor_.is_armed_) {
+        bool reached_target_vel = std::abs(open_loop_controller_.phase_vel_.any().value_or(0.0f) - lockin_config.vel) <= std::numeric_limits<float>::epsilon();
+        bool reached_target_dist = open_loop_controller_.total_distance_.any().value_or(0.0f) * dir >= lockin_config.finish_distance * dir;
+
+        // Check if terminal condition is reached
+        bool terminal_condition = (reached_target_vel && lockin_config.finish_on_vel)
+                               || (reached_target_dist && lockin_config.finish_on_distance)
+                               || (encoder_.index_found_ && lockin_config.finish_on_enc_idx);
+        if (terminal_condition) {
+            success = true;
+            break;
+        }
+
+        // Activate index pin as soon as target velocity was reached. This is
+        // to avoid hitting the index from the wrong direction.
+        if (reached_target_vel && !encoder_.index_found_ && !subscribed_to_idx_once) {
+            encoder_.set_idx_subscribe(true);
+            subscribed_to_idx_once = true;
+        }
+
+        if (loop_cb)
+            if (!loop_cb(reached_target_vel))
+                break;
+
+        // TODO: use new sync function instead
+        asm volatile ("" ::: "memory");
+        osDelay(1);
     }
 
-    lockin_state_ = LOCKIN_STATE_INACTIVE;
-    return check_for_errors();
+    if (!success || !remain_armed) {
+        motor_.disarm();
+    }
+
+    return success;
 }
 
-// Note run_sensorless_control_loop and run_closed_loop_control_loop are very similar and differ only in where we get the estimate from.
-bool Axis::run_sensorless_control_loop() {
-    controller_.pos_estimate_linear_src_ = nullptr;
-    controller_.pos_estimate_circular_src_ = nullptr;
-    controller_.pos_estimate_valid_src_ = nullptr;
-    controller_.vel_estimate_src_ = &sensorless_estimator_.vel_estimate_;
-    controller_.vel_estimate_valid_src_ = &sensorless_estimator_.vel_estimate_valid_;
 
-    run_control_loop([this](){
-        // Note that all estimators are updated in the loop prefix in run_control_loop
-        float torque_setpoint;
-        if (!controller_.update(&torque_setpoint))
-            return error_ |= ERROR_CONTROLLER_FAILED, false;
-        if (!motor_.update(torque_setpoint, sensorless_estimator_.phase_, sensorless_estimator_.vel_estimate_))
-            return false; // set_error should update axis.error_
-        return true;
-    });
+bool Axis::start_closed_loop_control() {
+    bool sensorless_mode = config_.enable_sensorless_mode;
+
+    if (sensorless_mode) {
+        // TODO: restart if desired
+        if (!run_lockin_spin(config_.sensorless_ramp, true)) {
+            return false;
+        }
+    }
+
+    // Hook up the data paths between the components
+    CRITICAL_SECTION() {
+        if (sensorless_mode) {
+            controller_.pos_estimate_linear_src_.disconnect();
+            controller_.pos_estimate_circular_src_.disconnect();
+            controller_.pos_wrap_src_.disconnect();
+            controller_.vel_estimate_src_.connect_to(&sensorless_estimator_.vel_estimate_);
+        } else if (controller_.config_.load_encoder_axis < AXIS_COUNT) {
+            Axis* ax = &axes[controller_.config_.load_encoder_axis];
+            controller_.pos_estimate_circular_src_.connect_to(&ax->encoder_.pos_circular_);
+            controller_.pos_wrap_src_.connect_to(&controller_.config_.circular_setpoint_range);
+            controller_.pos_estimate_linear_src_.connect_to(&ax->encoder_.pos_estimate_);
+            controller_.vel_estimate_src_.connect_to(&ax->encoder_.vel_estimate_);
+        } else {
+            controller_.pos_estimate_circular_src_.disconnect();
+            controller_.pos_estimate_linear_src_.disconnect();
+            controller_.pos_wrap_src_.disconnect();
+            controller_.vel_estimate_src_.disconnect();
+            controller_.set_error(Controller::ERROR_INVALID_LOAD_ENCODER);
+            return false;
+        }
+
+        // To avoid any transient on startup, we intialize the setpoint to be the current position
+        // note - input_pos_ is not set here. It is set to 0 earlier in this method and velocity control is used.
+        if (controller_.config_.control_mode >= Controller::CONTROL_MODE_POSITION_CONTROL) {
+            std::optional<float> pos_init = (controller_.config_.circular_setpoints ?
+                                    controller_.pos_estimate_circular_src_ :
+                                    controller_.pos_estimate_linear_src_).any();
+            if (!pos_init.has_value()) {
+                return false;
+            } else {
+                controller_.pos_setpoint_ = *pos_init;
+                controller_.input_pos_ = *pos_init;
+            }
+        }
+        controller_.input_pos_updated();
+
+        // Avoid integrator windup issues
+        controller_.vel_integrator_torque_ = 0.0f;
+
+        motor_.torque_setpoint_src_.connect_to(&controller_.torque_output_);
+        motor_.direction_ = sensorless_mode ? 1.0f : encoder_.config_.direction;
+
+        motor_.current_control_.enable_current_control_src_ = motor_.config_.motor_type != Motor::MOTOR_TYPE_GIMBAL;
+        motor_.current_control_.Idq_setpoint_src_.connect_to(&motor_.Idq_setpoint_);
+        motor_.current_control_.Vdq_setpoint_src_.connect_to(&motor_.Vdq_setpoint_);
+
+        OutputPort<float>* phase_src = sensorless_mode ? &sensorless_estimator_.phase_ : &encoder_.phase_;
+        motor_.current_control_.phase_src_.connect_to(phase_src);
+        acim_estimator_.rotor_phase_src_.connect_to(phase_src);
+        
+        OutputPort<float>* phase_vel_src = sensorless_mode ? &sensorless_estimator_.phase_vel_ : &encoder_.phase_vel_;
+        motor_.phase_vel_src_.connect_to(phase_vel_src);
+        motor_.current_control_.phase_vel_src_.connect_to(phase_vel_src);
+        acim_estimator_.rotor_phase_vel_src_.connect_to(phase_vel_src);
+        
+        if (sensorless_mode) {
+            // Make the final velocity of the loĉk-in spin the setpoint of the
+            // closed loop controller to allow for smooth transition.
+            float vel = config_.sensorless_ramp.vel / (2.0f * M_PI * motor_.config_.pole_pairs);
+            controller_.input_vel_ = vel;
+            controller_.vel_setpoint_ = vel;
+        }
+    }
+
+    // In sensorless mode the motor is already armed.
+    if (!motor_.is_armed_) {
+        wait_for_control_iteration();
+        motor_.arm(&motor_.current_control_);
+    }
+
+    return true;
+}
+
+bool Axis::stop_closed_loop_control() {
+    motor_.disarm();
     return check_for_errors();
 }
 
 bool Axis::run_closed_loop_control_loop() {
-    if (!controller_.select_encoder(controller_.config_.load_encoder_axis)) {
-        return error_ |= ERROR_CONTROLLER_FAILED, false;
-    }
-
-    // To avoid any transient on startup, we intialize the setpoint to be the current position
-    if (controller_.config_.circular_setpoints) {
-        if (!controller_.pos_estimate_circular_src_) {
-            return error_ |= ERROR_CONTROLLER_FAILED, false;
-        }
-        else {
-            controller_.pos_setpoint_ = *controller_.pos_estimate_circular_src_;
-            controller_.input_pos_ = *controller_.pos_estimate_circular_src_;
-        }
-    }
-    else {
-        if (!controller_.pos_estimate_linear_src_) {
-            return error_ |= ERROR_CONTROLLER_FAILED, false;
-        }
-        else {
-            controller_.pos_setpoint_ = *controller_.pos_estimate_linear_src_;
-            controller_.input_pos_ = *controller_.pos_estimate_linear_src_;
-        }
-    }
-    controller_.input_pos_updated();
-
-    // Avoid integrator windup issues
-    controller_.vel_integrator_torque_ = 0.0f;
-
+    start_closed_loop_control();
     set_step_dir_active(config_.enable_step_dir);
-    run_control_loop([this](){
-        // Note that all estimators are updated in the loop prefix in run_control_loop
-        float torque_setpoint;
-        if (!controller_.update(&torque_setpoint))
-            return error_ |= ERROR_CONTROLLER_FAILED, false;
 
-        float phase_vel = (2*M_PI) * encoder_.vel_estimate_ * motor_.config_.pole_pairs;
-        if (!motor_.update(torque_setpoint, encoder_.phase_, phase_vel))
-            return false; // set_error should update axis.error_
+    while ((requested_state_ == AXIS_STATE_UNDEFINED) && motor_.is_armed_) {
+        osDelay(1);
+    }
 
-        return true;
-    });
     set_step_dir_active(config_.enable_step_dir && config_.step_dir_always_on);
+    stop_closed_loop_control();
+
     return check_for_errors();
 }
 
@@ -368,45 +382,15 @@ bool Axis::run_homing() {
 
     homing_.is_homed = false;
 
-    if (!controller_.select_encoder(controller_.config_.load_encoder_axis)) {
-        return error_ |= ERROR_CONTROLLER_FAILED, false;
-    }
-    
-    // To avoid any transient on startup, we intialize the setpoint to be the current position
-    // note - input_pos_ is not set here. It is set to 0 earlier in this method and velocity control is used.
-    if (controller_.config_.circular_setpoints) {
-        if (!controller_.pos_estimate_circular_src_) {
-            return error_ |= ERROR_CONTROLLER_FAILED, false;
-        }
-        else {
-            controller_.pos_setpoint_ = *controller_.pos_estimate_circular_src_;
-        }
-    }
-    else {
-        if (!controller_.pos_estimate_linear_src_) {
-            return error_ |= ERROR_CONTROLLER_FAILED, false;
-        }
-        else {
-            controller_.pos_setpoint_ = *controller_.pos_estimate_linear_src_;
-        }
-    }
-
-    // Avoid integrator windup issues
-    controller_.vel_integrator_torque_ = 0.0f;
+    start_closed_loop_control();
 
     // Driving toward the endstop
-    run_control_loop([this](){
-        // Note that all estimators are updated in the loop prefix in run_control_loop
-        float torque_setpoint;
-        if (!controller_.update(&torque_setpoint))
-            return error_ |= ERROR_CONTROLLER_FAILED, false;
+    while ((requested_state_ == AXIS_STATE_UNDEFINED) && motor_.is_armed_ && !min_endstop_.get_state()) {
+        osDelay(1);
+    }
 
-        float phase_vel = (2*M_PI) * encoder_.vel_estimate_ * motor_.config_.pole_pairs;
-        if (!motor_.update(torque_setpoint, encoder_.phase_, phase_vel))
-            return false; // set_error should update axis.error_
+    stop_closed_loop_control();
 
-        return !min_endstop_.get_state();
-    });
     error_ &= ~ERROR_MIN_ENDSTOP_PRESSED; // clear this error since we deliberately drove into the endstop
 
     // pos_setpoint is the starting position for the trap_traj so we need to set it.
@@ -424,18 +408,13 @@ bool Axis::run_homing() {
     controller_.input_vel_ = 0.0f;
     controller_.input_torque_ = 0.0f;
 
-    run_control_loop([this](){
-        // Note that all estimators are updated in the loop prefix in run_control_loop
-        float torque_setpoint;
-        if (!controller_.update(&torque_setpoint))
-            return error_ |= ERROR_CONTROLLER_FAILED, false;
+    start_closed_loop_control();
 
-        float phase_vel = (2*M_PI) * encoder_.vel_estimate_ * motor_.config_.pole_pairs;
-        if (!motor_.update(torque_setpoint, encoder_.phase_, phase_vel))
-            return false; // set_error should update axis.error_
+    while ((requested_state_ == AXIS_STATE_UNDEFINED) && motor_.is_armed_ && !controller_.trajectory_done_) {
+        osDelay(1);
+    }
 
-        return !controller_.trajectory_done_;
-    });
+    stop_closed_loop_control();
 
     controller_.config_.control_mode = stored_control_mode;
     controller_.config_.input_mode = stored_input_mode;
@@ -445,24 +424,18 @@ bool Axis::run_homing() {
 }
 
 bool Axis::run_idle_loop() {
-    // run_control_loop ignores missed modulation timing updates
-    // if and only if we're in AXIS_STATE_IDLE
-    safety_critical_disarm_motor_pwm(motor_);
+    last_drv_fault_ = motor_.gate_driver_.get_error();
     mechanical_brake_.engage();
     set_step_dir_active(config_.enable_step_dir && config_.step_dir_always_on);
-    run_control_loop([this]() {
-        return true;
-    });
+    while (requested_state_ == AXIS_STATE_UNDEFINED) {
+        motor_.setup();
+        osDelay(1);
+    }
     return check_for_errors();
 }
 
 // Infinite loop that does calibration and enters main control loop as appropriate
 void Axis::run_state_machine_loop() {
-
-    // arm!
-    motor_.arm();
-    mechanical_brake_.release();
-
     for (;;) {
         // Load the task chain if a specific request is pending
         if (requested_state_ != AXIS_STATE_UNDEFINED) {
@@ -478,11 +451,11 @@ void Axis::run_state_machine_loop() {
                     task_chain_[pos++] = AXIS_STATE_HOMING;
                 if (config_.startup_closed_loop_control)
                     task_chain_[pos++] = AXIS_STATE_CLOSED_LOOP_CONTROL;
-                else if (config_.startup_sensorless_control)
-                    task_chain_[pos++] = AXIS_STATE_SENSORLESS_CONTROL;
                 task_chain_[pos++] = AXIS_STATE_IDLE;
             } else if (requested_state_ == AXIS_STATE_FULL_CALIBRATION_SEQUENCE) {
                 task_chain_[pos++] = AXIS_STATE_MOTOR_CALIBRATION;
+                if (encoder_.config_.mode == ODriveIntf::EncoderIntf::MODE_HALL)
+                    task_chain_[pos++] = AXIS_STATE_ENCODER_HALL_POLARITY_CALIBRATION;
                 if (encoder_.config_.use_index)
                     task_chain_[pos++] = AXIS_STATE_ENCODER_INDEX_SEARCH;
                 task_chain_[pos++] = AXIS_STATE_ENCODER_OFFSET_CALIBRATION;
@@ -504,57 +477,78 @@ void Axis::run_state_machine_loop() {
         bool status;
         switch (current_state_) {
             case AXIS_STATE_MOTOR_CALIBRATION: {
+                // These error checks are a hacky way to force legacy behavior
+                // when an error is raised. TODO: remove this when we overhaul
+                // the error architecture
+                // (https://github.com/madcowswe/ODrive/issues/526).
+                //if (odrv.any_error())
+                //    goto invalid_state_label;
                 status = motor_.run_calibration();
             } break;
 
             case AXIS_STATE_ENCODER_INDEX_SEARCH: {
+                //if (odrv.any_error())
+                //    goto invalid_state_label;
                 if (!motor_.is_calibrated_)
-                    goto invalid_state_label;
-                if (encoder_.config_.idx_search_unidirectional && motor_.config_.direction==0)
                     goto invalid_state_label;
 
                 status = encoder_.run_index_search();
             } break;
 
             case AXIS_STATE_ENCODER_DIR_FIND: {
+                //if (odrv.any_error())
+                //    goto invalid_state_label;
                 if (!motor_.is_calibrated_)
                     goto invalid_state_label;
 
                 status = encoder_.run_direction_find();
             } break;
 
+            case AXIS_STATE_ENCODER_HALL_POLARITY_CALIBRATION: {
+                if (!motor_.is_calibrated_)
+                    goto invalid_state_label;
+
+                status = encoder_.run_hall_polarity_calibration();
+            } break;
+
+            case AXIS_STATE_ENCODER_HALL_PHASE_CALIBRATION: {
+                if (!motor_.is_calibrated_)
+                    goto invalid_state_label;
+
+                if (!encoder_.config_.hall_polarity_calibrated) {
+                    encoder_.set_error(ODriveIntf::EncoderIntf::ERROR_HALL_NOT_CALIBRATED_YET);
+                    goto invalid_state_label;
+                }
+
+                status = encoder_.run_hall_phase_calibration();
+            } break;
+
             case AXIS_STATE_HOMING: {
+                //if (odrv.any_error())
+                //    goto invalid_state_label;
                 status = run_homing();
             } break;
 
             case AXIS_STATE_ENCODER_OFFSET_CALIBRATION: {
+                //if (odrv.any_error())
+                //    goto invalid_state_label;
                 if (!motor_.is_calibrated_)
                     goto invalid_state_label;
                 status = encoder_.run_offset_calibration();
             } break;
 
             case AXIS_STATE_LOCKIN_SPIN: {
-                if (!motor_.is_calibrated_ || motor_.config_.direction==0)
+                //if (odrv.any_error())
+                //    goto invalid_state_label;
+                if (!motor_.is_calibrated_ || encoder_.config_.direction==0)
                     goto invalid_state_label;
-                status = run_lockin_spin(config_.general_lockin);
-            } break;
-
-            case AXIS_STATE_SENSORLESS_CONTROL: {
-                if (!motor_.is_calibrated_ || motor_.config_.direction==0)
-                        goto invalid_state_label;
-                status = run_lockin_spin(config_.sensorless_ramp); // TODO: restart if desired
-                if (status) {
-                    // call to controller.reset() that happend when arming means that vel_setpoint
-                    // is zeroed. So we make the setpoint the spinup target for smooth transition.
-                    controller_.vel_setpoint_ = config_.sensorless_ramp.vel / (2.0f * M_PI * motor_.config_.pole_pairs);
-                    status = run_sensorless_control_loop();
-                }
+                status = run_lockin_spin(config_.general_lockin, false);
             } break;
 
             case AXIS_STATE_CLOSED_LOOP_CONTROL: {
-                if (!motor_.is_calibrated_ || motor_.config_.direction==0)
-                    goto invalid_state_label;
-                if (!encoder_.is_ready_)
+                //if (odrv.any_error())
+                //    goto invalid_state_label;
+                if (!motor_.is_calibrated_ || (encoder_.config_.direction==0 && !config_.enable_sensorless_mode))
                     goto invalid_state_label;
                 watchdog_feed();
                 status = run_closed_loop_control_loop();
@@ -562,8 +556,7 @@ void Axis::run_state_machine_loop() {
 
             case AXIS_STATE_IDLE: {
                 run_idle_loop();
-                status = motor_.arm(); // done with idling - try to arm the motor
-                mechanical_brake_.release();
+                status = true;
             } break;
 
             default:

@@ -12,6 +12,8 @@
 #ifndef __FIBRE_INTERFACES_HPP
 #define __FIBRE_INTERFACES_HPP
 
+[[userdata.c_preamble]]
+
 #include <fibre/protocol.hpp>
 
 #pragma GCC push_options
@@ -28,7 +30,7 @@ void
 [%- endmacro %]
 
 [%- macro render_interface(intf) %]
-class [[intf.name | to_pascal_case]]Intf {
+class [[intf.name | to_pascal_case]]Intf[% if intf.implements %] :[%- for base_intf in intf.implements %] public [[base_intf.c_name]][% endfor %][% endif %] {
 public:
 [%- for intf in intf.interfaces -%]
 [[render_interface(intf) | indent(4)]]
@@ -36,7 +38,7 @@ public:
 [%- for enum in intf.enums %]
     enum [[enum.name | to_pascal_case]] {
 [%- for k, value in enum['values'].items() %]
-        [[((enum.name + k) | to_macro_case).ljust(32)]] = [% if enum.is_flags %]0x[['%08x' | format(value.value)]][% else %][[value.value]][% endif %],
+        [[((enum.name | to_macro_case) + "_" + (k | to_macro_case)).ljust(32)]] = [% if enum.is_flags %]0x[['%08x' | format(value.value)]][% else %][[value.value]][% endif %],
 [%- endfor %]
     };
 [%- endfor %]

@@ -26,7 +26,7 @@ struct [[intf.fullname | to_pascal_case]]TypeInfo : TypeInfo {
         T* ptr = *(T**)&obj;
         introspectable_storage_t res;
         switch (idx) {
-[%- for property in intf.attributes.values() %]
+[%- for property in intf.get_all_attributes().values() %]
             case [[loop.index0]]: *(decltype([[intf.c_name]]::get_[[property.name]](std::declval<T*>()))*)(&res) = [[intf.c_name]]::get_[[property.name]](ptr); break;
 [%- endfor %]
         }
@@ -38,7 +38,7 @@ struct [[intf.fullname | to_pascal_case]]TypeInfo : TypeInfo {
 [% for intf in interfaces.values() %][% if not intf.builtin %]
 template<typename T>
 const PropertyInfo [[intf.fullname | to_pascal_case]]TypeInfo<T>::property_table[] = {
-[%- for property in intf.attributes.values() %]
+[%- for property in intf.get_all_attributes().values() %]
     {"[[property.name]]", &[[(property.type.purename or property.type.fullname) | to_pascal_case]]TypeInfo<std::remove_reference_t<decltype(*[[intf.c_name]]::get_[[property.name]](std::declval<T*>()))>>::singleton},
 [%- endfor %]
 };

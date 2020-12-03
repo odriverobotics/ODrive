@@ -25,17 +25,13 @@ extern uint16_t adc_measurements_[ADC_CHANNEL_COUNT];
 /* Exported macro ------------------------------------------------------------*/
 /* Exported functions --------------------------------------------------------*/
 
-void safety_critical_arm_motor_pwm(Motor& motor);
-bool safety_critical_disarm_motor_pwm(Motor& motor);
-void safety_critical_apply_motor_pwm_timings(Motor& motor, uint16_t timings[3]);
 void safety_critical_arm_brake_resistor();
 void safety_critical_disarm_brake_resistor();
 void safety_critical_apply_brake_resistor_timings(uint32_t low_off, uint32_t high_on);
 
 // called from STM platform code
 extern "C" {
-void pwm_trig_adc_cb(ADC_HandleTypeDef* hadc, bool injected);
-void vbus_sense_adc_cb(ADC_HandleTypeDef* hadc, bool injected);
+void vbus_sense_adc_cb(uint32_t adc_value);
 void pwm_in_cb(TIM_HandleTypeDef *htim);
 }
 
@@ -46,11 +42,14 @@ void sync_timers(TIM_HandleTypeDef* htim_a, TIM_HandleTypeDef* htim_b,
                  uint16_t TIM_CLOCKSOURCE_ITRx, uint16_t count_offset,
                  TIM_HandleTypeDef* htim_refbase = nullptr);
 void start_general_purpose_adc();
-float get_adc_voltage(Stm32Gpio gpio);
-uint16_t channel_from_gpio(Stm32Gpio gpio);
-float get_adc_voltage_channel(uint16_t channel);
 void pwm_in_init();
 void start_analog_thread();
+
+// ADC getters
+uint16_t channel_from_gpio(Stm32Gpio gpio);
+float get_adc_voltage(Stm32Gpio gpio);
+float get_adc_relative_voltage(Stm32Gpio gpio);
+float get_adc_relative_voltage_ch(uint16_t channel);
 
 void update_brake_current();
 

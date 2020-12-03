@@ -131,11 +131,7 @@ If the flashing worked, you can connect to the board using the [odrivetool](gett
 
 <br><br>
 ## Testing
-The script `tools/run_tests.py` runs a sequence of automated tests for several firmware features as well as high power burn-in tests. Some tests only need one ODrive and one motor/encoder pair while other tests need a back-to-back test rig such as [this one](https://cad.onshape.com/documents/026bda35ad5dff4d73c1d37f/w/ae302174f402737e1fdb3783/e/5ca143a6e5e24daf1fe8e434). In any case, to run the tests you need to provide a YAML file that lists the parameters of your test setup. An example can be found at [`tools/test-rig-parallel.yaml`](tools/test-rig-parallel.yaml`). The programmer serial number can be found by running `Firmware/find_programmer.sh` (make sure it has the latest firmware from STM).
-
-<div class="alert" markdown="span">The test script commands the ODrive to high currents and high motor speeds so if your ODrive is connected to anything other than a stirdy test-rig (or free spinning motors), it will probably break your machine.</div>
-
-Example usage: `./run_tests.py --test-rig-yaml ../tools/test-rig-parallel.yaml`
+_Main article: [Testing](testing.md)_
 
 <br><br>
 ## Debugging
@@ -232,6 +228,34 @@ This happens from time to time.
 3. Plug in the STLink into your computer
 4. Power on the ODrive
 5. Run `make flash` again
+
+### `Warn : Cannot identify target as a STM32 family.` when flashing using openocd
+
+**Problem:** When I try to flash ODrive v4.1 with `make flash` then I get:
+```
+[...]
+** Programming Started **
+auto erase enabled
+Info : device id = 0x10006452
+Warn : Cannot identify target as a STM32 family.
+Error: auto_probe failed
+embedded:startup.tcl:487: Error: ** Programming Failed **
+in procedure 'program' 
+in procedure 'program_error' called at file "embedded:startup.tcl", line 543
+at file "embedded:startup.tcl", line 487
+```
+
+**Solution:**
+Compile and install a recent version of openocd from source. The latest official release (0.10.0 as of Nov 2020) doesn't support the STM32F722 yet.
+```
+sudo apt-get install libtool libusb-1.0
+git clone https://git.code.sf.net/p/openocd/code openocd
+cd openocd/
+./bootstrap
+./configure --enable-stlink
+make
+sudo make install
+```
 
 ## Documentation
 

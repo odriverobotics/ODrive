@@ -48,12 +48,7 @@ class TestEncoderBase():
         # encoder.count_in_cpr
         slope, offset, fitted_curve = fit_sawtooth(data[:,(0,2)], true_cpr if reverse else 0, 0 if reverse else true_cpr)
         test_assert_eq(slope, true_cps, accuracy=0.005)
-        test_curve_fit(data[:,(0,2)], fitted_curve, max_mean_err = true_cpr * 0.02, inlier_range = true_cpr * 0.02, max_outliers = len(data[:,0]) * 0.02)
-
-        # encoder.phase
-        slope, offset, fitted_curve = fit_sawtooth(data[:,(0,3)], pi if reverse else -pi, -pi if reverse else pi, sigma=5)
-        test_assert_eq(slope / 7, 2*pi*true_rps, accuracy=0.05)
-        test_curve_fit(data[:,(0,3)], fitted_curve, max_mean_err = true_cpr * 0.02, inlier_range = true_cpr * 0.02, max_outliers = len(data[:,0]) * 0.02)
+        test_curve_fit(data[:,(0,2)], fitted_curve, max_mean_err = true_cpr * 0.02, inlier_range = true_cpr * 0.02, max_outliers = len(data[:,0]) * 0.02 * noise)
 
         # encoder.pos_estimate
         slope, offset, fitted_curve = fit_line(data[:,(0,4)])
@@ -68,7 +63,7 @@ class TestEncoderBase():
         # encoder.vel_estimate
         slope, offset, fitted_curve = fit_line(data[:,(0,6)])
         test_assert_eq(slope, 0.0, range = true_cpr * abs(true_rps) * 0.01)
-        test_assert_eq(offset, true_cpr * true_rps, accuracy = 0.02)
+        test_assert_eq(offset, true_cpr * true_rps, accuracy = 0.03)
         test_curve_fit(data[:,(0,6)], fitted_curve, max_mean_err = true_cpr * 0.05, inlier_range = true_cpr * 0.05 * noise, max_outliers = len(data[:,0]) * 0.05)
 
 
@@ -189,11 +184,11 @@ class TestSinCosEncoder(TestEncoderBase):
             enc.parent.handle.config.gpio3_mode = GPIO_MODE_ANALOG_IN
             enc.parent.handle.config.gpio4_mode = GPIO_MODE_ANALOG_IN
             enc.handle.config.mode = ENCODER_MODE_SINCOS
+            enc.handle.config.bandwidth = 100
             enc.parent.save_config_and_reboot()
         else:
             time.sleep(1.0) # wait for PLLs to stabilize
 
-        enc.handle.config.bandwidth = 100
 
         self.run_generic_encoder_test(enc.handle, 6283, 1.0, 2.0)
 

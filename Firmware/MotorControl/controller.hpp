@@ -38,7 +38,7 @@ public:
         bool enable_current_mode_vel_limit = true;  // enable velocity limit in current control mode (requires a valid velocity estimator)
         uint8_t axis_to_mirror = -1;
         float mirror_ratio = 1.0f;
-        uint8_t load_encoder_axis = -1;  // default depends on Axis number and is set in load_configuration()
+        uint8_t load_encoder_axis = -1;  // default depends on Axis number and is set in load_configuration(). Set to -1 to select sensorless estimator.
 
         // custom setters
         Controller* parent;
@@ -67,20 +67,18 @@ public:
     bool anticogging_calibration(float pos_estimate, float vel_estimate);
 
     void update_filter_gains();
-    bool update(float* torque_setpoint);
+    bool update();
 
     Config_t config_;
     Axis* axis_ = nullptr; // set by Axis constructor
 
     Error error_ = ERROR_NONE;
 
-    float* pos_estimate_linear_src_ = nullptr;
-    float* pos_estimate_circular_src_ = nullptr;
-    bool* pos_estimate_valid_src_ = nullptr;
-    float* vel_estimate_src_ = nullptr;
-    bool* vel_estimate_valid_src_ = nullptr;
-    float* pos_wrap_src_ = nullptr; 
-
+    // Inputs
+    InputPort<float> pos_estimate_linear_src_;
+    InputPort<float> pos_estimate_circular_src_;
+    InputPort<float> vel_estimate_src_;
+    InputPort<float> pos_wrap_src_; 
 
     float pos_setpoint_ = 0.0f; // [turns]
     float vel_setpoint_ = 0.0f; // [turn/s]
@@ -100,9 +98,11 @@ public:
 
     bool anticogging_valid_ = false;
 
+    // Outputs
+    OutputPort<float> torque_output_ = 0.0f;
+
     // custom setters
     void set_input_pos(float value) { input_pos_ = value; input_pos_updated(); }
-
 };
 
 #endif // __CONTROLLER_HPP

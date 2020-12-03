@@ -5,11 +5,8 @@
   ******************************************************************************
 */
 
-#include <cmsis_os.h>
-#include <freertos_vars.h>
 #include <sys/unistd.h>
-#include <usart.h>
-#include <usbd_cdc_if.h>
+#include <board.h>
 
 
 //int _read(int file, char *data, int len) {}
@@ -41,8 +38,8 @@ void* heap_end_ptr = 0;
 */
 intptr_t _sbrk(size_t size) {
     intptr_t ptr;
-	vTaskSuspendAll();
 	{
+        uint32_t mask = cpu_enter_critical();
         if (!heap_end_ptr)
             heap_end_ptr = _end_ptr;
         if (heap_end_ptr + size > _heap_end_max_ptr) {
@@ -51,8 +48,8 @@ intptr_t _sbrk(size_t size) {
             ptr = (intptr_t)heap_end_ptr;
             heap_end_ptr += size;
         }
+        cpu_exit_critical(mask);
 	}
-	(void)xTaskResumeAll();
     return ptr;
 }
 

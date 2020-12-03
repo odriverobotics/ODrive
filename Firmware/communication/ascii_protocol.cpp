@@ -29,7 +29,11 @@ using namespace fibre;
 
 /* Private variables ---------------------------------------------------------*/
 
-static Introspectable root_obj = ODriveTypeInfo<ODrive>::make_introspectable(odrv);
+#if HW_VERSION_MAJOR == 3
+static Introspectable root_obj = ODrive3TypeInfo<ODrive>::make_introspectable(odrv);
+#elif HW_VERSION_MAJOR == 4
+static Introspectable root_obj = ODrive4TypeInfo<ODrive>::make_introspectable(odrv);
+#endif
 
 /* Private function prototypes -----------------------------------------------*/
 
@@ -218,7 +222,7 @@ void AsciiProtocol::cmd_set_torque(char * pStr, bool use_checksum) {
 // @param pStr buffer of ASCII encoded values
 // @param response_channel reference to the stream to respond on
 // @param use_checksum bool to indicate whether a checksum is required on response
-void cmd_encoder(char * pStr, StreamSink& response_channel, bool use_checksum) {
+void AsciiProtocol::cmd_encoder(char * pStr, bool use_checksum) {
     if (pStr[1] == 's') {
         pStr += 2; // Substring two characters to the right (ok because we have guaranteed null termination after all chars)
 
@@ -226,17 +230,17 @@ void cmd_encoder(char * pStr, StreamSink& response_channel, bool use_checksum) {
         int encoder_count;
 
         if (sscanf(pStr, "l %u %i", &motor_number, &encoder_count) < 2) {
-            respond(response_channel, use_checksum, "invalid command format");
+            respond(use_checksum, "invalid command format");
         } else if (motor_number >= AXIS_COUNT) {
-            respond(response_channel, use_checksum, "invalid motor %u", motor_number);
+            respond(use_checksum, "invalid motor %u", motor_number);
         } else {
             Axis& axis = axes[motor_number];
             axis.encoder_.set_linear_count(encoder_count);
             axis.watchdog_feed();
-            respond(response_channel, use_checksum, "encoder set to %u", encoder_count);
+            respond(use_checksum, "encoder set to %u", encoder_count);
         }
     } else {
-        respond(response_channel, use_checksum, "invalid command format");
+        respond(use_checksum, "invalid command format");
     }
 }
 
@@ -276,8 +280,8 @@ void AsciiProtocol::cmd_get_feedback(char * pStr, bool use_checksum) {
     } else {
         Axis& axis = axes[motor_number];
         respond(use_checksum, "%f %f",
-                (double)axis.encoder_.pos_estimate_,
-                (double)axis.encoder_.vel_estimate_);
+                (double)axis.encoder_.pos_estimate_.any().value_or(0.0f),
+                (double)axis.encoder_.vel_estimate_.any().value_or(0.0f));
     }
 }
 

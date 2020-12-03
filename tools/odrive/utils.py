@@ -56,6 +56,7 @@ def calculate_thermistor_coeffs(degree, Rload, R_25, Beta, Tmin, Tmax, plot = Fa
     fit_temps = p1(V)
 
     if plot:
+        import matplotlib.pyplot as plt
         print(fit)
         plt.plot(V, temps, label='actual')
         plt.plot(V, fit_temps, label='fit')
@@ -76,47 +77,56 @@ def set_motor_thermistor_coeffs(axis, Rload, R_25, Beta, Tmin, TMax):
     axis.motor.motor_thermistor.config.poly_coefficient_2 = float(coeffs[1])
     axis.motor.motor_thermistor.config.poly_coefficient_3 = float(coeffs[0])
 
-def dump_errors(odrv, clear=False):
+def dump_errors(odrv, clear=False, printfunc = print):
     axes = [(name, getattr(odrv, name)) for name in dir(odrv) if name.startswith('axis')]
     axes.sort()
+
+    def dump_errors_for_module(indent, name, obj, path, errorcodes):
+        prefix = indent + name.strip('0123456789') + ": "
+        for elem in path.split('.'):
+            if not hasattr(obj, elem):
+                printfunc(prefix + _VT100Colors['yellow'] + "not found" + _VT100Colors['default'])
+                return
+            parent = obj
+            obj = getattr(obj, elem)
+        if obj != 0:
+            printfunc(indent + name + ": " + _VT100Colors['red'] + "Error(s):" + _VT100Colors['default'])
+            for bit in range(64):
+                if obj & (1 << bit) != 0:
+                    printfunc(indent + "  " + errorcodes.get((1 << bit), 'UNKNOWN ERROR: 0x{:08X}'.format(1 << bit)))
+            if clear:
+                setattr(parent, elem, 0)
+        else:
+            printfunc(indent + name + ": " + _VT100Colors['green'] + "no error" + _VT100Colors['default'])
+
+    system_error_codes = {v: k for k, v in odrive.enums.__dict__ .items() if k.startswith("ODRIVE_ERROR_")}
+    dump_errors_for_module("", "system", odrv, 'error', system_error_codes)
+
     for name, axis in axes:
-        print(name)
+        printfunc(name)
 
         # Flatten axis and submodules
-        # (name, remote_obj, errorcode)
+        # (name, obj, path, errorcode)
         module_decode_map = [
-            (name, odrv, {k: v for k, v in odrive.enums.__dict__ .items() if k.startswith("AXIS_ERROR_")}),
-            ('motor', axis, {k: v for k, v in odrive.enums.__dict__ .items() if k.startswith("MOTOR_ERROR_")}),
-            ('encoder', axis, {k: v for k, v in odrive.enums.__dict__ .items() if k.startswith("ENCODER_ERROR_")}),
-            ('controller', axis, {k: v for k, v in odrive.enums.__dict__ .items() if k.startswith("CONTROLLER_ERROR_")}),
+            ('axis', axis, 'error', {v: k for k, v in odrive.enums.__dict__ .items() if k.startswith("AXIS_ERROR_")}),
+            ('motor', axis, 'motor.error', {v: k for k, v in odrive.enums.__dict__ .items() if k.startswith("MOTOR_ERROR_")}),
+            ('sensorless_estimator', axis, 'sensorless_estimator.error', {v: k for k, v in odrive.enums.__dict__ .items() if k.startswith("SENSORLESS_ESTIMATOR_ERROR")}),
+            ('encoder', axis, 'encoder.error', {v: k for k, v in odrive.enums.__dict__ .items() if k.startswith("ENCODER_ERROR_")}),
+            ('controller', axis, 'controller.error', {v: k for k, v in odrive.enums.__dict__ .items() if k.startswith("CONTROLLER_ERROR_")}),
         ]
 
-        # Module error decode
-        for name, remote_obj, errorcodes in module_decode_map:
-            prefix = ' '*2 + name.strip('0123456789') + ": "
-            if not hasattr(remote_obj, name):
-                print(prefix + _VT100Colors['yellow'] + "not found" + _VT100Colors['default'])
-            elif getattr(remote_obj, name).error != 0:
-                foundError = False
-                print(prefix + _VT100Colors['red'] + "Error(s):" + _VT100Colors['default'])
-                errorcodes_dict = {val: name for name, val in errorcodes.items() if 'ERROR_' in name}
-                for bit in range(64):
-                    if getattr(remote_obj, name).error & (1 << bit) != 0:
-                        print("    " + errorcodes_dict.get((1 << bit), 'UNKNOWN ERROR: 0x{:08X}'.format(1 << bit)))
-                if clear:
-                    getattr(remote_obj, name).error = 0
-            else:
-                print(prefix + _VT100Colors['green'] + "no error" + _VT100Colors['default'])
+        for name, obj, path, errorcodes in module_decode_map:
+            dump_errors_for_module("  ", name, obj, path, errorcodes)
 
 def oscilloscope_dump(odrv, num_vals, filename='oscilloscope.csv'):
     with open(filename, 'w') as f:
         for x in range(num_vals):
-            f.write(str(odrv.get_oscilloscope_val(x)))
+            f.write(str(odrv.oscilloscope.get_val(x)))
             f.write('\n')
 
-data_rate = 100
+data_rate = 200
 plot_rate = 10
-num_samples = 1000
+num_samples = 500
 def start_liveplotter(get_var_callback):
     """
     Starts a liveplotter.
@@ -153,10 +163,10 @@ def start_liveplotter(get_var_callback):
         plt.ion()
 
         # Make sure the script terminates when the user closes the plotter
-        def did_close(evt):
+        def closed(evt):
             cancellation_token.set()
         fig = plt.figure()
-        fig.canvas.mpl_connect('close_event', did_close)
+        fig.canvas.mpl_connect('close_event', closed)
 
         while not cancellation_token.is_set():
             plt.clf()
@@ -301,7 +311,7 @@ def show_oscilloscope(odrv):
     size = 18000
     values = []
     for i in range(size):
-        values.append(odrv.get_oscilloscope_val(i))
+        values.append(odrv.oscilloscope.get_val(i))
 
     import matplotlib.pyplot as plt
     plt.plot(values)
@@ -485,6 +495,25 @@ def dump_interrupts(odrv):
                     " *" if (status & 0x80000000) else "  ",
                     str((status >> 8) & 0x7fffff).rjust(7)))
 
+def dump_threads(odrv):
+    prefixes = ["max_stack_usage_", "stack_size_", "prio_"]
+    keys = [k[len(prefix):] for k in dir(odrv.system_stats) for prefix in prefixes if k.startswith(prefix)]
+    good_keys = set([k for k in set(keys) if keys.count(k) == len(prefixes)])
+    if len(good_keys) > len(set(keys)):
+        print("Warning: incomplete thread information for threads {}".format(set(keys) - good_keys))
+
+    print("| Name    | Stack Size [B] | Max Ever Stack Usage [B] | Prio |")
+    print("|---------|----------------|--------------------------|------|")
+    for k in sorted(good_keys):
+        sz = getattr(odrv.system_stats, "stack_size_" + k)
+        use = getattr(odrv.system_stats, "max_stack_usage_" + k)
+        print("| {} | {} | {} | {} |".format(
+            k.ljust(7),
+            str(sz).rjust(14),
+            "{} ({:.1f}%)".format(use, use / sz * 100).rjust(24),
+            str(getattr(odrv.system_stats, "prio_" + k)).rjust(4)
+        ))
+
 
 def dump_dma(odrv):
     if odrv.hw_version_major == 3:
@@ -509,6 +538,32 @@ def dump_dma(odrv):
             ["TIM1_TRIG", "TIM1_CH1",    "TIM1_CH2",                      "TIM1_CH1",    "TIM1_CH4/TIM1_TRIG/TIM1_COM",   "TIM1_UP",     "TIM1_CH3",                      "-"],
             ["-",         "TIM8_UP",     "TIM8_CH1",                      "TIM8_CH2",    "TIM8_CH3",                      "SPI5_RX",     "SPI5_TX",                       "TIM8_CH4/TIM8_TRIG/TIM8_COM"],
         ]]
+    elif odrv.hw_version_major == 4:
+        dma_functions = [[
+            # https://www.st.com/resource/en/reference_manual/dm00305990-stm32f72xxx-and-stm32f73xxx-advanced-armbased-32bit-mcus-stmicroelectronics.pdf Table 26
+            ["SPI3_RX",          "-",                  "SPI3_RX",           "SPI2_RX",            "SPI2_TX",            "SPI3_TX",     "-",                  "SPI3_TX"],
+            ["I2C1_RX",          "I2C3_RX",            "TIM7_UP",           "-",                  "TIM7_UP",            "I2C1_RX",     "I2C1_TX",            "I2C1_TX"],
+            ["TIM4_CH1",         "-",                  "-",                 "TIM4_CH2",           "-",                  "-",           "TIM4_UP",            "TIM4_CH3"],
+            ["-",                "TIM2_UP/TIM2_CH3",   "I2C3_RX",           "-",                  "I2C3_TX",            "TIM2_CH1",    "TIM2_CH2/TIM2_CH4",  "TIM2_UP/TIM2_CH4"],
+            ["UART5_RX",         "USART3_RX",          "UART4_RX",          "USART3_TX",          "UART4_TX",           "USART2_RX",   "USART2_TX",          "UART5_TX"],
+            ["UART8_TX",         "UART7_TX",           "TIM3_CH4/TIM3_UP",  "UART7_RX",           "TIM3_CH1/TIM3_TRIG", "TIM3_CH2",    "UART8_RX",           "TIM3_CH3"],
+            ["TIM5_CH3/TIM5_UP", "TIM5_CH4/TIM5_TRIG", "TIM5_CH1",          "TIM5_CH4/TIM5_TRIG", "TIM5_CH2",           "-",           "TIM5_UP",            "-"],
+            ["-",                "TIM6_UP",            "I2C2_RX",           "I2C2_RX",            "USART3_TX",          "DAC1",        "DAC2",               "I2C2_TX"],
+        ], [
+            # https://www.st.com/resource/en/reference_manual/dm00305990-stm32f72xxx-and-stm32f73xxx-advanced-armbased-32bit-mcus-stmicroelectronics.pdf Table 27
+            ["ADC1",      "SAI1_A",      "TIM8_CH1/TIM8_CH2/TIM8_CH3",    "SAI1_A",      "ADC1",                          "SAI1_B",      "TIM1_CH1/TIM1_CH2/TIM1_CH3",    "SAI2_B"],
+            ["-",         "-",           "ADC2",                          "ADC2",        "SAI1_B",                        "-",           "-",                             "-"],
+            ["ADC3",      "ADC3",        "-",                             "SPI5_RX",     "SPI5_TX",                       "AES_OUT",     "AES_IN",                        "-"],
+            ["SPI1_RX",   "-",           "SPI1_RX",                       "SPI1_TX",     "SAI2_A",                        "SPI1_TX",     "SAI2_B",                        "QUADSPI"],
+            ["SPI4_RX",   "SPI4_TX",     "USART1_RX",                     "SDMMC1",      "-",                             "USART1_RX",   "SDMMC1",                        "USART1_TX"],
+            ["-",         "USART6_RX",   "USART6_RX",                     "SPI4_RX",     "SPI4_TX",                       "-",           "USART6_TX",                     "USART6_TX"],
+            ["TIM1_TRIG", "TIM1_CH1",    "TIM1_CH2",                      "TIM1_CH1",    "TIM1_CH4/TIM1_TRIG/TIM1_COM",   "TIM1_UP",     "TIM1_CH3",                      "-"],
+            ["-",         "TIM8_UP",     "TIM8_CH1",                      "TIM8_CH2",    "TIM8_CH3",                      "SPI5_RX",     "SPI5_TX",                       "TIM8_CH4/TIM8_TRIG/TIM8_COM"],
+            None,
+            None,
+            None,
+            ["SDMMC2",    "-",           "-",                             "-",           "-",                             "SDMMC2",      "-",                             "-"],
+        ]]
 
     print("| Name         | Prio | Channel                          | Configured |")
     print("|--------------|------|----------------------------------|------------|")
@@ -525,4 +580,45 @@ def dump_dma(odrv):
                      ("(" + ch_name + ")").ljust(30),
                      "*" if (status & 0x80000000) else " "))
 
+def dump_timing(odrv, n_samples=100, path='/tmp/timings.png'):
+    import matplotlib.pyplot as plt
+    import re
+    
+    timings = []
+    
+    for attr in dir(odrv.task_times):
+        if not attr.startswith('_'):
+            timings.append((attr, getattr(odrv.task_times, attr), [], [])) # (name, obj, start_times, lengths)
+    for k in dir(odrv):
+        if re.match(r'axis[0-9]+', k):
+            for attr in dir(getattr(odrv, k).task_times):
+                if not attr.startswith('_'):
+                    timings.append((k + '.' + attr, getattr(getattr(odrv, k).task_times, attr), [], [])) # (name, obj, start_times, lengths)
 
+    # Take a couple of samples
+    print("sampling...")
+    for i in range(n_samples):
+        odrv.task_timers_armed = True # Trigger sample and wait for it to finish
+        while odrv.task_timers_armed: pass
+        for name, obj, start_times, lengths in timings:
+            start_times.append(obj.start_time)
+            lengths.append(obj.length)
+    print("done")
+
+    # sort by start time
+    timings = sorted(timings, key = lambda x: np.mean(x[2]))
+
+    plt.rcParams['figure.figsize'] = 21, 9
+    plt.figure()
+    plt.grid(True)
+    plt.barh(
+        [-i for i in range(len(timings))], # y positions
+        [np.mean(lengths) for name, obj, start_times, lengths in timings], # lengths
+        left = [np.mean(start_times) for name, obj, start_times, lengths in timings], # starts
+        xerr = (
+            [np.std(lengths) for name, obj, start_times, lengths in timings], # error bars to the left side
+            [(min(obj.max_length, 20100) - np.mean(lengths)) for name, obj, start_times, lengths in timings], # error bars to the right side  - TODO: remove artificial min()
+        ),
+        tick_label = [name for name, obj, start_times, lengths in timings], # labels
+    )
+    plt.savefig(path, bbox_inches='tight')

@@ -1,7 +1,7 @@
 #%%
 from odrive.utils import calculate_thermistor_coeffs
 
-Rload = 3300
+Rload = 3300 # 2000 for ODrive v4
 R_25 = 10000
 Beta = 3434
 Tmin = 0

@@ -7,6 +7,7 @@ sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..'))
 import stat
 import odrive
 from odrive.enums import *
+import odrive.utils
 import fibre
 from fibre import Logger, Event
 import argparse
@@ -16,6 +17,7 @@ import itertools
 import time
 import tempfile
 import io
+import re
 from typing import Union, Tuple
 
 # needed for curve fitting
@@ -69,14 +71,14 @@ def test_assert_within(observed, lower_bound, upper_bound, accuracy=0.0):
 def disjoint_sets(list_of_sets: list):
     while len(list_of_sets):
         current_set, list_of_sets = list_of_sets[0], list_of_sets[1:]
-        did_update = True
-        while did_update:
-            did_update = False
+        updated = True
+        while updated:
+            updated = False
             for i, s in enumerate(list_of_sets):
                 if len(current_set.intersection(s)):
                     current_set = current_set.union(s)
                     list_of_sets = list_of_sets[:i] + list_of_sets[(i+1):]
-                    did_update = True
+                    updated = True
         yield current_set
 
 def is_list_like(arg):
@@ -206,10 +208,19 @@ class ODriveComponent(Component):
     def __init__(self, yaml: dict):
         self.handle = None
         self.yaml = yaml
-        #self.axes = [ODriveAxisComponent(None), ODriveAxisComponent(None)]
-        self.encoders = [ODriveEncoderComponent(self, 0, yaml['encoder0']), ODriveEncoderComponent(self, 1, yaml['encoder1'])]
-        self.axes = [ODriveAxisComponent(self, 0, yaml['motor0']), ODriveAxisComponent(self, 1, yaml['motor1'])]
-        for i in range(1,9):
+
+        if yaml['board-version'].startswith("v3."):
+            self.encoders = [ODriveEncoderComponent(self, 0, yaml['encoder0']), ODriveEncoderComponent(self, 1, yaml['encoder1'])]
+            self.axes = [ODriveAxisComponent(self, 0, yaml['motor0']), ODriveAxisComponent(self, 1, yaml['motor1'])]
+            gpio_nums = range(1,9)
+        elif yaml['board-version'].startswith("v4."):
+            self.encoders = [ODriveEncoderComponent(self, 0, yaml['encoder0'])]
+            self.axes = [ODriveAxisComponent(self, 0, yaml['motor0'])]
+            gpio_nums = range(23)
+        else:
+            raise Exception("unknown board version {}".format(yaml['board-version']))
+
+        for i in gpio_nums:
             self.__setattr__('gpio' + str(i), Component(self))
         self.can = Component(self)
         self.sck = Component(self)
@@ -221,8 +232,9 @@ class ODriveComponent(Component):
             yield 'encoder' + str(enc_ctx.num), enc_ctx
         for axis_ctx in self.axes:
             yield 'axis' + str(axis_ctx.num), axis_ctx
-        for i in range(1,9):
-            yield ('gpio' + str(i)), getattr(self, 'gpio' + str(i))
+        for k in dir(self):
+            if k.startswith('gpio'):
+                yield k, getattr(self, k)
         yield 'can', self.can
         yield 'spi.sck', self.sck
         yield 'spi.miso', self.miso
@@ -248,12 +260,12 @@ class ODriveComponent(Component):
             axis_ctx.handle = self.handle.__dict__['axis{}'.format(axis_idx)]
 
     def disable_mappings(self):
-        self.handle.config.gpio1_pwm_mapping.endpoint = None # here
-        self.handle.config.gpio2_pwm_mapping.endpoint = None
-        self.handle.config.gpio3_pwm_mapping.endpoint = None
-        self.handle.config.gpio4_pwm_mapping.endpoint = None
-        self.handle.config.gpio3_analog_mapping.endpoint = None
-        self.handle.config.gpio4_analog_mapping.endpoint = None
+        for k in dir(self.handle.config):
+            if re.match(r'gpio[0-9]+_pwm_mapping', k):
+                getattr(self.handle.config, k).endpoint = None
+        for k in dir(self.handle.config):
+            if re.match(r'gpio[0-9]+_analog_mapping', k):
+                getattr(self.handle.config, k).endpoint = None
 
     def save_config_and_reboot(self):
         self.handle.save_configuration()
@@ -381,7 +393,12 @@ class TeensyComponent(Component):
     def __init__(self, testrig, yaml: dict):
         self.testrig = testrig
         self.yaml = yaml
-        self.gpios = [TeensyGpio(self, i) for i in range(24)]
+        if self.yaml['board-version'] == 'teensy:avr:teensy40':
+            self.gpios = [TeensyGpio(self, i) for i in range(24)]
+        elif self.yaml['board-version'] == 'teensy:avr:teensy41':
+            self.gpios = [TeensyGpio(self, i) for i in range(42)]
+        else:
+            raise Exception(f"unknown Arduino board {self.yaml['board-version']}")
         self.routes = []
         self.previous_routes = object()
 
@@ -424,7 +441,7 @@ class TeensyComponent(Component):
         env = os.environ.copy()
         env['ARDUINO_COMPILE_DESTINATION'] = hexfile
         run_shell(
-            ['arduino', '--board', 'teensy:avr:teensy40', '--verify', sketchfile],
+            ['arduino', '--board', self.yaml['board-version'], '--verify', sketchfile],
             logger, env = env, timeout = 120)
 
     def program(self, hex_file_path: str, logger: Logger):
@@ -443,7 +460,7 @@ class TeensyComponent(Component):
         time.sleep(0.1)
         program_gpio.write(True)
         
-        run_shell(["teensy-loader-cli", "-mmcu=imxrt1062", "-w", hex_file_path], logger, timeout = 5)
+        run_shell(["teensy-loader-cli", "-mmcu=" + self.yaml['board-version'].rpartition(':')[2].upper(), "-w", hex_file_path], logger, timeout = 5)
         time.sleep(0.5) # give it some time to boot
 
     def compile_and_program(self, code: str):
@@ -507,7 +524,7 @@ class TestRig():
                 add_component(component_yaml['name'], ODriveComponent(component_yaml))
             elif component_yaml['type'] == 'generalpurpose':
                 add_component(component_yaml['name'], GeneralPurposeComponent(component_yaml))
-            elif component_yaml['type'] == 'teensy':
+            elif component_yaml['type'] == 'arduino':
                 add_component(component_yaml['name'], TeensyComponent(self, component_yaml))
             elif component_yaml['type'] == 'motor':
                 add_component(component_yaml['name'], MotorComponent(component_yaml))
@@ -617,24 +634,16 @@ def request_state(axis_ctx: ODriveAxisComponent, state, expect_success=True):
         test_assert_eq(axis_ctx.handle.error, AXIS_ERROR_INVALID_STATE)
         axis_ctx.handle.error = AXIS_ERROR_NONE # reset error
 
-def get_errors(axis_ctx: ODriveAxisComponent):
-    errors = []
-    if axis_ctx.handle.motor.error != 0:
-        errors.append("motor failed with error 0x{:04X}".format(axis_ctx.handle.motor.error))
-    if axis_ctx.handle.encoder.error != 0:
-        errors.append("encoder failed with error 0x{:04X}".format(axis_ctx.handle.encoder.error))
-    if axis_ctx.handle.sensorless_estimator.error != 0:
-        errors.append("sensorless_estimator failed with error 0x{:04X}".format(axis_ctx.handle.sensorless_estimator.error))
-    if axis_ctx.handle.error != 0:
-        errors.append("axis failed with error 0x{:04X}".format(axis_ctx.handle.error))
-    elif len(errors) > 0:
-        errors.append("and by the way: axis reports no error even though there is one")
-    return errors
-
 def test_assert_no_error(axis_ctx: ODriveAxisComponent):
-    errors = get_errors(axis_ctx)
-    if len(errors) > 0:
-        raise TestFailed("\n".join(errors))
+    any_error = (axis_ctx.handle.motor.error |
+                 axis_ctx.handle.encoder.error |
+                 axis_ctx.handle.sensorless_estimator.error |
+                 axis_ctx.handle.error) != 0 # TODO: this is not the complete list of components
+
+    if any_error:
+        lines = []
+        odrive.utils.dump_errors(axis_ctx.parent.handle, printfunc = lines.append)
+        raise TestFailed("\n".join(lines))
 
 def run_shell(command_line, logger, env=None, timeout=None):
     """

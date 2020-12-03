@@ -21,12 +21,8 @@
 static uint8_t dma_rx_buffer[UART_RX_BUFFER_SIZE];
 static uint32_t dma_last_rcv_idx;
 
-// FIXME: the stdlib doesn't know about CMSIS threads, so this is just a global variable
-// static thread_local uint32_t deadline_ms = 0;
-
 osThreadId uart_thread = 0;
-extern UART_HandleTypeDef* uart0;
-static UART_HandleTypeDef* huart_ = uart0; // defined in board.cpp.
+static UART_HandleTypeDef* huart_ = nullptr;
 const uint32_t stack_size_uart_thread = 4096;  // Bytes
 
 namespace fibre {
@@ -147,8 +143,8 @@ static void uart_server_thread(void * ctx) {
 
                 // Check for UART errors and restart receive DMA transfer if required
                 if (huart_->RxState != HAL_UART_STATE_BUSY_RX) {
-                    HAL_UART_AbortReceive(&huart4);
-                    HAL_UART_Receive_DMA(&huart4, dma_rx_buffer, sizeof(dma_rx_buffer));
+                    HAL_UART_AbortReceive(huart_);
+                    HAL_UART_Receive_DMA(huart_, dma_rx_buffer, sizeof(dma_rx_buffer));
                     dma_last_rcv_idx = 0;
                 }
                 // Fetch the circular buffer "write pointer", where it would write next
@@ -183,7 +179,9 @@ static void uart_server_thread(void * ctx) {
 }
 
 // TODO: allow multiple UART server instances
-void start_uart_server() {
+void start_uart_server(UART_HandleTypeDef* huart) {
+    huart_ = huart;
+
     // DMA is set up to receive in a circular buffer forever.
     // We dont use interrupts to fetch the data, instead we periodically read
     // data out of the circular buffer into a parse buffer, controlled by a state machine
@@ -202,7 +200,7 @@ void uart_poll() {
 }
 
 void HAL_UART_TxCpltCallback(UART_HandleTypeDef* huart) {
-    if (huart == &huart4) {
+    if (huart == huart_) {
         osMessagePut(uart_event_queue, 2, 0);
     }
 }

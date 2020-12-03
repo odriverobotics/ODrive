@@ -40,7 +40,11 @@ bool Stm32SpiArbiter::start() {
     task.ncs_gpio.write(false);
     
     HAL_StatusTypeDef status = HAL_ERROR;
-    if (task.tx_buf && task.rx_buf) {
+
+    if (hspi_->hdmatx->State != HAL_DMA_STATE_READY || hspi_->hdmarx->State != HAL_DMA_STATE_READY) {
+        // This can happen if the DMA or interrupt priorities are not configured properly.
+        status = HAL_BUSY;
+    } else if (task.tx_buf && task.rx_buf) {
         status = HAL_SPI_TransmitReceive_DMA(hspi_, (uint8_t*)task.tx_buf, task.rx_buf, task.length);
     } else if (task.tx_buf) {
         status = HAL_SPI_Transmit_DMA(hspi_, (uint8_t*)task.tx_buf, task.length);
