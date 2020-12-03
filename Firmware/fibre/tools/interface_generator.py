@@ -131,10 +131,13 @@ dictionary = []
 
 def get_words(string):
     """
-    Splits a string in PascalCase into a list of lower case words
+    Splits a string in PascalCase or MACRO_CASE into a list of lower case words
     """
-    regex = ''.join((re.escape(w) + '|') for w in dictionary) + '[a-z0-9]+|[A-Z][a-z0-9]*'
-    return [(w if w in dictionary else w.lower()) for w in re.findall(regex, string)]
+    if string.isupper():
+        return [w.lower() for w in string.split('_')]
+    else:
+        regex = ''.join((re.escape(w) + '|') for w in dictionary) + '[a-z0-9]+|[A-Z][a-z0-9]*'
+        return [(w if w in dictionary else w.lower()) for w in re.findall(regex, string)]
 
 def join_name(*names, delimiter: str = '.'):
     """
