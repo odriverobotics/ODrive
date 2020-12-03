@@ -27,8 +27,6 @@ uint32_t _reboot_cookie __attribute__ ((section (".noinit")));
 extern char _estack; // provided by the linker script
 
 
-ODriveCAN::Config_t can_config;
-CANSimple *can_simple = nullptr;
 ODrive odrv{};
 
 
@@ -89,7 +87,7 @@ void StatusLedController::update() {
 static bool config_read_all() {
     bool success = board_read_config() &&
            config_manager.read(&odrv.config_) &&
-           config_manager.read(&can_config);
+           config_manager.read(&odrv.can_.config_);
     for (size_t i = 0; (i < AXIS_COUNT) && success; ++i) {
         success = config_manager.read(&encoders[i].config_) &&
                   config_manager.read(&axes[i].sensorless_estimator_.config_) &&
@@ -109,7 +107,7 @@ static bool config_read_all() {
 static bool config_write_all() {
     bool success = board_write_config() &&
            config_manager.write(&odrv.config_) &&
-           config_manager.write(&can_config);
+           config_manager.write(&odrv.can_.config_);
     for (size_t i = 0; (i < AXIS_COUNT) && success; ++i) {
         success = config_manager.write(&encoders[i].config_) &&
                   config_manager.write(&axes[i].sensorless_estimator_.config_) &&
@@ -128,7 +126,7 @@ static bool config_write_all() {
 
 static void config_clear_all() {
     odrv.config_ = {};
-    can_config = {};
+    odrv.can_.config_ = {};
     for (size_t i = 0; i < AXIS_COUNT; ++i) {
         encoders[i].config_ = {};
         axes[i].sensorless_estimator_.config_ = {};
