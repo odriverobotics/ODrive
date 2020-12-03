@@ -31,6 +31,7 @@ class CANSimple {
         MSG_RESET_ODRIVE,
         MSG_GET_VBUS_VOLTAGE,
         MSG_CLEAR_ERRORS,
+        MSG_SET_PERIODIC_UPDATES,
         MSG_CO_HEARTBEAT_CMD = 0x700,  // CANOpen NMT Heartbeat  SEND
     };
 
@@ -66,6 +67,11 @@ class CANSimple {
     static void set_traj_accel_limits_callback(Axis& axis, const can_Message_t& msg);
     static void set_traj_inertia_callback(Axis& axis, const can_Message_t& msg);
     static void set_linear_count_callback(Axis& axis, const can_Message_t& msg);
+    static void enable_periodic_update(Axis& axis, const can_Message_t& msg);
+
+    // Can TPDO similar
+    static void periodic_handler_update(Axis::CANConfig_t& can_conf, const uint32_t id, const uint32_t command_id, const uint32_t rate_ms, bool construct);
+    static int32_t call_periodic_handler(Axis& axis, uint32_t command);
 
     // Other functions
     static void nmt_callback(const Axis& axis, const can_Message_t& msg);

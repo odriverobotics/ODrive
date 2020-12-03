@@ -533,13 +533,23 @@ interfaces:
       finish_on_distance: bool
       finish_on_enc_idx: bool
 
+  ODrive.Axis.CanPeriodic:
+    c_is_class: False
+    attributes:
+      can_command: uint32
+      call_rate_ms: uint32
+      last_call: uint32
+
   ODrive.Axis.CanConfig:
     c_is_class: False
     attributes:
       node_id: uint32
       is_extended: bool
-      heartbeat_rate_ms: uint32
-      encoder_rate_ms: uint32
+      periodic_handler1: {type: CanPeriodic, c_name: 'periodic_handlers[0]'}
+      periodic_handler2: {type: CanPeriodic, c_name: 'periodic_handlers[1]'}
+      periodic_handler3: {type: CanPeriodic, c_name: 'periodic_handlers[2]'}
+      periodic_handler4: {type: CanPeriodic, c_name: 'periodic_handlers[3]'}
+      periodic_handler5: {type: CanPeriodic, c_name: 'periodic_handlers[4]'}
 
   ODrive.ThermistorCurrentLimiter:
     c_is_class: False

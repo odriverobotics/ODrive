@@ -105,6 +105,8 @@ void CANSimple::doCommand(Axis& axis, const can_Message_t& msg) {
         case MSG_CLEAR_ERRORS:
             clear_errors_callback(axis, msg);
             break;
+        case MSG_SET_PERIODIC_UPDATES:
+            enable_periodic_update(axis, msg);
         default:
             break;
     }
@@ -290,6 +292,99 @@ int32_t CANSimple::get_vbus_voltage_callback(const Axis& axis) {
 void CANSimple::clear_errors_callback(Axis& axis, const can_Message_t& msg) {
     odrv.clear_errors(); // TODO: might want to clear axis errors only
 }
+void CANSimple::periodic_handler_update(Axis::CANConfig_t& can_conf, const uint32_t id, const uint32_t command_id, const uint32_t rate_ms, bool construct)
+{
+    if (construct)
+    {
+        switch (command_id)
+        {
+            case MSG_GET_MOTOR_ERROR:
+                can_conf.periodic_handlers[id] = {command_id, rate_ms, 0};
+                break;
+            case MSG_GET_ENCODER_ERROR:
+                can_conf.periodic_handlers[id] = {command_id, rate_ms, 0};
+                break;
+            case MSG_GET_SENSORLESS_ERROR:
+                can_conf.periodic_handlers[id] = {command_id, rate_ms, 0};
+                break;
+            case MSG_GET_ENCODER_ESTIMATES:
+                can_conf.periodic_handlers[id] = {command_id, rate_ms, 0};
+                break;
+            case MSG_GET_ENCODER_COUNT:
+                can_conf.periodic_handlers[id] = {command_id, rate_ms, 0};
+                break;
+            case MSG_GET_IQ:
+                can_conf.periodic_handlers[id] = {command_id, rate_ms, 0};
+                break;
+            case MSG_GET_SENSORLESS_ESTIMATES:
+                can_conf.periodic_handlers[id] = {command_id, rate_ms, 0};
+                break;
+            case MSG_GET_VBUS_VOLTAGE:
+                can_conf.periodic_handlers[id] = {command_id, rate_ms, 0};
+                break;
+            case MSG_ODRIVE_HEARTBEAT:
+                can_conf.periodic_handlers[id] = {command_id, rate_ms, 0};
+                break;
+            default:
+                return;
+        }
+        can_conf.nbr_of_periodic_handlers++;
+    }
+    else
+    {
+        // Clear handler, move last handler to position to clear and clear last element
+        can_conf.periodic_handlers[id] = can_conf.periodic_handlers[can_conf.nbr_of_periodic_handlers-1];
+        can_conf.periodic_handlers[can_conf.nbr_of_periodic_handlers-1] = {0, 0, 0};
+        /*
+        memset(&can_conf.periodic_handlers[id], 0, sizeof(struct Axis::CANPeriodic));
+        if (id < 5-1)
+        {
+            memmove(&can_conf.periodic_handlers[id], &can_conf.periodic_handlers[id+1], sizeof(struct CANPeriodic)*(can_conf.nbr_of_periodic_handlers-1));
+        }*/
+
+        can_conf.nbr_of_periodic_handlers--;
+    }
+}
+void CANSimple::enable_periodic_update(Axis& axis,  const can_Message_t& msg)
+{
+    const uint32_t periodic_cmd = can_getSignal<uint32_t>(msg, 0, 32, true);
+    const uint32_t update_rate_ms = can_getSignal<uint32_t>(msg, 32, 32, true);
+
+    if (periodic_cmd != MSG_GET_MOTOR_ERROR &&
+        periodic_cmd != MSG_GET_ENCODER_ERROR &&
+        periodic_cmd != MSG_GET_SENSORLESS_ERROR &&
+        periodic_cmd != MSG_GET_ENCODER_ESTIMATES &&
+        periodic_cmd != MSG_GET_ENCODER_COUNT &&
+        periodic_cmd != MSG_GET_IQ &&
+        periodic_cmd != MSG_GET_SENSORLESS_ESTIMATES &&
+        periodic_cmd != MSG_GET_VBUS_VOLTAGE &&
+        periodic_cmd != MSG_ODRIVE_HEARTBEAT)
+    {
+        return; //Message not a valid get function
+    }
+    uint32_t id = 0;
+    for (auto& handler: axis.config_.can.periodic_handlers)
+    {
+        if (handler.can_command == periodic_cmd)
+        {
+            if (update_rate_ms == 0)
+            {
+                periodic_handler_update(axis.config_.can, id, periodic_cmd, update_rate_ms, false);
+            }
+            else
+            {
+                handler.call_rate_ms = update_rate_ms;
+            }
+            break;
+        }
+        else if(handler.call_rate_ms == 0)
+        {
+            periodic_handler_update(axis.config_.can, id, periodic_cmd, update_rate_ms, true);
+            break;
+        }
+        id++;
+    }
+}
 
 int32_t CANSimple::send_heartbeat(const Axis& axis) {
     can_Message_t txmsg;
@@ -304,20 +399,60 @@ int32_t CANSimple::send_heartbeat(const Axis& axis) {
     return odCAN->write(txmsg);
 }
 
+int32_t CANSimple::call_periodic_handler(Axis& axis, uint32_t command)
+{
+        switch (command)
+        {
+            case MSG_GET_MOTOR_ERROR:
+                get_motor_error_callback(axis);
+                break;
+            case MSG_GET_ENCODER_ERROR:
+                get_encoder_error_callback(axis);
+                break;
+            case MSG_GET_SENSORLESS_ERROR:
+                get_sensorless_error_callback(axis);
+                break;
+            case MSG_GET_ENCODER_ESTIMATES:
+                get_encoder_estimates_callback(axis);
+                break;
+            case MSG_GET_ENCODER_COUNT:
+                get_encoder_count_callback(axis);
+                break;
+            case MSG_GET_IQ:
+                get_iq_callback(axis);
+                break;
+            case MSG_GET_SENSORLESS_ESTIMATES:
+                get_sensorless_estimates_callback(axis);
+                break;
+            case MSG_GET_VBUS_VOLTAGE:
+                get_vbus_voltage_callback(axis);
+                break;
+            case MSG_ODRIVE_HEARTBEAT:
+                send_heartbeat(axis);
+                break;
+            default:
+                return 0;
+        }
+        return 1;
+}
+
 void CANSimple::send_cyclic(Axis& axis) {
     const uint32_t now = HAL_GetTick();
 
-    if (axis.config_.can.heartbeat_rate_ms > 0) {
-        if ((now - axis.can_.last_heartbeat) >= axis.config_.can.heartbeat_rate_ms) {
-            if(send_heartbeat(axis) >= 0)
-                axis.can_.last_heartbeat = now;
+    for (auto& handler : axis.config_.can.periodic_handlers)
+    {
+        if (handler.call_rate_ms == 0)
+        {
+            break;
         }
-    }
 
-    if (axis.config_.can.encoder_rate_ms > 0) {
-        if ((now - axis.can_.last_encoder) >= axis.config_.can.encoder_rate_ms) {
-            if(get_encoder_estimates_callback(axis) >= 0)
-                axis.can_.last_encoder = now;
+        if ((now - handler.last_call) >= handler.call_rate_ms)
+        {
+            if (call_periodic_handler(axis, handler.can_command) >= 0)
+            {
+                handler.last_call = now;
+            }
+
         }
     }
 }

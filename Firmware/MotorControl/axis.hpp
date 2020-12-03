@@ -51,11 +51,16 @@ public:
     static LockinConfig_t default_sensorless();
     static LockinConfig_t default_lockin();
 
+    struct CANPeriodic {  // Think of TPDO
+        uint32_t can_command = 0;
+        uint32_t call_rate_ms = 0;
+        uint32_t last_call = 0;
+    };
     struct CANConfig_t {
         uint32_t node_id = 0;
         bool is_extended = false;
-        uint32_t heartbeat_rate_ms = 100;
-        uint32_t encoder_rate_ms = 10;
+        uint32_t nbr_of_periodic_handlers = 0;
+        CANPeriodic periodic_handlers[5];
     };
 
     struct Config_t {
@@ -98,11 +103,6 @@ public:
 
     struct Homing_t {
         bool is_homed = false;
-    };
-
-    struct CAN_t {
-        uint32_t last_heartbeat = 0;
-        uint32_t last_encoder = 0;
     };
 
     Axis(int axis_num,
@@ -189,7 +189,6 @@ public:
     AxisState& current_state_ = task_chain_.front();
     uint32_t loop_counter_ = 0;
     Homing_t homing_;
-    CAN_t can_;
 
 
     // watchdog
