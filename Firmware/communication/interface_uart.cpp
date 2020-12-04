@@ -181,6 +181,7 @@ static void uart_server_thread(void * ctx) {
 // TODO: allow multiple UART server instances
 void start_uart_server(UART_HandleTypeDef* huart) {
     huart_ = huart;
+    uart_tx_stream.huart_ = huart;
 
     // DMA is set up to receive in a circular buffer forever.
     // We dont use interrupts to fetch the data, instead we periodically read

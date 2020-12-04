@@ -248,16 +248,15 @@ class ODriveComponent(Component):
             return
 
         logger.debug('waiting for {} ({})'.format(self.yaml['name'], self.yaml['serial-number']))
-        self.handle = odrive.find_any(
-            path="usb", serial_number=self.yaml['serial-number'], timeout=60)#, printer=print)
+        self.handle = odrive.find_any(channel_termination_token=shutdown_token, serial_number=self.yaml['serial-number'], timeout=60)#, printer=print)
         assert(self.handle)
         #for axis_idx, axis_ctx in enumerate(self.axes):
-        #    axis_ctx.handle = self.handle.__dict__['axis{}'.format(axis_idx)]
+        #    axis_ctx.handle = getattr(self.handle, f'axis{axis_idx}')
         for encoder_idx, encoder_ctx in enumerate(self.encoders):
-            encoder_ctx.handle = self.handle.__dict__['axis{}'.format(encoder_idx)].encoder
+            encoder_ctx.handle = getattr(self.handle, f'axis{encoder_idx}').encoder
         # TODO: distinguish between axis and motor context
         for axis_idx, axis_ctx in enumerate(self.axes):
-            axis_ctx.handle = self.handle.__dict__['axis{}'.format(axis_idx)]
+            axis_ctx.handle = getattr(self.handle, f'axis{axis_idx}')
 
     def disable_mappings(self):
         for k in dir(self.handle.config):
@@ -752,10 +751,15 @@ def run(tests):
                 if isinstance(param, ProxiedComponent):
                     params[i] = param.impl
 
-            test.run_test(*params, logger)
+            try:
+                test.run_test(*params, logger)
+            except:
+                shutdown_token.set()
+                raise
 
 
     logger.success('All tests passed!')
+    shutdown_token.set()
 
 
 # Load test engine ------------------------------------------------------------#
@@ -778,7 +782,7 @@ test_rig_yaml = yaml.load(args.test_rig_yaml, Loader=yaml.BaseLoader)
 logger = Logger()
 
 testrig = TestRig(test_rig_yaml, logger)
-
+shutdown_token = fibre.Event()
 
 if args.setup_host:
     for gpio in testrig.get_components(LinuxGpioComponent):

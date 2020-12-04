@@ -33,8 +33,8 @@ _VT100Colors = {
 }
 
 async def get_serial_number_str(device):
-    if hasattr(device, 'serial_number'):
-        return format(await device.serial_number, 'x').upper()
+    if hasattr(device, '_serial_number_property'):
+        return format(await device._serial_number_property.read(), 'x').upper()
     else:
         return "[unknown serial number]"
 

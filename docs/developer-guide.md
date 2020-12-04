@@ -282,6 +282,14 @@ bundle exec jekyll serve --incremental --host=0.0.0.0
 
 On Ubuntu 18.04, prerequisites are: `ruby ruby-dev zlib1g-dev`.
 
+## Modifying libfibre
+
+If you need to modify libfibre run `make fibre` in the `Firmware` directory. If
+you now run odrivetool from the repository it should use the new libfibre binary.
+
+If you're satisfied with the changes don't forget to generate binaries for all
+supported systems. See [Releases](#releases) for more info.
+
 ## Releases
 
 We use GitHub Releases to provide firmware releases.

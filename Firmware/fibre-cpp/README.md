@@ -1,6 +1,6 @@
 # fibre-cpp
 
-This directory provides the C/C++ reference implementation of [Fibre](https://github.com/samuelsadok/fibre). Its home is located [here](https://github.com/samuelsadok/fibre/tree/master/cpp). There's also a standalone repository for this directory [here](https://github.com/samuelsadok/fibre-cpp).
+This directory provides the C++ reference implementation of [Fibre](https://github.com/samuelsadok/fibre). Its home is located [here](https://github.com/samuelsadok/fibre/tree/master/cpp). There's also a standalone repository for this directory [here](https://github.com/samuelsadok/fibre-cpp).
 
 ## How to use
 

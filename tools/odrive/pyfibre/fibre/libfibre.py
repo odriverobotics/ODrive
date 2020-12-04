@@ -301,6 +301,7 @@ class TxStream():
         written or an Exception.
         """
         assert(self._future is None)
+        assert(not self.is_closed)
         self._future = future = self._libfibre.loop.create_future()
         self._tx_buf = data # Retain a reference to the buffer to prevent it from being garbage collected
 
@@ -375,6 +376,7 @@ class RxStream():
         bytes that were read or completes with an Exception.
         """
         assert(self._future is None)
+        assert(not self.is_closed)
         self._future = future = self._libfibre.loop.create_future()
         self._rx_buf = bytes(n_read)
 
@@ -424,7 +426,9 @@ class RemoteFunction(object):
     def _on_completed(self, ctx, status):
         call = self._calls.pop(ctx)
 
-        if status != kFibreOk:
+        if status == kFibreClosed:
+            call.set_exception(ObjectLostError())
+        elif status != kFibreOk:
             call.set_exception(_get_exception(status))
         else:
             call.set_result(None)

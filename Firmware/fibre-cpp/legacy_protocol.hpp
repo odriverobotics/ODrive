@@ -125,7 +125,9 @@ private:
         uint16_t seqno;
         uint16_t endpoint_id;
         cbufptr_t tx_buf;
+        bool tx_done;
         bufptr_t rx_buf;
+        bool rx_done;
         Completer<EndpointOperationResult>* completer;
     };
 

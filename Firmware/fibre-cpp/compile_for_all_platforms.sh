@@ -102,6 +102,7 @@ echo "building libusb for macOS..."
 
 CC='/opt/osxcross/bin/o64-clang' \
 LD_LIBRARY_PATH="/opt/osxcross/lib" \
+PATH="/opt/osxcross/bin:$PATH" \
 CFLAGS='-I/opt/osxcross/SDK/MacOSX10.13.sdk/usr/include -arch i386 -arch x86_64' \
 MACOSX_DEPLOYMENT_TARGET='10.9' \
     compile_libusb 'macos-amd64' 'x86_64-apple-darwin17'
@@ -116,7 +117,7 @@ cat <<EOF > build-linux-amd64/tup.config
 CONFIG_DEBUG=false
 CONFIG_CC="clang++"
 CONFIG_CFLAGS="-I./third_party/libusb-dev-armhf/usr/include/libusb-1.0"
-CONFIG_LDFLAGS="-L./third_party/libusb-amd64/lib/x86_64-linux-gnu/libusb-1.0.so.0.2.0"
+CONFIG_LDFLAGS="./third_party/libusb-amd64/lib/x86_64-linux-gnu/libusb-1.0.so.0.2.0"
 CONFIG_USE_PKGCONF=false
 EOF
 
@@ -154,7 +155,8 @@ EOF
 #cat <<EOF > build-wasm/tup.config
 #CONFIG_DEBUG=true
 #CONFIG_CC=/usr/lib/emscripten/em++
-#CONFIG_CFLAGS="-include emscripten.h -DFIBRE_PUBLIC=EMSCRIPTEN_KEEPALIVE"
+#CONFIG_CFLAGS=-include emscripten.h -DFIBRE_PUBLIC=EMSCRIPTEN_KEEPALIVE -s RESERVED_FUNCTION_POINTERS=1
+#CONFIG_LDFLAGS=-s EXPORT_ES6=1 -s MODULARIZE=1 -s USE_ES6_IMPORT_META=0 -s 'EXTRA_EXPORTED_RUNTIME_METHODS=[addFunction, stringToUTF8Array, UTF8ArrayToString, ENV]'
 #CONFIG_USE_PKGCONF=false
 #CONFIG_ENABLE_LIBUSB=false
 #EOF
@@ -178,5 +180,5 @@ function copy_to() {
     cp build-macos-x86/libfibre-macos-x86.dylib "$1/"
 }
 
-copy_to ../python/fibre/
-cp build-wasm/libfibre-* ../js/
+[ -d ../python/fibre ] && copy_to ../python/fibre
+[ -d ../js ] && cp build-wasm/libfibre-* ../js

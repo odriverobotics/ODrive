@@ -1,4 +1,11 @@
 
+-- Projects that include libfibre and also use tup can place a Tuprules.lua file
+-- into their root directory with the line `no_libfibre = true` to prevent
+-- libfibre from building.
+if no_libfibre == true then
+    return
+end
+
 tup.include('package.lua')
 
 CFLAGS = {'-I./include -fPIC -std=c++11 -DFIBRE_COMPILE -DFIBRE_ENABLE_CLIENT'}

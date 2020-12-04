@@ -25,6 +25,14 @@ all:
 	@tup --quiet --no-environ-check
 	@python interface_generator_stub.py --definitions odrive-interface.yaml --template ../tools/enums_template.j2 --output ../tools/odrive/enums.py
 
+fibre:
+	(cd fibre-cpp && tup --no-environ-check)
+	! ls fibre-cpp/*.so 2>&1 > /dev/null || cp fibre-cpp/build-local/*.so ../tools/odrive/pyfibre/fibre/
+	! ls fibre-cpp/*.dylib 2>&1 > /dev/null || cp fibre-cpp/build-local/*.dylib ../tools/odrive/pyfibre/fibre/
+	! ls fibre-cpp/*.dll 2>&1 > /dev/null || cp fibre-cpp/build-local/*.dll ../tools/odrive/pyfibre/fibre/
+	#(cd fibre-cpp && tup --no-environ-check build-linux-armhf)
+	#cp fibre-cpp/build-linux-armhf/libfibre-linux-armhf.so ../tools/odrive/pyfibre/fibre/
+
 clean:
 	-rm -fR .dep $(BUILD_DIR)
 
@@ -71,4 +79,4 @@ unlock: unlock-stlink2
 
 .PHONY: stlink2-config flash-stlink2 gdb-stlink2 erase-stlink2 unlock-stlink2
 .PHONY: flash-bmp gdb-bmp
-.PHONY: all clean flash gdb erase unlock dfu
+.PHONY: all clean flash gdb erase unlock dfu fibre

@@ -333,7 +333,7 @@ class TestVelLimitInTorqueControl(TestClosedLoopControlBase):
             axis_ctx.handle.requested_state=1
             
             test_curve_fit(dataA[:,(0,3)], dataA[:,4], max_mean_err=0.02, inlier_range=0.05, max_outliers=len(dataA[:,0]*0.01))
-            test_curve_fit(dataB[:,(0,3)], dataB[:,4], max_mean_err=0.1, inlier_range=0.2, max_outliers=len(dataB[:,0])*0.01)
+            test_curve_fit(dataB[:,(0,3)], dataB[:,4], max_mean_err=0.1, inlier_range=0.3, max_outliers=len(dataB[:,0])*0.01)
 
 class TestTorqueLimit(TestClosedLoopControlBase):
     """

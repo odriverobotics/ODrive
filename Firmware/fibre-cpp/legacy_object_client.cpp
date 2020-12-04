@@ -425,7 +425,7 @@ void LegacyObjectClient::CallContext::start_write(cbufptr_t buffer, TransferHand
             // Write input arg
             size_t argnum = progress;
             if (buffer.size() < func->inputs[argnum].size) {
-                FIBRE_LOG(W) << "TX granularity too small";
+                FIBRE_LOG(W) << "TX granularity too small: " << buffer.size() << " < " << func->inputs[argnum].size;
                 safe_complete(tx_completer_, {kStreamError, buffer.begin()});
             } else {
                 protocol_->start_endpoint_operation(func->inputs[argnum].ep_num,
@@ -479,7 +479,7 @@ void LegacyObjectClient::CallContext::start_read(bufptr_t buffer, TransferHandle
                 FIBRE_LOG(W) << "RX granularity too small";
                 safe_complete(rx_completer_, {kStreamError, buffer.begin()});
             } else {
-                protocol_->start_endpoint_operation(func->inputs[argnum].ep_num,
+                protocol_->start_endpoint_operation(func->outputs[argnum].ep_num,
                     {}, buffer.take(func->outputs[argnum].size), &op_handle_, *this);
             }
         } else {
@@ -493,6 +493,8 @@ void LegacyObjectClient::CallContext::cancel_read(TransferHandle transfer_handle
 }
 
 void LegacyObjectClient::CallContext::complete(EndpointOperationResult result) {
+    op_handle_ = 0;
+
     if (result.status == kStreamCancelled || (result.status == kStreamOk && cancelling_)) {
         safe_complete(tx_completer_, {kStreamCancelled, result.tx_end});
         safe_complete(rx_completer_, {kStreamCancelled, result.rx_end});
@@ -524,14 +526,29 @@ void LegacyObjectClient::CallContext::complete(EndpointOperationResult result) {
     } else {
         // Multi-endpoint function (deprecated)
 
-        if (progress < func->inputs.size() + 1) {
+        if (progress < func->inputs.size()) {
             safe_complete(tx_completer_, {kStreamOk, result.tx_end});
+        } else if (progress == func->inputs.size()) {
+            // Last input argument transferred. Start write again with an empty
+            // buffer to run the trigger operation.
+            auto tx_completer = tx_completer_;
+            tx_completer_ = nullptr;
+            start_write({result.tx_end, result.tx_end}, nullptr, *tx_completer);
         } else if (progress == func->inputs.size() + 1) {
             safe_complete(tx_completer_, {kStreamClosed, result.tx_end});
-            // If the application already prepared an RX operation complete this
-            // operation with length 0 to make the application restart this
-            // operation.
-            safe_complete(rx_completer_, {kStreamOk, rx_buf_.begin()});
+
+            // If the application has an RX operation enqueued and it was not
+            // already started (that would happen if it got enqueued during the
+            // callback above) then we start it now.
+            if (rx_completer_ && !op_handle_) {
+                auto rx_completer = rx_completer_;
+                rx_completer_ = nullptr;
+                start_read(rx_buf_, nullptr, *rx_completer); // If case there are zero outputs this will close the RX stream
+            }
+
+            if (!func->outputs.size()) {
+                complete_call(kFibreOk);
+            }
         } else if (progress < func->inputs.size() + 1 + func->outputs.size()) {
             safe_complete(rx_completer_, {kStreamOk, result.rx_end});
         } else if (progress == func->inputs.size() + 1 + func->outputs.size()) {

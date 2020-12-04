@@ -19,6 +19,8 @@ struct EndpointOperationResult {
     uint8_t* rx_end;
 };
 
+// Lower 16 bits are the seqno. Upper 16 bits are all 1 for valid handles
+// (such that seqno 0 doesn't cause the handle to be 0)
 using EndpointOperationHandle = uint32_t;
 
 struct LegacyProtocolPacketBased;

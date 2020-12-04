@@ -621,7 +621,7 @@ struct FIBRE_PRIVATE LibFibreCallContext : fibre::Completer<FibreStatus> {
     void complete(FibreStatus status) final;
 
     template<typename Func>
-    bool iterate_over_args_at(size_t encoded_offset, size_t max_encoded_length, size_t max_decoded_length, Func visitor);
+    bool iterate_over_args_at(std::vector<fibre::LegacyFibreArg>& args, size_t encoded_offset, size_t max_encoded_length, size_t max_decoded_length, Func visitor);
 
     uint8_t n_active_transfers = 0;
     fibre::LegacyObject* obj = nullptr;
@@ -766,11 +766,11 @@ bool decode_from_transport(fibre::LegacyObjectClient* client, fibre::cbufptr_t s
  *              - size_t decoded_length
  */
 template<typename Func>
-bool LibFibreCallContext::iterate_over_args_at(size_t encoded_offset, size_t max_encoded_length, size_t max_decoded_length, Func visitor) {
+bool LibFibreCallContext::iterate_over_args_at(std::vector<fibre::LegacyFibreArg>& args, size_t encoded_offset, size_t max_encoded_length, size_t max_decoded_length, Func visitor) {
     ssize_t arg_offset = 0;
     ssize_t len_diff = 0;
 
-    for (auto& arg: func->outputs) {
+    for (auto& arg: args) {
         if (arg.size >= SIZE_MAX || arg_offset + arg.size > encoded_offset) {
             ssize_t rel_encoded_offset = arg_offset - (ssize_t)encoded_offset;
             ssize_t rel_decoded_offset = arg_offset - (ssize_t)encoded_offset - len_diff;
@@ -853,7 +853,7 @@ void ArgEncoder::start_write(fibre::cbufptr_t buffer, fibre::TransferHandle* han
     encoded_buf_.reserve(buffer.size());
     
     // Transcode application buffer to stream buffer
-    bool ok = call_->iterate_over_args_at(encoded_offset_, SIZE_MAX, buffer.size(), [&](
+    bool ok = call_->iterate_over_args_at(call_->func->inputs, encoded_offset_, SIZE_MAX, buffer.size(), [&](
             const fibre::LegacyFibreArg& arg,
             ssize_t rel_encoded_offset, ssize_t rel_decoded_offset,
             size_t encoded_arg_size, size_t decoded_arg_size) {
@@ -882,7 +882,7 @@ void ArgEncoder::cancel_write(fibre::TransferHandle transfer_handle) {
 
 void ArgEncoder::complete(fibre::WriteResult result) {
     size_t n_sent = (result.end - encoded_buf_.data());
-    FIBRE_LOG(D) << "sent " << n_sent << " bytes ";
+    FIBRE_LOG(D) << "sent " << n_sent << " bytes with status " << result.status;
 
     if (n_sent > encoded_buf_.size()) {
         FIBRE_LOG(E) << "internal error: sent more bytes than expected";
@@ -902,7 +902,7 @@ void ArgEncoder::complete(fibre::WriteResult result) {
 void ArgDecoder::start_read(fibre::bufptr_t buffer, fibre::TransferHandle* handle, Completer<fibre::ReadResult>& completer) {
     size_t encoded_size = 0;
 
-    bool ok = call_->iterate_over_args_at(encoded_offset_, SIZE_MAX, buffer.size(), [&](
+    bool ok = call_->iterate_over_args_at(call_->func->outputs, encoded_offset_, SIZE_MAX, buffer.size(), [&](
             const fibre::LegacyFibreArg& arg,
             ssize_t rel_encoded_offset, ssize_t rel_decoded_offset,
             size_t encoded_arg_size, size_t decoded_arg_size) {
@@ -933,7 +933,7 @@ void ArgDecoder::complete(fibre::ReadResult result) {
     transfer_handle_ = 0;
 
     size_t n_recv = result.end - encoded_buf_.data();
-    FIBRE_LOG(D) << "received " << n_recv << " bytes ";
+    FIBRE_LOG(D) << "received " << n_recv << " bytes with status " << result.status;
 
     if (n_recv > encoded_buf_.size()) {
         FIBRE_LOG(E) << "internal error: received more bytes than expected";
@@ -945,7 +945,7 @@ void ArgDecoder::complete(fibre::ReadResult result) {
     size_t arg_offset = 0;
 
     // Transcode stream buffer to application buffer
-    bool ok = call_->iterate_over_args_at(encoded_offset_, n_recv, decoded_buf_.size(), [&](
+    bool ok = call_->iterate_over_args_at(call_->func->outputs, encoded_offset_, n_recv, decoded_buf_.size(), [&](
             const fibre::LegacyFibreArg& arg,
             ssize_t rel_encoded_offset, ssize_t rel_decoded_offset,
             size_t encoded_arg_size, size_t decoded_arg_size) {

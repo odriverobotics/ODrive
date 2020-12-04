@@ -486,7 +486,7 @@ class TestSpiEncoder(TestEncoderBase):
         # Check absolute position after 1.5s
         time.sleep(1.5)
         true_delta_t = time.monotonic() - release_time
-        test_assert_eq(enc.handle.pos_abs, (true_delta_t * true_rps * true_cpr) % true_cpr, range = true_cpr*0.001)
+        test_assert_eq(enc.handle.pos_abs, (true_delta_t * true_rps * true_cpr) % true_cpr, range = true_cpr*0.002)
 
         test_assert_eq(enc.handle.error, 0)
         reset_gpio.write(True)
@@ -501,7 +501,7 @@ class TestSpiEncoder(TestEncoderBase):
         # Check absolute position after 1.5s
         time.sleep(1.5)
         true_delta_t = time.monotonic() - release_time
-        test_assert_eq(enc.handle.pos_abs, (true_delta_t * true_rps * true_cpr) % true_cpr, range = true_cpr*0.001)
+        test_assert_eq(enc.handle.pos_abs, (true_delta_t * true_rps * true_cpr) % true_cpr, range = true_cpr*0.002)
 
         self.run_generic_encoder_test(enc.handle, true_cpr, true_rps)
         enc.handle.config.cpr = 8192
