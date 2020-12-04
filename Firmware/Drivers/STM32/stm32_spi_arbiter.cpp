@@ -124,7 +124,23 @@ void Stm32SpiArbiter::on_complete() {
     if (!task_list_) {
         return; // this should not happen
     }
-    if(!task_list_->split_tx_rx) {
+
+    if (task_list_->split_tx_rx && !task_list_->done_tx) {
+        // handle TX transaction for TLE encoder
+
+        // Start next task if any
+        SpiTask* next = nullptr;
+        CRITICAL_SECTION() {
+            task_list_->done_tx = true;
+            next = task_list_;
+        }
+        if (next) {
+            start();
+        }
+    } else {
+        // handle TX-RX transaction for normal encoders
+        // handle RX transaction for TLE encoder
+
         // Wrap up transfer
         task_list_->ncs_gpio.write(true);
         if (task_list_->on_complete) {
@@ -133,31 +149,8 @@ void Stm32SpiArbiter::on_complete() {
         // Start next task if any
         SpiTask* next = nullptr;
         CRITICAL_SECTION() {
+            task_list_->done_tx = false;
             next = task_list_ = task_list_->next;
-        }
-        if (next) {
-            start();
-        }
-    } else {
-        SpiTask* next = nullptr;
-        if(!task_list_->done_tx) {
-            // run the same task again, this time will be receiving
-            CRITICAL_SECTION() {
-                task_list_->done_tx = true;
-                next = task_list_;
-            }
-        } else {
-            // receive complete, pull CS high, run completion callback
-            task_list_->ncs_gpio.write(true);
-            if (task_list_->on_complete) {
-                (*task_list_->on_complete)(task_list_->on_complete_ctx, true);
-            }
-
-            // Start next task if any
-            CRITICAL_SECTION() {
-                task_list_->done_tx = false;
-                next = task_list_ = task_list_->next;
-            }
         }
         if (next) {
             start();
