@@ -179,7 +179,7 @@ interfaces:
              Example: `step_gpio_pin` of both axes were set to the same GPIO.
             
       oscilloscope: {type: Oscilloscope}
-      can: {type: Can, c_name: get_can()}
+      can: {type: Can}
       test_property: uint32
         
     functions:
@@ -370,10 +370,8 @@ interfaces:
       config:
         c_is_class: False
         attributes:
-          baud_rate: readonly uint32
+          baud_rate: {type: uint32, c_setter: 'set_baud_rate'}
           protocol: Protocol
-    functions:
-      set_baud_rate: {in: {baudRate: uint32}}
 
   ODrive.Endpoint:
     c_is_class: False
@@ -1163,7 +1161,7 @@ valuetypes:
       STATUS: {doc: The pin is used for status output (see `config.error_gpio_pin`)}
 
   ODrive.Can.Protocol:
-    values: {SIMPLE: }
+    flags: {SIMPLE: }
 
   ODrive.Axis.AxisState: # TODO: remove redundant "Axis" in name
     values:

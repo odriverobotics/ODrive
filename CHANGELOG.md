@@ -61,6 +61,7 @@ Please add a note of your changes below this heading if you make a Pull Request.
 * `<axis>.encoder.config.offset` was renamed to ``<axis>.encoder.config.phase_offset`
 * `<axis>.encoder.config.offset_float` was renamed to ``<axis>.encoder.config.phase_offset_float`
 * `<odrv>.config.brake_resistance == 0.0` is no longer a valid way to disable the brake resistor. Use `<odrv>.config.enable_brake_resistor` instead.
+* `<odrv>.can.set_baud_rate()` was removed. The baudrate is now automatically updated when writing to `<odrv>.can.config.baud_rate`.
 
 # Releases
 ## [0.5.1] - 2020-09-27

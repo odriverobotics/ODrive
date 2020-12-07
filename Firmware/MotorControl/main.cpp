@@ -27,8 +27,6 @@ uint32_t _reboot_cookie __attribute__ ((section (".noinit")));
 extern char _estack; // provided by the linker script
 
 
-ODriveCAN::Config_t can_config;
-ODriveCAN *odCAN = nullptr;
 ODrive odrv{};
 
 
@@ -89,7 +87,7 @@ void StatusLedController::update() {
 static bool config_read_all() {
     bool success = board_read_config() &&
            config_manager.read(&odrv.config_) &&
-           config_manager.read(&can_config);
+           config_manager.read(&odrv.can_.config_);
     for (size_t i = 0; (i < AXIS_COUNT) && success; ++i) {
         success = config_manager.read(&encoders[i].config_) &&
                   config_manager.read(&axes[i].sensorless_estimator_.config_) &&
@@ -109,7 +107,7 @@ static bool config_read_all() {
 static bool config_write_all() {
     bool success = board_write_config() &&
            config_manager.write(&odrv.config_) &&
-           config_manager.write(&can_config);
+           config_manager.write(&odrv.can_.config_);
     for (size_t i = 0; (i < AXIS_COUNT) && success; ++i) {
         success = config_manager.write(&encoders[i].config_) &&
                   config_manager.write(&axes[i].sensorless_estimator_.config_) &&
@@ -128,7 +126,7 @@ static bool config_write_all() {
 
 static void config_clear_all() {
     odrv.config_ = {};
-    can_config = {};
+    odrv.can_.config_ = {};
     for (size_t i = 0; i < AXIS_COUNT; ++i) {
         encoders[i].config_ = {};
         axes[i].sensorless_estimator_.config_ = {};
@@ -146,7 +144,7 @@ static void config_clear_all() {
 }
 
 static bool config_apply_all() {
-    bool success = true;
+    bool success = odrv.can_.apply_config();
     for (size_t i = 0; (i < AXIS_COUNT) && success; ++i) {
         success = encoders[i].apply_config(motors[i].config_.motor_type)
                && axes[i].controller_.apply_config()
@@ -272,24 +270,23 @@ void vApplicationIdleHook(void) {
         odrv.system_stats_.max_stack_usage_usb = stack_size_usb_thread - uxTaskGetStackHighWaterMark(usb_thread) * sizeof(StackType_t);
         odrv.system_stats_.max_stack_usage_uart = stack_size_uart_thread - uxTaskGetStackHighWaterMark(uart_thread) * sizeof(StackType_t);
         odrv.system_stats_.max_stack_usage_startup = stack_size_default_task - uxTaskGetStackHighWaterMark(defaultTaskHandle) * sizeof(StackType_t);
-        odrv.system_stats_.max_stack_usage_can = odCAN->stack_size_ - uxTaskGetStackHighWaterMark(odCAN->thread_id_) * sizeof(StackType_t);
+        odrv.system_stats_.max_stack_usage_can = odrv.can_.stack_size_ - uxTaskGetStackHighWaterMark(odrv.can_.thread_id_) * sizeof(StackType_t);
 
         odrv.system_stats_.stack_size_axis = axes[0].stack_size_;
         odrv.system_stats_.stack_size_usb = stack_size_usb_thread;
         odrv.system_stats_.stack_size_uart = stack_size_uart_thread;
         odrv.system_stats_.stack_size_startup = stack_size_default_task;
-        odrv.system_stats_.stack_size_can = odCAN->stack_size_;
+        odrv.system_stats_.stack_size_can = odrv.can_.stack_size_;
 
         odrv.system_stats_.prio_axis = osThreadGetPriority(axes[0].thread_id_);
         odrv.system_stats_.prio_usb = osThreadGetPriority(usb_thread);
         odrv.system_stats_.prio_uart = osThreadGetPriority(uart_thread);
         odrv.system_stats_.prio_startup = osThreadGetPriority(defaultTaskHandle);
-        odrv.system_stats_.prio_can = osThreadGetPriority(odCAN->thread_id_);
+        odrv.system_stats_.prio_can = osThreadGetPriority(odrv.can_.thread_id_);
 
         status_led_controller.update();
     }
 }
-
 }
 
 /**
@@ -437,9 +434,6 @@ void ODrive::control_loop_cb(uint32_t timestamp) {
             axis.min_endstop_.update();
             axis.max_endstop_.update();
         }
-
-        MEASURE_TIME(axis.task_times_.can_heartbeat)
-            odCAN->send_cyclic(axis);
 
         MEASURE_TIME(axis.task_times_.controller_update)
             axis.controller_.update(); // uses position and velocity from encoder
@@ -838,9 +832,6 @@ extern "C" int main(void) {
     osSemaphoreDef(sem_can);
     sem_can = osSemaphoreCreate(osSemaphore(sem_can), 1);
     osSemaphoreWait(sem_can, 0);
-
-    // Construct all objects.
-    odCAN = new ODriveCAN(can_config, &hcan1);
 
     // Create main thread
     osThreadDef(defaultTask, rtos_main, osPriorityNormal, 0, stack_size_default_task / sizeof(StackType_t));

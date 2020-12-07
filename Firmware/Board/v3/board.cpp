@@ -357,8 +357,6 @@ bool board_init() {
         // mode initialization won't override the CAN mode.
         if (odrv.config_.gpio_modes[15] != ODriveIntf::GPIO_MODE_CAN_A || odrv.config_.gpio_modes[16] != ODriveIntf::GPIO_MODE_CAN_A) {
             odrv.misconfigured_ = true;
-        } else {
-            MX_CAN1_Init();
         }
     }
 

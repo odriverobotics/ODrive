@@ -1,7 +1,8 @@
 #ifndef __CAN_SIMPLE_HPP_
 #define __CAN_SIMPLE_HPP_
 
-#include "interface_can.hpp"
+#include "canbus.hpp"
+#include "axis.hpp"
 
 class CANSimple {
    public:
@@ -34,24 +35,30 @@ class CANSimple {
         MSG_CO_HEARTBEAT_CMD = 0x700,  // CANOpen NMT Heartbeat  SEND
     };
 
-    static void handle_can_message(const can_Message_t& msg);
-    static void doCommand(Axis& axis, const can_Message_t& cmd);
+    CANSimple(CanBusBase* canbus) : canbus_(canbus) {}
 
-    // Cyclic Senders
-    static int32_t send_heartbeat(const Axis& axis);
-    static void send_cyclic(Axis& axis);
+    bool init();
+    uint32_t service_stack();
 
    private:
+
+    bool renew_subscription(size_t i);
+    bool send_heartbeat(const Axis& axis);
+
+    void handle_can_message(const can_Message_t& msg);
+
+    void do_command(Axis& axis, const can_Message_t& cmd);
+    
     // Get functions (msg.rtr bit must be set)
-    static int32_t get_motor_error_callback(const Axis& axis);
-    static int32_t get_encoder_error_callback(const Axis& axis);
-    static int32_t get_controller_error_callback(const Axis& axis);
-    static int32_t get_sensorless_error_callback(const Axis& axis);
-    static int32_t get_encoder_estimates_callback(const Axis& axis);
-    static int32_t get_encoder_count_callback(const Axis& axis);
-    static int32_t get_iq_callback(const Axis& axis);
-    static int32_t get_sensorless_estimates_callback(const Axis& axis);
-    static int32_t get_vbus_voltage_callback(const Axis& axis);
+    bool get_motor_error_callback(const Axis& axis);
+    bool get_encoder_error_callback(const Axis& axis);
+    bool get_controller_error_callback(const Axis& axis);
+    bool get_sensorless_error_callback(const Axis& axis);
+    bool get_encoder_estimates_callback(const Axis& axis);
+    bool get_encoder_count_callback(const Axis& axis);
+    bool get_iq_callback(const Axis& axis);
+    bool get_sensorless_estimates_callback(const Axis& axis);
+    bool get_vbus_voltage_callback(const Axis& axis);
 
     // Set functions
     static void set_axis_nodeid_callback(Axis& axis, const can_Message_t& msg);
@@ -84,6 +91,14 @@ class CANSimple {
     static constexpr uint8_t get_cmd_id(uint32_t msgID) {
         return (msgID & 0x01F);  // Bottom 5 bits
     }
+
+    CanBusBase* canbus_;
+    CanBusBase::CanSubscription* subscription_handles_[AXIS_COUNT];
+
+    // TODO: we this is a hack but actually we should use protocol hooks to
+    // renew our filter when the node ID changes
+    uint32_t node_ids_[AXIS_COUNT];
+    bool extended_node_ids_[AXIS_COUNT];
 };
 
 #endif
