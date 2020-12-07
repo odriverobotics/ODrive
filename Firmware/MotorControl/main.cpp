@@ -175,6 +175,12 @@ bool ODrive::save_configuration(void) {
                && config_manager.start_store(&config_size)
                && config_write_all()
                && config_manager.finish_store();
+
+        // FIXME: during save_configuration we might miss some interrupts
+        // because the CPU gets halted during a flash erase. Missing events
+        // (encoder updates, step/dir steps) is not good so to be sure we just
+        // reboot.
+        NVIC_SystemReset();
     }
 
     return success;
