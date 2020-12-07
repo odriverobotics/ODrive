@@ -29,6 +29,7 @@ bool ODriveCAN::reinit() {
 bool ODriveCAN::start_server(CAN_HandleTypeDef* handle) {
     handle_ = handle;
 
+    handle_->Init.Prescaler = CAN_FREQ / config_.baud_rate;
     if (!reinit()) {
         return false;
     }
