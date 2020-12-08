@@ -1,0 +1,57 @@
+name: 'Release Firmware'
+description: 'Compiles the firmware for the specified board version and uploads it to a GitHub release url'
+inputs:
+  board_version:
+    required: true
+  url:
+    required: true
+  token:
+    required: true
+runs:
+  using: "composite"
+  steps: 
+    - name: Compile for ODrive ${{ inputs.board_version }}
+      shell: bash
+      run: |
+        # for debugging
+        arm-none-eabi-gcc --version
+        python3 --version
+
+        cd ${{ github.workspace }}/Firmware
+
+        echo "CONFIG_STRICT=true" > tup.config
+        echo "CONFIG_BOARD_VERSION=${{ inputs.board_version }}" >> tup.config
+        tup init
+        tup generate ./tup_build.sh
+        bash -xe ./tup_build.sh
+    
+    - name: Upload ELF file
+      shell: bash
+      run: |
+        urls=( ${{ inputs.url }} )
+        URL="${urls[0]}=ODriveFirmware_${{ inputs.board_version }}.elf"
+        echo "uploading to $URL"
+
+        curl --silent --show-error --fail \
+          -H "Content-Type: application/octet-stream" \
+          -H "Authorization: token ${{ inputs.token }}" \
+          --data-binary @"Firmware/build/ODriveFirmware.elf" \
+          "$URL"
+    
+    - name: Upload HEX file
+      shell: bash
+      run: |
+        urls=( ${{ inputs.url }} )
+        URL="${urls[0]}=ODriveFirmware_${{ inputs.board_version }}.hex"
+        echo "uploading to $URL"
+        
+        curl --silent --show-error --fail \
+          -H "Content-Type: application/octet-stream" \
+          -H "Authorization: token ${{ inputs.token }}" \
+          --data-binary @"Firmware/build/ODriveFirmware.hex" \
+          "$URL"
+
+    # This is required to make the action repeatable
+    - name: Clean up
+      shell: bash
+      run: git clean -dffx

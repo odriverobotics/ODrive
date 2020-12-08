@@ -30,7 +30,7 @@ def get_version_from_git():
         # Determine the current git commit version
         git_tag = subprocess.check_output(["git", "describe", "--always", "--tags", "--dirty=*"],
             cwd=script_dir)
-        git_tag = git_tag.decode(sys.stdout.encoding).rstrip('\n')
+        git_tag = git_tag.decode(sys.stdout.encoding or 'ascii').rstrip('\n')
 
         (major, minor, revision, is_prerelease) = version_str_to_tuple(git_tag)
 
