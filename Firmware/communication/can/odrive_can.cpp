@@ -199,7 +199,8 @@ bool ODriveCAN::unsubscribe(CanSubscription* handle) {
 
     subscription->fifo = kCanFifoNone;
 
-    CAN_FilterTypeDef hal_filter = {.FilterActivation = DISABLE};
+    CAN_FilterTypeDef hal_filter = {};
+    hal_filter.FilterActivation = DISABLE;
     return HAL_CAN_ConfigFilter(handle_, &hal_filter) == HAL_OK;
 }
 

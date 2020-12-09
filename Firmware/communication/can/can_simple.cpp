@@ -21,6 +21,7 @@ bool CANSimple::renew_subscription(size_t i) {
     extended_node_ids_[i] = axis.config_.can.is_extended;
 
     MsgIdFilterSpecs filter = {
+        .id = {},
         .mask = (uint32_t)(0xffffffff << NUM_CMD_ID_BITS)
     };
     if (axis.config_.can.is_extended) {
