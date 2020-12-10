@@ -29,7 +29,7 @@ struct ResistanceMeasurementControlLaw : AlphaBetaFrameController {
         if (Ialpha_beta.has_value()) {
             actual_current_ = Ialpha_beta->first;
             test_voltage_ += (kI * current_meas_period) * (target_current_ - actual_current_);
-            I_beta_ += kIBetaFilt * (Ialpha_beta->second - I_beta_);
+            I_beta_ += (kIBetaFilt * current_meas_period) * (Ialpha_beta->second - I_beta_);
         } else {
             actual_current_ = 0.0f;
             test_voltage_ = 0.0f;
@@ -69,7 +69,7 @@ struct ResistanceMeasurementControlLaw : AlphaBetaFrameController {
     }
 
     const float kI = 1.0f; // [(V/s)/A]
-    const float kIBetaFilt = 0.01f;
+    const float kIBetaFilt = 80.0f;
     float max_voltage_ = 0.0f;
     float actual_current_ = 0.0f;
     float target_current_ = 0.0f;
