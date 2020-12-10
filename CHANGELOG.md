@@ -1,6 +1,7 @@
 # Unreleased Features
 Please add a note of your changes below this heading if you make a Pull Request.
 ### Added
+* Added phase balance check to motor calibration and MOTOR_ERROR_UNBALANCED_PHASES to error enums
 * Added polarity and phase offset calibration for hall effect encoders
 * [Mechanical brake support](docs/mechanical-brakes.md)
 * Added periodic sending of encoder position on CAN
