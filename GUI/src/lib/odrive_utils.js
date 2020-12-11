@@ -120,9 +120,6 @@ export async function motorCalibration(odrive, axis) {
 
         state = getVal(odrive + axis + ".current_state");
         motorError = getVal(odrive + axis + ".motor.error");
-        if (run) {
-            setTimeout(updateVals, 100);
-        }
     }
 
     // set up our state watch function
@@ -137,8 +134,7 @@ export async function motorCalibration(odrive, axis) {
     }
 
     // start getting live updates
-    let run = true;
-    updateVals();
+    let cylicUpdate = setInterval(updateVals, 100);
 
     // send motor calibration command to correct odrive and axis
     putVal(odrive + axis + ".requested_state", odriveEnums.AXIS_STATE_MOTOR_CALIBRATION);
@@ -150,7 +146,7 @@ export async function motorCalibration(odrive, axis) {
     const result = await waitFor(end);
 
     // stop our parameter updates
-    run = false;
+    clearInterval(cylicUpdate);
 
     return result;
 }
@@ -167,9 +163,6 @@ export async function encoderCalibration(odrive,axis) {
 
         state = getVal(odrive + axis + ".current_state");
         encoderError = getVal(odrive + axis + ".encoder.error");
-        if (run) {
-            setTimeout(updateVals, 100);
-        }
     }
 
     // set up our state watch function
@@ -184,8 +177,7 @@ export async function encoderCalibration(odrive,axis) {
     }
 
     // start getting live updates
-    let run = true;
-    updateVals();
+    let cylicUpdate = setInterval(updateVals, 100);
 
     // start encoder offset cal
     putVal(odrive + axis + ".requested_state", odriveEnums.AXIS_STATE_ENCODER_OFFSET_CALIBRATION);
@@ -197,7 +189,7 @@ export async function encoderCalibration(odrive,axis) {
     const result = await waitFor(end);
 
     // stop our parameter updates
-    run = false;
+    clearInterval(cylicUpdate);
 
     return result;
 }

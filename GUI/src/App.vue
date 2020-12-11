@@ -142,16 +142,6 @@ export default {
       console.log(dashName);
       this.$store.commit("setDash", dashName);
     },
-    //updateOdrives() {
-    //  if (this.$store.state.serverConnected == true) {
-        //} && this.sampling == false) {
-    //    this.$store.dispatch("getOdrives");
-    //  }
-      //setTimeout(() => {
-      //  this.updateOdrives();
-      //}, 1000);
-      //console.log("updating data...");
-    //},
     addDash() {
       let dashname = "Dashboard " + (this.dashboards.length - 2);
       this.dashboards.push({
