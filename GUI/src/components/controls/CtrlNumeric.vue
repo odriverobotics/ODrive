@@ -25,7 +25,9 @@ export default {
     value: function () {
       let keys = this.path.split('.');
       keys.shift();
-      return parseFloat(getVal(keys.join('.'))).toFixed(3);
+      let val = getVal(keys.join('.'));
+      console.log(val + ' ' + typeof val);
+      return parseFloat(val).toFixed(3);
     },
     name: function () {
       let keys = this.path.split(".");

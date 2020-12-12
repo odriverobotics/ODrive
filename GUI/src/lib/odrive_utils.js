@@ -42,13 +42,13 @@ export function fetchParam(path) {
 
 export function parseMath(inString) {
     // given an input string that is valid arithmetic, use eval() to evaluate it
-    let allowedChars = "0123456789eE/*-+.()";
+    //let allowedChars = "0123456789eE/*-+.()";
     let send = true;
-    for (const c of inString) {
-        if (!allowedChars.includes(c)) {
-            send = false;
-        }
-    }
+    //for (const c of inString) {
+    //    if (!allowedChars.includes(c)) {
+    //        send = false;
+    //    }
+    //}
     if (send) {
         return eval(inString);
     }
@@ -60,6 +60,12 @@ export function parseMath(inString) {
 export function putVal(path, value) {
     console.log("path: " + path + ", val: " + value + ", type: " + typeof value);
     if (store.state.ODrivesConnected[path.split('.')[0]]) {
+        if (value == Number.POSITIVE_INFINITY) {
+            value = "Infinity";
+        }
+        else if (value == Number.NEGATIVE_INFINITY) {
+            value = "-Infinity";
+        }
         socketio.sendEvent({
             type: "setProperty",
             data: {path: path, val: value, type: typeof value}

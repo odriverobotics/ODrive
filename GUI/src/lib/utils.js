@@ -56,3 +56,23 @@ export let wait = (time) => {
         setTimeout(() => resolve(), time);
     });
 }
+
+export let pathsFromTree = (tree) => {
+    let flatpaths = [];
+    let path = [];
+    let pathFromTree = (tree) => {
+        for (const key of Object.keys(tree)) {
+            path.push(key);
+            if (tree[key] != null && typeof tree[key] == "object") {
+              pathFromTree(tree[key]);
+            }
+            else {
+              flatpaths.push(path.join('.'));
+            }
+            path.pop();
+        }
+    }
+    // array path
+    pathFromTree(tree);
+    return flatpaths;
+}

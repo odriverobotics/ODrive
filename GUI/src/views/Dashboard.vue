@@ -337,6 +337,7 @@ export default {
       switch (this.addCompType) {
         case "control":
           this.treeParams = this.$store.state.odriveConfigs['params'];
+          console.log(this.treeParams);
           break;
         case "plot":
           this.treeParams = this.$store.state.odriveConfigs['params'];
