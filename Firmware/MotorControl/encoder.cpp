@@ -364,7 +364,7 @@ bool Encoder::run_offset_calibration() {
         axis_->motor_.current_control_.phase_src_.connect_to(&axis_->open_loop_controller_.phase_);
         axis_->acim_estimator_.rotor_phase_src_.connect_to(&axis_->open_loop_controller_.phase_);
 
-        axis_->motor_.phase_vel_src_.connect_to(&axis_->open_loop_controller_.phase_vel_);
+        axis_->motor_.vel_src_.disconnect();
         axis_->motor_.current_control_.phase_vel_src_.connect_to(&axis_->open_loop_controller_.phase_vel_);
         axis_->acim_estimator_.rotor_phase_vel_src_.connect_to(&axis_->open_loop_controller_.phase_vel_);
     }

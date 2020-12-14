@@ -555,27 +555,31 @@ void Motor::update(uint32_t timestamp) {
     float vd = 0.0f;
     float vq = 0.0f;
 
-    std::optional<float> phase_vel = phase_vel_src_.present();
+    std::optional<float> vel = vel_src_.present();
 
     if (config_.R_wL_FF_enable) {
-        if (!phase_vel.has_value()) {
-            error_ |= ERROR_UNKNOWN_PHASE_VEL;
+        if (!vel.has_value()) {
+            error_ |= ERROR_UNKNOWN_VEL;
             return;
         }
 
-        vd -= *phase_vel * config_.phase_inductance * iq;
-        vq += *phase_vel * config_.phase_inductance * id;
+        float phase_vel = (2*M_PI) * (*vel) * config_.pole_pairs * direction_;
+
+        vd -= phase_vel * config_.phase_inductance * iq;
+        vq += phase_vel * config_.phase_inductance * id;
         vd += config_.phase_resistance * id;
         vq += config_.phase_resistance * iq;
     }
 
     if (config_.bEMF_FF_enable) {
-        if (!phase_vel.has_value()) {
-            error_ |= ERROR_UNKNOWN_PHASE_VEL;
+        if (!vel.has_value()) {
+            error_ |= ERROR_UNKNOWN_VEL;
             return;
         }
 
-        vq += *phase_vel * (2.0f/3.0f) * (config_.torque_constant / config_.pole_pairs);
+        float phase_vel = (2*M_PI) * (*vel) * config_.pole_pairs * direction_;
+
+        vq += phase_vel * (2.0f/3.0f) * (config_.torque_constant / config_.pole_pairs);
     }
     
     if (axis_->motor_.config_.motor_type == Motor::MOTOR_TYPE_GIMBAL) {

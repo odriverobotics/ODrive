@@ -207,7 +207,7 @@ bool Axis::run_lockin_spin(const LockinConfig_t &lockin_config, bool remain_arme
         motor_.current_control_.phase_src_.connect_to(&open_loop_controller_.phase_);
         acim_estimator_.rotor_phase_src_.connect_to(&open_loop_controller_.phase_);
         
-        motor_.phase_vel_src_.connect_to(&open_loop_controller_.phase_vel_);
+        motor_.vel_src_.disconnect();
         motor_.current_control_.phase_vel_src_.connect_to(&open_loop_controller_.phase_vel_);
         acim_estimator_.rotor_phase_vel_src_.connect_to(&open_loop_controller_.phase_vel_);
     }
@@ -318,9 +318,14 @@ bool Axis::start_closed_loop_control() {
         acim_estimator_.rotor_phase_src_.connect_to(phase_src);
         
         OutputPort<float>* phase_vel_src = sensorless_mode ? &sensorless_estimator_.phase_vel_ : &encoder_.phase_vel_;
-        motor_.phase_vel_src_.connect_to(phase_vel_src);
         motor_.current_control_.phase_vel_src_.connect_to(phase_vel_src);
         acim_estimator_.rotor_phase_vel_src_.connect_to(phase_vel_src);
+
+        if (motor_.config_.vel_setpoint_FF) {
+            motor_.vel_src_.connect_to(&controller_.vel_setpoint_);
+        } else {
+            motor_.vel_src_.connect_to(sensorless_mode ? &sensorless_estimator_.vel_estimate_ : &encoder_.vel_estimate_);
+        }
         
         if (sensorless_mode) {
             // Make the final velocity of the loĉk-in spin the setpoint of the

@@ -42,6 +42,7 @@ public:
         
         bool R_wL_FF_enable = false; // Enable feedforwards for R*I and w*L*I terms
         bool bEMF_FF_enable = false; // Enable feedforward for bEMF
+        bool vel_setpoint_FF = false;
 
         float I_bus_hard_min = -INFINITY;
         float I_bus_hard_max = INFINITY;
@@ -125,7 +126,7 @@ public:
     float max_dc_calib_ = 0.0f; // [A] set in setup()
 
     InputPort<float> torque_setpoint_src_; // Usually points to the Controller object's output
-    InputPort<float> phase_vel_src_; // Usually points to the Encoder object's output
+    InputPort<float> vel_src_; // Usually points to the Encoder object's output
 
     float direction_ = 0.0f; // if -1 then positive torque is converted to negative Iq
     OutputPort<float2D> Vdq_setpoint_ = {{0.0f, 0.0f}}; // fed to the FOC

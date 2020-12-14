@@ -651,7 +651,7 @@ interfaces:
               See `ODrive.Error` for more details.
           BAD_TIMING: {doc: The main control loop got out of sync with the motor control loop. This could indicate that the main control loop got stuck.}
           UNKNOWN_PHASE_ESTIMATE: {doc: The current controller did not get a valid angle input. Maybe you didn't calibrate the encoder.}
-          UNKNOWN_PHASE_VEL: {doc: The motor controller did not get a valid phase velocity input.}
+          UNKNOWN_VEL: {doc: The motor controller did not get a valid velocity input.}
           UNKNOWN_TORQUE: {doc: The motor controller did not get a valid torque input.}
           UNKNOWN_CURRENT_COMMAND: {doc: The current controller did not get a valid current setpoint. Maybe you didn't configure the controller correctly.}
           UNKNOWN_CURRENT_MEASUREMENT: {doc: The current controller did not get a valid current measurement.}
@@ -729,6 +729,13 @@ interfaces:
           acim_autoflux_decay_gain: float32
           R_wL_FF_enable: bool
           bEMF_FF_enable: bool
+          vel_setpoint_FF:
+            type: bool
+            doc: |
+              If true, the feedforward terms that are enabled by
+              `R_wL_FF_enable` and `bEMF_FF_enable` are calculated from the
+              controller's velocity setpoint rather than the velocity estimate.
+              Default: false.
           I_bus_hard_min:
             type: float32
             unit: A
