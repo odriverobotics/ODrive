@@ -117,6 +117,7 @@ try:
       'matplotlib', # Required to run the liveplotter
       'monotonic', # For compatibility with older python versions
       'appdirs',  # Used to find caching directory
+      'setuptools',  # ubuntu-latest on GitHub Actions fails to install odrive without this dependency
       'pywin32 >= 222; platform_system == "Windows"' # Required for fancy terminal features on Windows
     ],
     package_data={'': ['version.txt']},

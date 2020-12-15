@@ -18,6 +18,7 @@ jobs:
         shell: bash
         run: |
           pip3 list | grep setuptools || echo "setuptools not installed" # show version
+          pip3 install setuptools # TODO: this should be a dependency of odrive
           pip3 install odrive
         env:
           # TODO: this is a workaround for https://github.com/pypa/setuptools/issues/2353 and we
