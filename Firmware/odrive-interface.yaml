@@ -981,6 +981,9 @@ interfaces:
           direction: int32
           pre_calibrated: {type: bool, c_setter: set_pre_calibrated}
           enable_phase_interpolation: bool
+          phase_interpolation_min_vel:
+            type: float32
+            unit: turns/s
           bandwidth: {type: float32, c_setter: set_bandwidth}
           calib_range: float32
           calib_scan_distance: float32

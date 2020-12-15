@@ -792,6 +792,9 @@ bool Encoder::update() {
         vel_estimate_counts_ = 0.0f;  //align delta-sigma on zero to prevent jitter
         snap_to_zero_vel = true;
     }
+    if (std::abs(vel_estimate_counts_ / (float)config_.cpr) < config_.phase_interpolation_min_vel) {
+        snap_to_zero_vel = true;
+    }
 
     // Outputs from Encoder for Controller
     pos_estimate_ = pos_estimate_counts_ / (float)config_.cpr;
