@@ -313,14 +313,18 @@ bool Axis::start_closed_loop_control() {
         motor_.current_control_.Idq_setpoint_src_.connect_to(&motor_.Idq_setpoint_);
         motor_.current_control_.Vdq_setpoint_src_.connect_to(&motor_.Vdq_setpoint_);
 
+        bool is_acim = motor_.config_.motor_type == Motor::MOTOR_TYPE_ACIM;
+        // phase
         OutputPort<float>* phase_src = sensorless_mode ? &sensorless_estimator_.phase_ : &encoder_.phase_;
-        motor_.current_control_.phase_src_.connect_to(phase_src);
         acim_estimator_.rotor_phase_src_.connect_to(phase_src);
-        
+        OutputPort<float>* stator_phase_src = is_acim ? &acim_estimator_.stator_phase_ : phase_src;
+        motor_.current_control_.phase_src_.connect_to(stator_phase_src);
+        // phase vel
         OutputPort<float>* phase_vel_src = sensorless_mode ? &sensorless_estimator_.phase_vel_ : &encoder_.phase_vel_;
-        motor_.phase_vel_src_.connect_to(phase_vel_src);
-        motor_.current_control_.phase_vel_src_.connect_to(phase_vel_src);
         acim_estimator_.rotor_phase_vel_src_.connect_to(phase_vel_src);
+        OutputPort<float>* stator_phase_vel_src = is_acim ? &acim_estimator_.stator_phase_vel_ : phase_vel_src;
+        motor_.phase_vel_src_.connect_to(stator_phase_vel_src);
+        motor_.current_control_.phase_vel_src_.connect_to(stator_phase_vel_src);
         
         if (sensorless_mode) {
             // Make the final velocity of the loĉk-in spin the setpoint of the
