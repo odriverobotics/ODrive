@@ -10,7 +10,7 @@ Note: ODrive versions after v3.5 are closed-source with respect to board files a
 - Max continuous current depends on cooling. See [this](https://discourse.odriverobotics.com/t/odrive-mosfet-temperature-rise-measurements-using-the-onboard-thermistor/972) for more details.
     - Heatsink in still air: 40A per channel
     - Heatsink with basic fan cooling: 75A per channel
-    - Heatsing with overkill fan cooling: 90A per channel
+    - Heatsink with overkill fan cooling: 90A per channel
 - Max motor RPM: This depends on your power supply voltage, motor, and encoder. It is the lesser of: 
     - motor RPM limit
     - encoder RPM limit
