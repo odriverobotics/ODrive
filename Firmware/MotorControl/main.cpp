@@ -510,6 +510,23 @@ uint32_t ODrive::get_gpio_states() {
  * @brief Main thread started from main().
  */
 static void rtos_main(void*) {
+#if HW_VERSION_MAJOR == 4
+    // TODO: move this to board file
+    if (!onboard_encoder.init()) {
+        for (;;);
+    }
+
+    // TODO: remove
+    for (int i = 0; i < 20; ++i) {
+        auto field = onboard_encoder.get_field_strength();
+        if (field.has_value()) {
+            vals[i] = *field;
+        } else {
+            vals[i] = -1.0f;
+        }
+    }
+#endif
+
     // Init USB device
     MX_USB_DEVICE_Init();
 
