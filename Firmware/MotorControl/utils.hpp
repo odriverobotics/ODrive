@@ -120,7 +120,7 @@ inline int round_int(float x) {
 // Wrap value to range.
 // With default rounding mode (round to nearest),
 // the result will be in range -y/2 to y/2
-constexpr float wrap_pm(float x, float y) {
+inline float wrap_pm(float x, float y) {
 #ifdef FPU_FPV4
     float intval = (float)round_int(x / y);
 #else
@@ -130,13 +130,13 @@ constexpr float wrap_pm(float x, float y) {
 }
 
 // Same as fmodf but result is positive and y must be positive
-constexpr float fmodf_pos(float x, float y) {
+inline float fmodf_pos(float x, float y) {
     float res = wrap_pm(x, y);
     if (res < 0) res += y;
     return res;
 }
 
-constexpr float wrap_pm_pi(float x) {
+inline float wrap_pm_pi(float x) {
     return wrap_pm(x, 2 * M_PI);
 }
 
