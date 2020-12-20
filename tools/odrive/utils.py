@@ -33,7 +33,7 @@ _VT100Colors = {
     'default': '\x1b[0m'
 }
 
-def calculate_thermistor_coeffs(degree, Rload, R_25, Beta, Tmin, Tmax, plot = False):
+def calculate_thermistor_coeffs(degree, Rload, R_25, Beta, Tmin, Tmax, thermistor_bottom = False, plot = False):
     T_25 = 25 + 273.15 #Kelvin
     temps = np.linspace(Tmin, Tmax, 1000)
     tempsK = temps + 273.15
@@ -41,7 +41,10 @@ def calculate_thermistor_coeffs(degree, Rload, R_25, Beta, Tmin, Tmax, plot = Fa
     # https://en.wikipedia.org/wiki/Thermistor#B_or_%CE%B2_parameter_equation
     r_inf = R_25 * np.exp(-Beta/T_25)
     R_temps = r_inf * np.exp(Beta/tempsK)
-    V = Rload / (Rload + R_temps)
+    if thermistor_bottom:
+        V = R_temps / (Rload + R_temps)
+    else:
+        V = Rload / (Rload + R_temps)
 
     fit = np.polyfit(V, temps, degree)
     p1 = np.poly1d(fit)
@@ -62,8 +65,8 @@ def calculate_thermistor_coeffs(degree, Rload, R_25, Beta, Tmin, Tmax, plot = Fa
 class OperationAbortedException(Exception):
     pass
 
-def set_motor_thermistor_coeffs(axis, Rload, R_25, Beta, Tmin, TMax):
-    coeffs = calculate_thermistor_coeffs(3, Rload, R_25, Beta, Tmin, TMax)
+def set_motor_thermistor_coeffs(axis, Rload, R_25, Beta, Tmin, TMax, thermistor_bottom = False):
+    coeffs = calculate_thermistor_coeffs(3, Rload, R_25, Beta, Tmin, TMax, thermistor_bottom)
     axis.motor.motor_thermistor.config.poly_coefficient_0 = float(coeffs[3])
     axis.motor.motor_thermistor.config.poly_coefficient_1 = float(coeffs[2])
     axis.motor.motor_thermistor.config.poly_coefficient_2 = float(coeffs[1])
