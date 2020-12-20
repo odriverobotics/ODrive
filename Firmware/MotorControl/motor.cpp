@@ -332,7 +332,7 @@ bool Motor::setup() {
     max_dc_calib_ = 0.1f * max_allowed_current_;
 
     if (!gate_driver_.init())
-        return true;
+        return false;
 
     return true;
 }
