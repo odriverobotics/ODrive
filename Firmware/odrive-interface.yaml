@@ -563,6 +563,7 @@ interfaces:
   ODrive.Motor:
     c_is_class: True
     attributes:
+      last_error_time: float32
       error:
         nullflag: NONE
         flags:
@@ -816,6 +817,7 @@ interfaces:
           INVALID_MIRROR_AXIS:
           INVALID_LOAD_ENCODER:
           INVALID_ESTIMATE:
+      last_error_time: float32
       input_pos:
         type: float32
         unit: turn
@@ -899,14 +901,12 @@ interfaces:
       autotuning:
         c_is_class: False
         attributes:
+          frequency: float32
           pos_amplitude: float32
-          pos_frequency: float32
           pos_phase: float32
           vel_amplitude: float32
-          vel_frequency: float32
           vel_phase: float32
           torque_amplitude: float32
-          torque_frequency: float32
           torque_phase: float32
     functions:
       move_incremental:

@@ -109,6 +109,7 @@ public:
 
     // variables exposed on protocol
     Error error_ = ERROR_NONE;
+    float last_error_time_ = 0.0f;
     // Do not write to this variable directly!
     // It is for exclusive use by the safety_critical_... functions.
     bool is_armed_ = false;

@@ -15,14 +15,12 @@ public:
     };
 
     struct Autotuning_t {
+        float frequency = 0.0f;
         float pos_amplitude = 0.0f;
-        float pos_frequency = 0.0f;
         float pos_phase = 0.0f;
         float vel_amplitude = 0.0f;
-        float vel_frequency = 0.0f;
         float vel_phase = 0.0f;
         float torque_amplitude = 0.0f;
-        float torque_frequency = 0.0f;
         float torque_phase = 0.0f;
     };
 
@@ -85,6 +83,7 @@ public:
     Axis* axis_ = nullptr; // set by Axis constructor
 
     Error error_ = ERROR_NONE;
+    float last_error_time_ = 0.0f;
 
     // Inputs
     InputPort<float> pos_estimate_linear_src_;
@@ -105,7 +104,8 @@ public:
     float input_filter_ki_ = 0.0f;
 
     Autotuning_t autotuning_;
-
+    float autotuning_phase_ = 0.0f;
+    
     bool input_pos_updated_ = false;
     
     bool trajectory_done_ = true;
