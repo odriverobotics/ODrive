@@ -2,15 +2,13 @@ const fs = require('fs');
 const path = require('path');
 
 
-fs.readFile(path.resolve(__dirname,'../../tools/odrive/enums.py'), 'utf8', function(err, data) {
+fs.readFile(path.resolve(__dirname,'..','..','tools','odrive','enums.py'), 'utf8', function(err, data) {
     if (err) throw err;
     let enumsString = data;
-    let lines = enumsString.split('\n');
+    let lines = enumsString.split(process.platform == 'win32' ? '\r\n' : '\n');
     let enums = {};
     for (const line of lines) {
         if (line != '' && line[0] != '#') {
-            // get word
-            // get = value
             let name;
             let value;
             name = line.split('=')[0];
