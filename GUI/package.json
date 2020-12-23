@@ -30,7 +30,7 @@
     "vue-context": "^5.2.0",
     "vue-directive-tooltip": "^1.6.3",
     "vue-json-component": "^0.4.1",
-    "vue-slider-component": "^3.2.2",
+    "vue-slider-component": "^3.2.11",
     "vuex": "^3.5.1"
   },
   "devDependencies": {
@@ -46,7 +46,6 @@
     "eslint-plugin-vue": "^6.2.2",
     "vue-cli-plugin-electron-builder": "~2.0.0-rc.4",
     "vue-cli-plugin-yaml": "^1.0.2",
-    "vue-json-component": "^0.4.1",
     "vue-template-compiler": "^2.6.11"
   },
   "eslintConfig": {

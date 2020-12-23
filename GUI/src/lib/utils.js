@@ -76,3 +76,18 @@ export let pathsFromTree = (tree) => {
     pathFromTree(tree);
     return flatpaths;
 }
+
+export let numberDisplay = (val) => {
+    // if a number can be represented with 3 decimals, return it in that form
+    // otherwise, return scientific notation
+    let retVal = '';
+    try {
+        retVal = parseFloat(val).toFixed(3);
+        if (retVal == '0.000' && val != 0 || retVal.length > 7) {
+            retVal = parseFloat(val).toExponential(3);
+        }
+    } catch (error) {
+        console.log(error);
+    }
+    return retVal;
+}

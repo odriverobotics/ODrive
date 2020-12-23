@@ -19,8 +19,8 @@
             style="display: none"
           />
         </button>
-        <button class="dash-button menu-item" id="importButton" @click="calcImportLeft();calcImportTop();showImport = !showImport">Import ODrive config</button>
-        <button class="dash-button menu-item" id="exportButton" @click="calcExportLeft();calcExportTop();showExport = !showExport">Export ODrive config</button>
+        <button class="dash-button menu-item" id="importButton" @click="calcImportLeft();calcImportTop();toggleImport()">Import ODrive config</button>
+        <button class="dash-button menu-item" id="exportButton" @click="calcExportLeft();calcExportTop();toggleExport()">Export ODrive config</button>
       </div>
       <div class="card import-menu" :style="{top: importTop, left: importLeft}" v-show="showImport">
         <button v-for="odrive in Object.keys(odrives)" :key="odrive" class="dash-button" @click="importConfigWrapper">
@@ -188,6 +188,14 @@ export default {
         this.showImport = false;
         this.showExport = false;
       }
+    },
+    toggleImport() {
+      this.showImport = !this.showImport;
+      this.showExport = false;
+    },
+    toggleExport() {
+      this.showExport = !this.showExport;
+      this.showImport=  false;
     },
     importConfigWrapper() {
       const inputElem = document.getElementById("inputConfig");
