@@ -5,10 +5,10 @@
       <span class="ctrlName">{{name}}</span>
     </div>
     <div class="slider-container">
-      <input type="number" :value="displayMin" v-on:change="setMin"/>
+      <input :value="displayMin" :placeholder="displayMin" v-on:change="setMin"/>
       <!-- <vue-slider v-model="value" :min="min" :max="max" :interval="interval" /> -->
       <vue-slider v-model="value" :data="data" :adsorb="true" @change="putVal"/>
-      <input type="number" :value="displayMax" v-on:change="setMax" />
+      <input :value="displayMax" :placeholder="displayMax" v-on:change="setMax" />
     </div>
   </div>
 </template>
@@ -66,14 +66,20 @@ export default {
       putVal(keys.join('.'), value);
     },
     setMin: function (e) {
-      this.min = parseMath(e.target.value);
-      this.data = Array.from(Array(101), (_, i) => this.min + (this.max-this.min) / 100 * i);
-      this.value = this.findNearest(this.data, this.value);
+      let min = parseMath(e.target.value);
+      if (min < this.max) {
+        this.min = min;
+        this.data = Array.from(Array(101), (_, i) => this.min + (this.max-this.min) / 100 * i);
+        this.value = this.findNearest(this.data, this.value);
+      }
     },
     setMax: function (e) {
-      this.max = parseMath(e.target.value);
-      this.data = Array.from(Array(101), (_, i) => this.min + (this.max-this.min) / 100 * i);
-      this.value = this.findNearest(this.data, this.value);
+      let max = parseMath(e.target.value);
+      if (max > this.min) {
+        this.max = max;
+        this.data = Array.from(Array(101), (_, i) => this.min + (this.max-this.min) / 100 * i);
+        this.value = this.findNearest(this.data, this.value);
+      }
     },
     deleteCtrl: function() {
       // commit a mutation in the store with the relevant information
