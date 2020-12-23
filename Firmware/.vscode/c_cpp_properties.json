@@ -17,7 +17,7 @@
                 "__GNUC__"
             ],
             "intelliSenseMode": "gcc-x64",
-            "compilerPath": "\"${ARM_GCC_ROOT}/bin/arm-none-eabi-g++.exe\" -mthumb -mcpu=cortex-m4 -mfpu=fpv4-sp-d16 -mfloat-abi=hard -specs=nosys.specs -specs=nano.specs -u _printf_float -u _scanf_float",
+            "compilerPath": "\"F:/Embedded development tools/GNU Tools Arm Embedded/9 2020-q2-update/bin/arm-none-eabi-g++.exe\" -mthumb -mcpu=cortex-m4 -mfpu=fpv4-sp-d16 -mfloat-abi=hard -specs=nosys.specs -specs=nano.specs -u _printf_float -u _scanf_float",
             "cStandard": "c11",
             "cppStandard": "c++17"
         },

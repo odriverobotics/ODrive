@@ -32,5 +32,6 @@
         "type_traits": "cpp",
         "typeinfo": "cpp",
         "algorithm": "cpp"
-    }
+    },
+    "python.pythonPath": "F:\\Software development tools\\Python37\\python.exe"
 }
