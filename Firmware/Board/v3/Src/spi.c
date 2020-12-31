@@ -109,7 +109,7 @@ void HAL_SPI_MspInit(SPI_HandleTypeDef* spiHandle)
     HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
 
     // MISO pull-up required for disconnect detection on SPI encoders with even parity
-    GPIO_InitStruct.Pin = GPIO_PIN_11
+    GPIO_InitStruct.Pin = GPIO_PIN_11;
     GPIO_InitStruct.Pull = GPIO_PULLUP;
     HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
 
