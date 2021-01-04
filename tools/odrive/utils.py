@@ -324,7 +324,7 @@ def rate_test(device):
     numFrames = 10000
     vals = []
     for _ in range(numFrames):
-        vals.append(device.axis0.loop_counter)
+        vals.append(device.n_evt_control_loop)
 
     loopsPerFrame = (vals[-1] - vals[0])/numFrames
     loopsPerSec = (168000000/(6*3500))

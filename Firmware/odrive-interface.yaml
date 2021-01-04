@@ -407,7 +407,6 @@ interfaces:
       last_drv_fault: readonly uint32
       current_state: readonly AxisState
       requested_state: AxisState
-      loop_counter: readonly uint32
       is_homed: {type: bool, c_name: homing_.is_homed}
       config:
         c_is_class: False

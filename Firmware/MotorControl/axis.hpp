@@ -187,7 +187,6 @@ public:
     AxisState requested_state_ = AXIS_STATE_STARTUP_SEQUENCE;
     std::array<AxisState, 10> task_chain_ = { AXIS_STATE_UNDEFINED };
     AxisState& current_state_ = task_chain_.front();
-    uint32_t loop_counter_ = 0;
     Homing_t homing_;
     CAN_t can_;
 
