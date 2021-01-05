@@ -69,7 +69,7 @@ If your test rig differs, you may be able to run some but not all of the tests.
 
  7. Install the prerequisites:
 
-        sudo apt-get install ipython3 python3-appdirs python3-yaml python3-usb python3-serial python3-can python3-scipy python3-matplotlib python3-ipdb git openocd
+        sudo apt-get install ipython3 python3-appdirs python3-yaml python3-jinja2 python3-usb python3-serial python3-can python3-scipy python3-matplotlib python3-ipdb git openocd
         # Optionally, to be able to compile the firmware:
         sudo apt-get install gcc-arm-none-eabi
 

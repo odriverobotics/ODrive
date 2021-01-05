@@ -20,9 +20,9 @@ import time
 import tempfile
 import io
 import re
-import jinja2
 import datetime
 from typing import Union, Tuple
+import traceback
 
 # needed for curve fitting
 import numpy as np
@@ -297,9 +297,8 @@ class ODriveComponent(Component):
                 getattr(self.handle.config, k).endpoint = None
 
     def save_config_and_reboot(self):
-        self.handle.save_configuration()
         try:
-            self.handle.reboot()
+            self.handle.save_configuration()
         except fibre.ChannelBrokenException:
             pass # this is expected
         self.handle = None
@@ -860,6 +859,7 @@ def run_shell(command_line, logger, env=None, timeout=None):
 
 
 def render_html_summary(status, test_results, output_file):
+    import jinja2
     with open(os.path.join(os.path.dirname(__file__), "results.html.j2")) as fp:
         env = jinja2.Environment()
         env.filters['passes'] = lambda x: [res for res in x if res == True]
@@ -984,6 +984,7 @@ def run(tests):
                 test.run_test(*params, logger)
                 test_case_results.append(True)
             except Exception as ex:
+                traceback.print_exc()
                 test_case_results.append(ex)
 
             if args.html:
@@ -1095,5 +1096,6 @@ if __name__ == '__main__':
         tests += test_module.tests
     
     logger.notify(f"found {len(tests)} tests in {len(test_scripts)} modules")
-    test_results = test_module.test_runner.run(tests)
+    if any(tests):
+        test_results = test_module.test_runner.run(tests)
 
