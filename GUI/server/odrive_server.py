@@ -9,6 +9,7 @@ import json
 import time
 import argparse
 import logging
+import math
 
 # interface for odrive GUI to get data from odrivetool
 
@@ -33,7 +34,7 @@ app.config.update(
     SESSION_COOKIE_SAMESITE='None'
 )
 CORS(app, support_credentials=True)
-Payload.max_decode_packets = 100
+Payload.max_decode_packets = 500
 socketio = SocketIO(app, cors_allowed_origins="*", async_mode = "threading")
 
 #def get_odrive():
@@ -176,9 +177,17 @@ def dictFromRO(RO):
         elif isinstance(RO._remote_attributes[key], fibre.remote_object.RemoteProperty):
             # grab value of that property
             # indicate if this property can be written or not
-            returnDict[key] = {"val": str(RO._remote_attributes[key].get_value()),
+            val = str(RO._remote_attributes[key].get_value())
+            _type = str(RO._remote_attributes[key]._property_type.__name__)
+            if val == "inf":
+                val = "Infinity"
+                _type = "str"
+            elif val == "-inf":
+                val = "-Infinity"
+                _type = "str"
+            returnDict[key] = {"val": val,
                                "readonly": not RO._remote_attributes[key]._can_write,
-                               "type": str(RO._remote_attributes[key]._property_type.__name__)}
+                               "type": _type}
         elif isinstance(RO._remote_attributes[key], fibre.remote_object.RemoteFunction):
             # this is a function - do nothing for now.
             returnDict[key] = "function"
@@ -200,6 +209,11 @@ def postVal(odrives, keyList, value, argType):
             RO.set_value(float(value))
         elif argType == "boolean":
             RO.set_value(value)
+        elif argType == "string":
+            if value == "Infinity":
+                RO.set_value(math.inf)
+            elif value == "-Infinity":
+                RO.set_value(-math.inf)
         else:
             pass # dont support that type yet
     except fibre.protocol.ChannelBrokenException:
@@ -217,7 +231,12 @@ def getVal(odrives, keyList):
         if isinstance(RO, fibre.remote_object.RemoteObject):
             return dictFromRO(RO)
         else:
-            return RO.get_value()
+            retVal = RO.get_value()
+            if retVal == math.inf:
+                retVal = "Infinity"
+            elif retVal == -math.inf:
+                retVal = "-Infinity"
+            return retVal
     except fibre.protocol.ChannelBrokenException:
         handle_disconnect(odrv)
     except:

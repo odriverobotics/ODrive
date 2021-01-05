@@ -44,7 +44,7 @@ function compile(src_file, obj_file)
     tup.frule{
         inputs={src_file},
         extra_inputs = {'autogen/interfaces.hpp', 'autogen/function_stubs.hpp', 'autogen/endpoints.hpp', 'autogen/type_info.hpp'},
-        command='^co^ '..compiler..' -c %f '..tostring(CFLAGS)..' -o %o',
+        command='^o^ '..compiler..' -c %f '..tostring(CFLAGS)..' -o %o',
         outputs={obj_file}
     }
 end
@@ -83,12 +83,12 @@ odrive_firmware_pkg = {
         'Drivers/STM32/stm32_gpio.cpp',
         'Drivers/STM32/stm32_nvm.c',
         'Drivers/STM32/stm32_spi_arbiter.cpp',
-        'communication/can_simple.cpp',
+        'communication/can/can_simple.cpp',
+        'communication/can/odrive_can.cpp',    
         'communication/communication.cpp',
         'communication/ascii_protocol.cpp',
         'communication/interface_uart.cpp',
         'communication/interface_usb.cpp',
-        'communication/interface_can.cpp',
         'communication/interface_i2c.cpp',
         'fibre/cpp/protocol.cpp',
         'FreeRTOS-openocd.c',
@@ -447,7 +447,7 @@ end
 
 tup.frule{
     inputs=object_files,
-    command='^c^ '..LINKER..' %f '..tostring(CFLAGS)..' '..tostring(LDFLAGS)..
+    command='^o^ '..LINKER..' %f '..tostring(CFLAGS)..' '..tostring(LDFLAGS)..
             ' -Wl,-Map=%O.map -o %o',
     outputs={'build/ODriveFirmware.elf', extra_outputs={'build/ODriveFirmware.map'}}
 }

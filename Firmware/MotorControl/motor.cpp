@@ -6,8 +6,8 @@
 
 #include <algorithm>
 
-#define CURRENT_ADC_LOWER_BOUND         (uint32_t)((float)(1 << 12) * CURRENT_SENSE_MIN_VOLT / 3.3f)
-#define CURRENT_ADC_UPPER_BOUND         (uint32_t)((float)(1 << 12) * CURRENT_SENSE_MAX_VOLT / 3.3f)
+static constexpr auto CURRENT_ADC_LOWER_BOUND =        (uint32_t)((float)(1 << 12) * CURRENT_SENSE_MIN_VOLT / 3.3f);
+static constexpr auto CURRENT_ADC_UPPER_BOUND =        (uint32_t)((float)(1 << 12) * CURRENT_SENSE_MAX_VOLT / 3.3f);
 
 /**
  * @brief This control law adjusts the output voltage such that a predefined
@@ -29,6 +29,7 @@ struct ResistanceMeasurementControlLaw : AlphaBetaFrameController {
         if (Ialpha_beta.has_value()) {
             actual_current_ = Ialpha_beta->first;
             test_voltage_ += (kI * current_meas_period) * (target_current_ - actual_current_);
+            I_beta_ += (kIBetaFilt * current_meas_period) * (Ialpha_beta->second - I_beta_);
         } else {
             actual_current_ = 0.0f;
             test_voltage_ = 0.0f;
@@ -63,11 +64,17 @@ struct ResistanceMeasurementControlLaw : AlphaBetaFrameController {
         return test_voltage_ / target_current_;
     }
 
+    float get_Ibeta() {
+        return I_beta_;
+    }
+
     const float kI = 1.0f; // [(V/s)/A]
+    const float kIBetaFilt = 80.0f;
     float max_voltage_ = 0.0f;
     float actual_current_ = 0.0f;
     float target_current_ = 0.0f;
     float test_voltage_ = 0.0f;
+    float I_beta_ = 0.0f; // [A] low pass filtered Ibeta response
     std::optional<float> test_mod_ = NAN;
 };
 
@@ -325,7 +332,7 @@ bool Motor::setup() {
     max_dc_calib_ = 0.1f * max_allowed_current_;
 
     if (!gate_driver_.init())
-        return true;
+        return false;
 
     return true;
 }
@@ -432,6 +439,12 @@ bool Motor::measure_phase_resistance(float test_current, float max_voltage) {
         // that only pretains to the measurement and its result so it should
         // just be a return value of this function.
         disarm_with_error(ERROR_PHASE_RESISTANCE_OUT_OF_RANGE);
+        success = false;
+    }
+
+    float I_beta = control_law.get_Ibeta();
+    if (is_nan(I_beta) || (abs(I_beta) / test_current) > 0.1f) {
+        disarm_with_error(ERROR_UNBALANCED_PHASES);
         success = false;
     }
 

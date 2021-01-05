@@ -140,7 +140,8 @@ public:
 
     bool start_closed_loop_control();
     bool stop_closed_loop_control();
-    bool run_lockin_spin(const LockinConfig_t &lockin_config, bool remain_armed);
+    bool run_lockin_spin(const LockinConfig_t &lockin_config, bool remain_armed,
+                std::function<bool(bool)> loop_cb = {} );
     bool run_closed_loop_control_loop();
     bool run_homing();
     bool run_idle_loop();
@@ -186,7 +187,6 @@ public:
     AxisState requested_state_ = AXIS_STATE_STARTUP_SEQUENCE;
     std::array<AxisState, 10> task_chain_ = { AXIS_STATE_UNDEFINED };
     AxisState& current_state_ = task_chain_.front();
-    uint32_t loop_counter_ = 0;
     Homing_t homing_;
     CAN_t can_;
 

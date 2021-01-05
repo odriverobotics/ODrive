@@ -101,11 +101,16 @@ void HAL_SPI_MspInit(SPI_HandleTypeDef* spiHandle)
     PC11     ------> SPI3_MISO
     PC12     ------> SPI3_MOSI 
     */
-    GPIO_InitStruct.Pin = GPIO_PIN_10|GPIO_PIN_11|GPIO_PIN_12;
+    GPIO_InitStruct.Pin = GPIO_PIN_10|GPIO_PIN_12;
     GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
-    GPIO_InitStruct.Pull = GPIO_PULLUP; // required for disconnect detection on SPI encoders
+    GPIO_InitStruct.Pull = GPIO_PULLDOWN; // Idle clock and MOSI low.
     GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
     GPIO_InitStruct.Alternate = GPIO_AF6_SPI3;
+    HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
+
+    // MISO pull-up required for disconnect detection on SPI encoders with even parity
+    GPIO_InitStruct.Pin = GPIO_PIN_11;
+    GPIO_InitStruct.Pull = GPIO_PULLUP;
     HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
 
     /* SPI3 DMA Init */

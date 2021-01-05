@@ -18,7 +18,8 @@
         "mode": null,
         "use_index": null,
         "cpr": null,
-        "calib_scan_distance": null
+        "calib_scan_distance": null,
+        "abs_spi_cs_gpio_pin": null
       }
     },
     "controller": {
@@ -53,7 +54,8 @@
         "mode": null,
         "use_index": null,
         "cpr": null,
-        "calib_scan_distance": null
+        "calib_scan_distance": null,
+        "abs_spi_cs_gpio_pin": null
       }
     },
     "controller": {

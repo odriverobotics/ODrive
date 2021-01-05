@@ -76,7 +76,7 @@ jobs:
         run: |
           Invoke-WebRequest -Uri "http://gittup.org/tup/win32/tup-latest.zip" -OutFile ".\tup-latest.zip"
           Expand-Archive ".\tup-latest.zip" -DestinationPath ".\tup-latest" -Force
-          echo "::add-path::$(Resolve-Path .)\tup-latest"
+          echo "$(Resolve-Path .)\tup-latest" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
 
           choco install gcc-arm-embedded # downloads https://developer.arm.com/-/media/Files/downloads/gnu-rm/9-2019q4/gcc-arm-none-eabi-9-2019-q4-major-win32.zip
           
