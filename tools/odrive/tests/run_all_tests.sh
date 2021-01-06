@@ -10,6 +10,7 @@ declare -a tests=('analog_input_test.py'
                   'integration_test.py'
                   'nvm_test.py'
                   'pwm_input_test.py'
+                  'sensor_test.py'
                   'step_dir_test.py'
                   'uart_ascii_test.py'
                   )

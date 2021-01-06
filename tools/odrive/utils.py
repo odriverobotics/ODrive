@@ -65,8 +65,8 @@ def calculate_thermistor_coeffs(degree, Rload, R_25, Beta, Tmin, Tmax, thermisto
 class OperationAbortedException(Exception):
     pass
 
-def set_motor_thermistor_coeffs(axis, Rload, R_25, Beta, Tmin, TMax, thermistor_bottom = False):
-    coeffs = calculate_thermistor_coeffs(3, Rload, R_25, Beta, Tmin, TMax, thermistor_bottom)
+def set_motor_thermistor_coeffs(axis, Rload, R_25, Beta, Tmin, Tmax, thermistor_bottom = False):
+    coeffs = calculate_thermistor_coeffs(3, Rload, R_25, Beta, Tmin, Tmax, thermistor_bottom)
     axis.motor.motor_thermistor.config.poly_coefficient_0 = float(coeffs[3])
     axis.motor.motor_thermistor.config.poly_coefficient_1 = float(coeffs[2])
     axis.motor.motor_thermistor.config.poly_coefficient_2 = float(coeffs[1])
