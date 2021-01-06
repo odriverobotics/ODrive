@@ -113,6 +113,7 @@ class TestOffboardTempSensors():
         set_motor_thermistor_coeffs(axis.handle, Rload=1000, R_25=10000, Beta=3434,
           Tmin=0, Tmax=140, thermistor_bottom=True)
         axis.parent.handle.config.gpio2_mode = GPIO_MODE_ANALOG_IN
+        axis.parent.save_config_and_reboot()
 
         data = record_log(lambda: [axis.handle.motor.motor_thermistor.temperature], duration=5.0)
         slope, offset, fitted_curve = fit_sawtooth(data[:,(0,1)], 20, 100)
@@ -121,7 +122,7 @@ class TestOffboardTempSensors():
 
 tests = [
   TestVbusVoltage(),
-  TestOnboardTempSensors()
+  TestOnboardTempSensors(),
   TestOffboardTempSensors()
 ]
 

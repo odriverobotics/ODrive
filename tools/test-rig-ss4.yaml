@@ -83,6 +83,10 @@ connections:
   - ['teensy.gpio30', 'odrive.gpio13']
   - ['teensy.gpio31', 'odrive.gpio12']
 
+  - ['teensy.gpio33', 'odrive.gpio8']
+  - ['teensy.gpio34', 'odrive.gpio7']
+  - ['teensy.gpio35', 'odrive.gpio9']
+
   - ['teensy.gpio23', 'real_encoder.b']
   - ['teensy.gpio22', 'real_encoder.a']
   - ['teensy.gpio21', 'real_encoder.z']
