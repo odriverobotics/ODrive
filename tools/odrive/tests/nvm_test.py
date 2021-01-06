@@ -24,13 +24,7 @@ class TestStoreAndReboot():
         for value in values:
             odrive.handle.config.brake_resistance = value
         
-        odrive.handle.save_configuration()
-        try:
-            odrive.handle.reboot()
-        except fibre.ChannelBrokenException:
-            pass # this is expected
-        odrive.handle = None
-        time.sleep(2)
+        odrive.save_config_and_reboot()
 
         odrive.prepare(logger)
 

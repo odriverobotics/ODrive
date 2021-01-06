@@ -56,8 +56,9 @@ components:
     cpr: 8192
     max-rpm: 7000
 
-  - type: teensy
+  - type: arduino
     name: teensy
+    board-version: teensy:avr:teensy40
 
   - {type: lpf, name: lpf0}
   - {type: lpf, name: lpf1}
