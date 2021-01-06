@@ -9,7 +9,6 @@ from fibre.utils import Logger
 from odrive.enums import *
 from test_runner import *
 
-
 class TestEncoderBase():
     """
     Base class for encoder tests.
@@ -252,6 +251,8 @@ class TestHallEffectEncoder(TestEncoderBase):
         teensy.compile_and_program(code)
 
         if enc.handle.config.mode != ENCODER_MODE_HALL:
+            enc.handle.config.mode = ENCODER_MODE_HALL
+            enc.handle.config.hall_polarity_calibrated = True
             if enc.num:
               enc.parent.handle.config.gpio9_mode = GPIO_MODE_DIGITAL
               enc.parent.handle.config.gpio10_mode = GPIO_MODE_DIGITAL
@@ -260,7 +261,6 @@ class TestHallEffectEncoder(TestEncoderBase):
               enc.parent.handle.config.gpio12_mode = GPIO_MODE_DIGITAL
               enc.parent.handle.config.gpio13_mode = GPIO_MODE_DIGITAL
               enc.parent.handle.config.gpio14_mode = GPIO_MODE_DIGITAL
-            enc.handle.config.mode = ENCODER_MODE_HALL
             enc.parent.save_config_and_reboot()
         else:
             time.sleep(1.0) # wait for PLLs to stabilize
@@ -268,7 +268,7 @@ class TestHallEffectEncoder(TestEncoderBase):
         enc.handle.config.bandwidth = 100
 
         self.run_generic_encoder_test(enc.handle, true_cpr, true_rps)
-        enc.handle.config.cpr = 8192
+        enc.parent.erase_config_and_reboot()
 
 
 
