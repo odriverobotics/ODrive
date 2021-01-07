@@ -1,11 +1,12 @@
 #ifndef __FIBRE_LEGACY_PROTOCOL_HPP
 #define __FIBRE_LEGACY_PROTOCOL_HPP
 
-#include "async_stream.hpp"
+#include <fibre/async_stream.hpp>
 
 #ifdef FIBRE_ENABLE_CLIENT
 #include "legacy_object_client.hpp"
 #include <unordered_map>
+#include <optional>
 #endif
 
 namespace fibre {
@@ -28,12 +29,12 @@ constexpr uint8_t CANONICAL_PREFIX = 0xAA;
 constexpr uint16_t PROTOCOL_VERSION = 1;
 
 
-class PacketWrapper : public AsyncStreamSink, Completer<WriteResult> {
+class PacketWrapper : public AsyncStreamSink {
 public:
     PacketWrapper(AsyncStreamSink* tx_channel)
         : tx_channel_(tx_channel) {}
 
-    void start_write(cbufptr_t buffer, TransferHandle* handle, Completer<WriteResult>& completer) final;
+    void start_write(cbufptr_t buffer, TransferHandle* handle, Callback<void, WriteResult> completer) final;
     void cancel_write(TransferHandle transfer_handle) final;
 
 private:
@@ -45,7 +46,7 @@ private:
     uint8_t trailer_buf_[2];
     const uint8_t* expected_tx_end_;
     cbufptr_t payload_buf_ = {nullptr, nullptr};
-    Completer<WriteResult>* completer_;
+    Callback<void, WriteResult> completer_;
 
     enum {
         kStateIdle,
@@ -57,12 +58,12 @@ private:
 };
 
 
-class PacketUnwrapper : public AsyncStreamSource, Completer<ReadResult> {
+class PacketUnwrapper : public AsyncStreamSource {
 public:
     PacketUnwrapper(AsyncStreamSource* rx_channel)
         : rx_channel_(rx_channel) {}
 
-    void start_read(bufptr_t buffer, TransferHandle* handle, Completer<ReadResult>& completer) final;
+    void start_read(bufptr_t buffer, TransferHandle* handle, Callback<void, ReadResult> completer) final;
     void cancel_read(TransferHandle transfer_handle) final;
 
 private:
@@ -74,7 +75,7 @@ private:
     uint8_t* expected_rx_end_;
     size_t payload_length_ = 0;
     bufptr_t payload_buf_ = {nullptr, nullptr};
-    Completer<ReadResult>* completer_;
+    Callback<void, ReadResult> completer_;
 
     enum {
         kStateIdle,
@@ -86,7 +87,7 @@ private:
 };
 
 
-struct LegacyProtocolPacketBased : ReadCompleter, WriteCompleter {
+struct LegacyProtocolPacketBased {
 public:
     LegacyProtocolPacketBased(AsyncStreamSource* rx_channel, AsyncStreamSink* tx_channel, size_t tx_mtu)
         : rx_channel_(rx_channel), tx_channel_(tx_channel), tx_mtu_(std::min(tx_mtu, sizeof(tx_buf_))) {}
@@ -103,38 +104,36 @@ public:
                                          // This signals to the TX process that it should close
                                          // the protocol instance at the next possible instant.
     
-    Completer<LegacyProtocolPacketBased*, StreamStatus>* on_stopped_ = nullptr;
+    Callback<void, LegacyProtocolPacketBased*, StreamStatus> on_stopped_ = nullptr;
 
-#ifdef FIBRE_ENABLE_CLIENT
-    void start_endpoint_operation(uint16_t endpoint_id, cbufptr_t tx_buf, bufptr_t rx_buf, EndpointOperationHandle* handle, Completer<EndpointOperationResult>& completer);
+#if FIBRE_ENABLE_CLIENT
+    void start_endpoint_operation(uint16_t endpoint_id, cbufptr_t tx_buf, bufptr_t rx_buf, EndpointOperationHandle* handle, Callback<void, EndpointOperationResult> callback);
     void cancel_endpoint_operation(EndpointOperationHandle handle);
 
     LegacyObjectClient client_{this};
 #endif
 
-#ifdef FIBRE_ENABLE_CLIENT
-    void start(Completer<LegacyObjectClient*, std::shared_ptr<LegacyObject>>& on_found_root_object, Completer<LegacyObjectClient*>& on_lost_root_object, Completer<LegacyProtocolPacketBased*, StreamStatus>& on_stopped);
+#if FIBRE_ENABLE_CLIENT
+    void start(Callback<void, LegacyObjectClient*, std::shared_ptr<LegacyObject>> on_found_root_object, Callback<void, LegacyObjectClient*> on_lost_root_object, Callback<void, LegacyProtocolPacketBased*, StreamStatus> on_stopped);
 #else
-    void start(Completer<LegacyProtocolPacketBased*, StreamStatus>& on_stopped);
+    void start(Callback<void, LegacyProtocolPacketBased*, StreamStatus> on_stopped);
 #endif
 
 private:
 
-#ifdef FIBRE_ENABLE_CLIENT
+#if FIBRE_ENABLE_CLIENT
     struct EndpointOperation {
         uint16_t seqno;
         uint16_t endpoint_id;
         cbufptr_t tx_buf;
-        bool tx_done;
         bufptr_t rx_buf;
-        bool rx_done;
-        Completer<EndpointOperationResult>* completer;
+        Callback<void, EndpointOperationResult> callback;
     };
 
     void start_endpoint_operation(EndpointOperation op);
 
     uint16_t outbound_seq_no_ = 0;
-    EndpointOperation pending_operation_{.completer = nullptr}; // operation that is waiting for TX
+    std::optional<EndpointOperation> pending_operation_ = std::nullopt; // operation that is waiting for TX
     EndpointOperationHandle transmitting_op_ = 0; // operation that is in TX
     std::unordered_map<uint16_t, EndpointOperation> expected_acks_; // operations that are waiting for RX
 #endif
@@ -152,12 +151,12 @@ public:
         : unwrapper_(rx_channel), wrapper_(tx_channel) {}
 
 
-#ifdef FIBRE_ENABLE_CLIENT
-    void start(Completer<LegacyObjectClient*, std::shared_ptr<LegacyObject>>& on_found_root_object, Completer<LegacyObjectClient*>& on_lost_root_object, Completer<LegacyProtocolPacketBased*, StreamStatus>& on_stopped) {
+#if FIBRE_ENABLE_CLIENT
+    void start(Callback<void, LegacyObjectClient*, std::shared_ptr<LegacyObject>> on_found_root_object, Callback<void, LegacyObjectClient*> on_lost_root_object, Callback<void, LegacyProtocolPacketBased*, StreamStatus> on_stopped) {
         inner_protocol_.start(on_found_root_object, on_lost_root_object, on_stopped);
     }
 #else
-    void start(Completer<LegacyProtocolPacketBased*, StreamStatus>& on_stopped) { inner_protocol_.start(on_stopped); }
+    void start(Callback<void, LegacyProtocolPacketBased*, StreamStatus> on_stopped) { inner_protocol_.start(on_stopped); }
 #endif
 
 private:

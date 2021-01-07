@@ -1,9 +1,9 @@
 #ifndef __FIBRE_USB_DISCOVERER_HPP
 #define __FIBRE_USB_DISCOVERER_HPP
 
-#include "../event_loop.hpp"
-#include "../async_stream.hpp"
-#include "../channel_discoverer.hpp"
+#include <fibre/event_loop.hpp>
+#include <fibre/async_stream.hpp>
+#include <fibre/channel_discoverer.hpp>
 
 #include <libusb.h>
 #include <thread>
@@ -15,9 +15,9 @@ namespace fibre {
 class LibusbBulkInEndpoint;
 class LibusbBulkOutEndpoint;
 
-template<typename TRes> class FIBRE_PRIVATE LibusbBulkEndpoint;
+template<typename TRes> class LibusbBulkEndpoint;
 
-class FIBRE_PRIVATE LibusbDiscoverer : public ChannelDiscoverer {
+class LibusbDiscoverer : public ChannelDiscoverer {
 public:
 
     struct InterfaceSpecs {
@@ -32,14 +32,13 @@ public:
 
     struct MyChannelDiscoveryContext : ChannelDiscoveryContext {
         InterfaceSpecs interface_specs;
-        Completer<ChannelDiscoveryResult>* on_found_channels;
+        Callback<void, ChannelDiscoveryResult> on_found_channels;
     };
 
-    ~LibusbDiscoverer() { deinit(); }
-
-    int init(EventLoop* event_loop);
-    int deinit() { return deinit(INT_MAX); }
-    void start_channel_discovery(const char* specs, size_t specs_len, ChannelDiscoveryContext** handle, Completer<ChannelDiscoveryResult>& on_found_channels) final;
+    constexpr static const char* get_name() { return "usb"; }
+    bool init(EventLoop* event_loop);
+    bool deinit() { return deinit(INT_MAX); }
+    void start_channel_discovery(const char* specs, size_t specs_len, ChannelDiscoveryContext** handle, Callback<void, ChannelDiscoveryResult> on_found_channels) final;
     int stop_channel_discovery(ChannelDiscoveryContext* handle) final;
 
 private:
@@ -53,9 +52,10 @@ private:
         std::vector<LibusbBulkOutEndpoint*> ep_out;
     };
 
-    int deinit(int stage);
+    bool deinit(int stage);
     void internal_event_loop();
     void on_event_loop_iteration();
+    void on_event_loop_iteration2(uint32_t) { on_event_loop_iteration(); }
     void on_add_pollfd(int fd, short events);
     void on_remove_pollfd(int fd);
     int on_hotplug(struct libusb_device *dev, libusb_hotplug_event event);
@@ -75,13 +75,13 @@ private:
 };
 
 template<typename TRes>
-class FIBRE_PRIVATE LibusbBulkEndpoint {
+class LibusbBulkEndpoint {
 public:
     bool init(LibusbDiscoverer* parent, struct libusb_device_handle* handle, uint8_t endpoint_id);
     bool deinit();
 
 protected:
-    void start_transfer(bufptr_t buffer, TransferHandle* handle, Completer<TRes>& completer);
+    void start_transfer(bufptr_t buffer, TransferHandle* handle, Callback<void, TRes> completer);
     void cancel_transfer(TransferHandle transfer_handle);
 
 private:
@@ -92,12 +92,12 @@ private:
     struct libusb_device_handle* handle_ = nullptr;
     uint8_t endpoint_id_ = 0;
     struct libusb_transfer* transfer_ = nullptr;
-    Completer<TRes>* completer_ = nullptr;
+    Callback<void, TRes> completer_ = nullptr;
 };
 
-class FIBRE_PRIVATE LibusbBulkInEndpoint : public LibusbBulkEndpoint<ReadResult>, public AsyncStreamSource {
+class LibusbBulkInEndpoint : public LibusbBulkEndpoint<ReadResult>, public AsyncStreamSource {
 public:
-    void start_read(bufptr_t buffer, TransferHandle* handle, Completer<ReadResult>& completer) final {
+    void start_read(bufptr_t buffer, TransferHandle* handle, Callback<void, ReadResult> completer) final {
         start_transfer(buffer, handle, completer);
     }
 
@@ -106,9 +106,9 @@ public:
     }
 };
 
-class FIBRE_PRIVATE LibusbBulkOutEndpoint : public LibusbBulkEndpoint<WriteResult>, public AsyncStreamSink {
+class LibusbBulkOutEndpoint : public LibusbBulkEndpoint<WriteResult>, public AsyncStreamSink {
 public:
-    void start_write(cbufptr_t buffer, TransferHandle* handle, Completer<WriteResult>& completer) final {
+    void start_write(cbufptr_t buffer, TransferHandle* handle, Callback<void, WriteResult> completer) final {
         start_transfer({
             (unsigned char*)buffer.begin(),
             buffer.size()

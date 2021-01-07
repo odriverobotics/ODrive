@@ -13,10 +13,9 @@ see protocol.md for the protocol specification
 #include <string.h>
 #include <unistd.h>
 #include <cstring>
-#include "crc.hpp"
-#include "cpp_utils.hpp"
-#include "bufptr.hpp"
-#include "simple_serdes.hpp"
+#include <fibre/cpp_utils.hpp>
+#include <fibre/bufptr.hpp>
+#include <fibre/simple_serdes.hpp>
 
 
 typedef struct {

@@ -5,6 +5,7 @@
 #include "limits.h"
 #include <optional> // TODO: make C++11 backport of this
 #include <cstring>
+#include <stdint.h>
 
 template<typename T, bool BigEndian, typename = void>
 struct SimpleSerializer;

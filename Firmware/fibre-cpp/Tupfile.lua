@@ -1,36 +1,15 @@
 
--- Projects that include libfibre and also use tup can place a Tuprules.lua file
--- into their root directory with the line `no_libfibre = true` to prevent
--- libfibre from building.
-if no_libfibre == true then
-    return
-end
-
 tup.include('package.lua')
 
-CFLAGS = {'-I./include -fPIC -std=c++11 -DFIBRE_COMPILE -DFIBRE_ENABLE_CLIENT'}
+CFLAGS = {'-fPIC -std=c++11 -DFIBRE_COMPILE'}
 LDFLAGS = {'-static-libstdc++'}
 
--- Runs the specified shell command immediately (not as part of the dependency
--- graph).
--- Returns the values (return_code, stdout) where stdout has the trailing new
--- line removed.
-function run_now(command)
-    local handle
-    handle = io.popen(command)
-    local output = handle:read("*a")
-    local rc = {handle:close()}
-    if not rc[1] then
-        error("failed to invoke "..command)
-    end
-    return string.sub(output, 0, -2)
-end
 
 if tup.getconfig("CC") == "" then
-    CC = 'clang++'
+    CXX = 'clang++'
     LINKER = 'clang++'
 else
-    CC = tup.getconfig("CC")
+    CXX = tup.getconfig("CC")
     LINKER = tup.getconfig("CC")
 end
 
@@ -42,22 +21,15 @@ function get_bool_config(name, default)
     elseif tup.getconfig(name) == "false" then
         return false
     else
-        error(name.." ("..tup.getconfig(name).." must be 'true' or 'false'.")
+        error(name.." ("..tup.getconfig(name)..") must be 'true' or 'false'.")
     end
 end
 
 CFLAGS += tup.getconfig("CFLAGS")
 LDFLAGS += tup.getconfig("LDFLAGS")
 DEBUG = get_bool_config("DEBUG", true)
-USE_PKGCONF = get_bool_config("USE_PKGCONF", true)
-ENABLE_LIBUSB = get_bool_config("ENABLE_LIBUSB", true)
 
-if USE_PKGCONF and ENABLE_LIBUSB then
-    CFLAGS += run_now("pkgconf libusb-1.0 --cflags")
-    LDFLAGS += run_now("pkgconf libusb-1.0 --libs")
-end
-
-machine = run_now(CC..' -dumpmachine') -- works with both clang and GCC
+machine = run_now(CXX..' -dumpmachine') -- works with both clang and GCC
 
 BUILD_TYPE='-shared'
 
@@ -92,29 +64,39 @@ else
     CFLAGS += '-O3' -- TODO: add back -lfto
 end
 
-function compile(src_file, obj_file)
+function compile(src_file)
+    obj_file = 'build/'..tup.file(src_file)..'.o'
     tup.frule{
         inputs={src_file},
-        command='^co^ '..CC..' -c %f '..tostring(CFLAGS)..' -fdebug-prefix-map=/Data/Projects/fibre/cpp/build-local=/Data/Projects/fibre/cpp -o %o',
+        command='^co^ '..CXX..' -c %f '..tostring(CFLAGS)..' -o %o',
         outputs={obj_file}
     }
+    return obj_file
 end
 
-code_files = fibre_package.core_files
+pkg = get_fibre_package({
+    enable_server=false,
+    enable_client=true,
+    enable_tcp_server_backend=get_bool_config("ENABLE_TCP_SERVER_BACKEND", true),
+    enable_tcp_client_backend=get_bool_config("ENABLE_TCP_CLIENT_BACKEND", true),
+    enable_libusb_backend=get_bool_config("ENABLE_LIBUSB_BACKEND", true),
+    allow_heap=true,
+    pkgconf=tup.getconfig("USE_PKGCONF") or nil
+})
 
-if ENABLE_LIBUSB then
-    tup.append_table(code_files, fibre_package.features["LIBUSB"])
-    CFLAGS += '-DFIBRE_ENABLE_LIBUSB=1'
-end
-if get_bool_config("ENABLE_LOGGING", true) then
-    tup.append_table(code_files, fibre_package.features["LOGGING"])
+CFLAGS += pkg.cflags
+LDFLAGS += pkg.ldflags
+
+for _, inc in pairs(pkg.include_dirs) do
+    CFLAGS += '-I./'..inc
 end
 
-for _, src_file in pairs(code_files) do
-    obj_file = "build/"..src_file:gsub("/","_")..".o"
-    object_files += obj_file
-    compile(src_file, obj_file)
+for _, src_file in pairs(pkg.code_files) do
+    object_files += compile(src_file)
 end
+object_files += compile('libfibre.cpp')
+
+outname = 'build/'..outname
 
 if not STRIP then
     compile_outname=outname

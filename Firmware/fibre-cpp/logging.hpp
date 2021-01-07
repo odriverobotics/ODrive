@@ -55,8 +55,18 @@
 #ifndef __FIBRE_LOGGING_HPP
 #define __FIBRE_LOGGING_HPP
 
+/**
+ * @brief Tag type to print the last system error
+ * 
+ * The statement `std::out << sys_err();` will print the last system error
+ * in the following format: "error description (errno)".
+ * This is based on `GetLastError()` (Windows) or `errno` (all other systems).
+ */
+struct sys_err {};
+
+
 // TODO: support lite-version of logging on embedded systems
-#if defined(_WIN32) || defined(_WIN64) || defined(__linux__) || defined(__APPLE__) || defined(EMSCRIPTEN)
+#if FIBRE_MAX_LOG_VERBOSITY
 
 #include <fibre/cpp_utils.hpp>
 
@@ -235,10 +245,10 @@ public:
 
 
 template<typename TOPIC>
-constexpr log_level_t get_default_log_verbosity() { return FIBRE_DEFAULT_LOG_VERBOSITY; }
+constexpr log_level_t get_default_log_verbosity() { return (log_level_t)FIBRE_DEFAULT_LOG_VERBOSITY; }
 
 template<typename TOPIC>
-constexpr log_level_t get_max_log_verbosity() { return FIBRE_MAX_LOG_VERBOSITY; }
+constexpr log_level_t get_max_log_verbosity() { return (log_level_t)FIBRE_MAX_LOG_VERBOSITY; }
 
 /**
  * @brief Resolves the currently active log verbosity for the given topic.
@@ -302,14 +312,6 @@ constexpr const char * get_file_name(TFilepath file_path) {
 
 }
 
-/**
- * @brief Tag type to print the last system error
- * 
- * The statement `std::out << sys_err();` will print the last system error
- * in the following format: "error description (errno)".
- * This is based on `GetLastError()` (Windows) or `errno` (all other systems).
- */
-struct sys_err {};
 
 namespace std {
 static inline std::ostream& operator<<(std::ostream& stream, const sys_err&) {
@@ -334,6 +336,6 @@ struct NullStream {
 
 #define FIBRE_LOG(level) NullStream()
 
-#endif
+#endif // FIBRE_MAX_LOG_VERBOSITY
 
 #endif // __FIBRE_LOGGING_HPP

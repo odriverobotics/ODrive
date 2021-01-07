@@ -1,7 +1,8 @@
 #ifndef __FIBRE_ASYNC_STREAM_HPP
 #define __FIBRE_ASYNC_STREAM_HPP
 
-#include "include/fibre/bufptr.hpp" // TODO: move this header
+#include <fibre/bufptr.hpp>
+#include <fibre/callback.hpp>
 #include <stdint.h>
 
 namespace fibre {
@@ -13,34 +14,6 @@ enum StreamStatus {
     kStreamError
 };
 
-template<typename ... TResults>
-class Completer {
-public:
-    virtual void complete(TResults ... result) = 0;
-
-    static Completer& get_dummy() {
-        static struct DummyCompleter : Completer {
-            void complete(TResults ... result) {}
-        } dummy;
-        return dummy;
-    }
-};
-
-/**
- * @brief Safe wrapper around Completer::complete.
- * 
- * This function takes a reference to a completer pointer and only invokes the
- * completer if it's not null. Before invoking the completer, the pointer is
- * cleared.
- */
-template<typename ... TResults>
-static void safe_complete(Completer<TResults...>*& completer, TResults ... results) {
-    Completer<TResults...>* tmp = completer;
-    completer = nullptr;
-    if (tmp) {
-        tmp->complete(results...);
-    }
-}
 
 struct ReadResult {
     StreamStatus status;
@@ -68,22 +41,6 @@ struct WriteResult {
      * of this field is not guaranteed.
      */
     const unsigned char* end;
-};
-
-struct WriteCompleter : Completer<WriteResult> {
-    virtual void on_write_finished(WriteResult result) = 0;
-
-    void complete(WriteResult result) final {
-        on_write_finished(result);
-    }
-};
-
-struct ReadCompleter : Completer<ReadResult> {
-    virtual void on_read_finished(ReadResult result) = 0;
-
-    void complete(ReadResult result) final {
-        on_read_finished(result);
-    }
 };
 
 
@@ -114,7 +71,7 @@ public:
      *        finishes, whether successful or not.
      *        Must remain valid until it is satisfied.
      */
-    virtual void start_read(bufptr_t buffer, TransferHandle* handle, Completer<ReadResult>& completer) = 0;
+    virtual void start_read(bufptr_t buffer, TransferHandle* handle, Callback<void, ReadResult> completer) = 0;
 
     /**
      * @brief Cancels an operation that was previously started with start_read().
@@ -163,7 +120,7 @@ public:
      *        finishes, whether successful or not.
      *        Must remain valid until it is satisfied.
      */
-    virtual void start_write(cbufptr_t buffer, TransferHandle* handle, Completer<WriteResult>& completer) = 0;
+    virtual void start_write(cbufptr_t buffer, TransferHandle* handle, Callback<void, WriteResult> completer) = 0;
 
     /**
      * @brief Cancels an operation that was previously started with start_write().
