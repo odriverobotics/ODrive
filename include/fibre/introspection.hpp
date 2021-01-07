@@ -10,7 +10,7 @@
 
 class TypeInfo;
 class Introspectable;
-using introspectable_storage_t = std::aligned_storage<16, 4>::type;
+using introspectable_storage_t = std::aligned_storage<4 * sizeof(uintptr_t), sizeof(uintptr_t)>::type;
 
 struct PropertyInfo {
     const char * name;
@@ -116,11 +116,11 @@ public: // these should technically be protected but are public for optimization
 };
 
 template<typename T> T& TypeInfo::as(Introspectable& obj) {
-    static_assert(sizeof(T) <= sizeof(obj.storage_));
+    static_assert(sizeof(T) <= sizeof(obj.storage_), "invalid size");
     return *(T*)&obj.storage_;
 }
 template<typename T> const T& TypeInfo::as(const Introspectable& obj) {
-    static_assert(sizeof(T) <= sizeof(obj.storage_));
+    static_assert(sizeof(T) <= sizeof(obj.storage_), "invalid size");
     return *(const T*)&obj.storage_;
 }
 template<typename T> Introspectable TypeInfo::make_introspectable(T obj, const TypeInfo* type_info) {
@@ -191,7 +191,7 @@ struct FibrePropertyTypeInfo<Property<T>> : FloatSettableTypeInfo, StringConvert
     }
 
     bool set_string(const Introspectable& obj, char* buffer, size_t length) const override {
-        maybe_underlying_type_t<T> value;
+        maybe_underlying_type_t<T> value{};
         if (!from_string(buffer, length, &value, 0)) {
             return false;
         }
@@ -200,7 +200,7 @@ struct FibrePropertyTypeInfo<Property<T>> : FloatSettableTypeInfo, StringConvert
     }
 
     bool set_float(const Introspectable& obj, float val) const override {
-        maybe_underlying_type_t<T> value;
+        maybe_underlying_type_t<T> value{};
         if (!conversion::set_from_float(val, &value)) {
             return false;
         }

@@ -12,7 +12,7 @@
 #ifndef __FIBRE_INTERFACES_HPP
 #define __FIBRE_INTERFACES_HPP
 
-#include <fibre/protocol.hpp>
+#include <fibre/../../protocol.hpp>
 
 #pragma GCC push_options
 #pragma GCC optimize ("s")
@@ -23,7 +23,7 @@ void
 [%- elif func.out | length == 1 -%]
 [[(func.out.values() | first).type.c_name]]
 [%- else -%]
-[% for arg in func.out.values() %][[arg.type]][[', ' if not loop.last]][% endfor %]
+std::tuple<[% for arg in func.out.values() %][[arg.type.c_name]][[', ' if not loop.last]][% endfor %]>
 [%- endif -%]
 [%- endmacro %]
 

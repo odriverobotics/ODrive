@@ -3,6 +3,7 @@
 
 #include <string>
 #include <ostream>
+#include <fibre/bufptr.hpp>
 
 namespace fibre {
 
@@ -15,7 +16,7 @@ constexpr size_t hex_digits() {
 * @param output If not null, the digit's value is stored in this output
 * Returns true if the char is a valid hex digit, false otherwise
 */
-static bool hex_digit_to_byte(char ch, uint8_t* output) {
+static inline bool hex_digit_to_byte(char ch, uint8_t* output) {
     uint8_t nil_output = 0;
     if (!output)
         output = &nil_output;

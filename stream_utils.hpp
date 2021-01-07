@@ -97,7 +97,7 @@ class AsyncStreamSinkMultiplexer : public AsyncStreamSink, Completer<WriteResult
 public:
     AsyncStreamSinkMultiplexer(AsyncStreamSink& sink) : sink_(sink) {}
 
-    void start_write(cbufptr_t buffer, TransferHandle* handle, Completer<WriteResult>& completer) final {
+    void start_write(cbufptr_t buffer, TransferHandle* handle, Callback<void, WriteResult> completer) final {
         for (size_t i = 0; i < NSlots; ++i) {
             auto& [slot_in_use, slot_buf, slot_completer] = slots_[i];
             if (!__atomic_exchange_n(&slot_in_use, true, __ATOMIC_SEQ_CST)) {
@@ -143,6 +143,7 @@ private:
         transfer_handle_ = 0;
 
         auto& [slot_in_use, slot_buf, slot_completer] =  slots_[active_slot_ - 1];
+        (void) slot_buf;
         auto completer = slot_completer;
         slot_in_use = false;
 
@@ -152,6 +153,8 @@ private:
         size_t active_slot = 0;
         for (size_t i = 0; i < NSlots; ++i) {
             auto& [slot_in_use, slot_buf, slot_completer] = slots_[i];
+            (void) slot_buf;
+            (void) slot_completer;
             if (slot_in_use) {
                 active_slot = i + 1;
                 break;
@@ -162,6 +165,8 @@ private:
         active_slot_ = active_slot;
         if (active_slot) {
             auto& [slot_in_use, slot_buf, slot_completer] = slots_[active_slot - 1];
+            (void) slot_in_use;
+            (void) slot_completer;
             sink_.start_write(slot_buf, &transfer_handle_, *this);
         }
     }
