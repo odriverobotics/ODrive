@@ -58,6 +58,7 @@ def get_user_name(interactive_variables, obj):
     return "anonymous_remote_object_" + str(self._obj_handle)
 
 def launch_shell(args,
+                object_filter,
                 interactive_variables,
                 print_banner, print_help,
                 logger, app_shutdown_token,
@@ -77,7 +78,7 @@ def launch_shell(args,
 
     # Connect to device
     logger.debug("Waiting for {}...".format(branding_long))
-    fibre.find_all(args.path, args.serial_number,
+    fibre.start_discovery(args.path, object_filter,
                     lambda dev: did_discover_device(dev, interactive_variables, discovered_devices, branding_short, branding_long, logger, app_shutdown_token),
                     app_shutdown_token,
                     app_shutdown_token,
