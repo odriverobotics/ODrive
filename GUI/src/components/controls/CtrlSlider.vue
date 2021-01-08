@@ -5,10 +5,10 @@
       <span class="ctrlName">{{name}}</span>
     </div>
     <div class="slider-container">
-      <input type="number" :value="min" v-on:change="setMin"/>
+      <input :value="displayMin" :placeholder="displayMin" v-on:change="setMin"/>
       <!-- <vue-slider v-model="value" :min="min" :max="max" :interval="interval" /> -->
-      <vue-slider v-model="value" :data="data" @change="putVal"/>
-      <input type="number" :value="max" v-on:change="setMax" />
+      <vue-slider v-model="value" :data="data" :adsorb="true" @change="putVal"/>
+      <input :value="displayMax" :placeholder="displayMax" v-on:change="setMax" />
     </div>
   </div>
 </template>
@@ -16,7 +16,8 @@
 <script>
 import VueSlider from "vue-slider-component";
 import "vue-slider-component/theme/default.css";
-import { getVal, putVal } from "../../lib/odrive_utils.js";
+import { getVal, putVal, parseMath } from "../../lib/odrive_utils.js";
+import { numberDisplay } from "../../lib/utils.js";
 
 export default {
   name: "CtrlSlider",
@@ -49,6 +50,12 @@ export default {
     sliderData: function () {
       let interval = (this.max - this.min) / 100;
       return Array.from(Array(101), (_, i) => this.min + interval * i);
+    },
+    displayMin() {
+      return numberDisplay(this.min);
+    },
+    displayMax() {
+      return numberDisplay(this.max);
     }
   },
   methods: {
@@ -59,27 +66,47 @@ export default {
       putVal(keys.join('.'), value);
     },
     setMin: function (e) {
-      this.min = parseFloat(e.target.value);
-      this.data = Array.from(Array(101), (_, i) => this.min + (this.max-this.min) / 100 * i);
+      let min = parseMath(e.target.value);
+      if (min < this.max) {
+        this.min = min;
+        this.data = Array.from(Array(101), (_, i) => this.min + (this.max-this.min) / 100 * i);
+        this.value = this.findNearest(this.data, this.value);
+      }
     },
     setMax: function (e) {
-      this.max = parseFloat(e.target.value);
-      this.data = Array.from(Array(101), (_, i) => this.min + (this.max-this.min) / 100 * i);
+      let max = parseMath(e.target.value);
+      if (max > this.min) {
+        this.max = max;
+        this.data = Array.from(Array(101), (_, i) => this.min + (this.max-this.min) / 100 * i);
+        this.value = this.findNearest(this.data, this.value);
+      }
     },
     deleteCtrl: function() {
       // commit a mutation in the store with the relevant information
       this.$store.commit("removeCtrlFromDash", {dashID: this.dashID, path: this.path});
+    },
+    findNearest(data, value) {
+      // find item in data closest to value
+      let diff = Number.POSITIVE_INFINITY;
+      let retVal = value;
+      for (const val of data) {
+        if (Math.abs(val - value) < diff) {
+          diff = Math.abs(val - value);
+          retVal = val;
+        }
+      }
+      return retVal;
     }
   },
   mounted() {
     let initVal = () => {
       let keys = this.path.split(".");
       keys.shift(); // don't need first key here
-      return getVal(keys.join('.'));
+      return parseFloat(getVal(keys.join('.')));
     };
     this.value = initVal();
-    this.max = parseFloat((this.value * 4).toFixed(3));
-    this.min = parseFloat((this.value / 4).toFixed(3));
+    this.max = this.value * 4;
+    this.min = this.value / 4;
     this.data = Array.from(Array(101), (_, i) => this.min + (this.max-this.min) / 100 * i);
   },
 };

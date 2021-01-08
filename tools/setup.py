@@ -102,6 +102,7 @@ try:
       'IntelHex', # Used to by DFU to download firmware from github
       'matplotlib', # Required to run the liveplotter
       'monotonic', # For compatibility with older python versions
+      'setuptools',  # ubuntu-latest on GitHub Actions fails to install odrive without this dependency
       'pywin32 >= 222; platform_system == "Windows"' # Required for fancy terminal features on Windows
     ],
     package_data={'': [

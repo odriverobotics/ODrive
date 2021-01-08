@@ -19,25 +19,20 @@ class TestStepDir():
     """
     def get_test_cases(self, testrig: TestRig):
         for odrive in testrig.get_components(ODriveComponent):
-            gpio_conns = [
-                list(testrig.get_connected_components((odrive.gpio1, False), LinuxGpioComponent)),
-                list(testrig.get_connected_components((odrive.gpio2, False), LinuxGpioComponent)),
-                #list(testrig.get_connected_components((odrive.gpio3, False), LinuxGpioComponent)), # connected to LPF on test rig
-                #list(testrig.get_connected_components((odrive.gpio4, False), LinuxGpioComponent)), # connected to LPF on test rig
-                list(testrig.get_connected_components((odrive.gpio5, False), LinuxGpioComponent)),
-                list(testrig.get_connected_components((odrive.gpio6, False), LinuxGpioComponent)),
-                list(testrig.get_connected_components((odrive.gpio7, False), LinuxGpioComponent)),
-                list(testrig.get_connected_components((odrive.gpio8, False), LinuxGpioComponent)),
-            ]
+            def stepdir_test_case(axis, step_gpio_num, dir_gpio_num):
+                alternatives = []
+                for step_ctrl_gpio, tf1 in testrig.get_connected_components((getattr(odrive, f'gpio{step_gpio_num}'), False), LinuxGpioComponent):
+                    for dir_ctrl_gpio, tf2 in testrig.get_connected_components((getattr(odrive, f'gpio{dir_gpio_num}'), False), LinuxGpioComponent):
+                        alternatives.append((axis, step_gpio_num, step_ctrl_gpio, dir_gpio_num, dir_ctrl_gpio, TestFixture.all_of(tf1, tf2)))
+                return AnyTestCase(*alternatives)
 
-            yield (odrive.axes[0], 1, gpio_conns[0], 2, gpio_conns[1])
-            yield (odrive.axes[0], 5, gpio_conns[2], 6, gpio_conns[3])
-            yield (odrive.axes[0], 7, gpio_conns[4], 8, gpio_conns[5])
-           # yield (odrive.axes[0], 7, gpio_conns[6], 8, gpio_conns[7]) # broken
+            yield stepdir_test_case(odrive.axes[0], 1, 2)
+            yield stepdir_test_case(odrive.axes[0], 5, 6)
+            yield stepdir_test_case(odrive.axes[0], 7, 8)
             
             # test other axes
             for i in range(1, len(odrive.axes)):
-                yield (odrive.axes[i], 7, gpio_conns[4], 8, gpio_conns[5])
+                yield stepdir_test_case(odrive.axes[i], 7, 8)
 
     def run_test(self, axis: ODriveAxisComponent, step_gpio_num: int, step_gpio: LinuxGpioComponent, dir_gpio_num: int, dir_gpio: LinuxGpioComponent, logger: Logger):
         step_gpio.config(output=True)
@@ -96,6 +91,7 @@ class TestStepDir():
             step_gpio.write(False)
             test_assert_eq(axis.handle.controller.input_pos, ref + (i + 1) * turns_per_step, range = 0.4 * abs(turns_per_step))
 
+tests = [TestStepDir()]
 
 if __name__ == '__main__':
-    test_runner.run(TestStepDir())
+    test_runner.run(tests)

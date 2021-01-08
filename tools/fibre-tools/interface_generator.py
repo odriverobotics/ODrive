@@ -443,7 +443,17 @@ def resolve_valuetype(scope, name):
 
 def map_to_fibre01_type(t):
     if t.get('is_enum', False):
-        return 'int32'
+        max_val = max(v['value'] for v in t['values'].values())
+        if max_val <= 0xff:
+            return 'uint8'
+        elif max_val <= 0xffff:
+            return 'uint16'
+        elif max_val <= 0xffffffff:
+            return 'uint32'
+        elif max_val <= 0xffffffffffffffff:
+            return 'uint64'
+        else:
+            raise Exception("enum with a maximum value of " + str(max_val) + " not supported")
     elif t['fullname'] == 'float32':
         return 'float'
     return t['fullname']

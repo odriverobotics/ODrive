@@ -179,7 +179,7 @@ interfaces:
              Example: `step_gpio_pin` of both axes were set to the same GPIO.
             
       oscilloscope: {type: Oscilloscope}
-      can: {type: Can, c_name: get_can()}
+      can: {type: Can}
       test_property: uint32
         
     functions:
@@ -381,10 +381,8 @@ interfaces:
       config:
         c_is_class: False
         attributes:
-          baud_rate: readonly uint32
+          baud_rate: {type: uint32, c_setter: 'set_baud_rate'}
           protocol: Protocol
-    functions:
-      set_baud_rate: {in: {baudRate: uint32}}
 
   ODrive.Endpoint:
     c_is_class: False
@@ -420,7 +418,6 @@ interfaces:
       last_drv_fault: readonly uint32
       current_state: readonly AxisState
       requested_state: AxisState
-      loop_counter: readonly uint32
       is_homed: {type: bool, c_name: homing_.is_homed}
       config:
         c_is_class: False
@@ -672,6 +669,7 @@ interfaces:
           UNKNOWN_VOLTAGE_COMMAND: {doc: The current controller did not get a valid feedforward voltage setpoint.}
           UNKNOWN_GAINS: {doc: The current controller gains were not configured. Run motor calibration or set `config.phase_resistance` and `config.phase_inductance` manually.}
           CONTROLLER_INITIALIZING: {doc: Internal value used while the controller is not yet ready to generate PWM timings.}
+          UNBALANCED_PHASES: {doc: The motor pahses are not balanced.}
       is_armed: readonly bool
       is_calibrated: readonly bool
       current_meas_phA: {type: readonly float32, c_getter: 'current_meas_.value_or(Iph_ABC_t{0.0f, 0.0f, 0.0f}).phA'}
@@ -1114,6 +1112,7 @@ interfaces:
         implements: ODrive.Config
         attributes:
           # TODO: add support for arrays
+          gpio0_mode: {type: ODrive.GpioMode, doc: Mode of GPIO0 (changes take effect after reboot), c_name: 'gpio_modes[0]'}
           gpio1_mode: {type: ODrive.GpioMode, doc: Mode of GPIO1 (changes take effect after reboot), c_name: 'gpio_modes[1]'}
           gpio2_mode: {type: ODrive.GpioMode, doc: Mode of GPIO2 (changes take effect after reboot), c_name: 'gpio_modes[2]'}
           gpio3_mode: {type: ODrive.GpioMode, doc: Mode of GPIO3 (changes take effect after reboot), c_name: 'gpio_modes[3]'}
@@ -1191,7 +1190,7 @@ valuetypes:
       AsciiAndStdout: {doc: Combination of `Ascii` and `Stdout`.}
 
   ODrive.Can.Protocol:
-    values: {SIMPLE: }
+    flags: {SIMPLE: }
 
   ODrive.Axis.AxisState: # TODO: remove redundant "Axis" in name
     values:

@@ -30,19 +30,19 @@ def reset_state(ser):
     time.sleep(0.1) # wait for any response that this may generate
     ser.flushInput() # discard response
 
-class TestUartAscii():
+class UartTest():
     """
-    Tests the most important functions of the ASCII protocol.
+    Base class for UART tests
     """
 
     def get_test_cases(self, testrig: TestRig):
         for odrive in testrig.get_components(ODriveComponent):
             if odrive.yaml['board-version'].startswith('v3.'):
-                ports = list(testrig.get_connected_components({
+                ports = testrig.get_connected_components({
                     'rx': (odrive.gpio1, True),
                     'tx': (odrive.gpio2, False)
-                }, SerialPortComponent))
-                yield (odrive, 0, 1, 2, ports)
+                }, SerialPortComponent)
+                yield AnyTestCase(*[(odrive, 0, 1, 2, port, tf) for port, tf in ports])
 
                 # Enable the line below to manually test UART_B. For this you need
                 # to manually move to the wires go to GPIO1/2 to GPIO3/4. The ones
@@ -53,11 +53,11 @@ class TestUartAscii():
                     'rx': (odrive.gpio15, True),
                     'tx': (odrive.gpio14, False)
                 }, SerialPortComponent))
-                yield (odrive, 0, 15, 14, ports)
+                yield AnyTestCase(*[(odrive, 0, 15, 14, port, tf) for port, tf in ports])
             else:
                 raise TestFailed("unknown board version")
 
-    def run_test(self, odrive: ODriveComponent, uart_num: int, tx_gpio: list, rx_gpio: list, port: SerialPortComponent, logger: Logger):
+    def prepare(self, odrive: ODriveComponent, uart_num: int, tx_gpio: list, rx_gpio: list, logger: Logger):
         logger.debug('Enabling UART {}...'.format(chr(ord('A') + uart_num)))
         
         # GPIOs might be in use by something other than UART and some components
@@ -86,6 +86,14 @@ class TestUartAscii():
 
         odrive.save_config_and_reboot()
 
+class TestUartAscii(UartTest):
+    """
+    Tests the most important functions of the ASCII protocol.
+    """
+
+    def run_test(self, odrive: ODriveComponent, uart_num: int, tx_gpio: list, rx_gpio: list, port: SerialPortComponent, logger: Logger):
+        self.prepare(odrive, uart_num, tx_gpio, rx_gpio, logger)
+
         with port.open(115200) as ser:
             # reset port to known state
             reset_state(ser)
@@ -110,7 +118,10 @@ class TestUartAscii():
             # Test GCode checksum and comments
             ser.write(b'r vbus_voltage *12\n') # invalid checksum
             test_assert_eq(ser.readline(), b'')
-            ser.write(append_checksum(b'r vbus_voltage ') + b' ; this is a comment\n') # valid checksum
+            cmd = append_checksum(b'r vbus_voltage ') + b' ; this is a comment\n'
+            # cmd evalutates to "r vbus_voltage *93 ; this is a comment"
+            logger.debug(f'sending command with checksum: "{cmd}"')
+            ser.write(cmd) # valid checksum
             response = float(strip_checksum(ser.readline()).strip())
             test_assert_eq(response, odrive.handle.vbus_voltage, accuracy=0.1)
 
@@ -183,23 +194,13 @@ class TestUartAscii():
             # TODO: test cases for 't', 'ss', 'se', 'sr' commands
 
 
-class TestUartBaudrate():
+class TestUartBaudrate(UartTest):
     """
     Tests if the UART baudrate setting works as intended.
     """
 
-    def get_test_cases(self, testrig: TestRig):
-        for odrive in testrig.get_components(ODriveComponent):
-            ports = list(testrig.get_connected_components({
-                'rx': (odrive.gpio1, True),
-                'tx': (odrive.gpio2, False)
-            }, SerialPortComponent))
-            yield (odrive, ports)
-
-    def run_test(self, odrive: ODriveComponent, port: SerialPortComponent, logger: Logger):
-        odrive.handle.config.enable_uart_a = True
-        odrive.handle.config.gpio1_mode = GPIO_MODE_UART_A
-        odrive.handle.config.gpio2_mode = GPIO_MODE_UART_A
+    def run_test(self, odrive: ODriveComponent, uart_num: int, tx_gpio: list, rx_gpio: list, port: SerialPortComponent, logger: Logger):
+        self.prepare(odrive, uart_num, tx_gpio, rx_gpio, logger)
 
         odrive.handle.config.uart_a_baudrate = 9600
         odrive.save_config_and_reboot()
@@ -225,23 +226,13 @@ class TestUartBaudrate():
         odrive.save_config_and_reboot()
 
 
-class TestUartBurnIn():
+class TestUartBurnIn(UartTest):
     """
     Tests if the ASCII protocol can handle 64kB of random data being thrown at it.
     """
 
-    def get_test_cases(self, testrig: TestRig):
-        for odrive in testrig.get_components(ODriveComponent):
-            ports = list(testrig.get_connected_components({
-                'rx': (odrive.gpio1, True),
-                'tx': (odrive.gpio2, False)
-            }, SerialPortComponent))
-            yield (odrive, ports)
-
-    def run_test(self, odrive: ODriveComponent, port: SerialPortComponent, logger: Logger):
-        odrive.handle.config.enable_uart_a = True
-        odrive.handle.config.gpio1_mode = GPIO_MODE_UART_A
-        odrive.handle.config.gpio2_mode = GPIO_MODE_UART_A
+    def run_test(self, odrive: ODriveComponent, uart_num: int, tx_gpio: list, rx_gpio: list, port: SerialPortComponent, logger: Logger):
+        self.prepare(odrive, uart_num, tx_gpio, rx_gpio, logger)
 
         with port.open(115200) as ser:
             with open('/dev/random', 'rb') as rand:
@@ -257,52 +248,58 @@ class TestUartBurnIn():
             test_assert_eq(response, odrive.handle.vbus_voltage, accuracy=0.1)
 
 
-class TestUartNoise():
+class TestUartNoise(UartTest):
     """
     Tests if the UART can handle invalid signals.
     """
     
     def get_test_cases(self, testrig: TestRig):
         for odrive in testrig.get_components(ODriveComponent):
-            # For every ODrive, find a connected serial port which has a teensy
-            # in between, so that we can inject noise,
+            if odrive.yaml['board-version'].startswith('v3.'):
+                uart_num, tx_gpio, rx_gpio = (0, 1, 2)
+            elif odrive.yaml['board-version'].startswith('v4.'):
+                uart_num, tx_gpio, rx_gpio = (0, 15, 14)
 
-            ports = list(testrig.get_connected_components({
-                'rx': (odrive.gpio1, True),
-                'tx': (odrive.gpio2, False)
-            }, SerialPortComponent))
+            alternatives = []
 
-            # Hack the bus objects to enable noise_enable functionality on the TX line.
+            # Find a Teensy that sits between a linux serial port and the ODrive
+            # with an additional wire that runs to the linux PC and will be used
+            # as noise-enable line
 
-            def get_noise_gpio(bus):
-                teensy = bus.gpio_tuples[1][0]
-                for teensy_gpio in teensy.gpios:
-                    for other_gpio in testrig.get_directly_connected_components(teensy_gpio):
-                        if isinstance(other_gpio, LinuxGpioComponent):
-                            return teensy_gpio, other_gpio
-                return None
+            for teensy in testrig.get_components(TeensyComponent):
+                for port in testrig.get_components(SerialPortComponent):
+                    gpio_conns = [
+                        testrig.net_by_component.get(getattr(odrive, f'gpio{tx_gpio}'), set()).intersection(set(teensy.gpios)),
+                        testrig.net_by_component.get(getattr(odrive, f'gpio{rx_gpio}'), set()).intersection(set(teensy.gpios)),
+                        testrig.net_by_component.get(port.tx, set()).intersection(set(teensy.gpios)),
+                        testrig.net_by_component.get(port.rx, set()).intersection(set(teensy.gpios)),
+                        teensy.gpios
+                    ]
 
-            for idx, bus in enumerate(ports):
-                noise_gpio_on_teensy, noise_gpio_on_rpi = get_noise_gpio(bus)
-                assert(noise_gpio_on_rpi)
-                t, i, o, _ = bus.gpio_tuples[1]
-                bus.gpio_tuples[1] = (t, i, o, noise_gpio_on_teensy)
-                ports[idx] = (bus, noise_gpio_on_rpi)
-                
-            yield (odrive, ports)
+                    for gpio1, gpio2, gpio3, gpio4, gpio5 in itertools.product(*gpio_conns):
+                        for noise_ctrl_gpio, tf3 in testrig.get_connected_components(gpio5, LinuxGpioComponent):
+                            tf1 = TeensyForwardingFixture(teensy, gpio3, gpio2)
+                            tf2 = TeensyForwardingFixture(teensy, gpio1, gpio4)
+                            tf1.noise_enable = gpio5
+                            alternatives.append((odrive, uart_num, tx_gpio, rx_gpio, port, noise_ctrl_gpio, TestFixture.all_of(tf1, tf2, tf3)))
 
-    def run_test(self, odrive: ODriveComponent, port: SerialPortComponent, noise_enable: LinuxGpioComponent, logger: Logger):
+            yield AnyTestCase(*alternatives)
+
+    def run_test(self, odrive: ODriveComponent, uart_num: int, tx_gpio: list, rx_gpio: list, port: SerialPortComponent, noise_enable: LinuxGpioComponent, logger: Logger):
         noise_enable.config(output=True)
         noise_enable.write(False)
         time.sleep(0.1)
 
-        odrive.handle.config.enable_uart_a = True
-        odrive.handle.config.gpio1_mode = GPIO_MODE_UART_A
-        odrive.handle.config.gpio2_mode = GPIO_MODE_UART_A
+        self.prepare(odrive, uart_num, tx_gpio, rx_gpio, logger)
 
         with port.open(115200) as ser:
             # reset port to known state
             reset_state(ser)
+
+            # First try
+            ser.write(b'r vbus_voltage\n')
+            response = float(ser.readline().strip())
+            test_assert_eq(response, odrive.handle.vbus_voltage, accuracy=0.1)
 
             # Enable square wave of ~1.6MHz on the ODrive's RX line
             noise_enable.write(True)
@@ -330,11 +327,12 @@ class TestUartNoise():
             response = float(ser.readline().strip())
             test_assert_eq(response, odrive.handle.vbus_voltage, accuracy=0.1)
 
+tests = [
+    TestUartAscii(),
+    TestUartBaudrate(),
+    TestUartBurnIn(),
+    TestUartNoise()
+]
 
 if __name__ == '__main__':
-    test_runner.run([
-        TestUartAscii(),
-        TestUartBaudrate(),
-        TestUartBurnIn(),
-        TestUartNoise(),
-    ])
+    test_runner.run(tests)

@@ -122,9 +122,6 @@ struct TaskTimes {
 // Forward Declarations
 class Axis;
 class Motor;
-class ODriveCAN;
-
-extern ODriveCAN *odCAN;
 
 // TODO: move
 // this is technically not thread-safe but practically it might be
@@ -153,6 +150,7 @@ inline ENUMTYPE operator ~ (ENUMTYPE a) { return static_cast<ENUMTYPE>(~static_c
 #include <axis.hpp>
 #include <oscilloscope.hpp>
 #include <communication/communication.h>
+#include <communication/can/odrive_can.hpp>
 
 // Defined in autogen/version.c based on git-derived version numbers
 extern "C" {
@@ -190,7 +188,6 @@ public:
     void control_loop_cb(uint32_t timestamp);
 
     Axis& get_axis(int num) { return axes[num]; }
-    ODriveCAN& get_can() { return *odCAN; }
 
     uint32_t get_interrupt_status(int32_t irqn);
     uint32_t get_dma_status(uint8_t stream_num);
@@ -228,6 +225,8 @@ public:
         0.5f, // trigger_threshold
         nullptr // data_src TODO: change data type
     };
+
+    ODriveCAN can_;
 
     BoardConfig_t config_;
     uint32_t user_config_loaded_ = 0;

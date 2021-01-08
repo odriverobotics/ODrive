@@ -1,7 +1,9 @@
 #ifndef __ENCODER_HPP
 #define __ENCODER_HPP
 
-#include <arm_math.h>
+class Encoder;
+
+#include <board.h> // needed for arm_math.h
 #include <Drivers/STM32/stm32_spi_arbiter.hpp>
 #include "utils.hpp"
 #include <autogen/interfaces.hpp>

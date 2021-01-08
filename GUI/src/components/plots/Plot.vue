@@ -51,8 +51,10 @@ export default {
   mounted() {
     this.timeStart = Date.now();
     //this.initData(); //set label for dataset and color
-    this.fillData();
-    this.liveData();
+    this.cyclicUpdate = setInterval(() => this.fillData(), 50);
+  },
+  beforeDestroy() {
+    clearInterval(this.cyclicUpdate);
   },
   methods: {
     fillData() {
@@ -84,15 +86,6 @@ export default {
           },
         ],
       };
-    },
-    liveData() {
-      setTimeout(() => {
-        this.liveData();
-      }, 50);
-      //if (this.$store.state.sampling == true) {
-      //  this.fillData();
-      //}
-      this.fillData();
     },
     deletePlot: function () {
       // commit a mutation in the store with the relevant information

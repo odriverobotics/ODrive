@@ -129,17 +129,11 @@ class TestSimpleCANClosedLoop():
 
 
     def get_test_cases(self, testrig: TestRig):
-        for odrive in testrig.get_components(ODriveComponent):
-            can_interfaces = list(testrig.get_connected_components(odrive.can, CanInterfaceComponent))
-            for num in range(2):
-                encoders = testrig.get_connected_components({
-                    'a': (odrive.encoders[num].a, False),
-                    'b': (odrive.encoders[num].b, False)
-                }, EncoderComponent)
-                motors = testrig.get_connected_components(odrive.axes[num], MotorComponent)
-                for motor, encoder in itertools.product(motors, encoders):
-                    if encoder.impl in testrig.get_connected_components(motor):
-                        yield (odrive, can_interfaces, odrive.axes[num], motor, encoder, 0, False)
+        for axis, motor, encoder, tf1 in testrig.get_closed_loop_combos(init=False):
+            yield AnyTestCase(*[
+                (axis.parent, canbus, axis, motor, encoder, 0, False, TestFixture.all_of(tf1, tf2))
+                for canbus, tf2 in testrig.get_connected_components(axis.parent.can, CanInterfaceComponent)
+            ])
 
     def run_test(self, odrive: ODriveComponent, canbus: CanInterfaceComponent, axis_ctx: ODriveAxisComponent, motor_ctx: MotorComponent, enc_ctx: EncoderComponent, node_id: int, extended_id: bool, logger: Logger):
         # this test is a sanity check to make sure that closed loop operation works
@@ -228,5 +222,7 @@ class TestSimpleCANClosedLoop():
             fence()
             test_assert_eq(axis_ctx.handle.current_state, AXIS_STATE_IDLE)
 
+tests = [TestSimpleCANClosedLoop()]
+
 if __name__ == '__main__':
-    test_runner.run(TestSimpleCANClosedLoop())
+    test_runner.run(tests)
