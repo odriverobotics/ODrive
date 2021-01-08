@@ -25,9 +25,10 @@ class TestMotorCalibration():
     def run_test(self, axis_ctx: ODriveAxisComponent, motor_ctx: MotorComponent, logger: Logger):
         # reset old calibration values
 
-        if axis_ctx.handle.encoder.config.mode != ENCODER_MODE_INCREMENTAL:
-            axis_ctx.handle.encoder.config.mode = ENCODER_MODE_INCREMENTAL
-            axis_ctx.parent.save_config_and_reboot()
+        axis_ctx.parent.erase_config_and_reboot()
+        #if axis_ctx.handle.encoder.config.mode != ENCODER_MODE_INCREMENTAL:
+        #    axis_ctx.handle.encoder.config.mode = ENCODER_MODE_INCREMENTAL
+        #    axis_ctx.parent.save_config_and_reboot()
 
         axis_ctx.handle.motor.config.phase_resistance = 0.0
         axis_ctx.handle.motor.config.phase_inductance = 0.0

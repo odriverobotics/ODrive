@@ -30,7 +30,7 @@ components:
     brake-resistance: 2.0
     usb: auto
     can: main_canbus
-    vbus-voltage: 24 # [V]
+    vbus-voltage: 20.5 # [V]
     max-brake-power: 150 # [W]
     encoder0: virtual_encoder0
     encoder1: virtual_encoder1
