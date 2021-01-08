@@ -6,6 +6,7 @@
 #include "print_utils.hpp"
 #include <memory>
 #include <algorithm>
+#include <array>
 
 #if FIBRE_ALLOW_HEAP
 #include <unordered_map>
@@ -102,6 +103,17 @@ struct BackendDeinitializer {
     Context* ctx;
 };
 
+template<typename ... T, size_t ... Is>
+bool all(std::tuple<T...> args, std::index_sequence<Is...>) {
+    std::array<bool, sizeof...(T)> arr = { std::get<Is>(args) ... };
+    return std::all_of(arr.begin(), arr.end(), [](bool val) { return val; });
+}
+
+template<typename ... T>
+bool all(std::tuple<T...> args) {
+    return all(args, std::make_index_sequence<sizeof...(T)>());
+}
+
 Context* fibre::open(EventLoop* event_loop) {
     Context* ctx = my_alloc<Context>();
     if (!ctx) {
@@ -115,9 +127,9 @@ Context* fibre::open(EventLoop* event_loop) {
 
     // TODO: check static_backends_good
 
-    //if (std::all(static_backends_good)) {
-    //    return nullptr;
-    //}
+    if (all(static_backends_good)) {
+        return nullptr;
+    }
 
     return ctx;
 }
@@ -133,6 +145,7 @@ void fibre::close(Context* ctx) {
     my_free<Context>(ctx);
 }
 
+#if FIBRE_ALLOW_HEAP
 Domain* Context::create_domain(std::string specs) {
     FIBRE_LOG(D) << "creating domain with path \"" << specs << "\"";
 
@@ -191,6 +204,7 @@ void Context::deregister_backend(std::string name) {
     
     discoverers.erase(it);
 }
+#endif
 
 #if FIBRE_ENABLE_CLIENT
 void Domain::start_discovery(Callback<void, Object*, Interface*> on_found_object, Callback<void, Object*> on_lost_object) {

@@ -95,7 +95,7 @@ private:
     Callback<void, TRes> completer_ = nullptr;
 };
 
-class LibusbBulkInEndpoint : public LibusbBulkEndpoint<ReadResult>, public AsyncStreamSource {
+class LibusbBulkInEndpoint final : public LibusbBulkEndpoint<ReadResult>, public AsyncStreamSource {
 public:
     void start_read(bufptr_t buffer, TransferHandle* handle, Callback<void, ReadResult> completer) final {
         start_transfer(buffer, handle, completer);
@@ -106,7 +106,7 @@ public:
     }
 };
 
-class LibusbBulkOutEndpoint : public LibusbBulkEndpoint<WriteResult>, public AsyncStreamSink {
+class LibusbBulkOutEndpoint final : public LibusbBulkEndpoint<WriteResult>, public AsyncStreamSink {
 public:
     void start_write(cbufptr_t buffer, TransferHandle* handle, Callback<void, WriteResult> completer) final {
         start_transfer({

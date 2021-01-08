@@ -47,6 +47,9 @@ RUN mkdir -p "third_party/libusb-windows" && \
 # Make Emscripten build its standard libraries for the WebAssembly target
 RUN echo "void test() {}" | em++ -x c - -o /tmp/a.out
 
+# Install dependencies for interface_generator.py
+RUN pacman -S --noconfirm python-yaml python-jinja python-jsonschema
+
 ENV THIRD_PARTY=/
 
 # Set up entrypoint

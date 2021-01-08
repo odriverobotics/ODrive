@@ -7,7 +7,7 @@
 using namespace fibre;
 
 bool ChannelDiscoverer::try_parse_key(const char* begin, const char* end, const char* key, const char** val_begin, const char** val_end) {
-    size_t keylen = strlen(key);
+    ssize_t keylen = strlen(key);
 
     while (begin != end) {
         const char* next_delim = std::find(begin, end, ',');

@@ -107,7 +107,7 @@ void stop_listening(ConnectionContext* ctx);
  * 
  * Note: To make this work on Windows, a "poll"-based worker must be implemented.
  */
-class PosixSocket : public AsyncStreamSource, public AsyncStreamSink {
+class PosixSocket final : public AsyncStreamSource, public AsyncStreamSink {
 public:
     /**
      * @brief Initializes the object with the given socket ID.

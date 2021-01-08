@@ -1,7 +1,14 @@
 
+-- Projects that include fibre-cpp and also use tup can place a Tuprules.lua file
+-- into their root directory with the line `no_libfibre = true` to prevent
+-- libfibre from building.
+if no_libfibre == true then
+    return
+end
+
 tup.include('package.lua')
 
-CFLAGS = {'-fPIC -std=c++11 -DFIBRE_COMPILE'}
+CFLAGS = {'-fPIC -std=c++11 -DFIBRE_COMPILE -Wall'}
 LDFLAGS = {'-static-libstdc++'}
 
 
@@ -28,8 +35,9 @@ end
 CFLAGS += tup.getconfig("CFLAGS")
 LDFLAGS += tup.getconfig("LDFLAGS")
 DEBUG = get_bool_config("DEBUG", true)
+STRICT = get_bool_config("STRICT", false)
 
-machine = run_now(CXX..' -dumpmachine') -- works with both clang and GCC
+machine = fibre_run_now(CXX..' -dumpmachine') -- works with both clang and GCC
 
 BUILD_TYPE='-shared'
 
@@ -64,6 +72,10 @@ else
     CFLAGS += '-O3' -- TODO: add back -lfto
 end
 
+if STRICT then
+    CFLAGS += '-Werror'
+end
+
 function compile(src_file)
     obj_file = 'build/'..tup.file(src_file)..'.o'
     tup.frule{
@@ -81,7 +93,7 @@ pkg = get_fibre_package({
     enable_tcp_client_backend=get_bool_config("ENABLE_TCP_CLIENT_BACKEND", true),
     enable_libusb_backend=get_bool_config("ENABLE_LIBUSB_BACKEND", true),
     allow_heap=true,
-    pkgconf=tup.getconfig("USE_PKGCONF") or nil
+    pkgconf=(tup.getconfig("USE_PKGCONF") != "") and tup.getconfig("USE_PKGCONF") or nil
 })
 
 CFLAGS += pkg.cflags
