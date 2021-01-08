@@ -1,0 +1,62 @@
+
+components:
+  - type: generalpurpose
+    name: homenet
+    net: homenet
+
+  - type: generalpurpose
+    name: rpi
+    ssh: odrv
+    net: homenet
+    components:
+      - type: can
+        name: can0
+        interface: can0
+        path: /dev/serial/by-id/usb-Protofusion_Labs_CANable_1205aa6_https:__github.com_normaldotcom_cantact-fw_002080015852430220363530-if00
+        connected-to: odrive.can
+
+  - type: odrive
+    name: odrive-v4_1
+    board-version: v4.1-58V
+    serial-number: "2060307C4E53"
+    encoder0: virtual_encoder0
+    motor0: D6374_150KV_0
+
+  - type: odrive
+    name: odrive-v4_0
+    board-version: v4.0-58V
+    serial-number: "206730834E53" # smart motor
+    encoder0: virtual_encoder1
+    motor0: D6374_150KV_1
+
+  - type: motor
+    name: D6374_150KV_0
+    phase-resistance: 0.065
+    phase-inductance: 2.15e-05
+
+  - type: motor
+    name: D6374_150KV_1
+    phase-resistance: 0.065
+    phase-inductance: 2.15e-05
+
+  - type: encoder
+    name: quadrature_encoder0
+    cpr: 8192
+    max-rpm: 7000
+
+  - type: encoder
+    name: quadrature_encoder1
+    cpr: 8192
+    max-rpm: 7000
+
+connections:
+  - ['odrive-v4_1.can', 'rpi.can0']
+  - ['odrive-v4_1.axis0', 'D6374_150KV_0.phases']
+  - ['odrive-v4_0.axis0', 'D6374_150KV_1.phases']
+  - ['quadrature_encoder0.shaft', 'D6374_150KV_0.shaft', 'D6374_150KV_1.shaft', 'quadrature_encoder1.shaft']
+  - ['odrive-v4_1.encoder0.a', 'quadrature_encoder0.a']
+  - ['odrive-v4_1.encoder0.b', 'quadrature_encoder0.b']
+  - ['odrive-v4_1.encoder0.z', 'quadrature_encoder0.z']
+  - ['odrive-v4_0.encoder0.a', 'quadrature_encoder1.a']
+  - ['odrive-v4_0.encoder0.b', 'quadrature_encoder1.b']
+  - ['odrive-v4_0.encoder0.z', 'quadrature_encoder1.z']

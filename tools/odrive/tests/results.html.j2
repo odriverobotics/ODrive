@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Test Results</title>
+<style>
+    body {
+        width: 35em;
+        margin: 0 auto;
+        font-family: Tahoma, Verdana, Arial, sans-serif;
+    }
+
+    td, th {
+      border: 1px solid #dddddd;
+      text-align: left;
+      padding: 8px;
+    }
+    tr:nth-child(even) {
+      background-color: #dddddd;
+    }
+
+    /* Source: https://codepen.io/fskirschbaum/pen/MYJNaj */
+    .led-green {
+        display: inline-flex;
+        margin: 0 auto;
+        width: 16px;
+        height: 16px;
+        background-color: #ABFF00;
+        border-radius: 50%;
+        box-shadow: rgba(0, 0, 0, 0.2) 0 -1px 4px 1px, inset #304701 0 -1px 5px, #89FF00 0 2px 8px;
+    }
+    .led-red {
+        display: inline-flex;
+        margin: 0 auto;
+        width: 16px;
+        height: 16px;
+        background-color: #ff7b7b;
+        border-radius: 50%;
+        box-shadow: rgba(0, 0, 0, 0.2) 0 -1px 4px 1px, inset #530000 0 -1px 5px, #ff5050 0 2px 8px;
+    }
+    .led-off {
+        display: inline-flex;
+        margin: 0 auto;
+        width: 16px;
+        height: 16px;
+        background-color: #c9c9c9;
+        border-radius: 50%;
+        box-shadow: rgba(0, 0, 0, 0.2) 0 -1px 4px 1px, inset #8f8f8f 0 -1px 5px;
+    }
+</style>
+</head>
+<body>
+<h1>Test Results</h1>
+  <p>Status: {{ status }}</p>
+  <p>This summary was generated on {{ date.isoformat() }}</p>
+  <table>
+      <tr>
+        <th>Test</th>
+        <th>Result</th>
+      </tr>
+{% for name, test_cases in test_results %}
+      <tr>
+        <td>
+{% if test_cases | fails | length %}
+          <div class="led-red"></div>
+{% elif test_cases | passes | length %}
+          <div class="led-green"></div>
+{% else %}
+          <div class="led-off"></div>
+{% endif %}
+          {{name}}
+        </td>
+        <td>{{test_cases | passes | length}} / {{test_cases | length}}</td>
+      </tr>
+{% endfor %}
+  </table>
+</body>
+</html>

@@ -18,17 +18,17 @@ class TestMotorCalibration():
 
     def get_test_cases(self, testrig: TestRig):
         """Returns all axes that are connected to a motor, along with the corresponding motor(s)"""
-        for odrive in testrig.get_components(ODriveComponent):
-            for axis in odrive.axes:
-                for motor in testrig.get_connected_components(axis, MotorComponent):
-                    yield (axis, motor)
+        for axis in testrig.get_components(ODriveAxisComponent):
+            for motor, tf in testrig.get_connected_components({'phases': axis}, MotorComponent):
+                yield (axis, motor, tf)
 
     def run_test(self, axis_ctx: ODriveAxisComponent, motor_ctx: MotorComponent, logger: Logger):
         # reset old calibration values
 
-        if axis_ctx.handle.encoder.config.mode != ENCODER_MODE_INCREMENTAL:
-            axis_ctx.handle.encoder.config.mode = ENCODER_MODE_INCREMENTAL
-            axis_ctx.parent.save_config_and_reboot()
+        axis_ctx.parent.erase_config_and_reboot()
+        #if axis_ctx.handle.encoder.config.mode != ENCODER_MODE_INCREMENTAL:
+        #    axis_ctx.handle.encoder.config.mode = ENCODER_MODE_INCREMENTAL
+        #    axis_ctx.parent.save_config_and_reboot()
 
         axis_ctx.handle.motor.config.phase_resistance = 0.0
         axis_ctx.handle.motor.config.phase_inductance = 0.0
@@ -57,10 +57,9 @@ class TestDisconnectedMotorCalibration():
 
     def get_test_cases(self, testrig: TestRig):
         """Returns all axes that are disconnected"""
-        for odrive in testrig.get_components(ODriveComponent):
-            for axis in odrive.axes:
-                if axis.yaml == 'floating':
-                    yield (axis,)
+        for axis in testrig.get_components(ODriveAxisComponent):
+            if axis.yaml == 'floating':
+                yield (axis, None)
 
     def run_test(self, axis_ctx: ODriveAxisComponent, logger: Logger):
         axis = axis_ctx.handle
@@ -85,17 +84,7 @@ class TestEncoderDirFind():
     """
 
     def get_test_cases(self, testrig: TestRig):
-        for odrive in testrig.get_components(ODriveComponent):
-            for num in range(len(odrive.axes)):
-                encoders = testrig.get_connected_components({
-                    'a': (odrive.encoders[num].a, False),
-                    'b': (odrive.encoders[num].b, False)
-                }, EncoderComponent)
-                motors = testrig.get_connected_components(odrive.axes[num], MotorComponent)
-
-                for motor, encoder in itertools.product(motors, encoders):
-                    if encoder.impl in testrig.get_connected_components(motor):
-                        yield (odrive.axes[num], motor, encoder)
+        return testrig.get_closed_loop_combos(init=False)
 
     def run_test(self, axis_ctx: ODriveAxisComponent, motor_ctx: MotorComponent, enc_ctx: EncoderComponent, logger: Logger):
         axis = axis_ctx.handle
@@ -129,17 +118,7 @@ class TestEncoderOffsetCalibration():
     """
 
     def get_test_cases(self, testrig: TestRig):
-        for odrive in testrig.get_components(ODriveComponent):
-            for num in range(len(odrive.axes)):
-                encoders = testrig.get_connected_components({
-                    'a': (odrive.encoders[num].a, False),
-                    'b': (odrive.encoders[num].b, False)
-                }, EncoderComponent)
-                motors = testrig.get_connected_components(odrive.axes[num], MotorComponent)
-
-                for motor, encoder in itertools.product(motors, encoders):
-                    if encoder.impl in testrig.get_connected_components(motor):
-                        yield (odrive.axes[num], motor, encoder)
+        return testrig.get_closed_loop_combos(init=False)
 
     def run_test(self, axis_ctx: ODriveAxisComponent, motor_ctx: MotorComponent, enc_ctx: EncoderComponent, logger: Logger):
         axis = axis_ctx.handle
@@ -178,18 +157,11 @@ class TestEncoderIndexSearch():
     """
 
     def get_test_cases(self, testrig: TestRig):
-        for odrive in testrig.get_components(ODriveComponent):
-            for num in range(len(odrive.axes)):
-                encoders = testrig.get_connected_components({
-                    'a': (odrive.encoders[num].a, False),
-                    'b': (odrive.encoders[num].b, False)
-                }, EncoderComponent)
-                motors = testrig.get_connected_components(odrive.axes[num], MotorComponent)
-                z_gpio = list(testrig.get_connected_components((odrive.encoders[num].z, False), LinuxGpioComponent))
-
-                for motor, encoder in itertools.product(motors, encoders):
-                    if encoder.impl in testrig.get_connected_components(motor):
-                        yield (odrive.axes[num], motor, encoder, z_gpio)
+        for axis, motor, encoder, tf1 in testrig.get_closed_loop_combos(init=False):
+            alternatives = []
+            for z_gpio, tf2 in testrig.get_connected_components((axis.parent.encoders[axis.num].z, False), LinuxGpioComponent):
+                alternatives.append((axis, motor, encoder, z_gpio, TestFixture.all_of(tf1, tf2)))
+            yield AnyTestCase(*alternatives)
 
     def run_test(self, axis_ctx: ODriveAxisComponent, motor_ctx: MotorComponent, enc_ctx: EncoderComponent, z_gpio: LinuxGpioComponent, logger: Logger):
         axis = axis_ctx.handle
@@ -230,12 +202,13 @@ class TestEncoderIndexSearch():
         test_assert_eq(modpm(axis_ctx.handle.encoder.pos_cpr_counts, cpr), 0.0, range=50)
         test_assert_eq(axis_ctx.handle.encoder.pos_abs, 0.0, range=50)
 
+tests = [
+    TestMotorCalibration(),
+    TestDisconnectedMotorCalibration(),
+    TestEncoderDirFind(),
+    TestEncoderOffsetCalibration(),
+    TestEncoderIndexSearch()
+]
 
 if __name__ == '__main__':
-    test_runner.run([
-        TestMotorCalibration(),
-        TestDisconnectedMotorCalibration(),
-        TestEncoderDirFind(),
-        TestEncoderOffsetCalibration(),
-        TestEncoderIndexSearch()
-    ])
+    test_runner.run(tests)

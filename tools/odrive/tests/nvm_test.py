@@ -16,7 +16,7 @@ class TestStoreAndReboot():
 
     def get_test_cases(self, testrig: TestRig):
         for odrive in testrig.get_components(ODriveComponent):
-            yield (odrive,)
+            yield (odrive, None)
 
     def run_with_values(self, odrive: ODriveComponent, values: list, logger: Logger):
         logger.debug("storing configuration and rebooting...")
@@ -24,13 +24,7 @@ class TestStoreAndReboot():
         for value in values:
             odrive.handle.config.brake_resistance = value
         
-        odrive.handle.save_configuration()
-        try:
-            odrive.handle.reboot()
-        except fibre.ChannelBrokenException:
-            pass # this is expected
-        odrive.handle = None
-        time.sleep(2)
+        odrive.save_config_and_reboot()
 
         odrive.prepare(logger)
 
@@ -42,5 +36,7 @@ class TestStoreAndReboot():
         self.run_with_values(odrive, [2.5, 3.7], logger)
         self.run_with_values(odrive, [0.47], logger)
 
+tests = [TestStoreAndReboot()]
+
 if __name__ == '__main__':
-    test_runner.run(TestStoreAndReboot())
+    test_runner.run(tests)
