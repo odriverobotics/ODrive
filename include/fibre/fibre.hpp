@@ -38,7 +38,7 @@ struct Function {
 
 struct Object;
 struct Interface;
-struct Domain;
+class Domain;
 
 template<typename T>
 struct StaticBackend {
@@ -87,11 +87,11 @@ struct Context {
 
 // TODO: don't declare these types here
 struct LegacyProtocolPacketBased;
-struct LegacyObjectClient;
+class LegacyObjectClient;
 struct LegacyObject;
 
 class Domain {
-    friend class Context;
+    friend struct Context;
 public:
 #if FIBRE_ENABLE_CLIENT
     // TODO: add interface argument

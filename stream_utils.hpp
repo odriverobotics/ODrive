@@ -1,13 +1,13 @@
 #ifndef __FIBRE_STREAM_UTILS_HPP
 #define __FIBRE_STREAM_UTILS_HPP
 
-#include "async_stream.hpp"
+#include <fibre/async_stream.hpp>
 #include <string.h>
 
 namespace fibre {
 
 template<size_t I>
-class BufferedStreamSink : Completer<WriteResult> {
+class BufferedStreamSink {
 public:
     BufferedStreamSink(AsyncStreamSink& sink) : sink_(sink) {}
 
@@ -50,17 +50,17 @@ public:
             // nothing to do
         } else if (read_idx_ < write_idx_) {
             is_active_ = true;
-            sink_.start_write({buffer_ + read_idx_, buffer_ + write_idx_}, &transfer_handle_, *this);
+            sink_.start_write({buffer_ + read_idx_, buffer_ + write_idx_}, &transfer_handle_, MEMBER_CB(this, on_write_complete));
         } else if (read_idx_ > write_idx_) {
             is_active_ = true;
-            sink_.start_write({buffer_ + read_idx_, buffer_ + I}, &transfer_handle_, *this);
+            sink_.start_write({buffer_ + read_idx_, buffer_ + I}, &transfer_handle_, MEMBER_CB(this, on_write_complete));
         } else {
             // nothing to do
         }
     }
 
 private:
-    void complete(WriteResult result) final {
+    void on_write_complete(WriteResult result) {
         is_active_ = false;
         transfer_handle_ = 0;
 
@@ -93,7 +93,7 @@ private:
  * operation at a time but are written to by multiple independent sources.
  */
 template<size_t NSlots>
-class AsyncStreamSinkMultiplexer : public AsyncStreamSink, Completer<WriteResult> {
+class AsyncStreamSinkMultiplexer : public AsyncStreamSink {
 public:
     AsyncStreamSinkMultiplexer(AsyncStreamSink& sink) : sink_(sink) {}
 
@@ -102,7 +102,7 @@ public:
             auto& [slot_in_use, slot_buf, slot_completer] = slots_[i];
             if (!__atomic_exchange_n(&slot_in_use, true, __ATOMIC_SEQ_CST)) {
                 slot_buf = buffer;
-                slot_completer = &completer;
+                slot_completer = completer;
 
                 if (handle) {
                     *handle = i + 1; // returning a valid handle of 0 is not a good idea
@@ -111,7 +111,7 @@ public:
                 // If the underlying sink wasn't busy, start it now.
                 if (active_slot_ == 0) {
                     active_slot_ = i + 1;
-                    sink_.start_write(slot_buf, &transfer_handle_, *this);
+                    sink_.start_write(slot_buf, &transfer_handle_, MEMBER_CB(this, on_write_complete));
                 }
 
                 return;
@@ -121,7 +121,7 @@ public:
         if (handle) {
             *handle = 0;
         }
-        completer.complete({kStreamError, buffer.begin()});
+        completer.invoke({kStreamError, buffer.begin()});
     }
 
     void cancel_write(TransferHandle transfer_handle) final {
@@ -134,12 +134,12 @@ public:
             auto completer = slot_completer;
             auto end = slot_buf.end();
             slot_in_use = false;
-            safe_complete(completer, {kStreamCancelled, end});
+            completer.invoke_and_clear({kStreamCancelled, end});
         }
     }
 
 private:
-    void complete(fibre::WriteResult result) final {
+    void on_write_complete(fibre::WriteResult result) {
         transfer_handle_ = 0;
 
         auto& [slot_in_use, slot_buf, slot_completer] =  slots_[active_slot_ - 1];
@@ -147,7 +147,7 @@ private:
         auto completer = slot_completer;
         slot_in_use = false;
 
-        safe_complete(completer, result);
+        completer.invoke_and_clear(result);
 
         // Select new slot before announcing completion of the old
         size_t active_slot = 0;
@@ -167,12 +167,12 @@ private:
             auto& [slot_in_use, slot_buf, slot_completer] = slots_[active_slot - 1];
             (void) slot_in_use;
             (void) slot_completer;
-            sink_.start_write(slot_buf, &transfer_handle_, *this);
+            sink_.start_write(slot_buf, &transfer_handle_, MEMBER_CB(this, on_write_complete));
         }
     }
     
     AsyncStreamSink& sink_;
-    std::tuple<bool, cbufptr_t, Completer<WriteResult>*> slots_[NSlots];
+    std::tuple<bool, cbufptr_t, Callback<void, WriteResult>> slots_[NSlots];
     size_t active_slot_ = 0;
     TransferHandle transfer_handle_ = 0;
 };

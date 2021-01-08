@@ -469,6 +469,7 @@ void LegacyCallContext::resume_from_protocol(EndpointOperationResult result) {
         ep_result = result;
         return;
     }
+    op_handle_ = 0;
 
     std::variant<ResultFromApp, ResultFromProtocol> res = result; 
 

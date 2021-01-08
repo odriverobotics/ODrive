@@ -12,7 +12,7 @@ USE_LOG_TOPIC(LIBFIBRE);
 
 static const struct LibFibreVersion libfibre_version = { 0, 1, 0 };
 
-class FIBRE_PRIVATE ExternalEventLoop : public fibre::EventLoop {
+class FIBRE_PRIVATE ExternalEventLoop final : public fibre::EventLoop {
 public:
     ExternalEventLoop(LibFibreEventLoop impl) : impl_(impl) {}
 
@@ -81,7 +81,7 @@ int ExternalDiscoverer::stop_channel_discovery(fibre::ChannelDiscoveryContext* h
 
 namespace fibre {
 
-class AsyncStreamLink : public AsyncStreamSink, public AsyncStreamSource {
+class AsyncStreamLink final : public AsyncStreamSink, public AsyncStreamSource {
 public:
     void start_write(cbufptr_t buffer, TransferHandle* handle, Callback<void, WriteResult> completer) final;
     void cancel_write(TransferHandle transfer_handle) final;
@@ -457,7 +457,7 @@ LibFibreStatus libfibre_get_attribute(LibFibreObject* parent_obj, LibFibreAttrib
         return kFibreInvalidArgument;
     }
 
-    LibFibreCtx* libfibre_ctx = reinterpret_cast<LibFibreCtx*>(parent_obj_cast->client->user_data_);
+    //LibFibreCtx* libfibre_ctx = reinterpret_cast<LibFibreCtx*>(parent_obj_cast->client->user_data_);
     fibre::LegacyObject* child_obj = attr_cast->object.get();
 
     if (!attr_cast->object->known_to_application) {

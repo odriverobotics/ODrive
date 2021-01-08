@@ -1,4 +1,5 @@
 
+fibre_root = tup.getcwd()
 
 -- Returns a table that contains the Fibre code files and the flags required to
 -- compile and link those files.
@@ -30,6 +31,7 @@
 --           linking the object files.
 function get_fibre_package(args)
     pkg = {
+        root = fibre_root,
         code_files = {
             'fibre.cpp',
             'channel_discoverer.cpp',
@@ -58,9 +60,11 @@ function get_fibre_package(args)
         end
 
     elseif args.pkgconf == false then
+        print("not using pkgconf")
         pkgconf_file = nil
         pkgconf = null_pkgconf
     else
+        print("using pkgconf: "..args.pkgconf)
         pkgconf_file = args.pkgconf
         pkgconf = real_pkgconf
     end
@@ -108,7 +112,7 @@ end
 -- graph).
 -- Returns the values (return_code, stdout) where stdout has the trailing new
 -- line removed.
-function run_now(command)
+function fibre_run_now(command)
     local handle
     handle = io.popen(command)
     local output = handle:read("*a")
@@ -117,13 +121,13 @@ function run_now(command)
 end
 
 function test_pkgconf(name)
-    local str, rc = run_now(name.." --version 2>&1 >/dev/null")
+    local str, rc = fibre_run_now(name.." --version 2>&1 >/dev/null")
     return rc
 end
 
 function real_pkgconf(pkg, lib)
-    pkg.cflags += run_now(pkgconf_file..' '..lib..' --cflags')
-    pkg.ldflags += run_now(pkgconf_file..' '..lib..' --libs')
+    pkg.cflags += fibre_run_now(pkgconf_file..' '..lib..' --cflags')
+    pkg.ldflags += fibre_run_now(pkgconf_file..' '..lib..' --libs')
 end
 
 function null_pkgconf(pkg, lib)

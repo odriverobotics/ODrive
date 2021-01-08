@@ -409,7 +409,7 @@ std::optional<ReadResult> PosixSocket::read_sync(bufptr_t buffer) {
             return {{kStreamError, buffer.end()}}; // the function might have written to the buffer
         }
 
-    } else if (n_received > buffer.size()) {
+    } else if ((size_t)n_received > buffer.size()) {
         FIBRE_LOG(E) << "received too many bytes";
         return {{kStreamError, buffer.end()}};
 
@@ -441,7 +441,7 @@ std::optional<WriteResult> PosixSocket::write_sync(cbufptr_t buffer) {
             return {{kStreamError, buffer.end()}}; // the function might have written to the buffer
         }
 
-    } else if (n_sent > buffer.size()) {
+    } else if ((size_t)n_sent > buffer.size()) {
         FIBRE_LOG(E) << "sent too many bytes";
         return {{kStreamError, buffer.end()}};
 

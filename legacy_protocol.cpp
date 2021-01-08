@@ -273,7 +273,7 @@ void LegacyProtocolPacketBased::cancel_endpoint_operation(EndpointOperationHandl
         pending_operation_ = std::nullopt;
     }
 
-    auto it = expected_acks_.find(handle);
+    auto it = expected_acks_.find(seqno);
 
     if (it != expected_acks_.end()) {
         callback = it->second.callback;
@@ -336,17 +336,26 @@ void LegacyProtocolPacketBased::on_write_finished(WriteResult result) {
         transmitting_op_ = 0;
 
         auto it = expected_acks_.find(seqno);
+
         size_t n_sent = std::max((size_t)(result.end - tx_buf_), (size_t)8) - 8;
         it->second.tx_buf = it->second.tx_buf.skip(n_sent);
+        it->second.tx_done = true;
 
-        // If the TX task was a remote endpoint operation but didn't succeed
-        // we terminate that operation
-        if (result.status != kStreamOk) {
-            auto callback = it->second.callback;
-            auto tx_end = it->second.tx_buf.begin();
-            auto rx_end = it->second.rx_buf.begin();
+        if (it->second.rx_done) {
+            // It's possible that the RX operation completes before the TX operation
+            auto op = it->second;
             expected_acks_.erase(it);
-            callback.invoke_and_clear({result.status, result.end, rx_end});
+            op.callback.invoke_and_clear({kStreamOk, op.tx_buf.begin(), op.rx_buf.begin()});
+        } else if (result.status != kStreamOk) {
+            // If the TX task was a remote endpoint operation but didn't succeed
+            // we terminate that operation
+            auto op = it->second;
+            expected_acks_.erase(it);
+            op.callback.invoke_and_clear({result.status, result.end, op.rx_buf.begin()});
+        }
+
+        if (transmitting_op_) {
+            return;
         }
     }
 #endif
@@ -360,7 +369,11 @@ void LegacyProtocolPacketBased::on_write_finished(WriteResult result) {
         uint8_t* rx_end = rx_end_;
         rx_end_ = nullptr;
         on_read_finished({kStreamOk, rx_end});
-        return;
+#if FIBRE_ENABLE_CLIENT
+        if (transmitting_op_) {
+            return;
+        }
+#endif
     }
 #endif
 
@@ -371,7 +384,9 @@ void LegacyProtocolPacketBased::on_write_finished(WriteResult result) {
         EndpointOperation op = *pending_operation_;
         pending_operation_ = std::nullopt;
         start_endpoint_operation(op);
-        return;
+        if (transmitting_op_) {
+            return;
+        }
     }
 #endif
 }
@@ -415,11 +430,16 @@ void LegacyProtocolPacketBased::on_read_finished(ReadResult result) {
         } else {
             size_t n_copy = std::min((size_t)(result.end - rx_buf.begin()), it->second.rx_buf.size());
             memcpy(it->second.rx_buf.begin(), rx_buf.begin(), n_copy);
-            const uint8_t* tx_end = it->second.tx_buf.begin();
-            uint8_t* rx_end = it->second.rx_buf.begin() + n_copy;
-            auto callback = it->second.callback;
-            expected_acks_.erase(it);
-            callback.invoke_and_clear({kStreamOk, tx_end, rx_end});
+            it->second.rx_buf = it->second.rx_buf.skip(n_copy);
+            it->second.rx_done = true;
+            FIBRE_LOG(T) << "received ACK: " << (*seq_no & 0x7fff);
+
+            // It's possible that the RX operation completes before the TX operation
+            if (it->second.tx_done) {
+                auto op = it->second;
+                expected_acks_.erase(it);
+                op.callback.invoke_and_clear({kStreamOk, op.tx_buf.begin(), op.rx_buf.begin()});
+            }
         }
 
 #else

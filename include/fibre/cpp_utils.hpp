@@ -528,6 +528,9 @@ optional<T> make_optional(T& val) {
 
 } // namespace std
 
+#else
+#include <variant>
+#include <optional>
 #endif
 
 /* Stuff that should be in the STL but isn't ---------------------------------*/
