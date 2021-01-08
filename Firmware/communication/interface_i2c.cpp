@@ -1,6 +1,5 @@
 
 #include "interface_i2c.h"
-#include "fibre/protocol.hpp"
 
 #include <i2c.h>
 

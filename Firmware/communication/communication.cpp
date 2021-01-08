@@ -60,7 +60,7 @@ void init_communication(void) {
     }
 }
 
-#include <fibre/../../async_stream.hpp>
+#include <fibre/async_stream.hpp>
 
 
 extern "C" {

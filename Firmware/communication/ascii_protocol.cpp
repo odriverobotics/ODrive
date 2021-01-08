@@ -60,7 +60,7 @@ void AsciiProtocol::respond(bool include_checksum, const char * fmt, TArgs&& ...
     len = std::min(len, sizeof(tx_buf_));
 
     tx_end_ = (const uint8_t*)tx_buf_ + len;
-    tx_channel_->start_write({(const uint8_t*)tx_buf_, tx_end_}, &tx_handle_, *static_cast<WriteCompleter*>(this));
+    tx_channel_->start_write({(const uint8_t*)tx_buf_, tx_end_}, &tx_handle_, MEMBER_CB(this, on_write_finished));
 }
 
 
@@ -413,7 +413,7 @@ void AsciiProtocol::on_write_finished(WriteResult result) {
 
     if (result.status == kStreamOk && result.end < tx_end_) {
         // Not everything was written. Try again.
-        tx_channel_->start_write({result.end, tx_end_}, &tx_handle_, *static_cast<WriteCompleter*>(this));
+        tx_channel_->start_write({result.end, tx_end_}, &tx_handle_, MEMBER_CB(this, on_write_finished));
         return;
     }
 
@@ -467,10 +467,10 @@ void AsciiProtocol::on_read_finished(ReadResult result) {
     }
 
     TransferHandle dummy;
-    rx_channel_->start_read({result.end, rx_buf_ + sizeof(rx_buf_)}, &dummy, *static_cast<ReadCompleter*>(this));
+    rx_channel_->start_read({result.end, rx_buf_ + sizeof(rx_buf_)}, &dummy, MEMBER_CB(this, on_read_finished));
 }
 
 void AsciiProtocol::start() {
     TransferHandle dummy;
-    rx_channel_->start_read(rx_buf_, &dummy, *static_cast<ReadCompleter*>(this));
+    rx_channel_->start_read(rx_buf_, &dummy, MEMBER_CB(this, on_read_finished));
 }

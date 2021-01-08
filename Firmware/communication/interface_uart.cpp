@@ -5,8 +5,7 @@
 
 #include <MotorControl/utils.hpp>
 
-#include <fibre/protocol.hpp>
-#include <fibre/../../async_stream.hpp>
+#include <fibre/async_stream.hpp>
 #include <fibre/../../legacy_protocol.hpp>
 #include <usart.h>
 #include <cmsis_os.h>
@@ -31,22 +30,22 @@ class Stm32UartTxStream : public AsyncStreamSink {
 public:
     Stm32UartTxStream(UART_HandleTypeDef* huart) : huart_(huart) {}
 
-    void start_write(cbufptr_t buffer, TransferHandle* handle, Completer<WriteResult>& completer) final;
+    void start_write(cbufptr_t buffer, TransferHandle* handle, Callback<void, WriteResult> completer) final;
     void cancel_write(TransferHandle transfer_handle) final;
     void did_finish();
 
     UART_HandleTypeDef *huart_;
-    Completer<WriteResult>* completer_ = nullptr;
+    Callback<void, WriteResult> completer_;
     const uint8_t* tx_end_ = nullptr;
 };
 
 class Stm32UartRxStream : public AsyncStreamSource {
 public:
-    void start_read(bufptr_t buffer, TransferHandle* handle, Completer<ReadResult>& completer) final;
+    void start_read(bufptr_t buffer, TransferHandle* handle, Callback<void, ReadResult> completer) final;
     void cancel_read(TransferHandle transfer_handle) final;
     void did_receive(uint8_t* buffer, size_t length);
 
-    Completer<ReadResult>* completer_ = nullptr;
+    Callback<void, ReadResult> completer_;
     bufptr_t rx_buf_ = {nullptr, nullptr};
 };
 
@@ -54,10 +53,10 @@ public:
 
 using namespace fibre;
 
-void Stm32UartTxStream::start_write(cbufptr_t buffer, TransferHandle* handle, Completer<WriteResult>& completer) {
+void Stm32UartTxStream::start_write(cbufptr_t buffer, TransferHandle* handle, Callback<void, WriteResult> completer) {
     size_t chunk = std::min(buffer.size(), (size_t)UART_TX_BUFFER_SIZE);
 
-    completer_ = &completer;
+    completer_ = completer;
     tx_end_ = buffer.begin() + chunk;
 
     if (handle) {
@@ -67,7 +66,7 @@ void Stm32UartTxStream::start_write(cbufptr_t buffer, TransferHandle* handle, Co
     if (HAL_UART_Transmit_DMA(huart_, const_cast<uint8_t*>(buffer.begin()), chunk) != HAL_OK) {
         completer_ = nullptr;
         tx_end_ = nullptr;
-        completer.complete({kStreamError, buffer.begin()});
+        completer.invoke({kStreamError, buffer.begin()});
     }
 }
 
@@ -78,11 +77,11 @@ void Stm32UartTxStream::cancel_write(TransferHandle transfer_handle) {
 void Stm32UartTxStream::did_finish() {
     const uint8_t* tx_end = tx_end_;
     tx_end_ = nullptr;
-    safe_complete(completer_, {kStreamOk, tx_end});
+    completer_.invoke_and_clear({kStreamOk, tx_end});
 }
 
-void Stm32UartRxStream::start_read(bufptr_t buffer, TransferHandle* handle, Completer<ReadResult>& completer) {
-    completer_ = &completer;
+void Stm32UartRxStream::start_read(bufptr_t buffer, TransferHandle* handle, Callback<void, ReadResult> completer) {
+    completer_ = completer;
     rx_buf_ = buffer;
     if (handle) {
         *handle = reinterpret_cast<TransferHandle>(this);
@@ -102,7 +101,7 @@ void Stm32UartRxStream::did_receive(uint8_t* buffer, size_t length) {
         rx_buf_ = {nullptr, nullptr};
         size_t chunk = std::min(length, rx_buf.size());
         memcpy(rx_buf.begin(), buffer, chunk);
-        safe_complete(completer_, {kStreamOk, rx_buf.begin() + chunk});
+        completer_.invoke_and_clear({kStreamOk, rx_buf.begin() + chunk});
     }
 }
 
@@ -121,7 +120,7 @@ static void uart_server_thread(void * ctx) {
     (void) ctx;
 
     if (odrv.config_.uart0_protocol == ODrive::STREAM_PROTOCOL_TYPE_FIBRE) {
-        fibre_over_uart.start(Completer<LegacyProtocolPacketBased*, StreamStatus>::get_dummy());
+        fibre_over_uart.start({});
     } else if (odrv.config_.uart0_protocol == ODrive::STREAM_PROTOCOL_TYPE_ASCII
             || odrv.config_.uart0_protocol == ODrive::STREAM_PROTOCOL_TYPE_ASCII_AND_STDOUT) {
         ascii_over_uart.start();

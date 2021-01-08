@@ -51,6 +51,14 @@ end
 
 -- Packages --------------------------------------------------------------------
 
+tup.include('fibre-cpp/package.lua')
+fibre_pkg = get_fibre_package({
+    enable_server=true,
+    enable_client=false,
+    allow_heap=false,
+    max_log_verbosity=0,
+})
+
 odrive_firmware_pkg = {
     root = '.',
     include_dirs = {
@@ -90,7 +98,6 @@ odrive_firmware_pkg = {
         'communication/interface_usb.cpp',
         'communication/interface_can.cpp',
         'communication/interface_i2c.cpp',
-        'fibre-cpp/legacy_protocol.cpp',
         'FreeRTOS-openocd.c',
         'autogen/version.c'
     }
@@ -413,6 +420,7 @@ add_pkg(freertos_pkg)
 add_pkg(cmsis_pkg)
 add_pkg(stm32_usb_device_library_pkg)
 add_pkg(board)
+add_pkg(fibre_pkg)
 add_pkg(odrive_firmware_pkg)
 
 

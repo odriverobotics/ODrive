@@ -1,11 +1,11 @@
 #ifndef __ASCII_PROTOCOL_HPP
 #define __ASCII_PROTOCOL_HPP
 
-#include <fibre/../../async_stream.hpp>
+#include <fibre/async_stream.hpp>
 
 #define MAX_LINE_LENGTH ((size_t)256)
 
-class AsciiProtocol : fibre::ReadCompleter, fibre::WriteCompleter {
+class AsciiProtocol {
 public:
     AsciiProtocol(fibre::AsyncStreamSource* rx_channel, fibre::AsyncStreamSink* tx_channel)
         : rx_channel_(rx_channel), tx_channel_(tx_channel) {}

@@ -4,8 +4,7 @@
 
 #include <MotorControl/utils.hpp>
 
-#include <fibre/protocol.hpp>
-#include <fibre/../../async_stream.hpp>
+#include <fibre/async_stream.hpp>
 #include <fibre/../../legacy_protocol.hpp>
 #include <usbd_cdc.h>
 #include <usbd_cdc_if.h>
@@ -25,13 +24,13 @@ class Stm32UsbTxStream : public AsyncStreamSink {
 public:
     Stm32UsbTxStream(uint8_t endpoint_num) : endpoint_num_(endpoint_num) {}
 
-    void start_write(cbufptr_t buffer, TransferHandle* handle, Completer<WriteResult>& completer) final;
+    void start_write(cbufptr_t buffer, TransferHandle* handle, Callback<void, WriteResult> completer) final;
     void cancel_write(TransferHandle transfer_handle) final;
     void did_finish();
 
     const uint8_t endpoint_num_;
     bool connected_ = false;
-    Completer<WriteResult>* completer_ = nullptr;
+    Callback<void, WriteResult> completer_;
     const uint8_t* tx_end_ = nullptr;
 };
 
@@ -39,13 +38,13 @@ class Stm32UsbRxStream : public AsyncStreamSource {
 public:
     Stm32UsbRxStream(uint8_t endpoint_num) : endpoint_num_(endpoint_num) {}
 
-    void start_read(bufptr_t buffer, TransferHandle* handle, Completer<ReadResult>& completer) final;
+    void start_read(bufptr_t buffer, TransferHandle* handle, Callback<void, ReadResult> completer) final;
     void cancel_read(TransferHandle transfer_handle) final;
     void did_finish();
     
     const uint8_t endpoint_num_;
     bool connected_ = false;
-    Completer<ReadResult>* completer_ = nullptr;
+    Callback<void, ReadResult> completer_;
     uint8_t* rx_end_ = nullptr;
 };
 
@@ -53,13 +52,13 @@ public:
 
 using namespace fibre;
 
-void Stm32UsbTxStream::start_write(cbufptr_t buffer, TransferHandle* handle, Completer<WriteResult>& completer) {
+void Stm32UsbTxStream::start_write(cbufptr_t buffer, TransferHandle* handle, Callback<void, WriteResult> completer) {
     if (handle) {
         *handle = reinterpret_cast<TransferHandle>(this);
     }
 
     if (!connected_) {
-        completer.complete({kStreamClosed, buffer.begin()});
+        completer.invoke({kStreamClosed, buffer.begin()});
         return;
     }
 
@@ -70,16 +69,16 @@ void Stm32UsbTxStream::start_write(cbufptr_t buffer, TransferHandle* handle, Com
     // must ensure that all packets are < 64 bytes, otherwise the host will wait
     // for more.
     if (buffer.size() >= USB_TX_DATA_SIZE) {
-        completer.complete({kStreamError, buffer.begin()});
+        completer.invoke({kStreamError, buffer.begin()});
         return;
     }
 
     if (completer_ || tx_end_) {
-        completer.complete({kStreamError, buffer.begin()});
+        completer.invoke({kStreamError, buffer.begin()});
         return;
     }
 
-    completer_ = &completer;
+    completer_ = completer;
     tx_end_ = buffer.end();
 
     if (
@@ -92,7 +91,7 @@ void Stm32UsbTxStream::start_write(cbufptr_t buffer, TransferHandle* handle, Com
 #endif
         (const_cast<uint8_t*>(buffer.begin()), buffer.size(), endpoint_num_) != USBD_OK) {
         tx_end_ = nullptr;
-        safe_complete(completer_, {kStreamError, buffer.begin()});
+        completer_.invoke_and_clear({kStreamError, buffer.begin()});
     }
 }
 
@@ -103,30 +102,30 @@ void Stm32UsbTxStream::cancel_write(TransferHandle transfer_handle) {
 void Stm32UsbTxStream::did_finish() {
     const uint8_t* tx_end = tx_end_;
     tx_end_ = nullptr;
-    safe_complete(completer_, {connected_ ? kStreamOk : kStreamClosed, tx_end});
+    completer_.invoke_and_clear({connected_ ? kStreamOk : kStreamClosed, tx_end});
 }
 
-void Stm32UsbRxStream::start_read(bufptr_t buffer, TransferHandle* handle, Completer<ReadResult>& completer) {
+void Stm32UsbRxStream::start_read(bufptr_t buffer, TransferHandle* handle, Callback<void, ReadResult> completer) {
     if (handle) {
         *handle = reinterpret_cast<TransferHandle>(this);
     }
 
     if (!connected_) {
-        completer.complete({kStreamClosed, buffer.begin()});
+        completer.invoke({kStreamClosed, buffer.begin()});
         return;
     }
 
     if (completer_ || rx_end_) {
-        completer.complete({kStreamError, buffer.begin()});
+        completer.invoke({kStreamError, buffer.begin()});
         return;
     }
 
-    completer_ = &completer;
+    completer_ = completer;
     rx_end_ = buffer.begin(); // the pointer is updated at the end of the transfer
 
     if (USBD_CDC_ReceivePacket(&usb_dev_handle, buffer.begin(), buffer.size(), endpoint_num_) != USBD_OK) {
         rx_end_ = nullptr;
-        safe_complete(completer_, {kStreamError, buffer.begin()});
+        completer_.invoke_and_clear({kStreamError, buffer.begin()});
         return;
     }
 }
@@ -138,7 +137,7 @@ void Stm32UsbRxStream::cancel_read(TransferHandle transfer_handle) {
 void Stm32UsbRxStream::did_finish() {
     uint8_t* rx_end = rx_end_;
     rx_end_ = nullptr;
-    safe_complete(completer_, {connected_ ? kStreamOk : kStreamClosed, rx_end});
+    completer_.invoke_and_clear({connected_ ? kStreamOk : kStreamClosed, rx_end});
 }
 
 Stm32UsbTxStream usb_cdc_tx_stream(CDC_IN_EP);
@@ -174,10 +173,10 @@ static void usb_server_thread(void * ctx) {
                 usb_cdc_rx_stream.connected_ = true;
                 usb_native_rx_stream.connected_ = true;
 
-                fibre_over_usb.start(Completer<LegacyProtocolPacketBased*, StreamStatus>::get_dummy());
+                fibre_over_usb.start({});
 
                 if (odrv.config_.usb_cdc_protocol == ODrive::STREAM_PROTOCOL_TYPE_FIBRE) {
-                    fibre_over_cdc.start(Completer<LegacyProtocolPacketBased*, StreamStatus>::get_dummy());
+                    fibre_over_cdc.start({});
                 } else if (odrv.config_.usb_cdc_protocol == ODrive::STREAM_PROTOCOL_TYPE_ASCII
                         || odrv.config_.usb_cdc_protocol == ODrive::STREAM_PROTOCOL_TYPE_ASCII_AND_STDOUT) {
                     ascii_over_cdc.start();

@@ -1,6 +1,6 @@
 #include "interface_can.hpp"
 
-#include "fibre/crc.hpp"
+#include <fibre/../../crc.hpp>
 #include "freertos_vars.h"
 #include "utils.hpp"
 
