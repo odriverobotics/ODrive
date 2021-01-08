@@ -4,7 +4,7 @@ import platform
 import threading
 import fibre
 
-async def discovered_device(device,
+async def did_discover_device(device,
                         interactive_variables, discovered_devices,
                         branding_short, branding_long,
                         logger, app_shutdown_token):
@@ -13,7 +13,7 @@ async def discovered_device(device,
     message and making the device available to the interactive
     console
     """
-    serial_number = '{:012X}'.format(await device._serial_number_property.read()) if hasattr(device, '_serial_number_property') else "[unknown serial number]"
+    serial_number = '{:012X}'.format(await device.serial_number) if hasattr(device, 'serial_number') else "[unknown serial number]"
     if serial_number in discovered_devices:
         verb = "Reconnected"
         index = discovered_devices.index(serial_number)
@@ -29,9 +29,9 @@ async def discovered_device(device,
     logger.notify("{} to {} {} as {}".format(verb, branding_long, serial_number, interactive_name))
 
     # Subscribe to disappearance of the device
-    device._on_lost.add_done_callback(lambda x: lost_device(interactive_name, logger, app_shutdown_token))
+    device._on_lost.add_done_callback(lambda x: did_lose_device(interactive_name, logger, app_shutdown_token))
 
-def lost_device(interactive_name, logger, app_shutdown_token):
+def did_lose_device(interactive_name, logger, app_shutdown_token):
     """
     Handles the disappearance of a device by displaying
     a message.
@@ -79,7 +79,7 @@ def launch_shell(args,
     # Connect to device
     logger.debug("Waiting for {}...".format(branding_long))
     fibre.start_discovery(args.path, object_filter,
-                    lambda dev: discovered_device(dev, interactive_variables, discovered_devices, branding_short, branding_long, logger, app_shutdown_token),
+                    lambda dev: did_discover_device(dev, interactive_variables, discovered_devices, branding_short, branding_long, logger, app_shutdown_token),
                     app_shutdown_token,
                     app_shutdown_token,
                     logger=logger)
