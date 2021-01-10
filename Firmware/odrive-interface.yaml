@@ -407,7 +407,6 @@ interfaces:
       last_drv_fault: readonly uint32
       current_state: readonly AxisState
       requested_state: AxisState
-      loop_counter: readonly uint32
       is_homed: {type: bool, c_name: homing_.is_homed}
       config:
         c_is_class: False
@@ -1114,6 +1113,7 @@ interfaces:
         implements: ODrive.Config
         attributes:
           # TODO: add support for arrays
+          gpio0_mode: {type: ODrive.GpioMode, doc: Mode of GPIO0 (changes take effect after reboot), c_name: 'gpio_modes[0]'}
           gpio1_mode: {type: ODrive.GpioMode, doc: Mode of GPIO1 (changes take effect after reboot), c_name: 'gpio_modes[1]'}
           gpio2_mode: {type: ODrive.GpioMode, doc: Mode of GPIO2 (changes take effect after reboot), c_name: 'gpio_modes[2]'}
           gpio3_mode: {type: ODrive.GpioMode, doc: Mode of GPIO3 (changes take effect after reboot), c_name: 'gpio_modes[3]'}

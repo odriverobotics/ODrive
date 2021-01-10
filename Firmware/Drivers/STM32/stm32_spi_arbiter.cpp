@@ -36,6 +36,7 @@ bool Stm32SpiArbiter::start() {
         HAL_SPI_DeInit(hspi_);
         hspi_->Init = task.config;
         HAL_SPI_Init(hspi_);
+        __HAL_SPI_ENABLE(hspi_);
     }
     task.ncs_gpio.write(false);
     

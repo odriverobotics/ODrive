@@ -22,7 +22,7 @@ class CANSimple {
         MSG_SET_INPUT_POS,
         MSG_SET_INPUT_VEL,
         MSG_SET_INPUT_TORQUE,
-        MSG_SET_VEL_LIMIT,
+        MSG_SET_LIMITS,
         MSG_START_ANTICOGGING,
         MSG_SET_TRAJ_VEL_LIMIT,
         MSG_SET_TRAJ_ACCEL_LIMITS,
@@ -68,7 +68,7 @@ class CANSimple {
     static void set_input_vel_callback(Axis& axis, const can_Message_t& msg);
     static void set_input_torque_callback(Axis& axis, const can_Message_t& msg);
     static void set_controller_modes_callback(Axis& axis, const can_Message_t& msg);
-    static void set_vel_limit_callback(Axis& axis, const can_Message_t& msg);
+    static void set_limits_callback(Axis& axis, const can_Message_t& msg);
     static void set_traj_vel_limit_callback(Axis& axis, const can_Message_t& msg);
     static void set_traj_accel_limits_callback(Axis& axis, const can_Message_t& msg);
     static void set_traj_inertia_callback(Axis& axis, const can_Message_t& msg);

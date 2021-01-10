@@ -128,10 +128,12 @@ void Encoder::update_pll_gains() {
 
 void Encoder::check_pre_calibrated() {
     // TODO: restoring config from python backup is fragile here (ACIM motor type must be set first)
-    if (!is_ready_ && axis_->motor_.config_.motor_type != Motor::MOTOR_TYPE_ACIM)
-        config_.pre_calibrated = false;
-    if (mode_ == MODE_INCREMENTAL && !index_found_)
-        config_.pre_calibrated = false;
+    if (axis_->motor_.config_.motor_type != Motor::MOTOR_TYPE_ACIM) {
+        if (!is_ready_)
+            config_.pre_calibrated = false;
+        if (mode_ == MODE_INCREMENTAL && !index_found_)
+            config_.pre_calibrated = false;
+    }
 }
 
 // Function that sets the current encoder count to a desired 32-bit value.

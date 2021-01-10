@@ -3,7 +3,7 @@
     <button class="close-button" @click=deleteAction>X</button>
     <span class="ctrlName">{{shortPath}}:</span>
     <div class="right">
-      <input v-on:change="newVal" :placeholder="initVal" :value="this.value"/>
+      <input v-on:change="newVal" :placeholder="initVal" :value="valueDisplay" spellcheck="false"/>
       <button class="action-button close-button" @click="putVal">Send</button>
     </div>
   </div>
@@ -11,6 +11,7 @@
 
 <script>
 import { putVal, parseMath } from "../../lib/odrive_utils.js";
+import { numberDisplay } from "../../lib/utils.js"
 
 export default {
   name: "Action",
@@ -35,6 +36,9 @@ export default {
       let keys = this.path.split('.');
       keys.shift();
       return keys.join('.');
+    },
+    valueDisplay() {
+      return numberDisplay(this.value);
     }
   },
   methods: {

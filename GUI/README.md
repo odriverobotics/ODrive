@@ -38,5 +38,19 @@ npm run electron:serve
 npm run electron:build
 ```
 
+### Build electron app for all platforms
+```
+npm run electron:build -- -mwl
+```
+
+### Building for rpi and potentially other ARM platform devices
+
+PhantomJS is required as a dependency, so it must be installed first:
+```
+sudo apt install phantomjs
+```
+
+After it is installed, `npm run electron:build` can be used to build the AppImage for ARM
+
 ### Customize configuration
 See [Configuration Reference](https://cli.vuejs.org/config/).

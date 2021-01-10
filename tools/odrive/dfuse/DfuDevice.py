@@ -4,6 +4,7 @@ import fractions
 import array
 import time
 from odrive.dfuse.DfuState import DfuState
+import math
 
 DFU_REQUEST_SEND = 0x21
 DFU_REQUEST_RECEIVE = 0xa1
@@ -189,7 +190,7 @@ class DfuDevice:
         self.set_alternate_safe(sector['alt'])
         self.set_address_safe(sector['addr'])
 
-        transfer_size = fractions.gcd(sector['len'], MAX_TRANSFER_SIZE)
+        transfer_size = math.gcd(sector['len'], MAX_TRANSFER_SIZE)
         
         blocks = [data[i:i + transfer_size] for i in range(0, len(data), transfer_size)]
         for blocknum, block in enumerate(blocks):
@@ -208,7 +209,7 @@ class DfuDevice:
         self.set_alternate_safe(sector['alt'])
         self.set_address_safe(sector['addr'])
 
-        transfer_size = fractions.gcd(sector['len'], MAX_TRANSFER_SIZE)
+        transfer_size = math.gcd(sector['len'], MAX_TRANSFER_SIZE)
         #blocknum_offset = int((sector['addr'] - sector['baseaddr']) / transfer_size)
 
         

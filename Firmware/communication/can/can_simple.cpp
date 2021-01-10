@@ -108,8 +108,8 @@ void CANSimple::do_command(Axis& axis, const can_Message_t& msg) {
         case MSG_SET_CONTROLLER_MODES:
             set_controller_modes_callback(axis, msg);
             break;
-        case MSG_SET_VEL_LIMIT:
-            set_vel_limit_callback(axis, msg);
+        case MSG_SET_LIMITS:
+            set_limits_callback(axis, msg);
             break;
         case MSG_START_ANTICOGGING:
             start_anticogging_callback(axis, msg);
@@ -263,8 +263,9 @@ void CANSimple::set_controller_modes_callback(Axis& axis, const can_Message_t& m
     axis.controller_.config_.input_mode = static_cast<Controller::InputMode>(can_getSignal<int32_t>(msg, 32, 32, true));
 }
 
-void CANSimple::set_vel_limit_callback(Axis& axis, const can_Message_t& msg) {
+void CANSimple::set_limits_callback(Axis& axis, const can_Message_t& msg) {
     axis.controller_.config_.vel_limit = can_getSignal<float>(msg, 0, 32, true);
+    axis.motor_.config_.current_lim = can_getSignal<float>(msg, 32, 32, true);
 }
 
 void CANSimple::start_anticogging_callback(const Axis& axis, const can_Message_t& msg) {
