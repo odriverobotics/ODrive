@@ -17,7 +17,7 @@ void Controller::reset() {
 
 void Controller::set_error(Error error) {
     error_ |= error;
-    last_error_time_ = axis_->loop_counter_ * current_meas_period;
+    last_error_time_ = odrv.n_evt_control_loop_ * current_meas_period;
 }
 
 //--------------------------------
@@ -98,7 +98,6 @@ static float limitVel(const float vel_limit, const float vel_estimate, const flo
 }
 
 bool Controller::update() {
-    axis_->loop_counter_++;
     std::optional<float> pos_estimate_linear = pos_estimate_linear_src_.present();
     std::optional<float> pos_estimate_circular = pos_estimate_circular_src_.present();
     std::optional<float> pos_wrap = pos_wrap_src_.present();
