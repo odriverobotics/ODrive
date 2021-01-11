@@ -17,6 +17,7 @@ void Controller::reset() {
 
 void Controller::set_error(Error error) {
     error_ |= error;
+    last_error_time_ = odrv.n_evt_control_loop_ * current_meas_period;
 }
 
 //--------------------------------
@@ -198,6 +199,12 @@ bool Controller::update() {
                 axis_->trap_traj_.t_ += current_meas_period;
             }
             anticogging_pos_estimate = pos_setpoint_; // FF the position setpoint instead of the pos_estimate
+        } break;
+        case INPUT_MODE_TUNING: {
+            autotuning_phase_ = wrap_pm_pi(autotuning_phase_ + (2.0f * M_PI * autotuning_.frequency * current_meas_period));
+            pos_setpoint_ = autotuning_.pos_amplitude * our_arm_sin_f32(autotuning_phase_ + autotuning_.pos_phase);
+            vel_setpoint_ = autotuning_.vel_amplitude * our_arm_sin_f32(autotuning_phase_ + autotuning_.vel_phase);
+            torque_setpoint_ = autotuning_.torque_amplitude * our_arm_sin_f32(autotuning_phase_ + autotuning_.torque_phase);
         } break;
         default: {
             set_error(ERROR_INVALID_INPUT_MODE);

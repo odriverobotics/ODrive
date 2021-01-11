@@ -562,6 +562,7 @@ interfaces:
   ODrive.Motor:
     c_is_class: True
     attributes:
+      last_error_time: float32
       error:
         nullflag: NONE
         flags:
@@ -815,6 +816,7 @@ interfaces:
           INVALID_MIRROR_AXIS:
           INVALID_LOAD_ENCODER:
           INVALID_ESTIMATE:
+      last_error_time: float32
       input_pos:
         type: float32
         unit: turn
@@ -895,6 +897,16 @@ interfaces:
               calib_vel_threshold: float32
               cogging_ratio: readonly float32
               anticogging_enabled: bool
+      autotuning:
+        c_is_class: False
+        attributes:
+          frequency: float32
+          pos_amplitude: float32
+          pos_phase: float32
+          vel_amplitude: float32
+          vel_phase: float32
+          torque_amplitude: float32
+          torque_phase: float32
     functions:
       move_incremental:
         doc: Moves the axes' goal point by a specified increment.
@@ -1347,6 +1359,12 @@ valuetypes:
 
           ### Valid Control modes
           * `CONTROL_MODE_POSITION_CONTROL`
+      Tuning:
+        brief: Implements a tuning mode
+        doc: |
+          Used for tuning your odrive, this mode allows the user to set different frequencies.
+          Set control_mode for the loop you want to tune, then set the frequency desired.
+          The ODrive will send a 1 turn amplitude sine wave to the controller with the given frequency and phase.
 
   ODrive.Motor.MotorType:
     values:
