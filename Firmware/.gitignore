@@ -1,6 +1,6 @@
 
 #build folder
-build/
+#build/
 deploy/
 .dep/
 tup_build.sh
