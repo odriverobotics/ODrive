@@ -56,6 +56,7 @@ sudo add-apt-repository ppa:team-gcc-arm-embedded/ppa
 sudo apt-get update
 sudo apt-get install gcc-arm-embedded
 sudo apt-get install openocd
+sudo apt-get install git-lfs
 sudo add-apt-repository ppa:jonathonf/tup && sudo apt-get update && sudo apt-get install tup
 sudo apt-get install python3 python3-yaml python3-jinja2 python3-jsonschema
 ```
@@ -64,6 +65,7 @@ sudo apt-get install python3 python3-yaml python3-jinja2 python3-jsonschema
 ```bash
 sudo apt install gcc-arm-embedded
 sudo apt install openocd
+sudo apt install git-lfs
 sudo apt install tup
 sudo apt install python3 python3-yaml python3-jinja2 python3-jsonschema
 ```
@@ -72,6 +74,7 @@ sudo apt install python3 python3-yaml python3-jinja2 python3-jsonschema
 ```bash
 sudo pacman -S arm-none-eabi-gcc arm-none-eabi-binutils
 sudo pacman -S arm-none-eabi-gdb
+sudo pacman -S git-lfs
 sudo pacman -S tup
 sudo pacman -S python python-yaml python-jinja python-jsonschema
 ```
@@ -81,8 +84,9 @@ sudo pacman -S python python-yaml python-jinja python-jsonschema
 First install [Homebrew](https://brew.sh/). Then you can run these commands in Terminal:
 ```bash
 brew install armmbed/formulae/arm-none-eabi-gcc
-brew cask install osxfuse && brew install tup
+brew install --cask osxfuse && brew install tup
 brew install openocd
+brew install git-lfs
 pip3 install PyYAML Jinja2 jsonschema
 ```
 
