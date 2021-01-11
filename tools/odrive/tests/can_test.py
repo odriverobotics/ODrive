@@ -233,9 +233,10 @@ class TestSimpleCAN():
         test_assert_eq([msg['current_state'] for msg in heartbeats], [1] * len(heartbeats))
 
         logger.debug('testing reboot...')
+        test_assert_eq(odrive.handle._on_lost.done(), False)
         my_cmd('reboot')
         time.sleep(0.5)
-        if len(odrive.handle._remote_attributes) != 0:
+        if not odrive.handle._on_lost is None:
             raise TestFailed("device didn't seem to reboot")
         odrive.handle = None
         time.sleep(2.0)

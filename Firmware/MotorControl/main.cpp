@@ -12,9 +12,8 @@
 #include <communication/interface_can.hpp>
 
 osSemaphoreId sem_usb_irq;
-osSemaphoreId sem_uart_dma;
-osSemaphoreId sem_usb_rx;
-osSemaphoreId sem_usb_tx;
+osMessageQId uart_event_queue;
+osMessageQId usb_event_queue;
 osSemaphoreId sem_can;
 
 #if defined(STM32F405xx)
@@ -816,18 +815,13 @@ extern "C" int main(void) {
     sem_usb_irq = osSemaphoreCreate(osSemaphore(sem_usb_irq), 1);
     osSemaphoreWait(sem_usb_irq, 0);
 
-    // Create a semaphore for UART DMA and remove a token
-    osSemaphoreDef(sem_uart_dma);
-    sem_uart_dma = osSemaphoreCreate(osSemaphore(sem_uart_dma), 1);
+    // Create an event queue for UART
+    osMessageQDef(uart_event_queue, 4, uint32_t);
+    uart_event_queue = osMessageCreate(osMessageQ(uart_event_queue), NULL);
 
-    // Create a semaphore for USB RX
-    osSemaphoreDef(sem_usb_rx);
-    sem_usb_rx = osSemaphoreCreate(osSemaphore(sem_usb_rx), 1);
-    osSemaphoreWait(sem_usb_rx, 0);  // Remove a token.
-
-    // Create a semaphore for USB TX
-    osSemaphoreDef(sem_usb_tx);
-    sem_usb_tx = osSemaphoreCreate(osSemaphore(sem_usb_tx), 1);
+    // Create an event queue for USB
+    osMessageQDef(usb_event_queue, 7, uint32_t);
+    usb_event_queue = osMessageCreate(osMessageQ(usb_event_queue), NULL);
 
     osSemaphoreDef(sem_can);
     sem_can = osSemaphoreCreate(osSemaphore(sem_can), 1);

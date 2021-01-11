@@ -404,25 +404,6 @@ static uint8_t USBD_CDC_Init(USBD_HandleTypeDef *pdev, uint8_t cfgidx)
   hcdc->ODRIVE_Tx.State = 0;
   hcdc->ODRIVE_Rx.State = 0;
 
-  if (pdev->dev_speed == USBD_SPEED_HIGH)
-  {
-    /* Prepare Out endpoint to receive next packet */
-    (void)USBD_LL_PrepareReceive(pdev, CDC_OUT_EP, hcdc->CDC_Rx.Buffer,
-                                 CDC_DATA_HS_OUT_PACKET_SIZE);
-  }
-  else
-  {
-    /* Prepare Out endpoint to receive next packet */
-    (void)USBD_LL_PrepareReceive(pdev, CDC_OUT_EP, hcdc->CDC_Rx.Buffer,
-                                 CDC_DATA_FS_OUT_PACKET_SIZE);
-  }
-    
-  /* Prepare ODrive Out endpoint to receive next packet */
-  USBD_LL_PrepareReceive(pdev,
-                         ODRIVE_OUT_EP,
-                         hcdc->ODRIVE_Rx.Buffer,
-                         pdev->dev_speed == USBD_SPEED_HIGH ? CDC_DATA_HS_OUT_PACKET_SIZE : CDC_DATA_FS_OUT_PACKET_SIZE);
-
   return (uint8_t)USBD_OK;
 }
 
@@ -601,13 +582,15 @@ static uint8_t USBD_CDC_DataIn(USBD_HandleTypeDef *pdev, uint8_t epnum)
   else
   {
     // NOTE: We would logically expect xx_IN_EP here, but we actually get the xx_OUT_EP
-    if (epnum == CDC_OUT_EP)
+    if (epnum == CDC_OUT_EP) {
       hcdc->CDC_Tx.State = 0;
-    if (epnum == ODRIVE_OUT_EP)
+      osMessagePut(usb_event_queue, 3, 0);
+    }
+    if (epnum == ODRIVE_OUT_EP) {
       hcdc->ODRIVE_Tx.State = 0;
-    //Note: We could use independent semaphores for simoultainous USB transmission.
-    osSemaphoreRelease(sem_usb_tx);
-    //((USBD_CDC_ItfTypeDef *)pdev->pUserData)->TransmitCplt(hcdc->TxBuffer, &hcdc->TxLength, epnum);
+      osMessagePut(usb_event_queue, 4, 0);
+    }
+    return USBD_OK;
   }
 
   return (uint8_t)USBD_OK;
@@ -640,7 +623,7 @@ static uint8_t USBD_CDC_DataOut(USBD_HandleTypeDef *pdev, uint8_t epnum)
   NAKed till the end of the application Xfer */
   if(pdev->pClassData != NULL)
   {
-    ((USBD_CDC_ItfTypeDef *)pdev->pUserData)->Receive(hEP_Rx->Buffer, &hEP_Rx->Length, epnum);
+    ((USBD_CDC_ItfTypeDef *)pdev->pUserData)->Receive(NULL, &hEP_Rx->Length, epnum);
 
     return USBD_OK;
   }
@@ -746,57 +729,6 @@ uint8_t USBD_CDC_RegisterInterface(USBD_HandleTypeDef *pdev,
   return (uint8_t)USBD_OK;
 }
 
-/**
-  * @brief  USBD_CDC_SetTxBuffer
-  * @param  pdev: device instance
-  * @param  pbuff: Tx Buffer
-  * @retval status
-  */
-uint8_t USBD_CDC_SetTxBuffer(USBD_HandleTypeDef *pdev,
-                             uint8_t *pbuff, uint32_t length,
-                             uint8_t endpoint_pair)
-{
-  USBD_CDC_HandleTypeDef   *hcdc = (USBD_CDC_HandleTypeDef*) pdev->pClassData;
-  
-  USBD_CDC_EP_HandleTypeDef* hEP_Tx;
-  if (endpoint_pair == CDC_OUT_EP) {
-    hEP_Tx = &hcdc->CDC_Tx;
-  } else if (endpoint_pair == ODRIVE_OUT_EP) {
-    hEP_Tx = &hcdc->ODRIVE_Tx;
-  } else {
-    return USBD_FAIL;
-  }
-
-  hEP_Tx->Buffer = pbuff;
-  hEP_Tx->Length = length;
-  
-  return USBD_OK;  
-}
-
-
-/**
-  * @brief  USBD_CDC_SetRxBuffer
-  * @param  pdev: device instance
-  * @param  pbuff: Rx Buffer
-  * @retval status
-  */
-uint8_t USBD_CDC_SetRxBuffer(USBD_HandleTypeDef *pdev, uint8_t *pbuff, uint8_t endpoint_pair)
-{
-  USBD_CDC_HandleTypeDef   *hcdc = (USBD_CDC_HandleTypeDef*) pdev->pClassData;
-
-  USBD_CDC_EP_HandleTypeDef* hEP_Rx;
-  if (endpoint_pair == CDC_OUT_EP) {
-    hEP_Rx = &hcdc->CDC_Rx;
-  } else if (endpoint_pair == ODRIVE_OUT_EP) {
-    hEP_Rx = &hcdc->ODRIVE_Rx;
-  } else {
-    return USBD_FAIL;
-  }
-  
-  hEP_Rx->Buffer = pbuff;
-  
-  return USBD_OK;
-}
 
 /**
   * @brief  USBD_CDC_TransmitPacket
@@ -804,7 +736,7 @@ uint8_t USBD_CDC_SetRxBuffer(USBD_HandleTypeDef *pdev, uint8_t *pbuff, uint8_t e
   * @param  pdev: device instance
   * @retval status
   */
-uint8_t USBD_CDC_TransmitPacket(USBD_HandleTypeDef *pdev, uint8_t endpoint_pair)
+uint8_t USBD_CDC_TransmitPacket(USBD_HandleTypeDef *pdev, uint8_t* buf, size_t len, uint8_t endpoint_num)
 {
   USBD_CDC_HandleTypeDef   *hcdc = (USBD_CDC_HandleTypeDef*) pdev->pClassData;
   
@@ -812,13 +744,10 @@ uint8_t USBD_CDC_TransmitPacket(USBD_HandleTypeDef *pdev, uint8_t endpoint_pair)
   {
     // Select Endpoint
     USBD_CDC_EP_HandleTypeDef* hEP_Tx;
-    uint8_t in_ep;
-    if (endpoint_pair == CDC_OUT_EP) {
+    if (endpoint_num == CDC_IN_EP) {
       hEP_Tx = &hcdc->CDC_Tx;
-      in_ep = CDC_IN_EP;
-    } else if (endpoint_pair == ODRIVE_OUT_EP) {
+    } else if (endpoint_num == ODRIVE_IN_EP) {
       hEP_Tx = &hcdc->ODRIVE_Tx;
-      in_ep = ODRIVE_IN_EP;
     } else {
       return USBD_FAIL;
     }
@@ -830,9 +759,9 @@ uint8_t USBD_CDC_TransmitPacket(USBD_HandleTypeDef *pdev, uint8_t endpoint_pair)
       
       /* Transmit next packet */
       USBD_LL_Transmit(pdev,
-                      in_ep,
-                      hEP_Tx->Buffer,
-                      hEP_Tx->Length);
+                      endpoint_num,
+                      buf,
+                      len);
 
       return USBD_OK;
     }
@@ -854,31 +783,16 @@ uint8_t USBD_CDC_TransmitPacket(USBD_HandleTypeDef *pdev, uint8_t endpoint_pair)
   * @param  pdev: device instance
   * @retval status
   */
-uint8_t USBD_CDC_ReceivePacket(USBD_HandleTypeDef *pdev, uint8_t endpoint_pair)
+uint8_t USBD_CDC_ReceivePacket(USBD_HandleTypeDef *pdev, uint8_t* buf, uint16_t len, uint8_t endpoint_num)
 {
-  USBD_CDC_HandleTypeDef   *hcdc = (USBD_CDC_HandleTypeDef*) pdev->pClassData;
-  
   /* Suspend or Resume USB Out process */
   if(pdev->pClassData != NULL)
   {
-    // Select Endpoint
-    USBD_CDC_EP_HandleTypeDef* hEP_Rx;
-    uint8_t out_ep;
-    if (endpoint_pair == CDC_OUT_EP) {
-      hEP_Rx = &hcdc->CDC_Rx;
-      out_ep = CDC_OUT_EP;
-    } else if (endpoint_pair == ODRIVE_OUT_EP) {
-      hEP_Rx = &hcdc->ODRIVE_Rx;
-      out_ep = ODRIVE_OUT_EP;
-    } else {
-      return USBD_FAIL;
-    }
-
     /* Prepare Out endpoint to receive next packet */
     USBD_LL_PrepareReceive(pdev,
-                            out_ep,
-                            hEP_Rx->Buffer,
-                            pdev->dev_speed == USBD_SPEED_HIGH ? CDC_DATA_HS_OUT_PACKET_SIZE : CDC_DATA_FS_OUT_PACKET_SIZE);
+                            endpoint_num,
+                            buf,
+                            len);
     
     return USBD_OK;
   }

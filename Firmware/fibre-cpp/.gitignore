@@ -1,0 +1,4 @@
+/third_party
+build/
+build-*/
+/.tup

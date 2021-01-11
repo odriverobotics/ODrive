@@ -3,7 +3,6 @@
 #include <can.h>
 #include <cmsis_os.h>
 
-#include "fibre/crc.hpp"
 #include "freertos_vars.h"
 #include "utils.hpp"
 

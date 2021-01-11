@@ -14,6 +14,8 @@
                 "HW_VERSION_MAJOR=4",
                 "HW_VERSION_MINOR=1",
                 "HW_VERSION_VOLTAGE=58",
+                "FIBRE_ENABLE_SERVER",
+                "FIBRE_ENABLE_CLIENT",
                 "__weak=\"__attribute__((weak))\"",
                 "__packed=\"__attribute__((__packed__))\"",
                 "__GNUC__"
@@ -46,6 +48,8 @@
                 "HW_VERSION_MAJOR=4",
                 "HW_VERSION_MINOR=1",
                 "HW_VERSION_VOLTAGE=58",
+                "FIBRE_ENABLE_SERVER",
+                "FIBRE_ENABLE_CLIENT",
                 "__weak=\"__attribute__((weak))\"",
                 "__packed=\"__attribute__((__packed__))\"",
                 "__GNUC__"
@@ -68,6 +72,8 @@
                 "HW_VERSION_MAJOR=4",
                 "HW_VERSION_MINOR=1",
                 "HW_VERSION_VOLTAGE=58",
+                "FIBRE_ENABLE_SERVER",
+                "FIBRE_ENABLE_CLIENT",
                 "__weak=\"__attribute__((weak))\"",
                 "__packed=\"__attribute__((__packed__))\"",
                 "__GNUC__"

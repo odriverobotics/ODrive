@@ -19,7 +19,6 @@ permalink: /
 - [Other control modes](#other-control-modes)
 - [Watchdog Timer](#watchdog-timer)
 - [What's next?](#whats-next)
-- [Upgrading from 0.4.12](#upgrading-from-0412)
 
 <!-- /TOC -->
 
@@ -83,9 +82,6 @@ Most instructions in this guide refer to a utility called `odrivetool`, so you s
   * __Anaconda__: In the start menu, type `Anaconda Prompt` <kbd>Enter</kbd>
   * __Standalone Python__: In the start menu, type `cmd` <kbd>Enter</kbd>
 3. Install the ODrive tools by typing `pip install --upgrade odrive` <kbd>Enter</kbd>
-4. Plug in a USB cable into the microUSB connector on ODrive, and connect it to your PC.
-5. Use the [Zadig](http://zadig.akeo.ie/) utility to set ODrive driver to libusb-win32.
-  * Check 'List All Devices' from the options menu, and select 'ODrive 3.x Native Interface (Interface 2)'. With that selected in the device list choose 'libusb-win32' from the target driver list and then press the large 'install driver' button.
 
 
 ### OSX
@@ -113,16 +109,22 @@ pip3 install --upgrade odrive
 
 __Troubleshooting__
 1. Permission Errors: Just run the previous command in sudo
-```bash
-sudo pip3 install --upgrade odrive
-```
+   ```bash
+   sudo pip3 install --upgrade odrive
+   ```
 
 2. Dependency Errors: If the installer doesn't complete and you get a dependency
 error (Ex. "No module..." or "module_name not found")
-```bash
-sudo pip3 install module_name
-```
-Try step 5 again
+   ```bash
+   sudo pip3 install module_name
+   ```
+   Try step 5 again
+
+3. Other Install Errors: If the installer fails at installing dependencies, try
+   ```bash
+   sudo pip3 install odrive --no-deps
+   ```
+   If you do this, brace yourself for runtime errors when you run `odrivetool` (the basic functionality should work though).
 
 
 ### Linux
@@ -144,7 +146,7 @@ Your board should come preflashed with firmware. If you run into problems, follo
 Your board does **not** come preflashed with any firmware. Follow the instructions [here](odrivetool.md#device-firmware-update) on the ST Link procedure before you continue.
 
 ## Start `odrivetool`
-To launch the main interactive ODrive tool, type `odrivetool` <kbd>Enter</kbd>. Connect your ODrive and wait for the tool to find it. Now you can, for instance type `odrv0.vbus_voltage` <kbd>Enter</kbd> to inpect the boards main supply voltage.
+To launch the main interactive ODrive tool, type `odrivetool` <kbd>Enter</kbd>. Connect your ODrive and wait for the tool to find it. If it doesn't connect after a few seconds refer to the [troubleshooting page](troubleshooting.md#usb-connectivity-issues). Now you can, for instance type `odrv0.vbus_voltage` <kbd>Enter</kbd> to inpect the boards main supply voltage.
 It should look something like this:
 
 ```text

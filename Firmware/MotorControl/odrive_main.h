@@ -5,7 +5,6 @@
 #include <board.h>
 
 #ifdef __cplusplus
-#include <fibre/protocol.hpp>
 #include <communication/interface_usb.h>
 #include <communication/interface_i2c.h>
 #include <communication/interface_uart.h>
@@ -52,7 +51,7 @@ typedef struct {
 } SystemStats_t;
 
 struct PWMMapping_t {
-    endpoint_ref_t endpoint;
+    endpoint_ref_t endpoint = {0, 0};
     float min = 0;
     float max = 0;
 };
@@ -71,7 +70,10 @@ struct BoardConfig_t {
     uint32_t uart_c_baudrate = 115200;
     bool enable_can_a = true;
     bool enable_i2c_a = false;
-    bool enable_ascii_protocol_on_usb = true;
+    ODriveIntf::StreamProtocolType uart0_protocol = ODriveIntf::STREAM_PROTOCOL_TYPE_ASCII_AND_STDOUT;
+    ODriveIntf::StreamProtocolType uart1_protocol = ODriveIntf::STREAM_PROTOCOL_TYPE_ASCII_AND_STDOUT;
+    ODriveIntf::StreamProtocolType uart2_protocol = ODriveIntf::STREAM_PROTOCOL_TYPE_ASCII_AND_STDOUT;
+    ODriveIntf::StreamProtocolType usb_cdc_protocol = ODriveIntf::STREAM_PROTOCOL_TYPE_ASCII_AND_STDOUT;
     float max_regen_current = 0.0f;
     float brake_resistance = DEFAULT_BRAKE_RESISTANCE;
     bool enable_brake_resistor = false;

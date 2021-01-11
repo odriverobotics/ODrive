@@ -1,0 +1,28 @@
+<!doctype html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <title>fibre-js Test</title>
+    </head>
+    <body>
+        <h1 id="statusText">not connected</h1>
+        <button id="connectBtn" disabled>Connect...</button>
+        <script type="module">
+            import { fibreOpen } from './fibre.js';
+            fibreOpen().then((libfibre) => {
+               const filter = 'usb:idVendor=0x1209,idProduct=0x0D32,bInterfaceClass=0,bInterfaceSubClass=1,bInterfaceProtocol=0';
+               const onFoundObject = async (obj) => {
+                  console.log("found an object!", obj);
+                  while (true) {
+                     document.getElementById("statusText").innerHTML = "vbus_voltage: " + (await obj.vbus_voltage.read());
+                     await new Promise((resolve) => setTimeout(resolve, 100));
+                  }
+               }
+               libfibre.startDiscovery(filter, onFoundObject);
+
+               document.getElementById("connectBtn").onclick = libfibre.usbDiscoverer.showDialog;
+               document.getElementById("connectBtn").removeAttribute('disabled');
+            });
+        </script>
+    </body>
+</html>

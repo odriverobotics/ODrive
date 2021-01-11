@@ -4,7 +4,6 @@
 #include <cmsis_os.h>
 
 #include "canbus.hpp"
-#include "fibre/protocol.hpp"
 #include "can_simple.hpp"
 #include <autogen/interfaces.hpp>
 

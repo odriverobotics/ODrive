@@ -92,7 +92,7 @@ class TestAnalogInput():
 
         odrive.disable_mappings()
         setattr(odrive.handle.config, 'gpio' + str(analog_in_num+1) + '_mode', GPIO_MODE_ANALOG_IN)
-        analog_mapping.endpoint = odrive.handle.axis0.controller._remote_attributes['input_pos']
+        analog_mapping.endpoint = odrive.handle.axis0.controller._input_pos_property
         analog_mapping.min = min_val
         analog_mapping.max = max_val
         odrive.save_config_and_reboot()

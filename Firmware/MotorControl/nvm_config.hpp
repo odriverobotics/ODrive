@@ -11,7 +11,7 @@
 #include <stdlib.h>
 
 #include <Drivers/STM32/stm32_nvm.h>
-#include <fibre/crc.hpp>
+#include <fibre/../../crc.hpp>
 
 
 /* Private defines -----------------------------------------------------------*/

@@ -31,6 +31,25 @@ all:
 	@tup --quiet --no-environ-check
 	@$(PY_CMD) interface_generator_stub.py --definitions odrive-interface.yaml --template ../tools/enums_template.j2 --output ../tools/odrive/enums.py
 
+# Copy libfibre files to odrivetool if they were built
+	@ ! compgen -G "fibre-cpp/build/libfibre-*.so" > /dev/null || cp fibre-cpp/build/libfibre-*.so ../tools/odrive/pyfibre/fibre/
+	@ ! compgen -G "fibre-cpp/build/libfibre-*.dylib" > /dev/null || cp fibre-cpp/build/libfibre-*.dylib ../tools/odrive/pyfibre/fibre/
+	@ ! compgen -G "fibre-cpp/build/libfibre-*.dll" > /dev/null || cp fibre-cpp/build/libfibre-*.dll ../tools/odrive/pyfibre/fibre/
+
+libfibre-linux-armhf:
+	docker run -it -v "`pwd`/fibre-cpp":/build -v /tmp/fibre-linux-armhf-build:/build/build -w /build fibre-compiler configs/linux-armhf.config
+	cp /tmp/fibre-linux-armhf-build/libfibre-*.so ../tools/odrive/pyfibre/fibre/
+
+libfibre-all:
+	docker run -it -v "`pwd`/fibre-cpp":/build -v /tmp/libfibre-build:/build/build -w /build fibre-compiler configs/linux-amd64.config
+	cp /tmp/libfibre-build/libfibre-linux-amd64.so ../tools/odrive/pyfibre/fibre/
+	docker run -it -v "`pwd`/fibre-cpp":/build -v /tmp/libfibre-build:/build/build -w /build fibre-compiler configs/linux-armhf.config
+	cp /tmp/libfibre-build/libfibre-linux-armhf.so ../tools/odrive/pyfibre/fibre/
+	docker run -it -v "`pwd`/fibre-cpp":/build -v /tmp/libfibre-build:/build/build -w /build fibre-compiler configs/macos-x86.config
+	cp /tmp/libfibre-build/libfibre-macos-x86.dylib ../tools/odrive/pyfibre/fibre/
+	docker run -it -v "`pwd`/fibre-cpp":/build -v /tmp/libfibre-build:/build/build -w /build fibre-compiler configs/windows-amd64.config
+	cp /tmp/libfibre-build/libfibre-windows-amd64.dll ../tools/odrive/pyfibre/fibre/
+
 clean:
 	-rm -fR .dep $(BUILD_DIR)
 
@@ -77,4 +96,4 @@ unlock: unlock-stlink2
 
 .PHONY: stlink2-config flash-stlink2 gdb-stlink2 erase-stlink2 unlock-stlink2
 .PHONY: flash-bmp gdb-bmp
-.PHONY: all clean flash gdb erase unlock dfu
+.PHONY: all clean flash gdb erase unlock dfu fibre

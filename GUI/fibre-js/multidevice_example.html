@@ -1,0 +1,47 @@
+<!doctype html>
+<html>
+   <head>
+      <meta charset="utf-8">
+      <title>WebAssembly Test</title>
+      <style>
+         div {
+            font-size : 30px; text-align : left; color:darkblue;
+         }
+      </style>
+   </head>
+   <body>
+      <div id="textcontent">loading...</div>
+      <script src="fibre.js"></script>
+      <script async>
+         const filter = 'usb:idVendor=0x1209,idProduct=0x0D32,bInterfaceClass=0,bInterfaceSubClass=1,bInterfaceProtocol=0';
+         let showStatus = (status) => document.getElementById("textcontent").innerHTML = status;
+         var connectedObjects = [];
+
+         displayLoop = async () => {
+            while (connectedObjects.length) {
+               console.log(connectedObjects.length);
+               let results = await Promise.all(connectedObjects.map(async (dev) => await dev.vbus_voltage.read()));
+               showStatus('connected to ' + results.length + ' devices' + results.map((x) => "<br>vbus_voltage: " + x + "V").join());
+               await new Promise((resolve) => setTimeout(resolve, 100));
+            }
+            showStatus("no devices connected");
+         }
+
+         let onFoundObject = async (obj) => {
+            connectedObjects.push(obj);
+            obj._onLost.then(() => connectedObjects.splice(connectedObjects.indexOf(obj), 1));
+            if (connectedObjects.length == 1) {
+               displayLoop();
+            }
+         }
+
+         fibreOpen().then((libfibre) => {
+            libfibre.startDiscovery(filter, onFoundObject);
+            document.getElementById("connectBtn").onclick = libfibre.usbDiscoverer.showDialog;
+            document.getElementById("connectBtn").removeAttribute('disabled');
+            showStatus("loaded WASM libfibre version " + libfibre.version.major + "." + libfibre.version.minor + "." + libfibre.version.patch);
+         });
+      </script>
+      <button id="connectBtn" disabled>Connect</button>
+   </body>
+</html>
