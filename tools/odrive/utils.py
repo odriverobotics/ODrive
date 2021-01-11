@@ -38,6 +38,12 @@ async def get_serial_number_str(device):
     else:
         return "[unknown serial number]"
 
+def get_serial_number_str_sync(device):
+    if hasattr(device, '_serial_number_property'):
+        return format(device._serial_number_property.read(), 'x').upper()
+    else:
+        return "[unknown serial number]"
+
 def calculate_thermistor_coeffs(degree, Rload, R_25, Beta, Tmin, Tmax, thermistor_bottom = False, plot = False):
     import numpy as np
     T_25 = 25 + 273.15 #Kelvin

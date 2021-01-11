@@ -3,6 +3,7 @@ import json
 import os
 import tempfile
 import fibre.libfibre
+import odrive
 from odrive.utils import OperationAbortedException, yes_no_prompt
 
 def obj_to_path(root, obj):
@@ -52,7 +53,7 @@ def set_dict(obj, path, config_dict):
     return errors
 
 def get_temp_config_filename(device):
-    serial_number = odrive.get_serial_number_str(device)
+    serial_number = odrive.get_serial_number_str_sync(device)
     safe_serial_number = ''.join(filter(str.isalnum, serial_number))
     return os.path.join(tempfile.gettempdir(), 'odrive-config-{}.json'.format(safe_serial_number))
 
