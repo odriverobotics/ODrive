@@ -46,14 +46,19 @@ class Event():
         Sets the event and invokes all subscribers if the event was
         not already set
         """
+        subscribers = []
         self._mutex.acquire()
         try:
             if not self._evt.is_set():
                 self._evt.set()
                 for s in self._subscribers:
-                    s()
+                    subscribers.append(s)
         finally:
             self._mutex.release()
+
+        # Invoke subscribes with the mutex released to prevent deadlocks
+        for s in subscribers:
+            s()
 
     def subscribe(self, handler):
         """

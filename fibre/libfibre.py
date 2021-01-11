@@ -591,27 +591,39 @@ class RemoteAttribute(object):
         self._magic_setter = magic_setter
 
     def _get_obj(self, instance):
-        py_intf = self._libfibre._load_py_intf(self._intf_name, self._intf_handle)
-
         obj_handle = c_void_p(0)
         status = libfibre_get_attribute(instance._obj_handle, self._attr_handle, byref(obj_handle))
         if status != kFibreOk:
             raise _get_exception(status)
         
-        return self._libfibre._objects[obj_handle.value]
+        obj = self._libfibre._load_py_obj(obj_handle.value, self._intf_handle)
+        if obj in instance._children:
+            self._libfibre._release_py_obj(obj_handle.value)
+        else:
+            # the object will be released when the parent is released
+            instance._children.add(obj)
+
+        return obj
 
     def __get__(self, instance, owner):
         if not instance:
             return self
 
         if self._magic_getter:
+            if threading.current_thread() == libfibre_thread:
+                # read() behaves asynchronously when run on the fibre thread
+                # which means it returns an awaitable which _must_ be awaited
+                # (otherwise it's a bug). However hasattr(...) internally calls
+                # __get__ and does not await the result. Thus the safest thing
+                # is to just disallow __get__ from run as an async method.
+                raise Exception("Cannot use magic getter on Fibre thread. Use _[prop_name]_propery.read() instead.")
             return self._get_obj(instance).read()
         else:
             return self._get_obj(instance)
 
     def __set__(self, instance, val):
         if self._magic_setter:
-            self._get_obj(instance).exchange(val)
+            return self._get_obj(instance).exchange(val)
         else:
             raise Exception("this attribute cannot be written to")
 
@@ -624,6 +636,8 @@ class RemoteObject(object):
 
     def __init__(self, libfibre, obj_handle):
         self.__class__._refcount += 1
+        self._refcount = 0
+        self._children = set()
 
         self._libfibre = libfibre
         self._obj_handle = obj_handle
@@ -682,10 +696,15 @@ class RemoteObject(object):
     def _destroy(self):
         libfibre = self._libfibre
         on_lost = self._on_lost
+        children = self._children
 
         self._libfibre = None
         self._obj_handle = None
         self._on_lost = None
+        self._children = set()
+
+        for child in children:
+            libfibre._release_py_obj(child._obj_handle)
 
         self.__class__._refcount -= 1
         if self.__class__._refcount == 0:
@@ -729,6 +748,7 @@ class LibFibre():
         event_loop.cancel_timer = self.c_cancel_timer
 
         self.ctx = c_void_p(libfibre_open(event_loop))
+        assert(self.ctx)
 
     def _post(self, callback, ctx):
         self.loop.call_soon_threadsafe(callback, ctx)
@@ -786,26 +806,19 @@ class LibFibre():
             self._objects[obj_handle] = py_obj
         else:
             py_obj = self._objects[obj_handle]
+
+        # Note: this refcount does not count the python references to the object
+        # but rather mirrors the libfibre-internal refcount of the object. This
+        # is so that we can destroy the Python object when libfibre releases it.
         py_obj._refcount += 1
         return py_obj
 
     def _release_py_obj(self, obj_handle):
         py_obj = self._objects[obj_handle]
         py_obj._refcount -= 1
-        if py_obj.refcount <= 0:
+        if py_obj._refcount <= 0:
             self._objects.pop(obj_handle)
-
-    #def _construct_object(self, ctx, obj, intf, name, name_length):
-    #    #increment_lib_refcount()
-    #    name = None if name is None else string_at(name, name_length).decode('utf-8')
-    #    py_intf = self._load_py_intf(name, intf)
-    #    assert(not obj in self._objects)
-    #    self._objects[obj] = py_intf(self, obj)
-
-    def _free_py_obj(self, ctx, obj):
-        py_obj = self._objects.pop(obj)
-        py_obj._destroy()
-        #decrement_lib_refcount()
+            py_obj._destroy()
 
     def _on_found_object(self, ctx, obj, intf):
         py_obj = self._load_py_obj(obj, intf)
@@ -816,7 +829,7 @@ class LibFibre():
         old_future.set_result(None)
     
     def _on_lost_object(self, ctx, obj):
-        self._free_py_obj(obj)
+        self._release_py_obj(obj)
     
     def _on_discovery_stopped(self, ctx, result):
         print("discovery stopped")
@@ -853,31 +866,11 @@ class LibFibre():
 
         return kFibreBusy
 
-#    def start_discovery(self, path, on_obj_discovered, cancellation_token):
-#        buf = path.encode('ascii')
-#
-#        discovery = {
-#            'domain_handle': c_void_p(0),
-#            'handle': c_void_p(0),
-#            'callback': on_obj_discovered
-#        }
-#        discovery_id = insert_with_new_id(self.discovery_processes, discovery)
-#
-#        def stop_discovery():
-#            libfibre_stop_discovery(discovery['handle'])
-#            print("closing domain")
-#            
-#
-#            print("ok   ")
-#        cancellation_token.subscribe(lambda: stop_discovery)
-#
-#        discovery['domain_handle'] = libfibre_open_domain(self.ctx, buf, len(buf))
-#        assert(discovery['domain_handle'])
-#        libfibre_start_discovery(discovery['domain_handle'], byref(discovery['handle']), self.c_on_found_object, self.c_on_lost_object, self.c_on_discovery_stopped, discovery_id)
-#        print("disc handle ", hex(discovery['handle'].value))
-#
-
 class Discovery():
+    """
+    All public members of this class are thread-safe.
+    """
+
     def __init__(self, domain):
         self._domain = domain
         self._id = 0
@@ -893,8 +886,19 @@ class Discovery():
     def _stop(self):
         self._domain._libfibre.discovery_processes.pop(self._id)
         libfibre_stop_discovery(self._discovery_handle)
+        self._future.set_exception(asyncio.CancelledError())
+
+    def stop(self):
+        if threading.current_thread() == libfibre_thread:
+            self._stop()
+        else:
+            run_coroutine_threadsafe(self._domain._libfibre.loop, self._stop)
 
 class _Domain():
+    """
+    All public members of this class are thread-safe.
+    """
+
     def __init__(self, libfibre, handle):
         self._libfibre = libfibre
         self._domain_handle = handle
@@ -917,8 +921,25 @@ class _Domain():
         return obj
 
     def discover_one(self):
+        """
+        Blocks until exactly one object is discovered.
+        """
         return run_coroutine_threadsafe(self._libfibre.loop, self._discover_one)
 
+    def run_discovery(self, callback):
+        """
+        Invokes `callback` for every object that is discovered. The callback is
+        invoked on the libfibre thread and can be an asynchronous function.
+        Returns a `Discovery` object on which `stop()` can be called to
+        terminate the discovery.
+        """
+        discovery = run_coroutine_threadsafe(self._libfibre.loop, self._start_discovery)
+        async def loop():
+            while True:
+                obj = await discovery._next()
+                await callback(obj)
+        self._libfibre.loop.call_soon_threadsafe(lambda: asyncio.ensure_future(loop()))
+        return discovery
 
 
 class Domain():
@@ -1005,38 +1026,6 @@ def decrement_lib_refcount():
 
             libfibre_thread.join()
             libfibre_thread = None
-
-
-#def start_discovery(path, obj_filter,
-#         on_object_discovered,
-#         search_cancellation_token,
-#         channel_termination_token):
-#    """
-#    Starts scanning for Fibre objects that match the specified path spec and calls
-#    the callback for each Fibre object that is found.
-#
-#    This function is non-blocking and thread-safe.
-#    """
-#
-#    async def on_object_discovered_filter(obj):
-#        increment_lib_refcount()
-#        if not channel_termination_token is None:
-#            channel_termination_token.subscribe(lambda: decrement_lib_refcount())
-#        if await obj_filter(obj):
-#            result = on_object_discovered(obj)
-#            if not result is None:
-#                await result
-#        elif not channel_termination_token is None:
-#            channel_termination_token.set()
-#    
-#    increment_lib_refcount()
-#    search_cancellation_token.subscribe(lambda: decrement_lib_refcount())
-#
-#    libfibre.loop.call_soon_threadsafe(lambda: libfibre.start_discovery(
-#        path,
-#        on_object_discovered_filter,
-#        search_cancellation_token))
-
 
 def get_user_name(obj):
     """
