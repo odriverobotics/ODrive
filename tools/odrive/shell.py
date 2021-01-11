@@ -53,7 +53,7 @@ def benchmark(odrv):
 
     fibre.libfibre.libfibre.loop.call_soon_threadsafe(lambda: asyncio.ensure_future(measure_async()))
 
-def launch_shell(args, logger, app_shutdown_token):
+def launch_shell(args, logger):
     """
     Launches an interactive python or IPython command line
     interface.
@@ -79,12 +79,13 @@ def launch_shell(args, logger, app_shutdown_token):
     # Expose all enums from odrive.enums
     interactive_variables.update({k: v for (k, v) in odrive.enums.__dict__.items() if not k.startswith("_")})
 
-    async def obj_filter(obj):
-        return (args.serial_number is None or
-                (await odrive.utils.get_serial_number_str(obj)) == args.serial_number)
+    async def mount(obj):
+        serial_number_str = await odrive.utils.get_serial_number_str(obj)
+        if ((not args.serial_number is None) and (serial_number_str != args.serial_number)):
+            return None # reject this object
+        return ("ODrive " + serial_number_str, "odrv")
 
-    fibre.launch_shell(args, obj_filter,
+    fibre.launch_shell(args, mount,
                        interactive_variables,
                        print_banner, print_help,
-                       logger, app_shutdown_token,
-                       branding_short="odrv", branding_long="ODrive")
+                       logger)

@@ -14,41 +14,42 @@ __version__ = get_version_str()
 del get_version_str
 
 from .utils import get_serial_number_str
+import threading
 
 default_search_path = 'usb:idVendor=0x1209,idProduct=0x0D32,bInterfaceClass=0,bInterfaceSubClass=1,bInterfaceProtocol=0'
 
 def find_any(path=default_search_path, serial_number=None,
         search_cancellation_token=None, channel_termination_token=None,
-        timeout=None, logger=fibre.Logger(verbose=False), find_multiple=False):
+        timeout=None, logger=fibre.Logger(verbose=False)):
     """
     Blocks until the first matching ODrive object is connected and then returns that object
     """
+
     result = []
+
     done_signal = fibre.Event(search_cancellation_token)
-    def did_discover_object(obj):
+    channel_termination_token = fibre.Event(channel_termination_token)
+
+    async def discovered_object(obj):
+        if not (serial_number is None) and ((await get_serial_number_str(obj)) != serial_number):
+            return # ignore this device
+
+        obj._on_lost.add_done_callback(lambda x: channel_termination_token.set())
         result.append(obj)
-        if find_multiple:
-            if len(result) >= int(find_multiple):
-               done_signal.set()
-        else:
-            done_signal.set()
+        done_signal.set()
 
-    async def obj_filter(obj):
-        return (serial_number is None or
-                (await get_serial_number_str(obj)) == serial_number)
-
-    fibre.start_discovery(path, obj_filter, did_discover_object,
-            done_signal, channel_termination_token, logger)
+    def domain_thread():
+        with fibre.Domain(path) as domain:
+            discovery = domain.run_discovery(discovered_object)
+            channel_termination_token.wait()
+            discovery.stop()
+    
+    threading.Thread(target=domain_thread).start()
 
     try:
         done_signal.wait(timeout=timeout)
-    except TimeoutError:
-        if not find_multiple:
-            return None
-    finally:
-        done_signal.set() # terminate find_all
+    except:
+        channel_termination_token.set()
+        raise
 
-    if find_multiple:
-        return result
-    else:
-        return result[0] if len(result) > 0 else None
+    return result[0]

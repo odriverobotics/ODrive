@@ -45,7 +45,6 @@ parser.set_defaults(path="usb,tcp:localhost:9910")
 args = parser.parse_args()
 
 logger = Logger(verbose=args.verbose)
-app_shutdown_token = Event()
 
 def print_banner():
     pass
@@ -54,4 +53,4 @@ def print_help(args, have_devices):
     pass
 
 import fibre
-fibre.launch_shell(args, {}, print_banner, print_help, logger, app_shutdown_token)
+fibre.launch_shell(args, {}, print_banner, print_help, logger)

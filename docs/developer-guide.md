@@ -284,11 +284,14 @@ On Ubuntu 18.04, prerequisites are: `ruby ruby-dev zlib1g-dev`.
 
 ## Modifying libfibre
 
-If you need to modify libfibre run `make fibre` in the `Firmware` directory. If
-you now run odrivetool from the repository it should use the new libfibre binary.
+If you need to modify libfibre add `CONFIG_BUILD_LIBFIBRE=true` to your tup.config and rerun `make`. After this you can start `odrivetool` (on your local PC) and it will use the updated libfibre.
+
+To cross-compile libfibre for the Raspberry Pi, run `make libfibre-linux-armhf` or `make libfibre-all`. This will require a docker container. See [fibre-cpp readme](../Firmware/fibre-cpp/README.md) for details.
+
+docker run -it -v "$(pwd)":/build -v /tmp/build:/build/build -w /build fibre-compiler configs/linux-armhf.config
 
 If you're satisfied with the changes don't forget to generate binaries for all
-supported systems. See [Releases](#releases) for more info.
+supported systems using `make libfibre-all`.
 
 ## Releases
 
@@ -297,7 +300,7 @@ We use GitHub Releases to provide firmware releases.
 1. Cut off the changelog to reflect the new release
 2. Merge the release candidate into master.
 3. Push a (lightweight) tag to the master branch. Follow the existing naming convention.
-4. If you changed something in libfibre, regenerate the binaries using `Firmware/fibre-cpp/compile_for_all_platforms.sh` and then copy all resulting `*.so`, `*.dll` and `*.dylib` files to `tools/odrive/pyfibre/fibre/`.
+4. If you changed something in libfibre, regenerate the binaries using `make libfibre-all`. See [Modifying libfibre](#modifying-libfibre) for details.
 5. Push the python tools to PyPI (see setup.py for details).
 6. Edit the release on GitHub to add a title and description (copy&paste from changelog).
 

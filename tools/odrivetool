@@ -140,7 +140,7 @@ try:
             print("  or better yet, submit a pull request to fix it.")
             print("")
         import odrive.shell
-        odrive.shell.launch_shell(args, logger, app_shutdown_token)
+        odrive.shell.launch_shell(args, logger)
 
     elif args.command == 'dfu':
         print_version()
