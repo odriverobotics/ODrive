@@ -125,9 +125,9 @@ Context* fibre::open(EventLoop* event_loop) {
     auto static_backends_good = for_each_in_tuple(BackendInitializer{ctx},
             ctx->static_backends);
 
-    // TODO: check static_backends_good
-
-    if (all(static_backends_good)) {
+    if (!all(static_backends_good)) {
+        // TODO: shutdown backends
+        FIBRE_LOG(E) << "some backends failed to initialize";
         return nullptr;
     }
 
@@ -216,8 +216,12 @@ void Domain::start_discovery(Callback<void, Object*, Interface*> on_found_object
 }
 
 void Domain::stop_discovery() {
+    auto on_lost_object = on_lost_object_;
     on_found_object_ = nullptr;
     on_lost_object_ = nullptr;
+    if (root_object_) {
+        on_lost_object.invoke(root_object_);
+    }
 }
 #endif
 
@@ -249,14 +253,14 @@ void Domain::on_found_channels(ChannelDiscoveryResult result) {
 void Domain::on_found_root_object(LegacyObjectClient* obj_client, std::shared_ptr<LegacyObject> obj) {
     root_object_ = reinterpret_cast<Object*>(obj.get());
     root_intf_ = reinterpret_cast<Interface*>(obj->intf.get());
-    on_found_object_.invoke(reinterpret_cast<Object*>(obj.get()),
-                            reinterpret_cast<Interface*>(obj->intf.get()));
+    on_found_object_.invoke(root_object_, root_intf_);
 }
 
 void Domain::on_lost_root_object(LegacyObjectClient* obj_client) {
+    auto root_object = root_object_;
     root_object_ = nullptr;
     root_intf_ = nullptr;
-    on_lost_object_.invoke(reinterpret_cast<Object*>(obj_client->root_obj_.get()));
+    on_lost_object_.invoke(reinterpret_cast<Object*>(root_object));
 }
 #endif
 

@@ -423,11 +423,8 @@ FIBRE_PUBLIC void libfibre_subscribe_to_interface(LibFibreInterface* interface,
  *        callback of libfibre_subscribe_to_interface().
  * @param child_obj_ptr: If and only if the function succeeds, the variable that
  *        this argument points to is set to the requested subobject. The returned
- *        object handle is only guaranteed to remain valid until the next
- *        iteration of the libfibre event loop or until any other libfibre
- *        function (other than libfibre_ref_obj()) is invoked. If the
- *        application intends to keep the object handle around it must call
- *        libfibre_ref_obj() immediately.
+ *        object handle is only guaranteed to remain valid for as long as the
+ *        parent object handle is valid.
  * @returns: kFibreOk or kFibreInvalidArgument
  */
 FIBRE_PUBLIC LibFibreStatus libfibre_get_attribute(LibFibreObject* parent_obj, LibFibreAttribute* attr, LibFibreObject** child_obj_ptr);

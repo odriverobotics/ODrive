@@ -55,6 +55,7 @@ ENV THIRD_PARTY=/
 # Set up entrypoint
 RUN echo "#!/bin/bash" > /entrypoint.sh && \
     echo "set -euo pipefail" >> /entrypoint.sh && \
+    echo "rm -rdf build/*" >> /entrypoint.sh && \
     echo "echo building \$@" >> /entrypoint.sh && \
     echo "tup generate --config \$@ /tmp/build.sh" >> /entrypoint.sh && \
     echo "exec /usr/bin/bash -x -e /tmp/build.sh" >> /entrypoint.sh && \
