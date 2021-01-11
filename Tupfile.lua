@@ -135,3 +135,10 @@ if STRIP then
         outputs={outname}
     }
 end
+
+if string.find(machine, "x86_64.*-apple-.*") then
+    tup.frule{
+        inputs=outname,
+        command='^c^ chmod 644 %f',
+    }
+end

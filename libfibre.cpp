@@ -265,6 +265,7 @@ LibFibreCtx* libfibre_open(LibFibreEventLoop event_loop) {
     ctx->fibre_ctx = fibre::open(ctx->event_loop);
 
     if (!ctx->fibre_ctx) {
+        FIBRE_LOG(E) << "fibre::open failed";
         delete ctx->event_loop;
         delete ctx;
         return nullptr;
