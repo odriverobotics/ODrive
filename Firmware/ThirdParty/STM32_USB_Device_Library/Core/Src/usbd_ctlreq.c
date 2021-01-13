@@ -416,106 +416,21 @@ static void USBD_GetDescriptor(USBD_HandleTypeDef *pdev, USBD_SetupReqTypedef *r
     break;
 
   case USB_DESC_TYPE_STRING:
-    switch ((uint8_t)(req->wValue))
+    if (pdev->pDesc->GetStringDescriptor != NULL)
     {
-    case USBD_IDX_LANGID_STR:
-      if (pdev->pDesc->GetLangIDStrDescriptor != NULL)
-      {
-        pbuf = pdev->pDesc->GetLangIDStrDescriptor(pdev->dev_speed, &len);
-      }
-      else
-      {
+      len = sizeof(pdev->StrDesc);
+      int status = pdev->pDesc->GetStringDescriptor(req->wValue, pdev->StrDesc, &len);
+      if (status == 0) {
+        pbuf = pdev->StrDesc;
+      } else {
         USBD_CtlError(pdev, req);
         err++;
       }
-      break;
-
-    case USBD_IDX_MFC_STR:
-      if (pdev->pDesc->GetManufacturerStrDescriptor != NULL)
-      {
-        pbuf = pdev->pDesc->GetManufacturerStrDescriptor(pdev->dev_speed, &len);
-      }
-      else
-      {
-        USBD_CtlError(pdev, req);
-        err++;
-      }
-      break;
-
-    case USBD_IDX_PRODUCT_STR:
-      if (pdev->pDesc->GetProductStrDescriptor != NULL)
-      {
-        pbuf = pdev->pDesc->GetProductStrDescriptor(pdev->dev_speed, &len);
-      }
-      else
-      {
-        USBD_CtlError(pdev, req);
-        err++;
-      }
-      break;
-
-    case USBD_IDX_SERIAL_STR:
-      if (pdev->pDesc->GetSerialStrDescriptor != NULL)
-      {
-        pbuf = pdev->pDesc->GetSerialStrDescriptor(pdev->dev_speed, &len);
-      }
-      else
-      {
-        USBD_CtlError(pdev, req);
-        err++;
-      }
-      break;
-
-    case USBD_IDX_CONFIG_STR:
-      if (pdev->pDesc->GetConfigurationStrDescriptor != NULL)
-      {
-        pbuf = pdev->pDesc->GetConfigurationStrDescriptor(pdev->dev_speed, &len);
-      }
-      else
-      {
-        USBD_CtlError(pdev, req);
-        err++;
-      }
-      break;
-
-    case USBD_IDX_INTERFACE_STR:
-      if (pdev->pDesc->GetInterfaceStrDescriptor != NULL)
-      {
-        pbuf = pdev->pDesc->GetInterfaceStrDescriptor(pdev->dev_speed, &len);
-      }
-      else
-      {
-        USBD_CtlError(pdev, req);
-        err++;
-      }
-      break;
-
-    default:
-#if (USBD_SUPPORT_USER_STRING_DESC == 1U)
-      if (pdev->pClass->GetUsrStrDescriptor != NULL)
-      {
-        pbuf = pdev->pClass->GetUsrStrDescriptor(pdev, (req->wValue), &len);
-      }
-      else
-      {
-        USBD_CtlError(pdev, req);
-        err++;
-      }
-#elif (USBD_CLASS_USER_STRING_DESC == 1U)
-      if (pdev->pDesc->GetUserStrDescriptor != NULL)
-      {
-        pbuf = pdev->pDesc->GetUserStrDescriptor(pdev->dev_speed, (req->wValue), &len);
-      }
-      else
-      {
-        USBD_CtlError(pdev, req);
-        err++;
-      }
-#else
+    }
+    else
+    {
       USBD_CtlError(pdev, req);
       err++;
-#endif
-      break;
     }
     break;
 

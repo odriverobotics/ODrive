@@ -14,7 +14,7 @@
 #include <tim.h>
 #include <can.h>
 #include <i2c.h>
-#include <usb_device.h>
+#include <usbd_def.h>
 #include <main.h>
 #include "cmsis_os.h"
 
@@ -98,7 +98,7 @@ extern Stm32Gpio gpios[GPIO_COUNT];
 struct GpioFunction { int mode = 0; uint8_t alternate_function = 0xff; };
 extern std::array<GpioFunction, 3> alternate_functions[GPIO_COUNT];
 
-extern USBD_HandleTypeDef& usb_dev_handle;
+extern USBD_HandleTypeDef usb_dev_handle;
 
 extern Stm32SpiArbiter& ext_spi_arbiter;
 

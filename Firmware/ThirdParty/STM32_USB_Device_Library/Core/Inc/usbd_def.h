@@ -153,6 +153,8 @@ extern "C" {
 #define USBD_EP_TYPE_INTR                               0x03U
 
 
+#define MS_VendorCode 'P'
+
 /**
   * @}
   */
@@ -214,9 +216,6 @@ typedef struct _Device_cb
   uint8_t  *(*GetFSConfigDescriptor)(uint16_t *length);
   uint8_t  *(*GetOtherSpeedConfigDescriptor)(uint16_t *length);
   uint8_t  *(*GetDeviceQualifierDescriptor)(uint16_t *length);
-#if (USBD_SUPPORT_USER_STRING_DESC == 1U)
-  uint8_t  *(*GetUsrStrDescriptor)(struct _USBD_HandleTypeDef *pdev, uint8_t index,  uint16_t *length);
-#endif
 
 } USBD_ClassTypeDef;
 
@@ -241,15 +240,7 @@ typedef enum
 typedef struct
 {
   uint8_t *(*GetDeviceDescriptor)(USBD_SpeedTypeDef speed, uint16_t *length);
-  uint8_t *(*GetLangIDStrDescriptor)(USBD_SpeedTypeDef speed, uint16_t *length);
-  uint8_t *(*GetManufacturerStrDescriptor)(USBD_SpeedTypeDef speed, uint16_t *length);
-  uint8_t *(*GetProductStrDescriptor)(USBD_SpeedTypeDef speed, uint16_t *length);
-  uint8_t *(*GetSerialStrDescriptor)(USBD_SpeedTypeDef speed, uint16_t *length);
-  uint8_t *(*GetConfigurationStrDescriptor)(USBD_SpeedTypeDef speed, uint16_t *length);
-  uint8_t *(*GetInterfaceStrDescriptor)(USBD_SpeedTypeDef speed, uint16_t *length);
-#if (USBD_CLASS_USER_STRING_DESC == 1)
-  uint8_t *(*GetUserStrDescriptor)(USBD_SpeedTypeDef speed, uint8_t idx, uint16_t *length);
-#endif
+  int (*GetStringDescriptor)(uint8_t str_id, uint8_t* buf, uint16_t *length);
 #if ((USBD_LPM_ENABLED == 1U) || (USBD_CLASS_BOS_ENABLED == 1))
   uint8_t *(*GetBOSDescriptor)(USBD_SpeedTypeDef speed, uint16_t *length);
 #endif
@@ -294,6 +285,7 @@ typedef struct _USBD_HandleTypeDef
   void                    *pData;
   void                    *pBosDesc;
   void                    *pConfDesc;
+  __ALIGN_BEGIN uint8_t StrDesc[USBD_MAX_STR_DESC_SIZ] __ALIGN_END;
 } USBD_HandleTypeDef;
 
 /**

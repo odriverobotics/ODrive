@@ -5,7 +5,6 @@
 
 #include "usart.h"
 #include "freertos_vars.h"
-#include "usb_device.h"
 #include <communication/interface_usb.h>
 #include <communication/interface_uart.h>
 #include <communication/interface_i2c.h>
@@ -509,10 +508,6 @@ uint32_t ODrive::get_gpio_states() {
  * @brief Main thread started from main().
  */
 static void rtos_main(void*) {
-    // Init USB device
-    MX_USB_DEVICE_Init();
-
-
     // Start ADC for temperature measurements and user measurements
     start_general_purpose_adc();
 
