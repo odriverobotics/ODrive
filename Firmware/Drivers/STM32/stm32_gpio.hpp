@@ -1,7 +1,7 @@
 #ifndef __STM32_GPIO_HPP
 #define __STM32_GPIO_HPP
 
-#include <gpio.h>
+#include "stm32_system.h"
 
 class Stm32Gpio {
 public:

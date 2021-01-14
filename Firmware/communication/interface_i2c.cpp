@@ -1,5 +1,8 @@
 
+// I2C support is currently not maintained
 #include "interface_i2c.h"
+I2CStats_t i2c_stats_;
+#if 0
 
 #include <i2c.h>
 
@@ -86,3 +89,5 @@ void HAL_I2C_ErrorCallback(I2C_HandleTypeDef *hi2c) {
     HAL_I2C_EnableListen_IT(hi2c);
 }
 */
+
+#endif

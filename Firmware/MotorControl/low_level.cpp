@@ -8,7 +8,6 @@
 #include <stdlib.h>
 
 #include <adc.h>
-#include <gpio.h>
 #include <main.h>
 #include <spi.h>
 #include <tim.h>

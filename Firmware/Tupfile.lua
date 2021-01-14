@@ -282,7 +282,6 @@ board_v4 = {
         'startup_stm32f722xx.s',
         'board.cpp',
         'Src/main.c',
-        'Src/gpio.c',
         'Src/adc.c',
         'Src/can.c',
         'Src/dma.c',

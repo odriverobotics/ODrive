@@ -1,7 +1,6 @@
 
 #include <stdlib.h>
 #include <functional>
-#include "gpio.h"
 
 #include "odrive_main.h"
 #include "utils.hpp"

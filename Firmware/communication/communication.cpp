@@ -14,10 +14,6 @@
 
 #include <cmsis_os.h>
 #include <memory>
-//#include <usbd_cdc_if.h>
-//#include <usb_device.h>
-//#include <usart.h>
-#include <gpio.h>
 
 #include <type_traits>
 
@@ -52,7 +48,9 @@ void init_communication(void) {
     start_usb_server();
 
     if (odrv.config_.enable_i2c_a) {
-        start_i2c_server();
+        // I2C support currently not maintained
+        //start_i2c_server();
+        odrv.misconfigured_ = true;
     }
 
     if (odrv.config_.enable_can_a) {

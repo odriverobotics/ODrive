@@ -3,8 +3,10 @@
 
 #if defined(STM32F405xx)
 #include <stm32f405xx.h>
+#include <stm32f4xx_hal.h>
 #elif defined(STM32F722xx)
 #include <stm32f722xx.h>
+#include <stm32f7xx_hal.h>
 #else
 #error "unknown STM32 microcontroller"
 #endif
