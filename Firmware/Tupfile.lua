@@ -436,6 +436,10 @@ tup.frule{inputs={'build/ODriveFirmware.elf'}, command='arm-none-eabi-size %f'}
 -- create *.hex and *.bin output formats
 tup.frule{inputs={'build/ODriveFirmware.elf'}, command='arm-none-eabi-objcopy -O ihex %f %o', outputs={'build/ODriveFirmware.hex'}}
 tup.frule{inputs={'build/ODriveFirmware.elf'}, command='arm-none-eabi-objcopy -O binary -S %f %o', outputs={'build/ODriveFirmware.bin'}}
+-- create disassembly
+if tup.getconfig('ENABLE_DISASM') == 'true' then
+    tup.frule{inputs={'build/ODriveFirmware.elf'}, command='arm-none-eabi-objdump %f -dSC > %o', outputs={'build/ODriveFirmware.asm'}}
+end
 
 if tup.getconfig('DOCTEST') == 'true' then
     TEST_INCLUDES = '-I. -I./MotorControl -I./fibre-cpp/include -I./Drivers/DRV8301 -I./doctest'

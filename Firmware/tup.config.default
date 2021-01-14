@@ -1,9 +1,22 @@
 # Copy this file to tup.config and adapt it to your needs
-# make sure this fits your board
-#CONFIG_BOARD_VERSION=v3.5-24V
-CONFIG_DEBUG=false
-CONFIG_DOCTEST=false
-CONFIG_USE_LTO=false
 
-# Uncomment this to error on compilation warnings
-#CONFIG_STRICT=true
+# Make sure this fits your board
+#CONFIG_BOARD_VERSION=v3.5-24V
+
+# Set to true to make the optimizer lazier
+#CONFIG_DEBUG=false
+
+# Set to true to locally run certain algorithm tests
+#CONFIG_DOCTEST=false
+
+# Set to true to enable link time optimization
+#CONFIG_USE_LTO=false
+
+# Set to true to error on compilation warnings
+#CONFIG_STRICT=false
+
+# Set to true to generate a disassembly of the final .elf file
+#CONFIG_ENABLE_DISASM=false
+
+# Set to true to compile libfibre (used by odrivetool) for the local platform
+#CONFIG_BUILD_LIBFIBRE=false
