@@ -57,6 +57,7 @@ fibre_pkg = get_fibre_package({
     enable_client=false,
     allow_heap=false,
     max_log_verbosity=0,
+    pkgconf=false,
 })
 
 odrive_firmware_pkg = {
