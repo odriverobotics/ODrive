@@ -27,7 +27,6 @@ export default {
       let keys = this.path.split('.');
       keys.shift();
       let val = getVal(keys.join('.'));
-      console.log(val + ' ' + typeof val);
       return numberDisplay(val);
     },
     name: function () {

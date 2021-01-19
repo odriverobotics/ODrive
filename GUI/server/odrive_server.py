@@ -194,8 +194,9 @@ def dictFromRO(RO):
             returnDict[key[1:-9]] = {"val": val,
                                "readonly": not hasattr(v, 'exchange'),
                                "type": _type}
-        elif not key.startswith('_') and isinstance(v, fibre.libfibre.RemoteFunction):
+        elif not key.startswith('_') and hasattr(v, '__call__'):
             # this is a function - do nothing for now.
+            print('found a function!',key)
             returnDict[key] = "function"
 
     return returnDict
@@ -205,7 +206,6 @@ def postVal(odrives, keyList, value, argType):
     # "key1" will be "odriveN"
     # like this: postVal(odrives, ["odrive0","axis0","config","calibration_lockin","accel"], 17.0)
     try:
-        #index = int(''.join([char for char in keyList.pop(0) if char.isnumeric()]))
         odrv = keyList.pop(0)
         RO = odrives[odrv]
         keyList[-1] = '_' + keyList[-1] + '_property'
@@ -229,21 +229,17 @@ def postVal(odrives, keyList, value, argType):
 
 def getVal(odrives, keyList):
     try:
-        #index = int(''.join([char for char in keyList.pop(0) if char.isnumeric()]))
         odrv = keyList.pop(0)
         RO = odrives[odrv]
         keyList[-1] = '_' + keyList[-1] + '_property'
         for key in keyList:
             RO = getattr(RO, key)
-        if isinstance(RO, fibre.libfibre.RemoteObject):
-            return dictFromRO(RO)
-        else:
-            retVal = RO.read()
-            if retVal == math.inf:
-                retVal = "Infinity"
-            elif retVal == -math.inf:
-                retVal = "-Infinity"
-            return retVal
+        retVal = RO.read()
+        if retVal == math.inf:
+            retVal = "Infinity"
+        elif retVal == -math.inf:
+            retVal = "-Infinity"
+        return retVal
     except fibre.ObjectLostError:
         handle_disconnect(odrv)
     except Exception as ex:
@@ -266,10 +262,10 @@ def callFunc(odrives, keyList):
         odrv = keyList.pop(0)
         RO = odrives[odrv]
         for key in keyList:
-            RO = RO._remote_attributes[key]
-        if isinstance(RO, fibre.remote_object.RemoteFunction):
+            RO = getattr(RO, key)
+        if hasattr(RO, '__call__'):
             RO.__call__()
-    except fibre.protocol.ChannelBrokenException:
+    except fibre.ObjectLostError:
         handle_disconnect(odrv)
     except:
         print("fcn call failed")
