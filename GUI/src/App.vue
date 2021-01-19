@@ -222,8 +222,8 @@ export default {
       };
       reader.addEventListener("load", function (e) {
         let importString = e.target.result;
-        importString = importString.replaceAll(" Infinity", '" Infinity"');
-        importString = importString.replaceAll(" -Infinity", '" -Infinity"');
+        importString = importString.replace(/ Infinity/g, '" Infinity"');
+        importString = importString.replace(/ -Infinity/g, '" -Infinity"');
         importConfig(JSON.parse(importString));
       });
       reader.readAsText(file);
@@ -268,8 +268,9 @@ export default {
       if (exportString.includes('"Infinity"')) {
         console.log("found infinity!");
       }
-      exportString = exportString.replaceAll('"Infinity"', 'Infinity');
-      exportString = exportString.replaceAll('"-Infinity"', '-Infinity');
+      console.log(typeof exportString);
+      exportString = exportString.replace(/"Infinity"/g, 'Infinity');
+      exportString = exportString.replace(/"-Infinity"/g, '-Infinity');
       const blob = new Blob([exportString], {
         type: "application/json",
       });

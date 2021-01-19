@@ -143,6 +143,14 @@ let odriveEnums = {
     {
       text: "Homing",
       value: 11,
+    },
+    {
+      text: "Encoder Hall Polarity Calibration",
+      value: 12,
+    },
+    {
+      text: "Encoder Hall Phase Calibration",
+      value: 13,
     }
   ],
   current_state: [
@@ -193,6 +201,14 @@ let odriveEnums = {
     {
       text: "Homing",
       value: 11,
+    },
+    {
+      text: "Encoder Hall Polarity Calibration",
+      value: 12,
+    },
+    {
+      text: "Encoder Hall Phase Calibration",
+      value: 13,
     }
   ],
   // encoder mode

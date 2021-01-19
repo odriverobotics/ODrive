@@ -267,7 +267,14 @@ export default new Vuex.Store({
                                 case "float":
                                     retObj[key] = parseFloat(parseFloat(odriveObj[key]["val"]).toFixed(3));
                                     break;
-                                case "int":
+                                case "int8":
+                                case "int16":
+                                case "int32":
+                                case "int64":
+                                case "uint8":
+                                case "uint16":
+                                case "uint32":
+                                case "uint64":
                                     retObj[key] = parseInt(odriveObj[key]["val"]);
                                     break;
                                 case "bool":
