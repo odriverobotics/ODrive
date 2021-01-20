@@ -90,7 +90,7 @@ After testing, don't forget to save and reboot:
 ---
 
 ## Homing Configuration
-There is one additional configuration parameter specifically for the homing process:
+There is one additional configuration parameter in `controller.config` specifically for the homing process:
 
 Name |  Type | Default
 --- | -- | -- 
@@ -98,6 +98,10 @@ homing_speed | float | 0.25f
 
 `homing_speed` is the axis travel speed during homing, in [turns/second].  If you are using SPI based encoders and the axis is homing in the wrong direction, you can enter a negative value for the homing speed and a negative value for the minimum endstop offset. 
 
+```
+# Set the homing speed to 0.25 turns / sec
+odrv0.axis0.controller.config.homing_speed = 0.25
+```
 
 ### Performing the Homing Sequence
 Homing is possible once the ODrive has closed-loop control over the axis.  To trigger homing, we must enter `AXIS_STATE_HOMING`. This starts the homing sequence, which works as follows:
