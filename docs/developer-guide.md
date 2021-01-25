@@ -292,8 +292,6 @@ If you need to modify libfibre add `CONFIG_BUILD_LIBFIBRE=true` to your tup.conf
 
 To cross-compile libfibre for the Raspberry Pi, run `make libfibre-linux-armhf` or `make libfibre-all`. This will require a docker container. See [fibre-cpp readme](../Firmware/fibre-cpp/README.md) for details.
 
-docker run -it -v "$(pwd)":/build -v /tmp/build:/build/build -w /build fibre-compiler configs/linux-armhf.config
-
 If you're satisfied with the changes don't forget to generate binaries for all
 supported systems using `make libfibre-all`.
 
