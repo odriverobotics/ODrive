@@ -151,6 +151,7 @@ inline ENUMTYPE operator ~ (ENUMTYPE a) { return static_cast<ENUMTYPE>(~static_c
 #include <oscilloscope.hpp>
 #include <communication/communication.h>
 #include <communication/can/odrive_can.hpp>
+#include <brake_resistor.hpp>
 
 // Defined in autogen/version.c based on git-derived version numbers
 extern "C" {
@@ -197,7 +198,7 @@ public:
 
     Error error_ = ERROR_NONE;
     float& vbus_voltage_ = ::vbus_voltage; // TODO: make this the actual variable
-    float& ibus_ = ::ibus_; // TODO: make this the actual variable
+    float ibus_ = 0.0f; // TODO: make this the actual variable
     float ibus_report_filter_k_ = 1.0f;
 
     const uint64_t& serial_number_ = ::serial_number;
@@ -214,8 +215,8 @@ public:
     const uint8_t fw_version_revision_ = ::fw_version_revision_;
     const uint8_t fw_version_unreleased_ = ::fw_version_unreleased_; // 0 for official releases, 1 otherwise
 
-    bool& brake_resistor_armed_ = ::brake_resistor_armed; // TODO: make this the actual variable
-    bool& brake_resistor_saturated_ = ::brake_resistor_saturated; // TODO: make this the actual variable
+    bool& brake_resistor_armed_ = brake_resistor_.is_armed_; // TODO: make this the actual variable
+    bool& brake_resistor_saturated_ = brake_resistor_.is_saturated_; // TODO: make this the actual variable
 
     SystemStats_t system_stats_;
 
@@ -226,7 +227,9 @@ public:
         nullptr // data_src TODO: change data type
     };
 
-    ODriveCAN can_;
+    ODriveCAN can_{*can_busses[0]};
+
+    BrakeResistor brake_resistor_{brake_resistor_output};
 
     BoardConfig_t config_;
     uint32_t user_config_loaded_ = 0;

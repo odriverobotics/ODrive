@@ -54,7 +54,7 @@ void init_communication(void) {
     }
 
     if (odrv.config_.enable_can_a) {
-        odrv.can_.start_server(&hcan1);
+        odrv.can_.start_server();
     }
 }
 

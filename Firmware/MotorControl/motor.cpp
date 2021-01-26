@@ -205,7 +205,7 @@ bool Motor::arm(PhaseControlLaw<3>* control_law) {
             control_law_->reset();
         }
 
-        if (!odrv.config_.enable_brake_resistor || brake_resistor_armed) {
+        if (!odrv.config_.enable_brake_resistor || odrv.brake_resistor_.is_armed_) {
             armed_state_ = 1;
             is_armed_ = true;
         } else {
@@ -227,7 +227,7 @@ bool Motor::arm(PhaseControlLaw<3>* control_law) {
  */
 void Motor::apply_pwm_timings(uint16_t timings[3], bool tentative) {
     CRITICAL_SECTION() {
-        if (odrv.config_.enable_brake_resistor && !brake_resistor_armed) {
+        if (odrv.config_.enable_brake_resistor && !odrv.brake_resistor_.is_armed_) {
             disarm_with_error(ERROR_BRAKE_RESISTOR_DISARMED);
         }
 
@@ -277,11 +277,6 @@ bool Motor::disarm(bool* p_was_armed) {
         timer->Instance->BDTR &= ~TIM_BDTR_AOE; // prevent the PWMs from automatically enabling at the next update
         __HAL_TIM_MOE_DISABLE_UNCONDITIONALLY(timer);
         control_law_ = nullptr;
-    }
-
-    // Check necessary to prevent infinite recursion
-    if (was_armed) {
-        update_brake_current();
     }
 
     if (p_was_armed) {
@@ -722,6 +717,4 @@ void Motor::pwm_update_cb(uint32_t output_timestamp) {
     if (*i_bus < config_.I_bus_hard_min || *i_bus > config_.I_bus_hard_max) {
         disarm_with_error(ERROR_I_BUS_OUT_OF_RANGE);
     }
-
-    update_brake_current();
 }

@@ -4,18 +4,10 @@
 #include "cmsis_os.h"
 #include "board.h"
 
-const SPI_InitTypeDef Drv8301::spi_config_ = {
-    .Mode = SPI_MODE_MASTER,
-    .Direction = SPI_DIRECTION_2LINES,
-    .DataSize = SPI_DATASIZE_16BIT,
-    .CLKPolarity = SPI_POLARITY_LOW,
-    .CLKPhase = SPI_PHASE_2EDGE,
-    .NSS = SPI_NSS_SOFT,
-    .BaudRatePrescaler = SPI_BAUDRATEPRESCALER_16,
-    .FirstBit = SPI_FIRSTBIT_MSB,
-    .TIMode = SPI_TIMODE_DISABLE,
-    .CRCCalculation = SPI_CRCCALCULATION_DISABLE,
-    .CRCPolynomial = 10,
+const Stm32Spi::Config Drv8301::spi_config_ = {
+    .max_baud_rate = 2625000, // TODO: look up actual max
+    .clk_polarity = SPI_POLARITY_LOW,
+    .clk_phase = SPI_PHASE_2EDGE,
 };
 
 bool Drv8301::config(float requested_gain, float* actual_gain) {

@@ -9,10 +9,7 @@
 
 // STM specific includes
 #include <stm32f4xx_hal.h>
-#include <gpio.h>
-#include <spi.h>
 #include <tim.h>
-#include <can.h>
 #include <i2c.h>
 #include <usbd_def.h>
 #include <main.h>
@@ -34,8 +31,6 @@
 // ODrive v3.4 and earlier don't have GPIOs 6, 7 and 8 but to keep the numbering
 // consistent we just leave a gap in the counting scheme.
 #define GPIO_COUNT  (17)
-
-#define CAN_FREQ (2000000UL)
 
 #if HW_VERSION_MINOR >= 5 && HW_VERSION_VOLTAGE >= 48
 #define DEFAULT_BRAKE_RESISTANCE (2.0f) // [ohm]
@@ -80,6 +75,9 @@
 #include <Drivers/DRV8301/drv8301.hpp>
 #include <Drivers/STM32/stm32_gpio.hpp>
 #include <Drivers/STM32/stm32_spi_arbiter.hpp>
+#include <Drivers/STM32/stm32_usart.hpp>
+#include <interfaces/canbus.hpp>
+#include <interfaces/pwm_output_group.hpp>
 #include <MotorControl/pwm_input.hpp>
 #include <MotorControl/thermistor.hpp>
 
@@ -102,11 +100,21 @@ extern USBD_HandleTypeDef usb_dev_handle;
 
 extern Stm32SpiArbiter& ext_spi_arbiter;
 
-extern UART_HandleTypeDef* uart_a;
-extern UART_HandleTypeDef* uart_b;
-extern UART_HandleTypeDef* uart_c;
+extern Stm32Usart uart_a;
+extern Stm32Usart uart_b;
+extern Stm32Usart uart_c;
+
+extern std::array<CanBusBase*, 1> can_busses;
 
 extern PwmInput pwm0_input;
+
+extern PwmOutputGroup<1>& brake_resistor_output;
+
+// Points to a counter that resets at the main control loop frequency. The unit
+// of this counter is an implementation detail. The period is indicated by
+// `board_control_loop_counter_period`.
+extern volatile uint32_t& board_control_loop_counter;
+extern uint32_t board_control_loop_counter_period;
 #endif
 
 // Period in [s]

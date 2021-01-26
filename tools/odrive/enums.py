@@ -20,6 +20,7 @@ GPIO_MODE_ENC1                           = 12
 GPIO_MODE_ENC2                           = 13
 GPIO_MODE_MECH_BRAKE                     = 14
 GPIO_MODE_STATUS                         = 15
+GPIO_MODE_BRAKE_RES                      = 16
 
 # ODrive.StreamProtocolType
 STREAM_PROTOCOL_TYPE_FIBRE               = 0

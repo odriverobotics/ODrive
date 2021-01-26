@@ -7,7 +7,6 @@
 
 #include <fibre/async_stream.hpp>
 #include <fibre/../../legacy_protocol.hpp>
-#include <usart.h>
 #include <cmsis_os.h>
 #include <freertos_vars.h>
 #include <odrive_main.h>
@@ -75,8 +74,11 @@ void Stm32UartTxStream::cancel_write(TransferHandle transfer_handle) {
 }
 
 void Stm32UartTxStream::did_finish() {
+    // This can be called even if there was no TX operation in progress (in
+    // case of an error)
     const uint8_t* tx_end = tx_end_;
     tx_end_ = nullptr;
+    // TODO: pass error code
     completer_.invoke_and_clear({kStreamOk, tx_end});
 }
 
@@ -173,14 +175,18 @@ static void uart_server_thread(void * ctx) {
                 uart0_stdout_pending = false;
                 uart0_stdout_sink.maybe_start_async_write();
             } break;
+
+            case 4: { // UART error
+                uart_tx_stream.did_finish();
+            } break;
         }
     }
 }
 
 // TODO: allow multiple UART server instances
-void start_uart_server(UART_HandleTypeDef* huart) {
-    huart_ = huart;
-    uart_tx_stream.huart_ = huart;
+void start_uart_server(Stm32Usart& uart) {
+    huart_ = uart;
+    uart_tx_stream.huart_ = uart;
 
     // DMA is set up to receive in a circular buffer forever.
     // We dont use interrupts to fetch the data, instead we periodically read
@@ -193,14 +199,28 @@ void start_uart_server(UART_HandleTypeDef* huart) {
     uart_thread = osThreadCreate(osThread(uart_server_thread_def), NULL);
 }
 
+int uart_errors_; // for debugging
+
 void uart_poll() {
     if (uart_thread) { // the thread is only started if UART is enabled
-        osMessagePut(uart_event_queue, 1, 0);
+        if (osMessagePut(uart_event_queue, 1, 0) != osOK) {
+            uart_errors_++;
+        }
     }
 }
 
 void HAL_UART_TxCpltCallback(UART_HandleTypeDef* huart) {
     if (huart == huart_) {
-        osMessagePut(uart_event_queue, 2, 0);
+        if (osMessagePut(uart_event_queue, 2, 0) != osOK) {
+            uart_errors_++;
+        }
+    }
+}
+
+void HAL_UART_ErrorCallback(UART_HandleTypeDef* huart) {
+    if (huart == huart_) {
+        if (osMessagePut(uart_event_queue, 4, 0) != osOK) {
+            uart_errors_++;
+        }
     }
 }

@@ -18,16 +18,9 @@ extern const float adc_full_scale;
 extern const float adc_ref_voltage;
 /* Exported variables --------------------------------------------------------*/
 extern float vbus_voltage;
-extern float ibus_;
-extern bool brake_resistor_armed;
-extern bool brake_resistor_saturated;
 extern uint16_t adc_measurements_[ADC_CHANNEL_COUNT];
 /* Exported macro ------------------------------------------------------------*/
 /* Exported functions --------------------------------------------------------*/
-
-void safety_critical_arm_brake_resistor();
-void safety_critical_disarm_brake_resistor();
-void safety_critical_apply_brake_resistor_timings(uint32_t low_off, uint32_t high_on);
 
 // called from STM platform code
 extern "C" {
@@ -50,8 +43,6 @@ uint16_t channel_from_gpio(Stm32Gpio gpio);
 float get_adc_voltage(Stm32Gpio gpio);
 float get_adc_relative_voltage(Stm32Gpio gpio);
 float get_adc_relative_voltage_ch(uint16_t channel);
-
-void update_brake_current();
 
 #ifdef __cplusplus
 }

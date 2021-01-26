@@ -7,6 +7,9 @@
 #elif defined(STM32F722xx)
 #include <stm32f722xx.h>
 #include <stm32f7xx_hal.h>
+#elif defined(STM32H7A3xx)
+#include <stm32h7a3xx.h>
+#include <stm32h7xx_hal.h>
 #else
 #error "unknown STM32 microcontroller"
 #endif
@@ -66,6 +69,17 @@ struct CriticalSectionContext {
 #else
 #define CRITICAL_SECTION() if (CriticalSectionContext __critical_section_context{})
 #endif
+
+
+struct Stm32Nvic {
+    void enable_with_prio(IRQn_Type irqn, uint32_t preempt_prio, uint32_t sub_prio = 0) {
+        HAL_NVIC_SetPriority(irqn, preempt_prio, sub_prio);
+        HAL_NVIC_EnableIRQ(irqn);
+    }
+};
+
+extern Stm32Nvic nvic;
+
 
 #endif
 

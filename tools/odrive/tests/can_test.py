@@ -117,13 +117,14 @@ class TestSimpleCAN():
         else:
             raise Exception("unknown board version {}".format(odrive.yaml['board-version']))
         odrive.handle.config.enable_can_a = True
-        odrive.save_config_and_reboot()
-
         axis = odrive.handle.axis0
         axis.config.enable_watchdog = False
-        odrive.handle.clear_errors()
         axis.config.can.node_id = node_id
         axis.config.can.is_extended = extended_id
+        odrive.save_config_and_reboot()
+        axis = odrive.handle.axis0
+
+        odrive.handle.clear_errors()
         time.sleep(0.1)
         
         def my_cmd(cmd_name, **kwargs): command(canbus.handle, node_id, extended_id, cmd_name, **kwargs)
@@ -135,13 +136,17 @@ class TestSimpleCAN():
         logger.debug('sending request...')
         test_assert_eq(my_req('get_vbus_voltage')['vbus_voltage'], odrive.handle.vbus_voltage, accuracy=0.01)
 
-        my_cmd('set_node_id', node_id=node_id+20)
+        axis.config.can.node_id = node_id + 20
+        odrive.save_config_and_reboot()
+        axis = odrive.handle.axis0
         time.sleep(0.1) # TODO: remove this hack (see note in firmware)
         asyncio.run(request(canbus.handle, node_id+20, extended_id, 'get_vbus_voltage'))
         test_assert_eq(axis.config.can.node_id, node_id+20)
 
         # Reset node ID to default value
-        command(canbus.handle, node_id+20, extended_id, 'set_node_id', node_id=node_id)
+        axis.config.can.node_id = node_id
+        odrive.save_config_and_reboot()
+        axis = odrive.handle.axis0
         fence()
         test_assert_eq(axis.config.can.node_id, node_id)
 

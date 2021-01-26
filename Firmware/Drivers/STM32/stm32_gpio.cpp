@@ -41,31 +41,41 @@ IRQn_Type get_irq_number(uint16_t pin_number) {
 #define GPIO_MODE             0x00000003U
 #define GPIO_OUTPUT_TYPE      0x00000010U
 
+#ifndef GPIO_MODER_MODER0
+// HAL for STM32 H7 has slightly different names for some macros and registers
+#define GPIO_MODER_MODER0 GPIO_MODER_MODE0
+#define GPIO_PUPDR_PUPDR0 GPIO_PUPDR_PUPD0
+#define GPIO_OSPEEDER_OSPEEDR0 GPIO_OSPEEDR_OSPEED0
+#define GPIO_OTYPER_OT_0 GPIO_OTYPER_OT0
+#define IMR IMR1
+#define EMR EMR1
+#define RTSR RTSR1
+#define FTSR FTSR1
+#endif
 
-bool Stm32Gpio::config(uint32_t mode, uint32_t pull, uint32_t speed) {
-    if (port_ == GPIOA) {
-        __HAL_RCC_GPIOA_CLK_ENABLE();
-    } else if (port_ == GPIOB) {
-        __HAL_RCC_GPIOB_CLK_ENABLE();
-    } else if (port_ == GPIOC) {
-        __HAL_RCC_GPIOC_CLK_ENABLE();
-    } else if (port_ == GPIOD) {
-        __HAL_RCC_GPIOD_CLK_ENABLE();
-    } else if (port_ == GPIOE) {
-        __HAL_RCC_GPIOE_CLK_ENABLE();
-    } else if (port_ == GPIOF) {
-        __HAL_RCC_GPIOF_CLK_ENABLE();
-    } else if (port_ == GPIOG) {
-        __HAL_RCC_GPIOG_CLK_ENABLE();
-    } else if (port_ == GPIOH) {
-        __HAL_RCC_GPIOH_CLK_ENABLE();
-    } else {
+bool Stm32Gpio::config(uint32_t mode, uint32_t pull, uint32_t speed, uint32_t alternate_function) {
+    if (!enable_clock()) {
         return false;
     }
-
+    
     size_t position = get_pin_number();
 
     // The following code is mostly taken from HAL_GPIO_Init
+    // The reason we copy it is to avoid the extenal interrupt state getting
+    // overridden.
+
+    /* Alternate function mode selection */
+    if ((mode == GPIO_MODE_AF_PP) || (mode == GPIO_MODE_AF_OD)) {
+        if (!IS_GPIO_AF(alternate_function)) {
+            return false;
+        }
+
+        /* Configure Alternate function mapped with the current IO */
+        uint32_t temp = port_->AFR[position >> 3];
+        temp &= ~((uint32_t)0xF << ((uint32_t)(position & (uint32_t)0x07) * 4)) ;
+        temp |= ((uint32_t)(alternate_function) << (((uint32_t)position & (uint32_t)0x07) * 4));
+        port_->AFR[position >> 3] = temp;
+    }
 
     /* Configure IO Direction mode (Input, Output, Alternate or Analog) */
     uint32_t temp = port_->MODER;
@@ -78,7 +88,10 @@ bool Stm32Gpio::config(uint32_t mode, uint32_t pull, uint32_t speed) {
        (mode == GPIO_MODE_OUTPUT_OD) || (mode == GPIO_MODE_AF_OD))
     {
         /* Check the Speed parameter */
-        assert_param(IS_GPIO_SPEED(speed));
+        if (!IS_GPIO_SPEED(speed)) {
+            return false;
+        }
+
         /* Configure the IO Speed */
         temp = port_->OSPEEDR; 
         temp &= ~(GPIO_OSPEEDER_OSPEEDR0 << (position * 2U));
@@ -121,7 +134,6 @@ bool Stm32Gpio::subscribe(bool rising_edge, bool falling_edge, void (*callback)(
     temp &= ~(0x0FU << (4U * (pin_number & 0x03U)));
     temp |= ((uint32_t)(GPIO_GET_INDEX(port_)) << (4U * (pin_number & 0x03U)));
     SYSCFG->EXTICR[pin_number >> 2U] = temp;
-
 
     if (rising_edge) {
         EXTI->RTSR |= (uint32_t)pin_mask_;

@@ -19,7 +19,8 @@ public:
      * 
      * If any subscription is in place, it is not disabled by this function.
      */
-    bool config(uint32_t mode, uint32_t pull, uint32_t speed = GPIO_SPEED_FREQ_LOW);
+    bool config(uint32_t mode, uint32_t pull,
+        uint32_t speed = GPIO_SPEED_FREQ_LOW, uint32_t alternate_function = 0);
 
     void write(bool state) {
         if (port_) {
@@ -73,6 +74,21 @@ public:
             pin_number++;
         }
         return pin_number;
+    }
+
+    bool enable_clock() {
+        switch ((uint32_t)port_) {
+            case GPIOA_BASE: __HAL_RCC_GPIOA_CLK_ENABLE(); break;
+            case GPIOB_BASE: __HAL_RCC_GPIOB_CLK_ENABLE(); break;
+            case GPIOC_BASE: __HAL_RCC_GPIOC_CLK_ENABLE(); break;
+            case GPIOD_BASE: __HAL_RCC_GPIOD_CLK_ENABLE(); break;
+            case GPIOE_BASE: __HAL_RCC_GPIOE_CLK_ENABLE(); break;
+            case GPIOF_BASE: __HAL_RCC_GPIOF_CLK_ENABLE(); break;
+            case GPIOG_BASE: __HAL_RCC_GPIOG_CLK_ENABLE(); break;
+            case GPIOH_BASE: __HAL_RCC_GPIOH_CLK_ENABLE(); break;
+            default: return false;
+        }
+        return true;
     }
 
     GPIO_TypeDef* port_;

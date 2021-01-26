@@ -152,16 +152,6 @@ class TestSimpleCANClosedLoop():
             axis_ctx.handle.config.can.is_extended = extended_id
             time.sleep(0.1)
 
-            my_cmd('set_node_id', node_id=node_id+20)
-            flush_rx()
-            asyncio.run(request(canbus.handle, node_id+20, extended_id, 'get_vbus_voltage'))
-            test_assert_eq(axis_ctx.handle.config.can.node_id, node_id+20)
-
-            # Reset node ID to default value
-            command(canbus.handle, node_id+20, extended_id, 'set_node_id', node_id=node_id)
-            fence()
-            test_assert_eq(axis_ctx.handle.config.can.node_id, node_id)
-
             vel_limit = 15.0
             nominal_vel = 10.0
             axis_ctx.handle.controller.config.vel_limit = vel_limit

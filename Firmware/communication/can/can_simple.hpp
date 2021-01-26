@@ -1,7 +1,7 @@
 #ifndef __CAN_SIMPLE_HPP_
 #define __CAN_SIMPLE_HPP_
 
-#include "canbus.hpp"
+#include <interfaces/canbus.hpp>
 #include "axis.hpp"
 
 class CANSimple {
@@ -37,28 +37,36 @@ class CANSimple {
 
     CANSimple(CanBusBase* canbus) : canbus_(canbus) {}
 
-    bool init();
-    uint32_t service_stack();
+    bool init(fibre::Callback<bool, float, fibre::Callback<void>> timer, uint32_t tx_slots_start, uint32_t tx_slots_end, uint32_t rx_slot);
 
    private:
+    struct PeriodicHandler {
+        CANSimple* parent_;
+        Axis* axis;
+        int type;
+        uint32_t* interval;
+        uint32_t last;
+
+        void trigger() { parent_->send_periodic(this); }
+    };
 
     bool renew_subscription(size_t i);
-    bool send_heartbeat(const Axis& axis);
-
-    void handle_can_message(const can_Message_t& msg);
+    void on_received(const can_Message_t& msg);
+    //void on_sent(bool success);
+    void send_periodic(PeriodicHandler* handler);
 
     void do_command(Axis& axis, const can_Message_t& cmd);
     
     // Get functions (msg.rtr bit must be set)
-    bool get_motor_error_callback(const Axis& axis);
-    bool get_encoder_error_callback(const Axis& axis);
-    bool get_controller_error_callback(const Axis& axis);
-    bool get_sensorless_error_callback(const Axis& axis);
-    bool get_encoder_estimates_callback(const Axis& axis);
-    bool get_encoder_count_callback(const Axis& axis);
-    bool get_iq_callback(const Axis& axis);
-    bool get_sensorless_estimates_callback(const Axis& axis);
-    bool get_vbus_voltage_callback(const Axis& axis);
+    void get_heartbeat(const Axis& axis, can_Message_t& txmsg);
+    void get_motor_error_callback(const Axis& axis, can_Message_t& txmsg);
+    void get_encoder_error_callback(const Axis& axis, can_Message_t& txmsg);
+    void get_sensorless_error_callback(const Axis& axis, can_Message_t& txmsg);
+    void get_encoder_estimates_callback(const Axis& axis, can_Message_t& txmsg);
+    void get_encoder_count_callback(const Axis& axis, can_Message_t& txmsg);
+    void get_iq_callback(const Axis& axis, can_Message_t& txmsg);
+    void get_sensorless_estimates_callback(const Axis& axis, can_Message_t& txmsg);
+    void get_vbus_voltage_callback(const Axis& axis, can_Message_t& txmsg);
 
     // Set functions
     static void set_axis_nodeid_callback(Axis& axis, const can_Message_t& msg);
@@ -75,7 +83,6 @@ class CANSimple {
     static void set_linear_count_callback(Axis& axis, const can_Message_t& msg);
 
     // Other functions
-    static void nmt_callback(const Axis& axis, const can_Message_t& msg);
     static void estop_callback(Axis& axis, const can_Message_t& msg);
     static void clear_errors_callback(Axis& axis, const can_Message_t& msg);
     static void start_anticogging_callback(const Axis& axis, const can_Message_t& msg);
@@ -95,10 +102,13 @@ class CANSimple {
     CanBusBase* canbus_;
     CanBusBase::CanSubscription* subscription_handles_[AXIS_COUNT];
 
-    // TODO: we this is a hack but actually we should use protocol hooks to
-    // renew our filter when the node ID changes
-    uint32_t node_ids_[AXIS_COUNT];
-    bool extended_node_ids_[AXIS_COUNT];
+    fibre::Callback<bool, float, fibre::Callback<void>> timer_;
+    uint32_t tx_slots_start_;
+    uint32_t tx_slots_end_;
+    uint32_t response_tx_slot_;
+    uint32_t rx_slot_;
+
+    std::array<PeriodicHandler, 2 * AXIS_COUNT> periodic_handlers_;
 };
 
 #endif

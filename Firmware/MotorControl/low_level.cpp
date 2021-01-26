@@ -9,7 +9,6 @@
 
 #include <adc.h>
 #include <main.h>
-#include <spi.h>
 #include <tim.h>
 #include <utils.hpp>
 
@@ -29,107 +28,6 @@ constexpr float adc_ref_voltage = 3.3f;
 // This value is updated by the DC-bus reading ADC.
 // Arbitrary non-zero inital value to avoid division by zero if ADC reading is late
 float vbus_voltage = 12.0f;
-float ibus_ = 0.0f; // exposed for monitoring only
-bool brake_resistor_armed = false;
-bool brake_resistor_saturated = false;
-/* Private constant data -----------------------------------------------------*/
-/* CPU critical section helpers ----------------------------------------------*/
-
-/* Safety critical functions -------------------------------------------------*/
-
-/*
-* This section contains all accesses to safety critical hardware registers.
-* Specifically, these registers:
-*   Motor0 PWMs:
-*     Timer1.MOE (master output enabled)
-*     Timer1.CCR1 (counter compare register 1)
-*     Timer1.CCR2 (counter compare register 2)
-*     Timer1.CCR3 (counter compare register 3)
-*   Motor1 PWMs:
-*     Timer8.MOE (master output enabled)
-*     Timer8.CCR1 (counter compare register 1)
-*     Timer8.CCR2 (counter compare register 2)
-*     Timer8.CCR3 (counter compare register 3)
-*   Brake resistor PWM:
-*     Timer2.CCR3 (counter compare register 3)
-*     Timer2.CCR4 (counter compare register 4)
-* 
-* The following assumptions are made:
-*   - The hardware operates as described in the datasheet:
-*     http://www.st.com/content/ccc/resource/technical/document/reference_manual/3d/6d/5a/66/b4/99/40/d4/DM00031020.pdf/files/DM00031020.pdf/jcr:content/translations/en.DM00031020.pdf
-*     This assumption also requires for instance that there are no radiation
-*     caused hardware errors.
-*   - After startup, all variables used in this section are exclusively modified
-*     by the code in this section (this excludes function parameters)
-*     This assumption also requires that there is no memory corruption.
-*   - This code is compiled by a C standard compliant compiler.
-*
-* Furthermore:
-*   - Between calls to safety_critical_arm_motor_pwm and
-*     safety_critical_disarm_motor_pwm the motor's Ibus current is
-*     set to the correct value and update_brake_resistor is called
-*     at a high rate.
-*/
-
-
-// @brief Arms the brake resistor
-void safety_critical_arm_brake_resistor() {
-    CRITICAL_SECTION() {
-        for (size_t i = 0; i < AXIS_COUNT; ++i) {
-            axes[i].motor_.I_bus_ = 0.0f;
-        }
-        brake_resistor_armed = true;
-#if HW_VERSION_MAJOR == 3
-        htim2.Instance->CCR3 = 0;
-        htim2.Instance->CCR4 = TIM_APB1_PERIOD_CLOCKS + 1;
-#endif
-    }
-}
-
-// @brief Disarms the brake resistor and by extension
-// all motor PWM outputs.
-// After calling this, the brake resistor can only be armed again
-// by calling safety_critical_arm_brake_resistor().
-void safety_critical_disarm_brake_resistor() {
-    bool brake_resistor_was_armed = brake_resistor_armed;
-
-    CRITICAL_SECTION() {
-        brake_resistor_armed = false;
-#if HW_VERSION_MAJOR == 3
-        htim2.Instance->CCR3 = 0;
-        htim2.Instance->CCR4 = TIM_APB1_PERIOD_CLOCKS + 1;
-#endif
-    }
-
-    // Check necessary to prevent infinite recursion
-    if (brake_resistor_was_armed) {
-        for (auto& axis: axes) {
-            axis.motor_.disarm();
-        }
-    }
-}
-
-// @brief Updates the brake resistor PWM timings unless
-// the brake resistor is disarmed.
-void safety_critical_apply_brake_resistor_timings(uint32_t low_off, uint32_t high_on) {
-    if (high_on - low_off < TIM_APB1_DEADTIME_CLOCKS) {
-        odrv.disarm_with_error(ODrive::ERROR_BRAKE_DEADTIME_VIOLATION);
-    }
-
-    CRITICAL_SECTION() {
-        if (brake_resistor_armed) {
-#if HW_VERSION_MAJOR == 3
-            // Safe update of low and high side timings
-            // To avoid race condition, first reset timings to safe state
-            // ch3 is low side, ch4 is high side
-            htim2.Instance->CCR3 = 0;
-            htim2.Instance->CCR4 = TIM_APB1_PERIOD_CLOCKS + 1;
-            htim2.Instance->CCR3 = low_off;
-            htim2.Instance->CCR4 = high_on;
-#endif
-        }
-    }
-}
 
 /* Function implementations --------------------------------------------------*/
 
@@ -162,20 +60,10 @@ void start_adc_pwm() {
     // Warp field stabilize.
     osDelay(2);
 
-
     start_timers();
 
-
-    // Start brake resistor PWM in floating output configuration
-#if HW_VERSION_MAJOR == 3
-    htim2.Instance->CCR3 = 0;
-    htim2.Instance->CCR4 = TIM_APB1_PERIOD_CLOCKS + 1;
-    HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_3);
-    HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_4);
-#endif
-
     if (odrv.config_.enable_brake_resistor) {
-        safety_critical_arm_brake_resistor();
+        odrv.brake_resistor_.arm();
     }
 }
 
@@ -312,70 +200,6 @@ void vbus_sense_adc_cb(uint32_t adc_value) {
     constexpr float voltage_scale = adc_ref_voltage * VBUS_S_DIVIDER_RATIO / adc_full_scale;
     vbus_voltage = adc_value * voltage_scale;
 }
-
-// @brief Sums up the Ibus contribution of each motor and updates the
-// brake resistor PWM accordingly.
-void update_brake_current() {
-    float Ibus_sum = 0.0f;
-    for (size_t i = 0; i < AXIS_COUNT; ++i) {
-        if (axes[i].motor_.is_armed_) {
-            Ibus_sum += axes[i].motor_.I_bus_;
-        }
-    }
-
-    float brake_duty;
-
-    if (odrv.config_.enable_brake_resistor) {
-        if (!(odrv.config_.brake_resistance > 0.0f)) {
-            odrv.disarm_with_error(ODrive::ERROR_INVALID_BRAKE_RESISTANCE);
-            return;
-        }
-    
-        // Don't start braking until -Ibus > regen_current_allowed
-        float brake_current = -Ibus_sum - odrv.config_.max_regen_current;
-        brake_duty = brake_current * odrv.config_.brake_resistance / vbus_voltage;
-        
-        if (odrv.config_.enable_dc_bus_overvoltage_ramp && (odrv.config_.brake_resistance > 0.0f) && (odrv.config_.dc_bus_overvoltage_ramp_start < odrv.config_.dc_bus_overvoltage_ramp_end)) {
-            brake_duty += std::max((vbus_voltage - odrv.config_.dc_bus_overvoltage_ramp_start) / (odrv.config_.dc_bus_overvoltage_ramp_end - odrv.config_.dc_bus_overvoltage_ramp_start), 0.0f);
-        }
-
-        if (is_nan(brake_duty)) {
-            // Shuts off all motors AND brake resistor, sets error code on all motors.
-            odrv.disarm_with_error(ODrive::ERROR_BRAKE_DUTY_CYCLE_NAN);
-            return;
-        }
-
-        if (brake_duty >= 0.95f) {
-            brake_resistor_saturated = true;
-        }
-
-        // Duty limit at 95% to allow bootstrap caps to charge
-        brake_duty = std::clamp(brake_duty, 0.0f, 0.95f);
-
-        // This cannot result in NaN (safe for race conditions) because we check
-        // brake_resistance != 0 further up.
-        Ibus_sum += brake_duty * vbus_voltage / odrv.config_.brake_resistance;
-    } else {
-        brake_duty = 0;
-    }
-
-    ibus_ += odrv.ibus_report_filter_k_ * (Ibus_sum - ibus_);
-
-    if (Ibus_sum > odrv.config_.dc_max_positive_current) {
-        odrv.disarm_with_error(ODrive::ERROR_DC_BUS_OVER_CURRENT);
-        return;
-    }
-    if (Ibus_sum < odrv.config_.dc_max_negative_current) {
-        odrv.disarm_with_error(ODrive::ERROR_DC_BUS_OVER_REGEN_CURRENT);
-        return;
-    }
-    
-    int high_on = (int)(TIM_APB1_PERIOD_CLOCKS * (1.0f - brake_duty));
-    int low_off = high_on - TIM_APB1_DEADTIME_CLOCKS;
-    if (low_off < 0) low_off = 0;
-    safety_critical_apply_brake_resistor_timings(low_off, high_on);
-}
-
 
 /* Analog speed control input */
 

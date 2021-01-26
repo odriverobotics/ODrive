@@ -523,9 +523,13 @@ interfaces:
   ODrive.Axis.CanConfig:
     c_is_class: False
     attributes:
-      node_id: uint32
-      is_extended: bool
-      heartbeat_rate_ms: uint32
+      node_id:
+        type: uint32
+        doc: Changes take effect after a reboot
+      is_extended:
+        type: bool
+        doc: Changes take effect after a reboot
+      heartbeat_rate_ms: uint32 # TODO: rename heartbeat_interval_ms
       encoder_rate_ms: uint32
 
   ODrive.ThermistorCurrentLimiter:
@@ -1183,6 +1187,7 @@ valuetypes:
       ENC2: {doc: This mode is not supported on ODrive v3.x.}
       MECH_BRAKE: {doc: This is to support external mechanical brakes.}
       STATUS: {doc: The pin is used for status output (see `config.error_gpio_pin`)}
+      BRAKE_RES: {doc: The pin is used to control a brake resistor board.}
 
   ODrive.StreamProtocolType:
     values:

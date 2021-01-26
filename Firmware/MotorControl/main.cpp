@@ -3,7 +3,6 @@
 #include "odrive_main.h"
 #include "nvm_config.hpp"
 
-#include "usart.h"
 #include "freertos_vars.h"
 #include <communication/interface_usb.h>
 #include <communication/interface_uart.h>
@@ -243,7 +242,7 @@ void ODrive::clear_errors() {
     }
     error_ = ERROR_NONE;
     if (odrv.config_.enable_brake_resistor) {
-        safety_critical_arm_brake_resistor();
+        brake_resistor_.arm();
     }
 }
 
@@ -253,7 +252,7 @@ void vApplicationStackOverflowHook(xTaskHandle *pxTask, signed portCHAR *pcTaskN
     for(auto& axis: axes){
         axis.motor_.disarm();
     }
-    safety_critical_disarm_brake_resistor();
+    odrv.brake_resistor_.disarm();
     for (;;); // TODO: safe action
 }
 
@@ -311,7 +310,7 @@ void ODrive::disarm_with_error(Error error) {
         for (auto& axis: axes) {
             axis.motor_.disarm_with_error(Motor::ERROR_SYSTEM_LEVEL);
         }
-        safety_critical_disarm_brake_resistor();
+        odrv.brake_resistor_.disarm();
         error_ |= error;
     }
 }
@@ -645,7 +644,9 @@ extern "C" int main(void) {
     serial_number_str[12] = 0;
 
     // Init low level system functions (clocks, flash interface)
-    system_init();
+    if (!board_init_stage_0()) {
+        for (;;);
+    }
 
     // Load configuration from NVM. This needs to happen after system_init()
     // since the flash interface must be initialized and before board_init()
@@ -667,11 +668,6 @@ extern "C" int main(void) {
             || (odrv.config_.enable_uart_b && !uart_b)
             || (odrv.config_.enable_uart_c && !uart_c);
 
-    // Init board-specific peripherals
-    if (!board_init()) {
-        for (;;); // TODO: handle properly
-    }
-
     // Init GPIOs according to their configured mode
     for (size_t i = 0; i < GPIO_COUNT; ++i) {
         // Skip unavailable GPIOs
@@ -681,7 +677,7 @@ extern "C" int main(void) {
 
         ODriveIntf::GpioMode mode = odrv.config_.gpio_modes[i];
 
-        GPIO_InitTypeDef GPIO_InitStruct;
+        GPIO_InitTypeDef GPIO_InitStruct = {0};
         GPIO_InitStruct.Pin = get_gpio(i).pin_mask_;
 
         // Set Alternate Function setting for this GPIO mode
@@ -796,13 +792,25 @@ extern "C" int main(void) {
                 GPIO_InitStruct.Pull = GPIO_NOPULL;
                 GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
             } break;
+            case ODriveIntf::GPIO_MODE_BRAKE_RES: {
+                GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
+                // TODO: remove hack. This is to pull up BRAKE_EN_N in idle state
+                GPIO_InitStruct.Pull = i == 7 ? GPIO_PULLUP : GPIO_PULLDOWN;
+                GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+            } break;
             default: {
                 odrv.misconfigured_ = true;
                 continue;
             }
         }
 
+        get_gpio(i).enable_clock();
         HAL_GPIO_Init(get_gpio(i).port_, &GPIO_InitStruct);
+    }
+
+    // Init board-specific peripherals
+    if (!board_init_stage_1()) {
+        for (;;); // TODO: handle properly
     }
 
     // Init usb irq binary semaphore, and start with no tokens by removing the starting one.

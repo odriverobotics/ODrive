@@ -85,7 +85,7 @@
                 "interface/stlink.cfg",
                 "target/stm32f7x.cfg",
             ],
-            "svdFile": "${workspaceRoot}/Private/v4/STM32F722.svd",
+            "svdFile": "${workspaceRoot}/Private/v4.0/STM32F722.svd",
             "cwd": "${workspaceRoot}"
         },
         {

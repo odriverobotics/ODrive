@@ -9,11 +9,6 @@
 #define MEASURE_LENGTH
 #define MEASURE_MAX_LENGTH
 
-inline uint16_t sample_TIM13() {
-    constexpr uint16_t clocks_per_cnt = (uint16_t)((float)TIM_1_8_CLOCK_HZ / (float)TIM_APB1_CLOCK_HZ);
-    return clocks_per_cnt * TIM13->CNT;  // TODO: Use a hw_config
-}
-
 struct TaskTimer {
     uint32_t start_time_ = 0;
     uint32_t end_time_ = 0;
@@ -23,11 +18,11 @@ struct TaskTimer {
     static bool enabled;
 
     uint32_t start() {
-        return sample_TIM13();
+        return board_control_loop_counter;
     }
 
     void stop(uint32_t start_time) {
-        uint32_t end_time = sample_TIM13();
+        uint32_t end_time = board_control_loop_counter;
         uint32_t length = end_time - start_time;
 
         if (enabled) {

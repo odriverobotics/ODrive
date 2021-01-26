@@ -4,20 +4,6 @@
 #include "utils.hpp"
 #include <cmsis_os.h>
 
-bool equals(const SPI_InitTypeDef& lhs, const SPI_InitTypeDef& rhs) {
-  return (lhs.Mode == rhs.Mode)
-      && (lhs.Direction == rhs.Direction)
-      && (lhs.DataSize == rhs.DataSize)
-      && (lhs.CLKPolarity == rhs.CLKPolarity)
-      && (lhs.CLKPhase == rhs.CLKPhase)
-      && (lhs.NSS == rhs.NSS)
-      && (lhs.BaudRatePrescaler == rhs.BaudRatePrescaler)
-      && (lhs.FirstBit == rhs.FirstBit)
-      && (lhs.TIMode == rhs.TIMode)
-      && (lhs.CRCCalculation == rhs.CRCCalculation)
-      && (lhs.CRCPolynomial == rhs.CRCPolynomial);
-}
-
 bool Stm32SpiArbiter::acquire_task(SpiTask* task) {
     return !__atomic_exchange_n(&task->is_in_use, true, __ATOMIC_SEQ_CST);
 }
@@ -32,25 +18,23 @@ bool Stm32SpiArbiter::start() {
     }
 
     SpiTask& task = *task_list_;
-    if (!equals(task.config, hspi_->Init)) {
-        HAL_SPI_DeInit(hspi_);
-        hspi_->Init = task.config;
-        HAL_SPI_Init(hspi_);
-        __HAL_SPI_ENABLE(hspi_);
+    if (current_config_ != task.config) {
+        current_config_ = task.config;
+        spi_->config(task.config);
     }
     task.ncs_gpio.write(false);
     
     HAL_StatusTypeDef status = HAL_ERROR;
 
-    if (hspi_->hdmatx->State != HAL_DMA_STATE_READY || hspi_->hdmarx->State != HAL_DMA_STATE_READY) {
+    if (spi_->hdma_tx_.State != HAL_DMA_STATE_READY || spi_->hdma_rx_.State != HAL_DMA_STATE_READY) {
         // This can happen if the DMA or interrupt priorities are not configured properly.
         status = HAL_BUSY;
     } else if (task.tx_buf && task.rx_buf) {
-        status = HAL_SPI_TransmitReceive_DMA(hspi_, (uint8_t*)task.tx_buf, task.rx_buf, task.length);
+        status = HAL_SPI_TransmitReceive_DMA(*spi_, (uint8_t*)task.tx_buf, task.rx_buf, task.length);
     } else if (task.tx_buf) {
-        status = HAL_SPI_Transmit_DMA(hspi_, (uint8_t*)task.tx_buf, task.length);
+        status = HAL_SPI_Transmit_DMA(*spi_, (uint8_t*)task.tx_buf, task.length);
     } else if (task.rx_buf) {
-        status = HAL_SPI_Receive_DMA(hspi_, task.rx_buf, task.length);
+        status = HAL_SPI_Receive_DMA(*spi_, task.rx_buf, task.length);
     }
 
     if (status != HAL_OK) {
@@ -83,7 +67,7 @@ void Stm32SpiArbiter::transfer_async(SpiTask* task) {
 }
 
 // TODO: this currently only works when called in a CMSIS thread.
-bool Stm32SpiArbiter::transfer(SPI_InitTypeDef config, Stm32Gpio ncs_gpio, const uint8_t* tx_buf, uint8_t* rx_buf, size_t length, uint32_t timeout_ms) {
+bool Stm32SpiArbiter::transfer(Stm32Spi::Config config, Stm32Gpio ncs_gpio, const uint8_t* tx_buf, uint8_t* rx_buf, size_t length, uint32_t timeout_ms) {
     volatile uint8_t result = 0xff;
 
     SpiTask task = {

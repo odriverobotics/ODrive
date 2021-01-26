@@ -598,6 +598,8 @@ class RemoteAttribute(object):
         self._magic_setter = magic_setter
 
     def _get_obj(self, instance):
+        assert(not instance._obj_handle is None)
+
         obj_handle = c_void_p(0)
         status = libfibre_get_attribute(instance._obj_handle, self._attr_handle, byref(obj_handle))
         if status != kFibreOk:

@@ -50,7 +50,6 @@
 /* Includes ------------------------------------------------------------------*/
 #include "i2c.h"
 
-#include "gpio.h"
 #include "dma.h"
 
 /* USER CODE BEGIN 0 */
@@ -105,6 +104,7 @@ void HAL_I2C_MspInit(I2C_HandleTypeDef* i2cHandle)
     hdma_i2c1_rx.Init.Mode = DMA_CIRCULAR;
     hdma_i2c1_rx.Init.Priority = DMA_PRIORITY_LOW;
     hdma_i2c1_rx.Init.FIFOMode = DMA_FIFOMODE_DISABLE;
+    __HAL_RCC_DMA1_CLK_ENABLE();
     if (HAL_DMA_Init(&hdma_i2c1_rx) != HAL_OK)
     {
       _Error_Handler(__FILE__, __LINE__);
@@ -123,6 +123,7 @@ void HAL_I2C_MspInit(I2C_HandleTypeDef* i2cHandle)
     hdma_i2c1_tx.Init.Mode = DMA_NORMAL;
     hdma_i2c1_tx.Init.Priority = DMA_PRIORITY_LOW;
     hdma_i2c1_tx.Init.FIFOMode = DMA_FIFOMODE_DISABLE;
+    __HAL_RCC_DMA1_CLK_ENABLE();
     if (HAL_DMA_Init(&hdma_i2c1_tx) != HAL_OK)
     {
       _Error_Handler(__FILE__, __LINE__);

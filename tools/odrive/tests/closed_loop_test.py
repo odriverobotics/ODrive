@@ -135,6 +135,7 @@ class TestRegenProtection(TestClosedLoopControlBase):
         
             # Accept a bit of noise on Ibus
             axis_ctx.parent.handle.config.dc_max_negative_current = -0.5
+            axis_ctx.parent.handle.config.dc_bus_overvoltage_trip_level = float(axis_ctx.parent.yaml['vbus-voltage']) + 1.0
 
             logger.debug(f'Brake control test from {nominal_rps} rounds/s...')
             
@@ -154,10 +155,23 @@ class TestRegenProtection(TestClosedLoopControlBase):
             time.sleep(1.0)
             test_assert_no_error(axis_ctx)
 
-
-            logger.debug(f'Brake control test with brake resistor disabled')
-            # once more, but this time without brake resistor
+            # The following two tests are with the brake resistor disabled
             axis_ctx.parent.handle.config.enable_brake_resistor = False
+
+            logger.debug(f'Brake control test with brake resistor disabled (test DC voltage limit)')
+            # accelerate...
+            axis_ctx.handle.controller.input_vel = nominal_rps
+            time.sleep(1.0)
+            test_assert_no_error(axis_ctx)
+
+            # ... and brake
+            axis_ctx.handle.controller.input_vel = 0
+            time.sleep(0.1)
+            test_assert_eq(axis_ctx.parent.handle.error, ODRIVE_ERROR_DC_BUS_OVER_VOLTAGE)
+            test_assert_eq(axis_ctx.handle.motor.error & MOTOR_ERROR_SYSTEM_LEVEL, MOTOR_ERROR_SYSTEM_LEVEL)
+            test_assert_eq(axis_ctx.handle.error, 0)
+
+            logger.debug(f'Brake control test with brake resistor disabled (test DC current limit)')
             # accelerate...
             axis_ctx.handle.controller.input_vel = nominal_rps
             time.sleep(1.0)
@@ -165,7 +179,7 @@ class TestRegenProtection(TestClosedLoopControlBase):
 
             # ... and brake
             axis_ctx.parent.handle.config.dc_max_negative_current = -0.2
-            axis_ctx.handle.controller.input_vel = 10 # this should fail almost instantaneously
+            axis_ctx.handle.controller.input_vel = 0 # this should fail almost instantaneously
             time.sleep(0.1)
             test_assert_eq(axis_ctx.parent.handle.error, ODRIVE_ERROR_DC_BUS_OVER_REGEN_CURRENT)
             test_assert_eq(axis_ctx.handle.motor.error & MOTOR_ERROR_SYSTEM_LEVEL, MOTOR_ERROR_SYSTEM_LEVEL)
