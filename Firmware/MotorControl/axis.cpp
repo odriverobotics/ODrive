@@ -397,28 +397,28 @@ bool Axis::run_homing() {
 
     error_ &= ~ERROR_MIN_ENDSTOP_PRESSED; // clear this error since we deliberately drove into the endstop
 
-    // pos_setpoint is the starting position for the trap_traj so we need to set it.
-    controller_.pos_setpoint_ = min_endstop_.config_.offset;
-    controller_.vel_setpoint_ = 0.0f;  // Change directions without decelerating
-
-    // Set our current position in encoder counts to make control more logical
-    encoder_.set_linear_count((int32_t)(controller_.pos_setpoint_ * encoder_.config_.cpr));
-
+    // Calculate the desired position after offset.
+    float inputBuffer = encoder_.pos_estimate_.any().value() + min_endstop_.config_.offset;
+    
     controller_.config_.control_mode = Controller::CONTROL_MODE_POSITION_CONTROL;
     controller_.config_.input_mode = Controller::INPUT_MODE_TRAP_TRAJ;
 
-    controller_.input_pos_ = 0.0f;
-    controller_.input_pos_updated();
-    controller_.input_vel_ = 0.0f;
-    controller_.input_torque_ = 0.0f;
-
+    // Initialize closed loop control, and then set the desired location.
     start_closed_loop_control();
-
+    
+    controller_.input_pos_ = inputBuffer;
+    controller_.input_pos_updated();
+    
     while ((requested_state_ == AXIS_STATE_UNDEFINED) && motor_.is_armed_ && !controller_.trajectory_done_) {
         osDelay(1);
     }
 
     stop_closed_loop_control();
+
+    // Set the current position to 0.
+    encoder_.set_linear_count(0);
+    controller_.input_pos_ = 0;
+    controller_.input_pos_updated();
 
     controller_.config_.control_mode = stored_control_mode;
     controller_.config_.input_mode = stored_input_mode;
