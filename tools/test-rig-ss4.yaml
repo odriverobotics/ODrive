@@ -13,6 +13,10 @@ components:
         name: uart0
         port: /dev/ttyS0
         connected-to: main_uart
+      - type: can
+        name: can0
+        interface: can0
+        connected-to: odrive.can
        # need to specify GPIOs explicitly for the generalpurpose type
       - {type: gpio, num: 4}
       - {type: gpio, num: 18}
@@ -22,7 +26,6 @@ components:
     name: odrive
     board-version: v4.1-58V
     serial-number: "206730814E53"
-    brake-resistance: 0.0
     usb: auto
     can: main_canbus
     vbus-voltage: 24 # [V]
@@ -53,6 +56,7 @@ components:
   - {type: lpf, name: lpf1}
 
 connections:
+  - ['odrive.can', 'rpi.can0']
   - ['teensy.program', 'rpi.gpio4']
   - ['teensy.gpio14', 'rpi.uart0.tx']
   - ['teensy.gpio15', 'rpi.uart0.rx']

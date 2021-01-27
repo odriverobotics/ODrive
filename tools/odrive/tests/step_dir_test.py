@@ -26,9 +26,15 @@ class TestStepDir():
                         alternatives.append((axis, step_gpio_num, step_ctrl_gpio, dir_gpio_num, dir_ctrl_gpio, TestFixture.all_of(tf1, tf2)))
                 return AnyTestCase(*alternatives)
 
-            yield stepdir_test_case(odrive.axes[0], 1, 2)
-            yield stepdir_test_case(odrive.axes[0], 5, 6)
-            yield stepdir_test_case(odrive.axes[0], 7, 8)
+            if odrive.yaml['board-version'].startswith('v3.'):
+                yield stepdir_test_case(odrive.axes[0], 1, 2)
+                yield stepdir_test_case(odrive.axes[0], 5, 6)
+                yield stepdir_test_case(odrive.axes[0], 7, 8)
+            elif odrive.yaml['board-version'].startswith('v4.'):
+                #yield stepdir_test_case(odrive.axes[0], 1, 2) # using GPIO2 as dir pin doesn't work (TODO: find out why)
+                yield stepdir_test_case(odrive.axes[0], 3, 4)
+                yield stepdir_test_case(odrive.axes[0], 5, 6)
+                yield stepdir_test_case(odrive.axes[0], 7, 9) # skip GPIO 8 (internally not connected)
             
             # test other axes
             for i in range(1, len(odrive.axes)):

@@ -335,7 +335,7 @@ static bool check_board_version(const uint8_t* otp_ptr) {
            (otp_ptr[5] == HW_VERSION_VOLTAGE);
 }
 
-void system_init() {
+bool board_init_stage_0() {
     // Reset of all peripherals, Initializes the Flash interface and the Systick.
     HAL_Init();
 
@@ -353,9 +353,11 @@ void system_init() {
     if (!check_board_version(otp_ptr)) {
         for (;;);
     }
+
+    return true;
 }
 
-bool board_init() {
+bool board_init_stage_1() {
 
     // Init DMA interrupts
 

@@ -144,8 +144,16 @@ static inline bool board_write_config() { return true; }
 static inline void board_clear_config() { }
 static inline bool board_apply_config() { return true; }
 
-void system_init();
-bool board_init();
+/**
+ * @brief Must be called very early during startup to start the clocks
+ */
+bool board_init_stage_0();
+
+/**
+ * @brief Must be called after configuration is loaded and GPIOs are initialized.
+ */
+bool board_init_stage_1();
+
 void start_timers();
 
 #endif // __BOARD_CONFIG_H

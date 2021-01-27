@@ -159,6 +159,7 @@ class TestSimpleCAN():
 
         axis.encoder.set_linear_count(123)
         flush_rx() # drop previous encoder estimates that were sent by the ODrive at a constant rate
+        canbus.handle.recv(timeout = 1.0) # receive one more encoder pos estimate that could have been waiting in the mailbox
         test_assert_eq(my_req('get_encoder_estimates')['encoder_pos_estimate'], 123.0 / axis.encoder.config.cpr, accuracy=0.01)
         test_assert_eq(my_req('get_encoder_count')['encoder_shadow_count'], 123.0, accuracy=0.01)
 

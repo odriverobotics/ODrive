@@ -106,6 +106,7 @@ class TestSimpleCANClosedLoop():
         # Make sure there are no funny configurations active
         logger.debug('Setting up clean configuration...')
         axis_ctx.parent.erase_config_and_reboot()
+        axis_ctx.parent.handle.config.brake_resistance = float(axis_ctx.parent.yaml['brake-resistance'])
         axis_ctx.parent.handle.config.enable_brake_resistor = True
         axis_ctx.parent.save_config_and_reboot()
 
@@ -130,10 +131,11 @@ class TestSimpleCANClosedLoop():
 
     def get_test_cases(self, testrig: TestRig):
         for axis, motor, encoder, tf1 in testrig.get_closed_loop_combos(init=False):
-            yield AnyTestCase(*[
-                (axis.parent, canbus, axis, motor, encoder, 0, False, TestFixture.all_of(tf1, tf2))
-                for canbus, tf2 in testrig.get_connected_components(axis.parent.can, CanInterfaceComponent)
-            ])
+            if 'brake-resistance' in axis.parent.yaml:
+                yield AnyTestCase(*[
+                    (axis.parent, canbus, axis, motor, encoder, 0, False, TestFixture.all_of(tf1, tf2))
+                    for canbus, tf2 in testrig.get_connected_components(axis.parent.can, CanInterfaceComponent)
+                ])
 
     def run_test(self, odrive: ODriveComponent, canbus: CanInterfaceComponent, axis_ctx: ODriveAxisComponent, motor_ctx: MotorComponent, enc_ctx: EncoderComponent, node_id: int, extended_id: bool, logger: Logger):
         # this test is a sanity check to make sure that closed loop operation works

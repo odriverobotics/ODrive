@@ -818,7 +818,10 @@ class TestRig():
 
 def request_state(axis_ctx: ODriveAxisComponent, state, expect_success=True):
     axis_ctx.handle.requested_state = state
-    time.sleep(0.001)
+    # For some reason on v4.1 the tests tend to fail if this delay is 1ms.
+    # When testing the average fulfillment time explicitly I found it to be
+    # around 1.7ms.
+    time.sleep(0.1)
     if expect_success:
         test_assert_eq(axis_ctx.handle.current_state, state)
     else:
@@ -1074,7 +1077,10 @@ if args.setup_host:
             run_shell(f'slcand -o -c -s5 \'{path}\' {name}', logger)
         else:
             run_shell('ip link set dev {} type can bitrate 250000'.format(name), logger)
-            run_shell('ip link set dev {} type can loopback off'.format(name), logger)
+            try:
+                run_shell('ip link set dev {} type can loopback off'.format(name), logger)
+            except:
+                logger.warn(f"can't turn off loopback on {name}")
         run_shell('ip link set dev {} up'.format(name), logger)
 
 
