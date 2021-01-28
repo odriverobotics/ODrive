@@ -154,7 +154,7 @@ One easy step that _might_ fix the noise on the Z input is to solder a 22nF-47nF
 Apart from (incremental) quadrature encoders, ODrive also supports absolute SPI encoders (since firmware v0.5). These usually measure an absolute angle. This means you don't need to repeat the encoder calibration after every ODrive reboot. Currently, the following modes are supported:
 
  * **CUI protocol**: Compatible with the AMT23xx family (AMT232A, AMT232B, AMT233A, AMT233B).
- * **AMS protocol**: Compatible with AS5047P and AS5048A/AS5048B.
+ * **AMS protocol**: Compatible with AS5047P and AS5048A.
 
 Some of these chips come with evaluation boards that can simplify mounting the chips to your motor. For our purposes if you are using an evaluation board you should select the settings for 3.3v.
 
