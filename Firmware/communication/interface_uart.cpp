@@ -149,7 +149,7 @@ static void uart_server_thread(void * ctx) {
                     dma_last_rcv_idx = 0;
                 }
                 // Fetch the circular buffer "write pointer", where it would write next
-                uint32_t new_rcv_idx = UART_RX_BUFFER_SIZE - huart_->hdmarx->Instance->NDTR;
+                uint32_t new_rcv_idx = UART_RX_BUFFER_SIZE - ((DMA_Stream_TypeDef *)huart_->hdmarx->Instance)->NDTR;
                 if (new_rcv_idx > UART_RX_BUFFER_SIZE) { // defensive programming
                     continue;
                 }

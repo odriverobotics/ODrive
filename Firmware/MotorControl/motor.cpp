@@ -1,13 +1,10 @@
 
 #include "motor.hpp"
 #include "axis.hpp"
-#include "low_level.h"
 #include "odrive_main.h"
 
 #include <algorithm>
 
-static constexpr auto CURRENT_ADC_LOWER_BOUND =        (uint32_t)((float)(1 << 12) * CURRENT_SENSE_MIN_VOLT / 3.3f);
-static constexpr auto CURRENT_ADC_UPPER_BOUND =        (uint32_t)((float)(1 << 12) * CURRENT_SENSE_MAX_VOLT / 3.3f);
 
 /**
  * @brief This control law adjusts the output voltage such that a predefined
@@ -120,7 +117,7 @@ struct InductanceMeasurementControlLaw : AlphaBetaFrameController {
             std::optional<float>* ibus) final
     {
         test_voltage_ *= -1.0f;
-        float vfactor = 1.0f / ((2.0f / 3.0f) * vbus_voltage);
+        float vfactor = 1.0f / ((2.0f / 3.0f) * odrv.vbus_voltage_);
         *mod_alpha_beta = {test_voltage_ * vfactor, 0.0f};
         *ibus = 0.0f;
         return Motor::ERROR_NONE;
@@ -153,15 +150,13 @@ Motor::Motor(TIM_HandleTypeDef* timer,
              float shunt_conductance,
              TGateDriver& gate_driver,
              TOpAmp& opamp,
-             OnboardThermistorCurrentLimiter& fet_thermistor,
-             OffboardThermistorCurrentLimiter& motor_thermistor) :
+             float* motor_fet_temp_ptr) :
         timer_(timer),
         current_sensor_mask_(current_sensor_mask),
         shunt_conductance_(shunt_conductance),
         gate_driver_(gate_driver),
         opamp_(opamp),
-        fet_thermistor_(fet_thermistor),
-        motor_thermistor_(motor_thermistor) {
+        fet_thermistor_(motor_fet_temp_ptr) {
     apply_config();
     fet_thermistor_.motor_ = this;
     motor_thermistor_.motor_ = this;
@@ -305,7 +300,6 @@ bool Motor::apply_config() {
 
 // @brief Set up the gate drivers
 bool Motor::setup() {
-    fet_thermistor_.update();
     motor_thermistor_.update();
 
     // Solve for exact gain, then snap down to have equal or larger range as requested
@@ -361,7 +355,7 @@ float Motor::effective_current_lim() {
     float current_lim = config_.current_lim;
     // Hardware limit
     if (axis_->motor_.config_.motor_type == Motor::MOTOR_TYPE_GIMBAL) {
-        current_lim = std::min(current_lim, 0.98f*one_by_sqrt3*vbus_voltage); //gimbal motor is voltage control
+        current_lim = std::min(current_lim, 0.98f * one_by_sqrt3 * odrv.vbus_voltage_); //gimbal motor is voltage control
     } else {
         current_lim = std::min(current_lim, axis_->motor_.max_allowed_current_);
     }
@@ -388,19 +382,6 @@ float Motor::max_available_torque() {
     }
 }
 
-std::optional<float> Motor::phase_current_from_adcval(uint32_t ADCValue) {
-    // Make sure the measurements don't come too close to the current sensor's hardware limitations
-    if (ADCValue < CURRENT_ADC_LOWER_BOUND || ADCValue > CURRENT_ADC_UPPER_BOUND) {
-        error_ |= ERROR_CURRENT_SENSE_SATURATION;
-        return std::nullopt;
-    }
-
-    int adcval_bal = (int)ADCValue - (1 << 11);
-    float amp_out_volt = (3.3f / (float)(1 << 12)) * (float)adcval_bal;
-    float shunt_volt = amp_out_volt * phase_current_rev_gain_;
-    float current = shunt_volt * shunt_conductance_;
-    return current;
-}
 
 //--------------------------------
 // Measurement and calibration
@@ -639,7 +620,7 @@ void Motor::current_meas_cb(uint32_t timestamp, std::optional<Iph_ABC_t> current
     }
 
     if (control_law_) {
-        Error err = control_law_->on_measurement(vbus_voltage,
+        Error err = control_law_->on_measurement(odrv.vbus_voltage_,
                             current_meas_.has_value() ?
                                 std::make_optional(std::array<float, 3>{current_meas_->phA, current_meas_->phB, current_meas_->phC})
                                 : std::nullopt,

@@ -8,9 +8,10 @@ public:
     static const Stm32Gpio none;
 
     Stm32Gpio() : port_(nullptr), pin_mask_(0) {}
-    Stm32Gpio(GPIO_TypeDef* port, uint16_t pin) : port_(port), pin_mask_(pin) {}
+    constexpr Stm32Gpio(GPIO_TypeDef* port, uint16_t pin) : port_(port), pin_mask_(pin) {}
 
     operator bool() const { return port_ && pin_mask_; }
+    bool operator==(Stm32Gpio other) const { return port_ == other.port_ && pin_mask_ == other.pin_mask_; }
 
     /**
      * @brief Configures the GPIO with the specified parameters.
@@ -28,7 +29,7 @@ public:
         }
     }
 
-    bool read() {
+    bool read() const {
         return port_ && (port_->IDR & pin_mask_);
     }
 

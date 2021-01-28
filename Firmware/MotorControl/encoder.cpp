@@ -476,8 +476,10 @@ void Encoder::sample_now() {
         } break;
 
         case MODE_SINCOS: {
-            sincos_sample_s_ = get_adc_relative_voltage(get_gpio(config_.sincos_gpio_pin_sin)) - 0.5f;
-            sincos_sample_c_ = get_adc_relative_voltage(get_gpio(config_.sincos_gpio_pin_cos)) - 0.5f;
+            uint16_t sin_gpio = config_.sincos_gpio_pin_sin;
+            uint16_t cos_gpio = config_.sincos_gpio_pin_cos;
+            sincos_sample_s_ = (sin_gpio < GPIO_COUNT) ? (board.gpio_adc_values[sin_gpio] - 0.5f) : -INFINITY;
+            sincos_sample_c_ = (cos_gpio < GPIO_COUNT) ? (board.gpio_adc_values[cos_gpio] - 0.5f) : -INFINITY;
         } break;
 
         case MODE_SPI_ABS_AMS:

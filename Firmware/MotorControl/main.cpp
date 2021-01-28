@@ -1,7 +1,6 @@
 
 #define __MAIN_CPP__
 #include "odrive_main.h"
-#include "nvm_config.hpp"
 
 #include "freertos_vars.h"
 #include <communication/interface_usb.h>
@@ -25,9 +24,6 @@ extern char _estack; // provided by the linker script
 
 
 ODrive odrv{};
-
-
-ConfigManager config_manager;
 
 class StatusLedController {
 public:
@@ -81,42 +77,50 @@ void StatusLedController::update() {
 #endif
 }
 
-static bool config_read_all() {
-    bool success = board_read_config() &&
-           config_manager.read(&odrv.config_) &&
-           config_manager.read(&odrv.can_.config_);
-    for (size_t i = 0; (i < AXIS_COUNT) && success; ++i) {
-        success = config_manager.read(&encoders[i].config_) &&
-                  config_manager.read(&axes[i].sensorless_estimator_.config_) &&
-                  config_manager.read(&axes[i].controller_.config_) &&
-                  config_manager.read(&axes[i].trap_traj_.config_) &&
-                  config_manager.read(&axes[i].min_endstop_.config_) &&
-                  config_manager.read(&axes[i].max_endstop_.config_) &&
-                  config_manager.read(&axes[i].mechanical_brake_.config_) &&
-                  config_manager.read(&motors[i].config_) &&
-                  config_manager.read(&motors[i].fet_thermistor_.config_) &&
-                  config_manager.read(&motors[i].motor_thermistor_.config_) &&
-                  config_manager.read(&axes[i].config_);
+static bool config_read_all(size_t* size) {
+    if (!board.nvm.open_read(size)) {
+        return false;
     }
+    bool success = board_read_config() &&
+           board.nvm.read(&odrv.config_) &&
+           board.nvm.read(&odrv.can_.config_);
+    for (size_t i = 0; (i < AXIS_COUNT) && success; ++i) {
+        success = board.nvm.read(&encoders[i].config_) &&
+                  board.nvm.read(&axes[i].sensorless_estimator_.config_) &&
+                  board.nvm.read(&axes[i].controller_.config_) &&
+                  board.nvm.read(&axes[i].trap_traj_.config_) &&
+                  board.nvm.read(&axes[i].min_endstop_.config_) &&
+                  board.nvm.read(&axes[i].max_endstop_.config_) &&
+                  board.nvm.read(&axes[i].mechanical_brake_.config_) &&
+                  board.nvm.read(&motors[i].config_) &&
+                  board.nvm.read(&motors[i].fet_thermistor_.config_) &&
+                  board.nvm.read(&motors[i].motor_thermistor_.config_) &&
+                  board.nvm.read(&axes[i].config_);
+    }
+
+    if (!board.nvm.close()) {
+        success = false;
+    }
+
     return success;
 }
 
 static bool config_write_all() {
     bool success = board_write_config() &&
-           config_manager.write(&odrv.config_) &&
-           config_manager.write(&odrv.can_.config_);
+           board.nvm.write(&odrv.config_) &&
+           board.nvm.write(&odrv.can_.config_);
     for (size_t i = 0; (i < AXIS_COUNT) && success; ++i) {
-        success = config_manager.write(&encoders[i].config_) &&
-                  config_manager.write(&axes[i].sensorless_estimator_.config_) &&
-                  config_manager.write(&axes[i].controller_.config_) &&
-                  config_manager.write(&axes[i].trap_traj_.config_) &&
-                  config_manager.write(&axes[i].min_endstop_.config_) &&
-                  config_manager.write(&axes[i].max_endstop_.config_) &&
-                  config_manager.write(&axes[i].mechanical_brake_.config_) &&
-                  config_manager.write(&motors[i].config_) &&
-                  config_manager.write(&motors[i].fet_thermistor_.config_) &&
-                  config_manager.write(&motors[i].motor_thermistor_.config_) &&
-                  config_manager.write(&axes[i].config_);
+        success = board.nvm.write(&encoders[i].config_) &&
+                  board.nvm.write(&axes[i].sensorless_estimator_.config_) &&
+                  board.nvm.write(&axes[i].controller_.config_) &&
+                  board.nvm.write(&axes[i].trap_traj_.config_) &&
+                  board.nvm.write(&axes[i].min_endstop_.config_) &&
+                  board.nvm.write(&axes[i].max_endstop_.config_) &&
+                  board.nvm.write(&axes[i].mechanical_brake_.config_) &&
+                  board.nvm.write(&motors[i].config_) &&
+                  board.nvm.write(&motors[i].fet_thermistor_.config_) &&
+                  board.nvm.write(&motors[i].motor_thermistor_.config_) &&
+                  board.nvm.write(&axes[i].config_);
     }
     return success;
 }
@@ -148,7 +152,6 @@ static bool config_apply_all() {
                && axes[i].min_endstop_.apply_config()
                && axes[i].max_endstop_.apply_config()
                && motors[i].apply_config()
-               && motors[i].motor_thermistor_.apply_config()
                && axes[i].apply_config();
     }
     return success;
@@ -164,12 +167,10 @@ bool ODrive::save_configuration(void) {
             return false;
         }
 
-        size_t config_size = 0;
-        success = config_manager.prepare_store()
+        board.nvm.erase(); // returns false if already erased
+        success = board.nvm.open_write()
                && config_write_all()
-               && config_manager.start_store(&config_size)
-               && config_write_all()
-               && config_manager.finish_store();
+               && board.nvm.close();
 
         // FIXME: during save_configuration we might miss some interrupts
         // because the CPU gets halted during a flash erase. Missing events
@@ -182,7 +183,9 @@ bool ODrive::save_configuration(void) {
 }
 
 void ODrive::erase_configuration(void) {
-    NVM_erase();
+    if (!board.nvm.erase()) {
+        return;
+    }
 
     // FIXME: this reboot is a workaround because we don't want the next save_configuration
     // to write back the old configuration from RAM to NVM. The proper action would
@@ -246,6 +249,33 @@ void ODrive::clear_errors() {
     }
 }
 
+// TODO: this could probably be part of the main control loop
+static void analog_polling_thread(void *) {
+    while (true) {
+        for (int i = 0; i < GPIO_COUNT; i++) {
+            struct PWMMapping_t *map = &odrv.config_.analog_mappings[i];
+
+            if (fibre::is_endpoint_ref_valid(map->endpoint)) {
+                float ratio = board.gpio_adc_values[i];
+                float value = map->min + (ratio * (map->max - map->min));
+                fibre::set_endpoint_from_float(map->endpoint, value);
+            }
+        }
+
+        for (int i = 0; i < GPIO_COUNT; i++) {
+            struct PWMMapping_t *map = &odrv.config_.pwm_mappings[i];
+
+            if (fibre::is_endpoint_ref_valid(map->endpoint)) {
+                float ratio = board.gpio_pwm_values[i];
+                float value = map->min + (ratio * (map->max - map->min));
+                fibre::set_endpoint_from_float(map->endpoint, value);
+            }
+        }
+        osDelay(10);
+    }
+}
+
+
 extern "C" {
 
 void vApplicationStackOverflowHook(xTaskHandle *pxTask, signed portCHAR *pcTaskName) {
@@ -293,9 +323,9 @@ void vApplicationIdleHook(void) {
  * It should finish as quickly as possible.
  */
 void ODrive::do_fast_checks() {
-    if (!(vbus_voltage >= config_.dc_bus_undervoltage_trip_level))
+    if (!(vbus_voltage_ >= config_.dc_bus_undervoltage_trip_level))
         disarm_with_error(ERROR_DC_BUS_UNDER_VOLTAGE);
-    if (!(vbus_voltage <= config_.dc_bus_overvoltage_trip_level))
+    if (!(vbus_voltage_ <= config_.dc_bus_overvoltage_trip_level))
         disarm_with_error(ERROR_DC_BUS_OVER_VOLTAGE);
 }
 
@@ -412,7 +442,6 @@ void ODrive::control_loop_cb(uint32_t timestamp) {
     for (auto& axis: axes) {
         // Sub-components should use set_error which will propegate to this error_
         MEASURE_TIME(axis.task_times_.thermistor_update) {
-            axis.motor_.fet_thermistor_.update();
             axis.motor_.motor_thermistor_.update();
         }
 
@@ -489,7 +518,13 @@ uint32_t ODrive::get_dma_status(uint8_t stream_num) {
                  && (stream->M0AR == 0x00000000)
                  && (stream->M1AR == 0x00000000)
                  && (stream->FCR == 0x00000021);
+#if DMA_SxCR_CHSEL_Msk
     uint8_t channel = ((stream->CR & DMA_SxCR_CHSEL_Msk) >> DMA_SxCR_CHSEL_Pos);
+#else
+    int stream_number = (((uint32_t)((uint32_t*)stream) & 0xFFU) - 16U) / 24U;
+    DMAMUX_Channel_TypeDef* dmamux = (DMAMUX_Channel_TypeDef *)((uint32_t)(((uint32_t)DMAMUX1_Channel0) + (stream_number * 4U)));
+    uint8_t channel = ((dmamux->CCR & DMAMUX_CxCR_DMAREQ_ID_Msk) >> DMAMUX_CxCR_DMAREQ_ID_Pos);
+#endif
     uint8_t priority = ((stream->CR & DMA_SxCR_PL_Msk) >> DMA_SxCR_PL_Pos);
     return (is_reset ? 0 : 0x80000000) | ((channel & 0x7) << 2) | (priority & 0x3);
 }
@@ -498,7 +533,7 @@ uint32_t ODrive::get_gpio_states() {
     // TODO: get values that were sampled synchronously with the control loop
     uint32_t val = 0;
     for (size_t i = 0; i < GPIO_COUNT; ++i) {
-        val |= ((gpios[i].read() ? 1UL : 0UL) << i);
+        val |= ((board.gpios[i].read() ? 1UL : 0UL) << i);
     }
     return val;
 }
@@ -507,16 +542,8 @@ uint32_t ODrive::get_gpio_states() {
  * @brief Main thread started from main().
  */
 static void rtos_main(void*) {
-    // Start ADC for temperature measurements and user measurements
-    start_general_purpose_adc();
-
-    //osDelay(100);
     // Init communications (this requires the axis objects to be constructed)
     init_communication();
-
-    // Start pwm-in compare modules
-    // must happen after communication is initialized
-    pwm0_input.init();
 
     // Set up the CS pins for absolute encoders (TODO: move to GPIO init switch statement)
     for(auto& axis : axes){
@@ -540,9 +567,36 @@ static void rtos_main(void*) {
         axis.acim_estimator_.idq_src_.connect_to(&axis.motor_.Idq_setpoint_);
     }
 
-    // Start PWM and enable adc interrupts/callbacks
-    start_adc_pwm();
-    start_analog_thread();
+    // Disarm motors
+    for (auto& axis: axes) {
+        axis.motor_.disarm();
+    }
+
+    for (Motor& motor: motors) {
+        // Init PWM
+        int half_load = TIM_1_8_PERIOD_CLOCKS / 2;
+        motor.timer_->Instance->CCR1 = half_load;
+        motor.timer_->Instance->CCR2 = half_load;
+        motor.timer_->Instance->CCR3 = half_load;
+
+        // Enable PWM outputs (they are still masked by MOE though)
+        motor.timer_->Instance->CCER |= (TIM_CCx_ENABLE << TIM_CHANNEL_1);
+        motor.timer_->Instance->CCER |= (TIM_CCxN_ENABLE << TIM_CHANNEL_1);
+        motor.timer_->Instance->CCER |= (TIM_CCx_ENABLE << TIM_CHANNEL_2);
+        motor.timer_->Instance->CCER |= (TIM_CCxN_ENABLE << TIM_CHANNEL_2);
+        motor.timer_->Instance->CCER |= (TIM_CCx_ENABLE << TIM_CHANNEL_3);
+        motor.timer_->Instance->CCER |= (TIM_CCxN_ENABLE << TIM_CHANNEL_3);
+    }
+
+    start_timers();
+
+    if (odrv.config_.enable_brake_resistor) {
+        odrv.brake_resistor_.arm();
+    }
+
+    // Start user ADC input thread
+    osThreadDef(thread_def, analog_polling_thread, osPriorityLow, 0, 512 / sizeof(StackType_t));
+    osThreadCreate(osThread(thread_def), NULL);
 
     // Wait for up to 2s for motor to become ready to allow for error-free
     // startup. This delay gives the current sensor calibration time to
@@ -652,9 +706,7 @@ extern "C" int main(void) {
     // since the flash interface must be initialized and before board_init()
     // since board initialization can depend on the config.
     size_t config_size = 0;
-    bool success = config_manager.start_load()
-            && config_read_all()
-            && config_manager.finish_load(&config_size)
+    bool success = config_read_all(&config_size)
             && config_apply_all();
     if (success) {
         odrv.user_config_loaded_ = config_size;

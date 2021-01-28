@@ -23,7 +23,7 @@
             "type": "cortex-debug",
             "servertype": "openocd",
             "request": "launch",
-            "name": "Debug ODrive v4.x - ST-Link",
+            "name": "Debug ODrive v4.1 - ST-Link",
             "executable": "${workspaceRoot}/build/ODriveFirmware.elf",
             "configFiles": [
                 "interface/stlink.cfg",
@@ -32,7 +32,41 @@
             "openOCDLaunchCommands": [
                 "reset_config none separate"
             ],
-            "svdFile": "${workspaceRoot}/Private/v4/STM32F722.svd",
+            "svdFile": "${workspaceRoot}/Private/v4.0/STM32F722.svd",
+            "cwd": "${workspaceRoot}"
+        },
+        {
+            // For the Cortex-Debug extension
+            "type": "cortex-debug",
+            "servertype": "openocd",
+            "request": "launch",
+            "name": "Debug ODrive v4.2 - ST-Link",
+            "executable": "${workspaceRoot}/build/ODriveFirmware.elf",
+            "configFiles": [
+                "interface/stlink.cfg",
+                "target/stm32h7x.cfg",
+            ],
+            "openOCDLaunchCommands": [
+                "reset_config none separate"
+            ],
+            "svdFile": "${workspaceRoot}/Private/v4.2/STM32H7x3.svd",
+            "cwd": "${workspaceRoot}"
+        },
+        {
+            // For the Cortex-Debug extension
+            "type": "cortex-debug",
+            "servertype": "openocd",
+            "request": "launch",
+            "name": "Debug TEST v4.2 - ST-Link",
+            "executable": "${workspaceRoot}/Private/testproj/build/testproj.elf",
+            "configFiles": [
+                "interface/stlink.cfg",
+                "target/stm32h7x.cfg",
+            ],
+            "openOCDLaunchCommands": [
+                "reset_config none separate"
+            ],
+            "svdFile": "${workspaceRoot}/Private/v4.2/STM32H7x3.svd",
             "cwd": "${workspaceRoot}"
         },
         {

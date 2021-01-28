@@ -13,6 +13,7 @@ public:
     void on_capture();
 
 private:
+    void handle_pulse(int channel, uint32_t high_time);
     void on_capture(int channel, uint32_t timestamp);
 
     TIM_HandleTypeDef* htim_;

@@ -32,6 +32,8 @@
 // consistent we just leave a gap in the counting scheme.
 #define GPIO_COUNT  (17)
 
+#define CANBUS_COUNT (1)
+
 #if HW_VERSION_MINOR >= 5 && HW_VERSION_VOLTAGE >= 48
 #define DEFAULT_BRAKE_RESISTANCE (2.0f) // [ohm]
 #else
@@ -78,7 +80,6 @@
 #include <Drivers/STM32/stm32_usart.hpp>
 #include <interfaces/canbus.hpp>
 #include <interfaces/pwm_output_group.hpp>
-#include <MotorControl/pwm_input.hpp>
 #include <MotorControl/thermistor.hpp>
 
 using TGateDriver = Drv8301;
@@ -87,11 +88,22 @@ using TOpAmp = Drv8301;
 #include <MotorControl/motor.hpp>
 #include <MotorControl/encoder.hpp>
 
+
+#include <interfaces/board_support_package.hpp>
+
+struct BoardTraits {
+    constexpr static const unsigned _AXIS_COUNT = AXIS_COUNT;
+    constexpr static const unsigned _GPIO_COUNT = GPIO_COUNT;
+    constexpr static const unsigned _CANBUS_COUNT = CANBUS_COUNT;
+};
+using BoardSupportPackage = BoardSupportPackageBase<BoardTraits>;
+
+extern BoardSupportPackage board;
+
+
 extern std::array<Axis, AXIS_COUNT> axes;
 extern Motor motors[AXIS_COUNT];
-extern OnboardThermistorCurrentLimiter fet_thermistors[AXIS_COUNT];
 extern Encoder encoders[AXIS_COUNT];
-extern Stm32Gpio gpios[GPIO_COUNT];
 
 struct GpioFunction { int mode = 0; uint8_t alternate_function = 0xff; };
 extern std::array<GpioFunction, 3> alternate_functions[GPIO_COUNT];
@@ -103,10 +115,6 @@ extern Stm32SpiArbiter& ext_spi_arbiter;
 extern Stm32Usart uart_a;
 extern Stm32Usart uart_b;
 extern Stm32Usart uart_c;
-
-extern std::array<CanBusBase*, 1> can_busses;
-
-extern PwmInput pwm0_input;
 
 extern PwmOutputGroup<1>& brake_resistor_output;
 
@@ -124,14 +132,6 @@ static const float current_meas_period = CURRENT_MEAS_PERIOD;
 // Frequency in [Hz]
 #define CURRENT_MEAS_HZ ( (float)(TIM_1_8_CLOCK_HZ) / (float)(2*TIM_1_8_PERIOD_CLOCKS*(TIM_1_8_RCR+1)) )
 static const int current_meas_hz = CURRENT_MEAS_HZ;
-
-#if HW_VERSION_VOLTAGE >= 48
-#define VBUS_S_DIVIDER_RATIO 19.0f
-#elif HW_VERSION_VOLTAGE == 24
-#define VBUS_S_DIVIDER_RATIO 11.0f
-#else
-#error "unknown board voltage"
-#endif
 
 // Linear range of the DRV8301 opamp output: 0.3V...5.7V. We set the upper limit
 // to 3.0V so that it's symmetric around the center point of 1.65V.

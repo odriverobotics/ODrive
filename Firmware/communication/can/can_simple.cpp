@@ -287,8 +287,8 @@ void CANSimple::get_vbus_voltage_callback(const Axis& axis, can_Message_t& txmsg
     txmsg.len = 8;
 
     uint32_t floatBytes;
-    static_assert(sizeof(vbus_voltage) == sizeof(floatBytes));
-    can_setSignal<float>(txmsg, vbus_voltage, 0, 32, true);
+    static_assert(sizeof(odrv.vbus_voltage_) == sizeof(floatBytes));
+    can_setSignal<float>(txmsg, odrv.vbus_voltage_, 0, 32, true);
 }
 
 void CANSimple::set_axis_nodeid_callback(Axis& axis, const can_Message_t& msg) {

@@ -541,6 +541,7 @@ interfaces:
       temperature:
         type: readonly float32
         unit: °C
+        c_getter: 'get_temp()'
       config:
         c_is_class: False
         attributes:
@@ -561,7 +562,7 @@ interfaces:
       config:
         c_is_class: False
         attributes:
-          gpio_pin: {type: uint16, c_setter: set_gpio_pin}
+          gpio_pin: uint16
           poly_coefficient_0: {type: float32, c_name: 'thermistor_poly_coeffs[0]'}
           poly_coefficient_1: {type: float32, c_name: 'thermistor_poly_coeffs[1]'}
           poly_coefficient_2: {type: float32, c_name: 'thermistor_poly_coeffs[2]'}
@@ -1112,10 +1113,10 @@ interfaces:
           gpio15_mode: {type: ODrive.GpioMode, doc: Mode of GPIO15 (changes take effect after reboot), c_name: 'gpio_modes[15]'}
           gpio16_mode: {type: ODrive.GpioMode, doc: Mode of GPIO16 (changes take effect after reboot), c_name: 'gpio_modes[16]'}
 
-          gpio1_pwm_mapping: {type: ODrive.Endpoint, c_name: 'pwm_mappings[0]', doc: Make sure the corresponding GPIO is in `GPIO_MODE_PWM`.}
-          gpio2_pwm_mapping: {type: ODrive.Endpoint, c_name: 'pwm_mappings[1]', doc: Make sure the corresponding GPIO is in `GPIO_MODE_PWM`.}
-          gpio3_pwm_mapping: {type: ODrive.Endpoint, c_name: 'pwm_mappings[2]', doc: Make sure the corresponding GPIO is in `GPIO_MODE_PWM`.}
-          gpio4_pwm_mapping: {type: ODrive.Endpoint, c_name: 'pwm_mappings[3]', doc: Make sure the corresponding GPIO is in `GPIO_MODE_PWM`.}
+          gpio1_pwm_mapping: {type: ODrive.Endpoint, c_name: 'pwm_mappings[1]', doc: Make sure the corresponding GPIO is in `GPIO_MODE_PWM`.}
+          gpio2_pwm_mapping: {type: ODrive.Endpoint, c_name: 'pwm_mappings[2]', doc: Make sure the corresponding GPIO is in `GPIO_MODE_PWM`.}
+          gpio3_pwm_mapping: {type: ODrive.Endpoint, c_name: 'pwm_mappings[3]', doc: Make sure the corresponding GPIO is in `GPIO_MODE_PWM`.}
+          gpio4_pwm_mapping: {type: ODrive.Endpoint, c_name: 'pwm_mappings[4]', doc: Make sure the corresponding GPIO is in `GPIO_MODE_PWM`.}
       axis0: {type: ODrive.Axis, c_name: get_axis(0)}
       axis1: {type: ODrive.Axis, c_name: get_axis(1)}
 
@@ -1152,10 +1153,10 @@ interfaces:
           gpio21_mode: {type: ODrive.GpioMode, doc: Mode of GPIO21 (changes take effect after reboot), c_name: 'gpio_modes[21]'}
           gpio22_mode: {type: ODrive.GpioMode, doc: Mode of GPIO22 (changes take effect after reboot), c_name: 'gpio_modes[22]'}
 
-          gpio14_pwm_mapping: {type: ODrive.Endpoint, c_name: 'pwm_mappings[3]', doc: Make sure the corresponding GPIO is in `GPIO_MODE_PWM`.}
-          gpio19_pwm_mapping: {type: ODrive.Endpoint, c_name: 'pwm_mappings[2]', doc: Make sure the corresponding GPIO is in `GPIO_MODE_PWM`.}
-          gpio20_pwm_mapping: {type: ODrive.Endpoint, c_name: 'pwm_mappings[0]', doc: Make sure the corresponding GPIO is in `GPIO_MODE_PWM`.}
-          gpio21_pwm_mapping: {type: ODrive.Endpoint, c_name: 'pwm_mappings[1]', doc: Make sure the corresponding GPIO is in `GPIO_MODE_PWM`.}
+          gpio14_pwm_mapping: {type: ODrive.Endpoint, c_name: 'pwm_mappings[14]', doc: Make sure the corresponding GPIO is in `GPIO_MODE_PWM`.}
+          gpio19_pwm_mapping: {type: ODrive.Endpoint, c_name: 'pwm_mappings[19]', doc: Make sure the corresponding GPIO is in `GPIO_MODE_PWM`.}
+          gpio20_pwm_mapping: {type: ODrive.Endpoint, c_name: 'pwm_mappings[20]', doc: Make sure the corresponding GPIO is in `GPIO_MODE_PWM`.}
+          gpio21_pwm_mapping: {type: ODrive.Endpoint, c_name: 'pwm_mappings[21]', doc: Make sure the corresponding GPIO is in `GPIO_MODE_PWM`.}
       axis0: {type: ODrive.Axis, c_name: get_axis(0)}
 
 valuetypes:

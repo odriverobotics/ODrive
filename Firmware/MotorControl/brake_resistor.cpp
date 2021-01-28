@@ -39,10 +39,10 @@ void BrakeResistor::update() {
     
         // Don't start braking until -Ibus > regen_current_allowed
         float brake_current = -Ibus_sum - odrv.config_.max_regen_current;
-        brake_duty = brake_current * odrv.config_.brake_resistance / vbus_voltage;
+        brake_duty = brake_current * odrv.config_.brake_resistance / odrv.vbus_voltage_;
         
         if (odrv.config_.enable_dc_bus_overvoltage_ramp && (odrv.config_.brake_resistance > 0.0f) && (odrv.config_.dc_bus_overvoltage_ramp_start < odrv.config_.dc_bus_overvoltage_ramp_end)) {
-            brake_duty += std::max((vbus_voltage - odrv.config_.dc_bus_overvoltage_ramp_start) / (odrv.config_.dc_bus_overvoltage_ramp_end - odrv.config_.dc_bus_overvoltage_ramp_start), 0.0f);
+            brake_duty += std::max((odrv.vbus_voltage_ - odrv.config_.dc_bus_overvoltage_ramp_start) / (odrv.config_.dc_bus_overvoltage_ramp_end - odrv.config_.dc_bus_overvoltage_ramp_start), 0.0f);
         }
 
         if (is_nan(brake_duty)) {
@@ -61,7 +61,7 @@ void BrakeResistor::update() {
 
         // This cannot result in NaN (safe for race conditions) because we check
         // brake_resistance != 0 further up.
-        Ibus_sum += brake_duty * vbus_voltage / odrv.config_.brake_resistance;
+        Ibus_sum += brake_duty * odrv.vbus_voltage_ / odrv.config_.brake_resistance;
     } else {
         brake_duty = 0;
     }

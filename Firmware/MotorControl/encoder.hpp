@@ -121,7 +121,6 @@ public:
     int16_t tim_cnt_sample_ = 0; // 
     static const constexpr GPIO_TypeDef* ports_to_sample[] = { GPIOA, GPIOB, GPIOC, GPIOD };
     uint16_t port_samples_[sizeof(ports_to_sample) / sizeof(ports_to_sample[0])];
-    // Updated by low_level pwm_adc_cb
     uint8_t hall_state_ = 0x0; // bit[0] = HallA, .., bit[2] = HallC
     std::optional<uint8_t> last_hall_cnt_ = std::nullopt; // Used to find hall edges for calibration
     bool calibrate_hall_phase_ = false;

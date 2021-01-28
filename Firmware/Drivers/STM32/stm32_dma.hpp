@@ -6,6 +6,10 @@
 struct Stm32DmaStreamRef {
 public:
     Stm32DmaStreamRef(DMA_Stream_TypeDef* ref) : ref_(ref) {}
+    
+    static Stm32DmaStreamRef none() {
+        return Stm32DmaStreamRef{nullptr};
+    };
 
     IRQn_Type get_irqn() {
         switch ((uint32_t)ref_) {

@@ -30,19 +30,14 @@ void PwmInput::init() {
 /**
  * @param channel: A channel number in [0, 3]
  */
-void handle_pulse(int channel, uint32_t high_time) {
+void PwmInput::handle_pulse(int channel, uint32_t high_time) {
     if (high_time < PWM_MIN_LEGAL_HIGH_TIME || high_time > PWM_MAX_LEGAL_HIGH_TIME)
         return;
 
-    if (high_time < PWM_MIN_HIGH_TIME)
-        high_time = PWM_MIN_HIGH_TIME;
-    if (high_time > PWM_MAX_HIGH_TIME)
-        high_time = PWM_MAX_HIGH_TIME;
+    high_time = std::clamp(high_time, PWM_MIN_HIGH_TIME, PWM_MAX_HIGH_TIME);
     float fraction = (float)(high_time - PWM_MIN_HIGH_TIME) / (float)(PWM_MAX_HIGH_TIME - PWM_MIN_HIGH_TIME);
-    float value = odrv.config_.pwm_mappings[channel].min +
-                  (fraction * (odrv.config_.pwm_mappings[channel].max - odrv.config_.pwm_mappings[channel].min));
 
-    fibre::set_endpoint_from_float(odrv.config_.pwm_mappings[channel].endpoint, value);
+    board.gpio_pwm_values[gpios_[channel]] = fraction;
 }
 
 /**

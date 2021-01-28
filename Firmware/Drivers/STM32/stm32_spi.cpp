@@ -38,30 +38,51 @@ Stm32Spi::Stm32Spi(SPI_TypeDef* instance, Stm32DmaStreamRef rx_dma, Stm32DmaStre
 bool Stm32Spi::init() {
     if (hspi_.Instance == SPI1) {
         INIT_SPI(SPI1, hdma_rx_, hdma_tx_);
-        freq_ = HAL_RCC_GetPCLK2Freq(); // verified for STM32F405 and STM32F722
     } else if (hspi_.Instance == SPI2) {
         INIT_SPI(SPI2, hdma_rx_, hdma_tx_);
-        freq_ = HAL_RCC_GetPCLK1Freq(); // verified for STM32F405 and STM32F722
     } else if (hspi_.Instance == SPI3) {
         INIT_SPI(SPI3, hdma_rx_, hdma_tx_);
-        freq_ = HAL_RCC_GetPCLK1Freq(); // verified for STM32F405 and STM32F722
     } else {
         // I'm too lazy to implement this for all instances
         return false;
     }
 
+#if defined(RCC_PERIPHCLK_SPI123)
+    // H7 series
+    if (hspi_.Instance == SPI1 || hspi_.Instance == SPI2 || hspi_.Instance == SPI3) {
+        freq_ = HAL_RCCEx_GetPeriphCLKFreq(RCC_PERIPHCLK_SPI123);
+    } else {
+        return false;
+    }
+#else
+    if (hspi_.Instance == SPI1) {
+        freq_ = HAL_RCC_GetPCLK2Freq(); // verified for STM32F405 and STM32F722
+    } else if (hspi_.Instance == SPI2) {
+        freq_ = HAL_RCC_GetPCLK1Freq(); // verified for STM32F405 and STM32F722
+    } else if (hspi_.Instance == SPI3) {
+        freq_ = HAL_RCC_GetPCLK1Freq(); // verified for STM32F405 and STM32F722
+    } else {
+        // I'm too lazy to implement this for all instances
+        return false;
+    }
+#endif
+
     __HAL_LINKDMA((&hspi_), hdmatx, hdma_tx_);
     __HAL_LINKDMA((&hspi_), hdmarx, hdma_rx_);
 
-    Stm32DmaStreamRef{hdma_rx_.Instance}.enable_clock();
-    Stm32DmaStreamRef{hdma_tx_.Instance}.enable_clock();
+    Stm32DmaStreamRef{(DMA_Stream_TypeDef*)hdma_rx_.Instance}.enable_clock();
+    Stm32DmaStreamRef{(DMA_Stream_TypeDef*)hdma_tx_.Instance}.enable_clock();
 
     return true;
 }
 
 bool Stm32Spi::config(Config config) {
-    HAL_DMA_DeInit(&hdma_tx_);
-    HAL_DMA_DeInit(&hdma_rx_);
+    if (hdma_tx_.Instance) {
+        HAL_DMA_DeInit(&hdma_tx_);
+    }
+    if (hdma_rx_.Instance) {
+        HAL_DMA_DeInit(&hdma_rx_);
+    }
     HAL_SPI_DeInit(&hspi_);
 
     
@@ -115,7 +136,7 @@ bool Stm32Spi::config(Config config) {
     hdma_tx_.Init.Priority = DMA_PRIORITY_HIGH; // SPI TX must have higher priority than SPI RX
     hdma_tx_.Init.FIFOMode = DMA_FIFOMODE_DISABLE;
 
-    if (HAL_DMA_Init(&hdma_tx_) != HAL_OK) {
+    if (hdma_tx_.Instance && (HAL_DMA_Init(&hdma_tx_) != HAL_OK)) {
         return false;
     }
 
@@ -133,7 +154,7 @@ bool Stm32Spi::config(Config config) {
     hdma_rx_.Init.Priority = DMA_PRIORITY_MEDIUM;
     hdma_rx_.Init.FIFOMode = DMA_FIFOMODE_DISABLE;
 
-    if (HAL_DMA_Init(&hdma_rx_) != HAL_OK) {
+    if (hdma_rx_.Instance && (HAL_DMA_Init(&hdma_rx_) != HAL_OK)) {
         return false;
     }
 
@@ -141,8 +162,11 @@ bool Stm32Spi::config(Config config) {
         return false;
     }
 
+#if defined(STM32F405) || defined(STM32F722)
     // This is necessary to avoid weird behavior when reconfiguring on the fly
     __HAL_SPI_ENABLE(&hspi_);
+    // On the H7 series however it prevents SPI from working
+#endif
 
     return true;
 }
