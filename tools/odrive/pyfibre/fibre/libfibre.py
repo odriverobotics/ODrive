@@ -68,8 +68,16 @@ if os.path.getsize(lib_path) < 1000:
         " 3. Run `git lfs install`\n"
         " 4. Run `git lfs pull`".format(lib_path, os.path.dirname(lib_path)))
 
-lib = windll.LoadLibrary(lib_path) if os.name == 'nt' else cdll.LoadLibrary(lib_path)
-
+if os.name == 'nt':
+  dll_dir = os.path.dirname(lib_path)
+  try:
+    # New way in python 3.8+
+    os.add_dll_directory(dll_dir)
+  except:
+    os.environ['PATH'] = dll_dir + os.pathsep + os.environ['PATH']
+  lib = windll.LoadLibrary(lib_path)
+else:
+  lib = cdll.LoadLibrary(lib_path)
 
 # libfibre definitions --------------------------------------------------------#
 
