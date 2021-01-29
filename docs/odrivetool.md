@@ -142,7 +142,7 @@ sudo dfu-util -a 0 -s 0x08000000 -D build/ODriveFirmware.bin
 First, you need to install the arm development tools to copy the binary into the appropriate format.
 
 ```text
-$ brew cask install gcc-arm-embedded
+$ brew install --cask gcc-arm-embedded
 ```
 
 Then convert the binary to .bin format
