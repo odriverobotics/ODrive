@@ -58,7 +58,7 @@ jobs:
         if: startsWith(matrix.os, 'macOS-')
         run: |
           brew install armmbed/formulae/arm-none-eabi-gcc
-          brew cask install osxfuse && brew install tup
+          brew install --cask osxfuse && brew install tup
           pip3 install PyYAML Jinja2 jsonschema
 
         

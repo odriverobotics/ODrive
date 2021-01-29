@@ -7,6 +7,7 @@ from engineering_notation import EngNumber
 
 filename = "oscilloscope.csv"
 
+USE_TEST_DATA = False
 PLOT_INITAL = True
 DO_FITTING = False
 PLOT_PROGRESS = False
@@ -109,6 +110,7 @@ class ACMotor():
     def print_parameter_info(self):
         print()
         print('Given parameters:')
+        print('pole_pairs = {}'.format(EngNumber(pole_pairs)))
         print('rotor_resistance = {}ohm'.format(EngNumber(assumed_rotor_resistance)))
 
         print()
@@ -164,8 +166,10 @@ def plot_data(t, y, ref, title):
 # load test data
 t = np.arange(4096)/8000.0
 voltage_step = 1.0
-with open(filename, 'r') as fp:
-    test_response = np.array([float(x) for x in fp.readlines()])
+if USE_TEST_DATA:
+    with open(filename, 'r') as fp:
+        test_response = np.array([float(x) for x in fp.readlines()])
+else: test_response = None
 
 
 inital_parameters = np.zeros(len(ACMotor.parameter_definitions))
