@@ -510,39 +510,41 @@ bool Motor::run_calibration() {
 }
 
 void Motor::update(uint32_t timestamp) {
-    std::optional<float> torque = torque_setpoint_src_.present();
-
-    if (!torque.has_value()) {
+    // Load torque setpoint, convert to motor direction
+    std::optional<float> maybe_torque = torque_setpoint_src_.present();
+    if (!maybe_torque.has_value()) {
         error_ |= ERROR_UNKNOWN_TORQUE;
         return;
     }
+    float torque = direction_ * *maybe_torque;
 
+    // Load setpoints from previous iteration.
     auto [id, iq] = Idq_setpoint_.previous()
-                     .value_or(float2D{0.0f, 0.0f}); // Id doubles as a state variable
-
-    // Convert torque to current
-    if (axis_->motor_.config_.motor_type == Motor::MOTOR_TYPE_ACIM) {
-        iq = *torque / (axis_->motor_.config_.torque_constant * std::max(axis_->acim_estimator_.rotor_flux_, config_.acim_gain_min_flux));
-    } else {
-        iq = *torque / axis_->motor_.config_.torque_constant;
-    }
-
-    iq *= direction_;
-
-
-    // Id takes priority, obey actual norm limit
-
-    // TODO: 2-norm vs independent clamping (current could be sqrt(2) bigger)
+                     .value_or(float2D{0.0f, 0.0f});
+    // Load effective current limit
     float ilim = axis_->motor_.effective_current_lim_;
-    id = std::clamp(id, -ilim, ilim);
-    iq = std::clamp(iq, -ilim, ilim);
 
+    // Autoflux tracks old Iq (that may be 2-norm clamped last cycle) to make sure we are chasing a feasable current.
     if ((axis_->motor_.config_.motor_type == Motor::MOTOR_TYPE_ACIM) && config_.acim_autoflux_enable) {
         float abs_iq = std::abs(iq);
         float gain = abs_iq > id ? config_.acim_autoflux_attack_gain : config_.acim_autoflux_decay_gain;
         id += gain * (abs_iq - id) * current_meas_period;
-        id = std::clamp(id, config_.acim_autoflux_min_Id, ilim);
+        id = std::clamp(id, config_.acim_autoflux_min_Id, 0.9f * ilim); // 10% space reserved for Iq
+    } else {
+        id = std::clamp(id, -ilim*0.99f, ilim*0.99f); // 1% space reserved for Iq to avoid numerical issues
     }
+
+    // Convert requested torque to current
+    if (axis_->motor_.config_.motor_type == Motor::MOTOR_TYPE_ACIM) {
+        iq = torque / (axis_->motor_.config_.torque_constant * std::max(axis_->acim_estimator_.rotor_flux_, config_.acim_gain_min_flux));
+    } else {
+        iq = torque / axis_->motor_.config_.torque_constant;
+    }
+
+    // 2-norm clamping where Id takes priority
+    float iq_lim_sqr = SQ(ilim) - SQ(id);
+    float Iq_lim = (iq_lim_sqr <= 0.0f) ? 0.0f : sqrt(iq_lim_sqr);
+    iq = std::clamp(iq, -Iq_lim, Iq_lim);
 
     if (axis_->motor_.config_.motor_type != Motor::MOTOR_TYPE_GIMBAL) {
         Idq_setpoint_ = {id, iq};
