@@ -529,6 +529,9 @@ void Motor::update(uint32_t timestamp) {
 
     iq *= direction_;
 
+
+    // Id takes priority, obey actual norm limit
+
     // TODO: 2-norm vs independent clamping (current could be sqrt(2) bigger)
     float ilim = axis_->motor_.effective_current_lim_;
     id = std::clamp(id, -ilim, ilim);
