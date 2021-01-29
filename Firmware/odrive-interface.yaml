@@ -414,6 +414,8 @@ interfaces:
           OVER_TEMP:
             # unused
             doc: Check `motor.error` for more details.
+          UNKNOWN_POSITION:
+            doc: There isn't a valid position estimate available.
       step_dir_active: readonly bool
       last_drv_fault: readonly uint32
       current_state: readonly AxisState

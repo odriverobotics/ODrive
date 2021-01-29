@@ -397,8 +397,13 @@ bool Axis::run_homing() {
 
     error_ &= ~ERROR_MIN_ENDSTOP_PRESSED; // clear this error since we deliberately drove into the endstop
 
+    
+    if (encoder_.pos_estimate_.any() == std::nullopt || !encoder_.pos_estimate_.any().has_value()){
+        return error_ |= ERROR_UNKNOWN_POSITION, false;
+    }
+
     // Calculate the desired position after offset.
-    float inputBuffer = encoder_.pos_estimate_.any().value() + min_endstop_.config_.offset;
+    float input_buffer = encoder_.pos_estimate_.any().value() + min_endstop_.config_.offset;
     
     controller_.config_.control_mode = Controller::CONTROL_MODE_POSITION_CONTROL;
     controller_.config_.input_mode = Controller::INPUT_MODE_TRAP_TRAJ;
@@ -406,7 +411,7 @@ bool Axis::run_homing() {
     // Initialize closed loop control, and then set the desired location.
     start_closed_loop_control();
     
-    controller_.input_pos_ = inputBuffer;
+    controller_.input_pos_ = input_buffer;
     controller_.input_pos_updated();
     
     while ((requested_state_ == AXIS_STATE_UNDEFINED) && motor_.is_armed_ && !controller_.trajectory_done_) {
