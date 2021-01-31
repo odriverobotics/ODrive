@@ -56,6 +56,9 @@ elseif string.find(machine, "x86_64.*-mingw.*") then
 elseif string.find(machine, "x86_64.*-apple-.*") then
     outname = 'libfibre-macos-x86.dylib'
     STRIP = false
+elseif string.find(machine, "arm64.*-apple-.*") then
+    outname = 'libfibre-macos-arm.dylib'
+    STRIP = false
 elseif string.find(machine, "wasm.*") then
     outname = 'libfibre-wasm.js'
     STRIP = false
