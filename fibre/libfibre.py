@@ -61,6 +61,13 @@ lib_path = get_first(
 if lib_path is None:
     raise ModuleNotFoundError("{} was not found in {}".format(lib_name, search_paths))
 
+if os.path.getsize(lib_path) < 1000:
+    raise ModuleNotFoundError("{} is too small. Did you forget to init git lfs? Try this:\n"
+        " 1. Install git lfs (https://git-lfs.github.com/)\n"
+        " 2. Run `cd {}`\n"
+        " 3. Run `git lfs install`\n"
+        " 4. Run `git lfs pull`".format(lib_path, os.path.dirname(lib_path)))
+
 lib = windll.LoadLibrary(lib_path) if os.name == 'nt' else cdll.LoadLibrary(lib_path)
 
 
