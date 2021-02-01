@@ -40,13 +40,14 @@ STRICT = get_bool_config("STRICT", false)
 machine = fibre_run_now(CXX..' -dumpmachine') -- works with both clang and GCC
 
 BUILD_TYPE='-shared'
+enable_tcp = true
 
 if string.find(machine, "x86_64.*%-linux%-.*") then
     outname = 'libfibre-linux-amd64.so'
     LDFLAGS += '-lpthread -Wl,--version-script=libfibre.version -Wl,--gc-sections'
     STRIP = not DEBUG
 elseif string.find(machine, "arm.*%-linux%-.*") then
-	outname = 'libfibre-linux-armhf.so'
+    outname = 'libfibre-linux-armhf.so'
     LDFLAGS += '-lpthread -Wl,--version-script=libfibre.version -Wl,--gc-sections'
     STRIP = false
 elseif string.find(machine, "x86_64.*-mingw.*") then
@@ -56,6 +57,11 @@ elseif string.find(machine, "x86_64.*-mingw.*") then
 elseif string.find(machine, "x86_64.*-apple-.*") then
     outname = 'libfibre-macos-x86.dylib'
     STRIP = false
+    enable_tcp = false
+elseif string.find(machine, "arm64.*-apple-.*") then
+    outname = 'libfibre-macos-arm.dylib'
+    STRIP = false
+    enable_tcp = false
 elseif string.find(machine, "wasm.*") then
     outname = 'libfibre-wasm.js'
     STRIP = false
@@ -89,8 +95,8 @@ end
 pkg = get_fibre_package({
     enable_server=false,
     enable_client=true,
-    enable_tcp_server_backend=get_bool_config("ENABLE_TCP_SERVER_BACKEND", true),
-    enable_tcp_client_backend=get_bool_config("ENABLE_TCP_CLIENT_BACKEND", true),
+    enable_tcp_server_backend=get_bool_config("ENABLE_TCP_SERVER_BACKEND", enable_tcp),
+    enable_tcp_client_backend=get_bool_config("ENABLE_TCP_CLIENT_BACKEND", enable_tcp),
     enable_libusb_backend=get_bool_config("ENABLE_LIBUSB_BACKEND", true),
     allow_heap=true,
     pkgconf=(tup.getconfig("USE_PKGCONF") != "") and tup.getconfig("USE_PKGCONF") or nil
