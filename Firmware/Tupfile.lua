@@ -209,7 +209,8 @@ sources = {
     'communication/interface_i2c.cpp',
     'fibre/cpp/protocol.cpp',
     'FreeRTOS-openocd.c',
-    'autogen/version.c'
+    'autogen/version.c',
+    'MotorControl/myapp.cpp'
 }
 tup.append_table(sources, board.sources)
 

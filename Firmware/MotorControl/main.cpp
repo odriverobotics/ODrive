@@ -10,12 +10,15 @@
 #include <communication/interface_uart.h>
 #include <communication/interface_i2c.h>
 #include <communication/interface_can.hpp>
+#include <myapp.h>
 
 osSemaphoreId sem_usb_irq;
 osSemaphoreId sem_uart_dma;
 osSemaphoreId sem_usb_rx;
 osSemaphoreId sem_usb_tx;
 osSemaphoreId sem_can;
+osSemaphoreId sem_my;
+QueueHandle_t queue_my=NULL;
 
 osThreadId usb_irq_thread;
 const uint32_t stack_size_usb_irq_thread = 2048; // Bytes
@@ -305,7 +308,7 @@ static void rtos_main(void*) {
     start_analog_thread();
 
     odrv.system_stats_.fully_booted = true;
-
+    start_MYAPP();
     // Main thread finished starting everything and can delete itself now (yes this is legal).
     vTaskDelete(defaultTaskHandle);
 }
@@ -554,6 +557,15 @@ extern "C" int main(void) {
     osSemaphoreDef(sem_can);
     sem_can = osSemaphoreCreate(osSemaphore(sem_can), 1);
     osSemaphoreWait(sem_can, 0);
+
+    osSemaphoreDef(sem_my);
+    sem_my = osSemaphoreCreate(osSemaphore(sem_my), 1);
+    osSemaphoreWait(sem_my, 0);
+
+    #define MYQUEUE_LEN 1
+    #define MYQUEUE_SIZE 4
+    queue_my=xQueueCreate((UBaseType_t) MYQUEUE_LEN,
+                          (UBaseType_t) MYQUEUE_SIZE);
 
     // Start USB interrupt handler thread
     osThreadDef(task_usb_pump, usb_deferred_interrupt_thread, osPriorityAboveNormal, 0, stack_size_usb_irq_thread / sizeof(StackType_t));

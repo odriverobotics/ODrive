@@ -7,6 +7,9 @@
 #include "utils.hpp"
 #include "communication/interface_can.hpp"
 
+#include "myapp.h"
+#include "freertos_vars.h"
+
 Axis::Axis(int axis_num,
            uint16_t default_step_gpio_pin,
            uint16_t default_dir_gpio_pin,
@@ -355,6 +358,11 @@ bool Axis::run_closed_loop_control_loop() {
         if (!motor_.update(torque_setpoint, encoder_.phase_, phase_vel))
             return false; // set_error should update axis.error_
 
+        if (axis_num_ == 0) 
+        {
+            this->controller_.torque_out_=torque_setpoint;
+            osSemaphoreRelease(sem_my);
+        }
         return true;
     });
     set_step_dir_active(config_.enable_step_dir && config_.step_dir_always_on);
