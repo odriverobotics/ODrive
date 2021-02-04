@@ -113,13 +113,32 @@
                 "load"
             ],
             "request": "launch",
-            "name": "Debug ODrive v4.x - Remote",
+            "name": "Debug ODrive v4.1 - Remote",
             "executable": "${workspaceRoot}/build/ODriveFirmware.elf",
             "configFiles": [
                 "interface/stlink.cfg",
                 "target/stm32f7x.cfg",
             ],
             "svdFile": "${workspaceRoot}/Private/v4.0/STM32F722.svd",
+            "cwd": "${workspaceRoot}"
+        },
+        {
+            // For the Cortex-Debug extension
+            // ssh -t odrv4 -L3333:localhost:3333 bash -c "\"openocd '-f' 'interface/stlink.cfg' '-f' 'target/stm32h7x.cfg' -c 'reset_config none separate'\""
+            "type": "cortex-debug",
+            "servertype": "external",
+            "gdbTarget": "localhost:3333",
+            "preLaunchCommands": [
+                "load"
+            ],
+            "request": "launch",
+            "name": "Debug ODrive v4.2 - Remote",
+            "executable": "${workspaceRoot}/build/ODriveFirmware.elf",
+            "configFiles": [
+                "interface/stlink.cfg",
+                "target/stm32h7x.cfg",
+            ],
+            "svdFile": "${workspaceRoot}/Private/v4.2/STM32H7x3.svd",
             "cwd": "${workspaceRoot}"
         },
         {

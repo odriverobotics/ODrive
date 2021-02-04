@@ -461,8 +461,6 @@ void start_usb_server() {
         for (;;); // TODO: handle
     }
 
-    HAL_PWREx_EnableUSBVoltageDetector();
-
     // Start USB communication thread
     osThreadDef(usb_server_thread_def, usb_server_thread, osPriorityNormal, 0, stack_size_usb_thread / sizeof(StackType_t));
     usb_thread = osThreadCreate(osThread(usb_server_thread_def), NULL);

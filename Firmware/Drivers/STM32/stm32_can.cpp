@@ -1,20 +1,15 @@
 
 #include "stm32_can.hpp"
 
-Stm32Can* can1;
-Stm32Can* can2;
-
 bool Stm32Can::init(CAN_InitTypeDef config, uint32_t can_freq) {
     handle_.Init = config;
     can_freq_ = can_freq;
 
     if (handle_.Instance == CAN1) {
         __HAL_RCC_CAN1_CLK_ENABLE();
-        can1 = this;
 #ifdef CAN2
     } else if (handle_.Instance == CAN2) {
         __HAL_RCC_CAN2_CLK_ENABLE();
-        can2 = this;
 #endif
     } else {
         return false;
@@ -24,14 +19,19 @@ bool Stm32Can::init(CAN_InitTypeDef config, uint32_t can_freq) {
     return HAL_CAN_Init(&handle_) == HAL_OK;
 }
 
-bool Stm32Can::is_valid_baud_rate(uint32_t baud_rate) {
-    uint32_t prescaler = can_freq_ / baud_rate;
-    return prescaler * baud_rate == can_freq_;
+bool Stm32Can::is_valid_baud_rate(uint32_t nominal_baud_rate, uint32_t data_baud_rate) {
+    uint32_t prescaler = can_freq_ / nominal_baud_rate;
+    return (nominal_baud_rate == data_baud_rate)
+        && (prescaler * nominal_baud_rate == can_freq_);
 }
 
-bool Stm32Can::start(uint32_t baud_rate, on_event_cb_t on_event, on_error_cb_t on_error) {
-    uint32_t prescaler = can_freq_ / baud_rate;
-    if (prescaler * baud_rate != can_freq_) {
+bool Stm32Can::start(uint32_t nominal_baud_rate, uint32_t data_baud_rate, on_event_cb_t on_event, on_error_cb_t on_error) {
+    if (nominal_baud_rate != data_baud_rate) {
+        return false;
+    }
+
+    uint32_t prescaler = can_freq_ / nominal_baud_rate;
+    if (prescaler * nominal_baud_rate != can_freq_) {
         return false;
     }
 
@@ -58,6 +58,13 @@ bool Stm32Can::stop() {
 
 // Send a CAN message on the bus
 bool Stm32Can::send_message(uint32_t tx_slot, const can_Message_t& message, on_sent_cb_t on_sent) {
+    if (message.fd_frame || message.bit_rate_switching) {
+        return false; // CAN FD not supported by hardware
+    }
+    if (message.len > 8) {
+        return false;
+    }
+
     // The mailboxes are always filled with the messages from those slots with
     // the highest priority messages.
 
@@ -112,6 +119,10 @@ bool Stm32Can::subscribe(uint32_t rx_slot, const MsgIdFilterSpecs& filter, on_re
         return false; // all subscription slots in use
     }
 
+    if (rx_slot >= 2) {
+        return false;
+    }
+
     it->on_received = on_received;
     it->fifo = (rx_slot == 0) ? CAN_RX_FIFO0 : CAN_RX_FIFO1;
     if (handle) {
@@ -154,8 +165,10 @@ bool Stm32Can::unsubscribe(CanSubscription* handle) {
 
     subscription->fifo = kCanFifoNone;
 
-    CAN_FilterTypeDef hal_filter = {};
-    hal_filter.FilterActivation = DISABLE;
+    CAN_FilterTypeDef hal_filter = {
+        .FilterBank = (uint32_t)(subscription - &subscriptions_[0]),
+        .FilterActivation = DISABLE
+    };
     return HAL_CAN_ConfigFilter(&handle_, &hal_filter) == HAL_OK;
 }
 
@@ -165,8 +178,8 @@ bool Stm32Can::send_now(size_t slot_id) {
     CAN_TxHeaderTypeDef header;
     header.StdId = message.id;
     header.ExtId = message.id;
-    header.IDE = message.isExt ? CAN_ID_EXT : CAN_ID_STD;
-    header.RTR = CAN_RTR_DATA;
+    header.IDE = message.is_extended_id ? CAN_ID_EXT : CAN_ID_STD;
+    header.RTR = message.rtr ? CAN_RTR_REMOTE : CAN_RTR_DATA;
     header.DLC = message.len;
     header.TransmitGlobalTime = FunctionalState::DISABLE; // this param is ignored
 
@@ -198,8 +211,8 @@ void Stm32Can::on_rx_fifo_pending(uint8_t fifo) {
         can_Message_t rxmsg;
         HAL_CAN_GetRxMessage(&handle_, fifo, &header, rxmsg.buf);
 
-        rxmsg.isExt = header.IDE;
-        rxmsg.id = rxmsg.isExt ? header.ExtId : header.StdId;  // If it's an extended message, pass the extended ID
+        rxmsg.is_extended_id = header.IDE;
+        rxmsg.id = rxmsg.is_extended_id ? header.ExtId : header.StdId;  // If it's an extended message, pass the extended ID
         rxmsg.len = header.DLC;
         rxmsg.rtr = header.RTR;
 

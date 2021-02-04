@@ -43,7 +43,7 @@ void ODriveCAN::can_server_thread() {
 
 // Invoked on any fibre thread
 bool ODriveCAN::set_baud_rate(uint32_t baud_rate) {
-    if (canbus_.is_valid_baud_rate(baud_rate)) {
+    if (canbus_.is_valid_baud_rate(baud_rate, baud_rate)) { // TODO: support dual-baudrate
         if (config_.baud_rate != baud_rate) {
             config_.baud_rate = baud_rate;
             event_loop_.put(MEMBER_CB(this, restart_canbus));
@@ -57,7 +57,8 @@ bool ODriveCAN::set_baud_rate(uint32_t baud_rate) {
 
 // Invoked on the CAN thread
 void ODriveCAN::start_canbus() {
-    canbus_.start(config_.baud_rate, MEMBER_CB(this, on_canbus_event), MEMBER_CB(this, on_canbus_error));
+    // TODO: support dual baud rate
+    canbus_.start(config_.baud_rate, config_.baud_rate, MEMBER_CB(this, on_canbus_event), MEMBER_CB(this, on_canbus_error));
 }
 
 // Invoked on the CAN thread

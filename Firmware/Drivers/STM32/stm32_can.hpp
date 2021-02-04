@@ -8,6 +8,34 @@ class Stm32Can : public CanBusBase {
 public:
     Stm32Can(CAN_TypeDef* instance) : handle_{.Instance = instance} {}
 
+    IRQn_Type get_tx_irqn() {
+        switch ((uint32_t)handle_.Instance) {
+            case CAN1_BASE: return CAN1_TX_IRQn;
+            default: return UsageFault_IRQn;
+        }
+    }
+
+    IRQn_Type get_rx0_irqn() {
+        switch ((uint32_t)handle_.Instance) {
+            case CAN1_BASE: return CAN1_RX0_IRQn;
+            default: return UsageFault_IRQn;
+        }
+    }
+
+    IRQn_Type get_rx1_irqn() {
+        switch ((uint32_t)handle_.Instance) {
+            case CAN1_BASE: return CAN1_RX1_IRQn;
+            default: return UsageFault_IRQn;
+        }
+    }
+
+    IRQn_Type get_sce_irqn() {
+        switch ((uint32_t)handle_.Instance) {
+            case CAN1_BASE: return CAN1_SCE_IRQn;
+            default: return UsageFault_IRQn;
+        }
+    }
+
     bool init(CAN_InitTypeDef config, uint32_t can_freq);
 
     // Callbacks called from interrupt routines
@@ -28,7 +56,6 @@ private:
 
     struct Stm32CanSubscription : CanSubscription {
         uint8_t fifo = kCanFifoNone; // kCanFifoNone means the slot is not in use
-        //MsgIdFilterSpecs filter;
         on_received_cb_t on_received;
     };
 
@@ -44,8 +71,8 @@ private:
         on_sent_cb_t on_sent;
     };
 
-    bool is_valid_baud_rate(uint32_t baud_rate) final;
-    bool start(uint32_t baud_rate, on_event_cb_t on_event, on_error_cb_t on_error) final;
+    bool is_valid_baud_rate(uint32_t nominal_baud_rate, uint32_t data_baud_rate) final;
+    bool start(uint32_t nominal_baud_rate, uint32_t data_baud_rate, on_event_cb_t on_event, on_error_cb_t on_error) final;
     bool stop() final;
     bool send_message(uint32_t tx_slot, const can_Message_t& message, on_sent_cb_t on_sent) final;
     bool subscribe(uint32_t rx_slot, const MsgIdFilterSpecs& filter, on_received_cb_t on_received, CanSubscription** handle) final;
@@ -68,5 +95,24 @@ private:
     std::array<Slot, kNTxSlots> slots_;
     std::array<MailboxState, 3> mailbox_state_;
 };
+
+#define DEFINE_STM32_CAN(name, instance) \
+    Stm32Can name{instance}; \
+    extern "C" void instance ## _TX_IRQHandler(void) { \
+        COUNT_IRQ(instance ## _TX_IRQn); \
+        HAL_CAN_IRQHandler(&name.handle_); \
+    } \
+    extern "C" void instance ## _RX0_IRQHandler(void) { \
+        COUNT_IRQ(instance ## _RX0_IRQn); \
+        HAL_CAN_IRQHandler(&name.handle_); \
+    } \
+    extern "C" void instance ## _RX1_IRQHandler(void) { \
+        COUNT_IRQ(instance ## _RX1_IRQn); \
+        HAL_CAN_IRQHandler(&name.handle_); \
+    } \
+    extern "C" void instance ## _SCE_IRQHandler(void) { \
+        COUNT_IRQ(instance ## _SCE_IRQn); \
+        HAL_CAN_IRQHandler(&name.handle_); \
+    }
 
 #endif  // __STM32_CAN_HPP
