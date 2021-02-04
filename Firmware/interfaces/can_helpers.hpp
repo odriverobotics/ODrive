@@ -54,14 +54,11 @@ struct can_Cyclic_t {
     uint32_t lastTime_ms;
 };
 
-#include <iterator>
 template <typename T>
 constexpr T can_getSignal(const can_Message_t& msg, const uint8_t startBit, const uint8_t length, const bool isIntel) {
-    uint64_t tempVal = 0;
     uint64_t mask = length < 64 ? (1ULL << length) - 1ULL : -1ULL;
 
-    std::memcpy(&tempVal, msg.buf, sizeof(tempVal));
-
+    uint64_t tempVal = *(reinterpret_cast<const uint64_t*>(msg.buf));
     if (isIntel) {
         tempVal = (tempVal >> startBit) & mask;
     } else {
@@ -69,9 +66,7 @@ constexpr T can_getSignal(const can_Message_t& msg, const uint8_t startBit, cons
         tempVal = (tempVal >> (64 - startBit - length)) & mask;
     }
 
-    T retVal;
-    std::memcpy(&retVal, &tempVal, sizeof(T));
-    return retVal;
+    return *(reinterpret_cast<T*>(&tempVal));
 }
 
 template <typename T>
