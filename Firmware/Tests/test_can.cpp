@@ -57,6 +57,10 @@ TEST_SUITE("CAN Functions") {
         msg.buf[2] = 0x00;
         msg.buf[3] = 0x00;
         CHECK(can_getSignal<int32_t>(msg, 0, 32, true, 0.01f, 0.0f) == 1.50f);
+
+        const auto bigVal = 0x123ULL << 28ULL;
+        std::memcpy(rxmsg.buf, &bigVal, sizeof(bigVal));
+        CHECK(can_getSignal<uint64_t>(rxmsg, 28, 12, true) == 0x123ULL);
     }
 
     TEST_CASE("setSignal") {
