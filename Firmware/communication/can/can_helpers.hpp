@@ -28,16 +28,16 @@ struct can_Cyclic_t {
 
 #include <iterator>
 template <typename T>
-constexpr T can_getSignal(can_Message_t msg, const uint8_t startBit, const uint8_t length, const bool isIntel) {
+constexpr T can_getSignal(const can_Message_t& msg, const uint8_t startBit, const uint8_t length, const bool isIntel) {
     uint64_t tempVal = 0;
     uint64_t mask = length < 64 ? (1ULL << length) - 1ULL : -1ULL;
 
+    std::memcpy(&tempVal, msg.buf, sizeof(tempVal));
+
     if (isIntel) {
-        std::memcpy(&tempVal, msg.buf, sizeof(tempVal));
         tempVal = (tempVal >> startBit) & mask;
     } else {
-        std::reverse(std::begin(msg.buf), std::end(msg.buf));
-        std::memcpy(&tempVal, msg.buf, sizeof(tempVal));
+        tempVal = __builtin_bswap64 (tempVal);
         tempVal = (tempVal >> (64 - startBit - length)) & mask;
     }
 
