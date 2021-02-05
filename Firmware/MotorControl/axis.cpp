@@ -395,13 +395,13 @@ bool Axis::run_homing() {
 
     error_ &= ~ERROR_MIN_ENDSTOP_PRESSED; // clear this error since we deliberately drove into the endstop
 
-    
-    if (encoder_.pos_estimate_.any() == std::nullopt || !encoder_.pos_estimate_.any().has_value()){
+    std::optional<float> pos_estimate_local = encoder_.pos_estimate_.any();
+    if (pos_estimate_local == std::nullopt || !pos_estimate_local.has_value()){
         return error_ |= ERROR_UNKNOWN_POSITION, false;
     }
 
     // Calculate the desired position after offset.
-    float input_buffer = encoder_.pos_estimate_.any().value() + min_endstop_.config_.offset;
+    float input_buffer = pos_estimate_local.value() + min_endstop_.config_.offset;
     
     controller_.config_.control_mode = Controller::CONTROL_MODE_POSITION_CONTROL;
     controller_.config_.input_mode = Controller::INPUT_MODE_TRAP_TRAJ;
