@@ -54,6 +54,8 @@ struct can_Cyclic_t {
     uint32_t lastTime_ms;
 };
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wstrict-aliasing" // Make sure to check these functions on your system
 template <typename T>
 constexpr T can_getSignal(const can_Message_t& msg, const uint8_t startBit, const uint8_t length, const bool isIntel) {
     uint64_t mask = length < 64 ? (1ULL << length) - 1ULL : -1ULL;
@@ -71,31 +73,36 @@ constexpr T can_getSignal(const can_Message_t& msg, const uint8_t startBit, cons
 
 template <typename T>
 constexpr void can_setSignal(can_Message_t& msg, const T& val, const uint8_t startBit, const uint8_t length, const bool isIntel) {
-    uint64_t valAsBits = 0;
-    std::memcpy(&valAsBits, &val, sizeof(val));
+    union aliastype {
+        aliastype() : valAsBits(0){}
+        T tempVal;
+        uint64_t valAsBits;
+    };
 
-    uint64_t mask = length < 64 ? (1ULL << length) - 1ULL : -1ULL;
+    const uint64_t mask = length < 64 ? (1ULL << length) - 1ULL : -1ULL;
+    uint64_t data = *(reinterpret_cast<const uint64_t*>(msg.buf));
+
+    aliastype valAlias;
+    valAlias.tempVal = val;
+    valAlias.valAsBits &= mask;
 
     if (isIntel) {
-        uint64_t data = 0;
-        std::memcpy(&data, msg.buf, sizeof(data));
-
         data &= ~(mask << startBit);
-        data |= valAsBits << startBit;
+        data |= valAlias.valAsBits << startBit;
 
-        std::memcpy(msg.buf, &data, sizeof(data));
+        *(reinterpret_cast<uint64_t*>(msg.buf)) = data;
     } else {
-        uint64_t data = 0;
-        std::reverse(std::begin(msg.buf), std::end(msg.buf));
-        std::memcpy(&data, msg.buf, sizeof(data));
+        data = __builtin_bswap64 (data);
 
         data &= ~(mask << (64 - startBit - length));
-        data |= valAsBits << (64 - startBit - length);
+        data |= valAlias.valAsBits << (64 - startBit - length);
 
-        std::memcpy(msg.buf, &data, sizeof(data));
-        std::reverse(std::begin(msg.buf), std::end(msg.buf));
+        data = __builtin_bswap64 (data);
+        *(reinterpret_cast<uint64_t*>(msg.buf)) = data;
+
     }
 }
+#pragma GCC diagnostic pop
 
 template<typename T>
 void can_setSignal(can_Message_t& msg, const T& val, const uint8_t startBit, const uint8_t length, const bool isIntel, const float factor, const float offset) {
