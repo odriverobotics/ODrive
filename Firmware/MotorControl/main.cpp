@@ -68,8 +68,8 @@ void StatusLedController::update() {
     } else {
         // Slow blue pulsating
         const uint32_t period_ms = 4096;
-        const uint8_t min_brightness = 64;
-        const uint8_t max_brightness = 180;
+        const uint8_t min_brightness = 50;
+        const uint8_t max_brightness = 160;
         uint32_t brightness = std::abs((int32_t)(t % period_ms) - (int32_t)(period_ms / 2)) * (max_brightness - min_brightness) / (period_ms / 2) + min_brightness;
         brightness = (brightness * brightness) >> 8; // eye response very roughly sqrt
         status_led.set_color(rgb_t{0, 0, (uint8_t)brightness});
