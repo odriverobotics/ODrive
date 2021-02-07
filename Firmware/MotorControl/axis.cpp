@@ -506,6 +506,9 @@ void Axis::run_state_machine_loop() {
                     goto invalid_state_label;
 
                 status = encoder_.run_direction_find();
+                // Help facilitate encoder.is_ready without reboot
+                if (status)
+                    encoder_.apply_config(motor_.config_.motor_type);
             } break;
 
             case AXIS_STATE_ENCODER_HALL_POLARITY_CALIBRATION: {
