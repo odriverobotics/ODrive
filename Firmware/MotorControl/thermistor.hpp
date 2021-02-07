@@ -16,12 +16,15 @@ public:
 
     bool do_checks();
     float get_current_limit(float base_current_lim) const override;
-    virtual float get_temp() const = 0;
+    void update(); // fetch value, and run low pass filter
+    float get_temp() const { return lpf_vals_.back(); };
+    virtual float get_raw_temp() const = 0;
 
     const float& temp_limit_lower_;
     const float& temp_limit_upper_;
     const bool& enabled_;
     Motor* motor_ = nullptr; // set by Motor::apply_config()
+    std::array<float, 2> lpf_vals_ = { 0.0f };
 };
 
 class OnboardThermistorCurrentLimiter : public ThermistorCurrentLimiter, public ODriveIntf::OnboardThermistorCurrentLimiterIntf {
@@ -34,7 +37,7 @@ public:
 
     virtual ~OnboardThermistorCurrentLimiter() = default;
     OnboardThermistorCurrentLimiter(float* value_ptr);
-    float get_temp() const final { return *value_ptr_; }
+    float get_raw_temp() const final { return *value_ptr_; }
 
     Config_t config_;
     float* value_ptr_;
@@ -60,13 +63,11 @@ public:
     virtual ~OffboardThermistorCurrentLimiter() = default;
     OffboardThermistorCurrentLimiter();
 
-    float get_temp() const final { return temperature_; }
+    float get_raw_temp() const final;
     bool apply_config();
-    void update();
 
     Config_t config_;
     const float* const coefficients_;
-    float temperature_ = NAN; // [°C] NaN while the ODrive is initializing.
 };
 
 #endif // __THERMISTOR_HPP

@@ -442,6 +442,7 @@ void ODrive::control_loop_cb(uint32_t timestamp) {
     for (auto& axis: axes) {
         // Sub-components should use set_error which will propegate to this error_
         MEASURE_TIME(axis.task_times_.thermistor_update) {
+            axis.motor_.fet_thermistor_.update();
             axis.motor_.motor_thermistor_.update();
         }
 

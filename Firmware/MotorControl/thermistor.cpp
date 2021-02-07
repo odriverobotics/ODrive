@@ -9,6 +9,19 @@ ThermistorCurrentLimiter::ThermistorCurrentLimiter(const float& temp_limit_lower
 {
 }
 
+void ThermistorCurrentLimiter::update() {
+    constexpr float tau = 0.1f; // [sec]
+    float k = current_meas_period / tau;
+    float val = get_raw_temp();
+    for (float& lpf_val : lpf_vals_) {
+        lpf_val += k * (val - lpf_val);
+        val = lpf_val;
+    }
+    if (is_nan(val)) {
+        lpf_vals_.fill(0.0f);
+    }
+}
+
 bool ThermistorCurrentLimiter::do_checks() {
     if (enabled_ && get_temp() >= temp_limit_upper_ + 5) {
         return false;
@@ -47,8 +60,8 @@ OffboardThermistorCurrentLimiter::OffboardThermistorCurrentLimiter() :
 {
 }
 
-void OffboardThermistorCurrentLimiter::update() {
+float OffboardThermistorCurrentLimiter::get_raw_temp() const {
     const uint16_t gpio = config_.gpio_pin;
     const float ratio =  (gpio < board.gpio_adc_values.size()) ? board.gpio_adc_values[gpio] : -INFINITY;
-    temperature_ = horner_poly_eval(ratio, coefficients_, num_coeffs_);
+    return horner_poly_eval(ratio, coefficients_, num_coeffs_);
 }
