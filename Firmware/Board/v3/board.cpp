@@ -13,6 +13,7 @@
 #include <Drivers/STM32/stm32_spi.hpp>
 #include <Drivers/STM32/stm32_timer.hpp>
 #include <Drivers/STM32/stm32_usart.hpp>
+#include <MotorControl/pwm_input.hpp>
 
 #include <adc.h>
 #include <tim.h>
@@ -621,6 +622,27 @@ void start_timers() {
     }
 }
 
+// Linear range of the DRV8301 opamp output: 0.3V...5.7V. We set the upper limit
+// to 3.0V so that it's symmetric around the center point of 1.65V.
+#define CURRENT_SENSE_MIN_VOLT  0.3f
+#define CURRENT_SENSE_MAX_VOLT  3.0f
+
+static constexpr auto CURRENT_ADC_LOWER_BOUND = (uint32_t)(kAdcFullScale * CURRENT_SENSE_MIN_VOLT / board.kAdcMaxVoltage);
+static constexpr auto CURRENT_ADC_UPPER_BOUND = (uint32_t)(kAdcFullScale * CURRENT_SENSE_MAX_VOLT / board.kAdcMaxVoltage);
+
+std::optional<float> phase_current_from_adcval(uint32_t ADCValue, float rev_gain) {
+    // Make sure the measurements don't come too close to the current sensor's hardware limitations
+    if (ADCValue < CURRENT_ADC_LOWER_BOUND || ADCValue > CURRENT_ADC_UPPER_BOUND) {
+        motors[0].error_ |= Motor::ERROR_CURRENT_SENSE_SATURATION; // TODO make multi-axis
+        return std::nullopt;
+    }
+
+    return ((float)ADCValue - kAdcFullScale / 2)
+         * (board.kAdcMaxVoltage / kAdcFullScale)
+         * rev_gain
+         * (1.0f / SHUNT_RESISTANCE);
+}
+
 static bool fetch_and_reset_adcs(
         std::optional<Iph_ABC_t>* current0,
         std::optional<Iph_ABC_t>* current1) {
@@ -634,16 +656,16 @@ static bool fetch_and_reset_adcs(
     board.vbus_voltage = ADC1->JDR1 * (board.kAdcMaxVoltage * VBUS_S_DIVIDER_RATIO / kAdcFullScale);
 
     if (m0_gate_driver.is_ready()) {
-        std::optional<float> phB = motors[0].phase_current_from_adcval(ADC2->JDR1);
-        std::optional<float> phC = motors[0].phase_current_from_adcval(ADC3->JDR1);
+        std::optional<float> phB = phase_current_from_adcval(ADC2->JDR1, motors[0].phase_current_rev_gain_);
+        std::optional<float> phC = phase_current_from_adcval(ADC3->JDR1, motors[0].phase_current_rev_gain_);
         if (phB.has_value() && phC.has_value()) {
             *current0 = {-*phB - *phC, *phB, *phC};
         }
     }
 
     if (m1_gate_driver.is_ready()) {
-        std::optional<float> phB = motors[1].phase_current_from_adcval(ADC2->DR);
-        std::optional<float> phC = motors[1].phase_current_from_adcval(ADC3->DR);
+        std::optional<float> phB = phase_current_from_adcval(ADC2->DR, motors[1].phase_current_rev_gain_);
+        std::optional<float> phC = phase_current_from_adcval(ADC3->DR, motors[1].phase_current_rev_gain_);
         if (phB.has_value() && phC.has_value()) {
             *current1 = {-*phB - *phC, *phB, *phC};
         }
