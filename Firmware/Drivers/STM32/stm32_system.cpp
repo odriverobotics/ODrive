@@ -41,6 +41,13 @@ void get_regs(void** stack_ptr) {
     volatile bool preciserr __attribute__((unused)) = (uint32_t)cfsr & 0x200;
     volatile bool ibuserr __attribute__((unused)) = (uint32_t)cfsr & 0x100;
 
+#if defined(FLASH_SR_DBECCERR)
+    volatile bool flash_dbeccerr1 __attribute__((unused)) = FLASH->SR1 & FLASH_SR_DBECCERR; // True if a double (uncorrectable) error occurred on bank 1 read access
+    volatile uint32_t flash_ecc_fa1 __attribute__((unused)) = FLASH->ECC_FA1; // Word number that caused the bank 1 bus error (the address is 16*word_number + BANK0_START)
+    volatile bool flash_dbeccerr2 __attribute__((unused)) = FLASH->SR2 & FLASH_SR_DBECCERR; // True if a double (uncorrectable) error occurred on bank 2 read access
+    volatile uint32_t flash_ecc_fa2 __attribute__((unused)) = FLASH->ECC_FA2; // Word number that caused the bank 2 bus error (the address is 16*word_number + BANK1_START)
+#endif
+
     volatile int stay_looping = 1;
     while(stay_looping);
 }

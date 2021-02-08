@@ -7,27 +7,46 @@
 
 #define NVM_CRC16_INIT 0xabcd
 #define NVM_CRC16_POLYNOMIAL 0x3d65
+
+//! This value is to be incremented when the NVM format changes between firmware
+//! releases in a way that the new firmware would misinterpret NVM data stored
+//! by the old firmware. This version only pretains to this low level NVM driver
+//! and should not take into account the NVM file format defined by the
+//! application. The application must provide its own appropriate mechanism to
+//! allow for safe firmware upgrades.
 #define NVM_FORMAT_VERSION 0x01
 
-bool Stm32NvmFile::init() {
-    bool is_erased = nvm_start_[0] & 0x80000000;
-    uint16_t crc16 = nvm_start_[0] & 0xffff;
-    uint8_t nvm_format_version = (nvm_start_[0] >> 24) & 0x7f;
-    uint32_t length = nvm_start_[1];
+struct __attribute__((packed)) Header {
+    uint8_t nvm_format_version; // see `NVM_FORMAT_VERSION`. A value of 0xff indicates that the NVM is erased.
+    uint8_t reserved; // must be written as 0xff and ignored on reading
+    uint16_t crc16; // checksum of the payload starting after the header
+    uint32_t length; // length of the payload
+};
 
-    bool is_valid = !is_erased && (nvm_format_version == NVM_FORMAT_VERSION)
-                && (nvm_format_version == NVM_FORMAT_VERSION)
-                && (length <= nvm_length_ - kHeaderSizeB)
+constexpr static const size_t kHeaderSizeB = std::max(sizeof(Header), Stm32NvmFile::kFlashGranularity);
+
+bool Stm32NvmFile::init() {
+    // If you get a hard fault on reading the header it could be because the
+    // NVM write operation did something bad (like writing twice to the same
+    // block). In that case, you can erase the NVM to rectify the issue.
+    //erase();
+
+    Header header = *(Header*)nvm_start_;
+    bool is_erased = header.nvm_format_version == 0xff;
+
+    bool is_valid = !is_erased && (header.nvm_format_version == NVM_FORMAT_VERSION)
+                && (header.nvm_format_version == NVM_FORMAT_VERSION)
+                && (header.length <= nvm_length_ - kHeaderSizeB)
                 && (calc_crc16<NVM_CRC16_POLYNOMIAL>(NVM_CRC16_INIT,
-                    ((uint8_t *)nvm_start_) + kHeaderSizeB, length) == crc16);
+                    ((uint8_t *)nvm_start_) + kHeaderSizeB, header.length) == header.crc16);
                 
     if (is_valid) {
-        file_length_ = length;
+        file_length_ = header.length;
         state_ = kStateValid;
         return true;
 
     } else {
-        // The flash area to be erased but let's be save and verify this claim.
+        // The flash area claims to be erased but let's be save and verify this claim.
         for (size_t i = 0; i < nvm_length_; i += 4) {
             if (nvm_start_[i >> 2] != 0xffffffff) {
                 // The flash was in an inconsistent state. Erase now.
@@ -63,12 +82,12 @@ bool Stm32NvmFile::open_write() {
 
 #ifdef FLASH_TYPEPROGRAM_FLASHWORD
 // H7
-HAL_StatusTypeDef FLASH_write_word(uint8_t* flash_addr, uint32_t* data_addr) {
+HAL_StatusTypeDef FLASH_write_block(uint8_t* flash_addr, uint32_t* data_addr) {
     return HAL_FLASH_Program(FLASH_TYPEPROGRAM_FLASHWORD, (uint32_t)flash_addr, (uint32_t)data_addr);
 }
 #else
 // F4, F7
-HAL_StatusTypeDef FLASH_write_word(uint8_t* flash_addr, uint32_t* data_addr) {
+HAL_StatusTypeDef FLASH_write_block(uint8_t* flash_addr, uint32_t* data_addr) {
     return HAL_FLASH_Program(FLASH_TYPEPROGRAM_WORD, (uint32_t)flash_addr, *data_addr);
 }
 #endif
@@ -86,37 +105,44 @@ bool Stm32NvmFile::write(const uint8_t* buffer, size_t length) {
     crc16_ = calc_crc16<NVM_CRC16_POLYNOMIAL>(crc16_, buffer, length);
 
     // Handle unaligned start
-    if (offset_ & 0x3) {
-        size_t n_copy = std::min(length, (size_t)(4U - (offset_ & 3U)));
-        memcpy((uint8_t*)write_carry_ + (offset_ & 0x3), buffer, n_copy);
+    if (offset_ % kFlashGranularity) {
+        size_t n_copy = std::min(length, (size_t)(kFlashGranularity - (offset_ % kFlashGranularity)));
+        memcpy(write_buf_ + (offset_ % kFlashGranularity), buffer, n_copy);
 
         offset_ += n_copy;
         buffer += n_copy;
         length -= n_copy;
 
-        if ((offset_ & 0x3) != 0) {
-            return true; // Didn't fill carry word yet
-        } else {
-            if (FLASH_write_word((uint8_t*)nvm_start_ + kHeaderSizeB + offset_ - 4, &write_carry_) != HAL_OK) {
-                return false;
-            }
-            write_carry_ = 0xffffffff;
+        if (offset_ % kFlashGranularity) {
+            return true; // Block not yet full
         }
-    }
 
-    // Write 32-bit values
-    for (; length >= 4; buffer += 4, offset_ += 4, length -=4) {
-        if (FLASH_write_word((uint8_t*)nvm_start_ + kHeaderSizeB + offset_, (uint32_t*)buffer) != HAL_OK) {
+        if (FLASH_write_block((uint8_t*)nvm_start_ + kHeaderSizeB + (offset_ / kFlashGranularity - 1) * kFlashGranularity, (uint32_t*)write_buf_) != HAL_OK) {
             return false;
         }
     }
 
-    // Handle unaligned end
-    if (length) {
-        memcpy((uint8_t*)write_carry_, buffer, length);
-        offset_ += length;
+    // Write blocks of the size of kFlashGranularity
+    while (length >= kFlashGranularity) {
+        if (FLASH_write_block((uint8_t*)nvm_start_ + kHeaderSizeB + offset_, (uint32_t*)buffer) != HAL_OK) {
+            return false;
+        }
+        offset_ += kFlashGranularity;
+        buffer += kFlashGranularity;
+        length -=kFlashGranularity;
     }
 
+    // Handle unaligned end
+    // On the H7 family we're not allowed to write to the same block multiple
+    // times because it would trip the ECC. Therefore we have to coalesce
+    // unaligned write operations into one.
+    if (length) {
+        memset(write_buf_, 0xff, sizeof(write_buf_));
+        memcpy((uint8_t*)write_buf_, buffer, length);
+        offset_ += length;
+        // write_buf_ will be flushed on the next write() or close() call
+    }
+    
     return true;
 }
 
@@ -156,22 +182,29 @@ bool Stm32NvmFile::close() {
         return true;
 
     } else if (state_ == kStateWriting) {
-
-        // If there was an unaligned end, write it out before closing
-        if (offset_ & 3) {
-            if (FLASH_write_word((uint8_t*)nvm_start_ + kHeaderSizeB + (offset_ & ~0x3), &write_carry_) != HAL_OK) {
+        // Flush unaligned write end if necessary
+        if (offset_ % kFlashGranularity) {
+            if (FLASH_write_block((uint8_t*)nvm_start_ + (offset_ / kFlashGranularity) * kFlashGranularity, (uint32_t*)write_buf_) != HAL_OK) {
                 return false;
             }
-            write_carry_ = 0;
         }
 
-        uint32_t header0 = (NVM_FORMAT_VERSION << 24) | crc16_;
-        uint32_t header1 = offset_;
+        // Write header to mark the NVM valid
+        union PaddedHeader {
+            Header header;
+            uint8_t raw[kFlashGranularity];
+        } padded_header;
 
-        if (FLASH_write_word((uint8_t*)&nvm_start_[0], &header0) != HAL_OK) {
-            return false;
-        }
-        if (FLASH_write_word((uint8_t*)&nvm_start_[1], &header1) != HAL_OK) {
+        memset(&padded_header, 0xff, sizeof(padded_header));
+
+        padded_header.header = {
+            .nvm_format_version = NVM_FORMAT_VERSION,
+            .reserved = 0xff,
+            .crc16 = crc16_,
+            .length = offset_
+        };
+
+        if (FLASH_write_block((uint8_t*)nvm_start_, (uint32_t*)padded_header.raw) != HAL_OK) {
             return false;
         }
 
@@ -202,8 +235,8 @@ bool Stm32NvmFile::erase() {
     for (size_t i = 0; i < n_sectors_; ++i) {
         FLASH_EraseInitTypeDef erase_struct = {
             .TypeErase = FLASH_TYPEERASE_SECTORS,
-#if defined(FLASH_OPTCR_nDBANK)
-            .Banks = 0, // only used for mass erase
+#if defined(FLASH_BANK_1)
+            .Banks = flash_bank_,
 #endif
             .Sector = sector_ids_[i],
             .NbSectors = 1,

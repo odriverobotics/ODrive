@@ -38,7 +38,7 @@ uint8_t __attribute__((section(".testdata"))) fake_otp[FLASH_OTP_END + 1 - FLASH
 // http://www.st.com/content/ccc/resource/technical/document/reference_manual/3d/6d/5a/66/b4/99/40/d4/DM00031020.pdf/files/DM00031020.pdf/jcr:content/translations/en.DM00031020.pdf
 std::array<uint32_t, 2> nvm_sectors = {FLASH_SECTOR_10, FLASH_SECTOR_11};
 Stm32NvmFile nvm_impl = {
-    nvm_sectors.data(), nvm_sectors.size(), 0x080C0000UL, 0x40000UL
+    0, nvm_sectors.data(), nvm_sectors.size(), 0x080C0000UL, 0x40000UL
 };
 template<> File& BoardSupportPackage::nvm = nvm_impl;
 
