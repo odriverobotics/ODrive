@@ -175,7 +175,7 @@ public:
     void clear_errors() override;
 
     float get_adc_voltage(uint32_t gpio) override {
-        return (gpio < board.gpio_adc_values.size()) ? board.gpio_adc_values[gpio] * board.kAdcMaxVoltage : -INFINITY;
+        return (gpio < board.gpio_adc_values.size()) ? board.gpio_adc_values[gpio] * board.kAdcMaxVoltage : NAN;
     }
 
     int32_t test_function(int32_t delta) override {

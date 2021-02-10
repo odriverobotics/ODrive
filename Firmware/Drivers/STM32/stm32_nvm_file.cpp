@@ -25,6 +25,32 @@ struct __attribute__((packed)) Header {
 
 constexpr static const size_t kHeaderSizeB = std::max(sizeof(Header), Stm32NvmFile::kFlashGranularity);
 
+
+static const uint32_t FLASH_ERR_FLAGS =
+#if defined(FLASH_FLAG_EOP)
+        FLASH_FLAG_EOP |
+#endif
+#if defined(FLASH_FLAG_OPERR)
+        FLASH_FLAG_OPERR |
+#endif
+#if defined(FLASH_FLAG_WRPERR)
+        FLASH_FLAG_WRPERR |
+#endif
+#if defined(FLASH_FLAG_PGAERR)
+        FLASH_FLAG_PGAERR |
+#endif
+#if defined(FLASH_FLAG_PGSERR)
+        FLASH_FLAG_PGSERR |
+#endif
+#if defined(FLASH_FLAG_PGPERR)
+        FLASH_FLAG_PGPERR |
+#endif
+        0;
+
+static void HAL_FLASH_ClearErrors() {
+    __HAL_FLASH_CLEAR_FLAG(FLASH_ERR_FLAGS);
+}
+
 bool Stm32NvmFile::init() {
     // If you get a hard fault on reading the header it could be because the
     // NVM write operation did something bad (like writing twice to the same
@@ -69,6 +95,8 @@ bool Stm32NvmFile::open_write() {
     if (state_ != kStateErased) {
         return false;
     }
+
+    HAL_FLASH_ClearErrors();
 
     if (HAL_FLASH_Unlock() != HAL_OK) {
         return false;
@@ -204,8 +232,10 @@ bool Stm32NvmFile::close() {
             .length = offset_
         };
 
-        if (FLASH_write_block((uint8_t*)nvm_start_, (uint32_t*)padded_header.raw) != HAL_OK) {
-            return false;
+        for (size_t i = 0; i < kHeaderSizeB; i += kFlashGranularity) {
+            if (FLASH_write_block((uint8_t*)nvm_start_ + i, (uint32_t*)(padded_header.raw + i)) != HAL_OK) {
+                return false;
+            }
         }
 
         if (HAL_FLASH_Lock() != HAL_OK) {
@@ -227,6 +257,8 @@ bool Stm32NvmFile::erase() {
     if ((state_ != kStateValid) && (state_ != kStateUninitialized)) {
         return false;
     }
+
+    HAL_FLASH_ClearErrors();
 
     if (HAL_FLASH_Unlock() != HAL_OK) {
         return false;

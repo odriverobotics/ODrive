@@ -21,7 +21,7 @@ public:
      * If any subscription is in place, it is not disabled by this function.
      */
     bool config(uint32_t mode, uint32_t pull,
-        uint32_t speed = GPIO_SPEED_FREQ_LOW, uint32_t alternate_function = 0);
+        uint32_t speed = GPIO_SPEED_FREQ_LOW, uint32_t alternate_function = 0) const;
 
     void write(bool state) {
         if (port_) {
@@ -67,7 +67,7 @@ public:
      */
     void unsubscribe();
 
-    uint16_t get_pin_number() {
+    uint16_t get_pin_number() const {
         uint16_t pin_number = 0;
         uint16_t pin_mask = pin_mask_ >> 1;
         while (pin_mask) {
@@ -77,7 +77,7 @@ public:
         return pin_number;
     }
 
-    bool enable_clock() {
+    bool enable_clock() const {
         switch ((uint32_t)port_) {
             case GPIOA_BASE: __HAL_RCC_GPIOA_CLK_ENABLE(); break;
             case GPIOB_BASE: __HAL_RCC_GPIOB_CLK_ENABLE(); break;

@@ -39,10 +39,10 @@ void init_communication(void) {
         odrv.misconfigured_ = true;
     }
 
-    if (odrv.config_.enable_uart_a && uart_a) {
-        start_uart_server(uart_a);
-    } else if (odrv.config_.enable_uart_b && uart_b) {
-        start_uart_server(uart_b);
+    if (odrv.config_.enable_uart_a && board._GPIO_COUNT > 0) {
+        start_uart_server(*board.uarts[0]);
+    } else if (odrv.config_.enable_uart_b && board._GPIO_COUNT > 1) {
+        start_uart_server(*board.uarts[1]);
     }
 
     start_usb_server();

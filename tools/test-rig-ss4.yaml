@@ -24,8 +24,8 @@ components:
 
   - type: odrive
     name: odrive
-    board-version: v4.1-58V
-    serial-number: "206730814E53"
+    board-version: v4.2-58V
+    serial-number: "3570397B3339"
     usb: auto
     can: main_canbus
     vbus-voltage: 24 # [V]

@@ -97,7 +97,7 @@ class TestClosedLoopControl(TestClosedLoopControlBase):
             slope, offset, fitted_curve = fit_line(data_motion[:,(0,1)])
             test_assert_eq(slope, 0.0, range = nominal_vel * 0.05)
             test_assert_eq(offset, nominal_vel, accuracy = 0.05)
-            test_curve_fit(data_motion[:,(0,1)], fitted_curve, max_mean_err = nominal_vel * 0.05, inlier_range = nominal_vel * 0.1, max_outliers = len(data[:,0]) * 0.01)
+            test_curve_fit(data_motion[:,(0,1)], fitted_curve, max_mean_err = nominal_vel * 0.05, inlier_range = nominal_vel * 0.1, max_outliers = len(data[:,0]) * 0.02)
 
             # encoder.pos_estimate
             slope, offset, fitted_curve = fit_line(data_motion[:,(0,2)])
@@ -108,7 +108,7 @@ class TestClosedLoopControl(TestClosedLoopControlBase):
             slope, offset, fitted_curve = fit_line(data_still[:,(0,1)])
             test_assert_eq(slope, 0.0, range = nominal_vel * 0.05)
             test_assert_eq(offset, 0.0, range = nominal_vel * 0.05)
-            test_curve_fit(data_still[:,(0,1)], fitted_curve, max_mean_err = nominal_vel * 0.05, inlier_range = nominal_vel * 0.1, max_outliers = len(data[:,0]) * 0.01)
+            test_curve_fit(data_still[:,(0,1)], fitted_curve, max_mean_err = nominal_vel * 0.05, inlier_range = nominal_vel * 0.1, max_outliers = len(data[:,0]) * 0.02)
 
             # encoder.pos_estimate
             slope, offset, fitted_curve = fit_line(data_still[:,(0,2)])

@@ -81,7 +81,7 @@ static bool config_read_all(size_t* size) {
     if (!board.nvm.open_read(size)) {
         return false;
     }
-    bool success = board_read_config() &&
+    bool success = 
            board.nvm.read(&odrv.config_) &&
            board.nvm.read(&odrv.can_.config_);
     for (size_t i = 0; (i < AXIS_COUNT) && success; ++i) {
@@ -106,7 +106,7 @@ static bool config_read_all(size_t* size) {
 }
 
 static bool config_write_all() {
-    bool success = board_write_config() &&
+    bool success = 
            board.nvm.write(&odrv.config_) &&
            board.nvm.write(&odrv.can_.config_);
     for (size_t i = 0; (i < AXIS_COUNT) && success; ++i) {
@@ -288,7 +288,7 @@ void vApplicationStackOverflowHook(xTaskHandle *pxTask, signed portCHAR *pcTaskN
 
 void vApplicationIdleHook(void) {
     if (odrv.system_stats_.fully_booted) {
-        odrv.system_stats_.uptime = xTaskGetTickCount();
+        odrv.system_stats_.uptime = HAL_GetTick(); //xTaskGetTickCount();
         odrv.system_stats_.min_heap_space = xPortGetMinimumEverFreeHeapSize();
 
         uint32_t min_stack_space[AXIS_COUNT];
@@ -682,6 +682,11 @@ extern "C" void early_start_checks(void) {
  * @brief Main entry point called from assembly startup code.
  */
 extern "C" int main(void) {
+    // Init low level system functions (clocks, flash interface)
+    if (!board.init()) {
+        for (;;);
+    }
+
     // This procedure of building a USB serial number should be identical
     // to the way the STM's built-in USB bootloader does it. This means
     // that the device will have the same serial number in normal and DFU mode.
@@ -698,11 +703,6 @@ extern "C" int main(void) {
     }
     serial_number_str[12] = 0;
 
-    // Init low level system functions (clocks, flash interface)
-    if (!board_init_stage_0()) {
-        for (;;);
-    }
-
     // Load configuration from NVM. This needs to happen after system_init()
     // since the flash interface must be initialized and before board_init()
     // since board initialization can depend on the config.
@@ -716,154 +716,84 @@ extern "C" int main(void) {
         config_apply_all();
     }
 
-    odrv.misconfigured_ = odrv.misconfigured_
-            || (odrv.config_.enable_uart_a && !uart_a)
-            || (odrv.config_.enable_uart_b && !uart_b)
-            || (odrv.config_.enable_uart_c && !uart_c);
 
-    // Init GPIOs according to their configured mode
-    for (size_t i = 0; i < GPIO_COUNT; ++i) {
-        // Skip unavailable GPIOs
-        if (!get_gpio(i)) {
-            continue;
-        }
+    BoardSupportPackage::BoardConfig config;
 
-        ODriveIntf::GpioMode mode = odrv.config_.gpio_modes[i];
-
-        GPIO_InitTypeDef GPIO_InitStruct = {0};
-        GPIO_InitStruct.Pin = get_gpio(i).pin_mask_;
-
-        // Set Alternate Function setting for this GPIO mode
-        if (mode == ODriveIntf::GPIO_MODE_DIGITAL ||
-            mode == ODriveIntf::GPIO_MODE_DIGITAL_PULL_UP ||
-            mode == ODriveIntf::GPIO_MODE_DIGITAL_PULL_DOWN ||
-            mode == ODriveIntf::GPIO_MODE_MECH_BRAKE ||
-            mode == ODriveIntf::GPIO_MODE_STATUS ||
-            mode == ODriveIntf::GPIO_MODE_ANALOG_IN) {
-            GPIO_InitStruct.Alternate = 0;
+    auto maybe_use_gpio = [&](int gpio, int expected_mode){ 
+        if (gpio >= 0 && odrv.config_.gpio_modes[gpio] == (ODrive::GpioMode)expected_mode) {
+            return gpio;
         } else {
-            auto it = std::find_if(
-                    alternate_functions[i].begin(), alternate_functions[i].end(),
-                    [mode](auto a) { return a.mode == mode; });
-
-            if (it == alternate_functions[i].end()) {
-                odrv.misconfigured_ = true; // this GPIO doesn't support the selected mode
-                continue;
-            }
-            GPIO_InitStruct.Alternate = it->alternate_function;
+            return -1;
         }
+    };
 
-        switch (mode) {
-            case ODriveIntf::GPIO_MODE_DIGITAL: {
-                GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
-                GPIO_InitStruct.Pull = GPIO_NOPULL;
-                GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-            } break;
-            case ODriveIntf::GPIO_MODE_DIGITAL_PULL_UP: {
-                GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
-                GPIO_InitStruct.Pull = GPIO_PULLUP;
-                GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-            } break;
-            case ODriveIntf::GPIO_MODE_DIGITAL_PULL_DOWN: {
-                GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
-                GPIO_InitStruct.Pull = GPIO_PULLDOWN;
-                GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-            } break;
-            case ODriveIntf::GPIO_MODE_ANALOG_IN: {
-                GPIO_InitStruct.Mode = GPIO_MODE_ANALOG;
-                GPIO_InitStruct.Pull = GPIO_NOPULL;
-            } break;
-            case ODriveIntf::GPIO_MODE_UART_A: {
-                GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
-                GPIO_InitStruct.Pull = (i == 0) ? GPIO_PULLDOWN : GPIO_PULLUP; // this is probably swapped but imitates old behavior
-                GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
-                if (!odrv.config_.enable_uart_a) {
-                    odrv.misconfigured_ = true;
-                }
-            } break;
-            case ODriveIntf::GPIO_MODE_UART_B: {
-                GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
-                GPIO_InitStruct.Pull = (i == 0) ? GPIO_PULLDOWN : GPIO_PULLUP; // this is probably swapped but imitates old behavior
-                GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
-                if (!odrv.config_.enable_uart_b) {
-                    odrv.misconfigured_ = true;
-                }
-            } break;
-            case ODriveIntf::GPIO_MODE_UART_C: {
-                GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
-                GPIO_InitStruct.Pull = (i == 0) ? GPIO_PULLDOWN : GPIO_PULLUP; // this is probably swapped but imitates old behavior
-                GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
-                if (!odrv.config_.enable_uart_c) {
-                    odrv.misconfigured_ = true;
-                }
-            } break;
-            case ODriveIntf::GPIO_MODE_CAN_A: {
-                GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
-                GPIO_InitStruct.Pull = GPIO_NOPULL;
-                GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
-                if (!odrv.config_.enable_can_a) {
-                    odrv.misconfigured_ = true;
-                }
-            } break;
-            case ODriveIntf::GPIO_MODE_I2C_A: {
-                GPIO_InitStruct.Mode = GPIO_MODE_AF_OD;
-                GPIO_InitStruct.Pull = GPIO_PULLUP;
-                GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
-                if (!odrv.config_.enable_i2c_a) {
-                    odrv.misconfigured_ = true;
-                }
-            } break;
-            //case ODriveIntf::GPIO_MODE_SPI_A: { // TODO
-            //} break;
-            case ODriveIntf::GPIO_MODE_PWM: {
-                GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
-                GPIO_InitStruct.Pull = GPIO_PULLDOWN;
-                GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-            } break;
-            case ODriveIntf::GPIO_MODE_ENC0: {
-                GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
-                GPIO_InitStruct.Pull = GPIO_NOPULL;
-                GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-            } break;
-            case ODriveIntf::GPIO_MODE_ENC1: {
-                GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
-                GPIO_InitStruct.Pull = GPIO_NOPULL;
-                GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-            } break;
-            case ODriveIntf::GPIO_MODE_ENC2: {
-                GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
-                GPIO_InitStruct.Pull = GPIO_NOPULL;
-                GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-            } break;
-            case ODriveIntf::GPIO_MODE_MECH_BRAKE: {
-                GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
-                GPIO_InitStruct.Pull = GPIO_NOPULL;
-                GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-            } break;
-            case ODriveIntf::GPIO_MODE_STATUS: {
-                GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
-                GPIO_InitStruct.Pull = GPIO_NOPULL;
-                GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-            } break;
-            case ODriveIntf::GPIO_MODE_BRAKE_RES: {
-                GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
-                // TODO: remove hack. This is to pull up BRAKE_EN_N in idle state
-                GPIO_InitStruct.Pull = i == 7 ? GPIO_PULLUP : GPIO_PULLDOWN;
-                GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-            } break;
-            default: {
-                odrv.misconfigured_ = true;
-                continue;
-            }
-        }
+    bool enable_uart[] = {odrv.config_.enable_uart_a, odrv.config_.enable_uart_b, odrv.config_.enable_uart_c};
+    uint32_t uart_baudrate[] = {odrv.config_.uart_a_baudrate, odrv.config_.uart_b_baudrate, odrv.config_.uart_c_baudrate};
 
-        get_gpio(i).enable_clock();
-        HAL_GPIO_Init(get_gpio(i).port_, &GPIO_InitStruct);
+    for (size_t i = 0; i < std::min(board.UART_COUNT, 3U); ++i) {
+        config.uart_config[i].enabled = enable_uart[i];
+        config.uart_config[i].baudrate = uart_baudrate[i];
+        config.uart_config[i].tx_gpio = maybe_use_gpio(board.uart_tx_gpios[i], (int)ODriveIntf::GPIO_MODE_UART_A + i);
+        config.uart_config[i].rx_gpio = maybe_use_gpio(board.uart_rx_gpios[i], (int)ODriveIntf::GPIO_MODE_UART_A + i);
     }
 
+    for (size_t i = board.UART_COUNT; i < 3UL; ++i) {
+        if (enable_uart[i]) {
+            odrv.misconfigured_ = true;
+        }
+    }
+    
+    bool enable_can[] = {odrv.config_.enable_can_a};
+    for (size_t i = 0; i < board.CANBUS_COUNT; ++i) {
+        config.can_config[i].enabled = enable_can[i];
+        config.can_config[i].r_gpio = maybe_use_gpio(board.can_r_gpios[i], (int)ODriveIntf::GPIO_MODE_CAN_A + i);
+        config.can_config[i].d_gpio = maybe_use_gpio(board.can_d_gpios[i], (int)ODriveIntf::GPIO_MODE_CAN_A + i);
+    }
+    
+    for (size_t i = 0; i < board.SPI_COUNT; ++i) {
+        config.spi_config[i].enabled = !(HW_VERSION_MAJOR == 4); // always keep SPI enabled on v3.x, not supported yet on v4.x
+        config.spi_config[i].miso_gpio = maybe_use_gpio(board.spi_miso_gpios[i], (int)ODriveIntf::GPIO_MODE_SPI_A + i);
+        config.spi_config[i].mosi_gpio = maybe_use_gpio(board.spi_mosi_gpios[i], (int)ODriveIntf::GPIO_MODE_SPI_A + i);
+        config.spi_config[i].sck_gpio = maybe_use_gpio(board.spi_sck_gpios[i], (int)ODriveIntf::GPIO_MODE_SPI_A + i);
+    }
+    
+    for (size_t i = 0; i < board.INC_ENC_COUNT; ++i) {
+        config.inc_enc_config[i].enabled = true; // always keep incremental encoders enabled
+        config.inc_enc_config[i].a_gpio = maybe_use_gpio(board.inc_enc_a_gpios[i], (int)ODriveIntf::GPIO_MODE_ENC0 + i);
+        config.inc_enc_config[i].b_gpio = maybe_use_gpio(board.inc_enc_b_gpios[i], (int)ODriveIntf::GPIO_MODE_ENC0 + i);
+    }
+
+    for (size_t i = 0; i < GPIO_COUNT; ++i) {
+        switch (odrv.config_.gpio_modes[i]) {
+            case ODriveIntf::GPIO_MODE_DIGITAL: config.gpio_modes[i] = BoardSupportPackage::kDigitalInputNoPull; break;
+            case ODriveIntf::GPIO_MODE_DIGITAL_PULL_UP: config.gpio_modes[i] = BoardSupportPackage::kDigitalInputPullUp; break;
+            case ODriveIntf::GPIO_MODE_DIGITAL_PULL_DOWN: config.gpio_modes[i] = BoardSupportPackage::kDigitalInputPullDown; break;
+            case ODriveIntf::GPIO_MODE_ANALOG_IN: config.gpio_modes[i] = BoardSupportPackage::kAnalogInput; break;
+            case ODriveIntf::GPIO_MODE_UART_A: config.gpio_modes[i] = BoardSupportPackage::kAlternateFunction; break;
+            case ODriveIntf::GPIO_MODE_UART_B: config.gpio_modes[i] = BoardSupportPackage::kAlternateFunction; break;
+            case ODriveIntf::GPIO_MODE_UART_C: config.gpio_modes[i] = BoardSupportPackage::kAlternateFunction; break;
+            case ODriveIntf::GPIO_MODE_CAN_A: config.gpio_modes[i] = BoardSupportPackage::kAlternateFunction; break;
+            case ODriveIntf::GPIO_MODE_I2C_A: odrv.misconfigured_ = true; break;
+            case ODriveIntf::GPIO_MODE_SPI_A: config.gpio_modes[i] = BoardSupportPackage::kAlternateFunction; break;
+            case ODriveIntf::GPIO_MODE_PWM: config.gpio_modes[i] = BoardSupportPackage::kPwmInput; break;
+            case ODriveIntf::GPIO_MODE_ENC0: config.gpio_modes[i] = BoardSupportPackage::kAlternateFunction; break;
+            case ODriveIntf::GPIO_MODE_ENC1: config.gpio_modes[i] = BoardSupportPackage::kAlternateFunction; break;
+            case ODriveIntf::GPIO_MODE_ENC2: config.gpio_modes[i] = BoardSupportPackage::kAlternateFunction; break;
+            case ODriveIntf::GPIO_MODE_MECH_BRAKE: config.gpio_modes[i] = BoardSupportPackage::kDigitalOutput; break;
+            case ODriveIntf::GPIO_MODE_STATUS: config.gpio_modes[i] = BoardSupportPackage::kDigitalOutput; break;
+            case ODriveIntf::GPIO_MODE_BRAKE_RES: odrv.misconfigured_ = true; break;
+            default: odrv.misconfigured_ = true; break;
+        }
+    }
+
+
     // Init board-specific peripherals
-    if (!board_init_stage_1()) {
-        for (;;); // TODO: handle properly
+    if (!board.config(config)) {
+        // Currently it's not safe to continue in degraded mode because the
+        // firmware would use some uninitialized variables. For now we just
+        // clear the NVM to make ODrive boot again.
+        // This will cause a reboot if the NVM was not cleared already.
+        odrv.erase_configuration();
     }
 
     // Init usb irq binary semaphore, and start with no tokens by removing the starting one.

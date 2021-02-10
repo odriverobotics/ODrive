@@ -7,6 +7,82 @@
 
 class Stm32Timer {
 public:
+    constexpr Stm32Timer(TIM_TypeDef* instance) : instance_(instance) {}
+
+    constexpr IRQn_Type get_irqn() {
+        switch ((uint32_t)instance_) {
+#if defined(TIM10_BASE)
+            case TIM1_BASE: return TIM1_UP_TIM10_IRQn;
+#else
+            case TIM1_BASE: return TIM1_UP_IRQn;
+#endif
+            case TIM2_BASE: return TIM2_IRQn;
+            case TIM3_BASE: return TIM3_IRQn;
+            case TIM4_BASE: return TIM4_IRQn;
+            case TIM5_BASE: return TIM5_IRQn;
+            case TIM6_BASE: return TIM6_DAC_IRQn;
+            case TIM7_BASE: return TIM7_IRQn;
+            case TIM8_BASE: return TIM8_UP_TIM13_IRQn;
+#if defined(TIM9_BASE)
+            case TIM9_BASE: return TIM1_BRK_TIM9_IRQn;
+#endif
+#if defined(TIM10_BASE)
+            case TIM10_BASE: return TIM1_UP_TIM10_IRQn;
+#endif
+#if defined(TIM11_BASE)
+            case TIM11_BASE: return TIM1_TRG_COM_TIM11_IRQn;
+#endif
+            case TIM12_BASE: return TIM8_BRK_TIM12_IRQn;
+            case TIM13_BASE: return TIM8_UP_TIM13_IRQn;
+            case TIM14_BASE: return TIM8_TRG_COM_TIM14_IRQn;
+#if defined(TIM15_BASE)
+            case TIM15_BASE: return TIM15_IRQn;
+#endif
+#if defined(TIM16_BASE)
+            case TIM16_BASE: return TIM16_IRQn;
+#endif
+#if defined(TIM17_BASE)
+            case TIM17_BASE: return TIM17_IRQn;
+#endif
+            default: return UsageFault_IRQn;
+        }
+    }
+
+    bool enable_clock() {
+        switch ((uint32_t)instance_) {
+            case TIM1_BASE: __HAL_RCC_TIM1_CLK_ENABLE(); return true;
+            case TIM2_BASE: __HAL_RCC_TIM2_CLK_ENABLE(); return true;
+            case TIM3_BASE: __HAL_RCC_TIM3_CLK_ENABLE(); return true;
+            case TIM4_BASE: __HAL_RCC_TIM4_CLK_ENABLE(); return true;
+            case TIM5_BASE: __HAL_RCC_TIM5_CLK_ENABLE(); return true;
+            case TIM6_BASE: __HAL_RCC_TIM6_CLK_ENABLE(); return true;
+            case TIM7_BASE: __HAL_RCC_TIM7_CLK_ENABLE(); return true;
+            case TIM8_BASE: __HAL_RCC_TIM8_CLK_ENABLE(); return true;
+#if defined(TIM9_BASE)
+            case TIM9_BASE: __HAL_RCC_TIM9_CLK_ENABLE(); return true;
+#endif
+#if defined(TIM10_BASE)
+            case TIM10_BASE: __HAL_RCC_TIM10_CLK_ENABLE(); return true;
+#endif
+#if defined(TIM11_BASE)
+            case TIM11_BASE: __HAL_RCC_TIM11_CLK_ENABLE(); return true;
+#endif
+            case TIM12_BASE: __HAL_RCC_TIM12_CLK_ENABLE(); return true;
+            case TIM13_BASE: __HAL_RCC_TIM13_CLK_ENABLE(); return true;
+            case TIM14_BASE: __HAL_RCC_TIM14_CLK_ENABLE(); return true;
+#if defined(TIM15_BASE)
+            case TIM15_BASE: __HAL_RCC_TIM15_CLK_ENABLE(); return true;
+#endif
+#if defined(TIM16_BASE)
+            case TIM16_BASE: __HAL_RCC_TIM16_CLK_ENABLE(); return true;
+#endif
+#if defined(TIM17_BASE)
+            case TIM17_BASE: __HAL_RCC_TIM17_CLK_ENABLE(); return true;
+#endif
+            default: return false;
+        }
+    }
+
     /**
      * @brief Starts multiple timers deterministically and synchronously from the
      * specified offset.
@@ -78,6 +154,9 @@ private:
         cpu_exit_critical(mask);
     }
 #pragma GCC pop_options
+
+
+    TIM_TypeDef* instance_;
 };
 
 #endif // __STM32_TIMER_HPP

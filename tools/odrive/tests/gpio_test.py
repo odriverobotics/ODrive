@@ -34,8 +34,13 @@ class TestInputs():
         for odrive in testrig.get_components(ODriveComponent):
             alternatives = []
             for teensy in testrig.get_components(TeensyComponent):
-                # all GPIOs except 8, 12 and 15 are digital input capable
-                odrive_gpios = [0, 1, 2, 3, 4, 5, 6, 7, 9, 10, 11, 13, 14, 16, 17, 18, 19, 20, 21, 22]
+                # on v4.1 all GPIOs except 8, 12 and 15 are digital input capable
+                # on v4.2 all GPIOs except 12, 15 and 22 are digital input capable
+                odrive_gpios = [0, 1, 2, 3, 4, 5, 6, 7, 9, 10, 11, 13, 14, 16, 17, 18, 19, 20, 21]
+                if odrive.yaml['board-version'].startswith("v4.1"):
+                    odrive_gpios.append(22)
+                #elif odrive.yaml['board-version'].startswith("v4.2"):
+                #    odrive_gpios.append(8) # not useful due to LPF
 
                 connections = [
                     testrig.net_by_component.get(getattr(odrive, f'gpio{gpio}'), set()).intersection(set(teensy.gpios))

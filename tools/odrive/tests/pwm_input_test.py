@@ -55,12 +55,21 @@ class TestPwmInput():
                               (2, 20, 400, odrive.gpio2),
                               (3, -1000, 0, odrive.gpio3),
                               (4, -20000, 20000, odrive.gpio4)]
-            elif odrive.yaml['board-version'].startswith('v4.'):
+            elif odrive.yaml['board-version'].startswith('v4.1'):
                 # Run a separate test for each PWM-capable GPIO. Use different min/max settings for each test.
                 test_cases = [(14, -50, 200, odrive.gpio14),
                               (19, 20, 400, odrive.gpio19),
                               (20, -20000, 20000, odrive.gpio20),
                               (21, -1000, 0, odrive.gpio21)]
+            elif odrive.yaml['board-version'].startswith('v4.2'):
+                # Run a separate test for each PWM-capable GPIO. Use different min/max settings for each test.
+                test_cases = [#(10, 0, 10, odrive.gpio10), # Not implemented (see tim.c)
+                              #(11, -20, -10, odrive.gpio11), # Not implemented (see tim.c)
+                              (14, -50, 200, odrive.gpio14),
+                              #(15, 20, 400, odrive.gpio15), # not supported (see board.cpp)
+                              (20, -20000, 20000, odrive.gpio20),
+                              (21, -1000, 0, odrive.gpio21)
+                              ]
             else:
                 raise Exception(f"unknown board version {odrive.yaml['board-version']}")
 

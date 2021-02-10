@@ -1,8 +1,11 @@
 
-#include "pwm_input.hpp"
-#include "odrive_main.h"
+#include "stm32_pwm_input.hpp"
+#include "stm32_timer.hpp"
+#include <algorithm>
 
-void PwmInput::init() {
+void Stm32PwmInput::init(std::array<bool, 4> enable_channels) {
+    Stm32Timer{htim_->Instance}.enable_clock();
+
     TIM_IC_InitTypeDef sConfigIC;
     sConfigIC.ICPolarity = TIM_INPUTCHANNELPOLARITY_BOTHEDGE;
     sConfigIC.ICSelection = TIM_ICSELECTION_DIRECTTI;
@@ -12,10 +15,10 @@ void PwmInput::init() {
     uint32_t channels[] = {TIM_CHANNEL_1, TIM_CHANNEL_2, TIM_CHANNEL_3, TIM_CHANNEL_4};
 
     for (size_t i = 0; i < 4; ++i) {
-        if (!fibre::is_endpoint_ref_valid(odrv.config_.pwm_mappings[i].endpoint))
-            continue;
-        HAL_TIM_IC_ConfigChannel(htim_, &sConfigIC, channels[i]);
-        HAL_TIM_IC_Start_IT(htim_, channels[i]);
+        if (enable_channels[i]) {
+            HAL_TIM_IC_ConfigChannel(htim_, &sConfigIC, channels[i]);
+            HAL_TIM_IC_Start_IT(htim_, channels[i]);
+        }
     }
 }
 
@@ -30,43 +33,39 @@ void PwmInput::init() {
 /**
  * @param channel: A channel number in [0, 3]
  */
-void PwmInput::handle_pulse(int channel, uint32_t high_time) {
+void Stm32PwmInput::handle_pulse(int channel, uint32_t high_time) {
     if (high_time < PWM_MIN_LEGAL_HIGH_TIME || high_time > PWM_MAX_LEGAL_HIGH_TIME)
         return;
 
     high_time = std::clamp(high_time, PWM_MIN_HIGH_TIME, PWM_MAX_HIGH_TIME);
     float fraction = (float)(high_time - PWM_MIN_HIGH_TIME) / (float)(PWM_MAX_HIGH_TIME - PWM_MIN_HIGH_TIME);
 
-    board.gpio_pwm_values[gpios_[channel]] = fraction;
+    pwm_values_[channel] = fraction;
 }
 
 /**
  * @param channel: A channel number in [0, 3]
  */
-void PwmInput::on_capture(int channel, uint32_t timestamp) {
-    static uint32_t last_timestamp[4] = { 0 };
-    static bool last_pin_state[4] = { false };
-    static bool last_sample_valid[4] = { false };
-
+void Stm32PwmInput::on_capture(int channel, uint32_t timestamp) {
     if (channel >= 4)
         return;
-    Stm32Gpio gpio = get_gpio(gpios_[channel]);
+    Stm32Gpio gpio = gpios_[channel];
     if (!gpio)
         return;
     bool current_pin_state = gpio.read();
 
-    if (last_sample_valid[channel]
-        && (last_pin_state[channel] != PWM_INVERT_INPUT)
+    if (last_sample_valid_[channel]
+        && (last_pin_state_[channel] != PWM_INVERT_INPUT)
         && (current_pin_state == PWM_INVERT_INPUT)) {
-        handle_pulse(channel, timestamp - last_timestamp[channel]);
+        handle_pulse(channel, timestamp - last_timestamp_[channel]);
     }
 
-    last_timestamp[channel] = timestamp;
-    last_pin_state[channel] = current_pin_state;
-    last_sample_valid[channel] = true;
+    last_timestamp_[channel] = timestamp;
+    last_pin_state_[channel] = current_pin_state;
+    last_sample_valid_[channel] = true;
 }
 
-void PwmInput::on_capture() {
+void Stm32PwmInput::on_capture() {
     if(__HAL_TIM_GET_FLAG(htim_, TIM_FLAG_CC1)) {
         __HAL_TIM_CLEAR_IT(htim_, TIM_IT_CC1);
         on_capture(0, htim_->Instance->CCR1);

@@ -53,7 +53,7 @@ IRQn_Type get_irq_number(uint16_t pin_number) {
 #define FTSR FTSR1
 #endif
 
-bool Stm32Gpio::config(uint32_t mode, uint32_t pull, uint32_t speed, uint32_t alternate_function) {
+bool Stm32Gpio::config(uint32_t mode, uint32_t pull, uint32_t speed, uint32_t alternate_function) const {
     if (!enable_clock()) {
         return false;
     }

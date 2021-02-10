@@ -62,6 +62,6 @@ OffboardThermistorCurrentLimiter::OffboardThermistorCurrentLimiter() :
 
 float OffboardThermistorCurrentLimiter::get_raw_temp() const {
     const uint16_t gpio = config_.gpio_pin;
-    const float ratio =  (gpio < board.gpio_adc_values.size()) ? board.gpio_adc_values[gpio] : -INFINITY;
-    return horner_poly_eval(ratio, coefficients_, num_coeffs_);
+    const float ratio =  (gpio < board.gpio_adc_values.size()) ? board.gpio_adc_values[gpio] : NAN;
+    return is_nan(ratio) ? NAN : horner_poly_eval(ratio, coefficients_, num_coeffs_);
 }

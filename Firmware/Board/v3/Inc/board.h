@@ -32,8 +32,6 @@
 // consistent we just leave a gap in the counting scheme.
 #define GPIO_COUNT  (17)
 
-#define CANBUS_COUNT (1)
-
 #if HW_VERSION_MINOR >= 5 && HW_VERSION_VOLTAGE >= 48
 #define DEFAULT_BRAKE_RESISTANCE (2.0f) // [ohm]
 #else
@@ -94,7 +92,14 @@ using TOpAmp = Drv8301;
 struct BoardTraits {
     constexpr static const unsigned _AXIS_COUNT = AXIS_COUNT;
     constexpr static const unsigned _GPIO_COUNT = GPIO_COUNT;
-    constexpr static const unsigned _CANBUS_COUNT = CANBUS_COUNT;
+#if HW_VERSION_MINOR < 3
+    constexpr static const unsigned UART_COUNT = 0;
+#else
+    constexpr static const unsigned UART_COUNT = 2;
+#endif
+    constexpr static const unsigned CANBUS_COUNT = 1;
+    constexpr static const unsigned SPI_COUNT = 1;
+    constexpr static const unsigned INC_ENC_COUNT = 2;
 };
 using BoardSupportPackage = BoardSupportPackageBase<BoardTraits>;
 
@@ -111,10 +116,6 @@ extern std::array<GpioFunction, 3> alternate_functions[GPIO_COUNT];
 extern USBD_HandleTypeDef usb_dev_handle;
 
 extern Stm32SpiArbiter& ext_spi_arbiter;
-
-extern Stm32Usart uart_a;
-extern Stm32Usart uart_b;
-extern Stm32Usart uart_c;
 
 extern PwmOutputGroup<1>& brake_resistor_output;
 
@@ -133,21 +134,6 @@ static const float current_meas_period = CURRENT_MEAS_PERIOD;
 #define CURRENT_MEAS_HZ ( (float)(TIM_1_8_CLOCK_HZ) / (float)(2*TIM_1_8_PERIOD_CLOCKS*(TIM_1_8_RCR+1)) )
 static const int current_meas_hz = CURRENT_MEAS_HZ;
 
-// This board has no board-specific user configurations
-static inline bool board_read_config() { return true; }
-static inline bool board_write_config() { return true; }
-static inline void board_clear_config() { }
-static inline bool board_apply_config() { return true; }
-
-/**
- * @brief Must be called very early during startup to start the clocks
- */
-bool board_init_stage_0();
-
-/**
- * @brief Must be called after configuration is loaded and GPIOs are initialized.
- */
-bool board_init_stage_1();
 
 void start_timers();
 

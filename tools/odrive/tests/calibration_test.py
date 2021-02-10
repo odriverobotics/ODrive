@@ -94,6 +94,7 @@ class TestEncoderDirFind():
         axis_ctx.handle.motor.config.phase_resistance = float(motor_ctx.yaml['phase-resistance'])
         axis_ctx.handle.motor.config.phase_inductance = float(motor_ctx.yaml['phase-inductance'])
         axis_ctx.handle.motor.config.pre_calibrated = True
+        axis_ctx.parent.handle.config.dc_max_negative_current = -1.0
 
         # Set calibration settings
         axis_ctx.handle.encoder.config.direction = 0
@@ -128,6 +129,7 @@ class TestEncoderOffsetCalibration():
         axis_ctx.handle.motor.config.phase_resistance = float(motor_ctx.yaml['phase-resistance'])
         axis_ctx.handle.motor.config.phase_inductance = float(motor_ctx.yaml['phase-inductance'])
         axis_ctx.handle.motor.config.pre_calibrated = True
+        axis_ctx.parent.handle.config.dc_max_negative_current = -1.0
 
         # Set calibration settings
         axis_ctx.handle.encoder.config.direction = 0
@@ -176,6 +178,7 @@ class TestEncoderIndexSearch():
         axis_ctx.handle.motor.config.phase_resistance = float(motor_ctx.yaml['phase-resistance'])
         axis_ctx.handle.motor.config.phase_inductance = float(motor_ctx.yaml['phase-inductance'])
         axis_ctx.handle.motor.config.pre_calibrated = True
+        axis_ctx.parent.handle.config.dc_max_negative_current = -1.0
 
         # Set calibration settings
         axis_ctx.handle.config.calibration_lockin.vel = 12.566 # 2 electrical revolutions per second

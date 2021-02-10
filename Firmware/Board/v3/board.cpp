@@ -10,10 +10,10 @@
 #include <Drivers/STM32/stm32_basic_pwm_output.hpp>
 #include <Drivers/STM32/stm32_can.hpp>
 #include <Drivers/STM32/stm32_nvm_file.hpp>
+#include <Drivers/STM32/stm32_pwm_input.hpp>
 #include <Drivers/STM32/stm32_spi.hpp>
 #include <Drivers/STM32/stm32_timer.hpp>
 #include <Drivers/STM32/stm32_usart.hpp>
-#include <MotorControl/pwm_input.hpp>
 
 #include <adc.h>
 #include <tim.h>
@@ -178,6 +178,26 @@ std::array<GpioFunction, 3> alternate_functions[GPIO_COUNT] = {
     /* CAN_D: */ {{{ODrive::GPIO_MODE_CAN_A, GPIO_AF9_CAN1}, {ODrive::GPIO_MODE_I2C_A, GPIO_AF4_I2C1}}},
 };
 
+#if HW_VERSION_MINOR < 3
+template<> const int BoardSupportPackage::uart_tx_gpios[] = {};
+template<> const int BoardSupportPackage::uart_rx_gpios[] = {};
+#else
+template<> const int BoardSupportPackage::uart_tx_gpios[] = {1, 3};
+template<> const int BoardSupportPackage::uart_rx_gpios[] = {2, 4};
+#endif
+
+template<> const int BoardSupportPackage::inc_enc_a_gpios[] = {9, 12};
+template<> const int BoardSupportPackage::inc_enc_b_gpios[] = {10, 13};
+uint32_t inc_enc_af[] = {GPIO_AF2_TIM3, GPIO_AF2_TIM4};
+
+// The SPI pins are hardwired and not part of the GPIO numbering scheme.
+template<> const int BoardSupportPackage::spi_miso_gpios[] = {-1};
+template<> const int BoardSupportPackage::spi_mosi_gpios[] = {-1};
+template<> const int BoardSupportPackage::spi_sck_gpios[] = {-1};
+
+template<> const int BoardSupportPackage::can_r_gpios[] = {15};
+template<> const int BoardSupportPackage::can_d_gpios[] = {16};
+
 
 /* DMA Streams ---------------------------------------------------------------*/
 
@@ -220,19 +240,35 @@ constexpr float kAdcFullScale = static_cast<float>(1UL << 12UL);
 Stm32Spi spi = {SPI3, spi_rx_dma, spi_tx_dma};
 Stm32SpiArbiter spi_arbiter{&spi};
 
-Stm32Usart uart_a = {UART4, uart_a_rx_dma, uart_a_tx_dma};
-Stm32Usart uart_b = {USART2, uart_b_rx_dma, uart_b_tx_dma};
-Stm32Usart uart_c = {nullptr, {0}, {0}};
+#if HW_VERSION_MINOR < 3
+Stm32Usart uart_impl[] = {};
+template<> const std::array<Stm32Usart*, board.UART_COUNT> BoardSupportPackage::uarts = {};
+uint32_t uart_af[] = {};
+#else
+Stm32Usart uart_impl[] = {
+    {UART4, uart_a_rx_dma, uart_a_tx_dma},
+    {USART2, uart_b_rx_dma, uart_b_tx_dma},
+};
+template<> const std::array<Stm32Usart*, board.UART_COUNT> BoardSupportPackage::uarts = {&uart_impl[0], &uart_impl[1]};
+uint32_t uart_af[] = {GPIO_AF8_UART4, GPIO_AF7_USART2};
+#endif
 
-Stm32Can can_a = {CAN1};
+
+DEFINE_STM32_CAN(can_a, CAN1);
 
 template<> const std::array<CanBusBase*, 1> BoardSupportPackage::can_busses = {&can_a};
 
 #if HW_VERSION_MINOR <= 2
-PwmInput pwm0_input{&htim5, {0, 0, 0, 4}}; // 0 means not in use
+int pwm_gpios[] = {};
 #else
-PwmInput pwm0_input{&htim5, {1, 2, 3, 4}};
+int pwm_gpios[] = {1, 2, 3, 4};
 #endif
+
+Stm32PwmInput pwm_inputs[] = {
+#if HW_VERSION_MINOR > 2
+    {&htim5, {BoardSupportPackage::gpios[pwm_gpios[0]], BoardSupportPackage::gpios[pwm_gpios[1]], BoardSupportPackage::gpios[pwm_gpios[2]], BoardSupportPackage::gpios[pwm_gpios[3]]}},
+#endif
+};
 
 extern PCD_HandleTypeDef hpcd_USB_OTG_FS; // defined in usbd_conf.c
 USBD_HandleTypeDef usb_dev_handle;
@@ -357,7 +393,7 @@ static bool check_board_version(const uint8_t* otp_ptr) {
            (otp_ptr[5] == HW_VERSION_VOLTAGE);
 }
 
-bool board_init_stage_0() {
+template<> bool BoardSupportPackage::init() {
     // Reset of all peripherals, Initializes the Flash interface and the Systick.
     HAL_Init();
 
@@ -376,22 +412,12 @@ bool board_init_stage_0() {
         for (;;);
     }
 
-    if (!nvm_impl.init()) {
-        return false;
-    }
-
-    return true;
-}
-
-bool board_init_stage_1() {
-
     // Init DMA interrupts
 
     nvic.enable_with_prio(spi_rx_dma.get_irqn(), 4);
     nvic.enable_with_prio(spi_tx_dma.get_irqn(), 3);
 
-    // Init internal GPIOs (external GPIOs are initialized in main.cpp
-    // depending on user config)
+    // Init internal GPIOs (external GPIOs are initialized in config())
 
     vbus_s_gpio.config(GPIO_MODE_ANALOG, GPIO_NOPULL);
     aux_fet_temp_gpio.config(GPIO_MODE_ANALOG, GPIO_NOPULL);
@@ -403,8 +429,10 @@ bool board_init_stage_1() {
     m1_sob_gpio.config(GPIO_MODE_ANALOG, GPIO_NOPULL);
     m1_soc_gpio.config(GPIO_MODE_ANALOG, GPIO_NOPULL);
 
+    drv0_ncs_gpio.enable_clock();
     drv0_ncs_gpio.write(true);
     drv0_ncs_gpio.config(GPIO_MODE_OUTPUT_PP, GPIO_NOPULL);
+    drv1_ncs_gpio.enable_clock();
     drv1_ncs_gpio.write(true);
     drv1_ncs_gpio.config(GPIO_MODE_OUTPUT_PP, GPIO_NOPULL);
     drv_nfault_gpio.config(GPIO_MODE_INPUT, GPIO_PULLUP);
@@ -464,82 +492,8 @@ bool board_init_stage_1() {
     nvic.enable_with_prio(ControlLoop_IRQn, 5);
     nvic.enable_with_prio(TIM8_UP_TIM13_IRQn, 0);
 
-    spi.init();
-
-    if (uart_a && odrv.config_.enable_uart_a) {
-        nvic.enable_with_prio(uart_a_rx_dma.get_irqn(), 10);
-        nvic.enable_with_prio(uart_a_tx_dma.get_irqn(), 10);
-        nvic.enable_with_prio(uart_a.get_irqn(), 10);
-        if (!uart_a.init(odrv.config_.uart_a_baudrate)) {
-            return false; // TODO: continue startup in degraded state
-        }
-    } else if (odrv.config_.enable_uart_a) {
-        odrv.misconfigured_ = true;
-    }
-
-    if (uart_b && odrv.config_.enable_uart_b) {
-        nvic.enable_with_prio(uart_b_rx_dma.get_irqn(), 10);
-        nvic.enable_with_prio(uart_b_tx_dma.get_irqn(), 10);
-        nvic.enable_with_prio(uart_b.get_irqn(), 10);
-        if (!uart_b.init(odrv.config_.uart_b_baudrate)) {
-            return false; // TODO: continue startup in degraded state
-        }
-    } else if (odrv.config_.enable_uart_b) {
-        odrv.misconfigured_ = true;
-    }
-
-    if (odrv.config_.enable_uart_c) {
-        odrv.misconfigured_ = true;
-    }
-
-    if (odrv.config_.enable_i2c_a) {
-        
-        /* I2C support currently not maintained
-        // Set up the direction GPIO as input
-        get_gpio(3).config(GPIO_MODE_INPUT, GPIO_PULLUP);
-        get_gpio(4).config(GPIO_MODE_INPUT, GPIO_PULLUP);
-        get_gpio(5).config(GPIO_MODE_INPUT, GPIO_PULLUP);
-
-        osDelay(1); // This has no effect but was here before.
-        i2c_stats_.addr = (0xD << 3);
-        i2c_stats_.addr |= get_gpio(3).read() ? 0x1 : 0;
-        i2c_stats_.addr |= get_gpio(4).read() ? 0x2 : 0;
-        i2c_stats_.addr |= get_gpio(5).read() ? 0x4 : 0;
-        MX_I2C1_Init(i2c_stats_.addr);*/
-
-        odrv.misconfigured_ = true;
-    }
-
-    if (odrv.config_.enable_can_a) {
-        // The CAN initialization will (and must) init its own GPIOs before the
-        // GPIO modes are initialized. Therefore we ensure that the later GPIO
-        // mode initialization won't override the CAN mode.
-        if (odrv.config_.gpio_modes[15] != ODriveIntf::GPIO_MODE_CAN_A || odrv.config_.gpio_modes[16] != ODriveIntf::GPIO_MODE_CAN_A) {
-            odrv.misconfigured_ = true;
-        } else {
-        
-            nvic.enable_with_prio(CAN1_TX_IRQn, 9);
-            nvic.enable_with_prio(CAN1_RX0_IRQn, 9);
-            nvic.enable_with_prio(CAN1_RX1_IRQn, 9);
-            nvic.enable_with_prio(CAN1_SCE_IRQn, 9);
-
-            if (!can_a.init({
-                .Prescaler = 8,
-                .Mode = CAN_MODE_NORMAL,
-                .SyncJumpWidth = CAN_SJW_4TQ,
-                .TimeSeg1 = CAN_BS1_16TQ,
-                .TimeSeg2 = CAN_BS2_4TQ,
-                .TimeTriggeredMode = DISABLE,
-                .AutoBusOff = ENABLE,
-                .AutoWakeUp = ENABLE,
-                .AutoRetransmission = ENABLE,
-                .ReceiveFifoLocked = DISABLE,
-                .TransmitFifoPriority = DISABLE,
-            }, 2000000UL)) {
-                return false; // TODO: continue in degraded mode
-            }
-
-        }
+    if (!spi.init()) {
+        return false;
     }
 
     // Ensure that debug halting of the core doesn't leave the motor PWM running
@@ -552,13 +506,6 @@ bool board_init_stage_1() {
     htim2.Instance->CCR4 = TIM_APB1_PERIOD_CLOCKS + 1;
     HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_3);
     HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_4);
-
-    // Reset both DRV chips. The enable pin also controls the SPI interface, not
-    // only the driver stages.
-    drv_en_gate_gpio.write(false);
-    delay_us(40); // mimumum pull-down time for full reset: 20us
-    drv_en_gate_gpio.write(true);
-    delay_us(20000); // mimumum pull-down time for full reset: 20us
 
     // Enable ADC
     __HAL_ADC_ENABLE(&hadc1);
@@ -580,6 +527,123 @@ bool board_init_stage_1() {
 
     Stm32Adc{&hadc1}.set_regular_sequence(channels.data(), channels.size());
     HAL_ADC_Start_DMA(&hadc1, reinterpret_cast<uint32_t*>(adc_measurements_.data()), ADC_CHANNEL_COUNT);
+
+    if (!nvm_impl.init()) {
+        return false;
+    }
+
+    return true;
+}
+
+template<> bool BoardSupportPackage::config(const BoardConfig& config) {
+    if (!validate_gpios(config)) {
+        return false;
+    }
+
+    // Cannot disable SPI because it's used by gate drivers
+    if (!config.spi_config[0].enabled) {
+        return false;
+    }
+
+    // Cannot enable CAN without enabling the corresponding GPIOs
+    if (config.can_config[0].enabled && (config.can_config[0].r_gpio != can_r_gpios[0] || config.can_config[0].d_gpio != can_d_gpios[0])) {
+        return false;
+    }
+
+    for (size_t i = 0; i < BoardTraits::_GPIO_COUNT; ++i) {
+        switch (config.gpio_modes[i]) {
+            case kAnalogInput: gpios[i].config(GPIO_MODE_ANALOG, GPIO_NOPULL); break;
+            case kPwmInput: break; // initialized below
+            case kDigitalInputNoPull: gpios[i].config(GPIO_MODE_INPUT, GPIO_NOPULL); break;
+            case kDigitalInputPullUp: gpios[i].config(GPIO_MODE_INPUT, GPIO_PULLUP); break;
+            case kDigitalInputPullDown: gpios[i].config(GPIO_MODE_INPUT, GPIO_PULLDOWN); break;
+            case kDigitalOutput: gpios[i].config(GPIO_MODE_OUTPUT_PP, GPIO_NOPULL, GPIO_SPEED_FREQ_LOW); break;
+
+            // Switch to Hi-Z for now. Will be overridden later.
+            case kAlternateFunction: gpios[i].config(GPIO_MODE_ANALOG, GPIO_NOPULL); break;
+            default: return false; // Should not happen because of preceding validate_gpio()
+        }
+    }
+
+    std::array<bool, 4> enable_arr[sizeof(pwm_inputs) / sizeof(pwm_inputs[0])];
+
+    for (size_t i = 0; i < sizeof(pwm_gpios) / sizeof(pwm_gpios[0]); ++i) {
+        bool enable = pwm_gpios[i] >= 0 && config.gpio_modes[pwm_gpios[i]] == kPwmInput;
+        enable_arr[i / 4][i % 4] = enable;
+        if (enable) {
+            gpios[pwm_gpios[i]].config(GPIO_MODE_AF_PP, GPIO_PULLDOWN, GPIO_SPEED_FREQ_LOW, GPIO_AF2_TIM5);
+        }
+    }
+
+    for (size_t i = 0; i < sizeof(pwm_inputs) / sizeof(pwm_inputs[0]); ++i) {
+        if (std::any_of(std::begin(enable_arr[i]), std::end(enable_arr[i]), [](auto& en) {return en;})) {
+            nvic.enable_with_prio(Stm32Timer{pwm_inputs[i].get_timer()}.get_irqn(), 1);
+            pwm_inputs[i].init(enable_arr[i]);
+        }
+    }
+
+    for (size_t i = 0; i < BoardTraits::UART_COUNT; ++i) {
+        if (config.uart_config[i].enabled) {
+            nvic.enable_with_prio(Stm32DmaStreamRef{(DMA_Stream_TypeDef*)uart_impl[i].hdma_rx_.Instance}.get_irqn(), 10);
+            nvic.enable_with_prio(Stm32DmaStreamRef{(DMA_Stream_TypeDef*)uart_impl[i].hdma_tx_.Instance}.get_irqn(), 10);
+            nvic.enable_with_prio(uart_impl[i].get_irqn(), 10);
+
+            if (!uart_impl[i].init(config.uart_config[i].baudrate)) {
+                return false; // TODO: continue startup in degraded state
+            }
+
+            if (config.uart_config[i].tx_gpio >= 0) {
+                gpios[uart_tx_gpios[i]].config(GPIO_MODE_AF_PP, GPIO_PULLDOWN, GPIO_SPEED_FREQ_VERY_HIGH, uart_af[i]);
+            }
+            if (config.uart_config[i].rx_gpio >= 0) {
+                gpios[uart_rx_gpios[i]].config(GPIO_MODE_AF_PP, GPIO_PULLUP, GPIO_SPEED_FREQ_VERY_HIGH, uart_af[i]);
+            }
+        }
+    }
+
+    if (config.can_config[0].enabled) {
+        gpios[can_r_gpios[0]].config(GPIO_MODE_AF_PP, GPIO_NOPULL, GPIO_SPEED_FREQ_VERY_HIGH, GPIO_AF9_CAN1);
+        gpios[can_d_gpios[0]].config(GPIO_MODE_AF_PP, GPIO_NOPULL, GPIO_SPEED_FREQ_VERY_HIGH, GPIO_AF9_CAN1);
+        
+        nvic.enable_with_prio(CAN1_TX_IRQn, 9);
+        nvic.enable_with_prio(CAN1_RX0_IRQn, 9);
+        nvic.enable_with_prio(CAN1_RX1_IRQn, 9);
+        nvic.enable_with_prio(CAN1_SCE_IRQn, 9);
+
+        if (!can_a.init({
+            .Prescaler = 8,
+            .Mode = CAN_MODE_NORMAL,
+            .SyncJumpWidth = CAN_SJW_4TQ,
+            .TimeSeg1 = CAN_BS1_16TQ,
+            .TimeSeg2 = CAN_BS2_4TQ,
+            .TimeTriggeredMode = DISABLE,
+            .AutoBusOff = ENABLE,
+            .AutoWakeUp = ENABLE,
+            .AutoRetransmission = ENABLE,
+            .ReceiveFifoLocked = DISABLE,
+            .TransmitFifoPriority = DISABLE,
+        }, 2000000UL)) {
+            return false; // TODO: continue in degraded mode
+        }
+    }
+
+    for (size_t i = 0; i < INC_ENC_COUNT; ++i) {
+        if (config.inc_enc_config[i].enabled) {
+            if (config.inc_enc_config[i].a_gpio >= 0) {
+                gpios[inc_enc_a_gpios[i]].config(GPIO_MODE_AF_PP, GPIO_NOPULL, GPIO_SPEED_FREQ_LOW, inc_enc_af[i]);
+            }
+            if (config.inc_enc_config[i].b_gpio >= 0) {
+                gpios[inc_enc_b_gpios[i]].config(GPIO_MODE_AF_PP, GPIO_NOPULL, GPIO_SPEED_FREQ_LOW, inc_enc_af[i]);
+            }
+        }
+    }
+
+    // Reset both DRV chips. The enable pin also controls the SPI interface, not
+    // only the driver stages.
+    drv_en_gate_gpio.write(false);
+    delay_us(40); // mimumum pull-down time for full reset: 20us
+    drv_en_gate_gpio.write(true);
+    delay_us(20000); // mimumum pull-down time for full reset: 20us
 
     return true;
 }
@@ -696,7 +760,7 @@ void HAL_SPI_TxRxCpltCallback(SPI_HandleTypeDef *hspi) {
 
 void TIM5_IRQHandler(void) {
     COUNT_IRQ(TIM5_IRQn);
-    pwm0_input.on_capture();
+    pwm_inputs[0].on_capture();
 }
 
 volatile uint32_t timestamp_ = 0;
@@ -727,6 +791,9 @@ void TIM8_UP_TIM13_IRQHandler(void) {
         // If TIM8 is counting up run sampling handlers and kick off control
         // tasks.
         TaskTimer::enabled = odrv.task_timers_armed_;
+        for (size_t i = 0; i < sizeof(pwm_gpios) / sizeof(pwm_gpios[0]); ++i) {
+            board.gpio_pwm_values[pwm_gpios[i]] = pwm_inputs[i / 4].pwm_values_[i % 4];
+        }
         odrv.sampling_cb();
         NVIC->STIR = ControlLoop_IRQn;
     } else {
@@ -765,8 +832,8 @@ void ControlLoop_IRQHandler(void) {
     }
     __HAL_DMA_CLEAR_FLAG(hadc1.DMA_Handle, tcif);
 
-    // Convert GPIO ADCs samples to voltages (actual sampling is done 
-    // continuously using DMA).
+    // Convert GPIO ADCs samples to voltages (actual sampling is triggered by
+    // TIM8 and done using DMA).
     for (size_t i = 0; i < adc_gpios.size(); ++i) {
         board.gpio_adc_values[adc_gpios[i]] = adc_measurements_[i] /
             kAdcFullScale;
@@ -846,35 +913,39 @@ void I2C1_ER_IRQHandler(void) {
     HAL_I2C_ER_IRQHandler(&hi2c1);
 }*/
 
+#if HW_VERSION_MINOR >= 3
+
 void DMA1_Stream2_IRQHandler(void) {
     COUNT_IRQ(DMA1_Stream2_IRQn);
-    HAL_DMA_IRQHandler(&uart_a.hdma_rx_);
+    HAL_DMA_IRQHandler(&uart_impl[0].hdma_rx_);
 }
 
 void DMA1_Stream4_IRQHandler(void) {
     COUNT_IRQ(DMA1_Stream4_IRQn);
-    HAL_DMA_IRQHandler(&uart_a.hdma_tx_);
+    HAL_DMA_IRQHandler(&uart_impl[0].hdma_tx_);
 }
 
 void DMA1_Stream5_IRQHandler(void) {
     COUNT_IRQ(DMA1_Stream5_IRQn);
-    HAL_DMA_IRQHandler(&uart_b.hdma_rx_);
+    HAL_DMA_IRQHandler(&uart_impl[1].hdma_rx_);
 }
 
 void DMA1_Stream6_IRQHandler(void) {
     COUNT_IRQ(DMA1_Stream6_IRQn);
-    HAL_DMA_IRQHandler(&uart_b.hdma_tx_);
+    HAL_DMA_IRQHandler(&uart_impl[1].hdma_tx_);
 }
 
 void UART4_IRQHandler(void) {
     COUNT_IRQ(UART4_IRQn);
-    HAL_UART_IRQHandler(uart_a);
+    HAL_UART_IRQHandler(uart_impl[0]);
 }
 
 void USART2_IRQHandler(void) {
     COUNT_IRQ(USART2_IRQn);
-    HAL_UART_IRQHandler(uart_b);
+    HAL_UART_IRQHandler(uart_impl[1]);
 }
+
+#endif
 
 void DMA1_Stream0_IRQHandler(void) {
     COUNT_IRQ(DMA1_Stream0_IRQn);
@@ -889,26 +960,6 @@ void DMA1_Stream7_IRQHandler(void) {
 void SPI3_IRQHandler(void) {
     COUNT_IRQ(SPI3_IRQn);
     HAL_SPI_IRQHandler(spi);
-}
-
-void CAN1_TX_IRQHandler(void) {
-    COUNT_IRQ(CAN1_TX_IRQn);
-    HAL_CAN_IRQHandler(&can_a.handle_);
-}
-
-void CAN1_RX0_IRQHandler(void) {
-    COUNT_IRQ(CAN1_RX0_IRQn);
-    HAL_CAN_IRQHandler(&can_a.handle_);
-}
-
-void CAN1_RX1_IRQHandler(void) {
-    COUNT_IRQ(CAN1_RX1_IRQn);
-    HAL_CAN_IRQHandler(&can_a.handle_);
-}
-
-void CAN1_SCE_IRQHandler(void) {
-    COUNT_IRQ(CAN1_SCE_IRQn);
-    HAL_CAN_IRQHandler(&can_a.handle_);
 }
 
 void OTG_FS_IRQHandler(void) {
