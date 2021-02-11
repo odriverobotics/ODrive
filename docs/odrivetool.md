@@ -98,11 +98,27 @@ To compile firmware from source, refer to the [developer guide](developer-guide)
   </div></details>
 
 ### Upgrading firmware with a different DFU tool
-Some people have had issues using the python dfu tool, so below is a guide on how to manually use a different tool.
+Some people have had issues using the python dfu tool, so below is a guide on how to manually use different tools.
 
 Before starting the below steps, you need to get firmware binary. You can download one of the officially released firmware files from [here](https://github.com/madcowswe/ODrive/releases). Make sure you select the file that matches your board version. On Windows you will need one of the __.hex__ files, and for Linux and Mac you will want the __.elf__ file.
 
 To compile firmware from source, refer to the [developer guide](developer-guide).
+
+#### Multi-platform
+ST has a tool called STM32CubeProgrammer.
+
+1. Download the tool [here](https://www.st.com/en/development-tools/stm32cubeprog.html). You will need to make an account with ST to download the tool.
+1. Install the tool. On Windows, make sure to let it make a desktop shortcut.
+1. Force the ODrive into DFU mode, as per the instructions above titled "How to force DFU mode".
+1. Launch the tool.
+1. Under "Memory & File edition", there are two tabs called "Device memory" and "Open file". Click "Open file" and choose the ODrive firmware hex file that you downloaded or compiled.
+1. In the top right, there is a dropdown menu containing the different methods to connect to an STM32 device. Choose "USB".
+1. Under "USB configuration", a USB port should be automatically selected and the ODrive serial number should be present next to "Serial number."
+1. Click "Connect" above "USB configuration".
+1. Click the tab with the name of your firmware file (example: ODriveFirmware_v3.6-56V.hex) if it is not already selected.
+1. Click "Download" to flash your ODrive with the firmware. Your ODrive is now flashed!
+1. Close STM32CubeProgrammer.
+1. Turn off the power to the ODrive and set the DIP swtich back to RUN mode.
 
 #### Windows
 You can use the DfuSe app from ST.
