@@ -70,7 +70,8 @@ class CANSimple {
     static void enable_periodic_update(Axis& axis, const can_Message_t& msg);
 
     // Can TPDO similar
-    static void periodic_handler_update(Axis::CANConfig_t& can_conf, const uint32_t id, const uint32_t command_id, const uint32_t rate_ms, bool construct);
+    static void periodic_handler_construct(Axis::CANConfig_t& can_conf, const uint32_t id, const uint32_t command_id, const uint32_t rate_ms);
+    static void periodic_handler_remove(Axis::CANConfig_t& can_conf, const uint32_t id);
     static int32_t call_periodic_handler(Axis& axis, uint32_t command);
 
     // Other functions

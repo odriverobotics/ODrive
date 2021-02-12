@@ -292,59 +292,38 @@ int32_t CANSimple::get_vbus_voltage_callback(const Axis& axis) {
 void CANSimple::clear_errors_callback(Axis& axis, const can_Message_t& msg) {
     odrv.clear_errors(); // TODO: might want to clear axis errors only
 }
-void CANSimple::periodic_handler_update(Axis::CANConfig_t& can_conf, const uint32_t id, const uint32_t command_id, const uint32_t rate_ms, bool construct)
+
+void CANSimple::periodic_handler_construct(Axis::CANConfig_t& can_conf, const uint32_t id, const uint32_t command_id, const uint32_t rate_ms)
 {
-    if (construct)
-    {
         switch (command_id)
         {
             case MSG_GET_MOTOR_ERROR:
-                can_conf.periodic_handlers[id] = {command_id, rate_ms, 0};
-                break;
             case MSG_GET_ENCODER_ERROR:
-                can_conf.periodic_handlers[id] = {command_id, rate_ms, 0};
-                break;
             case MSG_GET_SENSORLESS_ERROR:
-                can_conf.periodic_handlers[id] = {command_id, rate_ms, 0};
-                break;
             case MSG_GET_ENCODER_ESTIMATES:
-                can_conf.periodic_handlers[id] = {command_id, rate_ms, 0};
-                break;
             case MSG_GET_ENCODER_COUNT:
-                can_conf.periodic_handlers[id] = {command_id, rate_ms, 0};
-                break;
             case MSG_GET_IQ:
-                can_conf.periodic_handlers[id] = {command_id, rate_ms, 0};
-                break;
             case MSG_GET_SENSORLESS_ESTIMATES:
-                can_conf.periodic_handlers[id] = {command_id, rate_ms, 0};
-                break;
             case MSG_GET_VBUS_VOLTAGE:
-                can_conf.periodic_handlers[id] = {command_id, rate_ms, 0};
-                break;
             case MSG_ODRIVE_HEARTBEAT:
                 can_conf.periodic_handlers[id] = {command_id, rate_ms, 0};
                 break;
             default:
+                // Again, capture invalid CAN commands
                 return;
         }
         can_conf.nbr_of_periodic_handlers++;
-    }
-    else
-    {
+
+}
+void CANSimple::periodic_handler_remove(Axis::CANConfig_t& can_conf, const uint32_t id)
+{
         // Clear handler, move last handler to position to clear and clear last element
         can_conf.periodic_handlers[id] = can_conf.periodic_handlers[can_conf.nbr_of_periodic_handlers-1];
         can_conf.periodic_handlers[can_conf.nbr_of_periodic_handlers-1] = {0, 0, 0};
-        /*
-        memset(&can_conf.periodic_handlers[id], 0, sizeof(struct Axis::CANPeriodic));
-        if (id < 5-1)
-        {
-            memmove(&can_conf.periodic_handlers[id], &can_conf.periodic_handlers[id+1], sizeof(struct CANPeriodic)*(can_conf.nbr_of_periodic_handlers-1));
-        }*/
 
         can_conf.nbr_of_periodic_handlers--;
-    }
 }
+
 void CANSimple::enable_periodic_update(Axis& axis,  const can_Message_t& msg)
 {
     const uint32_t periodic_cmd = can_getSignal<uint32_t>(msg, 0, 32, true);
@@ -369,7 +348,7 @@ void CANSimple::enable_periodic_update(Axis& axis,  const can_Message_t& msg)
         {
             if (update_rate_ms == 0)
             {
-                periodic_handler_update(axis.config_.can, id, periodic_cmd, update_rate_ms, false);
+                periodic_handler_remove(axis.config_.can, id);
             }
             else
             {
@@ -377,9 +356,9 @@ void CANSimple::enable_periodic_update(Axis& axis,  const can_Message_t& msg)
             }
             break;
         }
-        else if(handler.call_rate_ms == 0)
+        else if(!handler.enabled) // Unused handlers are placed furthest down in the array. When all active handlers have been checked, activate a new one
         {
-            periodic_handler_update(axis.config_.can, id, periodic_cmd, update_rate_ms, true);
+            periodic_handler_construct(axis.config_.can, id, periodic_cmd, update_rate_ms);
             break;
         }
         id++;

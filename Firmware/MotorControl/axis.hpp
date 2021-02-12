@@ -52,7 +52,10 @@ public:
     static LockinConfig_t default_lockin();
 
     struct CANPeriodic {  // Think of TPDO
-        uint32_t can_command = 0;
+        union { // Kind of ugly solution, only works if can_commmand is writing to lowest 8 bits. Valid to waste a word?
+            uint32_t can_command = 0;
+            bool enabled;
+        };
         uint32_t call_rate_ms = 0;
         uint32_t last_call = 0;
     };
