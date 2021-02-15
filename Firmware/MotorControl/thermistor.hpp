@@ -52,7 +52,11 @@ public:
     struct Config_t {
         float thermistor_poly_coeffs[num_coeffs_];
 
+#if HW_VERSION_MAJOR == 3
         uint16_t gpio_pin = 4;
+#elif HW_VERSION_MAJOR == 4
+        uint16_t gpio_pin = 2;
+#endif
         float temp_limit_lower = 100;
         float temp_limit_upper = 120;
         bool enabled = false;

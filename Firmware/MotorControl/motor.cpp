@@ -6,8 +6,8 @@
 
 #include <algorithm>
 
-#define CURRENT_ADC_LOWER_BOUND         (uint32_t)((float)(1 << 12) * CURRENT_SENSE_MIN_VOLT / 3.3f)
-#define CURRENT_ADC_UPPER_BOUND         (uint32_t)((float)(1 << 12) * CURRENT_SENSE_MAX_VOLT / 3.3f)
+static constexpr auto CURRENT_ADC_LOWER_BOUND =        (uint32_t)((float)(1 << 12) * CURRENT_SENSE_MIN_VOLT / 3.3f);
+static constexpr auto CURRENT_ADC_UPPER_BOUND =        (uint32_t)((float)(1 << 12) * CURRENT_SENSE_MAX_VOLT / 3.3f);
 
 /**
  * @brief This control law adjusts the output voltage such that a predefined
@@ -29,6 +29,7 @@ struct ResistanceMeasurementControlLaw : AlphaBetaFrameController {
         if (Ialpha_beta.has_value()) {
             actual_current_ = Ialpha_beta->first;
             test_voltage_ += (kI * current_meas_period) * (target_current_ - actual_current_);
+            I_beta_ += (kIBetaFilt * current_meas_period) * (Ialpha_beta->second - I_beta_);
         } else {
             actual_current_ = 0.0f;
             test_voltage_ = 0.0f;
@@ -63,11 +64,17 @@ struct ResistanceMeasurementControlLaw : AlphaBetaFrameController {
         return test_voltage_ / target_current_;
     }
 
+    float get_Ibeta() {
+        return I_beta_;
+    }
+
     const float kI = 1.0f; // [(V/s)/A]
+    const float kIBetaFilt = 80.0f;
     float max_voltage_ = 0.0f;
     float actual_current_ = 0.0f;
     float target_current_ = 0.0f;
     float test_voltage_ = 0.0f;
+    float I_beta_ = 0.0f; // [A] low pass filtered Ibeta response
     std::optional<float> test_mod_ = NAN;
 };
 
@@ -199,6 +206,7 @@ bool Motor::arm(PhaseControlLaw<3>* control_law) {
         }
 
         if (!odrv.config_.enable_brake_resistor || brake_resistor_armed) {
+            armed_state_ = 1;
             is_armed_ = true;
         } else {
             error_ |= Motor::ERROR_BRAKE_RESISTOR_DISARMED;
@@ -264,6 +272,7 @@ bool Motor::disarm(bool* p_was_armed) {
             gate_driver_.set_enabled(false);
         }
         is_armed_ = false;
+        armed_state_ = 0;
         TIM_HandleTypeDef* timer = timer_;
         timer->Instance->BDTR &= ~TIM_BDTR_AOE; // prevent the PWMs from automatically enabling at the next update
         __HAL_TIM_MOE_DISABLE_UNCONDITIONALLY(timer);
@@ -323,13 +332,14 @@ bool Motor::setup() {
     max_dc_calib_ = 0.1f * max_allowed_current_;
 
     if (!gate_driver_.init())
-        return true;
+        return false;
 
     return true;
 }
 
 void Motor::disarm_with_error(Motor::Error error){
     error_ |= error;
+    last_error_time_ = odrv.n_evt_control_loop_ * current_meas_period;
     disarm();
 }
 
@@ -433,6 +443,12 @@ bool Motor::measure_phase_resistance(float test_current, float max_voltage) {
         success = false;
     }
 
+    float I_beta = control_law.get_Ibeta();
+    if (is_nan(I_beta) || (abs(I_beta) / test_current) > 0.1f) {
+        disarm_with_error(ERROR_UNBALANCED_PHASES);
+        success = false;
+    }
+
     return success;
 }
 
@@ -494,36 +510,41 @@ bool Motor::run_calibration() {
 }
 
 void Motor::update(uint32_t timestamp) {
-    std::optional<float> torque = torque_setpoint_src_.present();
-
-    if (!torque.has_value()) {
+    // Load torque setpoint, convert to motor direction
+    std::optional<float> maybe_torque = torque_setpoint_src_.present();
+    if (!maybe_torque.has_value()) {
         error_ |= ERROR_UNKNOWN_TORQUE;
         return;
     }
+    float torque = direction_ * *maybe_torque;
 
+    // Load setpoints from previous iteration.
     auto [id, iq] = Idq_setpoint_.previous()
-                     .value_or(float2D{0.0f, 0.0f}); // Id doubles as a state variable
-
-    // Convert torque to current
-    if (axis_->motor_.config_.motor_type == Motor::MOTOR_TYPE_ACIM) {
-        iq = *torque / (axis_->motor_.config_.torque_constant * std::max(axis_->acim_estimator_.rotor_flux_, config_.acim_gain_min_flux));
-    } else {
-        iq = *torque / axis_->motor_.config_.torque_constant;
-    }
-
-    iq *= direction_;
-
-    // TODO: 2-norm vs independent clamping (current could be sqrt(2) bigger)
+                     .value_or(float2D{0.0f, 0.0f});
+    // Load effective current limit
     float ilim = axis_->motor_.effective_current_lim_;
-    id = std::clamp(id, -ilim, ilim);
-    iq = std::clamp(iq, -ilim, ilim);
 
+    // Autoflux tracks old Iq (that may be 2-norm clamped last cycle) to make sure we are chasing a feasable current.
     if ((axis_->motor_.config_.motor_type == Motor::MOTOR_TYPE_ACIM) && config_.acim_autoflux_enable) {
         float abs_iq = std::abs(iq);
         float gain = abs_iq > id ? config_.acim_autoflux_attack_gain : config_.acim_autoflux_decay_gain;
         id += gain * (abs_iq - id) * current_meas_period;
-        id = std::clamp(id, config_.acim_autoflux_min_Id, ilim);
+        id = std::clamp(id, config_.acim_autoflux_min_Id, 0.9f * ilim); // 10% space reserved for Iq
+    } else {
+        id = std::clamp(id, -ilim*0.99f, ilim*0.99f); // 1% space reserved for Iq to avoid numerical issues
     }
+
+    // Convert requested torque to current
+    if (axis_->motor_.config_.motor_type == Motor::MOTOR_TYPE_ACIM) {
+        iq = torque / (axis_->motor_.config_.torque_constant * std::max(axis_->acim_estimator_.rotor_flux_, config_.acim_gain_min_flux));
+    } else {
+        iq = torque / axis_->motor_.config_.torque_constant;
+    }
+
+    // 2-norm clamping where Id takes priority
+    float iq_lim_sqr = SQ(ilim) - SQ(id);
+    float Iq_lim = (iq_lim_sqr <= 0.0f) ? 0.0f : sqrt(iq_lim_sqr);
+    iq = std::clamp(iq, -Iq_lim, Iq_lim);
 
     if (axis_->motor_.config_.motor_type != Motor::MOTOR_TYPE_GIMBAL) {
         Idq_setpoint_ = {id, iq};
@@ -587,7 +608,10 @@ void Motor::current_meas_cb(uint32_t timestamp, std::optional<Iph_ABC_t> current
                        && (abs(DC_calib_.phB) < max_dc_calib_)
                        && (abs(DC_calib_.phC) < max_dc_calib_);
 
-    if (current.has_value() && dc_calib_valid) {
+    if (armed_state_ == 1 || armed_state_ == 2) {
+        current_meas_ = {0.0f, 0.0f, 0.0f};
+        armed_state_ += 1;
+    } else if (current.has_value() && dc_calib_valid) {
         current_meas_ = {
             current->phA - DC_calib_.phA,
             current->phB - DC_calib_.phB,
@@ -678,7 +702,6 @@ void Motor::pwm_update_cb(uint32_t output_timestamp) {
             (uint16_t)(pwm_timings[1] * (float)TIM_1_8_PERIOD_CLOCKS),
             (uint16_t)(pwm_timings[2] * (float)TIM_1_8_PERIOD_CLOCKS)
         };
-
         apply_pwm_timings(next_timings, false);
     } else if (is_armed_) {
         if (!(timer_->Instance->BDTR & TIM_BDTR_MOE) && (control_law_status == ERROR_CONTROLLER_INITIALIZING)) {

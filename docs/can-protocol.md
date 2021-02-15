@@ -50,7 +50,7 @@ CMD ID | Name | Sender | Signals | Start byte | Signal Type | Bits | Factor | Of
 0x00C | Set Input Pos | Master | Input Pos<br>Vel FF<br>Torque FF | 0<br>4<br>6 | IEEE 754 Float<br>Signed Int<br>Signed Int | 32<br>16<br>16 | 1<br>0.001<br>0.001 | 0<br>0<br>0 | Intel<br>Intel<br>Intel
 0x00D | Set Input Vel | Master | Input Vel<br>Torque FF | 0<br>4 | IEEE 754 Float<br>IEEE 754 Float | 32<br>32 | 1<br>1 | 0<br>0 | Intel<br>Intel
 0x00E | Set Input Torque | Master | Input Torque | 0 |  IEEE 754 Float | 32 | 1 | 0 | Intel
-0x00F | Set Velocity Limit | Master | Velocity Limit | 0 | IEEE 754 Float | 32 | 1 | 0 | Intel
+0x00F | Set Limits | Master | Velocity Limit<br>Current Limit | 0<br>4 | IEEE 754 Float<br>IEEE 754 Float | 32<br> | 1<br>1 | 0<br>0 | Intel
 0x010 | Start Anticogging | Master | - | - | - | - | - | - | -
 0x011 | Set Traj Vel Limit | Master | Traj Vel Limit | 0 | IEEE 754 Float | 32 | 1 | 0 | Intel
 0x012 | Set Traj Accel Limits | Master | Traj Accel Limit<br>Traj Decel Limit | 0<br>4 | IEEE 754 Float<br>IEEE 754 Float | 32<br>32 | 1<br>1 | 0<br>0 | Intel<br>Intel

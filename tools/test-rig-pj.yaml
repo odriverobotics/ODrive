@@ -56,8 +56,9 @@ components:
     cpr: 8192
     max-rpm: 7000
 
-  - type: teensy
+  - type: arduino
     name: teensy
+    board-version: teensy:avr:teensy40
 
   - {type: lpf, name: lpf0}
   - {type: lpf, name: lpf1}
@@ -89,8 +90,8 @@ connections:
   - ['teensy.gpio3', 'odrive.spi.mosi']
   - ['teensy.gpio4', 'odrive.spi.miso']
   - ['teensy.gpio5', 'odrive.spi.sck']
-  - ['odrive.axis0', 'D5065-270KV_0']
-  - ['D5065-270KV_0', 'real_encoder']
+  - ['odrive.axis0', 'D5065-270KV_0.phases']
+  - ['D5065-270KV_0.shaft', 'real_encoder.shaft']
   - ['odrive.gpio3', 'lpf0']
   - ['odrive.gpio4', 'lpf1']
   - ['lpf0.en', 'lpf1.en', 'rpi.gpio16']

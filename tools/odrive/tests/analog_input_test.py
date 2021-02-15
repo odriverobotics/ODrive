@@ -56,17 +56,16 @@ class TestAnalogInput():
     def get_test_cases(self, testrig: TestRig):
         for odrive in testrig.get_components(ODriveComponent):
             for odrive_gpio_num, odrive_gpio in [(2, odrive.gpio3), (3, odrive.gpio4)]:
-                analog_out_options = []
-                lpf_gpio = [gpio for lpf in testrig.get_connected_components(odrive_gpio, LowPassFilterComponent)
-                                 for gpio in testrig.get_connected_components(lpf.en, LinuxGpioComponent)]
-                for teensy_gpio in testrig.get_connected_components(odrive_gpio, TeensyGpio):
-                    teensy = teensy_gpio.parent
-                    analog_reset_options = []
-                    for gpio in teensy.gpios:
-                        for local_gpio in testrig.get_connected_components(gpio, LinuxGpioComponent):
-                            analog_reset_options.append((gpio, local_gpio))
-                    analog_out_options.append((teensy, teensy_gpio, analog_reset_options))
-                yield (odrive, lpf_gpio, odrive_gpio_num, analog_out_options)
+                alternatives = []
+                lpfs = [(gpio, TestFixture.all_of(tf1, tf2)) for lpf, tf1 in testrig.get_connected_components(odrive_gpio, LowPassFilterComponent)
+                                                             for gpio, tf2 in testrig.get_connected_components(lpf.en, LinuxGpioComponent)]
+                for lpf, tf1 in lpfs:
+                    for teensy_gpio, tf2 in testrig.get_connected_components(odrive_gpio, TeensyGpio):
+                        teensy = teensy_gpio.parent
+                        for gpio in teensy.gpios:
+                            for local_gpio, tf3 in testrig.get_connected_components(gpio, LinuxGpioComponent):
+                                alternatives.append([odrive, lpf, odrive_gpio_num, teensy, teensy_gpio, gpio, local_gpio, TestFixture.all_of(tf1, tf2, tf3)])
+                yield AnyTestCase(*alternatives)
 
 
     def run_test(self, odrive: ODriveComponent, lpf_enable: LinuxGpioComponent, analog_in_num: int, teensy: TeensyComponent, teensy_analog_out: Component, teensy_analog_reset: Component, analog_reset_gpio: LinuxGpioComponent, logger: Logger):
@@ -93,7 +92,7 @@ class TestAnalogInput():
 
         odrive.disable_mappings()
         setattr(odrive.handle.config, 'gpio' + str(analog_in_num+1) + '_mode', GPIO_MODE_ANALOG_IN)
-        analog_mapping.endpoint = odrive.handle.axis0.controller._remote_attributes['input_pos']
+        analog_mapping.endpoint = odrive.handle.axis0.controller._input_pos_property
         analog_mapping.min = min_val
         analog_mapping.max = max_val
         odrive.save_config_and_reboot()
@@ -108,7 +107,7 @@ class TestAnalogInput():
         test_assert_eq(slope, (max_val - min_val) / period, accuracy=0.005) 
         test_curve_fit(data, fitted_curve, max_mean_err = full_range * 0.03, inlier_range = full_range * 0.05, max_outliers = len(data[:,0]) * 0.02)
 
-
+tests = [TestAnalogInput()]
 
 if __name__ == '__main__':
-    test_runner.run(TestAnalogInput())
+    test_runner.run(tests)

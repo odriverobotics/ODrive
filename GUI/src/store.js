@@ -120,7 +120,15 @@ export default new Vuex.Store({
                 }
                 return ref;
             };
-            Vue.set(createNestedObject(state.odrives, payload.path), "val", payload.val);
+            let val = payload.val
+            if (val == "Infinity") {
+                val = Number.POSITIVE_INFINITY;
+                console.log("val is infinity");
+            }
+            else if (val == "-Infinity") {
+                val = Number.NEGATIVE_INFINITY;
+            }
+            Vue.set(createNestedObject(state.odrives, payload.path), "val", val);
 
         },
         addSampledProperty(state, path) {
@@ -244,10 +252,29 @@ export default new Vuex.Store({
                         if (Object.prototype.hasOwnProperty.call(odriveObj[key], "val")) {
                             // parse from string to a type that we care about
                             switch (odriveObj[key]["type"]) {
+                                case "str": {
+                                    // for handling infinity
+                                    let val;
+                                    if (odriveObj[key]["val"] == 'Infinity') {
+                                        val = Number.POSITIVE_INFINITY;
+                                    }
+                                    else if (odriveObj[key]["val"] == '-Infinity') {
+                                        val = Number.NEGATIVE_INFINITY;
+                                    }
+                                    retObj[key] = val;
+                                    break;
+                                }
                                 case "float":
                                     retObj[key] = parseFloat(parseFloat(odriveObj[key]["val"]).toFixed(3));
                                     break;
-                                case "int":
+                                case "int8":
+                                case "int16":
+                                case "int32":
+                                case "int64":
+                                case "uint8":
+                                case "uint16":
+                                case "uint32":
+                                case "uint64":
                                     retObj[key] = parseInt(odriveObj[key]["val"]);
                                     break;
                                 case "bool":

@@ -36,7 +36,7 @@
           "value": 1
         },
         {
-          "text": "Starup Sequence",
+          "text": "Startup Sequence",
           "value": 2
         },
         {
@@ -102,11 +102,11 @@
       "vars": [
         {
           "path": "odrives.odrive0.axis0.controller.pos_setpoint",
-          "color": "#195bd7"
+          "color": "#1f77b4"
         },
         {
           "path": "odrives.odrive0.axis0.encoder.pos_estimate",
-          "color": "#d6941a"
+          "color": "#ff7f0e"
         }
       ]
     },
@@ -115,11 +115,11 @@
       "vars": [
         {
           "path": "odrives.odrive0.axis0.controller.vel_setpoint",
-          "color": "#195bd7"
+          "color": "#1f77b4"
         },
         {
           "path": "odrives.odrive0.axis0.encoder.vel_estimate",
-          "color": "#d6941a"
+          "color": "#ff7f0e"
         }
       ]
     }

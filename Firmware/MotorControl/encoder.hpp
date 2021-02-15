@@ -1,7 +1,9 @@
 #ifndef __ENCODER_HPP
 #define __ENCODER_HPP
 
-#include <arm_math.h>
+class Encoder;
+
+#include <board.h> // needed for arm_math.h
 #include <Drivers/STM32/stm32_spi_arbiter.hpp>
 #include "utils.hpp"
 #include <autogen/interfaces.hpp>
@@ -11,30 +13,37 @@
 class Encoder : public ODriveIntf::EncoderIntf {
 public:
     static constexpr uint32_t MODE_FLAG_ABS = 0x100;
+    static constexpr std::array<float, 6> hall_edge_defaults = 
+        {0.0f, 1.0f, 2.0f, 3.0f, 4.0f, 5.0f};
 
     struct Config_t {
         Mode mode = MODE_INCREMENTAL;
+        float calib_range = 0.02f; // Accuracy required to pass encoder cpr check
+        float calib_scan_distance = 16.0f * M_PI; // rad electrical
+        float calib_scan_omega = 4.0f * M_PI; // rad/s electrical
+        float bandwidth = 1000.0f;
+        int32_t phase_offset = 0;        // Offset between encoder count and rotor electrical phase
+        float phase_offset_float = 0.0f; // Sub-count phase alignment offset
+        int32_t cpr = (2048 * 4);   // Default resolution of CUI-AMT102 encoder,
+        float index_offset = 0.0f;
         bool use_index = false;
         bool pre_calibrated = false; // If true, this means the offset stored in
                                     // configuration is valid and does not need
                                     // be determined by run_offset_calibration.
                                     // In this case the encoder will enter ready
                                     // state as soon as the index is found.
-        bool zero_count_on_find_idx = true;
-        int32_t cpr = (2048 * 4);   // Default resolution of CUI-AMT102 encoder,
-        int32_t phase_offset = 0;        // Offset between encoder count and rotor electrical phase
-        float phase_offset_float = 0.0f; // Sub-count phase alignment offset
-        int32_t direction = 0.0f; // direction with respect to motor
+        int32_t direction = 0; // direction with respect to motor
+        bool use_index_offset = true;
         bool enable_phase_interpolation = true; // Use velocity to interpolate inside the count state
-        float calib_range = 0.02f; // Accuracy required to pass encoder cpr check
-        float calib_scan_distance = 16.0f * M_PI; // rad electrical
-        float calib_scan_omega = 4.0f * M_PI; // rad/s electrical
-        float bandwidth = 1000.0f;
         bool find_idx_on_lockin_only = false; // Only be sensitive during lockin scan constant vel state
         bool ignore_illegal_hall_state = false; // dont error on bad states like 000 or 111
+        uint8_t hall_polarity = 0;
+        bool hall_polarity_calibrated = false;
+        std::array<float, 6> hall_edge_phcnt = hall_edge_defaults;
         uint16_t abs_spi_cs_gpio_pin = 1;
         uint16_t sincos_gpio_pin_sin = 3;
         uint16_t sincos_gpio_pin_cos = 4;
+
 
         // custom setters
         Encoder* parent = nullptr;
@@ -65,10 +74,13 @@ public:
 
     bool run_index_search();
     bool run_direction_find();
+    bool run_hall_polarity_calibration();
+    bool run_hall_phase_calibration();
     bool run_offset_calibration();
     void sample_now();
     bool read_sampled_gpio(Stm32Gpio gpio);
     void decode_hall_samples();
+    int32_t hall_model(float internal_pos);
     bool update();
 
     TIM_HandleTypeDef* timer_;
@@ -91,6 +103,7 @@ public:
     OutputPort<float> phase_vel_ = 0.0f; // [rad/s]
     float pos_estimate_counts_ = 0.0f;  // [count]
     float pos_cpr_counts_ = 0.0f;  // [count]
+    float delta_pos_cpr_counts_ = 0.0f;  // [count] phase detector result for debug
     float vel_estimate_counts_ = 0.0f;  // [count/s]
     float pll_kp_ = 0.0f;   // [count/s / count]
     float pll_ki_ = 0.0f;   // [(count/s^2) / count]
@@ -110,6 +123,13 @@ public:
     uint16_t port_samples_[sizeof(ports_to_sample) / sizeof(ports_to_sample[0])];
     // Updated by low_level pwm_adc_cb
     uint8_t hall_state_ = 0x0; // bit[0] = HallA, .., bit[2] = HallC
+    std::optional<uint8_t> last_hall_cnt_ = std::nullopt; // Used to find hall edges for calibration
+    bool calibrate_hall_phase_ = false;
+    bool sample_hall_states_ = false;
+    bool sample_hall_phase_ = false;
+    std::array<int, 8> states_seen_count_; // for hall polarity calibration
+    std::array<int, 6> hall_phase_calib_seen_count_;
+
     float sincos_sample_s_ = 0.0f;
     float sincos_sample_c_ = 0.0f;
 

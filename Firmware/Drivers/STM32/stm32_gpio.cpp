@@ -43,8 +43,25 @@ IRQn_Type get_irq_number(uint16_t pin_number) {
 
 
 bool Stm32Gpio::config(uint32_t mode, uint32_t pull, uint32_t speed) {
-    if (!port_)
+    if (port_ == GPIOA) {
+        __HAL_RCC_GPIOA_CLK_ENABLE();
+    } else if (port_ == GPIOB) {
+        __HAL_RCC_GPIOB_CLK_ENABLE();
+    } else if (port_ == GPIOC) {
+        __HAL_RCC_GPIOC_CLK_ENABLE();
+    } else if (port_ == GPIOD) {
+        __HAL_RCC_GPIOD_CLK_ENABLE();
+    } else if (port_ == GPIOE) {
+        __HAL_RCC_GPIOE_CLK_ENABLE();
+    } else if (port_ == GPIOF) {
+        __HAL_RCC_GPIOF_CLK_ENABLE();
+    } else if (port_ == GPIOG) {
+        __HAL_RCC_GPIOG_CLK_ENABLE();
+    } else if (port_ == GPIOH) {
+        __HAL_RCC_GPIOH_CLK_ENABLE();
+    } else {
         return false;
+    }
 
     size_t position = get_pin_number();
 

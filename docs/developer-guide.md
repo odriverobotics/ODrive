@@ -56,6 +56,7 @@ sudo add-apt-repository ppa:team-gcc-arm-embedded/ppa
 sudo apt-get update
 sudo apt-get install gcc-arm-embedded
 sudo apt-get install openocd
+sudo apt-get install git-lfs
 sudo add-apt-repository ppa:jonathonf/tup && sudo apt-get update && sudo apt-get install tup
 sudo apt-get install python3 python3-yaml python3-jinja2 python3-jsonschema
 ```
@@ -64,6 +65,7 @@ sudo apt-get install python3 python3-yaml python3-jinja2 python3-jsonschema
 ```bash
 sudo apt install gcc-arm-embedded
 sudo apt install openocd
+sudo apt install git-lfs
 sudo apt install tup
 sudo apt install python3 python3-yaml python3-jinja2 python3-jsonschema
 ```
@@ -72,6 +74,7 @@ sudo apt install python3 python3-yaml python3-jinja2 python3-jsonschema
 ```bash
 sudo pacman -S arm-none-eabi-gcc arm-none-eabi-binutils
 sudo pacman -S arm-none-eabi-gdb
+sudo pacman -S git-lfs
 sudo pacman -S tup
 sudo pacman -S python python-yaml python-jinja python-jsonschema
 ```
@@ -81,8 +84,9 @@ sudo pacman -S python python-yaml python-jinja python-jsonschema
 First install [Homebrew](https://brew.sh/). Then you can run these commands in Terminal:
 ```bash
 brew install armmbed/formulae/arm-none-eabi-gcc
-brew cask install osxfuse && brew install tup
+brew install --cask osxfuse && brew install tup
 brew install openocd
+brew install git-lfs
 pip3 install PyYAML Jinja2 jsonschema
 ```
 
@@ -108,18 +112,6 @@ Some instructions in this document may assume that you're using a bash command p
 To customize the compile time parameters, copy or rename the file `Firmware/tup.config.default` to `Firmware/tup.config` and edit the parameters in that file:
 
 __CONFIG_BOARD_VERSION__: The board version you're using. Can be `v3.1`, `v3.2`, `v3.3`, `v3.4-24V`, `v3.4-48V`, `v3.5-24V`, `v3.5-48V`, etc. Check for a label on the upper side of the ODrive to find out which version you have. Some ODrive versions don't specify the voltage: in that case you can read the value of the main capacitors: 120uF are 48V ODrives, 470uF are 24V ODrives.
-
-__CONFIG_USB_PROTOCOL__: Defines which protocol the ODrive should use on the USB interface.
- * `native`: The native ODrive protocol. Use this if you want to use the python tools in this repo. Can maybe work with macOS.
- * `native-stream`: Like the native ODrive protocol, but the ODrive will treat the USB connection exactly as if it was a UART connection. __You may need to use this if you're on macOS__. This is necessary because macOS doesn't grant our python tools sufficient low-level access to treat the device as the USB device that it is.
- * `none`: Disable USB. The device will still show up when plugged in but it will ignore any commands.
- 
- **Note**: There is a second USB interface that is always a serial port.
-
-__CONFIG_UART_PROTOCOL__: Defines which protocol the ODrive should use on the UART interface (GPIO1 and GPIO2). Note that UART is only supported on ODrive v3.3 and higher.
- * `native`: The native ODrive protocol. Use this if you're connecting the ODrive to a PC using UART and want to use the python tools to control and setup the ODrive.
- * `ascii`: The ASCII protocol. Use this option if you control the ODrive with an Arduino. The ODrive Arduino library is not yet updated to the native protocol.
- * `none`: Disable UART.
 
 __CONFIG_DEBUG__: Defines wether debugging will be enabled when compiling the firmware; specifically the `-g -gdwarf-2` flags. Note that printf debugging will only function if your tup.config specifies the `USB_PROTOCOL` or `UART_PROTOCOL` as stdout and `DEBUG_PRINT` is defined. See the IDE specific documentation for more information.
 
@@ -241,6 +233,34 @@ This happens from time to time.
 4. Power on the ODrive
 5. Run `make flash` again
 
+### `Warn : Cannot identify target as a STM32 family.` when flashing using openocd
+
+**Problem:** When I try to flash ODrive v4.1 with `make flash` then I get:
+```
+[...]
+** Programming Started **
+auto erase enabled
+Info : device id = 0x10006452
+Warn : Cannot identify target as a STM32 family.
+Error: auto_probe failed
+embedded:startup.tcl:487: Error: ** Programming Failed **
+in procedure 'program' 
+in procedure 'program_error' called at file "embedded:startup.tcl", line 543
+at file "embedded:startup.tcl", line 487
+```
+
+**Solution:**
+Compile and install a recent version of openocd from source. The latest official release (0.10.0 as of Nov 2020) doesn't support the STM32F722 yet.
+```
+sudo apt-get install libtool libusb-1.0
+git clone https://git.code.sf.net/p/openocd/code openocd
+cd openocd/
+./bootstrap
+./configure --enable-stlink
+make
+sudo make install
+```
+
 ## Documentation
 
 All *.md files in the `docs/` directory of the master branch are served up by GitHub Pages on [this domain](https://docs.odriverobotics.com).
@@ -266,6 +286,15 @@ bundle exec jekyll serve --incremental --host=0.0.0.0
 
 On Ubuntu 18.04, prerequisites are: `ruby ruby-dev zlib1g-dev`.
 
+## Modifying libfibre
+
+If you need to modify libfibre add `CONFIG_BUILD_LIBFIBRE=true` to your tup.config and rerun `make`. After this you can start `odrivetool` (on your local PC) and it will use the updated libfibre.
+
+To cross-compile libfibre for the Raspberry Pi, run `make libfibre-linux-armhf` or `make libfibre-all`. This will require a docker container. See [fibre-cpp readme](../Firmware/fibre-cpp/README.md) for details.
+
+If you're satisfied with the changes don't forget to generate binaries for all
+supported systems using `make libfibre-all`.
+
 ## Releases
 
 We use GitHub Releases to provide firmware releases.
@@ -273,8 +302,9 @@ We use GitHub Releases to provide firmware releases.
 1. Cut off the changelog to reflect the new release
 2. Merge the release candidate into master.
 3. Push a (lightweight) tag to the master branch. Follow the existing naming convention.
-4. Push the python tools to PyPI.
-5. Edit the release on GitHub to add a title and description (copy&paste from changelog).
+4. If you changed something in libfibre, regenerate the binaries using `make libfibre-all`. See [Modifying libfibre](#modifying-libfibre) for details.
+5. Push the python tools to PyPI (see setup.py for details).
+6. Edit the release on GitHub to add a title and description (copy&paste from changelog).
 
 ## Other code maintenance notes
 The cortex M4F processor has hardware single precision float unit. However double precision operations are not accelerated, and hence should be avoided. The following regex is helpful for cleaning out double constants:

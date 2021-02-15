@@ -81,11 +81,16 @@ import { JSONView } from "vue-json-component";
 import { v4 as uuidv4 } from "uuid";
 
 let plotColors = [
-  "#195bd7", // blue
-  "#d6941a", // orange
-  "#1ad636", // green
-  "#d61aba", // purple
-  "#d5241a", // red
+  "#1f77b4", // blue
+  "#ff7f0e", // orange
+  "#2ca02c", // green
+  "#d62728", // red
+  "#9467bd", // purple
+  "#8c564b", // brown
+  "#e377c2", // pink
+  "#7f7f7f", // gray
+  "#bcbd22", // olive
+  "#17becf", // cyan
 ];
 
 let odriveEnums = {
@@ -100,7 +105,7 @@ let odriveEnums = {
       value: 1,
     },
     {
-      text: "Starup Sequence",
+      text: "Startup Sequence",
       value: 2,
     },
     {
@@ -138,6 +143,14 @@ let odriveEnums = {
     {
       text: "Homing",
       value: 11,
+    },
+    {
+      text: "Encoder Hall Polarity Calibration",
+      value: 12,
+    },
+    {
+      text: "Encoder Hall Phase Calibration",
+      value: 13,
     }
   ],
   current_state: [
@@ -150,7 +163,7 @@ let odriveEnums = {
       value: 1,
     },
     {
-      text: "Starup Sequence",
+      text: "Startup Sequence",
       value: 2,
     },
     {
@@ -188,6 +201,14 @@ let odriveEnums = {
     {
       text: "Homing",
       value: 11,
+    },
+    {
+      text: "Encoder Hall Polarity Calibration",
+      value: 12,
+    },
+    {
+      text: "Encoder Hall Phase Calibration",
+      value: 13,
     }
   ],
   // encoder mode
@@ -337,6 +358,7 @@ export default {
       switch (this.addCompType) {
         case "control":
           this.treeParams = this.$store.state.odriveConfigs['params'];
+          console.log(this.treeParams);
           break;
         case "plot":
           this.treeParams = this.$store.state.odriveConfigs['params'];

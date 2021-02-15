@@ -15,13 +15,16 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - name: Install odrivetool
+        shell: bash
         run: |
+          pip3 list | grep setuptools || echo "setuptools not installed" # show version
+          pip3 install setuptools # TODO: this should be a dependency of odrive
+          pip3 install odrive
+        env:
           # TODO: this is a workaround for https://github.com/pypa/setuptools/issues/2353 and we
           # can remove it as soon as python3-setuptools on GitHub's ubuntu-latest
           # moves to version 50.1+.
-          pip3 list | grep setuptools # show version
-          export SETUPTOOLS_USE_DISTUTILS=stdlib
-          pip3 install odrive
+          SETUPTOOLS_USE_DISTUTILS: stdlib
 
       # This one currently fails because Github Actions runs pip as non-root
       #- name: Check if udev rules were set up properly

@@ -59,7 +59,7 @@ when you call `dump_errors()`, you have a version mismatch between odrivetool an
  * **Linux**: Type `lsusb` to list all USB devices. Verify that your ODrive is listed.
  * **Linux**: Make sure you [set up your udev rules](getting-started#downloading-and-installing-tools) correctly.
  * **Windows**: Right-click on the start menu and open "Device Manager". Verify that your ODrive is listed.
- * **Windows**: Use the [Zadig utility](http://zadig.akeo.ie/) to verify the driver is set to `libusb-win32`. Note that there are two options listed in Zadig for Odrive: `ODrive 3.x Native Interface (Interface 2)` and `ODrive 3.x CDC Interface (Interface 0)`. Only the native interface should have `libusb-win32` while the CDC interface should use `WinUSB`.
+ * **Windows**: Use the [Zadig utility](http://zadig.akeo.ie/) to verify the driver is set to `WinUSB` or `libusb-win32`. Note that there are two options listed in Zadig for ODrive: `ODrive 3.x Native Interface (Interface 2)` and `ODrive 3.x CDC Interface (Interface 0)`. Only the driver setting of the native interface is important to `odrivetool`.
  * Ensure that no other ODrive program is running
  * Run `odrivetools` with the `--verbose` option.
  * Run `PYUSB_DEBUG=debug odrivetools` to get even more log output.

@@ -1,7 +1,46 @@
 <template>
   <div id="app">
     <!-- HEADER -->
-    <div class="header">
+    <div class="header" id="header">
+      <button class="dash-button menu-button" @click="toggleMenu">Menu</button>
+      <div class="card menu" id="menu" :style="{top: menuTop}" v-show="showMenu">
+        <button class="dash-button menu-item" @click="exportDash">Export dash</button>
+        <button class="dash-button menu-item" @click="importDashWrapper">
+          Import dash
+          <input
+            type="file"
+            id="inputDash"
+            ref="fileInput"
+            @change="
+              importDashFile($event.target.files);
+              $refs.fileInput.value = null;
+            "
+            value
+            style="display: none"
+          />
+        </button>
+        <button class="dash-button menu-item" id="importButton" @click="calcImportLeft();calcImportTop();toggleImport()">Import ODrive config</button>
+        <button class="dash-button menu-item" id="exportButton" @click="calcExportLeft();calcExportTop();toggleExport()">Export ODrive config</button>
+      </div>
+      <div class="card import-menu" :style="{top: importTop, left: importLeft}" v-show="showImport">
+        <button v-for="odrive in Object.keys(odrives)" :key="odrive" class="dash-button" @click="importConfigWrapper">
+          {{odrive}}
+          <input
+            type="file"
+            id="inputConfig"
+            ref="fileInputConfig"
+            @change="
+              importConfigFile($event.target, odrive);
+            "
+            onclick="this.value=null"
+            value
+            style="display: none"
+          />
+          </button>
+      </div>
+      <div class="card export-menu" :style="{top: exportTop, left: exportLeft}" v-show="showExport">
+        <button v-for="odrive in Object.keys(odrives)" :key="odrive" class="dash-button" @click="exportConfig(odrive)">{{odrive}}</button>
+      </div>
       <button
         v-for="dash in dashboards"
         :key="dash.id"
@@ -23,21 +62,12 @@
         {{ dash.name }}
       </button>
       <button class="dash-button dash-add" @click="addDash">+</button>
-      <button class="dash-button sample-button" :class="[{ active: sampling === true }]" @click="sampleButton">{{samplingText}}</button>
-      <button class="dash-button" @click="exportDash">export dash</button>
-      <button class="dash-button" @click="importDashWrapper">
-        import dash
-        <input
-          type="file"
-          id="inputDash"
-          ref="fileInput"
-          @change="
-            importDashFile($event.target.files);
-            $refs.fileInput.value = null;
-          "
-          value
-          style="display: none"
-        />
+      <button
+        class="dash-button sample-button"
+        :class="[{ active: sampling === true }]"
+        @click="sampleButton"
+      >
+        {{ samplingText }}
       </button>
     </div>
 
@@ -57,6 +87,7 @@
         :odrives="odrives"
       ></Axis>
     </div>
+
   </div>
 </template>
 
@@ -68,6 +99,8 @@ import Wizard from "./views/Wizard.vue";
 import * as socketio from "./comms/socketio";
 import { saveAs } from "file-saver";
 import { v4 as uuidv4 } from "uuid";
+import { pathsFromTree } from "./lib/utils.js";
+import { getVal, putVal } from "./lib/odrive_utils.js";
 
 export default {
   name: "App",
@@ -80,7 +113,19 @@ export default {
   data: function () {
     return {
       //currentDash: "Start",
+      showMenu: false,
+      showImport: false,
+      showExport: false,
+      menuTop: '0px',
+      importTop: '0px',
+      importLeft: '0px',
+      exportTop: '0px',
+      exportLeft: '0px',
     };
+  },
+  mounted() {
+    var elem = document.getElementById('header');
+    this.menuTop = elem.offsetHeight + 'px';
   },
   computed: {
     currentDashName: function () {
@@ -129,29 +174,126 @@ export default {
     samplingText: function () {
       let ret;
       if (this.$store.state.sampling) {
-        ret = "stop sampling"
-      }
-      else {
-        ret = "start sampling"
+        ret = "stop sampling";
+      } else {
+        ret = "start sampling";
       }
       return ret;
-    }
+    },
   },
   methods: {
+    toggleMenu() {
+      this.showMenu = !this.showMenu;
+      if (!this.showMenu) {
+        this.showImport = false;
+        this.showExport = false;
+      }
+    },
+    toggleImport() {
+      this.showImport = !this.showImport;
+      this.showExport = false;
+    },
+    toggleExport() {
+      this.showExport = !this.showExport;
+      this.showImport=  false;
+    },
+    importConfigWrapper() {
+      const inputElem = document.getElementById("inputConfig");
+      if (inputElem) {
+        console.log("importing config");
+        inputElem.click();
+      }
+    },
+    importConfigFile(event, odrive) {
+      console.log("Importing config to odrive " + odrive);
+      let file = event.files[0];
+      const reader = new FileReader();
+      // this is ugly, but it gets around scoping problems the "load" callback
+      let importConfig = (config) => {
+        let paths = pathsFromTree(config);
+        for (const path of paths) {
+          let val = config;
+          for(const key of path.split('.')) {
+            val = val[key];
+          }
+          putVal(odrive + '.' + path, val);
+        }
+        console.log("Config imported to odrive " + odrive);
+      };
+      reader.addEventListener("load", function (e) {
+        let importString = e.target.result;
+        importString = importString.replace(/ Infinity/g, '" Infinity"');
+        importString = importString.replace(/ -Infinity/g, '" -Infinity"');
+        importConfig(JSON.parse(importString));
+      });
+      reader.readAsText(file);
+    },
+    exportConfig(odrive) {
+      console.log("Exporting config from odrive " + odrive);
+      let configPaths = [];
+      let exportConfig = {};
+
+      let paramTree = this.$store.state.odriveConfigs.params[odrive];
+      for (const path of pathsFromTree(paramTree)) {
+        if (path.includes('config.') && !path.includes('mapping')) {
+          configPaths.push(path);
+        }
+      }
+      for (const path of configPaths) {
+        let keys = path.split('.');
+        let val = String(getVal(odrive + '.' + path));
+        // super ugly! Need a better way to do this and handle tuples in odrive_utils
+        if (val.includes('True')) {
+          val = true;
+        }
+        else if (val.includes('False')) {
+          val = false;
+        }
+        else if (val.includes('.')) {
+          val = parseFloat(val);
+        }
+        else if (!val.includes(',') && !val.includes('Infinity')){
+          val = parseInt(val);
+        }
+        let obj = exportConfig;
+        for (const key of keys.slice(0,-1)) {
+          if (!Object.keys(obj).includes(key)) {
+            obj[key] = {}
+          }
+          obj = obj[key];
+        }
+        obj[keys.pop()] = val;
+      }
+      let exportString = JSON.stringify(exportConfig, null, 2);
+      if (exportString.includes('"Infinity"')) {
+        console.log("found infinity!");
+      }
+      console.log(typeof exportString);
+      exportString = exportString.replace(/"Infinity"/g, 'Infinity');
+      exportString = exportString.replace(/"-Infinity"/g, '-Infinity');
+      const blob = new Blob([exportString], {
+        type: "application/json",
+      });
+      saveAs(blob, odrive + '-config.json');
+    },
+    calcImportLeft() {
+      let elem = document.getElementById('menu');
+      this.importLeft = elem.offsetWidth + 'px';
+    },
+    calcImportTop() {
+      this.importTop = document.getElementById('importButton').getBoundingClientRect().top + 'px';
+    },
+    calcExportLeft() {
+      let elem = document.getElementById('menu')
+      this.exportLeft = elem.offsetWidth + 'px';
+    },
+    calcExportTop() {
+      this.exportTop = document.getElementById('exportButton').getBoundingClientRect().top + 'px';
+    },
     changeDash(dashName) {
       console.log(dashName);
       this.$store.commit("setDash", dashName);
     },
-    //updateOdrives() {
-    //  if (this.$store.state.serverConnected == true) {
-        //} && this.sampling == false) {
-    //    this.$store.dispatch("getOdrives");
-    //  }
-      //setTimeout(() => {
-      //  this.updateOdrives();
-      //}, 1000);
-      //console.log("updating data...");
-    //},
     addDash() {
       let dashname = "Dashboard " + (this.dashboards.length - 2);
       this.dashboards.push({
@@ -217,12 +359,11 @@ export default {
     sampleButton() {
       if (this.$store.state.sampling) {
         // sampling acttive, stop
-          socketio.sendEvent({
+        socketio.sendEvent({
           type: "stopSampling",
         });
         this.$store.state.sampling = false;
-      }
-      else {
+      } else {
         // sampling inactive, start sampling
         socketio.sendEvent({
           type: "sampledVarNames",
@@ -273,13 +414,13 @@ export default {
 
     // to allow running as web app
     if (window.ipcRenderer != undefined) {
-      window.ipcRenderer.on('server-stdout', (event, arg) => {
-        this.$store.commit('logServerMessage', arg);
+      window.ipcRenderer.on("server-stdout", (event, arg) => {
+        this.$store.commit("logServerMessage", arg);
       });
-        window.ipcRenderer.on('server-stderr', (event, arg) => {
-        this.$store.commit('logServerMessage', arg);
+      window.ipcRenderer.on("server-stderr", (event, arg) => {
+        this.$store.commit("logServerMessage", arg);
       });
-      window.ipcRenderer.send('start-server');
+      window.ipcRenderer.send("start-server");
     }
   },
 };
@@ -343,6 +484,10 @@ button {
   background-color: var(--bg-color);
 }
 
+.menu-item {
+  text-align: left;
+}
+
 .active {
   color: #000000;
   background-color: var(--bg-color);
@@ -395,4 +540,32 @@ button {
   padding: 5px 10px;
 }
 
+.menu-button {
+  border-right: 1px solid grey;
+}
+
+.menu {
+  position: absolute;
+  margin: 0;
+  padding: 0;
+  left: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.import-menu {
+  position: absolute;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.export-menu {
+  position: absolute;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
 </style>

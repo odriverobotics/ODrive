@@ -1,7 +1,7 @@
 
 #include "odrive_main.h"
 #include <Drivers/STM32/stm32_system.h>
-
+#include <bitset>
 
 Encoder::Encoder(TIM_HandleTypeDef* timer, Stm32Gpio index_gpio,
                  Stm32Gpio hallA_gpio, Stm32Gpio hallB_gpio, Stm32Gpio hallC_gpio,
@@ -22,7 +22,9 @@ bool Encoder::apply_config(ODriveIntf::MotorIntf::MotorType motor_type) {
     update_pll_gains();
 
     if (config_.pre_calibrated) {
-        if (config_.mode == Encoder::MODE_HALL || config_.mode == Encoder::MODE_SINCOS)
+        if (config_.mode == Encoder::MODE_HALL && config_.hall_polarity_calibrated)
+            is_ready_ = true;
+        if (config_.mode == Encoder::MODE_SINCOS)
             is_ready_ = true;
         if (motor_type == Motor::MOTOR_TYPE_ACIM)
             is_ready_ = true;
@@ -41,7 +43,7 @@ void Encoder::setup() {
         .Mode = SPI_MODE_MASTER,
         .Direction = SPI_DIRECTION_2LINES,
         .DataSize = SPI_DATASIZE_16BIT,
-        .CLKPolarity = mode_ == MODE_SPI_ABS_AEAT ? SPI_POLARITY_HIGH : SPI_POLARITY_LOW,
+        .CLKPolarity = (mode_ == MODE_SPI_ABS_AEAT || mode_ == MODE_SPI_ABS_MA732) ? SPI_POLARITY_HIGH : SPI_POLARITY_LOW,
         .CLKPhase = SPI_PHASE_2EDGE,
         .NSS = SPI_NSS_SOFT,
         .BaudRatePrescaler = SPI_BAUDRATEPRESCALER_32,
@@ -50,6 +52,10 @@ void Encoder::setup() {
         .CRCCalculation = SPI_CRCCALCULATION_DISABLE,
         .CRCPolynomial = 10,
     };
+
+    if (mode_ == MODE_SPI_ABS_MA732) {
+        abs_spi_dma_tx_[0] = 0x0000;
+    }
 
     if(mode_ & MODE_FLAG_ABS){
         abs_spi_cs_pin_init();
@@ -80,8 +86,8 @@ bool Encoder::do_checks(){
 void Encoder::enc_index_cb() {
     if (config_.use_index) {
         set_circular_count(0, false);
-        if (config_.zero_count_on_find_idx)
-            set_linear_count(0); // Avoid position control transient after search
+        if (config_.use_index_offset)
+            set_linear_count((int32_t)(config_.index_offset * config_.cpr));
         if (config_.pre_calibrated) {
             is_ready_ = true;
             if(axis_->controller_.config_.anticogging.pre_calibrated){
@@ -122,10 +128,12 @@ void Encoder::update_pll_gains() {
 
 void Encoder::check_pre_calibrated() {
     // TODO: restoring config from python backup is fragile here (ACIM motor type must be set first)
-    if (!is_ready_ && axis_->motor_.config_.motor_type != Motor::MOTOR_TYPE_ACIM)
-        config_.pre_calibrated = false;
-    if (mode_ == MODE_INCREMENTAL && !index_found_)
-        config_.pre_calibrated = false;
+    if (axis_->motor_.config_.motor_type != Motor::MOTOR_TYPE_ACIM) {
+        if (!is_ready_)
+            config_.pre_calibrated = false;
+        if (mode_ == MODE_INCREMENTAL && !index_found_)
+            config_.pre_calibrated = false;
+    }
 }
 
 // Function that sets the current encoder count to a desired 32-bit value.
@@ -197,6 +205,122 @@ bool Encoder::run_direction_find() {
     return success;
 }
 
+
+bool Encoder::run_hall_polarity_calibration() {
+    Axis::LockinConfig_t lockin_config = axis_->config_.calibration_lockin;
+    lockin_config.finish_distance = lockin_config.vel * 3.0f; // run for 3 seconds
+    lockin_config.finish_on_distance = true;
+    lockin_config.finish_on_enc_idx = false;
+    lockin_config.finish_on_vel = false;
+
+    auto loop_cb = [this](bool const_vel) {
+        if (const_vel)
+            sample_hall_states_ = true;
+        // No need to cancel early
+        return true;
+    };
+
+    config_.hall_polarity_calibrated = false;
+    states_seen_count_.fill(0);
+    bool success = axis_->run_lockin_spin(lockin_config, false, loop_cb);
+    sample_hall_states_ = false;
+
+    if (success) {
+        std::bitset<8> state_seen;
+        std::bitset<8> state_confirmed;
+        for (int i = 0; i < 8; i++) {
+            if (states_seen_count_[i] > 0)
+                state_seen[i] = true;
+            if (states_seen_count_[i] > 50)
+                state_confirmed[i] = true;
+        }
+        if (!(state_seen == state_confirmed)) {
+            set_error(ERROR_ILLEGAL_HALL_STATE);
+            return false;
+        }
+
+        // Hall effect sensors can be arranged at 60 or 120 electrical degrees.
+        // Out of 8 possible states, 120 and 60 deg arrangements each miss 2 states.
+        // ODrive assumes 120 deg separation - if a 60 deg setup is used, it can
+        // be converted to 120 deg states by flipping the polarity of one sensor.
+        uint8_t states = state_seen.to_ulong();
+        uint8_t hall_polarity = 0;
+        auto flip_detect = [](uint8_t states, unsigned int idx)->bool {
+            return (~states & 0xFF) == (1<<(0+idx) | 1<<(7-idx));
+        };
+        if (flip_detect(states, 0)) {
+            hall_polarity = 0b000;
+        } else if (flip_detect(states, 1)) {
+            hall_polarity = 0b001;
+        } else if (flip_detect(states, 2)) {
+            hall_polarity = 0b010;
+        } else if (flip_detect(states, 3)) {
+            hall_polarity = 0b100;
+        } else {
+            set_error(ERROR_ILLEGAL_HALL_STATE);
+            return false;
+        }
+        config_.hall_polarity = hall_polarity;
+        config_.hall_polarity_calibrated = true;
+    }
+
+    return success;
+}
+
+bool Encoder::run_hall_phase_calibration() {
+    Axis::LockinConfig_t lockin_config = axis_->config_.calibration_lockin;
+    lockin_config.finish_distance = lockin_config.vel * 30.0f; // run for 30 seconds
+    lockin_config.finish_on_distance = true;
+    lockin_config.finish_on_enc_idx = false;
+    lockin_config.finish_on_vel = false;
+
+    auto loop_cb = [this](bool const_vel) {
+        if (const_vel)
+            sample_hall_phase_ = true;
+        // No need to cancel early
+        return true;
+    };
+
+    // TODO: There is a race condition here with the execution in Encoder::update.
+    // We should evaluate making thread execution synchronous with the control loops
+    // at least optionally.
+    // Perhaps the new loop_sync feature will give a loose timing guarantee that may be sufficient
+    calibrate_hall_phase_ = true;
+    config_.hall_edge_phcnt.fill(0.0f);
+    hall_phase_calib_seen_count_.fill(0);
+    bool success = axis_->run_lockin_spin(lockin_config, false, loop_cb);
+    if (error_ & ERROR_ILLEGAL_HALL_STATE)
+        success = false;
+
+    if (success) {
+        // Check deltas to dicern rotation direction
+        float delta_phase = 0.0f;
+        for (int i = 0; i < 6; i++) {
+            int next_i = (i == 5) ? 0 : i+1;
+            delta_phase += wrap_pm_pi(config_.hall_edge_phcnt[next_i] - config_.hall_edge_phcnt[i]);
+        }
+        // Correct reverse rotation
+        if (delta_phase < 0.0f) {
+            config_.direction = -1;
+            for (int i = 0; i < 6; i++)
+                config_.hall_edge_phcnt[i] = wrap_pm_pi(-config_.hall_edge_phcnt[i]);
+        } else {
+            config_.direction = 1;
+        }
+        // Normalize edge timing to 1st edge in sequence, and change units to counts
+        float offset = config_.hall_edge_phcnt[0];
+        for (int i = 0; i < 6; i++) {
+            float& phcnt = config_.hall_edge_phcnt[i];
+            phcnt = fmodf_pos((6.0f / (2.0f * M_PI)) * (phcnt - offset), 6.0f);
+        }
+    } else {
+        config_.hall_edge_phcnt = hall_edge_defaults;
+    }
+
+    calibrate_hall_phase_ = false;
+    return success;
+}
+
 // @brief Turns the motor in one direction for a bit and then in the other
 // direction in order to find the offset between the electrical phase 0
 // and the encoder state 0.
@@ -206,6 +330,11 @@ bool Encoder::run_offset_calibration() {
     // Require index found if enabled
     if (config_.use_index && !index_found_) {
         set_error(ERROR_INDEX_NOT_FOUND_YET);
+        return false;
+    }
+
+    if (config_.mode == MODE_HALL && !config_.hall_polarity_calibrated) {
+        set_error(ERROR_HALL_NOT_CALIBRATED_YET);
         return false;
     }
 
@@ -363,6 +492,7 @@ void Encoder::sample_now() {
         case MODE_SPI_ABS_CUI:
         case MODE_SPI_ABS_AEAT:
         case MODE_SPI_ABS_RLS:
+        case MODE_SPI_ABS_MA732:
         {
             abs_spi_start_transaction();
             // Do nothing
@@ -459,6 +589,11 @@ void Encoder::abs_spi_cb(bool success) {
             pos = (rawVal >> 2) & 0x3fff;
         } break;
 
+        case MODE_SPI_ABS_MA732: {
+            uint16_t rawVal = abs_spi_dma_rx_[0];
+            pos = (rawVal >> 2) & 0x3fff;
+        } break;
+
         default: {
            set_error(ERROR_UNSUPPORTED_ENCODER_MODE);
            goto done;
@@ -477,11 +612,39 @@ done:
 
 void Encoder::abs_spi_cs_pin_init(){
     // Decode and init cs pin
+#if HW_VERSION_MAJOR == 4
+    if (mode_ == MODE_SPI_ABS_MA732)
+        abs_spi_cs_gpio_ = {GPIOA, GPIO_PIN_15};
+    else
+#else
     abs_spi_cs_gpio_ = get_gpio(config_.abs_spi_cs_gpio_pin);
+#endif
     abs_spi_cs_gpio_.config(GPIO_MODE_OUTPUT_PP, GPIO_PULLUP);
 
     // Write pin high
     abs_spi_cs_gpio_.write(true);
+}
+
+// Note that this may return counts +1 or -1 without any wrapping
+int32_t Encoder::hall_model(float internal_pos) {
+    int32_t base_cnt = (int32_t)std::floor(internal_pos);
+
+    float pos_in_range = fmodf_pos(internal_pos, 6.0f);
+    int pos_idx = (int)pos_in_range;
+    if (pos_idx == 6) pos_idx = 5; // in case of rounding error
+    int next_i = (pos_idx == 5) ? 0 : pos_idx+1;
+
+    float below_edge = config_.hall_edge_phcnt[pos_idx];
+    float above_edge = config_.hall_edge_phcnt[next_i];
+
+    // if we are blow the "below" edge, we are the count under
+    if (wrap_pm(pos_in_range - below_edge, 6.0f) < 0.0f)
+        return base_cnt - 1;
+    // if we are above the "above" edge, we are the count over
+    else if (wrap_pm(pos_in_range - above_edge, 6.0f) > 0.0f)
+        return base_cnt + 1;
+    // otherwise we are in the nominal count (or completely lost)
+    return base_cnt;
 }
 
 bool Encoder::update() {
@@ -499,16 +662,56 @@ bool Encoder::update() {
 
         case MODE_HALL: {
             decode_hall_samples();
-            int32_t hall_cnt;
-            if (decode_hall(hall_state_, &hall_cnt)) {
-                delta_enc = hall_cnt - count_in_cpr_;
-                delta_enc = mod(delta_enc, 6);
-                if (delta_enc > 3)
-                    delta_enc -= 6;
-            } else {
-                if (!config_.ignore_illegal_hall_state) {
-                    set_error(ERROR_ILLEGAL_HALL_STATE);
-                    return false;
+            if (sample_hall_states_) {
+                states_seen_count_[hall_state_]++;
+            }
+            if (config_.hall_polarity_calibrated) {
+                int32_t hall_cnt;
+                if (decode_hall((hall_state_ ^ config_.hall_polarity), &hall_cnt)) {
+                    if (calibrate_hall_phase_) {
+                        if (sample_hall_phase_ && last_hall_cnt_.has_value()) {
+                            int mod_hall_cnt = mod(hall_cnt - last_hall_cnt_.value(), 6);
+                            size_t edge_idx;
+                            if (mod_hall_cnt == 0) { goto skip; } // no count - do nothing
+                            else if (mod_hall_cnt == 1) { // counted up
+                                edge_idx = hall_cnt;
+                            } else if (mod_hall_cnt == 5) { // counted down
+                                edge_idx = last_hall_cnt_.value();
+                            } else {
+                                set_error(ERROR_ILLEGAL_HALL_STATE);
+                                return false;
+                            }
+
+                            auto maybe_phase = axis_->open_loop_controller_.phase_.any();
+                            if (maybe_phase) {
+                                float phase = maybe_phase.value();
+                                // Early increment to get the right divisor in recursive average
+                                hall_phase_calib_seen_count_[edge_idx]++;
+                                float& edge_phase = config_.hall_edge_phcnt[edge_idx];
+                                if (hall_phase_calib_seen_count_[edge_idx] == 1)
+                                    edge_phase = phase;
+                                else {
+                                    // circularly wrapped recursive average
+                                    edge_phase += (phase - edge_phase) / hall_phase_calib_seen_count_[edge_idx];
+                                    edge_phase = wrap_pm_pi(edge_phase);
+                                }
+                            }
+                        }
+                    skip:
+                        last_hall_cnt_ = hall_cnt;
+
+                        return true; // Skip all velocity and phase estimation
+                    }
+
+                    delta_enc = hall_cnt - count_in_cpr_;
+                    delta_enc = mod(delta_enc, 6);
+                    if (delta_enc > 3)
+                        delta_enc -= 6;
+                } else {
+                    if (!config_.ignore_illegal_hall_state) {
+                        set_error(ERROR_ILLEGAL_HALL_STATE);
+                        return false;
+                    }
                 }
             }
         } break;
@@ -527,7 +730,8 @@ bool Encoder::update() {
         case MODE_SPI_ABS_RLS:
         case MODE_SPI_ABS_AMS:
         case MODE_SPI_ABS_CUI: 
-        case MODE_SPI_ABS_AEAT: {
+        case MODE_SPI_ABS_AEAT:
+        case MODE_SPI_ABS_MA732: {
             if (abs_spi_pos_updated_ == false) {
                 // Low pass filter the error
                 spi_error_rate_ += current_meas_period * (1.0f - spi_error_rate_);
@@ -568,10 +772,18 @@ bool Encoder::update() {
     // Predict current pos
     pos_estimate_counts_ += current_meas_period * vel_estimate_counts_;
     pos_cpr_counts_      += current_meas_period * vel_estimate_counts_;
+    // Encoder model
+    auto encoder_model = [this](float internal_pos)->int32_t {
+        if (config_.mode == MODE_HALL)
+            return hall_model(internal_pos);
+        else
+            return (int32_t)std::floor(internal_pos);
+    };
     // discrete phase detector
-    float delta_pos_counts = (float)(shadow_count_ - (int32_t)std::floor(pos_estimate_counts_));
-    float delta_pos_cpr_counts = (float)(count_in_cpr_ - (int32_t)std::floor(pos_cpr_counts_));
+    float delta_pos_counts = (float)(shadow_count_ - encoder_model(pos_estimate_counts_));
+    float delta_pos_cpr_counts = (float)(count_in_cpr_ - encoder_model(pos_cpr_counts_));
     delta_pos_cpr_counts = wrap_pm(delta_pos_cpr_counts, (float)(config_.cpr));
+    delta_pos_cpr_counts_ += 0.1f * (delta_pos_cpr_counts - delta_pos_cpr_counts_); // for debug
     // pll feedback
     pos_estimate_counts_ += current_meas_period * pll_kp_ * delta_pos_counts;
     pos_cpr_counts_ += current_meas_period * pll_kp_ * delta_pos_cpr_counts;

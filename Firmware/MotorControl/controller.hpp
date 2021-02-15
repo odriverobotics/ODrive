@@ -3,7 +3,7 @@
 
 class Controller : public ODriveIntf::ControllerIntf {
 public:
-    typedef struct {
+    struct Anticogging_t {
         uint32_t index = 0;
         float cogging_map[3600];
         bool pre_calibrated = false;
@@ -12,7 +12,17 @@ public:
         float calib_vel_threshold = 1.0f;
         float cogging_ratio = 1.0f;
         bool anticogging_enabled = true;
-    } Anticogging_t;
+    };
+
+    struct Autotuning_t {
+        float frequency = 0.0f;
+        float pos_amplitude = 0.0f;
+        float pos_phase = 0.0f;
+        float vel_amplitude = 0.0f;
+        float vel_phase = 0.0f;
+        float torque_amplitude = 0.0f;
+        float torque_phase = 0.0f;
+    };
 
     struct Config_t {
         ControlMode control_mode = CONTROL_MODE_POSITION_CONTROL;  //see: ControlMode_t
@@ -73,6 +83,7 @@ public:
     Axis* axis_ = nullptr; // set by Axis constructor
 
     Error error_ = ERROR_NONE;
+    float last_error_time_ = 0.0f;
 
     // Inputs
     InputPort<float> pos_estimate_linear_src_;
@@ -92,6 +103,9 @@ public:
     float input_filter_kp_ = 0.0f;
     float input_filter_ki_ = 0.0f;
 
+    Autotuning_t autotuning_;
+    float autotuning_phase_ = 0.0f;
+    
     bool input_pos_updated_ = false;
     
     bool trajectory_done_ = true;

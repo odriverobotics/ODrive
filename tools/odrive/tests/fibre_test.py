@@ -13,7 +13,7 @@ class FibreFunctionalTest():
     """
 
     def get_test_cases(self, testrig: TestRig):
-        return testrig.get_components(ODriveComponent)
+        return [(odrv, None) for odrv in testrig.get_components(ODriveComponent)]
 
     def run_test(self, odrive: ODriveComponent, logger: Logger):
         # Test property read/write
@@ -23,7 +23,7 @@ class FibreFunctionalTest():
         test_assert_eq(odrive.handle.test_property, 0xffffffff)
 
         # Test function call
-        val = odrive.handle.get_adc_voltage(1)
+        val = odrive.handle.get_adc_voltage(2) # ADC pin on both ODrive 3 and 4
         test_assert_within(val, 0.01, 3.29)
 
         # Test custom setter (aka property write hook)
@@ -41,16 +41,17 @@ class FibreBurnInTest():
     """
 
     def get_test_cases(self, testrig: TestRig):
-        return testrig.get_components(ODriveComponent)
+        return [(odrv, None) for odrv in testrig.get_components(ODriveComponent)]
 
     def run_test(self, odrive: ODriveComponent, logger: Logger):
         data = record_log(lambda: [odrive.handle.vbus_voltage], duration=10.0)
         expected_data = np.mean(data[:,1]) * np.ones(data[:,1].size)
         test_curve_fit(data, expected_data, max_mean_err = 0.1, inlier_range = 0.5, max_outliers = 0)
 
+tests = [
+    FibreFunctionalTest(),
+    FibreBurnInTest(),
+]
 
 if __name__ == '__main__':
-    test_runner.run([
-        FibreFunctionalTest(),
-        FibreBurnInTest(),
-    ])
+    test_runner.run(tests)

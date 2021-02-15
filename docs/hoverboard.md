@@ -131,11 +131,11 @@ We also have to reboot to activate the PWM input.
 ```txt
 odrv0.config.gpio3_pwm_mapping.min = -200
 odrv0.config.gpio3_pwm_mapping.max = 200
-odrv0.config.gpio3_pwm_mapping.endpoint = odrv0.axis0.controller._remote_attributes['input_vel']
+odrv0.config.gpio3_pwm_mapping.endpoint = odrv0.axis0.controller._input_vel_property
 
 odrv0.config.gpio4_pwm_mapping.min = -200
 odrv0.config.gpio4_pwm_mapping.max = 200
-odrv0.config.gpio4_pwm_mapping.endpoint = odrv0.axis1.controller._remote_attributes['input_vel']
+odrv0.config.gpio4_pwm_mapping.endpoint = odrv0.axis1.controller._input_vel_property
 
 odrv0.save_configuration()
 odrv0.reboot()

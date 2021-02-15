@@ -1,10 +1,8 @@
 #ifndef __INTERFACE_UART_HPP
 #define __INTERFACE_UART_HPP
 
-#ifdef __cplusplus
-#include "fibre/protocol.hpp"
-extern StreamSink* uart_stream_output_ptr;
 
+#ifdef __cplusplus
 extern "C" {
 #endif
 
@@ -19,6 +17,13 @@ void uart_poll(void);
 
 #ifdef __cplusplus
 }
+#endif
+
+
+#ifdef __cplusplus
+#include <fibre/../../stream_utils.hpp>
+extern fibre::BufferedStreamSink<64> uart0_stdout_sink;
+extern bool uart0_stdout_pending;
 #endif
 
 #endif // __INTERFACE_UART_HPP

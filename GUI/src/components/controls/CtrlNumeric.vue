@@ -4,7 +4,7 @@
     <span class="ctrlName">{{name}}:</span>
     <div class="right">
       <span v-if="!writeAccess" class="ctrlVal">{{value}}</span>
-      <input v-if="writeAccess" :placeholder="value" v-on:change="putVal" :value="value"/>
+      <input v-if="writeAccess" :placeholder="value" v-on:change="putVal" :value="value" spellcheck="false"/>
       <!-- <span class="unit">[{{unit}}]</span> -->
     </div>
   </div>
@@ -12,6 +12,7 @@
 
 <script>
 import { getVal, getReadonly, putVal, fetchParam, getUnit, parseMath } from "../../lib/odrive_utils.js";
+import { numberDisplay } from "../../lib/utils.js";
 
 export default {
   name: "CtrlNumeric",
@@ -25,7 +26,8 @@ export default {
     value: function () {
       let keys = this.path.split('.');
       keys.shift();
-      return parseFloat(getVal(keys.join('.'))).toFixed(3);
+      let val = getVal(keys.join('.'));
+      return numberDisplay(val);
     },
     name: function () {
       let keys = this.path.split(".");

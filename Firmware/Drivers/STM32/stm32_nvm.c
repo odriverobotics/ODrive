@@ -48,6 +48,20 @@
 #define FLASH_SECTOR_B_BASE (const volatile uint8_t*)0x80E0000UL
 #define FLASH_SECTOR_B_SIZE 0x20000UL
 
+#elif defined(STM32F722xx)
+
+#include <stm32f722xx.h>
+#include <stm32f7xx_hal.h>
+
+// refer to page 68 of datasheet:
+// https://www.st.com/resource/en/reference_manual/dm00305990-stm32f72xxx-and-stm32f73xxx-advanced-armbased-32bit-mcus-stmicroelectronics.pdf
+#define FLASH_SECTOR_A FLASH_SECTOR_1
+#define FLASH_SECTOR_A_BASE (const volatile uint8_t*)0x8004000UL
+#define FLASH_SECTOR_A_SIZE 0x4000UL
+#define FLASH_SECTOR_B FLASH_SECTOR_2
+#define FLASH_SECTOR_B_BASE (const volatile uint8_t*)0x8008000UL
+#define FLASH_SECTOR_B_SIZE 0x4000UL
+
 #else
 #error "unknown flash sector size"
 #endif

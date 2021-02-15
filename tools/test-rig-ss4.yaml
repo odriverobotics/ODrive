@@ -1,0 +1,102 @@
+
+components:
+  - type: generalpurpose
+    name: homenet
+    net: homenet
+
+  - type: generalpurpose
+    name: rpi
+    ssh: odrv
+    net: homenet
+    components:
+      - type: uart
+        name: uart0
+        port: /dev/ttyS0
+        connected-to: main_uart
+       # need to specify GPIOs explicitly for the generalpurpose type
+      - {type: gpio, num: 4}
+      - {type: gpio, num: 18}
+      - {type: gpio, num: 23}
+
+  - type: odrive
+    name: odrive
+    board-version: v4.1-58V
+    serial-number: "206730814E53"
+    brake-resistance: 0.0
+    usb: auto
+    can: main_canbus
+    vbus-voltage: 24 # [V]
+    max-brake-power: 0 # [W]
+    encoder0: virtual_encoder0
+    motor0: D5065-270KV_0
+
+  - type: motor
+    name: D5065-270KV_0
+    phase-resistance: 0.039
+    phase-inductance: 1.57e-05
+    pole-pairs: 7
+    direction: 1
+    kv: 270
+    max-current: 70
+    max-voltage: 40
+
+  - type: encoder
+    name: real_encoder
+    cpr: 8192
+    max-rpm: 7000
+
+  - type: arduino
+    name: teensy
+    board-version: teensy:avr:teensy41
+
+  - {type: lpf, name: lpf0}
+  - {type: lpf, name: lpf1}
+
+connections:
+  - ['teensy.program', 'rpi.gpio4']
+  - ['teensy.gpio14', 'rpi.uart0.tx']
+  - ['teensy.gpio15', 'rpi.uart0.rx']
+  - ['teensy.gpio16', 'rpi.gpio18']
+  - ['teensy.gpio17', 'rpi.gpio23']
+
+  # J8
+  - ['teensy.gpio0', 'odrive.gpio6']
+  - ['teensy.gpio1', 'odrive.gpio5']
+  - ['teensy.gpio2', 'odrive.gpio4']
+  - ['teensy.gpio3', 'odrive.gpio3']
+  - ['teensy.gpio4', 'odrive.gpio0']
+  - ['teensy.gpio5', 'odrive.gpio1']
+  - ['teensy.gpio6', 'odrive.gpio2']
+
+  - ['teensy.gpio8', 'odrive.gpio16']
+  - ['teensy.gpio9', 'odrive.gpio17']
+  - ['teensy.gpio10', 'odrive.gpio18']
+  - ['teensy.gpio11', 'odrive.gpio19']
+  - ['teensy.gpio12', 'odrive.gpio20']
+  - ['teensy.gpio24', 'odrive.gpio21']
+  - ['teensy.gpio25', 'odrive.gpio22']
+
+  - ['teensy.gpio26', 'odrive.gpio10']
+  - ['teensy.gpio27', 'odrive.gpio11']
+  - ['teensy.gpio28', 'odrive.gpio15']
+  - ['teensy.gpio29', 'odrive.gpio14']
+  - ['teensy.gpio30', 'odrive.gpio13']
+  - ['teensy.gpio31', 'odrive.gpio12']
+
+  - ['teensy.gpio33', 'odrive.gpio8']
+  - ['teensy.gpio34', 'odrive.gpio7']
+  - ['teensy.gpio35', 'odrive.gpio9']
+
+  - ['teensy.gpio23', 'real_encoder.b']
+  - ['teensy.gpio22', 'real_encoder.a']
+  - ['teensy.gpio21', 'real_encoder.z']
+  - ['odrive.axis0', 'D5065-270KV_0.phases']
+  - ['D5065-270KV_0.shaft', 'real_encoder.shaft']
+
+  - ['odrive.encoder0.a', 'odrive.gpio0']
+  - ['odrive.encoder0.b', 'odrive.gpio5']
+  - ['odrive.encoder0.z', 'odrive.gpio6'] # TODO
+
+#  - ['odrive.encoder1.a', 'odrive.gpio0']
+#  - ['odrive.encoder1.b', 'odrive.gpio5']
+#  - ['odrive.encoder1.z', 'odrive.gpio6'] # TODO

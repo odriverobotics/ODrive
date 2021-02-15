@@ -74,3 +74,59 @@ Take this info with a grain of salt as we might forget to update it from time to
 | uart    |           4096 |    0 |
 | usb     |           4096 |    0 |
 
+
+# ODrive v4.0
+
+## Interrupt Vectors
+
+ - lowest priority: 15
+ - highest priority: 0
+
+|   # | Name                    | Prio |
+|-----|-------------------------|------|
+| -12 | MemoryManagement_IRQn   |    0 |
+| -11 | BusFault_IRQn           |    0 |
+| -10 | UsageFault_IRQn         |    0 |
+|  -5 | SVCall_IRQn             |    0 |
+|  -4 | DebugMonitor_IRQn       |    0 |
+|  -2 | PendSV_IRQn             |   15 |
+|  -1 | SysTick_IRQn            |   15 |
+|  11 | DMA1_Stream0_IRQn       |    5 |
+|  14 | DMA1_Stream3_IRQn       |    5 |
+|  15 | DMA1_Stream4_IRQn       |    5 |
+|  16 | DMA1_Stream5_IRQn       |    5 |
+|  17 | DMA1_Stream6_IRQn       |    5 |
+|  18 | ADC_IRQn                |    1 |
+|  19 | CAN1_TX_IRQn            |    6 |
+|  20 | CAN1_RX0_IRQn           |    6 |
+|  21 | CAN1_RX1_IRQn           |    6 |
+|  22 | CAN1_SCE_IRQn           |    6 |
+|  26 | TIM1_TRG_COM_TIM11_IRQn |    2 |
+|  35 | SPI1_IRQn               |    5 |
+|  36 | SPI2_IRQn               |    5 |
+|  38 | USART2_IRQn             |    5 |
+|  45 | TIM8_TRG_COM_TIM14_IRQn |    0 |
+|  47 | DMA1_Stream7_IRQn       |    0 |
+|  51 | SPI3_IRQn               |    5 |
+|  59 | DMA2_Stream3_IRQn       |    5 |
+|  77 | OTG_HS_IRQn             |    5 |
+
+## DMA Streams
+
+ - lowest priority: 0
+ - highest priority: 3
+
+| Name         | Prio | Channel                          | High Level Func |
+|--------------|------|----------------------------------|-----------------|
+| DMA1_Stream0 |    1 | 0 (SPI3_RX)                      | Onboard SPI     |
+| DMA1_Stream3 |    0 | 0 (SPI2_RX)                      | Offboard SPI    |
+| DMA1_Stream4 |    0 | 0 (SPI2_TX)                      | Offboard SPI    |
+| DMA1_Stream5 |    0 | 4 (USART2_RX)                    | UART1           |
+| DMA1_Stream6 |    0 | 4 (USART2_TX)                    | UART1           |
+| DMA1_Stream7 |    1 | 0 (SPI3_TX)                      | Onboard SPI     |
+| DMA2_Stream0 |    0 | 0 (ADC1)                         | freerunning ADC |
+| DMA2_Stream3 |    0 | 3 (SPI1_TX)                      | Status LED      |
+
+## Threads
+
+**TODO**

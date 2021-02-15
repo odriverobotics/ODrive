@@ -9,6 +9,8 @@ import json
 import time
 import argparse
 import logging
+import math
+import traceback
 
 # interface for odrive GUI to get data from odrivetool
 
@@ -33,7 +35,7 @@ app.config.update(
     SESSION_COOKIE_SAMESITE='None'
 )
 CORS(app, support_credentials=True)
-Payload.max_decode_packets = 100
+Payload.max_decode_packets = 500
 socketio = SocketIO(app, cors_allowed_origins="*", async_mode = "threading")
 
 #def get_odrive():
@@ -43,10 +45,10 @@ socketio = SocketIO(app, cors_allowed_origins="*", async_mode = "threading")
 #    print("odrives found")
 #    socketio.emit('odrive-found')
 
-def discovered_device(device):
+async def discovered_device(device):
     # when device is discovered, add it to list of serial numbers and global odrive list
     # shamelessly lifted from odrive python package
-    serial_number = '{:012X}'.format(device.serial_number) if hasattr(device, 'serial_number') else "[unknown serial number]"
+    serial_number = await odrive.get_serial_number_str(device)
     if serial_number in globals()['discovered_devices']:
         index = globals()['discovered_devices'].index(serial_number)
     else:
@@ -69,8 +71,10 @@ def discovered_device(device):
 def start_discovery():
     print("starting disco loop...")
     log = fibre.Logger(verbose = False)
-    shutdown = fibre.Event()
-    fibre.find_all("usb", None, discovered_device, shutdown, shutdown, log)
+
+    domain = fibre.Domain("usb:idVendor=0x1209,idProduct=0x0D32,bInterfaceClass=0,bInterfaceSubClass=1,bInterfaceProtocol=0")
+    domain = domain.__enter__()
+    discovery = domain.run_discovery(discovered_device)
 
 def handle_disconnect(odrive_name):
     print("lost odrive")
@@ -169,21 +173,32 @@ def home():
 def dictFromRO(RO):
     # create dict from an odrive RemoteObject that's suitable for sending as JSON
     returnDict = {}
-    for key in RO._remote_attributes.keys():
-        if isinstance(RO._remote_attributes[key], fibre.remote_object.RemoteObject):
+
+    for key in dir(RO):
+        v = getattr(RO, key)
+        if not key.startswith('_') and isinstance(v, fibre.libfibre.RemoteObject):
             # recurse
-            returnDict[key] = dictFromRO(RO._remote_attributes[key])
-        elif isinstance(RO._remote_attributes[key], fibre.remote_object.RemoteProperty):
+            returnDict[key] = dictFromRO(v)
+        
+        elif key.startswith('_') and key.endswith('_property'):
             # grab value of that property
             # indicate if this property can be written or not
-            returnDict[key] = {"val": str(RO._remote_attributes[key].get_value()),
-                               "readonly": not RO._remote_attributes[key]._can_write,
-                               "type": str(RO._remote_attributes[key]._property_type.__name__)}
-        elif isinstance(RO._remote_attributes[key], fibre.remote_object.RemoteFunction):
+            val = str(v.read())
+            _type = str(v.read._outputs[0][1])
+            if val == "inf":
+                val = "Infinity"
+                _type = "str"
+            elif val == "-inf":
+                val = "-Infinity"
+                _type = "str"
+            returnDict[key[1:-9]] = {"val": val,
+                               "readonly": not hasattr(v, 'exchange'),
+                               "type": _type}
+        elif not key.startswith('_') and hasattr(v, '__call__'):
             # this is a function - do nothing for now.
+            print('found a function!',key)
             returnDict[key] = "function"
-        else:
-            returnDict[key] = RO._remote_attributes[key]
+
     return returnDict
 
 def postVal(odrives, keyList, value, argType):
@@ -191,37 +206,44 @@ def postVal(odrives, keyList, value, argType):
     # "key1" will be "odriveN"
     # like this: postVal(odrives, ["odrive0","axis0","config","calibration_lockin","accel"], 17.0)
     try:
-        #index = int(''.join([char for char in keyList.pop(0) if char.isnumeric()]))
         odrv = keyList.pop(0)
         RO = odrives[odrv]
+        keyList[-1] = '_' + keyList[-1] + '_property'
         for key in keyList:
-            RO = RO._remote_attributes[key]
+            RO = getattr(RO, key)
         if argType == "number":
-            RO.set_value(float(value))
+            RO.exchange(float(value))
         elif argType == "boolean":
-            RO.set_value(value)
+            RO.exchange(value)
+        elif argType == "string":
+            if value == "Infinity":
+                RO.exchange(math.inf)
+            elif value == "-Infinity":
+                RO.exchange(-math.inf)
         else:
             pass # dont support that type yet
-    except fibre.protocol.ChannelBrokenException:
+    except fibre.ObjectLostError:
         handle_disconnect(odrv)
-    except:
-        print("exception in postVal")
+    except Exception as ex:
+        print("exception in postVal: ", traceback.format_exc())
 
 def getVal(odrives, keyList):
     try:
-        #index = int(''.join([char for char in keyList.pop(0) if char.isnumeric()]))
         odrv = keyList.pop(0)
         RO = odrives[odrv]
+        keyList[-1] = '_' + keyList[-1] + '_property'
         for key in keyList:
-            RO = RO._remote_attributes[key]
-        if isinstance(RO, fibre.remote_object.RemoteObject):
-            return dictFromRO(RO)
-        else:
-            return RO.get_value()
-    except fibre.protocol.ChannelBrokenException:
+            RO = getattr(RO, key)
+        retVal = RO.read()
+        if retVal == math.inf:
+            retVal = "Infinity"
+        elif retVal == -math.inf:
+            retVal = "-Infinity"
+        return retVal
+    except fibre.ObjectLostError:
         handle_disconnect(odrv)
-    except:
-        print("exception in getVal")
+    except Exception as ex:
+        print("exception in getVal: ", traceback.format_exc())
         return 0
 
 def getSampledData(vars):
@@ -240,10 +262,10 @@ def callFunc(odrives, keyList):
         odrv = keyList.pop(0)
         RO = odrives[odrv]
         for key in keyList:
-            RO = RO._remote_attributes[key]
-        if isinstance(RO, fibre.remote_object.RemoteFunction):
+            RO = getattr(RO, key)
+        if hasattr(RO, '__call__'):
             RO.__call__()
-    except fibre.protocol.ChannelBrokenException:
+    except fibre.ObjectLostError:
         handle_disconnect(odrv)
     except:
         print("fcn call failed")

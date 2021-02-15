@@ -235,7 +235,7 @@ def put_into_dfu_mode(device, cancellation_token):
     print("Putting device {} into DFU mode...".format(device.__channel__.usb_device.serial_number))
     try:
         device.enter_dfu_mode()
-    except fibre.ChannelBrokenException:
+    except fibre.ObjectLostError:
         pass # this is expected because the device reboots
     if platform.system() == "Windows":
         show_deferred_message("Still waiting for the device to reappear.\n"

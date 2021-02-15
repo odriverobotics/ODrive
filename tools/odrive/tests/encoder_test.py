@@ -9,7 +9,6 @@ from fibre.utils import Logger
 from odrive.enums import *
 from test_runner import *
 
-
 class TestEncoderBase():
     """
     Base class for encoder tests.
@@ -107,12 +106,12 @@ class TestIncrementalEncoder(TestEncoderBase):
                 ]
 
                 valid_combinations = [
-                    (combination[0].parent,) + tuple(combination)
+                    (encoder, combination[0].parent,) + tuple(combination) + (None,)
                     for combination in itertools.product(*gpio_conns)
                     if ((len(set(c.parent for c in combination)) == 1) and isinstance(combination[0].parent, TeensyComponent))
                 ]
 
-                yield (encoder, valid_combinations)
+                yield AnyTestCase(*valid_combinations)
 
 
     def run_test(self, enc: ODriveEncoderComponent, teensy: TeensyComponent, teensy_gpio_a: TeensyGpio, teensy_gpio_b: TeensyGpio, logger: Logger):
@@ -167,12 +166,12 @@ class TestSinCosEncoder(TestEncoderBase):
             ]
 
             valid_combinations = [
-                (combination[0].parent,) + tuple(combination)
+                (odrive.encoders[0], combination[0].parent,) + tuple(combination) + (None,)
                 for combination in itertools.product(*gpio_conns)
                 if ((len(set(c.parent for c in combination)) == 1) and isinstance(combination[0].parent, TeensyComponent))
             ]
 
-            yield (odrive.encoders[0], valid_combinations)
+            yield AnyTestCase(*valid_combinations)
 
 
     def run_test(self, enc: ODriveEncoderComponent, teensy: TeensyComponent, teensy_gpio_sin: TeensyGpio, teensy_gpio_cos: TeensyGpio, logger: Logger):
@@ -236,12 +235,12 @@ class TestHallEffectEncoder(TestEncoderBase):
                 ]
 
                 valid_combinations = [
-                    (combination[0].parent,) + tuple(combination)
+                    (encoder, combination[0].parent,) + tuple(combination) + (None,)
                     for combination in itertools.product(*gpio_conns)
                     if ((len(set(c.parent for c in combination)) == 1) and isinstance(combination[0].parent, TeensyComponent))
                 ]
 
-                yield (encoder, valid_combinations)
+                yield AnyTestCase(*valid_combinations)
 
 
     def run_test(self, enc: ODriveEncoderComponent, teensy: TeensyComponent, teensy_gpio_a: TeensyGpio, teensy_gpio_b: TeensyGpio, teensy_gpio_c: TeensyGpio, logger: Logger):
@@ -252,6 +251,8 @@ class TestHallEffectEncoder(TestEncoderBase):
         teensy.compile_and_program(code)
 
         if enc.handle.config.mode != ENCODER_MODE_HALL:
+            enc.handle.config.mode = ENCODER_MODE_HALL
+            enc.handle.config.hall_polarity_calibrated = True
             if enc.num:
               enc.parent.handle.config.gpio9_mode = GPIO_MODE_DIGITAL
               enc.parent.handle.config.gpio10_mode = GPIO_MODE_DIGITAL
@@ -260,7 +261,6 @@ class TestHallEffectEncoder(TestEncoderBase):
               enc.parent.handle.config.gpio12_mode = GPIO_MODE_DIGITAL
               enc.parent.handle.config.gpio13_mode = GPIO_MODE_DIGITAL
               enc.parent.handle.config.gpio14_mode = GPIO_MODE_DIGITAL
-            enc.handle.config.mode = ENCODER_MODE_HALL
             enc.parent.save_config_and_reboot()
         else:
             time.sleep(1.0) # wait for PLLs to stabilize
@@ -268,7 +268,7 @@ class TestHallEffectEncoder(TestEncoderBase):
         enc.handle.config.bandwidth = 100
 
         self.run_generic_encoder_test(enc.handle, true_cpr, true_rps)
-        enc.handle.config.cpr = 8192
+        enc.parent.erase_config_and_reboot()
 
 
 
@@ -413,28 +413,24 @@ class TestSpiEncoder(TestEncoderBase):
         self.mode = mode
 
     def get_test_cases(self, testrig: TestRig):
-        for odrive in testrig.get_components(ODriveComponent):
-            for encoder in odrive.encoders:
-                odrive_ncs_gpio = odrive.gpio7 # this GPIO choice is completely arbitrary
+        for encoder in testrig.get_components(ODriveEncoderComponent):
+            odrive = encoder.parent
+            odrive_ncs_gpio = odrive.gpio7 # this GPIO choice is completely arbitrary
+
+            for teensy in testrig.get_components(TeensyComponent):
                 gpio_conns = [
-                    testrig.get_connected_components(odrive.sck, TeensyGpio),
-                    testrig.get_connected_components(odrive.miso, TeensyGpio),
-                    testrig.get_connected_components(odrive.mosi, TeensyGpio),
-                    testrig.get_connected_components(odrive_ncs_gpio, TeensyGpio),
+                    testrig.net_by_component.get(odrive.sck, set()).intersection(set(teensy.gpios)),
+                    testrig.net_by_component.get(odrive.miso, set()).intersection(set(teensy.gpios)),
+                    testrig.net_by_component.get(odrive.mosi, set()).intersection(set(teensy.gpios)),
+                    testrig.net_by_component.get(odrive_ncs_gpio, set()).intersection(set(teensy.gpios)),
+                    teensy.gpios
                 ]
 
-                valid_combinations = []
-                for combination in itertools.product(*gpio_conns):
-                    if (len(set(c.parent for c in combination)) != 1):
-                        continue
-                    teensy = combination[0].parent
-                    reset_pin_options = []
-                    for gpio in teensy.gpios:
-                        for local_gpio in testrig.get_connected_components(gpio, LinuxGpioComponent):
-                            reset_pin_options.append((gpio, local_gpio))
-                    valid_combinations.append((teensy, *combination, reset_pin_options))
-
-                yield (encoder, 7, valid_combinations)
+                alternatives = []
+                for gpio1, gpio2, gpio3, gpio4, gpio5 in itertools.product(*gpio_conns):
+                    for local_reset_gpio, tf in testrig.get_connected_components(gpio5, LinuxGpioComponent):
+                        alternatives.append((encoder, 7, teensy, gpio1, gpio2, gpio3, gpio4, gpio5, local_reset_gpio, tf))
+                yield AnyTestCase(*alternatives)
 
 
     def run_test(self, enc: ODriveEncoderComponent, odrive_ncs_gpio: int, teensy: TeensyComponent, teensy_gpio_sck: TeensyGpio, teensy_gpio_miso: TeensyGpio, teensy_gpio_mosi: TeensyGpio, teensy_gpio_ncs: TeensyGpio, teensy_gpio_reset: TeensyGpio, reset_gpio: LinuxGpioComponent, logger: Logger):
@@ -486,7 +482,7 @@ class TestSpiEncoder(TestEncoderBase):
         # Check absolute position after 1.5s
         time.sleep(1.5)
         true_delta_t = time.monotonic() - release_time
-        test_assert_eq(enc.handle.pos_abs, (true_delta_t * true_rps * true_cpr) % true_cpr, range = true_cpr*0.001)
+        test_assert_eq(enc.handle.pos_abs, (true_delta_t * true_rps * true_cpr) % true_cpr, range = true_cpr*0.002)
 
         test_assert_eq(enc.handle.error, 0)
         reset_gpio.write(True)
@@ -501,18 +497,18 @@ class TestSpiEncoder(TestEncoderBase):
         # Check absolute position after 1.5s
         time.sleep(1.5)
         true_delta_t = time.monotonic() - release_time
-        test_assert_eq(enc.handle.pos_abs, (true_delta_t * true_rps * true_cpr) % true_cpr, range = true_cpr*0.001)
+        test_assert_eq(enc.handle.pos_abs, (true_delta_t * true_rps * true_cpr) % true_cpr, range = true_cpr*0.002)
 
         self.run_generic_encoder_test(enc.handle, true_cpr, true_rps)
         enc.handle.config.cpr = 8192
 
-
+tests = [
+    TestIncrementalEncoder(),
+    TestSinCosEncoder(),
+    TestHallEffectEncoder(),
+    TestSpiEncoder(ENCODER_MODE_SPI_ABS_AMS),
+    TestSpiEncoder(ENCODER_MODE_SPI_ABS_CUI),
+]
 
 if __name__ == '__main__':
-    test_runner.run([
-        TestIncrementalEncoder(),
-        TestSinCosEncoder(),
-        TestHallEffectEncoder(),
-        TestSpiEncoder(ENCODER_MODE_SPI_ABS_AMS),
-        TestSpiEncoder(ENCODER_MODE_SPI_ABS_CUI),
-    ])
+    test_runner.run(tests)

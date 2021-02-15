@@ -3,7 +3,7 @@
 #include <algorithm>
 #include <cstring>
 
-#include "communication/can_helpers.hpp"
+#include "communication/can/can_helpers.hpp"
 
 enum InputMode {
     INPUT_MODE_INACTIVE,

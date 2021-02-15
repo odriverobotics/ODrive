@@ -1,5 +1,11 @@
 # Pinout
 
+## ODrive v4.1
+
+**TODO**
+
+## ODrive v3.x
+
 | #  | Label         | `GPIO_MODE_DIGITAL`    | `GPIO_MODE_ANALOG_IN` | `GPIO_MODE_UART_A` | `GPIO_MODE_UART_B` | `GPIO_MODE_PWM` | `GPIO_MODE_CAN_A` | `GPIO_MODE_I2C_A` | `GPIO_MODE_ENC0` | `GPIO_MODE_ENC1` | `GPIO_MODE_MECH_BRAKE` |
 |----|---------------|------------------------|-----------------------|--------------------|--------------------|-----------------|------------------|-------------------|------------------|------------------|------------------------|
 |  0 | _not a pin_   |                        |                       |                    |                    |                 |                  |                   |                  |                  |                        |
@@ -24,7 +30,8 @@
 (*) ODrive v3.5 and later <br>
 (+) On ODrive v3.5 and later these pins have noise suppression filters. This is useful for step/dir input. <br>
 
-Notes:
+## Notes
+
 * Changes to the pin configuration only take effect after `odrv0.save_configuration()` and `odrv0.reboot()`
 * Bold font marks the default configuration.
 * If a GPIO is set to an unsupported mode it will be left uninitialized.

@@ -6,7 +6,6 @@ import threading
 import platform
 import subprocess
 import os
-import numpy as np
 from fibre.utils import Event
 import odrive.enums
 from odrive.enums import *
@@ -33,7 +32,20 @@ _VT100Colors = {
     'default': '\x1b[0m'
 }
 
-def calculate_thermistor_coeffs(degree, Rload, R_25, Beta, Tmin, Tmax, plot = False):
+async def get_serial_number_str(device):
+    if hasattr(device, '_serial_number_property'):
+        return format(await device._serial_number_property.read(), 'x').upper()
+    else:
+        return "[unknown serial number]"
+
+def get_serial_number_str_sync(device):
+    if hasattr(device, '_serial_number_property'):
+        return format(device._serial_number_property.read(), 'x').upper()
+    else:
+        return "[unknown serial number]"
+
+def calculate_thermistor_coeffs(degree, Rload, R_25, Beta, Tmin, Tmax, thermistor_bottom = False, plot = False):
+    import numpy as np
     T_25 = 25 + 273.15 #Kelvin
     temps = np.linspace(Tmin, Tmax, 1000)
     tempsK = temps + 273.15
@@ -41,7 +53,10 @@ def calculate_thermistor_coeffs(degree, Rload, R_25, Beta, Tmin, Tmax, plot = Fa
     # https://en.wikipedia.org/wiki/Thermistor#B_or_%CE%B2_parameter_equation
     r_inf = R_25 * np.exp(-Beta/T_25)
     R_temps = r_inf * np.exp(Beta/tempsK)
-    V = Rload / (Rload + R_temps)
+    if thermistor_bottom:
+        V = R_temps / (Rload + R_temps)
+    else:
+        V = Rload / (Rload + R_temps)
 
     fit = np.polyfit(V, temps, degree)
     p1 = np.poly1d(fit)
@@ -62,15 +77,15 @@ def calculate_thermistor_coeffs(degree, Rload, R_25, Beta, Tmin, Tmax, plot = Fa
 class OperationAbortedException(Exception):
     pass
 
-def set_motor_thermistor_coeffs(axis, Rload, R_25, Beta, Tmin, TMax):
-    coeffs = calculate_thermistor_coeffs(3, Rload, R_25, Beta, Tmin, TMax)
+def set_motor_thermistor_coeffs(axis, Rload, R_25, Beta, Tmin, Tmax, thermistor_bottom = False):
+    coeffs = calculate_thermistor_coeffs(3, Rload, R_25, Beta, Tmin, Tmax, thermistor_bottom)
     axis.motor.motor_thermistor.config.poly_coefficient_0 = float(coeffs[3])
     axis.motor.motor_thermistor.config.poly_coefficient_1 = float(coeffs[2])
     axis.motor.motor_thermistor.config.poly_coefficient_2 = float(coeffs[1])
     axis.motor.motor_thermistor.config.poly_coefficient_3 = float(coeffs[0])
 
 def dump_errors(odrv, clear=False, printfunc = print):
-    axes = [(name, axis) for name, axis in odrv._remote_attributes.items() if 'axis' in name]
+    axes = [(name, getattr(odrv, name)) for name in dir(odrv) if name.startswith('axis')]
     axes.sort()
 
     def dump_errors_for_module(indent, name, obj, path, errorcodes):
@@ -321,7 +336,7 @@ def rate_test(device):
     numFrames = 10000
     vals = []
     for _ in range(numFrames):
-        vals.append(device.axis0.loop_counter)
+        vals.append(device.n_evt_control_loop)
 
     loopsPerFrame = (vals[-1] - vals[0])/numFrames
     loopsPerSec = (168000000/(6*3500))
@@ -529,6 +544,32 @@ def dump_dma(odrv):
             ["-",         "USART6_RX",   "USART6_RX",                     "SPI4_RX",     "SPI4_TX",                       "-",           "USART6_TX",                     "USART6_TX"],
             ["TIM1_TRIG", "TIM1_CH1",    "TIM1_CH2",                      "TIM1_CH1",    "TIM1_CH4/TIM1_TRIG/TIM1_COM",   "TIM1_UP",     "TIM1_CH3",                      "-"],
             ["-",         "TIM8_UP",     "TIM8_CH1",                      "TIM8_CH2",    "TIM8_CH3",                      "SPI5_RX",     "SPI5_TX",                       "TIM8_CH4/TIM8_TRIG/TIM8_COM"],
+        ]]
+    elif odrv.hw_version_major == 4:
+        dma_functions = [[
+            # https://www.st.com/resource/en/reference_manual/dm00305990-stm32f72xxx-and-stm32f73xxx-advanced-armbased-32bit-mcus-stmicroelectronics.pdf Table 26
+            ["SPI3_RX",          "-",                  "SPI3_RX",           "SPI2_RX",            "SPI2_TX",            "SPI3_TX",     "-",                  "SPI3_TX"],
+            ["I2C1_RX",          "I2C3_RX",            "TIM7_UP",           "-",                  "TIM7_UP",            "I2C1_RX",     "I2C1_TX",            "I2C1_TX"],
+            ["TIM4_CH1",         "-",                  "-",                 "TIM4_CH2",           "-",                  "-",           "TIM4_UP",            "TIM4_CH3"],
+            ["-",                "TIM2_UP/TIM2_CH3",   "I2C3_RX",           "-",                  "I2C3_TX",            "TIM2_CH1",    "TIM2_CH2/TIM2_CH4",  "TIM2_UP/TIM2_CH4"],
+            ["UART5_RX",         "USART3_RX",          "UART4_RX",          "USART3_TX",          "UART4_TX",           "USART2_RX",   "USART2_TX",          "UART5_TX"],
+            ["UART8_TX",         "UART7_TX",           "TIM3_CH4/TIM3_UP",  "UART7_RX",           "TIM3_CH1/TIM3_TRIG", "TIM3_CH2",    "UART8_RX",           "TIM3_CH3"],
+            ["TIM5_CH3/TIM5_UP", "TIM5_CH4/TIM5_TRIG", "TIM5_CH1",          "TIM5_CH4/TIM5_TRIG", "TIM5_CH2",           "-",           "TIM5_UP",            "-"],
+            ["-",                "TIM6_UP",            "I2C2_RX",           "I2C2_RX",            "USART3_TX",          "DAC1",        "DAC2",               "I2C2_TX"],
+        ], [
+            # https://www.st.com/resource/en/reference_manual/dm00305990-stm32f72xxx-and-stm32f73xxx-advanced-armbased-32bit-mcus-stmicroelectronics.pdf Table 27
+            ["ADC1",      "SAI1_A",      "TIM8_CH1/TIM8_CH2/TIM8_CH3",    "SAI1_A",      "ADC1",                          "SAI1_B",      "TIM1_CH1/TIM1_CH2/TIM1_CH3",    "SAI2_B"],
+            ["-",         "-",           "ADC2",                          "ADC2",        "SAI1_B",                        "-",           "-",                             "-"],
+            ["ADC3",      "ADC3",        "-",                             "SPI5_RX",     "SPI5_TX",                       "AES_OUT",     "AES_IN",                        "-"],
+            ["SPI1_RX",   "-",           "SPI1_RX",                       "SPI1_TX",     "SAI2_A",                        "SPI1_TX",     "SAI2_B",                        "QUADSPI"],
+            ["SPI4_RX",   "SPI4_TX",     "USART1_RX",                     "SDMMC1",      "-",                             "USART1_RX",   "SDMMC1",                        "USART1_TX"],
+            ["-",         "USART6_RX",   "USART6_RX",                     "SPI4_RX",     "SPI4_TX",                       "-",           "USART6_TX",                     "USART6_TX"],
+            ["TIM1_TRIG", "TIM1_CH1",    "TIM1_CH2",                      "TIM1_CH1",    "TIM1_CH4/TIM1_TRIG/TIM1_COM",   "TIM1_UP",     "TIM1_CH3",                      "-"],
+            ["-",         "TIM8_UP",     "TIM8_CH1",                      "TIM8_CH2",    "TIM8_CH3",                      "SPI5_RX",     "SPI5_TX",                       "TIM8_CH4/TIM8_TRIG/TIM8_COM"],
+            None,
+            None,
+            None,
+            ["SDMMC2",    "-",           "-",                             "-",           "-",                             "SDMMC2",      "-",                             "-"],
         ]]
 
     print("| Name         | Prio | Channel                          | Configured |")

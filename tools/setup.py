@@ -73,19 +73,6 @@ if creating_package:
   version_file_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'odrive', 'version.txt')
   with open(version_file_path, mode='w') as version_file:
     version_file.write(version)
-  
-  # Temporarily link fibre into the python tools directory
-  # TODO: distribute a fibre package separately
-  fibre_src = os.path.join(os.path.dirname(os.path.dirname(
-                    os.path.realpath(__file__))),
-                    "Firmware", "fibre", "python", "fibre")
-  fibre_link = os.path.join(os.path.dirname(
-                    os.path.realpath(__file__)), "fibre")
-  if not os.path.exists(fibre_link):
-    if sys.version_info > (3, 3):
-      os.symlink(fibre_src, fibre_link, target_is_directory=True)
-    else:
-      os.symlink(fibre_src, fibre_link)
 
 # TODO: find a better place for this
 if not creating_package:
@@ -99,7 +86,7 @@ if not creating_package:
 try:
   setup(
     name = 'odrive',
-    packages = ['odrive', 'odrive.dfuse', 'fibre'],
+    packages = ['odrive', 'odrive.dfuse', 'odrive.pyfibre.fibre'],
     scripts = ['odrivetool', 'odrivetool.bat', 'odrive_demo.py'],
     version = version,
     description = 'Control utilities for the ODrive high performance motor controller',
@@ -110,16 +97,20 @@ try:
     keywords = ['odrive', 'motor', 'motor control'],
     install_requires = [
       'ipython',  # Used to do the interactive parts of the odrivetool
-      'PyUSB',    # Required to access USB devices from Python through libusb
-      'PySerial', # Required to access serial devices from Python
+      'PyUSB',    # Only required for DFU. Normal communication happens through libfibre.
       'requests', # Used to by DFU to load firmware files
       'IntelHex', # Used to by DFU to download firmware from github
       'matplotlib', # Required to run the liveplotter
       'monotonic', # For compatibility with older python versions
-      'appdirs',  # Used to find caching directory
+      'setuptools',  # ubuntu-latest on GitHub Actions fails to install odrive without this dependency
       'pywin32 >= 222; platform_system == "Windows"' # Required for fancy terminal features on Windows
     ],
-    package_data={'': ['version.txt']},
+    package_data={'': [
+      'version.txt',
+      'pyfibre/fibre/*.so',
+      'pyfibre/fibre/*.dll',
+      'pyfibre/fibre/*.dylib'
+    ]},
     classifiers = [],
   )
 
@@ -129,4 +120,3 @@ finally:
   # clean up
   if creating_package:
     os.remove(version_file_path)
-    os.remove(fibre_link)

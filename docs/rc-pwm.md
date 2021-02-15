@@ -10,7 +10,7 @@ Any of the numerical parameters that are writable from the ODrive Tool can be ho
     odrv0.config.gpio4_mode = GPIO_MODE_PWM
     odrv0.config.gpio4_pwm_mapping.min = -2
     odrv0.config.gpio4_pwm_mapping.max = 2
-    odrv0.config.gpio4_pwm_mapping.endpoint = odrv0.axis0.controller._remote_attributes['input_pos']
+    odrv0.config.gpio4_pwm_mapping.endpoint = odrv0.axis0.controller._input_pos_property
     ```
    Note: you can disable the input by setting `odrv0.config.gpio4_pwm_mapping.endpoint = None`
 4. Save the configuration and reboot

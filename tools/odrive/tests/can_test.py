@@ -104,13 +104,18 @@ class TestSimpleCAN():
     def get_test_cases(self, testrig: TestRig):
         for odrive in testrig.get_components(ODriveComponent):
             can_interfaces = list(testrig.get_connected_components(odrive.can, CanInterfaceComponent))
-            yield (odrive, can_interfaces, 0, False) # standard ID
-            yield (odrive, can_interfaces, 0xfedcba, True) # extended ID
+            yield AnyTestCase(*[(odrive, intf, 0, False, tf) for intf, tf in can_interfaces]) # standard ID
+            yield AnyTestCase(*[(odrive, intf, 0xfedcba, True, tf) for intf, tf in can_interfaces]) # extended ID
 
     def run_test(self, odrive: ODriveComponent, canbus: CanInterfaceComponent, node_id: int, extended_id: bool, logger: Logger):
         odrive.disable_mappings()
-        odrive.handle.config.gpio15_mode = GPIO_MODE_CAN_A
-        odrive.handle.config.gpio16_mode = GPIO_MODE_CAN_A
+        if odrive.yaml['board-version'].startswith("v3."):
+            odrive.handle.config.gpio15_mode = GPIO_MODE_CAN_A
+            odrive.handle.config.gpio16_mode = GPIO_MODE_CAN_A
+        elif odrive.yaml['board-version'].startswith("v4."):
+            pass # CAN pin configuration is hardcoded
+        else:
+            raise Exception("unknown board version {}".format(odrive.yaml['board-version']))
         odrive.handle.config.enable_can_a = True
         odrive.save_config_and_reboot()
 
@@ -131,6 +136,7 @@ class TestSimpleCAN():
         test_assert_eq(my_req('get_vbus_voltage')['vbus_voltage'], odrive.handle.vbus_voltage, accuracy=0.01)
 
         my_cmd('set_node_id', node_id=node_id+20)
+        time.sleep(0.1) # TODO: remove this hack (see note in firmware)
         asyncio.run(request(canbus.handle, node_id+20, extended_id, 'get_vbus_voltage'))
         test_assert_eq(axis.config.can.node_id, node_id+20)
 
@@ -227,13 +233,16 @@ class TestSimpleCAN():
         test_assert_eq([msg['current_state'] for msg in heartbeats], [1] * len(heartbeats))
 
         logger.debug('testing reboot...')
+        test_assert_eq(odrive.handle._on_lost.done(), False)
         my_cmd('reboot')
         time.sleep(0.5)
-        if len(odrive.handle._remote_attributes) != 0:
+        if not odrive.handle._on_lost is None:
             raise TestFailed("device didn't seem to reboot")
         odrive.handle = None
         time.sleep(2.0)
         odrive.prepare(logger)
 
+tests = [TestSimpleCAN()]
+
 if __name__ == '__main__':
-    test_runner.run(TestSimpleCAN())
+    test_runner.run(tests)
