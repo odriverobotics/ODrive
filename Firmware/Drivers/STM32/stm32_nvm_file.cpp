@@ -212,7 +212,7 @@ bool Stm32NvmFile::close() {
     } else if (state_ == kStateWriting) {
         // Flush unaligned write end if necessary
         if (offset_ % kFlashGranularity) {
-            if (FLASH_write_block((uint8_t*)nvm_start_ + (offset_ / kFlashGranularity) * kFlashGranularity, (uint32_t*)write_buf_) != HAL_OK) {
+            if (FLASH_write_block((uint8_t*)nvm_start_ + kHeaderSizeB + (offset_ / kFlashGranularity) * kFlashGranularity, (uint32_t*)write_buf_) != HAL_OK) {
                 return false;
             }
         }
