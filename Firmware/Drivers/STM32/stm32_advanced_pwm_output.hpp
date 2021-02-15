@@ -1,5 +1,5 @@
-#ifndef __STM32_BASIC_PWM_OUTPUT_HPP
-#define __STM32_BASIC_PWM_OUTPUT_HPP
+#ifndef __STM32_ADVANCED_PWM_OUTPUT_HPP
+#define __STM32_ADVANCED_PWM_OUTPUT_HPP
 
 #include <interfaces/pwm_output_group.hpp>
 
@@ -156,4 +156,4 @@ public:
     on_stopped_cb_t on_stopped_;
 };
 
-#endif // __STM32_BASIC_PWM_OUTPUT_HPP
+#endif // __STM32_ADVANCED_PWM_OUTPUT_HPP

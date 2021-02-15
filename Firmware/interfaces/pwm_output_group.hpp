@@ -57,7 +57,7 @@ struct PwmOutputGroup {
      *        stopped operating.
      */
     virtual void start(on_update_cb_t on_update,
-                       fibre::Callback<void> on_stopped) = 0;
+                       on_stopped_cb_t on_stopped) = 0;
 
     /**
      * @brief Stops the PWM output asynchronously.

@@ -56,6 +56,13 @@ struct BoardSupportPackageBase {
     static File& nvm;
 
     /**
+     * @brief PWM output to control the FAN speed.
+     * 
+     * null on 
+     */
+    static PwmOutputGroup<1>* fan_output;
+
+    /**
      * @brief Continuously updated measurement of the DC link voltage in Volts.
      * 
      * If the value cannot be measured, it is set to 0.

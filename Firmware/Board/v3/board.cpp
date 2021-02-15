@@ -376,6 +376,9 @@ std::array<Axis, AXIS_COUNT> axes{{
 Stm32BasicPwmOutput<TIM_APB1_PERIOD_CLOCKS, TIM_APB1_DEADTIME_CLOCKS> brake_resistor_output_impl{TIM2->CCR3, TIM2->CCR4};
 PwmOutputGroup<1>& brake_resistor_output = brake_resistor_output_impl;
 
+template<> PwmOutputGroup<1>* BoardSupportPackage::fan_output = nullptr;
+
+
 /* Misc Variables ------------------------------------------------------------*/
 
 volatile uint32_t& board_control_loop_counter = TIM13->CNT;
