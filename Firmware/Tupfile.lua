@@ -49,6 +49,11 @@ function compile(src_file, obj_file)
     }
 end
 
+function file_exists(name)
+    local f=io.open(name,"r")
+    if f~=nil then io.close(f) return true else return false end
+end
+
 -- Packages --------------------------------------------------------------------
 
 tup.include('fibre-cpp/package.lua')
@@ -72,8 +77,8 @@ odrive_firmware_pkg = {
         'MotorControl/utils.cpp',
         'MotorControl/arm_sin_f32.c',
         'MotorControl/arm_cos_f32.c',
-        'MotorControl/low_level.cpp',
         'MotorControl/axis.cpp',
+        'MotorControl/brake_resistor.cpp',
         'MotorControl/motor.cpp',
         'MotorControl/thermistor.cpp',
         'MotorControl/encoder.cpp',
@@ -86,19 +91,22 @@ odrive_firmware_pkg = {
         'MotorControl/oscilloscope.cpp',
         'MotorControl/sensorless_estimator.cpp',
         'MotorControl/trapTraj.cpp',
-        'MotorControl/pwm_input.cpp',
         'MotorControl/main.cpp',
         'Drivers/STM32/stm32_system.cpp',
         'Drivers/STM32/stm32_gpio.cpp',
-        'Drivers/STM32/stm32_nvm.c',
+        'Drivers/STM32/stm32_nvm_file.cpp',
+        'Drivers/STM32/stm32_pwm_input.cpp',
+        'Drivers/STM32/stm32_spi.cpp',
         'Drivers/STM32/stm32_spi_arbiter.cpp',
+        'Drivers/STM32/stm32_usart.cpp',
         'communication/can/can_simple.cpp',
-        'communication/can/odrive_can.cpp',    
+        'communication/can/odrive_can.cpp',
         'communication/communication.cpp',
         'communication/ascii_protocol.cpp',
         'communication/interface_uart.cpp',
         'communication/interface_usb.cpp',
         'communication/interface_i2c.cpp',
+        'cmsis_event_loop.cpp',
         'FreeRTOS-openocd.c',
         'autogen/version.c'
     }
@@ -175,6 +183,43 @@ stm32f7xx_hal_pkg = {
     cflags = {'-DARM_MATH_CM7', '-mcpu=cortex-m7', '-mfpu=fpv5-sp-d16'}
 }
 
+stm32h7xx_hal_pkg = {
+    root = 'Private/ThirdParty/STM32H7xx_HAL_Driver',
+    include_dirs = {
+        'Inc',
+    },
+    code_files = {
+        'Src/stm32h7xx_hal.c',
+        'Src/stm32h7xx_hal_adc.c',
+        'Src/stm32h7xx_hal_adc_ex.c',
+        'Src/stm32h7xx_hal_cortex.c',
+        'Src/stm32h7xx_hal_dma.c',
+        'Src/stm32h7xx_hal_dma_ex.c',
+        'Src/stm32h7xx_hal_exti.c',
+        'Src/stm32h7xx_hal_fdcan.c',
+        'Src/stm32h7xx_hal_flash.c',
+        'Src/stm32h7xx_hal_flash_ex.c',
+        'Src/stm32h7xx_hal_gpio.c',
+        'Src/stm32h7xx_hal_i2c.c',
+        'Src/stm32h7xx_hal_i2c_ex.c',
+        'Src/stm32h7xx_hal_i2s.c',
+        'Src/stm32h7xx_hal_pcd.c',
+        'Src/stm32h7xx_hal_pcd_ex.c',
+        'Src/stm32h7xx_hal_pwr.c',
+        'Src/stm32h7xx_hal_pwr_ex.c',
+        'Src/stm32h7xx_hal_rcc.c',
+        'Src/stm32h7xx_hal_rcc_ex.c',
+        'Src/stm32h7xx_hal_spi.c',
+        'Src/stm32h7xx_hal_spi_ex.c',
+        'Src/stm32h7xx_hal_tim.c',
+        'Src/stm32h7xx_hal_tim_ex.c',
+        'Src/stm32h7xx_hal_uart.c',
+        'Src/stm32h7xx_hal_uart_ex.c',
+        'Src/stm32h7xx_ll_usb.c',
+    },
+    cflags = {'-DARM_MATH_CM7', '-mcpu=cortex-m7', '-mfpu=fpv5-d16'}
+}
+
 freertos_pkg = {
     root = 'ThirdParty/FreeRTOS',
     include_dirs = {
@@ -198,6 +243,7 @@ cmsis_pkg = {
     root = 'ThirdParty/CMSIS',
     include_dirs = {
         'Include',
+        'Device/ST/STM32H7xx/Include',
         'Device/ST/STM32F7xx/Include',
         'Device/ST/STM32F4xx/Include'
     },
@@ -241,73 +287,23 @@ board_v3 = {
     code_files = {
         '../../ThirdParty/FreeRTOS/Source/portable/GCC/ARM_CM4F/port.c',
         '../../Drivers/DRV8301/drv8301.cpp',
+        '../../Drivers/STM32/stm32_can.cpp',
         'board.cpp',
         'startup_stm32f405xx.s',
         'Src/stm32f4xx_hal_timebase_TIM.c',
         'Src/tim.c',
-        'Src/dma.c',
         'Src/freertos.c',
         'Src/main.c',
         'Src/usbd_conf.c',
-        'Src/spi.c',
-        'Src/usart.c',
-        'Src/usbd_cdc_if.c',
         'Src/adc.c',
         'Src/stm32f4xx_hal_msp.c',
-        'Src/usbd_desc.c',
         'Src/stm32f4xx_it.c',
-        'Src/usb_device.c',
-        'Src/can.c',
         'Src/system_stm32f4xx.c',
-        'Src/gpio.c',
-        'Src/i2c.c',
     },
     cflags = {'-DSTM32F405xx', '-DHW_VERSION_MAJOR=3'},
     ldflags = {
         '-TBoard/v3/STM32F405RGTx_FLASH.ld',
         '-larm_cortexM4lf_math',
-    }
-}
-
-board_v4 = {
-    root = 'Private/v4',
-    root_interface = 'ODrive4',
-    include = {stm32f7xx_hal_pkg, crypto_pkg},
-    include_dirs = {
-        '..',
-        'Inc',
-        '../../ThirdParty/FreeRTOS/Source/portable/GCC/ARM_CM7/r0p1',
-    },
-    code_files = {
-        '../../ThirdParty/FreeRTOS/Source/portable/GCC/ARM_CM7/r0p1/port.c',
-        '../Drivers/DRV8353/drv8353.cpp',
-        '../Drivers/status_led.cpp',
-        'startup_stm32f722xx.s',
-        'board.cpp',
-        'Src/main.c',
-        'Src/gpio.c',
-        'Src/adc.c',
-        'Src/can.c',
-        'Src/dma.c',
-        'Src/freertos.c',
-        'Src/spi.c',
-        'Src/tim.c',
-        'Src/stm32f7xx_it.c',
-        'Src/stm32f7xx_hal_msp.c',
-        'Src/stm32f7xx_hal_timebase_tim.c',
-        'Src/system_stm32f7xx.c',
-        'Src/i2s.c',
-        'Src/usart.c',
-        'Src/usb_device.c',
-        'Src/usbd_conf.c',
-        'Src/usbd_desc.c',
-        'Src/usbd_cdc_if.c',
-        'Src/i2c.c',
-    },
-    cflags = {'-DSTM32F722xx', '-DHW_VERSION_MAJOR=4'},
-    ldflags = {
-        '-TPrivate/v4/STM32F722RETx_FLASH.ld',
-        '-larm_cortexM7lfsp_math',
     }
 }
 
@@ -321,10 +317,12 @@ boards = {
     ["v3.5-48V"] = {include={board_v3}, cflags={"-DHW_VERSION_MINOR=5 -DHW_VERSION_VOLTAGE=48"}},
     ["v3.6-24V"] = {include={board_v3}, cflags={"-DHW_VERSION_MINOR=6 -DHW_VERSION_VOLTAGE=24"}},
     ["v3.6-56V"] = {include={board_v3}, cflags={"-DHW_VERSION_MINOR=6 -DHW_VERSION_VOLTAGE=56"}},
-    ["v4.0-56V"] = {include={board_v4}, cflags={"-DHW_VERSION_MINOR=0 -DHW_VERSION_VOLTAGE=56"}},
-    ["v4.1-58V"] = {include={board_v4}, cflags={"-DHW_VERSION_MINOR=1 -DHW_VERSION_VOLTAGE=58"}},
 }
-
+ 
+if file_exists('Private/package.lua') then
+    print('Including private boards')
+    tup.include('Private/package.lua')
+end
 
 -- Toolchain setup -------------------------------------------------------------
 
@@ -442,6 +440,10 @@ tup.frule{inputs={'build/ODriveFirmware.elf'}, command='arm-none-eabi-size %f'}
 -- create *.hex and *.bin output formats
 tup.frule{inputs={'build/ODriveFirmware.elf'}, command='arm-none-eabi-objcopy -O ihex %f %o', outputs={'build/ODriveFirmware.hex'}}
 tup.frule{inputs={'build/ODriveFirmware.elf'}, command='arm-none-eabi-objcopy -O binary -S %f %o', outputs={'build/ODriveFirmware.bin'}}
+-- create disassembly
+if tup.getconfig('ENABLE_DISASM') == 'true' then
+    tup.frule{inputs={'build/ODriveFirmware.elf'}, command='arm-none-eabi-objdump %f -dSC > %o', outputs={'build/ODriveFirmware.asm'}}
+end
 
 if tup.getconfig('DOCTEST') == 'true' then
     TEST_INCLUDES = '-I. -I./MotorControl -I./fibre-cpp/include -I./Drivers/DRV8301 -I./doctest'

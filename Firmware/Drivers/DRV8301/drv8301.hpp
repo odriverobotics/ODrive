@@ -4,7 +4,7 @@
 #include "stdbool.h"
 #include "stdint.h"
 
-#include <Drivers/gate_driver.hpp>
+#include <interfaces/gate_driver.hpp>
 #include <Drivers/STM32/stm32_spi_arbiter.hpp>
 #include <Drivers/STM32/stm32_gpio.hpp>
 
@@ -118,7 +118,7 @@ private:
     /** @brief Writes data to a DRV8301 register. There is no check if the write succeeded. */
     bool write_reg(const RegName_e regName, const uint16_t data);
 
-    static const SPI_InitTypeDef spi_config_;
+    static const Stm32Spi::Config spi_config_;
 
     // Configuration
     Stm32SpiArbiter* spi_arbiter_;

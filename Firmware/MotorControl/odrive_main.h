@@ -107,7 +107,7 @@ struct BoardConfig_t {
     float dc_max_positive_current = INFINITY; // Max current [A] the power supply can source
     float dc_max_negative_current = -0.000001f; // Max current [A] the power supply can sink. You most likely want a non-positive value here. Set to -INFINITY to disable.
     uint32_t error_gpio_pin = DEFAULT_ERROR_PIN;
-    PWMMapping_t pwm_mappings[4];
+    PWMMapping_t pwm_mappings[GPIO_COUNT];
     PWMMapping_t analog_mappings[GPIO_COUNT];
 };
 
@@ -138,7 +138,6 @@ inline ENUMTYPE operator ~ (ENUMTYPE a) { return static_cast<ENUMTYPE>(~static_c
 
 // ODrive specific includes
 #include <utils.hpp>
-#include <low_level.h>
 #include <encoder.hpp>
 #include <sensorless_estimator.hpp>
 #include <controller.hpp>
@@ -151,6 +150,7 @@ inline ENUMTYPE operator ~ (ENUMTYPE a) { return static_cast<ENUMTYPE>(~static_c
 #include <oscilloscope.hpp>
 #include <communication/communication.h>
 #include <communication/can/odrive_can.hpp>
+#include <brake_resistor.hpp>
 
 // Defined in autogen/version.c based on git-derived version numbers
 extern "C" {
@@ -160,8 +160,8 @@ extern const unsigned char fw_version_revision_;
 extern const unsigned char fw_version_unreleased_;
 }
 
-static Stm32Gpio get_gpio(size_t gpio_num) {
-    return (gpio_num < GPIO_COUNT) ? gpios[gpio_num] : GPIO_COUNT ? gpios[0] : Stm32Gpio::none;
+static inline Stm32Gpio get_gpio(size_t gpio_num) {
+    return (gpio_num < GPIO_COUNT) ? board.gpios[gpio_num] : Stm32Gpio::none;
 }
 
 // general system functions defined in main.cpp
@@ -175,7 +175,7 @@ public:
     void clear_errors() override;
 
     float get_adc_voltage(uint32_t gpio) override {
-        return ::get_adc_voltage(get_gpio(gpio));
+        return (gpio < board.gpio_adc_values.size()) ? board.gpio_adc_values[gpio] * board.kAdcMaxVoltage : NAN;
     }
 
     int32_t test_function(int32_t delta) override {
@@ -196,8 +196,8 @@ public:
     void disarm_with_error(Error error);
 
     Error error_ = ERROR_NONE;
-    float& vbus_voltage_ = ::vbus_voltage; // TODO: make this the actual variable
-    float& ibus_ = ::ibus_; // TODO: make this the actual variable
+    float& vbus_voltage_ = board.vbus_voltage; // TODO: make this the actual variable
+    float ibus_ = 0.0f; // TODO: make this the actual variable
     float ibus_report_filter_k_ = 1.0f;
 
     const uint64_t& serial_number_ = ::serial_number;
@@ -214,8 +214,8 @@ public:
     const uint8_t fw_version_revision_ = ::fw_version_revision_;
     const uint8_t fw_version_unreleased_ = ::fw_version_unreleased_; // 0 for official releases, 1 otherwise
 
-    bool& brake_resistor_armed_ = ::brake_resistor_armed; // TODO: make this the actual variable
-    bool& brake_resistor_saturated_ = ::brake_resistor_saturated; // TODO: make this the actual variable
+    bool& brake_resistor_armed_ = brake_resistor_.is_armed_; // TODO: make this the actual variable
+    bool& brake_resistor_saturated_ = brake_resistor_.is_saturated_; // TODO: make this the actual variable
 
     SystemStats_t system_stats_;
 
@@ -226,7 +226,9 @@ public:
         nullptr // data_src TODO: change data type
     };
 
-    ODriveCAN can_;
+    ODriveCAN can_{*board.can_busses[0]};
+
+    BrakeResistor brake_resistor_{brake_resistor_output};
 
     BoardConfig_t config_;
     uint32_t user_config_loaded_ = 0;

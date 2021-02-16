@@ -65,8 +65,7 @@ public:
          float shunt_conductance,
          TGateDriver& gate_driver,
          TOpAmp& opamp,
-         OnboardThermistorCurrentLimiter& fet_thermistor,
-         OffboardThermistorCurrentLimiter& motor_thermistor);
+         float* motor_fet_temp_ptr);
 
     bool arm(PhaseControlLaw<3>* control_law);
     void apply_pwm_timings(uint16_t timings[3], bool tentative);
@@ -79,7 +78,6 @@ public:
     bool do_checks(uint32_t timestamp);
     float effective_current_lim();
     float max_available_torque();
-    std::optional<float> phase_current_from_adcval(uint32_t ADCValue);
     bool measure_phase_resistance(float test_current, float max_voltage);
     bool measure_phase_inductance(float test_voltage);
     bool run_calibration();
@@ -96,8 +94,8 @@ public:
     const float shunt_conductance_;
     TGateDriver& gate_driver_;
     TOpAmp& opamp_;
-    OnboardThermistorCurrentLimiter& fet_thermistor_;
-    OffboardThermistorCurrentLimiter& motor_thermistor_;
+    OnboardThermistorCurrentLimiter fet_thermistor_;
+    OffboardThermistorCurrentLimiter motor_thermistor_;
 
     Config_t config_;
     Axis* axis_ = nullptr; // set by Axis constructor

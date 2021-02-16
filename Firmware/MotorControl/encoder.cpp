@@ -40,17 +40,9 @@ void Encoder::setup() {
     mode_ = config_.mode;
 
     spi_task_.config = {
-        .Mode = SPI_MODE_MASTER,
-        .Direction = SPI_DIRECTION_2LINES,
-        .DataSize = SPI_DATASIZE_16BIT,
-        .CLKPolarity = (mode_ == MODE_SPI_ABS_AEAT || mode_ == MODE_SPI_ABS_MA732) ? SPI_POLARITY_HIGH : SPI_POLARITY_LOW,
-        .CLKPhase = SPI_PHASE_2EDGE,
-        .NSS = SPI_NSS_SOFT,
-        .BaudRatePrescaler = SPI_BAUDRATEPRESCALER_32,
-        .FirstBit = SPI_FIRSTBIT_MSB,
-        .TIMode = SPI_TIMODE_DISABLE,
-        .CRCCalculation = SPI_CRCCALCULATION_DISABLE,
-        .CRCPolynomial = 10,
+        .max_baud_rate = 1687500,
+        .clk_polarity = (mode_ == MODE_SPI_ABS_AEAT || mode_ == MODE_SPI_ABS_MA732) ? SPI_POLARITY_HIGH : SPI_POLARITY_LOW,
+        .clk_phase = SPI_PHASE_2EDGE,
     };
 
     if (mode_ == MODE_SPI_ABS_MA732) {
@@ -484,8 +476,10 @@ void Encoder::sample_now() {
         } break;
 
         case MODE_SINCOS: {
-            sincos_sample_s_ = get_adc_relative_voltage(get_gpio(config_.sincos_gpio_pin_sin)) - 0.5f;
-            sincos_sample_c_ = get_adc_relative_voltage(get_gpio(config_.sincos_gpio_pin_cos)) - 0.5f;
+            uint16_t sin_gpio = config_.sincos_gpio_pin_sin;
+            uint16_t cos_gpio = config_.sincos_gpio_pin_cos;
+            sincos_sample_s_ = (sin_gpio < GPIO_COUNT) ? (board.gpio_adc_values[sin_gpio] - 0.5f) : -INFINITY;
+            sincos_sample_c_ = (cos_gpio < GPIO_COUNT) ? (board.gpio_adc_values[cos_gpio] - 0.5f) : -INFINITY;
         } break;
 
         case MODE_SPI_ABS_AMS:

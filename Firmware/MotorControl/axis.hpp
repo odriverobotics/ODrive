@@ -11,7 +11,6 @@ class Axis;
 #include "trapTraj.hpp"
 #include "endstop.hpp"
 #include "mechanical_brake.hpp"
-#include "low_level.h"
 #include "utils.hpp"
 #include "task_timer.hpp"
 
@@ -100,11 +99,6 @@ public:
         bool is_homed = false;
     };
 
-    struct CAN_t {
-        uint32_t last_heartbeat = 0;
-        uint32_t last_encoder = 0;
-    };
-
     Axis(int axis_num,
             uint16_t default_step_gpio_pin,
             uint16_t default_dir_gpio_pin,
@@ -188,7 +182,6 @@ public:
     std::array<AxisState, 10> task_chain_ = { AXIS_STATE_UNDEFINED };
     AxisState& current_state_ = task_chain_.front();
     Homing_t homing_;
-    CAN_t can_;
 
 
     // watchdog

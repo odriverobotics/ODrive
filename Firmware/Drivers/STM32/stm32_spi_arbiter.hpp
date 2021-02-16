@@ -2,13 +2,12 @@
 #define __STM32_SPI_ARBITER_HPP
 
 #include "stm32_gpio.hpp"
-
-#include <spi.h>
+#include "stm32_spi.hpp"
 
 class Stm32SpiArbiter {
 public:
     struct SpiTask {
-        SPI_InitTypeDef config;
+        Stm32Spi::Config config;
         Stm32Gpio ncs_gpio;
         const uint8_t* tx_buf;
         uint8_t* rx_buf;
@@ -19,7 +18,7 @@ public:
         struct SpiTask* next;
     };
 
-    Stm32SpiArbiter(SPI_HandleTypeDef* hspi): hspi_(hspi) {}
+    Stm32SpiArbiter(Stm32Spi* spi): spi_(spi) {}
 
     /**
      * Reserves the task for the caller if it's not in use currently.
@@ -76,7 +75,7 @@ public:
      * @param rx_buf: Buffer for the incoming data to be sent. Can be null unless
      *        tx_buf is null too.
      */
-    bool transfer(SPI_InitTypeDef config, Stm32Gpio ncs_gpio, const uint8_t* tx_buf, uint8_t* rx_buf, size_t length, uint32_t timeout_ms);
+    bool transfer(Stm32Spi::Config config, Stm32Gpio ncs_gpio, const uint8_t* tx_buf, uint8_t* rx_buf, size_t length, uint32_t timeout_ms);
 
     /**
      * @brief Completion method to be called from HAL_SPI_TxCpltCallback,
@@ -87,8 +86,9 @@ public:
 private:
     bool start();
     
-    SPI_HandleTypeDef* hspi_;
+    Stm32Spi* spi_;
     SpiTask* task_list_ = nullptr;
+    Stm32Spi::Config current_config_;
 };
 
 #endif // __STM32_SPI_ARBITER_HPP

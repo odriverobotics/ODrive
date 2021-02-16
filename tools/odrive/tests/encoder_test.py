@@ -253,14 +253,19 @@ class TestHallEffectEncoder(TestEncoderBase):
         if enc.handle.config.mode != ENCODER_MODE_HALL:
             enc.handle.config.mode = ENCODER_MODE_HALL
             enc.handle.config.hall_polarity_calibrated = True
-            if enc.num:
-              enc.parent.handle.config.gpio9_mode = GPIO_MODE_DIGITAL
-              enc.parent.handle.config.gpio10_mode = GPIO_MODE_DIGITAL
-              enc.parent.handle.config.gpio11_mode = GPIO_MODE_DIGITAL
-            else:
-              enc.parent.handle.config.gpio12_mode = GPIO_MODE_DIGITAL
-              enc.parent.handle.config.gpio13_mode = GPIO_MODE_DIGITAL
-              enc.parent.handle.config.gpio14_mode = GPIO_MODE_DIGITAL
+            if enc.parent.yaml['board-version'].startswith('v3.'):
+              if enc.num:
+                enc.parent.handle.config.gpio9_mode = GPIO_MODE_DIGITAL
+                enc.parent.handle.config.gpio10_mode = GPIO_MODE_DIGITAL
+                enc.parent.handle.config.gpio11_mode = GPIO_MODE_DIGITAL
+              else:
+                enc.parent.handle.config.gpio12_mode = GPIO_MODE_DIGITAL
+                enc.parent.handle.config.gpio13_mode = GPIO_MODE_DIGITAL
+                enc.parent.handle.config.gpio14_mode = GPIO_MODE_DIGITAL
+            elif enc.parent.yaml['board-version'].startswith('v4.'):
+              enc.parent.handle.config.gpio0_mode = GPIO_MODE_DIGITAL
+              enc.parent.handle.config.gpio5_mode = GPIO_MODE_DIGITAL
+              enc.parent.handle.config.gpio6_mode = GPIO_MODE_DIGITAL
             enc.parent.save_config_and_reboot()
         else:
             time.sleep(1.0) # wait for PLLs to stabilize

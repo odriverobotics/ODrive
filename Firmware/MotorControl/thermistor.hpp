@@ -10,25 +10,21 @@ class ThermistorCurrentLimiter : public CurrentLimiter, public ODriveIntf::Therm
 public:
     virtual ~ThermistorCurrentLimiter() = default;
 
-    ThermistorCurrentLimiter(uint16_t adc_channel,
-                             const float* const coefficients,
-                             size_t num_coeffs,
-                             const float& temp_limit_lower,
+    ThermistorCurrentLimiter(const float& temp_limit_lower,
                              const float& temp_limit_upper,
                              const bool& enabled);
 
-    void update();
     bool do_checks();
     float get_current_limit(float base_current_lim) const override;
+    void update(); // fetch value, and run low pass filter
+    float get_temp() const { return lpf_vals_.back(); };
+    virtual float get_raw_temp() const = 0;
 
-    uint16_t adc_channel_;
-    const float* const coefficients_;
-    const size_t num_coeffs_;
-    float temperature_ = NAN; // [°C] NaN while the ODrive is initializing.
     const float& temp_limit_lower_;
     const float& temp_limit_upper_;
     const bool& enabled_;
     Motor* motor_ = nullptr; // set by Motor::apply_config()
+    std::array<float, 2> lpf_vals_ = { 0.0f };
 };
 
 class OnboardThermistorCurrentLimiter : public ThermistorCurrentLimiter, public ODriveIntf::OnboardThermistorCurrentLimiterIntf {
@@ -40,9 +36,11 @@ public:
     };
 
     virtual ~OnboardThermistorCurrentLimiter() = default;
-    OnboardThermistorCurrentLimiter(uint16_t adc_channel, const float* const coefficients, size_t num_coeffs);
+    OnboardThermistorCurrentLimiter(float* value_ptr);
+    float get_raw_temp() const final { return *value_ptr_; }
 
     Config_t config_;
+    float* value_ptr_;
 };
 
 class OffboardThermistorCurrentLimiter : public ThermistorCurrentLimiter, public ODriveIntf::OffboardThermistorCurrentLimiterIntf {
@@ -60,21 +58,16 @@ public:
         float temp_limit_lower = 100;
         float temp_limit_upper = 120;
         bool enabled = false;
-
-        // custom setters
-        OffboardThermistorCurrentLimiter* parent;
-        void set_gpio_pin(uint16_t value) { gpio_pin = value; parent->decode_pin(); }
     };
 
     virtual ~OffboardThermistorCurrentLimiter() = default;
     OffboardThermistorCurrentLimiter();
 
-    Config_t config_;
-
+    float get_raw_temp() const final;
     bool apply_config();
 
-private:
-    void decode_pin();
+    Config_t config_;
+    const float* const coefficients_;
 };
 
 #endif // __THERMISTOR_HPP

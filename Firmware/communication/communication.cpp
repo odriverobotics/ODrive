@@ -14,10 +14,6 @@
 
 #include <cmsis_os.h>
 #include <memory>
-//#include <usbd_cdc_if.h>
-//#include <usb_device.h>
-//#include <usart.h>
-#include <gpio.h>
 
 #include <type_traits>
 
@@ -43,20 +39,22 @@ void init_communication(void) {
         odrv.misconfigured_ = true;
     }
 
-    if (odrv.config_.enable_uart_a && uart_a) {
-        start_uart_server(uart_a);
-    } else if (odrv.config_.enable_uart_b && uart_b) {
-        start_uart_server(uart_b);
+    if (odrv.config_.enable_uart_a && board._GPIO_COUNT > 0) {
+        start_uart_server(*board.uarts[0]);
+    } else if (odrv.config_.enable_uart_b && board._GPIO_COUNT > 1) {
+        start_uart_server(*board.uarts[1]);
     }
 
     start_usb_server();
 
     if (odrv.config_.enable_i2c_a) {
-        start_i2c_server();
+        // I2C support currently not maintained
+        //start_i2c_server();
+        odrv.misconfigured_ = true;
     }
 
     if (odrv.config_.enable_can_a) {
-        odrv.can_.start_server(&hcan1);
+        odrv.can_.start_server();
     }
 }
 

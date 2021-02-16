@@ -56,24 +56,30 @@ If your test rig differs, you may be able to run some but not all of the tests.
 
  3. Add the following lines to `/boot/config.txt`:
     - `enable_uart=1`
+
+ 4. If you're using the [WaveShare RS485 CAN Hat](https://www.waveshare.com/rs485-can-hat.htm), add the following lines to `/boot/config.txt`:
+
     - `dtparam=spi=on`
     - `dtoverlay=spi-bcm2835-overlay`
     - `dtoverlay=mcp2515-can0,oscillator=12000000,interrupt=25` - Note: These oscillator and interrupt GPIO settings here are for the "RS485 CAN HAT" I have. There appear to be multiple versions, so they may be different from yours. Check the marking on the oscillator and the schematics.
 
- 4. Remove the following arguments from `/boot/cmdline.txt`:
+ 5. If you're using the [SeeedStudio MCP2518FD CAN-FD Hat](https://www.seeedstudio.com/CAN-BUS-FD-HAT-for-Raspberry-Pi-p-4742.html), run the commands listed [here](https://wiki.seeedstudio.com/2-Channel-CAN-BUS-FD-Shield-for-Raspberry-Pi/#install-can-hat).
+
+
+ 6. Remove the following arguments from `/boot/cmdline.txt`:
     - `console=serial0,115200`
 
- 5. Append `ODRIVE_TEST_RIG_NAME=[test-rig-name]` to `/etc/environment`. The HWIL tests use this to look up the the file `[test-rig-name].yaml` which is supposed to describe your test rig.
+ 7. Append `ODRIVE_TEST_RIG_NAME=[test-rig-name]` to `/etc/environment`. The HWIL tests use this to look up the the file `[test-rig-name].yaml` which is supposed to describe your test rig.
 
- 6. Reboot.
+ 8. Reboot.
 
- 7. Install the prerequisites:
+ 9. Install the prerequisites:
 
         sudo apt-get install ipython3 python3-appdirs python3-yaml python3-jinja2 python3-usb python3-serial python3-can python3-scipy python3-matplotlib python3-ipdb git openocd
         # Optionally, to be able to compile the firmware:
         sudo apt-get install gcc-arm-none-eabi
 
- 8. Install Teensyduino and teensy-loader-cli:
+ 10. Install Teensyduino and teensy-loader-cli:
 
         sudo apt-get install libfontconfig libxft2 libusb-dev
 
@@ -93,20 +99,20 @@ If your test rig differs, you may be able to run some but not all of the tests.
         popd
         curl https://www.pjrc.com/teensy/49-teensy.rules | sudo tee /etc/udev/rules.d/49-teensy.rules
 
- 9. Add the following lines to `/etc/udev/rules.d/49-stlinkv2.rules`:
+ 11. Add the following lines to `/etc/udev/rules.d/49-stlinkv2.rules`:
 
         SUBSYSTEMS=="usb", ATTRS{idVendor}=="0483", ATTRS{idProduct}=="374b", MODE:="0666"
         SUBSYSTEMS=="usb", ATTRS{idVendor}=="0483", ATTRS{idProduct}=="3748", MODE:="0666"
 
- 10. `sudo mkdir /opt/odrivetest && sudo chown $USER /opt/odrivetest`
+ 12. `sudo mkdir /opt/odrivetest && sudo chown $USER /opt/odrivetest`
 
- 11. At this point you need the ODrive repository. See next section to sync it from your main PC. We assume now that you navigated to `tools/odrive/tests/`.
+ 13. At this point you need the ODrive repository. See next section to sync it from your main PC. We assume now that you navigated to `tools/odrive/tests/`.
 
- 12. `sudo ../../odrivetool udev-setup`
+ 14. `sudo ../../odrivetool udev-setup`
 
- 13. `sudo udevadm trigger`
+ 15. `sudo udevadm trigger`
 
- 14. Run once after every reboot: `sudo -E ipython3 --pdb test_runner.py -- --setup-host`
+ 16. Run once after every reboot: `sudo -E ipython3 --pdb test_runner.py -- --setup-host`
 
 ## SSH testing flow
 

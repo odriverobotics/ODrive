@@ -9,12 +9,9 @@
 
 // STM specific includes
 #include <stm32f4xx_hal.h>
-#include <gpio.h>
-#include <spi.h>
 #include <tim.h>
-#include <can.h>
 #include <i2c.h>
-#include <usb_device.h>
+#include <usbd_def.h>
 #include <main.h>
 #include "cmsis_os.h"
 
@@ -34,8 +31,6 @@
 // ODrive v3.4 and earlier don't have GPIOs 6, 7 and 8 but to keep the numbering
 // consistent we just leave a gap in the counting scheme.
 #define GPIO_COUNT  (17)
-
-#define CAN_FREQ (2000000UL)
 
 #if HW_VERSION_MINOR >= 5 && HW_VERSION_VOLTAGE >= 48
 #define DEFAULT_BRAKE_RESISTANCE (2.0f) // [ohm]
@@ -80,7 +75,9 @@
 #include <Drivers/DRV8301/drv8301.hpp>
 #include <Drivers/STM32/stm32_gpio.hpp>
 #include <Drivers/STM32/stm32_spi_arbiter.hpp>
-#include <MotorControl/pwm_input.hpp>
+#include <Drivers/STM32/stm32_usart.hpp>
+#include <interfaces/canbus.hpp>
+#include <interfaces/pwm_output_group.hpp>
 #include <MotorControl/thermistor.hpp>
 
 using TGateDriver = Drv8301;
@@ -89,24 +86,44 @@ using TOpAmp = Drv8301;
 #include <MotorControl/motor.hpp>
 #include <MotorControl/encoder.hpp>
 
+
+#include <interfaces/board_support_package.hpp>
+
+struct BoardTraits {
+    constexpr static const unsigned _AXIS_COUNT = AXIS_COUNT;
+    constexpr static const unsigned _GPIO_COUNT = GPIO_COUNT;
+#if HW_VERSION_MINOR < 3
+    constexpr static const unsigned UART_COUNT = 0;
+#else
+    constexpr static const unsigned UART_COUNT = 2;
+#endif
+    constexpr static const unsigned CANBUS_COUNT = 1;
+    constexpr static const unsigned SPI_COUNT = 1;
+    constexpr static const unsigned INC_ENC_COUNT = 2;
+};
+using BoardSupportPackage = BoardSupportPackageBase<BoardTraits>;
+
+extern BoardSupportPackage board;
+
+
 extern std::array<Axis, AXIS_COUNT> axes;
 extern Motor motors[AXIS_COUNT];
-extern OnboardThermistorCurrentLimiter fet_thermistors[AXIS_COUNT];
 extern Encoder encoders[AXIS_COUNT];
-extern Stm32Gpio gpios[GPIO_COUNT];
 
 struct GpioFunction { int mode = 0; uint8_t alternate_function = 0xff; };
 extern std::array<GpioFunction, 3> alternate_functions[GPIO_COUNT];
 
-extern USBD_HandleTypeDef& usb_dev_handle;
+extern USBD_HandleTypeDef usb_dev_handle;
 
 extern Stm32SpiArbiter& ext_spi_arbiter;
 
-extern UART_HandleTypeDef* uart_a;
-extern UART_HandleTypeDef* uart_b;
-extern UART_HandleTypeDef* uart_c;
+extern PwmOutputGroup<1>& brake_resistor_output;
 
-extern PwmInput pwm0_input;
+// Points to a counter that resets at the main control loop frequency. The unit
+// of this counter is an implementation detail. The period is indicated by
+// `board_control_loop_counter_period`.
+extern volatile uint32_t& board_control_loop_counter;
+extern uint32_t board_control_loop_counter_period;
 #endif
 
 // Period in [s]
@@ -117,27 +134,7 @@ static const float current_meas_period = CURRENT_MEAS_PERIOD;
 #define CURRENT_MEAS_HZ ( (float)(TIM_1_8_CLOCK_HZ) / (float)(2*TIM_1_8_PERIOD_CLOCKS*(TIM_1_8_RCR+1)) )
 static const int current_meas_hz = CURRENT_MEAS_HZ;
 
-#if HW_VERSION_VOLTAGE >= 48
-#define VBUS_S_DIVIDER_RATIO 19.0f
-#elif HW_VERSION_VOLTAGE == 24
-#define VBUS_S_DIVIDER_RATIO 11.0f
-#else
-#error "unknown board voltage"
-#endif
 
-// Linear range of the DRV8301 opamp output: 0.3V...5.7V. We set the upper limit
-// to 3.0V so that it's symmetric around the center point of 1.65V.
-#define CURRENT_SENSE_MIN_VOLT  0.3f
-#define CURRENT_SENSE_MAX_VOLT  3.0f
-
-// This board has no board-specific user configurations
-static inline bool board_read_config() { return true; }
-static inline bool board_write_config() { return true; }
-static inline void board_clear_config() { }
-static inline bool board_apply_config() { return true; }
-
-void system_init();
-bool board_init();
 void start_timers();
 
 #endif // __BOARD_CONFIG_H

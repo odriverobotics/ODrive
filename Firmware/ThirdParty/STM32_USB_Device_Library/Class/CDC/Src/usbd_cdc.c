@@ -57,7 +57,7 @@ EndBSPDependencies */
 
 /* Includes ------------------------------------------------------------------*/
 #include "usbd_cdc.h"
-#include "usbd_desc.h"
+//#include "usbd_desc.h"
 #include "usbd_ctlreq.h"
 #include <cmsis_os.h>
 #include <freertos_vars.h>
@@ -157,7 +157,6 @@ USBD_ClassTypeDef  USBD_CDC =
   USBD_CDC_GetFSCfgDesc,
   USBD_CDC_GetOtherSpeedCfgDesc,
   USBD_CDC_GetDeviceQualifierDescriptor,
-  USBD_UsrStrDescriptor
 };
 
 /* USB CDC device Configuration Descriptor */
@@ -729,7 +728,7 @@ uint8_t USBD_CDC_RegisterInterface(USBD_HandleTypeDef *pdev,
   return (uint8_t)USBD_OK;
 }
 
-
+#if 0
 /**
   * @brief  USBD_CDC_TransmitPacket
   *         Transmit packet on IN endpoint
@@ -775,6 +774,7 @@ uint8_t USBD_CDC_TransmitPacket(USBD_HandleTypeDef *pdev, uint8_t* buf, size_t l
     return USBD_FAIL;
   }
 }
+#endif
 
 
 /**

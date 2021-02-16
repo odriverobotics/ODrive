@@ -279,6 +279,13 @@ class ODriveComponent(Component):
         logger.debug('waiting for {} ({})'.format(self.yaml['name'], self.yaml['serial-number']))
         self.handle = odrive.find_any(channel_termination_token=shutdown_token, serial_number=self.yaml['serial-number'], timeout=60)#, printer=print)
         assert(self.handle)
+
+        # Wait for axis thread to launch (and DC calib to converge)
+        for i in range(20):
+            if self.handle.axis0.current_state != AXIS_STATE_UNDEFINED:
+                break
+            time.sleep(0.1)
+
         #for axis_idx, axis_ctx in enumerate(self.axes):
         #    axis_ctx.handle = getattr(self.handle, f'axis{axis_idx}')
         for encoder_idx, encoder_ctx in enumerate(self.encoders):
@@ -297,20 +304,18 @@ class ODriveComponent(Component):
 
     def save_config_and_reboot(self):
         try:
-            self.handle.save_configuration()
-        except fibre.ObjectLostError:
-            pass # this is expected
-        self.handle = None
-        time.sleep(2)
+            if not self.handle.save_configuration():
+                raise Exception("failed to save config")
+        except fibre.ObjectLostError: # this is expected
+            self.handle = None
         self.prepare(logger)
 
     def erase_config_and_reboot(self):
         try:
             self.handle.erase_configuration()
-        except fibre.ObjectLostError:
-            pass # this is expected
-        self.handle = None
-        time.sleep(2)
+            self.handle.reboot()
+        except fibre.ObjectLostError: # this is expected
+            self.handle = None
         self.prepare(logger)
 
 class MotorComponent(Component):
@@ -1074,7 +1079,10 @@ if args.setup_host:
             run_shell(f'slcand -o -c -s5 \'{path}\' {name}', logger)
         else:
             run_shell('ip link set dev {} type can bitrate 250000'.format(name), logger)
-            run_shell('ip link set dev {} type can loopback off'.format(name), logger)
+            try:
+                run_shell('ip link set dev {} type can loopback off'.format(name), logger)
+            except:
+                logger.warn(f"can't turn off loopback on {name}")
         run_shell('ip link set dev {} up'.format(name), logger)
 
 
