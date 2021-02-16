@@ -165,10 +165,9 @@ bool Stm32Can::unsubscribe(CanSubscription* handle) {
 
     subscription->fifo = kCanFifoNone;
 
-    CAN_FilterTypeDef hal_filter = {
-        .FilterBank = (uint32_t)(subscription - &subscriptions_[0]),
-        .FilterActivation = DISABLE
-    };
+    CAN_FilterTypeDef hal_filter = {};
+    hal_filter.FilterBank = (uint32_t)(subscription - &subscriptions_[0]);
+    hal_filter.FilterActivation = DISABLE;
     return HAL_CAN_ConfigFilter(&handle_, &hal_filter) == HAL_OK;
 }
 
