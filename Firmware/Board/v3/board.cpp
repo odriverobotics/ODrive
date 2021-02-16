@@ -761,10 +761,12 @@ void HAL_SPI_TxRxCpltCallback(SPI_HandleTypeDef *hspi) {
     }
 }
 
+#if HW_VERSION_MINOR >= 3
 void TIM5_IRQHandler(void) {
     COUNT_IRQ(TIM5_IRQn);
     pwm_inputs[0].on_capture();
 }
+#endif
 
 volatile uint32_t timestamp_ = 0;
 volatile bool counting_down_ = false;
