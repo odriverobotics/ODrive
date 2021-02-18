@@ -11,7 +11,6 @@
 
 #include <doctest.h>
 
-#include <communication/can/can_helpers.hpp>
 
 using std::cout;
 using std::endl;
