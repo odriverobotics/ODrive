@@ -3,7 +3,7 @@
 #include <algorithm>
 #include <cstring>
 
-#include "communication/can/can_helpers.hpp"
+#include "../interfaces/can_helpers.hpp"
 
 enum InputMode {
     INPUT_MODE_INACTIVE,
@@ -15,21 +15,6 @@ enum InputMode {
 };
 
 TEST_SUITE("CAN Functions") {
-    TEST_CASE("reverse") {
-        can_Message_t rxmsg;
-        rxmsg.id = 0x000;
-        rxmsg.isExt = false;
-        rxmsg.len = 8;
-
-        rxmsg.buf[0] = 0x12;
-        rxmsg.buf[1] = 0x34;
-
-        std::reverse(std::begin(rxmsg.buf), std::end(rxmsg.buf));
-        CHECK(rxmsg.buf[0] == 0x00);
-        CHECK(rxmsg.buf[6] == 0x34);
-        CHECK(rxmsg.buf[7] == 0x12);
-    }
-
     TEST_CASE("getSignal") {
         can_Message_t rxmsg;
 
@@ -57,6 +42,14 @@ TEST_SUITE("CAN Functions") {
         msg.buf[2] = 0x00;
         msg.buf[3] = 0x00;
         CHECK(can_getSignal<int32_t>(msg, 0, 32, true, 0.01f, 0.0f) == 1.50f);
+
+        const auto bigVal = 0x123ULL << 28ULL;
+        std::memcpy(rxmsg.buf, &bigVal, sizeof(bigVal));
+        CHECK(can_getSignal<uint64_t>(rxmsg, 28, 12, true) == 0x123ULL);
+
+        const auto myVal = 0xDEADBEEF;
+        std::memcpy(&rxmsg.buf[15], &myVal, sizeof(myVal));
+        CHECK(can_getSignal<int>(rxmsg, 120, 32, true) == 0xDEADBEEF);
     }
 
     TEST_CASE("setSignal") {
