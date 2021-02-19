@@ -231,7 +231,7 @@ std::vector<LegacyFibreArg> parse_arglist(const json_value& list_val) {
     return arglist;
 }
 
-void LegacyObjectClient::start(Callback<void, LegacyObjectClient*, std::shared_ptr<LegacyObject>> on_found_root_object, Callback<void, LegacyObjectClient*> on_lost_root_object) {
+void LegacyObjectClient::start(Callback<void, LegacyObjectClient*, std::shared_ptr<LegacyObject>> on_found_root_object, Callback<void, LegacyObjectClient*, std::shared_ptr<LegacyObject>> on_lost_root_object) {
     FIBRE_LOG(D) << "start";
     on_found_root_object_ = on_found_root_object;
     on_lost_root_object_ = on_lost_root_object;

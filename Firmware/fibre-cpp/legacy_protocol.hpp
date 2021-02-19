@@ -114,7 +114,7 @@ public:
 #endif
 
 #if FIBRE_ENABLE_CLIENT
-    void start(Callback<void, LegacyObjectClient*, std::shared_ptr<LegacyObject>> on_found_root_object, Callback<void, LegacyObjectClient*> on_lost_root_object, Callback<void, LegacyProtocolPacketBased*, StreamStatus> on_stopped);
+    void start(Callback<void, LegacyObjectClient*, std::shared_ptr<LegacyObject>> on_found_root_object, Callback<void, LegacyObjectClient*, std::shared_ptr<LegacyObject>> on_lost_root_object, Callback<void, LegacyProtocolPacketBased*, StreamStatus> on_stopped);
 #else
     void start(Callback<void, LegacyProtocolPacketBased*, StreamStatus> on_stopped);
 #endif
@@ -154,7 +154,7 @@ public:
 
 
 #if FIBRE_ENABLE_CLIENT
-    void start(Callback<void, LegacyObjectClient*, std::shared_ptr<LegacyObject>> on_found_root_object, Callback<void, LegacyObjectClient*> on_lost_root_object, Callback<void, LegacyProtocolPacketBased*, StreamStatus> on_stopped) {
+    void start(Callback<void, LegacyObjectClient*, std::shared_ptr<LegacyObject>> on_found_root_object, Callback<void, LegacyObjectClient*, std::shared_ptr<LegacyObject>> on_lost_root_object, Callback<void, LegacyProtocolPacketBased*, StreamStatus> on_stopped) {
         inner_protocol_.start(on_found_root_object, on_lost_root_object, on_stopped);
     }
 #else

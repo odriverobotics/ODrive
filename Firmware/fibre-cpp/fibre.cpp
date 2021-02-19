@@ -210,8 +210,8 @@ void Context::deregister_backend(std::string name) {
 void Domain::start_discovery(Callback<void, Object*, Interface*> on_found_object, Callback<void, Object*> on_lost_object) {
     on_found_object_ = on_found_object;
     on_lost_object_ = on_lost_object;
-    if (root_object_) {
-        on_found_object_.invoke(root_object_, root_intf_);
+    for (auto& it: root_objects_) {
+        on_found_object_.invoke(it.first, it.second);
     }
 }
 
@@ -219,8 +219,8 @@ void Domain::stop_discovery() {
     auto on_lost_object = on_lost_object_;
     on_found_object_ = nullptr;
     on_lost_object_ = nullptr;
-    if (root_object_) {
-        on_lost_object.invoke(root_object_);
+    for (auto& it: root_objects_) {
+        on_lost_object.invoke(it.first);
     }
 }
 #endif
@@ -251,16 +251,17 @@ void Domain::on_found_channels(ChannelDiscoveryResult result) {
 
 #if FIBRE_ENABLE_CLIENT
 void Domain::on_found_root_object(LegacyObjectClient* obj_client, std::shared_ptr<LegacyObject> obj) {
-    root_object_ = reinterpret_cast<Object*>(obj.get());
-    root_intf_ = reinterpret_cast<Interface*>(obj->intf.get());
-    on_found_object_.invoke(root_object_, root_intf_);
+    Object* root_object = reinterpret_cast<Object*>(obj.get());
+    Interface* root_intf = reinterpret_cast<Interface*>(obj->intf.get());
+    root_objects_[root_object] = root_intf;
+    on_found_object_.invoke(root_object, root_intf);
 }
 
-void Domain::on_lost_root_object(LegacyObjectClient* obj_client) {
-    auto root_object = root_object_;
-    root_object_ = nullptr;
-    root_intf_ = nullptr;
-    on_lost_object_.invoke(reinterpret_cast<Object*>(root_object));
+void Domain::on_lost_root_object(LegacyObjectClient* obj_client, std::shared_ptr<LegacyObject> obj) {
+    Object* root_object = reinterpret_cast<Object*>(obj.get());
+    auto it = root_objects_.find(root_object);
+    root_objects_.erase(it);
+    on_lost_object_.invoke(root_object);
 }
 #endif
 

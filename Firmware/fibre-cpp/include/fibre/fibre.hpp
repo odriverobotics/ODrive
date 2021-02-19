@@ -106,7 +106,7 @@ public:
 private:
 #if FIBRE_ENABLE_CLIENT
     void on_found_root_object(LegacyObjectClient* obj_client, std::shared_ptr<LegacyObject> obj);
-    void on_lost_root_object(LegacyObjectClient* obj_client);
+    void on_lost_root_object(LegacyObjectClient* obj_client, std::shared_ptr<LegacyObject> obj);
 #endif
     void on_stopped(LegacyProtocolPacketBased* protocol, StreamStatus status);
 
@@ -116,8 +116,7 @@ private:
 #if FIBRE_ENABLE_CLIENT
     Callback<void, Object*, Interface*> on_found_object_;
     Callback<void, Object*> on_lost_object_;
-    Object* root_object_ = nullptr;
-    Interface* root_intf_ = nullptr;
+    std::unordered_map<Object*, Interface*> root_objects_;
 #endif
 };
 

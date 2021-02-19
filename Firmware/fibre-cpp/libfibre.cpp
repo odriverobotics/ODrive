@@ -10,7 +10,7 @@
 DEFINE_LOG_TOPIC(LIBFIBRE);
 USE_LOG_TOPIC(LIBFIBRE);
 
-static const struct LibFibreVersion libfibre_version = { 0, 1, 0 };
+static const struct LibFibreVersion libfibre_version = { 0, 1, 1 };
 
 class FIBRE_PRIVATE ExternalEventLoop final : public fibre::EventLoop {
 public:

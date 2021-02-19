@@ -243,6 +243,7 @@ class ObjectPtrCodec():
         if value is None:
             return struct.pack("P", 0)
         elif isinstance(value, RemoteObject):
+            assert(value._obj_handle) # Cannot serialize reference to a lost object
             return struct.pack("P", value._obj_handle)
         else:
             raise TypeError("Expected value of type RemoteObject or None but got '{}'. An example for a RemoteObject is this expression: odrv0.axis0.controller._input_pos_property".format(type(value).__name__))
@@ -642,6 +643,11 @@ class RemoteAttribute(object):
         else:
             raise Exception("this attribute cannot be written to")
 
+class EmptyInterface():
+    def __str__(self):
+        return "[lost object]"
+    def __repr__(self):
+        return self.__str__()
 
 class RemoteObject(object):
     """
@@ -725,6 +731,7 @@ class RemoteObject(object):
         if self.__class__._refcount == 0:
             libfibre.interfaces.pop(self.__class__._handle)
 
+        self.__class__ = EmptyInterface # ensure that this object has no more attributes
         on_lost.set_result(True)
 
 
@@ -844,6 +851,7 @@ class LibFibre():
         old_future.set_result(None)
     
     def _on_lost_object(self, ctx, obj):
+        assert(obj)
         self._release_py_obj(obj)
     
     def _on_discovery_stopped(self, ctx, result):

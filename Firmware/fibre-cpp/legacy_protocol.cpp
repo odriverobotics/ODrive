@@ -541,15 +541,16 @@ void LegacyProtocolPacketBased::on_rx_tx_closed(StreamStatus status) {
 
     // Report that the root object was lost
     if (client_.on_lost_root_object_ && client_.root_obj_) {
+        auto root_obj = client_.root_obj_;
         client_.root_obj_ = nullptr;
-        client_.on_lost_root_object_.invoke(&client_);
+        client_.on_lost_root_object_.invoke(&client_, root_obj);
     }
 #endif
     on_stopped_.invoke_and_clear(this, status);
 }
 
 #if FIBRE_ENABLE_CLIENT
-void LegacyProtocolPacketBased::start(Callback<void, LegacyObjectClient*, std::shared_ptr<LegacyObject>> on_found_root_object, Callback<void, LegacyObjectClient*> on_lost_root_object, Callback<void, LegacyProtocolPacketBased*, StreamStatus> on_stopped) {
+void LegacyProtocolPacketBased::start(Callback<void, LegacyObjectClient*, std::shared_ptr<LegacyObject>> on_found_root_object, Callback<void, LegacyObjectClient*, std::shared_ptr<LegacyObject>> on_lost_root_object, Callback<void, LegacyProtocolPacketBased*, StreamStatus> on_stopped) {
 #else
 void LegacyProtocolPacketBased::start(Callback<void, LegacyProtocolPacketBased*, StreamStatus> on_stopped) {
 #endif
