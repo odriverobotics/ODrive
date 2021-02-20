@@ -563,7 +563,7 @@ void Encoder::abs_spi_cb(bool success) {
         case MODE_SPI_ABS_AMS: {
             uint16_t rawVal = abs_spi_dma_rx_[0];
             // check if parity is correct (even) and error flag clear
-            if (ams_parity(rawVal) || ((rawVal >> 14) & 1)) {
+            if (ams_parity(rawVal & 0x7FFF) || ((rawVal >> 14) & 1)) {
                 goto done;
             }
             pos = rawVal & 0x3fff;

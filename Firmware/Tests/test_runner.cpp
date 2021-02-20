@@ -118,7 +118,7 @@ TEST_SUITE("vel_ramp") {
         return std::clamp(full_step, -max_step_size, max_step_size);
     }
     
-    uint8_t parity(uint16_t v) {
+    uint8_t ams_parity(uint16_t v) {
         v ^= v >> 8;
         v ^= v >> 4;
         v ^= v >> 2;
@@ -149,8 +149,8 @@ TEST_SUITE("vel_ramp") {
     }
 
     TEST_CASE("Parity") {
-        CHECK(parity(0x0DDF & 0x7FFF) == 0);
-        CHECK(parity(0x8DDF & 0x7FFF) == 0);
-        CHECK(parity(0x5BFF & 0x7FFF) == 1);
+        CHECK(ams_parity(0x0DDF & 0x7FFF) == 0);
+        CHECK(ams_parity(0x8DDF & 0x7FFF) == 0);
+        CHECK(ams_parity(0x5BFF & 0x7FFF) == 1);
     }
 }
