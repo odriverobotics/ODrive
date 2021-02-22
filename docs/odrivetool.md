@@ -100,7 +100,7 @@ To compile firmware from source, refer to the [developer guide](developer-guide)
 ### Upgrading firmware with a different DFU tool
 Some people have had issues using the python dfu tool, so below is a guide on how to manually use different tools.
 
-Before starting the below steps, you need to get firmware binary. You can download one of the officially released firmware files from [here](https://github.com/madcowswe/ODrive/releases). Make sure you select the file that matches your board version. On Windows you will need one of the __.hex__ files, and for Linux and Mac you will want the __.elf__ file.
+Before starting the below steps, you need to get firmware binary. You can download one of the officially released firmware files from [here](https://github.com/madcowswe/ODrive/releases/latest). Make sure you select the file that matches your board version. On Windows you will need one of the __.hex__ files, and for Linux and Mac you will want the __.elf__ file.
 
 To compile firmware from source, refer to the [developer guide](developer-guide).
 
