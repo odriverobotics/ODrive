@@ -273,7 +273,7 @@ You can also directly control the current of the motor, which is proportional to
 - [Circular position control](#circular-position-control)
 - [Velocity control](#velocity-control)
 - [Ramped velocity control](#ramped-velocity-control)
-- [Current control](#current-control)
+- [Torque control](#torque-control)
 
 
 ### Filtered position control
