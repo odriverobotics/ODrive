@@ -621,6 +621,7 @@ std::variant<LegacyCallContext::ContinueWithApp, LegacyCallContext::ContinueWith
                 return ContinueWithApp{kFibreInternalError, app_tx_end_, app_rx_buf_.begin()};
             }
             transcoded_pos += arg.protocol_size;
+            tx_pos_ += arg.app_size;
         }
 
         tx_buf_ = transcoded;
@@ -647,6 +648,7 @@ std::variant<LegacyCallContext::ContinueWithApp, LegacyCallContext::ContinueWith
                 return ContinueWithApp{kFibreInternalError, app_tx_end_, app_rx_buf_.begin()};
             }
             transcoded_pos += arg.app_size;
+            rx_pos_ += arg.protocol_size;
         }
 
         rx_buf_ = transcoded;

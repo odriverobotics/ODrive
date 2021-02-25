@@ -22,7 +22,7 @@ USE_LOG_TOPIC(USB);
 
 // This probably has no noteworthy effect since we automatically restart
 // timed out operations anyway.
-constexpr unsigned int kBulkTimeoutMs = 2000;
+constexpr unsigned int kBulkTimeoutMs = 10000;
 
 // Only relevant for platforms don't support hotplug detection and thus
 // need polling.
@@ -635,6 +635,9 @@ void LibusbBulkEndpoint<TRes>::on_transfer_finished() {
         // Sometimes it's LIBUSB_TRANSFER_STALL, sometimes
         // LIBUSB_TRANSFER_ERROR. Therefore we just check if the device
         // is still present to determine which error code to return.
+        // TODO: this detection doesn't really work. The device is still in the
+        // device list at this point when it just got unplugged. For now we
+        // just ignore transfer errors.
 
         bool found = false;
 
@@ -644,6 +647,7 @@ void LibusbBulkEndpoint<TRes>::on_transfer_finished() {
         if (n_devices >= 0) {
             for (size_t i = 0; i < (size_t)n_devices; ++i) {
                 if (list[i] == dev) {
+                    // found = true;
                     break;
                 }
             }
