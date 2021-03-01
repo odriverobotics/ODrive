@@ -16,7 +16,8 @@ del get_version_str
 from .utils import get_serial_number_str, get_serial_number_str_sync
 import threading
 
-default_search_path = 'usb:idVendor=0x1209,idProduct=0x0D32,bInterfaceClass=0,bInterfaceSubClass=1,bInterfaceProtocol=0'
+default_usb_search_path = 'usb:idVendor=0x1209,idProduct=0x0D32,bInterfaceClass=0,bInterfaceSubClass=1,bInterfaceProtocol=0'
+default_search_path = default_usb_search_path
 
 def find_any(path=default_search_path, serial_number=None,
         search_cancellation_token=None, channel_termination_token=None,
