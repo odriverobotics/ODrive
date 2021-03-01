@@ -97,5 +97,8 @@ def restore_config(device, filename, logger):
     if errors:
         logger.warn("Some of the configuration could not be restored.")
     
-    device.save_configuration()
+    try:
+        device.save_configuration()
+    except fibre.libfibre.ObjectLostError:
+        pass # Saving configuration makes the device reboot
     logger.info("Configuration restored.")
