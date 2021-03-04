@@ -755,6 +755,9 @@ interfaces:
               [your encoder](https://docs.odriverobotics.com/encoders). The
               ODrive uses your supplied value for the motor pole pairs to
               measure the CPR. So you should also double check this value.
+              
+              If you are still having issues, you can try to increase
+              `encoder.config.calib_scan_distance` up to a factor of 4 above the default.
 
               Note that the AMT encoders are configurable using the micro-
               switches on the encoder PCB and so you may need to check that
