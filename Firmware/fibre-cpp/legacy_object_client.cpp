@@ -479,6 +479,12 @@ void LegacyCallContext::resume_from_protocol(EndpointOperationResult result) {
             auto app_result = callback.invoke(std::get<0>(continuation));
             if (!app_result.has_value()) {
                 return; // app will resume asynchronously
+            } else if (std::get<0>(continuation).status != kFibreOk) {
+                if (app_result->status != kFibreClosed || app_result->rx_buf.size() || app_result->tx_buf.size()) {
+                    FIBRE_LOG(W) << "app tried to continue a closed call";
+                }
+                FIBRE_LOG(T) << "closing call";
+                return;
             } else {
                 res = *app_result;
             }
@@ -491,6 +497,7 @@ void LegacyCallContext::resume_from_protocol(EndpointOperationResult result) {
             return; // protocol will return asynchronously
         } else {
             callback.invoke({kFibreInternalError, app_tx_end_, app_rx_buf_.begin()});
+            return;
         }
     }
 }
@@ -574,7 +581,7 @@ std::variant<LegacyCallContext::ContinueWithApp, LegacyCallContext::ContinueWith
             return ContinueWithApp{kFibreHostUnreachable, app_tx_end_, app_rx_buf_.begin()};
         } else if (result_from_protocol.status != kStreamOk) {
             FIBRE_LOG(W) << "protocol failed with " << result_from_protocol.status << " - propagating error to application";
-            return ContinueWithApp{kFibreInternalError, app_tx_end_, app_rx_buf_.begin()};
+            return ContinueWithApp{kFibreHostUnreachable, app_tx_end_, app_rx_buf_.begin()};
         }
 
         tx_pos_ = result_from_protocol.tx_end - tx_buf_.data();
@@ -590,7 +597,7 @@ std::variant<LegacyCallContext::ContinueWithApp, LegacyCallContext::ContinueWith
 
         ResultFromApp result_from_app = std::get<0>(continue_from);
 
-        if (result_from_app.status) {
+        if (result_from_app.status != kFibreOk && result_from_app.status != kFibreClosed) {
             FIBRE_LOG(W) << "application failed with " << result_from_app.status << " - dropping this call";
             return InternalError{};
         }
@@ -653,6 +660,8 @@ std::variant<LegacyCallContext::ContinueWithApp, LegacyCallContext::ContinueWith
 
         rx_buf_ = transcoded;
         rx_pos_ = 0;
+
+        FIBRE_LOG(T) << "rx buf is " << as_hex(cbufptr_t{rx_buf_});
     }
 
     progress++;

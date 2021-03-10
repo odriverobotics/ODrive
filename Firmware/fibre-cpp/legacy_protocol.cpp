@@ -523,6 +523,10 @@ void LegacyProtocolPacketBased::on_rx_closed(StreamStatus status) {
 }
 
 void LegacyProtocolPacketBased::on_rx_tx_closed(StreamStatus status) {
+    if (status == kStreamClosed || status == kStreamCancelled) {
+        // TODO: handle app-initiated cancellation via cancel_endpoint_operation() (currently unused)
+        status = kStreamError;
+    }
 
 #if FIBRE_ENABLE_CLIENT
     // Cancel pending endpoint operation

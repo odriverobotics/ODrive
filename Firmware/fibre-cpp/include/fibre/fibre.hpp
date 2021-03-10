@@ -100,7 +100,7 @@ public:
     void stop_discovery();
 #endif
 
-    void on_found_channels(ChannelDiscoveryResult result);
+    void add_channels(ChannelDiscoveryResult result);
 
     Context* ctx;
 private:

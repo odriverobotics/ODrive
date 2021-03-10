@@ -20,14 +20,14 @@ public:
     bool init(EventLoop* event_loop);
     bool deinit();
 
-    void start_channel_discovery(const char* specs, size_t specs_len, ChannelDiscoveryContext** handle, Callback<void, ChannelDiscoveryResult> on_found_channels) final;
+    void start_channel_discovery(Domain* domain, const char* specs, size_t specs_len, ChannelDiscoveryContext** handle) final;
     int stop_channel_discovery(ChannelDiscoveryContext* handle) final;
 
 private:
     struct TcpChannelDiscoveryContext {
         PosixTcpBackend* parent;
         std::tuple<std::string, int> address;
-        Callback<void, ChannelDiscoveryResult> on_found_channels;
+        Domain* domain;
         AddressResolutionContext* addr_resolution_ctx;
         ConnectionContext* connection_ctx;
         float lookup_period = 1.0f; // wait 1s for next address resolution

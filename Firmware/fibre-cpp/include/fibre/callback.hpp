@@ -56,20 +56,20 @@ public:
         return cb_;
     }
     
-    TRet invoke(TArgs ... result) const {
+    TRet invoke(TArgs ... arg) const {
         if (cb_) {
-            return (*cb_)(ctx_, result...);
+            return (*cb_)(ctx_, arg...);
         }
         return detail::get_default<TRet>::val();
     }
 
-    TRet invoke_and_clear(TArgs ... result) {
+    TRet invoke_and_clear(TArgs ... arg) {
         void* ctx = ctx_;
         auto cb = cb_;
         ctx_ = nullptr;
         cb_ = nullptr;
         if (cb) {
-            return (*cb)(ctx, result...);
+            return (*cb)(ctx, arg...);
         }
         return detail::get_default<TRet>::val();
     }

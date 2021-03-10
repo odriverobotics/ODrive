@@ -10,7 +10,53 @@
 DEFINE_LOG_TOPIC(LIBFIBRE);
 USE_LOG_TOPIC(LIBFIBRE);
 
-static const struct LibFibreVersion libfibre_version = { 0, 1, 2 };
+
+struct LibFibreChannelDiscoveryCtx {
+    fibre::Domain* domain;
+};
+
+LibFibreFunction* to_c(fibre::Function* ptr) {
+    return reinterpret_cast<LibFibreFunction*>(ptr);
+}
+fibre::Function* from_c(LibFibreFunction* ptr) {
+    return reinterpret_cast<fibre::Function*>(ptr);
+}
+void** from_c(LibFibreCallContext** ptr) {
+    return reinterpret_cast<void**>(ptr);
+}
+LibFibreDomain* to_c(fibre::Domain* ptr) {
+    return reinterpret_cast<LibFibreDomain*>(ptr);
+}
+fibre::Domain* from_c(LibFibreDomain* ptr) {
+    return reinterpret_cast<fibre::Domain*>(ptr);
+}
+LibFibreObject* to_c(fibre::Object* ptr) {
+    return reinterpret_cast<LibFibreObject*>(ptr);
+}
+fibre::Object* from_c(LibFibreObject* ptr) {
+    return reinterpret_cast<fibre::Object*>(ptr);
+}
+LibFibreInterface* to_c(fibre::Interface* ptr) {
+    return reinterpret_cast<LibFibreInterface*>(ptr);
+}
+fibre::Interface* from_c(LibFibreInterface* ptr) {
+    return reinterpret_cast<fibre::Interface*>(ptr);
+}
+LibFibreStatus to_c(fibre::Status status) {
+    return static_cast<LibFibreStatus>(status);
+}
+fibre::Status from_c(LibFibreStatus status) {
+    return static_cast<fibre::Status>(status);
+}
+LibFibreChannelDiscoveryCtx* to_c(fibre::ChannelDiscoveryContext* ptr) {
+    return reinterpret_cast<LibFibreChannelDiscoveryCtx*>(ptr);
+}
+fibre::ChannelDiscoveryContext* from_c(LibFibreChannelDiscoveryCtx* ptr) {
+    return reinterpret_cast<fibre::ChannelDiscoveryContext*>(ptr);
+}
+
+
+static const struct LibFibreVersion libfibre_version = { 0, 1, 3 };
 
 class FIBRE_PRIVATE ExternalEventLoop final : public fibre::EventLoop {
 public:
@@ -45,9 +91,9 @@ private:
 
 class ExternalDiscoverer : public fibre::ChannelDiscoverer {
     void start_channel_discovery(
+        fibre::Domain* domain,
         const char* specs, size_t specs_len,
-        fibre::ChannelDiscoveryContext** handle,
-        fibre::Callback<void, fibre::ChannelDiscoveryResult> on_found_channels) final;
+        fibre::ChannelDiscoveryContext** handle) final;
     int stop_channel_discovery(fibre::ChannelDiscoveryContext* handle) final;
 public:
     on_start_discovery_cb_t on_start_discovery;
@@ -55,25 +101,21 @@ public:
     void* cb_ctx;
 };
 
-struct LibFibreChannelDiscoveryCtx : fibre::ChannelDiscoveryContext {
-    fibre::Callback<void, fibre::ChannelDiscoveryResult> completer;
-};
 
-void ExternalDiscoverer::start_channel_discovery(const char* specs, size_t specs_len, fibre::ChannelDiscoveryContext** handle, fibre::Callback<void, fibre::ChannelDiscoveryResult> on_found_channels) {
+void ExternalDiscoverer::start_channel_discovery(fibre::Domain* domain, const char* specs, size_t specs_len, fibre::ChannelDiscoveryContext** handle) {
     LibFibreChannelDiscoveryCtx* ctx = new LibFibreChannelDiscoveryCtx{};
-    ctx->completer = on_found_channels;
     if (handle) {
-        *handle = ctx;
+        *handle = from_c(ctx);
     }
     if (on_start_discovery) {
-        (*on_start_discovery)(cb_ctx, ctx, specs, specs_len);
+        (*on_start_discovery)(cb_ctx, to_c(domain), specs, specs_len);
     }
 }
 
 int ExternalDiscoverer::stop_channel_discovery(fibre::ChannelDiscoveryContext* handle) {
-    LibFibreChannelDiscoveryCtx* ctx = static_cast<LibFibreChannelDiscoveryCtx*>(handle);
+    LibFibreChannelDiscoveryCtx* ctx = to_c(handle);
     if (on_stop_discovery) {
-        (*on_stop_discovery)(cb_ctx, ctx);
+        (*on_stop_discovery)(cb_ctx, to_c(ctx->domain));
     }
     delete ctx;
     return 0;
@@ -116,13 +158,11 @@ void AsyncStreamLink::cancel_write(TransferHandle transfer_handle) {
 
 void AsyncStreamLink::start_read(bufptr_t buffer, TransferHandle* handle, Callback<void, ReadResult> completer) {
     if (write_completer_) {
-        FIBRE_LOG(W) << "start_read: completing writer";
         size_t n_copy = std::min(buffer.size(), write_buf_.size());
         memcpy(buffer.begin(), write_buf_.begin(), n_copy);
         write_completer_.invoke_and_clear({kStreamOk, write_buf_.begin() + n_copy});
         completer.invoke({kStreamOk, buffer.begin() + n_copy});
     } else {
-        //FIBRE_LOG(W) << "start_read: waiting for writer";
         if (handle) {
             *handle = reinterpret_cast<uintptr_t>(this);
         }
@@ -207,39 +247,6 @@ struct LibFibreRxStream {
     void* on_closed_ctx;
 };
 
-LibFibreFunction* to_c(fibre::Function* ptr) {
-    return reinterpret_cast<LibFibreFunction*>(ptr);
-}
-fibre::Function* from_c(LibFibreFunction* ptr) {
-    return reinterpret_cast<fibre::Function*>(ptr);
-}
-void** from_c(LibFibreCallContext** ptr) {
-    return reinterpret_cast<void**>(ptr);
-}
-LibFibreDomain* to_c(fibre::Domain* ptr) {
-    return reinterpret_cast<LibFibreDomain*>(ptr);
-}
-fibre::Domain* from_c(LibFibreDomain* ptr) {
-    return reinterpret_cast<fibre::Domain*>(ptr);
-}
-LibFibreObject* to_c(fibre::Object* ptr) {
-    return reinterpret_cast<LibFibreObject*>(ptr);
-}
-fibre::Object* from_c(LibFibreObject* ptr) {
-    return reinterpret_cast<fibre::Object*>(ptr);
-}
-LibFibreInterface* to_c(fibre::Interface* ptr) {
-    return reinterpret_cast<LibFibreInterface*>(ptr);
-}
-fibre::Interface* from_c(LibFibreInterface* ptr) {
-    return reinterpret_cast<fibre::Interface*>(ptr);
-}
-LibFibreStatus to_c(fibre::Status status) {
-    return static_cast<LibFibreStatus>(status);
-}
-fibre::Status from_c(LibFibreStatus status) {
-    return static_cast<fibre::Status>(status);
-}
 
 void LibFibreDiscoveryCtx::on_found_object(fibre::Object* obj, fibre::Interface* intf) {
     if (on_found_object_) {
@@ -320,10 +327,10 @@ void libfibre_close_domain(LibFibreDomain* domain) {
 }
 
 void libfibre_add_channels(LibFibreDomain* domain, LibFibreRxStream** tx_channel, LibFibreTxStream** rx_channel, size_t mtu) {
-    fibre::AsyncStreamLink* tx_link = new fibre::AsyncStreamLink();
-    fibre::AsyncStreamLink* rx_link = new fibre::AsyncStreamLink();
-    LibFibreRxStream* tx = new LibFibreRxStream();
-    LibFibreTxStream* rx = new LibFibreTxStream();
+    fibre::AsyncStreamLink* tx_link = new fibre::AsyncStreamLink(); // libfibre => backend
+    fibre::AsyncStreamLink* rx_link = new fibre::AsyncStreamLink(); // backend => libfibre
+    LibFibreRxStream* tx = new LibFibreRxStream(); // libfibre => backend
+    LibFibreTxStream* rx = new LibFibreTxStream(); // backend => libfibre
     tx->source = tx_link;
     rx->sink = rx_link;
 
@@ -351,7 +358,7 @@ void libfibre_add_channels(LibFibreDomain* domain, LibFibreRxStream** tx_channel
     }
 
     fibre::ChannelDiscoveryResult result = {fibre::kFibreOk, rx_link, tx_link, mtu};
-    from_c(domain)->on_found_channels(result);
+    from_c(domain)->add_channels(result);
 }
 
 void libfibre_start_discovery(LibFibreDomain* domain, LibFibreDiscoveryCtx** handle,

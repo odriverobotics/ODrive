@@ -7,6 +7,7 @@
 #include "libusb_transport.hpp"
 #include "../logging.hpp"
 #include "../print_utils.hpp"
+#include <fibre/fibre.hpp>
 
 #include <algorithm>
 #include <string.h>
@@ -213,7 +214,7 @@ bool LibusbDiscoverer::deinit(int stage) {
  *        This callback will also be called for any matching channels that already exist when
  *        the discovery is started.
  */
-void LibusbDiscoverer::start_channel_discovery(const char* specs, size_t specs_len, ChannelDiscoveryContext** handle, Callback<void, ChannelDiscoveryResult> on_found_channels) {
+void LibusbDiscoverer::start_channel_discovery(Domain* domain, const char* specs, size_t specs_len, ChannelDiscoveryContext** handle) {
     FIBRE_LOG(D) << "starting discovery with filter \"" << std::string(specs, specs_len) << "\"";
 
     InterfaceSpecs interface_specs;
@@ -228,7 +229,7 @@ void LibusbDiscoverer::start_channel_discovery(const char* specs, size_t specs_l
 
     MyChannelDiscoveryContext* subscription = new MyChannelDiscoveryContext{};
     subscription->interface_specs = interface_specs;
-    subscription->on_found_channels = on_found_channels;
+    subscription->domain = domain;
     subscriptions_.push_back(subscription);
 
     for (auto& dev: known_devices_) {
@@ -517,7 +518,7 @@ void LibusbDiscoverer::consider_device(struct libusb_device *device, MyChannelDi
                     ep_out = nullptr;
                 }
 
-                subscription->on_found_channels.invoke({kFibreOk, ep_in, ep_out, mtu});
+                subscription->domain->add_channels({kFibreOk, ep_in, ep_out, mtu});
             }
         }
 

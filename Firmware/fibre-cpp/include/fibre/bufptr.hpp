@@ -34,7 +34,7 @@ struct generic_bufptr_t {
         : generic_bufptr_t(vector.data(), vector.size()) {}
 
     generic_bufptr_t(const generic_bufptr_t<typename std::remove_const<T>::type>& other)
-        : generic_bufptr_t(other.begin_, other.end_) {}
+        : generic_bufptr_t(other.begin(), other.end()) {}
 
     generic_bufptr_t& operator+=(size_t num) {
         if (!soft_assert(num <= size())) {

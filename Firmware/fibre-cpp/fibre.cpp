@@ -165,9 +165,9 @@ Domain* Context::create_domain(std::string specs) {
             FIBRE_LOG(W) << "transport layer \"" << name << "\" not implemented";
         } else {
             domain->channel_discovery_handles[name] = nullptr;
-            it->second->start_channel_discovery(&*colon_end, next_delim - colon_end,
-                    &domain->channel_discovery_handles[name],
-                    MEMBER_CB(domain, on_found_channels));
+            it->second->start_channel_discovery(domain,
+                    &*colon_end, next_delim - colon_end,
+                    &domain->channel_discovery_handles[name]);
         }
 
         prev_delim = std::min(next_delim + 1, specs.end());
@@ -225,7 +225,7 @@ void Domain::stop_discovery() {
 }
 #endif
 
-void Domain::on_found_channels(ChannelDiscoveryResult result) {
+void Domain::add_channels(ChannelDiscoveryResult result) {
     FIBRE_LOG(D) << "found channels!";
 
     if (result.status != kFibreOk) {

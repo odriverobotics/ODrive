@@ -2,6 +2,7 @@
 #include "posix_tcp_backend.hpp"
 #include "posix_socket.hpp"
 #include "../logging.hpp"
+#include <fibre/fibre.hpp>
 #include <signal.h>
 #include <unistd.h>
 #include <algorithm>
@@ -33,27 +34,27 @@ bool PosixTcpBackend::deinit() {
     return true;
 }
 
-void PosixTcpBackend::start_channel_discovery(const char* specs, size_t specs_len, ChannelDiscoveryContext** handle, Callback<void, ChannelDiscoveryResult> on_found_channels) {
+void PosixTcpBackend::start_channel_discovery(Domain* domain, const char* specs, size_t specs_len, ChannelDiscoveryContext** handle) {
     const char* address_begin;
     const char* address_end;
     int port;
 
     if (!event_loop_) {
         FIBRE_LOG(E) << "not initialized";
-        on_found_channels.invoke({kFibreInvalidArgument, nullptr, nullptr, 0});
-        return;
+        //on_found_channels.invoke({kFibreInvalidArgument, nullptr, nullptr, 0});
+        return; // TODO: error reporting
     }
 
     if (!try_parse_key(specs, specs + specs_len, "address", &address_begin, &address_end)) {
         FIBRE_LOG(E) << "no address specified";
-        on_found_channels.invoke({kFibreInvalidArgument, nullptr, nullptr, 0});
-        return;
+        //on_found_channels.invoke({kFibreInvalidArgument, nullptr, nullptr, 0});
+        return; // TODO: error reporting
     }
 
     if (!try_parse_key(specs, specs + specs_len, "port", &port)) {
         FIBRE_LOG(E) << "no port specified";
-        on_found_channels.invoke({kFibreInvalidArgument, nullptr, nullptr, 0});
-        return;
+        //on_found_channels.invoke({kFibreInvalidArgument, nullptr, nullptr, 0});
+        return; // TODO: error reporting
     }
 
     n_discoveries_++;
@@ -61,7 +62,7 @@ void PosixTcpBackend::start_channel_discovery(const char* specs, size_t specs_le
     TcpChannelDiscoveryContext* ctx = new TcpChannelDiscoveryContext(); // TODO: free
     ctx->parent = this;
     ctx->address = {{address_begin, address_end}, port};
-    ctx->on_found_channels = on_found_channels;
+    ctx->domain = domain;
     ctx->resolve_address();
 }
 
@@ -119,7 +120,7 @@ void PosixTcpBackend::TcpChannelDiscoveryContext::on_connected(std::optional<soc
     if (socket_id.has_value()) {
         auto socket = new PosixSocket{}; // TODO: free
         if (socket->init(parent->event_loop_, *socket_id)) {
-            on_found_channels.invoke({kFibreOk, socket, socket, SIZE_MAX});
+            domain->add_channels({kFibreOk, socket, socket, SIZE_MAX});
             return;
         }
         delete socket;

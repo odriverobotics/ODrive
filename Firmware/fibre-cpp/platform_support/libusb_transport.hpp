@@ -32,13 +32,13 @@ public:
 
     struct MyChannelDiscoveryContext : ChannelDiscoveryContext {
         InterfaceSpecs interface_specs;
-        Callback<void, ChannelDiscoveryResult> on_found_channels;
+        Domain* domain;
     };
 
     constexpr static const char* get_name() { return "usb"; }
     bool init(EventLoop* event_loop);
     bool deinit() { return deinit(INT_MAX); }
-    void start_channel_discovery(const char* specs, size_t specs_len, ChannelDiscoveryContext** handle, Callback<void, ChannelDiscoveryResult> on_found_channels) final;
+    void start_channel_discovery(Domain* domain, const char* specs, size_t specs_len, ChannelDiscoveryContext** handle) final;
     int stop_channel_discovery(ChannelDiscoveryContext* handle) final;
 
 private:

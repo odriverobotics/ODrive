@@ -16,12 +16,16 @@ struct ChannelDiscoveryResult {
 
 struct ChannelDiscoveryContext {};
 
+class Domain; // defined in fibre.hpp
+
 class ChannelDiscoverer {
 public:
+    // TODO: maybe we should remove "handle" because a discovery can also be
+    // uniquely identified by domain.
     virtual void start_channel_discovery(
+        Domain* domain,
         const char* specs, size_t specs_len,
-        ChannelDiscoveryContext** handle,
-        Callback<void, ChannelDiscoveryResult> on_found_channels) = 0;
+        ChannelDiscoveryContext** handle) = 0;
     virtual int stop_channel_discovery(ChannelDiscoveryContext* handle) = 0;
 
 protected:

@@ -56,7 +56,6 @@ extern "C" {
 #endif
 
 struct LibFibreCtx;
-struct LibFibreChannelDiscoveryCtx;
 struct LibFibreDiscoveryCtx;
 struct LibFibreCallContext;
 struct LibFibreObject;
@@ -143,8 +142,8 @@ struct LibFibreEventLoop {
  * @param specs, specs_length: The specs string that specifies discoverer-specific
  *        filter parameters.
  */
-typedef void (*on_start_discovery_cb_t)(void* ctx, LibFibreChannelDiscoveryCtx* discovery_ctx, const char* specs, size_t specs_length);
-typedef void (*on_stop_discovery_cb_t)(void* ctx, LibFibreChannelDiscoveryCtx* discovery_ctx);
+typedef void (*on_start_discovery_cb_t)(void* ctx, LibFibreDomain* domain, const char* specs, size_t specs_length);
+typedef void (*on_stop_discovery_cb_t)(void* ctx, LibFibreDomain* domain);
 
 /**
  * @brief on_found_object callback type for libfibre_start_discovery().
