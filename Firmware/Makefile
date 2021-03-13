@@ -34,6 +34,7 @@ all:
 # Copy libfibre files to odrivetool if they were built
 	@ ! test -f "fibre-cpp/build/libfibre-linux-amd64.so" || cp fibre-cpp/build/libfibre-linux-amd64.so ../tools/odrive/pyfibre/fibre/
 	@ ! test -f "fibre-cpp/build/libfibre-linux-armhf.so" || cp fibre-cpp/build/libfibre-linux-armhf.so ../tools/odrive/pyfibre/fibre/
+	@ ! test -f "fibre-cpp/build/libfibre-linux-aarch64.so" || cp fibre-cpp/build/libfibre-linux-aarch64.so ../tools/odrive/pyfibre/fibre/
 	@ ! test -f "fibre-cpp/build/libfibre-macos-x86.dylib" || cp fibre-cpp/build/libfibre-macos-x86.dylib ../tools/odrive/pyfibre/fibre/
 	@ ! test -f "fibre-cpp/build/libfibre-windows-amd64.dll" || cp fibre-cpp/build/libfibre-windows-amd64.dll ../tools/odrive/pyfibre/fibre/
 
@@ -46,6 +47,8 @@ libfibre-all:
 	cp /tmp/libfibre-build/libfibre-linux-amd64.so ../tools/odrive/pyfibre/fibre/
 	docker run -it -v "`pwd`/fibre-cpp":/build -v /tmp/libfibre-build:/build/build -w /build fibre-compiler configs/linux-armhf.config
 	cp /tmp/libfibre-build/libfibre-linux-armhf.so ../tools/odrive/pyfibre/fibre/
+	docker run -it -v "`pwd`/fibre-cpp":/build -v /tmp/libfibre-build:/build/build -w /build fibre-compiler configs/linux-aarch64.config
+	cp /tmp/libfibre-build/libfibre-linux-aarch64.so ../tools/odrive/pyfibre/fibre/
 	docker run -it -v "`pwd`/fibre-cpp":/build -v /tmp/libfibre-build:/build/build -w /build fibre-compiler configs/macos-x86.config
 	cp /tmp/libfibre-build/libfibre-macos-x86.dylib ../tools/odrive/pyfibre/fibre/
 	docker run -it -v "`pwd`/fibre-cpp":/build -v /tmp/libfibre-build:/build/build -w /build fibre-compiler configs/windows-amd64.config

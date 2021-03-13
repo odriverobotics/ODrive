@@ -20,6 +20,7 @@ import sys
 lib_names = {
     ('Linux', 'x86_64'): 'libfibre-linux-amd64.so',
     ('Linux', 'armv7l'): 'libfibre-linux-armhf.so',
+    ('Linux', 'aarch64'): 'libfibre-linux-aarch64.so',
     ('Windows', 'AMD64'): 'libfibre-windows-amd64.dll',
     ('Darwin', 'x86_64'): 'libfibre-macos-x86.dylib'
 }
