@@ -1,6 +1,6 @@
 
 #include <doctest.h>
-#include <algorithm>
+
 #include <cstring>
 
 #include "../interfaces/can_helpers.hpp"

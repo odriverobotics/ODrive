@@ -2,15 +2,6 @@
 
 #include <stdint.h>
 
-#include <algorithm>
-#include <cstring>
-#include <iterator>
-
-enum CanFrameType {
-    kCanFrameTypeClassical,
-    kCanFrameTypeClassicalRtr,
-};
-
 struct can_Message_t {
     uint32_t id = 0x000;  // 11-bit max is 0x7ff, 29-bit max is 0x1FFFFFFF
 
@@ -50,13 +41,9 @@ struct can_Signal_t {
     const float offset;
 };
 
-struct can_Cyclic_t {
-    uint32_t cycleTime_ms;
-    uint32_t lastTime_ms;
-};
-
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wstrict-aliasing"  // Make sure to check these functions on your system
+
 template <typename T>
 constexpr T can_getSignal(const can_Message_t& msg, const uint8_t startBit, const uint8_t length, const bool isIntel) {
     uint64_t mask = length < 64 ? (1ULL << length) - 1ULL : -1ULL;
