@@ -57,11 +57,10 @@ CMD ID | Name | Signals | Start byte | Signal Type | Bits | Factor | Offset | By
 0x013 | Set Traj Inertia | Traj Inertia | 0 | IEEE 754 Float | 32 | 1 | 0 | Intel
 0x014 | Get IQ\* | Iq Setpoint<br>Iq Measured | 0<br>4 | IEEE 754 Float<br>IEEE 754 Float | 32<br>32 | 1<br>1 | 0<br>0 | Intel<br>Intel
 0x015 | Get Sensorless Estimates\* | Sensorless Pos Estimate<br>Sensorless Vel Estimate | 0<br>4 | IEEE 754 Float<br>IEEE 754 Float | 32<br>32 | 1<br>1 | 0<br>0 | Intel<br>Intel
-0x016 | Reboot ODrive | Master\*\*\* | - | - | - | - | - | - | -
-0x017 | Get Vbus Voltage | Master\*\*\* | Vbus Voltage | 0 | IEEE 754 Float | 32 | 1 | 0 | Intel
+0x016 | Reboot ODrive\*\*\* | - | - | - | - | - | - | -
+0x017 | Get Vbus Voltage\*\*\* | Vbus Voltage | 0 | IEEE 754 Float | 32 | 1 | 0 | Intel
 0x018 | Clear Errors | - | - | - | - | - | - | -
-0x700 | CANOpen Heartbeat Message\*\* | Slave | - | -  | - | - | - | - | -
--|-|-|----------------------------------|-|--------------------|-|-|-|_
+0x700 | CANOpen Heartbeat Message\*\* | - | -  | - | - | - | - | -
 
 \* Note: These messages are call & response.  The Master node sends a message with the RTR bit set, and the axis responds with the same ID and specified payload.  
 \*\* Note:  These CANOpen messages are reserved to avoid bus collisions with CANOpen devices.  They are not used by CAN Simple.  
