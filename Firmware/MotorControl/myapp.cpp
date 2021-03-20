@@ -69,7 +69,7 @@ void StartMYAPPTask(void const * argument)
         if(cnt==7)
         {
             cnt=0;
-            axis0.controller_.input_pos_=-4.0f*axis1.encoder_.pos_estimate_;
+            axis0.controller_.input_pos_=-1.0f*axis1.encoder_.pos_estimate_;
             axis1.controller_.input_torque_=0.1f*axis0.controller_.torque_out_;
         }
         else
