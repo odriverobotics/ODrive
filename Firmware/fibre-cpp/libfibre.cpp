@@ -56,7 +56,7 @@ fibre::ChannelDiscoveryContext* from_c(LibFibreChannelDiscoveryCtx* ptr) {
 }
 
 
-static const struct LibFibreVersion libfibre_version = { 0, 1, 3 };
+static const struct LibFibreVersion libfibre_version = { 0, 1, 4 };
 
 class FIBRE_PRIVATE ExternalEventLoop final : public fibre::EventLoop {
 public:

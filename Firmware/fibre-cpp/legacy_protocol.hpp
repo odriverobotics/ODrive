@@ -7,6 +7,7 @@
 #include "legacy_object_client.hpp"
 #include <unordered_map>
 #include <optional>
+#include <queue>
 #endif
 
 namespace fibre {
@@ -135,7 +136,7 @@ private:
     void start_endpoint_operation(EndpointOperation op);
 
     uint16_t outbound_seq_no_ = 0;
-    std::optional<EndpointOperation> pending_operation_ = std::nullopt; // operation that is waiting for TX
+    std::vector<EndpointOperation> pending_operations_; // operations that are waiting for TX
     EndpointOperationHandle transmitting_op_ = 0; // operation that is in TX
     std::unordered_map<uint16_t, EndpointOperation> expected_acks_; // operations that are waiting for RX
 #endif

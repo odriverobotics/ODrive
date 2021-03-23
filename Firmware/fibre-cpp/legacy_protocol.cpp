@@ -9,6 +9,7 @@
 #include <fibre/async_stream.hpp>
 #include <memory>
 #include <stdlib.h>
+#include <algorithm>
 
 DEFINE_LOG_TOPIC(LEGACY_PROTOCOL);
 USE_LOG_TOPIC(LEGACY_PROTOCOL);
@@ -218,16 +219,8 @@ void LegacyProtocolPacketBased::start_endpoint_operation(uint16_t endpoint_id, c
     if (tx_handle_) {
         FIBRE_LOG(D) << "Endpoint operation already in progress. Enqueuing this one.";
 
-        // A TX operation is already in progress
-        if (pending_operation_.has_value()) {
-            // Previous endpoint operation was not yet sent. We don't support
-            // enqueuing multiple endpoint operations while the first didn't send yet.
-            FIBRE_LOG(E) << "previous endpoint operation still not sent";
-            callback.invoke_and_clear({kStreamError, tx_buf.begin(), rx_buf.begin()});
-        } else {
-            // Control is returned to start_endpoint_operation once TX completes
-            pending_operation_ = op;
-        }
+        // A TX operation is already in progress. Enqueue this one.
+        pending_operations_.push_back(op);
         return;
     }
 
@@ -266,20 +259,24 @@ void LegacyProtocolPacketBased::cancel_endpoint_operation(EndpointOperationHandl
     const uint8_t* tx_end = nullptr;
     uint8_t* rx_end = nullptr;
 
-    if (pending_operation_.has_value() && pending_operation_->seqno == seqno) {
-        callback = pending_operation_->callback;
-        tx_end = pending_operation_->tx_buf.begin();
-        rx_end = pending_operation_->rx_buf.begin();
-        pending_operation_ = std::nullopt;
+    auto it0 = std::find_if(pending_operations_.begin(), pending_operations_.end(), [&](EndpointOperation& op) {
+        return op.seqno == seqno;
+    });
+
+    if (it0 != pending_operations_.end()) {
+        callback = it0->callback;
+        tx_end = it0->tx_buf.begin();
+        rx_end = it0->rx_buf.begin();
+        pending_operations_.erase(it0);
     }
 
-    auto it = expected_acks_.find(seqno);
+    auto it1 = expected_acks_.find(seqno);
 
-    if (it != expected_acks_.end()) {
-        callback = it->second.callback;
-        tx_end = it->second.tx_buf.begin();
-        rx_end = it->second.rx_buf.begin();
-        expected_acks_.erase(it);
+    if (it1 != expected_acks_.end()) {
+        callback = it1->second.callback;
+        tx_end = it1->second.tx_buf.begin();
+        rx_end = it1->second.rx_buf.begin();
+        expected_acks_.erase(it1);
     }
 
     if (transmitting_op_ == handle) {
@@ -378,11 +375,11 @@ void LegacyProtocolPacketBased::on_write_finished(WriteResult result) {
 #endif
 
 #if FIBRE_ENABLE_CLIENT
-    if (pending_operation_.has_value()) {
+    if (pending_operations_.size() > 0) {
         // There is a write operation pending from the client side (i.e. an
         // outgoing remote endpoint operation).
-        EndpointOperation op = *pending_operation_;
-        pending_operation_ = std::nullopt;
+        EndpointOperation op = pending_operations_[0];
+        pending_operations_.erase(pending_operations_.begin());
         start_endpoint_operation(op);
         if (transmitting_op_) {
             return;
@@ -530,10 +527,10 @@ void LegacyProtocolPacketBased::on_rx_tx_closed(StreamStatus status) {
 
 #if FIBRE_ENABLE_CLIENT
     // Cancel pending endpoint operation
-    if (pending_operation_.has_value()) {
-        pending_operation_->callback.invoke_and_clear({status, pending_operation_->tx_buf.begin(), pending_operation_->rx_buf.begin()});
-        pending_operation_ = std::nullopt;
+    for (auto& op: pending_operations_) {
+        op.callback.invoke_and_clear({status, op.tx_buf.begin(), op.rx_buf.begin()});
     }
+    pending_operations_.clear();
 
     // Cancel all ongoing endpoint operations
     for (auto& item: expected_acks_) {

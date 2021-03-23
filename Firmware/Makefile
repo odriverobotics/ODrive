@@ -50,6 +50,8 @@ libfibre-all:
 	cp /tmp/libfibre-build/libfibre-macos-x86.dylib ../tools/odrive/pyfibre/fibre/
 	docker run -it -v "`pwd`/fibre-cpp":/build -v /tmp/libfibre-build:/build/build -w /build fibre-compiler configs/windows-amd64.config
 	cp /tmp/libfibre-build/libfibre-windows-amd64.dll ../tools/odrive/pyfibre/fibre/
+	docker run -it -v "`pwd`/fibre-cpp":/build -v /tmp/libfibre-build:/build/build -w /build fibre-compiler configs/wasm.config
+	cp /tmp/libfibre-build/libfibre-wasm.* ../GUI/fibre-js/
 
 clean:
 	-rm -fR .dep $(BUILD_DIR)
