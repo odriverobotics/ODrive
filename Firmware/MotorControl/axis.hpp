@@ -1,7 +1,6 @@
 #ifndef __AXIS_HPP
 #define __AXIS_HPP
 
-class Axis;
 
 #include "encoder.hpp"
 #include "acim_estimator.hpp"

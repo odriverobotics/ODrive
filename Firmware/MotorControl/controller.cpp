@@ -1,6 +1,7 @@
 
-#include "odrive_main.h"
 #include <algorithm>
+
+#include "odrive_main.h"
 
 bool Controller::apply_config() {
     config_.parent = this;
@@ -201,10 +202,7 @@ bool Controller::update() {
             anticogging_pos_estimate = pos_setpoint_; // FF the position setpoint instead of the pos_estimate
         } break;
         case INPUT_MODE_TUNING: {
-            autotuning_phase_ = wrap_pm_pi(autotuning_phase_ + (2.0f * M_PI * autotuning_.frequency * current_meas_period));
-            pos_setpoint_ = autotuning_.pos_amplitude * our_arm_sin_f32(autotuning_phase_ + autotuning_.pos_phase);
-            vel_setpoint_ = autotuning_.vel_amplitude * our_arm_sin_f32(autotuning_phase_ + autotuning_.vel_phase);
-            torque_setpoint_ = autotuning_.torque_amplitude * our_arm_sin_f32(autotuning_phase_ + autotuning_.torque_phase);
+            std::tie(pos_setpoint_, vel_setpoint_, torque_setpoint_) = autotuning_.update();
         } break;
         default: {
             set_error(ERROR_INVALID_INPUT_MODE);

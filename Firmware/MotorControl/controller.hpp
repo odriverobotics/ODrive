@@ -1,6 +1,8 @@
 #ifndef __CONTROLLER_HPP
 #define __CONTROLLER_HPP
 
+#include "autotuner.hpp"
+
 class Controller : public ODriveIntf::ControllerIntf {
 public:
     struct Anticogging_t {
@@ -12,16 +14,6 @@ public:
         float calib_vel_threshold = 1.0f;
         float cogging_ratio = 1.0f;
         bool anticogging_enabled = true;
-    };
-
-    struct Autotuning_t {
-        float frequency = 0.0f;
-        float pos_amplitude = 0.0f;
-        float pos_phase = 0.0f;
-        float vel_amplitude = 0.0f;
-        float vel_phase = 0.0f;
-        float torque_amplitude = 0.0f;
-        float torque_phase = 0.0f;
     };
 
     struct Config_t {
@@ -104,12 +96,8 @@ public:
     float input_filter_ki_ = 0.0f;
 
     Autotuning_t autotuning_;
-    float autotuning_phase_ = 0.0f;
-    
     bool input_pos_updated_ = false;
-    
     bool trajectory_done_ = true;
-
     bool anticogging_valid_ = false;
 
     // Outputs
