@@ -202,13 +202,12 @@ bool Controller::update() {
             anticogging_pos_estimate = pos_setpoint_; // FF the position setpoint instead of the pos_estimate
         } break;
         case INPUT_MODE_TUNING: {
-            std::tie(pos_setpoint_, vel_setpoint_, torque_setpoint_) = autotuning_.update();
+            std::tie(pos_setpoint_, vel_setpoint_, torque_setpoint_) = autotuning_.update(current_meas_period);
         } break;
         default: {
             set_error(ERROR_INVALID_INPUT_MODE);
             return false;
         }
-        
     }
 
     // Position control
