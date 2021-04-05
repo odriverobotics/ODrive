@@ -694,7 +694,9 @@ interfaces:
           vel_limit_tolerance:
             type: float32
             doc: Ratio to `vel_limit`. Infinity to disable.
-          vel_ramp_rate: float32
+          vel_ramp_rate: 
+            type: float32
+            unit: turn/s^2
           torque_ramp_rate:
             type: float32
             unit: Nm / sec
