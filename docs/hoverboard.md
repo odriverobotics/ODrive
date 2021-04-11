@@ -101,7 +101,7 @@ Check the status of the encoder object:
 odrv0.axis0.encoder
 ```
 
-Check that there are no errors. If your hall sensors has a standard timing angle then `offset_float` should be close to 0.5 or 1.5.
+Check that there are no errors. If your hall sensors has a standard timing angle then `offset_float` should be close to 0.5 mod 1. Meaning values close to -1.5, -0.5, 0.5, or 1.5, etc are all good.
 ```txt
   error = 0x0000 (int)
   offset_float = 0.5126956701278687 (float)
