@@ -202,13 +202,10 @@ bool Encoder::run_offset_calibration() {
     else
         return false;
 
-    // go to start position of forward scan for start_lock_duration to get ready to scan
+    // go to motor zero phase for start_lock_duration to get ready to scan
     int i = 0;
     axis_->run_control_loop([&](){
-        float phase = wrap_pm_pi(0 - config_.calib_scan_distance / 2.0f);
-        float v_alpha = voltage_magnitude * our_arm_cos_f32(phase);
-        float v_beta = voltage_magnitude * our_arm_sin_f32(phase);
-        if (!axis_->motor_.enqueue_voltage_timings(v_alpha, v_beta))
+        if (!axis_->motor_.enqueue_voltage_timings(voltage_magnitude, 0.0f))
             return false; // error set inside enqueue_voltage_timings
         axis_->motor_.log_timing(TIMING_LOG_ENC_CALIB);
         return ++i < start_lock_duration * current_meas_hz;
