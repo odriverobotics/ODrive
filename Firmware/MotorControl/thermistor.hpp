@@ -29,6 +29,7 @@ public:
     const float& temp_limit_upper_;
     const bool& enabled_;
     Motor* motor_ = nullptr; // set by Motor::apply_config()
+    std::array<float, 2> lpf_vals_ = { 0.0f };
 };
 
 class OnboardThermistorCurrentLimiter : public ThermistorCurrentLimiter, public ODriveIntf::OnboardThermistorCurrentLimiterIntf {
