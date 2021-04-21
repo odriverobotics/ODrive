@@ -970,6 +970,11 @@ interfaces:
               ODrive then it does not output an index pulse.
           ABS_SPI_TIMEOUT:
           ABS_SPI_COM_FAIL:
+            doc: |
+              The communication with the encoder failed, or the encoder set the error flag to true.
+              It is possible that the wire to the encoder is too long.
+              If this error doesn't go away with clear_errors, you can try to set 
+              `<axis>.encoder.ignore_abs_ams_error_flag` to `True`.
           ABS_SPI_NOT_READY:
           HALL_NOT_CALIBRATED_YET:
       is_ready: readonly bool
@@ -989,6 +994,7 @@ interfaces:
       calib_scan_response: readonly float32
       pos_abs: int32
       spi_error_rate: readonly float32
+      spi_abs_ams_error_flag: readonly bool
       config:
         c_is_class: False
         attributes:
@@ -998,6 +1004,7 @@ interfaces:
           use_index_offset: bool
           find_idx_on_lockin_only: {type: bool, c_setter: set_find_idx_on_lockin_only}
           abs_spi_cs_gpio_pin: {type: uint16, c_setter: set_abs_spi_cs_gpio_pin, doc: Make sure that the GPIO is in `GPIO_MODE_DIGITAL`.}
+          ignore_abs_ams_error_flag: {type: bool, doc: If this is true, errors reported by the encoder will be ignored. Set this to true if you get ENCODER_ERROR_ABS_SPI_COM_FAIL errors and they do not disappear with clear_errors. You can still check for the error flag with `<axis>.encoder.spi_abs_ams_error_flag`.}
           cpr: int32
           phase_offset: int32
           phase_offset_float: float32

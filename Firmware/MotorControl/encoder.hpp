@@ -41,6 +41,7 @@ public:
         bool hall_polarity_calibrated = false;
         std::array<float, 6> hall_edge_phcnt = hall_edge_defaults;
         uint16_t abs_spi_cs_gpio_pin = 1;
+        bool ignore_abs_ams_error_flag = false;
         uint16_t sincos_gpio_pin_sin = 3;
         uint16_t sincos_gpio_pin_cos = 4;
 
@@ -110,6 +111,7 @@ public:
     float calib_scan_response_ = 0.0f; // debug report from offset calib
     int32_t pos_abs_ = 0;
     float spi_error_rate_ = 0.0f;
+    bool spi_abs_ams_error_flag_ = false;
 
     OutputPort<float> pos_estimate_ = 0.0f; // [turn]
     OutputPort<float> vel_estimate_ = 0.0f; // [turn/s]
