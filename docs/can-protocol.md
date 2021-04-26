@@ -21,8 +21,8 @@ At its most basic, the CAN Simple frame looks like this:
 
 To understand how the Node ID and Command ID interact, let's look at an example
 
-`odrv0.axis0.can_node_id = 0x010` - Reserves messages 0x200 through 0x21F  
-`odrv0.axis1.can_node_id = 0x018` - Reserves messages 0x300 through 0x31F
+`odrv0.axis0.config.can_node_id = 0x010` - Reserves messages 0x200 through 0x21F  
+`odrv0.axis1.config.can_node_id = 0x018` - Reserves messages 0x300 through 0x31F
 
 It may not be obvious, but this allows for some compatibility with CANOpen.  Although the address space 0x200 and 0x300 correspond to receive PDO base addresses, we can guarantee they will not conflict if all CANopen node IDs are >= 32.  E.g.:
 
