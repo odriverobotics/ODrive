@@ -1,0 +1,34 @@
+name: pip install odrive (nightly)
+
+on:
+  schedule:
+    - cron: '0 2 * * *' # run at 2 AM UTC
+
+jobs:
+  nightly:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macOS-latest]
+        #pip: [pip2, pip3]
+
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Install odrivetool
+        run: |
+          pip install monotonic # TODO: this is dishonest. Must be removed as soon as v0.5.0 is published!
+          pip install odrive
+
+      # This one currently fails because Github Actions runs pip as non-root
+      #- name: Check if udev rules were set up properly
+      #  if: matrix.os == 'ubuntu-latest'
+      #  run: test -f /etc/udev/rules.d/91-odrive.rules
+
+      # This step is mentioned in the user guide
+      - name: Add ~/.local/bin to path
+        if: matrix.os == 'ubuntu-latest'
+        run: echo "::add-path::~/.local/bin"
+
+      - name: Launch odrivetool
+        # This returns a non-zero exit code if the odrivetool throws an exception
+        run: echo 'quit()' | odrivetool shell

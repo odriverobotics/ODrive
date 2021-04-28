@@ -1,0 +1,68 @@
+{
+	"folders": [
+		{
+			"path": "Firmware"
+		},
+		{
+			"path": "tools"
+		},
+		{
+			"path": "docs"
+		},
+		{
+			"path": "analysis"
+		}
+	],
+	"settings": {
+		"c-cpp-flylint.cppcheck.standard": ["c99","c++14"],
+		"files.associations": {
+			"*.config": "yaml",
+			"memory": "cpp",
+			"utility": "cpp",
+			"deque": "cpp",
+			"vector": "cpp",
+			"array": "cpp",
+			"*.tcc": "cpp",
+			"cctype": "cpp",
+			"clocale": "cpp",
+			"cstdint": "cpp",
+			"cstdio": "cpp",
+			"cstdlib": "cpp",
+			"cstring": "cpp",
+			"cwchar": "cpp",
+			"cwctype": "cpp",
+			"exception": "cpp",
+			"functional": "cpp",
+			"initializer_list": "cpp",
+			"iosfwd": "cpp",
+			"istream": "cpp",
+			"limits": "cpp",
+			"new": "cpp",
+			"ostream": "cpp",
+			"stdexcept": "cpp",
+			"streambuf": "cpp",
+			"string_view": "cpp",
+			"system_error": "cpp",
+			"tuple": "cpp",
+			"type_traits": "cpp",
+			"typeinfo": "cpp",
+			"algorithm": "cpp",
+			"chrono": "cpp",
+			"condition_variable": "cpp",
+			"future": "cpp",
+			"arm_math.h": "c",
+			"iostream": "cpp",
+			"cmath": "cpp",
+			"csignal": "cpp",
+			"cstdarg": "cpp",
+			"cstddef": "cpp",
+			"ctime": "cpp",
+			"unordered_map": "cpp",
+			"fstream": "cpp",
+			"iomanip": "cpp",
+			"optional": "cpp",
+			"sstream": "cpp",
+			"utils.h": "c"
+		}
+	}
+}

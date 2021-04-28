@@ -1,0 +1,40 @@
+{
+    // See https://go.microsoft.com/fwlink/?LinkId=733558
+    // for the documentation about the tasks.json format
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "build",
+            "type": "shell",
+            "command": "make",
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "presentation": {
+                "panel": "new"
+            },
+            "problemMatcher": [
+                "$gcc"
+            ]
+        },
+        {
+            "label": "flash - ST-Link",
+            "type": "shell",
+            "command": "make flash",
+            "problemMatcher": []
+        },
+        {
+            "label": "flash - Black Magic Probe",
+            "type": "shell",
+            "command": "make flashbmp",
+            "problemMatcher": []
+        },
+        {
+            "label": "openocd",
+            "type": "shell",
+            "command": "openocd -f \"interface/stlink-v2.cfg\" -f \"target/stm32f4x_stlink.cfg\" -c \"gdb_port 3333; log_output openocd.log\"",
+            "problemMatcher": []
+        }
+    ]
+}

@@ -1,0 +1,6 @@
+﻿---
+BasedOnStyle: Google
+AllowShortCaseLabelsOnASingleLine: 'true'
+IndentWidth: '4'
+ColumnLimit: '0'
+...

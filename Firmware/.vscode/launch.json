@@ -1,0 +1,70 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            // For the Cortex-Debug extension
+            "type": "cortex-debug",
+            "servertype": "openocd",
+            "request": "launch",
+            "name": "Debug ODrive - ST-Link",
+            "executable": "${workspaceRoot}/build/ODriveFirmware.elf",
+            "configFiles": [
+                "interface/stlink-v2.cfg",
+                "target/stm32f4x_stlink.cfg",
+            ],
+            "svdFile": "${workspaceRoot}/Board/v3/STM32F40x.svd",
+            "cwd": "${workspaceRoot}"
+        },
+        {
+            // For the Cortex-Debug extension
+            "type": "cortex-debug",
+            "servertype": "openocd",
+            "request": "launch",
+            "name": "Debug ODrive - ST-Link - FreeRTOS",
+            "executable": "${workspaceRoot}/build/ODriveFirmware.elf",
+            "rtos": "FreeRTOS",
+            "configFiles": [
+                "interface/stlink-v2.cfg",
+                "target/stm32f4x_stlink.cfg",
+            ],
+            "svdFile": "${workspaceRoot}/Board/v3/STM32F40x.svd",
+            "cwd": "${workspaceRoot}"
+        },
+        {
+            // For the Cortex-Debug extension
+            // ssh -t odrv -L3333:localhost:3333 bash -c "\"openocd '-f' 'interface/stlink-v2.cfg' '-f' 'target/stm32f4x_stlink.cfg'\""
+            "type": "cortex-debug",
+            "servertype": "external",
+            "gdbTarget": "localhost:3333",
+            "preLaunchCommands": [
+                "load"
+            ],
+            "request": "launch",
+            "name": "Debug ODrive via external server",
+            "executable": "${workspaceRoot}/build/ODriveFirmware.elf",
+            "configFiles": [
+                "interface/stlink-v2.cfg",
+                "target/stm32f4x_stlink.cfg",
+            ],
+            "svdFile": "${workspaceRoot}/Board/v3/STM32F40x.svd",
+            "cwd": "${workspaceRoot}"
+        },
+        {
+            // For the Cortex-Debug extensions
+            "type": "cortex-debug",
+            "servertype": "bmp",
+            "request": "launch",
+            "name": "Debug ODrive - Black Magic Probe",
+            "executable": "${workspaceRoot}/build/ODriveFirmware.elf",
+            "device": "STM32F4xx",
+            "BMPGDBSerialPort": "${env:BMP_PORT}",
+            "interface": "swd",
+            "targetId": 1,
+            "armToolchainPath": "${env:ARM_GCC_ROOT}/bin/",
+            "cwd": "${workspaceRoot}"
+        }
+    ]
+}
