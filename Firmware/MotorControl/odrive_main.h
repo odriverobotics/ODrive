@@ -237,6 +237,23 @@ public:
     float get_oscilloscope_val(uint32_t index) override {
         return oscilloscope[index];
     }
+    /*
+    float get_motorCharacterizeData_timestep(uint32_t index) override {
+        return motorCharacterizeData[0][index];
+    } //ERG
+
+    float get_motorCharacterizeData_voltage(uint32_t index) override {
+        return motorCharacterizeData[1][index];
+    } //ERG
+    
+    float get_motorCharacterizeData_position(uint32_t index) override {
+        return motorCharacterizeData[2][index];
+    } //ERG
+    
+    float get_motorCharacterizeData_velocity(uint32_t index) override {
+        return motorCharacterizeData[3][index];
+    } //ERG
+    */
 
     float get_adc_voltage(uint32_t gpio) override {
         return ::get_adc_voltage(get_gpio_port_by_pin(gpio), get_gpio_pin_by_pin(gpio));

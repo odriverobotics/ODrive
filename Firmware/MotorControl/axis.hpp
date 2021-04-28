@@ -63,17 +63,9 @@ public:
         void set_dir_gpio_pin(uint16_t value) { dir_gpio_pin = value; parent->decode_step_dir_pins(); }
     };
 
-    //ERG - Input type to be run by run_motor_characterize_input()
-    enum InputType_t {
-        INPUT_TYPE_IMPULSE = 0,		//set current_setpoint high briefly, then zero
-        INPUT_TYPE_STEP = 1,		//set current_setpoint zero, then constant
-        INPUT_TYPE_CHIRP = 2,		//sweep current_setpoint through a given frequency range
-        INPUT_TYPE_NOISE = 3, 	    //white noise, completely random
-    };
-
     //ERG - Parameters to be used by run_motor_characterize_input()
     struct InputConfig_t {
-        InputType_t input_type = INPUT_TYPE_STEP; //see: InputType_t
+        InputType input_type = INPUT_TYPE_STEP; //see: InputType_t
         float test_delay = 2.0f;            // [s]
         float test_duration = 5.0f;	        // [s]
         float impulse_voltage = 2.0f;       // [V]
