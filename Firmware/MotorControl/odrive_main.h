@@ -166,6 +166,11 @@ extern ODriveCAN *odCAN;
 extern float oscilloscope[OSCILLOSCOPE_SIZE];
 extern size_t oscilloscope_pos;
 
+// ERG - used to export results of axis.run_motor_characterize_input() (modeled after oscilloscope)
+#define MOTORCHARACTERIZEDATA_SIZE 128
+extern float motorCharacterizeData[4][MOTORCHARACTERIZEDATA_SIZE];
+extern uint32_t motorCharacterizeData_pos;
+
 // TODO: move
 // this is technically not thread-safe but practically it might be
 #define DEFINE_ENUM_FLAG_OPERATORS(ENUMTYPE) \
