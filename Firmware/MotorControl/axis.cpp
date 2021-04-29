@@ -481,7 +481,128 @@ void Axis::record_motor_characterize_data(float timestep, float voltage_setpoint
 
 //ERG - Sends voltage commands to the motor to run a test input for motor characterization
 bool Axis::run_motor_characterize_input() {
-    record_motor_characterize_data(10, 2.0f);
+    float voltage_lim = motor_.effective_current_lim(); //ERG TODO - should this go inside the handlers instead?
+    uint32_t loopCountStart = loop_counter_;
+    
+    //Wait [test_delay] seconds
+    float x = 0.0f;
+    run_control_loop([&]() {
+        //float phase_vel = 2*M_PI * encoder_.vel_estimate_ / (float)encoder_.config_.cpr * motor_.config_.pole_pairs;
+        //if (!motor_.update(0.0f, encoder_.phase_, phase_vel))
+        //    return false;
+        record_motor_characterize_data(static_cast<float>(loop_counter_-loopCountStart), 0.0f);
+
+        x += current_meas_period / input_config_.test_delay;
+        return x < 1.0f;
+    });
+
+    //Carry out configured test input. Each option has the same basic format:
+    // 1) Calculate voltage command at current time
+    // 2) Get latest encoder estimates for phase and phase velocity
+    // 3) Call motor.update() with the desired voltage and observed phase and phase velocity
+    // 4) Call record_motor_characterize_data()
+    // 5) Repeat until x >= 1 ([test_duration] seconds have passed)
+    x = 0.0f;
+    uint16_t impulse_counter = 0;
+    switch (input_config_.input_type) {
+            
+        case INPUT_TYPE_IMPULSE:
+            run_control_loop([&]() {
+                float voltage_setpoint = 0.0f;
+                if (impulse_counter < input_config_.impulse_peakDuration) {
+                    voltage_setpoint = input_config_.impulse_voltage;
+                    if (voltage_setpoint > voltage_lim) {
+                        voltage_setpoint = voltage_lim;
+                    }
+                    if (voltage_setpoint < -voltage_lim) {
+                        voltage_setpoint = -voltage_lim;
+                    }
+                    impulse_counter++;
+                }
+
+                //float phase_vel = 2*M_PI * encoder_.vel_estimate_ / (float)encoder_.config_.cpr * motor_.config_.pole_pairs;
+                //if (!motor_.update(voltage_setpoint, encoder_.phase_, phase_vel))
+                //    return false;
+                record_motor_characterize_data(static_cast<float>(loop_counter_-loopCountStart), voltage_setpoint);
+
+                x += current_meas_period / input_config_.test_duration;
+                return x < 1.0f;
+            });
+            break;
+        
+        case INPUT_TYPE_STEP:
+            run_control_loop([&]() {
+                float voltage_setpoint = input_config_.step_voltage;
+                if (voltage_setpoint > voltage_lim) {
+                    voltage_setpoint = voltage_lim;
+                }
+                if (voltage_setpoint < -voltage_lim) {
+                    voltage_setpoint = -voltage_lim;
+                }
+
+                //float phase_vel = 2*M_PI * encoder_.vel_estimate_ / (float)encoder_.config_.cpr * motor_.config_.pole_pairs;
+                //if (!motor_.update(voltage_setpoint, encoder_.phase_, phase_vel))
+                //    return false;
+                record_motor_characterize_data(static_cast<float>(loop_counter_-loopCountStart), voltage_setpoint);
+
+                x += current_meas_period / input_config_.test_duration;
+                return x < 1.0f;
+            });
+            break;		
+        
+        case INPUT_TYPE_CHIRP:
+            run_control_loop([&]() {
+                //For exponential chirp, voltage at time t is x(t) = sin(phi(0) + 2*pi*f0*((k^t)-1)/ln(k))
+                //Given phi(0) = 0 and rate of exponential change k = (f1/f0)^(1/T)
+                float exponent = 1 / input_config_.test_duration;
+                float k = pow(input_config_.chirp_freqHigh / input_config_.chirp_freqLow, exponent);
+                float scaling_term = (pow(k,x*input_config_.test_duration) - 1) / log(k);
+                float chirp_phase = 2*M_PI * input_config_.chirp_freqLow * scaling_term;
+                float voltage_setpoint = input_config_.chirp_amplitude * our_arm_sin_f32(chirp_phase) + input_config_.chirp_midline;
+                if (voltage_setpoint > voltage_lim) {
+                    voltage_setpoint = voltage_lim;
+                }
+                if (voltage_setpoint < -voltage_lim) {
+                    voltage_setpoint = -voltage_lim;
+                }
+                
+                //float phase_vel = 2*M_PI * encoder_.vel_estimate_ / (float)encoder_.config_.cpr * motor_.config_.pole_pairs;
+                //if (!motor_.update(voltage_setpoint, encoder_.phase_, phase_vel))
+                //    return false;
+                record_motor_characterize_data(static_cast<float>(loop_counter_-loopCountStart), voltage_setpoint);
+
+                x += current_meas_period / input_config_.test_duration;
+                return x < 1.0f;
+            });
+            break;
+        
+        case INPUT_TYPE_NOISE:
+            run_control_loop([&]() {
+                float rand_int =  rand() % (2 * 100 * input_config_.noise_max);
+                float rand_zeroed = (rand_int - 100 * input_config_.noise_max) / 10000;
+                float voltage_setpoint = voltage_lim * rand_zeroed;
+                if (voltage_setpoint > voltage_lim) {
+                    voltage_setpoint = voltage_lim;
+                }
+                if (voltage_setpoint < -voltage_lim) {
+                    voltage_setpoint = -voltage_lim;
+                }
+
+                //float phase_vel = 2*M_PI * encoder_.vel_estimate_ / (float)encoder_.config_.cpr * motor_.config_.pole_pairs;
+                //if (!motor_.update(voltage_setpoint, encoder_.phase_, phase_vel))
+                //    return false;
+                record_motor_characterize_data(loop_counter_-loopCountStart, voltage_setpoint);
+
+                x += current_meas_period / input_config_.test_duration;
+                return x < 1.0f;
+            });
+            break;
+            
+        default:
+            return false;
+    }
+    
+    record_motor_characterize_data(0.0f, 0.0f);
     return true;
 }
 

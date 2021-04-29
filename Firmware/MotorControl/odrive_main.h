@@ -244,7 +244,7 @@ public:
 
     uint32_t get_motor_characterize_data_idx() override {
         return motor_characterize_data_pos;
-    } //ERG - seems like this should be doable without a get function, but I couldn't get it working
+    } //ERG - same as get_motor_characterize_data_size, seems like it should be doable as a field rather than get
 
     float get_motor_characterize_data_timestep(uint32_t index) override {
         return motor_characterize_data[0][index];
