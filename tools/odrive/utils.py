@@ -298,9 +298,8 @@ def run_motor_characterize_input(odrv, axs):
         print("Error: invalid directory")
         return
 
-    timeout = 5 # [s] ERG TODO - change back to 30
-    #buffer_size = odrv.motorCharacterizeData_size
-    buffer_size = 128 #TODO replace with actual size call
+    timeout = 10 # [s]
+    buffer_size = odrv.get_motor_characterize_data_size()
     vals = []
 
     with open(file_name, "a+") as file:
@@ -313,7 +312,7 @@ def run_motor_characterize_input(odrv, axs):
         file.write('%Date:,' + start_time.strftime("%d/%m/%Y") + '\n')
         file.write('%Start time:,' + start_time.strftime("%H:%M:%S") + '\n\n')
         file.write('%timestep (8Hz),voltage,position,velocity\n')
-        file.write('%[#],[V],[counts],[counts/s]\n')
+        file.write('%[#],[V],[turns],[turns/s]\n')
         file.flush()
 
         print("Input starting...")
@@ -329,9 +328,7 @@ def run_motor_characterize_input(odrv, axs):
         finish_counter = 0
         while not finished:
             try:            
-                #idx = odrv.motorCharacterizeData_pos
-                idx = 1 #ERG TODO - replace with actual index
-
+                idx = odrv.get_motor_characterize_data_idx()
                 #ERG TODO - figure out why fetching data with idx==0 shifts all the data over a column, remove idx>0 condition
                 if idx < buffer_size and idx > 0:
                     data = [odrv.get_motor_characterize_data_timestep(idx),
