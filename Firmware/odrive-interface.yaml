@@ -35,8 +35,6 @@ interfaces:
             line when plotting `ibus`. Set to 1.0 to disable. This filter is only applied to
             the reported value and not for internal calculations.
       serial_number: readonly uint64
-      #motor_characterize_data_pos: readonly uint32 #ERG
-      #motor_characterize_data_size: readonly uint8 #ERG
       hw_version_major: readonly uint8
       hw_version_minor: readonly uint8
       hw_version_variant: readonly uint8
@@ -193,6 +191,8 @@ interfaces:
     functions:
       test_function: {in: {delta: int32}, out: {cnt: int32}}
       get_oscilloscope_val: {in: {index: uint32}, out: {val: float32}}
+      get_motor_characterize_data_size: {in: {}, out: {val: uint8}} #ERG
+      get_motor_characterize_data_idx: {in: {}, out: {val: uint32}} #ERG
       get_motor_characterize_data_timestep: {in: {index: uint32}, out: {val: float32}} #ERG
       get_motor_characterize_data_voltage: {in: {index: uint32}, out: {val: float32}} #ERG
       get_motor_characterize_data_position: {in: {index: uint32}, out: {val: float32}} #ERG

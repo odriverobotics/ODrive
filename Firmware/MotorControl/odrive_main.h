@@ -169,7 +169,7 @@ extern size_t oscilloscope_pos;
 // ERG - used to export results of axis.run_motor_characterize_input() (modeled after oscilloscope)
 #define MOTORCHARACTERIZEDATA_SIZE 128
 extern float motor_characterize_data[4][MOTORCHARACTERIZEDATA_SIZE];
-extern uint32_t motorCharacterizeData_pos;
+extern uint32_t motor_characterize_data_pos;
 
 // TODO: move
 // this is technically not thread-safe but practically it might be
@@ -238,6 +238,13 @@ public:
         return oscilloscope[index];
     }
 
+    uint8_t get_motor_characterize_data_size() override {
+        return MOTORCHARACTERIZEDATA_SIZE;
+    } //ERG TODO - seems like this should be doable without a get function, but I couldn't get it working
+
+    uint32_t get_motor_characterize_data_idx() override {
+        return motor_characterize_data_pos;
+    } //ERG - seems like this should be doable without a get function, but I couldn't get it working
 
     float get_motor_characterize_data_timestep(uint32_t index) override {
         return motor_characterize_data[0][index];
@@ -255,7 +262,6 @@ public:
         return motor_characterize_data[3][index];
     } //ERG
     
-
     float get_adc_voltage(uint32_t gpio) override {
         return ::get_adc_voltage(get_gpio_port_by_pin(gpio), get_gpio_pin_by_pin(gpio));
     }
