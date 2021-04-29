@@ -470,17 +470,18 @@ bool Axis::run_idle_loop() {
 
 //ERG - saves latest data for motor characterization
 void Axis::record_motor_characterize_data(float timestep, float voltage_setpoint) {
-    //motorCharacterizeData_pos++;
-    //if (motorCharacterizeData_pos > MOTORCHARACTERIZEDATA_SIZE)
-    //    motorCharacterizeData_pos = 0;
-    //motorCharacterizeData[0][motorCharacterizeData_pos] = timestep;                // [#]
-    //motorCharacterizeData[1][motorCharacterizeData_pos] = voltage_setpoint;        // [V]
-    //motorCharacterizeData[2][motorCharacterizeData_pos] = encoder_.pos_estimate_;  // [count]
-    //motorCharacterizeData[3][motorCharacterizeData_pos] = encoder_.vel_estimate_;  // [count/s]
+    motorCharacterizeData_pos++;
+    if (motorCharacterizeData_pos > MOTORCHARACTERIZEDATA_SIZE)
+        motorCharacterizeData_pos = 0;
+    motor_characterize_data[0][motorCharacterizeData_pos] = timestep;                // [#]
+    motor_characterize_data[1][motorCharacterizeData_pos] = voltage_setpoint;        // [V]
+    motor_characterize_data[2][motorCharacterizeData_pos] = encoder_.pos_estimate_;  // [count]
+    motor_characterize_data[3][motorCharacterizeData_pos] = encoder_.vel_estimate_;  // [count/s]
 }
 
 //ERG - Sends voltage commands to the motor to run a test input for motor characterization
 bool Axis::run_motor_characterize_input() {
+    record_motor_characterize_data(10, 2.0f);
     return true;
 }
 
