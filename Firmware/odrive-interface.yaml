@@ -191,10 +191,10 @@ interfaces:
     functions:
       test_function: {in: {delta: int32}, out: {cnt: int32}}
       get_oscilloscope_val: {in: {index: uint32}, out: {val: float32}}
-      #get_motorCharacterizeData_timestep: {in: {index: uint32}, out: {val: float32}} #ERG
-      #get_motorCharacterizeData_voltage: {in: {index: uint32}, out: {val: float32}} #ERG
-      #get_motorCharacterizeData_position: {in: {index: uint32}, out: {val: float32}} #ERG
-      #get_motorCharacterizeData_velocity: {in: {index: uint32}, out: {val: float32}} #ERG
+      get_motor_characterize_data_timestep: {in: {index: uint32}, out: {val: float32}} #ERG
+      get_motor_characterize_data_voltage: {in: {index: uint32}, out: {val: float32}} #ERG
+      get_motor_characterize_data_position: {in: {index: uint32}, out: {val: float32}} #ERG
+      get_motor_characterize_data_velocity: {in: {index: uint32}, out: {val: float32}} #ERG
       get_adc_voltage: {in: {gpio: uint32}, out: {voltage: float32}}
       save_configuration:
       erase_configuration:
