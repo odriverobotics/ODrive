@@ -78,6 +78,9 @@ public:
         uint32_t noise_max = 2;             // [#] percentage of voltage limit
     };
 
+    void record_motor_characterize_data(float timestep, float voltage_setpoint); //ERG
+    bool run_motor_characterize_input(); //ERG
+
     struct Homing_t {
         bool is_homed = false;
     };

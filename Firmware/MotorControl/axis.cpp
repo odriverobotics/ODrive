@@ -468,6 +468,22 @@ bool Axis::run_idle_loop() {
     return check_for_errors();
 }
 
+//ERG - saves latest data for motor characterization
+void Axis::record_motor_characterize_data(float timestep, float voltage_setpoint) {
+    //motorCharacterizeData_pos++;
+    //if (motorCharacterizeData_pos > MOTORCHARACTERIZEDATA_SIZE)
+    //    motorCharacterizeData_pos = 0;
+    //motorCharacterizeData[0][motorCharacterizeData_pos] = timestep;                // [#]
+    //motorCharacterizeData[1][motorCharacterizeData_pos] = voltage_setpoint;        // [V]
+    //motorCharacterizeData[2][motorCharacterizeData_pos] = encoder_.pos_estimate_;  // [count]
+    //motorCharacterizeData[3][motorCharacterizeData_pos] = encoder_.vel_estimate_;  // [count/s]
+}
+
+//ERG - Sends voltage commands to the motor to run a test input for motor characterization
+bool Axis::run_motor_characterize_input() {
+    return true;
+}
+
 // Infinite loop that does calibration and enters main control loop as appropriate
 void Axis::run_state_machine_loop() {
 
@@ -524,8 +540,7 @@ void Axis::run_state_machine_loop() {
                 if (motor_.config_.torque_constant != 1.0f)
                     goto invalid_state_label;
                 
-                //status = run_motor_characterize_input();
-                status = true;
+                status = run_motor_characterize_input();
             } break;
 
             case AXIS_STATE_MOTOR_CALIBRATION: {
