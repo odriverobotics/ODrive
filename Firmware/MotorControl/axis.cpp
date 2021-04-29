@@ -514,6 +514,20 @@ void Axis::run_state_machine_loop() {
         // Handlers should exit if requested_state != AXIS_STATE_UNDEFINED
         bool status;
         switch (current_state_) {
+
+            //ERG
+            case AXIS_STATE_MOTOR_CHARACTERIZE_INPUT: {
+                if (motor_.config_.motor_type != Motor::MOTOR_TYPE_GIMBAL)
+                    goto invalid_state_label;
+                if (controller_.config_.control_mode != Controller::CONTROL_MODE_TORQUE_CONTROL)
+                    goto invalid_state_label;
+                if (motor_.config_.torque_constant != 1.0f)
+                    goto invalid_state_label;
+                
+                //status = run_motor_characterize_input();
+                status = true;
+            } break;
+
             case AXIS_STATE_MOTOR_CALIBRATION: {
                 status = motor_.run_calibration();
             } break;

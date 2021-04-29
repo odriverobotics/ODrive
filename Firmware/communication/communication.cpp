@@ -56,7 +56,7 @@ float oscilloscope[OSCILLOSCOPE_SIZE] = {0};
 size_t oscilloscope_pos = 0;
 
 // ERG - modeling characterization data structure after oscilloscope
-float motorCharacterizeData[4][MOTORCHARACTERIZEDATA_SIZE] = {0}; //the 4x128 version
+float motor_characterize_data[4][MOTORCHARACTERIZEDATA_SIZE] = {0}; //the 4x128 version
 uint8_t motorCharacterizeData_size = MOTORCHARACTERIZEDATA_SIZE; //for use in communication protocol
 uint32_t motorCharacterizeData_pos = 0;
 

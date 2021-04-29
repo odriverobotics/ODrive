@@ -168,7 +168,7 @@ extern size_t oscilloscope_pos;
 
 // ERG - used to export results of axis.run_motor_characterize_input() (modeled after oscilloscope)
 #define MOTORCHARACTERIZEDATA_SIZE 128
-extern float motorCharacterizeData[4][MOTORCHARACTERIZEDATA_SIZE];
+extern float motor_characterize_data[4][MOTORCHARACTERIZEDATA_SIZE];
 extern uint32_t motorCharacterizeData_pos;
 
 // TODO: move
@@ -237,21 +237,22 @@ public:
     float get_oscilloscope_val(uint32_t index) override {
         return oscilloscope[index];
     }
-    
+
+
     float get_motor_characterize_data_timestep(uint32_t index) override {
-        return motorCharacterizeData[0][index];
+        return motor_characterize_data[0][index];
     } //ERG
     
     float get_motor_characterize_data_voltage(uint32_t index) override {
-        return motorCharacterizeData[1][index];
+        return motor_characterize_data[1][index];
     } //ERG
     
     float get_motor_characterize_data_position(uint32_t index) override {
-        return motorCharacterizeData[2][index];
+        return motor_characterize_data[2][index];
     } //ERG
     
     float get_motor_characterize_data_velocity(uint32_t index) override {
-        return motorCharacterizeData[3][index];
+        return motor_characterize_data[3][index];
     } //ERG
     
 

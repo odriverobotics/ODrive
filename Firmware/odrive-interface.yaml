@@ -35,6 +35,8 @@ interfaces:
             line when plotting `ibus`. Set to 1.0 to disable. This filter is only applied to
             the reported value and not for internal calculations.
       serial_number: readonly uint64
+      #motor_characterize_data_pos: readonly uint32 #ERG
+      #motor_characterize_data_size: readonly uint8 #ERG
       hw_version_major: readonly uint8
       hw_version_minor: readonly uint8
       hw_version_variant: readonly uint8
@@ -964,6 +966,13 @@ valuetypes:
         brief: Run axis homing function.
         doc:
           Endstops must be enabled to use this feature.
+      MotorCharacterizeInput:
+        brief: Run configured voltage input and record data.
+        doc:
+          Requires
+           motor.config.torque_constant = 1
+           motor.config.motor_type = MOTOR_TYPE_GIMBAL
+           controller.config.control_mode = CONTROL_MODE_TORQUE_CONTROL
 
   ODrive.Axis.InputType: #ERG
     values:
