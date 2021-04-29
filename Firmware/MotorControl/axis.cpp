@@ -475,8 +475,8 @@ void Axis::record_motor_characterize_data(float timestep, float voltage_setpoint
         motor_characterize_data_pos = 0;
     motor_characterize_data[0][motor_characterize_data_pos] = timestep;                // [#]
     motor_characterize_data[1][motor_characterize_data_pos] = voltage_setpoint;        // [V]
-    motor_characterize_data[2][motor_characterize_data_pos] = encoder_.pos_estimate_;  // [count]
-    motor_characterize_data[3][motor_characterize_data_pos] = encoder_.vel_estimate_;  // [count/s]
+    motor_characterize_data[2][motor_characterize_data_pos] = encoder_.pos_estimate_;  // [turns]
+    motor_characterize_data[3][motor_characterize_data_pos] = encoder_.vel_estimate_;  // [turns/s]
 }
 
 //ERG - Sends voltage commands to the motor to run a test input for motor characterization
@@ -487,9 +487,9 @@ bool Axis::run_motor_characterize_input() {
     //Wait [test_delay] seconds
     float x = 0.0f;
     run_control_loop([&]() {
-        //float phase_vel = 2*M_PI * encoder_.vel_estimate_ / (float)encoder_.config_.cpr * motor_.config_.pole_pairs;
-        //if (!motor_.update(0.0f, encoder_.phase_, phase_vel))
-        //    return false;
+        float phase_vel = (2*M_PI) * encoder_.vel_estimate_ * motor_.config_.pole_pairs;
+        if (!motor_.update(0.0f, encoder_.phase_, phase_vel))
+            return false;
         record_motor_characterize_data(static_cast<float>(loop_counter_-loopCountStart), 0.0f);
 
         x += current_meas_period / input_config_.test_delay;
@@ -520,9 +520,9 @@ bool Axis::run_motor_characterize_input() {
                     impulse_counter++;
                 }
 
-                //float phase_vel = 2*M_PI * encoder_.vel_estimate_ / (float)encoder_.config_.cpr * motor_.config_.pole_pairs;
-                //if (!motor_.update(voltage_setpoint, encoder_.phase_, phase_vel))
-                //    return false;
+                float phase_vel = (2*M_PI) * encoder_.vel_estimate_ * motor_.config_.pole_pairs;
+                if (!motor_.update(voltage_setpoint, encoder_.phase_, phase_vel))
+                    return false;
                 record_motor_characterize_data(static_cast<float>(loop_counter_-loopCountStart), voltage_setpoint);
 
                 x += current_meas_period / input_config_.test_duration;
@@ -540,9 +540,9 @@ bool Axis::run_motor_characterize_input() {
                     voltage_setpoint = -voltage_lim;
                 }
 
-                //float phase_vel = 2*M_PI * encoder_.vel_estimate_ / (float)encoder_.config_.cpr * motor_.config_.pole_pairs;
-                //if (!motor_.update(voltage_setpoint, encoder_.phase_, phase_vel))
-                //    return false;
+                float phase_vel = (2*M_PI) * encoder_.vel_estimate_ * motor_.config_.pole_pairs;
+                if (!motor_.update(voltage_setpoint, encoder_.phase_, phase_vel))
+                    return false;
                 record_motor_characterize_data(static_cast<float>(loop_counter_-loopCountStart), voltage_setpoint);
 
                 x += current_meas_period / input_config_.test_duration;
@@ -566,9 +566,9 @@ bool Axis::run_motor_characterize_input() {
                     voltage_setpoint = -voltage_lim;
                 }
                 
-                //float phase_vel = 2*M_PI * encoder_.vel_estimate_ / (float)encoder_.config_.cpr * motor_.config_.pole_pairs;
-                //if (!motor_.update(voltage_setpoint, encoder_.phase_, phase_vel))
-                //    return false;
+                float phase_vel = (2*M_PI) * encoder_.vel_estimate_ * motor_.config_.pole_pairs;
+                if (!motor_.update(voltage_setpoint, encoder_.phase_, phase_vel))
+                    return false;
                 record_motor_characterize_data(static_cast<float>(loop_counter_-loopCountStart), voltage_setpoint);
 
                 x += current_meas_period / input_config_.test_duration;
@@ -588,9 +588,10 @@ bool Axis::run_motor_characterize_input() {
                     voltage_setpoint = -voltage_lim;
                 }
 
-                //float phase_vel = 2*M_PI * encoder_.vel_estimate_ / (float)encoder_.config_.cpr * motor_.config_.pole_pairs;
-                //if (!motor_.update(voltage_setpoint, encoder_.phase_, phase_vel))
-                //    return false;
+                
+                float phase_vel = (2*M_PI) * encoder_.vel_estimate_ * motor_.config_.pole_pairs;
+                if (!motor_.update(voltage_setpoint, encoder_.phase_, phase_vel))
+                    return false;
                 record_motor_characterize_data(loop_counter_-loopCountStart, voltage_setpoint);
 
                 x += current_meas_period / input_config_.test_duration;
