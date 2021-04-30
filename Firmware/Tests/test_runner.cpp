@@ -168,7 +168,7 @@ TEST_SUITE("") {
 
     float step_cb_new(bool step_dir_active_, bool dir_pin, int64_t& steps_, float turns_per_step) {
         if (step_dir_active_) {
-            dir_pin ? steps_++ : steps_--;
+            dir_pin ? ++steps_ : --steps_;
             // controller_.input_pos_ = steps_ * config_.turns_per_step;
             // controller_.input_pos_updated();
         }
