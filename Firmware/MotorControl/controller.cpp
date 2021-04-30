@@ -170,7 +170,7 @@ bool Controller::update() {
 
                 pos_setpoint_ = *other_pos * config_.mirror_ratio;
                 vel_setpoint_ = *other_vel * config_.mirror_ratio;
-                torque_setpoint_ = *other_torque * config_.mirror_ratio;
+                torque_setpoint_ = *other_torque * config_.torque_mirror_ratio;
             } else {
                 set_error(ERROR_INVALID_MIRROR_AXIS);
                 return false;

@@ -48,6 +48,7 @@ public:
         bool enable_current_mode_vel_limit = true;  // enable velocity limit in current control mode (requires a valid velocity estimator)
         uint8_t axis_to_mirror = -1;
         float mirror_ratio = 1.0f;
+        float torque_mirror_ratio = 0.0f;
         uint8_t load_encoder_axis = -1;  // default depends on Axis number and is set in load_configuration(). Set to -1 to select sensorless estimator.
         float mechanical_power_bandwidth = 100.0f; // [rad/s] filter cutoff for mechanical power for spinout detction
         float electrical_power_bandwidth = 200.0f; // [rad/s] filter cutoff for electrical power for spinout detection
