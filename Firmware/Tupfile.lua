@@ -426,7 +426,7 @@ add_pkg(odrive_firmware_pkg)
 
 
 for _, src_file in pairs(code_files) do
-    obj_file = "build/"..src_file:gsub("/","_"):gsub("%.","")..".o"
+    obj_file = "build/obj/"..src_file:gsub("/","_"):gsub("%.","")..".o"
     object_files += obj_file
     compile(src_file, obj_file)
 end
