@@ -908,6 +908,18 @@ interfaces:
               calib_vel_threshold: float32
               cogging_ratio: readonly float32
               anticogging_enabled: bool
+          mechanical_power_bandwidth:
+            type: float32
+            doc: "Bandwidth for mechanical power estimate. Used for spinout detection"
+            unit: rad/s
+          electrical_power_bandwidth:
+            type: float32
+            doc: "Bandwidth for electrical power estimate. Used for spinout detection. Dot product of Vdq and Idq"
+            unit: rad/s
+          spinout_power_margin:
+            type: float32
+            doc: "Margin on electrical power for spinout detection. Should be positive values"
+            unit: Watt
       autotuning:
         c_is_class: False
         attributes:
@@ -918,6 +930,14 @@ interfaces:
           vel_phase: float32
           torque_amplitude: float32
           torque_phase: float32
+      mechanical_power:
+        type: readonly float32
+        unit: Watt
+        doc: "Mechanical power estimate. Torque * velocity"
+      electrical_power:
+        type: readonly float32
+        unit: Watt
+        doc: "Electrical power estimate. Vdq dot Idq"
     functions:
       move_incremental:
         doc: Moves the axes' goal point by a specified increment.
@@ -964,6 +984,12 @@ interfaces:
           ABS_SPI_COM_FAIL:
           ABS_SPI_NOT_READY:
           HALL_NOT_CALIBRATED_YET:
+          INCORRECT_OFFSET:
+            doc: |
+              Detected by spinout detection. See Controller class config for spinout_power_margin.
+              Check that your encoder is not slipping on the motor. If using an Index pin, check
+              that you are not getting false index pulses caused by noise. This can happen if you
+              are using unshielded cable for the encoder signals.
       is_ready: readonly bool
       index_found: readonly bool
       shadow_count: readonly int32

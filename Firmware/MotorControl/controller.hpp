@@ -49,6 +49,9 @@ public:
         uint8_t axis_to_mirror = -1;
         float mirror_ratio = 1.0f;
         uint8_t load_encoder_axis = -1;  // default depends on Axis number and is set in load_configuration(). Set to -1 to select sensorless estimator.
+        float mechanical_power_bandwidth = 100.0f; // [rad/s] filter cutoff for mechanical power for spinout detction
+        float electrical_power_bandwidth = 200.0f; // [rad/s] filter cutoff for electrical power for spinout detection
+        float spinout_power_margin = 10.0f; // [W] margin for spinout detection
 
         // custom setters
         Controller* parent;
@@ -111,6 +114,8 @@ public:
     bool trajectory_done_ = true;
 
     bool anticogging_valid_ = false;
+    float mechanical_power_ = 0.0f; // [W]
+    float electrical_power_ = 0.0f; // [W]
 
     // Outputs
     OutputPort<float> torque_output_ = 0.0f;

@@ -342,6 +342,21 @@ bool Controller::update() {
         }
     }
 
+    mechanical_power_ += config_.mechanical_power_bandwidth * current_meas_period * (torque * *vel_estimate - mechanical_power_);
+    electrical_power_ += config_.electrical_power_bandwidth * current_meas_period * (axis_->motor_.current_control_.power_ - electrical_power_);
+
+    // Spinout check
+    // If mechanical power is negative (braking) and measured power is positive, something is wrong
+    // This indicates that the controller is trying to stop, but torque is being produced.
+    // Usually caused by an incorrect encoder offset
+    if (mechanical_power_ < 0 && electrical_power_ > config_.spinout_power_margin) {
+        axis_->encoder_.error_ |= Encoder::ERROR_INCORRECT_OFFSET;
+        set_error(ERROR_NONE);
+        electrical_power_ = 0.0f;
+        mechanical_power_ = 0.0f;
+        return false;
+    }
+
     torque_output_ = torque;
 
     // TODO: this is inconsistent with the other errors which are sticky.

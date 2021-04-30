@@ -31,7 +31,7 @@ components:
     name: odrive
     board-version: v3.6-58V
     serial-number: "2061398A4D4D"
-    brake-resistance: 0.47
+    brake-resistance: 0.50
     usb: auto
     can: main_canbus
     vbus-voltage: 24 # [V]
