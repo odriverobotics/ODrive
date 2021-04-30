@@ -49,6 +49,7 @@ void FieldOrientedController::reset() {
     v_current_control_integral_q_ = 0.0f;
     vbus_voltage_measured_ = std::nullopt;
     Ialpha_beta_measured_ = std::nullopt;
+    power_ = 0.0f;
 }
 
 Motor::Error FieldOrientedController::on_measurement(

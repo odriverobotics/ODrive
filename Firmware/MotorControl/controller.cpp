@@ -13,6 +13,8 @@ void Controller::reset() {
     vel_setpoint_ = 0.0f;
     vel_integrator_torque_ = 0.0f;
     torque_setpoint_ = 0.0f;
+    mechanical_power_ = 0.0f;
+    electrical_power_ = 0.0f;
 }
 
 void Controller::set_error(Error error) {
@@ -352,8 +354,6 @@ bool Controller::update() {
     if (mechanical_power_ < 0 && electrical_power_ > config_.spinout_power_margin) {
         axis_->encoder_.error_ |= Encoder::ERROR_INCORRECT_OFFSET;
         set_error(ERROR_NONE);
-        electrical_power_ = 0.0f;
-        mechanical_power_ = 0.0f;
         return false;
     }
 
