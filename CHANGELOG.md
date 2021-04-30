@@ -29,6 +29,8 @@ Please add a note of your changes below this heading if you make a Pull Request.
 * Sensorless mode was merged into closed loop control mode. Use `<axis>.enable_sensorless_mode` to disable the use of an encoder.
 * More informative profiling instrumentation was added.
 * A system-level error property was introduced.
+* Added `torque_mirror_ratio` and use it to feed-forward `controller_.torque_output` in `INPUT_MODE_MIRROR`
+* Accumulate integer steps in step/dir to avoid float precision errors
 
 ### API Migration Notes
 

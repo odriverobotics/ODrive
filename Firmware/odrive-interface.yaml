@@ -890,6 +890,7 @@ interfaces:
             unit: Nm/(turn/s^2)
           axis_to_mirror: uint8
           mirror_ratio: float32
+          torque_mirror_ratio: float32
           load_encoder_axis:
             type: uint8
             # TODO: this is meaningless for a user. Should there be a separate developer note?
