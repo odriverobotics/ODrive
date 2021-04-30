@@ -11,8 +11,6 @@
 
 #include <doctest.h>
 
-#include <communication/can/can_helpers.hpp>
-
 using std::cout;
 using std::endl;
 
@@ -118,7 +116,7 @@ TEST_SUITE("vel_ramp") {
         float full_step = input_vel_ - vel_setpoint_;
         return std::clamp(full_step, -max_step_size, max_step_size);
     }
-    
+
     uint8_t parity(uint16_t v) {
         v ^= v >> 8;
         v ^= v >> 4;
@@ -153,5 +151,46 @@ TEST_SUITE("vel_ramp") {
         CHECK(parity(0x0DDF & 0x7FFF) == 0);
         CHECK(parity(0x8DDF & 0x7FFF) == 0);
         CHECK(parity(0x5BFF & 0x7FFF) == 1);
+    }
+}
+
+TEST_SUITE("") {
+    float step_cb(bool step_dir_active_, bool dir_pin, float& input_pos_, float turns_per_step) {
+        if (step_dir_active_) {
+            // const bool dir_pin = dir_gpio_.read();
+            const float dir = dir_pin ? 1.0f : -1.0f;
+            input_pos_ += dir * turns_per_step;
+            // controller_.input_pos_ += dir * config_.turns_per_step;
+            // controller_.input_pos_updated();
+        }
+        return input_pos_;
+    }
+
+    float step_cb_new(bool step_dir_active_, bool dir_pin, int64_t& steps_, float turns_per_step) {
+        if (step_dir_active_) {
+            dir_pin ? steps_++ : steps_--;
+            // controller_.input_pos_ = steps_ * config_.turns_per_step;
+            // controller_.input_pos_updated();
+        }
+        return steps_ * turns_per_step;
+    }
+
+    TEST_CASE("step_cb") {
+        bool step_dir_active = true;
+        bool dir_pin = true;
+        float input_pos = 0.0f;
+        float turns_per_step = 1/8192.0f;
+        int64_t steps = 0;
+
+        CHECK(step_cb(step_dir_active, dir_pin, input_pos, turns_per_step) ==
+              step_cb_new(step_dir_active, dir_pin, steps, turns_per_step));
+
+        for (uint64_t i = 0; i < 1ULL << 33; ++i) {
+            step_cb(step_dir_active, dir_pin, input_pos, turns_per_step);
+            step_cb_new(step_dir_active, dir_pin, steps, turns_per_step);
+        }
+
+        std::cout << step_cb(step_dir_active, dir_pin, input_pos, turns_per_step) << '\n';
+        std::cout << step_cb_new(step_dir_active, dir_pin, steps, turns_per_step) << '\n';
     }
 }
