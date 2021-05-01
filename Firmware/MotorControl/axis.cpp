@@ -116,8 +116,7 @@ bool Axis::wait_for_control_iteration() {
 // step/direction interface
 void Axis::step_cb() {
     if (step_dir_active_) {
-        dir_gpio_.read() ? ++steps_ : ++steps_;
-        controller_.input_pos_ = steps_ * config_.turns_per_step;
+        dir_gpio_.read() ? ++steps_ : --steps_;
         controller_.input_pos_updated();
     }
 }

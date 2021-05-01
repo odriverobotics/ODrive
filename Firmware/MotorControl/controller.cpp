@@ -108,6 +108,10 @@ bool Controller::update() {
     std::optional<float> anticogging_pos_estimate = axis_->encoder_.pos_estimate_.present();
     std::optional<float> anticogging_vel_estimate = axis_->encoder_.vel_estimate_.present();
 
+    if (axis_->step_dir_active_) {
+        input_pos_ = axis_->steps_ * axis_->config_.turns_per_step;
+    }
+
     if (config_.anticogging.calib_anticogging) {
         if (!anticogging_pos_estimate.has_value() || !anticogging_vel_estimate.has_value()) {
             set_error(ERROR_INVALID_ESTIMATE);
