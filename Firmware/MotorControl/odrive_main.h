@@ -246,6 +246,7 @@ public:
         return motor_characterize_data_pos;
     } //ERG - same as get_motor_characterize_data_size, seems like it should be doable as a field rather than get
 
+    //ERG TODO - could instead use a single get function with two arguments 'index' and 'row'; less explicit, but more concise
     float get_motor_characterize_data_timestep(uint32_t index) override {
         return motor_characterize_data[0][index];
     } //ERG
