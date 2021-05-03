@@ -966,7 +966,7 @@ valuetypes:
         brief: Run axis homing function.
         doc:
           Endstops must be enabled to use this feature.
-      MotorCharacterizeInput:
+      MotorCharacterizeInput: #ERG
         brief: Run configured voltage input and record data.
         doc:
           Requires
