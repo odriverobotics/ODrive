@@ -278,15 +278,12 @@ def step_and_plot(  axis,
 
 
 #ERG
-def run_motor_characterize_input(odrv, axs):
+def run_motor_characterize_input(odrv, axs, dir):
     """
     Runs configured test input for motor characterization; records time, voltage command, position, and velocity to a *.CSV in the provided directory.
     Note: must be set to gimbal motor mode and current control. Make sure current_limit is set appropriately,
     and be aware that this 'current limit' actually signifies the voltage limit when in gimbal motor mode.
     """
-    
-    #ERG TODO - move back to argument
-    dir = "C:\\Users\\Emily\\Documents\\1Graduate School\\2021 Spring\\Lab\\v5exports"
 
     from odrive.enums import AXIS_STATE_MOTOR_CHARACTERIZE_INPUT
     from datetime import datetime
