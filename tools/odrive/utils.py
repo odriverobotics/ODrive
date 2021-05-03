@@ -295,7 +295,7 @@ def run_motor_characterize_input(odrv, axs, dir):
         print("Error: invalid directory")
         return
 
-    timeout = 10 # [s]
+    timeout = 30 # [s]
     buffer_size = odrv.get_motor_characterize_data_size()
     vals = []
 
@@ -318,7 +318,7 @@ def run_motor_characterize_input(odrv, axs, dir):
         elif axs == 1 and odrv.axis1.motor.is_calibrated:
             odrv.axis1.requested_state = AXIS_STATE_MOTOR_CHARACTERIZE_INPUT
         else:
-            print("Error: invalid axis. Please choose either 0 or 1, and make sure axis is calibrated.")
+            print("Error: invalid axis. Please choose either 0 or 1, and make sure motor is calibrated.")
             return
 
         finished = False
@@ -327,6 +327,7 @@ def run_motor_characterize_input(odrv, axs, dir):
             try:            
                 idx = odrv.get_motor_characterize_data_idx()
                 #ERG TODO - figure out why fetching data with idx==0 shifts all the data over a column, remove idx>0 condition
+                #If desired, reducing data collected (e.g. to only timestep and velocity) could get lower latency
                 if idx < buffer_size and idx > 0:
                     data = [odrv.get_motor_characterize_data_timestep(idx),
                             odrv.get_motor_characterize_data_voltage(idx),
@@ -366,7 +367,6 @@ def run_motor_characterize_input(odrv, axs, dir):
                     file.flush()
                 print("Data saved at: " + file_name)
     return
-
 
 def print_drv_regs(name, motor):
     """
