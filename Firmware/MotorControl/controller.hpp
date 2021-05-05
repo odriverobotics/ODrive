@@ -36,10 +36,11 @@ public:
         float vel_ramp_rate = 1.0f;              // [(turn/s) / s]
         float torque_ramp_rate = 0.01f;          // Nm / sec
         bool circular_setpoints = false;
-        float circular_setpoint_range = 1.0f; // Circular range when circular_setpoints is true. [turn]
-        float inertia = 0.0f;                 // [Nm/(turn/s^2)]
-        float input_filter_bandwidth = 2.0f;  // [1/s]
-        float homing_speed = 0.25f;           // [turn/s]
+        float circular_setpoint_range = 1.0f;    // Circular range when circular_setpoints is true. [turn]
+        uint32_t steps_per_circular_range = 1024;
+        float inertia = 0.0f;                    // [Nm/(turn/s^2)]
+        float input_filter_bandwidth = 2.0f;     // [1/s]
+        float homing_speed = 0.25f;              // [turn/s]
         Anticogging_t anticogging;
         float gain_scheduling_width = 10.0f;
         bool enable_gain_scheduling = false;
@@ -57,6 +58,7 @@ public:
         // custom setters
         Controller* parent;
         void set_input_filter_bandwidth(float value) { input_filter_bandwidth = value; parent->update_filter_gains(); }
+        void set_steps_per_circular_range(uint32_t value) { steps_per_circular_range = value > 0 ? value : steps_per_circular_range; }
     };
 
     Controller() {}

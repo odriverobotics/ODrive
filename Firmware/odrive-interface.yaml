@@ -418,6 +418,7 @@ interfaces:
             doc: There isn't a valid position estimate available.
       step_dir_active: readonly bool
       last_drv_fault: readonly uint32
+      steps: readonly int64
       current_state: readonly AxisState
       requested_state: AxisState
       is_homed: {type: bool, c_name: homing_.is_homed}
@@ -450,7 +451,6 @@ interfaces:
               This setting only takes effect on a state transition
               into idle or out of closed loop control.
           enable_sensorless_mode: bool
-          turns_per_step: float32
           watchdog_timeout:
             type: float32
             unit: s
@@ -829,6 +829,7 @@ interfaces:
           INVALID_MIRROR_AXIS:
           INVALID_LOAD_ENCODER:
           INVALID_ESTIMATE:
+          INVALID_CIRCULAR_RANGE:
       last_error_time: float32
       input_pos:
         type: float32
@@ -884,6 +885,10 @@ interfaces:
           circular_setpoint_range:
             type: float32
             doc: circular range in [turns] for position setpoints when circular_setpoints is True
+          steps_per_circular_range:
+            type: int32
+            doc: Number of steps within the circular setpoint range. Set this and the circular setpoint range to powers of 2 for the best results.
+            c_setter: set_steps_per_circular_range
           homing_speed:
             type: float32
             unit: turns/s

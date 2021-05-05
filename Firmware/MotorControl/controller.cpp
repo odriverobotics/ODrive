@@ -109,7 +109,11 @@ bool Controller::update() {
     std::optional<float> anticogging_vel_estimate = axis_->encoder_.vel_estimate_.present();
 
     if (axis_->step_dir_active_) {
-        input_pos_ = axis_->steps_ * axis_->config_.turns_per_step;
+        if (!pos_wrap.has_value()) {
+            set_error(ERROR_INVALID_CIRCULAR_RANGE);
+            return false;
+        }
+        input_pos_ = (float)(axis_->steps_ % config_.steps_per_circular_range) * (*pos_wrap / (float)(config_.steps_per_circular_range));
     }
 
     if (config_.anticogging.calib_anticogging) {
@@ -123,8 +127,11 @@ bool Controller::update() {
 
     // TODO also enable circular deltas for 2nd order filter, etc.
     if (config_.circular_setpoints) {
-        // Keep pos setpoint from drifting
-        input_pos_ = fmodf_pos(input_pos_, config_.circular_setpoint_range);
+        if (!pos_wrap.has_value()) {
+            set_error(ERROR_INVALID_CIRCULAR_RANGE);
+            return false;
+        }
+        input_pos_ = fmodf_pos(input_pos_, *pos_wrap);
     }
 
     // Update inputs
@@ -155,6 +162,13 @@ bool Controller::update() {
         case INPUT_MODE_POS_FILTER: {
             // 2nd order pos tracking filter
             float delta_pos = input_pos_ - pos_setpoint_; // Pos error
+            if (config_.circular_setpoints) {
+                if (!pos_wrap.has_value()) {
+                    set_error(ERROR_INVALID_CIRCULAR_RANGE);
+                    return false;
+                }
+                delta_pos = wrap_pm(delta_pos, *pos_wrap);
+            }
             float delta_vel = input_vel_ - vel_setpoint_; // Vel error
             float accel = input_filter_kp_*delta_pos + input_filter_ki_*delta_vel; // Feedback
             torque_setpoint_ = accel * config_.inertia; // Accel

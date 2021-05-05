@@ -33,7 +33,7 @@ Please add a note of your changes below this heading if you make a Pull Request.
 * Accumulate integer steps in step/dir to avoid float precision errors
 
 ### API Migration Notes
-
+* `axis.config.turns_per_step` changed to `axis.controller.config.steps_per_circular_range`
 * `odrive.axis.fet_thermistor`, `odrive.axis.motor_thermistor` moved to `odrive.axis.motor` object
 * `enable_uart` and `uart_baudrate` were renamed to `enable_uart0` and `uart0_baudrate`.
 * `enable_i2c_instead_of_can` was replaced by the separate settings `enable_i2c0` and `enable_can0`.

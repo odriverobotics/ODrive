@@ -75,8 +75,6 @@ public:
 
         bool enable_sensorless_mode = false;
 
-        float turns_per_step = 1.0f / 1024.0f;
-
         float watchdog_timeout = 0.0f; // [s]
         bool enable_watchdog = false;
 
