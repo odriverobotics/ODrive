@@ -392,6 +392,8 @@ bool Axis::run_homing() {
     }
 
     stop_closed_loop_control();
+    
+    controller_.input_vel_ = 0.0f;
 
     error_ &= ~ERROR_MIN_ENDSTOP_PRESSED; // clear this error since we deliberately drove into the endstop
 
