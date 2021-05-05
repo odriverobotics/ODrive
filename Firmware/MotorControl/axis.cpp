@@ -399,9 +399,6 @@ bool Axis::run_homing() {
     if (pos_estimate_local == std::nullopt || !pos_estimate_local.has_value()){
         return error_ |= ERROR_UNKNOWN_POSITION, false;
     }
-
-    // Calculate the desired position after offset.
-    float input_buffer = pos_estimate_local.value() + min_endstop_.config_.offset;
     
     controller_.config_.control_mode = Controller::CONTROL_MODE_POSITION_CONTROL;
     controller_.config_.input_mode = Controller::INPUT_MODE_TRAP_TRAJ;
@@ -409,7 +406,9 @@ bool Axis::run_homing() {
     // Initialize closed loop control, and then set the desired location.
     start_closed_loop_control();
     
-    controller_.input_pos_ = input_buffer;
+    controller_.input_pos_ = pos_estimate_local.value() + min_endstop_.config_.offset;
+    controller_.pos_setpoint_ = pos_estimate_local.value();
+    controller_.vel_setpoint_ = 0.0f;
     controller_.input_pos_updated();
     
     while ((requested_state_ == AXIS_STATE_UNDEFINED) && motor_.is_armed_ && !controller_.trajectory_done_) {
