@@ -15,7 +15,6 @@ Please add a note of your changes below this heading if you make a Pull Request.
 * Added AARCH64 support to libfibre
 
 ### Changed
-* 
 * Step/dir performance improved! Dual axis step rates up to 250kHz have been tested
 * Apply_config is called for encoders after a successful direction find
 * Full calibration sequence now includes hall polarity calibration if a hall effect encoder is used
@@ -34,7 +33,7 @@ Please add a note of your changes below this heading if you make a Pull Request.
   6. Finally, the control loop interrupt invokes `pwm_update_cb` on both motors to make them update their PWM timing registers.
 * Components that need low level control over PWM timings are implemented by inheriting from the `PhaseControlLaw` interface. Three components currently inherit this interface: `FieldOrientedController`, `ResistanceMeasurementControlLaw` and `InductanceMeasurementControlLaw`.
 * The FOC algorithm is now found in foc.cpp and and is presumably capable of running at a different frequency than the main control tasks (not relevant for ODrive v3).
-* Async estimator was consolidated into a separate component `<odrv>.async_estimator`.
+* ACIM estimator was consolidated into a separate component `<odrv>.acim_estimator`.
 * The Automatic Output Enable (AOE) flag of TIM1/TIM8 is used to achieve glitch-free motor arming.
 * Sensorless mode was merged into closed loop control mode. Use `<axis>.enable_sensorless_mode` to disable the use of an encoder.
 * More informative profiling instrumentation was added.
@@ -65,16 +64,16 @@ Please add a note of your changes below this heading if you make a Pull Request.
 * `<axis>.motor.current_control.Ibus` was moved to `<axis>.motor.I_bus`.
 * `<axis>.motor.current_control.max_allowed_current` was moved to `<axis>.motor.max_allowed_current`.
 * `<axis>.motor.current_control.overcurrent_trip_level` was removed.
-* `<axis>.motor.current_control.acim_rotor_flux` was moved to `<axis>.async_estimator.rotor_flux`.
-* `<axis>.motor.current_control.async_phase_vel` was moved to `<axis>.async_estimator.stator_phase_vel`.
-* `<axis>.motor.current_control.async_phase_offset` was moved to `<axis>.async_estimator.phase`.
+* `<axis>.motor.current_control.acim_rotor_flux` was moved to `<axis>.acim_estimator.rotor_flux`.
+* `<axis>.motor.current_control.async_phase_vel` was moved to `<axis>.acim_estimator.stator_phase_vel`.
+* `<axis>.motor.current_control.async_phase_offset` was moved to `<axis>.acim_estimator.phase`.
 * `<axis>.motor.timing_log` was removed in favor of `<odrv>.task_times` and `<odrv>.<axis>.task_times`.
 * `<axis>.motor.config.direction` was moved to `<axis>.encoder.config.direction`.
-* `<axis>.motor.config.acim_slip_velocity` was moved to `<axis>.async_estimator.config.slip_velocity`.
+* `<axis>.motor.config.acim_slip_velocity` was moved to `<axis>.acim_estimator.config.slip_velocity`.
 * Several properties were changed to readonly.
 * `<axis>.encoder.config.offset` was renamed to ``<axis>.encoder.config.phase_offset`
 * `<axis>.encoder.config.offset_float` was renamed to ``<axis>.encoder.config.phase_offset_float`
-* `<odrv>.config.brake_resistance == 0.0` is no longer a valid way to disable the brake resistor. Use `<odrv>.config.enable_brake_resistor` instead.
+* `<odrv>.config.brake_resistance == 0.0` is no longer a valid way to disable the brake resistor. Use `<odrv>.config.enable_brake_resistor` instead. A reboot is necessary for this to take effect.
 * `<odrv>.can.set_baud_rate()` was removed. The baudrate is now automatically updated when writing to `<odrv>.can.config.baud_rate`.
 
 # Releases
