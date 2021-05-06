@@ -13,6 +13,8 @@ Please add a note of your changes below this heading if you make a Pull Request.
 * 2-norm current clamping is used for AC induction motors
 * Added spinout detection to detect incorrect encoder offset and ENCODER_ERROR_INCORRECT_OFFSET to error enums.
 * Added AARCH64 support to libfibre
+* Tuning input mode added to provide sinusoidal position, velocity, or torque stimulus. See INPUT_MODE_TUNING and the controller class for details.
+* Added torque mirroring to INPUT_MODE_MIRROR
 
 ### Changed
 * Step/dir performance improved! Dual axis step rates up to 250kHz have been tested

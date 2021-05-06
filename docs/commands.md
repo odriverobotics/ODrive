@@ -80,7 +80,7 @@ All variables that are part of a `[...].config` object can be saved to non-volat
  * `<odrv>.hw_version_major`, `<odrv>.hw_version_minor`, `<odrv>.hw_version_revision`: The hardware version of your ODrive.
 
 ## Setting up sensorless
-The ODrive can run without encoder/hall feedback, but there is a minimum speed, usually around a few hunderd RPM.
+The ODrive can run without encoder/hall feedback, but there is a minimum speed, usually around a few hundred RPM.
 
 Below are some suggested starting parameters that you can use. Note that you _must_ set the `pm_flux_linkage` correctly for sensorless mode to work. Motor calibration and setup must also be completed before sensorless mode will work.
 

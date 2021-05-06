@@ -90,6 +90,22 @@ Next step is to check the alignment between the motor and the hall sensor.
 Because of this step you are allowed to plug the motor phases in random order and also the hall signals can be random. Just don't change it after calibration.
 Make sure the motor is free to move and run:
 ```txt
+odrv0.axis0.requested_state = AXIS_STATE_ENCODER_HALL_POLARITY_CALIBRATION
+```
+
+Check the status of the encoder object:
+```txt
+odrv0.axis0.encoder
+```
+
+Check that there are no errors.
+```txt
+  error = 0x0000 (int)
+```
+
+If the hall encoder polarity calibration was successful, run the encoder offset calibration.
+
+```txt
 odrv0.axis0.requested_state = AXIS_STATE_ENCODER_OFFSET_CALIBRATION
 ```
 

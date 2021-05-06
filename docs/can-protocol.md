@@ -72,7 +72,7 @@ CMD ID | Name | Sender | Signals | Start byte | Signal Type | Bits | Factor | Of
 ## Configuring ODrive for CAN
 Configuration of the CAN parameters should be done via USB before putting the device on the bus.
 
-To set the desired baud rate, use `<odrv>.can.set_baud_rate(<value>)`.  The baud rate can be done without rebooting the device.  If you'd like to keep the baud rate, simply call `<odrv>.save_configuration()` before rebooting.
+To set the desired baud rate, use `<odrv>.can.config.baud_rate = <value>`. Save the config with `<odrv>.save_configuration()` and reboot for the baud rate setting to take effect.
 
 Each axis looks like a separate node on the bus. Thus, they both have the two properties `can_node_id` and `can_node_id_extended`. The node ID can be from 0 to 63 (0x3F) inclusive, or, if extended CAN IDs are used, from 0 to 16777215 (0xFFFFFF). If you want to connect more than one ODrive on a CAN bus, you must set different node IDs for the second ODrive or they will conflict and crash the bus.
 
@@ -81,7 +81,7 @@ Each axis looks like a separate node on the bus. Thus, they both have the two pr
 ```
 odrv0.axis0.config.can_node_id = 3
 odrv0.axis1.config.can_node_id = 1
-odrv0.can.set_baud_rate(500000)
+odrv0.can.config.baud_rate = 500000
 odrv0.save_configuration()
 odrv0.reboot()
 ```

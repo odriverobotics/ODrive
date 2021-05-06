@@ -62,6 +62,8 @@ When the encoder mode is set to hall feedback, the pinout on the encoder port is
 | B               | Hall B        |
 | Z               | Hall C        |
 
+To use hall effect encoders, the calibration sequence is different than incremental or absolute encoders. You must first run `AXIS_STATE_ENCODER_HALL_POLARITY_CALIBRATION` before `AXIS_STATE_ENCODER_OFFSET_CALIBRATION` The hall polarity calibration will automatically determine the order and polarity of the hall signals. When using `AXIS_STATE_FULL_CALIBRATION_SEQUENCE`, these steps are automatically used if the encoder is set to hall mode.
+
 ### Startup sequence notes
 The following are variables that MUST be set up for your encoder configuration. Your values will vary depending on your encoder:
 
@@ -178,7 +180,7 @@ In this mode, the pinout on the encoder port is as follows:
 Apart from (incremental) quadrature encoders, ODrive also supports absolute SPI encoders (since firmware v0.5). These usually measure an absolute angle. This means you don't need to repeat the encoder calibration after every ODrive reboot. Currently, the following modes are supported:
 
  * **CUI protocol**: Compatible with the AMT23xx family (AMT232A, AMT232B, AMT233A, AMT233B).
- * **AMS protocol**: Compatible with AS5047P and AS5048A/AS5048B.
+ * **AMS protocol**: Compatible with AS5047P and AS5048A.
 
 Some of these chips come with evaluation boards that can simplify mounting the chips to your motor. For our purposes if you are using an evaluation board you should select the settings for 3.3v.
 
