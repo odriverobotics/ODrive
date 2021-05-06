@@ -105,7 +105,7 @@ struct BoardConfig_t {
                                                                     //!< otherwise the ramp feature is disabled.
 
     float dc_max_positive_current = INFINITY; // Max current [A] the power supply can source
-    float dc_max_negative_current = -0.000001f; // Max current [A] the power supply can sink. You most likely want a non-positive value here. Set to -INFINITY to disable.
+    float dc_max_negative_current = -0.01f; // Max current [A] the power supply can sink. You most likely want a non-positive value here. Set to -INFINITY to disable.
     uint32_t error_gpio_pin = DEFAULT_ERROR_PIN;
     PWMMapping_t pwm_mappings[4];
     PWMMapping_t analog_mappings[GPIO_COUNT];

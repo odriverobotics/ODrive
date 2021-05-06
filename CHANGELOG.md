@@ -1,13 +1,23 @@
 # Unreleased Features
 Please add a note of your changes below this heading if you make a Pull Request.
+
+# Releases
+## [0.5.2] - 2021-05-05
 ### Added
 * Added phase balance check to motor calibration and MOTOR_ERROR_UNBALANCED_PHASES to error enums
 * Added polarity and phase offset calibration for hall effect encoders
 * [Mechanical brake support](docs/mechanical-brakes.md)
 * Added periodic sending of encoder position on CAN
 * Support for UART1 on GPIO3 and GPIO4. UART0 (on GPIO1/2) and UART1 can currently not be enabled at the same time.
+* Thermistors now have a 2nd order lowpass filter applied to reduce noise
+* 2-norm current clamping is used for AC induction motors
+* Added spinout detection to detect incorrect encoder offset and ENCODER_ERROR_INCORRECT_OFFSET to error enums.
+* Added AARCH64 support to libfibre
 
 ### Changed
+* 
+* Step/dir performance improved! Dual axis step rates up to 250kHz have been tested
+* Apply_config is called for encoders after a successful direction find
 * Full calibration sequence now includes hall polarity calibration if a hall effect encoder is used
 * Modified encoder offset calibration to work correctly when calib_scan_distance is not a multiple of 4pi
 * Moved thermistors from being a top level object to belonging to Motor objects. Also changed errors: thermistor errors rolled into motor errors
@@ -31,6 +41,7 @@ Please add a note of your changes below this heading if you make a Pull Request.
 * A system-level error property was introduced.
 * Added `torque_mirror_ratio` and use it to feed-forward `controller_.torque_output` in `INPUT_MODE_MIRROR`
 * Accumulate integer steps in step/dir to avoid float precision errors
+* Circular setpoint mode must be enabled when the step/dir interface is used.
 
 ### API Migration Notes
 * `axis.config.turns_per_step` changed to `axis.controller.config.steps_per_circular_range`
