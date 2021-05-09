@@ -94,8 +94,13 @@ You can deconflict with CANopen like this:
 
 It may not be obvious, but this allows for some compatibility with CANOpen.  Although the address space 0x200 and 0x300 correspond to receive PDO base addresses, we can guarantee they will not conflict if all CANopen node IDs are >= 32.  E.g.:
 
-CANopen nodeID = 35 = 0x23  
-Receive PDO 0x200 + nodeID = 0x223, which does not conflict with the range [0x200 : 0x21F]
+```
+odrv0.axis0.config.can_node_id = 3
+odrv0.axis1.config.can_node_id = 1
+odrv0.can.set_baud_rate(500000)
+odrv0.save_configuration()
+odrv0.reboot()
+```
 
 Be careful that you don't assign too many nodeIDs per PDO group.  Four CAN Simple nodes (32*4) is all of the available address space of a single PDO.  If the bus is strictly ODrive CAN Simple nodes, a simple sequential Node ID assignment will work fine.
 
