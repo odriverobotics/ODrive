@@ -101,6 +101,10 @@ $ candump can0 -xct z -n 10
  (000.401972)  can0  RX - -  021   [8]  00 00 00 00 08 00 00 00
 ```
 
+Alternatively, if you have python can installed (`pip3 install python-can`), you can use the can.viewer script:
+
+`python3 -m can.viewer -c "can0" -i "socketcan"` which will give you a nice readout.  See [the python-can docs](https://python-can.readthedocs.io/en/master/scripts.html#can-viewer) for an example.
+
 ## Commanding the ODrive
 
 Now that we've verified the communication is working, we can try commanding the ODrive.  Make sure your ODrive is configured and working properly over USB with `odrivetool` before continuing.  See the [Getting Started Guide](getting-started.md) for help with first-time configuration.
