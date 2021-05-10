@@ -2,10 +2,9 @@ import can
 
 bus = can.interface.Bus("can0", bustype="socketcan")
 axisID = 0x1
-msgID = axisID << 5 | 0x7
 
 print("Requesting AXIS_STATE_FULL_CALIBRATION_SEQUENCE (0x03) on axisID: " + str(axisID))
-msg = can.Message(arbitration_id=msgID, data=[3, 0, 0, 0, 0, 0, 0, 0], dlc=8, is_extended_id=False)
+msg = can.Message(arbitration_id=axisID << 5 | 0x07, data=[3, 0, 0, 0, 0, 0, 0, 0], dlc=8, is_extended_id=False)
 print(msg)
 try:
     bus.send(msg)
@@ -33,7 +32,7 @@ while True:
         break
 
 print("\nPutting axis",axisID,"into AXIS_STATE_CLOSED_LOOP_CONTROL...")
-msg = can.Message(arbitration_id=msgID, data=[8, 0, 0, 0, 0, 0, 0, 0], dlc=8, is_extended_id=False)
+msg = can.Message(arbitration_id=axisID << 5 | 0x07, data=[8, 0, 0, 0, 0, 0, 0, 0], dlc=8, is_extended_id=False)
 print(msg)
 
 try:
