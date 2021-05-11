@@ -276,8 +276,6 @@ def step_and_plot(  axis,
     axis.controller.config.control_mode = initial_control_mode
     capture.plot()
 
-
-<<<<<<< HEAD
 #ERG
 def run_motor_characterize_input(odrv, axs, dir):
     """
@@ -369,8 +367,6 @@ def run_motor_characterize_input(odrv, axs, dir):
                 print("Data saved at: " + file_name)
     return
 
-=======
->>>>>>> 411494c7f02707f551a4f7f071f14c962d7b475f
 def print_drv_regs(name, motor):
     """
     Dumps the current gate driver regisers for the specified motor
