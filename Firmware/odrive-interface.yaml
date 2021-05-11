@@ -191,15 +191,12 @@ interfaces:
     functions:
       test_function: {in: {delta: int32}, out: {cnt: int32}}
       get_oscilloscope_val: {in: {index: uint32}, out: {val: float32}}
-<<<<<<< HEAD
       get_motor_characterize_data_size: {in: {}, out: {val: uint8}} #ERG
       get_motor_characterize_data_idx: {in: {}, out: {val: uint32}} #ERG
       get_motor_characterize_data_timestep: {in: {index: uint32}, out: {val: float32}} #ERG
       get_motor_characterize_data_voltage: {in: {index: uint32}, out: {val: float32}} #ERG
       get_motor_characterize_data_position: {in: {index: uint32}, out: {val: float32}} #ERG
       get_motor_characterize_data_velocity: {in: {index: uint32}, out: {val: float32}} #ERG
-=======
->>>>>>> 411494c7f02707f551a4f7f071f14c962d7b475f
       get_adc_voltage: {in: {gpio: uint32}, out: {voltage: float32}}
       save_configuration:
       erase_configuration:
@@ -363,7 +360,6 @@ interfaces:
             doc: Both axes will have the same id to start
           can_node_id_extended: bool
           can_heartbeat_rate_ms: uint32
-<<<<<<< HEAD
       input_config: #ERG
         c_is_class: False
         attributes:
@@ -400,8 +396,6 @@ interfaces:
           noise_max:
             type: uint32
             doc: percentage of voltage limit
-=======
->>>>>>> 411494c7f02707f551a4f7f071f14c962d7b475f
       fet_thermistor: OnboardThermistorCurrentLimiter
       motor_thermistor: OffboardThermistorCurrentLimiter
       motor: Motor
@@ -972,7 +966,6 @@ valuetypes:
         brief: Run axis homing function.
         doc:
           Endstops must be enabled to use this feature.
-<<<<<<< HEAD
       MotorCharacterizeInput: #ERG
         brief: Run configured voltage input and record data.
         doc:
@@ -991,8 +984,6 @@ valuetypes:
         brief: Exponential chirp from freqLow to freqHigh
       Noise:
         brief: White noise
-=======
->>>>>>> 411494c7f02707f551a4f7f071f14c962d7b475f
 
   ODrive.ThermistorCurrentLimiter.Error:
     nullflag: None
