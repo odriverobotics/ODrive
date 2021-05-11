@@ -215,10 +215,7 @@ public:
     int axis_num_;
     const AxisHardwareConfig_t& hw_config_;
     Config_t& config_;
-<<<<<<< HEAD
     InputConfig_t& input_config_; //ERG 
-=======
->>>>>>> 411494c7f02707f551a4f7f071f14c962d7b475f
 
     Encoder& encoder_;
     SensorlessEstimator& sensorless_estimator_;
