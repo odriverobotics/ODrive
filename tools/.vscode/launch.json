@@ -9,11 +9,7 @@
             "type": "python",
             "request": "launch",
             "stopOnEntry": true,
-<<<<<<< HEAD
-
-=======
             "pythonPath": "${command:python.pythonPath}",
->>>>>>> 411494c7f02707f551a4f7f071f14c962d7b475f
             "program": "${file}",
             "cwd": "${workspaceRoot}",
             "env": {},
