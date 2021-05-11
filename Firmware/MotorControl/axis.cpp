@@ -468,7 +468,6 @@ bool Axis::run_idle_loop() {
     return check_for_errors();
 }
 
-<<<<<<< HEAD
 //ERG - saves latest data for motor characterization
 void Axis::record_motor_characterize_data(float timestep, float voltage_setpoint) {
     motor_characterize_data_pos++;
@@ -608,8 +607,6 @@ bool Axis::run_motor_characterize_input() {
     return true;
 }
 
-=======
->>>>>>> 411494c7f02707f551a4f7f071f14c962d7b475f
 // Infinite loop that does calibration and enters main control loop as appropriate
 void Axis::run_state_machine_loop() {
 
@@ -656,7 +653,6 @@ void Axis::run_state_machine_loop() {
         // Handlers should exit if requested_state != AXIS_STATE_UNDEFINED
         bool status;
         switch (current_state_) {
-<<<<<<< HEAD
 
             //ERG
             case AXIS_STATE_MOTOR_CHARACTERIZE_INPUT: {
@@ -670,8 +666,6 @@ void Axis::run_state_machine_loop() {
                 status = run_motor_characterize_input();
             } break;
 
-=======
->>>>>>> 411494c7f02707f551a4f7f071f14c962d7b475f
             case AXIS_STATE_MOTOR_CALIBRATION: {
                 status = motor_.run_calibration();
             } break;
