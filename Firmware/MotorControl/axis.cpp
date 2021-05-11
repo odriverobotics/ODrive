@@ -24,10 +24,7 @@ Axis::Axis(int axis_num,
     : axis_num_(axis_num),
       hw_config_(hw_config),
       config_(config),
-<<<<<<< HEAD
       input_config_(input_config), //ERG
-=======
->>>>>>> 411494c7f02707f551a4f7f071f14c962d7b475f
       encoder_(encoder),
       sensorless_estimator_(sensorless_estimator),
       controller_(controller),
