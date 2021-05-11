@@ -1,6 +1,3 @@
-<<<<<<< HEAD
-IN PROGRESS - This branch is for development as we work to upgrade to ODrive firmware v5. It is not yet functional.
-=======
 ![ODrive Logo](https://static1.squarespace.com/static/58aff26de4fcb53b5efd2f02/t/59bf2a7959cc6872bd68be7e/1505700483663/Odrive+logo+plus+text+black.png?format=1000w)
 
 This project is all about accurately driving brushless motors, for cheap. The aim is to make it possible to use inexpensive brushless motors in high performance robotics projects, like [this](https://www.youtube.com/watch?v=WT4E5nb3KtY).
@@ -26,4 +23,3 @@ Please refer to the [Developer Guide](https://docs.odriverobotics.com/developer-
  * [User Guide](https://docs.odriverobotics.com/)
  * [Forum](https://discourse.odriverobotics.com/)
  * [Chat](https://discourse.odriverobotics.com/t/come-chat-with-us/281)
->>>>>>> 411494c7f02707f551a4f7f071f14c962d7b475f
