@@ -166,11 +166,14 @@ extern ODriveCAN *odCAN;
 extern float oscilloscope[OSCILLOSCOPE_SIZE];
 extern size_t oscilloscope_pos;
 
+<<<<<<< HEAD
 // ERG - used to export results of axis.run_motor_characterize_input() (modeled after oscilloscope)
 #define MOTORCHARACTERIZEDATA_SIZE 128
 extern float motor_characterize_data[4][MOTORCHARACTERIZEDATA_SIZE];
 extern uint32_t motor_characterize_data_pos;
 
+=======
+>>>>>>> 411494c7f02707f551a4f7f071f14c962d7b475f
 // TODO: move
 // this is technically not thread-safe but practically it might be
 #define DEFINE_ENUM_FLAG_OPERATORS(ENUMTYPE) \
@@ -238,6 +241,7 @@ public:
         return oscilloscope[index];
     }
 
+<<<<<<< HEAD
     uint8_t get_motor_characterize_data_size() override {
         return MOTORCHARACTERIZEDATA_SIZE;
     } //ERG TODO - seems like this should be doable without a get function, but I couldn't get it working
@@ -263,6 +267,8 @@ public:
         return motor_characterize_data[3][index];
     } //ERG
     
+=======
+>>>>>>> 411494c7f02707f551a4f7f071f14c962d7b475f
     float get_adc_voltage(uint32_t gpio) override {
         return ::get_adc_voltage(get_gpio_port_by_pin(gpio), get_gpio_pin_by_pin(gpio));
     }

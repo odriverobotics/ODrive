@@ -63,6 +63,7 @@ public:
         void set_dir_gpio_pin(uint16_t value) { dir_gpio_pin = value; parent->decode_step_dir_pins(); }
     };
 
+<<<<<<< HEAD
     //ERG - Parameters to be used by run_motor_characterize_input()
     struct InputConfig_t {
         InputType input_type = INPUT_TYPE_STEP; //see: InputType_t
@@ -81,6 +82,8 @@ public:
     void record_motor_characterize_data(float timestep, float voltage_setpoint); //ERG
     bool run_motor_characterize_input(); //ERG
 
+=======
+>>>>>>> 411494c7f02707f551a4f7f071f14c962d7b475f
     struct Homing_t {
         bool is_homed = false;
     };
@@ -92,7 +95,10 @@ public:
     Axis(int axis_num,
             const AxisHardwareConfig_t& hw_config,
             Config_t& config,
+<<<<<<< HEAD
             InputConfig_t& input_config, //ERG
+=======
+>>>>>>> 411494c7f02707f551a4f7f071f14c962d7b475f
             Encoder& encoder,
             SensorlessEstimator& sensorless_estimator,
             Controller& controller,
@@ -215,7 +221,10 @@ public:
     int axis_num_;
     const AxisHardwareConfig_t& hw_config_;
     Config_t& config_;
+<<<<<<< HEAD
     InputConfig_t& input_config_; //ERG 
+=======
+>>>>>>> 411494c7f02707f551a4f7f071f14c962d7b475f
 
     Encoder& encoder_;
     SensorlessEstimator& sensorless_estimator_;

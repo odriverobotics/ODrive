@@ -1,4 +1,4 @@
-{
+
     // Use IntelliSense to learn about possible attributes.
     // Hover to view descriptions of existing attributes.
     // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
@@ -9,7 +9,11 @@
             "type": "python",
             "request": "launch",
             "stopOnEntry": true,
-            "python": "${command:python.pythonPath}",
+<<<<<<< HEAD
+
+=======
+            "pythonPath": "${command:python.pythonPath}",
+>>>>>>> 411494c7f02707f551a4f7f071f14c962d7b475f
             "program": "${file}",
             "cwd": "${workspaceRoot}",
             "env": {},

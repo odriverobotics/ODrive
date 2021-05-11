@@ -19,7 +19,10 @@ AXIS_STATE_CLOSED_LOOP_CONTROL           = 8
 AXIS_STATE_LOCKIN_SPIN                   = 9
 AXIS_STATE_ENCODER_DIR_FIND              = 10
 AXIS_STATE_HOMING                        = 11
+<<<<<<< HEAD
 AXIS_STATE_MOTOR_CHARACTERIZE_INPUT      = 12 #ERG
+=======
+>>>>>>> 411494c7f02707f551a4f7f071f14c962d7b475f
 
 # ODrive.ThermistorCurrentLimiter.Error
 THERMISTOR_CURRENT_LIMITER_ERROR_NONE    = 0x00000000
