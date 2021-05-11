@@ -11,10 +11,7 @@
 Axis::Axis(int axis_num,
            const AxisHardwareConfig_t& hw_config,
            Config_t& config,
-<<<<<<< HEAD
            InputConfig_t& input_config, //ERG
-=======
->>>>>>> 411494c7f02707f551a4f7f071f14c962d7b475f
            Encoder& encoder,
            SensorlessEstimator& sensorless_estimator,
            Controller& controller,
