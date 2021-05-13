@@ -140,7 +140,7 @@ ODriveIntf::MotorIntf::Error FieldOrientedController::get_alpha_beta_output(
         mod_q = V_to_mod * (Vq + v_current_control_integral_q_ + Ierr_q * p_gain);
 
         // calculate power estimate
-        power_ = Idq->first * v_current_control_integral_d_ + Idq->second * v_current_control_integral_q_; 
+        power_ = Id * (Vd + v_current_control_integral_d_) + Iq * (Vq + v_current_control_integral_q_); 
 
         // Vector modulation saturation, lock integrator if saturated
         // TODO make maximum modulation configurable

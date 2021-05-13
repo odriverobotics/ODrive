@@ -710,6 +710,7 @@ interfaces:
           Ibeta_measured: {type: readonly float32, c_getter: 'Ialpha_beta_measured_.value_or(float2D{0.0f, 0.0f}).second'}
           Id_measured: readonly float32
           Iq_measured: readonly float32
+          power: readonly float32
           v_current_control_integral_d: float32
           v_current_control_integral_q: float32
           final_v_alpha: readonly float32
@@ -830,6 +831,13 @@ interfaces:
           INVALID_LOAD_ENCODER:
           INVALID_ESTIMATE:
           INVALID_CIRCULAR_RANGE:
+          SPINOUT_DETECTED:
+            doc: |
+              The motor mechanical power and electrical power do not agree. This is usually
+              caused by a slipping encoder or incorrect encoder offset calibration.
+              Check that your encoder is not slipping on the motor. If using an Index pin, check
+              that you are not getting false index pulses caused by noise. This can happen if you
+              are using unshielded cable for the encoder signals.
       last_error_time: float32
       input_pos:
         type: float32
@@ -924,9 +932,13 @@ interfaces:
             type: float32
             doc: "Bandwidth for electrical power estimate. Used for spinout detection. Dot product of Vdq and Idq"
             unit: rad/s
-          spinout_power_margin:
+          spinout_mechanical_power_threshold:
             type: float32
-            doc: "Margin on electrical power for spinout detection. Should be positive values"
+            doc: "Mechanical power threshold for spinout detection. This should be a negative value"
+            unit: Watt
+          spinout_electrical_power_threshold:
+            type: float32
+            doc: "Electrical power threshold for spinout detection. This should be a positive value"
             unit: Watt
       autotuning:
         c_is_class: False
@@ -992,12 +1004,6 @@ interfaces:
           ABS_SPI_COM_FAIL:
           ABS_SPI_NOT_READY:
           HALL_NOT_CALIBRATED_YET:
-          INCORRECT_OFFSET:
-            doc: |
-              Detected by spinout detection. See Controller class config for spinout_power_margin.
-              Check that your encoder is not slipping on the motor. If using an Index pin, check
-              that you are not getting false index pulses caused by noise. This can happen if you
-              are using unshielded cable for the encoder signals.
       is_ready: readonly bool
       index_found: readonly bool
       shadow_count: readonly int32
