@@ -23,6 +23,8 @@ This is the simplest possible way of controlling the ODrive. It is also the most
 
         <axis>.controller.config.circular_setpoints = True
 
+After this, step and direction will be enabled when you put the axis into closed loop control. Note that to change out of step/dir, you need to set `<axis>.config.enable_step_dir = False`, go to `AXIS_STATE_IDLE`, and then back into closed loop control.
+
 Circular setpoints are used to keep floating point error at a manageable error for systems where the motor can rotate large amounts. If the motor is commanded out of the circular range, the position setpoint automatically wraps around to stay in the range. Two parameters are used to control this behavior: `<odrv>.<axis>.controller.config.circular_setpoint_range` and `<odrv>.<axis>.controller.config.steps_per_circular_range`. The circular setpoint range sets the operating range of input_pos, starting at 0.0. The `steps per circular range` setting controls how many steps are needed to traverse the entire range. For example, to use 1024 steps per 1 full motor turn, set
 
 ```
