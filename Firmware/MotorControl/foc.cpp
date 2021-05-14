@@ -139,9 +139,6 @@ ODriveIntf::MotorIntf::Error FieldOrientedController::get_alpha_beta_output(
         mod_d = V_to_mod * (Vd + v_current_control_integral_d_ + Ierr_d * p_gain);
         mod_q = V_to_mod * (Vq + v_current_control_integral_q_ + Ierr_q * p_gain);
 
-        // calculate power estimate
-        power_ = Id * (Vd + v_current_control_integral_d_) + Iq * (Vq + v_current_control_integral_q_); 
-
         // Vector modulation saturation, lock integrator if saturated
         // TODO make maximum modulation configurable
         float mod_scalefactor = 0.80f * sqrt3_by_2 * 1.0f / std::sqrt(mod_d * mod_d + mod_q * mod_q);
@@ -178,6 +175,7 @@ ODriveIntf::MotorIntf::Error FieldOrientedController::get_alpha_beta_output(
     if (Idq.has_value()) {
         auto [Id, Iq] = *Idq;
         *ibus = mod_d * Id + mod_q * Iq;
+        power_ = vbus_voltage * (*ibus).value();
     }
     
     return Motor::ERROR_NONE;

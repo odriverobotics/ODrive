@@ -26,7 +26,7 @@ public:
         Protocol protocol = PROTOCOL_SIMPLE;
 
         ODriveCAN* parent = nullptr; // set in apply_config()
-        void set_baud_rate(uint32_t value) { parent->set_baud_rate(baud_rate); }
+        void set_baud_rate(uint32_t value) { parent->set_baud_rate(value); }
     };
 
     ODriveCAN() {}

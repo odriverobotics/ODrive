@@ -367,8 +367,8 @@ bool Controller::update() {
     float ideal_electrical_power = 0.0f;
     if (axis_->motor_.config_.motor_type != Motor::MOTOR_TYPE_GIMBAL) {
         ideal_electrical_power = axis_->motor_.current_control_.power_ - \
-            axis_->motor_.current_control_.Iq_measured_ * axis_->motor_.current_control_.Iq_measured_ * axis_->motor_.config_.phase_resistance - \
-            axis_->motor_.current_control_.Id_measured_ * axis_->motor_.current_control_.Id_measured_ * axis_->motor_.config_.phase_resistance;
+            SQ(axis_->motor_.current_control_.Iq_measured_) * 1.5f * axis_->motor_.config_.phase_resistance - \
+            SQ(axis_->motor_.current_control_.Id_measured_) * 1.5f * axis_->motor_.config_.phase_resistance;
     }
     else {
         ideal_electrical_power = axis_->motor_.current_control_.power_;
