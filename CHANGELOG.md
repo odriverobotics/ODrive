@@ -2,7 +2,13 @@
 Please add a note of your changes below this heading if you make a Pull Request.
 
 # Releases
-## [0.5.2] - 2021-05-05
+## [0.5.2] - 2021-05-15
+
+### Fixed
+* spinout error is no longer sticky and doesn't trigger on static torque loads due to I^2*R electrical power
+* Step and direction mode resets position when entering closed loop just like `input_pos` does
+* CAN baud rate setting is now correctly handled
+
 ### Added
 * Added phase balance check to motor calibration and MOTOR_ERROR_UNBALANCED_PHASES to error enums
 * Added polarity and phase offset calibration for hall effect encoders
@@ -11,10 +17,12 @@ Please add a note of your changes below this heading if you make a Pull Request.
 * Support for UART1 on GPIO3 and GPIO4. UART0 (on GPIO1/2) and UART1 can currently not be enabled at the same time.
 * Thermistors now have a 2nd order lowpass filter applied to reduce noise
 * 2-norm current clamping is used for AC induction motors
-* Added spinout detection to detect incorrect encoder offset and ENCODER_ERROR_INCORRECT_OFFSET to error enums.
+* Added spinout detection to detect incorrect encoder offset and CONTROLLER_ERROR_SPINOUT_DETECTED to error enums.
 * Added AARCH64 support to libfibre
 * Tuning input mode added to provide sinusoidal position, velocity, or torque stimulus. See INPUT_MODE_TUNING and the controller class for details.
 * Added torque mirroring to INPUT_MODE_MIRROR
+* `mechanical_power_bandwidth`, `electrical_power_bandwidth`, `spinout_electrical_power_threshold`, `spinout_mechanical_power_threshold` added to `controller.config` for spinout detection.
+* `mechanical_power` and `electrical_power` added to `controller`.
 
 ### Changed
 * Step/dir performance improved! Dual axis step rates up to 250kHz have been tested
