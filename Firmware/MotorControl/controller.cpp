@@ -328,6 +328,11 @@ bool Controller::update() {
         v_err = vel_des - *vel_estimate;
         torque += (vel_gain * gain_scheduling_multiplier) * v_err;
 
+        float vel_error_diff = v_err - vel_err_previous_;
+        vel_error_diff /= current_meas_period;
+        vel_err_previous_ = v_err;
+        torque += vel_error_diff * config_.vel_differentiator_gain;
+
         // Velocity integral action before limiting
         torque += vel_integrator_torque_;
     }

@@ -1079,6 +1079,9 @@ interfaces:
             type: float32
             unit: N·m
             doc: Limit the integrator output (independent of proportional gain output). Set to infinity to disable. Units = N·m
+          vel_differentiator_gain:
+            type: float32
+            unit: Nm/turn
           vel_limit:
             type: float32
             unit: turn/s
