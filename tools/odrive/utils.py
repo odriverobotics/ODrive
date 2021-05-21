@@ -590,6 +590,7 @@ def dump_dma(odrv):
 def dump_timing(odrv, n_samples=100, path='/tmp/timings.png'):
     import matplotlib.pyplot as plt
     import re
+    import numpy as np
     
     timings = []
     
