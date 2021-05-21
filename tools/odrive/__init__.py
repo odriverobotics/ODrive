@@ -53,4 +53,4 @@ def find_any(path=default_search_path, serial_number=None,
         channel_termination_token.set()
         raise
 
-    return result[0]
+    return result[0] if len(result) > 0 else None
