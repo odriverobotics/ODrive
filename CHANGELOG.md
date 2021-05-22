@@ -2,7 +2,7 @@
 Please add a note of your changes below this heading if you make a Pull Request.
 
 # Releases
-## [0.5.2] - 2021-05-15
+## [0.5.2] - 2021-05-21
 
 ### Fixed
 * spinout error is no longer sticky and doesn't trigger on static torque loads due to I^2*R electrical power
@@ -10,6 +10,7 @@ Please add a note of your changes below this heading if you make a Pull Request.
 * CAN baud rate setting is now correctly handled
 
 ### Added
+* `sc` command to ascii protocol to run `odrv.clear_errors()`
 * Added phase balance check to motor calibration and MOTOR_ERROR_UNBALANCED_PHASES to error enums
 * Added polarity and phase offset calibration for hall effect encoders
 * [Mechanical brake support](docs/mechanical-brakes.md)
