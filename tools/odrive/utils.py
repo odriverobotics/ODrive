@@ -101,8 +101,6 @@ def dump_errors(odrv, clear=False, printfunc = print):
             for bit in range(64):
                 if obj & (1 << bit) != 0:
                     printfunc(indent + "  " + errorcodes.get((1 << bit), 'UNKNOWN ERROR: 0x{:08X}'.format(1 << bit)))
-            if clear:
-                setattr(parent, elem, 0)
         else:
             printfunc(indent + name + ": " + _VT100Colors['green'] + "no error" + _VT100Colors['default'])
 
@@ -124,6 +122,9 @@ def dump_errors(odrv, clear=False, printfunc = print):
 
         for name, obj, path, errorcodes in module_decode_map:
             dump_errors_for_module("  ", name, obj, path, errorcodes)
+
+    if clear:
+        odrv.clear_errors()
 
 def oscilloscope_dump(odrv, num_vals, filename='oscilloscope.csv'):
     with open(filename, 'w') as f:

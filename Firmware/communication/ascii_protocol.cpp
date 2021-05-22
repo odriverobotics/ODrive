@@ -331,6 +331,7 @@ void AsciiProtocol::cmd_system_ctrl(char * pStr, bool use_checksum) {
         case 's':   odrv.save_configuration();  break;  // Save config
         case 'e':   odrv.erase_configuration(); break;  // Erase config
         case 'r':   odrv.reboot();              break;  // Reboot
+        case 'c':   odrv.clear_errors();        break;  // clear all errors and rearm brake resistor if necessary
         default:    /* default */               break;
     }
 }

@@ -142,3 +142,4 @@ Not all parameters can be accessed via the ASCII protocol but at least all param
 * `ss` - Save config
 * `se` - Erase config
 * `sr` - Reboot
+* `sc` - Clear errors

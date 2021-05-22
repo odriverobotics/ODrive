@@ -164,7 +164,7 @@ The tool you're looking at is a fully capable Python command prompt, so you can 
 You can read more about `odrivetool` [here](odrivetool.md).
 
 ## Debugging
-If any of the following steps fail, print the errors by running `dump_errors(odrv0)` in `odrivetool`. You can clear errors by running `dump_errors(odrv0, True)` or `odrv0.clear_errors()`.
+If any of the following steps fail, print the errors by running `dump_errors(odrv0)` in `odrivetool`. You can clear errors by running `odrv0.clear_errors()`.
 
 ## Configure M0
 <div class="alert" markdown="span">Read this section carefully, else you risk breaking something.</div>
@@ -262,7 +262,7 @@ Let's get motor 0 up and running. The procedure for motor 1 is exactly the same,
   
   Check the encoder wiring and that the encoder is firmly connected to the motor. Check the value of `dump_errors(odrv0)` and then refer to the [error code documentation](troubleshooting.md#error-codes) for details.
 
-  Once you understand the error and have fixed its cause, you may clear the error state with (`dump_errors(odrv0, True)` <kbd>Enter</kbd>) and retry.
+  Once you understand the error and have fixed its cause, you may clear the error state with (`odrv0.clear_errors()` <kbd>Enter</kbd>) and retry.
   </div></details>
 
 2. Type `odrv0.axis0.requested_state = AXIS_STATE_CLOSED_LOOP_CONTROL` <kbd>Enter</kbd>. From now on the ODrive will try to hold the motor's position. If you try to turn it by hand, it will fight you gently. That is unless you bump up `odrv0.axis0.motor.config.current_lim`, in which case it will fight you more fiercely. If the motor begins to vibrate either immediately or after being disturbed you will need to [lower the controller gains](control.md).

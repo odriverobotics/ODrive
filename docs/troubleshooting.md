@@ -11,7 +11,7 @@ Table of Contents:
 <!-- /TOC -->
 
 ## Error codes
-If your ODrive is not working as expected, run `odrivetool` and type `dump_errors(odrv0)` <kbd>Enter</kbd>. This will dump a list of all the errors that are present. To also clear all the errors, you can run `dump_errors(odrv0, True)`.
+If your ODrive is not working as expected, run `odrivetool` and type `dump_errors(odrv0)` <kbd>Enter</kbd>. This will dump a list of all the errors that are present. To clear all the errors, you can run `odrv0.clear_errors()`.
 
 With this information you can look up the API documentation for your error(s):
 * Axis error flags documented [here](api/odrive.axis.error).
