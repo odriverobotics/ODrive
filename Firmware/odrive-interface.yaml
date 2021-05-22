@@ -859,7 +859,7 @@ interfaces:
               the speed limit. You can set `config.enable_overspeed_error` to False
               to disable this error.
           INVALID_INPUT_MODE:
-            brief: `controller.config.input_mode` was set to an invalid value. See InputMode for available values
+            brief: The `controller.config.input_mode` setting was set to an invalid value. See InputMode for available values
             doc: |
               Input modes and control modes are separate concepts. A control mode sets the type of control to be used,
               like position, velocity, or torque control. Input modes modify the input given (`input_pos`, etc) to
