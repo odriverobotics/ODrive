@@ -65,11 +65,17 @@ interfaces:
               connections you can also try increasing your brake resistance by
               ~ 0.01 Ohm at a time to a maximum of 0.05 greater than your brake
               resistor value.
-          DC_BUS_OVER_REGEN_CURRENT: {doc: too much current pushed into the power supply}
-          DC_BUS_OVER_CURRENT: {doc: too much current pulled out of the power supply}
+          DC_BUS_OVER_REGEN_CURRENT:
+            doc: |
+              Current flowing back into the power supply exceeded `odrv.config.dc_max_negative_current`.
+              This can happen if your brake resistor is unable to handle the braking current. Check that
+              `(V_power_supply / Brake_resistance) > (total motor.config.current_lim + total motor.config.current_lim_margin)`.
+          DC_BUS_OVER_CURRENT:
+            doc: |
+              Too much current was pulled from the power supply. `odrv.ibus` exceeded `odrv.config.dc_max_positive_current`.
           BRAKE_DEADTIME_VIOLATION:
           BRAKE_DUTY_CYCLE_NAN:
-          INVALID_BRAKE_RESISTANCE: {doc: '`config.brake_resistance` is non-positive or NaN.'}
+          INVALID_BRAKE_RESISTANCE: {doc: '`config.brake_resistance` is non-positive or NaN. Make sure that `config.brake_resistance` is a positive number.'}
 #          BRAKE_RESISTOR_DISARMED:
 #            doc: The brake resistor was unexpectedly disarmed.
         
@@ -404,10 +410,18 @@ interfaces:
               tried to run encoder calibration or closed loop control before the
               motor was calibrated, or you tried to run closed loop control
               before the encoder was calibrated.
-          WATCHDOG_TIMER_EXPIRED: {bit: 11}
+          WATCHDOG_TIMER_EXPIRED:
+            bit: 11
+            brief: The axis watchdog timer expired.
+            doc: |
+              An amount of time greater than `axis.config.watchdog_timeout` passed
+              without the watchdog being fed.
           MIN_ENDSTOP_PRESSED:
+            brief: The min endstop was pressed
           MAX_ENDSTOP_PRESSED:
+            brief: The max endstop was pressed
           ESTOP_REQUESTED:
+            brief: The estop message was sent over CAN
           HOMING_WITHOUT_ENDSTOP:
             bit: 17
             doc: the min endstop was not enabled during homing
@@ -644,8 +658,21 @@ interfaces:
               For gimbal motors, it is recommended to set the
               `config.calibration_current` and `config.current_lim`
               to half your bus voltage, or less.
-          CURRENT_SENSE_SATURATION: {bit: 10}
-          CURRENT_LIMIT_VIOLATION: {bit: 12}
+          CURRENT_SENSE_SATURATION:
+            bit: 10
+            doc: |
+              The current sense circuit saturated the current sense amplifier.
+              This can be caused by setting `motor.config.current_lim` higher than
+              `motor.config.requested_current_range`. If this happens, increase the
+              requested current range, save the configuration, and reboot the controller.
+          CURRENT_LIMIT_VIOLATION:
+            bit: 12
+            doc: |
+              The motor current exceeded `motor.config.current_lim + motor.config.current_lim_margin`.
+              The current controller is a PI controller, so it can experience overshoot. The PI gains
+              are automatically calculated based on `motor.config.current_control_bandwidth` and the
+              motor resistance and inductance (pole placement). Some overshoot is normal, so a sensible
+              solution is to increase the current limit margin if your current limit is large.
           MODULATION_IS_NAN: {bit: 16}
           MOTOR_THERMISTOR_OVER_TEMP: {doc: The motor thermistor measured a temperature above motor.motor_thermistor.config.temp_limit_upper}
           FET_THERMISTOR_OVER_TEMP: {doc: The inverter thermistor measured a temperature above motor.fet_thermistor.config.temp_limit_upper}
@@ -657,7 +684,12 @@ interfaces:
               The DC current sourced/sunk by this motor exceeded the configured
               hard limits. More specifically `i_bus` fell outside of the range
               `config.i_bus_hard_min` ... `config.i_bus_hard_max`.
-          BRAKE_RESISTOR_DISARMED: {doc: An attempt was made to run the motor PWM while the brake resistor was enabled but disarmed.}
+          BRAKE_RESISTOR_DISARMED: 
+            doc: |
+              An attempt was made to run the motor PWM while the brake resistor was enabled but disarmed.
+              The brake resistor can be disarmed for many reasons, but this usually happens if an error
+              is thrown that disables the motor. Check for other errors, then run `odrvX.clear_errors()` 
+              to clear the errors and rearm the brake resistor.
           SYSTEM_LEVEL:
             doc: |
               The motor had to be disarmed because of a system level error.
@@ -672,7 +704,7 @@ interfaces:
           UNKNOWN_VOLTAGE_COMMAND: {doc: The current controller did not get a valid feedforward voltage setpoint.}
           UNKNOWN_GAINS: {doc: The current controller gains were not configured. Run motor calibration or set `config.phase_resistance` and `config.phase_inductance` manually.}
           CONTROLLER_INITIALIZING: {doc: Internal value used while the controller is not yet ready to generate PWM timings.}
-          UNBALANCED_PHASES: {doc: The motor pahses are not balanced.}
+          UNBALANCED_PHASES: {doc: The motor phases are not balanced.}
       is_armed: readonly bool
       is_calibrated: readonly bool
       current_meas_phA: {type: readonly float32, c_getter: 'current_meas_.value_or(Iph_ABC_t{0.0f, 0.0f, 0.0f}).phA'}
@@ -814,18 +846,25 @@ interfaces:
         nullflag: NONE
         flags:
           OVERSPEED:
+            brief: Motor speed exceeded `config.vel_limit * config.vel_limit_tolerance` and `config.enable_overspeed_error` was enabled.
             doc: |
               Try increasing `config.vel_limit`. The default of 2 turns per second 
               gives a motor speed of only 120 RPM. Note: Even if
-              you do not commanded your motor to exceed `config.vel_limit`
+              you do not command your motor to exceed `config.vel_limit`,
               sudden changes in the load placed on a motor may cause this speed
               to be temporarily exceeded, resulting in this error.
 
               You can also try increasing `config.vel_limit_tolerance`. The
               default value of 1.2 means it will only allow a 20% violation of
-              the speed limit. You can set the `config.vel_limit_tolerance` to 0
-              to disable the check altogether.
+              the speed limit. You can set `config.enable_overspeed_error` to False
+              to disable this error.
           INVALID_INPUT_MODE:
+            brief: `controller.config.input_mode` was set to an invalid value. See InputMode for available values
+            doc: |
+              Input modes and control modes are separate concepts. A control mode sets the type of control to be used,
+              like position, velocity, or torque control. Input modes modify the input given (`input_pos`, etc) to
+              give desired behavior. For example, in position *control mode*, the position filter *input mode* will
+              smooth out `input_pos` commands to give smoother motion.
           UNSTABLE_GAIN:
           INVALID_MIRROR_AXIS:
           INVALID_LOAD_ENCODER:
@@ -985,6 +1024,11 @@ interfaces:
               ODrive uses your supplied value for the motor pole pairs to
               measure the CPR. So you should also double check this value.
 
+              If your encoder cpr and motor pole pair settings are correct,
+              this error can be caused because motor cogging makes the motor
+              move less or more than commanded. You can fix this by increasing
+              `encoder.config.calib_scan_distance`.
+
               Note that the AMT encoders are configurable using the micro-
               switches on the encoder PCB and so you may need to check that
               these are in the right positions. If your encoder lists its pulse
@@ -995,6 +1039,11 @@ interfaces:
               ODrive board.
           UNSUPPORTED_ENCODER_MODE:
           ILLEGAL_HALL_STATE:
+            doc: |
+              Hall effect encoder only have 6 valid states out of 8 (2^3) possible states.
+              An invalid state can be caused by noise or a hardware fault. If you get this
+              error and you are sure that your electrical connections are correct, add
+              22nF capacitors between the encoder A,B,Z pins and ground to filter out noise.
           INDEX_NOT_FOUND_YET:
             doc: |
               Check that your encoder is a model that has an index pulse. If
@@ -1154,45 +1203,6 @@ interfaces:
           gpio4_pwm_mapping: {type: ODrive.Endpoint, c_name: 'pwm_mappings[3]', doc: Make sure the corresponding GPIO is in `GPIO_MODE_PWM`.}
       axis0: {type: ODrive.Axis, c_name: get_axis(0)}
       axis1: {type: ODrive.Axis, c_name: get_axis(1)}
-
-  ODrive4:
-    c_is_class: True
-    implements: ODrive
-    attributes:
-      config:
-        c_is_class: False
-        implements: ODrive.Config
-        attributes:
-          # TODO: add support for arrays
-          gpio0_mode: {type: ODrive.GpioMode, doc: Mode of GPIO0 (changes take effect after reboot), c_name: 'gpio_modes[0]'}
-          gpio1_mode: {type: ODrive.GpioMode, doc: Mode of GPIO1 (changes take effect after reboot), c_name: 'gpio_modes[1]'}
-          gpio2_mode: {type: ODrive.GpioMode, doc: Mode of GPIO2 (changes take effect after reboot), c_name: 'gpio_modes[2]'}
-          gpio3_mode: {type: ODrive.GpioMode, doc: Mode of GPIO3 (changes take effect after reboot), c_name: 'gpio_modes[3]'}
-          gpio4_mode: {type: ODrive.GpioMode, doc: Mode of GPIO4 (changes take effect after reboot), c_name: 'gpio_modes[4]'}
-          gpio5_mode: {type: ODrive.GpioMode, doc: Mode of GPIO5 (changes take effect after reboot), c_name: 'gpio_modes[5]'}
-          gpio6_mode: {type: ODrive.GpioMode, doc: Mode of GPIO6 (changes take effect after reboot), c_name: 'gpio_modes[6]'}
-          gpio7_mode: {type: ODrive.GpioMode, doc: Mode of GPIO7 (changes take effect after reboot), c_name: 'gpio_modes[7]'}
-          gpio8_mode: {type: ODrive.GpioMode, doc: Mode of GPIO8 (changes take effect after reboot), c_name: 'gpio_modes[8]'}
-          gpio9_mode: {type: ODrive.GpioMode, doc: Mode of GPIO9 (changes take effect after reboot), c_name: 'gpio_modes[9]'}
-          gpio10_mode: {type: ODrive.GpioMode, doc: Mode of GPIO10 (changes take effect after reboot), c_name: 'gpio_modes[10]'}
-          gpio11_mode: {type: ODrive.GpioMode, doc: Mode of GPIO11 (changes take effect after reboot), c_name: 'gpio_modes[11]'}
-          gpio12_mode: {type: ODrive.GpioMode, doc: Mode of GPIO12 (changes take effect after reboot), c_name: 'gpio_modes[12]'}
-          gpio13_mode: {type: ODrive.GpioMode, doc: Mode of GPIO13 (changes take effect after reboot), c_name: 'gpio_modes[13]'}
-          gpio14_mode: {type: ODrive.GpioMode, doc: Mode of GPIO14 (changes take effect after reboot), c_name: 'gpio_modes[14]'}
-          gpio15_mode: {type: ODrive.GpioMode, doc: Mode of GPIO15 (changes take effect after reboot), c_name: 'gpio_modes[15]'}
-          gpio16_mode: {type: ODrive.GpioMode, doc: Mode of GPIO16 (changes take effect after reboot), c_name: 'gpio_modes[16]'}
-          gpio17_mode: {type: ODrive.GpioMode, doc: Mode of GPIO17 (changes take effect after reboot), c_name: 'gpio_modes[17]'}
-          gpio18_mode: {type: ODrive.GpioMode, doc: Mode of GPIO18 (changes take effect after reboot), c_name: 'gpio_modes[18]'}
-          gpio19_mode: {type: ODrive.GpioMode, doc: Mode of GPIO19 (changes take effect after reboot), c_name: 'gpio_modes[19]'}
-          gpio20_mode: {type: ODrive.GpioMode, doc: Mode of GPIO20 (changes take effect after reboot), c_name: 'gpio_modes[20]'}
-          gpio21_mode: {type: ODrive.GpioMode, doc: Mode of GPIO21 (changes take effect after reboot), c_name: 'gpio_modes[21]'}
-          gpio22_mode: {type: ODrive.GpioMode, doc: Mode of GPIO22 (changes take effect after reboot), c_name: 'gpio_modes[22]'}
-
-          gpio14_pwm_mapping: {type: ODrive.Endpoint, c_name: 'pwm_mappings[3]', doc: Make sure the corresponding GPIO is in `GPIO_MODE_PWM`.}
-          gpio19_pwm_mapping: {type: ODrive.Endpoint, c_name: 'pwm_mappings[2]', doc: Make sure the corresponding GPIO is in `GPIO_MODE_PWM`.}
-          gpio20_pwm_mapping: {type: ODrive.Endpoint, c_name: 'pwm_mappings[0]', doc: Make sure the corresponding GPIO is in `GPIO_MODE_PWM`.}
-          gpio21_pwm_mapping: {type: ODrive.Endpoint, c_name: 'pwm_mappings[1]', doc: Make sure the corresponding GPIO is in `GPIO_MODE_PWM`.}
-      axis0: {type: ODrive.Axis, c_name: get_axis(0)}
 
 valuetypes:
   ODrive.GpioMode:

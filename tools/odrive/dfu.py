@@ -265,6 +265,7 @@ def update_device(device, firmware, logger, cancellation_token):
     """
 
     if isinstance(device, usb.core.Device):
+        found_in_dfu = True
         serial_number = device.serial_number
         dfudev = DfuDevice(device)
         if (logger._verbose):
@@ -281,6 +282,7 @@ def update_device(device, firmware, logger, cancellation_token):
         else:
             hw_version = (0, 0, 0)
     else:
+        found_in_dfu = False
         serial_number = "{:08X}".format(device.serial_number)
         dfudev = None
 
@@ -421,13 +423,15 @@ def update_device(device, firmware, logger, cancellation_token):
     # Jump to application
     dfudev.jump_to_application(0x08000000)
 
-    logger.info("Waiting for the device to reappear...")
-    device = odrive.find_any(odrive.default_usb_search_path, serial_number,
-                    cancellation_token, cancellation_token, timeout=30)
+    if not found_in_dfu:
+        logger.info("Waiting for the device to reappear...")
+        device = odrive.find_any(odrive.default_usb_search_path, serial_number,
+                        cancellation_token, cancellation_token, timeout=30)
 
-    if do_backup_config:
-        odrive.configuration.restore_config(device, None, logger)
-        os.remove(odrive.configuration.get_temp_config_filename(device))
+        if do_backup_config:
+            temp_config_filename = odrive.configuration.get_temp_config_filename(device)
+            odrive.configuration.restore_config(device, None, logger)
+            os.remove(temp_config_filename)
 
     logger.success("Device firmware update successful.")
 
