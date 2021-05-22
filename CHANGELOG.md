@@ -8,6 +8,7 @@ Please add a note of your changes below this heading if you make a Pull Request.
 * spinout error is no longer sticky and doesn't trigger on static torque loads due to I^2*R electrical power
 * Step and direction mode resets position when entering closed loop just like `input_pos` does
 * CAN baud rate setting is now correctly handled
+* `odrivetool dfu` works properly when an ODrive is flashed with the `dfu` switch set to "dfu".
 
 ### Added
 * `sc` command to ascii protocol to run `odrv.clear_errors()`
