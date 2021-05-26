@@ -38,7 +38,7 @@ CMD ID | Name | Sender | Signals | Start byte | Signal Type | Bits | Factor | Of
 0x000 | CANOpen NMT Message\*\* | Master | - | - | - | - | - | - | -
 0x001 | ODrive Heartbeat Message | Axis | Axis Error<br>Axis Current State | 0<br>4 | Unsigned Int<br>Unsigned Int | 32<br>32 | 1<br>1 | 0<br>0 | Intel<br>Intel
 0x002 | ODrive Estop Message | Master | - | - | - | - | - | - | -
-0x003 | Get Motor Error\* | Axis  | Motor Error | 0 | Unsigned Int | 32 | 1 | 0 | Intel
+0x003 | Get Motor Error\* | Axis  | Motor Error | 0 | Unsigned Int | 64 | 1 | 0 | Intel
 0x004 | Get Encoder Error\*  | Axis | Encoder Error | 0 | Unsigned Int | 32 | 1 | 0 | Intel
 0x005 | Get Sensorless Error\* | Axis | Sensorless Error | 0 | Unsigned Int | 32 | 1 | 0 | Intel
 0x006 | Set Axis Node ID | Master | Axis CAN Node ID | 0 | Unsigned Int | 32 | 1 | 0 | Intel

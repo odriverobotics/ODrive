@@ -161,7 +161,7 @@ bool CANSimple::get_motor_error_callback(const Axis& axis) {
     txmsg.isExt = axis.config_.can.is_extended;
     txmsg.len = 8;
 
-    can_setSignal(txmsg, axis.motor_.error_, 0, 32, true);
+    can_setSignal(txmsg, axis.motor_.error_, 0, 64, true);
 
     return canbus_->send_message(txmsg);
 }
