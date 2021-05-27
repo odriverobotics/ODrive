@@ -381,9 +381,11 @@ def update_device(device, firmware, logger, cancellation_token):
 
     # Erase
     try:
-        for i, (sector, data) in enumerate(touched_sectors):
-            print("Erasing... (sector {}/{})  \r".format(i, len(touched_sectors)), end='', flush=True)
-            dfudev.erase_sector(sector)
+        internal_flash_sectors = [sector for sector in dfudev.sectors if sector['name'] == 'Internal Flash']
+        for i, sector in enumerate(dfudev.sectors):
+            if sector['name'] == 'Internal Flash':
+                print("Erasing... (sector {}/{})  \r".format(i, len(internal_flash_sectors)), end='', flush=True)
+                dfudev.erase_sector(sector)
         print('Erasing... done            \r', end='', flush=True)
     finally:
         print('', flush=True)

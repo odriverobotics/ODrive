@@ -10,7 +10,7 @@ To use UART connect it like this:
 
 The logic level of the ODrive is 3.3V. The GPIOs are 5V tolerant.
 
-You can use `odrv0.config.uart_a_baudrate` to change the baudrate and `odrv0.config.enable_uart_a` to disable/reenable UART_A. Currently the UART port runs both the [Native Protocol](native-protocol) and the [ASCII Protocol](ascii-protocol) at the same time.
+You can use `odrv0.config.uart_a_baudrate` to change the baudrate and `odrv0.config.enable_uart_a` to disable/reenable UART_A. The UART_A port can run the [Native Protocol](native-protocol) or the [ASCII Protocol](ascii-protocol), but not both at the same time. You can configure this by setting `odrv0.config.uart0_protocol` to either `STREAM_PROTOCOL_TYPE_ASCII_AND_STDOUT` for the ASCII protocol or `STREAM_PROTOCOL_TYPE_FIBRE` for the native protocol.
 
 ### How to use UART on GPIO3/4
 
