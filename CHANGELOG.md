@@ -9,6 +9,8 @@ Please add a note of your changes below this heading if you make a Pull Request.
 * Step and direction mode resets position when entering closed loop just like `input_pos` does
 * CAN baud rate setting is now correctly handled
 * `odrivetool dfu` works properly when an ODrive is flashed with the `dfu` switch set to "dfu".
+* `odrivetool dfu` now erases the entire flash memory before flashing firmware. This ensures that old configuration parameters are erased.
+* ASCII and the Native Protocol do not run at the same time on a UART interface. See `odrv0.config.uart0_protocol` and the `STREAM_PROTOCOL_TYPE` enums for details.
 
 ### Added
 * `sc` command to ascii protocol to run `odrv.clear_errors()`
