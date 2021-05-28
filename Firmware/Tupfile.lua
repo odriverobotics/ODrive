@@ -346,7 +346,8 @@ CFLAGS += '-DFIBRE_ENABLE_SERVER'
 
 -- linker flags
 LDFLAGS += '-flto -lc -lm -lnosys' -- libs
-LDFLAGS += '-mthumb -mfloat-abi=hard -specs=nosys.specs -specs=nano.specs -u _printf_float -u _scanf_float -Wl,--cref -Wl,--gc-sections'
+-- LDFLAGS += '-mthumb -mfloat-abi=hard -specs=nosys.specs -specs=nano.specs -u _printf_float -u _scanf_float -Wl,--cref -Wl,--gc-sections'
+LDFLAGS += '-mthumb -mfloat-abi=hard -specs=nosys.specs -u _printf_float -u _scanf_float -Wl,--cref -Wl,--gc-sections'
 LDFLAGS += '-Wl,--undefined=uxTopUsedPriority'
 
 
