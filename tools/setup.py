@@ -35,7 +35,7 @@ to publish packages with the name odrive.
 is_release = True
 
 # Set to true to make an official post-release, rather than dev of new version
-is_post_release = False
+is_post_release = True
 post_rel_num = 0
 
 # To test higher numbered releases, bump to the next rev
@@ -67,9 +67,8 @@ version = odrive.version.get_version_str(
 if creating_package:
   if is_post_release:
     version += str(post_rel_num)
-  #elif (devnum > 0):
-  #  version += str(devnum)
-  version+= str(devnum)
+  elif (devnum > 0):
+    version += str(devnum)
 
   version_file_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'odrive', 'version.txt')
   with open(version_file_path, mode='w') as version_file:
