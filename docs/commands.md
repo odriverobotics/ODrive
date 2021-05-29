@@ -31,7 +31,6 @@ The ODrive will sequence all enabled startup actions selected in the order shown
 * `<axis>.config.startup_encoder_index_search`
 * `<axis>.config.startup_encoder_offset_calibration`
 * `<axis>.config.startup_closed_loop_control`
-* `<axis>.config.startup_sensorless_control`
 
 See [here](api/odrive.axis.axisstate) for a description of each state.
 
@@ -81,22 +80,26 @@ All variables that are part of a `[...].config` object can be saved to non-volat
  * `<odrv>.hw_version_major`, `<odrv>.hw_version_minor`, `<odrv>.hw_version_revision`: The hardware version of your ODrive.
 
 ## Setting up sensorless
-The ODrive can run without encoder/hall feedback, but there is a minimum speed, usually around a few hunderd RPM.
+The ODrive can run without encoder/hall feedback, but there is a minimum speed, usually around a few hundred RPM. In other words, sensorless mode does not support stopping or changing direction!
 
-Below are some suggested starting parameters that you can use. Note that you _must_ set the `pm_flux_linkage` correctly for sensorless mode to work. Motor calibration and setup must also be completed before sensorless mode will work.
+Sensorless mode starts by ramping up the motor speed in open loop control and then switches to closed loop control automatically. The sensorless speed ramping parameters are in `axis.config.sensorless_ramp` The `vel` and `accel` (in [radians/s] and [radians/s^2]) control the speed that the ramp tries to reach and how quickly it gets there. When the ramp reaches `sensorless_ramp.vel`, `controller.input_vel` is automatically set to the same velocity, in [turns/s], and the state switches to closed loop control.
+
+If your motor comes to a stop after the ramp, try incrementally raising the `vel` parameter. The goal is to be above the minimum speed necessary for sensorless position and speed feedback to converge - this is not well-parameterized per motor. The parameters suggested below work for the D5065 motor, with 270KV and 7 pole pairs. If your motor grinds and skips during the ramp, lower the `accel` parameter until it is tolerable.
+
+Below are some suggested starting parameters that you can use for the ODrive D5065 motor. Note that you _must_ set the `pm_flux_linkage` correctly for sensorless mode to work. Motor calibration and setup must also be completed before sensorless mode will work.
+
 
 ```
 odrv0.axis0.controller.config.vel_gain = 0.01
 odrv0.axis0.controller.config.vel_integrator_gain = 0.05
-odrv0.axis0.controller.config.control_mode = 2
-odrv0.axis0.controller.input_vel = 10
-odrv0.axis0.controller.config.vel_limit = <a value greater than input_vel>
+odrv0.axis0.controller.config.control_mode = CONTROL_MODE_VELOCITY_CONTROL
+odrv0.axis0.controller.config.vel_limit = <a value greater than axis.config.sensorless_ramp.vel / (2pi * <pole_pairs>)>
 odrv0.axis0.motor.config.current_lim = 2 * odrv0.axis0.config.sensorless_ramp.current
-odrv0.axis0.motor.config.direction = 1
 odrv0.axis0.sensorless_estimator.config.pm_flux_linkage = 5.51328895422 / (<pole pairs> * <motor kv>)
+odrv0.axis0.config.enable_sensorless_mode = True
 ```
 
 To start the motor:
 ```
-<axis>.requested_state = AXIS_STATE_SENSORLESS_CONTROL
+<axis>.requested_state = AXIS_STATE_CLOSED_LOOP_CONTROL
 ```

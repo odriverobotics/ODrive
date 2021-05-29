@@ -1,0 +1,77 @@
+{
+  "config": {
+    "brake_resistance": null
+  },
+  "axis0": {
+    "motor": {
+      "config": {
+        "pole_pairs": null,
+        "phase_resistance": null,
+        "phase_inductance": null,
+        "motor_type": null,
+        "current_lim": null,
+        "torque_constant": null
+      }
+    },
+    "encoder": {
+      "config": {
+        "mode": null,
+        "use_index": null,
+        "cpr": null,
+        "calib_scan_distance": null,
+        "abs_spi_cs_gpio_pin": null
+      }
+    },
+    "controller": {
+      "config": {
+        "input_mode": null,
+        "control_mode": null,
+        "vel_limit": null,
+        "inertia": null
+      }
+    },
+    "trap_traj": {
+      "config": {
+        "vel_limit": null,
+        "accel_limit": null,
+        "decel_limit": null
+      }
+    }
+  },
+  "axis1": {
+    "motor": {
+      "config": {
+        "pole_pairs": null,
+        "phase_resistance": null,
+        "phase_inductance": null,
+        "motor_type": null,
+        "current_lim": null,
+        "torque_constant": null
+      }
+    },
+    "encoder": {
+      "config": {
+        "mode": null,
+        "use_index": null,
+        "cpr": null,
+        "calib_scan_distance": null,
+        "abs_spi_cs_gpio_pin": null
+      }
+    },
+    "controller": {
+      "config": {
+        "input_mode": null,
+        "control_mode": null,
+        "vel_limit": null,
+        "inertia": null
+      }
+    },
+    "trap_traj": {
+      "config": {
+        "vel_limit": null,
+        "accel_limit": null,
+        "decel_limit": null
+      }
+    }
+  }
+}

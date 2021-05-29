@@ -19,7 +19,6 @@ permalink: /
 - [Other control modes](#other-control-modes)
 - [Watchdog Timer](#watchdog-timer)
 - [What's next?](#whats-next)
-- [Upgrading from 0.4.12](#upgrading-from-0412)
 
 <!-- /TOC -->
 
@@ -90,9 +89,6 @@ Most instructions in this guide refer to a utility called `odrivetool`, so you s
   * __Anaconda__: In the start menu, type `Anaconda Prompt` <kbd>Enter</kbd>
   * __Standalone Python__: In the start menu, type `cmd` <kbd>Enter</kbd>
 3. Install the ODrive tools by typing `pip install --upgrade odrive` <kbd>Enter</kbd>
-4. Plug in a USB cable into the microUSB connector on ODrive, and connect it to your PC.
-5. Use the [Zadig](http://zadig.akeo.ie/) utility to set ODrive driver to libusb-win32.
-  * Check 'List All Devices' from the options menu, and select 'ODrive 3.x Native Interface (Interface 2)'. With that selected in the device list choose 'libusb-win32' from the target driver list and then press the large 'install driver' button.
 
 
 ### OSX
@@ -120,16 +116,22 @@ pip3 install --upgrade odrive
 
 __Troubleshooting__
 1. Permission Errors: Just run the previous command in sudo
-```bash
-sudo pip3 install --upgrade odrive
-```
+   ```bash
+   sudo pip3 install --upgrade odrive
+   ```
 
 2. Dependency Errors: If the installer doesn't complete and you get a dependency
 error (Ex. "No module..." or "module_name not found")
-```bash
-sudo pip3 install module_name
-```
-Try step 5 again
+   ```bash
+   sudo pip3 install module_name
+   ```
+   Try step 5 again
+
+3. Other Install Errors: If the installer fails at installing dependencies, try
+   ```bash
+   sudo pip3 install odrive --no-deps
+   ```
+   If you do this, brace yourself for runtime errors when you run `odrivetool` (the basic functionality should work though).
 
 
 ### Linux
@@ -151,7 +153,7 @@ Your board should come preflashed with firmware. If you run into problems, follo
 Your board does **not** come preflashed with any firmware. Follow the instructions [here](odrivetool.md#device-firmware-update) on the ST Link procedure before you continue.
 
 ## Start `odrivetool`
-To launch the main interactive ODrive tool, type `odrivetool` <kbd>Enter</kbd>. Connect your ODrive and wait for the tool to find it. Now you can, for instance type `odrv0.vbus_voltage` <kbd>Enter</kbd> to inpect the boards main supply voltage.
+To launch the main interactive ODrive tool, type `odrivetool` <kbd>Enter</kbd>. Connect your ODrive and wait for the tool to find it. If it doesn't connect after a few seconds refer to the [troubleshooting page](troubleshooting.md#usb-connectivity-issues). Now you can, for instance type `odrv0.vbus_voltage` <kbd>Enter</kbd> to inpect the boards main supply voltage.
 It should look something like this:
 
 ```text
@@ -167,6 +169,9 @@ Out[1]: 11.97055721282959
 The tool you're looking at is a fully capable Python command prompt, so you can type any valid python code.
 
 You can read more about `odrivetool` [here](odrivetool.md).
+
+## Debugging
+If any of the following steps fail, print the errors by running `dump_errors(odrv0)` in `odrivetool`. You can clear errors by running `odrv0.clear_errors()`.
 
 ## Configure M0
 <div class="alert" markdown="span">Read this section carefully, else you risk breaking something.</div>
@@ -198,8 +203,14 @@ The motor will be limited to this speed. Again the default value is quite slow.
 You can change `odrv0.axis0.motor.config.calibration_current` [A] to the largest value you feel comfortable leaving running through the motor continuously when the motor is stationary. If you are using a small motor (i.e. 15A current rated) you may need to reduce `calibration_current` to a value smaller than the default.
 
 ### 2. Set other hardware parameters
+`odrv0.config.enable_brake_resistor`
+Set this to `True` if using a brake resistor. You need to save the ODrive configuration and reboot the ODrive for this to take effect.
+
 `odrv0.config.brake_resistance` [Ohm]  
-This is the resistance of the brake resistor. If you are not using it, you may set it to `0`. Note that there may be some extra resistance in your wiring and in the screw terminals, so if you are getting issues while braking you may want to increase this parameter by around 0.05 ohm.
+This is the resistance of the brake resistor. You can leave this at the default setting if you are not using a brake resistor. Note that there may be some extra resistance in your wiring and in the screw terminals, so if you are getting issues while braking you may want to increase this parameter by around 0.05 ohm.
+
+`odrv0.config.dc_max_negative_current` [Amps]
+This is the amount of current allowed to flow back into the power supply. The convention is that it is negative. By default, it is set to a conservative value of 10mA. If you are using a brake resistor and getting `DC_BUS_OVER_REGEN_CURRENT` errors, raise it slightly. If you are not using a brake resistor and you intend to send braking current back to the power supply, set this to a safe level for your power source. Note that in that case, it should be higher than your motor current limit + current limit margin.
  
 `odrv0.axis0.motor.config.pole_pairs`  
 This is the number of **magnet poles** in the rotor, **divided by two**. To find this, you can simply count the number of permanent magnets in the rotor, if you can see them.
@@ -258,7 +269,7 @@ Let's get motor 0 up and running. The procedure for motor 1 is exactly the same,
   
   Check the encoder wiring and that the encoder is firmly connected to the motor. Check the value of `dump_errors(odrv0)` and then refer to the [error code documentation](troubleshooting.md#error-codes) for details.
 
-  Once you understand the error and have fixed its cause, you may clear the error state with (`dump_errors(odrv0, True)` <kbd>Enter</kbd>) and retry.
+  Once you understand the error and have fixed its cause, you may clear the error state with (`odrv0.clear_errors()` <kbd>Enter</kbd>) and retry.
   </div></details>
 
 2. Type `odrv0.axis0.requested_state = AXIS_STATE_CLOSED_LOOP_CONTROL` <kbd>Enter</kbd>. From now on the ODrive will try to hold the motor's position. If you try to turn it by hand, it will fight you gently. That is unless you bump up `odrv0.axis0.motor.config.current_lim`, in which case it will fight you more fiercely. If the motor begins to vibrate either immediately or after being disturbed you will need to [lower the controller gains](control.md).

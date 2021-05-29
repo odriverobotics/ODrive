@@ -11,7 +11,6 @@
 #include "odrive_main.h"
 #include "freertos_vars.h"
 #include "utils.hpp"
-#include "gpio_utils.hpp"
 
 #include <cmsis_os.h>
 #include <memory>
@@ -33,62 +32,64 @@ char serial_number_str[13]; // 12 digits + null termination
 
 /* Private constant data -----------------------------------------------------*/
 /* Private variables ---------------------------------------------------------*/
-
-osThreadId comm_thread;
-const uint32_t stack_size_comm_thread = 4096; // Bytes
-volatile bool endpoint_list_valid = false;
-
 /* Private function prototypes -----------------------------------------------*/
 /* Function implementations --------------------------------------------------*/
 
 void init_communication(void) {
-    printf("hi!\r\n");
+    //printf("hi!\r\n");
 
-    // Start command handling thread
-    osThreadDef(task_cmd_parse, communication_task, osPriorityNormal, 0, stack_size_comm_thread / sizeof(StackType_t));
-    comm_thread = osThreadCreate(osThread(task_cmd_parse), NULL);
+    // Dual UART operation not supported yet
+    if (odrv.config_.enable_uart_a && odrv.config_.enable_uart_b) {
+        odrv.misconfigured_ = true;
+    }
 
-    while (!endpoint_list_valid)
-        osDelay(1);
-}
+    if (odrv.config_.enable_uart_a && uart_a) {
+        start_uart_server(uart_a);
+    } else if (odrv.config_.enable_uart_b && uart_b) {
+        start_uart_server(uart_b);
+    }
 
-float oscilloscope[OSCILLOSCOPE_SIZE] = {0};
-size_t oscilloscope_pos = 0;
-
-// Thread to handle deffered processing of USB interrupt, and
-// read commands out of the UART DMA circular buffer
-void communication_task(void * ctx) {
-    (void) ctx; // unused parameter
-
-    // Allow main init to continue
-    endpoint_list_valid = true;
-    
-    start_uart_server();
     start_usb_server();
-    if (odrv.config_.enable_i2c_instead_of_can) {
+
+    if (odrv.config_.enable_i2c_a) {
         start_i2c_server();
-    } else {
-        odCAN->start_can_server();
     }
 
-    for (;;) {
-        osDelay(1000); // nothing to do
+    if (odrv.config_.enable_can_a) {
+        odrv.can_.start_server(&hcan1);
     }
 }
+
+#include <fibre/async_stream.hpp>
+
 
 extern "C" {
-int _write(int file, const char* data, int len);
+int _write(int file, const char* data, int len) __attribute__((used));
 }
 
 // @brief This is what printf calls internally
 int _write(int file, const char* data, int len) {
-#ifdef USB_PROTOCOL_STDOUT
-    usb_stream_output_ptr->process_bytes((const uint8_t *)data, len, nullptr);
-#endif
-#ifdef UART_PROTOCOL_STDOUT
-    uart4_stream_output_ptr->process_bytes((const uint8_t *)data, len, nullptr);
-#endif
-    return len;
+    fibre::cbufptr_t buf{(const uint8_t*)data, (const uint8_t*)data + len};
+
+    if (odrv.config_.uart0_protocol == ODrive::STREAM_PROTOCOL_TYPE_STDOUT ||
+        odrv.config_.uart0_protocol == ODrive::STREAM_PROTOCOL_TYPE_ASCII_AND_STDOUT) {
+        uart0_stdout_sink.write(buf);
+        if (!uart0_stdout_pending) {
+            uart0_stdout_pending = true;
+            osMessagePut(uart_event_queue, 3, 0);
+        }
+    }
+
+    if (odrv.config_.usb_cdc_protocol == ODrive::STREAM_PROTOCOL_TYPE_STDOUT ||
+        odrv.config_.usb_cdc_protocol == ODrive::STREAM_PROTOCOL_TYPE_ASCII_AND_STDOUT) {
+        usb_cdc_stdout_sink.write(buf);
+        if (!usb_cdc_stdout_pending) {
+            usb_cdc_stdout_pending = true;
+            osMessagePut(usb_event_queue, 7, 0);
+        }
+    }
+
+    return len; // Always pretend that we processed everything
 }
 
 

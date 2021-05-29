@@ -101,16 +101,21 @@ void HAL_SPI_MspInit(SPI_HandleTypeDef* spiHandle)
     PC11     ------> SPI3_MISO
     PC12     ------> SPI3_MOSI 
     */
-    GPIO_InitStruct.Pin = GPIO_PIN_10|GPIO_PIN_11|GPIO_PIN_12;
+    GPIO_InitStruct.Pin = GPIO_PIN_10|GPIO_PIN_12;
     GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
-    GPIO_InitStruct.Pull = GPIO_PULLUP; // required for disconnect detection on SPI encoders
+    GPIO_InitStruct.Pull = GPIO_PULLDOWN; // Idle clock and MOSI low.
     GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
     GPIO_InitStruct.Alternate = GPIO_AF6_SPI3;
     HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
 
+    // MISO pull-up required for disconnect detection on SPI encoders with even parity
+    GPIO_InitStruct.Pin = GPIO_PIN_11;
+    GPIO_InitStruct.Pull = GPIO_PULLUP;
+    HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
+
     /* SPI3 DMA Init */
     /* SPI3_TX Init */
-    hdma_spi3_tx.Instance = DMA1_Stream5;
+    hdma_spi3_tx.Instance = DMA1_Stream7;
     hdma_spi3_tx.Init.Channel = DMA_CHANNEL_0;
     hdma_spi3_tx.Init.Direction = DMA_MEMORY_TO_PERIPH;
     hdma_spi3_tx.Init.PeriphInc = DMA_PINC_DISABLE;
@@ -125,7 +130,7 @@ void HAL_SPI_MspInit(SPI_HandleTypeDef* spiHandle)
     }
     
     hdma_spi3_tx.Init.Mode = DMA_NORMAL;
-    hdma_spi3_tx.Init.Priority = DMA_PRIORITY_MEDIUM;
+    hdma_spi3_tx.Init.Priority = DMA_PRIORITY_HIGH; // SPI TX must have higher priority than SPI RX
     hdma_spi3_tx.Init.FIFOMode = DMA_FIFOMODE_DISABLE;
     if (HAL_DMA_Init(&hdma_spi3_tx) != HAL_OK)
     {
@@ -158,8 +163,8 @@ void HAL_SPI_MspInit(SPI_HandleTypeDef* spiHandle)
     __HAL_LINKDMA(spiHandle,hdmarx,hdma_spi3_rx);
 
     /* SPI3 interrupt Init */
-    HAL_NVIC_SetPriority(SPI3_IRQn, 5, 0);
-    HAL_NVIC_EnableIRQ(SPI3_IRQn);
+    //HAL_NVIC_SetPriority(SPI3_IRQn, 3, 0);
+    //HAL_NVIC_EnableIRQ(SPI3_IRQn);
   /* USER CODE BEGIN SPI3_MspInit 1 */
 
   /* USER CODE END SPI3_MspInit 1 */

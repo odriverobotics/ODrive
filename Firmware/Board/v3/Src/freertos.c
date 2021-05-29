@@ -56,12 +56,6 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */     
-#include "freertos_vars.h"
-#include "usb_device.h"
-extern PCD_HandleTypeDef hpcd_USB_OTG_FS;
-int odrive_main(void);
-int load_configuration(void);
-int construct_objects(void);
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -81,19 +75,6 @@ int construct_objects(void);
 
 /* Private variables ---------------------------------------------------------*/
 /* USER CODE BEGIN Variables */
-// List of semaphores
-osSemaphoreId sem_usb_irq;
-osSemaphoreId sem_uart_dma;
-osSemaphoreId sem_usb_rx;
-osSemaphoreId sem_usb_tx;
-osSemaphoreId sem_can;
-
-osThreadId usb_irq_thread;
-const uint32_t stack_size_usb_irq_thread = 2048; // Bytes
-
-// Place FreeRTOS heap in core coupled memory for better performance
-__attribute__((section(".ccmram")))
-uint8_t ucHeap[configTOTAL_HEAP_SIZE];
 /* USER CODE END Variables */
 osThreadId defaultTaskHandle;
 const uint32_t stack_size_default_task = 2048; // Bytes
@@ -134,28 +115,6 @@ __weak void vApplicationStackOverflowHook(xTaskHandle xTask, signed char *pcTask
    configCHECK_FOR_STACK_OVERFLOW is defined to 1 or 2. This hook function is
    called if a stack overflow is detected. */
 }
-
-void usb_deferred_interrupt_thread(void * ctx) {
-    (void) ctx; // unused parameter
-
-    for (;;) {
-        // Wait for signalling from USB interrupt (OTG_FS_IRQHandler)
-        osStatus semaphore_status = osSemaphoreWait(sem_usb_irq, osWaitForever);
-        if (semaphore_status == osOK) {
-            // We have a new incoming USB transmission: handle it
-            HAL_PCD_IRQHandler(&hpcd_USB_OTG_FS);
-            // Let the irq (OTG_FS_IRQHandler) fire again.
-            HAL_NVIC_EnableIRQ(OTG_FS_IRQn);
-        }
-    }
-}
-
-void init_deferred_interrupts(void) {
-    // Start USB interrupt handler thread
-    osThreadDef(task_usb_pump, usb_deferred_interrupt_thread, osPriorityAboveNormal, 0, stack_size_usb_irq_thread / sizeof(StackType_t));
-    usb_irq_thread = osThreadCreate(osThread(task_usb_pump), NULL);
-}
-
 /* USER CODE END 4 */
 
 /**
@@ -173,33 +132,6 @@ void MX_FREERTOS_Init(void) {
   /* USER CODE END RTOS_MUTEX */
 
   /* USER CODE BEGIN RTOS_SEMAPHORES */
-  // Init usb irq binary semaphore, and start with no tokens by removing the starting one.
-  osSemaphoreDef(sem_usb_irq);
-  sem_usb_irq = osSemaphoreCreate(osSemaphore(sem_usb_irq), 1);
-  osSemaphoreWait(sem_usb_irq, 0);
-
-  // Create a semaphore for UART DMA and remove a token
-  osSemaphoreDef(sem_uart_dma);
-  sem_uart_dma = osSemaphoreCreate(osSemaphore(sem_uart_dma), 1);
-
-  // Create a semaphore for USB RX
-  osSemaphoreDef(sem_usb_rx);
-  sem_usb_rx = osSemaphoreCreate(osSemaphore(sem_usb_rx), 1);
-  osSemaphoreWait(sem_usb_rx, 0);  // Remove a token.
-
-  // Create a semaphore for USB TX
-  osSemaphoreDef(sem_usb_tx);
-  sem_usb_tx = osSemaphoreCreate(osSemaphore(sem_usb_tx), 1);
-
-  osSemaphoreDef(sem_can);
-  sem_can = osSemaphoreCreate(osSemaphore(sem_can), 1);
-  osSemaphoreWait(sem_can, 0);
-
-  init_deferred_interrupts();
-
-  // Load persistent configuration (or defaults)
-  load_configuration();
-  construct_objects();
   /* USER CODE END RTOS_SEMAPHORES */
 
   /* USER CODE BEGIN RTOS_TIMERS */
@@ -233,11 +165,6 @@ void StartDefaultTask(void * argument)
   MX_USB_DEVICE_Init();
 
   /* USER CODE BEGIN StartDefaultTask */
-
-  odrive_main();
-
-  //If we get to here, then the default task is done.
-  vTaskDelete(defaultTaskHandle);
 
   /* USER CODE END StartDefaultTask */
 }

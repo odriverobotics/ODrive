@@ -1,0 +1,19 @@
+{
+  "name": "fibre-js",
+  "version": "0.1.0",
+  "eslintConfig":  {
+    "rules": {
+      "no-empty": "off",
+      "no-unused-vars": "off",
+      "no-undef": "off",
+      "no-constant-condition": "off",
+      "no-extra-semi": "off",
+      "no-async-promise-executor": "off",
+      "no-redeclare": "off",
+      "no-prototype-builtins": "off",
+      "no-global-assign": "off",
+      "no-useless-escape": "off",
+      "no-useless-catch": "off"
+    }
+  }
+}

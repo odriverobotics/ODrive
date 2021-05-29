@@ -1,5 +1,44 @@
 # Migration Guide
 
+## v0.5.1 -> v0.5.2
+
+The change from v0.5.1 to v0.5.2 had fewer breaking changes than the v0.4.12 to v0.5.1 change.
+
+## GPIO modes
+The GPIO configuration is now more explicit. For example, to use `gpio1` for for step signals (as part of a step/dir interface), it must be set to
+```
+odrv0.config.gpio1_mode = GPIO_MODE_DIGITAL
+```
+
+## Braking behavior
+Before using the brake resistor, it must be explicitly enabled as follows:
+```
+odrv0.config.enable_brake_resistor = True
+```
+and then save the configuration and reboot for the setting to take effect.
+
+## Step/direction settings
+Previously, steps were added incrementally to `input_pos`. This caused issues with accumulated floating point rounding error. Now, an absolute step count is used. This change requires that the circular setpoints mode is used `odrv0.axis0.controller.config.circular_setpoints = True` when step/dir signals are used.
+
+In addition, `odrv0.axis0.config.turns_per_step` has been removed and `odrv0.axis0.controller.config.steps_per_circular_range` is used. For example:
+```
+# previous
+odrv0.axis0.config.turns_per_step = 1.0/1024.0
+
+# v0.5.2
+odrv0.axis0.controller.config.circular_setpoints = True
+odrv0.axis0.controller.config.circular_setpoint_range = 1.0
+odrv0.axis0.controller.config.steps_per_circular_range = 1024
+```
+
+For best results, set both the circular range and steps per circular range to powers of 2.
+
+## API changes
+
+For other API changes, see the Changelog file on github.
+
+## v0.4.12 -> v0.5.1
+
 Certain changes occurred between firmware versions v0.4.12 and v0.5.1 that will break existing configurations. This document is a guide for how to take a working v0.4.12 ODrive config and change it to work with firmware v0.5.1.
 
 ## Unit Changes

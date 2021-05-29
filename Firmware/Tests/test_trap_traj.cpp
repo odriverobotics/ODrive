@@ -85,8 +85,8 @@ bool TrapezoidalTrajectory::planTrapezoidal(float Xf, float Xi, float Vi,
     // Are we displacing enough to reach cruising speed?
     if (s*dX < s*dXmin) {
         // Short move (triangle profile)
-        Vr_ = s * sqrtf(std::fmax((Dr_*SQ(Vi) + 2*Ar_*Dr_*dX) / (Dr_ - Ar_), 0.0f));
-        //Vr_ = s * sqrtf((Dr_*SQ(Vi) + 2*Ar_*Dr_*dX) / (Dr_ - Ar_));
+        Vr_ = s * std::sqrt(std::max((Dr_*SQ(Vi) + 2*Ar_*Dr_*dX) / (Dr_ - Ar_), 0.0f));
+        //Vr_ = s * std::sqrt((Dr_*SQ(Vi) + 2*Ar_*Dr_*dX) / (Dr_ - Ar_));
         Ta_ = std::max(0.0f, (Vr_ - Vi) / Ar_);
         Td_ = std::max(0.0f, -Vr_ / Dr_);
         Tv_ = 0.0f;

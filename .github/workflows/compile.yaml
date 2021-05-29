@@ -108,9 +108,22 @@ jobs:
           mv tup_build.sh tup_build.bat # in reality this is a .bat script on windows
           .\tup_build.bat
 
-  #code-checks:
-  #  runs-on: ubuntu-latest
-  #  steps:
+  code-checks:
+    strategy:
+      fail-fast: false
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Check that we're not using std::isnan
+        run: |
+          cd ${{ github.workspace }}/Firmware
+
+          if grep 'std::isnan' -R .; then
+            echo "Don't use std::isnan because it's not compatible with '-ffast-math'. Use is_nan() instead."
+            return 1;
+          fi
+
   #    TODO:
   #     - check if enums.py is consistent with yaml
   #     - clang-format check

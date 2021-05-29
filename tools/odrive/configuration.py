@@ -2,39 +2,58 @@
 import json
 import os
 import tempfile
-import fibre.remote_object
+import fibre.libfibre
+import odrive
 from odrive.utils import OperationAbortedException, yes_no_prompt
 
-def get_dict(obj, is_config_object):
+def obj_to_path(root, obj):
+    for k in dir(root):
+        v = getattr(root, k)
+        if not k.startswith('_') and isinstance(v, fibre.libfibre.RemoteObject):
+            if v == obj:
+                return k
+            subpath = obj_to_path(v, obj)
+            if not subpath is None:
+                return k + "." + subpath
+    return None
+
+def get_dict(root, obj, is_config_object):
     result = {}
-    for (k,v) in obj._remote_attributes.items():
-        if isinstance(v, fibre.remote_object.RemoteProperty) and is_config_object:
-            result[k] = v.get_value()
-        elif isinstance(v, fibre.remote_object.RemoteObject):
-            sub_dict = get_dict(v, k == 'config')
+
+    for k in dir(obj):
+        v = getattr(obj, k)
+        if k.startswith('_') and k.endswith('_property') and is_config_object:
+            v = v.read()
+            if isinstance(v, fibre.libfibre.RemoteObject):
+                v = obj_to_path(root, v)
+            result[k[1:-9]] = v
+        elif not k.startswith('_') and isinstance(v, fibre.libfibre.RemoteObject):
+            sub_dict = get_dict(root, v, (k == 'config') or is_config_object)
             if sub_dict != {}:
                 result[k] = sub_dict
+
     return result
 
 def set_dict(obj, path, config_dict):
     errors = []
     for (k,v) in config_dict.items():
         name = path + ("." if path != "" else "") + k
-        if not k in obj._remote_attributes:
+        if not k in dir(obj):
             errors.append("Could not restore {}: property not found on device".format(name))
             continue
-        remote_attribute = obj._remote_attributes[k]
-        if isinstance(remote_attribute, fibre.remote_object.RemoteObject):
-            errors += set_dict(remote_attribute, name, v)
+        if isinstance(v, dict):
+            errors += set_dict(getattr(obj, k), name, v)
         else:
             try:
-                remote_attribute.set_value(v)
+                remote_attribute = getattr(obj, '_' + k + '_property')
+                #if isinstance(v, str) and isinstance()
+                remote_attribute.exchange(v)
             except Exception as ex:
                 errors.append("Could not restore {}: {}".format(name, str(ex)))
     return errors
 
 def get_temp_config_filename(device):
-    serial_number = fibre.utils.get_serial_number_str(device)
+    serial_number = odrive.get_serial_number_str_sync(device)
     safe_serial_number = ''.join(filter(str.isalnum, serial_number))
     return os.path.join(tempfile.gettempdir(), 'odrive-config-{}.json'.format(safe_serial_number))
 
@@ -54,7 +73,7 @@ def backup_config(device, filename, logger):
         if not yes_no_prompt("The file {} already exists. Do you want to override it?".format(filename), True):
             raise OperationAbortedException()
 
-    data = get_dict(device, False)
+    data = get_dict(device, device, False)
     with open(filename, 'w') as file:
         json.dump(data, file)
     logger.info("Configuration saved.")
@@ -78,5 +97,8 @@ def restore_config(device, filename, logger):
     if errors:
         logger.warn("Some of the configuration could not be restored.")
     
-    device.save_configuration()
+    try:
+        device.save_configuration()
+    except fibre.libfibre.ObjectLostError:
+        pass # Saving configuration makes the device reboot
     logger.info("Configuration restored.")

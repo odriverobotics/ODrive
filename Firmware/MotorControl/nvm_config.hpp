@@ -9,10 +9,9 @@
 
 #include <stdint.h>
 #include <stdlib.h>
-#include <stm32f405xx.h>
 
-#include "nvm.h"
-#include <fibre/crc.hpp>
+#include <Drivers/STM32/stm32_nvm.h>
+#include <fibre/../../crc.hpp>
 
 
 /* Private defines -----------------------------------------------------------*/
@@ -26,116 +25,168 @@
 /* Private constant data -----------------------------------------------------*/
 
 // IMPORTANT: if you change, reorder or otherwise modify any of the fields in
-// the config structs, make sure to increment this number:
+// the config structs without changing its total length, make sure to increment this number:
 static constexpr uint16_t config_version = 0x0001;
 
 /* Private variables ---------------------------------------------------------*/
 /* Private function prototypes -----------------------------------------------*/
 /* Function implementations --------------------------------------------------*/
 
-
-// @brief Manages configuration load and store operations from and to NVM
-//
-// The NVM stores consecutive one-to-one copies of arbitrary objects.
-// The types of these objects are passed as template arguments to Config<Ts...>.
-//
-// Config<Ts...> has two template specializations to implement template recursion:
-// - Config<T, Ts...> handles loading/storing of the first object (type T) and leaves
-//   the rest of the objects to an "inner" class Config<Ts...>.
-// - Config<> represents the leaf of the recursion.
-template<typename ... Ts>
-struct Config;
-
-template<>
-struct Config<> {
-    static size_t get_size() {
-        return 0;
+/**
+ * @brief Manages configuration load and store operations from and to NVM
+ * 
+ * Usage:
+ *  1. start_load()
+ *  2. read() (as often needed)
+ *  3. finish_load() (to see if all reads were successful and the CRC in the end is valid)
+ * 
+ *  1. prepare_store()
+ *  2. write() (as often as needed)
+ *  3. start_store()
+ *  4. write() (same sequence as before)
+ *  5. finish_store()
+ * 
+ * The two store passes are required in order to measure the size on the first
+ * pass. If the size increases between the first and second pass, finish_store()
+ * will return an error.
+ */
+class ConfigManager {
+public:
+    /**
+     * @brief Starts a load operation. This can be called at any time, even half
+     * way through a previous load operation.
+     */
+    bool start_load() {
+        if (NVM_init() != 0) {
+            return (load_state = kLoadStateFailed), false;
+        }
+        load_offset = 0;
+        load_crc16 = CONFIG_CRC16_INIT ^ config_version;
+        load_state = kLoadStateInProgress;
+        return true;
     }
-    static int load_config(size_t offset, uint16_t* crc16) {
-        return 0;
-    }
-    static int store_config(size_t offset, uint16_t* crc16) {
-        return 0;
-    }
-};
 
-template<typename T, typename ... Ts>
-struct Config<T, Ts...> {
-    static size_t get_size() {
-        return sizeof(T) + Config<Ts...>::get_size();
-    }
-
-    // @brief Loads one or more consecutive objects from the NVM.
-    // During loading this function also calculates the CRC over the loaded data.
-    // @param offset: 0 means that the function should start reading at the beginning
-    // of the last comitted NVM block
-    // @param crc16: the result of the CRC calculation is written to this address
-    // @param val0, vals: the values to be loaded
-    static int load_config(size_t offset, uint16_t* crc16, T* val0, Ts* ... vals) {
+    /**
+     * @brief Loads the next chunk from NVM.
+     * Note that this may return true even if invalid data was read. The user
+     * will know the final verdict by the return value of finish_load().
+     */
+    template<typename T>
+    bool read(T* val) {
+        if (load_state != 1) {
+            return (load_state = kLoadStateFailed), false;
+        }
         size_t size = sizeof(T);
-        // save current CRC (in case val0 and crc16 point to the same address)
-        size_t previous_crc16 = *crc16;
-        if (NVM_read(offset, (uint8_t *)val0, size))
-            return -1;
-        *crc16 = calc_crc16<CONFIG_CRC16_POLYNOMIAL>(previous_crc16, (uint8_t *)val0, size);
-        if (Config<Ts...>::load_config(offset + size, crc16, vals...))
-            return -1;
-        return 0;
+        if (NVM_read(load_offset, (uint8_t *)val, size) != 0)
+            return (load_state = kLoadStateFailed), false;
+        load_crc16 = calc_crc16<CONFIG_CRC16_POLYNOMIAL>(load_crc16, (uint8_t *)val, size);
+        load_offset += size;
+        return true;
     }
 
-    // @brief Stores one or more consecutive objects to the NVM.
-    // During storing this function also calculates the CRC over the stored data.
-    // @param offset: 0 means that the function should start writing at the beginning
-    // of the currently active NVM write block
-    // @param crc16: the result of the CRC calculation is written to this address
-    // @param val0, vals: the values to be stored
-    static int store_config(size_t offset, uint16_t* crc16, const T* val0, const Ts* ... vals) {
-        size_t size = sizeof(T);
-        if (NVM_write(offset, (uint8_t *)val0, size))
-            return -1;
-        // update CRC _after_ writing (in case val0 and crc16 point to the same address)
-        if (crc16)
-            *crc16 = calc_crc16<CONFIG_CRC16_POLYNOMIAL>(*crc16, (uint8_t *)val0, size);
-        if (Config<Ts...>::store_config(offset + size, crc16, vals...))
-            return -1;
-        return 0;
+    /**
+     * @brief Checks the final state of the load operation.
+     * If this function returns false, it is possible that previous read()
+     * operations actually returned garbage.
+     */
+    bool finish_load(size_t* occupied_size) {
+        if (occupied_size) {
+            *occupied_size = load_offset + 2;
+        }
+
+        uint16_t crc16_calculated = load_crc16;
+        uint16_t crc16_loaded;
+        if (!read(&crc16_loaded)) {
+            return (load_state = kLoadStateFailed), false;
+        }
+        bool result = (load_state == 1) && (crc16_loaded == crc16_calculated);
+        load_state = kLoadStateIdle;
+        return result;
     }
 
-    // @brief Loads one or more consecutive objects from the NVM. The loaded data
-    // is validated using a CRC value that is stored at the beginning of the data.
-    static int safe_load_config(T* val0, Ts* ... vals) {
-        //printf("have %d bytes\r\n", NVM_get_max_read_length()); osDelay(5);
-        if (Config<T, Ts..., uint16_t>::get_size() > NVM_get_max_read_length())
-            return -1;
-        uint16_t crc16 = CONFIG_CRC16_INIT ^ config_version;
-        if (Config<T, Ts..., uint16_t>::load_config(0, &crc16, val0, vals..., &crc16))
-            return -1;
-        if (crc16)
-            return -1;
-        return 0;
+    /**
+     * @brief Starts preparation of a new store operation.
+     */
+    bool prepare_store() {
+        if (store_state != kStoreStateIdle) {
+            // it might be possible to restart the store process from other states but let's be safe
+            return (store_state = kStoreStateFailed), false;
+        }
+        store_offset = 0;
+        store_crc16 = CONFIG_CRC16_INIT ^ config_version;
+        store_state = kStoreStatePreparing;
+        return true;
     }
 
-    // @brief Stores one or more consecutive objects to the NVM. In addition to the
-    // provided objects, a CRC of the data is stored.
-    //
-    // The CRC includes a version number and thus adds some protection against
-    // changes of the config structs during firmware update. Note that if the total
-    // config data length changes, the CRC validation will fail even if the developer
-    // forgets to update the config version number.
-    static int safe_store_config(const T* val0, const Ts* ... vals) {
-        size_t size = Config<T, Ts...>::get_size() + 2;
-        //printf("config is %d bytes\r\n", size); osDelay(5);
-        if (size > NVM_get_max_write_length())
-            return -1;
-        if (NVM_start_write(size))
-            return -1;
-        uint16_t crc16 = CONFIG_CRC16_INIT ^ config_version;
-        if (Config<T, Ts...>::store_config(0, &crc16, val0, vals...))
-            return -1;
-        if (Config<uint8_t, uint8_t>::store_config(size - 2, nullptr, (uint8_t *)&crc16 + 1, (uint8_t *)&crc16))
-            return -1;
-        if (NVM_commit())
-            return -1;
-        return 0;
+    template<typename T>
+    bool write(T* val) {
+        if (store_state == kStoreStateInProgress) {
+            if (NVM_write(store_offset, (uint8_t*)val, sizeof(T)) != 0) {
+                return (store_state = kStoreStateFailed), false;
+            }
+        } else if (store_state != kStoreStatePreparing) {
+            return (store_state = kStoreStateFailed), false;
+        }
+        store_crc16 = calc_crc16<CONFIG_CRC16_POLYNOMIAL>(store_crc16, (uint8_t *)val, sizeof(T));
+        store_offset += sizeof(T);
+        return true;
     }
+
+    /**
+     * @brief Finishes the prepare pass and starts the actual store pass.
+     */
+    bool start_store(size_t* occupied_size) {
+        if (occupied_size) {
+            *occupied_size = store_offset + 2;
+        }
+
+        if (store_state != kStoreStatePreparing) {
+            return (store_state = kStoreStateFailed), false;
+        }
+        store_offset += 2; // account for CRC16
+        if (store_offset > NVM_get_max_write_length()) {
+            return (store_state = kStoreStateFailed), false;
+        }
+        if (NVM_start_write(store_offset) != 0) {
+            return (store_state = kStoreStateFailed), false;
+        }
+        store_offset = 0;
+        store_crc16 = CONFIG_CRC16_INIT ^ config_version;
+        store_state = kStoreStateInProgress;
+        return true;
+    }
+
+    /**
+     * @brief Commits the store operation.
+     * If this function succeeds, the new configuration was successfully saved.
+     * If this function fails, the old configuration was not touched.
+     */
+    bool finish_store() {
+        uint16_t crc16 = store_crc16;
+        if (!write(&crc16)) {
+            return (store_state = kStoreStateFailed), false;
+        }
+        if (NVM_commit() != 0) {
+            return (store_state = kStoreStateFailed), false;
+        }
+        store_state = kStoreStateIdle;
+        return true;
+    }
+
+    enum {
+        kLoadStateIdle = 0,
+        kLoadStateInProgress = 1,
+        kLoadStateFailed = 2
+    } load_state = kLoadStateIdle;
+    size_t load_offset;
+    size_t load_crc16;
+
+    enum {
+        kStoreStateIdle = 0,
+        kStoreStatePreparing = 1,
+        kStoreStateInProgress = 2,
+        kStoreStateFailed = 3
+    } store_state = kStoreStateIdle;
+    size_t store_offset;
+    size_t store_crc16;
 };

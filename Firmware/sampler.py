@@ -3,7 +3,7 @@
 # run openocd (0.9.0) with :
 # $ openocd -f interface/stlink-v2.cfg -f target/stm32f4x.cfg &> /dev/null &
 # then run
-# $ python2 sampler.py path_to_myelf_with_symbols
+# $ python sampler.py path_to_myelf_with_symbols
 # ctrl-c to stop sampling.
 # To terminate the openocd session, enter command "fg" then do ctrl-c.
 
@@ -45,17 +45,22 @@ class OpenOCDCMSampler(object):
         return 0
 
 
-    def initSymbols(self, elf, readelf='arm-none-eabi-readelf'):
-        proc = subprocess.Popen([readelf, '-s', elf], stdout=subprocess.PIPE)
+    def initSymbols(self, elf, symbol_dump_cmd='arm-none-eabi-nm'):
+        proc = subprocess.Popen([symbol_dump_cmd, '-CS', '--size-sort', elf], stdout=subprocess.PIPE)
         for line in proc.stdout.readlines():
             field = line.split()
-            # for i,txt in enumerate(field):
-            #     print("{}, {}".format(i, txt))
+
             try:
-                if field[3] == b'FUNC':
-                    addr = int(field[1], 16) - 1 # For some reason readelf dumps the func addr off by 1
-                    func = field[7]
-                    size = int(field[2])
+                # For using nm -CS
+                if field[2] in (b't', b'T', b'w', b'W'):
+                    addr = int(field[0], 16)
+                    func = b' '.join(field[3:])
+                    size = int(field[1], 16)
+                # # For using readelf -s
+                # if field[3] == b'FUNC':
+                #     addr = int(field[1], 16) - 1 # For some reason readelf dumps the func addr off by 1
+                #     func = field[7]
+                #     size = int(field[2])
                     if addr not in self.indexes:
                         self.table.append((addr, func, size))
                         self.indexes.add(addr)
@@ -88,6 +93,7 @@ if __name__ == '__main__':
     total = 0
     countmap = { }
     pcmap = { }
+    funcmap = { }
     start = time.time()
 
     try:
@@ -101,6 +107,9 @@ if __name__ == '__main__':
 
             func, addr = sampler.func(pc)
 
+            if(func == 'ADC_IRQ_Dispatch'):
+                funcmap[pc] = 1
+
             if not addr:
                 continue
 
@@ -112,14 +121,22 @@ if __name__ == '__main__':
                 total += 1
 
             cur = time.time()
-            if cur - start > 1.0:
+            if cur - start > 5.0:
+
+                # tmp = sorted(funcmap)
+                # for k in tmp:
+                #     print(hex(k))
+
                 tmp = sorted(countmap.items(), key=operator.itemgetter(1)) #, reverse=True)
                 for k, v in tmp:
-                    print('{:05.2f}% {}'.format((v * 100.) / total, k))
+                    print('{:05.2f}% {}'.format((v * 100.) / total, k.decode('UTF-8')))
                     # print('{:06.2f} clocks : {}'.format((v * 10500) / total, k))
                 start = cur
                 print('{} Samples'.format(total))
                 print('')
+                # total = 0
+                # countmap = { }
+                # pcmap = { }
 
     except KeyboardInterrupt:
         pcmap = sorted(pcmap.items(), key=operator.itemgetter(1), reverse=True)

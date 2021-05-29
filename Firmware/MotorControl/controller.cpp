@@ -2,12 +2,10 @@
 #include "odrive_main.h"
 #include <algorithm>
 
-#include <algorithm>
-
-Controller::Controller(Config_t& config) :
-    config_(config)
-{
+bool Controller::apply_config() {
+    config_.parent = this;
     update_filter_gains();
+    return true;
 }
 
 void Controller::reset() {
@@ -15,32 +13,19 @@ void Controller::reset() {
     vel_setpoint_ = 0.0f;
     vel_integrator_torque_ = 0.0f;
     torque_setpoint_ = 0.0f;
+    mechanical_power_ = 0.0f;
+    electrical_power_ = 0.0f;
 }
 
 void Controller::set_error(Error error) {
     error_ |= error;
-    axis_->error_ |= Axis::ERROR_CONTROLLER_FAILED;
+    last_error_time_ = odrv.n_evt_control_loop_ * current_meas_period;
 }
 
 //--------------------------------
 // Command Handling
 //--------------------------------
 
-
-bool Controller::select_encoder(size_t encoder_num) {
-    if (encoder_num < AXIS_COUNT) {
-        Axis* ax = axes[encoder_num];
-        pos_estimate_circular_src_ = &ax->encoder_.pos_circular_;
-        pos_wrap_src_ = &config_.circular_setpoint_range;
-        pos_estimate_linear_src_ = &ax->encoder_.pos_estimate_;
-        pos_estimate_valid_src_ = &ax->encoder_.pos_estimate_valid_;
-        vel_estimate_src_ = &ax->encoder_.vel_estimate_;
-        vel_estimate_valid_src_ = &ax->encoder_.vel_estimate_valid_;
-        return true;
-    } else {
-        return set_error(Controller::ERROR_INVALID_LOAD_ENCODER), false;
-    }
-}
 
 void Controller::move_to_pos(float goal_point) {
     axis_->trap_traj_.planTrapezoidal(goal_point, pos_setpoint_, vel_setpoint_,
@@ -114,29 +99,39 @@ static float limitVel(const float vel_limit, const float vel_estimate, const flo
     return std::clamp(torque, Tmin, Tmax);
 }
 
-bool Controller::update(float* torque_setpoint_output) {
-    float* pos_estimate_linear = (pos_estimate_valid_src_ && *pos_estimate_valid_src_)
-            ? pos_estimate_linear_src_ : nullptr;
-    float* pos_estimate_circular = (pos_estimate_valid_src_ && *pos_estimate_valid_src_)
-            ? pos_estimate_circular_src_ : nullptr;
-    float* vel_estimate_src = (vel_estimate_valid_src_ && *vel_estimate_valid_src_)
-            ? vel_estimate_src_ : nullptr;
+bool Controller::update() {
+    std::optional<float> pos_estimate_linear = pos_estimate_linear_src_.present();
+    std::optional<float> pos_estimate_circular = pos_estimate_circular_src_.present();
+    std::optional<float> pos_wrap = pos_wrap_src_.present();
+    std::optional<float> vel_estimate = vel_estimate_src_.present();
 
-    // Calib_anticogging is only true when calibration is occurring, so we can't block anticogging_pos
-    float anticogging_pos = axis_->encoder_.pos_estimate_ / axis_->encoder_.getCoggingRatio();
+    std::optional<float> anticogging_pos_estimate = axis_->encoder_.pos_estimate_.present();
+    std::optional<float> anticogging_vel_estimate = axis_->encoder_.vel_estimate_.present();
+
+    if (axis_->step_dir_active_) {
+        if (!pos_wrap.has_value()) {
+            set_error(ERROR_INVALID_CIRCULAR_RANGE);
+            return false;
+        }
+        input_pos_ = (float)(axis_->steps_ % config_.steps_per_circular_range) * (*pos_wrap / (float)(config_.steps_per_circular_range));
+    }
+
     if (config_.anticogging.calib_anticogging) {
-        if (!axis_->encoder_.pos_estimate_valid_ || !axis_->encoder_.vel_estimate_valid_) {
+        if (!anticogging_pos_estimate.has_value() || !anticogging_vel_estimate.has_value()) {
             set_error(ERROR_INVALID_ESTIMATE);
             return false;
         }
         // non-blocking
-        anticogging_calibration(axis_->encoder_.pos_estimate_, axis_->encoder_.vel_estimate_);
+        anticogging_calibration(*anticogging_pos_estimate, *anticogging_vel_estimate);
     }
 
     // TODO also enable circular deltas for 2nd order filter, etc.
     if (config_.circular_setpoints) {
-        // Keep pos setpoint from drifting
-        input_pos_ = fmodf_pos(input_pos_, config_.circular_setpoint_range);
+        if (!pos_wrap.has_value()) {
+            set_error(ERROR_INVALID_CIRCULAR_RANGE);
+            return false;
+        }
+        input_pos_ = fmodf_pos(input_pos_, *pos_wrap);
     }
 
     // Update inputs
@@ -167,6 +162,13 @@ bool Controller::update(float* torque_setpoint_output) {
         case INPUT_MODE_POS_FILTER: {
             // 2nd order pos tracking filter
             float delta_pos = input_pos_ - pos_setpoint_; // Pos error
+            if (config_.circular_setpoints) {
+                if (!pos_wrap.has_value()) {
+                    set_error(ERROR_INVALID_CIRCULAR_RANGE);
+                    return false;
+                }
+                delta_pos = wrap_pm(delta_pos, *pos_wrap);
+            }
             float delta_vel = input_vel_ - vel_setpoint_; // Vel error
             float accel = input_filter_kp_*delta_pos + input_filter_ki_*delta_vel; // Feedback
             torque_setpoint_ = accel * config_.inertia; // Accel
@@ -175,8 +177,18 @@ bool Controller::update(float* torque_setpoint_output) {
         } break;
         case INPUT_MODE_MIRROR: {
             if (config_.axis_to_mirror < AXIS_COUNT) {
-                pos_setpoint_ = axes[config_.axis_to_mirror]->encoder_.pos_estimate_ * config_.mirror_ratio;
-                vel_setpoint_ = axes[config_.axis_to_mirror]->encoder_.vel_estimate_ * config_.mirror_ratio;
+                std::optional<float> other_pos = axes[config_.axis_to_mirror].encoder_.pos_estimate_.present();
+                std::optional<float> other_vel = axes[config_.axis_to_mirror].encoder_.vel_estimate_.present();
+                std::optional<float> other_torque = axes[config_.axis_to_mirror].controller_.torque_output_.present();
+
+                if (!other_pos.has_value() || !other_vel.has_value() || !other_torque.has_value()) {
+                    set_error(ERROR_INVALID_ESTIMATE);
+                    return false;
+                }
+
+                pos_setpoint_ = *other_pos * config_.mirror_ratio;
+                vel_setpoint_ = *other_vel * config_.mirror_ratio;
+                torque_setpoint_ = *other_torque * config_.torque_mirror_ratio;
             } else {
                 set_error(ERROR_INVALID_MIRROR_AXIS);
                 return false;
@@ -208,7 +220,13 @@ bool Controller::update(float* torque_setpoint_output) {
                 torque_setpoint_ = traj_step.Ydd * config_.inertia;
                 axis_->trap_traj_.t_ += current_meas_period;
             }
-            anticogging_pos = pos_setpoint_; // FF the position setpoint instead of the pos_estimate
+            anticogging_pos_estimate = pos_setpoint_; // FF the position setpoint instead of the pos_estimate
+        } break;
+        case INPUT_MODE_TUNING: {
+            autotuning_phase_ = wrap_pm_pi(autotuning_phase_ + (2.0f * M_PI * autotuning_.frequency * current_meas_period));
+            pos_setpoint_ = autotuning_.pos_amplitude * our_arm_sin_f32(autotuning_phase_ + autotuning_.pos_phase);
+            vel_setpoint_ = autotuning_.vel_amplitude * our_arm_sin_f32(autotuning_phase_ + autotuning_.vel_phase);
+            torque_setpoint_ = autotuning_.torque_amplitude * our_arm_sin_f32(autotuning_phase_ + autotuning_.torque_phase);
         } break;
         default: {
             set_error(ERROR_INVALID_INPUT_MODE);
@@ -225,17 +243,17 @@ bool Controller::update(float* torque_setpoint_output) {
         float pos_err;
 
         if (config_.circular_setpoints) {
-            if(!pos_estimate_circular) {
+            if (!pos_estimate_circular.has_value() || !pos_wrap.has_value()) {
                 set_error(ERROR_INVALID_ESTIMATE);
                 return false;
             }
             // Keep pos setpoint from drifting
-            pos_setpoint_ = fmodf_pos(pos_setpoint_, *pos_wrap_src_);
+            pos_setpoint_ = fmodf_pos(pos_setpoint_, *pos_wrap);
             // Circular delta
             pos_err = pos_setpoint_ - *pos_estimate_circular;
-            pos_err = wrap_pm(pos_err, 0.5f * *pos_wrap_src_);
+            pos_err = wrap_pm(pos_err, *pos_wrap);
         } else {
-            if(!pos_estimate_linear) {
+            if (!pos_estimate_linear.has_value()) {
                 set_error(ERROR_INVALID_ESTIMATE);
                 return false;
             }
@@ -258,11 +276,11 @@ bool Controller::update(float* torque_setpoint_output) {
 
     // Check for overspeed fault (done in this module (controller) for cohesion with vel_lim)
     if (config_.enable_overspeed_error) {  // 0.0f to disable
-        if (!vel_estimate_src) {
+        if (!vel_estimate.has_value()) {
             set_error(ERROR_INVALID_ESTIMATE);
             return false;
         }
-        if (std::abs(*vel_estimate_src) > config_.vel_limit_tolerance * vel_lim) {
+        if (std::abs(*vel_estimate) > config_.vel_limit_tolerance * vel_lim) {
             set_error(ERROR_OVERSPEED);
             return false;
         }
@@ -273,9 +291,9 @@ bool Controller::update(float* torque_setpoint_output) {
     float vel_gain = config_.vel_gain;
     float vel_integrator_gain = config_.vel_integrator_gain;
     if (axis_->motor_.config_.motor_type == Motor::MOTOR_TYPE_ACIM) {
-        float effective_flux = axis_->motor_.current_control_.acim_rotor_flux;
+        float effective_flux = axis_->acim_estimator_.rotor_flux_;
         float minflux = axis_->motor_.config_.acim_gain_min_flux;
-        if (fabsf(effective_flux) < minflux)
+        if (std::abs(effective_flux) < minflux)
             effective_flux = std::copysignf(minflux, effective_flux);
         vel_gain /= effective_flux;
         vel_integrator_gain /= effective_flux;
@@ -290,17 +308,22 @@ bool Controller::update(float* torque_setpoint_output) {
     // We get the current position and apply a current feed-forward
     // ensuring that we handle negative encoder positions properly (-1 == motor->encoder.encoder_cpr - 1)
     if (anticogging_valid_ && config_.anticogging.anticogging_enabled) {
+        if (!anticogging_pos_estimate.has_value()) {
+            set_error(ERROR_INVALID_ESTIMATE);
+            return false;
+        }
+        float anticogging_pos = *anticogging_pos_estimate / axis_->encoder_.getCoggingRatio();
         torque += config_.anticogging.cogging_map[std::clamp(mod((int)anticogging_pos, 3600), 0, 3600)];
     }
 
     float v_err = 0.0f;
     if (config_.control_mode >= CONTROL_MODE_VELOCITY_CONTROL) {
-        if (!vel_estimate_src) {
+        if (!vel_estimate.has_value()) {
             set_error(ERROR_INVALID_ESTIMATE);
             return false;
         }
 
-        v_err = vel_des - *vel_estimate_src;
+        v_err = vel_des - *vel_estimate;
         torque += (vel_gain * gain_scheduling_multiplier) * v_err;
 
         // Velocity integral action before limiting
@@ -309,11 +332,11 @@ bool Controller::update(float* torque_setpoint_output) {
 
     // Velocity limiting in current mode
     if (config_.control_mode < CONTROL_MODE_VELOCITY_CONTROL && config_.enable_current_mode_vel_limit) {
-        if (!vel_estimate_src) {
+        if (!vel_estimate.has_value()) {
             set_error(ERROR_INVALID_ESTIMATE);
             return false;
         }
-        torque = limitVel(config_.vel_limit, *vel_estimate_src, vel_gain, torque);
+        torque = limitVel(config_.vel_limit, *vel_estimate, vel_gain, torque);
     }
 
     // Torque limiting
@@ -341,6 +364,33 @@ bool Controller::update(float* torque_setpoint_output) {
         }
     }
 
-    if (torque_setpoint_output) *torque_setpoint_output = torque;
+    float ideal_electrical_power = 0.0f;
+    if (axis_->motor_.config_.motor_type != Motor::MOTOR_TYPE_GIMBAL) {
+        ideal_electrical_power = axis_->motor_.current_control_.power_ - \
+            SQ(axis_->motor_.current_control_.Iq_measured_) * 1.5f * axis_->motor_.config_.phase_resistance - \
+            SQ(axis_->motor_.current_control_.Id_measured_) * 1.5f * axis_->motor_.config_.phase_resistance;
+    }
+    else {
+        ideal_electrical_power = axis_->motor_.current_control_.power_;
+    }
+    mechanical_power_ += config_.mechanical_power_bandwidth * current_meas_period * (torque * *vel_estimate * M_PI * 2.0f - mechanical_power_);
+    electrical_power_ += config_.electrical_power_bandwidth * current_meas_period * (ideal_electrical_power - electrical_power_);
+
+    // Spinout check
+    // If mechanical power is negative (braking) and measured power is positive, something is wrong
+    // This indicates that the controller is trying to stop, but torque is being produced.
+    // Usually caused by an incorrect encoder offset
+    if (mechanical_power_ < config_.spinout_mechanical_power_threshold && electrical_power_ > config_.spinout_electrical_power_threshold) {
+        set_error(ERROR_SPINOUT_DETECTED);
+        return false;
+    }
+
+    torque_output_ = torque;
+
+    // TODO: this is inconsistent with the other errors which are sticky.
+    // However if we make ERROR_INVALID_ESTIMATE sticky then it will be
+    // confusing that a normal sequence of motor calibration + encoder
+    // calibration would leave the controller in an error state.
+    error_ &= ~ERROR_INVALID_ESTIMATE;
     return true;
 }

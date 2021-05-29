@@ -3,7 +3,7 @@
 #include <algorithm>
 #include <cstring>
 
-#include "communication/can_helpers.hpp"
+#include "communication/can/can_helpers.hpp"
 
 enum InputMode {
     INPUT_MODE_INACTIVE,
@@ -37,6 +37,9 @@ TEST_SUITE("CAN Functions") {
         std::memcpy(rxmsg.buf, &val, sizeof(val));
 
         val = can_getSignal<uint16_t>(rxmsg, 0, 16, true, 1, 0);
+        CHECK(val == 0x1234);
+
+        val = can_getSignal<uint16_t>(rxmsg, 0, 16, true);
         CHECK(val == 0x1234);
 
         val = can_getSignal<uint16_t>(rxmsg, 0, 16, false, 1, 0);

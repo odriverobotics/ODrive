@@ -1,0 +1,127 @@
+{
+  "name": "Tuning",
+  "component": "Dashboard",
+  "id": "deadb33f",
+  "controls": [
+    {
+      "controlType": "CtrlNumeric",
+      "path": "odrives.odrive0.axis0.motor.config.current_lim"
+    },
+    {
+      "controlType": "CtrlNumeric",
+      "path": "odrives.odrive0.axis0.controller.config.vel_limit"
+    },
+    {
+      "controlType": "CtrlSlider",
+      "path": "odrives.odrive0.axis0.controller.config.pos_gain"
+    },
+    {
+      "controlType": "CtrlSlider",
+      "path": "odrives.odrive0.axis0.controller.config.vel_gain"
+    },
+    {
+      "controlType": "CtrlSlider",
+      "path": "odrives.odrive0.axis0.controller.config.vel_integrator_gain"
+    },
+    {
+      "controlType": "CtrlEnum",
+      "path": "odrives.odrive0.axis0.requested_state",
+      "options": [
+        {
+          "text": "Undefined",
+          "value": 0
+        },
+        {
+          "text": "Idle",
+          "value": 1
+        },
+        {
+          "text": "Startup Sequence",
+          "value": 2
+        },
+        {
+          "text": "Full Calibration Sequence",
+          "value": 3
+        },
+        {
+          "text": "Motor Calibration",
+          "value": 4
+        },
+        {
+          "text": "Sensorless Control",
+          "value": 5
+        },
+        {
+          "text": "Encoder Index Search",
+          "value": 6
+        },
+        {
+          "text": "Encoder Offset Calibration",
+          "value": 7
+        },
+        {
+          "text": "Closed Loop Control",
+          "value": 8
+        },
+        {
+          "text": "Lockin Spin",
+          "value": 9
+        },
+        {
+          "text": "Encoder Direction Find",
+          "value": 10
+        },
+        {
+          "text": "Homing",
+          "value": 11
+        }
+      ]
+    },
+    {
+      "controlType": "CtrlFunction",
+      "path": "odrives.odrive0.save_configuration"
+    }
+  ],
+  "actions": [
+    {
+      "actionType": "Action",
+      "id": "a699c462-cf8d-4b4e-aedf-0b200e84f97a",
+      "path": "odrives.odrive0.axis0.controller.input_pos",
+      "val": 0
+    },
+    {
+      "actionType": "Action",
+      "id": "db267ae4-fdf4-4770-a2d3-eb61de026659",
+      "path": "odrives.odrive0.axis0.controller.input_pos",
+      "val": 10
+    }
+  ],
+  "plots": [
+    {
+      "name": "65a2768d-e61e-4dd5-bf80-dba153838f74",
+      "vars": [
+        {
+          "path": "odrives.odrive0.axis0.controller.input_pos",
+          "color": "#1f77b4"
+        },
+        {
+          "path": "odrives.odrive0.axis0.encoder.pos_estimate",
+          "color": "#ff7f0e"
+        }
+      ]
+    },
+    {
+      "name": "d9ee2474-3e53-408f-9eab-1656342eb531",
+      "vars": [
+        {
+          "path": "odrives.odrive0.axis0.controller.vel_setpoint",
+          "color": "#1f77b4"
+        },
+        {
+          "path": "odrives.odrive0.axis0.encoder.vel_estimate",
+          "color": "#ff7f0e"
+        }
+      ]
+    }
+  ]
+}

@@ -2,6 +2,95 @@
 Please add a note of your changes below this heading if you make a Pull Request.
 
 # Releases
+## [0.5.2] - 2021-05-21
+
+### Fixed
+* spinout error is no longer sticky and doesn't trigger on static torque loads due to I^2*R electrical power
+* Step and direction mode resets position when entering closed loop just like `input_pos` does
+* CAN baud rate setting is now correctly handled
+* `odrivetool dfu` works properly when an ODrive is flashed with the `dfu` switch set to "dfu".
+* `odrivetool dfu` now erases the entire flash memory before flashing firmware. This ensures that old configuration parameters are erased.
+* ASCII and the Native Protocol do not run at the same time on a UART interface. See `odrv0.config.uart0_protocol` and the `STREAM_PROTOCOL_TYPE` enums for details.
+
+### Added
+* `sc` command to ascii protocol to run `odrv.clear_errors()`
+* Added phase balance check to motor calibration and MOTOR_ERROR_UNBALANCED_PHASES to error enums
+* Added polarity and phase offset calibration for hall effect encoders
+* [Mechanical brake support](docs/mechanical-brakes.md)
+* Added periodic sending of encoder position on CAN
+* Support for UART1 on GPIO3 and GPIO4. UART0 (on GPIO1/2) and UART1 can currently not be enabled at the same time.
+* Thermistors now have a 2nd order lowpass filter applied to reduce noise
+* 2-norm current clamping is used for AC induction motors
+* Added spinout detection to detect incorrect encoder offset and CONTROLLER_ERROR_SPINOUT_DETECTED to error enums.
+* Added AARCH64 support to libfibre
+* Tuning input mode added to provide sinusoidal position, velocity, or torque stimulus. See INPUT_MODE_TUNING and the controller class for details.
+* Added torque mirroring to INPUT_MODE_MIRROR
+* `mechanical_power_bandwidth`, `electrical_power_bandwidth`, `spinout_electrical_power_threshold`, `spinout_mechanical_power_threshold` added to `controller.config` for spinout detection.
+* `mechanical_power` and `electrical_power` added to `controller`.
+
+### Changed
+* Step/dir performance improved! Dual axis step rates up to 250kHz have been tested
+* Apply_config is called for encoders after a successful direction find
+* Full calibration sequence now includes hall polarity calibration if a hall effect encoder is used
+* Modified encoder offset calibration to work correctly when calib_scan_distance is not a multiple of 4pi
+* Moved thermistors from being a top level object to belonging to Motor objects. Also changed errors: thermistor errors rolled into motor errors
+* Use DMA for DRV8301 setup
+* Make NVM configuration code more dynamic so that the layout doesn't have to be known at compile time.
+* GPIO initialization logic was changed. GPIOs now need to be explicitly set to the mode corresponding to the feature that they are used by. See `<odrv>.config.gpioX_mode`.
+* Previously, if two components used the same interrupt pin (e.g. step input for axis0 and axis1) then the one that was configured later would override the other one. Now this is no longer the case (the old component remains the owner of the pin).
+* New control loop architecture:
+  1. TIM8 update interrupt handler (CNT = 0) runs at a high priority and invokes the system level function `sample_cb()` to sample all timing critical inputs (currently only encoder state).
+  2. TIM8 update interrupt handler (CNT = 0) raises an NVIC flag to kick off a lower priority interrupt.
+  3. The control loop interrupt handler checks if all ADC measurements are ready and informs both motor objects about the current measurements.
+  4. The control loop interrupt handler invokes the system level function `control_loop_cb()` which updates all components (encoders, estimators, torque controllers, etc). The data paths between the components are configured by the Axis threads based on the requested state. This replaces the previous architecture where the components were updated inside the Axis threads in `Axis::run_control_loop()`.
+  5. Meanwhile the TIM1 and TIM8 updates for CNT = 3500 will have fired. The control loop interrupt handler thus reads the new ADC measurements and informs both motor objects that a DC calibration event has happened.
+  6. Finally, the control loop interrupt invokes `pwm_update_cb` on both motors to make them update their PWM timing registers.
+* Components that need low level control over PWM timings are implemented by inheriting from the `PhaseControlLaw` interface. Three components currently inherit this interface: `FieldOrientedController`, `ResistanceMeasurementControlLaw` and `InductanceMeasurementControlLaw`.
+* The FOC algorithm is now found in foc.cpp and and is presumably capable of running at a different frequency than the main control tasks (not relevant for ODrive v3).
+* ACIM estimator was consolidated into a separate component `<odrv>.acim_estimator`.
+* The Automatic Output Enable (AOE) flag of TIM1/TIM8 is used to achieve glitch-free motor arming.
+* Sensorless mode was merged into closed loop control mode. Use `<axis>.enable_sensorless_mode` to disable the use of an encoder.
+* More informative profiling instrumentation was added.
+* A system-level error property was introduced.
+* Added `torque_mirror_ratio` and use it to feed-forward `controller_.torque_output` in `INPUT_MODE_MIRROR`
+* Accumulate integer steps in step/dir to avoid float precision errors
+* Circular setpoint mode must be enabled when the step/dir interface is used.
+
+### API Migration Notes
+* `axis.config.turns_per_step` changed to `axis.controller.config.steps_per_circular_range`
+* `odrive.axis.fet_thermistor`, `odrive.axis.motor_thermistor` moved to `odrive.axis.motor` object
+* `enable_uart` and `uart_baudrate` were renamed to `enable_uart0` and `uart0_baudrate`.
+* `enable_i2c_instead_of_can` was replaced by the separate settings `enable_i2c0` and `enable_can0`.
+* `<axis>.motor.gate_driver` was moved to `<axis>.gate_driver`.
+* `<axis>.min_endstop.pullup` and `<axis>.max_endstop.pullup` were removed. Use `<odrv>.config.gpioX_mode = GPIO_MODE_DIGITAL / GPIO_MODE_DIGITAL_PULL_UP / GPIO_MODE_DIGITAL_PULL_DOWN` instead.
+* `<axis>.config.can_node_id` was moved to `<axis>.config.can.node_id`
+* `<axis>.config.can_node_id_extended` was moved to `<axis>.config.can.is_extended`
+* `<axis>.config.can_heartbeat_rate_ms` was moved to `<axis>.config.can.heartbeat_rate_ms`
+* `<odrv>.get_oscilloscope_val()` was moved to `<odrv>.oscilloscope.get_val()`.
+* Several error flags from `<odrv>.<axis>.error` were removed. Some were moved to `<odrv>.error` and some are no longer relevant because implementation details changed.
+* Several error flags from `<odrv>.<axis>.motor.error` were removed. Some were moved to `<odrv>.error` and some are no longer relevant because implementation details changed.
+* `<axis>.lockin_state` was removed as the lockin implementation was replaced by a more general open loop control block (currently not exposed on the API).
+* `AXIS_STATE_SENSORLESS_CONTROL` was removed. Use `AXIS_STATE_CLOSED_LOOP_CONTROL` instead with `<odrv>.enable_sensorless_mode = True`.
+* `<axis>.config.startup_sensorless_control` was removed. Use `<axis>.config.startup_closed_loop_control` instead with `<odrv>.enable_sensorless_mode = True`.
+* `<axis>.clear_errors()` was replaced by the system-wide function `<odrv>.clear_errors()`.
+* `<axis>.armed_state` was replaced by `<axis>.is_armed`.
+* Several properties in `<axis>.motor.current_control` were changed to read-only.
+* `<axis>.motor.current_control.Ibus` was moved to `<axis>.motor.I_bus`.
+* `<axis>.motor.current_control.max_allowed_current` was moved to `<axis>.motor.max_allowed_current`.
+* `<axis>.motor.current_control.overcurrent_trip_level` was removed.
+* `<axis>.motor.current_control.acim_rotor_flux` was moved to `<axis>.acim_estimator.rotor_flux`.
+* `<axis>.motor.current_control.async_phase_vel` was moved to `<axis>.acim_estimator.stator_phase_vel`.
+* `<axis>.motor.current_control.async_phase_offset` was moved to `<axis>.acim_estimator.phase`.
+* `<axis>.motor.timing_log` was removed in favor of `<odrv>.task_times` and `<odrv>.<axis>.task_times`.
+* `<axis>.motor.config.direction` was moved to `<axis>.encoder.config.direction`.
+* `<axis>.motor.config.acim_slip_velocity` was moved to `<axis>.acim_estimator.config.slip_velocity`.
+* Several properties were changed to readonly.
+* `<axis>.encoder.config.offset` was renamed to ``<axis>.encoder.config.phase_offset`
+* `<axis>.encoder.config.offset_float` was renamed to ``<axis>.encoder.config.phase_offset_float`
+* `<odrv>.config.brake_resistance == 0.0` is no longer a valid way to disable the brake resistor. Use `<odrv>.config.enable_brake_resistor` instead. A reboot is necessary for this to take effect.
+* `<odrv>.can.set_baud_rate()` was removed. The baudrate is now automatically updated when writing to `<odrv>.can.config.baud_rate`.
+
+# Releases
 ## [0.5.1] - 2020-09-27
 ### Added
 * Added motor `torque_constant`: units of torque are now [Nm] instead of just motor current.
@@ -18,6 +107,8 @@ Please add a note of your changes below this heading if you make a Pull Request.
 * `axis.motor.get_inverter_temp()`, `axis.motor.inverter_temp_limit_lower` and `axis.motor.inverter_temp_limit_upper` have been moved to seperate fet thermistor object under `axis.fet_thermistor`. `get_inverter_temp()` function has been renamed to `temp` and is now a read-only property.
 * `axis.config.counts_per_step` is now `axis.config.turns_per_step`
 * Outputs of `axis.sensorless_estimator` are now in turns/s instead of electrical rad/s
+* Fixed bug of high current during lockin-ramp caused by `motor::update()` expecting a torque command instead of current
+* Fixed bug where commanded velocity was extremely high just after sensorless ramp when using `input_mode` INPUT_MODE_VEL_RAMP caused by `vel_setpoint` and `axis.config.sensorless_ramp.vel` being in different units
 
 ### Fixed
 * Fixed bug of high current during lockin-ramp caused by `motor::update()` expecting a torque command instead of current

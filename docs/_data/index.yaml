@@ -45,6 +45,8 @@ sections:
         url: /step-direction
       - title: RC PWM
         url: /rc-pwm
+      - title: Analog Input
+        url: /analog-input
       - title: Homing & Endstops
         url: /endstops
       - title: Thermistors

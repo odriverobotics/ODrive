@@ -223,19 +223,19 @@ def put_into_dfu_mode(device, cancellation_token):
     Puts the specified device into DFU mode
     """
     if not hasattr(device, "enter_dfu_mode"):
-        print("The firmware on device {} cannot soft enter DFU mode.\n"
+        print("The firmware on device {:08X} cannot soft enter DFU mode.\n"
               "Please remove power, put the DFU switch into DFU mode,\n"
               "then apply power again. Then try again.\n"
               "If it still doesn't work, you can try to use the DeFuse app or \n"
               "dfu-util, see the odrive documentation.\n"
               "You can also flash the firmware using STLink (`make flash`)"
-              .format(device.__channel__.usb_device.serial_number))
+              .format(device.serial_number))
         return
         
-    print("Putting device {} into DFU mode...".format(device.__channel__.usb_device.serial_number))
+    print("Putting device {:08X} into DFU mode...".format(device.serial_number))
     try:
         device.enter_dfu_mode()
-    except fibre.ChannelBrokenException:
+    except fibre.ObjectLostError:
         pass # this is expected because the device reboots
     if platform.system() == "Windows":
         show_deferred_message("Still waiting for the device to reappear.\n"
@@ -265,6 +265,7 @@ def update_device(device, firmware, logger, cancellation_token):
     """
 
     if isinstance(device, usb.core.Device):
+        found_in_dfu = True
         serial_number = device.serial_number
         dfudev = DfuDevice(device)
         if (logger._verbose):
@@ -281,7 +282,8 @@ def update_device(device, firmware, logger, cancellation_token):
         else:
             hw_version = (0, 0, 0)
     else:
-        serial_number = device.__channel__.usb_device.serial_number
+        found_in_dfu = False
+        serial_number = "{:08X}".format(device.serial_number)
         dfudev = None
 
         # Read hardware version as reported from firmware
@@ -379,9 +381,11 @@ def update_device(device, firmware, logger, cancellation_token):
 
     # Erase
     try:
-        for i, (sector, data) in enumerate(touched_sectors):
-            print("Erasing... (sector {}/{})  \r".format(i, len(touched_sectors)), end='', flush=True)
-            dfudev.erase_sector(sector)
+        internal_flash_sectors = [sector for sector in dfudev.sectors if sector['name'] == 'Internal Flash']
+        for i, sector in enumerate(dfudev.sectors):
+            if sector['name'] == 'Internal Flash':
+                print("Erasing... (sector {}/{})  \r".format(i, len(internal_flash_sectors)), end='', flush=True)
+                dfudev.erase_sector(sector)
         print('Erasing... done            \r', end='', flush=True)
     finally:
         print('', flush=True)
@@ -421,13 +425,15 @@ def update_device(device, firmware, logger, cancellation_token):
     # Jump to application
     dfudev.jump_to_application(0x08000000)
 
-    logger.info("Waiting for the device to reappear...")
-    device = odrive.find_any("usb", serial_number,
-                    cancellation_token, cancellation_token, timeout=30)
+    if not found_in_dfu:
+        logger.info("Waiting for the device to reappear...")
+        device = odrive.find_any(odrive.default_usb_search_path, serial_number,
+                        cancellation_token, cancellation_token, timeout=30)
 
-    if do_backup_config:
-        odrive.configuration.restore_config(device, None, logger)
-        os.remove(odrive.configuration.get_temp_config_filename(device))
+        if do_backup_config:
+            temp_config_filename = odrive.configuration.get_temp_config_filename(device)
+            odrive.configuration.restore_config(device, None, logger)
+            os.remove(temp_config_filename)
 
     logger.success("Device firmware update successful.")
 
@@ -455,7 +461,7 @@ def launch_dfu(args, logger, cancellation_token):
 
     # Scan for ODrives not in DFU mode
     # We only scan on USB because DFU is only implemented over USB
-    devices[1] = odrive.find_any("usb", serial_number,
+    devices[1] = odrive.find_any(odrive.default_usb_search_path, serial_number,
         find_odrive_cancellation_token, cancellation_token)
     find_odrive_cancellation_token.set()
     

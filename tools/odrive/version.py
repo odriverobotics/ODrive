@@ -28,7 +28,7 @@ def get_version_from_git():
     script_dir = os.path.dirname(os.path.realpath(__file__))
     try:
         # Determine the current git commit version
-        git_tag = subprocess.check_output(["git", "describe", "--always", "--tags", "--dirty=*"],
+        git_tag = subprocess.check_output(["git", "describe", "--always", "--tags", "--match=*fw*", "--dirty=*"],
             cwd=script_dir)
         git_tag = git_tag.decode(sys.stdout.encoding or 'ascii').rstrip('\n')
 

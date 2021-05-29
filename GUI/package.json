@@ -1,0 +1,70 @@
+{
+  "name": "ODriveGUI",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "serve": "vue-cli-service serve",
+    "build": "vue-cli-service build",
+    "lint": "vue-cli-service lint",
+    "enumGenerate": "node scripts/enumGenerate.js",
+    "preelectron:build": "electron-icon-builder --input=./public/icon.png --output=build --flatten && npm run enumGenerate",
+    "electron:build": "vue-cli-service electron:build",
+    "preelectron:serve": "npm run enumGenerate",
+    "electron:serve": "vue-cli-service electron:serve",
+    "postinstall": "electron-builder install-app-deps",
+    "postuninstall": "electron-builder install-app-deps",
+    "electron:generate-icons": "electron-icon-builder --input=./public/icon.png --output=build --flatten"
+  },
+  "main": "background.js",
+  "dependencies": {
+    "chart.js": "^2.9.3",
+    "chartjs-plugin-streaming": "^1.8.0",
+    "core-js": "^3.6.5",
+    "electron": "^9.1.1",
+    "file-saver": "^2.0.2",
+    "socket.io-client": "^3.0.4",
+    "typeface-roboto": "0.0.75",
+    "uuid": "^8.2.0",
+    "vue": "^2.6.11",
+    "vue-chartjs": "^3.5.0",
+    "vue-context": "^5.2.0",
+    "vue-directive-tooltip": "^1.6.3",
+    "vue-json-component": "^0.4.1",
+    "vue-slider-component": "^3.2.11",
+    "vuex": "^3.5.1"
+  },
+  "devDependencies": {
+    "@vue/cli-plugin-babel": "~4.4.0",
+    "@vue/cli-plugin-eslint": "~4.4.0",
+    "@vue/cli-plugin-router": "^4.4.6",
+    "@vue/cli-service": "~4.4.0",
+    "babel-eslint": "^10.1.0",
+    "electron": "^9.0.0",
+    "electron-devtools-installer": "^3.1.0",
+    "electron-icon-builder": "^1.0.2",
+    "eslint": "^6.7.2",
+    "eslint-plugin-vue": "^6.2.2",
+    "vue-cli-plugin-electron-builder": "~2.0.0-rc.4",
+    "vue-cli-plugin-yaml": "^1.0.2",
+    "vue-template-compiler": "^2.6.11"
+  },
+  "eslintConfig": {
+    "root": true,
+    "env": {
+      "node": true
+    },
+    "extends": [
+      "plugin:vue/essential",
+      "eslint:recommended"
+    ],
+    "parserOptions": {
+      "parser": "babel-eslint"
+    },
+    "rules": {}
+  },
+  "browserslist": [
+    "> 1%",
+    "last 2 versions",
+    "not dead"
+  ]
+}

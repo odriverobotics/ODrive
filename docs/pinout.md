@@ -1,35 +1,42 @@
 # Pinout
 
-| GPIO      | primary   | step/dir      | other                   |
-|-----------|-----------|---------------|-------------------------|
-| GPIO1     | UART TX   | Axis0 Step    | Analog input, PWM input |
-| GPIO2     | UART RX   | Axis0 Dir     | Analog input, PWM input |
-| GPIO3     |           | Axis1 Step (+)| Analog input, PWM input |
-| GPIO4     |           | Axis1 Dir (+) | Analog input, PWM input |
-| GPIO5     |           |               | Analog input (*)        |
-| GPIO6 (*) |           |               |                         |
-| GPIO7 (*) |           | Axis1 Step (*)|                         |
-| GPIO8 (*) |           | Axis1 Dir (*) |                         |
+## ODrive v4.1
 
-(+) on ODrive v3.4 and earlier <br>
-(*) ODrive v3.5 and later
+**TODO**
 
-Notes:
+## ODrive v3.x
+
+| #  | Label         | `GPIO_MODE_DIGITAL`    | `GPIO_MODE_ANALOG_IN` | `GPIO_MODE_UART_A` | `GPIO_MODE_UART_B` | `GPIO_MODE_PWM` | `GPIO_MODE_CAN_A` | `GPIO_MODE_I2C_A` | `GPIO_MODE_ENC0` | `GPIO_MODE_ENC1` | `GPIO_MODE_MECH_BRAKE` |
+|----|---------------|------------------------|-----------------------|--------------------|--------------------|-----------------|------------------|-------------------|------------------|------------------|------------------------|
+|  0 | _not a pin_   |                        |                       |                    |                    |                 |                  |                   |                  |                  |                        |
+|  1 | GPIO1 (+)     | general purpose        | analog input          | **UART_A.TX**      |                    | PWM0.0          |                  |                   |                  |                  | mechanical brake       |
+|  2 | GPIO2 (+)     | general purpose        | analog input          | **UART_A.RX**      |                    | PWM0.1          |                  |                   |                  |                  | mechanical brake       |
+|  3 | GPIO3         | general purpose        | **analog input**      |                    | **UART_B.TX**      | PWM0.2          |                  |                   |                  |                  | mechanical brake       |
+|  4 | GPIO4         | general purpose        | **analog input**      |                    | **UART_B.RX**      | PWM0.3          |                  |                   |                  |                  | mechanical brake       |
+|  5 | GPIO5         | general purpose        | **analog input** (*)  |                    |                    |                 |                  |                   |                  |                  | mechanical brake       |
+|  6 | GPIO6 (*) (+) | **general purpose**    |                       |                    |                    |                 |                  |                   |                  |                  | mechanical brake       |
+|  7 | GPIO7 (*) (+) | **general purpose**    |                       |                    |                    |                 |                  |                   |                  |                  | mechanical brake       |
+|  8 | GPIO8 (*) (+) | **general purpose**    |                       |                    |                    |                 |                  |                   |                  |                  | mechanical brake       |
+|  9 | M0.A          | general purpose        |                       |                    |                    |                 |                  |                   | **ENC0.A**       |                  |                        |
+| 10 | M0.B          | general purpose        |                       |                    |                    |                 |                  |                   | **ENC0.B**       |                  |                        |
+| 11 | M0.Z          | **general purpose**    |                       |                    |                    |                 |                  |                   |                  |                  |                        |
+| 12 | M1.A          | general purpose        |                       |                    |                    |                 |                  | I2C.SCL           |                  | **ENC1.A**       |                        |
+| 13 | M1.B          | general purpose        |                       |                    |                    |                 |                  | I2C.SDA           |                  | **ENC1.B**       |                        |
+| 14 | M1.Z          | **general purpose**    |                       |                    |                    |                 |                  |                   |                  |                  |                        |
+| 15 | _not exposed_ | general purpose        |                       |                    |                    |                 | **CAN_A.RX**     | I2C.SCL           |                  |                  |                        |
+| 16 | _not exposed_ | general purpose        |                       |                    |                    |                 | **CAN_A.TX**     | I2C.SDA           |                  |                  |                        |
+
+
+(*) ODrive v3.5 and later <br>
+(+) On ODrive v3.5 and later these pins have noise suppression filters. This is useful for step/dir input. <br>
+
+## Notes
+
+* Changes to the pin configuration only take effect after `odrv0.save_configuration()` and `odrv0.reboot()`
+* Bold font marks the default configuration.
+* If a GPIO is set to an unsupported mode it will be left uninitialized.
+* When setting a GPIO to a special purpose mode (e.g. `GPIO_MODE_UART_A`) you must also enable the corresponding feature (e.g. `<odrv>.config.enable_uart_a`).
+* Digital mode is a general purpose mode that can be used for these functions: step, dir, enable, encoder index, hall effect encoder, SPI encoder nCS.
 * You must also connect GND between ODrive and your other board.
 * ODrive v3.3 and onward have 5V tolerant GPIO pins.
-* ODrive v3.5 and later have some noise suppression filters on the default step/dir pins
-* You can change the step/dir pins using `axis.config.<step/dir>_gpio_pin`.
-
-### Pin function priorities
-1. PWM in, if enabled. Disabled by default.
-1. UART, **Enabled by default**.
-1. Step/Dir, if enabled. Disabled by default.
-1. Analog, default behavior if not overridden (only on supported pins).
-1. Digital in, default behavior on pins not capable of analog input.
-
-For predictable results, try to have only one feature enabled for any one pin. When changing pin assignments you must:
-* `odrv0.save_configuration()`
-* `odrv0.reboot()`
-
-### Analog input
-Analog inputs can be used to measure voltages between 0 and 3.3V. Odrive uses a 12 bit ADC (4096 steps) and so has a maximum resolution of 0.8 mV. Some GPIO pins require the appropriate pin priority (see above) to be set before they can be used as an analog input. To read the voltage on GPIO1 in odrive tool the following would be entered: `odrv0.get_adc_voltage(1)`
+* Simultaneous operation of UART_A and UART_B is currently not supported.

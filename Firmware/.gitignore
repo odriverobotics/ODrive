@@ -26,3 +26,6 @@ STM32CubeMX
 
 #gdb log
 openocd.log
+
+# OS-specific files
+.DS_Store

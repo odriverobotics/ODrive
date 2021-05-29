@@ -35,26 +35,10 @@
 #include "stm32f4xx.h"
 #include "stm32f4xx_it.h"
 #include "cmsis_os.h"
-
-/* USER CODE BEGIN 0 */
-#include "freertos_vars.h"
 #include <stdbool.h>
 
-typedef void (*ADC_handler_t)(ADC_HandleTypeDef* hadc, bool injected);
-void ADC_IRQ_Dispatch(ADC_HandleTypeDef* hadc, ADC_handler_t callback);
-
-typedef void (*TIM_capture_callback_t)(int channel, uint32_t timestamp);
-void decode_tim_capture(TIM_HandleTypeDef *htim, TIM_capture_callback_t callback);
-
-// TODO: move somewhere else
-void pwm_trig_adc_cb(ADC_HandleTypeDef* hadc, bool injected);
-void vbus_sense_adc_cb(ADC_HandleTypeDef* hadc, bool injected);
-void tim_update_cb(TIM_HandleTypeDef* htim);
-void pwm_in_cb(int channel, uint32_t timestamp);
-
-extern TIM_HandleTypeDef htim1;
-extern I2C_HandleTypeDef hi2c1;
-
+/* USER CODE BEGIN 0 */
+#include <Drivers/STM32/stm32_system.h>
 /* USER CODE END 0 */
 
 /* External variables --------------------------------------------------------*/
@@ -70,7 +54,10 @@ extern TIM_HandleTypeDef htim5;
 extern TIM_HandleTypeDef htim8;
 extern DMA_HandleTypeDef hdma_uart4_rx;
 extern DMA_HandleTypeDef hdma_uart4_tx;
+extern DMA_HandleTypeDef hdma_usart2_rx;
+extern DMA_HandleTypeDef hdma_usart2_tx;
 extern UART_HandleTypeDef huart4;
+extern UART_HandleTypeDef huart2;
 
 extern TIM_HandleTypeDef htim14;
 
@@ -84,14 +71,18 @@ extern TIM_HandleTypeDef htim14;
 void NMI_Handler(void)
 {
   /* USER CODE BEGIN NonMaskableInt_IRQn 0 */
-
+  COUNT_IRQ(NonMaskableInt_IRQn);
   /* USER CODE END NonMaskableInt_IRQn 0 */
   /* USER CODE BEGIN NonMaskableInt_IRQn 1 */
 
   /* USER CODE END NonMaskableInt_IRQn 1 */
 }
 
+__attribute__((used)) 
 void get_regs(void** stack_ptr) {
+  TIM1->BDTR &= ~(TIM_BDTR_AOE_Msk | TIM_BDTR_MOE_Msk); // disable M0 PWM
+  TIM8->BDTR &= ~(TIM_BDTR_AOE_Msk | TIM_BDTR_MOE_Msk); // disable M1 PWM
+
   void* volatile r0 __attribute__((unused)) = stack_ptr[0];
   void* volatile r1 __attribute__((unused)) = stack_ptr[1];
   void* volatile r2 __attribute__((unused)) = stack_ptr[2];
@@ -102,7 +93,14 @@ void get_regs(void** stack_ptr) {
   void* volatile pc __attribute__((unused)) = stack_ptr[6];  // Program counter
   void* volatile psr __attribute__((unused)) = stack_ptr[7];  // Program status register
 
-  volatile bool stay_looping = true;
+  void* volatile cfsr __attribute__((unused)) = (void*)SCB->CFSR; // Configurable fault status register
+  void* volatile cpacr __attribute__((unused)) = (void*)SCB->CPACR;
+  void* volatile fpccr __attribute__((unused)) = (void*)FPU->FPCCR;
+
+  volatile bool preciserr __attribute__((unused)) = (uint32_t)cfsr & 0x200;
+  volatile bool ibuserr __attribute__((unused)) = (uint32_t)cfsr & 0x100;
+
+  volatile int stay_looping = 1;
   while(stay_looping);
 }
 
@@ -127,11 +125,13 @@ void HardFault_Handler(void)
 void MemManage_Handler(void)
 {
   /* USER CODE BEGIN MemoryManagement_IRQn 0 */
-
+  COUNT_IRQ(MemoryManagement_IRQn);
   /* USER CODE END MemoryManagement_IRQn 0 */
   while (1)
   {
     /* USER CODE BEGIN W1_MemoryManagement_IRQn 0 */
+    TIM1->BDTR &= ~(TIM_BDTR_AOE_Msk | TIM_BDTR_MOE_Msk); // disable M0 PWM
+    TIM8->BDTR &= ~(TIM_BDTR_AOE_Msk | TIM_BDTR_MOE_Msk); // disable M1 PWM
     /* USER CODE END W1_MemoryManagement_IRQn 0 */
   }
   /* USER CODE BEGIN MemoryManagement_IRQn 1 */
@@ -145,11 +145,13 @@ void MemManage_Handler(void)
 void BusFault_Handler(void)
 {
   /* USER CODE BEGIN BusFault_IRQn 0 */
-
+  COUNT_IRQ(BusFault_IRQn);
   /* USER CODE END BusFault_IRQn 0 */
   while (1)
   {
     /* USER CODE BEGIN W1_BusFault_IRQn 0 */
+    TIM1->BDTR &= ~(TIM_BDTR_AOE_Msk | TIM_BDTR_MOE_Msk); // disable M0 PWM
+    TIM8->BDTR &= ~(TIM_BDTR_AOE_Msk | TIM_BDTR_MOE_Msk); // disable M1 PWM
     /* USER CODE END W1_BusFault_IRQn 0 */
   }
   /* USER CODE BEGIN BusFault_IRQn 1 */
@@ -163,11 +165,13 @@ void BusFault_Handler(void)
 void UsageFault_Handler(void)
 {
   /* USER CODE BEGIN UsageFault_IRQn 0 */
-
+  COUNT_IRQ(UsageFault_IRQn);
   /* USER CODE END UsageFault_IRQn 0 */
   while (1)
   {
     /* USER CODE BEGIN W1_UsageFault_IRQn 0 */
+    TIM1->BDTR &= ~(TIM_BDTR_AOE_Msk | TIM_BDTR_MOE_Msk); // disable M0 PWM
+    TIM8->BDTR &= ~(TIM_BDTR_AOE_Msk | TIM_BDTR_MOE_Msk); // disable M1 PWM
     /* USER CODE END W1_UsageFault_IRQn 0 */
   }
   /* USER CODE BEGIN UsageFault_IRQn 1 */
@@ -181,7 +185,7 @@ void UsageFault_Handler(void)
 void DebugMon_Handler(void)
 {
   /* USER CODE BEGIN DebugMonitor_IRQn 0 */
-
+  COUNT_IRQ(DebugMonitor_IRQn);
   /* USER CODE END DebugMonitor_IRQn 0 */
   /* USER CODE BEGIN DebugMonitor_IRQn 1 */
 
@@ -194,7 +198,7 @@ void DebugMon_Handler(void)
 void SysTick_Handler(void)
 {
   /* USER CODE BEGIN SysTick_IRQn 0 */
-
+  COUNT_IRQ(SysTick_IRQn);
   /* USER CODE END SysTick_IRQn 0 */
   osSystickHandler();
   /* USER CODE BEGIN SysTick_IRQn 1 */
@@ -215,7 +219,7 @@ void SysTick_Handler(void)
 void DMA1_Stream0_IRQHandler(void)
 {
   /* USER CODE BEGIN DMA1_Stream0_IRQn 0 */
-
+  COUNT_IRQ(DMA1_Stream0_IRQn);
   /* USER CODE END DMA1_Stream0_IRQn 0 */
   HAL_DMA_IRQHandler(&hdma_spi3_rx);
   /* USER CODE BEGIN DMA1_Stream0_IRQn 1 */
@@ -229,7 +233,7 @@ void DMA1_Stream0_IRQHandler(void)
 void DMA1_Stream2_IRQHandler(void)
 {
   /* USER CODE BEGIN DMA1_Stream2_IRQn 0 */
-
+  COUNT_IRQ(DMA1_Stream2_IRQn);
   /* USER CODE END DMA1_Stream2_IRQn 0 */
   HAL_DMA_IRQHandler(&hdma_uart4_rx);
   /* USER CODE BEGIN DMA1_Stream2_IRQn 1 */
@@ -243,7 +247,7 @@ void DMA1_Stream2_IRQHandler(void)
 void DMA1_Stream4_IRQHandler(void)
 {
   /* USER CODE BEGIN DMA1_Stream4_IRQn 0 */
-
+  COUNT_IRQ(DMA1_Stream4_IRQn);
   /* USER CODE END DMA1_Stream4_IRQn 0 */
   HAL_DMA_IRQHandler(&hdma_uart4_tx);
   /* USER CODE BEGIN DMA1_Stream4_IRQn 1 */
@@ -257,38 +261,40 @@ void DMA1_Stream4_IRQHandler(void)
 void DMA1_Stream5_IRQHandler(void)
 {
   /* USER CODE BEGIN DMA1_Stream5_IRQn 0 */
-
+  COUNT_IRQ(DMA1_Stream5_IRQn);
   /* USER CODE END DMA1_Stream5_IRQn 0 */
-  HAL_DMA_IRQHandler(&hdma_spi3_tx);
+  HAL_DMA_IRQHandler(&hdma_usart2_rx);
   /* USER CODE BEGIN DMA1_Stream5_IRQn 1 */
 
   /* USER CODE END DMA1_Stream5_IRQn 1 */
 }
 
 /**
-* @brief This function handles ADC1, ADC2 and ADC3 global interrupts.
+* @brief This function handles DMA1 stream6 global interrupt.
 */
-void ADC_IRQHandler(void)
+void DMA1_Stream6_IRQHandler(void)
 {
-  /* USER CODE BEGIN ADC_IRQn 0 */
+  /* USER CODE BEGIN DMA1_Stream6_IRQn 0 */
+  COUNT_IRQ(DMA1_Stream6_IRQn);
+  /* USER CODE END DMA1_Stream6_IRQn 0 */
+  HAL_DMA_IRQHandler(&hdma_usart2_tx);
+  /* USER CODE BEGIN DMA1_Stream6_IRQn 1 */
 
-  // The HAL's ADC handling mechanism adds many clock cycles of overhead
-  // So we bypass it and handle the logic ourselves.
-  //@TODO add vbus measurement on adc1 here
-  ADC_IRQ_Dispatch(&hadc1, &vbus_sense_adc_cb);
-  ADC_IRQ_Dispatch(&hadc2, &pwm_trig_adc_cb);
-  ADC_IRQ_Dispatch(&hadc3, &pwm_trig_adc_cb);
+  /* USER CODE END DMA1_Stream6_IRQn 1 */
+}
 
-  // Bypass HAL
-  return;
+/**
+* @brief This function handles DMA1 stream7 global interrupt.
+*/
+void DMA1_Stream7_IRQHandler(void)
+{
+  /* USER CODE BEGIN DMA1_Stream7_IRQn 0 */
+  COUNT_IRQ(DMA1_Stream7_IRQn);
+  /* USER CODE END DMA1_Stream7_IRQn 0 */
+  HAL_DMA_IRQHandler(&hdma_spi3_tx);
+  /* USER CODE BEGIN DMA1_Stream7_IRQn 1 */
 
-  /* USER CODE END ADC_IRQn 0 */
-  HAL_ADC_IRQHandler(&hadc1);
-  HAL_ADC_IRQHandler(&hadc2);
-  HAL_ADC_IRQHandler(&hadc3);
-  /* USER CODE BEGIN ADC_IRQn 1 */
-
-  /* USER CODE END ADC_IRQn 1 */
+  /* USER CODE END DMA1_Stream7_IRQn 1 */
 }
 
 /**
@@ -297,7 +303,7 @@ void ADC_IRQHandler(void)
 void CAN1_TX_IRQHandler(void)
 {
   /* USER CODE BEGIN CAN1_TX_IRQn 0 */
-
+  COUNT_IRQ(CAN1_TX_IRQn);
   /* USER CODE END CAN1_TX_IRQn 0 */
   HAL_CAN_IRQHandler(&hcan1);
   /* USER CODE BEGIN CAN1_TX_IRQn 1 */
@@ -311,7 +317,7 @@ void CAN1_TX_IRQHandler(void)
 void CAN1_RX0_IRQHandler(void)
 {
   /* USER CODE BEGIN CAN1_RX0_IRQn 0 */
-
+  COUNT_IRQ(CAN1_RX0_IRQn);
   /* USER CODE END CAN1_RX0_IRQn 0 */
   HAL_CAN_IRQHandler(&hcan1);
   /* USER CODE BEGIN CAN1_RX0_IRQn 1 */
@@ -325,7 +331,7 @@ void CAN1_RX0_IRQHandler(void)
 void CAN1_RX1_IRQHandler(void)
 {
   /* USER CODE BEGIN CAN1_RX1_IRQn 0 */
-
+  COUNT_IRQ(CAN1_RX1_IRQn);
   /* USER CODE END CAN1_RX1_IRQn 0 */
   HAL_CAN_IRQHandler(&hcan1);
   /* USER CODE BEGIN CAN1_RX1_IRQn 1 */
@@ -339,7 +345,7 @@ void CAN1_RX1_IRQHandler(void)
 void CAN1_SCE_IRQHandler(void)
 {
   /* USER CODE BEGIN CAN1_SCE_IRQn 0 */
-
+  COUNT_IRQ(CAN1_SCE_IRQn);
   /* USER CODE END CAN1_SCE_IRQn 0 */
   HAL_CAN_IRQHandler(&hcan1);
   /* USER CODE BEGIN CAN1_SCE_IRQn 1 */
@@ -348,12 +354,26 @@ void CAN1_SCE_IRQHandler(void)
 }
 
 /**
+  * @brief This function handles USART2 global interrupt.
+  */
+void USART2_IRQHandler(void)
+{
+  /* USER CODE BEGIN USART2_IRQn 0 */
+
+  /* USER CODE END USART2_IRQn 0 */
+  HAL_UART_IRQHandler(&huart2);
+  /* USER CODE BEGIN USART2_IRQn 1 */
+
+  /* USER CODE END USART2_IRQn 1 */
+}
+
+/**
 * @brief This function handles TIM8 trigger and commutation interrupts and TIM14 global interrupt.
 */
 void TIM8_TRG_COM_TIM14_IRQHandler(void)
 {
   /* USER CODE BEGIN TIM8_TRG_COM_TIM14_IRQn 0 */
-
+  COUNT_IRQ(TIM8_TRG_COM_TIM14_IRQn);
   /* USER CODE END TIM8_TRG_COM_TIM14_IRQn 0 */
   HAL_TIM_IRQHandler(&htim8);
   HAL_TIM_IRQHandler(&htim14);
@@ -363,29 +383,12 @@ void TIM8_TRG_COM_TIM14_IRQHandler(void)
 }
 
 /**
-* @brief This function handles TIM5 global interrupt.
-*/
-void TIM5_IRQHandler(void)
-{
-  /* USER CODE BEGIN TIM5_IRQn 0 */
-
-  // We know we only use capture mode here, so bypass HAL
-  decode_tim_capture(&htim5, &pwm_in_cb);
-
-  /* USER CODE END TIM5_IRQn 0 */
-  HAL_TIM_IRQHandler(&htim5);
-  /* USER CODE BEGIN TIM5_IRQn 1 */
-
-  /* USER CODE END TIM5_IRQn 1 */
-}
-
-/**
 * @brief This function handles SPI3 global interrupt.
 */
 void SPI3_IRQHandler(void)
 {
   /* USER CODE BEGIN SPI3_IRQn 0 */
-
+  COUNT_IRQ(SPI3_IRQn);
   /* USER CODE END SPI3_IRQn 0 */
   HAL_SPI_IRQHandler(&hspi3);
   /* USER CODE BEGIN SPI3_IRQn 1 */
@@ -399,7 +402,7 @@ void SPI3_IRQHandler(void)
 void UART4_IRQHandler(void)
 {
   /* USER CODE BEGIN UART4_IRQn 0 */
-
+  COUNT_IRQ(UART4_IRQn);
   /* USER CODE END UART4_IRQn 0 */
   HAL_UART_IRQHandler(&huart4);
   /* USER CODE BEGIN UART4_IRQn 1 */
@@ -407,159 +410,7 @@ void UART4_IRQHandler(void)
   /* USER CODE END UART4_IRQn 1 */
 }
 
-/**
-* @brief This function handles USB On The Go FS global interrupt.
-*/
-void OTG_FS_IRQHandler(void)
-{
-  /* USER CODE BEGIN OTG_FS_IRQn 0 */
-
-  // Mask interrupt, and signal processing of interrupt by usb_cmd_thread
-  // The thread will re-enable the interrupt when all pending irqs are clear.
-  HAL_NVIC_DisableIRQ(OTG_FS_IRQn);
-  osSemaphoreRelease(sem_usb_irq);
-  // Bypass interrupt processing here
-  return;
-
-  /* USER CODE END OTG_FS_IRQn 0 */
-  HAL_PCD_IRQHandler(&hpcd_USB_OTG_FS);
-  /* USER CODE BEGIN OTG_FS_IRQn 1 */
-
-  /* USER CODE END OTG_FS_IRQn 1 */
-}
-
 /* USER CODE BEGIN 1 */
-
-void ADC_IRQ_Dispatch(ADC_HandleTypeDef* hadc, ADC_handler_t callback) {
-
-  // Injected measurements
-  uint32_t JEOC = __HAL_ADC_GET_FLAG(hadc, ADC_FLAG_JEOC);
-  uint32_t JEOC_IT_EN = __HAL_ADC_GET_IT_SOURCE(hadc, ADC_IT_JEOC);
-  if (JEOC && JEOC_IT_EN) {
-    callback(hadc, true);
-    __HAL_ADC_CLEAR_FLAG(hadc, (ADC_FLAG_JSTRT | ADC_FLAG_JEOC));
-  }
-  // Regular measurements
-  uint32_t EOC = __HAL_ADC_GET_FLAG(hadc, ADC_FLAG_EOC);
-  uint32_t EOC_IT_EN = __HAL_ADC_GET_IT_SOURCE(hadc, ADC_IT_EOC);
-  if (EOC && EOC_IT_EN) {
-    callback(hadc, false);
-    __HAL_ADC_CLEAR_FLAG(hadc, (ADC_FLAG_STRT | ADC_FLAG_EOC));
-  }
-}
-
-void decode_tim_capture(TIM_HandleTypeDef *htim, TIM_capture_callback_t callback) {
-  if(__HAL_TIM_GET_FLAG(htim, TIM_FLAG_CC1)) {
-    __HAL_TIM_CLEAR_IT(htim, TIM_IT_CC1);
-    callback(1, htim->Instance->CCR1);
-  }
-  if(__HAL_TIM_GET_FLAG(htim, TIM_FLAG_CC2)) {
-    __HAL_TIM_CLEAR_IT(htim, TIM_IT_CC2);
-    callback(2, htim->Instance->CCR2);
-  }
-  if(__HAL_TIM_GET_FLAG(htim, TIM_FLAG_CC3)) {
-    __HAL_TIM_CLEAR_IT(htim, TIM_IT_CC3);
-    callback(3, htim->Instance->CCR3);
-  }
-  if(__HAL_TIM_GET_FLAG(htim, TIM_FLAG_CC4)) {
-    __HAL_TIM_CLEAR_IT(htim, TIM_IT_CC4);
-    callback(4, htim->Instance->CCR4);
-  }
-}
-
-/**
-* @brief This function handles TIM1 update interrupt and TIM10 global interrupt.
-*/
-void TIM1_UP_TIM10_IRQHandler(void)
-{
-  __HAL_TIM_CLEAR_IT(&htim1, TIM_IT_UPDATE);
-  tim_update_cb(&htim1);
-}
-
-/**
-* @brief This function handles TIM8 update interrupt and TIM13 global interrupt.
-*/
-void TIM8_UP_TIM13_IRQHandler(void)
-{
-  __HAL_TIM_CLEAR_IT(&htim8, TIM_IT_UPDATE);
-  tim_update_cb(&htim8);
-}
-
-
-/**
-* @brief This function handles I2C1 event interrupt.
-*/
-void I2C1_EV_IRQHandler(void)
-{
-  HAL_I2C_EV_IRQHandler(&hi2c1);
-}
-
-/**
-* @brief This function handles I2C1 error interrupt.
-*/
-void I2C1_ER_IRQHandler(void)
-{
-  HAL_I2C_ER_IRQHandler(&hi2c1);
-}
-
-/**
-* @brief This function handles EXTI line0 interrupt.
-*/
-void EXTI0_IRQHandler(void)
-{
-  HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_0);
-}
-
-/**
-* @brief This function handles EXTI line2 interrupt.
-*/
-void EXTI2_IRQHandler(void)
-{
-  HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_2);
-}
-
-/**
-* @brief This function handles EXTI line3 interrupt.
-*/
-void EXTI3_IRQHandler(void)
-{
-  HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_3);
-}
-
-/**
-* @brief This function handles EXTI line4 interrupt.
-*/
-void EXTI4_IRQHandler(void)
-{
-  HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_4);
-}
-
-/**
-* @brief This function handles EXTI lines 5-9 interrupt.
-*/
-void EXTI9_5_IRQHandler(void)
-{
-  // The true source of the interrupt is checked inside HAL_GPIO_EXTI_IRQHandler() 
-  HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_5);
-  HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_6);
-  HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_7);
-  HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_8);
-  HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_9);
-}
-
-/**
-* @brief This function handles EXTI lines 10-15 interrupt.
-*/
-void EXTI15_10_IRQHandler(void)
-{
-  // The true source of the interrupt is checked inside HAL_GPIO_EXTI_IRQHandler() 
-  HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_10);
-  HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_11);
-  HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_12);
-  HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_13);
-  HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_14);
-  HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_15);
-}
 
 /* USER CODE END 1 */
 /************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/
