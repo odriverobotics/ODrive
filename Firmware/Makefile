@@ -28,7 +28,9 @@ endif
 $(info board version: $(CONFIG_BOARD_VERSION))
 
 all:
-	@tup --quiet --no-environ-check
+	@mkdir -p autogen
+	@$(PY_CMD) ../tools/odrive/version.py --output autogen/version.c
+	@tup --quiet -no-environ-check
 	@$(PY_CMD) interface_generator_stub.py --definitions odrive-interface.yaml --template ../tools/enums_template.j2 --output ../tools/odrive/enums.py
 
 # Copy libfibre files to odrivetool if they were built
