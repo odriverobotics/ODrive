@@ -624,6 +624,7 @@ for _, item in list(interfaces.items()):
 toplevel_interfaces = []
 for k, item in list(interfaces.items()):
     k = split_name(k)
+    item.parent = None
     if len(k) == 1:
         toplevel_interfaces.append(item)
     else:
@@ -673,36 +674,49 @@ def tokenize(text, interface, interface_transform, value_type_transform, attribu
                          and returns a string.
     value_type_transform: A function that takes a value type object as an argument
                           and returns a string.
-    attribute_transform: A function that takes the token strin and an attribute
-                         object as arguments and returns a string.
+    attribute_transform: A function that takes the token string, an interface object
+                         and an attribute object as arguments and returns a string.
     """
     if text is None or isinstance(text, jinja2.runtime.Undefined):
         return text
 
     def token_transform(token):
         token = token.groups()[0]
+
+        if ':' in token:
+            intf_name, _, attr_name = token.partition(':')
+            intf = InterfaceRefElement(interface.fullname, None, intf_name, []).resolve()
+            token = attr_name
+        else:
+            intf = interface
+
         token_list = split_name(token)
 
         # Check if this is an attribute reference
-        scope = interface
+        scope = intf
         attr = None
-        while attr is None and not scope is None:
-            attr_intf = scope
-            for name in token_list:
-                if not name in attr_intf['attributes']:
-                    attr = None
-                    break
-                attr = attr_intf['attributes'][name]
-                attr_intf = attr['type']
-            scope = scope.get('parent', None)
+
+        for name in token_list:
+            if scope.fullname == 'ODrive': # TODO: this is a temporary hack
+                scope = interfaces['ODrive3']
+            if (not name.endswith('()')) and name in scope.get_all_attributes():
+                attr = scope.get_all_attributes()[name]
+                scope = attr['type']
+            elif name.endswith('()') and name[:-2] in scope.get_all_functions():
+                attr = scope.get_all_functions()[name[:-2]]
+                scope = None # TODO
+            else:
+                print('Warning: cannot resolve "{}" in {}'.format(token, intf.fullname))
+                return "`" + token + "`"
         
-        if not attr is None:
-            return attribute_transform(token, attr)
+        return attribute_transform(token, interface, intf, attr)
 
-        print('Warning: cannot resolve "{}" in {}'.format(token, interface.fullname))
-        return "`" + token + "`"
 
-    return re.sub(r'`([A-Za-z\._]+)`', token_transform, text)
+    return re.sub(r'`([A-Za-z0-9\.:_]+)`', token_transform, text)
+
+def html_escape(text):
+    import html
+    return html.escape(str(text))
 
 env.filters['to_pascal_case'] = to_pascal_case
 env.filters['to_camel_case'] = to_camel_case
@@ -713,6 +727,7 @@ env.filters['first'] = lambda x: next(iter(x))
 env.filters['skip_first'] = lambda x: list(x)[1:]
 env.filters['to_c_string'] = lambda x: '\n'.join(('"' + line.replace('"', '\\"') + '"') for line in json.dumps(x, separators=(',', ':')).replace('{"name"', '\n{"name"').split('\n'))
 env.filters['tokenize'] = tokenize
+env.filters['html_escape'] = html_escape
 env.filters['diagonalize'] = lambda lst: [lst[:i + 1] for i in range(len(lst))]
 env.filters['debug'] = lambda x: print(x)
 

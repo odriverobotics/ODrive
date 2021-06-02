@@ -7,6 +7,14 @@ download:
   text: 'download as YAML'
 ---
 
+[% set attr_lookup_table =
+{
+    'ODrive': '<odrv>',
+    'ODrive.Axis': '<odrv>.<axis>',
+    'ODrive.Motor': '<odrv>.<axis>.motor',
+}
+%]
+
 [%- macro interface_ref(type) -%]
 **[['[']]<span [% if type.brief %]title="[[type.brief]]"[% endif %]>[[type.name]]</span>[[']']]([[type.fullname | lower]])**
 [%- endmacro %]
@@ -19,8 +27,8 @@ download:
 [%- endif %]
 [%- endmacro %]
 
-[% macro attr_ref(token, attr) -%]
-**[['[']]<span [% if attr.brief %]title="[[attr.brief]]"[% endif %]>[[token]]</span>[[']']]([[attr.parent.fullname | lower]]#[[attr.name]])**
+[% macro attr_ref(token, scope, intf, attr) -%]
+**[['[']]<span [% if attr.brief %]title="[[attr.brief]]"[% endif %]>[% if intf != scope %][[attr_lookup_table[intf.fullname] | html_escape]].[% endif %][[token]]</span>[[']']]([[attr.parent.fullname | lower]]#[[attr.name]])**
 [%- endmacro %]
 
 [% if interface %]
@@ -131,7 +139,7 @@ This interface has no functions.
 ## [% if enum.is_flags %]Flags[% else %]Values[% endif %]
 
 [% for k, value in enum['values'].items() %]
-<a name="[[value.name]]"></a><span style="font-size: medium;">**<code markdown="span">[[(enum.name + value.name) | to_macro_case]]</code>**&nbsp;&nbsp;&mdash;&nbsp;&nbsp;[% if enum.is_flags %]0x[['%08x' | format(value.value)]][% else %][[value.value]][% endif %]</span>
+<a name="[[value.name]]"></a><span style="font-size: medium;">**<code markdown="span">[[enum.name | to_macro_case]]_[[value.name]]</code>**&nbsp;&nbsp;&mdash;&nbsp;&nbsp;[% if enum.is_flags %]0x[['%08x' | format(value.value)]][% else %][[value.value]][% endif %]</span>
 [[-status_badge(value.status)]]
 
 <ul markdown="block">
