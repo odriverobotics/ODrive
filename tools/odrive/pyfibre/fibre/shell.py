@@ -148,3 +148,4 @@ def launch_shell(args, mount,
         interact()
 
         shutdown_token[0] = True
+        discovery.stop()
