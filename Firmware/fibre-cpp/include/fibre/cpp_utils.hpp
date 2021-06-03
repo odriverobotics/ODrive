@@ -82,6 +82,7 @@ public:
 #include <tuple>
 #include <functional>
 #include <unordered_map>
+#include <stdlib.h>
 //#include <ostream>
 
 /* Backport features from C++14 and C++17 ------------------------------------*/
