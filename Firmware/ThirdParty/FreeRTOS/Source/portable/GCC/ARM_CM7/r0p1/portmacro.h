@@ -166,6 +166,10 @@ not necessary for to use this port.  They are defined so the common demo files
 	#define portFORCE_INLINE inline __attribute__(( always_inline))
 #endif
 
+#ifndef portDONT_DISCARD
+	#define portDONT_DISCARD __attribute__(( used ))
+#endif
+
 portFORCE_INLINE static BaseType_t xPortIsInsideInterrupt( void )
 {
 uint32_t ulCurrentInterrupt;
