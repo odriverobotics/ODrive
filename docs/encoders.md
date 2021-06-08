@@ -20,7 +20,7 @@ In the `odrivetool`, type `<axis>.requested_state = AXIS_STATE_ENCODER_OFFSET_CA
 To verify everything went well, check the following variables:
 
  * `<axis>.error` should be 0.
- * `<axis>.encoder.config.offset` - This should print a number, like -326 or 1364.
+ * `<axis>.encoder.config.phase_offset` - This should print a number, like -326 or 1364.
  * `<axis>.encoder.config.direction` - This should print 1 or -1.
 
 ### Encoder with index signal
