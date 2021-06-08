@@ -112,8 +112,7 @@ void loop() {
       unsigned long start = millis();
       while(millis() - start < duration) {
         for (int motor = 0; motor < 2; ++motor) {
-          odrive_serial << "r axis" << motor << ".encoder.pos_estimate\n";
-          Serial << odrive.readFloat() << '\t';
+          Serial << odrive.GetPosition(motor) << '\t';
         }
         Serial << '\n';
       }

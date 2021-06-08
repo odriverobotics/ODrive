@@ -1,4 +1,3 @@
-
 #include "Arduino.h"
 #include "ODriveArduino.h"
 
@@ -42,7 +41,7 @@ void ODriveArduino::SetCurrent(int motor_number, float current) {
     serial_ << "c " << motor_number << " " << current << "\n";
 }
 
-void ODriveArduino::TrapezoidalMove(int motor_number, float position){
+void ODriveArduino::TrapezoidalMove(int motor_number, float position) {
     serial_ << "t " << motor_number << " " << position << "\n";
 }
 
@@ -50,9 +49,14 @@ float ODriveArduino::readFloat() {
     return readString().toFloat();
 }
 
-float ODriveArduino::GetVelocity(int motor_number){
+float ODriveArduino::GetVelocity(int motor_number) {
 	serial_<< "r axis" << motor_number << ".encoder.vel_estimate\n";
 	return ODriveArduino::readFloat();
+}
+
+float ODriveArduino::GetPosition(int motor_number) {
+    serial_ << "r axis" << motor_number << ".encoder.pos_estimate\n";
+    return ODriveArduino::readFloat();
 }
 
 int32_t ODriveArduino::readInt() {
