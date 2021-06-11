@@ -21,6 +21,17 @@ At its most basic, the CAN Simple frame looks like this:
 
 To understand how the Node ID and Command ID interact, let's look at an example
 
+The 11-bit Arbitration ID is setup as follows:
+
+`can_id = axis_id << 5 | cmd_id`
+
+For example, an Axis ID of `0x01` with a command of `0x0C` would be result in `0x2C`:
+
+`0x01 << 5 | 0x0C = 0x2C`
+
+### Interoperability with CANopen
+You can deconflict with CANopen like this:
+
 `odrv0.axis0.can_node_id = 0x010` - Reserves messages 0x200 through 0x21F  
 `odrv0.axis1.can_node_id = 0x018` - Reserves messages 0x300 through 0x31F
 
