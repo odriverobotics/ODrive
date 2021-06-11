@@ -29,19 +29,6 @@ For example, an Axis ID of `0x01` with a command of `0x0C` would be result in `0
 
 `0x01 << 5 | 0x0C = 0x2C`
 
-### Interoperability with CANopen
-You can deconflict with CANopen like this:
-
-`odrv0.axis0.can_node_id = 0x010` - Reserves messages 0x200 through 0x21F  
-`odrv0.axis1.can_node_id = 0x018` - Reserves messages 0x300 through 0x31F
-
-It may not be obvious, but this allows for some compatibility with CANOpen.  Although the address space 0x200 and 0x300 correspond to receive PDO base addresses, we can guarantee they will not conflict if all CANopen node IDs are >= 32.  E.g.:
-
-CANopen nodeID = 35 = 0x23  
-Receive PDO 0x200 + nodeID = 0x223, which does not conflict with the range [0x200 : 0x21F]
-
-Be careful that you don't assign too many nodeIDs per PDO group.  Four CAN Simple nodes (32*4) is all of the available address space of a single PDO.  If the bus is strictly ODrive CAN Simple nodes, a simple sequential Node ID assignment will work fine.
-
 ### Messages
 
 CMD ID | Name | Sender | Signals | Start byte | Signal Type | Bits | Factor | Offset | Byte Order
@@ -96,3 +83,19 @@ odrv0.can.config.baud_rate = 500000
 odrv0.save_configuration()
 odrv0.reboot()
 ```
+
+---
+
+### Interoperability with CANopen
+You can deconflict with CANopen like this:
+
+`odrv0.axis0.can_node_id = 0x010` - Reserves messages 0x200 through 0x21F  
+`odrv0.axis1.can_node_id = 0x018` - Reserves messages 0x300 through 0x31F
+
+It may not be obvious, but this allows for some compatibility with CANOpen.  Although the address space 0x200 and 0x300 correspond to receive PDO base addresses, we can guarantee they will not conflict if all CANopen node IDs are >= 32.  E.g.:
+
+CANopen nodeID = 35 = 0x23  
+Receive PDO 0x200 + nodeID = 0x223, which does not conflict with the range [0x200 : 0x21F]
+
+Be careful that you don't assign too many nodeIDs per PDO group.  Four CAN Simple nodes (32*4) is all of the available address space of a single PDO.  If the bus is strictly ODrive CAN Simple nodes, a simple sequential Node ID assignment will work fine.
+
