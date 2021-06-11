@@ -10,6 +10,24 @@ ODrive currently supports the following CAN baud rates:
 * 1000 kbps
 
 ---
+## Configuring ODrive for CAN
+Configuration of the CAN parameters should be done via USB before putting the device on the bus.
+
+To set the desired baud rate, use `<odrv>.can.config.baud_rate = <value>`.
+
+Each axis looks like a separate node on the bus. Thus, they both have the two properties `can_node_id` and `can_node_id_extended`. The node ID can be from 0 to 63 (0x3F) inclusive, or, if extended CAN IDs are used, from 0 to 16777215 (0xFFFFFF). If you want to connect more than one ODrive on a CAN bus, you must set different node IDs for the second ODrive or they will conflict and crash the bus.
+
+### Example Configuration
+
+```
+odrv0.axis0.config.can_node_id = 3
+odrv0.axis1.config.can_node_id = 1
+odrv0.can.config.baud_rate = 500000
+odrv0.save_configuration()
+odrv0.reboot()
+```
+
+---
 ## Transport Protocol
 We've implemented a very basic CAN protocol that we call "CAN Simple" to get users going with ODrive.  This protocol is sufficiently abstracted that it is straightforward to add other protocols such as CANOpen, J1939, or Fibre over ISO-TP in the future.  Unfortunately, implementing those protocols is a lot of work, and we wanted to give users a way to control ODrive's basic functions via CAN sooner rather than later.
 
@@ -65,24 +83,6 @@ CMD ID | Name | Sender | Signals | Start byte | Signal Type | Bits | Factor | Of
 \* Note: These messages are call & response.  The Master node sends a message with the RTR bit set, and the axis responds with the same ID and specified payload.  
 \*\* Note:  These CANOpen messages are reserved to avoid bus collisions with CANOpen devices.  They are not used by CAN Simple.  
 \*\*\* Note:  These messages can be sent to either address on a given ODrive board.
-
----
-## Configuring ODrive for CAN
-Configuration of the CAN parameters should be done via USB before putting the device on the bus.
-
-To set the desired baud rate, use `<odrv>.can.config.baud_rate = <value>`.
-
-Each axis looks like a separate node on the bus. Thus, they both have the two properties `can_node_id` and `can_node_id_extended`. The node ID can be from 0 to 63 (0x3F) inclusive, or, if extended CAN IDs are used, from 0 to 16777215 (0xFFFFFF). If you want to connect more than one ODrive on a CAN bus, you must set different node IDs for the second ODrive or they will conflict and crash the bus.
-
-### Example Configuration
-
-```
-odrv0.axis0.config.can_node_id = 3
-odrv0.axis1.config.can_node_id = 1
-odrv0.can.config.baud_rate = 500000
-odrv0.save_configuration()
-odrv0.reboot()
-```
 
 ---
 
