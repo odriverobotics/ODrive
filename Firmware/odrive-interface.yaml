@@ -892,6 +892,7 @@ interfaces:
       trajectory_done: readonly bool
       vel_integrator_torque: float32
       anticogging_valid: bool
+      autotuning_phase: float32
       config:
         c_is_class: False
         attributes:
@@ -986,11 +987,11 @@ interfaces:
         attributes:
           frequency: float32
           pos_amplitude: float32
-          pos_phase: float32
           vel_amplitude: float32
-          vel_phase: float32
           torque_amplitude: float32
-          torque_phase: float32
+          # pos_phase: float32
+          # vel_phase: float32
+          # torque_phase: float32
       mechanical_power:
         type: readonly float32
         unit: Watt

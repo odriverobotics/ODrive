@@ -308,6 +308,10 @@ let odriveEnums = {
     {
       text: "Mirror",
       value: 7
+    },
+    {
+      text: "Tuning",
+      value: 8
     }
   ]
 }
