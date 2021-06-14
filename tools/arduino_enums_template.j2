@@ -1,5 +1,6 @@
-#ifndef arduino_enums_template_h
-#define arduino_enums_template_h
+
+#ifndef ODriveEnums_h
+#define ODriveEnums_h
 
 /* TODO: This file is dangerous because the enums could potentially change between API versions. Should transmit as part of the JSON.
 ** To regenerate this file, nagivate to the top level of the ODrive repository and run:
