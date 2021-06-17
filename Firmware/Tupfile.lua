@@ -239,10 +239,10 @@ board_v3 = {
         '../../ThirdParty/FreeRTOS/Source/portable/GCC/ARM_CM4F',
     },
     code_files = {
+        'startup_stm32f405xx.s',
         '../../ThirdParty/FreeRTOS/Source/portable/GCC/ARM_CM4F/port.c',
         '../../Drivers/DRV8301/drv8301.cpp',
         'board.cpp',
-        'startup_stm32f405xx.s',
         'Src/stm32f4xx_hal_timebase_TIM.c',
         'Src/tim.c',
         'Src/dma.c',
@@ -279,10 +279,10 @@ board_v4 = {
         '../../ThirdParty/FreeRTOS/Source/portable/GCC/ARM_CM7/r0p1',
     },
     code_files = {
+        'startup_stm32f722xx.s',
         '../../ThirdParty/FreeRTOS/Source/portable/GCC/ARM_CM7/r0p1/port.c',
         '../Drivers/DRV8353/drv8353.cpp',
         '../Drivers/status_led.cpp',
-        'startup_stm32f722xx.s',
         'board.cpp',
         'Src/main.c',
         'Src/gpio.c',
@@ -418,10 +418,10 @@ tup.frule{inputs={'fibre-cpp/endpoints_template.j2', extra_inputs='odrive-interf
 tup.frule{inputs={'fibre-cpp/type_info_template.j2', extra_inputs='odrive-interface.yaml'}, command=python_command..' interface_generator_stub.py --definitions odrive-interface.yaml --template %f --output %o', outputs='autogen/type_info.hpp'}
 
 
+add_pkg(board)
 add_pkg(freertos_pkg)
 add_pkg(cmsis_pkg)
 add_pkg(stm32_usb_device_library_pkg)
-add_pkg(board)
 add_pkg(fibre_pkg)
 add_pkg(odrive_firmware_pkg)
 
