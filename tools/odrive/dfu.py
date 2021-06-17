@@ -303,7 +303,7 @@ def update_device(device, firmware, logger, cancellation_token):
     fw_version_major = device.fw_version_major if hasattr(device, 'fw_version_major') else 0
     fw_version_minor = device.fw_version_minor if hasattr(device, 'fw_version_minor') else 0
     fw_version_revision = device.fw_version_revision if hasattr(device, 'fw_version_revision') else 0
-    fw_version_prerelease = device.fw_version_prerelease if hasattr(device, 'fw_version_prerelease') else True
+    fw_version_prerelease = device.fw_version_unreleased != 0 if hasattr(device, 'fw_version_unreleased') else True
     fw_version = (fw_version_major, fw_version_minor, fw_version_revision, fw_version_prerelease)
 
     print("Found ODrive {} ({}) with firmware {}{}".format(
