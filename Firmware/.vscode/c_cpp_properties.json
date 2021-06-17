@@ -1,31 +1,32 @@
 {
     "configurations": [
         {
-            "name": "Win32",
+            "name": "ODrive v3.6 Windows",
             "includePath": [
-                "${workspaceFolder}/Private/**",
-                "${workspaceFolder}/**"
+                "${workspaceFolder}/**",
+                "${workspaceFolder}/ThirdParty/FreeRTOS/Source/portable/GCC/ARM_CM4F",
+                "${workspaceFolder}/fibre-cpp/include"
             ],
+            "compilerPath": "C:/Tools/ARM/10 2020-q4-major/bin/arm-none-eabi-g++.exe",
+            "intelliSenseMode": "gcc-arm",
             "defines": [
                 "__arm__",
-                "STM32F722xx",
-                "FPU_FPV5",
+                "STM32F405xx",
+                "FPU_FPV4",
                 "USE_HAL_DRIVER",
-                "HW_VERSION_MAJOR=4",
-                "HW_VERSION_MINOR=1",
-                "HW_VERSION_VOLTAGE=58",
+                "HW_VERSION_MAJOR=3",
+                "HW_VERSION_MINOR=6",
+                "HW_VERSION_VOLTAGE=56",
                 "FIBRE_ENABLE_SERVER",
                 "FIBRE_ENABLE_CLIENT",
                 "__weak=\"__attribute__((weak))\"",
                 "__packed=\"__attribute__((__packed__))\"",
                 "__GNUC__"
             ],
-            "intelliSenseMode": "gcc-arm",
-            "compilerPath": "arm-none-eabi-g++.exe",
             "compilerArgs": [
                 "-mthumb",
-                "-mcpu=cortex-m7",
-                "-mfpu=fpv5-sp-d16",
+                "-mcpu=cortex-m4",
+                "-mfpu=fpv4-sp-d16",
                 "-mfloat-abi=hard",
                 "-specs=nosys.specs",
                 "-specs=nano.specs",
@@ -36,49 +37,73 @@
             "cppStandard": "c++17"
         },
         {
-            "name": "Linux",
+            "name": "ODrive 3.6 Linux",
             "includePath": [
-                "${workspaceFolder}/**"
+                "${workspaceFolder}/**",
+                "${workspaceFolder}/ThirdParty/FreeRTOS/Source/portable/GCC/ARM_CM4F",
+                "${workspaceFolder}/fibre-cpp/include"
             ],
+            "compilerPath": "arm-none-eabi-g++",
+            "intelliSenseMode": "gcc-arm",
             "defines": [
                 "__arm__",
                 "STM32F405xx",
                 "FPU_FPV4",
                 "USE_HAL_DRIVER",
-                "HW_VERSION_MAJOR=4",
-                "HW_VERSION_MINOR=1",
-                "HW_VERSION_VOLTAGE=58",
+                "HW_VERSION_MAJOR=3",
+                "HW_VERSION_MINOR=6",
+                "HW_VERSION_VOLTAGE=56",
                 "FIBRE_ENABLE_SERVER",
                 "FIBRE_ENABLE_CLIENT",
                 "__weak=\"__attribute__((weak))\"",
                 "__packed=\"__attribute__((__packed__))\"",
                 "__GNUC__"
             ],
-            "intelliSenseMode": "gcc-arm",
-            "compilerPath": "arm-none-eabi-g++ -mthumb -mcpu=cortex-m4 -mfpu=fpv4-sp-d16 -mfloat-abi=hard -specs=nosys.specs -specs=nano.specs -u _printf_float -u _scanf_float",
+            "compilerArgs": [
+                "-mthumb",
+                "-mcpu=cortex-m4",
+                "-mfpu=fpv4-sp-d16",
+                "-mfloat-abi=hard",
+                "-specs=nosys.specs",
+                "-specs=nano.specs",
+                "-u _printf_float",
+                "-u _scanf_float"
+            ],
             "cStandard": "c11",
             "cppStandard": "c++17"
         },
         {
-            "name": "Mac",
+            "name": "ODrive 3.6 Mac",
             "includePath": [
-                "${workspaceFolder}/**"
+                "${workspaceFolder}/**",
+                "${workspaceFolder}/ThirdParty/FreeRTOS/Source/portable/GCC/ARM_CM4F",
+                "${workspaceFolder}/fibre-cpp/include"
             ],
+            "intelliSenseMode": "gcc-arm",
             "defines": [
                 "__arm__",
                 "STM32F405xx",
                 "FPU_FPV4",
                 "USE_HAL_DRIVER",
-                "HW_VERSION_MAJOR=4",
-                "HW_VERSION_MINOR=1",
-                "HW_VERSION_VOLTAGE=58",
+                "HW_VERSION_MAJOR=3",
+                "HW_VERSION_MINOR=6",
+                "HW_VERSION_VOLTAGE=56",
                 "FIBRE_ENABLE_SERVER",
                 "FIBRE_ENABLE_CLIENT",
                 "__weak=\"__attribute__((weak))\"",
                 "__packed=\"__attribute__((__packed__))\"",
                 "__GNUC__"
             ],
-            "intelliSenseMode": "gcc-arm",
+            "compilerArgs": [
+                "-mthumb",
+                "-mcpu=cortex-m4",
+                "-mfpu=fpv4-sp-d16",
+                "-mfloat-abi=hard",
+                "-specs=nosys.specs",
+                "-specs=nano.specs",
+                "-u _printf_float",
+                "-u _scanf_float"
+            ],
             "cStandard": "c11",
             "cppStandard": "c++17"
         }
