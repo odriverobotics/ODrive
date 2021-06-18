@@ -36,13 +36,13 @@ jobs:
         run: |
           DEBIAN_VERSION="$(lsb_release --release --short)"
           echo Debian version: $DEBIAN_VERSION
-          if [ "$DEBIAN_VERSION" -gt 9 ]; then
-            sudo apt-get install gcc-arm-none-eabi
-          else
+          if [ "$DEBIAN_VERSION" == "16.04" ]; then
             # Ubuntu 16.04 (Debian 9) is on ARM GCC 4.9 which is too old for us
             sudo add-apt-repository ppa:team-gcc-arm-embedded/ppa
             sudo apt-get update
             sudo apt-get install gcc-arm-embedded
+          else
+            sudo apt-get install gcc-arm-none-eabi
           fi
 
           if ! (apt-cache search tup | grep "^tup - "); then
@@ -58,7 +58,9 @@ jobs:
         if: startsWith(matrix.os, 'macOS-')
         run: |
           brew install armmbed/formulae/arm-none-eabi-gcc
-          brew install --cask osxfuse && brew install tup
+          brew install --cask osxfuse
+          # See https://github.com/osxfuse/osxfuse/issues/801#issuecomment-833419942
+          brew install gromgit/fuse/tup-mac
           pip3 install PyYAML Jinja2 jsonschema
 
         
