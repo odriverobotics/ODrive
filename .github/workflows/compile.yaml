@@ -91,7 +91,9 @@ jobs:
           cd ${{ github.workspace }}/Firmware
           echo "CONFIG_BOARD_VERSION=${{ matrix.board_version }}" >> tup.config
           echo "CONFIG_STRICT=true" >> tup.config
-          echo "CONFIG_DEBUG=${{ matrix.release }}" >> tup.config
+          echo "CONFIG_DEBUG=${{ matrix.debug }}" >> tup.config
+          mkdir -p autogen
+          python ../tools/odrive/version.py --output autogen/version.c
           tup init
           tup generate ./tup_build.sh
       
