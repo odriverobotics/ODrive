@@ -10,6 +10,24 @@ ODrive currently supports the following CAN baud rates:
 * 1000 kbps
 
 ---
+## Configuring ODrive for CAN
+Configuration of the CAN parameters should be done via USB before putting the device on the bus.
+
+To set the desired baud rate, use `<odrv>.can.config.baud_rate = <value>`.
+
+Each axis looks like a separate node on the bus. Thus, they both have the two properties `can_node_id` and `can_node_id_extended`. The node ID can be from 0 to 63 (0x3F) inclusive, or, if extended CAN IDs are used, from 0 to 16777215 (0xFFFFFF). If you want to connect more than one ODrive on a CAN bus, you must set different node IDs for the second ODrive or they will conflict and crash the bus.
+
+### Example Configuration
+
+```
+odrv0.axis0.config.can_node_id = 3
+odrv0.axis1.config.can_node_id = 1
+odrv0.can.config.baud_rate = 500000
+odrv0.save_configuration()
+odrv0.reboot()
+```
+
+---
 ## Transport Protocol
 We've implemented a very basic CAN protocol that we call "CAN Simple" to get users going with ODrive.  This protocol is sufficiently abstracted that it is straightforward to add other protocols such as CANOpen, J1939, or Fibre over ISO-TP in the future.  Unfortunately, implementing those protocols is a lot of work, and we wanted to give users a way to control ODrive's basic functions via CAN sooner rather than later.
 
@@ -21,15 +39,13 @@ At its most basic, the CAN Simple frame looks like this:
 
 To understand how the Node ID and Command ID interact, let's look at an example
 
-`odrv0.axis0.can_node_id = 0x010` - Reserves messages 0x200 through 0x21F  
-`odrv0.axis1.can_node_id = 0x018` - Reserves messages 0x300 through 0x31F
+The 11-bit Arbitration ID is setup as follows:
 
-It may not be obvious, but this allows for some compatibility with CANOpen.  Although the address space 0x200 and 0x300 correspond to receive PDO base addresses, we can guarantee they will not conflict if all CANopen node IDs are >= 32.  E.g.:
+`can_id = axis_id << 5 | cmd_id`
 
-CANopen nodeID = 35 = 0x23  
-Receive PDO 0x200 + nodeID = 0x223, which does not conflict with the range [0x200 : 0x21F]
+For example, an Axis ID of `0x01` with a command of `0x0C` would be result in `0x2C`:
 
-Be careful that you don't assign too many nodeIDs per PDO group.  Four CAN Simple nodes (32*4) is all of the available address space of a single PDO.  If the bus is strictly ODrive CAN Simple nodes, a simple sequential Node ID assignment will work fine.
+`0x01 << 5 | 0x0C = 0x2C`
 
 ### Messages
 
@@ -69,19 +85,17 @@ CMD ID | Name | Sender | Signals | Start byte | Signal Type | Bits | Factor | Of
 \*\*\* Note:  These messages can be sent to either address on a given ODrive board.
 
 ---
-## Configuring ODrive for CAN
-Configuration of the CAN parameters should be done via USB before putting the device on the bus.
 
-To set the desired baud rate, use `<odrv>.can.config.baud_rate = <value>`.
+### Interoperability with CANopen
+You can deconflict with CANopen like this:
 
-Each axis looks like a separate node on the bus. Thus, they both have the two properties `can_node_id` and `can_node_id_extended`. The node ID can be from 0 to 63 (0x3F) inclusive, or, if extended CAN IDs are used, from 0 to 16777215 (0xFFFFFF). If you want to connect more than one ODrive on a CAN bus, you must set different node IDs for the second ODrive or they will conflict and crash the bus.
+`odrv0.axis0.can_node_id = 0x010` - Reserves messages 0x200 through 0x21F  
+`odrv0.axis1.can_node_id = 0x018` - Reserves messages 0x300 through 0x31F
 
-### Example Configuration
+It may not be obvious, but this allows for some compatibility with CANOpen.  Although the address space 0x200 and 0x300 correspond to receive PDO base addresses, we can guarantee they will not conflict if all CANopen node IDs are >= 32.  E.g.:
 
-```
-odrv0.axis0.config.can_node_id = 3
-odrv0.axis1.config.can_node_id = 1
-odrv0.can.config.baud_rate = 500000
-odrv0.save_configuration()
-odrv0.reboot()
-```
+CANopen nodeID = 35 = 0x23  
+Receive PDO 0x200 + nodeID = 0x223, which does not conflict with the range [0x200 : 0x21F]
+
+Be careful that you don't assign too many nodeIDs per PDO group.  Four CAN Simple nodes (32*4) is all of the available address space of a single PDO.  If the bus is strictly ODrive CAN Simple nodes, a simple sequential Node ID assignment will work fine.
+

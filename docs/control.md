@@ -6,6 +6,8 @@ The motor controller is a cascaded style position, velocity and current control 
 
 Each stage of the control loop is a variation on a [PID controller](https://en.wikipedia.org/wiki/PID_controller). A PID controller is a mathematical model that can be adapted to control a wide variety of systems. This flexibility is essential as it allows the ODrive to be used to control all kinds of mechanical systems.
 
+* Note:  The controller has been updated to use `torque` in Newton-meters instead of current at the "system" level.  There is a `torque_constant` parameter which converts between torque and current, after which the rest of this explanation still holds.
+
 ### Position loop:
 The position controller is a P loop with a single proportional gain.
 ```text
