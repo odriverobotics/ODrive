@@ -1,5 +1,6 @@
 # Unreleased Features
 Please add a note of your changes below this heading if you make a Pull Request.
+* Fix python DFU firmware version prerelease status resolution to use correct attribute
 
 # Releases
 ## [0.5.3] - unreleased
