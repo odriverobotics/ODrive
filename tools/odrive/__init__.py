@@ -45,7 +45,7 @@ def find_any(path=default_search_path, serial_number=None,
             channel_termination_token.wait()
             discovery.stop()
     
-    threading.Thread(target=domain_thread).start()
+    threading.Thread(target=domain_thread, daemon=True).start()
 
     try:
         done_signal.wait(timeout=timeout)
