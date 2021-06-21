@@ -343,6 +343,7 @@ CFLAGS += '-Wno-psabi' -- suppress unimportant note about ABI compatibility in G
 CFLAGS += { '-Wall', '-Wdouble-promotion', '-Wfloat-conversion', '-fdata-sections', '-ffunction-sections'}
 CFLAGS += '-g'
 CFLAGS += '-DFIBRE_ENABLE_SERVER'
+CFLAGS += '-Wno-nonnull'
 
 -- linker flags
 LDFLAGS += '-flto -lc -lm -lnosys' -- libs
