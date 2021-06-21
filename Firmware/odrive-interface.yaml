@@ -1088,6 +1088,7 @@ interfaces:
           phase_offset: int32
           phase_offset_float: float32
           direction: int32
+          override_precal_check: bool
           pre_calibrated: {type: bool, c_setter: set_pre_calibrated}
           enable_phase_interpolation: bool
           bandwidth: {type: float32, c_setter: set_bandwidth}

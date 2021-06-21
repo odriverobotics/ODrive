@@ -127,6 +127,8 @@ void Encoder::update_pll_gains() {
 }
 
 void Encoder::check_pre_calibrated() {
+    if (config_.override_precal_check)
+        return;
     // TODO: restoring config from python backup is fragile here (ACIM motor type must be set first)
     if (axis_->motor_.config_.motor_type != Motor::MOTOR_TYPE_ACIM) {
         if (!is_ready_)
