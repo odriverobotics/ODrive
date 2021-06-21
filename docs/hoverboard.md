@@ -120,10 +120,11 @@ Check the status of the encoder object:
 odrv0.axis0.encoder
 ```
 
-Check that there are no errors. If your hall sensors has a standard timing angle then `offset_float` should be close to 0.5 mod 1. Meaning values close to -1.5, -0.5, 0.5, or 1.5, etc are all good.
+Check that there are no errors. If your hall sensors has a standard timing angle then `phase_offset_float` should be close to 0.5 mod 1. Meaning values close to -1.5, -0.5, 0.5, or 1.5, etc are all good.
 ```txt
   error = 0x0000 (int)
-  offset_float = 0.5126956701278687 (float)
+  config:
+    phase_offset_float = 0.5126956701278687 (float)
 ```
 
 If all looks good then you can tell the ODrive that saving this calibration to presistent memory is OK:
@@ -151,23 +152,13 @@ Lets use GPIO 3/4 for the velocity inputs so that we don't have to disable UART.
 Then let's map the full stick range of these inputs to some suitable velocity setpoint range.
 We also have to reboot to activate the PWM input.
 ```txt
-<<<<<<< HEAD
 odrv0.config.gpio3_pwm_mapping.min = -2
 odrv0.config.gpio3_pwm_mapping.max = 2
-odrv0.config.gpio3_pwm_mapping.endpoint = odrv0.axis0.controller._remote_attributes['input_vel']
+odrv0.config.gpio3_pwm_mapping.endpoint = odrv0.axis0.controller._input_vel_property
 
 odrv0.config.gpio4_pwm_mapping.min = -2
 odrv0.config.gpio4_pwm_mapping.max = 2
-odrv0.config.gpio4_pwm_mapping.endpoint = odrv0.axis1.controller._remote_attributes['input_vel']
-=======
-odrv0.config.gpio3_pwm_mapping.min = -200
-odrv0.config.gpio3_pwm_mapping.max = 200
-odrv0.config.gpio3_pwm_mapping.endpoint = odrv0.axis0.controller._input_vel_property
-
-odrv0.config.gpio4_pwm_mapping.min = -200
-odrv0.config.gpio4_pwm_mapping.max = 200
 odrv0.config.gpio4_pwm_mapping.endpoint = odrv0.axis1.controller._input_vel_property
->>>>>>> fw-v0.5.2rc1
 
 odrv0.save_configuration()
 odrv0.reboot()
