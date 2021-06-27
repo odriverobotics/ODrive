@@ -23,6 +23,7 @@ public:
         float calib_scan_omega = 4.0f * M_PI; // rad/s electrical
         float bandwidth = 1000.0f;
         float pos_offset_bandwidth = 1.0f;
+        float pos_offset_update_gain = 0.2f;
         int32_t phase_offset = 0;        // Offset between encoder count and rotor electrical phase
         float phase_offset_float = 0.0f; // Sub-count phase alignment offset
         int32_t cpr = (2048 * 4);   // Default resolution of CUI-AMT102 encoder,
@@ -84,6 +85,7 @@ public:
     void decode_hall_samples();
     int32_t hall_model(float internal_pos);
     bool update();
+    void update_pos_offset(float ref_pos);
 
     TIM_HandleTypeDef* timer_;
     Stm32Gpio index_gpio_;

@@ -138,6 +138,9 @@ void CANSimple::do_command(Axis& axis, const can_Message_t& msg) {
             if (msg.rtr)
                 get_vbus_voltage_callback(axis);
             break;
+        case MSG_ENCODER_REF_UPDATE:
+            encoder_ref_update(axis, msg);
+            break;
         case MSG_CLEAR_ERRORS:
             clear_errors_callback(axis, msg);
             break;
@@ -287,6 +290,10 @@ void CANSimple::set_traj_inertia_callback(Axis& axis, const can_Message_t& msg) 
 
 void CANSimple::set_linear_count_callback(Axis& axis, const can_Message_t& msg){
     axis.encoder_.set_linear_count(can_getSignal<int32_t>(msg, 0, 32, true));
+}
+
+void CANSimple::encoder_ref_update(Axis& axis, const can_Message_t& msg){
+    axis.encoder_.update_pos_offset(can_getSignal<float>(msg, 0, 32, true));
 }
 
 bool CANSimple::get_iq_callback(const Axis& axis) {

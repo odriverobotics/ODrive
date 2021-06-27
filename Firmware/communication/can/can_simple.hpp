@@ -32,6 +32,7 @@ class CANSimple {
         MSG_RESET_ODRIVE,
         MSG_GET_VBUS_VOLTAGE,
         MSG_CLEAR_ERRORS,
+        MSG_ENCODER_REF_UPDATE,
         MSG_CO_HEARTBEAT_CMD = 0x700,  // CANOpen NMT Heartbeat  SEND
     };
 
@@ -73,12 +74,14 @@ class CANSimple {
     static void set_traj_accel_limits_callback(Axis& axis, const can_Message_t& msg);
     static void set_traj_inertia_callback(Axis& axis, const can_Message_t& msg);
     static void set_linear_count_callback(Axis& axis, const can_Message_t& msg);
+    static void encoder_ref_update(Axis& axis, const can_Message_t& msg);
 
     // Other functions
     static void nmt_callback(const Axis& axis, const can_Message_t& msg);
     static void estop_callback(Axis& axis, const can_Message_t& msg);
     static void clear_errors_callback(Axis& axis, const can_Message_t& msg);
     static void start_anticogging_callback(const Axis& axis, const can_Message_t& msg);
+
 
     static constexpr uint8_t NUM_NODE_ID_BITS = 6;
     static constexpr uint8_t NUM_CMD_ID_BITS = 11 - NUM_NODE_ID_BITS;

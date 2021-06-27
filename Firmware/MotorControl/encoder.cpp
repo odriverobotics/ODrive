@@ -845,3 +845,9 @@ bool Encoder::update() {
 
     return true;
 }
+
+void Encoder::update_pos_offset(float ref_pos) {
+    float base_pos = pos_estimate_counts_ / (float)config_.cpr;
+    float pos_offset = ref_pos - base_pos;
+    pos_offset_target_ += config_.pos_offset_update_gain * (pos_offset - pos_offset_target_);
+}
