@@ -28,6 +28,7 @@ public:
         int32_t cpr = (2048 * 4);   // Default resolution of CUI-AMT102 encoder,
         float index_offset = 0.0f;
         bool use_index = false;
+        bool override_precal_check = false; // If true, apply pre_calibrated unconditionally
         bool pre_calibrated = false; // If true, this means the offset stored in
                                     // configuration is valid and does not need
                                     // be determined by run_offset_calibration.
