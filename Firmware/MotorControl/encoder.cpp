@@ -795,9 +795,13 @@ bool Encoder::update() {
         snap_to_zero_vel = true;
     }
 
+    // Update offset LPF
+    float offset_vel = config_.pos_offset_bandwidth * (pos_offset_target_ - pos_offset_);
+    pos_offset_ += current_meas_period * offset_vel;
+
     // Outputs from Encoder for Controller
-    pos_estimate_ = pos_estimate_counts_ / (float)config_.cpr;
-    vel_estimate_ = vel_estimate_counts_ / (float)config_.cpr;
+    pos_estimate_ = pos_estimate_counts_ / (float)config_.cpr + pos_offset_;
+    vel_estimate_ = vel_estimate_counts_ / (float)config_.cpr + offset_vel;
     
     // TODO: we should strictly require that this value is from the previous iteration
     // to avoid spinout scenarios. However that requires a proper way to reset

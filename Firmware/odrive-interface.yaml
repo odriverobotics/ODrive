@@ -1073,6 +1073,8 @@ interfaces:
       hall_state: readonly uint8
       vel_estimate: {type: readonly float32, c_getter: vel_estimate_.any().value_or(0.0f)}
       vel_estimate_counts: readonly float32
+      pos_offset_target: float32
+      pos_offset: float32
       calib_scan_response: readonly float32
       pos_abs: int32
       spi_error_rate: readonly float32
@@ -1092,6 +1094,7 @@ interfaces:
           pre_calibrated: {type: bool, c_setter: set_pre_calibrated}
           enable_phase_interpolation: bool
           bandwidth: {type: float32, c_setter: set_bandwidth}
+          pos_offset_bandwidth: float32
           calib_range: float32
           calib_scan_distance: float32
           calib_scan_omega: float32

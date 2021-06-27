@@ -22,6 +22,7 @@ public:
         float calib_scan_distance = 16.0f * M_PI; // rad electrical
         float calib_scan_omega = 4.0f * M_PI; // rad/s electrical
         float bandwidth = 1000.0f;
+        float pos_offset_bandwidth = 1.0f;
         int32_t phase_offset = 0;        // Offset between encoder count and rotor electrical phase
         float phase_offset_float = 0.0f; // Sub-count phase alignment offset
         int32_t cpr = (2048 * 4);   // Default resolution of CUI-AMT102 encoder,
@@ -110,6 +111,8 @@ public:
     float calib_scan_response_ = 0.0f; // debug report from offset calib
     int32_t pos_abs_ = 0;
     float spi_error_rate_ = 0.0f;
+    float pos_offset_target_ = 0.0f;
+    float pos_offset_ = 0.0f;
 
     OutputPort<float> pos_estimate_ = 0.0f; // [turn]
     OutputPort<float> vel_estimate_ = 0.0f; // [turn/s]
