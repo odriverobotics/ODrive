@@ -1074,6 +1074,7 @@ interfaces:
       vel_estimate: {type: readonly float32, c_getter: vel_estimate_.any().value_or(0.0f)}
       vel_estimate_counts: readonly float32
       pos_offset: float32
+      pos_offset_target: float32
       calib_scan_response: readonly float32
       pos_abs: int32
       spi_error_rate: readonly float32
