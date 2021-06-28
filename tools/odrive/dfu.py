@@ -389,6 +389,16 @@ def update_device(device, firmware, logger, cancellation_token):
         find_odrive_cancellation_token.set()
         dfudev = DfuDevice(stm_device)
 
+    hw_version = get_hw_version_in_dfu_mode(dfudev)
+    if hw_version is None:
+        logger.error("Could not determine hardware version. Flashing precompiled "
+                     "firmware could lead to unexpected results. Please use an "
+                     "STLink/2 to force-update the firmware anyway. Refer to "
+                     "https://docs.odriverobotics.com/developer-guide for details.")
+        # Jump to application
+        dfudev.jump_to_application(0x08000000)
+        return
+
     logger.debug("Sectors on device: ")
     for sector in dfudev.sectors:
         logger.debug(" {:08X} to {:08X} ({})".format(
