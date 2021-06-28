@@ -16,10 +16,13 @@ website does not help.
 
 Use TestPyPi while developing.
 
-To build, package and upload the python tools to TestPyPi, run:
-    python setup.py sdist upload -r pypitest
-To make a real release ensure you're at the release commit
-and then run the above command without the "test" (so just "pypi").
+To upload the python package to TestPyPi, run:
+    twine upload dist/odrive-0.5.3.dev0.tar.gz -r pypitest
+(Replace the file name with something appropriate)
+
+To make a real release ensure the version number in the filename matches what
+you intend to release and then run the above command without the "test" (so just
+"pypi").
 
 To install a prerelease version from test index:
 (extra-index-url is there because some packages don't upload to test server)
@@ -93,7 +96,7 @@ try:
     author = 'Oskar Weigl',
     author_email = 'oskar.weigl@odriverobotics.com',
     license='MIT',
-    url = 'https://github.com/madcowswe/ODrive',
+    url = 'https://github.com/odriverobotics/ODrive',
     keywords = ['odrive', 'motor', 'motor control'],
     install_requires = [
       'ipython',  # Used to do the interactive parts of the odrivetool
