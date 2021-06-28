@@ -59,6 +59,8 @@ dfu_parser.add_argument('file', metavar='HEX', nargs='?',
                         'If no file is provided, the script automatically downloads '
                         'the latest firmware.')
 
+unlock_parser = subparsers.add_parser('unlock', help="Try to remove read-out protection."
+                                               "If no serial number is specified, the first ODrive that is found is unlocked")
 
 dfu_parser = subparsers.add_parser('backup-config', help="Saves the configuration of the ODrive to a JSON file")
 dfu_parser.add_argument('file', nargs='?',
@@ -146,6 +148,11 @@ try:
         print_version()
         import odrive.dfu
         odrive.dfu.launch_dfu(args, logger, app_shutdown_token)
+
+    elif args.command == 'unlock':
+        print_version()
+        import odrive.dfu
+        odrive.dfu.unlock_device(args.serial_number, app_shutdown_token)
 
     elif args.command == 'liveplotter':
         from odrive.utils import start_liveplotter

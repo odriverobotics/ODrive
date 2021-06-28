@@ -24,6 +24,13 @@ MAX_TRANSFER_SIZE = 2048
 def address_to_4bytes(a):
     return [ a % 256, (a >> 8)%256, (a >> 16)%256, (a >> 24)%256 ]
 
+def make_exception(status):
+    if status[0] == 11: # errVENDOR
+        suffix = " - Try running \"odrivetool unlock\" and then try \"odrivetool dfu\" again."
+    else:
+        suffix = ""
+    return RuntimeError("An error occured. Device Status: {!r}{}".format(status, suffix))
+
 class DfuDevice:
     def __init__(self, device, timeout = None):
         self.dev = device
@@ -86,6 +93,16 @@ class DfuDevice:
 
     def set_address(self, ap):
         return self.dnload(0x0, [0x21] + address_to_4bytes(ap))
+
+    def unprotect(self):
+        alt = [a for a in self.alternates() if a[0].startswith("@Device Feature/")]
+        assert(len(alt) == 1)
+        self.set_alternate_safe(alt[0])
+
+        self.dnload(0x0, [0x92])
+        status = self.get_status()
+        if status[1] != DfuState.DFU_DOWNLOAD_BUSY:
+            raise make_exception(status)
 
     def write(self, block, data):
         return self.dnload(block + 2, data)
@@ -171,12 +188,12 @@ class DfuDevice:
         self.set_address(addr)
         status = self.wait_while_state(DfuState.DFU_DOWNLOAD_BUSY)
         if status[1] != DfuState.DFU_DOWNLOAD_IDLE:
-            raise RuntimeError("An error occured. Device Status: {!r}".format(status))
+            raise make_exception(status)
         # take device out of DFU_DOWNLOAD_SYNC and into DFU_IDLE
         self.abort()
         status = self.wait_while_state(DfuState.DFU_DOWNLOAD_SYNC)
         if status[1] != DfuState.DFU_IDLE:
-            raise RuntimeError("An error occured. Device Status: {!r}".format(status))
+            raise make_exception(status)
         
 
     def erase_sector(self, sector):
@@ -184,7 +201,7 @@ class DfuDevice:
         self.erase(sector['addr'])
         status = self.wait_while_state(DfuState.DFU_DOWNLOAD_BUSY, timeout=sector['len']/32)
         if status[1] != DfuState.DFU_DOWNLOAD_IDLE:
-            raise RuntimeError("An error occured. Device Status: {!r}".format(status))
+            raise make_exception(status)
 
     def write_sector(self, sector, data):
         self.set_alternate_safe(sector['alt'])
@@ -199,7 +216,7 @@ class DfuDevice:
             self.write(blocknum, block)
             status = self.wait_while_state(DfuState.DFU_DOWNLOAD_BUSY)
             if status[1] != DfuState.DFU_DOWNLOAD_IDLE:
-                raise RuntimeError("An error occured. Device Status: {!r}".format(status))
+                raise make_exception(status)
 
     def read_sector(self, sector):
         """
@@ -226,9 +243,9 @@ class DfuDevice:
         #self.set_address(address)
         #status = self.wait_while_state(DfuState.DFU_DOWNLOAD_BUSY)
         #if status[1] != DfuState.DFU_DOWNLOAD_IDLE:
-        #    raise RuntimeError("An error occured. Device Status: {}".format(status[1]))
+        #    raise make_exception(status)
 
         self.leave()
         status = self.wait_while_state(DfuState.DFU_MANIFEST_SYNC)
         if status[1] != DfuState.DFU_MANIFEST:
-            raise RuntimeError("An error occured. Device Status: {}".format(status[1]))
+            raise make_exception(status)
