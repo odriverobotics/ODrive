@@ -110,3 +110,12 @@ Alternatively, if you have python can installed (`pip3 install python-can`), you
 Now that we've verified the communication is working, we can try commanding the ODrive.  Make sure your ODrive is configured and working properly over USB with `odrivetool` before continuing.  See the [Getting Started Guide](getting-started.md) for help with first-time configuration.
 
 To move the ODrive, we use the command `Set Input Pos`, or cmd ID `0x00C`.
+
+## DBC Files
+
+A DBC file (.dbc) is a database of all the messages and signals in a CAN protocol.  This file can be used with Python cantools to serialize and deserialize messages without having to handle the bitshifting etc yourself.  We have generated a .dbc for CANSimple for you!
+
+* [CANSimple DBC File](../tools/odrive-cansimple.dbc)
+* [CANSimple DBC Generator Script](../tools/create_can_dbc.py)
+
+Instead of manually writing values into 

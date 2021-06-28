@@ -1,5 +1,4 @@
 import can
-import struct
 
 bus = can.Bus("can0", bustype="socketcan")
 axisID = 0x1
@@ -24,7 +23,6 @@ while True:
             print("\nAxis has returned to Idle state.")
             break
 
-print("\nAxis has returned to Idle state.")
 for msg in bus:
     if(msg.arbitration_id == (axisID << 5 | 0x01)):
         errorCode = msg.data[0] | msg.data[1] << 8 | msg.data[2] << 16 | msg.data[3] << 24
