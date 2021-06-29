@@ -109,7 +109,7 @@ Alternatively, if you have python can installed (`pip3 install python-can`), you
 
 Now that we've verified the communication is working, we can try commanding the ODrive.  Make sure your ODrive is configured and working properly over USB with `odrivetool` before continuing.  See the [Getting Started Guide](getting-started.md) for help with first-time configuration.
 
-To move the ODrive, we use the command `Set Input Pos`, or cmd ID `0x00C`.
+To move the ODrive, we use the command `Set Input Pos`, or cmd ID `0x00C`.  First we create a message with this ID, and then "OR" in the axis ID.  Then we create an 8-byte array of data with input position that we want, with a float value turned into bytes... this can be a pain though.
 
 ## DBC Files
 
@@ -118,4 +118,12 @@ A DBC file (.dbc) is a database of all the messages and signals in a CAN protoco
 * [CANSimple DBC File](../tools/odrive-cansimple.dbc)
 * [CANSimple DBC Generator Script](../tools/create_can_dbc.py)
 
-Instead of manually writing values into 
+Instead of manually writing values into the data, we can create a dictionary of signal:value pairs and serialize the data according to the database definition.
+
+1. Load the database into memory
+2. Use `encode_message()` to get a byte array representation of data for sending
+3. Use `decode_message()` to get a dictionary representation of data for receiving
+
+The [CAN DBC Example](../tools/can_dbc_example.py) script shows you how this can be used.  This is the recommended method of serializing and deserializing.
+
+If you're using C++, then you can use the [CANHelpers](..firmware/communication/../../../Firmware/communication/can/can_helpers.hpp) single-header library to do this instead, although the DBC file isn't used.

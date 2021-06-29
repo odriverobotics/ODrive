@@ -83,8 +83,9 @@ setInputTqMsg = cantools.database.can.Message(
 )
 
 # 0x00F - Set Velocity Limit
-velLimit = cantools.database.can.Signal("Vel_Limit", 0, 32, is_float=True)
-setVelLimMsg = cantools.database.can.Message(0x00F, "Set_Vel_Limit", 8, [velLimit])
+velLimit = cantools.database.can.Signal("Velocity_Limit", 0, 32, is_float=True)
+currentLimit = cantools.database.can.Signal("Current_Limit", 32, 32, is_float=True)
+setVelLimMsg = cantools.database.can.Message(0x00F, "Set_Limits", 8, [velLimit, currentLimit])
 
 # 0x010 - Start Anticogging
 startAnticoggingMsg = cantools.database.can.Message(0x010, "Start_Anticogging", 0, [])

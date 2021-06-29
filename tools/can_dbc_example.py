@@ -1,5 +1,7 @@
+import math
 import can
 import cantools
+import time
 
 db = cantools.database.load_file("odrive-cansimple.dbc")
 # print(db)
@@ -61,3 +63,18 @@ for msg in bus:
         else:
             print("Axis failed to enter closed loop")
         break
+
+target = 0
+
+data = db.encode_message('Set_Limits', {'Velocity_Limit':10.0, 'Current_Limit':10.0})
+msg = can.Message(arbitration_id=axisID << 5 | 0x00F, is_extended_id=False, data=data)
+bus.send(msg)
+
+t0 = time.monotonic()
+while True:
+    setpoint = 4.0 * math.sin((time.monotonic() - t0)*2)
+    print("goto " + str(setpoint))
+    data = db.encode_message('Set_Input_Pos', {'Input_Pos':setpoint, 'Vel_FF':0.0, 'Torque_FF':0.0})
+    msg = can.Message(arbitration_id=axisID << 5 | 0x00C, data=data, is_extended_id=False)
+    bus.send(msg)
+    time.sleep(0.01)

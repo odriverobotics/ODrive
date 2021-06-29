@@ -79,8 +79,9 @@ BO_ 13 Set_Input_Vel: 8 Vector__XXX
 BO_ 14 Set_Input_Torque: 8 Vector__XXX
  SG_ Input_Torque : 0|32@1+ (1,0) [0|0] "" Vector__XXX
 
-BO_ 15 Set_Vel_Limit: 8 Vector__XXX
- SG_ Vel_Limit : 0|32@1+ (1,0) [0|0] "" Vector__XXX
+BO_ 15 Set_Limits: 8 Vector__XXX
+ SG_ Current_Limit : 32|32@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ Velocity_Limit : 0|32@1+ (1,0) [0|0] "" Vector__XXX
 
 BO_ 16 Start_Anticogging: 0 Vector__XXX
 
@@ -121,7 +122,8 @@ SIG_VALTYPE_ 12 Input_Pos : 1;
 SIG_VALTYPE_ 13 Input_Vel : 1;
 SIG_VALTYPE_ 13 Input_Torque_FF : 1;
 SIG_VALTYPE_ 14 Input_Torque : 1;
-SIG_VALTYPE_ 15 Vel_Limit : 1;
+SIG_VALTYPE_ 15 Velocity_Limit : 1;
+SIG_VALTYPE_ 15 Current_Limit : 1;
 SIG_VALTYPE_ 17 Traj_Vel_Limit : 1;
 SIG_VALTYPE_ 18 Traj_Accel_Limit : 1;
 SIG_VALTYPE_ 18 Traj_Decel_Limit : 1;
