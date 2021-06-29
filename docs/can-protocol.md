@@ -1,6 +1,6 @@
 # CAN Protocol
 
-This document describes teh CAN Protocol.  For examples of usage, check out our [CAN Guide!](can-guide.md)
+This document describes the CAN Protocol.  For examples of usage, check out our [CAN Guide!](can-guide.md)
 
 
 ---
