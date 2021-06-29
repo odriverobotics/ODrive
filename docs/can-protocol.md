@@ -1,13 +1,7 @@
 # CAN Protocol
 
-## Hardware Setup
-ODrive assumes the CAN PHY is a standard differential twisted pair in a linear bus configuration with 120 ohm termination resistance at each end. ODrive versions less than V3.5 include a soldered 120 ohm termination resistor, but ODrive versions V3.5 and greater implement a dip switch to toggle the termination.  ODrive uses 3.3v as the high output, but conforms to the CAN PHY requirement of achieving a differential voltage > 1.5V to represent a "0".  As such, it is compatible with standard 5V bus architectures.
+This document describes teh CAN Protocol.  For examples of usage, check out our [CAN Guide!](can-guide.md)
 
-ODrive currently supports the following CAN baud rates:
-* 125 kbps
-* 250 kbps (default)
-* 500 kbps
-* 1000 kbps
 
 ---
 ## Configuring ODrive for CAN
@@ -94,7 +88,7 @@ You can deconflict with CANopen like this:
 
 It may not be obvious, but this allows for some compatibility with CANOpen.  Although the address space 0x200 and 0x300 correspond to receive PDO base addresses, we can guarantee they will not conflict if all CANopen node IDs are >= 32.  E.g.:
 
-CANopen nodeID = 35 = 0x23  
+CANopen nodeID = 35 = 0x23
 Receive PDO 0x200 + nodeID = 0x223, which does not conflict with the range [0x200 : 0x21F]
 
 Be careful that you don't assign too many nodeIDs per PDO group.  Four CAN Simple nodes (32*4) is all of the available address space of a single PDO.  If the bus is strictly ODrive CAN Simple nodes, a simple sequential Node ID assignment will work fine.

@@ -9,6 +9,12 @@ Please add a note of your changes below this heading if you make a Pull Request.
 * odrivetool no longer shows the message `<Task pending coro=... running at ...>` when closing
 
 # Releases
+## [0.5.3] - unreleased
+### Fixed
+* ASCII protocol commands with multiline responses (`i`, `h`) now return the expected response (in v0.5.2 the response was corrupted)
+* odrivetool no longer shows the message `<Task pending coro=... running at ...>` when closing
+
+# Releases
 ## [0.5.2] - 2021-05-21
 
 ### Fixed

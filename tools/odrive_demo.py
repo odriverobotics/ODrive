@@ -39,7 +39,7 @@ for i in [1,2,3,4]:
 # A sine wave to test
 t0 = time.monotonic()
 while True:
-    setpoint = 10000.0 * math.sin((time.monotonic() - t0)*2)
+    setpoint = 4.0 * math.sin((time.monotonic() - t0)*2)
     print("goto " + str(int(setpoint)))
     my_drive.axis0.controller.pos_setpoint = setpoint
     time.sleep(0.01)

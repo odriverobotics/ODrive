@@ -63,7 +63,7 @@ sudo apt-get install python3 python3-yaml python3-jinja2 python3-jsonschema
 
 #### Linux (Ubuntu >= 20.04)
 ```bash
-sudo apt install gcc-arm-embedded
+sudo apt install gcc-arm-none-eabi
 sudo apt install openocd
 sudo apt install git-lfs
 sudo apt install tup
