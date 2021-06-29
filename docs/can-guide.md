@@ -16,6 +16,9 @@ In simple terms, CAN is a way of communicating between many devices over a singl
 
 CAN is convenient for its simple and robust Physical Layer (PHY) that requires only a twisted pair of wires and a 120ohm termination resistor at each end.  It has low jitter and low latency, because there is no host computer.  It is relatively fast (CAN 2.0b supports 1 Mbps).  Messages are easy to configure and load with data.  Transceivers and controllers are inexpensive and widely available, thanks to its use in automotive.
 
+## Hardware Setup
+ODrive assumes the CAN PHY is a standard differential twisted pair in a linear bus configuration with 120 ohm termination resistance at each end. ODrive versions less than V3.5 include a soldered 120 ohm termination resistor, but ODrive versions V3.5 and greater implement a dip switch to toggle the termination.  ODrive uses 3.3v as the high output, but conforms to the CAN PHY requirement of achieving a differential voltage > 1.5V to represent a "0".  As such, it is compatible with standard 5V bus architectures.
+
 ## Setting up CAN on ODrive
 
 CANSimple breaks the CAN Message ID into two parts:  An axis ID and a command ID.  By default, CAN is enabled on the ODrive, where Axis 0 has ID 0, and Axis 1 has ID 1.  The ID of each axis should be unique; each should be set via `odrivetool` before connecting to the bus with the command:
@@ -75,6 +78,8 @@ sudo ip link set can0 up type can bitrate 250000
 The CANH and CANL pins on J2 are used for CAN communication.  Connect CANH to CANH on all other devices, and CANL to CANL.
 
 If your ODrive is the "last" (furthest) device on the bus, you can use the on-board 120 Ohm termination resistor by switching the DIP switch to "CAN 120R".  Otherwise, add an external resistor.
+
+
 
 ### Verifying Communcation
 
