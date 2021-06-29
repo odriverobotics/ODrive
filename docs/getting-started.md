@@ -9,18 +9,30 @@ permalink: /
 ### Table of contents
 <!-- TOC depthFrom:2 depthTo:2 -->
 
-- [Hardware Requirements](#hardware-requirements)
-- [Wiring up the ODrive](#wiring-up-the-odrive)
-- [Downloading and Installing Tools](#downloading-and-installing-tools)
-- [Firmware](#firmware)
-- [Start `odrivetool`](#start-odrivetool)
-- [Debugging](#debugging)
-- [Configure M0](#configure-m0)
-- [Position control of M0](#position-control-of-m0)
-- [Other control modes](#other-control-modes)
-- [Watchdog Timer](#watchdog-timer)
-- [What's next?](#whats-next)
-- [Upgrading from 0.4.12](#upgrading-from-0412)
+- [Getting Started](#getting-started)
+    - [Table of contents](#table-of-contents)
+  - [Hardware Requirements](#hardware-requirements)
+    - [You will need:](#you-will-need)
+  - [Wiring up the ODrive](#wiring-up-the-odrive)
+    - [Wiring up the motors](#wiring-up-the-motors)
+    - [Wiring up the encoders](#wiring-up-the-encoders)
+    - [Safety & Power UP](#safety--power-up)
+  - [Downloading and Installing Tools](#downloading-and-installing-tools)
+    - [Windows](#windows)
+    - [OSX](#osx)
+    - [Linux](#linux)
+  - [Firmware](#firmware)
+  - [Start `odrivetool`](#start-odrivetool)
+  - [Debugging](#debugging)
+  - [Configure M0](#configure-m0)
+    - [1. Set the limits:](#1-set-the-limits)
+    - [2. Set other hardware parameters](#2-set-other-hardware-parameters)
+    - [3. Save configuration](#3-save-configuration)
+  - [Position control of M0](#position-control-of-m0)
+  - [Other control modes](#other-control-modes)
+  - [Watchdog Timer](#watchdog-timer)
+  - [What's next?](#whats-next)
+  - [Upgrading from 0.4.12](#upgrading-from-0412)
 
 <!-- /TOC -->
 
@@ -307,6 +319,7 @@ You can now:
 * See what other [commands and parameters](commands.md) are available, in order to better control the ODrive.
 * Control the ODrive from your own program or hook it up to an existing system through one of it's [interfaces](pinout.md).
 * See how you can improve the behavior during the startup procedure, like [bypassing encoder calibration](encoders.md#encoder-with-index-signal).
+* The CAN communication is the most reliable way of talking to ODrive in a real application.  Check out the [CAN Guide](can-guide.md) and [CAN Protocol](can-protocol.md)
 
 If you have any issues or any questions please get in touch. The [ODrive Community](https://discourse.odriverobotics.com/) warmly welcomes you.
 
