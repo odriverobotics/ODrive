@@ -40,6 +40,8 @@ BO_ 1 Heartbeat: 8 Vector__XXX
  SG_ Axis_State : 32|32@1+ (1,0) [0|0] "" Vector__XXX
  SG_ Axis_Error : 0|32@1+ (1,0) [0|0] "" Vector__XXX
 
+BO_ 2 Estop: 0 Vector__XXX
+
 BO_ 3 Get_Motor_Error: 8 Vector__XXX
  SG_ Motor_Error : 0|32@1+ (1,0) [0|0] "" Vector__XXX
 
@@ -107,6 +109,11 @@ BO_ 22 Reboot: 0 Vector__XXX
 
 BO_ 23 Get_Vbus_Voltage: 8 Vector__XXX
  SG_ Vbus_Voltage : 0|32@1+ (1,0) [0|0] "" Vector__XXX
+
+BO_ 24 Clear_Errors: 0 Vector__XXX
+
+BO_ 25 Set_Linear_Count: 8 Vector__XXX
+ SG_ Position : 0|32@1- (1,0) [0|0] "" Vector__XXX
 
 
 

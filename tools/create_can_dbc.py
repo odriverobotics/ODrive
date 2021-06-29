@@ -9,6 +9,9 @@ heartbeatMsg = cantools.database.can.Message(
     0x001, "Heartbeat", 8, [axisError, axisState]
 )
 
+# 0x002 - E-Stop Message
+estopMsg = cantools.database.can.Message(0x002, "Estop", 0, [])
+
 # 0x003 - Motor Error
 motorError = cantools.database.can.Signal("Motor_Error", 0, 32)
 motorErrorMsg = cantools.database.can.Message(0x003, "Get_Motor_Error", 8, [motorError])
@@ -85,7 +88,9 @@ setInputTqMsg = cantools.database.can.Message(
 # 0x00F - Set Velocity Limit
 velLimit = cantools.database.can.Signal("Velocity_Limit", 0, 32, is_float=True)
 currentLimit = cantools.database.can.Signal("Current_Limit", 32, 32, is_float=True)
-setVelLimMsg = cantools.database.can.Message(0x00F, "Set_Limits", 8, [velLimit, currentLimit])
+setVelLimMsg = cantools.database.can.Message(
+    0x00F, "Set_Limits", 8, [velLimit, currentLimit]
+)
 
 # 0x010 - Start Anticogging
 startAnticoggingMsg = cantools.database.can.Message(0x010, "Start_Anticogging", 0, [])
@@ -135,9 +140,14 @@ getVbusVMsg = cantools.database.can.Message(0x017, "Get_Vbus_Voltage", 8, [vbusV
 # 0x018 - Clear Errors
 clearErrorsMsg = cantools.database.can.Message(0x018, "Clear_Errors", 0, [])
 
+# 0x019 - Set Linear Count
+position = cantools.database.can.Signal("Position", 0, 32, is_signed=True)
+setLinearCountMsg = cantools.database.can.Message(0x019, "Set_Linear_Count", 8, [position])
+
 db = cantools.database.can.Database(
     [
         heartbeatMsg,
+        estopMsg,
         motorErrorMsg,
         encoderErrorMsg,
         sensorlessErrorMsg,
@@ -158,6 +168,8 @@ db = cantools.database.can.Database(
         getSensorlessEstMsg,
         rebootMsg,
         getVbusVMsg,
+        clearErrorsMsg,
+        setLinearCountMsg,
     ]
 )
 
