@@ -141,6 +141,9 @@ void CANSimple::do_command(Axis& axis, const can_Message_t& msg) {
         case MSG_CLEAR_ERRORS:
             clear_errors_callback(axis, msg);
             break;
+        case MSG_SET_LINEAR_COUNT:
+            set_linear_count_callback(axis, msg);
+            break;
         default:
             break;
     }

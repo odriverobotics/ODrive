@@ -32,6 +32,7 @@ class CANSimple {
         MSG_RESET_ODRIVE,
         MSG_GET_VBUS_VOLTAGE,
         MSG_CLEAR_ERRORS,
+        MSG_SET_LINEAR_COUNT,
         MSG_CO_HEARTBEAT_CMD = 0x700,  // CANOpen NMT Heartbeat  SEND
     };
 
