@@ -462,7 +462,7 @@ def update_device(device, firmware, logger, cancellation_token):
     if not found_in_dfu:
         logger.info("Waiting for the device to reappear...")
         device = odrive.find_any(odrive.default_usb_search_path, serial_number,
-                        cancellation_token, cancellation_token, timeout=30)
+                        cancellation_token, timeout=30)
 
         if do_backup_config:
             temp_config_filename = odrive.configuration.get_temp_config_filename(device)
@@ -500,7 +500,7 @@ def launch_dfu(args, logger, cancellation_token):
     # Scan for ODrives not in DFU mode
     # We only scan on USB because DFU is only implemented over USB
     devices[1] = odrive.find_any(odrive.default_usb_search_path, serial_number,
-        find_odrive_cancellation_token, cancellation_token)
+        find_odrive_cancellation_token)
     find_odrive_cancellation_token.set()
     
     device = devices[0] or devices[1]
