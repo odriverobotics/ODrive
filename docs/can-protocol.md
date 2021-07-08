@@ -22,7 +22,7 @@ Each axis looks like a separate node on the bus. Thus, they both have the two pr
 ```
 odrv0.axis0.config.can_node_id = 3
 odrv0.axis1.config.can_node_id = 1
-odrv0.can.config.baud_rate = 500000
+odrv0.can.set_baud_rate(500000)
 odrv0.save_configuration()
 odrv0.reboot()
 ```
