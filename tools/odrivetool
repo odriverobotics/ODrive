@@ -72,13 +72,6 @@ dfu_parser.add_argument('file', nargs='?',
                         help="Path to the file that contains the configuration data. "
                         "If no path is provided, the configuration is loaded from {}.".format(tempfile.gettempdir()))
 
-code_generator_parser = subparsers.add_parser('generate-code', help="Process a jinja2 template, passing the ODrive's JSON data as data input")
-code_generator_parser.add_argument("-t", "--template", type=argparse.FileType('r'),
-                    help="the code template")
-code_generator_parser.add_argument("-o", "--output", type=argparse.FileType('w'), default='-',
-                    help="path of the generated output")
-code_generator_parser.set_defaults(template = os.path.join(script_path, 'odrive_header_template.h.in'))
-
 subparsers.add_parser('liveplotter', help="For plotting of odrive parameters (i.e. position) in real time")
 subparsers.add_parser('drv-status', help="Show status of the on-board DRV8301 chips (for debugging only)")
 subparsers.add_parser('rate-test', help="Estimate the average transmission bandwidth over USB")
@@ -187,11 +180,6 @@ try:
         from odrive.version import setup_udev_rules
         setup_udev_rules(logger)
     
-    elif args.command == 'generate-code':
-        from odrive.code_generator import generate_code
-        my_odrive = odrive.find_any(path=args.path, serial_number=args.serial_number)
-        generate_code(my_odrive, args.template, args.output)
-
     elif args.command == 'backup-config':
         from odrive.configuration import backup_config
         print("Waiting for ODrive...")

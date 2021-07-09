@@ -14,6 +14,9 @@ Please add a note of your changes below this heading if you make a Pull Request.
 * ASCII protocol commands with multiline responses (`i`, `h`) now return the expected response (in v0.5.2 the response was corrupted)
 * odrivetool no longer shows the message `<Task pending coro=... running at ...>` when closing
 
+### Changed
+* Removed `odrivetool generate-code`. This feature was broken in 0.5.2. Use [`interface_generator.py`](https://github.com/odriverobotics/ODrive/blob/master/tools/fibre-tools/interface_generator.py) instead (see Tupfile.lua for examples).
+
 # Releases
 ## [0.5.2] - 2021-05-21
 
