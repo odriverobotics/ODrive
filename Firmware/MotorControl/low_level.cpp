@@ -33,6 +33,7 @@ float vbus_voltage = 12.0f;
 float ibus_ = 0.0f; // exposed for monitoring only
 bool brake_resistor_armed = false;
 bool brake_resistor_saturated = false;
+float brake_resistor_current = 0.0f;
 /* Private constant data -----------------------------------------------------*/
 /* CPU critical section helpers ----------------------------------------------*/
 
@@ -324,8 +325,8 @@ void update_brake_current() {
         }
     }
 
-    float brake_duty;
-
+    float brake_duty = 0.0f;
+    float brake_current = 0.0f;
     if (odrv.config_.enable_brake_resistor) {
         if (!(odrv.config_.brake_resistance > 0.0f)) {
             odrv.disarm_with_error(ODrive::ERROR_INVALID_BRAKE_RESISTANCE);
@@ -333,7 +334,7 @@ void update_brake_current() {
         }
     
         // Don't start braking until -Ibus > regen_current_allowed
-        float brake_current = -Ibus_sum - odrv.config_.max_regen_current;
+        brake_current = -Ibus_sum - odrv.config_.max_regen_current;
         brake_duty = brake_current * odrv.config_.brake_resistance / vbus_voltage;
         
         if (odrv.config_.enable_dc_bus_overvoltage_ramp && (odrv.config_.brake_resistance > 0.0f) && (odrv.config_.dc_bus_overvoltage_ramp_start < odrv.config_.dc_bus_overvoltage_ramp_end)) {
@@ -355,11 +356,13 @@ void update_brake_current() {
 
         // This cannot result in NaN (safe for race conditions) because we check
         // brake_resistance != 0 further up.
+        brake_current = brake_duty * vbus_voltage / odrv.config_.brake_resistance;
         Ibus_sum += brake_duty * vbus_voltage / odrv.config_.brake_resistance;
     } else {
         brake_duty = 0;
     }
 
+    brake_resistor_current = brake_current;
     ibus_ += odrv.ibus_report_filter_k_ * (Ibus_sum - ibus_);
 
     if (Ibus_sum > odrv.config_.dc_max_positive_current) {

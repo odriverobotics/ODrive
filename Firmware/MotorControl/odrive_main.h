@@ -216,6 +216,7 @@ public:
 
     bool& brake_resistor_armed_ = ::brake_resistor_armed; // TODO: make this the actual variable
     bool& brake_resistor_saturated_ = ::brake_resistor_saturated; // TODO: make this the actual variable
+    float& brake_resistor_current_ = ::brake_resistor_current;
 
     SystemStats_t system_stats_;
 

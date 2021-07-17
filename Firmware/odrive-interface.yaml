@@ -111,8 +111,10 @@ interfaces:
         type: readonly uint8
         doc: 0 for official releases, 1 otherwise
       brake_resistor_armed: readonly bool
-      brake_resistor_saturated: bool
-
+      brake_resistor_saturated: readonly bool
+      brake_resistor_current:
+        type: readonly float32
+        doc: Commanded brake resistor current
       # Diagnostics & performance monitoring
       n_evt_sampling: {type: readonly uint32, doc: Number of input sampling events since startup (modulo 2^32)}
       n_evt_control_loop: {type: readonly uint32, doc: Number of control loop iterations since startup (modulo 2^32)}

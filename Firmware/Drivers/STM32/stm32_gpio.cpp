@@ -16,7 +16,7 @@ const Stm32Gpio Stm32Gpio::none{nullptr, 0};
  * Note that all GPIOs with the same pin number map to the same IRQn,
  * no matter which port they belong to.
  */
-IRQn_Type get_irq_number(uint16_t pin_number) {
+static IRQn_Type get_irq_number(uint16_t pin_number) {
     switch (pin_number) {
         case 0: return EXTI0_IRQn;
         case 1: return EXTI1_IRQn;
