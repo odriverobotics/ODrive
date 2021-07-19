@@ -669,7 +669,7 @@ class RemoteObject(object):
         self.__sealed__ = True
 
     def __setattr__(self, key, value):
-        if self.__sealed__ and not hasattr(self, key):
+        if self.__sealed__ and not key in dir(self) and not hasattr(self, key):
             raise AttributeError("Attribute {} not found".format(key))
         object.__setattr__(self, key, value)
 
@@ -846,6 +846,17 @@ class LibFibre():
     def _on_found_object(self, ctx, obj, intf):
         py_obj = self._load_py_obj(obj, intf)
         discovery = self.discovery_processes[ctx]
+
+        # TODO: this is a hack because ObjectPtrCodec is broken
+        def load(subobj):
+            for key in dir(subobj):
+                if not key.startswith('_'):
+                    attr = getattr(subobj.__class__, key)
+                    if isinstance(attr, RemoteAttribute):
+                        load(attr._get_obj(subobj))
+
+        load(py_obj)
+
         discovery._unannounced.append(py_obj)
         old_future = discovery._future
         discovery._future = self.loop.create_future()
