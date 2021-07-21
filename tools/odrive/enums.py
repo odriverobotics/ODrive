@@ -28,7 +28,7 @@ STREAM_PROTOCOL_TYPE_STDOUT              = 2
 STREAM_PROTOCOL_TYPE_ASCII_AND_STDOUT    = 3
 
 # ODrive.Can.Protocol
-PROTOCOL_SIMPLE                          = 0x00000001
+PROTOCOL_SIMPLE                          = 0
 
 # ODrive.Axis.AxisState
 AXIS_STATE_UNDEFINED                     = 0

@@ -986,14 +986,14 @@ interfaces:
             unit: Watt
       autotuning:
         c_is_class: False
+        doc: Automatically generate sine waves for frequency-domain response tuning
         attributes:
-          frequency: float32
-          pos_amplitude: float32
-          vel_amplitude: float32
-          torque_amplitude: float32
-          # pos_phase: float32
-          # vel_phase: float32
-          # torque_phase: float32
+          frequency: {type: float32, unit: Hz}
+          pos_amplitude: {type: float32, unit: turns}
+          vel_amplitude: {type: float32, unit: turns/sec}
+          torque_amplitude: {type: float32, unit: N-m}
+          measured_phase: readonly float32
+          measured_amplitude: readonly float32
       mechanical_power:
         type: readonly float32
         unit: Watt
@@ -1292,7 +1292,9 @@ valuetypes:
       AsciiAndStdout: {doc: Combination of `Ascii` and `Stdout`.}
 
   ODrive.Can.Protocol:
-    flags: {SIMPLE: }
+    values: 
+      SIMPLE:
+        doc: CANSimple, an ODrive-specific protocol for basic functionality
 
   ODrive.Axis.AxisState: # TODO: remove redundant "Axis" in name
     values:
