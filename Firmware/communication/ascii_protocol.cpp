@@ -53,7 +53,7 @@ void AsciiProtocol::respond(bool include_checksum, const char * fmt, TArgs&& ...
         uint8_t checksum = 0;
         for (size_t i = 0; i < len; ++i)
             checksum ^= tx_buf[i];
-        len += snprintf(tx_buf + len, sizeof(tx_buf) - len, "*%u", checksum);
+        len += snprintf(tx_buf + len, sizeof(tx_buf) - len, "*%u\r\n", checksum);
     } else {
         len += snprintf(tx_buf + len, sizeof(tx_buf) - len, "\r\n");
     }
