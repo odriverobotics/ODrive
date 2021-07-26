@@ -395,4 +395,5 @@ bool Controller::update() {
     // calibration would leave the controller in an error state.
     error_ &= ~ERROR_INVALID_ESTIMATE;
     return true;
+
 }
