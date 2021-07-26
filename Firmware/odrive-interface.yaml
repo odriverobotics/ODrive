@@ -193,7 +193,7 @@ interfaces:
     functions:
       test_function: {in: {delta: int32}, out: {cnt: int32}}
       get_adc_voltage: {in: {gpio: uint32}, out: {voltage: float32}, doc: Reads the ADC voltage of the specified GPIO. The GPIO should be in `GPIO_MODE_ANALOG_IN`.}
-      save_configuration: {out: {success: bool}}
+      save_configuration: {out: {success: bool}, doc: Saves the current configuration to non-volatile memory and reboots the board.}
       erase_configuration:
       reboot:
       enter_dfu_mode:
