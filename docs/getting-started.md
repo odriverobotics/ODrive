@@ -262,7 +262,7 @@ This is 4x the Pulse Per Revolution (PPR) value. Usually this is indicated in th
 Please see the [Thermistors](thermistors.md) page for setup.
 
 ### 3. Save configuration
-You can save all `.config` parameters to persistent memory so the ODrive remembers them between power cycles. 
+You can save all `.config` parameters to persistent memory so the ODrive remembers them between power cycles. This will reboot the board.
 * `odrv0.save_configuration()` <kbd>Enter</kbd>. 
 
 
