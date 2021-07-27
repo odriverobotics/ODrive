@@ -7,6 +7,7 @@ Please add a note of your changes below this heading if you make a Pull Request.
 ### Fixed
 * ASCII protocol commands with multiline responses (`i`, `h`) now return the expected response (in v0.5.2 the response was corrupted)
 * odrivetool no longer shows the message `<Task pending coro=... running at ...>` when closing
+* Homing used to erroneously complete with `is_homed == True` even if it failed for some reason
 
 ### Added
 * `brake_resistor_current` added to interface for reading the commanded brake resistor current

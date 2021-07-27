@@ -386,16 +386,24 @@ bool Axis::run_homing() {
 
     homing_.is_homed = false;
 
+    error_ &= ~ERROR_MIN_ENDSTOP_PRESSED;
+
+    bool done = false;
+
     start_closed_loop_control();
 
     // Driving toward the endstop
-    while ((requested_state_ == AXIS_STATE_UNDEFINED) && motor_.is_armed_ && !min_endstop_.get_state()) {
+    while ((requested_state_ == AXIS_STATE_UNDEFINED) && motor_.is_armed_ && !(done = min_endstop_.get_state())) {
         osDelay(1);
     }
 
     stop_closed_loop_control();
     
     controller_.input_vel_ = 0.0f;
+
+    if (!done) {
+        return false;
+    }
 
     error_ &= ~ERROR_MIN_ENDSTOP_PRESSED; // clear this error since we deliberately drove into the endstop
 
@@ -415,11 +423,15 @@ bool Axis::run_homing() {
     controller_.vel_setpoint_ = 0.0f;
     controller_.input_pos_updated();
     
-    while ((requested_state_ == AXIS_STATE_UNDEFINED) && motor_.is_armed_ && !controller_.trajectory_done_) {
+    while ((requested_state_ == AXIS_STATE_UNDEFINED) && motor_.is_armed_ && !(done = controller_.trajectory_done_)) {
         osDelay(1);
     }
 
     stop_closed_loop_control();
+
+    if (!done) {
+        return false;
+    }
 
     // Set the current position to 0.
     encoder_.set_linear_count(0);
