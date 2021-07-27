@@ -37,7 +37,7 @@ enum StreamProtocolType {
 
 // ODrive.Can.Protocol
 enum Protocol {
-    PROTOCOL_SIMPLE                          = 0,
+    PROTOCOL_SIMPLE                          = 0x00000001,
 };
 
 // ODrive.Axis.AxisState

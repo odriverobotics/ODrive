@@ -992,8 +992,6 @@ interfaces:
           pos_amplitude: {type: float32, unit: turns}
           vel_amplitude: {type: float32, unit: turns/sec}
           torque_amplitude: {type: float32, unit: N-m}
-          measured_phase: readonly float32
-          measured_amplitude: readonly float32
       mechanical_power:
         type: readonly float32
         unit: Watt
@@ -1292,7 +1290,7 @@ valuetypes:
       AsciiAndStdout: {doc: Combination of `Ascii` and `Stdout`.}
 
   ODrive.Can.Protocol:
-    values: 
+    flags: 
       SIMPLE:
         doc: CANSimple, an ODrive-specific protocol for basic functionality
 

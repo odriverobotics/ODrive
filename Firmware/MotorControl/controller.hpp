@@ -19,8 +19,6 @@ public:
         float pos_amplitude = 0.0f;
         float vel_amplitude = 0.0f;
         float torque_amplitude = 0.0f;
-        float measured_phase = 0.0f;
-        float measured_amplitude = 0.0f;
     };
 
     struct Config_t {
