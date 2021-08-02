@@ -16,9 +16,9 @@ anticogging_enabled | bool | Enable or disable anticogging.  A valid anticogging
 
 ## Calibration
 
-To calibrate anticogging, first make sure you can adequately control the motor in .  It should respond to position commands.
+To calibrate anticogging, first make sure you can adequately control the motor. It should respond to position commands.
 
-Start by putting the axis in `AXIS_STATE_CLOSED_LOOP` with `CONTROL_MODE_POSITION_CONTROL` and `INPUT_MODE_PASSTHROUGH`.  Make sure you have good control of the motor in this state (it responds to position commands).  Now, tune the motor to be very stiff - high `pos_gain` and relatively high `vel_integrator_gain`.  This will help in calibration.
+Start by putting the axis in `AXIS_STATE_CLOSED_LOOP_CONTROL` with `CONTROL_MODE_POSITION_CONTROL` and `INPUT_MODE_PASSTHROUGH`.  Make sure you have good control of the motor in this state (it responds to position commands).  Now, tune the motor to be very stiff - high `pos_gain` and relatively high `vel_integrator_gain`.  This will help in calibration.
 
 Run `controller.start_anticogging_calibration()`.  The motor will start turning slowly, calibrating each point.  If you like, you can start a liveplotter session before running this command so that you can watch the position move.
 
