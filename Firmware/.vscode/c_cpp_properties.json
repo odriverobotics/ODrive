@@ -7,7 +7,7 @@
                 "${workspaceFolder}/ThirdParty/FreeRTOS/Source/portable/GCC/ARM_CM4F",
                 "${workspaceFolder}/fibre-cpp/include"
             ],
-            "compilerPath": "C:/Tools/ARM/10 2020-q4-major/bin/arm-none-eabi-g++.exe",
+            "compilerPath": "${ARM_GCC_ROOT}/bin/arm-none-eabi-g++.exe",
             "intelliSenseMode": "gcc-arm",
             "defines": [
                 "__arm__",
