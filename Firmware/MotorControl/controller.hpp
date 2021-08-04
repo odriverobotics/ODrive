@@ -43,7 +43,7 @@ public:
         bool enable_gain_scheduling = false;
         bool enable_vel_limit = true;
         bool enable_overspeed_error = true;
-        bool enable_current_mode_vel_limit = true;  // enable velocity limit in current control mode (requires a valid velocity estimator)
+        bool enable_torque_mode_vel_limit = true;  // enable velocity limit in current control mode (requires a valid velocity estimator)
         uint8_t axis_to_mirror = -1;
         float mirror_ratio = 1.0f;
         float torque_mirror_ratio = 0.0f;

@@ -900,9 +900,9 @@ interfaces:
         attributes:
           gain_scheduling_width: float32
           enable_vel_limit: bool
-          enable_current_mode_vel_limit:
+          enable_torque_mode_vel_limit:
             type: bool
-            doc: Enable velocity limit in current control mode (requires a valid velocity estimator).
+            doc: Enable velocity limit in torque control mode (requires a valid velocity estimator).
           enable_gain_scheduling: bool
           enable_overspeed_error: bool
           control_mode: ControlMode
