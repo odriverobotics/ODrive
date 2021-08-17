@@ -59,7 +59,6 @@ public:
         void set_steps_per_circular_range(uint32_t value) { steps_per_circular_range = value > 0 ? value : steps_per_circular_range; }
     };
 
-    Controller() {}
     
     bool apply_config();
 
