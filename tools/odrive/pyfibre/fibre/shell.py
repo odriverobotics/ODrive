@@ -34,6 +34,9 @@ async def discovered_device(device,
     globals()[var_name] = device # Add to globals so tab complete works
     logger.notify("{} to {} as {}".format(verb, display_name, var_name))
 
+    if not device._OTP_ok_property.read():
+        logger.warn("{}: Unsupported or non-genuine ODrive board!".format(var_name))
+
     # Subscribe to disappearance of the device
     device._on_lost.add_done_callback(lambda x: lost_device(var_name, shutdown_token, logger))
 
