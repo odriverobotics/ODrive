@@ -445,6 +445,10 @@ tup.frule{inputs={'build/ODriveFirmware.elf'}, command='arm-none-eabi-size %f'}
 tup.frule{inputs={'build/ODriveFirmware.elf'}, command='arm-none-eabi-objcopy -O ihex %f %o', outputs={'build/ODriveFirmware.hex'}}
 tup.frule{inputs={'build/ODriveFirmware.elf'}, command='arm-none-eabi-objcopy -O binary -S %f %o', outputs={'build/ODriveFirmware.bin'}}
 
+if tup.getconfig('ENABLE_DISASM') == 'true' then
+    tup.frule{inputs={'build/ODriveFirmware.elf'}, command='arm-none-eabi-objdump %f -dSC > %o', outputs={'build/ODriveFirmware.asm'}}
+end
+
 if tup.getconfig('DOCTEST') == 'true' then
     TEST_INCLUDES = '-I. -I./MotorControl -I./fibre-cpp/include -I./Drivers/DRV8301 -I./doctest'
     tup.foreach_rule('Tests/*.cpp', 'g++ -O3 -std=c++17 '..TEST_INCLUDES..' -c %f -o %o', 'Tests/bin/%B.o')
