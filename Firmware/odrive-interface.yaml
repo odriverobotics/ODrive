@@ -110,6 +110,9 @@ interfaces:
       fw_version_unreleased:
         type: readonly uint8
         doc: 0 for official releases, 1 otherwise
+      OTP_ok:
+        type: readonly bool
+        brief: Flag indicating the OTP version matches the firmware version
       brake_resistor_armed: readonly bool
       brake_resistor_saturated: readonly bool
       brake_resistor_current:
@@ -229,6 +232,9 @@ interfaces:
   ODrive.Config:
     c_is_class: False
     attributes:
+      bypass_version_check:
+        type: bool
+        brief: Allows the board to boot, even if OTP version doesn't match firmware version
       enable_uart_a:
         type: bool
         brief: Enables/disables UART_A.

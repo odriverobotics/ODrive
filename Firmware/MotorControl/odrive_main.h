@@ -62,6 +62,7 @@ struct BoardConfig_t {
         DEFAULT_GPIO_MODES
     };
 
+    bool bypass_version_check = false; // Bypasses the OTP HW version check
     bool enable_uart_a = true;
     bool enable_uart_b = false;
     bool enable_uart_c = false;
@@ -232,6 +233,7 @@ public:
     BoardConfig_t config_;
     uint32_t user_config_loaded_ = 0;
     bool misconfigured_ = false;
+    bool OTP_ok_ = false;
 
     uint32_t test_property_ = 0;
 
