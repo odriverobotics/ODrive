@@ -12,7 +12,7 @@ def print_banner():
     print("Docs: https://docs.odriverobotics.com/")
     print("Forums: https://discourse.odriverobotics.com/")
     print("Discord: https://discord.gg/k3ZZ3mS")
-    print("Github: https://github.com/madcowswe/ODrive/")
+    print("Github: https://github.com/odriverobotics/ODrive/")
 
     print()
     print('Please connect your ODrive.')

@@ -163,7 +163,7 @@ class FirmwareFromGithub(Firmware):
         """
         if self.hex is None:
             print("Downloading firmware {}...".format(get_fw_version_string(self.fw_version)))
-            response = requests.get('https://api.github.com/repos/madcowswe/ODrive/releases/assets/' + str(self.github_asset_id),
+            response = requests.get('https://api.github.com/repos/odriverobotics/ODrive/releases/assets/' + str(self.github_asset_id),
                                     headers={'Accept': 'application/octet-stream'})
             if response.status_code != 200:
                 raise Exception("failed to download firmware")
@@ -178,7 +178,7 @@ class FirmwareFromFile(Firmware):
         return self._file
 
 def get_all_github_firmwares():
-    response = requests.get('https://api.github.com/repos/madcowswe/ODrive/releases')
+    response = requests.get('https://api.github.com/repos/odriverobotics/ODrive/releases')
     if response.status_code != 200:
         raise Exception("could not fetch releases")
     response_json = response.json()
