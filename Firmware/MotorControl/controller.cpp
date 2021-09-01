@@ -9,7 +9,6 @@ bool Controller::apply_config() {
 }
 
 void Controller::reset() {
-    pos_setpoint_ = 0.0f;
     vel_setpoint_ = 0.0f;
     vel_integrator_torque_ = 0.0f;
     torque_setpoint_ = 0.0f;
