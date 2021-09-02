@@ -189,6 +189,7 @@ interfaces:
       oscilloscope: {type: Oscilloscope}
       can: {type: Can}
       test_property: uint32
+      otp_valid: readonly bool
         
     functions:
       test_function: {in: {delta: int32}, out: {cnt: int32}}

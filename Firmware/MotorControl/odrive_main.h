@@ -240,6 +240,7 @@ public:
     uint32_t n_evt_control_loop_ = 0;
     bool task_timers_armed_ = false;
     TaskTimes task_times_;
+    const bool otp_valid_ = ((uint8_t*)FLASH_OTP_BASE)[0] != 0xff;
 };
 
 extern ODrive odrv; // defined in main.cpp
