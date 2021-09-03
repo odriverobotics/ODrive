@@ -143,16 +143,19 @@ interfaces:
           max_stack_usage_uart: readonly uint32
           max_stack_usage_can: readonly uint32
           max_stack_usage_startup: readonly uint32
+          max_stack_usage_analog: readonly uint32
           stack_size_axis: readonly uint32
           stack_size_usb: readonly uint32
           stack_size_uart: readonly uint32
           stack_size_startup: readonly uint32
           stack_size_can: readonly uint32
+          stack_size_analog: readonly uint32
           prio_axis: readonly int32
           prio_usb: readonly int32
           prio_uart: readonly int32
           prio_startup: readonly int32
           prio_can: readonly int32
+          prio_analog: readonly int32
           usb:
             c_is_class: False
             attributes:

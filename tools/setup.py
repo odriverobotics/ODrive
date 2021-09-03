@@ -38,7 +38,7 @@ to publish packages with the name odrive.
 is_release = True
 
 # Set to true to make an official post-release, rather than dev of new version
-is_post_release = True
+is_post_release = False
 post_rel_num = 0
 
 # To test higher numbered releases, bump to the next rev

@@ -23,6 +23,8 @@ extern bool brake_resistor_armed;
 extern bool brake_resistor_saturated;
 extern float brake_resistor_current;
 extern uint16_t adc_measurements_[ADC_CHANNEL_COUNT];
+extern osThreadId analog_thread;
+extern const uint32_t stack_size_analog_thread;
 /* Exported macro ------------------------------------------------------------*/
 /* Exported functions --------------------------------------------------------*/
 

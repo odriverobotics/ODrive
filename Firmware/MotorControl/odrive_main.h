@@ -33,18 +33,21 @@ typedef struct {
     uint32_t max_stack_usage_uart;
     uint32_t max_stack_usage_startup;
     uint32_t max_stack_usage_can;
+    uint32_t max_stack_usage_analog;
 
     uint32_t stack_size_axis;
     uint32_t stack_size_usb;
     uint32_t stack_size_uart;
     uint32_t stack_size_startup;
     uint32_t stack_size_can;
+    uint32_t stack_size_analog;
 
     int32_t prio_axis;
     int32_t prio_usb;
     int32_t prio_uart;
     int32_t prio_startup;
     int32_t prio_can;
+    int32_t prio_analog;
 
     USBStats_t& usb = usb_stats_;
     I2CStats_t& i2c = i2c_stats_;
