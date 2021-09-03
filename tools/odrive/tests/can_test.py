@@ -14,7 +14,7 @@ from test_runner import *
 # Each argument is described as tuple (name, format, scale).
 # Struct format codes: https://docs.python.org/2/library/struct.html
 command_set = {
-    'heartbeat': (0x001, [('error', 'I', 1), ('current_state', 'I', 1)]), # tested
+    'heartbeat': (0x001, [('error', 'I', 1), ('current_state', 'B', 1), ('reserved', 'H', 1), ('controller_state', 'B', 1)]), # tested
     'estop': (0x002, []), # tested
     'get_motor_error': (0x003, [('motor_error', 'I', 1)]), # untested
     'get_encoder_error': (0x004, [('encoder_error', 'I', 1)]), # untested
