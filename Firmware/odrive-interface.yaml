@@ -68,7 +68,9 @@ interfaces:
           DC_BUS_OVER_REGEN_CURRENT:
             doc: |
               Current flowing back into the power supply exceeded `config.dc_max_negative_current`.
-              This can happen if your brake resistor is unable to handle the braking current. Check that
+              This can happen if your brake resistor is disabled or unable to handle the braking current.
+              
+              Check that `config.enable_brake_resistor` is `True` and that
               `(V_power_supply / Brake_resistance) > (total motor.config.current_lim + total motor.config.current_lim_margin)`.
           DC_BUS_OVER_CURRENT:
             doc: |
@@ -687,12 +689,18 @@ interfaces:
               The DC current sourced/sunk by this motor exceeded the configured
               hard limits. More specifically `I_bus` fell outside of the range
               `config.I_bus_hard_min` ... `config.I_bus_hard_max`.
-          BRAKE_RESISTOR_DISARMED: 
+          BRAKE_RESISTOR_DISARMED:
             doc: |
-              An attempt was made to run the motor PWM while the brake resistor was enabled but disarmed.
-              The brake resistor can be disarmed for many reasons, but this usually happens if an error
-              is thrown that disables the motor. Check for other errors, then run `odrvX.clear_errors()` 
-              to clear the errors and rearm the brake resistor.
+              An attempt was made to run the motor PWM while the brake resistor was configured as enabled
+              (`config.enable_brake_resistor`) but disarmed.
+
+              The most common cause is that you just set `config.enable_brake_resistor` to `True` but didn't
+              arm the brake resistor yet (by either rebooting or running `odrvX.clear_errors()`).
+
+              Otherwise, the brake resistor can be disarmed due to various system-wide errors.
+              The root cause will usually show up under `system:` when you run `dump_errors(odrvX)`.
+
+              To re-arm the brake resistor reboot the ODrive or run `odrvX.clear_errors()`.
           SYSTEM_LEVEL:
             doc: |
               The motor had to be disarmed because of a system level error.
