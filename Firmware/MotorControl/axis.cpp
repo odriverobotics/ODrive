@@ -287,7 +287,6 @@ bool Axis::start_closed_loop_control() {
         }
 
         // To avoid any transient on startup, we intialize the setpoint to be the current position
-        // note - input_pos_ is not set here. It is set to 0 earlier in this method and velocity control is used.
         if (controller_.config_.control_mode >= Controller::CONTROL_MODE_POSITION_CONTROL) {
             std::optional<float> pos_init = (controller_.config_.circular_setpoints ?
                                     controller_.pos_estimate_circular_src_ :

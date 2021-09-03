@@ -9,6 +9,7 @@ bool Controller::apply_config() {
 }
 
 void Controller::reset() {
+    // pos_setpoint is initialized in start_closed_loop_control
     vel_setpoint_ = 0.0f;
     vel_integrator_torque_ = 0.0f;
     torque_setpoint_ = 0.0f;
