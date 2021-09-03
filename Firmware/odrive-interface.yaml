@@ -68,7 +68,9 @@ interfaces:
           DC_BUS_OVER_REGEN_CURRENT:
             doc: |
               Current flowing back into the power supply exceeded `config.dc_max_negative_current`.
-              This can happen if your brake resistor is unable to handle the braking current. Check that
+              This can happen if your brake resistor is disabled or unable to handle the braking current.
+              
+              Check that `config.enable_brake_resistor` is `True` and that
               `(V_power_supply / Brake_resistance) > (total motor.config.current_lim + total motor.config.current_lim_margin)`.
           DC_BUS_OVER_CURRENT:
             doc: |
@@ -111,8 +113,10 @@ interfaces:
         type: readonly uint8
         doc: 0 for official releases, 1 otherwise
       brake_resistor_armed: readonly bool
-      brake_resistor_saturated: bool
-
+      brake_resistor_saturated: readonly bool
+      brake_resistor_current:
+        type: readonly float32
+        doc: Commanded brake resistor current
       # Diagnostics & performance monitoring
       n_evt_sampling: {type: readonly uint32, doc: Number of input sampling events since startup (modulo 2^32)}
       n_evt_control_loop: {type: readonly uint32, doc: Number of control loop iterations since startup (modulo 2^32)}
@@ -187,11 +191,12 @@ interfaces:
       oscilloscope: {type: Oscilloscope}
       can: {type: Can}
       test_property: uint32
+      otp_valid: readonly bool
         
     functions:
       test_function: {in: {delta: int32}, out: {cnt: int32}}
       get_adc_voltage: {in: {gpio: uint32}, out: {voltage: float32}, doc: Reads the ADC voltage of the specified GPIO. The GPIO should be in `GPIO_MODE_ANALOG_IN`.}
-      save_configuration: {out: {success: bool}}
+      save_configuration: {out: {success: bool}, doc: Saves the current configuration to non-volatile memory and reboots the board.}
       erase_configuration:
       reboot:
       enter_dfu_mode:
@@ -684,12 +689,18 @@ interfaces:
               The DC current sourced/sunk by this motor exceeded the configured
               hard limits. More specifically `I_bus` fell outside of the range
               `config.I_bus_hard_min` ... `config.I_bus_hard_max`.
-          BRAKE_RESISTOR_DISARMED: 
+          BRAKE_RESISTOR_DISARMED:
             doc: |
-              An attempt was made to run the motor PWM while the brake resistor was enabled but disarmed.
-              The brake resistor can be disarmed for many reasons, but this usually happens if an error
-              is thrown that disables the motor. Check for other errors, then run `odrvX.clear_errors()` 
-              to clear the errors and rearm the brake resistor.
+              An attempt was made to run the motor PWM while the brake resistor was configured as enabled
+              (`config.enable_brake_resistor`) but disarmed.
+
+              The most common cause is that you just set `config.enable_brake_resistor` to `True` but didn't
+              arm the brake resistor yet (by either rebooting or running `odrvX.clear_errors()`).
+
+              Otherwise, the brake resistor can be disarmed due to various system-wide errors.
+              The root cause will usually show up under `system:` when you run `dump_errors(odrvX)`.
+
+              To re-arm the brake resistor reboot the ODrive or run `odrvX.clear_errors()`.
           SYSTEM_LEVEL:
             doc: |
               The motor had to be disarmed because of a system level error.
@@ -892,14 +903,15 @@ interfaces:
       trajectory_done: readonly bool
       vel_integrator_torque: float32
       anticogging_valid: bool
+      autotuning_phase: float32
       config:
         c_is_class: False
         attributes:
           gain_scheduling_width: float32
           enable_vel_limit: bool
-          enable_current_mode_vel_limit:
+          enable_torque_mode_vel_limit:
             type: bool
-            doc: Enable velocity limit in current control mode (requires a valid velocity estimator).
+            doc: Enable velocity limit in torque control mode (requires a valid velocity estimator).
           enable_gain_scheduling: bool
           enable_overspeed_error: bool
           control_mode: ControlMode
@@ -983,14 +995,12 @@ interfaces:
             unit: Watt
       autotuning:
         c_is_class: False
+        doc: Automatically generate sine waves for frequency-domain response tuning
         attributes:
-          frequency: float32
-          pos_amplitude: float32
-          pos_phase: float32
-          vel_amplitude: float32
-          vel_phase: float32
-          torque_amplitude: float32
-          torque_phase: float32
+          frequency: {type: float32, unit: Hz}
+          pos_amplitude: {type: float32, unit: turns}
+          vel_amplitude: {type: float32, unit: turns/sec}
+          torque_amplitude: {type: float32, unit: N-m}
       mechanical_power:
         type: readonly float32
         unit: Watt
@@ -1060,20 +1070,52 @@ interfaces:
           HALL_NOT_CALIBRATED_YET:
       is_ready: readonly bool
       index_found: readonly bool
-      shadow_count: readonly int32
-      count_in_cpr: readonly int32
+      shadow_count: 
+        type: readonly int32
+        unit: counts
+        doc: Raw linear count from the encoder.
+      count_in_cpr: 
+        type: readonly int32
+        unit: counts
+        doc: Raw circular count from the encoder on [0, cpr)
       interpolation: readonly float32
       phase: {type: readonly float32, c_getter: phase_.any().value_or(0.0f)}
-      pos_estimate: {type: readonly float32, c_getter: pos_estimate_.any().value_or(0.0f)}
-      pos_estimate_counts: readonly float32
-      pos_cpr_counts: readonly float32
-      delta_pos_cpr_counts: readonly float32
-      pos_circular: {type: readonly float32, c_getter: pos_circular_.any().value_or(0.0f)}
+      pos_estimate: 
+        type: readonly float32
+        c_getter: pos_estimate_.any().value_or(0.0f)
+        unit: turns
+        doc: Linear position estimate of the encoder, in turns.  Also known as "multi-turn" position.
+      pos_estimate_counts:
+        type: readonly float32
+        unit: counts
+        doc: Linear position estimate of the encoder, in counts.  Equal to `pos_estimate * config.cpr`
+      pos_circular: 
+        type: readonly float32
+        c_getter: pos_circular_.any().value_or(0.0f)
+        unit: turns
+        doc: Circular position estimate of the encoder, as a decimal from [0, 1).  Also known as "single-turn" position.
+      pos_cpr_counts:
+        type: readonly float32
+        unit: counts
+        doc: Circular position estimate of the encoder, on the space [0, cpr).
+      delta_pos_cpr_counts: 
+        type: readonly float32
+        unit: counts
+        doc: Circular position delta of the encoder in the most recent loop. Primarily for debug purposes, it indicates much the encoder changed since the last time it was checked.
       hall_state: readonly uint8
-      vel_estimate: {type: readonly float32, c_getter: vel_estimate_.any().value_or(0.0f)}
-      vel_estimate_counts: readonly float32
+      vel_estimate: 
+        type: readonly float32
+        c_getter: vel_estimate_.any().value_or(0.0f)
+        unit: turns/s
+        doc: Estimate of the linear velocity of an axis in turns/s
+      vel_estimate_counts: 
+        type: readonly float32
+        unit: counts/sec
+        doc: Estimate of the linear velocity of an axis, in counts/s.
       calib_scan_response: readonly float32
-      pos_abs: int32
+      pos_abs:
+        type: int32
+        doc: The last (valid) position from an absolute encoder, if used.
       spi_error_rate: readonly float32
       config:
         c_is_class: False
@@ -1257,7 +1299,9 @@ valuetypes:
       AsciiAndStdout: {doc: Combination of `Ascii` and `Stdout`.}
 
   ODrive.Can.Protocol:
-    flags: {SIMPLE: }
+    flags: 
+      SIMPLE:
+        doc: CANSimple, an ODrive-specific protocol for basic functionality
 
   ODrive.Axis.AxisState: # TODO: remove redundant "Axis" in name
     values:

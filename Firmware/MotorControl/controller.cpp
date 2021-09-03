@@ -9,7 +9,7 @@ bool Controller::apply_config() {
 }
 
 void Controller::reset() {
-    pos_setpoint_ = 0.0f;
+    // pos_setpoint is initialized in start_closed_loop_control
     vel_setpoint_ = 0.0f;
     vel_integrator_torque_ = 0.0f;
     torque_setpoint_ = 0.0f;
@@ -224,9 +224,11 @@ bool Controller::update() {
         } break;
         case INPUT_MODE_TUNING: {
             autotuning_phase_ = wrap_pm_pi(autotuning_phase_ + (2.0f * M_PI * autotuning_.frequency * current_meas_period));
-            pos_setpoint_ = autotuning_.pos_amplitude * our_arm_sin_f32(autotuning_phase_ + autotuning_.pos_phase);
-            vel_setpoint_ = autotuning_.vel_amplitude * our_arm_sin_f32(autotuning_phase_ + autotuning_.vel_phase);
-            torque_setpoint_ = autotuning_.torque_amplitude * our_arm_sin_f32(autotuning_phase_ + autotuning_.torque_phase);
+            float c = our_arm_cos_f32(autotuning_phase_);
+            float s = our_arm_sin_f32(autotuning_phase_);
+            pos_setpoint_ = autotuning_.pos_amplitude * s; // + pos_amp_c * c
+            vel_setpoint_ = autotuning_.vel_amplitude * c;
+            torque_setpoint_ = autotuning_.torque_amplitude * -s;
         } break;
         default: {
             set_error(ERROR_INVALID_INPUT_MODE);
@@ -331,7 +333,7 @@ bool Controller::update() {
     }
 
     // Velocity limiting in current mode
-    if (config_.control_mode < CONTROL_MODE_VELOCITY_CONTROL && config_.enable_current_mode_vel_limit) {
+    if (config_.control_mode < CONTROL_MODE_VELOCITY_CONTROL && config_.enable_torque_mode_vel_limit) {
         if (!vel_estimate.has_value()) {
             set_error(ERROR_INVALID_ESTIMATE);
             return false;

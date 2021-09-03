@@ -50,6 +50,8 @@ You can use ODrive Tool to back up and restore device configurations or transfer
  * To save the configuration to a file on the PC, run `odrivetool backup-config my_config.json`.
  * To restore the configuration form such a file, run `odrivetool restore-config my_config.json`.
 
+Note that encoder offset calibration is not restored because this would be dangerous if you transfer the calibration values of one axis to another axis.
+
 ## Device Firmware Update
 
 <div class="note" markdown="span">__ODrive v3.4 or earlier__: DFU is not supported on these devices. You need to [flash with the external programmer](#flashing-with-an-stlink) instead.</div>

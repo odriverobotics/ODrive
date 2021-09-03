@@ -14,6 +14,7 @@ Table of Contents:
 If your ODrive is not working as expected, run `odrivetool` and type `dump_errors(odrv0)` <kbd>Enter</kbd>. This will dump a list of all the errors that are present. To clear all the errors, you can run `odrv0.clear_errors()`.
 
 With this information you can look up the API documentation for your error(s):
+* System error flags documented [here](api/odrive.error).
 * Axis error flags documented [here](api/odrive.axis.error).
 * Motor error flags documented [here](api/odrive.motor.error).
 * Encoder error flags documented [here](api/odrive.encoder.error).

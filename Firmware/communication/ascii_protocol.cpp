@@ -42,25 +42,27 @@ static Introspectable root_obj = ODrive4TypeInfo<ODrive>::make_introspectable(od
 // @brief Sends a line on the specified output.
 template<typename ... TArgs>
 void AsciiProtocol::respond(bool include_checksum, const char * fmt, TArgs&& ... args) {
-    size_t len = snprintf(tx_buf_, sizeof(tx_buf_), fmt, std::forward<TArgs>(args)...);
+    char tx_buf[64];
+
+    size_t len = snprintf(tx_buf, sizeof(tx_buf), fmt, std::forward<TArgs>(args)...);
 
     // Silently truncate the output if it's too long for the buffer.
-    len = std::min(len, sizeof(tx_buf_));
+    len = std::min(len, sizeof(tx_buf));
 
     if (include_checksum) {
         uint8_t checksum = 0;
         for (size_t i = 0; i < len; ++i)
-            checksum ^= tx_buf_[i];
-        len += snprintf(tx_buf_ + len, sizeof(tx_buf_) - len, "*%u", checksum);
+            checksum ^= tx_buf[i];
+        len += snprintf(tx_buf + len, sizeof(tx_buf) - len, "*%u\r\n", checksum);
     } else {
-        len += snprintf(tx_buf_ + len, sizeof(tx_buf_) - len, "\r\n");
+        len += snprintf(tx_buf + len, sizeof(tx_buf) - len, "\r\n");
     }
 
     // Silently truncate the output if it's too long for the buffer.
-    len = std::min(len, sizeof(tx_buf_));
+    len = std::min(len, sizeof(tx_buf));
 
-    tx_end_ = (const uint8_t*)tx_buf_ + len;
-    tx_channel_->start_write({(const uint8_t*)tx_buf_, tx_end_}, &tx_handle_, MEMBER_CB(this, on_write_finished));
+    sink_.write({(const uint8_t*)tx_buf, len});
+    sink_.maybe_start_async_write();
 }
 
 
@@ -407,24 +409,6 @@ void AsciiProtocol::cmd_unknown(char * pStr, bool use_checksum) {
     respond(use_checksum, "unknown command");
 }
 
-
-
-void AsciiProtocol::on_write_finished(WriteResult result) {
-    tx_handle_ = 0;
-
-    if (result.status == kStreamOk && result.end < tx_end_) {
-        // Not everything was written. Try again.
-        tx_channel_->start_write({result.end, tx_end_}, &tx_handle_, MEMBER_CB(this, on_write_finished));
-        return;
-    }
-
-    if (rx_end_) {
-        uint8_t* rx_end = rx_end_;
-        rx_end_ = nullptr;
-        on_read_finished({kStreamOk, rx_end});
-    }
-}
-
 void AsciiProtocol::on_read_finished(ReadResult result) {
     if (result.status != kStreamOk) {
         return;
@@ -440,13 +424,6 @@ void AsciiProtocol::on_read_finished(ReadResult result) {
         }
 
         if (read_active_) {
-            if (tx_handle_) {
-                // TX is busy - inhibit processing of the incoming data until
-                // on_write_finished() is invoked.
-                rx_end_ = result.end;
-                return;
-            }
-
             process_line({rx_buf_, end_of_line});
         } else {
             // Ignoring this line cause it didn't start at a new-line character

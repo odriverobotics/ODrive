@@ -19,11 +19,17 @@ public:
      * (TODO: this is not true yet, see comment in function)
      */
     void write(cbufptr_t buf) {
+        size_t read_idx = read_idx_; // read_idx_ could change during this function
+
+        if ((read_idx + 1) % I == write_idx_) {
+            return;
+        }
+
         // We subtract 1 from the read index because we never want the write
         // pointer to catch up with the read pointer, cause then
         // `write_idx_ == read_idx_` could mean both "full" and "empty".
 
-        size_t read_idx = (read_idx_ + I - 1) % I; // read_idx_ could change during this function
+        read_idx = (read_idx + I - 1) % I; 
 
         if (write_idx_ > read_idx) {
             size_t n_copy = std::min(I - write_idx_, buf.size());

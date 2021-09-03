@@ -51,45 +51,47 @@ class TestStepDir():
         request_state(axis, AXIS_STATE_IDLE) # apply step_dir_always_on config
 
 
-        axis.handle.controller.input_pos = 0
-        ref = axis.handle.controller.input_pos
-        axis.handle.config.turns_per_step = turns_per_step = 10
+        ref = axis.handle.steps
+        turns_per_step = 1
+        axis.handle.controller.config.steps_per_circular_range = 1.0 / turns_per_step
 
         # On the RPi 4 a ~5kHz GPIO signal can be generated from Python
 
         for i in range(100):
             step_gpio.write(True)
-            test_assert_eq(axis.handle.controller.input_pos, ref + (i + 1) * turns_per_step, range = 0.4 * turns_per_step)
+            test_assert_eq(axis.handle.steps, ref + (i + 1) * turns_per_step, range = 0.4 * turns_per_step)
             step_gpio.write(False)
-            test_assert_eq(axis.handle.controller.input_pos, ref + (i + 1) * turns_per_step, range = 0.4 * turns_per_step)
+            test_assert_eq(axis.handle.steps, ref + (i + 1) * turns_per_step, range = 0.4 * turns_per_step)
 
-        ref = axis.handle.controller.input_pos
+        ref = axis.handle.steps
         dir_gpio.write(False)
 
         for i in range(100):
             step_gpio.write(True)
-            test_assert_eq(axis.handle.controller.input_pos, ref - (i + 1) * turns_per_step, range = 0.4 * turns_per_step)
+            test_assert_eq(axis.handle.steps, ref - (i + 1) * turns_per_step, range = 0.4 * turns_per_step)
             step_gpio.write(False)
-            test_assert_eq(axis.handle.controller.input_pos, ref - (i + 1) * turns_per_step, range = 0.4 * turns_per_step)
+            test_assert_eq(axis.handle.steps, ref - (i + 1) * turns_per_step, range = 0.4 * turns_per_step)
 
-        ref = axis.handle.controller.input_pos
+        ref = axis.handle.steps
         dir_gpio.write(True)
-        axis.handle.config.turns_per_step = turns_per_step = 1
+        turns_per_step = 1
+        axis.handle.controller.config.steps_per_circular_range = 1.0 / turns_per_step
 
         for i in range(100):
             step_gpio.write(True)
-            test_assert_eq(axis.handle.controller.input_pos, ref + (i + 1) * turns_per_step, range = 0.4 * turns_per_step)
+            test_assert_eq(axis.handle.steps, ref + (i + 1) * turns_per_step, range = 0.4 * turns_per_step)
             step_gpio.write(False)
-            test_assert_eq(axis.handle.controller.input_pos, ref + (i + 1) * turns_per_step, range = 0.4 * turns_per_step)
+            test_assert_eq(axis.handle.steps, ref + (i + 1) * turns_per_step, range = 0.4 * turns_per_step)
 
-        ref = axis.handle.controller.input_pos
-        axis.handle.config.turns_per_step = turns_per_step = -1
-
-        for i in range(100):
-            step_gpio.write(True)
-            test_assert_eq(axis.handle.controller.input_pos, ref + (i + 1) * turns_per_step, range = 0.4 * abs(turns_per_step))
-            step_gpio.write(False)
-            test_assert_eq(axis.handle.controller.input_pos, ref + (i + 1) * turns_per_step, range = 0.4 * abs(turns_per_step))
+#        ref = axis.handle.steps
+#        turns_per_step = -1
+#        axis.handle.controller.config.steps_per_circular_range = 1.0 / turns_per_step
+#
+#        for i in range(100):
+#            step_gpio.write(True)
+#            test_assert_eq(axis.handle.steps, ref + (i + 1) * turns_per_step, range = 0.4 * abs(turns_per_step))
+#            step_gpio.write(False)
+#            test_assert_eq(axis.handle.steps, ref + (i + 1) * turns_per_step, range = 0.4 * abs(turns_per_step))
 
 tests = [TestStepDir()]
 

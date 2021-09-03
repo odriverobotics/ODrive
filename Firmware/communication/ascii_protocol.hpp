@@ -2,13 +2,14 @@
 #define __ASCII_PROTOCOL_HPP
 
 #include <fibre/async_stream.hpp>
+#include <fibre/../../stream_utils.hpp>
 
 #define MAX_LINE_LENGTH ((size_t)256)
 
 class AsciiProtocol {
 public:
     AsciiProtocol(fibre::AsyncStreamSource* rx_channel, fibre::AsyncStreamSink* tx_channel)
-        : rx_channel_(rx_channel), tx_channel_(tx_channel) {}
+        : rx_channel_(rx_channel), sink_(*tx_channel) {}
 
     void start();
 
@@ -34,16 +35,12 @@ private:
     void on_read_finished(fibre::ReadResult result);
 
     fibre::AsyncStreamSource* rx_channel_ = nullptr;
-    fibre::AsyncStreamSink* tx_channel_ = nullptr;
-
-    fibre::TransferHandle tx_handle_ = 0; // non-zero while a TX operation is in progress
     uint8_t* rx_end_ = nullptr; // non-zero if an RX operation has finished but wasn't handled yet because the TX channel was busy
-    const uint8_t* tx_end_ = nullptr;
 
     uint8_t rx_buf_[MAX_LINE_LENGTH];
     bool read_active_ = true;
 
-    char tx_buf_[64];
+    fibre::BufferedStreamSink<512> sink_;
 };
 
 #endif // __ASCII_PROTOCOL_HPP

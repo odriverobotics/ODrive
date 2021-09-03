@@ -16,7 +16,6 @@ offset | float | 0.0
 debounce_ms | float | 50.0
 enabled | boolean | false
 is_active_high | boolean | false
-pullup | boolean | true
 
 ### gpio_num
 The GPIO pin number, according to the silkscreen labels on ODrive. Set with these commands:
@@ -33,7 +32,7 @@ Enables/disables detection of the endstop.  If disabled, homing and e-stop canno
 ```
 
 ### offset
-This is the position of the endstops on the relevant axis, in counts.  For example, if you want a position command of `0` to represent a position 100 counts away from the endstop, the offset would be `-100.0` (because the endstop is located at axis position `-100.0`).
+This is the position of the endstops on the relevant axis, in turns.  For example, if you want a position command of `0` to represent a position 3 turns away from the endstop, the offset would be `-3.0` (because the endstop is located at axis position `-3.0`).
 
 ```
 <odrv>.<axis>.min_endstop.config.offset = <int>
@@ -54,8 +53,13 @@ This is how you configure the endstop to be either "NPN" or "PNP".  An "NPN" con
 
 Typically configuration **1** or **3** is preferred when using mechanical switches as the most common failure mode leaves the switch open.
 
-### pullup
-Match the pullup value to the configuration.  If `true`, it enables the GPIO pullup resistor.  If `false`, it enables the GPIO pull*down* resistor.
+### GPIO configuration
+The GPIOs that are used for the endstops need to be configured according to the diagram below.
+
+Assuming your endstop is connected to GPIO X:
+
+ - Configuration 1, 2: `<odrv>.config.gpioX_mode = GPIO_MODE_DIGITAL_PULL_DOWN`
+ - Configuration 3, 4: `<odrv>.config.gpioX_mode = GPIO_MODE_DIGITAL_PULL_DOWN`
 
 ![Endstop configuration](Endstop_configuration.png)  
 
@@ -70,6 +74,7 @@ If we want to configure a 3D printer-style (configuration 4) minimum endstop for
 <odrv>.<axis>.min_endstop.config.is_active_high = False
 <odrv>.<axis>.min_endstop.config.offset = -1.0*(8912/4)
 <odrv>.<axis>.min_endstop.config.enabled = True
+<odrv>.config.gpio5_mode = GPIO_MODE_DIGITAL_PULL_UP
 ```
 
 ### Testing The Endstops

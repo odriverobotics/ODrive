@@ -5,7 +5,7 @@ on:
     branches: [master, devel]
     tags: ['fw-v*']
   push:
-    branches: [master, devel]
+    branches: [master, devel, 'fw-v*']
     tags: ['fw-v*']
 
 jobs:
@@ -111,6 +111,16 @@ jobs:
           cd ${{ github.workspace }}/Firmware
           mv tup_build.sh tup_build.bat # in reality this is a .bat script on windows
           .\tup_build.bat
+
+      - name: Upload binary
+        if: ${{ matrix.os == 'ubuntu-latest' && matrix.debug == false }}
+        uses: actions/upload-artifact@v2
+        with:
+          name: firmware-${{ matrix.board_version }}
+          path: |
+            Firmware/build/ODriveFirmware.elf
+            Firmware/build/ODriveFirmware.bin
+            Firmware/build/ODriveFirmware.hex
 
   code-checks:
     strategy:

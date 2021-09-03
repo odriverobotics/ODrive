@@ -17,11 +17,8 @@ public:
     struct Autotuning_t {
         float frequency = 0.0f;
         float pos_amplitude = 0.0f;
-        float pos_phase = 0.0f;
         float vel_amplitude = 0.0f;
-        float vel_phase = 0.0f;
         float torque_amplitude = 0.0f;
-        float torque_phase = 0.0f;
     };
 
     struct Config_t {
@@ -46,7 +43,7 @@ public:
         bool enable_gain_scheduling = false;
         bool enable_vel_limit = true;
         bool enable_overspeed_error = true;
-        bool enable_current_mode_vel_limit = true;  // enable velocity limit in current control mode (requires a valid velocity estimator)
+        bool enable_torque_mode_vel_limit = true;  // enable velocity limit in current control mode (requires a valid velocity estimator)
         uint8_t axis_to_mirror = -1;
         float mirror_ratio = 1.0f;
         float torque_mirror_ratio = 0.0f;
@@ -62,7 +59,6 @@ public:
         void set_steps_per_circular_range(uint32_t value) { steps_per_circular_range = value > 0 ? value : steps_per_circular_range; }
     };
 
-    Controller() {}
     
     bool apply_config();
 

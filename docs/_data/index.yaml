@@ -29,6 +29,8 @@ sections:
         url: /hoverboard
       - title: Migration Guide
         url: /migration
+      - title: CAN Guide
+        url: /can-guide
   - title: Interfaces & Protocols
     docs:
       - title: Pinout

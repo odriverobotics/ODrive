@@ -14,9 +14,6 @@ import math
 print("finding an odrive...")
 my_drive = odrive.find_any()
 
-# Find an ODrive that is connected on the serial port /dev/ttyUSB0
-#my_drive = odrive.find_any("serial:/dev/ttyUSB0")
-
 # Calibrate motor and wait for it to finish
 print("starting calibration...")
 my_drive.axis0.requested_state = AXIS_STATE_FULL_CALIBRATION_SEQUENCE
@@ -39,7 +36,7 @@ for i in [1,2,3,4]:
 # A sine wave to test
 t0 = time.monotonic()
 while True:
-    setpoint = 10000.0 * math.sin((time.monotonic() - t0)*2)
+    setpoint = 4.0 * math.sin((time.monotonic() - t0)*2)
     print("goto " + str(int(setpoint)))
     my_drive.axis0.controller.pos_setpoint = setpoint
     time.sleep(0.01)

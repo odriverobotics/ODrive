@@ -216,6 +216,7 @@ public:
 
     bool& brake_resistor_armed_ = ::brake_resistor_armed; // TODO: make this the actual variable
     bool& brake_resistor_saturated_ = ::brake_resistor_saturated; // TODO: make this the actual variable
+    float& brake_resistor_current_ = ::brake_resistor_current;
 
     SystemStats_t system_stats_;
 
@@ -239,6 +240,7 @@ public:
     uint32_t n_evt_control_loop_ = 0;
     bool task_timers_armed_ = false;
     TaskTimes task_times_;
+    const bool otp_valid_ = ((uint8_t*)FLASH_OTP_BASE)[0] != 0xff;
 };
 
 extern ODrive odrv; // defined in main.cpp
