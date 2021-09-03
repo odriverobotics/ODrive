@@ -30,6 +30,8 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0 # fetch entire history to get version information
 
       - name: Install prerequisites (Debian)
         if: startsWith(matrix.os, 'ubuntu-')
@@ -96,6 +98,7 @@ jobs:
           echo "CONFIG_DEBUG=${{ matrix.debug }}" >> tup.config
           mkdir -p autogen
           python ../tools/odrive/version.py --output autogen/version.c
+          cat autogen/version.c
           tup init
           tup generate ./tup_build.sh
       
