@@ -117,7 +117,10 @@ jobs:
         uses: actions/upload-artifact@v2
         with:
           name: firmware-${{ matrix.board_version }}
-          path: Firmware/build/ODriveFirmware.{elf,bin,hex}
+          path: |
+            Firmware/build/ODriveFirmware.elf
+            Firmware/build/ODriveFirmware.bin
+            Firmware/build/ODriveFirmware.hex
 
   code-checks:
     strategy:
