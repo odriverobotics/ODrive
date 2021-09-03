@@ -1486,6 +1486,8 @@ valuetypes:
 
           ### Valid Control modes
           * `CONTROL_MODE_POSITION_CONTROL`
+          * `CONTROL_MODE_VELOCITY_CONTROL`
+          * `CONTROL_MODE_TORQUE_CONTROL`
       Tuning:
         brief: Implements a tuning mode
         doc: |

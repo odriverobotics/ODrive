@@ -103,7 +103,7 @@ Some instructions in this document may assume that you're using a bash command p
 * [Python 3](https://www.python.org/downloads/)
   * Install Python packages: `pip install PyYAML Jinja2 jsonschema`
 * [OpenOCD](https://github.com/xpack-dev-tools/openocd-xpack/releases/). 
-* [ST-Link/V2 Drivers](http://www.st.com/web/en/catalog/tools/FM147/SC1887/PF260219)
+* [ST-Link/V2 Drivers](https://www.st.com/content/st_com/en/products/development-tools/software-development-tools/stm32-software-development-tools/stm32-utilities/stsw-link009.html)
 
 <br>
 
