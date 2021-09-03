@@ -701,7 +701,7 @@ interfaces:
               arm the brake resistor yet (by either rebooting or running `odrvX.clear_errors()`).
 
               Otherwise, the brake resistor can be disarmed due to various system-wide errors.
-              The root cause will usually show up under `system:` when you run `dump_errors(odrvX)`.
+              The root cause will usually show up under `system` when you run `dump_errors(odrvX)`.
 
               To re-arm the brake resistor reboot the ODrive or run `odrvX.clear_errors()`.
           SYSTEM_LEVEL:
