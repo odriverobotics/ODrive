@@ -139,6 +139,12 @@ try:
 
     elif args.command == 'dfu':
         print_version()
+        import platform
+        if platform.system() == "Windows":
+            print("This tool does not support firmware update on Windows. Please refer to "
+                  "https://docs.odriverobotics.com/odrivetool#upgrading-firmware-with-a-different-dfu-tool "
+                  "for other options.")
+            sys.exit(1)
         import odrive.dfu
         odrive.dfu.launch_dfu(args, logger, app_shutdown_token)
 
