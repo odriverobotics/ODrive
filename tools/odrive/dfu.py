@@ -247,10 +247,13 @@ def find_device_in_dfu_mode(serial_number, cancellation_token):
     Polls libusb until a device in DFU mode is found
     """
     while not cancellation_token.is_set():
-        params = {} if serial_number == None else {'serial_number': serial_number}
-        stm_device = usb.core.find(idVendor=0x0483, idProduct=0xdf11, **params)
-        if stm_device != None:
-            return stm_device
+        stm_devices = usb.core.find(idVendor=0x0483, idProduct=0xdf11, find_all=True)
+        for dev in stm_devices:
+            try:
+                if (serial_number is None) or (dev.serial_number == serial_number):
+                    return dev
+            except ValueError:
+                print("found device but could not check serial number (retrying in 1s)")
         time.sleep(1)
     return None
 
@@ -341,7 +344,7 @@ def update_device(device, firmware, logger, cancellation_token):
             if dfudev is None:
                 suggestion = 'You have to manually flash an up-to-date firmware to make automatic checks work. Run `odrivetool dfu --help` for more info.'
             else:
-                suggestion = 'Run "make write_otp" to program the board version.'
+                suggestion = 'Please contact info@odriverobotics.com with your order number for help.'
             raise Exception('Cannot check online for new firmware because the board version is unknown. ' + suggestion)
         print("Checking online for newest firmware...", end='')
         firmware = get_newest_firmware(hw_version)
