@@ -2,15 +2,6 @@
 #include "Arduino.h"
 #include "ODriveArduino.h"
 
-static const int kMotorOffsetFloat = 2;
-static const int kMotorStrideFloat = 28;
-static const int kMotorOffsetInt32 = 0;
-static const int kMotorStrideInt32 = 4;
-static const int kMotorOffsetBool = 0;
-static const int kMotorStrideBool = 4;
-static const int kMotorOffsetUint16 = 0;
-static const int kMotorStrideUint16 = 2;
-
 // Print with stream operator
 template<class T> inline Print& operator <<(Print &obj,     T arg) { obj.print(arg);    return obj; }
 template<>        inline Print& operator <<(Print &obj, float arg) { obj.print(arg, 4); return obj; }
