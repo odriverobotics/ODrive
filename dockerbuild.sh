@@ -17,7 +17,7 @@ function build {
     docker build -t odrive-build-img .
 
     echo "Build in container"
-    docker run -v $(pwd):/ODrive --name odrive-build-cont odrive-build-img:latest
+    docker run -it -v $(pwd):/ODrive --name odrive-build-cont --user $(id -u)  odrive-build-img:latest 
 }
 
 function usage {
