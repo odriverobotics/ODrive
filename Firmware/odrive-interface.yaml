@@ -931,6 +931,11 @@ interfaces:
             type: float32
             unit: Nm/(turn/s * s)
             doc: units = Nm/(turn/s * s), default = 0.32
+            doc: units = 'Nm/(turn/s), default = 0.16
+          vel_integrator_limit:
+            type: float32
+            unit: Nm
+            doc: Limit the integrator output (independent of proportional gain output) to prevent 'integrator windup'. Set to infinity to disable. Units = Nm, default = inf
           vel_limit:
             type: float32
             unit: turn/s

@@ -30,6 +30,7 @@ public:
         float vel_integrator_gain = 2.0f / 6.0f; // [Nm/(turn/s * s)]
         float vel_limit = 2.0f;                  // [turn/s] Infinity to disable.
         float vel_limit_tolerance = 1.2f;        // ratio to vel_lim. Infinity to disable.
+        float vel_integrator_limit = INFINITY;   // Vel. integrator clamping value. Infinity to disable.
         float vel_ramp_rate = 1.0f;              // [(turn/s) / s]
         float torque_ramp_rate = 0.01f;          // Nm / sec
         bool circular_setpoints = false;
