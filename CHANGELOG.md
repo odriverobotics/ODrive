@@ -1,6 +1,10 @@
 # Unreleased Features
 Please add a note of your changes below this heading if you make a Pull Request.
 
+### Fixed
+* Some ASCII protocol commands (e.g. `w axis0.requested_state 4`) resulted in `not implemented` due to an issue with the CI compiler. A workaround was made to fix this.
+* Fixed bad response of some ASCII procotol commands (e.g. `r axis0.error` returned `0d` instead of `0`).
+
 # Releases
 ## [0.5.3] - 2021-09-03
 
