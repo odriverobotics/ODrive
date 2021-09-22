@@ -131,42 +131,52 @@ struct format_traits_t;
 template<> struct format_traits_t<long long> { using type = void;
     static constexpr const char * fmt = "%lld";
     static constexpr const char * fmtp = "%lld";
+    using scn_type = long long;
 };
 template<> struct format_traits_t<unsigned long long> { using type = void;
     static constexpr const char * fmt = "%llu";
     static constexpr const char * fmtp = "%llu";
+    using scn_type = unsigned long long;
 };
 template<> struct format_traits_t<long> { using type = void;
     static constexpr const char * fmt = "%ld";
     static constexpr const char * fmtp = "%ld";
+    using scn_type = long;
 };
 template<> struct format_traits_t<unsigned long> { using type = void;
     static constexpr const char * fmt = "%lu";
     static constexpr const char * fmtp = "%lu";
+    using scn_type = unsigned long;
 };
 template<> struct format_traits_t<int> { using type = void;
     static constexpr const char * fmt = "%d";
     static constexpr const char * fmtp = "%d";
+    using scn_type = int;
 };
 template<> struct format_traits_t<unsigned int> { using type = void;
-    static constexpr const char * fmt = "%ud";
-    static constexpr const char * fmtp = "%ud";
+    static constexpr const char * fmt = "%u";
+    static constexpr const char * fmtp = "%u";
+    using scn_type = unsigned int;
 };
 template<> struct format_traits_t<short> { using type = void;
-    static constexpr const char * fmt = "%hd";
-    static constexpr const char * fmtp = "%hd";
+    static constexpr const char * fmt = "%d";
+    static constexpr const char * fmtp = "%d";
+    using scn_type = int;
 };
 template<> struct format_traits_t<unsigned short> { using type = void;
-    static constexpr const char * fmt = "%hu";
-    static constexpr const char * fmtp = "%hu";
+    static constexpr const char * fmt = "%u";
+    static constexpr const char * fmtp = "%u";
+    using scn_type = unsigned int;
 };
 template<> struct format_traits_t<char> { using type = void;
-    static constexpr const char * fmt = "%hhd";
+    static constexpr const char * fmt = "%d";
     static constexpr const char * fmtp = "%d";
+    using scn_type = int;
 };
 template<> struct format_traits_t<unsigned char> { using type = void;
-    static constexpr const char * fmt = "%hhu";
+    static constexpr const char * fmt = "%u";
     static constexpr const char * fmtp = "%u";
+    using scn_type = unsigned int;
 };
 
 template<typename T, typename = typename format_traits_t<T>::type>
@@ -193,13 +203,12 @@ static bool to_string(const T& value, char * buffer, size_t length, ...) {
 
 template<typename T, typename = typename format_traits_t<T>::type>
 static bool from_string(const char * buffer, size_t length, T* property, int) {
-    // Note for T == uint8_t: Even though we supposedly use the correct format
-    // string sscanf treats our pointer as pointer-to-int instead of
-    // pointer-to-uint8_t. To avoid an unexpected memory access we first read
-    // into a union.
-    union { T t; int i; } val;
-    if (sscanf(buffer, format_traits_t<T>::fmt, &val.t) == 1) {
-        *property = val.t;
+    // sscanf doesn't work well with integers that are smaller than int, so we
+    // first scan into an appropriate int type and then convert it.
+    // (e.g. %hhu has been observed to not work on some compilers)
+    typename format_traits_t<T>::scn_type val;
+    if (sscanf(buffer, format_traits_t<T>::fmt, &val) == 1) {
+        *property = (T)val;
         return true;
     } else {
         return false;
