@@ -37,7 +37,10 @@ BU_:
 
 
 BO_ 1 Heartbeat: 8 Vector__XXX
- SG_ Axis_State : 32|32@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ Controller_Flags : 56|8@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ Encoder_Flags : 48|8@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ Motor_Flags : 40|8@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ Axis_State : 32|8@1+ (1,0) [0|0] "" Vector__XXX
  SG_ Axis_Error : 0|32@1+ (1,0) [0|0] "" Vector__XXX
 
 BO_ 2 Estop: 0 Vector__XXX

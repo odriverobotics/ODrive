@@ -4,9 +4,13 @@ import cantools
 
 # 0x001 - Heartbeat
 axisError = cantools.database.can.Signal("Axis_Error", 0, 32)
-axisState = cantools.database.can.Signal("Axis_State", 32, 32)
+axisState = cantools.database.can.Signal("Axis_State", 32, 8)
+motorFlags = cantools.database.can.Signal("Motor_Flags", 40, 8)
+encoderFlags = cantools.database.can.Signal("Encoder_Flags", 48, 8)
+controllerFlags = cantools.database.can.Signal("Controller_Flags", 56, 8)
+
 heartbeatMsg = cantools.database.can.Message(
-    0x001, "Heartbeat", 8, [axisError, axisState]
+    0x001, "Heartbeat", 8, [axisError, axisState, motorFlags, encoderFlags, controllerFlags]
 )
 
 # 0x002 - E-Stop Message
