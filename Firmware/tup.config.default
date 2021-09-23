@@ -1,9 +1,12 @@
 # Copy this file to tup.config and adapt it to your needs
 # make sure this fits your board
-#CONFIG_BOARD_VERSION=v3.5-24V
+#CONFIG_BOARD_VERSION=v3.6-56V
 CONFIG_DEBUG=false
 CONFIG_DOCTEST=false
 CONFIG_USE_LTO=false
+
+# Path to the ARM compiler /bin folder (optional)
+#CONFIG_ARM_COMPILER_PATH=C:/Tools/ARM/9-2019-q4-major/bin
 
 # Uncomment this to error on compilation warnings
 #CONFIG_STRICT=true
