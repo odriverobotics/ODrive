@@ -144,6 +144,15 @@ clearErrorsMsg = cantools.database.can.Message(0x018, "Clear_Errors", 0, [])
 position = cantools.database.can.Signal("Position", 0, 32, is_signed=True)
 setLinearCountMsg = cantools.database.can.Message(0x019, "Set_Linear_Count", 8, [position])
 
+# 0x01A - Set Pos gain
+posGain = cantools.database.can.Signal("Pos_Gain", 0, 32, is_float=True)
+setPosGainMsg = cantools.database.can.Message(0x01A, "Set_Pos_Gain", 8, [posGain])
+
+# 0x01B - Set Vel Gains
+velGain = cantools.database.can.Signal("Vel_Gain", 0, 32, is_float=True)
+velIntGain = cantools.database.can.Signal("Vel_Integrator_Gain", 32, 32, is_float=True)
+setVelGainsMsg = cantools.database.can.Message(0x01B, "Set_Vel_gains", 8, [velGain, velIntGain])
+
 db = cantools.database.can.Database(
     [
         heartbeatMsg,
@@ -170,6 +179,8 @@ db = cantools.database.can.Database(
         getVbusVMsg,
         clearErrorsMsg,
         setLinearCountMsg,
+        setPosGainMsg,
+        setVelGainsMsg
     ]
 )
 
