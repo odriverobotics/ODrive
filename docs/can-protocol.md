@@ -71,6 +71,8 @@ CMD ID | Name | Sender | Signals | Start byte | Signal Type | Bits | Factor | Of
 0x017 | Get Vbus Voltage | Master\*\*\* | Vbus Voltage | 0 | IEEE 754 Float | 32 | 1 | 0
 0x018 | Clear Errors | Master | - | - | - | - | - | -
 0x019 | Set Linear Count | Master | Position | 0 | Signed Int | 32 | 1 | 0
+0x01A | Set Position Gain | Master | Pos Gain | 0 | IEEE 754 Float | 32 | 1 | 0
+0x01B | Set Vel Gains | Master | Vel Gain<br>Vel Integrator Gain | 0<br>4 | IEEE 754 Float<br>IEEE 754 Float | 32<br>32 | 1<br>1 | 0<br>0
 0x700 | CANOpen Heartbeat Message\*\* | Slave | - | -  | - | - | - | -
 -|-|-|----------------------------------|-|--------------------|-|-|-
 

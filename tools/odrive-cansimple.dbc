@@ -37,7 +37,10 @@ BU_:
 
 
 BO_ 1 Heartbeat: 8 Vector__XXX
- SG_ Axis_State : 32|32@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ Controller_Flags : 56|8@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ Encoder_Flags : 48|8@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ Motor_Flags : 40|8@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ Axis_State : 32|8@1+ (1,0) [0|0] "" Vector__XXX
  SG_ Axis_Error : 0|32@1+ (1,0) [0|0] "" Vector__XXX
 
 BO_ 2 Estop: 0 Vector__XXX
@@ -115,6 +118,13 @@ BO_ 24 Clear_Errors: 0 Vector__XXX
 BO_ 25 Set_Linear_Count: 8 Vector__XXX
  SG_ Position : 0|32@1- (1,0) [0|0] "" Vector__XXX
 
+BO_ 26 Set_Pos_Gain: 8 Vector__XXX
+ SG_ Pos_Gain : 0|32@1+ (1,0) [0|0] "" Vector__XXX
+
+BO_ 27 Set_Vel_gains: 8 Vector__XXX
+ SG_ Vel_Integrator_Gain : 32|32@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ Vel_Gain : 0|32@1+ (1,0) [0|0] "" Vector__XXX
+
 
 
 
@@ -140,5 +150,8 @@ SIG_VALTYPE_ 20 Iq_Measured : 1;
 SIG_VALTYPE_ 21 Sensorless_Pos_Estimate : 1;
 SIG_VALTYPE_ 21 Sensorless_Vel_Estimate : 1;
 SIG_VALTYPE_ 23 Vbus_Voltage : 1;
+SIG_VALTYPE_ 26 Pos_Gain : 1;
+SIG_VALTYPE_ 27 Vel_Gain : 1;
+SIG_VALTYPE_ 27 Vel_Integrator_Gain : 1;
 
 

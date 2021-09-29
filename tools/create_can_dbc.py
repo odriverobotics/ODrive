@@ -4,9 +4,13 @@ import cantools
 
 # 0x001 - Heartbeat
 axisError = cantools.database.can.Signal("Axis_Error", 0, 32)
-axisState = cantools.database.can.Signal("Axis_State", 32, 32)
+axisState = cantools.database.can.Signal("Axis_State", 32, 8)
+motorFlags = cantools.database.can.Signal("Motor_Flags", 40, 8)
+encoderFlags = cantools.database.can.Signal("Encoder_Flags", 48, 8)
+controllerFlags = cantools.database.can.Signal("Controller_Flags", 56, 8)
+
 heartbeatMsg = cantools.database.can.Message(
-    0x001, "Heartbeat", 8, [axisError, axisState]
+    0x001, "Heartbeat", 8, [axisError, axisState, motorFlags, encoderFlags, controllerFlags]
 )
 
 # 0x002 - E-Stop Message
@@ -144,6 +148,15 @@ clearErrorsMsg = cantools.database.can.Message(0x018, "Clear_Errors", 0, [])
 position = cantools.database.can.Signal("Position", 0, 32, is_signed=True)
 setLinearCountMsg = cantools.database.can.Message(0x019, "Set_Linear_Count", 8, [position])
 
+# 0x01A - Set Pos gain
+posGain = cantools.database.can.Signal("Pos_Gain", 0, 32, is_float=True)
+setPosGainMsg = cantools.database.can.Message(0x01A, "Set_Pos_Gain", 8, [posGain])
+
+# 0x01B - Set Vel Gains
+velGain = cantools.database.can.Signal("Vel_Gain", 0, 32, is_float=True)
+velIntGain = cantools.database.can.Signal("Vel_Integrator_Gain", 32, 32, is_float=True)
+setVelGainsMsg = cantools.database.can.Message(0x01B, "Set_Vel_gains", 8, [velGain, velIntGain])
+
 db = cantools.database.can.Database(
     [
         heartbeatMsg,
@@ -170,6 +183,8 @@ db = cantools.database.can.Database(
         getVbusVMsg,
         clearErrorsMsg,
         setLinearCountMsg,
+        setPosGainMsg,
+        setVelGainsMsg
     ]
 )
 

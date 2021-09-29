@@ -22,8 +22,7 @@ bool CANSimple::renew_subscription(size_t i) {
 
     MsgIdFilterSpecs filter = {
         .id = {},
-        .mask = (uint32_t)(0xffffffff << NUM_CMD_ID_BITS)
-    };
+        .mask = (uint32_t)(0xffffffff << NUM_CMD_ID_BITS)};
     if (axis.config_.can.is_extended) {
         filter.id = (uint32_t)(axis.config_.can.node_id << NUM_CMD_ID_BITS);
     } else {
@@ -34,9 +33,11 @@ bool CANSimple::renew_subscription(size_t i) {
         canbus_->unsubscribe(subscription_handles_[i]);
     }
 
-    return canbus_->subscribe(filter, [](void* ctx, const can_Message_t& msg) {
-        ((CANSimple*)ctx)->handle_can_message(msg);
-    }, this, &subscription_handles_[i]);
+    return canbus_->subscribe(
+        filter, [](void* ctx, const can_Message_t& msg) {
+            ((CANSimple*)ctx)->handle_can_message(msg);
+        },
+        this, &subscription_handles_[i]);
 }
 
 void CANSimple::handle_can_message(const can_Message_t& msg) {
@@ -143,6 +144,12 @@ void CANSimple::do_command(Axis& axis, const can_Message_t& msg) {
             break;
         case MSG_SET_LINEAR_COUNT:
             set_linear_count_callback(axis, msg);
+            break;
+        case MSG_SET_POS_GAIN:
+            set_pos_gain_callback(axis, msg);
+            break;
+        case MSG_SET_VEL_GAINS:
+            set_vel_gains_callback(axis, msg);
             break;
         default:
             break;
@@ -288,8 +295,17 @@ void CANSimple::set_traj_inertia_callback(Axis& axis, const can_Message_t& msg) 
     axis.controller_.config_.inertia = can_getSignal<float>(msg, 0, 32, true);
 }
 
-void CANSimple::set_linear_count_callback(Axis& axis, const can_Message_t& msg){
+void CANSimple::set_linear_count_callback(Axis& axis, const can_Message_t& msg) {
     axis.encoder_.set_linear_count(can_getSignal<int32_t>(msg, 0, 32, true));
+}
+
+void CANSimple::set_pos_gain_callback(Axis& axis, const can_Message_t& msg) {
+    axis.controller_.config_.pos_gain = can_getSignal<float>(msg, 0, 32, true);
+}
+
+void CANSimple::set_vel_gains_callback(Axis& axis, const can_Message_t& msg) {
+    axis.controller_.config_.vel_gain = can_getSignal<float>(msg, 0, 32, true);
+    axis.controller_.config_.vel_integrator_gain = can_getSignal<float>(msg, 32, 32, true);
 }
 
 bool CANSimple::get_iq_callback(const Axis& axis) {
@@ -303,7 +319,7 @@ bool CANSimple::get_iq_callback(const Axis& axis) {
     if (!Idq_setpoint.has_value()) {
         Idq_setpoint = {0.0f, 0.0f};
     }
-    
+
     static_assert(sizeof(float) == sizeof(Idq_setpoint->first));
     static_assert(sizeof(float) == sizeof(Idq_setpoint->second));
     can_setSignal<float>(txmsg, Idq_setpoint->first, 0, 32, true);
@@ -328,7 +344,7 @@ bool CANSimple::get_vbus_voltage_callback(const Axis& axis) {
 }
 
 void CANSimple::clear_errors_callback(Axis& axis, const can_Message_t& msg) {
-    odrv.clear_errors(); // TODO: might want to clear axis errors only
+    odrv.clear_errors();  // TODO: might want to clear axis errors only
 }
 
 uint32_t CANSimple::service_stack() {
@@ -337,14 +353,13 @@ uint32_t CANSimple::service_stack() {
 
     // TODO: remove this polling loop and replace with protocol hook
     for (size_t i = 0; i < AXIS_COUNT; ++i) {
-        bool node_id_changed = (axes[i].config_.can.node_id != node_ids_[i])
-                            || (axes[i].config_.can.is_extended != extended_node_ids_[i]);
+        bool node_id_changed = (axes[i].config_.can.node_id != node_ids_[i]) || (axes[i].config_.can.is_extended != extended_node_ids_[i]);
         if (node_id_changed) {
             renew_subscription(i);
         }
     }
 
-    for (auto& a: axes) {
+    for (auto& a : axes) {
         MEASURE_TIME(a.task_times_.can_heartbeat) {
             if (a.config_.can.heartbeat_rate_ms > 0) {
                 if ((now - a.can_.last_heartbeat) >= a.config_.can.heartbeat_rate_ms) {
@@ -382,10 +397,10 @@ bool CANSimple::send_heartbeat(const Axis& axis) {
     can_setSignal(txmsg, uint8_t(axis.current_state_), 32, 8, true);
 
     // Motor flags
-    uint8_t motorFlags = 0; // reserved
+    uint8_t motorFlags = 0;  // reserved
 
     // Encoder flags
-    uint8_t encoderFlags = 0; // reserved
+    uint8_t encoderFlags = 0;  // reserved
 
     // Controller flags
     uint8_t controllerFlags = 0;
