@@ -364,6 +364,8 @@ bool Controller::update() {
         } else {
             vel_integrator_torque_ += ((vel_integrator_gain * gain_scheduling_multiplier) * current_meas_period) * v_err;
         }
+        // integrator limiting to prevent windup 
+        vel_integrator_torque_ = std::clamp(vel_integrator_torque_, -config_.vel_integrator_limit, config_.vel_integrator_limit);
     }
 
     float ideal_electrical_power = 0.0f;
