@@ -1,9 +1,16 @@
 # Unreleased Features
 Please add a note of your changes below this heading if you make a Pull Request.
 
+# Releases
+## [0.5.4] - 2021-10-12
+
 ### Fixed
 * Some ASCII protocol commands (e.g. `w axis0.requested_state 4`) resulted in `not implemented` due to an issue with the CI compiler. A workaround was made to fix this.
 * Fixed bad response of some ASCII procotol commands (e.g. `r axis0.error` returned `0d` instead of `0`).
+
+### Added
+* Added `<axis>.controller.config.vel_integrator_limit`
+* Allow setting controller gains on CAN Simple
 
 # Releases
 ## [0.5.3] - 2021-09-03
