@@ -141,10 +141,10 @@ try:
         print_version()
         import platform
         if platform.system() == "Windows":
-            print("This tool does not support firmware update on Windows. Please refer to "
-                  "https://docs.odriverobotics.com/odrivetool#upgrading-firmware-with-a-different-dfu-tool "
-                  "for other options.")
-            sys.exit(1)
+            logger.warn("DFU is unreliable on Windows. If it fails, please use "
+                        "the DFU switch to force DFU mode. You can also try the "
+                        "developer preview of odrivetool with `python -m pip install odrive --upgrade --pre`.\n"
+                        "Also see https://docs.odriverobotics.com/odrivetool#upgrading-firmware-with-a-different-dfu-tool for other options.")
         import odrive.dfu
         odrive.dfu.launch_dfu(args, logger, app_shutdown_token)
 
