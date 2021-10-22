@@ -69,15 +69,15 @@ void CANSimple::do_command(Axis& axis, const can_Message_t& msg) {
             estop_callback(axis, msg);
             break;
         case MSG_GET_MOTOR_ERROR:
-            if (msg.rtr)
+            if (msg.rtr || msg.len == 0)
                 get_motor_error_callback(axis);
             break;
         case MSG_GET_ENCODER_ERROR:
-            if (msg.rtr)
+            if (msg.rtr || msg.len == 0)
                 get_encoder_error_callback(axis);
             break;
         case MSG_GET_SENSORLESS_ERROR:
-            if (msg.rtr)
+            if (msg.rtr || msg.len == 0)
                 get_sensorless_error_callback(axis);
             break;
         case MSG_SET_AXIS_NODE_ID:
@@ -90,11 +90,11 @@ void CANSimple::do_command(Axis& axis, const can_Message_t& msg) {
             set_axis_startup_config_callback(axis, msg);
             break;
         case MSG_GET_ENCODER_ESTIMATES:
-            if (msg.rtr)
+            if (msg.rtr || msg.len == 0)
                 get_encoder_estimates_callback(axis);
             break;
         case MSG_GET_ENCODER_COUNT:
-            if (msg.rtr)
+            if (msg.rtr || msg.len == 0)
                 get_encoder_count_callback(axis);
             break;
         case MSG_SET_INPUT_POS:
@@ -125,18 +125,18 @@ void CANSimple::do_command(Axis& axis, const can_Message_t& msg) {
             set_traj_vel_limit_callback(axis, msg);
             break;
         case MSG_GET_IQ:
-            if (msg.rtr)
+            if (msg.rtr || msg.len == 0)
                 get_iq_callback(axis);
             break;
         case MSG_GET_SENSORLESS_ESTIMATES:
-            if (msg.rtr)
+            if (msg.rtr || msg.len == 0)
                 get_sensorless_estimates_callback(axis);
             break;
         case MSG_RESET_ODRIVE:
             NVIC_SystemReset();
             break;
         case MSG_GET_VBUS_VOLTAGE:
-            if (msg.rtr)
+            if (msg.rtr || msg.len == 0)
                 get_vbus_voltage_callback(axis);
             break;
         case MSG_CLEAR_ERRORS:
