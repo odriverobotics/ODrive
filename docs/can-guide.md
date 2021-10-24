@@ -10,7 +10,11 @@ Borrowing from [Wikipeda](https://en.wikipedia.org/wiki/CAN_bus):
 
 In simple terms, CAN is a way of communicating between many devices over a single twisted pair of wires.  The signal is transmitted as the difference in voltage between the two wires (differential signalling), which makes it very robust against noise.  Instead of using a unique address (like I2C) or a select pin (like SPI), CAN *messages* have a unique ID that also acts as the priority.  At the beginning of a message frame, all devices talk and read at the same time.  As the message ID is transmitted, the lowest value "wins" and that message will be transmitted (ID **0** has the *highest* priority).  All other devices will wait for the next chance to send.  If two devices send the same message ID at the same time, they will conflict and a bus failure may occur.  Make sure your devices can never send the same message ID at the same time!
 
+See also this great article from Danfoss that quickly describes how to put together the wiring for a CAN bus https://danfosseditron.zendesk.com/hc/en-gb/articles/360042232992-CAN-bus-physical-layer
+
 ![CAN picture](screenshots/CAN_Bus_Drawing.png)
+
+
 
 ## Why use CAN?
 
