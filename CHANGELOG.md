@@ -2,7 +2,7 @@
 Please add a note of your changes below this heading if you make a Pull Request.
 
 * CANSimple messages which previously required the rtr bit to be set will now also respond if DLC = 0
-
+* Ensure endstops update before being checked for errors, to prevent [#625](https://github.com/odriverobotics/ODrive/issues/625)
 
 # Releases
 ## [0.5.4] - 2021-10-12
