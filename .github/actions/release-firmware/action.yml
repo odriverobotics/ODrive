@@ -19,6 +19,9 @@ runs:
 
         cd ${{ github.workspace }}/Firmware
 
+        mkdir -p autogen
+        python ../tools/odrive/version.py --output autogen/version.c
+
         echo "CONFIG_STRICT=true" > tup.config
         echo "CONFIG_BOARD_VERSION=${{ inputs.board_version }}" >> tup.config
         tup init

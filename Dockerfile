@@ -17,6 +17,10 @@ WORKDIR ODrive/Firmware
 
 # Must attach the firmware tree into the container
 CMD \
+	# Regenerate autogen/version.c
+	mkdir -p autogen && \
+	python ../tools/odrive/version.py \
+	--output autogen/version.c && \
 	# Regenerate python interface
 	python interface_generator_stub.py \
 	--definitions odrive-interface.yaml \
