@@ -1,3 +1,4 @@
+#!/usr/bin/env bash
 function cleanup {
     echo "Removing previous build artifacts"
     rm -rf build/ Firmware/autogen Firmware/build Firmware/.tup
