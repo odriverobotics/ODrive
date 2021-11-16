@@ -84,6 +84,18 @@ All multibyte values are little endian (aka Intel format, aka least significant 
 
 ---
 
+### Cyclic Messages
+Cyclic messages are sent by ODrive on a timer without a request. As of `fw0.5.4`, the Cyclic messsages are:
+
+ID | Name | Rate (ms)
+--:    | :--  | :--
+0x001 | ODrive Heartbeat Message | 100
+0x009 | Encoder Estimates | 10
+
+These can be configured for each axis, see e.g. `axis.config.can`.
+
+---
+
 ### Interoperability with CANopen
 You can deconflict with CANopen like this:
 
