@@ -22,7 +22,7 @@ public:
     InputPort<float2D> idq_src_;
 
     // State variables
-    float active_ = false;
+    bool active_ = false;
     uint32_t last_timestamp_ = 0;
     float rotor_flux_ = 0.0f; // [A]
     float phase_offset_ = 0.0f; // [A]
