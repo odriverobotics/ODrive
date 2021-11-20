@@ -66,13 +66,13 @@ Assuming your endstop is connected to GPIO X:
 
 ### Example
 
-If we want to configure a 3D printer-style (configuration 4) minimum endstop for homing on GPIO 5 and we want our motor to move away from the endstop about a quarter turn with a 8192 cpr encoder, we would set:
+If we want to configure a 3D printer-style (configuration 4) minimum endstop for homing on GPIO 5 and we want our motor to move away from the endstop about a quarter turn, we would set:
 
 ```
 <odrv>.config.gpio5_mode = GPIO_MODE_DIGITAL
 <odrv>.<axis>.min_endstop.config.gpio_num = 5
 <odrv>.<axis>.min_endstop.config.is_active_high = False
-<odrv>.<axis>.min_endstop.config.offset = -1.0*(8912/4)
+<odrv>.<axis>.min_endstop.config.offset = -0.25
 <odrv>.<axis>.min_endstop.config.enabled = True
 <odrv>.config.gpio5_mode = GPIO_MODE_DIGITAL_PULL_UP
 ```
@@ -90,7 +90,6 @@ A state of `True` means the switch is pressed.  A state of `False` means the swi
 After testing, don't forget to save and reboot:
 ```
 <odrv>.save_configuration()
-<odrv>.reboot()
 ```
 
 ---
