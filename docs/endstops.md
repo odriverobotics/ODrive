@@ -59,7 +59,7 @@ The GPIOs that are used for the endstops need to be configured according to the 
 Assuming your endstop is connected to GPIO X:
 
  - Configuration 1, 2: `<odrv>.config.gpioX_mode = GPIO_MODE_DIGITAL_PULL_DOWN`
- - Configuration 3, 4: `<odrv>.config.gpioX_mode = GPIO_MODE_DIGITAL_PULL_DOWN`
+ - Configuration 3, 4: `<odrv>.config.gpioX_mode = GPIO_MODE_DIGITAL_PULL_UP`
 
 ![Endstop configuration](Endstop_configuration.png)  
 
