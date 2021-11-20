@@ -108,4 +108,4 @@ when you call `dump_errors()`, you have a version mismatch between odrivetool an
 
 ### Index search never completes
 
-There are some GPIO pin interrupt collisions on ODrive 3.6 that could cause index search to fail in certain conditions.  If you are using both step/dir and index pins, we recommend disabling `step_dir_always_on`.  For more information, see this thread: https://github.com/odriverobotics/ODrive/issues/605#issuecomment-971576393
+- There are some GPIO pin interrupt collisions on ODrive 3.6 that could cause index search to fail in certain conditions.  If you are using both step/dir and index pins, we recommend disabling `step_dir_always_on`.  For more information, see this thread: https://github.com/odriverobotics/ODrive/issues/605#issuecomment-971576393
