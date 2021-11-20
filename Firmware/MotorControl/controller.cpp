@@ -209,7 +209,7 @@ bool Controller::update() {
             if (axis_->trap_traj_.t_ > axis_->trap_traj_.Tf_) {
                 // Drop into position control mode when done to avoid problems on loop counter delta overflow
                 config_.control_mode = CONTROL_MODE_POSITION_CONTROL;
-                pos_setpoint_ = input_pos_;
+                pos_setpoint_ = axis_->trap_traj_.Xf_;
                 vel_setpoint_ = 0.0f;
                 torque_setpoint_ = 0.0f;
                 trajectory_done_ = true;
