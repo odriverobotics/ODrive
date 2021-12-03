@@ -43,6 +43,13 @@ npm run electron:build
 npm run electron:build -- -mwl
 ```
 
+### Running from source
+On the devel git branch, there may be unreleased changes to dependencies like fibre or the ODrive enumerations.
+Use this command to launch the GUI with the dependencies from the repo:
+```
+npm run electron:serve -- ../tools/
+```
+
 ### Building for rpi and potentially other ARM platform devices
 
 PhantomJS is required as a dependency, so it must be installed first:
