@@ -7,7 +7,7 @@ Troubleshooting
 .. contents::
    :depth: 1
    :local:
-   
+
 .. _error-codes:
 
 Error Codes
@@ -18,12 +18,12 @@ This will dump a list of all the errors that are present. To clear all the error
 
 With this information you can look up the API documentation for your error(s):
 
-* System error flags documented :ref:`here <api/odrive.error>`.
-* Axis error flags documented :ref:`here <api/odrive.axis.error>`.
-* Motor error flags documented :ref:`here <api/odrive.motor.error>`.
-* Encoder error flags documented :ref:`here <api/odrive.encoder.error>`.
-* Controller error flags documented :ref:`here <api/odrive.controller.error>`.
-* Sensorless estimator error flags documented :ref:`here <api/odrive.sensorlessestimator.error>`.
+* System error flags documented :attr:`here <api/odrive.error>`.
+* Axis error flags documented :attr:`here <api/odrive.axis.error>`.
+* Motor error flags documented :attr:`here <api/odrive.motor.error>`.
+* Encoder error flags documented :attr:`here <api/odrive.encoder.error>`.
+* Controller error flags documented :attr:`here <api/odrive.controller.error>`.
+* Sensorless estimator error flags documented :attr:`here <api/odrive.sensorlessestimator.error>`.
 
 What if :code:`dump_errors()` gives me python errors? 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
